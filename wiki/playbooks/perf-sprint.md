@@ -22,6 +22,10 @@ The orchestrator's first job is the kickoff sequence in "How to work" below — 
 
 **Equivalence gate (binary, must pass):** `K1_match >= 60%` AND `regret_delta` within ±10% on that same paired run. If the gate fails, the row is `discard` regardless of wall.
 
+**Wall budget (hard cap):** a single paired bench (baseline + variant) MUST complete in **≤ 10 minutes total wall time**. No exceptions. Long benches do not earn their keep — codified 2026-04-28 after sprint 2 burned hours on subset_560[:50] runs that silent-died or didn't change the lever ladder. If a config can't show a signal in 10 min, the config is too big: shrink N, not the budget. Cross-hand confirmation lives at subset_560[:10–20]; primary discovery lives at subset_5.
+
+**Logging discipline (hard rule):** no process started by a perf-sprint worker may go **more than 60 seconds without writing a log line**. If it does, that is a high-priority bug — fix it before the next iter runs. Long silent benches set a precedent the next worker copies; we lose the ability to distinguish "dead" from "working slowly." Required for any bench/worker process: a tail-able log (`run.log` / `live.log` / `events.jsonl`) with a heartbeat or progress line at least every 60 seconds. The existing `[bench] subproc-cohort alive (...)` pings at 30s satisfy this; any new harness must do the same. If you must spawn a process that doesn't log natively, wrap it in a watchdog that does. Codified 2026-04-28.
+
 **Cycle:** modify, run paired baseline + variant, log one row to the ledger, `keep` or `discard` (advance branch or `git reset`). See [[perf-sprint-loop]].
 
 **Architecture:** orchestrator + one backgrounded worker at a time, in a `TeamCreate`'d team for addressability. The worker drives iterations; the orchestrator never blocks. `/loop` is the supervision heartbeat (status pings, stuck-worker recovery), not the driver. See "Architecture" below.

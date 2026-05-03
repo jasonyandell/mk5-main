@@ -192,6 +192,8 @@ def build_rows() -> list[dict[str, str]]:
     partner_claims = read_csv("w42/partner_support_claim_validation/claim_proxy_stats.csv")
     setter_summary = read_json("w42/setter_defense_claim_validation/summary.json")
     setter_claims = read_csv("w42/setter_defense_claim_validation/claim_proxy_stats.csv")
+    tactical_summary = read_json("w42/gus_corpus_claim_deep_dive/summary.json")
+    tactical_contrasts = read_csv("w42/gus_corpus_claim_deep_dive/paired_contrasts.csv")
     bidder_summary = read_json("w42/bidder_sequencing_claim_validation/summary.json")
     bidder_claims = read_csv("w42/bidder_sequencing_claim_validation/claim_summary.csv")
 
@@ -713,52 +715,187 @@ def build_rows() -> list[dict[str, str]]:
     )
 
     for claim_row in partner_claims:
-        result = (
-            f"preferred_n={claim_row['preferred_action_n']}, alternative_n={claim_row['alternative_action_n']}, "
-            f"paired_n={claim_row['paired_decision_n']}, paired_delta={claim_row['paired_preferred_minus_alternative_mean_regret']}"
-        )
-        add(
-            claim_row["claim_id"],
-            "partner support",
-            claim_row["verdict"],
-            claim_row["label"],
-            "wiki/experiments/winning42-ch04-partner-support.md; w42/partner_support_claim_validation/claim_proxy_stats.csv",
-            "proxy regret analysis",
-            "w42; oracle",
-            "Bootstrap CIs over available eval-corpus proxy buckets.",
-            result,
-            [
-                "w42/partner_support_claim_validation/claim_proxy_stats.csv",
-                "w42/partner_support_claim_validation/summary.json",
-            ],
-            "Proxy tags do not fully encode bidder-partner intent, hidden risk, or future forcedness.",
-            "Implement direct partner-intent and forcedness detectors before moving statuses broadly.",
-            hf=partner_summary["hf_links"],
-        )
+        if claim_row["claim_id"] == "ch04-safe-partner-count-donation":
+            contrast = row_by(tactical_contrasts, "contrast_id", "ch04_safe_partner_count_vs_other_same_decision")
+            result = (
+                f"direct paired_n={contrast['paired_decision_n']}, "
+                f"mean_delta={contrast['mean_delta']}, "
+                f"ci95=[{contrast['mean_delta_ci95_low']}, {contrast['mean_delta_ci95_high']}], "
+                f"threshold_mass_delta={contrast['threshold_mass_delta']}"
+            )
+            add(
+                claim_row["claim_id"],
+                "partner support",
+                "context-limited",
+                "Safe count donation under current bidder-team trick control is better than same-decision alternatives.",
+                "wiki/experiments/winning42-ch04-partner-support.md; wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md",
+                "direct role-gated corpus contrast",
+                "w42; oracle; gus",
+                "Paired same-decision E[Q] contrast over Gus v2 pip-declaration corpus.",
+                result,
+                [
+                    "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
+                    "w42/gus_corpus_claim_deep_dive/summary.json",
+                ],
+                "The direct label means bidder team currently controls the trick; it is not yet a guaranteed-trick proof against later seats.",
+                "Add guaranteed-win strength and later-seat overtake labels before broad partner-support promotion.",
+                wandb=wandb_url(tactical_summary["scientific_status"]["wandb"]["url"]),
+                hf="not applicable",
+            )
+        else:
+            result = (
+                f"preferred_n={claim_row['preferred_action_n']}, alternative_n={claim_row['alternative_action_n']}, "
+                f"paired_n={claim_row['paired_decision_n']}, paired_delta={claim_row['paired_preferred_minus_alternative_mean_regret']}"
+            )
+            add(
+                claim_row["claim_id"],
+                "partner support",
+                claim_row["verdict"],
+                claim_row["label"],
+                "wiki/experiments/winning42-ch04-partner-support.md; w42/partner_support_claim_validation/claim_proxy_stats.csv",
+                "proxy regret analysis",
+                "w42; oracle",
+                "Bootstrap CIs over available eval-corpus proxy buckets.",
+                result,
+                [
+                    "w42/partner_support_claim_validation/claim_proxy_stats.csv",
+                    "w42/partner_support_claim_validation/summary.json",
+                ],
+                "Proxy tags do not fully encode bidder-partner intent, hidden risk, or future forcedness.",
+                "Implement direct partner-intent and forcedness detectors before moving statuses broadly.",
+                hf=partner_summary["hf_links"],
+            )
+
+    unsafe_partner = row_by(tactical_contrasts, "contrast_id", "ch04_unsafe_partner_count_vs_nonunsafe_same_decision")
+    add(
+        "ch04-unsafe-partner-count-donation",
+        "partner support",
+        "supported",
+        "The bidder's partner should not donate count into a defense-controlled trick that the candidate cannot win.",
+        "wiki/experiments/winning42-ch04-partner-support.md; wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md",
+        "direct role-gated corpus contrast",
+        "w42; oracle; gus",
+        "Paired same-decision E[Q] contrast over Gus v2 pip-declaration corpus.",
+        (
+            f"paired_n={unsafe_partner['paired_decision_n']}, "
+            f"mean_delta={unsafe_partner['mean_delta']}, "
+            f"ci95=[{unsafe_partner['mean_delta_ci95_low']}, {unsafe_partner['mean_delta_ci95_high']}], "
+            f"threshold_mass_delta={unsafe_partner['threshold_mass_delta']}"
+        ),
+        [
+            "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
+            "w42/gus_corpus_claim_deep_dive/summary.json",
+        ],
+        "Negative-control support on generated Gus v2 corpus; this does not prove every positive donation rule.",
+        "Add guaranteed-win strength labels for the positive safe-donation rule.",
+        wandb=wandb_url(tactical_summary["scientific_status"]["wandb"]["url"]),
+        hf="not applicable",
+    )
 
     for claim_row in setter_claims:
-        result = (
-            f"directness={claim_row['directness']}, preferred_n={claim_row['preferred_action_n']}, "
-            f"alternative_n={claim_row['alternative_action_n']}, paired_n={claim_row['paired_decision_n']}"
-        )
-        add(
-            claim_row["claim_id"],
-            "setter defense",
-            claim_row["verdict"],
-            claim_row["label"],
-            "wiki/experiments/winning42-ch05-setter-defense.md; wiki/experiments/winning42-ch12-advanced-bidding-playing.md; w42/setter_defense_claim_validation/claim_proxy_stats.csv",
-            "proxy regret analysis",
-            "w42; oracle",
-            "Bootstrap CIs over available eval-corpus proxy buckets.",
-            result,
-            [
-                "w42/setter_defense_claim_validation/claim_proxy_stats.csv",
-                "w42/setter_defense_claim_validation/summary.json",
-            ],
-            "The current v0 corpus lacks direct setter-role, bidder-off, void-creation, trump-set, and bid-margin detectors.",
-            "Implement direct setter-pounce labels and set-threshold accounting.",
-            hf=setter_summary["hf_links"],
-        )
+        if claim_row["claim_id"] == "ch05-pounce-count-before-certainty":
+            contrast = row_by(tactical_contrasts, "contrast_id", "ch05_pounce_count_vs_other_same_decision")
+            result = (
+                f"direct paired_n={contrast['paired_decision_n']}, "
+                f"mean_delta={contrast['mean_delta']}, "
+                f"ci95=[{contrast['mean_delta_ci95_low']}, {contrast['mean_delta_ci95_high']}], "
+                f"threshold_mass_delta={contrast['threshold_mass_delta']}"
+            )
+            add(
+                claim_row["claim_id"],
+                "setter defense",
+                "supported",
+                "When a defender can take an offense-controlled trick with count, the pounce-count action is better than same-decision alternatives.",
+                "wiki/experiments/winning42-ch05-setter-defense.md; wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md",
+                "direct role-gated corpus contrast",
+                "w42; oracle; gus",
+                "Paired same-decision E[Q] contrast over Gus v2 pip-declaration corpus.",
+                result,
+                [
+                    "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
+                    "w42/gus_corpus_claim_deep_dive/summary.json",
+                ],
+                "Supported for the operationalized pounce-count label on fixed-bid-30 generated corpus; high-bid and real bid-margin contexts remain untested.",
+                "Add bid-margin/high-bid filters and bidder-off inference before broad Chapter 5 promotion.",
+                wandb=wandb_url(tactical_summary["scientific_status"]["wandb"]["url"]),
+                hf="not applicable",
+            )
+        elif claim_row["claim_id"] == "ch05-extra-count-to-set":
+            contrast = row_by(tactical_contrasts, "contrast_id", "ch05_pounce_sets_now_vs_other_same_decision")
+            result = (
+                f"direct paired_n={contrast['paired_decision_n']}, "
+                f"mean_delta={contrast['mean_delta']}, "
+                f"ci95=[{contrast['mean_delta_ci95_low']}, {contrast['mean_delta_ci95_high']}], "
+                f"threshold_mass_delta={contrast['threshold_mass_delta']}"
+            )
+            add(
+                claim_row["claim_id"],
+                "setter defense",
+                "context-limited",
+                "Pounce count that immediately reaches the set threshold is better than same-decision alternatives.",
+                "wiki/experiments/winning42-ch05-setter-defense.md; wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md",
+                "direct role-gated corpus contrast",
+                "w42; oracle; gus",
+                "Paired same-decision E[Q] contrast over Gus v2 pip-declaration corpus.",
+                result,
+                [
+                    "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
+                    "w42/gus_corpus_claim_deep_dive/summary.json",
+                ],
+                "The direct label tests set-threshold count, not the exact ten-count-versus-five-count overbid story.",
+                "Add bid-margin and explicit five-count/ten-count loss-budget labels.",
+                wandb=wandb_url(tactical_summary["scientific_status"]["wandb"]["url"]),
+                hf="not applicable",
+            )
+        else:
+            result = (
+                f"directness={claim_row['directness']}, preferred_n={claim_row['preferred_action_n']}, "
+                f"alternative_n={claim_row['alternative_action_n']}, paired_n={claim_row['paired_decision_n']}"
+            )
+            add(
+                claim_row["claim_id"],
+                "setter defense",
+                claim_row["verdict"],
+                claim_row["label"],
+                "wiki/experiments/winning42-ch05-setter-defense.md; wiki/experiments/winning42-ch12-advanced-bidding-playing.md; w42/setter_defense_claim_validation/claim_proxy_stats.csv",
+                "proxy regret analysis",
+                "w42; oracle",
+                "Bootstrap CIs over available eval-corpus proxy buckets.",
+                result,
+                [
+                    "w42/setter_defense_claim_validation/claim_proxy_stats.csv",
+                    "w42/setter_defense_claim_validation/summary.json",
+                ],
+                "The current v0 corpus lacks direct setter-role, bidder-off, void-creation, trump-set, and bid-margin detectors.",
+                "Implement direct setter-pounce labels and set-threshold accounting.",
+                hf=setter_summary["hf_links"],
+            )
+
+    reckless = row_by(tactical_contrasts, "contrast_id", "ch05_reckless_count_vs_nonreckless_same_decision")
+    add(
+        "ch05-reckless-count-to-bidder",
+        "setter defense",
+        "supported",
+        "A defender should not dump count into an offense-controlled trick when the candidate cannot win the trick.",
+        "wiki/experiments/winning42-ch05-setter-defense.md; wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md",
+        "direct role-gated corpus contrast",
+        "w42; oracle; gus",
+        "Paired same-decision E[Q] contrast over Gus v2 pip-declaration corpus.",
+        (
+            f"paired_n={reckless['paired_decision_n']}, "
+            f"mean_delta={reckless['mean_delta']}, "
+            f"ci95=[{reckless['mean_delta_ci95_low']}, {reckless['mean_delta_ci95_high']}], "
+            f"threshold_mass_delta={reckless['threshold_mass_delta']}"
+        ),
+        [
+            "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
+            "w42/gus_corpus_claim_deep_dive/summary.json",
+        ],
+        "Negative-control support on generated Gus v2 corpus; the positive pounce rule still needs bid-margin expansion.",
+        "Use this as a regression fixture for future pounce detectors.",
+        wandb=wandb_url(tactical_summary["scientific_status"]["wandb"]["url"]),
+        hf="not applicable",
+    )
 
     for claim_row in bidder_claims:
         add(
@@ -807,7 +944,8 @@ def build_summary(rows: list[dict[str, str]], generated_at: str) -> dict[str, An
         "evidence_mode_counts": dict(sorted(evidence_counts.items())),
         "headline_findings": [
             "Exact hand-count, void-frequency, double-count, modal-hand, four-trump assignment, ruleset, and scoring-algebra substrates are supported on their stated slices.",
-            "Bidding, partner-support, setter-defense, bidder-sequencing, 84, and no-trump tactical recommendations remain mostly context-limited, underpowered, or not-yet-tested.",
+            "The Gus v2 tactical deep dive moves operationalized setter-pounce and unsafe-count donation labels from proxy-only to direct corpus evidence.",
+            "Bidding, bidder-sequencing, 84, no-trump, and most tactical recommendation families remain context-limited, underpowered, or not-yet-tested.",
             "The contradicted rows are narrow: one 84 stopper-ownership overgeneralization and one partner-support proxy result.",
             "No tactical advice was moved to supported solely because its statistical substrate is true.",
         ],
@@ -826,6 +964,7 @@ def build_summary(rows: list[dict[str, str]], generated_at: str) -> dict[str, An
                 "wiki/experiments/w42-doubles-no-trump-claim-validation.md",
                 "wiki/experiments/w42-scoring-objective-drift-claim-validation.md",
                 "wiki/experiments/w42-84-claim-validation.md",
+                "wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md",
             ],
             "w42_artifact_inputs": [
                 "w42/odds_ruleset_claim_validation/",
@@ -835,6 +974,7 @@ def build_summary(rows: list[dict[str, str]], generated_at: str) -> dict[str, An
                 "w42/eighty_four_claim_validation/",
                 "w42/partner_support_claim_validation/",
                 "w42/setter_defense_claim_validation/",
+                "w42/gus_corpus_claim_deep_dive/",
                 "w42/bidder_sequencing_claim_validation/",
             ],
         },
@@ -849,8 +989,9 @@ def build_summary(rows: list[dict[str, str]], generated_at: str) -> dict[str, An
             "Rows retain source W&B links where an upstream validation artifact logged one; HF remains not applicable."
         ),
         "claim_ledger_impact": (
-            "Phase-2 statistics ledger created as a local artifact and report page. "
-            "No central ledger, wiki index, entity page, decision page, or bead file was updated."
+            "Phase-2 statistics ledger is maintained as a local artifact and report page. "
+            "This rebuild integrates the Gus-corpus tactical deep dive into the ledger, wiki index, "
+            "w42 entity page, and relevant tactical claim-validation pages."
         ),
         "caveats": [
             "Static enumeration supports arithmetic, prevalence, and ruleset substrate claims, not strategy optimality.",
@@ -893,6 +1034,8 @@ def build_manifest(rows: list[dict[str, str]], generated_at: str) -> dict[str, A
             "w42/partner_support_claim_validation/claim_proxy_stats.csv",
             "w42/setter_defense_claim_validation/summary.json",
             "w42/setter_defense_claim_validation/claim_proxy_stats.csv",
+            "w42/gus_corpus_claim_deep_dive/summary.json",
+            "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
             "w42/bidder_sequencing_claim_validation/summary.json",
             "w42/bidder_sequencing_claim_validation/claim_summary.csv",
         ],
@@ -917,7 +1060,7 @@ def write_outputs() -> None:
     rows = build_rows()
     generated_at = datetime.now(timezone.utc).isoformat()
     with CLAIMS_CSV.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     SUMMARY_JSON.write_text(json.dumps(build_summary(rows, generated_at), indent=2) + "\n")

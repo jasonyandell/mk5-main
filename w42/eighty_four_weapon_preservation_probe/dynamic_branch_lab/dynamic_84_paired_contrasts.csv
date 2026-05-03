@@ -1,0 +1,3 @@
+contrast_id,paired_decision_n,mean_delta,threshold_mass_delta,lower_tail_mass_delta
+defense_preserve_low_asset_vs_spend_live_asset_proxy,13,0.1363812960111178,0.005108173076923077,-0.004807692307692308
+offense_trump_pull_vs_final_off_proxy,23,4.0078611581221875,0.0,-0.00016983695652173913

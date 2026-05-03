@@ -14,7 +14,9 @@ machine-readable ledger without promoting tactical advice beyond the evidence?
 This phase-2 pass covers hand odds, trump counts, doubles/no-trump odds, void
 frequencies, count exposure, stopper ownership, 84 weapon availability, scoring
 transforms, and the existing proxy reports for partner support, setter defense,
-and bidder sequencing.
+and bidder sequencing. It now also incorporates
+[[w42-gus-corpus-tactical-claim-deep-dive]] for direct Gus v2 corpus evidence on
+setter pounce and partner count-donation boundaries.
 
 ## Data And Source Inventory
 
@@ -40,6 +42,7 @@ Local evidence artifacts:
 | 84 bidder/defender | `w42/eighty_four_claim_validation/` |
 | partner support | `w42/partner_support_claim_validation/` |
 | setter defense | `w42/setter_defense_claim_validation/` |
+| Gus corpus tactical deep dive | `w42/gus_corpus_claim_deep_dive/` |
 | bidder sequencing | `w42/bidder_sequencing_claim_validation/` |
 
 Wiki inputs included [[w42]], [[w42-final-empirical-strategy-report]],
@@ -58,6 +61,7 @@ Evidence modes:
 - deterministic ruleset and scoring transforms;
 - exact assignment/hypergeometric ownership checks;
 - existing proxy regret/model-bucket reports;
+- direct role-gated corpus contrasts from Gus v2 joint-world records;
 - one small in-ledger arithmetic check for the Chapter 9 five-doubles claim:
   with two missing doubles distributed over 21 unknown slots, at least one
   opponent is void in doubles in `161 / 210 = 76.667%` of assignments.
@@ -70,14 +74,14 @@ directly tests the tactic.
 
 ## Claim Table Summary
 
-The generated ledger has 62 rows.
+The generated ledger has 64 rows.
 
 | status | count |
 |---|---:|
-| supported | 20 |
+| supported | 23 |
 | contradicted | 2 |
-| context-limited | 10 |
-| underpowered | 24 |
+| context-limited | 12 |
+| underpowered | 21 |
 | not-yet-tested | 6 |
 
 High-signal rows:
@@ -93,7 +97,9 @@ High-signal rows:
 | scoring | deterministic marks-vs-points transforms are `supported`; skill-signal and timed-advancement claims need policy/tournament data. |
 | 84 stoppers | named missing-double ownership is `context-limited`; applying the two-to-one prior when either of two matching doubles can set is `contradicted` by the 90% exact ownership result. |
 | 84 weapons | static one-to-four last-trick weapon inventory is `context-limited`; same-suit pair defense is `underpowered`; abandonment and throwaway priorities are `not-yet-tested`. |
-| partner/setter/bidder proxies | mostly `underpowered`; the effective-double partner-support proxy is `contradicted` on the available slice. |
+| setter pounce | `supported` on the operationalized Gus v2 pip-declaration slice: pounce-count actions beat same-decision alternatives by about +4.1 Q; reckless count into the bidder is a supported negative-control warning. |
+| partner count donation | safe donation under current bidder-team control is `context-limited` with a small paired signal; unsafe count into defense control is `supported` as a negative-control warning. |
+| remaining partner/setter/bidder proxies | mostly `underpowered`; the effective-double partner-support proxy is `contradicted` on the available slice. |
 
 ## Caveats
 
@@ -103,6 +109,8 @@ High-signal rows:
   a live-agent feature.
 - Several proxy reports use existing Gus/w42 eval slices and broad tags. Their
   statuses should not be widened without direct detectors or paired rollouts.
+  The Gus corpus tactical deep dive is the first direct-detector update for a
+  narrow subset, not a broad promotion of all tactical advice.
 - Book preview OCR is used as provenance, not as a source for long quotation.
 - No central ledger page was rewritten; this is a phase-2 local artifact ready
   for the parent integrator to link.
@@ -119,6 +127,7 @@ High-signal rows:
 | random seeds | not applicable for this synthesis; upstream proxy reports preserve their own seeds |
 | configs | not applicable |
 | data inputs | wiki/source pages and w42 artifact directories listed above |
+| W&B additions | `https://wandb.ai/jasonyandell-forge42/w42/runs/zm3jdrnj` for the Gus corpus tactical deep dive |
 
 ## Artifact Paths
 
@@ -131,23 +140,29 @@ High-signal rows:
 
 ## W&B / HF Note
 
-No new W&B or HuggingFace artifact was created for this synthesis. Ledger rows
-preserve source W&B links where upstream validation runs logged one, notably
-the doubles/no-trump run, scoring-objective run, and corrected 84 run. HF remains
-not applicable.
+No new W&B or HuggingFace artifact was created by the ledger synthesis itself.
+Ledger rows preserve source W&B links where upstream validation runs logged one,
+including the Gus corpus tactical deep dive, doubles/no-trump run,
+scoring-objective run, and corrected 84 run. HF remains not applicable.
 
 ## Claim-Ledger Impact
 
-This page and `w42/statistics_claims_ledger/` create a phase-2 statistics
-claims ledger. They do not update `.beads`, `wiki/index.md`, `wiki/entities/w42.md`,
-shared decision pages, or the central [[w42-claim-ledger]] page.
+This page and `w42/statistics_claims_ledger/` now track the phase-2 statistics
+claims ledger as an active local artifact. The Gus corpus tactical update moves
+only narrow operationalized rows; it does not rewrite the central
+[[w42-claim-ledger]] schema page.
 
-Deferred parent integration:
+[[w42-phase2-claim-analysis-matrix]] now routes every current ledger row to a
+testability class, required fields, leakage boundary, sample/power need, target
+wiki page, and next bead. That matrix is planning metadata only; it does not
+move claim statuses by itself.
 
-- add this page to `wiki/index.md`;
-- add a backlink from [[w42]] if desired;
-- decide whether any subset of these rows should become the canonical central
-  machine-readable claim ledger.
+[[w42-tactical-claim-replication]] confirms the direct tactical rows using a
+full legal-action export and harness pass, but does not broaden the statuses
+beyond the operationalized Gus v2 slice already recorded here.
+
+Deferred parent integration: decide whether any subset of these rows should
+become the canonical central machine-readable claim ledger.
 
 ## Links
 
@@ -156,4 +171,5 @@ Deferred parent integration:
 [[w42-bidding-risk-budget-claim-validation]] |
 [[w42-doubles-no-trump-claim-validation]] |
 [[w42-scoring-objective-drift-claim-validation]] |
-[[w42-84-claim-validation]]
+[[w42-84-claim-validation]] |
+[[w42-gus-corpus-tactical-claim-deep-dive]]

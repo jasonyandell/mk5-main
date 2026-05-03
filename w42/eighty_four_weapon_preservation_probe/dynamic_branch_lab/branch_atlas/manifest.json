@@ -1,0 +1,79 @@
+{
+  "bead_id": "t42-0b4l.7",
+  "config": {
+    "examples": 16,
+    "log_every_decisions": 2,
+    "top_k_hidden_threats_per_action": 8,
+    "wandb_group": "w42-eighty-four-dynamic-branch-lab",
+    "wandb_mode": "online",
+    "wandb_name": "t42-0b4l.7-dynamic-84-branch-lab",
+    "wandb_project": "w42"
+  },
+  "created_at_utc": "2026-05-03T03:37:01.631751+00:00",
+  "experiment": "w42-eighty-four-dynamic-branch-lab",
+  "feature_groups": {
+    "actor_private_context": [
+      "actor remaining hand facts",
+      "candidate legal action"
+    ],
+    "offline_distribution_labels": [
+      "q_per_world-derived PDF shape",
+      "threshold mass",
+      "lower-tail mass",
+      "quantiles",
+      "CVaR",
+      "scalar-EV omission flags"
+    ],
+    "offline_hidden_threat_labels": [
+      "conditioned hidden domino holder impact",
+      "top downside/upside hidden drivers",
+      "holder/domino impact rows"
+    ],
+    "online_safe_context": [
+      "seat_role",
+      "trick_position",
+      "public score",
+      "played count",
+      "current trick winner",
+      "candidate action facts"
+    ]
+  },
+  "input": {
+    "bid_value_counts": {
+      "84": 6
+    },
+    "bid_value_status": "fixed recorded bid_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "input_games": 6,
+    "n_samples": 256,
+    "path": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/targeted_84_games.pt",
+    "schema": "v2",
+    "seeds": [
+      840700,
+      840701,
+      840702,
+      840703,
+      840704,
+      840705
+    ],
+    "sha256": "88626b7e6f00c074f39283cb0819daaa04c88b6bdcc6b9ba4e4396b46015c19a",
+    "start_seed": null
+  },
+  "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+  "outputs": {
+    "decision_actions_csv": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/decision_actions.csv",
+    "decision_states_csv": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/decision_states.csv",
+    "examples_json": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/examples.json",
+    "hidden_threat_rows_csv": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/hidden_threat_rows.csv",
+    "manifest_json": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/manifest.json"
+  },
+  "schema_version": "w42.branch_atlas_v1.manifest.v0"
+}

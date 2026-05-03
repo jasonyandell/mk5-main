@@ -14,6 +14,20 @@ tags, and oracle E[Q] labels. The report checks whether Chapter 4 partner-suppor
 claims leave measurable signal in existing public-state tags before a richer
 bidder-partner detector exists.
 
+The follow-up [[w42-gus-corpus-tactical-claim-deep-dive]] adds a larger
+role-gated direct slice from the Gus v2 all-declaration corpus. It keeps the
+Chapter 4 conclusion conservative but strengthens the safety boundary: safe
+partner count donation under current bidder-team control has a small positive
+paired signal, while unsafe count donation into a defense-won trick is strongly
+negative.
+
+[[w42-tactical-claim-replication]] reruns that direct slice with full
+legal-action rows and the reusable claim harness. It confirms safe partner count
+at `+0.683` Q versus same-decision alternatives and unsafe partner count at
+`-8.428`. The result still treats safe donation as context-limited because
+current bidder-team control is not yet the same as guaranteed future trick
+control.
+
 Generated artifacts:
 
 - `w42/partner_support_claim_validation/analyze_partner_support.py`
@@ -94,6 +108,14 @@ Safe donation has the cleanest directional signal: candidate actions tagged as d
 count to partner have lower unpaired oracle regret than candidate actions tagged as
 donating count to an opponent-currently-winning trick. The sample is small and unpaired,
 so this is not ledger-grade support.
+
+[[w42-gus-corpus-tactical-claim-deep-dive]] improves that evidence shape. On
+400 paired same-decision cases, safe partner count has a mean E[Q] delta of
+`+0.683` with 95% CI `[+0.147, +1.232]` versus other actions. On 559 paired
+cases, unsafe partner count has a mean delta of `-8.428` with 95% CI
+`[-9.268, -7.613]`. This supports the "do not donate count into a losing
+trick" boundary on the Gus v2 slice, while the positive safe-donation claim
+remains context-limited until a true guaranteed-trick detector is added.
 
 Low-liability off leads also lean in the book's direction, with lower regret than
 count-exposing off leads, but the paired interval crosses zero. The existing `live_count`
@@ -196,4 +218,5 @@ Commit SHA:
 ## Links
 
 [[w42]] | [[winning42-ch04-partner-support]] | [[w42-strategy-tags-v0]] |
-[[w42-strategy-tags-v1-map]] | [[w42-claim-ledger]] | [[forge]] | [[gus]]
+[[w42-strategy-tags-v1-map]] | [[w42-claim-ledger]] |
+[[w42-tactical-claim-replication]] | [[forge]] | [[gus]]

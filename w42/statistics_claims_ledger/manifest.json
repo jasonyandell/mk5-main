@@ -1,8 +1,8 @@
 {
   "schema_version": "w42.statistics_claims_ledger.manifest.v1",
   "owner_bead": "t42-5m82.1",
-  "generated_at_utc": "2026-05-02T21:17:15.549224+00:00",
-  "git_sha": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "generated_at_utc": "2026-05-03T00:11:49.791108+00:00",
+  "git_sha": "e55a6f89de6e599f795db87c30c29d82b8883313",
   "generator": "w42/statistics_claims_ledger/build_statistics_claims_ledger.py",
   "command": "python w42/statistics_claims_ledger/build_statistics_claims_ledger.py",
   "check_command": "python w42/statistics_claims_ledger/build_statistics_claims_ledger.py --check",
@@ -13,7 +13,7 @@
     "supported",
     "underpowered"
   ],
-  "claim_count": 62,
+  "claim_count": 64,
   "inputs": [
     "wiki/AGENTS.md",
     "wiki/entities/w42.md",
@@ -35,6 +35,8 @@
     "w42/partner_support_claim_validation/claim_proxy_stats.csv",
     "w42/setter_defense_claim_validation/summary.json",
     "w42/setter_defense_claim_validation/claim_proxy_stats.csv",
+    "w42/gus_corpus_claim_deep_dive/summary.json",
+    "w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
     "w42/bidder_sequencing_claim_validation/summary.json",
     "w42/bidder_sequencing_claim_validation/claim_summary.csv"
   ],

@@ -12,12 +12,26 @@ status: active
 It tests Chapter 5 and related Chapter 12 setter-defense claims against the
 available public/action-local v0 strategy tags and stored [[forge]] E[Q] labels.
 
-The headline is conservative: the run does not move any central claim-ledger
-status, because the current v0 artifacts still lack direct setter-role,
+The original headline was conservative: this run did not move any central
+claim-ledger status, because the v0 artifacts lacked direct setter-role,
 bidder-off, void-creation, trump-set, and bid-margin/set-threshold detectors.
-The proxy evidence is still useful because it shows that naive
-opponent-currently-winning count donation is high-regret outside a properly gated
-setter-pounce detector, and that the missing detector list is now concrete.
+The proxy evidence was still useful because it showed that naive
+opponent-currently-winning count donation was high-regret outside a properly
+gated setter-pounce detector.
+
+The follow-up [[w42-gus-corpus-tactical-claim-deep-dive]] supersedes the pounce
+part of that limitation for the Gus v2 generated-corpus slice. It implements
+role-gated pounce-count labels over 28,000 decisions and finds that pounce count
+beats same-decision alternatives by about +4.1 Q, while reckless count into the
+bidder side is about -8.4 Q. Other Chapter 5 families on this page remain
+underpowered or untested.
+
+[[w42-tactical-claim-replication]] confirms that result with a full legal-action
+row export and reusable harness output. The replication keeps pounce count at
+`+4.102` Q versus same-decision alternatives, pounce count that sets now at
+`+6.069`, and reckless count at `-8.372`. It also adds declaration/seat/trick
+and count-amount slices for follow-up work, while leaving broad Chapter 5 status
+movement conservative.
 
 Artifacts:
 
@@ -229,4 +243,5 @@ Commit SHA:
 
 [[w42]] | [[w42-claim-ledger]] | [[w42-strategy-tags-v0]] |
 [[w42-strategy-tags-v1-map]] | [[w42-concept-bucket-regret]] |
-[[winning42-ch05-setter-defense]] | [[winning42-ch12-advanced-bidding-playing]]
+[[w42-tactical-claim-replication]] | [[winning42-ch05-setter-defense]] |
+[[winning42-ch12-advanced-bidding-playing]]

@@ -1,15 +1,15 @@
 {
   "schema_version": "w42.statistics_claims_ledger.v1",
   "owner_bead": "t42-5m82.1",
-  "generated_at_utc": "2026-05-02T21:17:15.549224+00:00",
-  "git_sha": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
-  "claim_count": 62,
+  "generated_at_utc": "2026-05-03T00:11:49.791108+00:00",
+  "git_sha": "e55a6f89de6e599f795db87c30c29d82b8883313",
+  "claim_count": 64,
   "status_counts": {
-    "context-limited": 10,
+    "context-limited": 12,
     "contradicted": 2,
     "not-yet-tested": 6,
-    "supported": 20,
-    "underpowered": 24
+    "supported": 23,
+    "underpowered": 21
   },
   "family_counts": {
     "84 bidder/defender": 9,
@@ -22,10 +22,10 @@
     "four-trump odds": 2,
     "four-trump tactics": 1,
     "hand odds": 2,
-    "partner support": 6,
+    "partner support": 7,
     "partner-help odds": 1,
     "scoring objective": 9,
-    "setter defense": 6,
+    "setter defense": 7,
     "stopper ownership": 1,
     "trump counts": 1,
     "void frequencies": 1
@@ -33,6 +33,7 @@
   "evidence_mode_counts": {
     "deterministic ruleset predicate": 5,
     "deterministic scoring transform": 9,
+    "direct role-gated corpus contrast": 5,
     "exact assignment enumeration": 2,
     "exact conditional arithmetic": 1,
     "exact enumeration": 5,
@@ -41,7 +42,7 @@
     "exact static enumeration / hypergeometric proxy": 8,
     "exact unconditional prior": 1,
     "not yet measured": 1,
-    "proxy regret analysis": 12,
+    "proxy regret analysis": 9,
     "secondary model-bucket analysis": 5,
     "static detector evidence only": 1,
     "static proxy limitation": 1,
@@ -49,7 +50,8 @@
   },
   "headline_findings": [
     "Exact hand-count, void-frequency, double-count, modal-hand, four-trump assignment, ruleset, and scoring-algebra substrates are supported on their stated slices.",
-    "Bidding, partner-support, setter-defense, bidder-sequencing, 84, and no-trump tactical recommendations remain mostly context-limited, underpowered, or not-yet-tested.",
+    "The Gus v2 tactical deep dive moves operationalized setter-pounce and unsafe-count donation labels from proxy-only to direct corpus evidence.",
+    "Bidding, bidder-sequencing, 84, no-trump, and most tactical recommendation families remain context-limited, underpowered, or not-yet-tested.",
     "The contradicted rows are narrow: one 84 stopper-ownership overgeneralization and one partner-support proxy result.",
     "No tactical advice was moved to supported solely because its statistical substrate is true."
   ],
@@ -67,7 +69,8 @@
       "wiki/experiments/w42-bidding-risk-budget-claim-validation.md",
       "wiki/experiments/w42-doubles-no-trump-claim-validation.md",
       "wiki/experiments/w42-scoring-objective-drift-claim-validation.md",
-      "wiki/experiments/w42-84-claim-validation.md"
+      "wiki/experiments/w42-84-claim-validation.md",
+      "wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md"
     ],
     "w42_artifact_inputs": [
       "w42/odds_ruleset_claim_validation/",
@@ -77,6 +80,7 @@
       "w42/eighty_four_claim_validation/",
       "w42/partner_support_claim_validation/",
       "w42/setter_defense_claim_validation/",
+      "w42/gus_corpus_claim_deep_dive/",
       "w42/bidder_sequencing_claim_validation/"
     ]
   },
@@ -87,7 +91,7 @@
     "script": "w42/statistics_claims_ledger/build_statistics_claims_ledger.py"
   },
   "wandb_hf_note": "No new W&B or HuggingFace run/artifact was created for this synthesis. Rows retain source W&B links where an upstream validation artifact logged one; HF remains not applicable.",
-  "claim_ledger_impact": "Phase-2 statistics ledger created as a local artifact and report page. No central ledger, wiki index, entity page, decision page, or bead file was updated.",
+  "claim_ledger_impact": "Phase-2 statistics ledger is maintained as a local artifact and report page. This rebuild integrates the Gus-corpus tactical deep dive into the ledger, wiki index, w42 entity page, and relevant tactical claim-validation pages.",
   "caveats": [
     "Static enumeration supports arithmetic, prevalence, and ruleset substrate claims, not strategy optimality.",
     "Proxy model/regret reports are retained with their original conservative statuses.",

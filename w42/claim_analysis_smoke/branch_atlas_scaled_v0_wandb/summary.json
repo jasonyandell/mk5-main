@@ -1,0 +1,57 @@
+{
+  "action_rows": 773,
+  "bead": "t42-0b4l.2",
+  "bootstrap_samples": 200,
+  "claim_ledger_impact": "no claim-ledger movement; harness smoke/report only",
+  "created_at_utc": "2026-05-03T00:45:43.261953+00:00",
+  "decision_rows": 280,
+  "input_paths": [
+    "w42/branch_atlas_scaled_v0/decision_actions.csv"
+  ],
+  "label_fields": [
+    "distribution_shape_tags",
+    "strategy_context_tags",
+    "matched_position_detectors",
+    "direct_label_readiness"
+  ],
+  "label_metric_rows": 36,
+  "leakage_boundary": "Rows may contain oracle/distribution/hidden-world labels, but this harness treats them as offline labels and does not expose them as live detector inputs.",
+  "paired_contrast_rows": 14,
+  "registered_claim_specs": 6,
+  "schema_version": "w42.claim_analysis.run_result.v1",
+  "source_kind": "branch_atlas_actions",
+  "top_label_counts": {
+    "called_suit_pressure": 148,
+    "distribution_labels_ready": 215,
+    "first_trick": 124,
+    "first_trick_public_belief_update": 649,
+    "hidden_threat_large_impact": 642,
+    "hidden_threat_offline_label_ready": 763,
+    "high_std": 457,
+    "high_variance_close_mean": 233,
+    "large_lower_tail": 392,
+    "last_to_act": 194,
+    "last_to_act_closure_policy": 194,
+    "late_hand": 215,
+    "late_trick_threshold_closure": 215,
+    "multi_peak_pdf": 666,
+    "needs_real_bid_margin": 154,
+    "no_trump_lead_control_and_support": 86,
+    "no_trump_regime": 86,
+    "public_context_ready": 756,
+    "scalar_ev_lying_by_omission": 147,
+    "wide_shelf_gap": 569
+  },
+  "wandb": {
+    "available": true,
+    "dir": "w42/claim_analysis_smoke/branch_atlas_scaled_v0_wandb/wandb/wandb/run-20260502_194542-rj3j0jsz/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-claim-analysis-harness",
+    "id": "rj3j0jsz",
+    "mode": "online",
+    "name": "t42-0b4l.2-branch-atlas-smoke-v2",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/rj3j0jsz"
+  }
+}

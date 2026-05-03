@@ -1,0 +1,3197 @@
+{
+  "bead_id": "t42-0b4l.8",
+  "coverage": {
+    "action_rows": 149415,
+    "decision_rows": 56000,
+    "decl_counts": {
+      "7": 75330,
+      "9": 74085
+    },
+    "input_files": 100,
+    "label_counts": {
+      "ch09_dt_dual_suit_top_65_play": 2282,
+      "ch09_dt_opening_high_double_control_proxy": 481,
+      "ch09_dt_opening_low_double_sacrifice_proxy": 1036,
+      "ch09_dt_trump_count_capture": 1121,
+      "ch09_nt_count_walker_or_capture_proxy": 4672,
+      "ch09_nt_defender_double_weapon_spend_proxy": 697,
+      "ch09_nt_early_support_double_spend_proxy": 11028,
+      "ch09_nt_late_support_double_spend_proxy": 5286
+    },
+    "labeled_action_rows": 25906
+  },
+  "created_at_utc": "2026-05-03T02:36:42.470229+00:00",
+  "file_meta": [
+    {
+      "action_rows": 7541,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1557,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_0-99.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 700,
+        "4000": 900,
+        "4800": 600
+      },
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "seeds_tail": [
+        95,
+        96,
+        97,
+        98,
+        99
+      ]
+    },
+    {
+      "action_rows": 7579,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1528,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_100-199.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 600,
+        "4000": 800,
+        "4800": 800,
+        "6400": 100
+      },
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104
+      ],
+      "seeds_tail": [
+        195,
+        196,
+        197,
+        198,
+        199
+      ]
+    },
+    {
+      "action_rows": 7437,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1440,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1000-1099.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1000,
+        "4800": 700,
+        "5600": 100,
+        "6400": 100
+      },
+      "seeds": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004
+      ],
+      "seeds_tail": [
+        1095,
+        1096,
+        1097,
+        1098,
+        1099
+      ]
+    },
+    {
+      "action_rows": 7490,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1497,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1100-1199.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 400,
+        "4000": 1800,
+        "4800": 300
+      },
+      "seeds": [
+        1100,
+        1101,
+        1102,
+        1103,
+        1104
+      ],
+      "seeds_tail": [
+        1195,
+        1196,
+        1197,
+        1198,
+        1199
+      ]
+    },
+    {
+      "action_rows": 7371,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1472,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1200-1299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 500,
+        "4000": 1100,
+        "4800": 800,
+        "5600": 100
+      },
+      "seeds": [
+        1200,
+        1201,
+        1202,
+        1203,
+        1204
+      ],
+      "seeds_tail": [
+        1295,
+        1296,
+        1297,
+        1298,
+        1299
+      ]
+    },
+    {
+      "action_rows": 7449,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1489,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1300-1399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1100,
+        "4800": 700
+      },
+      "seeds": [
+        1300,
+        1301,
+        1302,
+        1303,
+        1304
+      ],
+      "seeds_tail": [
+        1395,
+        1396,
+        1397,
+        1398,
+        1399
+      ]
+    },
+    {
+      "action_rows": 7376,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1475,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1400-1499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 700,
+        "4000": 1300,
+        "4800": 200,
+        "5600": 100,
+        "6400": 100
+      },
+      "seeds": [
+        1400,
+        1401,
+        1402,
+        1403,
+        1404
+      ],
+      "seeds_tail": [
+        1495,
+        1496,
+        1497,
+        1498,
+        1499
+      ]
+    },
+    {
+      "action_rows": 7556,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1545,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1500-1599.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 700
+      },
+      "seeds": [
+        1500,
+        1501,
+        1502,
+        1503,
+        1504
+      ],
+      "seeds_tail": [
+        1595,
+        1596,
+        1597,
+        1598,
+        1599
+      ]
+    },
+    {
+      "action_rows": 7457,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1487,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1600-1699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 900,
+        "4000": 1000,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        1600,
+        1601,
+        1602,
+        1603,
+        1604
+      ],
+      "seeds_tail": [
+        1695,
+        1696,
+        1697,
+        1698,
+        1699
+      ]
+    },
+    {
+      "action_rows": 7591,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1535,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1700-1799.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 800,
+        "4000": 1200,
+        "4800": 600
+      },
+      "seeds": [
+        1700,
+        1701,
+        1702,
+        1703,
+        1704
+      ],
+      "seeds_tail": [
+        1795,
+        1796,
+        1797,
+        1798,
+        1799
+      ]
+    },
+    {
+      "action_rows": 7494,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1534,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1800-1899.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 300,
+        "3200": 1100,
+        "4000": 700,
+        "4800": 500
+      },
+      "seeds": [
+        1800,
+        1801,
+        1802,
+        1803,
+        1804
+      ],
+      "seeds_tail": [
+        1895,
+        1896,
+        1897,
+        1898,
+        1899
+      ]
+    },
+    {
+      "action_rows": 7380,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1491,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1900-1999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 600,
+        "4000": 1300,
+        "4800": 400,
+        "5600": 200
+      },
+      "seeds": [
+        1900,
+        1901,
+        1902,
+        1903,
+        1904
+      ],
+      "seeds_tail": [
+        1995,
+        1996,
+        1997,
+        1998,
+        1999
+      ]
+    },
+    {
+      "action_rows": 7437,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1513,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_200-299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1100,
+        "4800": 700
+      },
+      "seeds": [
+        200,
+        201,
+        202,
+        203,
+        204
+      ],
+      "seeds_tail": [
+        295,
+        296,
+        297,
+        298,
+        299
+      ]
+    },
+    {
+      "action_rows": 7446,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1497,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2000-2099.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 600,
+        "4000": 1100,
+        "4800": 800
+      },
+      "seeds": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2004
+      ],
+      "seeds_tail": [
+        2095,
+        2096,
+        2097,
+        2098,
+        2099
+      ]
+    },
+    {
+      "action_rows": 7366,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1415,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2100-2199.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1200,
+        "4800": 700
+      },
+      "seeds": [
+        2100,
+        2101,
+        2102,
+        2103,
+        2104
+      ],
+      "seeds_tail": [
+        2195,
+        2196,
+        2197,
+        2198,
+        2199
+      ]
+    },
+    {
+      "action_rows": 7626,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1514,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2200-2299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 800,
+        "4000": 1100,
+        "4800": 200,
+        "5600": 300
+      },
+      "seeds": [
+        2200,
+        2201,
+        2202,
+        2203,
+        2204
+      ],
+      "seeds_tail": [
+        2295,
+        2296,
+        2297,
+        2298,
+        2299
+      ]
+    },
+    {
+      "action_rows": 7510,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1498,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2300-2399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 700,
+        "4000": 900,
+        "4800": 700
+      },
+      "seeds": [
+        2300,
+        2301,
+        2302,
+        2303,
+        2304
+      ],
+      "seeds_tail": [
+        2395,
+        2396,
+        2397,
+        2398,
+        2399
+      ]
+    },
+    {
+      "action_rows": 7576,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1595,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2400-2499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 900,
+        "4000": 1100,
+        "4800": 400
+      },
+      "seeds": [
+        2400,
+        2401,
+        2402,
+        2403,
+        2404
+      ],
+      "seeds_tail": [
+        2495,
+        2496,
+        2497,
+        2498,
+        2499
+      ]
+    },
+    {
+      "action_rows": 7685,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1561,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2500-2599.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 200,
+        "3200": 700,
+        "4000": 1000,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        2500,
+        2501,
+        2502,
+        2503,
+        2504
+      ],
+      "seeds_tail": [
+        2595,
+        2596,
+        2597,
+        2598,
+        2599
+      ]
+    },
+    {
+      "action_rows": 7459,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1466,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2600-2699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 700,
+        "4000": 900,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        2600,
+        2601,
+        2602,
+        2603,
+        2604
+      ],
+      "seeds_tail": [
+        2695,
+        2696,
+        2697,
+        2698,
+        2699
+      ]
+    },
+    {
+      "action_rows": 7352,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1428,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2700-2799.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 600,
+        "5600": 200
+      },
+      "seeds": [
+        2700,
+        2701,
+        2702,
+        2703,
+        2704
+      ],
+      "seeds_tail": [
+        2795,
+        2796,
+        2797,
+        2798,
+        2799
+      ]
+    },
+    {
+      "action_rows": 7341,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1444,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2800-2899.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 300,
+        "4000": 1100,
+        "4800": 800,
+        "5600": 400
+      },
+      "seeds": [
+        2800,
+        2801,
+        2802,
+        2803,
+        2804
+      ],
+      "seeds_tail": [
+        2895,
+        2896,
+        2897,
+        2898,
+        2899
+      ]
+    },
+    {
+      "action_rows": 7460,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1511,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2900-2999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 600,
+        "4000": 1200,
+        "4800": 500
+      },
+      "seeds": [
+        2900,
+        2901,
+        2902,
+        2903,
+        2904
+      ],
+      "seeds_tail": [
+        2995,
+        2996,
+        2997,
+        2998,
+        2999
+      ]
+    },
+    {
+      "action_rows": 7635,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1572,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_300-399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 800,
+        "4000": 1100,
+        "4800": 500
+      },
+      "seeds": [
+        300,
+        301,
+        302,
+        303,
+        304
+      ],
+      "seeds_tail": [
+        395,
+        396,
+        397,
+        398,
+        399
+      ]
+    },
+    {
+      "action_rows": 7536,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1490,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3000-3099.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 600,
+        "4000": 1300,
+        "4800": 500
+      },
+      "seeds": [
+        3000,
+        3001,
+        3002,
+        3003,
+        3004
+      ],
+      "seeds_tail": [
+        3095,
+        3096,
+        3097,
+        3098,
+        3099
+      ]
+    },
+    {
+      "action_rows": 7518,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1511,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3100-3199.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1100,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        3100,
+        3101,
+        3102,
+        3103,
+        3104
+      ],
+      "seeds_tail": [
+        3195,
+        3196,
+        3197,
+        3198,
+        3199
+      ]
+    },
+    {
+      "action_rows": 7430,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1493,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3200-3299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 1000,
+        "4000": 900,
+        "4800": 600
+      },
+      "seeds": [
+        3200,
+        3201,
+        3202,
+        3203,
+        3204
+      ],
+      "seeds_tail": [
+        3295,
+        3296,
+        3297,
+        3298,
+        3299
+      ]
+    },
+    {
+      "action_rows": 7600,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1523,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3300-3399.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 200,
+        "3200": 400,
+        "4000": 1400,
+        "4800": 500
+      },
+      "seeds": [
+        3300,
+        3301,
+        3302,
+        3303,
+        3304
+      ],
+      "seeds_tail": [
+        3395,
+        3396,
+        3397,
+        3398,
+        3399
+      ]
+    },
+    {
+      "action_rows": 7565,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1545,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3400-3499.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1200,
+        "4800": 700
+      },
+      "seeds": [
+        3400,
+        3401,
+        3402,
+        3403,
+        3404
+      ],
+      "seeds_tail": [
+        3495,
+        3496,
+        3497,
+        3498,
+        3499
+      ]
+    },
+    {
+      "action_rows": 7446,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1477,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3500-3599.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 300,
+        "4000": 1300,
+        "4800": 600
+      },
+      "seeds": [
+        3500,
+        3501,
+        3502,
+        3503,
+        3504
+      ],
+      "seeds_tail": [
+        3595,
+        3596,
+        3597,
+        3598,
+        3599
+      ]
+    },
+    {
+      "action_rows": 7549,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1522,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3600-3699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 300,
+        "4000": 1300,
+        "4800": 600,
+        "5600": 100
+      },
+      "seeds": [
+        3600,
+        3601,
+        3602,
+        3603,
+        3604
+      ],
+      "seeds_tail": [
+        3695,
+        3696,
+        3697,
+        3698,
+        3699
+      ]
+    },
+    {
+      "action_rows": 7434,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1447,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3700-3799.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 400,
+        "4000": 900,
+        "4800": 800,
+        "5600": 100
+      },
+      "seeds": [
+        3700,
+        3701,
+        3702,
+        3703,
+        3704
+      ],
+      "seeds_tail": [
+        3795,
+        3796,
+        3797,
+        3798,
+        3799
+      ]
+    },
+    {
+      "action_rows": 7365,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1478,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3800-3899.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1000,
+        "4800": 900
+      },
+      "seeds": [
+        3800,
+        3801,
+        3802,
+        3803,
+        3804
+      ],
+      "seeds_tail": [
+        3895,
+        3896,
+        3897,
+        3898,
+        3899
+      ]
+    },
+    {
+      "action_rows": 7496,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1485,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3900-3999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 400,
+        "4000": 1000,
+        "4800": 800,
+        "5600": 100
+      },
+      "seeds": [
+        3900,
+        3901,
+        3902,
+        3903,
+        3904
+      ],
+      "seeds_tail": [
+        3995,
+        3996,
+        3997,
+        3998,
+        3999
+      ]
+    },
+    {
+      "action_rows": 7476,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1415,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_400-499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 800,
+        "4000": 900,
+        "4800": 700
+      },
+      "seeds": [
+        400,
+        401,
+        402,
+        403,
+        404
+      ],
+      "seeds_tail": [
+        495,
+        496,
+        497,
+        498,
+        499
+      ]
+    },
+    {
+      "action_rows": 7386,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1420,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4000-4099.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 1000,
+        "4000": 1000,
+        "4800": 400
+      },
+      "seeds": [
+        4000,
+        4001,
+        4002,
+        4003,
+        4004
+      ],
+      "seeds_tail": [
+        4095,
+        4096,
+        4097,
+        4098,
+        4099
+      ]
+    },
+    {
+      "action_rows": 7546,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1518,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4100-4199.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 600,
+        "4000": 1300,
+        "4800": 700
+      },
+      "seeds": [
+        4100,
+        4101,
+        4102,
+        4103,
+        4104
+      ],
+      "seeds_tail": [
+        4195,
+        4196,
+        4197,
+        4198,
+        4199
+      ]
+    },
+    {
+      "action_rows": 7483,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1477,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4200-4299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 700,
+        "4000": 1000,
+        "4800": 500,
+        "5600": 100,
+        "6400": 100
+      },
+      "seeds": [
+        4200,
+        4201,
+        4202,
+        4203,
+        4204
+      ],
+      "seeds_tail": [
+        4295,
+        4296,
+        4297,
+        4298,
+        4299
+      ]
+    },
+    {
+      "action_rows": 7387,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1484,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4300-4399.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "3200": 500,
+        "4000": 1100,
+        "4800": 900
+      },
+      "seeds": [
+        4300,
+        4301,
+        4302,
+        4303,
+        4304
+      ],
+      "seeds_tail": [
+        4395,
+        4396,
+        4397,
+        4398,
+        4399
+      ]
+    },
+    {
+      "action_rows": 7561,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1471,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4400-4499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 400,
+        "4000": 1300,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        4400,
+        4401,
+        4402,
+        4403,
+        4404
+      ],
+      "seeds_tail": [
+        4495,
+        4496,
+        4497,
+        4498,
+        4499
+      ]
+    },
+    {
+      "action_rows": 7525,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1506,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4500-4599.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 400,
+        "4000": 1800,
+        "4800": 400
+      },
+      "seeds": [
+        4500,
+        4501,
+        4502,
+        4503,
+        4504
+      ],
+      "seeds_tail": [
+        4595,
+        4596,
+        4597,
+        4598,
+        4599
+      ]
+    },
+    {
+      "action_rows": 7507,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1519,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4600-4699.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 400,
+        "4000": 1300,
+        "4800": 900
+      },
+      "seeds": [
+        4600,
+        4601,
+        4602,
+        4603,
+        4604
+      ],
+      "seeds_tail": [
+        4695,
+        4696,
+        4697,
+        4698,
+        4699
+      ]
+    },
+    {
+      "action_rows": 7491,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1458,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4700-4799.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 200,
+        "3200": 800,
+        "4000": 1000,
+        "4800": 500
+      },
+      "seeds": [
+        4700,
+        4701,
+        4702,
+        4703,
+        4704
+      ],
+      "seeds_tail": [
+        4795,
+        4796,
+        4797,
+        4798,
+        4799
+      ]
+    },
+    {
+      "action_rows": 7486,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1451,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4800-4899.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 900,
+        "4000": 800,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        4800,
+        4801,
+        4802,
+        4803,
+        4804
+      ],
+      "seeds_tail": [
+        4895,
+        4896,
+        4897,
+        4898,
+        4899
+      ]
+    },
+    {
+      "action_rows": 7432,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1493,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4900-4999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 800,
+        "4000": 700,
+        "4800": 900
+      },
+      "seeds": [
+        4900,
+        4901,
+        4902,
+        4903,
+        4904
+      ],
+      "seeds_tail": [
+        4995,
+        4996,
+        4997,
+        4998,
+        4999
+      ]
+    },
+    {
+      "action_rows": 7407,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1420,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_500-599.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 900,
+        "4000": 1000,
+        "4800": 400
+      },
+      "seeds": [
+        500,
+        501,
+        502,
+        503,
+        504
+      ],
+      "seeds_tail": [
+        595,
+        596,
+        597,
+        598,
+        599
+      ]
+    },
+    {
+      "action_rows": 7607,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1561,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5000-5099.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 200,
+        "4000": 1100,
+        "4800": 900,
+        "5600": 200
+      },
+      "seeds": [
+        5000,
+        5001,
+        5002,
+        5003,
+        5004
+      ],
+      "seeds_tail": [
+        5095,
+        5096,
+        5097,
+        5098,
+        5099
+      ]
+    },
+    {
+      "action_rows": 7591,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1444,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5100-5199.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1100,
+        "4800": 700,
+        "5600": 100
+      },
+      "seeds": [
+        5100,
+        5101,
+        5102,
+        5103,
+        5104
+      ],
+      "seeds_tail": [
+        5195,
+        5196,
+        5197,
+        5198,
+        5199
+      ]
+    },
+    {
+      "action_rows": 7527,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1551,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5200-5299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 800,
+        "4000": 900,
+        "4800": 700,
+        "5600": 100
+      },
+      "seeds": [
+        5200,
+        5201,
+        5202,
+        5203,
+        5204
+      ],
+      "seeds_tail": [
+        5295,
+        5296,
+        5297,
+        5298,
+        5299
+      ]
+    },
+    {
+      "action_rows": 7469,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1513,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5300-5399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 500,
+        "3200": 600,
+        "4000": 1100,
+        "4800": 400
+      },
+      "seeds": [
+        5300,
+        5301,
+        5302,
+        5303,
+        5304
+      ],
+      "seeds_tail": [
+        5395,
+        5396,
+        5397,
+        5398,
+        5399
+      ]
+    },
+    {
+      "action_rows": 7387,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1524,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5400-5499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 500,
+        "4000": 1400,
+        "4800": 200,
+        "5600": 100
+      },
+      "seeds": [
+        5400,
+        5401,
+        5402,
+        5403,
+        5404
+      ],
+      "seeds_tail": [
+        5495,
+        5496,
+        5497,
+        5498,
+        5499
+      ]
+    },
+    {
+      "action_rows": 7469,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1481,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5500-5599.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 1000,
+        "4000": 900,
+        "4800": 700
+      },
+      "seeds": [
+        5500,
+        5501,
+        5502,
+        5503,
+        5504
+      ],
+      "seeds_tail": [
+        5595,
+        5596,
+        5597,
+        5598,
+        5599
+      ]
+    },
+    {
+      "action_rows": 7360,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1423,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5600-5699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 500,
+        "4000": 1400,
+        "4800": 400,
+        "5600": 100,
+        "6400": 100
+      },
+      "seeds": [
+        5600,
+        5601,
+        5602,
+        5603,
+        5604
+      ],
+      "seeds_tail": [
+        5695,
+        5696,
+        5697,
+        5698,
+        5699
+      ]
+    },
+    {
+      "action_rows": 7488,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1533,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5700-5799.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 500,
+        "3200": 700,
+        "4000": 900,
+        "4800": 400
+      },
+      "seeds": [
+        5700,
+        5701,
+        5702,
+        5703,
+        5704
+      ],
+      "seeds_tail": [
+        5795,
+        5796,
+        5797,
+        5798,
+        5799
+      ]
+    },
+    {
+      "action_rows": 7308,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1505,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5800-5899.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 500,
+        "4000": 1000,
+        "4800": 900,
+        "5600": 100
+      },
+      "seeds": [
+        5800,
+        5801,
+        5802,
+        5803,
+        5804
+      ],
+      "seeds_tail": [
+        5895,
+        5896,
+        5897,
+        5898,
+        5899
+      ]
+    },
+    {
+      "action_rows": 7423,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1449,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5900-5999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 600,
+        "3200": 700,
+        "4000": 900,
+        "4800": 400
+      },
+      "seeds": [
+        5900,
+        5901,
+        5902,
+        5903,
+        5904
+      ],
+      "seeds_tail": [
+        5995,
+        5996,
+        5997,
+        5998,
+        5999
+      ]
+    },
+    {
+      "action_rows": 7495,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1469,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_600-699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1300,
+        "4800": 500
+      },
+      "seeds": [
+        600,
+        601,
+        602,
+        603,
+        604
+      ],
+      "seeds_tail": [
+        695,
+        696,
+        697,
+        698,
+        699
+      ]
+    },
+    {
+      "action_rows": 7461,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1481,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6000-6099.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 500,
+        "3200": 500,
+        "4000": 800,
+        "4800": 800
+      },
+      "seeds": [
+        6000,
+        6001,
+        6002,
+        6003,
+        6004
+      ],
+      "seeds_tail": [
+        6095,
+        6096,
+        6097,
+        6098,
+        6099
+      ]
+    },
+    {
+      "action_rows": 7581,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1487,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6100-6199.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 800,
+        "4000": 1100,
+        "4800": 500
+      },
+      "seeds": [
+        6100,
+        6101,
+        6102,
+        6103,
+        6104
+      ],
+      "seeds_tail": [
+        6195,
+        6196,
+        6197,
+        6198,
+        6199
+      ]
+    },
+    {
+      "action_rows": 7490,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1443,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6200-6299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 400,
+        "4000": 1400,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        6200,
+        6201,
+        6202,
+        6203,
+        6204
+      ],
+      "seeds_tail": [
+        6295,
+        6296,
+        6297,
+        6298,
+        6299
+      ]
+    },
+    {
+      "action_rows": 7354,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1464,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6300-6399.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1600,
+        "4800": 200,
+        "5600": 100
+      },
+      "seeds": [
+        6300,
+        6301,
+        6302,
+        6303,
+        6304
+      ],
+      "seeds_tail": [
+        6395,
+        6396,
+        6397,
+        6398,
+        6399
+      ]
+    },
+    {
+      "action_rows": 7596,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1497,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6400-6499.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 400,
+        "4000": 1200,
+        "4800": 700,
+        "5600": 200,
+        "6400": 100
+      },
+      "seeds": [
+        6400,
+        6401,
+        6402,
+        6403,
+        6404
+      ],
+      "seeds_tail": [
+        6495,
+        6496,
+        6497,
+        6498,
+        6499
+      ]
+    },
+    {
+      "action_rows": 7520,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1517,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6500-6599.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 900
+      },
+      "seeds": [
+        6500,
+        6501,
+        6502,
+        6503,
+        6504
+      ],
+      "seeds_tail": [
+        6595,
+        6596,
+        6597,
+        6598,
+        6599
+      ]
+    },
+    {
+      "action_rows": 7454,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1508,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6600-6699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 300,
+        "4000": 1400,
+        "4800": 500,
+        "5600": 200
+      },
+      "seeds": [
+        6600,
+        6601,
+        6602,
+        6603,
+        6604
+      ],
+      "seeds_tail": [
+        6695,
+        6696,
+        6697,
+        6698,
+        6699
+      ]
+    },
+    {
+      "action_rows": 7531,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1487,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6700-6799.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 400,
+        "4000": 1300,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        6700,
+        6701,
+        6702,
+        6703,
+        6704
+      ],
+      "seeds_tail": [
+        6795,
+        6796,
+        6797,
+        6798,
+        6799
+      ]
+    },
+    {
+      "action_rows": 7503,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1480,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6800-6899.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 1000,
+        "4000": 1000,
+        "4800": 400
+      },
+      "seeds": [
+        6800,
+        6801,
+        6802,
+        6803,
+        6804
+      ],
+      "seeds_tail": [
+        6895,
+        6896,
+        6897,
+        6898,
+        6899
+      ]
+    },
+    {
+      "action_rows": 7492,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1527,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6900-6999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 500,
+        "4000": 1000,
+        "4800": 800,
+        "5600": 200
+      },
+      "seeds": [
+        6900,
+        6901,
+        6902,
+        6903,
+        6904
+      ],
+      "seeds_tail": [
+        6995,
+        6996,
+        6997,
+        6998,
+        6999
+      ]
+    },
+    {
+      "action_rows": 7423,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1435,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_700-799.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 700,
+        "4000": 1200,
+        "4800": 400
+      },
+      "seeds": [
+        700,
+        701,
+        702,
+        703,
+        704
+      ],
+      "seeds_tail": [
+        795,
+        796,
+        797,
+        798,
+        799
+      ]
+    },
+    {
+      "action_rows": 7492,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1473,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7000-7099.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 600,
+        "4000": 900,
+        "4800": 600,
+        "5600": 100,
+        "6400": 100
+      },
+      "seeds": [
+        7000,
+        7001,
+        7002,
+        7003,
+        7004
+      ],
+      "seeds_tail": [
+        7095,
+        7096,
+        7097,
+        7098,
+        7099
+      ]
+    },
+    {
+      "action_rows": 7462,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1507,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7100-7199.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 200,
+        "3200": 400,
+        "4000": 1400,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        7100,
+        7101,
+        7102,
+        7103,
+        7104
+      ],
+      "seeds_tail": [
+        7195,
+        7196,
+        7197,
+        7198,
+        7199
+      ]
+    },
+    {
+      "action_rows": 7589,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1515,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7200-7299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 500,
+        "3200": 500,
+        "4000": 1400,
+        "4800": 200
+      },
+      "seeds": [
+        7200,
+        7201,
+        7202,
+        7203,
+        7204
+      ],
+      "seeds_tail": [
+        7295,
+        7296,
+        7297,
+        7298,
+        7299
+      ]
+    },
+    {
+      "action_rows": 7451,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1478,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7300-7399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 300,
+        "4000": 1600,
+        "4800": 600
+      },
+      "seeds": [
+        7300,
+        7301,
+        7302,
+        7303,
+        7304
+      ],
+      "seeds_tail": [
+        7395,
+        7396,
+        7397,
+        7398,
+        7399
+      ]
+    },
+    {
+      "action_rows": 7524,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1474,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7400-7499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 700,
+        "4000": 900,
+        "4800": 800,
+        "5600": 100
+      },
+      "seeds": [
+        7400,
+        7401,
+        7402,
+        7403,
+        7404
+      ],
+      "seeds_tail": [
+        7495,
+        7496,
+        7497,
+        7498,
+        7499
+      ]
+    },
+    {
+      "action_rows": 7545,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1540,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7500-7599.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 800,
+        "4000": 1100,
+        "4800": 400
+      },
+      "seeds": [
+        7500,
+        7501,
+        7502,
+        7503,
+        7504
+      ],
+      "seeds_tail": [
+        7595,
+        7596,
+        7597,
+        7598,
+        7599
+      ]
+    },
+    {
+      "action_rows": 7671,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1557,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7600-7699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 100,
+        "3200": 600,
+        "4000": 900,
+        "4800": 1000
+      },
+      "seeds": [
+        7600,
+        7601,
+        7602,
+        7603,
+        7604
+      ],
+      "seeds_tail": [
+        7695,
+        7696,
+        7697,
+        7698,
+        7699
+      ]
+    },
+    {
+      "action_rows": 7457,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1449,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7700-7799.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 100,
+        "3200": 600,
+        "4000": 800,
+        "4800": 800,
+        "5600": 200
+      },
+      "seeds": [
+        7700,
+        7701,
+        7702,
+        7703,
+        7704
+      ],
+      "seeds_tail": [
+        7795,
+        7796,
+        7797,
+        7798,
+        7799
+      ]
+    },
+    {
+      "action_rows": 7555,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1516,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7800-7899.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        7800,
+        7801,
+        7802,
+        7803,
+        7804
+      ],
+      "seeds_tail": [
+        7895,
+        7896,
+        7897,
+        7898,
+        7899
+      ]
+    },
+    {
+      "action_rows": 7436,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1465,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7900-7999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 400,
+        "4000": 1100,
+        "4800": 800
+      },
+      "seeds": [
+        7900,
+        7901,
+        7902,
+        7903,
+        7904
+      ],
+      "seeds_tail": [
+        7995,
+        7996,
+        7997,
+        7998,
+        7999
+      ]
+    },
+    {
+      "action_rows": 7499,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1510,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_800-899.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 200,
+        "2400": 100,
+        "3200": 600,
+        "4000": 1000,
+        "4800": 600,
+        "5600": 100
+      },
+      "seeds": [
+        800,
+        801,
+        802,
+        803,
+        804
+      ],
+      "seeds_tail": [
+        895,
+        896,
+        897,
+        898,
+        899
+      ]
+    },
+    {
+      "action_rows": 7579,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1491,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8000-8099.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 1000,
+        "4000": 800,
+        "4800": 700,
+        "5600": 100
+      },
+      "seeds": [
+        8000,
+        8001,
+        8002,
+        8003,
+        8004
+      ],
+      "seeds_tail": [
+        8095,
+        8096,
+        8097,
+        8098,
+        8099
+      ]
+    },
+    {
+      "action_rows": 7527,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1505,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8100-8199.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 700,
+        "4000": 800,
+        "4800": 700,
+        "5600": 100
+      },
+      "seeds": [
+        8100,
+        8101,
+        8102,
+        8103,
+        8104
+      ],
+      "seeds_tail": [
+        8195,
+        8196,
+        8197,
+        8198,
+        8199
+      ]
+    },
+    {
+      "action_rows": 7403,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1483,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8200-8299.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 600,
+        "4000": 1100,
+        "4800": 600,
+        "5600": 100
+      },
+      "seeds": [
+        8200,
+        8201,
+        8202,
+        8203,
+        8204
+      ],
+      "seeds_tail": [
+        8295,
+        8296,
+        8297,
+        8298,
+        8299
+      ]
+    },
+    {
+      "action_rows": 7498,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1474,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8300-8399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 600,
+        "4000": 1100,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        8300,
+        8301,
+        8302,
+        8303,
+        8304
+      ],
+      "seeds_tail": [
+        8395,
+        8396,
+        8397,
+        8398,
+        8399
+      ]
+    },
+    {
+      "action_rows": 7551,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1459,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8400-8499.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 300,
+        "3200": 900,
+        "4000": 800,
+        "4800": 500
+      },
+      "seeds": [
+        8400,
+        8401,
+        8402,
+        8403,
+        8404
+      ],
+      "seeds_tail": [
+        8495,
+        8496,
+        8497,
+        8498,
+        8499
+      ]
+    },
+    {
+      "action_rows": 7393,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1518,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8500-8599.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 700,
+        "4000": 1400,
+        "4800": 500
+      },
+      "seeds": [
+        8500,
+        8501,
+        8502,
+        8503,
+        8504
+      ],
+      "seeds_tail": [
+        8595,
+        8596,
+        8597,
+        8598,
+        8599
+      ]
+    },
+    {
+      "action_rows": 7455,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1499,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8600-8699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 700,
+        "4000": 1200,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        8600,
+        8601,
+        8602,
+        8603,
+        8604
+      ],
+      "seeds_tail": [
+        8695,
+        8696,
+        8697,
+        8698,
+        8699
+      ]
+    },
+    {
+      "action_rows": 7458,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1500,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8700-8799.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 700,
+        "4000": 1100,
+        "4800": 600
+      },
+      "seeds": [
+        8700,
+        8701,
+        8702,
+        8703,
+        8704
+      ],
+      "seeds_tail": [
+        8795,
+        8796,
+        8797,
+        8798,
+        8799
+      ]
+    },
+    {
+      "action_rows": 7580,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1536,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8800-8899.pt",
+      "sample_counts": {
+        "800": 200,
+        "3200": 400,
+        "4000": 1200,
+        "4800": 900,
+        "5600": 100
+      },
+      "seeds": [
+        8800,
+        8801,
+        8802,
+        8803,
+        8804
+      ],
+      "seeds_tail": [
+        8895,
+        8896,
+        8897,
+        8898,
+        8899
+      ]
+    },
+    {
+      "action_rows": 7550,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1547,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8900-8999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1100,
+        "4800": 400,
+        "5600": 300
+      },
+      "seeds": [
+        8900,
+        8901,
+        8902,
+        8903,
+        8904
+      ],
+      "seeds_tail": [
+        8995,
+        8996,
+        8997,
+        8998,
+        8999
+      ]
+    },
+    {
+      "action_rows": 7418,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1504,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_900-999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 600,
+        "5600": 100
+      },
+      "seeds": [
+        900,
+        901,
+        902,
+        903,
+        904
+      ],
+      "seeds_tail": [
+        995,
+        996,
+        997,
+        998,
+        999
+      ]
+    },
+    {
+      "action_rows": 7336,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1449,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9000-9099.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 700,
+        "5600": 100
+      },
+      "seeds": [
+        9000,
+        9001,
+        9002,
+        9003,
+        9004
+      ],
+      "seeds_tail": [
+        9095,
+        9096,
+        9097,
+        9098,
+        9099
+      ]
+    },
+    {
+      "action_rows": 7406,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1485,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9100-9199.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 700,
+        "4000": 900,
+        "4800": 600,
+        "5600": 100
+      },
+      "seeds": [
+        9100,
+        9101,
+        9102,
+        9103,
+        9104
+      ],
+      "seeds_tail": [
+        9195,
+        9196,
+        9197,
+        9198,
+        9199
+      ]
+    },
+    {
+      "action_rows": 7485,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1483,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9200-9299.pt",
+      "sample_counts": {
+        "800": 300,
+        "3200": 800,
+        "4000": 1200,
+        "4800": 500
+      },
+      "seeds": [
+        9200,
+        9201,
+        9202,
+        9203,
+        9204
+      ],
+      "seeds_tail": [
+        9295,
+        9296,
+        9297,
+        9298,
+        9299
+      ]
+    },
+    {
+      "action_rows": 7384,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1447,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9300-9399.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 800,
+        "4000": 1200,
+        "4800": 300,
+        "5600": 100
+      },
+      "seeds": [
+        9300,
+        9301,
+        9302,
+        9303,
+        9304
+      ],
+      "seeds_tail": [
+        9395,
+        9396,
+        9397,
+        9398,
+        9399
+      ]
+    },
+    {
+      "action_rows": 7506,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1527,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9400-9499.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 500,
+        "4000": 1200,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        9400,
+        9401,
+        9402,
+        9403,
+        9404
+      ],
+      "seeds_tail": [
+        9495,
+        9496,
+        9497,
+        9498,
+        9499
+      ]
+    },
+    {
+      "action_rows": 7343,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1434,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9500-9599.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 400,
+        "3200": 300,
+        "4000": 1300,
+        "4800": 500,
+        "5600": 100
+      },
+      "seeds": [
+        9500,
+        9501,
+        9502,
+        9503,
+        9504
+      ],
+      "seeds_tail": [
+        9595,
+        9596,
+        9597,
+        9598,
+        9599
+      ]
+    },
+    {
+      "action_rows": 7392,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1504,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9600-9699.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 300,
+        "4000": 900,
+        "4800": 1000,
+        "5600": 100
+      },
+      "seeds": [
+        9600,
+        9601,
+        9602,
+        9603,
+        9604
+      ],
+      "seeds_tail": [
+        9695,
+        9696,
+        9697,
+        9698,
+        9699
+      ]
+    },
+    {
+      "action_rows": 7593,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1536,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9700-9799.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 300,
+        "3200": 400,
+        "4000": 1000,
+        "4800": 900
+      },
+      "seeds": [
+        9700,
+        9701,
+        9702,
+        9703,
+        9704
+      ],
+      "seeds_tail": [
+        9795,
+        9796,
+        9797,
+        9798,
+        9799
+      ]
+    },
+    {
+      "action_rows": 7585,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1570,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9800-9899.pt",
+      "sample_counts": {
+        "800": 200,
+        "1600": 100,
+        "2400": 100,
+        "3200": 700,
+        "4000": 1200,
+        "4800": 400,
+        "5600": 100
+      },
+      "seeds": [
+        9800,
+        9801,
+        9802,
+        9803,
+        9804
+      ],
+      "seeds_tail": [
+        9895,
+        9896,
+        9897,
+        9898,
+        9899
+      ]
+    },
+    {
+      "action_rows": 7413,
+      "decision_rows": 2800,
+      "filtered_action_rows": 1534,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9900-9999.pt",
+      "sample_counts": {
+        "800": 200,
+        "2400": 200,
+        "3200": 100,
+        "4000": 1600,
+        "4800": 600,
+        "5600": 100
+      },
+      "seeds": [
+        9900,
+        9901,
+        9902,
+        9903,
+        9904
+      ],
+      "seeds_tail": [
+        9995,
+        9996,
+        9997,
+        9998,
+        9999
+      ]
+    }
+  ],
+  "git_commit": "f70a849ad62b6ae75e5ce6b08e960cad46f3860d",
+  "inputs": [
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_0-99.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_100-199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1000-1099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1100-1199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1200-1299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1300-1399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1400-1499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1500-1599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1600-1699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1700-1799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1800-1899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1900-1999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_200-299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2000-2099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2100-2199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2200-2299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2300-2399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2400-2499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2500-2599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2600-2699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2700-2799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2800-2899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2900-2999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_300-399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3000-3099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3100-3199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3200-3299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3300-3399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3400-3499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3500-3599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3600-3699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3700-3799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3800-3899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3900-3999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_400-499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4000-4099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4100-4199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4200-4299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4300-4399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4400-4499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4500-4599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4600-4699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4700-4799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4800-4899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4900-4999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_500-599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5000-5099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5100-5199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5200-5299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5300-5399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5400-5499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5500-5599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5600-5699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5700-5799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5800-5899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5900-5999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_600-699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6000-6099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6100-6199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6200-6299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6300-6399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6400-6499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6500-6599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6600-6699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6700-6799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6800-6899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6900-6999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_700-799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7000-7099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7100-7199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7200-7299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7300-7399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7400-7499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7500-7599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7600-7699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7700-7799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7800-7899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7900-7999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_800-899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8000-8099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8100-8199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8200-8299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8300-8399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8400-8499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8500-8599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8600-8699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8700-8799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8800-8899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8900-8999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_900-999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9000-9099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9100-9199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9200-9299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9300-9399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9400-9499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9500-9599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9600-9699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9700-9799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9800-9899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9900-9999.pt"
+  ],
+  "label_metrics": [
+    {
+      "action_n": 1036,
+      "actual_action_rate": 0.3745173745173745,
+      "best_mean_rate": 0.22683397683397682,
+      "best_threshold_rate": 0.3841698841698842,
+      "claim_label": "ch09_dt_opening_low_double_sacrifice_proxy",
+      "decision_n": 720,
+      "decl_ids": "7",
+      "mean": -2.9381460548600122,
+      "mean_lower_tail_mass": 0.3280060274088402,
+      "mean_regret": 2.445788706160415,
+      "mean_regret_ci95_high": 2.6504034127435356,
+      "mean_regret_ci95_low": 2.242387947567176,
+      "mean_threshold_mass": 0.2512103960576061,
+      "safest_tail_rate": 0.09652509652509653
+    },
+    {
+      "action_n": 481,
+      "actual_action_rate": 0.5883575883575883,
+      "best_mean_rate": 0.5280665280665281,
+      "best_threshold_rate": 0.5883575883575883,
+      "claim_label": "ch09_dt_opening_high_double_control_proxy",
+      "decision_n": 432,
+      "decl_ids": "7",
+      "mean": 6.712464725122382,
+      "mean_lower_tail_mass": 0.21247443353282647,
+      "mean_regret": 3.858896635240428,
+      "mean_regret_ci95_high": 4.339369887544187,
+      "mean_regret_ci95_low": 3.3646380393051403,
+      "mean_threshold_mass": 0.38254773046767143,
+      "safest_tail_rate": 0.4698544698544699
+    },
+    {
+      "action_n": 2282,
+      "actual_action_rate": 0.43821209465381245,
+      "best_mean_rate": 0.48334794040315515,
+      "best_threshold_rate": 0.537248028045574,
+      "claim_label": "ch09_dt_dual_suit_top_65_play",
+      "decision_n": 2282,
+      "decl_ids": "7",
+      "mean": 1.3264669412143013,
+      "mean_lower_tail_mass": 0.23067542318949963,
+      "mean_regret": 3.3988075594627523,
+      "mean_regret_ci95_high": 3.6088588002581057,
+      "mean_regret_ci95_low": 3.155423783547899,
+      "mean_threshold_mass": 0.4947900388219284,
+      "safest_tail_rate": 0.5968448729184925
+    },
+    {
+      "action_n": 1121,
+      "actual_action_rate": 0.5316681534344335,
+      "best_mean_rate": 0.5236396074933095,
+      "best_threshold_rate": 0.7484388938447815,
+      "claim_label": "ch09_dt_trump_count_capture",
+      "decision_n": 1121,
+      "decl_ids": "7",
+      "mean": 18.900451494216334,
+      "mean_lower_tail_mass": 0.03887399890654065,
+      "mean_regret": 2.164322739335759,
+      "mean_regret_ci95_high": 2.409625591707385,
+      "mean_regret_ci95_low": 1.9186936784221607,
+      "mean_threshold_mass": 0.78610070216732,
+      "safest_tail_rate": 0.8590544157002676
+    },
+    {
+      "action_n": 11028,
+      "actual_action_rate": 0.348113891911498,
+      "best_mean_rate": 0.3406782734856728,
+      "best_threshold_rate": 0.4288175553137468,
+      "claim_label": "ch09_nt_early_support_double_spend_proxy",
+      "decision_n": 6424,
+      "decl_ids": "9",
+      "mean": 6.307808943373469,
+      "mean_lower_tail_mass": 0.20960375270289652,
+      "mean_regret": 3.319767611638244,
+      "mean_regret_ci95_high": 3.4251886235129363,
+      "mean_regret_ci95_low": 3.2198851404220026,
+      "mean_threshold_mass": 0.5765786614943632,
+      "safest_tail_rate": 0.508886470801596
+    },
+    {
+      "action_n": 5286,
+      "actual_action_rate": 0.5979947029890276,
+      "best_mean_rate": 0.5961029133560348,
+      "best_threshold_rate": 0.8543321982595535,
+      "claim_label": "ch09_nt_late_support_double_spend_proxy",
+      "decision_n": 4127,
+      "decl_ids": "9",
+      "mean": 2.9662339782520353,
+      "mean_lower_tail_mass": 0.13968517074081174,
+      "mean_regret": 1.723982203987232,
+      "mean_regret_ci95_high": 1.8471084681616836,
+      "mean_regret_ci95_low": 1.6054185623878194,
+      "mean_threshold_mass": 0.6298896706358225,
+      "safest_tail_rate": 0.8533863034430571
+    },
+    {
+      "action_n": 4672,
+      "actual_action_rate": 0.22538527397260275,
+      "best_mean_rate": 0.19991438356164384,
+      "best_threshold_rate": 0.2666952054794521,
+      "claim_label": "ch09_nt_count_walker_or_capture_proxy",
+      "decision_n": 3757,
+      "decl_ids": "9",
+      "mean": -5.359713949786566,
+      "mean_lower_tail_mass": 0.39628088634214553,
+      "mean_regret": 11.328492469883887,
+      "mean_regret_ci95_high": 11.62772868609538,
+      "mean_regret_ci95_low": 11.059988087785438,
+      "mean_threshold_mass": 0.35717063327912335,
+      "safest_tail_rate": 0.24357876712328766
+    },
+    {
+      "action_n": 697,
+      "actual_action_rate": 0.8794835007173601,
+      "best_mean_rate": 0.8751793400286944,
+      "best_threshold_rate": 0.9655667144906743,
+      "claim_label": "ch09_nt_defender_double_weapon_spend_proxy",
+      "decision_n": 697,
+      "decl_ids": "9",
+      "mean": 19.953698160824295,
+      "mean_lower_tail_mass": 0.014318862186581627,
+      "mean_regret": 0.6500166268054519,
+      "mean_regret_ci95_high": 0.8673522532157267,
+      "mean_regret_ci95_low": 0.46100238450887043,
+      "mean_threshold_mass": 0.9837342941093992,
+      "safest_tail_rate": 0.9655667144906743
+    }
+  ],
+  "paired_contrasts": [
+    {
+      "contrast_id": "ch09_dt_low_double_lead_vs_nonlow_lead_same_decision",
+      "lower_tail_mass_delta": 0.054382027712199486,
+      "mean_delta": -2.1038940474704657,
+      "mean_delta_ci95_high": -1.839583344846558,
+      "mean_delta_ci95_low": -2.390899086057276,
+      "paired_decision_n": 720,
+      "threshold_mass_delta": -0.005951686532029675,
+      "threshold_mass_delta_ci95_high": -0.0002769540883471362,
+      "threshold_mass_delta_ci95_low": -0.010741733627704282
+    },
+    {
+      "contrast_id": "ch09_dt_low_double_lead_vs_high_double_lead_same_decision",
+      "lower_tail_mass_delta": -0.04592896451736629,
+      "mean_delta": 0.007366336868370935,
+      "mean_delta_ci95_high": 1.0291264698728908,
+      "mean_delta_ci95_low": -1.0969456735228755,
+      "paired_decision_n": 288,
+      "threshold_mass_delta": -0.02695124469593995,
+      "threshold_mass_delta_ci95_high": -0.013160116937554752,
+      "threshold_mass_delta_ci95_low": -0.040683605596293804
+    },
+    {
+      "contrast_id": "ch09_dt_dual_suit_65_vs_other_same_decision",
+      "lower_tail_mass_delta": 0.02158125179105708,
+      "mean_delta": -1.6227840876606094,
+      "mean_delta_ci95_high": -1.245537863198625,
+      "mean_delta_ci95_low": -1.993437150382376,
+      "paired_decision_n": 2001,
+      "threshold_mass_delta": -0.026612966032159437,
+      "threshold_mass_delta_ci95_high": -0.020024819534571737,
+      "threshold_mass_delta_ci95_low": -0.03322966060395979
+    },
+    {
+      "contrast_id": "ch09_nt_early_double_spend_vs_non_double_same_decision",
+      "lower_tail_mass_delta": -0.10462710189053717,
+      "mean_delta": 5.759077386378466,
+      "mean_delta_ci95_high": 6.047457858748168,
+      "mean_delta_ci95_low": 5.455409475131129,
+      "paired_decision_n": 6136,
+      "threshold_mass_delta": 0.0681219643746128,
+      "threshold_mass_delta_ci95_high": 0.07209864566013169,
+      "threshold_mass_delta_ci95_low": 0.06390131921077821
+    },
+    {
+      "contrast_id": "ch09_nt_late_double_spend_vs_non_double_same_decision",
+      "lower_tail_mass_delta": -0.05179891254992504,
+      "mean_delta": 3.0293232145615967,
+      "mean_delta_ci95_high": 3.4470585146102506,
+      "mean_delta_ci95_low": 2.646007431379059,
+      "paired_decision_n": 2363,
+      "threshold_mass_delta": 0.05472242446983618,
+      "threshold_mass_delta_ci95_high": 0.062240069050141233,
+      "threshold_mass_delta_ci95_low": 0.04705769284961123
+    },
+    {
+      "contrast_id": "ch09_nt_defender_double_weapon_vs_other_same_decision",
+      "lower_tail_mass_delta": -0.17780588709538778,
+      "mean_delta": 12.802684153611326,
+      "mean_delta_ci95_high": 14.461779779609394,
+      "mean_delta_ci95_low": 11.183382530117612,
+      "paired_decision_n": 365,
+      "threshold_mass_delta": 0.18602319576152385,
+      "threshold_mass_delta_ci95_high": 0.20997841537611125,
+      "threshold_mass_delta_ci95_low": 0.16425214004639074
+    }
+  ],
+  "schema_version": "w42.doubles_no_trump_legacy_mining.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "No central claim status changes from proxy labels alone.",
+    "interpretation": "Direct legacy Gus corpus mining for Chapter 9 within-regime tactical proxies. This does not validate no-trump-over-doubles-trump declaration choice because legacy seeds are not same-hand paired across declaration regimes.",
+    "leakage_boundary": "E[Q], q_per_world, and hidden sampled worlds are offline labels only.",
+    "wandb": {
+      "available": true,
+      "dir": "w42/doubles_no_trump_legacy_mining/wandb/wandb/run-20260502_213356-o96omty7/files",
+      "enabled": true,
+      "entity": "jasonyandell-forge42",
+      "group": "w42-doubles-no-trump-legacy-mining",
+      "id": "o96omty7",
+      "mode": "online",
+      "name": "t42-0b4l.8-legacy-ch09-mining-v0",
+      "project": "w42",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/o96omty7"
+    }
+  },
+  "wall_seconds": 164.74809250002727
+}

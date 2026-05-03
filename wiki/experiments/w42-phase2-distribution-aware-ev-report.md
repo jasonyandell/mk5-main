@@ -101,6 +101,12 @@ declarations for one seed and adds bid-aware threshold plumbing. Its fixed
 `bid_value=30` means distribution rates remain a declaration-coverage pilot, not
 real auction strategy evidence.
 
+[[w42-hidden-threat-legacy-mining]] is the full legacy-corpus follow-up for the
+same feature family. It shows that close-mean action choices can reduce
+lower-tail mass and hidden-downside score without materially changing scalar
+mean, while broader safest-tail choices often trade mean and threshold mass for
+tail safety.
+
 ## Artifacts
 
 | artifact | path | purpose |
@@ -137,4 +143,5 @@ real auction strategy evidence.
 ## Links
 
 [[w42]] | [[eq-browser-visualizers]] | [[w42-next-model-decision]] |
-[[w42-powered-branch-atlas-v1]] | [[w42-branch-atlas-scaled-v0]]
+[[w42-powered-branch-atlas-v1]] | [[w42-branch-atlas-scaled-v0]] |
+[[w42-hidden-threat-legacy-mining]]

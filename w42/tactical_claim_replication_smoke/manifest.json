@@ -1,0 +1,25 @@
+{
+  "command": "w42/tactical_claim_replication/run_tactical_replication.py --max-files 1 --output-dir w42/tactical_claim_replication_smoke --bootstrap-samples 100 --min-slice-n 5 --min-paired-slice-n 5 --wandb-mode disabled",
+  "created_at_utc": "2026-05-03T00:49:46.478658+00:00",
+  "leakage_boundary": "Public role/trick/action labels are report features. E[Q], q_per_world, world_hands, and sampled-world outcomes are offline labels and diagnostics only.",
+  "outputs": {
+    "all_action_rows": "w42/tactical_claim_replication_smoke/all_action_rows.jsonl",
+    "claim_metrics": "w42/tactical_claim_replication_smoke/claim_metrics.csv",
+    "examples": "w42/tactical_claim_replication_smoke/examples.json",
+    "harness_outputs": {
+      "claim_specs": "w42/tactical_claim_replication_smoke/harness/claim_specs.csv",
+      "examples": "w42/tactical_claim_replication_smoke/harness/examples.json",
+      "label_counts": "w42/tactical_claim_replication_smoke/harness/label_counts.csv",
+      "label_metrics": "w42/tactical_claim_replication_smoke/harness/label_metrics.csv",
+      "manifest": "w42/tactical_claim_replication_smoke/harness/manifest.json",
+      "paired_contrasts": "w42/tactical_claim_replication_smoke/harness/paired_contrasts.csv",
+      "summary": "w42/tactical_claim_replication_smoke/harness/summary.json"
+    },
+    "paired_contrasts": "w42/tactical_claim_replication_smoke/paired_contrasts.csv",
+    "paired_contrasts_by_slice": "w42/tactical_claim_replication_smoke/paired_contrasts_by_slice.csv",
+    "slice_metrics": "w42/tactical_claim_replication_smoke/slice_metrics.csv",
+    "summary": "w42/tactical_claim_replication_smoke/summary.json"
+  },
+  "schema_version": "w42.tactical_claim_replication.manifest.v1",
+  "wandb": "not applicable"
+}

@@ -93,6 +93,12 @@ oracle/model/trace evidence?
 | A same-hand no-trump-over-doubles-trump proxy bucket exists, but does not prove the strategy recommendation. | `hand_regime_proxy_slices.csv` | 21,884 / 51,108 = 42.819% of 4+ double hands | underpowered |
 | Oracle/regret slices are not available for this claim in current artifacts. | [[w42-concept-bucket-regret]] and local artifact check | existing v0 artifacts expose broad `global:declaration`, not isolated no-trump/doubles rows | not-yet-tested |
 
+Follow-up note: [[w42-doubles-no-trump-legacy-mining]] now supplies direct
+legacy-corpus within-regime action slices for declaration 7 and declaration 9.
+That follow-up does not change the static validation results here, but it
+retires the earlier assumption that Chapter 9 had no available action-row data.
+Same-hand regime choice remains untested.
+
 ## Concept Buckets
 
 | bucket | detector coverage | regret / tail-risk impact | belief impact | notes |
@@ -217,6 +223,9 @@ Commit SHA at validation run:
 - Run paired declaration rollouts for the same hand under doubles-trump,
   no-trump, and best pip-trump choices, split by high-double coverage and off-count
   liability.
+- Refine the legacy-corpus Chapter 9 proxies from
+  [[w42-doubles-no-trump-legacy-mining]], especially low-double sacrifice,
+  no-trump support-double preservation, and no-trump suit-count/walker labels.
 - Add action-local oracle slices for low-double sacrifice and no-trump support
   double preservation.
 - Emit full prediction rows from future model runs so no-trump/doubles regret can

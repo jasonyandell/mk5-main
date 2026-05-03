@@ -16,6 +16,9 @@ joint-world artifacts. The first empirical implementation is now
 produced 1026 hidden-threat rows from real `world_hands` and `q_per_world`
 tensors. [[w42-branch-atlas-scaled-v0]] expands the same analyzer to all ten
 declarations for one seed, producing 5955 hidden-threat rows.
+[[w42-hidden-threat-legacy-mining]] then scales the same hidden-impact idea over
+the 100 legacy Gus chunks, summarizing 280000 decisions and 748305 legal actions
+without exporting a full action table.
 
 ## Method
 
@@ -94,6 +97,7 @@ donation, or bid-margin detector should care about.
 | powered implementation | `w42/branch_atlas_v1/build_branch_atlas.py` | empirical branch/threat atlas |
 | powered threat rows | `w42/branch_atlas_v1/hidden_threat_rows.csv` | 1026 real rows |
 | scaled threat rows | `w42/branch_atlas_scaled_v0/hidden_threat_rows.csv` | 5955 real rows |
+| legacy mining pass | `w42/hidden_threat_legacy_mining/summary.json` | full-corpus compact diagnostics |
 
 ## Run Recipe
 
@@ -131,19 +135,20 @@ Real metric pass:
 | branch | `w42/phase2-hidden-threat` |
 | design-time commit | `343a9f4c45244889ea9c1eaa8edacde7e2a69920` |
 | generation status | schema design superseded by [[w42-powered-branch-atlas-v1]] and [[w42-branch-atlas-scaled-v0]] empirical runs |
-| W&B links | `https://wandb.ai/jasonyandell-forge42/w42/runs/44z1kl9j`; `https://wandb.ai/jasonyandell-forge42/w42/runs/7fwi2zwn` |
+| W&B links | `https://wandb.ai/jasonyandell-forge42/w42/runs/44z1kl9j`; `https://wandb.ai/jasonyandell-forge42/w42/runs/7fwi2zwn`; `https://wandb.ai/jasonyandell-forge42/w42/runs/74vfet6o` |
 | HF links | not applicable |
 | claim-ledger impact | no central claim status change |
 
 ## Next Steps
 
 - Preserve per-world posterior weights for posterior runs.
-- Feed the resulting top-k rows into the next targeted w42 regime: setter pounce,
-  84 weapon preservation, or auction bid-margin counterfactuals.
+- Feed [[w42-hidden-threat-legacy-mining]] mitigation labels into the next
+  targeted w42 regime: setter pounce, 84 weapon preservation, or auction
+  bid-margin counterfactuals.
 
 ## Links
 
 [[w42]] | [[w42-final-empirical-strategy-report]] |
 [[w42-next-model-decision]] | [[joint-world-tensor]] |
 [[gus-joint-world-tire-kick]] | [[w42-powered-branch-atlas-v1]] |
-[[w42-branch-atlas-scaled-v0]]
+[[w42-branch-atlas-scaled-v0]] | [[w42-hidden-threat-legacy-mining]]

@@ -1,0 +1,26 @@
+{
+  "command": "w42/doubles_no_trump_legacy_mining/run_legacy_mining.py --bootstrap-samples 1000 --wandb-mode online --wandb-group w42-doubles-no-trump-legacy-mining --wandb-name t42-0b4l.8-legacy-ch09-mining-v0",
+  "created_at_utc": "2026-05-03T02:36:42.470229+00:00",
+  "large_row_policy": "No full action-row dump is emitted; rerun from corpus paths for row-level detail.",
+  "leakage_boundary": "E[Q], q_per_world, and hidden sampled worlds are offline labels only.",
+  "outputs": {
+    "examples": "w42/doubles_no_trump_legacy_mining/examples.json",
+    "label_metrics": "w42/doubles_no_trump_legacy_mining/label_metrics.csv",
+    "paired_contrasts": "w42/doubles_no_trump_legacy_mining/paired_contrasts.csv",
+    "paired_examples": "w42/doubles_no_trump_legacy_mining/paired_examples.json",
+    "summary": "w42/doubles_no_trump_legacy_mining/summary.json"
+  },
+  "schema_version": "w42.doubles_no_trump_legacy_mining.manifest.v0",
+  "wandb": {
+    "available": true,
+    "dir": "w42/doubles_no_trump_legacy_mining/wandb/wandb/run-20260502_213356-o96omty7/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-doubles-no-trump-legacy-mining",
+    "id": "o96omty7",
+    "mode": "online",
+    "name": "t42-0b4l.8-legacy-ch09-mining-v0",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/o96omty7"
+  }
+}

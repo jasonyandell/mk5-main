@@ -1,0 +1,223 @@
+{
+  "bead": "t42-0b4l.3",
+  "claim_metrics": [
+    {
+      "action_n": 41,
+      "actual_action_rate": 0.7073170731707317,
+      "best_mean_rate": 0.7317073170731707,
+      "best_threshold_rate": 0.8292682926829268,
+      "claim_label": "ch05_setter_pounce_count_before_certainty",
+      "decision_n": 40,
+      "mean_lower_tail_mass": 0.11902439040018291,
+      "mean_regret": 1.0833961914588766,
+      "mean_regret_ci95_high": 2.0602403420500632,
+      "mean_regret_ci95_low": 0.5066787906172799,
+      "mean_threshold_gap": 0.007195122358275623,
+      "mean_threshold_gap_ci95_high": 0.014454268282506524,
+      "mean_threshold_gap_ci95_low": 0.0029847569218496,
+      "mean_threshold_mass": 0.8762195124858763,
+      "safest_tail_rate": 0.8292682926829268
+    },
+    {
+      "action_n": 52,
+      "actual_action_rate": 0.6923076923076923,
+      "best_mean_rate": 0.75,
+      "best_threshold_rate": 0.8653846153846154,
+      "claim_label": "ch05_setter_pounce_count",
+      "decision_n": 50,
+      "mean_lower_tail_mass": 0.09403846165738426,
+      "mean_regret": 1.2071563471108675,
+      "mean_regret_ci95_high": 2.181480777750794,
+      "mean_regret_ci95_low": 0.4689680136167086,
+      "mean_threshold_gap": 0.005673077244025011,
+      "mean_threshold_gap_ci95_high": 0.00985817344715962,
+      "mean_threshold_gap_ci95_low": 0.0017307704171309105,
+      "mean_threshold_mass": 0.9020192313652772,
+      "safest_tail_rate": 0.8653846153846154
+    },
+    {
+      "action_n": 24,
+      "actual_action_rate": 0.625,
+      "best_mean_rate": 0.8333333333333334,
+      "best_threshold_rate": 0.875,
+      "claim_label": "ch05_setter_pounce_count_sets_now",
+      "decision_n": 22,
+      "mean_lower_tail_mass": 0.06145833261931936,
+      "mean_regret": 0.7178652882575989,
+      "mean_regret_ci95_high": 1.4076052819689113,
+      "mean_regret_ci95_low": 0.16325438022613525,
+      "mean_threshold_gap": 0.004375000794728597,
+      "mean_threshold_gap_ci95_high": 0.009078126276532802,
+      "mean_threshold_gap_ci95_low": 0.0,
+      "mean_threshold_mass": 0.9364583343267441,
+      "safest_tail_rate": 0.9166666666666666
+    },
+    {
+      "action_n": 238,
+      "actual_action_rate": 0.3025210084033613,
+      "best_mean_rate": 0.3025210084033613,
+      "best_threshold_rate": 0.41596638655462187,
+      "claim_label": "ch05_reckless_count_to_bidder",
+      "decision_n": 212,
+      "mean_lower_tail_mass": 0.5451260499710984,
+      "mean_regret": 6.685520619179412,
+      "mean_regret_ci95_high": 7.983887871766479,
+      "mean_regret_ci95_low": 5.560528226682678,
+      "mean_threshold_gap": 0.10825630221437632,
+      "mean_threshold_gap_ci95_high": 0.1280598741547134,
+      "mean_threshold_gap_ci95_low": 0.08453571372244804,
+      "mean_threshold_mass": 0.43987394939372393,
+      "safest_tail_rate": 0.41596638655462187
+    },
+    {
+      "action_n": 73,
+      "actual_action_rate": 0.6027397260273972,
+      "best_mean_rate": 0.6164383561643836,
+      "best_threshold_rate": 0.6575342465753424,
+      "claim_label": "ch04_partner_safe_count_donation_current_control",
+      "decision_n": 59,
+      "mean_lower_tail_mass": 0.09486301429569721,
+      "mean_regret": 1.6007452174408796,
+      "mean_regret_ci95_high": 2.3505890078740572,
+      "mean_regret_ci95_low": 1.100731839709086,
+      "mean_threshold_gap": 0.033835614993147654,
+      "mean_threshold_gap_ci95_high": 0.0501301341677365,
+      "mean_threshold_gap_ci95_low": 0.018551368919545657,
+      "mean_threshold_mass": 0.48664383610633954,
+      "safest_tail_rate": 0.726027397260274
+    },
+    {
+      "action_n": 68,
+      "actual_action_rate": 0.3382352941176471,
+      "best_mean_rate": 0.3382352941176471,
+      "best_threshold_rate": 0.4411764705882353,
+      "claim_label": "ch04_partner_unsafe_count_to_defense",
+      "decision_n": 61,
+      "mean_lower_tail_mass": 0.49985294065931263,
+      "mean_regret": 8.80065474308589,
+      "mean_regret_ci95_high": 11.128680520800543,
+      "mean_regret_ci95_low": 6.144899694533909,
+      "mean_threshold_gap": 0.15338235300527336,
+      "mean_threshold_gap_ci95_high": 0.21855330924188496,
+      "mean_threshold_gap_ci95_low": 0.10090257314115982,
+      "mean_threshold_mass": 0.055514705435865945,
+      "safest_tail_rate": 0.5294117647058824
+    }
+  ],
+  "coverage": {
+    "action_rows": 7447,
+    "claim_action_rows": 431,
+    "claim_decision_rows": 369,
+    "decision_rows": 2800,
+    "input_files": 1,
+    "label_counts": {
+      "ch04_partner_safe_count_donation_current_control": 73,
+      "ch04_partner_unsafe_count_to_defense": 68,
+      "ch05_reckless_count_to_bidder": 238,
+      "ch05_setter_pounce_count": 52,
+      "ch05_setter_pounce_count_before_certainty": 41,
+      "ch05_setter_pounce_count_sets_now": 24
+    }
+  },
+  "created_at_utc": "2026-05-03T00:49:46.478658+00:00",
+  "file_meta": [
+    {
+      "action_rows": 7447,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_0-9_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "seeds_tail": [
+        9,
+        9,
+        9,
+        9,
+        9
+      ]
+    }
+  ],
+  "git_commit": "551ea630737e1a50d6e7642cc1fc489a93a2726b",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M burl/chat/server/tools_runner.py\n M w42/statistics_claims_ledger/build_statistics_claims_ledger.py\n M w42/statistics_claims_ledger/claims.csv\n M w42/statistics_claims_ledger/manifest.json\n M w42/statistics_claims_ledger/summary.json\n M wiki/entities/w42.md\n M wiki/experiments/w42-partner-support-claim-validation.md\n M wiki/experiments/w42-phase2-setter-pounce-direct-label-probe.md\n M wiki/experiments/w42-phase2-statistics-claims-ledger.md\n M wiki/experiments/w42-setter-defense-claim-validation.md\n M wiki/index.md\n M wiki/log.md\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/skills/analyze-hand/\n?? .agents/skills/clustering/\n?? .agents/skills/comprehension-test/\n?? .agents/skills/ecological/\n?? .agents/skills/minirocket/\n?? .agents/skills/modal/\n?? .agents/skills/pdf/\n?? .agents/skills/pymc/\n?? .agents/skills/pytorch-lightning/\n?? .agents/skills/pytorch/\n?? .agents/skills/ralph-loop/\n?? .agents/skills/shap/\n?? .agents/skills/statistical-rigor/\n?? .agents/skills/survival-forest/\n?? .agents/skills/texas-42-analytics/\n?? .agents/skills/texas-42-forge/\n?? .agents/skills/umap/\n?? .agents/skills/volcano-plots/\n?? .agents/skills/word2vec/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/claim_analysis/\n?? w42/claim_analysis_matrix/\n?? w42/claim_analysis_smoke/\n?? w42/gus_corpus_claim_deep_dive/\n?? w42/tactical_claim_replication/\n?? w42/tactical_claim_replication_smoke/\n?? wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md\n?? wiki/experiments/w42-phase2-claim-analysis-harness.md\n?? wiki/experiments/w42-phase2-claim-analysis-matrix.md",
+  "harness": {
+    "action_rows": 7447,
+    "artifact_dir": "w42/tactical_claim_replication_smoke/harness",
+    "decision_rows": 2800,
+    "label_metric_rows": 6,
+    "paired_contrast_rows": 6
+  },
+  "inputs": [
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_0-9_d0-9.pt"
+  ],
+  "paired_contrasts": [
+    {
+      "contrast_id": "ch05_pounce_count_vs_other_same_decision",
+      "lower_tail_mass_delta": -0.040697674375287325,
+      "mean_delta": 4.22741942000467,
+      "mean_delta_ci95_high": 6.925638931350467,
+      "mean_delta_ci95_low": 1.670785407592315,
+      "paired_decision_n": 43,
+      "regret_delta": -4.22741942000467,
+      "threshold_mass_delta": 0.05197674261276112
+    },
+    {
+      "contrast_id": "ch05_pounce_sets_now_vs_other_same_decision",
+      "lower_tail_mass_delta": -0.06309523735018004,
+      "mean_delta": 6.614049589638377,
+      "mean_delta_ci95_high": 11.071722427436281,
+      "mean_delta_ci95_low": 1.6239537761862657,
+      "paired_decision_n": 21,
+      "regret_delta": -6.614049589638377,
+      "threshold_mass_delta": 0.08571428237926393
+    },
+    {
+      "contrast_id": "ch05_reckless_count_vs_nonreckless_same_decision",
+      "lower_tail_mass_delta": 0.123031249869382,
+      "mean_delta": -8.26225248569681,
+      "mean_delta_ci95_high": -6.610856668211055,
+      "mean_delta_ci95_low": -9.942078199541427,
+      "paired_decision_n": 160,
+      "regret_delta": 8.26225248569681,
+      "threshold_mass_delta": -0.12287499933736398
+    },
+    {
+      "contrast_id": "ch04_safe_partner_count_vs_other_same_decision",
+      "lower_tail_mass_delta": -0.024090909173317028,
+      "mean_delta": 0.451036147999041,
+      "mean_delta_ci95_high": 1.9715065244472383,
+      "mean_delta_ci95_low": -1.2413022588599811,
+      "paired_decision_n": 33,
+      "regret_delta": -0.451036147999041,
+      "threshold_mass_delta": -0.0003030291109374075
+    },
+    {
+      "contrast_id": "ch04_unsafe_partner_count_vs_nonunsafe_same_decision",
+      "lower_tail_mass_delta": 0.13675000139046462,
+      "mean_delta": -12.167790047079325,
+      "mean_delta_ci95_high": -9.060262323226784,
+      "mean_delta_ci95_low": -15.83836763849482,
+      "paired_decision_n": 40,
+      "regret_delta": 12.167790047079325,
+      "threshold_mass_delta": -0.2268749994924292
+    }
+  ],
+  "paired_slice_rows": 116,
+  "schema_version": "w42.tactical_claim_replication.v1",
+  "scientific_status": {
+    "claim_ledger_impact": "no automatic status movement; existing narrow supported/context-limited readings remain conservative",
+    "hf": "not applicable",
+    "interpretation": "Powered tactical replication over existing Gus v2 joint-world records with full legal-action row export and reusable harness smoke.",
+    "leakage_boundary": "Public role/trick/action labels are report features. E[Q], q_per_world, world_hands, and sampled-world outcomes are offline labels and diagnostics only.",
+    "wandb": "not applicable"
+  },
+  "slice_rows": 153,
+  "wall_seconds": 1.045378457987681
+}

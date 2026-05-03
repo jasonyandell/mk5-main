@@ -1823,7 +1823,7 @@ Fix in `burl/chat/web/src/App.svelte`:
 
 **Frontier shift:**
 - w42 phase 2 now has a concrete research bench rather than a discussion queue: a statistics ledger, seat/position strategy map, hidden-domino threat attribution design, distribution-aware EV report, setter-pounce direct-label probe, and 84 weapon-preservation probe.
-- The statistics ledger is the bedrock: 62 rows separate supported exact/rules/scoring substrates from underpowered tactical advice. No tactical book claim is promoted simply because its arithmetic substrate is true.
+- The statistics ledger is the bedrock: originally 62 rows here, now 64 rows after the Gus-corpus tactical deep dive. It separates supported exact/rules/scoring substrates and direct tactical-corpus evidence from underpowered tactical advice. No tactical book claim is promoted simply because its arithmetic substrate is true.
 - The E[Q] visualizer insight has been operationalized: phase-2 reports now track threshold mass, tails, quantiles, branch shape, and belief-impact magnitude instead of reducing every decision to scalar mean EV.
 - The direct tactical probes remain conservative. Setter pounce and 84 preservation produced label specs, fixtures, required fields, and leakage checks; dynamic rollouts/model probes are explicitly next work, not silently assumed.
 
@@ -1900,6 +1900,22 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 
 ---
 
+## [2026-05-02 | local | w42 Gus corpus tactical claim deep dive]
+
+**Touched pages:** [[w42]] [[w42-gus-corpus-tactical-claim-deep-dive]] [[w42-phase2-setter-pounce-direct-label-probe]] [[w42-setter-defense-claim-validation]] [[w42-partner-support-claim-validation]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-gus-corpus-tactical-claim-deep-dive]]; 1 artifact directory - `w42/gus_corpus_claim_deep_dive/`.
+**Updated:** [[w42]] lists the Gus-corpus tactical report as an active phase-2 surface; setter-pounce and partner-support pages point to the new direct evidence.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- w42 can use existing Gus v2 joint-world corpora for some tactical claim tests instead of regenerating seeds. The run processes 10 source files, 28,000 decisions, and 75,079 legal actions at N=200 sampled worlds per decision.
+- Setter pounce moved from direct-label spec/proxy evidence to a powered corpus result on pip declarations: pounce-count actions beat same-decision alternatives by about +4.1 Q, and pounce-count actions that set now beat alternatives by about +6.1 Q.
+- Reckless count donation into the bidder side is a strong negative control at about -8.4 Q versus non-reckless alternatives. Partner safe donation has a smaller positive paired signal, while unsafe partner count donation is strongly negative.
+- W&B run `zm3jdrnj` logs progress per source shard; the report remains a corpus-slice result, not a model-training run, HF artifact, or universal book-claim verdict.
+
+---
+
 ## [2026-05-02 | local | burl/lab harvested chat prompt import]
 
 **Touched pages:** [[burl-lab]] [[log]]
@@ -1913,6 +1929,52 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 **Touched pages:** [[burl-lab]] [[log]]
 
 The four useful [[improvised-tools]] from [[burl-chat-spike]] now load into burl-lab as first-class `ToolSpec` wrappers: `state_brief`, `board_snapshot`, `legal_plays`, and `play_brief`. Implementations still delegate to `burl/chat/server/tools_library/`, but burl-lab now owns their schemas, examples, protocol roles, and protocol phrases, so the rendered Decision Protocol can name them directly.
+
+---
+
+## [2026-05-02 | local | w42 claim analysis matrix]
+
+**Touched pages:** [[w42]] [[w42-phase2-statistics-claims-ledger]] [[w42-phase2-claim-analysis-matrix]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase2-claim-analysis-matrix]]; 1 artifact directory - `w42/claim_analysis_matrix/`.
+**Updated:** [[w42]] lists the claim-analysis matrix as the eleventh phase-2 surface; [[w42-phase2-statistics-claims-ledger]] points to the routing matrix as planning metadata; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The 64-row w42 statistics ledger now has a generated test-design matrix with required fields, leakage risks, likely blockers, sample/power needs, target wiki pages, and next beads for every claim.
+- Nineteen rows are fixture-only exact or deterministic substrates. Forty-two rows are routed to powered research queues, led by 84 dynamic generation, auction/bid-margin generation, direct detector implementation, bidder sequence counterfactuals, and doubles/no-trump regime generation.
+- The matrix preserves the current claim statuses. It is not evidence that additional claims are supported; it is the route map for the next empirical beads.
+
+---
+
+## [2026-05-02 | local | w42 claim analysis harness]
+
+**Touched pages:** [[w42]] [[w42-phase2-claim-analysis-matrix]] [[w42-phase2-claim-analysis-harness]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase2-claim-analysis-harness]]; 1 code package - `w42/claim_analysis/`; 1 smoke artifact directory - `w42/claim_analysis_smoke/`.
+**Updated:** [[w42]] lists the harness as the twelfth phase-2 surface; [[w42-phase2-claim-analysis-matrix]] points its harness dependency to the new page; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The one-off Gus tactical deep-dive loop now has a reusable row-level harness for label metrics, label-vs-nonlabel paired contrasts, bootstrap CIs, examples, manifests, and W&B progress series.
+- A branch-atlas smoke over 773 legal action rows produced 36 label metric rows and 14 paired contrast rows, with W&B run `rj3j0jsz` logging eight progress points over rows processed.
+- A Gus claim-row smoke reproduced the six exported tactical labels, but its paired contrasts are explicitly limited because the exported JSONL is label-filtered rather than a full legal-action table.
+
+---
+
+## [2026-05-02 | local | w42 tactical claim replication]
+
+**Touched pages:** [[w42]] [[w42-gus-corpus-tactical-claim-deep-dive]] [[w42-tactical-claim-replication]] [[w42-setter-defense-claim-validation]] [[w42-partner-support-claim-validation]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-tactical-claim-replication]]; 1 artifact directory - `w42/tactical_claim_replication/`.
+**Updated:** [[w42]] lists the tactical replication as the thirteenth phase-2 surface; the Gus deep-dive, setter-defense, and partner-support pages point to the replication.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The tactical replication reruns all ten Gus v2 source shards: 28,000 decisions, 75,079 legal-action rows, and 3903 claim-labeled action rows.
+- It preserves full legal-action rows for the reusable harness, then adds 166 label-slice rows and 133 paired-contrast slice rows over declaration, seat, trick, current-control, count amount, later-seat proxy, and sets-now context.
+- The original narrow conclusions hold: pounce count is about `+4.1` Q, pounce-that-sets-now is about `+6.1`, reckless count is about `-8.4`, safe partner count is about `+0.7`, and unsafe partner count is about `-8.4` on paired same-decision contrasts.
+- W&B run `jv9luhgp` logs ten progress points, one per processed source shard. No claim status is broadened beyond the already stated operationalized slice.
 
 ---
 
@@ -1953,3 +2015,68 @@ The wizard and `pre_game.start_run` now require a user/decision prompt before en
 **Touched pages:** [[burl-lab]] [[log]]
 
 The guided wizard now exposes the intended seeded decision flow directly: optional chat, generate the system prompt from the selected tool protocol, select/apply tools, then `send_seeded_decision(harvest, seed)`. The arrow now uses rendered `board_snapshot()` prose as the user message instead of the harvested prompt text, without requiring `legal_plays` in the selected tool set. After a commit, the server journals `SessionOutcome`: selected tools, final domino, legal/illegal status, legal set, and pi/qmean/burl/oracle/consensus comparisons for later tool-selection mining.
+
+---
+
+## [2026-05-03 | local | w42 claim data inventory]
+
+**Touched pages:** [[w42]] [[w42-claim-data-inventory]] [[w42-phase2-claim-analysis-matrix]] [[w42-doubles-no-trump-claim-validation]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-claim-data-inventory]]; 1 artifact directory - `w42/claim_data_inventory/`.
+**Updated:** [[w42]] lists the data inventory as the fourteenth phase-2 surface; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The W42 recovery now accounts for the large local Gus corpus under `gus/data/`, not only promoted `w42/` artifacts or repo `scratch/`.
+- A full one-chunk-at-a-time inventory inspected 113 payloads with no load errors: all 100 legacy seed-modulo chunks, the legacy 100-game file, all 10 v2 train files, and both eval files.
+- The legacy corpus provides 10000 inferred games and 280000 decisions, with 1000 games per declaration. It supports broad within-regime play, action, and hidden-threat diagnostics, including Chapter 9 doubles-trump/no-trump tactical mining.
+- The same inventory confirms the missing-field blockers: legacy chunks have no observed real `bid_value` or auction margin, and the v2 all-declaration files use fixed `bid_value=30`. Hard bid-only-enough claims and true 84-contract claims still require generated data.
+
+---
+
+## [2026-05-03 | local | w42 doubles/no-trump legacy mining]
+
+**Touched pages:** [[w42]] [[w42-doubles-no-trump-legacy-mining]] [[w42-doubles-no-trump-claim-validation]] [[winning42-ch09-doubles-no-trump]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-doubles-no-trump-legacy-mining]]; 1 artifact directory - `w42/doubles_no_trump_legacy_mining/`.
+**Updated:** [[w42]] lists the legacy mining pass as the fifteenth phase-2 surface; [[w42-doubles-no-trump-claim-validation]] points to the new action-row follow-up.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- Chapter 9 is no longer static-only. The large legacy Gus corpus supports within-regime declaration-7 and declaration-9 tactical proxy mining, even though same-hand no-trump-vs-doubles-trump regime choice still needs generated paired declarations.
+- The run processes all 100 legacy chunks: 56000 declaration-7/9 decisions, 149415 legal action rows, and 25906 proxy-labeled action rows. W&B run `o96omty7` logs 20 progress points and the report artifact.
+- No-trump double control is the strongest signal: early support-double spend proxies beat non-double alternatives by about `+5.76` Q, late double spend by about `+3.03` Q, and defender double weapons by about `+12.80` Q on paired same-decision contrasts.
+- Broad doubles-trump low-double sacrifice and `6-5` dual-suit-top proxies do not promote claims by themselves. They need the book's missing gates: planned loss budget, missing higher doubles, off/walker payoff, suit depletion, and support-double preservation state.
+
+---
+
+## [2026-05-03 | local | w42 hidden-threat legacy mining]
+
+**Touched pages:** [[w42]] [[w42-hidden-threat-legacy-mining]] [[w42-phase2-hidden-domino-threat-attribution]] [[w42-phase2-distribution-aware-ev-report]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-hidden-threat-legacy-mining]]; 1 artifact directory - `w42/hidden_threat_legacy_mining/`.
+**Updated:** [[w42]] lists the hidden-threat legacy pass as the sixteenth phase-2 surface; hidden-attribution and distribution-aware EV pages point to the full-corpus follow-up.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The hidden-threat bead `t42-0b4l.4` now has a full legacy-corpus pass: 100 Gus chunks, 280000 decisions, 748305 legal actions, and W&B run `74vfet6o` with 20 progress points.
+- Hidden-holder impact is pervasive in this corpus: 85.16% of legal actions have top hidden-impact score at least `5.0`; mean top impact is `17.46`, and max top impact is `85.04`.
+- The cleanest mitigation contrast is close-mean hidden downside. Across 4619 same-decision pairs, choosing the lower hidden-downside action changes mean by only `-0.021` Q with CI crossing zero, while reducing lower-tail mass by `-0.033` and hidden-downside score by `-7.49`.
+- Broader safest-tail and top-threshold choices expose the tradeoff surface: tail safety can cost mean/threshold mass, and threshold-mass improvements can worsen lower-tail exposure. The result is diagnostic branch-impact evidence, not a central claim-status promotion.
+
+---
+
+## [2026-05-03 | local | w42 dynamic 84 branch lab]
+
+**Touched pages:** [[w42]] [[w42-phase2-84-weapon-preservation-probe]] [[index]] [[log]]
+**Added:** 1 dynamic artifact directory - `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/`; 1 runner - `w42/eighty_four_weapon_preservation_probe/run_dynamic_branch_lab.py`.
+**Updated:** [[w42]] records the generated 84 follow-up; [[w42-phase2-84-weapon-preservation-probe]] now includes the dynamic branch lab and W&B run; [[index]] updates the catalog description.
+**Retired:** none.
+**Questions opened:** how to inject exact late-hand states, or mine many seeds, so same-suit-pair and last-trick stopper claims are no longer limited by the greedy policy trace.
+
+**Frontier shift:**
+- Bead `t42-0b4l.7` now has explicit bid-84 generated data rather than only static shape evidence. Six constructed hands cover laydown control, protected one-off, straight-off named stopper threat, two-off ordering, same-suit pair/protector pressure, and dead-asset release.
+- The run uses schema-v2 E[Q] generation with `bid_value=84`: 168 decision states, 584 legal action rows, 4497 hidden-threat rows, and W&B run `f7uzoo7f`.
+- Dynamic proxy labels find 10 live double weapon actions, 21 live same-suit pair actions, 4 pair-protector actions, 7 dead-asset release candidates, 13 preserve-vs-spend paired decisions, and 23 offense trump-vs-final-off paired decisions.
+- The first preserve/spend contrast is deliberately small and conservative: preserving lower-asset alternatives is `+0.136` mean Q with `+0.005` threshold-mass delta across 13 same-decision pairs. This proves the measurement surface exists, not that the broad book claim is settled.
+- No central claim status changes. The next credible step is either explicit late-hand state injection or seed mining at scale for powered 84 endgame tableaux.

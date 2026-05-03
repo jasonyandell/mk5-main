@@ -1,0 +1,63 @@
+{
+  "artifacts": {
+    "branch_atlas": "w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas",
+    "dynamic_action_labels": "w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_action_labels.csv",
+    "eq_games": "w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/targeted_84_games.pt",
+    "examples": "w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_examples.json",
+    "label_metrics": "w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_label_metrics.csv",
+    "paired_contrasts": "w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_paired_contrasts.csv"
+  },
+  "claim_surfaces": {
+    "dead_asset_abandonment": 1,
+    "laydown_84_proof": 1,
+    "live_same_suit_pair_and_protector": 1,
+    "protected_one_off_84_shape": 1,
+    "straight_off_84_risk": 1,
+    "two_off_same_suit_84": 1
+  },
+  "commit_sha": "f70a849ad62b6ae75e5ce6b08e960cad46f3860d",
+  "coverage": {
+    "action_rows": 584,
+    "decision_rows": 168,
+    "dynamic_labeled_actions": 584,
+    "dynamic_labels": 10,
+    "fixture_games": 6,
+    "hidden_threat_rows": 4497
+  },
+  "created_at": "2026-05-03T03:37:04.939978+00:00",
+  "fixture_ids": [
+    "six_trump_laydown_control",
+    "protected_one_off_43",
+    "straight_off_named_44_threat",
+    "two_off_same_suit_ordering",
+    "defender_pair_protector_pressure",
+    "dead_asset_release_control"
+  ],
+  "generation": {
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "device": "mps",
+    "elapsed_seconds": 7.350346666062251,
+    "games": 6,
+    "samples": 256
+  },
+  "headline": {
+    "dead_asset_release_candidate_proxy_actions": 7,
+    "defender_live_double_weapon_proxy_actions": 10,
+    "defender_live_same_suit_pair_proxy_actions": 21,
+    "laydown_control_actions": 56,
+    "pair_protector_proxy_actions": 4,
+    "preserve_vs_spend_paired_decisions": 13,
+    "trump_vs_final_off_paired_decisions": 23
+  },
+  "owner_bead": "t42-0b4l.7",
+  "schema_version": "w42.eighty_four_dynamic_branch_lab.v0",
+  "scientific_status": {
+    "blockers": [
+      "generated fixtures are hand-picked and small",
+      "policy trace determines reached decisions; unreached endgame states still need state injection or seed mining",
+      "preserve/spend labels are proxy asset-priority labels, not full proof of final-trick set attribution"
+    ],
+    "claim_ledger_impact": "no central claim-ledger status movement; targeted fixtures are dynamic examples, not powered corpus evidence",
+    "leakage_boundary": "asset labels reconstructed from full generated deals are offline diagnostics; live model features must use public state/actor hand only"
+  }
+}

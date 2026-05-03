@@ -1,0 +1,454 @@
+{
+  "claim_metrics": [
+    {
+      "action_n": 321,
+      "actual_action_rate": 0.6417445482866043,
+      "best_mean_rate": 0.7133956386292835,
+      "best_threshold_rate": 0.7881619937694704,
+      "claim_label": "ch05_setter_pounce_count_before_certainty",
+      "decision_n": 317,
+      "mean_lower_tail_mass": 0.09845794383378415,
+      "mean_regret": 0.9990612449870819,
+      "mean_regret_ci95_high": 1.2584250561656711,
+      "mean_regret_ci95_low": 0.7557384435992652,
+      "mean_threshold_gap": 0.01520249210414114,
+      "mean_threshold_gap_ci95_high": 0.02084151004844365,
+      "mean_threshold_gap_ci95_low": 0.010435746923506817,
+      "mean_threshold_mass": 0.8927881628089234,
+      "safest_tail_rate": 0.8037383177570093
+    },
+    {
+      "action_n": 453,
+      "actual_action_rate": 0.6534216335540839,
+      "best_mean_rate": 0.7306843267108167,
+      "best_threshold_rate": 0.8388520971302428,
+      "claim_label": "ch05_setter_pounce_count",
+      "decision_n": 442,
+      "mean_lower_tail_mass": 0.07295805731249631,
+      "mean_regret": 1.07491425419289,
+      "mean_regret_ci95_high": 1.3426847053151556,
+      "mean_regret_ci95_low": 0.8250199362772459,
+      "mean_threshold_gap": 0.011114790147503481,
+      "mean_threshold_gap_ci95_high": 0.01508829959115182,
+      "mean_threshold_gap_ci95_low": 0.007593819104283061,
+      "mean_threshold_mass": 0.9203642391934826,
+      "safest_tail_rate": 0.8520971302428256
+    },
+    {
+      "action_n": 172,
+      "actual_action_rate": 0.7209302325581395,
+      "best_mean_rate": 0.8372093023255814,
+      "best_threshold_rate": 0.9244186046511628,
+      "claim_label": "ch05_setter_pounce_count_sets_now",
+      "decision_n": 170,
+      "mean_lower_tail_mass": 0.04072674408793276,
+      "mean_regret": 0.6369612781807433,
+      "mean_regret_ci95_high": 1.0529550477948992,
+      "mean_regret_ci95_low": 0.2982531346987153,
+      "mean_threshold_gap": 0.004883721470832825,
+      "mean_threshold_gap_ci95_high": 0.011279071139734845,
+      "mean_threshold_gap_ci95_low": 0.0010465127091075098,
+      "mean_threshold_mass": 0.9509593020518159,
+      "safest_tail_rate": 0.9302325581395349
+    },
+    {
+      "action_n": 1987,
+      "actual_action_rate": 0.3064921992954202,
+      "best_mean_rate": 0.29944640161046804,
+      "best_threshold_rate": 0.40463009562154,
+      "claim_label": "ch05_reckless_count_to_bidder",
+      "decision_n": 1785,
+      "mean_lower_tail_mass": 0.5098062403566637,
+      "mean_regret": 7.212615962518743,
+      "mean_regret_ci95_high": 7.661093471565692,
+      "mean_regret_ci95_low": 6.777865662717861,
+      "mean_threshold_gap": 0.11001006554939681,
+      "mean_threshold_gap_ci95_high": 0.1173763214978101,
+      "mean_threshold_gap_ci95_low": 0.10283568218661163,
+      "mean_threshold_mass": 0.4670634122094806,
+      "safest_tail_rate": 0.40865626572722696
+    },
+    {
+      "action_n": 603,
+      "actual_action_rate": 0.615257048092869,
+      "best_mean_rate": 0.6169154228855721,
+      "best_threshold_rate": 0.6716417910447762,
+      "claim_label": "ch04_partner_safe_count_donation_current_control",
+      "decision_n": 528,
+      "mean_lower_tail_mass": 0.11504975145228614,
+      "mean_regret": 1.7082255365045904,
+      "mean_regret_ci95_high": 1.985333315852665,
+      "mean_regret_ci95_low": 1.4428276426064632,
+      "mean_threshold_gap": 0.03411276888405011,
+      "mean_threshold_gap_ci95_high": 0.04122719589418502,
+      "mean_threshold_gap_ci95_low": 0.02764510741082034,
+      "mean_threshold_mass": 0.5002321730758593,
+      "safest_tail_rate": 0.7097844112769486
+    },
+    {
+      "action_n": 860,
+      "actual_action_rate": 0.3209302325581395,
+      "best_mean_rate": 0.33488372093023255,
+      "best_threshold_rate": 0.4662790697674419,
+      "claim_label": "ch04_partner_unsafe_count_to_defense",
+      "decision_n": 776,
+      "mean_lower_tail_mass": 0.49254651140140066,
+      "mean_regret": 6.585681542942604,
+      "mean_regret_ci95_high": 7.2172770556155035,
+      "mean_regret_ci95_low": 5.972685933558617,
+      "mean_threshold_gap": 0.0993023254377984,
+      "mean_threshold_gap_ci95_high": 0.11231453494103841,
+      "mean_threshold_gap_ci95_low": 0.08651133742668059,
+      "mean_threshold_mass": 0.06888953491200715,
+      "safest_tail_rate": 0.4848837209302326
+    }
+  ],
+  "coverage": {
+    "action_rows": 75079,
+    "claim_action_rows": 3903,
+    "claim_decision_rows": 3428,
+    "decision_rows": 28000,
+    "input_files": 10,
+    "label_counts": {
+      "ch04_partner_safe_count_donation_current_control": 603,
+      "ch04_partner_unsafe_count_to_defense": 860,
+      "ch05_reckless_count_to_bidder": 1987,
+      "ch05_setter_pounce_count": 453,
+      "ch05_setter_pounce_count_before_certainty": 321,
+      "ch05_setter_pounce_count_sets_now": 172
+    }
+  },
+  "created_at_utc": "2026-05-03T00:02:37.193472+00:00",
+  "file_meta": [
+    {
+      "action_rows": 7447,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_0-9_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "seeds_tail": [
+        9,
+        9,
+        9,
+        9,
+        9
+      ]
+    },
+    {
+      "action_rows": 7488,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_10-19_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "seeds_tail": [
+        19,
+        19,
+        19,
+        19,
+        19
+      ]
+    },
+    {
+      "action_rows": 7666,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_20-29_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "seeds_tail": [
+        29,
+        29,
+        29,
+        29,
+        29
+      ]
+    },
+    {
+      "action_rows": 7478,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_30-39_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "seeds_tail": [
+        39,
+        39,
+        39,
+        39,
+        39
+      ]
+    },
+    {
+      "action_rows": 7235,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_40-49_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        40,
+        40,
+        40,
+        40,
+        40
+      ],
+      "seeds_tail": [
+        49,
+        49,
+        49,
+        49,
+        49
+      ]
+    },
+    {
+      "action_rows": 7436,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_50-59_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        50,
+        50,
+        50,
+        50,
+        50
+      ],
+      "seeds_tail": [
+        59,
+        59,
+        59,
+        59,
+        59
+      ]
+    },
+    {
+      "action_rows": 7592,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_60-69_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        60,
+        60,
+        60,
+        60,
+        60
+      ],
+      "seeds_tail": [
+        69,
+        69,
+        69,
+        69,
+        69
+      ]
+    },
+    {
+      "action_rows": 7551,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_70-79_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "seeds_tail": [
+        79,
+        79,
+        79,
+        79,
+        79
+      ]
+    },
+    {
+      "action_rows": 7535,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_80-89_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        80,
+        80,
+        80,
+        80,
+        80
+      ],
+      "seeds_tail": [
+        89,
+        89,
+        89,
+        89,
+        89
+      ]
+    },
+    {
+      "action_rows": 7651,
+      "decision_rows": 2800,
+      "games": 100,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_90-99_d0-9.pt",
+      "sample_counts": {
+        "200": 2800
+      },
+      "seeds": [
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "seeds_tail": [
+        99,
+        99,
+        99,
+        99,
+        99
+      ]
+    }
+  ],
+  "git_commit": "e55a6f89de6e599f795db87c30c29d82b8883313",
+  "git_status_before_artifacts": "M burl/chat/server/tools_runner.py\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/skills/analyze-hand/\n?? .agents/skills/clustering/\n?? .agents/skills/comprehension-test/\n?? .agents/skills/ecological/\n?? .agents/skills/minirocket/\n?? .agents/skills/modal/\n?? .agents/skills/pdf/\n?? .agents/skills/pymc/\n?? .agents/skills/pytorch-lightning/\n?? .agents/skills/pytorch/\n?? .agents/skills/ralph-loop/\n?? .agents/skills/shap/\n?? .agents/skills/statistical-rigor/\n?? .agents/skills/survival-forest/\n?? .agents/skills/texas-42-analytics/\n?? .agents/skills/texas-42-forge/\n?? .agents/skills/umap/\n?? .agents/skills/volcano-plots/\n?? .agents/skills/word2vec/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/gus_corpus_claim_deep_dive/",
+  "input_files": [
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_0-9_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_10-19_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_20-29_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_30-39_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_40-49_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_50-59_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_60-69_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_70-79_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_80-89_d0-9.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_v2_train_90-99_d0-9.pt"
+  ],
+  "paired_contrasts": [
+    {
+      "contrast_id": "ch05_pounce_count_vs_other_same_decision",
+      "mean_delta": 4.1018437380136525,
+      "mean_delta_ci95_high": 5.1759628792364705,
+      "mean_delta_ci95_low": 3.1444330820341873,
+      "paired_decision_n": 359,
+      "regret_delta": -4.1018437380136525,
+      "regret_delta_ci95_high": -3.1108332843310835,
+      "regret_delta_ci95_low": -5.138165022068674,
+      "threshold_mass_delta": 0.04940111375826315,
+      "threshold_mass_delta_ci95_high": 0.06579526365062734,
+      "threshold_mass_delta_ci95_low": 0.03373258999006662
+    },
+    {
+      "contrast_id": "ch05_pounce_sets_now_vs_other_same_decision",
+      "mean_delta": 6.068571160912319,
+      "mean_delta_ci95_high": 8.087687143438782,
+      "mean_delta_ci95_low": 4.219104287852343,
+      "paired_decision_n": 134,
+      "regret_delta": -6.068571160912319,
+      "regret_delta_ci95_high": -4.214454510833012,
+      "regret_delta_ci95_low": -8.00516710643528,
+      "threshold_mass_delta": 0.07298507332913022,
+      "threshold_mass_delta_ci95_high": 0.10701492329114186,
+      "threshold_mass_delta_ci95_low": 0.04227611728971685
+    },
+    {
+      "contrast_id": "ch05_reckless_count_vs_nonreckless_same_decision",
+      "mean_delta": -8.372450999124148,
+      "mean_delta_ci95_high": -7.7914284101805675,
+      "mean_delta_ci95_low": -8.97540012777289,
+      "paired_decision_n": 1355,
+      "regret_delta": 8.372450999124148,
+      "regret_delta_ci95_high": 8.944377420186374,
+      "regret_delta_ci95_low": 7.790579563649801,
+      "threshold_mass_delta": -0.11901107039646248,
+      "threshold_mass_delta_ci95_high": -0.10948311807939996,
+      "threshold_mass_delta_ci95_low": -0.1287345936916583
+    },
+    {
+      "contrast_id": "ch04_safe_partner_count_vs_other_same_decision",
+      "mean_delta": 0.682629239037633,
+      "mean_delta_ci95_high": 1.2317096571391446,
+      "mean_delta_ci95_low": 0.1467387869227678,
+      "paired_decision_n": 400,
+      "regret_delta": -0.682629239037633,
+      "regret_delta_ci95_high": -0.1393317832201721,
+      "regret_delta_ci95_low": -1.2480887891110035,
+      "threshold_mass_delta": 0.006550001837313175,
+      "threshold_mass_delta_ci95_high": 0.018100315052084624,
+      "threshold_mass_delta_ci95_low": -0.00402531233173795
+    },
+    {
+      "contrast_id": "ch04_unsafe_partner_count_vs_nonunsafe_same_decision",
+      "mean_delta": -8.428134944293255,
+      "mean_delta_ci95_high": -7.612516224666788,
+      "mean_delta_ci95_low": -9.268463332229336,
+      "paired_decision_n": 559,
+      "regret_delta": 8.428134944293255,
+      "regret_delta_ci95_high": 9.305137270533152,
+      "regret_delta_ci95_low": 7.612514572617996,
+      "threshold_mass_delta": -0.13218246836195266,
+      "threshold_mass_delta_ci95_high": -0.11485576847991333,
+      "threshold_mass_delta_ci95_low": -0.15153868468724066
+    }
+  ],
+  "schema_version": "w42.gus_corpus_claim_deep_dive.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "local evidence update; conservative wiki status required",
+    "hf": "not applicable",
+    "interpretation": "Direct corpus report over existing Gus v2 joint-world records. Tests role-gated tactical labels with oracle E[Q] distributions; does not train a policy or use hidden labels as live features.",
+    "wandb": {
+      "available": true,
+      "dir": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/wandb/wandb/run-20260502_190229-zm3jdrnj/files",
+      "enabled": true,
+      "entity": "jasonyandell-forge42",
+      "group": "w42-gus-corpus-claim-deep-dive",
+      "id": "zm3jdrnj",
+      "mode": "online",
+      "name": "w42-gus-corpus-claim-deep-dive-v0-stable",
+      "project": "w42",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/zm3jdrnj"
+    }
+  },
+  "wall_seconds": 7.249410332995467
+}

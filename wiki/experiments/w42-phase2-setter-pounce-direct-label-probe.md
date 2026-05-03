@@ -9,10 +9,15 @@ status: active
 ## Summary
 
 [[w42]] has a first-pass direct-label spec for setter pounce and count-to-set
-windows. The bead does not move any book claim status and does not train a model:
-the available eval corpus still exposes v0 public/action tensors plus `e_q`, but
-not the named bidder, contract, pre-action score, bidder-off, or distribution
-fields needed for a true direct detector.
+windows. The original bead did not move any book claim status because it only
+inspected the small eval surface and found missing direct fields. The follow-up
+[[w42-gus-corpus-tactical-claim-deep-dive]] uses the richer Gus v2 joint-world
+corpus and does run direct role/trick/action labels for pounce count,
+count-before-certainty, and reckless count into the bidder.
+
+That follow-up changes the current frontier: setter pounce is no longer only a
+label spec on the Gus v2 generated-corpus slice. The direct label remains narrow,
+but it now has paired E[Q] evidence.
 
 Artifacts:
 
@@ -24,10 +29,27 @@ Artifacts:
 - `w42/setter_pounce_direct_label_probe/summary.json`
 - `w42/setter_pounce_direct_label_probe/manifest.json`
 
-The result sharpens the next detector definition from
+The label spec still sharpens the detector definition from
 [[w42-setter-defense-claim-validation]]: setter pounce should be measured as a
-public-state window first, with hidden-distribution effects attached only as
-offline evaluation labels.
+public-state window first, with E[Q] distributions and hidden-world effects
+attached only as offline evaluation labels.
+
+## Follow-Up Evidence
+
+[[w42-gus-corpus-tactical-claim-deep-dive]] processes 28,000 decisions and
+75,079 legal actions from the Gus v2 all-declaration corpus. On pip
+declarations, the direct pounce labels report:
+
+| contrast | paired decisions | mean delta | 95% CI | threshold-mass delta |
+|---|---:|---:|---|---:|
+| pounce count vs other action | 359 | +4.102 | `[+3.144, +5.176]` | +0.049 |
+| pounce count that sets now vs other action | 134 | +6.069 | `[+4.219, +8.088]` | +0.073 |
+| reckless defender count vs non-reckless action | 1,355 | -8.372 | `[-8.975, -7.791]` | -0.119 |
+
+This supports the operationalized pounce-count label and its negative control on
+the Gus v2 N=200 generated-corpus slice. It does not prove every Chapter 5
+setter-defense recommendation, and it still does not cover real bid-margin or
+high-bid overbid contexts.
 
 ## Question
 

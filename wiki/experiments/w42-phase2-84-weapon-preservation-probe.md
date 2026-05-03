@@ -2,20 +2,20 @@
 title: w42 Phase2 84 Weapon Preservation Probe
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+last_updated: local-2026-05-03
 status: active
 ---
 
 ## Summary
 
-This page completes the first phase-2 pass for bead `t42-5m82.6`: a targeted
-[[w42]] probe for 84 weapon preservation.
+This page started as the first phase-2 pass for bead `t42-5m82.6`: a targeted
+[[w42]] probe for 84 weapon preservation. It now also records the dynamic
+follow-up for bead `t42-0b4l.7`.
 
-The result is not a new make/set verdict. It is a direct-label and fixture
-surface for the next empirical run. Prior [[w42-84-claim-validation]] artifacts
-already count static 84 shapes and defender weapon pools; this bead turns that
-into labels for preservation, forced spending, dead-asset abandonment, and
-hidden-weapon attribution.
+The original result was a direct-label and fixture surface, not a make/set
+verdict. The `t42-0b4l.7` follow-up adds generated 84 contract hands, schema-v2
+E[Q] PDFs, branch-atlas hidden-threat rows, and proxy preserve/spend contrasts.
+It is still not powered broad-corpus proof, but it is no longer static-only.
 
 ## Question
 
@@ -96,25 +96,53 @@ evaluation. A live model may use legal public state and learned beliefs, but not
 the hidden truth. The probe should report hidden-weapon attribution separately
 from live feature feasibility.
 
-## Next Dynamic Run
+## Dynamic Branch Lab
 
-The smallest useful next run is not a broad model. It is a constructed or
-filtered 84 slice with:
+The `t42-0b4l.7` dynamic run uses explicit hands instead of waiting for lucky
+seed matches. It covers six fixture deals: a six-trump laydown control,
+protected one-off `4-3`, straight-off named `4-4` stopper threat, two-off
+same-suit ordering, defender same-suit pair/protector pressure, and a dead-asset
+release control.
 
-- legal action states for defender free-discard decisions;
-- current contract, bidder seat, trick index, and public play history;
-- per-action E[Q] PDF or sampled-world labels where feasible;
-- hidden-world ownership only in the label/evaluation payload;
-- forced-spend versus voluntary-break annotation.
+| measure | value |
+|---|---:|
+| fixture games | 6 |
+| generated decision states | 168 |
+| legal action rows | 584 |
+| hidden-threat attribution rows | 4497 |
+| dynamic proxy labels | 10 |
+| preserve-vs-spend paired decisions | 13 |
+| offense trump-vs-final-off paired decisions | 23 |
 
-Success is a report that can say: this action spent a live weapon, a preserving
-legal alternative existed, and the preserve/spend choice changed threshold mass
-or tail risk.
+Headline proxy labels:
+
+| label | actions | decision states | note |
+|---|---:|---:|---|
+| `laydown_84_proof_fixture` | 56 | 14 | six-trump laydown control only |
+| `defender_live_double_weapon_proxy` | 10 | 10 | live double can beat a bidder off under full-deal reconstruction |
+| `defender_live_same_suit_pair_proxy` | 21 | 9 | same-suit pair can beat a bidder final-off candidate |
+| `pair_protector_proxy` | 4 | 3 | thin but present in generated play |
+| `dead_asset_release_candidate_proxy` | 7 | 5 | release candidates from the dead-asset control |
+
+The first preserve/spend contrast is deliberately conservative. Across 13
+same-decision defender pairs, the lower-asset preserving alternative beats the
+best live-asset spend by only `+0.136` mean Q, with `+0.005` threshold-mass delta
+and `-0.0048` lower-tail-mass delta. That is useful because it says the fixture
+lab can find the choice surface, not because it proves the book rule.
+
+The offense comparison is clearer but still fixture-limited: across 23
+same-decision pairs, trump-pull candidates beat final-off candidates by about
+`+4.01` mean Q with nearly unchanged threshold/tail mass. That matches the book's
+trumps-first shape on this constructed slice, but it is not yet a powered
+protected-off make-rate estimate.
+
+W&B run: [f7uzoo7f](https://wandb.ai/jasonyandell-forge42/w42/runs/f7uzoo7f).
 
 ## Claim Ledger
 
-No central claim-ledger status changes. This bead sharpens labels for claims that
-remain underpowered or context-limited in [[w42-84-claim-validation]].
+No central claim-ledger status changes. This bead sharpens labels and produces
+the first dynamic examples for claims that remain underpowered or
+context-limited in [[w42-84-claim-validation]].
 
 | claim area | current reading |
 |---|---|
@@ -123,6 +151,13 @@ remain underpowered or context-limited in [[w42-84-claim-validation]].
 | defender same-suit pair | static pair availability counted; final-two-trick proof missing |
 | abandonment | trigger table exists; replay/action regret labels missing |
 | throwaway ladder | designed but not action-labeled |
+
+The dynamic branch lab adds three blockers before any promotion:
+
+- the six deals are hand-picked fixtures, not an ecological corpus;
+- reached decisions depend on the current greedy E[Q] policy trace, so unreached
+  last-trick tableaux still need state injection or seed mining;
+- live/spend labels are asset-priority proxies, not final set-attribution proofs.
 
 ## Artifacts
 
@@ -134,8 +169,14 @@ remain underpowered or context-limited in [[w42-84-claim-validation]].
 | measurement axes | `w42/eighty_four_weapon_preservation_probe/measurement_axes.csv` |
 | summary | `w42/eighty_four_weapon_preservation_probe/summary.json` |
 | manifest | `w42/eighty_four_weapon_preservation_probe/manifest.json` |
+| dynamic runner | `w42/eighty_four_weapon_preservation_probe/run_dynamic_branch_lab.py` |
+| dynamic summary | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/summary.json` |
+| dynamic action labels | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_action_labels.csv` |
+| dynamic paired contrasts | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_paired_contrasts.csv` |
+| dynamic branch atlas | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/` |
 
-W&B: not applicable. No training or long iterative run occurred.
+W&B for the original spec pass: not applicable. W&B for the dynamic branch lab:
+`f7uzoo7f`.
 
 HF: not applicable. This is a local report/spec surface, not a publishable
 dataset or checkpoint.
@@ -146,10 +187,12 @@ dataset or checkpoint.
 |---|---|
 | bead | `t42-5m82.6` |
 | command | `python w42/eighty_four_weapon_preservation_probe/build_probe.py` |
+| dynamic bead | `t42-0b4l.7` |
+| dynamic command | `.venv/bin/python w42/eighty_four_weapon_preservation_probe/run_dynamic_branch_lab.py --samples 256 --wandb-mode online` |
 | source artifacts | `w42/eighty_four_claim_validation/summary.json`; `example_cases.csv`; `abandonment_trigger_table.csv` |
 | source pages | [[winning42-ch07-taking-every-trick-84]]; [[winning42-ch08-setting-84]]; [[w42-84-claim-validation]] |
-| random seeds | not applicable |
-| W&B | not applicable |
+| random seeds | fixture ids `840700` through `840705` |
+| W&B | `f7uzoo7f` for the dynamic branch lab |
 | HF | not applicable |
 
 ## Links

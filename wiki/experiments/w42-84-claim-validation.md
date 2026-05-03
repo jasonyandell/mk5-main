@@ -2,7 +2,7 @@
 title: w42 84 Claim Validation
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+last_updated: local-2026-05-03
 status: active
 ---
 
@@ -22,6 +22,13 @@ The report validates what the current artifacts can count: bidder 84 shape bucke
 straight-off matching-double ownership odds, defender last-trick weapon inventory, and
 same-suit pair availability. It does not validate make/set rates, oracle regret, score
 gates, legal throwaway decisions, or dynamic abandonment quality.
+
+Follow-up: [[w42-phase2-84-weapon-preservation-probe]] now includes a
+`t42-0b4l.7` dynamic branch lab. That lab generates six explicit bid-84 hands
+with schema-v2 E[Q] PDFs and branch-atlas hidden-threat rows, producing first
+proxy labels for live doubles, same-suit pairs, pair protectors, dead-asset
+release, and preserve/spend contrasts. It narrows the dynamic-data blocker but
+does not promote the static claim statuses on this page.
 
 ## Key Question
 
