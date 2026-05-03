@@ -1,0 +1,54 @@
+{
+  "corpus": "eighty_four_throwaway",
+  "schema_version": "forge.eq.snapshot.v1",
+  "source": "oracle-greedy legacy corpus",
+  "n_snapshots": 22,
+  "n_candidates_scanned": 140000,
+  "n_chunks_used": 50,
+  "source_chunks": [
+    "corpus_train_chunk_1000-1099.pt",
+    "corpus_train_chunk_1200-1299.pt",
+    "corpus_train_chunk_1400-1499.pt",
+    "corpus_train_chunk_1600-1699.pt",
+    "corpus_train_chunk_1900-1999.pt",
+    "corpus_train_chunk_2200-2299.pt",
+    "corpus_train_chunk_2300-2399.pt",
+    "corpus_train_chunk_2400-2499.pt",
+    "corpus_train_chunk_3300-3399.pt",
+    "corpus_train_chunk_3400-3499.pt",
+    "corpus_train_chunk_3800-3899.pt",
+    "corpus_train_chunk_3900-3999.pt",
+    "corpus_train_chunk_400-499.pt",
+    "corpus_train_chunk_4200-4299.pt",
+    "corpus_train_chunk_4300-4399.pt",
+    "corpus_train_chunk_5000-5099.pt",
+    "corpus_train_chunk_5300-5399.pt"
+  ],
+  "filter_definition": {
+    "role": "bidder (player 0)",
+    "position": "opening lead (trick 0, on lead)",
+    "decl_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "84_shape": "bidder holds >= 4 doubles in initial hand AND >= 2 additional trump tiles",
+    "note": "BLOCKER EXPECTED: legacy corpus has bid_value=None (bid=30); snapshots emitted with bid_value=84 as placeholder shape only",
+    "status": "best-effort"
+  },
+  "validation": {
+    "n_valid": 22,
+    "n_invalid": 0,
+    "method": "GameStateTensor.from_snapshot"
+  },
+  "claim_tested": "ch07-eighty-four-throwaway (deferred)",
+  "status": "partial",
+  "blocker": null,
+  "deferred_to": "Wave 2.B.2",
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/eighty_four_throwaway/snapshots.jsonl",
+  "sha256": "62b790ee783ad81f6e2649b5332f8e58caf8108c685b5930a99b43f8960bff6a"
+}
