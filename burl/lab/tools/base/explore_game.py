@@ -52,4 +52,5 @@ EXPLORE_GAME = ToolSpec(
         "outcome distribution."
     ),
     impl=_impl,
+    requires_context=True,
 )

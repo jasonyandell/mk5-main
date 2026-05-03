@@ -68,6 +68,7 @@ STATE_BRIEF = ToolSpec(
         "labeled sections before deeper belief or outcome tools."
     ),
     impl=_state_brief_impl,
+    requires_context=True,
 )
 
 
@@ -85,6 +86,7 @@ BOARD_SNAPSHOT = ToolSpec(
         "choosing which candidate plays to evaluate."
     ),
     impl=_board_snapshot_impl,
+    requires_context=True,
 )
 
 
@@ -102,6 +104,7 @@ LEGAL_PLAYS = ToolSpec(
         "after an illegal-play rejection, or whenever legality is uncertain."
     ),
     impl=_legal_plays_impl,
+    requires_context=True,
 )
 
 
@@ -129,6 +132,7 @@ PLAY_BRIEF = ToolSpec(
         "candidate play; compare candidates by calling it once per play."
     ),
     impl=_play_brief_impl,
+    requires_context=True,
 )
 
 

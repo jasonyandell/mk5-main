@@ -89,7 +89,7 @@ async def drive(
 
     while True:
         messages = render_messages(current_state, registry)
-        tools = _active_tools(current_state, registry)
+        tools = _active_tools(current_state, registry, ctx=ctx)
 
         pending_tool: tuple[str, dict, str] | None = None
         done_reason: str | None = None
@@ -158,7 +158,12 @@ async def drive(
         return
 
 
-def _active_tools(state: State, registry: Registry) -> list[ToolSpec]:
+def _active_tools(
+    state: State,
+    registry: Registry,
+    *,
+    ctx: Any = None,
+) -> list[ToolSpec]:
     """Resolve the active tool set from State + Registry.
 
     State carries names; Registry resolves them to ToolSpec objects with
@@ -170,6 +175,9 @@ def _active_tools(state: State, registry: Registry) -> list[ToolSpec]:
         spec = registry.find(name)
         if spec is None:
             log.warning("[drive] active_tools name %r not in registry", name)
+            continue
+        if spec.requires_context and ctx is None:
+            log.info("[drive] active tool %r requires ctx; hiding it", name)
             continue
         out.append(spec)
     return out
@@ -195,6 +203,22 @@ async def _dispatch_tool(
         evidence = {
             "prose": f"ERROR: tool {name!r} is not registered.",
             "structured": {"error": "unknown_tool", "name": name},
+        }
+        return ToolResult(
+            stamp=_stamp_for(current_state),
+            name=name,
+            call_id=call_id,
+            evidence=evidence,
+            next_tools=[],
+        )
+
+    if spec.requires_context and ctx is None:
+        evidence = {
+            "prose": (
+                f"ERROR: tool {name!r} requires a loaded game context. "
+                "Load a harvested decision before using game-state tools."
+            ),
+            "structured": {"error": "missing_context", "name": name},
         }
         return ToolResult(
             stamp=_stamp_for(current_state),

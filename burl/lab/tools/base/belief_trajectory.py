@@ -45,4 +45,5 @@ BELIEF_TRAJECTORY = ToolSpec(
         "before considering candidate plays."
     ),
     impl=_impl,
+    requires_context=True,
 )

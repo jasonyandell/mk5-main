@@ -1937,3 +1937,11 @@ Pre-game is now a walkable prompt-builder phase. The user can select the exact a
 **Touched pages:** [[burl-lab]] [[log]]
 
 The web surface now presents the prompt-builder path as a four-step wizard: start a new session, build a prompt or load/chat from a harvested decision, select tools with presets or checkboxes, then confirm and ship to Gemma. The wizard drives the same logged-arrow moves (`generate_system`, `set_advertised`, `load_decision`, `ask_gemma`, `start_run`) while keeping the raw option composer behind an advanced console.
+
+---
+
+## [2026-05-03 | local | burl/lab no-context ship guard]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+The wizard and `pre_game.start_run` now require a user/decision prompt before entering `in_run`. `ToolSpec.requires_context` also keeps game-state tools hidden from the engine until a harvested decision has produced ctx, with a `missing_context` tool result as the last-resort guard. This prevents the footgun where a system prompt plus advertised game-state tools could be shipped with no harvested decision, causing context-bound tools such as `state_brief` to run with `ctx=None`.

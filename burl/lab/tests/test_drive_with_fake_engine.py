@@ -64,7 +64,13 @@ class FakeEngine:
             yield ev
 
 
-def _spec(name: str, role: str, fn: Any = None) -> ToolSpec:
+def _spec(
+    name: str,
+    role: str,
+    fn: Any = None,
+    *,
+    requires_context: bool = False,
+) -> ToolSpec:
     def default_impl(ctx: Any, args: dict) -> ImplToolResult:
         return ImplToolResult(evidence={"prose": "noop", "structured": {}})
 
@@ -76,6 +82,7 @@ def _spec(name: str, role: str, fn: Any = None) -> ToolSpec:
         protocol_role=role,  # type: ignore[arg-type]
         protocol_phrase="",
         impl=fn or default_impl,
+        requires_context=requires_context,
     )
 
 
@@ -234,6 +241,81 @@ async def test_drive_handles_unknown_tool_with_synthetic_result():
     tr = next(m for m in moves if isinstance(m, ToolResult))
     assert tr.name == "not_registered"
     assert "not registered" in tr.evidence["prose"].lower()
+    assert tr.next_tools == []
+
+
+@pytest.mark.asyncio
+async def test_drive_hides_context_required_tools_without_ctx():
+    """No harvested decision means no game ctx, so ctx-bound tools should not
+    be advertised to the engine even if the state has them active."""
+    registry = Registry()
+    registry.add(_spec("state_brief", "first_read", requires_context=True))
+    registry.add(_spec("scratchpad", "diagnostic", requires_context=False))
+    engine = FakeEngine(
+        [
+            [
+                EngineStart(
+                    stamp=_stamp(1), messages_hash="x", n_messages=1, n_tools=1
+                ),
+                EngineDone(stamp=_stamp(2), reason="done"),
+            ]
+        ]
+    )
+
+    state = _empty_state(advertised=("state_brief", "scratchpad"))
+    moves = [mv async for mv in drive(state, registry, engine, ctx=None)]
+
+    assert [spec.name for spec in engine.last_tools[0]] == ["scratchpad"]
+    assert [type(m).__name__ for m in moves] == ["EngineStart", "EngineDone"]
+
+
+@pytest.mark.asyncio
+async def test_drive_reports_missing_ctx_for_rogue_context_tool_call():
+    """If an engine still asks for a hidden ctx-bound tool, synthesize a useful
+    ToolResult instead of letting the impl raise on ctx=None."""
+
+    def should_not_run(ctx: Any, args: dict) -> ImplToolResult:  # noqa: ARG001
+        raise AssertionError("impl should not run without ctx")
+
+    registry = Registry()
+    registry.add(
+        _spec(
+            "state_brief",
+            "first_read",
+            fn=should_not_run,
+            requires_context=True,
+        )
+    )
+    engine = FakeEngine(
+        [
+            [
+                EngineStart(
+                    stamp=_stamp(1), messages_hash="x", n_messages=1, n_tools=0
+                ),
+                EngineToolCall(
+                    stamp=_stamp(2),
+                    name="state_brief",
+                    args={},
+                    call_id="call-missing-ctx",
+                ),
+                EngineDone(stamp=_stamp(3), reason="tool_dispatch"),
+            ],
+            [
+                EngineStart(
+                    stamp=_stamp(4), messages_hash="y", n_messages=2, n_tools=0
+                ),
+                EngineDone(stamp=_stamp(5), reason="done"),
+            ],
+        ]
+    )
+
+    state = _empty_state(advertised=("state_brief",))
+    moves = [mv async for mv in drive(state, registry, engine, ctx=None)]
+    tr = next(m for m in moves if isinstance(m, ToolResult))
+
+    assert tr.name == "state_brief"
+    assert tr.evidence["structured"]["error"] == "missing_context"
+    assert "loaded game context" in tr.evidence["prose"]
     assert tr.next_tools == []
 
 

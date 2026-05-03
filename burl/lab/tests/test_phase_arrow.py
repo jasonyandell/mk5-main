@@ -158,8 +158,36 @@ async def test_pre_game_generate_system_seeds_default_prompt(tmp_path: Path) -> 
 
 
 @pytest.mark.asyncio
-async def test_pre_game_start_run_is_explicit_transition(tmp_path: Path) -> None:
+async def test_pre_game_start_run_without_user_text_stays_in_builder(
+    tmp_path: Path,
+) -> None:
     state = _state(tmp_path)
+    move = UserChoice(
+        stamp=_stamp(1),
+        option_name="start_run",
+        args={},
+    )
+
+    trace = await PRE_GAME.handle(state, move)
+
+    assert trace.events == ()
+    assert trace.output is None
+
+
+@pytest.mark.asyncio
+async def test_pre_game_start_run_with_user_text_transitions(tmp_path: Path) -> None:
+    state = State(
+        session_dir=tmp_path,
+        phase="pre_game",
+        messages=({"role": "user", "content": "loaded decision"},),
+        active_tools=(),
+        advertised=(),
+        segments=(),
+        cum_tok_in=0,
+        cum_tok_out=0,
+        started_mono_ns=0,
+        started_wall_ns=0,
+    )
     move = UserChoice(
         stamp=_stamp(1),
         option_name="start_run",

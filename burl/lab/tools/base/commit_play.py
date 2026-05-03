@@ -59,4 +59,5 @@ COMMIT_PLAY = ToolSpec(
         "Do not call other tools after committing."
     ),
     impl=_impl,
+    requires_context=True,
 )

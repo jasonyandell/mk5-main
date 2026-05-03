@@ -47,6 +47,7 @@ class ToolSpec:
     protocol_role: ProtocolRole
     protocol_phrase: str         # the literal sentence the system prompt should include
     impl: Callable[[Any, dict], ToolResult]
+    requires_context: bool = False
 
 
 class Registry:

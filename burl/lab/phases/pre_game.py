@@ -233,6 +233,8 @@ class _PreGamePhase:
                 new_moves.append(UserText(stamp=now_stamp(state), text=text))
 
         elif opt == "start_run":
+            if not _has_user_text(state):
+                return Trace()
             if not _system_text(state):
                 new_moves.append(
                     SystemSet(stamp=now_stamp(state), text=DEFAULT_BASE_SYSTEM)
@@ -253,6 +255,10 @@ def _system_text(state: State) -> str:
         if msg.get("role") == "system":
             return str(msg.get("content", ""))
     return ""
+
+
+def _has_user_text(state: State) -> bool:
+    return any(msg.get("role") == "user" for msg in state.messages)
 
 
 def _timing(state: State) -> dict:

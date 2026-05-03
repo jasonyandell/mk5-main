@@ -479,6 +479,9 @@
   let hasRenderedSystem = $derived(
     renderedSystemChars > 0 || String(renderedSystemSegment?.text ?? "").length > 0,
   );
+  let canShipToGemma = $derived(
+    hasRenderedSystem && hasUserPrompt && !toolDraftChanged && hasOption("start_run"),
+  );
 </script>
 
 <div class="app">
@@ -664,11 +667,16 @@
                 <span class:ok-text={hasUserPrompt}>{hasUserPrompt ? "user prompt loaded" : "no user prompt"}</span>
                 <span class:ok-text={hasRenderedSystem}>rendered {renderedSystemChars} chars</span>
               </div>
+              {#if !hasUserPrompt}
+                <div class="dim small">
+                  load a decision first, or use chat if you want a free-form run.
+                </div>
+              {/if}
               <div class="wizard-actions">
                 <button onclick={wizardGenerateSystem} disabled={streaming || !hasOption("generate_system")}>
                   refresh prompt
                 </button>
-                <button onclick={wizardShipToGemma} disabled={streaming || toolDraftChanged || !hasRenderedSystem || !hasOption("start_run")}>
+                <button onclick={wizardShipToGemma} disabled={streaming || !canShipToGemma}>
                   ship to Gemma
                 </button>
               </div>
