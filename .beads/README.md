@@ -78,4 +78,33 @@ bd create "Try out Beads"
 
 ---
 
+## Backup (this repo)
+
+Issues are backed up to DoltHub (`jasonyandell/t42-beads`, public, free):
+
+- Auto-backup runs every 15 min on issue writes (`backup.enabled=true` in config.yaml).
+- Manual sync: `bd backup sync`
+- Status: `bd backup status`
+
+### Disaster recovery
+
+The local working copy is `.beads/embeddeddolt/` (gitignored, fast).
+The local backup copy is `.beads/backup/*.darc` (gitignored, the canonical
+`bd backup restore` source). The DoltHub remote is the off-machine copy
+of last resort.
+
+If `.beads/embeddeddolt/` is gone but `.beads/backup/` is intact:
+
+    bd init --prefix=t42       # in a fresh dir or after wiping embeddeddolt
+    bd backup restore .beads/backup --force
+
+If even `.beads/backup/` is gone (lost machine), pull from DoltHub:
+
+    dolt clone jasonyandell/t42-beads /tmp/restore
+    # then copy /tmp/restore/.dolt chunks into a new bd workspace —
+    # see the beads docs (this path is fiddly; the local backup
+    # dir is the recommended recovery source).
+
+---
+
 *Beads: Issue tracking that moves at the speed of thought* ⚡
