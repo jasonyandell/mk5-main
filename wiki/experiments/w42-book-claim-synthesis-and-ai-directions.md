@@ -200,15 +200,85 @@ rank an action by EV, mark utility, make probability, and lower-tail risk may be
 more useful than a slightly stronger scalar-EV student, because the project can
 choose the utility that matches the game context.
 
+## Wave 1 Findings (Book Validation v1)
+
+The first wave of the book-validation campaign ran five offline analyses on
+already-existing artifacts. Five new wiki pages capture the details:
+[[w42-bookval-v1-wave1-distribution-lens-reranker]],
+[[w42-bookval-v1-wave1-mark-utility-transform]],
+[[w42-bookval-v1-wave1-hidden-threat-impact-ranker]],
+[[w42-bookval-v1-wave1-cross-ai-agreement]], and
+[[w42-bookval-v1-wave1-independent-audit]].
+
+The wave's structural findings:
+
+- **Scalar EV "lies" in 64.9% of decisions on the seed-9430 branch atlas**, but
+  the alternative-utility pick never beats EV on EV terms. Median EV cost when
+  alternative wins is +0.18-0.26 points. Disagreement is pure risk-framing.
+- **CVaR_10 and robust_q25 agree with EV at 82-83%; p_make and threshold_mass
+  only at 59%.** Tail-aware utilities track the oracle. Make-rate framing does
+  not. The book's "make first" framing is less aligned with optimal play than
+  its "manage tail risk" framing.
+- **No-trump shows 90% EV-lying rate**, doubles-trump 39% CVaR disagreement.
+  Clean detector signals for "scalar EV is the wrong target here."
+- **mark_ev is algebraically identical to p_make at bid=30 with one-mark
+  multiplier.** The Ch 10 multiplier (`ch10-special-bid-mark-multiplier`) is
+  unreachable on the fixed-bid corpus. A bid-aware E[Q] generator is now a
+  hard prerequisite for further mark-objective work.
+- **Genuine mark-vs-point flips are only 3.6% of decisions** (10/280); 81.5% of
+  nominal flips are surface-flattening artifacts of the binary {-1, 0, +1}
+  mark transform near the 30-point make threshold.
+- **The "one tile decides the plan" rhetoric is real but rare**: 1.85% of
+  decisions show >=60% impact concentration on a single hidden tile.
+- **Trump-count tiles are 100% directionally helpful as load-bearing tiles** -
+  the easiest belief-attention target to train against.
+- **5-5 in twos and 4-4 in no-trump are the highest-impact non-trump
+  load-bearing tiles** - low-pip declarations promote the highest off-suit
+  double into the strategic role usually held by trump.
+- **Setter seats are asymmetric**: right-setter load-bearing tiles are ~30%
+  trump doubles; left-setter is ~37% plain tiles. The book treats setters
+  symmetrically; the data does not.
+- **Detector hygiene**: `ch05_reckless_count` mean regret 9.18 over 2,300
+  cases (overfires beyond its qualifying window); `ch03_called_non_double` is
+  wrong as an absolute action endorsement 86% of the time (within-pair
+  contrast is fine, action-level endorsement is not);
+  `ch05_setter_pressure_regime` is a regime label, not an action label.
+
+### Ledger absorptions
+
+Two Ch 10 rows moved to `context-limited` after the independent audit found
+phase-4 worker evidence the prior audit did not absorb:
+
+- `ch10-point-system-skill-signal`: `underpowered` -> `context-limited`
+  (4 heuristic policy pairs, point/mark separation observed; bounded by small
+  N and no oracle).
+- `ch10-timed-marks-advancement-objective`: `not-yet-tested` ->
+  `context-limited` (160 synthetic timed trials, advancement disagreement rate
+  0.15; bounded by trick-budget proxy, no real clock or bracket).
+
+The non-vocabulary status string `supported-for-generated-trace-proxy` in
+`w42/phase4_scoring_objective_tests/claim_summary.csv` for
+`ch10-tournament-speed-tradeoff` was normalized to `context-limited`.
+
+Status counts after Wave 1: supported 23, context-limited 14, underpowered
+20, not-yet-tested 5, contradicted 2.
+
 ## Current Bottom Line
 
 The book taught the project a vocabulary for action reasons. The confirmed
-parts are mostly gated and tactical, not slogans. The unconfirmed parts are now
-precisely technical: state injection, high-bid generation, real auction policy,
-population play, and objective-conditioned utility.
+parts are mostly gated and tactical, not slogans. The unconfirmed parts are
+now precisely technical: state injection, high-bid generation, real auction
+policy, population play, and objective-conditioned utility.
 
 That is a good outcome. The book did not become rules; it became a test suite,
 a feature vocabulary, and a roadmap for better agents.
+
+Wave 1 sharpened the path: tail-aware utilities (CVaR, robust_q25) are the
+near-free upgrade over scalar EV; mark-objective work is blocked on bid-aware
+generation; hidden-threat attribution has surfaced concrete training targets
+(trump-count, 5-5-in-twos, 4-4-in-no-trump, setter-seat asymmetry); and
+several detectors need refinement before they can serve as direct training
+labels.
 
 ## Links
 
@@ -219,4 +289,9 @@ a feature vocabulary, and a roadmap for better agents.
 [[w42-phase4-doubles-notrump-regime-tests]] |
 [[w42-phase4-bidding-count-exposure-tests]] |
 [[w42-phase4-scoring-objective-tests]] |
-[[w42-phase4-laydown-rule-accounting]]
+[[w42-phase4-laydown-rule-accounting]] |
+[[w42-bookval-v1-wave1-distribution-lens-reranker]] |
+[[w42-bookval-v1-wave1-mark-utility-transform]] |
+[[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] |
+[[w42-bookval-v1-wave1-cross-ai-agreement]] |
+[[w42-bookval-v1-wave1-independent-audit]]

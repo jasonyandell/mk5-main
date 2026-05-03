@@ -1,0 +1,598 @@
+{
+  "schema_version": "w42.book_validation_v1.wave1.independent_audit.v1",
+  "bead": "t42-1nmm",
+  "created_at_utc": "2026-05-03T17:35:50.587693+00:00",
+  "method": "Independent parse of 64-row ledger + artifact path verification + worker-vs-ledger comparison. Not a rerun of run_audit.py.",
+  "baseline_counts": {
+    "supported": 23,
+    "underpowered": 21,
+    "context-limited": 12,
+    "not-yet-tested": 6,
+    "contradicted": 2
+  },
+  "independent_counts": {
+    "not-yet-tested": 5,
+    "context-limited": 14,
+    "supported": 23,
+    "underpowered": 20,
+    "contradicted": 2
+  },
+  "claims": {
+    "ch02-bid-only-enough": {
+      "ledger_status": "not-yet-tested",
+      "independent_verdict": "not-yet-tested",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": ""
+    },
+    "ch02-double-side-protection": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch02-duplicate-count-exposure": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch02-fixed-suit-trump-count-prior": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch02-four-five-off-danger": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch02-risk-budget-threshold": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": "Worker found mean_p_make delta=0.037 for risk<=12 vs >12 in 384 contracts; directional but tiny effect; underpowered is defensible"
+    },
+    "ch02-strong-trump-bad-risk-trap": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": ""
+    },
+    "ch02-three-plus-trumps-good-start": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch03-count-inventory": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch03-laydown-correctness": {
+      "ledger_status": "not-yet-tested",
+      "independent_verdict": "not-yet-tested",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": "Laydown checker fixtures exist (6 cases); but corpus/Burl snapshot ingestion still missing; not-yet-tested for broad claim is correct"
+    },
+    "ch03-off-timing": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch03-reentry-preservation": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch03-trump-pull-sequencing": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch04-avoid-disruptive-partner-trump-lead": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch04-effective-double-highest-remaining": {
+      "ledger_status": "contradicted",
+      "independent_verdict": "contradicted",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch04-lead-away-from-count-damage": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch04-lead-capture-for-support": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch04-low-trump-trap-against-count-dump": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch04-safe-partner-count-donation": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": ""
+    },
+    "ch04-unsafe-partner-count-donation": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch05-count-calling-lead": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch05-count-protection": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch05-extra-count-to-set": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch05-pounce-count-before-certainty": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": ""
+    },
+    "ch05-reckless-count-to-bidder": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch05-trump-rich-count-intervention": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch07-84-contract-regime": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch07-protected-one-off-84-shape": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch07-protected-one-off-shape-frequency": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": ""
+    },
+    "ch07-score-42-vs-84-gate": {
+      "ledger_status": "not-yet-tested",
+      "independent_verdict": "not-yet-tested",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch07-straight-off-two-to-one-double": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch08-abandon-dead-assets": {
+      "ledger_status": "not-yet-tested",
+      "independent_verdict": "not-yet-tested",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch08-double-ahead-needs-same-suit-pair": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch08-either-matching-double-not-two-to-one": {
+      "ledger_status": "contradicted",
+      "independent_verdict": "contradicted",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch08-one-to-four-last-trick-weapons": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch08-throwaway-priority-ladder": {
+      "ledger_status": "not-yet-tested",
+      "independent_verdict": "not-yet-tested",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-doubles-trump-candidate-4plus": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": ""
+    },
+    "ch09-doubles-trump-doubles-leave-native-suits": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-doubles-trump-follow-suit-removal": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-dual-suit-top-protection": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-five-doubles-opponent-void-prior": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-no-trump-doubles-remain-native-tops": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-no-trump-separate-doubles-suit-variant": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-no-trump-support-proxy": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch09-regime-switch-proxy-nt-over-dt": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-early-terminal-under-marks": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-low-bid-score-distortion": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-nonbidder-partial-points-erased": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-point-system-skill-signal": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "context-limited",
+      "consistency": "worker_higher",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": "Phase-4 scoring worker ran 4 heuristic policy pairs and observed different point/mark separation; policy_population_rows=4; needs oracle/human but not zero evidence"
+    },
+    "ch10-score-mode-objective": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-set-severity-compression": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-special-bid-mark-multiplier": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch10-timed-marks-advancement-objective": {
+      "ledger_status": "not-yet-tested",
+      "independent_verdict": "context-limited",
+      "consistency": "worker_higher",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": "Phase-4 scoring worker ran 160 synthetic timed round-robin trials; advancement_disagreement_rate=0.15; not full bracket but beyond not-yet-tested"
+    },
+    "ch10-tournament-speed-tradeoff": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": true,
+      "evidence_note": "Worker used non-standard status \"supported-for-generated-trace-proxy\"; ledger context-limited is correct per taxonomy; wall-clock evidence still missing"
+    },
+    "ch12-natural-bid-bucket-anomaly": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch12-setter-pounce-high-bid-off": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-double-count-frequency": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-four-trump-boss-first-policy": {
+      "ledger_status": "underpowered",
+      "independent_verdict": "underpowered",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-four-trump-missing-next-two": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-four-trump-missing-second": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-modal-two-doubles-one-void": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-partner-two-plus-doubles-prior": {
+      "ledger_status": "context-limited",
+      "independent_verdict": "context-limited",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-seven-card-hand-total": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    },
+    "ch16-suit-void-frequency": {
+      "ledger_status": "supported",
+      "independent_verdict": "supported",
+      "consistency": "consistent",
+      "artifacts_exist": true,
+      "missing_artifacts": "",
+      "is_overclaim_risk": false,
+      "evidence_note": ""
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "bead": "t42-m2i7",
+  "wave": "1.4",
+  "created_at_utc": "2026-05-03T17:40:08.270922+00:00",
+  "question": "Where do book detectors, Gus row-model, scalar EV, and distribution-lens reranker disagree? Those decisions are the most pedagogically valuable.",
+  "slice": {
+    "primary_corpus": "joined_claim_action_rows.csv (28 000 decisions, corpus_v2_train, seeds 0-99)",
+    "dist_lens_corpus": "branch_atlas_scaled_v0 / Wave 1.1 (280 decisions, seed 9430)"
+  },
+  "N": {
+    "primary_decisions": 28000,
+    "primary_action_rows": 75079,
+    "dist_lens_decisions": 754
+  },
+  "paired": "per-decision: same decision compared across sources",
+  "metric": "top-1 pick agreement rate; mean_regret of each source's pick",
+  "headline_agreement_rates": {
+    "ev_vs_gus": {
+      "rate": 0.7834,
+      "n": 28000
+    },
+    "ev_vs_detector": {
+      "rate": 0.4368,
+      "n": 9667
+    },
+    "gus_vs_detector": {
+      "rate": 0.4702,
+      "n": 9667
+    },
+    "ev_vs_dist_lens": {
+      "rate": 0.3952,
+      "n": 539,
+      "note": "Dist-lens available on 280-decision sub-corpus (seed 9430) only"
+    }
+  },
+  "divisiveness_distribution": {
+    "4_sources_spread": 11,
+    "3_sources_spread": 1082,
+    "2_sources_spread": 8529,
+    "full_agreement": 18378,
+    "note": "Count sources with non-None picks; dist_lens is None for 27720/28000 decisions"
+  },
+  "dist_lens_gap": "Wave 1.1 operates on a 280-decision sub-corpus (seed 9430); the primary 28 000-decision corpus has no dist_lens coverage. Orchestrator should integrate when Wave 1.1 is extended.",
+  "gus_proxy_note": "Individual Gus row-model scores per candidate are not saved in artifacts. gus_top_action uses is_best_threshold (threshold-utility top) as the closest row-level proxy. Aggregate proxy-vs-EV agreement is 78.3%.",
+  "claim_ledger_impact": "underpowered",
+  "caveats": [
+    "gus_top_action is a proxy (is_best_threshold), not the actual model output.",
+    "dist_lens_top_action covers only 280/28000 decisions (1.0%); deferred for main corpus.",
+    "Detector endorsement only for ch03/ch04/ch05 labels from paired_contrasts.csv; 84-domain and bidding-domain detectors operate on different corpora.",
+    "Agreement rates on dist_lens sub-corpus may not generalize to full corpus."
+  ],
+  "artifacts": {
+    "per_action_source_picks": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/per_action_source_picks.csv",
+    "agreement_matrix": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/agreement_matrix.csv",
+    "divisive_decisions": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/divisive_decisions.csv",
+    "spot_check_pack": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/spot_check_pack.json",
+    "per_claim_family_agreement": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/per_claim_family_agreement.csv"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": "w42.book_validation_v1.manifest.v1",
+  "frozen_at_utc": "2026-05-03",
+  "epic_bead": "t42-4zi6",
+  "wave_0_bead": "t42-snwe",
+  "baseline_sources": {
+    "completion_board": "w42/phase4_claim_completion_board/completion_board.csv",
+    "audit_summary": "w42/phase4_final_claim_audit/audit_summary.json",
+    "unresolved_or_blocked": "w42/phase4_final_claim_audit/unresolved_or_blocked_claims.csv"
+  },
+  "baseline_ledger_status_counts": {
+    "supported": 23,
+    "underpowered": 21,
+    "context-limited": 12,
+    "not-yet-tested": 6,
+    "contradicted": 2
+  },
+  "ledger_review_candidates": [
+    "ch02-bid-only-enough",
+    "ch07-protected-one-off-shape-frequency"
+  ],
+  "overclaim_risks": [
+    "ch02-bid-only-enough",
+    "ch07-protected-one-off-shape-frequency",
+    "ch10-tournament-speed-tradeoff",
+    "ch09-doubles-trump-candidate-4plus",
+    "ch03-laydown-correctness",
+    "ch04-safe-partner-count-donation",
+    "ch05-pounce-count-before-certainty",
+    "ch02-strong-trump-bad-risk-trap"
+  ],
+  "wave_plan": {
+    "wave_0": "baseline + rules of engagement (this manifest)",
+    "wave_1": "lift existing data — distribution-lens, mark-utility, hidden-threat, cross-AI agreement, audit re-run",
+    "wave_2": "state-injection harness + bid-aware E[Q] (highest-leverage infra) + agents on top",
+    "wave_3": "auction policy + opponent population",
+    "wave_4": "tournament objective (Ch 10 marks, advancement)",
+    "wave_5": "belief + reasoning faithfulness"
+  }
+}

@@ -2237,3 +2237,20 @@ The guided wizard now exposes the intended seeded decision flow directly: option
 - No broad central ledger mutation is made by the wiki update. Rows are promoted only at the page/evidence level; exact private-state, high-bid, auction-policy, state-injection, and human/tournament population blockers remain explicit.
 - [[w42-phase4-final-claim-audit]] independently confirms the closure condition: all 64 ledger rows have evidence and/or explicit bounded blockers, with no no-evidence/no-blocker rows.
 - [[w42-book-claim-synthesis-and-ai-directions]] records the post-closure synthesis: confirmed claims, unconfirmed technical blockers, distribution-aware E[Q] alternatives, and model/Burl/Gus experiment directions.
+
+---
+
+## [2026-05-03 | local | w42 book validation v1 wave 1]
+
+**Touched pages:** [[w42]] [[w42-book-claim-synthesis-and-ai-directions]] [[w42-bookval-v1-wave1-distribution-lens-reranker]] [[w42-bookval-v1-wave1-mark-utility-transform]] [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] [[w42-bookval-v1-wave1-cross-ai-agreement]] [[w42-bookval-v1-wave1-independent-audit]] [[index]] [[log]]
+**Added:** 5 experiment pages — wave 1 of the book-validation campaign (distribution-lens reranker, mark-utility transform, hidden-threat impact ranker, cross-AI agreement, independent audit). Artifacts under `w42/book_validation_v1/wave1/<bead>_<slug>/`. Wave 0 baseline + agent rules of engagement under `w42/book_validation_v1/`.
+**Updated:** [[w42-book-claim-synthesis-and-ai-directions]] absorbs Wave 1's structural findings and ledger absorptions; `w42/statistics_claims_ledger/claims.csv` and `w42/phase4_claim_completion_board/completion_board.csv` move two Ch 10 rows to context-limited; `w42/phase4_scoring_objective_tests/claim_summary.csv` normalizes a non-vocabulary status string. Status counts after wave 1: supported 23, context-limited 14, underpowered 20, not-yet-tested 5, contradicted 2.
+**Retired:** none.
+**Questions opened:** can a bid-aware E[Q] generator land in time to unblock Ch 10 mark-multiplier tests; how to refine the three over-firing detectors (`ch05_reckless_count`, `ch03_called_non_double`, `ch05_setter_pressure_regime`) without losing their within-pair contrast value.
+
+**Frontier shift:**
+- Tail-aware utilities (CVaR_10, robust_q25) agree with EV at 82-83% on the seed-9430 branch atlas, while p_make / threshold_mass only agree at 59%. The book's "manage tail risk" framing is more aligned with optimal play than its "make first" framing.
+- mark_ev is algebraically identical to p_make at bid=30 with one-mark multiplier. Genuine mark-vs-point flips are 3.6% of decisions; 81.5% of nominal flips are surface-flattening artifacts. Bid-aware E[Q] generation is now a hard prerequisite for further mark-objective work.
+- Hidden-threat attribution surfaces concrete training targets: trump-count tiles are 100% directionally helpful as load-bearing tiles; 5-5 in twos and 4-4 in no-trump are the highest-impact non-trump load-bearing tiles; right- and left-setter seats are asymmetric in load-bearing-tile category, contradicting the book's symmetric Ch 5 treatment.
+- Two Ch 10 ledger rows promoted to context-limited (`ch10-point-system-skill-signal`, `ch10-timed-marks-advancement-objective`) after the independent audit found phase-4 worker evidence the prior audit had not absorbed. The `ch10-tournament-speed-tradeoff` worker artifact's non-vocabulary status string was normalized.
+- Three detectors flagged for refinement (not retirement): `ch05_reckless_count` (mean regret 9.18 over 2,300 fires - overfires beyond qualifying window); `ch03_called_non_double` (within-pair contrast valid, action-level endorsement wrong 86% of the time); `ch05_setter_pressure_regime` (regime label, not action label).

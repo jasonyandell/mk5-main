@@ -1,0 +1,22 @@
+{
+  "schema_version": "w42.book_validation_v1.wave1.v1",
+  "bead": "t42-1nmm",
+  "wave": "wave1",
+  "task_slug": "independent_audit",
+  "created_at_utc": "2026-05-03T17:35:16.086172+00:00",
+  "input_artifact_shas": {
+    "w42/phase4_claim_completion_board/completion_board.csv": "470d093f02640446",
+    "w42/statistics_claims_ledger/claims.csv": "66cdf51c9d2081ce",
+    "w42/phase4_final_claim_audit/audit_summary.json": "c19539da83e63039",
+    "w42/phase4_final_claim_audit/unresolved_or_blocked_claims.csv": "399fe085d52ef1c6",
+    "w42/phase4_84_dynamic_seed_tests/summary.json": "61e262be03da3e21",
+    "w42/phase4_bidding_count_exposure_tests/summary.json": "97cce408093c8de0",
+    "w42/phase4_doubles_notrump_regime_tests/summary.json": "d90013521b88cb78",
+    "w42/phase4_laydown_rule_accounting/summary.json": "b9629173bdecf2d6",
+    "w42/phase4_scoring_objective_tests/summary.json": "82d39621a6cdb313",
+    "w42/phase4_sequence_handshape_tests/summary.json": "fda17077a790435f",
+    "w42/phase4_claim_completion_board/summary.json": "575debe2b4422d24"
+  },
+  "provenance": "Independent rebuild from artifacts. No rerun of run_audit.py.",
+  "output_dir": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/"
+}

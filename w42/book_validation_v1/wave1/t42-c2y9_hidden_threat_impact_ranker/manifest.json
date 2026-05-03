@@ -1,0 +1,43 @@
+{
+  "bead_id": "t42-c2y9",
+  "command": "python /Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/run_hidden_threat_impact_ranker.py",
+  "created_at_utc": "2026-05-03T17:36:40.016772+00:00",
+  "do_not_edit_central_ledger": true,
+  "do_not_touch_dirs": [
+    "w42/phase4_claim_completion_board/",
+    "w42/phase4_final_claim_audit/"
+  ],
+  "git_commit": "12064bf1e67052bb1515fe59f4393104f2a3766b",
+  "inputs": {
+    "branch_atlas_scaled_v0_hidden_threat_rows": {
+      "path": "/Users/jason/code/mk5-main/w42/branch_atlas_scaled_v0/hidden_threat_rows.csv",
+      "rows": 5955,
+      "sha256_prefix": "f5b5811ed8dd43a9"
+    },
+    "branch_atlas_v1_hidden_threat_rows": {
+      "path": "/Users/jason/code/mk5-main/w42/branch_atlas_v1/hidden_threat_rows.csv",
+      "rows": 1026,
+      "sha256_prefix": "22207125e99a0ecf"
+    },
+    "joined_claim_action_rows": {
+      "path": "/Users/jason/code/mk5-main/w42/joined_claim_row_model_table/joined_claim_action_rows.csv",
+      "rows": 75079,
+      "sha256_prefix": "5e9a4458978d7efb"
+    },
+    "legacy_driver_rollup": {
+      "path": "/Users/jason/code/mk5-main/w42/hidden_threat_legacy_mining/hidden_driver_rollup.csv",
+      "sha256_prefix": "d5adb72d242db3b8"
+    }
+  },
+  "leakage_boundary": "q_per_world, world_hands, E[Q|tile=t] are offline diagnostic labels only. Not proposed as live features. Inferability uses only public conditioned_mass proxy.",
+  "outputs": {
+    "detector_correlation": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/detector_correlation.csv",
+    "inferable_vs_not": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/inferable_vs_not.csv",
+    "manifest": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/manifest.json",
+    "per_decision_top_k_tiles": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/per_decision_top_k_tiles.csv",
+    "single_tile_dominant_decisions": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/single_tile_dominant_decisions.csv",
+    "summary": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/summary.json"
+  },
+  "parent_epic": "t42-4zi6",
+  "schema_version": "w42.book_validation_v1.wave1.manifest.v0"
+}
