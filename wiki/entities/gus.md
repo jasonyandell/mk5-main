@@ -552,6 +552,12 @@ corpus is ~110 GB — a `MapDataset` would OOM before training starts.
 RSS ceiling in practice: **~3.4 GB regardless of corpus size**, measured at 5 chunks. The
 `--lazy` flag enables this path in all training scripts. (commit message @ f138069)
 
+**Mirror (2026-05-03)**: the full v1 + v2 + eval corpus (118.68 GB across 230 files) is
+published as a public HF dataset:
+[jasonyandell/texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus).
+`MANIFEST.json` carries sha256 + paired generation log for every chunk so re-pulled
+copies can be verified against the local original.
+
 ### Explanation sketcher (2026-04-22, commit 695f2ef)
 
 Template-filled natural-language rationalization from student head outputs — no new ML. Slots:
