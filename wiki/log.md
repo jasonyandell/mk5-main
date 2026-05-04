@@ -74,9 +74,6 @@ Single commit. Small ingest: 5 page touches, first decision page added.
 - Stage 1 training moves from L4 to A100.
 
 **Questions opened:** none.
-**Questions resolved:** none.
-
----
 
 ## [2026-04-10 | 6e71df9 | STaR harness built; first smoke test passes; base-model K1 baseline measured (7538016..6e71df9)]
 
@@ -2526,5 +2523,40 @@ large clusters should now be approached through hubs and trails. W42 is the
 pilot: the latest Wave 2-4, Lens v1, and [[book-strategy-player]] evidence stays
 intact, while the entity page becomes orientation material rather than a
 complete ledger.
+
+**Questions opened:** none.
+
+---
+
+## [2026-05-04 | local | book-strategy-player algebra tightened]
+
+Design refinement for [[book-strategy-player]] after reviewing `t42-zrf9` against
+the wiki algebra.
+
+**Touched pages:** [[book-strategy-player]] [[index]] [[log]]
+
+**Updated:**
+- [[book-strategy-player]] now makes arbitration order-independent even on equal
+  priorities by requiring a canonical `strategy.name` tie-break.
+- L4 now states the intended invariant directly: active plans are not
+  re-recognized. One-shot-per-hand behavior is an explicit tombstone fact, not
+  the framework default.
+- L6 and the core operation now agree: bail falls back while preserving the
+  active plan unless the strategy explicitly emits a retire delta or `plan_done`
+  retires it.
+- Hierarchical composition is finite and acyclic. A wrapped sub-player remains
+  a valid Strategy, but construction should reject cycles rather than implying a
+  recursive execution stack.
+- Decision records now carry `strategy_path` and coverage buckets. Fallback-only
+  decisions are explicitly the future strategy-discovery surface: uncovered,
+  high-regret or high-tail-risk regions can later suggest candidate strategies.
+- Context-aware strategies are recorded as a future composition pattern through
+  published facts or hierarchical sub-libraries, not through cross-strategy
+  reads of private plan state.
+
+**Frontier shift:** The Phase 1 build contract is crisper. The immediate build
+is still the algebra-preserving framework plus measurement instrument; uncovered
+region mining, context wrappers, and richer nested libraries are recorded as
+future exploration surfaces rather than detailed near-term plan.
 
 **Questions opened:** none.

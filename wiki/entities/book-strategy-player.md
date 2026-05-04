@@ -2,7 +2,7 @@
 title: BookStrategyPlayer — multi-step strategy framework with recording
 kind: entity
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+last_updated: local-2026-05-04
 status: design (build pending)
 ---
 
@@ -73,13 +73,17 @@ The protocol's purity makes meta-strategies compose naturally:
 
 2. **Strategy chaining** — one strategy's plan publishes a `fact`; another strategy reads it
    via `applies_to`. Example: `SingletonLeadToVoid` publishes `facts.void_suits`;
-   `CountSteeringIntoVoid` reads it. Requires formalizing publish/subscribe in `PlanState`
-   (~30 LOC framework addition).
+   `CountSteeringIntoVoid` reads it. Context-aware strategies use the same mechanism:
+   a parent strategy publishes an explicit context fact (`active_context`, `target_suit`,
+   `plan_phase`, etc.) and another strategy becomes applicable only in that context.
+   Requires formalizing publish/subscribe in `PlanState` (~30 LOC framework addition).
 
 3. **Hierarchical strategies** — a Strategy's `next_action` can delegate to a sub-player
-   with its own library. Recursive composition with no protocol changes. Maps directly to the
-   book's chapter structure — Ch 3 (bidder play), Ch 5 (setter defense), Ch 8 (84-bid endgame)
-   are each natural sub-libraries.
+   with its own library. Finite acyclic nesting needs no protocol change and maps directly
+   to the book's chapter structure — Ch 3 (bidder play), Ch 5 (setter defense), Ch 8
+   (84-bid endgame) are each natural sub-libraries. Cyclic self-recursion is not part of
+   the design; construction should reject cycles and records should carry a `strategy_path`
+   for nested decisions.
 
 4. **Opponent-aware (counter-strategies)** — add an `observe(opp_action, ...)` hook to the
    protocol. Strategies accumulate opponent statistics in shared facts. Counter-strategies
@@ -124,6 +128,7 @@ class DecisionRecord:
     hand_id, trick_idx, decision_idx
     game_state_tensor                   # serialized GameStateTensor
     plan_state_snapshot                 # active_plans + facts at decision time
+    strategy_path                       # nested strategy path, empty for top-level fallback
     legal_actions
     applicable_strategy_names           # which fired
     strategy_priorities                 # all returned scores, not just winner
@@ -140,6 +145,22 @@ what the strategy player did *and* what Lens(ev) would have done. The difference
 strategy's contribution exactly. Re-running the hand with the counterfactual action gives
 ground-truth per-decision causal effect (paired-seed style); off-policy estimation gives a
 cheaper approximation once a value model is trained.
+
+The same records are also the strategy-discovery surface. Decisions where no strategy
+applies are not empty data; they are uncovered territory. The useful coverage buckets are:
+
+- `uncovered` — no strategy applied and fallback played.
+- `covered_same_as_fallback` — a strategy applied but matched Lens(ev).
+- `covered_diff_positive` — a strategy diverged and improved outcome.
+- `covered_diff_negative` — a strategy diverged and hurt outcome.
+- `bailed` — a strategy recognized context but declined to play.
+- `disrupted` — a committed plan failed to complete.
+
+High-regret or high-tail-risk uncovered regions become candidates for new strategy
+discovery. A candidate strategy is composed into the library, rerun in paired-seed
+head-to-head, and kept only if coverage, completion, and point-margin diagnostics justify
+it. This is future exploration, not a Phase 1 requirement beyond recording the fields
+needed to identify the regions.
 
 Three trainable models, in increasing ambition:
 
@@ -200,9 +221,11 @@ next layer — and the training data accumulates as a pure side effect of runnin
 
 **Phase 1 (now, ~3-4h build):**
 - Strategy framework (~400 LOC)
-- 1-3 starter strategies (~150 LOC each); recommended first: `singleton_lead_to_void` —
-  rehabilitates [[w42-bookval-v1-wave2-void-creation]] (which was contradicted at single-
-  decision granularity)
+- 1-3 starter strategies (~150 LOC each). `singleton_lead_to_void` is a valid first
+  measurement target, but it should be treated as a measurement/negative-control candidate,
+  not assumed to rehabilitate [[w42-bookval-v1-wave2-void-creation]]. The canonical
+  follow-position void variant remains the cleaner book-positive candidate if the first
+  strategy is meant to test the book's strongest version.
 - DecisionRecord serialization to parquet (~50 LOC; logged but not yet trained on)
 - Head-to-head measurement vs Lens(ev) (~50 LOC, reuses `w42/lens_v1/parallel_match.py`)
 - Publish/subscribe `facts` extension to PlanState (~30 LOC; mode 2 enabler)
@@ -243,12 +266,13 @@ listing it once, and order doesn't matter. **Forced**: dedupe by `Strategy.name`
 **A2. `Arbitration` is a bounded join-semilattice.**
 ```
 carrier   = (Strategy, priority) ∪ {⊥}
-join (∨)  = argmax-priority    (with -∞ identity)
+join (∨)  = argmax-priority with canonical strategy.name tie-break (with -∞ identity)
 laws      = associative, commutative, idempotent
 ```
 The framework picks the join over all applicable (strategy, priority) pairs. Bottom ⊥
 exists (no strategies applicable → fall back). **Forced**: arbitration code is
-`applicable.fold(max_priority, ⊥)` — three lines, no branching.
+`applicable.fold(max_priority_then_name, ⊥)` — three lines, no branching. Equal priorities
+must not reintroduce library-order dependence.
 
 **A3. `PlanState` evolves under the State monad (per hand).**
 ```
@@ -309,9 +333,10 @@ wrap : BookStrategyPlayer → Strategy
 wrap(BSP).next_action(gs, ps) = (BSP.choose_action(gs), Δ-from-sub-recording)
 ```
 A sub-player wraps as a Strategy. The functor preserves structure: `wrap(BSP1 ∪ BSP2)` is
-observably equivalent to coordinating wrap(BSP1) and wrap(BSP2) at the parent. **Forced**:
-chapters can be sub-libraries; nesting depth is unbounded; the framework supports
-recursive composition without special-casing.
+observably equivalent to coordinating wrap(BSP1) and wrap(BSP2) at the parent for finite
+acyclic strategy graphs. **Forced**: chapters can be sub-libraries; nesting depth is
+unbounded by the protocol but finite in any instantiated player; construction rejects
+cycles rather than providing a recursive execution stack.
 
 **A9. The full player is a composed monad stack.**
 ```
@@ -344,11 +369,13 @@ BSP({s, s}, fb) ≡ BSP({s}, fb)
 ```
 Falls out of A1 (set semantics).
 
-**L4 — Recognize-at-most-once per plan instance.**
+**L4 — Do not re-recognize active plans.**
 ```
-commit_recognition(s, _, _) called ≤ 1 time per (hand, s.name) tuple
+If s.name ∈ ps.active_plans, commit_recognition(s, _, _) is not called.
 ```
-Plans are committed once and persist until retired. No re-recognition of an active plan.
+Plans are committed once and persist until retired. A strategy may recognize again after
+retirement only if the library intentionally permits a new plan instance. One-shot-per-hand
+strategies require an explicit tombstone fact; they are not the framework default.
 
 **L5 — Priority monotonicity for active plans.**
 ```
@@ -359,8 +386,10 @@ Following through dominates starting fresh. Convention enforced as an assertion.
 
 **L6 — Bail and Retire are orthogonal operations.**
 ```
-Bail   (next_action returns None action)               : DOES NOT modify ps.active_plans[s.name]
-Retire (next_action returns None delta-value, OR plan_done returns True) : DELETES ps.active_plans[s.name]
+Bail   (next_action returns None action and identity/private-preserving delta)
+       : DOES NOT modify ps.active_plans[s.name]
+Retire (plan_done returns True, OR delta.active_plans[s.name] = None)
+       : DELETES ps.active_plans[s.name]
 ```
 Two semantically distinct ways for a strategy to "give up" — one preserves the chance to
 fire again, the other doesn't.
@@ -392,7 +421,9 @@ strategies.
 ```
 Decision records contain enough state to deterministically replay the hand. Falls out
 of A4 + the immutability of A3/A5. **Critical for training-data integrity**: the records
-ARE the training data; they must be sufficient.
+ARE the training data; they must be sufficient. Records include the player/library
+identity, fallback identity, `strategy_path`, legal actions, chosen action, fallback
+action, plan-state snapshot, and all RNG/forge world-sampling seeds needed for replay.
 
 ### The core operation
 
@@ -407,7 +438,7 @@ choose_action(gs, ps) =
             ⊥          → (fb.choose_action(gs), ε, Record(fallback))
             Some(s)    → let (a, δ) = s.next_action(gs, ps₂)
                          in  case a of
-                                Nothing  → (fb.choose_action(gs), Δ_retire(s), Record(bail, s))
+                                Nothing  → (fb.choose_action(gs), δ, Record(bail, s))
                                 Just(α)  → (α,                    δ,           Record(strategy, s, α))
 ```
 
@@ -420,12 +451,13 @@ A handful of decisions that look like preferences are actually forced:
 | design "choice" | actually forced by | what would break |
 |---|---|---|
 | Strategies stored as `dict[name → Strategy]`, not `list` | A1 + L3 | dedup gets messy with lists |
-| Arbitration = `max(priority)`, not weighted vote | A2 | weighted vote breaks commutativity (L2) |
+| Arbitration = `max(priority)` with canonical `strategy.name` tie-break, not weighted vote | A2 | weighted vote or order-dependent ties break commutativity (L2) |
 | Facts must be monoid-valued | A7 + L7 + L8 | merge ordering becomes load-bearing |
 | Per-hand PlanState, not global | A3 | parallel hands need locks |
 | Recording is pure-write | A4 | recording could secretly affect play |
 | Strategies hermetic in namespace | A9 + L9 | adding a strategy could break others |
-| Hierarchical sub-player wraps as Strategy | A8 | composite strategies need bespoke plumbing |
+| Bail preserves active plan unless explicit retire delta is emitted | L6 | a last-second fallback silently destroys plan state |
+| Hierarchical sub-player wraps as Strategy in an acyclic graph | A8 | composite strategies need bespoke plumbing, or cycles need a stack/termination protocol |
 
 ### Maintenance benefits the algebra delivers
 
