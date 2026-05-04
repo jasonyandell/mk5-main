@@ -2426,3 +2426,16 @@ Scribe-C's Phase-3 follow-up under continued exclusive GPU.  Team-lead's "GO" me
 - ch12-setter-pounce-high-bid is **unanimously contradicted** under all 4 available utilities (EV -10.42, p_make -0.047, mark_ev -0.047, CVaR_10 +4.40). The earliest "p_make split" framing was an artifact of EV-only reporting in Wave 2.E.2.
 - Schema decision **ADOPT-DEFERRED** — defer per-utility status columns until future probes record all 5 utilities by default. AGENTS.md utility-coverage amendment makes this happen automatically.
 - Status counts unchanged (Wave 3.0 is read-only meta-analysis): supported 24, context-limited 14, underpowered 19, not-yet-tested 4, contradicted 3.
+
+---
+
+## [2026-05-03 | local | w42 book validation v1 wave 4.0 utility-argmax divergence]
+
+**Touched pages:** [[w42-bookval-v3-utility-argmax-divergence]] [[w42-bookval-v2-utility-lens-synthesis]] [[index]] [[log]]
+**Added:** Wave 4.0 (`t42-hmjr`) measures utility-argmax divergence at the policy-action level on the Wave 2 ch05-void-creation-follow corpus (n=500, bid=30, all-setter-to-act). For every snapshot, argmax is computed over ALL legal actions under EV / p_make / mark_ev / CVaR_10 / robust_q25. Outputs: `w42/book_validation_v1/wave4/t42-hmjr_utility_argmax_divergence/` with `per_snapshot_argmax.csv`, `disagreement_matrix.csv` (5×5 with bootstrap CIs), `void_subset_confusion.csv`, `summary.json`, `manifest.json`, `analyze.py`. Wiki page `w42-bookval-v3-utility-argmax-divergence` records the verdict.
+**Verdict:** **DISAGREE ≥ 5%** — EV vs p_make argmax disagreement is **41.2% (CI [36.8%, 45.6%])**, an order of magnitude above the 5% gate. Recommend scoping rung-2 (utility-tunable searcher) as the next build. p_make = mark_ev exactly (0/500 disagreement) — empirical confirmation of the bid=30 mm=1 affine identity at the argmax level.
+**Frontier shift:**
+- Wave 3.0's EV vs p_make split is **NOT** purely a contrast-magnitude artefact; the two utilities pick different actions on ~41% of the corpus. The architecture-decision gate trips clearly.
+- A subtle inversion of the Wave 3.0 framing emerged: p_make picks the void slot (38.6%) MORE often than EV does (29.4%). EV more often picks a third action that is neither void nor preserve (37.6%). The canonical "EV→void, p_make→preserve" pattern accounts for only 5.8% (29/500) of snapshots — meaningful, but only ~14% of the total disagreement. Rung-2 design framing should be "EV/p_make systematically pick different slots" rather than "EV likes void, p_make likes preserve."
+- This wave is read-only on the ledger (architecture-decision measurement, no claim row moves).
+- Status counts unchanged.

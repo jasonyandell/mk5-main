@@ -41,6 +41,7 @@ the central ledger or the synthesis page.
 | 2.G | ch02 multi-step bid-only-enough | t42-ey88 | closed — **`ch02-bid-only-enough` promoted to `supported`** (campaign's first) |
 | 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; ch10 row already `supported`) |
 | 3.0 | utility-lens meta-analysis | t42-f2ur | closed — narrows p_make/EV thread; ch05-void-creation-follow is the only true objective-dependent split; high-bid pounce contradicted under all 4 utilities |
+| 4.0 | utility-argmax divergence (architecture-decision gate) | t42-hmjr | closed — **gate TRIPPED**; EV vs p_make argmax disagrees on 41.2% (CI [36.8%, 45.6%]) of ch05-follow snapshots; Wave 3.0 framing inverted (p_make picks void MORE than EV; EV is the outlier preferring third-option discards); rung-2 utility-tunable searcher justified |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
@@ -149,24 +150,46 @@ before merge.
   sharpened, not retired.
 - Push at session end. Work is not done until pushed.
 
-## Wave 3.0 reconciliation
+## Wave 3.0 reconciliation (revised by Wave 4.0)
 
 [[w42-bookval-v2-utility-lens-synthesis]] re-processed all 7 closed
-Wave 2 probes through 5 utility lenses. Net effect on the campaign's
-emergent p_make/EV thread:
+Wave 2 probes through 5 utility lenses. Initial read narrowed the
+emergent p_make/EV thread to one claim. **Wave 4.0 then broadened it.**
 
-- **Narrowed, not killed.** ch05-void-creation-follow remains a true
-  objective-dependent split (EV supported, p_make spans zero) — model-
-  training-relevant.
-- **High-bid pounce hypothesis superseded.** ch12-setter-pounce-high-bid
-  is contradicted under all 4 available utilities. The earlier read
-  (Wave 2.E pounce is a p_make/EV split) does not generalize.
+- **High-bid pounce hypothesis superseded** (still holds): ch12-setter-
+  pounce-high-bid is contradicted under all 4 available utilities. The
+  Wave 2.E "p_make split" framing was an EV-only-reporting artefact.
 - **Schema decision: ADOPT-DEFERRED.** Per-utility status columns are
   the right shape, but populating them needs probes to record all 5
   utilities. Defer adoption until next 3-5 probes record full coverage.
-- **Status counts unchanged** (Wave 3.0 is read-only meta-analysis):
-  supported 24, context-limited 14, underpowered 19, not-yet-tested 4,
-  contradicted 3.
+- **Wave 3.0's "narrowing" was an artefact of paired-contrast statistics**
+  (magnitudes on specific action pairs, not what each utility's argmax
+  actually picks). Wave 4.0 measured argmax directly and found EV
+  disagrees with p_make / mark_ev / CVaR_10 on 41-44% of ch05-follow
+  snapshots. The multi-objective story is real, just not in the
+  direction Wave 3.0 framed it.
+- **Status counts unchanged** (both waves are read-only meta/measurement,
+  no new probe verdicts): supported 24, context-limited 14,
+  underpowered 19, not-yet-tested 4, contradicted 3.
+
+## Wave 4.0 — architecture-decision gate
+
+[[w42-bookval-v3-utility-argmax-divergence]] computed argmax-under-
+utility for ALL legal actions on the 500 ch05-follow snapshots.
+
+- **Verdict: gate TRIPPED.** EV vs p_make argmax disagrees on 41.2%
+  (CI [36.8%, 45.6%]) — order of magnitude above the 5% gate.
+- **Direction inverts Wave 3.0's framing.** p_make picks void MORE
+  often than EV (38.6% vs 29.4%); CVaR_10 picks void most aggressively
+  (42.6%). EV is the outlier — it more often selects a third-option
+  discard (37.6% "neither" rate). The book's void advice aligns with
+  *risk-aware* utilities, not with mean-EV.
+- **Empirical confirmation of the bid=30 mm=1 affine identity at
+  argmax level:** p_make and mark_ev agree on every single one of 500
+  snapshots (0/500 disagreement).
+- **Recommendation:** scope rung-2 utility-tunable searcher (named
+  decision pending — see [[w42-bookval-v3-utility-argmax-divergence]]).
+  Whether to actually build is a separate prioritization decision.
 
 ## Links
 

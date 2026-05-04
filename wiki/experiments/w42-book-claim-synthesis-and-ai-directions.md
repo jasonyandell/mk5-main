@@ -594,34 +594,113 @@ amendment to `AGENTS.md` requiring all five utilities in
 `paired_contrasts.csv`, and revisit schema after the next 3-5 probes
 land with full coverage.
 
-### Implications for model design
+### Implications for model design (initial reading — see Wave 4.0 correction below)
 
-The single concrete prediction for Burl/Gus head design that survives
-Wave 3.0 review:
+The Wave 3.0 reconciliation initially read the evidence as: "ch05-void-
+creation-follow is the only situation in the validated claim set where
+an EV head and a p_make head would disagree on what to learn."
 
-- **ch05-void-creation-follow is the only situation in the validated
-  claim set where an EV head and a p_make head would disagree on what
-  to learn.** A model with an EV training signal should learn to create
-  voids when forced off-suit in follow position; a model with a p_make
-  training signal should remain neutral. This is testable by examining
-  Burl's behavior in this specific position vs a pure-EV oracle.
-
-- For all other validated claims, both EV and p_make agree (ch12-pounce-
-  high-bid: both contradict; ch02-bid-only-enough: both support;
-  ch03-reentry, ch12-pounce-bid30: both unresolved). A single-objective
-  head suffices for these.
-
-Conclusion: a multi-head architecture (EV head + p_make head + CVaR
-head) is *worth carrying forward as future work* but is **not yet
-justified by validated evidence at the strength a campaign would
-warrant**. The earlier framing in Wave 1.4 — "p_make / threshold_mass
-agree with EV at only 59%" — describes a *ranking-disagreement rate at
-the action level*, not a strategic-claim-level split. The two phenomena
-are different: actions can disagree without claim verdicts disagreeing.
+That read was correct at the *paired-contrast / ledger-verdict* level
+but **misleading at the policy-action level**, as Wave 4.0 immediately
+demonstrated.
 
 Status counts are unchanged by Wave 3.0 (it is an analysis of existing
 verdicts, not a new probe): supported 24, context-limited 14,
 underpowered 19, not-yet-tested 4, contradicted 3.
+
+## Wave 4.0 — Utility-Argmax Divergence (Architecture-Decision Gate)
+
+[[w42-bookval-v3-utility-argmax-divergence]] (`t42-hmjr`) measured
+argmax-under-utility for ALL legal actions on the same 500 ch05-void-
+creation-follow snapshots that drove Wave 3.0. The motivating question:
+do EV-greedy and p_make-greedy policies actually pick different actions
+at these snapshots, or only differ in contrast-magnitude?
+
+**Result: EV-argmax and p_make-argmax disagree on 206/500 snapshots
+(41.2%, CI [36.8%, 45.6%])** — an order of magnitude above the 5%
+gate. The Wave 3.0 paired-contrast was *not* a magnitude-only
+artefact; the policy-action divergence is real and substantial.
+
+Full pairwise disagreement matrix (n=500):
+
+| pair | disagree rate | 95% CI |
+|------|---:|---|
+| EV vs p_make | 41.2% | [36.8%, 45.6%] |
+| EV vs mark_ev | 41.2% | [36.8%, 45.6%] (= p_make at bid=30) |
+| EV vs CVaR_10 | 43.0% | [38.6%, 47.4%] |
+| EV vs robust_q25 | 29.6% | [25.8%, 33.8%] |
+| p_make vs CVaR_10 | 44.0% | [39.8%, 48.4%] |
+| p_make vs robust_q25 | 38.4% | [34.2%, 42.8%] |
+| CVaR_10 vs robust_q25 | 30.8% | [26.8%, 35.0%] |
+| **p_make vs mark_ev** | **0.0%** | [0.0%, 0.0%] |
+
+The p_make ≡ mark_ev identity at bid=30 (Wave 1.2 / Wave 2.H affine
+algebra) is **empirically confirmed at the argmax level** — every
+single one of 500 snapshots has identical p_make and mark_ev
+selections, as the positive-affine algebra demands.
+
+### Framing inversion (important)
+
+The void/preserve confusion table inverts the intuitive Wave 3.0
+framing ("EV likes void, p_make is neutral"):
+
+| utility | argmax = void | argmax = preserve | argmax = neither |
+|---|---:|---:|---:|
+| EV | 29.4% | 33.0% | **37.6%** |
+| p_make | 38.6% | 31.0% | 30.4% |
+| mark_ev | 38.6% | 31.0% | 30.4% |
+| CVaR_10 | **42.6%** | 27.8% | 29.6% |
+| robust_q25 | 40.6% | 30.6% | 28.8% |
+
+p_make picks the void slot *more often* than EV does (38.6% vs 29.4%).
+The risk-aware utilities (CVaR_10 at 42.6%, robust_q25 at 40.6%) pick
+void most aggressively of all. **EV is the outlier** — it more often
+selects a third action that is neither void nor preserve (37.6%, the
+highest "neither" rate of any utility).
+
+The literal "EV→void AND p_make→preserve" canonical pattern accounts
+for only 5.8% (29 / 500) of snapshots — meaningful, but only ~14% of
+total EV/p_make disagreement. The remaining ~36% is composed of other
+slot-pair disagreements.
+
+**Corrected mechanistic read:** the book's void-creation advice (in
+follow position) aligns with **risk-aware utilities** (p_make / CVaR /
+robust_q25) more than with **mean-EV**. EV-greedy strategy on this
+corpus often selects a third-option discard that is even better than
+void in EV terms but worse in tail / threshold terms. Voiding gives
+*optionality* (you can trump that suit later), which improves tail
+outcomes more than mean — a sensible structural reason for the split.
+
+This refines the Wave 3.0 reconciliation: the multi-objective story is
+NOT narrowed to one claim. It is **broadened to a 30-44% policy-action
+divergence between EV and risk-aware utilities** on a corpus where the
+book's advice has been validated. Wave 3.0 missed this because paired
+contrasts measure magnitudes on specific action pairs, not what each
+utility's argmax actually picks.
+
+### Architecture decision gate: TRIPPED
+
+The Wave 4.0 gate said: ≥5% disagreement with a coherent pattern →
+scope rung-2 (utility-tunable searcher). The actual disagreement is
+~10× the gate (41% vs 5%) and the pattern is coherent (EV is the
+outlier; risk-aware utilities cluster). The gate is decisively
+tripped. Whether to actually build rung-2 is now a separate
+prioritization decision (held for orchestrator/user review), but the
+evidence base is in place.
+
+### Caveats (carried forward)
+
+- All 500 snapshots are bid=30 (mm=1, mark_ev ≡ p_make by construction).
+  The cleanest test of mark_ev divergence requires a bid=84 snapshot
+  corpus. Wave 2.F (84-throwaway) is the open path.
+- All to-act players are setters at bid=30, where the make-threshold
+  (Q ≥ −17) is loose; CVaR_10 / robust_q25 do more discrimination here
+  than they would on offense. A bid-aware mixed-position corpus is the
+  natural follow-up scope.
+- 100 worlds per snapshot leaves sample noise on near-tied slots.
+  Bootstrap CIs quantify snapshot-level variance, not per-snapshot
+  resampling variance.
+- Read-only on the claim ledger; no row moves.
 
 ## Links
 
@@ -637,4 +716,6 @@ underpowered 19, not-yet-tested 4, contradicted 3.
 [[w42-bookval-v1-wave1-mark-utility-transform]] |
 [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] |
 [[w42-bookval-v1-wave1-cross-ai-agreement]] |
-[[w42-bookval-v1-wave1-independent-audit]]
+[[w42-bookval-v1-wave1-independent-audit]] |
+[[w42-bookval-v2-utility-lens-synthesis]] |
+[[w42-bookval-v3-utility-argmax-divergence]]

@@ -1,0 +1,6 @@
+utility,n_void_subset,argmax_eq_void,argmax_eq_preserve,argmax_eq_neither,pct_void,pct_preserve,pct_neither
+ev,500,147,165,188,29.4,33.0,37.6
+p_make,500,193,155,152,38.6,31.0,30.4
+mark_ev,500,193,155,152,38.6,31.0,30.4
+cvar_10,500,213,139,148,42.6,27.8,29.6
+robust_q25,500,203,153,144,40.6,30.6,28.8

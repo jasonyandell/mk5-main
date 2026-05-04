@@ -50,22 +50,30 @@ Wave 2 probes:
 
 ### In flight
 
-(none — Wave 3.0 closed)
+(none)
 
 ### Most recently closed
 
+- **Wave 4.0** (`t42-hmjr`) — utility-argmax divergence (architecture-
+  decision gate). Closed 2026-05-03. Computed argmax-under-utility for
+  ALL legal actions on the 500 ch05-void-creation-follow snapshots.
+  **Verdict: gate TRIPPED.** EV vs p_make disagree on 41.2% (CI [36.8%,
+  45.6%]). p_make / mark_ev / CVaR_10 / robust_q25 are the utilities;
+  p_make ≡ mark_ev exactly at bid=30 (0/500 disagreement, confirms
+  affine identity). **Wave 3.0's framing inverted:** p_make picks
+  void MORE than EV (38.6% vs 29.4%); EV is the outlier preferring
+  third-option discards. The book's void advice aligns with risk-aware
+  utilities, not with mean-EV. Recommendation: scope rung-2 utility-
+  tunable searcher (decision held for user input on whether to build,
+  what to call it, and what scope).
+
 - **Wave 3.0** (`t42-f2ur`) — utility-lens meta-analysis. Closed
   2026-05-03. Re-processed all 7 closed Wave 2 probes through 5 utility
-  lenses. **Headline finding: the broad p_make/EV split hypothesis did
-  not generalize.** Only ch05-void-creation-follow shows a true
-  objective-dependent verdict (EV supported, p_make spans zero) — the
-  one place where EV-head vs p_make-head training signal would diverge.
-  ch12-setter-pounce-high-bid is contradicted under all 4 available
-  utilities (Wave 2.E.2's "p_make split" framing was wrong; the book
-  is wrong here irrespective of objective). Schema decision: ADOPT-
-  DEFERRED — add per-utility status columns once probes record full
-  utility coverage. AGENTS.md amended with utility-coverage requirement
-  for all future probes.
+  lenses. Initial read narrowed the p_make/EV split hypothesis to one
+  claim. Wave 4.0 broadened it back at the policy-action level (Wave
+  3.0 was working at paired-contrast magnitudes; Wave 4.0 at argmax).
+  Schema decision still ADOPT-DEFERRED until more probes record full
+  utility coverage. AGENTS.md amended with utility-coverage requirement.
 
 ### Deferred (filed but not launched)
 
@@ -104,32 +112,39 @@ Wave 2.E.2 demotion triggered a new promotion-guard rule:
 **aggregate proxies do not qualify for promotion**, only paired
 same-decision contrasts on the relevant action shape.
 
-### Major emergent thread: p_make vs EV objective lens (post-Wave 3.0 update)
+### Major emergent thread: utility-objective split (post-Wave 4.0)
 
-The earlier formulation — "the book may be implicitly p_make-optimized
-at the contract threshold" — was projected from 2-3 probes (Wave 1.4
-action-ranking matrix, Wave 2.E pounce-bid30, Wave 2.E.2 high-bid
-pounce). **Wave 3.0's full re-analysis substantially narrowed this
-read:**
+Three iterations of this thread:
 
-- Only **1 of 7** closed claims shows a true model-design-relevant
-  objective split: **ch05-void-creation-follow** (EV supported,
-  p_make/mark_ev/CVaR_10 all span zero).
-- ch12-setter-pounce-high-bid is contradicted under all 4 available
-  utilities — the book is wrong irrespective of objective. The Wave
-  2.E.2 "p_make split" framing was an artifact of that probe only
-  reporting EV.
-- ch12-setter-pounce-bid30 (the Wave 2.E result) reproduces in re-
-  analysis as spans_zero under all utilities — claim is unresolved,
-  not split.
-- Wave 1.4's 59% p_make/EV agreement is an *action-ranking-level*
-  disagreement that does not propagate to the *strategic-claim-level*
-  in our closed probe set.
+1. **Initial (Waves 1.4 + 2.E + 2.E.2):** "book may encode p_make-
+   optimized advice at the contract threshold; EV-optimal play differs."
+   Projected from action-ranking 59% disagreement and 2 probe verdicts.
+2. **Wave 3.0 narrowed:** at the paired-contrast / ledger-verdict level,
+   only ch05-void-creation-follow shows a true objective-dependent
+   verdict (1 of 7 claims). The other apparent splits dissolved into
+   "all utilities agree" or "all utilities are unresolved."
+3. **Wave 4.0 broadened back, in a corrected direction:** at the
+   argmax-action level on those same 500 snapshots, EV disagrees with
+   p_make / mark_ev / CVaR_10 on **41-44%** of decisions. The split is
+   real and substantial. Direction: p_make / CVaR / robust_q25 pick
+   void *more often* than EV (the book's advice aligns with risk-aware
+   utilities); EV is the outlier preferring third-option discards.
 
-Conclusion: the multi-objective head architecture (EV head + p_make
-head + CVaR head) is worth carrying forward as future work but is not
-yet justified by validated evidence. ch05-void-creation-follow is the
-single concrete testable prediction.
+Conclusion: **rung-2 utility-tunable searcher is justified by validated
+evidence.** Not on "claim verdict differs by utility" (that was wrong)
+but on "argmax action differs by utility ~40% on a corpus where the
+book's advice has been validated." The original framing missed this
+because paired contrasts measure magnitudes on specific action pairs,
+not what each utility argmax picks across all legal actions.
+
+Open architectural questions for the user:
+- Build rung-2 (utility-tunable searcher over forge engine) at all?
+- If yes, what name (Zeb is taken in the AlphaZero sense; candidates:
+  Sift, Tally, Burlap, Drey)?
+- Scope: pure rollout MCTS (~400 LOC, 2-4h) vs Gus-belief-conditioned
+  rollouts (richer, larger build)?
+- Validation corpus: ch05-follow-only first (replicates Wave 4.0 with
+  search depth) or 10K mixed corpus (tests Wave 1.4 at scale)?
 
 ### Pending decisions for the user when resuming
 
@@ -139,13 +154,21 @@ single concrete testable prediction.
   otherwise it's a one-off claim probe.
 - **Detector hygiene beads** (`t42-v0m5`, `t42-2yb5`, `t42-btpg`):
   could roll into a single Wave 2.X cleanup pass when Wave 3.0 lands.
-- **Wave 4 design**: training implications. Wave 3.0 substantially
-  weakened the case for an objective-conditioned head (only 1 of 7
-  claims shows the split). The narrower next direction: probe Burl's
-  ch05-void-creation-follow behavior vs a pure-EV oracle to test
-  whether a single-objective EV head learns the supported claim. If
-  not, multi-head architecture is justified by that one claim; if so,
-  single-head suffices.
+- **Rung-2 build decision**: gate tripped by Wave 4.0. Whether to
+  build, what to call it, and what scope are the live open questions.
+  Per user discussion: skipping the new model entirely would leave
+  measurement against EV oracle n=10 only, which is suboptimal — but
+  that's what Wave 4.0 just did with full Q-distribution comparison.
+  So rung-2 (a searcher) is the bridge that lets us test whether
+  utility-conditioned policies hold up at search-depth, before
+  committing to rung-3 (a learned net).
+- **Wave 4 follow-on candidates** (rung-2 design dependent):
+  - Replicate Wave 4.0 on a 10K mixed-corpus snapshot pool to test
+    whether the 41% disagreement holds at scale and across positions
+    (currently bid=30 setter-only).
+  - Wave 2.F (84-throwaway, t42-wikw): test mark_ev divergence at
+    bid=84 where mm=2 and the affine identity breaks. Design pass
+    already on file.
 - **Wave 3 (auction policy + opponent population)**: deferred from
   earlier sessions; multiple Wave 2 probes flagged that real auction
   strategy testing needs a bid-policy simulator. Wave 2.G's
