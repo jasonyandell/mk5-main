@@ -2601,3 +2601,37 @@ committed every fresh recognizer, or described the logged fallback proposal as e
 strategy contribution.
 
 **Questions opened:** none.
+
+---
+
+## [2026-05-04 | local | book-strategy-player amended design organized]
+
+The amended design for [[book-strategy-player]] was folded into the live wiki
+contract instead of being appended as another review note.
+
+**Touched pages:** [[book-strategy-player]] [[w42]] [[w42-book-validation]] [[index]] [[log]]
+
+**Updated:**
+- [[book-strategy-player]] now reads as the current Phase 1 build-ready contract:
+  fresh recognition is separate from active-plan execution, only the arbitration
+  winner commits a fresh plan, shared facts must be monoid-valued wrappers, and
+  fallback recording must be pure.
+- The page now distinguishes bail, retire, blocked, and disrupted states; records
+  `fallback_action` as a local counterfactual proposal rather than exact causal
+  attribution; and replaces optimistic coverage names with conservative
+  pre-replay buckets such as `covered_diff_unattributed`.
+- The `DecisionRecord` section now carries replay/version/fingerprint fields,
+  lossless `game_state_snapshot` separate from model input tensor, RNG/forge
+  seed fields, `strategy_path`, strategy-returned action, status, delta summary,
+  and plan completion status.
+- The implementation surface now includes Phase 1 property tests T1-T17 and a
+  concrete module layout under `w42/book_strategy/`.
+- [[w42]], [[w42-book-validation]], and [[index]] now route readers to the amended
+  build-ready contract rather than the older "design pending" framing.
+
+**Frontier shift:** The design is no longer just a conceptual route past the
+single-decision blind spot. It is organized as the implementation contract for
+`t42-zrf9`: framework laws and fake-strategy tests first, then fallback purity
+and recording, then the first book tactic and head-to-head measurement.
+
+**Questions opened:** none.

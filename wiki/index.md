@@ -13,7 +13,7 @@ catalog:
 - [[entities/gus|gus]] — oracle distillation, belief/value/policy heads, LAMIR, regret eval, and strategy probes (active)
 - [[entities/w42|w42]] — Winning 42 book validation, strategy detectors, claim ledger, and report-shaped research (active)
 - [[trails/w42-book-validation|w42-book-validation]] — curated route through the W42 / Winning 42 evidence pile, Lens v1, and planning-aware frontier (active)
-- [[entities/book-strategy-player|book-strategy-player]] — multi-step book-plan architecture, tightened nine-algebra spec, replayable coverage recording, and strategy-selector training route (design)
+- [[entities/book-strategy-player|book-strategy-player]] — amended Phase 1 build-ready strategy framework: fresh recognition vs commitment, lawful facts, pure fallback recording, replayable records, and strategy-selector training route (active)
 
 ## Entities
 
@@ -62,7 +62,7 @@ catalog:
 - [[entities/gus|gus]] — third sibling project; distills forge's E[Q] oracle via multi-head transformer; skips reasoning channel; 5-head LAMIR-ready (active)
 - [[entities/joint-world-tensor|joint-world-tensor]] — packed game-state representation enabling look-ahead without oracle calls; core Gus data structure (active)
 - [[entities/gen-fleet|gen-fleet]] — Vast.ai distributed corpus generation plan; 5 pre-launch fixes identified (bid=30 bias, schema v2, lazy dataset done); not yet launched (plan)
-- [[entities/book-strategy-player|book-strategy-player]] — multi-step strategy framework with split recognition/execution lifecycle, nine algebras / ten laws, lawful facts, replay/versioned records, local fallback counterfactuals, and uncovered-region discovery hooks; resurrects Burl/Gus/Zeb roles (design)
+- [[entities/book-strategy-player|book-strategy-player]] — amended Phase 1 build-ready strategy framework with split recognition/commitment, nine algebras / ten laws, lawful facts, replay/versioned records, pure fallback counterfactuals, and property-test checklist; resurrects Burl/Gus/Zeb roles (active)
 
 ### W42 — book validation and strategy measurement
 
