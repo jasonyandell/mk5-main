@@ -50,8 +50,6 @@ Four commits completing Stage 0: infra, PEFT fix, training run, second contact, 
 
 **Questions opened:** none.
 
----
-
 **Questions partially resolved:**
 - LoRA hyperparameters for Stage 0: 1 epoch sufficient, bf16 required, rank/LR from Unsloth recipe. Stage 1 hyperparameters still open.
 
@@ -2633,5 +2631,49 @@ contract instead of being appended as another review note.
 single-decision blind spot. It is organized as the implementation contract for
 `t42-zrf9`: framework laws and fake-strategy tests first, then fallback purity
 and recording, then the first book tactic and head-to-head measurement.
+
+**Questions opened:** none.
+
+---
+
+## [2026-05-04 | local | book-strategy-player algebra refactored]
+
+The long amended [[book-strategy-player]] design was split into a compact core
+algebra plus satellite pages for recording, implementation, and future extension
+points.
+
+**Touched pages:** [[book-strategy-player]] [[book-strategy-player-recording]] [[book-strategy-player-phase-1-build]] [[book-strategy-player-extension-points]] [[w42]] [[w42-book-validation]] [[index]] [[log]]
+
+**Added:**
+- [[book-strategy-player-recording]] now owns the Writer-side contract:
+  pure fallback proposals, replay-heavy `DecisionRecord`, conservative coverage
+  buckets, and the warning that local fallback divergence is not causal
+  attribution.
+- [[book-strategy-player-phase-1-build]] now owns the implementer checklist:
+  fake-strategy law tests, pure `Lens("ev")` fallback adapter, recording,
+  starter strategies, error policy, module layout, and head-to-head measurement.
+- [[book-strategy-player-extension-points]] now parks hierarchy, observation,
+  match memory, learned selectors, plan-success prediction, and Gus/Burl/Zeb
+  roles outside the Phase 1 algebra.
+
+**Updated:**
+- [[book-strategy-player]] now centers the single implementer equation:
+  `Env + GameState + PlanState -> Action + PlanState' + DecisionRecord`.
+  It frames BookStrategyPlayer as a pure Reader/State/Writer player over a
+  finite strategy library, per-hand plan state, lawful shared facts,
+  deterministic arbitration, and replay-pure recording.
+- The previous "nine algebras / ten laws" presentation is reduced to the
+  load-bearing contracts implementers must preserve: empty-library fallback
+  identity, unique strategy names, order independence, recognition/commit
+  separation, active-plan continuation, finite-priority arbitration, namespace
+  hermeticity, fact merge laws, bail/retire orthogonality, and recording purity.
+- [[w42]], [[w42-book-validation]], and [[index]] now route readers to the split
+  core/spec/checklist structure rather than treating one long page as the whole
+  design.
+
+**Frontier shift:** Phase 1 is now easier to implement because the main page is
+the algebra and the satellite pages are supporting contracts. Future model and
+hierarchy ideas remain preserved, but they no longer compete with the core
+framework specification.
 
 **Questions opened:** none.

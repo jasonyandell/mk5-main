@@ -90,7 +90,7 @@ Use these leaves by question shape:
 | What hidden tiles drive branch shape? | [[w42-phase2-hidden-domino-threat-attribution]], [[w42-powered-branch-atlas-v1]], [[w42-branch-atlas-scaled-v0]], [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] |
 | Which utility wins at one-step play? | [[w42-bookval-v2-utility-lens-synthesis]], [[w42-bookval-v3-utility-argmax-divergence]], [[w42-lens-v1-utility-head-to-head]] |
 | Which book claims need plans, not one-step probes? | [[w42-book-claim-synthesis-and-ai-directions]], [[book-strategy-player]] |
-| What must the planning framework obey? | [[book-strategy-player]]'s amended Phase 1 contract, nine algebras, ten laws, and property-test checklist |
+| What must the planning framework obey? | [[book-strategy-player]]'s compact algebra, plus [[book-strategy-player-recording]] and [[book-strategy-player-phase-1-build]] |
 | What data exists? | [[w42-claim-data-inventory]], [[w42-dataset-manifest]], [[w42-wandb-run-comparison-dashboard]], [[w42-wandb-series-logging-standard]] |
 
 Older claim-validation leaves remain useful as evidence, but should not be
@@ -122,11 +122,12 @@ utility contest.
 The current frontier is planning-aware validation. [[w42-book-claim-synthesis-and-ai-directions]]
 names the single-decision blind spot: many book claims are multi-step plans.
 [[book-strategy-player]] is the route for testing those claims without loading
-the entire W42 leaf pile. Its amended Phase 1 contract is now build-ready:
-fresh recognition is split from commitment, only the winning fresh strategy
-commits, shared facts are lawful wrappers, fallback dry-runs are pure, decision
-records are replayable, and the nine algebras / ten laws become the property-test
-checklist.
+the entire W42 leaf pile. Its core is now a compact algebraic contract: pure
+Reader/State/Writer decision logic, finite strategy library, per-hand
+`PlanState`, lawful facts, deterministic arbitration, and replay-pure records.
+[[book-strategy-player-recording]] carries the recording schema, and
+[[book-strategy-player-phase-1-build]] carries the fake-strategy property tests
+and starter implementation checklist.
 
 ## Related pages
 

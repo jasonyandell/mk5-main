@@ -13,7 +13,7 @@ catalog:
 - [[entities/gus|gus]] — oracle distillation, belief/value/policy heads, LAMIR, regret eval, and strategy probes (active)
 - [[entities/w42|w42]] — Winning 42 book validation, strategy detectors, claim ledger, and report-shaped research (active)
 - [[trails/w42-book-validation|w42-book-validation]] — curated route through the W42 / Winning 42 evidence pile, Lens v1, and planning-aware frontier (active)
-- [[entities/book-strategy-player|book-strategy-player]] — amended Phase 1 build-ready strategy framework: fresh recognition vs commitment, lawful facts, pure fallback recording, replayable records, and strategy-selector training route (active)
+- [[entities/book-strategy-player|book-strategy-player]] — compact algebraic Phase 1 contract for the strategy player: Reader/State/Writer core, finite strategy library, lawful facts, deterministic arbitration, and replay-pure recording (active)
 
 ## Entities
 
@@ -62,7 +62,7 @@ catalog:
 - [[entities/gus|gus]] — third sibling project; distills forge's E[Q] oracle via multi-head transformer; skips reasoning channel; 5-head LAMIR-ready (active)
 - [[entities/joint-world-tensor|joint-world-tensor]] — packed game-state representation enabling look-ahead without oracle calls; core Gus data structure (active)
 - [[entities/gen-fleet|gen-fleet]] — Vast.ai distributed corpus generation plan; 5 pre-launch fixes identified (bid=30 bias, schema v2, lazy dataset done); not yet launched (plan)
-- [[entities/book-strategy-player|book-strategy-player]] — amended Phase 1 build-ready strategy framework with split recognition/commitment, nine algebras / ten laws, lawful facts, replay/versioned records, pure fallback counterfactuals, and property-test checklist; resurrects Burl/Gus/Zeb roles (active)
+- [[entities/book-strategy-player|book-strategy-player]] — algebraic Phase 1 contract for named multi-step strategies over Lens(ev): pure Reader/State/Writer core, finite library, lawful facts, deterministic arbitration, and strict fallback identity (active)
 
 ### W42 — book validation and strategy measurement
 
@@ -77,6 +77,9 @@ catalog:
 - [[topics/k1-grading|k1-grading]] — "beat the bot it replaced": STaR keep rule, `E[Q][gemma] ≥ E[Q][bot]` (active)
 - [[topics/r1-rationalization|r1-rationalization]] — STaR failure branch: reveal the bot's action, train on the model's rationalization of it (active)
 - [[topics/expected-q-value|expected-q-value]] — E[Q]: scalar measuring position value, supplied by forge's Q-value checkpoint (active)
+- [[topics/book-strategy-player-recording|book-strategy-player-recording]] — Writer-side recording and replay contract for BookStrategyPlayer: pure fallback proposals, replay-heavy DecisionRecord, and conservative coverage buckets (active)
+- [[topics/book-strategy-player-phase-1-build|book-strategy-player-phase-1-build]] — implementer checklist for Phase 1: fake-strategy law tests, pure Lens(ev) fallback, recording, starter strategies, and head-to-head measurement (active)
+- [[topics/book-strategy-player-extension-points|book-strategy-player-extension-points]] — future directions kept outside the core algebra: hierarchy, observation, match memory, learned selectors, and Gus/Burl/Zeb roles (active)
 - [[topics/lora-unsloth|lora-unsloth]] — parameter-efficient fine-tuning; full reproducible Stage 0 recipe: ClippableLinear patch, bf16, gradient checkpointing, eval disabled, 1 epoch (active)
 - [[topics/learned-by-playing|learned-by-playing]] — key insight: Q&A drilling transfers hand-tracking but not trump membership; rules learn by playing (active)
 - [[topics/scratchpad-validation|scratchpad-validation]] — attempted structured output + fact-validation in one step; 64.5% invalid; format-bootstrap lesson; code parked for later (retired)
