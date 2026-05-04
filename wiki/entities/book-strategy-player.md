@@ -221,6 +221,229 @@ Phase 1 confirms strategies are worth measuring.
   selector deviates from hand-crafted priorities
 - End-to-end policy distillation (Model C) if Phase 2 lifts are real
 
+## Algebraic specification
+
+The framework's structure is determined by nine algebras and ten laws. Stating them
+explicitly removes most "design choice" degrees of freedom — most decisions become forced
+moves once the algebras are fixed. Property-based tests for L1-L10 should ship with
+Phase 1.
+
+### The nine algebras
+
+**A1. `Library` is a commutative idempotent monoid.**
+```
+Library    = Set Strategy
+identity   = ∅
+operation  = ∪    (set union)
+```
+Two strategies merged into one library forms a *set*, not a list. Arbitration uses `max`,
+which is commutative and idempotent — so listing the same strategy twice is equivalent to
+listing it once, and order doesn't matter. **Forced**: dedupe by `Strategy.name`.
+
+**A2. `Arbitration` is a bounded join-semilattice.**
+```
+carrier   = (Strategy, priority) ∪ {⊥}
+join (∨)  = argmax-priority    (with -∞ identity)
+laws      = associative, commutative, idempotent
+```
+The framework picks the join over all applicable (strategy, priority) pairs. Bottom ⊥
+exists (no strategies applicable → fall back). **Forced**: arbitration code is
+`applicable.fold(max_priority, ⊥)` — three lines, no branching.
+
+**A3. `PlanState` evolves under the State monad (per hand).**
+```
+HandComputation a = State PlanState a
+```
+Each decision is a pure function `(GameState, PlanState) → (Action, PlanState')`. The
+hand is a sequence threaded by `>>=`. **Forced**: PlanState is per-hand-immutable-but-
+rebound, never globally mutable — which is what lets parallel-hand simulation run
+without locks.
+
+**A4. `Recording` is the Writer monad.**
+```
+type      = WriterT [DecisionRecord] Identity
+operation = `tell` per decision; `runWriter` per hand
+```
+Records accumulate. They never read back — pure write. **Forced**: recording can never
+affect player behavior; A/B testing recording-on vs recording-off is observably identical.
+
+**A5. `Fallback` and `Library` together form the Reader monad.**
+```
+PlayerEnv = (Library, Fallback)
+type      = Reader PlayerEnv
+```
+Library + fallback are immutable per-player. **Forced**: a player object is immutable
+after construction.
+
+**A6. `Strategy` is a Σ-algebra (a record of operations on a carrier).**
+```
+Strategy : (GameState × PlanState) → ⟨5 + 1 functions⟩
+  applies_to          : (GS, PS) → 𝔹
+  priority            : (GS, PS) → ℝ
+  commit_recognition  : (GS, PS) → Δ PS
+  next_action         : (GS, PS) → (Maybe Action × Δ PS)
+  plan_done           : (GS, PS) → 𝔹
+  observe (optional)  : (Action, Seat, GS, PS) → Δ PS
+```
+Universal-algebra style: a fixed signature of operations on a common carrier. **Forced**:
+every strategy implements the same interface; framework code never inspects strategy
+internals; refactoring one strategy can't break others.
+
+**A7. `Δ PlanState` is a partial monoid where facts must be monoid-valued.**
+```
+Δ PlanState         = (Δ active_plans, Δ facts)
+Δ active_plans      = Map String (Maybe Plan)        -- None = retire
+Δ facts             = Map String MonoidValue         -- e.g. Set, Counter, Max
+fact merge          = pointwise monoid-op
+plan merge          = namespace-keyed overwrite (or delete on None)
+```
+The crucial constraint: **facts must be values in a commutative monoid** (sets union,
+counters add, max-tracked values take max). This is what makes fact accumulation order-
+independent across decisions and across parallel hands. **Forced**: facts API only
+accepts values with declared monoid laws — implementation rejects naked scalars unless
+wrapped in a monoid type.
+
+**A8. Hierarchical composition is a functor `BookStrategyPlayer → Strategy`.**
+```
+wrap : BookStrategyPlayer → Strategy
+wrap(BSP).next_action(gs, ps) = (BSP.choose_action(gs), Δ-from-sub-recording)
+```
+A sub-player wraps as a Strategy. The functor preserves structure: `wrap(BSP1 ∪ BSP2)` is
+observably equivalent to coordinating wrap(BSP1) and wrap(BSP2) at the parent. **Forced**:
+chapters can be sub-libraries; nesting depth is unbounded; the framework supports
+recursive composition without special-casing.
+
+**A9. The full player is a composed monad stack.**
+```
+PlayerM = ReaderT (Library, Fallback) (StateT PlanState (WriterT [DecisionRecord] Identity))
+```
+Reader for env, State for plan-thread, Writer for recording, no IO (Identity). **Forced**:
+the entire decision logic is a pure function from env+state to (action, state', records).
+Testable without a simulator. Replayable from records (which is L10 below).
+
+### The ten laws
+
+These are invariants the algebras force. Each is testable by property-based tests
+(Hypothesis or equivalent) and should ship with Phase 1.
+
+**L1 — Empty library identity.**
+```
+BSP(∅, fb).choose_action(gs) ≡ fb.choose_action(gs)         ∀ gs
+```
+Adding strategies STRICTLY EXTENDS behavior; never alters the fallback baseline.
+
+**L2 — Library order independence.**
+```
+BSP({s₁, s₂}, fb).choose_action(gs) ≡ BSP({s₂, s₁}, fb).choose_action(gs)
+```
+Falls out of A2 (max is commutative).
+
+**L3 — Library idempotence.**
+```
+BSP({s, s}, fb) ≡ BSP({s}, fb)
+```
+Falls out of A1 (set semantics).
+
+**L4 — Recognize-at-most-once per plan instance.**
+```
+commit_recognition(s, _, _) called ≤ 1 time per (hand, s.name) tuple
+```
+Plans are committed once and persist until retired. No re-recognition of an active plan.
+
+**L5 — Priority monotonicity for active plans.**
+```
+∀ s ∈ Library, ∀ ps : s.name ∈ ps.active_plans :
+    s.priority(gs, ps) ≥ max{ s'.priority(gs, ps) | s'.name ∉ ps.active_plans }
+```
+Following through dominates starting fresh. Convention enforced as an assertion.
+
+**L6 — Bail and Retire are orthogonal operations.**
+```
+Bail   (next_action returns None action)               : DOES NOT modify ps.active_plans[s.name]
+Retire (next_action returns None delta-value, OR plan_done returns True) : DELETES ps.active_plans[s.name]
+```
+Two semantically distinct ways for a strategy to "give up" — one preserves the chance to
+fire again, the other doesn't.
+
+**L7 — Fact merge is associative.**
+```
+merge(merge(a, b), c) ≡ merge(a, merge(b, c))
+```
+Falls out of A7 (facts are monoid-valued).
+
+**L8 — Fact merge is commutative.**
+```
+merge(a, b) ≡ merge(b, a)
+```
+Same source. Lets parallel hands accumulate facts without ordering concerns.
+
+**L9 — Strategy namespace hermeticity.**
+```
+Strategy s reads/writes only ps.active_plans[s.name] (private) and ps.facts.* (shared).
+∀ s, s' : s ≠ s' ⇒ s does not read/write ps.active_plans[s'.name]
+```
+Inter-strategy communication goes through `facts`, never through plan-state poking. This
+is the law that makes adding a strategy a *pure addition* — it CANNOT break existing
+strategies.
+
+**L10 — Recording fidelity.**
+```
+∀ hand h : Records(h) + (forge oracle + seeds) ⊨ Replay(h)
+```
+Decision records contain enough state to deterministically replay the hand. Falls out
+of A4 + the immutability of A3/A5. **Critical for training-data integrity**: the records
+ARE the training data; they must be sufficient.
+
+### The core operation
+
+```
+choose_action : (GameState, PlanState) → (Action, ΔPlanState, DecisionRecord)
+choose_action(gs, ps) =
+    let ps₁  =  retire_done(ps, library)                          -- A6 plan_done; A7 Δ_apply
+        new  =  { s ∈ library | s.applies_to(gs, ps₁) ∧ s.name ∉ ps₁.active_plans }
+        ps₂  =  ps₁ ⊕ ⊕{ s.commit_recognition(gs, ps₁) | s ∈ new } -- A7 Δ-fold
+        app  =  { s ∈ library | s.applies_to(gs, ps₂) }
+    in  case argmax-priority(app, gs, ps₂) of                     -- A2 ∨-fold
+            ⊥          → (fb.choose_action(gs), ε, Record(fallback))
+            Some(s)    → let (a, δ) = s.next_action(gs, ps₂)
+                         in  case a of
+                                Nothing  → (fb.choose_action(gs), Δ_retire(s), Record(bail, s))
+                                Just(α)  → (α,                    δ,           Record(strategy, s, α))
+```
+
+Six lines of meaningful logic. Everything else is implementation noise.
+
+### What the algebra forces in implementation
+
+A handful of decisions that look like preferences are actually forced:
+
+| design "choice" | actually forced by | what would break |
+|---|---|---|
+| Strategies stored as `dict[name → Strategy]`, not `list` | A1 + L3 | dedup gets messy with lists |
+| Arbitration = `max(priority)`, not weighted vote | A2 | weighted vote breaks commutativity (L2) |
+| Facts must be monoid-valued | A7 + L7 + L8 | merge ordering becomes load-bearing |
+| Per-hand PlanState, not global | A3 | parallel hands need locks |
+| Recording is pure-write | A4 | recording could secretly affect play |
+| Strategies hermetic in namespace | A9 + L9 | adding a strategy could break others |
+| Hierarchical sub-player wraps as Strategy | A8 | composite strategies need bespoke plumbing |
+
+### Maintenance benefits the algebra delivers
+
+1. **Property-based tests fall out for free.** L1-L10 are property tests directly. Hypothesis
+   (or equivalent) can fuzz strategies and game states and check the invariants
+   automatically. A bug in a new strategy that violates L9 (writes to another strategy's
+   namespace) gets caught before it ships.
+
+2. **Refactoring is safe by construction.** If the algebras hold, replacing the arbitration
+   implementation (e.g. swapping `max` for a learned head, per Model A in the training-
+   pipeline section) preserves L1-L4 and L7-L10 automatically. Only L5 needs re-checking
+   under a learned head.
+
+3. **Future strategies have a precise contract.** When a future strategy author (human
+   or agent) adds strategy #20, they don't need to read framework code. They need: the
+   Strategy signature (A6), the namespace rules (L9), the bail-vs-retire distinction (L6).
+   Three concepts. The rest of the system is downstream of those.
+
 ## Composition limits worth knowing
 
 Three things the framework can't do, no matter how clever the strategies:
