@@ -68,3 +68,16 @@ CLS attention. Gus provides a higher-quality, calibrated belief model.
 
 Zeb remains parked — not deleted. The `get_belief` tool wrapper in `burl/tools/zeb.py` is
 still present and re-enableable. Gus is the production path. (commit message @ d858781)
+
+## Potential role for [[book-strategy-player]] (2026-05-03)
+
+The book-strategy-player architecture (designed 2026-05-03; build pending) opens two
+candidate roles for Zeb:
+
+1. **Training-data generator.** Zeb's self-play infrastructure could supply structured
+   training data for the strategy-selector model (Model A) or end-to-end policy (Model C).
+2. **Model C target.** Zeb's policy head, retrained on strategy-labeled data, has a much
+   smaller structured output space (15-30 named strategies vs raw 7-domino choice).
+   Faster to train, more interpretable, natively produces strategy attributions.
+
+Speculative until the book-strategy framework is built and recording starts.

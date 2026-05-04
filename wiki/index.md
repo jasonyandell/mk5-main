@@ -49,6 +49,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[entities/gus|gus]] — third sibling project; distills forge's E[Q] oracle via multi-head transformer; skips reasoning channel; 5-head LAMIR-ready (active)
 - [[entities/joint-world-tensor|joint-world-tensor]] — packed game-state representation enabling look-ahead without oracle calls; core Gus data structure (active)
 - [[entities/gen-fleet|gen-fleet]] — Vast.ai distributed corpus generation plan; 5 pre-launch fixes identified (bid=30 bias, schema v2, lazy dataset done); not yet launched (plan)
+- [[entities/book-strategy-player|book-strategy-player]] — multi-step strategy framework with explicit lifecycle, namespaced plan state, free counterfactual recording for training pipeline; resurrects Burl/Gus/Zeb roles (design)
 
 ## Topics
 

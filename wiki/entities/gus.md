@@ -698,3 +698,17 @@ Burl's [[belief-trajectory]] tool uses Gus's `v3_consistency_10000g` belief adap
 providing per-domino posterior, shift-since-last, V, and CLS attention. This predates the
 formal Gus replay trail — Burl consumed an existing Gus checkpoint before Gus's own
 development was documented here. (commit message @ d858781)
+
+## Role for [[book-strategy-player]] (2026-05-03)
+
+The book-strategy-player architecture (designed 2026-05-03; build pending) gives Gus a
+natural new role: **input encoder for the strategy-selector model (Model A).** Gus turns
+partial-observability into a clean belief tensor; the strategy selector consumes that
+belief tensor + plan state + applicability mask and outputs per-strategy logits.
+
+This is what Gus was *originally designed for* — feeding decision-time models. It just
+turned out the decision-time model wasn't [[burl]] (the LLM) but a lighter strategy
+selector. Gus's `belief_head` + `V_head` + `world_encoder` are all directly useful here
+without modification.
+
+See [[book-strategy-player]] for the full pipeline architecture.

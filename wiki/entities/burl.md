@@ -489,6 +489,34 @@ Two findings from this spike worth carrying forward:
 
 A side product of the first session: base Gemma critiqued the existing tool surface unprompted, suggesting structured summaries before raw histograms, explicit strategic labels, and a "why" framing that reads as the [[topics/at-risk-points]] frame Roberson uses. First product feedback from Burl on its own tools — usable backlog item.
 
+## Candidate role for [[book-strategy-player]] (2026-05-03)
+
+The book-strategy-player architecture (designed 2026-05-03 in W42 book validation) gives
+Burl a use case it was unusually well-suited for but had not yet found:
+**strategy-selector model (Model A) over a structured action space.**
+
+The setup: encoded book strategies have human-readable names ("singleton_lead_to_void",
+"throwaway_ladder", "trump_pulling"). The action space at decision time is "which named
+strategy should fire?" rather than "which of 7 dominoes should I play?" — small (~15-30
+strategies), structured, and naturally narrative. An LLM can reason about strategy
+*rationales* in chain-of-thought, justify the pick, and commit. STaR-style training has
+clean ground truth: we record per-decision (game_state, applicable_strategies, chosen,
+hand_outcome) and Burl can learn from labeled traces or from self-rationalization on the
+ones where it disagrees with the hand-crafted priority arbitration.
+
+Why this is better than raw-action policy for Burl:
+- 15-30 strategy choices vs 7-domino × 28-trick raw action space → much smaller decision
+  surface
+- Each strategy has a one-paragraph rationale → natural fit for LLM narrative reasoning
+- Failure modes are interpretable ("Burl picked throwaway_ladder when trump_pulling would
+  have been right") rather than opaque ("Burl picked the 5-2 instead of the 4-1")
+- Recorded counterfactual (Lens(ev) action) gives free training signal for "when does
+  Burl's strategy pick beat the EV-greedy fallback?"
+
+Speculative until the book-strategy framework lands. See [[book-strategy-player]] for
+architecture; this is referenced as Model A in that page's recording → training pipeline
+section.
+
 ## Open questions at this frontier
 
 - Can Gemma 4 E2B tool-use reliably at 2B scale? (Move 3 answers cheaply.)

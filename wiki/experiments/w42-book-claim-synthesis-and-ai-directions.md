@@ -886,6 +886,48 @@ This insight is the natural Wave 5 frontier: stop testing book claims
 at the single-decision granularity for the strategy-shaped ones, start
 encoding the strategies and testing the *plan*.
 
+### The architectural payoff: strategies are not just probes, they are training data
+
+Detailed in [[book-strategy-player]]. Brief version: every decision the
+strategy-player makes is logged with `(game_state, plan_state,
+applicable_strategies, priorities, chosen_strategy, chosen_action,
+fallback_action, hand_outcome)`. The `fallback_action` is a *free
+counterfactual* — what Lens(ev) would have done at the same state — so
+each decision is naturally a paired sample. Multiplied across ~28
+decisions per hand × thousands of hands, this is a structured labeled
+dataset for training a learned strategy selector (Model A) or even an
+end-to-end policy (Model C), without any extra simulation cost.
+
+Three models become trainable from the same recorded data:
+
+- **Model A — strategy selector.** Replaces hand-crafted `priority(gs, ps)`
+  with a learned head. Same framework, learned arbitration. [[burl]]
+  becomes a candidate (small structured action space + narrative
+  reasoning is exactly Burl's shape); [[gus]] becomes the input encoder
+  (this is what Gus was designed for — feeding decision-time models).
+- **Model B — plan-success predictor.** P(plan completes) and E[points
+  if it does], per (state, strategy). Useful as input to A or as an
+  early-bail signal.
+- **Model C — end-to-end policy distillation.** Bypasses the library at
+  inference. Strategies become *training scaffolding*. Discovery
+  side-effect: clusters of fallback-invoked decisions where the trained
+  selector deviates from hand-crafted priorities are candidate new
+  strategies nobody wrote down.
+
+This is the cleanest path past the EV ceiling that the campaign has
+identified. Multi-utility heads are dead (Lens v1). Soft-cliff utilities
+are dead (disaster). Generic MCTS is expensive and doesn't directly use
+book wisdom. Lookahead-Lens is impractical (4-player branching). The
+strategy-selector path uses the book's encoded plan-shaped wisdom as a
+structured action space, trains on cheap self-play with free
+counterfactuals, and the deployed model has planning capability without
+paying MCTS's branching cost.
+
+[[book-strategy-player]] has the full architecture: Strategy protocol,
+five composition modes (state-conditioned, chaining, hierarchical,
+opponent-aware, cross-hand), DecisionRecord format, phased build plan,
+and the role-resurrection of [[burl]] / [[gus]] / [[zeb]].
+
 ## Links
 
 ### Caveats (carried forward)
