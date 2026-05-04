@@ -2439,3 +2439,17 @@ Scribe-C's Phase-3 follow-up under continued exclusive GPU.  Team-lead's "GO" me
 - A subtle inversion of the Wave 3.0 framing emerged: p_make picks the void slot (38.6%) MORE often than EV does (29.4%). EV more often picks a third action that is neither void nor preserve (37.6%). The canonical "EV→void, p_make→preserve" pattern accounts for only 5.8% (29/500) of snapshots — meaningful, but only ~14% of the total disagreement. Rung-2 design framing should be "EV/p_make systematically pick different slots" rather than "EV likes void, p_make likes preserve."
 - This wave is read-only on the ledger (architecture-decision measurement, no claim row moves).
 - Status counts unchanged.
+
+---
+
+## [2026-05-03 | local | w42 lens v1 head-to-head — ev wins decisively]
+
+**Touched pages:** [[w42-lens-v1-utility-head-to-head]] [[w42-book-claim-synthesis-and-ai-directions]] [[w42-book-validation-campaign]] [[index]] [[log]]
+**Added:** Lens v1 (`t42-4ouu`) — 1-step Q-greedy player wrapped by utility, parallel-hand simulator, round-robin {ev, p_make, cvar_10, robust_q25} × 6 pairings × 1000 hands paired-seed in 7 minutes wall on M5 Max (parallel-hand K=500, N=10 per Q-query, fp32). Outputs: `w42/lens_v1/` with `lens.py`, `parallel_match.py`, `round_robin.py`, `fp_sanity.py`, `analyze.py`, `results/round_robin_n10.csv`, `results/per_hand_margins.csv`, `results/sample_sweep.csv`, `results/fp_sanity.csv`, `results/mark_ev_pmake_sanity.csv`, `manifest.json`, `summary.json`. Wiki page `w42-lens-v1-utility-head-to-head`.
+**Verdict:** **EV WINS.** Total ordering ev > robust_q25 ≳ cvar_10 > p_make, all 6 CIs exclude zero, ev beats p_make by +5.42 pts/hand ([+4.03, +6.81]), 59.5% A win rate, 99.5% decisive. Sample-sweep at N ∈ {10, 50, 100} confirms direction is robust to N. fp16 sanity passed (≥99% argmax match all 5 utilities) but round-robin ran fp32 (MPS doesn't autocast).
+**Frontier shift:**
+- Wave 4.0's "EV is the outlier preferring third-option discards" framing is **inverted** by Lens v1: those third-option picks are point-winning, not noise. Wave 4.0 measured *who picks differently*; Lens v1 measured *who wins*. The answers point in opposite directions on the void-creation slice — the book aligns with the worst-scoring utility (p_make).
+- This kills the "build a multi-objective head because the utilities differ" thread as a research agenda. A single fixed-utility EV head is the strongest of the four tested at 1-step lookahead on this corpus. Multi-objective architecture only re-emerges if utility selection is *state-conditioned* (filed: t42-nwuu Lens v2).
+- **Production-code follow-up:** `forge.eq.generate.actions.select_actions` is essentially Lens(p_make) — it picks p_make-argmax with EV as tie-break. The current production E[Q] action selector is the WORST of the four utilities tested. Switching to ev-argmax is a one-line change predicted to lift the existing E[Q]-N=100 vs Zeb-Large win rate (currently 55.7% per `forge/zeb/OVERVIEW.md`). Filed as a separate bead.
+- The Zeb-era N=10 ≈ N=100 finding (from `forge/zeb/OVERVIEW.md` lines 622-632) empirically holds for Lens-vs-Lens matchups too. N=10 is the right operating point for utility-comparison work.
+- Promotion guard respected: no central ledger row moved.

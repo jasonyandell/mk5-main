@@ -42,6 +42,7 @@ the central ledger or the synthesis page.
 | 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; ch10 row already `supported`) |
 | 3.0 | utility-lens meta-analysis | t42-f2ur | closed — narrows p_make/EV thread; ch05-void-creation-follow is the only true objective-dependent split; high-bid pounce contradicted under all 4 utilities |
 | 4.0 | utility-argmax divergence (architecture-decision gate) | t42-hmjr | closed — **gate TRIPPED**; EV vs p_make argmax disagrees on 41.2% (CI [36.8%, 45.6%]) of ch05-follow snapshots; Wave 3.0 framing inverted (p_make picks void MORE than EV; EV is the outlier preferring third-option discards); rung-2 utility-tunable searcher justified |
+| 4.1 | Lens v1 utility head-to-head (who wins games?) | t42-4ouu | closed — **EV wins decisively**: round-robin {ev, p_make, cvar_10, robust_q25} × 6 pairings × 1000 hands paired-seed; total ordering ev > robust_q25 ≳ cvar_10 > p_make, all 6 CIs exclude zero, ev beats p_make by +5.42 pts/hand; Wave 4.0 reading inverted (EV's "third-option" picks are point-winning, not noise); production `select_actions` is Lens(p_make) — the worst utility — switching to ev-argmax is a one-line follow-up |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
@@ -171,6 +172,25 @@ emergent p_make/EV thread to one claim. **Wave 4.0 then broadened it.**
 - **Status counts unchanged** (both waves are read-only meta/measurement,
   no new probe verdicts): supported 24, context-limited 14,
   underpowered 19, not-yet-tested 4, contradicted 3.
+
+## Wave 4.1 — Lens v1 head-to-head (who wins games?)
+
+[[w42-lens-v1-utility-head-to-head]] is the cheap rung-1.5 player —
+1-step Q-greedy with utility as a parameter. Round-robin in 7 minutes
+wall.
+
+- **Total ordering: ev > robust_q25 ≳ cvar_10 > p_make**, all 6 CIs
+  exclude zero. EV beats p_make by **+5.42 pts/hand** ([+4.03, +6.81]).
+- Wave 4.0's "EV is the outlier" framing is inverted: EV's third-
+  option picks are *point-winning*, not noise. The book's void-
+  creation advice aligns with the *worst-scoring* utility (p_make) on
+  this corpus.
+- Sample-sweep at N ∈ {10, 50, 100} confirms ranking is robust to N;
+  N=10 is the right operating point (per Zeb's prior finding).
+- **Production-code follow-up:** `forge.eq.generate.actions.select_actions`
+  hardcodes p_make-argmax-with-EV-tiebreak (effectively Lens(p_make)).
+  Switching to ev-argmax is a one-line change predicted to lift the
+  E[Q]-vs-Zeb-Large win rate. Filed separately.
 
 ## Wave 4.0 — architecture-decision gate
 

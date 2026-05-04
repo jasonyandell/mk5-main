@@ -54,6 +54,30 @@ Wave 2 probes:
 
 ### Most recently closed
 
+- **Wave 4.1 / Lens v1** (`t42-4ouu`) — utility head-to-head round-
+  robin. Closed 2026-05-03. Built Lens (1-step Q-greedy player wrapped
+  by utility), reused Zeb's parallel-hand simulator pattern, ran
+  {ev, p_make, cvar_10, robust_q25} round-robin × 1000 paired-seed
+  hands × 6 pairings in 7 minutes wall. **Verdict: ev wins decisively.**
+  Total ordering ev > robust_q25 ≳ cvar_10 > p_make, all 6 CIs exclude
+  zero, ev beats p_make by +5.42 pts/hand ([+4.03, +6.81]).
+  
+  This **inverts the natural reading of Wave 4.0**: EV's "third-
+  option discards" turn out to be point-winning, not noise. The book
+  aligns with the worst utility (p_make) on this corpus. Two open
+  interpretations: (a) book is locally right but globally suboptimal;
+  (b) p_make is the wrong meta-objective for bid=30 contracts where
+  p_make is near-saturated and tie-breaking arbitrarily.
+  
+  Sample-sweep at N ∈ {10, 50, 100} confirms N=10 is the right
+  operating point. fp16 sanity passed (≥99% argmax match) but round-
+  robin ran fp32 (MPS doesn't autocast inside model forward).
+  
+  **Production-code action item:** `forge.eq.generate.actions.select_actions`
+  is essentially Lens(p_make) — the worst utility tested. Switching
+  to ev-argmax is a one-line change predicted to improve E[Q] vs
+  Zeb-Large win rate. Filed as a separate follow-up bead.
+
 - **Wave 4.0** (`t42-hmjr`) — utility-argmax divergence (architecture-
   decision gate). Closed 2026-05-03. Computed argmax-under-utility for
   ALL legal actions on the 500 ch05-void-creation-follow snapshots.
@@ -127,15 +151,22 @@ Three iterations of this thread:
    argmax-action level on those same 500 snapshots, EV disagrees with
    p_make / mark_ev / CVaR_10 on **41-44%** of decisions. The split is
    real and substantial. Direction: p_make / CVaR / robust_q25 pick
-   void *more often* than EV (the book's advice aligns with risk-aware
-   utilities); EV is the outlier preferring third-option discards.
+   void *more often* than EV; EV is the outlier preferring third-
+   option discards.
+4. **Wave 4.1 (Lens v1) inverted again:** when the four utilities
+   actually play games head-to-head, **EV wins decisively** (every
+   pairing's CI excludes zero; ev beats p_make by +5.42 pts/hand).
+   EV's "third-option discards" are not noise — they win games. The
+   book aligns with the *worst-scoring* utility (p_make) on this
+   corpus.
 
-Conclusion: **rung-2 utility-tunable searcher is justified by validated
-evidence.** Not on "claim verdict differs by utility" (that was wrong)
-but on "argmax action differs by utility ~40% on a corpus where the
-book's advice has been validated." The original framing missed this
-because paired contrasts measure magnitudes on specific action pairs,
-not what each utility argmax picks across all legal actions.
+Conclusion: **the multi-utility architecture is real (utilities pick
+different actions ~40% of the time)** but **a single-objective EV head
+is the strongest fixed-utility choice on this corpus by a wide margin.**
+Multi-objective architecture would only beat fixed-EV if utility
+selection is *state-conditioned* — which is exactly what t42-nwuu
+(Lens v2 future) tests. The book's chapter structure is plausibly an
+implicit state→utility lookup table that no fixed utility captures.
 
 Open architectural questions for the user:
 - Build rung-2 (utility-tunable searcher over forge engine) at all?

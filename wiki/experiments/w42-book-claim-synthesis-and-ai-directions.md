@@ -688,6 +688,111 @@ tripped. Whether to actually build rung-2 is now a separate
 prioritization decision (held for orchestrator/user review), but the
 evidence base is in place.
 
+## Lens v1 — Head-to-Head Game Outcomes (Who Actually Wins?)
+
+[[w42-lens-v1-utility-head-to-head]] (`t42-4ouu`) is the cheap
+1-step-greedy player that lets us play actual games with each utility
+and count points. The build was much smaller than the rung-2 MCTS we
+were originally scoping (~150 LOC + reuse of the Zeb eq-vs-eq batched
+path), and the round-robin completed in 7 minutes wall on M5 Max
+(parallel-hand K=500, N=10 per Q-query, fp32 — fp16 sanity passed but
+MPS doesn't autocast inside the model forward).
+
+Round-robin: {ev, p_make, cvar_10, robust_q25} × 6 pairings × 1000
+hands paired-seed (mark_ev excluded — affine-identical to p_make at
+bid=30; sanity matchup confirmed). Bid forced to 30 to stay aligned
+with the Wave 4.0 corpus.
+
+| Team A | Team B | mean margin / hand | 95% CI | A win rate |
+|---|---|---:|---|---:|
+| **ev** | p_make | **+5.42** | [+4.03, +6.81] | 59.5% |
+| **ev** | cvar_10 | **+3.98** | [+2.55, +5.45] | 55.2% |
+| **ev** | robust_q25 | **+2.49** | [+1.09, +3.98] | 56.2% |
+| p_make | cvar_10 | −1.91 | [−3.35, −0.45] | 44.3% |
+| p_make | robust_q25 | −2.97 | [−4.52, −1.51] | 44.3% |
+| cvar_10 | robust_q25 | −1.71 | [−3.15, −0.27] | 47.4% |
+
+**Every CI excludes zero. Total ordering: ev > robust_q25 ≳ cvar_10
+> p_make.** The Wave 3.0 paired-contrast +0.77 EV gain on void-vs-
+preserve translates into a +5.42 pts/hand head-to-head EV advantage at
+the *full game* level — about 7× larger in normalized magnitude.
+
+### The inversion that matters
+
+This **inverts the natural reading of Wave 4.0**. Wave 4.0 said: "the
+book + p_make / CVaR / robust_q25 cluster on void; EV is the outlier
+preferring third-option discards." Lens v1 says: **EV's third-option
+discards are not noise — they win games.** Every risk-aware utility
+loses to mean-EV head-to-head, on every paired comparison, with CIs
+that exclude zero.
+
+The book aligns with the *worst-scoring* utility on this corpus
+(p_make, −5.42 vs ev) on the specific scenario where Wave 3.0 / Wave
+4.0 measured. Two interpretations both consistent with the data:
+
+1. **The book's void-creation advice is locally correct but globally
+   suboptimal in EV terms** — the action it endorses is +0.77 EV vs
+   the named alternative (Wave 3.0), but EV-greedy finds an action
+   that's even better than both, ~5 pts/hand cumulatively across a
+   game.
+2. **p_make-greedy plays globally suboptimally because it's the wrong
+   meta-objective for this corpus** — bid=30 contracts are
+   structurally ~always-make, so optimizing for "did I make it?"
+   collapses to nearly indifferent action selection over a wide range
+   of legal plays. Optimizing for mean score (EV) breaks the tie in a
+   point-rewarding direction.
+
+The state-conditioned utility hypothesis ([[w42|t42-nwuu]] filed
+2026-05-03) becomes more interesting under this finding: p_make may
+not be globally worse, just worse on the bid=30 setter-defense corpus
+that dominates these games. The book may encode state-dependent
+utility selection that no single fixed utility captures — ev wins on
+average, but a state-conditioned policy that switches utilities by
+game state could in principle beat fixed-ev.
+
+### Sample-sweep confirmation (N=10 is the right operating point)
+
+ev vs p_make at N ∈ {10, 50, 100}, 250 hands each: margins +6.18,
++4.54, +3.13 — all CIs exclude zero, ranking preserved. Magnitude
+drops with N (more sample noise at low N inflates margins) but
+direction is robust. **N=10 is the right default for head-to-head
+ranking work.** This empirically extends the Zeb-era N=10 ≈ N=100
+finding from `forge/zeb/OVERVIEW.md` to Lens-vs-Lens matchups, where
+both sides are Q-driven and noise might correlate.
+
+### Production-code follow-up
+
+Non-obvious: **`forge.eq.generate.actions.select_actions` is essentially
+Lens(p_make)** (it picks p_make-argmax with EV as tie-break). The
+production E[Q] action selector is therefore using the **worst** of
+the four utilities tested by Lens v1. Switching it to ev-argmax is a
+one-line change. Hypothesis: this would lift the existing E[Q]-N=100
+vs Zeb-Large win rate (currently 55.7%, see `forge/zeb/OVERVIEW.md`)
+toward whatever the +5.42 pts/hand head-to-head advantage translates
+to in Bradley-Terry Elo. Filed as a separate follow-up bead so it
+doesn't get lost.
+
+### What rung-2 (MCTS over forge) would now answer
+
+Lens v1 already produced the headline answer ("ev wins"), so rung-2
+moves from "is utility-conditioning worth building?" to a more
+focused question: **does deeper search amplify or attenuate the
+EV-over-p_make gap?** Plausible answers:
+
+- **Amplify:** EV's "third-option" picks are good *because* they set
+  up better future-tree positions; deeper search would find this
+  endogenously and the gap widens.
+- **Attenuate:** EV's wins on this corpus are because forge's
+  one-step Q already captures most of the relevant information;
+  deeper search converges all utilities toward minimax and the gap
+  shrinks.
+
+Either way is a finding. Worth building only if there's appetite for
+the next layer of evidence — Lens v1 already answered the build-or-
+kill question for the multi-utility *architecture* thread.
+
+## Links
+
 ### Caveats (carried forward)
 
 - All 500 snapshots are bid=30 (mm=1, mark_ev ≡ p_make by construction).

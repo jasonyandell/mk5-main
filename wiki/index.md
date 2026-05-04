@@ -209,6 +209,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/w42-bookval-v1-wave1-independent-audit|w42-bookval-v1-wave1-independent-audit]] — book validation v1 wave 1: independent rebuild of the 64-row audit; baseline holds, two Ch 10 rows promoted to context-limited (active)
 - [[experiments/w42-bookval-v2-utility-lens-synthesis|w42-bookval-v2-utility-lens-synthesis]] — wave 3.0: 5-utility re-analysis of 7 closed wave-2 probes; ch05-void-creation-follow EV-supported but p_make spans zero (active)
 - [[experiments/w42-bookval-v3-utility-argmax-divergence|w42-bookval-v3-utility-argmax-divergence]] — wave 4.0: argmax-action-level disagreement; EV vs p_make 41.2% (CI 36.8–45.6); recommend rung-2 utility-tunable searcher (closed-on-completion)
+- [[experiments/w42-lens-v1-utility-head-to-head|w42-lens-v1-utility-head-to-head]] — wave 4.1: Lens 1-step Q-greedy round-robin; EV wins decisively (ev > robust_q25 ≳ cvar_10 > p_make, all CIs exclude zero, ev beats p_make by +5.42 pts/hand) (closed-on-completion)
 - [[experiments/winning42-ch01-in-a-nutshell|winning42-ch01-in-a-nutshell]] — foundational rule/state-accounting detectors from Winning 42 Chapter 1 (active)
 - [[experiments/winning42-ch02-bidding|winning42-ch02-bidding]] — bidding-as-risk-budget detectors from Winning 42 Chapter 2 (active)
 - [[experiments/winning42-ch03-bidder-play|winning42-ch03-bidder-play]] — bidder sequencing detectors from Winning 42 Chapter 3 (active)

@@ -1,0 +1,8 @@
+utility,n_states_compared,n_argmax_match,match_rate,n_samples
+ev,100,99,0.99,10
+p_make,100,100,1.0,10
+mark_ev,100,100,1.0,10
+cvar_10,100,99,0.99,10
+robust_q25,100,100,1.0,10
+
+# verdict: fp16_safe
