@@ -791,6 +791,101 @@ Either way is a finding. Worth building only if there's appetite for
 the next layer of evidence — Lens v1 already answered the build-or-
 kill question for the multi-utility *architecture* thread.
 
+### Disaster utility — confirms EV is the ceiling for fixed pointwise utilities
+
+A user-suggested utility was added and tested: `disaster` clips every
+sub-threshold sample's Q value to −42, then takes the expectation
+under the PDF (so it matches EV above threshold and floors everything
+below). Head-to-head 1000 paired-seed hands, N=10, fp32:
+
+- disaster vs **ev**: −1.55 pts/hand, CI [−3.07, +0.05] (just barely
+  loses; CI grazes zero)
+- disaster vs **p_make**: **+2.74**, CI [+1.24, +4.37] (clearly wins)
+- disaster vs **robust_q25**: +0.32, CI [−1.13, +1.81] (tied)
+
+Implied ordering: `ev ≳ disaster ≳ robust_q25 ≳ cvar_10 > p_make`.
+**Disaster keeps the part of EV that matters most (continuous reward
+above threshold) and only loses the damage-control information on
+losing hands. Cost vs EV: ~1.5 pts/hand.** No fixed *pointwise* utility
+distinguishably beats EV at one-step lookahead — EV is by construction
+the maximum-information summary of the per-action outcome distribution,
+and any other pointwise utility either throws information away (hard
+cliff, p_make) or imposes a fixed reward shape that EV can already
+represent (soft cliff = EV minus a bias term on a region; same argmax
+modulo a constant). Artifacts: `w42/lens_v1/results/disaster_head_to_head.csv`,
+`w42/lens_v1/run_disaster.py`. Detail: [[w42-lens-v1-utility-head-to-head]].
+
+## Methodology insight — the single-decision blind spot
+
+The deepest finding of this campaign is not in any single probe; it
+is a property of the campaign's measurement shape itself.
+
+**Most book claims are multi-step plans, but most probes are single-
+decision contrasts.** "Lead a singleton on trick 1 to set up a void
+by trick 3." "Hold trump 4 until trick 5 to catch the queen." "84-
+throwaway-ladder across the last 3 tricks." "Reentry preservation
+across the next four tricks." "Pounce-window timing." These are
+sequences. The decision-quality of each individual move within a
+plan is often *worse* than the locally-greedy alternative — that is
+the whole point of a setup move. The plan pays off downstream.
+
+Single-decision EV (and Lens(EV) by extension) literally cannot see
+this. EV at one decision asks "given everyone plays default future
+moves, what is the average outcome of action X?" The "default future
+moves" inside the forge oracle do not include the bidder's own plan.
+So EV evaluates each move as if no one (including itself) is plotting
+two tricks ahead.
+
+This reframes a lot of campaign findings retroactively:
+
+- **Wave 4.0's 41% EV vs p_make argmax disagreement on void-creation-
+  follow** isn't "EV picks weird things." It might be "EV picks the
+  locally-best move; the book picks the move that *sets up the next
+  two tricks*; one-step Q can't tell the difference between those
+  because the rollout assumes default future play by both sides."
+- **The 19 underpowered + 14 context-limited claims in the ledger**
+  are mostly multi-step strategy claims tested at single-decision
+  granularity. They may be stuck not because the book is wrong but
+  because the methodology is too zoomed-in for the claims' real shape.
+- **Lens v1's "ev wins by +5.42 vs p_make"** measured EV's *individual
+  moves* against p_make's *individual moves*. Of course EV won that
+  contest — it's by construction the best per-decision thing. The book
+  was not in that contest at all; the book plays plans, not moves.
+
+So "EV wins" is a finding bounded by the test's abstraction level. To
+fairly test the book's actual strength, **the campaign needs planning-
+aware probes** (probes whose contrast unit is a multi-decision
+sequence, not a single action). Three architectures could supply this:
+
+1. **MCTS over forge** — generic K-deep planner, finds any sequence
+   the simulator supports. Heavyweight build (~1-2 days). Answers:
+   does any planning beat one-step EV? Almost certainly yes; the
+   interesting number is by how much.
+2. **Lookahead-Lens** — cheap K=2 or K=3 step lookahead in the same
+   Lens framework. ~300 LOC, half a day. Captures most of the planning
+   benefit if book plans are short (which most are: 2-3 tricks).
+3. **Book-strategy player** — for each named book strategy, hand-code
+   the multi-step policy and play it head-to-head against EV-greedy.
+   Cost: low per strategy (~1-2h each), but you have to know which
+   strategies to encode. Tests "is THIS specific book strategy
+   point-positive?" — claim-by-claim, the actual question the campaign
+   has been trying to answer.
+
+**For the book validation campaign specifically, #3 is the most directly
+useful.** #1 or #2 would prove planning generically beats EV (almost
+certainly true) but would not tell us *which book claims* are right.
+#3 tests the book directly. The deferred Wave 2.F (84-throwaway,
+[[w42|t42-wikw]]) is exactly this shape and now has a sharper
+motivation than when it was deferred — it's the campaign's first
+concrete multi-step strategy to encode and test.
+
+For broader model-design questions, #2 is the cheaper general-purpose
+tool.
+
+This insight is the natural Wave 5 frontier: stop testing book claims
+at the single-decision granularity for the strategy-shaped ones, start
+encoding the strategies and testing the *plan*.
+
 ## Links
 
 ### Caveats (carried forward)

@@ -190,7 +190,32 @@ wall.
 - **Production-code follow-up:** `forge.eq.generate.actions.select_actions`
   hardcodes p_make-argmax-with-EV-tiebreak (effectively Lens(p_make)).
   Switching to ev-argmax is a one-line change predicted to lift the
-  E[Q]-vs-Zeb-Large win rate. Filed separately.
+  E[Q]-vs-Zeb-Large win rate. Filed as `t42-10yj`.
+- **`disaster` follow-up exploration**: a clipped EV that floors all
+  sub-threshold samples to Q=−42. Beats p_make by +2.74; loses to ev
+  by ~1.5; ties robust_q25. Confirms EV is the ceiling for fixed
+  pointwise utilities at one-step lookahead.
+
+## Methodology insight — single-decision blind spot
+
+The campaign's deepest finding is structural, not from any single
+probe: **most book claims are multi-step plans, but most probes are
+single-decision contrasts.** Single-decision EV can be the locally-
+best move yet still lose to a planner that sets up future tricks
+(the book's bread and butter). This means the 19 underpowered + 14
+context-limited claims may be stuck at the wrong abstraction level,
+not because the book is wrong. The "EV wins" Lens v1 result is
+bounded by the test's abstraction level — Lens v1 measured EV's
+individual moves against p_make's individual moves; the book was
+never in that contest because the book plays plans.
+
+Wave 5 frontier: planning-aware probes. Three architectures —
+MCTS over forge, Lookahead-Lens (K=2-3 step), or book-strategy player
+(hand-coded multi-step policies). For the book validation use case,
+the third is most direct (tests specific claims rather than "is
+planning generically good?"); for broader model-design questions,
+the second is the cheap general-purpose tool. Detail in
+[[w42-book-claim-synthesis-and-ai-directions#methodology-insight-the-single-decision-blind-spot]].
 
 ## Wave 4.0 — architecture-decision gate
 

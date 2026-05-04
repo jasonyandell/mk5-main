@@ -54,6 +54,17 @@ Wave 2 probes:
 
 ### Most recently closed
 
+- **Lens v1 follow-up: `disaster` utility** (no bead — inline
+  exploration). Added a clipped-EV utility where any sub-threshold Q
+  sample is floored to −42. Head-to-head 1000 paired-seed hands:
+  disaster beats p_make by +2.74 (CI excludes zero); loses to ev by
+  ~1.5 (CI grazes zero); ties robust_q25. Confirms EV is the ceiling
+  for fixed pointwise utilities — to beat EV at one-step lookahead
+  you need information EV doesn't have, which means planning, not a
+  different summary statistic. Artifacts:
+  `w42/lens_v1/results/disaster_head_to_head.csv`,
+  `w42/lens_v1/run_disaster.py`. Wiki section: [[w42-lens-v1-utility-head-to-head]] follow-up.
+
 - **Wave 4.1 / Lens v1** (`t42-4ouu`) — utility head-to-head round-
   robin. Closed 2026-05-03. Built Lens (1-step Q-greedy player wrapped
   by utility), reused Zeb's parallel-hand simulator pattern, ran
@@ -185,21 +196,36 @@ Open architectural questions for the user:
   otherwise it's a one-off claim probe.
 - **Detector hygiene beads** (`t42-v0m5`, `t42-2yb5`, `t42-btpg`):
   could roll into a single Wave 2.X cleanup pass when Wave 3.0 lands.
-- **Rung-2 build decision**: gate tripped by Wave 4.0. Whether to
-  build, what to call it, and what scope are the live open questions.
-  Per user discussion: skipping the new model entirely would leave
-  measurement against EV oracle n=10 only, which is suboptimal — but
-  that's what Wave 4.0 just did with full Q-distribution comparison.
-  So rung-2 (a searcher) is the bridge that lets us test whether
-  utility-conditioned policies hold up at search-depth, before
-  committing to rung-3 (a learned net).
-- **Wave 4 follow-on candidates** (rung-2 design dependent):
-  - Replicate Wave 4.0 on a 10K mixed-corpus snapshot pool to test
-    whether the 41% disagreement holds at scale and across positions
-    (currently bid=30 setter-only).
-  - Wave 2.F (84-throwaway, t42-wikw): test mark_ev divergence at
-    bid=84 where mm=2 and the affine identity breaks. Design pass
-    already on file.
+- **Rung-2 / planning architecture decision (NEW framing post-Lens v1
+  + methodology insight):** Lens v1 closed the multi-objective-
+  architecture thread (EV is the ceiling for fixed pointwise
+  utilities at one-step). The live next question is no longer "which
+  utility?" but **"how do we test the book's actual strength, which
+  lives in multi-step plans?"** Three candidate architectures, in
+  ascending cost:
+  - **Book-strategy player (Form 3, recommended for the campaign):**
+    hand-code each named book strategy as a multi-step policy; play
+    head-to-head against EV-greedy. Tests specific claims claim-by-
+    claim. ~1-2h per strategy. Wave 2.F (`t42-wikw`, 84-throwaway)
+    is the natural first instance — already designed, just needed
+    sharper motivation, which the methodology insight provides.
+  - **Lookahead-Lens (Form 2):** K=2 or K=3 step lookahead in the
+    Lens framework. ~300 LOC, half a day. General-purpose planning
+    tool for any utility. Doesn't directly test specific book
+    claims but answers "does planning generically beat one-step EV?"
+  - **MCTS over forge (Form 1):** generic K-deep planner. Heavy
+    build (~1-2 days). Strongest planner; rung-2 in the original
+    naming. Worth building if Lookahead-Lens shows planning helps
+    materially and we want depth.
+- **Wave 5 frontier:** planning-aware probes for strategy-shaped
+  claims; single-decision probes only for the genuinely-single-
+  decision ones. Many of the 19 underpowered + 14 context-limited
+  ledger rows may be testable at this new abstraction level.
+- **Production-code follow-up (`t42-10yj`):** flip
+  `forge.eq.generate.actions.select_actions` from p_make-argmax to
+  ev-argmax. One-line change, predicted ~+30-40 BT Elo lift vs Zeb-
+  Large baseline. Independent of planning work; can be done
+  whenever.
 - **Wave 3 (auction policy + opponent population)**: deferred from
   earlier sessions; multiple Wave 2 probes flagged that real auction
   strategy testing needs a bid-policy simulator. Wave 2.G's
