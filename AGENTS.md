@@ -70,7 +70,9 @@ bd close bd-42 --reason "Completed" --json
 4. **Discover new work?** Create linked issue:
    - `bd create "Found bug" -p 1 --deps discovered-from:<parent-id>`
 5. **Complete**: `bd close <id> --reason "Done"`
-6. **Commit together**: Always commit the `.beads/issues.jsonl` file together with the code changes so issue state stays in sync with code state
+6. **Sync beads backup**: Run `bd backup sync` before ending the session. This
+   repo uses embedded Dolt plus DoltHub backup, not git-tracked JSONL, for issue
+   durability.
 
 ### Context Hygiene for AI Agents
 
@@ -84,15 +86,24 @@ conversation context:
   for issue archaeology.
 - Use targeted commands such as `bd show <id> --json`, `bd create`, `bd update`,
   and `bd close`, then summarize the result in prose.
-- Never paste `.beads/issues.jsonl` diffs into the conversation. Git is
-  configured to suppress textual diffs for that export; respect that boundary.
+- Never paste `.beads/issues.jsonl` diffs into the conversation. In this repo it
+  is intentionally gitignored and local-only; the embedded Dolt database plus
+  `bd backup sync` is the source of truth for issue durability.
 
 ### Auto-Sync
 
-bd automatically syncs with git:
-- Exports to `.beads/issues.jsonl` after changes (5s debounce)
-- Imports from JSONL when newer (e.g., after `git pull`)
-- No manual export/import needed!
+This repo uses embedded Dolt for beads, with DoltHub backup configured in
+`.beads/README.md`.
+
+- `bd` writes to `.beads/embeddeddolt/` locally.
+- `.beads/issues.jsonl` is ignored and should not be staged.
+- Use `bd backup sync` to push bead state to the configured DoltHub backup.
+- Use `bd backup status` to inspect the last backup.
+- `bd dolt push` is only meaningful if `bd dolt remote list` shows a configured
+  Dolt remote. In this repo it normally reports "No remotes configured"; that is
+  not a failure if `bd backup sync` succeeds.
+- The tracked pre-push hook in `.beads/hooks/pre-push` runs `bd backup sync`
+  automatically when `core.hooksPath` points at `.beads/hooks`.
 
 ### MCP Server (Recommended)
 
@@ -199,7 +210,7 @@ bd close <id>         # Complete work
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd dolt push
+   bd backup sync
    git push
    git status  # MUST show "up to date with origin"
    ```

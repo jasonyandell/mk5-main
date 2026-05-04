@@ -17,6 +17,7 @@ interactions.jsonl
 
 # Push state (runtime, per-machine)
 push-state.json
+dolt-backup-state.json
 
 # Lock files (various runtime locks)
 *.lock

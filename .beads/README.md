@@ -26,8 +26,8 @@ bd show <issue-id>
 bd update <issue-id> --claim
 bd update <issue-id> --status done
 
-# Sync with Dolt remote
-bd dolt push
+# Sync this repo's configured DoltHub backup
+bd backup sync
 ```
 
 ### Working with Issues
@@ -85,6 +85,11 @@ Issues are backed up to DoltHub (`jasonyandell/t42-beads`, public, free):
 - Auto-backup runs every 15 min on issue writes (`backup.enabled=true` in config.yaml).
 - Manual sync: `bd backup sync`
 - Status: `bd backup status`
+- `bd dolt push` is for Dolt remotes shown by `bd dolt remote list`. This repo
+  normally has no Dolt remotes; it uses the backup destination above instead.
+- `.beads/issues.jsonl` is local/export-only and intentionally gitignored.
+- The tracked pre-push hook at `.beads/hooks/pre-push` runs `bd backup sync`
+  automatically when the checkout has `git config core.hooksPath .beads/hooks`.
 
 ### Disaster recovery
 

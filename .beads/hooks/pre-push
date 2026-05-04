@@ -22,3 +22,15 @@ if command -v bd >/dev/null 2>&1; then
   if [ $_bd_exit -ne 0 ]; then exit $_bd_exit; fi
 fi
 # --- END BEADS INTEGRATION v1.0.3 ---
+
+# Repo-local beads backup: this checkout uses embedded Dolt plus the configured
+# DoltHub backup destination instead of `bd dolt push`.
+if command -v bd >/dev/null 2>&1; then
+  echo "beads: syncing configured backup before git push"
+  bd backup sync
+  _bd_backup_exit=$?
+  if [ $_bd_backup_exit -ne 0 ]; then
+    echo >&2 "beads: backup sync failed; aborting git push"
+    exit $_bd_backup_exit
+  fi
+fi
