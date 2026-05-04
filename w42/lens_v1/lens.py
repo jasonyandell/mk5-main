@@ -28,7 +28,7 @@ from torch import Tensor
 from forge.eq.generate.actions import contract_threshold_bins, EQ_BIN_COUNT
 
 
-UTILITIES = ("ev", "p_make", "mark_ev", "cvar_10", "robust_q25")
+UTILITIES = ("ev", "p_make", "mark_ev", "cvar_10", "robust_q25", "disaster")
 
 
 def _q_values_tensor(device) -> Tensor:
@@ -100,6 +100,27 @@ def utility_scores(
         empty = (wsum <= 1e-12)
         cvar = torch.where(empty, first_q, cvar_w).squeeze(2)
         return cvar.float()
+
+    if utility == "disaster":
+        # "Anything below the make threshold is a disaster, treat it as Q=-42."
+        # Per-bin Q values; for bins below the seat's make threshold, replace
+        # the Q value with -42 BEFORE taking the expectation under the pdf.
+        # Above-threshold bins keep their continuous Q value (so we still
+        # distinguish "made by 1" from "made by 12"). The result is a clipped
+        # EV that overweights the worst case.
+        is_offense = ((current_players % 2) == (bidder % 2))  # [n]
+        offense_bins, defense_bins = contract_threshold_bins(
+            bid_values, n_games=n_games, device=device,
+        )
+        threshold_bin = torch.where(is_offense, offense_bins, defense_bins)  # [n]
+        bins = torch.arange(EQ_BIN_COUNT, device=device).view(1, 1, EQ_BIN_COUNT)  # [1,1,85]
+        # broadcast threshold to [n, 1, 1] so we can compare
+        above_thresh = (bins >= threshold_bin.view(n_games, 1, 1))  # [n,1,85]
+        qvals = torch.arange(-42, 43, dtype=torch.float32, device=device).view(1, 1, EQ_BIN_COUNT)
+        # For above-threshold bins, use the bin's Q value; below, use -42.
+        clipped_q = torch.where(above_thresh, qvals, torch.full_like(qvals, -42.0))
+        # Expectation under pdf, broadcasting across the 7 action slots
+        return (e_q_pdf * clipped_q).sum(dim=2).float()
 
     if utility == "robust_q25":
         # smallest Q with cum >= 0.25 -> argmax over (cum >= 0.25) returns

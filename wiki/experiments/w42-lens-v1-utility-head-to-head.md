@@ -142,6 +142,28 @@ A non-obvious finding: **`forge.eq.generate.actions.select_actions` is essential
 
 ---
 
+## Follow-up exploration: `disaster` utility
+
+User question: "what if we treat any set outcome as equally bad (Q=−42) instead of distinguishing 'set by 5' from 'set by 25'? Why would that be a bad idea?"
+
+A new utility `disaster` was added to `lens.py` (UTILITIES tuple) implementing exactly that: for each Q-bin below the seat's make threshold, replace the bin's Q value with −42; bins at/above threshold keep their continuous Q; take expectation under the PDF. So `disaster` matches EV above threshold and floors everything below threshold to the worst-case value.
+
+Head-to-head (1000 paired-seed hands, N=10, fp32, MPS):
+
+| matchup | mean margin | 95% CI | excludes zero |
+|---|---:|:---|:---:|
+| disaster vs **ev** | −1.55 | [−3.07, +0.05] | barely no (CI grazes zero) |
+| disaster vs **p_make** | **+2.74** | [+1.24, +4.37] | yes |
+| disaster vs **robust_q25** | +0.32 | [−1.13, +1.81] | no (tied) |
+
+**Implied ordering with disaster inserted:** `ev ≳ disaster ≳ robust_q25 ≳ cvar_10 > p_make`. Disaster lands between EV and the risk-aware cluster.
+
+**Interpretation:** disaster keeps the part of EV that matters most (continuous reward above threshold, which beats p_make's binary tie-breaking by +2.74 pts/hand) but loses the part of EV that matters slightly less (damage control on losing hands — distinguishing "set by 5" from "set by 25"). Net cost vs EV: ~1.5 pts/hand at n=1000, statistical separation just outside 95% confidence.
+
+This is consistent with the earlier finding that EV's strength comes from using full Q-distribution information; throwing away one tail of the distribution costs only modestly because the above-threshold tail is doing most of the work. **Disaster is "not a bad idea" — it just doesn't get to use the damage-control information that EV uses.**
+
+Artifacts: `w42/lens_v1/results/disaster_head_to_head.csv`, `w42/lens_v1/run_disaster.py`. Sanity test included in `run_disaster.py` confirms the utility correctly clips below-threshold bins (synthetic-pdf check).
+
 ## Caveats
 
 - **1-step lookahead only.** Lens is greedy — no search tree, no opponent modeling beyond what's already inside the forge oracle's world-rollout assumption.
