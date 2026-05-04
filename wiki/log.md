@@ -50,6 +50,8 @@ Four commits completing Stage 0: infra, PEFT fix, training run, second contact, 
 
 **Questions opened:** none.
 
+---
+
 **Questions partially resolved:**
 - LoRA hyperparameters for Stage 0: 1 epoch sufficient, bf16 required, rank/LR from Unsloth recipe. Stage 1 hyperparameters still open.
 
@@ -2558,5 +2560,44 @@ the wiki algebra.
 is still the algebra-preserving framework plus measurement instrument; uncovered
 region mining, context wrappers, and richer nested libraries are recorded as
 future exploration surfaces rather than detailed near-term plan.
+
+**Questions opened:** none.
+
+---
+
+## [2026-05-04 | local | book-strategy-player commitment semantics refined]
+
+Second design refinement for [[book-strategy-player]] before implementing `t42-zrf9`.
+External review exposed where the previous algebra still conflated recognition,
+commitment, active execution, local fallback proposals, and causal attribution.
+
+**Touched pages:** [[book-strategy-player]] [[index]] [[log]]
+
+**Updated:**
+- [[book-strategy-player]] now splits fresh recognition from active-plan execution.
+  Fresh strategies may propose `commit_recognition` deltas, but only the arbitration
+  winner's recognition delta is committed to `active_plans`.
+- The Strategy protocol now uses `recognizes` instead of `applies_to`; active plans are
+  arbitration candidates because they are already committed, not because they newly
+  recognize the current state.
+- Shared `facts` are explicitly lawful `FactValue` wrappers. Scalar-looking phase,
+  target, and context data belong in private plan state unless wrapped in a commutative
+  monoid value with canonical conflict behavior.
+- `fallback_action` is now a pure local counterfactual proposal, not an exact causal
+  effect. Exact contribution requires paired-seed replay or value-model estimation.
+- Hierarchical wrappers are weakened from a broad functor-equivalence claim to explicit
+  wrapper semantics: expose parent priority, namespace by `strategy_path`, return `None`
+  when no inner strategy applies unless configured as a terminal fallback, and reject
+  cycles.
+- L3, L5, L10, the core operation, and the Phase 1 build order now include duplicate-name
+  rejection, non-NaN priorities, illegal-action handling, replay/version fingerprints,
+  lossless game-state snapshots, pure fallback dry-runs, and framework-contract tests
+  before W42 strategy logic.
+
+**Frontier shift:** `t42-zrf9` remains the right bead, but implementation should start
+with the framework contract and fake-strategy invariant tests before encoding the first
+book tactic. The wiki contract supersedes older bead wording that used `applies_to`,
+committed every fresh recognizer, or described the logged fallback proposal as exact
+strategy contribution.
 
 **Questions opened:** none.
