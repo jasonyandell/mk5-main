@@ -135,12 +135,14 @@ def test_lmstudio_chat_launch_journals_request_and_response(client, monkeypatch)
 
     captured: dict = {}
 
-    def fake_lmstudio_chat(config, payload):  # noqa: ARG001
+    def fake_lmstudio_act(config, payload, tools, *, ctx):  # noqa: ARG001
         captured.update(payload)
+        captured["tool_names"] = [tool.name for tool in tools]
         return {
-            "model_instance_id": payload["model"],
-            "output": [{"type": "message", "content": "play the 2-1"}],
-            "response_id": "resp_unit_test",
+            "api": "lmstudio-python.act",
+            "run_id": "act_unit_test",
+            "output_text": "play the 2-1",
+            "tool_calls": [],
             "stats": {
                 "input_tokens": 42,
                 "total_output_tokens": 7,
@@ -149,7 +151,12 @@ def test_lmstudio_chat_launch_journals_request_and_response(client, monkeypatch)
             },
         }
 
-    monkeypatch.setattr(server_app, "lmstudio_chat", fake_lmstudio_chat)
+    monkeypatch.setattr(server_app, "lmstudio_act", fake_lmstudio_act)
+    monkeypatch.setattr(
+        server_app,
+        "_open_lmstudio_app",
+        lambda: {"attempted": True, "ok": True, "returncode": 0, "stderr": ""},
+    )
 
     sid = client.post("/api/sessions").json()["session_id"]
     client.post(
@@ -181,21 +188,55 @@ def test_lmstudio_chat_launch_journals_request_and_response(client, monkeypatch)
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["response"]["response_id"] == "resp_unit_test"
+    assert body["response"]["run_id"] == "act_unit_test"
     assert captured["model"] == "test-model"
     assert captured["input"] == "board snapshot"
     assert captured["store"] is True
     assert "You are Burl." in captured["system_prompt"]
     assert "state_brief" in captured["system_prompt"]
     assert "commit_play" in captured["system_prompt"]
+    # No ctx exists for a free-form input-only launch, so context-bound tools
+    # are withheld from the SDK act call even though the prompt still names the
+    # advertised protocol surface.
+    assert captured["tool_names"] == []
 
     frame = client.get(f"/api/sessions/{sid}/frame").json()["frame"]
     response_seg = next(
         s for s in frame["segments"] if s.get("kind") == "lmstudio_response"
     )
-    assert response_seg["response"]["response_id"] == "resp_unit_test"
+    assert response_seg["response"]["run_id"] == "act_unit_test"
     assert frame["timing"]["tok_cum_in"] == 42
     assert frame["timing"]["tok_cum_out"] == 7
+
+
+def test_lmstudio_chat_failure_opens_app_and_returns_hint(client, monkeypatch):
+    from burl.lab.server import app as server_app
+    from burl.lab.server.lmstudio import LmStudioClientError
+
+    def fail_lmstudio_act(config, payload, tools, *, ctx):  # noqa: ARG001
+        raise LmStudioClientError("LM Studio request failed: connection refused")
+
+    monkeypatch.setattr(server_app, "lmstudio_act", fail_lmstudio_act)
+    monkeypatch.setattr(
+        server_app,
+        "_open_lmstudio_app",
+        lambda: {"attempted": True, "ok": True, "returncode": 0, "stderr": ""},
+    )
+
+    sid = client.post("/api/sessions").json()["session_id"]
+    r = client.post(
+        f"/api/sessions/{sid}/lmstudio/chat",
+        json={"model": "test-model", "input": "board snapshot"},
+    )
+    assert r.status_code == 502
+    detail = r.json()["detail"]
+    assert detail["app_launch"]["ok"] is True
+    assert "local API server" in detail["hint"]
+
+    frame = client.get(f"/api/sessions/{sid}/frame").json()["frame"]
+    error_seg = next(s for s in frame["segments"] if s.get("kind") == "lmstudio_error")
+    assert error_seg["detail"]["app_launch"]["ok"] is True
+    assert "local API server" in error_seg["detail"]["hint"]
 
 
 def test_journal_is_canonical_no_state_json(client, tmp_path, monkeypatch):

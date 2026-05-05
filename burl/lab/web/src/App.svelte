@@ -578,7 +578,7 @@
     for (const s of [...segments].reverse()) {
       if (s.kind !== "lmstudio_response") continue;
       const response = s.response as Record<string, unknown> | undefined;
-      const responseId = response?.response_id;
+      const responseId = response?.response_id ?? response?.run_id;
       if (typeof responseId === "string" && responseId.length > 0) return responseId;
     }
     return "";
@@ -643,7 +643,7 @@
               <span class="dim small">fresh event log, fresh prompt builder</span>
             </div>
             <button onclick={onCreateSession} disabled={!healthOk || streaming}>
-              start
+              create session
             </button>
           </div>
           <div class="wizard-step muted">
@@ -811,7 +811,7 @@
                   {#if latestLmStudioResponseId()}
                     <span class="dim small mono">{latestLmStudioResponseId()}</span>
                   {:else}
-                    <span class="dim small">stateful chat API</span>
+                    <span class="dim small">SDK .act(), local LM Studio inference</span>
                   {/if}
                 </div>
                 <div class="lmstudio-actions">
@@ -822,10 +822,7 @@
                     disabled={streaming}
                   />
                   <button onclick={() => wizardSendSeedToLmStudio(false)} disabled={streaming || !hasRenderedSystem || toolDraftChanged || !wizardHarvest.trim() || wizardSeed == null}>
-                    start
-                  </button>
-                  <button class="ghost" onclick={() => wizardSendSeedToLmStudio(true)} disabled={streaming || !latestLmStudioResponseId() || !hasRenderedSystem || toolDraftChanged || !wizardHarvest.trim() || wizardSeed == null}>
-                    continue
+                    run SDK agent
                   </button>
                 </div>
               </div>
@@ -968,14 +965,14 @@
             {@const stats = (response.stats ?? {}) as Record<string, unknown>}
             <div class="seg lmstudio">
               <span class="badge lmstudio">LM Studio ←</span>
-              <span class="mono small dim">{String(response.response_id ?? "no response_id")}</span>
+              <span class="mono small dim">{String(response.response_id ?? response.run_id ?? "no run id")}</span>
               <div class="seg-body mono">
                 {Array.isArray(response.output)
                   ? (response.output as Record<string, unknown>[])
                       .filter((item) => item.type === "message")
                       .map((item) => String(item.content ?? ""))
                       .join("\n")
-                  : ""}
+                  : String(response.output_text ?? "")}
               </div>
               <div class="next-tools small dim">
                 {String(stats.input_tokens ?? 0)} in · {String(stats.total_output_tokens ?? 0)} out · {String(stats.tokens_per_second ?? 0)} tok/s

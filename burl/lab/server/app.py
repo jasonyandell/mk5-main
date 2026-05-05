@@ -22,10 +22,12 @@ colliding with burl/chat (8001).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
+import subprocess
+import sys
 import uuid
-import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
@@ -60,8 +62,13 @@ from burl.lab.core.transcript import (
 from burl.lab.phases import PHASES
 from burl.lab.phases.pre_game import DEFAULT_BASE_SYSTEM
 
-from .ctx import build_board_snapshot_prompt, build_ctx_for_session, build_session_outcome
-from .lmstudio import LmStudioClientError, LmStudioConfig, chat as lmstudio_chat
+from .ctx import (
+    build_board_snapshot_prompt,
+    build_ctx_for_decision,
+    build_ctx_for_session,
+    build_session_outcome,
+)
+from .lmstudio import LmStudioClientError, LmStudioConfig, act as lmstudio_act
 from .stream import sse_from_async_iter
 
 log = logging.getLogger(__name__)
@@ -409,19 +416,33 @@ async def launch_lmstudio_chat(session_id: str, req: LmStudioChatRequestBody) ->
     append(state.session_dir, request_move)
     state_after_request = _load_state(session_id, registry)
 
+    app_launch = await asyncio.to_thread(_open_lmstudio_app)
     config = _lmstudio_config()
+    ctx = _lmstudio_ctx(req, state)
+    tools = _lmstudio_tools(state, registry, ctx=ctx)
     try:
-        response = await asyncio.to_thread(lmstudio_chat, config, payload)
+        response = await asyncio.to_thread(
+            lmstudio_act,
+            config,
+            payload,
+            tools,
+            ctx=ctx,
+        )
     except LmStudioClientError as exc:
+        detail = {
+            **exc.detail(),
+            "app_launch": app_launch,
+            "hint": _lmstudio_hint(config),
+        }
         err_move = LmStudioChatError(
             stamp=now_stamp(state_after_request),
             message=str(exc),
-            detail=exc.detail(),
+            detail=detail,
         )
         append(state.session_dir, err_move)
         raise HTTPException(
             status_code=502,
-            detail={"message": str(exc), **exc.detail()},
+            detail={"message": str(exc), **detail},
         ) from exc
 
     response_move = LmStudioChatResponse(
@@ -520,6 +541,29 @@ def _build_lmstudio_payload(
     return payload
 
 
+def _lmstudio_ctx(req: LmStudioChatRequestBody, state: State) -> Any:
+    if req.harvest and req.seed is not None:
+        return build_ctx_for_decision(req.harvest, req.seed, key="seed")
+    return build_ctx_for_session(state.session_dir)
+
+
+def _lmstudio_tools(
+    state: State,
+    registry: Registry,
+    *,
+    ctx: Any,
+) -> list:
+    specs = []
+    for name in state.advertised:
+        spec = registry.find(name)
+        if spec is None:
+            continue
+        if spec.requires_context and ctx is None:
+            continue
+        specs.append(spec)
+    return specs
+
+
 def _rendered_system_for_state(state: State, registry: Registry) -> str:
     base_text = _state_system_text(state) or DEFAULT_BASE_SYSTEM
     advertised = []
@@ -549,6 +593,43 @@ def _lmstudio_config() -> LmStudioConfig:
         base_url=os.environ.get("LMSTUDIO_BASE_URL", "http://localhost:1234"),
         api_token=os.environ.get("LM_API_TOKEN") or None,
         timeout_s=float(os.environ.get("LMSTUDIO_TIMEOUT_S", "300")),
+    )
+
+
+def _open_lmstudio_app() -> dict[str, Any]:
+    """Best-effort focus/open for the LM Studio desktop app.
+
+    This does not guarantee LM Studio's Developer API server is enabled. LM
+    Studio owns that toggle, so the UI still reports a clear next step if the
+    subsequent API request cannot connect.
+    """
+
+    if sys.platform != "darwin":
+        return {"attempted": False, "ok": False, "reason": "unsupported_platform"}
+    try:
+        completed = subprocess.run(
+            ["open", "-a", "LM Studio"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"attempted": True, "ok": False, "reason": str(exc)}
+    return {
+        "attempted": True,
+        "ok": completed.returncode == 0,
+        "returncode": completed.returncode,
+        "stderr": completed.stderr.strip(),
+    }
+
+
+def _lmstudio_hint(config: LmStudioConfig) -> str:
+    return (
+        "LM Studio was opened/focused if macOS could find it. In LM Studio, "
+        f"make sure the local API server is available at {config.base_url}, "
+        "install lmstudio-python in this environment if needed, then run the "
+        "SDK agent again."
     )
 
 

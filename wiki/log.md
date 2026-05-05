@@ -52,29 +52,29 @@ Four commits completing Stage 0: infra, PEFT fix, training run, second contact, 
 
 ---
 
-## [2026-05-04 | local | burl-lab LM Studio stateful-chat launch]
+## [2026-05-04 | local | burl-lab LM Studio SDK agent lane]
 
-[[burl-lab]] gained a first integration slice for LM Studio's native stateful
-chat API. The lab still owns the replayable session journal, while LM Studio
-owns the interactive model runtime and returns `response_id` values for
-continuation or branching.
+[[burl-lab]] gained a first integration slice for LM Studio's Python SDK
+agent loop. The lab owns the replayable session journal, callbacks, and
+tool execution; LM Studio provides local inference through `lmstudio-python`.
 
 **Touched pages:** [[burl-lab]] [[index]] [[log]]
 
 **Updated:**
-- [[burl-lab]] now documents the LM Studio launch lane: composed rendered system
-  prompt plus seeded `board_snapshot()` user prompt into `/api/v1/chat`.
+- [[burl-lab]] now documents the LM Studio SDK lane: composed rendered system
+  prompt plus seeded `board_snapshot()` user prompt into `model.act(...)`.
 - The Move table records `LmStudioChatRequest`, `LmStudioChatResponse`, and
-  `LmStudioChatError` as journaled wrapper events around LM Studio's
-  `response_id` / `previous_response_id` chain.
-- [[index]] now routes readers to burl-lab's LM Studio stateful-chat launch
+  `LmStudioChatError` as journaled wrapper events around SDK `.act()` runs,
+  including prediction fragments and tool-call summaries.
+- [[index]] now routes readers to burl-lab's LM Studio SDK agent lane
   alongside event-sourced sessions, rendered ToolSpec prompts, and HATEOAS
   tool advertisement.
 
-**Frontier shift:** LM Studio integration starts as a chat/session launch
-surface, not an MCP façade. That preserves the clean responsibility split:
-LM Studio hosts the interruptible conversation, while burl-lab keeps the
-experiment recipe and response-id lineage in `events.jsonl`.
+**Frontier shift:** LM Studio integration starts as a server-side SDK agent
+surface, not an MCP façade and not a raw REST stateful-chat wrapper. That
+preserves the clean responsibility split: LM Studio supplies inference, while
+burl-lab owns the experiment recipe, Python tool functions, callbacks, and
+journaled tool-call lineage in `events.jsonl`.
 
 **Questions opened:** none.
 

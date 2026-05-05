@@ -46,12 +46,25 @@ export async function launchLmStudioChat(
   });
   if (!r.ok) {
     let detail = "";
+    const raw = await r.text();
     try {
-      detail = JSON.stringify(await r.json());
+      const payload = raw ? JSON.parse(raw) : {};
+      const responseDetail = payload?.detail;
+      if (responseDetail && typeof responseDetail === "object") {
+        const message =
+          typeof responseDetail.message === "string"
+            ? responseDetail.message
+            : `LM Studio request failed with HTTP ${r.status}`;
+        const hint =
+          typeof responseDetail.hint === "string" ? responseDetail.hint : "";
+        detail = [message, hint].filter(Boolean).join(" ");
+      } else {
+        detail = JSON.stringify(payload);
+      }
     } catch {
-      detail = await r.text();
+      detail = raw;
     }
-    throw new Error(`POST /api/sessions/{id}/lmstudio/chat: ${r.status} ${detail}`);
+    throw new Error(detail || `LM Studio request failed with HTTP ${r.status}`);
   }
   return r.json();
 }

@@ -28,7 +28,7 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 
 **Seeded decision lane.** The happy path no longer requires a separate "load then ship" move. `send_seeded_decision` takes `(harvest, seed)`, replaces the harvested user prompt with the rendered `board_snapshot()` prose, preserves the currently built system prompt/tool protocol, enters `in_run`, and gives the server enough journal data to build the game ctx for state tools. The wizard surfaces this as "Send play": optional chat, generate system prompt, select/apply tools, then send a seed. `legal_plays` is not required by the lane; when a run commits, the server journals a `SessionOutcome` row that records the selected tools, final domino, legal/illegal status, legal set, and comparisons to the harvest's pi/qmean/burl/oracle references.
 
-**LM Studio stateful-chat launch.** The prompt-builder can now send the composed system prompt plus a seeded `board_snapshot()` user prompt to LM Studio's native `/api/v1/chat` endpoint. burl-lab does not treat LM Studio as the source of session truth; it journals `LmStudioChatRequest`, `LmStudioChatResponse`, and `LmStudioChatError` Moves around LM Studio's `response_id` / `previous_response_id` chain. This gives the user an immediate "start / continue in LM Studio" lane while preserving `events.jsonl` as the durable wrapper for replay and comparison.
+**LM Studio SDK agent lane.** The prompt-builder can now run LM Studio's Python SDK `.act()` loop from the burl-lab server process: the user picks the model, the composed system prompt, the seeded `board_snapshot()` user prompt, and the active Burl tools; burl-lab supplies those tools as plain Python functions around existing `ToolSpec.impl(ctx, args)` adapters. LM Studio provides inference, but burl-lab owns the agent loop, callbacks, tool execution, and journal. The lane journals `LmStudioChatRequest`, `LmStudioChatResponse`, and `LmStudioChatError` Moves with SDK events, prediction fragments, and tool-call summaries. The `lmstudio` package is an optional runtime dependency until the lane is made mandatory.
 
 ## Architecture
 
@@ -130,7 +130,7 @@ burl/lab/
   tools/chat_mined.py           # ToolSpecs wrapping burl-chat improvised tools
   server/
     app.py                      # FastAPI on :8002
-    lmstudio.py                 # LM Studio native stateful-chat client
+    lmstudio.py                 # LM Studio Python SDK .act() client
     stream.py                   # SSE streaming
   tests/
     test_transcript_roundtrip.py
@@ -155,9 +155,9 @@ The Move union is the wire format. One JSON line per move:
 | `EngineToolCall` | `name: str`, `args: dict`, `call_id: str` | engine |
 | `ToolResult` | `name`, `call_id`, `evidence: dict`, `next_tools: list[str]` | runtime (after `impl()`) |
 | `EngineCommit` | `final: Any` | engine (phase-defined commit shape) |
-| `LmStudioChatRequest` | `request: dict` | server (before `/api/v1/chat`) |
-| `LmStudioChatResponse` | `response: dict` | server (after `/api/v1/chat`) |
-| `LmStudioChatError` | `message: str`, `detail: dict` | server (failed LM Studio launch) |
+| `LmStudioChatRequest` | `request: dict` | server (before SDK `.act()`) |
+| `LmStudioChatResponse` | `response: dict` | server (after SDK `.act()`) |
+| `LmStudioChatError` | `message: str`, `detail: dict` | server (failed LM Studio SDK run) |
 | `EngineDone` | `reason: Literal["done","budget","aborted","tool_dispatch"]` | engine (terminal) |
 
 `ToolResult.next_tools` carries tool **names** on the wire; full ToolSpecs live in the Registry, resolved during `fold`.
