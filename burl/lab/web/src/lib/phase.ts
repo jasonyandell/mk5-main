@@ -27,6 +27,9 @@ export type MoveKind =
   | "ToolResult"
   | "EngineCommit"
   | "SessionOutcome"
+  | "LmStudioChatRequest"
+  | "LmStudioChatResponse"
+  | "LmStudioChatError"
   | "EngineError"
   | "EngineDone"
   | "SystemSet"
@@ -93,4 +96,22 @@ export type Health = {
   model: string | null;
   adapter: string | null;
   n_tools: number;
+};
+
+export type LmStudioLaunchRequest = {
+  model?: string;
+  input?: string;
+  system_prompt?: string;
+  previous_response_id?: string;
+  harvest?: string;
+  seed?: number;
+  store?: boolean;
+  temperature?: number;
+  max_output_tokens?: number;
+};
+
+export type LmStudioChatResponse = {
+  session_id: string;
+  request: Record<string, unknown>;
+  response: Record<string, unknown>;
 };

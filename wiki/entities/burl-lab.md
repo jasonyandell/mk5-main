@@ -2,7 +2,7 @@
 title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
 first_seen: a2db3c7
-last_updated: local-2026-05-03
+last_updated: local-2026-05-04
 status: active
 ---
 
@@ -27,6 +27,8 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 **Prompt-builder UX.** Pre-game is now an explicit prompt builder rather than a hidden bootstrap step. The user picks an advertised tool set from registry checkboxes, clicks `Generate system prompt` to seed the default Burl base prompt, and sees the composed `rendered_system` immediately: base prompt plus the selected tools' `ToolSpec.protocol_phrase` values. `Load harvested decision into builder` imports harvested `prompt_system` and `prompt_user` but does not start the run; `Start run` and `Ask Gemma now` are separate phase choices. The web surface now wraps this in a guided wizard: new session → build prompt or chat → select tools → confirm and ship to Gemma. The raw HATEOAS/option controls remain available as an advanced console, but the happy path no longer requires knowing internal move names like `SystemSet`, `AdvertisedSet`, or `load_decision`. The wizard and backend now refuse `Start run` until a user/decision prompt exists, and `ToolSpec.requires_context` keeps game-state tools hidden from the engine until ctx exists.
 
 **Seeded decision lane.** The happy path no longer requires a separate "load then ship" move. `send_seeded_decision` takes `(harvest, seed)`, replaces the harvested user prompt with the rendered `board_snapshot()` prose, preserves the currently built system prompt/tool protocol, enters `in_run`, and gives the server enough journal data to build the game ctx for state tools. The wizard surfaces this as "Send play": optional chat, generate system prompt, select/apply tools, then send a seed. `legal_plays` is not required by the lane; when a run commits, the server journals a `SessionOutcome` row that records the selected tools, final domino, legal/illegal status, legal set, and comparisons to the harvest's pi/qmean/burl/oracle references.
+
+**LM Studio stateful-chat launch.** The prompt-builder can now send the composed system prompt plus a seeded `board_snapshot()` user prompt to LM Studio's native `/api/v1/chat` endpoint. burl-lab does not treat LM Studio as the source of session truth; it journals `LmStudioChatRequest`, `LmStudioChatResponse`, and `LmStudioChatError` Moves around LM Studio's `response_id` / `previous_response_id` chain. This gives the user an immediate "start / continue in LM Studio" lane while preserving `events.jsonl` as the durable wrapper for replay and comparison.
 
 ## Architecture
 
@@ -128,6 +130,7 @@ burl/lab/
   tools/chat_mined.py           # ToolSpecs wrapping burl-chat improvised tools
   server/
     app.py                      # FastAPI on :8002
+    lmstudio.py                 # LM Studio native stateful-chat client
     stream.py                   # SSE streaming
   tests/
     test_transcript_roundtrip.py
@@ -152,6 +155,9 @@ The Move union is the wire format. One JSON line per move:
 | `EngineToolCall` | `name: str`, `args: dict`, `call_id: str` | engine |
 | `ToolResult` | `name`, `call_id`, `evidence: dict`, `next_tools: list[str]` | runtime (after `impl()`) |
 | `EngineCommit` | `final: Any` | engine (phase-defined commit shape) |
+| `LmStudioChatRequest` | `request: dict` | server (before `/api/v1/chat`) |
+| `LmStudioChatResponse` | `response: dict` | server (after `/api/v1/chat`) |
+| `LmStudioChatError` | `message: str`, `detail: dict` | server (failed LM Studio launch) |
 | `EngineDone` | `reason: Literal["done","budget","aborted","tool_dispatch"]` | engine (terminal) |
 
 `ToolResult.next_tools` carries tool **names** on the wire; full ToolSpecs live in the Registry, resolved during `fold`.

@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
+import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
@@ -36,10 +37,14 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from burl.lab.core.drive import drive
+from burl.lab.core.render import render_system
 from burl.lab.core.tool import Registry
 from burl.lab.core.transcript import (
     EngineCommit,
     EVENTS_FILENAME,
+    LmStudioChatError,
+    LmStudioChatRequest,
+    LmStudioChatResponse,
     PhaseEnter,
     PhaseExit,
     SessionOutcome,
@@ -53,8 +58,10 @@ from burl.lab.core.transcript import (
     replay,
 )
 from burl.lab.phases import PHASES
+from burl.lab.phases.pre_game import DEFAULT_BASE_SYSTEM
 
-from .ctx import build_ctx_for_session, build_session_outcome
+from .ctx import build_board_snapshot_prompt, build_ctx_for_session, build_session_outcome
+from .lmstudio import LmStudioClientError, LmStudioConfig, chat as lmstudio_chat
 from .stream import sse_from_async_iter
 
 log = logging.getLogger(__name__)
@@ -252,6 +259,18 @@ class MoveRequest(BaseModel):
     move: dict
 
 
+class LmStudioChatRequestBody(BaseModel):
+    model: str | None = None
+    input: str | None = None
+    system_prompt: str | None = None
+    previous_response_id: str | None = None
+    harvest: str | None = None
+    seed: int | None = None
+    store: bool = True
+    temperature: float | None = None
+    max_output_tokens: int | None = None
+
+
 @app.post("/api/move")
 async def post_move(req: MoveRequest):
     """Apply a move and SSE-stream resulting Moves.
@@ -374,6 +393,49 @@ async def post_move(req: MoveRequest):
     return EventSourceResponse(sse_from_async_iter(gen()), sep="\n")
 
 
+@app.post("/api/sessions/{session_id}/lmstudio/chat")
+async def launch_lmstudio_chat(session_id: str, req: LmStudioChatRequestBody) -> dict:
+    """Launch or continue an LM Studio stateful chat from the current lab session."""
+
+    registry: Registry = app_state.get("registry") or Registry()
+    state = _load_state(session_id, registry)
+    payload = _build_lmstudio_payload(state, registry, req)
+
+    visible_request = dict(payload)
+    request_move = LmStudioChatRequest(
+        stamp=now_stamp(state),
+        request=visible_request,
+    )
+    append(state.session_dir, request_move)
+    state_after_request = _load_state(session_id, registry)
+
+    config = _lmstudio_config()
+    try:
+        response = await asyncio.to_thread(lmstudio_chat, config, payload)
+    except LmStudioClientError as exc:
+        err_move = LmStudioChatError(
+            stamp=now_stamp(state_after_request),
+            message=str(exc),
+            detail=exc.detail(),
+        )
+        append(state.session_dir, err_move)
+        raise HTTPException(
+            status_code=502,
+            detail={"message": str(exc), **exc.detail()},
+        ) from exc
+
+    response_move = LmStudioChatResponse(
+        stamp=_lmstudio_response_stamp(state_after_request, response),
+        response=response,
+    )
+    append(state.session_dir, response_move)
+    return {
+        "session_id": session_id,
+        "request": visible_request,
+        "response": response,
+    }
+
+
 def _journal_phase_transition(
     session_dir: Path,
     from_phase: str,
@@ -415,6 +477,95 @@ def _decode_move(payload: dict, state: State) -> Any:
         stamp=stamp,
         option_name=str(payload.get("option_name", "")),
         args=dict(payload.get("args") or {}),
+    )
+
+
+def _build_lmstudio_payload(
+    state: State,
+    registry: Registry,
+    req: LmStudioChatRequestBody,
+) -> dict[str, Any]:
+    model = (
+        (req.model or "").strip()
+        or os.environ.get("LMSTUDIO_MODEL", "").strip()
+        or "ibm/granite-4-micro"
+    )
+    system_prompt = req.system_prompt
+    if system_prompt is None:
+        system_prompt = _rendered_system_for_state(state, registry)
+
+    input_text = req.input
+    if input_text is None and req.harvest and req.seed is not None:
+        input_text = build_board_snapshot_prompt(req.harvest, req.seed)
+    if input_text is None:
+        input_text = _latest_user_text(state)
+    if not input_text:
+        raise HTTPException(
+            status_code=400,
+            detail="LM Studio chat needs input text or harvest+seed.",
+        )
+
+    payload: dict[str, Any] = {
+        "model": model,
+        "input": input_text,
+        "system_prompt": system_prompt,
+        "store": req.store,
+    }
+    if req.previous_response_id:
+        payload["previous_response_id"] = req.previous_response_id
+    if req.temperature is not None:
+        payload["temperature"] = req.temperature
+    if req.max_output_tokens is not None:
+        payload["max_output_tokens"] = req.max_output_tokens
+    return payload
+
+
+def _rendered_system_for_state(state: State, registry: Registry) -> str:
+    base_text = _state_system_text(state) or DEFAULT_BASE_SYSTEM
+    advertised = []
+    for name in state.advertised:
+        spec = registry.find(name)
+        if spec is not None:
+            advertised.append(spec)
+    return render_system(base_text, advertised)
+
+
+def _state_system_text(state: State) -> str:
+    for msg in state.messages:
+        if msg.get("role") == "system":
+            return str(msg.get("content", ""))
+    return ""
+
+
+def _latest_user_text(state: State) -> str:
+    for msg in reversed(state.messages):
+        if msg.get("role") == "user":
+            return str(msg.get("content", ""))
+    return ""
+
+
+def _lmstudio_config() -> LmStudioConfig:
+    return LmStudioConfig(
+        base_url=os.environ.get("LMSTUDIO_BASE_URL", "http://localhost:1234"),
+        api_token=os.environ.get("LM_API_TOKEN") or None,
+        timeout_s=float(os.environ.get("LMSTUDIO_TIMEOUT_S", "300")),
+    )
+
+
+def _lmstudio_response_stamp(state: State, response: dict[str, Any]) -> Stamp:
+    stats = response.get("stats") if isinstance(response.get("stats"), dict) else {}
+    input_tokens = int(stats.get("input_tokens") or 0)
+    output_tokens = int(stats.get("total_output_tokens") or 0)
+    ttft_s = stats.get("time_to_first_token_seconds")
+    ttft_ms = int(float(ttft_s) * 1000) if ttft_s is not None else None
+    tok_per_s = stats.get("tokens_per_second")
+    tok_per_s_f = float(tok_per_s) if tok_per_s is not None else None
+    return now_stamp(
+        state,
+        tok_in=input_tokens,
+        tok_out=output_tokens,
+        ms_ttft=ttft_ms,
+        tok_per_s=tok_per_s_f,
     )
 
 

@@ -5,6 +5,8 @@ import type {
   CreateSessionResponse,
   FrameResponse,
   Health,
+  LmStudioChatResponse,
+  LmStudioLaunchRequest,
 } from "./phase";
 import { streamMove } from "./stream";
 import type { SseEvent } from "./stream";
@@ -30,6 +32,27 @@ export async function listSessions(): Promise<{ sessions: { id: string; has_even
 export async function getFrame(sessionId: string): Promise<FrameResponse> {
   const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/frame`);
   if (!r.ok) throw new Error(`GET /api/sessions/{id}/frame: ${r.status}`);
+  return r.json();
+}
+
+export async function launchLmStudioChat(
+  sessionId: string,
+  body: LmStudioLaunchRequest,
+): Promise<LmStudioChatResponse> {
+  const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/lmstudio/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    let detail = "";
+    try {
+      detail = JSON.stringify(await r.json());
+    } catch {
+      detail = await r.text();
+    }
+    throw new Error(`POST /api/sessions/{id}/lmstudio/chat: ${r.status} ${detail}`);
+  }
   return r.json();
 }
 

@@ -130,6 +130,74 @@ def test_pre_game_generate_system_builds_default_prompt_with_selected_tools(clie
     assert "legal_plays" in rendered["text"]
 
 
+def test_lmstudio_chat_launch_journals_request_and_response(client, monkeypatch):
+    from burl.lab.server import app as server_app
+
+    captured: dict = {}
+
+    def fake_lmstudio_chat(config, payload):  # noqa: ARG001
+        captured.update(payload)
+        return {
+            "model_instance_id": payload["model"],
+            "output": [{"type": "message", "content": "play the 2-1"}],
+            "response_id": "resp_unit_test",
+            "stats": {
+                "input_tokens": 42,
+                "total_output_tokens": 7,
+                "tokens_per_second": 21.0,
+                "time_to_first_token_seconds": 0.5,
+            },
+        }
+
+    monkeypatch.setattr(server_app, "lmstudio_chat", fake_lmstudio_chat)
+
+    sid = client.post("/api/sessions").json()["session_id"]
+    client.post(
+        "/api/move",
+        json={
+            "session_id": sid,
+            "move": {
+                "kind": "UserChoice",
+                "option_name": "set_system",
+                "args": {"text": "You are Burl."},
+            },
+        },
+    )
+    client.post(
+        "/api/move",
+        json={
+            "session_id": sid,
+            "move": {
+                "kind": "UserChoice",
+                "option_name": "set_advertised",
+                "args": {"names": ["state_brief", "commit_play"]},
+            },
+        },
+    )
+
+    r = client.post(
+        f"/api/sessions/{sid}/lmstudio/chat",
+        json={"model": "test-model", "input": "board snapshot"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["response"]["response_id"] == "resp_unit_test"
+    assert captured["model"] == "test-model"
+    assert captured["input"] == "board snapshot"
+    assert captured["store"] is True
+    assert "You are Burl." in captured["system_prompt"]
+    assert "state_brief" in captured["system_prompt"]
+    assert "commit_play" in captured["system_prompt"]
+
+    frame = client.get(f"/api/sessions/{sid}/frame").json()["frame"]
+    response_seg = next(
+        s for s in frame["segments"] if s.get("kind") == "lmstudio_response"
+    )
+    assert response_seg["response"]["response_id"] == "resp_unit_test"
+    assert frame["timing"]["tok_cum_in"] == 42
+    assert frame["timing"]["tok_cum_out"] == 7
+
+
 def test_journal_is_canonical_no_state_json(client, tmp_path, monkeypatch):
     """fold(replay(events.jsonl)) is the only source of truth.
 

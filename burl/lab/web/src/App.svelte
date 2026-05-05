@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { health, createSession, getFrame, postMove } from "./lib/api";
+  import { health, createSession, getFrame, launchLmStudioChat, postMove } from "./lib/api";
   import type { Frame, Health, Move, Option, Segment } from "./lib/phase";
   import { summarizeStamp, summarizeTiming, fmtMs, fmtTok } from "./lib/stamp";
   import { toolRows } from "./lib/tool";
@@ -48,6 +48,7 @@
   let wizardMessage = $state("");
   let wizardError = $state<string | null>(null);
   let wizardSeed = $state<number | null>(1);
+  let lmStudioModel = $state("ibm/granite-4-micro");
 
   // HATEOAS aside: tools that are active but not advertised.
   let asideOpen = $state(false);
@@ -202,6 +203,33 @@
           {
             kind: "session_outcome",
             summary: (mv as unknown as { summary: Record<string, unknown> }).summary,
+          },
+        ];
+        break;
+      case "LmStudioChatRequest":
+        segments = [
+          ...segments,
+          {
+            kind: "lmstudio_request",
+            request: (mv as unknown as { request: Record<string, unknown> }).request,
+          },
+        ];
+        break;
+      case "LmStudioChatResponse":
+        segments = [
+          ...segments,
+          {
+            kind: "lmstudio_response",
+            response: (mv as unknown as { response: Record<string, unknown> }).response,
+          },
+        ];
+        break;
+      case "LmStudioChatError":
+        segments = [
+          ...segments,
+          {
+            kind: "lmstudio_error",
+            message: String((mv as unknown as { message: string }).message),
           },
         ];
         break;
@@ -447,6 +475,46 @@
     });
   }
 
+  async function wizardSendSeedToLmStudio(continueLatest: boolean) {
+    if (!sessionId || streaming) return;
+    const harvest = wizardHarvest.trim();
+    const model = lmStudioModel.trim();
+    if (!harvest) {
+      wizardError = "enter a harvest name";
+      return;
+    }
+    if (wizardSeed == null) {
+      wizardError = "enter a seed";
+      return;
+    }
+    if (!model) {
+      wizardError = "enter an LM Studio model";
+      return;
+    }
+    streaming = true;
+    streamError = null;
+    wizardError = null;
+    try {
+      await launchLmStudioChat(sessionId, {
+        model,
+        harvest,
+        seed: wizardSeed,
+        previous_response_id: continueLatest ? latestLmStudioResponseId() : undefined,
+        store: true,
+      });
+      await refreshFrame();
+    } catch (e) {
+      streamError = String(e);
+      try {
+        await refreshFrame();
+      } catch {
+        // Keep the original LM Studio error visible.
+      }
+    } finally {
+      streaming = false;
+    }
+  }
+
   async function wizardSendMessage() {
     const text = wizardMessage.trim();
     if (!text) {
@@ -506,6 +574,15 @@
     renderedSystemChars > 0 || String(renderedSystemSegment?.text ?? "").length > 0,
   );
   let hasCommitTool = $derived(Boolean(frame?.advertised.includes("commit_play")));
+  let latestLmStudioResponseId = $derived(() => {
+    for (const s of [...segments].reverse()) {
+      if (s.kind !== "lmstudio_response") continue;
+      const response = s.response as Record<string, unknown> | undefined;
+      const responseId = response?.response_id;
+      if (typeof responseId === "string" && responseId.length > 0) return responseId;
+    }
+    return "";
+  });
   let canShipToGemma = $derived(
     hasRenderedSystem && hasUserPrompt && !toolDraftChanged && hasOption("start_run"),
   );
@@ -728,6 +805,30 @@
                   ship loaded
                 </button>
               </div>
+              <div class="lmstudio-box">
+                <div class="lmstudio-head">
+                  <strong>LM Studio</strong>
+                  {#if latestLmStudioResponseId()}
+                    <span class="dim small mono">{latestLmStudioResponseId()}</span>
+                  {:else}
+                    <span class="dim small">stateful chat API</span>
+                  {/if}
+                </div>
+                <div class="lmstudio-actions">
+                  <input
+                    bind:value={lmStudioModel}
+                    aria-label="LM Studio model"
+                    placeholder="model id"
+                    disabled={streaming}
+                  />
+                  <button onclick={() => wizardSendSeedToLmStudio(false)} disabled={streaming || !hasRenderedSystem || toolDraftChanged || !wizardHarvest.trim() || wizardSeed == null}>
+                    start
+                  </button>
+                  <button class="ghost" onclick={() => wizardSendSeedToLmStudio(true)} disabled={streaming || !latestLmStudioResponseId() || !hasRenderedSystem || toolDraftChanged || !wizardHarvest.trim() || wizardSeed == null}>
+                    continue
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -847,6 +948,43 @@
                 consensus {String(outcome.consensus_play ?? "none")}
                 {matches.consensus === true ? " ✓" : ""}
               </div>
+            </div>
+          {:else if k === "lmstudio_request"}
+            {@const request = s.request as Record<string, unknown>}
+            <div class="seg lmstudio">
+              <span class="badge lmstudio">LM Studio →</span>
+              <code class="args-line">
+                {JSON.stringify({
+                  model: request.model,
+                  store: request.store,
+                  previous_response_id: request.previous_response_id,
+                  input_chars: String(request.input ?? "").length,
+                  system_chars: String(request.system_prompt ?? "").length,
+                })}
+              </code>
+            </div>
+          {:else if k === "lmstudio_response"}
+            {@const response = s.response as Record<string, unknown>}
+            {@const stats = (response.stats ?? {}) as Record<string, unknown>}
+            <div class="seg lmstudio">
+              <span class="badge lmstudio">LM Studio ←</span>
+              <span class="mono small dim">{String(response.response_id ?? "no response_id")}</span>
+              <div class="seg-body mono">
+                {Array.isArray(response.output)
+                  ? (response.output as Record<string, unknown>[])
+                      .filter((item) => item.type === "message")
+                      .map((item) => String(item.content ?? ""))
+                      .join("\n")
+                  : ""}
+              </div>
+              <div class="next-tools small dim">
+                {String(stats.input_tokens ?? 0)} in · {String(stats.total_output_tokens ?? 0)} out · {String(stats.tokens_per_second ?? 0)} tok/s
+              </div>
+            </div>
+          {:else if k === "lmstudio_error"}
+            <div class="seg engine-error">
+              <span class="badge err">LM Studio error</span>
+              <div class="seg-body mono">{String(s.message)}</div>
             </div>
           {:else if k === "engine_done"}
             <div class="seg engine-done dim small">
@@ -1224,6 +1362,29 @@
     border-color: #31583f;
     color: #bfe6c6;
   }
+  .lmstudio-box {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.2rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid #303535;
+  }
+  .lmstudio-head,
+  .lmstudio-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    min-width: 0;
+  }
+  .lmstudio-head .mono {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lmstudio-actions input {
+    min-width: 0;
+    flex: 1;
+  }
   .wizard-error {
     color: #f3a4a4;
     margin-bottom: 0.4rem;
@@ -1315,6 +1476,9 @@
 
   .seg.commit { background: #1c2e1c; border-color: #3a6a3a; border-left: 3px solid #6acf6a; }
   .badge.commit { background: #2a5a2a; color: #b4f3b4; }
+
+  .seg.lmstudio { background: #25251c; border-color: #535036; border-left: 3px solid #c8a55a; }
+  .badge.lmstudio { background: #4c4325; color: #f0d58f; }
 
   .seg.engine-error { background: #2e1c1c; border-color: #6a3a3a; border-left: 3px solid #cf6a6a; }
   .badge.err { background: #5a2a2a; color: #f3b4b4; }

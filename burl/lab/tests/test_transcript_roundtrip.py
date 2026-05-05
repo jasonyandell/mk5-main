@@ -14,6 +14,9 @@ from burl.lab.core.transcript import (
     EngineStart,
     EngineToken,
     EngineToolCall,
+    LmStudioChatError,
+    LmStudioChatRequest,
+    LmStudioChatResponse,
     PhaseEnter,
     PhaseExit,
     Stamp,
@@ -177,6 +180,48 @@ def test_engine_error_roundtrip_and_fold(tmp_path: Path) -> None:
     assert err_segs[0]["message"] == "MLX out of memory"
     assert err_segs[0]["traceback"].startswith("Traceback")
     assert err_segs[0]["during"] is None
+
+
+def test_lmstudio_chat_moves_roundtrip_and_fold(tmp_path: Path) -> None:
+    moves = [
+        PhaseEnter(stamp=_stamp(0, 1_000), phase="pre_game"),
+        LmStudioChatRequest(
+            stamp=_stamp(10, 2_000),
+            request={
+                "model": "test-model",
+                "input": "board snapshot",
+                "system_prompt": "You are Burl.",
+                "store": True,
+            },
+        ),
+        LmStudioChatResponse(
+            stamp=_stamp(20, 3_000, tok_in=12, tok_out=5, cum_in=12, cum_out=5),
+            response={
+                "model_instance_id": "test-model",
+                "output": [{"type": "message", "content": "I would play 2-1."}],
+                "response_id": "resp_test",
+                "stats": {"input_tokens": 12, "total_output_tokens": 5},
+            },
+        ),
+        LmStudioChatError(
+            stamp=_stamp(30, 4_000),
+            message="LM Studio request failed",
+            detail={"status": 503},
+        ),
+    ]
+    for m in moves:
+        append(tmp_path, m)
+
+    assert list(replay(tmp_path)) == moves
+    state = fold(replay(tmp_path), session_dir=tmp_path)
+    kinds = [s.get("kind") for s in state.segments]
+    assert "lmstudio_request" in kinds
+    assert "lmstudio_response" in kinds
+    assert "lmstudio_error" in kinds
+    response_seg = next(s for s in state.segments if s.get("kind") == "lmstudio_response")
+    assert response_seg["response"]["response_id"] == "resp_test"
+    assert state.cum_tok_in == 12
+    assert state.cum_tok_out == 5
 
 
 def test_engine_error_during_tool_dispatch(tmp_path: Path) -> None:

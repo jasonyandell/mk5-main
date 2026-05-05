@@ -125,6 +125,38 @@ class SessionOutcome:
 
 
 @dataclass(frozen=True)
+class LmStudioChatRequest:
+    """Outbound stateful-chat request sent to LM Studio.
+
+    The request payload is journaled so the Burl Lab session remains the
+    replayable wrapper around LM Studio's response-chain ids.
+    """
+
+    stamp: Stamp
+    request: dict
+    kind: str = "LmStudioChatRequest"
+
+
+@dataclass(frozen=True)
+class LmStudioChatResponse:
+    """Result from LM Studio's native ``/api/v1/chat`` endpoint."""
+
+    stamp: Stamp
+    response: dict
+    kind: str = "LmStudioChatResponse"
+
+
+@dataclass(frozen=True)
+class LmStudioChatError:
+    """LM Studio launch failed before a usable response was returned."""
+
+    stamp: Stamp
+    message: str
+    detail: dict = field(default_factory=dict)
+    kind: str = "LmStudioChatError"
+
+
+@dataclass(frozen=True)
 class EngineError:
     """Engine raised mid-step. Yielded immediately before `EngineDone(reason="aborted")`.
 
@@ -209,6 +241,9 @@ Move = Union[
     ToolResult,
     EngineCommit,
     SessionOutcome,
+    LmStudioChatRequest,
+    LmStudioChatResponse,
+    LmStudioChatError,
     EngineError,
     EngineDone,
     SystemSet,
@@ -229,6 +264,9 @@ _MOVE_BY_KIND: dict[str, type] = {
     "ToolResult": ToolResult,
     "EngineCommit": EngineCommit,
     "SessionOutcome": SessionOutcome,
+    "LmStudioChatRequest": LmStudioChatRequest,
+    "LmStudioChatResponse": LmStudioChatResponse,
+    "LmStudioChatError": LmStudioChatError,
     "EngineError": EngineError,
     "EngineDone": EngineDone,
     "SystemSet": SystemSet,
@@ -442,6 +480,24 @@ def fold(
             segments.append(
                 {"kind": "session_outcome", "summary": dict(m.summary)}
             )
+        elif k == "LmStudioChatRequest":
+            segments.append(
+                {
+                    "kind": "lmstudio_request",
+                    "request": dict(m.request),  # type: ignore[attr-defined]
+                }
+            )
+        elif k == "LmStudioChatResponse":
+            response = dict(m.response)  # type: ignore[attr-defined]
+            segments.append({"kind": "lmstudio_response", "response": response})
+        elif k == "LmStudioChatError":
+            segments.append(
+                {
+                    "kind": "lmstudio_error",
+                    "message": m.message,  # type: ignore[attr-defined]
+                    "detail": dict(m.detail),  # type: ignore[attr-defined]
+                }
+            )
         elif k == "EngineError":
             segments.append(
                 {
@@ -542,6 +598,9 @@ __all__ = [
     "ToolResult",
     "EngineCommit",
     "SessionOutcome",
+    "LmStudioChatRequest",
+    "LmStudioChatResponse",
+    "LmStudioChatError",
     "EngineError",
     "EngineDone",
     "SystemSet",
