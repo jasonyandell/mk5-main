@@ -2705,3 +2705,31 @@ hierarchy ideas remain preserved, but they no longer compete with the core
 framework specification.
 
 **Questions opened:** none.
+
+## [2026-05-06 | local | Burl microscope prompt/tool recipe workbench]
+
+[[burl-microscope]] lands as a lightweight human-in-the-loop workbench for Burl
+prompt, tool, and tool-response experiments. It is intentionally smaller than
+[[burl-lab]]: one harvested case, one editable recipe, one Gemma conversation,
+and one JSONL trace.
+
+**Touched pages:** [[burl]] [[burl-microscope]] [[index]] [[log]]
+
+**Added:**
+- [[burl-microscope]] — documents the recipe shape, Pi extension client, and
+  first smoke result.
+
+**Updated:**
+- [[burl]] now routes lightweight prompt/tool experimentation to
+  [[burl-microscope]] and keeps [[burl-lab]] for heavier event-sourced phase
+  machinery.
+- [[index]] adds [[burl-microscope]] to the Burl entity cluster.
+
+**Frontier shift:** Prompt/tool iteration now has a tight interactive loop:
+edit recipe files, reopen the same failed decision from [[burl-2000-harvest]],
+step Gemma with native tool calls, and compare final play against the original
+Burl/oracle references. First smoke on `global_idx=1` reproduced the original
+Burl mistake under `baseline` (`25`) and flipped to oracle/consensus play `19`
+under `legal-brief`.
+
+**Questions opened:** none.

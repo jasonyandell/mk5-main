@@ -55,6 +55,7 @@ catalog:
 - [[entities/belief-trajectory|belief-trajectory]] — tool wiring Gus's calibrated belief head into Burl; replaces static E[Q] PDF primitive (active)
 - [[entities/burl-chat|burl-chat]] — reference predecessor workbench; in-process MLX-LM + Svelte 5 + typed-segment rendering; stays alongside burl-lab until parity (active)
 - [[entities/burl-lab|burl-lab]] — deterministic experimentation platform replacing burl-chat: event-sourced sessions, phase state machine, first-class ToolSpec prompts, HATEOAS tools, and LM Studio SDK agent lane (active)
+- [[entities/burl-microscope|burl-microscope]] — lightweight Pi-driven recipe workbench for human-in-the-loop Burl prompt, tool, and tool-response experiments; first smoke flips one BURL_BREAKS_CONSENSUS case via legal-candidate protocol (active)
 - [[entities/improvised-tools|improvised-tools]] — hot-register tool registry inside burl-chat; MCP bridge lets Claude author wax_museum-shaped tools mid-conversation; persists to burl/chat/server/tools_library/ (active)
 
 ### Gus — oracle distillation project

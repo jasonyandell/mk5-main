@@ -2,7 +2,7 @@
 title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
-last_updated: 063fcac
+last_updated: local-2026-05-06
 status: active
 ---
 
@@ -488,6 +488,21 @@ Two findings from this spike worth carrying forward:
 - **[[play-adapter-lock-in]]** is real and complete. e1-rank16 ([[experiments/iter5-e1-rank-sweep]]) cannot be talked out of `commit_play` even with primer + explicit "do not output a tool call" + a non-tool question. Base Gemma + same prefix engages cleanly. Implication: any post-commit Q&A adapter must be co-trained or trained from base, not stacked on a play adapter.
 
 A side product of the first session: base Gemma critiqued the existing tool surface unprompted, suggesting structured summaries before raw histograms, explicit strategic labels, and a "why" framing that reads as the [[topics/at-risk-points]] frame Roberson uses. First product feedback from Burl on its own tools — usable backlog item.
+
+## [[burl-microscope]] prompt/tool workbench (2026-05-06)
+
+`burl/microscope/` is the current lightweight surface for human-in-the-loop prompt,
+tool, and tool-response experimentation. It keeps Pi as the terminal client via
+`.pi/extensions/burl-microscope.ts`, while the Python microscope server owns Gemma
+4 E2B inference, Gemma-native `tool_calls`/`tool_responses`, and Burl tool
+execution. Unlike [[burl-lab]], it intentionally avoids phase machinery: a session is
+just one harvested case + one editable recipe + one conversation + a JSONL trace.
+
+First smoke on [[burl-2000-harvest]] case `global_idx=1` (`BURL_BREAKS_CONSENSUS`):
+`baseline` reproduced the original Burl play `25` while `legal-brief` forced a
+legal-candidate protocol and committed oracle/consensus play `19`. Single-case
+smoke only, but it validates the intended loop: edit recipe → rerun same failed
+case → compare.
 
 ## Candidate role for [[book-strategy-player]] (2026-05-03)
 
