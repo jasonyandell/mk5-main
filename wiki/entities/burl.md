@@ -509,7 +509,9 @@ surface, not a solved recipe for this case.
 Burl's next live-tool request was more specific than another belief dump: a
 "Hypothetical Hand Simulation" / "Opponent Hand Query". The microscope now exposes
 that as `simulate_hand_impact(play_id=X, seat=..., holds=Y)`, which answers one
-seat/domino hypothesis with Gus plausibility plus conditional outcome shift.
+seat/domino hypothesis with Gus plausibility plus conditional outcome shift. After
+using that tool, Burl requested `calculate_expected_utility`: a ranked EV synthesis
+over all candidate plays, now available in the `snapshot-utility` recipe.
 
 ## Candidate role for [[book-strategy-player]] (2026-05-03)
 

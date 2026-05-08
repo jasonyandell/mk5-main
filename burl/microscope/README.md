@@ -86,3 +86,4 @@ Useful starting recipes:
 | `legal-brief` | Forces `legal_plays()` then `play_brief()` over legal candidates. |
 | `snapshot-first` | Minimal user prompt: pre-rendered `board_snapshot()` output plus decide text; no oracle/original-Burl references. |
 | `snapshot-hypothesis` | `snapshot-first` plus Burl's requested `simulate_hand_impact` tool for targeted hidden-hand hypotheses. Try with `/burl open 1 --recipe snapshot-hypothesis`. |
+| `snapshot-utility` | `snapshot-hypothesis` plus Burl's requested `calculate_expected_utility` EV-ranking synthesis tool. Try with `/burl open 1 --recipe snapshot-utility`. |

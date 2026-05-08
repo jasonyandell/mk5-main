@@ -22,6 +22,7 @@ from burl.lab.core.tool import Registry, ToolSpec
 from burl.lab.tools import (
     BELIEF_TRAJECTORY,
     BOARD_SNAPSHOT,
+    CALCULATE_EXPECTED_UTILITY,
     COMMIT_PLAY,
     EXPLORE_GAME,
     LEGAL_PLAYS,
@@ -50,6 +51,7 @@ def load_registry() -> Registry:
         LEGAL_PLAYS,
         PLAY_BRIEF,
         SIMULATE_HAND_IMPACT,
+        CALCULATE_EXPECTED_UTILITY,
         EXPLORE_GAME,
         COMMIT_PLAY,
     ):

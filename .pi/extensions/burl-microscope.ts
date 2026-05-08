@@ -5,7 +5,7 @@ import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child
 const MESSAGE_TYPE = "burl-microscope";
 const BASE_URL = process.env.BURL_MICROSCOPE_URL ?? "http://127.0.0.1:8765";
 const DEFAULT_HARVEST = "harvest_batched_20260425_072910";
-const REQUIRED_SERVER_TOOLS = ["simulate_hand_impact"];
+const REQUIRED_SERVER_TOOLS = ["simulate_hand_impact", "calculate_expected_utility"];
 
 let currentSession: string | undefined;
 let burlMode = false;

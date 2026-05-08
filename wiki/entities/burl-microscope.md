@@ -32,9 +32,11 @@ The rendered system prompt still uses first-class `ToolSpec` values from
 protocol phrases, and protocol roles without editing the Python tool
 implementation.
 
-`snapshot-hypothesis` is the current garage-tinker variant: it keeps the clean
-`board_snapshot()`-first prompt and active tools `board_snapshot`, `legal_plays`,
-`play_brief`, `belief_trajectory`, `simulate_hand_impact`, and `commit_play`.
+`snapshot-hypothesis` keeps the clean `board_snapshot()`-first prompt and active
+tools `board_snapshot`, `legal_plays`, `play_brief`, `belief_trajectory`,
+`simulate_hand_impact`, and `commit_play`. `snapshot-utility` extends that surface
+with `calculate_expected_utility`, an EV-ranking synthesis tool Burl requested after
+trying the targeted hypothesis tool.
 
 ## Pi client
 
@@ -73,6 +75,18 @@ seat/domino with [[wax-museum]]'s conditional E[Q] machinery, rendering the answ
 "plausibility + baseline Q + conditional Q + shift" rather than another broad
 posterior table. It is meant to follow `play_brief` catalyst lines, not replace
 candidate evaluation.
+
+## Burl-requested expected-utility tool
+
+After seeing `simulate_hand_impact`, Burl asked for a higher-level
+`calculate_expected_utility` tool: calculate integrated expected utility for the legal
+candidate set and return a ranked list, rather than forcing the model to manually
+integrate individual catalysts. The microscope now exposes
+`calculate_expected_utility()` / `calculate_expected_utility(plays=[...])`, rendering
+mean Q, p_make, confidence interval for the sampled mean, distribution shape, and a
+dominant information source for each candidate. `snapshot-utility` makes this the main
+synthesis tool, with `play_brief`, `simulate_hand_impact`, and `belief_trajectory` left
+as follow-up uncertainty inspections.
 
 ## Boundary
 

@@ -2787,3 +2787,33 @@ A live [[burl-microscope]] conversation asked Burl what was missing after
 catalyst line.
 
 **Questions opened:** none.
+
+## [2026-05-07 | local | Burl microscope expected-utility tool]
+
+A follow-up [[burl-microscope]] conversation using `snapshot-hypothesis` asked Burl
+what tool should exist after `simulate_hand_impact`. Burl named
+`calculate_expected_utility`: a high-level EV synthesis that ranks candidate plays
+instead of making the model manually integrate single-hypothesis probes.
+
+**Touched pages:** [[burl]] [[burl-lab]] [[burl-microscope]] [[index]] [[log]]
+
+**Added:**
+- `calculate_expected_utility(plays=[...])` as a first-class ToolSpec. Omitting
+  `plays` ranks the current legal plays. Output includes mean Q, p_make, sampled
+  mean CI, distribution shape, and dominant information source.
+- `snapshot-utility` recipe: clean `board_snapshot()`-first prompt with
+  `legal_plays`, `calculate_expected_utility`, and the lower-level follow-up tools
+  (`play_brief`, `simulate_hand_impact`, `belief_trajectory`) available.
+
+**Updated:**
+- [[burl-microscope]] documents the expected-utility tool and recipe.
+- [[burl-lab]] records the registry expansion to nine tools.
+- [[burl]] notes the sequence of Burl-requested tools from targeted hypothesis to
+  integrated EV ranking.
+- [[index]] updates the hooks for Burl Lab and Burl microscope.
+
+**Frontier shift:** The live microscope can now test whether Gemma behaves better
+when the EV integration step is made explicit as a tool, rather than reconstructed
+from separate `play_brief` and `simulate_hand_impact` calls.
+
+**Questions opened:** none.

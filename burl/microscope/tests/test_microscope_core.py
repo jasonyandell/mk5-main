@@ -18,6 +18,13 @@ def test_registry_includes_hand_hypothesis_tool() -> None:
     assert "play_id" in spec.params["required"]
 
 
+def test_registry_includes_expected_utility_tool() -> None:
+    spec = load_registry().find("calculate_expected_utility")
+    assert spec is not None
+    assert spec.protocol_role == "candidate_eval"
+    assert "plays" in spec.params["properties"]
+
+
 class FakeEngine:
     async def step(self, messages: list[dict], tools: list[ToolSpec], max_tokens: int = 2048):
         del messages, tools, max_tokens

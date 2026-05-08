@@ -1,0 +1,33 @@
+[
+  {
+    "name": "board_snapshot",
+    "protocol_role": "first_read",
+    "protocol_phrase": "The user prompt already includes a board_snapshot-style state summary; call `board_snapshot()` only if you need to reread or refresh the state."
+  },
+  {
+    "name": "legal_plays",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `legal_plays()` before evaluating so you know the exact legal candidate domino_ids."
+  },
+  {
+    "name": "calculate_expected_utility",
+    "protocol_role": "candidate_eval",
+    "protocol_phrase": "Call `calculate_expected_utility()` after `legal_plays()` to rank the current legal plays by integrated expected utility; use it as the main synthesis tool."
+  },
+  {
+    "name": "play_brief",
+    "protocol_role": "candidate_eval",
+    "protocol_phrase": "Call `play_brief(play=X)` when you need to inspect the modes/catalysts behind the expected-utility ranking."
+  },
+  {
+    "name": "simulate_hand_impact",
+    "protocol_role": "candidate_eval",
+    "protocol_phrase": "Call `simulate_hand_impact(play_id=X, seat='left_opp|partner|right_opp', holds=Y)` when a dominant information source or play brief catalyst needs targeted testing."
+  },
+  {
+    "name": "belief_trajectory",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `belief_trajectory()` when you need the broader posterior over unseen dominoes, not just one ranking or hypothesis."
+  },
+  "commit_play"
+]

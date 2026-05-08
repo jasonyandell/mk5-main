@@ -106,6 +106,7 @@ def _load_registry() -> Registry:
     try:
         from burl.lab.tools import (
             BELIEF_TRAJECTORY,
+            CALCULATE_EXPECTED_UTILITY,
             CHAT_MINED_TOOLS,
             COMMIT_PLAY,
             EXPLORE_GAME,
@@ -118,6 +119,7 @@ def _load_registry() -> Registry:
         for spec in CHAT_MINED_TOOLS:
             reg.add(spec)
         reg.add(SIMULATE_HAND_IMPACT)
+        reg.add(CALCULATE_EXPECTED_UTILITY)
     except ImportError as exc:
         log.info("[lab] tools not available: %s", exc)
     return reg

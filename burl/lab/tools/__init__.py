@@ -24,12 +24,14 @@ from burl.lab.tools.chat_mined import (
     PLAY_BRIEF,
     STATE_BRIEF,
 )
+from burl.lab.tools.expected_utility import CALCULATE_EXPECTED_UTILITY
 from burl.lab.tools.hand_hypothesis import SIMULATE_HAND_IMPACT
 
 __all__ = [
     "BELIEF_TRAJECTORY",
     "BOARD_SNAPSHOT",
     "CHAT_MINED_TOOLS",
+    "CALCULATE_EXPECTED_UTILITY",
     "COMMIT_PLAY",
     "EXPLORE_GAME",
     "LEGAL_PLAYS",
