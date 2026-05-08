@@ -77,3 +77,11 @@ A tool response template can use:
 ```
 
 Edit recipe files, then `/burl open` the same case again to compare.
+
+Useful starting recipes:
+
+| Recipe | Shape |
+|---|---|
+| `baseline` | Minimal user prompt: pre-rendered `board_snapshot()` output plus decide text; broad tool set. |
+| `legal-brief` | Forces `legal_plays()` then `play_brief()` over legal candidates. |
+| `snapshot-first` | Minimal user prompt: pre-rendered `board_snapshot()` output plus decide text; no oracle/original-Burl references. |

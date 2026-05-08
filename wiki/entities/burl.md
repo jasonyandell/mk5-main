@@ -498,11 +498,13 @@ tool, and tool-response experimentation. It keeps Pi as the terminal client via
 execution. Unlike [[burl-lab]], it intentionally avoids phase machinery: a session is
 just one harvested case + one editable recipe + one conversation + a JSONL trace.
 
-First smoke on [[burl-2000-harvest]] case `global_idx=1` (`BURL_BREAKS_CONSENSUS`):
-`baseline` reproduced the original Burl play `25` while `legal-brief` forced a
-legal-candidate protocol and committed oracle/consensus play `19`. Single-case
-smoke only, but it validates the intended loop: edit recipe → rerun same failed
-case → compare.
+First smoke on [[burl-2000-harvest]] case `global_idx=1` (`BURL_BREAKS_CONSENSUS`)
+validated the loop but also caught a prompt-leakage trap. The original `legal-brief`
+prompt exposed `oracle/reference play: 19`, so its `19` commit is not clean evidence.
+After stripping references and using `board_snapshot()` output plus decide text, fair
+`snapshot-first`/`legal-brief` runs chose `25`. The useful frontier result is the
+workflow itself and the evidence that `board_snapshot()` is a strong first-read
+surface, not a solved recipe for this case.
 
 ## Candidate role for [[book-strategy-player]] (2026-05-03)
 

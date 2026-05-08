@@ -39,19 +39,21 @@ A project-local Pi extension at `.pi/extensions/burl-microscope.ts` registers
 on. Pi is the terminal client; the microscope server owns Gemma inference,
 Gemma-native `tool_calls`/`tool_responses`, tool execution, and JSONL traces.
 
-## First smoke result
+## First smoke result and correction
 
-On `harvest_batched_20260425_072910`, `global_idx=1` (`BURL_BREAKS_CONSENSUS`):
+On `harvest_batched_20260425_072910`, `global_idx=1` (`BURL_BREAKS_CONSENSUS`),
+the initial smoke compared `baseline` and `legal-brief`. The first `legal-brief`
+version committed oracle/consensus play `19`, but its prompt exposed
+`oracle/reference play: 19` and `original Burl play: 25`. That result is now treated
+as a reference-leakage smoke, not evidence that the protocol alone fixed the case.
 
-| Recipe | Tool path | Final | Match |
-|---|---|---:|---|
-| `baseline` | `belief_trajectory → board_snapshot → explore_game(21) → play_brief(21) → play_brief(25) → play_brief(25) → commit_play(25)` | 25 | original Burl, not oracle |
-| `legal-brief` | `legal_plays → play_brief(19) → play_brief(25) → belief_trajectory → commit_play(19)` | 19 | oracle / pi / qmean |
-
-This is the microscope's motivating use case: the same base model and case can
-flip from the harvested Burl mistake to the oracle play through a recipe-level
-prompt/tool-protocol change. The result is a single-case smoke, not a batch
-claim.
+After stripping oracle/original-Burl references and using a minimal prompt shaped as
+`board_snapshot()` output plus decide text, both `snapshot-first` and fair
+`legal-brief` chose `25` on this case. The interactive session where the user talked
+with Burl and asked for `board_snapshot()` also reached `19`, but that conversation
+still contained the original prompt's reference leak. The frontier lesson is
+methodological: `board_snapshot()` is a good first-read surface, but this case is not
+yet a clean prompt-only win.
 
 ## Boundary
 

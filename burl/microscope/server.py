@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -70,6 +71,9 @@ class MicroscopeHandler(BaseHTTPRequestHandler):
                 self._send_json(tools_json())
             elif method == "POST" and path == "/api/sessions":
                 self._send_json(create_session(self._read_json()))
+            elif method == "POST" and path == "/api/shutdown":
+                self._send_json({"ok": True, "shutting_down": True})
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
             elif method == "GET" and _match(path, "/api/sessions/{sid}"):
                 sid = path.split("/")[3]
                 self._send_json(session_json(_session(sid)))

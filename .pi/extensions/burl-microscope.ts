@@ -46,11 +46,18 @@ export default function (pi: ExtensionAPI) {
 		return { action: "handled" as const };
 	});
 
-	pi.on("session_shutdown", async () => {
-		// Leave externally-started servers alone. If this extension spawned one,
-		// clean it up on pi shutdown/reload.
+	pi.on("session_shutdown", async (event) => {
+		// Reload tears down the extension runtime but should not tear down the
+		// microscope server. The replacement extension will reconnect to the
+		// already-running process, avoiding noisy Python resource_tracker warnings
+		// from MLX/oracle shutdown on every /reload.
+		if (event.reason === "reload") return;
 		if (serverProc) {
-			serverProc.kill();
+			try {
+				await postJson("/api/shutdown", {}, 2000);
+			} catch {
+				serverProc.kill();
+			}
 			serverProc = undefined;
 		}
 	});
@@ -149,16 +156,34 @@ async function handleCommand(
 			return;
 		}
 		case "stop":
-			if (serverProc) {
-				serverProc.kill();
+			try {
+				await postJson("/api/shutdown", {}, 2000);
 				serverProc = undefined;
-				emit(pi, "Stopped spawned Burl microscope server.");
-			} else {
-				emit(pi, "No spawned server to stop.");
+				emit(pi, "Stopped Burl microscope server.");
+			} catch (error) {
+				if (serverProc) {
+					serverProc.kill();
+					serverProc = undefined;
+					emit(pi, "Stopped spawned Burl microscope server.");
+				} else {
+					const msg = error instanceof Error ? error.message : String(error);
+					emit(pi, `No spawned server to stop (${msg}).`);
+				}
 			}
 			return;
 		default:
 			emit(pi, `Unknown /burl command ${JSON.stringify(cmd)}.\n\n${helpText()}`);
+	}
+}
+
+function writeServerStderr(chunk: Buffer | string) {
+	const text = String(chunk);
+	for (const line of text.split(/\r?\n/)) {
+		if (!line) continue;
+		if (line.includes("resource_tracker: There appear to be") || line.includes("warnings.warn('resource_tracker")) {
+			continue;
+		}
+		process.stderr.write(`[burl-microscope] ${line}\n`);
 	}
 }
 
@@ -194,7 +219,7 @@ async function ensureServer(ctx: ExtensionContext) {
 			env: { ...process.env },
 		});
 		serverProc.stdout.on("data", (chunk) => process.stderr.write(`[burl-microscope] ${chunk}`));
-		serverProc.stderr.on("data", (chunk) => process.stderr.write(`[burl-microscope] ${chunk}`));
+		serverProc.stderr.on("data", writeServerStderr);
 		serverProc.on("exit", () => {
 			serverProc = undefined;
 		});

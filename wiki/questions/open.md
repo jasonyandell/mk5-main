@@ -77,3 +77,6 @@ Format:
   - Context: The [[improvised-tools]] adoption asymmetry finding (`play_brief` registered but never called because the protocol section named only `explore_game(play=X)` literally) drove two structural fixes in burl-lab: rendered protocol text from active ToolSpecs, and HATEOAS `next_tools` on every tool result. The first is by-construction; the second is empirical. If `next_tools` advertisement does not move adoption, the rendered-protocol-text lever is the only one that does — and the platform's surface area shrinks to "edit the active set, watch the protocol text re-render, see what the model does." See [[burl-lab]], [[improvised-tools]], [[burl-tool-wishlist]].
 
 
+- **Q:** What additional prompt/tool-response framing lets Gemma choose `19` on Burl microscope case `global_idx=1` without oracle/original-play leakage or human steering?
+  - Raised: `local-2026-05-07` ([[burl-microscope]])
+  - Context: `board_snapshot()` is a strong first-read surface, but fair no-reference `snapshot-first` and `legal-brief` runs both committed `25` on the `BURL_BREAKS_CONSENSUS` case where oracle/pi/qmean prefer `19`.

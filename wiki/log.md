@@ -2733,3 +2733,27 @@ Burl mistake under `baseline` (`25`) and flipped to oracle/consensus play `19`
 under `legal-brief`.
 
 **Questions opened:** none.
+
+## [2026-05-07 | local | Burl microscope board-snapshot prompt correction]
+
+The first post-commit microscope review read the user's live session logs and
+corrected the initial `legal-brief` smoke claim.
+
+**Touched pages:** [[burl]] [[burl-microscope]] [[index]] [[questions/open]] [[log]]
+
+**Updated:**
+- [[burl-microscope]] now treats the original `legal-brief → 19` smoke as
+  reference-leakage-tainted because the prompt exposed `oracle/reference play: 19`.
+- [[burl]] now routes the frontier result to the workflow and the strength of
+  `board_snapshot()` as a first-read surface, not to a solved recipe.
+- [[index]] updates the one-line hook accordingly.
+
+**Frontier shift:** `board_snapshot()` is promoted as the clean default user-prompt
+substrate. Baseline and `legal-brief` prompts were stripped down to
+`board_snapshot()` output plus decide text / legal-candidate instructions. On the
+same `global_idx=1` case, fair no-reference `snapshot-first` and `legal-brief`
+runs both committed `25`; the case remains unsolved by prompt shape alone.
+
+**Questions opened:**
+- What additional prompt/tool-response framing lets Gemma choose `19` on this case
+  without oracle/original-play leakage or human steering? Logged in [[questions/open]].
