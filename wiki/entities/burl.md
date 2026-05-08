@@ -2,7 +2,7 @@
 title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
-last_updated: local-2026-05-06
+last_updated: local-2026-05-07
 status: active
 ---
 
@@ -505,6 +505,11 @@ After stripping references and using `board_snapshot()` output plus decide text,
 `snapshot-first`/`legal-brief` runs chose `25`. The useful frontier result is the
 workflow itself and the evidence that `board_snapshot()` is a strong first-read
 surface, not a solved recipe for this case.
+
+Burl's next live-tool request was more specific than another belief dump: a
+"Hypothetical Hand Simulation" / "Opponent Hand Query". The microscope now exposes
+that as `simulate_hand_impact(play_id=X, seat=..., holds=Y)`, which answers one
+seat/domino hypothesis with Gus plausibility plus conditional outcome shift.
 
 ## Candidate role for [[book-strategy-player]] (2026-05-03)
 

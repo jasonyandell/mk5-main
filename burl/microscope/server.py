@@ -39,6 +39,10 @@ _state: dict[str, Any] = {
 }
 
 
+class ReusableThreadingHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+
+
 class MicroscopeHandler(BaseHTTPRequestHandler):
     server_version = "BurlMicroscope/0.1"
 
@@ -267,7 +271,7 @@ def _match(path: str, pattern: str) -> bool:
 def main() -> None:
     host = os.environ.get("BURL_MICROSCOPE_HOST", "127.0.0.1")
     port = int(os.environ.get("BURL_MICROSCOPE_PORT", "8765"))
-    httpd = ThreadingHTTPServer((host, port), MicroscopeHandler)
+    httpd = ReusableThreadingHTTPServer((host, port), MicroscopeHandler)
     print(f"Burl microscope listening on http://{host}:{port}", flush=True)
     try:
         httpd.serve_forever()

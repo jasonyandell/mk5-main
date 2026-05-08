@@ -2757,3 +2757,33 @@ runs both committed `25`; the case remains unsolved by prompt shape alone.
 **Questions opened:**
 - What additional prompt/tool-response framing lets Gemma choose `19` on this case
   without oracle/original-play leakage or human steering? Logged in [[questions/open]].
+
+## [2026-05-07 | local | Burl microscope hand-hypothesis tool]
+
+A live [[burl-microscope]] conversation asked Burl what was missing after
+`board_snapshot`, `legal_plays`, `play_brief`, and `belief_trajectory`. Burl named a
+"Hypothetical Hand Simulation" / "Opponent Hand Query" and proposed
+`simulate_hand_impact`.
+
+**Touched pages:** [[burl]] [[burl-lab]] [[burl-microscope]] [[index]] [[log]]
+
+**Added:**
+- `simulate_hand_impact(play_id=X, seat=..., holds=Y)` as a first-class ToolSpec.
+  It returns one hidden-hand hypothesis's Gus plausibility plus baseline vs.
+  conditional E[Q] shift.
+- `snapshot-hypothesis` recipe: clean `board_snapshot()`-first prompt with
+  `board_snapshot`, `legal_plays`, `play_brief`, `belief_trajectory`,
+  `simulate_hand_impact`, and `commit_play` active.
+
+**Updated:**
+- [[burl-microscope]] documents the Burl-requested hypothesis tool and recipe.
+- [[burl-lab]] records the registry expansion from seven to eight tools.
+- [[burl]] notes that the requested tool is a query-shaped belief/simulation bridge,
+  not another broad posterior dump.
+- [[index]] updates the Burl microscope hook.
+
+**Frontier shift:** The microscope can now test targeted questions of the form
+"if seat S holds domino D, what happens to play P?" directly after a `play_brief`
+catalyst line.
+
+**Questions opened:** none.

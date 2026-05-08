@@ -2,7 +2,7 @@
 title: burl-microscope — Human-in-the-loop Burl recipe workbench
 kind: entity
 first_seen: local-2026-05-06
-last_updated: local-2026-05-06
+last_updated: local-2026-05-07
 status: active
 ---
 
@@ -32,6 +32,10 @@ The rendered system prompt still uses first-class `ToolSpec` values from
 protocol phrases, and protocol roles without editing the Python tool
 implementation.
 
+`snapshot-hypothesis` is the current garage-tinker variant: it keeps the clean
+`board_snapshot()`-first prompt and active tools `board_snapshot`, `legal_plays`,
+`play_brief`, `belief_trajectory`, `simulate_hand_impact`, and `commit_play`.
+
 ## Pi client
 
 A project-local Pi extension at `.pi/extensions/burl-microscope.ts` registers
@@ -54,6 +58,21 @@ with Burl and asked for `board_snapshot()` also reached `19`, but that conversat
 still contained the original prompt's reference leak. The frontier lesson is
 methodological: `board_snapshot()` is a good first-read surface, but this case is not
 yet a clean prompt-only win.
+
+## Burl-requested hypothesis tool
+
+A later interactive session asked Burl what information was missing. Burl named a
+"Hypothetical Hand Simulation" / "Opponent Hand Query" tool and proposed
+`simulate_hand_impact`: given a candidate play and a concrete hidden-hand hypothesis,
+report how likely the hypothesis is and how the play's outcome distribution changes if
+it is true.
+
+That request is now first-class as `simulate_hand_impact(play_id=X, seat=..., holds=Y)`.
+The tool combines [[belief-trajectory]]'s marginal probability for the queried
+seat/domino with [[wax-museum]]'s conditional E[Q] machinery, rendering the answer as
+"plausibility + baseline Q + conditional Q + shift" rather than another broad
+posterior table. It is meant to follow `play_brief` catalyst lines, not replace
+candidate evaluation.
 
 ## Boundary
 

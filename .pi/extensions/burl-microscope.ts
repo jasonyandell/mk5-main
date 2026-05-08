@@ -1,10 +1,11 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Box, Text } from "@mariozechner/pi-tui";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 
 const MESSAGE_TYPE = "burl-microscope";
 const BASE_URL = process.env.BURL_MICROSCOPE_URL ?? "http://127.0.0.1:8765";
 const DEFAULT_HARVEST = "harvest_batched_20260425_072910";
+const REQUIRED_SERVER_TOOLS = ["simulate_hand_impact"];
 
 let currentSession: string | undefined;
 let burlMode = false;
@@ -18,7 +19,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerCommand("burl", {
-		description: "Burl microscope: /burl open|step|say|auto|tools|prompt|mode|recipes|health",
+		description: "Burl microscope: /burl open|step|say|auto|tools|prompt|mode|recipes|health|restart",
 		handler: async (args, ctx) => {
 			const tokens = splitArgs(args);
 			const cmd = tokens.shift() ?? "help";
@@ -52,14 +53,7 @@ export default function (pi: ExtensionAPI) {
 		// already-running process, avoiding noisy Python resource_tracker warnings
 		// from MLX/oracle shutdown on every /reload.
 		if (event.reason === "reload") return;
-		if (serverProc) {
-			try {
-				await postJson("/api/shutdown", {}, 2000);
-			} catch {
-				serverProc.kill();
-			}
-			serverProc = undefined;
-		}
+		if (serverProc) await stopServer();
 	});
 }
 
@@ -75,7 +69,7 @@ async function handleCommand(
 			emit(pi, helpText());
 			return;
 		case "start":
-			await ensureServer(ctx);
+			await ensureServer(ctx, { requireFresh: true });
 			emit(pi, `Microscope server is up at ${BASE_URL}`);
 			return;
 		case "health": {
@@ -91,9 +85,17 @@ async function handleCommand(
 			return;
 		}
 		case "open": {
-			await ensureServer(ctx);
+			await ensureServer(ctx, { requireFresh: true });
 			const spec = parseOpenArgs(tokens);
-			const session = await postJson("/api/sessions", spec);
+			let session: any;
+			try {
+				session = await postJson("/api/sessions", spec);
+			} catch (error) {
+				if (!isStaleServerError(error)) throw error;
+				emit(pi, "Backend looks stale after a code reload; restarting microscope server and retrying.");
+				await restartServer(ctx);
+				session = await postJson("/api/sessions", spec);
+			}
 			currentSession = session.session_id;
 			emit(pi, formatSession(session) + "\n\nBurl mode is on. Type normal messages to chat with Burl, or use `/burl step`.");
 			burlMode = true;
@@ -155,21 +157,13 @@ async function handleCommand(
 			emit(pi, `Burl mode ${burlMode ? "on" : "off"}.`);
 			return;
 		}
+		case "restart":
+			await restartServer(ctx);
+			emit(pi, `Restarted Burl microscope server at ${BASE_URL}.`);
+			return;
 		case "stop":
-			try {
-				await postJson("/api/shutdown", {}, 2000);
-				serverProc = undefined;
-				emit(pi, "Stopped Burl microscope server.");
-			} catch (error) {
-				if (serverProc) {
-					serverProc.kill();
-					serverProc = undefined;
-					emit(pi, "Stopped spawned Burl microscope server.");
-				} else {
-					const msg = error instanceof Error ? error.message : String(error);
-					emit(pi, `No spawned server to stop (${msg}).`);
-				}
-			}
+			await stopServer();
+			emit(pi, "Stopped Burl microscope server.");
 			return;
 		default:
 			emit(pi, `Unknown /burl command ${JSON.stringify(cmd)}.\n\n${helpText()}`);
@@ -205,35 +199,137 @@ function parseOpenArgs(tokens: string[]) {
 	return spec;
 }
 
-async function ensureServer(ctx: ExtensionContext) {
-	try {
-		await getJson("/api/health", 1000);
+async function ensureServer(ctx: ExtensionContext, options: { requireFresh?: boolean } = {}) {
+	if (await isServerHealthy()) {
+		if (!options.requireFresh || await backendHasRequiredTools()) return;
+		ctx.ui.notify("Restarting stale Burl microscope server after code reload...", "info");
+		await restartServer(ctx);
 		return;
-	} catch {
-		// fall through and spawn
 	}
-	if (!serverProc) {
-		ctx.ui.notify("Starting Burl microscope server...", "info");
-		serverProc = spawn(process.env.PYTHON ?? "python", ["-m", "burl.microscope.server"], {
-			cwd: ctx.cwd,
-			env: { ...process.env },
-		});
-		serverProc.stdout.on("data", (chunk) => process.stderr.write(`[burl-microscope] ${chunk}`));
-		serverProc.stderr.on("data", writeServerStderr);
-		serverProc.on("exit", () => {
-			serverProc = undefined;
-		});
-	}
-	const deadline = Date.now() + 30_000;
-	while (Date.now() < deadline) {
-		try {
-			await getJson("/api/health", 1000);
+
+	// Give an already-running server a short grace period before spawning. A busy
+	// model/tool turn can make the 1s health probe miss, and blindly spawning then
+	// produces an address-in-use traceback.
+	const grace = Date.now() + 3_000;
+	while (Date.now() < grace) {
+		await new Promise((resolve) => setTimeout(resolve, 250));
+		if (await isServerHealthy()) {
+			if (!options.requireFresh || await backendHasRequiredTools()) return;
+			ctx.ui.notify("Restarting stale Burl microscope server after code reload...", "info");
+			await restartServer(ctx);
 			return;
-		} catch {
-			await new Promise((resolve) => setTimeout(resolve, 500));
 		}
 	}
+
+	await killServerOnPort();
+	await spawnServer(ctx);
+	await waitForHealthy(30_000);
+	if (options.requireFresh && !(await backendHasRequiredTools())) {
+		await restartServer(ctx);
+	}
+}
+
+async function restartServer(ctx: ExtensionContext) {
+	await stopServer();
+	await waitForStopped(5_000);
+	if (await isServerHealthy()) await killServerOnPort();
+	await spawnServer(ctx);
+	await waitForHealthy(30_000);
+}
+
+async function stopServer() {
+	try {
+		await postJson("/api/shutdown", {}, 2000);
+	} catch {
+		// Older/stuck servers may not have /api/shutdown. If this extension owns
+		// the child, fall back to killing it; otherwise there is nothing safe to do.
+		if (serverProc) serverProc.kill();
+	}
+	serverProc = undefined;
+	await killServerOnPort();
+}
+
+async function killServerOnPort() {
+	const port = new URL(BASE_URL).port || "80";
+	let stdout = "";
+	try {
+		stdout = await execFileText("lsof", [`-tiTCP:${port}`, "-sTCP:LISTEN"]);
+	} catch {
+		return;
+	}
+	const pids = stdout.split(/\s+/).filter(Boolean);
+	for (const pid of pids) {
+		try {
+			process.kill(Number(pid), "SIGTERM");
+		} catch {
+			// Process may have exited between lsof and kill.
+		}
+	}
+	if (pids.length > 0) await new Promise((resolve) => setTimeout(resolve, 500));
+}
+
+function execFileText(cmd: string, args: string[]) {
+	return new Promise<string>((resolve, reject) => {
+		execFile(cmd, args, (error, stdout) => {
+			if (error) reject(error);
+			else resolve(stdout);
+		});
+	});
+}
+
+async function spawnServer(ctx: ExtensionContext) {
+	if (serverProc) return;
+	ctx.ui.notify("Starting Burl microscope server...", "info");
+	serverProc = spawn(process.env.PYTHON ?? "python", ["-m", "burl.microscope.server"], {
+		cwd: ctx.cwd,
+		env: { ...process.env },
+	});
+	serverProc.stdout.on("data", (chunk) => process.stderr.write(`[burl-microscope] ${chunk}`));
+	serverProc.stderr.on("data", writeServerStderr);
+	serverProc.on("exit", () => {
+		serverProc = undefined;
+	});
+}
+
+async function waitForHealthy(timeoutMs: number) {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		if (await isServerHealthy()) return;
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
 	throw new Error(`Burl microscope server did not start at ${BASE_URL}`);
+}
+
+async function waitForStopped(timeoutMs: number) {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		if (!(await isServerHealthy())) return;
+		await new Promise((resolve) => setTimeout(resolve, 250));
+	}
+}
+
+async function isServerHealthy() {
+	try {
+		await getJson("/api/health", 1000);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function backendHasRequiredTools() {
+	try {
+		const data = await getJson("/api/tools", 2000);
+		const names = new Set((data.tools ?? []).map((tool: any) => String(tool.name)));
+		return REQUIRED_SERVER_TOOLS.every((name) => names.has(name));
+	} catch {
+		return false;
+	}
+}
+
+function isStaleServerError(error: unknown) {
+	const msg = error instanceof Error ? error.message : String(error);
+	return msg.includes("references unknown tool") || msg.includes("unknown tool");
 }
 
 async function getJson(path: string, timeoutMs = 10_000) {
@@ -336,6 +432,8 @@ function helpText() {
 /burl mode on|off                    route normal typed input to Burl
 /burl recipes                        list recipes
 /burl health                         show backend health
+/burl restart                        restart backend after Python code/tool changes
+/burl stop                           stop backend server
 
 Recipe files live under burl/microscope/recipes/. Edit system.md, play.md,
 tools.json, or tool_responses/<tool>.md, then /burl open the same case again.`;

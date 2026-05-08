@@ -109,6 +109,7 @@ def _load_registry() -> Registry:
             CHAT_MINED_TOOLS,
             COMMIT_PLAY,
             EXPLORE_GAME,
+            SIMULATE_HAND_IMPACT,
         )
 
         reg.add(BELIEF_TRAJECTORY)
@@ -116,6 +117,7 @@ def _load_registry() -> Registry:
         reg.add(COMMIT_PLAY)
         for spec in CHAT_MINED_TOOLS:
             reg.add(spec)
+        reg.add(SIMULATE_HAND_IMPACT)
     except ImportError as exc:
         log.info("[lab] tools not available: %s", exc)
     return reg

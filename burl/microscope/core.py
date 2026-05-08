@@ -26,6 +26,7 @@ from burl.lab.tools import (
     EXPLORE_GAME,
     LEGAL_PLAYS,
     PLAY_BRIEF,
+    SIMULATE_HAND_IMPACT,
     STATE_BRIEF,
 )
 
@@ -48,6 +49,7 @@ def load_registry() -> Registry:
         BOARD_SNAPSHOT,
         LEGAL_PLAYS,
         PLAY_BRIEF,
+        SIMULATE_HAND_IMPACT,
         EXPLORE_GAME,
         COMMIT_PLAY,
     ):

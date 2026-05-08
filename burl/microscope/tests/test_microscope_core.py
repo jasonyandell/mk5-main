@@ -8,7 +8,14 @@ import pytest
 
 from burl.lab.core.tool import Registry, ToolResult, ToolSpec
 from burl.lab.core.transcript import EngineDone, EngineStart, EngineToken, EngineToolCall, Stamp
-from burl.microscope.core import Case, MicroscopeSession, load_recipe
+from burl.microscope.core import Case, MicroscopeSession, load_recipe, load_registry
+
+
+def test_registry_includes_hand_hypothesis_tool() -> None:
+    spec = load_registry().find("simulate_hand_impact")
+    assert spec is not None
+    assert spec.protocol_role == "candidate_eval"
+    assert "play_id" in spec.params["required"]
 
 
 class FakeEngine:

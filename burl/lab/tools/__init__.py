@@ -24,6 +24,7 @@ from burl.lab.tools.chat_mined import (
     PLAY_BRIEF,
     STATE_BRIEF,
 )
+from burl.lab.tools.hand_hypothesis import SIMULATE_HAND_IMPACT
 
 __all__ = [
     "BELIEF_TRAJECTORY",
@@ -33,5 +34,6 @@ __all__ = [
     "EXPLORE_GAME",
     "LEGAL_PLAYS",
     "PLAY_BRIEF",
+    "SIMULATE_HAND_IMPACT",
     "STATE_BRIEF",
 ]
