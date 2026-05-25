@@ -2817,3 +2817,26 @@ when the EV integration step is made explicit as a tool, rather than reconstruct
 from separate `play_brief` and `simulate_hand_impact` calls.
 
 **Questions opened:** none.
+
+## [2026-05-25 | local | Fair 42 agent table skill]
+
+The fair 42 table pilot was scoped around live play rather than full automation:
+P0 stays human/cheater/referee, P1-P3 are fair-view agent seats, bidding is
+skipped, and the agents use Burl-style tools through wrapper messages.
+
+**Touched pages:** [[fair-42-agent-table]] [[index]] [[log]]
+
+**Added:**
+- [[fair-42-agent-table]] playbook for the human-in-loop table, seat visibility
+  contract, tool posture, and friction loop.
+- `.agents/skills/forty-two-table-player/SKILL.md` as the Codex seat skill,
+  mirrored to `.claude/skills/forty-two-table-player/SKILL.md`.
+- Skill helper scripts for formatting referee/broker messages and reading or
+  appending table friction.
+
+**Frontier shift:** The table-agent contract now treats friction as part of play.
+Agents read recent friction at seat start and log rough edges in
+`scratch/42-table/friction.jsonl`, so repeated awkwardness can become a small
+wrapper, prompt, or skill update instead of another ad hoc workaround.
+
+**Questions opened:** none.

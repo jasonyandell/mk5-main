@@ -426,6 +426,7 @@ catalog:
 
 ## Playbooks
 
+- [[playbooks/fair-42-agent-table|fair-42-agent-table]] — human-in-loop fair 42 table protocol: P0 cheater/referee, P1-P3 filtered agent seats, Burl tools, send-message wrappers, and friction logs (active)
 - [[playbooks/perf-sprint|perf-sprint]] — entry point: one metric, equivalence gate, orchestrator + backgrounded team-worker for context discipline (active)
 - [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message; supervision heartbeat (status pings, stuck-worker recovery), not the driver (active)
 - [[playbooks/perf-sprint-goal|perf-sprint-goal]] — sticky-goal template for scratch/<sprint>/PERF_GOAL.md (active)

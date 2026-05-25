@@ -1,0 +1,4 @@
+interface:
+  display_name: "42 Table Player"
+  short_description: "Fair 42 seat play with friction logs"
+  default_prompt: "Use $forty-two-table-player to play your assigned Texas 42 seat fairly, request tools through the wrapper, and log friction."
