@@ -1,0 +1,146 @@
+---
+title: Champion — unified belief-state player
+kind: entity
+first_seen: local-2026-06-09
+last_updated: local-2026-06-09
+status: active
+phase: direction set; arena + auction v0 are the first rungs
+---
+
+## What it is
+
+The champion is the unification target for the project's player work: one
+belief-state player that bids and plays full games to 7 marks, built from
+pieces that already exist as separate artifacts. The reframe (2026-06-09): the
+[[forge]] oracle, [[gus]], the pre-wiki bidding evaluators, the mark-utility
+machinery, and the [[w42]] concept vocabulary are stapled together today; the
+champion is the architecture that makes them one thing — and the same object,
+read from the other side, is the teacher.
+
+Action ladder lives in GitHub issues, milestone **Champion**
+(beads retired 2026-06; historical beads remain readable in
+`.beads/issues.jsonl`).
+
+## Decision loop
+
+At every decision, bid or play:
+
+1. Maintain a posterior over the 21 hidden tiles conditioned on **all**
+   evidence — auction history, every play, every failure to follow suit.
+2. Sample worlds from that posterior, not uniformly over consistent worlds.
+3. Evaluate each world with the perfect-info oracle ([[expected-q-value]]) or
+   its student ([[gus]]); marginalize.
+4. Choose under marks-to-7 win probability conditioned on the score, not raw
+   points and not fixed p_make.
+
+This is the belief-conditioned-search architecture behind the strongest
+bridge, Skat, and poker programs. Texas 42 is small for the class (7 tricks,
+~4×10⁸ worlds at deal collapsing rapidly with voids), so near-equilibrium play
+is a realistic target, not a romantic one. The residual [[pimc]] flaw
+(strategy fusion, information value) is mitigated by self-play consistency and
+— optionally, the summit — depth-limited subgame re-solving on late tricks,
+where 42's endgames are small enough to solve exactly at the information-set
+level.
+
+## Asset map
+
+| Organ | Status | Where |
+|---|---|---|
+| Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |
+| Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
+| One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
+| Belief posterior | partial | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]; **not** auction-conditioned; **not** wired into world sampling |
+| Mark utility | partial | mark_ev transform validated ([[w42-bookval-v1-wave2-bid-aware-atlas]]); not score-conditioned (Lens v2 design preserved in former bead t42-nwuu) |
+| Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
+| Auction policy | **missing** | — |
+| Full-game arena | **missing** | — |
+| Self-play consistency | **missing** | — |
+
+## Bidding inventory (pre-wiki work, promoted 2026-06-09)
+
+Contract evaluation predates the wiki and was never promoted until now:
+
+- `forge/bidding/` (2026-01): Monte Carlo contract evaluator — hand →
+  P(make) over 9 declarations × 13 bids, Wilson CIs, convergence analysis
+  (N=500 ≈ ±0.04), PDF poster, multi-GPU support, and a continuous corpus
+  generator with a finished 365-column parquet schema
+  (`forge/bidding/schema.py`). The corpus generator **never ran**; no
+  `data/bidding-results/` exists.
+- `gus/bidding/` (2026-04): second-generation evaluator with Gus playing all
+  four seats; batched all-trumps × N games; `find_best_bid` returns
+  (trump, bid, mark swing). Seconds per hand.
+- `w42/bidding_risk_budget_claim_validation/hand_eval()`: static
+  [[at-risk-points]] metrics (`unique_exposed_points`, `bid_ceiling_proxy`,
+  trump counts) reused across the w42 bidding claim tests.
+- TS-side `BeginnerAIStrategy` (`src/game/ai/`): 5-sim Monte Carlo per bid,
+  fixed 0.50 threshold; elementary but wired into the playable game.
+- Known landmine ([[gen-fleet]] priority 1): `contract_threshold_bins` exists
+  but `bid_value` is not plumbed through generation action selection, so
+  generated play is bid-30-shaped regardless of recorded bid.
+
+Every piece answers "P(make) if I play contract (decl, B)" — the hand in a
+vacuum. None answers the live auction question: pass vs bid given partner and
+opponent bids, the defensive value of the pass alternative, and the score.
+Forcing bid=30 in all evals dodges all three at once.
+
+## Why the auction dominates
+
+Once card play is near-double-dummy, remaining edge in trick-taking games
+concentrates in auction accuracy and belief quality (the bridge lesson). The
+stack's card play is already near-oracle (0.49–0.55 regret); no auction
+exists. Marginal-value ranking for the champion:
+
+**auction ≫ belief-weighted worlds > score-conditioned utility ≫ card-play polish.**
+
+## Self-consistency
+
+A bid is information only if the policy that produces bids is the policy the
+belief model is trained on. The champion reaches that fixed point by self-play
+iteration: arena games with the current bidder+player → retrain the belief
+model on those games → re-derive the policy via belief-weighted oracle search
+→ repeat. Bidding conventions emerge as equilibrium artifacts rather than
+authored rules. Existing evidence for the wiring step: [[belief-co-train]]'s
+q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
+
+## Build ladder
+
+1. **Arena** — full games: auction + play, marks to 7; paired-seed team
+   rotation like `w42/lens_v1/parallel_match.py`. The measuring stick; "best
+   player" is not a measurable sentence without it.
+2. **Auction v0** — Roberson risk-budget policy over `gus/bidding`
+   (anchor: ch02 bid-only-enough, `supported` at wave 2.B.2).
+3. **Bid-strength net** — finish the 2026-01 plan: run the corpus generator
+   Gus-backed, distill hand → (decl × bid) p_make table to <1ms.
+4. **Belief v2** — condition the belief head on auction + play history
+   (training data free from arena self-play); revisit [[belief-bayes-ceiling]]
+   with auction evidence.
+5. **Belief-weighted world sampling** — replace uniform consistent sampling in
+   the oracle player; one change improves bidding, play, and defense together.
+6. **Self-play fixed point** — iterate policy ↔ belief until conventions
+   stabilize.
+7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM
+   analogue; absorbs the Lens v2 design).
+8. **Summit (optional)** — depth-limited subgame re-solving on late tricks;
+   exact information-set endgame solving.
+
+## Teaching half
+
+A maximally strong player is mute; the [[w42]] campaign built the concept
+vocabulary that makes it legible. Run the champion through the detector
+battery: where the book is right, where it is wrong, and what to do instead —
+with receipts ("Roberson says double ahead of your off; the champion agrees
+84% of the time, and the 16% has a pattern"). [[burl]] narrates in the
+Roberson idiom ([[at-risk-points]], [[post-commit-q-and-a]]). The distillation
+chain **oracle → champion → gus → burl → lem** is also the pedagogy chain:
+each level explains the one above to the one below. Target artifact: a
+data-validated strategy guide — *Winning 42, second edition*.
+
+## Links
+
+- [[forge]] · [[gus]] · [[burl]] · [[lem]] · [[w42]] — the organs
+- [[w42-lens-v1-utility-head-to-head]] — EV ceiling for fixed one-step utilities
+- [[w42-bookval-v1-wave2-bid-aware-atlas]] — bid-aware mark machinery + power analysis
+- [[belief-bayes-ceiling]] · [[belief-co-train]] — belief evidence base
+- [[pimc]] — the flaw the self-play loop and the summit address
+- [[book-strategy-player]] — plan algebra; natural fit is contract plans at the auction, not play-phase overlay
+- [[w42-book-claim-synthesis-and-ai-directions]] — the single-decision blind spot that started this thread

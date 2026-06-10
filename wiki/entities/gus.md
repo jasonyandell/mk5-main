@@ -712,3 +712,13 @@ selector. Gus's `belief_head` + `V_head` + `world_encoder` are all directly usef
 without modification.
 
 See [[book-strategy-player]] for the full pipeline architecture.
+
+## Role in [[champion]] (2026-06-09)
+
+The champion direction makes Gus's belief head the posterior engine of the
+unified player: conditioned on auction + play history (belief v2) and wired
+into oracle world sampling, replacing uniform consistent sampling.
+[[belief-co-train]]'s q-bootstrap-belief result (belief-sampled worlds beat
+corpus worlds, 0.655) is the standing evidence for the wiring step.
+`gus/bidding/` (2026-04) already uses Gus as the simulating player for
+contract evaluation and is the substrate for auction v0. See [[champion]].

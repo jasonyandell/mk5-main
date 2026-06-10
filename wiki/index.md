@@ -14,6 +14,7 @@ catalog:
 - [[entities/w42|w42]] — Winning 42 book validation, strategy detectors, claim ledger, and report-shaped research (active)
 - [[trails/w42-book-validation|w42-book-validation]] — curated route through the W42 / Winning 42 evidence pile, Lens v1, and planning-aware frontier (active)
 - [[entities/book-strategy-player|book-strategy-player]] — compact algebraic Phase 1 contract for the strategy player: Reader/State/Writer core, finite strategy library, lawful facts, deterministic arbitration, and replay-pure recording (active)
+- [[entities/champion|champion]] — unification target: one belief-state player that bids and plays full games to 7 marks; asset map, build ladder (arena → auction → belief-weighted worlds → self-play), and the teaching half (active)
 
 ## Entities
 
@@ -24,6 +25,7 @@ catalog:
 - [[entities/forge-analysis|forge-analysis]] — statistical analysis workstream over forge's ~300M oracle states; produces a publication-shaped report (active)
 - [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
+- [[entities/champion|champion]] — unified belief-state player: decision loop (posterior → belief-weighted worlds → oracle value → marks-to-7 utility), pre-wiki bidding inventory, and the auction-first build ladder (active)
 
 ### LEM — STaR curriculum project
 

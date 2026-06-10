@@ -2817,3 +2817,32 @@ when the EV integration step is made explicit as a tool, rather than reconstruct
 from separate `play_brief` and `simulate_hand_impact` calls.
 
 **Questions opened:** none.
+
+## [2026-06-09 | local-session | Champion — unified belief-state player direction]
+
+The session reframed the project's player work around one architecture: a
+belief-state player that bids and plays full games to 7 marks. Pre-wiki
+bidding work (`forge/bidding/` 2026-01, `gus/bidding/` 2026-04) was located
+and promoted into the wiki for the first time. The auction was named the
+dominant strength gap (auction ≫ belief-weighted worlds > score utility ≫
+card-play polish), and the teaching half (champion vs. the W42 detector
+battery, Burl narration) was identified as the same object read from the
+other side.
+
+**Touched pages:** [[champion]] [[gus]] [[index]] [[log]]
+
+**Added:**
+- [[champion]] — decision loop, asset map, pre-wiki bidding inventory,
+  self-consistency fixed point, 8-rung build ladder, teaching half.
+
+**Updated:**
+- [[gus]] — role in the champion: belief head as the posterior engine,
+  auction-conditioned and wired into oracle world sampling.
+- [[index]] — champion added to Start here and Shared infrastructure.
+
+**Frontier shift:** beads is retired (2026-06); the champion action ladder
+lives in GitHub issues (milestone "Champion") on jasonyandell/mk5-main.
+Historical beads remain readable in `.beads/issues.jsonl`. The wiki carries
+information; GitHub issues carry action.
+
+**Questions opened:** none.
