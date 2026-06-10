@@ -413,6 +413,48 @@ Fisher z-transform confidence intervals for all correlations (n=200):
 
 **Key insight**: Many features show bivariately significant correlations with E[V], but in multivariate regression (13a), only n_doubles and trump_count survive. This indicates that has_trump_double, n_voids, and count_points are largely explained by their association with the two key predictors.
 
+### SHAP on Q-Val Transformer (14d)
+
+Transformer-level SHAP using `shap.GradientExplainer` on the actual 3.3M-parameter oracle transformer.
+The SHAP method operates on the concatenated sub-embedding outputs (pre-`input_proj`), giving per-token attributions at the value head.  n=200 synthetic root states (deal_from_seed), decl_id=3 (sixes trump), SHAP computed with 100-state background.
+
+**Top 5 dominoes by mean |SHAP| at value head:**
+
+| Domino | Mean |SHAP| | Type |
+|--------|-------------|------|
+| 6-3 | 0.339 | Other |
+| 3-3 | 0.313 | Double |
+| 5-5 | 0.244 | Double (10 pts) |
+| 5-3 | 0.230 | Other |
+| 6-4 | 0.207 | Count (10 pts) |
+
+**Category elevation vs baseline (non-count, non-double dominoes):**
+- Doubles: 1.13x elevated
+- Count non-doubles: 1.26x elevated
+
+**Per-player mean |SHAP|:** P3/opp-right shows slightly higher importance (0.178) vs others (~0.152-0.155).
+
+**Corroborates or contradicts 14a?** Partial corroboration with nuance:
+- 14a found n_doubles and trump_count dominated the surrogate by a large margin (4.84 vs 1.4 for next)
+- The transformer shows weaker differentiation (1.13x doubles elevation, not 3x) — the gap between doubles/counts and other dominoes is much smaller
+- The transformer appears to distribute attribution more broadly across tokens: 6-3 (a low-ranking "other" domino) is #1, suggesting the transformer attends to specific domino combinations rather than categorical features
+- The 5-5 (strongest single domino from 17a enrichment) confirms at rank 3; 6-0 (worst from 17a) is near the bottom
+
+**Approximation notes:**
+- SHAP is computed in embedding space (not logit/prediction space), so units are not directly comparable to 14a's point-scale SHAP
+- GradientExplainer residual: mean |SHAP_sum - (pred - E_bg)| = 0.11 (acceptable for deep network, not exact)
+- decl_id=3 (sixes trump) is one declaration; results may vary across trump suits
+
+**Saved files:**
+- `results/figures/14d_shap_token_importance.png` — Per-token bar chart colored by player
+- `results/figures/14d_shap_per_domino.png` — Per-domino importance (all 28 dominoes)
+- `results/figures/14d_shap_comparison.png` — Side-by-side with 14a surrogate SHAP
+- `results/figures/14d_shap_waterfall.png` — Best vs worst state signed SHAP breakdown
+- `results/tables/14d_shap_token_importance.csv` — Per-token mean |SHAP|
+- `results/tables/14d_shap_per_domino.csv` — Per-domino mean |SHAP| with pip labels
+
+**Loading workaround:** The checkpoint was saved with `torch.compile`, producing `_orig_mod` prefix in state_dict keys. Strip with `k.replace('model._orig_mod.', '').replace('model.', '')` and load into `DominoTransformer` directly (do not use `DominoLightningModule.load_from_checkpoint` — it fails with `weights_only=False` key-stripping issues on this checkpoint).
+
 ### SHAP Analysis on E[V] Model (14a)
 
 SHAP (SHapley Additive exPlanations) analysis using GradientBoostingRegressor + TreeExplainer:
