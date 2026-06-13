@@ -3067,3 +3067,42 @@ to — A takes more auctions (54.1% offense share) — but the extra marginal co
 are made at a lower rate (65.6% vs 69.1%), so volume and quality cancel: q=0.4 sits
 near the break-even point. The behavioral change is real and win-rate-neutral; the
 *right* q, derived from self-play rather than a hand-set scalar, is rung #26.
+
+---
+
+## [2026-06-13 | pending | Champion #24 + #26 scaffolded + adversarially reviewed]
+
+Resumed the [[champion]] epic to land the heavy-training frontier the last session
+documented-but-didn't-build. The handoff's blocker — "bid tokens grow
+`tokenize.py`'s vocab and break every adapter" — dissolved on reading the code: the
+**auction is a side feature**, not tokens. `gus/model/auction.py
+auction_feature_vector` (per-relative-seat bid/pass/winner + winning-bid level + a
+declared-trump one-hot) → `BidsEncoder` → added to the pooled state_emb, mirroring
+`VoidsEncoder` exactly (`StudentTransformerFullVoidsAuction`). No tokenizer change,
+so the #25 belieflens and the gus bidder load and behave identically; `load_gus`
+auto-detects via the `--auction` flag. Same "find the lower-risk seam" move as #25's
+`compute_eq_weighted_mean`.
+
+**#26 data bridge** (the reason #24 can mean anything): the belief corpus had no real
+auction (seed deal + imposed bid), so `arena.cli --emit-snapshots` now dumps each
+contracted hand's deal + real per-seat auction, and
+`forge.cli.generate_eq_from_snapshots` runs the SAME oracle E[Q] generation on those
+deals — with the **declarer leading the first trick** — stamping the auction onto each
+`GameRecordGPU`. Proven end-to-end on MPS. Two-track build (model vs bridge) split by
+file-conflict structure; a background agent owned the bridge.
+
+**Adversarial review workflow** (5 dimensions → verify) confirmed 9 findings, dismissed
+5. The keeper was CRITICAL: the bridge generated every deal with seat 0 leading while
+the stamped bidder varied — a train/inference mismatch. Fixed (`from_deals` sets
+`leader=bidder`). Also added the declared-trump to the feature (the head's own
+"declared fours ⇒ holds fours" rationale was missing) and hardened the gus bidder
+against an auction model. Follow-ups #30/#31 filed.
+
+Trained measurement is **GPU-gated** — the box was busy with other training all
+session — set up as a train-time A/B (auction vs voids control on the SAME
+real-auction corpus) so the delta isolates the auction's contribution. Honest prior:
+with the conservative `net:wp` bidder the live signal is mostly winner+suit (bid
+magnitude near-degenerate, #31), so expect a small delta — one more honest
+measurement in this project's tradition. Scaffold pushed to `origin/forge`
+(d84e22e, b0b35d3, b4baec7); one-command training kickoff at
+`scratch/champion-run/run_24_pipeline.sh`.

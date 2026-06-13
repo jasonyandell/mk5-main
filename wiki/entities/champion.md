@@ -2,9 +2,9 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: local-2026-06-12
+last_updated: local-2026-06-13
 status: active
-phase: rungs #20-#23, #27 v2, #25 landed (2026-06-12); play-risk (wrong lever) + belief-weighting (null, pending stronger belief) measured; #24 auction-conditioned belief is the next unlock
+phase: rungs #20-#23, #27 v2, #25 landed (2026-06-12); #24 auction-conditioned belief + #26 arena→corpus self-play bridge SCAFFOLDED + adversarially reviewed (2026-06-13), trained measurement GPU-gated; play-risk (wrong lever) + belief-weighting (null, pending stronger belief) measured
 ---
 
 ## What it is
@@ -49,13 +49,13 @@ level.
 | Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |
 | Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
 | One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
-| Belief posterior | wired (null) | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]. **Now wired into world sampling** (rung #25, `champion/belief.py`+`play.py`): importance-weights MRV worlds by the posterior, ESS-active (~5–8/10) but measured **null** in the arena (−0.13 marks/game, CI includes zero) — the play-evidence belief is too weak. **not** auction-conditioned — that's the #24 unlock |
+| Belief posterior | wired (null) | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]. **Now wired into world sampling** (rung #25, `champion/belief.py`+`play.py`): importance-weights MRV worlds by the posterior, ESS-active (~5–8/10) but measured **null** in the arena (−0.13 marks/game, CI includes zero) — the play-evidence belief is too weak. **#24 auction-conditioning scaffold landed + reviewed 2026-06-13** (`gus/model/auction.py` + `StudentTransformerFullVoidsAuction`): the auction enters as a side feature (winner/bid/decl), no tokenizer change so existing adapters are untouched; trained delta is GPU-gated (see ladder rung 4) |
 | Mark utility | **v2** | `champion/utility.py`: `race_wp` Pascal WP table + `MarksToSeven` (now with an optional equilibrium-aware pass model `pass_q_opp`/`pass_make_rate`, default off = v1) + `score_to_utility` for play risk. Score-conditioned **play** risk measured **negative** (rung #27 v2): `ScoreConditionedLensPlay` loses to `lens:ev` −1.20 marks/game, CI [−1.69,−0.70] ([[arena]]) — risk-shaped lenses sacrifice contracts (make-rate 48.9% vs 60.2%); confirms play-risk is the wrong lever. Pass model shifts 16.7% of sampled bids toward fighting for the auction (win-rate impact unmeasured) |
 | Bid-strength net | **done + wired** (rung #22) | `champion/bid_net.py`: Gus-backed corpus (`bidding_continuous.py` rewired off the retired 817k policy) distilled to a hand → (9 decl × 13 bid) p_make MLP (MAE 0.053, ECE 0.007). **Now wired into the policy** as `NetPointsEvaluator` via `GusBidder(pmake_fn=...)` (CLI `net:wp`): 0.68 ms/hand, ~1500× faster than the live Gus sim. **Beats the heuristic 85/128 (+1.29 marks/game, CI [+0.72,+1.84])** — matches/exceeds the sim bidder's own +1.09 edge, validating the distillation, and reaches notrump/doubles-trump the 8-decl sim bidder cannot ([[arena]]) |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
 | Auction policy | v0 (two tiers) | static risk-budget `HeuristicBidder` (`arena/bidders.py`), beats bid30 58.9% under identical play ([[arena]]); **Gus-backed** `champion.GusBidder` (2026-06-12, rung #21) — min positive-utility bid over a simulated P(make) table, pluggable `MarkEV`/`MarksToSeven` utility, static prefilter, one Gus eval per hand cached. **Beats the static heuristic 84/128 (65.6%), +1.09 marks/game, 95% CI [+0.54, +1.62]** under identical oracle play — wins on make-rate (65.8% vs 55.8%) and doubles-trump access, not auction volume ([[arena]]) |
 | Full-game arena | **done** | [[arena]] (2026-06-12); 192 games ≈ 150 s; `BidContext` now carries game score for score-conditioned bidding; `gus[:samples[,wp]]` CLI bidder |
-| Self-play consistency | **missing** | — |
+| Self-play consistency | **bridge landed** (rung #26) | `arena.cli --emit-snapshots` → `forge.cli.generate_eq_from_snapshots`: arena real-auction games → oracle E[Q] corpus (declarer leads) → belief-trainable `GameRecordGPU` with the auction. One policy→corpus→belief round, proven on MPS; full iteration remains |
 
 ## Bidding inventory (pre-wiki work, promoted 2026-06-09)
 
@@ -133,7 +133,19 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    rung #23.
 4. **Belief v2** — condition the belief head on auction + play history
    (training data free from arena self-play); revisit [[belief-bayes-ceiling]]
-   with auction evidence.
+   with auction evidence. **Scaffold landed + reviewed 2026-06-13** (rung #24):
+   instead of bid *tokens* (which would grow `gus/model/tokenize.py`'s vocab and
+   break every existing adapter at load), the auction is an explicit **side
+   feature** — `auction_feature_vector` (per-relative-seat bid/pass/winner +
+   winning-bid level + a declared-trump one-hot, the "winner declared fours ⇒
+   winner holds fours" signal) → `BidsEncoder` → added to the pooled state_emb,
+   mirroring `VoidsEncoder` exactly (`StudentTransformerFullVoidsAuction`,
+   `gus/model/student.py`). No tokenizer change ⇒ the #25 belieflens and the gus
+   bidder load and behave identically; `load_gus` auto-detects via `--auction`.
+   Trained measurement is GPU-gated (a train-time A/B vs a voids control on the
+   SAME real-auction corpus isolates the auction's contribution). Honest prior:
+   with the conservative `net:wp` bidder the live signal is mostly winner+suit
+   (bid magnitude near-degenerate → issue #31), so expect a **small** delta.
 5. **Belief-weighted world sampling** — **mechanism landed 2026-06-12**
    (`champion/play.py BeliefLensPlay`): importance-weights the MRV worlds by the
    Gus belief posterior (`champion/belief.py`), changing only the marginalization
@@ -144,7 +156,16 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    and the win awaits the stronger auction-conditioned belief of rung #24
    ([[arena]]). One change will then improve bidding, play, and defense together.
 6. **Self-play fixed point** — iterate policy ↔ belief until conventions
-   stabilize.
+   stabilize. **Data bridge landed + reviewed 2026-06-13** (rung #26): the belief
+   corpus had no real auction (`generate_eq_continuous` deals from a seed with an
+   imposed bid), so conditioning on it teaches nothing. `arena.cli
+   --emit-snapshots` now dumps every contracted hand's real deal + per-seat
+   auction; `forge.cli.generate_eq_from_snapshots` runs the SAME oracle E[Q]
+   generation on those deals (the declarer leads the first trick, matching real
+   play) and stamps the auction onto each `GameRecordGPU` → a corpus loadable by
+   `JointWorldFullDataset`. Proven end-to-end on MPS. This is the one round of the
+   policy→corpus→belief loop; full iteration (retrain the policy on the new
+   belief, repeat) remains.
 7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM
    analogue; absorbs the Lens v2 design). **v2 done 2026-06-12**
    (`champion/utility.py`, `champion/play_risk.py`): `race_wp` is the WP table
