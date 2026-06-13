@@ -17,6 +17,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
+from .auction import N_AUCTION_FEATURES
 from .features import FEATURE_DIM, N_DOMINOES
 from .tokenize import (
     N_PLAYER_REL,
@@ -480,6 +481,98 @@ class StudentTransformerFullVoids(nn.Module):
         h = self.encoder(tokens, attention_mask)
         cls_h = h[:, 0, :]
         state_emb = cls_h + self.voids_encoder(voids)
+
+        belief_logits = self.belief(state_emb)
+        v = self.v_head(state_emb).squeeze(-1)
+        pi_me_logits = self.pi_me(state_emb)
+
+        world_emb = self.world_encoder(world_assignment)
+        q = self.q_head(state_emb, world_emb)
+
+        return {
+            "belief_logits": belief_logits,
+            "v": v,
+            "pi_me_logits": pi_me_logits,
+            "q": q,
+            "state_emb": state_emb,
+            "world_emb": world_emb,
+        }
+
+
+# --- #24: auction-conditioned student -----------------------------------------
+
+
+class BidsEncoder(nn.Module):
+    """Project the [18]-dim auction feature into d_model.
+
+    The output is added to the pooled state embedding alongside the void
+    evidence — the same explicit-feature injection VoidsEncoder uses, applied to
+    the completed auction (rung #24). The auction is the signal the play-evidence
+    belief head was missing at the Bayes ceiling.
+    """
+
+    def __init__(self, d_model: int, hidden_dim: int = 64):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(N_AUCTION_FEATURES, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, d_model),
+        )
+        self.norm = nn.LayerNorm(d_model)
+
+    def forward(self, bids: Tensor) -> Tensor:
+        return self.norm(self.net(bids))
+
+
+class StudentTransformerFullVoidsAuction(nn.Module):
+    """v2+auction: transformer encoder + VoidsEncoder + BidsEncoder + four heads.
+
+    Identical to StudentTransformerFullVoids except the pooled state_emb is
+    `cls_h + voids_encoder(voids) + bids_encoder(bids)` before any head runs.
+    The transformer sees play tokens; voids inject explicit follow-failure
+    evidence; the auction injects who-bid-what-and-won. Conditioning belief on
+    the auction is rung #24 — the unlock #25's null pointed at.
+    """
+
+    def __init__(
+        self,
+        d_model: int = 128,
+        n_heads: int = 4,
+        n_layers: int = 2,
+        ff_dim: int = 256,
+        dropout: float = 0.1,
+        d_world: int = 64,
+        q_hidden: int = 256,
+        voids_hidden: int = 64,
+        bids_hidden: int = 64,
+    ):
+        super().__init__()
+        self.encoder = TransformerEncoder(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            ff_dim=ff_dim,
+            dropout=dropout,
+        )
+        self.voids_encoder = VoidsEncoder(d_model, hidden_dim=voids_hidden)
+        self.bids_encoder = BidsEncoder(d_model, hidden_dim=bids_hidden)
+        self.belief = BeliefHead(in_dim=d_model)
+        self.v_head = nn.Linear(d_model, 1)
+        self.pi_me = nn.Linear(d_model, 7)
+        self.world_encoder = WorldEncoder(d_model, d_world=d_world)
+        self.q_head = QHead(state_dim=d_model, world_dim=d_world, hidden_dim=q_hidden)
+
+    def forward(
+        self,
+        tokens: Tensor,
+        attention_mask: Tensor,
+        world_assignment: Tensor,
+        voids: Tensor,
+        bids: Tensor,
+    ) -> dict[str, Tensor]:
+        h = self.encoder(tokens, attention_mask)
+        cls_h = h[:, 0, :]
+        state_emb = cls_h + self.voids_encoder(voids) + self.bids_encoder(bids)
 
         belief_logits = self.belief(state_emb)
         v = self.v_head(state_emb).squeeze(-1)

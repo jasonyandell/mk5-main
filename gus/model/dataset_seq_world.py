@@ -36,6 +36,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset, IterableDataset
 
+from .auction import auction_feature_vector
 from .features import extract_belief_target, reconstruct_prior_plays
 from .strategy_features import extract_strategy_action_features, extract_strategy_features
 from .tokenize import SEQ_LEN, tokenize_decision
@@ -155,6 +156,15 @@ class JointWorldFullDataset(Dataset):
         # Engine-computed void features (explicit signal for belief head)
         voids = voids_feature_vector(prior_plays, int(game.decl_id), current_player)  # [24]
 
+        # Auction features (#24): zero vector for the seed-imposed corpus that
+        # carries no real bids — degrades to the play+voids belief.
+        bids = auction_feature_vector(
+            getattr(game, "bids", None),
+            getattr(game, "bidder", None),
+            getattr(game, "bid_value", None),
+            current_player,
+        )  # [18]
+
         item = {
             "tokens": tokens,
             "attention_mask": attn_mask,
@@ -168,6 +178,7 @@ class JointWorldFullDataset(Dataset):
             "decision_idx": torch.tensor(d_idx, dtype=torch.long),
             "player": torch.tensor(current_player, dtype=torch.long),
             "voids": voids,                        # [24]
+            "bids": bids,                          # [18]
         }
         if self.include_strategy_features:
             item["strategy_features"] = extract_strategy_features(
@@ -238,6 +249,12 @@ def _build_item(
     action_taken = int(decision.action_taken)
     legal_mask = decision.legal_mask.bool()
     voids = voids_feature_vector(prior_plays, int(game.decl_id), current_player)
+    bids = auction_feature_vector(
+        getattr(game, "bids", None),
+        getattr(game, "bidder", None),
+        getattr(game, "bid_value", None),
+        current_player,
+    )
     item = {
         "tokens": tokens,
         "attention_mask": attn_mask,
@@ -251,6 +268,7 @@ def _build_item(
         "decision_idx": torch.tensor(d_idx, dtype=torch.long),
         "player": torch.tensor(current_player, dtype=torch.long),
         "voids": voids,
+        "bids": bids,
     }
     if include_strategy_features:
         item["strategy_features"] = extract_strategy_features(

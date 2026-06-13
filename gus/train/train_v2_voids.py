@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 from gus.model.dataset_seq_world import JointWorldFullDataset, JointWorldFullIterable
 from gus.model.student import (
     StudentTransformerFullVoids,
+    StudentTransformerFullVoidsAuction,
     belief_accuracy,
     pi_me_accuracy,
     v1_full_loss,
@@ -40,6 +41,7 @@ def _run_epoch(
     optimizer: torch.optim.Optimizer | None,
     device: str,
     loss_weights: dict[str, float],
+    is_auction: bool = False,
 ) -> dict[str, float]:
     is_train = optimizer is not None
     model.train(is_train)
@@ -57,12 +59,21 @@ def _run_epoch(
         batch_on_device = {k: v.to(device) for k, v in batch.items()}
 
         with torch.set_grad_enabled(is_train):
-            out = model(
-                batch_on_device["tokens"],
-                batch_on_device["attention_mask"],
-                batch_on_device["world_assignment"],
-                batch_on_device["voids"],
-            )
+            if is_auction:
+                out = model(
+                    batch_on_device["tokens"],
+                    batch_on_device["attention_mask"],
+                    batch_on_device["world_assignment"],
+                    batch_on_device["voids"],
+                    batch_on_device["bids"],
+                )
+            else:
+                out = model(
+                    batch_on_device["tokens"],
+                    batch_on_device["attention_mask"],
+                    batch_on_device["world_assignment"],
+                    batch_on_device["voids"],
+                )
             loss, per_head = v1_full_loss(out, batch_on_device, weights=loss_weights)
 
         if is_train:
@@ -124,6 +135,12 @@ def main() -> int:
     parser.add_argument("--d-world", type=int, default=64)
     parser.add_argument("--q-hidden", type=int, default=256)
     parser.add_argument("--voids-hidden", type=int, default=128)
+    parser.add_argument("--auction", action="store_true",
+                        help="Train the auction-conditioned student (#24): adds a "
+                             "BidsEncoder over the [18]-dim auction feature. Requires a "
+                             "corpus generated from real auctions (forge.cli.generate_eq_from_snapshots).")
+    parser.add_argument("--bids-hidden", type=int, default=64,
+                        help="Hidden width of the BidsEncoder MLP (only with --auction).")
     parser.add_argument("--w-belief", type=float, default=1.0)
     parser.add_argument("--w-v", type=float, default=0.5)
     parser.add_argument("--w-pi", type=float, default=0.5)
@@ -163,16 +180,30 @@ def main() -> int:
     eval_loader = DataLoader(eval_ds, batch_size=args.batch_size, shuffle=False,
                               num_workers=args.num_workers)
 
-    model = StudentTransformerFullVoids(
-        d_model=args.d_model,
-        n_heads=args.n_heads,
-        n_layers=args.n_layers,
-        ff_dim=args.ff_dim,
-        dropout=args.dropout,
-        d_world=args.d_world,
-        q_hidden=args.q_hidden,
-        voids_hidden=args.voids_hidden,
-    ).to(device)
+    if args.auction:
+        model = StudentTransformerFullVoidsAuction(
+            d_model=args.d_model,
+            n_heads=args.n_heads,
+            n_layers=args.n_layers,
+            ff_dim=args.ff_dim,
+            dropout=args.dropout,
+            d_world=args.d_world,
+            q_hidden=args.q_hidden,
+            voids_hidden=args.voids_hidden,
+            bids_hidden=args.bids_hidden,
+        ).to(device)
+    else:
+        model = StudentTransformerFullVoids(
+            d_model=args.d_model,
+            n_heads=args.n_heads,
+            n_layers=args.n_layers,
+            ff_dim=args.ff_dim,
+            dropout=args.dropout,
+            d_world=args.d_world,
+            q_hidden=args.q_hidden,
+            voids_hidden=args.voids_hidden,
+        ).to(device)
+    print(f"Auction-conditioned: {args.auction}", flush=True)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model params: {n_params:,}", flush=True)
 
@@ -188,8 +219,8 @@ def main() -> int:
 
     for epoch in range(args.epochs):
         t_epoch = time.perf_counter()
-        tr = _run_epoch(model, train_loader, optimizer, device, loss_weights)
-        ev = _run_epoch(model, eval_loader, None, device, loss_weights)
+        tr = _run_epoch(model, train_loader, optimizer, device, loss_weights, is_auction=args.auction)
+        ev = _run_epoch(model, eval_loader, None, device, loss_weights, is_auction=args.auction)
         dt = time.perf_counter() - t_epoch
 
         print(

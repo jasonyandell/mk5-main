@@ -21,6 +21,7 @@ from torch import Tensor
 
 from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
+from gus.model.auction import auction_feature_vector
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import voids_feature_vector
 
@@ -66,7 +67,10 @@ def belief_logits_for_states(
 
     The belief head depends only on the pooled state embedding, so a zeros
     placeholder world drives the forward pass (lamir1 does the same)."""
-    toks, attns, voids_rows = [], [], []
+    # The auction student (#24) is a voids student that also reads the auction;
+    # detect it by its bids encoder and feed the live bid_state.
+    is_auction = hasattr(model, "bids_encoder")
+    toks, attns, voids_rows, bids_rows = [], [], [], []
     for st in states:
         decisions, d_idx, cp = _decisions_and_idx(st)
         tk, am = tokenize_decision([list(h) for h in st.hands], int(st.decl_id), decisions, d_idx)
@@ -76,11 +80,20 @@ def belief_logits_for_states(
             voids_rows.append(
                 voids_feature_vector(list(st.play_history), int(st.decl_id), cp)
             )
+        if is_auction:
+            bid_state = st.bid_state
+            bids_rows.append(
+                auction_feature_vector(bid_state.bids, bid_state.high_bidder, bid_state.high_bid, cp)
+            )
     tokens = torch.stack(toks).to(device)  # [n, 33, 5]
     attn = torch.stack(attns).to(device)   # [n, 33]
     n = tokens.shape[0]
     placeholder_world = torch.zeros(n, 28, 3, device=device)
-    if is_voids:
+    if is_auction:
+        voids = torch.stack(voids_rows).to(device)  # [n, 24]
+        bids = torch.stack(bids_rows).to(device)    # [n, 18]
+        out = model(tokens, attn, placeholder_world, voids, bids)
+    elif is_voids:
         voids = torch.stack(voids_rows).to(device)  # [n, 24]
         out = model(tokens, attn, placeholder_world, voids)
     else:
