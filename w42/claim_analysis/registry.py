@@ -121,9 +121,74 @@ BRANCH_ATLAS_SPECS = (
 )
 
 
+CHAMPION_SPECS = (
+    ClaimSpec(
+        claim_id="ch05-pounce-count-before-certainty",
+        family="setter defense",
+        label="ch05_setter_pounce_count_before_certainty",
+        description="Defender takes offense-controlled trick with count before all later seats play; champion slice.",
+        online_fields=("seat_role", "team", "trick_position", "current_winner_team_before",
+                       "candidate_count_points", "candidate_beats_current"),
+        offline_label_fields=("mean", "threshold_mass", "lower_tail_mass", "q_per_world"),
+        leakage_policy="Public/action-local detector; oracle and sampled-world values are offline labels only.",
+    ),
+    ClaimSpec(
+        claim_id="ch05-pounce-count",
+        family="setter defense",
+        label="ch05_setter_pounce_count",
+        description="Defender takes offense-controlled trick with count; champion slice.",
+        online_fields=("seat_role", "team", "trick_position", "current_winner_team_before",
+                       "candidate_count_points", "candidate_beats_current"),
+        offline_label_fields=("mean", "threshold_mass", "lower_tail_mass", "q_per_world"),
+        leakage_policy="Public/action-local detector; oracle and sampled-world values are offline labels only.",
+    ),
+    ClaimSpec(
+        claim_id="ch05-extra-count-to-set",
+        family="setter defense",
+        label="ch05_setter_pounce_count_sets_now",
+        description="Pounce-count candidate reaches set threshold if it wins the current trick; champion slice.",
+        online_fields=("bid_value", "defense_score_before", "current_trick_count_before",
+                       "candidate_count_points", "candidate_would_win_trick_now"),
+        offline_label_fields=("mean", "threshold_mass", "lower_tail_mass", "q_per_world"),
+        leakage_policy="Set-threshold arithmetic is public from bid/score/trick state; oracle values remain labels only.",
+    ),
+    ClaimSpec(
+        claim_id="ch05-reckless-count-to-bidder",
+        family="setter defense",
+        label="ch05_reckless_count_to_bidder",
+        description="Defender plays count into offense-controlled trick without winning it; negative control; champion slice.",
+        online_fields=("team", "current_winner_team_before", "candidate_count_points",
+                       "candidate_would_win_trick_now"),
+        offline_label_fields=("mean", "threshold_mass", "lower_tail_mass", "q_per_world"),
+        leakage_policy="Public/action-local negative-control detector; oracle values remain labels only.",
+    ),
+    ClaimSpec(
+        claim_id="ch04-safe-partner-count-donation",
+        family="partner support",
+        label="ch04_partner_safe_count_donation_current_control",
+        description="Bidder partner donates count while bidder team currently winning; champion slice.",
+        online_fields=("seat_role", "current_winner_team_before", "candidate_count_points"),
+        offline_label_fields=("mean", "threshold_mass", "lower_tail_mass", "q_per_world"),
+        leakage_policy="Current-control is public; guaranteed future control and oracle values are offline labels.",
+    ),
+    ClaimSpec(
+        claim_id="ch04-unsafe-partner-count-donation",
+        family="partner support",
+        label="ch04_partner_unsafe_count_to_defense",
+        description="Bidder partner donates count into defense-controlled trick they cannot beat; negative control; champion slice.",
+        online_fields=("seat_role", "current_winner_team_before", "candidate_count_points",
+                       "candidate_beats_current"),
+        offline_label_fields=("mean", "threshold_mass", "lower_tail_mass", "q_per_world"),
+        leakage_policy="Public/action-local negative-control detector; oracle values remain labels only.",
+    ),
+)
+
+
 def specs_for_source_kind(source_kind: str) -> tuple[ClaimSpec, ...]:
     if source_kind == "gus_claim_rows":
         return GUS_TACTICAL_SPECS
     if source_kind in {"branch_atlas_actions", "phase2_decision_actions"}:
         return BRANCH_ATLAS_SPECS
+    if source_kind == "champion_play_rows":
+        return CHAMPION_SPECS
     return ()

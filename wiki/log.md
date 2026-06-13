@@ -3021,3 +3021,36 @@ CI [+0.72, +1.84]**, make-rate 69.3% vs 54.1%. The distillation fully preserved
 bidder cost ~49 min for 128 games; the net bidder runs in arena-play time. Fast
 full-game auction sweeps (e.g. measuring the #27 v2 pass baseline's win-rate
 impact in full games) are now practical.
+
+---
+
+## [2026-06-13 | pending | Champion #28: teaching battery — first champion-vs-the-book receipts]
+
+The pedagogy chain produces its first receipts. [[w42-champion-teaching-battery]]
+runs the champion (GusBidder auction + lens:ev play) through the ch04/ch05 tactical
+detectors on its OWN trajectories — 256 games, 7,168 decisions, 19,264 action rows,
+1,484 labeled — and scores each claim by the paired same-decision contrast
+(`w42/claim_analysis/harness.py`), with a half/seed key so contrasts never straddle
+the two arena halves.
+
+**Touched pages:** [[entities/champion]] (Teaching half) · new
+[[experiments/w42-champion-teaching-battery]]
+
+**Result — champion agrees with the book on 3 of 6 checkable claims:**
+- setter pounce-count: **+4.9 pts** [CI +3.3,+6.7], 117 paired — supported-on-slice
+- pounce-count before certainty: **+3.9 pts** [+2.2,+5.7], 87 paired — supported
+- extra-count-to-set: **+10.0 pts** [+4.6,+15.8], 23 paired — supported
+- reckless count to the bidder: **−7.7 pts** [−8.6,−6.8], 550 paired — contradicted (negative control)
+- unsafe partner donation: **−9.2 pts** [−11.0,−7.7], 201 paired — contradicted (negative control)
+- safe partner donation: +0.05 [−1.1,+1.2] — within-CI (a genuine draw)
+
+The two "contradicted" are claims about BAD plays: the negative deltas confirm the
+plays lose, and the champion's low obey rate (~0.32) shows it learned to avoid them —
+exactly Roberson's "don't throw count to the bidder." `CHAMPION_SPECS` appended to
+the registry (additive); central ledger untouched.
+
+**Frontier shift:** the teaching half is no longer aspirational — the champion's play
+can be graded against the book with paired-contrast receipts. Out of scope (honest):
+84-endgames (champion rarely bids 84), multi-step ch03/ch10 claims (need
+trajectory contrasts), paired-bid auction claims (one bid per auction), and a
+production n_worlds=50 run to halve the CIs.

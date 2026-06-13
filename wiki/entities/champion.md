@@ -171,6 +171,18 @@ chain **oracle → champion → gus → burl → lem** is also the pedagogy chai
 each level explains the one above to the one below. Target artifact: a
 data-validated strategy guide — *Winning 42, second edition*.
 
+**First receipts (rung #28, 2026-06-12):** [[w42-champion-teaching-battery]] runs
+the champion's own lens:ev trajectories (256 games, 7,168 decisions, 19,264 action
+rows) through the ch04/ch05 tactical detectors. The champion **agrees with the
+book on 3 of 6 checkable claims** — it takes the setter's pounce-count (+3.9 to
++10.0 pts on the labeled action, CI excludes zero) — and the two "contradicted"
+verdicts are negative controls that confirm it *learned* Roberson's prohibition:
+reckless count to the bidder (−7.7 pts) and unsafe partner donation (−9.2 pts) are
+correctly valued as losing, and the champion rarely does them (obey ~0.32). The
+84-endgame, multi-step, and paired-bid auction claims await a forced-scenario
+corpus — the champion's self-selected positions rarely reach them. First proof
+the pedagogy chain produces real receipts.
+
 ## Links
 
 - [[forge]] · [[gus]] · [[burl]] · [[lem]] · [[w42]] — the organs

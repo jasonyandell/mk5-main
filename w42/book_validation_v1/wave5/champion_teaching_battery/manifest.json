@@ -1,0 +1,26 @@
+{
+  "args": {
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "device": "mps",
+    "n_samples": 10,
+    "n_seeds": 128,
+    "start_seed": 0
+  },
+  "artifacts": {
+    "action_rows_csv": "w42/book_validation_v1/wave5/champion_teaching_battery/action_rows.csv",
+    "manifest_json": "w42/book_validation_v1/wave5/champion_teaching_battery/manifest.json",
+    "receipts_csv": "w42/book_validation_v1/wave5/champion_teaching_battery/receipts.csv",
+    "summary_json": "w42/book_validation_v1/wave5/champion_teaching_battery/summary.json"
+  },
+  "caveats": [
+    "Self-selection: champion plays own lens:ev trajectories.",
+    "Tactical scenarios (setter-pounce windows, 84 contracts) are rare.",
+    "Paired contrast required for ledger movement (AGENTS.md promotion guard).",
+    "Central ledger NOT modified by this probe."
+  ],
+  "created_at_utc": "2026-06-13T05:18:06.302230+00:00",
+  "exact_command": "python -u w42/book_validation_v1/wave5/probe_champion_teaching_battery.py --n-seeds 128 --n-samples 10 --device mps --out-dir w42/book_validation_v1/wave5/champion_teaching_battery --checkpoint /Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+  "input_n_action_rows": 19264,
+  "repo_commit": "78f74329ebc213e5781db57be1d00b4080139e3f",
+  "schema_version": "w42.bookval.wave5.champion_teaching_battery.manifest.v1"
+}
