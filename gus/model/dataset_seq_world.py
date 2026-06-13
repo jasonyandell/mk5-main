@@ -162,8 +162,9 @@ class JointWorldFullDataset(Dataset):
             getattr(game, "bids", None),
             getattr(game, "bidder", None),
             getattr(game, "bid_value", None),
+            int(game.decl_id),
             current_player,
-        )  # [18]
+        )  # [28]
 
         item = {
             "tokens": tokens,
@@ -253,6 +254,7 @@ def _build_item(
         getattr(game, "bids", None),
         getattr(game, "bidder", None),
         getattr(game, "bid_value", None),
+        int(game.decl_id),
         current_player,
     )
     item = {

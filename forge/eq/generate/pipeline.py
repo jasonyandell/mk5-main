@@ -69,6 +69,7 @@ def generate_eq_games_gpu(
     save_joint_worlds: bool = False,
     schema_v2: bool = False,
     bid_values: list[int] | None = None,
+    bidders: list[int] | None = None,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -127,8 +128,10 @@ def generate_eq_games_gpu(
     else:
         rng = None
 
-    # Initialize GPU state
-    states = GameStateTensor.from_deals(hands, decl_ids, device)
+    # Initialize GPU state. Passing bidders makes the declarer lead the first
+    # trick (from_deals sets leader=bidder), so auction-sourced deals (#26) play
+    # out consistently with the real auction the belief head conditions on (#24).
+    states = GameStateTensor.from_deals(hands, decl_ids, device, bidders=bidders)
 
     # Determine sample allocation for adaptive vs fixed sampling
     use_adaptive = adaptive_config is not None and adaptive_config.enabled

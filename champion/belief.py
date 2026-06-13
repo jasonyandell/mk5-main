@@ -83,7 +83,9 @@ def belief_logits_for_states(
         if is_auction:
             bid_state = st.bid_state
             bids_rows.append(
-                auction_feature_vector(bid_state.bids, bid_state.high_bidder, bid_state.high_bid, cp)
+                auction_feature_vector(
+                    bid_state.bids, bid_state.high_bidder, bid_state.high_bid, int(st.decl_id), cp
+                )
             )
     tokens = torch.stack(toks).to(device)  # [n, 33, 5]
     attn = torch.stack(attns).to(device)   # [n, 33]

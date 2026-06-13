@@ -57,7 +57,10 @@ def new_game(seed: int, skip_bidding: bool = True) -> ZebGameState:
         trick_leader = bidder
 
         bid_state = BidState(
-            bids=(high_bid, 0, 0, 0),  # Placeholder - bidder won
+            # Seat-indexed: the winning bid sits at the bidder's seat (others pass),
+            # so any consumer reading bids[seat] (e.g. the auction belief feature)
+            # attributes the bid to the seat that actually won it.
+            bids=tuple(high_bid if s == bidder else 0 for s in range(4)),
             high_bidder=bidder,
             high_bid=high_bid,
         )

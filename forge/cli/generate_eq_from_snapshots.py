@@ -80,6 +80,7 @@ def generate_corpus(
         hands = [[list(h) for h in snap["hands"]] for snap in batch]
         decl_ids = [int(snap["decl_id"]) for snap in batch]
         bid_values = [int(snap["bid_value"]) for snap in batch]
+        bidders = [int(snap["bidder"]) for snap in batch]
 
         records = generate_eq_games_gpu(
             model=model,
@@ -89,6 +90,10 @@ def generate_corpus(
             device=device,
             save_joint_worlds=True,
             bid_values=bid_values,
+            # The real bid winner leads the first trick, so the generated play
+            # matches the auction the belief head conditions on (avoids a
+            # train/inference mismatch where seat 0 always led).
+            bidders=bidders,
         )
         for record, snap in zip(records, batch):
             results.append(attach_auction(record, snap))

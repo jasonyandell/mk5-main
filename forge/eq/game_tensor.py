@@ -234,13 +234,14 @@ class GameStateTensor:
         played_mask = torch.zeros(n_games, 28, dtype=torch.bool, device=device)
         history = torch.full((n_games, 28, 3), -1, dtype=torch.int8, device=device)
         trick_plays = torch.full((n_games, 4), -1, dtype=torch.int8, device=device)
-        leader = torch.zeros(n_games, dtype=torch.int8, device=device)
 
-        # Bidder tensor (default 0)
+        # Bidder tensor (default 0). The declarer (bid winner) leads the first
+        # trick in 42, so the initial trick leader IS the bidder.
         if bidders is not None:
             bidder_t = torch.tensor(bidders, dtype=torch.int8, device=device)
         else:
             bidder_t = torch.zeros(n_games, dtype=torch.int8, device=device)
+        leader = bidder_t.clone()
 
         return cls(
             hands=hands_t,

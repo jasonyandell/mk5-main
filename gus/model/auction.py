@@ -26,7 +26,8 @@ import torch
 from torch import Tensor
 
 N_PLAYERS = 4
-N_AUCTION_FEATURES = 4 * N_PLAYERS + 2  # 4 per relative seat + 2 global = 18
+N_DECLS = 10  # declarations 0..9 (0-6 pip trumps, 7 doubles, 8 doubles-as-suit, 9 notrump)
+N_AUCTION_FEATURES = 4 * N_PLAYERS + 2 + N_DECLS  # 4/seat + 2 global + decl one-hot = 28
 
 # Bid value normalization: 30 (minimum points bid) → 0.0, 42 (max points) → 1.0.
 _BID_LO = 30.0
@@ -45,9 +46,10 @@ def auction_feature_vector(
     bids: tuple[int, ...] | list[int] | None,
     bidder: int | None,
     bid_value: int | None,
+    decl_id: int | None,
     current_player: int,
 ) -> Tensor:
-    """Flatten a completed auction to an [18]-dim float feature, current-player POV.
+    """Flatten a completed auction to a [28]-dim float feature, current-player POV.
 
     Layout (per relative seat r = (current_player + r) % 4, r in 0..3):
       [4*r + 0] bid_norm   — normalized bid level of that seat (0 if it passed)
@@ -57,6 +59,12 @@ def auction_feature_vector(
     Global tail:
       [16] win_bid_norm    — normalized winning bid value
       [17] is_marks        — 1.0 if the contract is a marks bid (>= 84)
+      [18..27] decl one-hot — the declared trump (0-6 pips, 7 doubles, 9 notrump)
+
+    The decl one-hot is what makes "the winner declared fours ⇒ the winner holds
+    fours" learnable: paired with the per-seat is_winner flag, the encoder can tie
+    the declared suit to the seat that won it. (decl is also a play token, but the
+    auction feature is where it joins the winner identity.)
 
     `bids=None` (no auction recorded, e.g. the seed-imposed corpus) yields an
     all-zero vector — the auction encoder then contributes nothing and the model
@@ -76,4 +84,6 @@ def auction_feature_vector(
 
     feat[16] = _bid_norm(bid_value if bid_value is not None else 0)
     feat[17] = 1.0 if (bid_value is not None and bid_value >= _MARKS_BID) else 0.0
+    if decl_id is not None and 0 <= int(decl_id) < N_DECLS:
+        feat[18 + int(decl_id)] = 1.0
     return feat

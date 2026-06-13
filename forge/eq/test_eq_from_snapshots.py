@@ -62,9 +62,11 @@ def test_bridge_produces_loadable_corpus_with_auction(tmp_path, monkeypatch):
     }
 
     def fake_generate(*, model, hands, decl_ids, n_samples, device,
-                      save_joint_worlds, bid_values):
+                      save_joint_worlds, bid_values, bidders):
         # One record per game, with the joint-world tensors the dataset needs.
         assert save_joint_worlds is True
+        # The bridge must thread the real bid winner through so the declarer leads.
+        assert bidders == [0]
         return [
             GameRecordGPU(
                 decisions=[_joint_world_decision()],

@@ -21,6 +21,7 @@ from torch import Tensor
 from forge.eq.game_tensor import GameStateTensor
 from forge.oracle.tables import resolve_trick
 
+from gus.model.auction import N_AUCTION_FEATURES
 from gus.model.features import reconstruct_prior_plays
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import voids_feature_vector
@@ -120,7 +121,12 @@ def _gus_actions(
     B = batch_tokens.shape[0]
     world = torch.zeros(B, 28, 3, dtype=torch.float32, device=device)
 
-    if is_voids:
+    if hasattr(model, "bids_encoder"):
+        # Auction student (#24): no auction exists while bidding, so an all-zero
+        # auction feature degrades it to the play+voids belief.
+        bids = torch.zeros(B, N_AUCTION_FEATURES, dtype=torch.float32, device=device)
+        out = model(batch_tokens, batch_masks, world, batch_voids, bids)
+    elif is_voids:
         out = model(batch_tokens, batch_masks, world, batch_voids)
     else:
         out = model(batch_tokens, batch_masks, world)

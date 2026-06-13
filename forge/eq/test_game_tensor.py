@@ -141,6 +141,21 @@ def test_from_deals_multiple_games(simple_hands, device):
     assert (state.decl_ids == torch.tensor(decl_ids, device=device)).all()
 
 
+def test_from_deals_leader_follows_bidder(simple_hands, device):
+    """The declarer (bid winner) leads the first trick: leader must equal bidder.
+    With no bidders given both default to 0 (the standard corpus convention)."""
+    state = GameStateTensor.from_deals(
+        hands=[simple_hands, simple_hands, simple_hands],
+        decl_ids=[NOTRUMP, NOTRUMP, NOTRUMP],
+        device=device,
+        bidders=[2, 3, 0],
+    )
+    assert state.leader.tolist() == [2, 3, 0]
+    assert state.bidder.tolist() == [2, 3, 0]
+    # current_player at trick 0 is the leader == the bidder
+    assert state.current_player.tolist() == [2, 3, 0]
+
+
 def test_from_deals_validation(device):
     """from_deals() validates input."""
     # Wrong number of hands per game
