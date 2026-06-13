@@ -50,10 +50,10 @@ level.
 | Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
 | One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
 | Belief posterior | partial | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]; **not** auction-conditioned; **not** wired into world sampling |
-| Mark utility | partial | mark_ev transform validated ([[w42-bookval-v1-wave2-bid-aware-atlas]]); not score-conditioned (Lens v2 design preserved in former bead t42-nwuu) |
+| Mark utility | v1 score-conditioned | `champion/utility.py` (2026-06-12): `race_wp` Pascal-recursion WP table + `MarksToSeven`. 1-mark contracts still flip at p=½ at every score (Pascal identity); conditioning bites on multi-mark bids — 84 needs p>¾ ahead 6-0, p>¼ behind 0-6. Pass baseline not yet equilibrium-aware (rung #26) |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
-| Auction policy | v0 | static risk-budget bidder in `arena/bidders.py`; beats bid30 58.9% under identical play ([[arena]]); model-backed version is rung 2 |
-| Full-game arena | **done** | [[arena]] (2026-06-12); 192 games ≈ 150 s |
+| Auction policy | v0 (two tiers) | static risk-budget `HeuristicBidder` (`arena/bidders.py`), beats bid30 58.9% under identical play ([[arena]]); **Gus-backed** `champion.GusBidder` (2026-06-12, rung #21) — min positive-utility bid over a simulated P(make) table, pluggable `MarkEV`/`MarksToSeven` utility, static prefilter, one Gus eval per hand cached |
+| Full-game arena | **done** | [[arena]] (2026-06-12); 192 games ≈ 150 s; `BidContext` now carries game score for score-conditioned bidding; `gus[:samples[,wp]]` CLI bidder |
 | Self-play consistency | **missing** | — |
 
 ## Bidding inventory (pre-wiki work, promoted 2026-06-09)
@@ -74,9 +74,15 @@ Contract evaluation predates the wiki and was never promoted until now:
   trump counts) reused across the w42 bidding claim tests.
 - TS-side `BeginnerAIStrategy` (`src/game/ai/`): 5-sim Monte Carlo per bid,
   fixed 0.50 threshold; elementary but wired into the playable game.
-- Known landmine ([[gen-fleet]] priority 1): `contract_threshold_bins` exists
-  but `bid_value` is not plumbed through generation action selection, so
-  generated play is bid-30-shaped regardless of recorded bid.
+- ~~Known landmine ([[gen-fleet]] priority 1): `bid_value` not plumbed
+  through generation action selection.~~ **Fixed 2026-06-12 (rung #23):**
+  `forge/cli/generate_eq_continuous.py` now threads per-seed `bid_values`
+  into `generate_eq_games_gpu` (and records them in each `.pt`), with a
+  `--bid-value 30|42|84|seed` flag. Proof: regenerating the same 8 seeds at
+  bid=42 vs bid=30 changes 18–24 of 28 decisions per game. The same commit
+  fixed the `estimator.py` 84-threshold bug (P(make 84) was measured against
+  84 points, not all-42) and the `cefb617` import breakage that had left the
+  continuous generator unrunnable.
 
 Every piece answers "P(make) if I play contract (decl, B)" — the hand in a
 vacuum. None answers the live auction question: pass vs bid given partner and
@@ -110,9 +116,15 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    ([[arena]]): first physics — a static risk-budget bidder beats
    always-bid-30 by +0.78 marks/game under identical oracle play.
 2. **Auction v0** — Roberson risk-budget policy over `gus/bidding`
-   (anchor: ch02 bid-only-enough, `supported` at wave 2.B.2).
+   (anchor: ch02 bid-only-enough, `supported` at wave 2.B.2). **Done
+   2026-06-12** (`champion/bidder.py`): `GusBidder` takes the minimum
+   positive-utility legal bid over a Gus-simulated P(make) table, declares
+   the trump maximizing P(make) at the contract threshold, and prefilters
+   statically hopeless hands before paying for simulation. Wired into the
+   arena CLI as `gus[:samples[,wp]]`; smoke match beats the static heuristic.
 3. **Bid-strength net** — finish the 2026-01 plan: run the corpus generator
-   Gus-backed, distill hand → (decl × bid) p_make table to <1ms.
+   Gus-backed, distill hand → (decl × bid) p_make table to <1ms. The 2026-01
+   `estimator.py` is now correct for mark bids (84-threshold fix, 2026-06-12).
 4. **Belief v2** — condition the belief head on auction + play history
    (training data free from arena self-play); revisit [[belief-bayes-ceiling]]
    with auction evidence.
@@ -121,7 +133,12 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
 6. **Self-play fixed point** — iterate policy ↔ belief until conventions
    stabilize.
 7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM
-   analogue; absorbs the Lens v2 design).
+   analogue; absorbs the Lens v2 design). **v1 done 2026-06-12**
+   (`champion/utility.py`): `race_wp` is the WP lookup table the issue asks
+   for, built as Pascal's recursion under a neutral one-mark-per-hand race
+   model; `MarksToSeven` scores a contract as Δ win-probability and is wired
+   as a `GusBidder` utility. Governs bidding now; play-risk hook and an
+   equilibrium-aware pass baseline are the remaining v2 work.
 8. **Summit (optional)** — depth-limited subgame re-solving on late tricks;
    exact information-set endgame solving.
 

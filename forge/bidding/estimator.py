@@ -16,8 +16,8 @@ from forge.oracle.declarations import DECL_ID_TO_NAME
 # All bid thresholds from 30 to 42 (standard bids)
 BID_THRESHOLDS = list(range(30, 43))  # 30, 31, 32, ... 42
 
-# Bid thresholds with mark values for expected value calculations
-# (threshold, marks_at_stake)
+# Bid values with marks at stake for expected value calculations
+# (bid, marks_at_stake)
 BID_LEVELS = [(t, 1) for t in BID_THRESHOLDS] + [(84, 2)]  # 84 = 2-mark bid
 
 
@@ -83,7 +83,10 @@ def evaluate_bids(points: List[int], decl_id: int) -> TrumpResult:
     n = len(points)
 
     bid_results = []
-    for threshold, marks in BID_LEVELS:
+    for bid, marks in BID_LEVELS:
+        # Mark bids (84+) require all 42 points; the bid value itself
+        # exceeds the 42 points a hand can hold.
+        threshold = min(bid, 42)
         successes = sum(1 for p in points if p >= threshold)
         p_make = successes / n if n > 0 else 0.0
         ci_low, ci_high = wilson_ci(successes, n)
@@ -96,7 +99,7 @@ def evaluate_bids(points: List[int], decl_id: int) -> TrumpResult:
             BidResult(
                 trump_name=trump_name,
                 decl_id=decl_id,
-                bid=threshold,
+                bid=bid,
                 marks=marks,
                 p_make=p_make,
                 mark_swing=mark_swing,

@@ -14,6 +14,7 @@ construction as the historical forced-bid-30 evals, with the force removed.
 from __future__ import annotations
 
 import random
+import time
 from dataclasses import dataclass
 
 from forge.oracle.rng import deal_from_seed
@@ -119,10 +120,13 @@ class _LiveGame:
         while True:
             seed = hand_seed(self.cfg.base_seed, self.game_idx, self.hand_idx, redeals)
             hands = tuple(tuple(h) for h in deal_from_seed(seed))
-            rng = random.Random(hash((seed, "auction")))
+            # int-only seed: str hashes are salted per-process, int hashes are not
+            rng = random.Random(hash((seed, 0xA0C7)))
             result = run_auction(
                 hands, self.dealer, self.bid_policies, rng,
                 force_shaker=redeals >= self.cfg.max_redeals,
+                marks=(self.marks[0], self.marks[1]),
+                marks_to_win=self.cfg.marks_to_win,
             )
             if result is not None:
                 break
@@ -213,21 +217,33 @@ def run_half(
     bid_b: BidPolicy,
     play_a: PlayPolicy,
     play_b: PlayPolicy,
+    log_every_s: float | None = None,
 ) -> list[GameRecord]:
     """Run n_games full games with player A as absolute team `a_team`.
 
     Lockstep: every iteration routes each live game's current decision to
     the owning side's play policy, one batched call per side per tick.
+    With log_every_s, prints a progress heartbeat so long halves are never
+    silent.
     """
     seats = tuple(
         (bid_a if seat % 2 == a_team else bid_b) for seat in range(4)
     )
     games = [_LiveGame(i, a_team, cfg, seats) for i in range(n_games)]
+    t0 = last_log = time.time()
 
     while True:
         live = [g for g in games if not g.done]
         if not live:
             break
+        if log_every_s is not None and time.time() - last_log >= log_every_s:
+            last_log = time.time()
+            hands = sum(len(g.hands) for g in games)
+            print(
+                f"    t={last_log - t0:5.0f}s  live {len(live)}/{n_games}  "
+                f"hands {hands}",
+                flush=True,
+            )
         a_games, b_games = [], []
         for g in live:
             side = a_games if current_player(g.state) % 2 == a_team else b_games

@@ -2876,3 +2876,47 @@ Next rung: auction v0 (#21) — replace the static ceiling with gus/bidding
 simulated mark swings; the static bidder is the baseline to beat.
 
 **Questions opened:** none.
+
+## [2026-06-12 | local-session | Champion rungs #21, #27 v1, #23 — bidder, marks-to-7, bid_value plumbing]
+
+**What happened:** Three champion rungs advanced in one session, the first
+working through epic [[champion]] (GitHub issue #29) directly. (1) **Auction
+v0 (#21):** `champion/bidder.py` — `GusBidder` takes the cheapest
+positive-utility legal bid over a `gus/bidding` simulated P(make) table,
+declares the trump maximizing P(make) at the contract threshold, prefilters
+hopeless hands, evaluates each hand once. Wired into the arena as
+`gus[:N[,wp]]`. (2) **Marks-to-7 utility v1 (#27):** `champion/utility.py` —
+`race_wp` is the score→WP lookup the issue asks for, built as Pascal's
+recursion under a neutral one-mark-per-hand race model; `MarksToSeven`
+scores a contract as Δ win-probability. The Pascal identity makes 1-mark
+contracts flip sign at p=½ at every score, so conditioning bites exactly on
+multi-mark bids (84 needs p>¾ ahead 6-0, p>¼ behind 0-6) — prudence and
+desperation emerge rather than being authored. (3) **bid_value plumbing
+(#23):** `forge/cli/generate_eq_continuous.py` now threads per-seed
+`bid_values` into `generate_eq_games_gpu` and records them per `.pt`, with a
+`--bid-value 30|42|84|seed` flag. Proven live: regenerating 8 seeds at
+bid=42 vs bid=30 changes 18–24 of 28 decisions per game. Same session fixed
+the `estimator.py` 84-threshold bug and the `cefb617` import breakage that
+had left the continuous generator unrunnable, and de-skipped a dead
+integration test (`forge.eq.generate_gpu` → `forge.eq.generate.pipeline`).
+
+**Touched pages:** [[champion]] [[arena]] [[log]]
+
+**Added:** `champion/` package (`utility.py`, `bidder.py`, tests).
+
+**Updated:**
+- [[champion]] — asset map: mark utility → v1 score-conditioned; auction
+  policy → v0 two-tier (static + Gus-backed); landmine struck through as
+  fixed. Ladder rungs #21, #27, #23 annotated done/v1.
+- [[arena]] — Gus bidder section; `BidContext` now carries game score.
+
+**Frontier shift:** the champion has a model-backed auction policy and a
+score-aware utility for the first time; generated corpora can finally vary
+the bid. Highest-leverage rung remaining is belief-weighted world sampling
+(#25). Open: equilibrium-aware pass baseline for `MarksToSeven` (rung #26);
+the play-risk hook for marks-to-7; the full 128-game `gus` vs `heuristic`
+headline (match running at session end).
+
+**Questions opened:** does `MarksToSeven`'s neutral race model (p=½/hand)
+bias bidding vs a model that knows the bidder's own edge? Flagged for the
+self-play loop to answer.

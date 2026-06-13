@@ -45,8 +45,26 @@ python -u -m arena.cli --team-a heuristic+lens:ev --team-b bid30+lens:ev \
   for the best ≥3-tile pip trump; the wave-2.B arithmetic from
   [[w42-bookval-v1-wave2-bid-aware-atlas]], ported to `arena/hand_metrics.py`
   with an equivalence test), `bid30` (opens 30, else passes — the
-  historical baseline as a live player), `random`. Play: `lens:<utility>`
-  over the forge E[Q] PDF, or `random`.
+  historical baseline as a live player), `random`, and `gus` (the
+  model-backed `champion.GusBidder`, rung #21 — see below). Play:
+  `lens:<utility>` over the forge E[Q] PDF, or `random`.
+- `BidContext` carries the live game score (`marks`, `marks_to_win`), so a
+  bidder can condition on it — the channel the marks-to-7 utility
+  ([[champion]] rung #27) rides. The shipped static bidders ignore it; the
+  `gus[:samples,wp]` bidder uses it.
+
+## Gus bidder (rung #21, 2026-06-12)
+
+`champion/bidder.py` adds the first model-backed auction policy: `GusBidder`
+prices each legal bid by P(make) from `gus/bidding/simulate.py` (Gus in all
+four seats, pip trumps + doubles, batched), scores it with a pluggable marks
+utility (`MarkEV` score-blind, or `MarksToSeven` score-conditioned), and
+takes the cheapest bid whose utility clears a margin — Roberson's "bid only
+enough" with a simulated willingness number. A static prefilter skips
+simulation on hands no trump structure could carry, and each hand is
+evaluated once (cached across the bid and declaration). CLI: `gus[:N[,wp]]`,
+where `wp` selects the marks-to-7 utility. Smoke matches beat the static
+heuristic; a full 128-game headline match is the standing comparison.
 
 ## First physics (2026-06-12)
 
@@ -83,4 +101,6 @@ is already worth ~+0.8 marks/game over always-bid-30.
 - [[w42-bookval-v1-wave2-bid-aware-atlas]] — validated the risk-budget
   arithmetic the heuristic bidder runs on
 - [[gen-fleet]] — bid-30 corpus shape; the arena is the consumer that
-  finally exercises `contract_threshold_bins` with real bids
+  finally exercises `contract_threshold_bins` with real bids. The matching
+  generation-side fix (rung #23, `bid_value` now threaded through
+  `generate_eq_continuous`) landed the same day — see [[champion]].

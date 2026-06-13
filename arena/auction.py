@@ -66,6 +66,12 @@ class BidContext:
     high_bid: int  # 0 if nothing bid yet
     high_seat: int  # -1 if nothing bid yet
     legal: tuple[int, ...]  # legal bid values; PASS is always allowed
+    marks: tuple[int, int] = (0, 0)  # absolute (team0, team1) game score
+    marks_to_win: int = 7
+
+    @property
+    def team(self) -> int:
+        return self.seat % 2
 
 
 class BidPolicy(Protocol):
@@ -96,6 +102,8 @@ def run_auction(
     rng: random.Random,
     *,
     force_shaker: bool = False,
+    marks: tuple[int, int] = (0, 0),
+    marks_to_win: int = 7,
 ) -> AuctionResult | None:
     """Run one round of bidding. Returns None if all four players pass.
 
@@ -117,6 +125,8 @@ def run_auction(
             high_bid=high_bid,
             high_seat=high_seat,
             legal=legal,
+            marks=marks,
+            marks_to_win=marks_to_win,
         )
         value = policies[seat].bid(ctx, rng)
         if value == PASS and force_shaker and seat == dealer and high_bid == 0:

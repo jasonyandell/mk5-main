@@ -25,8 +25,8 @@ catalog:
 - [[entities/forge-analysis|forge-analysis]] — statistical analysis workstream over forge's ~300M oracle states; produces a publication-shaped report (active)
 - [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
-- [[entities/champion|champion]] — unified belief-state player: decision loop (posterior → belief-weighted worlds → oracle value → marks-to-7 utility), pre-wiki bidding inventory, and the auction-first build ladder (active)
-- [[entities/arena|arena]] — full-game harness (arena/): real auctions, marks to 7, paired-seed team rotation; champion rung 1; first physics: static risk-budget bidding beats bid30 by +0.78 marks/game (active)
+- [[entities/champion|champion]] — unified belief-state player: decision loop (posterior → belief-weighted worlds → oracle value → marks-to-7 utility), the auction-first build ladder; rungs landed: arena (#20), Gus-backed auction v0 (#21, `champion/bidder.py`), marks-to-7 utility v1 (#27, `champion/utility.py`), bid_value plumbing (#23) (active)
+- [[entities/arena|arena]] — full-game harness (arena/): real auctions, marks to 7, paired-seed team rotation; champion rung 1; first physics: static risk-budget bidding beats bid30 by +0.78 marks/game; now also the model-backed `gus` bidder and score-carrying `BidContext` (active)
 
 ### LEM — STaR curriculum project
 

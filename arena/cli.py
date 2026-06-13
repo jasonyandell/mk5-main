@@ -5,6 +5,7 @@
 
 Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
+            | gus[:<samples>[,wp]]   (champion rung #21; wp = marks-to-7 utility)
     play:   lens:<utility> | random
 
 Writes summary.json, per_hand.csv, per_game.csv under --out-dir.
@@ -27,7 +28,7 @@ from arena.match import game_rows, hand_rows, run_match, summarize
 from arena.play import PlayPolicy, RandomPlay
 
 
-def parse_bidder(spec: str) -> BidPolicy:
+def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolicy:
     name, _, arg = spec.partition(":")
     if name == "heuristic":
         if arg:
@@ -38,7 +39,19 @@ def parse_bidder(spec: str) -> BidPolicy:
         return Bid30Bidder()
     if name == "random":
         return RandomBidder(float(arg)) if arg else RandomBidder()
-    raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random)")
+    if name == "gus":
+        from champion.bidder import GusBidder, GusPointsEvaluator
+        from champion.utility import MarksToSeven
+
+        samples, _, utility_name = arg.partition(",")
+        evaluator = GusPointsEvaluator(
+            adapter=gus_adapter, device=device,
+            n_samples=int(samples) if samples else 32,
+        )
+        print(f"Gus bidder: {evaluator}", flush=True)
+        utility = MarksToSeven() if utility_name == "wp" else None
+        return GusBidder(evaluator, utility)
+    raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus)")
 
 
 def parse_play(spec: str, *, model, n_samples: int, device: str, seed: int) -> PlayPolicy:
@@ -53,6 +66,10 @@ def parse_play(spec: str, *, model, n_samples: int, device: str, seed: int) -> P
 
 def needs_model(*specs: str) -> bool:
     return any(s.split("+", 1)[1].startswith("lens") for s in specs)
+
+
+def needs_gus(*specs: str) -> bool:
+    return any(s.split("+", 1)[0].startswith("gus") for s in specs)
 
 
 def write_csv(path: Path, rows: list[dict]) -> None:
@@ -78,6 +95,8 @@ def main() -> int:
                         help="Worlds per Lens decision")
     parser.add_argument("--device", type=str, default="mps")
     parser.add_argument("--checkpoint", type=str, default=None)
+    parser.add_argument("--gus-adapter", type=str, default=None,
+                        help="Gus adapter for the gus bidder (default: gus/bidding's)")
     parser.add_argument("--base-seed", type=int, default=0)
     parser.add_argument("--out-dir", type=str,
                         default=str(Path(__file__).parent / "results"))
@@ -89,19 +108,22 @@ def main() -> int:
 
     model = None
     device = args.device
-    if needs_model(args.team_a, args.team_b):
+    if needs_model(args.team_a, args.team_b) or needs_gus(args.team_a, args.team_b):
         import torch
-        from forge.zeb.eval.loading import DEFAULT_ORACLE, load_oracle
 
         if device == "mps" and not torch.backends.mps.is_available():
             print("MPS unavailable; falling back to CPU.", flush=True)
             device = "cpu"
         torch.manual_seed(args.base_seed)
+    if needs_model(args.team_a, args.team_b):
+        from forge.zeb.eval.loading import DEFAULT_ORACLE, load_oracle
+
         ckpt = Path(args.checkpoint or PROJECT_ROOT / DEFAULT_ORACLE)
         print(f"Loading oracle: {ckpt} on {device}", flush=True)
         model = load_oracle(str(ckpt), device)
 
-    bid_a, bid_b = parse_bidder(args.team_a.split("+", 1)[0]), parse_bidder(args.team_b.split("+", 1)[0])
+    bid_a = parse_bidder(args.team_a.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter)
+    bid_b = parse_bidder(args.team_b.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter)
     play_a = parse_play(args.team_a.split("+", 1)[1], model=model,
                         n_samples=args.n_samples, device=device, seed=args.base_seed)
     play_b = parse_play(args.team_b.split("+", 1)[1], model=model,

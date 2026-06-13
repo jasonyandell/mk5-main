@@ -64,6 +64,7 @@ def run_match(
         records = run_half(
             n_games=half, a_team=a_team, cfg=cfg,
             bid_a=bid_a, bid_b=bid_b, play_a=play_a, play_b=play_b,
+            log_every_s=30.0 if verbose else None,
         )
         games.extend(records)
         if verbose:
