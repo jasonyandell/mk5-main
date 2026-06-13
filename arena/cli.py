@@ -7,6 +7,8 @@ Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
             | gus[:<samples>[,wp][,pass[<q>]]]   (rung #21; wp = marks-to-7
               utility, pass<q> = rung #27 v2 equilibrium-aware pass baseline)
+            | net[:[wp][,pass[<q>]]]   (rung #22 distilled bid-strength net,
+              <1ms/hand; same utility options as gus)
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random
             (scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter)
@@ -67,7 +69,27 @@ def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolic
         else:
             utility = None
         return GusBidder(evaluator, utility)
-    raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus)")
+    if name == "net":
+        # Distilled bid-strength net (rung #22) as the auction policy — same
+        # GusBidder walk, P(make) from a <1ms forward pass instead of Gus sim.
+        from champion.bidder import GusBidder, NetPointsEvaluator
+        from champion.utility import MarksToSeven
+
+        tags = [p for p in arg.split(",") if p]
+        evaluator = NetPointsEvaluator()
+        print(f"Net bidder: {evaluator}", flush=True)
+        pass_q = 0.0
+        for t in tags:
+            if t.startswith("pass"):
+                pass_q = float(t[4:]) if t[4:] else 0.4
+        if pass_q > 0.0:
+            utility = MarksToSeven(pass_q_opp=pass_q, pass_make_rate=0.55)
+        elif "wp" in tags:
+            utility = MarksToSeven()
+        else:
+            utility = None
+        return GusBidder(pmake_fn=evaluator, utility=utility)
+    raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus | net)")
 
 
 def parse_play(

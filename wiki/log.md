@@ -2997,3 +2997,27 @@ to load the belief model by default — the ESS heartbeat surfaced it).
 **Questions opened:** does a sharper belief (lower `tau`) or the
 `arena_v3_consistency` adapter move the null, or is 39% top-1 a hard floor until
 auction evidence enters the belief input (#24)? The latter is the bet.
+
+---
+
+## [2026-06-12 | pending | Champion #22 follow-up: bid-strength net wired into the policy]
+
+The rung-#22 distilled net plugged back into the auction policy. `GusBidder`
+gained an optional `pmake_fn` (behavior-preserving — default `None` is the exact
+old simulated path), and `champion.NetPointsEvaluator` loads `champion/bid_net.pt`
+to serve a `{decl: {threshold: P(make)}}` table in **0.68 ms/hand** (~1500× faster
+than the ~1 s Gus simulation). CLI: `net[:wp[,pass<q>]]`.
+
+**Touched pages:** [[entities/champion]] [[entities/arena]]
+
+**Validation (128 games, seed 0 — directly comparable to the gus 84/128 run):**
+`net:wp` vs `heuristic`, lens:ev both — **85/128 (66.4%), +1.29 marks/game, 95%
+CI [+0.72, +1.84]**, make-rate 69.3% vs 54.1%. The distillation fully preserved
+(slightly exceeded) the live Gus bidder's own +1.09 edge, and the net bidder is
+*more* selective (42.8% offense share) and reaches `notrump`/`doubles-trump` the
+8-decl sim bidder structurally cannot.
+
+**Frontier shift:** the auction policy is now both strong AND fast. The Gus sim
+bidder cost ~49 min for 128 games; the net bidder runs in arena-play time. Fast
+full-game auction sweeps (e.g. measuring the #27 v2 pass baseline's win-rate
+impact in full games) are now practical.

@@ -74,8 +74,16 @@ took *fewer* auctions (49.6% offense share) but made 65.8% of its contracts
 vs the heuristic's 55.8%, and reached `doubles-trump` 40 times — a
 declaration the pip-only static bidder structurally cannot make. ~49 min on
 M5 Max MPS (one Gus eval per dealt hand is the cost; the bid-strength net of
-rung #22 is the planned fix). Result under
-`arena/results/gus_vs_heuristic_128/`.
+rung #22 is the fix). Result under `arena/results/gus_vs_heuristic_128/`.
+
+**Net bidder (rung #22, 2026-06-12):** the distilled `net` bidder
+(`champion.NetPointsEvaluator` via `GusBidder(pmake_fn=...)`, CLI `net:wp`)
+replaces the ~1 s/hand Gus sim with a **0.68 ms/hand** forward pass — and
+**preserves the edge: 85/128 (66.4%), +1.29 marks/game, 95% CI [+0.72, +1.84]**
+vs the heuristic (seed 0, same as the gus run), make-rate 69.3% vs 54.1%. It is
+*more* selective (42.8% offense share) and reaches `notrump`/`doubles-trump` the
+8-decl sim bidder cannot. ~1500× faster bidding unblocks full-game auction
+sweeps. Result under `arena/results/net_vs_heuristic_128/`.
 
 ## Belief-weighted world sampling — measured null (rung #25, 2026-06-12)
 

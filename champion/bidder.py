@@ -23,7 +23,7 @@ from __future__ import annotations
 import random
 from typing import Callable, Mapping, Sequence
 
-from arena.auction import PASS, BidContext, contract_points
+from arena.auction import MIN_BID, ONE_MARK, PASS, BidContext, contract_points
 from arena.hand_metrics import best_trump
 from forge.oracle.tables import DOMINO_IS_DOUBLE
 
@@ -31,6 +31,12 @@ from .utility import BidUtility, MarkEV
 
 # hand -> {decl_id: bidding team's final points, one per simulated world}
 PointsEvaluator = Callable[[tuple[int, ...]], Mapping[int, Sequence[int]]]
+# hand -> {decl_id: {threshold: P(make)}} — the table the policy actually reads;
+# the distilled bid_net (rung #22) supplies this directly, skipping simulation.
+PMakeFn = Callable[[tuple[int, ...]], Mapping[int, Mapping[int, float]]]
+
+# Point thresholds a contract can demand: 30..42 (a mark bid caps at all 42).
+THRESHOLDS = tuple(range(MIN_BID, ONE_MARK + 1))
 
 
 def _p_make(points: Sequence[int], threshold: int) -> float:
@@ -42,17 +48,22 @@ class GusBidder:
 
     def __init__(
         self,
-        evaluator: PointsEvaluator,
+        evaluator: PointsEvaluator | None = None,
         utility: BidUtility | None = None,
         *,
         prefilter_min_trumps: int = 3,
         margin: float = 0.0,
+        pmake_fn: PMakeFn | None = None,
     ):
+        if evaluator is None and pmake_fn is None:
+            raise ValueError("GusBidder needs an `evaluator` or a `pmake_fn`")
         self.evaluator = evaluator
+        self.pmake_fn = pmake_fn
         self.utility = utility or MarkEV()
         self.prefilter_min_trumps = prefilter_min_trumps
         self.margin = margin
         self._cache: dict[tuple[int, ...], dict[int, list[int]]] = {}
+        self._pm_cache: dict[tuple[int, ...], dict[int, dict[int, float]]] = {}
 
     def _points(self, hand: tuple[int, ...]) -> dict[int, list[int]]:
         key = tuple(sorted(hand))
@@ -62,6 +73,22 @@ class GusBidder:
             }
         return self._cache[key]
 
+    def _pmake(self, hand: tuple[int, ...]) -> dict[int, dict[int, float]]:
+        """{decl: {threshold: P(make)}}, from the net if given else simulated
+        points. One evaluation per hand, cached across bid and declaration."""
+        key = tuple(sorted(hand))
+        if key not in self._pm_cache:
+            if self.pmake_fn is not None:
+                self._pm_cache[key] = {
+                    decl: dict(row) for decl, row in self.pmake_fn(key).items()
+                }
+            else:
+                self._pm_cache[key] = {
+                    decl: {t: _p_make(pts, t) for t in THRESHOLDS}
+                    for decl, pts in self._points(key).items()
+                }
+        return self._pm_cache[key]
+
     def _worth_evaluating(self, hand: tuple[int, ...]) -> bool:
         if best_trump(hand, self.prefilter_min_trumps) is not None:
             return True
@@ -70,10 +97,10 @@ class GusBidder:
     def bid(self, ctx: BidContext, rng: random.Random) -> int:
         if not self._worth_evaluating(ctx.hand):
             return PASS
-        table = self._points(ctx.hand)
+        pm = self._pmake(ctx.hand)
         for value in ctx.legal:
             threshold = contract_points(value)
-            p = max(_p_make(pts, threshold) for pts in table.values())
+            p = max(row[threshold] for row in pm.values())
             u = self.utility.value(
                 p, value,
                 team=ctx.team, marks=ctx.marks, marks_to_win=ctx.marks_to_win,
@@ -83,19 +110,21 @@ class GusBidder:
         return PASS
 
     def declare(self, hand: tuple[int, ...], bid: int, rng: random.Random) -> int:
-        table = self._points(hand)  # cached unless the bid was forced
+        pm = self._pmake(hand)  # cached unless the bid was forced
         threshold = contract_points(bid)
-        return max(
-            table,
-            key=lambda decl: (
-                _p_make(table[decl], threshold),
-                sum(table[decl]) / len(table[decl]),
-            ),
-        )
+        if self.pmake_fn is None:
+            # Break ties on P(make) by higher mean points (needs the points path).
+            pts = self._points(hand)
+            return max(
+                pm,
+                key=lambda decl: (pm[decl][threshold], sum(pts[decl]) / len(pts[decl])),
+            )
+        return max(pm, key=lambda decl: pm[decl][threshold])
 
     def __repr__(self) -> str:
+        src = "net" if self.pmake_fn is not None else "sim"
         return (
-            f"GusBidder(utility={self.utility!r}, margin={self.margin}, "
+            f"GusBidder(source={src}, utility={self.utility!r}, margin={self.margin}, "
             f"prefilter_min_trumps={self.prefilter_min_trumps})"
         )
 
@@ -137,3 +166,46 @@ class GusPointsEvaluator:
             f"GusPointsEvaluator(adapter={self.adapter!r}, "
             f"n_samples={self.n_samples}, device={self.device!r})"
         )
+
+
+class NetPointsEvaluator:
+    """P(make) table from the distilled bid_net (rung #22) — <1ms per hand.
+
+    Returns {decl_id: {threshold: P(make)}} for the GusBidder `pmake_fn` path,
+    replacing the per-hand Gus simulation (≈1s) with a single MLP forward pass.
+    The net lives in `champion/bid_net.py`; default weights `champion/bid_net.pt`.
+    Covers 9 declarations (EVAL_DECLS, including no-trump=9) × thresholds 30..42.
+    """
+
+    def __init__(self, model_path: str = "champion/bid_net.pt", device: str = "cpu"):
+        import torch
+
+        from champion.bid_net import (
+            BID_THRESHOLDS, BidNet, EVAL_DECLS, FEATURE_DIM, featurize_hand,
+        )
+
+        self._torch = torch
+        self._featurize = featurize_hand
+        self._decls = list(EVAL_DECLS)
+        self._thresholds = list(BID_THRESHOLDS)
+        ckpt = torch.load(model_path, map_location=device, weights_only=False)
+        self.model = BidNet(in_dim=ckpt.get("feature_dim", FEATURE_DIM))
+        self.model.load_state_dict(ckpt["model_state"])
+        self.model.eval()
+        self.device = device
+        self.model_path = model_path
+
+    def __call__(self, hand: tuple[int, ...]) -> dict[int, dict[int, float]]:
+        x = self._featurize(tuple(hand)).unsqueeze(0).to(self.device)
+        with self._torch.no_grad():
+            table = self.model(x)[0].cpu()  # [9, 13]
+        return {
+            self._decls[i]: {
+                self._thresholds[j]: float(table[i, j])
+                for j in range(len(self._thresholds))
+            }
+            for i in range(len(self._decls))
+        }
+
+    def __repr__(self) -> str:
+        return f"NetPointsEvaluator(model_path={self.model_path!r}, device={self.device!r})"
