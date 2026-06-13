@@ -2,9 +2,9 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: local-2026-06-09
+last_updated: local-2026-06-12
 status: active
-phase: direction set; arena + auction v0 are the first rungs
+phase: arena landed (rung 1, 2026-06-12); auction v0 is the next rung
 ---
 
 ## What it is
@@ -52,8 +52,8 @@ level.
 | Belief posterior | partial | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]; **not** auction-conditioned; **not** wired into world sampling |
 | Mark utility | partial | mark_ev transform validated ([[w42-bookval-v1-wave2-bid-aware-atlas]]); not score-conditioned (Lens v2 design preserved in former bead t42-nwuu) |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
-| Auction policy | **missing** | — |
-| Full-game arena | **missing** | — |
+| Auction policy | v0 | static risk-budget bidder in `arena/bidders.py`; beats bid30 58.9% under identical play ([[arena]]); model-backed version is rung 2 |
+| Full-game arena | **done** | [[arena]] (2026-06-12); 192 games ≈ 150 s |
 | Self-play consistency | **missing** | — |
 
 ## Bidding inventory (pre-wiki work, promoted 2026-06-09)
@@ -106,7 +106,9 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
 
 1. **Arena** — full games: auction + play, marks to 7; paired-seed team
    rotation like `w42/lens_v1/parallel_match.py`. The measuring stick; "best
-   player" is not a measurable sentence without it.
+   player" is not a measurable sentence without it. **Done 2026-06-12**
+   ([[arena]]): first physics — a static risk-budget bidder beats
+   always-bid-30 by +0.78 marks/game under identical oracle play.
 2. **Auction v0** — Roberson risk-budget policy over `gus/bidding`
    (anchor: ch02 bid-only-enough, `supported` at wave 2.B.2).
 3. **Bid-strength net** — finish the 2026-01 plan: run the corpus generator

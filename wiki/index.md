@@ -26,6 +26,7 @@ catalog:
 - [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
 - [[entities/champion|champion]] — unified belief-state player: decision loop (posterior → belief-weighted worlds → oracle value → marks-to-7 utility), pre-wiki bidding inventory, and the auction-first build ladder (active)
+- [[entities/arena|arena]] — full-game harness (arena/): real auctions, marks to 7, paired-seed team rotation; champion rung 1; first physics: static risk-budget bidding beats bid30 by +0.78 marks/game (active)
 
 ### LEM — STaR curriculum project
 

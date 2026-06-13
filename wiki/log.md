@@ -2846,3 +2846,33 @@ Historical beads remain readable in `.beads/issues.jsonl`. The wiki carries
 information; GitHub issues carry action.
 
 **Questions opened:** none.
+
+## [2026-06-12 | a715af4 | Arena — full-game harness landed (champion rung 1)]
+
+**What happened:** The [[champion]] ladder's first rung shipped: `arena/`
+plays four seats through real auctions (docs/rules.md §4) and hands to 7
+marks, with paired-seed team rotation. GitHub issue #20 closed. First
+physics followed within the hour: under identical oracle play (lens:ev,
+N=10), a static Roberson risk-budget bidder beats the always-bid-30
+baseline 58.9% (113/192 games), mark margin +0.78/game, 95% CI
+[+0.28, +1.26] — the auction-first marginal-value ranking got its first
+confirmation at the cheapest possible rung. 192 full games run in ~150 s
+on MPS.
+
+**Touched pages:** [[arena]] [[champion]] [[index]] [[log]]
+
+**Added:**
+- [[arena]] — design (engine split, lockstep batching, oracle never sees
+  the bid), shipped bidders/players, first physics, v0 limits.
+
+**Updated:**
+- [[champion]] — asset map: full-game arena → done; auction policy → v0
+  (static risk-budget in `arena/bidders.py`); ladder rung 1 marked done.
+- [[index]] — arena added to Shared infrastructure.
+
+**Frontier shift:** every player in the stack is now comparable at the
+level the game is actually played; "best player" is a measurable sentence.
+Next rung: auction v0 (#21) — replace the static ceiling with gus/bidding
+simulated mark swings; the static bidder is the baseline to beat.
+
+**Questions opened:** none.
