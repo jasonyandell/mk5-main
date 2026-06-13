@@ -3054,3 +3054,16 @@ can be graded against the book with paired-contrast receipts. Out of scope (hone
 84-endgames (champion rarely bids 84), multi-step ch03/ch10 claims (need
 trajectory contrasts), paired-bid auction claims (one bid per auction), and a
 production n_worlds=50 run to halve the CIs.
+
+---
+
+## [2026-06-13 | pending | Champion #27 v2 pass baseline — win-rate measured null]
+
+The fast net bidder (rung #22) made the once-impractical experiment cheap: does
+crediting the defensive cost of passing actually win games? `net:wp,pass0.4` vs
+`net:wp` (identical lens:ev play), 128 games — **61/128 (47.7%), −0.07 marks/game,
+95% CI [−0.62, +0.46]** (includes zero). The pass baseline does what it's designed
+to — A takes more auctions (54.1% offense share) — but the extra marginal contracts
+are made at a lower rate (65.6% vs 69.1%), so volume and quality cancel: q=0.4 sits
+near the break-even point. The behavioral change is real and win-rate-neutral; the
+*right* q, derived from self-play rather than a hand-set scalar, is rung #26.

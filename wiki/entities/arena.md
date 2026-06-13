@@ -136,8 +136,13 @@ utility, the score channel) is correct and unit-tested; the value is the
 measurement that redirects effort to the auction and belief (#25). The bidding
 side of marks-to-7 conditioning — `MarksToSeven`'s optional equilibrium-aware
 pass baseline (`pass_q_opp`/`pass_make_rate`) — does move the policy (16.7% of
-sampled bids shift, all toward fighting harder for the auction), but its
-win-rate impact is unmeasured. Result under `arena/results/scorelens_vs_ev_192/`.
+sampled bids shift, all toward fighting harder for the auction). Its win-rate
+impact, made measurable by the fast net bidder, is **null**: `net:wp,pass0.4` vs
+`net:wp` over 128 games is −0.07 marks/game, 95% CI [−0.62, +0.46] — the q=0.4
+aggression is calibrated near break-even (A takes more auctions, 54.1% offense
+share, at a slightly lower make-rate 65.6% vs 69.1%, and the two cancel). The
+right q derived from self-play is rung #26's equilibrium. Results under
+`arena/results/scorelens_vs_ev_192/` and `pass_vs_nopass_128/`.
 
 ## First physics (2026-06-12)
 
