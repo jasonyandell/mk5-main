@@ -21,10 +21,12 @@ A bid utility scores one contract decision against the status quo:
   needs p > 3/4 when ahead 6-0, p > 1/2 at even, and only p > 1/4 when
   behind 0-6. Prudence and desperation emerge instead of being authored.
 
-v1 limitation, stated honestly: the pass baseline is WP at the current
-score under the neutral race model. It does not yet model who bids if we
-pass — the defensive value of passing and the cost of handing the auction
-to opponents at 6-x is rung #26's equilibrium to find.
+v2 (2026-06-12): the pass baseline is parameterizable. Default is still WP at
+the current score (the neutral race model); with ``pass_q_opp > 0`` it credits
+the defensive cost of handing the auction to opponents — a first, calibrated
+step toward rung #26's full equilibrium, which would derive who bids from
+self-play rather than a scalar. ``score_to_utility`` extends the same
+race-model conditioning to play-phase risk.
 """
 from __future__ import annotations
 
@@ -81,7 +83,34 @@ class MarkEV:
 
 
 class MarksToSeven:
-    """Win-probability gain of bidding, under the race-model WP table."""
+    """Win-probability gain of bidding, under the race-model WP table.
+
+    The pass alternative is valued at ``wp_pass``. By default (``pass_q_opp=0``)
+    that is the status-quo WP at the current score — passing freezes the race,
+    the v1 baseline. With ``pass_q_opp > 0`` it becomes equilibrium-aware:
+    passing hands the auction on, an opponent declares a one-mark contract with
+    probability ``pass_q_opp`` and makes it with probability ``pass_make_rate``
+    (they gain a mark) or is set (we gain a mark). Crediting that defensive cost
+    is rung #27's v2 step toward the #26 equilibrium — passing into a strong
+    field at 6-x becomes correctly worse than the neutral 0, so the bidder
+    fights harder to deny opponents the auction when behind.
+    """
+
+    def __init__(self, pass_q_opp: float = 0.0, pass_make_rate: float = 0.5):
+        self.pass_q_opp = pass_q_opp
+        self.pass_make_rate = pass_make_rate
+
+    def _wp_pass(self, my_needed: int, opp_needed: int) -> float:
+        """WP if we pass: status quo, unless an opponent takes the contract."""
+        q, r = self.pass_q_opp, self.pass_make_rate
+        if q <= 0.0:
+            return race_wp(my_needed, opp_needed)
+        opp_takes = q * (
+            r * race_wp(my_needed, opp_needed - 1)            # they make → they gain
+            + (1.0 - r) * race_wp(my_needed - 1, opp_needed)  # they're set → we gain
+        )
+        no_take = (1.0 - q) * race_wp(my_needed, opp_needed)
+        return opp_takes + no_take
 
     def value(
         self,
@@ -97,8 +126,47 @@ class MarksToSeven:
         m = marks_for_bid(bid)
         wp_make = race_wp(my_needed - m, opp_needed)
         wp_set = race_wp(my_needed, opp_needed - m)
-        wp_now = race_wp(my_needed, opp_needed)
-        return p_make * wp_make + (1.0 - p_make) * wp_set - wp_now
+        wp_pass = self._wp_pass(my_needed, opp_needed)
+        return p_make * wp_make + (1.0 - p_make) * wp_set - wp_pass
 
     def __repr__(self) -> str:
-        return "MarksToSeven()"
+        if self.pass_q_opp <= 0.0:
+            return "MarksToSeven()"
+        return (
+            f"MarksToSeven(pass_q_opp={self.pass_q_opp}, "
+            f"pass_make_rate={self.pass_make_rate})"
+        )
+
+
+def score_to_utility(
+    marks: tuple[int, int],
+    team: int,
+    marks_to_win: int = 7,
+    *,
+    band: float = 0.15,
+    ahead: str = "cvar_10",
+    even: str = "ev",
+    behind: str = "upside_10",
+) -> str:
+    """Pick a play-risk lens by score: protect a lead, chase from behind.
+
+    The acting team's win probability under the neutral race model decides the
+    risk posture. Comfortably ahead (WP >= 1/2 + band) the right move is to
+    protect the lead — minimize the downside that could squander it — so play
+    the lower-tail-averse ``cvar_10``. Comfortably behind (WP <= 1/2 - band)
+    only the rare big outcome changes the game, so chase variance with
+    ``upside_10``. Near even, maximize expected value (``ev``). The band keeps
+    the default ev posture across the broad middle where risk-shaping is noise.
+
+    This is the play-phase analogue of MarksToSeven's bid-phase conditioning:
+    both read the same ``race_wp`` table, so the champion's play risk and bid
+    risk move together rather than as two ad-hoc policies.
+    """
+    my_needed = marks_to_win - marks[team]
+    opp_needed = marks_to_win - marks[1 - team]
+    wp = race_wp(my_needed, opp_needed)
+    if wp >= 0.5 + band:
+        return ahead
+    if wp <= 0.5 - band:
+        return behind
+    return even

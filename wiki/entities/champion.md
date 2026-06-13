@@ -4,7 +4,7 @@ kind: entity
 first_seen: local-2026-06-09
 last_updated: local-2026-06-12
 status: active
-phase: arena landed (rung 1, 2026-06-12); auction v0 is the next rung
+phase: rungs #20-#23 + #27 v2 landed (2026-06-12); play-risk measured the wrong lever; #25 belief-weighted sampling is the next move
 ---
 
 ## What it is
@@ -50,7 +50,8 @@ level.
 | Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
 | One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
 | Belief posterior | partial | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]; **not** auction-conditioned; **not** wired into world sampling |
-| Mark utility | v1 score-conditioned | `champion/utility.py` (2026-06-12): `race_wp` Pascal-recursion WP table + `MarksToSeven`. 1-mark contracts still flip at p=½ at every score (Pascal identity); conditioning bites on multi-mark bids — 84 needs p>¾ ahead 6-0, p>¼ behind 0-6. Pass baseline not yet equilibrium-aware (rung #26) |
+| Mark utility | **v2** | `champion/utility.py`: `race_wp` Pascal WP table + `MarksToSeven` (now with an optional equilibrium-aware pass model `pass_q_opp`/`pass_make_rate`, default off = v1) + `score_to_utility` for play risk. Score-conditioned **play** risk measured **negative** (rung #27 v2): `ScoreConditionedLensPlay` loses to `lens:ev` −1.20 marks/game, CI [−1.69,−0.70] ([[arena]]) — risk-shaped lenses sacrifice contracts (make-rate 48.9% vs 60.2%); confirms play-risk is the wrong lever. Pass model shifts 16.7% of sampled bids toward fighting for the auction (win-rate impact unmeasured) |
+| Bid-strength net | **done** (rung #22) | `champion/bid_net.py`: Gus-backed bidding corpus (`forge/cli/bidding_continuous.py` rewired off the retired 817k policy) distilled to a hand → (9 decl × 13 bid) p_make MLP. Test MAE 0.053, ECE 0.007, 0.012 ms/call — the <1ms replacement for the live Gus sim the `GusBidder` pays per hand |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
 | Auction policy | v0 (two tiers) | static risk-budget `HeuristicBidder` (`arena/bidders.py`), beats bid30 58.9% under identical play ([[arena]]); **Gus-backed** `champion.GusBidder` (2026-06-12, rung #21) — min positive-utility bid over a simulated P(make) table, pluggable `MarkEV`/`MarksToSeven` utility, static prefilter, one Gus eval per hand cached. **Beats the static heuristic 84/128 (65.6%), +1.09 marks/game, 95% CI [+0.54, +1.62]** under identical oracle play — wins on make-rate (65.8% vs 55.8%) and doubles-trump access, not auction volume ([[arena]]) |
 | Full-game arena | **done** | [[arena]] (2026-06-12); 192 games ≈ 150 s; `BidContext` now carries game score for score-conditioned bidding; `gus[:samples[,wp]]` CLI bidder |
@@ -123,9 +124,13 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    statically hopeless hands before paying for simulation. Wired into the
    arena CLI as `gus[:samples[,wp]]`; beats the static heuristic 84/128
    (65.6%, +1.09 marks/game, CI excludes zero) under identical oracle play.
-3. **Bid-strength net** — finish the 2026-01 plan: run the corpus generator
-   Gus-backed, distill hand → (decl × bid) p_make table to <1ms. The 2026-01
-   `estimator.py` is now correct for mark bids (84-threshold fix, 2026-06-12).
+3. **Bid-strength net** — **done 2026-06-12** (`champion/bid_net.py`): the
+   2026-01 corpus generator, rewired off the retired 817k policy onto the Gus
+   simulator (`forge/cli/bidding_continuous.py`), ran a scaled Gus-backed
+   corpus; a small MLP distills hand → (9 decl × 13 bid) p_make at 0.012 ms/call
+   (test MAE 0.053, ECE 0.007). The <1ms replacement for the live Gus sim the
+   bidder pays per hand. The 2026-01 `estimator.py` 84-threshold fix landed with
+   rung #23.
 4. **Belief v2** — condition the belief head on auction + play history
    (training data free from arena self-play); revisit [[belief-bayes-ceiling]]
    with auction evidence.
@@ -134,12 +139,16 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
 6. **Self-play fixed point** — iterate policy ↔ belief until conventions
    stabilize.
 7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM
-   analogue; absorbs the Lens v2 design). **v1 done 2026-06-12**
-   (`champion/utility.py`): `race_wp` is the WP lookup table the issue asks
-   for, built as Pascal's recursion under a neutral one-mark-per-hand race
-   model; `MarksToSeven` scores a contract as Δ win-probability and is wired
-   as a `GusBidder` utility. Governs bidding now; play-risk hook and an
-   equilibrium-aware pass baseline are the remaining v2 work.
+   analogue; absorbs the Lens v2 design). **v2 done 2026-06-12**
+   (`champion/utility.py`, `champion/play_risk.py`): `race_wp` is the WP table
+   (Pascal's recursion under a neutral one-mark-per-hand race); `MarksToSeven`
+   scores a contract as Δ win-probability, now with an optional equilibrium-aware
+   pass baseline (`pass_q_opp`, default off). The play-risk hook
+   (`score_to_utility` + `ScoreConditionedLensPlay` + the `upside_10` lens) is
+   built and measured — and it **loses** to plain EV play (−1.20 marks/game, CI
+   excludes zero), a clean confirmation that play-risk is the wrong lever
+   ([[arena]]). The lever is the auction and belief; the full equilibrium pass
+   baseline stays rung #26.
 8. **Summit (optional)** — depth-limited subgame re-solving on late tricks;
    exact information-set endgame solving.
 

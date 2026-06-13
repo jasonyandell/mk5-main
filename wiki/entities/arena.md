@@ -47,7 +47,8 @@ python -u -m arena.cli --team-a heuristic+lens:ev --team-b bid30+lens:ev \
   with an equivalence test), `bid30` (opens 30, else passes — the
   historical baseline as a live player), `random`, and `gus` (the
   model-backed `champion.GusBidder`, rung #21 — see below). Play:
-  `lens:<utility>` over the forge E[Q] PDF, or `random`.
+  `lens:<utility>` over the forge E[Q] PDF, `scorelens[:band]` (rung #27 v2
+  score-conditioned, see below), or `random`.
 - `BidContext` carries the live game score (`marks`, `marks_to_win`), so a
   bidder can condition on it — the channel the marks-to-7 utility
   ([[champion]] rung #27) rides. The shipped static bidders ignore it; the
@@ -75,6 +76,35 @@ declaration the pip-only static bidder structurally cannot make. ~49 min on
 M5 Max MPS (one Gus eval per dealt hand is the cost; the bid-strength net of
 rung #22 is the planned fix). Result under
 `arena/results/gus_vs_heuristic_128/`.
+
+## Score-conditioned play — measured negative (rung #27 v2, 2026-06-12)
+
+`champion/play_risk.py` adds `ScoreConditionedLensPlay`: a LensPlay that picks
+its lens per game from the live mark score via `champion.utility.score_to_utility`
+— protect a lead with the lower-tail-averse `cvar_10`, chase from behind with
+the new risk-seeking `upside_10` lens (the reverse-cumulative top-10% tail,
+mirror of `cvar_10`), hold `ev` near even (race-model WP band 0.15). The score
+reaches play through a new `marks`/`marks_to_win` channel on `PlayPolicy.choose`,
+threaded from `_LiveGame.marks` in the engine loop.
+
+Headline (identical `heuristic` bidders both sides, 192 games, seed 2000,
+n_samples=10): **`scorelens` LOSES to `lens:ev` 72/192 (37.5%; halves 36.5% /
+38.5%), mark margin −1.20/game, 95% CI [−1.69, −0.70]** — CI excludes zero. The
+mechanism is the make-rate: the score-conditioned team made only 48.9% of its
+contracts vs the EV team's 60.2%. The risk-shaped lenses trade expected
+contracts for tail-shaping, and in 42 the per-hand marks outcome is dominated by
+EV-greedy play — within a hand, marks-optimal ≈ maximize P(make), which is
+score-independent.
+
+A clean, direct confirmation of the [[champion]] marginal-value ranking
+(auction ≫ belief ≫ score-utility ≫ **card-play polish**): score-conditioned
+*play* risk is the wrong lever. The mechanism (lens dispatch, the `upside_10`
+utility, the score channel) is correct and unit-tested; the value is the
+measurement that redirects effort to the auction and belief (#25). The bidding
+side of marks-to-7 conditioning — `MarksToSeven`'s optional equilibrium-aware
+pass baseline (`pass_q_opp`/`pass_make_rate`) — does move the policy (16.7% of
+sampled bids shift, all toward fighting harder for the auction), but its
+win-rate impact is unmeasured. Result under `arena/results/scorelens_vs_ev_192/`.
 
 ## First physics (2026-06-12)
 

@@ -28,7 +28,7 @@ from torch import Tensor
 from forge.eq.generate.actions import contract_threshold_bins, EQ_BIN_COUNT
 
 
-UTILITIES = ("ev", "p_make", "mark_ev", "cvar_10", "robust_q25", "disaster")
+UTILITIES = ("ev", "p_make", "mark_ev", "cvar_10", "robust_q25", "disaster", "upside_10")
 
 
 def _q_values_tensor(device) -> Tensor:
@@ -100,6 +100,28 @@ def utility_scores(
         empty = (wsum <= 1e-12)
         cvar = torch.where(empty, first_q, cvar_w).squeeze(2)
         return cvar.float()
+
+    if utility == "upside_10":
+        # Risk-SEEKING mirror of cvar_10: mean of Q in the UPPER tail (the top
+        # 10% of probability mass). The exact mirror of cvar_10's forward
+        # `cum <= 0.10` is the REVERSE cumulative mass (mass at or above each
+        # bin) `<= 0.10` — using `cum >= 0.90` would wrongly swallow a heavy
+        # low bin that merely crosses the 0.90 line. High when an action has a
+        # fat best-case tail even at a mediocre mean — the utility a player far
+        # behind on marks wants, where only the rare big outcome changes the game.
+        rev_cum = torch.cumsum(pdf.flip(dims=[2]), dim=2).flip(dims=[2])  # [n,7,85]
+        mask = (rev_cum <= 0.10).float()
+        w = pdf * mask
+        wsum = w.sum(dim=2, keepdim=True)  # [n,7,1]
+        up_w = (qvals * w).sum(dim=2, keepdim=True) / wsum.clamp(min=1e-12)
+        # Fallback: highest mass-bearing bin (best-case location) when the top
+        # mass-bearing bin alone exceeds 10% mass and the mask is empty.
+        order = torch.arange(EQ_BIN_COUNT, device=device, dtype=torch.float32).view(1, 1, EQ_BIN_COUNT)
+        last_idx = ((pdf > 0).float() * order).argmax(dim=2, keepdim=True)  # [n,7,1]
+        last_q = last_idx.float() - 42.0
+        empty = (wsum <= 1e-12)
+        up = torch.where(empty, last_q, up_w).squeeze(2)
+        return up.float()
 
     if utility == "disaster":
         # "Anything below the make threshold is a disaster, treat it as Q=-42."

@@ -15,12 +15,19 @@ from forge.zeb.types import ZebGameState
 
 
 class PlayPolicy(Protocol):
-    """A card player: slot indices (0-6) for a batch of PLAYING states."""
+    """A card player: slot indices (0-6) for a batch of PLAYING states.
+
+    ``marks`` carries each game's absolute (team0, team1) mark score so a
+    score-conditioned player can shape its play risk (rung #27); ``None`` and
+    score-blind players ignore it. The engine always supplies it.
+    """
 
     def choose(
         self,
         states: Sequence[ZebGameState],
         bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
     ) -> list[int]:
         ...
 
@@ -35,6 +42,8 @@ class RandomPlay:
         self,
         states: Sequence[ZebGameState],
         bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
     ) -> list[int]:
         return [self._rng.choice(legal_actions(s)) for s in states]
 

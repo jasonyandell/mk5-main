@@ -52,6 +52,8 @@ class LensPlay:
         self,
         states: Sequence[ZebGameState],
         bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
     ) -> list[int]:
         n = len(states)
         self._ensure_capacity(n)
@@ -65,17 +67,34 @@ class LensPlay:
                 self.model, tokens, masks, gst, self.n_samples, self.device,
             )
             q_reshaped = q_values.view(n, self.n_samples, 7)
-            actions = argmax_under_utility(
-                utility=self.utility,
-                e_q=q_reshaped.mean(dim=1),
-                e_q_pdf=compute_eq_pdf(q_reshaped),
-                bidder=gst.bidder.long(),
-                current_players=gst.current_player.long(),
-                legal_mask=gst.legal_actions(),
-                bid_values=list(bid_values),
+            e_q, e_q_pdf = self._marginalize(q_reshaped, gst, states, worlds)
+            actions = self._select(
+                e_q, e_q_pdf, gst, bid_values, marks, marks_to_win,
             )
 
         return [int(a) for a in actions.tolist()]
+
+    def _marginalize(self, q_reshaped, gst, states, worlds):
+        """Reduce per-world Q to (E[Q], E[Q] PDF). Base: uniform over worlds.
+
+        The belief-weighted player (rung #25) overrides this to importance-weight
+        the worlds by a learned posterior; the extra ``gst``/``states``/``worlds``
+        arguments are the evidence it needs."""
+        return q_reshaped.mean(dim=1), compute_eq_pdf(q_reshaped)
+
+    def _select(self, e_q, e_q_pdf, gst, bid_values, marks, marks_to_win):
+        """Choose one action per game under the fixed utility. The
+        score-conditioned player (rung #27) overrides this to vary the utility
+        by the game's mark score."""
+        return argmax_under_utility(
+            utility=self.utility,
+            e_q=e_q,
+            e_q_pdf=e_q_pdf,
+            bidder=gst.bidder.long(),
+            current_players=gst.current_player.long(),
+            legal_mask=gst.legal_actions(),
+            bid_values=list(bid_values),
+        )
 
     def __repr__(self) -> str:
         return f"LensPlay(utility={self.utility!r}, n_samples={self.n_samples})"

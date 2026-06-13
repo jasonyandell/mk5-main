@@ -254,6 +254,8 @@ def run_half(
             actions = policy.choose(
                 [g.state for g in side_games],
                 [g.bid_value for g in side_games],
+                [(g.marks[0], g.marks[1]) for g in side_games],
+                cfg.marks_to_win,
             )
             for g, action in zip(side_games, actions):
                 g.apply(action)

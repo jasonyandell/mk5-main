@@ -2920,3 +2920,45 @@ headline (match running at session end).
 **Questions opened:** does `MarksToSeven`'s neutral race model (p=½/hand)
 bias bidding vs a model that knows the bidder's own edge? Flagged for the
 self-play loop to answer.
+
+---
+
+## [2026-06-12 | 40a32a7 | Champion rungs #22 + #27 v2: bid-strength net; play-risk measured the wrong lever]
+
+A two-track push on the [[champion]] ladder: rung #22 (bid-strength net) landed
+by a parallel agent while rung #27 v2 (marks-to-7 v2) was built in the main loop.
+
+**Touched pages:** [[entities/champion]] [[entities/arena]]
+
+**Rung #22 — bid-strength net.** The 2026-01 corpus generator
+(`forge/cli/bidding_continuous.py`) was rewired off the retired 817k policy
+model onto the Gus simulator (`simulate_all_gus_batch`, all 9 EVAL_DECLS incl
+notrump, MPS/auto). A scaled Gus-backed corpus (604 rows) was distilled by
+`champion/bid_net.py` into a hand → (9 decl × 13 bid) p_make MLP: **test MAE
+0.053, ECE 0.007, 0.012 ms/call** — the sub-millisecond replacement for the
+live Gus sim the `GusBidder` pays per hand.
+
+**Rung #27 v2 — marks-to-7 v2.** Two pieces, both correct and unit-tested:
+(1) an equilibrium-aware pass baseline on `MarksToSeven` (`pass_q_opp`/
+`pass_make_rate`, default off = v1) — a behavioral diff shows it shifts 16.7%
+of sampled bids, all toward fighting harder for the auction; (2) a
+score-conditioned play-risk hook (`champion/play_risk.py
+ScoreConditionedLensPlay` + the new risk-seeking `upside_10` lens + a
+`marks`/`marks_to_win` channel on `PlayPolicy.choose`). The play-risk hook was
+**measured and it loses**: `scorelens` vs `lens:ev`, identical bidders, 192
+games — **72/192 (37.5%), −1.20 marks/game, 95% CI [−1.69, −0.70]**, make-rate
+48.9% vs 60.2%.
+
+**Frontier shift:** a direct, CI-excludes-zero confirmation of the marginal-value
+ranking (auction ≫ belief ≫ score-utility ≫ **card-play polish**). Within a 42
+hand, marks-optimal play ≈ maximize P(make), which is score-independent; the
+risk-shaped lenses sacrifice contracts. Play-risk is the wrong lever — the
+mechanism is correct, the measurement redirects effort to the auction and
+belief. Highest-leverage rung remaining is still **#25 belief-weighted world
+sampling**, now with a clean lower-risk plan (importance-weight the
+marginalization, `compute_eq_pdf` already takes per-world weights).
+
+**Questions opened:** does marks-optimal *play* (`lens:p_make`, score-blind)
+beat the EV default `lens:ev`? Untested — the cheap next play-side experiment.
+Does the pass baseline's win-rate edge survive full games (vs the behavioral
+diff)? Needs an expensive paired run; deferred.

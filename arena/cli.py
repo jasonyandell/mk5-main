@@ -5,8 +5,10 @@
 
 Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
-            | gus[:<samples>[,wp]]   (champion rung #21; wp = marks-to-7 utility)
-    play:   lens:<utility> | random
+            | gus[:<samples>[,wp][,pass[<q>]]]   (rung #21; wp = marks-to-7
+              utility, pass<q> = rung #27 v2 equilibrium-aware pass baseline)
+    play:   lens:<utility> | scorelens[:<band>] | random
+            (scorelens = rung #27 v2 score-conditioned play risk)
 
 Writes summary.json, per_hand.csv, per_game.csv under --out-dir.
 """
@@ -43,13 +45,26 @@ def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolic
         from champion.bidder import GusBidder, GusPointsEvaluator
         from champion.utility import MarksToSeven
 
-        samples, _, utility_name = arg.partition(",")
+        parts = [p for p in arg.split(",") if p]
+        samples = parts[0] if parts and parts[0].isdigit() else ""
+        tags = parts[1:] if samples else parts
         evaluator = GusPointsEvaluator(
             adapter=gus_adapter, device=device,
             n_samples=int(samples) if samples else 32,
         )
         print(f"Gus bidder: {evaluator}", flush=True)
-        utility = MarksToSeven() if utility_name == "wp" else None
+        # tags: "wp" selects the marks-to-7 utility; "pass[<q>]" adds the
+        # equilibrium-aware pass baseline (rung #27 v2) with P(opp takes)=q.
+        pass_q = 0.0
+        for t in tags:
+            if t.startswith("pass"):
+                pass_q = float(t[4:]) if t[4:] else 0.4
+        if pass_q > 0.0:
+            utility = MarksToSeven(pass_q_opp=pass_q, pass_make_rate=0.55)
+        elif "wp" in tags:
+            utility = MarksToSeven()
+        else:
+            utility = None
         return GusBidder(evaluator, utility)
     raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus)")
 
@@ -61,11 +76,22 @@ def parse_play(spec: str, *, model, n_samples: int, device: str, seed: int) -> P
     if name == "lens":
         from arena.lens_play import LensPlay
         return LensPlay(model, utility=arg or "ev", n_samples=n_samples, device=device)
-    raise ValueError(f"Unknown play policy: {spec!r} (lens:<utility> | random)")
+    if name == "scorelens":
+        # Score-conditioned play risk (rung #27 v2); optional arg is the WP band.
+        from champion.play_risk import ScoreConditionedLensPlay
+        band = float(arg) if arg else 0.15
+        return ScoreConditionedLensPlay(
+            model, n_samples=n_samples, device=device, band=band,
+        )
+    raise ValueError(
+        f"Unknown play policy: {spec!r} (lens:<utility> | scorelens[:<band>] | random)"
+    )
 
 
 def needs_model(*specs: str) -> bool:
-    return any(s.split("+", 1)[1].startswith("lens") for s in specs)
+    return any(
+        s.split("+", 1)[1].split(":")[0] in ("lens", "scorelens") for s in specs
+    )
 
 
 def needs_gus(*specs: str) -> bool:
