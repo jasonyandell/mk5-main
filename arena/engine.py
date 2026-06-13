@@ -49,6 +49,7 @@ class HandRecord:
     dealer: int
     redeals: int
     forced: bool
+    hands: tuple[tuple[int, ...], ...]  # initial deal, seat order (4 x 7 domino ids)
     bids: tuple[int, int, int, int]
     bidder: int
     bid_value: int
@@ -109,6 +110,7 @@ class _LiveGame:
         self.hands: list[HandRecord] = []
         self.state: ZebGameState | None = None
         self._auction: AuctionResult | None = None
+        self._hands: tuple[tuple[int, ...], ...] = ()
         self._seed = -1
         self._redeals = 0
         self.done = False
@@ -134,6 +136,7 @@ class _LiveGame:
             self.dealer = (self.dealer + 1) % 4
 
         self._auction = result
+        self._hands = hands
         self._seed = seed
         self._redeals = redeals
         self.state = ZebGameState(
@@ -179,6 +182,7 @@ class _LiveGame:
             dealer=self.dealer,
             redeals=self._redeals,
             forced=auction.forced,
+            hands=self._hands,
             bids=auction.bids,
             bidder=auction.winner,
             bid_value=auction.high_bid,

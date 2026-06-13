@@ -187,3 +187,23 @@ def game_rows(result: MatchResult) -> list[dict]:
         }
         for g in result.games
     ]
+
+
+def snapshot_rows(result: MatchResult) -> list[dict]:
+    """Per-hand deal+auction snapshots for the #26 belief-corpus bridge.
+
+    Each row carries everything needed to regenerate an oracle E[Q] belief
+    record from a REAL auction: the seat-ordered deal, the winning declaration,
+    the full per-seat bid vector, the winning seat, and the contract value.
+    Hand layout matches GameRecordGPU.hands / deal_from_seed (4 x 7 ids).
+    """
+    return [
+        {
+            "hands": [list(h) for h in hr.hands],
+            "decl_id": hr.decl_id,
+            "bids": list(hr.bids),
+            "bidder": hr.bidder,
+            "bid_value": hr.bid_value,
+        }
+        for g in result.games for hr in g.hands
+    ]

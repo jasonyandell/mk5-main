@@ -97,3 +97,8 @@ class GameRecordGPU:
     hands: list[list[int]]  # Initial deal (4 players x 7 dominoes)
     decl_id: int  # Declaration ID
     bid_value: int | None = None  # Schema v2: actual bid amount for this game
+    # Real-auction provenance (populated when the deal came from an arena
+    # self-play auction rather than an imposed bid_value). Let the belief
+    # model condition on the auction that actually happened.
+    bids: tuple[int, ...] | None = None  # per-seat final bids, seat order (0=pass, 30-42 bid, 84 marks)
+    bidder: int | None = None  # winning seat (0-3)

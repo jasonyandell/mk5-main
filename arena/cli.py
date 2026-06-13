@@ -29,7 +29,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from arena.auction import BidPolicy
 from arena.bidders import Bid30Bidder, HeuristicBidder, RandomBidder
 from arena.engine import ArenaConfig
-from arena.match import game_rows, hand_rows, run_match, summarize
+from arena.match import game_rows, hand_rows, run_match, snapshot_rows, summarize
 from arena.play import PlayPolicy, RandomPlay
 
 
@@ -160,6 +160,10 @@ def main() -> int:
     parser.add_argument("--base-seed", type=int, default=0)
     parser.add_argument("--out-dir", type=str,
                         default=str(Path(__file__).parent / "results"))
+    parser.add_argument("--emit-snapshots", type=str, default=None,
+                        help="Write per-hand deal+auction snapshots (JSON) to this "
+                             "path for the #26 belief-corpus bridge "
+                             "(forge.cli.generate_eq_from_snapshots).")
     args = parser.parse_args()
 
     for spec in (args.team_a, args.team_b):
@@ -242,6 +246,26 @@ def main() -> int:
     write_csv(out_dir / "per_hand.csv", hand_rows(result))
     write_csv(out_dir / "per_game.csv", game_rows(result))
     print(f"\nWrote {out_dir}/summary.json, per_hand.csv, per_game.csv", flush=True)
+
+    if args.emit_snapshots:
+        snaps = snapshot_rows(result)
+        snap_path = Path(args.emit_snapshots)
+        snap_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "snapshots": snaps,
+            "metadata": {
+                "team_a": args.team_a,
+                "team_b": args.team_b,
+                "n_games": result.n_games,
+                "n_snapshots": len(snaps),
+                "base_seed": cfg.base_seed,
+                "marks_to_win": cfg.marks_to_win,
+                "max_redeals": cfg.max_redeals,
+            },
+        }
+        snap_path.write_text(json.dumps(payload, indent=2) + "\n")
+        print(f"Wrote {len(snaps)} snapshots -> {snap_path}", flush=True)
+
     return 0
 
 
