@@ -63,8 +63,18 @@ takes the cheapest bid whose utility clears a margin — Roberson's "bid only
 enough" with a simulated willingness number. A static prefilter skips
 simulation on hands no trump structure could carry, and each hand is
 evaluated once (cached across the bid and declaration). CLI: `gus[:N[,wp]]`,
-where `wp` selects the marks-to-7 utility. Smoke matches beat the static
-heuristic; a full 128-game headline match is the standing comparison.
+where `wp` selects the marks-to-7 utility.
+
+Headline (2026-06-12, identical oracle play both sides, lens:ev N=10,
+128 games, base seed 0): **`gus` beats the static `heuristic` 84/128
+(65.6%; halves 73.4% / 57.8%), mark margin +1.09/game, 95% CI
+[+0.54, +1.62]** — CI excludes zero. Quality, not volume: the Gus bidder
+took *fewer* auctions (49.6% offense share) but made 65.8% of its contracts
+vs the heuristic's 55.8%, and reached `doubles-trump` 40 times — a
+declaration the pip-only static bidder structurally cannot make. ~49 min on
+M5 Max MPS (one Gus eval per dealt hand is the cost; the bid-strength net of
+rung #22 is the planned fix). Result under
+`arena/results/gus_vs_heuristic_128/`.
 
 ## First physics (2026-06-12)
 

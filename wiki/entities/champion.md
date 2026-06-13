@@ -52,7 +52,7 @@ level.
 | Belief posterior | partial | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]; **not** auction-conditioned; **not** wired into world sampling |
 | Mark utility | v1 score-conditioned | `champion/utility.py` (2026-06-12): `race_wp` Pascal-recursion WP table + `MarksToSeven`. 1-mark contracts still flip at p=½ at every score (Pascal identity); conditioning bites on multi-mark bids — 84 needs p>¾ ahead 6-0, p>¼ behind 0-6. Pass baseline not yet equilibrium-aware (rung #26) |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
-| Auction policy | v0 (two tiers) | static risk-budget `HeuristicBidder` (`arena/bidders.py`), beats bid30 58.9% under identical play ([[arena]]); **Gus-backed** `champion.GusBidder` (2026-06-12, rung #21) — min positive-utility bid over a simulated P(make) table, pluggable `MarkEV`/`MarksToSeven` utility, static prefilter, one Gus eval per hand cached |
+| Auction policy | v0 (two tiers) | static risk-budget `HeuristicBidder` (`arena/bidders.py`), beats bid30 58.9% under identical play ([[arena]]); **Gus-backed** `champion.GusBidder` (2026-06-12, rung #21) — min positive-utility bid over a simulated P(make) table, pluggable `MarkEV`/`MarksToSeven` utility, static prefilter, one Gus eval per hand cached. **Beats the static heuristic 84/128 (65.6%), +1.09 marks/game, 95% CI [+0.54, +1.62]** under identical oracle play — wins on make-rate (65.8% vs 55.8%) and doubles-trump access, not auction volume ([[arena]]) |
 | Full-game arena | **done** | [[arena]] (2026-06-12); 192 games ≈ 150 s; `BidContext` now carries game score for score-conditioned bidding; `gus[:samples[,wp]]` CLI bidder |
 | Self-play consistency | **missing** | — |
 
@@ -121,7 +121,8 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    positive-utility legal bid over a Gus-simulated P(make) table, declares
    the trump maximizing P(make) at the contract threshold, and prefilters
    statically hopeless hands before paying for simulation. Wired into the
-   arena CLI as `gus[:samples[,wp]]`; smoke match beats the static heuristic.
+   arena CLI as `gus[:samples[,wp]]`; beats the static heuristic 84/128
+   (65.6%, +1.09 marks/game, CI excludes zero) under identical oracle play.
 3. **Bid-strength net** — finish the 2026-01 plan: run the corpus generator
    Gus-backed, distill hand → (decl × bid) p_make table to <1ms. The 2026-01
    `estimator.py` is now correct for mark bids (84-threshold fix, 2026-06-12).
