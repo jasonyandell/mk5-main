@@ -2962,3 +2962,38 @@ marginalization, `compute_eq_pdf` already takes per-world weights).
 beat the EV default `lens:ev`? Untested — the cheap next play-side experiment.
 Does the pass baseline's win-rate edge survive full games (vs the behavioral
 diff)? Needs an expensive paired run; deferred.
+
+---
+
+## [2026-06-12 | pending | Champion #25: belief-weighted world sampling — mechanism landed, measured null]
+
+The highest-leverage architectural slot on the [[champion]] ladder, wired and
+validated. `champion/play.py BeliefLensPlay` keeps the validity-guaranteed MRV
+world sampler and the oracle E[Q] path untouched and changes only the
+marginalization: it importance-weights the sampled worlds by the Gus belief
+posterior (`champion/belief.py`) instead of averaging them uniformly. A world's
+weight is softmax over worlds of Σ log P(seat | tile); `compute_eq_pdf` already
+accepted per-world weights and `compute_eq_weighted_mean` was added for the mean.
+The belief head's three classes (relative opponents P+1/+2/+3) align exactly with
+the MRV sampler's three opponent rows from the same POV — no reindex.
+
+**Touched pages:** [[entities/champion]] [[entities/arena]]
+
+**Result (128 games, identical heuristic bidders):** `belieflens:ev` vs `lens:ev`
+is a **null** — 58/128 (45.3%), −0.13 marks/game, 95% CI [−0.76, +0.48]; make-rate
+54.9% vs 55.9%. The weights are genuinely active (effective sample size ~5–8 of
+10, min ~2), so the mechanism works — but the play-evidence-only belief is too
+weak to move play. Exactly the [[belief-bayes-ceiling]] prediction: top-1 belief
+sits at the ~39% Bayes ceiling, barely above 33% chance.
+
+**Frontier shift:** the belief→world-sampling slot — the single change the
+champion design says will improve bidding, play, and defense together — is now
+built, unit-tested (degrades to uniform exactly), and arena-validated. The win is
+gated not on the wiring but on belief quality: **rung #24 (auction-conditioned
+belief)** is now the clear unlock, and #26 (self-play) feeds it. A bug was caught
+and fixed mid-run (the CLI player ran uniform-mode until `BeliefLensPlay` was made
+to load the belief model by default — the ESS heartbeat surfaced it).
+
+**Questions opened:** does a sharper belief (lower `tau`) or the
+`arena_v3_consistency` adapter move the null, or is 39% top-1 a hard floor until
+auction evidence enters the belief input (#24)? The latter is the bet.

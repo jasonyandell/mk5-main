@@ -77,6 +77,31 @@ M5 Max MPS (one Gus eval per dealt hand is the cost; the bid-strength net of
 rung #22 is the planned fix). Result under
 `arena/results/gus_vs_heuristic_128/`.
 
+## Belief-weighted world sampling — measured null (rung #25, 2026-06-12)
+
+`champion/play.py BeliefLensPlay` is the highest-leverage architectural slot: it
+keeps the validity-guaranteed MRV world sampler and the oracle E[Q] path
+unchanged and changes only the marginalization — instead of averaging Q uniformly
+over the sampled worlds, it importance-weights them by the Gus belief posterior
+(`champion/belief.py`). A world's weight is the softmax over worlds of
+Σ log P(seat | tile) under the belief head, with a uniform floor (`uniform_mix=0.1`)
+to bound effective sample size. `compute_eq_pdf` already took per-world weights; a
+new `compute_eq_weighted_mean` weights the E[Q] mean too. The seat-row alignment is
+exact: the belief head's three classes (relative opponents P+1/+2/+3) ARE the MRV
+sampler's three opponent rows, from the same current-player POV.
+
+Headline (identical `heuristic` bidders, 128 games, seed 3000, n_samples=10):
+**`belieflens:ev` vs `lens:ev` is a null — 58/128 (45.3%), mark margin
+−0.13/game, 95% CI [−0.76, +0.48]** (includes zero); make-rate 54.9% vs 55.9%.
+The weights are genuinely active (effective sample size ~5–8 of 10, min ~2), so
+the mechanism works — but the play-evidence-only belief is too weak to move play
+strength. Exactly the [[belief-bayes-ceiling]] prediction: top-1 belief sits at
+the ~39% Bayes ceiling, barely above the 33% three-seat chance, so reweighting
+worlds by it changes little. The unlock is **auction-conditioned belief (#24)** —
+the infrastructure is now wired and validated, ready to pay off the moment belief
+sharpens. `belief_model=None` degrades to uniform exactly (unit-tested), so the
+A/B is a pure swap. Result under `arena/results/belieflens_vs_ev_128/`.
+
 ## Score-conditioned play — measured negative (rung #27 v2, 2026-06-12)
 
 `champion/play_risk.py` adds `ScoreConditionedLensPlay`: a LensPlay that picks

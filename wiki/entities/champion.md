@@ -4,7 +4,7 @@ kind: entity
 first_seen: local-2026-06-09
 last_updated: local-2026-06-12
 status: active
-phase: rungs #20-#23 + #27 v2 landed (2026-06-12); play-risk measured the wrong lever; #25 belief-weighted sampling is the next move
+phase: rungs #20-#23, #27 v2, #25 landed (2026-06-12); play-risk (wrong lever) + belief-weighting (null, pending stronger belief) measured; #24 auction-conditioned belief is the next unlock
 ---
 
 ## What it is
@@ -49,7 +49,7 @@ level.
 | Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |
 | Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
 | One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
-| Belief posterior | partial | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]; **not** auction-conditioned; **not** wired into world sampling |
+| Belief posterior | wired (null) | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]. **Now wired into world sampling** (rung #25, `champion/belief.py`+`play.py`): importance-weights MRV worlds by the posterior, ESS-active (~5–8/10) but measured **null** in the arena (−0.13 marks/game, CI includes zero) — the play-evidence belief is too weak. **not** auction-conditioned — that's the #24 unlock |
 | Mark utility | **v2** | `champion/utility.py`: `race_wp` Pascal WP table + `MarksToSeven` (now with an optional equilibrium-aware pass model `pass_q_opp`/`pass_make_rate`, default off = v1) + `score_to_utility` for play risk. Score-conditioned **play** risk measured **negative** (rung #27 v2): `ScoreConditionedLensPlay` loses to `lens:ev` −1.20 marks/game, CI [−1.69,−0.70] ([[arena]]) — risk-shaped lenses sacrifice contracts (make-rate 48.9% vs 60.2%); confirms play-risk is the wrong lever. Pass model shifts 16.7% of sampled bids toward fighting for the auction (win-rate impact unmeasured) |
 | Bid-strength net | **done** (rung #22) | `champion/bid_net.py`: Gus-backed bidding corpus (`forge/cli/bidding_continuous.py` rewired off the retired 817k policy) distilled to a hand → (9 decl × 13 bid) p_make MLP. Test MAE 0.053, ECE 0.007, 0.012 ms/call — the <1ms replacement for the live Gus sim the `GusBidder` pays per hand |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
@@ -134,8 +134,15 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
 4. **Belief v2** — condition the belief head on auction + play history
    (training data free from arena self-play); revisit [[belief-bayes-ceiling]]
    with auction evidence.
-5. **Belief-weighted world sampling** — replace uniform consistent sampling in
-   the oracle player; one change improves bidding, play, and defense together.
+5. **Belief-weighted world sampling** — **mechanism landed 2026-06-12**
+   (`champion/play.py BeliefLensPlay`): importance-weights the MRV worlds by the
+   Gus belief posterior (`champion/belief.py`), changing only the marginalization
+   (`compute_eq_pdf` already took weights; `compute_eq_weighted_mean` added; the
+   belief↔world seat rows align exactly). Measured **null** with the weak
+   play-evidence belief (−0.13 marks/game, CI [−0.76, +0.48]; ESS ~5–8/10 confirms
+   the weights are active) — the highest-leverage *slot* is wired and validated,
+   and the win awaits the stronger auction-conditioned belief of rung #24
+   ([[arena]]). One change will then improve bidding, play, and defense together.
 6. **Self-play fixed point** — iterate policy ↔ belief until conventions
    stabilize.
 7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM

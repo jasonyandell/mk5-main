@@ -7,8 +7,9 @@ Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
             | gus[:<samples>[,wp][,pass[<q>]]]   (rung #21; wp = marks-to-7
               utility, pass<q> = rung #27 v2 equilibrium-aware pass baseline)
-    play:   lens:<utility> | scorelens[:<band>] | random
-            (scorelens = rung #27 v2 score-conditioned play risk)
+    play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random
+            (scorelens = rung #27 v2 score-conditioned play risk;
+             belieflens = rung #25 belief-weighted world sampling, --gus-adapter)
 
 Writes summary.json, per_hand.csv, per_game.csv under --out-dir.
 """
@@ -69,7 +70,9 @@ def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolic
     raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus)")
 
 
-def parse_play(spec: str, *, model, n_samples: int, device: str, seed: int) -> PlayPolicy:
+def parse_play(
+    spec: str, *, model, n_samples: int, device: str, seed: int, gus_adapter: str | None = None,
+) -> PlayPolicy:
     name, _, arg = spec.partition(":")
     if name == "random":
         return RandomPlay(seed=seed)
@@ -83,14 +86,23 @@ def parse_play(spec: str, *, model, n_samples: int, device: str, seed: int) -> P
         return ScoreConditionedLensPlay(
             model, n_samples=n_samples, device=device, band=band,
         )
+    if name == "belieflens":
+        # Belief-weighted world sampling (rung #25); belief model = --gus-adapter.
+        from champion.play import BeliefLensPlay
+        return BeliefLensPlay(
+            model, utility=arg or "ev", n_samples=n_samples, device=device,
+            belief_adapter=gus_adapter,
+        )
     raise ValueError(
-        f"Unknown play policy: {spec!r} (lens:<utility> | scorelens[:<band>] | random)"
+        f"Unknown play policy: {spec!r} "
+        f"(lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random)"
     )
 
 
 def needs_model(*specs: str) -> bool:
     return any(
-        s.split("+", 1)[1].split(":")[0] in ("lens", "scorelens") for s in specs
+        s.split("+", 1)[1].split(":")[0] in ("lens", "scorelens", "belieflens")
+        for s in specs
     )
 
 
@@ -151,9 +163,11 @@ def main() -> int:
     bid_a = parse_bidder(args.team_a.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter)
     bid_b = parse_bidder(args.team_b.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter)
     play_a = parse_play(args.team_a.split("+", 1)[1], model=model,
-                        n_samples=args.n_samples, device=device, seed=args.base_seed)
+                        n_samples=args.n_samples, device=device, seed=args.base_seed,
+                        gus_adapter=args.gus_adapter)
     play_b = parse_play(args.team_b.split("+", 1)[1], model=model,
-                        n_samples=args.n_samples, device=device, seed=args.base_seed + 1)
+                        n_samples=args.n_samples, device=device, seed=args.base_seed + 1,
+                        gus_adapter=args.gus_adapter)
 
     cfg = ArenaConfig(
         marks_to_win=args.marks_to_win,

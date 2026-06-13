@@ -54,6 +54,21 @@ def compute_eq_with_counts(
     return e_q, e_q_var
 
 
+def compute_eq_weighted_mean(q_values: Tensor, weights: Tensor) -> Tensor:
+    """Weighted mean of Q over worlds — the belief-weighted counterpart of the
+    uniform ``q_values.mean(dim=1)``.
+
+    Args:
+        q_values: [N, M, 7] Q per game/world/action
+        weights:  [N, M] per-world weights (need not be normalized)
+
+    Returns:
+        e_q: [N, 7] sum_m w[n,m] q[n,m,a] / sum_m w[n,m]
+    """
+    w = weights.unsqueeze(-1)  # [N, M, 1]
+    return (q_values * w).sum(dim=1) / w.sum(dim=1).clamp(min=1e-12)
+
+
 def compute_eq_pdf(
     q_values: Tensor,  # [N, M, 7]
     weights: Tensor | None = None,  # [N, M] optional weights
