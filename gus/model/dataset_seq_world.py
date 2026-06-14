@@ -59,6 +59,7 @@ class JointWorldFullDataset(Dataset):
         corpus_path: str | Path | list[str | Path],
         seed: int | None = None,
         include_strategy_features: bool = False,
+        shuffle_bids: bool = False,
     ):
         # Accept a single .pt path, a glob, or a list of paths/globs.
         from glob import glob
@@ -89,6 +90,21 @@ class JointWorldFullDataset(Dataset):
         if seed is not None:
             self._rng.manual_seed(seed)
         self.include_strategy_features = include_strategy_features
+
+        # Capacity control (#24): when shuffle_bids, source each game's auction
+        # feature from a DIFFERENT game (a fixed derangement), keeping everything
+        # else (tokens, belief target, voids, worlds) real. This gives the auction
+        # student the SAME BidsEncoder capacity + real auction-feature distribution
+        # but breaks the auction↔deal correlation — so any belief-acc edge over the
+        # voids control must come from added capacity, not auction information.
+        self.shuffle_bids = shuffle_bids
+        self.bid_perm: list[int] | None = None
+        if shuffle_bids:
+            n = len(self.games)
+            # Cyclic shift by 1: game g uses game (g+1)'s auction. A guaranteed
+            # derangement for n>1 (no game keeps its own auction), deterministic,
+            # and fully decorrelated since deals are independent across games.
+            self.bid_perm = [(g + 1) % n for g in range(n)]
 
         # Flatten to (game_idx, decision_idx) index. Only include decisions
         # that actually carry a joint-world tensor.
@@ -157,12 +173,14 @@ class JointWorldFullDataset(Dataset):
         voids = voids_feature_vector(prior_plays, int(game.decl_id), current_player)  # [24]
 
         # Auction features (#24): zero vector for the seed-imposed corpus that
-        # carries no real bids — degrades to the play+voids belief.
+        # carries no real bids — degrades to the play+voids belief. Under
+        # shuffle_bids (capacity control) the auction comes from a different game.
+        bid_game = self.games[self.bid_perm[g_idx]] if self.shuffle_bids else game
         bids = auction_feature_vector(
-            getattr(game, "bids", None),
-            getattr(game, "bidder", None),
-            getattr(game, "bid_value", None),
-            int(game.decl_id),
+            getattr(bid_game, "bids", None),
+            getattr(bid_game, "bidder", None),
+            getattr(bid_game, "bid_value", None),
+            int(bid_game.decl_id),
             current_player,
         )  # [28]
 

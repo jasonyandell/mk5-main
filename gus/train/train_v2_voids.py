@@ -141,6 +141,10 @@ def main() -> int:
                              "corpus generated from real auctions (forge.cli.generate_eq_from_snapshots).")
     parser.add_argument("--bids-hidden", type=int, default=64,
                         help="Hidden width of the BidsEncoder MLP (only with --auction).")
+    parser.add_argument("--shuffle-bids", action="store_true",
+                        help="Capacity control (#24): source each game's auction feature "
+                             "from a different game, breaking the auction↔deal correlation. "
+                             "Same BidsEncoder capacity, no real auction information.")
     parser.add_argument("--w-belief", type=float, default=1.0)
     parser.add_argument("--w-v", type=float, default=0.5)
     parser.add_argument("--w-pi", type=float, default=0.5)
@@ -168,23 +172,33 @@ def main() -> int:
 
     t0 = time.perf_counter()
     if args.lazy:
+        if args.shuffle_bids:
+            raise SystemExit("--shuffle-bids is only supported with the non-lazy dataset")
         train_ds = JointWorldFullIterable(
             args.train, shuffle=True, buffer_size=args.buffer_size,
             length_cache_path=args.length_cache,
         )
         eval_ds = JointWorldFullIterable(args.eval, shuffle=False, seed=42)
     else:
-        train_ds = JointWorldFullDataset(args.train)
-        eval_ds = JointWorldFullDataset(args.eval, seed=42)
+        train_ds = JointWorldFullDataset(args.train, shuffle_bids=args.shuffle_bids)
+        eval_ds = JointWorldFullDataset(args.eval, seed=42, shuffle_bids=args.shuffle_bids)
     print(f"Loaded datasets: train={len(train_ds)} decisions, "
           f"eval={len(eval_ds)} decisions (in {time.perf_counter() - t0:.1f}s)", flush=True)
 
     # IterableDataset handles its own shuffling; DataLoader shuffle=False either way.
+    # persistent_workers keeps the workers (and their pickled corpus copy) alive
+    # across epochs — essential on macOS spawn, where re-spawning would otherwise
+    # re-pickle the whole corpus every epoch. The per-item featurization
+    # (tokenize/voids/auction/world-sample) is the bottleneck for this small model,
+    # so num_workers>0 is the speedup, not GPU.
+    persistent = args.num_workers > 0
     train_loader = DataLoader(train_ds, batch_size=args.batch_size,
                                shuffle=False if args.lazy else True,
-                               num_workers=args.num_workers)
+                               num_workers=args.num_workers,
+                               persistent_workers=persistent)
     eval_loader = DataLoader(eval_ds, batch_size=args.batch_size, shuffle=False,
-                              num_workers=args.num_workers)
+                              num_workers=args.num_workers,
+                              persistent_workers=persistent)
 
     if args.auction:
         model = StudentTransformerFullVoidsAuction(
