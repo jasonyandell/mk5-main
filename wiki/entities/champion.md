@@ -185,9 +185,22 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    auction; `forge.cli.generate_eq_from_snapshots` runs the SAME oracle E[Q]
    generation on those deals (the declarer leads the first trick, matching real
    play) and stamps the auction onto each `GameRecordGPU` → a corpus loadable by
-   `JointWorldFullDataset`. Proven end-to-end on MPS. This is the one round of the
-   policy→corpus→belief loop; full iteration (retrain the policy on the new
-   belief, repeat) remains.
+   `JointWorldFullDataset`. Proven end-to-end on MPS. **Full iteration run
+   2026-06-14** ([[w42-champion-selfplay-fixed-point]]): a belief-conditioned
+   **bidder** (`champion/belief_bidder.py` — the hypothetical-completed-auction +
+   belief-weighted oracle E[Q] → P(make) → score-conditioned util-max) closes the
+   loop (the corpus = f(deal, decl, bids, bidder), so only a changing bidder
+   iterates it). Over 4 self-play rounds the belief-KL **converges to a stable
+   fixed point** (0.116 → ~0.08 plateau, vs a measured 0.045 seed floor) — genuine
+   policy↔belief iteration. But the fixed point is a **stable over-bidder**: the
+   belief bidder loses to `net:wp` by ~3.4 marks/game, because the oracle's
+   double-dummy P(make) exceeds achievable PIMC play (strategy fusion at the
+   auction, [[pimc]]). An optimism correction (`pmake_scale=0.70`, the measured
+   0.58/0.83 gap) halves the loss (~−2.2) and doubles the wins (~20/80) —
+   confirming the diagnosis — yet the PIMC-calibrated `net:wp` stays the stronger
+   bidder. So the self-play *machinery* converges; belief value is **legibility,
+   not marks** (the #24/#25 lesson again). The converged calibrated belief student
+   is the playable champion, exported to [[plunge]] as the `onyx` difficulty.
 7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM
    analogue; absorbs the Lens v2 design). **v2 done 2026-06-12**
    (`champion/utility.py`, `champion/play_risk.py`): `race_wp` is the WP table

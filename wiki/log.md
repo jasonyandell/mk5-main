@@ -3161,3 +3161,31 @@ lever; the pattern is the marginal-value ranking confirming itself from the
 bottom (`≫ card-play polish`), not the levers being worthless.
 
 **Questions opened:** none (sharpens the auction-side frontier already in #26).
+
+## [2026-06-14 | complete | Champion #26 self-play fixed point — converges to a calibratable over-bidder]
+
+**What happened:** Ran [[champion-design-review|Fable's]] rung #6 to the end. Built the keystone
+`champion/belief_bidder.py::BeliefBidder` (hypothetical-completed-auction + belief-weighted oracle
+E[Q] → P(make) → score-conditioned util-max; 0.118 s/bid-turn) — the organ that closes the loop,
+since the corpus = f(deal, decl, bids, bidder) and only a changing bidder iterates it. Two 4-round
+self-play runs ([[w42-champion-selfplay-fixed-point]]).
+
+**Result:** the loop reaches a **stable fixed point** (belief-KL 0.116 → ~0.08 plateau vs a measured
+0.045 seed floor — genuine policy↔belief iteration). The fixed point is a **stable over-bidder**:
+the belief bidder loses to `net:wp` by ~3.4 marks/game (A wins ~9/80) because the oracle's
+double-dummy P(make) exceeds achievable PIMC play (strategy fusion, [[pimc]]). An optimism
+correction (`pmake_scale=0.70`, the measured 0.58/0.83 gap) **halves the loss (~−2.2) and doubles
+the wins (~20/80)** — confirming the diagnosis — but the PIMC-calibrated `net:wp` stays stronger.
+Did NOT grind further scales (belief value is legibility, not marks).
+
+**Measured-finding sidebars:** seed-noise floor of belief-KL ≈ 0.045 nats/slot (calibrates the
+convergence threshold); ONNX export of the student is 40 KB with exact parity (enables the [[plunge]]
+`onyx` player); 4-chunk arena process-parallelism netted only ~1.18× (MPS-dispatch-bound, not
+idle-latency — real lever is batching the bidder across games, deferred).
+
+**Also closed this session:** #30 (unified the gus adapter loaders), #31 (util-max bidder; bid-
+magnitude structurally dead in 42 — measured null). New: `gus/eval/eval_belief_kl.py` (belief-KL
+convergence metric), `train_v2_voids --out-belief`, deterministic bridge seed.
+
+**Questions opened:** does a PIMC-calibrated (not double-dummy) value backing the belief bidder reach
+parity with `net:wp`? — the principled next lever, left for a future rung.
