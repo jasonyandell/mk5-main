@@ -34,7 +34,10 @@ from arena.match import game_rows, hand_rows, run_match, snapshot_rows, summariz
 from arena.play import PlayPolicy, RandomPlay
 
 
-def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolicy:
+def parse_bidder(
+    spec: str, *, device: str, gus_adapter: str | None,
+    model=None, belief_bidder_adapter: str | None = None,
+) -> BidPolicy:
     name, _, arg = spec.partition(":")
     if name == "heuristic":
         if arg:
@@ -90,7 +93,30 @@ def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolic
         else:
             utility = None
         return GusBidder(pmake_fn=evaluator, utility=utility, maximize="max" in tags)
-    raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus | net)")
+    if name == "belief":
+        # Belief-conditioned bidder (rung #26 keystone): the hypothetical
+        # completed auction + #24 belief-weighted oracle E[Q] -> P(make) per
+        # contract. Spec: belief[:<adapter>]; adapter falls back to
+        # --belief-bidder-adapter, then the #24 default. Needs the oracle model.
+        from champion.belief import load_belief
+        from champion.belief_bidder import BeliefBidder
+        from champion.utility import MarksToSeven
+
+        if model is None:
+            raise ValueError("belief bidder needs the oracle model (load it first)")
+        adapter = arg or belief_bidder_adapter
+        belief_model, is_voids = load_belief(adapter, device)
+        bidder = BeliefBidder(
+            belief_model, model, is_voids=is_voids, device=device,
+            utility=MarksToSeven(), maximize=True,
+        )
+        print(f"Belief bidder: {bidder} (adapter={adapter!r}, is_voids={is_voids})",
+              flush=True)
+        return bidder
+    raise ValueError(
+        f"Unknown bidder: {spec!r} "
+        f"(heuristic | bid30 | random | gus | net | belief)"
+    )
 
 
 def parse_play(
@@ -123,10 +149,14 @@ def parse_play(
 
 
 def needs_model(*specs: str) -> bool:
-    return any(
+    # The play side needs the oracle (lens family); so does the `belief` bidder,
+    # which queries the oracle E[Q] for the hypothetical completed auction.
+    plays = any(
         s.split("+", 1)[1].split(":")[0] in ("lens", "scorelens", "belieflens")
         for s in specs
     )
+    bidders = any(s.split("+", 1)[0].split(":")[0] == "belief" for s in specs)
+    return plays or bidders
 
 
 def needs_gus(*specs: str) -> bool:
@@ -158,6 +188,10 @@ def main() -> int:
     parser.add_argument("--checkpoint", type=str, default=None)
     parser.add_argument("--gus-adapter", type=str, default=None,
                         help="Gus adapter for the gus bidder (default: gus/bidding's)")
+    parser.add_argument("--belief-bidder-adapter", type=str, default=None,
+                        help="Auction-belief adapter for the `belief` bidder "
+                             "(rung #26; separate from --gus-adapter). Falls back "
+                             "to the spec's belief[:<adapter>] then the #24 default.")
     parser.add_argument("--base-seed", type=int, default=0)
     parser.add_argument("--out-dir", type=str,
                         default=str(Path(__file__).parent / "results"))
@@ -187,8 +221,14 @@ def main() -> int:
         print(f"Loading oracle: {ckpt} on {device}", flush=True)
         model = load_oracle(str(ckpt), device)
 
-    bid_a = parse_bidder(args.team_a.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter)
-    bid_b = parse_bidder(args.team_b.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter)
+    bid_a = parse_bidder(
+        args.team_a.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter,
+        model=model, belief_bidder_adapter=args.belief_bidder_adapter,
+    )
+    bid_b = parse_bidder(
+        args.team_b.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter,
+        model=model, belief_bidder_adapter=args.belief_bidder_adapter,
+    )
     play_a = parse_play(args.team_a.split("+", 1)[1], model=model,
                         n_samples=args.n_samples, device=device, seed=args.base_seed,
                         gus_adapter=args.gus_adapter)
