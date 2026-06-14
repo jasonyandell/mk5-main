@@ -3189,3 +3189,123 @@ convergence metric), `train_v2_voids --out-belief`, deterministic bridge seed.
 
 **Questions opened:** does a PIMC-calibrated (not double-dummy) value backing the belief bidder reach
 parity with `net:wp`? — the principled next lever, left for a future rung.
+
+## [2026-06-14 | local | Jud — the unified belief-conditioned core: direction + vocabulary]
+
+**Touched pages:** [[jud]] [[champion]] [[index]]
+**Added:** [[jud]] — names the unified belief-conditioned core the [[champion]] points at: one organ
+that bids and plays as the *same act* by conditioning search on a learned belief, trained by self-play
+over whole games. Fixes the precise vocabulary the project had been conflating — **solve** (exact
+perfect-information 42, exhaustive backward induction per deal, `forge/oracle/solve.py`), **oracle**
+(its ≈97% distillation; both are perfect-information values and share the brick wall — they cannot take
+uncertainty as input), **eq** (the lift past the wall → a *distribution* per action, the honest object,
+[[expected-q-value]]), **the blob** (eq's melted per-action distribution), **belief** (a learned
+conditioned weighting over worlds, today only a post-hoc reweight, marks-neutral in play at #25 because
+the [[arena]] is information-blind), **utility** (the collapse to a scalar; EV settled at
+[[w42-lens-v1-utility-head-to-head]]). Core idea: belief belongs *inside* the search, not as a reweight
+after it; the same operation at every depth makes bidding and play one act; signaling and
+self-consistency follow from belief-in-the-rollout trained on whole games ([[champion-design-review]]).
+The solve/oracle is bootstrap and referee, not the thing copied — jud's value target is realized
+whole-game (belief-state) outcomes, not perfect-information Q ([[pimc]] strategy fusion). First picture:
+a scratch sketch (`scratch/jud_demo/`, uncommitted) un-melts an eq blob by belief weighting (world
+ESS 128 → 10.5, a contract's p_make 0.20 → 0.61) — the #25 belief value seen directly in the
+distribution rather than through the information-blind arena.
+**Updated:** [[champion]] (self-consistency section links the unified-core framing to [[jud]]);
+[[index]] (jud added to the entities catalog).
+**Retired:** none.
+**Questions opened:** how is the value trained belief-native (on realized whole-game outcomes) rather
+than distilled from perfect-information Q; what is the minimal first loop that makes a convention appear.
+Status: a direction and a vocabulary, captured 2026-06-14 — not built; engineering deferred.
+
+## [2026-06-14 | local | Belief-conditioned self-play — Fable's training approach, rediscovered (clear vs not)]
+
+**Touched pages:** [[belief-conditioned-self-play]] [[jud]] [[index]]
+**Added:** [[belief-conditioned-self-play]] — records the training approach behind [[jud]], separating
+what Fable specified (sourced, clear) from this session's extension and the open gaps. **Clear (Fable,
+verbatim [[champion-design-review]]):** the spine (posterior → belief-sampled worlds → solve/oracle
+value → marks-to-7), the [[arena]] as measuring stick, and the self-play loop *as written* — play full
+games → **retrain the belief** → re-derive the policy by belief-weighted [[expected-q-value|eq]] search
+over the **fixed** oracle → repeat; conventions emerge. So Fable's loop trains the **belief**; the value
+stays the perfect-information oracle. **Extension (this session):** belief *inside* the search, and the
+**value itself** trained belief-native on realized whole-game outcomes — because a fixed perfect-info
+value is why #26 ([[w42-champion-selfplay-fixed-point]]) converged to an over-bidder. In the source,
+learned values appear only at the optional summit ("Gus V as leaf values"), not the main loop.
+**Explicitly flagged NOT established:** whether the value-native step is Fable's intent (the source
+shows a belief-only loop over a fixed value); the training mechanics (losses, targets, credit assignment
+across bid + 14 plays, how the belief-updating rollout is computed, what "the policy" is once the value
+is learned) — undetermined, the value-native loop has no implementation or objective; and whether the
+deep fixed point is reachable / tournament-strong (#26 reached only a shallow one).
+**Updated:** [[jud]] (links the training-approach page); [[index]] (topic added).
+**Questions opened:** the training mechanics above, and whether the value-native loop's fixed point
+exists and is strong — carried as explicit unknowns, not guessed.
+
+## [2026-06-14 | local | Provenance correction — champion-design-review is a recovered summary, not Fable's words]
+
+**Touched pages:** [[belief-conditioned-self-play]] [[jud]]
+**Correction:** earlier entries this session leaned on [[champion-design-review]] as a "verbatim
+primary source." It is a **recovered summary of Fable's conclusions** compacted from session logs; its
+"verbatim" self-claim is not a reliable transcript. Pages demoted accordingly.
+[[belief-conditioned-self-play]] gains a **"What is remembered of the coherent vision"** section
+distinguishing (a) what the summary records, (b) what the participant remembers Fable emphasizing — a
+trained model that changes how the game is played *even during search*, belief-conditioned search, and
+"somehow all about bidding," as one elegant whole — and (c) interpretation. Recorded plainly: the
+[[champion]] ladder (#20–#28) built **staples**, not this coherent vision; the over-bidder and the
+play-side nulls measured the staples, not Fable's design, which has not been built.
+**Questions opened:** the "somehow it's all about bidding" why; whether [[champion-design-review]]'s own
+"verbatim" self-claim should be corrected on that page (it predates this session).
+
+---
+
+## [2026-06-14 | local | Fresh-eyes review — provenance correction reversed, decoration numbers relabeled, optimism meter built]
+
+A fresh-eyes adversarial review (17-agent workflow + independent verification) of the
+[[jud]] / [[belief-conditioned-self-play]] / #26 surface. Three outcomes, all working-tree-local.
+
+**1. The provenance "correction" above (entry of the same day) was itself an over-correction —
+reversed.** That entry demoted [[champion-design-review]] to "a recovered summary of Fable's
+conclusions, not Fable's own words." It is now disproven: the page's verbatim forward-design section
+is **byte-exact** to the original transcript (session `0a708a4e`). Verified this pass with difflib —
+the assistant forward-design turn vs the wiki section normalize to **5590 == 5590 chars, similarity
+1.0000**, all anchor sentences present in both. The canonical [[champion-design-review]] page was
+never demoted in place (it remained correctly verbatim); only its two backlinking pages carried the
+wrong "recovered summary / not his words" language. Those are now restored: [[jud]] (idea section +
+backlink) and [[belief-conditioned-self-play]] (the "What the design review records" heading + the
+sourcing paragraph). The honest framing: the page is **Fable's verbatim forward design + a later-pass
+graded ledger synthesized on top** — synthesis above, faithful Fable below. (The [[jud]]-as-extension
+line stands unchanged and is *confirmed* by the source: value-native / "changes-the-game-during-search"
+is Fable's doubly-hedged optional step-6 summit, not his core; those phrases appear nowhere in the
+1195-line transcript.)
+
+**2. Decoration relabeled — prose that over-claimed measurement.** Three #26 numbers had no computing
+script and are now labeled as the tuned knobs / asserted values they are, across [[champion]],
+[[belief-conditioned-self-play|w42-champion-selfplay-fixed-point]], [[index]], and
+`champion/belief_bidder.py`: (a) the "0.58/0.83 measured gap" justifying `pmake_scale=0.70` — never
+computed, prose-only in ~5 files (0.83 even collided numerically with `a_offense_share=0.8333`);
+(b) the "~0.045 nats/slot seed floor" — a hardcoded literal in the run script tagged "measured" with
+no surviving artifact (actual KL never drops below 0.072); (c) "halves the loss" — really ~34%
+(−3.4→−2.2). The real convergence evidence (KL plateau 0.072–0.080 + A-vs-B acc-gap collapse Δ−0.043→~0)
+and the real loss (CI-excluding-zero every round) stand on their own without the decoration.
+
+**3. The optimism meter — the first real "oracle as ruler" instrument** (`champion/optimism_meter.py`
+→ committed `champion/optimism_gap.json` + `.png`). Computes oracle double-dummy P(make) (bid-aware
+atlas, N=50) vs realized 4-seat make-rate (forge bidding parquet, N=604), best-declaration, by bid.
+Findings: realized make-rate falls **0.52 @ bid30 → 0.11 @ bid42** (a global `pmake_scale` is the
+wrong *shape*, not the wrong constant); the prose 0.83/0.58 does **not** reproduce (closest real
+analog at bid 30 is oracle 0.64 / realized 0.52, ratio ~0.81); the optimism ratio is bid-dependent
+(0.64–0.81 over 30–39). It is a distributional gap (different hand pools) — a first instrument; the
+paired refinement (oracle over the exact parquet hands) is the obvious next step.
+
+**Evidence rescued (Step 0).** The load-bearing #26 artifacts lived only in gitignored `scratch/`
+(one re-run from loss). Copied to committed `champion/evidence/` (run26cal `kl.log`/`ab.json`/
+`RESULTS.txt`; jud_demo `manifest.json` + figures + headline/counter-example `.npz`), and the 4-game
+belief-vs-`net:wp` smoke `arena/results/*` committed. See `champion/evidence/README.md`.
+
+**Touched:** [[jud]] [[belief-conditioned-self-play]] [[champion]] [[index]]
+[[experiments/w42-champion-selfplay-fixed-point]] + `champion/optimism_meter.py`,
+`champion/optimism_gap.{json,png}`, `champion/belief_bidder.py` (comment), `champion/evidence/`,
+`arena/results/`.
+
+**Questions opened:** does the oracle-minus-realized gap actually *move* as self-play learns to
+signal (the meter is static today), or is it confounded by play-skill? — the test of whether "oracle
+as ruler" is a real instrument. The deferred jud engineering (value-native training target + the
+belief-conditioned *sampler*, which does not yet exist — today's belief only reweights) remains open.

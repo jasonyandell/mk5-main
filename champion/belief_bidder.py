@@ -95,9 +95,14 @@ class BeliefBidder(BidPolicy):
         self.margin = margin
         # Optimism correction (#26): the oracle E[Q] is double-dummy (perfect play
         # by all four seats), so its P(make) runs systematically optimistic vs the
-        # realized PIMC rate (measured ~0.58/0.83 ~= 0.70 at bid 30). Scaling P(make)
-        # at utility time recalibrates the bidder toward achievable contracts without
-        # touching the cached raw oracle P(make). 1.0 = raw double-dummy (default).
+        # realized PIMC rate. NOTE: pmake_scale=0.70 is a TUNED KNOB, not a measured
+        # constant — the prose "0.58/0.83 gap at bid 30" was never computed. The real
+        # gap, measured from existing data (champion/optimism_meter.py -> optimism_gap.json),
+        # is oracle 0.64 / realized 0.52 at bid 30 (ratio ~0.81) and is strongly
+        # BID-DEPENDENT (realized make-rate falls 0.52 -> 0.11 across bids 30-42), so a
+        # single global scalar is the wrong SHAPE. Scaling P(make) at utility time
+        # nudges toward achievable contracts without touching the cached raw oracle
+        # P(make). 1.0 = raw double-dummy (default).
         self.pmake_scale = pmake_scale
 
         if self.belief_model is not None:

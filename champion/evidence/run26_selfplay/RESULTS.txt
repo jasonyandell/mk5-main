@@ -1,0 +1,19 @@
+[08:58:34] === #26 PARALLEL self-play START  rounds=4 games=80 chunks=4 bidspec_extra=',s0.7' ===
+[08:58:34] B_0=scratch/champion-run/run24_measure/v2_auction_s0.pt  eval=scratch/champion-run/run24_measure/corpus_eval.pt
+[08:58:34] === ROUND 0  (B_n=scratch/champion-run/run24_measure/v2_auction_s0.pt) ===
+merged 816 snapshots from 4 chunks -> scratch/champion-run/run26cal/round0/train_snaps.json
+A/B: margin -2.23/game (95% CI [-2.93, -1.51])  A wins 19/80  SIGNIF
+[09:07:48] ROUND 0 DONE  emit=157s bridge=128s train=157s ab=112s | belief-KL(A,B) = 0.10793 belB=B=0.4264
+[09:07:48] === ROUND 1  (B_n=scratch/champion-run/run26cal/round0/B_next.pt) ===
+merged 849 snapshots from 4 chunks -> scratch/champion-run/run26cal/round1/train_snaps.json
+A/B: margin -2.20/game (95% CI [-2.84, -1.54])  A wins 18/80  SIGNIF
+[09:17:21] ROUND 1 DONE  emit=162s bridge=134s train=160s ab=117s | belief-KL(A,B) = 0.07413 belB=B=0.4307
+[09:17:21] === ROUND 2  (B_n=scratch/champion-run/run26cal/round1/B_next.pt) ===
+merged 850 snapshots from 4 chunks -> scratch/champion-run/run26cal/round2/train_snaps.json
+A/B: margin -2.59/game (95% CI [-3.33, -1.92])  A wins 18/80  SIGNIF
+[09:26:49] ROUND 2 DONE  emit=163s bridge=134s train=160s ab=111s | belief-KL(A,B) = 0.07237 belB=B=0.4249
+[09:26:49] === ROUND 3  (B_n=scratch/champion-run/run26cal/round2/B_next.pt) ===
+merged 815 snapshots from 4 chunks -> scratch/champion-run/run26cal/round3/train_snaps.json
+A/B: margin -2.01/game (95% CI [-2.68, -1.31])  A wins 21/80  SIGNIF
+[09:36:04] ROUND 3 DONE  emit=154s bridge=128s train=158s ab=115s | belief-KL(A,B) = 0.08036 belB=B=0.4232
+[09:36:04] === #26 PARALLEL DONE in 37min. Final belief=scratch/champion-run/run26cal/round3/B_next.pt ===

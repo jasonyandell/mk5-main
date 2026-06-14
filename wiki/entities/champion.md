@@ -117,7 +117,10 @@ iteration: arena games with the current bidder+player → retrain the belief
 model on those games → re-derive the policy via belief-weighted oracle search
 → repeat. Bidding conventions emerge as equilibrium artifacts rather than
 authored rules. Existing evidence for the wiring step: [[belief-co-train]]'s
-q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
+q-bootstrap-belief result — belief-sampled worlds beat corpus worlds. The
+unified-core framing of this target — one organ, belief conditioning the search
+rather than reweighting it after, and the precise solve / oracle /
+[[expected-q-value|eq]] / belief / utility vocabulary — is recorded at [[jud]].
 
 ## Build ladder
 
@@ -195,8 +198,11 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    policy↔belief iteration. But the fixed point is a **stable over-bidder**: the
    belief bidder loses to `net:wp` by ~3.4 marks/game, because the oracle's
    double-dummy P(make) exceeds achievable PIMC play (strategy fusion at the
-   auction, [[pimc]]). An optimism correction (`pmake_scale=0.70`, the measured
-   0.58/0.83 gap) halves the loss (~−2.2) and doubles the wins (~20/80) —
+   auction, [[pimc]]). An optimism correction (`pmake_scale=0.70`, a **tuned knob** —
+   the "0.58/0.83 gap" was never computed; the real, bid-dependent gap is measured in
+   `champion/optimism_meter.py` → oracle 0.64 / realized 0.52 at bid 30, and the
+   realized rate falls 0.52→0.11 across bids so a global scalar is the wrong *shape*)
+   cuts the loss ~a third (~−3.4→−2.2) and roughly doubles the wins (~9→~20/80) —
    confirming the diagnosis — yet the PIMC-calibrated `net:wp` stays the stronger
    bidder. So the self-play *machinery* converges; belief value is **legibility,
    not marks** (the #24/#25 lesson again). The converged calibrated belief student
