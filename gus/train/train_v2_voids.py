@@ -146,6 +146,9 @@ def main() -> int:
     parser.add_argument("--w-pi", type=float, default=0.5)
     parser.add_argument("--w-q", type=float, default=1.0)
     parser.add_argument("--out", type=str, default="gus/adapters/v2_voids.pt")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Seed torch RNG (model init + per-item world draw) for "
+                             "reproducible / multi-seed runs. None = nondeterministic.")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--lazy", action="store_true",
@@ -156,6 +159,9 @@ def main() -> int:
     parser.add_argument("--length-cache", type=str, default=None,
                         help="Path to cache corpus length when --lazy (skips rescan).")
     args = parser.parse_args()
+
+    if args.seed is not None:
+        torch.manual_seed(args.seed)
 
     device = args.device or _pick_device()
     print(f"Device: {device}", flush=True)
