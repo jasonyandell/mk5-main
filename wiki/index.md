@@ -74,6 +74,7 @@ catalog:
 
 ## Topics
 
+- [[topics/champion-design-review|champion-design-review]] — Fable 5's recovered design reasoning behind the champion: verbatim reviews + a graded predictions ledger + the two caveats distillation sheared off (information-blind arena; score-conditioning is auction-not-play) (active)
 - [[topics/star|star]] — Self-Taught Reasoner; LEM's Stage 1 training paradigm (active)
 - [[topics/backwards-curriculum|backwards-curriculum]] — start at the end of the game, ratchet backward one ply per stage (active)
 - [[topics/rules-adapter|rules-adapter]] — Stage 0: 3500-example Q&A corpus across 7 categories, primer 55/55 verified; Q&A drilling does not transfer to narration (active)

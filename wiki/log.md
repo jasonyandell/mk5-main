@@ -3130,3 +3130,34 @@ Process: two-track build (model / data bridge) → pre-train adversarial review 
 CRITICAL declarer-leads corpus bug) → 5-seed parallel measurement (10 trains, all cores) →
 4-skeptic refutation workflow → multi-corpus + capacity matrix to answer the survivors. The
 machine went from idle to ~10-core-saturated; the whole measurement landed in minutes.
+
+## [2026-06-14 | pending | Champion design review promoted — Fable's recovered reasoning + 2 caveats]
+
+**What happened:** The [[champion]] direction came from one 2026-06-09 design
+session (Fable 5) that was compacted out of live context; only its conclusions
+survived into [[champion]]. Mined the transcript (`0a708a4e`) and promoted the
+five design turns verbatim to [[champion-design-review]], with a graded
+predictions ledger (Fable's calls vs what the rungs measured) and the two
+load-bearing caveats distillation had sheared off.
+
+**Touched pages:** [[champion-design-review]] (new) · [[champion]] · [[index]] · [[log]]
+
+**The two recovered caveats (each corrects a live over-claim):**
+- **Information-blind arena** — both sides are PIMC, so the arena cannot reward
+  belief/concealment value via play-marks. Reframes the #25 decisive null from
+  "belief→play is dead" to "the harness can't see it here"; #24's belief value
+  routes through bidding/defense (#26), shown by belief accuracy not arena marks.
+- **Score-conditioning is auction-not-play** — #27's −1.20 negative tested play
+  risk; Fable located mark-state value at the auction, which is unrun. (#31's
+  dead bid-magnitude channel is a different thing.)
+
+**Why:** distillation shears caveats, and the missing ones were quietly steering
+parallel sessions toward "belief is dead / score-conditioning is the wrong lever"
+when the real reading is "value is at the auction, and the play harness is blind
+to it." Folded both back into [[champion]]'s ladder (#25, #27).
+
+**Meta-pattern recorded:** every rung null/negative (#25, #27) is a *play-phase*
+lever; the pattern is the marginal-value ranking confirming itself from the
+bottom (`≫ card-play polish`), not the levers being worthless.
+
+**Questions opened:** none (sharpens the auction-side frontier already in #26).

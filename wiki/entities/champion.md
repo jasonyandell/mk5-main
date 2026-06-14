@@ -165,12 +165,18 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    belief −0.02 (net bidder, varied auctions incl. notrump) — three nulls, all CIs
    include zero, make-rates identical in the decisive run ([[arena]]). The
    hypothesis that the play-side null awaited a stronger belief was **falsified**:
-   #24's sharper belief (ESS ~4 vs 5–8) still does not move play marks. Structural
-   reason — card play is already near-oracle, so reweighting *play* worlds is
-   card-polish-tier leverage regardless of belief quality. **#24's belief value
-   routes through bidding/defense via self-play (#26), not play reweighting.** The
-   mechanism stays built and unit-tested (degrades to uniform exactly), available
-   for a future much-stronger belief or a defense-phase application.
+   #24's sharper belief (ESS ~4 vs 5–8) still does not move play marks. Two
+   reasons, and the second is load-bearing: (a) card play is already near-oracle,
+   so reweighting *play* worlds is card-polish-tier leverage; (b) **the arena is
+   information-blind by construction** — both sides are PIMC, so the harness
+   cannot reward belief/concealment value via play-marks regardless of whether it
+   exists ([[champion-design-review]], caveat 1; the point Fable flagged in the
+   critical review and that this null re-demonstrates). So this is *not* "belief
+   is useless in play" — it is "play-marks is the wrong instrument." **#24's
+   belief value routes through bidding/defense via self-play (#26), not play
+   reweighting.** The mechanism stays built and unit-tested (degrades to uniform
+   exactly), available for a future much-stronger belief or a defense-phase
+   application.
 6. **Self-play fixed point** — iterate policy ↔ belief until conventions
    stabilize. **Data bridge landed + reviewed 2026-06-13** (rung #26): the belief
    corpus had no real auction (`generate_eq_continuous` deals from a seed with an
@@ -190,9 +196,14 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    pass baseline (`pass_q_opp`, default off). The play-risk hook
    (`score_to_utility` + `ScoreConditionedLensPlay` + the `upside_10` lens) is
    built and measured — and it **loses** to plain EV play (−1.20 marks/game, CI
-   excludes zero), a clean confirmation that play-risk is the wrong lever
-   ([[arena]]). The lever is the auction and belief; the full equilibrium pass
-   baseline stays rung #26.
+   excludes zero), a clean confirmation that *play-risk* is the wrong lever
+   ([[arena]]). Caveat ([[champion-design-review]], caveat 2): this tested the
+   **play** phase; Fable located mark-state value at the **auction** ("bites
+   hardest at the auction"), where bid thresholds shift with the score — and that
+   auction-side `MarksToSeven` test is unrun, the live opportunity. (#31's
+   "bid-magnitude → belief is dead" is a different channel; not the same as score
+   → auction-policy.) The lever is the auction and belief; the full equilibrium
+   pass baseline stays rung #26.
 8. **Summit (optional)** — depth-limited subgame re-solving on late tricks;
    exact information-set endgame solving.
 
