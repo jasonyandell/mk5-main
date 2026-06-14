@@ -150,6 +150,11 @@ def main() -> int:
     parser.add_argument("--w-pi", type=float, default=0.5)
     parser.add_argument("--w-q", type=float, default=1.0)
     parser.add_argument("--out", type=str, default="gus/adapters/v2_voids.pt")
+    parser.add_argument("--out-belief", type=str, default=None,
+                        help="If set, ALSO checkpoint the best held-out BELIEF-accuracy "
+                             "epoch here, separate from --out (which saves the pi-heavy "
+                             "composite 0.5*pi+0.4*belief-0.03*qmae). The self-play loop "
+                             "(#26) selects adapters by belief-acc, so it reads this file.")
     parser.add_argument("--seed", type=int, default=None,
                         help="Seed torch RNG (model init + per-item world draw) for "
                              "reproducible / multi-seed runs. None = nondeterministic.")
@@ -234,8 +239,12 @@ def main() -> int:
     print(f"Loss weights: {loss_weights}", flush=True)
 
     best_score = -1e9
+    best_bel = -1.0
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    belief_path = Path(args.out_belief) if args.out_belief else None
+    if belief_path is not None:
+        belief_path.parent.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(args.epochs):
         t_epoch = time.perf_counter()
@@ -263,7 +272,19 @@ def main() -> int:
             }, out_path)
             print(f"  -> saved best model (score={score:.4f})", flush=True)
 
-    print(f"\nFinal best composite: {best_score:.4f}", flush=True)
+        if belief_path is not None and ev["belief_acc"] > best_bel:
+            best_bel = ev["belief_acc"]
+            torch.save({
+                "model_state": model.state_dict(),
+                "args": vars(args),
+                "eval": ev,
+                "epoch": epoch + 1,
+            }, belief_path)
+            print(f"  -> saved best-belief model (bel={ev['belief_acc']:.2%})", flush=True)
+
+    print(f"\nFinal best composite: {best_score:.4f}"
+          + (f"  best belief-acc: {best_bel:.2%}" if belief_path is not None else ""),
+          flush=True)
     return 0
 
 

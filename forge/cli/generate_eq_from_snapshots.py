@@ -132,7 +132,14 @@ def main() -> int:
                         help="Snapshots (games) per GPU batch (default: 8)")
     parser.add_argument("--limit", type=int, default=None,
                         help="Process at most this many snapshots (smoke runs)")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="Seed torch RNG so the MRV world sampling is reproducible. "
+                             "For the #26 self-play loop this makes round-over-round "
+                             "corpora differ by the real auction shift, not by sampler "
+                             "jitter — essential for a clean belief-KL convergence read.")
     args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
 
     snap_path = Path(args.snapshots)
     if not snap_path.exists():
