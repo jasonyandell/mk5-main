@@ -33,7 +33,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Subset
 
-from gus.eval.eval_regret import _load_student
+from gus.model.load import load_student
 from gus.model.dataset_seq_world import JointWorldFullDataset
 
 DECL_OFFSET = 30
@@ -322,7 +322,7 @@ def collect_samples(
     max_decisions: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     print(f"Loading adapter: {adapter_path}", flush=True)
-    model, is_voids = _load_student(adapter_path, device)
+    model, is_voids = load_student(adapter_path, device)
     model.eval()
 
     print(f"Loading corpus: {corpus_paths}", flush=True)

@@ -53,7 +53,7 @@ from gus.eval.blunder_detector_student import (
     collect_samples,
     FEATURE_NAMES,
 )
-from gus.eval.eval_regret import _load_student
+from gus.model.load import load_student
 from gus.model.dataset_seq_world import JointWorldFullDataset
 
 BLUNDER_THRESHOLD = 8.0
@@ -214,7 +214,7 @@ def run(args) -> int:
     print(f"fallbacks: {args.fallback}", flush=True)
 
     # --- Load primary student ---
-    primary, primary_voids = _load_student(args.adapter, device)
+    primary, primary_voids = load_student(args.adapter, device)
 
     # --- Load fallback adapter if next-best-adapter is requested ---
     fallback_model = None
@@ -225,7 +225,7 @@ def run(args) -> int:
                   "in --fallback", file=sys.stderr)
             return 1
         print(f"next-best fallback adapter: {args.fallback_adapter}", flush=True)
-        fallback_model, fallback_is_voids = _load_student(args.fallback_adapter, device)
+        fallback_model, fallback_is_voids = load_student(args.fallback_adapter, device)
 
     # --- Train / load detector ---
     cache_path = Path(args.detector_cache)

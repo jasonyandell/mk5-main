@@ -29,7 +29,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from gus.eval.eval_regret import _load_student, _pick_device
+from gus.eval.eval_regret import _pick_device
+from gus.model.load import load_student
 from gus.model.dataset_seq_world import JointWorldFullDataset
 
 
@@ -157,7 +158,7 @@ def collect_samples(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Run the student and return (features [N, F], regret [N], decision_idx [N])."""
     print(f"Loading adapter: {adapter_path}", flush=True)
-    model, is_voids = _load_student(adapter_path, device)
+    model, is_voids = load_student(adapter_path, device)
     model.eval()
 
     print(f"Loading corpus: {corpus_paths}", flush=True)

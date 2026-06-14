@@ -41,7 +41,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from gus.model.dataset_seq_world import JointWorldFullDataset
-from gus.eval.eval_regret import _load_student  # reuse loader
+from gus.model.load import load_student
 from gus.model.sample_worlds import argmax_world, sample_worlds
 
 
@@ -106,7 +106,7 @@ def main() -> int:
     print(f"Adapter: {args.adapter}", flush=True)
     print(f"Device:  {device}  K={args.k}", flush=True)
 
-    model, is_voids = _load_student(args.adapter, device)
+    model, is_voids = load_student(args.adapter, device)
     ds = JointWorldFullDataset(args.eval, seed=args.seed)
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False)
     print(f"Eval decisions: {len(ds)}", flush=True)

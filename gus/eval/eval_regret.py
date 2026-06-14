@@ -31,7 +31,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from gus.model.dataset_seq_world import JointWorldFullDataset
-from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
+from gus.model.load import load_student
 
 
 def _pick_device() -> str:
@@ -40,28 +40,6 @@ def _pick_device() -> str:
     if torch.backends.mps.is_available():
         return "mps"
     return "cpu"
-
-
-def _load_student(path: str, device: str):
-    ckpt = torch.load(path, weights_only=False, map_location=device)
-    args = ckpt["args"]
-    is_voids = "voids_hidden" in args
-    cls = StudentTransformerFullVoids if is_voids else StudentTransformerFull
-    kwargs = {
-        "d_model": args["d_model"],
-        "n_heads": args["n_heads"],
-        "n_layers": args["n_layers"],
-        "ff_dim": args.get("ff_dim", 256),
-        "dropout": 0.0,
-        "d_world": args.get("d_world", 64),
-        "q_hidden": args.get("q_hidden", 256),
-    }
-    if is_voids:
-        kwargs["voids_hidden"] = args.get("voids_hidden", 64)
-    model = cls(**kwargs).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model, is_voids
 
 
 def main() -> int:
@@ -75,7 +53,7 @@ def main() -> int:
     device = args.device or _pick_device()
     print(f"Adapter: {args.adapter}  device: {device}", flush=True)
 
-    model, is_voids = _load_student(args.adapter, device)
+    model, is_voids = load_student(args.adapter, device)
     ds = JointWorldFullDataset(args.eval, seed=42)
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False)
 

@@ -41,36 +41,9 @@ from forge.oracle.rng import deal_from_seed
 from forge.oracle.tables import score_trick
 
 from gus.model.features import reconstruct_prior_plays
-from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
+from gus.model.load import load_student
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import voids_feature_vector
-
-
-# -----------------------------------------------------------------------------
-# Student loading — matches eval_regret pattern.
-# -----------------------------------------------------------------------------
-
-
-def _load_student(path: str, device: str):
-    ckpt = torch.load(path, weights_only=False, map_location=device)
-    args = ckpt["args"]
-    is_voids = "voids_hidden" in args
-    cls = StudentTransformerFullVoids if is_voids else StudentTransformerFull
-    kwargs = {
-        "d_model": args["d_model"],
-        "n_heads": args["n_heads"],
-        "n_layers": args["n_layers"],
-        "ff_dim": args.get("ff_dim", 256),
-        "dropout": 0.0,
-        "d_world": args.get("d_world", 64),
-        "q_hidden": args.get("q_hidden", 256),
-    }
-    if is_voids:
-        kwargs["voids_hidden"] = args.get("voids_hidden", 64)
-    model = cls(**kwargs).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model, is_voids
 
 
 # -----------------------------------------------------------------------------
@@ -501,7 +474,7 @@ def main() -> int:
 
     # Load models.
     print("Loading student...", flush=True)
-    student_model, is_voids = _load_student(args.adapter, device)
+    student_model, is_voids = load_student(args.adapter, device)
     print(f"  student is_voids={is_voids}", flush=True)
 
     print(f"Loading oracle from {args.oracle_ckpt}...", flush=True)

@@ -31,7 +31,7 @@ from torch import Tensor
 from gus.eval.explain import explain_decision
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.features import extract_belief_target, reconstruct_prior_plays
-from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
+from gus.model.load import load_student
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import is_trump, led_suit, voids_feature_vector
 
@@ -93,28 +93,6 @@ def _pick_device() -> str:
     if torch.backends.mps.is_available():
         return "mps"
     return "cpu"
-
-
-def _load_student(path: str, device: str):
-    ckpt = torch.load(path, weights_only=False, map_location=device)
-    args = ckpt["args"]
-    is_voids = "voids_hidden" in args
-    cls = StudentTransformerFullVoids if is_voids else StudentTransformerFull
-    kwargs = {
-        "d_model": args["d_model"],
-        "n_heads": args["n_heads"],
-        "n_layers": args["n_layers"],
-        "ff_dim": args.get("ff_dim", 256),
-        "dropout": 0.0,
-        "d_world": args.get("d_world", 64),
-        "q_hidden": args.get("q_hidden", 256),
-    }
-    if is_voids:
-        kwargs["voids_hidden"] = args.get("voids_hidden", 64)
-    model = cls(**kwargs).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model, is_voids
 
 
 def slot_to_domino(slot: int, player: int, hands: list[list[int]]) -> int:
@@ -559,7 +537,7 @@ def main() -> int:
     device = args.device or _pick_device()
     print(f"Adapter: {args.adapter}  device: {device}", file=sys.stderr, flush=True)
 
-    model, is_voids = _load_student(args.adapter, device)
+    model, is_voids = load_student(args.adapter, device)
     ds = JointWorldFullDataset(args.eval, seed=42)
 
     g = args.game_idx

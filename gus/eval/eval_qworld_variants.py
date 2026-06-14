@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 import torch
 from torch.utils.data import DataLoader
 
-from gus.eval.eval_regret import _load_student
+from gus.model.load import load_student
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.sample_worlds import sample_worlds
 
@@ -137,7 +137,7 @@ def main() -> int:
     print(f"Eval:    {args.eval}", flush=True)
     print(f"Device:  {device}  K={args.k}  seeds={seeds}", flush=True)
 
-    model, is_voids = _load_student(args.adapter, device)
+    model, is_voids = load_student(args.adapter, device)
     ds = JointWorldFullDataset(args.eval, seed=42)
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False)
     print(f"Decisions: {len(ds)}", flush=True)

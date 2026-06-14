@@ -31,7 +31,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-from gus.model.student import StudentTransformerFullVoids, StudentTransformerFull
+from gus.model.load import load_student
 from gus.model.tokenize import tokenize_decision
 from gus.model.features import extract_belief_target, reconstruct_prior_plays
 from gus.model.voids import voids_feature_vector
@@ -75,28 +75,6 @@ def _tail(msg: str):
 # ---------------------------------------------------------------------------
 
 ADAPTER_PATH = Path(PROJECT_ROOT) / "gus/adapters/v3_consistency_10000g.pt"
-
-
-def load_student(device: str):
-    ckpt = torch.load(str(ADAPTER_PATH), weights_only=False, map_location=device)
-    args = ckpt["args"]
-    is_voids = "voids_hidden" in args
-    cls = StudentTransformerFullVoids if is_voids else StudentTransformerFull
-    kwargs = {
-        "d_model": args["d_model"],
-        "n_heads": args["n_heads"],
-        "n_layers": args["n_layers"],
-        "ff_dim": args.get("ff_dim", 256),
-        "dropout": 0.0,
-        "d_world": args.get("d_world", 64),
-        "q_hidden": args.get("q_hidden", 256),
-    }
-    if is_voids:
-        kwargs["voids_hidden"] = args.get("voids_hidden", 64)
-    model = cls(**kwargs).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model, is_voids
 
 
 # ---------------------------------------------------------------------------
@@ -318,7 +296,7 @@ def main():
 
     device = "cpu"  # Per spec: don't use MPS (arena-runner is on it)
     _update_live("LOADING MODEL", f"adapter: {ADAPTER_PATH.name}")
-    model, is_voids = load_student(device)
+    model, is_voids = load_student(str(ADAPTER_PATH), device)
     _emit_event("model_loaded", {"is_voids": is_voids})
     _tail(f"Model loaded (is_voids={is_voids}), device={device}")
 

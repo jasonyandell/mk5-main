@@ -42,7 +42,7 @@ from forge.oracle.declarations import DECL_ID_TO_NAME
 from forge.oracle.schema import domino_pips
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.features import reconstruct_prior_plays
-from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
+from gus.model.load import load_student
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import (
     is_trump,
@@ -69,28 +69,6 @@ def slot_to_domino(game_hands, player: int, slot: int) -> int:
     if 0 <= slot < len(hand):
         return int(hand[slot])
     return -1
-
-
-def load_student(path: str, device: str):
-    ckpt = torch.load(path, weights_only=False, map_location=device)
-    args = ckpt["args"]
-    is_voids = "voids_hidden" in args
-    cls = StudentTransformerFullVoids if is_voids else StudentTransformerFull
-    kwargs = dict(
-        d_model=args["d_model"],
-        n_heads=args["n_heads"],
-        n_layers=args["n_layers"],
-        ff_dim=args.get("ff_dim", 256),
-        dropout=0.0,
-        d_world=args.get("d_world", 64),
-        q_hidden=args.get("q_hidden", 256),
-    )
-    if is_voids:
-        kwargs["voids_hidden"] = args.get("voids_hidden", 64)
-    model = cls(**kwargs).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model, is_voids, args
 
 
 def pct(n, d):
@@ -232,10 +210,10 @@ def main() -> int:
     device = args.device
     print(f"Adapter: {args.adapter}   device: {device}", flush=True)
 
-    model, is_voids, ckpt_args = load_student(args.adapter, device)
+    model, is_voids = load_student(args.adapter, device)
     print(
         f"Model: {'voids' if is_voids else 'plain'} "
-        f"d_model={ckpt_args['d_model']} layers={ckpt_args['n_layers']}",
+        f"d_model={model.adapter_args['d_model']} layers={model.adapter_args['n_layers']}",
         flush=True,
     )
 

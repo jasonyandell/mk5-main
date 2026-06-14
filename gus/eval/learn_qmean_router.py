@@ -33,7 +33,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from gus.eval.eval_regret import _load_student
+from gus.model.load import load_student
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.sample_worlds import sample_worlds
 
@@ -266,7 +266,7 @@ def main() -> int:
     print(f"Device:  {device}  K={args.k}  target={args.target}")
     print(f"Eval seeds: {','.join(str(s) for s in eval_seeds)}")
 
-    model, is_voids = _load_student(args.adapter, device)
+    model, is_voids = load_student(args.adapter, device)
     print("Collecting train features...", flush=True)
     X_train, train_rows = _collect(model, is_voids, args.train, device, args.k, args.train_seed, args.batch_size)
 

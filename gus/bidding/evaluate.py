@@ -18,17 +18,11 @@ import sys
 import time
 from pathlib import Path
 
-import torch
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from forge.bidding.estimator import evaluate_bids, find_best_bid, TrumpResult
 from gus.bidding.simulate import simulate_all_gus_batch, _pick_device
-from gus.model.student import (
-    StudentTransformerFull,
-    StudentTransformerFullVoids,
-    StudentTransformerFullVoidsAuction,
-)
+from gus.model.load import load_student
 
 ADAPTER_DEFAULT = Path(__file__).resolve().parents[2] / "gus/adapters/v2_voids_3000g_big.pt"
 
@@ -54,39 +48,7 @@ def parse_hand(spec: str) -> list[int]:
 
 
 def load_gus(adapter_path: Path, device: str):
-    ckpt = torch.load(adapter_path, weights_only=False, map_location=device)
-    args = ckpt["args"]
-    # The auction student (#24) is a superset of the voids student — it also
-    # carries voids — so detect it first via the explicit --auction flag
-    # (NOT "bids_hidden" in args: that key has a default, so it is present on
-    # every voids run too).
-    is_auction = bool(args.get("auction", False))
-    is_voids = "voids_hidden" in args
-    if is_auction:
-        cls = StudentTransformerFullVoidsAuction
-    elif is_voids:
-        cls = StudentTransformerFullVoids
-    else:
-        cls = StudentTransformerFull
-    kwargs = dict(
-        d_model=args["d_model"],
-        n_heads=args["n_heads"],
-        n_layers=args["n_layers"],
-        ff_dim=args.get("ff_dim", 256),
-        dropout=0.0,
-        d_world=args.get("d_world", 64),
-        q_hidden=args.get("q_hidden", 256),
-    )
-    if is_voids:
-        kwargs["voids_hidden"] = args.get("voids_hidden", 64)
-    if is_auction:
-        kwargs["bids_hidden"] = args.get("bids_hidden", 64)
-    model = cls(**kwargs).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    # is_voids stays True for the auction model (it consumes voids too); callers
-    # detect the auction path via `hasattr(model, "bids_encoder")`.
-    return model, is_voids
+    return load_student(adapter_path, device)
 
 
 def evaluate_hand(
