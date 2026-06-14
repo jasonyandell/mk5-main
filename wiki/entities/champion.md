@@ -2,9 +2,9 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: local-2026-06-13
+last_updated: local-2026-06-14
 status: active
-phase: rungs #20-#23, #27 v2, #25 landed (2026-06-12); #24 auction-conditioned belief MEASURED WIN (+2.59pp belief acc, 3-corpus + capacity-controlled) + #26 arena→corpus self-play bridge landed (2026-06-13); play-risk (wrong lever) + belief-weighting (null) + auction→marks (null, belief-link confirmed instead) measured
+phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
 
 ## What it is
@@ -49,7 +49,7 @@ level.
 | Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |
 | Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
 | One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
-| Belief posterior | wired (null) | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]. **Now wired into world sampling** (rung #25, `champion/belief.py`+`play.py`): importance-weights MRV worlds by the posterior, ESS-active (~5–8/10) but measured **null** in the arena (−0.13 marks/game, CI includes zero) — the play-evidence belief is too weak. **#24 auction-conditioning MEASURED WIN 2026-06-13** (`gus/model/auction.py` + `StudentTransformerFullVoidsAuction`): the auction as a side feature (winner/bid/decl, no tokenizer change) gives **+2.59pp held-out belief acc** vs an identical voids control on real-auction corpora (3-corpus + capacity-controlled, [[w42-champion-auction-belief]]) — the win #25's null pointed at. Marks-neutral under oracle play (belief→marks weak, as #25) |
+| Belief posterior | **accuracy won, play-weighting dead** | [[gus]] belief head; [[belief-bayes-ceiling]]. **#24 auction-conditioning MEASURED WIN** (`gus/model/auction.py` + `StudentTransformerFullVoidsAuction`): auction as a side feature (winner/bid/decl, no tokenizer change) → **+2.59pp held-out belief acc** vs an identical voids control (3-corpus + capacity-controlled, [[w42-champion-auction-belief]]). **But the better belief is marks-neutral when wired into *play* world-sampling** (rung #25, `champion/play.py`): three nulls across both belief models and both bidder regimes (−0.13 / −0.17 / −0.02 marks/game, 2026-06-14, [[arena]]) — belief→play is structurally dead (play already near-oracle). The belief's value lives in bidding/defense via self-play (#26), not play reweighting |
 | Mark utility | **v2** | `champion/utility.py`: `race_wp` Pascal WP table + `MarksToSeven` (now with an optional equilibrium-aware pass model `pass_q_opp`/`pass_make_rate`, default off = v1) + `score_to_utility` for play risk. Score-conditioned **play** risk measured **negative** (rung #27 v2): `ScoreConditionedLensPlay` loses to `lens:ev` −1.20 marks/game, CI [−1.69,−0.70] ([[arena]]) — risk-shaped lenses sacrifice contracts (make-rate 48.9% vs 60.2%); confirms play-risk is the wrong lever. Pass model shifts 16.7% of sampled bids toward fighting for the auction (win-rate impact unmeasured) |
 | Bid-strength net | **done + wired** (rung #22) | `champion/bid_net.py`: Gus-backed corpus (`bidding_continuous.py` rewired off the retired 817k policy) distilled to a hand → (9 decl × 13 bid) p_make MLP (MAE 0.053, ECE 0.007). **Now wired into the policy** as `NetPointsEvaluator` via `GusBidder(pmake_fn=...)` (CLI `net:wp`): 0.68 ms/hand, ~1500× faster than the live Gus sim. **Beats the heuristic 85/128 (+1.29 marks/game, CI [+0.72,+1.84])** — matches/exceeds the sim bidder's own +1.09 edge, validating the distillation, and reaches notrump/doubles-trump the 8-decl sim bidder cannot ([[arena]]) |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
@@ -99,6 +99,16 @@ exists. Marginal-value ranking for the champion:
 
 **auction ≫ belief-weighted worlds > score-conditioned utility ≫ card-play polish.**
 
+Empirically refined (2026-06-14): the ranking holds **for the auction**, not for
+play. The auction tier produced every CI-excludes-zero arena win (#21 +1.09, #22
++1.29 marks/game). Both *play-side* levers measured dead — score-conditioned play
+risk (#27, −1.20) and belief-weighted play sampling (#25, three nulls even with
+the +2.59pp #24 belief). So "belief-weighted worlds" and "score-conditioned
+utility" earn their rank **as bidding and defense inputs**, realized through
+self-play (#26); applied to card play they collapse into the card-play-polish
+floor. The lesson the stack keeps repeating: edge is in the auction and in how
+belief feeds it, not in reweighting near-oracle play.
+
 ## Self-consistency
 
 A bid is information only if the policy that produces bids is the policy the
@@ -147,15 +157,20 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    (verified). The better belief is **marks-neutral** under oracle play
    (−0.29/game, CI incl. 0) — #25's lesson again; #24's value is belief quality
    (feeds bidding/defense + compounds in self-play), not direct arena marks.
-5. **Belief-weighted world sampling** — **mechanism landed 2026-06-12**
-   (`champion/play.py BeliefLensPlay`): importance-weights the MRV worlds by the
-   Gus belief posterior (`champion/belief.py`), changing only the marginalization
-   (`compute_eq_pdf` already took weights; `compute_eq_weighted_mean` added; the
-   belief↔world seat rows align exactly). Measured **null** with the weak
-   play-evidence belief (−0.13 marks/game, CI [−0.76, +0.48]; ESS ~5–8/10 confirms
-   the weights are active) — the highest-leverage *slot* is wired and validated,
-   and the win awaits the stronger auction-conditioned belief of rung #24
-   ([[arena]]). One change will then improve bidding, play, and defense together.
+5. **Belief-weighted world sampling** — **investigated, decisive null; closed
+   2026-06-14** (`champion/play.py BeliefLensPlay`): importance-weights the MRV
+   worlds by the Gus belief posterior (`champion/belief.py`), changing only the
+   marginalization. Tested across both belief models and both bidder regimes:
+   play-only belief −0.13, #24 auction belief −0.17 (static bidder), #24 auction
+   belief −0.02 (net bidder, varied auctions incl. notrump) — three nulls, all CIs
+   include zero, make-rates identical in the decisive run ([[arena]]). The
+   hypothesis that the play-side null awaited a stronger belief was **falsified**:
+   #24's sharper belief (ESS ~4 vs 5–8) still does not move play marks. Structural
+   reason — card play is already near-oracle, so reweighting *play* worlds is
+   card-polish-tier leverage regardless of belief quality. **#24's belief value
+   routes through bidding/defense via self-play (#26), not play reweighting.** The
+   mechanism stays built and unit-tested (degrades to uniform exactly), available
+   for a future much-stronger belief or a defense-phase application.
 6. **Self-play fixed point** — iterate policy ↔ belief until conventions
    stabilize. **Data bridge landed + reviewed 2026-06-13** (rung #26): the belief
    corpus had no real auction (`generate_eq_continuous` deals from a seed with an

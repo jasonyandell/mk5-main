@@ -98,17 +98,41 @@ new `compute_eq_weighted_mean` weights the E[Q] mean too. The seat-row alignment
 exact: the belief head's three classes (relative opponents P+1/+2/+3) ARE the MRV
 sampler's three opponent rows, from the same current-player POV.
 
-Headline (identical `heuristic` bidders, 128 games, seed 3000, n_samples=10):
+First pass (identical `heuristic` bidders, 128 games, seed 3000, n_samples=10):
 **`belieflens:ev` vs `lens:ev` is a null — 58/128 (45.3%), mark margin
 −0.13/game, 95% CI [−0.76, +0.48]** (includes zero); make-rate 54.9% vs 55.9%.
 The weights are genuinely active (effective sample size ~5–8 of 10, min ~2), so
-the mechanism works — but the play-evidence-only belief is too weak to move play
-strength. Exactly the [[belief-bayes-ceiling]] prediction: top-1 belief sits at
-the ~39% Bayes ceiling, barely above the 33% three-seat chance, so reweighting
-worlds by it changes little. The unlock is **auction-conditioned belief (#24)** —
-the infrastructure is now wired and validated, ready to pay off the moment belief
-sharpens. `belief_model=None` degrades to uniform exactly (unit-tested), so the
-A/B is a pure swap. Result under `arena/results/belieflens_vs_ev_128/`.
+the mechanism works — but the play-evidence-only belief was too weak to move play
+strength. The hypothesis at the time: the unlock is the stronger
+**auction-conditioned belief (#24)**, then unbuilt.
+
+**Tested 2026-06-14 — the unlock did not unlock (decisive null).** #24's
+auction-conditioned belief landed (+2.59pp held-out accuracy), so the join was
+finally run — it was always one flag away (`belieflens --gus-adapter <#24 auction
+adapter>`; `load_gus` auto-detects the auction architecture). The better belief is
+genuinely sharper here (ESS ~4 vs 5–8 — it concentrates weight on fewer worlds),
+and it still does not move play marks, across two bidder regimes:
+
+| belief | bidder (auction info) | result | CI |
+|---|---|---|---|
+| play-only voids | heuristic (low-variance bids) | −0.13/game | [−0.76, +0.48] |
+| **#24 auction** | heuristic (low-variance bids) | −0.17/game | [−0.76, +0.44] |
+| **#24 auction** | **net (varied bids, notrump 66×)** | **−0.02/game** | [−0.58, +0.52] |
+
+The net-bidder run is the confound-resolver: even with informative auctions the
+belief was trained to read, make-rates come out *identical* (65.1% vs 65.1%) and
+the halves are dead even (48.4% / 48.4%). **Verdict: belief-weighting in the
+*play* phase is a dead lever** — structural, not a belief-quality problem. With
+card play already near-oracle (0.49–0.55 regret), the E[Q] averaged over uniform
+consistent worlds is already near-optimal *in play*; a better posterior changes
+the play decision rarely and the marks outcome not at all. #24's belief value is
+real but routes through **bidding and defense via self-play (#26)**, not play
+reweighting — the [[champion]] marginal-value ranking, now measured on its
+play-side floor. The mechanism stays built and unit-tested
+(`belief_model=None` ⇒ uniform exactly), available if a much stronger belief or a
+defense-phase application ever wants it. Results under
+`arena/results/belieflens_vs_ev_128/`, `belieflens_auction_vs_ev_128/`,
+`belieflens_auction_net_vs_ev_128/`.
 
 ## Score-conditioned play — measured negative (rung #27 v2, 2026-06-12)
 
