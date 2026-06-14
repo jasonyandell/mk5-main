@@ -197,7 +197,7 @@ class JointWorldFullDataset(Dataset):
             "decision_idx": torch.tensor(d_idx, dtype=torch.long),
             "player": torch.tensor(current_player, dtype=torch.long),
             "voids": voids,                        # [24]
-            "bids": bids,                          # [18]
+            "bids": bids,                          # [28]
         }
         if self.include_strategy_features:
             item["strategy_features"] = extract_strategy_features(

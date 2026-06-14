@@ -93,7 +93,7 @@ def belief_logits_for_states(
     placeholder_world = torch.zeros(n, 28, 3, device=device)
     if is_auction:
         voids = torch.stack(voids_rows).to(device)  # [n, 24]
-        bids = torch.stack(bids_rows).to(device)    # [n, 18]
+        bids = torch.stack(bids_rows).to(device)    # [n, 28]
         out = model(tokens, attn, placeholder_world, voids, bids)
     elif is_voids:
         voids = torch.stack(voids_rows).to(device)  # [n, 24]

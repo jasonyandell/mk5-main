@@ -503,7 +503,7 @@ class StudentTransformerFullVoids(nn.Module):
 
 
 class BidsEncoder(nn.Module):
-    """Project the [18]-dim auction feature into d_model.
+    """Project the [28]-dim auction feature into d_model.
 
     The output is added to the pooled state embedding alongside the void
     evidence — the same explicit-feature injection VoidsEncoder uses, applied to

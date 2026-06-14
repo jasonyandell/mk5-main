@@ -137,7 +137,7 @@ def main() -> int:
     parser.add_argument("--voids-hidden", type=int, default=128)
     parser.add_argument("--auction", action="store_true",
                         help="Train the auction-conditioned student (#24): adds a "
-                             "BidsEncoder over the [18]-dim auction feature. Requires a "
+                             "BidsEncoder over the [28]-dim auction feature. Requires a "
                              "corpus generated from real auctions (forge.cli.generate_eq_from_snapshots).")
     parser.add_argument("--bids-hidden", type=int, default=64,
                         help="Hidden width of the BidsEncoder MLP (only with --auction).")
