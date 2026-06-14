@@ -4,7 +4,7 @@ kind: entity
 first_seen: local-2026-06-09
 last_updated: local-2026-06-13
 status: active
-phase: rungs #20-#23, #27 v2, #25 landed (2026-06-12); #24 auction-conditioned belief + #26 arena→corpus self-play bridge SCAFFOLDED + adversarially reviewed (2026-06-13), trained measurement GPU-gated; play-risk (wrong lever) + belief-weighting (null, pending stronger belief) measured
+phase: rungs #20-#23, #27 v2, #25 landed (2026-06-12); #24 auction-conditioned belief MEASURED WIN (+2.59pp belief acc, 3-corpus + capacity-controlled) + #26 arena→corpus self-play bridge landed (2026-06-13); play-risk (wrong lever) + belief-weighting (null) + auction→marks (null, belief-link confirmed instead) measured
 ---
 
 ## What it is
@@ -49,7 +49,7 @@ level.
 | Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |
 | Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
 | One-step utility ceiling | **done** | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
-| Belief posterior | wired (null) | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]. **Now wired into world sampling** (rung #25, `champion/belief.py`+`play.py`): importance-weights MRV worlds by the posterior, ESS-active (~5–8/10) but measured **null** in the arena (−0.13 marks/game, CI includes zero) — the play-evidence belief is too weak. **#24 auction-conditioning scaffold landed + reviewed 2026-06-13** (`gus/model/auction.py` + `StudentTransformerFullVoidsAuction`): the auction enters as a side feature (winner/bid/decl), no tokenizer change so existing adapters are untouched; trained delta is GPU-gated (see ladder rung 4) |
+| Belief posterior | wired (null) | [[gus]] belief head; play-evidence only; [[belief-bayes-ceiling]]. **Now wired into world sampling** (rung #25, `champion/belief.py`+`play.py`): importance-weights MRV worlds by the posterior, ESS-active (~5–8/10) but measured **null** in the arena (−0.13 marks/game, CI includes zero) — the play-evidence belief is too weak. **#24 auction-conditioning MEASURED WIN 2026-06-13** (`gus/model/auction.py` + `StudentTransformerFullVoidsAuction`): the auction as a side feature (winner/bid/decl, no tokenizer change) gives **+2.59pp held-out belief acc** vs an identical voids control on real-auction corpora (3-corpus + capacity-controlled, [[w42-champion-auction-belief]]) — the win #25's null pointed at. Marks-neutral under oracle play (belief→marks weak, as #25) |
 | Mark utility | **v2** | `champion/utility.py`: `race_wp` Pascal WP table + `MarksToSeven` (now with an optional equilibrium-aware pass model `pass_q_opp`/`pass_make_rate`, default off = v1) + `score_to_utility` for play risk. Score-conditioned **play** risk measured **negative** (rung #27 v2): `ScoreConditionedLensPlay` loses to `lens:ev` −1.20 marks/game, CI [−1.69,−0.70] ([[arena]]) — risk-shaped lenses sacrifice contracts (make-rate 48.9% vs 60.2%); confirms play-risk is the wrong lever. Pass model shifts 16.7% of sampled bids toward fighting for the auction (win-rate impact unmeasured) |
 | Bid-strength net | **done + wired** (rung #22) | `champion/bid_net.py`: Gus-backed corpus (`bidding_continuous.py` rewired off the retired 817k policy) distilled to a hand → (9 decl × 13 bid) p_make MLP (MAE 0.053, ECE 0.007). **Now wired into the policy** as `NetPointsEvaluator` via `GusBidder(pmake_fn=...)` (CLI `net:wp`): 0.68 ms/hand, ~1500× faster than the live Gus sim. **Beats the heuristic 85/128 (+1.29 marks/game, CI [+0.72,+1.84])** — matches/exceeds the sim bidder's own +1.09 edge, validating the distillation, and reaches notrump/doubles-trump the 8-decl sim bidder cannot ([[arena]]) |
 | Contract evaluator | done twice | `forge/bidding/` (2026-01) and `gus/bidding/` (2026-04); see inventory below |
@@ -131,21 +131,22 @@ q-bootstrap-belief result — belief-sampled worlds beat corpus worlds.
    (test MAE 0.053, ECE 0.007). The <1ms replacement for the live Gus sim the
    bidder pays per hand. The 2026-01 `estimator.py` 84-threshold fix landed with
    rung #23.
-4. **Belief v2** — condition the belief head on auction + play history
-   (training data free from arena self-play); revisit [[belief-bayes-ceiling]]
-   with auction evidence. **Scaffold landed + reviewed 2026-06-13** (rung #24):
-   instead of bid *tokens* (which would grow `gus/model/tokenize.py`'s vocab and
-   break every existing adapter at load), the auction is an explicit **side
-   feature** — `auction_feature_vector` (per-relative-seat bid/pass/winner +
-   winning-bid level + a declared-trump one-hot, the "winner declared fours ⇒
-   winner holds fours" signal) → `BidsEncoder` → added to the pooled state_emb,
-   mirroring `VoidsEncoder` exactly (`StudentTransformerFullVoidsAuction`,
-   `gus/model/student.py`). No tokenizer change ⇒ the #25 belieflens and the gus
-   bidder load and behave identically; `load_gus` auto-detects via `--auction`.
-   Trained measurement is GPU-gated (a train-time A/B vs a voids control on the
-   SAME real-auction corpus isolates the auction's contribution). Honest prior:
-   with the conservative `net:wp` bidder the live signal is mostly winner+suit
-   (bid magnitude near-degenerate → issue #31), so expect a **small** delta.
+4. **Belief v2** — condition the belief head on auction + play history.
+   **MEASURED WIN 2026-06-13** (rung #24, [[w42-champion-auction-belief]]): the
+   auction enters as an explicit **side feature** (not bid *tokens*, which would
+   grow `gus/model/tokenize.py`'s vocab and break every adapter) — `auction_feature_vector`
+   (per-relative-seat bid/pass/winner + winning-bid level + a declared-trump one-hot)
+   → `BidsEncoder` → added to the pooled state_emb, mirroring `VoidsEncoder`
+   (`StudentTransformerFullVoidsAuction`). No tokenizer change ⇒ existing adapters
+   load identically; `load_gus` auto-detects via `--auction`. Vs an identical
+   voids-only control on the same real-auction corpus: **+2.59pp held-out belief
+   accuracy** (corpus-level mean, 95% CI [+1.41,+3.76]; consistent across 3
+   independent corpora A/B/C, 11/11 seed deltas positive). A **shuffled-auction**
+   capacity control sits at voids level (−0.39pp) while the real auction is +2.63pp
+   ⇒ the gain is auction *information*, not the +10k BidsEncoder params. No leakage
+   (verified). The better belief is **marks-neutral** under oracle play
+   (−0.29/game, CI incl. 0) — #25's lesson again; #24's value is belief quality
+   (feeds bidding/defense + compounds in self-play), not direct arena marks.
 5. **Belief-weighted world sampling** — **mechanism landed 2026-06-12**
    (`champion/play.py BeliefLensPlay`): importance-weights the MRV worlds by the
    Gus belief posterior (`champion/belief.py`), changing only the marginalization

@@ -3106,3 +3106,27 @@ magnitude near-degenerate, #31), so expect a small delta — one more honest
 measurement in this project's tradition. Scaffold pushed to `origin/forge`
 (d84e22e, b0b35d3, b4baec7); one-command training kickoff at
 `scratch/champion-run/run_24_pipeline.sh`.
+
+---
+
+## [2026-06-13 | complete | Champion #24 auction-conditioned belief — MEASURED WIN]
+
+The heavy-training frontier delivered its first measured win. Conditioning the [[gus]]
+belief head on the completed auction (side feature, no tokenizer change) gives **+2.59pp
+held-out belief accuracy** vs an identical voids-only control on the same real-auction
+corpus — see [[w42-champion-auction-belief]]. Bulletproofed against the adversarial
+review's two valid objections: it **generalizes** (3 independent corpora A/B/C: +2.42,
++2.21, +3.12pp; 11/11 seed deltas positive) and it's **information not capacity** (a
+shuffled-auction control with the same BidsEncoder sits at voids level, −0.39pp, while the
+real auction is +2.63pp). No leakage (one auction key → 22 distinct belief targets).
+
+The better belief is **marks-neutral** under oracle play (auction belieflens vs lens:ev:
+−0.29/game, CI [−0.92,+0.36], belief active at ESS≈4.8) — rung #25's lesson again. So the
+thesis **auction ≫ belief ≫ utility ≫ play-polish** refines: #24 confirms the auction→belief
+link is real and strong, while belief→marks stays weak when card play is already near-oracle.
+#24's value is the belief quality itself — the substrate the self-play loop (#26) compounds.
+
+Process: two-track build (model / data bridge) → pre-train adversarial review (fixed a
+CRITICAL declarer-leads corpus bug) → 5-seed parallel measurement (10 trains, all cores) →
+4-skeptic refutation workflow → multi-corpus + capacity matrix to answer the survivors. The
+machine went from idle to ~10-core-saturated; the whole measurement landed in minutes.
