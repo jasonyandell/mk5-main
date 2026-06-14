@@ -334,3 +334,25 @@ def test_all_bids_legal_or_pass(oracle_and_device):
         assert b == PASS or b in ctx.legal
         if b != PASS:
             assert bidder.declare(hand, b, rng) in EVAL_DECLS
+
+
+# --------------------------------------------------------------------------- #
+# Test 5: optimism-correction scale (no GPU)                                  #
+# --------------------------------------------------------------------------- #
+
+def test_pmake_scale_lowers_utility_no_gpu():
+    """Rung #26 optimism correction: scaling the (double-dummy-optimistic) P(make)
+    down makes the bidder more conservative — a contract clearing the bar at
+    scale=1.0 can fall below it at scale=0.5. Exercises _utility_of only (no GPU)."""
+    from champion.utility import MarkEV
+
+    class _MockOracle:
+        def eval(self):
+            return self
+
+    table = {5: {30: 0.8}}  # raw double-dummy P(make 30) = 0.8
+    ctx = _ctx((0, 1, 2, 3, 4, 5, 6))
+    full = BeliefBidder(None, _MockOracle(), utility=MarkEV(), pmake_scale=1.0)
+    half = BeliefBidder(None, _MockOracle(), utility=MarkEV(), pmake_scale=0.5)
+    # MarkEV(0.8, 30) = +0.6 ; MarkEV(0.4, 30) = -0.2 -> the scale flips it to a pass.
+    assert full._utility_of(30, table, ctx) > 0 > half._utility_of(30, table, ctx)

@@ -80,6 +80,7 @@ class BeliefBidder(BidPolicy):
         tau: float = 1.0,
         prefilter_min_trumps: int = 3,
         margin: float = 0.0,
+        pmake_scale: float = 1.0,
     ):
         self.belief_model = belief_model
         self.oracle_model = oracle_model
@@ -92,6 +93,12 @@ class BeliefBidder(BidPolicy):
         self.tau = tau
         self.prefilter_min_trumps = prefilter_min_trumps
         self.margin = margin
+        # Optimism correction (#26): the oracle E[Q] is double-dummy (perfect play
+        # by all four seats), so its P(make) runs systematically optimistic vs the
+        # realized PIMC rate (measured ~0.58/0.83 ~= 0.70 at bid 30). Scaling P(make)
+        # at utility time recalibrates the bidder toward achievable contracts without
+        # touching the cached raw oracle P(make). 1.0 = raw double-dummy (default).
+        self.pmake_scale = pmake_scale
 
         if self.belief_model is not None:
             self.belief_model.eval()
@@ -258,8 +265,12 @@ class BeliefBidder(BidPolicy):
     def _utility_of(
         self, value: int, table: Mapping[int, Mapping[int, float]], ctx: BidContext,
     ) -> float:
-        """Marks utility of bidding ``value`` under the best declaration's P(make)."""
+        """Marks utility of bidding ``value`` under the best declaration's P(make).
+
+        Applies the optimism-correction scale at utility time (the cache keeps the
+        raw double-dummy P(make) so it stays reusable across scales)."""
         p = max(table[d][value] for d in table)
+        p = min(1.0, max(0.0, p * self.pmake_scale))
         return self.utility.value(
             p, value, team=ctx.team, marks=ctx.marks, marks_to_win=ctx.marks_to_win,
         )
@@ -320,5 +331,5 @@ class BeliefBidder(BidPolicy):
         return (
             f"BeliefBidder(weights={tag}, mode={mode}, utility={self.utility!r}, "
             f"n_samples={self.n_samples}, uniform_mix={self.uniform_mix}, "
-            f"margin={self.margin})"
+            f"margin={self.margin}, pmake_scale={self.pmake_scale})"
         )

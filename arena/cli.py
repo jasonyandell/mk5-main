@@ -104,14 +104,35 @@ def parse_bidder(
 
         if model is None:
             raise ValueError("belief bidder needs the oracle model (load it first)")
-        adapter = arg or belief_bidder_adapter
+        # Spec: belief[:<adapter>][,s<pmake_scale>][,m<margin>]. The adapter is a
+        # path (may itself start with 's'), so disambiguate tags by float-parseability:
+        # s0.7 = rung-#26 optimism correction (scale the double-dummy P(make)), m0.05
+        # = utility margin. Adapter falls back to --belief-bidder-adapter.
+        def _floatable(x: str) -> bool:
+            try:
+                float(x)
+                return True
+            except ValueError:
+                return False
+
+        adapter = None
+        pmake_scale, margin = 1.0, 0.0
+        for part in (p for p in arg.split(",") if p):
+            if part[0] == "s" and _floatable(part[1:]):
+                pmake_scale = float(part[1:])
+            elif part[0] == "m" and _floatable(part[1:]):
+                margin = float(part[1:])
+            else:
+                adapter = part
+        adapter = adapter or belief_bidder_adapter
         belief_model, is_voids = load_belief(adapter, device)
         bidder = BeliefBidder(
             belief_model, model, is_voids=is_voids, device=device,
             utility=MarksToSeven(), maximize=True,
+            pmake_scale=pmake_scale, margin=margin,
         )
-        print(f"Belief bidder: {bidder} (adapter={adapter!r}, is_voids={is_voids})",
-              flush=True)
+        print(f"Belief bidder: {bidder} (adapter={adapter!r}, is_voids={is_voids}, "
+              f"pmake_scale={pmake_scale}, margin={margin})", flush=True)
         return bidder
     raise ValueError(
         f"Unknown bidder: {spec!r} "
