@@ -5,10 +5,11 @@
 
 Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
-            | gus[:<samples>[,wp][,pass[<q>]]]   (rung #21; wp = marks-to-7
-              utility, pass<q> = rung #27 v2 equilibrium-aware pass baseline)
-            | net[:[wp][,pass[<q>]]]   (rung #22 distilled bid-strength net,
-              <1ms/hand; same utility options as gus)
+            | gus[:<samples>[,wp][,pass[<q>]][,max]]   (rung #21; wp = marks-to-7
+              utility, pass<q> = rung #27 v2 equilibrium-aware pass baseline,
+              max = rung #31 utility-MAXIMIZING bid so strong hands reach 84)
+            | net[:[wp][,pass[<q>]][,max]]   (rung #22 distilled bid-strength net,
+              <1ms/hand; same utility/max options as gus)
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random
             (scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter)
@@ -68,7 +69,7 @@ def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolic
             utility = MarksToSeven()
         else:
             utility = None
-        return GusBidder(evaluator, utility)
+        return GusBidder(evaluator, utility, maximize="max" in tags)
     if name == "net":
         # Distilled bid-strength net (rung #22) as the auction policy — same
         # GusBidder walk, P(make) from a <1ms forward pass instead of Gus sim.
@@ -88,7 +89,7 @@ def parse_bidder(spec: str, *, device: str, gus_adapter: str | None) -> BidPolic
             utility = MarksToSeven()
         else:
             utility = None
-        return GusBidder(pmake_fn=evaluator, utility=utility)
+        return GusBidder(pmake_fn=evaluator, utility=utility, maximize="max" in tags)
     raise ValueError(f"Unknown bidder: {spec!r} (heuristic | bid30 | random | gus | net)")
 
 

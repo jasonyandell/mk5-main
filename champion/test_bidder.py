@@ -103,3 +103,30 @@ def test_score_conditioned_desperation_84():
     assert behind.bid(ctx(marks=(0, 0)), random.Random(0)) == PASS
     score_blind = GusBidder(StubEvaluator(table))
     assert score_blind.bid(ctx(marks=(0, 6)), random.Random(0)) == PASS
+
+
+# --- rung #31: utility-maximizing bid (live bid-magnitude channel) ---
+
+
+def test_maximize_climbs_to_two_mark_on_strong_hand():
+    """A hand strong enough that 2 * P(make 42) beats P(make 30): the default
+    (min) bidder takes the cheap 30, the maximize bidder climbs to 84."""
+    # P(>=42)=0.75 ⇒ MarkEV(84) = (2*0.75-1)*2 = +1.0 > MarkEV(30) = +0.8.
+    table = {5: points(p30=0.9, p42=0.75)}
+    assert GusBidder(StubEvaluator(table)).bid(ctx(), random.Random(0)) == 30
+    assert GusBidder(StubEvaluator(table), maximize=True).bid(ctx(), random.Random(0)) == 84
+
+
+def test_maximize_keeps_one_mark_when_two_mark_is_worse():
+    """When the two-mark contract is too risky, the argmax stays at the cheap
+    one-mark bid — maximize does not gratuitously inflate the level."""
+    # P(>=42)=0.0 ⇒ MarkEV(84) = -2 < MarkEV(30) = +0.6, so 30 wins.
+    table = {5: points(p30=0.8, p42=0.0)}
+    assert GusBidder(StubEvaluator(table), maximize=True).bid(ctx(), random.Random(0)) == 30
+
+
+def test_maximize_passes_when_nothing_clears_margin():
+    """A marginal hand: no legal bid has positive utility, so maximize passes
+    (same verdict as the min bidder, reached by a different walk)."""
+    table = {5: points(p30=0.45, p42=0.0)}
+    assert GusBidder(StubEvaluator(table), maximize=True).bid(ctx(), random.Random(0)) == PASS

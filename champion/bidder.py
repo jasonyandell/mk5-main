@@ -14,6 +14,14 @@ so this is the minimum positive-utility bid; from far behind the walk can
 step past negative point bids onto a positive two-mark gamble, which is
 the score-conditioned desperation bid emerging rather than being authored.
 
+With ``maximize=True`` (rung #31) the policy instead takes the utility-
+*maximizing* legal bid. For one-mark point bids the argmax is still the
+minimum (utility is monotone), but a hand strong enough that the two-mark
+contract's ``2 * P(make 42)`` beats the one-mark ``P(make 30)`` now climbs
+to 84 — so the bid *level* tracks hand strength and bid magnitude becomes a
+live auction signal rather than a flat 30/31 (it is otherwise near-dead, the
+belief feature's #24 magnitude channel having nothing to learn from).
+
 A static prefilter (the wave-2.B risk-budget arithmetic plus a doubles
 count) skips simulation on hands no trump structure could carry — the
 same hands the simulator would price below every threshold.
@@ -54,6 +62,7 @@ class GusBidder:
         prefilter_min_trumps: int = 3,
         margin: float = 0.0,
         pmake_fn: PMakeFn | None = None,
+        maximize: bool = False,
     ):
         if evaluator is None and pmake_fn is None:
             raise ValueError("GusBidder needs an `evaluator` or a `pmake_fn`")
@@ -62,6 +71,7 @@ class GusBidder:
         self.utility = utility or MarkEV()
         self.prefilter_min_trumps = prefilter_min_trumps
         self.margin = margin
+        self.maximize = maximize
         self._cache: dict[tuple[int, ...], dict[int, list[int]]] = {}
         self._pm_cache: dict[tuple[int, ...], dict[int, dict[int, float]]] = {}
 
@@ -94,18 +104,32 @@ class GusBidder:
             return True
         return sum(1 for d in hand if DOMINO_IS_DOUBLE[d]) >= 3
 
+    def _utility_of(self, value: int, pm: Mapping[int, Mapping[int, float]],
+                    ctx: BidContext) -> float:
+        """Marks utility of bidding `value`, under the best declaration's P(make)."""
+        threshold = contract_points(value)
+        p = max(row[threshold] for row in pm.values())
+        return self.utility.value(
+            p, value,
+            team=ctx.team, marks=ctx.marks, marks_to_win=ctx.marks_to_win,
+        )
+
     def bid(self, ctx: BidContext, rng: random.Random) -> int:
         if not self._worth_evaluating(ctx.hand):
             return PASS
         pm = self._pmake(ctx.hand)
+        if self.maximize:
+            # Rung #31: take the utility-maximizing legal bid (ties keep the
+            # cheapest, "bid only enough" among equals); PASS if none clears.
+            best_val, best_u = PASS, self.margin
+            for value in ctx.legal:
+                u = self._utility_of(value, pm, ctx)
+                if u > best_u:
+                    best_u, best_val = u, value
+            return best_val
+        # Rung #21: the minimum positive-utility bid (cheapest that clears).
         for value in ctx.legal:
-            threshold = contract_points(value)
-            p = max(row[threshold] for row in pm.values())
-            u = self.utility.value(
-                p, value,
-                team=ctx.team, marks=ctx.marks, marks_to_win=ctx.marks_to_win,
-            )
-            if u > self.margin:
+            if self._utility_of(value, pm, ctx) > self.margin:
                 return value
         return PASS
 
@@ -123,9 +147,10 @@ class GusBidder:
 
     def __repr__(self) -> str:
         src = "net" if self.pmake_fn is not None else "sim"
+        mode = "max" if self.maximize else "min"
         return (
-            f"GusBidder(source={src}, utility={self.utility!r}, margin={self.margin}, "
-            f"prefilter_min_trumps={self.prefilter_min_trumps})"
+            f"GusBidder(source={src}, mode={mode}, utility={self.utility!r}, "
+            f"margin={self.margin}, prefilter_min_trumps={self.prefilter_min_trumps})"
         )
 
 
