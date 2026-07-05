@@ -107,7 +107,13 @@ not optional" is confirmed as the design position.
 
 ### jud v0 — the value-native bidder (the smallest true slice)
 
-One head is added; nothing else moves:
+The stack today runs two value backends across three consumers: play *ranks*
+with the double-dummy oracle (`arena/lens_play.py`), `net:wp` *prices* with
+distilled Gus-sim realized play (`gus/bidding/simulate.py` — Gus in all four
+seats, "skips the oracle entirely"), and the belief bidder *prices* with the
+oracle again (`champion/belief_bidder.py`). [[rank-vs-price]] says the ranking
+consumer is fine and every price consumer must share the realized backend. v0
+does exactly that — one head is added; nothing else moves:
 
 - **V_realized** — a distributional belief-state value: info-state (own hand +
   full auction + play history so far) → distribution over the hand's final points
@@ -133,6 +139,12 @@ One head is added; nothing else moves:
   that never bids 84 generates no 84 data). Blend ε-exploration bids into arena
   generation and/or forced-bid corpora (`generate_eq_continuous --bid-value seed`
   exists since rung #23).
+- **The pass alternative** — arena corpora contain opponent-won contracts, so
+  V_realized also trains on defend-side info-states ("suppose they win"),
+  pricing the pass counterfactual from data. This closes with data the hole #26
+  flagged as genuinely OOD for the oracle path (the suppose-opponent-wins
+  hypothetical was never queried) and gives `MarksToSeven`'s pass baseline a
+  learned leg to stand on.
 - **Belief's role in v0** — implicit: V_realized conditioned on the auction
   learns what the belief would say. The explicit belief head keeps training in
   the loop (the #24/#26 line) for legibility ([[belief-trajectory]]) and for

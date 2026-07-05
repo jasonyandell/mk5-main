@@ -41,8 +41,10 @@ measurement. Its legs:
 
 1. Fusion inflation grows with the threshold — measured:
    `champion/optimism_gap.json` has the realized best-declaration make-rate
-   falling 0.52 (bid 30) → ~0.19 (bid 41) while the oracle sits at 0.64 @ 30;
-   thresholds bind exactly where the inflation is largest.
+   falling 0.52 (bid 30) → ~0.19 (bid 41), N=604. The oracle curve falls too
+   (0.64 @ 30 → 0.37 @ 39, N=50) but slower: the absolute gap holds at
+   +0.12–0.17 while the realized/oracle ratio worsens 0.81 → 0.64 over bids
+   30–39 — relative inflation is largest exactly where thresholds bind.
 2. Shape-not-order play levers null — measured three ways (#25 ×3 configs, #27).
 3. The prediction it makes: an evaluator calibrated in absolute terms fixes
    bidding *without touching play*. `net:wp` already half-demonstrates this —
