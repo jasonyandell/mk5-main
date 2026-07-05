@@ -26,7 +26,7 @@ catalog:
 - [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
 - [[entities/champion|champion]] — unified belief-state player: decision loop (posterior → belief-weighted worlds → oracle value → marks-to-7 utility), the auction-first build ladder; rungs landed: arena (#20), Gus-backed auction v0 (#21, `champion/bidder.py`), marks-to-7 utility v1 (#27, `champion/utility.py`), bid_value plumbing (#23) (active)
-- [[entities/jud|jud]] — the unified belief-conditioned core the champion points at: one organ that bids and plays as the same act by conditioning search on a learned belief, trained by self-play. Fixes the precise solve / oracle / eq / belief / utility vocabulary, and the idea that belief belongs *inside* the search (un-melting the eq blob), not as a post-hoc reweight. A direction and a vocabulary, not yet built (active)
+- [[entities/jud|jud]] — the unified belief-conditioned core the champion points at: one organ that bids and plays as the same act by conditioning search on a learned belief, trained by self-play. Fixes the precise solve / oracle / eq / belief / utility vocabulary, and the idea that belief belongs *inside* the search (un-melting the eq blob), not as a post-hoc reweight. Now carries the v0 engineering first cut (value-native bidder: V_realized distributional head on realized outcomes; the oracle leaves the pricing loop) with three registered predictions. Not yet built (active)
 - [[entities/arena|arena]] — full-game harness (arena/): real auctions, marks to 7, paired-seed team rotation; champion rung 1; first physics: static risk-budget bidding beats bid30 by +0.78 marks/game; now also the model-backed `gus` bidder and score-carrying `BidContext` (active)
 
 ### LEM — STaR curriculum project
@@ -76,7 +76,7 @@ catalog:
 ## Topics
 
 - [[topics/champion-design-review|champion-design-review]] — Fable 5's recovered design reasoning behind the champion: verbatim reviews + a graded predictions ledger + the two caveats distillation sheared off (information-blind arena; score-conditioning is auction-not-play) (active)
-- [[topics/belief-conditioned-self-play|belief-conditioned-self-play]] — the training approach behind jud (what jud trains, how, the arena, the self-play loop): Fable's spine + loop *as written* (trains the belief; the value stays the fixed oracle) is clear and sourced; this session's extension (the value trained belief-native) and the training mechanics are explicitly flagged as not-yet-established (active)
+- [[topics/belief-conditioned-self-play|belief-conditioned-self-play]] — the training approach behind jud (what jud trains, how, the arena, the self-play loop): Fable's spine + loop *as written* (trains the belief; the value stays the fixed oracle) is clear and sourced; the value-native extension is now endorsed by a Fable 5 session (2026-07-05; design question closed, historical intent stays open) with training mechanics first-cut at jud (active)
 - [[topics/star|star]] — Self-Taught Reasoner; LEM's Stage 1 training paradigm (active)
 - [[topics/backwards-curriculum|backwards-curriculum]] — start at the end of the game, ratchet backward one ply per stage (active)
 - [[topics/rules-adapter|rules-adapter]] — Stage 0: 3500-example Q&A corpus across 7 categories, primer 55/55 verified; Q&A drilling does not transfer to narration (active)
@@ -111,6 +111,7 @@ catalog:
 - [[topics/lamir1|lamir1]] — 5 rollout modes + lamir1-piopp; direct 0.551 beats all 8 look-ahead variants; Q_head OOD at depleted leaves is root cause; Bug 6 + Fix 6 documented (active)
 - [[topics/dense-q-supervision|dense-q-supervision]] — 3400× per-decision signal: Q supervision regularizes the shared encoder; both training-time regularizer and inference-time LAMIR primitive (active)
 - [[topics/pimc|pimc]] — Perfect-Information Monte Carlo inference variants; direct π_me beats single-step PIMC because policy head already is the marginalized policy (active)
+- [[topics/rank-vs-price|rank-vs-price]] — why PIMC's strategy-fusion optimism bites the auction and not the play: play consumes rankings (common-mode inflation cancels in argmax), bids consume prices (tail mass read cardinally against pass/race_wp) — the mechanism under "it's all about bidding," explaining the play nulls and the #26 over-bidder in one stroke (active)
 - [[topics/regret-eval|regret-eval]] — primary Gus quality metric; bimodal: 73% perfect, 6% blunder tail drives all mean regret; near-tie rate 70-75%; ported to Burl 2026-04-26: paired in-distribution n=180 has run-3c at 1.92 regret vs naked-Burl 3.13 (−39%) (active)
 - [[topics/v-pi-decoupling|v-pi-decoupling]] — V_head correctly predicts +26 while π_me picks −0.4 play; heads decouple because training objectives only couple them indirectly (active)
 - [[topics/consistency-regularizer|consistency-regularizer]] — v3 at 10k: 0.551 regret (first Gus adapter under 1.0); gap vs v2 widens from tied at 3k to −33% at 10k (active)

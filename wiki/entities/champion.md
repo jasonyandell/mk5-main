@@ -120,7 +120,10 @@ authored rules. Existing evidence for the wiring step: [[belief-co-train]]'s
 q-bootstrap-belief result — belief-sampled worlds beat corpus worlds. The
 unified-core framing of this target — one organ, belief conditioning the search
 rather than reweighting it after, and the precise solve / oracle /
-[[expected-q-value|eq]] / belief / utility vocabulary — is recorded at [[jud]].
+[[expected-q-value|eq]] / belief / utility vocabulary — is recorded at [[jud]],
+which now also carries the v0 engineering first cut (value-native bidder over a
+V_realized head; 2026-07-05) and the [[rank-vs-price]] mechanism for why the
+value-native move is load-bearing at the auction specifically.
 
 ## Build ladder
 

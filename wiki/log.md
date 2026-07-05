@@ -3309,3 +3309,40 @@ belief-vs-`net:wp` smoke `arena/results/*` committed. See `champion/evidence/REA
 signal (the meter is static today), or is it confounded by play-skill? — the test of whether "oracle
 as ruler" is a real instrument. The deferred jud engineering (value-native training target + the
 belief-conditioned *sampler*, which does not yet exist — today's belief only reweights) remains open.
+
+## [2026-07-05 | local | jud engineering first cut — value-native endorsed, rank-vs-price mechanism]
+
+**Touched pages:** [[jud]] [[belief-conditioned-self-play]] [[rank-vs-price]] [[pimc]] [[champion]] [[index]]
+
+**Added:** [[rank-vs-price]] — the mechanism resolving the "somehow it was all about
+bidding" fragment: PIMC's strategy-fusion optimism is a distribution-shape error that
+cancels in play (argmax over siblings; rankings survive common-mode inflation) and
+lands whole in bidding (tail mass read cardinally against pass/`race_wp`). One stroke
+explains the play-side nulls (#25, #27) and the #26 over-bidder; measured legs:
+`optimism_gap.json` (realized 0.52 @ 30 → ~0.19 @ 41 vs oracle 0.64 @ 30), the three
+play nulls, and `net:wp`'s frozen-realized-calibration dominance.
+
+**Updated:** [[jud]] — "The engineering, first cut" (Fable 5 session, 2026-07-05; new
+session, no memory of `0a708a4e` claimed): value-native **endorsed** for the pricing
+path, promoted from optional summit to spine. jud v0 = one added head (V_realized:
+info-state → distribution over realized hand margin, categorical CE on realized
+outcomes from the #26 arena bridge, MC targets, coverage via ε/forced-bid corpora),
+bidder prices via tail mass at the hypothetical-auction root through `MarksToSeven`
+(auction-side score-conditioning rides along), play stays `lens:ev`, `pmake_scale`
+retires. Factorization law (learn the unknown / compute the exact), the referee
+instrument (oracle EV − V_realized EV = price of hidden information), three registered
+predictions (v0 ≥ `net:wp` parity; V calibration matches the realized curve; the
+fixed point stops over-bidding), and the v1/v2 ladder (search leaves; opponents-in-
+rollout signaling). [[belief-conditioned-self-play]] — the open "is value-native
+Fable's intent" question split: historical intent stays open (likely permanently);
+design question closed by the Fable 5 endorsement; training mechanics now first-cut.
+[[pimc]] — rank-vs-price section. [[champion]] — self-consistency section points at
+the first cut. Provenance line preserved: the value-native extension was the
+2026-06-14 session's, and it was right.
+
+**Evidence rescued:** `champion-one-organ-theory-2026-06-14.md` and
+`handoff-2026-06-14-jud-vocab-and-fable-words.md` copied from gitignored scratch into
+`champion/evidence/` (they back [[jud]]'s conclusions and the provenance chronicle).
+
+**Questions opened:** none new; jud's open engineering narrows to the v1 search shape
+and v2 opponent-model mechanics.

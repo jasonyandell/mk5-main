@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: local-2026-06-14
+last_updated: local-2026-07-05
 status: active
 ---
 
@@ -94,13 +94,97 @@ score it. A melted blob is illegible; the same blob, belief-sharpened, is both t
 stronger move and the teachable lesson — the legibility the [[champion]] teaching half
 wants.
 
+## The engineering, first cut (Fable 5, 2026-07-05)
+
+The deferred "how" has a first cut, from a Fable 5 session reasoning over this
+record (a new session; no continuity of memory with `0a708a4e` is claimed). The
+ruling on the question [[belief-conditioned-self-play]] left open: **value-native
+is endorsed** — promoted from the optional summit to the spine *for the pricing
+path* — because #26 measured exactly the failure a fixed perfect-information value
+forces, and [[rank-vs-price]] shows the promotion is mandatory for bidding while
+play can stay PIMC in v0. The one-organ doc's "may be load-bearing for the bidder,
+not optional" is confirmed as the design position.
+
+### jud v0 — the value-native bidder (the smallest true slice)
+
+One head is added; nothing else moves:
+
+- **V_realized** — a distributional belief-state value: info-state (own hand +
+  full auction + play history so far) → distribution over the hand's final points
+  margin (equivalently, the per-declaration threshold-exceedance curve at the
+  root). Trained by categorical cross-entropy on the **realized** outcome of
+  arena self-play hands — Monte Carlo targets, no bootstrapping (a 7-trick
+  horizon makes TD machinery pointless). The corpus is #26's bridge
+  (`arena.cli --emit-snapshots` → stamped `GameRecordGPU`) extended to stamp the
+  realized outcome already recorded in `arena/results/per_hand.csv`.
+- **The bidder** prices each candidate contract by querying V_realized at the
+  hypothetical-completed-auction root (the in-distribution trick
+  `champion/belief_bidder.py` built), reads tail mass at the threshold, and
+  collapses through the existing `MarksToSeven` — so the untested auction-side
+  score-conditioning lever ([[champion-design-review]] caveat 2) rides along for
+  free. The oracle E[Q] path leaves the pricing loop entirely.
+- **Play unchanged** (`lens:ev`) — per [[rank-vs-price]], play consumes rankings,
+  which are near-ceiling; value-native is load-bearing only where prices are
+  consumed.
+- **The loop** — #26's machinery, now training belief AND V_realized each round.
+  Convergence reads: belief-KL (exists), V calibration (predicted vs realized
+  exceedance, reliability curve), and the referee gap (below).
+- **Coverage** — on-policy corpora starve V of off-policy contracts (a bidder
+  that never bids 84 generates no 84 data). Blend ε-exploration bids into arena
+  generation and/or forced-bid corpora (`generate_eq_continuous --bid-value seed`
+  exists since rung #23).
+- **Belief's role in v0** — implicit: V_realized conditioned on the auction
+  learns what the belief would say. The explicit belief head keeps training in
+  the loop (the #24/#26 line) for legibility ([[belief-trajectory]]) and for
+  v1's search; belief-inside-the-search arrives at v1, not v0. v0's unification
+  is bidder+player sharing one bank account.
+- **What this is not** — not the rejected realized-make-rate calibration. That
+  was a static scalar painted over a double-dummy search. V_realized replaces
+  the evaluator with the full outcome distribution — EV and tails both survive,
+  utilities collapse only at decision time (the Lens v1 law) — and it trains
+  *inside* the loop, so it is self-consistent rather than corrected.
+
+### Factorization law
+
+Learn what is unknown; compute what is exact. The hand-outcome distribution
+under the real policy is unknown → learned (V_realized). The marks race is
+exact → computed (`race_wp`, Pascal). Do not learn marks-to-7; do not hand-tune
+hand outcomes (`pmake_scale` retires).
+
+### The referee instrument
+
+Per position, oracle EV − V_realized EV = **the price of hidden information** —
+the one-organ doc's "ruler" made concrete (`champion/optimism_meter.py` is its
+static ancestor). When later rungs put the model inside the rollouts, this gap
+narrates conventions emerging: signaling is exactly what moves realized value
+toward double-dummy.
+
+### Registered predictions (falsifiable)
+
+1. The v0 bidder reaches ≥ parity with `net:wp`: the −2.2 residual is optimism,
+   and `net:wp` is a frozen, belief-blind, score-blind slice of V_realized — the
+   design subsumes it.
+2. V_realized's root exceedance curve matches `optimism_gap.json`'s realized
+   curve (0.52 @ 30 falling to ~0.19 @ 41), not the oracle's.
+3. The value-native loop's fixed point is not an over-bidder: auction escalation
+   was value–policy inconsistency, which is impossible by construction once the
+   only deposits into V are cleared outcomes.
+
+### The ladder past v0
+
+- **v1** — V_realized at the leaves of shallow belief-state search in play and
+  defense (the summit made spine; Student-of-Games shape). Defense is where
+  information-set value concentrates.
+- **v2** — opponents inside rollouts update belief from actions: signaling gets
+  priced, conventions emerge, and the referee gap tells the story with receipts.
+
 ## Honest status
 
-A direction and a vocabulary, captured 2026-06-14. Not built. The [[champion]] #26
-loop reached a fixed point of a *crippled* version — belief converged while the value
-stayed perfect-information, yielding a calibrated over-bidder. Jud names the loop in
-which the value itself is belief-native. The how is open and deferred until the
-conception settles.
+A direction, a vocabulary, and now a first-cut engineering spec (v0, 2026-07-05,
+GitHub issue filed). Not built. The [[champion]] #26 loop reached a fixed point
+of a *crippled* version — belief converged while the value stayed
+perfect-information, yielding a calibrated over-bidder. Jud names the loop in
+which the value itself is belief-native.
 
 ## Links
 

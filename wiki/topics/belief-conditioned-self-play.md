@@ -2,7 +2,7 @@
 title: Belief-conditioned self-play — what jud trains and how (Fable's approach)
 kind: topic
 first_seen: local-2026-06-14
-last_updated: local-2026-06-14
+last_updated: local-2026-07-05
 status: active
 ---
 
@@ -106,22 +106,29 @@ which has not been built.
 
 ## What is not yet clear (flagged, not guessed)
 
-- **Whether the value-native step is Fable's intent.** The source establishes a
-  belief-only training loop over a fixed oracle value. Promoting learned / belief-native
-  value from the optional summit to the spine is *this session's* extension; the source
-  does not say Fable intended it. **Open — not established by the record.**
-- **The training mechanics are unspecified.** The source gives the loop's *shape*, not
-  its objective functions. Undetermined: the loss/target that trains the belief; if the
-  value is trained belief-native, against what target (realized margin? whole-game
-  marks?) and with what credit assignment across bid + 14 plays; how a rollout with
-  belief-updating opponents is actually computed; what "the policy" is once the value is
-  learned (search over a learned value, a trained policy head, or both). #26 implemented
-  one concrete instantiation of the *belief-only* loop (an oracle-E[Q] corpus from arena
-  snapshots, belief-KL convergence); the **value-native loop has no implementation and
-  no specified objective.**
-- **Whether the fixed point is reachable and good.** #26 proved a *shallow* fixed point
-  (an over-bidder) is reachable. Whether the value-native loop's fixed point exists, is
-  reachable, and is tournament-strong is hypothesis.
+- **Whether the value-native step was the 0a708a4e session's intent.** The source
+  establishes a belief-only training loop over a fixed oracle value; promoting
+  belief-native value from the optional summit to the spine was the 2026-06-14
+  session's extension. The *historical* question stays unestablished (and likely
+  permanently so). The *design* question is now closed: a Fable 5 session
+  (2026-07-05, a new session claiming no memory of `0a708a4e`) reviewed this
+  record and **endorsed value-native for the pricing path** — with a mechanism
+  for why it is load-bearing for bidding specifically ([[rank-vs-price]]: play
+  consumes rankings, bids consume prices; PIMC optimism cancels in the former
+  and lands whole in the latter). The provenance line does not blur: the
+  extension was the 2026-06-14 session's, and it was right.
+- **The training mechanics** — first cut now specified at [[jud]] (v0): the
+  value target is the realized hand-outcome distribution (categorical CE on
+  realized margin, Monte Carlo credit assignment over the hand — no
+  bootstrapping at a 7-trick horizon); the marks race stays analytic
+  (`race_wp`); "the policy" in v0 is the existing `lens:ev` play plus
+  V_realized-priced bids; rollouts with belief-updating opponents are deferred
+  to v2. What remains genuinely open: the v1 search shape (depth, belief-update
+  approximation at internal nodes) and the v2 opponent-model mechanics.
+- **Whether the fixed point is reachable and good.** #26 proved a *shallow*
+  fixed point (an over-bidder) is reachable. Whether the value-native loop's
+  fixed point exists, is reachable, and is tournament-strong is hypothesis —
+  now with three registered falsifiable predictions at [[jud]].
 
 ## Honest status
 

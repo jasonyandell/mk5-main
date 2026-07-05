@@ -33,6 +33,17 @@ maximizer of a selection function that rewards the displayed effect, and the dem
 measures motion toward the *belief posterior*, not toward solved ground truth. It is
 an illustration of "belief un-melts the blob," not yet a proof of "toward truth."
 
+## The jud primary sources (rescued 2026-07-05)
+
+- `champion-one-organ-theory-2026-06-14.md` — the theory doc behind [[jud]]: Jason's
+  restatement of the vision laid over Fable's framework, including the one-paragraph
+  statement of the whole design and the oracle's promotion from player to referee.
+- `handoff-2026-06-14-jud-vocab-and-fable-words.md` — the session handoff that carries
+  the adversarial vetting of #26 (what HELD / CRACKED / was REFUTED), the
+  solve/oracle/eq/blob/belief/utility vocabulary, and the provenance chronicle for
+  [[champion-design-review]] (the verbatim section is faithful; the demotion was an
+  over-correction, since reversed).
+
 ## See also
 
 - `champion/optimism_meter.py` + `champion/optimism_gap.json` — the oracle-vs-realized
