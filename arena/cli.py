@@ -371,7 +371,9 @@ def main() -> int:
                 "max_redeals": cfg.max_redeals,
             },
         }
-        snap_path.write_text(json.dumps(payload, indent=2) + "\n")
+        # Compact dump: each row now carries a 28-step play history, so the
+        # pretty-printed form would be ~30x the lines for zero information.
+        snap_path.write_text(json.dumps(payload) + "\n")
         print(f"Wrote {len(snaps)} snapshots -> {snap_path}", flush=True)
 
     return 0
