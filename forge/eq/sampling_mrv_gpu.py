@@ -72,6 +72,25 @@ def _build_suit_domino_mask() -> torch.Tensor:
 
 SUIT_DOMINO_MASK = _build_suit_domino_mask()  # [8, 10] int64
 
+# Per-device caches of small constant tensors (host->device copies and scalar
+# tensor construction inside the assignment loop are one dispatch each).
+_DEVICE_CONSTS: dict[str, dict[str, torch.Tensor]] = {}
+
+
+def _consts(device) -> dict[str, torch.Tensor]:
+    key = str(device)
+    c = _DEVICE_CONSTS.get(key)
+    if c is None:
+        bit_indices = torch.arange(28, device=device, dtype=torch.int32)
+        c = {
+            "suit_domino_mask": SUIT_DOMINO_MASK.to(device),
+            "bit_indices": bit_indices,
+            "bit_masks": (1 << bit_indices).to(torch.int64),  # [28]
+            "one_i64": torch.tensor(1, dtype=torch.int64, device=device),
+        }
+        _DEVICE_CONSTS[key] = c
+    return c
+
 
 def _build_void_masks_vectorized(
     voids: torch.Tensor,  # [n_games, 3, 8] bool
@@ -90,7 +109,7 @@ def _build_void_masks_vectorized(
         domino d violates player p's void constraints in game g.
     """
     n_games = voids.shape[0]
-    suit_domino_mask = SUIT_DOMINO_MASK.to(device)  # [8, 10]
+    suit_domino_mask = _consts(device)["suit_domino_mask"]  # [8, 10]
 
     # Vectorized computation:
     # voids: [n_games, 3, 8] bool
@@ -160,45 +179,6 @@ def _popcount_vectorized(x: torch.Tensor) -> torch.Tensor:
     return x.to(torch.int32)
 
 
-def _random_set_bit_vectorized(masks: torch.Tensor, rng: torch.Tensor) -> torch.Tensor:
-    """Select a random set bit from each mask (vectorized).
-
-    Args:
-        masks: [N] int64 bitmasks, each with at least one bit set
-        rng: [N] float in [0, 1) for random selection
-
-    Returns:
-        [N] int64 with the selected bit index (0-27)
-    """
-    N = masks.shape[0]
-    device = masks.device
-
-    # Expand masks to [N, 28] bool tensor
-    bit_indices = torch.arange(28, device=device)  # [28]
-    bit_masks = (1 << bit_indices).to(torch.int64)  # [28]
-
-    # Check which bits are set: [N, 28]
-    bits_set = (masks.unsqueeze(1) & bit_masks.unsqueeze(0)) != 0
-
-    # Count total set bits per sample
-    counts = bits_set.sum(dim=1).float()  # [N]
-
-    # Target index (which set bit to select)
-    target_idx = (rng * counts).floor().to(torch.int64)  # [N]
-
-    # Cumulative sum to find the position of each set bit
-    cumsum = bits_set.to(torch.int64).cumsum(dim=1)  # [N, 28]
-
-    # Find where cumsum == target_idx + 1 AND bit is set (first occurrence)
-    # This gives us the target_idx-th set bit (0-indexed)
-    match = (cumsum == (target_idx.unsqueeze(1) + 1)) & bits_set  # [N, 28]
-
-    # Get the bit index (argmax on bool gives first True)
-    selected = match.to(torch.int64).argmax(dim=1)  # [N]
-
-    return selected
-
-
 def sample_worlds_mrv_gpu(
     pools: torch.Tensor,           # [n_games, pool_size] available dominoes
     hand_sizes: torch.Tensor,      # [n_games, 3] opponent hand sizes
@@ -206,6 +186,7 @@ def sample_worlds_mrv_gpu(
     decl_ids: torch.Tensor,        # [n_games] declaration IDs
     n_samples: int = 50,
     device: str = 'cuda',
+    max_pool_size: int | None = None,
 ) -> torch.Tensor:
     """Sample consistent worlds using MRV heuristic on GPU.
 
@@ -220,6 +201,8 @@ def sample_worlds_mrv_gpu(
         decl_ids: [n_games] declaration ID per game
         n_samples: Number of worlds to sample per game
         device: 'cuda' or 'cpu'
+        max_pool_size: Largest pool across games, if the caller knows it
+            (skips a GPU->CPU sync; must equal max(popcount(pool)) exactly)
 
     Returns:
         [n_games, n_samples, 3, 7] opponent hands (padded with -1)
@@ -228,6 +211,10 @@ def sample_worlds_mrv_gpu(
         device = 'cpu'
 
     n_games = pools.shape[0]
+    consts = _consts(device)
+    bit_masks = consts["bit_masks"]  # [28] int64
+    bit_indices = consts["bit_indices"]  # [28] int32
+    one_i64 = consts["one_i64"]
 
     # Move inputs to device
     pools = pools.to(device)
@@ -241,9 +228,10 @@ def sample_worlds_mrv_gpu(
     # Convert pools to bitmasks
     pool_masks = _pool_to_mask(pools)  # [n_games]
 
-    # Get pool sizes (total dominoes to distribute)
-    pool_sizes = _popcount_vectorized(pool_masks)  # [n_games]
-    max_pool_size = pool_sizes.max().item()
+    if max_pool_size is None:
+        # Get pool sizes (total dominoes to distribute)
+        pool_sizes = _popcount_vectorized(pool_masks)  # [n_games]
+        max_pool_size = int(pool_sizes.max().item())
 
     # Candidate masks: candidates[g, p] = dominoes player p COULD hold = pool & ~void_mask
     candidate_masks = pool_masks.unsqueeze(1) & ~void_masks  # [n_games, 3]
@@ -265,25 +253,29 @@ def sample_worlds_mrv_gpu(
 
     # Pre-allocate reusable tensors to reduce allocation overhead
     batch_idx = torch.arange(total_samples, device=device)
-    available_unsqueezed = available.unsqueeze(1)  # [N, 1]
+    bits3 = bit_masks.view(1, 1, 28)  # for [N, 3] popcounts
 
-    # MRV assignment loop: assign one domino per step (vectorized across samples)
+    # MRV assignment loop: assign one domino per step (vectorized across samples).
+    #
+    # NOTE the loop intentionally has no early-exit check: the sample with the
+    # largest pool stays active through step max_pool_size - 1 by construction
+    # (one domino leaves its pool per step), so an `if not active.any(): break`
+    # can never fire — it only added a GPU->CPU sync per step. Every step draws
+    # torch.rand(total_samples) exactly as before, so the RNG stream (and thus
+    # every sampled world) is unchanged.
     for step in range(max_pool_size):
-        # Check if any samples still need assignment
         active = (available != 0)
-        if not active.any():
-            break
 
         # Compute slack for each player: popcount(candidates & available) - need
-        # Reuse available_unsqueezed shape
-        available_unsqueezed = available.unsqueeze(1)
-        valid_candidates = candidate_masks_flat & available_unsqueezed  # [N, 3]
+        valid_candidates = candidate_masks_flat & available.unsqueeze(1)  # [N, 3]
 
-        # Vectorized popcount for all players at once
-        slack = _popcount_vectorized(valid_candidates.reshape(-1)).reshape(total_samples, 3) - need
+        # popcount via bit expansion: 3 kernels instead of ~12 (dispatch-bound)
+        cand_counts = (valid_candidates.unsqueeze(-1) & bits3).ne(0).sum(dim=-1, dtype=torch.int32)  # [N, 3]
+        slack = cand_counts - need
 
-        # MRV: find player with minimum slack (in-place to reduce allocations)
-        slack[need == 0] = 1000  # Set slack to large value for players with need=0
+        # MRV: find player with minimum slack; players with need=0 are out of
+        # the running (same effect as the historical slack[need == 0] = 1000)
+        slack = torch.where(need == 0, torch.full_like(slack, 1000), slack)
         most_constrained = slack.argmin(dim=1)  # [N]
 
         # Gather candidates for the chosen player: [N]
@@ -293,13 +285,19 @@ def sample_worlds_mrv_gpu(
         rng = torch.rand(total_samples, device=device)
 
         # Handle inactive samples (set a dummy valid bit to avoid errors)
-        # Clone only inactive samples to reduce overhead
-        chosen_candidates_safe = torch.where(active, chosen_candidates, torch.tensor(1, dtype=torch.int64, device=device))
+        chosen_candidates_safe = torch.where(active, chosen_candidates, one_i64)
 
-        selected_domino = _random_set_bit_vectorized(chosen_candidates_safe, rng)  # [N]
+        # Random set bit: select the target_idx-th set bit; the first position
+        # where cumsum > target_idx IS that bit (cumsum increments only at set
+        # bits), and torch.argmax returns the first occurrence of the max
+        bits_set = (chosen_candidates_safe.unsqueeze(1) & bit_masks.unsqueeze(0)) != 0  # [N, 28]
+        counts = bits_set.sum(dim=1).float()  # [N]
+        target_idx = (rng * counts).floor().to(torch.int64)  # [N]
+        cumsum = bits_set.to(torch.int64).cumsum(dim=1)  # [N, 28]
+        selected_domino = (cumsum > target_idx.unsqueeze(1)).to(torch.int8).argmax(dim=1)  # [N]
 
         # Create bitmask for selected domino
-        selected_mask = (1 << selected_domino).to(torch.int64)  # [N]
+        selected_mask = (one_i64 << selected_domino)  # [N] int64
 
         # Update available: remove selected domino (only for active samples)
         available = torch.where(active, available & ~selected_mask, available)
@@ -309,21 +307,16 @@ def sample_worlds_mrv_gpu(
         active_mask = selected_mask * active.to(torch.int64)
         hands[batch_idx, most_constrained] |= active_mask
 
-        # Update need: decrement for chosen player (vectorized)
-        # Create one-hot encoding of most_constrained: [N, 3]
-        player_mask = torch.nn.functional.one_hot(most_constrained, num_classes=3).to(torch.int32)
-        # Apply only to active samples
-        need -= player_mask * active.unsqueeze(1).to(torch.int32)
+        # Update need: decrement the chosen player of each active sample
+        need.scatter_add_(
+            1, most_constrained.unsqueeze(1), -active.to(torch.int32).unsqueeze(1),
+        )
 
     # Convert bitmask hands to domino ID lists (vectorized, GPU-only)
     # hands: [total_samples, 3] int64 bitmasks
     # Output: [n_games, n_samples, 3, 7] domino IDs
 
     max_hand = 7
-
-    # Create bit test masks [28]
-    bit_indices = torch.arange(28, device=device, dtype=torch.int32)
-    bit_masks = (1 << bit_indices).to(torch.int64)  # [28]
 
     # Check which bits are set: [total_samples, 3, 28]
     bits_set = (hands.unsqueeze(2) & bit_masks.view(1, 1, 28)) != 0
@@ -381,6 +374,7 @@ class WorldSamplerMRV:
         voids: torch.Tensor,           # [n_games, 3, 8]
         decl_ids: torch.Tensor,        # [n_games]
         n_samples: int = 50,
+        max_pool_size: int | None = None,
     ) -> torch.Tensor:
         """Sample consistent worlds using MRV heuristic.
 
@@ -390,6 +384,8 @@ class WorldSamplerMRV:
             voids: [n_games, 3, 8] bool - voids[g,o,s] = opponent o is void in suit s
             decl_ids: [n_games] declaration ID per game
             n_samples: Number of worlds to sample per game
+            max_pool_size: Largest pool across games, if the caller knows it
+                (skips a GPU->CPU sync)
 
         Returns:
             [n_games, n_samples, 3, 7] opponent hands (padded with -1)
@@ -407,4 +403,5 @@ class WorldSamplerMRV:
             decl_ids=decl_ids,
             n_samples=n_samples,
             device=self.device,
+            max_pool_size=max_pool_size,
         )

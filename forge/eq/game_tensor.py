@@ -142,6 +142,24 @@ def _build_trick_rank_table() -> torch.Tensor:
 LED_SUIT_TABLE = _build_led_suit_table()
 TRICK_RANK_TABLE = _build_trick_rank_table()
 
+# Per-device cache: .to(device) on the module-level CPU tables is a fresh
+# host->device copy on every call, which the hot paths pay once per tick.
+_TABLES_ON: dict[str, tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
+
+
+def _tables_on(device) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """(LED_SUIT_TABLE, TRICK_RANK_TABLE, CAN_FOLLOW) on the given device."""
+    key = str(device)
+    tables = _TABLES_ON.get(key)
+    if tables is None:
+        tables = (
+            LED_SUIT_TABLE.to(device),
+            TRICK_RANK_TABLE.to(device),
+            CAN_FOLLOW.to(device),
+        )
+        _TABLES_ON[key] = tables
+    return tables
+
 # Convert CPU constants to tensors
 DOMINO_HIGH_T = torch.tensor(DOMINO_HIGH, dtype=torch.int8)
 DOMINO_LOW_T = torch.tensor(DOMINO_LOW, dtype=torch.int8)
@@ -183,6 +201,10 @@ class GameStateTensor:
         self.decl_ids = decl_ids
         self.device = device
         self.n_games = hands.shape[0]
+        # Memoized current_player: state transitions go through apply_actions
+        # (which builds a new instance), so trick_plays/leader are fixed for
+        # the lifetime of an instance. Hot paths read the property ~5x/tick.
+        self._current_player: torch.Tensor | None = None
         # Default bidder to 0 (P0 is bidder) if not provided
         if bidder is None:
             self.bidder = torch.zeros(self.n_games, dtype=torch.int8, device=device)
@@ -544,9 +566,11 @@ class GameStateTensor:
     @property
     def current_player(self) -> torch.Tensor:
         """Returns (n_games,) tensor of current players (0-3)."""
-        # Count non-(-1) entries in trick_plays
-        trick_len = (self.trick_plays >= 0).sum(dim=1)  # (n_games,)
-        return ((self.leader.long() + trick_len) % 4).to(torch.int8)
+        if self._current_player is None:
+            # Count non-(-1) entries in trick_plays
+            trick_len = (self.trick_plays >= 0).sum(dim=1)  # (n_games,)
+            self._current_player = ((self.leader.long() + trick_len) % 4).to(torch.int8)
+        return self._current_player
 
     def legal_actions(self) -> torch.Tensor:
         """Returns (n_games, 7) boolean mask of legal actions.
@@ -580,7 +604,7 @@ class GameStateTensor:
         # Need to handle -1 lead_domino (when leading)
         # Use 0 as placeholder for leading games (will be masked out)
         lead_domino_safe = torch.where(is_leading, torch.zeros_like(lead_domino), lead_domino).long()
-        led_suit_table = LED_SUIT_TABLE.to(self.device)
+        led_suit_table, _, can_follow_table = _tables_on(self.device)
         led_suit = led_suit_table[lead_domino_safe, self.decl_ids.long()]  # (n_games,)
 
         # Check which hand slots can follow
@@ -600,7 +624,6 @@ class GameStateTensor:
         flat_led_suits = led_suit.long().unsqueeze(1).expand(-1, 7).reshape(-1)  # (n_games * 7,)
         flat_decl_ids = self.decl_ids.long().unsqueeze(1).expand(-1, 7).reshape(-1)  # (n_games * 7,)
 
-        can_follow_table = CAN_FOLLOW.to(self.device)
         flat_can_follow = can_follow_table[flat_dominoes, flat_led_suits, flat_decl_ids]  # (n_games * 7,)
         can_follow_mask = flat_can_follow.reshape(n_games, 7)  # (n_games, 7)
 
@@ -690,13 +713,12 @@ class GameStateTensor:
             # Get led suit for each completed trick
             lead_dominoes = trick_dominoes[:, 0].long()
             decl_ids_complete = self.decl_ids[complete_indices].long()
-            led_suit_table = LED_SUIT_TABLE.to(self.device)
+            led_suit_table, trick_rank_table, _ = _tables_on(self.device)
             led_suits = led_suit_table[lead_dominoes, decl_ids_complete]  # (n_complete,)
 
             # Look up trick ranks for all 4 dominoes
             # TRICK_RANK_TABLE: (28, 8, 10)
             # trick_dominoes: (n_complete, 4)
-            trick_rank_table = TRICK_RANK_TABLE.to(self.device)
             ranks = trick_rank_table[
                 trick_dominoes.long(),  # (n_complete, 4)
                 led_suits.long().unsqueeze(1).expand(-1, 4),  # (n_complete, 4)

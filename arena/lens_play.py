@@ -20,8 +20,24 @@ from forge.eq.generate.tokenization import tokenize_batched
 from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
 from forge.eq.tokenize_gpu import GPUTokenizer
 from forge.zeb.eq_player import zeb_states_to_game_state_tensor
+from forge.zeb.game import current_player as zeb_current_player
 from forge.zeb.types import ZebGameState
 from w42.lens_v1.lens import UTILITIES, argmax_under_utility
+
+
+def _max_pool_size(states: Sequence[ZebGameState]) -> int:
+    """Largest unseen-tile pool across the batch, computed on the CPU.
+
+    Pool = 28 - played - (current player's unplayed tiles); matches the GPU
+    pool bitmask popcount exactly, so the MRV sampler can skip its
+    max-pool-size GPU->CPU sync without changing its step count.
+    """
+    max_pool = 0
+    for s in states:
+        played = s.played
+        mine_left = sum(1 for d in s.hands[zeb_current_player(s)] if d not in played)
+        max_pool = max(max_pool, 28 - len(played) - mine_left)
+    return max_pool
 
 
 class LensPlay:
@@ -60,7 +76,10 @@ class LensPlay:
         gst = zeb_states_to_game_state_tensor(list(states), self.device)
 
         with torch.no_grad():
-            worlds = sample_worlds_batched(gst, self._sampler, self.n_samples)
+            worlds = sample_worlds_batched(
+                gst, self._sampler, self.n_samples,
+                max_pool_size=_max_pool_size(states),
+            )
             deals = build_hypothetical_deals(gst, worlds)
             tokens, masks = tokenize_batched(gst, deals, self._tokenizer)
             q_values = query_model(
