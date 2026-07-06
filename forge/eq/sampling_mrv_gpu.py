@@ -179,45 +179,6 @@ def _popcount_vectorized(x: torch.Tensor) -> torch.Tensor:
     return x.to(torch.int32)
 
 
-def _random_set_bit_vectorized(masks: torch.Tensor, rng: torch.Tensor) -> torch.Tensor:
-    """Select a random set bit from each mask (vectorized).
-
-    Args:
-        masks: [N] int64 bitmasks, each with at least one bit set
-        rng: [N] float in [0, 1) for random selection
-
-    Returns:
-        [N] int64 with the selected bit index (0-27)
-    """
-    N = masks.shape[0]
-    device = masks.device
-
-    # Expand masks to [N, 28] bool tensor
-    bit_indices = torch.arange(28, device=device)  # [28]
-    bit_masks = (1 << bit_indices).to(torch.int64)  # [28]
-
-    # Check which bits are set: [N, 28]
-    bits_set = (masks.unsqueeze(1) & bit_masks.unsqueeze(0)) != 0
-
-    # Count total set bits per sample
-    counts = bits_set.sum(dim=1).float()  # [N]
-
-    # Target index (which set bit to select)
-    target_idx = (rng * counts).floor().to(torch.int64)  # [N]
-
-    # Cumulative sum to find the position of each set bit
-    cumsum = bits_set.to(torch.int64).cumsum(dim=1)  # [N, 28]
-
-    # Find where cumsum == target_idx + 1 AND bit is set (first occurrence)
-    # This gives us the target_idx-th set bit (0-indexed)
-    match = (cumsum == (target_idx.unsqueeze(1) + 1)) & bits_set  # [N, 28]
-
-    # Get the bit index (argmax on bool gives first True)
-    selected = match.to(torch.int64).argmax(dim=1)  # [N]
-
-    return selected
-
-
 def sample_worlds_mrv_gpu(
     pools: torch.Tensor,           # [n_games, pool_size] available dominoes
     hand_sizes: torch.Tensor,      # [n_games, 3] opponent hand sizes
@@ -326,9 +287,9 @@ def sample_worlds_mrv_gpu(
         # Handle inactive samples (set a dummy valid bit to avoid errors)
         chosen_candidates_safe = torch.where(active, chosen_candidates, one_i64)
 
-        # Inline random-set-bit (same math as _random_set_bit_vectorized):
-        # select the target_idx-th set bit; the first position where
-        # cumsum > target_idx IS that bit (cumsum increments only at set bits)
+        # Random set bit: select the target_idx-th set bit; the first position
+        # where cumsum > target_idx IS that bit (cumsum increments only at set
+        # bits), and torch.argmax returns the first occurrence of the max
         bits_set = (chosen_candidates_safe.unsqueeze(1) & bit_masks.unsqueeze(0)) != 0  # [N, 28]
         counts = bits_set.sum(dim=1).float()  # [N]
         target_idx = (rng * counts).floor().to(torch.int64)  # [N]
