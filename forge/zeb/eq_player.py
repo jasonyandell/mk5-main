@@ -13,6 +13,7 @@ from __future__ import annotations
 import random as stdlib_random
 import time
 
+import numpy as np
 import torch
 from torch import Tensor
 
@@ -48,41 +49,45 @@ def zeb_states_to_game_state_tensor(
     """
     n_games = len(states)
 
-    # Build hands tensor: [N, 4, 7] int8
-    hands_list = [[list(h) for h in s.hands] for s in states]
-    hands = torch.tensor(hands_list, dtype=torch.int8, device=device)
+    # Build everything in numpy on the host, then transfer once per tensor.
+    # Per-element device writes (played_mask[g, d] = True, history[g, i, k] = v)
+    # are one kernel launch each on GPU backends — hundreds per call — so all
+    # scalar assembly happens on CPU here.
+    hands_np = np.empty((n_games, 4, 7), dtype=np.int8)
+    played_np = np.zeros((n_games, 28), dtype=bool)
+    history_np = np.full((n_games, 28, 3), -1, dtype=np.int8)
+    trick_np = np.full((n_games, 4), -1, dtype=np.int8)
+    scalars_np = np.empty((n_games, 3), dtype=np.int8)  # leader, decl_id, bidder
 
-    # Build played_mask: [N, 28] bool
-    played_mask = torch.zeros(n_games, 28, dtype=torch.bool, device=device)
     for g, state in enumerate(states):
+        hands_np[g] = state.hands
         for d in state.played:
-            played_mask[g, d] = True
+            played_np[g, d] = True
+        ph = state.play_history
+        for i, (player, domino_id) in enumerate(ph):
+            row = history_np[g, i]
+            row[0] = player
+            row[1] = domino_id
+            row[2] = ph[(i // 4) * 4][1]
+        ct = state.current_trick
+        trick_np[g, : len(ct)] = ct
+        scalars_np[g, 0] = state.trick_leader
+        scalars_np[g, 1] = state.decl_id
+        scalars_np[g, 2] = state.bidder
 
-    # Mark played slots in hands as -1 (vectorized)
-    hands_long = hands.long().clamp(0, 27)
-    batch_idx = torch.arange(n_games, device=device).view(-1, 1, 1).expand_as(hands)
-    is_played = played_mask[batch_idx.reshape(-1), hands_long.reshape(-1)].reshape(n_games, 4, 7)
-    hands[is_played] = -1
+    # Mark played slots in hands as -1 (vectorized in numpy)
+    game_idx = np.arange(n_games)[:, None, None]  # broadcasts to [N, 4, 7]
+    is_played = played_np[game_idx, hands_np.clip(0, 27).astype(np.int64)]
+    hands_np[is_played] = -1
 
-    # Build history: [N, 28, 3] int8 - (player, domino_id, lead_domino_id)
-    history = torch.full((n_games, 28, 3), -1, dtype=torch.int8, device=device)
-    for g, state in enumerate(states):
-        for i, (player, domino_id) in enumerate(state.play_history):
-            trick_start = (i // 4) * 4
-            lead_domino_id = state.play_history[trick_start][1]
-            history[g, i, 0] = player
-            history[g, i, 1] = domino_id
-            history[g, i, 2] = lead_domino_id
-
-    # Build trick_plays: [N, 4] int8
-    trick_plays = torch.full((n_games, 4), -1, dtype=torch.int8, device=device)
-    for g, state in enumerate(states):
-        for i, domino_id in enumerate(state.current_trick):
-            trick_plays[g, i] = domino_id
-
-    leader = torch.tensor([s.trick_leader for s in states], dtype=torch.int8, device=device)
-    decl_ids = torch.tensor([s.decl_id for s in states], dtype=torch.int8, device=device)
-    bidder = torch.tensor([s.bidder for s in states], dtype=torch.int8, device=device)
+    hands = torch.from_numpy(hands_np).to(device)
+    played_mask = torch.from_numpy(played_np).to(device)
+    history = torch.from_numpy(history_np).to(device)
+    trick_plays = torch.from_numpy(trick_np).to(device)
+    scalars = torch.from_numpy(scalars_np).to(device)
+    leader = scalars[:, 0].contiguous()
+    decl_ids = scalars[:, 1].contiguous()
+    bidder = scalars[:, 2].contiguous()
 
     return GameStateTensor(
         hands=hands,
