@@ -14,9 +14,15 @@ Player spec: <bidder>+<play>
               bidder: the realized-value head prices contracts; pass baseline uses
               net:wp's measured make-rate; model= selects a versioned head; no
               pmake_scale, no max)
-    play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random
+            | jud[:[wp][,pass[<q>]][,model=<path>]]   (jud v1: the unified organ
+              prices contracts at its empty-history root; same ValueBidder walk
+              and options as margin)
+    play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>]
+            | judplay[:model=<path>] | random
             (scorelens = rung #27 v2 score-conditioned play risk;
-             belieflens = rung #25 belief-weighted world sampling, --gus-adapter)
+             belieflens = rung #25 belief-weighted world sampling, --gus-adapter;
+             judplay = jud v1 value-native play — argmax E[pts] over the jud
+             head, defenders minimize; no oracle, no world sampling)
 
 Writes summary.json, per_hand.csv, per_game.csv under --out-dir.
 """
@@ -130,6 +136,31 @@ def parse_bidder(
         bidder = ValueBidder(margin_model, utility)
         print(f"Value bidder: {bidder} (model={model_path})", flush=True)
         return bidder
+    if name == "jud":
+        # jud v1 unified organ as the auction policy: the SAME ValueBidder walk
+        # as `margin`, pointed at JudNet's empty-history root (pmake_table has
+        # MarginNet's exact signature). Spec: jud[:wp][,pass[<q>]][,model=<path>].
+        from champion.jud_net import load_jud_net
+        from champion.utility import MarksToSeven
+        from champion.value_bidder import ValueBidder
+
+        NET_WP_MAKE_RATE = 0.754  # measured net:wp offense make-rate (Step-3 A/B)
+        tags = [p for p in arg.split(",") if p]
+        model_path = "champion/jud_net.pt"
+        pass_q = 0.0
+        for t in tags:
+            if t.startswith("model="):
+                model_path = t[len("model="):]
+            elif t.startswith("pass"):
+                pass_q = float(t[4:]) if t[4:] else 0.4
+        jud_model = load_jud_net(model_path, device="cpu")  # small MLP; CPU fastest
+        if pass_q > 0.0:
+            utility = MarksToSeven(pass_q_opp=pass_q, pass_make_rate=NET_WP_MAKE_RATE)
+        else:
+            utility = MarksToSeven()
+        bidder = ValueBidder(jud_model, utility)
+        print(f"Jud bidder: {bidder} (model={model_path})", flush=True)
+        return bidder
     if name == "belief":
         # Belief-conditioned bidder (rung #26 keystone): the hypothetical
         # completed auction + #24 belief-weighted oracle E[Q] -> P(make) per
@@ -173,7 +204,7 @@ def parse_bidder(
         return bidder
     raise ValueError(
         f"Unknown bidder: {spec!r} "
-        f"(heuristic | bid30 | random | gus | net | margin | belief)"
+        f"(heuristic | bid30 | random | gus | net | margin | jud | belief)"
     )
 
 
@@ -200,9 +231,23 @@ def parse_play(
             model, utility=arg or "ev", n_samples=n_samples, device=device,
             belief_adapter=gus_adapter,
         )
+    if name == "judplay":
+        # jud v1 value-native play: argmax E[pts] over the jud head's post-move
+        # info-states, defenders minimize. Spec: judplay[:model=<path>].
+        from arena.jud_play import JudPlay
+        from champion.jud_net import load_jud_net
+
+        model_path = "champion/jud_net.pt"
+        for t in (p for p in arg.split(",") if p):
+            if t.startswith("model="):
+                model_path = t[len("model="):]
+        play = JudPlay(load_jud_net(model_path, device="cpu"))  # small MLP; CPU fastest
+        print(f"Jud play: {play} (model={model_path})", flush=True)
+        return play
     raise ValueError(
         f"Unknown play policy: {spec!r} "
-        f"(lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random)"
+        f"(lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] "
+        f"| judplay[:model=<path>] | random)"
     )
 
 
