@@ -186,6 +186,27 @@ The auction was the predicted high-ground ([[champion]]: auction ≫ play
 polish) and the very first measurement agrees: a seven-line static bidder
 is already worth ~+0.8 marks/game over always-bid-30.
 
+## Performance (2026-07-06)
+
+Two perf passes on the MPS decision path (docs/arena-perf-2026-07-06.md):
+
+- **Pass 1 (byte-identical)**: dispatch/sync reduction across sampling,
+  tokenization, and state→tensor — **2.38× games/s** (0.56 → 1.34 on the
+  32-game bench), actions byte-for-byte unchanged. The arena is
+  dispatch-bound on MPS; per-tick fixed cost, not FLOPs, is the wall.
+- **Pass 2 (fast batching)**: `run_paired` pools both halves of the paired
+  match into one lockstep batch — twice the width, one straggler tail.
+  For a fixed set of games all-at-once pooling is tick-optimal (total
+  ticks = the longest game), so there is no refill queue. `arena.cli`
+  defaults to `--fast-batching`; `--no-fast-batching` restores the
+  sequential halves, which remain byte-identical and are the regression
+  path. Measured: **1.55–1.63× at 32 games** (24.1 s → 15.5 s),
+  **1.29–1.41× at 128 games**; distribution-equivalent to the exact path
+  (made-rate p=0.78, mark-margin p=0.64, hands/game p=0.91 over 256
+  games/mode). Fast mode diverges from the exact realization (batch
+  composition feeds the world-sampling RNG) but is itself run-to-run
+  deterministic on a fixed device.
+
 ## Limits (v0)
 
 - Shipped bidders declare pip trumps only and never bid past 42; the rules

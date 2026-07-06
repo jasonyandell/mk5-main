@@ -112,3 +112,38 @@ alternating A,B,A,B on an M5 Max (~3.5 min total, under the 10-min cap);
 **Speedup 2.38× (2.36–2.38 across pairs; baseline and optimized each <1%
 run-to-run).** CPU wall also improved ~1.14× (9.6 → 8.4 s on the 12-game gate)
 — consistent with the forward dominating on CPU and overhead dominating on MPS.
+
+## Pass #2: fast batching (byte-identity relaxed by decision, 2026-07-06)
+
+The lever above was taken once byte-identity was explicitly relaxed.
+`arena.engine.run_paired` pools BOTH halves of the paired match into one
+lockstep batch: deal seeds and opening auctions are per-game deterministic
+(`hand_seed` + per-hand auction RNG never see batch composition), so the
+paired-seed structure is intact; only realized play diverges. For a fixed
+set of games, all-at-once pooling is tick-optimal — total ticks = the
+longest game's ticks, which no capped-width refill queue can beat — so the
+"refill" lever reduces to this single pooled loop.
+
+Surface: `run_match(fast_batching=...)`, default **off** (the sequential
+halves remain the exactly-reproducible regression path, re-verified
+byte-identical vs `e04b5bf` on the 32-game MPS gate); `arena.cli
+--fast-batching` default **on** (corpus/loop generation), `--no-fast-batching`
+to opt out. Fast mode is itself run-to-run deterministic on a fixed device
+(same seed → same stream → same regrouping; 32-game per_hand.csv identical
+across repeats).
+
+Bench (M5 Max MPS, net:wp+lens:ev self-play, n_samples 10, `elapsed_s`):
+
+| bench | exact | fast | speedup |
+|---|---|---|---|
+| 32 games, seed 0 | 24.1 s (1.33 g/s) | 15.5 / 14.8 s (2.06–2.16 g/s) | **1.55–1.63×** |
+| 128 games, seed 0 | 35.3 s (3.63 g/s) | 27.5 s (4.65 g/s) | 1.29× |
+| 128 games, seed 1 | 39.3 s (3.26 g/s) | 27.9 s (4.59 g/s) | 1.41× |
+
+The gain shrinks with n_games, as it must: the straggler tail is a fixed
+number of ticks, a larger fraction of small runs. Distribution equivalence
+(256 games/mode, seeds 0+1): made-rate 68.8% vs 69.2% (two-prop z, p=0.78),
+mark margin −0.10 vs −0.24 (Welch, p=0.64), hands/game 11.00 vs 10.99
+(p=0.91) — statistically indistinguishable. Tests: arena+champion suites
+green (111 passed + 3 pre-existing worktree skips; 2 new fast-batching
+tests).
