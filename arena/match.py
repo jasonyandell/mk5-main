@@ -233,6 +233,14 @@ def snapshot_rows(result: MatchResult) -> list[dict]:
     alone: bidding proceeds ``dealer + 1 .. dealer`` (the shaker bids last), so a
     consumer can recover which seats bid BEFORE the declarer — the only bids
     available at the declarer's decision time (jud v0 Step 2 encoding).
+
+    ``plays`` is the hand's complete play history — 28 ``[seat, domino_id]``
+    pairs in play order (jud v1). Every play DECISION in the hand is a prefix
+    of it: at step k the mover is ``plays[k][0]``, the current trick is
+    ``plays[4*(k//4):k]``, and trick winners are implicit (the leader of trick
+    t+1, ``plays[4*(t+1)][0]``, is the winner of trick t). One compact field
+    therefore carries all ~28 per-decision info-states — offense and defense —
+    each sharing the hand's realized-outcome stamp (``bidder_team_pts``).
     """
     return [
         {
@@ -246,6 +254,7 @@ def snapshot_rows(result: MatchResult) -> list[dict]:
             "bids": list(hr.bids),
             "bidder": hr.bidder,
             "bid_value": hr.bid_value,
+            "plays": [list(p) for p in hr.plays],
             "bidder_team_pts": hr.team_points[hr.bidder_team],
             "opp_team_pts": hr.team_points[1 - hr.bidder_team],
             "made": int(hr.made),

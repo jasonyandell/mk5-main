@@ -11,7 +11,7 @@ from arena.play import RandomPlay
 
 _SNAPSHOT_KEYS = {
     "a_team", "game_idx", "hand_idx", "seed", "dealer",
-    "hands", "decl_id", "bids", "bidder", "bid_value",
+    "hands", "decl_id", "bids", "bidder", "bid_value", "plays",
     "bidder_team_pts", "opp_team_pts", "made",
 }
 
@@ -47,6 +47,21 @@ def test_snapshot_rows_shape_and_valid_deal():
         assert 0 <= r["bidder_team_pts"] <= 42
         assert 0 <= r["opp_team_pts"] <= 42
         assert r["made"] in (0, 1)
+        # Play history (jud v1): 28 (seat, domino) pairs covering every domino
+        # exactly once, bidder leads trick 1, and within each trick the seats
+        # rotate clockwise from the trick's leader.
+        plays = r["plays"]
+        assert len(plays) == 28
+        assert sorted(d for _, d in plays) == list(range(28))
+        assert plays[0][0] == r["bidder"]
+        for t in range(7):
+            leader = plays[4 * t][0]
+            assert [p for p, _ in plays[4 * t:4 * t + 4]] == [
+                (leader + i) % 4 for i in range(4)
+            ]
+        # Every play came from the player's own dealt hand.
+        for seat, domino in plays:
+            assert domino in r["hands"][seat]
 
 
 def test_snapshot_outcomes_match_per_hand_and_sum_to_42():
@@ -79,6 +94,29 @@ def test_snapshot_outcomes_match_per_hand_and_sum_to_42():
         # pass-outs, not partial play), so this holds for every completed hand.
         if row["redeals"] == 0:
             assert s["bidder_team_pts"] + s["opp_team_pts"] == 42
+
+
+def test_snapshot_plays_replay_to_recorded_points():
+    """The play history must replay — via resolve_trick — to exactly the
+    stamped outcome: each trick's winner leads the next, and the accumulated
+    team points equal bidder_team_pts / opp_team_pts. This is the contract the
+    jud featurizer's points-so-far reconstruction stands on."""
+    from forge.oracle.tables import resolve_trick
+
+    for s in snapshot_rows(_tiny_result(n_games=4)):
+        pts = [0, 0]
+        for t in range(7):
+            trick = s["plays"][4 * t:4 * t + 4]
+            out = resolve_trick(
+                trick[0][1], tuple(d for _, d in trick), s["decl_id"],
+            )
+            winner = (trick[0][0] + out.winner_offset) % 4
+            if t < 6:
+                assert s["plays"][4 * (t + 1)][0] == winner
+            pts[winner % 2] += out.points
+        assert pts[s["bidder"] % 2] == s["bidder_team_pts"]
+        assert pts[1 - s["bidder"] % 2] == s["opp_team_pts"]
+        assert sum(pts) == 42
 
 
 def test_cli_emit_snapshots_writes_file(tmp_path):

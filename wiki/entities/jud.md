@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: 0bdd4d5
+last_updated: 0d82a97
 status: active
 ---
 
@@ -205,6 +205,27 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
 - **v2** — opponents inside rollouts update belief from actions: signaling gets
   priced, conventions emerge, and the referee gap tells the story with receipts.
 
+### jud v1 — the one organ, built (2026-07-06, `0d82a97`)
+
+The unified value organ exists: `champion/jud_net.py` extends V_realized from
+bid-time to EVERY decision — info-state (own hand + canonical auction + play
+history) → the same 43-bin realized-points categorical, where bid-time is
+play-time with an empty history (one featurization, byte-identical to
+`margin_net`'s at the root — tested). The arena emits play-decision corpora as
+one compact field: each hand's full 28-step play history, every decision a
+prefix, offense and defense rows alike sharing the hand's Monte Carlo label.
+Two consumers ride one net: the v0 ValueBidder unchanged (`jud` spec) and
+`judplay` — greedy depth-1 value-native play (price every legal move's
+post-move info-state, argmax E[pts], defenders minimize), no oracle and no
+world sampling at runtime. Round-0 decomposition vs `net:wp+lens:ev`
+(`champion/evidence/jud_v1/`): combined −6.09, bidder-only −4.08 (the
+winner's-curse round-0 signature, amplified), play-only −5.53 with defense the
+largest channel; floor check `judplay` beats random play +1.80. The head's
+value sharpens with depth (MAE 8.6 → 3.5 root → terminal) — the jud signature.
+What remains of the v1 rung: the self-play loop (v0's recipe, both consumers
+on-policy) and then search above the leaves; the greedy player is the leaf
+evaluator that search will call.
+
 ## Honest status
 
 A direction, a vocabulary, and **v0 built, graded, and now past parity**
@@ -227,7 +248,12 @@ over-bidder); jud v0 is the loop in which the value itself is realized-native, a
 now beats the baseline. The next binding constraint is capacity or mechanism, not
 rounds — which is **v1's cue: ONE net for bid + play** (play-history-conditioned
 `V_realized`, 1-ply argmax-EV play replacing E[Q] n=10 at runtime, then the same
-self-play-loop method on the full stack). In build as of this writing.
+self-play-loop method on the full stack). **v1's machinery is now built**
+(`0d82a97`): one net for every decision, play-decision corpora, the `judplay`
+consumer — at smoke-scale round 0 it loses to the oracle player searchless and
+beats random play, its MAE sharpening root→terminal (the jud signature). The v1
+loop at real corpus scale, and search above the leaves, are where the E[Q]-beating
+edge, if any, lives.
 
 ## Links
 

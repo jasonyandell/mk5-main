@@ -54,6 +54,7 @@ class HandRecord:
     bidder: int
     bid_value: int
     decl_id: int
+    plays: tuple[tuple[int, int], ...]  # full play history, 28 x (seat, domino id)
     team_points: tuple[int, int]  # absolute (team0, team1)
     made: bool
     marks_delta: tuple[int, int]
@@ -187,6 +188,7 @@ class _LiveGame:
             bidder=auction.winner,
             bid_value=auction.high_bid,
             decl_id=auction.decl_id,
+            plays=self.state.play_history,
             team_points=self.state.team_points,
             made=score.made,
             marks_delta=score.marks,
