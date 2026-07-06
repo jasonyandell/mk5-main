@@ -81,6 +81,43 @@ def test_dealer_rotates():
             assert nxt.dealer == (prev.dealer + 1 + nxt.redeals) % 4
 
 
+def _match_kw(**kw):
+    """Fresh policies per call: RandomPlay is stateful (one RNG stream)."""
+    return {
+        "bid_a": HeuristicBidder(), "bid_b": HeuristicBidder(),
+        "play_a": RandomPlay(seed=1), "play_b": RandomPlay(seed=2),
+        "n_games": 8, "cfg": _cfg(), **kw,
+    }
+
+
+def test_fast_batching_pools_halves():
+    """Fast batching preserves everything that is per-game deterministic:
+    game order, pairing structure, deal seeds, and opening auctions. Play
+    diverges (batch composition regroups the policies' RNG streams), so
+    later hands may differ — that is the accepted trade."""
+    exact = run_match(**_match_kw())
+    fast = run_match(**_match_kw(), fast_batching=True)
+    assert [(g.game_idx, g.a_team) for g in fast.games] == \
+           [(g.game_idx, g.a_team) for g in exact.games]
+    for gf, ge in zip(fast.games, exact.games):
+        hf, he = gf.hands[0], ge.hands[0]
+        assert (hf.seed, hf.dealer, hf.bids, hf.bidder, hf.decl_id) == \
+               (he.seed, he.dealer, he.bids, he.bidder, he.decl_id)
+        # completed games with a clean marks ledger
+        assert gf.marks[gf.winner_team] >= 3
+        run = [0, 0]
+        for h in gf.hands:
+            run[0] += h.marks_delta[0]
+            run[1] += h.marks_delta[1]
+        assert tuple(run) == gf.marks
+
+
+def test_fast_batching_deterministic():
+    a = run_match(**_match_kw(), fast_batching=True)
+    b = run_match(**_match_kw(), fast_batching=True)
+    assert a.games == b.games
+
+
 def test_match_summary():
     result = run_match(
         bid_a=HeuristicBidder(), bid_b=HeuristicBidder(),
