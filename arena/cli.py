@@ -10,8 +10,10 @@ Player spec: <bidder>+<play>
               max = rung #31 utility-MAXIMIZING bid so strong hands reach 84)
             | net[:[wp][,pass[<q>]][,max]]   (rung #22 distilled bid-strength net,
               <1ms/hand; same utility/max options as gus)
-            | margin[:[wp][,pass[<q>]]]   (jud v0 #32 value-native bidder: the
-              realized-value head prices contracts; no pmake_scale, no max)
+            | margin[:[wp][,pass[<q>]][,model=<path>]]   (jud v0 #32 value-native
+              bidder: the realized-value head prices contracts; pass baseline uses
+              net:wp's measured make-rate; model= selects a versioned head; no
+              pmake_scale, no max)
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] | random
             (scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter)
@@ -97,26 +99,36 @@ def parse_bidder(
         return GusBidder(pmake_fn=evaluator, utility=utility, maximize="max" in tags)
     if name == "margin":
         # Value-native bidder (jud v0, #32): the realized-value head prices each
-        # contract instead of the double-dummy oracle. Spec: margin[:wp[,pass[<q>]]].
-        # The utility defaults to marks-to-7 WP (value-native pricing wants the
-        # score-conditioned utility), mirroring `net:wp`; there is NO pmake_scale
-        # and NO max — the head is already realized-calibrated and #31 measured
+        # contract instead of the double-dummy oracle.
+        # Spec: margin[:wp][,pass[<q>]][,model=<path>].
+        #   wp        marks-to-7 utility (default; value-native pricing wants the
+        #             score-conditioned utility), mirroring `net:wp`.
+        #   pass[<q>] rung #27-v2 equilibrium-aware pass baseline, P(opp takes)=q
+        #             (default 0.4). pass_make_rate is net:wp's MEASURED offense
+        #             make-rate (0.754, Step-3 A/B) — passing to net:wp correctly
+        #             credits that they make ~75%, not the old 0.55 placeholder.
+        #   model=<p> load a specific margin_net checkpoint (loop-versioned heads).
+        # NO pmake_scale, NO max — the head is realized-calibrated and #31 measured
         # bid-magnitude maximization dead.
         from champion.utility import MarksToSeven
         from champion.value_bidder import ValueBidder, load_margin_net
 
+        NET_WP_MAKE_RATE = 0.754  # measured net:wp offense make-rate (Step-3 A/B)
         tags = [p for p in arg.split(",") if p]
-        margin_model = load_margin_net(device="cpu")  # tiny MLP; CPU is fastest
+        model_path = "champion/margin_net.pt"
         pass_q = 0.0
         for t in tags:
-            if t.startswith("pass"):
+            if t.startswith("model="):
+                model_path = t[len("model="):]
+            elif t.startswith("pass"):
                 pass_q = float(t[4:]) if t[4:] else 0.4
+        margin_model = load_margin_net(model_path, device="cpu")  # tiny MLP; CPU fastest
         if pass_q > 0.0:
-            utility = MarksToSeven(pass_q_opp=pass_q, pass_make_rate=0.55)
+            utility = MarksToSeven(pass_q_opp=pass_q, pass_make_rate=NET_WP_MAKE_RATE)
         else:
             utility = MarksToSeven()
         bidder = ValueBidder(margin_model, utility)
-        print(f"Value bidder: {bidder}", flush=True)
+        print(f"Value bidder: {bidder} (model={model_path})", flush=True)
         return bidder
     if name == "belief":
         # Belief-conditioned bidder (rung #26 keystone): the hypothetical
