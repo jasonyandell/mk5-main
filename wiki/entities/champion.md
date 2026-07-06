@@ -2,7 +2,7 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: local-2026-06-14
+last_updated: 4080e07
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
@@ -124,6 +124,29 @@ rather than reweighting it after, and the precise solve / oracle /
 which now also carries the v0 engineering first cut (value-native bidder over a
 V_realized head; 2026-07-05) and the [[rank-vs-price]] mechanism for why the
 value-native move is load-bearing at the auction specifically.
+
+**Rung #32 — jud v0, the value-native bidder — built and graded (2026-07-06,
+[[w42-jud-v0]], `4080e07`).** One added head: `V_realized`
+(`champion/margin_net.py`) prices contracts from realized 4-seat self-play
+outcomes instead of the double-dummy oracle; the bidder (`champion/value_bidder.py`,
+CLI `margin:wp`) reads tail mass at the hypothetical-auction root through
+`MarksToSeven`; play stays `lens:ev`; `pmake_scale` retires. Graded against three
+registered predictions: **calibration PASS** (ECE 0.046, 6× closer to realized than
+oracle), **round-0 parity MISS** (−1.44, a legible over-bidder — wins points, loses
+marks, via a winner's-curse-on-selection channel independent of double-dummy), and
+**self-play loop PASS** — 4 rounds carry the margin −1.44 → −0.31 → +0.24 → +0.22
+(CI includes zero from round 2), reaching **statistical parity** with `net:wp`
+(−0.07 [−0.66, +0.49] at the canonical seed) while winning +7 points/hand. The
+#26 over-bidder dissolves the principled way (realized-outcome pricing, no tuned
+knob), but the loop converges *at* parity, not past it — offense share plateaus
+~60–67%. **The champion's bidder stays `net:wp` for now**; `margin:wp` is its
+value-native equal on marks and its superior on legibility (its price is backed by
+realized cash). Two methodological findings ride along: coverage anchoring beats
+single-variable recipe purity (the recipe fork), and the `MarksToSeven` pass
+baseline is a denial-bidding lever that makes over-bidding worse, not better (the
+A2 sign-catch, credited to the value-bidder subagent). The parity-breaking edge, if
+any, is v1's — value at the leaves of shallow belief-state search in play and
+defense.
 
 ## Build ladder
 

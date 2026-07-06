@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: local-2026-07-05
+last_updated: 4080e07
 status: active
 ---
 
@@ -171,16 +171,27 @@ static ancestor). When later rungs put the model inside the rollouts, this gap
 narrates conventions emerging: signaling is exactly what moves realized value
 toward double-dummy.
 
-### Registered predictions (falsifiable)
+### Registered predictions (falsifiable) — GRADED
+
+Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
 
 1. The v0 bidder reaches ≥ parity with `net:wp`: the −2.2 residual is optimism,
    and `net:wp` is a frozen, belief-blind, score-blind slice of V_realized — the
-   design subsumes it.
+   design subsumes it. **MISS at round 0** (−1.44 [−1.88, −0.95], a legible
+   over-bidder that wins points and loses marks) → **PASS after the loop**
+   (prediction 3): the final head reaches statistical parity (−0.07 [−0.66, +0.49]
+   at the Step-3 seed). Parity, not dominance.
 2. V_realized's root exceedance curve matches `optimism_gap.json`'s realized
-   curve (0.52 @ 30 falling to ~0.19 @ 41), not the oracle's.
+   curve (0.52 @ 30 falling to ~0.19 @ 41), not the oracle's. **PASS** — ECE 0.046,
+   max |Δ| ≤ 0.029 over 13 thresholds, 6× closer to realized than to oracle, sits
+   0.09–0.13 below the double-dummy oracle.
 3. The value-native loop's fixed point is not an over-bidder: auction escalation
    was value–policy inconsistency, which is impossible by construction once the
-   only deposits into V are cleared outcomes.
+   only deposits into V are cleared outcomes. **PASS** — 4 rounds carry the margin
+   −1.44 → −0.31 → +0.24 → +0.24 → +0.22 (CI includes zero from round 2); made-rate
+   49.9% → 60–64%; the notrump artifact dies in one on-policy round. The residual
+   channel it exposed: optimism returns through *selection* (winner's curse) as
+   well as the evaluator, and the loop is what closes it.
 
 ### The ladder past v0
 
@@ -192,14 +203,24 @@ toward double-dummy.
 
 ## Honest status
 
-A direction, a vocabulary, and now a first-cut engineering spec (v0, 2026-07-05,
-GitHub issue filed). Not built. The [[champion]] #26 loop reached a fixed point
-of a *crippled* version — belief converged while the value stayed
-perfect-information, yielding a calibrated over-bidder. Jud names the loop in
-which the value itself is belief-native.
+A direction, a vocabulary, and now **v0 built and graded** ([[w42-jud-v0]],
+`4080e07`): the value-native bidder is real, calibrated (P2), and its self-play
+loop dissolves the #26 over-bidder the principled way (P3), reaching **statistical
+parity** with the hand-tuned `net:wp` baseline while winning points. It does not
+yet beat it — the loop converges *at* parity, offense share plateauing ~60–67%
+rather than the predicted selective 50–55%. The round-0 miss (P1) exposed a second
+optimism channel — the winner's curse on *selection*, independent of the oracle's
+double-dummy assumption — which the loop closes the same way it closes the
+evaluator channel. The [[champion]] #26 loop had reached a fixed point of a
+*crippled* version (belief converged while the value stayed perfect-information,
+a calibrated over-bidder); jud v0 is the loop in which the value itself is
+realized-native, and it lands. v1 (value at search leaves in play/defense) is
+where the parity-breaking edge, if any, lives.
 
 ## Links
 
+- [[w42-jud-v0]] — v0 built and graded (P2 pass / P1 miss→loop-recovered / P3 pass);
+  the recipe-fork and A2 denial-bidding findings
 - [[champion]] — the player-and-teacher this is the core for; the ladder that built
   the pieces
 - [[champion-design-review]] — Fable's verbatim forward design (confirmed byte-exact vs the transcript) + a graded predictions ledger; the two load-bearing caveats

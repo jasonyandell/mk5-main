@@ -3366,3 +3366,48 @@ gate relaxed from byte-identity to distribution-level equivalence by user
 decision) is in flight as of 2026-07-06.
 
 **Questions opened:** none new.
+
+## [2026-07-06 | 4080e07 | jud v0 built and graded — value-native bidder reaches net:wp parity]
+
+**Touched pages:** [[w42-jud-v0]] [[jud]] [[champion]] [[rank-vs-price]] [[index]] [[log]]
+
+**Added:** [[w42-jud-v0]] — the closing write-up for jud's first buildable slice
+(Champion rung #32, GitHub #32). A value-native bidder prices contracts from a head
+(`V_realized`/`champion/margin_net.py`) trained on **realized** 4-seat self-play
+outcomes instead of the double-dummy oracle; the bidder (`champion/value_bidder.py`,
+CLI `margin:wp`) reads tail mass at the hypothetical-auction root through
+`MarksToSeven`; play stays `lens:ev`; `pmake_scale` retires. Graded against the three
+registered predictions: **P2 calibration PASS** (ECE 0.046, max |Δ| ≤ 0.029 over 13
+thresholds, 6× closer to realized than to oracle, sits 0.09–0.13 below double-dummy);
+**P1 round-0 parity MISS** (−1.44 [−1.88, −0.95] — a legible over-bidder that wins
+points (+5.66/hand) and loses marks, via a winner's-curse-on-*selection* channel plus a
+notrump declaration-level artifact, both independent of double-dummy optimism); **P3
+self-play loop PASS** (4 rounds carry the margin −1.44 → −0.31 → +0.24 → +0.24 → +0.22,
+CI includes zero from round 2; made-rate 49.9% → 60–64%; notrump artifact dies in one
+on-policy round, share 47.5% → 1.5%). Canonical same-seed check: −0.07 [−0.66, +0.49],
+**statistical parity** with `net:wp` while winning +7 points/hand. Two methodological
+findings: coverage anchoring beats single-variable recipe purity (the recipe fork —
+dropping net:wp self-play chunks regressed round 1 to −2.18), and the `MarksToSeven`
+pass baseline is a denial-bidding lever that makes over-bidding worse (the A2 sign-catch,
+credited to the value-bidder subagent). Evidence at `4080e07`
+(`champion/evidence/jud_v0/`). Definitive 512-game same-seed A/B: **−0.01/game
+[−0.28, +0.25]**, 258/512 — dead parity (`ab_definitive_512_r4_summary.json`).
+
+**Updated:** [[jud]] — honest status flipped from "not built" to "v0 built and graded";
+predictions ledger graded in place (P2 pass / P1 miss→loop-recovered / P3 pass); v1
+named as the parity-breaking frontier. [[champion]] — self-consistency section carries
+the rung #32 outcome; champion's bidder stays `net:wp` for now (`margin:wp` its
+value-native equal on marks, superior on legibility). [[rank-vs-price]] — leg 3
+(the pricing mechanism's full test) confirmed at parity, with the winner's-curse-on-
+selection rider the mechanism did not originally name.
+
+**Frontier shift:** the value-native pricing path is validated — realized-outcome pricing
+dissolves the #26 over-bidder without a tuned knob, and reaches the best hand-tuned
+baseline. But it converges *at* parity, not past it (offense share plateaus ~60–67% vs
+the predicted selective 50–55%). Whether the residual is the [[pimc]] price of hidden
+information or further calibration headroom is v1's question — value at the leaves of
+shallow belief-state search in play and defense.
+
+**Questions opened:** what breaks the parity plateau (v1 search shape vs opponent
+modeling); reading the referee gap (oracle EV − V_realized EV) as a live convergence
+instrument rather than a static meter.
