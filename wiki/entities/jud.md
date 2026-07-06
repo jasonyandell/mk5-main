@@ -44,7 +44,11 @@ so they stop being conflated.
   is the correct bridge. Its limit: it draws worlds by *consistency only*, conditions
   on no belief, and does not learn or grow.
 - **the blob** — eq's per-action distribution. Real, but *melted*: smeared across
-  every consistent world at equal weight.
+  every consistent world at equal weight. The melted blob IS [[candlewax]] — the
+  Burl-era name for the same multi-peaked object, measured at founding (2026-01-06)
+  and carrying the project's central consumption question ("distill it — for what
+  purpose?"); see that page's concordance and "the wall, stated precisely."
+
 - **belief** — a learned, conditioned weighting over worlds, P(world | all evidence).
   It exists today (the [[gus]] belief head; auction-conditioned at
   [[w42-champion-auction-belief]], #24) but only as a *post-hoc reweight*, which

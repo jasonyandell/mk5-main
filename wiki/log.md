@@ -3520,3 +3520,26 @@ player is unchanged. v2's cue is concrete: a bigger leaf on per-move targets (E[
 distilled as bootstrap) plus opponents-in-rollout.
 
 **Questions opened:** none new — v1's play wall is named, and v2's target follows from it.
+
+## [2026-07-06 | working-tree | the wall, stated precisely — distill-for-what + candlewax concordance]
+
+**Touched pages:** [[candlewax]] [[jud]] [[w42-lens-v1-utility-head-to-head]]
+
+**Updated:** [[candlewax]] — two new sections. (1) *Concordance*: candlewax ≡ bimodal/
+multimodal PDF ≡ jud's "melted blob" ≡ mixed-mode geometry, with the founding-era
+provenance (report/11, 2026-01-06: −42→+40 swings, 11% stable hands, 53% within-hand
+variance; the 85-bin discs rendered 2026-01-24 — ~3.5 months before the name). (2) *The
+wall, stated precisely* — Jason, verbatim: "I saw eq, I said sure I could distill it.
+but for what purpose? no idea what to do with distilled melted candlewax." Distillation
+was never the wall; CONSUMPTION is. Every era is a successive consumer hypothesis
+(LLM-as-reasoner → tool surface → Lens utilities → rank-vs-price → jud), and any
+"distill X" proposal must first name the consumer and the licensed collapse.
+[[jud]] — the blob entry now names the identity with [[candlewax]]. [[w42-lens-v1]] —
+the EV-wins verdict now carries the aggregate-vs-per-decision reconciliation note
+against [[candlewax]].
+
+**Context:** first surgical edits from the wiki-overhaul mining (5 scout reports in
+scratch/wiki-mine/); the full charter (trails, founding-era backfill, page zero) is
+pending approval.
+
+**Questions opened:** none new.
