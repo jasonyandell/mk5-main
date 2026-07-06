@@ -204,5 +204,198 @@
       "n_notrump": 73,
       "n_mine": 973
     }
+  },
+  {
+    "round": 5,
+    "head": "champion/margin_net_r5.pt",
+    "use_pass": false,
+    "ab": {
+      "a_wins": 143,
+      "n_games": 256,
+      "mean_mark_margin": 0.117,
+      "ci_lo": -0.297,
+      "ci_hi": 0.52,
+      "ci_excludes_zero": 0,
+      "a_offense_share": 0.639,
+      "a_made_rate": 0.6075,
+      "a_mean_bid": 30.72,
+      "b_made_rate": 0.6761,
+      "point_margin": 5.073,
+      "bid_hist": {
+        "30": 1173,
+        "31": 1448,
+        "32": 192,
+        "33": 16,
+        "34": 1,
+        "84": 1
+      },
+      "decl_hist": {
+        "blanks": 482,
+        "fives": 479,
+        "fours": 423,
+        "ones": 361,
+        "twos": 342,
+        "threes": 336,
+        "sixes": 252,
+        "notrump": 156
+      }
+    },
+    "eval": {
+      "max_pred_emp_gap": 0.0231,
+      "ece_p30": 0.0391,
+      "mae_mean_pts": 7.008,
+      "n_test": 1607
+    },
+    "notrump": {
+      "notrump_share": 0.0669,
+      "notrump_gap30": 0.0376,
+      "n_notrump": 121,
+      "n_mine": 1809
+    }
+  },
+  {
+    "round": 6,
+    "head": "champion/margin_net_r6.pt",
+    "use_pass": false,
+    "ab": {
+      "a_wins": 128,
+      "n_games": 256,
+      "mean_mark_margin": 0.023,
+      "ci_lo": -0.367,
+      "ci_hi": 0.406,
+      "ci_excludes_zero": 0,
+      "a_offense_share": 0.6384,
+      "a_made_rate": 0.6313,
+      "a_mean_bid": 30.72,
+      "b_made_rate": 0.7288,
+      "point_margin": 4.974,
+      "bid_hist": {
+        "30": 1139,
+        "31": 1483,
+        "32": 243,
+        "33": 10,
+        "34": 1
+      },
+      "decl_hist": {
+        "fours": 567,
+        "fives": 465,
+        "ones": 374,
+        "sixes": 337,
+        "blanks": 324,
+        "threes": 314,
+        "twos": 313,
+        "notrump": 181,
+        "doubles-trump": 1
+      }
+    },
+    "eval": {
+      "max_pred_emp_gap": 0.0213,
+      "ece_p30": 0.0274,
+      "mae_mean_pts": 7.047,
+      "n_test": 2005
+    },
+    "notrump": {
+      "notrump_share": 0.0741,
+      "notrump_gap30": 0.0103,
+      "n_notrump": 136,
+      "n_mine": 1836
+    }
+  },
+  {
+    "round": 7,
+    "head": "champion/margin_net_r7.pt",
+    "use_pass": false,
+    "ab": {
+      "a_wins": 138,
+      "n_games": 256,
+      "mean_mark_margin": 0.402,
+      "ci_lo": 0.016,
+      "ci_hi": 0.801,
+      "ci_excludes_zero": 1,
+      "a_offense_share": 0.582,
+      "a_made_rate": 0.6494,
+      "a_mean_bid": 30.63,
+      "b_made_rate": 0.6647,
+      "point_margin": 3.73,
+      "bid_hist": {
+        "30": 1388,
+        "31": 1271,
+        "32": 168,
+        "33": 18,
+        "34": 2
+      },
+      "decl_hist": {
+        "fours": 509,
+        "fives": 480,
+        "ones": 438,
+        "twos": 395,
+        "blanks": 326,
+        "sixes": 305,
+        "threes": 230,
+        "notrump": 162,
+        "doubles-trump": 2
+      }
+    },
+    "eval": {
+      "max_pred_emp_gap": 0.0251,
+      "ece_p30": 0.0179,
+      "mae_mean_pts": 6.944,
+      "n_test": 2448
+    },
+    "notrump": {
+      "notrump_share": 0.0688,
+      "notrump_gap30": -0.0112,
+      "n_notrump": 114,
+      "n_mine": 1657
+    }
+  },
+  {
+    "round": 8,
+    "head": "champion/margin_net_r8.pt",
+    "use_pass": false,
+    "ab": {
+      "a_wins": 137,
+      "n_games": 256,
+      "mean_mark_margin": 0.32,
+      "ci_lo": -0.098,
+      "ci_hi": 0.734,
+      "ci_excludes_zero": 0,
+      "a_offense_share": 0.6439,
+      "a_made_rate": 0.6171,
+      "a_mean_bid": 30.74,
+      "b_made_rate": 0.6703,
+      "point_margin": 5.715,
+      "bid_hist": {
+        "30": 1114,
+        "31": 1460,
+        "32": 226,
+        "33": 8,
+        "34": 2,
+        "84": 1
+      },
+      "decl_hist": {
+        "fours": 568,
+        "fives": 416,
+        "blanks": 383,
+        "ones": 381,
+        "twos": 356,
+        "threes": 312,
+        "sixes": 270,
+        "notrump": 124,
+        "doubles-trump": 1
+      }
+    },
+    "eval": {
+      "max_pred_emp_gap": 0.0291,
+      "ece_p30": 0.0336,
+      "mae_mean_pts": 6.851,
+      "n_test": 2843
+    },
+    "notrump": {
+      "notrump_share": 0.047,
+      "notrump_gap30": 0.0059,
+      "n_notrump": 85,
+      "n_mine": 1810
+    }
   }
 ]
