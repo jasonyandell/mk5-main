@@ -1,0 +1,48 @@
+{
+  "round": 10,
+  "head": "champion/margin_net_r10.pt",
+  "use_pass": false,
+  "ab": {
+    "a_wins": 139,
+    "n_games": 256,
+    "mean_mark_margin": 0.305,
+    "ci_lo": -0.125,
+    "ci_hi": 0.738,
+    "ci_excludes_zero": 0,
+    "a_offense_share": 0.6449,
+    "a_made_rate": 0.6316,
+    "a_mean_bid": 30.67,
+    "b_made_rate": 0.7,
+    "point_margin": 5.864,
+    "bid_hist": {
+      "30": 1230,
+      "31": 1347,
+      "32": 224,
+      "33": 14,
+      "34": 1
+    },
+    "decl_hist": {
+      "fours": 484,
+      "fives": 424,
+      "ones": 414,
+      "twos": 387,
+      "blanks": 353,
+      "threes": 298,
+      "sixes": 277,
+      "notrump": 178,
+      "doubles-trump": 1
+    }
+  },
+  "eval": {
+    "max_pred_emp_gap": 0.0186,
+    "ece_p30": 0.0224,
+    "mae_mean_pts": 6.799,
+    "n_test": 3686
+  },
+  "notrump": {
+    "notrump_share": 0.0716,
+    "notrump_gap30": 0.0127,
+    "n_notrump": 130,
+    "n_mine": 1816
+  }
+}

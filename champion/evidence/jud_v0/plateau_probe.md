@@ -58,3 +58,13 @@ sequence (+0.12, +0.02, +0.40, +0.32) looks like noise around a fixed edge, not 
 head_12's 512-game same-seed measurements land in [+0.2, +0.6], indistinguishable from
 head_8. Falsifier: head_12 ≥ +0.7 (data still the binding constraint → keep scaling) or
 ≤ +0.1 (r7/r8 were a transient — overfitting to the opponent region).
+
+## Extension VERDICT (2026-07-06 ~02:15): SATURATION CONFIRMED
+
+Rounds 9–12 (256-game A/Bs): +0.16, +0.30, +0.31, +0.42. head_12 definitive:
+seed 7000000: **+0.21 [−0.08, +0.47]**; seed 9000000: **+0.37 [+0.09, +0.65]** — both
+inside the registered [+0.2, +0.6] saturation band, statistically indistinguishable from
+head_8 (+0.38/+0.42). The data-scaling curve flattens at **≈ +0.3–0.4 marks/game** over
+net:wp at this net capacity (tiny MLP) and recipe. head_8 remains the best-measured head
+(both 512-game CIs exclude zero). Next binding constraint is capacity or mechanism, not
+rounds — which is jud v1's cue (one net, bid + play, in build as of this writing).
