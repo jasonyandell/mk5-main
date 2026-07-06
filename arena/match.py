@@ -190,20 +190,38 @@ def game_rows(result: MatchResult) -> list[dict]:
 
 
 def snapshot_rows(result: MatchResult) -> list[dict]:
-    """Per-hand deal+auction snapshots for the #26 belief-corpus bridge.
+    """Per-hand deal+auction snapshots for the #26 belief-corpus bridge and
+    the jud v0 realized-value head (#32).
 
     Each row carries everything needed to regenerate an oracle E[Q] belief
     record from a REAL auction: the seat-ordered deal, the winning declaration,
     the full per-seat bid vector, the winning seat, and the contract value.
     Hand layout matches GameRecordGPU.hands / deal_from_seed (4 x 7 ids).
+
+    It also carries the hand's REALIZED outcome — points captured by the
+    declaring team (``bidder_team_pts``) vs the opponents (``opp_team_pts``),
+    and whether the contract was ``made`` — plus the ``a_team`` / ``game_idx`` /
+    ``hand_idx`` / ``seed`` join keys back to per_hand.csv. ``team_points`` is
+    absolute ``(team0, team1)`` and the bidder's absolute team is ``bidder %
+    2``, so the declaring team's share is ``team_points[bidder % 2]`` regardless
+    of which half rotated A onto which team. The two paired halves replay the
+    same deal seeds, so ``a_team`` is part of the key: ``(a_team, game_idx,
+    hand_idx)`` is what uniquely identifies a hand across the whole match.
     """
     return [
         {
+            "a_team": hr.a_team,
+            "game_idx": hr.game_idx,
+            "hand_idx": hr.hand_idx,
+            "seed": hr.seed,
             "hands": [list(h) for h in hr.hands],
             "decl_id": hr.decl_id,
             "bids": list(hr.bids),
             "bidder": hr.bidder,
             "bid_value": hr.bid_value,
+            "bidder_team_pts": hr.team_points[hr.bidder_team],
+            "opp_team_pts": hr.team_points[1 - hr.bidder_team],
+            "made": int(hr.made),
         }
         for g in result.games for hr in g.hands
     ]
