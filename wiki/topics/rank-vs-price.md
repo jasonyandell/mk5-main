@@ -2,7 +2,7 @@
 title: Rank vs price — why PIMC's flaw bites the auction, not the play
 kind: topic
 first_seen: local-2026-07-05
-last_updated: 0bdd4d5
+last_updated: 3ac03de
 status: active
 ---
 
@@ -62,6 +62,26 @@ measurement. Its legs:
    happens to over-rate), and on-policy data volume is what closes that second
    channel (the plateau probe showed it was data-limited, not structural).
 
+## The other half — play consumes rankings, and the ranking gap survives
+
+[[w42-jud-v1]] tested the play half of the same law by replacing `lens:ev`'s
+oracle-per-move ranking with a value-native player over the same `V_realized`
+head. The result confirms the framing from the losing side: **greedy 1-ply value
+play is a bad *ranker* even when the head is a fine *evaluator*.** The head prices
+positions honestly (its MAE sharpens root→terminal), but reading it greedily
+argmaxes over post-*move* values that share one hand-level Monte-Carlo label, so the
+ranking is noisy — the full stack loses −4.37 at round 0 and the self-play loop moves
+play quality **zero** (unlike the bidder it dissolved). What *does* recover the play
+channel is turning the sharp post-*trick* leaf into a ranking via search: `judsearch`
+(belief-lift worlds, current-trick rollout, `V_realized` leaves, **no oracle
+anywhere**) plays −1.16 where greedy scored −3.44 — two-thirds of the gap, without any
+oracle. But it stops short of `lens:ev`: **the oracle's rankings are still unbeaten**,
+and neither more worlds nor a better-calibrated head closes the rest. So the law now
+reads with both halves measured: prices went value-native and *won* (the bidder beats
+the hand-tuned baseline), while a realized-outcome leaf inside search recovered *most,
+not all* of the ranking gap — the per-move discrimination a perfect-information oracle
+gives is the residual play edge value-native pricing does not touch.
+
 ## Corollary — the calibration law for evaluators
 
 Any evaluator whose output is consumed as a price (bid thresholds, pass/play
@@ -77,6 +97,7 @@ rankings (play-phase argmax) tolerate optimism that price-consumers cannot.
 - [[jud]] — the design that makes prices honest (value-native pricing path)
 - [[w42-jud-v0]] — the experiment that validated the mechanism at parity
 - [[w42-plateau-probe]] — the follow-on that carried the value-native price past `net:wp`
+- [[w42-jud-v1]] — the play half: greedy value play is a bad ranker; search recovers most (not all) of the gap oracle-free; the oracle's rankings stay unbeaten
 - [[w42-champion-selfplay-fixed-point]] — the over-bidder this explains
 - [[belief-conditioned-self-play]] — the "all about bidding" fragment this resolves
 - [[arena]] · [[champion]] — where the measurements live

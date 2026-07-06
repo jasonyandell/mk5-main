@@ -2,7 +2,7 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: 0bdd4d5
+last_updated: 3ac03de
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
@@ -153,9 +153,27 @@ best-measured bidder is `margin:wp`(head_8) at `champion/margin_net_r8.pt` and t
 edge is capacity or mechanism. Two methodological findings ride along from v0: coverage
 anchoring beats single-variable recipe purity (the recipe fork), and the `MarksToSeven`
 pass baseline is a denial-bidding lever that makes over-bidding worse, not better (the
-A2 sign-catch, credited to the value-bidder subagent). The parity-breaking edge is now
-in hand; the next frontier is v1 — one net for bid + play, value at the leaves of
-shallow belief-state search.
+A2 sign-catch, credited to the value-bidder subagent).
+
+**Current best player: `margin:wp`(head_8) + `lens:ev`.** This value-native bidder over
+oracle play beats the previous champion `net:wp+lens:ev` by **+0.38 [+0.09, +0.67]** and
+**+0.42 [+0.12, +0.72]** (512 games at each of two reserved seeds) — the first learned
+bidder to beat the hand-tuned one.
+
+**Rung #33 — jud v1, the one organ for bid + play — built and graded
+([[w42-jud-v1]], 2026-07-06, `3ac03de`).** One net (`champion/jud_net.py`) prices every
+decision from the same realized-margin distribution; the v0 `ValueBidder` consumes it with
+zero adapter and `judplay` replaces `lens:ev` with greedy 1-ply value play, oracle-free at
+runtime. Six registered predictions: the unification **holds at the auction** (the bidder
+survives the fold — it beats v0's own round-0 bidder) and is **mechanism-limited at play**.
+Greedy value play is a bad move-ranker (the loop moves it zero, JP3 falsified); `judsearch`
+— belief-lift worlds, current-trick rollout, V_realized leaves, no oracle anywhere —
+recovers two-thirds of the gap (−3.44 → −1.16, **JS1 PASS +2.28**) but not parity, and
+neither more worlds (JS2) nor a better-calibrated head (JS3 falsified) closes the rest. The
+wall is per-move discrimination: a 470k MLP on hand-level Monte-Carlo labels cannot out-rank
+E[Q] n=10's per-move oracle. The stack reached **−1.43 from −4.37 oracle-free in one night**;
+the current best player is unchanged, and v2's cue is a bigger leaf on per-move targets
+(E[Q] distilled as bootstrap) plus opponents-in-rollout.
 
 ## Build ladder
 
@@ -295,3 +313,4 @@ the pedagogy chain produces real receipts.
 - [[book-strategy-player]] — plan algebra; natural fit is contract plans at the auction, not play-phase overlay
 - [[w42-book-claim-synthesis-and-ai-directions]] — the single-decision blind spot that started this thread
 - [[w42-jud-v0]] · [[w42-plateau-probe]] — rung #32: the value-native bidder, and the plateau probe that carried it past `net:wp`
+- [[w42-jud-v1]] — rung #33: the one organ for bid + play; unification holds at the auction, mechanism-limited at play; current best player stays `margin:wp`(head_8)+`lens:ev`

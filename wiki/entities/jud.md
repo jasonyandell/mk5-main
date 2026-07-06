@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: 0d82a97
+last_updated: 3ac03de
 status: active
 ---
 
@@ -196,35 +196,70 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
 
 ### The ladder past v0
 
-- **v1** — one net for bid AND play: play-history-conditioned V_realized with 1-ply
-  argmax-EV play replacing E[Q] n=10 at runtime, then the same self-play-loop method
-  on the full stack. The [[w42-plateau-probe]] saturation result re-locates the
-  frontier here — data has run its course at v0's capacity, so the next edge is
-  capacity/mechanism. Defense is where information-set value concentrates
-  (Student-of-Games shape). In build as of this writing.
-- **v2** — opponents inside rollouts update belief from actions: signaling gets
-  priced, conventions emerge, and the referee gap tells the story with receipts.
+- **v1 — built and graded ([[w42-jud-v1]], `3ac03de`).** One net for bid AND play:
+  play-history-conditioned V_realized, greedy 1-ply play, then the loop and then search
+  above the leaves. The bidding side validated the unification; the play side hit the
+  per-move-discrimination wall (greedy is mechanism-limited; search recovers 2/3 of the
+  gap but not parity; more worlds and better calibration add nothing). The stack went
+  −4.37 → −1.43 oracle-free and named v2's target.
+- **v2** — the play wall's two named cues: **bigger leaf + per-move targets** (distill
+  E[Q] as an auxiliary policy/value signal — the solve-as-bootstrap law, oracle as
+  bootstrap not copy) so the leaf can *discriminate* moves, not just *calibrate*
+  positions; and **opponents inside rollouts** updating belief from actions, so
+  signaling gets priced, conventions emerge, and the referee gap tells the story with
+  receipts.
 
-### jud v1 — the one organ, built (2026-07-06, `0d82a97`)
+### jud v1 — the one organ, bid and play, built + graded ([[w42-jud-v1]], `3ac03de`)
 
-The unified value organ exists: `champion/jud_net.py` extends V_realized from
-bid-time to EVERY decision — info-state (own hand + canonical auction + play
-history) → the same 43-bin realized-points categorical, where bid-time is
-play-time with an empty history (one featurization, byte-identical to
-`margin_net`'s at the root — tested). The arena emits play-decision corpora as
-one compact field: each hand's full 28-step play history, every decision a
-prefix, offense and defense rows alike sharing the hand's Monte Carlo label.
-Two consumers ride one net: the v0 ValueBidder unchanged (`jud` spec) and
-`judplay` — greedy depth-1 value-native play (price every legal move's
-post-move info-state, argmax E[pts], defenders minimize), no oracle and no
-world sampling at runtime. Round-0 decomposition vs `net:wp+lens:ev`
-(`champion/evidence/jud_v1/`): combined −6.09, bidder-only −4.08 (the
-winner's-curse round-0 signature, amplified), play-only −5.53 with defense the
-largest channel; floor check `judplay` beats random play +1.80. The head's
-value sharpens with depth (MAE 8.6 → 3.5 root → terminal) — the jud signature.
-What remains of the v1 rung: the self-play loop (v0's recipe, both consumers
-on-policy) and then search above the leaves; the greedy player is the leaf
-evaluator that search will call.
+The unified value organ exists and is graded: `champion/jud_net.py` extends
+V_realized from bid-time to EVERY decision — info-state (own hand + canonical
+auction + play history) → the same 43-bin realized-points categorical, where
+bid-time is play-time with an empty history (one featurization, byte-identical
+to `margin_net`'s at the root — tested). Two consumers ride one net: the v0
+ValueBidder unchanged (`jud` spec) and `judplay` — greedy depth-1 value-native
+play (price every legal move's post-move info-state, argmax E[pts], defenders
+minimize), oracle-free and world-sample-free at runtime. The head's value
+sharpens with depth (MAE 8.6 → 3.5 root → terminal) — the jud signature.
+
+Six registered predictions ([[w42-jud-v1]], GitHub #33) settle the rung:
+**the unification holds at the auction and is mechanism-limited at play.**
+
+- **Bidding validates the unification.** The unified encoding beats v0's own
+  round-0 bidder at round 0 (JP2), and jud r4's bidding matures to −0.27 vs
+  `net:wp` *behind `lens:ev` play*. The value-native move survives being
+  folded into the one organ.
+- **Greedy play is a bad ranker.** The full stack loses −4.37 at round 0 (JP1,
+  a play-channel loss — points negative, unlike v0's over-bidder), and the
+  self-play loop moves play quality **zero** (JP3 falsified: judplay r0 −3.35
+  vs r4 −3.44 with bidding fixed). All full-stack movement was the bidder
+  adapting to its own weak play. 1-ply greedy value play over a hand-level-MC
+  head is mechanism-limited: 28 decisions share one label, against E[Q] n=10's
+  per-move oracle evaluation.
+- **Search recovers most of the gap.** `judsearch` (belief-lift worlds N=10,
+  current-trick rollout with the head playing every seat info-honestly,
+  V_realized leaves, **no oracle anywhere**) plays −1.16 where greedy judplay
+  scored −3.44 on identical deals — **JS1 PASS, +2.28.** The leaf was fine; the
+  greedy consumer was the bottleneck. More worlds (JS2, +0.11) and a
+  better-calibrated head (JS3, best test CE of the night, zero play gain) added
+  nothing: the wall is per-move discrimination, not worlds or data. Full stack
+  bottomed at −1.43 — from −4.37 in one night, oracle-free — never at parity.
+
+The v1 stack is not the champion (that stays `margin:wp`(head_8)+`lens:ev`,
+[[champion]]); it is the unification proven at the auction and the play wall
+named with receipts. The greedy player is the leaf evaluator search calls, and
+search is what makes the sharp post-trick leaf into a ranking.
+
+### The policy-conditional pricing law (jud v1, new to the vocabulary)
+
+`V_realized` prices honestly **only for the policy that generated its corpus.**
+jud r4's bidding reads −0.27 with `lens:ev` play behind it, but its prices are
+calibrated to its own weak play (offense 49.7% vs head_8's 64%); pair the head
+with a *better* player and its prices go stale-pessimistic. The one organ
+prices honestly *for itself*, not in the abstract — so a stack's consumers
+cannot be mixed and matched, and a value head must be retrained whenever the
+policy it prices for changes. This is the realized-outcome analogue of the
+self-consistency requirement: a price is only as honest as the policy it was
+trained against.
 
 ## Honest status
 
@@ -246,17 +281,29 @@ already used. The [[champion]] #26 loop had reached a fixed point of a *crippled
 version (belief converged while the value stayed perfect-information, a calibrated
 over-bidder); jud v0 is the loop in which the value itself is realized-native, and it
 now beats the baseline. The next binding constraint is capacity or mechanism, not
-rounds — which is **v1's cue: ONE net for bid + play** (play-history-conditioned
+rounds — which was **v1's cue: ONE net for bid + play** (play-history-conditioned
 `V_realized`, 1-ply argmax-EV play replacing E[Q] n=10 at runtime, then the same
-self-play-loop method on the full stack). **v1's machinery is now built**
-(`0d82a97`): one net for every decision, play-decision corpora, the `judplay`
-consumer — at smoke-scale round 0 it loses to the oracle player searchless and
-beats random play, its MAE sharpening root→terminal (the jud signature). The v1
-loop at real corpus scale, and search above the leaves, are where the E[Q]-beating
-edge, if any, lives.
+self-play-loop method on the full stack). **v1 is now built AND graded**
+([[w42-jud-v1]], `3ac03de`): one net for every decision, the loop, and search
+above the leaves, all registered before measurement. The verdict: the
+unification holds at the auction (the bidder survives the fold intact — it beats
+v0's own round-0 bidder) and is **mechanism-limited at play** — greedy 1-ply
+value play is a bad move-ranker (the loop moves it zero), search recovers
+two-thirds of the gap (−3.44 → −1.16, JS1 PASS +2.28) but not parity, and
+neither more worlds nor a better-calibrated head closes the rest. The wall is
+per-move discrimination: a 470k MLP on hand-level Monte-Carlo labels cannot
+out-rank E[Q] n=10's per-move oracle. So the E[Q]-beating edge did **not** live
+in a searchless value net at this capacity; the stack reached −1.43 from −4.37
+oracle-free in one night, and the current best player stays the value-native
+bidder over oracle play (`margin:wp`(head_8)+`lens:ev`, [[champion]]). v2's cue
+is now concrete: a bigger leaf trained on **per-move** targets (E[Q] distilled
+as a bootstrap, the solve-as-bootstrap law) plus opponents-in-rollout.
 
 ## Links
 
+- [[w42-jud-v1]] — v1 built and graded: the one organ for bid + play; unification holds
+  at the auction, mechanism-limited at play (JS1 search PASS +2.28, JP3/JS3 falsified);
+  the policy-conditional pricing law; the −4.37 → −1.43 oracle-free trajectory
 - [[w42-jud-v0]] — v0 built and graded (P2 pass / P1 miss→loop-recovered / P3 pass);
   the recipe-fork and A2 denial-bidding findings
 - [[w42-plateau-probe]] — the parity plateau broken: 3× data/round carries the bidder

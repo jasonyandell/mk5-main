@@ -3484,3 +3484,39 @@ JudNet organ, the judplay consumer, and a graded round-0 head.
   let the loop close it?
 - Does the v1 self-play loop dissolve the round-0 over-bid (93% offense share) the
   way v0's did?
+
+## [2026-07-06 | 3ac03de | jud v1 graded: one organ, bid and play (f550205..3ac03de)]
+
+Four commits carrying jud v1 from build to a graded verdict, every rung registered on
+GitHub #33 before its measurement: `f550205` (the organ — one net, play-history
+snapshots, the `judplay` consumer), `9d30b25` (the loop grades JP1/JP2/JP3), `e596205`
+(judsearch — belief-lift worlds, current-trick rollout, V_realized leaves), and
+`3ac03de` (the search-ladder grades JS1/JS2/JS3 + the night verdict).
+
+**Touched pages:** [[experiments/w42-jud-v1]] [[entities/jud]] [[entities/champion]] [[topics/rank-vs-price]]
+
+**Added:** [[experiments/w42-jud-v1]] — the full arc as a registered-prediction ledger.
+
+**Updated:**
+- [[entities/jud]] — v1 promoted from "machinery built" to "built and graded"; the
+  policy-conditional pricing law added to the vocabulary; v1/v2 ladder bullets and the
+  honest status rewritten to the graded verdict.
+- [[entities/champion]] — current best player stated: `margin:wp`(head_8)+`lens:ev`
+  (+0.38/+0.42 over `net:wp+lens:ev`); rung #33 recorded as built-and-graded, not
+  displacing the champion.
+- [[topics/rank-vs-price]] — the play half measured: greedy value play is a bad ranker,
+  search recovers most (not all) of the gap oracle-free, the oracle's rankings stay
+  unbeaten.
+
+**Frontier verdict:** the one-organ unification **holds at the auction and is
+mechanism-limited at play**. The bidder survives the fold intact (beats v0's own round-0
+bidder); greedy 1-ply value play is a bad move-ranker (the loop moves it zero, JP3
+falsified); `judsearch` recovers two-thirds of the play gap oracle-free (−3.44 → −1.16,
+JS1 PASS +2.28) but not parity, and neither more worlds (JS2 below band) nor a
+better-calibrated head (JS3 falsified) closes the rest. The wall is per-move
+discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's
+per-move oracle. The stack went −4.37 → −1.43 oracle-free in one night; the current best
+player is unchanged. v2's cue is concrete: a bigger leaf on per-move targets (E[Q]
+distilled as bootstrap) plus opponents-in-rollout.
+
+**Questions opened:** none new — v1's play wall is named, and v2's target follows from it.
