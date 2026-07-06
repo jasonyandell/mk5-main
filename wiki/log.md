@@ -3411,3 +3411,34 @@ shallow belief-state search in play and defense.
 **Questions opened:** what breaks the parity plateau (v1 search shape vs opponent
 modeling); reading the referee gap (oracle EV − V_realized EV) as a live convergence
 instrument rather than a static meter.
+
+## [2026-07-06 | 0d82a97 | jud v1 built: one organ, two consumers (6860a75..0d82a97)]
+
+Three commits building jud v1's machinery: play-decision snapshot emission, the unified
+JudNet organ, the judplay consumer, and a graded round-0 head.
+
+**Touched pages:** [[entities/jud]] [[sources/0d82a97]]
+
+**Added:** 1 source digest.
+
+**Frontier established:**
+- One net now serves bid and play: info-state (own hand + canonical auction + play
+  history) → 43-bin realized-points categorical; bid-time = empty-history play-time,
+  byte-identical to margin_net's root encoding (tested train/serve both ways).
+- The arena emits per-decision corpora compactly: `HandRecord.plays` (28 seat/domino
+  pairs), every decision a prefix, offense and defense rows sharing the hand's Monte
+  Carlo label. Works in sequential and fast-batching modes.
+- Registry: `jud[:wp][,pass<q>][,model=]` bidder (ValueBidder unchanged) and
+  `judplay[:model=]` play (greedy depth-1, argmax E[pts], defenders minimize, one
+  forward per tick).
+- Round 0 graded honestly (champion/evidence/jud_v1/): combined −6.09 vs
+  net:wp+lens:ev, bidder −4.08, play −5.53 (defense the biggest channel);
+  judplay beats random +1.80; value sharpens with depth (MAE 8.6 → 3.5).
+
+**Questions opened:**
+- Overfitting is the binding constraint (memorizes 200K rows in ~1 epoch at lr 1e-3);
+  regularization/data scale for loop rounds.
+- Root-row dilution (bid roots are 2/56 of samples; worst ECE slice) — up-weight or
+  let the loop close it?
+- Does the v1 self-play loop dissolve the round-0 over-bid (93% offense share) the
+  way v0's did?

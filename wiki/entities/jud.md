@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: 4080e07
+last_updated: 0d82a97
 status: active
 ---
 
@@ -201,21 +201,46 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
 - **v2** — opponents inside rollouts update belief from actions: signaling gets
   priced, conventions emerge, and the referee gap tells the story with receipts.
 
+### jud v1 — the one organ, built (2026-07-06, `0d82a97`)
+
+The unified value organ exists: `champion/jud_net.py` extends V_realized from
+bid-time to EVERY decision — info-state (own hand + canonical auction + play
+history) → the same 43-bin realized-points categorical, where bid-time is
+play-time with an empty history (one featurization, byte-identical to
+`margin_net`'s at the root — tested). The arena emits play-decision corpora as
+one compact field: each hand's full 28-step play history, every decision a
+prefix, offense and defense rows alike sharing the hand's Monte Carlo label.
+Two consumers ride one net: the v0 ValueBidder unchanged (`jud` spec) and
+`judplay` — greedy depth-1 value-native play (price every legal move's
+post-move info-state, argmax E[pts], defenders minimize), no oracle and no
+world sampling at runtime. Round-0 decomposition vs `net:wp+lens:ev`
+(`champion/evidence/jud_v1/`): combined −6.09, bidder-only −4.08 (the
+winner's-curse round-0 signature, amplified), play-only −5.53 with defense the
+largest channel; floor check `judplay` beats random play +1.80. The head's
+value sharpens with depth (MAE 8.6 → 3.5 root → terminal) — the jud signature.
+What remains of the v1 rung: the self-play loop (v0's recipe, both consumers
+on-policy) and then search above the leaves; the greedy player is the leaf
+evaluator that search will call.
+
 ## Honest status
 
-A direction, a vocabulary, and now **v0 built and graded** ([[w42-jud-v0]],
-`4080e07`): the value-native bidder is real, calibrated (P2), and its self-play
-loop dissolves the #26 over-bidder the principled way (P3), reaching **statistical
-parity** with the hand-tuned `net:wp` baseline while winning points. It does not
-yet beat it — the loop converges *at* parity, offense share plateauing ~60–67%
-rather than the predicted selective 50–55%. The round-0 miss (P1) exposed a second
-optimism channel — the winner's curse on *selection*, independent of the oracle's
+A direction, a vocabulary, **v0 built and graded** ([[w42-jud-v0]],
+`4080e07`), and now **v1's organ built** (`0d82a97`): the value-native bidder is
+real, calibrated (P2), and its self-play loop dissolves the #26 over-bidder the
+principled way (P3), reaching **statistical parity** with the hand-tuned
+`net:wp` baseline while winning points. It does not yet beat it — the loop
+converges *at* parity, offense share plateauing ~60–67% rather than the
+predicted selective 50–55%. The round-0 miss (P1) exposed a second optimism
+channel — the winner's curse on *selection*, independent of the oracle's
 double-dummy assumption — which the loop closes the same way it closes the
 evaluator channel. The [[champion]] #26 loop had reached a fixed point of a
 *crippled* version (belief converged while the value stayed perfect-information,
 a calibrated over-bidder); jud v0 is the loop in which the value itself is
-realized-native, and it lands. v1 (value at search leaves in play/defense) is
-where the parity-breaking edge, if any, lives.
+realized-native, and it lands. v1's machinery — one net for every decision,
+play-decision corpora, the `judplay` consumer — is in place at round 0 (loses
+to the oracle player searchless, beats random play, sharpens with depth); the
+v1 loop and search above the leaves are where the parity-breaking edge, if
+any, lives.
 
 ## Links
 
