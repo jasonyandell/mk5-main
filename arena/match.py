@@ -207,6 +207,11 @@ def snapshot_rows(result: MatchResult) -> list[dict]:
     of which half rotated A onto which team. The two paired halves replay the
     same deal seeds, so ``a_team`` is part of the key: ``(a_team, game_idx,
     hand_idx)`` is what uniquely identifies a hand across the whole match.
+
+    ``dealer`` is carried so auction order is reconstructible from the snapshot
+    alone: bidding proceeds ``dealer + 1 .. dealer`` (the shaker bids last), so a
+    consumer can recover which seats bid BEFORE the declarer — the only bids
+    available at the declarer's decision time (jud v0 Step 2 encoding).
     """
     return [
         {
@@ -214,6 +219,7 @@ def snapshot_rows(result: MatchResult) -> list[dict]:
             "game_idx": hr.game_idx,
             "hand_idx": hr.hand_idx,
             "seed": hr.seed,
+            "dealer": hr.dealer,
             "hands": [list(h) for h in hr.hands],
             "decl_id": hr.decl_id,
             "bids": list(hr.bids),

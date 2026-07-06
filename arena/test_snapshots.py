@@ -10,7 +10,7 @@ from arena.match import hand_rows, run_match, snapshot_rows
 from arena.play import RandomPlay
 
 _SNAPSHOT_KEYS = {
-    "a_team", "game_idx", "hand_idx", "seed",
+    "a_team", "game_idx", "hand_idx", "seed", "dealer",
     "hands", "decl_id", "bids", "bidder", "bid_value",
     "bidder_team_pts", "opp_team_pts", "made",
 }
@@ -41,6 +41,7 @@ def test_snapshot_rows_shape_and_valid_deal():
         assert r["bids"][r["bidder"]] == r["bid_value"]
         assert r["bid_value"] == max(r["bids"])
         assert 0 <= r["decl_id"] <= 6  # arena bidders declare pip trumps
+        assert 0 <= r["dealer"] <= 3  # auction runs dealer+1 .. dealer
         # Realized outcome: declaring + opposing points partition the 42, the
         # declaring team captured at least 0, and made is a clean 0/1 flag.
         assert 0 <= r["bidder_team_pts"] <= 42
@@ -64,6 +65,7 @@ def test_snapshot_outcomes_match_per_hand_and_sum_to_42():
     for s in snaps:
         row = by_key[(s["a_team"], s["game_idx"], s["hand_idx"])]
         assert s["seed"] == row["seed"]
+        assert s["dealer"] == row["dealer"]
         # per_hand.csv reports points in A/B terms; the snapshot reports them
         # in declaring/opposing terms. bidder_is_a picks which is which.
         if row["bidder_is_a"]:
