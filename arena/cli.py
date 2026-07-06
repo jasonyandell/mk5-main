@@ -18,11 +18,15 @@ Player spec: <bidder>+<play>
               prices contracts at its empty-history root; same ValueBidder walk
               and options as margin)
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>]
-            | judplay[:model=<path>] | random
+            | judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]]
+            | random
             (scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter;
              judplay = jud v1 value-native play — argmax E[pts] over the jud
-             head, defenders minimize; no oracle, no world sampling)
+             head, defenders minimize; no oracle, no world sampling;
+             judsearch = jud v1 JS1 — roll the current trick to resolution in
+             N sampled worlds with the jud head at every seat, evaluate the
+             post-trick leaf from the mover's POV; no oracle)
 
 Writes summary.json, per_hand.csv, per_game.csv under --out-dir.
 """
@@ -244,10 +248,30 @@ def parse_play(
         play = JudPlay(load_jud_net(model_path, device="cpu"))  # small MLP; CPU fastest
         print(f"Jud play: {play} (model={model_path})", flush=True)
         return play
+    if name == "judsearch":
+        # jud v1 search rung (JS1): sample N consistent worlds, roll the current
+        # trick to resolution with the jud head playing every seat, average the
+        # post-trick leaf E[pts] over worlds, argmax (defenders minimize).
+        # Spec: judsearch[:n<worlds>][,model=<path>], default n10.
+        from arena.jud_search import JudSearch
+        from champion.jud_net import load_jud_net
+
+        model_path = "champion/jud_net.pt"
+        n_worlds = 10
+        for t in (p for p in arg.split(",") if p):
+            if t.startswith("model="):
+                model_path = t[len("model="):]
+            elif t.startswith("n") and t[1:].isdigit():
+                n_worlds = int(t[1:])
+        # CPU throughout: the 470k MLP dispatches faster than MPS at this size,
+        # and the MRV sampler is tiny at arena batch widths.
+        play = JudSearch(load_jud_net(model_path, device="cpu"), n_worlds=n_worlds)
+        print(f"Jud search: {play} (model={model_path})", flush=True)
+        return play
     raise ValueError(
         f"Unknown play policy: {spec!r} "
         f"(lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] "
-        f"| judplay[:model=<path>] | random)"
+        f"| judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]] | random)"
     )
 
 
