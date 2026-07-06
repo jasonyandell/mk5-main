@@ -1,0 +1,177 @@
+[
+  {
+    "round": 0,
+    "head": "champion/jud_net_r0.pt",
+    "ab_full512": {
+      "a_wins": 14,
+      "n_games": 512,
+      "mean_mark_margin": -4.371,
+      "ci_lo": -4.547,
+      "ci_hi": -4.193,
+      "a_offense_share": 0.6449,
+      "a_made_rate": 0.3278,
+      "a_mean_bid": 30.81,
+      "point_margin": -6.103,
+      "decl_hist": {
+        "fours": 865,
+        "ones": 856,
+        "fives": 821,
+        "twos": 625,
+        "threes": 619,
+        "blanks": 515,
+        "sixes": 322,
+        "notrump": 223,
+        "doubles-trump": 3
+      }
+    },
+    "ab_bidonly256": {
+      "a_wins": 89,
+      "n_games": 256,
+      "mean_mark_margin": -1.09,
+      "ci_lo": -1.496,
+      "ci_hi": -0.691,
+      "a_offense_share": 0.6612,
+      "a_made_rate": 0.5233,
+      "a_mean_bid": 30.82,
+      "point_margin": 3.35,
+      "decl_hist": {
+        "fours": 516,
+        "fives": 498,
+        "ones": 461,
+        "threes": 360,
+        "twos": 347,
+        "blanks": 295,
+        "sixes": 174,
+        "notrump": 139,
+        "doubles-trump": 2
+      }
+    },
+    "eval": {
+      "test_ce": 2.244042158126831,
+      "mae_mean_pts": 5.502682209014893,
+      "ece_p30": 0.040610838508459056
+    }
+  },
+  {
+    "round": 1,
+    "head": "champion/jud_net_r1.pt",
+    "ab": {
+      "a_wins": 7,
+      "n_games": 256,
+      "mean_mark_margin": -4.379,
+      "ci_lo": -4.621,
+      "ci_hi": -4.129,
+      "a_offense_share": 0.64,
+      "a_made_rate": 0.3252,
+      "a_mean_bid": 30.8,
+      "point_margin": -5.835,
+      "decl_hist": {
+        "fours": 511,
+        "twos": 425,
+        "blanks": 333,
+        "ones": 325,
+        "fives": 293,
+        "sixes": 263,
+        "threes": 212,
+        "notrump": 73,
+        "doubles-trump": 1
+      }
+    },
+    "eval": {
+      "test_ce": 2.216291904449463,
+      "mae_mean_pts": 5.311594486236572,
+      "ece_p30": 0.026119004573942704
+    }
+  },
+  {
+    "round": 2,
+    "head": "champion/jud_net_r2.pt",
+    "ab": {
+      "a_wins": 10,
+      "n_games": 256,
+      "mean_mark_margin": -4.156,
+      "ci_lo": -4.402,
+      "ci_hi": -3.887,
+      "a_offense_share": 0.6451,
+      "a_made_rate": 0.3354,
+      "a_mean_bid": 30.7,
+      "point_margin": -4.363,
+      "decl_hist": {
+        "fives": 446,
+        "fours": 443,
+        "ones": 322,
+        "twos": 312,
+        "threes": 310,
+        "blanks": 280,
+        "sixes": 184,
+        "notrump": 171
+      }
+    },
+    "eval": {
+      "test_ce": 2.1401944160461426,
+      "mae_mean_pts": 5.24307918548584,
+      "ece_p30": 0.02229945901545338
+    }
+  },
+  {
+    "round": 3,
+    "head": "champion/jud_net_r3.pt",
+    "ab": {
+      "a_wins": 23,
+      "n_games": 256,
+      "mean_mark_margin": -3.719,
+      "ci_lo": -4.012,
+      "ci_hi": -3.41,
+      "a_offense_share": 0.5345,
+      "a_made_rate": 0.415,
+      "a_mean_bid": 30.52,
+      "point_margin": -6.697,
+      "decl_hist": {
+        "fours": 555,
+        "fives": 428,
+        "ones": 331,
+        "twos": 319,
+        "threes": 314,
+        "sixes": 284,
+        "blanks": 238,
+        "notrump": 51
+      }
+    },
+    "eval": {
+      "test_ce": 2.0709288120269775,
+      "mae_mean_pts": 5.259676456451416,
+      "ece_p30": 0.029666659004818643
+    }
+  },
+  {
+    "round": 4,
+    "head": "champion/jud_net_r4.pt",
+    "ab": {
+      "a_wins": 19,
+      "n_games": 256,
+      "mean_mark_margin": -4.043,
+      "ci_lo": -4.32,
+      "ci_hi": -3.754,
+      "a_offense_share": 0.4941,
+      "a_made_rate": 0.3967,
+      "a_mean_bid": 30.48,
+      "point_margin": -9.124,
+      "decl_hist": {
+        "fours": 472,
+        "fives": 405,
+        "twos": 375,
+        "threes": 346,
+        "blanks": 311,
+        "ones": 272,
+        "sixes": 193,
+        "notrump": 93,
+        "doubles-trump": 2
+      }
+    },
+    "eval": {
+      "test_ce": 2.064267158508301,
+      "mae_mean_pts": 5.355771541595459,
+      "ece_p30": 0.044182957765667566
+    }
+  }
+]

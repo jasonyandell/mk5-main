@@ -1,0 +1,31 @@
+{
+  "round": 4,
+  "head": "champion/jud_net_r4.pt",
+  "ab": {
+    "a_wins": 19,
+    "n_games": 256,
+    "mean_mark_margin": -4.043,
+    "ci_lo": -4.32,
+    "ci_hi": -3.754,
+    "a_offense_share": 0.4941,
+    "a_made_rate": 0.3967,
+    "a_mean_bid": 30.48,
+    "point_margin": -9.124,
+    "decl_hist": {
+      "fours": 472,
+      "fives": 405,
+      "twos": 375,
+      "threes": 346,
+      "blanks": 311,
+      "ones": 272,
+      "sixes": 193,
+      "notrump": 93,
+      "doubles-trump": 2
+    }
+  },
+  "eval": {
+    "test_ce": 2.064267158508301,
+    "mae_mean_pts": 5.355771541595459,
+    "ece_p30": 0.044182957765667566
+  }
+}
