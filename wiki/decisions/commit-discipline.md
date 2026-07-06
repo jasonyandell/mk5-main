@@ -3,7 +3,7 @@ title: Commit Discipline (primer as behavioral scaffold)
 kind: decision
 first_seen: 09b841e
 last_updated: 09b841e
-status: active
+status: superseded
 ---
 
 ## Observation
@@ -17,11 +17,15 @@ The primer was teaching Gemma to "structure your turn and commit" as much as it 
 
 ## Implications for iter-2
 
-Three candidate mitigations, not yet resolved at this frontier:
+Three candidate mitigations:
 
 1. **Keep full primer** — accept eq-shy pathology (iter-0 lesson) but maintain commit discipline.
 2. **Trim primer + add explicit protocol line** — keep ~500-word primer, add "you MUST emit `commit_play` to end your turn" to the system prompt. Separates behavioral scaffold from rules content.
 3. **Drop primer, rely on tool schema + protocol** — re-harvest from spike v2 prompt shape (no framing, no primer). Would need explicit `max_turns` limit.
+
+**Resolved the following week**: [[iter3-rules-adapter]] (dbadb5f) shipped option 3's
+spirit — rules-as-tools, no primer — at 90% bot-match / 0 retry-exhausted. See
+[[rules-as-tools]].
 
 ## Generalizable principle
 

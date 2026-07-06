@@ -3,7 +3,7 @@ title: Post-commit Q&A — talking with Burl after a hand
 kind: topic
 first_seen: cba521d
 last_updated: cba521d
-status: active
+status: retired
 ---
 
 ## What
@@ -19,9 +19,9 @@ Post-commit Q&A is a **fourth surface**, oriented at the human player's seat, no
 
 ## Why
 
-[[gus]] was conceived to be the belief brain that informs the LLM at decision time ([[project_gus_as_burl_belief_brain]]). The natural product above that is talking with the player about decisions — the way a teammate would, after the trick.
+[[gus]] was conceived to be the belief brain that informs the LLM at decision time. The natural product above that is talking with the player about decisions — the way a teammate would, after the trick.
 
-The closest published precedent is chapters 2–8 of Roberson's *Winning 42*, which is structurally a worked-example dialogue: "here is a hand, here are the trumps and offs, here is the at-risk-point analysis, here is the bid." Each "HAND N" is a (state, declaration, bid, prose-justification) tuple authored by a champion. That's exactly the corpus shape post-commit Q&A wants — hands paired with conversational reasoning traces — and the project already owns the canonical text via [[user_role_and_north_star|the user's family heritage]].
+The closest published precedent is chapters 2–8 of Roberson's *Winning 42*, which is structurally a worked-example dialogue: "here is a hand, here are the trumps and offs, here is the at-risk-point analysis, here is the bid." Each "HAND N" is a (state, declaration, bid, prose-justification) tuple authored by a champion. That's exactly the corpus shape post-commit Q&A wants — hands paired with conversational reasoning traces — and the project already owns the canonical text via the user's family heritage.
 
 ## Three cuts at the corpus
 
@@ -51,7 +51,7 @@ Stacking a Q&A adapter on top of an existing play-decision adapter does not work
 
 ### Voice authenticity
 
-The model must sound like someone who's actually played a thousand hands of 42, not like an LLM explaining 42. Roberson's transcribed prose has the cadence; the [[user_role_and_north_star|user's family]] is the authenticity check. A native Texan player can hear a fake explanation in two sentences. This is a real verification signal — anything in the corpus that doesn't pattern-match Roberson's voice is suspect.
+The model must sound like someone who's actually played a thousand hands of 42, not like an LLM explaining 42. Roberson's transcribed prose has the cadence; the user's family is the authenticity check. A native Texan player can hear a fake explanation in two sentences. This is a real verification signal — anything in the corpus that doesn't pattern-match Roberson's voice is suspect.
 
 ## Open questions
 
@@ -60,10 +60,17 @@ The model must sound like someone who's actually played a thousand hands of 42, 
 - Does bucket category (agreement / disagreement / forced / illegal) map to qualitatively different self-critique shapes? Need ~3-4 decisions per bucket sampled before this is meaningful.
 - Can [[gus]]'s `belief_trajectory` be exposed as a chat-time tool ("what did Gus think the partner held when you committed?") in the conversational surface, not just at decision time?
 
+## Status
+
+None of the three proposed corpus cuts were ever executed. The [[burl-chat]]/adapter
+line has been dormant since 2026-05-07, and the project's current answer ([[jud]])
+doesn't route through an LLM adapter at all — post-commit Q&A has no active carrier
+architecture.
+
 ## Related
 
 - [[burl-chat]] — the workbench
 - [[burl-chat-spike]] — first session and findings
 - [[chat-mode-primer]] — the priming technique
 - [[play-adapter-lock-in]] — the A/B that says you can't talk to the play adapter
-- [[user_role_and_north_star|user_role_and_north_star (memory)]] — the family-game authenticity standard
+- the user's 42 family heritage (project memory) — the family-game authenticity standard

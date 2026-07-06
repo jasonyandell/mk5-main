@@ -3,10 +3,10 @@ title: burl-chat — Interactive workbench for talking with Burl
 kind: entity
 first_seen: cba521d
 last_updated: 2026-05-02
-status: active
+status: superseded
 ---
 
-> **Reference predecessor.** New experimentation work happens in [[burl-lab]] (greenfield event-sourced platform with first-class ToolSpec + Phase machine). burl-chat stays alongside as the working reference until burl-lab reaches parity; do not delete or restructure.
+> **Superseded.** [[burl-lab]] (greenfield event-sourced platform with first-class ToolSpec + Phase machine) replaced burl-chat as the active experimentation surface. Last commit `18a5b94` (2026-05-03); the whole [[burl]] line has had no commits since 2026-05-07. This page is kept as the working reference for the plumbing burl-lab ported forward — do not delete or restructure.
 
 ## What it is
 

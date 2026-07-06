@@ -2,11 +2,17 @@
 title: BookStrategyPlayer Phase 1 Build Contract
 kind: topic
 first_seen: local-2026-05-04
-last_updated: local-2026-05-04
-status: active
+last_updated: afd4802
+status: superseded
 ---
 
 ## Purpose
+
+**Superseded before build.** [[book-strategy-player]] was redirected before
+this checklist was ever started — the chassis moved from play-time strategy
+to the auction by Fable's 2026-06-09 design review (see
+[[champion-design-review]]); no `w42/book_strategy*` code exists. May still
+run someday as a cheap epilogue measurement, not a live plan.
 
 [[book-strategy-player]] Phase 1 builds the framework and measurement
 instrument. It should prove the algebra on fake strategies before encoding real

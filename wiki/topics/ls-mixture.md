@@ -3,7 +3,7 @@ title: LS-Mixture (verbosity blender)
 kind: topic
 first_seen: 3414507
 last_updated: 3414507
-status: active
+status: retired
 ---
 
 ## Overview
@@ -21,6 +21,8 @@ Preview corpus from iter-0 and iter-1 rows: 118 total (79 long + 39 short). Shor
 Gemma 4 E2B's `chat_template.jinja` strips `<|channel>thought` blocks before tokenization. SFTTrainer calls `apply_chat_template` per row, so the trainer never sees the thought prose. This means the verbosity difference between long and short traces is invisible at training time. The blend's actual benefit is: (1) 118 vs 79 rows for commit-discipline coverage, and (2) data-augmentation regularization (same tool-call chain, two framings) (eebcae5).
 
 This also explains why iter-0 and iter-1 still ramble at inference: rambly thoughts are base-model reflex, not trained-in behavior (eebcae5).
+
+Never used to train a shipped adapter — [[commit-discipline-collapse]] itself still calls it "staged" as of its own later writing. The [[burl]] line went dormant (2026-05-07) before this preview corpus was ever promoted to a training run.
 
 ## Links
 

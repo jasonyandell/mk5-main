@@ -3,7 +3,7 @@ title: improvised-tools — Hot-register tool registry inside burl-chat
 kind: entity
 first_seen: 2026-05-01
 last_updated: 2026-05-01
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -117,3 +117,9 @@ The wax_museum system prompt is explicit: *"State tools answer WHAT IS the state
 - [[burl-tool-wishlist]] — what Burl's meta-requests reveal about its reasoning gaps
 - [[play-adapter-lock-in]] — why Burl articulates needs in the form of "plan tool calls" instead of plain prose
 - [[post-commit-q-and-a]] — the eventual research direction the library is feeding
+
+## Status
+
+Architecturally replaced within the same week by [[burl-lab]]'s first-class `ToolSpec`
+hot-registration, which attaches JSON schemas, protocol roles, and rendered protocol
+phrases that this registry's ad hoc declarations lacked.

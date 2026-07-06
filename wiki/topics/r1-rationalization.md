@@ -45,7 +45,11 @@ v10 ([[v10-adapter]]) introduces an alternative to STaR-iteration rationalizatio
 
 ## Open questions
 
-- Whether R1 rationalization is sufficient for Stage 3+ or whether DPO-style preference learning becomes necessary at longer lookahead horizons. (?) (lem/OVERVIEW.md @ a8bccfa)
+The original open question ("sufficient for Stage 3+, or does longer lookahead need
+DPO?") is moot — Stage 3+ (the [[backwards-curriculum]] beyond trick 6) never happened;
+LEM plateaued in Stage 1 and pivoted to [[burl]] before the question could be tested. R1
+itself remains in active use: [[burl]] runs the same reveal-and-justify mechanism on tool-use
+trajectories (see [[star]] "STaR on Burl's trajectories").
 
 ## Links
 

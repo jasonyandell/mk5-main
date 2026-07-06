@@ -3,7 +3,7 @@ title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
 first_seen: a2db3c7
 last_updated: local-2026-05-07
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -182,6 +182,13 @@ The package was first called `burl/harness/` before the team noticed the collisi
 - Do not touch `burl/chat/` — it is the reference implementation until burl/lab/ reaches parity.
 - Do not touch `burl/harness/` — that is the existing agent tool-loop runner.
 - No legacy / no backwards-compat shims. Greenfield.
+
+## Status
+
+Last commit `465d1af` (2026-05-07); no further `burl/` commits since. The frontier
+moved on 2026-06-09 to [[champion]] / [[w42-jud-v1|jud]] — pure-NN bid/play nets, an
+unrelated architecture. burl-lab never reached the parity milestone that would have
+retired [[burl-chat]].
 
 ## Related
 

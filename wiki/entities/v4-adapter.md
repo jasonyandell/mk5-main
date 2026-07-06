@@ -3,7 +3,8 @@ title: Stage 0 v4 Adapter (game-context)
 kind: entity
 first_seen: 4729dad
 last_updated: 2f11f32
-status: active
+status: superseded
+superseded_by: v5-adapter
 ---
 
 ## What it is
@@ -69,3 +70,10 @@ The model no longer hallucinates playing Bridge. `is_trump` at 100% means the 6-
 error that persisted through [[kerry-adapter]] and [[v3-adapter]] is resolved in the
 game-context format. `what_beats` at 15% is the remaining weak spot and the likely target
 for future curriculum work.
+
+## Superseded
+
+Three days later (3465e29) the base model pivoted from [[gemma-4-e2b]] to [[qwen3-1.7b]]
+— see [[base-model-pivot-qwen]]. [[v5-adapter]] retrains the same corpus on Qwen
+and reaches 100% comprehension vs v4's 67% on the same eval. No Gemma v6 was ever built;
+v4 is the last Gemma-base Stage 0 adapter.

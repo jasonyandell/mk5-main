@@ -3,7 +3,7 @@ title: LAMIR-1 Ceiling
 kind: topic
 first_seen: 8106f01
 last_updated: b42669a
-status: active
+status: superseded
 ---
 
 ## The finding
@@ -51,6 +51,16 @@ Four directions identified at the ceiling (MORNING4_STATUS @ b42669a):
 3. **Implement LAMIR paper faithfully**: multi-valued states + CFR+ solver. Research-grade, months of work.
 4. **Bridge-AI / BMCS recipe**: Move to PPO self-play (OVERVIEW Move 1). The 68.6% π_opp head and world-conditioned Q_head are raw materials for a Bridge-AI-style player. Gus does not have to be a LAMIR clone.
 
+## Option 4 taken
+
+This page is the pivot-decision record. The project took **option 4**: self-play/value-native,
+no CFR+, which became [[w42-jud-v1]] and [[champion]] — not a further LAMIR refinement, and not
+option 2's look-ahead-compatible V-head. Neither `jud` nor `champion` cite this page back; that
+missing forward link was the most consequential status mismark found in the era-6 gus-family
+audit (2026-07-06). This page is now superseded, not active frontier — the LAMIR-1 track is
+closed history, and Gus's decision-time look-ahead question was answered by abandoning
+look-ahead in favor of `jud`'s different mechanism.
+
 ## Links
 
-[[lamir1]] [[pi-opp-head]] [[student-distillation]] [[gus]] [[expected-q-value]] [[regret-eval]]
+[[lamir1]] [[pi-opp-head]] [[student-distillation]] [[gus]] [[expected-q-value]] [[regret-eval]] [[w42-jud-v1]] [[champion]]

@@ -2,8 +2,8 @@
 title: w42 Phase3 Joined Claim Row Model Table
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: complete
 ---
 
 ## Summary

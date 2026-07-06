@@ -2,7 +2,7 @@
 title: W42 Book Validation
 kind: trail
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+last_updated: afd4802
 status: active
 ---
 
@@ -119,19 +119,32 @@ p_make argmax policies still disagree sharply on the ch05 void-creation-follow
 corpus. [[w42-lens-v1-utility-head-to-head]] then showed EV wins the one-step
 utility contest.
 
-The current frontier is planning-aware validation. [[w42-book-claim-synthesis-and-ai-directions]]
-names the single-decision blind spot: many book claims are multi-step plans.
-[[book-strategy-player]] is the route for testing those claims without loading
-the entire W42 leaf pile. Its core is now a compact algebraic contract: pure
-Reader/State/Writer decision logic, finite strategy library, per-hand
-`PlanState`, lawful facts, deterministic arbitration, and replay-pure records.
-[[book-strategy-player-recording]] carries the recording schema, and
-[[book-strategy-player-phase-1-build]] carries the fake-strategy property tests
-and starter implementation checklist.
+[[w42-book-claim-synthesis-and-ai-directions]] named the single-decision blind
+spot: many book claims are multi-step plans. [[book-strategy-player]] was the
+route proposed for testing those claims without loading the entire W42 leaf
+pile — a compact algebraic contract (pure Reader/State/Writer decision logic,
+finite strategy library, per-hand `PlanState`, lawful facts, deterministic
+arbitration, replay-pure records), detailed in
+[[book-strategy-player-recording]] and [[book-strategy-player-phase-1-build]].
+It was never built (bead `t42-zrf9` froze `in_progress` 2026-05-04) and is not
+where the project's best-player energy went.
+
+As of 2026-07-06 the actual frontier is [[jud]] v1 ([[w42-jud-v1]], graded,
+registered-prediction methodology), reached via an intervening Champion
+generation ([[champion]] rungs #20-#28, 2026-06-09 → 06-14) that this trail
+predates and never documented. The auction-first value-net line (champion →
+jud) is unrelated to BSP's symbolic strategy-library thesis; per
+[[champion-design-review]] (Fable, 2026-06-09), "the chassis was later
+repointed from play to the auction." Route readers who want the current
+best-player state to [[jud]] and [[champion]], not to book-strategy-player.
+The book-validation evidence pile above (Waves 1-4, Phase 4 closure) remains
+accurate and is the record of a completed research generation; it is not the
+live edge.
 
 ## Related pages
 
 [[w42]] · [[winning42-strategy-measurement]] · [[w42-book-validation-campaign]] ·
 [[w42-book-claim-synthesis-and-ai-directions]] · [[w42-lens-v1-utility-head-to-head]]
-· [[book-strategy-player]] · [[w42-promote-or-retire]] · [[gus]] · [[burl]] ·
+· [[book-strategy-player]] · [[champion]] · [[jud]] · [[w42-jud-v1]] ·
+[[w42-promote-or-retire]] · [[gus]] · [[burl]] ·
 [[forge]]

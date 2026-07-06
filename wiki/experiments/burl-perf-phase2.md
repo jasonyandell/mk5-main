@@ -3,8 +3,21 @@ title: Burl Perf — Phase 2 (Continuous Batching + Prefix Sharing)
 kind: experiment
 first_seen: 29da3d2
 last_updated: 29da3d2
-status: active
+status: superseded
 ---
+
+> **Retraction (era-6 audit, 2026-07-06): the "1.8–2.1× wall" number below is stale.**
+> A clean re-validation nine days after this page was written, on unmerged branch
+> `perf/batch`@`7c4991c` (2026-04-27), ran a 7-row alternating re-test and found
+> continuous batching is a **statistical tie** with baseline — mean delta −1.9%,
+> pairwise deltas alternate direction (−31.7%, +41.1%, −9.1%). Prefix-cache also ties
+> (+8.4%). The commit message states plainly: *"the original '1.8–2.1x lever-2 win'
+> was a contention artifact."* `git merge-base --is-ancestor 7c4991c HEAD` → **false**
+> — that branch was never merged into `forge`, so the correction below never reached
+> this page even though it reached [[perf-on-the-table]] (evidently retyped onto
+> `main` at a different sha rather than merged). Treat the "Lever 2 result" section
+> below as superseded; [[perf-on-the-table]] and
+> [[continuous-batching-dispatcher-design]] carry the corrected numbers.
 
 > **Caveat — read this first (added during scribe-A pause, 2026-04-27):**
 > All wall-time numbers in this page were collected while [[burl-perf-phase1]]
@@ -280,7 +293,11 @@ the 5-decision subset's ~80k prompt tokens).  Worth doing if it
 slots into the [[continuous-batching-dispatcher-design]] cleanly,
 not worth a standalone lever.
 
-## Lever 2 result — 1.8-2.1× wall on M5 Max
+## Lever 2 result — 1.8-2.1× wall on M5 Max (retracted — see top-of-page notice)
+
+**This section's headline number was retracted by a clean re-run on unmerged
+`perf/batch`@7c4991c nine days after it was measured — see the retraction notice at
+the top of this page.** Left in place below for the record, not as a current claim.
 
 A continuous-batching dispatcher built on `mlx_lm.generate.BatchGenerator`
 replaces the bench's sync-wave loop.  All decisions submit their first

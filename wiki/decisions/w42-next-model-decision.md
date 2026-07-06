@@ -2,8 +2,8 @@
 title: w42 Next Model Decision
 kind: decision
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: complete
 ---
 
 ## Decision

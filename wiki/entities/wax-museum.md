@@ -3,7 +3,7 @@ title: wax_museum (hard-gated HATEOAS harness)
 kind: entity
 first_seen: 54f7776
 last_updated: 063fcac
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -59,3 +59,11 @@ Pre-Phase-A blunder rerun: 3/29 decisions committed illegally. Post-Phase-A and 
 ## 2000-decision harvest (2026-04-25)
 
 A single batched harvest run produced 2000 [[burl]] decisions on `D_required_first` for [[star]] training corpus. Key parameters: batch=6 sequences, `max_tokens=2048` (see [[max-tokens-2048-floor]]), 5h 46m wall, zero quarantine fires. Bucket distribution lands within ±2pp of the sequential 560 baseline everywhere. Yields 1062-row strict pool (52.5% of corpus) and 299-row sharpest-loss bucket (`BURL_BREAKS_CONSENSUS`). See [[burl-2000-harvest]].
+
+## Status
+
+Last commit touching wax_museum is `063fcac` (2026-04-25). The harness is vendored,
+frozen-in-place, inside [[burl-chat]] and [[burl-lab]] (which port its Gemma
+chat-template fix and single-thread executor pattern forward); it received no further
+direct changes after the 2000-decision harvest. Superseded by [[burl-lab]]'s
+event-sourced HATEOAS design.

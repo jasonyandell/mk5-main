@@ -3,7 +3,7 @@ title: Stage 0 v4 Comprehension Eval
 kind: experiment
 first_seen: 3c33e86
 last_updated: 2f11f32
-status: active
+status: superseded
 ---
 
 ## Summary
@@ -51,6 +51,14 @@ The bugs:
 1. **EOS token mismatch** — `generate()` stopped on `<eos>` (token 1) but Gemma 4 uses `<turn|>` (token 106); responses were truncated mid-answer.
 2. **Left-pad slicing error** — `attention_mask.sum()` counted padding as input, causing trailing input tokens to appear in the extracted "response."
 
+## Superseded
+
+The 67% overall figure was superseded twice: first by [[v9-adapter]]'s 83% (14 categories,
+same [[game-context-qa]] lineage on [[qwen3-1.7b]]), then by v10-maskfix's 86% (see
+[[v10-maskfix-breakthrough]]). This page's 5-category, Gemma-base result is
+historical — it is the eval that proved the model "knows Texas 42" at all, not the current
+best number.
+
 ## Related pages
 
-[[lem]] · [[v4-adapter]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[game-context-qa]] · [[decisions/flexible-grader]] · [[experiments/third-gemma-contact]] · [[sources/4729dad]] · [[sources/1d3e1b7]] · [[sources/3c33e86]] · [[sources/2f11f32]]
+[[lem]] · [[v4-adapter]] · [[v9-adapter]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[game-context-qa]] · [[decisions/flexible-grader]] · [[experiments/third-gemma-contact]] · [[experiments/v10-maskfix-breakthrough]] · [[sources/4729dad]] · [[sources/1d3e1b7]] · [[sources/3c33e86]] · [[sources/2f11f32]]

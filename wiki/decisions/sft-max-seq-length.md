@@ -26,9 +26,13 @@ TRL's `SFTConfig` has at least two traps whose defaults waste or destroy gradien
 
 For any SFT recipe: log the actual token count of training rows AND assert the max against the configured `max_seq_length`. Silent truncation is the quietest failure mode in supervised fine-tuning — the trainer runs successfully, loss decreases, but the model never sees the tokens the recipe was designed to train on.
 
-## Follow-up
+## Follow-up — resolved
 
-iter-5 re-runs the [[preserve-thoughts]] A/B with `max_seq_length=4096`. If the result is non-null, it retroactively vindicates the thought-gradient hypothesis and upgrades the iter-4 experiment from "null" to "artifact."
+[[iter5-e1-rank-sweep]] re-ran the [[preserve-thoughts]] A/B with
+`max_seq_length=4096` and confirmed the result is non-null: rank-16 bot-match improved
+66.7% → 70.0% over base Gemma. This retroactively vindicates the thought-gradient
+hypothesis and upgrades [[iter4-null-preserve-thoughts]] from "null result" to
+"truncation artifact."
 
 ## Related pages
 

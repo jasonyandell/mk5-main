@@ -2,9 +2,18 @@
 title: w42 W&B Run Comparison Dashboard
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded.** The dashboard and its 10-run inventory are accurate as of
+2026-05-02, but the practice it prescribes for future runs was abandoned:
+W&B logging tapered off after phase3 and is absent entirely from the
+book-validation/jud/champion era (zero W&B mentions in
+[[w42-phase4-final-claim-audit]], [[w42-lens-v1-utility-head-to-head]],
+[[w42-jud-v1]], or [[w42-champion-selfplay-fixed-point]]). No successor
+dashboard exists because the workstream stopped using W&B as its evidence
+notebook.
 
 ## Summary
 

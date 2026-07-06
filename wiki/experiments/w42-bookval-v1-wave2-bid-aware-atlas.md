@@ -7,7 +7,7 @@ wave2b2_bead: t42-7eop
 parent_epic: t42-4zi6
 wave: wave2
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+last_updated: afd4802
 ---
 
 # w42-bookval-v1-wave2-bid-aware-atlas
@@ -281,8 +281,17 @@ the book's "bid only enough" advice, but the effect (−0.076 mark_ev units) is 
 At bid≥39, setter's mean Q rises vs bid=30 (CI excludes zero), suggesting setter-side positions
 improve as bid rises — consistent with "pounce at high bids" claim. At bid=35/36/84, CI includes
 zero (borderline).
-**Verdict: sufficient at bid=39 and bid=42; borderline at bid=35/36/84.**
+**Verdict at this aggregate-proxy level: sufficient at bid=39 and bid=42; borderline at bid=35/36/84.**
 Caveat: mean Q is a rough proxy; proper test needs snapshot-level setter-side probes.
+
+**Reversed by Wave 2.E.2 (`t42-8kbh`, [[w42-bookval-v1-wave2-pounce-high-bid]]).** The
+snapshot-level probe this page calls for was run and found the opposite of "sufficient":
+`ch12-setter-pounce-high-bid-off` was **demoted to `contradicted`** at all four high-bid
+buckets (N=1,140, all CIs excluding zero in the contradicting direction). The campaign used
+this reversal to write a new methodology guardrail: aggregate proxies like the one above do
+not qualify for ledger promotion, only paired same-decision contrasts do
+([[w42-book-validation-campaign]], "Ledger movement to date"). Treat the "sufficient at
+bid≥39" read above as superseded by that snapshot-level result, not as a standing verdict.
 
 ### Infrastructure Note
 
@@ -297,11 +306,12 @@ The driver `run_bid_aware_atlas.py` was not modified.
 |-------|--------|
 | ch10-special-bid-mark-multiplier | **sufficient** (all bid buckets) |
 | ch02-bid-only-enough | **sufficient** for mark_ev/p_make; borderline for threshold_mass |
-| ch12-setter-pounce-high-bid-off | sufficient at bid≥39; borderline at bid=35/36/84 |
+| ch12-setter-pounce-high-bid-off | aggregate-proxy read: sufficient at bid≥39, borderline at bid=35/36/84 — **reversed to `contradicted` by [[w42-bookval-v1-wave2-pounce-high-bid]]'s snapshot-level probe; do not read this row as standing** |
 
 This corpus has enough power for ledger promotion of ch10 (full multiplier effect) and
 ch02 (mark_ev/p_make paired delta). ch12 promotion requires snapshot-level probes for
-the setter-pounce mechanism at bid=35/36.
+the setter-pounce mechanism at bid=35/36 — those probes ran ([[w42-bookval-v1-wave2-pounce-high-bid]],
+bead `t42-8kbh`) and demoted the claim to `contradicted` rather than promoting it.
 
 ### Reproduce (Full Sweep, MPS)
 

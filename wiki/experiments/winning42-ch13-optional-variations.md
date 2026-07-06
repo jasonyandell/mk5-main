@@ -2,9 +2,19 @@
 title: Winning 42 Ch13 Optional Variations
 kind: experiment
 first_seen: local-2026-05-01
-last_updated: local-2026-05-01
-status: active
+last_updated: afd4802
+status: retired
 ---
+
+**Phantom plan.** This one-session chapter harvest (2026-05-01) registered 7
+measurement targets and got zero empirical follow-up in the two months
+since — none of its detectors (`rule_variant_gate`,
+`straight_auction_legality`, `first_lead_exception_bucket`,
+`high_bid_scoring_invariant`, `variant_legal_set_diff`,
+`preplay_information_leak`) were ever built, and none of its claim ids appear
+in the central 64-row ledger ([[w42-phase4-final-claim-audit]]). The
+project's actual frontier moved through the phase-4 closure and on to the
+[[champion]]/[[jud]] ladder.
 
 ## Summary
 

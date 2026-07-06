@@ -2,9 +2,16 @@
 title: w42 Branch Atlas Scaled v0
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded in scope, not wrong in content.** [[w42-hidden-threat-legacy-mining]]
+(100 legacy chunks, 280,000 decisions) is a strictly larger version of the
+same hidden-threat measurement over the fixed-bid legacy corpus, and the
+phase-4 paired-regime tests ([[w42-phase4-84-dynamic-seed-tests]],
+[[w42-phase4-doubles-notrump-regime-tests]]) supersede its
+declaration-specific 84/Ch.9 claims.
 
 ## Summary
 

@@ -26,9 +26,14 @@ Smoke-tested: 2 epochs over 5 chunks (14k items) in 6s wall, memory flat across 
 
 ## What it unlocks
 
-- **10k+ game corpora**: training [[consistency-regularizer]] (v3) and future variants on [[gen-fleet]]-scale data.
+The loader shipped and works; the fleet it was sized for never launched. [[gen-fleet]] (the
+Vast.ai distributed generator) never ran past its pre-launch fix list — the 10k-game corpus
+actually used to train [[consistency-regularizer]] (v3) was generated locally, not on fleet
+infrastructure. What the loader unlocked in practice:
+
+- **10k+ game corpora**: training [[consistency-regularizer]] (v3) on the locally-generated 10k corpus.
 - **N-declaration-per-seed**: each seed generates up to 10 declaration variants; the iterable loader handles the resulting chunked layout transparently.
-- **Scale experiments**: arbitrary corpus growth without architecture changes to the training scripts.
+- **Scale experiments**: arbitrary corpus growth without architecture changes to the training scripts — the growth path this enabled was local, not distributed.
 
 ## Links
 

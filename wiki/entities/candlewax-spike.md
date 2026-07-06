@@ -3,7 +3,7 @@ title: Candlewax Spike (multimodal VL + local MLX LoRA STaR)
 kind: entity
 first_seen: 0545342
 last_updated: 0545342
-status: exploratory
+status: retired
 ---
 
 ## What it is
@@ -12,6 +12,13 @@ The Candlewax Spike is a subproject under `burl/candlewax_spike/` that closes th
 "Can we STaR a small VL model on Texas 42 decisions locally?" It combines candlewax PDF
 rendering, Claude Agent SDK rollout, local Qwen VL inference via [[mlx-lm]], and an engine
 fact-checker into one end-to-end pipeline. (commit message @ 0545342)
+
+**Disambiguation**: this project is not born in [[eq-genesis]] (era 3, January 2026), despite
+a charter-level claim to that effect. The string "candlewax" does not appear anywhere in the
+repo or conversation corpus until 2026-04, naming this project specifically. The January
+mechanical ancestor is `ef199b0` (Jan 24), which stores the full 85-bin E[Q] outcome histogram —
+a distribution-over-Q the later name happened to echo, not the same artifact and not a rename.
+See [[candlewax]]'s concordance section for the full dating.
 
 ## Pipeline
 

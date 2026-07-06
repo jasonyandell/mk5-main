@@ -2,8 +2,8 @@
 title: w42 Book Validation Campaign
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: superseded
 ---
 
 ## Mission
@@ -18,7 +18,13 @@ orchestrated from the foreground. Each wave's outputs land under
 page per agent. Reconciliation is foreground-only: agents do not touch
 the central ledger or the synthesis page.
 
-## Status (live)
+## Status
+
+**Dormant since Wave 5 (2026-05-03); superseded in research attention by
+[[champion]]/[[jud]] (no closure note was written at the time, no further
+waves were planned).** This table was never updated after Wave 4.1 landed;
+the Wave 5 row below was added by the era-6 audit (2026-07-06) from the
+on-disk artifact, which existed but had never been entered.
 
 | wave | scope | bead | status |
 |---|---|---|---|
@@ -43,6 +49,7 @@ the central ledger or the synthesis page.
 | 3.0 | utility-lens meta-analysis | t42-f2ur | closed — narrows p_make/EV thread; ch05-void-creation-follow is the only true objective-dependent split; high-bid pounce contradicted under all 4 utilities |
 | 4.0 | utility-argmax divergence (architecture-decision gate) | t42-hmjr | closed — **gate TRIPPED**; EV vs p_make argmax disagrees on 41.2% (CI [36.8%, 45.6%]) of ch05-follow snapshots; Wave 3.0 framing inverted (p_make picks void MORE than EV; EV is the outlier preferring third-option discards); rung-2 utility-tunable searcher justified |
 | 4.1 | Lens v1 utility head-to-head (who wins games?) | t42-4ouu | closed — **EV wins decisively**: round-robin {ev, p_make, cvar_10, robust_q25} × 6 pairings × 1000 hands paired-seed; total ordering ev > robust_q25 ≳ cvar_10 > p_make, all 6 CIs exclude zero, ev beats p_make by +5.42 pts/hand; Wave 4.0 reading inverted (EV's "third-option" picks are point-winning, not noise); production `select_actions` is Lens(p_make) — the worst utility — switching to ev-argmax is a one-line follow-up |
+| 5 | champion teaching battery (book-claim-checking against champion trajectories) | — | closed (`w42/book_validation_v1/wave5/champion_teaching_battery/`, 2026-06-13, [[w42-champion-teaching-battery]]) — the campaign's only Wave 5 probe; runs the champion's lens:ev self-play trajectories through the ch04/ch05 detectors rather than through a planning-aware architecture (MCTS/Lookahead-Lens/book-strategy-player, all unbuilt); backfilled into this table by the era-6 audit (2026-07-06) — the artifact existed on disk but was never entered here |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
@@ -216,6 +223,14 @@ the third is most direct (tests specific claims rather than "is
 planning generically good?"); for broader model-design questions,
 the second is the cheap general-purpose tool. Detail in
 [[w42-book-claim-synthesis-and-ai-directions#methodology-insight-the-single-decision-blind-spot]].
+
+None of the three were built as planning architectures. [[book-strategy-player]]
+was designed (2026-05-03/04) but never implemented — superseded before build
+by the auction-first [[champion]]/[[jud]] redirection ([[champion-design-review]],
+2026-06-09). The Wave 5 probe that actually ran, [[w42-champion-teaching-battery]]
+(2026-06-13), answered the book-validation use case a different way: it checks
+book claims against the champion's own realized self-play trajectories,
+bypassing the planning-architecture question entirely.
 
 ## Wave 4.0 — architecture-decision gate
 

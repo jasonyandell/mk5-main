@@ -3,7 +3,8 @@ title: Kerry Newberry Curriculum
 kind: topic
 first_seen: f8cdbe7
 last_updated: 43009a4
-status: active
+status: superseded
+superseded_by: trump-drilling
 ---
 
 ## Overview
@@ -48,6 +49,11 @@ Evaluated in [[experiments/third-gemma-contact]] against the same probe prompt u
 | Final answer | Legal, correct | Legal, correct |
 
 The 6-4 under fives error remains. All other trump-membership cases are now handled correctly. This narrows the remaining rule gap to a single edge case (43009a4).
+
+Superseded same-day-ish by [[trump-drilling]] (601f622), which adds 5k targeted
+trump-membership Q&A on top of this 15k corpus to close the remaining error. Frozen
+mid-arc: this page does not describe the later v4–v10 curriculum rounds (see
+[[rules-adapter]] for the full progression).
 
 ## Links
 

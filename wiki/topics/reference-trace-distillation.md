@@ -3,7 +3,7 @@ title: Reference-Trace Distillation (Haiku 4.5 teacher)
 kind: topic
 first_seen: 1f13f92
 last_updated: b5d05de
-status: active
+status: retired
 ---
 
 ## Overview
@@ -38,7 +38,7 @@ Haiku's characteristic reasoning pattern:
 
 3. **Haiku's "go with the grain" patterns** — 7 tools/decision, no retries, `is_legal` self-check — are worth imprinting via distillation if iter-3 takes that direction (b5d05de).
 
-The 72.4% Haiku baseline sets the reference ceiling for [[burl]] iter-3+ comparisons. Traces live in `scratch/` (gitignored) (b5d05de).
+The 72.4% Haiku baseline was intended as the reference ceiling for [[burl]] iter-3+ comparisons, but that comparison never happened: [[iter3-rules-adapter]] shipped via a different lever ([[rules-as-tools]]) with zero Haiku-ceiling comparison ever run. Traces live in `scratch/` (gitignored) (b5d05de).
 
 ## Links
 

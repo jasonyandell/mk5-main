@@ -3,7 +3,7 @@ title: EQ-gate STaR (rejection sampling by eq_delta threshold)
 kind: topic
 first_seen: f164796
 last_updated: 761587c
-status: active
+status: retired
 ---
 
 ## Overview
@@ -30,7 +30,14 @@ Wired into the STaR orchestrator in 761587c. Phase B fires the gate on legal-but
 
 ## Relationship to K1
 
-K1 asks "did the model beat the bot?" EQ-gate asks "did the model come close enough to the argmax to be worth training on?" Both are acceptance criteria on the same E[Q] signal; EQ-gate is strictly stricter. STaR with EQ-gate produces a smaller but higher-quality corpus than STaR with K1 alone (f164796).
+K1 asks "did the model beat the bot?" EQ-gate asks "did the model come close enough to the argmax to be worth training on?" Both are acceptance criteria on the same E[Q] signal; EQ-gate is strictly stricter.
+
+**Asserted, unverified.** EQ-gate was wired into the STaR orchestrator (761587c) but no
+experiment page or commit ever reports a run that used it to gate a real training
+corpus — the "produces a smaller but higher-quality corpus" claim below was the design
+intent, not a measured result.
+
+STaR with EQ-gate produces a smaller but higher-quality corpus than STaR with K1 alone (f164796).
 
 ## Links
 

@@ -3,7 +3,7 @@ title: "Chat-Template Fix Validation (Burl N=5)"
 kind: experiment
 first_seen: 54f7776
 last_updated: 54f7776
-status: active
+status: superseded
 ---
 
 ## Summary
@@ -31,9 +31,17 @@ status: active
 
 The [[iter3-rules-adapter]]'s 90% result remains impressive but now needs reframing: it was achieving near-90% under zero tool-input conditions, not under full tool orchestration. What LoRA learned under the confound is unclear — pattern-match on prompt shape, or genuine tool-orchestration reasoning?
 
-## Open question at this frontier
+## Open question at this frontier — never answered
 
 Does iter-3-rules adapter behavior change under the fix? Re-running with working tool responses would decompose "LoRA learned tool orchestration" from "LoRA learned to pattern-match without tool input."
+
+**This question was never resolved.** No re-run appears anywhere in the [[burl]]
+family (checked across all evidence chunks). [[iter3-rules-adapter]]
+(`last_updated: dbadb5f`, predating this page's `54f7776` fix) was never revised to
+carry this caveat until the era-6 audit (2026-07-06) added it directly. The project's
+single headline validated result — 90% bot-match — was measured with the model's
+tool outputs silently invisible to it, and the project never re-ran it after fixing
+that bug two commits later.
 
 ## Related pages
 

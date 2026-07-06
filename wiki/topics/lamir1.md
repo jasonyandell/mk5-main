@@ -3,12 +3,14 @@ title: LAMIR-1 (continual-resolving look-ahead)
 kind: topic
 first_seen: 31e10ef
 last_updated: b42669a
-status: active
+status: superseded
 ---
 
 ## Overview
 
 LAMIR (Look-Ahead Monte Carlo with Information Re-weighting) is a 2025 technique for doing look-ahead during imperfect-information game play by sampling hidden-state worlds, evaluating each via a neural Q head, and aggregating by the current belief posterior. "LAMIR-1" is the depth-1 variant: a single look-ahead step (31e10ef).
+
+**Superseded.** Every rollout mode built here was measured against direct π_me and lost — see [[lamir1-ceiling]] for the full ladder and root cause. The project took pivot option 4 (self-play/value-native, no CFR+), which became [[w42-jud-v1]]/[[champion]], not a further LAMIR refinement. This page is the frozen historical record of the depth-1 attempt, not an open frontier.
 
 ## Why it matters for Gus
 
@@ -37,8 +39,8 @@ Four modes implemented in `gus/eval/lamir1.py`, selectable via `--mode` (7d2af99
 **direct** — baseline. No look-ahead; runs π_me argmax at the root. Used as the comparison baseline (regret 0.551, bot-match 76.07% on v3-10k).
 
 **v-bootstrap** — depth-1 look-ahead with V_head leaf evaluator, no opponent simulation. For each candidate action, scores the resulting state by averaging V_head over M corpus worlds.
-- Result: regret 2.777, bot-match 59.46%
-- Per-trick-pos breakdown: pos 0 (leads) 7.41 regret / 22% bot-match; pos 3 (last follower) 0.43 regret / 82% — same as direct.
+- Result: regret 2.777, bot-match 59.46% as first measured; corrected to **regret 1.645** after the eval fix — see [[gus-lamir1-mode-comparison]]. Still loses to direct.
+- Per-trick-pos breakdown (pre-fix run): pos 0 (leads) 7.41 regret / 22% bot-match; pos 3 (last follower) 0.43 regret / 82% — same as direct.
 - V_head at depth-1 is as broken as full rollout at trick_pos 0. Opp simulation is not the cause — V_head has distribution shift at the immediately-post-play state (7d2af99).
 
 **lamir1** (original mode) — 1-ply rollout: simulate remaining trick plays using rotation-equivariant π_me as π_opp, then score the leaf with V_head averaged over M worlds.
@@ -66,4 +68,4 @@ Both bugs are silent — they produce plausible-looking numbers without crashing
 
 ## Links
 
-[[gus]] [[joint-world-tensor]] [[expected-q-value]] [[student-distillation]] [[forge]] [[pimc]] [[qmae-plateau]] [[pi-opp-head]] [[lamir1-ceiling]]
+[[gus]] [[joint-world-tensor]] [[expected-q-value]] [[student-distillation]] [[forge]] [[pimc]] [[qmae-plateau]] [[pi-opp-head]] [[lamir1-ceiling]] [[w42-jud-v1]] [[champion]]

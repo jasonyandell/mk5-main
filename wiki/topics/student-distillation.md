@@ -18,7 +18,7 @@ Student distillation is [[gus]]'s training paradigm. The [[forge]] E[Q] oracle p
 | [[burl]] (tool orchestration) | Tool-trajectory STaR | Play (via tool calls) | Central |
 | Gus (student distillation) | E[Q] oracle labels | Play decision | Skipped |
 
-LEM is planned as the downstream commentary / explanation head once Gus's player works. Gus provides the decision; LEM provides the explanation (42a7535).
+The kickoff doc planned LEM as the downstream commentary/explanation head once Gus's player worked — Gus provides the decision, LEM provides the explanation (42a7535). That pairing was never executed: no wiki page shows [[lem]] ever consuming a Gus decision, and LEM instead pursued its own independent STaR curriculum (see [[lem]]). The harl→lem narrator framing from the project's earliest planning conversations (pre-rename) carried the same plan forward and was likewise never built. Gus and LEM remain separate sibling projects, not a decision/narration pipeline.
 
 ## Why variance-free
 

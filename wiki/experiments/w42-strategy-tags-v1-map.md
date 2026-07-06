@@ -2,8 +2,8 @@
 title: w42 Strategy Tags v1 Map
 kind: experiment
 first_seen: local-2026-05-01
-last_updated: local-2026-05-01
-status: active
+last_updated: afd4802
+status: complete
 ---
 
 ## Summary

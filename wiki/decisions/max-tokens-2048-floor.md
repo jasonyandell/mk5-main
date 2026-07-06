@@ -38,7 +38,16 @@ The downstream cost of truncation was not "1.2% of turns are short." It was that
 | `belief_turns` not starting at turn 1 | 0.0% | was 11.4% |
 | Bucket distribution | within ±2pp of sequential | was 5pp+ on `BURL_BREAKS_CONSENSUS` |
 
-Override flag `--max-tokens N` exists for opportunistic re-tuning, but the constant default is now 2048.
+Override flag `--max-tokens N` exists for opportunistic re-tuning.
+
+**Correction (era-6 audit, 2026-07-06):** "the constant default is now 2048" is false
+as stated. `burl/eval/run_move4_star_rollout_batched.py:696` has `default=512`,
+unchanged since `6a97d55` (predates this decision). 2048 appears only as an explicit
+CLI flag in `STAR_RUN3_PLAN.md` and in the harvest scripts that actually ran this
+decision's evidence (`scratch/belief_trajectory_rollout/harvest_batched.py`). The
+2048 floor documented above is real and was applied — but it must be passed
+explicitly via `--max-tokens 2048`; the code-level default in at least one production
+rollout script remains 512.
 
 ## Why not 4096 or 8192
 

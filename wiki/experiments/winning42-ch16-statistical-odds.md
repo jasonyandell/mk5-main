@@ -2,7 +2,7 @@
 title: Winning 42 Ch16 Statistical Odds
 kind: experiment
 first_seen: local-2026-05-01
-last_updated: local-2026-05-01
+last_updated: 12064bf
 status: active
 ---
 

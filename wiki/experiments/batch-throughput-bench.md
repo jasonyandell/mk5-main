@@ -29,13 +29,19 @@ status: active
 
 ## Operationalized (6a97d55)
 
-`GemmaLocalNativeBatched` + `run_move4_star_rollout_batched.py`: N=16 batched (batch=16) runs in 58s vs sequential 134s — 2.3× wall. Larger batches and `prompt_cache` reuse expected to push toward the bench's 14.5× aggregate win.
+`GemmaLocalNativeBatched` + `run_move4_star_rollout_batched.py`: N=16 batched (batch=16) runs in 58s vs sequential 134s — 2.3× wall. Larger batches and `prompt_cache` reuse expected to push toward the bench's 14.5× aggregate win — **but ragged batches and prompt_cache reuse are both untested**; the 2.3× figure is measured, the extrapolation toward 14.5× is not.
 
 ## Significance
 
 N=500 rollouts at ~4 turns × ~128 tokens = ~3.5 min wall time vs hours sequential. Corpus scale stops being a throughput constraint. Unlocks "corpus 10-20× larger" as the next iter-5+ lever.
 
-**Load-bearing incidental finding** (flagged in [[sources/7321952]]): `WorldSamplerMRV` marginal distribution is biased vs uniform enumeration by ~6.8 Q points at trick 6. Enumeration is ground truth; all historical Burl eval numbers and forge/eq training data use the biased sampler. Worth a bead.
+**Load-bearing incidental finding** (flagged in [[sources/7321952]]): `WorldSamplerMRV` marginal distribution is biased vs uniform enumeration by ~6.8 Q points at trick 6. Enumeration is ground truth; all historical Burl eval numbers and forge/eq training data use the biased sampler.
+
+**This was never tracked.** "Worth a bead" was the recommendation at the time, but no
+bead and no GitHub issue was ever filed for it — before or after the 2026-06
+beads→GitHub-issues migration. This is a real, still-open project gap affecting every
+historical Burl eval number and forge/eq training-data quality claim, not merely a
+wiki staleness issue.
 
 ## Related pages
 

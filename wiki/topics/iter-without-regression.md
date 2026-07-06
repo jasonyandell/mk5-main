@@ -3,7 +3,7 @@ title: Iter without regression
 kind: topic
 first_seen: 74464e9
 last_updated: 74464e9
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -47,6 +47,8 @@ Each of these is a small piece of plumbing. Together they gave the recipe enough
 - **Corpus enrichment with FORCED_COMMIT-as-negative** (`scratch/belief_trajectory_rollout/star/CORPUS_ENRICHMENT_PLAN.md`) is staged as insurance if iter-3 reverts to commit-discipline collapse.
 - **Backwards-curriculum ratchet to trick 5** becomes meaningful because iter-2 → iter-3 will have an apples-to-apples reference once the rollout target shifts.
 - **Capacity scaling experiments** (rank 8 → 16 → 32) can now A/B without the prior-iteration confound of "did the trainer survive."
+
+**None of these three ran.** The project pivoted to a perf-sprint ([[perf-on-the-table]]), then [[burl-chat]]/[[burl-lab]]/[[burl-microscope]], then [[champion]]/[[jud]]. The "iter without regression" milestone held at the infrastructure level named above, but the forward implications it was meant to unlock were never exercised.
 
 ## Caveat
 

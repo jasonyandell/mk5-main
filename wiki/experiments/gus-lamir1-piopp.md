@@ -3,7 +3,7 @@ title: LAMIR-1 with π_opp Rollout — Ceiling Finding (§20)
 kind: experiment
 first_seen: 1a1a324
 last_updated: b42669a
-status: active
+status: superseded
 ---
 
 ## Summary
@@ -26,14 +26,20 @@ four pivot options. (commit messages @ 1a1a324, 2c380a6, 8106f01, b42669a)
 |---|---|---|---|
 | **direct π_me (baseline)** | **0.551** | **76.07%** | v3-10k |
 | q-bootstrap | 0.679 | — | Best look-ahead mode |
-| v-bootstrap | 2.777 | 59.46% | V_head distribution shift |
-| lamir1 (argmax opp) | 2.384 | 62.86% | — |
-| lamir1-qleaf | worse | — | Full rollout, Q_head leaf |
-| lamir1-piopp | worse | — | π_opp rollout, Q_head leaf |
+| v-bootstrap | 1.645 | 66.96% | V_head distribution shift |
+| lamir1 (argmax opp) | 2.094 | 60.36% | — |
+| lamir1-qleaf | 2.006 | 64.29% | Full rollout, Q_head leaf |
+| lamir1-piopp | 2.268 | 62.10% | π_opp rollout, Q_head leaf |
 
 Direct π_me beats all 8 look-ahead variants. q-bootstrap (0.679) is the best look-ahead
 mode but still 23% worse than direct. Full rollouts uniformly worse than depth-1.
 (commit message @ b42669a)
+
+**Number correction (2026-07-06 audit):** this page cites the right commit (`b42669a`) but had
+been carrying the wrong (pre-fix) numbers from it — v-bootstrap was previously listed as 2.777
+and lamir1 as 2.384, both superseded values from earlier in the same bug-fix cluster. The
+table above now matches `b42669a:PRACTICALITIES.md` §20 and [[lamir1-ceiling]]'s canonical
+ladder exactly.
 
 ## Bug 6 — stale world_assign at Q_head leaf (2c380a6)
 
@@ -78,4 +84,4 @@ message @ 8106f01)
 
 ## Links
 
-[[gus]] · [[topics/lamir1]] · [[topics/regret-eval]] · [[experiments/gus-pi-opp-training]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-router-pilot]]
+[[gus]] · [[topics/lamir1]] · [[topics/lamir1-ceiling]] · [[topics/regret-eval]] · [[experiments/gus-pi-opp-training]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-router-pilot]]

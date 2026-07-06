@@ -3,7 +3,7 @@ title: Stage 0 v10 Adapter (joint rationalization + maskfix)
 kind: entity
 first_seen: 0c7392f
 last_updated: be7efc4
-status: active
+status: complete
 ---
 
 ## What it is
@@ -57,6 +57,17 @@ Capacity or STaR iteration is the next lever, not more SFT signal.
 
 ## End-of-LEM-replay state
 
-v10-maskfix is the best LEM adapter at the close of the replay. Open path: capacity
-(compound 14B + joint training) or STaR on v10/14B. The 55/100 bot-match is a stable
-floor waiting for a different lever.
+v10-maskfix is the best LEM adapter at the close of the replay. Neither proposed lever
+(capacity — compound 14B + joint training — or STaR on v10/14B) was taken; the actual next
+step was a full mechanism pivot to [[burl]] (see [[lem-to-burl-handoff]]). The
+55/100 bot-match ceiling remains unresolved by either proposed lever — it was never tested
+against them.
+
+## Why the chain stops here
+
+Nothing newer supersedes v10-maskfix within its own lineage — LEM went dormant (`be7efc4`,
+Apr 17) before a v11 was attempted. Zooming out further: as of jud v1, the project's play
+mechanism no longer consumes any LoRA adapter at all. [[champion]] (line ~166) states the
+jud v1 capstone runs "zero adapter," with `judplay` replacing `lens:ev` with greedy 1-ply
+value play, oracle-free at runtime. The chain stopped because the mechanism it fed was
+abandoned project-wide, not because a v11 lost a bake-off.

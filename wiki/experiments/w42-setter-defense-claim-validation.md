@@ -2,8 +2,8 @@
 title: w42 Setter Defense Claim Validation
 kind: experiment
 first_seen: f746b93
-last_updated: f746b93
-status: active
+last_updated: afd4802
+status: superseded
 ---
 
 ## Summary

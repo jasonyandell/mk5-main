@@ -3,7 +3,7 @@ title: π_opp Head
 kind: topic
 first_seen: 93859a0
 last_updated: b4e8ecd
-status: active
+status: retired
 ---
 
 ## What it is
@@ -51,6 +51,13 @@ Backwards compatible: v1 corpora load unchanged.
 
 Better opp simulation made rollout outcomes slightly worse. The bottleneck is not opp quality — it is the scalar noise in the distilled leaf evaluator (b42669a). See [[lamir1-ceiling]].
 
+## Retired
+
+The head is a real trained artifact (68.57% oracle top-1) but belongs to the abandoned
+[[lamir1]] rollout track. `jud`/[[champion]] do not use it — the project's decision-time
+look-ahead question was closed by taking pivot option 4 (self-play, no CFR+), not by fixing
+the rollout this head was built to serve. See [[lamir1-ceiling]] for the full pivot record.
+
 ## Links
 
-[[lamir1]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[expected-q-value]]
+[[lamir1]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[expected-q-value]] [[champion]]

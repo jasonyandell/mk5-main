@@ -3,7 +3,7 @@ title: Learned by Playing, Not Drilling
 kind: topic
 first_seen: 24ae55a
 last_updated: 8c1bb14
-status: active
+status: superseded
 ---
 
 ## Overview
@@ -43,6 +43,14 @@ That hypothesis was contradicted by ingest 13 (8c1bb14). A better Stage 0 adapte
 ## Recurring theme
 
 This observation may generalize: factual state-reading (what dominoes remain?) transfers from Q&A to narration context; compositional rule application (which dominoes are trump given this declaration?) may require game-grounded correction to transfer. A pattern worth tracking across future stages (lem/OVERVIEW.md @ 24ae55a).
+
+## Inapplicable to the successor
+
+[[burl]] does not test this thesis at all — it doesn't drill rules into weights in the
+first place, so there is nothing for "playing" to correct. Rules facts come from the
+[[engine]] tool at inference time. The drilling-vs-playing question this page tracks was
+never resolved by LEM (it ended mid-plateau, see [[lem]]) and became moot once the project
+pivoted to a weights-don't-hold-facts architecture. See [[lem-to-burl-handoff]].
 
 ## Links
 

@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: 3ac03de
+last_updated: afd4802
 status: active
 ---
 
@@ -302,6 +302,14 @@ oracle-free in one night, and the current best player stays the value-native
 bidder over oracle play (`margin:wp`(head_8)+`lens:ev`, [[champion]]). v2's cue
 is now concrete: a bigger leaf trained on **per-move** targets (E[Q] distilled
 as a bootstrap, the solve-as-bootstrap law) plus opponents-in-rollout.
+
+**Zeb-protocol reconfirmation (2026-07-06, `afd4802`).** A further paired test
+(dropped contracts, bid30 both sides, seed 7000000, 256 games) holds the line:
+`judsearch` −1.39 [−1.75,−1.00] and `judplay` −2.73 [−3.04,−2.43] both still
+lose to `lens:ev` — eq n=10 remains undefeated at pure play against every
+learned challenger since Zeb. A bonus pilot priced `margin:wp`(r8) against the
+**live** (non-distilled) `gus:10,wp` sim bidder: **+0.59 [-0.19,+1.39]** (64
+games) — the bidding crown wasn't hiding behind the distillation.
 
 ## Links
 

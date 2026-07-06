@@ -3,7 +3,7 @@ title: logged-arrows
 kind: topic
 first_seen: local-2026-05-02
 last_updated: local-2026-05-02
-status: active
+status: superseded
 ---
 
 ## What It Is
@@ -25,3 +25,9 @@ The server is the interpreter. It appends each returned Move to `events.jsonl`, 
 ## Why It Matters
 
 The first `burl/lab` implementation preserved event sourcing and rendered `ToolSpec` prompts but left orchestration procedural: phases appended directly, server code owned some semantic reconstruction, and the algebra was implicit. Logged arrows restore the intended composition rule without changing the journal format.
+
+## Status
+
+Downstream of [[burl-lab]], which went dormant 2026-05-07 and was superseded by
+[[champion]] / [[jud]]. The design remains correct as documented; it is not carried
+forward into the current architecture.

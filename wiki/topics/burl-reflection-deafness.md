@@ -3,7 +3,7 @@ title: burl-reflection-deafness — explicit "why?" prompts get re-routed into t
 kind: topic
 first_seen: 2026-05-01
 last_updated: 2026-05-01
-status: active
+status: retired
 ---
 
 ## What
@@ -54,3 +54,9 @@ Three implications:
 - [[burl-chat-spike]] — the rerun-fresh session where this surfaced
 - [[count-vs-pip-sum-confusion]] — adjacent reasoning-grounding bug, separable
 - [[post-commit-q-and-a]] — research direction this constrains (corpus must include reflection turns explicitly)
+
+## Status
+
+The proposed cheap fix (a protocol-text line telling the model to answer questions
+rather than call tools) was never tried — the [[burl-chat]] line went dormant
+2026-05-07, two months before this reconciliation, without anyone testing it.

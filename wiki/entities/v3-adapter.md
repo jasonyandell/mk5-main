@@ -3,7 +3,8 @@ title: Stage 0 v3 Adapter (Kerry + trump drill)
 kind: entity
 first_seen: 601f622
 last_updated: 8c1bb14
-status: active
+status: superseded
+superseded_by: v4-adapter
 ---
 
 ## What it is
@@ -38,6 +39,9 @@ stubborn error (6-4 called trump under fives). (commit messages @ 601f622, 8c1bb
 Average ~44%. Illegal rate ~13% across iterations. Best adapter: `star-iter2` at 48%.
 See [[experiments/stage-0-progression-star]]. (commit message @ 8c1bb14)
 
+v3 was the last flashcard-format Stage 0 adapter — two days later [[v4-adapter]] pivoted
+to [[game-context-qa]] and moved past this peak.
+
 ## Stage 0 progression
 
 | Stage 0 | Avg pass | Peak | Illegal rate |
@@ -48,3 +52,6 @@ See [[experiments/stage-0-progression-star]]. (commit message @ 8c1bb14)
 
 Each curriculum round raises the floor. The ingest-10 plateau at ~40% was a Stage-0-quality
 ceiling, not a K1-grading ceiling. (commit message @ 8c1bb14)
+
+v3 is superseded by [[v4-adapter]] (game-context Q&A, 4729dad) — flashcard curricula (v1,
+Kerry, v3) were discarded in favor of game-grounded prompts.

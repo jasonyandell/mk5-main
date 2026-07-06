@@ -3,7 +3,7 @@ title: belief_trajectory tool
 kind: entity
 first_seen: d858781
 last_updated: 1bf1885
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -38,3 +38,9 @@ full tool-response payloads into live logs. (commit message @ d858781)
 Three hooks in [[wax-museum]] (1bf1885) control how `belief_trajectory` enters the model's
 context: via `system_prompt_transform`, `preload_tool_calls` (model wakes with belief
 already injected), or `menu_override` (gate can strip or enforce belief-only).
+
+## Status
+
+Last commit `1bf1885` (2026-04-24); still referenced across the [[burl]] family but the
+line it fed is dormant. Superseded along with the rest of the [[burl]] tool-use
+architecture by [[w42-jud-v1|jud]]'s pure-NN belief/policy nets.

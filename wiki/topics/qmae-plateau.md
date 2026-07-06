@@ -2,7 +2,7 @@
 title: qMAE Plateau (Q-head scaling wall)
 kind: topic
 first_seen: 41fdb3c
-last_updated: 41fdb3c
+last_updated: cf8ff79
 status: active
 ---
 
@@ -26,13 +26,13 @@ Q_head trains on one random world per forward pass — no cross-world consistenc
 
 This is the same issue that caused the [[blunder-detector]]'s Q-spread feature to underperform as a blunder proxy — the per-world Q estimates are individually accurate but collectively noisy (5373223, 41fdb3c).
 
-## Known fix paths
+## Known fix paths — one tried and falsified, one never attempted
 
-Two candidate remedies (41fdb3c):
+Two candidate remedies were proposed (41fdb3c):
 
-1. **Multi-world variance regularization during Q_head training**: add a loss that penalizes high variance in Q_head predictions across worlds for the same state when the oracle says the Q values should be similar. Affects `train_v2_voids.py` and descendants.
+1. **Multi-world variance regularization during Q_head training**: add a loss that penalizes high variance in Q_head predictions across worlds for the same state when the oracle says the Q values should be similar. Affects `train_v2_voids.py` and descendants. **Never attempted.**
 
-2. **Joint co-training**: train Q_head simultaneously on multiple worlds per decision rather than one. More expensive per-decision but gives the Q_head direct gradient signal for cross-world consistency.
+2. **Joint co-training**: train Q_head simultaneously on multiple worlds per decision rather than one. Remedy #2's cousin was tried the same week as [[belief-co-train]] (`cf8ff79`) and **falsified on this setup**: "the hypothesis... is falsified on this setup" — joint co-training of belief + world_encoder + Q_head improved belief calibration but made downstream q-bootstrap regret slightly worse (0.685 → 0.718), because Q_head had been trained against the old belief head's output shape and joint retraining moved it off that sweet spot.
 
 ## LAMIR-1 dependency
 
@@ -40,4 +40,4 @@ LAMIR-1 requires the Q_head to produce reliable per-world Q estimates for belief
 
 ## Links
 
-[[gus]] [[lamir1]] [[dense-q-supervision]] [[pimc]] [[blunder-detector]] [[consistency-regularizer]] [[regret-eval]]
+[[gus]] [[lamir1]] [[dense-q-supervision]] [[pimc]] [[blunder-detector]] [[consistency-regularizer]] [[regret-eval]] [[belief-co-train]]

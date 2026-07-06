@@ -2,9 +2,19 @@
 title: w42 84 Claim Validation
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: complete
 ---
+
+**Complete for the static-math scope it covers** (exact double-six
+enumeration and hypergeometric proxies are final). Its claim-ledger rows have
+been frozen at `underpowered`/`context-limited`/`not-yet-tested` since
+2026-05-03 while [[w42-phase2-84-weapon-preservation-probe]]'s dynamic branch
+lab and, later, [[w42-phase4-84-dynamic-seed-tests]] and
+[[w42-phase4-final-claim-audit]] moved past it on the dynamic/replay side this
+page explicitly says it cannot measure — no page reconciled this page's rows
+against that later work; read [[w42-phase4-final-claim-audit]] for the
+current closure state of the 64-claim ledger this page feeds into.
 
 ## Summary
 

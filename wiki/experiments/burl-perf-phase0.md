@@ -3,7 +3,7 @@ title: Burl Perf — Phase 0 (Measurement Harness)
 kind: experiment
 first_seen: 1f11d28
 last_updated: 1f11d28
-status: active
+status: complete
 ---
 
 ## Overview
@@ -110,3 +110,10 @@ The base Gemma 4 E2B inference path is **not bit-pinned**:
 - Promoted bridge: `burl/eval/gus_eval_bridge.py`
   (was `scratch/belief_trajectory_rollout/diagnostic/gus_eval_bridge.py`)
 - Per-run JSON detail: `burl/eval/results/perf_<timestamp>_<variant>.json`
+
+## Status
+
+The measurement harness itself is durable infrastructure, but the "phase 0" framing
+is stage-1 of a perf sprint that stalled: no further Burl commits landed after
+2026-05-07, and the sprint's own compounded-stack projection ([[perf-on-the-table]])
+was never revisited after [[burl-perf-phase2]]'s continuous-batching retraction.

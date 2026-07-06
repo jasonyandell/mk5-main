@@ -3,7 +3,7 @@ title: Detect-and-Route (blunder-gated inference wrapper)
 kind: topic
 first_seen: eba5103
 last_updated: a09ef43
-status: active
+status: retired
 ---
 
 ## Overview
@@ -30,9 +30,15 @@ Baseline (no routing): 1.39 regret.
 
 3. **Next-best adapter is worst** — smaller/weaker adapters are also wrong on the same sharp decisions where the primary needs help. Adapter diversity doesn't help in the tail (eba5103).
 
-## Emerging architecture
+## Proposed architecture (never shipped)
 
-The deployable shape of Gus v1.0 is: detect → route → fallback. For oracle-budget inference this already works (0.49 regret). For no-oracle inference, the prerequisite is a Q_head that survives multi-world averaging — either via multi-world variance regularization during training or K=50+ worlds at inference (109f9e1, a09ef43).
+This was proposed as the deployable shape of "Gus v1.0": detect → route → fallback. No such
+release exists — `git tag` and `git log --grep` show no "Gus v1.0" artifact. The oracle-budget
+path reached 0.49 regret in eval scripts only; it was never wired into champion, arena, or
+forge production. For no-oracle inference, the prerequisite would have been a Q_head that
+survives multi-world averaging — either via multi-world variance regularization during
+training or K=50+ worlds at inference (109f9e1, a09ef43) — but the whole line was abandoned
+when the project pivoted to `jud`/[[champion]] instead of pursuing further LAMIR-era fixes.
 
 Router benefit concentrates on mid-game tricks (decisions 0-12, especially 4, 8, 10) where primary regret is 2-6 Q-pts. End-game decisions (24-27) are correctly never flagged (eba5103).
 
@@ -42,4 +48,4 @@ Naïve ensemble (majority vote, softmax average) boosts bot-match but hurts regr
 
 ## Links
 
-[[gus]] [[blunder-detector]] [[regret-eval]] [[router-reality-check]] [[pimc]] [[expected-q-value]]
+[[gus]] [[blunder-detector]] [[regret-eval]] [[router-reality-check]] [[pimc]] [[expected-q-value]] [[champion]]

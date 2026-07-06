@@ -3,7 +3,7 @@ title: K1 Grading — Beat the Bot It Replaced
 kind: topic
 first_seen: a8bccfa
 last_updated: 908773a
-status: active
+status: superseded
 ---
 
 ## Overview
@@ -34,11 +34,32 @@ Traces that fail K1 are not discarded. They are routed to [[r1-rationalization]]
 
 With Stage 0 adapter as starting point, K1 pass rate across 15 iterations: 30% → 34% → 33% → 36% → 35% → **42%** → 36% → **42%** → 38% → 36% → 39% → 41% → 40% → 39% → 38%. Best recorded: 42% at iterations 5 and 7. Plateau band: 38–41% in iters 10–14. The base-model K1 baseline (no adapter, 60%) is measured on a different distribution — the base model is tested via llama.cpp on a small sample, whereas STaR iterations run on the Stage 0 adapter against a filtered subset of the training pool (lem/OVERVIEW.md @ 908773a). See [[experiments/star-10-iterations]].
 
-## Ceiling hypothesis
+## Ceiling hypothesis (superseded — see revised framing below)
 
-After 15 STaR iterations, pass rate has plateaued at 38–41% and does not improve further. The frontier's explanation: "The plateau at ~40% likely reflects the ceiling of K1 grading without fact-verification. The model may be learning wrong game-facts that happen to produce correct plays ~40% of the time but can't go further because the reasoning is polluted." (lem/OVERVIEW.md @ 908773a)
+After 15 STaR iterations, pass rate plateaued at 38–41% and did not improve further. The
+frontier's explanation at the time: "The plateau at ~40% likely reflects the ceiling of K1
+grading without fact-verification. The model may be learning wrong game-facts that happen
+to produce correct plays ~40% of the time but can't go further because the reasoning is
+polluted." (lem/OVERVIEW.md @ 908773a)
 
-K1 rewards matching the argmax play, but a model can match the argmax by accident or by reasoning from incorrect game-state that coincidentally produces the right answer. Without a mechanism to verify that the reasoning chain is factually grounded, the improvement signal caps at whatever fraction of decisions the model can get right despite polluted reasoning. See [[scratchpad-validation]] for the proposed remediation.
+K1 rewards matching the argmax play, but a model can match the argmax by accident or by
+reasoning from incorrect game-state that coincidentally produces the right answer. Without
+a mechanism to verify that the reasoning chain is factually grounded, the improvement
+signal caps at whatever fraction of decisions the model can get right despite polluted
+reasoning. This motivated [[scratchpad-validation]] as a proposed remediation — but the
+premise was never tested, because a cheaper lever (better Stage 0 curriculum) broke the
+plateau first. See below.
+
+## Revised ceiling framing
+
+The ~40% K1-without-fact-verification reading (ingest 10, 908773a) was premature. v3
+pushed through it to 48% (ingest 13, 8c1bb14) — the [[kerry-curriculum]] and
+[[trump-drilling]] curriculum rounds raised the STaR ceiling without any
+fact-verification mechanism at all. The revised hypothesis: K1's apparent ceiling
+depends on the rules-comprehension floor Stage 0 provides — better Stage 0 → higher
+STaR plateau. [[scratchpad-validation]] may still matter eventually but is not proven
+necessary; the ingest-10 "structural ceiling" framing was curriculum-bounded, not
+K1-structural. See [[stage-0-progression-star]] and [[learned-by-playing]] (8c1bb14).
 
 ## Stricter grading attempted and shelved
 

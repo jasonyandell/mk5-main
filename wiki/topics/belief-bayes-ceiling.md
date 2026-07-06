@@ -40,11 +40,11 @@ These are complementary findings: the propagation gap is an architectural proble
 
 **Top-1 accuracy is a dead lever.** Any belief head exceeding ~39.2% on this corpus is overfitting; lower is underfitting. Gus is tuned.
 
-**The remaining lever is posterior shape (calibration).** §15 already showed distribution-target training closed 47% of the KL gap (0.078 → 0.062). That improvement stalled because downstream heads weren't co-trained on the new distribution. The live question is whether jointly training belief + world_encoder + Q_head with a distribution target propagates the calibration win to look-ahead quality. (Attempted in [[belief-co-train]]; result: no — Q_head was already at a sweet spot for the old belief's distribution.)
+**The remaining lever is posterior shape (calibration).** §15 already showed distribution-target training closed 47% of the KL gap (0.078 → 0.062). That improvement stalled because downstream heads weren't co-trained on the new distribution. This was tested in [[belief-co-train]]; the answer is no — jointly training belief + world_encoder + Q_head with a distribution target did propagate calibration (KL improved) but Q_head was already at a sweet spot for the old belief's distribution, so downstream regret got slightly worse, not better.
 
-**LAMIR / PIMC / BMCS** all consume the full `P(seat | domino)` distribution, not argmax. Better tail calibration → better-weighted world samples → potentially better look-ahead aggregation. But the co-train experiment showed this doesn't propagate additively in our current distillation pipeline.
+**LAMIR / PIMC / BMCS** all consume the full `P(seat | domino)` distribution, not argmax. Better tail calibration → better-weighted world samples → potentially better look-ahead aggregation. But the co-train experiment showed this doesn't propagate additively in the project's distillation pipeline — and the whole LAMIR/PIMC-lookahead line was subsequently abandoned in favor of `jud`/[[champion]] (see [[lamir1-ceiling]]).
 
-**Corpus-specific caveat**: 39.2% is the ceiling on `corpus_eval_20.pt`. Schema v2 / diverse-seed corpora may differ. The diagnostic should be re-run before any future belief architecture claim (548d32a).
+**Corpus-specific caveat**: 39.2% is the ceiling on `corpus_eval_20.pt`. Schema v2 / diverse-seed corpora may differ, but the diagnostic was never re-run on one — [[gen-fleet]], the diverse-seed generator this caveat depended on, never launched. The 10k corpus that did ship (v3-10k) was generated locally on the same schema-v1-shaped pipeline as `corpus_eval_20.pt`, so the caveat remains open but untestable against the originally-envisioned diverse-seed corpus (548d32a).
 
 ## Diagnostic artifact
 
@@ -52,4 +52,4 @@ These are complementary findings: the propagation gap is an architectural proble
 
 ## Links
 
-[[belief-propagation-gap]] [[belief-co-train]] [[consistency-regularizer]] [[lamir1-ceiling]] [[student-distillation]] [[gus]]
+[[belief-propagation-gap]] [[belief-co-train]] [[consistency-regularizer]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[gen-fleet]] [[champion]]

@@ -8,6 +8,11 @@ status: active
 
 The "let's friggin rock this perf problem" entry point.
 
+**Dormant since sprint 2 (2026-04-28).** No perf sprint has run in the ~2 months since;
+frontier work has moved to jud v1 / Zeb (see [[champion]], `wiki/log.md` 2026-07-06
+entries). The contract and playbook below are still the right starting point if a perf
+sprint resumes — nothing here is stale, it's just unclaimed.
+
 ## Kickoff
 
 Paste into a fresh session at the project root:

@@ -3,7 +3,7 @@ title: STaR Harness
 kind: entity
 first_seen: 7538016
 last_updated: efad16e
-status: active
+status: complete
 ---
 
 ## What it is
@@ -154,3 +154,10 @@ alongside `pass_rate`. Interpretation per [[k1-grading]]:
   to justify why it is correct. Keep that justification as the training trace. Illegal and
   parse-fail traces are discarded, not rationalized (as of fb47ab3).
   Simpler than DPO; proven effective in the original STaR paper.
+
+## End state
+
+The harness was frozen at efad16e (10-iteration run) with no `lem/gemma_star/` commits
+after that point. [[burl]] does not reuse this code — it runs [[star]] on a different
+trace format (tool-call trajectories, not free-form narration text). See
+[[lem-to-burl-handoff]].

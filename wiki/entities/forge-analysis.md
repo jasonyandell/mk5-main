@@ -2,7 +2,7 @@
 title: forge-analysis (oracle game-tree analytics workstream)
 kind: entity
 first_seen: 5ffdf58
-last_updated: 4a747f6
+last_updated: b512324
 status: active
 ---
 
@@ -59,8 +59,9 @@ any claim that wants to extrapolate ("doubles are good for E[V]" is an oracle fa
 | 7 | **Domino co-occurrence carries near-zero strategic signal** (Word2Vec/UMAP). Value comes from game context (trump, position), not hand composition. | report/16a–b |
 | 8 | **Symmetry compression negligible** (1.005×). Trump + played-card history breaks pip-permutation orbits. | report/04_symmetry.md |
 | 9 | **Hurst H=0.925** in oracle PV trajectories — strong persistence, far from random walk. | report/05_topology.md |
+| 10 | **14d SHAP analysis (2026-06-09) partially walks back 14a's doubles-importance magnitude**: the 14a surrogate implied ~3x importance for doubles; direct 14d SHAP measurement on the Q-value transformer finds 1.13x — doubles matter, but the effect is distributed more broadly across features than the surrogate implied. | `git show b512324 --stat`; `forge/analysis/CLAUDE.md` |
 
-The full list is much longer; the executive summary at `forge/analysis/report/00_executive_summary.md` is the canonical index.
+The full list is much longer; the executive summary at `forge/analysis/report/00_executive_summary.md` is the canonical index. Note: the executive summary and this table predate the 2026-06-09 14d finding; row 10 above is the current correction until the summary itself is regenerated.
 
 ## Tooling
 
@@ -75,9 +76,19 @@ across `run_11*.py` scripts. The 200-seed × 20-column master table at
 
 ## Status
 
-Mature. Last commit 2026-01-31. Active strand at the time of the LEM→Burl handoff
-(8d26e0d) was the `bias/` slot-0 investigation; that strand resolved with proposed
-fix `bias/20-proposed-fix-shuffle.md`.
+Mature. Last commit 2026-06-09 (`b512324`, "Add 14d SHAP analysis of Q-val transformer" —
++4 figures, +2 CSVs, `forge/analysis/CLAUDE.md` update; verified via `git show --stat`). The
+workstream was quiet from 2026-01-31 through early June, then resumed once for the 14d SHAP
+pass; no further activity since. Active strand at the time of the LEM→Burl handoff (8d26e0d)
+was the `bias/` slot-0 investigation; that strand resolved with proposed fix
+`bias/20-proposed-fix-shuffle.md`.
+
+## Origin
+
+Launched 2026-01-06 through 01-08, the closing act of [[breakthrough-and-oracle]] — see
+[[the-analysis-epic]] for the launch week itself: the 131-commit Jan 7 volume, the six
+folk-heuristic refutations, the self-caught "19% skill, 81% luck" retraction, and the Jan 8
+epistemic-audit closeout.
 
 ## Related
 

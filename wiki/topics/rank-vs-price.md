@@ -8,7 +8,7 @@ status: active
 
 ## The mechanism
 
-[[pimc]]'s strategy-fusion optimism — per-world double-dummy values assume the
+[[pimc]]'s [[strategy-fusion]] optimism — per-world double-dummy values assume the
 player will *know the world* when acting later — is a distribution-shape error:
 it fattens the upper tail of every action's outcome blob. The stack's two
 decision types consume that blob differently:

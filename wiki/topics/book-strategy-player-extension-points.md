@@ -2,11 +2,16 @@
 title: BookStrategyPlayer Extension Points
 kind: topic
 first_seen: local-2026-05-04
-last_updated: local-2026-05-04
-status: active
+last_updated: afd4802
+status: superseded
 ---
 
 ## Purpose
+
+**Superseded before build.** These are extension points for a core
+([[book-strategy-player]]) that was never built — the chassis was redirected
+from play-time strategy to the auction by Fable's 2026-06-09 design review
+(see [[champion-design-review]]). Preserved as design record only.
 
 [[book-strategy-player]] has a small Phase 1 algebra. The following directions
 are allowed by that algebra but should not complicate the core implementation.

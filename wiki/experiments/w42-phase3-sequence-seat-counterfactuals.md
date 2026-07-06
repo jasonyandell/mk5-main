@@ -2,9 +2,13 @@
 title: w42 Phase3 Sequence Seat Counterfactuals
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-phase4-sequence-handshape-tests]], which sharpens the
+same Ch3/4/5 claims over the same 75,079-row table with sharper labels — its
+"needs hand-shape/state-injection follow-up" gap shipped the same day.
 
 ## Summary
 

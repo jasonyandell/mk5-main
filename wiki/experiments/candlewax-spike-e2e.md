@@ -3,7 +3,7 @@ title: "Candlewax Spike: Multimodal PDFs + Engine Fact-Checker + MLX LoRA STaR (
 kind: experiment
 first_seen: 0545342
 last_updated: 0545342
-status: active
+status: retired
 ---
 
 ## Summary

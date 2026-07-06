@@ -15,6 +15,7 @@ Narration converts a played [[texas-42]] game into second-person prose from one 
 1. **Humans** — eyeballing whether the voice is natural and self-contained.
 2. **[[rules-adapter]] parsing checks** — Stage 0 uses held-out narrations to verify the adapter can parse game text.
 3. **[[star]] prompts** — Stage 1 truncates narrations at the narrator's decision point to form the STaR prompt input (lem/narrate/OVERVIEW.md @ a8bccfa).
+4. **[[burl]]** — draws on the same game-state representations (second-person prose, public-state blocks) for its own decision datasets, even though it doesn't reuse LEM's adapters. See [[lem-to-burl-handoff]] §4 ("Narration work").
 
 ## Voice rules
 

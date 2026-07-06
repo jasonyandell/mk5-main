@@ -2,9 +2,13 @@
 title: w42 Gus Corpus Tactical Claim Deep Dive
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-tactical-claim-replication]], which reruns the same
+source corpus, confirms these paired-contrast numbers, and exports the full
+75,079-row table for the reusable [[w42-phase2-claim-analysis-harness]].
 
 ## Summary
 

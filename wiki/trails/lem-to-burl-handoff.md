@@ -74,9 +74,13 @@ Both projects run on [[forge]] infrastructure:
 
 Both projects use [[modal]] for GPU compute and HuggingFace for adapter storage.
 
-## 7. Open at this frontier
+## 7. Resolved since this trail was written
 
-This trail reflects the LEM/Burl boundary as of 8d26e0d. Burl's experimental moves (Move 3 baseline, Move 4 training corpus, STaR iterations) will refine the "different shape" claim. Notably: if Move 3 shows the Gemma 4 base is not agentic enough at 2B scale, the model choice is provisional and will be revisited.
+This trail reflects the LEM/Burl boundary as of 8d26e0d. The provisional question it left
+open — whether the Gemma 4 base is agentic enough at 2B scale — is answered **yes**: see
+[[burl-move3-base]] and [[burl-move4-native-spike]]. The model choice was not revisited;
+Burl's subsequent STaR iterations and the 2000-decision harvest (see [[star]]) all build on
+the Gemma 4 E2B base.
 
 ## Related pages
 

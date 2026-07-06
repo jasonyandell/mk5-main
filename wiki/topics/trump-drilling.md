@@ -3,7 +3,8 @@ title: Trump-Membership Drilling (Stage 0 v3)
 kind: topic
 first_seen: 601f622
 last_updated: 8c1bb14
-status: active
+status: superseded
+superseded_by: game-context-qa
 ---
 
 ## Overview
@@ -45,6 +46,9 @@ Peak 48% at iter-2 is a new high water mark (previously 42% on v1, 46% on Kerry)
 | v3 (20k + trump drill) | ~44% | 48% | 13% |
 
 "Each curriculum round raises the floor." (8c1bb14)
+
+Superseded two days later by [[game-context-qa]] (Stage 0 v4, 4729dad), which discarded the
+flashcard structure entirely — the five drill types above do not carry forward past v3.
 
 ## Links
 

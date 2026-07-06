@@ -2,9 +2,13 @@
 title: w42 Powered Branch Atlas v1
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** three days later in scope by [[w42-branch-atlas-scaled-v0]]
+(10 games, all declarations, bid-aware threshold plumbing), and in corpus
+size by the 100-file [[w42-hidden-threat-legacy-mining]].
 
 ## Summary
 

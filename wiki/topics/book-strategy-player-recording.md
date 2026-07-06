@@ -2,11 +2,17 @@
 title: BookStrategyPlayer Recording Contract
 kind: topic
 first_seen: local-2026-05-04
-last_updated: local-2026-05-04
-status: active
+last_updated: afd4802
+status: superseded
 ---
 
 ## Purpose
+
+**Superseded before build.** [[book-strategy-player]] was redirected before
+this schema was ever implemented — the chassis moved from play-time strategy
+to the auction by Fable's 2026-06-09 design review (see
+[[champion-design-review]]); this Phase 1 spec was never built. May still run
+someday as a cheap epilogue measurement, not a live plan.
 
 BookStrategyPlayer recording is the Writer side of [[book-strategy-player]].
 Records are append-only decision facts. They support diagnostics, paired replay,

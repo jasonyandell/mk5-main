@@ -53,8 +53,13 @@ Decomposition of total regret reduction from v2-3k to v3-10k (−60%):
 - Data scaling alone: −41%
 - Consistency loss on top: additional −33%
 
-Decision: consistency loss rides forward into LAMIR-1 training (31f0ec3).
+Decision: consistency loss rides forward into LAMIR-1 training (31f0ec3) — v3-10k became the
+baseline adapter for every LAMIR-1 rollout mode evaluated. LAMIR-1 itself was later measured
+as a dead end (every rollout mode lost to direct π_me; see [[lamir1-ceiling]]), so this
+decision correctly carried the best base model forward — it just carried it into a track that
+didn't pan out. The 0.551-regret / 76.07%-bot-match number remains the best-known single
+adapter as of 2026-07-06, cited unchanged in [[champion]]'s asset map.
 
 ## Links
 
-[[gus]] [[v-pi-decoupling]] [[dense-q-supervision]] [[regret-eval]]
+[[gus]] [[v-pi-decoupling]] [[dense-q-supervision]] [[regret-eval]] [[lamir1-ceiling]] [[champion]]

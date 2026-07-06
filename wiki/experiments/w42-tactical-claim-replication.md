@@ -2,9 +2,16 @@
 title: w42 Tactical Claim Replication
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-phase4-sequence-handshape-tests]], which reads
+directly from this page's output artifact (`all_action_rows.jsonl`) to
+sharpen the same Ch3/4/5 claims. This page's own "harness migration"
+follow-up (moving corpus replay into shared `w42/claim_analysis/` adapters)
+appears to have landed by June, per the `w42/claim_analysis/` directory's
+mtime — asserted, unverified beyond directory presence.
 
 ## Summary
 

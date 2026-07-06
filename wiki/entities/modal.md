@@ -2,16 +2,19 @@
 title: Modal
 kind: entity
 first_seen: a8bccfa
-last_updated: 26f5ddf
+last_updated: local-2026-07-06
 status: active
 ---
 
 ## What it is
 
-Modal is a serverless GPU compute platform used by [[lem]] for both training and inference.
-LEM wraps its training and inference paths in Modal functions, which run on GPU instances
-provisioned on demand. Model weights are cached across invocations using Modal volumes.
-(lem/gemma_star/modal_app.py @ a8bccfa)
+Modal is a serverless GPU compute platform used across the project's forge/burl/zeb
+infrastructure for training and inference, independent of any single consumer project.
+It was first wired up for [[lem]], which wrapped its training and inference paths in Modal
+functions running on GPU instances provisioned on demand, with model weights cached across
+invocations using Modal volumes (lem/gemma_star/modal_app.py @ a8bccfa). LEM went dormant in
+mid-April 2026, but Modal usage continued independently (`forge/modal_app.py` @ 089e850 Feb
+10; `burl/modal` @ 19ba103 Apr 28) — LEM was never the sole consumer.
 
 ## Usage in LEM
 

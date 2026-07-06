@@ -218,3 +218,15 @@ When a later ingest resolves the question, remove it from `questions/open.md` an
 ## Backlinks, not categories
 
 Organization emerges from backlinks, not from rigid category taxonomy. The Obsidian graph view should show clustering; if it doesn't, the wiki is under-linked.
+
+## Anti-rot rules (added by the 2026-07 overhaul)
+
+The July 2026 archaeology audited every page against the repo and found 211+ discrepancies with a consistent shape. These rules exist so the same rot cannot recur:
+
+1. **Status must be falsifiable.** A `status:` field is a claim; it needs evidence reachable from the page. When an experiment's "next steps" never run, the page gets the one-line frontier truth ("the planned X never ran; the project pivoted to Y at `<sha>`") — past tense, forward-linked. A status field that is never flipped is decoration.
+2. **Corrections must be reachable from the error.** When a result is retracted, reversed, or re-measured (Wave 3→4, the perf-batch retraction), the page that carries the stale number gets the correction or a forward link — a correction a cold reader can't reach from the error did not happen.
+3. **Questions, not retrofitted goals.** Experiment pages state the question asked, in question form, subjunctive preserved ("can X…?"). Never "the goal was X" unless traceable to Jason's words. Goals vs instruments per [[the-wall]] — do not promote instruments to goals.
+4. **Names doctrine.** Every named thing is classified BUILT (repo artifacts), IDEATED (conversation-only), or RENAMED (mapping stated). Conversation-space names (Harl, LLem, LEWM, walker) are real project knowledge but are never claimed as artifacts.
+5. **Dates trace to artifacts.** Every date traces to a git timestamp, bead timestamp, or conversation `created_at` — never to a narrative's memory of a date (known failure: summaries shift dates by a year and migrate facts between eras).
+6. **Privacy firewall for conversation-sourced content.** This repo is public domain; Jason's claude.ai conversations are not. `sources/claude/*` digests carry only Texas-42-project content — nothing about work, family, or any non-42 personal thread, not even in paraphrase. When in doubt, omit.
+7. **"Worth a bead" is not a resting state.** A flagged risk either becomes a tracked issue in the same session or the flag is removed; parked risks evaporate (documented instance: the WorldSamplerMRV sampler bias).

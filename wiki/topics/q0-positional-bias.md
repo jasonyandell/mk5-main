@@ -15,6 +15,21 @@ depend on position if the model were truly invariant under domino-set permutatio
 `forge/analysis/scripts/slot_swap_test.py` and `q0_bias_check.py` quantify it; the
 bias is robust and large enough to drive measurable Q errors at hand-evaluation time.
 
+## Origin (2026-01-25..26, era 3)
+
+The investigation was triggered mid-[[eq-genesis]] (era 3) by a mispredicted slot-0 anomaly
+during E[Q] training-data work. `0feee02` (2026-01-25, "complete slot 0 positional bias
+investigation") is the largest non-checkpoint commit of the era — 53 files, 8,132 insertions,
+18-20 numbered analysis scripts — and the methodology is the lesson as much as the fix: "20
+parallel investigations ruled out architectural causes" (no positional encoding issue, balanced
+attention, identical LayerNorm stats) before the actual, mundane cause was found: `deal_from_seed()`
+sorted hands by domino ID, so slot 0 only ever saw low-pip dominoes in training — a 1.74-bit KL
+divergence baked into the data by data *provenance*, not architecture. The fix (`9f73c42`,
+`440aeea`, shuffle hand slots at training time) moved slot-0 tie rate 0.38 → 0.17 (theoretical
+target 0.14) at a small, honest cost to aggregate Q-gap (0.071 → 0.074, `domino-qval-3.3M-shuffle`
+checkpoint) — a measured trade, not a clean win. See [[eq-genesis]] and
+[[expected-q-value]].
+
 ## The investigation
 
 `forge/analysis/bias/` contains 20 numbered probes (`01-attention-mask.md` through
@@ -63,3 +78,7 @@ calibration eval, eventual parking documented in `wiki/decisions/zeb-parked-eq-p
 Investigation closed at `4a747f6` with a proposed fix (#20) but not validated. Any
 future model retraining (e.g. [[gus]] q-head augmentation work) should incorporate
 the shuffle remedy before reading further conclusions about positional Q bias.
+
+## Links
+
+[[forge]] [[eq-genesis]] [[expected-q-value]] [[zeb]] [[forge-analysis]] [[gus]]

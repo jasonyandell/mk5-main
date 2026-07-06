@@ -3543,3 +3543,71 @@ scratch/wiki-mine/); the full charter (trails, founding-era backfill, page zero)
 pending approval.
 
 **Questions opened:** none new.
+
+## [2026-07-06 | afd4802 | wiki overhaul: archaeology backfill (eras 1-5) + full staleness audit (era 6)]
+
+The seven-month archaeology, landed. Two moves at once: (1) **backfill** — ~30 new pages
+reconstructing the project's pre-wiki history, one page per era-question, every date traced
+to a git/bead/conversation timestamp and every named thing classified BUILT / IDEATED /
+RENAMED; (2) **audit** — a full pass over the existing wiki that reconciled ~173 pages
+against the repo, flipping stale `status: active` claims to their true frontier state and
+making every correction reachable from the page that carries the stale claim. New front
+door: [[the-wall]] → [[the-wall-biography]] → [[consumption-ledger]]. New anti-rot rules
+codified in `AGENTS.md` (status-must-be-falsifiable, corrections-reachable-from-error,
+questions-not-goals, names-doctrine, dates-trace-to-artifacts, privacy-firewall,
+worth-a-bead-is-not-a-resting-state).
+
+**Touched pages (hubs + spine):** [[the-wall]] [[the-wall-biography]] [[consumption-ledger]]
+[[web-game]] [[the-oracle]] [[breakthrough-and-oracle]] [[eq-genesis]] [[strategy-fusion]]
+[[argmax-q-ceiling]] [[alphazero-under-imperfect-information]] [[the-gestation]]
+[[ideated-not-built]] [[zeb]] [[zeb-fleet-ops]] [[lem]] [[burl]] [[gus]] [[forge]]
+[[champion]] [[jud]] [[index]]
+
+**Added (~30 new pages):**
+- Era backfill topics: [[pre-ml-ai-attempts]], [[multiplayer-lineage]], [[the-book-enters]],
+  [[breakthrough-and-oracle]], [[the-oracle]], [[the-analysis-epic]], [[suit-algebra]],
+  [[eq-genesis]], [[strategy-fusion]], [[alphazero-under-imperfect-information]],
+  [[argmax-q-ceiling]], [[belief-feeding-policy]], [[eval-matrix-bradley-terry]],
+  [[the-gestation]], [[ideated-not-built]], plus the front-door pair [[the-wall]] +
+  [[consumption-ledger]].
+- Entities: [[web-game]] (era-1 founding substrate), [[zeb-fleet-ops]].
+- Experiments: [[full-teacher-eq-experiment]], [[gus-drama-atlas]].
+- Decisions: [[qval-over-policy-models]], [[vs-random-eval-is-suspect]], [[grok-not-converge]].
+- Source digests: [[sources/claude/era1-web-game-prologue]], [[sources/claude/era2-breakthrough-oracle]],
+  [[sources/claude/era3-eq-era]], [[sources/claude/era4-zeb-era]], [[sources/claude/era5-gestation]]
+  (privacy-curated claude.ai user turns; Texas-42 content only).
+- Trail: [[the-wall-biography]] (seven-month capstone).
+- Index: 7 previously-unindexed w42 strategy-tag experiments folded into the catalog.
+
+**Updated:** ~173 pages status-reconciled per the era-6 audit; `index.md` catalog synced
+(111 status-suffix corrections + 37 new/backfilled entries + a new "Era backfill" Topics
+subsection + a claude.ai-digest Sources subsection + the-wall front-door entry);
+`questions/open.md` extended (4 items, below).
+
+**Retired / superseded (frontier flips, not deletions):** LEM and its Stage-0 adapter
+chain → `complete`/`superseded`; [[burl]] and its lab/chat/microscope/wax-museum surface →
+`superseded`; [[zeb]] → `superseded` (belief work carried by Gus/jud); the Winning-42
+per-chapter book cluster and its phase-2/3/4 probes → `complete`/`superseded` as the
+campaign closed; the LAMIR/router/blunder-detector no-oracle branch → `retired`/`superseded`;
+[[candlewax-spike]] and [[selfplay-arena]] → `retired`. The live frontier
+([[gus]], [[w42]], [[forge]], [[champion]], [[jud]], [[engine]]) stays `active`.
+
+**Questions opened (raising `afd4802`):**
+- `WorldSamplerMRV` sampler bias (~6.8 Q-pts vs enumeration at trick 6) — parked "worth a
+  bead," never filed; **needs a GitHub issue** (anti-rot rule 7).
+- The never-applied Lens ev-argmax switch — production `select_actions` is still Lens(p_make),
+  the worst of four utilities; the one-line ev-argmax fix is open two months on.
+- jud v2 cue — does a bigger leaf on per-move targets + opponents-in-rollout close the play
+  gap the v1 hand-level MLP could not?
+- The era-5 gestation's IDEATED generation — which unbuilt designs are worth resurrecting?
+
+**Lint:** dead backlinks in the new era pages fixed (`[[the-engine]]`→`[[engine]]`,
+`[[era-1-web-game-prologue]]`→`[[web-game]]`, `[[era-2-breakthrough-oracle]]`→[[breakthrough-and-oracle]],
+`[[the-wall-stated-precisely]]`/`[[distill-for-what]]`→[[the-wall]]/[[candlewax]], phantom
+`[[layer-system]]`/`[[mccfr-excursion]]`/`[[walker]]` de-linked or redirected); two private-memory
+filename links purged from [[burl-chat-spike]] and [[post-commit-q-and-a]] (privacy firewall);
+qualified body links in the new pages converted to bare. No orphans (every new page has an
+inbound content link). Flagged-not-fixed: dead `[[plunge]]`, `[[burl-perf-phase1]]`,
+`[[topics/spec-decode-acceptance]]`, `[[explore-game-cache-bug]]` in pre-existing modified
+pages (missing-page candidates), and the two distinct "~74%" ceilings (era-3 argmax-vs-oracle
+tie-structure vs era-4 Zeb vs-random capacity) that no page cross-claims as identical.

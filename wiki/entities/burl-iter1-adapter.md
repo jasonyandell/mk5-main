@@ -3,7 +3,7 @@ title: Burl iter-1 LoRA Adapter (mixed)
 kind: entity
 first_seen: 09b841e
 last_updated: 09b841e
-status: mixed
+status: superseded
 ---
 
 ## What it is
@@ -56,3 +56,9 @@ decisions are the blocker.
 3. N=50 corpus instead of 30; max_retries=7 at eval-time.
 
 (commit message @ 09b841e)
+
+## Superseded
+
+Option 3's spirit was folded into [[topics/rules-as-tools]] and shipped as
+[[iter3-rules-adapter]] (90% bot-match, dbadb5f) — the documented successor on this
+adapter lineage.

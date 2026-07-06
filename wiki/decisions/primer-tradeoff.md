@@ -3,7 +3,7 @@ title: "Primer Trade-off: Vocabulary vs Tool-Use Breadth"
 kind: decision
 first_seen: b8116b5
 last_updated: 789e14d
-status: active
+status: superseded
 ---
 
 ## The trade-off
@@ -26,7 +26,12 @@ This weakens (but does not invalidate) the trade. The vocabulary was in the corp
 
 ## Direction at this frontier
 
-Trim or remove the primer for iter-1; keep the 42-aware framing block (provides vocabulary at tiny cost without the 4× prompt size penalty). Re-harvest STaR corpus on the lighter prompt, retrain, eval. Open.
+Trim or remove the primer for iter-1; keep the 42-aware framing block (provides vocabulary at tiny cost without the 4× prompt size penalty). Re-harvest STaR corpus on the lighter prompt, retrain, eval.
+
+**Resolved**: iter-1 trimmed the primer and kept the 42-aware framing block (see
+[[burl-iter1-adapter]]); outcome documented, not further revisited before the project
+moved to [[candlewax]]/[[jud]]. [[topics/rules-as-tools]] later replaced the primer
+question entirely by making rules content callable instead of textual.
 
 ## Generalizable principle
 
