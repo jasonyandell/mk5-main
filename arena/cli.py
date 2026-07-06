@@ -250,6 +250,13 @@ def main() -> int:
                         help="Auction-belief adapter for the `belief` bidder "
                              "(rung #26; separate from --gus-adapter). Falls back "
                              "to the spec's belief[:<adapter>] then the #24 default.")
+    parser.add_argument("--fast-batching", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="Pool both halves into one lockstep batch (twice the "
+                             "batch width, one straggler tail; games are "
+                             "statistically equivalent, not byte-identical). "
+                             "--no-fast-batching runs the sequential halves, whose "
+                             "actions are exactly reproducible run-to-run.")
     parser.add_argument("--base-seed", type=int, default=0)
     parser.add_argument("--out-dir", type=str,
                         default=str(Path(__file__).parent / "results"))
@@ -308,6 +315,7 @@ def main() -> int:
         bid_a=bid_a, bid_b=bid_b, play_a=play_a, play_b=play_b,
         n_games=args.n_games, cfg=cfg,
         label_a=args.team_a, label_b=args.team_b, verbose=True,
+        fast_batching=args.fast_batching,
     )
 
     s = summarize(result)
@@ -339,6 +347,7 @@ def main() -> int:
             "base_seed": cfg.base_seed,
             "n_samples": args.n_samples,
             "device": device,
+            "fast_batching": args.fast_batching,
         },
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")

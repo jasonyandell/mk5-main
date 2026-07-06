@@ -212,6 +212,56 @@ class _LiveGame:
         )
 
 
+def _seat_policies(
+    a_team: int, bid_a: BidPolicy, bid_b: BidPolicy,
+) -> tuple[BidPolicy, BidPolicy, BidPolicy, BidPolicy]:
+    return tuple((bid_a if seat % 2 == a_team else bid_b) for seat in range(4))
+
+
+def _run_lockstep(
+    games: list[_LiveGame],
+    play_a: PlayPolicy,
+    play_b: PlayPolicy,
+    marks_to_win: int,
+    log_every_s: float | None = None,
+) -> None:
+    """Drive every game to completion in lockstep.
+
+    Every iteration routes each live game's current decision to the owning
+    side's play policy, one batched call per side per tick. Games may mix
+    a_team assignments — routing is per game. With log_every_s, prints a
+    progress heartbeat so long runs are never silent.
+    """
+    t0 = last_log = time.time()
+    while True:
+        live = [g for g in games if not g.done]
+        if not live:
+            break
+        if log_every_s is not None and time.time() - last_log >= log_every_s:
+            last_log = time.time()
+            hands = sum(len(g.hands) for g in games)
+            print(
+                f"    t={last_log - t0:5.0f}s  live {len(live)}/{len(games)}  "
+                f"hands {hands}",
+                flush=True,
+            )
+        a_games, b_games = [], []
+        for g in live:
+            side = a_games if current_player(g.state) % 2 == g.a_team else b_games
+            side.append(g)
+        for side_games, policy in ((a_games, play_a), (b_games, play_b)):
+            if not side_games:
+                continue
+            actions = policy.choose(
+                [g.state for g in side_games],
+                [g.bid_value for g in side_games],
+                [(g.marks[0], g.marks[1]) for g in side_games],
+                marks_to_win,
+            )
+            for g, action in zip(side_games, actions):
+                g.apply(action)
+
+
 def run_half(
     *,
     n_games: int,
@@ -223,45 +273,39 @@ def run_half(
     play_b: PlayPolicy,
     log_every_s: float | None = None,
 ) -> list[GameRecord]:
-    """Run n_games full games with player A as absolute team `a_team`.
-
-    Lockstep: every iteration routes each live game's current decision to
-    the owning side's play policy, one batched call per side per tick.
-    With log_every_s, prints a progress heartbeat so long halves are never
-    silent.
-    """
-    seats = tuple(
-        (bid_a if seat % 2 == a_team else bid_b) for seat in range(4)
-    )
+    """Run n_games full games with player A as absolute team `a_team`."""
+    seats = _seat_policies(a_team, bid_a, bid_b)
     games = [_LiveGame(i, a_team, cfg, seats) for i in range(n_games)]
-    t0 = last_log = time.time()
+    _run_lockstep(games, play_a, play_b, cfg.marks_to_win, log_every_s)
+    return [g.record() for g in games]
 
-    while True:
-        live = [g for g in games if not g.done]
-        if not live:
-            break
-        if log_every_s is not None and time.time() - last_log >= log_every_s:
-            last_log = time.time()
-            hands = sum(len(g.hands) for g in games)
-            print(
-                f"    t={last_log - t0:5.0f}s  live {len(live)}/{n_games}  "
-                f"hands {hands}",
-                flush=True,
-            )
-        a_games, b_games = [], []
-        for g in live:
-            side = a_games if current_player(g.state) % 2 == a_team else b_games
-            side.append(g)
-        for side_games, policy in ((a_games, play_a), (b_games, play_b)):
-            if not side_games:
-                continue
-            actions = policy.choose(
-                [g.state for g in side_games],
-                [g.bid_value for g in side_games],
-                [(g.marks[0], g.marks[1]) for g in side_games],
-                cfg.marks_to_win,
-            )
-            for g, action in zip(side_games, actions):
-                g.apply(action)
 
+def run_paired(
+    *,
+    half: int,
+    cfg: ArenaConfig,
+    bid_a: BidPolicy,
+    bid_b: BidPolicy,
+    play_a: PlayPolicy,
+    play_b: PlayPolicy,
+    log_every_s: float | None = None,
+) -> list[GameRecord]:
+    """Both halves of a paired match in ONE lockstep pool (fast batching).
+
+    Deal seeds and opening auctions match the sequential halves exactly —
+    they depend only on (base_seed, game_idx, hand_idx), never on batch
+    composition. Pooling doubles the lockstep batch width and pays the
+    straggler tail once instead of twice; for a fixed set of games this is
+    tick-optimal (total ticks = the longest game's ticks), so no refill
+    queue is needed. The cost: batch composition feeds the world-sampling
+    RNG, so realized play diverges from the sequential path — games are
+    statistically equivalent, not byte-identical (see
+    docs/arena-perf-2026-07-06.md). Records return half 1 then half 2.
+    """
+    games = [
+        _LiveGame(i, a_team, cfg, _seat_policies(a_team, bid_a, bid_b))
+        for a_team in (0, 1)
+        for i in range(half)
+    ]
+    _run_lockstep(games, play_a, play_b, cfg.marks_to_win, log_every_s)
     return [g.record() for g in games]

@@ -186,7 +186,7 @@ The auction was the predicted high-ground ([[champion]]: auction ≫ play
 polish) and the very first measurement agrees: a seven-line static bidder
 is already worth ~+0.8 marks/game over always-bid-30.
 
-## Perf pass — 2.38× games/sec on MPS (2026-07-06)
+## Perf pass 1 — 2.38× games/sec on MPS, byte-identical (2026-07-06)
 
 Dispatch/sync reduction on the oracle decision path, merged as `d678598`.
 Byte-identical results were the gate — `per_hand.csv`/`per_game.csv` match
@@ -210,13 +210,24 @@ A/B pairs (both <1% run-to-run). Post-merge production throughput sits at
 ~1.34 games/s on a pooled 128-game A/B. Full profile and per-lever breakdown:
 `docs/arena-perf-2026-07-06.md`.
 
-A second perf pass is in flight as of 2026-07-06: constant-batch-width /
-refill, so the lockstep batch stays wide as games finish instead of decaying
-to a width-1–2 straggler tail. This is structurally incompatible with strict
-byte-identity (the MRV sampler draws `torch.rand` once per step over the
-*global* batch composition, so any refill changes every subsequent world
-sample); the user decided to relax the correctness gate from byte-identity to
-distribution-level equivalence to unlock it.
+## Perf pass 2 — fast batching, 1.55–1.63× on paired A/B (2026-07-06)
+
+The straggler tail was the remaining waste: the lockstep batch decays to
+width 1–2 as games finish. Structurally this can't be fixed byte-identically
+(the MRV sampler draws `torch.rand` once per step over the *global* batch
+composition, so any pooling change reshapes every subsequent world sample);
+the user relaxed the gate from byte-identity to distribution-level
+equivalence for this mode. **Pass 2 (fast batching)**: `run_paired` pools
+both halves of the paired match into one lockstep batch — twice the width,
+one straggler tail. For a fixed set of games all-at-once pooling is
+tick-optimal (total ticks = the longest game), so there is no refill queue.
+`arena.cli` defaults to `--fast-batching`; `--no-fast-batching` restores the
+sequential halves, which remain byte-identical and are the regression path.
+Measured: **1.55–1.63× at 32 games** (24.1 s → 15.5 s), **1.29–1.41× at 128
+games**; distribution-equivalent to the exact path (made-rate p=0.78,
+mark-margin p=0.64, hands/game p=0.91 over 256 games/mode). Fast mode
+diverges from the exact realization (batch composition feeds the
+world-sampling RNG) but is itself run-to-run deterministic on a fixed device.
 
 ## Limits (v0)
 

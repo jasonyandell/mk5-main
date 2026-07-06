@@ -17,7 +17,7 @@ import numpy as np
 from forge.oracle.declarations import DECL_ID_TO_NAME
 
 from .auction import BidPolicy
-from .engine import ArenaConfig, GameRecord, run_half
+from .engine import ArenaConfig, GameRecord, run_half, run_paired
 from .play import PlayPolicy
 
 
@@ -49,27 +49,48 @@ def run_match(
     label_a: str = "A",
     label_b: str = "B",
     verbose: bool = False,
+    fast_batching: bool = False,
 ) -> MatchResult:
-    """Run a full paired match; n_games is split evenly across the halves."""
+    """Run a full paired match; n_games is split evenly across the halves.
+
+    fast_batching pools both halves into one lockstep batch — twice the
+    batch width, one straggler tail — at the cost of byte-identity with the
+    sequential halves (statistically equivalent games; see engine.run_paired).
+    Off by default so the sequential path stays exactly reproducible.
+    """
     cfg = cfg or ArenaConfig()
     half = n_games // 2
     if half == 0:
         raise ValueError("n_games must be at least 2")
 
     t0 = time.time()
-    games: list[GameRecord] = []
-    for a_team in (0, 1):
+    log_every_s = 30.0 if verbose else None
+    if fast_batching:
         if verbose:
-            print(f"  half {a_team + 1}: A=team{a_team} ({half} games)", flush=True)
-        records = run_half(
-            n_games=half, a_team=a_team, cfg=cfg,
+            print(f"  pooled halves: {2 * half} games in one batch", flush=True)
+        games = run_paired(
+            half=half, cfg=cfg,
             bid_a=bid_a, bid_b=bid_b, play_a=play_a, play_b=play_b,
-            log_every_s=30.0 if verbose else None,
+            log_every_s=log_every_s,
         )
-        games.extend(records)
         if verbose:
-            wins = sum(1 for g in records if g.a_won)
-            print(f"    A won {wins}/{half}", flush=True)
+            for a_team in (0, 1):
+                wins = sum(1 for g in games if g.a_team == a_team and g.a_won)
+                print(f"    half {a_team + 1}: A won {wins}/{half}", flush=True)
+    else:
+        games = []
+        for a_team in (0, 1):
+            if verbose:
+                print(f"  half {a_team + 1}: A=team{a_team} ({half} games)", flush=True)
+            records = run_half(
+                n_games=half, a_team=a_team, cfg=cfg,
+                bid_a=bid_a, bid_b=bid_b, play_a=play_a, play_b=play_b,
+                log_every_s=log_every_s,
+            )
+            games.extend(records)
+            if verbose:
+                wins = sum(1 for g in records if g.a_won)
+                print(f"    A won {wins}/{half}", flush=True)
 
     return MatchResult(
         label_a=label_a,
