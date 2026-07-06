@@ -3346,3 +3346,23 @@ the first cut. Provenance line preserved: the value-native extension was the
 
 **Questions opened:** none new; jud's open engineering narrows to the v1 search shape
 and v2 opponent-model mechanics.
+
+## [2026-07-06 | d678598 | arena perf pass — 2.38× games/sec on MPS, byte-identical]
+
+**Touched pages:** [[arena]]
+
+**Updated:** [[arena]] — dispatch/sync reduction on the oracle decision path
+(numpy-assembled state tensors, vectorized order-preserving pool construction,
+maskless `scatter_add` void aggregation, MRV loop ~45→~20 kernels/step with dead
+per-step syncs removed, per-device table caches, memoized `current_player`).
+Byte-identical to baseline on CPU and MPS was the correctness gate. Paired MPS
+bench: 0.56 → 1.34 games/s (2.38×), reproduced across two A/B pairs; post-merge
+production throughput ~1.34 games/s on a pooled 128-game A/B. Key finding: the
+arena is dispatch-bound, not compute-bound — the oracle forward dominates CPU
+wall (62%) but shrinks on MPS, where per-tick kernel-dispatch/sync overhead
+(~1,500–2,000 launches, ~25–45 syncs) becomes the bottleneck. Full profile:
+`docs/arena-perf-2026-07-06.md`. A second pass (constant-batch-width refill,
+gate relaxed from byte-identity to distribution-level equivalence by user
+decision) is in flight as of 2026-07-06.
+
+**Questions opened:** none new.

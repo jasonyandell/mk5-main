@@ -2,7 +2,7 @@
 title: Arena — full-game harness
 kind: entity
 first_seen: local-2026-06-12
-last_updated: local-2026-06-12
+last_updated: d678598
 status: active
 phase: landed; measuring stick for the champion ladder
 ---
@@ -185,6 +185,38 @@ Identical oracle play both sides (lens:ev, N=10), bidders differ —
 The auction was the predicted high-ground ([[champion]]: auction ≫ play
 polish) and the very first measurement agrees: a seven-line static bidder
 is already worth ~+0.8 marks/game over always-bid-30.
+
+## Perf pass — 2.38× games/sec on MPS (2026-07-06)
+
+Dispatch/sync reduction on the oracle decision path, merged as `d678598`.
+Byte-identical results were the gate — `per_hand.csv`/`per_game.csv` match
+baseline exactly on CPU (12 games) and MPS (32 games, both A/B pairs); the
+torch RNG stream was never touched, only deterministic-math restructuring
+around it (numpy-assembled state tensors in `zeb_states_to_game_state_tensor`,
+vectorized order-preserving pool construction in `sample_worlds_batched`,
+maskless `scatter_add` void aggregation, the MRV loop in
+`sample_worlds_mrv_gpu` cut from ~45 to ~20 kernels/step with dead per-step
+syncs removed, per-device lookup-table caches, memoized `current_player`).
+
+**Key finding: the arena is dispatch-bound, not compute-bound.** On CPU the
+oracle forward pass dominates the wall (62%); on MPS the forward shrinks and
+the same surrounding work becomes kernel-dispatch + sync overhead — the
+measured "40% GPU" was actually ~1,500–2,000 kernel launches and ~25–45
+GPU→CPU syncs per tick.
+
+Paired MPS bench (32-game `net:wp+lens:ev` self-play, seed 0, alternating
+A/B/A/B on an M5 Max): **0.56 → 1.34 games/s (2.38×)**, reproduced across two
+A/B pairs (both <1% run-to-run). Post-merge production throughput sits at
+~1.34 games/s on a pooled 128-game A/B. Full profile and per-lever breakdown:
+`docs/arena-perf-2026-07-06.md`.
+
+A second perf pass is in flight as of 2026-07-06: constant-batch-width /
+refill, so the lockstep batch stays wide as games finish instead of decaying
+to a width-1–2 straggler tail. This is structurally incompatible with strict
+byte-identity (the MRV sampler draws `torch.rand` once per step over the
+*global* batch composition, so any refill changes every subsequent world
+sample); the user decided to relax the correctness gate from byte-identity to
+distribution-level equivalence to unlock it.
 
 ## Limits (v0)
 
