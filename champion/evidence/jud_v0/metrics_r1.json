@@ -1,0 +1,44 @@
+{
+  "round": 1,
+  "self_play": {
+    "n_hands": 5694,
+    "selfplay_made_rate": 0.4828,
+    "selfplay_mean_bid": 31.38,
+    "selfplay_mean_bidder_pts": 29.67,
+    "bid_hist": {
+      "30": 662,
+      "31": 2645,
+      "32": 1957,
+      "33": 430
+    },
+    "decl_hist": {
+      "notrump": 3128,
+      "fours": 525,
+      "threes": 482,
+      "twos": 458,
+      "fives": 354,
+      "sixes": 296,
+      "blanks": 286,
+      "ones": 165
+    }
+  },
+  "eval": {
+    "ece_p30": 0.042771586059221156,
+    "mae_mean_pts": 8.802407264709473,
+    "n_test": 366,
+    "test_ce": 3.3426620960235596
+  },
+  "ab": {
+    "a_wins": 35,
+    "n_games": 128,
+    "mean_mark_margin": -2.18,
+    "ci_lo": -2.75,
+    "ci_hi": -1.578,
+    "ci_excludes_zero": 1,
+    "a_offense_share": 0.2807,
+    "a_made_rate": 0.64,
+    "a_mean_bid": 30.61,
+    "b_made_rate": 0.6993,
+    "point_margin": -12.03
+  }
+}
