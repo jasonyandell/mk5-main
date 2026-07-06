@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: 4080e07
+last_updated: 0bdd4d5
 status: active
 ---
 
@@ -180,7 +180,8 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
    design subsumes it. **MISS at round 0** (−1.44 [−1.88, −0.95], a legible
    over-bidder that wins points and loses marks) → **PASS after the loop**
    (prediction 3): the final head reaches statistical parity (−0.07 [−0.66, +0.49]
-   at the Step-3 seed). Parity, not dominance.
+   at the Step-3 seed). Parity at v0's scale — later dominance once data scaled
+   ([[w42-plateau-probe]]: +0.38/+0.42 at 3× data/round).
 2. V_realized's root exceedance curve matches `optimism_gap.json`'s realized
    curve (0.52 @ 30 falling to ~0.19 @ 41), not the oracle's. **PASS** — ECE 0.046,
    max |Δ| ≤ 0.029 over 13 thresholds, 6× closer to realized than to oracle, sits
@@ -195,32 +196,45 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
 
 ### The ladder past v0
 
-- **v1** — V_realized at the leaves of shallow belief-state search in play and
-  defense (the summit made spine; Student-of-Games shape). Defense is where
-  information-set value concentrates.
+- **v1** — one net for bid AND play: play-history-conditioned V_realized with 1-ply
+  argmax-EV play replacing E[Q] n=10 at runtime, then the same self-play-loop method
+  on the full stack. The [[w42-plateau-probe]] saturation result re-locates the
+  frontier here — data has run its course at v0's capacity, so the next edge is
+  capacity/mechanism. Defense is where information-set value concentrates
+  (Student-of-Games shape). In build as of this writing.
 - **v2** — opponents inside rollouts update belief from actions: signaling gets
   priced, conventions emerge, and the referee gap tells the story with receipts.
 
 ## Honest status
 
-A direction, a vocabulary, and now **v0 built and graded** ([[w42-jud-v0]],
-`4080e07`): the value-native bidder is real, calibrated (P2), and its self-play
-loop dissolves the #26 over-bidder the principled way (P3), reaching **statistical
-parity** with the hand-tuned `net:wp` baseline while winning points. It does not
-yet beat it — the loop converges *at* parity, offense share plateauing ~60–67%
-rather than the predicted selective 50–55%. The round-0 miss (P1) exposed a second
-optimism channel — the winner's curse on *selection*, independent of the oracle's
-double-dummy assumption — which the loop closes the same way it closes the
-evaluator channel. The [[champion]] #26 loop had reached a fixed point of a
-*crippled* version (belief converged while the value stayed perfect-information,
-a calibrated over-bidder); jud v0 is the loop in which the value itself is
-realized-native, and it lands. v1 (value at search leaves in play/defense) is
-where the parity-breaking edge, if any, lives.
+A direction, a vocabulary, and **v0 built, graded, and now past parity**
+([[w42-jud-v0]], [[w42-plateau-probe]]): the value-native bidder is real,
+calibrated (P2), and its self-play loop dissolves the #26 over-bidder the
+principled way (P3). The v0 write-up (`4080e07`) reached statistical *parity* with
+the hand-tuned `net:wp` baseline and left one question open — whether the plateau
+was the [[pimc]] price of hidden information or a data-starved head. The plateau
+probe (`68fda7b`/`0bdd4d5`) answered it: **data starvation, not structure.** Scaling
+on-policy self-play 3× per round (rounds 5–8, 1000 games/round) carried the bidder
+past `net:wp` — head_8 beats it **+0.38 [+0.09, +0.67]** (reserved seed) and **+0.42
+[+0.12, +0.72]** (fresh seed), the first learned bidder to beat the hand-tuned
+champion on marks. Rounds 9–12 confirmed **saturation at ≈ +0.3–0.4 marks/game** at
+this net capacity (a tiny MLP). The round-0 miss (P1) exposed a second optimism
+channel — the winner's curse on *selection*, independent of the oracle's
+double-dummy assumption — and the fix was simply more of the on-policy data the loop
+already used. The [[champion]] #26 loop had reached a fixed point of a *crippled*
+version (belief converged while the value stayed perfect-information, a calibrated
+over-bidder); jud v0 is the loop in which the value itself is realized-native, and it
+now beats the baseline. The next binding constraint is capacity or mechanism, not
+rounds — which is **v1's cue: ONE net for bid + play** (play-history-conditioned
+`V_realized`, 1-ply argmax-EV play replacing E[Q] n=10 at runtime, then the same
+self-play-loop method on the full stack). In build as of this writing.
 
 ## Links
 
 - [[w42-jud-v0]] — v0 built and graded (P2 pass / P1 miss→loop-recovered / P3 pass);
   the recipe-fork and A2 denial-bidding findings
+- [[w42-plateau-probe]] — the parity plateau broken: 3× data/round carries the bidder
+  past `net:wp` (+0.3–0.4), saturating at this capacity; registered prior falsified
 - [[champion]] — the player-and-teacher this is the core for; the ladder that built
   the pieces
 - [[champion-design-review]] — Fable's verbatim forward design (confirmed byte-exact vs the transcript) + a graded predictions ledger; the two load-bearing caveats

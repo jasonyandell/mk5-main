@@ -3411,3 +3411,45 @@ shallow belief-state search in play and defense.
 **Questions opened:** what breaks the parity plateau (v1 search shape vs opponent
 modeling); reading the referee gap (oracle EV − V_realized EV) as a live convergence
 instrument rather than a static meter.
+
+---
+
+## [2026-07-06 | 68fda7b + 0bdd4d5 | the plateau probe: data starvation, not structure]
+
+The jud v0→v1 bridge. [[w42-jud-v0]]'s open question 1 — was the parity plateau the
+[[pimc]] price of hidden information (structural) or a data-starved tiny MLP? — run as a
+registered prediction and answered.
+
+**Touched pages:** [[w42-plateau-probe]] [[w42-jud-v0]] [[jud]] [[champion]] [[rank-vs-price]]
+
+**Added:** [[w42-plateau-probe]] — the registered-prediction write-up (GitHub #33). The
+structural reading was registered pre-run as a falsifiable prediction: scaling on-policy
+data would NOT break parity. **Falsified.** Rounds 5–8 at 3× data/round (1000 self-play
+games/round vs 300) carried `margin:wp` past `net:wp` — head_8 beats it **+0.38
+[+0.09, +0.67]** (reserved seed 7000000, 512 games) and **+0.42 [+0.12, +0.72]** (fresh
+seed 9000000), both 287/512 (56.1%), with round 7's 256-game A/B independently excluding
+zero. **The first learned bidder to beat the hand-tuned champion on marks.** The plateau
+was calibration headroom in a data-starved head, not the hidden-information price. A
+registered extension (rounds 9–12) confirmed **saturation**: head_12 at +0.21 [−0.08, +0.47]
+/ +0.37 [+0.09, +0.65], inside the registered [+0.2, +0.6] band, indistinguishable from
+head_8 — the data-scaling curve flattens at **≈ +0.3–0.4 marks/game** at this net capacity.
+The page carries the full r0–r12 round table (`champion/evidence/jud_v0/loop_metrics.json`).
+The registered prior was wrong, recorded plainly — a falsified prediction run to its
+falsifier is the system working.
+
+**Updated:** [[w42-jud-v0]] — addendum + open question 1 marked ANSWERED (data starvation),
+pointing to the probe. [[jud]] — honest status flipped from "reaches parity, does not yet
+beat" to "past parity, saturating at ≈+0.3–0.4"; v1 re-described as one net for bid + play,
+in build. [[champion]] — the bidder claim flipped: `margin:wp`(head_8) is the first learned
+bidder to beat `net:wp`, best-measured bidder is `champion/margin_net_r8.pt`; saturation
+noted. [[rank-vs-price]] — leg 3 upgraded from "validated at parity" to "validated and then
+dominant"; the winner's-curse-on-selection channel is data-limited, not structural.
+
+**Frontier shift:** the value-native pricing path no longer ties the best hand-tuned
+baseline — it beats it. The binding constraint at v0's scale was on-policy data volume, not
+the [[pimc]] price of hidden information; that reading is refuted at this scale. Data has
+run its course at this net capacity, so the next constraint is capacity or mechanism —
+jud v1's premise (one net, bid + play; play-history-conditioned V_realized with 1-ply
+argmax-EV play replacing E[Q] n=10 at runtime; then the same self-play-loop method).
+
+**Questions opened:** none new — the probe closed [[w42-jud-v0]]'s open question 1.

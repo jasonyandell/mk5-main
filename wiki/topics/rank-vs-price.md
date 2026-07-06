@@ -2,7 +2,7 @@
 title: Rank vs price — why PIMC's flaw bites the auction, not the play
 kind: topic
 first_seen: local-2026-07-05
-last_updated: 4080e07
+last_updated: 0bdd4d5
 status: active
 ---
 
@@ -49,15 +49,18 @@ measurement. Its legs:
 3. The prediction it makes: an evaluator calibrated in absolute terms fixes
    bidding *without touching play*. `net:wp` already half-demonstrates this —
    frozen realized-play calibration, strongest bidder on the board
-   ([[champion]] rung #22). **The full test ran and confirmed it** ([[w42-jud-v0]],
-   2026-07-06): a value trained on realized outcomes (`V_realized`), consumed only
-   as a bid-side price with play left on `lens:ev`, dissolved the #26 over-bidder
-   and reached parity with `net:wp` (−0.07 [−0.66, +0.49]) — the pricing mechanism
-   validated at parity, without touching the near-ceiling play argmax. The round-0
-   miss added a rider the mechanism did not name: optimism re-enters the price not
-   only through the evaluator (double-dummy) but through *selection* (the winner's
-   curse — a calibrated head still over-bids the hands it happens to over-rate),
-   and only on-policy retraining closes that second channel.
+   ([[champion]] rung #22). **The full test ran, confirmed it, and then beat the
+   baseline** ([[w42-jud-v0]] → [[w42-plateau-probe]], 2026-07-06): a value trained
+   on realized outcomes (`V_realized`), consumed only as a bid-side price with play
+   left on `lens:ev`, dissolved the #26 over-bidder. The v0 loop reached parity with
+   `net:wp` (−0.07 [−0.66, +0.49]); scaling on-policy data 3× per round then carried
+   it **past** `net:wp` (+0.38 [+0.09, +0.67] / +0.42 [+0.12, +0.72]) — the pricing
+   mechanism validated and then *dominant*, without ever touching the near-ceiling
+   play argmax. The round-0 miss added a rider the mechanism did not name: optimism
+   re-enters the price not only through the evaluator (double-dummy) but through
+   *selection* (the winner's curse — a calibrated head still over-bids the hands it
+   happens to over-rate), and on-policy data volume is what closes that second
+   channel (the plateau probe showed it was data-limited, not structural).
 
 ## Corollary — the calibration law for evaluators
 
@@ -73,6 +76,7 @@ rankings (play-phase argmax) tolerate optimism that price-consumers cannot.
 - [[pimc]] — the flaw whose bite this localizes
 - [[jud]] — the design that makes prices honest (value-native pricing path)
 - [[w42-jud-v0]] — the experiment that validated the mechanism at parity
+- [[w42-plateau-probe]] — the follow-on that carried the value-native price past `net:wp`
 - [[w42-champion-selfplay-fixed-point]] — the over-bidder this explains
 - [[belief-conditioned-self-play]] — the "all about bidding" fragment this resolves
 - [[arena]] · [[champion]] — where the measurements live

@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: gh-32
 first_seen: 4080e07
-last_updated: 4080e07
+last_updated: 0bdd4d5
 ---
 
 # w42-jud-v0
@@ -36,6 +36,19 @@ The value-native move works. The over-bidding was value–policy inconsistency, 
 it by depositing only realized outcomes into the value head dissolves it — but the
 equilibrium plateaus *at* parity with the hand-tuned baseline, not past it. That plateau is
 the finding v1 inherits.
+
+## Addendum — the plateau was data starvation (2026-07-06, [[w42-plateau-probe]])
+
+Open question 1 below ("what breaks the parity plateau?") is answered. The probe registered
+the *structural* reading as a falsifiable prediction — scaling on-policy data would NOT break
+parity — and **falsified it**. Running the same loop at 3× data/round (rounds 5–8, 1000
+self-play games/round vs 300) carried `margin:wp` past `net:wp`: head_8 beats it **+0.38
+[+0.09, +0.67]** (reserved seed) and **+0.42 [+0.12, +0.72]** (fresh seed), the first learned
+bidder to beat the hand-tuned champion on marks. A registered extension (rounds 9–12)
+confirmed saturation at **≈ +0.3–0.4 marks/game**. The plateau was a tiny MLP starved of
+on-policy data, not the [[pimc]] price of hidden information; the winner's-curse-on-selection
+channel closes with more of exactly the data the loop already used. See [[w42-plateau-probe]]
+for the full round table and the registered-prediction ledger.
 
 ## Method
 
@@ -219,11 +232,12 @@ backwards fix before either A/B ran. Evidence: `ab_a2_pass_summary.json`,
 
 ## Open questions
 
-- **What breaks the parity plateau?** The loop dissolves the over-bidder but converges *at*
-  `net:wp`, not past it. Offense share plateaus ~60–67% rather than the predicted selective
-  50–55% — the bidder stays aggressive but stops being punished. Is the residual the [[pimc]]
-  price of hidden information (which only belief-inside-the-search touches), or is there
-  further calibration headroom?
+- **What breaks the parity plateau? — ANSWERED (data starvation, [[w42-plateau-probe]]).**
+  The [[pimc]]-price reading was registered as a prediction and falsified: scaling on-policy
+  data 3× per round (rounds 5–8) carried head_8 past `net:wp` to +0.38/+0.42 marks/game, and
+  rounds 9–12 confirmed saturation at ≈ +0.3–0.4. It was calibration headroom in a
+  data-starved head, not the hidden-information price. The remaining edge is capacity or
+  mechanism, which v1 inherits.
 - **The referee gap as an instrument.** Per position, oracle EV − `V_realized` EV = the price
   of hidden information (`champion/optimism_meter.py` is its static ancestor). v0 built the
   head that makes this gap measurable per-position; it is not yet read as a live convergence

@@ -2,7 +2,7 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: 4080e07
+last_updated: 0bdd4d5
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
@@ -135,18 +135,27 @@ registered predictions: **calibration PASS** (ECE 0.046, 6× closer to realized 
 oracle), **round-0 parity MISS** (−1.44, a legible over-bidder — wins points, loses
 marks, via a winner's-curse-on-selection channel independent of double-dummy), and
 **self-play loop PASS** — 4 rounds carry the margin −1.44 → −0.31 → +0.24 → +0.22
-(CI includes zero from round 2), reaching **statistical parity** with `net:wp`
+(CI includes zero from round 2), reaching statistical parity with `net:wp`
 (−0.07 [−0.66, +0.49] at the canonical seed) while winning +7 points/hand. The
 #26 over-bidder dissolves the principled way (realized-outcome pricing, no tuned
-knob), but the loop converges *at* parity, not past it — offense share plateaus
-~60–67%. **The champion's bidder stays `net:wp` for now**; `margin:wp` is its
-value-native equal on marks and its superior on legibility (its price is backed by
-realized cash). Two methodological findings ride along: coverage anchoring beats
-single-variable recipe purity (the recipe fork), and the `MarksToSeven` pass
-baseline is a denial-bidding lever that makes over-bidding worse, not better (the
-A2 sign-catch, credited to the value-bidder subagent). The parity-breaking edge, if
-any, is v1's — value at the leaves of shallow belief-state search in play and
-defense.
+knob).
+
+**Rung #32 follow-on — the parity plateau broken ([[w42-plateau-probe]], 2026-07-06,
+`68fda7b`/`0bdd4d5`).** The v0 loop stopped *at* parity; a registered prediction held
+the plateau was structural (the [[pimc]] price of hidden information). It was
+falsified. Scaling on-policy self-play 3× per round (rounds 5–8, 1000 games/round)
+carried `margin:wp` past `net:wp`: **head_8 beats it +0.38 [+0.09, +0.67]** (reserved
+seed) and **+0.42 [+0.12, +0.72]** (fresh seed), both 287/512 (56.1%) — **the first
+learned bidder to beat the hand-tuned champion on marks.** The plateau was data
+starvation in a tiny MLP, not structure. Rounds 9–12 confirmed **saturation at ≈ +0.3–0.4
+marks/game** at this net capacity — the data-scaling curve has run its course, so the
+best-measured bidder is `margin:wp`(head_8) at `champion/margin_net_r8.pt` and the next
+edge is capacity or mechanism. Two methodological findings ride along from v0: coverage
+anchoring beats single-variable recipe purity (the recipe fork), and the `MarksToSeven`
+pass baseline is a denial-bidding lever that makes over-bidding worse, not better (the
+A2 sign-catch, credited to the value-bidder subagent). The parity-breaking edge is now
+in hand; the next frontier is v1 — one net for bid + play, value at the leaves of
+shallow belief-state search.
 
 ## Build ladder
 
@@ -285,3 +294,4 @@ the pedagogy chain produces real receipts.
 - [[pimc]] — the flaw the self-play loop and the summit address
 - [[book-strategy-player]] — plan algebra; natural fit is contract plans at the auction, not play-phase overlay
 - [[w42-book-claim-synthesis-and-ai-directions]] — the single-decision blind spot that started this thread
+- [[w42-jud-v0]] · [[w42-plateau-probe]] — rung #32: the value-native bidder, and the plateau probe that carried it past `net:wp`
