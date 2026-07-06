@@ -67,3 +67,46 @@ greedy 1-ply cannot see trick resolution (who wins the count) while the leaf aft
 resolution is exactly where the head is sharpest (MAE falls root→terminal). Honest prior
 on judsearch reaching lens:ev parity: ~15% — E[Q] n=10 sees distributional world
 information a single determinized rollout cannot.
+
+## JS1 GRADE (04:20): PASS, +2.28 — search recovers 2/3 of the play gap
+
+Play-only, same head (r4), same deals (seed 7200000): greedy judplay −3.44 [−3.75,−3.14]
+→ judsearch:n10 **−1.16 [−1.55,−0.77]** (made 46.1% → 62.7%). Registered bar ≥ +1.0:
+CLEARED at +2.28. The leaf was fine; the greedy consumer was the bottleneck. Still short
+of lens:ev (CI excludes 0). No oracle anywhere in the jud side.
+
+## JS2 — worlds sweep (registered pre-run): judsearch:n20, same seed/head.
+Prediction: mild gain, +0.2 to +0.6 (world-average noise shrinks but the leaf's bias is
+shared); falsifier ≥ +1.0 (then worlds were the binding constraint, push n harder).
+
+## JS3 — search-in-the-loop (registered pre-run): one loop round where SELF-PLAY uses
+judsearch:n10 both sides (~600 games), retrain cumulative, re-measure play-only + full
+stack. Prediction: the policy-conditional pricing insight cuts both ways — the head
+retrained on search-quality games improves BOTH its prices and its leaf, worth ≥ +0.4
+on the play channel beyond JS2's config, and the full jud stack (jud bid + judsearch)
+lands within [−1.0, +0.2] of net:wp+lens:ev. Honest prior on full parity tonight: ~25%.
+
+## JS2 GRADE (04:35): BELOW BAND — n20 = −1.05 [−1.44,−0.64], gain +0.11 (predicted
++0.2–0.6). Worlds are not the constraint; the shared leaf bias is. Don't push n.
+
+## JS3 GRADE (05:25): FALSIFIER FIRED — search-in-the-loop does not improve the leaf
+
+One round of judsearch self-play (600 games, 6612 hands) + cumulative retrain (r5, test
+CE 2.09 — best head yet on paper): play-only −1.41 [−1.79,−1.02] vs r4's −1.16 (gain
+ZERO, registered ≥ +0.4); full stack jud:wp(r5)+judsearch(r5) at reserved seed 7000000:
+**−1.43 [−1.68,−1.16]** (registered band [−1.0,+0.2]). Better paper calibration did not
+buy better play. Interpretation: the leaf's per-move discrimination is the wall — a 470k
+MLP trained on hand-level Monte-Carlo labels cannot match a 97%-accurate 3.3M
+perfect-information oracle evaluated per move over sampled worlds. Capacity/signal, not
+data or loop rounds. v2's cue: bigger leaf + per-move targets (e.g. distill E[Q] as an
+auxiliary policy/value signal — the solve/oracle as bootstrap, per jud.md), and
+opponents-in-rollout.
+
+# NIGHT VERDICT — the best player I know how to make at this time
+
+**margin:wp(head_8) + lens:ev** — the value-native bidder (v0 mechanism, loop-matured,
+data-scaled) over E[Q] n=10 play. Beats the previous champion net:wp+lens:ev by
+**+0.38 [+0.09,+0.67] / +0.42 [+0.12,+0.72]** (512 games × 2 reserved seeds). The first
+learned bidder to beat the hand-tuned one. jud v1's one-organ stack reached −1.43 from
+−4.37 in one night of registered rungs (organ → loop → search → search-in-loop) with
+every rung graded; its bidding validates the unification, its play names the next wall.
