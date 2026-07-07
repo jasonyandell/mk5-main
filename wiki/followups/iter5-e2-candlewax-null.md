@@ -17,5 +17,12 @@ Reviewed against code on 2026-07-07.
 
 ## Follow-ups
 
-- A cheap next probe (also flagged in the writeup): rerun under the trimmed primer + tool-nudge EQ-gate to force `eq_outcome_distribution` exposure and directly test the downstream hint→probe chain.
-- Prototype Candidate C (`what_would_change_my_mind`) since it sits on the tool menu before `eq_outcome_distribution` and dodges the upstream-crowd-out issue entirely.
+- Writeup follow-up #2 still open: stack candlewax + the EQ-gate's `tool-nudge` variant on the stubborn non-match T12 decisions to force `eq_outcome_distribution` exposure even under rules-as-tools (writeup lines 395-400; no later commit runs this).
+- Writeup follow-up #4 still open: tune the 0.04 prominence threshold on an N=50 stability sweep (current knee came from a 10-play smoke).
+
+## Review (second pass, 2026-07-07)
+
+- Filename correction stands: `burl/experiments/iter5_e2_candlewax_eval_writeup.md` exists; no `iter5_e2_candlewax_writeup.md` (ls of burl/experiments/).
+- Page numbers independently re-verified: T11 8/10 non-unimodal with populated `suggested_counterfactuals`, T12 (base Gemma N=10, `--enable-rules-tools`, 0 eq calls, crowd-out to `trick_winner_if`/`is_legal`), and the four candlewax field names all match the writeup; E3 N=500 / 98 eq / 74 non-unimodal / 53 mixed-mode / 0 `conditional_outcome` match commit messages 1efb9c5 and ceca203.
+- The "three traces" claim is better-sourced than the followup implied: both ceca203 and 1efb9c5 commit bodies state it explicitly ("Three thought-prose mentions where the model considers the tool then declines"). Raw E3 traces are still not in the repo, so it remains commit-attested rather than artifact-attested.
+- Amended the Follow-ups section: (a) the original first suggestion conflated writeup lever #1 (trimmed-primer rerun) with lever #2 (tool-nudge EQ-gate) — lever #1 was already executed as the E3 N=500 rollout plus the trimmed-primer variant recorded in ceca203's commit body, so only the EQ-gate stack remains open; (b) dropped "prototype Candidate C" — `what_would_change_my_mind` was implemented in commit 7321952 (`burl/tools/meta_tools.py`, see wiki/sources/7321952.md).

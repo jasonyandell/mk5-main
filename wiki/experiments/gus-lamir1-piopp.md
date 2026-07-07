@@ -61,13 +61,13 @@ Per §20, Kubíček & Lisý explicitly warn that a value function trained by dis
 (like Gus's V_head) cannot be used for look-ahead reasoning. The scalar noise of the
 distilled V/Q heads is enough to flip argmax at decision boundaries, while π_me trained
 on argmax directly preserves ordering. V_head is also architecturally world-blind
-(std=0.000 across 200 world samples for the same decision). (commit message @ b42669a)
+(std=0.000 across 200 world samples for the same decision). (PRACTICALITIES §20 @ b42669a)
 
 Deeper issue per §20: LAMIR paper's T×T multi-valued-states value function is more
 expressive than Gus's scalar V/Q heads. Scalar distillation noise compounds across
 rollout steps and overwhelms any leaf evaluator signal.
 
-## §20 pivot options
+## Pivot options
 
 Four paths documented in MORNING4_STATUS (commit b42669a):
 

@@ -9,3 +9,7 @@ All headline numbers verified clean against `w42/phase2_decision_table/summary.j
 ## Follow-ups
 
 - The build is unreproducible without the source JSONL; a cheap fix is to check the 5-game sample (or a regeneration command) into the repo, or note where it can be regenerated from.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand. Independently confirmed: `forge/analysis/results/data/eq_pdf_v3_sample.jsonl` absent with zero git history (`git log --all` on the path is empty); sha256 present in `w42/phase2_decision_table/manifest.json`; all page numbers match `w42/phase2_decision_table/summary.json` (140/346, 68, 118, 87/309/259/177, 133/128/114, all nine detector counts, 1000 samples/PDF); CSVs have 346 and 140 data rows on disk; `examples.json` has 12 entries; script default input and `--input` flag match the Commands section (`build_phase2_decision_table.py` lines 44, 884). Edit touched only the Data Slice paragraph; nothing nearby damaged. Follow-up suggestion kept — the source sample is still missing, so reproducibility remains open.

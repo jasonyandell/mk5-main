@@ -9,3 +9,7 @@ Everything else checked out: adapter repo name, `PeftModel.from_pretrained` + `m
 ## Follow-ups
 
 - The raw inference transcript itself appears to live only in Modal/W&B logs, not in-repo; the results table is verified against OVERVIEW prose, not raw output.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand. (`git show df73c8d:lem/gemma_star/modal_app.py` loads with `dtype=torch.bfloat16`; adapter repo, `merge_and_unload`, L4, `enable_thinking=True` all confirmed; results table matches `git show 24ae55a:lem/OVERVIEW.md` lines 164-169 verbatim; grep confirms no in-repo raw transcript.)

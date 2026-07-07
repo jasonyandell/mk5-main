@@ -126,8 +126,8 @@ tensors. Two structural findings have direct Ch 10 implications:
   10 are detector-endorsed) on the bid=30 corpus; 81.5% of nominal flips
   are surface-flattening artifacts of the binary {-1, 0, +1} mark
   transform near the 30-point make threshold. The genuine flips
-  concentrate at mid-hand on partner third-seat count-safe lines and
-  setter lead-pressure plays.
+  concentrate early-hand (10 of 12) on bidder and partner count-safe
+  lines and setter lead-pressure opening plays.
 - **Two ledger rows promoted to context-limited** after the independent
   audit absorbed prior phase-4 worker evidence (160 timed trials,
   4 heuristic policy pairs). See [[w42-bookval-v1-wave1-independent-audit]].

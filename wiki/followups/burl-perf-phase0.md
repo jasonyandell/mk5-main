@@ -15,3 +15,12 @@
 
 - `harvest_batched.py` is imported from gitignored `scratch/belief_trajectory_rollout/` via a hardcoded absolute-path fallback in the bench; promoting it to tracked code (as the bench's own comment suggests) would make the harness reproducible from a clean checkout.
 - Note run 1's 100% K1 match is self-graded (baseline vs itself), so only run 2 is a true run-vs-run stability read; a third run would cheaply confirm the 80–100% envelope.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand.
+- sha correction re-derived: `burl/eval/results/perf_ledger.csv` rows 20260427_013720/013851 both record `sha=da25079, branch=perf/bench`; page frontmatter/ledger commit is `1f11d28`.
+- gi=36 flip re-derived from `per_decision_grades` + `per_decision_rows` in both run JSONs: run 1 gi=36 `final_play=26, eq_delta_vs_bot=−11.49, k1_pass=false`; run 2 `final_play=1 (bot's play), delta=0.0, k1_pass=true`. gi=72 is `−1.7338, k1_pass=false` in both. K1 booleans differ only at gi=36 → 4/5 = 80%.
+- The original page's "+0.8" has no eq-delta grounding anywhere in either JSON (the only ~0.83 value is a `step_stats[5].prompt_time`); its deleted "<0.5 Q-point deltas flip K1 sign about half the time" claim is likewise unsupported (observed deltas are −12.5/−11.5/−1.73/0.0/0.0). One phrasing nit: the followup's "−1.7→+0.8 numbers appear nowhere" is literal only for the flip pair — −1.73 itself does appear, stably, at gi=72, as the same sentence already states.
+- Follow-up 1 re-confirmed still open: `harvest_batched.py` is untracked (`git ls-files` finds only chain-trace jsonls), `scratch/` is gitignored, and `bench_decision_latency.py:59-66` carries the hardcoded absolute-path fallback plus the "if/when promoted, this fallback can drop" comment. Follow-up 2 matches the ledger note "Phase 0 baseline (self-graded)".
+- Frontmatter left at `1f11d28` is consistent with the 45a7e35 audit batch (pages generally did not bump `last_updated`); no edit damage found in tables, links, or pointers.

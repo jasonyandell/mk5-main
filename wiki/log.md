@@ -3611,3 +3611,11 @@ inbound content link). Flagged-not-fixed: dead `[[plunge]]`, `[[burl-perf-phase1
 `[[topics/spec-decode-acceptance]]`, `[[explore-game-cache-bug]]` in pre-existing modified
 pages (missing-page candidates), and the two distinct "~74%" ceilings (era-3 argmax-vs-oracle
 tie-structure vs era-4 Zeb vs-random capacity) that no page cross-claims as identical.
+
+## [2026-07-07 | working-tree | experiment-page audit: 162 pages validated against code, 43 corrected, followups/ born]
+
+**Touched pages:** all 162 `experiments/` pages audited (43 edited in place); new `followups/` directory with one review file per experiment page.
+**Added:** `followups/<page>.md` × 162 — per-page audit record: substantive corrections ("page said X; code/artifact says Y, evidence path"), follow-up suggestions, and a second-pass review verdict on every corrected page.
+**Updated:** 43 experiment pages corrected against primary artifacts. Highest-weight fixes: [[gus-lamir1-piopp]] (Bug-6 outcome was inverted — the world_assign fix made regret *worse* 2.268→2.350; root cause is scalar V/Q distillation noise flipping argmax, not Q_head depletion-OOD; pivot-options list replaced with the real four from MORNING4_STATUS @ b42669a), [[gus-q-head-augmentation]] (conclusion rewritten to the sourced diagnosis), [[batch-throughput-bench]] (baseline is 83 tok/s not 43; prompt-cache reuse *was* tested — negative, c0020751, see [[burl-perf-phase2]]), [[burl-perf-phase0]] (K1 flip was gi=36, not gi=72), [[gus-belief-co-train]] (2×2 regret table disentangled; §20-vs-§21 0.679/0.685 source discrepancy flagged), [[gus-belief-calibration-diagnostic]] (the "47% closer" gloss implies a nonzero KL floor; receipt quoted verbatim).
+**Method:** two-pass fan-out — 162 low-effort auditors (one per page), then 43 adversarial second-pass reviewers over every corrected page (19 amendments, mostly reverting over-corrections or tightening citations).
+**Lint:** dead-link check over all 43 touched pages — zero new dead links introduced; pre-existing dead `[[burl-perf-phase1]]`, `[[topics/spec-decode-acceptance]]`, `[[log]]` (burl-perf-phase3), `[[sources/<sha>]]` placeholder (burl-star-run3) remain flagged from the era-6 audit.

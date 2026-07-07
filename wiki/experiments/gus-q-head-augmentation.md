@@ -45,11 +45,12 @@ context (path b) to fix this. (gus/MORNING4_STATUS.md @ 5f390fb)
 
 ## Conclusion
 
-Path (a) is closed. Augmenting the existing Q_head with random depletion is insufficient —
-the gap between training distribution and rollout distribution cannot be bridged by this
-technique. The only viable path for LAMIR-1 look-ahead is end-to-end joint training with
-actual rollout-generated leaf states, which is a substantially larger project.
+Path (a) is closed. Random-depletion augmentation is insufficient — it fixes the OOD
+measurement artifact (q_mae on depleted inputs) but not the ordering problem at decision
+boundaries, where scalar distillation noise swamps the action-value gap. The remaining
+path for LAMIR-1 look-ahead is training the leaf evaluator end-to-end in the rollout
+context (path b), a substantially larger project. (gus/MORNING4_STATUS.md @ 5f390fb)
 
 ## Links
 
-[[gus]] · [[experiments/gus-lamir1-piopp]] · [[experiments/gus-lamir1-mode-comparison]] · [[topics/lamir1]] · [[topics/regret-eval]]
+[[gus]] · [[experiments/gus-lamir1-piopp]] · [[experiments/gus-lamir1-mode-comparison]] · [[topics/lamir1]] · [[topics/regret-eval]] · [[topics/q-head-augmentation]]

@@ -13,3 +13,7 @@
 ## Follow-ups
 
 - Metrics are transcribed from the commit message only; no training-log/JSON artifact for this run exists in-repo, so the 57.9% etc. are unverifiable beyond the commit text. A cheap probe: re-run train_v1_full.py on the 100g corpus to confirm reproducibility.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand. Re-derived the 3400× correction from gus/model/dataset_seq_world.py (lines 20, 53: "avg M=3400", one random world per item) and commit da21f52 ("3400× signal per decision vs belief-alone"); the original page's M×7/84 formula would give ~283×, so the fix is right and the diff touched nothing else. Metrics, per-decision table, seed convention (gus/GEN_FLEET.md:113,119), and module paths all check out; the reproducibility follow-up remains valid (no in-repo artifact contains these metrics).

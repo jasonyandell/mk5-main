@@ -123,11 +123,12 @@ This is a regressor/detector design gap: regime labels need action-discriminatin
 subconditions before they can endorse a specific domino.
 
 ### 4. CVaR and robust-Q25 track EV much better than make-rate
-On the 280-decision dist-lens sub-corpus (seed 9430, strict-argmax top-1 agreement with EV):
-- `cvar_10` agrees with EV: **82.5%**
-- `robust_q25` agrees with EV: **81.8%**
+On the 280-decision dist-lens sub-corpus (seed 9430; top-1 argmax agreement with EV,
+utility-side ties broken by row order — EV itself has no tied maxima):
+- `cvar_10` agrees with EV: **82.5%** (tie-free)
+- `robust_q25` agrees with EV: **81.8%** (tie-free)
 - `p_make` agrees with EV: **74.6%** (91.1% if ties count as agreement)
-- `threshold_mass_low` agrees with EV: only **45.7%**
+- `threshold_mass_low` agrees with EV: only **45.7%** (58.9% if ties count)
 
 Risk-adjusted utilities are near-substitutes for EV; make-rate and especially the
 lower-threshold-mass lens diverge more. This suggests the distribution-lens reranker's

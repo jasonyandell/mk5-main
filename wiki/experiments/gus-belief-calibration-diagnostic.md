@@ -31,9 +31,12 @@ result kept in `scratch/`. (commit message @ 137a8e7, PRACTICALITIES receipt 15)
 | KL vs world-marginal | 0.078 | 0.062 |
 | (uniform-belief baseline KL) | 0.081 | — |
 
-Calibration is real — distribution training closes ~47% of the gap between the
-uniform-prior baseline (0.081) and hypothetical perfect belief (0). Truth-trained
-belief was optimizing for the mode, not the shape. (gus/PRACTICALITIES.md receipt 15)
+Calibration is real — the receipt's gloss is that distribution training "closes
+about 47% of the gap between uniform-prior and a hypothetical perfect belief".
+Truth-trained belief was optimizing for the mode, not the shape. The raw KL drop
+0.078 → 0.062 is ~20%; the 47% figure only works against a nonzero KL floor
+(~0.041, unstated in the receipt — plausibly the finite-M sampling floor of the
+empirical marginal), not against 0. (gus/PRACTICALITIES.md receipt 15)
 
 ### Downstream (where it matters)
 
@@ -58,6 +61,12 @@ belief targets, the full {belief_head, world_encoder, Q_head} cluster must be co
 together with distribution-belief targets and regular Q loss. Sequential fine-tuning
 creates irreconcilable distribution shift. (commit message @ 137a8e7)
 
+The co-training follow-up was run in §21 ([[experiments/gus-belief-co-train]], cf8ff79):
+co-training worsened q-bootstrap regret slightly (0.685 → 0.718), falsifying the
+"co-training propagates calibration" hypothesis on that setup — but sampling worlds
+from belief at inference (q-bootstrap-belief, 0.655) became the closest look-ahead
+to the direct baseline.
+
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[topics/dense-q-supervision]] · [[joint-world-tensor]]
+[[gus]] · [[topics/regret-eval]] · [[topics/dense-q-supervision]] · [[joint-world-tensor]] · [[experiments/gus-belief-co-train]]

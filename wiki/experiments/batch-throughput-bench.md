@@ -29,7 +29,7 @@ status: active
 
 ## Operationalized (6a97d55)
 
-`GemmaLocalNativeBatched` + `run_move4_star_rollout_batched.py`: N=16 batched (batch=64) runs in 58s vs sequential 134s — 2.3× wall. Larger batches and `prompt_cache` reuse expected to push toward the bench's 14.5× aggregate win — **but ragged batches and prompt_cache reuse are both untested**; the 2.3× figure is measured, the extrapolation toward 14.5× is not.
+`GemmaLocalNativeBatched` + `run_move4_star_rollout_batched.py`: N=16 batched (batch=16 in the measured run; the harness default is batch=64) runs in 58s vs sequential 134s — 2.3× wall. Larger batches were expected to push toward the bench's 14.5× aggregate win — **ragged-batch deltas remain unmeasured**, and `prompt_cache` reuse was later tested and came back **negative** in this batched shape (1.9× slower, K1 grade match dropped to 60%; `c002075`, see [[burl-perf-phase2]]); the 2.3× figure is measured, the extrapolation toward 14.5× is not.
 
 ## Significance
 

@@ -16,3 +16,7 @@ Reviewed against code on 2026-07-07.
 
 - Per-decision N=5 result logs (e.g. `burl/wax_museum/logs/n5_qwen/live.log` referenced by the README) are not in git; 5/5 rests on the commit message and README, not raw artifacts.
 - Fix the parallel "three commits after" phrasing in `wiki/entities/iter3-rules-adapter.md` in a future pass.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand. Independently re-derived: `git rev-list --count dbadb5f..54f7776` = 17; commit dates 2026-04-19 14:06 → 2026-04-20 22:56 ("one day later" is accurate). The 5/5 Gemma result, Qwen 6K-token `<think>` behavior, and the `assistant.tool_responses=[{name, response}]` mechanism all match the 54f7776 commit message and `burl/wax_museum/harness.py` (lines 108, 247-308). All three linked pages exist. Both follow-up suggestions remain valid: `git ls-files burl/wax_museum/logs` is empty, and `wiki/entities/iter3-rules-adapter.md:56` still says "three commits after".

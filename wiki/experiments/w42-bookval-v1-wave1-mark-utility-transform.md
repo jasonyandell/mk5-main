@@ -70,8 +70,9 @@ whether a world is "made" or "set", producing near-identical mark EV across acti
 - **12 decisions (18.5%)**: positive mark_gain — genuine preference shift
 - **53 decisions (81.5%)**: mark_gain = 0 — tie-breaking artifact of the flat binary surface
 
-For the genuine flips: mean EV-cost = 1.32 pts, mean mark-gain = 0.030 marks
-(~3.0 percentage points better odds of winning this hand under marks).
+For the genuine flips: mean EV-cost = 1.32 pts, mean mark-gain = 0.030 marks.
+Mark utility is the ±1 (team0 − team1) mark differential, so a 0.030 mean gain is
+~1.5 percentage points better odds of winning the hand under marks.
 
 ### Declaration-level finding: no-trump is most sensitive
 
@@ -116,7 +117,8 @@ with the book's claim that marks create early-terminal pressure.
 
 3. **game 4, decision 7, fours, bidder_partner, early_hand**: 3.8pt cost, **0.070 mark gain**.
    `last_to_act_closure_policy` active. **Genuine objective flip** — partner-third-seat
-   decision where a count-safe line sacrifices point EV but improves make odds by 7%.
+   decision where a count-safe line sacrifices point EV but improves make odds by
+   3.5 percentage points (0.070 in ±1 mark-utility).
 
 4. **game 7, decision 17, doubles, left_setter, mid_hand**: 3.7pt cost, 0.0 mark gain.
    `doubles_regime_plan|doubles_trump_regime` active. Doubles-as-trump creates a
@@ -124,7 +126,8 @@ with the book's claim that marks create early-terminal pressure.
 
 5. **game 6, decision 4, sixes, left_setter, early_hand**: 3.4pt cost, **0.028 mark gain**.
    `setter_lead_pressure|defender_damage_lead_class` active. **Genuine setter flip**
-   — opening lead that forfeits 3.4 pts of EV improves setter's mark-winning odds by 2.8%.
+   — opening lead that forfeits 3.4 pts of EV improves setter's mark-winning odds by
+   1.4 percentage points (0.028 in ±1 mark-utility).
 
 ### Blocker finding: ch10-special-bid-mark-multiplier cannot be tested here
 

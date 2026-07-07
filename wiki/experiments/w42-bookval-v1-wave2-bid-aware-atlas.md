@@ -68,7 +68,7 @@ The per-world mark utility transform is verbatim from
 6. `mark_ev[a] = mean_w(mark_util[w,a])`
 7. `p_make[a] = P(mark_util[w,a] > 0)`
 
-`mark_multiplier(bid) = 1` for bid < 42; `= bid // 42` for bid ≥ 42 (so 1 at bid=42, 2 at bid=84).
+`mark_multiplier(bid) = 1` for bid < 84 (including bid=42); `= bid // 42` for bid ≥ 84 (so 2 at bid=84).
 
 ### Validation Protocol
 

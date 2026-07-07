@@ -11,3 +11,19 @@
 
 - The verified numbers themselves (0.551 / 0.679 / 1.645 / 2.006 / 2.094 / 2.268 / 68.6%) all check out against b42669a docs and commit messages; per-mode JSONs (`scratch/lamir1_*.json`) are gitignored so raw eval artifacts are unverifiable in-repo.
 - Pivot option 2 (V trained on expected Q under sampled opp play) was never tried per the wiki; a cheap probe now that E[Q]-distill is on the champion v2 roadmap.
+
+## Review (second pass, 2026-07-07)
+
+All four claimed corrections independently re-verified against primary sources and confirmed:
+
+- Fix 6 made regret worse (2.268 → 2.350, all rollout modes) and the training convention preserves the original world_assignment — confirmed by `git show b42669a:gus/PRACTICALITIES.md` §20 and `git show b42669a:gus/MORNING4_STATUS.md`; the original page's "correctly identifies and fixes" wording matched only the pre-result 2c380a6 commit message, superseded by b42669a.
+- Root-cause swap (Q_head-OOD → distilled scalar V/Q argmax-flip per Kubíček & Lisý, V_head world-blind std=0.000) — confirmed by §20; additionally the depletion-OOD hypothesis was later tested and disconfirmed as root cause (`wiki/topics/q-head-augmentation.md`, commit 5f390fb).
+- Pivot options — confirmed: the four in MORNING4_STATUS "Next directions" match the corrected page; the original page's four did not appear in either source.
+- Ladder table — every number and note matches the MORNING4_STATUS final ladder exactly; "rotated π_me" mode descriptions match the `gus/eval/lamir1.py` module docstring at b42669a.
+
+Two precision amendments made:
+
+- Renamed the page's "## §20 pivot options" heading to "## Pivot options" — the options live in MORNING4_STATUS, not PRACTICALITIES §20 (evidence: `git show b42669a:gus/PRACTICALITIES.md` §20 contains no pivot list).
+- Fixed the root-cause section's citation from "(commit message @ b42669a)" to "(PRACTICALITIES §20 @ b42669a)" — the K&L wording and std=0.000 detail are in §20, not the commit message.
+
+Follow-ups checked: both stand (scratch/lamir1_*.json confirmed gitignored via `git check-ignore`; pivot option 2 confirmed untried — only path (a) depletion augmentation was run, per `wiki/topics/q-head-augmentation.md`).

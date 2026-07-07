@@ -26,7 +26,7 @@ This is harness/tooling work. It does not move any claim status.
 |---|---|
 | `w42/claim_analysis/harness.py` | row normalization, label parsing, bootstrap CIs, label metrics, paired contrasts, artifact writing, W&B progress logging |
 | `w42/claim_analysis/run_existing_rows.py` | CLI for Gus claim rows, branch-atlas action tables, phase-2 decision tables, or custom row artifacts |
-| `w42/claim_analysis/registry.py` | built-in claim-label registry (Gus tactical `ClaimSpec`s) |
+| `w42/claim_analysis/registry.py` | built-in claim-spec registry: `GUS_TACTICAL_SPECS`, `BRANCH_ATLAS_SPECS`, `CHAMPION_SPECS` (6 each), selected via `specs_for_source_kind` |
 | `w42/claim_analysis/__init__.py` | package exports |
 
 The first version expects row artifacts that already expose public/action facts

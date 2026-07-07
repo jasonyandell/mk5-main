@@ -17,3 +17,11 @@
 ## Follow-ups
 
 - The report notes eval ran at `--max-retries 3` while spike v2 used 7; the cheap "re-eval at max_retries 7" probe was never recorded here — worth checking whether iter3-comparison actually ran it.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand.
+- Primer word count: `_TRIMMED_PRIMER` at `09b841e:burl/harness/agent_runner_native.py` is exactly 386 words (counted); SPIKE_REPORT @ 09b841e says "~400 words"; the old ~500 figure indeed traces to the commit message ("~500 words instead of 1549").
+- The 3× claim: SPIKE_REPORT's "Corpus N=30, not N=50" bullet says "ran ~3× slower per-decision than iter-0 (180 s vs 56 s wall)" — wall time, not trace size; iter-1 eval mean_tokens_out is 2.9 K chars vs iter-0's 5.6 K, so "trace bodies ~3× larger" was backwards. Auditor's rewrite is accurate.
+- Spot-checked the "Verified" section: 4-baseline table, rollout numbers (13/30 = 43% K1, 0 retry-exhausted, tool histogram is_legal 44 / trump_declared 4 / is_trump 1 / eq 2), Step 1 framing-only result, and adapter name all match SPIKE_REPORT @ 09b841e.
+- Follow-up suggestion kept: wiki/experiments/iter3-comparison.md records no max_retries-7 re-eval of the iter-1 adapter, so the question remains open.

@@ -13,4 +13,12 @@
 ## Follow-ups
 
 - Note that at rollout level iter-3-rules had 1/50 (2%) retry-exhausted; the page's "0 retry-exhausted" is the N=10 eval headline. A one-word qualifier ("eval") would preempt confusion.
-- iter-4-thoughts was byte-identical to iter-3-rules on N=10 — worth a sentence on this page since it bounds the value of the thoughts channel at this scale.
+- iter-4-thoughts was byte-identical to iter-3-rules on N=10 — worth a sentence on this page since it bounds the value of the thoughts channel at this scale. (Natural link target already exists: [[experiments/iter4-null-preserve-thoughts]].)
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand.
+- Correction 1 re-derived: `git ls-tree -r dbadb5f` shows `SPIKE_REPORT.md` at repo root; no `burl/SPIKE_REPORT.md` in that tree. Link target `../sources/dbadb5f.md` unchanged and valid.
+- Correction 2 re-derived: SPIKE_REPORT.md @ dbadb5f Phase 6 (18-row corpus, iter-3-v2) vs Phase 7 (30-row corpus, iter-3-rules); distinct HF adapters `jasonyandell/gemma-4-e2b-texas42-burl-iter3-v2` and `...-iter3-rules` listed in the report's artifact section; `wiki/entities/` has no iter3-v2 page and `wiki/entities/iter3-rules-adapter.md` never mentions iter-3-v2.
+- Verified-section numbers spot-checked against SPIKE_REPORT.md Phases 6-8 and section "4. Three-mode prompt shape flag" — all match.
+- Both follow-up suggestions kept: page still lacks the "eval" qualifier (rollout retry-exhausted was 1/50 = 2%, report Phase 7 table) and still omits the iter-4-thoughts null.

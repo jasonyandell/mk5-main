@@ -17,3 +17,7 @@ Reviewed against code on 2026-07-07.
 
 - `renege_immediate_detection` remains the cheapest live probe: it's deterministic from engine legality and needs only injected illegal-play fixtures.
 - If Burl STaR traces are ever re-filtered, `trace_public_evidence_faithfulness` is a one-afternoon lint (regex for partner-hand claims + tool-citation check) with direct training-data value.
+
+## Review (second pass, 2026-07-07)
+
+- Verified — corrections stand. Concept table has exactly 13 rows (page lines 61-73), so 14→13 was correct; book slice, bead `t42-ni1l.11`, 64-row ledger, and absent-detectors claims all re-verified against `scratch/winning42/winning42.with_figures.md`, `.beads/issues.jsonl`, and `wiki/experiments/w42-phase4-final-claim-audit.md`.
