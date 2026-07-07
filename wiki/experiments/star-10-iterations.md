@@ -71,11 +71,15 @@ Iters 10–14 (39%, 41%, 40%, 39%, 38%) show no improvement over iters 5–9. Lo
 - **Scratchpad validation attempted and deferred** during this period — see [[experiments/scratchpad-v2-iter0]] and [[scratchpad-validation]].
 - **Iterations chained as separate Modal runs** to avoid container staleness (one-iteration-per-invocation pattern).
 
-## Open directions
+## Open directions — none taken
 
-1. Run held-out eval (seeds 900000–909999, see [[decisions/eval-seed-holdout]]) on iter 5 or iter 7 to get a proper [[expected-q-value]] delta measurement vs Stage 0 and vs base model.
-2. Bootstrap [[scratchpad-validation]] format via SFT — generate correct scratchpad examples from the engine, train one LoRA pass to teach the format, then resume validated STaR. This is the approach most likely to break the plateau.
-3. 11,672 narrations now available (seeds 0–799) for larger-subset iterations.
+None of these three candidates (held-out E[Q]-delta eval, scratchpad-SFT bootstrap, another
+Stage-0 round) happened. Five days later the project replaced the base model entirely
+(Gemma → Qwen 3 1.7B, [[base-model-pivot-qwen]]) rather than pursuing any of them.
+
+1. ~~Run held-out eval (seeds 900000–909999, see [[decisions/eval-seed-holdout]]) on iter 5 or iter 7 to get a proper [[expected-q-value]] delta measurement vs Stage 0 and vs base model.~~
+2. ~~Bootstrap [[scratchpad-validation]] format via SFT — generate correct scratchpad examples from the engine, train one LoRA pass to teach the format, then resume validated STaR.~~
+3. ~~11,672 narrations now available (seeds 0–799) for larger-subset iterations.~~ (What actually happened instead: [[experiments/stage-0-progression-star]] found the plateau was curriculum-bounded, not something more STaR iteration or scratchpad validation would fix.)
 
 ## Related pages
 

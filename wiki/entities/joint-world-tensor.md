@@ -28,6 +28,11 @@ Both fixed-sampling (M constant) and adaptive-convergence (SEM < threshold) path
 supported. Adaptive+posterior path still skipped at this frontier. MPS fallback added so
 tire-kicking runs locally on Apple Silicon. (commit message @ 31e10ef)
 
+**This is schema v1.** Schema v2 (`dcd9365`) added `oracle_softmax_per_seat [4, 7]`,
+`legal_mask_per_seat [4, 7]`, and `voids_per_seat [4, 3, 8]` to support [[pi-opp-head]]
+training — see that page for the v2 fields. Those fields were never folded back into this
+page's schema block above; v1 loaders remain backwards compatible with v2 corpora.
+
 ## Tire-kick validation (seed 900000)
 
 | M | Finding |
@@ -61,3 +66,7 @@ python -u -m forge.eq.generate \
 ```
 
 Expected: ~10s/game on MPS, ~17 min for 100 games, ~600 MB file.
+
+## Links
+
+[[gus]] [[forge]] [[lamir1]] [[pi-opp-head]] [[student-distillation]]

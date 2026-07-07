@@ -54,3 +54,14 @@ hour paid for twice. All five fixes must land before the diverse-seed fleet runs
    → train → eval).
 2. **Scale fleet**: 4-16 workers via `vast_monitor.sh`.
 3. **Local consumer**: periodic HF pull + retrain trigger.
+
+## Outcome: never launched
+
+The fleet never ran past phase 0. There is no `jasonyandell/gus-42-worlds` HF dataset (zero
+repo-wide hits for the name) and no fleet-provenance commit beyond the pre-launch fix list
+above — one commit total (`b1de970`, bulk migration), 2.5 months with zero revisit as of
+2026-07-06. The scaling goal this plan targeted was reached by a different path: the 10k-game
+corpus that actually shipped ([[consistency-regularizer]]'s v3-10k run) was generated locally,
+consumed through [[lazy-iterable-dataset]]'s streaming loader rather than a distributed fleet.
+Superseded by local generation; kept as the design record for the Vast.ai pattern should
+corpus generation ever need to scale past single-machine wall time again.

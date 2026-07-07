@@ -2,9 +2,13 @@
 title: w42 Phase 2 Setter Pounce Direct Label Probe
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-gus-corpus-tactical-claim-deep-dive]] (itself
+superseded by [[w42-tactical-claim-replication]]) — three supersession hops
+from the current frontier.
 
 ## Summary
 

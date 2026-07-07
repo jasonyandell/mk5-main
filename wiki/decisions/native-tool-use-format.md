@@ -3,7 +3,7 @@ title: Native Tool-Use Format (not XML)
 kind: decision
 first_seen: 3781dce
 last_updated: 3781dce
-status: active
+status: superseded
 ---
 
 ## Decision
@@ -43,3 +43,9 @@ OVERVIEW principle (added at [[sources/3781dce]]): *"Go with the model's grain; 
 ## Related pages
 
 [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[experiments/burl-move4-native-spike]] · [[experiments/burl-move3-base]] · [[sources/3781dce]]
+
+## Status
+
+Dormant since move-4 (mid-April 2026), superseded along with the rest of [[burl]] by
+[[champion]] / [[jud]]'s pure-NN direction — no native tool-calling harness is used
+there.

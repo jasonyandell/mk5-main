@@ -2,15 +2,22 @@
 title: TypeScript Game Engine
 kind: entity
 first_seen: 8d26e0d
-last_updated: 8d26e0d
+last_updated: local-2026-07-06
 status: active
 ---
 
 ## What it is
 
 The TypeScript game engine is the authoritative implementation of [[texas-42]] rules, state
-transitions, legality checks, and visible-information accounting. It lives at `src/core/`.
-(burl/OVERVIEW.md @ 8d26e0d)
+transitions, legality checks, and visible-information accounting. It lives at
+`src/game/core/` (`src/core/` never existed in this repo — `git log --all -- src/core`
+returns zero commits at any point; `src/game/core/state.ts` has git history back to the
+repo's earliest commit `f989134`). (burl/OVERVIEW.md @ 8d26e0d)
+
+Its origin is [[web-game]] (2025-07 .. 2025-12): the pure-functional,
+event-sourced core, the `GameLayer` variant system (nello/plunge/sevens/splash),
+and PIMC-minimax as the working AI were all built there, pre-dating [[forge]],
+[[gus]], and [[burl]] by months.
 
 ## Distinct from Forge
 

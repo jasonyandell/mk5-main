@@ -3,7 +3,7 @@ title: Batched eval resilience pattern
 kind: topic
 first_seen: 86334b8
 last_updated: 86334b8
-status: active
+status: superseded
 ---
 
 ## Problem
@@ -59,7 +59,10 @@ Resume sanity (n=12, batch=6, kill@6-of-12, then `--resume-dir`):
 --variant-name NAME  Default D_required_first.
 ```
 
-A pending `--turn-cap N` flag (task #12) will land via trainer-fixer to expose the harvest's implicit `MAX_TURNS_PER_DECISION = 8` for the run-4 path; see [[burl-star-run3]] §What's next.
+The `--turn-cap N` flag never landed. `burl/eval/` last commit is 2026-04-28; the
+eval-adapter-smoke script this resilience layer lives in (as opposed to the
+metric/rescore layer under "Promotion status" below) remained in `scratch/` for the
+rest of the family's active window.
 
 ## Why this matters for STaR planning
 

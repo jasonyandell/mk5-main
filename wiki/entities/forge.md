@@ -2,15 +2,28 @@
 title: Forge
 kind: entity
 first_seen: a8bccfa
-last_updated: 8d26e0d
+last_updated: local-2026-07-06
 status: active
 ---
 
 ## What it is
 
-Forge is the shared ML infrastructure used by both [[lem]] and [[burl]]. Neither project
-owns it; both treat it as a data source and oracle. (lem/narrate/OVERVIEW.md @ a8bccfa;
-burl/OVERVIEW.md @ 8d26e0d)
+Forge is the project's central shared ML infrastructure — the oracle, the E[Q] framework,
+and the training/analysis substrate no single project owns. It was originally built for
+[[lem]] and [[burl]]; its current consumers are [[gus]], [[w42]], jud, and [[champion]]
+(`forge/oracle/`, `forge/eq/` — see `wiki/entities/jud.md` lines 19, 31, 321), with LEM and
+Burl now dormant. (lem/narrate/OVERVIEW.md @ a8bccfa; burl/OVERVIEW.md @ 8d26e0d)
+
+## Origin
+
+Named and structured on 2025-12-30 ("Crystal Forge: Lightning-first ML pipeline," `2559818`):
+`forge/oracle/` (the GPU tablebase solver, moved in from a three-generation solver lineage
+built two days earlier — see [[the-oracle]]), `forge/ml/` (LightningModule + DataModule),
+`forge/cli/`. Naming moment: "the crystal forge sounds so badass. I can say 'yeah over in the
+forge' and I feel like a cool dude." (conv bec8b3d4). See [[breakthrough-and-oracle]] for the
+full era this was built inside — the algebra that made the solver trustworthy
+([[suit-algebra]]) and the theoretical result ([[strategy-fusion]]) that shaped how its
+output could later be consumed for bidding.
 
 ## Three distinct components (vocabulary enforced at 8d26e0d)
 
@@ -31,6 +44,9 @@ the distinction:
 opponent-hand prediction, trained via self-play + oracle distillation). It is Burl-first
 infrastructure but lives in Forge as shared infrastructure. LEM did not call Zeb directly.
 (burl/OVERVIEW.md @ 8d26e0d)
+
+Zeb was subsequently parked: E[Q] n=10's outcome PDF replaced it as the project's belief
+primitive. See [[zeb-parked-eq-primitive]].
 
 ## Components consumed by LEM at this frontier
 

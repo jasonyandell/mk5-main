@@ -3,7 +3,7 @@ title: Router Reality-Check (detect-and-route PoC results)
 kind: topic
 first_seen: a09ef43
 last_updated: a09ef43
-status: active
+status: retired
 ---
 
 ## Overview
@@ -28,7 +28,11 @@ To ship a no-oracle-inference student at 0.49 regret:
 1. Multi-world variance regularization during Q_head training (affects `train_v2_voids.py`), or
 2. K=50+ worlds at inference (cheap, already validated in the blunder-detector K=20 path).
 
-Until then, detect-and-route requires oracle calls. The oracle-budget version is already deployable (a09ef43).
+Until then, detect-and-route requires oracle calls. The oracle-budget version reached its
+projected regret in eval scripts (a09ef43), but "deployable" overstates it: no oracle-budget
+router was ever wired into champion, arena, or forge. The whole [[detect-and-route]] line was
+abandoned when the project pivoted to `jud`/[[champion]] rather than continuing the LAMIR-era
+fallback-routing approach.
 
 ## Numbers summary
 
@@ -44,4 +48,4 @@ Until then, detect-and-route requires oracle calls. The oracle-budget version is
 
 ## Links
 
-[[gus]] [[detect-and-route]] [[blunder-detector]] [[regret-eval]] [[pimc]]
+[[gus]] [[detect-and-route]] [[blunder-detector]] [[regret-eval]] [[pimc]] [[champion]]

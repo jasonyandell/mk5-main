@@ -2,9 +2,16 @@
 title: w42 Bidding Risk-Budget Claim Validation
 kind: experiment
 first_seen: c603a0d
-last_updated: 18a5b94
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** for the static-detector claims by
+[[w42-phase4-bidding-count-exposure-tests]]. The "real auction rollout" and
+"partner rescue-ownership conditioning" gaps this page names remain genuinely
+open — no later page resolves them. (The `last_updated` sha above is the era-6
+audit commit; this page's own prior `last_updated` pointed at an unrelated
+commit, likely a tip-of-branch stamping convention rather than an error.)
 
 ## Summary
 

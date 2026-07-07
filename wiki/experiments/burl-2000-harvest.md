@@ -3,7 +3,7 @@ title: Burl 2000-decision batched harvest (D_required_first)
 kind: experiment
 first_seen: 063fcac
 last_updated: 02d9096
-status: active
+status: complete
 ---
 
 ## What
@@ -90,6 +90,13 @@ Corpus is ready for [[star]] run-3:
 3. Eval on a held-out sample (sequential 560 baseline is the obvious candidate).
 
 Recipe (rank=8 LoRA, lr=3e-5, 1 epoch, val-loss + early-stopping) follows from [[iter5-e1-rank-sweep]] + the prior session's `star_mlx.py` instrumentation work. Conservative hyperparams chosen because the prior 71-row STaR collapsed at rank=16 + lr=1e-4.
+
+## Status
+
+This corpus fed [[burl-star-run3]] and, upstream of it, [[burl-harvest-2]] — the
+harvest's job is done and its outputs are consumed by name in both of those. Last
+`burl/` commit in this window is 02d9096 (2026-04-25); the family has had no commits
+since 2026-05-07.
 
 ## Links
 

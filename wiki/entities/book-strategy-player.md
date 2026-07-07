@@ -2,16 +2,26 @@
 title: BookStrategyPlayer - strategy algebra
 kind: entity
 first_seen: local-2026-05-03
-last_updated: local-2026-05-04
-status: active
-phase: algebraic Phase 1 contract
+last_updated: afd4802
+status: superseded
+phase: algebraic Phase 1 contract (never built)
 supersedes: BookStrategyPlayer - amended Phase 1 design
 ---
 
 ## What it is
 
-BookStrategyPlayer is the W42 player architecture for testing book advice that
-is plan-shaped instead of one-domino-shaped. It plays through a finite library
+**Superseded before build.** BookStrategyPlayer was the W42 player
+architecture proposed for testing book advice that is plan-shaped instead of
+one-domino-shaped. The chassis was redirected from play-time strategy to the
+auction by Fable's 2026-06-09 design review (see [[champion-design-review]]);
+this Phase 1 design was never implemented — bead `t42-zrf9` froze
+`in_progress` on 2026-05-04 and no `w42/book_strategy*` directory ever
+appeared on disk. The project's best-player energy moved instead to the
+auction-first [[champion]]/[[jud]] value-net line, an unrelated mechanism.
+BSP may still run someday as a cheap epilogue measurement, not a live plan —
+the algebra below is preserved as a design record, not a build in progress.
+
+It was to play through a finite library
 of named strategies, each with this lifecycle:
 
 ```text
@@ -397,9 +407,12 @@ Those are extension points, not Phase 1 obligations. They are summarized in
 - **Designed:** 2026-05-03.
 - **Amended:** 2026-05-04 after lifecycle, algebra, and recording review.
 - **Refactored:** 2026-05-04 into compact algebra plus satellite pages.
-- **Built:** not yet.
-- **Strategies encoded:** none yet.
-- **Bead in progress:** `t42-zrf9`.
+- **Built:** never — bead `t42-zrf9` froze `in_progress` at 2026-05-04 and was
+  never revisited; beads were retired project-wide 2026-06 without it closing.
+- **Strategies encoded:** none.
+- **Superseded:** 2026-06-09, by the auction-first [[champion]]/[[jud]] line
+  (see [[champion-design-review]]). May still run someday as a cheap epilogue
+  measurement, not a live plan.
 
 ## Links
 
@@ -413,3 +426,7 @@ Those are extension points, not Phase 1 obligations. They are summarized in
 - [[book-strategy-player-extension-points]] - future extension boundaries.
 - [[w42-bookval-v1-wave2-void-creation]] - prior void-creation result to avoid
   overclaiming against.
+- [[champion-design-review]] - Fable's 2026-06-09 review that redirected the
+  chassis from play to the auction.
+- [[champion]] · [[jud]] - the mechanism the project's best-player energy
+  moved to instead.

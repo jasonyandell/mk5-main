@@ -3,7 +3,8 @@ title: LEM — Little Expert Model
 kind: entity
 first_seen: a8bccfa
 last_updated: be7efc4
-status: active
+status: complete
+superseded_by: burl
 ---
 
 ## What it is
@@ -347,7 +348,15 @@ gradient-allocation problem. Capacity or STaR is the next lever.
 
 See [[experiments/v10-maskfix-breakthrough]]. (commit messages @ b857299, 0c7392f, be7efc4)
 
-## Open questions (at this frontier)
+## How it ended
+
+LEM's replay ended at v10-maskfix (86% comprehension, 55/100 bot-match); the project
+pivoted to [[burl]]'s tool-orchestration approach before any of the open questions below
+(variance-filter thresholds, Stage 2 ratchet timing, DPO-vs-R1) were answered. See
+[[lem-to-burl-handoff]] for the full pivot narrative — the next-day handoff is not
+otherwise visible from this page. (lem/OVERVIEW.md @ be7efc4; trails/lem-to-burl-handoff @ 8d26e0d)
+
+## Open questions (never answered — closed by pivot, not resolution)
 
 - Exact variance filter thresholds (`δ`, `σ_max`) — to be determined from wandb
 - Stage 0 corpus size and category mix — depends on parsing sanity check result

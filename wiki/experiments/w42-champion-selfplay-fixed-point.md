@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: champion-26-selfplay
 first_seen: local-2026-06-14
-last_updated: local-2026-06-14
+last_updated: afd4802
 ---
 
 # w42-champion-selfplay-fixed-point
@@ -116,11 +116,13 @@ still converges (KL ~0.07–0.08) — but the bidder **still loses** (CI exclude
 
 ## What it means for the champion
 
-The **playable champion** is the calibrated belief student (sensible, legible). It is exported to
-[[plunge]] as the `onyx` difficulty via ONNX (a 40 KB net; the student plays its `pi_me` policy
-head in-browser) so a person can sit down across from the thing we grew through self-play — its
-teaching value being the legible belief trajectory, per the project's reframe of the belief→marks
-nulls.
+The **playable champion** is the calibrated belief student (sensible, legible). It was slated for
+export to [[plunge]] as the `onyx` difficulty via ONNX (a 40 KB net; the student would play its
+`pi_me` policy head in-browser) so a person can sit down across from the thing we grew through
+self-play — its teaching value being the legible belief trajectory, per the project's reframe of
+the belief→marks nulls. **Asserted, unverified**: the era-6 audit (2026-07-06) found no `plunge`
+app, `onyx` difficulty string, or ONNX export artifact anywhere in the repo — either this export
+never shipped or lives somewhere the audit didn't check.
 
 ## Links
 

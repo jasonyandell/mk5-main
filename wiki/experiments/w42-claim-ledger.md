@@ -2,7 +2,7 @@
 title: w42 Claim Ledger
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+last_updated: afd4802
 status: active
 ---
 
@@ -11,6 +11,17 @@ status: active
 The w42 claim ledger is the conservative evidence register for
 [[winning42-strategy-measurement]]. It ties each Winning 42 chapter claim to a detector,
 metric or test, data source, readiness state, evidence artifact, status, and caveats.
+This schema/vocabulary was real and used across roughly six dozen w42 bead reports
+through phase 4 ([[w42-phase4-final-claim-audit]]), but it was never centrally
+assembled into one populated ledger file — only `w42/claim_ledger.schema.json`,
+`w42/claim_ledger.template.json`, and six scattered per-bead delta/update files
+exist on disk. **Methodology succession:** the [[jud]] track (v0/v1) silently
+replaced this status vocabulary with "registered predictions stated before
+measurement" ([[w42-jud-v1]]: "Six registered predictions, each stated before its
+measurement") — no page recorded that transition until this note. The vocabulary
+below remains the correct reference for every w42 page that still cites it
+(phases 1-4, the book-validation-campaign waves); it is not the methodology of
+the current best-player frontier.
 
 The ledger is schema-first. A detector definition, chapter harvest, or report bucket is not
 empirical support by itself. A claim can move to `supported` or `contradicted` only after an

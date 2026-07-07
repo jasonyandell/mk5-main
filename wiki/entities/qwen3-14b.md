@@ -3,7 +3,7 @@ title: Qwen 3 14B (capacity experiment)
 kind: entity
 first_seen: 0c7392f
 last_updated: 0c7392f
-status: active
+status: complete
 ---
 
 ## What it is
@@ -42,5 +42,7 @@ v9) at one-third the compute cost. The gap between 1.7B and 14B on comprehension
 largely a gradient-allocation artifact, not a fundamental capacity limit.
 
 **Rationalization gap is real.** The 14B reaches 97/100 rationalization vs 1.7B's 68 —
-a 43pp jump the mask fix does not replicate. This remains an open question for the next
-phase of LEM. See [[lem]] and [[v10-adapter]] for the current end-of-replay state.
+a 43pp jump the mask fix does not replicate. This was a one-shot capacity probe (single
+commit, 0c7392f) — it never ran as a production system, and LEM ended (pivoted to [[burl]])
+before any follow-up experiment used it. See [[lem]] and [[v10-adapter]] for the
+end-of-replay state, and [[lem-to-burl-handoff]] for the pivot.

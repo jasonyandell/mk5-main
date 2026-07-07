@@ -3,7 +3,7 @@ title: Burl harvest-2 + run-4 — first STaR self-sharpening test
 kind: experiment
 first_seen: 74464e9
 last_updated: 74464e9
-status: active
+status: complete
 ---
 
 ## What
@@ -89,6 +89,11 @@ The plateau strongly motivates **changing the loss target**, not just iterating 
 2. **FORCED_COMMIT-as-negative**: include FC decisions in training with a negative signal (counterfactual: the bot would not have forced). Aimed at the FC-vs-regret tradeoff that run-3c and run-4 expose as a real two-axis Pareto.
 3. **Ratchet curriculum to trick 5**: harvest D_trick5_first to get away from the trick-0 bias of the current corpus.
 4. **Fix/promote the corpus tagger's denominator handling** so future summaries count the harvested GI set, not every row in the source per-decision file.
+
+None of these four ran before the family went dormant on 2026-05-07. The plateau this
+page documents was the last word on filter-only STaR for Burl; the project pivoted to
+a perf-sprint, then [[burl-chat]]/[[burl-lab]]/[[burl-microscope]], then
+[[champion]]/[[jud]] rather than changing the loss target as recommended here.
 
 ## Caveat
 

@@ -2,9 +2,16 @@
 title: w42 Doubles No-Trump Legacy Mining
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-phase4-doubles-notrump-regime-tests]], which
+delivers the generated paired same-hand regime comparison this page's own
+"Next Checks" named as its central blocker (192 same-hand regime pairs,
+66.1% no-trump-preferred). The three narrower proxy-sharpening TODOs (low-double
+sacrifice state gates, support-double preservation label, suit-count/walker
+labels) remain genuinely open.
 
 ## Summary
 

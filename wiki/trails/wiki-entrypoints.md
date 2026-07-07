@@ -2,7 +2,7 @@
 title: Wiki Entrypoints
 kind: trail
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+last_updated: local-2026-07-06
 status: active
 ---
 
@@ -23,6 +23,13 @@ Start with one of these when the user names a major workstream:
 | [[gus]] | oracle distillation, belief/value/policy heads, LAMIR, regret eval, strategy probes |
 | [[w42]] | Winning 42 book validation, strategy detectors, claim ledger, report-shaped research |
 | [[book-strategy-player]] | multi-step book-plan architecture, algebraic spec, strategy-selector data, and W42 planning-aware validation |
+| [[jud]] | the unified belief-conditioned core direction; bidding+play as one act |
+| [[champion]] | the jud v1 capstone build — zero-adapter, greedy 1-ply value play, oracle-free at runtime |
+
+**The actual frontier since June 2026** is the jud v1 / Zeb-protocol capstone
+(`afd4802`, `622c1a1`, `1143ebb`, `bdebb82`, `3ac03de`) — start at [[jud]] or [[champion]],
+not at the hubs above alone, which predate it. See `wiki/log.md`'s 2026-07-06 entries for
+the graded verdict (E[Q] n=10 undefeated at pure play).
 
 ## Current trails
 

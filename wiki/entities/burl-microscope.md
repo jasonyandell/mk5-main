@@ -3,7 +3,7 @@ title: burl-microscope — Human-in-the-loop Burl recipe workbench
 kind: entity
 first_seen: local-2026-05-06
 last_updated: local-2026-05-07
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -98,3 +98,9 @@ journaling.
 ## Related
 
 [[burl]] · [[burl-lab]] · [[burl-chat]] · [[wax-museum]] · [[gemma-tool-response-shape]] · [[burl-2000-harvest]]
+
+## Status
+
+Last commit in this window is `local-2026-05-07`; the whole [[burl]] line went dormant
+the same day and never revisited. Superseded by the [[champion]] / [[w42-jud-v1|jud]]
+pure-NN direction.

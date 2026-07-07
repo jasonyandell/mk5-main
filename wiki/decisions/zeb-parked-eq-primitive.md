@@ -3,7 +3,7 @@ title: "Zeb Parked; E[Q] Distribution as Belief Primitive"
 kind: decision
 first_seen: d9baf3b
 last_updated: d9baf3b
-status: active
+status: superseded
 ---
 
 ## Decision
@@ -36,3 +36,10 @@ When an ML artifact advertises a headline number, inspect what denominator the n
 ## Related pages
 
 [[zeb]] · [[burl]] · [[forge]] · [[experiments/zeb-calibration-eval]] · [[tool-orchestration]] · [[sources/d9baf3b]]
+
+## Status
+
+Reconfirmed independently by [[w42-jud-v1|jud v1]]'s 2026-07-06 verdict (`afd4802`),
+which names E[Q] n=10 the play champion "against every learned challenger since Zeb."
+Superseded as Burl's belief primitive by [[belief-trajectory]] (Gus), and Zeb-as-belief
+is itself now superseded architecturally by [[gus]]'s belief/champion engine.

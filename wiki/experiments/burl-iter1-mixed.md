@@ -52,6 +52,10 @@ Trimmed primer + SFT amplified "think deeply about the position" at the cost of 
 2. Keep trimmed primer + add explicit "you MUST emit `commit_play` to end your turn" line in system prompt.
 3. N=50 corpus; `max_retries=7` at eval-time.
 
+iter-2 was never a standalone adapter page — its results were folded directly into
+[[experiments/iter3-comparison]]'s variant table on the way to [[iter3-rules-adapter]].
+See that page for how these options actually resolved.
+
 ## Related pages
 
-[[burl-iter1-adapter]] · [[burl-iter0-adapter]] · [[experiments/burl-iter0-eval]] · [[decisions/primer-tradeoff]] · [[decisions/commit-discipline]] · [[burl]] · [[gemma-4-e2b]] · [[sources/09b841e]]
+[[burl-iter1-adapter]] · [[burl-iter0-adapter]] · [[experiments/burl-iter0-eval]] · [[decisions/primer-tradeoff]] · [[decisions/commit-discipline]] · [[experiments/iter3-comparison]] · [[burl]] · [[gemma-4-e2b]] · [[sources/09b841e]]

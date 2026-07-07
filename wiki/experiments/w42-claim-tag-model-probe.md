@@ -2,9 +2,12 @@
 title: w42 Claim-Tag Model Probe
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-phase3-joined-claim-row-model-table]], which resolves
+this page's "unavailable-family" caveat the same day.
 
 ## Summary
 

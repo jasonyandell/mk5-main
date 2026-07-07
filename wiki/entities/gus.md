@@ -2,7 +2,7 @@
 title: Gus (sibling project — neural player + belief + value)
 kind: entity
 first_seen: d858781
-last_updated: local-2026-04-30
+last_updated: ca06b27
 status: active
 ---
 
@@ -181,8 +181,10 @@ E[Q] spread (max − min over legal actions). Student makes honest mistakes on s
 consequential positions (decision 0 spread = 13.2 Q-pts, student regret = 4.0 vs random
 baseline 6.6), not on easy near-ties. (commit message @ a50c9ef)
 
-**Open directions at this frontier**: π_opp head (needs corpus regen with opponent-view
-oracle Q), multi-step LAMIR tree search (needs π_opp), 5000g–10000g scaling.
+**All three were pursued and closed within the same document**: [[pi-opp-head]] was trained
+(68.57% oracle top-1 accuracy), multi-step LAMIR was built and found to lose to direct π_me
+in every rollout mode (see [[lamir1-ceiling]]), and 10k-game scaling shipped (0.551 regret,
+v3-10k — see [[consistency-regularizer]]).
 
 ### 3000g + arena + v3 consistency (2026-04-21, commits 286eb23–b007cf3)
 

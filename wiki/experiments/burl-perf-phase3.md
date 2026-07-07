@@ -3,7 +3,7 @@ title: Burl Perf — Phase 3 (Speculative Decoding + Quantization)
 kind: experiment
 first_seen: 29da3d2
 last_updated: ec46190
-status: active
+status: complete
 ---
 
 > **Status:** complete (post-RESUME bench + Unsloth-UD cross-check).

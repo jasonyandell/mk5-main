@@ -70,7 +70,8 @@ actual brick wall the project hit in early 2026 and has been answering ever sinc
 what decision procedure *deserves* this shape, given that its whole message is that
 every scalar collapse (mean, argmax, single threshold) discards the decision-relevant
 structure. Distilling doesn't answer that; it makes the unanswered question run faster
-(measured: the Feb 2026 full-teacher capacity-ceiling null, `6081420`). Every era since
+(measured: the Feb 2026 [[full-teacher-eq-experiment|full-teacher capacity-ceiling null]],
+`6081420`). Every era since
 is a successive consumer hypothesis: LLM-as-reasoner (retired, 0545342), this page's
 tool surface (tool validated, policy null), the Lens v1 utilities (EV least-dishonest
 in aggregate — [[w42-lens-v1-utility-head-to-head]], which needs reading *against* this

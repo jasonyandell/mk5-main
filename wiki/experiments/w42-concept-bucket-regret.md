@@ -2,11 +2,16 @@
 title: w42 Concept Bucket Regret
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+last_updated: afd4802
 status: active
 ---
 
 ## Summary
+
+The missing-bucket gaps this page's "Next Checks" flagged (setter pounce,
+effective walkers, 84, scoring) were filled by
+[[w42-setter-defense-claim-validation]], [[w42-84-claim-validation]], and
+[[w42-scoring-objective-drift-claim-validation]].
 
 [[w42]] now has a report-only concept-bucket regret slice over the merged raw
 public-state baseline and raw-plus-v0-strategy-tags baseline.

@@ -2,9 +2,15 @@
 title: w42 Phase 2 Decision Table
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded.** Every extension this page's Next Steps proposed (bid amount
+and margin, joint-world ownership, direct setter-pounce/84-preservation
+labels) was delivered by [[w42-powered-branch-atlas-v1]],
+[[w42-branch-atlas-scaled-v0]], [[w42-gus-corpus-tactical-claim-deep-dive]],
+and [[w42-phase2-84-weapon-preservation-probe]].
 
 ## Summary
 

@@ -2,9 +2,14 @@
 title: w42 Phase 2 Statistics Claims Ledger
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: complete
 ---
+
+This page's own open question ("should any subset of these 64 rows become the
+canonical central claim ledger?") was resolved by
+[[w42-phase4-final-claim-audit]], which carried this exact ledger through to
+closure (all 64 rows have evidence and/or bounded blockers).
 
 ## Question
 

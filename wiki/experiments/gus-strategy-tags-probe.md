@@ -3,7 +3,7 @@ title: Gus Strategy Tags Probe
 kind: experiment
 first_seen: local-2026-04-30
 last_updated: local-2026-04-30
-status: active
+status: superseded
 ---
 
 ## Summary
@@ -140,13 +140,19 @@ Delta:
 4. `E[Q] N=10` is still a very strong small-compute baseline on this eval slice.
 5. The next useful question is not just aggregate regret, but concept buckets: count-dump risk, trump pressure, off-risk/protection, donation windows, pounce windows, and walker/endgame states.
 
-## Next
+## Next (executed as w42)
 
 - Add concept-bucket reporting to `gus/eval/strategy_probe.py`.
 - Train/eval on full-decision chunks, not only d0-9 early-decision v2 shards.
 - Add deeper book-derived tags: off protection, partner donation, setter pounce, effective walker, 84 preservation.
 - Run multiple random `E[Q] N=10` samples per decision to estimate the boss's variance.
 
+This entire "Next" list was executed the following day as a top-level workstream: `a417295`,
+promoted explicitly in `2d3e9d7` ("Promote w42 to top-level workstream"). This page is the
+**origin probe** for [[w42]] — the seed the whole wave/phase structure grew from — and was
+unlinked from it until this correction. Superseded by the w42 strategy-tag program; go to
+[[w42]] for the current frontier.
+
 ## Links
 
-[[gus]] · [[topics/student-distillation]] · [[topics/regret-eval]] · [[experiments/gus-probe]] · [[experiments/gus-v3-consistency-full-run]]
+[[gus]] · [[topics/student-distillation]] · [[topics/regret-eval]] · [[experiments/gus-probe]] · [[experiments/gus-v3-consistency-full-run]] · [[w42]]

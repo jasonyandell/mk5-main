@@ -2,9 +2,15 @@
 title: w42 Final Empirical Strategy Report
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded.** This closed the *initial* w42 survey (2026-05-02); it is not
+final for the workstream, which continued through [[w42-phase4-final-claim-audit]]'s
+64-claim closure, the [[w42-book-validation-campaign]] waves 1-4, and the
+[[w42-jud-v1]] champion capstone. See [[w42-book-claim-synthesis-and-ai-directions]]
+for the later synthesis.
 
 ## Summary
 

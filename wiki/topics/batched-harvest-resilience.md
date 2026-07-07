@@ -3,7 +3,7 @@ title: Batched harvest resilience pattern
 kind: topic
 first_seen: 063fcac
 last_updated: 063fcac
-status: active
+status: superseded
 ---
 
 ## Problem
@@ -58,7 +58,9 @@ The v2 [[burl]] 2000-decision run (see [[burl-2000-harvest]]) ran for 5h 46m and
 
 ## Why this matters for STaR planning
 
-If the harvest pipeline is fragile, you can't iterate on prompt variants or scale up corpus size — every overnight run becomes a roll of the dice. The resilience layer turns a 5h harvest from "0 failures or restart" into "0 failures or quarantine 6 decisions and rerun those." For the [[star]] iterations downstream of the corpus, this is the difference between a quarterly cadence and a weekly cadence.
+If the harvest pipeline is fragile, you can't iterate on prompt variants or scale up corpus size — every overnight run becomes a roll of the dice. The resilience layer turns a 5h harvest from "0 failures or restart" into "0 failures or quarantine 6 decisions and rerun those."
+
+The harvest cadence this was built for stopped 2026-04-28; zero STaR-harvest commits landed after that date. The pattern is documented and correct, but no weekly-cadence follow-on ever exercised it.
 
 ## Links
 

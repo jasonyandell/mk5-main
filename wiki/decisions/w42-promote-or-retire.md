@@ -2,9 +2,19 @@
 title: w42 Promote Or Retire
 kind: decision
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: complete
 ---
+
+**Complete: fulfilled and superseded.** This charter decision correctly kept
+w42 alive as research in May 2026; its recommended next phase (open narrower
+beads from [[w42-next-model-decision]]) was executed and the workstream then
+evolved two further generations past this decision's scope — the Champion
+ladder (2026-06-09 → 06-14) and the [[jud]] stack ([[w42-jud-v1]], graded
+2026-07-06) — which now sits closer to [[gus]] (the belief head) and is the
+project's leading best-player candidate. The "don't promote w42 model
+architecture into Gus" boundary this decision drew was never explicitly
+re-litigated for that line — open, not resolved.
 
 ## Decision
 

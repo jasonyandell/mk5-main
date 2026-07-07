@@ -3,7 +3,7 @@ title: LAMIR-1 Mode Comparison (direct / v-bootstrap / q-bootstrap / qleaf)
 kind: experiment
 first_seen: 7d2af99
 last_updated: fb03970
-status: active
+status: superseded
 ---
 
 ## Summary
@@ -29,10 +29,17 @@ immediately-post-play states; this is the bottleneck, not opponent simulation qu
 | Mode | Regret | Bot-match | Notes |
 |---|---|---|---|
 | **direct (baseline)** | **0.551** | **76.07%** | v3-10k |
-| v-bootstrap | 2.777 | 59.46% | Worse than full rollout |
+| v-bootstrap | 2.777 (pre-fix; see below) | 59.46% | Worse than full rollout |
 | lamir1 (argmax opp + V_head) | 2.384 | 62.86% | See [[experiments/gus-lamir1-pilot]] |
 | q-bootstrap | — | — | Added in 8544fbe; full results in later ingest |
 | lamir1-qleaf | — | — | Added in fb03970; full results in later ingest |
+
+**Number correction (2026-07-06 audit):** the 2.777 v-bootstrap regret above is the pre-bug-fix
+number from this commit range. The canonical post-fix value, reported in `b42669a`
+(PRACTICALITIES §20, see [[lamir1-ceiling]]'s complete ladder), is **1.645** — a 69%
+overstatement if 2.777 is read as current. Treat this page as the historical record of the
+mode-comparison work itself (bugs found, root-cause reasoning); go to [[lamir1-ceiling]] for
+the canonical numbers.
 
 ## Per-trick-pos breakdown (v-bootstrap, 7d2af99)
 
@@ -80,4 +87,4 @@ action_slot from states[0].current_player. (commit message @ 566bc4d)
 
 ## Links
 
-[[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-pilot]] · [[topics/regret-eval]]
+[[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-pilot]] · [[topics/regret-eval]] · [[topics/lamir1-ceiling]]

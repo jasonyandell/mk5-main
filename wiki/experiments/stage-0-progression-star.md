@@ -10,7 +10,10 @@ status: active
 
 Controlled comparison of [[star]] pass/illegal rates across Stage 0 adapter versions, testing whether the [[experiments/star-10-iterations]] plateau was K1-structural (an inherent ceiling of the grading criterion) or curriculum-bounded (fixable by improving the Stage 0 adapter).
 
-Result: the plateau was curriculum-bounded. Better Stage 0 consistently raises both the floor (illegal rate) and the ceiling (peak pass rate).
+Result: curriculum improves the floor confirmedly (illegal rate 33% → 13%, replicated across
+Kerry and v3), and nudged the ceiling once, unreplicated (peak pass 42% → 48%, a single data
+point at v3 iter-2 that was never repeated across its own 5 iterations). The floor claim is
+double-confirmed; the ceiling claim is not.
 
 ([sources/a2498e4](../sources/a2498e4.md), [sources/601f622](../sources/601f622.md), [sources/8c1bb14](../sources/8c1bb14.md))
 
@@ -64,9 +67,14 @@ The ingest-10 "K1 ceiling" narrative was too strong. Better Stage 0 lifts both t
 
 Concretely: the v1 plateau at ~40% was curriculum-bounded. With Kerry + v3, the plateau rises to ~44–48%.
 
-## Open questions at this frontier
+## Open questions — none pursued
 
-The v3 peak of 48% is itself plateau-like — 5 iters never repeated the 48%. Whether the v3 plateau is rules-bounded or strategy-bounded is unknown. Candidate next steps: another Stage 0 improvement round, or bootstrap [[scratchpad-validation]] to enable fact-verified K1.
+The v3 peak of 48% is itself plateau-like — 5 iters never repeated the 48%. Whether the v3
+plateau is rules-bounded or strategy-bounded is unknown. Neither candidate next step
+(another Stage 0 improvement round, or bootstrapping [[scratchpad-validation]] for
+fact-verified K1) happened. Five days later the project replaced the base model entirely
+(Gemma → Qwen 3 1.7B, [[base-model-pivot-qwen]]), and the v4 game-context pivot
+two days after that made the flashcard-format v3 plateau moot rather than resolving it.
 
 ## Related pages
 

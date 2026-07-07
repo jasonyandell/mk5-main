@@ -1,17 +1,36 @@
 ---
 title: W42 Book Validation — Utility-Lens Synthesis (Wave 3.0)
 kind: experiment
-status: active
+status: superseded
 first_seen: local-2026-05-03
+last_updated: afd4802
 bead: t42-f2ur
 parent_epic: t42-4zi6
 ---
+
+## Superseded by Wave 4.0/4.1 — read this before the findings below
+
+**This page's headline framing was inverted by the same campaign two waves
+later.** [[w42-bookval-v3-utility-argmax-divergence]] (Wave 4.0) measured
+argmax directly on the ch05-void-creation-follow snapshots and found EV
+disagrees with p_make/mark_ev/CVaR_10 on 41-44% of them — an order of
+magnitude above this page's implied "narrow" split — and, decisively, that
+**p_make picks void MORE often than EV does**, the opposite of what this
+page's tables below suggest. [[w42-lens-v1-utility-head-to-head]] (Wave 4.1)
+then measured which utility actually wins games and found EV is the
+**best**-scoring of four lenses while p_make is the **worst** — i.e. the
+book's void-creation advice aligns with the worst-scoring utility on this
+corpus, not the best. The schema recommendation below ("ADOPT") was
+correspondingly downgraded to **"ADOPT-DEFERRED"** by the campaign tracker
+([[w42-book-validation-campaign]], Wave 3.0/4.0 rows). This page's own tables
+were never revised to reflect either reversal — read the Wave 4.0/4.1 pages as
+the current frontier on which utility a play policy should optimize.
 
 ## Summary
 
 Wave 3.0 re-analyzed all 7 closed Wave 2 probes under 5 utility lenses: EV, p_make, mark_ev, CVaR_10, and robust_q25. The central question: which book claims flip verdict depending on which objective a player optimizes?
 
-**Key finding:** Three of seven claims show utility-dependent verdicts. The most consequential is ch05-void-creation-follow: EV supports the book's void-creation advice in follow position, but p_make, mark_ev, and CVaR_10 all span zero. No claim flips from supported to contradicted (or vice versa) — all flips are between supported/contradicted and spans_zero.
+**Key finding (superseded, see above):** Three of seven claims show utility-dependent verdicts. The most consequential is ch05-void-creation-follow: EV supports the book's void-creation advice in follow position, but p_make, mark_ev, and CVaR_10 all span zero. No claim flips from supported to contradicted (or vice versa) — all flips are between supported/contradicted and spans_zero.
 
 **Most model-design-relevant:** High-bid pounce is contradicted under all 4 available utilities (unanimous, large effect). Low-trump-trap is contradicted under EV only (other utilities not recorded in that probe).
 
@@ -76,7 +95,7 @@ The current `ledger_status` field is EV-conditional (forge oracle E[Q] is the so
 | `ledger_status_robust_q25` | verdict under Q25 (currently all missing) |
 | `utility_flip_flags` | list of utilities where verdict diverges from EV |
 
-**Recommendation: ADOPT.** Rationale: (a) ch05-void-creation-follow is EV-supported but p_make-inconclusive — directly relevant to whether to train a model to do this; (b) ch12-setter-pounce-high-bid is unanimously contradicted, strengthening that verdict; (c) ch02-bid-only-enough is unanimously supported, also strengthening. The schema enables objective-conditioned model head design decisions.
+**Recommendation: ADOPT** (superseded — downgraded to **ADOPT-DEFERRED** by [[w42-book-validation-campaign]] after Wave 4.0 tripped the argmax-divergence gate; "defer adoption until the next 3-5 probes record full coverage"). Original rationale: (a) ch05-void-creation-follow is EV-supported but p_make-inconclusive — directly relevant to whether to train a model to do this; (b) ch12-setter-pounce-high-bid is unanimously contradicted, strengthening that verdict; (c) ch02-bid-only-enough is unanimously supported, also strengthening. The schema enables objective-conditioned model head design decisions.
 
 **Against:** Adds complexity to ledger; most current probes don't record CVaR or q25; requires future probes to capture more quantile data.
 
@@ -133,3 +152,6 @@ No GPU. No forge access. Bootstrap statistics, pandas/numpy/scipy.
 - [[w42-bookval-v1-wave2-void-creation]] — void-creation lead probe (t42-26j8)
 - [[w42-bookval-v1-wave2-void-creation-follow]] — void-creation follow probe (t42-z31l)
 - [[w42-book-claim-synthesis-and-ai-directions]] — campaign synthesis
+- [[w42-bookval-v3-utility-argmax-divergence]] — Wave 4.0, the argmax-divergence gate that inverted this page's void-creation framing
+- [[w42-lens-v1-utility-head-to-head]] — Wave 4.1, the head-to-head that found EV best and p_make worst of four lenses
+- [[w42-book-validation-campaign]] — the tracker recording the ADOPT → ADOPT-DEFERRED downgrade

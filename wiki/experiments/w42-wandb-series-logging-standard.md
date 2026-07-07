@@ -2,9 +2,16 @@
 title: w42 W&B Series Logging Standard
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded.** This standard governed the May-2026 tag/ablation phase but was
+abandoned once the workstream moved to phase3+: zero W&B mentions in
+[[w42-phase4-final-claim-audit]], the [[w42-book-validation-campaign]] waves,
+[[w42-lens-v1-utility-head-to-head]], or [[w42-jud-v1]]. The dozens of later
+scripts (`w42/branch_atlas_v1/`, `w42/bookval_v1/`, `w42/jud_v1/`, etc.) mostly
+do not log to W&B at all.
 
 ## Summary
 

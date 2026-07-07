@@ -3,7 +3,7 @@ title: Continuous batching dispatcher — design
 kind: topic
 first_seen: 0310b12
 last_updated: 0310b12
-status: active
+status: superseded
 ---
 
 ## What this page is
@@ -264,6 +264,19 @@ saves churn when production-harvest migration starts.
 5. Phase-exit gate (full560) deferred to scribe-C / Phase 4 because
    it's a 2 hour run and the 5-row gate already discriminates the
    levers' direction.
+
+## Outcome: executed, negative (7c4991c, 2026-04-27)
+
+This validation plan was executed nine days later on unmerged branch
+`perf/batch`@`7c4991c` and came back a **statistical tie**: mean(continuous) −
+mean(baseline) = −1.9%, pairwise deltas alternate direction (−31.7%, +41.1%, −9.1%
+across a clean 7-row alternating re-test) — direction fails to confirm a consistent
+variant-faster-than-baseline result. Prefix-cache also ties (+8.4%). The commit
+message states plainly: *"the original '1.8–2.1x lever-2 win' was a contention
+artifact."* That branch was never merged into `forge`, so the correction never
+reached [[burl-perf-phase2]] (the page that still headlines the retracted number) —
+it did reach [[perf-on-the-table]], evidently retyped onto `main` at a different sha
+rather than merged.
 
 ## Links
 

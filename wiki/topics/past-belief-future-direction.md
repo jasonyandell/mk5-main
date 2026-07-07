@@ -2,7 +2,7 @@
 title: What You Do Past Belief
 kind: topic
 first_seen: 94d8646
-last_updated: 94d8646
+last_updated: 76355ac
 status: active
 ---
 
@@ -10,15 +10,14 @@ status: active
 
 After [[belief-bayes-ceiling]] showed that belief is at the information limit, the remaining 42-craft is not about *knowing better* — it is about *acting well given unresolvable uncertainty*. The user framed this as "the heart of the game." Human experts call it reading the table, signaling, playing the percentages (94d8646, PRACTICALITIES §22).
 
-## Extractable analytics (not yet run)
+## Extractable analytics — run three days later
 
-Every decision in the existing corpus has a `q_per_world` tensor — [M, 7] oracle Q values per world × legal action. Three derived quantities are computable with pure indexing, no new training:
+Every decision in the existing corpus has a `q_per_world` tensor — [M, 7] oracle Q values per world × legal action. Three derived quantities are computable with pure indexing, no new training: outcome-variance, action-choice fragility, and belief-limited high-impact decisions (join belief sharpness with fragility and outcome-variance).
 
-1. **Outcome-variance**: `q_per_world[:, action_taken].std()` — how much the chosen action's result depends on which hidden world is true.
-2. **Action-choice fragility**: per-world argmax action count — how many distinct plays the oracle would pick across M worlds. 1 = cleanly determined; 3+ = fog-of-war call.
-3. **Belief-limited high-impact decisions**: join (1) and (2) with §21's per-decision belief sharpness. Decisions where belief is ~33% (pure prior) AND fragility is high AND outcome-variance is high are the defining moments of 42.
-
-Estimated effort: one afternoon. No new model training. Output: a ranked (game, decision) list sorted by "drama," plus a per-trick-pos distribution of where strategic uncertainty concentrates (94d8646).
+This ran three days later (`76355ac`, `gus/analysis/drama_atlas_findings.md`): drama
+(oracle-disagrees-and-belief-is-blind) fraction is 26.2% of all decisions; the opening lead
+alone accounts for 64.9% of drama decisions and 62% of all drama decisions in the corpus.
+See [[gus-drama-atlas]] for the full quadrant analysis and findings.
 
 ## The research question
 
@@ -28,4 +27,4 @@ This is noted as a future direction, not blocking anything. See PRACTICALITIES �
 
 ## Links
 
-[[belief-bayes-ceiling]] [[belief-co-train]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[expected-q-value]]
+[[belief-bayes-ceiling]] [[belief-co-train]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[expected-q-value]] [[gus-drama-atlas]]

@@ -2,7 +2,7 @@
 title: Winning 42 Ch12 Advanced Bidding Playing
 kind: experiment
 first_seen: local-2026-05-01
-last_updated: local-2026-05-01
+last_updated: 5233160
 status: active
 ---
 

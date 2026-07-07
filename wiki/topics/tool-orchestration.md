@@ -3,7 +3,7 @@ title: Tool Orchestration (Burl's core philosophy)
 kind: topic
 first_seen: 8d26e0d
 last_updated: 0545342
-status: active
+status: superseded
 ---
 
 ## Overview
@@ -159,6 +159,15 @@ Layer 1 (b8116b5) added a full rules primer (1,549 words, 2.7K tokens) and 42-aw
 - Does trimming the primer (keeping only the 42-aware framing block) recover toward spike v2's 88.9% bot-match while retaining vocabulary? Open — planned iter-1. (?)
 
 (d9baf3b, 4b3ba3d, 3781dce, b8116b5, 789e14d)
+
+## Frontier status
+
+Iter-1 through iter-5 answered some of the above on other pages ([[rules-as-tools]]);
+the project abandoned the tool-orchestration bet entirely for [[champion]] / [[jud]]
+around 2026-06-09 without formally closing the loop on the rest. The foundational bet
+itself was never resolved as a program-level question — it was superseded by a
+different architecture (pure NN bid/play nets) before the remaining ablations
+(tool-less transfer, `conditional_outcome` leakage) were run.
 
 ## Links
 

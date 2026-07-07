@@ -2,7 +2,7 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: 3ac03de
+last_updated: afd4802
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
@@ -37,7 +37,7 @@ This is the belief-conditioned-search architecture behind the strongest
 bridge, Skat, and poker programs. Texas 42 is small for the class (7 tricks,
 ~4×10⁸ worlds at deal collapsing rapidly with voids), so near-equilibrium play
 is a realistic target, not a romantic one. The residual [[pimc]] flaw
-(strategy fusion, information value) is mitigated by self-play consistency and
+([[strategy-fusion]], information value) is mitigated by self-play consistency and
 — optionally, the summit — depth-limited subgame re-solving on late tricks,
 where 42's endgames are small enough to solve exactly at the information-set
 level.
@@ -175,6 +175,14 @@ E[Q] n=10's per-move oracle. The stack reached **−1.43 from −4.37 oracle-fre
 the current best player is unchanged, and v2's cue is a bigger leaf on per-move targets
 (E[Q] distilled as bootstrap) plus opponents-in-rollout.
 
+**Zeb-protocol reconfirmation (2026-07-06, `afd4802`).** A further paired test
+(dropped contracts, bid30 both sides, seed 7000000, 256 games) reconfirms: eq
+n=10 still undefeated at pure play against every learned challenger since Zeb
+(`judsearch` −1.39 [−1.75,−1.00], `judplay` −2.73 [−3.04,−2.43], both losing to
+`lens:ev`). A bonus pilot ran `margin:wp`(r8) vs the **live** (non-distilled)
+`gus:10,wp` sim bidder: **+0.59 [-0.19,+1.39]** (64 games) — the bidding crown
+wasn't hiding behind the distillation.
+
 ## Build ladder
 
 1. **Arena** — full games: auction + play, marks to 7; paired-seed team
@@ -259,7 +267,10 @@ the current best player is unchanged, and v2's cue is a bigger leaf on per-move 
    confirming the diagnosis — yet the PIMC-calibrated `net:wp` stays the stronger
    bidder. So the self-play *machinery* converges; belief value is **legibility,
    not marks** (the #24/#25 lesson again). The converged calibrated belief student
-   is the playable champion, exported to [[plunge]] as the `onyx` difficulty.
+   was slated for export as a playable `onyx`-difficulty opponent in [[plunge]]
+   via ONNX — **asserted, unverified**: the era-6 audit (2026-07-06) found no
+   `plunge` app, `onyx` difficulty, or ONNX export artifact anywhere in the
+   repo; either this never shipped or lives somewhere the audit didn't check.
 7. **Marks-to-7 utility** — score-conditioned bidding and play risk (ICM
    analogue; absorbs the Lens v2 design). **v2 done 2026-06-12**
    (`champion/utility.py`, `champion/play_risk.py`): `race_wp` is the WP table

@@ -3,7 +3,7 @@ title: Selfplay Arena (4-model full-game orchestrator)
 kind: entity
 first_seen: 35c75ff
 last_updated: 39aafaf
-status: active
+status: retired
 ---
 
 ## What it is
@@ -49,3 +49,9 @@ Across 145+ decisions spanning single-decision Haiku, single-decision Opus, Haik
 and Opus full game, no model has ever called `conditional_outcome` zero-shot. This is the
 4th observation of the pattern. See [[topics/conditional-outcome-structural-nonuse]].
 (commit messages @ 35c75ff, 39aafaf)
+
+## Status
+
+The 2-run POC (Haiku shutout, Opus salvage) was never extended past these two games.
+Last commit touching the arena is `39aafaf` (2026-04-19); dormant since, and superseded
+along with the rest of [[burl]] by [[w42-jud-v1|jud]]'s pure-NN self-play line.

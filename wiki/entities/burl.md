@@ -3,7 +3,7 @@ title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
 last_updated: local-2026-05-07
-status: active
+status: superseded
 ---
 
 ## What it is
@@ -541,11 +541,35 @@ Speculative until the book-strategy framework lands. See [[book-strategy-player]
 architecture; this is referenced as Model A in that page's recording → training pipeline
 section.
 
-## Open questions at this frontier
+## Frontier status (as of 2026-07-06)
 
-- Can Gemma 4 E2B tool-use reliably at 2B scale? (Move 3 answers cheaply.)
-- Is Zeb's 72% belief accuracy useful to Burl's reasoning? (Move 2 + 3.)
+Burl ran hard for ~3 weeks (2026-04-18 → 2026-05-07: Move-3/4 spikes, primer
+ablations, iter-0 through iter-5 STaR, the 2000-decision harvest, [[burl-chat]] →
+[[burl-lab]] → [[burl-microscope]], and a parallel perf-engineering sprint). Zero
+commits have touched any `burl/` path since 2026-05-07 (`465d1af`). These were never
+resolved; the project moved to a different architecture ([[w42-jud-v1|jud]], pure NN
+bid/play nets) rather than answering them:
+
+- Can Gemma 4 E2B tool-use reliably at 2B scale? (Move 3 answered cheaply, yes — but
+  this stopped mattering once the project left the LLM-as-reasoner line.)
+- Is Zeb's 72% belief accuracy useful to Burl's reasoning? (Answered no — see [[zeb]].)
 - Does tool-mediated reasoning transfer to tool-less reasoning (ablation)?
 - Does `conditional_outcome` leak evaluative signal through the back door?
 - Is 3M-parameter Zeb strong enough, or does Burl need more capacity?
 - Does v2's residual −2.4pp gap on `BURL_BREAKS_CONSENSUS` (vs sequential 560) reflect real batched-mode policy drift or sampling noise? A paired McNemar test on the 560 overlap would settle it.
+
+The one real win, [[iter3-rules-adapter]] (90% bot-match), was measured under a
+confound — Gemma's own chat template silently dropped tool-response messages for
+every rollout through B9 (see [[decisions/gemma-tool-response-shape]]) — and was
+never re-run after the fix. The family's other headline negative result, Zeb's
+hidden-only belief accuracy (~39%, not the advertised 72%), was independently
+reconfirmed by [[w42-jud-v1|jud v1]]'s 2026-07-06 verdict, which names E[Q] n=10 the
+play champion "against every learned challenger since Zeb." See [[candlewax]] and
+[[w42-jud-v1]] for the pivot that superseded this entire line, and [[champion]] for
+the current best-player direction.
+
+**Naming footnote.** Pre-repo, conversation-only names for this conceptual space
+(first used Christmas 2025) were "harl" (a GRPO-trained strategy/goal engine) and
+"llem" (a narrator model explaining harl's choices). Neither ever entered git, disk,
+or beads — asserted from conversation, not commit-verified. `burl` and [[lem]] are
+the repo's actual christened successors; no rename or redirect is needed.

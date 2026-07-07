@@ -46,6 +46,12 @@ improves action selection. (commit message @ 581bf1f)
 - The failure mode is clearly diagnosed and points to two separable issues:
   opponent simulation quality and leaf evaluator distribution shift
 
+Kept active: this is the first-attempt qualitative record (rollout hurts, damage
+concentrates at trick_pos 0-2) and it is correctly self-scoped to its own commit. The 2.384
+regret number above is this pilot's own reading and is superseded by the post-bug-fix
+canonical value (2.094) in [[experiments/gus-lamir1-mode-comparison]] and [[lamir1-ceiling]] —
+go there for current numbers.
+
 ## Links
 
-[[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-v3-consistency-full-run]]
+[[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-v3-consistency-full-run]] · [[topics/lamir1-ceiling]]

@@ -2,8 +2,8 @@
 title: burl-chat spike — first interactive sessions and findings
 kind: experiment
 first_seen: cba521d
-last_updated: 2026-05-01
-status: active
+last_updated: local-2026-05-01
+status: complete
 ---
 
 ## What
@@ -43,7 +43,7 @@ Without the primer turn after `commit_play`, even the base model produces "I am 
 
 ### 3. Tool vocabulary gap
 
-The base model's spontaneous critique used Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes), not Roberson vocabulary (offs, walkers, double ahead of your off, at-risk-points). That's because the harvest's *tool outputs* speak Gus, not Roberson. To get the family-reunion voice ([[user_role_and_north_star]]'s standard, since Roberson's *Winning 42* names the user's actual cousins), the tools themselves need to surface Roberson framing, OR a Roberson primer needs to ride the system prompt. Probably both.
+The base model's spontaneous critique used Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes), not Roberson vocabulary (offs, walkers, double ahead of your off, at-risk-points). That's because the harvest's *tool outputs* speak Gus, not Roberson. To get the family-reunion voice (the project's voice standard, since Roberson's *Winning 42* names the user's actual cousins), the tools themselves need to surface Roberson framing, OR a Roberson primer needs to ride the system prompt. Probably both.
 
 ### 4. Bucket signal is plausibly real through prose
 
@@ -144,3 +144,10 @@ Fix landed in `burl/chat/web/src/App.svelte`: `autoFillFromHarvest` now returns 
 Methodological lesson: the bug was invisible during normal use because the auto-filled wrong-args response is *structurally identical* to a real response (same prose schema, same numeric ranges, same catalysts format). It only became visible when one trace happened to call `explore_game` with three different play arguments and got identical output. Diagnostic protocol going forward: when comparing tool outputs across changed args in a rerun-fresh session, sanity-check that the headers (`PLAY: X(p-p)`) actually match the requested play before reading the rest of the prose. The improvised `play_brief` tool surfaces the play in its first line for exactly this reason.
 
 **Reflection-deafness.** During the same trace the user injected, via the harness's free-text feedback channel routed back as a `commit_play` tool_result: *"that is not the best play. why?"* Burl's response was zero-engagement: re-ran `explore_game`, re-probed, re-committed `14`. Three identical commits in a row, no reflection. Documented as [[burl-reflection-deafness]] — third symptom of [[play-adapter-lock-in]] (alongside the wishlist's tool-spec response shape and the post-commit primer's load-bearing role). The implication for [[post-commit-q-and-a]]: the eventual training corpus has to include reflection turns explicitly, since the current model cannot produce them organically.
+
+## Status
+
+This spike is complete and superseded — [[burl-lab]] (dormant since 2026-05-07) was
+built specifically on the findings named here (adoption asymmetry, hand-edited primer
+drift, performance as second-pass derivation, reflection-deafness needing phase-scoped
+retries). No further burl-chat sessions ran after this window.

@@ -3,6 +3,7 @@ title: W42 Lens v1 — Utility Head-to-Head Round-Robin
 kind: experiment
 status: closed-on-completion
 first_seen: local-2026-05-03
+last_updated: afd4802
 bead: t42-4ouu
 parent_epic: t42-4zi6
 ---
@@ -138,7 +139,7 @@ The single most actionable consequence for downstream work: **a utility-conditio
 
 A non-obvious finding: **`forge.eq.generate.actions.select_actions` is essentially Lens(p_make)** (it picks p_make-argmax with EV as tie-break). The current production EV pipeline is therefore using the **worst** of the four utilities tested. Switching `select_actions` to ev-argmax (with p_make as tie-break, or no tie-break at all — they almost never tie at fp32 resolution) is a one-line change worth a follow-up evaluation against Zeb-Large to see whether the +5.42 pts/hand head-to-head advantage of Lens(ev) over Lens(p_make) translates into a higher Zeb-Large win rate than the current 55.7% E[Q]-N=100 figure.
 
-
+**Follow-up status: NOT applied.** `forge/eq/generate/actions.py::select_actions` still computes Lens(p_make) as of 2026-07-06 (verified against the current file plus `afd4802`'s Zeb-protocol path via `forge/zeb/eq_player.py`, which still wires `select_actions` into the production play path). The one-line switch to ev-argmax recommended above remains open, two months on.
 
 ---
 

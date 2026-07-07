@@ -3,7 +3,7 @@ title: Game-Context Q&A (Stage 0 v4)
 kind: topic
 first_seen: 4729dad
 last_updated: be7efc4
-status: active
+status: superseded
 ---
 
 ## Overview
@@ -86,6 +86,14 @@ Six new question types were added across three curriculum rounds (b857299):
 ## Corpus portability
 
 The game-context Q&A corpus is base-model-agnostic. The same 31,830 train / 7,725 eval examples were used to train both Gemma 4 E2B (v4, 67% overall) and Qwen 3 1.7B (v5, 100% overall). The corpus quality is validated — the 33-point gap is explained by the base model, not by the training data. See [[rules-adapter]] Stage 0 v5 and [[decisions/base-model-pivot-qwen]] (3465e29).
+
+## Terminal LEM Stage-0 artifact
+
+Game-context Q&A was the last Stage 0 curriculum format LEM used (v4 through v10-maskfix
+all built on it) — but it is terminal to LEM, not carried forward. [[burl]] does not train
+on this corpus or any adapter descended from it; only the *lesson* (game-grounded prompts
+beat context-free flashcards) informed how Burl's tool responses are shaped. See
+[[lem-to-burl-handoff]].
 
 ## Links
 

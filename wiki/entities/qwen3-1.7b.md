@@ -3,7 +3,7 @@ title: Qwen 3 1.7B
 kind: entity
 first_seen: 3465e29
 last_updated: be7efc4
-status: active
+status: complete
 ---
 
 ## What it is
@@ -45,3 +45,8 @@ tuning GPU/kernel configuration. (commit message @ 3465e29; see [[decisions/base
 
 Current best: `jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix` — 86% comprehension.
 See [[experiments/v10-maskfix-breakthrough]]. (commit messages @ b857299, 0c7392f, be7efc4)
+
+## End state
+
+LEM ended at v10-maskfix with no further Qwen 3 1.7B training. [[burl]] uses [[gemma-4-e2b]]
+instead — Qwen 3 1.7B was never carried forward. See [[lem]] and [[lem-to-burl-handoff]].

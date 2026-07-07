@@ -3,7 +3,7 @@ title: Reasoning-Coherence Verification (the bottleneck)
 kind: topic
 first_seen: ceca203
 last_updated: 0545342
-status: active
+status: superseded
 ---
 
 ## Overview
@@ -22,7 +22,10 @@ Without coherence verification, adding more training data may amplify existing i
 
 ## Scope and deferral
 
-A real reasoning-coherence verifier requires a multi-week subproject: designing what "coherence" means for tool-orchestrated traces, building the checking infrastructure, and validating it against human judgment. This is not a weekend spike (ceca203, 0545342).
+A real reasoning-coherence verifier requires a multi-week subproject: designing what "coherence" means for tool-orchestrated traces, building the checking infrastructure, and validating it against human judgment.
+
+Never built, because the LLM-as-reasoner program it gates was retired ([[candlewax]],
+0545342), not because the subproject was merely postponed.
 
 The [[candlewax-spike]] pivoted precisely away from LLM-as-reasoner because this verification is missing. It substituted structured prediction blocks (winner_seat, count_to_my_team, count_to_opponents) verified by post-commit engine simulation — a partial, domain-specific coherence check for that specific pipeline.
 

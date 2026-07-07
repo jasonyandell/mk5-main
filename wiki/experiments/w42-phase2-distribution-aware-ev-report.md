@@ -2,9 +2,14 @@
 title: w42 Phase 2 Distribution-Aware EV Report
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-powered-branch-atlas-v1]], which recomputes the same
+distribution family from saved `q_per_world` tensors rather than collapsed
+JSONL PDFs, then by [[w42-branch-atlas-scaled-v0]] and
+[[w42-hidden-threat-legacy-mining]] at greater scale.
 
 ## Summary
 

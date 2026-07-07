@@ -3,7 +3,7 @@ title: burl-tool-wishlist — Burl naming its needs through tool-call planning
 kind: topic
 first_seen: 2026-05-01
 last_updated: 2026-05-01
-status: active
+status: complete
 ---
 
 ## What
@@ -69,3 +69,10 @@ For the current spike, the practical pattern is: build the tool, confirm it's ca
 - [[chat-mode-primer]] — the prior step that gets Burl into the meta-conversation at all
 - [[post-commit-q-and-a]] — research direction this is feeding
 - [[at-risk-points]] — Roberson-canonical voice the eventual corpus must match
+
+## Status
+
+The operating loop documented above hasn't run in the two months since 2026-05-01;
+the [[burl-chat]] line is dormant. The wishlist itself — Burl's meta-asks mapped
+correctly onto real failure modes — is a completed piece of evidence, not an ongoing
+practice.

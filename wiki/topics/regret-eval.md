@@ -98,7 +98,7 @@ On the held-out 560 (cross-harness comparison via `corpus_index_k200.jsonl`):
 - Original run-3 report builder: `scratch/belief_trajectory_rollout/star/star_eval_report.py`
 - Rescore output: per-eval `star_rescore.json` + `star_rescore_rows.jsonl` alongside each eval dir
 - Comparison report: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`
-- Triangle script (when n=180 base eval lands): `scratch/belief_trajectory_rollout/star/fold_base_into_report.py`
+- Triangle script (used to fold the n=180 base eval into the report, reported above): `scratch/belief_trajectory_rollout/star/fold_base_into_report.py`
 - Origin experiment: [[burl-star-run3]]
 - Diagnosis spinoff: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_2026-04-26.md`
 

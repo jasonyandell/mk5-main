@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: gh-33
 first_seen: f550205
-last_updated: 3ac03de
+last_updated: afd4802
 ---
 
 # w42-jud-v1
@@ -29,6 +29,18 @@ Six registered predictions, each stated before its measurement (GitHub #33). **T
 falsified, one passed, three missed the band — all first-class results.** A falsified
 registered prediction, run to its pre-committed falsifier, is the system working: it makes
 the reversal unarguable instead of a matter of interpretation.
+
+## Addendum — Zeb-protocol verdict (2026-07-06, `afd4802`)
+
+The very next commit ran a further Zeb-protocol paired test (dropped contracts,
+bid30 both sides, seed 7000000, 256 games), confirming the night's verdict
+rather than overturning it: `judsearch` **−1.39 [−1.75,−1.00]** (30.9%) and
+`judplay` **−2.73 [−3.04,−2.43]** (15.2%) both lose to `lens:ev` — "the noisy
+mean over ten exact worlds remains the play champion, as it has against every
+learned challenger since Zeb." A bonus pilot also ran: `margin:wp`(r8) vs the
+**live** (non-distilled) `gus:10,wp` sim bidder, **+0.59 [-0.19,+1.39]** (64
+games) — the bidding crown wasn't hiding behind the distillation. Neither
+result changes the Night verdict below; both reinforce it.
 
 ## The organ
 

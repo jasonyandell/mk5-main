@@ -3,7 +3,7 @@ title: "Stage 0 v7-v9: 14-Category Expansion"
 kind: experiment
 first_seen: b857299
 last_updated: b857299
-status: active
+status: superseded
 ---
 
 ## Summary

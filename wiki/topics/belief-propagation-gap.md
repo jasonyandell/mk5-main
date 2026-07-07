@@ -2,7 +2,7 @@
 title: Belief Propagation Gap (calibration doesn't transfer to Q)
 kind: topic
 first_seen: 137a8e7
-last_updated: 137a8e7
+last_updated: cf8ff79
 status: active
 ---
 
@@ -30,17 +30,22 @@ The calibration is real — KL improved substantially. The downstream effect is 
 
 The Q_head was co-trained with mode-sharp (uncalibrated) belief samples. At inference, softening the belief output creates a distribution shift that the Q_head was not prepared for. The Q_head learned to interpret belief outputs of a specific sharpness; feeding it softer distributions degrades its performance (137a8e7).
 
-Possible mechanisms (not fully diagnosed at this frontier):
-- **Distribution shift**: Q_head internalized the mode-sharp belief distribution during co-training.
-- **Encoder bottleneck**: the shared encoder may not surface belief information in a form the Q_head actually uses.
-- **Task interference**: belief and Q gradients may be competing through the shared encoder.
+Substantially answered the next day by [[belief-co-train]] (`cf8ff79`): the mechanism is
+distribution-shift/task-interference, not a coupling deficiency. Joint co-training of belief +
+world_encoder + Q_head with a distribution target did make calibration propagate as designed
+(KL dropped 20%, 0.0840 → 0.0672) — but downstream q-bootstrap regret still got slightly
+*worse* (0.685 → 0.718), because Q_head had learned the old belief head's output shape as
+implicit context and joint retraining moved it off that sweet spot. So the takeaway below
+holds, with one caveat co-train sharpened: co-training fixes the *propagation* problem but
+does not, by itself, guarantee a net win — the Q_head's dependence on a specific upstream
+shape is itself the residual issue.
 
 ## Takeaway
 
-Fine-tuning individual heads in isolation does not work when the heads were co-trained. Improving belief calibration requires co-training `{belief, world_encoder, Q_head}` together with a distribution-belief target alongside the regular Q loss — so that downstream heads learn the new calibration from the start. Stacking calibration on a frozen ecosystem creates distribution mismatch (137a8e7).
+Fine-tuning individual heads in isolation does not work when the heads were co-trained. Improving belief calibration requires co-training `{belief, world_encoder, Q_head}` together with a distribution-belief target alongside the regular Q loss — so that downstream heads learn the new calibration from the start. Stacking calibration on a frozen ecosystem creates distribution mismatch (137a8e7). [[belief-co-train]] confirmed the propagation mechanism but found the co-trained result was net-neutral-to-negative on regret, not a clean win.
 
 This result motivates later co-train experiments. The ablation was not promoted; kept in `scratch/` (137a8e7).
 
 ## Links
 
-[[gus]] [[student-distillation]] [[dense-q-supervision]] [[pimc]] [[blunder-detector]] [[joint-world-tensor]]
+[[gus]] [[student-distillation]] [[dense-q-supervision]] [[pimc]] [[blunder-detector]] [[joint-world-tensor]] [[belief-co-train]]

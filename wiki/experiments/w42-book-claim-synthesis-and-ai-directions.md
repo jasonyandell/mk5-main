@@ -2,7 +2,7 @@
 title: w42 Book Claim Synthesis And AI Directions
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+last_updated: afd4802
 status: active
 ---
 
@@ -328,7 +328,7 @@ production run should be a 50-seed × 1000-sample CUDA sweep so paired
 contrasts at bids 32 / 35 / 36 / 42 / 84 carry enough statistical power
 to move ledger rows (rather than just demonstrating divergence).
 
-## Wave 2 Probes (in flight)
+## Wave 2 Probes (closed)
 
 [[w42-bookval-v1-wave2-reentry-v2]] — re-runs the original Wave 2.A
 reentry probe on oracle-greedy snapshots from

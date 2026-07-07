@@ -3,8 +3,15 @@ title: Rules Adapter (Stage 0)
 kind: topic
 first_seen: a8bccfa
 last_updated: be7efc4
-status: active
+status: superseded
 ---
+
+## Current frontier
+
+[[burl]] abandoned the weight-drilled-rules-primer approach entirely: rules facts are
+supplied by the [[engine]] tool at inference time, not trained into weights. This page
+describes the full v1–v10 curriculum arc that ended with LEM's pivot — see
+[[lem-to-burl-handoff]] §4 ("Rules infrastructure").
 
 ## Overview
 

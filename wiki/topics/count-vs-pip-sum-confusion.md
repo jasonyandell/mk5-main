@@ -3,7 +3,7 @@ title: count-vs-pip-sum-confusion — Burl conflates pip-sum with count value
 kind: topic
 first_seen: 2026-05-01
 last_updated: 2026-05-01
-status: active
+status: retired
 ---
 
 ## What
@@ -53,7 +53,10 @@ Order of operations should be: ship (1), confirm the error pattern disappears in
 
 ## Status
 
-Identified 2026-05-01 in [[burl-chat]] rerun-fresh comparison. Not yet patched. Burl has not asked for the count-ledger tool — but the [[burl-tool-wishlist]] frame says we should let him ask first; if he doesn't and the bug bites a future rerun, build it then.
+Identified 2026-05-01 in [[burl-chat]] rerun-fresh comparison. The bug is real and
+remains unpatched — but the surrounding [[burl-chat]] line has been dormant since
+2026-05-07, so there is no active rerun-fresh session where it would bite next. Burl
+never asked for the count-ledger tool before the line went quiet.
 
 ## Related
 

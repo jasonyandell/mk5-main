@@ -2,9 +2,14 @@
 title: w42 Phase3 84 Seed Mining Corpus
 kind: experiment
 first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+last_updated: afd4802
+status: superseded
 ---
+
+**Superseded** by [[w42-phase4-84-dynamic-seed-tests]], which turns this
+page's natural-84-seed inventory into a dynamic reached-state branch-atlas
+artifact — the "future branch-atlas/state-injection" work this page names
+landed the same archive commit.
 
 ## Summary
 

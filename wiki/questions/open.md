@@ -80,3 +80,19 @@ Format:
 - **Q:** What additional prompt/tool-response framing lets Gemma choose `19` on Burl microscope case `global_idx=1` without oracle/original-play leakage or human steering?
   - Raised: `local-2026-05-07` ([[burl-microscope]])
   - Context: `board_snapshot()` is a strong first-read surface, but fair no-reference `snapshot-first` and `legal-brief` runs both committed `25` on the `BURL_BREAKS_CONSENSUS` case where oracle/pi/qmean prefer `19`.
+
+- **Q:** Is the `WorldSamplerMRV` marginal-distribution bias (~6.8 Q-pts vs uniform enumeration at trick 6) actually corrupting historical Burl eval numbers and forge/eq training data — and by how much?
+  - Raised: `afd4802` ([[batch-throughput-bench]], [[sources/7321952]])
+  - Context: Flagged in `7321952` as affecting "all historical Burl eval numbers and forge/eq training data," parked as "worth a bead," never filed. Enumeration (`enumerate="auto"`, pool ≤ 12 at trick 6) is exact ground truth; the sampler is biased against it. Per anti-rot rule 7 a parked risk must become a tracked issue or the flag is removed — **action: needs a GitHub issue.** Still dangling as of 2026-07-06.
+
+- **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
+  - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])
+  - Context: `forge/eq/generate/actions.py::select_actions` hardcodes p_make-argmax-with-EV-tiebreak — effectively Lens(p_make), the **worst** of the four utilities in the Lens v1 round-robin (Lens(ev) beats Lens(p_make) by +5.42 pts/hand). The recommended one-line switch to ev-argmax is **NOT applied** as of `afd4802` (verified against the current file plus the Zeb-protocol play path in `forge/zeb/eq_player.py`) — open two months on.
+
+- **Q:** Does jud v2 — a bigger leaf on per-move targets (E[Q] distilled as a bootstrap value) plus opponents-in-rollout — close the play gap the v1 hand-level MLP could not?
+  - Raised: `afd4802` ([[w42-jud-v1]], [[jud]])
+  - Context: jud v1 held the unification at the auction but was mechanism-limited at play. `judsearch` recovered two-thirds of the play gap oracle-free (JS1 PASS +2.28) but neither more worlds (JS2 below band) nor a better-calibrated head (JS3 falsified) closed the rest. v1's diagnosis: the wall is per-move discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle. v2's cue follows directly from that diagnosis; unbuilt.
+
+- **Q:** Which era-5 gestation designs (the IDEATED generation — Harl, LLem, walker, and the rest) are worth resurrecting, and which did the built LEM/Burl/Gus/jud line already subsume?
+  - Raised: `afd4802` ([[the-gestation]], [[ideated-not-built]])
+  - Context: The 52-day zero-commit gestation designed a whole generation out loud that mostly never shipped. The archaeology catalogued the names (classified IDEATED, never claimed as artifacts per anti-rot rule 4) but did not adjudicate which remain live options vs. which the built line already answered.

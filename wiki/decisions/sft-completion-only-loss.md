@@ -39,7 +39,9 @@ When SFT stalls and the answer is a small fraction of the total sequence, inspec
 
 ## Scope at this frontier
 
-Applied to the 1.7B trainer only. 14B and 5 other trainers still have the bug; 14B is the priority for the t42-aoga path A run.
+Applied to the 1.7B trainer only. 14B and 5 other trainers still have the bug. (No
+follow-up run ever applied the fix to 14B — LEM ended the next ingest and no
+"t42-aoga path A" run exists anywhere in the wiki or git history.)
 
 ## Bead
 

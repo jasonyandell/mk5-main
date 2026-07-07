@@ -4,6 +4,7 @@ kind: entity
 first_seen: 3465e29
 last_updated: be7efc4
 status: superseded
+superseded_by: v9-adapter
 ---
 
 ## What it is
