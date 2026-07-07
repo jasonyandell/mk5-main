@@ -141,6 +141,17 @@ The book-validation evidence pile above (Waves 1-4, Phase 4 closure) remains
 accurate and is the record of a completed research generation; it is not the
 live edge.
 
+A second close reading of the full book text (2026-07-07,
+[[w42-book-second-pass]]) re-opened the source with the campaign's findings as
+the lens. Headline: the first extraction captured the book's tactics and missed
+its information theory — the auction decoder (bid → hand posteriors, the
+{30,31,35,36} bid lattice), the action-choice inference catalog, the signaling
+conventions, reputation-driven overbidding, and match-score-conditioned
+bidding — all of which map onto [[jud]]'s named untested gaps. It also flags
+the `contradicted` verdict on [[w42-bookval-v1-wave2-pounce-high-bid]] as a
+probable information-regime category error (the book's clause is an
+imperfect-information hedge tested against a perfect-information oracle).
+
 ## Related pages
 
 [[w42]] · [[winning42-strategy-measurement]] · [[w42-book-validation-campaign]] ·
