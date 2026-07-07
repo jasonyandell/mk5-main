@@ -16,7 +16,7 @@ Base [[gemma-4-e2b]] (no fine-tuning) on Burl's XML tool-call harness, evaluated
 
 - **Model:** base [[gemma-4-e2b]], zero fine-tuning
 - **Harness:** XML tool-call format (`<tool>`, `<commit>`) via `burl/harness/agent_runner.py`
-- **Eval set:** 10 held-out decisions from `burl/eval/decision_dataset.py` — balanced across 10 declarations, trick-6, `|legal|>=2`, `eq_gap>=1.0`, seeds ≥900000
+- **Eval set:** 10 of the 50 held-out decisions from `burl/eval/decision_dataset.py` — balanced across 10 declarations, trick-6, `|legal|>=2`, `eq_gap>=1.0`, seeds ≥900000
 - **Infra:** [[modal]] L4, `burl/modal/gemma_serve.py` with `threading.Lock` around vLLM V1's sync `generate()` (ZMQ race under Modal's threaded dispatch)
 - **Cost:** $0.09
 

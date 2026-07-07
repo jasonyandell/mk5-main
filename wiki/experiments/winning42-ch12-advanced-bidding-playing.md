@@ -161,8 +161,10 @@ instruction encodes an implicit `p_make` objective at the contract
 threshold; under tail-aware utilities (CVaR, robust_q25 — see
 [[w42-bookval-v1-wave1-distribution-lens-reranker]]) it would
 recommend a different action substantially more often. The high-bid
-extension (35/36/42 - the regime the chapter most cares about) waits
-for the bid-aware corpus from Wave 2.B.2 (bead `t42-8kbh`).
+extension (35/36/39/42 - the regime the chapter most cares about) has
+since run on the bid-aware corpus (bead `t42-8kbh`):
+[[w42-bookval-v1-wave2-pounce-high-bid]] contradicted the claim at all
+four high bids (see Claim Ledger above).
 
 This finding generalizes: several book claims that read as universal
 advice may actually encode `p_make` reasoning that is directionally

@@ -128,7 +128,7 @@ High-signal rows:
 | generator | `w42/statistics_claims_ledger/build_statistics_claims_ledger.py` |
 | primary command | `python w42/statistics_claims_ledger/build_statistics_claims_ledger.py` |
 | verification command | `python w42/statistics_claims_ledger/build_statistics_claims_ledger.py --check` |
-| current commit at generation | `343a9f4c45244889ea9c1eaa8edacde7e2a69920` |
+| current commit at generation | `e55a6f89de6e599f795db87c30c29d82b8883313` (per `summary.json` `git_sha` for the final rebuild) |
 | random seeds | not applicable for this synthesis; upstream proxy reports preserve their own seeds |
 | configs | not applicable |
 | data inputs | wiki/source pages and w42 artifact directories listed above |

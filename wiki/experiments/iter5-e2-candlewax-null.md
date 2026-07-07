@@ -10,7 +10,7 @@ status: active
 
 [[candlewax]]-aware `eq_outcome_distribution` return fields (bimodality, modes, suggested counterfactuals) were implemented and validated at the tool surface, but did not change model behavior in live rollouts. The bottleneck is not tool-surface legibility — it is reasoning-coherence.
 
-([burl/experiments/iter5_e2_candlewax_writeup.md @ ceca203](../sources/ceca203.md))
+([burl/experiments/iter5_e2_candlewax_eval_writeup.md @ ceca203](../sources/ceca203.md))
 
 ## Setup
 

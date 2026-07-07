@@ -86,7 +86,7 @@ Important fields:
   "player": 0,
   "action_taken": 5,
   "legal_mask": [true, true, true, true, true, true, true],
-  "e_q": [-14.435, -15.853, -15.045, -14.06, -13.798, -12.936, -14.917]
+  "e_q": [20.909, 15.15, 18.93, 16.764, 14.965, 21.372, 12.356]
 }
 ```
 
@@ -96,7 +96,7 @@ The adapter keeps oracle values as labels only. They are not included in
 ## Reproducibility
 
 Run commit at smoke generation:
-`fe8500155f4a3dd003feb6e3a2a92c35db28ea4d`.
+`68e6ee3afb659e26239f72264e5c94515ef947f9`.
 
 Exact command:
 

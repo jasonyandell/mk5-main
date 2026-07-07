@@ -32,7 +32,7 @@ v3 wins clearly: −33% regret vs v2 at same corpus size. (commit message @ 31f0
 
 | Factor | Regret change |
 |---|---|
-| Baseline (v2-3k) | 1.346 |
+| Baseline (v2-3k) | 1.391 |
 | Data scaling alone (v2-3k → v2-10k) | −41% → 0.818 |
 | Consistency loss on top (v2-10k → v3-10k) | additional −33% → 0.551 |
 | **Total v2-3k → v3-10k** | **−60%** |

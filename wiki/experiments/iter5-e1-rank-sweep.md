@@ -16,7 +16,7 @@ First real [[preserve-thoughts]] adapter trained with `max_seq_length=4096` (tru
 
 - **Corpus:** 26-row `preserve_thoughts` corpus, `max_seq_length=4096`
 - **Recipe:** 3 epochs, matched across all ranks, [[mlx-lm]] on M5 Max
-- **Eval:** same 10-decision held-out set (9 completed for base/rank-16/64; 10 attempted for rank-128)
+- **Eval:** same 10-decision held-out set (rank-16 completed 10/10; base and rank-64 completed 9/10; rank-128 completed 0/10)
 
 ## Results
 

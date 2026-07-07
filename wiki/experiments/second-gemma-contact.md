@@ -16,7 +16,7 @@ Second inference pass against [[gemma-4-e2b]], using the same prompt as [[experi
 
 - **Prompt:** identical to [[experiments/first-gemma-contact]] — seed 42, fives trump, truncated at trick 6 narrator turn, rules primer prepended
 - **Adapter:** `jasonyandell/gemma-4-e2b-texas42-stage0` ([[stage-0-adapter]]) loaded via `PeftModel.from_pretrained`, merged and unloaded before inference
-- **Infrastructure:** [[modal]] L4 GPU, fp16, thinking mode enabled
+- **Infrastructure:** [[modal]] L4 GPU, bf16, thinking mode enabled
 
 ## Results
 

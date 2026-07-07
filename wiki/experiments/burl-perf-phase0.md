@@ -57,7 +57,8 @@ drifts.
 ## Measurements (canonical baseline-bf16, M5 Max, batch=5, max_tokens=8192)
 
 Two consecutive runs of `--variant baseline-bf16 --subset 5 --batch 5`,
-no flags changed in between (sha `1f11d28`):
+no flags changed in between (bench ran at sha `da25079` on `perf/bench`;
+`1f11d28` is the commit that recorded the ledger rows):
 
 | Run | wall_total | wall_p50 | wall_p95 | prefill tok/s | decode tok/s | peak GB | K1 match % | regret Δ % |
 |-----|-----------:|---------:|---------:|--------------:|-------------:|--------:|-----------:|-----------:|
@@ -85,12 +86,12 @@ The base Gemma 4 E2B inference path is **not bit-pinned**:
   `--temperature` help.
 - The "K1 match within tolerance" definition for this bench is:
   **at temp=0.6, run-vs-run K1 grade match is expected to land at
-  80–100% on the 5-decision subset; per-decision deltas <0.5 Q-points
-  flip K1 sign about half the time.**  The 80% read in run 2 vs run 1
-  came from gi=72 (the trick-5 forced-commit decision) flipping
-  `eq_delta_vs_bot` from −1.7 to +0.8 — which crosses K1's `≥0`
-  threshold.  Both are inside Gemma's sampling envelope; neither is a
-  measurement bug.
+  80–100% on the 5-decision subset.**  The 80% read in run 2 vs run 1
+  came from gi=36 (the trick-3 decision) flipping: run 1 played `26`
+  (signed_delta −11.5, K1 fail) while run 2 matched the bot's play `1`
+  exactly (delta 0.0, K1 pass).  gi=72 failed K1 identically in both
+  runs (−1.73).  Both runs are inside Gemma's sampling envelope;
+  neither is a measurement bug.
 - Phase 1+ levers should target a `regret_delta_pct ≤ −10%` to be
   considered a confirmed win, given a ~−45% noise floor at the 5-row
   subset.  Phase 4's `--full560` mode tightens this — the 560-row

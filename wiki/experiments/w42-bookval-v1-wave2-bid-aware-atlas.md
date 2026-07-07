@@ -68,7 +68,7 @@ The per-world mark utility transform is verbatim from
 6. `mark_ev[a] = mean_w(mark_util[w,a])`
 7. `p_make[a] = P(mark_util[w,a] > 0)`
 
-`mark_multiplier(bid) = 1` for bid < 42; `= bid // 42` for bid ≥ 84.
+`mark_multiplier(bid) = 1` for bid < 42; `= bid // 42` for bid ≥ 42 (so 1 at bid=42, 2 at bid=84).
 
 ### Validation Protocol
 
@@ -160,11 +160,10 @@ with 3×SEM + 3 pt buffer to account for trajectory divergence after decision 0.
 |------|-------------|
 | `w42/book_validation_v1/wave2/run_bid_aware_atlas.py` | Driver script |
 | `w42/book_validation_v1/wave2/bid_aware_atlas/README.md` | Artifact README |
-| `w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv` | Per-action joined CSV (last run: seed 9430, 7 bids, 5550 rows) |
+| `w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv` | Per-action joined CSV (current on-disk file is the full-sweep corpus: seeds 9000–9049, 7 bids, 259,618 rows; the earlier seed-9430 smoke output was overwritten) |
 | `w42/book_validation_v1/wave2/bid_aware_atlas/validation_check.csv` | Aggregate validation vs branch_atlas_scaled_v0 |
 | `w42/book_validation_v1/wave2/bid_aware_atlas/manifest.json` | Full provenance, SHAs, divergence stats |
-| `w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9000-9004_bid*.pt` | 5-seed sweep per-bid .pt files |
-| `w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid*.pt` | Validation seed per-bid .pt files |
+| `eq_pdf_seeds90*0-90*9_bid*.pt`, `eq_pdf_seeds9430-9430_bid*.pt` | Per-bid joint-world .pt files (not checked into the repo; filenames + SHA256s recorded in `manifest.json` join logs) |
 
 ## Provenance
 

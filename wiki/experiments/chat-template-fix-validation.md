@@ -41,7 +41,7 @@ family (checked across all evidence chunks). [[iter3-rules-adapter]]
 carry this caveat until the era-6 audit (2026-07-06) added it directly. The project's
 single headline validated result — 90% bot-match — was measured with the model's
 tool outputs silently invisible to it, and the project never re-ran it after fixing
-that bug two commits later.
+that bug 17 commits (one day) later.
 
 ## Related pages
 

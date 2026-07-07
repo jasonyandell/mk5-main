@@ -12,7 +12,7 @@ Filter-only [[star]] pass on the 1062-row strict pool from [[burl-2000-harvest]]
 
 ## Recipe
 
-Corpus: 1062-row strict pool from [[burl-2000-harvest]] (`ALL_AGREE_CORRECT` + `BURL_ALONE_FIXES` + `BOTH_FIX` + `BURL_INDEPENDENT_RIGHT` + `BURL_FOLLOWS_PI_RIGHT`), with `--min-assistant-chars 300` strip — yields ~755 train + ~169 val rows. Pre-built at `scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/`. Token cap follows [[max-tokens-2048-floor]]; the underlying harvest's per-wave resilience is documented at [[batched-harvest-resilience]].
+Corpus: 1062-row strict pool from [[burl-2000-harvest]] (`ALL_AGREE_CORRECT` + `BURL_ALONE_FIXES` + `BOTH_FIX` + `BURL_INDEPENDENT_RIGHT` + `BURL_FOLLOWS_PI_RIGHT`), with `--min-assistant-chars 300` strip — yields 1025 decisions (37 emptied by the filter), split 820 train + 205 val decisions = 2686 train + 665 val assistant rows (per the corpus `manifest.json`). Pre-built at `scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/`. Token cap follows [[max-tokens-2048-floor]]; the underlying harvest's per-wave resilience is documented at [[batched-harvest-resilience]].
 
 Hyperparameters: rank=8, lr=3e-5, 1 epoch, `--steps-per-eval 50`, `--early-stop-val-rise 1.02 --early-stop-patience 2` (multiplicative — 1.02 = 2% above best, not 0.02). Best-checkpoint snapshot lands the lowest-val-loss params, not the final iteration. Trainer: `burl/train/star_mlx.py`. `--preserve-thoughts` is **load-bearing** (see [[preserve-thoughts]]) — without it the Gemma 4 chat template strips `<|channel>thought...<channel|>` regions before tokenization and the adapter learns to skip reasoning at inference (run-3b).
 
@@ -54,7 +54,7 @@ Same recipe as run-3b with `--preserve-thoughts` flipped on. Trained 45 min wall
 
 ### Run-3b eval (partial — killed at n=113)
 
-Eval at `scratch/belief_trajectory_rollout/star/eval/run3b_eval_seq560_20260425_164239/`. 113/560 decisions completed before the session was killed (unrelated to the experiment). Partial result:
+Eval at `scratch/belief_trajectory_rollout/star/eval/run3b_eval_seq560_20260425_164239/`. Killed partway through (unrelated to the experiment) — the live snapshot read 113/560, but the dir actually holds 130 parseable `trace_summary.json` files (decisions 0–129; the 2026-04-26 rescore uses all 130: match 58.5%, |Δ| 2.98). Partial result at the n=113 snapshot:
 
 | Metric | Run-3b @ n=113 |
 |---|---|

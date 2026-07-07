@@ -28,17 +28,20 @@ result kept in `scratch/`. (commit message @ 137a8e7, PRACTICALITIES receipt 15)
 | Metric | Before | After |
 |---|---|---|
 | truth top-1 | 38.4% | 38.3% (unchanged) |
-| KL vs world-marginal | 0.078 | 0.062 (47% closer to perfect) |
+| KL vs world-marginal | 0.078 | 0.062 |
+| (uniform-belief baseline KL) | 0.081 | — |
 
-Calibration is real — KL to the marginal distribution drops substantially.
+Calibration is real — distribution training closes ~47% of the gap between the
+uniform-prior baseline (0.081) and hypothetical perfect belief (0). Truth-trained
+belief was optimizing for the mode, not the shape. (gus/PRACTICALITIES.md receipt 15)
 
 ### Downstream (where it matters)
 
 | Metric | Before | After |
 |---|---|---|
-| pimc-belief K=50 bot-match | 66.4% | 65.4% (−1pp, regressed) |
-| blunder detector AUC | flat | flat |
-| blunder detector PR-AUC | — | regressed |
+| pimc-belief K=50 | 66.4% | 65.4% (−1pp, regressed) |
+| blunder detector ROC-AUC | 0.792 | 0.793 (flat) |
+| blunder detector PR-AUC | 0.175 | 0.133 (regressed) |
 
 ## Why calibration didn't propagate (receipt 15)
 

@@ -19,7 +19,7 @@ Next bottleneck is data. (commit message @ da21f52)
   world_encoder + Q_head
 - **Training**: 20 epochs, MPS (M5 Max)
 - **Key change from v1 belief-only**: Q supervision is ~3400× denser per decision than
-  belief alone (M sampled worlds × 7 actions vs 84 belief slots)
+  belief alone (avg M≈3400 oracle-labeled sampled worlds per decision, each with a 7-action Q vector, vs a single belief target)
 
 ## Results
 

@@ -15,9 +15,10 @@ Applying the deterministic Chapter 10 mark/match utility transform to the existi
 branch_atlas_scaled_v0 Q PDFs produces a **23.2% top-1 action flip rate** (65/280
 decisions). However, **81.5% of those flips have zero mark gain** — they are
 surface-flattening artifacts of the binary mark threshold, not strategic preference
-changes. Only **10 decisions (3.6% of total)** show genuine objective flips where
+changes. Only **12 decisions (4.3% of total)** show genuine objective flips where
 the mark-preferred action has a higher probability of winning the hand under marks,
-at a mean point-EV cost of 1.46 points and a mean mark-gain of 0.044 marks.
+at a mean point-EV cost of 1.32 points and a mean mark-gain of 0.030 marks
+(10 of the 12 are detector-endorsed; that subset has mean cost 1.46 pts, mean gain 0.032).
 
 The book's claim that tournament (marks) play demands different decisions from money
 (points) 42 does show up at the action-ranking level, but only modestly at bid=30.
@@ -66,11 +67,11 @@ The binary mark transform collapses a continuous 42-point outcome space into a b
 +1/−1 mark outcome. Near the 30-point make threshold, small Q differences may not change
 whether a world is "made" or "set", producing near-identical mark EV across actions.
 
-- **10 decisions (15.4%)**: positive mark_gain — genuine preference shift
-- **55 decisions (84.6%)**: mark_gain = 0 — tie-breaking artifact of the flat binary surface
+- **12 decisions (18.5%)**: positive mark_gain — genuine preference shift
+- **53 decisions (81.5%)**: mark_gain = 0 — tie-breaking artifact of the flat binary surface
 
-For the genuine flips: mean EV-cost = 1.46 pts, mean mark-gain = 0.044 marks
-(~4.4 percentage points better odds of winning this hand under marks).
+For the genuine flips: mean EV-cost = 1.32 pts, mean mark-gain = 0.030 marks
+(~3.0 percentage points better odds of winning this hand under marks).
 
 ### Declaration-level finding: no-trump is most sensitive
 
@@ -137,7 +138,7 @@ to test whether high-stakes special bids produce qualitatively different flip ra
 
 1. Single seed (9430), bid=30 only. No generalization claim across seeds or bid values.
 2. 81.5% of flips are surface-flattening artifacts; the strategic content is in the
-   10 genuine mark_gain > 0 flips.
+   12 genuine mark_gain > 0 flips.
 3. The `joined_claim_action_rows.csv` corpus (seeds 0-9, corpus_v2_train) does not
    overlap with branch_atlas_scaled_v0 (seed 9430), so full feature-label join was
    not possible. Book endorsement uses `matched_position_detectors` from the atlas CSV.

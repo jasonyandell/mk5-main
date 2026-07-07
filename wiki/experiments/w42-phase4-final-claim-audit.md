@@ -42,9 +42,11 @@ The audit calls out these tempting overclaims to avoid:
 
 ## Validation
 
-The audit parsed 13 CSV files and 15 JSON summaries, reran the seven phase-4
-validation scripts, and checked that the 64-row ledger and 64-row completion
-board align exactly.
+The audit parsed 13 CSV files and 15 JSON summaries and checked that the
+64-row ledger and 64-row completion board align exactly (no rows on either
+side of the join). It was read-only over the worker artifacts — per its
+recorded scope it parsed existing phase-4 outputs rather than rerunning the
+validation scripts.
 
 ## Links
 

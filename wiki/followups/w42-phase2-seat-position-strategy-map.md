@@ -1,0 +1,5 @@
+Reviewed against code on 2026-07-07 — no issues found.
+
+- All headline numbers verified against artifacts: 17-row matrix (`w42/seat_position_strategy_map/position_strategy_matrix.csv`), coverage counts (75,079 actions / 28,000 decisions / 37 / 36 / 8 / 160) and all eight paired-contrast deltas (+3.85/489, +6.76/128, +0.61/614, -8.35/802, +10.94/808, +4.67/277, -6.38/1803) match `w42/seat_position_claim_tests/summary.json` and `paired_contrasts.csv`.
+- Note: the input `w42/tactical_claim_replication/all_action_rows.jsonl` is gitignored (large artifact), so the full-run command is not reproducible from a fresh clone without regenerating it via `run_tactical_replication.py` — worth a one-line regeneration hint on the page if reruns are expected.
+- Cheap next probe: the strong negative slough-count-from-closure result (-6.38 Q, n=1,803) could be sliced by whether the trick is already lost to the defense — that separates "forced slough" from "voluntary donation" and would sharpen the book claim.

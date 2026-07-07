@@ -9,9 +9,10 @@ status: superseded
 **Superseded.** This standard governed the May-2026 tag/ablation phase but was
 abandoned once the workstream moved to phase3+: zero W&B mentions in
 [[w42-phase4-final-claim-audit]], the [[w42-book-validation-campaign]] waves,
-[[w42-lens-v1-utility-head-to-head]], or [[w42-jud-v1]]. The dozens of later
-scripts (`w42/branch_atlas_v1/`, `w42/bookval_v1/`, `w42/jud_v1/`, etc.) mostly
-do not log to W&B at all.
+[[w42-lens-v1-utility-head-to-head]], or [[w42-jud-v1]]. Most later
+workstreams (`w42/book_validation_v1/`, `champion/` (jud), `arena/`, etc.) do
+not log to W&B at all; `w42/branch_atlas_v1/` still wires in
+`w42/wandb_utils.py` but is the exception.
 
 ## Summary
 

@@ -85,9 +85,11 @@ The visualizers support the current E[Q]/w42 discussion:
 ## Caveats
 
 - The 27a surface is aggregate analysis data, not a single game.
-- The PDF/journey sample uses a small checked-in E[Q] PDF tensor with low
-  per-decision sample count; it is for visual inspection, not final empirical
-  claims.
+- The PDF/journey sample uses a small local E[Q] PDF tensor
+  (`forge/data/eq_pdf_s9200-9201_d10_10s.pt`, not checked into the repo) with
+  low per-decision sample count; it is for visual inspection, not final
+  empirical claims. Without that local file, the export script only rebuilds
+  the 27a aggregate surface.
 - Browser visual shape can guide hypotheses, but all policy changes still need
   paired game/regret tests.
 

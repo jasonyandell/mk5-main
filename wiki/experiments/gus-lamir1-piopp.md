@@ -9,9 +9,9 @@ status: superseded
 ## Summary
 
 Full LAMIR-1 attempt with trained π_opp rollout + Q_head leaf evaluator. All 8 look-ahead
-variants fail to beat direct π_me baseline (0.551 regret). Root cause identified: Q_head
-is OOD at depleted post-rollout leaf states. PRACTICALITIES §20 documents the ceiling and
-four pivot options. (commit messages @ 1a1a324, 2c380a6, 8106f01, b42669a)
+variants fail to beat direct π_me baseline (0.551 regret). Root cause identified: distilled
+scalar V/Q noise flips argmax at decision boundaries — the failure mode Kubíček & Lisý warn
+about. PRACTICALITIES §20 + MORNING4_STATUS document the ceiling and four pivot options. (commit messages @ 1a1a324, 2c380a6, 8106f01, b42669a)
 
 ## Setup
 
@@ -25,11 +25,12 @@ four pivot options. (commit messages @ 1a1a324, 2c380a6, 8106f01, b42669a)
 | Mode | Regret | Bot-match | Notes |
 |---|---|---|---|
 | **direct π_me (baseline)** | **0.551** | **76.07%** | v3-10k |
-| q-bootstrap | 0.679 | — | Best look-ahead mode |
-| v-bootstrap | 1.645 | 66.96% | V_head distribution shift |
-| lamir1 (argmax opp) | 2.094 | 60.36% | — |
-| lamir1-qleaf | 2.006 | 64.29% | Full rollout, Q_head leaf |
+| q-bootstrap | 0.679 | 72.50% | Best look-ahead mode |
+| v-bootstrap | 1.645 | 66.96% | Depth-1 V_head, world-blind |
+| lamir1-qleaf | 2.006 | 64.29% | Full rollout (rotated π_me), Q_head leaf |
+| lamir1 | 2.094 | 60.36% | Full rollout (rotated π_me), V_head leaf |
 | lamir1-piopp | 2.268 | 62.10% | π_opp rollout, Q_head leaf |
+| lamir1-piopp + Fix 6 | 2.350 | 62.50% | Assignment-update "fix" made it worse |
 
 Direct π_me beats all 8 look-ahead variants. q-bootstrap (0.679) is the best look-ahead
 mode but still 23% worse than direct. Full rollouts uniformly worse than depth-1.
@@ -41,23 +42,26 @@ and lamir1 as 2.384, both superseded values from earlier in the same bug-fix clu
 table above now matches `b42669a:PRACTICALITIES.md` §20 and [[lamir1-ceiling]]'s canonical
 ladder exactly.
 
-## Bug 6 — stale world_assign at Q_head leaf (2c380a6)
+## Bug 6 / Fix 6 — the stale-world_assign hypothesis that made things worse (2c380a6)
 
-After 1-3 opp rollout plays, the world_assignment tensor passed to the leaf Q_head
-still reflected the pre-rollout hand layout — dominoes played out of world hands were
-still marked as present. Fix: during the rollout loop, record each opp's played domino
-ID per world; after the loop, zero those rows in `world_assign_leaf` before the Q_head
-call. Matches the training convention in `dataset_seq_world._world_to_assignment`.
-Applied to both `lamir1_qleaf_decision` and `lamir1_piopp_decision`. (commit message @ 2c380a6)
+Hypothesis: after 1-3 opp rollout plays, the world_assignment tensor passed to the leaf
+Q_head still reflected the pre-rollout hand layout, giving Q_head stale beliefs. Fix 6
+recorded each opp's played domino ID per world and zeroed those rows in
+`world_assign_leaf` before the Q_head call, applied to both `lamir1_qleaf_decision` and
+`lamir1_piopp_decision`. (commit message @ 2c380a6)
 
-## Root cause: Q_head OOD at depleted leaf states
+Result: regret ticked UP across all modes (lamir1-piopp 2.268 → 2.350). The training
+convention in `dataset_seq_world` actually preserves the original world_assignment as
+the played_mask advances — the "fix" broke an invariant the Q_head relied on. The bug
+was in the hypothesis, not the model. (PRACTICALITIES §20 @ b42669a)
 
-Q_head was trained on initial-deal world assignments (full hands). Post-rollout leaf
-states have partially depleted hands (1-3 dominoes played). This is out-of-distribution
-for Q_head — it was never trained on partially-depleted world layouts. Bug 6 correctly
-identifies and fixes the data invariant violation, but does not cure the underlying
-distribution shift: the training data simply never contained depleted states. (commit
-message @ b42669a)
+## Root cause: distilled scalar V/Q noise flips argmax
+
+Per §20, Kubíček & Lisý explicitly warn that a value function trained by distillation
+(like Gus's V_head) cannot be used for look-ahead reasoning. The scalar noise of the
+distilled V/Q heads is enough to flip argmax at decision boundaries, while π_me trained
+on argmax directly preserves ordering. V_head is also architecturally world-blind
+(std=0.000 across 200 world samples for the same decision). (commit message @ b42669a)
 
 Deeper issue per §20: LAMIR paper's T×T multi-valued-states value function is more
 expressive than Gus's scalar V/Q heads. Scalar distillation noise compounds across
@@ -65,16 +69,17 @@ rollout steps and overwhelms any leaf evaluator signal.
 
 ## §20 pivot options
 
-Four paths documented in PRACTICALITIES §20:
+Four paths documented in MORNING4_STATUS (commit b42669a):
 
-1. **Retrain Q_head with partial-depletion augmentation** — generate training data that
-   includes partially-played-out hands at various trick depths
-2. **End-to-end LAMIR training** — train the full pipeline jointly rather than distilling
-   each head separately
-3. **Abandon look-ahead; invest in data** — more corpus for direct π_me, which still
-   dominates all look-ahead variants
-4. **Focus on detect-and-route** — oracle fallback on flagged decisions (already shown to
-   reach 0.49 regret; see [[experiments/gus-router-pilot]])
+1. **Accept depth-1 ceiling; ship q-bootstrap as an alternative inference mode** — +25%
+   regret vs direct but world-conditioned; could be a second opinion in a router when
+   π_me entropy is high (see [[experiments/gus-router-pilot]])
+2. **Train a look-ahead-compatible V-head** — train V on expected Q under sampled opp
+   play rather than marginal oracle E[Q]
+3. **Implement the LAMIR paper faithfully** — multi-valued states + CFR+ solver; large,
+   research-grade effort
+4. **Bridge-AI / BMCS recipe** — PPO self-play to reshape V/Q heads; the π_opp head and
+   world-conditioned Q_head are the raw materials. Gus doesn't have to be LAMIR.
 
 ## π_opp as real side product
 
