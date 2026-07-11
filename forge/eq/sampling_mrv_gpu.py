@@ -185,8 +185,9 @@ def _uniform_below(
 
     limit = random_range - torch.remainder(random_range, bounds)
     accepted = draws < limit.unsqueeze(-1)
-    first_accepted = accepted.to(torch.int8).argmax(dim=-1, keepdim=True)
-    selected = torch.gather(draws, -1, first_accepted).squeeze(-1)
+    # MPS's int64 gather kernel rounds 62-bit values through float32; select
+    # between the two candidates with where, which is exact on every device.
+    selected = torch.where(accepted[..., 0], draws[..., 0], draws[..., 1])
     return torch.remainder(selected, bounds), ~accepted.any(dim=-1)
 
 

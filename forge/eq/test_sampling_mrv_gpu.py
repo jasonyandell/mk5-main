@@ -20,6 +20,20 @@ from forge.eq.enumeration_gpu import enumerate_worlds_cpu
 from forge.eq.sampling import hand_violates_voids
 
 
+def _sampler_devices() -> list[str]:
+    """Every device the sampler can run on here; uniformity must hold on all.
+
+    The MPS int64-gather defect produced valid but severely non-uniform
+    worlds, so accelerator coverage cannot be CPU-only.
+    """
+    devices = ["cpu"]
+    if torch.cuda.is_available():
+        devices.append("cuda")
+    if torch.backends.mps.is_available():
+        devices.append("mps")
+    return devices
+
+
 def _fixture_historical_dead_end():
     """Exact audit fixture where greedy MRV reached a dead end with p=1/3."""
 
@@ -426,7 +440,8 @@ class TestMRVSamplerDiversity:
 class TestUniformCompletionRegression:
     """Regression coverage for the two exact sampler-audit failures."""
 
-    def test_historical_dead_end_fixture_returns_only_exact_worlds(self):
+    @pytest.mark.parametrize("device", _sampler_devices())
+    def test_historical_dead_end_fixture_returns_only_exact_worlds(self, device):
         pools, hand_sizes, voids, decl_ids = _fixture_historical_dead_end()
         exact = _exact_world_keys(
             pool=[3, 5, 7, 8, 14, 24],
@@ -438,8 +453,8 @@ class TestUniformCompletionRegression:
 
         torch.manual_seed(20260711)
         result = sample_worlds_mrv_gpu(
-            pools, hand_sizes, voids, decl_ids, n_samples=2_000, device="cpu"
-        )
+            pools, hand_sizes, voids, decl_ids, n_samples=2_000, device=device
+        ).cpu()
         observed = {_canonical_world(world) for world in result[0]}
 
         # The historical implementation emitted malformed worlds one third of
@@ -448,7 +463,8 @@ class TestUniformCompletionRegression:
         assert observed == exact
         assert not (result == 0).any()
 
-    def test_valid_only_bias_fixture_is_uniform_against_enumeration(self):
+    @pytest.mark.parametrize("device", _sampler_devices())
+    def test_valid_only_bias_fixture_is_uniform_against_enumeration(self, device):
         pools, hand_sizes, voids, decl_ids = _fixture_valid_only_bias()
         exact = _exact_world_keys(
             pool=[0, 2, 4, 5, 6, 25],
@@ -461,8 +477,8 @@ class TestUniformCompletionRegression:
         n_samples = 60_000
         torch.manual_seed(20260711)
         result = sample_worlds_mrv_gpu(
-            pools, hand_sizes, voids, decl_ids, n_samples=n_samples, device="cpu"
-        )
+            pools, hand_sizes, voids, decl_ids, n_samples=n_samples, device=device
+        ).cpu()
         counts = Counter(_canonical_world(world) for world in result[0])
 
         assert set(counts) == exact
