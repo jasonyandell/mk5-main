@@ -120,10 +120,3 @@ No claim status changed. This is an evidence-availability and routing artifact.
 [[w42]] | [[w42-phase2-claim-analysis-matrix]] |
 [[w42-doubles-no-trump-claim-validation]] |
 [[winning42-ch09-doubles-no-trump]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Beads are retired (bd → GitHub issues); the `t42-0b4l.*` route table still points at bead IDs — a cheap pass could annotate gh-issue successors or mark them historical.
-- The 100 legacy chunks' `q_per_world` sample counts vary widely (200–6400); a small probe correlating sample count with E[Q] variance would sharpen the "improves power" claim.

@@ -74,13 +74,6 @@ principled inference, not table lookup.
 Counterfactual V sensitivity is a usable interpretability tool — promotable from
 `scratch/` to `gus/eval/` if threat-boon analysis becomes a recurring diagnostic.
 
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Probe scripts live in gitignored `scratch/`; numbers verify only against PRACTICALITIES §19 and commit messages 245918d / 31f0ec3. Promoting the counterfactual-swap tool to `gus/eval/` would make them reproducible.
-- Cheap next probe: repeat threat/boon conditioning on a normal bid-worthy hand to test whether the "all threats are trumps" result is hand-specific.
-
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[topics/v-pi-decoupling]] · [[experiments/gus-v3-consistency-full-run]]

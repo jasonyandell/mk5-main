@@ -44,9 +44,3 @@ Proves that [[rules-adapter]] Q&A training transfers for factual state-tracking 
 ## Related pages
 
 [[lem]] · [[gemma-4-e2b]] · [[stage-0-adapter]] · [[rules-adapter]] · [[star]] · [[k1-grading]] · [[r1-rationalization]] · [[learned-by-playing]] · [[experiments/first-gemma-contact]] · [[experiments/stage-0-v1-training]] · [[modal]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- The raw inference transcript lives only in Modal/W&B logs, not in-repo; the results table traces to `lem/OVERVIEW.md` prose, not raw output.

@@ -159,11 +159,3 @@ python w42/auction_bid_discipline_claim_tests/validate_outputs.py \
 [[w42-claim-analysis-synthesis-report]] | [[winning42-ch02-bidding]] |
 [[winning42-ch12-advanced-bidding-playing]] | [[winning42-ch16-statistical-odds]] |
 [[forge]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The W&B run (`6cup1bat`) is external and unverified; the local `summary.json` records the same URL.
-- Cheap next probe: rerun with 128 deals to tighten the thin `risk_gt_20` bucket (n=14) and the natural 32/33 cell (n=2), both too small for stable rates.
-- The 0/14976 bid-above-minimum result is structurally guaranteed under fixed hand/declaration labels — a higher bid can only raise the make threshold; a follow-up could note this analytically rather than empirically.

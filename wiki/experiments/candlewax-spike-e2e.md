@@ -35,10 +35,3 @@ Reasoning-coherence verification is the bottleneck: distinguishing correct reaso
 ## Related pages
 
 [[candlewax-spike]] · [[candlewax]] · [[reasoning-coherence-verification]] · [[mlx-lm]] · [[haiku-4-5]] · [[burl]] · [[sources/0545342]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Numeric receipts (Haiku d000 13→21 flip, v7 +15% bot-match, LR collapse thresholds) are not verifiable from the repo — result artifacts lived in gitignored scratch/local runs.
-- Cheap probe if the thread revives: commit the v7 eval JSON (or a digest) so the +15% receipt is reproducible from the repo.

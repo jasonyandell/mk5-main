@@ -52,10 +52,3 @@ Useful as a side product for LAMIR-1 rollout quality independent of the V/Q leaf
 ## Links
 
 [[gus]] · [[experiments/gus-lamir1-piopp]] · [[topics/lamir1]] · [[joint-world-tensor]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The "useful for LAMIR-1 rollout quality" claim is aspirational: `gus/MORNING4_STATUS.md` records that even at 68.6% oracle match, lamir1-piopp rollouts were *worse* than direct π_me — see [[gus-lamir1-piopp]].
-- Cheap next probe: report per-seat accuracy (L-opp vs partner vs R-opp) — partner prediction likely differs and matters most for signaling.

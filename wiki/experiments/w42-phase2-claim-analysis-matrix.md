@@ -160,9 +160,3 @@ links where applicable, and conservative caveats.
 [[w42-phase2-seat-position-strategy-map]] |
 [[w42-phase2-hidden-domino-threat-attribution]] |
 [[w42-phase2-distribution-aware-ev-report]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- `summary.json` routes 9 rows to `t42-0b4l.10` plus a future tournament-simulation bead; the Next Beads table lists `.10` as "synthesis" without a count — 9 simulation-class rows park there pending a tournament-sim bead.

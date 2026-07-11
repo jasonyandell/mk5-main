@@ -16,7 +16,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Burl harvests + perf sprint** (2026-04-25 → 04-28, ~25 entries) — STaR run-3/3b/3c (preserve-thoughts is load-bearing), resumable checkpointing, the 2000-decision harvest, and the [[perf-sprint]] playbook's many small revisions plus [[burl-perf-phase0]]–phase3.
 - **burl-lab / burl-chat / microscope + w42** (2026-04-30 → 05-07, ~65 entries; the log's densest stretch) — two parallel campaigns: the [[burl-lab]] workbench lane, and the [[w42]] book-validation campaign (claim ledger, branch atlases, four phases, waves 1–4, lens head-to-head). Trail: [[w42-book-validation]]. Also [[book-strategy-player]] design and the first wiki-curation pilot (hubs + trails).
 - **Champion rungs** (2026-06-09 → 06-14, ~16 entries, after a five-week gap) — the [[champion]] ladder: arena harness, rungs #21–#28 (auction-conditioned belief the measured win; several honest nulls), [[jud]] direction and vocabulary, the Fable provenance corrections. Hub: [[champion]].
-- **jud + the wall + wiki overhaul** (2026-07-05 → 07-10, ~10 entries, mostly still below) — jud v0/v1 built and graded, [[the-wall]] stated precisely, then the wiki turned on itself: era archaeology backfill, the 162-page experiment audit, followups folded back.
+- **jud + the wall + wiki overhaul** (2026-07-05 → 07-10, ~10 entries, mostly still below) — jud v0/v1 built and graded, [[the-wall]] stated precisely, then the wiki turned on itself: era archaeology backfill, the 162-page experiment audit.
 
 ---
 
@@ -322,21 +322,12 @@ inbound content link). Flagged-not-fixed: dead `[[plunge]]`, `[[burl-perf-phase1
 pages (missing-page candidates), and the two distinct "~74%" ceilings (era-3 argmax-vs-oracle
 tie-structure vs era-4 Zeb vs-random capacity) that no page cross-claims as identical.
 
-## [2026-07-07 | working-tree | experiment-page audit: 162 pages validated against code, 43 corrected, followups/ born]
+## [2026-07-07 | working-tree | experiment-page audit: 162 pages validated against primary artifacts, 43 corrected in place]
 
-**Touched pages:** all 162 `experiments/` pages audited (43 edited in place); new `followups/` directory with one review file per experiment page.
-**Added:** `followups/<page>.md` × 162 — per-page audit record: substantive corrections ("page said X; code/artifact says Y, evidence path"), follow-up suggestions, and a second-pass review verdict on every corrected page.
-**Updated:** 43 experiment pages corrected against primary artifacts. Highest-weight fixes: [[gus-lamir1-piopp]] (Bug-6 outcome was inverted — the world_assign fix made regret *worse* 2.268→2.350; root cause is scalar V/Q distillation noise flipping argmax, not Q_head depletion-OOD; pivot-options list replaced with the real four from MORNING4_STATUS @ b42669a), [[gus-q-head-augmentation]] (conclusion rewritten to the sourced diagnosis), [[batch-throughput-bench]] (baseline is 83 tok/s not 43; prompt-cache reuse *was* tested — negative, c0020751, see [[burl-perf-phase2]]), [[burl-perf-phase0]] (K1 flip was gi=36, not gi=72), [[gus-belief-co-train]] (2×2 regret table disentangled; §20-vs-§21 0.679/0.685 source discrepancy flagged), [[gus-belief-calibration-diagnostic]] (the "47% closer" gloss implies a nonzero KL floor; receipt quoted verbatim).
-**Method:** two-pass fan-out — 162 low-effort auditors (one per page), then 43 adversarial second-pass reviewers over every corrected page (19 amendments, mostly reverting over-corrections or tightening citations).
-**Lint:** dead-link check over all 43 touched pages — zero new dead links introduced; pre-existing dead `[[burl-perf-phase1]]`, `[[topics/spec-decode-acceptance]]`, `[[log]]` (burl-perf-phase3), `[[sources/<sha>]]` placeholder (burl-star-run3) remain flagged from the era-6 audit.
-
-## [2026-07-10 | working-tree | followups/ folded back: audit trail merged into experiment pages, directory retired]
-
-**Touched pages:** all 162 `experiments/` pages; `followups/` directory deleted.
-**Updated:** every experiment page gained a terse `## Audit (2026-07-07)` section — one-line two-pass verdict (no issues / N corrections applied and re-verified) plus only the surviving substance from its followup file: open follow-up suggestions and cheap next probes, verifiability caveats (gitignored or HF-only artifacts whose numbers trace to commit messages), and source discrepancies not already noted in the body. The "page said X; source says Y" correction ledgers were NOT copied — that history lives in git at the audit commits (45a7e358, 29641ded).
-**Retired:** `followups/<page>.md` × 162 — the directory's content now lives on the pages it reviewed.
-**Method:** one merge agent per page (162 fan-out); a per-page safety check for corrections not actually reflected on the page found zero.
-**Lint:** qualified `[[kind/name]]` links in the new audit sections converted to bare (19 pages); one invented dead link ([[belief-value-is-legibility]] in [[gus-drama-atlas]]) redirected to [[belief-conditioned-self-play]]; dead-link check over all added backlinks otherwise clean.
+**Touched pages:** all 162 `experiments/` pages audited via two-pass fan-out (162 auditors, then adversarial re-review of every corrected page); 43 corrected in place, no audit residue left on pages.
+**Updated (highest-weight):** [[gus-lamir1-piopp]] (Bug-6 outcome was inverted — the world_assign fix made regret *worse* 2.268→2.350; root cause is scalar V/Q distillation noise flipping argmax, not Q_head depletion-OOD; pivot options replaced with the real four from MORNING4_STATUS @ b42669a), [[gus-q-head-augmentation]] (conclusion rewritten to the sourced diagnosis), [[batch-throughput-bench]] (baseline is 83 tok/s not 43; prompt-cache reuse *was* tested — negative, see [[burl-perf-phase2]]), [[burl-perf-phase0]] (K1 flip was gi=36, not gi=72), [[gus-belief-co-train]] (2×2 regret table disentangled; §20-vs-§21 source discrepancy noted in place), [[gus-belief-calibration-diagnostic]] (receipt quoted verbatim), [[iter5-e1-rank-sweep]] (2048-vs-1024 truncation-ceiling source conflict noted in place), [[iter3-rules-adapter]] (fix landed 17 commits after, not three).
+**Trail:** per-page audit ledgers ("page said X; artifact says Y, evidence path") live in git history at `45a7e358` / `29641ded`; live questions surfaced by the audit were already tracked in `questions/open.md` or on their pages.
+**Lint:** zero new dead links; pre-existing dead `[[burl-perf-phase1]]`, `[[topics/spec-decode-acceptance]]`, `[[log]]` (burl-perf-phase3), `[[sources/<sha>]]` placeholder (burl-star-run3) remain flagged from the era-6 audit.
 
 ## [2026-07-10 | working-tree | log rotated: changelog-not-chronicle rule, digest + archive]
 

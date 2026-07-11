@@ -256,12 +256,3 @@ Commit SHA:
 [[w42]] | [[w42-claim-ledger]] | [[w42-report-template]] |
 [[w42-lab-infrastructure]] | [[winning42-strategy-measurement]] |
 [[winning42-ch10-tournament-scoring]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- W&B run `7keeve33` is external and not verified from the repo.
-- Cheap next probe: run the scoreboard-distortion transform over real generated
-  game trajectories (not just the five synthetic scenarios) to measure how often
-  mark and point leaders diverge in practice.

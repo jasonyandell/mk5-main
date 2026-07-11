@@ -56,11 +56,3 @@ Results from [[experiments/second-gemma-contact]] confirm that factual state-tra
 ## Related pages
 
 [[lem]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[stage-0-adapter]] · [[modal]] · [[lora-unsloth]] · [[star]] · [[k1-grading]] · [[experiments/second-gemma-contact]] · [[experiments/first-gemma-contact]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- `lem/rules/qa_corpus.jsonl` is not checked in — it is the generated output of `lem/rules/generate_qa.py`.
-- Training metrics (loss curve, 208 steps, ~60 min, wandb run) live on Modal/W&B; best in-repo evidence is the df73c8d commit-message digest.
-- `train_stage0.py` defaults to `epochs: int = 3`; this run used 1 — copy-paste reproduction of the recipe must override the default.

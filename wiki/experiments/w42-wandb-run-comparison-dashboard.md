@@ -177,11 +177,3 @@ Commit SHA during dashboard construction: `1830e5f`.
 [[w42-setter-defense-claim-validation]] | [[w42-84-claim-validation]] |
 [[w42-doubles-no-trump-claim-validation]] |
 [[w42-scoring-objective-drift-claim-validation]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Run-table metrics match `w42/wandb_run_comparison_dashboard/run_comparison.csv` exactly; the view definition matches `wandb_view_definition.json`.
-- Live W&B run states/metrics were not re-fetched; the page's numbers rest on the checked-in CSV snapshot from 2026-05-02.
-- Cheap next probe if W&B is revisited: re-run the `wandb.Api()` listing to confirm the 10-run inventory and whether the unresolvable smoke ids (`5ychhiid`, `as3xy7oz`, `rwexij8m`) were deleted.

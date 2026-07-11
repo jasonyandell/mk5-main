@@ -178,10 +178,3 @@ python -m py_compile w42/gus_corpus_claim_deep_dive/analyze_gus_claims.py
 [[w42-partner-support-claim-validation]] |
 [[winning42-ch04-partner-support]] |
 [[winning42-ch05-setter-defense]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- All headline numbers match `summary.json` and `paired_contrasts.csv` to rounding; artifact paths, manifest, W&B run id, and analyzer script all exist. Input corpus `.pt` files exist in the main checkout only (untracked data).
-- Cheap next probe: `slice_metrics_by_decl.csv` is already exported but unread on this page — a short slice summary would test whether the pounce advantage holds across trump declarations.

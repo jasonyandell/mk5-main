@@ -61,10 +61,3 @@ workload. (commit message @ 7a9c720)
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[experiments/gus-blunder-detector]] · [[experiments/gus-router-pilot]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- `gus/eval/shine_analysis.py` is 669 lines at HEAD vs 691 at anchor commit 7a9c720; page figures are accurate as-of the anchor.
-- Cheap next probe: the routing heuristic's ≤2% blunder-rate claim traces to the commit message; re-running against the current script would confirm it survives the post-7a9c720 edits.

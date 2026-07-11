@@ -263,11 +263,3 @@ utility for ALL legal actions on the 500 ch05-follow snapshots.
 [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] |
 [[w42-bookval-v1-wave1-cross-ai-agreement]] |
 [[w42-bookval-v1-wave1-independent-audit]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The status table carries six stale "blocked on 2.A/2.B" rows (2.C–2.H) below their closed counterparts; deleting the superseded rows would remove a reader trap.
-- Wave 2 probe artifacts live under `w42/book_validation_v1/wave2/probes/<bead>_<slug>/`, one level deeper than the `wave<N>/<bead>_<slug>/` template above.
-- The `t42-10yj` one-line ev-argmax switch predates the beads-to-GitHub-issues migration; a cheap check is whether it was carried over or superseded by the [[champion]] `lens:ev` result.

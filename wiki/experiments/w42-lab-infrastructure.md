@@ -377,10 +377,3 @@ metric result, run, artifact, or claim status change.
 
 [[w42]] | [[winning42-strategy-measurement]] |
 [[gus-strategy-tags-probe]] | [[forge-analysis]] | [[forge]] | [[gus]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- W&B run ids/URLs (`rwexij8m`, `as3xy7oz`, `wv7pkuco`, `5ychhiid`), `w42/wandb_smoke/` outputs, and `gus/data/*.pt` corpora are gitignored local artifacts; they trace only to W&B and commit messages, not the repo.
-- Open convention tension: the page's run-group schema is `w42-{bead_slug}-{experiment_slug}` but the implemented default group is `t42-csw6`; one convention should win.

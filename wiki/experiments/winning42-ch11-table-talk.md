@@ -139,7 +139,3 @@ analysis status, not evidence status.
 ## Links
 
 [[winning42-strategy-measurement]] - [[gus-strategy-tags-probe]] - [[gus]] - [[burl]] - [[forge]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.

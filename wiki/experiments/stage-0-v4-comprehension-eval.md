@@ -62,10 +62,3 @@ best number.
 ## Related pages
 
 [[lem]] · [[v4-adapter]] · [[v9-adapter]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[game-context-qa]] · [[decisions/flexible-grader]] · [[experiments/third-gemma-contact]] · [[experiments/v10-maskfix-breakthrough]] · [[sources/4729dad]] · [[sources/1d3e1b7]] · [[sources/3c33e86]] · [[sources/2f11f32]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended 1.
-
-- HF adapter repos themselves unverified (private HuggingFace); adapter name traces to `lem/OVERVIEW.md @ 2f11f32`.
-- `lem/gemma_star/eval_comprehension.py:21` ADAPTER_REPO default still points at the non-full3ep name — one-line cleanup if the script is ever run again (superseded by the qwen variants).

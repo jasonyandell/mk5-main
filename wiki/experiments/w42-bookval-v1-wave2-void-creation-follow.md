@@ -138,10 +138,3 @@ python w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow/run_voi
   --device mps \
   --output-dir w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow/
 ```
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The Wave 2.E.2 high-bid (35+) re-run is cheap: the corpus filter is already parameterized in `build_void_creation_follow_corpus.py`, so only the source chunks and bid filter change.
-- The count_exposed slice (N=30, p_set +0.063) is the only sub-slice with a notable signal; a targeted mine growing it to N~150 would settle whether count exposure is the moderator.

@@ -150,10 +150,3 @@ tail safety.
 [[w42]] | [[eq-browser-visualizers]] | [[w42-next-model-decision]] |
 [[w42-powered-branch-atlas-v1]] | [[w42-branch-atlas-scaled-v0]] |
 [[w42-hidden-threat-legacy-mining]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The walkthrough (sample_002_decl_2, move 16) comes from `example_decisions.json` and matches it exactly; `summary.json`'s own `walkthrough_example` field points at a different decision (sample_001_decl_1, move 18), so a reader diffing against summary.json alone may be confused.
-- Cheap next probe: 81 of 140 decisions have multiple legal PDF actions (summary.json `decisions_with_multiple_legal_pdf_actions`); the flag rates could be re-expressed per multi-action decision rather than per row.

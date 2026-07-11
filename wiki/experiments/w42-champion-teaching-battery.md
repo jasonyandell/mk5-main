@@ -160,11 +160,3 @@ python -u w42/book_validation_v1/wave5/probe_champion_teaching_battery.py \
 - Static/ruleset claims (ch09, ch16): no dynamic data needed
 - Any claim requiring opponent hands not held by the champion: structurally impossible
   under the self-selection slice
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The within-CI safe-donation result (N_paired=150) might resolve with more seeds; a 512-seed rerun of just the ch04 slice is cheap (~40 min at the observed 574s/128 seeds).
-- The "context-limited" hypothesis for safe donation is testable from existing data: split the N=150 pairs by whether the actor holds another non-count safe play, using `action_rows.csv` — no new games needed.
-- The ledger path in the promotion-guard note is repo-root-relative (`w42/phase4_claim_completion_board/completion_board.csv`); resolves, but worth normalizing if the wiki adopts a path convention.

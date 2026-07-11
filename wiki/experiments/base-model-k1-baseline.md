@@ -40,11 +40,3 @@ This is the number to beat with [[stage-0-adapter]] + STaR iterations.
 ## Related pages
 
 [[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[decisions/eval-seed-holdout]] · [[experiments/star-harness-5ex-smoke]] · [[sources/f578bfa]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Verifiability: the raw run log lives only in the session transcript, so the 60/30/10/0 counts trace only to the source digest [[f578bfa]], not a repo artifact; `lem/data/narrations_train.jsonl` is gitignored generated data.
-- Cheap next probe: rerun with a fixed `--seed` and n=50 to get a repo-committed JSON baseline artifact.
-- The "structural ceiling" claim is quantifiable offline: fraction of trick-6 decisions where >1 legal action ties the argmax [[expected-q-value]], computable from `all_eq` with no inference.

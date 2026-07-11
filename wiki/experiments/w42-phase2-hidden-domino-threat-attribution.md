@@ -152,12 +152,3 @@ Real metric pass:
 [[w42-next-model-decision]] | [[joint-world-tensor]] |
 [[gus-joint-world-tire-kick]] | [[w42-powered-branch-atlas-v1]] |
 [[w42-branch-atlas-scaled-v0]] | [[w42-hidden-threat-legacy-mining]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Cheap next probe: the legacy-mining summary already flags 54778
-  "actual_not_safest_tail" decisions — a one-page rollup of where actual play
-  diverges from tail-safe play would directly feed the setter-pounce next step.
-- W&B run links were not verified (external).

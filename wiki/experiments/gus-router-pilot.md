@@ -62,10 +62,3 @@ where primary regret is 2-6 Q-pts. End-game decisions (24-27) are correctly neve
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[experiments/gus-blunder-detector]] · [[experiments/gus-scaling-ladder]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended 1 citation.
-
-- Receipt 14 also has 10%/15% flag rows (0.97/0.82 oracle) omitted from the table above.
-- Detector precision at flag time is the real lever (6 false-positive-induced blunders); a cheap probe is re-running the router with a precision-tuned detector threshold instead of flag% quotas. Never run as such — later router work (`gus/eval/*qmean_router.py`, commit 3ad63f9f) routes on Q-mean, a different signal.

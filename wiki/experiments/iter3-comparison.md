@@ -33,10 +33,3 @@ iter-3-rules is the Pareto-dominant adapter at this frontier: better commit disc
 ## Related pages
 
 [[iter3-rules-adapter]] · [[rules-as-tools]] · [[burl]] · [[decisions/primer-tradeoff]] · [[decisions/commit-discipline]] · [[experiments/burl-iter1-mixed]] · [[sources/dbadb5f]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
-
-- "0 retry-exhausted" is the N=10 eval headline; at rollout level iter-3-rules had 1/50 (2%) retry-exhausted (SPIKE_REPORT.md Phase 7 table).
-- iter-4-thoughts was byte-identical to iter-3-rules on N=10, bounding the value of the thoughts channel at this scale — see [[iter4-null-preserve-thoughts]].

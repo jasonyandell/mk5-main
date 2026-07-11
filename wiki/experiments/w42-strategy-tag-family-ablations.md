@@ -255,15 +255,3 @@ Claim-ledger impact: no claim-ledger change.
 [[w42]] | [[w42-rich-tag-many-signal-probe]] |
 [[w42-v0-strategy-tags-baseline]] | [[w42-concept-bucket-regret]] |
 [[w42-strategy-tags-v1-map]] | [[winning42-strategy-measurement]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and
-independently re-verified.
-
-- The W&B run itself was not fetched; all numbers verified against local
-  artifacts only (`ablation_matrix.csv`, `metrics.json`, `run.json`,
-  `manifest.json`).
-- Cheap next probe: re-run only the two edge families (no-trump/doubles
-  `+0.107`, off-protection `-0.051`) at 3 seeds before spending on the full
-  multi-seed matrix repeat.

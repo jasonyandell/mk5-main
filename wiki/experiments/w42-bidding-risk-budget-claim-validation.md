@@ -317,13 +317,3 @@ Follow-up commit SHA:
 [[winning42-strategy-measurement]] | [[winning42-ch02-bidding]] |
 [[winning42-ch12-advanced-bidding-playing]] | [[winning42-ch16-statistical-odds]] |
 [[forge]] | [[gus]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Cheap next probe: a small trick-loss-aware ceiling (rank coverage per off)
-  could test whether natural bid buckets emerge without full auction logs.
-- `bid_margin_by_context_summary.csv` and `opponent_pressure_summary.csv` exist
-  but are not cited in the Findings table; a one-row opponent-pressure finding
-  would round out the phase-3 slice.

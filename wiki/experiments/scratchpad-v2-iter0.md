@@ -47,10 +47,3 @@ Format-bootstrapping must precede fact-validation. The model needs to produce we
 ## Related pages
 
 [[lem]] · [[star]] · [[k1-grading]] · [[scratchpad-validation]] · [[decisions/discard-illegal-traces]] · [[learned-by-playing]] · [[sources/380f3fa]] · [[sources/b12fcec]] · [[sources/78ba940]] · [[sources/5946c94]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Wandb logs of the actual iteration live off-repo and were not checked; the numbers above trace to commit messages, which are internally consistent.
-- Cheap next probe if scratchpad is revived: SFT a few dozen synthetic engine-generated scratchpads first (format bootstrap), then re-enable hand-only validation — the [[b12fcec]] relaxation already isolates the critical check.

@@ -37,14 +37,8 @@ The rank-16 improvement (66.7% → 70.0%) is modest but real — the first evide
 
 Retroactively reframes the iter-4 [[experiments/iter4-null-preserve-thoughts]] result: with `max_seq_length=1024`, both stripped and preserved rows were identical at token 1024. The fix was data-reaching-loss, not LoRA capacity.
 
+Note: the E1 writeup and the ceca203 commit message say the old truncation ceiling was `max_seq_length=2048`; [[sft-max-seq-length]] and the iter-4 pages say TRL's default 1024. This page follows the 1024 account — one of the two source docs is wrong.
+
 ## Related pages
 
 [[burl]] · [[preserve-thoughts]] · [[decisions/sft-max-seq-length]] · [[iter3-rules-adapter]] · [[mlx-lm]] · [[lora-unsloth]] · [[experiments/iter4-null-preserve-thoughts]] · [[sources/ceca203]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- Source discrepancy: the E1 writeup and the ceca203 commit message say the old truncation ceiling was `max_seq_length=2048`; [[sft-max-seq-length]] and the iter-4 pages say TRL's default 1024. This page follows the 1024 account; one of the two source docs is wrong.
-- Eval artifacts (`burl/eval/results/e1/{base,rank16,rank64,rank128}/`) are not committed — headline numbers verify only against the writeup and commit message, not raw summary.json.
-- The "147 rows — rank-64 still diverges at LR peak" claim traces only to the ceca203 commit message; no writeup or artifact exists. Cheap probe: rerun rank-64 on the larger corpus after adding gradient clipping to `burl/train/star_mlx.py` (still absent there).

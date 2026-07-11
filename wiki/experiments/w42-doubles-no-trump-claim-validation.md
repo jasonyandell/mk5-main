@@ -236,9 +236,3 @@ Commit SHA at validation run:
 [[w42]] | [[winning42-ch09-doubles-no-trump]] | [[w42-claim-ledger]] |
 [[w42-odds-ruleset-claim-validation]] | [[w42-detector-tests]] |
 [[w42-concept-bucket-regret]] | [[forge-analysis]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- W&B runs `0kop3jhk` and `fveoarwf` are external; they are verified only as ids recorded in `summary.json`, not against the hosted runs.

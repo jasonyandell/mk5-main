@@ -60,13 +60,6 @@ included.
 | `ch10-tournament-speed-tradeoff` | supported-for-generated-trace-proxy | marks reduce played tricks by `23.814062` in the proxy |
 | `ch10-timed-marks-advancement-objective` | context-limited | synthetic pool disagreement `0.15`; needs real format |
 
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Artifact inconsistency (not a page error): `claim_summary.csv` lists `ch10-tournament-speed-tradeoff` as `context-limited` while `summary.json` and the script's inline table say `supported-for-generated-trace-proxy`; the page follows `summary.json`. Cheap probe: rerun the script and confirm which writer produced the CSV row.
-- Named next step for `ch10-point-system-skill-signal`: a paired policy-population arena with E[Q]/[[gus]]/[[burl]] traces under both scoring labels — a natural cheap follow-up given [[champion]]-direction work.
-
 ## Links
 
 [[w42]] | [[winning42-ch10-tournament-scoring]] | [[forge]]

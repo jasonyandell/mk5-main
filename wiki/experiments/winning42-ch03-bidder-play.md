@@ -161,13 +161,6 @@ of the book claims.
 | Low-trump-first can preserve command better than boss-trump-first in some hands. | context-limited | Counterfactual oracle rollout on hands with boss trump plus unresolved lower trumps and offs. |
 | A laydown is valid only when every legal continuation wins the rest. | supported-by-fixture-proof, corpus-untested | `t42-br7n.4` implements an exact tiny-state proof checker and rejects false claims, including the final-deuce warning. Next: wire saved engine snapshots and Burl trace claims into the checker. |
 
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Source slice `scratch/winning42/winning42.with_figures.md` is gitignored scratch, present only in the main working directory; lines 1407-2057 were not spot-checked line-by-line, so book quotes trace to the working copy rather than a committed artifact.
-- Bead IDs (`t42-ni1l.3`, `t42-br7n.1`, `t42-br7n.4`, `t42-qtwb.3`) are from the retired beads system, still grep-able in `.beads/issues.jsonl`; a future pass could link their GitHub-issue successors.
-
 ## Links
 
 [[winning42-strategy-measurement]] · [[gus-strategy-tags-probe]] · [[gus]] · [[burl]] · [[forge]]

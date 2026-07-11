@@ -118,11 +118,3 @@ Only ~4000 total decisions across two harvests. Zeb plateaued only after hundred
 ## Links
 
 [[burl]] [[star]] [[burl-2000-harvest]] [[burl-star-run3]] [[preserve-thoughts]] [[commit-discipline-collapse]] [[regret-eval]] [[learned-by-playing]] [[iter-without-regression]] [[r1-rationalization]] [[batched-eval-resilience]] [[batched-harvest-resilience]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- All numbers verified against `scratch/` artifacts in the main checkout — `scratch/` is gitignored, so bucket tables, the run-4 fold, and adapter/eval paths trace only to those local files, not to any commit.
-- The raw `HARVEST_SUMMARY.md` files still say "ILLEGAL 800 (28.6%)"; the page's denominator correction is right, but a one-line addendum in the summary files (or the tagger fix, next-steps #4) would stop future re-confusion.
-- The run-3c regret discrepancy (2.30 at N=560 vs 1.92 at paired-180) remains unresolved; cheap probe: rescore run-3c on indices 180–559 only.

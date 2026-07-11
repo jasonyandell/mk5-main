@@ -192,10 +192,3 @@ Commit SHA:
 [[w42]] | [[winning42-strategy-measurement]] | [[w42-claim-ledger]] |
 [[winning42-ch01-in-a-nutshell]] | [[winning42-ch13-optional-variations]] |
 [[winning42-ch16-statistical-odds]] | [[forge-analysis]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Cheap next probe: re-run `validate_odds_ruleset.py` in CI or a wiki-lint hook so the CSVs cannot drift from the script.
-- The `ch13-small-end-illegal` predicate encodes "led suit fixed to high pip" as an assumption of the predicate itself; a follow-up could check this against the engine's actual lead-suit resolution in `src/`.

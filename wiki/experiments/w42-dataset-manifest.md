@@ -311,10 +311,3 @@ Claim-ledger impact: no claim-ledger change.
 
 [[w42]] | [[winning42-strategy-measurement]] | [[gus-strategy-tags-probe]] |
 [[forge-analysis]] | [[forge]] | [[gus]] | [[eval-seed-holdout]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- `lem/data/narrations_eval.jsonl` is also absent locally; the leakage-exclusion list could mark it provenance-only, like the Gus corpora.
-- The `owner_bead` manifest field predates the 2026-06 retirement of beads to GitHub issues and may want a successor convention.

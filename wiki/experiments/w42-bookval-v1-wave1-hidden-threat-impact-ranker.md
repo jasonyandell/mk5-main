@@ -188,11 +188,3 @@ Output directory: `w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ra
 ```bash
 .venv/bin/python3 w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/run_hidden_threat_impact_ranker.py
 ```
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- The "Highest-impact single-decision tile occurrences" list mirrors the artifact README, which is not a strict impact ranking: `inferable_vs_not.csv` sorted by max_impact_score puts 4-4 held by bidder_partner in a fours declaration (trump_double, 52.3) at #2, omitted by both README and page; the 4-4/no-trump entries are ranks 3 and 5 (47.5, 49.1). Cheap fix: regenerate the list from `inferable_vs_not.csv`.
-- `summary.json` reports `detector_correlation_rows: 24` while `detector_correlation.csv` has 113 data rows; the summary.json field is stale for programmatic consumers.
-- The enrichment table's "Rate in Top-5" column renormalizes summary.json's `rate_in_topk` by a constant (~1.895); enrichment ratios are unchanged.

@@ -134,9 +134,3 @@ python w42/claim_tag_model_probe/validate_outputs.py \
 [[w42-phase2-84-weapon-preservation-probe]] |
 [[w42-doubles-no-trump-legacy-mining]] |
 [[w42-claim-tag-model-probe]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Cheap next probe: in the joined-table ablation, `drop_hidden_public_proxy` beats the full feature set (1.1179 vs 1.1257); a one-line pruning test could confirm whether hidden proxies are net-negative as model features despite remaining diagnostic.

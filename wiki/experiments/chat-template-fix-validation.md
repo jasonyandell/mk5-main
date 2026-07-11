@@ -46,10 +46,3 @@ that bug 17 commits (one day) later.
 ## Related pages
 
 [[decisions/gemma-tool-response-shape]] · [[wax-museum]] · [[burl]] · [[gemma-4-e2b]] · [[iter3-rules-adapter]] · [[experiments/burl-move4-native-spike]] · [[sources/54f7776]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- Per-decision N=5 result logs (e.g. `burl/wax_museum/logs/n5_qwen/live.log` referenced by the README) are not in git; the 5/5 result traces to the 54f7776 commit message and `burl/wax_museum/README.md`, not raw artifacts.
-- [[iter3-rules-adapter]] still says the fix landed "three commits after" the 90% measurement; git says 17 commits (one day) — pending fix on that page.

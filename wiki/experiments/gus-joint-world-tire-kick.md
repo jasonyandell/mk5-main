@@ -58,10 +58,3 @@ v0 training: belief-only head on 100-game corpus (seeds 0-99), evaluated on held
 ## Related pages
 
 [[gus]] · [[joint-world-tensor]] · [[zeb]] · [[forge]] · [[sources/31e10ef]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Raw tire-kick artifacts are not in the repo; all metrics trace to the commit message at [[31e10ef]], not independent logs.
-- If the v0 belief-head training on the 100-game corpus has since run, this page should be closed out and linked to that result.

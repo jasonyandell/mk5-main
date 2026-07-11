@@ -125,10 +125,3 @@ population set-rate claims remain blocked.
 ## Links
 
 [[winning42-strategy-measurement]] | [[gus-strategy-tags-probe]] | [[gus]] | [[burl]] | [[forge]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The double-choice-by-live-target detector (P1) has zero reached-state evidence: `lower_target_double_choice_pairs: 0` in the [[w42-phase4-84-dynamic-seed-tests]] summary. A constructed trick-6 two-live-doubles endgame battery would be the first data on it.
-- Source slice `scratch/winning42/winning42.with_figures.md` lives in gitignored scratch of the main checkout (not the worktree), so its line anchors are not verifiable from git.

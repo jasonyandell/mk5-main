@@ -66,6 +66,11 @@ reading from the oracle corpus.
 a 19% gap (belief-sampled worlds beat corpus worlds 0.655 vs 0.685, a 4.4% relative improvement). This mode uses `gus/model/sample_worlds.py` (the symmetry-checker wrote it
 off-plan; it turned out to be exactly what this experiment needed). (commit message @ cf8ff79)
 
+Note: `gus/PRACTICALITIES.md` §20 and `gus/MORNING4_STATUS.md` report 0.679 for
+original-adapter corpus-worlds q-bootstrap where §21's A/B table says 0.685 —
+presumably different runs/configs. The §21 A/B (0.655/0.685 vs 0.679/0.718) is
+authoritative for this experiment.
+
 ## §22 — "What you do past belief"
 
 With belief at the Bayes ceiling, the remaining 42-craft is about acting well given
@@ -75,14 +80,6 @@ research question: π_me commits to one meta-strategy ("play for the mode of the
 where humans use several (mode, signal, hedge, gamble). A richer student could output a
 meta-strategy distribution; training data already exists in the oracle's per-world tensor.
 No code written — noted as future direction. (commit message @ 94d8646)
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- Source discrepancy: `gus/PRACTICALITIES.md` §20 / `gus/MORNING4_STATUS.md` report 0.679 for original-adapter corpus-worlds q-bootstrap where §21's A/B table says 0.685 — presumably different runs/configs; the §21 A/B (0.655/0.685 vs 0.679/0.718) is authoritative for this experiment.
-- The "smoother belief sampling beats oracle adaptive sampling" mechanism is marked unverified in §21; cheap probe: compare world-distribution entropy of belief-sampled vs corpus worlds at decisions where regret differs.
-- K sweep for q-bootstrap-belief is proposed in §21 ("Next experiment (not run)"); K=200 already matches/beats corpus at M~3000, suggesting distribution rather than diversity is what's better. Still unrun.
 
 ## Links
 

@@ -123,11 +123,3 @@ and eval bucket are run.
 ## Links
 
 [[winning42-strategy-measurement]] / [[gus-strategy-tags-probe]] / [[gus]] / [[burl]] / [[forge]] / [[regret-eval]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Cited source line ranges verified against `scratch/winning42/winning42.with_figures.md`; the file is gitignored scratch, so citations do not survive a fresh clone — promoting the text slice or a digest into wiki/sources/ would fix that if the chapter series stays load-bearing.
-- `unsafe_count_after_trump_in` is action-local and cheap over the existing action-feature substrate — a good first detector to actually run, converting one claim-ledger row from context-limited to measured.
-- The bead reference `t42-ni1l.6` is historical (beads retired 2026-06; tracker moved to GitHub issues).

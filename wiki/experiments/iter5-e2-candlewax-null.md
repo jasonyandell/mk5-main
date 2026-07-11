@@ -32,11 +32,3 @@ This is a [[reasoning-coherence-verification]] gap, not a tool-surface legibilit
 ## Related pages
 
 [[candlewax]] · [[reasoning-coherence-verification]] · [[candlewax-spike]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[sources/ceca203]] · [[sources/1efb9c5]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended the follow-up list.
-
-- Open follow-up: stack candlewax with the EQ-gate's `tool-nudge` variant on the stubborn T12 non-match decisions to force `eq_outcome_distribution` exposure under rules-as-tools (writeup follow-up #2; never run).
-- Open follow-up: tune the 0.04 prominence threshold on an N=50 stability sweep — the current knee came from a 10-play smoke (writeup follow-up #4).
-- Raw E3 traces (`burl/eval/results/e2|e3`) are not in the repo; the "three traces" claim is commit-attested ([[ceca203]], [[1efb9c5]] both state it), not artifact-attested.

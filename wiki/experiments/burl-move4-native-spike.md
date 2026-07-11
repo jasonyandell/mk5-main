@@ -56,9 +56,3 @@ The OVERVIEW principle added at this commit: *"Go with the model's grain; catch 
 ## Related pages
 
 [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[k1-grading]] · [[decisions/native-tool-use-format]] · [[experiments/burl-move3-base]] · [[sources/3781dce]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Per-decision spike result JSONs are absent from `burl/eval/results/` (only later perf benches) — the numbers trace to the commit 3781dce message and SPIKE_REPORT.md at that commit; check the archived SPIKE_REPORT if raw traces are ever needed.

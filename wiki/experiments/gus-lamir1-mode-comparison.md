@@ -88,10 +88,3 @@ action_slot from states[0].current_player. (commit message @ 566bc4d)
 ## Links
 
 [[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-pilot]] · [[topics/regret-eval]] · [[topics/lamir1-ceiling]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- `gus/eval/lamir1.py` has since grown `q-bootstrap-belief` and `lamir1-piopp` modes (post-cluster, not covered here).
-- The "results in later ingest" placeholders for q-bootstrap and lamir1-qleaf can be closed by pointing to [[lamir1-ceiling]]'s ladder, which carries their final numbers.

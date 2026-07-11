@@ -287,15 +287,3 @@ Claim-ledger impact: no claim-ledger change.
 [[w42]] | [[w42-raw-public-state-baseline]] | [[w42-strategy-tags-v0]] |
 [[w42-report-template]] | [[w42-lab-infrastructure]] |
 [[gus-strategy-tags-probe]] | [[gus]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Several action groups in the bucket-comparison slices (hand_shape, identity,
-  pip_pressure, slot) fire on essentially every decision with identical n=381
-  stats; a cheap next probe is to drop always-on groups from the diagnostic
-  table.
-- The epoch 6 vs 7 disagreement on match rate hints the -0.47 best-epoch delta
-  may be noise; the multi-seed repeat in Next Checks is the cheapest way to
-  settle it.

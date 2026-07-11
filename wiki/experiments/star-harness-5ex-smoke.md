@@ -40,11 +40,3 @@ The 20% K1 pass rate on 5 examples is too small to interpret, but the 40% illega
 ## Related pages
 
 [[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[experiments/base-model-k1-baseline]] · [[sources/7538016]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The 1/5 / 2/5 / 2/5 result counts trace only to the commit message of 7538016 — the JSONL output is Modal/local and gitignored, so no independent artifact exists in the repo.
-- The "with [[stage-0-adapter]] loaded" setup claim is unconfirmed: the harness takes the adapter as an optional parameter and the docstring's iter0 example runs without one.
-- `lem/data/narrations_train.jsonl` is untracked; the path is the harness's expected input but the file itself is unverifiable.

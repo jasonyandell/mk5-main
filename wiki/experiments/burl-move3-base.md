@@ -49,10 +49,3 @@ Premise survives: base 2B model plays legally at 70% K1 with no fine-tuning. But
 ## Related pages
 
 [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[k1-grading]] · [[modal]] · [[decisions/native-tool-use-format]] · [[experiments/burl-move4-native-spike]] · [[sources/4b3ba3d]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- The move3 results directory (`burl/eval/results/move3_<timestamp>/`) is not in the repo; metrics trace only to the 4b3ba3d commit message and [[4b3ba3d]]. Committing or archiving summary.json would make the numbers independently checkable.
-- `burl/eval/data/move3_decisions.jsonl` (the dataset path in `run_move3.py`'s usage string) is absent from the worktree; regenerating it or noting it as generated-on-demand would help reproduction.

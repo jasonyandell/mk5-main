@@ -187,11 +187,3 @@ Input corpus: `w42/book_validation_v1/wave2/snapshots/pounce_window/snapshots.js
 - [[w42-claim-analysis-synthesis-report]] — Wave 1 synthesis
 
 ---
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Finding 3's "high-pip count tiles (5-5 or 6-4)" detail is not re-derivable from `paired_contrasts.csv` (its count_bucket column doesn't name tiles); listing the 5 snap_idx values would make it reproducible.
-- Cheap next probe: rerun the paired contrast with p_make (threshold-probability) deltas instead of the p_set proxy — the p_make-vs-E[Q] divergence is the page's central mechanism but is inferred, not measured.
-- The count=10pts and phase-late slices (N=5) drive two bolded findings; pooling with a second 500-snapshot draw would cheaply confirm or kill the 10-pt "pounce burns position" effect.

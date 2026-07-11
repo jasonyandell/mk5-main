@@ -159,11 +159,3 @@ rates still need stronger generators.
   as 84 when behind and strategically dominated by 42 when already within match range.
 - Treat OCR gaps in the preview as source limitations. The chapter's figures define
   concrete hand examples, but the surrounding prose is enough to specify detector shapes.
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Source citations resolve only against the main checkout: `scratch/winning42/winning42.with_figures.md` is gitignored and absent from worktrees, so line references trace via that checkout, and phase counts/Q proxies trace to [[w42-phase3-84-seed-mining-corpus]] and [[w42-phase4-84-dynamic-seed-tests]].
-- `laydown_84_proof` is enumeration-ready and remains the cheapest next probe on this page.
-- Bead `t42-ni1l.7` predates the beads-to-GitHub-issues migration; note the corresponding GitHub issue when the claim ledger next changes.

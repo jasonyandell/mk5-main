@@ -232,7 +232,3 @@ Commit SHA:
 
 [[w42]] | [[winning42-ch03-bidder-play]] | [[winning42-ch14-history-tournaments]] |
 [[w42-claim-ledger]] | [[w42-report-template]] | [[w42-strategy-tags-v1-map]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.

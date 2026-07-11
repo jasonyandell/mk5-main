@@ -57,9 +57,3 @@ See [[experiments/gus-v2-voids-1000g]] for the 1000g result.
 ## Links
 
 [[gus]] · [[topics/dense-q-supervision]] · [[experiments/gus-v0-v1-belief]] · [[experiments/gus-v2-voids-1000g]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- Metrics (57.9% π_me etc.) trace only to commit da21f52's message — no training-log/JSON artifact for this run exists in-repo. Cheap probe: re-run `gus/train/train_v1_full.py` on the 100g corpus to confirm reproducibility.

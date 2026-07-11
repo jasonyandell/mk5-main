@@ -287,12 +287,6 @@ Run/artifact fields:
 | HF links | not applicable |
 | claim ledger impact | no claim-ledger change |
 
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The "Exact commands" block references retired `bd` tooling (beads moved to GitHub issues in 2026-06); the commands are a historical record and cannot be re-run as written.
-
 ## Links
 
 [[w42]] | [[w42-strategy-tags-v0]] | [[w42-claim-ledger]] |

@@ -62,10 +62,3 @@ Consistency loss rides forward into LAMIR-1. v3 is the new baseline. (commit mes
 ## Links
 
 [[gus]] · [[topics/consistency-regularizer]] · [[topics/v-pi-decoupling]] · [[topics/regret-eval]] · [[experiments/gus-scaling-ladder]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
-
-- No raw eval JSON/CSV for the regret set exists in-repo; numbers trace to commit messages, but `gus/EVENING_STATUS.md` at HEAD carries the full v2/v3 comparison table, so they are re-checkable without git archaeology.
-- Neither §18 qMAE fix candidate has been tested: [[gus-q-head-augmentation]] tested §20 path (a) (partial-depletion augmentation), which is not multi-world variance regularization or joint co-training.

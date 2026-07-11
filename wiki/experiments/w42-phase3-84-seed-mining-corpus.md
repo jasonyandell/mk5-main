@@ -153,11 +153,3 @@ python w42/eighty_four_seed_mining/validate_outputs.py \
 [[w42-claim-analysis-synthesis-report]] |
 [[winning42-ch07-taking-every-trick-84]] |
 [[winning42-ch08-setting-84]] | [[forge]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Headline counts, per-surface table, laydown seed `46198`, and the seed 6 / seed 16 recommendation examples all match `summary.json`, `examples.json`, and `recommended_84_seed_rows.csv`; measured directory size is 67 MB (page's "about 68 MB" is within rounding).
-- W&B run `f33g4fy1` is external and verified only as the URL recorded in `summary.json`.
-- The page's compress-or-promote-summaries suggestion remains the cheap follow-up.

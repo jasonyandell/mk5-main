@@ -41,10 +41,3 @@ This is the STaR substrate, not the final product. The vocabulary the corpus mus
 ## Related pages
 
 [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[decisions/primer-tradeoff]] · [[experiments/burl-move4-native-spike]] · [[experiments/burl-phase2-starcorpus]] · [[sources/b8116b5]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The N=10 eval behind the 18.9pp regression is small; a cheap probe is rerunning the primer condition on a larger held-out set to bound noise on that delta.
-- The "not yet wired into native registry" claim about `game_summary` may have been overtaken by later iterations; recheck on revisit.

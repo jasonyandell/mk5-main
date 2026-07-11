@@ -126,11 +126,3 @@ supported or contradicted; they are converted into measurable hypotheses.
 ## Links
 
 [[winning42-strategy-measurement]] - [[gus-strategy-tags-probe]] - [[gus]] - [[burl]] - [[forge]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Cheapest live probe remaining is `laydown_challenge_proof`: exhaustive late-hand set-line search overlaps existing forge endgame enumeration and could piggyback on [[w42-phase4-laydown-rule-accounting]].
-- Source slice `scratch/winning42/winning42.with_figures.md` is gitignored, so it exists only in the main working tree and is absent from git and worktrees; anchor citations trace only against that local file.
-- Bead id `t42-ni1l.14` is unverifiable (beads retired 2026-06, old beads grep-able only in `.beads/issues.jsonl`).

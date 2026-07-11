@@ -61,10 +61,3 @@ P0 is always treated as bidder; auction pressure is outside the bead.
 
 [[w42]] | [[winning42-ch09-doubles-no-trump]] |
 [[w42-doubles-no-trump-legacy-mining]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- summary.json also contains a dual_suit_65 bucket (n=44, `+0.148`, `75.0%` no-trump preferred) not shown in the bucket table.
-- Cheap next probe: rerun with non-greedy (sampled) play to check whether the flat high-double-control result is sensitive to policy greediness.

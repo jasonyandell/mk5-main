@@ -238,11 +238,3 @@ Commit SHA at pilot time:
 [[w42]] | [[w42-lab-infrastructure]] | [[w42-claim-ledger]] |
 [[winning42-ch14-history-tournaments]] | [[winning42-ch15-celebrities-style]] |
 [[w42-rich-tag-many-signal-probe]] | [[w42-partner-support-claim-validation]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- All headline numbers match `w42/style_partnership_concept_buckets/summary.json` and `bucket_matrix.csv` locally; script, source paths, commit SHA, and W&B run id check out.
-- Not externally verifiable: W&B run `7z6aw6bp` (remote) and bead `t42-csw6.25` (bd retired; grep `.beads/issues.jsonl` if provenance matters).
-- None of the four Next Checks have run since; the auction/make-rate slice for calibrated overbid restraint remains the highest-value follow-up.

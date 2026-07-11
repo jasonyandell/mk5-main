@@ -42,13 +42,6 @@ Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix` ([[v10-adapter]]).
 - `train_comprehension_qwen.py` pinned to B200 (was H100).
 - Scope: 1.7B trainer only. 14B and other trainers still have the loss-mask bug at this frontier.
 
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Eval numbers trace only to the be7efc4 commit message — no results JSON in-repo; the adapter lives on HuggingFace, so headline metrics are not verifiable locally.
-- Cheap next probe: apply the maskfix to the 14B and remaining trainers, then re-check whether the 55/100 bot-match ceiling is truly capacity-limited.
-
 ## Related pages
 
 [[v10-adapter]] · [[qwen3-1.7b]] · [[qwen3-14b]] · [[decisions/sft-completion-only-loss]] · [[decisions/flexible-grader]] · [[experiments/qwen-14b-capacity]] · [[star]] · [[modal]] · [[sources/be7efc4]]

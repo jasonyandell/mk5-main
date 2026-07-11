@@ -169,11 +169,3 @@ PY
 [[w42-phase2-hidden-domino-threat-attribution]] |
 [[w42-phase2-distribution-aware-ev-report]] |
 [[w42-powered-branch-atlas-v1]] | [[w42-branch-atlas-scaled-v0]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- W&B run `74vfet6o` not independently verified (external service); everything it would confirm is corroborated by local artifacts.
-- Cheap next probe: slice the close-mean contrast (n=4619) by declaration to see whether the disaster-tail mitigation concentrates in specific trump regimes.
-- The page's validation snippet could be lifted into a shared `w42/validate_artifacts.py` for other experiment dirs.

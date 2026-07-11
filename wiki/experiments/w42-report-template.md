@@ -260,10 +260,3 @@ Run/artifact fields for this bead:
 [[w42]] | [[w42-claim-ledger]] | [[w42-dataset-manifest]] |
 [[w42-lab-infrastructure]] | [[winning42-strategy-measurement]] |
 [[gus-strategy-tags-probe]] | [[forge-analysis]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- `w42/report_template.md` matches the embedded skeleton verbatim; the referenced [[forge-analysis]] reports (`13_statistical_rigor.md`, `26_austin_verification.md`) and base commit `fe85001...` all resolve in the repo.
-- The `bd` commands in "Checks Run" date from when beads were live; beads have since been retired for GitHub issues, so those commands are non-reproducible today.

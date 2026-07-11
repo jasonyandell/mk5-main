@@ -131,11 +131,3 @@ never shipped or lives somewhere the audit didn't check.
   score-conditioning belongs at the auction)
 - [[w42-champion-auction-belief]] — rung #24, the belief this loop iterates
 - [[arena]] · [[gus]] · [[forge]] · [[pimc]] — the organs and the flaw the fixed point probes
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Provenance: the calibrated 4-round table matches `champion/evidence/run26_selfplay/RESULTS.txt` exactly; the as-is (raw) round table has no surviving repo artifact and is corroborated only by wiki/log.md.
-- `scratch/champion-run/run_26_par.sh` is gitignored and no longer on disk; the RESULTS.txt header preserves its invocation shape — the only surviving record of the loop script.
-- Cheap next probe (also named in wiki/log.md): back the belief bidder with a PIMC-calibrated value instead of double-dummy — the optimism ratio is bid-dependent (0.64–0.81), so no single `pmake_scale` can fit it.

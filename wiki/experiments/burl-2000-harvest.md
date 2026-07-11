@@ -101,9 +101,3 @@ since 2026-05-07.
 ## Links
 
 [[burl]] [[wax-museum]] [[gemma-4-e2b]] [[belief-trajectory]] [[gus]] [[star]] [[r1-rationalization]] [[batched-harvest-resilience]] [[max-tokens-2048-floor]] [[sources/063fcac]] [[sources/1bf1885]] [[sources/d858781]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended 2.
-
-- Wall-time and quarantine claims (5h46m, 0 fires, 733 max_turns_extensions) were not re-derived from events.jsonl; a one-liner over the `trace_summary.json` files could confirm the 733 figure if it ever becomes load-bearing.

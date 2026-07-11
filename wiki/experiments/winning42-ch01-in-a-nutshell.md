@@ -130,11 +130,3 @@ claims have executable Forge-backed fixtures.
 ## Links
 
 [[winning42-strategy-measurement]] · [[gus-strategy-tags-probe]] · [[gus]] · [[burl]] · [[forge]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- Source slice verified against `scratch/winning42/winning42.with_figures.md` lines 479-734; the file lives in gitignored `scratch/` in the main checkout only, so the slice is not reproducible from the repo.
-- Beads are retired (bd → GitHub issues); `t42-ni1l.1` and `t42-br7n.4` are historical bead identifiers — a cheap pass could annotate them as archived-bead IDs.
-- The "Underpowered / model-untested" ledger rows (walker regret bucket, Burl trace audit) remain the obvious next probes.

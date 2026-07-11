@@ -271,11 +271,3 @@ Claim-ledger impact: no claim-ledger change.
 [[w42-detector-tests]] | [[w42-strategy-tags-v1-map]] |
 [[w42-concept-bucket-regret]] | [[winning42-ch06-concentration-style]] |
 [[winning42-ch11-table-talk]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- All headline metrics verified against `w42/raw_public_state_baseline/metrics.json`, `w42/v0_strategy_tags_baseline/metrics.json`, and `w42/concept_bucket_regret_report/concept_bucket_regret.csv`; bucket matrix and manifest match the described schema; commit `f746b93` exists.
-- The `bd show t42-csw6.24` command in Exact Commands is historical-only: beads are retired (moved to GitHub issues), so it is a record, not re-runnable.
-- Cheapest next probe: void-inference calibration around the first public failure-to-follow — the lowest-cost unmeasured bucket; would convert one not-yet-tested finding to numeric evidence.

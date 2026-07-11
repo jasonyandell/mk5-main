@@ -109,10 +109,3 @@ w42/book_validation_v1/wave2/snapshots/reentry_preservation/
 
 [[w42]] | [[w42-bookval-v1-wave2-infra-design]] |
 [[w42-phase4-final-claim-audit]] | [[w42-branch-atlas-scaled-v0]]
-
-## Audit (2026-07-07)
-
-Two-pass audit against code and artifacts; no issues found.
-
-- The proposed follow-up already exists as [[w42-bookval-v1-wave2-reentry-v2]] (artifacts in `snapshots/reentry_preservation_v2/`).
-- Cheap next probe: rerun the same 200 pairs with oracle-greedy off-suit selection only (keeping the random-play corpus) to isolate how much of the −1.62 comes from the first-available-slot bias.
