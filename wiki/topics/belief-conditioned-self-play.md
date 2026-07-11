@@ -2,7 +2,7 @@
 title: Belief-conditioned self-play — what jud trains and how (Fable's approach)
 kind: topic
 first_seen: local-2026-06-14
-last_updated: local-2026-07-05
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -136,6 +136,17 @@ The architecture and the loop *shape* are clear and sourced to Fable. The traini
 *mechanics*, and whether the value-native extension is Fable's own intent, are **not
 established**; the engineering is deferred ([[jud]]). This page records what is
 established and fences off what is not.
+
+## Origin of the "reasoning is the product" reframe
+
+The reframe predates [[jud]]: it was named at the end of the [[gus]] Morning-5 session
+(2026-04-22), resolving a planning loop in which PPO self-play, LAMIR-done-right,
+meta-strategy heads, and [[detect-and-route]] each deflated under repeated stress-testing.
+Jason's words: *"It's a lot to take in. Who has what, how did that change, what does that
+mean, updated domino upon domino until the play. Ultimately it's the reasoning I care
+about."* (gus/MORNING5_PLAN.md @ 233b7dc5). The reframe — the reasoning is the product,
+not the play — made [[belief-trajectory]] extraction the first move and demoted
+action-selection improvements to downstream depth.
 
 ## Links
 

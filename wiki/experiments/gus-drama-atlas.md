@@ -2,7 +2,7 @@
 title: Gus Drama Atlas (outcome-variance / fragility / belief-sharpness join)
 kind: experiment
 first_seen: 76355ac
-last_updated: 76355ac
+last_updated: pending-this-ingest
 status: complete
 ---
 
@@ -66,6 +66,17 @@ Gus is primarily a mode-player, degrading to near-coin-flip (52.6%) on drama dec
 is not evidence of learned meta-strategy — it is explained by ambiguous BCE training signal:
 when oracle worlds split across 5-7 different best actions, the argmax label compresses a
 near-uniform distribution into one target, and the trained output drifts accordingly.
+
+## Methodology caveat: the refined drama filter
+
+A later pass replaced the quadrant definition with an oracle-marginal filter for "real
+drama": `marginal_eq_gap ≤ 1.0` (top1 − top2 E[Q] over legal actions) ∧ `count_unplayed ≥ 15`
+(points still live), restricted to mid/endgame phases — plus a forced-move exclusion
+`n_legal_actions ≥ 2`. Without the exclusion, 31,421 of 67,605 raw real-drama flags in
+`drama_atlas_v2.parquet` are single-legal decisions where `marginal_eq_gap` is trivially 0;
+the filtered set is 36,184 decisions (gus/analysis/real_drama_examples.md @ 233b7dc5;
+exclusion counts from [[gus-qmean-router]]'s side finding). Any "real drama" view should
+exclude forced moves.
 
 ## Concrete example
 

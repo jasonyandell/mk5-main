@@ -2,7 +2,7 @@
 title: Winning 42 Strategy Measurement
 kind: experiment
 first_seen: local-2026-04-30
-last_updated: local-2026-05-01
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -11,14 +11,14 @@ status: active
 The Winning 42 book is now treated as a strategy-hypothesis source for Gus/Burl,
 not as ground truth. The working breakdown lives in:
 
-- `scratch/winning42/strategy_measurement_breakdown.md`
+- `w42/strategy_measurement_breakdown.md`
 
 The core claim: each strategy concept should become one or more detector labels,
 adversarial buckets, regret metrics, belief-calibration tests, or training examples.
 
 ## Current Artifacts
 
-- `scratch/winning42/strategy_measurement_breakdown.md` — project shape, MVP detectors,
+- `w42/strategy_measurement_breakdown.md` — project shape, MVP detectors,
   chapter harvest map, first work package, and a lengthy analysis catalog.
 - `scratch/winning42/winning42.with_figures.md` — OCR/preview source used for the chapter harvest.
 - [[experiments/gus-strategy-tags-probe]] — first promoted empirical probe showing that
