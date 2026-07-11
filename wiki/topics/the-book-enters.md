@@ -2,7 +2,7 @@
 title: The book enters — Winning 42 as citation, extraction stayed dormant
 kind: topic
 first_seen: de7b7c71
-last_updated: af9c2cba
+last_updated: pending-this-ingest
 status: retired
 ---
 
@@ -32,7 +32,7 @@ Texas Monthly, Wikipedia, and — as its second-listed authoritative source —
 Roberson (Texas Tech University Press, 1997-2009) - Definitive published
 rulebook.* This is the book's first documented appearance in the project.
 The citation is substituted into `docs/rules.md` wholesale by commit
-`5b5e97c` (2025-08-09) and survives verbatim in that file today
+`5b5e97c` (2025-08-09) and survived verbatim there until the docs→wiki consolidation — it now lives in [[rules-of-42]] §Provenance
 (`docs/rules.md:26`). Sibling files `docs/rules-gherkin.md` and
 `docs/rules-tournament.md` do not carry the citation forward.
 
@@ -51,7 +51,7 @@ files, no Roberson-hand files. All four conversations are plan-only.
 ## Terminal status
 
 **RENAMED / RETARGETED, not carried forward as built infrastructure.** The
-book's *citation* is BUILT and durable — present in `docs/rules.md` unchanged
+book's *citation* is BUILT and durable — carried forward into [[rules-of-42]], unchanged
 in substance since the 2025-07-26 draft. The book's *extraction protocol* —
 the actual mechanism for turning Roberson's hands into test data — stayed
 IDEATED-only for the rest of this era: a detailed, iterated schema and a

@@ -132,7 +132,7 @@ describe('Domino System', () => {
 
       // 6-6 is trump (Tier 2), 5-5 is a slough (Tier 0) since it doesn't contain 6
       expect(rankInTrickBase(state, SIXES, sixDouble)).toBeGreaterThan(rankInTrickBase(state, SIXES, fiveDouble));
-      // Note: Per SUIT_ALGEBRA.md §8, all sloughs return 0 (unordered)
+      // Note: Per wiki/topics/suit-algebra-spec.md §6, all sloughs return 0 (unordered)
       // So we don't compare sloughs against each other
     });
 

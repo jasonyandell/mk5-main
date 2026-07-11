@@ -2,7 +2,7 @@
 title: Breakthrough and Oracle (Dec 24, 2025 – Jan 8, 2026)
 kind: topic
 first_seen: 085ffa71
-last_updated: 3a6d2ec
+last_updated: pending-this-ingest
 status: complete
 ---
 
@@ -126,7 +126,7 @@ gone — a real, if minor, loss.
 Several claims that had crept into prior narrative framing do not survive direct
 re-verification against commits, beads, and the raw conversation corpus:
 
-- **The suit algebra was not "later extended to the Sevens variant."** `docs/theory/SUIT_ALGEBRA.md`
+- **The suit algebra was not "later extended to the Sevens variant."** [[suit-algebra-spec]] (then `docs/theory/SUIT_ALGEBRA.md`)
   explicitly excludes Sevens ("Nothing in this algebra applies"). The extension bead
   (t42-d2ia) sat `pending` and was closed only by an automated stale-sweep four months later,
   not by an implementation.

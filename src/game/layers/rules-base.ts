@@ -70,7 +70,7 @@ export function canFollowBase(state: GameState, led: LedSuit, domino: Domino): b
 /**
  * Rank computation with pre-computed configuration IDs.
  *
- * Implements τ(d, ℓ, δ) = (tier << 4) + rank from SUIT_ALGEBRA.md §8.
+ * Implements τ(d, ℓ, δ) = (tier << 4) + rank from wiki/topics/suit-algebra-spec.md §6 (encoding: machine-encoding appendix).
  *
  * This is the optimized version used by calculateTrickWinner to avoid
  * recomputing absorptionId/powerId for each domino in a trick.
@@ -109,7 +109,7 @@ export function rankInTrickWithConfig(
   }
 
   // Determine rank within tier
-  // Per SUIT_ALGEBRA.md §8: when κ(δ) = D° (absorptionId = 7), doubles rank by pip value
+  // Per wiki/topics/suit-algebra-spec.md §6: when κ(δ) = D° (absorptionId = 7), doubles rank by pip value
   let rank: number;
   if (absorptionId === 7 && isDouble) {
     // Doubles form suit 7 (doubles-trump or doubles-suit/nello): rank by pip value (0-6)

@@ -22,7 +22,7 @@ export type DominoId = number;
 export type Pip = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /**
- * Called set configuration (absorption pattern) - encodes κ(δ) from SUIT_ALGEBRA.md §3.
+ * Called set configuration (absorption pattern) - encodes κ(δ) from wiki/topics/suit-algebra-spec.md §3.
  * Determines which dominoes are "called" into suit 7.
  *
  * 0-6: "I called Xs" - dominoes containing that pip go to the called suit
@@ -197,7 +197,7 @@ export const SUIT_MASK: readonly (readonly number[])[] = (() => {
 /**
  * RANK[d][powerId] -> number (higher wins)
  *
- * Implements the ranking portion of τ from SUIT_ALGEBRA.md §8.
+ * Implements the ranking portion of τ from wiki/topics/suit-algebra-spec.md §6.
  *
  * This table encodes:
  * - Power dominoes: (2 << 4) + rank = 32-46 (full Tier 2 τ value)
@@ -212,7 +212,7 @@ export const SUIT_MASK: readonly (readonly number[])[] = (() => {
  * - 0-12: Non-doubles (pip sum)
  * - Exception: Doubles-trump (powerId=7) → rank = pip value (0-6)
  *
- * See SUIT_ALGEBRA.md "Architectural Note: Configuration vs Context"
+ * See wiki/topics/suit-algebra-spec.md §6 "Architectural note: configuration vs context"
  *
  * 28 × 9 = 252 entries
  */

@@ -2,7 +2,7 @@
 title: The Web Game (Era 1 — prologue)
 kind: entity
 first_seen: b25480b
-last_updated: 7529489
+last_updated: pending-this-ingest
 status: retired
 ---
 
@@ -148,7 +148,7 @@ Socket/Room/GameClient pattern.
 ## The book's first appearance
 
 Dennis Roberson's *Winning 42* enters the project as a citation on
-2025-07-26, durable in `docs/rules.md` today. An extraction protocol to mine
+2025-07-26, durable today in [[rules-of-42]] (in `docs/rules.md` until the docs→wiki consolidation). An extraction protocol to mine
 its hands into test data was designed in detail (2025-08-18) and never
 executed in this era. See [[the-book-enters]].
 

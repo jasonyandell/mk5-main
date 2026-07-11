@@ -1,4 +1,4 @@
-"""Auction rules and marks scoring (docs/rules.md §4, §6, §7).
+"""Auction rules and marks scoring (wiki/topics/rules-of-42.md §Bidding, §Scoring).
 
 One round of bidding: the player left of the shaker bids first, clockwise,
 each player bidding exactly once — pass, or a value above the current high

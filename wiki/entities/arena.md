@@ -2,7 +2,7 @@
 title: Arena — full-game harness
 kind: entity
 first_seen: local-2026-06-12
-last_updated: d678598
+last_updated: pending-this-ingest
 status: active
 phase: landed; measuring stick for the champion ladder
 ---
@@ -27,9 +27,9 @@ python -u -m arena.cli --team-a heuristic+lens:ev --team-b bid30+lens:ev \
 ## Design
 
 - The zeb engine (`forge/zeb/game.py`) owns the play phase; the arena owns
-  the auction (docs/rules.md §4: one bid each, left of shaker first, point
+  the auction ([[rules-of-42]] §Bidding: one bid each, left of shaker first, point
   bids 30–41 then marks, reshake on pass-out, forced 30 after max
-  redeals), marks scoring (§6–§7: `max(1, bid // 42)` marks, set pays the
+  redeals), marks scoring (§Scoring: `max(1, bid // 42)` marks, set pays the
   defenders), and the game loop. A hand enters play as a fully-formed
   PLAYING state — the `_force_bid_30` construction from
   [[w42-lens-v1-utility-head-to-head]]'s harness, minus the force.

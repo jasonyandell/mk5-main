@@ -2,15 +2,27 @@
 title: Texas 42
 kind: entity
 first_seen: a8bccfa
-last_updated: a8bccfa
+last_updated: pending-this-ingest
 status: active
 ---
 
 ## What it is
 
-Texas 42 is a trick-taking partnership game played with a standard double-six domino set.
-This wiki covers the straight tournament form only. Nel-O, Plunge, Splash, Sevens, and
-regional variants are out of scope for [[lem]]'s [[rules-adapter]]. (lem/rules/primer.md @ a8bccfa)
+Texas 42 is a trick-taking partnership game played with a standard double-six domino set —
+the game this whole project is about. This page is the terse quick-reference for the
+straight tournament form, the form every model and experiment in this repo plays.
+
+**The game-of-42 cluster** — where to go deeper:
+
+- [[rules-of-42]] — the complete ruleset: full bidding rules, special contracts
+  (nello/plunge/splash/sevens), conduct, tournament standards, terminology.
+- [[suit-algebra]] — how the algebraic model of suits came to be, and what it replaced.
+- [[suit-algebra-spec]] — the formal specification: called sets, power, the three-tier
+  trick order, the unique-winner theorem, S₇ symmetry, machine encoding.
+- [[play-phase-algebra]] — the play-phase state model, signed rewards, and the graded DAG
+  that [[the-oracle]] solves.
+- [[the-book-enters]] / [[w42]] — Roberson's *Winning 42* and the empirical validation of
+  its strategy claims.
 
 ## Equipment and players
 

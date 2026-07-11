@@ -1,6 +1,22 @@
-# Texas 42: Algebraic Suit Structure
+---
+title: Suit algebra — the formal specification
+kind: topic
+first_seen: 69d636ac
+last_updated: pending-this-ingest
+status: active
+---
 
-## §1. The Domino Set
+The complete algebraic specification of Texas 42's suit structure: called sets, power,
+effective suits, the three-tier trick order, the unique-winner theorem, the S₇ symmetry, and
+the machine encoding. [[suit-algebra]] tells the story of how this model came to be and what
+it replaced; this page is the mathematics itself. The play phase built on these primitives
+is [[play-phase-algebra]].
+
+Merged at this ingest from `docs/theory/SUIT_ALGEBRA.md` (first committed 69d636ac) and
+`SUIT_ALGEBRA_PURE.md` (19373119) — two ~90%-identical documents; the pure-mathematical
+formulation is the body, the machine encoding is the appendix.
+
+## §1. The domino set
 
 Let $\mathbb{P} = \{0, 1, 2, 3, 4, 5, 6\}$ be the set of pip values.
 
@@ -14,9 +30,7 @@ Define $\mathsf{sum}(\{i,j\}) = i + j$ and $\mathsf{max}(\{i,j\}) = \max(i, j)$,
 
 $$\mathcal{D}^\circ = \{\, \{p, p\} : p \in \mathbb{P} \,\} \qquad \mathcal{D}^\times = \mathcal{D} \setminus \mathcal{D}^\circ$$
 
----
-
-## §2. The Natural Covering
+## §2. The natural covering
 
 For each $p \in \mathbb{P}$, the **natural suit** is:
 
@@ -33,9 +47,7 @@ This yields a **covering** $\Sigma = \{\sigma_0, \sigma_1, \ldots, \sigma_6\}$ w
 
 This is **not** a partition—each mixed domino inhabits two suits simultaneously.
 
----
-
-## §3. Declarations: Called Set and Power
+## §3. Declarations: called set and power
 
 A **declaration** $\delta$ does two things: it **calls** dominoes into the 8th suit, and it may grant that suit **power** over the others.
 
@@ -60,15 +72,13 @@ $$\pi(\delta) = \begin{cases}
 
 Dominoes with power beat all others (§6). When $\pi(\delta) = \varnothing$, no suit has power and the highest follower wins.
 
-The pair $(\kappa(\delta), \pi(\delta))$ is the **entire semantic content** of a declaration. The ten declarations yield ten distinct pairs but only **nine** distinct called sets: doubles-trump and doubles-suit share $\kappa = \mathcal{D}^\circ$ and differ only in power. This asymmetry matters for table layouts (see the GPU appendix).
+The pair $(\kappa(\delta), \pi(\delta))$ is the **entire semantic content** of a declaration. The ten declarations yield ten distinct pairs but only **nine** distinct called sets: doubles-trump and doubles-suit share $\kappa = \mathcal{D}^\circ$ and are distinguished by power alone. This asymmetry matters for table layouts (see the machine-encoding appendix).
 
 **Nello note:** Doubles-suit serves nello contracts. The strategic objective is to *lose* tricks, but the trick mechanics are unchanged: doubles form suit 7, rank by pip value (6-6 highest), and the highest follower wins—no domino has power.
 
-**Sevens note:** The sevens contract is deliberately absent from $\Delta$: it has no suit structure and no decisions. Play is forced—order your hand by $|\mathsf{sum}(d) - 7|$ and play it out. Nothing in this algebra applies.
+**Sevens note:** The sevens contract is deliberately absent from $\Delta$: it has no suit structure and no decisions. Play is forced—order your hand by $|\mathsf{sum}(d) - 7|$ and play it out. Nothing in this algebra applies. (See [[rules-of-42]] §Special contracts.)
 
----
-
-## §4. The Effective Suit Structure
+## §4. The effective suit structure
 
 Under declaration $\delta$, the covering transforms. Define the **effective suits**:
 
@@ -78,7 +88,7 @@ The full **effective structure** is:
 
 $$\hat{\Sigma}^\delta = \{\hat{\sigma}_0^\delta, \hat{\sigma}_1^\delta, \ldots, \hat{\sigma}_6^\delta, \hat{\sigma}_7^\delta\}$$
 
-### Theorem: Effective Membership
+### Theorem: effective membership
 
 Under any declaration $\delta$, each domino belongs to **exactly one or two** effective suits:
 
@@ -88,9 +98,7 @@ with equality to 1 iff $d \in \kappa(\delta) \cup \mathcal{D}^\circ$.
 
 Called dominoes live only in $\hat{\sigma}_7$; uncalled doubles live only in their own pip suit; uncalled mixed dominoes still straddle two suits. The covering narrows under calling, but it does not become a partition.
 
----
-
-## §5. Following and the Led Suit
+## §5. Following and the led suit
 
 When suit $\ell \in \{0..7\}$ is led under declaration $\delta$, a domino $d$ **can follow** iff:
 
@@ -114,23 +122,21 @@ $$\ell(d, \delta) = \begin{cases}
 
 Under notrump $\kappa(\delta) = \varnothing$, so $\ell = 7$ never occurs.
 
----
-
-## §6. Trick Ranking: The Three-Tier Function
+## §6. The trick order
 
 ### Rank
 
-Rank within a suit depends only on the domino and the declaration—never on what was led. Define $\mathsf{rank} : \mathcal{D} \times \Delta \to \{0..14\}$ (cases read top-down):
+Rank within a suit depends only on the domino and the declaration—never on what was led. Let $R = \{0 < 1 < \cdots < 12\} \cup \{\top\}$ be the linear order with $\top$ above every number, and define $\mathsf{rank} : \mathcal{D} \times \Delta \to R$ (cases read top-down):
 
 $$\mathsf{rank}(d, \delta) = \begin{cases}
 p & \text{if } \kappa(\delta) = \mathcal{D}^\circ \land d = \{p,p\} & \text{(doubles as a suit: by pip)} \\[4pt]
-14 & \text{if } d \in \mathcal{D}^\circ & \text{(lone double in a pip suit)} \\[4pt]
+\top & \text{if } d \in \mathcal{D}^\circ & \text{(lone double in a pip suit)} \\[4pt]
 \mathsf{sum}(d) & \text{otherwise} & \text{(non-double: by pip sum)}
 \end{cases}$$
 
 Key facts:
 
-- **The double tops its suit**—the fundamental ranking rule of Texas 42. Within suit $\ell$, non-double sums are $\ell + k \leq 12$, so 14 beats them all. Any constant exceeding 12 works; 14 is chosen to fit the 4-bit rank field.
+- **The double tops its suit**—the fundamental ranking rule of Texas 42. $\top$ exceeds every pip sum.
 - **Exception:** when doubles form their own suit ($\kappa(\delta) = \mathcal{D}^\circ$), they rank by pip value: 6-6 beats 5-5 beats … beats 0-0.
 - Within suit $\ell$, pip sum $\ell + k$ is monotone in the other pip $k$—so sum-ordering is exactly the familiar "rank by the other end."
 
@@ -144,31 +150,22 @@ $$\mathsf{tier}(d, \ell, \delta) = \begin{cases}
 0 & \text{otherwise} & \text{(slough)}
 \end{cases}$$
 
-### Trick Ranking
+### Trick order
+
+Order dominoes by the pair (tier, rank) under the **lexicographic order**, with all sloughs identified at the bottom:
 
 $$\tau(d, \ell, \delta) = \begin{cases}
-0 & \text{if } \mathsf{tier}(d, \ell, \delta) = 0 \\[4pt]
-(\mathsf{tier}(d, \ell, \delta) \ll 4) \;|\; \mathsf{rank}(d, \delta) & \text{otherwise}
+(0, 0) & \text{if } \mathsf{tier}(d, \ell, \delta) = 0 \\[4pt]
+\bigl(\mathsf{tier}(d, \ell, \delta),\; \mathsf{rank}(d, \delta)\bigr) & \text{otherwise}
 \end{cases}$$
 
-The slough gate is applied exactly once, here—so every tier-0 domino maps to 0 by construction. This yields a 6-bit encoding:
+Sloughs are unordered among themselves. This is consistent because the lead domino always lands in tier 1 or tier 2 (Lemma 7.1), so tier 0 is never the highest occupied tier—slough order is irrelevant to trick resolution.
 
-| Tier | Binary Pattern | Decimal Range |
-|------|----------------|---------------|
-| 2 (trump) | `10_xxxx` | 32–46 |
-| 1 (follows) | `01_xxxx` | 16–30 |
-| 0 (slough) | `00_0000` | 0 |
-
-**Extraction:**
-$$\mathsf{tier}(\tau) = \tau \gg 4 \qquad \mathsf{rank}(\tau) = \tau \;\&\; \mathsf{0xF}$$
-
-**Note on Tier 0:** Sloughs are unordered. This is consistent because the lead domino always lands in Tier 1 or Tier 2 (Lemma 7.1), so Tier 0 is never the highest occupied tier. Slough ordering is strategically irrelevant to trick resolution.
-
-### Architectural Note: Configuration vs Context
+### Architectural note: configuration vs context
 
 The ranking decomposes into two dependencies:
 
-| Aspect | Depends On | Known When |
+| Aspect | Depends on | Known when |
 |--------|-----------|------------|
 | Tier 2 membership | $\delta$ only | Hand starts |
 | Tier 1 membership | $\delta$ and $\ell$ | Trick starts |
@@ -176,9 +173,7 @@ The ranking decomposes into two dependencies:
 
 The called set $\kappa(\delta)$, power set $\pi(\delta)$, and rank are **configuration-dependent**—computable from $\delta$ alone, suitable for lookup tables. Only "follows the led suit" is **context-dependent**: it requires $\ell$, which isn't determined until the lead is played.
 
----
-
-## §7. Theorem: Unique Winner
+## §7. Theorem: unique winner
 
 **Claim:** Let $d_1, d_2, d_3, d_4 \in \mathcal{D}$ be distinct, with $d_1$ the lead and $\ell = \ell(d_1, \delta)$. Then:
 
@@ -186,43 +181,41 @@ $$\exists! \, d^* : \forall i, \; \tau(d^*, \ell, \delta) \geq \tau(d_i, \ell, \
 
 Distinctness is the only hypothesis—legality of the trick is not needed.
 
-*Proof.* We show the highest occupied tier always contains a unique maximum.
+*Proof.* Under the lexicographic order, the maximum lies in the highest occupied tier; we show that tier is never 0 and never contains two dominoes of equal rank.
 
-### Lemma 7.1: The Lead Is Never Tier 0
+### Lemma 7.1: the lead is never tier 0
 
-If $d_1 \in \kappa(\delta)$ then $\ell = 7$: under a powered declaration $d_1 \in \pi(\delta)$ (Tier 2); otherwise $d_1 \in \hat{\sigma}_7^\delta = \kappa(\delta)$ (Tier 1). If $d_1 \notin \kappa(\delta)$ then $\ell = \mathsf{max}(d_1)$ and $d_1 \in \sigma_\ell \setminus \kappa(\delta) = \hat{\sigma}_\ell^\delta$ (Tier 1). Either way at least one domino is in Tier 1 or above, so Tier 0 never contains the winner. $\square$
+If $d_1 \in \kappa(\delta)$ then $\ell = 7$: under a powered declaration $d_1 \in \pi(\delta)$ (tier 2); otherwise $d_1 \in \hat{\sigma}_7^\delta = \kappa(\delta)$ (tier 1). If $d_1 \notin \kappa(\delta)$ then $\ell = \mathsf{max}(d_1)$ and $d_1 \in \sigma_\ell \setminus \kappa(\delta) = \hat{\sigma}_\ell^\delta$ (tier 1). Either way at least one domino is in tier 1 or above, so tier 0 never contains the winner. $\square$
 
-### Lemma 7.2: Pip Sums Are Injective Within a Natural Suit
+### Lemma 7.2: pip sums are injective within a natural suit
 
 Each $d \in \sigma_p$ has the form $\{p, k\}$, so $\mathsf{sum}(d) = p + k$. Distinct members have distinct other-pips $k$, hence distinct sums. $\square$
 
-### Lemma 7.3: Tier 2 Ranks Are Injective
+### Lemma 7.3: tier 2 ranks are injective
 
 $\pi(\delta) \neq \varnothing$ only for powered declarations, where $\pi(\delta) = \kappa(\delta)$.
 
-*Pip trump* $\delta = t$: the only double in $\sigma_t$ is $\{t,t\}$, with rank 14. Non-doubles have distinct sums by Lemma 7.2, all $\leq 12 < 14$. Injective.
+*Pip trump* $\delta = t$: the only double in $\sigma_t$ is $\{t,t\}$, with rank $\top$. Non-doubles have distinct sums by Lemma 7.2, all below $\top$. Injective.
 
 *Doubles-trump*: $\pi(\delta) = \mathcal{D}^\circ$, ranked by pip value—ranks $\{0, \ldots, 6\}$, all distinct. $\square$
 
-### Lemma 7.4: Tier 1 Ranks Are Injective
+### Lemma 7.4: tier 1 ranks are injective
 
-The Tier 1 occupants are $\hat{\sigma}_\ell^\delta \setminus \pi(\delta)$.
+The tier 1 occupants are $\hat{\sigma}_\ell^\delta \setminus \pi(\delta)$.
 
-*Case $\ell \in \{0..6\}$:* $\hat{\sigma}_\ell^\delta \subseteq \sigma_\ell$. The only possible double is $\{\ell,\ell\}$ (others are called away or lack pip $\ell$), with rank 14. Non-doubles have distinct sums by Lemma 7.2, all $\leq 12 < 14$. Injective.
+*Case $\ell \in \{0..6\}$:* $\hat{\sigma}_\ell^\delta \subseteq \sigma_\ell$. The only possible double is $\{\ell,\ell\}$ (others are called away or lack pip $\ell$), with rank $\top$. Non-doubles have distinct sums by Lemma 7.2, all below $\top$. Injective.
 
-*Case $\ell = 7$:* If $\delta$ is powered, $\hat{\sigma}_7^\delta = \kappa(\delta) = \pi(\delta)$, so Tier 1 is empty—vacuously injective. If $\delta = \mathsf{doubles\text{-}suit}$, Tier 1 is $\mathcal{D}^\circ$ ranked by pip value—ranks $\{0, \ldots, 6\}$, all distinct. Under notrump $\ell = 7$ is unreachable (§5). $\square$
+*Case $\ell = 7$:* If $\delta$ is powered, $\hat{\sigma}_7^\delta = \kappa(\delta) = \pi(\delta)$, so tier 1 is empty—vacuously injective. If $\delta = \mathsf{doubles\text{-}suit}$, tier 1 is $\mathcal{D}^\circ$ ranked by pip value—ranks $\{0, \ldots, 6\}$, all distinct. Under notrump $\ell = 7$ is unreachable (§5). $\square$
 
-### Lemma 7.5: Tiers Are Strictly Separated
+### Lemma 7.5: tiers are strictly separated
 
-Tier 2 values lie in $[32, 46]$, Tier 1 in $[16, 30]$, Tier 0 is $\{0\}$—pairwise disjoint, since rank $\leq 14 < 16$. $\square$
+The lexicographic order places every tier-2 pair above every tier-1 pair, and every tier-1 pair above $(0,0)$. (In the 6-bit integer encoding below this is literal: tier 2 occupies $[32,46]$, tier 1 $[16,30]$, tier 0 is $\{0\}$—pairwise disjoint since rank $\leq 14 < 16$.) $\square$
 
 ### Completion
 
 By Lemma 7.1 the highest occupied tier is 1 or 2. By Lemma 7.5 the maximum $\tau$ comes from that tier. By Lemmas 7.3–7.4 ranks are injective there, so distinct dominoes get distinct $\tau$. Therefore $\arg\max$ is unique. $\square$
 
----
-
-## §8. The Complete Decision Function
+## §8. The complete decision function
 
 Given a trick with lead $d_1$ under declaration $\delta$ and a hand $H$:
 
@@ -236,9 +229,7 @@ $$\mathsf{winner} = \underset{d \in \text{trick}}{\arg\max} \; \tau(d, \ell, \de
 
 By Theorem §7, this is well-defined.
 
----
-
-## §9. The Symmetry Group
+## §9. The symmetry group
 
 The symmetric group $S_7$ acts on $\mathbb{P}$ and induces automorphisms of $\mathcal{D}$:
 
@@ -248,20 +239,18 @@ $$\phi_g\{i, j\} = \{g(i), g(j)\} \quad \text{for } g \in S_7$$
 
 $$\hat{\Sigma}^p \cong \hat{\Sigma}^{g(p)} \quad \forall g \in S_7$$
 
-All pip-trump declarations share **one** following/legality structure, instantiated seven ways.
+All pip-trump declarations share **one** following/legality structure, instantiated seven ways. This is the isomorphism that lets training-data generation sample one pip-trump representative instead of all seven (see [[suit-algebra]]).
 
 **What the symmetry does not preserve.** The action preserves suit *membership* only—not the ranked game:
 
 - *Intra-suit order:* the swap $0 \leftrightarrow 6$ carries trump-0 to trump-6 but sends $\{3,6\}$—the top non-double of suit 3—to $\{3,0\}$, the bottom. Pip sums are not equivariant.
 - *Count points:* $\{5,0\}, \{4,1\}, \{3,2\}, \{5,5\}, \{6,4\}$ are fixed targets, not symmetric under relabeling.
 
-Pip-trump declarations are isomorphic as legality structures, not as games.
+Pip-trump declarations are isomorphic as legality structures, not as games. ([[play-phase-algebra]] §8.3 develops why the full scored game breaks the big symmetry.)
 
----
+## §10. Summary: the 8-suit model
 
-## §10. Summary: The 8-Suit Model
-
-| Suit Index | Name | Contents under $\delta$ |
+| Suit index | Name | Contents under $\delta$ |
 |------------|------|-------------------------|
 | $\sigma_0$ | Blanks | $\hat{\sigma}_0^\delta = \sigma_0 \setminus \kappa(\delta)$ |
 | $\sigma_1$ | Aces | $\hat{\sigma}_1^\delta = \sigma_1 \setminus \kappa(\delta)$ |
@@ -272,11 +261,9 @@ Pip-trump declarations are isomorphic as legality structures, not as games.
 | $\sigma_6$ | Sixes | $\hat{\sigma}_6^\delta = \sigma_6 \setminus \kappa(\delta)$ |
 | $\sigma_7$ | **Called** | $\kappa(\delta)$ |
 
-The word **called** reflects the game's vocabulary: *"I called fives"* summons all 5-bearing dominoes into $\sigma_7$.
+The word **called** reflects the game's vocabulary: *"I called fives"* summons all 5-bearing dominoes into $\sigma_7$. (The term is Jason's coinage replacing the earlier "absorbed suit" jargon — see [[suit-algebra]].)
 
----
-
-## Appendix: Notation Reference
+## Notation reference
 
 | Symbol | Meaning |
 |--------|---------|
@@ -291,20 +278,39 @@ The word **called** reflects the game's vocabulary: *"I called fives"* summons a
 | $\pi(\delta)$ | Power set: $\kappa(\delta)$ if powered, else $\varnothing$ |
 | $\hat{\sigma}_\ell^\delta$ | Effective suit $\ell \in \{0..7\}$; $\hat{\sigma}_7^\delta = \kappa(\delta)$ |
 | $\ell(d, \delta)$ | Suit led by domino $d$ |
+| $\top$ | Top element of the rank order; the double's rank in a pip suit |
 | $\mathsf{rank}(d, \delta)$ | Rank within suit (declaration-only) |
-| $\tau(d, \ell, \delta)$ | Trick ranking (three-tier function) |
+| $\tau(d, \ell, \delta)$ | Trick order: (tier, rank), lexicographic |
 | $\phi_g$ | Automorphism of $\mathcal{D}$ induced by $g \in S_7$ |
-| $\ll, \gg, \&$ | Bit shift left/right, bitwise AND |
 
----
+## Appendix: machine encoding
 
-## Appendix: GPU Suitability
+The algebra was designed from the start for massively parallel evaluation — the substrate for
+[[the-oracle]]'s GPU solver and the PIMC world-sampling behind [[expected-q-value]]. (An
+MCCFR direction was explored and retired separately; see [[pre-ml-ai-attempts]].) Branching
+rules logic serializes poorly on SIMT architectures; the algebra reduces every rule to table
+lookup or bitmask operation.
 
-The algebraic model is designed for massively parallel evaluation on GPUs. Monte Carlo methods (PIMC, MCCFR) evaluate thousands to millions of game states; traditional branching logic serializes poorly on SIMT architectures, which want uniform operations across lanes.
+### The 6-bit τ encoding
 
-### Index Spaces
+$\top$ becomes 14 (any constant exceeding the max pip sum 12 works; 14 fits the 4-bit rank field):
 
-The lookup tables index on the distinct *semantic* values, not the ten declarations:
+$$\tau(d, \ell, \delta) = \begin{cases}
+0 & \text{if } \mathsf{tier} = 0 \\
+(\mathsf{tier} \ll 4) \;|\; \mathsf{rank}(d, \delta) & \text{otherwise}
+\end{cases}$$
+
+| Tier | Binary pattern | Decimal range |
+|------|----------------|---------------|
+| 2 (trump) | `10_xxxx` | 32–46 |
+| 1 (follows) | `01_xxxx` | 16–30 |
+| 0 (slough) | `00_0000` | 0 |
+
+Extraction: $\mathsf{tier}(\tau) = \tau \gg 4$, $\mathsf{rank}(\tau) = \tau \,\&\, \mathsf{0xF}$.
+
+### Index spaces
+
+Lookup tables index on distinct *semantic* values, not the ten declarations:
 
 | Space | Values | Count |
 |-------|--------|-------|
@@ -314,9 +320,7 @@ The lookup tables index on the distinct *semantic* values, not the ten declarati
 
 The full ranking needs the *pair*: doubles-trump and doubles-suit share a called set but differ in $\tau$—a sloughed double wins under one and loses under the other.
 
-### The Algebraic Advantage
-
-Every game rule reduces to **table lookup** or **bitmask operation**:
+### Tables and operations
 
 | Operation | Implementation | Complexity |
 |-----------|----------------|------------|
@@ -324,8 +328,6 @@ Every game rule reduces to **table lookup** or **bitmask operation**:
 | Can follow? | `(SUIT_MASK[δ][ℓ] >> d) & 1` | O(1), no branch |
 | Legal moves | `handMask & SUIT_MASK[δ][ℓ]` (empty ⟹ whole hand legal) | O(1), parallel |
 | Trick winner | `argmax(τ)` over 4 values | O(1), reducible |
-
-### Memory Layout
 
 | Table | Dimensions | Size | Contents |
 |-------|------------|------|----------|
@@ -336,11 +338,18 @@ Every game rule reduces to **table lookup** or **bitmask operation**:
 
 (Following is a *relation*—a mixed uncalled domino belongs to two effective suits—so membership lives in `SUIT_MASK`; the single-valued `LED_SUIT` answers only "which suit does $d$ lead?")
 
-**Total: under 1 KB.** Fits entirely in L1 cache, shared across all threads in a warp.
+**Total: under 1 KB**, L1-resident, shared across a warp. Ranking logic is branchless, mirroring §6:
 
-### State Representation
+```
+tier  = ((POWER_MASK[δ] >> d) & 1) ? 2 : ((SUIT_MASK[δ][ℓ] >> d) & 1)
+value = tier ? (tier << 4) | RANK[d][doublesCalled] : 0
+```
 
-A complete game state for AI search:
+The fully-precomputed ranking table is 28 dominoes × 10 declaration classes × 8 led suits = 2,240 entries — ~2.2 KB at a byte each.
+
+### State representation
+
+A complete game state for search:
 
 | Component | Representation | Bits |
 |-----------|----------------|------|
@@ -351,31 +360,16 @@ A complete game state for AI search:
 | Trick winner | 2-bit player id | 2 |
 | Score | 2 × 8-bit | 16 |
 
-**Total: ~182 bits per state.** Thousands of states fit in shared memory.
+~182 bits per state; thousands of states fit in GPU shared memory. ([[play-phase-algebra]]
+tightens this further to a score-free int64 packing for the oracle.)
 
-### Parallelization Strategy
+### Live implementations
 
-For Perfect Information Monte Carlo (PIMC): each thread samples one possible world (hidden-card assignment); all threads evaluate tricks in lockstep via table lookups; a parallel reduction aggregates win rates.
+- **TypeScript engine**: `src/game/core/domino-tables.ts` (DOMINO_PIPS, getAbsorptionId, getPowerId, EFFECTIVE_SUIT, SUIT_MASK, RANK, HAS_POWER), tested in `src/tests/unit/domino-tables.test.ts`.
+- **Oracle solver**: `forge/oracle/tables.py` (`led_suit_for_lead_domino`, `can_follow`, `trick_rank`, `resolve_trick`) — see [[play-phase-algebra]] §9.
+- **Tokenizer**: τ's rank-relative-to-trump idea survives as `trump_rank` / `TRICK_RANK_TABLE` in `forge/eq/game_tensor.py`, consumed by [[forge]]'s training pipeline and `forge/analysis/bias/` interpretability scripts.
 
-For Counterfactual Regret Minimization (MCCFR): information sets encode (visible cards, declaration, trick history); regret tables are indexed by info-set hash; updates are atomic adds to shared accumulators.
+## Links
 
-### The Key Insight
-
-The branching logic that plagued the old implementation:
-
-```
-if (isTrump(d, δ)) { ... }
-else if (canFollow(d, ℓ, δ)) { ... }
-else { ... }
-```
-
-becomes branchless, exactly mirroring §6:
-
-```
-tier  = ((POWER_MASK[δ] >> d) & 1) ? 2 : ((SUIT_MASK[δ][ℓ] >> d) & 1)
-value = tier ? (tier << 4) | RANK[d][doublesCalled] : 0
-```
-
-And even this can be precomputed: the complete ranking table is 28 dominoes × 10 declaration classes × 8 led suits = 2,240 entries—**~2.2 KB** at a byte each. A modern GPU with 48 KB of shared memory per SM holds the entire rule system twenty times over, leaving room for game states, strategy tables, and intermediate results.
-
-The algebra doesn't just clarify the rules—it makes them *fast*.
+[[suit-algebra]] · [[play-phase-algebra]] · [[rules-of-42]] · [[the-oracle]] ·
+[[expected-q-value]] · [[engine]]

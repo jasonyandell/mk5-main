@@ -378,4 +378,4 @@ forge/
 
 - Model catalog: [forge/models/README.md](forge/models/README.md)
 - Full orientation: [forge/ORIENTATION.md](forge/ORIENTATION.md)
-- Game rules: [docs/rules.md](docs/rules.md)
+- Game rules: [wiki/topics/rules-of-42.md](wiki/topics/rules-of-42.md)
