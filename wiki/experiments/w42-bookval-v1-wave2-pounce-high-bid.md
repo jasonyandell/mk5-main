@@ -158,6 +158,17 @@ finalizing the verdict.
 
 ## Caveats
 
+0. **Information-regime challenge (2026-07-07, [[w42-book-second-pass]] §4).**
+   The book's actual clause (p. 112) is "pouncing when you can, **regardless of
+   whether you know who will win the trick**… Play it or lose it!" — an
+   explicitly imperfect-information hedge for a defender who cannot see whether
+   partner takes the trick. This probe's E[Q] arms evaluate under
+   sampled-complete-worlds where the oracle always knows the trick winner, a
+   regime in which "pounce regardless" is worse by construction. The
+   `contradicted` verdict therefore may be a category error rather than a wrong
+   book claim; the proposed re-adjudication is a belief/PIMC defender that does
+   not see hands, scoped to bid ≥ 35 and bidder ≤ 2 offs. Verdict stands until
+   that probe runs, but should be cited with this caveat.
 1. E[Q] perspective (not mark_ev per position). A future probe should compute
    per-position mark_ev to test whether the mark-probability metric agrees.
 2. Broad filter: includes positions where count was in the last trick (already

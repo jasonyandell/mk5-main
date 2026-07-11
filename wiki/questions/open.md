@@ -96,3 +96,15 @@ Format:
 - **Q:** Which era-5 gestation designs (the IDEATED generation — Harl, LLem, walker, and the rest) are worth resurrecting, and which did the built LEM/Burl/Gus/jud line already subsume?
   - Raised: `afd4802` ([[the-gestation]], [[ideated-not-built]])
   - Context: The 52-day zero-commit gestation designed a whole generation out loud that mostly never shipped. The archaeology catalogued the names (classified IDEATED, never claimed as artifacts per anti-rot rule 4) but did not adjudicate which remain live options vs. which the built line already answered.
+
+- **Q:** Does the `contradicted` verdict on high-bid pounce dissolve under an imperfect-information defender (belief/PIMC, no hand visibility), scoped to bid ≥ 35 and bidder ≤ 2 offs?
+  - Raised: `5e3f3245` ([[w42-book-second-pass]] §4, [[w42-bookval-v1-wave2-pounce-high-bid]] caveat 0)
+  - Context: The book's clause (p. 112, "regardless of whether you know who will win the trick") is an imperfect-information hedge; the probe's E[Q] arms evaluate under sampled-complete-worlds where the oracle always knows the trick winner — a regime in which "pounce regardless" is worse by construction. Prediction: the contradiction dissolves toward neutral-or-positive. Every other `contradicted`/`context-limited` row where the book hedges against *not knowing* deserves the same audit.
+
+- **Q:** Do the book's bid→hand posteriors hold empirically (35 ⇒ two offs/one five-count; 31 ⇒ ≥1 double; shuffler-last-at-30/31 uninformative), and does [[jud]]'s head_8 respect the {30,31,35,36} bid lattice ("if you can bid 32, then you can bid 35")?
+  - Raised: `5e3f3245` ([[w42-book-second-pass]] §1, proposed experiment 1)
+  - Context: The auction decoder is the highest-value missed cluster — bids as messages, not risk budgets. Testable from bid-aware corpora as P(hand features | bid, seat, who-raised); the lattice is a dominance claim over the whole bid action space with one stated exception (last bidder raising a standing 31).
+
+- **Q:** What does the missing book text say — pages 181–182 and 185–186 are absent from the OCR, the ch 16 four-trump table is truncated (37%/52% conditionals cut mid-row), and worked hands 1–14 are image-only diagrams with no prose reconstruction?
+  - Raised: `5e3f3245` ([[w42-book-second-pass]] §Proposed experiments, item 9)
+  - Context: Re-scan via the Kindle CDP pipeline (`scratch/winning42/`); the hand diagrams need prose reconstruction to be replayable as probes.

@@ -322,6 +322,35 @@ inbound content link). Flagged-not-fixed: dead `[[plunge]]`, `[[burl-perf-phase1
 pages (missing-page candidates), and the two distinct "~74%" ceilings (era-3 argmax-vs-oracle
 tie-structure vs era-4 Zeb vs-random capacity) that no page cross-claims as identical.
 
+## [2026-07-07 | 5e3f3245 | book second pass: what the first extraction missed]
+
+**Touched pages:** [[w42-book-second-pass]] [[w42-book-validation]] [[w42-bookval-v1-wave2-pounce-high-bid]]
+**Added:** [[w42-book-second-pass]] — four parallel readers re-read the full OCR text with the
+finished campaign as lens. The first pass extracted the book's tactics and missed its
+information theory: the auction decoder (ch 6/12 bid→hand posteriors, the {30,31,35,36} bid
+lattice, who-bid asymmetry, match-score-conditioned bidding), the action-choice inference
+catalog, the signaling conventions (top-unplayed-trump as protocol, donate-highest code,
+dump-to-inform, Plunge as legal one-bit signal), reputation-driven overbidding, the
+quantified-prior calibration table, and multi-step plans with author-supplied win rates
+(strip-the-protector p.92/94, double-ahead-of-off 53/60/33). Nine ranked follow-up
+experiments; raw reader reports preserved at `docs/research/book-second-pass-2026-07-07/`.
+**Updated:** [[w42-book-validation]] trail (frontier section routes to the second pass);
+[[w42-bookval-v1-wave2-pounce-high-bid]] gains caveat 0 — the `contradicted` verdict is a
+probable information-regime category error (book's clause is an imperfect-information hedge,
+"regardless of whether you know who will win the trick," tested under a perfect-information
+oracle).
+**Questions opened:** does the pounce contradiction dissolve under a belief/PIMC defender
+(bid ≥ 35, bidder ≤ 2 offs)? Do the book's bid→hand posteriors hold empirically, and does
+head_8 respect the {30,31,35,36} bid lattice? OCR re-scan needed: book pages 181–182 and
+185–186 absent, ch 16 four-trump table truncated, worked-hand diagrams are images.
+Filed in `questions/open.md`.
+**Curation (2026-07-10, PR #35 landing):** provenance pinned to `5e3f3245`; the
+"named untested gaps" claim on [[w42-book-second-pass]] §1 re-attributed from jud's
+page to the campaign synthesis ([[w42-book-claim-synthesis-and-ai-directions]]),
+where the list actually lives; [[jud]] Links section now routes to the second pass
+as the book-sourced experiment queue for the auction-first frontier and v2
+opponents-in-rollout; opened questions filed into `questions/open.md`.
+
 ## [2026-07-07 | working-tree | experiment-page audit: 162 pages validated against primary artifacts, 43 corrected in place]
 
 **Touched pages:** all 162 `experiments/` pages audited via two-pass fan-out (162 auditors, then adversarial re-review of every corrected page); 43 corrected in place, no audit residue left on pages.
