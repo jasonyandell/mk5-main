@@ -14,9 +14,10 @@ The project selects architecture only after the causal microgames in
 
 CFR, a larger network, an LLM, a symbolic strategy library, and [[jud|Jud]] v2 are not
 default next steps. Each remains eligible only through a mechanism-specific
-gate. This preserves negative results and prevents interpretability, book
-agreement, belief accuracy, or E[Q] imitation from substituting for higher
-marks.
+gate. This preserves falsifications, adequately measured nulls, bounded null
+observations, confounds, and instrument insufficiency as distinct outcomes. It
+also prevents interpretability, book agreement, belief accuracy, or E[Q]
+imitation from substituting for higher marks.
 
 ## Architecture-selection gates
 

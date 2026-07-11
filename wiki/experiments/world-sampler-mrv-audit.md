@@ -59,13 +59,26 @@ second fixture proves a separate, smaller defect: greedy local MRV choices are
 not generally uniform over legal completions even when every emitted world is
 valid. The third fixture is the symmetry null.
 
+## Epistemic classification
+
+- The malformed-world and non-uniformity mechanisms are positive findings.
+- The historical `~6.8 Q` number is confounded and retired as an effect
+  estimate; it is neither confirmed nor cleanly contradicted.
+- No argmax flip in three fixtures is a bounded null observation, not evidence
+  that historical corpora or match outcomes were unaffected.
+- Failure on the low-valid-mass JudSearch state is a negative result for
+  `uniform-rejection-v1` as a production repair.
+- `uniform-completion-dp-v1` passes the defined sampler instrument gate. It is
+  not a policy result.
+
 ## What this changes
 
 - The “validity-guaranteed MRV sampler” claim is falsified.
 - The old `~6.8 Q` statement is retired as a clean sampler estimate. Its action,
   sample count, RNG seed, and representation parity did not survive.
 - The audit does **not** establish a population corruption rate or a C0 action
-  loss. Three late states contain no argmax flip.
+  loss. Three late states contain no argmax flip; that observation is bounded
+  to the diagnostic panel.
 - Historical corpus and arena conclusions are not automatically void. Their
   exposure depends on state-specific dead-end probability, valid-world bias,
   Q gap, and consumer.

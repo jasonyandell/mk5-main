@@ -173,8 +173,8 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 
 ## Experiments
 
-- [[experiments/partnership-failure-atlas-v0|partnership-failure-atlas-v0]] — five-way exact 75,079-action role/order/handshape join plus 114-source seam inventory; exposes 2,173 EV-vs-threshold disagreement decisions but proves the archive cannot yet attribute a failure to the current champion or measure fixed-pair lift (complete)
-- [[experiments/partnership-decision-record-v1|partnership-decision-record-v1]] — replay-verified Arena decision JSONL with separate public/info/context/world identities, eight mechanism sections, exact policy provenance, and a tested deterministic-deal leakage boundary; missing causal variables remain explicit nulls (complete; C0 reproduction open)
+- [[experiments/partnership-failure-atlas-v0|partnership-failure-atlas-v0]] — five-way exact 75,079-action role/order/handshape join plus 114-source seam inventory; exposes 2,173 EV-vs-threshold disagreement decisions and establishes archive insufficiency for Champion attribution, while leaving the partnership hypothesis untested (complete)
+- [[experiments/partnership-decision-record-v1|partnership-decision-record-v1]] — replay-verified Arena decision JSONL with separate public/info/context/world identities, eight mechanism sections, exact policy provenance, and a tested deterministic-deal leakage boundary; missing causal variables remain explicitly unavailable (complete; C0 reproduction open)
 - [[experiments/world-sampler-mrv-audit|world-sampler-mrv-audit]] — exact recursion falsifies legacy MRV (malformed mass 1/3; 4.619-Q shift), a uniform-rejection repair fails a real `5.39e-5`-valid-mass state, and exact completion-count sampling passes all fixtures (complete; CUDA performance, historical exposure, and C0 reproduction open)
 - [[experiments/first-gemma-contact|first-gemma-contact]] — a8bccfa: first Gemma 4 E2B inference pass, no adapter, showed coherent reasoning with state/trump-membership gaps (active)
 - [[experiments/stage-0-v1-training|stage-0-v1-training]] — Modal L4, 1 epoch, 208 steps, loss 32→0.001; adapter published to HuggingFace (active)

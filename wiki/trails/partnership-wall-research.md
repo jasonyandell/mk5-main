@@ -8,7 +8,8 @@ status: active
 
 This trail reads the wiki as a cumulative experimental record around
 [[the-wall]]. It does not begin from a preferred architecture. It separates
-surviving hypotheses, negative results, confounded measurements, unbuilt
+surviving hypotheses, falsified designs, adequately measured nulls, bounded
+null observations, confounded measurements, unanswerable questions, unbuilt
 designs, and missing instruments, then routes them through
 [[partnership-value]] and [[partnership-research-gates]].
 
@@ -26,6 +27,20 @@ result demonstrates a play-side partnership gain. The production
 [[forge]] selector also remains distinct from the validated baseline: its
 `p_make` collapse was not changed to the stronger `lens:ev` collapse found by
 [[w42-lens-v1-utility-head-to-head]].
+
+## Result vocabulary
+
+The program uses result labels narrowly so absence of evidence does not become
+evidence of absence.
+
+| label | meaning here | current example |
+|---|---|---|
+| Finding | A valid measurement establishes a mechanism or fact. | Legacy MRV can fabricate worlds; exact malformed mass is `1/3` on one fixture. |
+| Negative result / falsification | A valid test makes a proposed mechanism, design, or useful effect fail its stated criterion. | `uniform-rejection-v1` is mathematically uniform when it returns but fails a real low-valid-mass state, so it is rejected as the production repair. |
+| Null result | A valid, adequately powered test finds no useful effect within stated bounds. | No partnership null has been measured yet. |
+| Bounded null observation | No effect appears in a small diagnostic panel whose scope is explicitly limited. | No action argmax flips in the three sampler-audit states. |
+| Confounded result | More than the intended variable changed, so the effect cannot be attributed. | The historical `~6.8 Q` comparison used different world encodings and lacks action/N/RNG provenance. |
+| Instrument insufficiency / inconclusive | Available records cannot answer the question. | The retained archive cannot attribute current-Champion partnership failures; the partnership hypothesis remains untested. |
 
 ## Evidence map
 
@@ -67,9 +82,9 @@ result demonstrates a play-side partnership gain. The production
   although [[w42-book-second-pass]] states an imperfect-information hedge.
 - Historical versus-random evaluation used a non-winning objective and had
   seat asymmetry ([[vs-random-eval-is-suspect]]).
-- `WorldSamplerMRV` differs from exact enumeration by about 6.8 Q points in a
-  tractable late-hand check. [[consumption-ledger]] records the unresolved
-  threat to historical labels and evaluations.
+- The historical `~6.8 Q` sampler comparison changed world encoding and lacks
+  action, sample-count, and RNG provenance. [[world-sampler-mrv-audit]] retires
+  it as a clean estimate; historical population exposure remains unanswered.
 
 ### Unbuilt, not failed
 
@@ -174,7 +189,8 @@ archive can already localize *Champion* failures: source policy, champion
 action-state fingerprints, Gus drama identity, partner assignment, action
 likelihood, persistent plan state, and match score do not join. The atlas is a
 measurement spine, not yet the balanced champion-failure cohort specified
-above.
+above. This is an instrument-sufficiency falsification, not a negative or null
+result about partnership value.
 
 ## Stage 2 — discriminating causal microgames
 

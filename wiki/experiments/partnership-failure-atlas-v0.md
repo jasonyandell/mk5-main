@@ -64,9 +64,10 @@ Gus output; the atlas renames it. The old dist-lens field remains confounded
 because it was merged from another corpus by positional indices without a
 shared state identity.
 
-The load-bearing result is negative: the atlas contains **zero attributable
-current-champion failures**. The source trajectory policy is not fingerprinted,
-and champion trajectories share no canonical action-state key with W42. Full
+The load-bearing result is an **instrument-sufficiency failure**, not a
+partnership null: the atlas contains zero attributable current-champion
+failures because the source trajectory policy is not fingerprinted and
+Champion trajectories share no canonical action-state key with W42. Full
 per-world Q, joinable Gus drama, partner identity, fixed/shuffled assignment,
 actor-policy likelihood, action-conditioned posterior change, persistent plan
 state, complete auction history, and pre-hand match score are also absent.
@@ -76,7 +77,9 @@ survive, but the atlas cannot estimate a bid-level or auction-policy effect.
 An observed source action with regret therefore cannot be called a champion
 error, and a partner-support detector firing cannot be called
 [[partnership-value]]. The prior archive localizes role-sensitive situations;
-it does not identify the mechanism of the current wall.
+it does not identify the mechanism of the current wall. The stronger claim
+that the retained archive could already localize Champion partnership failures
+is falsified. Whether partnership failure exists or matters remains untested.
 
 ## Decision
 
