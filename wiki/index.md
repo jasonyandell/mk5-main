@@ -478,6 +478,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[sources/0d82a97|0d82a97]] — 2026-07-06: jud v1 built — play-history snapshot emission, JudNet one-organ value head, judplay consumer, round-0 head + graded A/B decomposition
 - [[sources/bc4eb386|bc4eb386]] — 2026-07-11: partnership-wall cumulative record, five-way failure atlas, exact sampler audit/repair, and canonical Arena decision records
 - [[sources/a2bb0437|a2bb0437]] — 2026-07-11: result vocabulary correction — partnership remains untested; archive insufficiency and bounded sampler observations are not general nulls
+- [[sources/5f314d2b|5f314d2b]] — 2026-07-11: one-page partnership research status table and ordered next gates for PR review
 
 ### claude.ai conversation digests (era backfill)
 

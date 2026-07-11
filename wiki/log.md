@@ -376,3 +376,9 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Touched pages:** [[partnership-wall-research]] [[partnership-failure-atlas-v0]] [[world-sampler-mrv-audit]] [[partnership-research-gates]] [[sources/a2bb0437]]
 **Updated:** archive insufficiency is not a partnership null; three no-flip sampler fixtures are a bounded observation; the confounded `~6.8 Q` estimate stays retired; failed uniform rejection is the genuine negative design result.
 **Frontier:** no negative or null result about partnership value has been measured.
+
+## [2026-07-11 | 5f314d2b | partnership research review surface]
+
+**Touched pages:** [[partnership-wall-research]] [[sources/5f314d2b]] [[index]]
+**Updated:** one review-first table now distinguishes measured/built/open/untested/designed work; four ordered gates route baseline cleanup → causal runner → first partnership discriminator → architecture selection.
+**Frontier:** [[partnership-wall-research]] is the single PR-review entrypoint.
