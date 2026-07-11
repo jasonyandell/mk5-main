@@ -1,7 +1,7 @@
 /**
  * Unit tests for nello layer overrides.
  *
- * Nello rules (from docs/rules.md §8.A):
+ * Nello rules (from wiki/topics/rules-of-42.md §Special contracts):
  * - Bidder must lose all tricks
  * - Partner sits out (3-player tricks)
  * - No trump suit

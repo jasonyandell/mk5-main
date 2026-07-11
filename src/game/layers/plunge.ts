@@ -1,7 +1,7 @@
 /**
  * Plunge layer - Special bid requiring 4+ doubles.
  *
- * From docs/rules.md §8.A:
+ * From wiki/topics/rules-of-42.md §Special contracts:
  * - Requires 4+ doubles in hand
  * - Bid value: Automatic based on current high bid (4+ marks, jumps over existing bids)
  * - Partner declares trump and leads

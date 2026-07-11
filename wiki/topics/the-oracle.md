@@ -2,7 +2,7 @@
 title: The oracle — three solver generations, one compression, one pivot
 kind: topic
 first_seen: b541a4b
-last_updated: fc3acc7
+last_updated: b89ff635
 status: active
 ---
 
@@ -102,6 +102,21 @@ naively averaging perfect-information rollouts is provably an upper bound on
 imperfect-information value ([[strategy-fusion]]), ruling out simple averaging as a bidding
 evaluator. It solved evaluation; it did not yet solve strategy. See
 [[breakthrough-and-oracle]] for the full arc.
+
+## Data format and state-space shape
+
+Each shard is one (seed, declaration) Parquet file with three columns: `state` int64
+(the 41-bit packed game state), `V` int8 (minimax value-to-go, Team-0 perspective),
+and `q0`–`q6` int8 (Q-value per local action, −128 = illegal). Declaration IDs:
+0–6 are pip trumps (blanks, ones, twos, threes, fours, fives, sixes), 7 doubles-trump,
+8 doubles-suit, 9 no-trump. (docs/solver2-data.md @ 233b7dc5)
+
+State-space shape, measured on the 999-seed / 180 GB continuous campaign (3.2M–115M
+states per shard): doubles-trump generates the largest trees (avg 33.8M states, also
+the highest variance, σ = 28.2M) and doubles-suit the smallest and most predictable
+(avg 23.1M, σ = 14.0M); the seven pip trumps and no-trump fall between. One seed in
+1,000 blew the 160M-state cap (seed 434, fours, ~190M states) and was skipped.
+(docs/oracle-state-space-analysis.md @ 233b7dc5)
 
 ## Links
 

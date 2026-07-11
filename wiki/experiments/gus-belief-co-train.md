@@ -2,7 +2,7 @@
 title: Gus Belief Co-Train + q-bootstrap-belief Mode (§21)
 kind: experiment
 first_seen: 548d32a
-last_updated: cf8ff79
+last_updated: e2171816
 status: active
 ---
 
@@ -66,7 +66,7 @@ reading from the oracle corpus.
 a 19% gap (belief-sampled worlds beat corpus worlds 0.655 vs 0.685, a 4.4% relative improvement). This mode uses `gus/model/sample_worlds.py` (the symmetry-checker wrote it
 off-plan; it turned out to be exactly what this experiment needed). (commit message @ cf8ff79)
 
-Note: `gus/PRACTICALITIES.md` §20 and `gus/MORNING4_STATUS.md` report 0.679 for
+Note: `gus/PRACTICALITIES.md` §20 and `gus/MORNING4_STATUS.md` (both @ 233b7dc5) report 0.679 for
 original-adapter corpus-worlds q-bootstrap where §21's A/B table says 0.685 —
 presumably different runs/configs. The §21 A/B (0.655/0.685 vs 0.679/0.718) is
 authoritative for this experiment.

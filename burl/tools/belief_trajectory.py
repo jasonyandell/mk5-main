@@ -3,8 +3,9 @@
 
 This is the Gus<->Burl bridge: instead of Burl sampling worlds to guess
 opponents' hands, it reads Gus's calibrated belief head directly. Gus's
-belief is at the Bayes ceiling on the corpus (see gus/PRACTICALITIES.md
-section 21) — so this trajectory is as good as any oracle-free belief can be.
+belief is at the Bayes ceiling on the corpus (see
+wiki/topics/belief-bayes-ceiling.md) — so this trajectory is as good as any
+oracle-free belief can be.
 
 Return shape is LLM-legible:
   - posterior_by_domino:      per-unseen 3-way posterior + entropy + argmax

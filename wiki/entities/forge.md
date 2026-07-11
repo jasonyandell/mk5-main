@@ -17,9 +17,9 @@ Burl now dormant. (lem/narrate/OVERVIEW.md @ a8bccfa; burl/OVERVIEW.md @ 8d26e0d
 ## Origin
 
 Named and structured on 2025-12-30 ("Crystal Forge: Lightning-first ML pipeline," `2559818`):
-`forge/oracle/` (the GPU tablebase solver, moved in from a three-generation solver lineage
-built two days earlier — see [[the-oracle]]), `forge/ml/` (LightningModule + DataModule),
-`forge/cli/`. Naming moment: "the crystal forge sounds so badass. I can say 'yeah over in the
+`forge/oracle/` (the GPU tablebase solver — solver2, promoted wholesale from a
+three-generation lineage built two days earlier; see [[the-oracle]]), `forge/ml/`
+(LightningModule + DataModule), `forge/cli/`. Naming moment: "the crystal forge sounds so badass. I can say 'yeah over in the
 forge' and I feel like a cool dude." (conv bec8b3d4). See [[breakthrough-and-oracle]] for the
 full era this was built inside — the algebra that made the solver trustworthy
 ([[suit-algebra]]) and the theoretical result ([[strategy-fusion]]) that shaped how its
@@ -105,3 +105,23 @@ It produces a publication-shaped report; its load-bearing epistemic frame
 minimax structure, not human play. Highlights include the [[risk-return-inverse]]
 correlation (r=−0.38) and the [[q0-positional-bias]] sub-investigation that
 characterized a slot-0 anomaly in forge's trained Q-value model.
+
+Two further headline results. The folk-wisdom audit tested six traditional Texas 42
+claims against oracle data and confirmed none; the sharpest verdict *inverts*
+conventional wisdom — coverage hurts E[V] (β = −0.288, p = 0.0001), because voids
+enable trumping: 4 trumps + voids beats 2 trumps + coverage. And the oracle game
+tree has an order → chaos → resolution phase structure: 40% best-move consistency
+at the opening, dropping to 22% mid-game, reaching 100% determinism at depth ≤ 4.
+(forge/README.md @ 233b7dc5)
+
+## Training-data doctrine
+
+Two generation modes feed Stage 1: standard (one declaration per seed,
+`decl = seed % 10` — declaration diversity outperforms sample volume) and
+marginalized (N opponent re-deals per P0 hand, so gradient descent implicitly
+prefers robust moves over fragile ones). The canonical sanity test is the
+6-6-vs-2-2 "slam dunk": with a trump-heavy sixes hand, 6-6 is the unbeatable best
+lead in every world, while 2-2 shows the same Q in some single deals but often
+fails — a hand-scale [[strategy-fusion]] scenario. Adopted external finding: ~3
+opponent samples per position suffice (arXiv 2407.05876).
+(forge/ORIENTATION.md @ 233b7dc5)

@@ -2,7 +2,7 @@
 title: "Strategy Fusion — E[max(score)] ≥ max(E[score]), the diagnosis, and the E[Q] founding sentence"
 kind: topic
 first_seen: adb6de51
-last_updated: 341dd53
+last_updated: e2171816
 status: complete
 ---
 
@@ -51,7 +51,7 @@ work.
 
 ## The synthesis (Jan 5, 2026)
 
-`a81fe27` ("Add PI oracle bidding research synthesis") landed `docs/research/{question,answer}.md`
+`a81fe27` ("Add PI oracle bidding research synthesis") landed `wiki/sources/pi-oracle-bidding-{question,answer}.md`
 plus eight per-model raw-response files from a multi-model deep-research pass. The headline
 prescription: **use the oracle as an evaluator, not a policy teacher — compute
 `max_trump(E[V])`, not `E[max_trump(V)]`.** Fix the strategy (trump/action) before aggregating

@@ -162,7 +162,8 @@ def test_identifies_impactful_assumption() -> None:
     state with a meaningfully ambiguous play — signalling the probe loop
     actually finds an assumption that would move the mean, not just noise.
 
-    This is the Task-2 correctness check from ITER4_PLAN §2 Candidate C.
+    This is the Task-2 correctness check from burl/ITER4_PLAN.md §2
+    Candidate C (deleted; @ 233b7dc5).
     """
     from burl.tools.eq_distribution import load_eq_oracle
 

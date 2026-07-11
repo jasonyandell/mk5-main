@@ -53,7 +53,8 @@ contradiction to resolve after the fact — it was already on the page in week o
   0.5 → 6,493 games/sec, "57/57 tests pass, bit-for-bit correctness verified." The old
   sequential-Monte-Carlo path was deleted the same day — no legacy fallback kept.
 - **2026-01-22..24** — CUDA-only enumeration; CPU pipeline moved to `cpu_deprecated/`, its
-  fallback stripped fifteen minutes after landing. `ef199b0` (Jan 24) replaces mean/variance
+  fallback stripped fifteen minutes after landing (the directory itself was deleted from the
+  repo in the 2026-07 docs consolidation). `ef199b0` (Jan 24) replaces mean/variance
   storage with a full **85-bin E[Q] histogram** (`e_q_pdf: Tensor[7,85]`), 42.5x the storage —
   the mechanical ancestor of the later name [[candlewax]] (a distinct, later-named object; see
   that page's concordance section for the dating).
@@ -65,6 +66,34 @@ contradiction to resolve after the fact — it was already on the page in week o
 
 The theoretical accuracy ceiling for any argmax-Q player is documented separately: see
 [[argmax-q-ceiling]].
+
+## Consumption foot-guns
+
+Hard-won rules for anyone consuming E[Q] outputs (forge/eq/README.md @ 233b7dc5):
+
+- **E[Q] is points, never logits — do not softmax.** `e_q_mean` is expected points,
+  roughly [−42, +42]. The values are already interpretable (−17.89 means "expect to be
+  17.89 points behind"); softmaxing them is a category error.
+- **Q-value checkpoints, not policy checkpoints.** Soft-cross-entropy (logit) models
+  preserve action ordering — argmax matches — but their magnitudes are arbitrary-scale;
+  only `loss_mode='qvalue'` checkpoints (`domino-qval-*.ckpt`) output points directly.
+  See [[decisions/qval-over-policy-models]].
+- **World sampling is backtracking, never rejection.** Rejection sampling has an
+  exponential rejection rate as voids accumulate and no termination guarantee;
+  backtracking with the MRV heuristic always finds a solution if one exists — and one
+  always does, the real deal being proof. A backtracking failure therefore indicates a
+  void-inference bug, not bad luck.
+- **Adaptive sampling is the "drunken master" technique.** Sample until max(SEM) over
+  legal actions falls below 0.1 points instead of to a fixed count: 8.4× better SEM
+  than 1k-fixed (0.077 vs 0.649) in a 100-game head-to-head. Game outcomes are the
+  wrong metric for judging label quality — tiny E[Q] differences cascade into different
+  game trajectories; what training needs is confident labels across diverse positions.
+  Convergence cost varies by phase: early game ~75–95k samples, mid ~55–75k, late ~50k.
+
+Adjacent rule: bidding consumes the oracle via Monte-Carlo P(make) simulation, not the
+model's value head — bid thresholds (30, 31, 32, 36, 42) make the target a cliff
+landscape MSE regression can't fit, while simulate-and-count handles it naturally
+(forge/ORIENTATION.md @ 233b7dc5; the value-head failure itself is on [[the-oracle]]).
 
 ## Roles across the project
 

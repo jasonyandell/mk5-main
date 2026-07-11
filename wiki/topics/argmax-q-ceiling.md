@@ -2,7 +2,7 @@
 title: "The Argmax-Q Ceiling (~74%)"
 kind: topic
 first_seen: d9402cf
-last_updated: d9402cf
+last_updated: b89ff635
 status: complete
 ---
 
@@ -12,7 +12,7 @@ There is a hard, provable ceiling on how accurately an argmax-over-[[expected-q-
 can match oracle-labeled ground truth: approximately 74%. It is not a training deficiency — it
 is a fact about the game's tie structure. Established during [[eq-genesis]] (era 3), 2026-01-12,
 and documented as a repo artifact the same week (`d9402cf`, "random tiebreaker ceiling
-analysis"; `docs/random-tiebreaker-ceiling.md`).
+analysis"; `docs/random-tiebreaker-ceiling.md @ 233b7dc5`).
 
 ## The measurement
 
@@ -26,6 +26,13 @@ almost exactly (`val/accuracy` 66.6% → 74.2%, alongside `val/q_gap` 2.02 → 0
 Jason's own gloss on the result (2026-01-12T03:56:42):
 
 > "I think it's not that I should panic at 74, it's that anything OTHER than 74 is wrong."
+
+The scan's far tail: exactly one state in the 10M sample has all seven actions tied —
+sample 7,851,428, sixes trump, V = −36. P2, dealt no trumps at all, must play third into
+a trick already won by P1's 6-5 (only the 6-6 beats it, and its holder P0 has already
+committed); the game tree from that point is fully deterministic and every path loses by
+36. Zero-agency states exist, but at one in ten million.
+(docs/random-tiebreaker-ceiling.md @ 233b7dc5)
 
 ## Why breaking it requires a plan, not a better model
 

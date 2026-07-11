@@ -1,7 +1,7 @@
 /**
  * Splash Layer - Special 2-3 mark bid requiring 3+ doubles.
  *
- * From docs/rules.md §8.A:
+ * From wiki/topics/rules-of-42.md §Special contracts:
  * - Requires 3+ doubles in hand
  * - Bid value: Automatic based on current high bid (2-3 marks, jumps over existing bids)
  * - Partner declares trump and leads

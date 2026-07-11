@@ -2,7 +2,7 @@
 title: Router Reality-Check (detect-and-route PoC results)
 kind: topic
 first_seen: a09ef43
-last_updated: a09ef43
+last_updated: d1f1633d
 status: retired
 ---
 
@@ -20,6 +20,8 @@ Oracle-argmax fallback at 20-25% flag rate achieves 0.49-0.56 [[regret-eval]] (v
 
 **Next-best-adapter fallback (regret → 1.55 at 20% flag):** smaller and weaker adapters are wrong on the same hard decisions where the primary fails. No complementary coverage at the tail (eba5103).
 
+The correct generalization is narrower than "every non-oracle fallback hurts": every non-oracle **replacement** hurts. A belief-sampled Q-mean **second opinion** — consulted only where direct π is uncertain and the two disagree — helps: [[gus-qmean-router]] (v3 adapter, different baseline) cuts eval blunders 8 → ~4 and regret 0.551 → ~0.42-0.43 while routing 5-7% of decisions, with no oracle.
+
 ## Practical implication
 
 To ship a no-oracle-inference student at 0.49 regret:
@@ -28,7 +30,7 @@ To ship a no-oracle-inference student at 0.49 regret:
 1. Multi-world variance regularization during Q_head training (affects `train_v2_voids.py`), or
 2. K=50+ worlds at inference (cheap, already validated in the blunder-detector K=20 path).
 
-Until then, detect-and-route requires oracle calls. The oracle-budget version reached its
+Route 2 was later realized on the v3 adapter: [[gus-qmean-router]] shows K=100-500 belief-sampled Q-mean, gated by a learned router, reaches the no-oracle goal. The oracle-budget version reached its
 projected regret in eval scripts (a09ef43), but "deployable" overstates it: no oracle-budget
 router was ever wired into champion, arena, or forge. The whole [[detect-and-route]] line was
 abandoned when the project pivoted to `jud`/[[champion]] rather than continuing the LAMIR-era
@@ -48,4 +50,4 @@ fallback-routing approach.
 
 ## Links
 
-[[gus]] [[detect-and-route]] [[blunder-detector]] [[regret-eval]] [[pimc]] [[champion]]
+[[gus]] [[detect-and-route]] [[blunder-detector]] [[regret-eval]] [[pimc]] [[champion]] [[gus-qmean-router]]

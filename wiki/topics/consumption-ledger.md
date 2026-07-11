@@ -52,7 +52,7 @@ chronology.
 - **RULED OUT: naive averaging of perfect-info rollouts as a hand evaluator.**
   [[strategy-fusion|Strategy Fusion]]: E[max(score)] ≥ max(E[score]); *"will
   systematically advise you to bid too high."* Fix: E[Q] per action, then
-  argmax. (adb6de51; `docs/research/answer.md`; the ~0.1 pts/game magnitude is
+  argmax. (adb6de51; `wiki/sources/pi-oracle-bidding-answer.md`; the ~0.1 pts/game magnitude is
   Skat/Bridge literature, never measured in 42.)
 - **RULED IN: E[Q] as a computable, trustworthy, cheap signal.** `remaining +
   played_by` marginalization defines it; 12,325× vectorization, bit-for-bit
@@ -64,7 +64,7 @@ chronology.
 - **HARD FACT: the argmax-Q ceiling is ~74%.** Only 55.7% of states have a
   unique best action; coin-flip tie-breaking caps at 73.96% agreement — a game
   fact, not a training deficiency; breaking it requires a reason. (`d9402cf`,
-  `docs/random-tiebreaker-ceiling.md`; [[argmax-q-ceiling]].)
+  `docs/random-tiebreaker-ceiling.md @ 233b7dc5`; [[argmax-q-ceiling]].)
 - **RULED IN: multi-sample voting.** Averaging noisy distilled evaluations
   improves decisions (regret 0.58→0.19, blunders 4.5%→0.52%); the champion
   E[Q] n=10 *is* this mechanism. (`t42-k54h`.)

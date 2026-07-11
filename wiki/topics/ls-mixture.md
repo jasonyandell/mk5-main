@@ -2,13 +2,13 @@
 title: LS-Mixture (verbosity blender)
 kind: topic
 first_seen: 3414507
-last_updated: 3414507
+last_updated: d1f1633d
 status: retired
 ---
 
 ## Overview
 
-LS-Mixture is a corpus construction technique that blends concise and verbose traces in a [[star]] training corpus. For [[burl]], it addresses the problem that trimming the rules primer (iter-1) produced traces with 3× larger `<|channel>thought` bodies — useful at inference time but potentially harmful as training signal if the model learns to always ramble (3414507).
+LS-Mixture is a corpus construction technique that blends concise and verbose traces in a [[star]] training corpus. Disambiguation: "LS" here is the arxiv-2505.03469 **long/short** (verbosity) blend — the sense of the source design doc (burl/experiments/corpus_blend_design.md, deleted; @ 233b7dc5). Wiki glosses that expand the abbreviation as *legal-but-suboptimal* trace mixing ([[commit-discipline-collapse]], the index) point to this same staged workstream — no suboptimal-trace mixing was ever designed; the legal-but-suboptimal concept lives in [[r1-rationalization]] grading, a different mechanism. For [[burl]], it addresses the problem that trimming the rules primer (iter-1) produced traces with 3× larger `<|channel>thought` bodies — useful at inference time but potentially harmful as training signal if the model learns to always ramble (3414507).
 
 ## Method
 

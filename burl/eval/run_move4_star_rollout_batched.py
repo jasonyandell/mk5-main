@@ -4,7 +4,7 @@ Sibling to ``run_move4_star_rollout.py``. The non-batched rollout is
 async-sequential — ``asyncio.gather`` with ``concurrency`` per-decision
 threads against a Modal endpoint. This driver is single-process but
 runs the whole active set through one fused ``batch_generate`` call per
-turn, which (per ``burl/experiments/batch_throughput_bench.md``) wins
+turn, which (per ``wiki/experiments/batch-throughput-bench.md``) wins
 14-16x aggregate throughput on M5 Max over single-stream at the
 recommended batch=64.
 
@@ -665,7 +665,7 @@ def _main() -> None:
         help=(
             "Maximum fused-generation width per step. Default 64 "
             "(90%% of peak throughput on M5 Max with half the wall-per-cycle "
-            "of batch=128; see burl/experiments/batch_throughput_bench.md)."
+            "of batch=128; see wiki/experiments/batch-throughput-bench.md)."
         ),
     )
     parser.add_argument(

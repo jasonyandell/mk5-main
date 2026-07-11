@@ -2,7 +2,7 @@
 title: Suit algebra — absorption vs. power, S₇ symmetry, τ-encoding
 kind: topic
 first_seen: b132ad92
-last_updated: 0113be4
+last_updated: 2ab1a825
 status: active
 ---
 
@@ -44,9 +44,12 @@ production tokenizer's `trump_rank` feature and `TRICK_RANK_TABLE`
 (`forge/eq/game_tensor.py`), still live and consumed by `forge/analysis/bias/`'s
 interpretability scripts today.
 
-**Spec:** `docs/theory/SUIT_ALGEBRA.md` (381 lines), `SUIT_ALGEBRA_PURE.md` (276 lines),
-`PLAY_PHASE_ALGEBRA.md` (305 lines) — 962 lines total, still the canonical theory docs, still
-cited by the Jan-8 epistemic-audit closeout and by later training-data-generation decisions
+**Spec:** the full formal treatment now lives in the wiki as [[suit-algebra-spec]] (suits,
+trick order, unique-winner theorem, machine encoding — merging `docs/theory/SUIT_ALGEBRA.md`
+and `SUIT_ALGEBRA_PURE.md`, which were ~90% identical) and [[play-phase-algebra]] (state
+model, signed rewards, backward induction — from `PLAY_PHASE_ALGEBRA.md` + `PLAY_PHASE_SPEC.md`).
+The docs/theory/ originals were retired at this ingest. The algebra is still cited by the
+Jan-8 epistemic-audit closeout and by later training-data-generation decisions
 (S₇-isomorphism-driven declaration sampling means only one pip-trump representative needs
 training data, not all seven).
 
@@ -98,5 +101,6 @@ full era narrative.
 
 ## Links
 
-[[the-oracle]] · [[breakthrough-and-oracle]] · [[forge]] ·
+[[suit-algebra-spec]] · [[play-phase-algebra]] · [[the-oracle]] ·
+[[breakthrough-and-oracle]] · [[forge]] ·
 [[sources/claude/era2-breakthrough-oracle|conversation digest]]
