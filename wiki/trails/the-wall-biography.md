@@ -2,7 +2,7 @@
 title: "The Wall: A Biography"
 kind: trail
 first_seen: afd4802
-last_updated: afd4802
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -222,7 +222,7 @@ answering "what next"; its terse decision-support form is
 - **RULED OUT: naive averaging of perfect-info rollouts as a hand evaluator.**
   [[strategy-fusion|Strategy Fusion]]: E[max(score)] ≥ max(E[score]); *"will
   systematically advise you to bid too high."* Fix: compute Max(Average) —
-  E[Q] per action, then argmax. (adb6de51; `docs/research/answer.md`. Note:
+  E[Q] per action, then argmax. (adb6de51; `wiki/sources/pi-oracle-bidding-answer.md`. Note:
   the ~0.1 pts/game magnitude is Skat/Bridge literature, never measured
   in 42.)
 - **RULED IN: E[Q] as a computable, trustworthy, cheap signal.** `remaining +
@@ -237,7 +237,7 @@ answering "what next"; its terse decision-support form is
   unique best action; an argmax player breaking ties by coin flip caps at
   73.96% agreement. Not a training deficiency — a fact about the game's tie
   structure. Breaking it requires a non-coin tiebreaker, i.e., a reason.
-  (`d9402cf`, `docs/random-tiebreaker-ceiling.md`; [[argmax-q-ceiling]].)
+  (`d9402cf`, `docs/random-tiebreaker-ceiling.md @ 233b7dc5`; [[argmax-q-ceiling]].)
 - **RULED IN: multi-sample voting.** Averaging noisy distilled evaluations
   genuinely improves decisions (regret 0.58→0.19, blunders 4.5%→0.52%,
   `t42-k54h`). It is also the champion: E[Q] n=10 *is* this mechanism.

@@ -2,7 +2,7 @@
 title: Modal
 kind: entity
 first_seen: a8bccfa
-last_updated: local-2026-07-06
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -58,3 +58,7 @@ left-padded batching recipe (5-example iteration in 151s). (commit messages @ b9
 
 [[experiments/first-gemma-contact]] and [[experiments/stage-0-v1-training]] both ran on
 Modal L4. [[lora-unsloth]] is the fine-tuning library invoked inside Modal functions.
+
+`forge/MODAL_ORIENTATION.md` and `forge/MODAL_MONITOR.md` are the live Modal ops
+runbooks for [[forge]] oracle generation (job launch, fleet monitoring, cost math),
+kept in-repo as operational docs.

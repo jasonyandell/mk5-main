@@ -43,8 +43,10 @@ naming that became [[forge]]'s own self-description a day later.
    generalization gap vs. the MLP's 1.8x). "We have PERFECT play here. it's just too much data
    to be practical. using a transformer to shortcut is awesome but is it a valid shortcut?"
    (653a0e68, 2025-12-29). A parallel **policy-network** epic (t42-vvvz) and the **ValueMLP /
-   Confidence Ladder** track (`docs/claudeai-mlp.md`) both specced a full in-browser AI
-   pipeline the same week, running without referencing each other — see "Corrections" below.
+   Confidence Ladder** track — a DP-solver → Value-MLP → fast-PIMC → transformer pipeline
+   ClaudeAI proposed in Dec 2025 (`docs/claudeai-mlp.md @ 233b7dc5`) — both specced a full
+   in-browser AI pipeline the same week, running without referencing each other — see
+   "Corrections" below.
 5. **The naming, and the sun** (Dec 30–31). `forge/` (ML) and `core/` (engine) named — "the
    crystal forge sounds so badass. I can say 'yeah over in the forge' and I feel like a cool
    dude." (bec8b3d4, 2025-12-30). H100s rented for the first time ("EXCITING OMG," b00686d3,
