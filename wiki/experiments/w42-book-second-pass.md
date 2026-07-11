@@ -2,7 +2,7 @@
 title: W42 Book Second Pass — what the first extraction missed
 kind: experiment
 first_seen: 5e3f3245
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: active
 ---
 

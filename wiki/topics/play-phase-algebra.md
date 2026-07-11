@@ -2,7 +2,7 @@
 title: Play-phase algebra — state model, rewards, and the solved game
 kind: topic
 first_seen: 69d636ac
-last_updated: pending-this-ingest
+last_updated: 2ab1a825
 status: active
 ---
 

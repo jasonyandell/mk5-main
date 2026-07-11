@@ -9,6 +9,7 @@ catalog:
 
 - [[topics/the-wall|the-wall]] — **the front door.** The project's central question, stated precisely; every era since January 2026 is an attempt on it and every experiment grades against it. Read next: [[trails/the-wall-biography|the-wall-biography]] (the seven-month narrative, 2025-07-19 → 2026-07-06) → [[topics/consumption-ledger|consumption-ledger]] (every mechanism tried, each verdict with its evidence) (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: hubs, trails, leaf clusters, and search shortcuts (active)
+- [[entities/texas-42|texas-42]] — the game itself: quick rules plus the game-of-42 cluster — [[topics/rules-of-42|rules-of-42]] (complete ruleset), [[topics/suit-algebra-spec|suit-algebra-spec]] (the formal algebra), [[topics/play-phase-algebra|play-phase-algebra]] (the solved play phase) (active)
 - [[entities/lem|lem]] — rules comprehension, Stage 0 adapters, STaR, and the LEM half of the LEM→Burl handoff (complete)
 - [[entities/burl|burl]] — tool-using play, wax_museum, burl-lab, chat, STaR traces, and post-commit Q&A (superseded)
 - [[entities/gus|gus]] — oracle distillation, belief/value/policy heads, LAMIR, regret eval, and strategy probes (active)
@@ -22,10 +23,10 @@ catalog:
 ### Shared infrastructure
 
 - [[entities/web-game|web-game]] — Era 1 prologue: the pure-functional, event-sourced TypeScript engine (`state = replayActions(config, history)`) that is the project's founding substrate; every later layer inherits its spine (retired)
-- [[entities/texas-42|texas-42]] — the game: 28 dominoes, 2 partnerships, 7 tricks, 42 points per hand (active)
+- [[entities/texas-42|texas-42]] — the game: 28 dominoes, 2 partnerships, 7 tricks, 42 points per hand; hub for the game-of-42 cluster ([[topics/rules-of-42|rules-of-42]] · [[topics/suit-algebra-spec|suit-algebra-spec]] · [[topics/play-phase-algebra|play-phase-algebra]]) (active)
 - [[entities/forge|forge]] — pipeline with three components: solver, E[Q] framework, E[Q] bot; shared by LEM and Burl (active)
 - [[entities/forge-analysis|forge-analysis]] — statistical analysis workstream over forge's ~300M oracle states; produces a publication-shaped report (active)
-- [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions (active)
+- [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions; hub for the six-topic engine reference cluster from the 2026-07 docs→wiki second pass (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
 - [[entities/champion|champion]] — unified belief-state player: decision loop (posterior → belief-weighted worlds → oracle value → marks-to-7 utility), the auction-first build ladder; rungs landed: arena (#20), Gus-backed auction v0 (#21, `champion/bidder.py`), marks-to-7 utility v1 (#27, `champion/utility.py`), bid_value plumbing (#23) (active)
 - [[entities/jud|jud]] — the unified belief-conditioned core the champion points at: one organ that bids and plays as the same act by conditioning search on a learned belief, trained by self-play. Fixes the precise solve / oracle / eq / belief / utility vocabulary, and the idea that belief belongs *inside* the search (un-melting the eq blob), not as a post-hoc reweight. v0 built, graded, and now **past parity** ([[experiments/w42-jud-v0]] → [[experiments/w42-plateau-probe]]): value-native bidder (V_realized distributional head on realized outcomes; oracle leaves the pricing loop) is calibrated (P2 pass), its self-play loop dissolves the #26 over-bidder (P3 pass), and scaling on-policy data 3× per round carried it past net:wp — **first learned bidder to beat the hand-tuned champion on marks** (+0.38/+0.42), saturating at ≈+0.3–0.4. The plateau was data starvation, not the pimc price (registered structural prior falsified). **v1 built + graded** ([[experiments/w42-jud-v1]], `3ac03de`): one net for every decision (bid-time = empty-history play-time), `jud`/`judplay` consumers, the loop, and search — unification holds at the auction, mechanism-limited at play (JS1 search PASS +2.28, JP3/JS3 falsified; −4.37 → −1.43 oracle-free). The policy-conditional pricing law: a V_realized head prices honestly only for the policy that generated it. Current best player stays `margin:wp`(head_8)+`lens:ev`; v2's cue = bigger leaf on per-move targets + opponents-in-rollout (active)
@@ -90,7 +91,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[topics/breakthrough-and-oracle|breakthrough-and-oracle]] — the fortnight (Dec 24 – Jan 8) the project stopped being a web game with a decent minimax and became a machine that computes ground truth (complete)
 - [[topics/the-oracle|the-oracle]] — genesis of `forge/oracle/`: three solver generations, one compression, one pivot to the perfect-information ground-truth solver (active)
 - [[topics/the-analysis-epic|the-analysis-epic]] — the three-day Jan 6-8 launch of `forge/analysis/` (modules 01-26) that became [[entities/forge-analysis|forge-analysis]] (complete)
-- [[topics/suit-algebra|suit-algebra]] — the factored absorption-vs-power / S₇-symmetry / τ-encoding model that replaced Texas 42's per-mode special-cased ranking code (active)
+- [[topics/suit-algebra|suit-algebra]] — the factored absorption-vs-power / S₇-symmetry / τ-encoding model that replaced Texas 42's per-mode special-cased ranking code; the formal spec is [[topics/suit-algebra-spec|suit-algebra-spec]] (active)
 - [[topics/eq-genesis|eq-genesis]] — Era 3: where E[Q] got built from nothing — `forge/eq/`, the marginalization fix that gives E[Q] its literal meaning, a 12,325× GPU speedup (complete)
 - [[topics/strategy-fusion|strategy-fusion]] — E[max(score)] ≥ max(E[score]): the failure mode of a full-info value model under partial information, and the founding sentence behind E[Q] (complete)
 - [[topics/alphazero-under-imperfect-information|alphazero-under-imperfect-information]] — Era 4: 16 days answering whether AlphaZero-style self-play beats the E[Q] oracle under hidden information (complete)
@@ -99,6 +100,21 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[topics/eval-matrix-bradley-terry|eval-matrix-bradley-terry]] — Bradley-Terry Elo tournament infra over named players (zeb checkpoints, random, heuristic, eq:n=10/50/100/500) (complete)
 - [[topics/the-gestation|the-gestation]] — Era 5: the 52-day zero-commit span between the E[Q] capacity-ceiling close and [[entities/lem|lem]]'s first commit (complete)
 - [[topics/ideated-not-built|ideated-not-built]] — Era 5's unbuilt record: ~15 conversations designed a whole generation named but never shipped (Harl / LLem / walker / …) — classified IDEATED, never claimed as artifacts (complete)
+
+### The game of 42 — reference cluster
+
+- [[topics/rules-of-42|rules-of-42]] — the complete ruleset: tournament standard, bidding, special contracts (nello/plunge/splash/sevens), conduct, terminology; migrated from docs/rules.md at the 2026-07 consolidation (active)
+- [[topics/suit-algebra-spec|suit-algebra-spec]] — the formal algebra: called sets, power, three-tier trick order, unique-winner theorem, S₇ symmetry, machine encoding; [[topics/suit-algebra|suit-algebra]] tells the story, this is the math (active)
+- [[topics/play-phase-algebra|play-phase-algebra]] — play-phase state model, signed-reward decomposition, graded DAG + backward induction; the mathematics forge/oracle implements (active)
+
+### Engine reference — web-game second pass (2026-07)
+
+- [[topics/engine-architecture|engine-architecture]] — start here for the engine: STATE→ACTION→STATE, event sourcing, kernel, view projection, verified src/ map (active)
+- [[topics/layer-system|layer-system]] — the unified Layer system: two composition surfaces, the 10 registry layers, zero-conditional executors (active)
+- [[topics/multiplayer-pattern|multiplayer-pattern]] — Socket/GameClient/Room, capability tokens, filtered GameView only, dumb-client projection (active)
+- [[topics/client-implementation|client-implementation]] — building a client: the validActions loop, createLocalGame, GameConfig/GameView reference (active)
+- [[topics/engine-testing-patterns|engine-testing-patterns]] — createTestContext family, HeadlessRoom, StateBuilder, guardrail + architecture tests (active)
+- [[topics/intermediate-ai|intermediate-ai]] — the shipped pre-ML opponent: PIMC world sampling + constraint tracking + partnership minimax (active)
 
 ### Concepts and methods
 
@@ -125,7 +141,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[topics/tool-orchestration|tool-orchestration]] — Burl's core philosophy: engine authority on rules, Zeb on beliefs, Burl reasons between and commits (superseded)
 - [[topics/logged-arrows|logged-arrows]] — Burl Lab harness algebra: input -> optional output plus journalable Moves; composition concatenates logs (superseded)
 - [[topics/eq-gate-star|eq-gate-star]] — staged iter-2/3 workstream: gate STaR keep on E[Q] delta, not just K1 match (retired)
-- [[topics/ls-mixture|ls-mixture]] — staged workstream: mix legal-but-suboptimal traces into SFT to train commit discipline (retired)
+- [[topics/ls-mixture|ls-mixture]] — staged workstream: blend short/long reasoning traces (arxiv-2505.03469 sense) into SFT; iter-2 blend regressed (retired)
 - [[topics/rules-as-tools|rules-as-tools]] — validated: rules-as-tools + no primer → iter-3 winner at 90% bot-match; trick_winner_if usage UP post-SFT confirms tools-replace-memorization (active)
 - [[topics/reference-trace-distillation|reference-trace-distillation]] — staged workstream: distill Haiku 4.5 reference traces into Gemma via SFT (retired)
 - [[topics/preserve-thoughts|preserve-thoughts]] — confirmed at N=560: thought-block emission 0% → ~95% (phase change), AND a play-quality win on paired n=130 (regret 2.255 vs 3.016, −25%, identical 32.3% FC rate) (active)
@@ -149,7 +165,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[topics/lazy-iterable-dataset|lazy-iterable-dataset]] — streaming IterableDataset bounds memory to one chunk + buffer; unlocks 10k+ game corpora; --lazy flag on training scripts (active)
 - [[topics/blunder-detector|blunder-detector]] — GBM classifier predicting student blunders (regret > 8 Q-pt); v1 oracle AUC 0.926, v2 student-only AUC 0.839; top feature: pi_peak (retired)
 - [[topics/detect-and-route|detect-and-route]] — blunder-gated inference wrapper; oracle fallback 0.49 regret at 25% flag; PIMC-Q and next-best-adapter both hurt (retired)
-- [[topics/router-reality-check|router-reality-check]] — honest PoC conclusion: oracle routing works, every non-oracle fallback hurts; prerequisite for no-oracle path is Q_head multi-world variance regularization (retired)
+- [[topics/router-reality-check|router-reality-check]] — honest PoC conclusion, refined 2026-07: oracle routing works; every non-oracle *replacement* hurts, but a belief-sampled Q-mean *second opinion* helps — see [[experiments/gus-qmean-router|gus-qmean-router]] (retired)
 - [[topics/pi-opp-head|pi-opp-head]] — 1,879-param PiOppHead trained on oracle softmax; 68.6% accuracy vs ~55% rotated π_me; real side product of LAMIR-1 work (retired)
 - [[topics/lamir1-ceiling|lamir1-ceiling]] — direct 0.551 beats all 8 look-ahead modes; q-bootstrap-belief 0.655 closest look-ahead; scalar V/Q noise vs T×T matrix; four pivot options (superseded)
 - [[topics/q-head-augmentation|q-head-augmentation]] — path (a) closed: random depletion ≠ structured causal depletion; 2.216 regret — augmented Q_head worse than pre-fix rollouts (retired)
@@ -211,6 +227,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[experiments/gus-belief-calibration-diagnostic|gus-belief-calibration-diagnostic]] — frozen-trunk belief fine-tune: KL −21%, PIMC regressed 1pp; receipt 15; co-train prerequisite (active)
 - [[experiments/gus-blunder-detector|gus-blunder-detector]] — oracle-feature (AUC 0.926) and student-feature (AUC 0.839) blunder classifiers; 20% flag rate → 1.13→0.49 regret; router > ensemble (active)
 - [[experiments/gus-router-pilot|gus-router-pilot]] — detect-and-route end-to-end validation; oracle fallback works (0.49 regret at 25%); PIMC-Q-K50 hurts due to Q_head signal noise (active)
+- [[experiments/gus-qmean-router|gus-qmean-router]] — the no-oracle router that works: belief-sampled Q-mean second opinion routes ~5-7% of decisions, blunder tail 8→4, regret 0.551→~0.42; learned router adds zero new blunders at the 5% cutoff (active)
 - [[experiments/gus-v3-consistency-full-run|gus-v3-consistency-full-run]] — first sub-1.0 regret: v3 at 10k → 0.551; v2-3k→v3-10k total −60%; consistency loss rides forward into LAMIR-1 (active)
 - [[experiments/gus-probe|gus-probe]] — interpretability probes on v3-10k; counterfactual V oracle agreement ±0.5 Q-pts; 6-6 impact trumpness-gated; game structure internalized (active)
 - [[experiments/eq-browser-visualizers|eq-browser-visualizers]] — local browser-runbook for E[Q] 3D surface, PDF discs, and game-journey visualizers; makes candlewax-shaped near-tie/uncertainty surfaces inspectable (active)
@@ -334,6 +351,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[decisions/qval-over-policy-models|qval-over-policy-models]] — ship Q-value models (predict [[topics/expected-q-value|E[Q]]] per candidate action) rather than policy models that directly emit a move distribution (active)
 - [[decisions/vs-random-eval-is-suspect|vs-random-eval-is-suspect]] — vs-random win rate is a suspect metric for marks-to-7 play; Zeb's era-4 headline numbers were measured against the wrong opponent (active)
 - [[decisions/grok-not-converge|grok-not-converge]] — when multiple LLMs converge on a plan, that convergence is not evidence it is correct; verify it is actually understood (by the human, not the model) first (active)
+- [[decisions/engine-adrs|engine-adrs]] — the seven engine ADRs (authority models, GameView-only protocol, single composition point, Connection.reply, URL carries complete config, one-hand terminal phase, layer unification), captured at the 2026-07 docs→wiki consolidation (active)
 
 ## Sources
 
@@ -470,6 +488,13 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[sources/063fcac|063fcac]] — 2026-04-24: Phase A guards on wax_museum (turn-budget extension on reject + forced-commit fallback); enables 2000-decision harvest
 - [[sources/a2db3c7|a2db3c7]] — 2026-05-02: burl/lab/ workbench platform spine; 31 files / 4619 insertions; phase machine + engine protocol + first-class ToolSpec + journal-canonical + mlx_lm rebind fix; 15 fast tests + 1 slow MLX smoke green
 - [[sources/0d82a97|0d82a97]] — 2026-07-06: jud v1 built — play-history snapshot emission, JudNet one-organ value head, judplay consumer, round-0 head + graded A/B decomposition
+
+### Relocated doc sources (2026-07 docs→wiki consolidation)
+
+- [[sources/pi-oracle-bidding-question|pi-oracle-bidding-question]] — Jan 2026 research bead framing: perfect-information oracles for imperfect-information bidding (paths A–D)
+- [[sources/pi-oracle-bidding-answer|pi-oracle-bidding-answer]] — the canonical synthesis behind [[topics/strategy-fusion|strategy-fusion]]: oracle as evaluator, not policy teacher; max_trump(E[V])
+- [[sources/mccfr-exploration|mccfr-exploration]] — Dec 2025 MCCFR postmortem; the surviving trace behind [[topics/pre-ml-ai-attempts|pre-ml-ai-attempts]]
+- `sources/book-second-pass-2026-07-07/` (reader A–D reports) — raw inputs behind [[experiments/w42-book-second-pass|w42-book-second-pass]]
 
 ### claude.ai conversation digests (era backfill)
 

@@ -2,7 +2,7 @@
 title: LS-Mixture (verbosity blender)
 kind: topic
 first_seen: 3414507
-last_updated: pending-this-ingest
+last_updated: d1f1633d
 status: retired
 ---
 

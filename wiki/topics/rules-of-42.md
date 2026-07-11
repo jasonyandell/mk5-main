@@ -2,7 +2,7 @@
 title: Rules of Texas 42 — complete ruleset
 kind: topic
 first_seen: f989134f
-last_updated: pending-this-ingest
+last_updated: 2ab1a825
 status: active
 ---
 

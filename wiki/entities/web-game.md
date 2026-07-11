@@ -2,7 +2,7 @@
 title: The Web Game (Era 1 — prologue)
 kind: entity
 first_seen: b25480b
-last_updated: pending-this-ingest
+last_updated: 522779c5
 status: retired
 ---
 

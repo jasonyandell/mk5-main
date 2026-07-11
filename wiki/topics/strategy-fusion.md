@@ -2,7 +2,7 @@
 title: "Strategy Fusion — E[max(score)] ≥ max(E[score]), the diagnosis, and the E[Q] founding sentence"
 kind: topic
 first_seen: adb6de51
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: complete
 ---
 

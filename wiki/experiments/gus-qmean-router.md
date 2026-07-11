@@ -2,7 +2,7 @@
 title: Gus Q-mean router (belief-sampled second opinion, no oracle)
 kind: experiment
 first_seen: 3ad63f9f
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: active
 ---
 

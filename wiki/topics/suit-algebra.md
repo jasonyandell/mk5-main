@@ -2,7 +2,7 @@
 title: Suit algebra — absorption vs. power, S₇ symmetry, τ-encoding
 kind: topic
 first_seen: b132ad92
-last_updated: pending-this-ingest
+last_updated: 2ab1a825
 status: active
 ---
 

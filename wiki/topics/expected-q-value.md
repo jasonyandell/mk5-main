@@ -2,7 +2,7 @@
 title: E[Q] — Expected Q-Value
 kind: topic
 first_seen: ece6dcf
-last_updated: pending-this-ingest
+last_updated: b89ff635
 status: active
 ---
 

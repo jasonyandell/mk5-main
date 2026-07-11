@@ -2,7 +2,7 @@
 title: Breakthrough and Oracle (Dec 24, 2025 – Jan 8, 2026)
 kind: topic
 first_seen: 085ffa71
-last_updated: pending-this-ingest
+last_updated: b89ff635
 status: complete
 ---
 

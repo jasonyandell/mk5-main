@@ -2,7 +2,7 @@
 title: "The Wall: A Biography"
 kind: trail
 first_seen: afd4802
-last_updated: pending-this-ingest
+last_updated: b89ff635
 status: active
 ---
 

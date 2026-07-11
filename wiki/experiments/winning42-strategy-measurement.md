@@ -2,7 +2,7 @@
 title: Winning 42 Strategy Measurement
 kind: experiment
 first_seen: local-2026-04-30
-last_updated: pending-this-ingest
+last_updated: d1f1633d
 status: active
 ---
 

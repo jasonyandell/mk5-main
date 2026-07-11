@@ -2,7 +2,7 @@
 title: Commit-discipline collapse
 kind: topic
 first_seen: 622816a
-last_updated: pending-this-ingest
+last_updated: 522779c5
 status: active
 ---
 

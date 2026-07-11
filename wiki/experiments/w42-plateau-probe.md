@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: gh-33
 first_seen: 68fda7b
-last_updated: pending-this-ingest
+last_updated: d1f1633d
 ---
 
 # w42-plateau-probe

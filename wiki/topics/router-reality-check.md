@@ -2,7 +2,7 @@
 title: Router Reality-Check (detect-and-route PoC results)
 kind: topic
 first_seen: a09ef43
-last_updated: pending-this-ingest
+last_updated: d1f1633d
 status: retired
 ---
 

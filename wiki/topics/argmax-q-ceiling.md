@@ -2,7 +2,7 @@
 title: "The Argmax-Q Ceiling (~74%)"
 kind: topic
 first_seen: d9402cf
-last_updated: pending-this-ingest
+last_updated: b89ff635
 status: complete
 ---
 

@@ -2,7 +2,7 @@
 title: PI-oracle bidding research bead — canonical answer (Jan 2026)
 kind: source
 first_seen: a81fe27a
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: active
 ---
 

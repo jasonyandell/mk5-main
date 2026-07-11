@@ -2,7 +2,7 @@
 title: TypeScript Game Engine
 kind: entity
 first_seen: 8d26e0d
-last_updated: pending-this-ingest
+last_updated: 522779c5
 status: active
 ---
 

@@ -2,7 +2,7 @@
 title: Book second pass 2026-07-07 — reader C raw report
 kind: source
 first_seen: 5e3f3245
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: active
 ---
 

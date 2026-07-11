@@ -2,7 +2,7 @@
 title: Modal
 kind: entity
 first_seen: a8bccfa
-last_updated: pending-this-ingest
+last_updated: b89ff635
 status: active
 ---
 

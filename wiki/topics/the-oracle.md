@@ -2,7 +2,7 @@
 title: The oracle — three solver generations, one compression, one pivot
 kind: topic
 first_seen: b541a4b
-last_updated: pending-this-ingest
+last_updated: b89ff635
 status: active
 ---
 

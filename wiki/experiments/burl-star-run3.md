@@ -2,7 +2,7 @@
 title: Burl STaR Run-3 (filter-only, strict pool)
 kind: experiment
 first_seen: 02d9096
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: complete
 ---
 

@@ -2,7 +2,7 @@
 title: Pre-ML AI attempts — AlphaZero ruled out, PIMC survives, MCCFR built-then-retired
 kind: topic
 first_seen: 1ca876df
-last_updated: pending-this-ingest
+last_updated: e2171816
 status: retired
 ---
 

@@ -2,7 +2,7 @@
 title: Arena — full-game harness
 kind: entity
 first_seen: local-2026-06-12
-last_updated: pending-this-ingest
+last_updated: 2ab1a825
 status: active
 phase: landed; measuring stick for the champion ladder
 ---

@@ -2,7 +2,7 @@
 title: Texas 42
 kind: entity
 first_seen: a8bccfa
-last_updated: pending-this-ingest
+last_updated: 2ab1a825
 status: active
 ---
 
