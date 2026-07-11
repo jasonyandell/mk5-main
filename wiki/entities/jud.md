@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: afd4802
+last_updated: local-2026-07-10
 status: active
 ---
 
@@ -333,3 +333,7 @@ games) — the bidding crown wasn't hiding behind the distillation.
   [[w42-champion-selfplay-fixed-point]] — the #26 fixed point
 - [[arena]] — the information-blind measuring stick belief value cannot be scored
   through
+- [[w42-book-second-pass]] — the book-sourced experiment queue for the auction-first
+  frontier: the auction decoder (bid→hand posteriors, the {30,31,35,36} bid lattice,
+  match-score-conditioned bidding) and the signaling/concealment material that is
+  exactly the v2 opponents-in-rollout target
