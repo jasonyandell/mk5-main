@@ -1,6 +1,7 @@
 """Detect-and-route inference: first end-to-end wrapper for the Gus student.
 
-Motivation (PRACTICALITIES.md sections 12-13): ensembling hurts regret but
+Motivation (formerly gus/PRACTICALITIES.md §12-13, @ 233b7dc5; see
+wiki/topics/detect-and-route.md): ensembling hurts regret but
 latent diversity is huge (oracle-per-decision regret drops from 1.39 → 0.36).
 A router — small blunder detector + fallback policy — should bridge the gap
 while staying deployable.

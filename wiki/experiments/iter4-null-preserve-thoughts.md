@@ -2,7 +2,7 @@
 title: "iter-4 preserve_thoughts: Byte-Identical A/B (Null Result)"
 kind: experiment
 first_seen: 20f4fa2
-last_updated: edf86e9
+last_updated: e2171816
 status: retired
 ---
 
@@ -26,7 +26,7 @@ Byte-identical output on the held-out eval set. The thought-gradient produced no
 
 LoRA rank 16 may be capacity-saturated — the adapter had no room to learn from the extra thought gradient on top of the iter-3-rules knowledge already encoded. The thought tokens are reaching the loss, but the rank-16 adapter cannot absorb the additional signal.
 
-**Follow-up hypothesis:** higher LoRA rank (32 or 64) may unblock thought-gradient learning. This is experiment E1 in `burl/ITER4_PLAN.md` — cheap to run locally on M5 Max.
+**Follow-up hypothesis:** higher LoRA rank (32 or 64) may unblock thought-gradient learning. This is experiment E1 in `burl/ITER4_PLAN.md` (deleted; @ 233b7dc5) — cheap to run locally on M5 Max.
 
 ## Reframe (edf86e9)
 

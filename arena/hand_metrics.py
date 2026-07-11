@@ -2,7 +2,7 @@
 
 A module-grade port of the wave-2.B validated arithmetic in
 `w42/bidding_risk_budget_claim_validation/validate_bidding_risk_budget.py`
-(hand_eval). In suit-algebra terms (docs/theory/SUIT_ALGEBRA.md §2): for a
+(hand_eval). In suit-algebra terms (wiki/topics/suit-algebra-spec.md §2): for a
 candidate pip trump t, every non-trump non-double tile in hand is an "off"
 whose two sides each expose the unheld count tiles of that side's natural
 suit σ_p (excluding tiles called into trump). The bid ceiling proxy is 42

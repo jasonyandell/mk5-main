@@ -439,7 +439,7 @@ Examples:
     #
     # Expanded (n_decl_per_seed=N): n_seeds seeds, each expanded across N
     # declarations 0..N-1. Matches the oracle's training recipe for state
-    # diversity (see gus/PRACTICALITIES.md #8).
+    # diversity (see wiki/entities/forge.md "Training-data doctrine").
     #     hands  = [deal(s0), deal(s0), ..., deal(s0+1), deal(s0+1), ...]
     #     decls  = [0, 1, ..., N-1,       0, 1, ..., N-1,       ...]
     from forge.oracle.rng import deal_from_seed

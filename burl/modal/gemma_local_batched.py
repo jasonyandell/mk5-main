@@ -7,7 +7,7 @@ template, same EOS handling. The difference is one step: instead of
 ``(messages, tools)`` into a prompt and drives them through
 ``mlx_lm.batch_generate`` in one fused pass.
 
-Numbers motivating this (from ``burl/experiments/batch_throughput_bench.md``
+Numbers motivating this (from ``wiki/experiments/batch-throughput-bench.md``
 on M5 Max, bf16 Gemma 4 E2B):
 
     single-stream :  83 tok/s  aggregate (1.0x)

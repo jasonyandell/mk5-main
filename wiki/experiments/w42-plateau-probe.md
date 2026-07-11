@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: gh-33
 first_seen: 68fda7b
-last_updated: 0bdd4d5
+last_updated: d1f1633d
 ---
 
 # w42-plateau-probe
@@ -154,3 +154,8 @@ data-starvation reading.
 - [[rank-vs-price]] — the mechanism the value-native bidder validates; now beats, not ties
 - [[pimc]] — strategy fusion; the structural residual this probe refuted at v0's scale
 - [[w42-champion-selfplay-fixed-point]] — #26, the over-bidder the loop dissolves
+
+## Evidence
+
+Primary artifact: `champion/evidence/jud_v0/plateau_probe.md` — the probe's run log and
+numbers, colocated with the other jud_v0 reports cited by [[w42-jud-v0]].

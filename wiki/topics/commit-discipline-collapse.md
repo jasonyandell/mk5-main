@@ -2,7 +2,7 @@
 title: Commit-discipline collapse
 kind: topic
 first_seen: 622816a
-last_updated: 622816a
+last_updated: 522779c5
 status: active
 ---
 
@@ -47,7 +47,7 @@ Two paths forward:
 - **Surface-level fix:** bump rollout turn cap (8 → 12) to push the failure-mode threshold past where most natural commits happen. Doesn't *teach* discipline but recovers training-corpus yield. Cheap; harness-side. Adopted for [[burl-harvest-2]] (see [[burl-star-run3]]'s "What's next" §"FORCED_COMMIT inflation diagnosis (closed)").
 - **Training-side fix:** add explicit negative supervision (FORCED_COMMIT rows formatted as "do NOT do this; instead, commit now"). See `scratch/belief_trajectory_rollout/star/CORPUS_ENRICHMENT_PLAN.md`. ~30 min implementation, drop-in compatible with `star_mlx.py` SFT loop. Insurance in case cap-bump alone isn't enough.
 
-Adjacent: [[ls-mixture]] (legal-but-suboptimal mixture for commit discipline) and [[eq-gate-star]] (gating on E[Q] delta, not just Δ ≥ 0) are both staged training-side workstreams that touch this failure mode.
+Adjacent: [[ls-mixture]] (the arxiv-2505.03469 short/long trace blend) and [[eq-gate-star]] (gating on E[Q] delta, not just Δ ≥ 0) are both staged training-side workstreams that touch this failure mode.
 
 ## Pointers
 

@@ -1,7 +1,7 @@
 /**
  * Nello Layer - Special contract where bidder must lose all tricks.
  *
- * From docs/rules.md §8.A:
+ * From wiki/topics/rules-of-42.md §Special contracts:
  * - Must bid at least 1 mark (standard marks bid, NOT a separate bid type)
  * - Nello is selected as trump during trump_selection phase
  * - Partner sits out with dominoes face-down (3-player tricks)

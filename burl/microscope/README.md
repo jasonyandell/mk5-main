@@ -1,11 +1,6 @@
 # Burl microscope
 
-A small human-in-the-loop experiment loop for Burl prompt/tool work.
-
-The microscope is not a production agent and not a training corpus generator. It
-loads one harvested decision, one editable recipe, and one Gemma conversation.
-Then you step the model turn-by-turn, inspect tool calls/results, edit the
-recipe, and rerun the same case.
+This project's knowledge lives in the wiki — see `wiki/entities/burl-microscope.md`.
 
 ## Run from Pi
 
@@ -40,7 +35,8 @@ curl -s -X POST http://127.0.0.1:8765/api/sessions/$SID/step \
 
 ## Recipes
 
-Recipes live under `burl/microscope/recipes/<name>/`:
+Recipes live under `burl/microscope/recipes/<name>/` (loaded from disk by
+`microscope/core.py::load_recipe`):
 
 | File | Purpose |
 |---|---|

@@ -178,6 +178,12 @@ tail -1 scratch/modal-progress.csv
 
 # Watch live
 watch -n 60 'bash scratch/log-progress.sh && tail -5 scratch/modal-progress.csv'
+
+# Count shards on the Modal volume
+modal run forge/modal_app.py::count_shards
+
+# Find missing shards (for retrying failed seeds)
+modal run forge/modal_app.py::find_missing
 ```
 
 ## Stop All Jobs (Emergency)
@@ -194,32 +200,6 @@ for app in $(modal app list 2>&1 | grep ephemeral | awk '{print $1}'); do
   modal app stop "$app"
 done
 ```
-
-## Current Jobs
-
-Generation complete! 10,000 shards on Modal volume.
-
-**To run new jobs**:
-```bash
-# Full generation (9000 train + 1000 val/test)
-modal run forge/modal_app.py::generate_range --start-seed 0 --end-seed 900 --n-opp-seeds 10
-modal run forge/modal_app.py::generate_valtest
-
-# Single shard (for retrying failed seeds)
-modal run forge/modal_app.py::main --base-seed 922 --opp-seed 1
-
-# Find missing shards
-modal run forge/modal_app.py::find_missing
-
-# Count shards on volume
-modal run forge/modal_app.py::count_shards
-```
-
-**Current settings** (in modal_app.py):
-- `max_states=500M` - A10 can handle up to ~500M states
-- `@modal.concurrent(max_inputs=2)` - 2 tasks per GPU
-- Lock files prevent duplicate work across parallel jobs
-- No per-shard commit (auto-commits on container shutdown)
 
 ## Cost Tracking
 

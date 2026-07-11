@@ -333,7 +333,7 @@ catalog, the signaling conventions (top-unplayed-trump as protocol, donate-highe
 dump-to-inform, Plunge as legal one-bit signal), reputation-driven overbidding, the
 quantified-prior calibration table, and multi-step plans with author-supplied win rates
 (strip-the-protector p.92/94, double-ahead-of-off 53/60/33). Nine ranked follow-up
-experiments; raw reader reports preserved at `docs/research/book-second-pass-2026-07-07/`.
+experiments; raw reader reports preserved at `wiki/sources/book-second-pass-2026-07-07/`.
 **Updated:** [[w42-book-validation]] trail (frontier section routes to the second pass);
 [[w42-bookval-v1-wave2-pounce-high-bid]] gains caveat 0 — the `contradicted` verdict is a
 probable information-regime category error (book's clause is an imperfect-information hedge,
@@ -363,3 +363,10 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Touched pages:** [[log]] [[log-archive]] `AGENTS.md`
 **Added:** [[log-archive]] — entries 1–145 (2026-04-09 → 06-14) moved verbatim; log.md keeps a phase digest + last ~10 entries.
 **Updated:** AGENTS.md log section — entry budget (~5 pointer lines), mechanical rotation trigger (>15 entries), no claim without a link.
+
+## [2026-07-11 | b89ff635 | docs→wiki consolidation: game-of-42 cluster, engine second pass, forge/burl/lem/gus promotion, entrypoints rewritten]
+
+**Touched pages:** [[texas-42]] [[rules-of-42]] [[suit-algebra-spec]] [[play-phase-algebra]] [[engine]] [[engine-architecture]] [[layer-system]] [[multiplayer-pattern]] [[client-implementation]] [[engine-testing-patterns]] [[intermediate-ai]] [[forge]] [[expected-q-value]] [[the-oracle]] [[gus-qmean-router]] [[router-reality-check]] [[engine-adrs]] (+~30 more: hooks, citations, sha-stamps; waves 2ab1a825, d1f1633d, e2171816, 522779c5, b89ff635)
+**Added:** the game-of-42 cluster (rules + algebra + play phase), the six-topic engine reference cluster, [[gus-qmean-router]] (the no-oracle router that works), [[engine-adrs]]; `sources/` gains pi-oracle-bidding {question,answer}, mccfr-exploration, and the book-second-pass reader reports (relocated from docs/)
+**Updated:** [[router-reality-check]] corrected (replacement hurts, second opinion helps); [[ls-mixture]] mis-expansion fixed (always the arxiv short/long sense); forge foot-guns/folk-wisdom/training-data doctrine promoted into [[forge]] and [[expected-q-value]]; ~12 stale engine-doc claims corrected against current code while writing the cluster
+**Retired:** docs/{adrs,archive,research,wiki-mine} and docs core+theory+rules files (rules-tournament.md unmigrated — erroneous), 36 burl/gus session docs, forge/eq/cpu_deprecated/ (no-legacy violation), SPIKE_REPORT.md, MORNING_DIGEST.md; CLAUDE.md/AGENTS.md/README.md rewritten wiki-first (beads → GitHub issues)

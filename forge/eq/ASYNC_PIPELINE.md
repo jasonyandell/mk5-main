@@ -134,14 +134,8 @@ Internally routes to `_query_batch_async()` or sync path based on `use_async` fl
 
 ## Benchmark
 
-Run benchmark to measure improvement:
-
-```bash
-python -m forge.eq.benchmark_async \
-    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
-    --n-worlds 100 \
-    --n-iterations 50
-```
+The original benchmark script (`benchmark_async.py`) was removed with the deprecated
+CPU pipeline; the motivating measurements live in `profiling_results.md`.
 
 Expected improvements (estimated):
 - **5-15% latency reduction** from non-blocking H2D transfers

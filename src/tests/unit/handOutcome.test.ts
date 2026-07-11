@@ -197,7 +197,7 @@ describe('Hand Outcome Detection', () => {
   // NOTE: Splash/Plunge handling has been moved to their respective layers
   // (splashLayer, plungeLayer). The core handOutcome function no longer handles
   // these special bid types directly - they are handled through the layer composition system.
-  // See ADR-20251112-onehand-terminal-phase.md for details on this architectural change.
+  // See wiki/decisions/engine-adrs.md (one-hand terminal phase) for details on this architectural change.
 
   describe('Edge Cases', () => {
     it('should not detect outcome during bidding phase', () => {
