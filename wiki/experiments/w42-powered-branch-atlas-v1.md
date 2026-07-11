@@ -19,7 +19,7 @@ impact in one inspectable table.
 
 This is the first empirical bridge from the visual "candlewax" insight to
 hidden-threat labels. It does not train a model and does not validate a book
-claim. It proves the loop can generate N=1000 joint-world games, keep hidden
+claim. It proves the loop can generate joint-world games with N=1000 sampled worlds per decision, keep hidden
 owner/Q outcomes, log a multi-point W&B dashboard, and produce rows that say
 which unseen domino holders most explain the high shelf, disaster tail, or
 large branch spread.

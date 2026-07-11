@@ -6,7 +6,7 @@ last_updated: afd4802
 status: retired
 ---
 
-**Phantom plan.** This one-session chapter harvest (2026-05-01) registered 14
+**Phantom plan.** This one-session chapter harvest (2026-05-01) registered 13
 measurable hypotheses and got zero empirical follow-up in the two months
 since — none of its detectors (`table_talk_leakage`,
 `trace_public_evidence_faithfulness`, etc.) were ever implemented against

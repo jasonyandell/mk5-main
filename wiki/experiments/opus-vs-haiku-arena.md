@@ -10,7 +10,7 @@ status: active
 
 [[selfplay-arena]] head-to-head on seed 900010. Same deal (bad for team 0), same declaration. Opus salvages 7 points where Haiku was shut out. Opus shows better decision quality AND better tool-use economy at 6.5× the cost.
 
-([burl/eval/arena.py @ 39aafaf](../sources/39aafaf.md))
+([burl/selfplay/arena.py @ 39aafaf](../sources/39aafaf.md))
 
 ## Results
 

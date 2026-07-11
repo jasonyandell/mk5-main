@@ -113,7 +113,7 @@ are not semantic evidence about play quality.
 ## Reproducibility
 
 Run commit at artifact generation:
-`8df0c3b1f03893cc4c059762de1fa1dd0c84ca06`.
+`e3bfefa7f3f01b32c39b74545badbb6d1b27a642` (per `w42/strategy_tags_v0/report.json`).
 
 Exact detector command:
 

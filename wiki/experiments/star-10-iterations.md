@@ -22,7 +22,7 @@ status: active
 - **Subset sampling:** random draw per iteration (different examples each run)
 - **Inference:** HF `model.generate()` with SDPA + `torch.compile` + left-padded batching; 120+ tok/s
 - **Grading:** [[k1-grading]]; illegal/parse-fail discarded per [[decisions/discard-illegal-traces]]; [[r1-rationalization]] on legal failures
-- **Cost:** ~$0.26/iter; total ~$25 for 15 iters
+- **Cost:** total ~$25 on B200 for 15 iters (~$1.67/iter; the earlier ~$0.26 figure was a 5-example smoke test)
 - **Wandb:** `jasonyandell-forge42/lem-star`
 
 ## Results

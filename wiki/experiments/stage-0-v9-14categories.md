@@ -17,7 +17,7 @@ Progressive curriculum expansion from 8 to 14 categories across Stage 0 versions
 - **Base model:** [[qwen3-1.7b]]
 - **Training:** 3 epochs per version, [[modal]] B200, [[lora-unsloth]]
 - **Eval:** [[decisions/flexible-grader]] (`grade_offline.GRADERS`), 14-category [[game-context-qa]]
-- **v7:** added `conditional_beat` (6 new categories toward 14 total)
+- **v7:** added `conditional_beat` (first of 6 new categories toward 14 total)
 - **v8:** added `beaters_in_unseen`, `partner_response`, `intervention_check`
 - **v9:** added `visibility_audit`, `highest_unseen_in_suit`; full 3-epoch train on all 14
 
@@ -25,18 +25,15 @@ Progressive curriculum expansion from 8 to 14 categories across Stage 0 versions
 
 | Category | Accuracy |
 |---|---|
-| is_trump | 100% |
-| highest_unseen_in_suit | 100% |
-| where_is | ~90% |
-| legal_moves | ~70% |
-| count_status | ~60% |
-| conditional_beat | strong |
-| intervention_check | ~70% |
-| partner_response | ~48% |
-| beaters_in_unseen | ~46% |
-| what_beats | 15% |
-| visibility_audit | **0%** |
-| **Overall** | **83%** |
+| highest_unseen_in_suit (new) | 100% |
+| is_trump, legal_moves, what_beats, rank_in_suit, suit_members, void_deduction, conditional_beat | 98-100% |
+| where_is | 98% |
+| count_status | 93% |
+| intervention_check | 70% (dropped from 91% at v8) |
+| partner_response | 48% (unchanged) |
+| beaters_in_unseen | 46% (unchanged) |
+| visibility_audit (new) | **0%** |
+| **Overall** | **583/700 = 83%** |
 
 Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v9` ([[v9-adapter]]).
 

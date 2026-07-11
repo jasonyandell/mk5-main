@@ -16,17 +16,17 @@ The 560-decision sequential pilot ([[gus-v3-consistency-full-run]] downstream pr
 
 ## v1 contamination + v2 success
 
-A first 2000-decision run kicked off (`harvest_batched_20260425_031033/`, batched, max_tokens=1024) and SIGKILLed at 1398/2000. Bucket parity against the sequential 560 looked plausible at the distribution level — within ±5pp everywhere. The user's morning intuition flagged a suspicion: "we didn't have short-decision problems before batched mode." Three parallel investigation agents reproduced the data:
+A first 2000-decision run kicked off (`harvest_batched_20260425_031033/`, batched, max_tokens=1024) and SIGKILLed at 1398/2000. Bucket parity against the sequential 560 looked plausible at the distribution level — within ±5pp everywhere. The user's morning intuition flagged a suspicion: "we didn't have short-decision problems before batched mode." Three parallel investigation agents reproduced the data (diagnostics were run on a batched 560-decision rerun with the same 1024-token settings, paired against the sequential 560 — see `PARITY_AUDIT.md` / `LENGTH_STATS_COMPARISON.md`):
 
-- 11.4% of v1 decisions had `belief_called_turns` not starting at turn 1 — i.e. the model had exhausted its 1024-token budget mid-thinking-block on turn 1 and never reached the [[belief-trajectory]] call. The harness re-prompted, the model recovered on turn 2, and the trace looked superficially fine. But the chain of reasoning that had been mid-flight when the budget hit was permanently lost as unstructured `assistant_text` (gi=42 sample: 2730 chars of prose ending mid-sentence at "*Checking for*", no tool call emitted).
+- 11.4% of batched decisions (64/560) had `belief_called_turns` not starting at turn 1 — i.e. the model had exhausted its 1024-token budget mid-thinking-block on turn 1 and never reached the [[belief-trajectory]] call. The harness re-prompted, the model recovered on turn 2, and the trace looked superficially fine. But the chain of reasoning that had been mid-flight when the budget hit was permanently lost as unstructured `assistant_text` (gi=42 sample: 2730 chars of prose ending mid-sentence at "*Checking for*", no tool call emitted).
 - 1.2% of batched turns hit the 1024-token cap (≥2800 chars of generated text); 0% of sequential turns did. Sequential's p99 turn was 1770 chars / ~600 tokens; max 2639 / ~900. 1024 was below the model's natural distribution.
-- 43% of decisions had moved between buckets relative to the sequential baseline. Aggregate parity was a false pass — distribution-level errors cancelled.
+- 43% of decisions (241/560) had moved between buckets relative to the sequential baseline. Aggregate parity was a false pass — distribution-level errors cancelled.
 
 Fix: `MODEL_MAX_TOKENS` 1024 → 2048 (see [[max-tokens-2048-floor]]) plus a per-wave OOM-resilience layer (see [[batched-harvest-resilience]]). Reverted run launched 2026-04-25 07:29:10 as v2. Finished 2026-04-25 13:15:28, wall 5h 46m, zero quarantine fires across 333 batches.
 
 ## Quality gates (v2)
 
-| Gate | Sequential 560 | v1 (1024 tok, contaminated) | v2 (2048 tok) |
+| Gate | Sequential 560 | batched @1024 tok (560 rerun, contaminated) | v2 (2048 tok) |
 |---|---:|---:|---:|
 | `belief_turns` not starting at turn 1 | ~0% | 11.4% | **0.0%** |
 | Truncated at cap (≥2800 chars) | 0.0% | 1.2% | **0.0%** |
@@ -61,7 +61,7 @@ Forced-commit dropped −1.4pp from the sequential baseline. n_turns mean is 6.2
 | ILLEGAL | 0 | 0.0 | 0.0 | guarded |
 | OTHER | 0 | 0.0 | 0.0 | guarded |
 
-Per-decision strict pool is 1062 (vs 294 from the sequential 560 → +268% absolute, +0.6pp rate). Non-trivial gold (excluding ALL_AGREE_CORRECT) is 202 rows, 3.9× the 52-row sequential count. Sharpest [[r1-rationalization]] target — `BURL_BREAKS_CONSENSUS` — is 299 rows (3.1× the 97-row sequential count). The −2.4pp decline in `BURL_BREAKS_CONSENSUS` directionally confirms the v1 truncation bug was inflating that bucket; some residual delta vs sequential remains and is worth a per-decision-trajectory comparison before declaring full parity. (The 560 decisions that overlap between sequential and v2 admit a paired-design McNemar test on bucket flips.)
+Per-decision strict pool is 1062 (vs 294 from the sequential 560 → +268% absolute, +0.6pp rate). Non-trivial gold (excluding ALL_AGREE_CORRECT) is 202 rows, 3.9× the 52-row sequential count. Sharpest [[r1-rationalization]] target — `BURL_BREAKS_CONSENSUS` — is 299 rows (3.1× the 97-row sequential count). The −2.4pp decline in `BURL_BREAKS_CONSENSUS` directionally confirms the v1 truncation bug was inflating that bucket; some residual delta vs sequential remains and is worth a per-decision-trajectory comparison before declaring full parity. (No paired test against sequential is possible: v2 ran on fresh seeds 0–71 from chunk_0-99, disjoint from the sequential 560's seeds 900000–900019. The closest paired design is the 1392 aligned decisions shared by the killed v1 run and v2 — same seed/declaration/seat — which isolates the 1024→2048 token-cap effect within batched mode; true parity with sequential would need a 2048-token batched rerun on the 900000-seed set.)
 
 ## Runtime characteristics
 

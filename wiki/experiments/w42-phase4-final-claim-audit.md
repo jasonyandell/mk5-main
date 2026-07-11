@@ -42,9 +42,15 @@ The audit calls out these tempting overclaims to avoid:
 
 ## Validation
 
-The audit parsed 13 CSV files and 15 JSON summaries, reran the seven phase-4
-validation scripts, and checked that the 64-row ledger and 64-row completion
-board align exactly.
+The audit parsed 13 CSV files and 15 JSON summaries and checked that the
+64-row ledger and 64-row completion board align exactly (no rows on either
+side of the join). Whether it also reran the seven per-worker
+`validate_outputs.py` scripts is not recorded in its artifact —
+`audit_summary.json`'s validation block documents only file-parse counts and
+the ledger/board join. The later independent audit
+(`w42/book_validation_v1/wave1/t42-1nmm_independent_audit/`) reran all seven
+validators (7/7 pass) and confirmed the audit's counts and all eight
+overclaim risks.
 
 ## Links
 

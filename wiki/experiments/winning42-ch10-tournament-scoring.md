@@ -122,11 +122,12 @@ tensors. Two structural findings have direct Ch 10 implications:
   fixed-bid corpus cannot test it; a bid-aware E[Q] generator (Wave 2.B,
   bead `t42-6j3k`) is required to make `ch10-special-bid-mark-multiplier`
   testable.
-- **Genuine mark-vs-point flips are 3.6% of decisions** (10/280) on the
-  bid=30 corpus; 81.5% of nominal flips are surface-flattening artifacts
-  of the binary {-1, 0, +1} mark transform near the 30-point make
-  threshold. The 10 genuine flips concentrate at mid-hand on partner
-  third-seat count-safe lines and setter lead-pressure plays.
+- **Genuine mark-vs-point flips are 4.3% of decisions** (12/280, of which
+  10 are detector-endorsed) on the bid=30 corpus; 81.5% of nominal flips
+  are surface-flattening artifacts of the binary {-1, 0, +1} mark
+  transform near the 30-point make threshold. The genuine flips
+  concentrate early-hand (10 of 12) on bidder and partner count-safe
+  lines and setter lead-pressure opening plays.
 - **Two ledger rows promoted to context-limited** after the independent
   audit absorbed prior phase-4 worker evidence (160 timed trials,
   4 heuristic policy pairs). See [[w42-bookval-v1-wave1-independent-audit]].

@@ -196,8 +196,12 @@ right under `p_make` (oracle pounces 59.6%) but **wrong under scalar EV**
 (decline better in 65.4%). 10-point count cases show EV delta `+15.68`
 with CI `[+1.60, +29.76]` (decline strictly better) yet oracle still
 pounces 80% of the time. Status: `context-limited` for the bid=30 slice;
-the high-bid scope (`ch12-setter-pounce-high-bid-off`) waits for Wave
-2.B.2's bid-aware corpus (bead `t42-8kbh`). The chapter's pounce
+the high-bid scope (`ch12-setter-pounce-high-bid-off`) has since been
+probed by Wave 2.E.2 ([[w42-bookval-v1-wave2-pounce-high-bid]], bead
+`t42-8kbh`) on the Wave 2.B.2 full-sweep bid-aware atlas
+([[w42-bookval-v1-wave2-bid-aware-atlas]], bead `t42-7eop`): **contradicted** — the
+decline-better-for-setter pattern is not reversed at bids 35/36/39/42,
+it is amplified (EV CI excludes zero at all four buckets). The chapter's pounce
 recommendation encodes implicit `p_make` reasoning at the contract
 threshold; under tail-aware utilities (CVaR, robust_q25) it would
 recommend a different action substantially more often.

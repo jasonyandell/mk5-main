@@ -223,3 +223,5 @@ Lens v1 build agent (t42-4ouu). Forge oracle + custom utility-aware simulator. I
 - [[w42-bookval-v2-utility-lens-synthesis]] — Wave 3.0 contrast-magnitude split
 - [[w42-book-validation-campaign]] — parent campaign
 - [[w42-book-claim-synthesis-and-ai-directions]] — campaign synthesis
+
+---

@@ -53,8 +53,8 @@ because the mechanism it fed was abandoned, not because an iter-4 or winner exis
 
 ## Caveat: measured under a confound, never re-tested
 
-[[decisions/gemma-tool-response-shape]] (first_seen `54f7776`, three commits after this
-adapter shipped) found that Gemma 4's chat template silently drops `role="tool"`
+[[decisions/gemma-tool-response-shape]] (first_seen `54f7776`, 17 commits and one day
+after this adapter shipped) found that Gemma 4's chat template silently drops `role="tool"`
 messages — every Burl rollout through B9, including the one that produced this
 adapter's training corpus and its 90% eval, ran with tool outputs invisible to the
 model. [[experiments/chat-template-fix-validation]] posed the obvious next step — does

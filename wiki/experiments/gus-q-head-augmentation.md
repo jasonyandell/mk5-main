@@ -3,7 +3,7 @@ title: Gus Q_head Partial-Depletion Augmentation (Path A)
 kind: experiment
 first_seen: a9fa0c6
 last_updated: 5f390fb
-status: active
+status: complete
 ---
 
 ## Summary
@@ -21,34 +21,36 @@ robust to OOD depleted leaf states from LAMIR-1 rollouts. Augmented Q_head reach
   `world_assign` before the forward pass — simulating partially-depleted post-rollout states
 - **Target**: `q_per_world` unchanged — Q should be invariant to whether played dominoes
   remain in the assignment tensor
-- **Script**: `gus/train/train_q_aug.py`
+- **Script**: `gus/train/train_q_head_augmented.py` (15 epochs, lr=5e-5, 160,007 trainable params; adapter saved as `gus/adapters/q_head_aug.pt`)
 
 ## Result
 
 | Mode | Regret | Notes |
 |---|---|---|
 | Direct π_me (baseline) | 0.551 | Unchanged |
-| lamir1-qleaf with aug Q_head | 2.216 | Path (a) result |
+| lamir1-qleaf + Bug6 (no aug) | 2.156 | Direct comparison baseline |
+| lamir1-qleaf + Bug6 + aug Q_head | 2.216 | Path (a) result |
 
-2.216 regret: worse than the pre-bug-fix rollouts, not better. Augmentation failed to
-teach the Q_head OOD robustness at post-rollout leaf states. (commit message @ 5f390fb)
+2.216 vs 2.156: slightly worse, and the 0.06 regret difference is noise, not signal
+either way. Eval q_mae improved marginally (8.277 → 8.169), but that didn't translate
+to better rollout decisions. (gus/MORNING4_STATUS.md @ 5f390fb)
 
 ## Path (a) postmortem
 
-Augmentation zeros random domino rows from `world_assign`, but this is not the same
-distribution shift that occurs during actual LAMIR-1 rollout. In the rollout, specific
-dominoes are removed in a causally consistent order (played by opponents in world-specific
-sequences). Random zeroing teaches the Q_head to be robust to arbitrary missing entries,
-not to the structured depletion pattern of a real rollout. The training signal is
-mismatched. (commit message @ 5f390fb)
+OOD augmentation fixes a measurement artifact (q_mae on depleted inputs) but not the
+fundamental ordering problem: scalar noise from distillation is large relative to the
+action-value gap at decision boundaries. Augmenting the input distribution alone is
+insufficient — the leaf evaluator would need to be trained end-to-end in the rollout
+context (path b) to fix this. (gus/MORNING4_STATUS.md @ 5f390fb)
 
 ## Conclusion
 
-Path (a) is closed. Augmenting the existing Q_head with random depletion is insufficient —
-the gap between training distribution and rollout distribution cannot be bridged by this
-technique. The only viable path for LAMIR-1 look-ahead is end-to-end joint training with
-actual rollout-generated leaf states, which is a substantially larger project.
+Path (a) is closed. Random-depletion augmentation is insufficient — it fixes the OOD
+measurement artifact (q_mae on depleted inputs) but not the ordering problem at decision
+boundaries, where scalar distillation noise swamps the action-value gap. The remaining
+path for LAMIR-1 look-ahead is training the leaf evaluator end-to-end in the rollout
+context (path b), a substantially larger project. (gus/MORNING4_STATUS.md @ 5f390fb)
 
 ## Links
 
-[[gus]] · [[experiments/gus-lamir1-piopp]] · [[experiments/gus-lamir1-mode-comparison]] · [[topics/lamir1]] · [[topics/regret-eval]]
+[[gus]] · [[experiments/gus-lamir1-piopp]] · [[experiments/gus-lamir1-mode-comparison]] · [[topics/lamir1]] · [[topics/regret-eval]] · [[topics/q-head-augmentation]]

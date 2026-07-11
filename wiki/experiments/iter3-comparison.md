@@ -10,14 +10,14 @@ status: active
 
 Three STaR adapters trained with the same corpus infrastructure but different prompt shapes via the three-mode `enable_primer` flag matrix. iter-3-rules (rules-as-tools, primer off) is the clear winner: 90% bot-match, 0 retry-exhausted, 100% first-legal.
 
-([burl/SPIKE_REPORT.md @ dbadb5f](../sources/dbadb5f.md))
+([SPIKE_REPORT.md @ dbadb5f](../sources/dbadb5f.md))
 
 ## Variants
 
 | Variant | Prompt shape | Adapter |
 |---|---|---|
 | iter-2 | trimmed primer + 42-framing | [[burl-iter1-adapter]] successor |
-| iter-3-v2 | no primer, 42-framing only (spike v2 shape) | [[iter3-rules-adapter]] |
+| iter-3-v2 | no primer, 42-framing only (spike v2 shape) | separate adapter, 18-row corpus (no wiki page) |
 | iter-3-rules | rules-as-tools preamble + 42-framing | [[iter3-rules-adapter]] (winner) |
 
 ## Key results

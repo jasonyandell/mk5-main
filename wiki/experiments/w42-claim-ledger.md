@@ -12,10 +12,13 @@ The w42 claim ledger is the conservative evidence register for
 [[winning42-strategy-measurement]]. It ties each Winning 42 chapter claim to a detector,
 metric or test, data source, readiness state, evidence artifact, status, and caveats.
 This schema/vocabulary was real and used across roughly six dozen w42 bead reports
-through phase 4 ([[w42-phase4-final-claim-audit]]), but it was never centrally
-assembled into one populated ledger file — only `w42/claim_ledger.schema.json`,
-`w42/claim_ledger.template.json`, and six scattered per-bead delta/update files
-exist on disk. **Methodology succession:** the [[jud]] track (v0/v1) silently
+through phase 4 ([[w42-phase4-final-claim-audit]]). On disk it exists as
+`w42/claim_ledger.schema.json`, `w42/claim_ledger.template.json`, six scattered
+per-bead delta/update files, and one populated central ledger:
+`w42/statistics_claims_ledger/claims.csv` (64 rows, built by
+`build_statistics_claims_ledger.py`, git sha `e55a6f8`), which
+[[w42-phase2-statistics-claims-ledger]] assembled and phase 4 carried to closure
+as the canonical claim ledger. **Methodology succession:** the [[jud]] track (v0/v1) silently
 replaced this status vocabulary with "registered predictions stated before
 measurement" ([[w42-jud-v1]]: "Six registered predictions, each stated before its
 measurement") — no page recorded that transition until this note. The vocabulary

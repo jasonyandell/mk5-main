@@ -187,7 +187,9 @@ Run when the wiki feels off, or after a large ingest:
 
 ## Log format
 
-`log.md` entries use this prefix so `grep "^## \[" log.md` gives a clean timeline:
+**The log is a changelog, not a chronicle.** An entry is the header line plus at most ~5 lines of pointers. If an entry wants a paragraph of synthesis, that content belongs on a page — write or extend the page and link it from the entry. The log carries no claim that isn't reachable through a link. (This rule exists because the log once grew to 3,600 lines of narrative nobody — human or LLM — could read; the history is preserved in `log-archive.md`.)
+
+Entries use this prefix so `grep "^## \[" log.md log-archive.md` gives the full timeline:
 
 ```
 ## [YYYY-MM-DD | <shortsha> | <subject>]
@@ -198,6 +200,8 @@ Run when the wiki feels off, or after a large ingest:
 **Retired:** ...
 **Questions opened:** ...
 ```
+
+**Rotation (mechanical, no judgment):** `log.md` holds a phase-by-phase digest at the top plus the most recent ~10 entries. When appending pushes it past ~15 entries, in the same session: move the oldest entries verbatim to `log-archive.md` (append at its end), and fold their gist into the digest — one line per phase, links only, no new claims. The entry count is the trigger; do not wait for the file to "feel" long.
 
 ## Question handling
 
@@ -230,3 +234,4 @@ The July 2026 archaeology audited every page against the repo and found 211+ dis
 5. **Dates trace to artifacts.** Every date traces to a git timestamp, bead timestamp, or conversation `created_at` — never to a narrative's memory of a date (known failure: summaries shift dates by a year and migrate facts between eras).
 6. **Privacy firewall for conversation-sourced content.** This repo is public domain; Jason's claude.ai conversations are not. `sources/claude/*` digests carry only Texas-42-project content — nothing about work, family, or any non-42 personal thread, not even in paraphrase. When in doubt, omit.
 7. **"Worth a bead" is not a resting state.** A flagged risk either becomes a tracked issue in the same session or the flag is removed; parked risks evaporate (documented instance: the WorldSamplerMRV sampler bias).
+8. **Audits leave no residue on pages.** The wiki is compressed context, not a maintenance record: a reader wants what's true, not the story of how the wiki got it right. An audit's corrections land in place; a genuinely unresolved source discrepancy gets a one-line note next to the number it qualifies; live questions go to `questions/open.md`; the audit event is one `log.md` entry, and the correction trail is git history. Pages never carry "reviewed on <date>" sections or verdict stamps.

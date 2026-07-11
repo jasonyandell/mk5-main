@@ -212,9 +212,9 @@ within the bench's noise envelope.
 20260427_025437 phase3-stack-best            wall=28.3 decode=87.7 peak=8.93  (FakeRockert Q4 + continuous)
 20260427_030306 continuous-paired-q4unsloth  wall=71.3 decode=36.8 peak=12.24 (paired baseline)
 20260427_030429 q4-unsloth-ud-cont           wall=44.1 decode=61.3 peak=6.24  (Unsloth UD Q4 + continuous)
-20260427_030755 continuous-paired-stack2     wall=60.2 decode=42.1 peak=10.80 (paired baseline)
-20260427_030849 phase3-stack-best-v2         wall=48.7 decode=66.1 peak=5.08  (Unsloth UD Q4 + continuous, headline)
-20260427_031040 phase3-stack-best-v3         wall=43.0 decode=61.9 peak=6.07  (Unsloth UD Q4 + continuous, stability)
+20260427_030558 continuous-paired-stack2     wall=60.2 decode=42.1 peak=10.80 (paired baseline)
+20260427_030708 phase3-stack-best-v2         wall=48.7 decode=66.1 peak=5.08  (Unsloth UD Q4 + continuous, headline)
+20260427_030825 phase3-stack-best-v3         wall=43.0 decode=61.9 peak=6.07  (Unsloth UD Q4 + continuous, stability)
 ```
 
 ### Dragons that bit during execution
@@ -479,8 +479,8 @@ calibration calculus has been waiting for.
   loader for `--draft-model`).
 - mlx-lm tokenizer-compat check: `mlx_lm/server.py:354`.
 - Quant repos:
-  - `FakeRocket543/gemma-4-e2b-it-MLX-4bit` (PLE-safe)
-  - `FakeRocket543/gemma-4-e2b-it-MLX-8bit` (PLE-safe)
+  - `FakeRockert543/gemma-4-e2b-it-MLX-4bit` (PLE-safe)
+  - `FakeRockert543/gemma-4-e2b-it-MLX-8bit` (PLE-safe)
   - `unsloth/gemma-4-E2B-it-UD-MLX-4bit` (PLE-aware "UD" variant)
   - **Avoid:** `mlx-community/gemma-4-e2b-4bit`,
     `unsloth/gemma-4-E2B-it-MLX-4bit` (non-UD) — known broken.

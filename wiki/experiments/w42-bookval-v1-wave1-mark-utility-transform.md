@@ -15,9 +15,10 @@ Applying the deterministic Chapter 10 mark/match utility transform to the existi
 branch_atlas_scaled_v0 Q PDFs produces a **23.2% top-1 action flip rate** (65/280
 decisions). However, **81.5% of those flips have zero mark gain** — they are
 surface-flattening artifacts of the binary mark threshold, not strategic preference
-changes. Only **10 decisions (3.6% of total)** show genuine objective flips where
+changes. Only **12 decisions (4.3% of total)** show genuine objective flips where
 the mark-preferred action has a higher probability of winning the hand under marks,
-at a mean point-EV cost of 1.46 points and a mean mark-gain of 0.044 marks.
+at a mean point-EV cost of 1.32 points and a mean mark-gain of 0.030 marks
+(10 of the 12 are detector-endorsed; that subset has mean cost 1.46 pts, mean gain 0.032).
 
 The book's claim that tournament (marks) play demands different decisions from money
 (points) 42 does show up at the action-ranking level, but only modestly at bid=30.
@@ -66,11 +67,12 @@ The binary mark transform collapses a continuous 42-point outcome space into a b
 +1/−1 mark outcome. Near the 30-point make threshold, small Q differences may not change
 whether a world is "made" or "set", producing near-identical mark EV across actions.
 
-- **10 decisions (15.4%)**: positive mark_gain — genuine preference shift
-- **55 decisions (84.6%)**: mark_gain = 0 — tie-breaking artifact of the flat binary surface
+- **12 decisions (18.5%)**: positive mark_gain — genuine preference shift
+- **53 decisions (81.5%)**: mark_gain = 0 — tie-breaking artifact of the flat binary surface
 
-For the genuine flips: mean EV-cost = 1.46 pts, mean mark-gain = 0.044 marks
-(~4.4 percentage points better odds of winning this hand under marks).
+For the genuine flips: mean EV-cost = 1.32 pts, mean mark-gain = 0.030 marks.
+Mark utility is the ±1 (team0 − team1) mark differential, so a 0.030 mean gain is
+~1.5 percentage points better odds of winning the hand under marks.
 
 ### Declaration-level finding: no-trump is most sensitive
 
@@ -115,7 +117,8 @@ with the book's claim that marks create early-terminal pressure.
 
 3. **game 4, decision 7, fours, bidder_partner, early_hand**: 3.8pt cost, **0.070 mark gain**.
    `last_to_act_closure_policy` active. **Genuine objective flip** — partner-third-seat
-   decision where a count-safe line sacrifices point EV but improves make odds by 7%.
+   decision where a count-safe line sacrifices point EV but improves make odds by
+   3.5 percentage points (0.070 in ±1 mark-utility).
 
 4. **game 7, decision 17, doubles, left_setter, mid_hand**: 3.7pt cost, 0.0 mark gain.
    `doubles_regime_plan|doubles_trump_regime` active. Doubles-as-trump creates a
@@ -123,7 +126,8 @@ with the book's claim that marks create early-terminal pressure.
 
 5. **game 6, decision 4, sixes, left_setter, early_hand**: 3.4pt cost, **0.028 mark gain**.
    `setter_lead_pressure|defender_damage_lead_class` active. **Genuine setter flip**
-   — opening lead that forfeits 3.4 pts of EV improves setter's mark-winning odds by 2.8%.
+   — opening lead that forfeits 3.4 pts of EV improves setter's mark-winning odds by
+   1.4 percentage points (0.028 in ±1 mark-utility).
 
 ### Blocker finding: ch10-special-bid-mark-multiplier cannot be tested here
 
@@ -137,7 +141,7 @@ to test whether high-stakes special bids produce qualitatively different flip ra
 
 1. Single seed (9430), bid=30 only. No generalization claim across seeds or bid values.
 2. 81.5% of flips are surface-flattening artifacts; the strategic content is in the
-   10 genuine mark_gain > 0 flips.
+   12 genuine mark_gain > 0 flips.
 3. The `joined_claim_action_rows.csv` corpus (seeds 0-9, corpus_v2_train) does not
    overlap with branch_atlas_scaled_v0 (seed 9430), so full feature-label join was
    not possible. Book endorsement uses `matched_position_detectors` from the atlas CSV.

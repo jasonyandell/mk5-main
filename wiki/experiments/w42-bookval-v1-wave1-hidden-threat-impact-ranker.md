@@ -146,7 +146,7 @@ Exact row-level join is not possible (seed mismatch). The categorical bridge via
 - `ch05_setter_pounce_count_before_certainty` fires at 1-3% of setter decisions. This
   low base rate means the targeted claim is rare but co-occurs with the highest-impact
   tile patterns when it fires.
-- Trump-count tiles as load-bearing appear in **fours** (8 decisions), **blanks** (6),
+- Trump-count tiles as load-bearing appear in **fours** (12 decisions), **blanks** (6),
   **sixes** (2). The 4-0/4-5 tiles in fours declaration are uniquely impactful because
   fours has a constrained trump suit (7 tiles vs 13 in a suit-declared game), so each
   trump count tile resolves a larger fraction of positional uncertainty.

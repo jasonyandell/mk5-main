@@ -28,8 +28,10 @@ shared table shape for the next [[w42-next-model-decision]] work package.
 
 ## Data Slice
 
-The v0 table reads
-`forge/analysis/results/data/eq_pdf_v3_sample.jsonl`.
+The v0 table read
+`forge/analysis/results/data/eq_pdf_v3_sample.jsonl` (a local, untracked
+artifact; no longer present in the repo — sha256 recorded in
+`w42/phase2_decision_table/manifest.json`).
 
 | artifact | rows | grain |
 |---|---:|---|

@@ -136,3 +136,5 @@ Wave 4.0 measurement agent (t42-hmjr). Forge pipeline + bootstrap statistics. In
 - [[w42-bookval-v1-wave2-ch10-action-level]] — Wave2.H mark_ev affine identity at all bids
 - [[w42-book-validation-campaign]] — parent campaign
 - [[w42-book-claim-synthesis-and-ai-directions]] — campaign synthesis
+
+---

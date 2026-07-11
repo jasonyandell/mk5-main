@@ -45,4 +45,4 @@ iter-1 plan: drop the full primer, keep the 42-aware framing block (provides voc
 
 ## Related pages
 
-[[burl-iter0-adapter]] · [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[decisions/primer-tradeoff]] · [[experiments/burl-phase1-primer]] · [[experiments/burl-phase2-starcorpus]] · [[experiments/burl-move3-base]] · [[experiments/burl-move4-native-spike]] · [[sources/789e14d]]
+[[burl-iter0-adapter]] · [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[primer-tradeoff]] · [[burl-phase1-primer]] · [[burl-phase2-starcorpus]] · [[burl-move3-base]] · [[burl-move4-native-spike]] · [[789e14d]]

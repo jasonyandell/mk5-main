@@ -77,8 +77,10 @@ Full pairwise matrix (from `agreement_matrix.csv`):
 | 3-source spread | 1,082 | 3.9% |
 | 4-source spread (all different) | 11 | 0.04% |
 
-The 11 four-way-split decisions are the most extreme divergence points and appear
-predominantly in no-trump and doubles-suit late-trick positions with 4–5 legal actions.
+The 11 four-way-split decisions are the most extreme divergence points. They span
+declarations (3× twos, 3× sixes, 2× fives, 2× doubles-suit, 1× no-trump), occur in
+early-to-middle tricks (trick_idx 0–3), and have 4–7 legal actions
+(from `divisive_decisions.csv`, `n_distinct_picks == 4`).
 
 ## Per-Claim-Family Agreement
 
@@ -114,25 +116,27 @@ called_non_double. The detector tags the action correctly within its contrast pa
 the absolute endorsement (vs the oracle's first choice) is wrong most of the time.
 
 ### 3. Setter-regime label is too coarse (ch05_setter_pressure_regime)
-The coarsest label in ch05 fires on 58% of setter decisions and has a 58% conflict
-rate with EV. It marks the game regime, not the action quality. Because it fires on
+The coarsest label in ch05 fires on 100% of setter action rows, and 60% of the rows
+it fires on are non-EV-best. It marks the game regime, not the action quality. Because it fires on
 every candidate in a setter-regime decision, it cannot discriminate the best action.
 This is a regressor/detector design gap: regime labels need action-discriminating
 subconditions before they can endorse a specific domino.
 
 ### 4. CVaR and robust-Q25 track EV much better than make-rate
-On the 280-decision dist-lens sub-corpus:
-- `cvar_10` agrees with EV: **82.5%**
-- `robust_q25` agrees with EV: **81.8%**
-- `p_make`/`threshold_mass` agree with EV: only **58.9%**
+On the 280-decision dist-lens sub-corpus (seed 9430; top-1 argmax agreement with EV,
+utility-side ties broken by row order — EV itself has no tied maxima):
+- `cvar_10` agrees with EV: **82.5%** (tie-free)
+- `robust_q25` agrees with EV: **81.8%** (tie-free)
+- `p_make` agrees with EV: **74.6%** (91.1% if ties count as agreement)
+- `threshold_mass_low` agrees with EV: only **45.7%** (58.9% if ties count)
 
-Risk-adjusted utilities are near-substitutes for EV; make-rate and threshold-mass diverge
-significantly in high-variance positions (especially last-to-act and no-trump regime).
-This suggests the distribution-lens reranker's most useful contribution is CVaR/robust-Q25,
-not the make-rate lens.
+Risk-adjusted utilities are near-substitutes for EV; make-rate and especially the
+lower-threshold-mass lens diverge more. This suggests the distribution-lens reranker's
+most EV-consistent lenses are CVaR/robust-Q25, while threshold-mass is the true outlier.
 
 ### 5. Detector endorses 5-5 (the double) against the EV-best non-count
-Twenty decisions have detector endorsing 5-5 when EV picks a different domino. The most
+Twenty of the top-100 most divisive decisions (915 decisions corpus-wide) have the detector
+endorsing 5-5 when EV picks a different domino. The most
 extreme case (4-way spread, regret 31.03) is a no-trump setter closure: the detector
 endorses 5-5 (count, double) at regret 31, while EV picks 6-0 (non-count, non-double),
 Gus picks 1-1 (minimal regret 1.33), and dist-lens picks 5-1. The 5-5 looks safe

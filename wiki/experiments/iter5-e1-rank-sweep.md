@@ -16,7 +16,7 @@ First real [[preserve-thoughts]] adapter trained with `max_seq_length=4096` (tru
 
 - **Corpus:** 26-row `preserve_thoughts` corpus, `max_seq_length=4096`
 - **Recipe:** 3 epochs, matched across all ranks, [[mlx-lm]] on M5 Max
-- **Eval:** same 10-decision held-out set (9 completed for base/rank-16/64; 10 attempted for rank-128)
+- **Eval:** same 10-decision held-out set (rank-16 completed 10/10; base and rank-64 completed 9/10; rank-128 completed 0/10)
 
 ## Results
 
@@ -36,6 +36,8 @@ The rank-16 improvement (66.7% → 70.0%) is modest but real — the first evide
 ## Reframes
 
 Retroactively reframes the iter-4 [[experiments/iter4-null-preserve-thoughts]] result: with `max_seq_length=1024`, both stripped and preserved rows were identical at token 1024. The fix was data-reaching-loss, not LoRA capacity.
+
+Note: the E1 writeup and the ceca203 commit message say the old truncation ceiling was `max_seq_length=2048`; [[sft-max-seq-length]] and the iter-4 pages say TRL's default 1024. This page follows the 1024 account — one of the two source docs is wrong.
 
 ## Related pages
 

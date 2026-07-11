@@ -106,7 +106,7 @@ make/set/E[Q] counterfactuals.
 | Double-ahead protection reduces only the protected side of an off, not both sides. | static side detector supported, context-limited | Side-specific protection covers only `16.774838%` of exposed count points; live sequence value remains untested. |
 | Duplicate count exposures should be counted once in the bid risk budget. | context-limited / not run | Unit-testable enumeration against naive risk-sum baseline. |
 | One vulnerable trick should be bid pessimistically, while two or more vulnerable tricks can justify some partner-help expectation. | context-limited / not run | Partner rescue probability and bid-regret interaction by loss-opportunity count. |
-| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | **supported** on same-hand bid-margin slice | [[w42-bookval-v1-wave2-ch02-multistep]] paired all 5 step pairs (30↔32, 32↔35, 35↔36, 36↔39, 39↔42) over n=8,168-10,052 paired decisions per step: mark_ev deltas `+0.07` to `+0.15`, all CIs exclude zero in book direction. Cohen d grows monotonically `0.16` → `0.47`. All 85 slice cells (decl × seat × phase × step) support book direction. Transitive 30→42 cumulative matches sum-of-steps within 0.81%. Ledger row promoted from `context-limited` to **`supported`** — the campaign's first promotion above `context-limited` from a non-supported start. Cross-contract bid choice (different declarations at different bids) and full auction-policy testing remain separate scopes. |
+| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | **supported** on same-hand bid-margin slice | [[w42-bookval-v1-wave2-ch02-multistep]] paired all 5 step pairs (30↔32, 32↔35, 35↔36, 36↔39, 39↔42) over n=8,168-10,052 paired decisions per step: mark_ev deltas `+0.048` to `+0.146`, all CIs exclude zero in book direction. Cohen d ranges `0.16`–`0.47` (smallest at 35↔36, largest at 39↔42; not monotone in step order). All 85 slice cells (5 step pairs × [10 decls + 4 seat roles + 3 phases]) support book direction. Transitive 30→42 cumulative matches sum-of-steps within 0.81%. Ledger row promoted from `context-limited` to **`supported`** — the campaign's first promotion above `context-limited` from a non-supported start. Cross-contract bid choice (different declarations at different bids) and full auction-policy testing remain separate scopes. |
 
 ## Wave 2 Findings (Book Validation v1)
 
@@ -139,8 +139,8 @@ plan.
 
 **Update**: Wave 2.G landed at [[w42-bookval-v1-wave2-ch02-multistep]]
 and extended the evidence to all 5 adjacent step pairs in {30, 32, 35,
-36, 39, 42}. Result: monotone overbid penalty across all steps
-(Cohen d `0.16` → `0.47`), 85 of 85 slice cells in book direction,
+36, 39, 42}. Result: overbid penalty in the book direction at every step, no reversals
+(Cohen d `0.16`–`0.47`), 85 of 85 slice cells in book direction,
 transitive cumulative matches sum-of-steps. Ledger row promoted from
 `context-limited` to **`supported`** on the same-hand bid-margin
 slice — the campaign's first non-trivial `supported` promotion. The

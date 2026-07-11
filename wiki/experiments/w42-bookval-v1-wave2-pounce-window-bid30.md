@@ -185,3 +185,5 @@ Input corpus: `w42/book_validation_v1/wave2/snapshots/pounce_window/snapshots.js
 - [[winning42-ch12-advanced-bidding-playing]] — pounce instruction source
 - [[w42-phase4-claim-completion-board]] — baseline ledger
 - [[w42-claim-analysis-synthesis-report]] — Wave 1 synthesis
+
+---

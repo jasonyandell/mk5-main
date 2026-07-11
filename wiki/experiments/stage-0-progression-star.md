@@ -78,4 +78,4 @@ two days after that made the flashcard-format v3 plateau moot rather than resolv
 
 ## Related pages
 
-[[stage-0-adapter]] · [[kerry-adapter]] · [[v3-adapter]] · [[rules-adapter]] · [[trump-drilling]] · [[kerry-curriculum]] · [[star]] · [[k1-grading]] · [[learned-by-playing]] · [[experiments/star-10-iterations]] · [[sources/a2498e4]] · [[sources/601f622]] · [[sources/8c1bb14]]
+[[stage-0-adapter]] · [[kerry-adapter]] · [[v3-adapter]] · [[rules-adapter]] · [[trump-drilling]] · [[kerry-curriculum]] · [[star]] · [[k1-grading]] · [[learned-by-playing]] · [[star-10-iterations]] · [[a2498e4]] · [[601f622]] · [[8c1bb14]]

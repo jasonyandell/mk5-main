@@ -155,3 +155,5 @@ No GPU. No forge access. Bootstrap statistics, pandas/numpy/scipy.
 - [[w42-bookval-v3-utility-argmax-divergence]] — Wave 4.0, the argmax-divergence gate that inverted this page's void-creation framing
 - [[w42-lens-v1-utility-head-to-head]] — Wave 4.1, the head-to-head that found EV best and p_make worst of four lenses
 - [[w42-book-validation-campaign]] — the tracker recording the ADOPT → ADOPT-DEFERRED downgrade
+
+---

@@ -52,8 +52,9 @@ Routing to a weaker adapter concentrates errors rather than diversifying them.
 
 Detect-and-route needs oracle calls to ship without quality regression. Without oracle
 budget, the prerequisite experiment is Q_head multi-world variance regularization —
-either during training (`train_v2_voids`) or by running K=50+ at inference with the
-current architecture. (commit message @ a09ef43)
+either during training (`train_v2_voids` loss penalizing cross-world Q variance) or by
+running K=100+ at inference with the current architecture (cheap but at best ~2× better
+than K=50). (PRACTICALITIES receipt 14 @ a09ef43)
 
 Router benefit concentrates on mid-game tricks (decisions 0-12, especially 4, 8, 10)
 where primary regret is 2-6 Q-pts. End-game decisions (24-27) are correctly never flagged.
