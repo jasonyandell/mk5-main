@@ -8,7 +8,7 @@ For broad orientation, prefer these compact entrypoints before loading the full
 catalog:
 
 - [[topics/the-wall|the-wall]] — **the front door.** The project's central question, stated precisely; every era since January 2026 is an attempt on it and every experiment grades against it. Read next: [[trails/the-wall-biography|the-wall-biography]] (the seven-month narrative, 2025-07-19 → 2026-07-06) → [[topics/consumption-ledger|consumption-ledger]] (every mechanism tried, each verdict with its evidence) (active)
-- [[trails/partnership-wall-research|partnership-wall-research]] — evidence map and staged program for the current frontier: measurement cleanup → joined failure atlas → causal microgames → architecture gates → build ladder (active)
+- [[trails/partnership-wall-research|partnership-wall-research]] — one-page current-position table plus the evidence map and staged frontier: measurement cleanup → joined failure atlas → causal microgames → architecture gates → build ladder (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: hubs, trails, leaf clusters, and search shortcuts (active)
 - [[entities/lem|lem]] — rules comprehension, Stage 0 adapters, STaR, and the LEM half of the LEM→Burl handoff (complete)
 - [[entities/burl|burl]] — tool-using play, wax_museum, burl-lab, chat, STaR traces, and post-commit Q&A (superseded)

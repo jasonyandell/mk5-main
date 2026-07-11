@@ -13,6 +13,40 @@ null observations, confounded measurements, unanswerable questions, unbuilt
 designs, and missing instruments, then routes them through
 [[partnership-value]] and [[partnership-research-gates]].
 
+## Current position — review this first
+
+| surface | status | what is true now | boundary / next gate |
+|---|---|---|---|
+| Pure-play baseline | MEASURED | `P0 = lens:ev` n=10 remains the strongest measured play policy. | It has not been reproduced on the repaired sampler over the two held-out blocks. |
+| Full-match baseline | MEASURED | `C0 = margin:wp(head_8) + lens:ev`; its demonstrated advantage is a bidding gain. | The explicit r8 bidder and large oracle are fingerprinted, but two-block C0 reproduction remains open. |
+| World sampler | BUILT + exact-fixture validated | `uniform-completion-dp-v1` replaces malformed/non-uniform legacy MRV and the failed rejection repair. | CPU fixtures and the low-mass JudSearch state pass; CUDA/MPS throughput, historical exposure, and policy-level effect remain open. |
+| Historical failure atlas | BUILT | [[partnership-failure-atlas-v0]] joins 75,079 actions / 28,000 decisions and inventories 114 live sources. | It proves archive insufficiency for Champion attribution; it does not measure a partnership null. |
+| Future decision record | BUILT + integration-validated | [[partnership-decision-record-v1]] records public/info/context/world identities, eight separate mechanism sections, and exact policy/artifact/sampler provenance. | A clean C0 smoke retained 644 decisions; live Q/PDF, belief change, action likelihood, plan state, and fixed/shuffled cohort remain unavailable. |
+| Partnership value | UNTESTED | No valid negative, null, or positive partnership result exists. | Requires fixed-versus-shuffled partners and actors that react to public actions. |
+| Causal microgames | DESIGNED, runner unbuilt | Five discriminating experiments are specified below with support, contrary evidence, missing instruments, and falsifiers. | The forced-state randomized-arm runner and mechanism telemetry must land before any architecture is selected. |
+| Successor architecture | INTENTIONALLY UNSELECTED | CFR, larger nets, LLMs, symbolic libraries, and Jud v2 remain candidates, not plans. | Only a mechanism that passes [[partnership-research-gates]] earns a build. |
+
+### Ordered next gates
+
+1. **Close measurement cleanup.** Benchmark the completion sampler on the
+   production device, audit historical state exposure, and reproduce P0/C0 on
+   two held-out seed blocks with exact policy and sampler fingerprints.
+2. **Build the causal runner.** Add forced-state injection and live emission of
+   Q/PDF, belief-before/after, actor-action likelihood, randomized partner
+   assignment, and mechanism-arm IDs to the canonical decision record.
+3. **Run the first partnership discriminator.** Start with sender convention x
+   receiver action-likelihood decoder x fixed/shuffled partners, using reactive
+   actors and paired states. Better belief alone is insufficient; the target is
+   a sender-by-decoder interaction that disappears when partners are shuffled.
+4. **Select and scale only what survives.** Promote the smallest passing
+   adapter to paired marks-to-7 evaluation, remove its claimed channel in an
+   ablation, then consider capacity, search, self-play, or a broader
+   architecture.
+
+The terminal criterion is unchanged: beat C0 on paired held-out full-match
+marks, gain more with matched than shuffled partners, and lose that advantage
+when the demonstrated role/partnership mechanism is removed.
+
 ## Baselines that must remain distinct
 
 The pure-play baseline is [[expected-q-value|E[Q]]] n=10 consumed as
