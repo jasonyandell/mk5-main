@@ -46,7 +46,7 @@ ORPHAN_CHANNEL_CLOSE_RE = re.compile(r"<channel\|>")
 TOOL_CALL_RE = re.compile(r"<\|tool_call>.*?<tool_call\|>", flags=re.DOTALL)
 COMMIT_PLAY_RE = re.compile(r"<\|tool_call>call:commit_play\{[^}]*\}<tool_call\|>")
 
-# Length thresholds for the classifier. See corpus_blend_design.md for choice.
+# Length thresholds for the classifier. See wiki/topics/ls-mixture.md for choice.
 SHORT_ASST_CHARS_MAX = 1500  # total assistant content cap
 SHORT_THOUGHT_CHARS_MAX = 200  # cumulative chars inside <|channel>thought blocks
 

@@ -2,7 +2,7 @@
 title: Pre-ML AI attempts — AlphaZero ruled out, PIMC survives, MCCFR built-then-retired
 kind: topic
 first_seen: 1ca876df
-last_updated: 3e063ff
+last_updated: pending-this-ingest
 status: retired
 ---
 
@@ -84,7 +84,7 @@ single most load-bearing sentence in this era:
 > could get that with fixed MCTS, and neural nets offer more upside for fun
 > play."*
 
-The postmortem is retained at `docs/archive/MCCFR-EXPLORATION.md`, which
+The postmortem is retained at `wiki/sources/mccfr-exploration.md`, which
 records the direct quality comparison: *"Play quality: Noticeably worse than
 simple heuristic rollouts."* Do not carry MCCFR forward as live or resumable
 infrastructure — this postmortem is its only surviving trace.

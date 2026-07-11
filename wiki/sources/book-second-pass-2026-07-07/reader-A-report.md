@@ -1,3 +1,11 @@
+---
+title: Book second pass 2026-07-07 — reader A raw report
+kind: source
+first_seen: 5e3f3245
+last_updated: pending-this-ingest
+status: active
+---
+
 # Second-Pass Close Reading — Winning 42, pp. 1–56 (p0014–p0080)
 
 Reader A. Covers "In a Nutshell," "Bidding," "Bidder Play," "Helping Your Partner," "Setting the Bidder," and the start of "Concentration and Style." Ranked by actionability for the jud/auction-first frontier.

@@ -1,3 +1,11 @@
+---
+title: Book second pass 2026-07-07 — reader C raw report
+kind: source
+first_seen: 5e3f3245
+last_updated: pending-this-ingest
+status: active
+---
+
 # Second-Pass Report: "Winning 42" pp. 109–156 (files p0142–p0199)
 
 ## Scope note — read this first

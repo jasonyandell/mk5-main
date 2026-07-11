@@ -2,7 +2,7 @@
 title: Burl STaR Run-3 (filter-only, strict pool)
 kind: experiment
 first_seen: 02d9096
-last_updated: add6a2a
+last_updated: pending-this-ingest
 status: complete
 ---
 
@@ -18,7 +18,7 @@ Hyperparameters: rank=8, lr=3e-5, 1 epoch, `--steps-per-eval 50`, `--early-stop-
 
 Eval: held-out 560 (`harvest_20260424_133611/`), `D_required_first` via `eval_adapter_smoke.py`. The eval defaults to `max_tokens=8192` for parity with the run-3c sequential reference (`run3c_eval_seq560_20260425_181016/`); add `--batch-size 6` (proven on M5 Max with belief+gus loaded) to route through `GemmaLocalNativeBatched` and the harvest-batched lockstep loop. Smoke (n=6, batch=6) matched the sequential reference within 1 decision out of 6 (acceptable temp=0.6 stochastic noise — see `run3c_smoke_n6b6_20260426_005343/`). Re-tag against `per_decision_eval_k200.jsonl` and compare bucket distributions to the unadapted 560 baseline.
 
-Full plan and rationale: `burl/STAR_RUN3_PLAN.md`.
+Full plan and rationale: `burl/STAR_RUN3_PLAN.md` (deleted; @ 233b7dc5).
 
 ## Pre-flight findings
 
@@ -95,7 +95,7 @@ The thought-vs-no-thought split tightened as the sample grew. At n=304 the gap l
 
 A 0.27% LoRA can flip whether the model thinks at all. That is the lesson that joins the recipe-lesson canon for [[star]].
 
-Scored against `burl/STAR_RUN3_PLAN.md` §"Success criteria":
+Scored against `burl/STAR_RUN3_PLAN.md` §"Success criteria" (@ 233b7dc5):
 
 - run-3: hard fail (no adapter) — see Training §Run-3.
 - run-3b: training succeeded, eval ran on 113/560, **thought-block emission 0%** — degenerate but informative.
@@ -160,7 +160,7 @@ Full report: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_202
 
 ## Pointers
 
-- Plan: `burl/STAR_RUN3_PLAN.md`
+- Plan: `burl/STAR_RUN3_PLAN.md` (deleted; @ 233b7dc5)
 - Trainer: `burl/train/star_mlx.py`
 - Tracked corpus builder: `burl/train/star_corpus.py` (CLI: `burl/train/build_star_corpus.py`)
 - Original run-3 corpus builder: `scratch/belief_trajectory_rollout/star/build_filtered_corpus.py`

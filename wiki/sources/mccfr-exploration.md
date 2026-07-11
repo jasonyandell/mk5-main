@@ -1,3 +1,11 @@
+---
+title: MCCFR exploration postmortem (Dec 2025)
+kind: source
+first_seen: 8699fc8a
+last_updated: pending-this-ingest
+status: active
+---
+
 # MCCFR Exploration for Texas 42
 
 This document archives the Monte Carlo Counterfactual Regret Minimization (MCCFR) exploration that was conducted for Texas 42 AI development. The approach was ultimately abandoned in favor of other methods.

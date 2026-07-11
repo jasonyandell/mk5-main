@@ -1,3 +1,11 @@
+---
+title: PI-oracle bidding research bead — canonical answer (Jan 2026)
+kind: source
+first_seen: a81fe27a
+last_updated: pending-this-ingest
+status: active
+---
+
 # Perfect-Information Oracles for Imperfect-Information Bidding in Texas 42
 
 **Status:** Definitive answer synthesizing all research

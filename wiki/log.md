@@ -333,7 +333,7 @@ catalog, the signaling conventions (top-unplayed-trump as protocol, donate-highe
 dump-to-inform, Plunge as legal one-bit signal), reputation-driven overbidding, the
 quantified-prior calibration table, and multi-step plans with author-supplied win rates
 (strip-the-protector p.92/94, double-ahead-of-off 53/60/33). Nine ranked follow-up
-experiments; raw reader reports preserved at `docs/research/book-second-pass-2026-07-07/`.
+experiments; raw reader reports preserved at `wiki/sources/book-second-pass-2026-07-07/`.
 **Updated:** [[w42-book-validation]] trail (frontier section routes to the second pass);
 [[w42-bookval-v1-wave2-pounce-high-bid]] gains caveat 0 — the `contradicted` verdict is a
 probable information-regime category error (book's clause is an imperfect-information hedge,

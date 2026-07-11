@@ -12,8 +12,8 @@ A no-oracle router over {direct π, belief-sampled Q-mean} that works: routing
 only ~5-7% of decisions cuts the eval blunder tail from 8 to ~4 per seed and
 mean [[regret-eval]] regret from 0.551 to ~0.42-0.43, with the learned router's
 5% cutoff introducing **zero new blunders** across five sampled-world seeds
-([gus/analysis/qmean_router_findings.md @ 233b7dc5](../../gus/analysis/qmean_router_findings.md);
-also recorded as gus/PRACTICALITIES.md §23). Adapter: `gus/adapters/v3_consistency_10000g.pt`;
+(gus/analysis/qmean_router_findings.md @ 233b7dc5;
+also recorded as gus/PRACTICALITIES.md §23 @ 233b7dc5). Adapter: `gus/adapters/v3_consistency_10000g.pt`;
 eval: `gus/data/corpus_eval_20.pt` (20 held-out games, 560 decisions); 2026-04-23.
 
 This refines [[router-reality-check]]: every non-oracle *replacement* hurts, but a

@@ -1,3 +1,11 @@
+---
+title: Book second pass 2026-07-07 — reader B raw report
+kind: source
+first_seen: 5e3f3245
+last_updated: pending-this-ingest
+status: active
+---
+
 # Second-Pass Report: Winning 42, pp. 59-108 (chapters 7-12)
 
 ## OCR quality note

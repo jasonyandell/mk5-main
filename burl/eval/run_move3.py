@@ -137,7 +137,7 @@ def _make_modal_model(server: Any, max_tokens: int = 2048) -> ModelCallable:
     ``_with_think_prefix`` so Gemma's output lands inside the XML protocol.
 
     ``max_tokens=2048`` is deliberate, not the ``gemma_serve.py`` default of 512:
-    per ``burl/GEMMA_4_ERGONOMICS.md``, Gemma 4 always emits a 200-500 token
+    per ``burl/GEMMA_4_ERGONOMICS.md`` (deleted; @ 233b7dc5), Gemma 4 always emits a 200-500 token
     thinking channel, so 512 leaves nothing for the answer channel where our
     ``<tool>`` / ``<commit>`` tags live.
     """

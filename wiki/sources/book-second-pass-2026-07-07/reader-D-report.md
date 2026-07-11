@@ -1,3 +1,11 @@
+---
+title: Book second pass 2026-07-07 — reader D raw report
+kind: source
+first_seen: 5e3f3245
+last_updated: pending-this-ingest
+status: active
+---
+
 # Second-pass report: Winning 42, "chapters 12–16"
 
 ## META-FINDING (read first): the page-range brief was wrong

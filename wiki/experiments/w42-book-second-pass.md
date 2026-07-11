@@ -2,7 +2,7 @@
 title: W42 Book Second Pass — what the first extraction missed
 kind: experiment
 first_seen: 5e3f3245
-last_updated: 5e3f3245
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -16,7 +16,7 @@ blind spot, [[w42-book-claim-synthesis-and-ai-directions]]), what is in the text
 that the first extraction flattened or never saw?
 
 Raw reader reports (quotes, page numbers, per-finding experiment sketches) are
-preserved at `docs/research/book-second-pass-2026-07-07/`.
+preserved at `wiki/sources/book-second-pass-2026-07-07/`.
 
 Headline: the first pass extracted the book's **tactics** and missed the book's
 **information theory**. The auction decoder, the action-choice inference catalog,

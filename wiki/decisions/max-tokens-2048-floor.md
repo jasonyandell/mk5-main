@@ -2,7 +2,7 @@
 title: max_tokens=2048 is the floor for batched Burl harvest
 kind: decision
 first_seen: 063fcac
-last_updated: 063fcac
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -43,7 +43,7 @@ Override flag `--max-tokens N` exists for opportunistic re-tuning.
 **Correction (era-6 audit, 2026-07-06):** "the constant default is now 2048" is false
 as stated. `burl/eval/run_move4_star_rollout_batched.py:696` has `default=512`,
 unchanged since `6a97d55` (predates this decision). 2048 appears only as an explicit
-CLI flag in `STAR_RUN3_PLAN.md` and in the harvest scripts that actually ran this
+CLI flag in `burl/STAR_RUN3_PLAN.md` (deleted; @ 233b7dc5) and in the harvest scripts that actually ran this
 decision's evidence (`scratch/belief_trajectory_rollout/harvest_batched.py`). The
 2048 floor documented above is real and was applied — but it must be passed
 explicitly via `--max-tokens 2048`; the code-level default in at least one production
