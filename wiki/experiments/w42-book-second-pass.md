@@ -1,8 +1,8 @@
 ---
 title: W42 Book Second Pass — what the first extraction missed
 kind: experiment
-first_seen: local-2026-07-07
-last_updated: local-2026-07-07
+first_seen: 5e3f3245
+last_updated: 5e3f3245
 status: active
 ---
 
@@ -54,8 +54,9 @@ bidding-claim extractor looked:
 
 Why it was missed: the material lives outside the bidding chapter, and the
 first pass modeled bids as risk budgets, not as messages. This is the highest-
-value cluster given [[jud]]'s auction-first frontier — jud's own page names
-auction policy, opponent response, and partner-bid intelligence as untested.
+value cluster given [[jud]]'s auction-first frontier — the campaign's own
+synthesis ([[w42-book-claim-synthesis-and-ai-directions]]) names real auction
+policy, opponent response, and partner-bid intelligence as untested.
 
 ## 2. The action-choice inference catalog (belief updates from choices, not voids)
 
