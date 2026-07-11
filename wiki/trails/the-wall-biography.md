@@ -2,7 +2,7 @@
 title: "The Wall: A Biography"
 kind: trail
 first_seen: afd4802
-last_updated: afd4802
+last_updated: local-2026-07-11
 status: active
 ---
 
@@ -396,9 +396,12 @@ answering "what next"; its terse decision-support form is
 - **RULED IN: pre-registration.** Every jud rung registered on GitHub before
   measurement; the plateau probe run to its falsifier. This is the loop, and
   it should be the default.
-- **UNTRACKED RISK, STILL OPEN: WorldSamplerMRV sampler bias** — flagged as
-  affecting "all historical Burl eval numbers and forge/eq training data,"
-  parked as "worth a bead," never filed. Still dangling as of 2026-07-06.
+- **MEASURED DEFECT, IMPACT BOUNDED ONLY ON THREE STATES: WorldSamplerMRV.**
+  [[world-sampler-mrv-audit]] later proved the validity guarantee false: an
+  exact `1/3` no-candidate branch on the historical late state injects `00`
+  outside the pool. The old `~6.8 Q` number was representation-confounded;
+  the clean panel found up to `4.619 Q` shift and no action flip. Corpus-wide
+  exposure remains unmeasured.
 
 ### Process and tooling (briefly, because they're load-bearing)
 
@@ -663,8 +666,9 @@ with its one-line code switch still unapplied
 and trustworthy with its plans untested ([[w42-claim-ledger]],
 [[book-strategy-player]]); the ratchet armed with its stopping condition unmet
 ([[the-gestation]]); the 85-bin histogram computed at scale and never once
-consumed as a shape ([[candlewax]]); and one untracked risk (WorldSamplerMRV
-sampler bias) still owed an issue. The named-but-unbuilt jud v2 cue — bigger
+consumed as a shape ([[candlewax]]); and one measured infrastructure defect
+([[world-sampler-mrv-audit]]) now has a valid, uniform replacement but no C0
+reproduction or historical exposure estimate. The named-but-unbuilt jud v2 cue — bigger
 leaf, per-move targets, E[Q] distilled with its consumer declared,
 opponents-in-rollout — sits in the record as an implication of the diagnosis
 rather than a hope, which is a first.

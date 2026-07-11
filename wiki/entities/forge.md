@@ -2,7 +2,7 @@
 title: Forge
 kind: entity
 first_seen: a8bccfa
-last_updated: local-2026-07-06
+last_updated: local-2026-07-11
 status: active
 ---
 
@@ -10,7 +10,7 @@ status: active
 
 Forge is the project's central shared ML infrastructure — the oracle, the E[Q] framework,
 and the training/analysis substrate no single project owns. It was originally built for
-[[lem]] and [[burl]]; its current consumers are [[gus]], [[w42]], jud, and [[champion]]
+[[lem]] and [[burl]]; its current consumers are [[gus]], [[w42]], [[jud]], and [[champion]]
 (`forge/oracle/`, `forge/eq/` — see `wiki/entities/jud.md` lines 19, 31, 321), with LEM and
 Burl now dormant. (lem/narrate/OVERVIEW.md @ a8bccfa; burl/OVERVIEW.md @ 8d26e0d)
 
@@ -37,6 +37,25 @@ the distinction:
 | **E[Q] bot** | The `argmax(E[Q])` player. Picks the legal move with highest expected value. The comparison target in [[k1-grading]]. | Throughout game + narration code |
 
 (burl/OVERVIEW.md @ 8d26e0d)
+
+## Sampler instrument boundary
+
+[[world-sampler-mrv-audit]] falsifies one implementation claim without
+changing the vocabulary above. The perfect-information solver remains exact;
+the E[Q] framework's target remains an average over consistent worlds. The
+production `WorldSamplerMRV` used to approximate that average can fabricate a
+world when its greedy assignment reaches no candidate and can weight valid
+worlds non-uniformly. The three-state audit finds up to `4.619 Q` value shift
+and no argmax flip; population exposure is not estimated.
+
+Sampler algorithm/version, exact-enumeration disagreement, and invalid-world
+rate are therefore required provenance for new Forge labels. Uniform rejection
+passed the original exact CPU fixtures but failed a real low-valid-mass arena
+state; [[world-sampler-mrv-audit]] retains that negative. The surviving
+`uniform-completion-dp-v1` sampler uses exact suffix counts and passes the CPU
+fixtures and JudSearch regression. A production CUDA benchmark, historical
+exposure scan, and C0 reproduction remain open in
+[[partnership-wall-research]].
 
 ## Also in Forge: Zeb
 

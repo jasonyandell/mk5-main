@@ -333,13 +333,25 @@ def main() -> int:
                         help="Write per-hand deal+auction snapshots (JSON) to this "
                              "path for the #26 belief-corpus bridge "
                              "(forge.cli.generate_eq_from_snapshots).")
+    parser.add_argument("--emit-decisions", type=str, default=None,
+                        help="Write canonical per-play decision JSONL plus a "
+                             "checksum/provenance manifest. This post-match "
+                             "export does not alter policy play.")
     args = parser.parse_args()
 
     for spec in (args.team_a, args.team_b):
         if "+" not in spec:
             parser.error(f"Player spec needs <bidder>+<play>, got {spec!r}")
 
+    # Code provenance must describe the policy implementation before the run
+    # creates or modifies summary/CSV/decision artifacts in the worktree.
+    decision_code_provenance = None
+    if args.emit_decisions:
+        from arena.decision_records import git_provenance
+        decision_code_provenance = git_provenance(PROJECT_ROOT)
+
     model = None
+    oracle_checkpoint = None
     device = args.device
     if needs_model(args.team_a, args.team_b) or needs_gus(args.team_a, args.team_b):
         import torch
@@ -351,9 +363,9 @@ def main() -> int:
     if needs_model(args.team_a, args.team_b):
         from forge.zeb.eval.loading import DEFAULT_ORACLE, load_oracle
 
-        ckpt = Path(args.checkpoint or PROJECT_ROOT / DEFAULT_ORACLE)
-        print(f"Loading oracle: {ckpt} on {device}", flush=True)
-        model = load_oracle(str(ckpt), device)
+        oracle_checkpoint = Path(args.checkpoint or PROJECT_ROOT / DEFAULT_ORACLE)
+        print(f"Loading oracle: {oracle_checkpoint} on {device}", flush=True)
+        model = load_oracle(str(oracle_checkpoint), device)
 
     bid_a = parse_bidder(
         args.team_a.split("+", 1)[0], device=device, gus_adapter=args.gus_adapter,
@@ -444,6 +456,47 @@ def main() -> int:
         # pretty-printed form would be ~30x the lines for zero information.
         snap_path.write_text(json.dumps(payload) + "\n")
         print(f"Wrote {len(snaps)} snapshots -> {snap_path}", flush=True)
+
+    if args.emit_decisions:
+        from arena.decision_records import (
+            build_decision_records,
+            policy_fingerprint_from_spec,
+            write_decision_records,
+        )
+
+        common = {
+            "n_samples": args.n_samples,
+            "device": device,
+            "oracle_checkpoint": oracle_checkpoint,
+            "gus_adapter": args.gus_adapter,
+            "belief_bidder_adapter": args.belief_bidder_adapter,
+            "repo_root": PROJECT_ROOT,
+            "code_provenance": decision_code_provenance,
+        }
+        policy_a = policy_fingerprint_from_spec(args.team_a, **common)
+        policy_b = policy_fingerprint_from_spec(args.team_b, **common)
+        decisions = build_decision_records(
+            result, policy_a=policy_a, policy_b=policy_b,
+        )
+        decision_path = Path(args.emit_decisions)
+        manifest_path = write_decision_records(
+            decision_path,
+            decisions,
+            result=result,
+            policy_a=policy_a,
+            policy_b=policy_b,
+            run_metadata={
+                "fast_batching": args.fast_batching,
+                "n_samples": args.n_samples,
+                "device": device,
+                "max_redeals": args.max_redeals,
+            },
+        )
+        print(
+            f"Wrote {len(decisions)} decisions -> {decision_path}; "
+            f"manifest -> {manifest_path}",
+            flush=True,
+        )
 
     return 0
 

@@ -13,6 +13,17 @@ Format:
 
 ---
 
+- **Q:** Is the `WorldSamplerMRV` `~6.8 Q` discrepancy actually corrupting
+  historical Burl evaluation and Forge E[Q] data, and by how much?
+  - Raised: `afd4802` ([[batch-throughput-bench]], [[sources/7321952]])
+  - Resolved: `local-2026-07-11` ([[world-sampler-mrv-audit]]) — partial
+  - Answer: The old number is not a clean estimate because the comparison used
+    different hand encodings and omitted action/N/RNG provenance. A new exact
+    audit proves the validity guarantee false: one historical late state emits
+    malformed worlds with probability `1/3` and shifts action value by up to
+    `4.619 Q`, but none of three fixtures flips the best action. Population and
+    historical-corpus impact remain open as a narrower exposure question.
+
 - **Q:** Will vLLM return once Gemma 4's transformers incompatibility is resolved, or is HF `model.generate()` the permanent simpler choice?
   - Raised: `8724e93` ([[sources/8724e93]])
   - Resolved: `26f5ddf` ([[sources/26f5ddf]])

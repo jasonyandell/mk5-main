@@ -2,7 +2,7 @@
 title: Arena — full-game harness
 kind: entity
 first_seen: local-2026-06-12
-last_updated: d678598
+last_updated: local-2026-07-11
 status: active
 phase: landed; measuring stick for the champion ladder
 ---
@@ -18,6 +18,13 @@ A player is a (BidPolicy, PlayPolicy) pair. Matches are paired-seed with
 team rotation (half 1: A as seats {0,2}; half 2: seats {1,3}; identical
 deal seeds), so card luck cancels and the auction itself becomes part of
 what is measured.
+
+[[partnership-decision-record-v1]] adds a post-match measurement surface: one
+replay-verified row per play, with distinct public-state, actor-information,
+auction/score-context, and offline-world identities. It fingerprints the exact
+bidder, player, artifacts, sampler, utility, and partner assignment while
+leaving action likelihood, plan state, fixed/shuffled cohort, and Q/PDF values
+explicitly unavailable. The exporter changes no policy execution.
 
 ```bash
 python -u -m arena.cli --team-a heuristic+lens:ev --team-b bid30+lens:ev \
@@ -87,9 +94,9 @@ sweeps. Result under `arena/results/net_vs_heuristic_128/`.
 
 ## Belief-weighted world sampling — measured null (rung #25, 2026-06-12)
 
-`champion/play.py BeliefLensPlay` is the highest-leverage architectural slot: it
-keeps the validity-guaranteed MRV world sampler and the oracle E[Q] path
-unchanged and changes only the marginalization — instead of averaging Q uniformly
+`champion/play.py BeliefLensPlay` was the highest-leverage architectural slot:
+it kept the then-believed-valid `WorldSamplerMRV` and the oracle E[Q] path
+unchanged and changed only the marginalization — instead of averaging Q uniformly
 over the sampled worlds, it importance-weights them by the Gus belief posterior
 (`champion/belief.py`). A world's weight is the softmax over worlds of
 Σ log P(seat | tile) under the belief head, with a uniform floor (`uniform_mix=0.1`)
@@ -168,6 +175,26 @@ share, at a slightly lower make-rate 65.6% vs 69.1%, and the two cancel). The
 right q derived from self-play is rung #26's equilibrium. Results under
 `arena/results/scorelens_vs_ev_192/` and `pass_vs_nopass_128/`.
 
+## 2026-07-11 sampler and record boundary
+
+[[world-sampler-mrv-audit]] later falsified the sampler guarantee shared by the
+historical Lens arena runs. One exact late state has malformed-world mass
+`1/3`; another weights valid worlds non-uniformly. The three-state causal panel
+finds no action flip, so the arena results above are not retracted, but their
+population exposure is unknown. Even same-sampler A/B contrasts can change if
+the distortion moves the two policies across different action boundaries.
+
+The replacement `uniform-completion-dp-v1` passes exact CPU fixtures and the
+real low-valid-mass JudSearch regression. CUDA/MPS execution and throughput are
+not measured here, so the 2026-07-06 MPS performance numbers describe the
+legacy sampler, not the replacement. C0 must be reproduced on two held-out
+blocks before the sampler instrument is treated as harmless at policy level.
+
+[[partnership-decision-record-v1]] supplies that reproduction's canonical row
+identity, policy/artifact/sampler fingerprint, and explicit online/offline
+boundary. It still does not emit action likelihood, Q/PDF tensors, persistent
+plan state, or a fixed-versus-shuffled partner arm.
+
 ## First physics (2026-06-12)
 
 Identical oracle play both sides (lens:ev, N=10), bidders differ —
@@ -241,6 +268,8 @@ world-sampling RNG) but is itself run-to-run deterministic on a fixed device.
 ## Links
 
 - [[champion]] — the ladder this measures; rung 1
+- [[partnership-decision-record-v1]] — the canonical decision/provenance seam
+  for the partnership-wall program
 - [[w42-lens-v1-utility-head-to-head]] — the play-only paired-seed
   predecessor and the lens utilities the arena reuses
 - [[w42-bookval-v1-wave2-bid-aware-atlas]] — validated the risk-budget

@@ -209,6 +209,45 @@ def _advance_state(seed: int, n_plays: int):
     return state
 
 
+def test_enumeration_worlds_contain_only_remaining_dominoes() -> None:
+    """The exact and sampled paths must encode the same kind of world.
+
+    Played dominoes are evidence for void inference, but they are not members
+    of an opponent's current hand.  Packing them into enumerated worlds makes
+    the oracle compare different state representations rather than different
+    world distributions.
+    """
+    from burl.tools.eq_distribution import (
+        _enumerated_worlds_tensor,
+        _extract_enumeration_inputs,
+        _state_to_game_state_tensor,
+    )
+
+    state = _advance_state(seed=900013, n_plays=20)
+    gst = _state_to_game_state_tensor(state, "cpu")
+    pool, known, slots, _voids, _decl_id = _extract_enumeration_inputs(gst, state)
+    worlds, raw = _enumerated_worlds_tensor(gst, state, "cpu")
+
+    assert known == [[], [], []]
+    assert sum(slots) == len(pool)
+    assert raw
+
+    played = {int(d) for d in state.played}
+    for world_idx, world in enumerate(raw):
+        assert [len(hand) for hand in world] == slots
+        flattened = [domino for hand in world for domino in hand]
+        assert len(flattened) == len(set(flattened)) == len(pool)
+        assert set(flattened) == set(pool)
+        assert not (set(flattened) & played)
+
+        packed = {
+            int(domino)
+            for domino in worlds[0, world_idx].reshape(-1).tolist()
+            if int(domino) >= 0
+        }
+        assert packed == set(pool)
+
+
 @pytest.mark.slow
 def test_enumerate_true_marks_sampling_mode() -> None:
     """At trick 6 (pool ~= 6) ``enumerate=True`` should return
@@ -312,11 +351,9 @@ def test_enumerate_is_deterministic_and_sensible() -> None:
     produce a PDF that sums to 1.0 with a mean inside the enumerated Q
     range.
 
-    We do NOT compare against the sampler here: WorldSamplerMRV biases
-    toward the most-constrained draws, so even at trick 6 with only ~12
-    unique worlds the sampled mean can differ from the uniform
-    (enumerated) mean by a few Q. Enumeration is the ground truth; the
-    sampler is the estimator. See SESSION_NOTES 2026-04-19.
+    This test does not compare against the sampler; distributional conformance
+    belongs to the dedicated sampler audit. Enumeration is the exact reference
+    once both paths encode the same remaining-hand representation.
     """
     from burl.tools.eq_distribution import (
         Q_VALUES,

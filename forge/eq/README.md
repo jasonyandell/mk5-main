@@ -185,7 +185,7 @@ forge/eq/
 │   └── cli.py               # CLI entry point
 ├── collate.py               # GPU records → training format
 ├── game_tensor.py           # GameStateTensor for GPU
-├── sampling_mrv_gpu.py      # MRV world sampler on GPU
+├── sampling_mrv_gpu.py      # Exact uniform world sampler (legacy MRV API)
 ├── tokenize_gpu.py          # GPUTokenizer
 ├── voids.py                 # Void inference from play history
 ├── sampling.py              # CPU backtracking sampler
@@ -437,6 +437,15 @@ Benefits:
 3. **Debuggable**: If it fails, there's a bug in void inference (not bad luck)
 
 The real game state is always a valid solution, so backtracking should never fail. If it does, it indicates a bug in constraint tracking.
+
+This section describes the CPU backtracker in `sampling.py`. The production
+torch sampler in `sampling_mrv_gpu.py` retains its historical `WorldSamplerMRV`
+name but uses an exact suffix-completion dynamic program. The prior greedy
+tensor MRV walk could dead-end and was not uniform over valid completions; a
+bounded uniform-rejection replacement was also falsified because real states
+can have valid mass below 0.01%. Completion-count sampling stays on the
+requested device and draws every valid assignment with equal probability,
+without an acceptance-rate wall.
 
 ### Oracle Tokenization: Duplicating vs Reusing Stage 1
 

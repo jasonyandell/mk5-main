@@ -1,0 +1,105 @@
+{
+  "schema_version": "w42.world-sampler-repair.v2",
+  "status": "complete",
+  "algorithm": "uniform-completion-dp-v1",
+  "implementation": "forge/eq/sampling_mrv_gpu.py",
+  "public_api": "WorldSamplerMRV legacy name retained for caller compatibility",
+  "production_contract": {
+    "counting": "int64 suffix dynamic program over tile position and three remaining capacities; 8^3 capacity states per position",
+    "sampling": "assign each tile to a seat in proportion to the exact suffix completion count behind that branch",
+    "result": "uniform over complete assignments because branch probabilities telescope to 1/root_completion_count",
+    "random_draw": "exact 62-bit integer randbelow with two bounded candidates; no float32 random-key ordering",
+    "padding": "padded pool positions are identity transitions",
+    "device": "all counting and sampling remain on the requested torch device; no CUDA-to-CPU fallback",
+    "failure": "infeasible inputs fail from root_completion_count=0; internal dead ends or exhausted integer draws raise before returning a partial world",
+    "fingerprint": "WorldSamplerMRV.algorithm=uniform-completion-dp-v1"
+  },
+  "rejected_intermediate": {
+    "algorithm": "uniform-rejection-v1",
+    "status": "rejected",
+    "what_worked": "uniform random partitions conditioned on void validity fixed malformed output and matched exact-uniform frequencies on the three original late-state fixtures",
+    "falsifying_state": {
+      "source": "arena/test_jud_search.py::test_mover_last_is_world_count_invariant",
+      "pool": [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 22, 23, 24, 25, 26, 27],
+      "hand_sizes": [6, 6, 6],
+      "void_suits_by_relative_opponent": [[], [7], [7]],
+      "decl_id": 6,
+      "exact_valid_assignment_count": 924,
+      "all_labeled_seat_partition_count": 17153136,
+      "exact_valid_mass": 0.000053867700926524454,
+      "proposal_budget": 40960,
+      "requested_worlds": 10,
+      "worlds_found": 3,
+      "empirical_acceptance": 0.0000732421875
+    },
+    "verdict": "mathematically uniform when it returns, but unusable because real valid mass can be below 0.01 percent; increasing the budget was rejected as the repair"
+  },
+  "exact_fixture_validation": {
+    "command": "python -m w42.world_sampler_audit.audit --skip-oracle --samples 100000 --empirical-seed 20260711 --device cpu",
+    "sample_count_per_fixture": 100000,
+    "empirical_seed": 20260711,
+    "all_live_outputs_valid": true,
+    "all_live_fixtures_match_uniform_within_seven_sigma": true,
+    "largest_uniform_standardized_residual": 2.82421730570268,
+    "historical_seed_900013_p20": {
+      "exact_world_count": 12,
+      "sample_unique_world_count": 12,
+      "invalid_fraction": 0.0,
+      "empirical_vs_uniform_tvd": 0.004259999999999993,
+      "max_uniform_standardized_residual": 1.8840420763492958
+    },
+    "valid_bias_seed_900017_p20": {
+      "exact_world_count": 60,
+      "sample_unique_world_count": 60,
+      "invalid_fraction": 0.0,
+      "empirical_vs_uniform_tvd": 0.010199999999999994,
+      "max_uniform_standardized_residual": 2.82421730570268
+    },
+    "symmetric_seed_900029_p20": {
+      "exact_world_count": 30,
+      "sample_unique_world_count": 30,
+      "invalid_fraction": 0.0,
+      "empirical_vs_uniform_tvd": 0.006736666666666669,
+      "max_uniform_standardized_residual": 2.1609704078141103
+    }
+  },
+  "direct_count_checks": {
+    "unconstrained_7_7_7_root_count": 399072960,
+    "unconstrained_formula": "21!/(7!^3)",
+    "low_mass_judsearch_root_count": 924,
+    "int64_required": true
+  },
+  "tests": {
+    "command": "pytest -q forge/eq/test_sampling_mrv_gpu.py w42/world_sampler_audit/test_audit.py arena/test_jud_search.py",
+    "result": "46 passed, 2 CUDA-skipped",
+    "sampler_focused": "28 passed, 2 CUDA-skipped",
+    "cuda_tests": "retained but skipped on this Mac"
+  },
+  "cpu_microbench": {
+    "method": "median of five fixed-seed Python timing runs; per-run loops 25 for 32x50 and 100 for single-game cases; no CUDA synchronization or production-device claim",
+    "unconstrained_32_games_x_50_samples": {
+      "legacy_greedy_mrv_ms": 7.59,
+      "rejected_uniform_rejection_ms": 1.02,
+      "uniform_completion_dp_ms": 4.2484
+    },
+    "historical_constrained_1_game_x_50_samples": {
+      "legacy_greedy_mrv_ms": 0.3,
+      "legacy_output_valid": false,
+      "rejected_uniform_rejection_ms": 0.39,
+      "uniform_completion_dp_ms": 0.6322,
+      "completion_dp_output_valid": true
+    },
+    "low_mass_judsearch_1_game_x_10_samples": {
+      "rejected_uniform_rejection_result": "failed after 40960 proposals with 3 of 10 worlds",
+      "uniform_completion_dp_ms": 1.6404,
+      "completion_dp_output_valid": true
+    }
+  },
+  "performance_interpretation": "completion DP is slower than the rejected rejection sampler on easy CPU states but faster by an unbounded factor on low-valid-mass states because its work does not depend on acceptance probability",
+  "platform_boundary": "CUDA was unavailable on this Mac; CUDA tests are retained but skipped, so production-device throughput and memory remain to be measured",
+  "remaining_research": [
+    "state-level historical exposure scan",
+    "two-held-out-block C0 reproduction",
+    "production CUDA throughput and memory benchmark"
+  ]
+}

@@ -289,9 +289,10 @@ def _extract_enumeration_inputs(
     my_hand = {int(d) for d in gst.hands[0, me].tolist() if int(d) >= 0}
     pool = [d for d in range(28) if d not in played and d not in my_hand]
 
-    # known[opp_idx] = dominoes already played by that opponent (from history).
-    # Voids inferred the same way: look at each play, if player couldn't follow
-    # the led suit, that seat is void in that suit.
+    # ``known`` means unplayed dominoes whose current owner is public.  A normal
+    # play state has none: dominoes in history have left every current hand and
+    # must not be packed back into the hypothetical deal.  History is still the
+    # source for void inference below.
     known: list[list[int]] = [[], [], []]
     voids: list[set[int]] = [set(), set(), set()]
 
@@ -305,7 +306,6 @@ def _extract_enumeration_inputs(
         opp_idx = (p - me - 1) % 4
         if opp_idx >= 3:
             continue
-        known[opp_idx].append(d)
         if lead < 0:
             continue
         # Determine led suit.

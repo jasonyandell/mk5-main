@@ -8,6 +8,7 @@ For broad orientation, prefer these compact entrypoints before loading the full
 catalog:
 
 - [[topics/the-wall|the-wall]] — **the front door.** The project's central question, stated precisely; every era since January 2026 is an attempt on it and every experiment grades against it. Read next: [[trails/the-wall-biography|the-wall-biography]] (the seven-month narrative, 2025-07-19 → 2026-07-06) → [[topics/consumption-ledger|consumption-ledger]] (every mechanism tried, each verdict with its evidence) (active)
+- [[trails/partnership-wall-research|partnership-wall-research]] — evidence map and staged program for the current frontier: measurement cleanup → joined failure atlas → causal microgames → architecture gates → build ladder (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: hubs, trails, leaf clusters, and search shortcuts (active)
 - [[entities/lem|lem]] — rules comprehension, Stage 0 adapters, STaR, and the LEM half of the LEM→Burl handoff (complete)
 - [[entities/burl|burl]] — tool-using play, wax_museum, burl-lab, chat, STaR traces, and post-commit Q&A (superseded)
@@ -103,6 +104,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 ### Concepts and methods
 
 - [[topics/champion-design-review|champion-design-review]] — Fable 5's recovered design reasoning behind the champion: verbatim reviews + a graded predictions ledger + the two caveats distillation sheared off (information-blind arena; score-conditioning is auction-not-play) (active)
+- [[topics/partnership-value|partnership-value]] — fixed-versus-shuffled partner lift as the target metric, preserving uncertainty, role/order, coordination, action-derived inference, plan persistence, distributional utility, bidding, and match score (active)
 - [[topics/belief-conditioned-self-play|belief-conditioned-self-play]] — the training approach behind jud (what jud trains, how, the arena, the self-play loop): Fable's spine + loop *as written* (trains the belief; the value stays the fixed oracle) is clear and sourced; the value-native extension is now endorsed by a Fable 5 session (2026-07-05; design question closed, historical intent stays open) with training mechanics first-cut at jud (active)
 - [[topics/star|star]] — Self-Taught Reasoner; LEM's Stage 1 training paradigm (superseded)
 - [[topics/backwards-curriculum|backwards-curriculum]] — start at the end of the game, ratchet backward one ply per stage (superseded)
@@ -171,6 +173,9 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 
 ## Experiments
 
+- [[experiments/partnership-failure-atlas-v0|partnership-failure-atlas-v0]] — five-way exact 75,079-action role/order/handshape join plus 114-source seam inventory; exposes 2,173 EV-vs-threshold disagreement decisions but proves the archive cannot yet attribute a failure to the current champion or measure fixed-pair lift (complete)
+- [[experiments/partnership-decision-record-v1|partnership-decision-record-v1]] — replay-verified Arena decision JSONL with separate public/info/context/world identities, eight mechanism sections, exact policy provenance, and a tested deterministic-deal leakage boundary; missing causal variables remain explicit nulls (complete; C0 reproduction open)
+- [[experiments/world-sampler-mrv-audit|world-sampler-mrv-audit]] — exact recursion falsifies legacy MRV (malformed mass 1/3; 4.619-Q shift), a uniform-rejection repair fails a real `5.39e-5`-valid-mass state, and exact completion-count sampling passes all fixtures (complete; CUDA performance, historical exposure, and C0 reproduction open)
 - [[experiments/first-gemma-contact|first-gemma-contact]] — a8bccfa: first Gemma 4 E2B inference pass, no adapter, showed coherent reasoning with state/trump-membership gaps (active)
 - [[experiments/stage-0-v1-training|stage-0-v1-training]] — Modal L4, 1 epoch, 208 steps, loss 32→0.001; adapter published to HuggingFace (active)
 - [[experiments/second-gemma-contact|second-gemma-contact]] — adapter-loaded re-run: hand-tracking fixed, trump membership still broken (active)
@@ -313,6 +318,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 
 ## Decisions
 
+- [[decisions/partnership-research-gates|partnership-research-gates]] — withhold CFR, larger nets, LLMs, symbolic strategy libraries, and Jud v2 until a causal microgame makes the corresponding mechanism eligible (active)
 - [[decisions/eval-seed-holdout|eval-seed-holdout]] — seeds 900000–909999 permanently held out for eval; never used in training (active)
 - [[decisions/discard-illegal-traces|discard-illegal-traces]] — illegal and parse-fail traces are discarded, not rationalized; illegal_rate becomes a diagnostic metric (active)
 - [[decisions/public-state-block|public-state-block]] — post-trick public state block (dominoes played, count, hand) appended to narration; state visible at the table belongs to the narrator, not the model (active)
@@ -483,6 +489,7 @@ Privacy-curated digests of Jason's own claude.ai user turns, one per pre-wiki er
 
 ## Trails
 
+- [[trails/partnership-wall-research|partnership-wall-research]] — cumulative experimental record and staged research program for turning information into demonstrated partnership marks (active)
 - [[trails/the-wall-biography|the-wall-biography]] — capstone of the seven-month archaeology (2025-07-19 → 2026-07-06): the long-form narrative companion to [[topics/the-wall|the-wall]], written over the six era memos and the era-6 reconciliation packets (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: frontier hubs, trails, large leaf clusters, and query shortcuts (active)
 - [[trails/lem-to-burl-handoff|lem-to-burl-handoff]] — thematic walkthrough of the LEM→Burl transition: shared infrastructure, diverging philosophies, open questions inherited (active)

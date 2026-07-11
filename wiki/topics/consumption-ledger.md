@@ -2,7 +2,7 @@
 title: Consumption Ledger
 kind: topic
 first_seen: afd4802
-last_updated: afd4802
+last_updated: local-2026-07-11
 status: active
 ---
 
@@ -205,9 +205,20 @@ chronology.
 - **RULED IN: pre-registration.** Every [[jud]] rung registered on GitHub
   before measurement; the plateau probe run to its falsifier. Should be the
   default loop.
-- **UNTRACKED RISK, STILL OPEN: WorldSamplerMRV sampler bias.** Flagged as
-  affecting "all historical Burl eval numbers and forge/eq training data,"
-  parked as "worth a bead," never filed. Still dangling as of 2026-07-06.
+- **MEASURED DEFECT; POPULATION IMPACT OPEN: WorldSamplerMRV.**
+  [[world-sampler-mrv-audit]] retires the confounded `~6.8 Q` note as a clean
+  estimate and proves two mechanisms instead. One late state has exact
+  no-candidate probability `1/3`; live code injects `00` outside the pool in
+  `0.33449` of 100,000 samples, shifting an action by up to `4.619 Q`. A second
+  valid-only state has TVD `0.0333` from uniform. No action rank flips in the
+  three-state panel, so historical corpus/eval exposure remains open.
+  A uniform-rejection replacement passed those supports, then failed a real
+  JudSearch state with exact valid-partition mass `5.39e-5` after finding only
+  3 of 10 worlds in 40,960 proposals. The surviving
+  `uniform-completion-dp-v1` sampler now passes all three exact supports and the
+  low-mass regression with zero invalid output and uniform frequencies. This
+  is an instrument repair, not a new policy mechanism; CUDA performance and C0
+  reproduction remain open.
 
 ## Process and tooling
 

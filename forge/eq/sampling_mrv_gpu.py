@@ -1,47 +1,22 @@
-"""GPU world sampling using MRV (Minimum Remaining Values) heuristic.
+"""Uniform, void-consistent world sampling on torch devices.
 
-This is a port of the CPU backtracking algorithm from sampling.py to GPU,
-using bitmask arithmetic for constraint checking.
+The public names in this module retain ``MRV`` for caller compatibility.  The
+historical implementation was a greedy, vectorized approximation of the CPU
+MRV backtracker.  It was neither a backtracker nor a uniform sampler: some
+local choices had unequal numbers of legal completions, and a dead end caused
+an all-false ``argmax`` to inject domino 0 into the result.
 
-## Key insight
-
-28 dominoes fit in a int64 bitmask. All constraint operations become:
-- candidates[p] = ~void_mask[p] & remaining
-- slack = popcount(candidates[p] & available) - need[p]
-- assign: hands[p] |= (1 << d), available &= ~(1 << d)
-
-## Algorithm
-
-For each sample (parallel across thousands):
-    available = remaining_pool_mask
-    hands[0..2] = 0
-    need[0..2] = hand_sizes
-
-    for step in 1..pool_size:
-        # MRV: find most constrained player
-        for p in 0..2:
-            slack[p] = popcount(candidates[p] & available) - need[p]
-        p = argmin(slack)
-
-        # Random selection from valid candidates
-        valid = candidates[p] & available
-        d = random_bit(valid)
-
-        # Assign
-        hands[p] |= (1 << d)
-        available &= ~(1 << d)
-        need[p] -= 1
-
-21 sequential steps, but vectorized across samples, no Python loops in hot path.
-
-## Performance
-
-- Guaranteed valid output (no rejection, no fallback)
-- O(pool_size) steps per sample
-- Each step is vectorized tensor ops
+The implementation now counts exact suffix completions over the three
+remaining hand capacities.  At each tile it chooses a seat proportional to the
+number of legal completions behind that choice.  The resulting policy is
+uniform over complete, void-consistent assignments without rejection, even
+when valid deals are vanishingly rare under random partitioning.  All dynamic
+programming and sampling stays on the requested torch device; there is no CPU
+fallback.
 """
 
 import torch
+
 from forge.eq.sampling_gpu import CAN_FOLLOW
 
 
@@ -76,17 +51,15 @@ SUIT_DOMINO_MASK = _build_suit_domino_mask()  # [8, 10] int64
 # tensor construction inside the assignment loop are one dispatch each).
 _DEVICE_CONSTS: dict[str, dict[str, torch.Tensor]] = {}
 
+SAMPLER_ALGORITHM = "uniform-completion-dp-v1"
+
 
 def _consts(device) -> dict[str, torch.Tensor]:
     key = str(device)
     c = _DEVICE_CONSTS.get(key)
     if c is None:
-        bit_indices = torch.arange(28, device=device, dtype=torch.int32)
         c = {
             "suit_domino_mask": SUIT_DOMINO_MASK.to(device),
-            "bit_indices": bit_indices,
-            "bit_masks": (1 << bit_indices).to(torch.int64),  # [28]
-            "one_i64": torch.tensor(1, dtype=torch.int64, device=device),
         }
         _DEVICE_CONSTS[key] = c
     return c
@@ -95,7 +68,7 @@ def _consts(device) -> dict[str, torch.Tensor]:
 def _build_void_masks_vectorized(
     voids: torch.Tensor,  # [n_games, 3, 8] bool
     decl_ids: torch.Tensor,  # [n_games]
-    device: str,
+    device: str | torch.device,
 ) -> torch.Tensor:
     """Build bitmask of dominoes that violate void constraints per player.
 
@@ -156,7 +129,9 @@ def _pool_to_mask(pools: torch.Tensor) -> torch.Tensor:
     valid_mask = pools >= 0  # [n_games, pool_size]
 
     # Clamp to valid range for bit shift (will be masked anyway)
-    pools_clamped = pools.clamp(min=0).to(torch.int64)
+    # Clamp both ends so this helper is safe during preflight validation; the
+    # caller still rejects IDs outside -1..27 before sampling.
+    pools_clamped = pools.clamp(min=0, max=27).to(torch.int64)
 
     # Compute bit positions: 2^d for each domino
     bit_positions = (1 << pools_clamped) * valid_mask.to(torch.int64)
@@ -179,20 +154,116 @@ def _popcount_vectorized(x: torch.Tensor) -> torch.Tensor:
     return x.to(torch.int32)
 
 
+def _uniform_below(
+    bounds: torch.Tensor, device: torch.device
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Draw one integer uniformly from ``[0, bound)`` per tensor element.
+
+    Completion counts are larger than float32's exact integer range, and even
+    float64 ``floor(U * bound)`` is not literally uniform unless ``bound``
+    divides 2^53. Draws therefore use rejection from the power-of-two range
+    ``[0, 2^62)``. Two candidates are drawn at once to avoid a hot-path host
+    synchronization; the second return value marks the astronomically rare
+    event that both candidates fell in the rejected tail. Successful draws are
+    exactly uniform. All bounds are positive and at most 399,072,960, so the
+    per-candidate rejection probability is below 8.7e-11.
+    """
+    random_range = 1 << 62
+    draw_shape = (*bounds.shape, 2)
+    if device.type == "mps":
+        high = torch.randint(
+            0, 1 << 31, draw_shape, dtype=torch.int64, device=device
+        )
+        low = torch.randint(
+            0, 1 << 31, draw_shape, dtype=torch.int64, device=device
+        )
+        draws = (high << 31) | low
+    else:
+        draws = torch.randint(
+            0, random_range, draw_shape, dtype=torch.int64, device=device
+        )
+
+    limit = random_range - torch.remainder(random_range, bounds)
+    accepted = draws < limit.unsqueeze(-1)
+    first_accepted = accepted.to(torch.int8).argmax(dim=-1, keepdim=True)
+    selected = torch.gather(draws, -1, first_accepted).squeeze(-1)
+    return torch.remainder(selected, bounds), ~accepted.any(dim=-1)
+
+
+def _build_suffix_completion_counts(
+    pools: torch.Tensor,
+    pool_sizes: torch.Tensor,
+    void_masks: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Build exact suffix counts for every capacity triple.
+
+    Returns ``(tile_ids, active_tiles, allowed, suffix)`` where
+    ``suffix[g, t, r0, r1, r2]`` counts assignments of tiles ``t..end`` that
+    exactly fill the three remaining capacities. Counts fit in int64: the
+    maximum reachable root is ``21! / (7!^3) = 399,072,960``.
+    """
+
+    n_games, pool_width = pools.shape
+    device = pools.device
+    pool_valid = pools >= 0
+    packed_pools = torch.where(
+        pool_valid, pools, torch.full_like(pools, 99)
+    ).sort(dim=1).values
+    positions = torch.arange(pool_width, device=device)
+    active_tiles = positions.unsqueeze(0) < pool_sizes.unsqueeze(1)
+    tile_ids = packed_pools.clamp(min=0, max=27)
+    tile_bits = 1 << tile_ids
+    allowed = (
+        (tile_bits.unsqueeze(2) & void_masks.unsqueeze(1)) == 0
+    ) & active_tiles.unsqueeze(2)
+
+    suffix = torch.zeros(
+        n_games,
+        pool_width + 1,
+        8,
+        8,
+        8,
+        dtype=torch.int64,
+        device=device,
+    )
+    suffix[:, pool_width, 0, 0, 0] = 1
+    for position in range(pool_width - 1, -1, -1):
+        next_counts = suffix[:, position + 1]
+        assign_0 = torch.zeros_like(next_counts)
+        assign_1 = torch.zeros_like(next_counts)
+        assign_2 = torch.zeros_like(next_counts)
+        assign_0[:, 1:, :, :] = next_counts[:, :-1, :, :]
+        assign_1[:, :, 1:, :] = next_counts[:, :, :-1, :]
+        assign_2[:, :, :, 1:] = next_counts[:, :, :, :-1]
+        completion_counts = (
+            assign_0 * allowed[:, position, 0].view(n_games, 1, 1, 1)
+            + assign_1 * allowed[:, position, 1].view(n_games, 1, 1, 1)
+            + assign_2 * allowed[:, position, 2].view(n_games, 1, 1, 1)
+        )
+        suffix[:, position] = torch.where(
+            active_tiles[:, position].view(n_games, 1, 1, 1),
+            completion_counts,
+            next_counts,
+        )
+
+    return tile_ids, active_tiles, allowed, suffix
+
+
 def sample_worlds_mrv_gpu(
     pools: torch.Tensor,           # [n_games, pool_size] available dominoes
     hand_sizes: torch.Tensor,      # [n_games, 3] opponent hand sizes
     voids: torch.Tensor,           # [n_games, 3, 8] void flags per opponent
     decl_ids: torch.Tensor,        # [n_games] declaration IDs
     n_samples: int = 50,
-    device: str = 'cuda',
+    device: str | torch.device = 'cuda',
     max_pool_size: int | None = None,
 ) -> torch.Tensor:
-    """Sample consistent worlds using MRV heuristic on GPU.
+    """Sample uniformly from worlds consistent with public void constraints.
 
-    Unlike rejection sampling, this is GUARANTEED to produce valid samples
-    (assuming valid constraints). Uses the same MRV algorithm as CPU
-    backtracking but with bitmask arithmetic.
+    ``MRV`` remains in the function name for API compatibility.  A suffix
+    dynamic program counts legal completions for every remaining-capacity
+    triple.  Each tile's seat is then sampled in proportion to the exact count
+    behind that choice, producing a uniform complete assignment directly.
 
     Args:
         pools: [n_games, pool_size] available domino IDs (padded with -1)
@@ -200,172 +271,271 @@ def sample_worlds_mrv_gpu(
         voids: [n_games, 3, 8] bool - voids[g,o,s] = opponent o is void in suit s
         decl_ids: [n_games] declaration ID per game
         n_samples: Number of worlds to sample per game
-        device: 'cuda' or 'cpu'
-        max_pool_size: Largest pool across games, if the caller knows it
-            (skips a GPU->CPU sync; must equal max(popcount(pool)) exactly)
-
+        device: Torch device. CUDA unavailability is an error; explicit CPU is
+            supported for focused tests only.
+        max_pool_size: Optional caller-computed largest pool.  Retained for API
+            compatibility and checked against the inputs when supplied.
     Returns:
-        [n_games, n_samples, 3, 7] opponent hands (padded with -1)
+        [n_games, n_samples, 3, 7] opponent hands, descending within each
+        hand and padded with -1.
     """
-    if device == 'cuda' and not torch.cuda.is_available():
-        device = 'cpu'
+    if n_samples <= 0:
+        raise ValueError(f"n_samples must be positive, got {n_samples}")
 
-    n_games = pools.shape[0]
-    consts = _consts(device)
-    bit_masks = consts["bit_masks"]  # [28] int64
-    bit_indices = consts["bit_indices"]  # [28] int32
-    one_i64 = consts["one_i64"]
+    requested_device = torch.device(device)
+    if requested_device.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError(
+            f"CUDA device {requested_device} requested but CUDA is unavailable; "
+            "the production sampler has no CPU fallback"
+        )
+    if requested_device.type == "mps" and not torch.backends.mps.is_available():
+        raise RuntimeError(f"MPS device {requested_device} requested but MPS is unavailable")
 
-    # Move inputs to device
-    pools = pools.to(device)
-    hand_sizes = hand_sizes.to(device).to(torch.int32)
-    voids = voids.to(device)
-    decl_ids = decl_ids.to(device)
+    if pools.ndim != 2:
+        raise ValueError(f"pools must have shape [games, pool_width], got {tuple(pools.shape)}")
+    n_games, pool_width = pools.shape
+    if n_games <= 0:
+        raise ValueError("at least one game is required")
+    if hand_sizes.shape != (n_games, 3):
+        raise ValueError(
+            f"hand_sizes must have shape {(n_games, 3)}, got {tuple(hand_sizes.shape)}"
+        )
+    if voids.shape != (n_games, 3, 8):
+        raise ValueError(
+            f"voids must have shape {(n_games, 3, 8)}, got {tuple(voids.shape)}"
+        )
+    if decl_ids.shape != (n_games,):
+        raise ValueError(
+            f"decl_ids must have shape {(n_games,)}, got {tuple(decl_ids.shape)}"
+        )
+    if pool_width > 28:
+        raise ValueError(f"pool width cannot exceed 28, got {pool_width}")
 
-    # Build void masks: void_mask[g, p] = dominoes player p CANNOT hold
-    void_masks = _build_void_masks_vectorized(voids, decl_ids, device)  # [n_games, 3]
+    # All tensor work stays on the explicitly requested device. CPU remains
+    # useful for deterministic focused tests only.
+    pools = pools.to(device=requested_device, dtype=torch.int64)
+    hand_sizes = hand_sizes.to(device=requested_device, dtype=torch.int64)
+    voids = voids.to(device=requested_device, dtype=torch.bool)
+    decl_ids = decl_ids.to(device=requested_device, dtype=torch.int64)
 
-    # Convert pools to bitmasks
-    pool_masks = _pool_to_mask(pools)  # [n_games]
+    invalid_pool_ids = ((pools < -1) | (pools > 27)).any(dim=1)
+    pool_valid = pools >= 0
+    pool_sizes = pool_valid.sum(dim=1, dtype=torch.int64)
+    pool_masks = _pool_to_mask(pools)
+    unique_pool_sizes = _popcount_vectorized(pool_masks).to(torch.int64)
+    hand_totals = hand_sizes.sum(dim=1)
 
-    if max_pool_size is None:
-        # Get pool sizes (total dominoes to distribute)
-        pool_sizes = _popcount_vectorized(pool_masks)  # [n_games]
-        max_pool_size = int(pool_sizes.max().item())
+    invalid_shape = (
+        (unique_pool_sizes != pool_sizes)
+        | (hand_totals != pool_sizes)
+        | (hand_sizes < 0).any(dim=1)
+        | (hand_sizes > 7).any(dim=1)
+        | (decl_ids < 0)
+        | (decl_ids >= SUIT_DOMINO_MASK.shape[1])
+    )
+    hint_mismatch = (
+        pool_sizes.max() != max_pool_size
+        if max_pool_size is not None
+        else torch.tensor(False, device=requested_device)
+    )
 
-    # Candidate masks: candidates[g, p] = dominoes player p COULD hold = pool & ~void_mask
-    candidate_masks = pool_masks.unsqueeze(1) & ~void_masks  # [n_games, 3]
+    void_masks = _build_void_masks_vectorized(
+        voids, decl_ids.clamp(0, SUIT_DOMINO_MASK.shape[1] - 1), requested_device
+    )  # [games, 3]
+    candidate_masks = pool_masks.unsqueeze(1) & ~void_masks
 
-    # Flatten for parallel processing across all (game, sample) pairs
-    total_samples = n_games * n_samples
+    tile_ids, active_tiles, allowed, suffix = _build_suffix_completion_counts(
+        pools, pool_sizes, void_masks
+    )
 
-    # available[i] = remaining dominoes for sample i
-    available = pool_masks.unsqueeze(1).expand(n_games, n_samples).reshape(total_samples).clone()
+    game_indices = torch.arange(n_games, device=requested_device)
+    safe_hand_sizes = hand_sizes.clamp(min=0, max=7)
+    root_counts = suffix[
+        game_indices,
+        0,
+        safe_hand_sizes[:, 0],
+        safe_hand_sizes[:, 1],
+        safe_hand_sizes[:, 2],
+    ]
+    infeasible = root_counts == 0
 
-    # hands[i, p] = bitmask of assigned dominoes for player p in sample i
-    hands = torch.zeros(total_samples, 3, dtype=torch.int64, device=device)
+    # One device synchronization covers the full preflight.  Detailed tensor
+    # transfers happen only on the exceptional path.
+    preflight = torch.stack(
+        [
+            invalid_pool_ids.any(),
+            invalid_shape.any(),
+            infeasible.any(),
+            hint_mismatch,
+        ]
+    ).detach().cpu().tolist()
+    if any(preflight):
+        if preflight[0]:
+            bad = pools[(pools < -1) | (pools > 27)].detach().cpu().tolist()
+            raise ValueError(f"pool domino IDs must be -1 or 0..27, got {bad[:8]}")
+        if preflight[1]:
+            bad_games = invalid_shape.nonzero(as_tuple=True)[0].detach().cpu().tolist()
+            raise ValueError(
+                "invalid sampler inputs for game indices "
+                f"{bad_games}: pool_sizes={pool_sizes[bad_games].detach().cpu().tolist()}, "
+                f"unique_pool_sizes={unique_pool_sizes[bad_games].detach().cpu().tolist()}, "
+                f"hand_sizes={hand_sizes[bad_games].detach().cpu().tolist()}, "
+                f"decl_ids={decl_ids[bad_games].detach().cpu().tolist()}"
+            )
+        if preflight[3]:
+            actual_max_pool_size = int(pool_sizes.max().item())
+            raise ValueError(
+                f"max_pool_size hint {max_pool_size} does not match actual "
+                f"maximum {actual_max_pool_size}"
+            )
 
-    # need[i, p] = how many more dominoes player p needs in sample i
-    need = hand_sizes.unsqueeze(1).expand(n_games, n_samples, 3).reshape(total_samples, 3).clone()
-
-    # Expand candidate_masks to [total_samples, 3]
-    candidate_masks_flat = candidate_masks.unsqueeze(1).expand(n_games, n_samples, 3).reshape(total_samples, 3)
-
-    # Pre-allocate reusable tensors to reduce allocation overhead
-    batch_idx = torch.arange(total_samples, device=device)
-    bits3 = bit_masks.view(1, 1, 28)  # for [N, 3] popcounts
-
-    # MRV assignment loop: assign one domino per step (vectorized across samples).
-    #
-    # NOTE the loop intentionally has no early-exit check: the sample with the
-    # largest pool stays active through step max_pool_size - 1 by construction
-    # (one domino leaves its pool per step), so an `if not active.any(): break`
-    # can never fire — it only added a GPU->CPU sync per step. Every step draws
-    # torch.rand(total_samples) exactly as before, so the RNG stream (and thus
-    # every sampled world) is unchanged.
-    for step in range(max_pool_size):
-        active = (available != 0)
-
-        # Compute slack for each player: popcount(candidates & available) - need
-        valid_candidates = candidate_masks_flat & available.unsqueeze(1)  # [N, 3]
-
-        # popcount via bit expansion: 3 kernels instead of ~12 (dispatch-bound)
-        cand_counts = (valid_candidates.unsqueeze(-1) & bits3).ne(0).sum(dim=-1, dtype=torch.int32)  # [N, 3]
-        slack = cand_counts - need
-
-        # MRV: find player with minimum slack; players with need=0 are out of
-        # the running (same effect as the historical slack[need == 0] = 1000)
-        slack = torch.where(need == 0, torch.full_like(slack, 1000), slack)
-        most_constrained = slack.argmin(dim=1)  # [N]
-
-        # Gather candidates for the chosen player: [N]
-        chosen_candidates = torch.gather(valid_candidates, 1, most_constrained.unsqueeze(1).to(torch.int64)).squeeze(1)
-
-        # Random selection: pick a random set bit from chosen_candidates
-        rng = torch.rand(total_samples, device=device)
-
-        # Handle inactive samples (set a dummy valid bit to avoid errors)
-        chosen_candidates_safe = torch.where(active, chosen_candidates, one_i64)
-
-        # Random set bit: select the target_idx-th set bit; the first position
-        # where cumsum > target_idx IS that bit (cumsum increments only at set
-        # bits), and torch.argmax returns the first occurrence of the max
-        bits_set = (chosen_candidates_safe.unsqueeze(1) & bit_masks.unsqueeze(0)) != 0  # [N, 28]
-        counts = bits_set.sum(dim=1).float()  # [N]
-        target_idx = (rng * counts).floor().to(torch.int64)  # [N]
-        cumsum = bits_set.to(torch.int64).cumsum(dim=1)  # [N, 28]
-        selected_domino = (cumsum > target_idx.unsqueeze(1)).to(torch.int8).argmax(dim=1)  # [N]
-
-        # Create bitmask for selected domino
-        selected_mask = (one_i64 << selected_domino)  # [N] int64
-
-        # Update available: remove selected domino (only for active samples)
-        available = torch.where(active, available & ~selected_mask, available)
-
-        # Update hands: add selected domino to chosen player's hand (vectorized)
-        # Zero out inactive samples and use scatter
-        active_mask = selected_mask * active.to(torch.int64)
-        hands[batch_idx, most_constrained] |= active_mask
-
-        # Update need: decrement the chosen player of each active sample
-        need.scatter_add_(
-            1, most_constrained.unsqueeze(1), -active.to(torch.int32).unsqueeze(1),
+        bad_games = infeasible.nonzero(as_tuple=True)[0].detach().cpu().tolist()
+        candidate_counts = _popcount_vectorized(candidate_masks).detach().cpu()
+        raise ValueError(
+            "no void-consistent hand assignment exists for game indices "
+            f"{bad_games}: hand_sizes={hand_sizes[bad_games].detach().cpu().tolist()}, "
+            f"candidate_counts={candidate_counts[bad_games].tolist()}, "
+            f"root_completion_counts={root_counts[bad_games].detach().cpu().tolist()}"
         )
 
-    # Convert bitmask hands to domino ID lists (vectorized, GPU-only)
-    # hands: [total_samples, 3] int64 bitmasks
-    # Output: [n_games, n_samples, 3, 7] domino IDs
+    if pool_width == 0:
+        return torch.full(
+            (n_games, n_samples, 3, 7),
+            -1,
+            dtype=torch.int32,
+            device=requested_device,
+        )
 
-    max_hand = 7
+    # Sample each tile's owner using the exact suffix completion counts. The
+    # product of conditional probabilities telescopes to 1/root_count for
+    # every complete assignment.
+    remaining = hand_sizes.unsqueeze(1).expand(
+        n_games, n_samples, 3
+    ).clone()
+    hand_masks = torch.zeros(
+        n_games, n_samples, 3, dtype=torch.int64, device=requested_device
+    )
+    game_grid = game_indices.unsqueeze(1).expand(n_games, n_samples)
+    seat_ids = torch.arange(3, device=requested_device).view(1, 1, 3)
+    dead_end = torch.zeros(
+        n_games, n_samples, dtype=torch.bool, device=requested_device
+    )
+    random_exhausted = torch.zeros_like(dead_end)
 
-    # Check which bits are set: [total_samples, 3, 28]
-    bits_set = (hands.unsqueeze(2) & bit_masks.view(1, 1, 28)) != 0
+    for position in range(pool_width):
+        active = active_tiles[:, position].unsqueeze(1)
+        next_suffix = suffix[:, position + 1]
+        branch_counts: list[torch.Tensor] = []
+        remaining_0 = remaining[:, :, 0]
+        remaining_1 = remaining[:, :, 1]
+        remaining_2 = remaining[:, :, 2]
+        for player in range(3):
+            eligible = (
+                active
+                & allowed[:, position, player].unsqueeze(1)
+                & (remaining[:, :, player] > 0)
+            )
+            counts = next_suffix[
+                game_grid,
+                (remaining_0 - int(player == 0)).clamp(min=0, max=7),
+                (remaining_1 - int(player == 1)).clamp(min=0, max=7),
+                (remaining_2 - int(player == 2)).clamp(min=0, max=7),
+            ]
+            branch_counts.append(counts * eligible.to(torch.int64))
 
-    # For each hand, we want indices of set bits, packed into first positions
-    # Strategy: Create weighted values where set bits have their index, unset bits have -1
-    # Then use sort to bring valid indices to the front
+        count_0, count_1, count_2 = branch_counts
+        total_counts = count_0 + count_1 + count_2
+        dead_end |= active & (total_counts == 0)
+        safe_totals = total_counts.clamp_min(1)
+        target, draw_exhausted = _uniform_below(safe_totals, requested_device)
+        random_exhausted |= active & draw_exhausted
+        selected = (
+            (target >= count_0).to(torch.int64)
+            + (target >= count_0 + count_1).to(torch.int64)
+        )
 
-    # Create values: bit_index where set, -1 where not set
-    values = torch.where(bits_set, bit_indices.view(1, 1, 28), torch.tensor(-1, dtype=torch.int32, device=device))
+        selected_seat = seat_ids == selected.unsqueeze(2)
+        selected_seat &= active.unsqueeze(2)
+        domino_bit = (1 << tile_ids[:, position]).view(n_games, 1, 1)
+        hand_masks |= selected_seat.to(torch.int64) * domino_bit
+        remaining.scatter_add_(
+            2,
+            selected.unsqueeze(2),
+            -active.expand(n_games, n_samples).to(torch.int64).unsqueeze(2),
+        )
 
-    # Sort descending to put valid (non-negative) indices first
-    sorted_values, _ = torch.sort(values, dim=2, descending=True)
+    invalid_sample = dead_end.any() | random_exhausted.any() | (remaining != 0).any()
+    if bool(invalid_sample.item()):
+        causes = []
+        if bool(dead_end.any().item()):
+            causes.append("zero completion count")
+        if bool(random_exhausted.any().item()):
+            causes.append("two rejected 62-bit draws")
+        if bool((remaining != 0).any().item()):
+            causes.append("unfilled hand capacity")
+        raise RuntimeError(
+            f"{SAMPLER_ALGORITHM} internal sampling failure: {', '.join(causes)}; "
+            "no partial world was returned"
+        )
 
-    # Take first max_hand values
-    results_flat = sorted_values[:, :, :max_hand]  # [total_samples, 3, 7]
-
-    # Reshape to [n_games, n_samples, 3, 7]
-    results = results_flat.reshape(n_games, n_samples, 3, max_hand)
-
-    return results
+    bit_indices = torch.arange(28, device=requested_device, dtype=torch.int64)
+    bit_values = 1 << bit_indices
+    bits_set = (hand_masks.unsqueeze(3) & bit_values.view(1, 1, 1, 28)) != 0
+    values = torch.where(
+        bits_set,
+        bit_indices.to(torch.int32).view(1, 1, 1, 28),
+        torch.tensor(-1, dtype=torch.int32, device=requested_device),
+    )
+    return values.sort(dim=3, descending=True).values[:, :, :, :7]
 
 
 class WorldSamplerMRV:
-    """Stateful MRV world sampler for GPU batch processing.
+    """Stateful uniform world sampler for torch batch processing.
 
-    Drop-in replacement for WorldSampler that uses MRV algorithm
-    instead of rejection sampling. GUARANTEED to produce valid samples.
+    The legacy class name is retained as a drop-in API for existing callers.
+    Every successful call returns a uniform sample of valid partitions. Exact
+    completion counting makes sampling independent of rejection acceptance.
 
     Example:
         >>> sampler = WorldSamplerMRV(max_games=32, max_samples=100, device='cuda')
         >>> worlds = sampler.sample(pools, hand_sizes, voids, decl_ids, n_samples=50)
     """
 
-    def __init__(self, max_games: int, max_samples: int, device: str = 'cuda'):
+    algorithm = SAMPLER_ALGORITHM
+
+    def __init__(
+        self,
+        max_games: int,
+        max_samples: int,
+        device: str | torch.device = 'cuda',
+    ):
         """Initialize sampler.
 
         Args:
             max_games: Maximum number of games to process
             max_samples: Maximum samples per game
-            device: 'cuda' or 'cpu'
+            device: Torch device. CPU must be requested explicitly.
         """
-        if device == 'cuda' and not torch.cuda.is_available():
-            device = 'cpu'
+        if max_games <= 0:
+            raise ValueError(f"max_games must be positive, got {max_games}")
+        if max_samples <= 0:
+            raise ValueError(f"max_samples must be positive, got {max_samples}")
+        requested_device = torch.device(device)
+        if requested_device.type == "cuda" and not torch.cuda.is_available():
+            raise RuntimeError(
+                f"CUDA device {requested_device} requested but CUDA is unavailable; "
+                "the production sampler has no CPU fallback"
+            )
+        if requested_device.type == "mps" and not torch.backends.mps.is_available():
+            raise RuntimeError(
+                f"MPS device {requested_device} requested but MPS is unavailable"
+            )
 
-        self.device = device
+        # Preserve the historical public attribute type for callers that use
+        # it in manifests or string comparisons.
+        self.device = str(requested_device)
         self.max_games = max_games
         self.max_samples = max_samples
-        # Note: suit_domino_mask is now precomputed at module level as SUIT_DOMINO_MASK
 
     def sample(
         self,
@@ -376,7 +546,7 @@ class WorldSamplerMRV:
         n_samples: int = 50,
         max_pool_size: int | None = None,
     ) -> torch.Tensor:
-        """Sample consistent worlds using MRV heuristic.
+        """Sample uniform, void-consistent worlds or raise diagnostics.
 
         Args:
             pools: [n_games, pool_size] available domino IDs (padded with -1)
@@ -384,8 +554,8 @@ class WorldSamplerMRV:
             voids: [n_games, 3, 8] bool - voids[g,o,s] = opponent o is void in suit s
             decl_ids: [n_games] declaration ID per game
             n_samples: Number of worlds to sample per game
-            max_pool_size: Largest pool across games, if the caller knows it
-                (skips a GPU->CPU sync)
+            max_pool_size: Optional caller-computed largest pool, checked
+                against the inputs.
 
         Returns:
             [n_games, n_samples, 3, 7] opponent hands (padded with -1)

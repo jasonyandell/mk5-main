@@ -81,9 +81,14 @@ Format:
   - Raised: `local-2026-05-07` ([[burl-microscope]])
   - Context: `board_snapshot()` is a strong first-read surface, but fair no-reference `snapshot-first` and `legal-brief` runs both committed `25` on the `BURL_BREAKS_CONSENSUS` case where oracle/pi/qmean prefer `19`.
 
-- **Q:** Is the `WorldSamplerMRV` marginal-distribution bias (~6.8 Q-pts vs uniform enumeration at trick 6) actually corrupting historical Burl eval numbers and forge/eq training data — and by how much?
-  - Raised: `afd4802` ([[batch-throughput-bench]], [[sources/7321952]])
-  - Context: Flagged in `7321952` as affecting "all historical Burl eval numbers and forge/eq training data," parked as "worth a bead," never filed. Enumeration (`enumerate="auto"`, pool ≤ 12 at trick 6) is exact ground truth; the sampler is biased against it. Per anti-rot rule 7 a parked risk must become a tracked issue or the flag is removed — **action: needs a GitHub issue.** Still dangling as of 2026-07-06.
+- **Q:** What fraction of historical Forge/Burl/Champion states had nonzero
+  `WorldSamplerMRV` malformed-world or valid-world bias, and does the uniform
+  repair change C0 action ranks or paired marks?
+  - Raised: `local-2026-07-11` ([[world-sampler-mrv-audit]])
+  - Context: the causal panel proves exact `1/3` malformed mass on one late
+    state and valid-only TVD `0.0333` on another, but finds no argmax flip in
+    three states. A state-level exposure scan and two-block C0 reproduction are
+    required before revising historical promotion claims.
 
 - **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
   - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])

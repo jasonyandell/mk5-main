@@ -149,7 +149,7 @@ The GPU pipeline is organized as a package in `forge/eq/generate/`:
 | `generate/deals.py` | `build_hypothetical_deals` |
 | `generate/cli.py` | CLI entry point for `python -m forge.eq.generate` |
 | `game_tensor.py` | `GameStateTensor` - vectorized game state on GPU |
-| `sampling_mrv_gpu.py` | `WorldSamplerMRV` - MRV constraint solver (guaranteed valid) |
+| `sampling_mrv_gpu.py` | `WorldSamplerMRV` - exact completion-count sampler (legacy class name) |
 | `tokenize_gpu.py` | `GPUTokenizer` - pure tensor tokenization |
 | `collate.py` | Convert `GameRecordGPU` to Stage 2 training format |
 | `types.py` | `ExplorationPolicy`, `PosteriorDiagnostics` dataclasses |

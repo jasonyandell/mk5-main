@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: afd4802
-last_updated: afd4802
+last_updated: local-2026-07-11
 status: active
 ---
 
@@ -10,7 +10,16 @@ The project's central question, stated precisely. Every era since January 2026 i
 
 ## The wall
 
-[[expected-q-value|E[Q]]] n=10 — the posterior-weighted expected-Q over ten sampled exact worlds, evaluated per move — is the undefeated champion at pure play as of `afd4802` (2026-07-06). It has beaten every learned challenger: [[zeb]], [[burl]], [[gus]], and [[jud]]'s play half. And it has no plan, no strategy, no feel. It computes p(make) and EV and stops. Jason's diagnosis: "like a Stephen Hawking voice modulator — you can understand it; it is obvious within seconds it isn't like a person." The distributions it emits are [[candlewax]]: gorgeous, honest, and mute on what to want.
+[[expected-q-value|E[Q]]] n=10 — expected Q over ten sampled worlds consistent
+with public history, evaluated per move — is the undefeated champion at pure
+play as of `afd4802` (2026-07-06). It has beaten every learned challenger:
+[[zeb]], [[burl]], [[gus]], and [[jud]]'s play half. It carries no behavioral
+action likelihood, partner convention, or information-set plan across turns;
+within each sampled exact world, however, Forge Q already prices play through
+the end of the hand. It computes p(make) and EV and stops. Jason's diagnosis:
+"like a Stephen Hawking voice modulator — you can understand it; it is obvious
+within seconds it isn't like a person." The distributions it emits are
+[[candlewax]]: gorgeous, honest, and mute on what to want.
 
 The founding condition (late January 2026, Jason): "maybe the most amazing thing I've ever built and I dunno what to do with it, so let's friggin try stuff." The wall was sighted at least six times before it was named — the MCCFR kill note ("'boring and competent' isn't worth the squeeze"), the 2-2 lead filed as an aggregation bug, the January 10 scope cut ("I don't care about signaling. **yet**"), the [[argmax-q-ceiling|74% argmax ceiling]] celebrated as validation, the 4am candlewax naming, and March's "distilling that run would just be distilling the heuristic I used to select ≥18." See [[the-wall-biography]] for the full arc.
 
@@ -39,3 +48,19 @@ Sessions that lack this page invent their own goals (documented instances: the 2
 From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Bidding validates — jud v0's `margin:wp`(head_8) is the first learned component ever to beat the hand-tuned champion on marks (+0.38 [+0.09,+0.67], +0.42 [+0.12,+0.72]). Play is mechanism-limited at the leaf: `judsearch` recovers two-thirds of the play gap oracle-free (−3.44 → −1.16) and stops; neither more worlds nor a better-calibrated head closes the rest. Verdict sentence: *a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.* The named-but-unbuilt continuation is jud v2: bigger leaf, per-move E[Q]-distill targets with the consumer declared, opponents-in-rollout.
 
 The full ruled-in/ruled-out record across all mechanisms: [[consumption-ledger]]. The untried inventory: [[ideated-not-built]] and [[the-wall-biography]] §4.
+
+## Partnership research frontier
+
+[[partnership-wall-research]] reconstructs the surviving explanations without
+selecting an architecture first. Its target, [[partnership-value]], is a marks
+interaction: a mutually legible fixed pair must gain more than the same policies
+with partners shuffled. The staged gate is measurement cleanup, a joined failure
+atlas, causal microgames, [[partnership-research-gates]], and only then a build.
+
+The correction is load-bearing. Ordinary within-world plans are not missing
+from Forge Q merely because `lens:ev` chooses again next turn. The plausible
+residual is narrower: action-derived inference, role/order semantics,
+partner-visible intent, information-set consistency, contextual distribution
+use, and auction/match-score value. A candidate clears the wall only by beating
+`margin:wp(head_8) + lens:ev` in paired marks for a demonstrated strategic
+reason.

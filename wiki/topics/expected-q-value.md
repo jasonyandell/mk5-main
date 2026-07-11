@@ -2,7 +2,7 @@
 title: E[Q] — Expected Q-Value
 kind: topic
 first_seen: ece6dcf
-last_updated: local-2026-07-06
+last_updated: local-2026-07-11
 status: active
 ---
 
@@ -84,7 +84,22 @@ Two of its original functions, from the LEM era:
 
 [[narration]] carries running score information, which reflects trick points accumulated. E[Q] over game outcomes is the deeper signal that determines which actions are worth learning from (lem/OVERVIEW.md @ a8bccfa).
 
+## Sampler measurement boundary
+
+[[world-sampler-mrv-audit]] separates E[Q]'s definition from one production
+instrument. `WorldSamplerMRV` was neither validity-guaranteed nor generally
+uniform: on one exact late state it reaches a no-candidate branch with
+probability `1/3` and injects `00` outside the unseen pool; another valid-only
+state differs from uniform enumeration by TVD `0.0333`. The three-state panel
+moves action values by up to `4.619 Q` but does not flip an argmax.
+
+This does not retract E[Q]'s uniform-consistent-world target or establish a
+population loss. It means sampler identity and exact-enumeration disagreement
+must accompany new E[Q] labels and champion reproductions. Historical exposure
+is state- and consumer-dependent.
+
 ## Links
 
 [[forge]] [[k1-grading]] [[narration]] [[lem]] [[strategy-fusion]] [[argmax-q-ceiling]]
-[[q0-positional-bias]] [[candlewax]] [[eq-genesis]] [[decisions/qval-over-policy-models]]
+[[q0-positional-bias]] [[candlewax]] [[eq-genesis]] [[qval-over-policy-models]]
+[[world-sampler-mrv-audit]] [[partnership-wall-research]]
