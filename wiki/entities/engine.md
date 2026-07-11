@@ -2,7 +2,7 @@
 title: TypeScript Game Engine
 kind: entity
 first_seen: 8d26e0d
-last_updated: local-2026-07-06
+last_updated: pending-this-ingest
 status: active
 ---
 
@@ -15,9 +15,27 @@ returns zero commits at any point; `src/game/core/state.ts` has git history back
 repo's earliest commit `f989134`). (burl/OVERVIEW.md @ 8d26e0d)
 
 Its origin is [[web-game]] (2025-07 .. 2025-12): the pure-functional,
-event-sourced core, the `GameLayer` variant system (nello/plunge/sevens/splash),
+event-sourced core, the Layer variant system (nello/plunge/sevens/splash),
 and PIMC-minimax as the working AI were all built there, pre-dating [[forge]],
 [[gus]], and [[burl]] by months.
+
+## Architecture reference
+
+The engine's current architecture is documented as a wiki cluster (promoted
+from the retired `docs/` engine guides at this ingest):
+
+- [[engine-architecture]] — **start here**: STATE→ACTION→STATE, event
+  sourcing, URL replay, the kernel, directory map, invariants
+- [[layer-system]] — GameRules (18 methods) + action generation, the ten
+  layers, the single composition point
+- [[multiplayer-pattern]] — Socket/GameClient/Room, capability tokens,
+  server-authoritative filtered views
+- [[client-implementation]] — building a client: createLocalGame, the
+  validActions loop, GameConfig
+- [[engine-testing-patterns]] — HeadlessRoom, createTestContext,
+  StateBuilder, guardrail tests
+- [[intermediate-ai]] — the shipped PIMC opponent that runs the web game's
+  AI seats
 
 ## Distinct from Forge
 

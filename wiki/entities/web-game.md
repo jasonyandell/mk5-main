@@ -14,9 +14,10 @@ built solo across roughly eight ground-up rewrites between 2025-07-19 and
 2025-12-23. It predates [[forge]], [[gus]], and [[burl]] entirely — no E[Q],
 no oracle, no LLM play-engine exists anywhere in this window. Its job was to
 get the rules, the state model, and a working non-ML AI right, and it
-succeeded: the engine (`src/game/`), the Layer system, and capability-based
-multiplayer (`src/multiplayer/`, `docs/MULTIPLAYER.md`) it produced are still
-current today ([[sources/claude/era1-web-game-prologue|conversation digest]]).
+succeeded: the engine (`src/game/`), the [[layer-system]], and
+capability-based multiplayer (`src/multiplayer/`, [[multiplayer-pattern]])
+it produced are still current today — current reference at
+[[engine-architecture]] ([[sources/claude/era1-web-game-prologue|conversation digest]]).
 
 This page is a retired-era hub. It exists to route to what Era 1 actually
 built, and to preserve two things later eras needed but under-filed: the

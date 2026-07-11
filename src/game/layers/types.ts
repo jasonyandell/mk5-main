@@ -17,18 +17,19 @@ export type HandOutcome =
   | { isDetermined: true; reason: string; decidedAtTrick?: number };
 
 /**
- * GameRules interface - 14 composable rules that define game execution semantics.
+ * GameRules interface - the composable rules that define game execution semantics.
  *
  * Rules are grouped into six categories:
- * - WHO: Determine which player acts (3 rules)
- * - WHEN: Determine timing and completion (2 rules)
- * - HOW: Determine game mechanics (2 rules)
- * - VALIDATION: Determine what's legal (3 rules)
- * - SCORING: Determine bid ordering and final marks (3 rules)
- * - LIFECYCLE: Determine game flow transitions (1 rule)
+ * - WHO: Determine which player acts
+ * - WHEN: Determine timing and completion
+ * - HOW: Determine game mechanics
+ * - VALIDATION: Determine what's legal
+ * - SCORING: Determine bid ordering and final marks
+ * - LIFECYCLE: Determine game flow transitions
  *
  * Executors call these rules instead of hardcoding behavior, enabling
  * special contracts to override specific rules without touching executor code.
+ * See wiki/topics/layer-system.md.
  */
 export interface GameRules {
   // ============================================

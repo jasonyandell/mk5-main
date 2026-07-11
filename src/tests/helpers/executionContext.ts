@@ -15,7 +15,7 @@
  * - For multi-action scenarios, use HeadlessRoom instead
  * - For state transition verification, use HeadlessRoom instead
  *
- * See docs/TESTING_PATTERNS.md for detailed guidance.
+ * See wiki/topics/engine-testing-patterns.md for detailed guidance.
  */
 
 import { createExecutionContext, type ExecutionContext } from '../../game/types/execution';

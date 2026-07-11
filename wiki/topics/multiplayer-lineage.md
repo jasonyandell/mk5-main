@@ -2,7 +2,7 @@
 title: Multiplayer lineage — evaluated frameworks, distilled pattern
 kind: topic
 first_seen: 850ab49
-last_updated: 7529489
+last_updated: pending-this-ingest
 status: retired
 ---
 
@@ -27,7 +27,7 @@ history.
 On 2025-09-30 Jason designs a capability-based, variant-as-transformer
 multiplayer architecture from a pasted real `GameEngine` class — this
 conversation already contains the CLIENT/SERVER/MULTIPLAYER/CORE four-layer
-diagram matching today's `docs/MULTIPLAYER.md`. On 2025-10-24, implementing
+diagram matching the shipped [[multiplayer-pattern]]. On 2025-10-24, implementing
 the offline parts and trying to add nello as the first variant, the naive
 "variants are rule-function overrides" design breaks: nello changes control
 flow (skips trump-selection, skips the partner's turn, ends the hand early).
@@ -58,17 +58,17 @@ Room, update the game store, fix tests). Two security bugs — unfiltered-state
 leaks before JOIN — are caught and fixed same-day. A separate, later,
 genuinely optional consensus layer (agree-trick/agree-score) follows two
 days after, all closed 2025-11-27, wired into Room config but not documented
-inline in `docs/MULTIPLAYER.md` itself.
+inline in the era's multiplayer doc (docs/MULTIPLAYER.md @ 233b7dc5).
 
 ## Terminal status
 
 **RENAMED / distilled, not adopted-then-abandoned.** None of Colyseus,
 PartyKit, or Cloudflare-Workers-as-host left a surviving dependency. What
-survived is their *pattern*: `docs/MULTIPLAYER.md` opens by stating the
-shipped Socket/Room/GameClient design is "inspired by PartyKit, Colyseus, and
-boardgame.io." The actual landing artifact — `src/multiplayer/`,
-`src/server/`, `docs/MULTIPLAYER.md` — is current today and is what
-`docs/MULTIPLAYER.md` still points to. Deploy is GitHub Pages (`d991529`,
+survived is their *pattern*: the shipped Socket/Room/GameClient design was
+stated "inspired by PartyKit, Colyseus, and boardgame.io"
+(docs/MULTIPLAYER.md @ 233b7dc5). The landing artifact —
+`src/multiplayer/`, `src/server/` — is current today; current reference at
+[[multiplayer-pattern]]. Deploy is GitHub Pages (`d991529`,
 2025-08-25), not Cloudflare Workers.
 
 ## Related pages
