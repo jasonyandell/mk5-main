@@ -496,3 +496,22 @@ calibration calculus has been waiting for.
   ([HF discussion](https://huggingface.co/mlx-community/gemma-4-e2b-4bit/discussions/1)).
 - FakeRocket543/mlx-gemma4 ([GitHub](https://github.com/FakeRocket543/mlx-gemma4)).
 - Gemma 3 270M tokenizer ([HF model](https://huggingface.co/google/gemma-3-270m-it)).
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
+
+- The "3.4× run-to-run wall variance" rationale for the paired-only
+  protocol predates the later [[perf-on-the-table]] /
+  [[burl-perf-phase2]] finding that the variance was GPU contention
+  with parallel scribes; read the paired-protocol justification with
+  that retraction in mind.
+- Paired play-match counts (4/5, 3/5) and per-variant Q-pts regret
+  deltas derive from cross-run comparison of per-decision JSONs; the
+  per-decision grades are in `burl/eval/results/` but the paired
+  tallies were not independently recomputed.
+- HF discussions, LM Studio / mlx-lm GitHub issues, and the
+  tokenizer-probe raw output live outside the repo.
+- The References-section GitHub link intentionally keeps the
+  `FakeRocket543` (no extra 'r') spelling — the GitHub repo lives
+  under the typo'd username, per Dragon #2.

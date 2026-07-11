@@ -152,3 +152,11 @@ for idx, row in enumerate(rows):
 run.finish()
 PY
 ```
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- In the coordinator rerun, `drop_seat_position_closure` (1.290) slightly beats the full tag model (1.295) — the "hurts less but still weakens" reading holds only in the primary run, so the seat/closure family contribution is within noise.
+- Cheap next probe: the dynamic-84 OOD eval in `metrics.json` shows baseline and tag model producing identical scores (0.488 regret both); worth confirming the tag features are truly all-zero on that fixture rather than silently dropped.
+- W&B run `gn7xxk14` is external and unverified.

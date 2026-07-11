@@ -143,3 +143,9 @@ python -m pytest forge/eq/test_select_actions.py -q
 [[w42-next-model-decision]] |
 [[w42-phase2-hidden-domino-threat-attribution]] |
 [[w42-phase2-distribution-aware-ev-report]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Metrics table and bid-aware threshold description verified against `w42/branch_atlas_scaled_v0/summary.json` and `forge/eq/generate/actions.py`; W&B run id 7fwi2zwn confirmed in summary.json, but the wandb.ai URL itself is external and unverified.

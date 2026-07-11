@@ -103,3 +103,14 @@ belief-only primitive after a separate calibration eval) — do not conflate the
 This is era 4's one durable, load-bearing negative result about E[Q] consumption. See
 [[candlewax]], [[zeb]], [[eval-matrix-bradley-terry]],
 [[sources/claude/era4-zeb-era|conversation digest]].
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `forge/zeb/learner/go-full-teacher.sh` confirms `--eval-aux-policy-weight` default 1.0
+  and the 25% eval-aux mix; the 95% regime was presumably a runtime env override — not
+  verifiable from the script, only from chat.
+- The bugfixed file is `forge/zeb/eq_player.py` (not under `learner/`).
+- Cheap next probe if this era is revisited: train the policy head on the full E[Q]
+  histogram via a distributional loss, rather than another p_make-collapse mix sweep.

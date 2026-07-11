@@ -118,3 +118,11 @@ The measurement harness itself is durable infrastructure, but the "phase 0" fram
 is stage-1 of a perf sprint that stalled: no further Burl commits landed after
 2026-05-07, and the sprint's own compounded-stack projection ([[perf-on-the-table]])
 was never revisited after [[burl-perf-phase2]]'s continuous-batching retraction.
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
+
+- Measurement table, subset layout table, and corpus SHA256 fingerprint mechanism match `perf_ledger.csv` and `perf_subset_5.jsonl` exactly; all Pointers paths exist.
+- `harvest_batched.py` lives in gitignored `scratch/belief_trajectory_rollout/` and is reached via a hardcoded absolute-path fallback in `bench_decision_latency.py`; promoting it to tracked code (as the bench's own comment suggests) would make the harness reproducible from a clean checkout.
+- Run 1's 100% K1 match is self-graded (baseline vs itself), so only run 2 is a true run-vs-run stability read; a third run would cheaply confirm the 80–100% envelope.

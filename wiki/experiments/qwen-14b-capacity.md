@@ -47,3 +47,10 @@ Parallel 1.7B v10 experiment (same commit): scout 500 decisions on v9 → 331 cl
 ## Related pages
 
 [[qwen3-14b]] · [[qwen3-1.7b]] · [[v9-adapter]] · [[v10-adapter]] · [[single-fact-enumeration]] · [[rationalization-verifier]] · [[r1-rationalization]] · [[experiments/stage-0-v9-14categories]] · [[experiments/v10-maskfix-breakthrough]] · [[sources/0c7392f]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The adapter lives on HuggingFace (private); per-epoch eval artifacts are not in the repo, so intermediate metrics are unverifiable locally — headline numbers trace to the 0c7392f commit message and [[0c7392f]].
+- Cheap next probe for the open question: rerun the rationalization verifier on a 14B trained with prompt/completion format (completion_only_loss) to test whether 97/100 survives the mask fix.

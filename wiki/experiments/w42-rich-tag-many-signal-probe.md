@@ -250,3 +250,14 @@ Claim-ledger impact: no claim-ledger change.
 [[w42]] | [[w42-raw-public-state-baseline]] |
 [[w42-v0-strategy-tags-baseline]] | [[w42-strategy-tags-v1-map]] |
 [[w42-concept-bucket-regret]] | [[winning42-strategy-measurement]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- W&B runs `3xyy2dxr` and superseded `c5x85xfx` verified only against local
+  `run.json`/`manifest.json`, not remotely.
+- In `bucket_metrics_best.csv`, the `action:identity`, `slot`, `pip_pressure`,
+  and `hand_shape` buckets are identical rows (n=381): the bucket assignment
+  collapses several action tags to the same mask. Worth noting before using
+  bucket slices as evidence.

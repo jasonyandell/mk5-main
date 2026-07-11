@@ -76,6 +76,13 @@ fact-verified K1) happened. Five days later the project replaced the base model 
 (Gemma → Qwen 3 1.7B, [[base-model-pivot-qwen]]), and the v4 game-context pivot
 two days after that made the flashcard-format v3 plateau moot rather than resolving it.
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Both source commits touch only `lem/gemma_star/iterate.sh`; per-iteration eval artifacts are not in the repo, so the numbers trace only to the commit messages of [[a2498e4]] and [[8c1bb14]].
+- The Kerry peak of 46% in the summary table (from 8c1bb14) exceeds the 44% top of the Kerry per-iter table (a2498e4) — presumably from later Kerry iterations not tabled here.
+
 ## Related pages
 
-[[stage-0-adapter]] · [[kerry-adapter]] · [[v3-adapter]] · [[rules-adapter]] · [[trump-drilling]] · [[kerry-curriculum]] · [[star]] · [[k1-grading]] · [[learned-by-playing]] · [[experiments/star-10-iterations]] · [[sources/a2498e4]] · [[sources/601f622]] · [[sources/8c1bb14]]
+[[stage-0-adapter]] · [[kerry-adapter]] · [[v3-adapter]] · [[rules-adapter]] · [[trump-drilling]] · [[kerry-curriculum]] · [[star]] · [[k1-grading]] · [[learned-by-playing]] · [[star-10-iterations]] · [[a2498e4]] · [[601f622]] · [[8c1bb14]]

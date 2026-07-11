@@ -156,3 +156,10 @@ was run.
 
 [[w42]] | [[w42-strategy-tags-v0]] | [[w42-strategy-tags-v1-map]] |
 [[w42-claim-ledger]] | [[winning42-strategy-measurement]] | [[gus]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The `bd show t42-csw6.9` step in the reproducibility block is no longer runnable (beads retired 2026-06); grep `.beads/issues.jsonl` instead.
+- Cheap next probe: implement the 12 high-priority v1 detectors as callable predicates and rerun the same fixtures, converting map-coverage checks into behavior checks.

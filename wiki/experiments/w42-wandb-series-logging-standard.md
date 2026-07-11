@@ -110,3 +110,9 @@ The current W&B project remains
 
 [[w42]] | [[w42-lab-infrastructure]] |
 [[w42-wandb-run-comparison-dashboard]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
+
+- The live W&B run page (wandb.ai) was not checked — external service; the smoke result traces to the local manifest `w42/wandb_series_smoke/run.json`.

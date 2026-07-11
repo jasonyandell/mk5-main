@@ -53,3 +53,9 @@ The seven scope-gap rows are `ch16-partner-two-plus-doubles-prior`,
 [[w42]] | [[w42-phase2-statistics-claims-ledger]] |
 [[w42-phase2-claim-analysis-matrix]] |
 [[w42-claim-analysis-synthesis-report]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The 25 closeable claims split finer in `completion_bucket_counts` (e.g. 20 static-supported vs 3 direct-empirical); worth surfacing here if that distinction ever matters for promotion decisions.

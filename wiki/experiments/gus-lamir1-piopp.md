@@ -90,3 +90,11 @@ message @ 8106f01)
 ## Links
 
 [[gus]] · [[topics/lamir1]] · [[topics/lamir1-ceiling]] · [[topics/regret-eval]] · [[experiments/gus-pi-opp-training]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-router-pilot]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 4 corrections applied in place and independently re-verified; second pass amended 2.
+
+- The verified numbers (0.551 / 0.679 / 1.645 / 2.006 / 2.094 / 2.268 / 68.6%) check out against b42669a docs and commit messages, but per-mode eval JSONs (`scratch/lamir1_*.json`) are gitignored — raw eval artifacts are unverifiable in-repo.
+- Pivot option 2 (V trained on expected Q under sampled opp play) was never tried — only path (a) depletion augmentation ran (see [[q-head-augmentation]]); a cheap probe now that E[Q]-distill is on the champion v2 roadmap.
+- The depletion-OOD hypothesis was later tested and disconfirmed as root cause ([[q-head-augmentation]], commit 5f390fb).

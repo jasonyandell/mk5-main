@@ -70,3 +70,10 @@ to the direct baseline.
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[topics/dense-q-supervision]] · [[joint-world-tensor]] · [[experiments/gus-belief-co-train]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified; second pass amended 1.
+
+- Training script `scratch/train_belief_distribution.py` (named in the receipt) was never committed and scratch/ is gitignored — the artifact is unrecoverable from the repo; "kept in scratch/" quotes the commit but the file is gone.
+- Base adapter `v2_voids_3000g_big` is not named in receipt 15 itself (it appears as "best single" in the §14 router table); plausible as the standing promoted adapter, not directly verified.

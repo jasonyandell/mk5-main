@@ -194,3 +194,10 @@ metrics. Training or W&B series should wait until that direct table exists.
 [[w42-setter-defense-claim-validation]] |
 [[w42-final-empirical-strategy-report]] |
 [[w42-strategy-tags-v1-map]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Headline numbers verified against `w42/gus_corpus_claim_deep_dive/paired_contrasts.csv` and `summary.json`; tiny-slice proxy numbers match `w42/setter_pounce_direct_label_probe/tiny_report_slice.csv`.
+- The "Required Phase-2 Data" table is now largely satisfied by the deep-dive corpus (bid_value, per-seat masks, declarations per [[w42-gus-corpus-tactical-claim-deep-dive]]); a cheap next probe is running the spec'd direct labels on real bid-margin / high-bid contexts (ch12), which remain uncovered.

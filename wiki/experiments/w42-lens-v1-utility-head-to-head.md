@@ -223,3 +223,11 @@ Lens v1 build agent (t42-4ouu). Forge oracle + custom utility-aware simulator. I
 - [[w42-bookval-v2-utility-lens-synthesis]] — Wave 3.0 contrast-magnitude split
 - [[w42-book-validation-campaign]] — parent campaign
 - [[w42-book-claim-synthesis-and-ai-directions]] — campaign synthesis
+
+---
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `lens.py` now also contains an `upside_10` utility not covered here; a cheap probe is a 1000-hand upside_10 vs ev matchup plus a one-paragraph addendum.

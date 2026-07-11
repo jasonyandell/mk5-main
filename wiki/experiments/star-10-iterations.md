@@ -84,3 +84,10 @@ Stage-0 round) happened. Five days later the project replaced the base model ent
 ## Related pages
 
 [[lem]] · [[star]] · [[k1-grading]] · [[r1-rationalization]] · [[learned-by-playing]] · [[scratchpad-validation]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[decisions/eval-seed-holdout]] · [[decisions/discard-illegal-traces]] · [[experiments/scratchpad-v2-iter0]] · [[sources/ff0d0d2]] · [[sources/efad16e]] · [[sources/908773a]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- HuggingFace adapters (`star-iter0`–`iter14`) and the `jasonyandell-forge42/lem-star` wandb project are external artifacts — names match repo docs but were not fetched, so the numbers trace only to lem/OVERVIEW.md.
+- Page title says "15 Iterations" while the filename is `star-10-iterations`; harmless, but a redirect note could prevent confusion.

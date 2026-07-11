@@ -1,7 +1,0 @@
-Reviewed against code on 2026-07-07 — no issues found.
-
-Verified: all wall/p50/prefill/decode/peak numbers in both result tables match `burl/eval/results/perf_20260427_*.json` (baseline-t0 70.95/73.69 s, prefix-cache 136.7 s @ 45.0 decode tok/s with 3/5 K1 pass, continuous 34.5/35.0/39.9 s and 58.6 s @ t=0.6); `run_bench_continuous` + `--continuous` exist in `burl/eval/bench_decision_latency.py`; `GemmaLocalNativeBatched` with `enable_prompt_cache` flag exists in `burl/modal/gemma_local_batched.py`; `git merge-base --is-ancestor 7c4991c HEAD` is indeed false and `perf/batch` exists unmerged, matching the retraction notice.
-
-- `scratch/belief_trajectory_rollout/harvest_batched.py` is absent in worktrees (scratch/ is gitignored) but exists in the main checkout, and the bench has an explicit absolute-path fallback for exactly this — no page change needed, but worth remembering scratch-hosted modules are invisible to worktree audits.
-- Unverifiable without a GPU re-run: the retraction's 7-row alternating re-test deltas (−31.7%, +41.1%, −9.1%) live in the `perf/batch`@7c4991c commit message, not in a results JSON on this branch.
-- Cheap next probe: the "shared system+user prefix across the wave's decisions" shape (~10–15% prefill savings) proposed at the end of the Lever-1 root-cause section was never measured; a single uncontended run would settle whether it is worth folding into the dispatcher.

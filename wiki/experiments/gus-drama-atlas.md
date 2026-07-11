@@ -77,3 +77,11 @@ actions. Gus chose the mode (33%); the actual game play was 4.3 Q-pts suboptimal
 ## Links
 
 [[gus]] [[past-belief-future-direction]] [[belief-bayes-ceiling]] [[joint-world-tensor]] [[regret-eval]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The findings doc's proposed next step — hedge-player / signal-player relabeling of the 73k drama decisions as multi-target training labels — remains unpursued; a cheap probe since the parquet already exists.
+- `drama_atlas_v2.parquet` and `add_real_drama_columns.py` (realised-regret join) exist but this page covers only v1.
+- The 64.9% lead-decision drama concentration motivates the concealment/signaling blindness point in [[belief-conditioned-self-play]].

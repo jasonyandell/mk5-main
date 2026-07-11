@@ -336,3 +336,11 @@ python -u w42/book_validation_v1/wave2/compute_power_analysis.py
 - [[w42-bookval-v1-wave2-infra-design]] — design record for Wave 2 builds
 - [[w42-phase4-scoring-objective-tests]] — mark utility transform source
 - [[w42]] | [[w42-book-claim-synthesis-and-ai-directions]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 3 corrections applied in place and independently re-verified; second pass amended 1 (the first-pass mark_multiplier edit misdescribed the code and was re-fixed to match `run_bid_aware_atlas.py:69-72` exactly). Full-sweep numbers — divergence table, per-bid row counts (259,618 total), wall time, power-analysis CIs, bid=30 validation 10/10 — all match `manifest.json` / `power_analysis.csv` / `validation_check.csv`.
+
+- Smoke-run tables (first divergence table, 63.2%/57.5% change rates, n=280) are no longer verifiable: smoke artifacts were overwritten by the full sweep.
+- Cheap fix: `bid_aware_atlas/README.md:99` still carries the stale "seed 9430, 7 bids, 5550 rows" description; update to the full-sweep corpus.
+- The per-bid joint-world `.pt` files exist only locally, if at all; if the corpus matters for reproduction, archive them or note explicitly where they live.

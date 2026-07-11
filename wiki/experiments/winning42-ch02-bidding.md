@@ -147,6 +147,14 @@ slice — the campaign's first non-trivial `supported` promotion. The
 remaining caveat is cross-contract bid choice (different declarations
 at different bids) and real auction-policy response, both Wave 3 work.
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified; second pass amended 1.
+
+- Bead IDs on this page (`t42-ni1l.2`, `t42-br7n.7`, `t42-ey88`) no longer resolve via `bd` (retired 2026-06) but all three exist in the archived `.beads/issues.jsonl`; a cheap pass could rewrite them as plain-text or archive references.
+- The 35↔36 step's small delta (`+0.048`, a count-point-only threshold shift) is a cheap probe for whether the overbid penalty is driven by threshold mass rather than bid magnitude.
+- [[w42-bookval-v1-wave2-ch02-multistep]]'s own Monotonicity section says Cohen d "grows" while its table shows the 35↔36 dip; that page could use the same rewording.
+
 ## Links
 
 [[winning42-strategy-measurement]] · [[gus-strategy-tags-probe]] · [[gus]] · [[burl]] · [[forge]]

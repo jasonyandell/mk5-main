@@ -379,3 +379,12 @@ splits prefill into chunks of 8 by default.
 
 [[perf-on-the-table]] · [[burl-perf-phase0]] · [[batch-throughput-bench]] ·
 [[batched-harvest-resilience]] · [[mlx-lm]] · [[burl]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- All wall/p50/prefill/decode/peak numbers in both result tables match `burl/eval/results/perf_20260427_*.json`; `run_bench_continuous`/`--continuous` and the `enable_prompt_cache` flag exist as described; the retraction's never-merged claim (`7c4991c` not an ancestor of HEAD, `perf/batch` unmerged) checks out.
+- Verifiability caveat: the retraction's 7-row alternating re-test deltas (−31.7%, +41.1%, −9.1%) trace only to the `perf/batch`@7c4991c commit message — no results JSON for them exists on this branch; confirming them needs a GPU re-run.
+- The shared system+user prefix-across-the-wave shape (~10–15% prefill savings) proposed in the Lever-1 root-cause section was never measured; a single uncontended run would settle whether it belongs in [[continuous-batching-dispatcher-design]].
+- `scratch/belief_trajectory_rollout/harvest_batched.py` lives in gitignored scratch/ (invisible to worktree checkouts); the bench carries an absolute-path fallback for it.

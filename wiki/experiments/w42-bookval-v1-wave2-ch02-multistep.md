@@ -98,3 +98,11 @@ w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/
 Input: `w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv` (read-only)
 
 Command: `python3 w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/run_ch02_multistep.py`
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Wording caveat: "makes bid=30 roughly 25 points more often" means 25 *percentage* points (p_make delta +0.245).
+- Cheap next probe: the flagged cross-contract case (bid=30/blanks vs bid=32/sixes) is directly computable from the existing `bid_aware_actions.csv` — no new oracle runs needed.
+- The threshold_mass rows in `step_pair_deltas.csv` are non-monotone in sign across steps; the page leans on mark_ev, but a one-line note on why threshold_mass flips could preempt confusion.

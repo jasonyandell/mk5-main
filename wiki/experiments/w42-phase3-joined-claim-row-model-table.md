@@ -155,3 +155,10 @@ python w42/joined_claim_row_model_table/validate_outputs.py \
 [[w42-doubles-no-trump-legacy-mining]] |
 [[w42-hidden-threat-legacy-mining]] |
 [[w42-claim-analysis-synthesis-report]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheap next probe: per-declaration-type ablation splits — the mixed all-declaration split may mask doubles/no-trump signal.
+- The W&B run URL was not fetched; treated as consistent with the local `summary.json` wandb block.

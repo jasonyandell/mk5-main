@@ -61,3 +61,10 @@ overclaim risks.
 [[w42-phase4-laydown-rule-accounting]] |
 [[w42-phase4-scoring-objective-tests]] |
 [[w42-phase4-bidding-count-exposure-tests]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended 1.
+
+- Of the two ledger-review candidates, `ch02-bid-only-enough` was later reconciled — promoted to `supported` in wave 2.G (commit 6918aa94, `w42/statistics_claims_ledger/claims.csv`). Only `ch07-protected-one-off-shape-frequency` remains `underpowered` with an open review recommendation; a cheap next step is a one-pass status review for that single row.
+- The audit's script (`run_audit.py`, named in `w42/book_validation_v1/wave1/t42-1nmm_independent_audit/README.md`) is not checked into the repo — only its outputs are; if reproducibility matters, capture the script alongside the artifacts. Mitigated but not mooted by t42-1nmm's independent-parse reproduction.

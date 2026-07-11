@@ -261,3 +261,10 @@ Claim-ledger impact: no claim-ledger change.
 [[w42]] | [[w42-raw-public-state-baseline]] |
 [[w42-v0-strategy-tags-baseline]] | [[w42-strategy-tags-v0]] |
 [[w42-strategy-tags-v1-map]] | [[winning42-strategy-measurement]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Source corpora `gus/data/corpus_train_100.pt` / `corpus_eval_20.pt` are gitignored local data files, so the manifest's corpus paths are unverifiable in-repo.
+- Cheap next probe: `concept_bucket_regret.csv` already carries raw-final-vs-tagged-best deltas per bucket; a table row per bucket would make the best-epoch comparison first-class instead of prose-only.

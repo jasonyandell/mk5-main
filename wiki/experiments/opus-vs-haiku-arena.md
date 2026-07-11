@@ -39,3 +39,10 @@ Confirms Opus's decision quality advantage on bad deals. The `conditional_outcom
 ## Related pages
 
 [[selfplay-arena]] · [[haiku-4-5]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[experiments/burl-move4-native-spike]] · [[sources/39aafaf]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- Game artifacts `seed_900010.jsonl` / `seed_900010_opus.jsonl` are not in git; their location off-repo is unrecorded.
+- The "145+ decisions across every model" claim is a cross-session tally not pinned by any single artifact; a cheap probe is a grep-and-count over the arena JSONL artifacts.

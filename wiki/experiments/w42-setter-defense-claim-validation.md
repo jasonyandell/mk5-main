@@ -245,3 +245,9 @@ Commit SHA:
 [[w42-strategy-tags-v1-map]] | [[w42-concept-bucket-regret]] |
 [[w42-tactical-claim-replication]] | [[winning42-ch05-setter-defense]] |
 [[winning42-ch12-advanced-bidding-playing]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheap next probe: the `ch05-trump-rich-count-intervention` slice has only 2 paired decisions; the Gus v2 generated corpus (28,000 rows) could power it the same way pounce was replicated in [[w42-tactical-claim-replication]].

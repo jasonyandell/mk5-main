@@ -218,3 +218,12 @@ but does not move central claim statuses.
 [[w42]] | [[winning42-strategy-measurement]] | [[w42-claim-ledger]] |
 [[w42-multi-seed-larger-eval-replication]] |
 [[w42-next-model-decision]] | [[w42-promote-or-retire]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- All headline metrics and paired deltas trace to `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/summary.json` and `paired_deltas.csv`; provenance commit `326fc509...` exists in repo.
+- Bead `t42-csw6.28` is not directly verifiable (bd retired 2026-06); grep-able in `.beads/issues.jsonl`.
+- W&B project link (`jasonyandell-forge42/w42`) is external and unverified.
+- A "Next Questions" probe partially landed via [[w42-jud-v1]] (bidding validated); covered by the superseded banner.

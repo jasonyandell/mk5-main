@@ -76,3 +76,11 @@ Oracle E[Q] spread (max − min across legal actions) per decision_idx on held-o
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[topics/pimc]] · [[experiments/gus-v2-voids-1000g]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Numbers trace to commit messages (0472125, 5cdec8a, fdcd654, 286eb23, 31f0ec3, a50c9ef); eval artifacts themselves are not in-repo.
+- The 10000g 3.4M (v2) row could carry its near-ties value (81.8%, in 31f0ec3) — currently "—".
+- Status is "active", but the 5000g extrapolation and π_opp directions were overtaken by the champion/jud work; a status pass is due when this era's frontier is formally closed.

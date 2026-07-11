@@ -155,3 +155,12 @@ No GPU. No forge access. Bootstrap statistics, pandas/numpy/scipy.
 - [[w42-bookval-v3-utility-argmax-divergence]] — Wave 4.0, the argmax-divergence gate that inverted this page's void-creation framing
 - [[w42-lens-v1-utility-head-to-head]] — Wave 4.1, the head-to-head that found EV best and p_make worst of four lenses
 - [[w42-book-validation-campaign]] — the tracker recording the ADOPT → ADOPT-DEFERRED downgrade
+
+---
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- ch04-low-trump-trap remains an open cheap probe under p_make — the Wave 4.x campaign never ran the re-probe this page flags as a priority.
+- robust_q25 is missing across all Wave 2 probes here, yet Wave 4.1 ([[w42-lens-v1-utility-head-to-head]]) found it the second-best lens; backfilling q25 on the existing snapshots would close that gap cheaply.

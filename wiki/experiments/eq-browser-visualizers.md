@@ -107,3 +107,9 @@ The visualizers support the current E[Q]/w42 discussion:
 
 [[expected-q-value]] | [[oracle-vs-human-play]] | [[candlewax]] |
 [[w42]] | [[w42-eq-n10-comparison-slice]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- Cheap next probe: check in a tiny E[Q] PDF tensor or a pre-exported `data/*.jsonl` sample so the PDF-discs and game-journey visualizers work from a fresh clone; the exported jsonl files exist locally at `forge/analysis/results/data/` but the blanket `data/` rule (`.gitignore:103`) excludes them, so this needs a gitignore exception.

@@ -199,3 +199,9 @@ Run/artifact fields for this bead:
 
 [[w42]] | [[winning42-strategy-measurement]] | [[gus-strategy-tags-probe]] |
 [[forge-analysis]] | [[forge]] | [[gus]] | [[burl]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- `w42/statistics_claims_ledger/claims.csv` uses a slightly different column set (family, evidence_mode, measurement, result, next_check) than the schema's entry fields; a one-line field-mapping note between the JSON schema and the CSV ledger would prevent confusion.

@@ -175,3 +175,11 @@ scalar.
 ## Links
 
 [[winning42-strategy-measurement]] - [[gus-strategy-tags-probe]] - [[gus]] - [[burl]] - [[forge]] - [[texas-42]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified; second pass amended 1.
+
+- Cheap next probe: extend the mark-ladder flip table past bid=84 to 126/168 to confirm the threshold_q-not-multiplier story holds once threshold_q saturates; no 126/168 flip data exists in either Wave 2 page.
+- Wave 1 flip counts recompute directly from `w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/action_mark_ev_scalars.csv` (65 top-1 flips, 12 positive-gain, 53 zero-gain; 10 detector-endorsed in `detector_endorsed_flips.csv`). The sibling `README.md` (lines 44-56) is stale — it still reports 10 genuine flips (15.4%) / 55 zero-gain, mean gain 0.044 — and should be regenerated or annotated.
+- Book source `scratch/winning42/winning42.with_figures.md` lines 4243-4331 is gitignored and lives only in the main working copy, so the chapter citation is not reproducible from this worktree.

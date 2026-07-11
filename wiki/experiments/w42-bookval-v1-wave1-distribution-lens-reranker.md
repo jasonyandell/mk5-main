@@ -170,3 +170,11 @@ python -u w42/book_validation_v1/wave1/t42-ybo6_distribution_lens_reranker/run_d
 - [[w42-phase3-joined-claim-row-model-table]] — master claim-tag row table (different corpus)
 - [[w42-phase4-claim-completion-board]] — baseline 64-row claim ledger
 - Parent bead: t42-4zi6 (epic) / this bead: t42-ybo6
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The per-detector table is a curated subset (10 of 31 tags in `detector_explained_disagreements.csv`); high-n tags such as hidden_threat_large_impact (n=179) and wide_shelf_gap (n=158) are omitted.
+- Cheap next probe: rerun on a multi-mark bid (84) corpus, where mark_ev decouples from p_make and the degenerate 4-way tie in the disagreement matrix breaks.
+- A multi-seed replication (2-3 more base seeds) would test whether EV's small point-advantage over tail lenses generalizes beyond the within-sample `n_alt_dominates_ev = 0`.

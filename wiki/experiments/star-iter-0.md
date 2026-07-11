@@ -50,3 +50,10 @@ vLLM was the original batch inference plan (see [[sources/8c5fbca]]). It was rem
 ## Related pages
 
 [[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[learned-by-playing]] · [[decisions/discard-illegal-traces]] · [[narration]] · [[experiments/base-model-k1-baseline]] · [[sources/576b694]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- HF adapters (`jasonyandell/gemma-4-e2b-texas42-star-iter0`) and wandb project `jasonyandell-forge42/lem-star` are external artifacts, not verifiable from the repo.
+- Cheap next probe: n=10 cannot distinguish 30% vs 60% pass rates; a 50–100 example paired run (base vs [[stage-0-adapter]], same hardware and inference path) would settle whether the adapter regressed K1 pass or the delta is sampling plus llama.cpp-vs-HF confound.

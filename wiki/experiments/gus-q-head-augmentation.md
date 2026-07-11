@@ -54,3 +54,9 @@ context (path b), a substantially larger project. (gus/MORNING4_STATUS.md @ 5f39
 ## Links
 
 [[gus]] · [[experiments/gus-lamir1-piopp]] · [[experiments/gus-lamir1-mode-comparison]] · [[topics/lamir1]] · [[topics/regret-eval]] · [[topics/q-head-augmentation]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 5 corrections applied in place and independently re-verified; second pass amended 2 (Conclusion rewrite, Links).
+
+- Cheap next probe: measure the per-decision action-value gap distribution to quantify noise headroom for any leaf evaluator; `gus/analysis/add_real_drama_columns.py` already computes `marginal_eq_gap` per decision (currently only a drama filter). The scalar-noise-vs-gap wall is named in [[q-head-augmentation]] and [[gus]]; [[gus-lamir1-mode-comparison]] names a different wall (V_head distribution shift).

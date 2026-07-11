@@ -84,3 +84,11 @@ end-to-end validation.
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[topics/v-pi-decoupling]] · [[experiments/gus-router-pilot]] · [[experiments/gus-scaling-ladder]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheap next probe: rerun v2 with K=50 sampled worlds at inference (the receipt-13 fix) — no retraining, a flag change in `gus/eval/blunder_detector_student.py`.
+- The v1/v2 baseline regrets differ (1.23 vs 1.13) because they use different eval slices.
+- Status is `active`; if [[gus-router-pilot]] closed this line, the page may deserve `status: closed`.

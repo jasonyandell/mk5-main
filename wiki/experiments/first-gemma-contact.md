@@ -55,3 +55,10 @@ This contact also motivates the "Facts this primer commits to" section of `lem/r
 ## Related pages
 
 [[lem]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[narration]] · [[texas-42]] · [[forge]] · [[star]] · [[backwards-curriculum]] · [[k1-grading]] · [[r1-rationalization]] · [[expected-q-value]] · [[lora-unsloth]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The Gemma output transcript is not preserved in the repo (Modal-side, ephemeral); the Result section traces only to the a8bccfa commit message. Linking the transcript, if it survives anywhere, would harden the page.
+- `status: active` is a staleness candidate: this was a one-shot sanity check, and `lem/gemma_star` has since moved past first contact (star_loop, train_stage0, qwen scouts).

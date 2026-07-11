@@ -151,3 +151,11 @@ This spike is complete and superseded — [[burl-lab]] (dormant since 2026-05-07
 built specifically on the findings named here (adoption asymmetry, hand-edited primer
 drift, performance as second-pass derivation, reflection-deafness needing phase-scoped
 retries). No further burl-chat sessions ran after this window.
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Session-level numbers (regret 12.12, +11.7/-5.8 Q, decision #1 rerun details) trace only to this page: the harvest directories under `scratch/belief_trajectory_rollout/` and the `burl/adapters/e1-rank16` adapter weights are gitignored/local.
+- The bucket-sampling pass (3–4 decisions per bucket) was never run before [[burl-lab]] superseded the spike; if burl-lab revives, that is the first thing to sample.
+- The `play_brief` adoption-asymmetry fix (naming the tool in protocol text) was diagnosed but not shown fixed here; worth confirming burl-lab's primer actually names improvised tools.

@@ -156,3 +156,10 @@ unlinked from it until this correction. Superseded by the w42 strategy-tag progr
 ## Links
 
 [[gus]] · [[topics/student-distillation]] · [[topics/regret-eval]] · [[experiments/gus-probe]] · [[experiments/gus-v3-consistency-full-run]] · [[w42]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The corpus `.pt` files (`gus/data/`) are not checked in, so the Runs tables have no raw artifact in-repo; the headline numbers (2.012 → 1.181, boss 0.167) rest on independent corroboration in `wiki/log.md` (~line 1532). Cheap fix: check in the probe's stdout/JSON summaries under a small results dir.
+- The boss-variance item (multiple `E[Q] N=10` samples per decision) is worth confirming actually landed in the [[w42]] family pages.

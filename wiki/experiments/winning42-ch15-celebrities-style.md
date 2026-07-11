@@ -144,3 +144,10 @@ No empirical run was performed for this chapter harvest.
 ## Links
 
 [[winning42-strategy-measurement]] | [[gus-strategy-tags-probe]] | [[gus]] | [[burl]] | [[forge]] | [[winning42-ch06-concentration-style]] | [[winning42-ch11-table-talk]] | [[winning42-ch14-history-tournaments]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Verifiability caveat: the chapter source `scratch/winning42/winning42.with_figures.md` lives only in gitignored scratch on the main machine (absent from worktrees), so the line-range citations depend on that local file surviving; if any detector is revived, re-anchor the ranges first.
+- Cheap next probe if ever revived: `dot_count_discipline` is the only detector that is pure deterministic accounting, buildable in an afternoon against existing [[burl]] traces without the other five.

@@ -55,3 +55,11 @@ See [[topics/v-pi-decoupling]] and [[topics/consistency-regularizer]].
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[topics/v-pi-decoupling]] · [[experiments/gus-scaling-ladder]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Headline numbers verified verbatim against commit 1a2f67f; `gus/eval/arena.py` and `gus/eval/play_visualizer.py` behave as described.
+- The V_head +26 / π-pick −0.4 decoupling figures trace only to the gitignored `scratch/BLUNDER_FORENSICS.md` (absent from the checkout) — consistent with the commit narrative but not independently verifiable.
+- Cheap next probe: rerun with the student at seats 1-3 (defender roles) to separate bidder-skill loss from general play loss; 20 games at one seat is a small sample for a 30pp claim.

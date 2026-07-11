@@ -132,3 +132,12 @@ three missing trumps to partner, left opponent, or right opponent. The source's 
 | Four trumps with the double but missing the next two highest has a 14/27 setter double-up risk. | supported | Exact 27-case assignment gives 14 under the same partner/non-threat interpretation. | Run forge rollouts and split the count-in-trump exception. |
 | Bidders with more than one off can count on partner double help. | context-limited | The unconditional double prior is real, but the useful probability is conditional on bidder hand and bid context. | Compute partner conditional prior and correlate with make/set and regret. |
 | The book's odds imply the recommended play is optimal. | underpowered | Exact priors alone do not settle E[Q] because count, bid margin, score, and off protection change value. | Use paired oracle rollouts in the first strategy-tags report. |
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Every exact figure (`C(28,7)`, void/double distributions, modal 18.011%) was independently recomputed by full enumeration and matched.
+- Retired-bead references `t42-ni1l.16` and `t42-br7n.7` are no longer resolvable (beads retired 2026-06); the 58.098713% partner two-plus-double prior traces only to the bead and was not recomputed — cheap probe: a one-line hypergeometric enumeration pins it.
+- The 10/27 and 14/27 four-trump counts were confirmed internally consistent with the partner/non-threat interpretation but not re-derived; a tiny script over the 3^3 missing-trump assignments would pin them permanently.
+- `scratch/winning42/winning42.with_figures.md` is gitignored, so the chapter slice is absent in worktrees though present in the main checkout.

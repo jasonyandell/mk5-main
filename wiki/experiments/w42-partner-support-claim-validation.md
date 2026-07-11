@@ -220,3 +220,9 @@ Commit SHA:
 [[w42]] | [[winning42-ch04-partner-support]] | [[w42-strategy-tags-v0]] |
 [[w42-strategy-tags-v1-map]] | [[w42-claim-ledger]] |
 [[w42-tactical-claim-replication]] | [[forge]] | [[gus]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The source corpus `gus/data/corpus_eval_20.pt` is referenced by machine-local absolute path; recording its sha256 in `summary.json` would make the report reproducible from other checkouts.

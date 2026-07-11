@@ -43,6 +43,13 @@ vLLM 0.19 rejects `Gemma4ForConditionalGeneration` for LoRA inference. Fix via `
 
 iter-1 plan: drop the full primer, keep the 42-aware framing block (provides vocabulary at tiny cost), re-harvest STaR corpus on the lighter prompt, retrain, eval. If the primer was the main regression cause, iter-1 should recover toward spike v2's ~88%.
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Commit 789e14d's message says "Phase 2's 50 K1 wins"; the page's 27 is correct (27/50 per [[burl-phase2-starcorpus]]) — the commit message has the typo.
+- Raw eval artifacts (`burl/eval/results/move4_iter0_eval/`) were gitignored, so per-decision numbers (e.g. decision 6 Δ−24.81) trace only to the commit message.
+
 ## Related pages
 
-[[burl-iter0-adapter]] · [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[decisions/primer-tradeoff]] · [[experiments/burl-phase1-primer]] · [[experiments/burl-phase2-starcorpus]] · [[experiments/burl-move3-base]] · [[experiments/burl-move4-native-spike]] · [[sources/789e14d]]
+[[burl-iter0-adapter]] · [[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[primer-tradeoff]] · [[burl-phase1-primer]] · [[burl-phase2-starcorpus]] · [[burl-move3-base]] · [[burl-move4-native-spike]] · [[789e14d]]

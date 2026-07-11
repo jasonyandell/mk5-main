@@ -146,3 +146,10 @@ python w42/sequence_seat_counterfactuals/validate_outputs.py \
 [[winning42-ch03-bidder-play]] |
 [[winning42-ch04-partner-support]] |
 [[winning42-ch05-setter-defense]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Input file `w42/tactical_claim_replication/all_action_rows.jsonl` is a generated artifact not present in the worktree (likely gitignored); `summary.json` confirms it as the run-time input.
+- Cheap next probe: the partner-support trick-timing pattern (trick 3 = +0.994 sits between the negative/uncertain tricks 1-2 and the stronger-positive tricks 4-5) could be re-cut by remaining-count inventory instead of trick index to test whether timing is really inventory depletion.

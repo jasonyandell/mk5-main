@@ -43,3 +43,10 @@ a larger model. (commit message @ 3c02d10)
 ## Links
 
 [[gus]] · [[experiments/gus-4head-baseline]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The "already inferred attentionally" conclusion is only tested at d=192/1000g; ablating voids on a larger corpus/model would test whether it holds at scale.
+- Cheap probe: linear-probe the v1 encoder's pooled embedding for void indicators to confirm attentional void inference directly, rather than inferring it from the flat delta.

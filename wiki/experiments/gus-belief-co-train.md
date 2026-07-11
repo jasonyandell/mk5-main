@@ -76,6 +76,14 @@ where humans use several (mode, signal, hedge, gamble). A richer student could o
 meta-strategy distribution; training data already exists in the oracle's per-world tensor.
 No code written — noted as future direction. (commit message @ 94d8646)
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- Source discrepancy: `gus/PRACTICALITIES.md` §20 / `gus/MORNING4_STATUS.md` report 0.679 for original-adapter corpus-worlds q-bootstrap where §21's A/B table says 0.685 — presumably different runs/configs; the §21 A/B (0.655/0.685 vs 0.679/0.718) is authoritative for this experiment.
+- The "smoother belief sampling beats oracle adaptive sampling" mechanism is marked unverified in §21; cheap probe: compare world-distribution entropy of belief-sampled vs corpus worlds at decisions where regret differs.
+- K sweep for q-bootstrap-belief is proposed in §21 ("Next experiment (not run)"); K=200 already matches/beats corpus at M~3000, suggesting distribution rather than diversity is what's better. Still unrun.
+
 ## Links
 
 [[gus]] · [[topics/regret-eval]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-belief-calibration-diagnostic]] · [[joint-world-tensor]]

@@ -209,3 +209,11 @@ Bid-aware driver validation:
 [[w42-phase4-final-claim-audit]] |
 [[w42-branch-atlas-scaled-v0]] |
 [[w42-powered-branch-atlas-v1]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Design landed essentially as written: `GameStateTensor.from_snapshot` (forge/eq/game_tensor.py), `generate_eq_from_snapshots` (forge/eq/generate/pipeline.py), `--snapshot-file` and `--bid-values` in forge/eq/generate/cli.py, `w42/book_validation_v1/wave2/run_bid_aware_atlas.py`, and the snapshot corpora under `w42/book_validation_v1/wave2/snapshots/`.
+- As-built corpus naming drifted from the design: `pounce_window_high_bid/` shipped as `pounce_window/`; extra corpora exist (`reentry_preservation_v2/`, `void_creation_follow/`).
+- Page remains `status: active` though wave 3-5 directories now exist; candidate for done/superseded with links to the wave-2 result pages.

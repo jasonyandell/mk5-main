@@ -194,3 +194,10 @@ not supply real auction metadata or bid margin.
 [[w42-phase2-distribution-aware-ev-report]] |
 [[w42-branch-atlas-scaled-v0]] |
 [[gus-joint-world-tire-kick]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- W&B run `44z1kl9j` is external; a local `wandb/` mirror path exists in `summary.json`, but run contents are not verifiable from the repo.
+- Cheap next probe: `summary.json` reports 119 action rows tagged multi-peak PDF; the page only surfaces the decision-level 46/56 rate.

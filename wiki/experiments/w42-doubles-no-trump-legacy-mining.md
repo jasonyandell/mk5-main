@@ -146,3 +146,10 @@ The next Chapter 9 pass should sharpen labels before moving statuses:
 [[w42]] | [[w42-claim-data-inventory]] |
 [[w42-doubles-no-trump-claim-validation]] |
 [[winning42-ch09-doubles-no-trump]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The input `gus/data/corpus_train_chunk_*.pt` files are no longer on disk; the run is reproducible only from the recorded manifest/summary, not from raw data.
+- Cheap next probe: the "hold a live double when a tempting spend is legal" preservation label can be built from the same labeled slice without regenerating data — only the labeler changes.

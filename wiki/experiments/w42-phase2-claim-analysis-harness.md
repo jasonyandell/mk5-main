@@ -171,3 +171,11 @@ coverage for later claim-analysis beads.
 [[w42-gus-corpus-tactical-claim-deep-dive]] |
 [[w42-branch-atlas-scaled-v0]] |
 [[w42-phase2-distribution-aware-ev-report]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended 1.
+
+- All headline metrics (773/280/36/14/6 branch-atlas; 3903/3428/6/4 Gus) verified exactly against both smoke `summary.json` artifacts.
+- The branch-atlas smoke command shows `--wandb-name t42-0b4l.2-branch-atlas-smoke`, but the recorded run name is `t42-0b4l.2-branch-atlas-smoke-v2` (`summary.json`) — cosmetic; run id `rj3j0jsz` matches.
+- The "eight progress points" figure is derivable from `harness.py:484-501` (`log_row_progress` logs every chunk plus the final row: 773 rows at chunk 100 → exactly 8), but the W&B-side rendering of run `rj3j0jsz` is unverified from the repo.

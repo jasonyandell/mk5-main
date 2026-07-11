@@ -76,3 +76,10 @@ table is entirely bid `30`.
 
 [[w42]] | [[winning42-ch03-bidder-play]] |
 [[winning42-ch04-partner-support]] | [[winning42-ch05-setter-defense]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The input `w42/tactical_claim_replication/all_action_rows.jsonl` is gitignored; the path is recorded provenance, not a live artifact.
+- Two null-ish contrasts in the artifact are omitted from summary.json and this page — ch04 low-trump-trap (`+0.370`, CI crosses zero, n=158) and ch05 count-before-certainty (`+0.438`, CI crosses zero, n=525); a one-line mention would keep the nulls from being lost.

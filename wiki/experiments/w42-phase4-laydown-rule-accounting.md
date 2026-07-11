@@ -62,3 +62,9 @@ trick. Rejected fixtures write concrete counterexample lines.
 
 [[w42]] | [[winning42-ch01-in-a-nutshell]] |
 [[winning42-ch03-bidder-play]] | [[forge]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The strict all-continuations criterion could be relaxed to "wins regardless of opponents but assuming partner cooperates" to match how humans actually declare laydowns — a one-flag variant worth trying.

@@ -58,3 +58,11 @@ Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v9` ([[v9-adapter]]).
 ## Related pages
 
 [[v9-adapter]] · [[game-context-qa]] · [[rationalization-verifier]] · [[single-fact-enumeration]] · [[rules-adapter]] · [[qwen3-1.7b]] · [[lora-unsloth]] · [[modal]] · [[experiments/qwen-14b-capacity]] · [[sources/b857299]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
+
+- The intervention_check 91% → 70% drop was later re-probed at stratified 50/category in the [[v10-maskfix-breakthrough]] eval: recovered to 88%, attributed to gradient allocation rather than noise (lem/OVERVIEW.md lines 834-856).
+- Adapter `jasonyandell/qwen3-1.7b-texas42-stage0-v9` traces only to lem/OVERVIEW.md; not verified on HuggingFace itself.
+- lem/OVERVIEW.md is internally inconsistent on the v8→v9 intervention_check comparison: line 673 says "a small sample (10 examples)" while the v9 overall (583/700) implies 50/category.

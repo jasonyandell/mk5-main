@@ -57,3 +57,11 @@ that multi-step LAMIR will plug into when that head is available. (commit messag
 ## Links
 
 [[gus]] · [[topics/pimc]] · [[topics/lamir1]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Headline numbers (65.4 / 62.1 / 61.8) and per-decision hints trace only to the commit message of 5a4c9b9 — no results JSON/log artifact exists in-repo.
+- `gus/eval/eval_pimc.py` confirms the mechanism: pimc-q uses the single corpus-saved `world_assignment` per decision (K=1; `--k-corpus-cap 200` exists but is unused in the current path), pimc-belief samples K=50 worlds from belief_head and argmaxes mean Q.
+- Cheap next probe: wire up the dangling `--k-corpus-cap` averaging to test whether pimc-q at K=50 oracle worlds closes the gap to direct — distinguishes sampler quality from single-step PIMC being inherently redundant.

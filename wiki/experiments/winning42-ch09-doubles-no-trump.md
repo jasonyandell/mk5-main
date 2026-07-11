@@ -175,3 +175,9 @@ specific finding:
 ## Links
 
 [[winning42-strategy-measurement]] / [[gus-strategy-tags-probe]] / [[gus]] / [[burl]] / [[forge]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The "nearly double the corpus average" claim for doubles-trump CVaR disagreement is qualitative: the [[w42-bookval-v1-wave1-distribution-lens-reranker]] table gives only per-detector rates, so a corpus-wide CVaR-disagree baseline would firm it up.

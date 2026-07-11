@@ -173,3 +173,11 @@ No status changes. The existing narrow reading remains:
 [[w42-partner-support-claim-validation]] |
 [[winning42-ch04-partner-support]] |
 [[winning42-ch05-setter-defense]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `all_action_rows.jsonl` is gitignored generated data — present in the main working tree (79 MB) but absent from fresh checkouts and worktrees; the open "later commit should decide" note could be resolved by documenting regeneration from the runner as the canonical path.
+- The W&B run itself was not verified (external service); the local manifest metadata matches the run URL above.
+- Cheap completeness probe: the harness `paired_contrasts.csv` has 6 rows not mentioned in the Harness Migration section (cosmetic).

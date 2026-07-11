@@ -133,3 +133,11 @@ python w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.
 - [[winning42-ch04-partner-support]] — chapter source
 - [[w42-book-validation-campaign]] — wave overview
 - Campaign rules: `w42/book_validation_v1/AGENTS.md`
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Source corpus dir `gus/data/` (corpus_train_chunk_*.pt) is gitignored and absent from the worktree; the corpus itself is unverifiable locally, though the builder script references it.
+- Cheap next probe: segment count-in-trick cases by belief-conditioned opponent trump-holding inference, to test the sub-configuration the book actually describes.
+- Pool count-in-trick cases across wave2 probes sharing the corpus to push N past 100 for the underpowered subgroup.

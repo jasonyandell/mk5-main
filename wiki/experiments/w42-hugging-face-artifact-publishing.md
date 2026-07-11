@@ -81,3 +81,11 @@ for this bead.
 [[w42]] | [[w42-lab-infrastructure]] |
 [[w42-wandb-run-comparison-dashboard]] |
 [[w42-multi-seed-larger-eval-replication]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Bead `t42-csw6.27` is unverifiable: beads were retired and `.beads/issues.jsonl` is absent from the worktree.
+- W&B project and group names match the linked wiki pages; the W&B side itself was not verified (external).
+- Cheap next probe: revisit the deferral criteria now that champion/jud work has advanced — if a checkpoint gets multi-seed promotion, this page's status should flip from active.

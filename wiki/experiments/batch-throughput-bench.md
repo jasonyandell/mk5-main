@@ -46,3 +46,11 @@ wiki staleness issue.
 ## Related pages
 
 [[mlx-lm]] · [[burl]] · [[selfplay-arena]] · [[sources/ed3cfc3]] · [[sources/6a97d55]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 3 corrections applied in place and independently re-verified; second pass amended 2 (reverted one first-pass over-correction, added the prompt_cache negative result).
+
+- The commit quote in [[6a97d55]] is truncated; the full message (`git show 6a97d55`) and `burl/experiments/batch_rollout_harness.md` confirm the measured run used batch=16 (batch=64 is only the harness default).
+- WorldSamplerMRV bias gap re-verified as untracked 2026-07-07: `gh issue list --state all --search WorldSamplerMRV` returns nothing; issue #33 has no sampler/bias mention. Filing a GitHub issue (milestone "Champion") remains the outstanding action.
+- Cheap next probe: measure the ragged-batch delta the source doc flags as unmeasured (the prompt_cache half is done and negative — see [[burl-perf-phase2]]).

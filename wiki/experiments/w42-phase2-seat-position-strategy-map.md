@@ -248,3 +248,10 @@ PY
 
 [[w42]] | [[w42-final-empirical-strategy-report]] |
 [[winning42-strategy-measurement]] | [[eq-browser-visualizers]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Reproducibility caveat: the input `w42/tactical_claim_replication/all_action_rows.jsonl` is gitignored, so the full-run command requires regenerating it via `run_tactical_replication.py` on a fresh clone.
+- Cheap next probe: slice the negative slough-count-from-closure result (-6.38 Q, n=1,803) by whether the trick is already lost to the defense, separating forced slough from voluntary donation.

@@ -1,5 +1,0 @@
-Reviewed against code on 2026-07-07 — no issues found.
-
-- All headline numbers verified: static shape percentages (`w42/eighty_four_claim_validation/summary.json`), dynamic coverage (6 games / 168 decisions / 584 actions / 4497 hidden-threat rows / 10 labels), proxy label counts, paired contrasts (+0.136 / +0.005 / -0.0048 over 13 pairs; +4.01 over 23 pairs), seed-mining figures (50000 seeds / 214229 candidate rows / 256 recommendations), fixture seed ids 840700–840705, and W&B run id f7uzoo7f (found in `branch_atlas/summary.json`; the hosted run itself not checked).
-- The pair_protector_proxy surface is very thin (4 actions / 3 decisions); a cheap next probe would be injecting constructed free-discard states from the phase-3 seed corpus to grow that label past single digits.
-- The `defense_preserve_low_asset_vs_spend_live_asset_proxy` effect (+0.136 mean Q, n=13) is too small/underpowered to cite as a rule; a phase-4-style rerun already exists — consider adding its contrast for this label back into a comparison table.

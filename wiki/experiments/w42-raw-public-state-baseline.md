@@ -237,3 +237,10 @@ Claim-ledger impact: no claim-ledger change.
 [[w42]] | [[w42-dataset-manifest]] | [[w42-data-adapter-smoke]] |
 [[w42-report-template]] | [[w42-lab-infrastructure]] |
 [[gus-strategy-tags-probe]] | [[gus]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- A repo-relative or hashed reference for the source corpora (currently absolute paths into the main checkout) would make the run reproducible from any worktree.
+- Bead `t42-csw6.10` is historical provenance only — beads were retired in favor of GitHub issues, so it is no longer resolvable via `bd`.

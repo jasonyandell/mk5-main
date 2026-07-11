@@ -148,6 +148,13 @@ gated stance on count donation: detector hygiene work is needed to keep
 overfires on setter seats in 2,300 cases), but the within-pair contrast
 between donation-on-closure and donation-before-closure is robust.
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Book source `scratch/winning42/winning42.with_figures.md` is gitignored — pages 37-41 citations trace only to the main checkout, not the repo.
+- Cheap next probe: regenerate [[w42-bookval-v1-wave2-low-trump-trap]] with a count-in-trick filter at snapshot-selection time to concentrate samples on the book's actual scenario (the n=86 subgroup is underpowered).
+
 ## Links
 
 [[winning42-strategy-measurement]] · [[gus-strategy-tags-probe]] · [[gus]] · [[burl]] · [[forge]]

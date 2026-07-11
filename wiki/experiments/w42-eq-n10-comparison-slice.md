@@ -216,3 +216,7 @@ Claim-ledger impact: no claim-ledger change.
 [[w42]] | [[w42-dataset-manifest]] | [[w42-data-adapter-smoke]] |
 [[w42-raw-public-state-baseline]] | [[gus-strategy-tags-probe]] |
 [[forge]] | [[gus]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.

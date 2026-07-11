@@ -154,3 +154,10 @@ metrics.
 [[w42-phase2-distribution-aware-ev-report]] |
 [[w42-phase2-hidden-domino-threat-attribution]] |
 [[eq-browser-visualizers]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- The build is unreproducible: the source `eq_pdf_v3_sample.jsonl` is untracked and gone (sha256 preserved in `w42/phase2_decision_table/manifest.json`). Cheap fix: check the 5-game sample or a regeneration command into the repo.
+- All headline numbers verified clean against `w42/phase2_decision_table/summary.json`; CSV row counts confirmed on disk.

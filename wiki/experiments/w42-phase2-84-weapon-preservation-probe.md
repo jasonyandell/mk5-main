@@ -216,3 +216,11 @@ dataset or checkpoint.
 [[w42-next-model-decision]] | [[w42-84-claim-validation]] |
 [[winning42-ch07-taking-every-trick-84]] |
 [[winning42-ch08-setting-84]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- W&B run id `f7uzoo7f` traces to `branch_atlas/summary.json`; the hosted run itself was not checked.
+- The `pair_protector_proxy` surface is very thin (4 actions / 3 decisions); a cheap next probe is injecting constructed free-discard states from the phase-3 seed corpus to grow that label past single digits.
+- The `defense_preserve_low_asset_vs_spend_live_asset_proxy` effect (+0.136 mean Q, n=13) is too underpowered to cite as a rule; a phase-4-style rerun exists — its contrast for this label could be added back into a comparison table.

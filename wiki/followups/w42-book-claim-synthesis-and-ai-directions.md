@@ -1,7 +1,0 @@
-Reviewed against code on 2026-07-07 — no issues found.
-
-Checked: phase-3 regret/match numbers (1.3598→1.1257, 64.464%→68.107%) match `wiki/experiments/w42-phase3-joined-claim-row-model-table.md`; Lens v1 round-robin, sample-sweep, and disaster head-to-head numbers match `w42/lens_v1/results/*.csv` and `summary.json`; Wave 4.0 disagreement matrix (206/500 = 41.2%, p_make≡mark_ev at 0.0%) and void/preserve confusion table match `w42/book_validation_v1/wave4/t42-hmjr_utility_argmax_divergence/`; pounce-high-bid −10.42 (CI [−11.25, −9.59]) matches `w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/README.md`; `forge/eq/generate/actions.py::select_actions` is indeed p_make-argmax with EV tie-break; `ch10-tournament-speed-tradeoff` in `w42/phase4_scoring_objective_tests/claim_summary.csv` reads `context-limited` as claimed; Zeb 55.7% matches `forge/zeb/OVERVIEW.md`; all cited local paths exist. Status-count arithmetic across waves is internally consistent (sums to 64 at every checkpoint).
-
-- Cosmetic only: the page has two "## Links" headings (one empty except the Caveats subsection); a future edit could merge them.
-- Cheap next probe: the page's own "verify mark_ev effect sizes when mm>1" caveat (Wave 3.0 section) is directly checkable against the bid-aware atlas at bid=84 — a one-script sanity pass.
-- The ledger status counts after each wave are stated in probe READMEs/wiki pages rather than a single canonical ledger file; a machine-readable post-wave ledger snapshot would make future audits one grep.

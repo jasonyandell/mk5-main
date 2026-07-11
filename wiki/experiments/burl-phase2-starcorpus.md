@@ -62,3 +62,9 @@ First real STaR corpus for Burl. Shape is healthy (27 wins + 23 rationalizations
 ## Related pages
 
 [[burl]] · [[star]] · [[r1-rationalization]] · [[tool-orchestration]] · [[burl-iter0-adapter]] · [[experiments/burl-phase1-primer]] · [[experiments/burl-iter0-eval]] · [[sources/fd6032b]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `burl/eval/run_move4_star_rollout.py` at HEAD is now the iter-2 EQ-gate rewrite (reveal-and-rationalize was replaced due to the 100% yes-bias flagged above); the @fd6032b pin remains correct for this page.

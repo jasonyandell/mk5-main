@@ -262,3 +262,12 @@ These findings do not retire any Ch 5 source-backed claim. They sharpen
 the implementation hooks: setter-defense work needs seat-aware features,
 gated reckless-count detection, and a regime-vs-action separation in the
 detector schema.
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified; second pass amended 1.
+
+- Claim Ledger pounce rows still cite only [[w42-phase4-sequence-handshape-tests]]; folding in the Wave 2.E bid=30 (`context-limited`) and Wave 2.E.2 high-bid (`contradicted`) results is a cheap next edit.
+- The `t42-br7n.1` ledger row cites the bead without linking [[w42-phase4-sequence-handshape-tests]].
+- Book line citations trace only to `scratch/winning42/winning42.with_figures.md` in the main working tree (scratch/ is gitignored, absent in this worktree); result numbers trace via the linked experiment pages and `.beads/issues.jsonl`.
+- The high-bid pounce probe's overall status is `context-limited` (per-bid `contradicted`), pending a narrower late-game probe and the setter-team-led subsample (39.6% pounce-better, N=280).

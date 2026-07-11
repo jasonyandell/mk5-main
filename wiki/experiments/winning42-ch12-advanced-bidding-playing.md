@@ -172,6 +172,13 @@ correct at threshold-sharp bids and incorrect under different
 utilities. A future audit pass should re-classify each
 `context-limited` row by which objective function it survives under.
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- The Wave 2 Findings re-classification suggestion (re-score each `context-limited` row by which objective it survives under) is partially done by [[w42-bookval-v2-utility-lens-synthesis]]; a one-line pointer from each `context-limited` ledger row to its utility-lens verdict remains a cheap consistency pass.
+- Source slice `scratch/winning42/winning42.with_figures.md` is gitignored, so line-number anchors are unverifiable from the repo; quoting a short anchor phrase per row would let anchors survive re-OCR.
+
 ## Links
 
 [[winning42-strategy-measurement]] - [[gus-strategy-tags-probe]] - [[gus]] - [[burl]] - [[forge]]

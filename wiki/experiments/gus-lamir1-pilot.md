@@ -55,3 +55,9 @@ go there for current numbers.
 ## Links
 
 [[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-v3-consistency-full-run]] · [[topics/lamir1-ceiling]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `gus/eval/lamir1.py` has since grown to 1124 lines (later modes and bug fixes); the "536 lines, new" figure is accurate for the pilot commit this page describes.

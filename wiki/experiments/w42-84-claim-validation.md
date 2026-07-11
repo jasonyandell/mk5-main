@@ -294,3 +294,10 @@ Commit SHA at corrected run:
 [[w42]] | [[w42-claim-ledger]] | [[w42-strategy-tags-v1-map]] |
 [[w42-detector-tests]] | [[w42-concept-bucket-regret]] |
 [[winning42-ch07-taking-every-trick-84]] | [[winning42-ch08-setting-84]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- All headline metrics, claim statuses, artifact paths, commit SHA `f746b93`, and seed 42 match `w42/eighty_four_claim_validation/summary.json` and the CSVs exactly.
+- W&B run URLs (`vmta9zew`, `oizyjty5`, `w4wupdih`) live outside the repo and are not directly verifiable; the primary run id and entity/project match summary.json's wandb block.

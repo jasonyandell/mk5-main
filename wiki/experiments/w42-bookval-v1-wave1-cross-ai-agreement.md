@@ -176,3 +176,11 @@ python3 w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/run_cross_ai_ag
 `underpowered` — This analysis is diagnostic. It identifies where vocabulary fails and
 which claim families are most contested, but agreement rates alone are not direct tests
 of individual claim truth values.
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 4 corrections applied in place and independently re-verified; second pass amended 1 (the dist-lens rates now state their tie convention).
+
+- Open N reconciliation: Wave 1.1 `summary.json` reports N=211 decisions (branch_atlas_scaled_v0 + v1, seeds 9420–9421 included) while the m2i7 join uses the 280-decision seed-9430 subset; a one-line note reconciling the two Ns would prevent confusion.
+- m2i7 `summary.json`'s `dist_lens_decisions: 754` does not match the 280/539 framing here; what that field counts is unverified.
+- Cheap next probe: recompute the four-source matrix on the 915 detector-endorses-5-5 decisions to see whether the 5-5 over-generalization is regime-specific or uniform.

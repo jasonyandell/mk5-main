@@ -203,3 +203,11 @@ The pre-launch prediction at `scratch/belief_trajectory_rollout/star/run3c_predi
 ## Links
 
 [[burl]] [[star]] [[burl-2000-harvest]] [[r1-rationalization]] [[max-tokens-2048-floor]] [[batched-harvest-resilience]] [[reasoning-coherence-verification]] [[candlewax]] [[iter5-e1-rank-sweep]] [[preserve-thoughts]] [[iter4-null-preserve-thoughts]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
+
+- The "1062-row strict pool" phrasing conflates decisions and rows through the Recipe section; the pool is 1062 *decisions* pre-filter (manifest `n_decisions_total` 1025 + `decisions_emptied_by_filter` 37). Cheap cleanup: standardize on decisions vs assistant-rows terminology.
+- The page's early-stop iters (849/1149) differ by one from the trainer log's "Iter 850"/"Iter 1150" — an off-by-one internal to the trainer's own logging; not amended.
+- All eval/training artifacts live under gitignored `scratch/`; numbers verify against on-disk files on the M5 Max, not against tracked files.

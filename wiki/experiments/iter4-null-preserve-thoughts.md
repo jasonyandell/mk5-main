@@ -38,6 +38,13 @@ No Burl adapter before iter-5 was trained on complete thought-to-tool-call trace
 
 **Follow-up:** iter-5 re-runs the A/B with `max_seq_length=4096`. If non-null, this experiment upgrades from "null/retired" to "artifact resolved."
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The byte-identical claim traces to commit messages only — no stored eval artifact in-repo; linking the eval JSON, if it exists, would make the null auditable.
+- Status stays `retired` pending the iter-5 `max_seq_length=4096` A/B; update the status line when that lands.
+
 ## Related pages
 
 [[preserve-thoughts]] · [[iter3-rules-adapter]] · [[lora-unsloth]] · [[burl]] · [[decisions/sft-max-seq-length]] · [[sources/20f4fa2]] · [[sources/dbadb5f]] · [[sources/edf86e9]]

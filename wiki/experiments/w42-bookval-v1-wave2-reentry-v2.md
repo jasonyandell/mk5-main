@@ -145,3 +145,10 @@ Wall time: 135 seconds (2.25 minutes) on Apple MPS.
 
 [[w42]] | [[w42-bookval-v1-wave2-reentry-preservation]] |
 [[w42-bookval-v1-wave2-infra-design]] | [[w42-phase4-final-claim-audit]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheap next probe: relax the shape filter to trick ≥ 1 (or mine a dedicated early-game corpus) to fill the 0-pair early slice — the book's primary regime remains untested.
+- The 208 "trump not legal in follower position" skips suggest the miner's shape filter could require bidder-leads positions upfront, doubling yield per corpus pass.

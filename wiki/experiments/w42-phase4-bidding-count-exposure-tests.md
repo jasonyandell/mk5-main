@@ -72,3 +72,10 @@ set counterfactuals that can separate bidding behavior from static hand shape.
 [[w42]] | [[winning42-ch02-bidding]] |
 [[winning42-ch12-advanced-bidding-playing]] |
 [[winning42-ch16-statistical-odds]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The four/five-off comparison (`0.337` vs `0.406`) rests on only n=34 exposed rows; a bootstrap CI over the delta is a cheap next probe before citing it further.
+- The strong-trump trap slice (n=24) would benefit from the paired same-hand high-off contrast that the summary.json caveat itself suggests.

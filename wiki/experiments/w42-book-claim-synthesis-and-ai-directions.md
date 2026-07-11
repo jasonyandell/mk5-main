@@ -961,3 +961,11 @@ and the role-resurrection of [[burl]] / [[gus]] / [[zeb]].
 [[w42-bookval-v1-wave1-independent-audit]] |
 [[w42-bookval-v2-utility-lens-synthesis]] |
 [[w42-bookval-v3-utility-argmax-divergence]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheap next probe: the Wave 3.0 "verify mark_ev effect sizes when mm>1" caveat is directly checkable against the bid-aware atlas at bid=84 — a one-script sanity pass.
+- Post-wave ledger status counts live in probe READMEs and wiki pages rather than a single canonical ledger file; a machine-readable post-wave ledger snapshot would make future audits one grep.
+- Cosmetic: the page has two "## Links" headings; a future edit could merge them.

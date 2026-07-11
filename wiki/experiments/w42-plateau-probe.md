@@ -154,3 +154,10 @@ data-starvation reading.
 - [[rank-vs-price]] — the mechanism the value-native bidder validates; now beats, not ties
 - [[pimc]] — strategy fusion; the structural residual this probe refuted at v0's scale
 - [[w42-champion-selfplay-fixed-point]] — #26, the over-bidder the loop dissolves
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `scratch/jud-v0/loop/run_loop.py` is gitignored (exists only on the local machine); copying the loop driver into `champion/evidence/jud_v0/` would let the recipe survive a scratch cleanup.
+- Cheap next probe before [[jud]] v1: one round at 2–3k SP games with a slightly larger MLP head, to distinguish "capacity" from "mechanism" as the next binding constraint.

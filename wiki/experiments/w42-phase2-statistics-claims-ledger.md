@@ -178,3 +178,9 @@ become the canonical central machine-readable claim ledger.
 [[w42-scoring-objective-drift-claim-validation]] |
 [[w42-84-claim-validation]] |
 [[w42-gus-corpus-tactical-claim-deep-dive]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- The W&B run link (`.../runs/zm3jdrnj`) is not verifiable from the repo; assumed correct.

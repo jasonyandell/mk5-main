@@ -136,3 +136,12 @@ Wave 4.0 measurement agent (t42-hmjr). Forge pipeline + bootstrap statistics. In
 - [[w42-bookval-v1-wave2-ch10-action-level]] — Wave2.H mark_ev affine identity at all bids
 - [[w42-book-validation-campaign]] — parent campaign
 - [[w42-book-claim-synthesis-and-ai-directions]] — campaign synthesis
+
+---
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheap next probe: rerun on a higher-bid subset (bid ≥ 84, mm ≥ 2) to actually exercise the mark_ev ≠ p_make regime the bid=30 caveat says this corpus cannot test.
+- Per-snapshot resampling variance (caveat 3) is checkable for ~$0: rerun 50 snapshots with a different world seed and count argmax flips.

@@ -39,3 +39,11 @@ When an ML artifact advertises a headline accuracy, inspect the denominator. "Ac
 ## Related pages
 
 [[zeb]] · [[burl]] · [[forge]] · [[decisions/zeb-parked-eq-primitive]] · [[tool-orchestration]] · [[sources/d9baf3b]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `burl/eval/belief_calibration.py` implements the hidden-vs-played separation as described (hidden_mask excludes own hand plus already-played; hidden-only top-1 computed per state).
+- No raw JSON calibration output is checked into `burl/eval/results/` (only perf artifacts), so the 72%/39%/0.224/0.067 figures trace to the [[d9baf3b]] digest rather than being re-derivable in-repo.
+- Cheap next probe: check in the calibration run's numeric output (or a one-line CSV) alongside the plots so those figures reproduce from the repo.

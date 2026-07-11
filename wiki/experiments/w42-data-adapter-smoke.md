@@ -183,3 +183,9 @@ status.
 
 [[w42]] | [[w42-dataset-manifest]] | [[w42-lab-infrastructure]] |
 [[w42-claim-ledger]] | [[gus-strategy-tags-probe]] | [[forge]] | [[gus]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified; second pass amended 1.
+
+- `gus/data/corpus_train_100.pt` is gitignored, so the real-corpus source bytes trace only to the local checkout, not to any commit.

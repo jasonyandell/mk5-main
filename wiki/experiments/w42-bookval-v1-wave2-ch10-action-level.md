@@ -156,3 +156,11 @@ All outputs under:
 - `slice_breakdown.csv` — slices by declaration, seat role, EV action tier
 - `summary.json` — machine-readable headline numbers
 - `run_ch10_action_level.py` — reproducibility script
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The declaration table lists 7 of 10 declarations; blanks (69.3%), ones (68.4%), threes (68.5%) at bid=84 are omitted — the "all above 68%" claim still holds.
+- summary.json notes that at bid=42 p_make=0 for all actions (mark_ev = −mm always, argmax settled by ties) — the zero-exception mark_ev==p_make agreement at bids 42/84 is partly tie-breaking, not discrimination.
+- Cheap next probe: flip-rate vs trick number (early vs late decisions) to test whether threshold_q sensitivity concentrates in the endgame.

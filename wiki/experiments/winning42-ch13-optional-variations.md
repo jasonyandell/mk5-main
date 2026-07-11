@@ -116,3 +116,10 @@ measurement target rather than a result.
 
 [[winning42-strategy-measurement]] | [[gus-strategy-tags-probe]] | [[gus]] |
 [[burl]] | [[forge]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Cheapest revival probe: the two P0 straight-42 items (`high_bid_scoring_invariant`, direct-84 legality) are pure engine unit tests requiring no variant machinery, landable as fixtures independent of any chapter-harvest revival.
+- Source `scratch/winning42/winning42.with_figures.md` is gitignored, so line citations trace only through the main checkout, not worktrees.

@@ -188,3 +188,10 @@ The first report should have three tables:
 
 [[gus]] · [[burl]] · [[forge]] · [[topics/regret-eval]] ·
 [[experiments/gus-strategy-tags-probe]] · [[w42-final-empirical-strategy-report]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The `strategy_tags` analyzer under "First Work Package" is still described prospectively; if any of it landed in `gus/eval/strategy_probe.py` or successors, this page should point at the implementation rather than the plan.
+- The working breakdown (`scratch/winning42/strategy_measurement_breakdown.md`) and OCR source (`scratch/winning42/winning42.with_figures.md`) are gitignored, so present only in the main checkout scratch/ and absent from worktrees.

@@ -47,3 +47,10 @@ Three contacts at the same prompt provide a controlled comparison of what each a
 ## Related pages
 
 [[lem]] · [[kerry-adapter]] · [[kerry-curriculum]] · [[rules-adapter]] · [[gemma-4-e2b]] · [[experiments/first-gemma-contact]] · [[experiments/second-gemma-contact]] · [[sources/43009a4]] · [[sources/f8cdbe7]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- The raw inference transcript lives off-repo (HF adapter + interactive run); results trace only to the 43009a4 commit message.
+- Cheap next probe: a 6-4-under-fives membership battery over all 7 dominoes containing a 4-pip would isolate whether the residual error is pip-confusion or count-salience.

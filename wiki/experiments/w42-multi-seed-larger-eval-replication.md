@@ -223,3 +223,13 @@ review.
 [[w42-raw-public-state-baseline]] | [[w42-v0-strategy-tags-baseline]] |
 [[w42-rich-tag-many-signal-probe]] | [[w42-strategy-tag-family-ablations]] |
 [[winning42-strategy-measurement]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Headline numbers (feature regrets, paired deltas, E[Q] N=10 baseline) match
+  the aggregate CSV/JSON artifacts exactly; W&B run URLs match `summary.json`.
+- The per-run manifests (`{raw,v0,rich}_s*/manifest.json`) are written by the
+  script but local-only — only the four aggregate files are committed to the
+  repo.

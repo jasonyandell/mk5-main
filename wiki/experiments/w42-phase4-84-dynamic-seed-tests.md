@@ -67,3 +67,10 @@ population than the current reached greedy policy trace.
 [[w42]] | [[w42-phase3-84-seed-mining-corpus]] |
 [[w42-phase2-84-weapon-preservation-probe]] |
 [[winning42-ch07-taking-every-trick-84]] | [[winning42-ch08-setting-84]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- `summary.json` reports `lower_target_double_choice_pairs: 0` — that contrast never fired in the 24-game sample; a targeted seed re-mine for that surface would fill the gap.
+- `summary.json` scopes its own claim-ledger stance to "outputs are a scoped phase-4 artifact for later synthesis"; the page's claim-ledger framing is a later synthesis on top of that, with the policy-trace caveat retained.

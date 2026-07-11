@@ -58,6 +58,12 @@ insufficient to push mid-game belief above chance. The full 4-head student with
 [[topics/dense-q-supervision]] (3400× denser signal per decision) is the right next step —
 see [[experiments/gus-4head-baseline]].
 
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; no issues found.
+
+- Metrics live only in commit messages (c04bda3, 8dbf7f3) — no eval JSON/log in-repo; checking in eval printouts is a cheap follow-up.
+
 ## Links
 
 [[gus]] · [[topics/student-distillation]] · [[joint-world-tensor]] · [[experiments/gus-4head-baseline]]

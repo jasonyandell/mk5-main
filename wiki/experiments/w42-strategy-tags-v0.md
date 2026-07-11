@@ -188,3 +188,10 @@ evidence for a Winning 42 strategy claim and does not move any claim status.
 
 [[w42]] | [[w42-dataset-manifest]] | [[w42-data-adapter-smoke]] |
 [[w42-claim-ledger]] | [[gus-strategy-tags-probe]] | [[gus]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 1 correction applied in place and independently re-verified.
+
+- Cheap next probe: rerun with `--limit` > 1 to check tag stability beyond a single deterministic row; note the wrapper consumes only the first available declared path, so on the main checkout this exercises more rows of `gus/data/corpus_train_100.pt`, not the chunk globs.
+- The run commit `e3bfefa7` traces to the real-corpus regeneration ("Verify w42 strategy tags on real corpus", `fe083b87`); the original fixture-mode artifact (`2418c42f`) recorded the earlier `8df0c3b1`.

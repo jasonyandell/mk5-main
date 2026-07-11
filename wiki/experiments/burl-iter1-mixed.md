@@ -59,3 +59,10 @@ See that page for how these options actually resolved.
 ## Related pages
 
 [[burl-iter1-adapter]] · [[burl-iter0-adapter]] · [[experiments/burl-iter0-eval]] · [[decisions/primer-tradeoff]] · [[decisions/commit-discipline]] · [[experiments/iter3-comparison]] · [[burl]] · [[gemma-4-e2b]] · [[sources/09b841e]]
+
+## Audit (2026-07-07)
+
+Two-pass audit against code and artifacts; 2 corrections applied in place and independently re-verified.
+
+- Eval ran at `--max-retries 3` while spike v2 used 7; the cheap re-eval-at-7 probe was never recorded, and [[iter3-comparison]] shows no max_retries-7 re-eval of the iter-1 adapter — still an open question.
+- `burl/data/star_iter1_corpus.jsonl` and `burl/eval/results/move4_iter1_*` are gitignored and the adapter is on private HF; numbers trace only to SPIKE_REPORT.md and the commit message @ 09b841e.
