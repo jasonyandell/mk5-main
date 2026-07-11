@@ -84,7 +84,7 @@ Format:
 - **Q:** What fraction of historical Forge/Burl/Champion states had nonzero
   `WorldSamplerMRV` malformed-world or valid-world bias, and does the uniform
   repair change C0 action ranks or paired marks?
-  - Raised: `local-2026-07-11` ([[world-sampler-mrv-audit]])
+  - Raised: `bc4eb386` ([[world-sampler-mrv-audit]])
   - Context: the causal panel proves exact `1/3` malformed mass on one late
     state and valid-only TVD `0.0333` on another, but finds no argmax flip in
     three states. A state-level exposure scan and two-block C0 reproduction are

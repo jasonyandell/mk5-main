@@ -16,7 +16,7 @@ Format:
 - **Q:** Is the `WorldSamplerMRV` `~6.8 Q` discrepancy actually corrupting
   historical Burl evaluation and Forge E[Q] data, and by how much?
   - Raised: `afd4802` ([[batch-throughput-bench]], [[sources/7321952]])
-  - Resolved: `local-2026-07-11` ([[world-sampler-mrv-audit]]) — partial
+  - Resolved: `bc4eb386` ([[world-sampler-mrv-audit]]) — partial
   - Answer: The old number is not a clean estimate because the comparison used
     different hand encodings and omitted action/N/RNG provenance. A new exact
     audit proves the validity guarantee false: one historical late state emits

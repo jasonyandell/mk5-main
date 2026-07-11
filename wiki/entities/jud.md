@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: local-2026-07-11
+last_updated: bc4eb386
 status: active
 ---
 

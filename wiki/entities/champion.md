@@ -2,7 +2,7 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: local-2026-07-11
+last_updated: bc4eb386
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---

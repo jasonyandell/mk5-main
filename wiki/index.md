@@ -476,6 +476,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[sources/063fcac|063fcac]] — 2026-04-24: Phase A guards on wax_museum (turn-budget extension on reject + forced-commit fallback); enables 2000-decision harvest
 - [[sources/a2db3c7|a2db3c7]] — 2026-05-02: burl/lab/ workbench platform spine; 31 files / 4619 insertions; phase machine + engine protocol + first-class ToolSpec + journal-canonical + mlx_lm rebind fix; 15 fast tests + 1 slow MLX smoke green
 - [[sources/0d82a97|0d82a97]] — 2026-07-06: jud v1 built — play-history snapshot emission, JudNet one-organ value head, judplay consumer, round-0 head + graded A/B decomposition
+- [[sources/bc4eb386|bc4eb386]] — 2026-07-11: partnership-wall cumulative record, five-way failure atlas, exact sampler audit/repair, and canonical Arena decision records
 
 ### claude.ai conversation digests (era backfill)
 

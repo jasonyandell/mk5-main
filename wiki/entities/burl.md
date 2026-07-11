@@ -2,7 +2,7 @@
 title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
-last_updated: local-2026-07-11
+last_updated: bc4eb386
 status: superseded
 ---
 

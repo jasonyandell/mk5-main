@@ -1,8 +1,8 @@
 ---
 title: Partnership decision record v1
 kind: experiment
-first_seen: local-2026-07-11
-last_updated: local-2026-07-11
+first_seen: bc4eb386
+last_updated: bc4eb386
 status: complete
 ---
 
@@ -66,11 +66,19 @@ convention, and persistent plan state null with explicit statuses. It does not
 upgrade W42 detectors into runtime mechanisms or call a static seat pairing
 partnership value.
 
-CPU tests run a two-game Arena, replay every 28-decision hand, isolate hidden
-world versus auction versus score identity changes, exercise the deterministic
-deal-leak boundary, verify C0 artifact/sampler fingerprints without loading the
-models, and round-trip plain and deterministic-gzip artifacts. This is an
+The full Arena suite passes `61` CPU tests. It runs a two-game Arena, replays
+every 28-decision hand, isolates hidden-world versus auction versus score
+identity changes, exercises the deterministic deal-leak boundary, verifies C0
+artifact/sampler fingerprints without loading the
+models, and round-trips plain and deterministic-gzip artifacts. This is an
 instrument result, not a C0 reproduction or a policy win.
+
+The retained integration smoke at
+`arena/evidence/partnership_decision_record_v1/` then loads the real canonical
+C0 from clean commit `bc4eb386`: explicit r8 bidder head, current large oracle,
+`uniform-completion-dp-v1`, and `n=10`. Two symmetric games contain 23 hands
+and 644 replayed decisions; the compressed record is 334 KiB and its manifest
+count and SHA-256 agree. The 2-game score is not a policy estimate.
 
 ## Falsifier
 
@@ -100,6 +108,13 @@ python -m arena.cli \
   --n-games 2 --device cpu \
   --emit-decisions /tmp/c0-decisions.jsonl.gz
 ```
+
+## Artifacts
+
+- `arena/evidence/partnership_decision_record_v1/README.md`
+- `arena/evidence/partnership_decision_record_v1/decisions.jsonl.gz`
+- `arena/evidence/partnership_decision_record_v1/decisions.jsonl.gz.manifest.json`
+- `arena/evidence/partnership_decision_record_v1/summary.json`
 
 ## Links
 

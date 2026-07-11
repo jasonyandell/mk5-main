@@ -363,3 +363,10 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Touched pages:** [[log]] [[log-archive]] `AGENTS.md`
 **Added:** [[log-archive]] — entries 1–145 (2026-04-09 → 06-14) moved verbatim; log.md keeps a phase digest + last ~10 entries.
 **Updated:** AGENTS.md log section — entry budget (~5 pointer lines), mechanical rotation trigger (>15 entries), no claim without a link.
+
+## [2026-07-11 | bc4eb386 | partnership wall — cumulative record to measurement spine]
+
+**Touched pages:** [[partnership-wall-research]] [[partnership-value]] [[partnership-research-gates]] [[the-wall]] [[consumption-ledger]] [[arena]] [[forge]] [[champion]]
+**Added:** [[partnership-failure-atlas-v0]] [[world-sampler-mrv-audit]] [[partnership-decision-record-v1]] [[sources/bc4eb386]]
+**Measured/built:** five-way 75,079-action join + 114-source seam inventory; legacy MRV malformed/bias mechanisms; rejected uniform-rejection repair; exact completion-count sampler; replay-verified Arena records with C0 policy and leakage fingerprints.
+**Frontier:** CUDA/MPS sampler performance, historical exposure, two-block C0 reproduction, forced causal arms, and information-reactive fixed/shuffled partnerships remain open; no successor architecture selected.
