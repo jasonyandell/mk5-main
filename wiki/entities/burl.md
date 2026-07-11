@@ -2,7 +2,7 @@
 title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
-last_updated: bc4eb386
+last_updated: 4123b2d5
 status: superseded
 ---
 
@@ -416,6 +416,9 @@ validity guarantee is falsified. A uniform-rejection repair passed these three
 fixtures but failed a real JudSearch state whose exact valid-partition mass is
 only `5.39e-5`. The surviving `uniform-completion-dp-v1` replacement closes the
 exact-fixture repair gate with zero invalid output and uniform frequencies.
+On MPS — Burl's production device — the shipped replacement was still silently
+non-uniform: the backend's int64 `gather` rounds the 62-bit draws through
+float32. Fixed at `4123b2d5`; the uniformity regressions now run per-device.
 
 ### wax_museum + chat-template bug + belief_trajectory — Burl end-of-replay (2026-04-20/23, commits 54f7776–1bf1885)
 

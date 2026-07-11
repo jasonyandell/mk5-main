@@ -2,7 +2,7 @@
 title: Forge
 kind: entity
 first_seen: a8bccfa
-last_updated: bc4eb386
+last_updated: 4123b2d5
 status: active
 ---
 
@@ -53,7 +53,10 @@ rate are therefore required provenance for new Forge labels. Uniform rejection
 passed the original exact CPU fixtures but failed a real low-valid-mass arena
 state; [[world-sampler-mrv-audit]] retains that negative. The surviving
 `uniform-completion-dp-v1` sampler uses exact suffix counts and passes the CPU
-fixtures and JudSearch regression. A production CUDA benchmark, historical
+fixtures and JudSearch regression. A post-review repair at `4123b2d5` fixed an
+MPS-only int64-`gather` defect that silently broke uniformity on Apple
+Silicon; the uniformity regressions now parameterize over every available
+device. A production CUDA benchmark, historical
 exposure scan, and C0 reproduction remain open in
 [[partnership-wall-research]].
 

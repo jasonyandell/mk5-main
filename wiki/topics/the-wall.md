@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: afd4802
-last_updated: bc4eb386
+last_updated: 4123b2d5
 status: active
 ---
 
@@ -49,18 +49,33 @@ From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Biddi
 
 The full ruled-in/ruled-out record across all mechanisms: [[consumption-ledger]]. The untried inventory: [[ideated-not-built]] and [[the-wall-biography]] §4.
 
-## Partnership research frontier
+## Registered directions
 
-[[partnership-wall-research]] reconstructs the surviving explanations without
-selecting an architecture first. Its target, [[partnership-value]], is a marks
-interaction: a mutually legible fixed pair must gain more than the same policies
-with partners shuffled. The staged gate is measurement cleanup, a joined failure
-atlas, causal microgames, [[partnership-research-gates]], and only then a build.
+No successor architecture is selected; each direction below is a thing the
+project knows how to test, and none is the default build. The shared
+measurement spine — repaired world sampler, canonical decision records,
+two-block C0 reproduction — serves all of them equally
+([[partnership-wall-research]] Stage 0).
 
-The correction is load-bearing. Ordinary within-world plans are not missing
-from Forge Q merely because `lens:ev` chooses again next turn. The plausible
-residual is narrower: action-derived inference, role/order semantics,
-partner-visible intent, information-set consistency, contextual distribution
-use, and auction/match-score value. A candidate clears the wall only by beating
-`margin:wp(head_8) + lens:ev` in paired marks for a demonstrated strategic
-reason.
+- **jud v2** — the named-but-unbuilt continuation from [[w42-jud-v1]]: bigger
+  leaf, per-move E[Q]-distill targets with the consumer declared,
+  opponents-in-rollout. [[lamir1-ceiling]] supplies the per-move-target prior
+  and marks CFR+ over distilled values as the one sanctioned look-ahead path
+  never walked.
+- **Partnership/coordination** — the newest instrumented family.
+  [[partnership-wall-research]] stages it (measurement cleanup → clairvoyance
+  bound → causal microgames → [[partnership-research-gates]]) without
+  presuming it causes the wall; its target, [[partnership-value]], is a marks
+  interaction — a mutually legible fixed pair must gain more than the same
+  policies with partners shuffled. Untested in either direction.
+- **Contextual distribution consumer** — the mode/signal/hedge/gamble
+  meta-strategy set of [[past-belief-future-direction]]; its training data
+  already sits in the oracle's per-world tensor.
+
+The plan correction is load-bearing across all of them. Ordinary within-world
+plans are not missing from Forge Q merely because `lens:ev` chooses again next
+turn. The plausible residual is narrower: action-derived inference, role/order
+semantics, partner-visible intent, information-set consistency, contextual
+distribution use, and auction/match-score value. A candidate clears the wall
+only by beating `margin:wp(head_8) + lens:ev` in paired marks for a
+demonstrated strategic reason.

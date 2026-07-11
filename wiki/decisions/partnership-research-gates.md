@@ -2,7 +2,7 @@
 title: Partnership Research Gates
 kind: decision
 first_seen: bc4eb386
-last_updated: a2bb0437
+last_updated: 4123b2d5
 status: active
 ---
 
@@ -25,12 +25,13 @@ imitation from substituting for higher marks.
 |---|---|---|
 | Per-move targets improve move ranking with capacity held fixed. | Add per-move auxiliary supervision to the existing leaf before increasing model size. | No held-out ranking or marks gain over hand-level targets. |
 | Capacity improves only in interaction with the better target. | Scale the leaf to the smallest capacity that clears the interaction. | Capacity-only paper metrics without a policy gain. |
-| Auction decoding improves same-hand belief and paired marks across role/order controls. | Build an auction-focused likelihood model and condition bidding/defense on it. | Gain disappears under masked-auction comparison or fails outside one convention population. |
+| Auction decoding improves same-hand belief and paired marks across role/order controls. | Build an auction-focused likelihood model and condition bidding/defense on it. | Gain disappears under masked-auction comparison, fails outside one convention population, or the consumer prices double-dummy rather than realized outcomes ([[w42-champion-selfplay-fixed-point]]). |
 | Voluntary-action likelihood improves calibrated belief. | Add an action-likelihood update to the posterior. | Better fit without held-out log-loss improvement. |
 | Sender-by-decoder interaction improves fixed-pair marks beyond shuffled pairs. | Put partner/opponent models inside the interactive rollout. | Belief improves but the interaction and partnership lift remain null. |
 | Persistent state wins only in merged-information or partner-visible plan fixtures. | Add the smallest recurrent option/plan state that carries the demonstrated variable. | Lift exists only in perfect-information worlds already priced by [[forge|Forge]] Q. |
 | Full PDF shape changes exact contextual decisions and improves held-out marks. | Add a role/score/future-information-conditioned distribution consumer. | A fixed risk collapse or diagnostic-only PDF difference. |
 | A passing mechanism still requires information-set consistency that belief-conditioned rollout cannot supply. | Test bounded information-set resolving or CFR on the demonstrated microgames. | No residual inconsistency after the simpler consumer is installed. |
+| A per-move-supervised leaf must also serve as a look-ahead evaluator. | Bounded CFR+ / multi-valued states over the demonstrated microgames — the repair Kubíček & Lisý specify for distilled leaves ([[lamir1-ceiling]]). | Look-ahead gains already achievable with per-move targets alone, or no look-ahead consumer passes its own gate. |
 | An LLM selector beats deterministic and small learned selectors on the same microgames and passes reasoning verification. | Use the LLM only at the narrow selection seam it wins. | Better narration, rationale agreement, or tool use without marks lift. |
 | Per-move supervision and action-updating opponents pass independently. | A Jud-v2-shaped integration becomes eligible. | Either premise remains unmeasured or fails independently. |
 | Reusable plan families beat minimal plan state across held-out fixtures. | A bounded symbolic strategy library becomes eligible. | Fixture-specific rules, ordinary within-world plans, or no generalization. |
@@ -51,6 +52,10 @@ Every promoted mechanism satisfies all of the following:
 [[w42-jud-v1]] makes policy matching load-bearing. [[w42-style-partnership-concept-buckets]]
 makes partner shuffling load-bearing. [[champion-design-review]] makes an
 information-reactive harness load-bearing for signaling and concealment.
+[[w42-champion-selfplay-fixed-point]] makes realized-outcome pricing
+load-bearing for any auction consumer: its converged belief-conditioned
+bidder lost on marks because it priced double-dummy P(make)
+([[strategy-fusion]]).
 
 ## Build ladder
 

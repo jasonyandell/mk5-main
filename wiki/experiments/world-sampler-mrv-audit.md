@@ -2,7 +2,7 @@
 title: WorldSamplerMRV audit
 kind: experiment
 first_seen: bc4eb386
-last_updated: a2bb0437
+last_updated: 4123b2d5
 status: complete
 ---
 
@@ -126,6 +126,17 @@ audit, and full JudSearch suite passes `46` tests with two CUDA tests skipped.
 On CPU the final sampler takes `4.25 ms` for unconstrained `32 x 50`, `0.63 ms`
 for the historical `1 x 50`, and `1.64 ms` for the low-mass `1 x 10` state where
 rejection exhausted. CUDA throughput and memory remain unmeasured on this Mac.
+
+Review of the shipped repair found one further defect in the same silent-bias
+class it was built to kill: the MPS backend's int64 `gather` rounds the 62-bit
+draws through float32, so on Apple Silicon every emitted world stayed valid
+while the distribution collapsed — support `24/60` and chi-square `1.4e5` at
+60,000 samples on the valid-bias fixture, worse than the legacy sampler it
+replaced. All original validation ran `--device cpu`, which is why it passed.
+Fixed at `4123b2d5`: candidate selection uses an exact `where` instead of
+`gather` (bit-identical on CPU, so the checked-in fixed-seed artifacts remain
+valid), and the dead-end and uniformity regressions now parameterize over
+every available device (CPU/CUDA/MPS).
 
 The repair closes the sampler gate, not the exposure question. A state-level
 historical scan, a two-block C0 reproduction, and a production CUDA benchmark

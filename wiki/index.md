@@ -8,7 +8,7 @@ For broad orientation, prefer these compact entrypoints before loading the full
 catalog:
 
 - [[topics/the-wall|the-wall]] — **the front door.** The project's central question, stated precisely; every era since January 2026 is an attempt on it and every experiment grades against it. Read next: [[trails/the-wall-biography|the-wall-biography]] (the seven-month narrative, 2025-07-19 → 2026-07-06) → [[topics/consumption-ledger|consumption-ledger]] (every mechanism tried, each verdict with its evidence) (active)
-- [[trails/partnership-wall-research|partnership-wall-research]] — one-page current-position table plus the evidence map and staged frontier: measurement cleanup → joined failure atlas → causal microgames → architecture gates → build ladder (active)
+- [[trails/partnership-wall-research|partnership-wall-research]] — the shared measurement spine (repaired sampler, decision records, C0 reproduction) plus the coordination family's staged program: cleanup → clairvoyance bound → causal microgames → architecture gates; one registered direction on [[topics/the-wall|the-wall]], not the default build (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: hubs, trails, leaf clusters, and search shortcuts (active)
 - [[entities/lem|lem]] — rules comprehension, Stage 0 adapters, STaR, and the LEM half of the LEM→Burl handoff (complete)
 - [[entities/burl|burl]] — tool-using play, wax_museum, burl-lab, chat, STaR traces, and post-commit Q&A (superseded)
@@ -175,7 +175,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 
 - [[experiments/partnership-failure-atlas-v0|partnership-failure-atlas-v0]] — five-way exact 75,079-action role/order/handshape join plus 114-source seam inventory; exposes 2,173 EV-vs-threshold disagreement decisions and establishes archive insufficiency for Champion attribution, while leaving the partnership hypothesis untested (complete)
 - [[experiments/partnership-decision-record-v1|partnership-decision-record-v1]] — replay-verified Arena decision JSONL with separate public/info/context/world identities, eight mechanism sections, exact policy provenance, and a tested deterministic-deal leakage boundary; missing causal variables remain explicitly unavailable (complete; C0 reproduction open)
-- [[experiments/world-sampler-mrv-audit|world-sampler-mrv-audit]] — exact recursion falsifies legacy MRV (malformed mass 1/3; 4.619-Q shift), a uniform-rejection repair fails a real `5.39e-5`-valid-mass state, and exact completion-count sampling passes all fixtures (complete; CUDA performance, historical exposure, and C0 reproduction open)
+- [[experiments/world-sampler-mrv-audit|world-sampler-mrv-audit]] — exact recursion falsifies legacy MRV (malformed mass 1/3; 4.619-Q shift), a uniform-rejection repair fails a real `5.39e-5`-valid-mass state, exact completion-count sampling passes all fixtures, and a post-review repair fixes an MPS int64-gather defect that silently broke uniformity on Apple Silicon (complete; CUDA performance, historical exposure, and C0 reproduction open)
 - [[experiments/first-gemma-contact|first-gemma-contact]] — a8bccfa: first Gemma 4 E2B inference pass, no adapter, showed coherent reasoning with state/trump-membership gaps (active)
 - [[experiments/stage-0-v1-training|stage-0-v1-training]] — Modal L4, 1 epoch, 208 steps, loss 32→0.001; adapter published to HuggingFace (active)
 - [[experiments/second-gemma-contact|second-gemma-contact]] — adapter-loaded re-run: hand-tracking fixed, trump membership still broken (active)
@@ -479,6 +479,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[sources/bc4eb386|bc4eb386]] — 2026-07-11: partnership-wall cumulative record, five-way failure atlas, exact sampler audit/repair, and canonical Arena decision records
 - [[sources/a2bb0437|a2bb0437]] — 2026-07-11: result vocabulary correction — partnership remains untested; archive insufficiency and bounded sampler observations are not general nulls
 - [[sources/5f314d2b|5f314d2b]] — 2026-07-11: one-page partnership research status table and ordered next gates for PR review
+- [[sources/4123b2d5|4123b2d5]] — 2026-07-11: review repairs — MPS int64-gather sampler defect fixed with per-device uniformity regressions; prior-sweep completion; partnership rebalanced to one registered direction
 
 ### claude.ai conversation digests (era backfill)
 

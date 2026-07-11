@@ -2,7 +2,7 @@
 title: Wiki Entrypoints
 kind: trail
 first_seen: local-2026-05-03
-last_updated: bc4eb386
+last_updated: 4123b2d5
 status: active
 ---
 
@@ -29,9 +29,14 @@ Start with one of these when the user names a major workstream:
 
 **The measured baseline since June 2026** is the jud v1 / Zeb-protocol
 capstone (`afd4802`, `622c1a1`, `1143ebb`, `bdebb82`, `3ac03de`): start at
-[[jud]] or [[champion]] for the graded policy. **The research frontier since
-2026-07-11** is [[partnership-wall-research]]: start there when the question is
-why E[Q] n=10 remains undefeated at pure play or what earns the next build.
+[[jud]] or [[champion]] for the graded policy. **The goal page** is
+[[the-wall]]: it states the goal, the goals-vs-instruments hierarchy, and
+every registered direction — jud v2, the partnership/coordination family,
+the contextual distribution consumer — with the gates that select among
+them. [[partnership-wall-research]] carries the shared measurement spine and
+the coordination family's staged program: start there when the question is
+which instrument or gate a next experiment must pass, not as the default
+answer to what matters.
 
 ## Current trails
 

@@ -2,7 +2,7 @@
 title: Partnership Wall Research
 kind: trail
 first_seen: bc4eb386
-last_updated: 5f314d2b
+last_updated: 4123b2d5
 status: active
 ---
 
@@ -13,13 +13,22 @@ null observations, confounded measurements, unanswerable questions, unbuilt
 designs, and missing instruments, then routes them through
 [[partnership-value]] and [[partnership-research-gates]].
 
-## Current position — review this first
+Scope: partnership/coordination is the family this program newly instruments
+— the best-specified untested direction, not the presumptive one. The
+measurement spine built here (repaired sampler, canonical decision records,
+C0 reproduction) serves every registered direction on [[the-wall]] equally:
+[[jud]] v2's per-move-target ladder, CFR+ over distilled values
+([[lamir1-ceiling]]), and the contextual distribution consumer
+([[past-belief-future-direction]]) gate through the same
+[[partnership-research-gates]] table as the coordination mechanisms.
+
+## Current position
 
 | surface | status | what is true now | boundary / next gate |
 |---|---|---|---|
 | Pure-play baseline | MEASURED | `P0 = lens:ev` n=10 remains the strongest measured play policy. | It has not been reproduced on the repaired sampler over the two held-out blocks. |
 | Full-match baseline | MEASURED | `C0 = margin:wp(head_8) + lens:ev`; its demonstrated advantage is a bidding gain. | The explicit r8 bidder and large oracle are fingerprinted, but two-block C0 reproduction remains open. |
-| World sampler | BUILT + exact-fixture validated | `uniform-completion-dp-v1` replaces malformed/non-uniform legacy MRV and the failed rejection repair. | CPU fixtures and the low-mass JudSearch state pass; CUDA/MPS throughput, historical exposure, and policy-level effect remain open. |
+| World sampler | BUILT + exact-fixture validated | `uniform-completion-dp-v1` replaces malformed/non-uniform legacy MRV and the failed rejection repair. Post-review repair `4123b2d5`: an MPS int64-gather defect made the shipped sampler valid but severely non-uniform on Apple Silicon; draws now select via `where` and the uniformity regression runs per-device. | CPU and MPS fixtures and the low-mass JudSearch state pass; CUDA/MPS throughput, historical exposure, and policy-level effect remain open. |
 | Historical failure atlas | BUILT | [[partnership-failure-atlas-v0]] joins 75,079 actions / 28,000 decisions and inventories 114 live sources. | It proves archive insufficiency for Champion attribution; it does not measure a partnership null. |
 | Future decision record | BUILT + integration-validated | [[partnership-decision-record-v1]] records public/info/context/world identities, eight separate mechanism sections, and exact policy/artifact/sampler provenance. | A clean C0 smoke retained 644 decisions; live Q/PDF, belief change, action likelihood, plan state, and fixed/shuffled cohort remain unavailable. |
 | Partnership value | UNTESTED | No valid negative, null, or positive partnership result exists. | Requires fixed-versus-shuffled partners and actors that react to public actions. |
@@ -31,14 +40,27 @@ designs, and missing instruments, then routes them through
 1. **Close measurement cleanup.** Benchmark the completion sampler on the
    production device, audit historical state exposure, and reproduce P0/C0 on
    two held-out seed blocks with exact policy and sampler fingerprints.
-2. **Build the causal runner.** Add forced-state injection and live emission of
+2. **Bound the prize before building the runner.** Run the clairvoyance
+   decomposition in the existing harness: paired arms `C0` → partner-hand
+   revealed (both partners see each other's hands, via conditioned world
+   sampling) → all hands revealed. The partner arm upper-bounds every
+   convention, decoder, and signaling mechanism about partner holdings — the
+   information is granted rather than transmitted, so the PIMC harness's
+   signaling blindness does not bias the bound. A near-zero partner-arm delta
+   re-aims Stage 2 at opponent inference, plan consistency, and distributional
+   utility before the expensive instruments are built; a large delta prices
+   the partnership program.
+3. **Build the causal runner.** Add forced-state injection and live emission of
    Q/PDF, belief-before/after, actor-action likelihood, randomized partner
    assignment, and mechanism-arm IDs to the canonical decision record.
-3. **Run the first partnership discriminator.** Start with sender convention x
+4. **Run the first partnership discriminator.** Start with sender convention x
    receiver action-likelihood decoder x fixed/shuffled partners, using reactive
    actors and paired states. Better belief alone is insufficient; the target is
    a sender-by-decoder interaction that disappears when partners are shuffled.
-4. **Select and scale only what survives.** Promote the smallest passing
+   The smallest engine-supported sender/decoder instrument already exists:
+   the Plunge/Splash one-bit convention testbed specified in
+   [[w42-book-second-pass]].
+5. **Select and scale only what survives.** Promote the smallest passing
    adapter to paired marks-to-7 evaluation, remove its claimed channel in an
    ablation, then consider capacity, search, self-play, or a broader
    architecture.
@@ -85,7 +107,7 @@ evidence of absence.
 | [[gus]] | Belief, policy, value, world-Q, and opponent-policy heads were built. Public play sequence carries signal; auction conditioning improved held-out belief accuracy by `+2.59pp` in [[w42-champion-auction-belief]]. | Gus reached the consistency-information ceiling early, every LAMIR/lookahead consumer lost to direct `pi_me`, and improved calibration did not improve downstream play ([[belief-bayes-ceiling]], [[belief-propagation-gap]]). Better belief is not yet better use of belief. |
 | [[burl]] | Rules-as-tools, game-state inspection, belief trajectories, and an interactive microscope established useful diagnostic grammar. | Gemma silently could not see tool responses in every B2-B9 rollout. The 90% result, environment-shape tests, and candlewax-policy null are confounded; the clean post-fix check covered only five decisions. Burl has not established partnership strength ([[gemma-tool-response-shape]]). |
 | [[w42]] | The book became detectors, legal-action tables, paired contrasts, branch atlases, and bounded claim statuses. Joined public tags reduced regret from `1.360` to `1.126`; sequence/seat was the dominant family ([[w42-phase3-joined-claim-row-model-table]]). | Tags predict action selection but do not prove the strategies behind them. Partner fit, action likelihoods, persistent plans, and auction partner/opponent values remain absent or design-only. |
-| [[champion]] | The full marks-to-7 arena, bidder ladder, auction-conditioned belief, and self-play bridge were built. Realized-outcome bidding produced the first learned marks win over the prior champion. | The play arena is PIMC-versus-PIMC and cannot reward signaling or concealment. Belief-weighted and score-conditioned play nulls do not test an information-reactive partnership ([[champion-design-review]]). |
+| [[champion]] | The full marks-to-7 arena, bidder ladder, auction-conditioned belief, and self-play bridge were built. Realized-outcome bidding produced the first learned marks win over the prior champion. The belief-conditioned self-play loop converges to a stable fixed point ([[w42-champion-selfplay-fixed-point]]). | The play arena is PIMC-versus-PIMC and cannot reward signaling or concealment. Belief-weighted and score-conditioned play nulls do not test an information-reactive partnership ([[champion-design-review]]). The converged belief-conditioned bidder over-bids via double-dummy optimism ([[strategy-fusion]]) and loses on marks even after calibration. |
 | [[jud]] | Policy-conditional realized value prices auctions honestly. Current-trick search recovered two-thirds of greedy Jud play's gap without an oracle. | Greedy play, loop rounds, more worlds, and better paper calibration did not reach `lens:ev`. Hand-level targets and capacity remain entangled explanations; [[w42-jud-v1]] did not discriminate between them. |
 | [[the-book-enters|Winning 42]] | Claim-by-claim validation found a trustworthy hypothesis source. [[w42-book-second-pass]] exposed auction decoding, choice-derived inference, signaling, role/order conditionals, score conventions, and concrete multi-trick sequences missed by the first pass. | Book claims are hypotheses until the matching information regime and utility are tested. [[book-strategy-player]] was designed but never built, and several plan claims were evaluated with the wrong instrument. |
 
@@ -103,6 +125,17 @@ evidence of absence.
   calibration did not close the residual search gap.
 - [[gus]] found every tested LAMIR/lookahead variant worse than direct
   `pi_me`. Better hidden-state prediction alone did not improve its consumer.
+  [[lamir1-ceiling]] carries the mechanism (Kubíček & Lisý): distilled scalar
+  value noise flips argmax at decision boundaries, while a policy trained on
+  argmax preserves ordering; a distilled leaf cannot support look-ahead
+  without CFR+. The [[consumption-ledger]] records this warning as having
+  pre-explained JS3 — the prior-sweep lesson.
+- [[w42-champion-selfplay-fixed-point]] found the belief-conditioned bidder
+  reaches a stable self-play fixed point yet loses `-3.0` to `-3.8` marks/game
+  raw and `-2.0` to `-2.6` calibrated against `net:wp`: double-dummy P(make)
+  optimism ([[strategy-fusion]]) over-bids, and dampening it shrinks but does
+  not close the gap. Any auction-decoder consumer must price realized, not
+  double-dummy, outcomes.
 
 ### Confounded or mis-scoped results
 
@@ -122,12 +155,21 @@ evidence of absence.
 
 ### Unbuilt, not failed
 
-- Voluntary-action likelihood models and action-conditioned posterior updates.
+- Action-conditioned posterior updates that consume a voluntary-action
+  likelihood. An opponent-action model exists — [[pi-opp-head]], 68.57%
+  oracle top-1 — but nothing updates belief from it.
 - Fixed-versus-shuffled partnership cohorts and a partner-interaction metric.
 - Partners and opponents that update beliefs from actions inside rollouts.
 - Persistent information-set plans with partner-visible intent.
-- A context-licensed consumer of the full action PDF.
+- A context-licensed consumer of the full action PDF, including the
+  mode/signal/hedge/gamble meta-strategy set of
+  [[past-belief-future-direction]] whose training data already sits in the
+  oracle's per-world tensor.
 - A causal match-score auction ablation.
+- The clairvoyance decomposition (gate 2 above): no measurement bounds how
+  many marks partner-hand or full hidden-hand information is worth to `C0`.
+- CFR+ / multi-valued-states over distilled values — the one
+  theoretically-sanctioned look-ahead path never walked ([[lamir1-ceiling]]).
 - [[book-strategy-player]], information-set resolving, and the proposed
   Jud-v2 continuation.
 
@@ -178,8 +220,14 @@ the three audit fixtures but failed a real JudSearch state: only `924` of
 `17,153,136` labeled-seat partitions are valid, and 40,960 proposals produced
 3 of 10 requested worlds. The surviving `uniform-completion-dp-v1` replacement
 samples from exact suffix-completion counts and passes every exact support plus
-that low-mass regression. A CUDA benchmark, state-level exposure audit, and
-two-block C0 reproduction now precede the remaining Stage-0 instruments.
+that low-mass regression. Review of the shipped repair then found one more
+defect in the same silent-bias class: MPS's int64 `gather` rounds the 62-bit
+draws through float32, leaving every world valid while collapsing the
+distribution (support 24/60, chi-square `1.4e5` at 60k samples on the bias
+fixture). Fixed at `4123b2d5` with an exact `where` selection; the dead-end
+and uniformity regressions now parameterize over every available device. A
+CUDA benchmark, state-level exposure audit, and two-block C0 reproduction now
+precede the remaining Stage-0 instruments.
 
 **Decision-record result:** [[partnership-decision-record-v1]] now replays
 Arena hands into one row per actual play with separate public, actor-information,
@@ -230,11 +278,11 @@ result about partnership value.
 
 | direction | supporting evidence | contrary evidence and prior attempt | missing instrument | falsifying experiment |
 |---|---|---|---|---|
-| Target granularity x capacity | [[w42-jud-v1]] shows a useful value head but weak move ranking; JudSearch recovered `+2.28` marks/game over greedy play. | [[gus|Gus]] often gained more from data than capacity. [[jud|Jud]] changed worlds, calibration, and input data, not target and capacity independently. | A factorial crossing hand-level versus per-move ranking targets with present versus modestly larger capacity on identical states and compute. | Per-move targets fail to improve held-out pairwise ranking or JudSearch marks. A capacity-only interaction selects capacity; a target-only interaction selects supervision. |
-| Auction decoder x role/order x score | Auction-conditioned [[gus|Gus]] gained `+2.59pp`; realized-value bidding is the [[champion]]'s only demonstrated marks gain; [[w42-book-second-pass]] gives explicit bid-to-hand and score hypotheses. | Score-conditioned play was negative, the pass-model pilot was null, and book conventions may be population-specific. | Same-hand counterfactual auctions with partner/opponent, failed/winning bid, auction position, and scores `{0-0, 6-6, 6-0, 0-6}` plus masked controls. | Bid/role claims have no held-out information, or the decoder and score treatment fail to improve paired marks over masked and shuffled-auction controls. |
-| Action likelihood x partner convention | [[the-book-enters|The book]] supplies choice-derived inference and signaling hypotheses; [[w42]]'s sequence/seat family dominates; [[w42-style-partnership-concept-buckets]] finds directional partner-legibility proxies. | Some support proxies are harmful; [[champion]]'s null was harness-blind; [[gus]]'s stronger opponent policy did not improve lookahead. No direct voluntary-action likelihood test ran. | Sender convention on/off x receiver decoder on/off x fixed/shuffled partner, with belief-updating opponents and permuted-role controls. | Action likelihood fails to improve held-out belief log loss, or improved belief produces no sender-by-decoder interaction in set rate or marks. |
+| Target granularity x capacity | [[w42-jud-v1]] shows a useful value head but weak move ranking; JudSearch recovered `+2.28` marks/game over greedy play. [[lamir1-ceiling]] supplies the mechanism: distilled scalar value noise flips argmax while a policy trained on argmax preserves ordering — the strongest existing prior for per-move targets. | [[gus|Gus]] often gained more from data than capacity. [[jud|Jud]] changed worlds, calibration, and input data, not target and capacity independently. Per [[lamir1-ceiling]], a per-move leaf that must also support look-ahead needs CFR+ / multi-valued states, not just better supervision. | A factorial crossing hand-level versus per-move ranking targets with present versus modestly larger capacity on identical states and compute. | Per-move targets fail to improve held-out pairwise ranking or JudSearch marks. A capacity-only interaction selects capacity; a target-only interaction selects supervision. |
+| Auction decoder x role/order x score | Auction-conditioned [[gus|Gus]] gained `+2.59pp`; realized-value bidding is the [[champion]]'s only demonstrated marks gain; [[w42-book-second-pass]] gives explicit bid-to-hand and score hypotheses. | Score-conditioned play was negative, the pass-model pilot was null, and book conventions may be population-specific. [[w42-champion-selfplay-fixed-point]] is the hard prior: a converged belief-conditioned bidder priced double-dummy P(make) and lost on marks even calibrated. | Same-hand counterfactual auctions with partner/opponent, failed/winning bid, auction position, and scores `{0-0, 6-6, 6-0, 0-6}` plus masked controls. | Bid/role claims have no held-out information, or the decoder and score treatment fail to improve paired marks over masked and shuffled-auction controls. |
+| Action likelihood x partner convention | [[the-book-enters|The book]] supplies choice-derived inference and signaling hypotheses; [[w42]]'s sequence/seat family dominates; [[w42-style-partnership-concept-buckets]] finds directional partner-legibility proxies. | Some support proxies are harmful; [[champion]]'s null was harness-blind; [[gus]]'s stronger opponent policy did not improve lookahead. No direct voluntary-action likelihood test ran. | Sender convention on/off x receiver decoder on/off x fixed/shuffled partner, with belief-updating opponents and permuted-role controls. The Plunge/Splash one-bit contract ([[w42-book-second-pass]]) is the smallest engine-supported sender/decoder instrument. | Action likelihood fails to improve held-out belief log loss, or improved belief produces no sender-by-decoder interaction in set rate or marks. |
 | Information-set plan persistence | [[w42-book-second-pass]] supplies fully specified strip-the-protector, double-ahead-of-off, crisis, and two-defender-84 sequences. | [[forge|Forge]] Q already prices ordinary within-world plans; [[w42-jud-v1|JudSearch]] captures current-trick continuation; [[book-strategy-player|BookStrategyPlayer]] never ran. | Merged information sets requiring one common policy across worlds, with persistent/erased plan state and partner-visible/partner-blind variants. | Forge already selects and continues the plan in the full-information control, and persistent state adds no lift in merged-information or partner-visible arms. |
-| Contextual distribution consumer | Full action PDFs exist; [[gus-drama-atlas]] localizes uncertain, fragile, high-impact opening decisions. | No tested fixed collapse beat EV, score-conditioned play lost, and [[burl]]'s distribution-policy result is confounded. | Matched-mean, different-shape fixtures with exact future-information or match utility, stratified by role and score. | Retaining PDF shape never changes the optimal continuation or improve held-out marks over EV. Distribution shape then remains diagnostic rather than causal. |
+| Contextual distribution consumer | Full action PDFs exist; [[gus-drama-atlas]] localizes uncertain, fragile, high-impact opening decisions; [[past-belief-future-direction]] already specifies the mode/signal/hedge/gamble meta-strategy set with its training data in the oracle's per-world tensor. | No tested fixed collapse beat EV, score-conditioned play lost, and [[burl]]'s distribution-policy result is confounded. | Matched-mean, different-shape fixtures with exact future-information or match utility, stratified by role and score. | Retaining PDF shape never changes the optimal continuation or improve held-out marks over EV. Distribution shape then remains diagnostic rather than causal. |
 
 ## Stage 3 — architecture selection
 
@@ -271,4 +319,6 @@ instruments.
 
 [[partnership-value]] [[partnership-research-gates]] [[the-wall]]
 [[the-wall-biography]] [[consumption-ledger]] [[champion-design-review]]
-[[w42-book-second-pass]] [[w42-jud-v1]]
+[[w42-book-second-pass]] [[w42-jud-v1]] [[w42-champion-selfplay-fixed-point]]
+[[lamir1-ceiling]] [[strategy-fusion]] [[past-belief-future-direction]]
+[[pi-opp-head]] [[world-sampler-mrv-audit]]
