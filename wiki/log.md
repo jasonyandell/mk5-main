@@ -192,3 +192,10 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Added:** [[sources/c7f74f5c]] — review correction and domain synthesis behind the cleaned PR frontier.
 **Updated:** Q-mean is restored as bounded positive consumer evidence; natural policy legibility is separated from sparse intentional signaling; wall promotion is separated from the additional fixed-vs-shuffled partnership criterion.
 **Frontier:** PR 39 delivers trustworthy measurement infrastructure and an evidence ledger; no next experiment, causal microgame, or successor architecture is selected.
+
+## [2026-07-12 | 1a4482fe | convention-aware blueprint search preserved without selection]
+
+**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-value]] [[sources/1a4482fe]] [[index]]
+**Added:** the SPARTA-style blueprint proposal and its separate project-record refinement; neither is promoted to a build.
+**Questions opened:** can [[w42-book-second-pass|Winning 42]] conventions seed a shared codebook while a learned policy supplies the complete blueprint?
+**Frontier:** the design is IDEATED, unbuilt, and unselected; clairvoyance remains a consumer-specific sensitivity probe rather than a universal bound.

@@ -115,5 +115,5 @@ Format:
   - Context: Re-scan via the Kindle CDP pipeline (`scratch/winning42/`); the hand diagrams need prose reconstruction to be replayable as probes.
 
 - **Q:** Can the explicit legal partnership conventions in [[w42-book-second-pass]] serve as the initial agreed blueprint for [[convention-aware-blueprint-search]], without treating the book as an optimal full policy?
-  - Raised: `local-2026-07-12` ([[convention-aware-blueprint-search]])
+  - Raised: `1a4482fe` ([[convention-aware-blueprint-search]])
   - Context: A SPARTA-style search needs a shared codebook before unilateral deviations can have signaling value. The book supplies concrete but sparse and contextual conventions; a complete blueprint still requires action likelihoods throughout the state space and policy-matched continuation. The architecture remains IDEATED and unselected.
