@@ -498,6 +498,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[sources/a2bb0437|a2bb0437]] — 2026-07-11: result vocabulary correction — partnership remains untested; archive insufficiency and bounded sampler observations are not general nulls
 - [[sources/5f314d2b|5f314d2b]] — 2026-07-11: one-page partnership research status table and ordered next gates for PR review
 - [[sources/4123b2d5|4123b2d5]] — 2026-07-11: review repairs — MPS int64-gather sampler defect fixed with per-device uniformity regressions; prior-sweep completion; partnership rebalanced to one registered direction
+- [[sources/c7f74f5c|c7f74f5c]] — 2026-07-11: PR frontier clarification — measurement readiness is the deliverable; Q-mean result restored; natural legibility separated from intentional signaling; general and partnership promotion criteria split
 
 ### Relocated doc sources (2026-07 docs→wiki consolidation)
 
