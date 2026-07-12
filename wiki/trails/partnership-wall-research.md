@@ -2,7 +2,7 @@
 title: Partnership Wall Research
 kind: trail
 first_seen: bc4eb386
-last_updated: 1a4482fe
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -264,7 +264,7 @@ result about partnership value.
 |---|---|---|---|
 | Target granularity x capacity | [[w42-jud-v1]] shows a useful value head but weak move ranking; JudSearch recovered `+2.28` marks/game over greedy play. [[lamir1-ceiling]] supplies a mechanism: distilled scalar value noise flips argmax while a policy trained on argmax preserves ordering. | [[gus|Gus]] often gained more from data than capacity. [[jud|Jud]] changed worlds, calibration, and input data rather than separating target from capacity. A leaf used for look-ahead may require CFR+ / multi-valued states rather than supervision alone. | Target quality, capacity, and look-ahead fitness remain entangled. |
 | Auction decoder x role/order x score | Auction-conditioned [[gus|Gus]] gained `+2.59pp`; realized-value bidding is the [[champion]]'s only demonstrated marks gain; [[w42-book-second-pass]] supplies bid-to-hand and score hypotheses. | Score-conditioned play was negative, the pass-model pilot was null, and book conventions may be population-specific. [[w42-champion-selfplay-fixed-point]] found a converged belief-conditioned bidder still lost by pricing double-dummy P(make). | Information gain, role/order semantics, score use, and realized-outcome pricing have not been attributed separately. |
-| Action-derived inference and partnership legibility | Table play naturally reveals information about holdings, priorities, and intent relative to a partner's known policy; [[w42-book-second-pass]] records choice-derived inference and explicit conventions. | Most informative actions are selected because they play well, not because they are deliberate messages. Intentional reliable signals are sparse; simple action-to-intent rules are noisy; no result measures their aggregate contribution to marks. | Natural policy legibility, explicit convention, partner-specific familiarity, and generic good-play inference remain distinct and unmeasured. See [[partnership-value]]. |
+| Action-derived inference and partnership legibility | Table play naturally reveals information about holdings, priorities, and intent relative to a partner's known policy; [[w42-book-second-pass]] records choice-derived inference and explicit conventions. [[convention-aware-blueprint-search]] preserves the book as a possible coordinated sender/receiver initialization rather than waiting for unilateral search to invent a code. | Most informative actions are selected because they play well, not because they are deliberate messages. Intentional reliable signals are sparse; simple action-to-intent rules are noisy; book conventions may be incomplete or population-specific; no result measures their aggregate contribution to marks. | Natural policy legibility, explicit convention, partner-specific familiarity, generic good-play inference, and opponent decoding remain distinct and unmeasured. |
 | Information-set plan persistence | [[w42-book-second-pass]] supplies concrete multi-trick sequences. | [[forge|Forge]] Q already prices ordinary within-world plans; [[w42-jud-v1|JudSearch]] captures current-trick continuation; [[book-strategy-player|BookStrategyPlayer]] never ran. | Ordinary continuation, cross-world policy consistency, and partner-visible intent remain separated in theory but not evidence. |
 | Contextual distribution consumer | Full action PDFs exist; [[gus-drama-atlas]] localizes uncertain, fragile, high-impact opening decisions; [[past-belief-future-direction]] describes a richer meta-strategy surface. [[gus-qmean-router]] is bounded positive evidence for selective consumption. | No tested fixed collapse beat EV, score-conditioned play lost, and [[burl]]'s distribution-policy result is confounded. | The project has not shown when distribution shape changes a valuable decision or full-match marks. |
 
@@ -275,6 +275,36 @@ forgetting positive evidence, contrary evidence, or missing instruments.
 joins action-derived inference, policy legibility, and information-set
 continuation through an agreed blueprint. It is IDEATED and unselected; the
 page records both the proposal and its load-bearing project-record corrections.
+
+### Preserved candidate mechanism — book-seeded convention overlay
+
+[[w42-book-second-pass|Winning 42]] may provide the coordinated policy change
+that unilateral search cannot bootstrap: install the same sparse convention
+overlay on sender and receiver, retain a learned policy as the complete
+fallback, then let search operate inside an already shared codebook. This is a
+mechanism candidate, not a claim that the book is optimal or complete.
+
+The direct double-dummy verdict is not the classifier. Oracle endorsement can
+coexist with additional partner-decoding value when good technique is also
+informative. The discriminating measurement is a sender-overlay x
+partner-reader x opponent-reader factorial:
+
+- sender on, readers off isolates direct technique or sacrifice;
+- partner reader on isolates the partnership interaction;
+- opponent readers on expose the price of becoming legible to the other team;
+- paired full-match marks give the net only after those components remain
+  separately attributable.
+
+The book can also seed opponent action-likelihood hypotheses, but not a
+population-wide assumption. Opponent book-likeness is a latent policy type to
+infer from public history. Top-unplayed-trump/donation, donate-highest,
+dump-to-inform, 84 keep priorities, auction messages, and the separate
+Plunge/Splash variant are candidate extraction surfaces. Their density,
+coverage, calibration, and net marks value remain unmeasured.
+
+This candidate is intentionally visible at the research-trail level. It does
+not displace target granularity, auction decoding, information-set planning,
+or distributional utility, and it is not the selected next experiment.
 
 ## Architecture and build remain withheld
 

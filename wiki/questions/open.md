@@ -114,6 +114,6 @@ Format:
   - Raised: `5e3f3245` ([[w42-book-second-pass]] §Proposed experiments, item 9)
   - Context: Re-scan via the Kindle CDP pipeline (`scratch/winning42/`); the hand diagrams need prose reconstruction to be replayable as probes.
 
-- **Q:** Can the explicit legal partnership conventions in [[w42-book-second-pass]] serve as the initial agreed blueprint for [[convention-aware-blueprint-search]], without treating the book as an optimal full policy?
+- **Q:** Can a sparse [[w42-book-second-pass|Winning 42]] convention overlay plus a learned fallback become a complete, calibrated blueprint whose partner-decoding gain remains positive after opponent decoding and full-match evaluation?
   - Raised: `1a4482fe` ([[convention-aware-blueprint-search]])
-  - Context: A SPARTA-style search needs a shared codebook before unilateral deviations can have signaling value. The book supplies concrete but sparse and contextual conventions; a complete blueprint still requires action likelihoods throughout the state space and policy-matched continuation. The architecture remains IDEATED and unselected.
+  - Context: Installing the same book overlay on sender and receiver supplies coordinated initialization before unilateral search. The proposed attribution is sender overlay x partner reader x opponent reader; double-dummy value isolates direct technique but does not classify away convention value. Opponent book-likeness remains a latent policy type, not a whole-table assumption. The architecture remains IDEATED and unselected.

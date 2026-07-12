@@ -2,7 +2,7 @@
 title: Convention-Aware Blueprint Search
 kind: topic
 first_seen: 1a4482fe
-last_updated: 1a4482fe
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -239,25 +239,108 @@ information, so a genuinely small information-sensitive gap would normally
 reduce, not isolate, that headroom. The useful surviving artifact is a
 per-decision C0 sensitivity atlas, interpreted as consumer-specific evidence.
 
-## Open question — Winning 42 as the starting blueprint
+## Book-seeded coordinated initialization
 
-Can the explicit legal partnership conventions documented in
-[[w42-book-second-pass]] serve as an initial agreed blueprint or codebook,
-without treating the book as an optimal full policy?
+[[w42-book-second-pass]] supplies a possible escape from the convention
+bootstrap problem. A new signal has no unilateral value when the fixed partner
+policy does not decode it. A book convention can instead be installed as the
+same sparse policy overlay on both partnership seats: one side produces the
+specified action in its stated context and the other performs the specified
+belief update or response. Single-agent search can then value deviations
+within an already coordinated codebook.
 
-This could seed common knowledge before unilateral search: the book supplies
-concrete sender/receiver interpretations, while a learned policy supplies
-behavior outside those sparse states. It also creates unresolved constraints:
+This is **coordinated initialization**, not wholesale imitation. The book is a
+trustworthy hypothesis source, not an optimal full policy. A learned fallback
+must supply action probabilities outside the convention states, and the
+overlay and fallback must form one policy with one policy-matched continuation
+value.
 
-- the book is a trustworthy hypothesis source, not wholesale policy truth;
-- its conventions are sparse, contextual, and potentially population-specific;
-- a likelihood filter needs a probability over every legal action, not only a
-  rule for convention-bearing states;
-- the learned fallback and book convention must form one coherent policy whose
-  continuation value can be trained and audited.
+### Mine interactions, not oracle-disapproved rules
 
-The question remains open. No book-seeded blueprint, blueprint-search build,
-or architecture selection follows from preserving it here.
+Double-dummy value can measure the direct tactical component of a book action,
+but it cannot classify every oracle-endorsed action as “mere technique.” A move
+can be tactically best and also make later partner behavior better. That is the
+common case where useful information is a byproduct of good play.
+
+The cleanest convention signature is still strong: the exact-world oracle
+dislikes the sender's sacrifice, a blind imperfect-information partnership
+also loses from it, and a decoding partner makes the joint policy win. It is a
+sufficient example of convention value, not its definition.
+
+Each mined convention therefore needs a sender-by-reader factorial rather than
+a binary oracle verdict:
+
+| sender overlay | partner reader | opponent reader | quantity exposed |
+|---|---|---|---|
+| off | off | off | ordinary-policy baseline |
+| on | off | off | direct technique value or sender sacrifice |
+| on | on | off | partner decoding increment |
+| on | on | on | net value after opponent information leakage |
+
+The full design also keeps the corresponding `sender=off` reader controls so
+the partner and opponent effects are interactions, not merely stronger policy
+substitutions. With team marks denoted by `V(sender, partner, opponents)`:
+
+- direct action effect is `V(1,0,0) - V(0,0,0)`;
+- partner convention value with opponent reading off is
+  `[V(1,1,0) - V(0,1,0)] - [V(1,0,0) - V(0,0,0)]`;
+- opponent leakage with partner reading on is
+  `[V(1,1,1) - V(0,1,1)] - [V(1,1,0) - V(0,1,0)]`;
+- net convention value is the full paired marks change, reported with those
+  components rather than substituted for them.
+
+Agreement with [[expected-q-value|E[Q]]] identifies a direct tactical
+component. It neither proves nor removes the decoding component. The wall is
+convention-shaped only to the extent that sender-by-reader interactions
+survive paired full-match marks and disappear under the matching ablation.
+
+### The book is an opponent-policy hypothesis, not a universal prior
+
+A book convention is public enough to seed an opponent model as well as a
+partner codebook. That creates extra action-derived inference unavailable to a
+cooperative-only SPARTA formulation: opponent actions can be weighted by the
+likelihood that a book-following policy would choose them from each candidate
+hand.
+
+Actual players need not follow the book. Opponent filtering therefore requires
+a latent policy type, not unconditional book likelihoods:
+
+`P(action | world) = sum_z P(action | world, policy_type=z) P(policy_type=z)`
+
+The controlled partner can have a known book-overlay type. Each opponent's
+book-likeness must be inferred from public history among book-like, learned
+baseline, and other policy types. This preserves a second effect that a
+partner-only test would miss: the same legibility that helps a partner may help
+both opponents more.
+
+### Initial mining surface
+
+The book already supplies several distinct convention shapes:
+
+- top-unplayed-trump as common knowledge that unlocks partner donation;
+- donate-highest and absence-of-donation as two-sided inference;
+- keep-priority and dump-to-inform choices in 84 defense;
+- bids as hand-shape, role, and score-conditioned messages;
+- Plunge/Splash as an explicit bounded signaling channel in a separate rule
+  variant, not evidence about ordinary straight-42 frequency.
+
+Each extraction must record the public preconditions, sender alternatives,
+receiver update, intended response, opponent-readable consequence, and the
+policy population for which the interpretation is claimed. Technique, natural
+legibility, explicit partnership convention, deception, and variant-specific
+communication remain separate labels.
+
+### Open question
+
+Can a sparse [[w42-book-second-pass|Winning 42]] convention overlay plus a
+learned fallback become a complete, calibrated, policy-matched blueprint whose
+partner-decoding gain remains positive after opponent decoding and full-match
+evaluation?
+
+The book now supplies a concrete coordinated-initialization mechanism and an
+attribution design. Whether that mechanism is dense enough, complete enough,
+or valuable enough to attack [[the-wall]] remains open. No book-seeded build,
+experiment selection, or architecture selection follows from preserving it.
 
 ## Status
 
