@@ -2,7 +2,7 @@
 title: Partnership Research Gates
 kind: decision
 first_seen: bc4eb386
-last_updated: local-2026-07-12
+last_updated: a6590bf6
 status: active
 ---
 

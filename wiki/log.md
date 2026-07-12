@@ -199,3 +199,10 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Added:** the SPARTA-style blueprint proposal and its separate project-record refinement; neither is promoted to a build.
 **Questions opened:** can [[w42-book-second-pass|Winning 42]] conventions seed a shared codebook while a learned policy supplies the complete blueprint?
 **Frontier:** the design is IDEATED, unbuilt, and unselected; clairvoyance remains a consumer-specific sensitivity probe rather than a universal bound.
+
+## [2026-07-12 | a6590bf6 | book-seeded coordinated initialization promoted into research trail]
+
+**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/a6590bf6]] [[index]]
+**Updated:** Winning 42 becomes a visible candidate codebook overlay; convention value is a sender x partner-reader x opponent-reader interaction, not a double-dummy rejection label.
+**Questions refined:** can the sparse overlay become a complete calibrated blueprint whose partner gain survives opponent decoding and full-match marks?
+**Frontier:** the mechanism is preserved above leaf level but remains IDEATED, unbuilt, unmeasured, and unselected.
