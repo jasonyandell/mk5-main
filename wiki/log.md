@@ -206,3 +206,10 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Updated:** Winning 42 becomes a visible candidate codebook overlay; convention value is a sender x partner-reader x opponent-reader interaction, not a double-dummy rejection label.
 **Questions refined:** can the sparse overlay become a complete calibrated blueprint whose partner gain survives opponent decoding and full-match marks?
 **Frontier:** the mechanism is preserved above leaf level but remains IDEATED, unbuilt, unmeasured, and unselected.
+
+## [2026-07-12 | d5816915 | blueprint hypothesis framing rebalanced]
+
+**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/d5816915]] [[index]]
+**Updated:** the surviving structural case now leads; Winning 42 initialization, existing infrastructure, causal attribution, and four-seat inference receive the same weight as the engineering requirements.
+**Corrected:** repeated status caveats no longer imply a negative result; no contrary experiment exists.
+**Frontier:** blueprint search remains one candidate among several, with durable research-trail visibility and no editorial presumption against it.

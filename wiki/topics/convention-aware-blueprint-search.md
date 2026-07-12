@@ -2,7 +2,7 @@
 title: Convention-Aware Blueprint Search
 kind: topic
 first_seen: 1a4482fe
-last_updated: local-2026-07-12
+last_updated: d5816915
 status: active
 ---
 
