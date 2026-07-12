@@ -114,6 +114,6 @@ Format:
   - Raised: `5e3f3245` ([[w42-book-second-pass]] §Proposed experiments, item 9)
   - Context: Re-scan via the Kindle CDP pipeline (`scratch/winning42/`); the hand diagrams need prose reconstruction to be replayable as probes.
 
-- **Q:** Can a sparse [[w42-book-second-pass|Winning 42]] convention overlay plus a learned fallback become a complete, calibrated blueprint whose partner-decoding gain remains positive after opponent decoding and full-match evaluation?
+- **Q:** Can an explicit [[w42-book-second-pass|Winning 42]] convention overlay plus a learned fallback become a complete, calibrated blueprint whose partner-decoding gain remains positive after opponent decoding and full-match evaluation?
   - Raised: `1a4482fe` ([[convention-aware-blueprint-search]])
-  - Context: Installing the same book overlay on sender and receiver supplies coordinated initialization before unilateral search. The proposed attribution is sender overlay x partner reader x opponent reader; double-dummy value isolates direct technique but does not classify away convention value. Opponent book-likeness remains a latent policy type, not a whole-table assumption. The architecture remains IDEATED and unselected.
+  - Context: Installing the same book overlay on sender and receiver supplies coordinated initialization before unilateral search. The proposed attribution is sender overlay x partner reader x opponent reader; double-dummy value isolates direct technique but does not classify away convention value. Latent opponent book-likeness extends the same design into four-seat action-derived inference. No contrary experiment has been run.

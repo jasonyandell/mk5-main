@@ -2,7 +2,7 @@
 title: Partnership Wall Research
 kind: trail
 first_seen: bc4eb386
-last_updated: a6590bf6
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -271,18 +271,19 @@ result about partnership value.
 No row is the current experiment. The ledger prevents a later choice from
 forgetting positive evidence, contrary evidence, or missing instruments.
 
-[[convention-aware-blueprint-search]] preserves one unbuilt architecture that
-joins action-derived inference, policy legibility, and information-set
-continuation through an agreed blueprint. It is IDEATED and unselected; the
-page records both the proposal and its load-bearing project-record corrections.
+Among the surviving architectures, [[convention-aware-blueprint-search]] is
+unusually concrete: it joins action-derived inference, policy legibility, and
+information-set continuation through an agreed blueprint, and it can consume
+the measurement substrate already built by this program.
 
-### Preserved candidate mechanism — book-seeded convention overlay
+### Book-seeded convention overlay — why it survives
 
-[[w42-book-second-pass|Winning 42]] may provide the coordinated policy change
-that unilateral search cannot bootstrap: install the same sparse convention
+[[w42-book-second-pass|Winning 42]] provides the first concrete coordinated
+policy initialization in the project record: install the same convention
 overlay on sender and receiver, retain a learned policy as the complete
-fallback, then let search operate inside an already shared codebook. This is a
-mechanism candidate, not a claim that the book is optimal or complete.
+fallback, then let search operate inside an already shared codebook. This
+escapes the requirement that unilateral search invent both sides of a signal
+at once.
 
 The direct double-dummy verdict is not the classifier. Oracle endorsement can
 coexist with additional partner-decoding value when good technique is also
@@ -295,16 +296,19 @@ partner-reader x opponent-reader factorial:
 - paired full-match marks give the net only after those components remain
   separately attributable.
 
-The book can also seed opponent action-likelihood hypotheses, but not a
-population-wide assumption. Opponent book-likeness is a latent policy type to
-infer from public history. Top-unplayed-trump/donation, donate-highest,
-dump-to-inform, 84 keep priorities, auction messages, and the separate
-Plunge/Splash variant are candidate extraction surfaces. Their density,
-coverage, calibration, and net marks value remain unmeasured.
+The book also supplies opponent action-likelihood hypotheses. Opponent
+book-likeness can be inferred as a latent policy type, creating a four-seat
+information model rather than only a private partnership code. The same public
+action can coordinate a partner, reveal an opponent's likely hand, and expose
+the sender to counter-inference; the factorial measures all three.
 
-This candidate is intentionally visible at the research-trail level. It does
-not displace target granularity, auction decoding, information-set planning,
-or distributional utility, and it is not the selected next experiment.
+Top-unplayed-trump/donation, donate-highest, dump-to-inform, 84 keep priorities,
+auction messages, and the separate Plunge/Splash variant provide an immediate
+mining surface. The candidate remains alongside target granularity, auction
+decoding, information-set planning, and distributional utility. It earns a
+durable place in the ledger because it is structurally distinct, buildable from
+existing pieces, and capable of producing mechanism-specific evidence even
+when individual conventions vary.
 
 ## Architecture and build remain withheld
 

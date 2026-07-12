@@ -2,7 +2,7 @@
 title: Partnership Research Gates
 kind: decision
 first_seen: bc4eb386
-last_updated: a6590bf6
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -28,7 +28,7 @@ imitation from substituting for higher marks.
 | Capacity improves only in interaction with the better target. | Scale the leaf to the smallest capacity that clears the interaction. | Capacity-only paper metrics without a policy gain. |
 | Auction decoding improves same-hand belief and paired marks across role/order controls. | Build an auction-focused likelihood model and condition bidding/defense on it. | Gain disappears under masked-auction comparison, fails outside one convention population, or the consumer prices double-dummy rather than realized outcomes ([[w42-champion-selfplay-fixed-point]]). |
 | Voluntary-action likelihood improves calibrated belief. | Add an action-likelihood update to the posterior. | Better fit without held-out log-loss improvement. |
-| Sender-by-decoder interaction improves fixed-pair marks beyond shuffled pairs after opponent decoding is enabled. | Put the demonstrated convention overlay and partner/opponent models inside the interactive rollout; [[w42-book-second-pass|Winning 42]] is eligible as coordinated initialization, not as policy truth. | Double-dummy agreement alone, belief improvement without a sender-by-reader interaction, or a partner-only gain erased by opponent leakage. |
+| Sender-by-decoder interaction improves fixed-pair marks beyond shuffled pairs after opponent decoding is enabled. | Put the demonstrated convention overlay and partner/opponent models inside the interactive rollout; [[w42-book-second-pass|Winning 42]] supplies coordinated initialization while a learned fallback supplies the complete policy. | Double-dummy agreement alone, belief improvement without a sender-by-reader interaction, or a partner-only gain erased by opponent leakage. |
 | Persistent state wins only in merged-information or partner-visible plan fixtures. | Add the smallest recurrent option/plan state that carries the demonstrated variable. | Lift exists only in perfect-information worlds already priced by [[forge|Forge]] Q. |
 | Full PDF shape changes exact contextual decisions and improves held-out marks. | Add a role/score/future-information-conditioned distribution consumer. | A fixed risk collapse or diagnostic-only PDF difference. |
 | A passing mechanism still requires information-set consistency that belief-conditioned rollout cannot supply. | Test bounded information-set resolving or CFR on the demonstrated microgames. | No residual inconsistency after the simpler consumer is installed. |

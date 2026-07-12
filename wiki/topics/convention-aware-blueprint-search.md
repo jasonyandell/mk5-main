@@ -2,13 +2,40 @@
 title: Convention-Aware Blueprint Search
 kind: topic
 first_seen: 1a4482fe
-last_updated: a6590bf6
+last_updated: local-2026-07-12
 status: active
 ---
 
-Classification: **IDEATED, unbuilt, unselected.** No current code artifact
-implements this architecture. This page preserves the proposal and its
-project-record refinement; it is not a build decision.
+Research position: **SURVIVING HYPOTHESIS.** Implementation status: IDEATED,
+unbuilt.
+
+Among the surviving designs for [[the-wall]], convention-aware blueprint
+search is unusually concrete. It names a structural capability the current
+champion lacks, a human-supplied way around the sender/receiver bootstrap, a
+causal attribution design, and a route through infrastructure already built by
+the project.
+
+## Why this survives
+
+- It creates an in-search channel through which a public action can change a
+  partner's later belief and play. Sharper belief alone does not create that
+  channel.
+- [[w42-book-second-pass|Winning 42]] supplies both halves of explicit legal
+  conventions before unilateral optimization begins. The learned policy need
+  not discover sender and receiver simultaneously from a neutral start.
+- The repaired world sampler, information-set views, decision records, policy
+  heads, and full-match arena provide much of the measurement substrate.
+- Sender, partner-reader, and opponent-reader arms separate direct technique,
+  partnership value, four-seat inference, and net marks instead of treating a
+  final score as an unexplained architecture result.
+- Published conventions provide an initial policy hypothesis for every seat.
+  They can support partner coordination and action-derived opponent inference
+  in the same framework.
+
+Even if only a subset of book conventions carries marks, mining them identifies
+where ordinary technique ends, where natural legibility begins, and where a
+shared codebook changes partnership behavior. That is useful strategic evidence
+about the wall rather than only an architecture verdict.
 
 ## Proposal
 
@@ -83,19 +110,19 @@ consequence of unilateral search.
 - [[partnership-decision-record-v1]] records policy, sampler, belief, role,
   partner, and action provenance for attribution.
 
-### Known failure modes
+### Engineering requirements
 
-- **Particle collapse:** repeated likelihood weighting can destroy effective
-  sample size; resampling and consistent-deal rejuvenation are required.
-- **Likelihood miscalibration:** an overconfident blueprint can eliminate
-  plausible worlds; likelihood floors or tempering may be required.
-- **Rollout cost:** full-hand imperfect-information rollouts can be expensive;
+- **Particle health:** repeated likelihood weighting needs effective-sample
+  monitoring, resampling, and consistent-deal rejuvenation.
+- **Likelihood calibration:** action likelihoods need calibration, likelihood
+  floors, or tempering so plausible worlds retain support.
+- **Rollout budget:** full-hand imperfect-information rollouts can be expensive;
   truncation is useful only when the leaf preserves the post-action belief and
   continuation policy.
-- **Convention drift:** a searcher, likelihood filter, partner policy, or leaf
-  trained from different blueprint generations can read a different codebook.
-- **Opponent mismatch:** opponents are not cooperative blueprint partners and
-  may exploit predictable conventions.
+- **Generation coherence:** searcher, likelihood filter, partner policy, and
+  leaf must read the same blueprint generation and codebook.
+- **Four-seat modeling:** partners use the shared blueprint; opponent adherence
+  is inferred and their ability to read the same public actions is represented.
 
 ### Clairvoyance headroom idea
 
@@ -110,9 +137,9 @@ Paired action flips and outcome changes could localize decisions sensitive to
 hidden information, especially bidding and early leads. This is a cheap
 headroom probe before a blueprint-search build.
 
-## Refinement against the project record
+## Fit to the project record
 
-### The missing object is narrower than planning
+### The target is information-set planning
 
 The [[champion]] does not lack planning in the general sense. [[forge|Forge]] Q
 solves through the end of a hand within each exact world. Singleton setup,
@@ -146,7 +173,7 @@ information not shared within either partnership. That weakens direct transfer
 of those guarantees, but it does not by itself prove blueprint search is the
 only principled route.
 
-### The current champion is not the proposed blueprint system
+### Blueprint requirements beyond the current champion
 
 The current full-match champion is
 `margin:wp(head_8) + lens:ev`, not a policy/value-network searcher.
@@ -164,19 +191,18 @@ SPARTA-style search offers a policy-improvement guarantee relative to its
 blueprint under its cooperative assumptions. It does not guarantee improvement
 over C0 when the available blueprint is weaker than C0.
 
-### Policy filtering adds information, not accuracy for free
+### Policy filtering adds a new information channel
 
 The `39.184%` figure in [[belief-bayes-ceiling]] is a top-1 ceiling for one
 consistency-information posterior and corpus. An observed action's likelihood
 under a policy supplies information outside that posterior, so the figure does
 not cap action-conditioned inference.
 
-The added information is useful only when the likelihood model is calibrated
-and policy-matched. “Potentially sharper than consistency-only belief” is
-supported structurally. “Far sharper” or “improved for free” is not yet a
-Texas 42 result.
+The added information is a genuine route beyond consistency-only belief. Its
+strength will be determined by calibration and policy match rather than by the
+existing ceiling measurement.
 
-### Search can read a convention before it can invent one
+### Existing conventions unlock single-agent search
 
 Single-agent blueprint search can exploit an existing decoded convention or
 the natural legibility of an established policy. It cannot make a novel signal
@@ -190,13 +216,13 @@ change, a multi-agent common-knowledge search step, or another explicit
 coordination mechanism. This is distinct from improving play within a fixed
 convention.
 
-### The Hanabi guarantee does not transfer unchanged
+### Adapting the cooperative guarantee to two teams
 
 SPARTA assumes a fully cooperative game with a common reward across all
-agents. Texas 42 has common reward only within each partnership; opponents are
-adversarial. Treating opponents as fixed environment policies remains a
-plausible engineering adaptation, but the cooperative improvement guarantee
-does not automatically survive it.
+agents. Texas 42 has common reward within each partnership and an adversarial
+opposing team. The natural adaptation keeps the partner on the shared
+blueprint while representing opponents as inferred policies. Its empirical
+marks result, rather than the cooperative theorem alone, carries the claim.
 
 Team-maxmin work with ex-ante correlation supports coordinated distributions
 over joint team strategies
@@ -213,7 +239,7 @@ being valued. [[w42-jud-v1]]'s policy-conditioned pricing law therefore applies
 inside every expert-iteration round; an existing value net is not automatically
 reusable.
 
-### PIMC theory is a hypothesis source, not a Texas 42 measurement
+### PIMC theory leaves a measurable residual hypothesis
 
 Perfect-information Monte Carlo performs well when leaf values are correlated
 across hidden worlds, information is revealed quickly, and bias is favorable
@@ -225,7 +251,7 @@ decision drama in early leads. It has not established that the residual value
 is concentrated specifically in bidding, the first two leads, and signal
 management. Signal-management marks remain unmeasured.
 
-### Clairvoyance is sensitivity, not a universal bound
+### Clairvoyance localizes consumer sensitivity
 
 Revealing hidden hands to a fixed policy consumer measures how much that
 consumer's behavior and results change when given the information. It does not
@@ -249,13 +275,13 @@ specified action in its stated context and the other performs the specified
 belief update or response. Single-agent search can then value deviations
 within an already coordinated codebook.
 
-This is **coordinated initialization**, not wholesale imitation. The book is a
-trustworthy hypothesis source, not an optimal full policy. A learned fallback
-must supply action probabilities outside the convention states, and the
-overlay and fallback must form one policy with one policy-matched continuation
-value.
+This is **coordinated initialization**. The book supplies the shared codebook;
+a learned fallback supplies action probabilities outside the convention
+states. Together they form one policy with one policy-matched continuation
+value. The proposal uses the book for the thing it uniquely offers—pre-agreed
+human coordination—without requiring it to be a complete policy.
 
-### Mine interactions, not oracle-disapproved rules
+### Mine convention interactions
 
 Double-dummy value can measure the direct tactical component of a book action,
 but it cannot classify every oracle-endorsed action as “mere technique.” A move
@@ -294,7 +320,7 @@ component. It neither proves nor removes the decoding component. The wall is
 convention-shaped only to the extent that sender-by-reader interactions
 survive paired full-match marks and disappear under the matching ablation.
 
-### The book is an opponent-policy hypothesis, not a universal prior
+### The book is a four-seat policy hypothesis
 
 A book convention is public enough to seed an opponent model as well as a
 partner codebook. That creates extra action-derived inference unavailable to a
@@ -302,8 +328,8 @@ cooperative-only SPARTA formulation: opponent actions can be weighted by the
 likelihood that a book-following policy would choose them from each candidate
 hand.
 
-Actual players need not follow the book. Opponent filtering therefore requires
-a latent policy type, not unconditional book likelihoods:
+The degree to which an opponent follows the book is empirical. A latent policy
+type lets the filter learn that degree rather than assume it:
 
 `P(action | world) = sum_z P(action | world, policy_type=z) P(policy_type=z)`
 
@@ -330,25 +356,27 @@ policy population for which the interpretation is claimed. Technique, natural
 legibility, explicit partnership convention, deception, and variant-specific
 communication remain separate labels.
 
-### Open question
+### Research question
 
-Can a sparse [[w42-book-second-pass|Winning 42]] convention overlay plus a
+Can an explicit [[w42-book-second-pass|Winning 42]] convention overlay plus a
 learned fallback become a complete, calibrated, policy-matched blueprint whose
 partner-decoding gain remains positive after opponent decoding and full-match
 evaluation?
 
-The book now supplies a concrete coordinated-initialization mechanism and an
-attribution design. Whether that mechanism is dense enough, complete enough,
-or valuable enough to attack [[the-wall]] remains open. No book-seeded build,
-experiment selection, or architecture selection follows from preserving it.
+The book supplies a concrete coordinated-initialization mechanism and an
+attribution design. A positive result would identify partnership value the
+current champion cannot price; convention-level variation would map where that
+value concentrates. The question remains open because it has not been run, not
+because contrary evidence has accumulated.
 
-## Status
+## Research position
 
-Convention-aware blueprint search is a serious candidate design with strong
-structural fit to action-derived inference and partner response. It is also
-unbuilt, unmeasured in Texas 42, and missing a C0-strength policy-matched
-blueprint. It remains in the competing-explanation ledger until evidence earns
-a build under [[partnership-research-gates]].
+Convention-aware blueprint search remains a serious candidate with strong
+structural fit to action-derived inference, information-set continuation, and
+partner response. The book-seeded form makes its hardest coordination problem
+concrete and testable. It has not displaced the other explanations in
+[[partnership-wall-research]]; evidence under
+[[partnership-research-gates]] determines whether and how it advances.
 
 ## Links
 
