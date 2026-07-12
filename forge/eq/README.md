@@ -96,7 +96,7 @@ forge/eq/
 │   └── cli.py               # CLI entry point
 ├── collate.py               # GPU records → training format
 ├── game_tensor.py           # GameStateTensor for GPU
-├── sampling_mrv_gpu.py      # MRV world sampler on GPU
+├── sampling_mrv_gpu.py      # Exact uniform world sampler (legacy MRV API)
 ├── tokenize_gpu.py          # GPUTokenizer
 ├── voids.py                 # Void inference from play history
 ├── sampling.py              # CPU backtracking sampler

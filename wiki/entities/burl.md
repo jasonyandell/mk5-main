@@ -2,7 +2,7 @@
 title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
-last_updated: local-2026-05-07
+last_updated: 4123b2d5
 status: superseded
 ---
 
@@ -404,10 +404,21 @@ truncation, rank-16 LoRA sweet spot, 43→1334 tok/s batch ceiling, M5-Max-as-mu
 OVERVIEW Pareto frontier table: iter-3-rules 90% robustness vs iter-1 −0.16 eq-delta.
 (commit message @ aeafe22)
 
-**Incidental finding** (7321952): `WorldSamplerMRV` marginal distribution is biased vs
-uniform enumeration by ~6.8 Q points at trick 6. Enumeration is ground truth; sampling is
-a biased estimator. Affects all historical Burl eval numbers and forge/eq training data
-quality. Not fixed; filed for follow-up.
+**Sampler finding, corrected by [[world-sampler-mrv-audit]]:** the `~6.8 Q`
+comparison at `7321952` mixed two hand encodings and did not retain its action,
+N, or RNG seed, so it is not a clean sampler estimate. The reconstructed state
+does expose a stronger code defect: `WorldSamplerMRV` reaches a no-candidate
+branch with exact probability `1/3` and silently injects `00` outside the pool
+(`0.33449` over 100,000 live samples). That moves an action by as much as
+`4.619 Q` without flipping the best move on the three-state audit panel.
+Corpus-wide and historical-eval impact remain unestimated; the sampler's
+validity guarantee is falsified. A uniform-rejection repair passed these three
+fixtures but failed a real JudSearch state whose exact valid-partition mass is
+only `5.39e-5`. The surviving `uniform-completion-dp-v1` replacement closes the
+exact-fixture repair gate with zero invalid output and uniform frequencies.
+On MPS — Burl's production device — the shipped replacement was still silently
+non-uniform: the backend's int64 `gather` rounds the 62-bit draws through
+float32. Fixed at `4123b2d5`; the uniformity regressions now run per-device.
 
 ### wax_museum + chat-template bug + belief_trajectory — Burl end-of-replay (2026-04-20/23, commits 54f7776–1bf1885)
 

@@ -51,6 +51,15 @@ shipped bidders declare pip trumps only and never bid past 42. Special
 contracts (nello, sevens, plunge) and model-backed bidding are Champion
 rungs #21–#22.
 
+## Decision measurement
+
+`--emit-decisions <path.jsonl.gz>` writes a post-match canonical decision stream
+and checksum/provenance manifest without changing policy execution. The record
+separates play state, actor information, auction/score context, and offline
+hidden-world truth, and keeps partnership research mechanisms in distinct
+nullable sections. Deterministic gzip is recommended for full matches; plain
+`.jsonl` is also supported. See [DECISION_RECORDS.md](DECISION_RECORDS.md).
+
 ## Tests
 
 ```bash

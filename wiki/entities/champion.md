@@ -2,7 +2,7 @@
 title: Champion — unified belief-state player
 kind: entity
 first_seen: local-2026-06-09
-last_updated: afd4802
+last_updated: bc4eb386
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
@@ -160,6 +160,15 @@ oracle play beats the previous champion `net:wp+lens:ev` by **+0.38 [+0.09, +0.6
 **+0.42 [+0.12, +0.72]** (512 games at each of two reserved seeds) — the first learned
 bidder to beat the hand-tuned one.
 
+That historical promotion remains the named baseline, not a retracted result.
+[[world-sampler-mrv-audit]] nevertheless blocks a *fresh* C0 reproduction: the
+shared `WorldSamplerMRV` can emit malformed worlds and weight valid worlds
+non-uniformly. The three-state audit shows value distortion but no argmax flip;
+the impact on the two 512-game promotions is unknown until C0 is rerun on two
+held-out blocks with the exact-fixture-validated
+`uniform-completion-dp-v1` replacement. Production CUDA throughput and memory
+remain unmeasured.
+
 **Rung #33 — jud v1, the one organ for bid + play — built and graded
 ([[w42-jud-v1]], 2026-07-06, `3ac03de`).** One net (`champion/jud_net.py`) prices every
 decision from the same realized-margin distribution; the v0 `ValueBidder` consumes it with
@@ -316,6 +325,10 @@ the pedagogy chain produces real receipts.
 
 ## Links
 
+- [[partnership-wall-research]] · [[partnership-value]] ·
+  [[partnership-research-gates]] — the post-v1 program: measure where the
+  current bidder-plus-`lens:ev` stack fails to convert public action into
+  fixed-pair marks before selecting its successor
 - [[forge]] · [[gus]] · [[burl]] · [[lem]] · [[w42]] — the organs
 - [[w42-lens-v1-utility-head-to-head]] — EV ceiling for fixed one-step utilities
 - [[w42-bookval-v1-wave2-bid-aware-atlas]] — bid-aware mark machinery + power analysis

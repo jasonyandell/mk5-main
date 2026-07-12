@@ -1,0 +1,78 @@
+{
+  "bidding_surface": {
+    "bid_value_cardinality": 1,
+    "bid_values": [
+      30
+    ],
+    "status": "fixed-bid30:cannot-estimate-bidding-or-bid-level-effects"
+  },
+  "coverage": {
+    "action_likelihood_rows": 0,
+    "action_rows": 75079,
+    "actual_action_rows": 28000,
+    "auction_history_rows": 0,
+    "bid_value_cardinality": 1,
+    "bidding_risk_action_rows": 7216,
+    "book_detector_anti_endorsed_action_rows": 44498,
+    "book_detector_endorsed_action_rows": 13837,
+    "champion_action_rows": 0,
+    "decision_rows": 28000,
+    "dist_lens_confounded_action_rows": 997,
+    "dist_lens_confounded_decisions": 754,
+    "eval_only_label_action_rows": 5365,
+    "exact_cross_ai_source_picks_joins": 75079,
+    "exact_handshape_joins": 75079,
+    "exact_seat_position_joins": 75079,
+    "exact_sequence_joins": 75079,
+    "full_world_q_action_rows": 0,
+    "gus_drama_joined_action_rows": 0,
+    "match_score_rows": 0,
+    "partner_assignment_rows": 0,
+    "partner_proxy_action_rows": 26310,
+    "persistent_plan_state_rows": 0,
+    "plan_proxy_action_rows": 14257,
+    "safest_tail_action_rows": 40641,
+    "sample_action_rows": 256,
+    "source_trajectory_policy_rows": 0,
+    "threshold_utility_top_action_proxy_rows": 39360
+  },
+  "inventory_scope": {
+    "champion": {
+      "claim": "bounded retained evidence inventory, not every file under champion",
+      "included_classes": [
+        "A/B summary JSON",
+        "training metric JSON",
+        "artifact manifest JSON",
+        "registered prediction and build report Markdown",
+        "Jud demonstration manifests",
+        "run26 self-play A/B and convergence text"
+      ],
+      "omitted_classes": [
+        "model weights",
+        "PNG figures",
+        "NPZ demonstrations",
+        "executable source code"
+      ]
+    }
+  },
+  "join_result": "The five retained W42 action tables join exactly by decision key plus candidate domino. Gus, arena, and champion evidence remain inventoried but unjoined.",
+  "schema_version": "w42.partnership_failure_atlas.v2",
+  "scientific_boundary": {
+    "leakage": "Oracle values and eval-only labels are retained as offline outcomes only; they are not promoted to runtime-observable features.",
+    "what_this_is": "An action-level measurement spine preserving available oracle distribution summaries, public role/order, and public/action-local partnership proxies.",
+    "what_this_is_not": "It is not a champion trajectory corpus, partnership-effect estimate, action-likelihood model, persistent-plan trace, or match-score-conditioned dataset."
+  },
+  "structural_limits": [
+    "The q_per_world source artifact referenced by older manifests is not retained in this worktree; only mean, regret, threshold mass, and lower-tail mass survive in the compatible CSVs.",
+    "Gus drama rows use a different corpus/state namespace, so integer seed overlap cannot establish identity.",
+    "The source-picks field named gus_top_action is is_best_threshold, not actual Gus output; the atlas renames it threshold_utility_top_action_proxy.",
+    "Nonblank dist_lens_top_action values came from a cross-corpus positional join on game index, decision index, and candidate domino; they remain confounded.",
+    "Arena and champion evidence is at hand, match, or experiment granularity with no W42 action-state fingerprint.",
+    "The retained actual-action indicator is not policy-fingerprinted, so its regret cannot be attributed to the current champion.",
+    "Partner labels are public/action-local proxies; partner identity and fixed-versus-shuffled assignment are absent.",
+    "Actual-action flags survive, but actor-policy likelihoods and action-conditioned posterior changes do not.",
+    "The bidder-lead-plan label is a detector firing, not a plan ID or persistent state across decisions.",
+    "Every compatible action row has bid_value=30. Declaration and partial risk proxies survive, but this corpus cannot estimate bidding or bid-level effects.",
+    "Complete auction history and pre-hand match score do not survive."
+  ]
+}

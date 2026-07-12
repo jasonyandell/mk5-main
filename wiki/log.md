@@ -16,220 +16,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Burl harvests + perf sprint** (2026-04-25 → 04-28, ~25 entries) — STaR run-3/3b/3c (preserve-thoughts is load-bearing), resumable checkpointing, the 2000-decision harvest, and the [[perf-sprint]] playbook's many small revisions plus [[burl-perf-phase0]]–phase3.
 - **burl-lab / burl-chat / microscope + w42** (2026-04-30 → 05-07, ~65 entries; the log's densest stretch) — two parallel campaigns: the [[burl-lab]] workbench lane, and the [[w42]] book-validation campaign (claim ledger, branch atlases, four phases, waves 1–4, lens head-to-head). Trail: [[w42-book-validation]]. Also [[book-strategy-player]] design and the first wiki-curation pilot (hubs + trails).
 - **Champion rungs** (2026-06-09 → 06-14, ~16 entries, after a five-week gap) — the [[champion]] ladder: arena harness, rungs #21–#28 (auction-conditioned belief the measured win; several honest nulls), [[jud]] direction and vocabulary, the Fable provenance corrections. Hub: [[champion]].
-- **jud + the wall + wiki overhaul** (2026-07-05 → 07-10, ~10 entries, mostly still below) — jud v0/v1 built and graded, [[the-wall]] stated precisely, then the wiki turned on itself: era archaeology backfill, the 162-page experiment audit.
+- **jud + the wall** (2026-07-05 → 07-06, 6 archived entries) — jud v0/v1 built and graded ([[jud]], [[champion]], [[w42-jud-v1]], [[w42-plateau-probe]]), the 2.38× arena perf pass, value-native endorsed via [[rank-vs-price]]. Later 07-06→07-11 entries remain below.
 
 ---
-
-## [2026-07-05 | local | jud engineering first cut — value-native endorsed, rank-vs-price mechanism]
-
-**Touched pages:** [[jud]] [[belief-conditioned-self-play]] [[rank-vs-price]] [[pimc]] [[champion]] [[index]]
-
-**Added:** [[rank-vs-price]] — the mechanism resolving the "somehow it was all about
-bidding" fragment: PIMC's strategy-fusion optimism is a distribution-shape error that
-cancels in play (argmax over siblings; rankings survive common-mode inflation) and
-lands whole in bidding (tail mass read cardinally against pass/`race_wp`). One stroke
-explains the play-side nulls (#25, #27) and the #26 over-bidder; measured legs:
-`optimism_gap.json` (realized 0.52 @ 30 → ~0.19 @ 41 vs oracle 0.64 @ 30), the three
-play nulls, and `net:wp`'s frozen-realized-calibration dominance.
-
-**Updated:** [[jud]] — "The engineering, first cut" (Fable 5 session, 2026-07-05; new
-session, no memory of `0a708a4e` claimed): value-native **endorsed** for the pricing
-path, promoted from optional summit to spine. jud v0 = one added head (V_realized:
-info-state → distribution over realized hand margin, categorical CE on realized
-outcomes from the #26 arena bridge, MC targets, coverage via ε/forced-bid corpora),
-bidder prices via tail mass at the hypothetical-auction root through `MarksToSeven`
-(auction-side score-conditioning rides along), play stays `lens:ev`, `pmake_scale`
-retires. Factorization law (learn the unknown / compute the exact), the referee
-instrument (oracle EV − V_realized EV = price of hidden information), three registered
-predictions (v0 ≥ `net:wp` parity; V calibration matches the realized curve; the
-fixed point stops over-bidding), and the v1/v2 ladder (search leaves; opponents-in-
-rollout signaling). [[belief-conditioned-self-play]] — the open "is value-native
-Fable's intent" question split: historical intent stays open (likely permanently);
-design question closed by the Fable 5 endorsement; training mechanics now first-cut.
-[[pimc]] — rank-vs-price section. [[champion]] — self-consistency section points at
-the first cut. Provenance line preserved: the value-native extension was the
-2026-06-14 session's, and it was right.
-
-**Evidence rescued:** `champion-one-organ-theory-2026-06-14.md` and
-`handoff-2026-06-14-jud-vocab-and-fable-words.md` copied from gitignored scratch into
-`champion/evidence/` (they back [[jud]]'s conclusions and the provenance chronicle).
-
-**Questions opened:** none new; jud's open engineering narrows to the v1 search shape
-and v2 opponent-model mechanics.
-
-## [2026-07-06 | d678598 | arena perf pass — 2.38× games/sec on MPS, byte-identical]
-
-**Touched pages:** [[arena]]
-
-**Updated:** [[arena]] — dispatch/sync reduction on the oracle decision path
-(numpy-assembled state tensors, vectorized order-preserving pool construction,
-maskless `scatter_add` void aggregation, MRV loop ~45→~20 kernels/step with dead
-per-step syncs removed, per-device table caches, memoized `current_player`).
-Byte-identical to baseline on CPU and MPS was the correctness gate. Paired MPS
-bench: 0.56 → 1.34 games/s (2.38×), reproduced across two A/B pairs; post-merge
-production throughput ~1.34 games/s on a pooled 128-game A/B. Key finding: the
-arena is dispatch-bound, not compute-bound — the oracle forward dominates CPU
-wall (62%) but shrinks on MPS, where per-tick kernel-dispatch/sync overhead
-(~1,500–2,000 launches, ~25–45 syncs) becomes the bottleneck. Full profile:
-`docs/arena-perf-2026-07-06.md`. A second pass (constant-batch-width refill,
-gate relaxed from byte-identity to distribution-level equivalence by user
-decision) is in flight as of 2026-07-06.
-
-**Questions opened:** none new.
-
-## [2026-07-06 | 4080e07 | jud v0 built and graded — value-native bidder reaches net:wp parity]
-
-**Touched pages:** [[w42-jud-v0]] [[jud]] [[champion]] [[rank-vs-price]] [[index]] [[log]]
-
-**Added:** [[w42-jud-v0]] — the closing write-up for jud's first buildable slice
-(Champion rung #32, GitHub #32). A value-native bidder prices contracts from a head
-(`V_realized`/`champion/margin_net.py`) trained on **realized** 4-seat self-play
-outcomes instead of the double-dummy oracle; the bidder (`champion/value_bidder.py`,
-CLI `margin:wp`) reads tail mass at the hypothetical-auction root through
-`MarksToSeven`; play stays `lens:ev`; `pmake_scale` retires. Graded against the three
-registered predictions: **P2 calibration PASS** (ECE 0.046, max |Δ| ≤ 0.029 over 13
-thresholds, 6× closer to realized than to oracle, sits 0.09–0.13 below double-dummy);
-**P1 round-0 parity MISS** (−1.44 [−1.88, −0.95] — a legible over-bidder that wins
-points (+5.66/hand) and loses marks, via a winner's-curse-on-*selection* channel plus a
-notrump declaration-level artifact, both independent of double-dummy optimism); **P3
-self-play loop PASS** (4 rounds carry the margin −1.44 → −0.31 → +0.24 → +0.24 → +0.22,
-CI includes zero from round 2; made-rate 49.9% → 60–64%; notrump artifact dies in one
-on-policy round, share 47.5% → 1.5%). Canonical same-seed check: −0.07 [−0.66, +0.49],
-**statistical parity** with `net:wp` while winning +7 points/hand. Two methodological
-findings: coverage anchoring beats single-variable recipe purity (the recipe fork —
-dropping net:wp self-play chunks regressed round 1 to −2.18), and the `MarksToSeven`
-pass baseline is a denial-bidding lever that makes over-bidding worse (the A2 sign-catch,
-credited to the value-bidder subagent). Evidence at `4080e07`
-(`champion/evidence/jud_v0/`). Definitive 512-game same-seed A/B: **−0.01/game
-[−0.28, +0.25]**, 258/512 — dead parity (`ab_definitive_512_r4_summary.json`).
-
-**Updated:** [[jud]] — honest status flipped from "not built" to "v0 built and graded";
-predictions ledger graded in place (P2 pass / P1 miss→loop-recovered / P3 pass); v1
-named as the parity-breaking frontier. [[champion]] — self-consistency section carries
-the rung #32 outcome; champion's bidder stays `net:wp` for now (`margin:wp` its
-value-native equal on marks, superior on legibility). [[rank-vs-price]] — leg 3
-(the pricing mechanism's full test) confirmed at parity, with the winner's-curse-on-
-selection rider the mechanism did not originally name.
-
-**Frontier shift:** the value-native pricing path is validated — realized-outcome pricing
-dissolves the #26 over-bidder without a tuned knob, and reaches the best hand-tuned
-baseline. But it converges *at* parity, not past it (offense share plateaus ~60–67% vs
-the predicted selective 50–55%). Whether the residual is the [[pimc]] price of hidden
-information or further calibration headroom is v1's question — value at the leaves of
-shallow belief-state search in play and defense.
-
-**Questions opened:** what breaks the parity plateau (v1 search shape vs opponent
-modeling); reading the referee gap (oracle EV − V_realized EV) as a live convergence
-instrument rather than a static meter.
-
----
-
-## [2026-07-06 | 68fda7b + 0bdd4d5 | the plateau probe: data starvation, not structure]
-
-The jud v0→v1 bridge. [[w42-jud-v0]]'s open question 1 — was the parity plateau the
-[[pimc]] price of hidden information (structural) or a data-starved tiny MLP? — run as a
-registered prediction and answered.
-
-**Touched pages:** [[w42-plateau-probe]] [[w42-jud-v0]] [[jud]] [[champion]] [[rank-vs-price]]
-
-**Added:** [[w42-plateau-probe]] — the registered-prediction write-up (GitHub #33). The
-structural reading was registered pre-run as a falsifiable prediction: scaling on-policy
-data would NOT break parity. **Falsified.** Rounds 5–8 at 3× data/round (1000 self-play
-games/round vs 300) carried `margin:wp` past `net:wp` — head_8 beats it **+0.38
-[+0.09, +0.67]** (reserved seed 7000000, 512 games) and **+0.42 [+0.12, +0.72]** (fresh
-seed 9000000), both 287/512 (56.1%), with round 7's 256-game A/B independently excluding
-zero. **The first learned bidder to beat the hand-tuned champion on marks.** The plateau
-was calibration headroom in a data-starved head, not the hidden-information price. A
-registered extension (rounds 9–12) confirmed **saturation**: head_12 at +0.21 [−0.08, +0.47]
-/ +0.37 [+0.09, +0.65], inside the registered [+0.2, +0.6] band, indistinguishable from
-head_8 — the data-scaling curve flattens at **≈ +0.3–0.4 marks/game** at this net capacity.
-The page carries the full r0–r12 round table (`champion/evidence/jud_v0/loop_metrics.json`).
-The registered prior was wrong, recorded plainly — a falsified prediction run to its
-falsifier is the system working.
-
-**Updated:** [[w42-jud-v0]] — addendum + open question 1 marked ANSWERED (data starvation),
-pointing to the probe. [[jud]] — honest status flipped from "reaches parity, does not yet
-beat" to "past parity, saturating at ≈+0.3–0.4"; v1 re-described as one net for bid + play,
-in build. [[champion]] — the bidder claim flipped: `margin:wp`(head_8) is the first learned
-bidder to beat `net:wp`, best-measured bidder is `champion/margin_net_r8.pt`; saturation
-noted. [[rank-vs-price]] — leg 3 upgraded from "validated at parity" to "validated and then
-dominant"; the winner's-curse-on-selection channel is data-limited, not structural.
-
-**Frontier shift:** the value-native pricing path no longer ties the best hand-tuned
-baseline — it beats it. The binding constraint at v0's scale was on-policy data volume, not
-the [[pimc]] price of hidden information; that reading is refuted at this scale. Data has
-run its course at this net capacity, so the next constraint is capacity or mechanism —
-jud v1's premise (one net, bid + play; play-history-conditioned V_realized with 1-ply
-argmax-EV play replacing E[Q] n=10 at runtime; then the same self-play-loop method).
-
-**Questions opened:** none new — the probe closed [[w42-jud-v0]]'s open question 1.
-
-## [2026-07-06 | 0d82a97 | jud v1 built: one organ, two consumers (6860a75..0d82a97)]
-
-Three commits building jud v1's machinery: play-decision snapshot emission, the unified
-JudNet organ, the judplay consumer, and a graded round-0 head.
-
-**Touched pages:** [[entities/jud]] [[sources/0d82a97]]
-
-**Added:** 1 source digest.
-
-**Frontier established:**
-- One net now serves bid and play: info-state (own hand + canonical auction + play
-  history) → 43-bin realized-points categorical; bid-time = empty-history play-time,
-  byte-identical to margin_net's root encoding (tested train/serve both ways).
-- The arena emits per-decision corpora compactly: `HandRecord.plays` (28 seat/domino
-  pairs), every decision a prefix, offense and defense rows sharing the hand's Monte
-  Carlo label. Works in sequential and fast-batching modes.
-- Registry: `jud[:wp][,pass<q>][,model=]` bidder (ValueBidder unchanged) and
-  `judplay[:model=]` play (greedy depth-1, argmax E[pts], defenders minimize, one
-  forward per tick).
-- Round 0 graded honestly (champion/evidence/jud_v1/): combined −6.09 vs
-  net:wp+lens:ev, bidder −4.08, play −5.53 (defense the biggest channel);
-  judplay beats random +1.80; value sharpens with depth (MAE 8.6 → 3.5).
-
-**Questions opened:**
-- Overfitting is the binding constraint (memorizes 200K rows in ~1 epoch at lr 1e-3);
-  regularization/data scale for loop rounds.
-- Root-row dilution (bid roots are 2/56 of samples; worst ECE slice) — up-weight or
-  let the loop close it?
-- Does the v1 self-play loop dissolve the round-0 over-bid (93% offense share) the
-  way v0's did?
-
-## [2026-07-06 | 3ac03de | jud v1 graded: one organ, bid and play (f550205..3ac03de)]
-
-Four commits carrying jud v1 from build to a graded verdict, every rung registered on
-GitHub #33 before its measurement: `f550205` (the organ — one net, play-history
-snapshots, the `judplay` consumer), `9d30b25` (the loop grades JP1/JP2/JP3), `e596205`
-(judsearch — belief-lift worlds, current-trick rollout, V_realized leaves), and
-`3ac03de` (the search-ladder grades JS1/JS2/JS3 + the night verdict).
-
-**Touched pages:** [[experiments/w42-jud-v1]] [[entities/jud]] [[entities/champion]] [[topics/rank-vs-price]]
-
-**Added:** [[experiments/w42-jud-v1]] — the full arc as a registered-prediction ledger.
-
-**Updated:**
-- [[entities/jud]] — v1 promoted from "machinery built" to "built and graded"; the
-  policy-conditional pricing law added to the vocabulary; v1/v2 ladder bullets and the
-  honest status rewritten to the graded verdict.
-- [[entities/champion]] — current best player stated: `margin:wp`(head_8)+`lens:ev`
-  (+0.38/+0.42 over `net:wp+lens:ev`); rung #33 recorded as built-and-graded, not
-  displacing the champion.
-- [[topics/rank-vs-price]] — the play half measured: greedy value play is a bad ranker,
-  search recovers most (not all) of the gap oracle-free, the oracle's rankings stay
-  unbeaten.
-
-**Frontier verdict:** the one-organ unification **holds at the auction and is
-mechanism-limited at play**. The bidder survives the fold intact (beats v0's own round-0
-bidder); greedy 1-ply value play is a bad move-ranker (the loop moves it zero, JP3
-falsified); `judsearch` recovers two-thirds of the play gap oracle-free (−3.44 → −1.16,
-JS1 PASS +2.28) but not parity, and neither more worlds (JS2 below band) nor a
-better-calibrated head (JS3 falsified) closes the rest. The wall is per-move
-discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's
-per-move oracle. The stack went −4.37 → −1.43 oracle-free in one night; the current best
-player is unchanged. v2's cue is concrete: a bigger leaf on per-move targets (E[Q]
-distilled as bootstrap) plus opponents-in-rollout.
-
-**Questions opened:** none new — v1's play wall is named, and v2's target follows from it.
 
 ## [2026-07-06 | working-tree | the wall, stated precisely — distill-for-what + candlewax concordance]
 
@@ -364,9 +153,42 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Added:** [[log-archive]] — entries 1–145 (2026-04-09 → 06-14) moved verbatim; log.md keeps a phase digest + last ~10 entries.
 **Updated:** AGENTS.md log section — entry budget (~5 pointer lines), mechanical rotation trigger (>15 entries), no claim without a link.
 
+## [2026-07-11 | bc4eb386 | partnership wall — cumulative record to measurement spine]
+
+**Touched pages:** [[partnership-wall-research]] [[partnership-value]] [[partnership-research-gates]] [[the-wall]] [[consumption-ledger]] [[arena]] [[forge]] [[champion]]
+**Added:** [[partnership-failure-atlas-v0]] [[world-sampler-mrv-audit]] [[partnership-decision-record-v1]] [[sources/bc4eb386]]
+**Measured/built:** five-way 75,079-action join + 114-source seam inventory; legacy MRV malformed/bias mechanisms; rejected uniform-rejection repair; exact completion-count sampler; replay-verified Arena records with C0 policy and leakage fingerprints.
+**Frontier:** CUDA/MPS sampler performance, historical exposure, two-block C0 reproduction, forced causal arms, and information-reactive fixed/shuffled partnerships remain open; no successor architecture selected.
+
+## [2026-07-11 | a2bb0437 | result vocabulary — partnership remains untested]
+
+**Touched pages:** [[partnership-wall-research]] [[partnership-failure-atlas-v0]] [[world-sampler-mrv-audit]] [[partnership-research-gates]] [[sources/a2bb0437]]
+**Updated:** archive insufficiency is not a partnership null; three no-flip sampler fixtures are a bounded observation; the confounded `~6.8 Q` estimate stays retired; failed uniform rejection is the genuine negative design result.
+**Frontier:** no negative or null result about partnership value has been measured.
+
+## [2026-07-11 | 5f314d2b | partnership research review surface]
+
+**Touched pages:** [[partnership-wall-research]] [[sources/5f314d2b]] [[index]]
+**Updated:** one review-first table now distinguishes measured/built/open/untested/designed work; four ordered gates route baseline cleanup → causal runner → first partnership discriminator → architecture selection.
+**Frontier:** [[partnership-wall-research]] is the single PR-review entrypoint.
+
 ## [2026-07-11 | b89ff635 | docs→wiki consolidation: game-of-42 cluster, engine second pass, forge/burl/lem/gus promotion, entrypoints rewritten]
 
 **Touched pages:** [[texas-42]] [[rules-of-42]] [[suit-algebra-spec]] [[play-phase-algebra]] [[engine]] [[engine-architecture]] [[layer-system]] [[multiplayer-pattern]] [[client-implementation]] [[engine-testing-patterns]] [[intermediate-ai]] [[forge]] [[expected-q-value]] [[the-oracle]] [[gus-qmean-router]] [[router-reality-check]] [[engine-adrs]] (+~30 more: hooks, citations, sha-stamps; waves 2ab1a825, d1f1633d, e2171816, 522779c5, b89ff635)
 **Added:** the game-of-42 cluster (rules + algebra + play phase), the six-topic engine reference cluster, [[gus-qmean-router]] (the no-oracle router that works), [[engine-adrs]]; `sources/` gains pi-oracle-bidding {question,answer}, mccfr-exploration, and the book-second-pass reader reports (relocated from docs/)
 **Updated:** [[router-reality-check]] corrected (replacement hurts, second opinion helps); [[ls-mixture]] mis-expansion fixed (always the arxiv short/long sense); forge foot-guns/folk-wisdom/training-data doctrine promoted into [[forge]] and [[expected-q-value]]; ~12 stale engine-doc claims corrected against current code while writing the cluster
 **Retired:** docs/{adrs,archive,research,wiki-mine} and docs core+theory+rules files (rules-tournament.md unmigrated — erroneous), 36 burl/gus session docs, forge/eq/cpu_deprecated/ (no-legacy violation), SPIKE_REPORT.md, MORNING_DIGEST.md; CLAUDE.md/AGENTS.md/README.md rewritten wiki-first (beads → GitHub issues)
+
+## [2026-07-11 | 4123b2d5 | review repairs — MPS sampler defect + prior-sweep completion + rebalance]
+
+**Touched pages:** [[partnership-wall-research]] [[partnership-research-gates]] [[the-wall]] [[world-sampler-mrv-audit]] [[wiki-entrypoints]] [[burl]] [[forge]] [[sources/4123b2d5]]
+**Added:** [[sources/4123b2d5]] — MPS int64-gather defect in the shipped sampler repair, fixed with per-device uniformity regressions.
+**Updated:** prior sweep completed ([[w42-champion-selfplay-fixed-point]], [[lamir1-ceiling]], [[strategy-fusion]], [[past-belief-future-direction]], [[pi-opp-head]], Plunge/Splash); clairvoyance decomposition registered as gate 2; partnership reframed as one registered direction on [[the-wall]]; `~6.8 Q` resolved-question entry rewritten as a split; source-digest correction shrunk to a one-line qualifier.
+**Frontier:** CUDA benchmark, exposure scan, two-block C0 reproduction, and the clairvoyance bound precede the causal runner.
+
+## [2026-07-11 | c7f74f5c | measurement-ready frontier — infrastructure before path selection]
+
+**Touched pages:** [[partnership-wall-research]] [[partnership-value]] [[partnership-research-gates]] [[the-wall]] [[wiki-entrypoints]] [[index]]
+**Added:** [[sources/c7f74f5c]] — review correction and domain synthesis behind the cleaned PR frontier.
+**Updated:** Q-mean is restored as bounded positive consumer evidence; natural policy legibility is separated from sparse intentional signaling; wall promotion is separated from the additional fixed-vs-shuffled partnership criterion.
+**Frontier:** PR 39 delivers trustworthy measurement infrastructure and an evidence ledger; no next experiment, causal microgame, or successor architecture is selected.

@@ -82,8 +82,9 @@ def generate_eq_games_gpu(
                    enumeration_threshold)
         device: Device to run on ('cuda')
         greedy: If True, always pick argmax(E[Q]). If False, sample from softmax.
-        use_mrv_sampler: If True (default), use MRV-based sampler (guaranteed valid).
-                        If False, use rejection sampling.
+        use_mrv_sampler: Legacy flag. If True (default), use the exact
+                        completion-count sampler exposed as WorldSamplerMRV.
+                        If False, use the older fixed rejection sampler.
         exploration_policy: Optional exploration policy for stochastic action selection.
                           If provided, overrides greedy parameter.
         posterior_config: Optional config for posterior weighting. If provided and enabled,
@@ -361,7 +362,8 @@ def generate_eq_from_snapshots(
         n_samples: World samples per decision (ignored in adaptive/enumeration modes).
         device: Device to run on ('cuda', 'mps', or 'cpu').
         greedy: Greedy action selection if True.
-        use_mrv_sampler: MRV-based sampler if True, rejection sampler if False.
+        use_mrv_sampler: Legacy flag selecting the exact completion-count
+                         sampler if True, older fixed rejection sampler if False.
         exploration_policy: Optional stochastic exploration policy.
         posterior_config: Optional posterior-weighting config.
         use_enumeration: Exact enumeration for late-game positions.

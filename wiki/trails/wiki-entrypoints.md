@@ -2,7 +2,7 @@
 title: Wiki Entrypoints
 kind: trail
 first_seen: local-2026-05-03
-last_updated: local-2026-07-06
+last_updated: c7f74f5c
 status: active
 ---
 
@@ -25,11 +25,19 @@ Start with one of these when the user names a major workstream:
 | [[book-strategy-player]] | multi-step book-plan architecture, algebraic spec, strategy-selector data, and W42 planning-aware validation |
 | [[jud]] | the unified belief-conditioned core direction; bidding+play as one act |
 | [[champion]] | the jud v1 capstone build — zero-adapter, greedy 1-ply value play, oracle-free at runtime |
+| [[partnership-wall-research]] | the post-Jud evidence map, measurement spine, result vocabulary, competing explanations, and architecture-withholding gates |
 
-**The actual frontier since June 2026** is the jud v1 / Zeb-protocol capstone
-(`afd4802`, `622c1a1`, `1143ebb`, `bdebb82`, `3ac03de`) — start at [[jud]] or [[champion]],
-not at the hubs above alone, which predate it. See `wiki/log.md`'s 2026-07-06 entries for
-the graded verdict (E[Q] n=10 undefeated at pure play).
+**The measured baseline since June 2026** is the jud v1 / Zeb-protocol
+capstone (`afd4802`, `622c1a1`, `1143ebb`, `bdebb82`, `3ac03de`): start at
+[[jud]] or [[champion]] for the graded policy. **The goal page** is
+[[the-wall]]: it states the goal, the goals-vs-instruments hierarchy, and
+every registered direction — jud v2, the partnership/coordination family,
+the contextual distribution consumer — with the gates that select among
+them. [[partnership-wall-research]] carries the shared measurement spine and
+the coordination family's unresolved evidence: start there when the question
+is what can now be measured, what remains confounded, or what a later mechanism
+must demonstrate, not as a selected experiment or the default answer to what
+matters.
 
 ## Current trails
 
@@ -38,6 +46,9 @@ the graded verdict (E[Q] n=10 undefeated at pure play).
 - [[w42-book-validation]] — how the Winning 42 book harvest, chapter pages,
   claim ledger, phase sweeps, utility-lens work, Lens v1, and
   planning-aware frontier fit together.
+- [[partnership-wall-research]] — how Forge, E[Q], Gus, Burl, W42, Champion,
+  Jud, and the book constrain the smallest next experiments without selecting
+  CFR, a larger network, an LLM, a symbolic library, or Jud v2 in advance.
 
 ## Query shortcuts
 

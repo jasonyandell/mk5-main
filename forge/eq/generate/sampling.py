@@ -39,14 +39,15 @@ def sample_worlds_batched(
         sampler: Pre-allocated WorldSampler or WorldSamplerMRV
         n_samples: Number of samples per game
         max_pool_size: Largest pool (unseen dominoes) across the batch, if the
-            caller already knows it. Passing it lets the MRV sampler skip a
-            GPU->CPU sync; the sampled worlds are identical either way.
+            caller already knows it. The legacy-named MRV sampler validates
+            this hint against the tensor-derived size.
 
     Returns:
         [n_games, n_samples, 3, 7] opponent hands
 
     Note:
-        WorldSamplerMRV is guaranteed to produce valid samples.
+        ``WorldSamplerMRV`` now uses exact suffix-completion counts internally.
+        It samples valid assignments uniformly without rejection.
     """
     n_games = states.n_games
     device = states.device
@@ -80,7 +81,7 @@ def sample_worlds_batched(
 
     # Convert pool_masks to pool lists with padding: ascending domino IDs first,
     # then -1 padding — byte-identical to the historical per-game loop, so the
-    # rejection sampler (order-sensitive) sees the same input.
+    # legacy WorldSampler rejection path (order-sensitive) sees the same input.
     # Sort trick: valid slots keep their domino ID, empty slots become 99, an
     # ascending sort packs the IDs to the front, then 99 -> -1.
     pool_vals = torch.where(pool_masks, all_dominoes, torch.full_like(all_dominoes, 99))  # [N, 28]

@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: local-2026-07-10
+last_updated: bc4eb386
 status: active
 ---
 
@@ -313,6 +313,9 @@ games) — the bidding crown wasn't hiding behind the distillation.
 
 ## Links
 
+- [[partnership-wall-research]] · [[partnership-research-gates]] — the
+  measurement and causal gates that now stand between v1's play result and any
+  Jud-v2-shaped build
 - [[w42-jud-v1]] — v1 built and graded: the one organ for bid + play; unification holds
   at the auction, mechanism-limited at play (JS1 search PASS +2.28, JP3/JS3 falsified);
   the policy-conditional pricing law; the −4.37 → −1.43 oracle-free trajectory

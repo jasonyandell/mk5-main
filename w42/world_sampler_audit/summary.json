@@ -1,0 +1,119 @@
+{
+  "schema_version": "w42.world-sampler-audit.v1",
+  "status": "complete",
+  "run": {
+    "repo_head_before_worktree_changes": "233b7dc55c82ab59700e25b9b18b32b017b68d25",
+    "command": "python -m w42.world_sampler_audit.audit --samples 100000 --device cpu",
+    "device": "cpu",
+    "sample_count_per_fixture": 100000,
+    "empirical_seed": 20260711,
+    "checkpoint": "forge/models/domino-qval-3.3M-shuffle-qgap0.074-qmae0.96.ckpt",
+    "checkpoint_sha256": "d78eb881d00acaa8564681b4d04c814e2a640677231bcc6d9dcd66b03a5dd1f9"
+  },
+  "verdict": {
+    "uniform_sampler_claim": "falsified",
+    "strongest_mechanism": "MRV can reach an active seat with zero candidates; all-false argmax injects domino 00 instead of rejecting or backtracking",
+    "historical_fixture_invalid_probability_exact": 0.3333333333333333,
+    "historical_fixture_invalid_probability_empirical": 0.33449,
+    "valid_world_bias_also_exists": true,
+    "max_valid_world_tvd_in_panel": 0.03333333333333331,
+    "max_primary_action_value_shift_q": 4.619098027547199,
+    "max_primary_valid_conditional_action_value_shift_q": 0.0011954042646618035,
+    "argmax_flips_in_three_fixture_panel": 0,
+    "historical_6_8_q_status": "not directly comparable: the surviving note omits action, N, RNG, and representation parity",
+    "corpus_wide_corruption_status": "not estimated by this three-state causal panel"
+  },
+  "instrument": {
+    "exact_reference": "uniform enumerate_worlds_cpu over remaining-only hands and production void inference",
+    "structural_reference": "analytic probability recursion emulating MRV tie-breaking and all-false argmax fallback",
+    "live_check": "seeded CPU WorldSamplerMRV empirical frequencies",
+    "primary_q_encoding": "production remaining-only representation with canonical ascending opponent slots",
+    "q_sensitivity_control": "reconstructed full initial 4x7 deals",
+    "historical_burl_encoding_confounded": true,
+    "current_burl_encoding_parity": "fixed in surrounding research session with remaining-only regression test"
+  },
+  "aggregate": {
+    "live_sampler_matches_analytic_mrv": true,
+    "largest_live_vs_analytic_standardized_residual": 2.7712068183240657,
+    "all_sampled_worlds_valid": false,
+    "dead_end_fallback_detected": true,
+    "valid_world_bias_detected": true,
+    "max_uniform_vs_mrv_tvd": 0.3333333333333333,
+    "max_seat_domino_marginal_error": 0.3333333333333333,
+    "primary_argmax_flips": 0,
+    "full_initial_control_argmax_flips": 0
+  },
+  "fixtures": [
+    {
+      "name": "historical-seed-900013-p20",
+      "role": "historical reproduction fixture",
+      "exact_world_count": 12,
+      "analytic_dead_end_probability": 0.3333333333333333,
+      "analytic_invalid_mass": 0.3333333333333333,
+      "empirical_invalid_fraction": 0.33449,
+      "uniform_vs_mrv_tvd": 0.3333333333333333,
+      "valid_conditional_tvd": 0.0,
+      "largest_marginal_error": {
+        "relative_opponent": 2,
+        "absolute_seat": 1,
+        "domino": "00",
+        "uniform_probability": 0.0,
+        "mrv_probability": 0.3333333333333333
+      },
+      "primary_actions": [
+        {
+          "domino": "00",
+          "uniform_eq": 3.569197416305542,
+          "mrv_eq": 7.985245015886095,
+          "shift_q": 4.416047599580553
+        },
+        {
+          "domino": "21",
+          "uniform_eq": 17.321733792622883,
+          "mrv_eq": 12.702635765075684,
+          "shift_q": -4.619098027547199
+        }
+      ],
+      "uniform_best": "21",
+      "mrv_best": "21",
+      "argmax_flipped": false,
+      "valid_conditional_max_shift_q": 0.0,
+      "full_initial_control_max_shift_q": 2.8167638248867455
+    },
+    {
+      "name": "late-panel-seed-900017-p20",
+      "role": "valid-output structural-bias fixture",
+      "exact_world_count": 60,
+      "analytic_dead_end_probability": 0.0,
+      "analytic_invalid_mass": 0.0,
+      "empirical_invalid_fraction": 0.0,
+      "uniform_vs_mrv_tvd": 0.03333333333333331,
+      "valid_conditional_tvd": 0.03333333333333331,
+      "max_marginal_error": 0.03333333333333349,
+      "primary_max_shift_q": 0.0011954042646618035,
+      "uniform_best": "65",
+      "mrv_best": "65",
+      "argmax_flipped": false
+    },
+    {
+      "name": "late-panel-seed-900029-p20",
+      "role": "symmetric null fixture",
+      "exact_world_count": 30,
+      "analytic_dead_end_probability": 0.0,
+      "analytic_invalid_mass": 0.0,
+      "empirical_invalid_fraction": 0.0,
+      "uniform_vs_mrv_tvd": 0.0,
+      "valid_conditional_tvd": 0.0,
+      "max_marginal_error": 0.0,
+      "primary_max_shift_q": 0.0,
+      "uniform_best": "52",
+      "mrv_best": "52",
+      "argmax_flipped": false
+    }
+  ],
+  "next_boundary": {
+    "sampler_repair": "replace greedy no-backtrack fallback with a completion-aware uniform sampler or fail fast; validate against exact enumeration before corpus use",
+    "historical_impact": "audit sampled historical corpora by state for dead-end probability and valid-world TVD before claiming corpus-wide corruption",
+    "decision_harm": "mine exact late-hand states with small Q gaps to test whether the demonstrated output errors flip action rank"
+  }
+}
