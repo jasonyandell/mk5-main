@@ -2,7 +2,7 @@
 title: Jud — the unified belief-conditioned core
 kind: entity
 first_seen: local-2026-06-14
-last_updated: bc4eb386
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -303,6 +303,12 @@ bidder over oracle play (`margin:wp`(head_8)+`lens:ev`, [[champion]]). v2's cue
 is now concrete: a bigger leaf trained on **per-move** targets (E[Q] distilled
 as a bootstrap, the solve-as-bootstrap law) plus opponents-in-rollout.
 
+[[belief-weighted-jud-mcts]] preserves a distinct consumer hypothesis over the
+same result: JudSearch proved that search can use the post-trick leaf, while
+the failed worlds sweep says flat sample count is not enough. Adaptive MCTS can
+test deeper allocation; information-set node sharing and mid-tree belief
+updates supply the structural increment that determinized JudSearch lacks.
+
 **Zeb-protocol reconfirmation (2026-07-06, `afd4802`).** A further paired test
 (dropped contracts, bid30 both sides, seed 7000000, 256 games) holds the line:
 `judsearch` −1.39 [−1.75,−1.00] and `judplay` −2.73 [−3.04,−2.43] both still
@@ -319,6 +325,10 @@ games) — the bidding crown wasn't hiding behind the distillation.
 - [[w42-jud-v1]] — v1 built and graded: the one organ for bid + play; unification holds
   at the auction, mechanism-limited at play (JS1 search PASS +2.28, JP3/JS3 falsified);
   the policy-conditional pricing law; the −4.37 → −1.43 oracle-free trajectory
+- [[belief-weighted-jud-mcts]] — surviving consumer hypothesis: adaptive Jud
+  search with belief particles, information-set node identity, and mid-tree
+  inference; J0/J1/J2/J3/J4 separates root belief, depth, information-set
+  updates, and convention
 - [[w42-jud-v0]] — v0 built and graded (P2 pass / P1 miss→loop-recovered / P3 pass);
   the recipe-fork and A2 denial-bidding findings
 - [[w42-plateau-probe]] — the parity plateau broken: 3× data/round carries the bidder

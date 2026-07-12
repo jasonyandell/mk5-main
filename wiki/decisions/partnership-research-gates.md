@@ -2,7 +2,7 @@
 title: Partnership Research Gates
 kind: decision
 first_seen: bc4eb386
-last_updated: d5816915
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -31,6 +31,8 @@ imitation from substituting for higher marks.
 | Sender-by-decoder interaction improves fixed-pair marks beyond shuffled pairs after opponent decoding is enabled. | Put the demonstrated convention overlay and partner/opponent models inside the interactive rollout; [[w42-book-second-pass|Winning 42]] supplies coordinated initialization while a learned fallback supplies the complete policy. | Double-dummy agreement alone, belief improvement without a sender-by-reader interaction, or a partner-only gain erased by opponent leakage. |
 | Persistent state wins only in merged-information or partner-visible plan fixtures. | Add the smallest recurrent option/plan state that carries the demonstrated variable. | Lift exists only in perfect-information worlds already priced by [[forge|Forge]] Q. |
 | Full PDF shape changes exact contextual decisions and improves held-out marks. | Add a role/score/future-information-conditioned distribution consumer. | A fixed risk collapse or diagnostic-only PDF difference. |
+| J2 adaptive Jud MCTS improves over J1 belief-weighted current-trick JudSearch at matched particles and leaf budget. | Use the adaptive determinized consumer from [[belief-weighted-jud-mcts]] for the demonstrated tactical depth/allocation gain. | More simulations reproduce the JS2 worlds-sweep plateau without a held-out marks gain. |
+| J3 information-set nodes with mid-tree belief updates improve over J2 determinized trees. | Promote the information-set MCTS consumer over the demonstrated blueprint and Jud leaf. | Information-set sharing adds no held-out marks beyond determinized depth. |
 | A passing mechanism still requires information-set consistency that belief-conditioned rollout cannot supply. | Test bounded information-set resolving or CFR on the demonstrated microgames. | No residual inconsistency after the simpler consumer is installed. |
 | A per-move-supervised leaf must also serve as a look-ahead evaluator. | Bounded CFR+ / multi-valued states over the demonstrated microgames — the repair Kubíček & Lisý specify for distilled leaves ([[lamir1-ceiling]]). | Look-ahead gains already achievable with per-move targets alone, or no look-ahead consumer passes its own gate. |
 | An LLM selector beats deterministic and small learned selectors on the same microgames and passes reasoning verification. | Use the LLM only at the narrow selection seam it wins. | Better narration, rationale agreement, or tool use without marks lift. |

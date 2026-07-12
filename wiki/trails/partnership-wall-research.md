@@ -2,7 +2,7 @@
 title: Partnership Wall Research
 kind: trail
 first_seen: bc4eb386
-last_updated: d5816915
+last_updated: local-2026-07-12
 status: active
 ---
 
@@ -266,6 +266,7 @@ result about partnership value.
 | Auction decoder x role/order x score | Auction-conditioned [[gus|Gus]] gained `+2.59pp`; realized-value bidding is the [[champion]]'s only demonstrated marks gain; [[w42-book-second-pass]] supplies bid-to-hand and score hypotheses. | Score-conditioned play was negative, the pass-model pilot was null, and book conventions may be population-specific. [[w42-champion-selfplay-fixed-point]] found a converged belief-conditioned bidder still lost by pricing double-dummy P(make). | Information gain, role/order semantics, score use, and realized-outcome pricing have not been attributed separately. |
 | Action-derived inference and partnership legibility | Table play naturally reveals information about holdings, priorities, and intent relative to a partner's known policy; [[w42-book-second-pass]] records choice-derived inference and explicit conventions. [[convention-aware-blueprint-search]] preserves the book as a possible coordinated sender/receiver initialization rather than waiting for unilateral search to invent a code. | Most informative actions are selected because they play well, not because they are deliberate messages. Intentional reliable signals are sparse; simple action-to-intent rules are noisy; book conventions may be incomplete or population-specific; no result measures their aggregate contribution to marks. | Natural policy legibility, explicit convention, partner-specific familiarity, generic good-play inference, and opponent decoding remain distinct and unmeasured. |
 | Information-set plan persistence | [[w42-book-second-pass]] supplies concrete multi-trick sequences. | [[forge|Forge]] Q already prices ordinary within-world plans; [[w42-jud-v1|JudSearch]] captures current-trick continuation; [[book-strategy-player|BookStrategyPlayer]] never ran. | Ordinary continuation, cross-world policy consistency, and partner-visible intent remain separated in theory but not evidence. |
+| Belief-weighted Jud MCTS | [[w42-jud-v1|JudSearch]] improved greedy Jud play by `+2.28` marks/game; its worlds sweep added only `+0.11`, so flat sample count was not the lever. [[gus-qmean-router]] keeps belief-sampled candidate generation in the positive ledger. | Zeb MCTS never beat E[Q] n=10 at pure play; every LAMIR-1 look-ahead mode lost to direct `pi_me`; a determinized MCTS tree retains strategy fusion. | Adaptive depth, information-set node identity, mid-tree belief updates, leaf fitness, and convention response remain separable and unmeasured. See [[belief-weighted-jud-mcts]]. |
 | Contextual distribution consumer | Full action PDFs exist; [[gus-drama-atlas]] localizes uncertain, fragile, high-impact opening decisions; [[past-belief-future-direction]] describes a richer meta-strategy surface. [[gus-qmean-router]] is bounded positive evidence for selective consumption. | No tested fixed collapse beat EV, score-conditioned play lost, and [[burl]]'s distribution-policy result is confounded. | The project has not shown when distribution shape changes a valuable decision or full-match marks. |
 
 No row is the current experiment. The ledger prevents a later choice from
@@ -310,6 +311,33 @@ durable place in the ledger because it is structurally distinct, buildable from
 existing pieces, and capable of producing mechanism-specific evidence even
 when individual conventions vary.
 
+### Belief-weighted Jud MCTS — why it survives
+
+[[belief-weighted-jud-mcts]] is the natural search consumer joining Jud's
+positive current-trick result to the information semantics above. JudSearch
+already established that search can turn the realized-value leaf into a much
+better move ranking (`+2.28` marks/game over greedy play). Doubling worlds did
+almost nothing; MCTS changes adaptive branch allocation and continuation depth,
+not merely sample count.
+
+The decisive fork is node identity. Root-belief determinized MCTS is deeper
+JudSearch and may add tactical value, but its separate world trees retain
+strategy fusion. Information-set MCTS shares action statistics across worlds
+the actor cannot distinguish and updates later-seat beliefs after simulated
+public actions. That version can price information-set consistency, action-
+derived inference, and partner response.
+
+The resulting stack is compact:
+
+`belief particles -> information-set MCTS -> blueprint policy -> Jud V_realized leaf`
+
+The nested J0/J1/J2/J3/J4 decomposition on the topic page separates current
+JudSearch, root belief weighting, adaptive determinized depth, information-set
+belief updates, and the book/learned convention layer. Zeb and LAMIR remain
+relevant prior evidence, but neither tested this combination. The idea earns
+research-trail visibility because its strongest components have independent
+project evidence and its structural increment has a clean ablation.
+
 ## Architecture and build remain withheld
 
 [[partnership-research-gates]] records what evidence would make an architecture
@@ -330,4 +358,4 @@ agreement remain instruments.
 [[w42-book-second-pass]] [[w42-jud-v1]] [[w42-champion-selfplay-fixed-point]]
 [[lamir1-ceiling]] [[strategy-fusion]] [[past-belief-future-direction]]
 [[pi-opp-head]] [[world-sampler-mrv-audit]]
-[[convention-aware-blueprint-search]]
+[[convention-aware-blueprint-search]] [[belief-weighted-jud-mcts]]
