@@ -271,6 +271,11 @@ result about partnership value.
 No row is the current experiment. The ledger prevents a later choice from
 forgetting positive evidence, contrary evidence, or missing instruments.
 
+[[convention-aware-blueprint-search]] preserves one unbuilt architecture that
+joins action-derived inference, policy legibility, and information-set
+continuation through an agreed blueprint. It is IDEATED and unselected; the
+page records both the proposal and its load-bearing project-record corrections.
+
 ## Architecture and build remain withheld
 
 [[partnership-research-gates]] records what evidence would make an architecture
@@ -291,3 +296,4 @@ agreement remain instruments.
 [[w42-book-second-pass]] [[w42-jud-v1]] [[w42-champion-selfplay-fixed-point]]
 [[lamir1-ceiling]] [[strategy-fusion]] [[past-belief-future-direction]]
 [[pi-opp-head]] [[world-sampler-mrv-audit]]
+[[convention-aware-blueprint-search]]

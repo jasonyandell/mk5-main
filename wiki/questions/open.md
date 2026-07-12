@@ -113,3 +113,7 @@ Format:
 - **Q:** What does the missing book text say — pages 181–182 and 185–186 are absent from the OCR, the ch 16 four-trump table is truncated (37%/52% conditionals cut mid-row), and worked hands 1–14 are image-only diagrams with no prose reconstruction?
   - Raised: `5e3f3245` ([[w42-book-second-pass]] §Proposed experiments, item 9)
   - Context: Re-scan via the Kindle CDP pipeline (`scratch/winning42/`); the hand diagrams need prose reconstruction to be replayable as probes.
+
+- **Q:** Can the explicit legal partnership conventions in [[w42-book-second-pass]] serve as the initial agreed blueprint for [[convention-aware-blueprint-search]], without treating the book as an optimal full policy?
+  - Raised: `local-2026-07-12` ([[convention-aware-blueprint-search]])
+  - Context: A SPARTA-style search needs a shared codebook before unilateral deviations can have signaling value. The book supplies concrete but sparse and contextual conventions; a complete blueprint still requires action likelihoods throughout the state space and policy-matched continuation. The architecture remains IDEATED and unselected.

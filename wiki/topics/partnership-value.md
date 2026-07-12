@@ -122,3 +122,4 @@ unless they cross the final fixed-pair marks seam.
 
 [[partnership-wall-research]] [[partnership-research-gates]] [[champion]]
 [[expected-q-value]] [[gus]] [[w42]] [[w42-book-second-pass]]
+[[convention-aware-blueprint-search]]
