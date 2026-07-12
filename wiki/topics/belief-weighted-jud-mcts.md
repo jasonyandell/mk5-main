@@ -1,8 +1,8 @@
 ---
 title: Belief-Weighted Jud MCTS
 kind: topic
-first_seen: local-2026-07-12
-last_updated: local-2026-07-12
+first_seen: f6b691da
+last_updated: f6b691da
 status: active
 ---
 

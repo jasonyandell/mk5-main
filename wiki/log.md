@@ -213,3 +213,10 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Updated:** the surviving structural case now leads; Winning 42 initialization, existing infrastructure, causal attribution, and four-seat inference receive the same weight as the engineering requirements.
 **Corrected:** repeated status caveats no longer imply a negative result; no contrary experiment exists.
 **Frontier:** blueprint search remains one candidate among several, with durable research-trail visibility and no editorial presumption against it.
+
+## [2026-07-12 | f6b691da | belief-weighted Jud MCTS preserved and synthesized]
+
+**Touched pages:** [[belief-weighted-jud-mcts]] [[jud]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/f6b691da]] [[index]]
+**Added:** belief particles → information-set MCTS → blueprint policy → Jud realized-value leaf, grounded by JudSearch's `+2.28` gain and the JS2 worlds-sweep boundary.
+**Separated:** J0-J4 attributes root belief, adaptive depth, information-set updates, and convention value; determinized and information-set MCTS have distinct promotion gates.
+**Frontier:** the idea is a surviving search-consumer hypothesis; Zeb and LAMIR are relevant prior evidence but did not test this combination.

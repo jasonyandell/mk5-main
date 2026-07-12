@@ -119,5 +119,5 @@ Format:
   - Context: Installing the same book overlay on sender and receiver supplies coordinated initialization before unilateral search. The proposed attribution is sender overlay x partner reader x opponent reader; double-dummy value isolates direct technique but does not classify away convention value. Latent opponent book-likeness extends the same design into four-seat action-derived inference. No contrary experiment has been run.
 
 - **Q:** Can belief-weighted information-set MCTS extend JudSearch's demonstrated `+2.28` search gain far enough to beat `lens:ev`, with an additional marks gain attributable specifically to mid-tree belief updates or the shared convention blueprint?
-  - Raised: `local-2026-07-12` ([[belief-weighted-jud-mcts]])
+  - Raised: `f6b691da` ([[belief-weighted-jud-mcts]])
   - Context: J0/J1/J2/J3/J4 separates current-trick JudSearch, root belief weighting, deeper determinized MCTS, information-set node sharing with mid-tree belief updates, and the book/learned blueprint. JS1 supports the search/leaf pairing; JS2 says more flat world samples are not the lever; Zeb and LAMIR did not test this combination.

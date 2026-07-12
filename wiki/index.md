@@ -504,6 +504,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 - [[sources/1a4482fe|1a4482fe]] — 2026-07-12: convention-aware blueprint search preserved as an unbuilt, unselected candidate alongside its project-record corrections and the open Winning 42 seed-convention question
 - [[sources/a6590bf6|a6590bf6]] — 2026-07-12: Winning 42 promoted as a sparse coordinated-initialization candidate with sender/partner/opponent attribution, latent opponent policy types, and no selected build
 - [[sources/d5816915|d5816915]] — 2026-07-12: blueprint-search framing rebalanced around why the hypothesis survives; implementation status retained once, repeated caution removed, and four-seat inference presented as part of the opportunity
+- [[sources/f6b691da|f6b691da]] — 2026-07-12: belief-weighted Jud MCTS preserved as a surviving search consumer; J0-J4 separates root belief, adaptive depth, information-set updates, and convention value
 
 ### Relocated doc sources (2026-07 docs→wiki consolidation)
 
