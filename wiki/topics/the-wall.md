@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: afd4802
-last_updated: 4123b2d5
+last_updated: local-2026-07-11
 status: active
 ---
 
@@ -51,8 +51,8 @@ The full ruled-in/ruled-out record across all mechanisms: [[consumption-ledger]]
 
 ## Registered directions
 
-No successor architecture is selected; each direction below is a thing the
-project knows how to test, and none is the default build. The shared
+No successor architecture is selected; each direction below is a surviving
+explanation, and none is the default build. The shared
 measurement spine — repaired world sampler, canonical decision records,
 two-block C0 reproduction — serves all of them equally
 ([[partnership-wall-research]] Stage 0).
@@ -63,11 +63,12 @@ two-block C0 reproduction — serves all of them equally
   and marks CFR+ over distilled values as the one sanctioned look-ahead path
   never walked.
 - **Partnership/coordination** — the newest instrumented family.
-  [[partnership-wall-research]] stages it (measurement cleanup → clairvoyance
-  bound → causal microgames → [[partnership-research-gates]]) without
-  presuming it causes the wall; its target, [[partnership-value]], is a marks
-  interaction — a mutually legible fixed pair must gain more than the same
-  policies with partners shuffled. Untested in either direction.
+  [[partnership-wall-research]] gives it the same measurement spine and
+  evidence discipline as the other directions without presuming it causes the
+  wall or selecting a next experiment. Its target, [[partnership-value]], is a
+  marks interaction — a mutually legible fixed pair must gain more than the
+  same policies with partners shuffled. Natural policy legibility is broader
+  than sparse intentional signaling; its aggregate value remains untested.
 - **Contextual distribution consumer** — the mode/signal/hedge/gamble
   meta-strategy set of [[past-belief-future-direction]]; its training data
   already sits in the oracle's per-world tensor.

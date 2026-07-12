@@ -8,7 +8,7 @@ For broad orientation, prefer these compact entrypoints before loading the full
 catalog:
 
 - [[topics/the-wall|the-wall]] — **the front door.** The project's central question, stated precisely; every era since January 2026 is an attempt on it and every experiment grades against it. Read next: [[trails/the-wall-biography|the-wall-biography]] (the seven-month narrative, 2025-07-19 → 2026-07-06) → [[topics/consumption-ledger|consumption-ledger]] (every mechanism tried, each verdict with its evidence) (active)
-- [[trails/partnership-wall-research|partnership-wall-research]] — the shared measurement spine (repaired sampler, decision records, C0 reproduction) plus the coordination family's staged program: cleanup → clairvoyance bound → causal microgames → architecture gates; one registered direction on [[topics/the-wall|the-wall]], not the default build (active)
+- [[trails/partnership-wall-research|partnership-wall-research]] — the shared measurement spine (repaired sampler, decision records, joined atlas, C0 provenance), result vocabulary, and unresolved competing explanations; it selects neither the next experiment nor a default build (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: hubs, trails, leaf clusters, and search shortcuts (active)
 - [[entities/texas-42|texas-42]] — the game itself: quick rules plus the game-of-42 cluster — [[topics/rules-of-42|rules-of-42]] (complete ruleset), [[topics/suit-algebra-spec|suit-algebra-spec]] (the formal algebra), [[topics/play-phase-algebra|play-phase-algebra]] (the solved play phase) (active)
 - [[entities/lem|lem]] — rules comprehension, Stage 0 adapters, STaR, and the LEM half of the LEM→Burl handoff (complete)
@@ -335,7 +335,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 
 ## Decisions
 
-- [[decisions/partnership-research-gates|partnership-research-gates]] — withhold CFR, larger nets, LLMs, symbolic strategy libraries, and Jud v2 until a causal microgame makes the corresponding mechanism eligible (active)
+- [[decisions/partnership-research-gates|partnership-research-gates]] — general wall-promotion criteria plus the additional fixed-vs-shuffled requirement for a partnership-value claim; withholds architecture without selecting the next experiment (active)
 - [[decisions/eval-seed-holdout|eval-seed-holdout]] — seeds 900000–909999 permanently held out for eval; never used in training (active)
 - [[decisions/discard-illegal-traces|discard-illegal-traces]] — illegal and parse-fail traces are discarded, not rationalized; illegal_rate becomes a diagnostic metric (active)
 - [[decisions/public-state-block|public-state-block]] — post-trick public state block (dominoes played, count, hand) appended to narration; state visible at the table belongs to the narrator, not the model (active)
@@ -518,7 +518,7 @@ Privacy-curated digests of Jason's own claude.ai user turns, one per pre-wiki er
 
 ## Trails
 
-- [[trails/partnership-wall-research|partnership-wall-research]] — cumulative experimental record and staged research program for turning information into demonstrated partnership marks (active)
+- [[trails/partnership-wall-research|partnership-wall-research]] — cumulative experimental record and shared measurement infrastructure; preserves partnership and other explanations without selecting a path (active)
 - [[trails/the-wall-biography|the-wall-biography]] — capstone of the seven-month archaeology (2025-07-19 → 2026-07-06): the long-form narrative companion to [[topics/the-wall|the-wall]], written over the six era memos and the era-6 reconciliation packets (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: frontier hubs, trails, large leaf clusters, and query shortcuts (active)
 - [[trails/lem-to-burl-handoff|lem-to-burl-handoff]] — thematic walkthrough of the LEM→Burl transition: shared infrastructure, diverging philosophies, open questions inherited (active)

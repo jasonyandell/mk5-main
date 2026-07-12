@@ -2,13 +2,14 @@
 title: Partnership Research Gates
 kind: decision
 first_seen: bc4eb386
-last_updated: 4123b2d5
+last_updated: local-2026-07-11
 status: active
 ---
 
-The project selects architecture only after the causal microgames in
-[[partnership-wall-research]] discriminate among explanations for
-[[the-wall]]. The smallest passing mechanism earns the next build rung.
+The project selects architecture only after evidence discriminates among the
+explanations preserved in [[partnership-wall-research]]. The smallest passing
+mechanism earns the next build rung. This decision records eligibility
+criteria, not a selected experiment or implementation queue.
 
 ## Decision
 
@@ -43,15 +44,16 @@ Every promoted mechanism satisfies all of the following:
 - runtime inputs are public information plus the actor's own hand;
 - value labels match the policy that generated them;
 - role and auction-order effects generalize beyond one seat assignment;
-- fixed and shuffled partner conditions use paired deals;
 - full matches to seven marks reproduce on two held-out seed blocks;
 - predictions, uncertainty bands, and falsifiers are registered before the
   final run;
-- removing the claimed information channel removes the marks advantage.
+- removing the claimed mechanism removes the marks advantage.
 
-[[w42-jud-v1]] makes policy matching load-bearing. [[w42-style-partnership-concept-buckets]]
-makes partner shuffling load-bearing. [[champion-design-review]] makes an
-information-reactive harness load-bearing for signaling and concealment.
+[[w42-jud-v1]] makes policy matching load-bearing.
+[[w42-style-partnership-concept-buckets]] makes partner shuffling load-bearing
+for a partnership-value claim, not for every route through the wall.
+[[champion-design-review]] makes an information-reactive harness load-bearing
+for signaling and concealment claims.
 [[w42-champion-selfplay-fixed-point]] makes realized-outcome pricing
 load-bearing for any auction consumer: its converged belief-conditioned
 bidder lost on marks because it priced double-dummy P(make)
@@ -62,16 +64,15 @@ bidder lost on marks because it priced double-dummy P(make)
 Current rung: [[partnership-failure-atlas-v0]],
 [[world-sampler-mrv-audit]], and [[partnership-decision-record-v1]] land the
 joined archive spine, exact-fixture sampler repair, and future Arena identity.
-The forced-state randomized-arm runner and two-block C0 reproduction remain
-open; no mechanism has passed an architecture gate.
+Two-block C0 reproduction remains open; no research mechanism, causal
+microgame, or successor architecture is selected by this PR.
 
-1. The joined record schema, exact-enumeration audit, and forced-state
-   microgame runner land first.
+1. The joined record schema and exact-enumeration audit land first.
 2. `C0 = margin:wp(head_8) + lens:ev` reproduces with bidder, player, sampler,
    utility, score, role, and partner fingerprints.
-3. One passing causal mechanism enters as a narrow adapter over `C0`.
-4. Fixed-versus-shuffled full matches run against partners and opponents that
-   update from public actions.
+3. A later research decision selects one causal question from the evidence
+   ledger; the current PR does not make that selection.
+4. One passing causal mechanism enters as a narrow adapter over `C0`.
 5. Policy-conditioned values retrain only when the adapter changes the policy
    distribution.
 6. The claimed mechanism is removed in an otherwise identical ablation.
@@ -93,18 +94,25 @@ open; no mechanism has passed an architecture gate.
 - A general plan library remains withheld when Forge Q already prices the
   proposed sequence within each exact world.
 
-## Promotion criterion
+## General promotion criterion
 
 A candidate replaces the full-match champion only when it:
 
 1. beats `margin:wp(head_8) + lens:ev` in paired marks-to-7 matches on two
    held-out seed blocks;
-2. produces a larger advantage with matched than shuffled partners; and
-3. loses that advantage when the demonstrated role/partnership mechanism is
-   removed.
+2. loses that advantage when the demonstrated strategic mechanism is removed.
 
-This criterion selects a role-aware, partnership-aware policy for a strategic
-reason. Interpretability and E[Q] imitation remain instruments.
+This criterion applies to every registered route through [[the-wall]]. It
+selects a policy with a demonstrated strategic marks gain. Interpretability and
+E[Q] imitation remain instruments.
+
+## Additional partnership-value criterion
+
+A partnership claim additionally requires a larger advantage with a matched,
+mutually legible pair than with the same policies and deals under shuffled
+partners, and that interaction must disappear when the claimed partnership
+channel is removed. A gain equal under fixed and shuffled partners may still
+break the wall, but it is not [[partnership-value]].
 
 ## Links
 
