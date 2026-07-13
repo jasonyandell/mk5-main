@@ -206,12 +206,34 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
   per-move-discrimination wall (greedy is mechanism-limited; search recovers 2/3 of the
   gap but not parity; more worlds and better calibration add nothing). The stack went
   −4.37 → −1.43 oracle-free and named v2's target.
-- **v2** — the play wall's two named cues: **bigger leaf + per-move targets** (distill
-  E[Q] as an auxiliary policy/value signal — the solve-as-bootstrap law, oracle as
-  bootstrap not copy) so the leaf can *discriminate* moves, not just *calibrate*
-  positions; and **opponents inside rollouts** updating belief from actions, so
-  signaling gets priced, conventions emerge, and the referee gap tells the story with
-  receipts.
+- **v2** — the play wall's two named cues: **bigger leaf + per-move targets** so the
+  leaf can *discriminate* moves, not just *calibrate* positions; and **opponents
+  inside rollouts** updating belief from actions, so signaling gets priced,
+  conventions emerge, and the referee gap tells the story with receipts.
+
+  "Per-move targets" names two distinct signals that must not be conflated
+  ([[research-lane-selection]] Lane B):
+
+  - **dense ranking auxiliary** — per-legal-action E[Q] (or pairwise E[Q]
+    ordering) distilled from the oracle. Teaches sharp local discrimination;
+    its declared consumer is move ranking (greedy play, search priors). The
+    solve-as-bootstrap law: oracle as bootstrap, not copy. Its ceiling is a
+    better imitator of `lens:ev`.
+  - **primary search value** — per-action realized continuation distribution
+    under a fixed, information-honest rollout policy. Preserves the
+    policy-conditional pricing law; its declared consumer is the search leaf
+    (JudSearch, [[belief-weighted-jud-mcts]], blueprint continuations). A leaf
+    that evaluates continuations must value the policy that will actually
+    produce them — teaching it that future actors receive double-dummy
+    information repeats, in play form, the over-bidder the fixed point already
+    measured ([[w42-champion-selfplay-fixed-point]]).
+
+  The discriminating experiment holds capacity fixed and varies only the
+  supervision — hand-level target vs per-move target — then scales only the
+  winning target ([[partnership-research-gates]] rows 1–2, which v1 left
+  entangled). Passage is a held-out move-ranking or marks gain (legal-action
+  ranking, pairwise ordering, tail regret, greedy marks, JudSearch marks);
+  calibration alone is not passage.
 
 ### jud v1 — the one organ, bid and play, built + graded ([[w42-jud-v1]], `3ac03de`)
 
@@ -300,8 +322,10 @@ out-rank E[Q] n=10's per-move oracle. So the E[Q]-beating edge did **not** live
 in a searchless value net at this capacity; the stack reached −1.43 from −4.37
 oracle-free in one night, and the current best player stays the value-native
 bidder over oracle play (`margin:wp`(head_8)+`lens:ev`, [[champion]]). v2's cue
-is now concrete: a bigger leaf trained on **per-move** targets (E[Q] distilled
-as a bootstrap, the solve-as-bootstrap law) plus opponents-in-rollout.
+is now concrete: a bigger leaf trained on **per-move** targets plus
+opponents-in-rollout — with the two per-move signals (dense E[Q] ranking
+auxiliary vs policy-conditioned realized continuation value) kept distinct by
+consumer, per the ladder note above and [[research-lane-selection]] Lane B.
 
 [[belief-weighted-jud-mcts]] preserves a distinct consumer hypothesis over the
 same result: JudSearch proved that search can use the post-trick leaf, while

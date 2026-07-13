@@ -55,7 +55,10 @@ No successor architecture is selected; each direction below is a surviving
 explanation, and none is the default build. The shared
 measurement spine — repaired world sampler, canonical decision records,
 two-block C0 reproduction — serves all of them equally
-([[partnership-wall-research]] Stage 0).
+([[partnership-wall-research]] Stage 0). [[research-lane-selection]]
+(2026-07-13) selects the next *experiments* — the [[auction-decoder]] and jud
+v2's target-granularity ladder first, the convention factorial after — without
+promoting any architecture past [[partnership-research-gates]].
 
 - **jud v2** — the named-but-unbuilt continuation from [[w42-jud-v1]]: bigger
   leaf, per-move E[Q]-distill targets with the consumer declared,

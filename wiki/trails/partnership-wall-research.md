@@ -33,7 +33,7 @@ direction on [[the-wall]] equally:
 | Historical failure atlas | BUILT | [[partnership-failure-atlas-v0]] joins 75,079 actions / 28,000 decisions and inventories 114 live sources. | It proves archive insufficiency for Champion attribution; it does not measure a partnership null. |
 | Future decision record | BUILT + integration-validated | [[partnership-decision-record-v1]] records public/info/context/world identities, eight separate mechanism sections, and exact policy/artifact/sampler provenance. | A clean C0 smoke retained 644 decisions; live Q/PDF, belief change, action likelihood, plan state, and fixed/shuffled cohort remain unavailable. |
 | Partnership value | UNTESTED | No valid negative, null, or positive partnership result exists. | Requires fixed-versus-shuffled partners and actors that react to public actions. |
-| Research directions | CATALOGED, UNSELECTED | Competing explanations are preserved below with supporting evidence, contrary evidence, and missing instruments. | No causal microgame or next experiment is selected by this PR. |
+| Research directions | SELECTED 2026-07-13 | Competing explanations remain preserved below; [[research-lane-selection]] selects the [[auction-decoder]] and the [[jud]] target-granularity ladder as the primary experiments, with the convention factorial following. | Stage 0 closes before any lane result is graded; if both primary gates fail, selection returns to this ledger. |
 | Successor architecture | INTENTIONALLY UNSELECTED | CFR, larger nets, LLMs, symbolic libraries, and Jud v2 remain candidates, not plans. | Only a mechanism that passes [[partnership-research-gates]] earns a build. |
 
 ## PR boundary — measurement readiness
@@ -269,8 +269,11 @@ result about partnership value.
 | Belief-weighted Jud MCTS | [[w42-jud-v1|JudSearch]] improved greedy Jud play by `+2.28` marks/game; its worlds sweep added only `+0.11`, so flat sample count was not the lever. [[gus-qmean-router]] keeps belief-sampled candidate generation in the positive ledger. | Zeb MCTS never beat E[Q] n=10 at pure play; every LAMIR-1 look-ahead mode lost to direct `pi_me`; a determinized MCTS tree retains strategy fusion. | Adaptive depth, information-set node identity, mid-tree belief updates, leaf fitness, and convention response remain separable and unmeasured. See [[belief-weighted-jud-mcts]]. |
 | Contextual distribution consumer | Full action PDFs exist; [[gus-drama-atlas]] localizes uncertain, fragile, high-impact opening decisions; [[past-belief-future-direction]] describes a richer meta-strategy surface. [[gus-qmean-router]] is bounded positive evidence for selective consumption. | No tested fixed collapse beat EV, score-conditioned play lost, and [[burl]]'s distribution-policy result is confounded. | The project has not shown when distribution shape changes a valuable decision or full-match marks. |
 
-No row is the current experiment. The ledger prevents a later choice from
-forgetting positive evidence, contrary evidence, or missing instruments.
+[[research-lane-selection]] (2026-07-13) selects two rows as the primary
+experiments — auction decoder and target granularity — with the convention
+factorial following. The ledger's purpose is unchanged: it prevents the
+selection from forgetting positive evidence, contrary evidence, or missing
+instruments, and it is where selection returns if the primary gates fail.
 
 Among the surviving architectures, [[convention-aware-blueprint-search]] is
 unusually concrete: it joins action-derived inference, policy legibility, and
@@ -342,8 +345,9 @@ project evidence and its structural increment has a clean ablation.
 
 [[partnership-research-gates]] records what evidence would make an architecture
 eligible; it is not an implementation queue. CFR, a larger network, an LLM, a
-symbolic strategy library, and [[jud|Jud]] v2 remain unselected. No build ladder
-beyond the shared measurement spine is active in this PR.
+symbolic strategy library, and [[jud|Jud]] v2 remain unselected as
+architectures. [[research-lane-selection]] selects the next *experiments*;
+promotion continues to gate through the table unchanged.
 
 The general wall criterion is higher paired held-out full-match marks for a
 demonstrated strategic reason, with the gain removed by the claimed mechanism's
