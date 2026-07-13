@@ -2,8 +2,8 @@
 title: Champion design review — Fable 5's recovered reasoning
 kind: topic
 first_seen: 2026-06-09
-last_updated: 2026-06-14
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 The [[champion]] direction was set in a single design session (2026-06-09,
@@ -75,8 +75,12 @@ These two qualifications were in Fable's reviews, did not make it into
    opportunity. Note #31's "bid-magnitude → belief is dead" is a *different*
    channel; don't conflate it with score → auction-policy.
 
-Both consequences are folded back into [[champion]]'s ladder (#25, #27) so the
-conclusions there carry their caveats.
+Both consequences are folded back into the rung record (#25, #27 on
+[[champion-ladder]]) so the conclusions there carry their caveats.
+
+The review is concluded: its predictions are graded above, its caveats are
+folded into the pages that needed them, and the ladder it designed has been
+walked ([[champion-ladder]]). The page stands as the preserved primary source.
 
 ## Links
 

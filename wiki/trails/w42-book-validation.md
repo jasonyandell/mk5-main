@@ -2,7 +2,7 @@
 title: W42 Book Validation
 kind: trail
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -27,12 +27,51 @@ is a detector inventory and evidence receipt, not a headline topic.
 Core index:
 
 - [[winning42-strategy-measurement]] — chapter inventory and measurement frame.
-- [[winning42-ch01-in-a-nutshell]] through [[winning42-ch16-statistical-odds]] —
-  chapter-level detector and evidence pages.
 - [[at-risk-points]] — Roberson's bidding framework used as a voice and concept
   anchor for bidding and post-commit Q&A.
 
+The sixteen chapter digests (now under `sources/`):
+
+- [[winning42-ch01-in-a-nutshell]] — rule/state accounting: trick winner,
+  follow obligation, count capture, make/set threshold, walkers.
+- [[winning42-ch02-bidding]] — bidding as risk budget: trump suitability,
+  off-risk, duplicate count, bid-only-enough discipline.
+- [[winning42-ch03-bidder-play]] — bidder sequencing: trump pull, reentry
+  preservation, donation windows, setter-pounce creation.
+- [[winning42-ch04-partner-support]] — partner help: safe count donation, lead
+  capture, virtual boss tiles, lead-away damage.
+- [[winning42-ch05-setter-defense]] — setter defense: pounce windows, void
+  creation, count-on-bidder-off, trump-rich setter policy.
+- [[winning42-ch06-concentration-style]] — attention and style: void
+  inference, bid-derived priors, trump attention traps.
+- [[winning42-ch07-taking-every-trick-84]] — bidder-side 84: eligibility,
+  laydown proof, protected offs, straight-off risk.
+- [[winning42-ch08-setting-84]] — defending 84: last-trick weapons, same-suit
+  pairs, protectors, throwaway priority, abandonment.
+- [[winning42-ch09-doubles-no-trump]] — doubles/no-trump regimes: regime
+  strength, count exposure, double protection.
+- [[winning42-ch10-tournament-scoring]] — scoring-objective drift: points vs
+  marks, early terminals, special-bid multipliers.
+- [[winning42-ch11-table-talk]] — legal inference vs illegal information:
+  anti-leakage boundaries, renege detection.
+- [[winning42-ch12-advanced-bidding-playing]] — advanced exceptions: crisis
+  trump, protection stripping, pounce triggers, reputation priors.
+- [[winning42-ch13-optional-variations]] — ruleset gates and contamination
+  guards: Nel-O, Sevens, Plunge/Splash, forced bidding.
+- [[winning42-ch14-history-tournaments]] — tournament and population ecology:
+  partner synergy, opponent adaptation, time management.
+- [[winning42-ch15-celebrities-style]] — player style and partnership:
+  watchfulness, overbid restraint, partner legibility.
+- [[winning42-ch16-statistical-odds]] — statistical validation: exact
+  hand-count, void, double-count, and four-trump enumeration baselines.
+
 ## 3. Phase ladder
+
+Which clock is this: three unrelated numbering families cross this ladder.
+`phase 2/3/4` is the 2026-05-02→03 claim-ledger sweep; bookval-v1
+`wave 1/2` plus `v2`/`v3` are the 2026-05-03 campaign (v2/v3 are utility-lens
+passes, not versions of the v1 corpus); the 2026-06+ [[champion]]/[[jud]]
+rungs are a third clock this trail hands off to.
 
 The W42 validation ladder is best read as phases:
 
@@ -42,7 +81,8 @@ The W42 validation ladder is best read as phases:
   [[w42-strategy-tag-family-ablations]].
 - Phase 2 / claim analysis: [[w42-phase2-statistics-claims-ledger]],
   [[w42-phase2-claim-analysis-matrix]], [[w42-phase2-claim-analysis-harness]],
-  [[w42-phase2-decision-table]], [[w42-claim-analysis-synthesis-report]].
+  [[w42-phase2-decision-table]], [[w42-phase2-setter-pounce-direct-label-probe]],
+  [[w42-claim-analysis-synthesis-report]].
 - Phase 3 / generated counterfactuals and joined rows:
   [[w42-phase3-auction-bid-discipline-corpus]],
   [[w42-phase3-84-seed-mining-corpus]],
@@ -65,6 +105,7 @@ The W42 validation ladder is best read as phases:
 - Book validation v1 / wave 2 paired probes:
   [[w42-bookval-v1-wave2-infra-design]],
   [[w42-bookval-v1-wave2-bid-aware-atlas]],
+  [[w42-bookval-v1-wave2-reentry-preservation]],
   [[w42-bookval-v1-wave2-reentry-v2]],
   [[w42-bookval-v1-wave2-low-trump-trap]],
   [[w42-bookval-v1-wave2-pounce-window-bid30]],
@@ -90,8 +131,9 @@ Use these leaves by question shape:
 | What hidden tiles drive branch shape? | [[w42-phase2-hidden-domino-threat-attribution]], [[w42-powered-branch-atlas-v1]], [[w42-branch-atlas-scaled-v0]], [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] |
 | Which utility wins at one-step play? | [[w42-bookval-v2-utility-lens-synthesis]], [[w42-bookval-v3-utility-argmax-divergence]], [[w42-lens-v1-utility-head-to-head]] |
 | Which book claims need plans, not one-step probes? | [[w42-book-claim-synthesis-and-ai-directions]], [[book-strategy-player]] |
-| What must the planning framework obey? | [[book-strategy-player]]'s compact algebra, plus [[book-strategy-player-recording]] and [[book-strategy-player-phase-1-build]] |
+| What must the planning framework obey? | [[book-strategy-player]] — the compact algebra plus absorbed recording/build contracts (design record; never built) |
 | What data exists? | [[w42-claim-data-inventory]], [[w42-dataset-manifest]], [[w42-wandb-run-comparison-dashboard]], [[w42-wandb-series-logging-standard]] |
+| What baseline should a model probe beat? | [[w42-eq-n10-comparison-slice]] — the reusable `E[Q] N=10` boss-baseline slice |
 
 Older claim-validation leaves remain useful as evidence, but should not be
 loaded first: [[w42-bidder-sequencing-claim-validation]],
@@ -102,9 +144,12 @@ loaded first: [[w42-bidder-sequencing-claim-validation]],
 
 ## 5. Current frontier
 
-[[w42-book-validation-campaign]] is the live campaign surface. The baseline
-state after [[w42-phase4-final-claim-audit]] is that every one of the 64 book
-claims has evidence and/or explicit bounded blockers; no row is ownerless.
+The campaign is dormant: [[w42-book-validation-campaign]] has run nothing
+since Wave 5 (2026-06-13), and research attention moved to the
+[[champion]]/[[jud]] line. The canonical synthesis — the page to send a cold
+reader to — is [[w42-book-claim-synthesis-and-ai-directions]]; the closure
+baseline is [[w42-phase4-final-claim-audit]]: every one of the 64 book claims
+has evidence and/or explicit bounded blockers; no row is ownerless.
 
 Wave 1 added independent audit, utility-lens disagreement, mark-utility,
 hidden-threat ranking, and cross-AI agreement. Wave 2 then produced the first
@@ -124,10 +169,9 @@ spot: many book claims are multi-step plans. [[book-strategy-player]] was the
 route proposed for testing those claims without loading the entire W42 leaf
 pile — a compact algebraic contract (pure Reader/State/Writer decision logic,
 finite strategy library, per-hand `PlanState`, lawful facts, deterministic
-arbitration, replay-pure records), detailed in
-[[book-strategy-player-recording]] and [[book-strategy-player-phase-1-build]].
-It was never built (bead `t42-zrf9` froze `in_progress` 2026-05-04) and is not
-where the project's best-player energy went.
+arbitration, replay-pure records). It was never built (bead `t42-zrf9` froze
+`in_progress` 2026-05-04) and is not where the project's best-player energy
+went.
 
 As of 2026-07-06 the actual frontier is [[jud]] v1 ([[w42-jud-v1]], graded,
 registered-prediction methodology), reached via an intervening Champion

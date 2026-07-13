@@ -2,8 +2,8 @@
 title: Narration
 kind: topic
 first_seen: 2026-04-09
-last_updated: 2026-04-11
-status: active
+last_updated: 2026-07-13
+status: retired
 ---
 
 ## Overview
@@ -75,6 +75,13 @@ This format is narration v3. V1 narrations (without state block) are no longer u
 
 - Whether to restate running count and void information each trick or only at the decision point. **Resolved 7f1994e**: a structured state block is emitted after every trick.
 - Whether the setup block should include full declaration rules or rely on [[rules-adapter]] weights. (?) (lem/narrate/OVERVIEW.md @ a8bccfa)
+
+## Status
+
+Every consumer of this pipeline is now historical: [[lem]] and its [[rules-adapter]]
+/ [[star]] Stage-1 curriculum are retired, and [[burl]] (which drew on the same
+game-state representations) has been dormant since 2026-05-07. The renderer and
+datasets remain in `lem/` but nothing at the current frontier consumes them.
 
 ## Links
 

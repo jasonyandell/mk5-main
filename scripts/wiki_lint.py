@@ -181,15 +181,18 @@ def main():
         if not hop:
             add("RT01", "WARN", rel)
 
-    # --- index coverage (bidirectional) ---
-    idx_targets = {base(t) for t in links_of(pages.get("index.md", ""))}
+    # --- index coverage (bidirectional; catalog = index.md + index-*.md) ---
+    index_files = [r for r in pages if re.fullmatch(r"index(-[\w-]+)?\.md", r)]
+    idx_targets = set()
+    for r in index_files:
+        idx_targets |= {base(t) for t in links_of(pages[r])}
     for rel in sorted(pages):
-        if rel in EXCLUDED or rel in FROZEN or rel in ("index.md", "log.md"):
+        if rel in EXCLUDED or rel in FROZEN or rel in index_files or rel == "log.md":
             continue
         if base(rel) not in idx_targets:
             add("IX01", "ERROR", rel)
     for t in sorted(idx_targets):
-        if t not in basemap:
+        if t not in basemap and not re.fullmatch(r"index(-[\w-]+)?", t):
             add("IX02", "ERROR", f"[[{t}]]")
 
     # --- log rotation ---

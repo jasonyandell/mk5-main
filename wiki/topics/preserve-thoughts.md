@@ -2,8 +2,8 @@
 title: Preserve Thoughts at SFT
 kind: topic
 first_seen: 2026-04-19
-last_updated: 2026-04-25
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview

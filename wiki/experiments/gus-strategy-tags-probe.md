@@ -2,7 +2,7 @@
 title: Gus Strategy Tags Probe
 kind: experiment
 first_seen: 2026-04-30
-last_updated: 2026-04-30
+last_updated: 2026-07-13
 status: superseded
 ---
 
@@ -155,4 +155,4 @@ unlinked from it until this correction. Superseded by the w42 strategy-tag progr
 
 ## Links
 
-[[gus]] · [[topics/student-distillation]] · [[topics/regret-eval]] · [[experiments/gus-probe]] · [[experiments/gus-v3-consistency-full-run]] · [[w42]]
+[[gus]] · [[student-distillation]] · [[regret-eval]] · [[gus-probe]] · [[gus-v3-consistency-full-run]] · [[w42]]

@@ -2,44 +2,45 @@
 title: Blunder Detector (student-feature blunder classifier)
 kind: topic
 first_seen: 2026-04-21
-last_updated: 2026-04-21
+last_updated: 2026-07-13
 status: retired
 ---
 
 ## Overview
 
-The blunder detector is a small `GradientBoostingClassifier` that predicts, from decision-level features, whether [[gus]]'s student will blunder (regret > threshold, typically 8 Q-pts) on a given decision. It is trained on labeled decisions from eval runs and used at inference to gate the [[detect-and-route]] fallback policy (f90682c, 5373223).
+The blunder detector is a small `GradientBoostingClassifier` that predicts, from
+decision-level features, whether [[gus]]'s student will blunder (regret > threshold,
+typically 8 Q-pts) on a given decision. It gates the [[detect-and-route]] fallback
+policy: run the fast student everywhere, escalate flagged decisions to a stronger
+evaluator (f90682c, 5373223).
 
-## Two versions
+## The concept in one line
 
-**v1 — oracle features** (f90682c): trained with oracle E[Q] vectors available. Primarily for analysis.
-- ROC-AUC: 0.926 / PR-AUC: 0.29
-- Dominant features: `oracle_spread` (max−min legal E[Q]) and `oracle_eq_std` — together 77% of importance.
-- At 15% flag rate: 80% recall of blunders. At 25%: 99% recall.
+The student's own uncertainty is a usable blunder signal — `pi_peak` (policy
+confidence) is the top feature in the deployable version — so a detector needs no
+oracle features at inference, only oracle labels at training time.
 
-**v2 — student features only** (5373223): trained using only what is available at inference from the student's own outputs. This was the deployable candidate; it was never wired into champion/arena/forge production (`grep -rl blunder_detector` across the repo returns no hits outside `gus/eval/`).
-- ROC-AUC: 0.839 / PR-AUC: 0.15
-- 28 features: policy (pi_peak, pi_entropy, pi_argmax_margin), V_head scalar, Q_head across K=20 sampled worlds (per-action mean/std/min/max, legal spread, std of means), consistency gaps (V_head vs policy-expected-Q, V_head vs Q_mean_chosen), meta (decision_idx, trick_num, trick_pos, player_rel, legal count, declaration one-hot, voids count), belief (max prob, entropy, high-confidence count).
-- **Top feature: pi_peak (0.19)** — when π_me is uncertain, trigger fallback. Intuitive and directly measurable.
+## Where the results live
 
-## Business case
-
-At 20% flag rate with oracle-argmax replacement:
-- Baseline regret 1.13 → 0.49 (57% reduction, approaching the 0.5-1.0 teacher-noise floor).
-
-Key limitation: student's Q_head spread across worlds is a weaker blunder proxy than oracle spread. Q_head was trained on one random world per forward pass, making its spread signal noisy. Two upgrade paths: multi-world variance regularization during Q_head training, or K=50+ worlds at inference (5373223).
-
-## Training data
-
-Labeled decisions from 3000g corpus eval runs (6k train / 3k test split). Label: `regret > 8 Q-pt` = blunder. Files: `gus/eval/blunder_detector.py` (oracle), `gus/eval/blunder_detector_student.py` (student) (f90682c, 5373223).
+- [[gus-blunder-detector]] — both versions with full numbers: v1 oracle-feature
+  (ROC-AUC 0.926, the ceiling), v2 student-feature (ROC-AUC 0.839, the deployable
+  candidate; 1.13 → 0.49 regret at 20% flag with oracle fallback), plus the
+  ensembles-hurt/router-wins receipt.
+- [[gus-router-pilot]] — end-to-end detect-and-route validation: oracle fallback works,
+  every non-oracle fallback tested there hurts.
+- [[gus-shine-analysis]] — the zero-inference pre-filter that removes ~80% of decisions
+  from the detector's workload.
+- [[gus-qmean-router]] — the later no-oracle router that works, using disagreement
+  shape between direct π and belief-sampled Q-mean rather than pure confidence.
 
 ## Retired
 
-Never wired into champion, arena, or forge. The [[detect-and-route]] architecture it was
-built to gate was itself abandoned when the project pivoted to `jud`/[[champion]] (self-play,
-no CFR+) rather than a distilled-value look-ahead/fallback stack. Kept as a source-backed
-record of the blunder-rate analysis, not a live component.
+Never wired into champion, arena, or forge (`grep -rl blunder_detector` across the repo
+returns no hits outside `gus/eval/`). The [[detect-and-route]] architecture it was built
+to gate was itself abandoned when the project pivoted to [[jud]]/[[champion]] (self-play,
+no CFR+) rather than a distilled-value look-ahead/fallback stack. Kept as a
+source-backed record of the blunder-rate analysis, not a live component.
 
 ## Links
 
-[[gus]] [[regret-eval]] [[detect-and-route]] [[v-pi-decoupling]] [[expected-q-value]] [[champion]]
+[[gus]] [[gus-line]] [[regret-eval]] [[detect-and-route]] [[v-pi-decoupling]] [[champion]]

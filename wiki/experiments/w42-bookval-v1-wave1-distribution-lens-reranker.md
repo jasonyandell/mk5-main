@@ -1,14 +1,12 @@
 ---
+title: "W42 Book Validation v1 — Wave 1 Distribution Lens Reranker"
 kind: experiment
-status: active
+status: complete
 first_seen: 2026-05-03
 bead: t42-ybo6
 parent_epic: t42-4zi6
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 ---
-
-# W42 Book Validation v1 — Wave 1 — Distribution Lens Reranker
-
 ## Summary
 
 Scalar EV disagrees with at least one risk-sensitive utility lens in **64.9% of

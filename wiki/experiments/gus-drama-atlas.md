@@ -2,7 +2,7 @@
 title: Gus Drama Atlas (outcome-variance / fragility / belief-sharpness join)
 kind: experiment
 first_seen: 2026-04-25
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 status: complete
 ---
 

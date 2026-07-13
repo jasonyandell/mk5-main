@@ -2,8 +2,8 @@
 title: w42 Book Validation v1 — Wave 2 Infra Design
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-05-03
-status: active
+last_updated: 2026-07-13
+status: complete
 parent_bead: t42-4zi6
 ---
 

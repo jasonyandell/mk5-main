@@ -3,7 +3,7 @@ title: Auction Decoder v0 — instrument validation
 kind: experiment
 first_seen: 2026-07-13
 last_updated: 2026-07-13
-status: active
+status: complete
 ---
 
 Can a decoder recover hand information from one-round arena auctions — and

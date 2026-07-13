@@ -24,6 +24,10 @@ bot's expected outcome. (lem/OVERVIEW.md @ a8bccfa)
 not wash out in a single game but does in aggregate, and E[Q] is a cleaner signal.
 (lem/OVERVIEW.md @ a8bccfa)
 
+The Stage 0 adapter chain (stage-0 → kerry → v3 → v4 → v5 → v9 → v10) is summarized with
+a comparative table on [[stage-0-adapter-line]]; per-adapter receipts live in
+`experiments/`.
+
 ## Two-stage plan
 
 ### Stage 0 — Rules Adapter

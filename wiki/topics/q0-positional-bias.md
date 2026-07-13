@@ -2,8 +2,8 @@
 title: Q-value model slot-0 positional bias (forge/zeb investigation)
 kind: topic
 first_seen: 2026-01-06
-last_updated: 2026-01-31
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## The anomaly

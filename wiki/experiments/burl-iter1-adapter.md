@@ -1,10 +1,13 @@
 ---
 title: Burl iter-1 LoRA Adapter (mixed)
-kind: entity
+kind: experiment
 first_seen: 2026-04-19
-last_updated: 2026-04-19
+last_updated: 2026-07-13
 status: superseded
+superseded_by: iter3-rules-adapter
 ---
+
+Receipt in the [[burl-adapter-line]].
 
 ## What it is
 
@@ -18,14 +21,14 @@ the held-out eval, but the 5 completed decisions reach 80% bot-match and mean E[
 
 - **Base**: [[gemma-4-e2b]] (`google/gemma-4-E2B-it`)
 - **Corpus**: 30 entries from trimmed-primer rollout (43% K1 on N=30, 0 retry-exhausted)
-- **Primer**: ~500 words (trimmed from 1549-word full primer). See [[decisions/primer-tradeoff]].
+- **Primer**: ~500 words (trimmed from 1549-word full primer). See [[primer-tradeoff]].
 - **Predecessor**: [[burl-iter0-adapter]] trained on the full-primer corpus
 
 (commit message @ 09b841e)
 
 ## Eval results (10-decision held-out)
 
-See [[experiments/burl-iter1-mixed]].
+See [[burl-iter1-mixed]].
 
 | Metric | Spike v2 | Layer 1 | iter-0 | **iter-1** |
 |---|---|---|---|---|
@@ -59,6 +62,6 @@ decisions are the blocker.
 
 ## Superseded
 
-Option 3's spirit was folded into [[topics/rules-as-tools]] and shipped as
+Option 3's spirit was folded into [[rules-as-tools]] and shipped as
 [[iter3-rules-adapter]] (90% bot-match, dbadb5f) — the documented successor on this
 adapter lineage.

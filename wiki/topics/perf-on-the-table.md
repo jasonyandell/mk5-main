@@ -2,9 +2,13 @@
 title: Perf on the table
 kind: topic
 first_seen: 2026-04-26
-last_updated: 2026-04-27
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
+
+The rollup for the 2026-04 Burl perf sprint. The sprint stalled after sprint 2
+(2026-04-28) and never resumed; the "pending re-validation" items below never ran.
+The per-lever findings stand as measured. Resume via [[perf-sprint]].
 
 ## Calibration
 

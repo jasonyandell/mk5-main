@@ -2,8 +2,8 @@
 title: STaR Harness 5-Example Smoke Test
 kind: experiment
 first_seen: 2026-04-10
-last_updated: 2026-04-10
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

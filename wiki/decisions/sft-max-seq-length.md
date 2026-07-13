@@ -2,8 +2,8 @@
 title: "SFT max_seq_length: Set Explicitly, Don't Trust Defaults"
 kind: decision
 first_seen: 2026-04-19
-last_updated: 2026-04-19
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision

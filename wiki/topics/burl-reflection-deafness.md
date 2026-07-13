@@ -2,8 +2,8 @@
 title: burl-reflection-deafness — explicit "why?" prompts get re-routed into the tool ritual
 kind: topic
 first_seen: 2026-05-01
-last_updated: 2026-05-01
-status: retired
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What

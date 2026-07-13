@@ -2,7 +2,7 @@
 title: LAMIR-1 Mode Comparison (direct / v-bootstrap / q-bootstrap / qleaf)
 kind: experiment
 first_seen: 2026-04-22
-last_updated: 2026-04-22
+last_updated: 2026-07-13
 status: superseded
 ---
 
@@ -30,7 +30,7 @@ immediately-post-play states; this is the bottleneck, not opponent simulation qu
 |---|---|---|---|
 | **direct (baseline)** | **0.551** | **76.07%** | v3-10k |
 | v-bootstrap | 2.777 (pre-fix; see below) | 59.46% | Worse than full rollout |
-| lamir1 (argmax opp + V_head) | 2.384 | 62.86% | See [[experiments/gus-lamir1-pilot]] |
+| lamir1 (argmax opp + V_head) | 2.384 | 62.86% | See [[gus-lamir1-pilot]] |
 | q-bootstrap | — | — | Added in 8544fbe; full results in later ingest |
 | lamir1-qleaf | — | — | Added in fb03970; full results in later ingest |
 
@@ -87,4 +87,4 @@ action_slot from states[0].current_player. (commit message @ 566bc4d)
 
 ## Links
 
-[[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-pilot]] · [[topics/regret-eval]] · [[topics/lamir1-ceiling]]
+[[gus]] · [[lamir1]] · [[pimc]] · [[gus-lamir1-pilot]] · [[regret-eval]] · [[lamir1-ceiling]]

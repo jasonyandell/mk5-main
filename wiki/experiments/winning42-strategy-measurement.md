@@ -2,7 +2,7 @@
 title: Winning 42 Strategy Measurement
 kind: experiment
 first_seen: 2026-04-30
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -26,11 +26,11 @@ adversarial buckets, regret metrics, belief-calibration tests, or training examp
 - [[w42-final-empirical-strategy-report]] — first w42 survey synthesis: strategy tags
   help small models, exact substrate claims can be supported, and most tactical claims
   remain context-limited or underpowered until direct detectors and paired tests land.
-- [[w42-book-claim-synthesis-and-ai-directions]] — post-phase-4 synthesis: confirmed
+- [[w42-book-claim-synthesis-and-ai-directions]] — the canonical synthesis: confirmed
   vs unconfirmed claims, distribution-aware E[Q] alternatives, AI/Burl/Gus directions.
-- [[w42-book-validation-campaign]] — live multi-wave campaign (epic `t42-4zi6`) to take
-  all 64 ledger rows from "evidence on slice" to paired counterfactuals on real auctions
-  or injected late states.
+- [[w42-book-validation-campaign]] — the 2026-05 multi-wave campaign (epic `t42-4zi6`)
+  that took ledger rows to paired counterfactuals; dormant since Wave 5, superseded in
+  research attention by [[champion]]/[[jud]].
 
 ## Analysis Catalog Shape
 

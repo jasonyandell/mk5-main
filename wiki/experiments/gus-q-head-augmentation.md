@@ -2,7 +2,7 @@
 title: Gus Q_head Partial-Depletion Augmentation (Path A)
 kind: experiment
 first_seen: 2026-04-22
-last_updated: 2026-04-22
+last_updated: 2026-07-13
 status: complete
 ---
 
@@ -53,4 +53,4 @@ context (path b), a substantially larger project. (gus/MORNING4_STATUS.md @ 5f39
 
 ## Links
 
-[[gus]] · [[experiments/gus-lamir1-piopp]] · [[experiments/gus-lamir1-mode-comparison]] · [[topics/lamir1]] · [[topics/regret-eval]] · [[topics/q-head-augmentation]]
+[[gus]] · [[gus-lamir1-piopp]] · [[gus-lamir1-mode-comparison]] · [[lamir1]] · [[regret-eval]] · [[q-head-augmentation]]

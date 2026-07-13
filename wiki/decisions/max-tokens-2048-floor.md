@@ -2,8 +2,8 @@
 title: max_tokens=2048 is the floor for batched Burl harvest
 kind: decision
 first_seen: 2026-04-24
-last_updated: 2026-07-11
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision

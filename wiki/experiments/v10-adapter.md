@@ -1,10 +1,12 @@
 ---
 title: Stage 0 v10 Adapter (joint rationalization + maskfix)
-kind: entity
+kind: experiment
 first_seen: 2026-04-17
-last_updated: 2026-04-17
+last_updated: 2026-07-13
 status: complete
 ---
+
+Receipt in the [[stage-0-adapter-line]] — its terminal adapter.
 
 ## What it is
 
@@ -17,7 +19,7 @@ loss computation. (commit messages @ 0c7392f, be7efc4)
 HF repo: `jasonyandell/qwen3-1.7b-texas42-stage0-v10`
 
 Jointly trains [[v9-adapter]]'s 14-category comprehension corpus with 331 clean
-rationalizations (scouted from v9, filtered by [[topics/rationalization-verifier]], then
+rationalizations (scouted from v9, filtered by [[rationalization-verifier]], then
 upweighted 10× in the training mix). The 331 examples come from 500 decisions scouted on
 v9 (66% pass rate through the verifier).
 
@@ -34,7 +36,7 @@ Results:
 HF repo: `jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix`
 
 Same 31,307-example corpus and hyperparameters as v10 original, but with completion-only
-SFT loss enabled. See [[decisions/sft-completion-only-loss]].
+SFT loss enabled. See [[sft-completion-only-loss]].
 
 **Root cause of fix**: TRL's `SFTConfig` defaults (`assistant_only_loss=False`) compute
 loss over the full prompt+answer sequence. The ~50-token answer gradient was diluted ~9×
@@ -58,16 +60,7 @@ Capacity or STaR iteration is the next lever, not more SFT signal.
 ## End-of-LEM-replay state
 
 v10-maskfix is the best LEM adapter at the close of the replay. Neither proposed lever
-(capacity — compound 14B + joint training — or STaR on v10/14B) was taken; the actual next
-step was a full mechanism pivot to [[burl]] (see [[lem-to-burl-handoff]]). The
-55/100 bot-match ceiling remains unresolved by either proposed lever — it was never tested
-against them.
-
-## Why the chain stops here
-
-Nothing newer supersedes v10-maskfix within its own lineage — LEM went dormant (`be7efc4`,
-Apr 17) before a v11 was attempted. Zooming out further: as of jud v1, the project's play
-mechanism no longer consumes any LoRA adapter at all. [[champion]] (line ~166) states the
-jud v1 capstone runs "zero adapter," with `judplay` replacing `lens:ev` with greedy 1-ply
-value play, oracle-free at runtime. The chain stopped because the mechanism it fed was
-abandoned project-wide, not because a v11 lost a bake-off.
+(capacity — compound 14B + joint training — or STaR on v10/14B) was taken; the 55/100
+bot-match ceiling was never tested against them. How the line ended — LEM dormancy at
+`be7efc4`, the mechanism pivot to [[burl]], and jud v1's zero-adapter endpoint — is on
+[[stage-0-adapter-line]].

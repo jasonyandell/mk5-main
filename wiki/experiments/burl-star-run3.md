@@ -2,7 +2,7 @@
 title: Burl STaR Run-3 (filter-only, strict pool)
 kind: experiment
 first_seen: 2026-04-25
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 status: complete
 ---
 
@@ -178,7 +178,7 @@ Full report: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_202
 - Postmortem of the 71-row collapse: `scratch/belief_trajectory_rollout/star/POSTMORTEM_002918.md`
 - Live snapshot (run-3b/3c arc): `scratch/belief_trajectory_rollout/star/RUN3BC_LIVE_SNAPSHOT.md`
 - Pre-launch prediction: `scratch/belief_trajectory_rollout/star/run3c_prediction.md`
-- Source digest: TBD `[[sources/<sha>]]` after post-run commit lands
+- Source digest: none — the planned post-run commit never landed before the family went dormant (2026-05-07). Run-3 proper died three times without writing an adapter (see Training §Run-3; the policy response is [[resumable-checkpointing]]); the surviving run-3b/3c artifacts live only in the gitignored `scratch/` paths above.
 
 ## Prediction vs reality (run-3c)
 

@@ -2,7 +2,7 @@
 title: w42 Book Validation v1 — Wave 2.A.3 Reentry Preservation v2 Probe
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-05-03
+last_updated: 2026-07-13
 status: complete
 parent_bead: t42-v9lu
 wave: 2.A.3
@@ -10,6 +10,18 @@ claim_tested: ch03-reentry-preservation
 claim_ledger_impact: context-limited
 predecessor: "[[w42-bookval-v1-wave2-reentry-preservation]]"
 ---
+
+**Reconciliation:** the predecessor
+[[w42-bookval-v1-wave2-reentry-preservation]] returned `underpowered` on
+random-play snapshots and flagged its own consume-over-preserve result as a
+probable measurement artifact. This probe's corrected methodology reproduced
+the same direction (consume > preserve; whole-sample CI now spans zero) and
+localized the significant signal to the late game — so the v1 direction was
+not purely artifact, but the verdict that stands is this page's
+`context-limited`: late game (tricks 5–6) contradicts the book with a CI
+excluding zero, mid-game is underpowered, and the early game — the book's
+primary advice context — has no data in either probe. This page is the current
+reference for `ch03-reentry-preservation`.
 
 ## Summary
 

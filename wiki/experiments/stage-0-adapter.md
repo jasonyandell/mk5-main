@@ -1,11 +1,13 @@
 ---
 title: Stage 0 Adapter
-kind: entity
+kind: experiment
 first_seen: 2026-04-10
-last_updated: 2026-04-11
+last_updated: 2026-07-13
 status: superseded
 superseded_by: kerry-adapter
 ---
+
+Receipt in the [[stage-0-adapter-line]].
 
 ## What it is
 
@@ -46,7 +48,7 @@ Compared to base [[gemma-4-e2b]] on the same prompt (seed 42, fives trump, trick
 | Final answer | Illegal move | Legal and correct |
 | Trump membership | 6-4 called trump under fives | 4-4, 6-4 still called trump (remaining gap) |
 
-(lem/OVERVIEW.md @ 24ae55a; see [[experiments/second-gemma-contact]])
+(lem/OVERVIEW.md @ 24ae55a; see [[second-gemma-contact]])
 
 ## Remaining gap
 

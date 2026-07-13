@@ -2,8 +2,8 @@
 title: "iter-4 preserve_thoughts: Byte-Identical A/B (Null Result)"
 kind: experiment
 first_seen: 2026-04-19
-last_updated: 2026-07-11
-status: retired
+last_updated: 2026-07-13
+status: superseded
 ---
 
 ## Summary
@@ -36,7 +36,7 @@ TRL's `SFTConfig` defaults to `max_seq_length=1024`. Burl's `preserve_thoughts` 
 
 No Burl adapter before iter-5 was trained on complete thought-to-tool-call traces. See [[decisions/sft-max-seq-length]].
 
-**Follow-up:** iter-5 re-runs the A/B with `max_seq_length=4096`. If non-null, this experiment upgrades from "null/retired" to "artifact resolved."
+**Resolution:** the re-run was non-null. [[iter5-e1-rank-sweep]] (+3.3pp at N=26) and [[burl-star-run3]] run-3c (95.9% thought-block emission at N=560) supersede this null — the byte-identical A/B was a truncation artifact, not a preserve-thoughts result.
 
 ## Related pages
 

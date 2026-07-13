@@ -2,8 +2,8 @@
 title: qMAE Plateau (Q-head scaling wall)
 kind: topic
 first_seen: 2026-04-21
-last_updated: 2026-04-22
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview
@@ -12,11 +12,14 @@ qMAE (Q-head mean absolute error) measures how accurately [[gus]]'s Q_head predi
 
 ## The plateau numbers (3k → 10k)
 
-| Metric | 3k games | 10k games | Delta |
-|---|---|---|---|
-| Regret | 1.39 | 0.551 (v3) | −60% |
-| V-MAE | ~10 | ~8 | −20% |
-| qMAE | ~12.3 | ~11.4 | −7% |
+From PRACTICALITIES receipt 18 (41fdb3c):
+
+| Metric | 3k | 10k | Relative Δ |
+|---|---:|---:|---:|
+| Regret (Q-pts) | 1.35 | 0.55 | −59% |
+| Bot-match | 66.4% | 76.1% | +9.7pp |
+| V-MAE | 4.5 | 3.6 | −20% |
+| **qMAE** | **9.4** | **8.7** | **−7%** |
 
 qMAE barely moved while the metrics that matter for play quality improved sharply. The Q_head is a weak link (41fdb3c).
 

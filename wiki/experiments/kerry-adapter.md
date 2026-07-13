@@ -1,11 +1,13 @@
 ---
 title: Kerry Adapter (Stage 0 v2)
-kind: entity
+kind: experiment
 first_seen: 2026-04-11
-last_updated: 2026-04-11
+last_updated: 2026-07-13
 status: superseded
 superseded_by: v3-adapter
 ---
+
+Receipt in the [[stage-0-adapter-line]].
 
 ## What it is
 
@@ -28,7 +30,7 @@ starting point for Kerry-branch [[star]] iterations. (commit messages @ f8cdbe7,
 ## Third contact results
 
 Evaluated on the same prompt used for first and second contact (seed 42, fives trump,
-trick 6). See [[experiments/third-gemma-contact]].
+trick 6). See [[third-gemma-contact]].
 
 | Dimension | Kerry adapter |
 |---|---|

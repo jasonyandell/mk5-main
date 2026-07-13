@@ -2,8 +2,8 @@
 title: Gus v0/v1 Belief Heads
 kind: experiment
 first_seen: 2026-04-20
-last_updated: 2026-04-20
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -55,9 +55,9 @@ chance floor at decision 0 where no observations exist yet. (commit message @ 8d
 
 Ceiling is data, not architecture. The per-decision shape is correct; 100 games is
 insufficient to push mid-game belief above chance. The full 4-head student with
-[[topics/dense-q-supervision]] (3400× denser signal per decision) is the right next step —
-see [[experiments/gus-4head-baseline]].
+[[dense-q-supervision]] (3400× denser signal per decision) is the right next step —
+see [[gus-4head-baseline]].
 
 ## Links
 
-[[gus]] · [[topics/student-distillation]] · [[joint-world-tensor]] · [[experiments/gus-4head-baseline]]
+[[gus]] · [[student-distillation]] · [[joint-world-tensor]] · [[gus-4head-baseline]]

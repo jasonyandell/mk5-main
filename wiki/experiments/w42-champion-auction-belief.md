@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: champion-24-auction-belief
 first_seen: 2026-06-13
-last_updated: 2026-06-13
+last_updated: 2026-07-13
 ---
 
 # w42-champion-auction-belief
@@ -107,7 +107,7 @@ oracle-play arena. The negative arena result is not a shortfall; it is the same 
 
 ## Links
 
-- [[champion]] — rung #24 (Belief v2) + #26 (self-play bridge)
+- [[champion]] — the player; [[champion-ladder]] — rungs #24 (belief v2) and #26 (self-play bridge)
 - [[belief-bayes-ceiling]] — the ~39% play-evidence ceiling the auction beats
 - [[arena]] — the marks A/B (null, #25-consistent)
 - [[gus]] — the belief head this conditions

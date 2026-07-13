@@ -2,8 +2,8 @@
 title: "Chat-Template Fix Validation (Burl N=5)"
 kind: experiment
 first_seen: 2026-04-20
-last_updated: 2026-04-20
-status: superseded
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

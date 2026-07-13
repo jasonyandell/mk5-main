@@ -2,8 +2,8 @@
 title: Zeb Calibration Eval
 kind: experiment
 first_seen: 2026-04-18
-last_updated: 2026-04-18
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

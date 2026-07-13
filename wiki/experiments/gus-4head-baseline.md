@@ -2,8 +2,8 @@
 title: Gus 4-Head Baseline (100g)
 kind: experiment
 first_seen: 2026-04-20
-last_updated: 2026-04-20
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -31,7 +31,7 @@ Next bottleneck is data. (commit message @ da21f52)
 | Q MAE (legal actions) | 18.4 | — |
 
 **Critical finding**: train and eval π_me track within 1-2 points — no overfit.
-The dense [[topics/dense-q-supervision]] regularizes the shared encoder, preventing the
+The dense [[dense-q-supervision]] regularizes the shared encoder, preventing the
 collapse seen in belief-only training. (commit message @ da21f52)
 
 ## Per-decision π_me
@@ -52,8 +52,8 @@ corpora merge transparently at load time.
 
 Data. 100 games insufficient for belief and value to converge. Chunked 1000-game generation
 (MPS can't handle n_games=1000 in one batch — INT_MAX dim limit) enables overnight scaling.
-See [[experiments/gus-v2-voids-1000g]] for the 1000g result.
+See [[gus-v2-voids-1000g]] for the 1000g result.
 
 ## Links
 
-[[gus]] · [[topics/dense-q-supervision]] · [[experiments/gus-v0-v1-belief]] · [[experiments/gus-v2-voids-1000g]]
+[[gus]] · [[dense-q-supervision]] · [[gus-v0-v1-belief]] · [[gus-v2-voids-1000g]]

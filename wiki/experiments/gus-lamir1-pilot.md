@@ -2,8 +2,8 @@
 title: LAMIR-1 Pilot — Argmax Opp π_me + V_head Leaf
 kind: experiment
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: superseded
 ---
 
 ## Summary
@@ -46,12 +46,12 @@ improves action selection. (commit message @ 581bf1f)
 - The failure mode is clearly diagnosed and points to two separable issues:
   opponent simulation quality and leaf evaluator distribution shift
 
-Kept active: this is the first-attempt qualitative record (rollout hurts, damage
-concentrates at trick_pos 0-2) and it is correctly self-scoped to its own commit. The 2.384
-regret number above is this pilot's own reading and is superseded by the post-bug-fix
-canonical value (2.094) in [[experiments/gus-lamir1-mode-comparison]] and [[lamir1-ceiling]] —
-go there for current numbers.
+This page is the first-attempt qualitative record (rollout hurts, damage concentrates
+at trick_pos 0-2), correctly self-scoped to its own commit. The 2.384 regret number
+above is this pilot's own reading and is superseded by the post-bug-fix canonical value
+(2.094) in [[gus-lamir1-mode-comparison]] and [[lamir1-ceiling]] — go there for current
+numbers.
 
 ## Links
 
-[[gus]] · [[topics/lamir1]] · [[topics/pimc]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-v3-consistency-full-run]] · [[topics/lamir1-ceiling]]
+[[gus]] · [[lamir1]] · [[pimc]] · [[gus-lamir1-mode-comparison]] · [[gus-v3-consistency-full-run]] · [[lamir1-ceiling]]

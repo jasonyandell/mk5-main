@@ -2,8 +2,8 @@
 title: Gus Router Pilot (detect-and-route inference)
 kind: experiment
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -31,7 +31,7 @@ Receipt 14 in PRACTICALITIES.md is the money-shot. (commit messages @ eba5103, a
 
 ## Finding 1 — Oracle routing works
 
-0.49 regret at 25% flag matches the projection from [[experiments/gus-blunder-detector]].
+0.49 regret at 25% flag matches the projection from [[gus-blunder-detector]].
 Routing to oracle on flagged decisions is effective and reaches near-teacher-noise floor.
 
 ## Finding 2 — PIMC-Q-K50 hurts (receipt 14 money-shot)
@@ -59,6 +59,10 @@ than K=50). (PRACTICALITIES receipt 14 @ a09ef43)
 Router benefit concentrates on mid-game tricks (decisions 0-12, especially 4, 8, 10)
 where primary regret is 2-6 Q-pts. End-game decisions (24-27) are correctly never flagged.
 
+The variance-regularization prerequisite never ran ([[qmae-plateau]]). The no-oracle
+router that did eventually work took a different shape: a belief-sampled Q-mean second
+opinion ([[gus-qmean-router]], 2026-04-25).
+
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[experiments/gus-blunder-detector]] · [[experiments/gus-scaling-ladder]]
+[[gus]] · [[regret-eval]] · [[gus-blunder-detector]] · [[gus-scaling-ladder]]

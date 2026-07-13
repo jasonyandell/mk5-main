@@ -2,13 +2,25 @@
 title: w42 Book Validation v1 — Wave 2 Reentry Preservation Probe
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-05-03
+last_updated: 2026-07-13
 status: complete
 parent_bead: t42-rwdj
 wave: 2
 claim_tested: ch03-reentry-preservation
 claim_ledger_impact: underpowered
 ---
+
+**Reconciliation:** [[w42-bookval-v1-wave2-reentry-v2]] re-ran this probe on
+oracle-greedy snapshots with highest-pip off-suit selection and a proper
+inference budget (MPS, N=200), correcting all three structural problems named
+below. The v2 verdict is the one that stands for `ch03-reentry-preservation`:
+`context-limited` — overall EV delta −1.23 (CI [−2.62, +0.16], inconclusive),
+but the late-game slice (tricks 5–6, n=60) contradicts the book with a CI
+excluding zero ([−6.76, −1.17], consume strictly better). This page's
+`underpowered` verdict was a statement about its own random-play slice, not
+about the claim; v2 shows the consume-over-preserve direction survives the
+methodology fix, while the book's primary early-game context remains untested
+in both probes. Cite v2, not this page, for the current claim state.
 
 ## Summary
 

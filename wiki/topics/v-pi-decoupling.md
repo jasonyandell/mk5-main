@@ -2,8 +2,8 @@
 title: V/π Head Decoupling
 kind: topic
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview
@@ -32,4 +32,4 @@ The arena pilot (20 games, seeds 900020-900021, v2_voids_3000g_big):
 
 ## Links
 
-[[gus]] [[consistency-regularizer]] [[regret-eval]] [[experiments/gus-arena-pilot]] [[student-distillation]]
+[[gus]] [[consistency-regularizer]] [[regret-eval]] [[gus-arena-pilot]] [[student-distillation]]

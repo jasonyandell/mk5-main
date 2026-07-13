@@ -2,8 +2,8 @@
 title: Haiku 4.5 (Burl reference-trace generator)
 kind: entity
 first_seen: 2026-04-19
-last_updated: 2026-04-19
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is
@@ -50,3 +50,9 @@ aim for" anchor.
 The Anthropic Agent SDK falls back to non-streaming `--print` mode when `prompt` is a
 plain string, which silently breaks in-process MCP RPC. Fix: pass prompt as an async
 iterable of stream-json user messages.
+
+## Status
+
+The reference-trace role concluded with the N=30 run above; no distillation from
+these traces ever ran before the [[burl]] line went dormant (2026-05-07). See
+[[burl-line]].

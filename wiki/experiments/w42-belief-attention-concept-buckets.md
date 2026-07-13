@@ -2,8 +2,8 @@
 title: w42 Belief and Attention Concept Buckets
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-05-02
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

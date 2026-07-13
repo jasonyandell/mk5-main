@@ -27,9 +27,9 @@ direction on [[the-wall]] equally:
 
 | surface | status | what is true now | boundary / next gate |
 |---|---|---|---|
-| Pure-play baseline | MEASURED + REPRODUCED | `P0 = lens:ev` n=10 remains the strongest measured play policy; on the repaired sampler the symmetry sanity is clean and `judsearch:n10(r4)` still loses `-1.42`/`-1.54` on both held-out blocks ([[stage-0-closure]]). | The next challenger is Lane B's per-move-target ladder. |
-| Full-match baseline | MEASURED + REPRODUCED | `C0 = margin:wp(head_8) + lens:ev`; its demonstrated advantage is a bidding gain, reproduced on the repaired sampler: `+0.385 [+0.102,+0.668]` and `+0.486 [+0.199,+0.775]` on the two reserved blocks ([[stage-0-closure]]). | Lane grading is unblocked. |
-| World sampler | BUILT + validated + measured | `uniform-completion-dp-v1` (with the `4123b2d5` MPS `where` fix) passes every per-device regression including CUDA; it is kernel-launch bound (~30 ms/call), so batch width, not device, is the throughput lever, and a C0 block costs ~2× legacy wall time on MPS. Historical exposure: `2.51%` of a 32k reconstructed late-state population carried nonzero legacy malformed mass; decision harm was real but tail-bound — 20 argmax flips in the 200 worst-mass states, regret ≤ `7.37 Q` ([[stage-0-closure]]). | Stage 0 is closed; the remaining denominators (forge E[Q] seeds, arena result states) are optional refinements. |
+| Pure-play baseline | MEASURED + REPRODUCED | `P0 = lens:ev` n=10 remains the strongest measured play policy; on the repaired sampler the symmetry sanity is clean and the strongest learned challenger (`judsearch:n10(r4)`) still loses on both held-out blocks ([[stage-0-closure]]). | The next challenger is Lane B's per-move-target ladder. |
+| Full-match baseline | MEASURED + REPRODUCED | `C0 = margin:wp(head_8) + lens:ev` — the current best player ([[jud]]); its demonstrated advantage is a bidding gain, reproduced on the repaired sampler on both reserved blocks ([[stage-0-closure]]). | Lane grading is unblocked. |
+| World sampler | BUILT + validated + measured | `uniform-completion-dp-v1` (with the `4123b2d5` MPS `where` fix) passes every per-device regression including CUDA; it is kernel-launch bound, so batch width, not device, is the throughput lever. Historical exposure and decision-level harm are quantified — real, rare, tail-bound, not load-bearing ([[stage-0-closure]]). | Stage 0 is closed; the remaining denominators (forge E[Q] seeds, arena result states) are optional refinements. |
 | Historical failure atlas | BUILT | [[partnership-failure-atlas-v0]] joins 75,079 actions / 28,000 decisions and inventories 114 live sources. | It proves archive insufficiency for Champion attribution; it does not measure a partnership null. |
 | Future decision record | BUILT + integration-validated | [[partnership-decision-record-v1]] records public/info/context/world identities, eight separate mechanism sections, and exact policy/artifact/sampler provenance. | A clean C0 smoke retained 644 decisions; live Q/PDF, belief change, action likelihood, plan state, and fixed/shuffled cohort remain unavailable. |
 | Partnership value | UNTESTED | No valid negative, null, or positive partnership result exists. | Requires fixed-versus-shuffled partners and actors that react to public actions. |
@@ -61,11 +61,10 @@ joined, and falsified for the reason it claims.
 The pure-play baseline is [[expected-q-value|E[Q]]] n=10 consumed as
 `lens:ev`. It remains the strongest measured play policy. The full-match
 baseline is `margin:wp(head_8) + lens:ev`: [[jud]]'s realized-outcome bidder
-over the same play policy. It beat the prior `net:wp + lens:ev` stack by
-`+0.38` and `+0.42` marks/game on two reserved seed blocks
-([[w42-plateau-probe]], [[w42-jud-v1]], [[champion]]).
+over the same play policy — the current best player, whose numbers and
+reproduction live on that page.
 
-The demonstrated full-match gain is therefore a bidding gain. No current
+The demonstrated full-match gain is a bidding gain. No current
 result demonstrates a play-side partnership gain. The production
 [[forge]] selector also remains distinct from the validated baseline: its
 `p_make` collapse was not changed to the stronger `lens:ev` collapse found by

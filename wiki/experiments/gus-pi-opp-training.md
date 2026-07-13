@@ -2,8 +2,8 @@
 title: Gus π_opp Training (Schema v2)
 kind: experiment
 first_seen: 2026-04-22
-last_updated: 2026-04-22
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -51,4 +51,4 @@ Useful as a side product for LAMIR-1 rollout quality independent of the V/Q leaf
 
 ## Links
 
-[[gus]] · [[experiments/gus-lamir1-piopp]] · [[topics/lamir1]] · [[joint-world-tensor]]
+[[gus]] · [[gus-lamir1-piopp]] · [[lamir1]] · [[joint-world-tensor]]

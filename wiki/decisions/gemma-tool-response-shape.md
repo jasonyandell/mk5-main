@@ -2,8 +2,8 @@
 title: "Gemma Tool Responses: assistant.tool_responses, not role='tool'"
 kind: decision
 first_seen: 2026-04-20
-last_updated: 2026-04-20
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision

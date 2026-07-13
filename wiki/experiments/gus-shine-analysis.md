@@ -2,8 +2,8 @@
 title: Gus Shine Analysis — Where the Student Is Perfect
 kind: experiment
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -60,4 +60,4 @@ workload. (commit message @ 7a9c720)
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[experiments/gus-blunder-detector]] · [[experiments/gus-router-pilot]]
+[[gus]] · [[regret-eval]] · [[gus-blunder-detector]] · [[gus-router-pilot]]

@@ -2,9 +2,13 @@
 title: Commit Discipline (primer as behavioral scaffold)
 kind: decision
 first_seen: 2026-04-19
-last_updated: 2026-04-19
+last_updated: 2026-07-13
 status: superseded
 ---
+
+> **Superseded by [[iter3-rules-adapter]]** (dbadb5f) — the [[rules-as-tools]] approach
+> (no primer, rules content made callable) shipped at 90% bot-match / 0 retry-exhausted,
+> replacing primer-as-behavioral-scaffold. Detail below.
 
 ## Observation
 

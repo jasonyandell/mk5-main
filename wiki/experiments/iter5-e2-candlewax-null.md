@@ -2,8 +2,8 @@
 title: "iter-5 E2: Candlewax-Aware EQ Didn't Help"
 kind: experiment
 first_seen: 2026-04-19
-last_updated: 2026-04-19
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

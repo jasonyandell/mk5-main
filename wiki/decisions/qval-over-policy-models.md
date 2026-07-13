@@ -2,8 +2,8 @@
 title: "Q-Value Models Supersede Policy Models"
 kind: decision
 first_seen: 2026-01-17
-last_updated: 2026-01-18
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision

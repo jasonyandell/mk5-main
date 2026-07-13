@@ -2,8 +2,8 @@
 title: burl-microscope — Human-in-the-loop Burl recipe workbench
 kind: entity
 first_seen: 2026-05-06
-last_updated: 2026-05-07
-status: superseded
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is
@@ -102,5 +102,6 @@ journaling.
 ## Status
 
 Last commit in this window is `local-2026-05-07`; the whole [[burl]] line went dormant
-the same day and never revisited. Superseded by the [[champion]] / [[w42-jud-v1|jud]]
-pure-NN direction.
+the same day and was never revisited. The instrument works and was never replaced;
+the frontier moved to the [[champion]] / [[w42-jud-v1|jud]] pure-NN direction. See
+[[burl-line]].

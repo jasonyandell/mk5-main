@@ -2,8 +2,8 @@
 title: w42 Raw Public-State Baseline
 kind: experiment
 first_seen: 2026-05-01
-last_updated: 2026-05-01
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

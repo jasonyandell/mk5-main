@@ -2,8 +2,8 @@
 title: Gus Scaling Ladder (100g → 10000g)
 kind: experiment
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -54,7 +54,7 @@ same regret floor. Architecture/data ceiling confirmed at 2000g × 3-7M params.
 2. **Explicit void features barely help once data + model compound.** The transformer
    infers voids attentionally from play tokens.
 3. **Single-step PIMC underperforms direct π_me** (~62% vs ~66%) regardless of K.
-   See [[experiments/gus-lamir-primitive-eval]].
+   See [[gus-lamir-primitive-eval]].
 4. **Decision hardness correlates with student regret.** Highest-regret decisions
    (0, 4, 8, 11, 12, 16) are the same decisions with highest oracle E[Q] spread.
    Student makes honest mistakes on strategically consequential positions. (commit message @ a50c9ef)
@@ -66,13 +66,14 @@ Oracle E[Q] spread (max − min across legal actions) per decision_idx on held-o
 - Uniform-random on dec 0 would give ~6.6 regret; student at 4.0 is doing real
   inference despite zero observable information
 
-## Directions open at this frontier
+## Directions opened here — all subsequently closed
 
-- π_opp head (requires opponent-view oracle queries in corpus regen — ~3× cost)
-- Multi-step LAMIR look-ahead (needs π_opp; see [[topics/lamir1]])
-- Further data scaling (5000g or 10000g; extrapolation: ~0.5-1 Q-pt regret reduction)
-- Decision-difficulty-weighted training
+Three of the four directions ran and closed: the π_opp head was trained (68.57% oracle
+top-1, [[gus-pi-opp-training]]), multi-step LAMIR was built and lost to direct π_me in
+every rollout mode ([[lamir1-ceiling]]), and 10k-game scaling shipped (0.551 regret,
+v3-10k — in the ladder above). Decision-difficulty-weighted training never ran; the
+line pivoted to [[jud]]/[[champion]] instead.
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[topics/pimc]] · [[experiments/gus-v2-voids-1000g]]
+[[gus]] · [[regret-eval]] · [[pimc]] · [[gus-v2-voids-1000g]]

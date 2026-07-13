@@ -45,7 +45,7 @@ Sessions that lack this page invent their own goals (documented instances: the 2
 
 ## Current coordinates (frontier)
 
-From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Bidding validates — jud v0's `margin:wp`(head_8) is the first learned component ever to beat the hand-tuned champion on marks (+0.38 [+0.09,+0.67], +0.42 [+0.12,+0.72]; reproduced on the repaired sampler at [[stage-0-closure]]). Play is mechanism-limited at the leaf: `judsearch` recovers two-thirds of the play gap oracle-free (−3.44 → −1.16) and stops; neither more worlds nor a better-calibrated head closes the rest. Verdict sentence: *a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.*
+From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Bidding validates — jud v0's `margin:wp`(head_8) is the first learned component ever to beat the hand-tuned champion on marks (the current-best-player fact, numbers, and repaired-sampler reproduction live at [[jud]]). Play is mechanism-limited at the leaf: `judsearch` recovers two-thirds of the play gap oracle-free and stops; neither more worlds nor a better-calibrated head closes the rest. Verdict sentence: *a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.*
 
 [[jud-target-granularity]] (2026-07-13) sharpened the coordinates: a dense per-move E[Q] auxiliary at fixed capacity triples the leaf's in-distribution ranking and moves marks **nothing** — and argmaxing that ranking directly plays worse than the calibrated value head. The wall is not "the leaf lacks per-move labels"; it is that ranking-label agreement does not order play strength ([[lamir1-ceiling]]'s mechanism, re-measured on a per-move-supervised head). The unbuilt residuals: per-move continuation values on child states, corpus volume, capacity×target interaction, opponents-in-rollout.
 
@@ -83,5 +83,5 @@ plans are not missing from Forge Q merely because `lens:ev` chooses again next
 turn. The plausible residual is narrower: action-derived inference, role/order
 semantics, partner-visible intent, information-set consistency, contextual
 distribution use, and auction/match-score value. A candidate clears the wall
-only by beating `margin:wp(head_8) + lens:ev` in paired marks for a
-demonstrated strategic reason.
+only by beating `margin:wp(head_8) + lens:ev` (the current best player,
+[[jud]]) in paired marks for a demonstrated strategic reason.

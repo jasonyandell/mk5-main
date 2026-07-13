@@ -2,8 +2,8 @@
 title: Gus v2 at 1000g with Explicit Voids
 kind: experiment
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -31,7 +31,7 @@ The transformer was already inferring voids attentionally from play tokens. (com
 | Q MAE | 12.3 | 12.2 | flat |
 
 Note: comparing v1 vs v2 both at 1000g. The 100g → 1000g scaling alone lifted π_me from
-57.9% ([[experiments/gus-4head-baseline]]) to 66.1%.
+57.9% ([[gus-4head-baseline]]) to 66.1%.
 
 ## Interpretation
 
@@ -42,4 +42,4 @@ a larger model. (commit message @ 3c02d10)
 
 ## Links
 
-[[gus]] · [[experiments/gus-4head-baseline]]
+[[gus]] · [[gus-4head-baseline]]

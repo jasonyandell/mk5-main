@@ -2,8 +2,8 @@
 title: At-risk points — Roberson's bidding framework
 kind: topic
 first_seen: 2026-04-30
-last_updated: 2026-04-30
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What

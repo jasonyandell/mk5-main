@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: champion-26-selfplay
 first_seen: 2026-06-14
-last_updated: 2026-07-06
+last_updated: 2026-07-13
 ---
 
 # w42-champion-selfplay-fixed-point
@@ -126,7 +126,7 @@ never shipped or lives somewhere the audit didn't check.
 
 ## Links
 
-- [[champion]] — the build ladder this is rung #6 of
+- [[champion]] — the player; [[champion-ladder]] — the rung record (rung #26; step 6 of the design build order)
 - [[champion-design-review]] — Fable's design + the two load-bearing caveats (info-blind arena;
   score-conditioning belongs at the auction)
 - [[w42-champion-auction-belief]] — rung #24, the belief this loop iterates

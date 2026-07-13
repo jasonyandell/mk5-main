@@ -2,9 +2,19 @@
 title: w42 Claim Ledger
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
-status: active
+last_updated: 2026-07-13
+status: superseded
 ---
+
+**Superseded as methodology.** The [[jud]] track replaced this status
+vocabulary with registered predictions stated before measurement
+([[w42-jud-v1]]). The populated 64-row ledger this schema produced was carried
+to closure by [[w42-phase2-statistics-claims-ledger]] and audited by
+[[w42-phase4-final-claim-audit]]; the canonical synthesis is
+[[w42-book-claim-synthesis-and-ai-directions]]. The vocabulary below remains
+the correct reference for every 2026-05 w42 page that cites it. Which clock is
+this: `phase 1–4` here is the 2026-05-02→03 claim-ledger sweep, not the
+bookval-v1 waves or the [[champion]]/[[jud]] rungs.
 
 ## Summary
 
@@ -18,13 +28,9 @@ per-bead delta/update files, and one populated central ledger:
 `w42/statistics_claims_ledger/claims.csv` (64 rows, built by
 `build_statistics_claims_ledger.py`, git sha `e55a6f8`), which
 [[w42-phase2-statistics-claims-ledger]] assembled and phase 4 carried to closure
-as the canonical claim ledger. **Methodology succession:** the [[jud]] track (v0/v1) silently
-replaced this status vocabulary with "registered predictions stated before
-measurement" ([[w42-jud-v1]]: "Six registered predictions, each stated before its
-measurement") — no page recorded that transition until this note. The vocabulary
-below remains the correct reference for every w42 page that still cites it
-(phases 1-4, the book-validation-campaign waves); it is not the methodology of
-the current best-player frontier.
+as the canonical claim ledger. The transition to [[jud]]'s
+registered-prediction methodology was silent — no page recorded it until the
+succession note above.
 
 The ledger is schema-first. A detector definition, chapter harvest, or report bucket is not
 empirical support by itself. A claim can move to `supported` or `contradicted` only after an

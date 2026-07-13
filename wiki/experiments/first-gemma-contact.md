@@ -2,8 +2,8 @@
 title: First Gemma Contact
 kind: experiment
 first_seen: 2026-04-09
-last_updated: 2026-04-09
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

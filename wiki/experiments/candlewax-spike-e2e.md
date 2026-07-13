@@ -2,8 +2,8 @@
 title: "Candlewax Spike: Multimodal PDFs + Engine Fact-Checker + MLX LoRA STaR (E2E)"
 kind: experiment
 first_seen: 2026-04-20
-last_updated: 2026-04-20
-status: retired
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

@@ -2,8 +2,8 @@
 title: Flexible Grader for Free-Form Responses
 kind: decision
 first_seen: 2026-04-13
-last_updated: 2026-04-13
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision

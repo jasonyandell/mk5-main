@@ -2,7 +2,7 @@
 title: w42 Final Empirical Strategy Report
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-13
 status: superseded
 ---
 
@@ -10,7 +10,9 @@ status: superseded
 final for the workstream, which continued through [[w42-phase4-final-claim-audit]]'s
 64-claim closure, the [[w42-book-validation-campaign]] waves 1-4, and the
 [[w42-jud-v1]] champion capstone. See [[w42-book-claim-synthesis-and-ai-directions]]
-for the later synthesis.
+for the canonical synthesis. Which clock is this: this page predates all three
+numbering families — the `phase 2/3/4` claim-ledger sweep (2026-05-02→03), the
+bookval-v1 waves (2026-05-03), and the 2026-06+ [[champion]]/[[jud]] rungs.
 
 ## Summary
 

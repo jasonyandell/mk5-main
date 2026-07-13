@@ -2,8 +2,8 @@
 title: Belief Propagation Gap (calibration doesn't transfer to Q)
 kind: topic
 first_seen: 2026-04-21
-last_updated: 2026-04-22
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview

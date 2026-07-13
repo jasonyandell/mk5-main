@@ -2,8 +2,8 @@
 title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
 first_seen: 2026-05-02
-last_updated: 2026-05-07
-status: superseded
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is

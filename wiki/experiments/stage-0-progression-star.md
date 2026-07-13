@@ -2,8 +2,8 @@
 title: Stage 0 Progression — Kerry STaR + v3 STaR
 kind: experiment
 first_seen: 2026-04-11
-last_updated: 2026-04-11
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

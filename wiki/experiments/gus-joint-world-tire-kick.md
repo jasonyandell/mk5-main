@@ -2,8 +2,8 @@
 title: Gus Joint-World Tire-Kick
 kind: experiment
 first_seen: 2026-04-20
-last_updated: 2026-04-20
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -55,6 +55,10 @@ are feasible on Apple Silicon. (commit message @ 31e10ef)
 v0 training: belief-only head on 100-game corpus (seeds 0-99), evaluated on held-out
 (seeds 900000-900099). Success bar: top-1 > 50% (beats [[zeb]]'s 39% hidden-only baseline).
 
+The v0 run happened as [[gus-v0-v1-belief]]. The >50% bar later proved
+information-theoretically unreachable: the Bayes-optimal top-1 on the eval corpus is
+39.184% ([[belief-bayes-ceiling]]) — Zeb's 39% was the ceiling, not a baseline to beat.
+
 ## Related pages
 
-[[gus]] · [[joint-world-tensor]] · [[zeb]] · [[forge]] · [[sources/31e10ef]]
+[[gus]] · [[gus-line]] · [[joint-world-tensor]] · [[zeb]] · [[forge]] · ([31e10ef](../sources/31e10ef.md))

@@ -2,8 +2,8 @@
 title: Regret Eval (E[Q] lost vs oracle's best legal)
 kind: topic
 first_seen: 2026-04-21
-last_updated: 2026-04-21
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview

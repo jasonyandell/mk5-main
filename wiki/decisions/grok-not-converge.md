@@ -2,8 +2,8 @@
 title: "Grok, Don't Converge"
 kind: decision
 first_seen: 2026-01-10
-last_updated: 2026-01-10
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision

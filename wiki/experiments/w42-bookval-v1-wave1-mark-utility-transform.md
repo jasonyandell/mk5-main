@@ -1,15 +1,13 @@
 ---
+title: "W42 Book Validation v1 — Wave 1 Mark Utility Transform"
 kind: experiment
-status: active
+status: complete
 bead: t42-c6sa
 parent_epic: t42-4zi6
 wave: wave1
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 ---
-
-# w42-bookval-v1-wave1-mark-utility-transform
-
 ## Summary
 
 Applying the deterministic Chapter 10 mark/match utility transform to the existing

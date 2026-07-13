@@ -2,8 +2,8 @@
 title: What You Do Past Belief
 kind: topic
 first_seen: 2026-04-22
-last_updated: 2026-04-25
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## The reframe

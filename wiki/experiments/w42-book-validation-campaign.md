@@ -2,9 +2,18 @@
 title: w42 Book Validation Campaign
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-07-13
 status: superseded
 ---
+
+**Superseded as a rollup.** The canonical synthesis of what this campaign found
+is [[w42-book-claim-synthesis-and-ai-directions]]; the closure baseline it
+started from is [[w42-phase4-final-claim-audit]]. This page remains the
+wave-by-wave operational record. Which clock is this: `Wave 0–5` and bookval
+`v1`/`v2`/`v3` are this 2026-05-03 campaign (v2/v3 are utility-lens passes, not
+versions of the v1 corpus); `phase2/3/4` names the earlier 2026-05-02→03
+claim-ledger sweep; the 2026-06+ [[champion]]/[[jud]] rungs are a third,
+unrelated clock.
 
 ## Mission
 

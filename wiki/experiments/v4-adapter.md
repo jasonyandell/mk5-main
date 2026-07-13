@@ -1,11 +1,13 @@
 ---
 title: Stage 0 v4 Adapter (game-context)
-kind: entity
+kind: experiment
 first_seen: 2026-04-13
-last_updated: 2026-04-13
+last_updated: 2026-07-13
 status: superseded
 superseded_by: v5-adapter
 ---
+
+Receipt in the [[stage-0-adapter-line]].
 
 ## What it is
 
@@ -18,7 +20,7 @@ Per-epoch HF checkpoints are published. (commit messages @ 4729dad, 3c33e86)
 
 - **Base model**: [[gemma-4-e2b]] (`google/gemma-4-E2B-it`)
 - **Corpus**: 31,830 train + 7,725 eval, generated from game records via 5 question types
-  (see [[topics/game-context-qa]])
+  (see [[game-context-qa]])
 - **Method**: [[lora-unsloth]] LoRA fine-tune on [[modal]] B200, 3 epochs
 - **Hyperparameters**: `batch_size=16` (was 4 + gradient accumulation), no gradient
   checkpointing — 1.4× faster than v3 training
@@ -47,7 +49,7 @@ reasoning trace. With thinking disabled, the adapter's learned behavior surfaces
 
 ## Eval results (flexible grader, 100 held-out examples)
 
-See [[experiments/stage-0-v4-comprehension-eval]] and [[decisions/flexible-grader]].
+See [[stage-0-v4-comprehension-eval]] and [[flexible-grader]].
 
 | Question type | Accuracy |
 |---|---|
@@ -59,7 +61,7 @@ See [[experiments/stage-0-v4-comprehension-eval]] and [[decisions/flexible-grade
 | **Overall** | **67%** |
 
 Two eval bugs (EOS token, left-pad slicing) masked real model knowledge in earlier
-iterations; see [[sources/1d3e1b7]] for the fix details. The flexible grader
+iterations; see [[1d3e1b7]] for the fix details. The flexible grader
 (`grade_offline.py`) extracts facts from free-form responses rather than requiring rigid
 format matching — this was necessary to see the true 100% `is_trump` result that rigid
 grading reported as 0%. (commit message @ 3c33e86)

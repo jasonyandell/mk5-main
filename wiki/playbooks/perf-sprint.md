@@ -2,7 +2,7 @@
 title: Perf Sprint — Playbook
 kind: playbook
 first_seen: 2026-04-27
-last_updated: 2026-04-27
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -68,6 +68,8 @@ commit  wall_s  k1_match  regret_delta  peak_gb  status  description
 The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 
 ## How to work
+
+**Mechanics note (2026-07-13):** the `TeamCreate` / `team_name` / `TaskStop` spawn plumbing below predates the current single-team `Agent` / `SendMessage` surface — refresh the kickoff sequence and spawn template against the live tool surface before the next sprint.
 
 **Kickoff (run once at sprint start):**
 

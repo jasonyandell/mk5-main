@@ -2,8 +2,8 @@
 title: Rationalization Verifier (6 engine checks)
 kind: topic
 first_seen: 2026-04-17
-last_updated: 2026-04-17
-status: active
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview
