@@ -1,8 +1,8 @@
 ---
 title: w42 Phase4 Final Claim Audit
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-05-03
 status: active
 ---
 

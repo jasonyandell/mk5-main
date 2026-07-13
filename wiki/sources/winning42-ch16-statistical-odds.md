@@ -1,9 +1,9 @@
 ---
 title: Winning 42 Ch16 Statistical Odds
-kind: experiment
-first_seen: local-2026-05-01
-last_updated: 12064bf
-status: active
+kind: source
+first_seen: 2026-05-01
+last_updated: 2026-05-03
+status: complete
 ---
 
 ## Summary

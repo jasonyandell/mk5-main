@@ -1,8 +1,8 @@
 ---
 title: Tool Orchestration (Burl's core philosophy)
 kind: topic
-first_seen: 8d26e0d
-last_updated: 0545342
+first_seen: 2026-04-18
+last_updated: 2026-04-20
 status: superseded
 ---
 

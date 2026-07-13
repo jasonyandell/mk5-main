@@ -1,10 +1,11 @@
 ---
 title: W42 Book Validation — Utility-Argmax Divergence (Wave 4.0)
 kind: experiment
-status: closed-on-completion
-first_seen: local-2026-05-03
+status: complete
+first_seen: 2026-05-03
 bead: t42-hmjr
 parent_epic: t42-4zi6
+last_updated: 2026-07-11
 ---
 
 ## Question

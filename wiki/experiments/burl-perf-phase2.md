@@ -1,8 +1,8 @@
 ---
 title: Burl Perf — Phase 2 (Continuous Batching + Prefix Sharing)
 kind: experiment
-first_seen: 29da3d2
-last_updated: 29da3d2
+first_seen: 2026-04-27
+last_updated: 2026-04-27
 status: superseded
 ---
 
@@ -20,7 +20,7 @@ status: superseded
 > [[continuous-batching-dispatcher-design]] carry the corrected numbers.
 
 > **Caveat — read this first (added during scribe-A pause, 2026-04-27):**
-> All wall-time numbers in this page were collected while [[burl-perf-phase1]]
+> All wall-time numbers in this page were collected while phase 1 (no page; see [[perf-sprint-history]])
 > was running parallel mlx-lm batch=5 jobs on the same M5 Max — Metal +
 > unified-memory contention is consistent with the same-config baseline-t0
 > drifting 71.0 s → 73.7 s and the prefix-cache rows hitting 114 s and

@@ -1,8 +1,8 @@
 ---
 title: "Source digest: b12fcec — relax scratchpad validation to hand-only (counts informational)"
 kind: source
-first_seen: b12fcec
-last_updated: b12fcec
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

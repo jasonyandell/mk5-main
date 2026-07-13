@@ -1,8 +1,8 @@
 ---
 title: Lazy IterableDataset (streaming corpus loader)
 kind: topic
-first_seen: f138069
-last_updated: f138069
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

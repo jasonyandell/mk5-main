@@ -1,8 +1,8 @@
 ---
 title: w42 Phase4 Claim Completion Board
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-06
 status: complete
 ---
 

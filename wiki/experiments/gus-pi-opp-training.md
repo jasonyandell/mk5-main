@@ -1,8 +1,8 @@
 ---
 title: Gus π_opp Training (Schema v2)
 kind: experiment
-first_seen: 93859a0
-last_updated: b4e8ecd
+first_seen: 2026-04-22
+last_updated: 2026-04-22
 status: active
 ---
 

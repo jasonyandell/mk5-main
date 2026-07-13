@@ -1,8 +1,8 @@
 ---
 title: Gus Router Pilot (detect-and-route inference)
 kind: experiment
-first_seen: eba5103
-last_updated: a09ef43
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

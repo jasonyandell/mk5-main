@@ -1,8 +1,8 @@
 ---
 title: Gus (sibling project — neural player + belief + value)
 kind: entity
-first_seen: d858781
-last_updated: ca06b27
+first_seen: 2026-04-23
+last_updated: 2026-06-14
 status: active
 ---
 

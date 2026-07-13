@@ -1,8 +1,8 @@
 ---
 title: STaR Stage 1 Iteration 0
 kind: experiment
-first_seen: 576b694
-last_updated: 576b694
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

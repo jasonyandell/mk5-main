@@ -1,8 +1,8 @@
 ---
 title: "LAMIR-primitive inference eval: direct vs PIMC-Q vs PIMC-belief"
 kind: experiment
-first_seen: 5a4c9b9
-last_updated: 5a4c9b9
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

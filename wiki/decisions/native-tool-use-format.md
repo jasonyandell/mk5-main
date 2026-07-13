@@ -1,8 +1,8 @@
 ---
 title: Native Tool-Use Format (not XML)
 kind: decision
-first_seen: 3781dce
-last_updated: 3781dce
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: superseded
 ---
 

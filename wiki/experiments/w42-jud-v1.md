@@ -3,8 +3,8 @@ title: Jud v1 — the one organ, bid and play
 kind: experiment
 status: complete
 task_id: gh-33
-first_seen: f550205
-last_updated: afd4802
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 ---
 
 # w42-jud-v1

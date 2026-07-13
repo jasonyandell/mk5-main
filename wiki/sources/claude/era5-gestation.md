@@ -1,8 +1,8 @@
 ---
 title: claude.ai Source Digest — Era 5, The Gestation (2026-02-17 .. 2026-04-08)
 kind: source
-first_seen: afd4802
-last_updated: afd4802
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 status: complete
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Haiku 4.5 (Burl reference-trace generator)
 kind: entity
-first_seen: 1f13f92
-last_updated: b5d05de
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

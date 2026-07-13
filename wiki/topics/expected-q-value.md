@@ -1,8 +1,8 @@
 ---
 title: E[Q] — Expected Q-Value
 kind: topic
-first_seen: ece6dcf
-last_updated: bc4eb386
+first_seen: 2026-01-10
+last_updated: 2026-07-11
 status: active
 ---
 

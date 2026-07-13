@@ -1,8 +1,8 @@
 ---
 title: Burl Perf — Phase 0 (Measurement Harness)
 kind: experiment
-first_seen: 1f11d28
-last_updated: 1f11d28
+first_seen: 2026-04-27
+last_updated: 2026-04-27
 status: complete
 ---
 

@@ -1,4 +1,5 @@
 ---
+kind: experiment
 title: "Book Validation v1 Wave 1 — Cross-AI Agreement Analysis"
 experiment_id: w42-bookval-v1-wave1-cross-ai-agreement
 bead: t42-m2i7
@@ -12,6 +13,8 @@ related:
   - [[w42-phase3-joined-claim-row-model-table]]
   - [[w42-phase4-claim-completion-board]]
   - [[w42-book-claim-synthesis-and-ai-directions]]
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 ## Question

@@ -1,8 +1,8 @@
 ---
 title: "Source digest: f8cdbe7 — Kerry Q&A generator + 15k corpus for Stage 0 v2"
 kind: source
-first_seen: f8cdbe7
-last_updated: f8cdbe7
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

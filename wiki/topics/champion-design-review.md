@@ -1,8 +1,8 @@
 ---
 title: Champion design review — Fable 5's recovered reasoning
 kind: topic
-first_seen: local-2026-06-09
-last_updated: local-2026-06-14
+first_seen: 2026-06-09
+last_updated: 2026-06-14
 status: active
 ---
 

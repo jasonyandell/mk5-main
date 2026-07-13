@@ -1,8 +1,8 @@
 ---
 title: STaR Harness
 kind: entity
-first_seen: 7538016
-last_updated: efad16e
+first_seen: 2026-04-10
+last_updated: 2026-04-11
 status: complete
 ---
 

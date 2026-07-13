@@ -1,8 +1,8 @@
 ---
 title: From LEM to Burl
 kind: trail
-first_seen: 8d26e0d
-last_updated: 8d26e0d
+first_seen: 2026-04-18
+last_updated: 2026-04-18
 status: active
 ---
 

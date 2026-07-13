@@ -1,8 +1,8 @@
 ---
 title: Gus Belief Co-Train + q-bootstrap-belief Mode (§21)
 kind: experiment
-first_seen: 548d32a
-last_updated: e2171816
+first_seen: 2026-04-22
+last_updated: 2026-07-11
 status: active
 ---
 

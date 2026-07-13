@@ -1,8 +1,8 @@
 ---
 title: "The Wall: A Biography"
 kind: trail
-first_seen: afd4802
-last_updated: bc4eb386
+first_seen: 2026-07-06
+last_updated: 2026-07-11
 status: active
 ---
 

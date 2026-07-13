@@ -1,8 +1,8 @@
 ---
 title: Champion — unified belief-state player
 kind: entity
-first_seen: local-2026-06-09
-last_updated: bc4eb386
+first_seen: 2026-06-09
+last_updated: 2026-07-11
 status: active
 phase: auction tier won (#21 +1.09 / #22 +1.29 marks-game) + #24 auction belief MEASURED WIN (+2.59pp acc); two play-side levers measured DEAD — score-conditioned play (#27, negative) and belief-weighted play sampling (#25, decisive null across both belief models + bidder regimes, closed 2026-06-14). Belief value routes to bidding/defense via self-play (#26 = live frontier). Tracker reconciled 2026-06-14: #21/#23/#24/#25 closed
 ---
@@ -277,7 +277,7 @@ wasn't hiding behind the distillation.
    confirming the diagnosis — yet the PIMC-calibrated `net:wp` stays the stronger
    bidder. So the self-play *machinery* converges; belief value is **legibility,
    not marks** (the #24/#25 lesson again). The converged calibrated belief student
-   was slated for export as a playable `onyx`-difficulty opponent in [[plunge]]
+   was slated for export as a playable `onyx`-difficulty opponent in plunge (external target; no page)
    via ONNX — **asserted, unverified**: the era-6 audit (2026-07-06) found no
    `plunge` app, `onyx` difficulty, or ONNX export artifact anywhere in the
    repo; either this never shipped or lives somewhere the audit didn't check.

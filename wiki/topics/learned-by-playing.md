@@ -1,8 +1,8 @@
 ---
 title: Learned by Playing, Not Drilling
 kind: topic
-first_seen: 24ae55a
-last_updated: 8c1bb14
+first_seen: 2026-04-10
+last_updated: 2026-04-11
 status: superseded
 ---
 

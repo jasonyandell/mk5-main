@@ -1,8 +1,8 @@
 ---
 title: burl-chat spike — first interactive sessions and findings
 kind: experiment
-first_seen: cba521d
-last_updated: local-2026-05-01
+first_seen: 2026-04-30
+last_updated: 2026-05-01
 status: complete
 ---
 

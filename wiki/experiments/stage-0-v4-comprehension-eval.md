@@ -1,8 +1,8 @@
 ---
 title: Stage 0 v4 Comprehension Eval
 kind: experiment
-first_seen: 3c33e86
-last_updated: 2f11f32
+first_seen: 2026-04-13
+last_updated: 2026-04-13
 status: superseded
 ---
 

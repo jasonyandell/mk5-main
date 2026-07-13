@@ -1,8 +1,8 @@
 ---
 title: Chat-mode primer — synthetic assistant turn after commit
 kind: decision
-first_seen: cba521d
-last_updated: cba521d
+first_seen: 2026-04-30
+last_updated: 2026-04-30
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: "Source digest: b5d05de — Haiku N=30 reference-trace runner"
 kind: source
-first_seen: b5d05de
-last_updated: b5d05de
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

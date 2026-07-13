@@ -1,8 +1,8 @@
 ---
 title: Winning 42 Ch13 Optional Variations
-kind: experiment
-first_seen: local-2026-05-01
-last_updated: afd4802
+kind: source
+first_seen: 2026-05-01
+last_updated: 2026-07-06
 status: retired
 ---
 

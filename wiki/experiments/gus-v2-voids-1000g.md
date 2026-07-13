@@ -1,8 +1,8 @@
 ---
 title: Gus v2 at 1000g with Explicit Voids
 kind: experiment
-first_seen: 3c02d10
-last_updated: 3c02d10
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

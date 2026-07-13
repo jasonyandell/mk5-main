@@ -1,8 +1,8 @@
 ---
 title: Burl iter-0 LoRA Adapter
 kind: entity
-first_seen: 0168210
-last_updated: 789e14d
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: superseded
 ---
 

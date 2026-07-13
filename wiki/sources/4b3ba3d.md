@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 4b3ba3d — Move 3 shipped — base Gemma 4 E2B 70% K1"
 kind: source
-first_seen: 4b3ba3d
-last_updated: 4b3ba3d
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

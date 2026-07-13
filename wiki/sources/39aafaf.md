@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 39aafaf — arena --tag + Opus vs Haiku head-to-head"
 kind: source
-first_seen: 39aafaf
-last_updated: 39aafaf
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -24,4 +24,4 @@ status: active
 
 ## Related pages
 
-[[experiments/opus-vs-haiku-arena]] · [[selfplay-arena]] · [[conditional-outcome-structural-nonuse]] · [[haiku-4-5]] · [[burl]]
+[[experiments/opus-vs-haiku-arena]] · [[burl-selfplay-arena]] · [[conditional-outcome-structural-nonuse]] · [[haiku-4-5]] · [[burl]]

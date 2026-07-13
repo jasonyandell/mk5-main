@@ -3,8 +3,8 @@ title: The plateau probe — data starvation, not structure
 kind: experiment
 status: complete
 task_id: gh-33
-first_seen: 68fda7b
-last_updated: d1f1633d
+first_seen: 2026-07-06
+last_updated: 2026-07-11
 ---
 
 # w42-plateau-probe

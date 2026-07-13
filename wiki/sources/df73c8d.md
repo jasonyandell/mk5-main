@@ -1,8 +1,8 @@
 ---
 title: "Source digest: df73c8d — Stage 0 complete"
 kind: source
-first_seen: df73c8d
-last_updated: df73c8d
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Dense Q Supervision (3400× per-decision signal)
 kind: topic
-first_seen: da21f52
-last_updated: 3c02d10
+first_seen: 2026-04-20
+last_updated: 2026-04-21
 status: active
 ---
 

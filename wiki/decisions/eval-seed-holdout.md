@@ -1,8 +1,8 @@
 ---
 title: Eval Seed Holdout
 kind: decision
-first_seen: b99c64d
-last_updated: b99c64d
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

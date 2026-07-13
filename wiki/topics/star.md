@@ -1,8 +1,8 @@
 ---
 title: STaR — Self-Taught Reasoner
 kind: topic
-first_seen: a8bccfa
-last_updated: add6a2a
+first_seen: 2026-04-09
+last_updated: 2026-04-26
 status: superseded
 ---
 

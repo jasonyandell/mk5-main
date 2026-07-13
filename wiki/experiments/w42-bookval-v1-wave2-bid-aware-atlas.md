@@ -6,8 +6,8 @@ bead: t42-6j3k
 wave2b2_bead: t42-7eop
 parent_epic: t42-4zi6
 wave: wave2
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-06
 ---
 
 # w42-bookval-v1-wave2-bid-aware-atlas

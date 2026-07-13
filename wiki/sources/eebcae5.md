@@ -1,8 +1,8 @@
 ---
 title: "Source digest: eebcae5 — iter-2 training launcher + chat-template schema surprise"
 kind: source
-first_seen: eebcae5
-last_updated: eebcae5
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Gus Arena Pilot (game-level eval)
 kind: experiment
-first_seen: 1a2f67f
-last_updated: 1a2f67f
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

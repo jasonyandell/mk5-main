@@ -1,8 +1,8 @@
 ---
 title: Gus Q_head Partial-Depletion Augmentation (Path A)
 kind: experiment
-first_seen: a9fa0c6
-last_updated: 5f390fb
+first_seen: 2026-04-22
+last_updated: 2026-04-22
 status: complete
 ---
 

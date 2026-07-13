@@ -1,8 +1,8 @@
 ---
 title: Gus v0/v1 Belief Heads
 kind: experiment
-first_seen: c04bda3
-last_updated: 8dbf7f3
+first_seen: 2026-04-20
+last_updated: 2026-04-20
 status: active
 ---
 

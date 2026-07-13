@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 26f5ddf — SDPA + torch.compile + batching on B200 (120 tok/s)"
 kind: source
-first_seen: 26f5ddf
-last_updated: 26f5ddf
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

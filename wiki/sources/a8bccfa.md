@@ -1,8 +1,8 @@
 ---
 title: "Source digest: a8bccfa — narration generator, rules primer, first Gemma contact"
 kind: source
-first_seen: a8bccfa
-last_updated: a8bccfa
+first_seen: 2026-04-09
+last_updated: 2026-04-09
 status: active
 ---
 

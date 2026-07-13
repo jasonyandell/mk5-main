@@ -1,8 +1,8 @@
 ---
 title: "Source digest: ff0d0d2 — use combined narration dataset (7409 examples from seeds 0-499)"
 kind: source
-first_seen: ff0d0d2
-last_updated: ff0d0d2
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

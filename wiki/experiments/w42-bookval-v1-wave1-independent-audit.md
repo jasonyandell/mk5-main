@@ -1,10 +1,13 @@
 ---
+kind: experiment
 title: W42 Book Validation v1 — Wave 1 Independent Audit
 bead: t42-1nmm
 epic: t42-4zi6
 wave: wave1
 status: complete
 created: 2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 ## Summary

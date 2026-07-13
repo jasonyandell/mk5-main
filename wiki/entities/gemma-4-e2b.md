@@ -1,9 +1,9 @@
 ---
 title: Gemma 4 E2B
 kind: entity
-first_seen: a8bccfa
-last_updated: ec46190
-status: retired-as-lem-base
+first_seen: 2026-04-09
+last_updated: 2026-04-27
+status: retired
 ---
 
 ## What it is

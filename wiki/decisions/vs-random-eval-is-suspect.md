@@ -1,8 +1,8 @@
 ---
 title: "vs-Random Win Rate Is a Suspect Metric for Marks-to-7 Play"
 kind: decision
-first_seen: era4
-last_updated: era4
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 status: active
 ---
 

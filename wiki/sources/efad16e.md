@@ -1,8 +1,8 @@
 ---
 title: "Source digest: efad16e — capture 10 STaR iterations results — 30% to 42% pass rate"
 kind: source
-first_seen: efad16e
-last_updated: efad16e
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

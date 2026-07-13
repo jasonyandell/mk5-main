@@ -1,9 +1,9 @@
 ---
 title: Winning 42 Ch03 Bidder Play
-kind: experiment
-first_seen: local-2026-05-01
-last_updated: local-2026-05-01
-status: active
+kind: source
+first_seen: 2026-05-01
+last_updated: 2026-05-01
+status: complete
 ---
 
 ## Summary

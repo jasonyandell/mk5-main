@@ -1,8 +1,8 @@
 ---
 title: Stage 0 v4 Adapter (game-context)
 kind: entity
-first_seen: 4729dad
-last_updated: 2f11f32
+first_seen: 2026-04-13
+last_updated: 2026-04-13
 status: superseded
 superseded_by: v5-adapter
 ---

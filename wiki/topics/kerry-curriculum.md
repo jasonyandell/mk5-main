@@ -1,8 +1,8 @@
 ---
 title: Kerry Newberry Curriculum
 kind: topic
-first_seen: f8cdbe7
-last_updated: 43009a4
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: superseded
 superseded_by: trump-drilling
 ---

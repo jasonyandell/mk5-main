@@ -1,8 +1,8 @@
 ---
 title: W42 Book Validation v1 Wave 2 — Void Creation
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-05-03
 status: complete
 bead: t42-26j8
 parent_epic: t42-4zi6

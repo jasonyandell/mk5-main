@@ -1,9 +1,9 @@
 ---
 title: GEN_FLEET (Vast.ai distributed corpus generation)
 kind: entity
-first_seen: a8bc35a
-last_updated: a14200f
-status: plan
+first_seen: 2026-04-21
+last_updated: 2026-04-21
+status: superseded
 ---
 
 ## What it is

@@ -1,8 +1,8 @@
 ---
 title: Zeb fleet-ops — the self-healing Vast.ai spot-GPU cluster
 kind: entity
-first_seen: bcc549f
-last_updated: 286aa97
+first_seen: 2026-02-07
+last_updated: 2026-02-15
 status: complete
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: The oracle — three solver generations, one compression, one pivot
 kind: topic
-first_seen: b541a4b
-last_updated: b89ff635
+first_seen: 2025-12-27
+last_updated: 2026-07-11
 status: active
 ---
 

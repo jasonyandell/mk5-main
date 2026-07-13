@@ -1,8 +1,8 @@
 ---
 title: BookStrategyPlayer Extension Points
 kind: topic
-first_seen: local-2026-05-04
-last_updated: afd4802
+first_seen: 2026-05-04
+last_updated: 2026-07-06
 status: superseded
 ---
 

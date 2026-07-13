@@ -1,8 +1,8 @@
 ---
 title: Rank vs price — why PIMC's flaw bites the auction, not the play
 kind: topic
-first_seen: local-2026-07-05
-last_updated: 3ac03de
+first_seen: 2026-07-05
+last_updated: 2026-07-06
 status: active
 ---
 

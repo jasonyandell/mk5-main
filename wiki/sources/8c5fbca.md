@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 8c5fbca — single-GPU STaR loop with vLLM batch inference"
 kind: source
-first_seen: 8c5fbca
-last_updated: 8c5fbca
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

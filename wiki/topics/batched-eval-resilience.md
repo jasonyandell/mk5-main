@@ -1,8 +1,8 @@
 ---
 title: Batched eval resilience pattern
 kind: topic
-first_seen: 86334b8
-last_updated: 86334b8
+first_seen: 2026-04-26
+last_updated: 2026-04-26
 status: superseded
 ---
 

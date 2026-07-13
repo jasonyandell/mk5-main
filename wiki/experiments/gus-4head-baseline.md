@@ -1,8 +1,8 @@
 ---
 title: Gus 4-Head Baseline (100g)
 kind: experiment
-first_seen: da21f52
-last_updated: da21f52
+first_seen: 2026-04-20
+last_updated: 2026-04-20
 status: active
 ---
 

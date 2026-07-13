@@ -1,8 +1,8 @@
 ---
 title: Wiki Entrypoints
 kind: trail
-first_seen: local-2026-05-03
-last_updated: c7f74f5c
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 status: active
 ---
 

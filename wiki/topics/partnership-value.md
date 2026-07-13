@@ -1,8 +1,8 @@
 ---
 title: Partnership Value
 kind: topic
-first_seen: bc4eb386
-last_updated: 1a4482fe
+first_seen: 2026-07-11
+last_updated: 2026-07-12
 status: active
 ---
 

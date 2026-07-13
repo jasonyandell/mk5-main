@@ -1,8 +1,8 @@
 ---
 title: Partnership decision record v1
 kind: experiment
-first_seen: bc4eb386
-last_updated: bc4eb386
+first_seen: 2026-07-11
+last_updated: 2026-07-11
 status: complete
 ---
 

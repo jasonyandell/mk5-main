@@ -3,8 +3,8 @@ title: Champion #24 — Auction-Conditioned Belief
 kind: experiment
 status: complete
 task_id: champion-24-auction-belief
-first_seen: local-2026-06-13
-last_updated: local-2026-06-13
+first_seen: 2026-06-13
+last_updated: 2026-06-13
 ---
 
 # w42-champion-auction-belief

@@ -1,8 +1,8 @@
 ---
 title: "Base Model Pivot: Gemma 4 E2B → Qwen 3 1.7B"
 kind: decision
-first_seen: 3465e29
-last_updated: 3465e29
+first_seen: 2026-04-16
+last_updated: 2026-04-16
 status: active
 ---
 

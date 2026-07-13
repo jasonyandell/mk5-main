@@ -1,8 +1,8 @@
 ---
 title: "iter-4 preserve_thoughts: Byte-Identical A/B (Null Result)"
 kind: experiment
-first_seen: 20f4fa2
-last_updated: e2171816
+first_seen: 2026-04-19
+last_updated: 2026-07-11
 status: retired
 ---
 

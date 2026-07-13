@@ -1,8 +1,8 @@
 ---
 title: "MLX batch_generate Ceiling on M5 Max"
 kind: experiment
-first_seen: ed3cfc3
-last_updated: 6a97d55
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -45,4 +45,4 @@ wiki staleness issue.
 
 ## Related pages
 
-[[mlx-lm]] · [[burl]] · [[selfplay-arena]] · [[sources/ed3cfc3]] · [[sources/6a97d55]]
+[[mlx-lm]] · [[burl]] · [[burl-selfplay-arena]] · [[sources/ed3cfc3]] · [[sources/6a97d55]]

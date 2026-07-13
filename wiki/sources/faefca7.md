@@ -1,8 +1,8 @@
 ---
 title: "Source digest: faefca7 — thread enable_primer into run_move4_spike (eval path)"
 kind: source
-first_seen: faefca7
-last_updated: faefca7
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

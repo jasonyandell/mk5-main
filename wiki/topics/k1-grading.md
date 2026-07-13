@@ -1,8 +1,8 @@
 ---
 title: K1 Grading — Beat the Bot It Replaced
 kind: topic
-first_seen: a8bccfa
-last_updated: 908773a
+first_seen: 2026-04-09
+last_updated: 2026-04-11
 status: superseded
 ---
 

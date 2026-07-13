@@ -1,8 +1,8 @@
 ---
 title: Burl iter-1 LoRA Adapter (mixed)
 kind: entity
-first_seen: 09b841e
-last_updated: 09b841e
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: superseded
 ---
 

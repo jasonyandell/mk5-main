@@ -1,8 +1,8 @@
 ---
 title: Burl 2000-decision batched harvest (D_required_first)
 kind: experiment
-first_seen: 063fcac
-last_updated: 02d9096
+first_seen: 2026-04-24
+last_updated: 2026-04-25
 status: complete
 ---
 

@@ -1,11 +1,14 @@
 ---
+kind: experiment
 title: "W42 Book Validation v1 — Wave 2.E.2: Pounce High-Bid Probe"
 bead: t42-8kbh
 parent_bead: t42-4zi6
 wave: "2.E.2"
 claim: ch12-setter-pounce-high-bid-off
-status: contradicted
+status: complete
 created: 2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 ## Summary

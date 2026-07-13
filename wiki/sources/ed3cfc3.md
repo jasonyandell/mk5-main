@@ -1,8 +1,8 @@
 ---
 title: "Source digest: ed3cfc3 — MLX-LM batch_generate ceiling bench (43 → 1334 tok/s)"
 kind: source
-first_seen: ed3cfc3
-last_updated: ed3cfc3
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

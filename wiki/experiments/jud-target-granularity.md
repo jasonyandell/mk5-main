@@ -1,8 +1,8 @@
 ---
 title: Jud Target Granularity — hand-level vs per-move at fixed capacity
 kind: experiment
-first_seen: 4cf66448
-last_updated: 0dc9a51b
+first_seen: 2026-07-13
+last_updated: 2026-07-13
 status: complete
 ---
 

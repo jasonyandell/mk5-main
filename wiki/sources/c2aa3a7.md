@@ -1,8 +1,8 @@
 ---
 title: "Source digest: c2aa3a7 — async concurrency in STaR rollout (2.5-3.5× speedup)"
 kind: source
-first_seen: c2aa3a7
-last_updated: c2aa3a7
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

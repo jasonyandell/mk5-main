@@ -1,8 +1,8 @@
 ---
 title: W42 Book Validation
 kind: trail
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-06
 status: active
 ---
 

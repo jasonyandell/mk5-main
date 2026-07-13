@@ -44,7 +44,7 @@ Three implications:
 
 - Not evidence that base [[gemma-4-e2b]] can't reflect. Base Gemma + chat-mode primer + post-commit context engages with prose ([[burl-chat-spike]]). The deafness is specific to the in-decision / play-rejected state.
 - Not evidence that the [[iter3-rules-adapter]] suffers the same lock-in (untested locally).
-- Not evidence that a lighter-touch system-prompt intervention couldn't work — e.g., adding *"if the user asks you a question instead of giving you a state, answer the question; do not call tools"* to the protocol section. Untested. Cheap to try once the [[explore-game-cache-bug]] is patched and rerun-fresh sessions are trustworthy again.
+- Not evidence that a lighter-touch system-prompt intervention couldn't work — e.g., adding *"if the user asks you a question instead of giving you a state, answer the question; do not call tools"* to the protocol section. Untested. Cheap to try once the explore-game cache bug (no page) is patched and rerun-fresh sessions are trustworthy again.
 
 ## Related
 

@@ -1,8 +1,8 @@
 ---
 title: Kerry Adapter (Stage 0 v2)
 kind: entity
-first_seen: f8cdbe7
-last_updated: 8c1bb14
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: superseded
 superseded_by: v3-adapter
 ---

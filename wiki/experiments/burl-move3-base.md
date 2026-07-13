@@ -1,8 +1,8 @@
 ---
 title: Burl Move 3 — Base Gemma 4 E2B Baseline
 kind: experiment
-first_seen: 4b3ba3d
-last_updated: 4b3ba3d
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

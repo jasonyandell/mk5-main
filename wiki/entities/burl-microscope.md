@@ -1,8 +1,8 @@
 ---
 title: burl-microscope — Human-in-the-loop Burl recipe workbench
 kind: entity
-first_seen: local-2026-05-06
-last_updated: local-2026-05-07
+first_seen: 2026-05-06
+last_updated: 2026-05-07
 status: superseded
 ---
 

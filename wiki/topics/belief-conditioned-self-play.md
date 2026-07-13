@@ -1,8 +1,8 @@
 ---
 title: Belief-conditioned self-play — what jud trains and how (Fable's approach)
 kind: topic
-first_seen: local-2026-06-14
-last_updated: d1f1633d
+first_seen: 2026-06-14
+last_updated: 2026-07-11
 status: active
 ---
 

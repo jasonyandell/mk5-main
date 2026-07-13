@@ -1,8 +1,8 @@
 ---
 title: Multiplayer Pattern — Socket / GameClient / Room
 kind: topic
-first_seen: afac151c
-last_updated: 522779c5
+first_seen: 2025-11-25
+last_updated: 2026-07-11
 status: active
 ---
 

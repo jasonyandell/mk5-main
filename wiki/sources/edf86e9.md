@@ -1,8 +1,8 @@
 ---
 title: "Source digest: edf86e9 — SFTConfig max_seq_length=4096, thought-bearing rows no longer truncate"
 kind: source
-first_seen: edf86e9
-last_updated: edf86e9
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

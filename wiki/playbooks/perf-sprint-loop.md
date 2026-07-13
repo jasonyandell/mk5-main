@@ -1,8 +1,8 @@
 ---
 title: Perf Sprint — Loop Message (verbatim)
 kind: playbook
-first_seen: fbe798f
-last_updated: fbe798f
+first_seen: 2026-04-27
+last_updated: 2026-04-27
 status: active
 ---
 

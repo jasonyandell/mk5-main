@@ -1,8 +1,8 @@
 ---
 title: The book enters — Winning 42 as citation, extraction stayed dormant
-kind: topic
-first_seen: de7b7c71
-last_updated: 2ab1a825
+kind: trail
+first_seen: 2026-07-06
+last_updated: 2026-07-11
 status: retired
 ---
 

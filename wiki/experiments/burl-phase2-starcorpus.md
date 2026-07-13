@@ -1,8 +1,8 @@
 ---
 title: "Phase 2: STaR Corpus (N=50)"
 kind: experiment
-first_seen: fd6032b
-last_updated: fd6032b
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

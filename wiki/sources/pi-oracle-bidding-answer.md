@@ -1,8 +1,8 @@
 ---
 title: PI-oracle bidding research bead — canonical answer (Jan 2026)
 kind: source
-first_seen: a81fe27a
-last_updated: e2171816
+first_seen: 2026-01-05
+last_updated: 2026-07-11
 status: active
 ---
 

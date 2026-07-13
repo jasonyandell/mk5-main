@@ -1,8 +1,8 @@
 ---
 title: Gus Strategy Tags Probe
 kind: experiment
-first_seen: local-2026-04-30
-last_updated: local-2026-04-30
+first_seen: 2026-04-30
+last_updated: 2026-04-30
 status: superseded
 ---
 

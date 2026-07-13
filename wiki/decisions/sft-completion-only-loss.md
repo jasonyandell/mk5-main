@@ -1,8 +1,8 @@
 ---
 title: SFT Completion-Only Loss (mask fix)
 kind: decision
-first_seen: be7efc4
-last_updated: be7efc4
+first_seen: 2026-04-17
+last_updated: 2026-04-17
 status: active
 ---
 

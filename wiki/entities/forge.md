@@ -1,8 +1,8 @@
 ---
 title: Forge
 kind: entity
-first_seen: a8bccfa
-last_updated: 4123b2d5
+first_seen: 2026-04-09
+last_updated: 2026-07-11
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: TypeScript Game Engine
 kind: entity
-first_seen: 8d26e0d
-last_updated: 522779c5
+first_seen: 2026-04-18
+last_updated: 2026-07-11
 status: active
 ---
 

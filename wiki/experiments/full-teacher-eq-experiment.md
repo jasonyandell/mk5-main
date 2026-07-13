@@ -1,8 +1,8 @@
 ---
 title: Full-teacher E[Q] experiment — the era-4 closeout
 kind: experiment
-first_seen: 6081420
-last_updated: 6081420
+first_seen: 2026-02-16
+last_updated: 2026-02-16
 status: complete
 ---
 

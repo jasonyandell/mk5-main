@@ -1,9 +1,10 @@
 ---
 kind: experiment
 status: active
-first_seen: local-2026-05-03
+first_seen: 2026-05-03
 bead: t42-ybo6
 parent_epic: t42-4zi6
+last_updated: 2026-07-11
 ---
 
 # W42 Book Validation v1 — Wave 1 — Distribution Lens Reranker

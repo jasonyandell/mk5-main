@@ -1,8 +1,8 @@
 ---
 title: What You Do Past Belief
 kind: topic
-first_seen: 94d8646
-last_updated: 76355ac
+first_seen: 2026-04-22
+last_updated: 2026-04-25
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Burl STaR Run-3 (filter-only, strict pool)
 kind: experiment
-first_seen: 02d9096
-last_updated: e2171816
+first_seen: 2026-04-25
+last_updated: 2026-07-11
 status: complete
 ---
 

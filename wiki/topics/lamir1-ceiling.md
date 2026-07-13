@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 Ceiling
 kind: topic
-first_seen: 8106f01
-last_updated: b42669a
+first_seen: 2026-04-22
+last_updated: 2026-04-22
 status: superseded
 ---
 

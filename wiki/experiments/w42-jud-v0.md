@@ -3,8 +3,8 @@ title: Jud v0 — the value-native bidder
 kind: experiment
 status: complete
 task_id: gh-32
-first_seen: 4080e07
-last_updated: 0bdd4d5
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 ---
 
 # w42-jud-v0

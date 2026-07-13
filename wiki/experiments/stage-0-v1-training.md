@@ -1,8 +1,8 @@
 ---
 title: Stage 0 v1 Training Run
 kind: experiment
-first_seen: df73c8d
-last_updated: df73c8d
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

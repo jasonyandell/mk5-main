@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 1efb9c5 — candlewax-aware eq_outcome_distribution return"
 kind: source
-first_seen: 1efb9c5
-last_updated: 1efb9c5
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

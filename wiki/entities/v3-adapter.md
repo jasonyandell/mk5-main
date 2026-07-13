@@ -1,8 +1,8 @@
 ---
 title: Stage 0 v3 Adapter (Kerry + trump drill)
 kind: entity
-first_seen: 601f622
-last_updated: 8c1bb14
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: superseded
 superseded_by: v4-adapter
 ---

@@ -1,8 +1,8 @@
 ---
 title: Discard Illegal Traces (don't rationalize them)
 kind: decision
-first_seen: fb47ab3
-last_updated: fb47ab3
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

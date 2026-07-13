@@ -1,8 +1,8 @@
 ---
 title: "Source digest: aeafe22 — PRACTICALITIES.md split from OVERVIEW"
 kind: source
-first_seen: aeafe22
-last_updated: aeafe22
+first_seen: 2026-04-20
+last_updated: 2026-04-20
 status: active
 ---
 

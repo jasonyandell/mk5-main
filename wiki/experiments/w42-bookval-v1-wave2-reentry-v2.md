@@ -1,8 +1,8 @@
 ---
 title: w42 Book Validation v1 — Wave 2.A.3 Reentry Preservation v2 Probe
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-05-03
 status: complete
 parent_bead: t42-v9lu
 wave: 2.A.3

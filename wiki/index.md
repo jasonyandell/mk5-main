@@ -57,7 +57,7 @@ catalog:
 - [[entities/burl-iter1-adapter|burl-iter1-adapter]] — iter-1 LoRA; trimmed primer (500 vs 1549 words); 5/10 retry-exhausted; 80% bot-match on 5 completed (superseded)
 - [[entities/haiku-4-5|haiku-4-5]] — Claude Haiku 4.5; Burl reference-trace teacher; N=30 run: 72.4% bot-match; zero conditional_outcome usage (active)
 - [[entities/iter3-rules-adapter|iter3-rules-adapter]] — winning Burl adapter: rules-as-tools + no primer; 90% bot-match, 0 retry-exhausted, 100% first-legal (active)
-- [[entities/selfplay-arena|selfplay-arena]] — game-level eval harness; Burl vs Burl or Burl vs baseline; ships with B7 (retired)
+- [[entities/burl-selfplay-arena|burl-selfplay-arena]] — game-level eval harness; Burl vs Burl or Burl vs baseline; ships with B7 (retired)
 - [[entities/mlx-lm|mlx-lm]] — local Apple Silicon inference path; 1.86× wall vs Modal; batch ceiling 43→1334 tok/s (16×) after B9 bench (active)
 - [[entities/candlewax-spike|candlewax-spike]] — E2E spike: Qwen 3.6-35B-A3B via mlx-vlm; reasoning-coherence verifier; pivots away from LLM-as-reasoner (retired)
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (superseded)

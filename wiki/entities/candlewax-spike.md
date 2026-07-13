@@ -1,8 +1,8 @@
 ---
 title: Candlewax Spike (multimodal VL + local MLX LoRA STaR)
 kind: entity
-first_seen: 0545342
-last_updated: 0545342
+first_seen: 2026-04-20
+last_updated: 2026-04-20
 status: retired
 ---
 

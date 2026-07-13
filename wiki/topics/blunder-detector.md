@@ -1,8 +1,8 @@
 ---
 title: Blunder Detector (student-feature blunder classifier)
 kind: topic
-first_seen: f90682c
-last_updated: a09ef43
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: retired
 ---
 

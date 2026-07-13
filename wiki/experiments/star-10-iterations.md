@@ -1,8 +1,8 @@
 ---
 title: "STaR Stage 1: 15 Iterations"
 kind: experiment
-first_seen: efad16e
-last_updated: 908773a
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

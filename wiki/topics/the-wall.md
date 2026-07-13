@@ -1,8 +1,8 @@
 ---
 title: The Wall
 kind: topic
-first_seen: afd4802
-last_updated: b28fb55a
+first_seen: 2026-07-06
+last_updated: 2026-07-13
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: "Source digest: abb1b3d — thread enable_rules_tools + iter-3-rules launcher"
 kind: source
-first_seen: abb1b3d
-last_updated: abb1b3d
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

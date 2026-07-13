@@ -1,8 +1,8 @@
 ---
 title: V/π Consistency Regularizer (v3)
 kind: topic
-first_seen: b007cf3
-last_updated: 31f0ec3
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

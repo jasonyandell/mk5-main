@@ -1,8 +1,8 @@
 ---
 title: "Source digest: fb47ab3 — discard illegal traces instead of rationalizing them"
 kind: source
-first_seen: fb47ab3
-last_updated: fb47ab3
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

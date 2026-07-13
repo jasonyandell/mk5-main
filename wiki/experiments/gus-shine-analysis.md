@@ -1,8 +1,8 @@
 ---
 title: Gus Shine Analysis — Where the Student Is Perfect
 kind: experiment
-first_seen: 7a9c720
-last_updated: 7a9c720
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

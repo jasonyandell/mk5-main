@@ -1,8 +1,8 @@
 ---
 title: "E[Q] Genesis — Era 3 (2026-01-09 .. 01-31)"
-kind: topic
-first_seen: ece6dcf
-last_updated: 62e3b53
+kind: trail
+first_seen: 2026-01-10
+last_updated: 2026-01-31
 status: complete
 ---
 

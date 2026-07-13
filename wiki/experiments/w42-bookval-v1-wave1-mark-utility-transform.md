@@ -4,7 +4,8 @@ status: active
 bead: t42-c6sa
 parent_epic: t42-4zi6
 wave: wave1
-first_seen: local-2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 # w42-bookval-v1-wave1-mark-utility-transform

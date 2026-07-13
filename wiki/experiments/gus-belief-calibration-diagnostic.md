@@ -1,8 +1,8 @@
 ---
 title: Gus Belief Calibration Diagnostic (receipt 15)
 kind: experiment
-first_seen: 137a8e7
-last_updated: 137a8e7
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

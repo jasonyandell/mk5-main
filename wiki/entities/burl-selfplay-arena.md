@@ -1,8 +1,8 @@
 ---
-title: Selfplay Arena (4-model full-game orchestrator)
+title: Burl Self-Play Arena (4-Claude orchestrator)
 kind: entity
-first_seen: 35c75ff
-last_updated: 39aafaf
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: retired
 ---
 

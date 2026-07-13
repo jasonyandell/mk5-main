@@ -1,8 +1,8 @@
 ---
 title: Eval matrix — Bradley-Terry Elo tournament infra
 kind: topic
-first_seen: 4f4220f
-last_updated: f5cbdc1
+first_seen: 2026-02-09
+last_updated: 2026-02-09
 status: complete
 ---
 

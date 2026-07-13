@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 with π_opp Rollout — Ceiling Finding (§20)
 kind: experiment
-first_seen: 1a1a324
-last_updated: b42669a
+first_seen: 2026-04-22
+last_updated: 2026-04-22
 status: superseded
 ---
 

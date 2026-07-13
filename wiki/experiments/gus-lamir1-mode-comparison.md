@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 Mode Comparison (direct / v-bootstrap / q-bootstrap / qleaf)
 kind: experiment
-first_seen: 7d2af99
-last_updated: fb03970
+first_seen: 2026-04-22
+last_updated: 2026-04-22
 status: superseded
 ---
 

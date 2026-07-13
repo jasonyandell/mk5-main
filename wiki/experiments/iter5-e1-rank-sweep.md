@@ -1,8 +1,8 @@
 ---
 title: "iter-5 E1: LoRA Rank Sweep with Truncation Fixed"
 kind: experiment
-first_seen: ceca203
-last_updated: ceca203
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

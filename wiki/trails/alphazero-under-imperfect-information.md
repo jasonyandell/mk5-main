@@ -1,8 +1,8 @@
 ---
 title: AlphaZero Under Imperfect Information (Era 4, 2026-02-01 .. 2026-02-18)
-kind: topic
-first_seen: b711311
-last_updated: 6081420
+kind: trail
+first_seen: 2026-02-01
+last_updated: 2026-02-16
 status: complete
 ---
 

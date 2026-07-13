@@ -54,7 +54,7 @@ FROZEN = {"log-archive.md"}       # history; report-only
 
 FM_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 LINK_RE = re.compile(r"\[\[([^\]|#\n]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
-FENCE_RE = re.compile(r"^```.*?^```", re.S | re.M)
+FENCE_RE = re.compile(r"^[ \t]*```.*?^[ \t]*```", re.S | re.M)
 SHA_RE = re.compile(r"^[0-9a-f]{7,10}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -76,9 +76,13 @@ def load():
     return pages
 
 
+INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+
+
 def links_of(text):
     body = FM_RE.sub("", text)
     body = FENCE_RE.sub("", body)
+    body = INLINE_CODE_RE.sub("", body)  # backticked [[x]] is mention, not use
     return [m.group(1).strip() for m in LINK_RE.finditer(body)]
 
 

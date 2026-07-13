@@ -1,8 +1,8 @@
 ---
 title: Qwen 3 14B (capacity experiment)
 kind: entity
-first_seen: 0c7392f
-last_updated: 0c7392f
+first_seen: 2026-04-17
+last_updated: 2026-04-17
 status: complete
 ---
 

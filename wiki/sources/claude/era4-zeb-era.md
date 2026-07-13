@@ -1,8 +1,8 @@
 ---
 title: "claude.ai source digest: Era 4 — Zeb (Feb 1–16, spillover to 02-18)"
 kind: source
-first_seen: era4
-last_updated: era4
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 status: complete
 ---
 

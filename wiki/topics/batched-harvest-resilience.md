@@ -1,8 +1,8 @@
 ---
 title: Batched harvest resilience pattern
 kind: topic
-first_seen: 063fcac
-last_updated: 063fcac
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 status: superseded
 ---
 

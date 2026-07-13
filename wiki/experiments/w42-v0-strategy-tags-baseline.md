@@ -1,8 +1,8 @@
 ---
 title: w42 v0 Strategy Tags Baseline
 kind: experiment
-first_seen: local-2026-05-02
-last_updated: afd4802
+first_seen: 2026-05-02
+last_updated: 2026-07-06
 status: complete
 ---
 

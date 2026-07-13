@@ -1,8 +1,8 @@
 ---
 title: Candlewax (bimodal/multimodal outcome distributions)
 kind: topic
-first_seen: 1efb9c5
-last_updated: 0545342
+first_seen: 2026-04-19
+last_updated: 2026-04-20
 status: active
 ---
 

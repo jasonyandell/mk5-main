@@ -1,8 +1,8 @@
 ---
 title: logged-arrows
 kind: topic
-first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+first_seen: 2026-05-02
+last_updated: 2026-05-02
 status: superseded
 ---
 

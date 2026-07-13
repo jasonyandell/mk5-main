@@ -1,8 +1,8 @@
 ---
 title: Rules as Tools (primer content as callable tools)
 kind: topic
-first_seen: b3a27e2
-last_updated: dbadb5f
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

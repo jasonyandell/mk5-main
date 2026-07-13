@@ -1,8 +1,8 @@
 ---
 title: The analysis epic — forge/analysis's Jan 6-8 launch
-kind: topic
-first_seen: 5ffdf58
-last_updated: 3a6d2ec
+kind: trail
+first_seen: 2026-01-06
+last_updated: 2026-01-08
 status: complete
 ---
 

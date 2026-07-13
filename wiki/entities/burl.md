@@ -1,8 +1,8 @@
 ---
 title: Burl — Tool-using Texas 42 agent
 kind: entity
-first_seen: 8d26e0d
-last_updated: 4123b2d5
+first_seen: 2026-04-18
+last_updated: 2026-07-11
 status: superseded
 ---
 
@@ -312,7 +312,7 @@ Byte-identical A/B result vs baseline. The winning reasoning shape was already p
 the tool-call/tool-response envelopes the template preserves; thought prose adds no signal
 at this LoRA rank. See [[experiments/iter4-null-preserve-thoughts]]. (commit message @ 20f4fa2)
 
-**[[selfplay-arena]] launched** (35c75ff, 39aafaf): 4-model full-game orchestrator in
+**[[burl-selfplay-arena]] launched** (35c75ff, 39aafaf): 4-model full-game orchestrator in
 `burl/arena/`. First run Haiku seed 900010: bidder team 0-42 shutout, $0.84, 7m22s.
 Opus vs Haiku same seed: Opus salvages 7-35 vs Haiku's 0-42, $5.58. Tool-use efficiency:
 Opus trusts the system prompt (1× `trump_declared` vs Haiku's 24×) and leads with

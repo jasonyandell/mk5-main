@@ -1,8 +1,8 @@
 ---
 title: Gus Joint-World Tire-Kick
 kind: experiment
-first_seen: 31e10ef
-last_updated: 31e10ef
+first_seen: 2026-04-20
+last_updated: 2026-04-20
 status: active
 ---
 

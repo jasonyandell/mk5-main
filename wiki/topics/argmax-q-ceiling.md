@@ -1,8 +1,8 @@
 ---
 title: "The Argmax-Q Ceiling (~74%)"
 kind: topic
-first_seen: d9402cf
-last_updated: b89ff635
+first_seen: 2026-01-17
+last_updated: 2026-07-11
 status: complete
 ---
 

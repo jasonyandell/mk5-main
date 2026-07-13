@@ -1,8 +1,8 @@
 ---
 title: Qwen 3 1.7B
 kind: entity
-first_seen: 3465e29
-last_updated: be7efc4
+first_seen: 2026-04-16
+last_updated: 2026-04-17
 status: complete
 ---
 

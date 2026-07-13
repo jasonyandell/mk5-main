@@ -1,10 +1,13 @@
 ---
+kind: experiment
 title: W42 Book Validation v1 Wave 1 — Hidden Threat Impact Ranker
 bead: t42-c2y9
 parent_epic: t42-4zi6
 status: complete
 date: 2026-05-03
 wave: "1.3"
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 # Hidden Threat Impact Ranker

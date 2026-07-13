@@ -1,8 +1,8 @@
 ---
 title: Third Gemma Contact (Kerry Adapter)
 kind: experiment
-first_seen: 43009a4
-last_updated: 43009a4
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

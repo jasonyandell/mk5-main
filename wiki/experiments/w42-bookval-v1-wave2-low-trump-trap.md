@@ -1,8 +1,8 @@
 ---
 title: w42 Book Validation v1 Wave2 — Low Trump Trap (ch04)
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-05-03
 status: complete
 bead: t42-jysl
 wave: wave2

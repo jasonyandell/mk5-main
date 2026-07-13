@@ -1,8 +1,8 @@
 ---
 title: Post-Trick Public State Block
 kind: decision
-first_seen: 7f1994e
-last_updated: 7f1994e
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 

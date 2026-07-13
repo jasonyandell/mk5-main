@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 (continual-resolving look-ahead)
 kind: topic
-first_seen: 31e10ef
-last_updated: b42669a
+first_seen: 2026-04-20
+last_updated: 2026-04-22
 status: superseded
 ---
 

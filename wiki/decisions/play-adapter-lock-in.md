@@ -1,7 +1,7 @@
 ---
 title: Play-adapter lock-in — STaR-distilled adapters cannot be talked out of commit_play
 kind: decision
-first_seen: cba521d
+first_seen: 2026-04-30
 last_updated: 2026-05-01
 status: active
 ---

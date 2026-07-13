@@ -1,8 +1,8 @@
 ---
 title: "Primer Trade-off: Vocabulary vs Tool-Use Breadth"
 kind: decision
-first_seen: b8116b5
-last_updated: 789e14d
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: superseded
 ---
 

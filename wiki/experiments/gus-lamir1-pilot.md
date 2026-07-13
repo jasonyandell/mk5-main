@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 Pilot — Argmax Opp π_me + V_head Leaf
 kind: experiment
-first_seen: 581bf1f
-last_updated: 581bf1f
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

@@ -1,9 +1,9 @@
 ---
 title: W42 Lens v1 — Utility Head-to-Head Round-Robin
 kind: experiment
-status: closed-on-completion
-first_seen: local-2026-05-03
-last_updated: afd4802
+status: complete
+first_seen: 2026-05-03
+last_updated: 2026-07-06
 bead: t42-4ouu
 parent_epic: t42-4zi6
 ---

@@ -1,8 +1,8 @@
 ---
 title: Intermediate AI — the shipped PIMC opponent
 kind: topic
-first_seen: ba123884
-last_updated: 522779c5
+first_seen: 2025-11-26
+last_updated: 2026-07-11
 status: active
 ---
 

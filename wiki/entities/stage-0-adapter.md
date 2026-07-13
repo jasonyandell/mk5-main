@@ -1,8 +1,8 @@
 ---
 title: Stage 0 Adapter
 kind: entity
-first_seen: df73c8d
-last_updated: 43009a4
+first_seen: 2026-04-10
+last_updated: 2026-04-11
 status: superseded
 superseded_by: kerry-adapter
 ---

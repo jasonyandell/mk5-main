@@ -2,8 +2,8 @@
 title: W42 Book Validation — Utility-Lens Synthesis (Wave 3.0)
 kind: experiment
 status: superseded
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-06
 bead: t42-f2ur
 parent_epic: t42-4zi6
 ---

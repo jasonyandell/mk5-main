@@ -1,8 +1,8 @@
 ---
 title: Gus Interpretability Probes (v3-10k)
 kind: experiment
-first_seen: 245918d
-last_updated: 245918d
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

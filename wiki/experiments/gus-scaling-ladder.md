@@ -1,8 +1,8 @@
 ---
 title: Gus Scaling Ladder (100g → 10000g)
 kind: experiment
-first_seen: 0472125
-last_updated: 31f0ec3
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Auction Decoder
 kind: topic
-first_seen: b28fb55a
-last_updated: b28fb55a
+first_seen: 2026-07-13
+last_updated: 2026-07-13
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Belief Bayes Ceiling
 kind: topic
-first_seen: 548d32a
-last_updated: 548d32a
+first_seen: 2026-04-22
+last_updated: 2026-04-22
 status: active
 ---
 

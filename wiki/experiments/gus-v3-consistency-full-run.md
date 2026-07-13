@@ -1,8 +1,8 @@
 ---
 title: Gus v3 Consistency Regularizer — Full 10k Run
 kind: experiment
-first_seen: b4040c5
-last_updated: 31f0ec3
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

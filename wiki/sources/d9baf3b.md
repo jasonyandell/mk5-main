@@ -1,8 +1,8 @@
 ---
 title: "Source digest: d9baf3b — foundational tool harness + first-contact findings"
 kind: source
-first_seen: d9baf3b
-last_updated: d9baf3b
+first_seen: 2026-04-18
+last_updated: 2026-04-18
 status: active
 ---
 

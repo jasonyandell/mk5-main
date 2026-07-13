@@ -1,8 +1,8 @@
 ---
 title: Zeb — AlphaZero-style self-play player, later Burl's parked belief primitive
 kind: entity
-first_seen: 62e3b53
-last_updated: d858781
+first_seen: 2026-01-31
+last_updated: 2026-04-23
 status: superseded
 ---
 

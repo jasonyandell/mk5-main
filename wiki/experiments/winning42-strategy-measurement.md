@@ -1,8 +1,8 @@
 ---
 title: Winning 42 Strategy Measurement
 kind: experiment
-first_seen: local-2026-04-30
-last_updated: d1f1633d
+first_seen: 2026-04-30
+last_updated: 2026-07-11
 status: active
 ---
 

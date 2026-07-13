@@ -1,8 +1,8 @@
 ---
 title: "Source digest: f578bfa — local STaR runner with streaming output for interactive debugging"
 kind: source
-first_seen: f578bfa
-last_updated: f578bfa
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 

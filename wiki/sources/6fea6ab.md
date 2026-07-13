@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 6fea6ab — Burl MLX-LM local path (Apple Silicon)"
 kind: source
-first_seen: 6fea6ab
-last_updated: 6fea6ab
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

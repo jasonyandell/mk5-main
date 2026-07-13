@@ -1,8 +1,8 @@
 ---
 title: Auction Decoder v0 — instrument validation
 kind: experiment
-first_seen: e2f56314
-last_updated: e2f56314
+first_seen: 2026-07-13
+last_updated: 2026-07-13
 status: active
 ---
 

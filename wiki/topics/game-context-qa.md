@@ -1,8 +1,8 @@
 ---
 title: Game-Context Q&A (Stage 0 v4)
 kind: topic
-first_seen: 4729dad
-last_updated: be7efc4
+first_seen: 2026-04-13
+last_updated: 2026-04-17
 status: superseded
 ---
 

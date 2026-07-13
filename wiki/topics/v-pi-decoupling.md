@@ -1,8 +1,8 @@
 ---
 title: V/π Head Decoupling
 kind: topic
-first_seen: 1a2f67f
-last_updated: b007cf3
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: "Phase 1: Primer + 42-Aware Framing"
 kind: experiment
-first_seen: b8116b5
-last_updated: b8116b5
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

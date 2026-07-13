@@ -4,8 +4,8 @@ kind: experiment
 status: complete
 wave: wave5
 task_id: wave5-champion-teaching-battery
-first_seen: local-2026-06-13
-last_updated: local-2026-06-13
+first_seen: 2026-06-13
+last_updated: 2026-06-13
 ---
 
 # w42-champion-teaching-battery

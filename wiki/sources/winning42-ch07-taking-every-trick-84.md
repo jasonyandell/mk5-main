@@ -1,9 +1,9 @@
 ---
 title: Winning 42 Ch07 Taking Every Trick 84
-kind: experiment
-first_seen: local-2026-05-01
-last_updated: local-2026-05-01
-status: active
+kind: source
+first_seen: 2026-05-01
+last_updated: 2026-05-01
+status: complete
 ---
 
 ## Summary

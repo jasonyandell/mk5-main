@@ -1,8 +1,8 @@
 ---
 title: Stage 0 v10 Adapter (joint rationalization + maskfix)
 kind: entity
-first_seen: 0c7392f
-last_updated: be7efc4
+first_seen: 2026-04-17
+last_updated: 2026-04-17
 status: complete
 ---
 

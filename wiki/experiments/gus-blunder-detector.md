@@ -1,8 +1,8 @@
 ---
 title: Gus Blunder Detector (oracle-feature + student-feature)
 kind: experiment
-first_seen: f90682c
-last_updated: 5373223
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: active
 ---
 

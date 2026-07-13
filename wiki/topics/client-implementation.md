@@ -1,8 +1,8 @@
 ---
 title: Building a Client Against the Engine
 kind: topic
-first_seen: 503402c0
-last_updated: 522779c5
+first_seen: 2025-11-28
+last_updated: 2026-07-11
 status: active
 ---
 

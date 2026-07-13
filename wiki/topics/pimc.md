@@ -1,8 +1,8 @@
 ---
 title: PIMC (Perfect-Information Monte Carlo) variants
 kind: topic
-first_seen: 5a4c9b9
-last_updated: local-2026-07-06
+first_seen: 2026-04-21
+last_updated: 2026-07-06
 status: active
 ---
 

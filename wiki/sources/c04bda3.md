@@ -4,6 +4,8 @@ kind: source
 commit: c04bda3
 date: 2026-04-20
 author: Jason Yandell
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 ---
 
 ## Commit message

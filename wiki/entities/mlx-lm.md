@@ -1,7 +1,7 @@
 ---
 title: MLX-LM (Apple Silicon local path for Burl)
 kind: entity
-first_seen: 6fea6ab
+first_seen: 2026-04-19
 last_updated: 2026-05-02
 status: active
 ---

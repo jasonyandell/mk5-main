@@ -1,8 +1,8 @@
 ---
 title: LS-Mixture (verbosity blender)
 kind: topic
-first_seen: 3414507
-last_updated: d1f1633d
+first_seen: 2026-04-19
+last_updated: 2026-07-11
 status: retired
 ---
 

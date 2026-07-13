@@ -1,8 +1,8 @@
 ---
 title: Router Reality-Check (detect-and-route PoC results)
 kind: topic
-first_seen: a09ef43
-last_updated: d1f1633d
+first_seen: 2026-04-21
+last_updated: 2026-07-11
 status: retired
 ---
 

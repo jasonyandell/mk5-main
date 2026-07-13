@@ -1,8 +1,8 @@
 ---
 title: "Grok, Don't Converge"
 kind: decision
-first_seen: ece6dcf
-last_updated: ece6dcf
+first_seen: 2026-01-10
+last_updated: 2026-01-10
 status: active
 ---
 

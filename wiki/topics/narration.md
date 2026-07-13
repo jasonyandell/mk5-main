@@ -1,8 +1,8 @@
 ---
 title: Narration
 kind: topic
-first_seen: a8bccfa
-last_updated: 7f1994e
+first_seen: 2026-04-09
+last_updated: 2026-04-11
 status: active
 ---
 

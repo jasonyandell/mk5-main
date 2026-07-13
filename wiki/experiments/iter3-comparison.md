@@ -1,8 +1,8 @@
 ---
 title: "iter-3: Three-Mode Enable_Primer Comparison"
 kind: experiment
-first_seen: dbadb5f
-last_updated: dbadb5f
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 

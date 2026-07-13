@@ -1,8 +1,8 @@
 ---
 title: Risk-return inverse correlation (oracle Texas 42)
 kind: topic
-first_seen: 5ffdf58
-last_updated: 4a747f6
+first_seen: 2026-01-06
+last_updated: 2026-01-31
 status: active
 ---
 
@@ -32,7 +32,7 @@ land.
 
 ## Why the inversion holds (mechanism)
 
-The two top E[V] predictors — `n_doubles` and `trump_count` (see [[napkin-formula]])
+The two top E[V] predictors — `n_doubles` and `trump_count` (the book's napkin formula; no page)
 — are also negatively associated with σ(V). 5-5 in particular shows up enriched in
 **both** high-E[V] AND low-σ(V) groups (report/17a, 17b). Doubles are trick winners
 **and** dampeners — they reduce the degrees of freedom available to opponent hand

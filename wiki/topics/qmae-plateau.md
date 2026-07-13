@@ -1,8 +1,8 @@
 ---
 title: qMAE Plateau (Q-head scaling wall)
 kind: topic
-first_seen: 41fdb3c
-last_updated: cf8ff79
+first_seen: 2026-04-21
+last_updated: 2026-04-22
 status: active
 ---
 
