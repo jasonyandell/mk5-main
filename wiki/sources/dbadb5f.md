@@ -33,4 +33,4 @@ New `burl/ITER4_PLAN.md` documents the ranked experiment queue (E1: LoRA rank sw
 
 ## Related pages
 
-[[burl]] · [[iter3-rules-adapter]] · [[rules-as-tools]] · [[experiments/iter3-comparison]] · [[experiments/iter4-null-preserve-thoughts]] · [[conditional-outcome-structural-nonuse]] · [[burl-selfplay-arena]]
+[[burl]] · [[iter3-rules-adapter]] · [[rules-as-tools]] · [[iter3-comparison]] · [[iter4-null-preserve-thoughts]] · [[conditional-outcome-structural-nonuse]] · [[burl-selfplay-arena]]

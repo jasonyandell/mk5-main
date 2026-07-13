@@ -20,7 +20,7 @@ Without 42 vocabulary in traces, STaR's kept corpus won't teach the adapter to r
 
 ## Iter-0 result weakens the trade
 
-The iter-0 adapter trained on the primer-heavy corpus reproduced Layer 1 Gemma's eq-shy pathology rather than internalizing the vocabulary AND recovering spike-v2-level tool-use breadth. The corpus shape mirrored the base's pathology — the adapter learned "Layer-1 Gemma." See [[experiments/burl-iter0-eval]].
+The iter-0 adapter trained on the primer-heavy corpus reproduced Layer 1 Gemma's eq-shy pathology rather than internalizing the vocabulary AND recovering spike-v2-level tool-use breadth. The corpus shape mirrored the base's pathology — the adapter learned "Layer-1 Gemma." See [[burl-iter0-eval]].
 
 This weakens (but does not invalidate) the trade. The vocabulary was in the corpus; the question is whether iter-0 training was sufficient to both internalize vocabulary AND recover distribution-tool usage.
 
@@ -30,7 +30,7 @@ Trim or remove the primer for iter-1; keep the 42-aware framing block (provides 
 
 **Resolved**: iter-1 trimmed the primer and kept the 42-aware framing block (see
 [[burl-iter1-adapter]]); outcome documented, not further revisited before the project
-moved to [[candlewax]]/[[jud]]. [[topics/rules-as-tools]] later replaced the primer
+moved to [[candlewax]]/[[jud]]. [[rules-as-tools]] later replaced the primer
 question entirely by making rules content callable instead of textual.
 
 ## Generalizable principle
@@ -39,4 +39,4 @@ When a pretext modifier buys one thing and costs another, the kept corpus shape 
 
 ## Related pages
 
-[[burl]] · [[burl-iter0-adapter]] · [[star]] · [[experiments/burl-phase1-primer]] · [[experiments/burl-phase2-starcorpus]] · [[experiments/burl-iter0-eval]] · [[tool-orchestration]] · [[sources/b8116b5]] · [[sources/789e14d]]
+[[burl]] · [[burl-iter0-adapter]] · [[star]] · [[burl-phase1-primer]] · [[burl-phase2-starcorpus]] · [[burl-iter0-eval]] · [[tool-orchestration]] · [[b8116b5]] · [[789e14d]]

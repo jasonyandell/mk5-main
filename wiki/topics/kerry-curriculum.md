@@ -26,7 +26,7 @@ Four sections with deliberate weighting:
 
 **Section B** covers bidding basics, trick structure, and hand scoring.
 
-**Section C** (heaviest, 40%) covers legal-move derivation, void inference, and trump membership under every declaration. It deliberately generates tricky hands where suit/trump interaction is non-obvious — e.g., 5-3 when fives are trump cannot follow threes because 5-3 is a trump, not a three. This is the exact stumbling block seen in [[experiments/first-gemma-contact]] and [[experiments/second-gemma-contact]] (f8cdbe7).
+**Section C** (heaviest, 40%) covers legal-move derivation, void inference, and trump membership under every declaration. It deliberately generates tricky hands where suit/trump interaction is non-obvious — e.g., 5-3 when fives are trump cannot follow threes because 5-3 is a trump, not a three. This is the exact stumbling block seen in [[first-gemma-contact]] and [[second-gemma-contact]] (f8cdbe7).
 
 **Section D** covers trick resolution under every declaration.
 
@@ -36,7 +36,7 @@ Section C matches precisely the failure mode identified in second-contact evalua
 
 ## Results
 
-Evaluated in [[experiments/third-gemma-contact]] against the same probe prompt used in first and second contact (43009a4):
+Evaluated in [[third-gemma-contact]] against the same probe prompt used in first and second contact (43009a4):
 
 | Dimension | v1 adapter | v2 Kerry adapter |
 |---|---|---|
@@ -57,4 +57,4 @@ mid-arc: this page does not describe the later v4–v10 curriculum rounds (see
 
 ## Links
 
-[[rules-adapter]] [[kerry-adapter]] [[learned-by-playing]] [[texas-42]] [[experiments/third-gemma-contact]] [[experiments/first-gemma-contact]] [[experiments/second-gemma-contact]]
+[[rules-adapter]] [[kerry-adapter]] [[learned-by-playing]] [[texas-42]] [[third-gemma-contact]] [[first-gemma-contact]] [[second-gemma-contact]]

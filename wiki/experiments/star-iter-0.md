@@ -18,8 +18,8 @@ First full end-to-end [[star]] iteration on [[gemma-4-e2b]] with [[stage-0-adapt
 - **Initial adapter:** [[stage-0-adapter]] (`jasonyandell/gemma-4-e2b-texas42-stage0`)
 - **Dataset:** `lem/data/narrations_train.jsonl`, seeds 0–199, 3148 examples (see [[narration]])
 - **Batch size:** 10 examples
-- **Inference:** sequential HF `model.generate()` (vLLM removed in [[sources/8724e93]])
-- **Grading:** [[k1-grading]]; illegal/parse-fail traces discarded per [[decisions/discard-illegal-traces]]
+- **Inference:** sequential HF `model.generate()` (vLLM removed in [[8724e93]])
+- **Grading:** [[k1-grading]]; illegal/parse-fail traces discarded per [[discard-illegal-traces]]
 - **Failure handling:** [[r1-rationalization]] on legal failures only
 
 ## Results
@@ -39,14 +39,14 @@ First full end-to-end [[star]] iteration on [[gemma-4-e2b]] with [[stage-0-adapt
 
 ## Significance
 
-The 40% illegal rate confirms the [[decisions/discard-illegal-traces]] diagnostic hypothesis: a model trained only on Q&A still gets rules wrong in narration context. This is consistent with the [[learned-by-playing]] prediction that rules comprehension will improve through STaR iteration, not additional Q&A drilling. The illegal rate is the primary thing to watch decline across iterations.
+The 40% illegal rate confirms the [[discard-illegal-traces]] diagnostic hypothesis: a model trained only on Q&A still gets rules wrong in narration context. This is consistent with the [[learned-by-playing]] prediction that rules comprehension will improve through STaR iteration, not additional Q&A drilling. The illegal rate is the primary thing to watch decline across iterations.
 
-The 30% K1 pass rate is lower than the 60% base-model baseline measured in [[experiments/base-model-k1-baseline]]. This is expected: adding [[stage-0-adapter]] improved state-tracking but did not improve strategic play, and the examples that benefit from the adapter's hand-tracking fixes may overlap more with the harder strategic decisions.
+The 30% K1 pass rate is lower than the 60% base-model baseline measured in [[base-model-k1-baseline]]. This is expected: adding [[stage-0-adapter]] improved state-tracking but did not improve strategic play, and the examples that benefit from the adapter's hand-tracking fixes may overlap more with the harder strategic decisions.
 
 ## Infrastructure note
 
-vLLM was the original batch inference plan (see [[sources/8c5fbca]]). It was removed before this run due to version conflicts with Gemma 4's tokenizer format. Sequential HF `model.generate()` is used instead (~1 prompt/min on H100).
+vLLM was the original batch inference plan (see [[8c5fbca]]). It was removed before this run due to version conflicts with Gemma 4's tokenizer format. Sequential HF `model.generate()` is used instead (~1 prompt/min on H100).
 
 ## Related pages
 
-[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[learned-by-playing]] · [[decisions/discard-illegal-traces]] · [[narration]] · [[experiments/base-model-k1-baseline]] · [[sources/576b694]]
+[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[learned-by-playing]] · [[discard-illegal-traces]] · [[narration]] · [[base-model-k1-baseline]] · [[576b694]]

@@ -49,8 +49,8 @@ See [[candlewax]]'s concordance section for the full dating.
 **Away from LLM-as-reasoner.** Reasoning-coherence verification emerged as the bottleneck —
 checking whether a model's reasoning chain is actually consistent with the game state
 requires a multi-week verifier subproject, not a weekend spike. See
-[[topics/reasoning-coherence-verification]].
+[[reasoning-coherence-verification]].
 
 The spike closes the VL question and surfaces the verifier gap. Future work on
-[[topics/candlewax]] must address this before further STaR iterations compound on
+[[candlewax]] must address this before further STaR iterations compound on
 incoherent traces.

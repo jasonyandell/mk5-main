@@ -18,9 +18,9 @@ Fix: explicit `max_seq_length=4096` in `SFTConfig`. Local path was fixed first i
 
 **Consequence:** no Burl adapter trained before iter-5 was trained on complete thought-to-tool-call traces. The thought tokens were present in the `formatting_func` output but were being clipped before they reached the loss (edf86e9).
 
-This is a parallel to LEM's [[decisions/sft-completion-only-loss]] finding: TRL defaults silently trap gradient. The pattern — "we think we're training on X, but a default is preventing it" — has now appeared twice in this project (edf86e9).
+This is a parallel to LEM's [[sft-completion-only-loss]] finding: TRL defaults silently trap gradient. The pattern — "we think we're training on X, but a default is preventing it" — has now appeared twice in this project (edf86e9).
 
-**Follow-up:** iter-5 with `max_seq_length=4096` explicit shows preserve_thoughts moves bot-match +3.3pp at N=26 ([[iter5-e1-rank-sweep]]); the [[burl-star-run3]] data point at N=560 (run-3c vs run-3b) confirms the directional signal at scale and is the definitive result — see "Result: confirmed" below. [[experiments/iter4-null-preserve-thoughts]] updated accordingly.
+**Follow-up:** iter-5 with `max_seq_length=4096` explicit shows preserve_thoughts moves bot-match +3.3pp at N=26 ([[iter5-e1-rank-sweep]]); the [[burl-star-run3]] data point at N=560 (run-3c vs run-3b) confirms the directional signal at scale and is the definitive result — see "Result: confirmed" below. [[iter4-null-preserve-thoughts]] updated accordingly.
 
 ## Implementation
 
@@ -78,4 +78,4 @@ So the headline becomes: **`--preserve-thoughts` is a phase change on thought-bl
 
 ## Links
 
-[[burl]] [[burl-star-run3]] [[iter3-rules-adapter]] [[iter5-e1-rank-sweep]] [[experiments/iter4-null-preserve-thoughts]] [[decisions/sft-completion-only-loss]] [[decisions/sft-max-seq-length]] [[regret-eval]] [[commit-discipline-collapse]]
+[[burl]] [[burl-star-run3]] [[iter3-rules-adapter]] [[iter5-e1-rank-sweep]] [[iter4-null-preserve-thoughts]] [[sft-completion-only-loss]] [[sft-max-seq-length]] [[regret-eval]] [[commit-discipline-collapse]]

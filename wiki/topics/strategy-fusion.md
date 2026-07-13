@@ -154,5 +154,5 @@ so clean.
 
 [[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[champion]] [[jud]]
 [[expected-q-value]] [[argmax-q-ceiling]] [[grok-not-converge]] [[zeb]] [[eq-genesis]]
-[[sources/claude/era2-breakthrough-oracle|conversation digest]]
-[[sources/claude/era3-eq-era|conversation digest]]
+[[era2-breakthrough-oracle|conversation digest]]
+[[era3-eq-era|conversation digest]]

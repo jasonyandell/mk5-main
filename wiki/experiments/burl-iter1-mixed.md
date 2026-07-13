@@ -21,7 +21,7 @@ Full second STaR iteration on [[burl]]. Trimmed the LEM primer from 1549 → ~40
 
 ## Three-step finding sequence
 
-**Step 1 — Dropping the primer entirely: killed.** Framing block only (no primer): 0% wins, 50% retry-exhausted at 6 decisions. The primer was carrying behavioral load beyond rules teaching. See [[decisions/commit-discipline]].
+**Step 1 — Dropping the primer entirely: killed.** Framing block only (no primer): 0% wins, 50% retry-exhausted at 6 decisions. The primer was carrying behavioral load beyond rules teaching. See [[commit-discipline]].
 
 **Step 2 — Trimmed primer rollout: deeper reasoning, lower K1.** N=30 at 43% K1 (below iter-0's 54%). 0 retry-exhausted. Rollouts ran ~3× slower per-decision than iter-0 (~180 s vs ~56 s wall). Healthier tool diversity: `is_legal` 44, `trump_declared` 4, `is_trump` 1, `eq_outcome_distribution` 2.
 
@@ -53,9 +53,9 @@ Trimmed primer + SFT amplified "think deeply about the position" at the cost of 
 3. N=50 corpus; `max_retries=7` at eval-time.
 
 iter-2 was never a standalone adapter page — its results were folded directly into
-[[experiments/iter3-comparison]]'s variant table on the way to [[iter3-rules-adapter]].
+[[iter3-comparison]]'s variant table on the way to [[iter3-rules-adapter]].
 See that page for how these options actually resolved.
 
 ## Related pages
 
-[[burl-iter1-adapter]] · [[burl-iter0-adapter]] · [[experiments/burl-iter0-eval]] · [[decisions/primer-tradeoff]] · [[decisions/commit-discipline]] · [[experiments/iter3-comparison]] · [[burl]] · [[gemma-4-e2b]] · [[sources/09b841e]]
+[[burl-iter1-adapter]] · [[burl-iter0-adapter]] · [[burl-iter0-eval]] · [[primer-tradeoff]] · [[commit-discipline]] · [[iter3-comparison]] · [[burl]] · [[gemma-4-e2b]] · [[09b841e]]

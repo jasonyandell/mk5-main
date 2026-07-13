@@ -38,7 +38,7 @@ Three implications:
 
 1. **Pedagogical interactions cannot be done in-band.** Any "teach Burl by talking to him" approach is structurally blocked while the harness is in play-decision mode. The teaching has to happen out-of-band — either via [[improvised-tools]] that surface the right facts, via system-prompt patches, or via adapter retraining.
 2. **Engine-rejection feedback loops produce repeat commits.** When a commit is rejected and the harness routes the rejection back as a tool_result, Burl reads it as "do another tool plan" and often re-commits the same illegal play. The harvest's force-commit fallback masks this in production traces. In the workbench, the symptom is visible: three identical `commit_play(14)` calls in a row.
-3. **The post-commit-Q&A corpus has to include reflection turns explicitly.** A corpus drawn purely from organic chat with the current model will be void of *"the previous play was wrong because…"* responses, because the current model can't produce them. Either we hand-write the reflection rows (Roberson chapters 2-8 are the voice template), or we synthesize them from a stronger model (Haiku 4.5, [[entities/haiku-4-5]]) and distill.
+3. **The post-commit-Q&A corpus has to include reflection turns explicitly.** A corpus drawn purely from organic chat with the current model will be void of *"the previous play was wrong because…"* responses, because the current model can't produce them. Either we hand-write the reflection rows (Roberson chapters 2-8 are the voice template), or we synthesize them from a stronger model (Haiku 4.5, [[haiku-4-5]]) and distill.
 
 ## What this does *not* prove
 

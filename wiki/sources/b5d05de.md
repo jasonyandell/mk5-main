@@ -26,4 +26,4 @@ Production N=30 [[reference-trace-distillation]] run of [[haiku-4-5]] (29/30 com
 
 ## Related pages
 
-[[reference-trace-distillation]] · [[haiku-4-5]] · [[burl]] · [[sources/1f13f92]]
+[[reference-trace-distillation]] · [[haiku-4-5]] · [[burl]] · [[1f13f92]]

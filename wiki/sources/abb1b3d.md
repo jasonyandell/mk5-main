@@ -28,4 +28,4 @@ Threads `enable_rules_tools` through the full STaR rollout + eval paths so rollo
 
 ## Related pages
 
-[[rules-as-tools]] · [[burl]] · [[eq-gate-star]] · [[sources/80704f0]] · [[sources/c698091]]
+[[rules-as-tools]] · [[burl]] · [[eq-gate-star]] · [[80704f0]] · [[c698091]]

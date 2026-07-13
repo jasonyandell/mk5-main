@@ -37,8 +37,8 @@ status: active
 - Enables interactive inspection of the model's thinking channel without incurring [[modal]] GPU cost.
 - Grading logic (`parse_play`, `grade_k1`) imported directly from `star_harness.py` — ensures local and Modal runs use identical grading.
 - Baseline result on 10 examples, base [[gemma-4-e2b]] (no adapter): 60% K1 pass, 30% legal-suboptimal fail, 10% illegal, 0% parse-fail.
-- The 60% baseline reflects the structural ceiling of [[k1-grading]] on a greedy-bot opponent (see [[experiments/base-model-k1-baseline]] for interpretation).
+- The 60% baseline reflects the structural ceiling of [[k1-grading]] on a greedy-bot opponent (see [[base-model-k1-baseline]] for interpretation).
 
 ## Related pages
 
-[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[gemma-4-e2b]] · [[experiments/base-model-k1-baseline]] · [[sources/7538016]]
+[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[gemma-4-e2b]] · [[base-model-k1-baseline]] · [[7538016]]

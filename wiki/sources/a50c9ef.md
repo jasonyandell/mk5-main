@@ -30,4 +30,4 @@ by regret = highest oracle E[Q] spread. The student is not making random errors.
 
 ## Links
 
-[[topics/regret-eval]] · [[experiments/gus-scaling-ladder]]
+[[regret-eval]] · [[gus-scaling-ladder]]

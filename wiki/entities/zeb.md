@@ -17,7 +17,7 @@ being the one still referenced by Burl's tool wrapper today.
 
 Zeb's name was chosen deliberately for a PR headline: "high wtf factor," workshopped from
 "a cute character name like from a retrofuturistic sharecropper in Texas in the 1930s"
-(2026-02-01, [[sources/claude/era4-zeb-era|conversation digest]]).
+(2026-02-01, [[era4-zeb-era|conversation digest]]).
 
 ## Precursor: the actual first commit (2026-01-31, era 3)
 
@@ -47,7 +47,7 @@ analysis thread was closed as a dead end (*"there are a lot of interesting disco
 here about 42 but ultimately they do not lead anywhere"*, 2026-02-01T01:31) and answered
 with *"ok left turn"* → *"why is alphago zero style approach not appropriate for 42
 again?"* (02:42) → *"yes prepare a statement for Claude code, let's do this buddy"* (02:59,
-[[sources/claude/era4-zeb-era|conversation digest]]). Twenty-five commits landed the first
+[[era4-zeb-era|conversation digest]]). Twenty-five commits landed the first
 day, seven of them from parallel build agents standing up types/game/observation/model/
 self-play/module/evaluate at once (`b711311`, 1888 lines).
 
@@ -61,7 +61,7 @@ actually tried the alphazero approach, we've tried proxies and standins and
 maybe-instead-ofs"* (2026-02-02T21:28). The scar tissue underneath the vigilance was named
 too: *"I don't want to be disappointed again, I admit it. I thought PIMC was gonna be sweet.
 it wasn't. I've had a blast making this and now I'm scared to find out if it stinks"*
-(2026-02-05T04:32, [[sources/claude/era4-zeb-era|conversation digest]]).
+(2026-02-05T04:32, [[era4-zeb-era|conversation digest]]).
 
 ## Build arc
 
@@ -191,8 +191,8 @@ Hidden-only calibration (dominoes actually uncertain at time of prediction):
 | ECE | 0.067 |
 
 39% top-1 on the hidden dominoes (the only ones that matter for belief-based reasoning) is
-not reliable enough to anchor decisions on. See [[experiments/zeb-calibration-eval]] and
-[[decisions/zeb-parked-eq-primitive]]. (commit message @ d9baf3b)
+not reliable enough to anchor decisions on. See [[zeb-calibration-eval]] and
+[[zeb-parked-eq-primitive]]. (commit message @ d9baf3b)
 
 **Status**: Zeb's tool wrapper (`get_belief`) is shipped in `burl/tools/zeb.py` but parked
 behind a flag in Burl's default tool list. The default checkpoint was also corrected from
@@ -252,5 +252,5 @@ Speculative until the book-strategy framework is built and recording starts.
 - **`lb-v-eq-1920` and `lb-v-eq-3740` are two different runs**, not one under two names — a
   later full-teacher run vs. an earlier Feb-15 large-belief bootstrap.
 
-See [[sources/claude/era4-zeb-era|conversation digest]] and
+See [[era4-zeb-era|conversation digest]] and
 [[alphazero-under-imperfect-information]] for the full era treatment.

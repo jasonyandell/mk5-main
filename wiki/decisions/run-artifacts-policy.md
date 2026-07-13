@@ -42,4 +42,4 @@ reference them before removal. New runs never enter git.
 ## Links
 
 [[stage-0-closure]] [[jud-target-granularity]] [[partnership-research-gates]]
-[[arena]]
+[[arena]] [[beads-to-gh-issues]]

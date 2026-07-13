@@ -30,4 +30,4 @@ Adds `asyncio.to_thread` + semaphore-gated batching to `run_star_rollout`, benef
 
 ## Related pages
 
-[[burl]] · [[star]] · [[modal]] · [[eq-gate-star]] · [[sources/761587c]]
+[[burl]] · [[star]] · [[modal]] · [[eq-gate-star]] · [[761587c]]

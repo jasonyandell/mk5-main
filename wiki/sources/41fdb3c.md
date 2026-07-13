@@ -33,4 +33,4 @@ blocking LAMIR-1.
 
 ## Links
 
-[[experiments/gus-v3-consistency-full-run]] · [[topics/dense-q-supervision]] · [[gus]]
+[[gus-v3-consistency-full-run]] · [[dense-q-supervision]] · [[gus]]

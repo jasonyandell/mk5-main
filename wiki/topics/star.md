@@ -35,8 +35,8 @@ The STaR harness exists in three variants (see [[star-harness]]):
 
 The inference step uses HF `model.generate()` in batch mode. vLLM has been tried and abandoned twice:
 
-1. **8724e93** — removed due to a version conflict between vLLM's pinned transformers and Gemma 4's tokenizer format. See [[sources/8724e93]].
-2. **2c2b851** — re-attempted on B200 with vLLM 0.19.0; abandoned 80 min later in **26f5ddf**. Root cause: `Gemma4ForConditionalGeneration`'s multimodal weight layout is incompatible with LoRA in vLLM 0.19.0 — merged LoRA checkpoints cannot be loaded. See [[sources/2c2b851]] and [[sources/26f5ddf]].
+1. **8724e93** — removed due to a version conflict between vLLM's pinned transformers and Gemma 4's tokenizer format. See [[8724e93]].
+2. **2c2b851** — re-attempted on B200 with vLLM 0.19.0; abandoned 80 min later in **26f5ddf**. Root cause: `Gemma4ForConditionalGeneration`'s multimodal weight layout is incompatible with LoRA in vLLM 0.19.0 — merged LoRA checkpoints cannot be loaded. See [[2c2b851]] and [[26f5ddf]].
 
 The settled recipe (26f5ddf): HF `model.generate()` with three fixes — `attn_implementation="sdpa"` (PyTorch native flash attention), `torch.compile(model, mode="reduce-overhead")`, and left-padded batching (all prompts in one `generate()` call). The model is loaded once and reused for both the inference pass and the [[r1-rationalization]] pass; stopped only for the LoRA training phase. Smoke test on B200: 120 tok/s, full 5-example iteration in 151s.
 
@@ -46,7 +46,7 @@ The settled recipe (26f5ddf): HF `model.generate()` with three fixes — `attn_i
 2. **Parse** — extract the model's chosen action from the thinking-channel output.
 3. **K1 grade** — classify each trace as `pass`, `fail`, `illegal`, or `parse_fail`.
 4. **Pass** → keep the full response as a training trace.
-5. **Illegal or parse_fail** → DISCARD. Traces arriving at impossible states are poison — the reasoning chain is corrupted even if intermediate steps looked reasonable. See [[decisions/discard-illegal-traces]]. (Prior to fb47ab3 these were rationalized; that behavior is superseded.)
+5. **Illegal or parse_fail** → DISCARD. Traces arriving at impossible states are poison — the reasoning chain is corrupted even if intermediate steps looked reasonable. See [[discard-illegal-traces]]. (Prior to fb47ab3 these were rationalized; that behavior is superseded.)
 6. **Fail** → [[r1-rationalization]]: reveal the correct action, ask the model to justify it, keep that rationalization as a training trace.
 7. **LoRA step** on the collected traces → push adapter to HuggingFace → repeat.
 
@@ -66,11 +66,11 @@ First full end-to-end STaR iteration (H100, Stage 0 adapter, 10 examples, ~15 mi
 - Adapter pushed: `jasonyandell/gemma-4-e2b-texas42-star-iter0`
 - Wandb: `jasonyandell-forge42/lem-star`
 
-The 40% illegal rate confirms the diagnostic prediction: Stage 0 rules knowledge is still incomplete. The rate is expected to drop across iterations as the model internalizes rules through practice (see [[learned-by-playing]]). See [[experiments/star-iter-0]] for the full run writeup (lem/OVERVIEW.md @ 576b694).
+The 40% illegal rate confirms the diagnostic prediction: Stage 0 rules knowledge is still incomplete. The rate is expected to drop across iterations as the model internalizes rules through practice (see [[learned-by-playing]]). See [[star-iter-0]] for the full run writeup (lem/OVERVIEW.md @ 576b694).
 
 ## First measurements
 
-Base-model K1 baseline (10 examples, no adapter, local runner, llama.cpp): 60% pass rate — 60% pass, 30% fail, 10% illegal, 0% parse fail. See [[experiments/base-model-k1-baseline]] (f578bfa).
+Base-model K1 baseline (10 examples, no adapter, local runner, llama.cpp): 60% pass rate — 60% pass, 30% fail, 10% illegal, 0% parse fail. See [[base-model-k1-baseline]] (f578bfa).
 
 ## Data flow
 
@@ -103,7 +103,7 @@ Data pool expanded at iter 5 from 3148 (seeds 0–199) to 7409 examples (seeds 2
 
 Pass rate: 30% → plateau at 36–42%. Best: 42% at iters 5 and 7, reproducible but not durable across iterations. Loss: 31.6 → 11.8. 10 adapters on HuggingFace: `star-iter0` through `star-iter9`.
 
-The plateau at 36–42% average suggests the current signal is saturating. See [[experiments/star-10-iterations]] for the full table (lem/OVERVIEW.md @ efad16e).
+The plateau at 36–42% average suggests the current signal is saturating. See [[star-10-iterations]] for the full table (lem/OVERVIEW.md @ efad16e).
 
 **Iterations 10–14 (908773a):** 39%, 41%, 40%, 39%, 38%. Loss stable at ~10. Plateau confirmed — 5 additional iterations on the 7409 pool did not break 42%. Total: 15 adapters on HuggingFace (`star-iter0` through `star-iter14`), total B200 cost ~$25.
 
@@ -111,7 +111,7 @@ Also generated 4263 more narrations (seeds 500–799); total pool now 11,672 exa
 
 > "The plateau at ~40% likely reflects the ceiling of K1 grading without fact-verification. The model may be learning wrong game-facts that happen to produce correct plays ~40% of the time but can't go further because the reasoning is polluted." (lem/OVERVIEW.md @ 908773a)
 
-The proposed remediation: bootstrap the scratchpad format via SFT first, then resume [[scratchpad-validation]]. See [[experiments/star-10-iterations]] (the experiment page tracks all 15 iterations).
+The proposed remediation: bootstrap the scratchpad format via SFT first, then resume [[scratchpad-validation]]. See [[star-10-iterations]] (the experiment page tracks all 15 iterations).
 
 ## Kerry STaR + v3 STaR
 
@@ -135,7 +135,7 @@ vs. v1 baseline iter-0: 30% pass / 33% illegal. Kerry's curriculum + public stat
 | 3 | 47% | ~13% |
 | 4 | 38% | ~13% |
 
-Peak 48% at iter-2 is a new high water mark (previously 42% on v1, 46% on Kerry). Best adapter: `star-iter2`. See [[experiments/stage-0-progression-star]] (8c1bb14).
+Peak 48% at iter-2 is a new high water mark (previously 42% on v1, 46% on Kerry). Best adapter: `star-iter2`. See [[stage-0-progression-star]] (8c1bb14).
 
 **Revised ceiling framing:** The "~40% K1-without-fact-verification ceiling" reading from ingest 10 (908773a) was premature. v3 shows Stage-0-quality improvements push through it — the 42% ceiling broke at 48%. The revised hypothesis: K1 has a ceiling that depends on the rules-comprehension floor provided by Stage 0. Better Stage 0 → higher STaR plateau. [[scratchpad-validation]] may still be needed eventually but is not proven necessary yet (8c1bb14).
 
@@ -190,4 +190,4 @@ At this frontier the project continues with simple K1 + random-subset sampling p
 
 ## Links
 
-[[k1-grading]] [[r1-rationalization]] [[lem]] [[burl]] [[tool-orchestration]] [[backwards-curriculum]] [[rules-adapter]] [[narration]] [[expected-q-value]] [[star-harness]] [[modal]] [[experiments/base-model-k1-baseline]] [[experiments/star-iter-0]] [[experiments/star-10-iterations]] [[experiments/stage-0-progression-star]] [[decisions/discard-illegal-traces]] [[decisions/resumable-checkpointing]] [[learned-by-playing]] [[scratchpad-validation]] [[kerry-curriculum]] [[trump-drilling]] [[sources/8724e93]] [[sources/2c2b851]] [[sources/26f5ddf]]
+[[k1-grading]] [[r1-rationalization]] [[lem]] [[burl]] [[tool-orchestration]] [[backwards-curriculum]] [[rules-adapter]] [[narration]] [[expected-q-value]] [[star-harness]] [[modal]] [[base-model-k1-baseline]] [[star-iter-0]] [[star-10-iterations]] [[stage-0-progression-star]] [[discard-illegal-traces]] [[resumable-checkpointing]] [[learned-by-playing]] [[scratchpad-validation]] [[kerry-curriculum]] [[trump-drilling]] [[8724e93]] [[2c2b851]] [[26f5ddf]]

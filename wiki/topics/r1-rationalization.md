@@ -22,7 +22,7 @@ The shift: "traces that arrive at impossible states (illegal moves, unparseable 
 
 At this frontier, only `fail` traces (legal action, E[Q] below the bot's threshold) are rationalized. `illegal` and `parse_fail` traces are discarded without training. This preserves R1's utility for strategy learning while preventing the model from internalizing rationalizations built on top of a corrupted reasoning chain.
 
-The illegality rate (`illegal_rate` in wandb) is now a free diagnostic: high (~40%) signals Stage 0 needs more rules work; low (~5%) signals the model knows the rules and training can focus on strategy. See [[decisions/discard-illegal-traces]] (fb47ab3).
+The illegality rate (`illegal_rate` in wandb) is now a free diagnostic: high (~40%) signals Stage 0 needs more rules work; low (~5%) signals the model knows the rules and training can focus on strategy. See [[discard-illegal-traces]] (fb47ab3).
 
 ## Implementation
 
@@ -41,7 +41,7 @@ v10 ([[v10-adapter]]) introduces an alternative to STaR-iteration rationalizatio
 
 **Bug documented:** `rationalize-v1`, a variant trained without the v9 foundation (fresh LoRA on rationalizations only), transferred the reasoning habit but not domain knowledge — 0/100 bot-match, 97/100 no-play. Lesson: rationalization training must build on top of comprehension, not replace it. Joint training from the comprehension base with mixed data avoids this (0c7392f).
 
-**Mask fix (be7efc4):** TRL's `SFTConfig` was computing loss over the full sequence (prompt + answer), diluting the answer gradient ~9× by memorized prompt tokens. Switching dataset format from `messages` → `prompt`/`completion` enables `completion_only_loss=True`. Transition bot-match unchanged at 55/100 after the fix — confirming bot-match is not a gradient-allocation problem; capacity or STaR is the next lever. See [[decisions/sft-completion-only-loss]] (be7efc4).
+**Mask fix (be7efc4):** TRL's `SFTConfig` was computing loss over the full sequence (prompt + answer), diluting the answer gradient ~9× by memorized prompt tokens. Switching dataset format from `messages` → `prompt`/`completion` enables `completion_only_loss=True`. Transition bot-match unchanged at 55/100 after the fix — confirming bot-match is not a gradient-allocation problem; capacity or STaR is the next lever. See [[sft-completion-only-loss]] (be7efc4).
 
 ## Open questions
 
@@ -53,4 +53,4 @@ trajectories (see [[star]] "STaR on Burl's trajectories").
 
 ## Links
 
-[[star]] [[k1-grading]] [[lem]] [[star-harness]] [[decisions/discard-illegal-traces]] [[rationalization-verifier]] [[v9-adapter]] [[v10-adapter]] [[decisions/sft-completion-only-loss]]
+[[star]] [[k1-grading]] [[lem]] [[star-harness]] [[discard-illegal-traces]] [[rationalization-verifier]] [[v9-adapter]] [[v10-adapter]] [[sft-completion-only-loss]]

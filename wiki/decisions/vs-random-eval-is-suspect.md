@@ -73,4 +73,4 @@ silently misgrade the specific comparisons — capacity ceilings, teacher-signal
 that a project treats as load-bearing.
 
 See [[zeb]] · [[full-teacher-eq-experiment]] · [[eval-matrix-bradley-terry]] ·
-[[sources/claude/era4-zeb-era|conversation digest]].
+[[era4-zeb-era|conversation digest]].

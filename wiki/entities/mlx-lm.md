@@ -53,7 +53,7 @@ tokens, iter-3-rules shape):
 
 Memory plateau: 15 GB on 48 GB host. N=500 rollouts at ~4 turns × ~128 tokens ≈ 3.5 min
 wall. Unlocks "corpus 10-20× larger" as a cheap iter-5+ lever. See
-[[experiments/batch-throughput-bench]]. (commit message @ ed3cfc3)
+[[batch-throughput-bench]]. (commit message @ ed3cfc3)
 
 Operationalized in `GemmaLocalNativeBatched` (`burl/modal/gemma_local_batched.py`) and
 `run_move4_star_rollout_batched.py`. Wall: N=16 batched at batch=16 in 58s vs sequential
@@ -70,7 +70,7 @@ parity.
 
 This reframes ingest B7's iter-4 null result: the byte-identical A/B was almost certainly
 truncation, not LoRA capacity saturation — no prior Burl adapter was trained on complete
-thought-to-tool-call traces. Parallel to LEM's [[decisions/sft-completion-only-loss]]
+thought-to-tool-call traces. Parallel to LEM's [[sft-completion-only-loss]]
 finding: TRL defaults are traps. (commit message @ edf86e9)
 
 ## Upstream bug: module-level `generation_stream`

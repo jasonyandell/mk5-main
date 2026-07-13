@@ -19,6 +19,8 @@ event-sourced core, the Layer variant system (nello/plunge/sevens/splash),
 and PIMC-minimax as the working AI were all built there, pre-dating [[forge]],
 [[gus]], and [[burl]] by months.
 
+The seven architecture decision records live at [[engine-adrs]].
+
 ## Architecture reference
 
 The engine's current architecture is documented as a wiki cluster (promoted

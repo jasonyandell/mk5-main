@@ -27,8 +27,8 @@ status: active
 >   and <|channel>thought round-trip invariants.
 > - burl/requirements-mlx.txt: mlx>=0.29, mlx-lm>=0.29.
 
-Closes the corpus-generation + training + eval loop as a fully local pipeline on M-series Macs. `gemma_local.py` implements the same `NativeModelCallable` interface as the [[modal]] path so callers are model-source-agnostic. `star_mlx.py` ports the `preserve_thoughts` bypass and includes `max_seq_length=4096` (the local path already had the fix that [[sources/edf86e9]] later applies to the Modal path).
+Closes the corpus-generation + training + eval loop as a fully local pipeline on M-series Macs. `gemma_local.py` implements the same `NativeModelCallable` interface as the [[modal]] path so callers are model-source-agnostic. `star_mlx.py` ports the `preserve_thoughts` bypass and includes `max_seq_length=4096` (the local path already had the fix that [[edf86e9]] later applies to the Modal path).
 
 ## Related pages
 
-[[mlx-lm]] · [[burl]] · [[gemma-4-e2b]] · [[modal]] · [[preserve-thoughts]] · [[sources/edf86e9]]
+[[mlx-lm]] · [[burl]] · [[gemma-4-e2b]] · [[modal]] · [[preserve-thoughts]] · [[edf86e9]]

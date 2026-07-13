@@ -136,10 +136,13 @@ def main():
     inbound = collections.Counter()          # from live pages (not index/log/archive)
     inbound_router = collections.defaultdict(set)  # experiments page -> linking entities/trails pages
     inbound_any = collections.Counter()      # from anything at all
+    def is_index(rel):
+        return re.fullmatch(r"index(-[\w-]+)?\.md", rel) is not None
+
     for rel, text in pages.items():
         if rel in EXCLUDED:
             continue
-        src_is_live = rel not in FROZEN and rel not in ("index.md", "log.md")
+        src_is_live = rel not in FROZEN and not is_index(rel) and rel != "log.md"
         for target in links_of(text):
             tbase = base(target)
             hits = basemap.get(tbase, set())
@@ -157,7 +160,7 @@ def main():
                     inbound[h] += 1
                     if h.startswith("experiments/") and rel.startswith(("entities/", "trails/")):
                         inbound_router[h].add(rel)
-            if "/" in target and src_is_live and rel != "index.md":
+            if "/" in target and src_is_live:
                 add("LN03", "WARN", f"{rel}: [[{target}]]")
 
     # --- orphans and routing ---

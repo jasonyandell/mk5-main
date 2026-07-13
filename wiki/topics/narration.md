@@ -53,7 +53,7 @@ At this frontier, datasets are local files — not yet uploaded to HuggingFace (
 | `lem/data/narrations_train.jsonl` | 0–199 | 3148 |
 | `lem/data/narrations_eval.jsonl` | 900000–900049 | 812 |
 
-The eval seed range is a deliberate holdout. See [[decisions/eval-seed-holdout]].
+The eval seed range is a deliberate holdout. See [[eval-seed-holdout]].
 
 ## Post-trick public state block (v3 format)
 
@@ -65,7 +65,7 @@ As of 7f1994e, narrations include a structured state block after every completed
 
 Rationale: "A 2B model shouldn't reconstruct game state from prose any more than a human should memorize 28 dominoes. In real 42, this information is public and visible at the table." (7f1994e) The state block surfaces information that was already in the narration in distributed prose form but required active bookkeeping to reconstruct. Cost: ~60 tokens per trick, ~300 extra tokens per prompt — cheap relative to the reduction in bookkeeping burden on the model.
 
-This format is narration v3. V1 narrations (without state block) are no longer used by default for Stage 1 going forward. See [[decisions/public-state-block]] for the design rationale.
+This format is narration v3. V1 narrations (without state block) are no longer used by default for Stage 1 going forward. See [[public-state-block]] for the design rationale.
 
 ## Implementation
 
@@ -85,4 +85,4 @@ datasets remain in `lem/` but nothing at the current frontier consumes them.
 
 ## Links
 
-[[lem]] [[star]] [[rules-adapter]] [[forge]] [[expected-q-value]] [[texas-42]] [[decisions/eval-seed-holdout]] [[decisions/public-state-block]]
+[[lem]] [[star]] [[rules-adapter]] [[forge]] [[expected-q-value]] [[texas-42]] [[eval-seed-holdout]] [[public-state-block]]

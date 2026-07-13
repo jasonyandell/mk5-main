@@ -50,4 +50,4 @@ belief at 0.655 is the best look-ahead result to date. `sample_worlds.py` finds 
 
 ## Links
 
-[[experiments/gus-belief-co-train]] · [[topics/lamir1]] · [[topics/regret-eval]]
+[[gus-belief-co-train]] · [[lamir1]] · [[regret-eval]]

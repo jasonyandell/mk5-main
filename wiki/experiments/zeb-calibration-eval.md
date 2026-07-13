@@ -8,7 +8,7 @@ status: complete
 
 ## Summary
 
-Calibration evaluation of [[zeb]]'s belief predictions using `burl/eval/belief_calibration.py`. Separates already-played dominoes (trivially known) from hidden dominoes (genuinely uncertain). Result: the advertised 72% top-1 accuracy is inflated; hidden-only top-1 is ~39%. See [[decisions/zeb-parked-eq-primitive]].
+Calibration evaluation of [[zeb]]'s belief predictions using `burl/eval/belief_calibration.py`. Separates already-played dominoes (trivially known) from hidden dominoes (genuinely uncertain). Result: the advertised 72% top-1 accuracy is inflated; hidden-only top-1 is ~39%. See [[zeb-parked-eq-primitive]].
 
 ([burl/eval/belief_calibration.py @ d9baf3b](../sources/d9baf3b.md))
 
@@ -30,7 +30,7 @@ Calibration evaluation of [[zeb]]'s belief predictions using `burl/eval/belief_c
 
 The 72% figure has been the headline Zeb accuracy since the [[forge]] training pipeline. It was measured over all 28 dominoes at each state — including dominoes already on the table, whose locations are trivially determinable from the play record. Including those inflates accuracy substantially.
 
-The number that matters for [[burl]]'s belief tool is the hidden-only figure: ~39%. At that accuracy, Zeb is not reliable enough to anchor decisions. Zeb is parked; E[Q] N=10 outcome distribution becomes the belief primitive. See [[decisions/zeb-parked-eq-primitive]].
+The number that matters for [[burl]]'s belief tool is the hidden-only figure: ~39%. At that accuracy, Zeb is not reliable enough to anchor decisions. Zeb is parked; E[Q] N=10 outcome distribution becomes the belief primitive. See [[zeb-parked-eq-primitive]].
 
 ## Generalizable lesson
 
@@ -38,4 +38,4 @@ When an ML artifact advertises a headline accuracy, inspect the denominator. "Ac
 
 ## Related pages
 
-[[zeb]] · [[burl]] · [[forge]] · [[decisions/zeb-parked-eq-primitive]] · [[tool-orchestration]] · [[sources/d9baf3b]]
+[[zeb]] · [[burl]] · [[forge]] · [[zeb-parked-eq-primitive]] · [[tool-orchestration]] · [[d9baf3b]]

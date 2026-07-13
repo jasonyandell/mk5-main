@@ -29,11 +29,11 @@ Fine-tuning uses [[lora-unsloth]].
 
 ## Stage 0 v1 results
 
-Training completed on [[modal]] L4 GPU (1 epoch, 208 steps, ~60 min). Loss: 32 → 0.001 in 40 steps; 100% token accuracy by step 50. Adapter pushed to HuggingFace at `jasonyandell/gemma-4-e2b-texas42-stage0`. See [[experiments/stage-0-v1-training]] (lem/OVERVIEW.md @ 24ae55a).
+Training completed on [[modal]] L4 GPU (1 epoch, 208 steps, ~60 min). Loss: 32 → 0.001 in 40 steps; 100% token accuracy by step 50. Adapter pushed to HuggingFace at `jasonyandell/gemma-4-e2b-texas42-stage0`. See [[stage-0-v1-training]] (lem/OVERVIEW.md @ 24ae55a).
 
 ## What transferred, what didn't
 
-The adapter is the [[experiments/second-gemma-contact]] baseline for this assessment.
+The adapter is the [[second-gemma-contact]] baseline for this assessment.
 
 | Dimension | Base Gemma | + Stage 0 adapter |
 |---|---|---|
@@ -49,7 +49,7 @@ The v2 adapter ("Kerry") replaces the original 3500-example v1 Q&A corpus with a
 
 Trained on B200, 150 steps. Adapter pushed to HuggingFace at `jasonyandell/gemma-4-e2b-texas42-stage0-kerry`. See [[kerry-adapter]] (43009a4).
 
-**Evaluation results** (see [[experiments/third-gemma-contact]]):
+**Evaluation results** (see [[third-gemma-contact]]):
 
 | Dimension | v1 adapter | v2 Kerry adapter |
 |---|---|---|
@@ -59,7 +59,7 @@ Trained on B200, 150 steps. Adapter pushed to HuggingFace at `jasonyandell/gemma
 | Strategic reasoning depth | Shallow | Dramatically deeper |
 | Final answer | Legal, correct | Legal, correct |
 
-Trump non-membership is fixed. The 6-4 under fives error is the last remaining trump-membership gap — the same error that has persisted since [[experiments/first-gemma-contact]], now narrowed to a single edge case (43009a4).
+Trump non-membership is fixed. The 6-4 under fives error is the last remaining trump-membership gap — the same error that has persisted since [[first-gemma-contact]], now narrowed to a single edge case (43009a4).
 
 ## Stage 0 v3 — Kerry + trump drilling
 
@@ -75,7 +75,7 @@ v3 extends [[kerry-curriculum]] with 5k targeted [[trump-drilling]] examples (5 
 
 > "Each curriculum round raises the floor." (8c1bb14)
 
-Best STaR checkpoint to date: v3 `star-iter2` at 48% pass. Current Stage 0 base for STaR is the v3 adapter. See [[experiments/stage-0-progression-star]].
+Best STaR checkpoint to date: v3 `star-iter2` at 48% pass. Current Stage 0 base for STaR is the v3 adapter. See [[stage-0-progression-star]].
 
 ## Stage 0 v4 — game-context Q&A
 
@@ -83,7 +83,7 @@ v4 discards the flashcard structure used in v1–v3. All Q&A now derives from ac
 
 Corpus: 31,830 train + 7,725 eval, engine-verified. Training: 31k × 3 epochs on B200, loss 0.06, 97.4% token accuracy. Adapter at [[v4-adapter]] (3c33e86).
 
-Two eval bugs (EOS token + left-pad slicing) were masking real knowledge in initial results. After fixes and switching to a flexible grader ([[decisions/flexible-grader]]):
+Two eval bugs (EOS token + left-pad slicing) were masking real knowledge in initial results. After fixes and switching to a flexible grader ([[flexible-grader]]):
 
 | Question type | Score |
 |---|---|
@@ -94,7 +94,7 @@ Two eval bugs (EOS token + left-pad slicing) were masking real knowledge in init
 | `what_beats` | 15% |
 | **Overall** | **67%** |
 
-"The model knows Texas 42." (3c33e86) See [[experiments/stage-0-v4-comprehension-eval]] (2f11f32).
+"The model knows Texas 42." (3c33e86) See [[stage-0-v4-comprehension-eval]] (2f11f32).
 
 **Progression v1 → v2 → v3 → v4:** each generation loosened the curriculum structure. v4 is the first approach giving the model prose-native, game-grounded answering rather than flashcard pattern matching — which is closer to what [[star]] narration prompts actually require.
 
@@ -102,7 +102,7 @@ Two eval bugs (EOS token + left-pad slicing) were masking real knowledge in init
 
 v5 pivots the base model from [[gemma-4-e2b]] to [[qwen3-1.7b]], using the same [[game-context-qa]] corpus (31k train + 7.7k eval). Result: **100% on `comprehension_eval_v5`**, vs Gemma v4's 67%. Training time ~19 min on Modal B200 at 36K tok/s via Unsloth + xformers. Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v5` ([[v5-adapter]], 3465e29).
 
-Gemma 4 E2B's architectural constraints (PLE, KV-sharing, no FA2) made it both slower and less accurate than Qwen 3 1.7B. Closing bead t42-hv08 (B200 underutilization) — the answer was model choice, not GPU/kernel tuning (3465e29). See [[decisions/base-model-pivot-qwen]].
+Gemma 4 E2B's architectural constraints (PLE, KV-sharing, no FA2) made it both slower and less accurate than Qwen 3 1.7B. Closing bead t42-hv08 (B200 underutilization) — the answer was model choice, not GPU/kernel tuning (3465e29). See [[base-model-pivot-qwen]].
 
 **Full Stage 0 progression:**
 
@@ -120,11 +120,11 @@ The bottleneck was both curriculum AND base model. Qwen's cleaner architecture p
 
 **v7-v9** — expanded [[game-context-qa]] from 5 to 14 categories, adding `conditional_beat`, `beaters_in_unseen`, `partner_response`, `intervention_check`, `visibility_audit`, `highest_unseen_in_suit`. v9 hits 83% overall comprehension on 1.7B [[qwen3-1.7b]]. Rationalization pass rate plateaus at ~68/100. `visibility_audit` at 0% on both 1.7B and 14B exposes a structural long-enumeration problem. See [[single-fact-enumeration]] and [[v9-adapter]] (b857299).
 
-**14B capacity experiment** ([[qwen3-14b]], 0c7392f) — same v9 comprehension data on the 14B base: 86% comprehension (+3pp), 97/100 rationalization (vs 1.7B's 68). `visibility_audit` still 0% — confirms structural, not capacity. See [[experiments/qwen-14b-capacity]].
+**14B capacity experiment** ([[qwen3-14b]], 0c7392f) — same v9 comprehension data on the 14B base: 86% comprehension (+3pp), 97/100 rationalization (vs 1.7B's 68). `visibility_audit` still 0% — confirms structural, not capacity. See [[qwen-14b-capacity]].
 
 **v10** ([[v10-adapter]], 0c7392f) — joint-trains v9 comprehension + 331 verified rationalizations (upweighted 10×) on 1.7B. Result: 83% comprehension preserved, 55/100 bot-match on open-ended transition prompts, 96/100 legal moves. Direct path from rules-knowing to play-reasoning without iterated STaR. See [[r1-rationalization]] "Rationalization-SFT bootstrap" section.
 
-**Mask fix** (be7efc4, [[decisions/sft-completion-only-loss]]) — TRL `SFTConfig` was computing loss over the full sequence, diluting answer gradient ~9× by memorized prompt tokens. Fix: switch dataset format from `messages` → `prompt`/`completion` (TRL 1.2+ auto-enables `completion_only_loss`). 1.7B v10-maskfix: 86% comprehension = 14B v9 at 1/3 cost. Transition bot-match unchanged at 55/100 — not a gradient-allocation problem (be7efc4).
+**Mask fix** (be7efc4, [[sft-completion-only-loss]]) — TRL `SFTConfig` was computing loss over the full sequence, diluting answer gradient ~9× by memorized prompt tokens. Fix: switch dataset format from `messages` → `prompt`/`completion` (TRL 1.2+ auto-enables `completion_only_loss`). 1.7B v10-maskfix: 86% comprehension = 14B v9 at 1/3 cost. Transition bot-match unchanged at 55/100 — not a gradient-allocation problem (be7efc4).
 
 **LEM finale progression:**
 
@@ -146,4 +146,4 @@ The adapter's hand-tracking and legal-move accuracy are sufficient to begin Stag
 
 ## Links
 
-[[lem]] [[gemma-4-e2b]] [[qwen3-1.7b]] [[qwen3-14b]] [[narration]] [[texas-42]] [[lora-unsloth]] [[modal]] [[kerry-curriculum]] [[kerry-adapter]] [[trump-drilling]] [[v3-adapter]] [[game-context-qa]] [[v4-adapter]] [[v5-adapter]] [[v9-adapter]] [[v10-adapter]] [[single-fact-enumeration]] [[rationalization-verifier]] [[r1-rationalization]] [[experiments/stage-0-v1-training]] [[experiments/second-gemma-contact]] [[experiments/third-gemma-contact]] [[experiments/first-gemma-contact]] [[experiments/stage-0-progression-star]] [[experiments/stage-0-v4-comprehension-eval]] [[experiments/qwen-14b-capacity]] [[decisions/flexible-grader]] [[decisions/base-model-pivot-qwen]] [[decisions/sft-completion-only-loss]] [[learned-by-playing]]
+[[lem]] [[gemma-4-e2b]] [[qwen3-1.7b]] [[qwen3-14b]] [[narration]] [[texas-42]] [[lora-unsloth]] [[modal]] [[kerry-curriculum]] [[kerry-adapter]] [[trump-drilling]] [[v3-adapter]] [[game-context-qa]] [[v4-adapter]] [[v5-adapter]] [[v9-adapter]] [[v10-adapter]] [[single-fact-enumeration]] [[rationalization-verifier]] [[r1-rationalization]] [[stage-0-v1-training]] [[second-gemma-contact]] [[third-gemma-contact]] [[first-gemma-contact]] [[stage-0-progression-star]] [[stage-0-v4-comprehension-eval]] [[qwen-14b-capacity]] [[flexible-grader]] [[base-model-pivot-qwen]] [[sft-completion-only-loss]] [[learned-by-playing]]

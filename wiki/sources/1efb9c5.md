@@ -21,8 +21,8 @@ status: active
 >
 > Next candidate: ITER4_PLAN §2 Candidate C (what_would_change_my_mind).
 
-Adds four new fields to `OutcomeDistribution` so bimodality is legible at the tool surface without parsing an 85-bin PDF. The `suggested_counterfactuals` field runs `conditional_outcome` on top-5 candidate dominoes × 3 seats × both modes. Live E3 rollout (N=500) showed 0 `conditional_outcome` calls despite the hints — upstream blocker is the model's breadth-first policy, not tool-surface legibility. See [[experiments/iter5-e2-candlewax-null]].
+Adds four new fields to `OutcomeDistribution` so bimodality is legible at the tool surface without parsing an 85-bin PDF. The `suggested_counterfactuals` field runs `conditional_outcome` on top-5 candidate dominoes × 3 seats × both modes. Live E3 rollout (N=500) showed 0 `conditional_outcome` calls despite the hints — upstream blocker is the model's breadth-first policy, not tool-surface legibility. See [[iter5-e2-candlewax-null]].
 
 ## Related pages
 
-[[candlewax]] · [[burl]] · [[experiments/iter5-e2-candlewax-null]] · [[conditional-outcome-structural-nonuse]] · [[sources/7321952]]
+[[candlewax]] · [[burl]] · [[iter5-e2-candlewax-null]] · [[conditional-outcome-structural-nonuse]] · [[7321952]]

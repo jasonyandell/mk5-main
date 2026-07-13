@@ -45,7 +45,7 @@ contradiction to resolve after the fact — it was already on the page in week o
 ## Build timeline (era 3 highlights)
 
 - **2026-01-17** — posterior-weighted E[Q] (ESS mitigation, adaptive K-window, rejuvenation
-  kernel) across a 9-commit chain spanning Jan 17-18; [[decisions/qval-over-policy-models]]
+  kernel) across a 9-commit chain spanning Jan 17-18; [[qval-over-policy-models]]
   documented the same week.
 - **2026-01-18** — schema v2 (`e_logits`→`e_q_mean`), canonical spec `docs/EQ_STAGE2_TRAINING.md`,
   99.3% cut in GPU→CPU transfer via world-invariance of the actor's own hand (`9098e5d`).
@@ -77,7 +77,7 @@ Hard-won rules for anyone consuming E[Q] outputs (forge/eq/README.md @ 233b7dc5)
 - **Q-value checkpoints, not policy checkpoints.** Soft-cross-entropy (logit) models
   preserve action ordering — argmax matches — but their magnitudes are arbitrary-scale;
   only `loss_mode='qvalue'` checkpoints (`domino-qval-*.ckpt`) output points directly.
-  See [[decisions/qval-over-policy-models]].
+  See [[qval-over-policy-models]].
 - **World sampling is backtracking, never rejection.** Rejection sampling has an
   exponential rejection rate as voids accumulate and no termination guarantee;
   backtracking with the MRV heuristic always finds a solution if one exists — and one

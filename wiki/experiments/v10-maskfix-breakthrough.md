@@ -14,7 +14,7 @@ Same 31,307-example v10 corpus, same hyperparameters — but dataset format swit
 
 ## The fix
 
-See [[decisions/sft-completion-only-loss]]. TRL's `SFTConfig` default computes loss over the full sequence (prompt + answer). For v10, the ~50-token answer's gradient was being diluted ~9× by ~400 template/prompt tokens the model had already memorized. Switching to `prompt`/`completion` format re-focuses gradient entirely on the completion tokens.
+See [[sft-completion-only-loss]]. TRL's `SFTConfig` default computes loss over the full sequence (prompt + answer). For v10, the ~50-token answer's gradient was being diluted ~9× by ~400 template/prompt tokens the model had already memorized. Switching to `prompt`/`completion` format re-focuses gradient entirely on the completion tokens.
 
 ## Results: v10 → v10-maskfix
 
@@ -38,10 +38,10 @@ Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix` ([[v10-adapter]]).
 
 ## Also in this commit
 
-- Eval graders unified to `grade_offline.GRADERS` (single source of truth). The prior inline `grade_response()` in `eval_comprehension_qwen.py` covered only 5 of 14 categories, scoring the rest 0%. This is why [[modal]] eval read 35% while `grade_offline.py` read 86% on the same raw responses. Consistent with [[decisions/flexible-grader]].
+- Eval graders unified to `grade_offline.GRADERS` (single source of truth). The prior inline `grade_response()` in `eval_comprehension_qwen.py` covered only 5 of 14 categories, scoring the rest 0%. This is why [[modal]] eval read 35% while `grade_offline.py` read 86% on the same raw responses. Consistent with [[flexible-grader]].
 - `train_comprehension_qwen.py` pinned to B200 (was H100).
 - Scope: 1.7B trainer only. 14B and other trainers still have the loss-mask bug at this frontier.
 
 ## Related pages
 
-[[v10-adapter]] · [[qwen3-1.7b]] · [[qwen3-14b]] · [[decisions/sft-completion-only-loss]] · [[decisions/flexible-grader]] · [[experiments/qwen-14b-capacity]] · [[star]] · [[modal]] · [[sources/be7efc4]]
+[[v10-adapter]] · [[qwen3-1.7b]] · [[qwen3-14b]] · [[sft-completion-only-loss]] · [[flexible-grader]] · [[qwen-14b-capacity]] · [[star]] · [[modal]] · [[be7efc4]]

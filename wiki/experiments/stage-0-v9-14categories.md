@@ -16,7 +16,7 @@ Progressive curriculum expansion from 8 to 14 categories across Stage 0 versions
 
 - **Base model:** [[qwen3-1.7b]]
 - **Training:** 3 epochs per version, [[modal]] B200, [[lora-unsloth]]
-- **Eval:** [[decisions/flexible-grader]] (`grade_offline.GRADERS`), 14-category [[game-context-qa]]
+- **Eval:** [[flexible-grader]] (`grade_offline.GRADERS`), 14-category [[game-context-qa]]
 - **v7:** added `conditional_beat` (first of 6 new categories toward 14 total)
 - **v8:** added `beaters_in_unseen`, `partner_response`, `intervention_check`
 - **v9:** added `visibility_audit`, `highest_unseen_in_suit`; full 3-epoch train on all 14
@@ -43,7 +43,7 @@ Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v9` ([[v9-adapter]]).
 
 **v8 — verbose-by-default shift:** adding 3 categories together shifted the response distribution to verbose-by-default. Concepts synthesize across categories even when not explicitly combined.
 
-**v9 — rationalization plateau:** rationalization pass rate plateaus at ~68/100 across all v7/v8/v9 versions. Initially attributed to 1.7B capacity ceiling — later disproven by [[experiments/v10-maskfix-breakthrough]] (gradient allocation was the actual cause).
+**v9 — rationalization plateau:** rationalization pass rate plateaus at ~68/100 across all v7/v8/v9 versions. Initially attributed to 1.7B capacity ceiling — later disproven by [[v10-maskfix-breakthrough]] (gradient allocation was the actual cause).
 
 **visibility_audit at 0% — structural failure:** long-enumeration answers (list all visible and unseen dominoes) fail autoregressive truncation consistently. Single-fact supporting categories (`highest_unseen_in_suit` at 100%) are the reliable pattern. See [[single-fact-enumeration]].
 
@@ -57,4 +57,4 @@ Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v9` ([[v9-adapter]]).
 
 ## Related pages
 
-[[v9-adapter]] · [[game-context-qa]] · [[rationalization-verifier]] · [[single-fact-enumeration]] · [[rules-adapter]] · [[qwen3-1.7b]] · [[lora-unsloth]] · [[modal]] · [[experiments/qwen-14b-capacity]] · [[sources/b857299]]
+[[v9-adapter]] · [[game-context-qa]] · [[rationalization-verifier]] · [[single-fact-enumeration]] · [[rules-adapter]] · [[qwen3-1.7b]] · [[lora-unsloth]] · [[modal]] · [[qwen-14b-capacity]] · [[b857299]]

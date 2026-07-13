@@ -21,7 +21,7 @@ Two key rules from the chapter:
 
 Roberson's vocabulary is the **canonical 42 voice**, owned by the project via the user's family heritage (family heritage: Roberson's book names the user's actual relatives). Any post-commit Q&A corpus ([[post-commit-q-and-a]]) needs to talk in this register, not in Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes).
 
-The framework also doubles as a [[topics/rules-as-tools]] target: tool outputs surfacing "you have two offs at five-deuce and ace-blank, your at-risk-points come to 12" would replace raw E[Q] histograms with a Burl-native interpretation layer the model already wants ([[burl-chat-spike]] surfaced this as spontaneous product feedback).
+The framework also doubles as a [[rules-as-tools]] target: tool outputs surfacing "you have two offs at five-deuce and ace-blank, your at-risk-points come to 12" would replace raw E[Q] histograms with a Burl-native interpretation layer the model already wants ([[burl-chat-spike]] surfaced this as spontaneous product feedback).
 
 ## Worked-example corpus
 
@@ -34,5 +34,5 @@ Each "HAND N" in chapters 2-8 is structurally `(hand, declaration, bid)` plus pr
 
 - [[texas-42]] — the game
 - [[post-commit-q-and-a]] — research direction this is the voice anchor for
-- [[topics/rules-as-tools]] — analogous framing applied to evaluative tools
+- [[rules-as-tools]] — analogous framing applied to evaluative tools
 - [[burl-chat-spike]] — Gemma spontaneously suggested the "why over how" framing that matches this

@@ -54,4 +54,4 @@ The commit message credits "ClaudeAI insight" for the policy change. This is the
 
 ## Related pages
 
-[[decisions/discard-illegal-traces]] · [[star]] · [[star-harness]] · [[r1-rationalization]] · [[k1-grading]] · [[modal]] · [[sources/7538016]] · [[sources/8c5fbca]]
+[[discard-illegal-traces]] · [[star]] · [[star-harness]] · [[r1-rationalization]] · [[k1-grading]] · [[modal]] · [[7538016]] · [[8c5fbca]]

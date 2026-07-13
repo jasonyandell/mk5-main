@@ -15,7 +15,7 @@ empty) — and zero beads are created, closed, or touched. It is also the most
 idea-dense stretch in the project's archaeology: roughly fifteen substantive Texas-42
 conversations, in which the entire next year's cast of names — [[lem]], [[burl]], Harl,
 LLem, walker — gets born out loud, with nothing committed to disk. See
-[[sources/claude/era5-gestation|conversation digest]] for the full quote trail.
+[[era5-gestation|conversation digest]] for the full quote trail.
 
 The era opens against a specific, git-verified negative result: commit `6081420`
 (2026-02-16, the last commit before the gap) closed the [[full-teacher-eq-experiment]]
@@ -156,4 +156,4 @@ what this era tried and did not finish.
 ## Links
 
 [[ideated-not-built]] [[lem]] [[burl]] [[zeb]] [[expected-q-value]]
-[[candlewax]] [[jud]] [[sources/claude/era5-gestation]]
+[[candlewax]] [[jud]] [[era5-gestation]]

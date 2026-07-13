@@ -35,4 +35,4 @@ last_updated: 2026-04-24
 
 ## Links
 
-[[experiments/gus-v0-v1-belief]]
+[[gus-v0-v1-belief]]

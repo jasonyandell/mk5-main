@@ -27,7 +27,7 @@ We track **the frontier**: what the project understood to be true *at this commi
 ```
 wiki/
 ├── AGENTS.md          ← this file
-├── index.md           ← catalog of every page, updated every ingest
+├── index.md           ← thin router; catalogs split per kind in index-<kind>.md
 ├── log.md             ← chronological append-only record of ingests
 ├── entities/          ← named things: projects, people, models, systems, named artifacts
 ├── topics/            ← concepts and methods: STaR, backwards curriculum, K1 grading
@@ -119,7 +119,7 @@ newest claim, the field is stale — fix it in the same session.
 - **Backlink style: prefer bare in body text.** Obsidian's fuzzy resolution finds the file regardless of directory, and bare links keep pages readable.
   - ✅ Body: `See [[burl-2000-harvest]]; tuned per [[max-tokens-2048-floor]]; resilient via [[batched-harvest-resilience]].`
   - ❌ Body: `See [[experiments/burl-2000-harvest]]; tuned per [[decisions/max-tokens-2048-floor]]; resilient via [[topics/batched-harvest-resilience]].`
-  - Use the fully-qualified form `[[path/name|alias]]` **only** in `index.md`, in log entries that need to disambiguate cross-kind pages, and when two pages share the same bare name (in which case rename one).
+  - Use the fully-qualified form `[[path/name|alias]]` **only** in the index files (`index.md`, `index-*.md`), in log entries that need to disambiguate cross-kind pages, and when two pages share the same bare name (in which case rename one).
   - When you create a new page, link to it bare from every page that mentions it — and audit your existing pages for stale qualified links to it.
 - Cite sources inline: `([lem/OVERVIEW.md @ a8bccfa](../sources/a8bccfa.md))`.
 - Headings: `##` for major sections, `###` for subsections. No `#` — the title is in frontmatter.
@@ -176,7 +176,7 @@ Most sessions start here. Before reading code, check whether the wiki already kn
 2. If the user names a specific concept, jump straight to the likely bare page
    name or use `rg` over `wiki/` to find it. Prefer this to loading the full
    catalog when the slug or phrase is already known.
-3. Use `wiki/index.md` as the catalog fallback and route map, not as mandatory
+3. Use the catalogs (`wiki/index.md` router → `index-<kind>.md`) as the fallback route map, not as mandatory
    first context for every query.
 4. Read the relevant pages. Follow backlinks across roles: frontier hub → trail
    → leaf pages → decisions → source digests.
@@ -206,7 +206,7 @@ For one commit you just made or are ingesting:
    - Update the body so it reads as the current frontier (no hedging, no "previously we thought"). Bump `last_updated` to the commit sha.
    - If the page is being retired/superseded, set `status:` accordingly and add a forward link.
 4. **Create `sources/<sha>.md`** — a compact digest: frontmatter + commit message quote + files-changed table + short "What this commit establishes" narrative + bare `[[backlinks]]` to every touched page.
-5. **Update `index.md`** — add new pages to the catalog, update hooks on pages whose gist changed.
+5. **Update the catalog** — add new pages to the right `index-<kind>.md` (entry shape: `- [[path|name]] — hook (status)`), update hooks on pages whose gist changed. The linter's IX checks enforce bidirectional coverage.
 6. **Append to `log.md`** — one entry in the format below.
 7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop. Skim the touched pages once for `[[kind/name]]` patterns in body text — those should almost always be bare `[[name]]` (see Backlink style above).
 
@@ -219,7 +219,7 @@ For a batch of commits (e.g. catching up after a quiet period, or replaying a tr
 3. **Per ingest, run three roles** (in one session or via a scribe team):
    - **Archivist** reads the raw sources (docs, code diffs, commit message) at the target sha(s) and produces a compact bundle: entities introduced, entities updated, concepts introduced, concepts updated, experiments performed, decisions made, questions raised.
    - **Scribes** update page sets in parallel on disjoint directories (one per `entities/` / `topics/` / `experiments/`). Each receives the bundle + current page contents and rewrites so the page reflects the new frontier.
-   - **Indexer** updates `index.md` (page catalog) and `log.md` (one entry per ingest) and sweeps for dead links + orphans.
+   - **Indexer** updates the `index-<kind>.md` catalogs and `log.md` (one entry per ingest), then runs `scripts/wiki_lint.py`.
 4. **Don't preemptively hedge.** If commit A believed X and commit G reverses it, write A's pages as if X is true; revise at G.
 
 #### Scribe dispatch pattern (for team-based ingests)

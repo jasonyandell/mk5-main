@@ -14,7 +14,7 @@ Layer-1 endpoint rolled over N=50 held-out decisions to produce Burl's first STa
 
 ## Setup
 
-- **Model:** [[gemma-4-e2b]] with [[experiments/burl-phase1-primer]] prompt (primer + framing block)
+- **Model:** [[gemma-4-e2b]] with [[burl-phase1-primer]] prompt (primer + framing block)
 - **Decisions:** N=50, seeds 900010+, balanced 5-per-declaration, trick-6, `|legal|>=2`, `eq_gap>=1.0`
 - **K1 filter:** keep traces where `E[Q][gemma] >= E[Q][bot]`
 - **Rationalization:** re-prompt legal losses with the ground-truth play, collect resulting trace
@@ -57,8 +57,8 @@ Assistant content preserves tool-call envelopes, tool responses, and the termina
 
 ## Significance
 
-First real STaR corpus for Burl. Shape is healthy (27 wins + 23 rationalizations) but the rationalizations are low-signal — Gemma restates the hint rather than independently justifying the play. The corpus also inherits Layer 1's eq-shy pathology: only 8 `eq_outcome_distribution` calls across 50 decisions, vs 15 across 10 in spike v2. The adapter trained on this corpus will learn "Layer-1 Gemma." See [[experiments/burl-iter0-eval]].
+First real STaR corpus for Burl. Shape is healthy (27 wins + 23 rationalizations) but the rationalizations are low-signal — Gemma restates the hint rather than independently justifying the play. The corpus also inherits Layer 1's eq-shy pathology: only 8 `eq_outcome_distribution` calls across 50 decisions, vs 15 across 10 in spike v2. The adapter trained on this corpus will learn "Layer-1 Gemma." See [[burl-iter0-eval]].
 
 ## Related pages
 
-[[burl]] · [[star]] · [[r1-rationalization]] · [[tool-orchestration]] · [[burl-iter0-adapter]] · [[experiments/burl-phase1-primer]] · [[experiments/burl-iter0-eval]] · [[sources/fd6032b]]
+[[burl]] · [[star]] · [[r1-rationalization]] · [[tool-orchestration]] · [[burl-iter0-adapter]] · [[burl-phase1-primer]] · [[burl-iter0-eval]] · [[fd6032b]]

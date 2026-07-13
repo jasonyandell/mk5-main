@@ -21,7 +21,7 @@ adversarial buckets, regret metrics, belief-calibration tests, or training examp
 - `w42/strategy_measurement_breakdown.md` — project shape, MVP detectors,
   chapter harvest map, first work package, and a lengthy analysis catalog.
 - `scratch/winning42/winning42.with_figures.md` — OCR/preview source used for the chapter harvest.
-- [[experiments/gus-strategy-tags-probe]] — first promoted empirical probe showing that
+- [[gus-strategy-tags-probe]] — first promoted empirical probe showing that
   explicit strategy tags improve a tiny Gus-like policy, though not enough to beat `E[Q] N=10`.
 - [[w42-final-empirical-strategy-report]] — first w42 survey synthesis: strategy tags
   help small models, exact substrate claims can be supported, and most tactical claims
@@ -186,5 +186,5 @@ The first report should have three tables:
 
 ## Links
 
-[[gus]] · [[burl]] · [[forge]] · [[topics/regret-eval]] ·
-[[experiments/gus-strategy-tags-probe]] · [[w42-final-empirical-strategy-report]]
+[[gus]] · [[burl]] · [[forge]] · [[regret-eval]] ·
+[[gus-strategy-tags-probe]] · [[w42-final-empirical-strategy-report]]

@@ -73,4 +73,4 @@ stated "inspired by PartyKit, Colyseus, and boardgame.io"
 
 ## Related pages
 
-[[web-game]] · [[pre-ml-ai-attempts]] · [[sources/claude/era1-web-game-prologue|conversation digest]]
+[[web-game]] · [[pre-ml-ai-attempts]] · [[era1-web-game-prologue|conversation digest]]

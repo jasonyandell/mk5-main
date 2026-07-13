@@ -56,7 +56,7 @@ left-padded batching recipe (5-example iteration in 151s). (commit messages @ b9
 
 ## Related
 
-[[experiments/first-gemma-contact]] and [[experiments/stage-0-v1-training]] both ran on
+[[first-gemma-contact]] and [[stage-0-v1-training]] both ran on
 Modal L4. [[lora-unsloth]] is the fine-tuning library invoked inside Modal functions.
 
 `forge/MODAL_ORIENTATION.md` and `forge/MODAL_MONITOR.md` are the live Modal ops

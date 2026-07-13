@@ -103,4 +103,4 @@ full era narrative.
 
 [[suit-algebra-spec]] · [[play-phase-algebra]] · [[the-oracle]] ·
 [[breakthrough-and-oracle]] · [[forge]] ·
-[[sources/claude/era2-breakthrough-oracle|conversation digest]]
+[[era2-breakthrough-oracle|conversation digest]]

@@ -16,7 +16,7 @@ answer:
 
 > "so how do we get beliefs feeding policy? right now we kind of have 2 things side by
 > side only connected via loss essentially" (2026-02-18T03:45,
-> [[sources/claude/era4-zeb-era|conversation digest]])
+> [[era4-zeb-era|conversation digest]])
 
 This sat unaddressed through the [[full-teacher-eq-experiment]] closeout the same week —
 that experiment fed [[expected-q-value|E[Q]]] into the policy head directly, not belief
@@ -53,4 +53,4 @@ decision it should have informed. "Make the model bigger" would not have fixed t
 wiring an existing signal into the decision path might have.
 
 See [[zeb]] · [[gus]] · [[belief-trajectory]] · [[belief-propagation-gap]] ·
-[[belief-co-train]] · [[sources/claude/era4-zeb-era|conversation digest]].
+[[belief-co-train]] · [[era4-zeb-era|conversation digest]].

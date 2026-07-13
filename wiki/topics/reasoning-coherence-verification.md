@@ -37,4 +37,4 @@ Coherence verification extends fact-checking to the logical structure of the arg
 
 ## Links
 
-[[rationalization-verifier]] [[candlewax-spike]] [[burl]] [[star]] [[experiments/iter5-e2-candlewax-null]] [[candlewax]]
+[[rationalization-verifier]] [[candlewax-spike]] [[burl]] [[star]] [[iter5-e2-candlewax-null]] [[candlewax]]

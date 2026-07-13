@@ -12,7 +12,7 @@ Seeds 900000–909999 are permanently reserved for evaluation. They must never a
 
 > Declared here so it's never ambiguous.
 
-— `lem/OVERVIEW.md` at [[sources/b99c64d]]
+— `lem/OVERVIEW.md` at [[b99c64d]]
 
 ## Training / validation split
 
@@ -32,4 +32,4 @@ Making the boundary explicit in `lem/OVERVIEW.md` prevents ambiguity as the data
 
 ## Related pages
 
-[[lem]] · [[narration]] · [[experiments/stage-0-v1-training]] · [[sources/b99c64d]]
+[[lem]] · [[narration]] · [[stage-0-v1-training]] · [[b99c64d]]

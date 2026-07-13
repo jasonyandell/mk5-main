@@ -32,8 +32,8 @@ last_updated: 2026-04-24
 
 Establishes the full v0 pipeline skeleton: features, dataset, model, trainer, and eval.
 Smoke test on 1-game corpus confirms end-to-end plumbing. Real numbers await the 100-game
-corpus generated in parallel (see [[experiments/gus-v0-v1-belief]]).
+corpus generated in parallel (see [[gus-v0-v1-belief]]).
 
 ## Links
 
-[[gus]] · [[experiments/gus-v0-v1-belief]]
+[[gus]] · [[gus-v0-v1-belief]]

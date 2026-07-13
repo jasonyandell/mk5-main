@@ -14,7 +14,7 @@ rewrite, three Q-value checkpoints still catalog-live today, and, on the last ni
 window, [[zeb]] founded as a second, parallel bet. It is also the era before the wall existed.
 The window opens on a confession about the perfect-information oracle and closes on
 unshaded triumph — "we did it buddy." See [[strategy-fusion]] for the diagnosis-through-founding
-arc and [[expected-q-value]] for the mechanism itself. Source: [[sources/claude/era3-eq-era|conversation digest]].
+arc and [[expected-q-value]] for the mechanism itself. Source: [[era3-eq-era|conversation digest]].
 
 ## The story
 

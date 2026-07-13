@@ -15,7 +15,7 @@ head directly (`policy_weight=1.0`), not just value/belief — break that compou
 push play strength past whatever self-play alone reaches?** Framed by Jason at kickoff:
 *"The selfplay loop has a bootstrapping problem... The E[Q] oracle breaks this by
 providing a 'ground truth' signal for what the best action is in any game state"*
-(2026-02-16T05:32:47, [[sources/claude/era4-zeb-era|conversation digest]]). The idea
+(2026-02-16T05:32:47, [[era4-zeb-era|conversation digest]]). The idea
 descends from a seed planted eleven days earlier: *"what if we play zeb vs that [e[q]]
 and train... until it exploits zeb the best it can, then train zeb on that play"*
 (2026-02-05T17:19).
@@ -102,4 +102,4 @@ belief-only primitive after a separate calibration eval) — do not conflate the
 
 This is era 4's one durable, load-bearing negative result about E[Q] consumption. See
 [[candlewax]], [[zeb]], [[eval-matrix-bradley-terry]],
-[[sources/claude/era4-zeb-era|conversation digest]].
+[[era4-zeb-era|conversation digest]].

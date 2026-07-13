@@ -16,7 +16,8 @@ blind spot, [[w42-book-claim-synthesis-and-ai-directions]]), what is in the text
 that the first extraction flattened or never saw?
 
 Raw reader reports (quotes, page numbers, per-finding experiment sketches) are
-preserved at `wiki/sources/book-second-pass-2026-07-07/`.
+preserved at `wiki/sources/book-second-pass-2026-07-07/`: [[reader-A-report]]
+[[reader-B-report]] [[reader-C-report]] [[reader-D-report]].
 
 Headline: the first pass extracted the book's **tactics** and missed the book's
 **information theory**. The auction decoder, the action-choice inference catalog,

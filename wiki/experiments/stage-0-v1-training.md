@@ -34,7 +34,7 @@ The working training configuration required several non-obvious fixes, documente
 4. Skip eval — redundant given that training converges to 100% token accuracy.
 5. 1 epoch is sufficient.
 
-Fix source: huggingface/peft#3129. First identified in [[sources/9571a7b]].
+Fix source: huggingface/peft#3129. First identified in [[9571a7b]].
 
 ## Results
 
@@ -51,8 +51,8 @@ Fix source: huggingface/peft#3129. First identified in [[sources/9571a7b]].
 
 First successful LEM training run. Establishes that [[gemma-4-e2b]] can be LoRA fine-tuned on [[texas-42]] game-engine ground truth via [[modal]], and that the [[rules-adapter]] Q&A corpus produces strong in-format accuracy. Training recipe is now considered reproducible.
 
-Results from [[experiments/second-gemma-contact]] confirm that factual state-tracking (hand tracking) transferred to narration context; compositional rule application (trump membership) did not fully transfer. This motivates Stage 1 [[star]].
+Results from [[second-gemma-contact]] confirm that factual state-tracking (hand tracking) transferred to narration context; compositional rule application (trump membership) did not fully transfer. This motivates Stage 1 [[star]].
 
 ## Related pages
 
-[[lem]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[stage-0-adapter]] · [[modal]] · [[lora-unsloth]] · [[star]] · [[k1-grading]] · [[experiments/second-gemma-contact]] · [[experiments/first-gemma-contact]]
+[[lem]] · [[gemma-4-e2b]] · [[rules-adapter]] · [[stage-0-adapter]] · [[modal]] · [[lora-unsloth]] · [[star]] · [[k1-grading]] · [[second-gemma-contact]] · [[first-gemma-contact]]

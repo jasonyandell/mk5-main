@@ -14,7 +14,7 @@ The transformer was already inferring voids attentionally from play tokens. (com
 
 ## Setup
 
-- **Corpus**: 1000 games (chunked generation; glob-load via [[sources/2e4f586]] fix)
+- **Corpus**: 1000 games (chunked generation; glob-load via [[2e4f586]] fix)
 - **Architecture**: v1 transformer + VoidsEncoder projecting `[24]`-dim void indicator
   (3 opponents × 8 suits) into d_model, added to pooled state_emb before all four heads
 - **Model size**: d=192, 4 layers, 40 epochs

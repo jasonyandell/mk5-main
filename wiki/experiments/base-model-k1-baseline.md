@@ -39,4 +39,4 @@ This is the number to beat with [[stage-0-adapter]] + STaR iterations.
 
 ## Related pages
 
-[[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[decisions/eval-seed-holdout]] · [[experiments/star-harness-5ex-smoke]] · [[sources/f578bfa]]
+[[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[eval-seed-holdout]] · [[star-harness-5ex-smoke]] · [[f578bfa]]

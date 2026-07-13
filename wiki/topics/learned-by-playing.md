@@ -54,4 +54,4 @@ pivoted to a weights-don't-hold-facts architecture. See [[lem-to-burl-handoff]].
 
 ## Links
 
-[[rules-adapter]] [[star]] [[k1-grading]] [[r1-rationalization]] [[lem]] [[scratchpad-validation]] [[kerry-curriculum]] [[trump-drilling]] [[experiments/second-gemma-contact]] [[experiments/star-10-iterations]] [[experiments/stage-0-progression-star]] [[sources/24ae55a]]
+[[rules-adapter]] [[star]] [[k1-grading]] [[r1-rationalization]] [[lem]] [[scratchpad-validation]] [[kerry-curriculum]] [[trump-drilling]] [[second-gemma-contact]] [[star-10-iterations]] [[stage-0-progression-star]] [[24ae55a]]

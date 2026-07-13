@@ -69,7 +69,7 @@ Three non-obvious constraints apply when fine-tuning Gemma 4 E2B with PEFT on L4
    required. Eval forward pass OOMs regardless; disable eval entirely.
    (commit message @ df73c8d)
 
-See [[stage-0-adapter]] for the training outcome and [[experiments/stage-0-v1-training]] for
+See [[stage-0-adapter]] for the training outcome and [[stage-0-v1-training]] for
 the full run record. [[lora-unsloth]] is the fine-tune library used.
 
 ## K1 baseline (base model, no adapter)
@@ -88,7 +88,7 @@ from eval seeds:
 The 60% baseline is surprisingly high, suggesting many trick-6 decisions are near-unanimous
 under E[Q] and the model stumbles mainly on hand-state tracking (the 10% illegal rate).
 This is the number the [[stage-0-adapter]] + [[star]] iterations must beat.
-See [[experiments/base-model-k1-baseline]]. (commit message @ f578bfa)
+See [[base-model-k1-baseline]]. (commit message @ f578bfa)
 
 ## Architecture quirk: KV-sharing (layers 15-34)
 
@@ -122,14 +122,14 @@ sizes. See [[star-harness]] for the full recipe. (commit message @ 26f5ddf)
 
 ## Second contact
 
-See [[experiments/second-gemma-contact]]. After the [[stage-0-adapter]] was applied:
+See [[second-gemma-contact]]. After the [[stage-0-adapter]] was applied:
 hand tracking was fixed (model correctly reads remaining hand, not initial hand) and the
 final move was legal and correct. Trump membership errors (4-4, 6-4 called trump under
 fives-trump) persisted. (lem/OVERVIEW.md @ 24ae55a)
 
 ## Third contact
 
-See [[experiments/third-gemma-contact]]. After the [[kerry-adapter]] was applied: trump
+See [[third-gemma-contact]]. After the [[kerry-adapter]] was applied: trump
 non-membership correct (model correctly identifies that 6-2 and 6-1 are not trump under
 fives); trump membership still partially wrong (6-4 still called trump under fives — same
 stubborn error from first contact, now narrowed to one case); strategic reasoning depth
@@ -150,7 +150,7 @@ Bridge. `what_beats` at 15% is the remaining weak spot.
 ## Retired as base model (2026-04-16)
 
 Per commit 3465e29, Gemma 4 E2B is no longer the LEM base model. Replaced by [[qwen3-1.7b]].
-See [[decisions/base-model-pivot-qwen]].
+See [[base-model-pivot-qwen]].
 
 Architectural reasons for retirement:
 - **PLE (parameter-embedding layer)** — architectural overhead absent in Qwen.
@@ -168,7 +168,7 @@ thinking-mode behavior, curriculum progression) informed the Qwen pivot.
 ## Burl-side findings (Moves 3-4, 2026-04-18/19)
 
 **Move 3** (XML harness, base Gemma, 10 held-out decisions, zero fine-tuning): 100% legal,
-60% bot-match, 70% K1. Premise survives. See [[experiments/burl-move3-base]].
+60% bot-match, 70% K1. Premise survives. See [[burl-move3-base]].
 
 Failure modes observed:
 - Only `is_legal` called; distribution tools (`eq_outcome_distribution`, `conditional_outcome`)
@@ -181,13 +181,13 @@ Failure modes observed:
 **Move 4 R3 spike** (native tool-use format, 9/10 decisions completed): 88.9% bot-match,
 88.9% K1 (+28.9pp / +18.9pp vs XML). `eq_outcome_distribution` used 15× (was 0), no
 hallucinated tools. Zero-shot XML emission was valid; native format is simply the better
-path. See [[experiments/burl-move4-native-spike]] and [[decisions/native-tool-use-format]].
+path. See [[burl-move4-native-spike]] and [[native-tool-use-format]].
 (commit messages @ 4b3ba3d, 3781dce)
 
 **Phase 1 primer regression**: adding the 1549-word rules primer caused bot-match to drop
 88.9% → 70% — primer occupies attention and suppresses `eq_outcome_distribution` calls
 (15 → 2). 42-vocabulary in traces rose from 0 to 5-11 mentions/trace. This is the
-substrate trade for STaR. See [[decisions/primer-tradeoff]].
+substrate trade for STaR. See [[primer-tradeoff]].
 
 **Phase 4 vLLM-LoRA blocker**: vLLM 0.19 rejects `Gemma4ForConditionalGeneration` for LoRA
 inference. Fix: `hf_overrides` to `Gemma4ForCausalLM` at load time. Separate blocker from

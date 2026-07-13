@@ -8,7 +8,7 @@ status: complete
 
 ## Finding
 
-A [[burl]] adapter distilled via [[star]] on play-decision traces (specifically tested: [[experiments/iter5-e1-rank-sweep|e1-rank16]]) cannot be redirected to plain conversation through prompting alone, even with all of:
+A [[burl]] adapter distilled via [[star]] on play-decision traces (specifically tested: [[iter5-e1-rank-sweep|e1-rank16]]) cannot be redirected to plain conversation through prompting alone, even with all of:
 
 - The full chat-cadence prefix from [[burl-chat]] (system + user state + Burl's reasoning trace + commit_play(N) + [[chat-mode-primer]] saying "ask me anything").
 - `enable_thinking=True` to encourage prose generation.
@@ -34,7 +34,7 @@ Same [[burl-chat]] prefix, same primer, same user question. Tested on `BURL_BREA
 - Locked into `commit_play(domino_id=14)` output. Mid-response self-correction: "Since I have already called commit_play, the system will now process that. If it rejects as illegal, I will get another turn..." — re-derives the play-decision protocol and exits the user's question.
 
 **No adapter (base Gemma 4 E2B):**
-- Engages cleanly. Produces a structured three-section critique of the tool surface (*what made it challenging, what would have made it easier, in short*), citing actual numbers from the harvest's tool outputs (+11.7 Q lift, -5.8 Q drop, 6-0 vs 2-2 catalyst dominoes), and proposing three concrete tool-design improvements aligned with [[topics/rules-as-tools]] and [[topics/at-risk-points]]. Produces real product feedback from a 9-word user prompt.
+- Engages cleanly. Produces a structured three-section critique of the tool surface (*what made it challenging, what would have made it easier, in short*), citing actual numbers from the harvest's tool outputs (+11.7 Q lift, -5.8 Q drop, 6-0 vs 2-2 catalyst dominoes), and proposing three concrete tool-design improvements aligned with [[rules-as-tools]] and [[at-risk-points]]. Produces real product feedback from a 9-word user prompt.
 
 The A/B is clean. The lock-in is the adapter.
 
@@ -60,4 +60,4 @@ This corroborates the original A/B but extends the claim: the lock-in survives e
 - [[improvised-tools]] — meta-layer corroboration surface
 - [[burl-tool-wishlist]] — the productive read of the meta-layer lock-in
 - [[post-commit-q-and-a]] — research direction this constrains
-- [[topics/conditional-outcome-structural-nonuse]] — adjacent finding: the same training pipeline produces structural non-use of certain tool calls, also an artifact of distillation distribution.
+- [[conditional-outcome-structural-nonuse]] — adjacent finding: the same training pipeline produces structural non-use of certain tool calls, also an artifact of distillation distribution.

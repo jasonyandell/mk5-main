@@ -20,8 +20,8 @@ status: active
 >
 > Unblocks eval-time prompt alignment without another threading pass.
 
-Companion to [[sources/65c749c]]: threads `enable_primer` into the eval path (`run_move4_spike.py`) so iter-3-v2 eval can use the same no-primer prompt shape as training. Without this, evaluating a no-primer adapter with the default (trimmed-primer) eval path would silently mismatch.
+Companion to [[65c749c]]: threads `enable_primer` into the eval path (`run_move4_spike.py`) so iter-3-v2 eval can use the same no-primer prompt shape as training. Without this, evaluating a no-primer adapter with the default (trimmed-primer) eval path would silently mismatch.
 
 ## Related pages
 
-[[burl]] · [[sources/65c749c]] · [[sources/c698091]]
+[[burl]] · [[65c749c]] · [[c698091]]

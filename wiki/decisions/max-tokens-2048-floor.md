@@ -63,4 +63,4 @@ Doubling `max_tokens` raises the per-batch memory footprint enough that a Metal 
 
 ## Links
 
-[[burl-2000-harvest]] · [[batched-harvest-resilience]] · [[burl]] · [[gemma-4-e2b]] · [[mlx-lm]] · [[wax-museum]] · [[sources/063fcac]]
+[[burl-2000-harvest]] · [[batched-harvest-resilience]] · [[burl]] · [[gemma-4-e2b]] · [[mlx-lm]] · [[wax-museum]] · [[063fcac]]

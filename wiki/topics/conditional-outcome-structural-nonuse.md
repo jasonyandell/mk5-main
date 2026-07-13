@@ -49,4 +49,4 @@ With tool responses now visible, does the model reach for `conditional_outcome` 
 
 ## Links
 
-[[burl]] [[zeb]] [[decisions/zeb-parked-eq-primitive]] [[tool-orchestration]] [[burl-selfplay-arena]] [[expected-q-value]]
+[[burl]] [[zeb]] [[zeb-parked-eq-primitive]] [[tool-orchestration]] [[burl-selfplay-arena]] [[expected-q-value]]

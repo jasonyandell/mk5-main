@@ -48,18 +48,18 @@ status: active
 
 ## Second contact observations
 
-Same prompt as [[experiments/first-gemma-contact]] (seed 42, fives trump, trick 6), now with [[stage-0-adapter]] loaded and merged:
+Same prompt as [[first-gemma-contact]] (seed 42, fives trump, trick 6), now with [[stage-0-adapter]] loaded and merged:
 
 - Hand tracking: FIXED. Model reads "remaining: 6-2, 6-1" correctly (was #1 error in first contact).
 - Final answer: LEGAL and CORRECT ("sluff 6-2 or 6-1").
 - Trump membership: REMAINING. 4-4 and 6-4 still called trumps under fives-trump. Q&A format did not fully transfer to narration-context reasoning.
 
-Full analysis: [[experiments/second-gemma-contact]].
+Full analysis: [[second-gemma-contact]].
 
 ## Infrastructure note
 
-The `Gemma4ClippableLinear` monkey-patch (introduced in [[sources/9571a7b]] for training) must also be applied in the inference path. This commit adds it to `modal_app.py`. Inference without the patch would fail to load the LoRA adapter correctly.
+The `Gemma4ClippableLinear` monkey-patch (introduced in [[9571a7b]] for training) must also be applied in the inference path. This commit adds it to `modal_app.py`. Inference without the patch would fail to load the LoRA adapter correctly.
 
 ## Related wiki pages
 
-[[lem]] · [[gemma-4-e2b]] · [[stage-0-adapter]] · [[rules-adapter]] · [[modal]] · [[experiments/stage-0-v1-training]] · [[experiments/second-gemma-contact]] · [[sources/9571a7b]] · [[sources/24ae55a]]
+[[lem]] · [[gemma-4-e2b]] · [[stage-0-adapter]] · [[rules-adapter]] · [[modal]] · [[stage-0-v1-training]] · [[second-gemma-contact]] · [[9571a7b]] · [[24ae55a]]

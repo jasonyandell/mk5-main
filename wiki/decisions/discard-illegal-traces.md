@@ -14,7 +14,7 @@ In the [[star-harness]] (all three runners including the single-GPU loop), trace
 
 > traces that arrive at impossible states (illegal moves, unparseable actions) are poison — the reasoning chain is corrupted even if intermediate steps looked reasonable. Don't rationalize, just discard.
 
-— commit message, [[sources/fb47ab3]]
+— commit message, [[fb47ab3]]
 
 A rationalized illegal trace would teach the model to reason toward an impossible state and then correct course — embedding the corrupted reasoning path in the training data alongside the correction. Discarding the whole trace is the cleaner signal.
 
@@ -31,8 +31,8 @@ The illegality rate is a diagnostic for rules comprehension, logged separately a
 
 ## Reversal note
 
-The [[star-harness]] introduced in [[sources/7538016]] rationalized illegal traces alongside legal failures. This decision supersedes that behavior. The prior frontier was short-lived (hours, same day: 2026-04-10).
+The [[star-harness]] introduced in [[7538016]] rationalized illegal traces alongside legal failures. This decision supersedes that behavior. The prior frontier was short-lived (hours, same day: 2026-04-10).
 
 ## Related pages
 
-[[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[sources/fb47ab3]] · [[sources/7538016]]
+[[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[fb47ab3]] · [[7538016]]

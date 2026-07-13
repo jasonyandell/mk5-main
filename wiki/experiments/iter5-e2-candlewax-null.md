@@ -14,7 +14,7 @@ status: complete
 
 ## Setup
 
-- Candlewax fields added: `distribution_shape`, `modes`, `gap_between_modes`, `suggested_counterfactuals` (see [[sources/1efb9c5]])
+- Candlewax fields added: `distribution_shape`, `modes`, `gap_between_modes`, `suggested_counterfactuals` (see [[1efb9c5]])
 - Smoke: 8/10 plays returned non-unimodal shapes with populated rationales
 - Live rollout T12 (base Gemma, N=10, `--enable-rules-tools`): 0 `eq_outcome_distribution` calls — rules-tools preamble crowds it out
 - E3 rollout (N=500 decisions, no `--enable-rules-tools`): 98 `eq_outcome_distribution` calls, 74 non-unimodal, 53 mixed-mode — still **0 `conditional_outcome` calls**
@@ -31,4 +31,4 @@ This is a [[reasoning-coherence-verification]] gap, not a tool-surface legibilit
 
 ## Related pages
 
-[[candlewax]] · [[reasoning-coherence-verification]] · [[candlewax-spike]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[sources/ceca203]] · [[sources/1efb9c5]]
+[[candlewax]] · [[reasoning-coherence-verification]] · [[candlewax-spike]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[ceca203]] · [[1efb9c5]]

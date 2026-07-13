@@ -30,7 +30,7 @@ Burl composes three distinct information sources at inference time:
 | `void_audit(player, suit)` | Has this player been proven void? |
 | `trump_declared()` | e.g. "blanks", "fives", "doubles" |
 
-**[[zeb]]** (`forge/zeb/`) — **parked** after calibration eval (d9baf3b). Advertised 72% top-1 accuracy was inflated by already-played dominoes; hidden-only top-1 is 39%, Brier 0.224, ECE 0.067. Not useful enough to anchor Burl's belief reasoning. See [[decisions/zeb-parked-eq-primitive]] and [[experiments/zeb-calibration-eval]].
+**[[zeb]]** (`forge/zeb/`) — **parked** after calibration eval (d9baf3b). Advertised 72% top-1 accuracy was inflated by already-played dominoes; hidden-only top-1 is 39%, Brier 0.224, ECE 0.067. Not useful enough to anchor Burl's belief reasoning. See [[zeb-parked-eq-primitive]] and [[zeb-calibration-eval]].
 
 **E[Q] N=10 outcome PDF** — the belief primitive that replaced Zeb. `eq_outcome_distribution()` returns a distribution over game outcomes given the current visible state, computed by running the E[Q] framework over N=10 hidden-hand samples. Counterfactual shift validated on seed 900013 (Δmean +15, p_make 0.6→1.0). 290ms/play, 49.8 MB peak VRAM (d9baf3b).
 
@@ -114,7 +114,7 @@ Key insight (3781dce):
 
 > "Go with the model's grain; catch it doing right. Small models have their own instincts — Gemma reaches for a `play` verb even when our menu doesn't define one… If `play` is what Gemma wants, `play` is what we give it."
 
-See [[decisions/native-tool-use-format]] (3781dce).
+See [[native-tool-use-format]] (3781dce).
 
 **Remaining limits at this frontier**: reasoning is still "generic card game" — never mentions partner seat, counts, offense/defense, target score. Expected to improve with STaR teacher rationalizations naming 42 concepts explicitly (3781dce).
 
@@ -146,7 +146,7 @@ Layer 1 (b8116b5) added a full rules primer (1,549 words, 2.7K tokens) and 42-aw
 
 **Benefit:** 42-aware vocabulary in traces went from 0 mentions to 5-11 per trace: partner, team, offense/defense, count, bid. STaR needs that vocabulary present in the corpus for it to be distilled into the adapter.
 
-**The trade:** "Primer buys vocabulary; costs tool-use breadth." For STaR corpus harvesting, the vocabulary is load-bearing — without it, the adapter has nothing 42-specific to learn. For pure K1 performance, the primer is a liability. See [[decisions/primer-tradeoff]] (b8116b5).
+**The trade:** "Primer buys vocabulary; costs tool-use breadth." For STaR corpus harvesting, the vocabulary is load-bearing — without it, the adapter has nothing 42-specific to learn. For pure K1 performance, the primer is a liability. See [[primer-tradeoff]] (b8116b5).
 
 **Phase 4 consequence (789e14d):** iter-0 trained on Phase 2's 50-entry corpus reproduced Layer 1's pathology. The adapter learned "Layer-1 Gemma" baked into weights: `is_legal`-heavy, `eq_outcome_distribution`-shy, primer-contaminated. Bot-match fell to 60% (vs 70% Layer 1, 88.9% spike v2). Next step: trim or remove primer, keep the 42-aware framing block alone, re-harvest (789e14d).
 
@@ -171,4 +171,4 @@ different architecture (pure NN bid/play nets) before the remaining ablations
 
 ## Links
 
-[[burl]] [[engine]] [[zeb]] [[lem]] [[forge]] [[star]] [[learned-by-playing]] [[rules-adapter]] [[scratchpad-validation]] [[expected-q-value]] [[candlewax]] [[rules-as-tools]] [[conditional-outcome-structural-nonuse]] [[decisions/native-tool-use-format]] [[decisions/zeb-parked-eq-primitive]] [[decisions/primer-tradeoff]] [[experiments/zeb-calibration-eval]]
+[[burl]] [[engine]] [[zeb]] [[lem]] [[forge]] [[star]] [[learned-by-playing]] [[rules-adapter]] [[scratchpad-validation]] [[expected-q-value]] [[candlewax]] [[rules-as-tools]] [[conditional-outcome-structural-nonuse]] [[native-tool-use-format]] [[zeb-parked-eq-primitive]] [[primer-tradeoff]] [[zeb-calibration-eval]]

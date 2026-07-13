@@ -76,4 +76,4 @@ rules-conformance test suite rather than a play policy.
 
 ## Related pages
 
-[[web-game]] · [[texas-42]] · [[sources/claude/era1-web-game-prologue|conversation digest]]
+[[web-game]] · [[texas-42]] · [[era1-web-game-prologue|conversation digest]]

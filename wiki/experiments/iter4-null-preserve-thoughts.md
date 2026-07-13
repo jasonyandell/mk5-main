@@ -34,10 +34,10 @@ The byte-identical A/B was very likely a truncation artifact, not a LoRA capacit
 
 TRL's `SFTConfig` defaults to `max_seq_length=1024`. Burl's `preserve_thoughts` corpus has median 2054 tokens and max 4210 tokens per row. Both the stripped and the preserved training rows were silently chopped at token 1024 — making them nearly identical at training time. The adapter had nothing to distinguish between the two conditions.
 
-No Burl adapter before iter-5 was trained on complete thought-to-tool-call traces. See [[decisions/sft-max-seq-length]].
+No Burl adapter before iter-5 was trained on complete thought-to-tool-call traces. See [[sft-max-seq-length]].
 
 **Resolution:** the re-run was non-null. [[iter5-e1-rank-sweep]] (+3.3pp at N=26) and [[burl-star-run3]] run-3c (95.9% thought-block emission at N=560) supersede this null — the byte-identical A/B was a truncation artifact, not a preserve-thoughts result.
 
 ## Related pages
 
-[[preserve-thoughts]] · [[iter3-rules-adapter]] · [[lora-unsloth]] · [[burl]] · [[decisions/sft-max-seq-length]] · [[sources/20f4fa2]] · [[sources/dbadb5f]] · [[sources/edf86e9]]
+[[preserve-thoughts]] · [[iter3-rules-adapter]] · [[lora-unsloth]] · [[burl]] · [[sft-max-seq-length]] · [[20f4fa2]] · [[dbadb5f]] · [[edf86e9]]

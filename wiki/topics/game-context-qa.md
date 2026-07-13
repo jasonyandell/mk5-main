@@ -41,11 +41,11 @@ Two bugs in the initial eval pipeline (`eval_comprehension.py`) were corrupting 
 1. **EOS token**: `generate()` stopped only on `<eos>` (token 1) but Gemma 4 uses `<turn|>` (token 106) to end model turns. Missing this caused responses to run on into garbage.
 2. **Left-pad slicing**: used `attention_mask.sum()` (real token count) instead of `input_ids.shape[1]` (padded input length) to separate generated tokens from input. With left padding, this included trailing input tokens in the "response", causing prompt-echo artifacts.
 
-Both fixes required before responses were clean enough to grade. See [[sources/1d3e1b7]].
+Both fixes required before responses were clean enough to grade. See [[1d3e1b7]].
 
 ## Flexible grader
 
-A rigid pattern-matcher failed on free-form model responses (e.g., `is_trump 0%` even when the model answered correctly in prose). The flexible offline grader (`grade_offline.py`) extracts facts from free-form responses: finds legal moves in numbered lists, yes/no anywhere in response, trick numbers for domino tracking, domino overlap for `what_beats`. See [[decisions/flexible-grader]] (3c33e86).
+A rigid pattern-matcher failed on free-form model responses (e.g., `is_trump 0%` even when the model answered correctly in prose). The flexible offline grader (`grade_offline.py`) extracts facts from free-form responses: finds legal moves in numbered lists, yes/no anywhere in response, trick numbers for domino tracking, domino overlap for `what_beats`. See [[flexible-grader]] (3c33e86).
 
 ## Eval results
 
@@ -85,7 +85,7 @@ Six new question types were added across three curriculum rounds (b857299):
 
 ## Corpus portability
 
-The game-context Q&A corpus is base-model-agnostic. The same 31,830 train / 7,725 eval examples were used to train both Gemma 4 E2B (v4, 67% overall) and Qwen 3 1.7B (v5, 100% overall). The corpus quality is validated — the 33-point gap is explained by the base model, not by the training data. See [[rules-adapter]] Stage 0 v5 and [[decisions/base-model-pivot-qwen]] (3465e29).
+The game-context Q&A corpus is base-model-agnostic. The same 31,830 train / 7,725 eval examples were used to train both Gemma 4 E2B (v4, 67% overall) and Qwen 3 1.7B (v5, 100% overall). The corpus quality is validated — the 33-point gap is explained by the base model, not by the training data. See [[rules-adapter]] Stage 0 v5 and [[base-model-pivot-qwen]] (3465e29).
 
 ## Terminal LEM Stage-0 artifact
 
@@ -97,4 +97,4 @@ beat context-free flashcards) informed how Burl's tool responses are shaped. See
 
 ## Links
 
-[[rules-adapter]] [[v4-adapter]] [[v5-adapter]] [[narration]] [[kerry-curriculum]] [[trump-drilling]] [[experiments/stage-0-v4-comprehension-eval]] [[decisions/flexible-grader]] [[decisions/base-model-pivot-qwen]] [[sources/1d3e1b7]]
+[[rules-adapter]] [[v4-adapter]] [[v5-adapter]] [[narration]] [[kerry-curriculum]] [[trump-drilling]] [[stage-0-v4-comprehension-eval]] [[flexible-grader]] [[base-model-pivot-qwen]] [[1d3e1b7]]

@@ -343,7 +343,7 @@ escalation rule:
 8. **Wiki update (10 min).**  Fill the tradeoff matrix with real
    numbers, bump `last_updated`, append [[log]] entry, edit
    [[perf-on-the-table]] levers 4 and 6, edit
-   [[entities/gemma-4-e2b]] with the quant variants benched.
+   [[gemma-4-e2b]] with the quant variants benched.
 
 Total active phase budget: ~60 min wall under the team-lead's
 90-min cap, if no escalation triggers.

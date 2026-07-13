@@ -24,7 +24,7 @@ As Gemma improves, its E[Q] rises, which raises the effective threshold for futu
 
 ## First measurements
 
-Base-model Gemma 4 E2B (no adapter) passes K1 on 60% of 10 trick-6 decisions, measured via the local runner (llama.cpp, CPU). Breakdown: 60% pass, 30% fail (legal but suboptimal), 10% illegal (hand tracking error), 0% parse fail. The surprisingly high base rate implies many trick-6 decisions have near-unanimous-argmax correct answers — the E[Q] signal is concentrated. See [[experiments/base-model-k1-baseline]] (f578bfa).
+Base-model Gemma 4 E2B (no adapter) passes K1 on 60% of 10 trick-6 decisions, measured via the local runner (llama.cpp, CPU). Breakdown: 60% pass, 30% fail (legal but suboptimal), 10% illegal (hand tracking error), 0% parse fail. The surprisingly high base rate implies many trick-6 decisions have near-unanimous-argmax correct answers — the E[Q] signal is concentrated. See [[base-model-k1-baseline]] (f578bfa).
 
 ## Failure path
 
@@ -32,7 +32,7 @@ Traces that fail K1 are not discarded. They are routed to [[r1-rationalization]]
 
 ## Pass-rate progression across 15 STaR iterations
 
-With Stage 0 adapter as starting point, K1 pass rate across 15 iterations: 30% → 34% → 33% → 36% → 35% → **42%** → 36% → **42%** → 38% → 36% → 39% → 41% → 40% → 39% → 38%. Best recorded: 42% at iterations 5 and 7. Plateau band: 38–41% in iters 10–14. The base-model K1 baseline (no adapter, 60%) is measured on a different distribution — the base model is tested via llama.cpp on a small sample, whereas STaR iterations run on the Stage 0 adapter against a filtered subset of the training pool (lem/OVERVIEW.md @ 908773a). See [[experiments/star-10-iterations]].
+With Stage 0 adapter as starting point, K1 pass rate across 15 iterations: 30% → 34% → 33% → 36% → 35% → **42%** → 36% → **42%** → 38% → 36% → 39% → 41% → 40% → 39% → 38%. Best recorded: 42% at iterations 5 and 7. Plateau band: 38–41% in iters 10–14. The base-model K1 baseline (no adapter, 60%) is measured on a different distribution — the base model is tested via llama.cpp on a small sample, whereas STaR iterations run on the Stage 0 adapter against a filtered subset of the training pool (lem/OVERVIEW.md @ 908773a). See [[star-10-iterations]].
 
 ## Ceiling hypothesis (superseded — see revised framing below)
 
@@ -67,4 +67,4 @@ For a 14-minute window on 2026-04-11 (commits 380f3fa → 78ba940), K1 was super
 
 ## Links
 
-[[star]] [[expected-q-value]] [[r1-rationalization]] [[lem]] [[gemma-4-e2b]] [[experiments/base-model-k1-baseline]] [[star-harness]] [[scratchpad-validation]]
+[[star]] [[expected-q-value]] [[r1-rationalization]] [[lem]] [[gemma-4-e2b]] [[base-model-k1-baseline]] [[star-harness]] [[scratchpad-validation]]

@@ -8,7 +8,7 @@ status: retired
 
 ## Overview
 
-Rules-as-tools is an alternative to the [[decisions/primer-tradeoff]] approach of baking rules into a system-prompt primer. Instead, rule content — count values, trump relationships, void rules, contract progress — is exposed as explicit callable tools that the model queries on demand. The model must learn to ask rather than know (b3a27e2).
+Rules-as-tools is an alternative to the [[primer-tradeoff]] approach of baking rules into a system-prompt primer. Instead, rule content — count values, trump relationships, void rules, contract progress — is exposed as explicit callable tools that the model queries on demand. The model must learn to ask rather than know (b3a27e2).
 
 ## Four tools
 
@@ -41,7 +41,7 @@ iter-3-rules trained with `enable_rules_tools=True` and primer removed. Results 
 
 Key behavioral finding: `trick_winner_if` tool USAGE INCREASED after SFT. The adapter learned to call the rules-tools more aggressively rather than internalizing the rules as weights. "Tools replace memorization." (dbadb5f)
 
-The [[decisions/primer-tradeoff]] tradeoff resolves at this frontier: "rules-as-tools + no primer" is the winning configuration within the Burl adapter lineage (dbadb5f).
+The [[primer-tradeoff]] tradeoff resolves at this frontier: "rules-as-tools + no primer" is the winning configuration within the Burl adapter lineage (dbadb5f).
 
 ## Status (dormant since 2026-05)
 
@@ -49,11 +49,11 @@ This 90% win is real and stands as measured, but the whole [[burl]] line has had
 commits since 2026-05-07 and was superseded by [[champion]] / [[jud]] (pure NN bid/play
 nets) around 2026-06-09. "Current Pareto frontier for Burl" no longer describes an
 active program — there is no active Burl frontier to be current for. Separately,
-[[decisions/gemma-tool-response-shape]] found that every rollout through iter-3-rules
+[[gemma-tool-response-shape]] found that every rollout through iter-3-rules
 ran with tool responses invisible to the model (a chat-template bug fixed at `54f7776`,
 after this adapter was trained); the 90% number was never re-measured under a working
 tool-response harness. See [[iter3-rules-adapter]].
 
 ## Links
 
-[[burl]] [[tool-orchestration]] [[decisions/primer-tradeoff]] [[iter3-rules-adapter]]
+[[burl]] [[tool-orchestration]] [[primer-tradeoff]] [[iter3-rules-adapter]]

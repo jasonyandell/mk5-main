@@ -39,7 +39,7 @@ Three tools make candlewax distributions actionable for [[burl]]:
 
 Surfacing bimodality legibly at the tool surface did not change model behavior. In live rollout (base Gemma, N=500, trimmed primer), the model's natural policy remained breadth-first alternative-play evaluation — it would consider `conditional_outcome` in thought prose, then decline in favor of trying another play. The environment-shape lever is validated at its firing site; the blocker is Gemma's policy, not the tool design (ceca203).
 
-This is the candlewax E2 null result. See [[experiments/iter5-e2-candlewax-null]] (ceca203).
+This is the candlewax E2 null result. See [[iter5-e2-candlewax-null]] (ceca203).
 
 ## Candlewax spike (multimodal investigation)
 
@@ -85,5 +85,5 @@ the consumer and the licensed collapse.**
 ## Links
 
 [[burl]] [[tool-orchestration]] [[zeb]] [[forge]] [[eq-browser-visualizers]]
-[[reasoning-coherence-verification]] [[experiments/iter5-e2-candlewax-null]]
+[[reasoning-coherence-verification]] [[iter5-e2-candlewax-null]]
 [[candlewax-spike]] [[jud]] [[rank-vs-price]] [[w42-lens-v1-utility-head-to-head]]

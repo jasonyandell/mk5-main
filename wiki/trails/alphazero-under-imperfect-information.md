@@ -15,7 +15,7 @@ that actually plans be learned the way AlphaGo Zero learned Go, from self-play a
 under 42's imperfect information? The project's own answer, delivered as a question on the
 way out the door: *"maybe the finding is 'alphago under imperfect information can carry
 you pretty far, actually!'"* (2026-02-16T15:38,
-[[sources/claude/era4-zeb-era|conversation digest]]).
+[[era4-zeb-era|conversation digest]]).
 
 Everything in this era routes through [[zeb]], the self-play player it built. This page is
 the narrative hub; [[zeb]] is the entity-level detail on the model itself.
@@ -110,4 +110,4 @@ this himself mid-era and it was never fixed in-window:
 See [[zeb]] · [[zeb-fleet-ops]] · [[full-teacher-eq-experiment]] ·
 [[eval-matrix-bradley-terry]] · [[vs-random-eval-is-suspect]] · [[belief-feeding-policy]] ·
 [[candlewax]] · [[the-gestation]] (the era that follows) ·
-[[sources/claude/era4-zeb-era|conversation digest]].
+[[era4-zeb-era|conversation digest]].

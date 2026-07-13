@@ -8,7 +8,7 @@ status: complete
 
 ## Summary
 
-Controlled comparison of [[star]] pass/illegal rates across Stage 0 adapter versions, testing whether the [[experiments/star-10-iterations]] plateau was K1-structural (an inherent ceiling of the grading criterion) or curriculum-bounded (fixable by improving the Stage 0 adapter).
+Controlled comparison of [[star]] pass/illegal rates across Stage 0 adapter versions, testing whether the [[star-10-iterations]] plateau was K1-structural (an inherent ceiling of the grading criterion) or curriculum-bounded (fixable by improving the Stage 0 adapter).
 
 Result: curriculum improves the floor confirmedly (illegal rate 33% → 13%, replicated across
 Kerry and v3), and nudged the ceiling once, unreplicated (peak pass 42% → 48%, a single data
@@ -19,7 +19,7 @@ double-confirmed; the ceiling claim is not.
 
 ## Motivation
 
-After 15 STaR iterations with [[stage-0-adapter]] (v1), the pass rate plateaued at 38–42% and the [[decisions/discard-illegal-traces]] diagnostic showed ~33% illegal. The proposed ceiling hypothesis (from [[sources/908773a]]) was that K1 grading without fact-verification had a structural ~40% limit. This experiment tests that hypothesis by running fresh STaR iterations starting from better Stage 0 adapters.
+After 15 STaR iterations with [[stage-0-adapter]] (v1), the pass rate plateaued at 38–42% and the [[discard-illegal-traces]] diagnostic showed ~33% illegal. The proposed ceiling hypothesis (from [[908773a]]) was that K1 grading without fact-verification had a structural ~40% limit. This experiment tests that hypothesis by running fresh STaR iterations starting from better Stage 0 adapters.
 
 ## Kerry STaR (a2498e4) — iters 0-2 on [[kerry-adapter]]
 
@@ -33,7 +33,7 @@ vs v1 baseline: 30% pass, 33% illegal at iter 0.
 
 > Kerry's curriculum + public state = floor above the old ceiling. Illegal rate cut in half (33% → 13%). Following-suit exercises worked.
 
-— commit message, [[sources/a2498e4]]
+— commit message, [[a2498e4]]
 
 ## v3 STaR (8c1bb14) — iters 0-4 on [[v3-adapter]]
 
@@ -59,7 +59,7 @@ New peak: 48% at iter 2. Best adapter: v3 STaR iter-2.
 
 > Each curriculum round raises the floor.
 
-— commit message, [[sources/8c1bb14]]
+— commit message, [[8c1bb14]]
 
 ## Interpretation
 

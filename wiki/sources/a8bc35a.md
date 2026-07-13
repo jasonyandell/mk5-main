@@ -38,4 +38,4 @@ last_updated: 2026-04-24
 
 ## Links
 
-[[entities/gen-fleet]] · [[gus]]
+[[gen-fleet]] · [[gus]]

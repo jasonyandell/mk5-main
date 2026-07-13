@@ -48,8 +48,8 @@ Total corpus: 15,000 examples at `lem/rules/qa_corpus_kerry.jsonl`.
 
 ## Target adapter
 
-`jasonyandell/gemma-4-e2b-texas42-stage0-kerry` ([[kerry-adapter]]). Trained in [[sources/43009a4]].
+`jasonyandell/gemma-4-e2b-texas42-stage0-kerry` ([[kerry-adapter]]). Trained in [[43009a4]].
 
 ## Related pages
 
-[[kerry-curriculum]] · [[kerry-adapter]] · [[rules-adapter]] · [[lem]] · [[sources/43009a4]]
+[[kerry-curriculum]] · [[kerry-adapter]] · [[rules-adapter]] · [[lem]] · [[43009a4]]

@@ -28,4 +28,4 @@ this, the entire gradient is NaN whenever an illegal slot appears in the batch.
 
 ## Links
 
-[[experiments/gus-pi-opp-training]]
+[[gus-pi-opp-training]]

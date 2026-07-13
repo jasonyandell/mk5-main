@@ -110,4 +110,4 @@ than mechanical.
 ## Related pages
 
 [[web-game]] · [[pimc]] · [[multiplayer-lineage]] · [[candlewax]] ·
-[[sources/claude/era1-web-game-prologue|conversation digest]]
+[[era1-web-game-prologue|conversation digest]]

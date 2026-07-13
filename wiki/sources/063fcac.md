@@ -48,4 +48,4 @@ The two guards:
 
 ## Related pages
 
-[[wax-museum]] · [[burl]] · [[burl-2000-harvest]] · [[max-tokens-2048-floor]] · [[batched-harvest-resilience]] · [[sources/1bf1885]] · [[sources/d858781]]
+[[wax-museum]] · [[burl]] · [[burl-2000-harvest]] · [[max-tokens-2048-floor]] · [[batched-harvest-resilience]] · [[1bf1885]] · [[d858781]]

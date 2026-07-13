@@ -33,4 +33,4 @@ and 7.4M XL (1.65). All 2000g variants converge to the same regret floor.
 
 ## Links
 
-[[experiments/gus-scaling-ladder]]
+[[gus-scaling-ladder]]

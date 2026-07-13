@@ -56,7 +56,7 @@ status: active
 
 ## Key outcomes
 
-- **Zeb parked:** hidden-only top-1 ~39% (vs advertised 72%). See [[decisions/zeb-parked-eq-primitive]] and [[experiments/zeb-calibration-eval]].
+- **Zeb parked:** hidden-only top-1 ~39% (vs advertised 72%). See [[zeb-parked-eq-primitive]] and [[zeb-calibration-eval]].
 - **E[Q] distribution validated:** seed 900013 counterfactual shows Δmean +15 and p_make 0.6→1.0 on a deliberate play shift.
 - **Gemma 4 XML zero-shot confirmed:** base model emits `<tool>{"name":"..."}</tool>` without fine-tuning — harness regex parses cleanly. Premise survives first contact.
 
@@ -66,4 +66,4 @@ t42-56gu (zeb wrapper), t42-oyq9 (engine+harness), t42-jljb (belief calibration)
 
 ## Related pages
 
-[[burl]] · [[zeb]] · [[experiments/zeb-calibration-eval]] · [[decisions/zeb-parked-eq-primitive]] · [[tool-orchestration]] · [[forge]] · [[sources/4b3ba3d]]
+[[burl]] · [[zeb]] · [[zeb-calibration-eval]] · [[zeb-parked-eq-primitive]] · [[tool-orchestration]] · [[forge]] · [[4b3ba3d]]

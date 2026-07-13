@@ -14,11 +14,11 @@ Always pass `max_seq_length=4096` (or larger, matching corpus max) to `SFTConfig
 
 TRL's `SFTConfig` defaults to `max_seq_length=1024` when the parameter is unset. Burl's `preserve_thoughts` corpus has median 2054 tokens and max 4210 tokens per row — the thought-bearing regions the recipe is meant to train on were silently truncated at token 1024 in every Burl adapter trained before iter-5 (both Modal `star.py` and local `star_mlx.py` paths).
 
-This is the very likely root cause of the [[experiments/iter4-null-preserve-thoughts]] "byte-identical" result. Both the stripped and preserved training rows were chopped at token 1024, making them nearly identical at training time. The adapter had nothing to distinguish — not LoRA capacity saturation as initially diagnosed.
+This is the very likely root cause of the [[iter4-null-preserve-thoughts]] "byte-identical" result. Both the stripped and preserved training rows were chopped at token 1024, making them nearly identical at training time. The adapter had nothing to distinguish — not LoRA capacity saturation as initially diagnosed.
 
 ## Parallel to LEM
 
-[[decisions/sft-completion-only-loss]] documented TRL's first trap: `SFTConfig` defaults leave `assistant_only_loss=False`, wasting gradient on memorized prompt tokens. This decision documents the second known trap: `max_seq_length=1024` silently truncates rows longer than 1024 tokens.
+[[sft-completion-only-loss]] documented TRL's first trap: `SFTConfig` defaults leave `assistant_only_loss=False`, wasting gradient on memorized prompt tokens. This decision documents the second known trap: `max_seq_length=1024` silently truncates rows longer than 1024 tokens.
 
 TRL's `SFTConfig` has at least two traps whose defaults waste or destroy gradient. Both require explicit overrides.
 
@@ -36,4 +36,4 @@ hypothesis and upgrades [[iter4-null-preserve-thoughts]] from "null result" to
 
 ## Related pages
 
-[[preserve-thoughts]] · [[experiments/iter4-null-preserve-thoughts]] · [[decisions/sft-completion-only-loss]] · [[lora-unsloth]] · [[burl]] · [[sources/edf86e9]]
+[[preserve-thoughts]] · [[iter4-null-preserve-thoughts]] · [[sft-completion-only-loss]] · [[lora-unsloth]] · [[burl]] · [[edf86e9]]

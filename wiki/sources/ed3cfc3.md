@@ -18,8 +18,8 @@ status: active
 > single-stream. 16× aggregate speedup, memory plateau 15 GB on 48 GB.
 > N=500 rollouts ~3.5 min wall time. Reproducer: bench_batch_throughput.py
 
-Benchmark establishing the batch_generate ceiling. Introduces `bench_batch_throughput.py` sweep script and writeup. Full analysis: [[experiments/batch-throughput-bench]].
+Benchmark establishing the batch_generate ceiling. Introduces `bench_batch_throughput.py` sweep script and writeup. Full analysis: [[batch-throughput-bench]].
 
 ## Related pages
 
-[[experiments/batch-throughput-bench]] · [[mlx-lm]] · [[burl]] · [[sources/6a97d55]]
+[[batch-throughput-bench]] · [[mlx-lm]] · [[burl]] · [[6a97d55]]

@@ -12,7 +12,7 @@ First end-to-end use of the [[burl-chat]] workbench. Goal: prove the loop "harve
 
 ## Setup
 
-- Model: `mlx-community/gemma-4-e2b-it-bf16` ([[gemma-4-e2b]]) on M5 Max via [[mlx-lm]]. Tested both base and with `e1-rank16` adapter ([[experiments/iter5-e1-rank-sweep]]).
+- Model: `mlx-community/gemma-4-e2b-it-bf16` ([[gemma-4-e2b]]) on M5 Max via [[mlx-lm]]. Tested both base and with `e1-rank16` adapter ([[iter5-e1-rank-sweep]]).
 - Harvest: `scratch/belief_trajectory_rollout/harvest_batched_20260426_031338/` (2800 corpus_index rows; later batched harvest than the canonical 2000-decision [[burl-2000-harvest]]).
 - Decision: `global_idx=0`, seed 0, bucket `BURL_BREAKS_CONSENSUS`, burl_play=14 (4-4), oracle_play=20 (5-5), regret 12.12.
 - Conversation prefix: 18 typed segments — system (5310 chars) + user state (295 chars) + 1 thought + 5 tool_calls + 5 tool_results + 4 assistant_texts + commit_play(14). Plus the [[chat-mode-primer]] injected after the commit.
@@ -35,7 +35,7 @@ With the same prefix and **no adapter** (base Gemma 4 E2B), the model engages im
 2. Strategic labels ("Key Insight: Play 14 is extremely volatile.").
 3. "Why" over "how" ("This play maximizes your chance of hitting the 30-count bid.").
 
-That third suggestion is exactly the [[topics/rules-as-tools]] insight applied to evaluative tools, and exactly the [[topics/at-risk-points]] frame Roberson uses. The base model invented it from a 9-word user prompt.
+That third suggestion is exactly the [[rules-as-tools]] insight applied to evaluative tools, and exactly the [[at-risk-points]] frame Roberson uses. The base model invented it from a 9-word user prompt.
 
 ### 2. The chat-mode primer is doing real work
 

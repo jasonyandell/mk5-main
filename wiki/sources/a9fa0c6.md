@@ -34,4 +34,4 @@ that OOD robustness can be learned post-hoc.
 
 ## Links
 
-[[experiments/gus-q-head-augmentation]] · [[topics/lamir1]]
+[[gus-q-head-augmentation]] · [[lamir1]]

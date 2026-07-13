@@ -28,4 +28,4 @@ This is the design principle behind the single-fact supporting categories (`high
 
 ## Links
 
-[[game-context-qa]] [[rules-adapter]] [[v9-adapter]] [[qwen3-14b]] [[experiments/qwen-14b-capacity]] [[scratchpad-validation]]
+[[game-context-qa]] [[rules-adapter]] [[v9-adapter]] [[qwen3-14b]] [[qwen-14b-capacity]] [[scratchpad-validation]]

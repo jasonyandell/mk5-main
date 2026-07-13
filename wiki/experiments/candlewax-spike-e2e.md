@@ -30,8 +30,8 @@ End-to-end spike under `burl/candlewax_spike/`: candlewax PDF rendering, Opus/Ha
 
 ## Key pivot
 
-Reasoning-coherence verification is the bottleneck: distinguishing correct reasoning from lucky commit requires an engine-based verifier that is a multi-week subproject, not a weekend. The plumbing works; the blocker is [[reasoning-coherence-verification]]. See [[experiments/iter5-e2-candlewax-null]] for the simpler Burl path hitting the same wall.
+Reasoning-coherence verification is the bottleneck: distinguishing correct reasoning from lucky commit requires an engine-based verifier that is a multi-week subproject, not a weekend. The plumbing works; the blocker is [[reasoning-coherence-verification]]. See [[iter5-e2-candlewax-null]] for the simpler Burl path hitting the same wall.
 
 ## Related pages
 
-[[candlewax-spike]] · [[candlewax]] · [[reasoning-coherence-verification]] · [[mlx-lm]] · [[haiku-4-5]] · [[burl]] · [[sources/0545342]]
+[[candlewax-spike]] · [[candlewax]] · [[reasoning-coherence-verification]] · [[mlx-lm]] · [[haiku-4-5]] · [[burl]] · [[0545342]]

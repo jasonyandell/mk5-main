@@ -8,7 +8,7 @@ status: complete
 
 ## Summary
 
-Exploratory spike migrating Burl from XML to Gemma 4's native `<|tool_call>` tool-use format on the same 10 held-out decisions as [[experiments/burl-move3-base]]. Result: +28.9pp bot-match, +18.9pp K1, mean E[Q] delta halved. Tool-use breadth finally real.
+Exploratory spike migrating Burl from XML to Gemma 4's native `<|tool_call>` tool-use format on the same 10 held-out decisions as [[burl-move3-base]]. Result: +28.9pp bot-match, +18.9pp K1, mean E[Q] delta halved. Tool-use breadth finally real.
 
 ([burl/eval/run_move4_spike.py @ 3781dce](../sources/3781dce.md))
 
@@ -44,7 +44,7 @@ Exploratory spike migrating Burl from XML to Gemma 4's native `<|tool_call>` too
 
 ## Significance
 
-The bet that "small models are better at asking questions than memorizing" survives — but only when the model is spoken to in its native grammar. The harness must adapt to the model's post-training, not the other way around. See [[decisions/native-tool-use-format]].
+The bet that "small models are better at asking questions than memorizing" survives — but only when the model is spoken to in its native grammar. The harness must adapt to the model's post-training, not the other way around. See [[native-tool-use-format]].
 
 The OVERVIEW principle added at this commit: *"Go with the model's grain; catch it doing right... STaR trains the model's own best behavior back into itself — their words, their corrections, their self-checks."*
 
@@ -55,4 +55,4 @@ The OVERVIEW principle added at this commit: *"Go with the model's grain; catch 
 
 ## Related pages
 
-[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[k1-grading]] · [[decisions/native-tool-use-format]] · [[experiments/burl-move3-base]] · [[sources/3781dce]]
+[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[k1-grading]] · [[native-tool-use-format]] · [[burl-move3-base]] · [[3781dce]]

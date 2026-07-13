@@ -57,8 +57,8 @@ Three fixes that replace vLLM's benefit for this use case:
 
 ## Narrative
 
-This is the third vLLM removal across the project's history: [[sources/8724e93]] (H100, version conflict), [[sources/d913932]] (cleanup), [[sources/2c2b851]] (B200 attempt), and now this. The conclusion at this frontier: HF `generate()` + SDPA + `torch.compile` + left-padded batching is the stable path for [[gemma-4-e2b]] at this frontier. vLLM will not be viable until its LoRA support catches up with `Gemma4ForConditionalGeneration`.
+This is the third vLLM removal across the project's history: [[8724e93]] (H100, version conflict), [[d913932]] (cleanup), [[2c2b851]] (B200 attempt), and now this. The conclusion at this frontier: HF `generate()` + SDPA + `torch.compile` + left-padded batching is the stable path for [[gemma-4-e2b]] at this frontier. vLLM will not be viable until its LoRA support catches up with `Gemma4ForConditionalGeneration`.
 
 ## Related pages
 
-[[star-harness]] · [[modal]] · [[gemma-4-e2b]] · [[sources/2c2b851]] · [[sources/8724e93]] · [[sources/d913932]]
+[[star-harness]] · [[modal]] · [[gemma-4-e2b]] · [[2c2b851]] · [[8724e93]] · [[d913932]]

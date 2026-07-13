@@ -11,7 +11,8 @@ research decision selects one causal question from the evidence ledger",
 build-ladder step 3) — taken 2026-07-13. Source: an external deep-research
 synthesis over the wiki record, reviewed against
 [[partnership-wall-research]] and adopted; its literature grounding is filed
-at [[search-literature-transfer]].
+at [[search-literature-transfer]]. Selected lanes run per the
+[[research-night]] playbook.
 
 This decision selects **experiments and their order**, not an architecture.
 Promotion still gates through [[partnership-research-gates]] unchanged.

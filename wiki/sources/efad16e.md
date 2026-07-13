@@ -41,12 +41,12 @@ status: active
 
 **LoRA adapter key mismatch RESOLVED:** Gemma 4 E2B uses KV-sharing for layers 15–34 — those layers reuse KV states from layers 0–14 and have no `k_proj`/`v_proj`. The adapter is complete; the missing keys were architectural, not a training bug.
 
-**Scratchpad validation documented as attempted and deferred.** See [[scratchpad-validation]] and [[experiments/scratchpad-v2-iter0]].
+**Scratchpad validation documented as attempted and deferred.** See [[scratchpad-validation]] and [[scratchpad-v2-iter0]].
 
-**10-iteration results table and key observations.** See [[experiments/star-10-iterations]] for full treatment.
+**10-iteration results table and key observations.** See [[star-10-iterations]] for full treatment.
 
 **Next steps documented:** held-out eval on iter 5/7, scratchpad format SFT bootstrap, or increase data diversity.
 
 ## Related pages
 
-[[experiments/star-10-iterations]] · [[gemma-4-e2b]] · [[star-harness]] · [[scratchpad-validation]] · [[star]] · [[modal]] · [[sources/ff0d0d2]] · [[sources/26f5ddf]]
+[[star-10-iterations]] · [[gemma-4-e2b]] · [[star-harness]] · [[scratchpad-validation]] · [[star]] · [[modal]] · [[ff0d0d2]] · [[26f5ddf]]

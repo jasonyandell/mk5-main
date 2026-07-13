@@ -56,8 +56,8 @@ status: active
 
 ## Results
 
-100% legal, 60% bot-match, 70% K1, $0.09. See [[experiments/burl-move3-base]] for full analysis.
+100% legal, 60% bot-match, 70% K1, $0.09. See [[burl-move3-base]] for full analysis.
 
 ## Related pages
 
-[[experiments/burl-move3-base]] · [[burl]] · [[gemma-4-e2b]] · [[modal]] · [[tool-orchestration]] · [[sources/d9baf3b]] · [[sources/3781dce]]
+[[burl-move3-base]] · [[burl]] · [[gemma-4-e2b]] · [[modal]] · [[tool-orchestration]] · [[d9baf3b]] · [[3781dce]]

@@ -33,7 +33,7 @@ Scratchpad validation introduced a superset of plain K1 grades:
 | `illegal` | Chosen play not in legal moves | DISCARD |
 | `parse_fail` | Cannot extract a play | DISCARD |
 
-The rationale for discarding `invalid` traces extends the [[decisions/discard-illegal-traces]] "poison" principle: a correct move arrived at via hallucinated game-state is still corrupted reasoning. Training on it would teach the model to reason from wrong facts (380f3fa). The iteration-summary wandb metric was renamed from `pass_rate` to `valid_pass_rate` at this frontier to match the stricter grading ([[sources/34775ca]]).
+The rationale for discarding `invalid` traces extends the [[discard-illegal-traces]] "poison" principle: a correct move arrived at via hallucinated game-state is still corrupted reasoning. Training on it would teach the model to reason from wrong facts (380f3fa). The iteration-summary wandb metric was renamed from `pass_rate` to `valid_pass_rate` at this frontier to match the stricter grading ([[34775ca]]).
 
 ## Result
 
@@ -51,4 +51,4 @@ The scratchpad validation logic and the enriched narration dataset v2 (with grou
 
 ## Links
 
-[[star]] [[k1-grading]] [[r1-rationalization]] [[decisions/discard-illegal-traces]] [[learned-by-playing]] [[sources/380f3fa]] [[sources/78ba940]]
+[[star]] [[k1-grading]] [[r1-rationalization]] [[discard-illegal-traces]] [[learned-by-playing]] [[380f3fa]] [[78ba940]]

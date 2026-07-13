@@ -35,8 +35,8 @@ status: complete
 
 N=500 rollouts at ~4 turns × ~128 tokens = ~3.5 min wall time vs hours sequential. Corpus scale stops being a throughput constraint. Unlocks "corpus 10-20× larger" as the next iter-5+ lever.
 
-**Load-bearing incidental finding** (flagged in [[sources/7321952]]): `WorldSamplerMRV` marginal distribution appeared biased vs uniform enumeration by ~6.8 Q points at trick 6. **Corrected by [[world-sampler-mrv-audit]] (2026-07-11):** the ~6.8 Q comparison mixed two hand encodings and is not a clean estimate, but the sampler really was broken — it emitted invalid worlds (probability exactly 1/3 on the audit fixture), and the `uniform-completion-dp-v1` replacement repaired it. Every historical Burl eval number and the forge/eq training data predate the repair.
+**Load-bearing incidental finding** (flagged in [[7321952]]): `WorldSamplerMRV` marginal distribution appeared biased vs uniform enumeration by ~6.8 Q points at trick 6. **Corrected by [[world-sampler-mrv-audit]] (2026-07-11):** the ~6.8 Q comparison mixed two hand encodings and is not a clean estimate, but the sampler really was broken — it emitted invalid worlds (probability exactly 1/3 on the audit fixture), and the `uniform-completion-dp-v1` replacement repaired it. Every historical Burl eval number and the forge/eq training data predate the repair.
 
 ## Related pages
 
-[[mlx-lm]] · [[burl]] · [[burl-selfplay-arena]] · [[sources/ed3cfc3]] · [[sources/6a97d55]]
+[[mlx-lm]] · [[burl]] · [[burl-selfplay-arena]] · [[ed3cfc3]] · [[6a97d55]]

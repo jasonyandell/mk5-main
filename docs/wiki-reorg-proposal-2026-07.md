@@ -1,8 +1,9 @@
 # Wiki Reorganization Proposal — 2026-07-13
 
-**Status:** proposal. This PR changes nothing under `wiki/` — it ships this document
-plus `scripts/wiki_lint.py`, the mechanical audit tool whose output is the evidence
-base below. Adoption happens in small follow-up waves, each sized to one session.
+**Status:** adopted and executed 2026-07-13 (same branch). All five waves ran;
+`scripts/wiki_lint.py --strict` exits clean. The appendix preserves the pre-adoption
+audit numbers. Open choices resolved as recommended, plus: canonical w42 rollup =
+`w42-book-claim-synthesis-and-ai-directions`.
 
 **Method:** full crawl of all 507 pages (~498k words) by four parallel surveyors
 (navigation layer; entities/topics taxonomy; experiments; decisions/playbooks/sources/log),

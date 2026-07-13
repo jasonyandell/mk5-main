@@ -30,7 +30,7 @@ The primary Stage 1 entry point. Runs on [[modal]] (A10G GPU). Six-step flow:
 
 Smoke tested on 5 examples: 1 K1 pass (20%), 2 failures rationalized, 2 illegals
 rationalized. All traces collected. Pipeline works end-to-end.
-See [[experiments/star-harness-5ex-smoke]]. (commit message @ 7538016)
+See [[star-harness-5ex-smoke]]. (commit message @ 7538016)
 
 ### `star_local.py` — local llama.cpp runner (f578bfa)
 
@@ -102,7 +102,7 @@ only 5 trainable traces. The model had never seen the scratchpad format; validat
 a format the model hasn't learned yet produces mostly noise. Relaxing to hand-only
 validation (b12fcec) didn't resolve the issue, so the entire validation layer was disabled
 (78ba940) and simple K1 grading restored. Insight: format bootstrapping must come before
-format validation. See [[topics/scratchpad-validation]]. (commit messages @ 380f3fa, b12fcec, 78ba940)
+format validation. See [[scratchpad-validation]]. (commit messages @ 380f3fa, b12fcec, 78ba940)
 
 **Narration v2**: a new narration format with ground-truth fields (HAND / VOIDS / COUNTS)
 was generated alongside the scratchpad feature. Current production runs (`iterate.sh`) use
@@ -134,7 +134,7 @@ Three-branch outcome for each graded example:
 |---|---|---|
 | `pass` | `E[Q][gemma] >= E[Q][bot]` | Keep trace as-is |
 | `fail` | Legal move, `E[Q][gemma] < E[Q][bot]` | Rationalize with [[r1-rationalization]] |
-| `illegal` / `parse_fail` | Illegal move or unparseable output | **Discard** — see [[decisions/discard-illegal-traces]] |
+| `illegal` / `parse_fail` | Illegal move or unparseable output | **Discard** — see [[discard-illegal-traces]] |
 
 Illegal and parse-fail traces are discarded rather than rationalized. Rationale: reasoning
 chains that arrive at an impossible game state are corrupted throughout, even if intermediate
@@ -149,7 +149,7 @@ alongside `pass_rate`. Interpretation per [[k1-grading]]:
 
 - **[[k1-grading]]**: keep a trace iff `E[Q][gemma] >= E[Q][bot]`. The bot plays E[Q]-greedy,
   so K1 reduces to "Gemma picked an argmax-tied action." Baseline (base model, no adapter,
-  10 examples): 60% K1 pass. See [[experiments/base-model-k1-baseline]].
+  10 examples): 60% K1 pass. See [[base-model-k1-baseline]].
 - **[[r1-rationalization]]**: on legal K1 failure, reveal the bot's action and ask Gemma
   to justify why it is correct. Keep that justification as the training trace. Illegal and
   parse-fail traces are discarded, not rationalized (as of fb47ab3).

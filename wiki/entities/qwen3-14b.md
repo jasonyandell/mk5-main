@@ -34,9 +34,9 @@ in rationalizations. (commit message @ 0c7392f)
 
 **Capacity helps enumeration, not structure.** `visibility_audit` at 0% on both 1.7B and
 14B confirms long-enumeration answer format is a structural problem — autoregressive
-truncation, not a knowledge gap. See [[topics/single-fact-enumeration]].
+truncation, not a knowledge gap. See [[single-fact-enumeration]].
 
-**The mask fix later closed the comprehension gap.** After [[decisions/sft-completion-only-loss]]
+**The mask fix later closed the comprehension gap.** After [[sft-completion-only-loss]]
 was applied to the 1.7B v10 trainer, 1.7B-maskfix reached 86% comprehension (same as 14B
 v9) at one-third the compute cost. The gap between 1.7B and 14B on comprehension was
 largely a gradient-allocation artifact, not a fundamental capacity limit.

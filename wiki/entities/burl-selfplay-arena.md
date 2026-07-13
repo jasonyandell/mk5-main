@@ -33,7 +33,7 @@ rationale snippets), run log.
 
 Same deal, both teams set (bad deal for team 0). Opus salvages 7 points where Haiku was
 shut out. Opening lead diverges: Haiku led low trump generically; Opus led double-ones
-after 7 `eq_outcome_distribution` evaluations. See [[experiments/opus-vs-haiku-arena]].
+after 7 `eq_outcome_distribution` evaluations. See [[opus-vs-haiku-arena]].
 
 Tool-use efficiency delta (same 28 decisions):
 - `trump_declared`: Haiku 24× vs Opus 1× — Haiku re-queries what's in the system prompt
@@ -47,7 +47,7 @@ Tool-use efficiency delta (same 28 decisions):
 
 Across 145+ decisions spanning single-decision Haiku, single-decision Opus, Haiku full game,
 and Opus full game, no model has ever called `conditional_outcome` zero-shot. This is the
-4th observation of the pattern. See [[topics/conditional-outcome-structural-nonuse]].
+4th observation of the pattern. See [[conditional-outcome-structural-nonuse]].
 (commit messages @ 35c75ff, 39aafaf)
 
 ## Status

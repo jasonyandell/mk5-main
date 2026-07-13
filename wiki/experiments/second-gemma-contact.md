@@ -8,13 +8,13 @@ status: complete
 
 ## Summary
 
-Second inference pass against [[gemma-4-e2b]], using the same prompt as [[experiments/first-gemma-contact]] (seed 42, fives trump, trick 6), but with [[stage-0-adapter]] loaded. Tests whether Stage 0 Q&A drilling transferred to the narration-context reasoning task.
+Second inference pass against [[gemma-4-e2b]], using the same prompt as [[first-gemma-contact]] (seed 42, fives trump, trick 6), but with [[stage-0-adapter]] loaded. Tests whether Stage 0 Q&A drilling transferred to the narration-context reasoning task.
 
 ([lem/gemma_star/modal_app.py @ df73c8d](../sources/df73c8d.md))
 
 ## Setup
 
-- **Prompt:** identical to [[experiments/first-gemma-contact]] — seed 42, fives trump, truncated at trick 6 narrator turn, rules primer prepended
+- **Prompt:** identical to [[first-gemma-contact]] — seed 42, fives trump, truncated at trick 6 narrator turn, rules primer prepended
 - **Adapter:** `jasonyandell/gemma-4-e2b-texas42-stage0` ([[stage-0-adapter]]) loaded via `PeftModel.from_pretrained`, merged and unloaded before inference
 - **Infrastructure:** [[modal]] L4 GPU, bf16, thinking mode enabled
 
@@ -43,4 +43,4 @@ Proves that [[rules-adapter]] Q&A training transfers for factual state-tracking 
 
 ## Related pages
 
-[[lem]] · [[gemma-4-e2b]] · [[stage-0-adapter]] · [[rules-adapter]] · [[star]] · [[k1-grading]] · [[r1-rationalization]] · [[learned-by-playing]] · [[experiments/first-gemma-contact]] · [[experiments/stage-0-v1-training]] · [[modal]]
+[[lem]] · [[gemma-4-e2b]] · [[stage-0-adapter]] · [[rules-adapter]] · [[star]] · [[k1-grading]] · [[r1-rationalization]] · [[learned-by-playing]] · [[first-gemma-contact]] · [[stage-0-v1-training]] · [[modal]]

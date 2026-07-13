@@ -182,4 +182,4 @@ unrelated side project — redirected into a likelihood-ratio opponent model ins
 
 [[suit-algebra]] · [[the-oracle]] · [[strategy-fusion]] · [[the-analysis-epic]] ·
 [[forge]] · [[forge-analysis]] · [[pimc]] · [[rank-vs-price]] · [[champion]] · [[gus]] ·
-[[sources/claude/era2-breakthrough-oracle|conversation digest]]
+[[era2-breakthrough-oracle|conversation digest]]

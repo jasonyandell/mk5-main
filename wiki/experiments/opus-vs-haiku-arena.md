@@ -38,4 +38,4 @@ Confirms Opus's decision quality advantage on bad deals. The `conditional_outcom
 
 ## Related pages
 
-[[burl-selfplay-arena]] · [[haiku-4-5]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[experiments/burl-move4-native-spike]] · [[sources/39aafaf]]
+[[burl-selfplay-arena]] · [[haiku-4-5]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[burl-move4-native-spike]] · [[39aafaf]]

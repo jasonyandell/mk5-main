@@ -12,7 +12,7 @@ status: superseded
 
 ## Observation
 
-The full LEM rules primer was acting as a load-bearing behavioral scaffold for `commit_play` emission — not just a rules reference. This was revealed by two ablations in [[experiments/burl-iter1-mixed]]:
+The full LEM rules primer was acting as a load-bearing behavioral scaffold for `commit_play` emission — not just a rules reference. This was revealed by two ablations in [[burl-iter1-mixed]]:
 
 1. **Drop primer entirely:** 0% wins, 50% retry-exhausted on 6 decisions. Killed immediately.
 2. **Trim primer to ~500 words:** commit discipline partially recovers in rollout (0 retry-exhausted during N=30 corpus generation), but the SFT adapter inherits the depth-without-commit pattern and goes 5/10 retry-exhausted on held-out eval.
@@ -37,4 +37,4 @@ Prompt components can carry behavioral load that is hard to isolate from their a
 
 ## Related pages
 
-[[burl]] · [[decisions/primer-tradeoff]] · [[experiments/burl-iter1-mixed]] · [[experiments/burl-iter0-eval]] · [[burl-iter1-adapter]]
+[[burl]] · [[primer-tradeoff]] · [[burl-iter1-mixed]] · [[burl-iter0-eval]] · [[burl-iter1-adapter]]

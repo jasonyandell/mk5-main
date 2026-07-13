@@ -28,4 +28,4 @@ New `burl/PRACTICALITIES.md` captures eight operational receipts that belong in 
 
 ## Related pages
 
-[[burl]] · [[iter3-rules-adapter]] · [[conditional-outcome-structural-nonuse]] · [[decisions/sft-max-seq-length]]
+[[burl]] · [[iter3-rules-adapter]] · [[conditional-outcome-structural-nonuse]] · [[sft-max-seq-length]]

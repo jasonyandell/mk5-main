@@ -25,8 +25,8 @@ status: active
 > Local path (star_mlx.py) was already fixed. This applies the equivalent
 > fix to the Modal recipe (star.py).
 
-Applies `max_seq_length=4096` to the Modal SFT recipe (`star.py`), matching the local path fix already in [[sources/6fea6ab]]'s `star_mlx.py`. Reframes the [[experiments/iter4-null-preserve-thoughts]] byte-identical A/B as a truncation artifact rather than a LoRA capacity ceiling. See [[decisions/sft-max-seq-length]] for the generalizable principle.
+Applies `max_seq_length=4096` to the Modal SFT recipe (`star.py`), matching the local path fix already in [[6fea6ab]]'s `star_mlx.py`. Reframes the [[iter4-null-preserve-thoughts]] byte-identical A/B as a truncation artifact rather than a LoRA capacity ceiling. See [[sft-max-seq-length]] for the generalizable principle.
 
 ## Related pages
 
-[[decisions/sft-max-seq-length]] · [[preserve-thoughts]] · [[experiments/iter4-null-preserve-thoughts]] · [[burl]] · [[sources/6fea6ab]]
+[[sft-max-seq-length]] · [[preserve-thoughts]] · [[iter4-null-preserve-thoughts]] · [[burl]] · [[6fea6ab]]

@@ -18,7 +18,7 @@ Layer 1 of Burl's STaR substrate. The rules primer + a 42-aware framing block ar
 - **Prompt additions:** full `lem/rules/primer.md` (1549 words, engine-verified tournament 42 rules) + "Current decision — 42-aware context" block: partner seat, left/right opponent seats, team role (offense/defense), bid contract, tricks-completed, score
 - **Total prompt size:** ~11 KB / 2.7K tokens — fits within 8192 `max_model_len`
 - **New tool:** `game_summary(game_state)` — one-shot structured view (not yet wired into native registry; available for follow-up iterations)
-- **Eval set:** same 10 held-out decisions as [[experiments/burl-move3-base]] and [[experiments/burl-move4-native-spike]]
+- **Eval set:** same 10 held-out decisions as [[burl-move3-base]] and [[burl-move4-native-spike]]
 
 ## Results
 
@@ -36,8 +36,8 @@ The primer shifts Gemma's attention toward lightweight rule-confirming tool call
 
 ## Verdict
 
-This is the STaR substrate, not the final product. The vocabulary the corpus must carry into SFT is now present. The expectation at this frontier: iter-0 training should recover bot-match while keeping the vocabulary. That expectation was not met — see [[experiments/burl-iter0-eval]] and [[decisions/primer-tradeoff]].
+This is the STaR substrate, not the final product. The vocabulary the corpus must carry into SFT is now present. The expectation at this frontier: iter-0 training should recover bot-match while keeping the vocabulary. That expectation was not met — see [[burl-iter0-eval]] and [[primer-tradeoff]].
 
 ## Related pages
 
-[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[decisions/primer-tradeoff]] · [[experiments/burl-move4-native-spike]] · [[experiments/burl-phase2-starcorpus]] · [[sources/b8116b5]]
+[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[primer-tradeoff]] · [[burl-move4-native-spike]] · [[burl-phase2-starcorpus]] · [[b8116b5]]

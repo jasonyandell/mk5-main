@@ -121,4 +121,4 @@ the highest variance, σ = 28.2M) and doubles-suit the smallest and most predict
 ## Links
 
 [[suit-algebra]] · [[strategy-fusion]] · [[forge]] · [[breakthrough-and-oracle]] ·
-[[the-analysis-epic]] · [[sources/claude/era2-breakthrough-oracle|conversation digest]]
+[[the-analysis-epic]] · [[era2-breakthrough-oracle|conversation digest]]

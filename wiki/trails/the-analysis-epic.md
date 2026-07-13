@@ -102,4 +102,4 @@ the endgame) — independent support for the same wall, arrived at by a differen
 ## Links
 
 [[forge-analysis]] · [[the-oracle]] · [[strategy-fusion]] · [[breakthrough-and-oracle]] ·
-[[oracle-vs-human-play]] · [[sources/claude/era2-breakthrough-oracle|conversation digest]]
+[[oracle-vs-human-play]] · [[era2-breakthrough-oracle|conversation digest]]

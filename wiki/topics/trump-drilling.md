@@ -9,7 +9,7 @@ superseded_by: game-context-qa
 
 ## Overview
 
-Trump-membership drilling is the targeted Q&A extension added to the [[kerry-curriculum]] to form Stage 0 v3. Five drill types attack the stubborn 6-4-under-fives error that persisted through [[experiments/first-gemma-contact]], [[experiments/second-gemma-contact]], and [[experiments/third-gemma-contact]] (601f622).
+Trump-membership drilling is the targeted Q&A extension added to the [[kerry-curriculum]] to form Stage 0 v3. Five drill types attack the stubborn 6-4-under-fives error that persisted through [[first-gemma-contact]], [[second-gemma-contact]], and [[third-gemma-contact]] (601f622).
 
 ## Five drill types
 
@@ -52,4 +52,4 @@ flashcard structure entirely — the five drill types above do not carry forward
 
 ## Links
 
-[[rules-adapter]] [[kerry-curriculum]] [[v3-adapter]] [[experiments/third-gemma-contact]] [[experiments/stage-0-progression-star]] [[experiments/first-gemma-contact]] [[experiments/second-gemma-contact]]
+[[rules-adapter]] [[kerry-curriculum]] [[v3-adapter]] [[third-gemma-contact]] [[stage-0-progression-star]] [[first-gemma-contact]] [[second-gemma-contact]]
