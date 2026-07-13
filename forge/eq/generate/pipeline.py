@@ -70,6 +70,7 @@ def generate_eq_games_gpu(
     schema_v2: bool = False,
     bid_values: list[int] | None = None,
     bidders: list[int] | None = None,
+    forced_actions: list[list[int]] | None = None,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -101,6 +102,14 @@ def generate_eq_games_gpu(
                        kernel launch overhead by ~10-20%)
         bid_values: Optional per-game bid values used for p_make selection and
                     stored on schema-v2 records.
+        forced_actions: Optional teacher-forcing. When given, ``forced_actions[g]``
+                    is game g's recorded line as slot indices (0-6, one per
+                    decision step); the loop advances that action instead of the
+                    oracle's p_make-greedy pick, so decision k lands on exactly
+                    the recorded play step k. The E[Q] computed and recorded at
+                    each state is unchanged — only which action is applied differs.
+                    This is the Lane B aligned-label path: every labeled decision
+                    state is byte-identical to the snapshot prefix it came from.
 
     Returns:
         List of N GameRecordGPU, one per game
@@ -287,16 +296,34 @@ def generate_eq_games_gpu(
         if e_q_pdf.device != states.hands.device:
             e_q_pdf = e_q_pdf.to(states.hands.device)
 
-        # 6. Select actions by p_make (greedy, sampled, or exploration)
-        actions, exploration_stats = select_actions(
-            states,
-            e_q,
-            e_q_pdf,
-            greedy,
-            exploration_policy,
-            rng,
-            bid_values=bid_values,
-        )
+        # 6. Select actions by p_make (greedy, sampled, or exploration) — OR, in
+        # teacher-forced mode, advance the caller-supplied recorded line so every
+        # labeled decision state stays byte-identical to the snapshot prefix it
+        # came from (Lane B aligned E[Q] labels). E[Q] above is untouched; only
+        # which action advances the state changes.
+        if forced_actions is not None:
+            actions = torch.tensor(
+                [forced_actions[g][decision_idx] for g in range(n_games)],
+                dtype=torch.long, device=e_q.device,
+            )
+            legal_now = states.legal_actions().to(actions.device)
+            if not legal_now[torch.arange(n_games, device=actions.device), actions].all():
+                raise ValueError(
+                    f"forced action illegal at decision {decision_idx}: the "
+                    "recorded line disagrees with the engine's legality (slot "
+                    "mapping bug or leader desync). Teacher-forcing aborted."
+                )
+            exploration_stats = None
+        else:
+            actions, exploration_stats = select_actions(
+                states,
+                e_q,
+                e_q_pdf,
+                greedy,
+                exploration_policy,
+                rng,
+                bid_values=bid_values,
+            )
 
         # 7. Compute Schema v2 per-seat data if requested and joint-world data is available
         v2_softmax = None

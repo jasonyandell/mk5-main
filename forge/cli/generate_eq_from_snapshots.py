@@ -56,6 +56,44 @@ def attach_auction(record: GameRecordGPU, snap: dict) -> GameRecordGPU:
     return record
 
 
+def forced_actions_from_snapshot(snap: dict) -> list[int]:
+    """The snapshot's recorded play line as slot indices (0-6) for teacher-forcing.
+
+    Each recorded play is ``(seat, domino_id)``. ``GameStateTensor`` lays a
+    seat's hand out in ``snap["hands"][seat]`` order and never permutes it (a
+    played slot is set to -1 in place), so the acting slot of a domino is simply
+    its index in that seat's original 7-tile hand — the exact slot the oracle's
+    ``e_q[7]`` / ``legal_mask[7]`` are indexed by. This is the inverse of
+    ``apply_actions``: feeding these advances the state along the recorded line.
+    """
+    slot_of = [{int(d): i for i, d in enumerate(seat_hand)} for seat_hand in snap["hands"]]
+    return [slot_of[int(seat)][int(domino)] for seat, domino in snap["plays"]]
+
+
+def verify_teacher_forced_alignment(record: GameRecordGPU, snap: dict) -> None:
+    """Fail-fast that the produced record is byte-aligned to the recorded line.
+
+    ``record.decisions[k].player`` is the engine's current player at ply k; if
+    teacher-forcing kept the simulation in lock-step with the snapshot it must
+    equal ``plays[k][0]`` for every k (and there must be exactly one decision per
+    recorded play). This is the property the (deal, decision-index, acting-seat)
+    join in ``champion.jud_net.load_aux_table`` needs to land decision k's E[Q]
+    on the corpus's play step k with 100% decision-row coverage.
+    """
+    plays = snap["plays"]
+    if len(record.decisions) != len(plays):
+        raise ValueError(
+            f"teacher-forced record has {len(record.decisions)} decisions but the "
+            f"snapshot has {len(plays)} plays — alignment broken."
+        )
+    for k, dec in enumerate(record.decisions):
+        if int(dec.player) != int(plays[k][0]):
+            raise ValueError(
+                f"teacher-forced decision {k} mover {int(dec.player)} != recorded "
+                f"mover {int(plays[k][0])} — alignment broken."
+            )
+
+
 def generate_corpus(
     *,
     model,
@@ -63,6 +101,7 @@ def generate_corpus(
     n_samples: int,
     device: str,
     batch_size: int,
+    teacher_forced: bool = False,
     log_every_s: float = 30.0,
 ) -> list[GameRecordGPU]:
     """Run the joint-world oracle on each snapshot's deal and attach the auction.
@@ -71,6 +110,13 @@ def generate_corpus(
     path, ``save_joint_worlds=True`` so each decision carries
     ``world_hands``/``q_per_world``), then stamps ``bids``/``bidder``/
     ``bid_value`` from the originating snapshot onto each record.
+
+    With ``teacher_forced=True`` the oracle still evaluates E[Q] for every legal
+    action at every state, but the state is advanced along the snapshot's
+    RECORDED play line rather than the oracle's own p_make-greedy line. Decision
+    k then corresponds exactly to arena play step k, so the aux-label join
+    (``champion.jud_net.load_aux_table``) lands on every decision row — the
+    guaranteed-aligned path that fixes the greedy-replay prefix mismatch.
     """
     results: list[GameRecordGPU] = []
     n = len(snapshots)
@@ -81,6 +127,10 @@ def generate_corpus(
         decl_ids = [int(snap["decl_id"]) for snap in batch]
         bid_values = [int(snap["bid_value"]) for snap in batch]
         bidders = [int(snap["bidder"]) for snap in batch]
+        forced = (
+            [forced_actions_from_snapshot(snap) for snap in batch]
+            if teacher_forced else None
+        )
 
         records = generate_eq_games_gpu(
             model=model,
@@ -94,8 +144,11 @@ def generate_corpus(
             # matches the auction the belief head conditions on (avoids a
             # train/inference mismatch where seat 0 always led).
             bidders=bidders,
+            forced_actions=forced,
         )
         for record, snap in zip(records, batch):
+            if teacher_forced:
+                verify_teacher_forced_alignment(record, snap)
             results.append(attach_auction(record, snap))
 
         now = time.time()
@@ -132,6 +185,13 @@ def main() -> int:
                         help="Snapshots (games) per GPU batch (default: 8)")
     parser.add_argument("--limit", type=int, default=None,
                         help="Process at most this many snapshots (smoke runs)")
+    parser.add_argument("--teacher-forced", action="store_true",
+                        help="Advance each hand along the snapshot's RECORDED play "
+                             "line instead of the oracle's greedy line, so decision "
+                             "k == arena play step k. Required for aligned Lane B "
+                             "E[Q] labels (100%% aux-join coverage); without it the "
+                             "greedy-replay prefix drifts and labels silently "
+                             "mis-key. Needs snapshots that carry full 'plays'.")
     parser.add_argument("--seed", type=int, default=0,
                         help="Seed torch RNG so the MRV world sampling is reproducible. "
                              "For the #26 self-play loop this makes round-over-round "
@@ -150,6 +210,19 @@ def main() -> int:
     if args.limit is not None:
         snapshots = snapshots[: args.limit]
     print(f"Loaded {len(snapshots)} snapshots from {snap_path}", flush=True)
+
+    if args.teacher_forced:
+        missing = [i for i, s in enumerate(snapshots) if "plays" not in s]
+        if missing:
+            print(
+                f"Error: --teacher-forced needs full 'plays' on every snapshot; "
+                f"{len(missing)} row(s) lack it (first at index {missing[0]}). "
+                "Regenerate the corpus with a post-jud-v1 arena (--emit-snapshots).",
+                flush=True,
+            )
+            return 1
+        print("Teacher-forced: replaying recorded play lines (aligned E[Q] labels).",
+              flush=True)
 
     device = args.device
     if device == "cuda" and not torch.cuda.is_available():
@@ -172,6 +245,7 @@ def main() -> int:
         n_samples=args.n_samples,
         device=device,
         batch_size=args.batch_size,
+        teacher_forced=args.teacher_forced,
     )
     elapsed = time.perf_counter() - t0
     rate = len(results) / elapsed if elapsed > 0 else 0.0
@@ -188,7 +262,9 @@ def main() -> int:
         "snapshot_file": str(snap_path),
         "checkpoint": args.checkpoint,
         "n_samples": args.n_samples,
-        "source": "arena_real_auction",
+        "source": "arena_real_auction_teacher_forced" if args.teacher_forced
+                  else "arena_real_auction",
+        "teacher_forced": bool(args.teacher_forced),
     }
     torch.save(save_dict, str(out_path))
     print(f"Saved corpus -> {out_path}", flush=True)
