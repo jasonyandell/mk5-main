@@ -90,6 +90,36 @@ that [[belief-weighted-jud-mcts]] J3 requires for mid-tree belief updates;
 J3 is not eligible before an instrument of this kind passes held-out
 evaluation ([[research-lane-selection]]).
 
+## Enriched-bid corpus — requirements for the next build
+
+[[auction-decoder-v0]] could not test the book's bid-semantics fixtures
+because no logged bidder ever bids meaningfully above 32 (six `84`s in ~10k
+margin hands; `HeuristicBidder` bids minimum legal raises,
+`arena/bidders.py`). The v1 corpus needs a bidder *family* that populates the
+upper lattice without being random:
+
+- **Shape:** the book's risk-budget logic ([[at-risk-points]],
+  [[w42-book-second-pass]] §1) with an aggression parameter — the same hand
+  evaluation, but a dial on how much risk budget converts to bid level, so
+  `35`/`36`/`42`/`84` appear from *hand-conditioned* choices (a random-high
+  bidder decodes to nothing, as v0's random population proved).
+- **Mechanics to respect:** one-round auction, minimum legal raise
+  constraints, shaker-last order, forced-open handling (`arena/auction.py`);
+  emit via `arena.cli --emit-snapshots` so `snapshot_rows` schema and
+  deal-hash splits carry over unchanged (`arena/match.py`).
+- **Population mixing:** generate several aggression settings as distinct
+  labeled populations (metadata.team_a) alongside the existing
+  margin:wp/net:wp corpora — the decoder's population-conditioning and the
+  future latent-mixture both need between-population variance.
+- **Fixture targets:** enough winning bids at each of `{31, 35, 36, 84}` to
+  power the book posteriors (`31 ⇒ ≥1 double`, `35 ⇒ two offs / one
+  five-count`, shuffler-last `30/31` weak, the `{30,31,35,36}` lattice —
+  open question in `questions/open.md`). Hundreds per level, not six.
+- **Score channel:** `snapshot_rows` omits pre-hand match score; the
+  score-conditioned book hypotheses need either an added snapshot field or
+  the decision-record path (`arena/decision_records.py`) — a deliberate
+  schema decision for the implementer, not an accident.
+
 ## What would deselect this lane
 
 - Held-out NLL no better than a hand-independent bid model (the auction
