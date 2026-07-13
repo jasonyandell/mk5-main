@@ -160,14 +160,15 @@ oracle play beats the previous champion `net:wp+lens:ev` by **+0.38 [+0.09, +0.6
 **+0.42 [+0.12, +0.72]** (512 games at each of two reserved seeds) — the first learned
 bidder to beat the hand-tuned one.
 
-That historical promotion remains the named baseline, not a retracted result.
-[[world-sampler-mrv-audit]] nevertheless blocks a *fresh* C0 reproduction: the
-shared `WorldSamplerMRV` can emit malformed worlds and weight valid worlds
-non-uniformly. The three-state audit shows value distortion but no argmax flip;
-the impact on the two 512-game promotions is unknown until C0 is rerun on two
-held-out blocks with the exact-fixture-validated
-`uniform-completion-dp-v1` replacement. Production CUDA throughput and memory
-remain unmeasured.
+The promotion is now **reproduced on the repaired sampler**
+([[stage-0-closure]], 2026-07-13): `+0.385 [+0.102, +0.668]` and
+`+0.486 [+0.199, +0.775]` on the same two reserved blocks with full
+`--emit-decisions` fingerprints. The legacy `WorldSamplerMRV` defect that had
+clouded the original numbers is quantified — 2.5% of late states carried
+malformed mass and the worst tail did flip actions (regret ≤ `7.37 Q`) — but
+the reproduction shows it was not load-bearing for the promotion. CUDA
+throughput is also measured: the sampler is kernel-launch bound; batch width,
+not device, is the lever.
 
 **Rung #33 — jud v1, the one organ for bid + play — built and graded
 ([[w42-jud-v1]], 2026-07-06, `3ac03de`).** One net (`champion/jud_net.py`) prices every
