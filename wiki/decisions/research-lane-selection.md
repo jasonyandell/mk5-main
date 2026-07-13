@@ -42,8 +42,20 @@ could produce or erase them.
 | **C — convention factorial, before any convention search** ([[convention-aware-blueprint-search]]) | Does one installed book convention produce a sender × reader marks interaction under fixed vs shuffled partners? | Measures the channel before building machinery to optimize it. If a literal installed convention cannot produce the interaction, a tree will not create the evidence. | A sender-by-partner-reader interaction that survives opponent readers, on one compact convention family. |
 | **D — information-honest blueprint search** ([[belief-weighted-jud-mcts]], [[convention-aware-blueprint-search]]) | Does single-agent search over a fixed blueprint beat the blueprint — legally? | The main architectural frontier, eligible only after A supplies calibrated likelihoods or C demonstrates a convention. Semantics 1 only at first; J3 before a calibrated likelihood instrument collapses into J2. | Paired marks over the blueprint with information-honesty verified (no partner-node max backups). |
 
-A and B run in parallel as the primary lanes; C follows; D builds on their
+A and B ran in parallel as the primary lanes; C follows; D builds on their
 outputs. Any lane's deselection criteria are recorded on its page.
+
+**Reprioritized 2026-07-13 (post-execution, adopted at PR review):** with
+Lane B's first gate graded null in both target forms
+([[jud-target-granularity]]) and Lane A's instrument validated cleanly
+([[auction-decoder-v0]]), the order becomes **A first** (enriched-bid corpus
+→ book fixtures → likelihood consumers), **C second** (the convention
+factorial and its information-reactive harness), **B parked** (its residuals
+— capacity×target interaction, on-policy loop data, opponents-in-rollout —
+reopen only if A produces a likelihood worth putting inside a search, or the
+itch strikes), D unchanged (eligible after A supplies calibrated likelihoods
+or C demonstrates a convention). The play-leaf ground measured cold; the
+information ground measured warm.
 
 ## Held back, with reasons
 

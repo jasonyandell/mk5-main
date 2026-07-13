@@ -187,9 +187,11 @@ above are the named follow-ups; the suggestive one-block search delta says a
 search consumer remains the more promising reader of any future per-move
 leaf.
 
-Artifacts: heads at `scratch/lane-b/heads/`, labeled corpus at
-`scratch/lane-b/eq/`, run summaries under `arena/results/lb_*`, ranking eval
-+ paired analysis scripts in `scratch/lane-b/`.
+Artifacts: curated run evidence (summary + per-game rows per arm, enough to
+recompute every paired CI) at `champion/evidence/lane_b_target_granularity/`
+per [[run-artifacts-policy]]; heads, labeled corpora, ranking-eval and
+paired-analysis scripts are scratch-ephemeral and regenerable from the
+commands in this page.
 
 ## Round 2 — the two named residuals (registered before any round-2 training)
 

@@ -146,3 +146,4 @@ w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds*.pt
 .dolt/
 *.db
 .beads-credential-key
+arena/results/

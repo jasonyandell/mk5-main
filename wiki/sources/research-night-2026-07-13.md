@@ -10,8 +10,9 @@ One autonomous overnight session on branch `worktree-research-night-2026-07-13`
 (b28fb55a → close), executing the continuation-frontier research adopted at
 [[research-lane-selection]]. Every experiment registered predictions before
 its runs; every result landed the same night. Commit trail is the branch
-history; per-run artifacts under `arena/results/`, `w42/world_sampler_audit/`,
-and (scratch, regenerable) `scratch/{stage0,lane-a,lane-b}/`.
+history; curated evidence under `champion/evidence/{stage0_2026-07-13,lane_b_target_granularity}/`
+and `w42/world_sampler_audit/`; raw runs and corpora are ephemeral per
+[[run-artifacts-policy]].
 
 ## What the night established
 

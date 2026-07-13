@@ -343,6 +343,7 @@ The synthesized-frontier read on the project's pre-wiki history, one page per er
 ## Decisions
 
 - [[decisions/partnership-research-gates|partnership-research-gates]] — general wall-promotion criteria plus the additional fixed-vs-shuffled requirement for a partnership-value claim; withholds architecture without selecting the next experiment (active)
+- [[decisions/run-artifacts-policy|run-artifacts-policy]] — claims in git, measurements ephemeral: wiki page carries numbers + reproduction command, curated evidence bundles only for load-bearing claims, arena/results/ gitignored (active)
 - [[decisions/research-lane-selection|research-lane-selection]] — the gates' build-ladder step-3 selection (2026-07-13): Stage 0 closure gates all grading; auction decoder + target granularity are the primary lanes, convention factorial before convention search, blueprint search after; nine held-back techniques with reasons and reopening conditions (active)
 - [[decisions/eval-seed-holdout|eval-seed-holdout]] — seeds 900000–909999 permanently held out for eval; never used in training (active)
 - [[decisions/discard-illegal-traces|discard-illegal-traces]] — illegal and parse-fail traces are discarded, not rationalized; illegal_rate becomes a diagnostic metric (active)
