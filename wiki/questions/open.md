@@ -87,7 +87,8 @@ Format:
 
 - **Q:** Does jud v2 — a bigger leaf on per-move targets (E[Q] distilled as a bootstrap value) plus opponents-in-rollout — close the play gap the v1 hand-level MLP could not?
   - Raised: `afd4802` ([[w42-jud-v1]], [[jud]])
-  - Context: jud v1 held the unification at the auction but was mechanism-limited at play. `judsearch` recovered two-thirds of the play gap oracle-free (JS1 PASS +2.28) but neither more worlds (JS2 below band) nor a better-calibrated head (JS3 falsified) closed the rest. v1's diagnosis: the wall is per-move discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle. v2's cue follows directly from that diagnosis; unbuilt.
+  - Context: jud v1 held the unification at the auction but was mechanism-limited at play. `judsearch` recovered two-thirds of the play gap oracle-free (JS1 PASS +2.28) but neither more worlds (JS2 below band) nor a better-calibrated head (JS3 falsified) closed the rest. v1's diagnosis: the wall is per-move discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.
+  - *Narrowed 2026-07-13 ([[jud-target-granularity]]):* per-move targets **at fixed v1 capacity** do not close it — parent-side dense aux and child-state value forms both graded marks-null, 3× corpus volume moved calibration but not ranking or marks, and ranking-label agreement was shown not to order play strength. The surviving question is the interaction: bigger leaf × per-move targets × on-policy loop data ([[w42-jud-v1|r4]]'s five-round corpus out-ranks fresh corpora), plus opponents-in-rollout — not per-move labels alone.
 
 - **Q:** Which era-5 gestation designs (the IDEATED generation — Harl, LLem, walker, and the rest) are worth resurrecting, and which did the built LEM/Burl/Gus/jud line already subsume?
   - Raised: `afd4802` ([[the-gestation]], [[ideated-not-built]])

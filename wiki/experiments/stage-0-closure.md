@@ -3,7 +3,7 @@ title: Stage 0 Closure — repaired-sampler measurement baseline
 kind: experiment
 first_seen: local-2026-07-13
 last_updated: local-2026-07-13
-status: active
+status: complete
 ---
 
 Can the measurement baseline of [[partnership-wall-research]] Stage 0 close on
