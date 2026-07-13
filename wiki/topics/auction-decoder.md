@@ -7,8 +7,13 @@ status: active
 ---
 
 Research position: **SELECTED LANE** ([[research-lane-selection]] Lane A).
-Implementation status: design registered; build begins after
-[[partnership-wall-research]] Stage 0 closes.
+Implementation status: v0 instrument built and validated
+([[auction-decoder-v0]]): held-out NLL beats the hand-independent ablation
+exactly and only for hand-dependent bidder populations (+0.36/+0.28 nats for
+`margin:wp`/`net:wp`, ~0 for `random`), and population-conditioning adds
+another 0.24 nats. The book-semantics fixtures are not testable on the
+current corpus (six 84-bids in ~10k hands) — an enriched-bid corpus is the
+named next step. Consumers remain unbuilt.
 
 The auction decoder models the probability of each public bid or pass
 conditioned on the actor's possible hand, seat, role, prior bids, who raised
