@@ -88,7 +88,9 @@ utility, and partner mechanism via `--emit-decisions` fingerprints.
 Every arena arm landed inside its registered band; the CUDA arm passed
 correctness and missed its throughput prediction in an informative direction.
 Run artifacts: `arena/results/{c0_repro,p0_sym,p0_chal}_seed{7000000,9000000}/`
-(summaries + `--emit-decisions` fingerprints on the C0 arms),
+(summaries + per-game/hand CSVs committed; the two 81 MB C0
+`--emit-decisions` fingerprint files are not committed — regenerate with the
+exact commands in the Arms section),
 `w42/world_sampler_audit/cuda_bench_2026-07-13.md`,
 `w42/world_sampler_audit/exposure_scan/`.
 
