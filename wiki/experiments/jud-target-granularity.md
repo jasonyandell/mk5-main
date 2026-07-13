@@ -78,6 +78,15 @@ Evaluation, in gate order (calibration alone is not passage):
    above search than under greedy argmax.
 5. **R5 — the wall stands tonight:** no arm beats `lens:ev` at pure play.
    Registered so that if it falls, the claim was on record before the run.
+6. **R6 — aux-direct consumer** (`judauxplay`, added before any grading):
+   reading the aux head directly beats routing HP's gain through the 43-bin
+   head — `judauxplay:HP` outperforms `judplay:HP`, guess **[-1.5, -0.3]** vs
+   `lens:ev`. This consumer is an imitation diagnostic (it distills
+   `argmax E[Q]`), so per [[partnership-research-gates]] its agreement with
+   `lens:ev` is not passage; its value is separating ranking-transfer from
+   trunk-regularization. Falsifier: `judauxplay:HP ≈ judplay:H` — the aux head
+   ranks well in-distribution (R1) but the ranking does not survive live play
+   states.
 
 ## Results
 
