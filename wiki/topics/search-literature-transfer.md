@@ -17,17 +17,19 @@ exact per-world oracle, policy-conditioned realized values ([[jud]]), four
 information-honest seats, and measurable partnership conventions. The closest
 pieces exist separately, mapped below.
 
-Source: an external deep-research synthesis reviewed 2026-07-13. Citations
-marked `(verify)` await primary-source confirmation.
+Source: an external deep-research synthesis reviewed 2026-07-13; every
+citation below was verified against its primary source (arXiv/AAAI/NeurIPS
+pages) the same day.
 
 ## Transfers directly
 
 ### Policy-based inference in trick-taking games (Skat)
 
-Rebstock et al.'s policy-based inference (verify) uses a model of how players
-choose actions to reweight states inside the acting information set, and
-improved both inference quality and the playing strength of an existing
-determinized Skat system. This maps one-for-one onto the seam this project has
+Policy-based inference
+([Rebstock, Solinas, Buro & Sturtevant, 2019](https://arxiv.org/abs/1905.10911),
+IEEE CoG, evaluated in Skat) uses a model of how players choose actions to
+reweight states inside the acting information set, and improved both inference
+quality and the playing strength of an existing determinized Skat system. This maps one-for-one onto the seam this project has
 built but never closed ([[pi-opp-head]] exists; nothing updates belief from
 it):
 
@@ -61,8 +63,10 @@ claim instead of the theorem.
 
 ### Learned Belief Search
 
-Learned Belief Search (Hu et al., verify) adds an approximate learned belief
-and a public/private policy architecture to the same cooperative setting. It
+Learned Belief Search
+([Hu, Lerer, Brown & Foerster, 2021](https://arxiv.org/abs/2106.09086)) adds
+an approximate learned belief and a public/private policy architecture to the
+same cooperative setting. It
 fits the project's particle and policy-head assets, with the identical
 cooperative-only caveat.
 
@@ -70,9 +74,11 @@ cooperative-only caveat.
 
 ### Alpha-mu and EPIMC
 
-Alpha-mu (Cazenave & Ventos, verify) attacks [[strategy-fusion]] and
-non-locality directly by backing up *vectors* of outcomes over possible worlds
-instead of resolving each world independently; EPIMC (verify) postpones
+Alpha-mu ([Cazenave & Ventos, 2019](https://arxiv.org/abs/1911.07960))
+attacks [[strategy-fusion]] and non-locality directly by backing up *vectors*
+of outcomes over possible worlds instead of resolving each world
+independently; EPIMC ([Arjonilla et al., 2024](https://arxiv.org/abs/2408.02380),
+"Perfect Information Monte Carlo with Postponing Reasoning") postpones
 perfect-information resolution and reports its largest gains where strategy
 fusion matters most — consistent with the game-property analysis of
 [Long, Sturtevant & Buro, 2010](https://ojs.aaai.org/index.php/AAAI/article/view/7562)
@@ -95,10 +101,12 @@ team and chooses a *prescription* `γ_j: I_j → Δ(A_j)` — an action for ever
 private state the acting teammate might hold — which is payoff-equivalent to
 the decentralized team game (TMECor line;
 [Farina et al., 2021](https://www.mit.edu/~gfarina/2021/tmecor-correlation-icml21/)).
-Solving the corresponding equilibria is NP-hard and the equivalent
-perfect-recall belief game may be exponentially larger; TB-DAG representations
-(Zhang, Farina & Sandholm, verify) improve the representation without removing
-the hardness. Correct use here: a legality specification for team search
+Solving the corresponding equilibria is NP-hard
+([Celli & Gatti, 2018](https://arxiv.org/abs/1711.06930)) and the equivalent
+single-coordinator belief game may be exponentially larger; the Team Belief
+DAG representation
+([Zhang, Farina & Sandholm, 2022](https://arxiv.org/abs/2202.00789)) improves
+the representation without removing the hardness. Correct use here: a legality specification for team search
 semantics (**Semantics 2** in [[belief-weighted-jud-mcts]]), a solver for
 bounded auction or late-hand microgames, and a verifier for approximate search
 policies — not the next whole-game build.
@@ -110,15 +118,17 @@ policies — not the next whole-game build.
   does transfer: values attach to public belief states, not hidden states, and
   a scalar hidden-state value is insufficient once search changes future
   strategies.
-- **Depth-limited solving** (Brown & Sandholm, verify): imperfect-information
-  states have no context-free values, so robust search needs multiple
-  continuation strategies or richer leaf objects. Relevant only when a search
+- **Depth-limited solving**
+  ([Brown, Sandholm & Amos, 2018](https://arxiv.org/abs/1805.08195)):
+  imperfect-information states have no context-free values, so robust search
+  needs multiple continuation strategies or richer leaf objects. Relevant only when a search
   jointly optimizes future strategies or performs resolving; a fixed-blueprint
   single-agent consumer legitimately uses a scalar policy-conditioned
   `V_realized` ([[jud]]).
-- **Ordinary ISMCTS by label**: re-determinizing ISMCTS (verify) exists
-  precisely because naive ISMCTS leaks hidden information into simulated
-  player models. Node identity must be actor-relative —
+- **Ordinary ISMCTS by label**: re-determinizing ISMCTS
+  ([Goodman, 2019](https://arxiv.org/abs/1902.06075), the Hanabi-competition
+  winner) exists precisely because naive ISMCTS leaks hidden information into
+  simulated player models. Node identity must be actor-relative —
   `N = (public history, acting seat, I_acting seat)`. Public-history-only keys
   over-merge; complete-world keys leak and retain strategy fusion; keys pinned
   to the root player's information fail once another seat acts
