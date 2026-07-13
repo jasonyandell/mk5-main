@@ -1,0 +1,236 @@
+{
+  "decision_schema_version": "arena.decision-record.v1",
+  "expected_record_count": 159348,
+  "identity_versions": {
+    "action_id": "arena.action.v1",
+    "actor_information_state_id": "arena.actor-information-state.v1",
+    "decision_context_id": "arena.decision-context.v1",
+    "rules_state_id": "arena.rules-state.v1",
+    "world_state_id": "arena.world-state.v1"
+  },
+  "leakage_boundary": {
+    "join_only_ids": [
+      "record_id",
+      "trajectory_id"
+    ],
+    "offline_only_fields": [
+      "offline_truth"
+    ],
+    "offline_only_ids": [
+      "world_state_id"
+    ],
+    "offline_provenance_fields": [
+      "match.base_seed"
+    ],
+    "online_ids": [
+      "rules_state_id",
+      "actor_information_state_id",
+      "decision_context_id"
+    ]
+  },
+  "match": {
+    "base_seed": 7000000,
+    "label_a": "margin:wp,model=champion/margin_net_r8.pt+lens:ev",
+    "label_b": "net:wp+lens:ev",
+    "marks_to_win": 7,
+    "n_games": 512,
+    "n_hands": 5691
+  },
+  "mechanism_sections": [
+    "uncertainty",
+    "role_order",
+    "partner_coordination",
+    "action_derived_inference",
+    "plan_persistence",
+    "distributional_utility",
+    "bidding",
+    "match_score"
+  ],
+  "policy_a": {
+    "artifacts": [
+      {
+        "path": "champion/margin_net_r8.pt",
+        "requested_path": "champion/margin_net_r8.pt",
+        "role": "bidder_value_head",
+        "schema_version": "arena.artifact-fingerprint.v1",
+        "sha256": "29ec29e4234c691adb1a7187d61d3f6a1b4a22d6bd41dd1cd0d0e5718d008e35",
+        "size_bytes": 404765,
+        "status": "available"
+      },
+      {
+        "path": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+        "requested_path": "/Users/jason/code/mk5-main/.claude/worktrees/research-night-2026-07-13/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+        "role": "player_oracle",
+        "schema_version": "arena.artifact-fingerprint.v1",
+        "sha256": "5f3f00de6215a28bcff76fc80844b53b595f4e98e6bc6ef4c53928bd73b325c1",
+        "size_bytes": 39209447,
+        "status": "available"
+      }
+    ],
+    "bidder": {
+      "artifacts": [
+        {
+          "path": "champion/margin_net_r8.pt",
+          "requested_path": "champion/margin_net_r8.pt",
+          "role": "bidder_value_head",
+          "schema_version": "arena.artifact-fingerprint.v1",
+          "sha256": "29ec29e4234c691adb1a7187d61d3f6a1b4a22d6bd41dd1cd0d0e5718d008e35",
+          "size_bytes": 404765,
+          "status": "available"
+        }
+      ],
+      "component_id": "arena.policy-fingerprint.v1.bidder:2e9f9c0daa3a2d297d0883047ac07e7b3c572d7d34dd8cb9b9bee191dffeee85",
+      "execution_device": "cpu",
+      "family": "margin",
+      "spec": "margin:wp,model=champion/margin_net_r8.pt",
+      "utility": {
+        "kind": "marks_to_seven",
+        "name": "wp"
+      }
+    },
+    "code": {
+      "dirty": false,
+      "error": null,
+      "head": "3fba46cb5f9ef1e59310d48b71a7795a2e09e253",
+      "scope": "tracked_patch_plus_nonignored_untracked_files",
+      "status": "clean_commit",
+      "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "untracked_file_count": 0,
+      "untracked_manifest_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "worktree_fingerprint": "arena.git-worktree.v1:e37ee2de51a847ecad75aa79384111d2cf1f33f0ed48d6846bbd864434398752"
+    },
+    "corpus": {
+      "id": null,
+      "status": "not_declared_by_runtime"
+    },
+    "player": {
+      "artifacts": [
+        {
+          "path": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+          "requested_path": "/Users/jason/code/mk5-main/.claude/worktrees/research-night-2026-07-13/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+          "role": "player_oracle",
+          "schema_version": "arena.artifact-fingerprint.v1",
+          "sha256": "5f3f00de6215a28bcff76fc80844b53b595f4e98e6bc6ef4c53928bd73b325c1",
+          "size_bytes": 39209447,
+          "status": "available"
+        }
+      ],
+      "component_id": "arena.policy-fingerprint.v1.player:aee2aed8d3a84918dfd8e32d192d054134a3f4d808c365a097874a31050af717",
+      "execution_device": "mps",
+      "family": "lens",
+      "spec": "lens:ev",
+      "utility": {
+        "kind": "fixed_e_q_collapse",
+        "name": "ev"
+      }
+    },
+    "policy_id": "arena.policy-fingerprint.v1:ba86a36b25e8056704db4929f7733cc0cb7bd55025dd43869e128a6a9504b335",
+    "sampler": {
+      "algorithm": "uniform-completion-dp-v1",
+      "device": "mps",
+      "n_worlds": 10,
+      "status": "declared"
+    },
+    "schema_version": "arena.policy-fingerprint.v1",
+    "team_spec": "margin:wp,model=champion/margin_net_r8.pt+lens:ev"
+  },
+  "policy_b": {
+    "artifacts": [
+      {
+        "path": "champion/bid_net.pt",
+        "requested_path": "champion/bid_net.pt",
+        "role": "bidder_value_head",
+        "schema_version": "arena.artifact-fingerprint.v1",
+        "sha256": "717532686a8fb00f1ac1c9606906c3e7954d87c6227d6b7679807098579bf2dd",
+        "size_bytes": 161941,
+        "status": "available"
+      },
+      {
+        "path": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+        "requested_path": "/Users/jason/code/mk5-main/.claude/worktrees/research-night-2026-07-13/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+        "role": "player_oracle",
+        "schema_version": "arena.artifact-fingerprint.v1",
+        "sha256": "5f3f00de6215a28bcff76fc80844b53b595f4e98e6bc6ef4c53928bd73b325c1",
+        "size_bytes": 39209447,
+        "status": "available"
+      }
+    ],
+    "bidder": {
+      "artifacts": [
+        {
+          "path": "champion/bid_net.pt",
+          "requested_path": "champion/bid_net.pt",
+          "role": "bidder_value_head",
+          "schema_version": "arena.artifact-fingerprint.v1",
+          "sha256": "717532686a8fb00f1ac1c9606906c3e7954d87c6227d6b7679807098579bf2dd",
+          "size_bytes": 161941,
+          "status": "available"
+        }
+      ],
+      "component_id": "arena.policy-fingerprint.v1.bidder:100bec3ef825df88fd30a69b1d344fca505f033200c8ba087868358ce0a1cf6e",
+      "execution_device": "cpu",
+      "family": "net",
+      "spec": "net:wp",
+      "utility": {
+        "kind": "marks_to_seven",
+        "name": "wp"
+      }
+    },
+    "code": {
+      "dirty": false,
+      "error": null,
+      "head": "3fba46cb5f9ef1e59310d48b71a7795a2e09e253",
+      "scope": "tracked_patch_plus_nonignored_untracked_files",
+      "status": "clean_commit",
+      "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "untracked_file_count": 0,
+      "untracked_manifest_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "worktree_fingerprint": "arena.git-worktree.v1:e37ee2de51a847ecad75aa79384111d2cf1f33f0ed48d6846bbd864434398752"
+    },
+    "corpus": {
+      "id": null,
+      "status": "not_declared_by_runtime"
+    },
+    "player": {
+      "artifacts": [
+        {
+          "path": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+          "requested_path": "/Users/jason/code/mk5-main/.claude/worktrees/research-night-2026-07-13/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+          "role": "player_oracle",
+          "schema_version": "arena.artifact-fingerprint.v1",
+          "sha256": "5f3f00de6215a28bcff76fc80844b53b595f4e98e6bc6ef4c53928bd73b325c1",
+          "size_bytes": 39209447,
+          "status": "available"
+        }
+      ],
+      "component_id": "arena.policy-fingerprint.v1.player:aee2aed8d3a84918dfd8e32d192d054134a3f4d808c365a097874a31050af717",
+      "execution_device": "mps",
+      "family": "lens",
+      "spec": "lens:ev",
+      "utility": {
+        "kind": "fixed_e_q_collapse",
+        "name": "ev"
+      }
+    },
+    "policy_id": "arena.policy-fingerprint.v1:bf7f8ce2d6acab6883457d8edbf5d1348905875921c02b22b6099a34f05d1108",
+    "sampler": {
+      "algorithm": "uniform-completion-dp-v1",
+      "device": "mps",
+      "n_worlds": 10,
+      "status": "declared"
+    },
+    "schema_version": "arena.policy-fingerprint.v1",
+    "team_spec": "net:wp+lens:ev"
+  },
+  "record_count": 159348,
+  "record_encoding": "gzip-jsonl-mtime0",
+  "record_path": "decisions.jsonl.gz",
+  "record_sha256": "b061439252e0c87de2f03b1914ea3d44d06b133081dddcc83d12d5c307d64745",
+  "run_metadata": {
+    "device": "mps",
+    "fast_batching": true,
+    "max_redeals": 3,
+    "n_samples": 10
+  },
+  "schema_version": "arena.decision-manifest.v1"
+}
