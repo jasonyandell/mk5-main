@@ -190,6 +190,16 @@ chronology.
   the rest. [[the-wall|The wall]]'s current coordinates: a 470k MLP on
   hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.
   ([[w42-jud-v1]], [[jud]].)
+- **RULED OUT: the parent-side dense per-move E[Q] auxiliary at fixed
+  capacity and fixed small corpus.** [[jud-target-granularity]] (2026-07-13):
+  a 512→7 aux head on teacher-forced per-action E[Q] triples the leaf's
+  in-distribution ranking (pairwise 0.603 vs a chance-level 0.508 main head)
+  and moves marks nothing — greedy paired Δ `-0.086 [-0.254,+0.092]`, search
+  paired Δ `+0.178 [-0.041,+0.385]`; argmaxing the aux head directly plays
+  0.9 marks *worse* than the calibrated main head. Ranking-label agreement
+  does not order play strength ([[lamir1-ceiling]]'s mechanism, re-measured).
+  Bounded: does not rule out per-move targets on child states, larger
+  corpora, or the capacity×target interaction.
 
 ## Evaluation itself
 

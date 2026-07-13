@@ -126,17 +126,70 @@ split, teacher-forced labels):
   marks-vs-`lens:ev` numbers below are not comparable to the r4 protocol
   numbers.
 
-Marks grading (R3–R6): *(battery running; block-1 arms and block-2 greedy/aux
-arms are in; the two block-2 judsearch arms remain)*
+Marks grading (all vs `lens:ev`, bid30 both sides, 256 games/block, marks_b
+per game; paired Δ is game-paired HP−H with 10k-bootstrap 95% CI):
 
-Interim guess, registered mid-battery before the block-2 judsearch arms or
-any paired analysis ran: block 1 showed `judsearch:HP` −1.64 vs
-`judsearch:H` −1.98 while greedy showed nothing — my guess is the
-search-consumer delta is **real but small**: combined game-paired
-`Δ(HP−H) ≈ +0.25`, block 2 alone directionally positive with CI including
-zero. If the paired CI includes zero combined, the whole experiment is a
-clean negative at this capacity/corpus and the residual moves to the
-capacity×target interaction ([[partnership-research-gates]] row 2).
+| consumer | block 7000000 | block 9000000 | paired Δ(HP−H) combined |
+|---|---|---|---|
+| `judplay:H` | `-3.270 [-3.555,-2.949]` | `-3.277 [-3.582,-2.945]` | — |
+| `judplay:HP` | `-3.305 [-3.586,-2.996]` | `-3.414 [-3.699,-3.121]` | `-0.086 [-0.254,+0.092]` |
+| `judauxplay:HP` | `-4.102 [-4.332,-3.867]` | `-4.180 [-4.414,-3.938]` | — |
+| `judsearch:H` | `-1.980 [-2.297,-1.648]` | `-1.785 [-2.152,-1.410]` | — |
+| `judsearch:HP` | `-1.641 [-1.980,-1.285]` | `-1.770 [-2.125,-1.402]` | `+0.178 [-0.041,+0.385]` |
+
+The mid-battery guess (search delta "real but small", combined ≈ `+0.25`)
+was **wrong per its own falsifier**: block 1's `+0.340 [+0.039,+0.637]` did
+not reproduce (block 2 `+0.016 [-0.285,+0.320]`); the combined paired CI
+includes zero.
+
+## Verdicts
+
+| prediction | verdict |
+|---|---|
+| R1 ranking | **PARTIAL** — aux head separates hard from the chance-level main head (0.603 vs 0.508 pairwise) but misses the ≥0.60 top-1 threshold (0.517) |
+| R2 guard | **PASS** — main heads statistically identical (val CE 2.5247 vs 2.5252) |
+| R3 greedy marks | **FALSIFIED** — paired Δ `-0.086 [-0.254,+0.092]` |
+| R4 search marks | **MISS** — `judsearch:HP` `-1.64/-1.77`, outside `[-1.2,-0.2]`; paired Δ CI includes zero |
+| R5 wall stands | **PASS** — every arm loses to `lens:ev` |
+| R6 aux-direct | **FALSIFIED, worse than its own falsifier** — `judauxplay:HP` (`-4.1/-4.2`) plays *worse* than `judplay:H` (`-3.3`), not merely equal |
+
+## Reading
+
+**The dense per-move E[Q] auxiliary, at jud-v1 capacity on one 512-game
+corpus, is a marks null** — [[partnership-research-gates]] row 1 does not
+pass: the in-distribution ranking gain exists but carries to no consumer's
+marks. Three mechanism-level facts survive the null and sharpen the wall:
+
+1. **Ranking-label agreement does not order play strength.** The aux head
+   agrees with `argmax E[Q]` far more than the main head does, and its direct
+   consumer plays 0.9 marks *worse*. A weak ranking argmaxed directly is
+   worse than a calibrated value priced over actual child states — the
+   [[lamir1-ceiling]] noise-at-the-boundary mechanism, measured in a new
+   form.
+2. **The trunk-shaping hypothesis fails at this scale.** The dense signal did
+   not move the main head at all (ranking 0.042 vs 0.046; greedy marks null)
+   — the [[dense-q-supervision]] regularization story from Gus does not
+   transfer to this architecture/corpus as-is.
+3. **A representational asymmetry was left untested.** The aux head must
+   predict all seven action consequences from the *parent* featurization;
+   `JudPlay` evaluates each actual *child* state. The unrun arm that removes
+   the asymmetry: supervise the **main head on child states** with per-move
+   E[Q]-derived continuation values (the signal-(b)-shaped form of "per-move
+   targets") instead of a separate parent-side ranking head. That, plus the
+   corpus-volume confounder (r4's five-round corpus out-ranks tonight's
+   single corpus before any aux signal), bounds this negative: **this
+   experiment rules out the parent-side dense auxiliary at fixed capacity and
+   fixed small corpus; it does not rule out per-move targets.**
+
+Residual per [[research-lane-selection]]: the capacity×target interaction
+([[partnership-research-gates]] row 2) and the child-state per-move form
+above are the named follow-ups; the suggestive one-block search delta says a
+search consumer remains the more promising reader of any future per-move
+leaf.
+
+Artifacts: heads at `scratch/lane-b/heads/`, labeled corpus at
+`scratch/lane-b/eq/`, run summaries under `arena/results/lb_*`, ranking eval
++ paired analysis scripts in `scratch/lane-b/`.
 
 ## Links
 

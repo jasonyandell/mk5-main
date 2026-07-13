@@ -235,6 +235,17 @@ Built and graded 2026-07-06 ([[w42-jud-v0]], evidence at `4080e07`):
   ranking, pairwise ordering, tail regret, greedy marks, JudSearch marks);
   calibration alone is not passage.
 
+  **First arm graded ([[jud-target-granularity]], 2026-07-13): the
+  parent-side dense auxiliary is a marks null at v1 capacity on one 512-game
+  corpus.** The aux head triples the leaf's in-distribution ranking over the
+  chance-level main head and carries it to no consumer — greedy paired
+  Δ `-0.086 [-0.254,+0.092]`, search paired Δ `+0.178 [-0.041,+0.385]`, and
+  the aux-direct player is 0.9 marks *worse* than the main head. Named
+  residuals: per-move continuation values on **child states** (the
+  signal-(b)-shaped form the graded arm did not test), corpus volume (r4's
+  five-round corpus out-ranks a single fresh corpus), and the
+  capacity×target interaction.
+
 ### jud v1 — the one organ, bid and play, built + graded ([[w42-jud-v1]], `3ac03de`)
 
 The unified value organ exists and is graded: `champion/jud_net.py` extends
