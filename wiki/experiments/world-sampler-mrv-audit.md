@@ -64,7 +64,9 @@ valid. The third fixture is the symmetry null.
 - The malformed-world and non-uniformity mechanisms are positive findings.
 - The historical `~6.8 Q` number is confounded and retired as an effect
   estimate; it is neither confirmed nor cleanly contradicted.
-- No argmax flip in three fixtures is a bounded null observation, not evidence
+- No argmax flip in three fixtures is a bounded null observation
+  (superseded by the population scan: 20 flips in the 200 worst-mass states,
+  regret up to `7.37 Q` — [[stage-0-closure]]), not evidence
   that historical corpora or match outcomes were unaffected.
 - Failure on the low-valid-mass JudSearch state is a negative result for
   `uniform-rejection-v1` as a production repair.
@@ -78,7 +80,10 @@ valid. The third fixture is the symmetry null.
   sample count, RNG seed, and representation parity did not survive.
 - The audit does **not** establish a population corruption rate or a C0 action
   loss. Three late states contain no argmax flip; that observation is bounded
-  to the diagnostic panel.
+  to the diagnostic panel. ([[stage-0-closure]] later established both: 2.51%
+  distributional exposure over 32k reconstructed states, and argmax flips in
+  20 of the 200 worst-mass states with regret up to `7.37 Q` — while the
+  two-block C0 reproduction shows match-level conclusions survived.)
 - Historical corpus and arena conclusions are not automatically void. Their
   exposure depends on state-specific dead-end probability, valid-world bias,
   Q gap, and consumer.
@@ -153,8 +158,9 @@ CUDA suite passed, and the state-level exposure scan
 reconstructed late-state population carrying nonzero legacy malformed mass
 (nonzero median `0.19`, max `0.83`; the exact-`1/3` fixture reproduces). The
 repaired sampler costs ~2× wall time per C0 block on MPS. Decision-level harm
-(Scan B: argmax flips, exact regret on the exposed subset) reports under
-[[stage-0-closure]].
+is measured: 20 argmax flips in the 200 worst-mass states, exact regret up to
+`7.37 Q`, largest per-action shifts (`27 Q`) mostly cancelling in the argmax
+([[stage-0-closure]], [[rank-vs-price]]).
 
 ## Artifacts and reproduction
 

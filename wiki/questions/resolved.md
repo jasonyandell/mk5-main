@@ -90,3 +90,8 @@ Format:
   - Raised: 2026-05-02 (burl-lab server end-to-end milestone)
   - Resolved: 2026-05-02 (burl-lab journal-canonical milestone, same day)
   - Answer: Resolved fully. `SystemSet`, `AdvertisedSet`, `ToolAdded`, `ToolRemoved` (and `UserText`) are journaled by phase handlers directly via `transcript.append`. `state.json` is gone from the runtime; `server/app.py:_load_state` is `fold(replay(session_dir))` with no snapshot read or write. Verified by `tests/test_server_smoke.py::test_journal_is_canonical_no_state_json` and `test_transcript_roundtrip.py::test_state_journal_only_no_state_json_needed`. See [[burl-lab]] Status section.
+
+- **Q:** What fraction of historical Forge/Burl/Champion states had nonzero `WorldSamplerMRV` malformed-world or valid-world bias, and does the uniform repair change C0 action ranks or paired marks?
+  - Raised: `bc4eb386` ([[world-sampler-mrv-audit]])
+  - Resolved: 2026-07-13 ([[stage-0-closure]], on a reconstructed proxy population — random legal playouts, not the literal historical stream)
+  - Answer: 2.51% of 32,000 tractable late states carried nonzero legacy malformed mass (nonzero median 0.19, max 0.83). Decision harm concentrates in the tail: 20 argmax flips in the 200 worst-mass states, exact regret up to 7.37 Q, biggest per-action shifts (27 Q) mostly cancelling in the argmax. The repair does NOT change paired marks conclusions: C0 reproduces on both reserved blocks (+0.385/+0.486 vs original +0.38/+0.42) and judsearch's deficit reproduces (−1.42/−1.54 vs −1.39). The repaired sampler costs ~2× C0 wall time on MPS.

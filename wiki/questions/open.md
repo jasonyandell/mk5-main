@@ -81,15 +81,6 @@ Format:
   - Raised: `local-2026-05-07` ([[burl-microscope]])
   - Context: `board_snapshot()` is a strong first-read surface, but fair no-reference `snapshot-first` and `legal-brief` runs both committed `25` on the `BURL_BREAKS_CONSENSUS` case where oracle/pi/qmean prefer `19`.
 
-- **Q:** What fraction of historical Forge/Burl/Champion states had nonzero
-  `WorldSamplerMRV` malformed-world or valid-world bias, and does the uniform
-  repair change C0 action ranks or paired marks?
-  - Raised: `bc4eb386` ([[world-sampler-mrv-audit]])
-  - Context: the causal panel proves exact `1/3` malformed mass on one late
-    state and valid-only TVD `0.0333` on another, but finds no argmax flip in
-    three states. A state-level exposure scan and two-block C0 reproduction are
-    required before revising historical promotion claims.
-
 - **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
   - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])
   - Context: `forge/eq/generate/actions.py::select_actions` hardcodes p_make-argmax-with-EV-tiebreak — effectively Lens(p_make), the **worst** of the four utilities in the Lens v1 round-robin (Lens(ev) beats Lens(p_make) by +5.42 pts/hand). The recommended one-line switch to ev-argmax is **NOT applied** as of `afd4802` (verified against the current file plus the Zeb-protocol play path in `forge/zeb/eq_player.py`) — open two months on.

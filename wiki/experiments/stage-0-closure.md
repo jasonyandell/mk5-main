@@ -109,11 +109,19 @@ Wall-time note: the repaired sampler roughly doubles a C0 block on MPS
 configuration) — the correctness fix was paid for in throughput, consistent
 with the CUDA finding that per-call overhead dominates this sampler.
 
-Scan B (decision-level harm on the 804 nonzero-mass states: argmax flips,
-exact regret) is running on the freed GPU; its report completes this arm's
-scope. The exposure population is a reconstructed proxy (random legal
-playouts), not the literal historical stream — scope and the two more-faithful
-future denominators are stated in
+**Scan B (decision-level harm)**: on the 200 worst-mass states (worst-first
+from the 804), the legacy distribution **flips the argmax in 20/200**, with
+exact regret of the legacy choice up to `7.37 Q` and per-action value shifts
+up to `27.1 Q` (large shifts mostly cancel in the argmax — 8 of the 10
+biggest shifts flip nothing, the [[rank-vs-price]] mechanism at work).
+This supersedes the audit's three-fixture "no argmax flip" bounded
+observation: legacy decision harm was real, rare, and concentrated in a
+late-game tail — and the C0/P0 reproductions above show it did not carry the
+match-level conclusions. Harm here is expected-harm under the exact legacy
+distribution (the analytic emulator), not literal historical draws (at
+production n=10 the injection is binomial around the state's dead-end mass).
+The population is a reconstructed proxy (random legal playouts); scope and
+the two more-faithful future denominators are stated in
 `w42/world_sampler_audit/exposure_scan/exposure_scan_a.md`.
 
 ## Reading
@@ -123,9 +131,11 @@ challenger re-grade, and the CUDA correctness suite all land inside their
 registered bands on the repaired sampler: the measurement baseline is
 trustworthy, the champion's `+0.4`-ish bidding advantage is real under a
 uniform world distribution, and `lens:ev` remains undefeated at pure play.
-The legacy sampler's defect was real but did not carry the prior conclusions
-(2.5% distributional exposure; no argmax flip yet observed anywhere). Lane
-grading per [[research-lane-selection]] is now unblocked.
+The legacy defect's harm is now quantified instead of hypothesized: 2.5%
+distributional exposure, argmax flips in 10% of the worst-exposed tail (up to
+`7.4 Q` regret) — real, rare, and demonstrably not load-bearing for the
+reproduced baselines. Lane grading per [[research-lane-selection]] is
+unblocked.
 
 ## Links
 
