@@ -33,11 +33,19 @@ One code path, one corpus, one seed; the arms differ in exactly one flag.
   per-move realized continuation value, needs a rollout-to-hand-end labeler
   that does not exist tonight; it is the named follow-on arm, not this
   experiment.
-- **Hard gate before HP trains:** teacher-forced label join coverage
-  `aux_coverage() ≥ 0.999` on decision rows. The original bridge replays the
-  oracle's own greedy line, not the recorded line — a low-coverage or
-  misaligned join would poison the arm, so a coverage miss aborts rather than
-  reinterprets.
+- **Hard gate before HP trains:** teacher-forced label join coverage = 100%
+  of decision rows (note `aux_coverage()` is over all rows and caps near 0.5
+  by design — the post-move evaluation half can never carry labels). The
+  original bridge replays the oracle's own greedy line, not the recorded
+  line — measured misalignment: only ~52% of decision rows joined. The gate
+  is closed by `--teacher-forced` in `forge.cli.generate_eq_from_snapshots`
+  (now a production capability: the pipeline advances the recorded line,
+  E[Q] per state unchanged, fail-fast on any desync); proven 84/84 decision
+  coordinates on a real corpus slice.
+- **Pre-experiment ranking baseline** (context for R1): jud v1's `r4`
+  main-head ranking against teacher-forced labels measures Spearman `0.128`,
+  pairwise `0.568`, top-1 `0.473` (55 decisions, smoke) — the per-move
+  discrimination wall, quantified at ranking level.
 
 Evaluation, in gate order (calibration alone is not passage):
 
