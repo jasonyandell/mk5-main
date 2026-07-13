@@ -3,7 +3,7 @@ title: Jud Target Granularity — hand-level vs per-move at fixed capacity
 kind: experiment
 first_seen: local-2026-07-13
 last_updated: local-2026-07-13
-status: active
+status: complete
 ---
 
 Does per-move supervision beat hand-level supervision at fixed capacity —
@@ -251,6 +251,50 @@ mean). Held-out ranking on the same 5,192 round-1 test decisions:
   supervises — child-value regression at λ=1.0 moved child-price ordering
   approximately nothing. The marks battery decides whether anything
   play-relevant changed anyway.
+
+### Round 2 marks (final; game-paired deltas, 512 paired games each)
+
+Absolute vs `lens:ev` (blocks 7M/9M): `judplay` — H3 `-3.305/-3.297`,
+HP3 `-3.242/-3.305`, HC3 `-3.594/-3.246`, HC1 `-3.359/-3.055`;
+`judsearch` — H3 `-1.762/-1.645`, HP3 `-1.695/-1.574`, HC3 `-1.848/-1.703`,
+HC1 `-1.848/-1.766`.
+
+| paired contrast | judplay | judsearch |
+|---|---|---|
+| H3 − H (volume) | `-0.027 [-0.238,+0.182]` | `+0.180 [-0.047,+0.402]` |
+| HP3 − H3 (aux at volume) | `+0.027 [-0.152,+0.203]` | `+0.068 [-0.154,+0.295]` |
+| HC3 − H3 (child-state) | `-0.119 [-0.307,+0.062]` | `-0.072 [-0.297,+0.154]` |
+| HC1 − H (child-state, 1×) | `+0.066 [-0.104,+0.238]` | `+0.076 [-0.152,+0.305]` |
+
+Round-2 verdicts: **V1 MISS** (both clauses — volume moved calibration only;
+the search delta `+0.180` is directional with CI including zero).
+**C1 FALSIFIED** decisively (the arm I believed in: greedy point estimate
+*negative*). **A2 CONFIRMED** — the only guess that hit was the one
+predicting a null: the parent-side aux stays null at 3× data.
+**W2 PASS** — the wall stands; the night's best play stack is
+`judsearch:HP3` at `-1.57/-1.70`, still behind `lens:ev` and behind r4's
+five-round `-1.42`.
+
+## Final reading
+
+**The per-move-target family at jud-v1 capacity is dead in both its forms.**
+Hand-level, parent-side dense auxiliary, child-state value regression, and 3×
+corpus volume all price play within noise of each other under both consumers;
+the registered predictions that asserted gains (R3, R4, R6, V1, C1) all
+missed, and the one asserting a null (A2) hit. Combined with round 1's
+mechanism facts (ranking-label agreement does not order play strength; the
+dense signal neither shapes the trunk nor survives argmax), the residual for
+[[jud]] v2 narrows to three levers this experiment could not touch at fixed
+capacity: the **capacity×target interaction**
+([[partnership-research-gates]] row 2), **on-policy loop data** (r4's
+five-round cumulative corpus remains the best-ranking leaf of its size —
+distributional, not volumetric), and **opponents-in-rollout** (v2's other
+named cue, untested tonight). One soft trace survives for the search
+direction: CE-lowering arms show a recurring ~`+0.18` judsearch-side paired
+delta (HP−H round 1, H3−H round 2), never individually significant — if a
+future leaf wants to claim search value from calibration, it needs ~4× the
+games to resolve that size, and [[belief-weighted-jud-mcts]] J1/J2 remain the
+registered consumers for such a claim.
 
 ## Links
 
