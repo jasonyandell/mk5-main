@@ -191,6 +191,37 @@ Artifacts: heads at `scratch/lane-b/heads/`, labeled corpus at
 `scratch/lane-b/eq/`, run summaries under `arena/results/lb_*`, ranking eval
 + paired analysis scripts in `scratch/lane-b/`.
 
+## Round 2 — the two named residuals (registered before any round-2 training)
+
+Same night, same protocol. Two more 512-game corpora (seeds 9,110,000 and
+9,120,000; teacher-forced labels) give a 3× corpus. Arms:
+
+- **H3** — hand-level only, 3× corpus (the volume lever alone).
+- **HP3** — parent-side aux, 3× corpus (does volume rescue the aux?).
+- **HC3** — **child-state per-move values**, 3× corpus: no extra head; the
+  main head's `mean_points` on each recorded child row is regressed toward
+  the parent decision's per-move oracle value (converted to declaring-team
+  points), exactly the quantity `JudPlay` argmaxes. Consumer-aligned by
+  construction.
+- **HC1** — child-state values on the original 1× corpus (volume-controlled
+  HC comparison).
+
+Registered predictions (guesses on record):
+
+- **V1 (volume):** H3 out-ranks arm H (Spearman ≥ 0.10 vs 0.046) and
+  `judsearch:H3` improves on H's `-1.98/-1.79` (guess ≈ `-1.6`). Corpus
+  volume is a real leaf lever, as the r4 comparison suggested.
+- **C1 (child-state, the arm I believe in):** HC3's main head out-ranks H3's
+  (pairwise ≥ 0.55) **and** `judplay:HC3` beats `judplay:H3` by ≥ +0.4
+  game-paired; `judsearch:HC3` guess `[-1.5, -0.9]`. Falsifier: paired CIs
+  include zero — then consumer-aligned per-move supervision at this capacity
+  fails too, and the per-move-target family at v1 capacity is dead on both
+  its parent-side and child-side forms (a strong, clean negative that moves
+  the residual entirely to capacity interaction and opponents-in-rollout).
+- **A2 (aux at volume):** HP3−H3 paired deltas remain null — the round-1
+  null is mechanism, not data starvation.
+- **W2:** the wall stands; no arm beats `lens:ev`.
+
 ## Links
 
 [[research-lane-selection]] [[jud]] [[w42-jud-v1]] [[lamir1-ceiling]]
