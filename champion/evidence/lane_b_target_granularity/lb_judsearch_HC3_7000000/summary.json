@@ -1,0 +1,56 @@
+{
+  "label_a": "bid30+lens:ev",
+  "label_b": "bid30+judsearch:n10,model=scratch/lane-b/heads/jud_HC3.pt",
+  "n_games": 256,
+  "n_hands": 2807,
+  "elapsed_s": 428.58,
+  "a_wins": 194,
+  "a_game_win_rate": 0.7578125,
+  "a_win_rate_half1": 0.765625,
+  "a_win_rate_half2": 0.75,
+  "mean_mark_margin": 1.84765625,
+  "mark_margin_ci_lo_95": 1.51162109375,
+  "mark_margin_ci_hi_95": 2.1954101562499995,
+  "ci_excludes_zero": 1,
+  "mean_hands_per_game": 10.96484375,
+  "mean_hand_point_margin": 5.734235838973993,
+  "auction": {
+    "bid_hist": {
+      "30": 2807
+    },
+    "decl_hist": {
+      "fours": 1002,
+      "fives": 964,
+      "sixes": 287,
+      "twos": 153,
+      "threes": 144,
+      "blanks": 132,
+      "ones": 125
+    },
+    "a_offense_share": 0.49910936943355894,
+    "forced_hands": 0,
+    "redealt_hands": 0
+  },
+  "contracts": {
+    "a_offense": {
+      "contracts": 1401,
+      "made": 585,
+      "made_rate": 0.41755888650963596,
+      "mean_bid": 30.0
+    },
+    "b_offense": {
+      "contracts": 1406,
+      "made": 351,
+      "made_rate": 0.2496443812233286,
+      "mean_bid": 30.0
+    }
+  },
+  "cfg": {
+    "marks_to_win": 7,
+    "max_redeals": 3,
+    "base_seed": 7000000,
+    "n_samples": 10,
+    "device": "mps",
+    "fast_batching": true
+  }
+}

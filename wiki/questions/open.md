@@ -81,22 +81,14 @@ Format:
   - Raised: `local-2026-05-07` ([[burl-microscope]])
   - Context: `board_snapshot()` is a strong first-read surface, but fair no-reference `snapshot-first` and `legal-brief` runs both committed `25` on the `BURL_BREAKS_CONSENSUS` case where oracle/pi/qmean prefer `19`.
 
-- **Q:** What fraction of historical Forge/Burl/Champion states had nonzero
-  `WorldSamplerMRV` malformed-world or valid-world bias, and does the uniform
-  repair change C0 action ranks or paired marks?
-  - Raised: `bc4eb386` ([[world-sampler-mrv-audit]])
-  - Context: the causal panel proves exact `1/3` malformed mass on one late
-    state and valid-only TVD `0.0333` on another, but finds no argmax flip in
-    three states. A state-level exposure scan and two-block C0 reproduction are
-    required before revising historical promotion claims.
-
 - **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
   - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])
   - Context: `forge/eq/generate/actions.py::select_actions` hardcodes p_make-argmax-with-EV-tiebreak — effectively Lens(p_make), the **worst** of the four utilities in the Lens v1 round-robin (Lens(ev) beats Lens(p_make) by +5.42 pts/hand). The recommended one-line switch to ev-argmax is **NOT applied** as of `afd4802` (verified against the current file plus the Zeb-protocol play path in `forge/zeb/eq_player.py`) — open two months on.
 
 - **Q:** Does jud v2 — a bigger leaf on per-move targets (E[Q] distilled as a bootstrap value) plus opponents-in-rollout — close the play gap the v1 hand-level MLP could not?
   - Raised: `afd4802` ([[w42-jud-v1]], [[jud]])
-  - Context: jud v1 held the unification at the auction but was mechanism-limited at play. `judsearch` recovered two-thirds of the play gap oracle-free (JS1 PASS +2.28) but neither more worlds (JS2 below band) nor a better-calibrated head (JS3 falsified) closed the rest. v1's diagnosis: the wall is per-move discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle. v2's cue follows directly from that diagnosis; unbuilt.
+  - Context: jud v1 held the unification at the auction but was mechanism-limited at play. `judsearch` recovered two-thirds of the play gap oracle-free (JS1 PASS +2.28) but neither more worlds (JS2 below band) nor a better-calibrated head (JS3 falsified) closed the rest. v1's diagnosis: the wall is per-move discrimination — a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.
+  - *Narrowed 2026-07-13 ([[jud-target-granularity]]):* per-move targets **at fixed v1 capacity** do not close it — parent-side dense aux and child-state value forms both graded marks-null, 3× corpus volume moved calibration but not ranking or marks, and ranking-label agreement was shown not to order play strength. The surviving question is the interaction: bigger leaf × per-move targets × on-policy loop data ([[w42-jud-v1|r4]]'s five-round corpus out-ranks fresh corpora), plus opponents-in-rollout — not per-move labels alone.
 
 - **Q:** Which era-5 gestation designs (the IDEATED generation — Harl, LLem, walker, and the rest) are worth resurrecting, and which did the built LEM/Burl/Gus/jud line already subsume?
   - Raised: `afd4802` ([[the-gestation]], [[ideated-not-built]])

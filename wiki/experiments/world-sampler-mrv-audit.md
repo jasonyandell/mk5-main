@@ -64,7 +64,9 @@ valid. The third fixture is the symmetry null.
 - The malformed-world and non-uniformity mechanisms are positive findings.
 - The historical `~6.8 Q` number is confounded and retired as an effect
   estimate; it is neither confirmed nor cleanly contradicted.
-- No argmax flip in three fixtures is a bounded null observation, not evidence
+- No argmax flip in three fixtures is a bounded null observation
+  (superseded by the population scan: 20 flips in the 200 worst-mass states,
+  regret up to `7.37 Q` — [[stage-0-closure]]), not evidence
   that historical corpora or match outcomes were unaffected.
 - Failure on the low-valid-mass JudSearch state is a negative result for
   `uniform-rejection-v1` as a production repair.
@@ -78,7 +80,10 @@ valid. The third fixture is the symmetry null.
   sample count, RNG seed, and representation parity did not survive.
 - The audit does **not** establish a population corruption rate or a C0 action
   loss. Three late states contain no argmax flip; that observation is bounded
-  to the diagnostic panel.
+  to the diagnostic panel. ([[stage-0-closure]] later established both: 2.51%
+  distributional exposure over 32k reconstructed states, and argmax flips in
+  20 of the 200 worst-mass states with regret up to `7.37 Q` — while the
+  two-block C0 reproduction shows match-level conclusions survived.)
 - Historical corpus and arena conclusions are not automatically void. Their
   exposure depends on state-specific dead-end probability, valid-world bias,
   Q gap, and consumer.
@@ -125,7 +130,13 @@ unconstrained root count is `21!/(7!^3) = 399,072,960`. The combined sampler,
 audit, and full JudSearch suite passes `46` tests with two CUDA tests skipped.
 On CPU the final sampler takes `4.25 ms` for unconstrained `32 x 50`, `0.63 ms`
 for the historical `1 x 50`, and `1.64 ms` for the low-mass `1 x 10` state where
-rejection exhausted. CUDA throughput and memory remain unmeasured on this Mac.
+rejection exhausted. [[stage-0-closure]] then measured the CUDA path on a
+rented 4090 (`w42/world_sampler_audit/cuda_bench_2026-07-13.md`): every
+device-parameterized regression passes, and the sampler is kernel-launch bound
+(~30 ms/call flat across batch shapes) — ~7× slower than CPU at `32 x 50`,
+paying off only through batch width (`858k` worlds/s at `256 x 100`, ≤63 MB).
+Batch size, not device, is the throughput lever; small-batch consumers
+(JudSearch n=10) belong on CPU.
 
 Review of the shipped repair found one further defect in the same silent-bias
 class it was built to kill: the MPS backend's int64 `gather` rounds the 62-bit
@@ -138,9 +149,18 @@ Fixed at `4123b2d5`: candidate selection uses an exact `where` instead of
 valid), and the dead-end and uniformity regressions now parameterize over
 every available device (CPU/CUDA/MPS).
 
-The repair closes the sampler gate, not the exposure question. A state-level
-historical scan, a two-block C0 reproduction, and a production CUDA benchmark
-remain required.
+The repair closed the sampler gate; [[stage-0-closure]] (2026-07-13) then
+closed the measurement questions it left open. The two-block C0 reproduction
+landed inside its registered bands (`+0.385`/`+0.486` vs original
+`+0.38`/`+0.42`), the P0 symmetry and challenger re-grades reproduced, the
+CUDA suite passed, and the state-level exposure scan
+(`w42/world_sampler_audit/exposure_scan/`) found `2.51%` of a 32,000-state
+reconstructed late-state population carrying nonzero legacy malformed mass
+(nonzero median `0.19`, max `0.83`; the exact-`1/3` fixture reproduces). The
+repaired sampler costs ~2× wall time per C0 block on MPS. Decision-level harm
+is measured: 20 argmax flips in the 200 worst-mass states, exact regret up to
+`7.37 Q`, largest per-action shifts (`27 Q`) mostly cancelling in the argmax
+([[stage-0-closure]], [[rank-vs-price]]).
 
 ## Artifacts and reproduction
 

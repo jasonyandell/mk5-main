@@ -2,7 +2,7 @@
 title: Convention-Aware Blueprint Search
 kind: topic
 first_seen: 1a4482fe
-last_updated: d5816915
+last_updated: b28fb55a
 status: active
 ---
 
@@ -81,9 +81,14 @@ an already understood convention or naturally legible action a measurable
 continuation value.
 
 The smallest version is single-agent search: only the acting seat deviates
-from the blueprint while partner and opponents remain fixed to it. A later
-multi-agent version could allow other seats to search at public states where
-the relevant search procedure is common knowledge.
+from the blueprint while partner and opponents remain fixed to it. In backup
+terms this is **Semantics 1** of [[belief-weighted-jud-mcts]]: later seats,
+the partner included, are stochastic blueprint nodes — never max/min backups.
+A later multi-agent version could allow other seats to search at public states
+where the relevant search procedure is common knowledge; done properly that is
+the team-public-information prescription construction (**Semantics 2**,
+[[search-literature-transfer]]), not per-hand maximization by the root
+process.
 
 ### Iteration
 
@@ -384,3 +389,5 @@ concrete and testable. It has not displaced the other explanations in
 [[partnership-research-gates]] [[champion]] [[expected-q-value]]
 [[strategy-fusion]] [[w42-book-second-pass]] [[w42-jud-v1]]
 [[world-sampler-mrv-audit]] [[partnership-decision-record-v1]]
+[[belief-weighted-jud-mcts]] [[search-literature-transfer]]
+[[research-lane-selection]]

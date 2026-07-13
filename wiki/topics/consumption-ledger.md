@@ -190,6 +190,20 @@ chronology.
   the rest. [[the-wall|The wall]]'s current coordinates: a 470k MLP on
   hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.
   ([[w42-jud-v1]], [[jud]].)
+- **RULED OUT: per-move targets at v1 capacity — both forms, and 3× volume.**
+  [[jud-target-granularity]] (2026-07-13, two rounds): the parent-side dense
+  E[Q] aux head triples in-distribution ranking (pairwise 0.603 vs a
+  chance-level 0.508 main head) and moves marks nothing (greedy paired Δ
+  `-0.086 [-0.254,+0.092]`); argmaxing it directly plays 0.9 marks *worse*;
+  it collapses at 3× data. The consumer-aligned child-state value form is
+  also null (`-0.119` greedy, `-0.072` search vs H3). 3× corpus volume moves
+  calibration (val CE 2.53→2.14), not ranking or marks. Ranking-label
+  agreement does not order play strength ([[lamir1-ceiling]]'s mechanism,
+  re-measured). The only prediction that hit was the one predicting a null.
+  Bounded residual: capacity×target interaction, on-policy loop data (r4's
+  five-round corpus still out-ranks fresh 3×), opponents-in-rollout; plus a
+  recurring, never-significant ~`+0.18` search-side trace for CE-lowering
+  leaves (needs ~4× games to resolve).
 
 ## Evaluation itself
 

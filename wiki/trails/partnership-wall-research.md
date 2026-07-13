@@ -2,7 +2,7 @@
 title: Partnership Wall Research
 kind: trail
 first_seen: bc4eb386
-last_updated: f6b691da
+last_updated: b28fb55a
 status: active
 ---
 
@@ -27,13 +27,13 @@ direction on [[the-wall]] equally:
 
 | surface | status | what is true now | boundary / next gate |
 |---|---|---|---|
-| Pure-play baseline | MEASURED | `P0 = lens:ev` n=10 remains the strongest measured play policy. | It has not been reproduced on the repaired sampler over the two held-out blocks. |
-| Full-match baseline | MEASURED | `C0 = margin:wp(head_8) + lens:ev`; its demonstrated advantage is a bidding gain. | The explicit r8 bidder and large oracle are fingerprinted, but two-block C0 reproduction remains open. |
-| World sampler | BUILT + exact-fixture validated | `uniform-completion-dp-v1` replaces malformed/non-uniform legacy MRV and the failed rejection repair. Post-review repair `4123b2d5`: an MPS int64-gather defect made the shipped sampler valid but severely non-uniform on Apple Silicon; draws now select via `where` and the uniformity regression runs per-device. | CPU and MPS fixtures and the low-mass JudSearch state pass; CUDA/MPS throughput, historical exposure, and policy-level effect remain open. |
+| Pure-play baseline | MEASURED + REPRODUCED | `P0 = lens:ev` n=10 remains the strongest measured play policy; on the repaired sampler the symmetry sanity is clean and `judsearch:n10(r4)` still loses `-1.42`/`-1.54` on both held-out blocks ([[stage-0-closure]]). | The next challenger is Lane B's per-move-target ladder. |
+| Full-match baseline | MEASURED + REPRODUCED | `C0 = margin:wp(head_8) + lens:ev`; its demonstrated advantage is a bidding gain, reproduced on the repaired sampler: `+0.385 [+0.102,+0.668]` and `+0.486 [+0.199,+0.775]` on the two reserved blocks ([[stage-0-closure]]). | Lane grading is unblocked. |
+| World sampler | BUILT + validated + measured | `uniform-completion-dp-v1` (with the `4123b2d5` MPS `where` fix) passes every per-device regression including CUDA; it is kernel-launch bound (~30 ms/call), so batch width, not device, is the throughput lever, and a C0 block costs ~2× legacy wall time on MPS. Historical exposure: `2.51%` of a 32k reconstructed late-state population carried nonzero legacy malformed mass; decision harm was real but tail-bound — 20 argmax flips in the 200 worst-mass states, regret ≤ `7.37 Q` ([[stage-0-closure]]). | Stage 0 is closed; the remaining denominators (forge E[Q] seeds, arena result states) are optional refinements. |
 | Historical failure atlas | BUILT | [[partnership-failure-atlas-v0]] joins 75,079 actions / 28,000 decisions and inventories 114 live sources. | It proves archive insufficiency for Champion attribution; it does not measure a partnership null. |
 | Future decision record | BUILT + integration-validated | [[partnership-decision-record-v1]] records public/info/context/world identities, eight separate mechanism sections, and exact policy/artifact/sampler provenance. | A clean C0 smoke retained 644 decisions; live Q/PDF, belief change, action likelihood, plan state, and fixed/shuffled cohort remain unavailable. |
 | Partnership value | UNTESTED | No valid negative, null, or positive partnership result exists. | Requires fixed-versus-shuffled partners and actors that react to public actions. |
-| Research directions | CATALOGED, UNSELECTED | Competing explanations are preserved below with supporting evidence, contrary evidence, and missing instruments. | No causal microgame or next experiment is selected by this PR. |
+| Research directions | SELECTED 2026-07-13 | Competing explanations remain preserved below; [[research-lane-selection]] selects the [[auction-decoder]] and the [[jud]] target-granularity ladder as the primary experiments, with the convention factorial following. | Stage 0 closes before any lane result is graded; if both primary gates fail, selection returns to this ledger. |
 | Successor architecture | INTENTIONALLY UNSELECTED | CFR, larger nets, LLMs, symbolic libraries, and Jud v2 remain candidates, not plans. | Only a mechanism that passes [[partnership-research-gates]] earns a build. |
 
 ## PR boundary — measurement readiness
@@ -81,7 +81,7 @@ evidence of absence.
 | Finding | A valid measurement establishes a mechanism or fact. | Legacy MRV can fabricate worlds; exact malformed mass is `1/3` on one fixture. |
 | Negative result / falsification | A valid test makes a proposed mechanism, design, or useful effect fail its stated criterion. | `uniform-rejection-v1` is mathematically uniform when it returns but fails a real low-valid-mass state, so it is rejected as the production repair. |
 | Null result | A valid, adequately powered test finds no useful effect within stated bounds. | No partnership null has been measured yet. |
-| Bounded null observation | No effect appears in a small diagnostic panel whose scope is explicitly limited. | No action argmax flips in the three sampler-audit states. |
+| Bounded null observation | No effect appears in a small diagnostic panel whose scope is explicitly limited. | No action argmax flips in the three sampler-audit states — later superseded by the population scan, which found flips in the exposed tail ([[stage-0-closure]]); the label was correct precisely because it stayed bounded. |
 | Confounded result | More than the intended variable changed, so the effect cannot be attributed. | The historical `~6.8 Q` comparison used different world encodings and lacks action/N/RNG provenance. |
 | Instrument insufficiency / inconclusive | Available records cannot answer the question. | The retained archive cannot attribute current-Champion partnership failures; the partnership hypothesis remains untested. |
 
@@ -262,15 +262,18 @@ result about partnership value.
 
 | direction | supporting evidence | contrary evidence and prior attempt | unresolved seam |
 |---|---|---|---|
-| Target granularity x capacity | [[w42-jud-v1]] shows a useful value head but weak move ranking; JudSearch recovered `+2.28` marks/game over greedy play. [[lamir1-ceiling]] supplies a mechanism: distilled scalar value noise flips argmax while a policy trained on argmax preserves ordering. | [[gus|Gus]] often gained more from data than capacity. [[jud|Jud]] changed worlds, calibration, and input data rather than separating target from capacity. A leaf used for look-ahead may require CFR+ / multi-valued states rather than supervision alone. | Target quality, capacity, and look-ahead fitness remain entangled. |
+| Target granularity x capacity | [[w42-jud-v1]] shows a useful value head but weak move ranking; JudSearch recovered `+2.28` marks/game over greedy play. [[lamir1-ceiling]] supplies a mechanism: distilled scalar value noise flips argmax while a policy trained on argmax preserves ordering. | [[jud-target-granularity]] (2026-07-13, two rounds) graded the family: **per-move targets at v1 capacity are marks-null in both forms** (parent-side dense aux; consumer-aligned child-state values), 3× corpus volume moves calibration only, the aux head collapses at 3×, and the aux-direct consumer plays 0.9 marks worse. Ranking-label agreement does not order play strength. | Surviving seam: the capacity×target interaction, on-policy loop data (r4's five-round corpus out-ranks fresh 3× — distributional, not volumetric), opponents-in-rollout, and a never-significant ~`+0.18` search-side trace for CE-lowering leaves. |
 | Auction decoder x role/order x score | Auction-conditioned [[gus|Gus]] gained `+2.59pp`; realized-value bidding is the [[champion]]'s only demonstrated marks gain; [[w42-book-second-pass]] supplies bid-to-hand and score hypotheses. | Score-conditioned play was negative, the pass-model pilot was null, and book conventions may be population-specific. [[w42-champion-selfplay-fixed-point]] found a converged belief-conditioned bidder still lost by pricing double-dummy P(make). | Information gain, role/order semantics, score use, and realized-outcome pricing have not been attributed separately. |
 | Action-derived inference and partnership legibility | Table play naturally reveals information about holdings, priorities, and intent relative to a partner's known policy; [[w42-book-second-pass]] records choice-derived inference and explicit conventions. [[convention-aware-blueprint-search]] preserves the book as a possible coordinated sender/receiver initialization rather than waiting for unilateral search to invent a code. | Most informative actions are selected because they play well, not because they are deliberate messages. Intentional reliable signals are sparse; simple action-to-intent rules are noisy; book conventions may be incomplete or population-specific; no result measures their aggregate contribution to marks. | Natural policy legibility, explicit convention, partner-specific familiarity, generic good-play inference, and opponent decoding remain distinct and unmeasured. |
 | Information-set plan persistence | [[w42-book-second-pass]] supplies concrete multi-trick sequences. | [[forge|Forge]] Q already prices ordinary within-world plans; [[w42-jud-v1|JudSearch]] captures current-trick continuation; [[book-strategy-player|BookStrategyPlayer]] never ran. | Ordinary continuation, cross-world policy consistency, and partner-visible intent remain separated in theory but not evidence. |
 | Belief-weighted Jud MCTS | [[w42-jud-v1|JudSearch]] improved greedy Jud play by `+2.28` marks/game; its worlds sweep added only `+0.11`, so flat sample count was not the lever. [[gus-qmean-router]] keeps belief-sampled candidate generation in the positive ledger. | Zeb MCTS never beat E[Q] n=10 at pure play; every LAMIR-1 look-ahead mode lost to direct `pi_me`; a determinized MCTS tree retains strategy fusion. | Adaptive depth, information-set node identity, mid-tree belief updates, leaf fitness, and convention response remain separable and unmeasured. See [[belief-weighted-jud-mcts]]. |
 | Contextual distribution consumer | Full action PDFs exist; [[gus-drama-atlas]] localizes uncertain, fragile, high-impact opening decisions; [[past-belief-future-direction]] describes a richer meta-strategy surface. [[gus-qmean-router]] is bounded positive evidence for selective consumption. | No tested fixed collapse beat EV, score-conditioned play lost, and [[burl]]'s distribution-policy result is confounded. | The project has not shown when distribution shape changes a valuable decision or full-match marks. |
 
-No row is the current experiment. The ledger prevents a later choice from
-forgetting positive evidence, contrary evidence, or missing instruments.
+[[research-lane-selection]] (2026-07-13) selects two rows as the primary
+experiments — auction decoder and target granularity — with the convention
+factorial following. The ledger's purpose is unchanged: it prevents the
+selection from forgetting positive evidence, contrary evidence, or missing
+instruments, and it is where selection returns if the primary gates fail.
 
 Among the surviving architectures, [[convention-aware-blueprint-search]] is
 unusually concrete: it joins action-derived inference, policy legibility, and
@@ -342,8 +345,9 @@ project evidence and its structural increment has a clean ablation.
 
 [[partnership-research-gates]] records what evidence would make an architecture
 eligible; it is not an implementation queue. CFR, a larger network, an LLM, a
-symbolic strategy library, and [[jud|Jud]] v2 remain unselected. No build ladder
-beyond the shared measurement spine is active in this PR.
+symbolic strategy library, and [[jud|Jud]] v2 remain unselected as
+architectures. [[research-lane-selection]] selects the next *experiments*;
+promotion continues to gate through the table unchanged.
 
 The general wall criterion is higher paired held-out full-match marks for a
 demonstrated strategic reason, with the gain removed by the claimed mechanism's

@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: afd4802
-last_updated: c7f74f5c
+last_updated: b28fb55a
 status: active
 ---
 
@@ -45,7 +45,9 @@ Sessions that lack this page invent their own goals (documented instances: the 2
 
 ## Current coordinates (frontier)
 
-From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Bidding validates — jud v0's `margin:wp`(head_8) is the first learned component ever to beat the hand-tuned champion on marks (+0.38 [+0.09,+0.67], +0.42 [+0.12,+0.72]). Play is mechanism-limited at the leaf: `judsearch` recovers two-thirds of the play gap oracle-free (−3.44 → −1.16) and stops; neither more worlds nor a better-calibrated head closes the rest. Verdict sentence: *a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.* The named-but-unbuilt continuation is jud v2: bigger leaf, per-move E[Q]-distill targets with the consumer declared, opponents-in-rollout.
+From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Bidding validates — jud v0's `margin:wp`(head_8) is the first learned component ever to beat the hand-tuned champion on marks (+0.38 [+0.09,+0.67], +0.42 [+0.12,+0.72]; reproduced on the repaired sampler at [[stage-0-closure]]). Play is mechanism-limited at the leaf: `judsearch` recovers two-thirds of the play gap oracle-free (−3.44 → −1.16) and stops; neither more worlds nor a better-calibrated head closes the rest. Verdict sentence: *a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.*
+
+[[jud-target-granularity]] (2026-07-13) sharpened the coordinates: a dense per-move E[Q] auxiliary at fixed capacity triples the leaf's in-distribution ranking and moves marks **nothing** — and argmaxing that ranking directly plays worse than the calibrated value head. The wall is not "the leaf lacks per-move labels"; it is that ranking-label agreement does not order play strength ([[lamir1-ceiling]]'s mechanism, re-measured on a per-move-supervised head). The unbuilt residuals: per-move continuation values on child states, corpus volume, capacity×target interaction, opponents-in-rollout.
 
 The full ruled-in/ruled-out record across all mechanisms: [[consumption-ledger]]. The untried inventory: [[ideated-not-built]] and [[the-wall-biography]] §4.
 
@@ -55,7 +57,10 @@ No successor architecture is selected; each direction below is a surviving
 explanation, and none is the default build. The shared
 measurement spine — repaired world sampler, canonical decision records,
 two-block C0 reproduction — serves all of them equally
-([[partnership-wall-research]] Stage 0).
+([[partnership-wall-research]] Stage 0). [[research-lane-selection]]
+(2026-07-13) selects the next *experiments* — the [[auction-decoder]] and jud
+v2's target-granularity ladder first, the convention factorial after — without
+promoting any architecture past [[partnership-research-gates]].
 
 - **jud v2** — the named-but-unbuilt continuation from [[w42-jud-v1]]: bigger
   leaf, per-move E[Q]-distill targets with the consumer declared,

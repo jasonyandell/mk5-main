@@ -63,3 +63,48 @@ class JudPlay:
 
     def __repr__(self) -> str:
         return "JudPlay()"
+
+
+class JudAuxPlay:
+    """Argmax over the per-legal-action auxiliary head (Lane B diagnostic).
+
+    Where `JudPlay` prices post-move states through the 43-bin realized-value
+    head, this consumer queries the CURRENT state once and reads the aux
+    head's per-slot values — the exact object the dense-E[Q] auxiliary was
+    trained on, in acting-seat orientation (higher is better for the mover, no
+    defender sign flip). It separates "the aux head learned the ranking" from
+    "the aux loss regularized the shared trunk": if `judplay` on an aux-trained
+    net improves but this consumer does not, the gain was trunk-shaping.
+    Requires a checkpoint trained with ``aux_per_action=True``.
+    """
+
+    def __init__(self, model: JudNet, device: str = "cpu"):
+        if not model.aux_per_action:
+            raise ValueError("JudAuxPlay requires an aux_per_action checkpoint")
+        self.model = model
+        self.device = device
+        self.model.eval()
+
+    def choose(
+        self,
+        states: Sequence[ZebGameState],
+        bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
+    ) -> list[int]:
+        feats = [
+            featurize_state(s, seat=current_player(s)) for s in states
+        ]
+        x = torch.stack(feats).to(self.device)
+        with torch.no_grad():
+            _, aux = self.model.forward_aux(x)
+        aux = aux.cpu()
+        out: list[int] = []
+        for i, s in enumerate(states):
+            legal = legal_actions(s)
+            vals = aux[i]
+            out.append(max(legal, key=lambda a: float(vals[a])))
+        return out
+
+    def __repr__(self) -> str:
+        return "JudAuxPlay()"
