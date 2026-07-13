@@ -222,6 +222,36 @@ Registered predictions (guesses on record):
   null is mechanism, not data starvation.
 - **W2:** the wall stands; no arm beats `lens:ev`.
 
+### Round 2 training + ranking (final; marks battery running)
+
+Training (4 arms parallel, ~3 min): volume is a real **calibration** lever —
+val CE 2.525 (1×) → 2.139/2.135/2.149 (3× H3/HP3/HC3); HC3 trades a little
+CE for MAE/ECE mix as the child-loss caveat predicted (pmf pulled toward its
+mean). Held-out ranking on the same 5,192 round-1 test decisions:
+
+| arm, ranker | Spearman | pairwise | top-1 |
+|---|---|---|---|
+| H3 main | 0.062 | 0.486 | 0.366 |
+| HP3 main | 0.074 | 0.488 | 0.374 |
+| HP3 aux | −0.045 | 0.523 | 0.310 |
+| HC3 main | 0.059 | 0.485 | 0.365 |
+| HC1 main | 0.055 | 0.515 | 0.351 |
+
+- **V1 ranking clause — MISS.** 3× volume improved calibration and moved
+  ranking nothing (0.486 pairwise ≈ chance). The r4-out-ranks-H observation
+  was evidently not about raw volume — r4's five *on-policy self-play rounds*
+  differ from 3× fresh champion self-play in distribution, not just size.
+- **Aux collapse at 3× (unpredicted):** HP3's aux head ranks *worse than
+  chance-adjacent* (Spearman −0.045 vs 0.236 at 1×). Best guess, recorded as
+  a guess: early stopping reads the main-head CE, which converges faster at
+  3×, so the aux head is stopped under-trained; an aux-aware stopping
+  criterion or λ sweep would test this. Either way the parent-side aux is
+  fragile, strengthening round 1's null.
+- **HC3 shows no in-distribution ranking gain** even in exactly the space it
+  supervises — child-value regression at λ=1.0 moved child-price ordering
+  approximately nothing. The marks battery decides whether anything
+  play-relevant changed anyway.
+
 ## Links
 
 [[research-lane-selection]] [[jud]] [[w42-jud-v1]] [[lamir1-ceiling]]
