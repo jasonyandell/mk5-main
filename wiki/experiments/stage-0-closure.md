@@ -1,8 +1,8 @@
 ---
 title: Stage 0 Closure — repaired-sampler measurement baseline
 kind: experiment
-first_seen: local-2026-07-13
-last_updated: local-2026-07-13
+first_seen: 3fba46cb
+last_updated: 242dff1e
 status: complete
 ---
 

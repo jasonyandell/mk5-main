@@ -102,3 +102,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Added:** [[stage-0-closure]] (all six arena arms in registered bands; CUDA correctness PASS + throughput-prediction MISS: sampler is launch-bound; exposure 2.51% distributional, 20/200-worst argmax flips), [[auction-decoder-v0]] (instrument validated, causal signature clean), [[jud-target-granularity]] (R1–R6 registered before evaluation).
 **Updated:** audit + trail + champion pages forward-linked to the closure; exposure question moved to `questions/resolved.md`; literature citations verified against primary sources.
 **Capability:** `--teacher-forced` E[Q] labeling (decision k = recorded play step k; 107,244/107,244 decision coordinates covered on the Lane B corpus).
+
+## [2026-07-13 | research-night close | Lane B graded both rounds; night digest filed]
+
+**Touched pages:** [[jud-target-granularity]] [[jud]] [[consumption-ledger]] [[the-wall]] [[partnership-wall-research]] [[dense-q-supervision]] [[research-lane-selection]] [[sources/research-night-2026-07-13]] [[index]]
+**Verdict:** per-move targets at v1 capacity are marks-null in both forms (parent-side aux; child-state values); 3× volume moves calibration only; ranking-label agreement does not order play strength. The only registered prediction that hit was the one predicting a null.
+**Residual:** capacity×target interaction, on-policy loop data, opponents-in-rollout; a never-significant ~+0.18 search-side trace for CE-lowering leaves.
+**Digest:** [[sources/research-night-2026-07-13]] carries the whole night (Stage 0 closure, Lane A validation, Lane B negative, new capabilities).
