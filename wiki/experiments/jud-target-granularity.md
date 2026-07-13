@@ -98,7 +98,35 @@ Evaluation, in gate order (calibration alone is not passage):
 
 ## Results
 
-*(pending)*
+Training: both arms early-stopped at epoch 7 with byte-similar trajectories
+(seed discipline held). Held-out ranking on 5,192 supervised decisions (test
+split, teacher-forced labels):
+
+| ranker | Spearman | pairwise | top-1 |
+|---|---|---|---|
+| arm H, main head (JudPlay-style) | 0.046 | 0.508 | 0.345 |
+| arm HP, main head | 0.042 | 0.506 | 0.345 |
+| arm HP, aux head (JudAuxPlay-style) | **0.236** | **0.603** | **0.517** |
+
+- **R1 — PARTIAL.** The mechanism separates exactly as hypothesized: the aux
+  head ranks far better than the main head, whose pairwise ordering is
+  literally chance (0.508) — the hand-level wall in its starkest measured
+  form. But the registered threshold missed: top-1 0.517 < 0.60. At this
+  capacity (one 512→7 linear) and one 512-game corpus, dense per-move
+  supervision buys a weak ranking, not an oracle imitation.
+- **R2 — PASS.** Main-head val CE 2.5247 (HP) vs 2.5252 (H): the aux loss did
+  not perturb the primary head — and notably also did not *help* it: the
+  trunk-shaping ("dense supervision regularizes the encoder",
+  [[dense-q-supervision]]) transferred nothing to main-head ranking
+  (0.042 vs 0.046). At this scale the aux gain lives in the aux head alone.
+- **Context observation (unregistered):** jud v1's `r4` head — trained on
+  five cumulative self-play rounds — out-ranks tonight's single-corpus arm H
+  (0.128/0.568/0.473 vs 0.046/0.508/0.345). Corpus volume moves the leaf's
+  ranking; the H-vs-HP contrast is controlled for it, but absolute
+  marks-vs-`lens:ev` numbers below are not comparable to the r4 protocol
+  numbers.
+
+Marks grading (R3–R6): *(battery running)*
 
 ## Links
 
