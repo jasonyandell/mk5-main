@@ -1,0 +1,23 @@
+[
+  {
+    "name": "legal_plays",
+    "protocol_role": "first_read",
+    "protocol_phrase": "First call `legal_plays()` to get the exact legal candidate domino_ids; only evaluate domino_ids in that legal set."
+  },
+  {
+    "name": "play_brief",
+    "protocol_role": "candidate_eval",
+    "protocol_phrase": "Call `play_brief(play=X)` once for each legal candidate play before committing."
+  },
+  {
+    "name": "belief_trajectory",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `belief_trajectory()` if hidden ownership could distinguish otherwise close legal candidates."
+  },
+  {
+    "name": "board_snapshot",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `board_snapshot()` if you need to reread the hand, trick, score, or history."
+  },
+  "commit_play"
+]

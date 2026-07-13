@@ -67,6 +67,26 @@ forge_image = (
     )
 )
 
+# Eval image: adds huggingface_hub for downloading Zeb models from HF.
+# pip_install must come before add_local_dir, so we rebuild from scratch.
+eval_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .pip_install(
+        "torch>=2.0",
+        "lightning>=2.0",
+        "pyarrow>=14.0",
+        "numpy>=1.26,<2",
+        "pandas>=2.0",
+        "rich",
+        "huggingface_hub",
+    )
+    .add_local_dir(
+        local_path="forge",
+        remote_path="/root/forge",
+        ignore=["__pycache__", "*.pyc", "venv", "*.egg-info"],
+    )
+)
+
 # =============================================================================
 # Volume Configuration
 # =============================================================================
@@ -2211,3 +2231,230 @@ def train(
     console.print(f"  Best Q-gap: {result['best_q_gap']:.4f}")
     console.print(f"  Time: {result['total_time_seconds'] / 60:.1f} minutes")
     console.print(f"  Checkpoint: {result['best_checkpoint']}")
+
+
+# =============================================================================
+# Eval Matrix (pairwise model comparison on T4)
+# =============================================================================
+#
+# Parallel pairwise eval matrix: fan out each pair to its own T4 via starmap,
+# then collect results locally for Elo computation and W&B logging.
+#
+# Usage:
+#     modal run forge/modal_app.py::eval-matrix \
+#         --players "eq:n=100;zeb:source=hf,weights_name=large-belief.pt;zeb:source=hf,weights_name=large.pt;zeb:source=hf" \
+#         --n-games 5000 --batch-size 50
+
+
+@app.function(image=eval_image, gpu="T4", timeout=21600)
+def eval_matchup_remote(player_a: str, player_b: str, n_games: int, batch_size: int) -> dict:
+    """Run one pair (both directions) on a single T4. Returns both MatchResult dicts."""
+    import sys
+    sys.path.insert(0, "/root")
+    import os
+    os.chdir("/root")
+
+    from forge.zeb.eval.players import parse_player_spec
+    from forge.zeb.eval.engine import MatchConfig, run_match
+
+    spec_a = parse_player_spec(player_a)
+    spec_b = parse_player_spec(player_b)
+    name_a = spec_a.display_name
+    name_b = spec_b.display_name
+    model_cache: dict = {}
+
+    # A vs B
+    print(f"\n--- {name_a} vs {name_b} ---")
+    config_ab = MatchConfig(
+        spec_a=spec_a, spec_b=spec_b,
+        n_games=n_games, batch_size=batch_size,
+        model_cache=model_cache, quiet=False,
+    )
+    result_ab = run_match(config_ab)
+    print(f"  -> {name_a} win rate: {result_ab.team_a_win_rate:.1%}")
+
+    # B vs A
+    print(f"\n--- {name_b} vs {name_a} ---")
+    config_ba = MatchConfig(
+        spec_a=spec_b, spec_b=spec_a,
+        n_games=n_games, batch_size=batch_size,
+        model_cache=model_cache, quiet=False,
+    )
+    result_ba = run_match(config_ba)
+    print(f"  -> {name_b} win rate: {result_ba.team_a_win_rate:.1%}")
+
+    return {
+        "a_vs_b": result_ab.to_dict(),
+        "b_vs_a": result_ba.to_dict(),
+    }
+
+
+@app.local_entrypoint(name="eval-matrix")
+def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
+    """Run parallel pairwise eval matrix on Modal T4s.
+
+    Each pair gets its own T4 — C(n,2) pairs run concurrently via starmap.
+
+    Usage:
+        modal run forge/modal_app.py::eval-matrix \\
+            --players "eq:n=100;zeb:source=hf,weights_name=large-belief.pt;zeb:source=hf,weights_name=large.pt;zeb:source=hf" \\
+            --n-games 5000 --batch-size 50
+    """
+    import json as json_mod
+    from itertools import combinations
+    import wandb
+    from forge.zeb.eval.players import parse_player_spec
+    from forge.zeb.eval.results import compute_elo_ratings, format_elo, format_matrix
+    from forge.zeb.eval.results import MatchResult, HalfResult
+    from forge.zeb.hf import DEFAULT_REPO, get_remote_training_state
+
+    player_list = [p.strip() for p in players.split(";") if p.strip()]
+    specs = [parse_player_spec(p) for p in player_list]
+    names = [s.display_name for s in specs]
+    n = len(names)
+    n_pairs = n * (n - 1) // 2
+
+    print(f"Eval matrix: {n} players, {n_pairs} pairs, {n_games} games/matchup")
+    for i, p in enumerate(player_list):
+        print(f"  [{i}] {names[i]}  ({p})")
+    print(f"\nFanning out {n_pairs} pairs to {n_pairs} T4s via starmap...")
+
+    # --- Fetch HF training state for zeb players (before starmap) ---
+    model_steps: dict[str, dict] = {}
+    for spec, name in zip(specs, names):
+        if spec.kind == 'zeb' and spec.params.get('source') == 'hf':
+            repo_id = spec.params.get('repo_id', DEFAULT_REPO)
+            weights_name = spec.params.get('weights_name', 'model.pt')
+            state = get_remote_training_state(repo_id, weights_name)
+            if state:
+                model_steps[name] = {
+                    'step': int(state.get('step', 0)),
+                    'total_games': int(state.get('total_games', 0)),
+                }
+                print(f"  {name}: step={model_steps[name]['step']}, "
+                      f"games={model_steps[name]['total_games']}")
+
+    training_step = max(
+        (info['step'] for info in model_steps.values()), default=0
+    )
+
+    # --- Init W&B early so we can log progressively ---
+    eq_anchor = None
+    for spec, name in zip(specs, names):
+        if spec.kind == 'eq':
+            eq_anchor = name
+            break
+
+    wandb.init(
+        project="zeb-eval",
+        config={
+            "players": player_list,
+            "n_games": n_games,
+            "batch_size": batch_size,
+            "n_pairs": n_pairs,
+            "model_steps": model_steps,
+        },
+    )
+    wandb.define_metric("elo/*", step_metric="training_step")
+    wandb.define_metric("elo_off/*", step_metric="training_step")
+    wandb.define_metric("elo_def/*", step_metric="training_step")
+    wandb.define_metric("pairs_completed", step_metric="training_step")
+
+    # Build starmap inputs: one call per pair
+    name_to_idx = {name: i for i, name in enumerate(names)}
+    pair_tasks = []
+    for i, j in combinations(range(n), 2):
+        pair_tasks.append((player_list[i], player_list[j], n_games, batch_size))
+
+    # --- Fan out and collect results as they complete ---
+    wins = [[0] * n for _ in range(n)]
+    wins_off = [[0] * n for _ in range(n)]  # i beat j when i was team 0
+    wins_def = [[0] * n for _ in range(n)]  # i beat j when i was team 1
+    results_matrix = [[None] * n for _ in range(n)]
+
+    def _dict_to_match_result(d: dict) -> MatchResult:
+        """Reconstruct MatchResult from serialized dict."""
+        return MatchResult(
+            team_a_name=d['team_a'], team_b_name=d['team_b'],
+            n_games=d['n_games'],
+            team_a_wins=d['team_a_wins'], team_b_wins=d['team_b_wins'],
+            team_a_win_rate=d['team_a_win_rate'],
+            avg_margin=d['avg_margin'], elapsed_s=d['elapsed_s'],
+            a_as_team0=HalfResult(**d['a_as_team0']),
+            a_as_team1=HalfResult(**d['a_as_team1']),
+        )
+
+    completed = 0
+    for pair_result in eval_matchup_remote.starmap(
+        pair_tasks, order_outputs=False
+    ):
+        ab = pair_result["a_vs_b"]
+        ba = pair_result["b_vs_a"]
+
+        # Identify pair from result data (order_outputs=False)
+        i = name_to_idx[ab["team_a"]]
+        j = name_to_idx[ab["team_b"]]
+
+        results_matrix[i][j] = _dict_to_match_result(ab)
+        results_matrix[j][i] = _dict_to_match_result(ba)
+
+        wins[i][j] = ab["team_a_wins"]
+        wins[j][i] = ab["team_b_wins"]
+        wins_off[i][j] = ab["a_as_team0"]["wins"]
+        wins_off[j][i] = ba["a_as_team0"]["wins"]
+        wins_def[i][j] = ab["a_as_team1"]["wins"]
+        wins_def[j][i] = ba["a_as_team1"]["wins"]
+
+        completed += 1
+        print(f"\n[{completed}/{n_pairs}] {names[i]} vs {names[j]}: "
+              f"{ab['team_a_win_rate']:.1%} / {ba['team_a_win_rate']:.1%}")
+
+        # Progressive Elo (combined + offensive + defensive) + W&B
+        ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
+        ratings_off = compute_elo_ratings(names, wins_off, anchor=eq_anchor)
+        ratings_def = compute_elo_ratings(names, wins_def, anchor=eq_anchor)
+        log_data: dict = {
+            "training_step": training_step,
+            "pairs_completed": completed,
+        }
+        for name, elo in ratings.items():
+            log_data[f"elo/{name}"] = elo
+        for name, elo in ratings_off.items():
+            log_data[f"elo_off/{name}"] = elo
+        for name, elo in ratings_def.items():
+            log_data[f"elo_def/{name}"] = elo
+        wandb.log(log_data)
+        print(format_elo(ratings))
+        print(format_elo(ratings_off, "Offensive Elo"))
+        print(format_elo(ratings_def, "Defensive Elo"))
+
+    # --- Final matrix table + JSON ---
+    matrix_text = format_matrix(results_matrix, names)
+    matrix_json = format_matrix(results_matrix, names, json_mode=True)
+    print("\n" + matrix_text)
+    print("\n" + matrix_json)
+
+    # Final Elo (combined + offensive + defensive)
+    ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
+    ratings_off = compute_elo_ratings(names, wins_off, anchor=eq_anchor)
+    ratings_def = compute_elo_ratings(names, wins_def, anchor=eq_anchor)
+    print("\n" + format_elo(ratings))
+    print("\n" + format_elo(ratings_off, "Offensive Elo (as team 0 / bidder)"))
+    print("\n" + format_elo(ratings_def, "Defensive Elo (as team 1 / defender)"))
+
+    # Pairwise results table (W&B)
+    matchups = json_mod.loads(matrix_json)
+    columns = ["player_a", "player_b", "a_wins", "b_wins", "n_games", "a_win_rate"]
+    table = wandb.Table(columns=columns)
+    for key, data in matchups.items():
+        total = data["team_a_wins"] + data["team_b_wins"]
+        wr = data["team_a_wins"] / total if total > 0 else 0.0
+        table.add_data(
+            data["team_a"], data["team_b"],
+            data["team_a_wins"], data["team_b_wins"],
+            data["n_games"], round(wr, 4),
+        )
+    wandb.log({"pairwise_results": table})
+
+    wandb.finish()
+    print("\nW&B run logged to project: zeb-eval")

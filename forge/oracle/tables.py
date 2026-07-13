@@ -89,7 +89,7 @@ def _rank_in_doubles_suit(domino_id: int) -> int:
 
 
 def trick_rank(domino_id: int, led_suit: int, decl_id: int) -> int:
-    """Return a 6-bit ordering key; higher wins. Matches docs/SUIT_ALGEBRA tiering."""
+    """Return a 6-bit ordering key; higher wins. Matches wiki/topics/suit-algebra-spec.md §6 tiering."""
     if has_trump_power(decl_id) and is_in_called_suit(domino_id, decl_id):
         tier = 2
         rank = _rank_in_called_suit(domino_id, decl_id)

@@ -1,0 +1,76 @@
+{
+  "description": "Proposed per-utility ledger schema for W42 claim tracking. The current ledger_status is EV-conditional (forge E[Q] is the source). Adding per-utility columns exposes which book claims are objective-dependent.",
+  "schema_version": "proposed-v1",
+  "date_proposed": "2026-05-03",
+  "columns": {
+    "claim_id": "str \u2014 existing identifier",
+    "ledger_status_ev": "str \u2014 current ledger_status (EV-based forge E[Q])",
+    "ledger_status_p_make": "str \u2014 verdict under P(Q >= make_threshold)",
+    "ledger_status_mark_ev": "str \u2014 verdict under mark-weighted EV (bid-scaled p_make)",
+    "ledger_status_cvar_10": "str \u2014 verdict under CVaR_10 (10th-pct tail outcome)",
+    "ledger_status_robust_q25": "str \u2014 verdict under Q25 (robust lower bound; currently all missing)",
+    "utility_flip_flags": "list[str] \u2014 utilities where verdict diverges from EV baseline"
+  },
+  "allowed_values": [
+    "supported",
+    "contradicted",
+    "context-limited",
+    "spans_zero",
+    "underpowered",
+    "missing"
+  ],
+  "recommendation": {
+    "adopt": true,
+    "rationale": "Three of seven claims show utility-dependent verdicts (flips). ch05-void-creation-follow: EV=supported but p_make/mark_ev/CVaR=spans_zero. ch12-setter-pounce-bid30: EV=spans_zero but oracle pounce rate 59.6% weakly supports book under p_make. ch12-setter-pounce-high-bid: EV=contradicted, p_make=contradicted, but CVaR_10=contradicted too (all agree: pounce bad). Adopting per-utility columns enables: (a) surfacing which claims are robust vs objective-dependent; (b) objective-conditioned model head design; (c) cleaner book validation status for tournament vs money-game contexts (tournament players optimize p_make; money games optimize EV).",
+    "caveats": [
+      "p_make proxy quality varies by probe: threshold_mass is oracle-derived (reliable); p_set_pounce_proxy in pounce_bid30 is heuristic (not from distributional oracle).",
+      "mark_ev \u2261 p_make at bid=30 confirmed by Wave1.2; Wave2.H confirms positive-affine identity at all bids for top-1 actions. For non-top-1 decisions, mark_ev and p_make may diverge at high bids.",
+      "CVaR_10 sign convention: all probes record CVaR from Team 0 (bidder) perspective (Q-values are always T0). For setter-action probes, the book direction requires negative cvar_delta (pounce) or positive cvar_delta (void creation, reentry).",
+      "robust_q25 unavailable in all probes; requires quantile oracle queries.",
+      "CVaR_10 unavailable for ch04-low-trump-trap and ch02-bid-only-enough."
+    ]
+  },
+  "per_claim_proposals": {
+    "ch03-reentry-preservation": {
+      "utility_flips": [],
+      "flip_detected": false,
+      "ledger_status_ev": "spans_zero"
+    },
+    "ch04-low-trump-trap": {
+      "utility_flips": [],
+      "flip_detected": false,
+      "ledger_status_ev": "contradicted"
+    },
+    "ch05-void-creation-lead": {
+      "utility_flips": [
+        "CVaR_10: EV=contradicted\u2192CVaR_10=spans_zero"
+      ],
+      "flip_detected": true,
+      "ledger_status_ev": "contradicted"
+    },
+    "ch05-void-creation-follow": {
+      "utility_flips": [
+        "p_make: EV=supported\u2192p_make=spans_zero",
+        "mark_ev: EV=supported\u2192mark_ev=spans_zero",
+        "CVaR_10: EV=supported\u2192CVaR_10=spans_zero"
+      ],
+      "flip_detected": true,
+      "ledger_status_ev": "supported"
+    },
+    "ch12-setter-pounce-bid30": {
+      "utility_flips": [],
+      "flip_detected": false,
+      "ledger_status_ev": "spans_zero"
+    },
+    "ch12-setter-pounce-high-bid": {
+      "utility_flips": [],
+      "flip_detected": false,
+      "ledger_status_ev": "contradicted"
+    },
+    "ch02-bid-only-enough": {
+      "utility_flips": [],
+      "flip_detected": false,
+      "ledger_status_ev": "missing"
+    }
+  }
+}

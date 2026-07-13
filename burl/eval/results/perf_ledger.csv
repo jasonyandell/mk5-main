@@ -1,0 +1,31 @@
+timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wall_s_total,wall_s_p50,wall_s_p95,prefill_tok_s,decode_tok_s,peak_mem_gb,k1_grade_match_pct,regret_delta_pct,notes
+20260427_013720,da25079,perf/bench,baseline-bf16,5,5,default,5,79.52,77.578,79.515,10274.0,87.5,11.59,100.0,0.0,Phase 0 baseline (self-graded)
+20260427_013851,da25079,perf/bench,baseline-bf16,5,5,default,5,79.862,69.641,79.859,10568.3,79.8,11.59,80.0,-44.65,Phase 0 stability check (vs prior baseline)
+20260427_015004,160ed1c,perf/batch,baseline-bf16-t0,5,5,default,5,70.953,65.967,70.95,11072.7,84.8,11.3,80.0,-87.83,phase2 lever-1 baseline at temp=0
+20260427_015127,160ed1c,perf/batch,baseline-bf16-t0,5,5,default,5,73.692,65.795,73.685,10779.8,82.8,11.33,80.0,-87.83,phase2 lever-1 baseline at temp=0 (run2 - check determinism)
+20260427_015823,eeb3339,perf/batch,prefix-cache,5,5,default,5,114.149,110.483,114.143,6906.6,54.9,12.37,80.0,-87.83,phase2 lever-1 turn-to-turn LRU cache reuse
+20260427_020118,eeb3339,perf/batch,prefix-cache,5,5,default,5,136.681,136.619,136.62,6957.3,45.0,13.46,60.0,-87.65,"phase2 lever-1 (LRUPromptCache approach, slow + no hits)"
+20260427_020553,c002075,perf/batch,continuous-batching,5,5,default,5,34.505,23.034,34.494,27672.4,68.0,10.8,80.0,-87.83,phase2 lever-2 continuous batching
+20260427_020655,c002075,perf/batch,continuous-batching,5,5,default,5,34.982,33.008,34.98,27717.5,65.5,10.8,60.0,-100.0,phase2 lever-2 continuous batching (run 2)
+20260427_020806,c002075,perf/batch,continuous-batching,5,5,default,5,39.933,38.906,39.93,19219.1,50.5,10.8,80.0,-87.83,phase2 lever-2 continuous batching (run 3 stability)
+20260427_021446,c002075,perf/batch,continuous-batching,5,5,default,5,58.584,36.893,58.582,26183.5,56.2,12.25,80.0,80.66,phase2 lever-2 production-faithful temp=0.6
+20260427_024913,96ebf0b,perf/aggressive,continuous-paired-q4,5,5,default,5,79.666,49.526,79.663,15424.1,32.0,12.43,80.0,0.18,phase3 paired baseline before q4-mlx-cont
+20260427_025045,96ebf0b,perf/aggressive,q4-mlx-cont,5,5,default,5,34.077,25.882,34.075,20574.8,62.2,9.17,100.0,0.0,phase3 lever-B Q4 PLE-safe + continuous batching
+20260427_025135,96ebf0b,perf/aggressive,continuous-paired-q8,5,5,default,5,46.222,33.766,46.218,26096.1,49.0,12.22,60.0,-100.0,phase3 paired baseline before q8-bf16-cont
+20260427_025231,96ebf0b,perf/aggressive,q8-bf16-cont,5,5,default,5,27.366,20.478,27.362,23928.9,90.8,9.83,60.0,-46.26,phase3 lever-B Q8 PLE-safe + continuous batching
+20260427_025350,96ebf0b,perf/aggressive,continuous-paired-stack,5,5,default,5,36.379,25.058,36.367,27745.1,67.5,10.8,60.0,-100.0,phase3 paired baseline before phase3-stack-best run-2
+20260427_025437,96ebf0b,perf/aggressive,phase3-stack-best,5,5,default,5,28.298,18.696,28.295,24903.7,87.7,8.93,80.0,-31.1,phase3 headline: Q4 PLE-safe + continuous batching
+20260427_030306,ec46190,perf/aggressive,continuous-paired-q4unsloth,5,5,default,5,71.311,54.958,71.308,17117.9,36.8,12.24,80.0,-87.83,phase3 paired baseline before q4-unsloth-ud-cont cross-check
+20260427_030429,ec46190,perf/aggressive,q4-unsloth-ud-cont,5,5,default,5,44.132,41.971,44.087,15393.0,61.3,6.24,100.0,0.0,phase3 lever-B Q4 Unsloth UD (cross-check vs FakeRockert)
+20260427_030558,ec46190,perf/aggressive,continuous-paired-stack2,5,5,default,5,60.197,44.889,60.195,18767.2,42.1,10.8,80.0,-87.83,phase3 paired baseline before phase3-stack-best v2 (unsloth UD)
+20260427_030708,ec46190,perf/aggressive,phase3-stack-best-v2,5,5,default,5,48.667,37.022,48.665,17452.7,66.1,5.08,80.0,80.66,phase3 v2 headline: Unsloth UD-MLX-4bit + continuous batching
+20260427_030825,ec46190,perf/aggressive,phase3-stack-best-v3,5,5,default,5,42.979,40.778,42.977,16415.0,61.9,6.07,80.0,-12.17,"phase3 v3 stability: Unsloth UD second run, same config"
+20260428_012407,8313b7d,perf/aggressive,baseline-iter10-pre,5,5,default,5,74.091,74.089,74.09,20994.6,77.2,12.39,80.0,-87.83,iter 10 paired baseline at bc4fbd9 (pre-instrumentation)
+20260428_012609,8313b7d,perf/aggressive,iter10-instrumented,5,5,default,5,68.883,64.395,68.882,20989.5,84.1,12.54,80.0,-87.83,iter 10 wall-time phase instrumentation
+20260428_013316,8313b7d,perf/aggressive,iter11-baseline-syncwave,5,5,default,5,67.665,67.663,67.663,21541.3,91.4,12.52,80.0,-87.83,iter11 paired baseline bf16 batch=5 temp=0 sync-wave
+20260428_013438,8313b7d,perf/aggressive,iter11-continuous,5,5,default,5,41.008,24.368,41.006,27649.8,54.3,10.37,60.0,-100.0,iter11 variant bf16 batch=5 temp=0 continuous
+20260428_014041,8313b7d,perf/aggressive,iter12-baseline-batch5-cont,5,5,default,5,39.321,32.871,39.319,27584.2,56.9,10.4,60.0,-100.0,iter12 paired baseline: bf16 batch=5 continuous temp=0
+20260428_014129,8313b7d,perf/aggressive,iter12-variant-batch8-cont,5,8,default,5,51.554,39.894,51.549,24458.3,43.8,12.22,40.0,-99.82,iter12 variant: bf16 batch=8 continuous temp=0
+20260428_020047,e9f1e6c,perf/aggressive,iter13-kernel-audit,5,5,default,5,56.485,45.894,56.483,25747.1,36.3,12.39,60.0,-100.0,lever#7 kernel-class audit on bf16 cont batch=5 (no .gputrace)
+20260428_020959,b3f68e0,perf/aggressive,iter14-baseline-batch5-cont-N50,560,5,default,50,883.667,776.471,858.911,13912.2,3.0,13.08,,,
+20260428_022535,b3f68e0,perf/aggressive,iter14-variant-batch8-cont-N50,560,8,default,50,664.226,567.593,649.773,14507.5,4.2,13.51,,,

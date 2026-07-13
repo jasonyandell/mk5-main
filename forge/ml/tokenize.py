@@ -28,9 +28,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 
 import numpy as np
-import pandas as pd
-import pyarrow.parquet as pq
-import yaml
 
 # Import from forge.oracle
 from forge.oracle.declarations import N_DECLS, NOTRUMP
@@ -167,6 +164,7 @@ def process_shard(
     """
     try:
         # Parse metadata from parquet
+        import pyarrow.parquet as pq
         pf = pq.ParquetFile(path)
         meta = pf.schema_arrow.metadata or {}
         seed = int(meta.get(b"seed", b"0").decode())
@@ -180,6 +178,7 @@ def process_shard(
         split = get_split(seed)
 
         # Load data
+        import pandas as pd
         df = pd.read_parquet(path)
         states = df["state"].values.astype(np.int64)
         v_values_all = df["V"].values.astype(np.int8)  # Oracle state value
@@ -376,6 +375,7 @@ class TokenizationManifest:
             "token_format": self.token_format,
             "token_shape": self.token_shape,
         }
+        import yaml
         return yaml.dump(data, default_flow_style=False, sort_keys=False)
 
 
@@ -588,6 +588,7 @@ def tokenize_shards(
         if verbose:
             print(f"Output already exists at {output_dir}, skipping (use --force to rebuild)")
         # Load and return existing manifest
+        import yaml
         with open(manifest_path) as f:
             data = yaml.safe_load(f)
         manifest = TokenizationManifest(

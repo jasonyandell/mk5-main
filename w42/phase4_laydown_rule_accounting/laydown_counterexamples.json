@@ -1,0 +1,107 @@
+[
+  {
+    "counterexample": [
+      {
+        "action": "4-0",
+        "legal_actions": [
+          "4-0"
+        ],
+        "player": 0
+      },
+      {
+        "action": "6-4",
+        "legal_actions": [
+          "6-4"
+        ],
+        "player": 1
+      },
+      {
+        "action": "1-1",
+        "legal_actions": [
+          "1-1"
+        ],
+        "player": 2
+      },
+      {
+        "action": "2-2",
+        "claimant_team_won_trick": false,
+        "completed_trick_winner": 1,
+        "legal_actions": [
+          "2-2"
+        ],
+        "player": 3
+      }
+    ],
+    "fixture_id": "false_off_can_be_taken"
+  },
+  {
+    "counterexample": [
+      {
+        "action": "6-0",
+        "legal_actions": [
+          "6-0"
+        ],
+        "player": 0
+      },
+      {
+        "action": "5-0",
+        "legal_actions": [
+          "5-0"
+        ],
+        "player": 1
+      },
+      {
+        "action": "1-1",
+        "legal_actions": [
+          "1-1"
+        ],
+        "player": 2
+      },
+      {
+        "action": "2-2",
+        "claimant_team_won_trick": false,
+        "completed_trick_winner": 1,
+        "legal_actions": [
+          "2-2"
+        ],
+        "player": 3
+      }
+    ],
+    "fixture_id": "false_secondary_trump_exclusion"
+  },
+  {
+    "counterexample": [
+      {
+        "action": "2-1",
+        "legal_actions": [
+          "2-1"
+        ],
+        "player": 0
+      },
+      {
+        "action": "6-2",
+        "legal_actions": [
+          "6-2"
+        ],
+        "player": 1
+      },
+      {
+        "action": "6-4",
+        "legal_actions": [
+          "6-4"
+        ],
+        "player": 2
+      },
+      {
+        "action": "0-0",
+        "claimant_team_won_trick": false,
+        "completed_trick_winner": 1,
+        "legal_actions": [
+          "0-0"
+        ],
+        "player": 3
+      }
+    ],
+    "fixture_id": "book_like_final_deuce_ace_counterexample"
+  }
+]

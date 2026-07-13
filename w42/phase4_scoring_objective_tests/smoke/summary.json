@@ -1,0 +1,58 @@
+{
+  "bead": "t42-br7n.3",
+  "caveats": [
+    "Generated play uses deterministic heuristic policies, not oracle-optimal play.",
+    "Trick count is a tournament time proxy; no wall-clock human timing data is used.",
+    "Timed advancement simulation is a synthetic four-team round-robin with a fixed trick budget.",
+    "No wiki or bead files are edited by this worker artifact."
+  ],
+  "claim_statuses": {
+    "ch10-early-terminal-under-marks": "supported",
+    "ch10-low-bid-score-distortion": "supported",
+    "ch10-nonbidder-partial-points-erased": "supported",
+    "ch10-point-system-skill-signal": "context-limited",
+    "ch10-score-mode-objective": "supported",
+    "ch10-set-severity-compression": "supported",
+    "ch10-special-bid-mark-multiplier": "supported",
+    "ch10-timed-marks-advancement-objective": "context-limited",
+    "ch10-tournament-speed-tradeoff": "supported-for-generated-trace-proxy"
+  },
+  "config": {
+    "base_seed": 2026050303,
+    "hands_per_pair": 80,
+    "match_count_per_pair": 16,
+    "policy_pairs": [
+      "control_greedy_vs_random",
+      "control_greedy_vs_weak_count_dumper",
+      "count_saver_vs_random",
+      "random_vs_weak_count_dumper"
+    ],
+    "timed_trials": 16,
+    "timed_trick_budget": 84
+  },
+  "coverage": {
+    "blockers": 3,
+    "claims_reported": 9,
+    "deterministic_terminal_rows": 688,
+    "generated_hands": 320,
+    "match_rows": 64,
+    "timed_trials": 16
+  },
+  "git_status_short": "M  .beads/issues.jsonl\n M wiki/entities/w42.md\n M wiki/experiments/w42-bidding-risk-budget-claim-validation.md\n M wiki/experiments/w42-phase2-84-weapon-preservation-probe.md\n M wiki/experiments/w42-phase2-seat-position-strategy-map.md\n M wiki/experiments/winning42-ch03-bidder-play.md\n M wiki/index.md\n M wiki/log.md\n?? w42/auction_bid_discipline_claim_tests/\n?? w42/bid_only_enough_claim_tests/\n?? w42/claim_analysis_synthesis/\n?? w42/claim_tag_model_probe/\n?? w42/eighty_four_seed_mining/\n?? w42/joined_claim_row_model_table/\n?? w42/phase4_84_dynamic_seed_tests/\n?? w42/phase4_claim_completion_board/\n?? w42/phase4_laydown_rule_accounting/\n?? w42/phase4_scoring_objective_tests/\n?? w42/phase4_sequence_handshape_tests/\n?? w42/seat_position_claim_tests/\n?? w42/sequence_seat_counterfactuals/\n?? wiki/experiments/w42-claim-analysis-synthesis-report.md\n?? wiki/experiments/w42-claim-tag-model-probe.md\n?? wiki/experiments/w42-phase3-84-seed-mining-corpus.md\n?? wiki/experiments/w42-phase3-auction-bid-discipline-corpus.md\n?? wiki/experiments/w42-phase3-joined-claim-row-model-table.md\n?? wiki/experiments/w42-phase3-sequence-seat-counterfactuals.md",
+  "headline_metrics": {
+    "distinct_ordinary_set_severity_values": 38,
+    "early_terminal_rate": 0.953125,
+    "mean_match_winner_disagreement_rate": 0.171875,
+    "mean_tricks_saved_per_generated_hand": 4.28125,
+    "partial_erasure_hands": 35,
+    "timed_advancement_disagreement_rate": 0.125
+  },
+  "repo_commit": "18a5b9415928386a9da1d74027574911306d17da",
+  "schema": "w42.phase4_scoring_objective_tests.v1",
+  "source_pages": [
+    "wiki/AGENTS.md",
+    "wiki/experiments/winning42-ch10-tournament-scoring.md",
+    "wiki/experiments/w42-scoring-objective-drift-claim-validation.md",
+    "scratch/winning42/winning42.with_figures.md lines 4243-4331"
+  ]
+}

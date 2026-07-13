@@ -1,0 +1,11 @@
+bucket,hand_n,mean_nt_minus_dt_points,mean_nt_minus_dt_mark_swing_30,mean_nt_minus_dt_mark_swing_30_ci95_low,mean_nt_minus_dt_mark_swing_30_ci95_high,mean_nt_minus_dt_best_mark_swing,mean_nt_minus_dt_best_mark_swing_ci95_low,mean_nt_minus_dt_best_mark_swing_ci95_high,nt_preferred_at_30_rate,dt_preferred_at_30_rate,nt_higher_max_profitable_bid_rate,dt_higher_max_profitable_bid_rate,mean_dt_max_profitable_bid,mean_nt_max_profitable_bid
+all_paired_hands,24,3.585938,0.239583,0.09375,0.348958,0.239583,0.114583,0.385417,0.666667,0.208333,0.583333,0.041667,17.25,27.625
+four_plus_doubles,15,3.2375,0.175,-0.033333,0.333333,0.175,-0.008333,0.341667,0.533333,0.333333,0.733333,0.066667,27.6,37.333333
+five_plus_doubles,4,4.234375,0.375,0.09375,0.59375,0.375,0.125,0.53125,0.75,0.0,0.75,0.0,19.25,41.25
+four_plus_missing_top_double,10,3.875,0.1875,-0.025,0.4125,0.1875,-0.05,0.425,0.5,0.3,0.7,0.1,21.8,35.2
+high_double_control,5,1.9625,0.15,-0.025,0.35,0.15,-0.075,0.4,0.6,0.4,0.8,0.0,39.2,41.6
+low_double_exposure,10,3.875,0.1875,-0.0375,0.4625,0.1875,-0.025,0.35,0.5,0.3,0.7,0.1,21.8,35.2
+no_trump_support,14,3.491071,0.223214,-0.017857,0.383929,0.223214,0.0,0.455357,0.571429,0.285714,0.714286,0.071429,18.571429,30.857143
+no_trump_support_without_fourplus,4,4.15625,0.4375,0.125,0.8125,0.4375,0.0625,0.75,0.75,0.0,0.5,0.0,0.0,18.25
+regime_switch_proxy,7,4.214286,0.214286,-0.107143,0.553571,0.214286,-0.107143,0.5,0.571429,0.285714,0.714286,0.142857,20.285714,33.428571
+dual_suit_65,6,1.302083,0.208333,0.104167,0.3125,0.208333,0.0625,0.333333,0.833333,0.0,0.166667,0.0,20.666667,20.833333

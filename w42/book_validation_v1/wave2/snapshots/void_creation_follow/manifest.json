@@ -1,0 +1,33 @@
+{
+  "corpus": "void_creation_follow",
+  "schema_version": "forge.eq.snapshot.v1",
+  "source": "oracle-greedy legacy corpus",
+  "n_snapshots": 500,
+  "n_candidates_scanned": 7827,
+  "filter_hit_rate": 6.3881,
+  "n_chunks_used": 3,
+  "source_chunks": [
+    "corpus_train_chunk_0-99.pt",
+    "corpus_train_chunk_100-199.pt",
+    "corpus_train_chunk_1000-1099.pt"
+  ],
+  "filter_definition": {
+    "role": "setter (player 1 or 3)",
+    "position": "following (trick_plays has >= 1 play before setter's turn)",
+    "led_suit": "non-trump (led_suit != 7)",
+    "cannot_follow_led": "setter has no legal tile in led suit",
+    "void_creation_condition": "setter holds exactly 1 tile in some non-led, non-trump suit (singleton); playing it voids that suit",
+    "alternative_play": "setter has at least 1 other legal play from a different suit",
+    "min_trick_number": 1,
+    "note": "Tests ch05-void-creation follow-position: discard last tile of a suit to void it"
+  },
+  "validation": {
+    "n_valid": 500,
+    "n_invalid": 0,
+    "method": "GameStateTensor.from_snapshot (5-sample round-trip verified)"
+  },
+  "claim_tested": "ch05-void-creation-follow",
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/void_creation_follow/snapshots.jsonl",
+  "sha256": "2058eaed07242156f4caea15b7f504c1630d33077fb80a360ac2492fa4f8393a",
+  "note": "Cap applied at TARGET=500. If n_snapshots < 500, mining yield was below target. All 100 corpus chunks were searched."
+}

@@ -1,0 +1,5 @@
+strong_trump_bucket,risk_threshold_bucket,n,pct_rows,mean_p_make_30,mean_mark_swing_30,mean_mean_points,mean_max_profitable_bid,profitable_at_30_rate_pct,natural_bucket_candidate_rate_pct,mean_static_unique_exposed_points
+trumps_0_3,risk_gt_12,189,49.21875,0.341683,-0.316634,22.964699,5.740741,16.931217,12.698413,18.121693
+trumps_0_3,risk_le_12,163,42.447917,0.407017,-0.185966,25.192676,9.441718,27.607362,19.018405,7.791411
+trumps_4_plus,risk_gt_12,24,6.25,0.710286,0.420573,32.888021,29.958333,79.166667,33.333333,18.125
+trumps_4_plus,risk_le_12,8,2.083333,0.699219,0.398438,32.953125,35.625,100.0,62.5,7.5

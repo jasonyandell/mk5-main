@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 import random
 
 from .types import ZebGameState
-from .game import new_game, apply_action, legal_actions, is_terminal, get_outcome
+from .game import new_game, game_seed, apply_action, legal_actions, is_terminal, get_outcome
 from .observation import observe, get_legal_mask
 
 
@@ -67,6 +67,52 @@ class RuleBasedPlayer:
         return best_slot
 
 
+class AnalysisHeuristicPlayer:
+    """Heuristic player derived from oracle analysis (25j_heuristic_derivation).
+
+    Key insight: "lead any double" matches oracle 34.2% of the time vs 21.2%
+    for "lead highest trump". Follow strategy is similar to RuleBasedPlayer
+    since follow heuristics cluster near random.
+
+    Lead: doubles first, then lowest offsuit.
+    Follow: protect count dominoes, dump lowest when sloughing.
+    """
+
+    def select_action(self, state: ZebGameState, player: int) -> int:
+        from forge.oracle.tables import (
+            DOMINO_HIGH, DOMINO_LOW, DOMINO_COUNT_POINTS, DOMINO_IS_DOUBLE,
+            is_in_called_suit,
+        )
+
+        legal = legal_actions(state)
+        hand = state.hands[player]
+        is_leading = len(state.current_trick) == 0
+
+        if is_leading:
+            # Lead any double (34.2% oracle accuracy — best lead heuristic)
+            doubles = [s for s in legal if DOMINO_IS_DOUBLE[hand[s]]]
+            if doubles:
+                # No strong preference for high vs low doubles per analysis
+                return doubles[0]
+
+            # No doubles: lead lowest offsuit (29.1% — second best)
+            decl = state.decl_id
+            offsuits = [s for s in legal if not is_in_called_suit(hand[s], decl)]
+            if offsuits:
+                return min(offsuits, key=lambda s: DOMINO_HIGH[hand[s]] + DOMINO_LOW[hand[s]])
+
+            # Only trumps remain: lead lowest
+            return min(legal, key=lambda s: DOMINO_HIGH[hand[s]] + DOMINO_LOW[hand[s]])
+        else:
+            # Follow: avoid count (22.2%), dump lowest (23.2%)
+            # Both suggest: play lowest non-count, then lowest count
+            best_slot = min(legal, key=lambda s: (
+                DOMINO_COUNT_POINTS[hand[s]],
+                DOMINO_HIGH[hand[s]] + DOMINO_LOW[hand[s]],
+            ))
+            return best_slot
+
+
 class NeuralPlayer:
     """Neural network player."""
 
@@ -114,7 +160,9 @@ def play_match(
     total_margin = 0
 
     for i in range(n_games):
-        state = new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True)
+        seed = game_seed(base_seed, i)
+        state = new_game(seed=seed)
+        torch.manual_seed(seed)  # Reproducible neural sampling per game
 
         while not is_terminal(state):
             player = _get_current_player(state)
@@ -168,8 +216,9 @@ def evaluate_vs_random_batched(
     model.to(device)
 
     # Initialize all games
-    states = [new_game(seed=i, dealer=i % 4, skip_bidding=True) for i in range(n_games)]
+    states = [new_game(seed=game_seed(0, i)) for i in range(n_games)]
     active = [True] * n_games  # Track which games are still running
+    step = 0  # For deterministic torch seeding
 
     # Play until all games complete
     while any(active):
@@ -216,7 +265,9 @@ def evaluate_vs_random_batched(
                 batch_hand_indices = torch.stack(batch_hand_indices).to(device)
                 batch_legal = torch.stack(batch_legal).to(device)
 
-                # Single forward pass for all neural states
+                # Single forward pass for all neural states (seeded for reproducibility)
+                torch.manual_seed(hash((0, step)) & 0xFFFFFFFF)
+                step += 1
                 actions, _, _ = model.get_action(
                     batch_tokens, batch_masks, batch_hand_indices, batch_legal,
                     temperature=temperature,

@@ -1,0 +1,29 @@
+{
+  "anti_leakage_boundary": "Static features use only P0 hand and candidate declaration. Points samples and make outcomes are offline labels, not live bidding features.",
+  "bead": "t42-0b4l.5",
+  "current_probe_command": "python w42/bid_only_enough_claim_tests/run_bid_only_enough_probe.py --start-seed 0 --hands 2 --samples 8 --declarations-per-hand 1 --device cpu",
+  "larger_run_recommendation": {
+    "auction_context": "Add real or simulated auction histories when available: bidder seat, partner/opponent bids, current high bid, score, pass/bid alternatives.",
+    "hands": ">=1000 arbitrary generated hands or auction-policy hands",
+    "primary_test": "Within identical seed/hand/decl/current_high groups, compare minimum_winning_bid against higher actual_bid rows; report p_make and mark_swing deltas by margin and static risk bucket.",
+    "samples_per_decl": ">=200 for screening, >=500 for narrower claim promotion"
+  },
+  "minimum_viable_rows": [
+    "seed",
+    "hand",
+    "decl_id",
+    "decl_name",
+    "current_high_bid",
+    "minimum_winning_bid",
+    "actual_bid",
+    "unnecessary_bid_margin",
+    "points_samples",
+    "p_make",
+    "mark_swing",
+    "static_unique_exposed_points",
+    "static_trump_count",
+    "static_risk_bucket"
+  ],
+  "purpose": "Generate auction-aware candidate bid rows that separate static hand/declaration strength from bid-level margin quality.",
+  "schema_version": "w42.bid_only_enough_generation_spec.v1"
+}

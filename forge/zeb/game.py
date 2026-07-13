@@ -16,25 +16,37 @@ from forge.oracle.tables import (
 from .types import BidState, GamePhase, ZebGameState
 
 
-def new_game(seed: int, dealer: int, skip_bidding: bool = True) -> ZebGameState:
-    """Create a new game state.
+def game_seed(base_seed: int, index: int) -> int:
+    """Derive a decorrelated seed for game `index` from a base seed.
+
+    Sequential seeds (base + 0, base + 1, ...) produce correlated Mersenne
+    Twister outputs. Hashing breaks the correlation so each game's RNG
+    state is independent.
+    """
+    return hash((base_seed, index)) & 0xFFFFFFFF
+
+
+def new_game(seed: int, skip_bidding: bool = True) -> ZebGameState:
+    """Create a new game state, fully deterministic from seed.
 
     Args:
         seed: RNG seed for dealing and random choices
-        dealer: Dealer seat (0-3)
         skip_bidding: If True, randomly assign bid winner and declaration
 
     Returns:
         Initial ZebGameState ready for play
     """
-    if not 0 <= dealer <= 3:
-        raise ValueError(f"dealer must be 0-3, got {dealer}")
-
+    rng = random.Random(seed)
     hands_list = deal_from_seed(seed)
     hands = tuple(tuple(h) for h in hands_list)
 
+    # Advance rng past the 28 draws consumed by deal_from_seed's shuffle
+    # so that skip_bidding choices are decorrelated from hand dealing.
+    # (deal_from_seed creates its own Random(seed) internally.)
+    for _ in range(28):
+        rng.random()
+
     if skip_bidding:
-        rng = random.Random(seed)
         # Random bidder (0-3) and bid amount (30-42)
         bidder = rng.randint(0, 3)
         high_bid = rng.randint(30, 42)
@@ -45,14 +57,17 @@ def new_game(seed: int, dealer: int, skip_bidding: bool = True) -> ZebGameState:
         trick_leader = bidder
 
         bid_state = BidState(
-            bids=(high_bid, 0, 0, 0),  # Placeholder - bidder won
+            # Seat-indexed: the winning bid sits at the bidder's seat (others pass),
+            # so any consumer reading bids[seat] (e.g. the auction belief feature)
+            # attributes the bid to the seat that actually won it.
+            bids=tuple(high_bid if s == bidder else 0 for s in range(4)),
             high_bidder=bidder,
             high_bid=high_bid,
         )
 
         return ZebGameState(
             hands=hands,
-            dealer=dealer,
+            dealer=0,
             phase=GamePhase.PLAYING,
             bid_state=bid_state,
             decl_id=decl_id,
@@ -65,7 +80,6 @@ def new_game(seed: int, dealer: int, skip_bidding: bool = True) -> ZebGameState:
         )
     else:
         # Full bidding mode (not implemented in v1)
-        first_bidder = (dealer + 1) % 4
         bid_state = BidState(
             bids=(-1, -1, -1, -1),
             high_bidder=-1,
@@ -74,7 +88,7 @@ def new_game(seed: int, dealer: int, skip_bidding: bool = True) -> ZebGameState:
 
         return ZebGameState(
             hands=hands,
-            dealer=dealer,
+            dealer=0,
             phase=GamePhase.BIDDING,
             bid_state=bid_state,
             decl_id=-1,

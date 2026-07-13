@@ -1,0 +1,352 @@
+{
+  "artifact_inventory": {
+    "auction_phase3": {
+      "existing": [
+        "w42/auction_bid_discipline_claim_tests/summary.json",
+        "w42/auction_bid_discipline_claim_tests/bid_margin_summary.csv",
+        "w42/auction_bid_discipline_claim_tests/natural_bucket_summary.csv",
+        "w42/auction_bid_discipline_claim_tests/partner_signal_summary.csv",
+        "w42/auction_bid_discipline_claim_tests/risk_budget_summary.csv"
+      ],
+      "missing": []
+    },
+    "auction_phase3_summary": {
+      "bead": "t42-qtwb.1",
+      "counts": {
+        "auction_context_rows": 608,
+        "bid_action_rows": 16800,
+        "context_decision_rows": 608,
+        "contract_rows": 384,
+        "deals": 32,
+        "minimum_bid_action_rows": 1824,
+        "point_sample_rows": 384,
+        "positive_margin_rows": 14976
+      },
+      "headline": {
+        "contract_natural_bucket_rate": 0.177083,
+        "minimum_bid_negative_vs_pass_rows": 1458,
+        "minimum_bid_positive_vs_pass_rows": 337,
+        "partner_contexts": 192,
+        "partner_overcall_rate": 0.401042,
+        "partner_overcall_recommended_contexts": 77,
+        "positive_margin_delta_vs_min_negative_rows": 12872,
+        "positive_margin_delta_vs_min_positive_rows": 0,
+        "positive_margin_delta_vs_min_zero_rows": 2104
+      },
+      "scientific_status": {
+        "boundary": "This is not a fully conditioned four-hand auction engine. Partner/opponent values use their hand as a bidder-hand Monte Carlo label, and pass values remain offline comparison labels.",
+        "supported_slices": "Bid-only-enough is now tested under opening, partner-high, and opponent-high auction contexts. Static risk buckets are joined to empirical make labels. Natural bid buckets are measured as max-profitable threshold buckets.",
+        "what_this_tests": "Generated auction-pressure rows compare pass, minimum overcall, and higher bid amounts using bidder-hand Monte Carlo make labels for P0, partner, and opponents."
+      },
+      "wandb": {
+        "mode": "online",
+        "run_id": "6cup1bat",
+        "run_url": "https://wandb.ai/jasonyandell-forge42/w42/runs/6cup1bat"
+      }
+    },
+    "bid_only_enough_phase2": {
+      "existing": [
+        "w42/bid_only_enough_claim_tests/summary.json",
+        "w42/bid_only_enough_claim_tests/margin_summary.csv"
+      ],
+      "missing": []
+    },
+    "bid_only_enough_summary": {
+      "bead": "t42-0b4l.5",
+      "counts": {
+        "bid_counterfactual_rows": 1224,
+        "hand_decl_rows": 24,
+        "margin_contrast_rows": 1104,
+        "static_risk_bucket_hand_decl_counts": {
+          "risk_13_20": 12,
+          "risk_le_12": 12
+        }
+      },
+      "headline": {
+        "mean_delta_mark_swing_vs_min": -0.223109,
+        "mean_delta_p_make_vs_min": -0.111555,
+        "negative_delta_mark_swing_rows": 1040,
+        "positive_delta_mark_swing_rows": 0,
+        "zero_delta_mark_swing_rows": 64
+      },
+      "scientific_status": {
+        "closeable_recommendation": "Close t42-0b4l.5 as a partial empirical probe plus executable generation spec, not as a central claim promotion.",
+        "empirically_testable_now": "partial",
+        "what_this_does_not_test": "No real auction policy, opponent response to bid size, partner bid signal, score-conditioned table style, or opening pass/bid decision is modeled.",
+        "what_this_tests": "For arbitrary generated hands, same hand/declaration/current-high counterfactuals show the cost of bidding above the minimum winning bid under the existing policy-simulation make labels."
+      },
+      "wandb": null
+    },
+    "doubles_no_trump": {
+      "existing": [
+        "w42/doubles_no_trump_claim_validation/summary.json",
+        "w42/doubles_no_trump_claim_validation/claim_ledger_delta.json",
+        "w42/doubles_no_trump_legacy_mining/summary.json"
+      ],
+      "missing": []
+    },
+    "eighty_four_phase3": {
+      "existing": [
+        "w42/eighty_four_seed_mining/summary.json",
+        "w42/eighty_four_seed_mining/surface_summary.csv",
+        "w42/eighty_four_claim_validation/summary.json",
+        "w42/eighty_four_claim_validation/claim_ledger_delta.json"
+      ],
+      "missing": []
+    },
+    "eighty_four_seed_mining_summary": {
+      "bead": "t42-qtwb.2",
+      "counts": {
+        "candidate_rows": 214229,
+        "recommended_rows": 256,
+        "scanned_seeds": 50000,
+        "seat_declaration_checks": 1400000,
+        "unique_candidate_seeds": 43013
+      },
+      "headline": {
+        "dead_asset_release_control": 192522,
+        "defender_live_double_weapon": 140264,
+        "defender_live_same_suit_pair": 206213,
+        "laydown_all_trumps": 1,
+        "pair_protector_pressure": 85753,
+        "protected_one_off": 22176,
+        "straight_one_off": 8330,
+        "three_trump_three_double_one_off": 17935,
+        "two_off_same_suit": 183722
+      },
+      "scientific_status": {
+        "what_this_does_not_test": "No legal late-state action value is measured here; dynamic preservation regret still needs branch-atlas generation or a true state injector.",
+        "what_this_enables": "Natural seed lists for follow-up branch-atlas or state-injection runs, replacing hand-built-only fixtures.",
+        "what_this_tests": "A large generated seed range is mined for exact 84 candidate structures and full-deal defender asset patterns."
+      },
+      "wandb": {
+        "mode": "online",
+        "run_id": "f33g4fy1",
+        "run_url": "https://wandb.ai/jasonyandell-forge42/w42/runs/f33g4fy1"
+      }
+    },
+    "joined_model": {
+      "existing": [
+        "w42/joined_claim_row_model_table/summary.json",
+        "w42/joined_claim_row_model_table/ablation_results.csv",
+        "w42/joined_claim_row_model_table/family_inventory.csv"
+      ],
+      "missing": []
+    },
+    "joined_model_summary": {
+      "bead": "t42-qtwb.4",
+      "counts": {
+        "action_rows": 75079,
+        "auction_join_rows": 7216,
+        "decision_rows": 28000,
+        "eighty_four_public_join_rows": 5365,
+        "feature_label_count": 128
+      },
+      "headline": {
+        "all_claim_families_delta_vs_public": -0.234055,
+        "all_claim_families_match_rate": 0.681071,
+        "all_claim_families_mean_regret": 1.125741,
+        "best_available_variant": "drop_hidden_public_proxy",
+        "public_match_rate": 0.644643,
+        "public_mean_regret": 1.359796
+      },
+      "scientific_status": {
+        "claim_ledger_impact": "no central claim status movement",
+        "interpretation": "Joined public/action-local claim-family tags can be ablated on one legal-action split. This is model-feature evidence and routing evidence, not proof of broad book claims.",
+        "leakage_boundary": "Features exclude oracle mean/regret, threshold mass, lower-tail mass, future outcomes, hidden owners, q_per_world, and full-deal opponent asset labels. Eval-only labels are written for auditing but never used as model features."
+      },
+      "wandb": {
+        "available": true,
+        "dir": "w42/joined_claim_row_model_table/wandb/wandb/run-20260503_100824-jvjuld7m/files",
+        "enabled": true,
+        "entity": "jasonyandell-forge42",
+        "group": "w42-joined-claim-row-model-table",
+        "id": "jvjuld7m",
+        "mode": "online",
+        "name": "t42-qtwb.4-joined-claim-row-model-table-v0",
+        "project": "w42",
+        "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/jvjuld7m"
+      }
+    },
+    "odds_static": {
+      "existing": [
+        "w42/odds_ruleset_claim_validation/validation_summary.json",
+        "w42/statistics_claims_ledger/claims.csv"
+      ],
+      "missing": []
+    },
+    "phase2_matrix": {
+      "existing": [
+        "w42/claim_analysis_matrix/claim_analysis_matrix.csv",
+        "w42/claim_analysis_matrix/ready_powered_tests.csv"
+      ],
+      "missing": []
+    },
+    "phase2_synthesis": {
+      "existing": [
+        "w42/claim_analysis_synthesis/claim_family_synthesis.csv",
+        "w42/claim_analysis_synthesis/summary.json"
+      ],
+      "missing": []
+    },
+    "scoring": {
+      "existing": [
+        "w42/scoring_objective_drift_claim_validation/summary.json",
+        "w42/scoring_objective_drift_claim_validation/claim_ledger_delta.json"
+      ],
+      "missing": []
+    },
+    "seat_sequence_phase3": {
+      "existing": [
+        "w42/sequence_seat_counterfactuals/summary.json",
+        "w42/sequence_seat_counterfactuals/paired_contrasts.csv",
+        "w42/sequence_seat_counterfactuals/label_metrics.csv",
+        "w42/seat_position_claim_tests/summary.json",
+        "w42/tactical_claim_replication/summary.json"
+      ],
+      "missing": []
+    },
+    "sequence_seat_summary": {
+      "bead": "t42-qtwb.3",
+      "counts": {
+        "action_rows": 75079,
+        "decision_rows": 28000,
+        "label_metric_rows": 50,
+        "paired_contrast_rows": 14,
+        "paired_contrast_slice_rows": 394,
+        "top_label_counts": {
+          "bidder_lead_called_non_double": 2054,
+          "bidder_lead_called_suit": 2876,
+          "bidder_lead_count": 2614,
+          "bidder_lead_noncount": 11643,
+          "bidder_lead_off_count": 2063,
+          "bidder_lead_off_suit": 11381,
+          "bidder_lead_plan": 14257,
+          "ch05_reckless_count_to_bidder": 1987,
+          "closure_decline_trick": 13738,
+          "closure_sequence_decision": 15593,
+          "closure_slough_count": 2706,
+          "closure_take_trick": 1855,
+          "follower_can_beat_opponent": 5306,
+          "follower_count_into_opponent_control": 5228,
+          "follower_opponent_currently_winning": 32617,
+          "follower_partner_or_self_currently_winning": 14462,
+          "follower_safe_count_to_current_control": 2057,
+          "follower_take_control_from_opponent": 5306,
+          "partner_count_into_defense_control": 1213,
+          "partner_support_sequence_context": 16929,
+          "phase_early": 29065,
+          "phase_late": 11179,
+          "phase_middle": 34835,
+          "role_bidder": 23017,
+          "role_partner": 16929,
+          "role_setter": 35133,
+          "seat_pos_0": 28000,
+          "seat_pos_1": 15586,
+          "seat_pos_2": 15900,
+          "seat_pos_3": 15593,
+          "sequence_follow": 31486,
+          "sequence_last_to_act": 15593,
+          "sequence_lead": 28000,
+          "setter_pounce_sequence_window": 18832,
+          "setter_reckless_count_to_bidder": 2937
+        }
+      },
+      "headline": null,
+      "scientific_status": "Direct branch-value counterfactuals at naturally occurring sequence states. This tests legal candidate moves within a public sequence context; it does not yet simulate fully divergent multi-trick human plan trees.",
+      "wandb": {
+        "available": true,
+        "dir": "w42/sequence_seat_counterfactuals/wandb/wandb/run-20260503_092531-kp0otpdo/files",
+        "enabled": true,
+        "entity": "jasonyandell-forge42",
+        "group": "w42-sequence-seat-counterfactuals",
+        "id": "kp0otpdo",
+        "mode": "online",
+        "name": "t42-qtwb.3-sequence-seat-counterfactuals-v0",
+        "project": "w42",
+        "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/kp0otpdo"
+      }
+    }
+  },
+  "bead": "t42-br7n.6",
+  "caveats": [
+    "This board is generated from current local artifacts and rule tables; it does not mutate wiki, beads, or the central ledger.",
+    "Phase-3 evidence can recommend reconciliation, but broad ledger promotion still needs coordinator review.",
+    "Bidding/count-exposure rows are the largest scope gap: phase 3 produced useful evidence, but no current t42-br7n child directly owns all remaining Ch02 refinements.",
+    "84 seed mining removes the natural-seed blocker but does not measure late-state action value."
+  ],
+  "claim_count": 64,
+  "completion_bucket_counts": {
+    "active_phase4": 30,
+    "complete_contradicted": 1,
+    "complete_direct_empirical": 3,
+    "complete_static_contradicted": 1,
+    "complete_static_supported": 20,
+    "needs_phase4_or_new_scope": 3,
+    "phase3_context_limited": 4,
+    "review_for_ledger_update": 2
+  },
+  "created_at_utc": "2026-05-03T15:21:25.893929+00:00",
+  "headline": {
+    "claims_already_complete_or_closeable": 25,
+    "claims_for_ledger_reconciliation_review": 2,
+    "claims_routed_to_open_phase4_children": 30,
+    "claims_total": 64,
+    "claims_with_no_open_phase4_scope": 7
+  },
+  "inputs": {
+    "ledger": "w42/statistics_claims_ledger/claims.csv",
+    "matrix": "w42/claim_analysis_matrix/claim_analysis_matrix.csv",
+    "ready_powered_tests": "w42/claim_analysis_matrix/ready_powered_tests.csv",
+    "synthesis": "w42/claim_analysis_synthesis/claim_family_synthesis.csv"
+  },
+  "ledger_status_counts": {
+    "context-limited": 12,
+    "contradicted": 2,
+    "not-yet-tested": 6,
+    "supported": 23,
+    "underpowered": 21
+  },
+  "next_bead_counts": {
+    "ledger_reconciliation": 2,
+    "needs_new_bidding_count_exposure_bead": 7,
+    "none": 25,
+    "t42-br7n.1": 15,
+    "t42-br7n.2": 8,
+    "t42-br7n.3": 3,
+    "t42-br7n.4": 1,
+    "t42-br7n.5": 3
+  },
+  "outputs": {
+    "completion_board": "w42/phase4_claim_completion_board/completion_board.csv",
+    "family_summary": "w42/phase4_claim_completion_board/family_summary.csv",
+    "summary": "w42/phase4_claim_completion_board/summary.json"
+  },
+  "phase4_children": {
+    "t42-br7n.1": "bidder/partner/setter hand-shape and sequence counterfactuals",
+    "t42-br7n.2": "84 dynamic mined-seed action tests",
+    "t42-br7n.3": "scoring objective and tournament tests",
+    "t42-br7n.4": "deterministic laydown and rule-accounting proof tests",
+    "t42-br7n.5": "doubles/no-trump paired-regime tests",
+    "t42-br7n.6": "completion board and ledger reconciliation"
+  },
+  "phase4_recommendation_counts": {
+    "add_or_assign_bid_bucket_followup": 1,
+    "add_or_assign_bid_shape_followup": 1,
+    "add_or_assign_count_exposure_followup": 3,
+    "add_or_assign_partner_prior_followup": 1,
+    "add_or_assign_risk_budget_followup": 1,
+    "close_as_already_supported": 20,
+    "close_as_contradicted": 2,
+    "close_as_supported": 1,
+    "close_as_supported_negative_control": 2,
+    "keep_open_under_phase4_1": 15,
+    "keep_open_under_phase4_2": 8,
+    "keep_open_under_phase4_3": 3,
+    "keep_open_under_phase4_4": 1,
+    "keep_open_under_phase4_5": 3,
+    "review_status_move_to_context_limited_or_supported_frequency": 1,
+    "review_status_move_to_supported_or_context_limited": 1
+  },
+  "schema_version": "w42.phase4_claim_completion_board.v1"
+}

@@ -1,0 +1,19 @@
+{
+  "bead": "t42-0b4l.2",
+  "created_at_utc": "2026-05-03T00:45:36.813579+00:00",
+  "git_status_short": "M  .beads/issues.jsonl\n M burl/chat/server/tools_runner.py\n M w42/statistics_claims_ledger/build_statistics_claims_ledger.py\n M w42/statistics_claims_ledger/claims.csv\n M w42/statistics_claims_ledger/manifest.json\n M w42/statistics_claims_ledger/summary.json\n M wiki/entities/w42.md\n M wiki/experiments/w42-partner-support-claim-validation.md\n M wiki/experiments/w42-phase2-setter-pounce-direct-label-probe.md\n M wiki/experiments/w42-phase2-statistics-claims-ledger.md\n M wiki/experiments/w42-setter-defense-claim-validation.md\n M wiki/index.md\n M wiki/log.md\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/skills/analyze-hand/\n?? .agents/skills/clustering/\n?? .agents/skills/comprehension-test/\n?? .agents/skills/ecological/\n?? .agents/skills/minirocket/\n?? .agents/skills/modal/\n?? .agents/skills/pdf/\n?? .agents/skills/pymc/\n?? .agents/skills/pytorch-lightning/\n?? .agents/skills/pytorch/\n?? .agents/skills/ralph-loop/\n?? .agents/skills/shap/\n?? .agents/skills/statistical-rigor/\n?? .agents/skills/survival-forest/\n?? .agents/skills/texas-42-analytics/\n?? .agents/skills/texas-42-forge/\n?? .agents/skills/umap/\n?? .agents/skills/volcano-plots/\n?? .agents/skills/word2vec/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/claim_analysis/\n?? w42/claim_analysis_matrix/\n?? w42/claim_analysis_smoke/\n?? w42/gus_corpus_claim_deep_dive/\n?? wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md\n?? wiki/experiments/w42-phase2-claim-analysis-harness.md\n?? wiki/experiments/w42-phase2-claim-analysis-matrix.md",
+  "inputs": [
+    "w42/gus_corpus_claim_deep_dive/claim_action_rows.jsonl"
+  ],
+  "outputs": [
+    "w42/claim_analysis_smoke/gus_claim_rows/label_metrics.csv",
+    "w42/claim_analysis_smoke/gus_claim_rows/paired_contrasts.csv",
+    "w42/claim_analysis_smoke/gus_claim_rows/label_counts.csv",
+    "w42/claim_analysis_smoke/gus_claim_rows/claim_specs.csv",
+    "w42/claim_analysis_smoke/gus_claim_rows/examples.json",
+    "w42/claim_analysis_smoke/gus_claim_rows/summary.json",
+    "w42/claim_analysis_smoke/gus_claim_rows/manifest.json"
+  ],
+  "repo_commit": "551ea630737e1a50d6e7642cc1fc489a93a2726b",
+  "schema_version": "w42.claim_analysis.manifest.v1"
+}

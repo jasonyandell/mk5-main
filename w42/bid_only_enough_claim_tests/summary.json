@@ -1,0 +1,54 @@
+{
+  "artifacts": {
+    "bid_counterfactual_rows": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/bid_counterfactual_rows.csv",
+    "generation_spec": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/generation_spec.json",
+    "hand_decl_rows": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/hand_decl_rows.csv",
+    "margin_contrasts": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/margin_contrasts.csv",
+    "margin_summary": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/margin_summary.csv",
+    "points_samples": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/points_samples.csv",
+    "static_bucket_margin_summary": "/Users/jason/code/mk5-main/w42/bid_only_enough_claim_tests/static_bucket_margin_summary.csv"
+  },
+  "bead": "t42-0b4l.5",
+  "config": {
+    "checkpoint": "default forge.bidding checkpoint",
+    "current_high_bids": [
+      29,
+      30,
+      31,
+      34,
+      35
+    ],
+    "declarations_per_hand": 2,
+    "device": "cpu",
+    "hands": 12,
+    "samples": 96,
+    "sim_seed": 420500,
+    "start_seed": 0
+  },
+  "counts": {
+    "bid_counterfactual_rows": 1224,
+    "hand_decl_rows": 24,
+    "margin_contrast_rows": 1104,
+    "static_risk_bucket_hand_decl_counts": {
+      "risk_13_20": 12,
+      "risk_le_12": 12
+    }
+  },
+  "created_at_utc": "2026-05-03T05:49:56.809959+00:00",
+  "effect_direction": {
+    "mean_delta_mark_swing_vs_min": -0.223109,
+    "mean_delta_p_make_vs_min": -0.111555,
+    "negative_delta_mark_swing_rows": 1040,
+    "positive_delta_mark_swing_rows": 0,
+    "zero_delta_mark_swing_rows": 64
+  },
+  "elapsed_seconds": 15.264,
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "schema_version": "w42.bid_only_enough_claim_tests.v1",
+  "scientific_status": {
+    "closeable_recommendation": "Close t42-0b4l.5 as a partial empirical probe plus executable generation spec, not as a central claim promotion.",
+    "empirically_testable_now": "partial",
+    "what_this_does_not_test": "No real auction policy, opponent response to bid size, partner bid signal, score-conditioned table style, or opening pass/bid decision is modeled.",
+    "what_this_tests": "For arbitrary generated hands, same hand/declaration/current-high counterfactuals show the cost of bidding above the minimum winning bid under the existing policy-simulation make labels."
+  }
+}

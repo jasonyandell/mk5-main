@@ -1,0 +1,24 @@
+{
+  "bead": "t42-dqow",
+  "artifact_id": "w42-phase2-decision-table-v0",
+  "created_at_utc": "2026-05-02T21:58:19.339027+00:00",
+  "script": "w42/phase2_decision_table/build_phase2_decision_table.py",
+  "input": "forge/analysis/results/data/eq_pdf_v3_sample.jsonl",
+  "input_sha256": "8c1e501db65da7f9cc6ad70738e7992ad0ca09042ba4edc1a05c461f21e55e4b",
+  "outputs": [
+    "decision_actions.csv",
+    "decision_states.csv",
+    "examples.json",
+    "schema.json",
+    "summary.json",
+    "manifest.json"
+  ],
+  "commands": [
+    "python w42/phase2_decision_table/build_phase2_decision_table.py --input forge/analysis/results/data/eq_pdf_v3_sample.jsonl"
+  ],
+  "wiki": [
+    "wiki/experiments/w42-phase2-decision-table.md"
+  ],
+  "wandb": "not applicable; no training run",
+  "hf": "not applicable; local table artifact only"
+}

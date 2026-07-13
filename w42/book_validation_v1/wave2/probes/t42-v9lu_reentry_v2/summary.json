@@ -1,0 +1,45 @@
+{
+  "N_pairs": 222,
+  "ev_delta_mean": -1.2302268543490418,
+  "ev_delta_ci95_lo": -2.6207838744607406,
+  "ev_delta_ci95_hi": 0.16033016576265724,
+  "ev_delta_direction": "consume > preserve",
+  "cvar_delta_mean": -0.5065603360936448,
+  "cvar_delta_ci95_lo": -2.336499566908674,
+  "cvar_delta_ci95_hi": 1.3233788947213845,
+  "threshold_mass_delta_mean": -0.015292793327757905,
+  "n_preserve_better": 109,
+  "pct_preserve_better": 49.0990990990991,
+  "n_consume_better": 113,
+  "pct_consume_better": 50.9009009009009,
+  "phase_slices": {
+    "early": {
+      "n": 0
+    },
+    "mid": {
+      "n": 162,
+      "ev_delta_mean": -0.21675027663141122,
+      "ev_delta_ci95": [
+        -1.793384795775455,
+        1.3598842425126327
+      ]
+    },
+    "late": {
+      "n": 60,
+      "ev_delta_mean": -3.9666136141866444,
+      "ev_delta_ci95": [
+        -6.762369144139536,
+        -1.1708580842337524
+      ]
+    }
+  },
+  "claim_ledger_impact": "context-limited",
+  "claim_ledger_rationale": "Paired EQ contrast on 222 oracle-greedy snapshots. Overall EV delta 95% CI [-2.621, +0.160] spans zero (inconclusive). Late-game slice (trick 5-6, n=60) CI [-6.762, -1.171] excludes zero in the direction opposite to book claim: consuming the trump is significantly better in late tricks.",
+  "run_metadata": {
+    "n_samples_per_branch": 200,
+    "device": "mps",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "wall_seconds": 135.2,
+    "n_snapshots_input": 500
+  }
+}

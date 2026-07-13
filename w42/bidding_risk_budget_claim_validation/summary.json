@@ -1,0 +1,375 @@
+{
+  "schema_version": "w42.bidding_risk_budget_claim_validation.v1",
+  "bead": "t42-csw6.17",
+  "git_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+  "random_seeds": "not applicable",
+  "statistical_method": "exhaustive enumeration of all C(28,7) hands times seven pip-trump candidates; exact population proportions, no sampling CI",
+  "hands": 1184040,
+  "candidate_evaluations": 8288280,
+  "count_tiles": {
+    "3-2": 5,
+    "4-1": 5,
+    "5-0": 5,
+    "5-5": 10,
+    "6-4": 10
+  },
+  "candidate_metrics": {
+    "duplicate_exposure": {
+      "n": 7157259,
+      "pct": 86.353972
+    },
+    "four_five_off": {
+      "n": 1480050,
+      "pct": 17.857143
+    },
+    "minimum_shape_low_risk": {
+      "n": 481586,
+      "pct": 5.810446
+    },
+    "strong_trump_bad_risk_trap": {
+      "n": 242620,
+      "pct": 2.927266
+    }
+  },
+  "hand_metrics": {
+    "any_duplicate_exposure": {
+      "n": 1159931,
+      "pct": 97.963836
+    },
+    "any_four_five_off": {
+      "n": 296010,
+      "pct": 25.0
+    },
+    "any_minimum_shape_low_risk": {
+      "n": 403197,
+      "pct": 34.05265
+    },
+    "any_strong_trump_bad_risk": {
+      "n": 238238,
+      "pct": 20.120773
+    },
+    "best_minimum_shape_low_risk": {
+      "n": 328402,
+      "pct": 27.735718
+    },
+    "best_strong_trump_bad_risk": {
+      "n": 36318,
+      "pct": 3.067295
+    }
+  },
+  "natural_bid_bucket_proxy": {
+    "odd_32_34": {
+      "n": 1285310,
+      "pct": 15.50756
+    },
+    "other": {
+      "n": 7002970,
+      "pct": 84.49244
+    }
+  },
+  "side_specific_exposure_points": {
+    "protected": 53130000,
+    "unprotected": 246169000,
+    "protected_pct": 17.751479,
+    "side_rows": 62162100
+  },
+  "examples": {
+    "duplicate_exposure": [
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 1,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 20,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 2,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 15,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 3,
+        "trump_count": 1,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 20,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 4,
+        "trump_count": 0,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 30,
+        "duplicate_overcount_points": 20,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 5,
+        "trump_count": 0,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 25,
+        "duplicate_overcount_points": 15,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 6,
+        "trump_count": 0,
+        "unique_exposed_points": 15,
+        "naive_exposed_points": 40,
+        "duplicate_overcount_points": 25,
+        "bid_ceiling_proxy": 27
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+        "trump_pip": 0,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 20,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+        "trump_pip": 2,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 15,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 32
+      }
+    ],
+    "strong_trump_bad_risk_trap": [
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,4-1",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 15,
+        "naive_exposed_points": 15,
+        "duplicate_overcount_points": 0,
+        "bid_ceiling_proxy": 27
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,4-2",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 20,
+        "naive_exposed_points": 30,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 22
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,4-3",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 20,
+        "naive_exposed_points": 30,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 22
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-1",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 20,
+        "naive_exposed_points": 25,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 22
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-2",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 20,
+        "naive_exposed_points": 25,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 22
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-3",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 20,
+        "naive_exposed_points": 25,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 22
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 35,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,6-1",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 20,
+        "naive_exposed_points": 25,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 22
+      }
+    ],
+    "minimum_shape_low_risk": [
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 10,
+        "duplicate_overcount_points": 0,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 1,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 20,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+        "trump_pip": 2,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 15,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+        "trump_pip": 0,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 20,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+        "trump_pip": 1,
+        "trump_count": 4,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 10,
+        "duplicate_overcount_points": 0,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+        "trump_pip": 2,
+        "trump_count": 3,
+        "unique_exposed_points": 10,
+        "naive_exposed_points": 15,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 32
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-2",
+        "trump_pip": 0,
+        "trump_count": 3,
+        "unique_exposed_points": 5,
+        "naive_exposed_points": 5,
+        "duplicate_overcount_points": 0,
+        "bid_ceiling_proxy": 37
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-2",
+        "trump_pip": 1,
+        "trump_count": 3,
+        "unique_exposed_points": 5,
+        "naive_exposed_points": 5,
+        "duplicate_overcount_points": 0,
+        "bid_ceiling_proxy": 37
+      }
+    ],
+    "four_five_off": [
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+        "trump_pip": 0,
+        "trump_count": 3,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 35,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+        "trump_pip": 1,
+        "trump_count": 3,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 35,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+        "trump_pip": 2,
+        "trump_count": 3,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 40,
+        "duplicate_overcount_points": 10,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+        "trump_pip": 3,
+        "trump_count": 0,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 50,
+        "duplicate_overcount_points": 20,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+        "trump_pip": 6,
+        "trump_count": 0,
+        "unique_exposed_points": 25,
+        "naive_exposed_points": 50,
+        "duplicate_overcount_points": 25,
+        "bid_ceiling_proxy": 17
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+        "trump_pip": 0,
+        "trump_count": 4,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 35,
+        "duplicate_overcount_points": 5,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+        "trump_pip": 1,
+        "trump_count": 3,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 45,
+        "duplicate_overcount_points": 15,
+        "bid_ceiling_proxy": 12
+      },
+      {
+        "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+        "trump_pip": 2,
+        "trump_count": 2,
+        "unique_exposed_points": 30,
+        "naive_exposed_points": 45,
+        "duplicate_overcount_points": 15,
+        "bid_ceiling_proxy": 12
+      }
+    ]
+  },
+  "caveat": "Static risk-budget proxies use own hand plus candidate pip trump only; no auction history, partner bid signal, hidden-world make/set result, or forge E[Q] rollout is used."
+}

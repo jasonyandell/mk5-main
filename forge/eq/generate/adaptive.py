@@ -41,7 +41,8 @@ def sample_until_convergence(
     decision_idx: int = 0,
     seeds: list[int] | None = None,
     use_cuda_graph: bool = False,
-) -> tuple[Tensor, Tensor, Tensor, None, int, bool]:
+    save_joint_worlds: bool = False,
+) -> tuple[Tensor, Tensor, Tensor, None, int, bool, Tensor | None, Tensor | None]:
     """Sample worlds until E[Q] estimates converge.
 
     Uses iterative batch sampling with running statistics to detect convergence.
@@ -58,15 +59,22 @@ def sample_until_convergence(
         decision_idx: Current decision index (for logging)
         seeds: Optional RNG seeds per game
         use_cuda_graph: Enable CUDA graph optimization for model forward pass
+        save_joint_worlds: If True, accumulate raw per-iteration (worlds, q_batch)
+                           tensors and return them concatenated along the sample axis.
 
     Returns:
-        Tuple of (e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge):
+        Tuple of (e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge,
+                  world_hands, q_per_world):
             - e_q: [N, 7] mean Q-values
             - e_q_var: [N, 7] variance of Q-values
             - e_q_pdf: [N, 7, 85] full PDF
             - diagnostics: None (posterior not supported with adaptive)
             - n_samples_used: Number of samples actually used
             - did_converge: True if SEM < threshold, False if hit max_samples
+            - world_hands: [N, total_samples, 3, 7] stacked sampled opponent hands,
+                           or None if save_joint_worlds=False
+            - q_per_world: [N, total_samples, 7] stacked oracle Q per action per world,
+                           or None if save_joint_worlds=False
     """
     n_games = states.n_games
     n_actions = 7
@@ -100,6 +108,10 @@ def sample_until_convergence(
     max_ones_size = batch_size * n_games * n_actions
     ones_buffer = torch.ones(max_ones_size, device=device, dtype=torch.float32)
 
+    # Joint-world accumulators (opt-in). Kept on CPU to avoid GPU pressure.
+    worlds_chunks: list[Tensor] = []
+    q_chunks: list[Tensor] = []
+
     iteration = 0
     while True:
         # Sample a batch of worlds
@@ -124,6 +136,12 @@ def sample_until_convergence(
         q_sum += q_batch_f32.sum(dim=1)  # [N, 7]
         q_sq_sum += (q_batch_f32 ** 2).sum(dim=1)  # [N, 7]
         n_total += n_worlds  # All games get same batch
+
+        # Accumulate raw per-world tensors for distillation (opt-in).
+        # Move to CPU immediately so GPU memory stays bounded by one batch.
+        if save_joint_worlds:
+            worlds_chunks.append(worlds.detach().cpu())
+            q_chunks.append(q_batch_f32.detach().cpu())
 
         # Online PDF accumulation: bin Q-values and scatter-add counts
         # Bin Q-values: q in [-42, 42] -> bin in [0, 84]
@@ -210,7 +228,15 @@ def sample_until_convergence(
     # Return number of samples used
     n_samples_used = int(n_total[0].item())  # All games have same count
 
-    return e_q, e_q_var, e_q_pdf, None, n_samples_used, did_converge
+    # Concatenate joint-world chunks along sample axis (if any)
+    if save_joint_worlds and worlds_chunks:
+        world_hands = torch.cat(worlds_chunks, dim=1)  # [N, total, 3, 7]
+        q_per_world = torch.cat(q_chunks, dim=1)      # [N, total, 7]
+    else:
+        world_hands = None
+        q_per_world = None
+
+    return e_q, e_q_var, e_q_pdf, None, n_samples_used, did_converge, world_hands, q_per_world
 
 
 def sample_until_convergence_posterior(

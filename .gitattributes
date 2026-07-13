@@ -3,3 +3,4 @@
 
 # Use bd merge for beads JSONL files
 .beads/beads.jsonl merge=beads
+.beads/issues.jsonl merge=beads -diff

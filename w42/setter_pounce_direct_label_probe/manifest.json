@@ -1,0 +1,43 @@
+{
+  "artifacts": [
+    {
+      "kind": "direct label spec",
+      "path": "w42/setter_pounce_direct_label_probe/label_spec.json"
+    },
+    {
+      "kind": "fixture examples",
+      "path": "w42/setter_pounce_direct_label_probe/fixtures.jsonl"
+    },
+    {
+      "kind": "required data fields",
+      "path": "w42/setter_pounce_direct_label_probe/required_fields.csv"
+    },
+    {
+      "kind": "anti-leakage checks",
+      "path": "w42/setter_pounce_direct_label_probe/anti_leakage_checks.csv"
+    },
+    {
+      "kind": "readiness report slice",
+      "path": "w42/setter_pounce_direct_label_probe/tiny_report_slice.csv"
+    },
+    {
+      "kind": "summary",
+      "path": "w42/setter_pounce_direct_label_probe/summary.json"
+    },
+    {
+      "kind": "wiki report",
+      "path": "wiki/experiments/w42-phase2-setter-pounce-direct-label-probe.md"
+    }
+  ],
+  "bead_id": "t42-5m82.5",
+  "claim_ledger_impact": "no central ledger change",
+  "created_at": "2026-05-02T21:17:07.549459+00:00",
+  "dependencies_for_revisit": [
+    "phase-2 seat/position decision table",
+    "contract and pre-action score export",
+    "distribution-aware E[Q] PDF or sampled-world outputs"
+  ],
+  "producer": "w42/setter_pounce_direct_label_probe/build_probe_artifacts.py",
+  "repo_commit": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "schema_version": "w42.setter_pounce_direct_label_probe.manifest.v1"
+}

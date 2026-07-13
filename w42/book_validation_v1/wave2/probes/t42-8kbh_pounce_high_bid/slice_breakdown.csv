@@ -1,0 +1,13 @@
+label,N,ev_delta_setter_mean,ev_delta_t_stat,ev_delta_ci95_lo,ev_delta_ci95_hi,ev_direction,pct_pounce_better,p_set_delta_mean,p_set_delta_ci95_lo,p_set_delta_ci95_hi,cvar_delta_mean
+overall,1140,-10.4204,-24.5245,-11.2532,-9.5876,decline_better_for_setter,24.47,-0.04714,-0.05635,-0.03793,4.398
+phase=early,582,-12.5992,-19.3837,-13.8732,-11.3253,decline_better_for_setter,22.85,-0.07,-0.0855,-0.0545,7.55
+phase=mid,558,-8.1478,-15.4973,-9.1783,-7.1174,decline_better_for_setter,26.16,-0.0233,-0.03252,-0.01407,1.1103
+phase=late,0,,,,,,,,,,
+count_5pts,540,-7.2728,-13.2818,-8.346,-6.1995,decline_better_for_setter,30.0,-0.03444,-0.04768,-0.0212,1.8579
+count_10pts,549,-13.6739,-20.8967,-14.9565,-12.3914,decline_better_for_setter,19.13,-0.06348,-0.07732,-0.04964,7.0328
+bidder_team_led,860,-11.9306,-24.9064,-12.8695,-10.9917,decline_better_for_setter,19.53,-0.05469,-0.06546,-0.04392,5.7177
+setter_team_led,280,-5.7819,-6.7733,-7.4551,-4.1088,decline_better_for_setter,39.64,-0.02396,-0.04134,-0.00659,0.3446
+bid=35,275,-10.0813,-11.7509,-11.7629,-8.3998,decline_better_for_setter,26.55,-0.06433,-0.08691,-0.04174,2.9183
+bid=36,259,-11.3153,-12.7048,-13.0609,-9.5696,decline_better_for_setter,21.62,-0.07826,-0.10246,-0.05406,5.8634
+bid=39,290,-10.1437,-11.8148,-11.8265,-8.4609,decline_better_for_setter,23.79,-0.05,-0.06797,-0.03203,4.3365
+bid=42,316,-10.2359,-12.7749,-11.8064,-8.6655,decline_better_for_setter,25.63,-0.00405,-0.0084,0.0003,4.541

@@ -108,30 +108,23 @@ def build_remaining_bitmasks(
     n_games = states.n_games
     n_samples = deals.shape[1]
     batch_size = n_games * n_samples
+    device = states.device
 
-    # Flatten deals
-    deals_flat = deals.reshape(batch_size, 4, 7)
+    # Flatten deals: [batch, 4, 7] -> [batch, 28] domino IDs
+    flat_ids = deals.reshape(batch_size, 28).long()
 
     # Expand played_mask: [n_games, 28] -> [batch, 28]
     played_mask = states.played_mask.unsqueeze(1).expand(-1, n_samples, -1).reshape(batch_size, 28)
 
-    # Build bitmasks
-    remaining = torch.zeros(batch_size, 4, dtype=torch.int32, device=states.device)
+    # Slot is remaining iff its domino is valid (>= 0) and not yet played.
+    # (Fully vectorized: the historical 4x7 Python loop was ~170 kernel
+    # launches per call; this is ~6.)
+    valid = flat_ids >= 0
+    is_played = torch.gather(played_mask, 1, flat_ids.clamp(min=0))  # [batch, 28]
+    is_remaining = (valid & ~is_played).view(batch_size, 4, 7)
 
-    for player in range(4):
-        hand = deals_flat[:, player, :]  # [batch, 7]
-        for local_idx in range(7):
-            domino_ids = hand[:, local_idx].long()  # [batch]
-
-            # Check if valid and not played
-            valid = domino_ids >= 0
-            batch_indices = torch.arange(batch_size, device=states.device)
-
-            # Safe indexing: use 0 for invalid, then mask out
-            domino_ids_safe = torch.where(valid, domino_ids, torch.zeros_like(domino_ids))
-            is_played = played_mask[batch_indices, domino_ids_safe]
-
-            is_remaining = valid & ~is_played
-            remaining[:, player] |= is_remaining.int() << local_idx
+    # Pack the 7 slot bits per player: bit local_idx set iff slot remaining
+    slot_bits = (1 << torch.arange(7, device=device, dtype=torch.int32)).view(1, 1, 7)
+    remaining = (is_remaining.to(torch.int32) * slot_bits).sum(dim=2, dtype=torch.int32)  # [batch, 4]
 
     return remaining

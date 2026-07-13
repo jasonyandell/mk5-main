@@ -26,7 +26,6 @@ import numpy as np
 import torch
 
 from forge.bidding.estimator import wilson_ci
-from forge.bidding.inference import PolicyModel
 from forge.bidding.schema import (
     BID_THRESHOLDS,
     EVAL_DECLS,
@@ -36,10 +35,11 @@ from forge.bidding.schema import (
     points_col,
     write_result,
 )
-from forge.bidding.simulator import simulate_games
 from forge.oracle.declarations import DECL_ID_TO_NAME
 from forge.oracle.rng import deal_from_seed
 from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW
+from gus.bidding.evaluate import load_gus, ADAPTER_DEFAULT
+from gus.bidding.simulate import simulate_all_gus_batch, _pick_device
 
 
 def get_output_dir(base_dir: Path, seed: int) -> Path:
@@ -75,10 +75,12 @@ def find_missing_seeds(base_dir: Path, start_seed: int) -> Iterator[tuple[int, P
 
 
 def evaluate_seed(
-    model: PolicyModel,
+    model,
+    is_voids: bool,
     seed: int,
     n_samples: int,
     checkpoint_path: str,
+    device: str,
 ) -> dict:
     """Evaluate a single seed across all declarations.
 
@@ -86,8 +88,7 @@ def evaluate_seed(
     Uses column names from forge.bidding.schema for consistency.
     """
     # Get P0's hand from seed
-    hands = deal_from_seed(seed)
-    p0_hand = list(hands[0])
+    p0_hand = list(deal_from_seed(seed)[0])
     hand_str = format_hand(p0_hand)
 
     result = {
@@ -98,20 +99,14 @@ def evaluate_seed(
         "timestamp": datetime.now().isoformat(),
     }
 
-    # Evaluate each declaration
-    for decl_id in EVAL_DECLS:
-        # Run simulations
-        points = simulate_games(
-            model=model,
-            bidder_hand=p0_hand,
-            decl_id=decl_id,
-            n_games=n_samples,
-            seed=seed * 1000 + decl_id,  # Unique seed per decl
-            greedy=True,
-        )
+    # Simulate all 9 declarations in one batched call
+    pts = simulate_all_gus_batch(
+        model, is_voids, p0_hand, EVAL_DECLS, n_samples, device, seed
+    )
 
-        # Store raw points as numpy array
-        points_np = points.cpu().numpy().astype(np.int8)
+    # Process each declaration
+    for decl_id in EVAL_DECLS:
+        points_np = pts[decl_id].cpu().numpy().astype(np.int8)
         result[points_col(decl_id)] = points_np
 
         # Compute P(make) and CI for each bid threshold
@@ -166,13 +161,7 @@ def main() -> None:
         "--checkpoint",
         type=str,
         default=None,
-        help="Path to model checkpoint (uses default if not specified)",
-    )
-    parser.add_argument(
-        "--device",
-        type=str,
-        default="cuda",
-        help="Device for computation (default: cuda)",
+        help="Path to Gus adapter checkpoint (uses default if not specified)",
     )
     parser.add_argument(
         "--dry-run",
@@ -194,7 +183,6 @@ def main() -> None:
     print(f"Start seed: {args.start_seed}")
     print(f"Samples per declaration: {args.samples}")
     print(f"Declarations: {len(EVAL_DECLS)} ({', '.join(DECL_ID_TO_NAME[d] for d in EVAL_DECLS)})")
-    print(f"Device: {args.device}")
     if args.limit:
         print(f"Limit: {args.limit} seeds")
     print()
@@ -209,21 +197,17 @@ def main() -> None:
             print("  ... (more gaps exist)")
         return
 
-    # Check device
-    device = torch.device(args.device)
-    if device.type == "cuda" and not torch.cuda.is_available():
-        raise SystemExit("CUDA not available. Use --device cpu or install CUDA-enabled PyTorch.")
+    # Pick device and load model
+    device = _pick_device()
+    print(f"Device: {device}")
+    adapter_path = Path(args.checkpoint) if args.checkpoint else ADAPTER_DEFAULT
+    checkpoint_path = str(adapter_path)
 
-    # Load model
-    print("Loading model...")
+    print(f"Loading Gus model from {adapter_path} ...")
     start_load = time.time()
-    model = PolicyModel(checkpoint_path=args.checkpoint, device=args.device)
-    checkpoint_path = args.checkpoint or "default"
-    print(f"Model loaded in {time.time() - start_load:.2f}s on {model.device}")
+    model, is_voids = load_gus(adapter_path, device)
+    print(f"Model loaded in {time.time() - start_load:.2f}s  is_voids={is_voids}")
     print()
-
-    # Warmup model
-    model.warmup(args.samples)
 
     evaluated = 0
     iterator = find_missing_seeds(base_dir, args.start_seed)
@@ -240,7 +224,9 @@ def main() -> None:
 
         while True:  # Retry loop
             try:
-                result = evaluate_seed(model, seed, args.samples, checkpoint_path)
+                result = evaluate_seed(
+                    model, is_voids, seed, args.samples, checkpoint_path, device
+                )
                 write_result(output_path, result)
                 elapsed = time.time() - start_time
                 print(f"done ({elapsed:.1f}s)")

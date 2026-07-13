@@ -1,0 +1,344 @@
+[
+  {
+    "alternate": {
+      "domino": "3-3",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -22.29443359375,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "defense_preserve_expendable_vs_spend_live_asset_proxy",
+    "decision_key": "0:1",
+    "preferred": {
+      "domino": "6-1",
+      "labels": "is_84_contract_decision|partner_readable_low_or_blank_throwaway_proxy",
+      "live_double_target_count": 0,
+      "mean": -19.25869369506836,
+      "throwaway_rank": 5
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "3-3",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -20.67490005493164,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "defense_preserve_expendable_vs_spend_live_asset_proxy",
+    "decision_key": "0:7",
+    "preferred": {
+      "domino": "6-1",
+      "labels": "is_84_contract_decision|partner_readable_low_or_blank_throwaway_proxy",
+      "live_double_target_count": 0,
+      "mean": -17.322126388549805,
+      "throwaway_rank": 5
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "3-3",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -8.918420791625977,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "defense_preserve_expendable_vs_spend_live_asset_proxy",
+    "decision_key": "0:17",
+    "preferred": {
+      "domino": "3-1",
+      "labels": "is_84_contract_decision|partner_readable_low_or_blank_throwaway_proxy",
+      "live_double_target_count": 0,
+      "mean": -8.536796569824219,
+      "throwaway_rank": 5
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "3-3",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -6.071704387664795,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "defense_preserve_expendable_vs_spend_live_asset_proxy",
+    "decision_key": "0:21",
+    "preferred": {
+      "domino": "6-2",
+      "labels": "is_84_contract_decision|partner_readable_low_or_blank_throwaway_proxy",
+      "live_double_target_count": 0,
+      "mean": -7.03181266784668,
+      "throwaway_rank": 5
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "1-1",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -31.860000610351562,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "defense_preserve_expendable_vs_spend_live_asset_proxy",
+    "decision_key": "1:4",
+    "preferred": {
+      "domino": "5-4",
+      "labels": "is_84_contract_decision|partner_readable_low_or_blank_throwaway_proxy",
+      "live_double_target_count": 0,
+      "mean": -32.26100158691406,
+      "throwaway_rank": 5
+    },
+    "surface": "straight_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "1-1",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": 0.554209291934967,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "defense_preserve_expendable_vs_spend_live_asset_proxy",
+    "decision_key": "3:3",
+    "preferred": {
+      "domino": "1-0",
+      "labels": "is_84_contract_decision|partner_readable_low_or_blank_throwaway_proxy",
+      "live_double_target_count": 0,
+      "mean": 1.2903608083724976,
+      "throwaway_rank": 5
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "1-1",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": 0.554209291934967,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "dead_asset_release_vs_spend_live_asset_proxy",
+    "decision_key": "3:3",
+    "preferred": {
+      "domino": "5-5",
+      "labels": "dead_asset_release_candidate_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": 0.9614927768707275,
+      "throwaway_rank": 4
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "6-3",
+      "labels": "defender_live_same_suit_pair_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -16.918930053710938,
+      "throwaway_rank": 2
+    },
+    "contrast_id": "dead_asset_release_vs_spend_live_asset_proxy",
+    "decision_key": "4:1",
+    "preferred": {
+      "domino": "4-4",
+      "labels": "dead_asset_release_candidate_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -20.41546058654785,
+      "throwaway_rank": 4
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "3-2",
+      "labels": "defender_live_same_suit_pair_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -17.692651748657227,
+      "throwaway_rank": 2
+    },
+    "contrast_id": "dead_asset_release_vs_spend_live_asset_proxy",
+    "decision_key": "4:5",
+    "preferred": {
+      "domino": "4-4",
+      "labels": "dead_asset_release_candidate_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -22.782554626464844,
+      "throwaway_rank": 4
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "4-0",
+      "labels": "defender_live_same_suit_pair_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -28.337661743164062,
+      "throwaway_rank": 2
+    },
+    "contrast_id": "dead_asset_release_vs_spend_live_asset_proxy",
+    "decision_key": "4:11",
+    "preferred": {
+      "domino": "3-3",
+      "labels": "dead_asset_release_candidate_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -26.79815101623535,
+      "throwaway_rank": 4
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "2-2",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -17.174707412719727,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "dead_asset_release_vs_spend_live_asset_proxy",
+    "decision_key": "4:13",
+    "preferred": {
+      "domino": "4-4",
+      "labels": "dead_asset_release_candidate_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -16.392108917236328,
+      "throwaway_rank": 4
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "2-2",
+      "labels": "defender_live_double_weapon_proxy|is_84_contract_decision",
+      "live_double_target_count": 1,
+      "mean": -15.913991928100586,
+      "throwaway_rank": 1
+    },
+    "contrast_id": "dead_asset_release_vs_spend_live_asset_proxy",
+    "decision_key": "4:17",
+    "preferred": {
+      "domino": "4-4",
+      "labels": "dead_asset_release_candidate_proxy|is_84_contract_decision",
+      "live_double_target_count": 0,
+      "mean": -14.901996612548828,
+      "throwaway_rank": 4
+    },
+    "surface": "two_off_same_suit"
+  },
+  {
+    "alternate": {
+      "domino": "4-3",
+      "labels": "bidder_final_off_candidate|bidder_nontrump_final_off_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": -1.778007984161377,
+      "throwaway_rank": 6
+    },
+    "contrast_id": "offense_trump_pull_vs_final_off_proxy",
+    "decision_key": "0:0",
+    "preferred": {
+      "domino": "5-2",
+      "labels": "bidder_trump_pull_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": 5.884304046630859,
+      "throwaway_rank": 6
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "6-3",
+      "labels": "bidder_final_off_candidate|bidder_nontrump_final_off_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": -2.451465368270874,
+      "throwaway_rank": 6
+    },
+    "contrast_id": "offense_trump_pull_vs_final_off_proxy",
+    "decision_key": "0:4",
+    "preferred": {
+      "domino": "6-5",
+      "labels": "bidder_trump_pull_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": 1.678418755531311,
+      "throwaway_rank": 6
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "4-3",
+      "labels": "bidder_final_off_candidate|bidder_nontrump_final_off_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": 19.613388061523438,
+      "throwaway_rank": 6
+    },
+    "contrast_id": "offense_trump_pull_vs_final_off_proxy",
+    "decision_key": "0:12",
+    "preferred": {
+      "domino": "5-4",
+      "labels": "bidder_trump_pull_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": 19.618953704833984,
+      "throwaway_rank": 6
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "4-3",
+      "labels": "bidder_final_off_candidate|bidder_nontrump_final_off_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": 13.662820816040039,
+      "throwaway_rank": 6
+    },
+    "contrast_id": "offense_trump_pull_vs_final_off_proxy",
+    "decision_key": "0:16",
+    "preferred": {
+      "domino": "5-4",
+      "labels": "bidder_trump_pull_candidate|is_84_contract_decision|surface_protected_one_off|surface_three_trump_three_double_one_off",
+      "live_double_target_count": 0,
+      "mean": 13.666204452514648,
+      "throwaway_rank": 6
+    },
+    "surface": "protected_one_off|three_trump_three_double_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "6-1",
+      "labels": "bidder_final_off_candidate|bidder_nontrump_final_off_candidate|is_84_contract_decision|surface_straight_one_off",
+      "live_double_target_count": 0,
+      "mean": 25.13994026184082,
+      "throwaway_rank": 6
+    },
+    "contrast_id": "offense_trump_pull_vs_final_off_proxy",
+    "decision_key": "1:0",
+    "preferred": {
+      "domino": "6-2",
+      "labels": "bidder_trump_pull_candidate|is_84_contract_decision|surface_straight_one_off",
+      "live_double_target_count": 0,
+      "mean": 29.185659408569336,
+      "throwaway_rank": 6
+    },
+    "surface": "straight_one_off"
+  },
+  {
+    "alternate": {
+      "domino": "6-0",
+      "labels": "bidder_final_off_candidate|bidder_nontrump_final_off_candidate|is_84_contract_decision|surface_two_off_same_suit",
+      "live_double_target_count": 0,
+      "mean": 19.2331600189209,
+      "throwaway_rank": 6
+    },
+    "contrast_id": "offense_trump_pull_vs_final_off_proxy",
+    "decision_key": "2:0",
+    "preferred": {
+      "domino": "1-1",
+      "labels": "bidder_trump_pull_candidate|is_84_contract_decision|surface_two_off_same_suit",
+      "live_double_target_count": 0,
+      "mean": 22.919797897338867,
+      "throwaway_rank": 6
+    },
+    "surface": "two_off_same_suit"
+  }
+]

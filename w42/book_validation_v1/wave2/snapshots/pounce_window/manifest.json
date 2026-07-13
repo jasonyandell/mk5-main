@@ -1,0 +1,29 @@
+{
+  "corpus": "pounce_window",
+  "schema_version": "forge.eq.snapshot.v1",
+  "source": "oracle-greedy legacy corpus",
+  "n_snapshots": 500,
+  "n_candidates_scanned": 3508,
+  "n_chunks_used": 2,
+  "source_chunks": [
+    "corpus_train_chunk_0-99.pt",
+    "corpus_train_chunk_100-199.pt"
+  ],
+  "filter_definition": {
+    "role": "setter (player 1 or 3)",
+    "position": "on lead or following",
+    "min_trick_number": 1,
+    "pounce_condition": "bidder's team played a count domino (>= 5 pts) in the last completed trick",
+    "note": "Tests ch12-setter-pounce bid=30 slice"
+  },
+  "validation": {
+    "n_valid": 500,
+    "n_invalid": 0,
+    "method": "GameStateTensor.from_snapshot"
+  },
+  "claim_tested": "ch12-setter-pounce",
+  "bid_value_slice": 30,
+  "note": "High-bid slice (ch12-setter-pounce-high-bid-off) deferred to Wave 2.B.2",
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/pounce_window/snapshots.jsonl",
+  "sha256": "a45352211e2a7ed7e78f9b03ae4515c6ef672a0f64ea31202eb57477774cd4b0"
+}

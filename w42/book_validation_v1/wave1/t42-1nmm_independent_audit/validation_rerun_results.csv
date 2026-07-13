@@ -1,0 +1,8 @@
+script,args,exit_code,passed,stdout_snippet,stderr_snippet
+w42/phase4_84_dynamic_seed_tests/validate_outputs.py,,0,True,"{   ""action_rows"": 1872,   ""contrast_ids"": [     ""dead_asset_release_vs_spend_live_asset_proxy"",     ""defense_preserve_expendable_vs_spend_live_asset_proxy"",     ""offense_trump_pull_vs_final_off_proxy""   ],   ""labels"": [     ""bidder_final_off_candidate"",     ""bidder_nontrump_final_off_candidate"",   ",
+w42/phase4_bidding_count_exposure_tests/validate_outputs.py,,0,True,validated phase4_bidding_count_exposure_tests outputs ,
+w42/phase4_doubles_notrump_regime_tests/validate_outputs.py,,0,True,"{   ""claim_contrasts"": 8,   ""ok"": true,   ""paired_hands"": 192,   ""point_sample_pairs"": 12288,   ""regime_rows"": 384 } ",
+w42/phase4_laydown_rule_accounting/validate_outputs.py,,0,True,"{""artifact_dir"": ""w42/phase4_laydown_rule_accounting"", ""counterexamples"": 3, ""laydown_fixtures"": 6, ""ok"": true, ""rule_assertions"": 23} ",
+w42/phase4_scoring_objective_tests/validate_outputs.py,,0,True,"{""artifact_dir"": ""w42/phase4_scoring_objective_tests"", ""early_terminal_rate"": 0.945, ""generated_hands"": 4000, ""match_rows"": 640, ""ok"": true, ""timed_trials"": 160} ",
+w42/phase4_sequence_handshape_tests/validate_outputs.py,,0,True,validated 75079 actions 28000 decisions 47 label metrics ,
+w42/phase4_claim_completion_board/validate_outputs.py,--artifact-dir w42/phase4_claim_completion_board,0,True,"{   ""claim_rows"": 64,   ""completion_bucket_counts"": {     ""active_phase4"": 30,     ""complete_contradicted"": 1,     ""complete_direct_empirical"": 3,     ""complete_static_contradicted"": 1,     ""complete_static_supported"": 20,     ""needs_phase4_or_new_scope"": 3,     ""phase3_context_limited"": 4,     ""rev",

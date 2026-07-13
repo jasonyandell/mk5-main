@@ -1,0 +1,4 @@
+contrast_id,paired_decision_n,preferred_label,alternate_label,mean_delta,threshold_mass_delta,lower_tail_mass_delta
+defense_preserve_expendable_vs_spend_live_asset_proxy,62,"play expendable/dead asset, preserving live weapon or protector",spend live weapon or protector,1.945828692566964,-0.0003780241935483871,-0.04057459677419355
+dead_asset_release_vs_spend_live_asset_proxy,29,release dead double,spend live weapon or protector,0.5038292305222873,0.003232758620689655,-0.032327586206896554
+offense_trump_pull_vs_final_off_proxy,76,best trump pull,best final-off candidate,4.294616058370785,0.0,-0.009457236842105263

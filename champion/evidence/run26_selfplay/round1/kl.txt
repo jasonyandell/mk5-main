@@ -1,0 +1,4 @@
+/Users/jason/code/mk5-main/gus/model/student.py:147: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.blocks = nn.TransformerEncoder(layer, num_layers=n_layers)
+belief-acc  A=0.4264  B=0.4307  (Δ=+0.0043)
+symmetric belief-KL(A,B) = 0.07413 nats/slot  over 131,712 unseen-domino slots (12,544 decisions)

@@ -1,0 +1,19 @@
+{
+  "bead": "wave5-champion-teaching-battery",
+  "created_at_utc": "2026-06-13T05:18:06.089948+00:00",
+  "git_status_short": "M arena/cli.py\n M champion/bidder.py\n?? arena/results/net_vs_heuristic_128/\n?? champion/README.md\n?? champion/test_net_bidder.py\n?? w42/book_validation_v1/wave5/",
+  "inputs": [
+    "w42/book_validation_v1/wave5/champion_teaching_battery/action_rows.csv"
+  ],
+  "outputs": [
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/label_metrics.csv",
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/paired_contrasts.csv",
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/label_counts.csv",
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/claim_specs.csv",
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/examples.json",
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/summary.json",
+    "w42/book_validation_v1/wave5/champion_teaching_battery/harness_output/manifest.json"
+  ],
+  "repo_commit": "78f74329ebc213e5781db57be1d00b4080139e3f",
+  "schema_version": "w42.claim_analysis.manifest.v1"
+}

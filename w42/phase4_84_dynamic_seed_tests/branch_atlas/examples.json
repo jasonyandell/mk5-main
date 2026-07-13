@@ -1,0 +1,2066 @@
+[
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-39|-34|-11|6|8|17",
+        "domino": "4-4",
+        "lower_tail_mass": 0.6094,
+        "mean": -18.6518,
+        "q10": -42,
+        "q50": -34,
+        "q90": 19,
+        "shelf_gap": 59,
+        "std": 26.1346,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8203,
+        "top_hidden_impact": {
+          "domino": "5-4",
+          "holder": 0,
+          "score": 46.468
+        }
+      },
+      {
+        "branch_peaks": "-42|-40|-37|-35|-28|-26|-25|-22|-17",
+        "domino": "4-2",
+        "lower_tail_mass": 0.8672,
+        "mean": -32.2342,
+        "q10": -42,
+        "q50": -39,
+        "q90": -16,
+        "shelf_gap": 25,
+        "std": 12.1415,
+        "tags": "multi_peak_pdf|wide_shelf_gap|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.75,
+        "top_hidden_impact": {
+          "domino": "3-3",
+          "holder": 1,
+          "score": 11.0395
+        }
+      }
+    ],
+    "actual_action": "4-4",
+    "decision_flags": {
+      "max_hidden_impact": 46.468,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 10,
+    "decl_name": "threes",
+    "game_idx": 16,
+    "seat_role": "right_setter",
+    "seed": 81,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-35|-32|-5|0|1|2|3|9|10|16|18|20|28|29|39|41",
+        "domino": "3-3",
+        "lower_tail_mass": 0.1719,
+        "mean": 9.9984,
+        "q10": -32,
+        "q50": 14,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 25.0756,
+        "tags": "scalar_ev_lying_by_omission|multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 0.9609,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 3,
+          "score": 25.3435
+        }
+      },
+      {
+        "branch_peaks": "-32|1|2|7|16|20|29|41",
+        "domino": "6-6",
+        "lower_tail_mass": 0.1875,
+        "mean": 9.6942,
+        "q10": -32,
+        "q50": 15,
+        "q90": 41,
+        "shelf_gap": 73,
+        "std": 25.6073,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 0.9844,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 3,
+          "score": 23.7341
+        }
+      },
+      {
+        "branch_peaks": "-42|-34|-32|-12|2|5|9|17|24|28|42",
+        "domino": "1-0",
+        "lower_tail_mass": 0.3281,
+        "mean": -1.0503,
+        "q10": -39,
+        "q50": 2,
+        "q90": 41,
+        "shelf_gap": 84,
+        "std": 26.75,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.9297,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 3,
+          "score": 25.8763
+        }
+      },
+      {
+        "branch_peaks": "-42|-32|-30|-23|-17|-14|-8|-5|-2|4|8|18|19|41|42",
+        "domino": "4-3",
+        "lower_tail_mass": 0.2891,
+        "mean": -2.2892,
+        "q10": -38,
+        "q50": -4,
+        "q90": 38,
+        "shelf_gap": 84,
+        "std": 25.7439,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.9219,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 3,
+          "score": 23.9646
+        }
+      },
+      {
+        "branch_peaks": "-41|-39|37|41",
+        "domino": "2-1",
+        "lower_tail_mass": 0.4453,
+        "mean": -5.7402,
+        "q10": -42,
+        "q50": -12,
+        "q90": 41,
+        "shelf_gap": 82,
+        "std": 32.6784,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8125,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 3,
+          "score": 46.2809
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-25|-19|-8|-5|-3|9|14|17|41|42",
+        "domino": "6-3",
+        "lower_tail_mass": 0.4375,
+        "mean": -9.5416,
+        "q10": -41,
+        "q50": -12,
+        "q90": 36,
+        "shelf_gap": 84,
+        "std": 26.3794,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8906,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 3,
+          "score": 25.6153
+        }
+      }
+    ],
+    "actual_action": "6-6",
+    "decision_flags": {
+      "max_hidden_impact": 46.2809,
+      "multi_peak_action_count": 6,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 4,
+    "decl_name": "twos",
+    "game_idx": 23,
+    "seat_role": "left_setter",
+    "seed": 132,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-34|34",
+        "domino": "2-1",
+        "lower_tail_mass": 0.5781,
+        "mean": -5.2921,
+        "q10": -34,
+        "q50": -34,
+        "q90": 34,
+        "shelf_gap": 68,
+        "std": 33.4064,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "4-0",
+          "holder": 0,
+          "score": 44.8878
+        }
+      },
+      {
+        "branch_peaks": "-34|34",
+        "domino": "5-3",
+        "lower_tail_mass": 0.5781,
+        "mean": -5.2931,
+        "q10": -34,
+        "q50": -34,
+        "q90": 34,
+        "shelf_gap": 68,
+        "std": 33.4126,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "4-0",
+          "holder": 0,
+          "score": 44.895
+        }
+      }
+    ],
+    "actual_action": "2-1",
+    "decision_flags": {
+      "max_hidden_impact": 44.895,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 22,
+    "decl_name": "blanks",
+    "game_idx": 7,
+    "seat_role": "bidder_partner",
+    "seed": 18,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-39|-37|-30|-26|-23|-19|-16|-14|-11|-7|41",
+        "domino": "3-2",
+        "lower_tail_mass": 0.6016,
+        "mean": -17.6927,
+        "q10": -42,
+        "q50": -26,
+        "q90": 33,
+        "shelf_gap": 83,
+        "std": 26.9629,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6797,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 43.6653
+        }
+      },
+      {
+        "branch_peaks": "-42|-36|-27|-23|-18|-1|1|41|42",
+        "domino": "5-2",
+        "lower_tail_mass": 0.6016,
+        "mean": -17.7551,
+        "q10": -42,
+        "q50": -26,
+        "q90": 36,
+        "shelf_gap": 84,
+        "std": 26.8127,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6953,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 39.6131
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-37|-29|-27|-25|-21|-16|-10|-9|4|41",
+        "domino": "6-5",
+        "lower_tail_mass": 0.6016,
+        "mean": -18.0118,
+        "q10": -42,
+        "q50": -27,
+        "q90": 34,
+        "shelf_gap": 83,
+        "std": 26.7925,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7031,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 38.7052
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-37|-26|-23|-19|-15|-1|41",
+        "domino": "5-4",
+        "lower_tail_mass": 0.6172,
+        "mean": -18.4025,
+        "q10": -42,
+        "q50": -27,
+        "q90": 35,
+        "shelf_gap": 83,
+        "std": 26.7973,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6953,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 38.5555
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-29|-25|-19|-18|-10|0|3|42",
+        "domino": "2-2",
+        "lower_tail_mass": 0.6562,
+        "mean": -20.501,
+        "q10": -42,
+        "q50": -29,
+        "q90": 19,
+        "shelf_gap": 84,
+        "std": 24.9474,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6875,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 34.9809
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-36|-24|-18|-2",
+        "domino": "4-4",
+        "lower_tail_mass": 0.6484,
+        "mean": -22.7826,
+        "q10": -42,
+        "q50": -36,
+        "q90": 12,
+        "shelf_gap": 40,
+        "std": 22.9703,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6406,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 30.5651
+        }
+      }
+    ],
+    "actual_action": "3-2",
+    "decision_flags": {
+      "max_hidden_impact": 43.6653,
+      "multi_peak_action_count": 6,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 5,
+    "decl_name": "ones",
+    "game_idx": 4,
+    "seat_role": "left_setter",
+    "seed": 10,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-20|-15|-10|-8|-6|-5|-3|5|13|28|40|41",
+        "domino": "6-4",
+        "lower_tail_mass": 0.1953,
+        "mean": 2.9368,
+        "q10": -20,
+        "q50": -3,
+        "q90": 40,
+        "shelf_gap": 83,
+        "std": 24.0162,
+        "tags": "scalar_ev_lying_by_omission|multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 0.9375,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 30.263
+        }
+      },
+      {
+        "branch_peaks": "-42|-30|-28|-26|-18|-8|-5|-4|-1|7|29|41",
+        "domino": "4-1",
+        "lower_tail_mass": 0.3125,
+        "mean": -0.5015,
+        "q10": -30,
+        "q50": -5,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 26.7212,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.9297,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 35.5084
+        }
+      },
+      {
+        "branch_peaks": "-41|-39|-31|-30|-15|-11|-6|2|8|28|29|40",
+        "domino": "3-0",
+        "lower_tail_mass": 0.3516,
+        "mean": -4.2592,
+        "q10": -41,
+        "q50": -10,
+        "q90": 40,
+        "shelf_gap": 81,
+        "std": 29.0721,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8906,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 39.6151
+        }
+      },
+      {
+        "branch_peaks": "-41|-39|-30|-15|-11|-6|-1|28|29|40",
+        "domino": "1-0",
+        "lower_tail_mass": 0.3438,
+        "mean": -4.3141,
+        "q10": -41,
+        "q50": -10,
+        "q90": 40,
+        "shelf_gap": 81,
+        "std": 29.0727,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8906,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 39.6266
+        }
+      },
+      {
+        "branch_peaks": "-41|-39|-32|-30|-28|-27|-18|-16|-14|-11|-7|-3|28|40",
+        "domino": "0-0",
+        "lower_tail_mass": 0.3672,
+        "mean": -4.5827,
+        "q10": -41,
+        "q50": -10,
+        "q90": 40,
+        "shelf_gap": 81,
+        "std": 28.9701,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8984,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 39.8054
+        }
+      },
+      {
+        "branch_peaks": "-41|-39|-33|-30|-18|-16|-12|-11|-7|-2|1|2|28|29|41",
+        "domino": "4-3",
+        "lower_tail_mass": 0.3594,
+        "mean": -5.3646,
+        "q10": -41,
+        "q50": -11,
+        "q90": 40,
+        "shelf_gap": 82,
+        "std": 29.0541,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8984,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 39.6131
+        }
+      }
+    ],
+    "actual_action": "6-4",
+    "decision_flags": {
+      "max_hidden_impact": 39.8054,
+      "multi_peak_action_count": 6,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 6,
+    "decl_name": "fives",
+    "game_idx": 18,
+    "seat_role": "right_setter",
+    "seed": 97,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-34|-27|-5|1|6|34|39|41",
+        "domino": "5-3",
+        "lower_tail_mass": 0.4453,
+        "mean": -8.1948,
+        "q10": -42,
+        "q50": -12,
+        "q90": 39,
+        "shelf_gap": 83,
+        "std": 29.6414,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8047,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 39.752
+        }
+      },
+      {
+        "branch_peaks": "-42|-34|-27|-5|-2|1|6|29|39|41",
+        "domino": "5-2",
+        "lower_tail_mass": 0.4453,
+        "mean": -8.3888,
+        "q10": -42,
+        "q50": -13,
+        "q90": 39,
+        "shelf_gap": 83,
+        "std": 29.5722,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8047,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 39.7175
+        }
+      }
+    ],
+    "actual_action": "5-2",
+    "decision_flags": {
+      "max_hidden_impact": 39.752,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 1,
+    "decl_name": "fives",
+    "game_idx": 19,
+    "seat_role": "left_setter",
+    "seed": 101,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-39|-22|-3|12|25|38",
+        "domino": "3-2",
+        "lower_tail_mass": 0.4688,
+        "mean": 0.4362,
+        "q10": -39,
+        "q50": -3,
+        "q90": 38,
+        "shelf_gap": 77,
+        "std": 28.3632,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-3",
+          "holder": 3,
+          "score": 34.349
+        }
+      },
+      {
+        "branch_peaks": "-38|-34|-4|11|34|38",
+        "domino": "2-1",
+        "lower_tail_mass": 0.4688,
+        "mean": -3.3285,
+        "q10": -38,
+        "q50": -4,
+        "q90": 38,
+        "shelf_gap": 76,
+        "std": 32.5673,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-3",
+          "holder": 3,
+          "score": 39.2518
+        }
+      }
+    ],
+    "actual_action": "3-2",
+    "decision_flags": {
+      "max_hidden_impact": 39.2518,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 18,
+    "decl_name": "blanks",
+    "game_idx": 7,
+    "seat_role": "bidder_partner",
+    "seed": 18,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-40|-36|-16|1|15|19|29",
+        "domino": "6-2",
+        "lower_tail_mass": 0.5781,
+        "mean": -18.202,
+        "q10": -42,
+        "q50": -29,
+        "q90": 22,
+        "shelf_gap": 71,
+        "std": 25.6577,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 38.9838
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-27|-18|-6|14",
+        "domino": "3-2",
+        "lower_tail_mass": 0.625,
+        "mean": -21.2372,
+        "q10": -42,
+        "q50": -34,
+        "q90": 19,
+        "shelf_gap": 56,
+        "std": 24.2823,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 37.8406
+        }
+      }
+    ],
+    "actual_action": "6-2",
+    "decision_flags": {
+      "max_hidden_impact": 38.9838,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 5,
+    "decl_name": "fives",
+    "game_idx": 18,
+    "seat_role": "bidder_partner",
+    "seed": 97,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-34|-8|34",
+        "domino": "6-4",
+        "lower_tail_mass": 0.7109,
+        "mean": -20.9466,
+        "q10": -34,
+        "q50": -33,
+        "q90": 34,
+        "shelf_gap": 68,
+        "std": 22.625,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 1.0,
+        "top_hidden_impact": {
+          "domino": "4-0",
+          "holder": 3,
+          "score": 37.9514
+        }
+      },
+      {
+        "branch_peaks": "-34|-19|34",
+        "domino": "4-1",
+        "lower_tail_mass": 0.875,
+        "mean": -22.622,
+        "q10": -34,
+        "q50": -33,
+        "q90": 34,
+        "shelf_gap": 68,
+        "std": 21.9833,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 1.0,
+        "top_hidden_impact": {
+          "domino": "4-0",
+          "holder": 3,
+          "score": 29.7377
+        }
+      }
+    ],
+    "actual_action": "6-4",
+    "decision_flags": {
+      "max_hidden_impact": 37.9514,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 21,
+    "decl_name": "blanks",
+    "game_idx": 7,
+    "seat_role": "left_setter",
+    "seed": 18,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-18|-15|-13|-7|-5|-1|1|3|7|15|41",
+        "domino": "4-4",
+        "lower_tail_mass": 0.3047,
+        "mean": -2.9858,
+        "q10": -42,
+        "q50": -2,
+        "q90": 40,
+        "shelf_gap": 83,
+        "std": 28.0485,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8359,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 29.0898
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-36|-25|-20|-17|-6|-1|4|18|41",
+        "domino": "2-2",
+        "lower_tail_mass": 0.3047,
+        "mean": -3.6349,
+        "q10": -41,
+        "q50": -3,
+        "q90": 40,
+        "shelf_gap": 83,
+        "std": 26.5834,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.8906,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 29.6399
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-32|-10|-9|-7|-3|6|41",
+        "domino": "3-1",
+        "lower_tail_mass": 0.5312,
+        "mean": -16.3931,
+        "q10": -42,
+        "q50": -24,
+        "q90": 36,
+        "shelf_gap": 83,
+        "std": 26.9674,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7109,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 37.435
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-19|-18|-16|-11|-6|-5|-3|41",
+        "domino": "4-2",
+        "lower_tail_mass": 0.5391,
+        "mean": -17.5441,
+        "q10": -42,
+        "q50": -24,
+        "q90": 29,
+        "shelf_gap": 83,
+        "std": 26.855,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6484,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 34.6184
+        }
+      },
+      {
+        "branch_peaks": "-42|-19|-18|-11|-5|-3|16|41",
+        "domino": "4-0",
+        "lower_tail_mass": 0.5547,
+        "mean": -17.5821,
+        "q10": -42,
+        "q50": -25,
+        "q90": 27,
+        "shelf_gap": 83,
+        "std": 26.8501,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6406,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 34.5714
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-33|-29|-18|-17|-16|-14|-1|0|1|5|41|42",
+        "domino": "2-0",
+        "lower_tail_mass": 0.5547,
+        "mean": -18.4197,
+        "q10": -42,
+        "q50": -27,
+        "q90": 19,
+        "shelf_gap": 84,
+        "std": 25.2402,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6875,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 34.3136
+        }
+      }
+    ],
+    "actual_action": "2-2",
+    "decision_flags": {
+      "max_hidden_impact": 37.435,
+      "multi_peak_action_count": 6,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 4,
+    "decl_name": "fives",
+    "game_idx": 18,
+    "seat_role": "left_setter",
+    "seed": 97,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-37|-19|-15|-9",
+        "domino": "5-2",
+        "lower_tail_mass": 0.7266,
+        "mean": -28.7931,
+        "q10": -42,
+        "q50": -41,
+        "q90": 1,
+        "shelf_gap": 33,
+        "std": 18.6717,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.5078,
+        "top_hidden_impact": {
+          "domino": "6-4",
+          "holder": 1,
+          "score": 37.3858
+        }
+      },
+      {
+        "branch_peaks": "-42|-40|-38|-18|-13|-9|25",
+        "domino": "5-3",
+        "lower_tail_mass": 0.7344,
+        "mean": -28.8706,
+        "q10": -42,
+        "q50": -41,
+        "q90": 1,
+        "shelf_gap": 67,
+        "std": 18.6586,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.5,
+        "top_hidden_impact": {
+          "domino": "6-4",
+          "holder": 1,
+          "score": 37.217
+        }
+      }
+    ],
+    "actual_action": "5-2",
+    "decision_flags": {
+      "max_hidden_impact": 37.3858,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 6,
+    "decl_name": "fours",
+    "game_idx": 17,
+    "seat_role": "right_setter",
+    "seed": 83,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-36|-34|-31|-24|-21|-17|-16|-9|16|28",
+        "domino": "3-0",
+        "lower_tail_mass": 0.6016,
+        "mean": -15.5481,
+        "q10": -36,
+        "q50": -27,
+        "q90": 27,
+        "shelf_gap": 64,
+        "std": 23.2459,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "3-3",
+          "holder": 0,
+          "score": 37.1597
+        }
+      },
+      {
+        "branch_peaks": "-35|-31|27",
+        "domino": "5-3",
+        "lower_tail_mass": 0.6797,
+        "mean": -20.3841,
+        "q10": -37,
+        "q50": -33,
+        "q90": 15,
+        "shelf_gap": 62,
+        "std": 21.6928,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "3-3",
+          "holder": 0,
+          "score": 30.5166
+        }
+      }
+    ],
+    "actual_action": "3-0",
+    "decision_flags": {
+      "max_hidden_impact": 37.1597,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 5,
+    "decl_name": "threes",
+    "game_idx": 3,
+    "seat_role": "bidder_partner",
+    "seed": 7,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-37|-36|-32|-28|-16|-14|-6|9|40",
+        "domino": "6-3",
+        "lower_tail_mass": 0.5625,
+        "mean": -16.9189,
+        "q10": -42,
+        "q50": -25,
+        "q90": 27,
+        "shelf_gap": 82,
+        "std": 25.5249,
+        "tags": "scalar_ev_lying_by_omission|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7812,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 31.8753
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-33|-32|-29|-16|10|28",
+        "domino": "5-2",
+        "lower_tail_mass": 0.5625,
+        "mean": -17.272,
+        "q10": -42,
+        "q50": -26,
+        "q90": 28,
+        "shelf_gap": 70,
+        "std": 25.6049,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7734,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 32.681
+        }
+      },
+      {
+        "branch_peaks": "-42|-40|-38|-33|-29|-26|-17|-15|-11|6|10",
+        "domino": "6-5",
+        "lower_tail_mass": 0.5781,
+        "mean": -17.5941,
+        "q10": -42,
+        "q50": -27,
+        "q90": 27,
+        "shelf_gap": 52,
+        "std": 25.3023,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7734,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 31.8986
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-35|-33|-29|-26|-18|-16|10|40",
+        "domino": "5-4",
+        "lower_tail_mass": 0.5781,
+        "mean": -17.6203,
+        "q10": -42,
+        "q50": -27,
+        "q90": 26,
+        "shelf_gap": 82,
+        "std": 25.5978,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7734,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 32.8778
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-38|-36|-33|-30|-22|-18|-17|-15|9",
+        "domino": "2-2",
+        "lower_tail_mass": 0.6016,
+        "mean": -18.4461,
+        "q10": -42,
+        "q50": -26,
+        "q90": 20,
+        "shelf_gap": 51,
+        "std": 24.3058,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7656,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 30.5295
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-35|-32|-31|-22|-17|-15|10|28",
+        "domino": "3-2",
+        "lower_tail_mass": 0.6016,
+        "mean": -18.6547,
+        "q10": -42,
+        "q50": -30,
+        "q90": 28,
+        "shelf_gap": 70,
+        "std": 25.6344,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.75,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 37.0412
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-36|-34|-32|-31|-27|-24|-17|-10|-6|5",
+        "domino": "4-4",
+        "lower_tail_mass": 0.6328,
+        "mean": -20.4155,
+        "q10": -42,
+        "q50": -30,
+        "q90": 17,
+        "shelf_gap": 47,
+        "std": 22.8228,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7422,
+        "top_hidden_impact": {
+          "domino": "1-1",
+          "holder": 3,
+          "score": 30.5333
+        }
+      }
+    ],
+    "actual_action": "6-3",
+    "decision_flags": {
+      "max_hidden_impact": 37.0412,
+      "multi_peak_action_count": 7,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 1,
+    "decl_name": "ones",
+    "game_idx": 4,
+    "seat_role": "left_setter",
+    "seed": 10,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-35|-19|-4|-1|41",
+        "domino": "4-3",
+        "lower_tail_mass": 0.6328,
+        "mean": -21.6814,
+        "q10": -42,
+        "q50": -31,
+        "q90": 11,
+        "shelf_gap": 83,
+        "std": 23.4624,
+        "tags": "scalar_ev_lying_by_omission|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6875,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 31.8135
+        }
+      },
+      {
+        "branch_peaks": "-42|-37|-28|-27|-19|-8|-3|7|41",
+        "domino": "3-1",
+        "lower_tail_mass": 0.6406,
+        "mean": -21.8562,
+        "q10": -42,
+        "q50": -31,
+        "q90": 10,
+        "shelf_gap": 83,
+        "std": 23.4667,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6719,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 32.1222
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-37|-32|-29|-26|-16|-8|-4|6|41",
+        "domino": "5-0",
+        "lower_tail_mass": 0.6484,
+        "mean": -21.8901,
+        "q10": -42,
+        "q50": -32,
+        "q90": 12,
+        "shelf_gap": 83,
+        "std": 23.9395,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6641,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 36.2708
+        }
+      },
+      {
+        "branch_peaks": "-42|-36|-34|-25|-9|3|41",
+        "domino": "4-1",
+        "lower_tail_mass": 0.6328,
+        "mean": -21.9494,
+        "q10": -42,
+        "q50": -35,
+        "q90": 12,
+        "shelf_gap": 83,
+        "std": 24.1139,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6484,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 36.7747
+        }
+      },
+      {
+        "branch_peaks": "-42|-31|-29|-17|-7|-2|3|41",
+        "domino": "6-5",
+        "lower_tail_mass": 0.625,
+        "mean": -22.0762,
+        "q10": -42,
+        "q50": -33,
+        "q90": 7,
+        "shelf_gap": 83,
+        "std": 23.3509,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6562,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 32.0431
+        }
+      },
+      {
+        "branch_peaks": "-42|-35|-29|-7|-5|41",
+        "domino": "4-4",
+        "lower_tail_mass": 0.6641,
+        "mean": -24.2884,
+        "q10": -42,
+        "q50": -37,
+        "q90": 7,
+        "shelf_gap": 83,
+        "std": 22.0697,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.625,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 31.2778
+        }
+      },
+      {
+        "branch_peaks": "-42|-32|-29|-27|-16|-8|-6|-3|-1|2",
+        "domino": "3-3",
+        "lower_tail_mass": 0.6641,
+        "mean": -24.4589,
+        "q10": -42,
+        "q50": -38,
+        "q90": 6,
+        "shelf_gap": 44,
+        "std": 21.8763,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6094,
+        "top_hidden_impact": {
+          "domino": "2-2",
+          "holder": 3,
+          "score": 31.2123
+        }
+      }
+    ],
+    "actual_action": "4-3",
+    "decision_flags": {
+      "max_hidden_impact": 36.7747,
+      "multi_peak_action_count": 7,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 1,
+    "decl_name": "twos",
+    "game_idx": 1,
+    "seat_role": "left_setter",
+    "seed": 16,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-33|-32|-30|-21|-19|-17|-7|-5|8|12|17|22|32",
+        "domino": "5-4",
+        "lower_tail_mass": 0.4297,
+        "mean": -7.495,
+        "q10": -32,
+        "q50": -14,
+        "q90": 22,
+        "shelf_gap": 65,
+        "std": 19.9222,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 32.0932
+        }
+      },
+      {
+        "branch_peaks": "-32|-29|-7|13|16|17",
+        "domino": "6-1",
+        "lower_tail_mass": 0.5781,
+        "mean": -16.0652,
+        "q10": -33,
+        "q50": -31,
+        "q90": 17,
+        "shelf_gap": 49,
+        "std": 19.9586,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 35.9774
+        }
+      },
+      {
+        "branch_peaks": "-32|-18|-15|-8|-6|-2|13|15|17",
+        "domino": "6-0",
+        "lower_tail_mass": 0.5859,
+        "mean": -16.2356,
+        "q10": -33,
+        "q50": -31,
+        "q90": 17,
+        "shelf_gap": 49,
+        "std": 19.7251,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 35.5986
+        }
+      },
+      {
+        "branch_peaks": "-32|-19|-15|-9|4|6|15",
+        "domino": "6-3",
+        "lower_tail_mass": 0.5938,
+        "mean": -17.6372,
+        "q10": -33,
+        "q50": -31,
+        "q90": 14,
+        "shelf_gap": 47,
+        "std": 18.3499,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 33.4521
+        }
+      },
+      {
+        "branch_peaks": "-32|-19|-17|-7|-6|-3|3|5|7",
+        "domino": "3-2",
+        "lower_tail_mass": 0.6328,
+        "mean": -19.898,
+        "q10": -33,
+        "q50": -31,
+        "q90": 6,
+        "shelf_gap": 39,
+        "std": 16.5479,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 0,
+          "score": 30.4755
+        }
+      }
+    ],
+    "actual_action": "5-4",
+    "decision_flags": {
+      "max_hidden_impact": 35.9774,
+      "multi_peak_action_count": 5,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 9,
+    "decl_name": "fives",
+    "game_idx": 18,
+    "seat_role": "bidder_partner",
+    "seed": 97,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-36|-33|-17|-7|4|9|41",
+        "domino": "6-1",
+        "lower_tail_mass": 0.5781,
+        "mean": -19.2587,
+        "q10": -42,
+        "q50": -33,
+        "q90": 21,
+        "shelf_gap": 83,
+        "std": 24.8923,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6875,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 35.8516
+        }
+      },
+      {
+        "branch_peaks": "-42|-35|-33|-12|-8|2|41",
+        "domino": "2-0",
+        "lower_tail_mass": 0.5781,
+        "mean": -19.3964,
+        "q10": -42,
+        "q50": -33,
+        "q90": 20,
+        "shelf_gap": 83,
+        "std": 24.7984,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6953,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 35.6847
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-36|-33|-8|2|41",
+        "domino": "3-0",
+        "lower_tail_mass": 0.5781,
+        "mean": -19.4127,
+        "q10": -42,
+        "q50": -32,
+        "q90": 22,
+        "shelf_gap": 83,
+        "std": 24.5564,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6953,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 35.4751
+        }
+      },
+      {
+        "branch_peaks": "-42|-36|-33|-17|-8|2|4|9|41",
+        "domino": "3-1",
+        "lower_tail_mass": 0.5781,
+        "mean": -19.4228,
+        "q10": -42,
+        "q50": -32,
+        "q90": 22,
+        "shelf_gap": 83,
+        "std": 24.5754,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6797,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 35.6372
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-36|-33|-16|-8|-6|23|41",
+        "domino": "6-2",
+        "lower_tail_mass": 0.5781,
+        "mean": -19.4818,
+        "q10": -42,
+        "q50": -33,
+        "q90": 22,
+        "shelf_gap": 83,
+        "std": 24.8974,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6953,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 35.8168
+        }
+      },
+      {
+        "branch_peaks": "-42|-38|-35|-16|1|4",
+        "domino": "4-2",
+        "lower_tail_mass": 0.5781,
+        "mean": -19.4825,
+        "q10": -42,
+        "q50": -32,
+        "q90": 18,
+        "shelf_gap": 46,
+        "std": 24.6364,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6875,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 35.5777
+        }
+      },
+      {
+        "branch_peaks": "-42|-40|-36|-35|-34|-17|-6|5",
+        "domino": "3-3",
+        "lower_tail_mass": 0.6016,
+        "mean": -22.2944,
+        "q10": -42,
+        "q50": -34,
+        "q90": 10,
+        "shelf_gap": 47,
+        "std": 21.8558,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6797,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 3,
+          "score": 33.2025
+        }
+      }
+    ],
+    "actual_action": "3-0",
+    "decision_flags": {
+      "max_hidden_impact": 35.8516,
+      "multi_peak_action_count": 7,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 1,
+    "decl_name": "fives",
+    "game_idx": 0,
+    "seat_role": "left_setter",
+    "seed": 6,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-32|-29|-13|2|9|15|30",
+        "domino": "4-3",
+        "lower_tail_mass": 0.6562,
+        "mean": -17.6653,
+        "q10": -32,
+        "q50": -31,
+        "q90": 14,
+        "shelf_gap": 62,
+        "std": 19.6565,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 1.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 35.5225
+        }
+      },
+      {
+        "branch_peaks": "-32|-8|3",
+        "domino": "4-1",
+        "lower_tail_mass": 0.6875,
+        "mean": -21.3638,
+        "q10": -33,
+        "q50": -31,
+        "q90": 4,
+        "shelf_gap": 35,
+        "std": 15.6812,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 1.0,
+        "top_hidden_impact": {
+          "domino": "5-5",
+          "holder": 1,
+          "score": 29.9722
+        }
+      }
+    ],
+    "actual_action": "4-3",
+    "decision_flags": {
+      "max_hidden_impact": 35.5225,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 10,
+    "decl_name": "fives",
+    "game_idx": 18,
+    "seat_role": "right_setter",
+    "seed": 97,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-35|-11|-7|-4|0|10|13|15|21|29",
+        "domino": "4-4",
+        "lower_tail_mass": 0.4531,
+        "mean": -12.8129,
+        "q10": -35,
+        "q50": -11,
+        "q90": 23,
+        "shelf_gap": 64,
+        "std": 22.9426,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "4-1",
+          "holder": 0,
+          "score": 35.2005
+        }
+      },
+      {
+        "branch_peaks": "-35|-9|-1|4|6|35",
+        "domino": "5-4",
+        "lower_tail_mass": 0.6094,
+        "mean": -20.0194,
+        "q10": -35,
+        "q50": -35,
+        "q90": 6,
+        "shelf_gap": 70,
+        "std": 19.52,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "4-1",
+          "holder": 0,
+          "score": 31.1555
+        }
+      },
+      {
+        "branch_peaks": "-35|-19|-11|-9|-4|3|35",
+        "domino": "5-3",
+        "lower_tail_mass": 0.6328,
+        "mean": -20.3568,
+        "q10": -35,
+        "q50": -35,
+        "q90": 6,
+        "shelf_gap": 70,
+        "std": 19.3694,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "4-1",
+          "holder": 0,
+          "score": 31.411
+        }
+      }
+    ],
+    "actual_action": "4-4",
+    "decision_flags": {
+      "max_hidden_impact": 35.2005,
+      "multi_peak_action_count": 3,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 16,
+    "decl_name": "ones",
+    "game_idx": 2,
+    "seat_role": "bidder_partner",
+    "seed": 2,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-16|-10|-5|-1|12|14|29",
+        "domino": "3-2",
+        "lower_tail_mass": 0.0,
+        "mean": -2.7247,
+        "q10": -16,
+        "q50": -10,
+        "q90": 17,
+        "shelf_gap": 45,
+        "std": 15.0927,
+        "tags": "scalar_ev_lying_by_omission|multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-6",
+          "holder": 0,
+          "score": 22.2791
+        }
+      },
+      {
+        "branch_peaks": "-27|-25|-12|-10|-2|12|15|16|29",
+        "domino": "6-5",
+        "lower_tail_mass": 0.5156,
+        "mean": -10.125,
+        "q10": -27,
+        "q50": -25,
+        "q90": 16,
+        "shelf_gap": 56,
+        "std": 20.0118,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-6",
+          "holder": 0,
+          "score": 34.6842
+        }
+      },
+      {
+        "branch_peaks": "-27|-12|-10|-1|4|12|29",
+        "domino": "3-3",
+        "lower_tail_mass": 0.4766,
+        "mean": -10.8922,
+        "q10": -27,
+        "q50": -14,
+        "q90": 17,
+        "shelf_gap": 56,
+        "std": 18.2978,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-6",
+          "holder": 0,
+          "score": 28.0516
+        }
+      }
+    ],
+    "actual_action": "3-2",
+    "decision_flags": {
+      "max_hidden_impact": 34.6842,
+      "multi_peak_action_count": 3,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 18,
+    "decl_name": "blanks",
+    "game_idx": 15,
+    "seat_role": "bidder_partner",
+    "seed": 79,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-18|-11|-7|3|6|11|33|34|35|41",
+        "domino": "4-4",
+        "lower_tail_mass": 0.1562,
+        "mean": 7.642,
+        "q10": -27,
+        "q50": 6,
+        "q90": 41,
+        "shelf_gap": 59,
+        "std": 24.4728,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 1.0,
+        "top_hidden_impact": {
+          "domino": "6-4",
+          "holder": 0,
+          "score": 20.7475
+        }
+      },
+      {
+        "branch_peaks": "-39|-36|-33|-30|-22|-20|0|34|41",
+        "domino": "4-2",
+        "lower_tail_mass": 0.4219,
+        "mean": -3.2271,
+        "q10": -37,
+        "q50": -11,
+        "q90": 41,
+        "shelf_gap": 80,
+        "std": 28.9105,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.9922,
+        "top_hidden_impact": {
+          "domino": "6-4",
+          "holder": 3,
+          "score": 34.6355
+        }
+      }
+    ],
+    "actual_action": "4-4",
+    "decision_flags": {
+      "max_hidden_impact": 34.6355,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 1,
+    "decl_name": "fours",
+    "game_idx": 17,
+    "seat_role": "left_setter",
+    "seed": 83,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-1|1|3|5|32|34|41",
+        "domino": "6-5",
+        "lower_tail_mass": 0.1641,
+        "mean": 14.0987,
+        "q10": -42,
+        "q50": 26,
+        "q90": 42,
+        "shelf_gap": 83,
+        "std": 28.5729,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-4",
+          "holder": 1,
+          "score": 33.8051
+        }
+      },
+      {
+        "branch_peaks": "-42|-1|1|2|5|11|25|32|37|41",
+        "domino": "5-1",
+        "lower_tail_mass": 0.1953,
+        "mean": 9.7592,
+        "q10": -42,
+        "q50": 11,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 28.6457,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|hidden_threat_large_impact",
+        "threshold_mass": 0.0,
+        "top_hidden_impact": {
+          "domino": "6-4",
+          "holder": 1,
+          "score": 34.311
+        }
+      }
+    ],
+    "actual_action": "6-5",
+    "decision_flags": {
+      "max_hidden_impact": 34.311,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 5,
+    "decl_name": "fours",
+    "game_idx": 17,
+    "seat_role": "bidder_partner",
+    "seed": 83,
+    "team": "offense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-42|-39|-37|-18|8|20|41",
+        "domino": "6-1",
+        "lower_tail_mass": 0.4766,
+        "mean": -9.6824,
+        "q10": -42,
+        "q50": -17,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 30.0024,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7578,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 3,
+          "score": 31.2573
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-29|-22|-19|41",
+        "domino": "3-1",
+        "lower_tail_mass": 0.4922,
+        "mean": -10.0985,
+        "q10": -42,
+        "q50": -17,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 30.1667,
+        "tags": "high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7578,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 3,
+          "score": 32.007
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-36|-16|6|41",
+        "domino": "5-4",
+        "lower_tail_mass": 0.4766,
+        "mean": -10.4445,
+        "q10": -42,
+        "q50": -17,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 29.9646,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7578,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 3,
+          "score": 31.4379
+        }
+      },
+      {
+        "branch_peaks": "-42|-30|-19|-16|7|23|41",
+        "domino": "4-1",
+        "lower_tail_mass": 0.5078,
+        "mean": -10.9156,
+        "q10": -42,
+        "q50": -19,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 30.2389,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7422,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 3,
+          "score": 34.2153
+        }
+      },
+      {
+        "branch_peaks": "-42|-40|-37|-19|4|7|41",
+        "domino": "2-1",
+        "lower_tail_mass": 0.5078,
+        "mean": -11.1441,
+        "q10": -42,
+        "q50": -19,
+        "q90": 41,
+        "shelf_gap": 83,
+        "std": 29.6987,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7578,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 3,
+          "score": 32.2208
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-37|-18|-2|8|34|35|41",
+        "domino": "2-2",
+        "lower_tail_mass": 0.5391,
+        "mean": -14.602,
+        "q10": -42,
+        "q50": -23,
+        "q90": 34,
+        "shelf_gap": 83,
+        "std": 27.8475,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.7188,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 3,
+          "score": 32.0669
+        }
+      },
+      {
+        "branch_peaks": "-42|-39|-32|-24|-20|-16|-11|4|21|41",
+        "domino": "4-4",
+        "lower_tail_mass": 0.5625,
+        "mean": -16.6308,
+        "q10": -42,
+        "q50": -22,
+        "q90": 28,
+        "shelf_gap": 83,
+        "std": 26.5528,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.6953,
+        "top_hidden_impact": {
+          "domino": "0-0",
+          "holder": 2,
+          "score": 26.8539
+        }
+      }
+    ],
+    "actual_action": "6-1",
+    "decision_flags": {
+      "max_hidden_impact": 34.2153,
+      "multi_peak_action_count": 7,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 1,
+    "decl_name": "blanks",
+    "game_idx": 15,
+    "seat_role": "left_setter",
+    "seed": 79,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-41",
+        "domino": "4-3",
+        "lower_tail_mass": 0.9609,
+        "mean": -39.6984,
+        "q10": -42,
+        "q50": -41,
+        "q90": -41,
+        "shelf_gap": null,
+        "std": 6.5801,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.1719,
+        "top_hidden_impact": {
+          "domino": "5-4",
+          "holder": 0,
+          "score": 32.5874
+        }
+      },
+      {
+        "branch_peaks": "-41",
+        "domino": "4-1",
+        "lower_tail_mass": 0.9688,
+        "mean": -39.7567,
+        "q10": -41,
+        "q50": -41,
+        "q90": -40,
+        "shelf_gap": null,
+        "std": 6.3109,
+        "tags": "high_variance_close_mean|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.5078,
+        "top_hidden_impact": {
+          "domino": "5-4",
+          "holder": 0,
+          "score": 34.012
+        }
+      },
+      {
+        "branch_peaks": "-41|-39",
+        "domino": "2-0",
+        "lower_tail_mass": 1.0,
+        "mean": -40.6828,
+        "q10": -41,
+        "q50": -41,
+        "q90": -40,
+        "shelf_gap": 2,
+        "std": 1.5378,
+        "tags": "multi_peak_pdf|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.4141,
+        "top_hidden_impact": {
+          "domino": "5-4",
+          "holder": 0,
+          "score": 10.5273
+        }
+      },
+      {
+        "branch_peaks": "-41",
+        "domino": "6-1",
+        "lower_tail_mass": 1.0,
+        "mean": -40.7002,
+        "q10": -41,
+        "q50": -41,
+        "q90": -40,
+        "shelf_gap": null,
+        "std": 2.0792,
+        "tags": "large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.4531,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 0,
+          "score": 8.8973
+        }
+      },
+      {
+        "branch_peaks": "-41",
+        "domino": "6-0",
+        "lower_tail_mass": 1.0,
+        "mean": -40.7033,
+        "q10": -41,
+        "q50": -41,
+        "q90": -40,
+        "shelf_gap": null,
+        "std": 1.9641,
+        "tags": "large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.5078,
+        "top_hidden_impact": {
+          "domino": "5-2",
+          "holder": 0,
+          "score": 8.1708
+        }
+      }
+    ],
+    "actual_action": "4-1",
+    "decision_flags": {
+      "max_hidden_impact": 34.012,
+      "multi_peak_action_count": 1,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 8,
+    "decl_name": "threes",
+    "game_idx": 16,
+    "seat_role": "left_setter",
+    "seed": 81,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  },
+  {
+    "actions_by_mean": [
+      {
+        "branch_peaks": "-40|-16",
+        "domino": "6-1",
+        "lower_tail_mass": 0.6797,
+        "mean": -24.5248,
+        "q10": -41,
+        "q50": -38,
+        "q90": 12,
+        "shelf_gap": 24,
+        "std": 21.8974,
+        "tags": "scalar_ev_lying_by_omission|high_variance_close_mean|multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.9766,
+        "top_hidden_impact": {
+          "domino": "6-0",
+          "holder": 3,
+          "score": 33.8769
+        }
+      },
+      {
+        "branch_peaks": "-40|-26|-16|-14|-11|27",
+        "domino": "4-1",
+        "lower_tail_mass": 0.6562,
+        "mean": -26.1803,
+        "q10": -41,
+        "q50": -37,
+        "q90": 3,
+        "shelf_gap": 67,
+        "std": 18.7613,
+        "tags": "multi_peak_pdf|wide_shelf_gap|high_std|large_lower_tail|hidden_threat_large_impact",
+        "threshold_mass": 0.9688,
+        "top_hidden_impact": {
+          "domino": "6-0",
+          "holder": 3,
+          "score": 30.988
+        }
+      }
+    ],
+    "actual_action": "6-1",
+    "decision_flags": {
+      "max_hidden_impact": 33.8769,
+      "multi_peak_action_count": 2,
+      "scalar_ev_lying_by_omission": true
+    },
+    "decision_idx": 11,
+    "decl_name": "blanks",
+    "game_idx": 7,
+    "seat_role": "left_setter",
+    "seed": 18,
+    "team": "defense",
+    "why_interesting": "scalar EV branch risk plus hidden ownership impact"
+  }
+]

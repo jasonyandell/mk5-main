@@ -1,0 +1,960 @@
+{
+  "args": {
+    "batch_seeds": 10,
+    "bid_values": [
+      30,
+      32,
+      35,
+      36,
+      39,
+      42,
+      84
+    ],
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "device": "mps",
+    "n_decl_per_seed": 10,
+    "n_samples": 200,
+    "n_seeds": 50,
+    "start_seed": 9000
+  },
+  "artifacts": {
+    "bid_aware_actions_csv": "w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv",
+    "validation_check_csv": "w42/book_validation_v1/wave2/bid_aware_atlas/validation_check.csv"
+  },
+  "bead_id": "t42-7eop",
+  "created_at_utc": "2026-05-03T21:39:48.836509+00:00",
+  "failures": [],
+  "generation_log": [
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 30,
+      "elapsed_s": 68.34,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 32,
+      "elapsed_s": 64.78,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 35,
+      "elapsed_s": 64.85,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 36,
+      "elapsed_s": 57.24,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 39,
+      "elapsed_s": 55.49,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 42,
+      "elapsed_s": 54.11,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9009,
+      "batch_start": 9000,
+      "bid": 84,
+      "elapsed_s": 54.04,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 30,
+      "elapsed_s": 53.61,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 32,
+      "elapsed_s": 53.96,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 35,
+      "elapsed_s": 54.66,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 36,
+      "elapsed_s": 54.51,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 39,
+      "elapsed_s": 53.55,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 42,
+      "elapsed_s": 53.55,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9019,
+      "batch_start": 9010,
+      "bid": 84,
+      "elapsed_s": 53.18,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 30,
+      "elapsed_s": 53.47,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 32,
+      "elapsed_s": 53.31,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 35,
+      "elapsed_s": 53.1,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 36,
+      "elapsed_s": 54.48,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 39,
+      "elapsed_s": 53.33,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 42,
+      "elapsed_s": 52.53,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9029,
+      "batch_start": 9020,
+      "bid": 84,
+      "elapsed_s": 53.2,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 30,
+      "elapsed_s": 53.34,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 32,
+      "elapsed_s": 53.2,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 35,
+      "elapsed_s": 52.78,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 36,
+      "elapsed_s": 53.37,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 39,
+      "elapsed_s": 53.53,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 42,
+      "elapsed_s": 54.13,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9039,
+      "batch_start": 9030,
+      "bid": 84,
+      "elapsed_s": 53.73,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 30,
+      "elapsed_s": 53.4,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 32,
+      "elapsed_s": 53.47,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 35,
+      "elapsed_s": 53.78,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 36,
+      "elapsed_s": 53.74,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 39,
+      "elapsed_s": 53.79,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 42,
+      "elapsed_s": 53.27,
+      "status": "ok"
+    },
+    {
+      "batch_end": 9049,
+      "batch_start": 9040,
+      "bid": 84,
+      "elapsed_s": 53.32,
+      "status": "ok"
+    }
+  ],
+  "join_log": [
+    {
+      "bid": 30,
+      "file": "eq_pdf_seeds9000-9009_bid30_v2.pt",
+      "rows": 7312,
+      "sha256": "a5afa20f85d978e10babaec9d54b9277f8cc28e0a0179fb5c52f04a7cfab9d05",
+      "status": "ok"
+    },
+    {
+      "bid": 32,
+      "file": "eq_pdf_seeds9000-9009_bid32_v2.pt",
+      "rows": 7510,
+      "sha256": "4a67cce1f7d304316080d9a2c1f71ba6ca46ecfded4a56f9a31353e5d37d0830",
+      "status": "ok"
+    },
+    {
+      "bid": 35,
+      "file": "eq_pdf_seeds9000-9009_bid35_v2.pt",
+      "rows": 7377,
+      "sha256": "feeac0ca5bfa4e5ee29efafd13e1bcaf36ef547a3f0f452e73327d913d9a4aa7",
+      "status": "ok"
+    },
+    {
+      "bid": 36,
+      "file": "eq_pdf_seeds9000-9009_bid36_v2.pt",
+      "rows": 7380,
+      "sha256": "c9bb773bed6244da21af07d21629e775f23ff0a7e5741f68d796a7061e0e5519",
+      "status": "ok"
+    },
+    {
+      "bid": 39,
+      "file": "eq_pdf_seeds9000-9009_bid39_v2.pt",
+      "rows": 7493,
+      "sha256": "ddb303abebc2e3c7ae939ffdb5be3cad600b41dbc0f9c6d405f3872c25bebe77",
+      "status": "ok"
+    },
+    {
+      "bid": 42,
+      "file": "eq_pdf_seeds9000-9009_bid42_v2.pt",
+      "rows": 7477,
+      "sha256": "e1c1c9bd86c4b34fea935049d89740c862c5fae15df8f949d2d64170bcb8a404",
+      "status": "ok"
+    },
+    {
+      "bid": 84,
+      "file": "eq_pdf_seeds9000-9009_bid84_v2.pt",
+      "rows": 7527,
+      "sha256": "0bc8d24b43dc4d248068a13690030c67ca21299056ad4b94e6d4c6a6bd094507",
+      "status": "ok"
+    },
+    {
+      "bid": 30,
+      "file": "eq_pdf_seeds9010-9019_bid30_v2.pt",
+      "rows": 7488,
+      "sha256": "d2ba0d27ddd8febc2f43c659c81a31071ffc0c0f983bedff4c83663db31ce851",
+      "status": "ok"
+    },
+    {
+      "bid": 32,
+      "file": "eq_pdf_seeds9010-9019_bid32_v2.pt",
+      "rows": 7492,
+      "sha256": "06b4d8c08b7cbc59765e99548e4aa2ca80b0034c1e679b3026f9bc4e1be53aa2",
+      "status": "ok"
+    },
+    {
+      "bid": 35,
+      "file": "eq_pdf_seeds9010-9019_bid35_v2.pt",
+      "rows": 7539,
+      "sha256": "08966344726b2892881960432fdedfe63183280115a9164ba07db3a14aa71233",
+      "status": "ok"
+    },
+    {
+      "bid": 36,
+      "file": "eq_pdf_seeds9010-9019_bid36_v2.pt",
+      "rows": 7513,
+      "sha256": "2e396fe5dcf3cb94e98600a8486dc01718e38547d085d3a6fb3e8ead7c9531c0",
+      "status": "ok"
+    },
+    {
+      "bid": 39,
+      "file": "eq_pdf_seeds9010-9019_bid39_v2.pt",
+      "rows": 7525,
+      "sha256": "83bc537cf2c389451d0be1a3226dab4551cbe8e0c9770aaccc2bd5925a7c30da",
+      "status": "ok"
+    },
+    {
+      "bid": 42,
+      "file": "eq_pdf_seeds9010-9019_bid42_v2.pt",
+      "rows": 7492,
+      "sha256": "b9bf11c91c78c67d4d9c75208378afbfe1e064b57eddd7258f4ee112f2d450a5",
+      "status": "ok"
+    },
+    {
+      "bid": 84,
+      "file": "eq_pdf_seeds9010-9019_bid84_v2.pt",
+      "rows": 7475,
+      "sha256": "d74f1433ec079b1df07be0485d54498642b15dabd394d6178ee948edd64ca864",
+      "status": "ok"
+    },
+    {
+      "bid": 30,
+      "file": "eq_pdf_seeds9020-9029_bid30_v2.pt",
+      "rows": 7386,
+      "sha256": "405acedebae812831929d6a1a7884b91456fa3911852439a88fd3548a738cd4b",
+      "status": "ok"
+    },
+    {
+      "bid": 32,
+      "file": "eq_pdf_seeds9020-9029_bid32_v2.pt",
+      "rows": 7434,
+      "sha256": "fa0db188cd2b850ae71e8680c01286813b7defa0256460d8badc7e0afdb64622",
+      "status": "ok"
+    },
+    {
+      "bid": 35,
+      "file": "eq_pdf_seeds9020-9029_bid35_v2.pt",
+      "rows": 7374,
+      "sha256": "e9970e1695cb0d5a911dc43b78e366e952e22c9dec466b1ff2d7c8308964e9fb",
+      "status": "ok"
+    },
+    {
+      "bid": 36,
+      "file": "eq_pdf_seeds9020-9029_bid36_v2.pt",
+      "rows": 7430,
+      "sha256": "6385ef00a798d3499954e3ca5117fff1fb42010b9f8b2b0b8781d482193f2e53",
+      "status": "ok"
+    },
+    {
+      "bid": 39,
+      "file": "eq_pdf_seeds9020-9029_bid39_v2.pt",
+      "rows": 7409,
+      "sha256": "3f92d14d831485eca2026c6dd38b6920787cca797dec49752d332a3088139942",
+      "status": "ok"
+    },
+    {
+      "bid": 42,
+      "file": "eq_pdf_seeds9020-9029_bid42_v2.pt",
+      "rows": 7393,
+      "sha256": "65f2fea399e108f81ac6d77e6ec572f2af068d382f43f0f5ace0e057f3dae036",
+      "status": "ok"
+    },
+    {
+      "bid": 84,
+      "file": "eq_pdf_seeds9020-9029_bid84_v2.pt",
+      "rows": 7394,
+      "sha256": "22be39a26e3f19561a4fb2ffeee1b24ce06775b5f31e27919ee6d17f8d7f6343",
+      "status": "ok"
+    },
+    {
+      "bid": 30,
+      "file": "eq_pdf_seeds9030-9039_bid30_v2.pt",
+      "rows": 7412,
+      "sha256": "c7ce1eafe6f32bb9ce00242b12f55fdd6775267d020b98f53ae4463ce2f54f15",
+      "status": "ok"
+    },
+    {
+      "bid": 32,
+      "file": "eq_pdf_seeds9030-9039_bid32_v2.pt",
+      "rows": 7347,
+      "sha256": "de2b858ffc18dd37a817c74b8e7a7f96f59f7625397913512368f67f85a14195",
+      "status": "ok"
+    },
+    {
+      "bid": 35,
+      "file": "eq_pdf_seeds9030-9039_bid35_v2.pt",
+      "rows": 7371,
+      "sha256": "f754bf5666b6d30061149001483ca5e7400650689739bd8e338e99b1fb0afefe",
+      "status": "ok"
+    },
+    {
+      "bid": 36,
+      "file": "eq_pdf_seeds9030-9039_bid36_v2.pt",
+      "rows": 7312,
+      "sha256": "d32d42eb0b693c3bf2beac819bdce9f46a7ec3eae40df01e0780947bca339146",
+      "status": "ok"
+    },
+    {
+      "bid": 39,
+      "file": "eq_pdf_seeds9030-9039_bid39_v2.pt",
+      "rows": 7384,
+      "sha256": "4cc0eadb30dcfd6652654011a282d58ab4448f62e939856ef9f63910b995ee70",
+      "status": "ok"
+    },
+    {
+      "bid": 42,
+      "file": "eq_pdf_seeds9030-9039_bid42_v2.pt",
+      "rows": 7313,
+      "sha256": "914cd06fd9bcdc4800fdd4a07667d301031321035807d517608ad82172dc094a",
+      "status": "ok"
+    },
+    {
+      "bid": 84,
+      "file": "eq_pdf_seeds9030-9039_bid84_v2.pt",
+      "rows": 7378,
+      "sha256": "aeae9e0dab0d21ad711db33a2ea029bc6dcedb49b1b20a8bc688105f4c57dbfc",
+      "status": "ok"
+    },
+    {
+      "bid": 30,
+      "file": "eq_pdf_seeds9040-9049_bid30_v2.pt",
+      "rows": 7342,
+      "sha256": "aced9fa0f11cc2fcbc58c01cf99b8659a05b3c6433ff0406124ce27fe2123118",
+      "status": "ok"
+    },
+    {
+      "bid": 32,
+      "file": "eq_pdf_seeds9040-9049_bid32_v2.pt",
+      "rows": 7365,
+      "sha256": "3e086ca26f6d1b86c53d512da7067c721186a28103ed83fa44fa58a9da34c0c5",
+      "status": "ok"
+    },
+    {
+      "bid": 35,
+      "file": "eq_pdf_seeds9040-9049_bid35_v2.pt",
+      "rows": 7375,
+      "sha256": "08b69c3cd3d92d8ab14cc215409fa6e73f0358a3e9389e0b4fba96000f6f4179",
+      "status": "ok"
+    },
+    {
+      "bid": 36,
+      "file": "eq_pdf_seeds9040-9049_bid36_v2.pt",
+      "rows": 7345,
+      "sha256": "bb077d94e31fa3cc7fe404a4f3ddd25a3be1648f5a9f3cdc87bdce754c1e1cfa",
+      "status": "ok"
+    },
+    {
+      "bid": 39,
+      "file": "eq_pdf_seeds9040-9049_bid39_v2.pt",
+      "rows": 7443,
+      "sha256": "2fe18d6deaae276ad26a8ffd8c8f2e4fb5e54ac1e677718e2e64a2239de14a5d",
+      "status": "ok"
+    },
+    {
+      "bid": 42,
+      "file": "eq_pdf_seeds9040-9049_bid42_v2.pt",
+      "rows": 7428,
+      "sha256": "789dab287e6c8aad1e71b35b44abfa4c8e163f6ca9bfb001aacde8cd7bd4268d",
+      "status": "ok"
+    },
+    {
+      "bid": 84,
+      "file": "eq_pdf_seeds9040-9049_bid84_v2.pt",
+      "rows": 7383,
+      "sha256": "44b2055625c35365521ba3f37d83c2c73cda8c49279cf2c38eb5ae5a1a244dda",
+      "status": "ok"
+    }
+  ],
+  "join_with_validation": [
+    {
+      "file": "eq_pdf_seeds9000-9009_bid30_v2.pt",
+      "rows": 7312,
+      "sha256": "a5afa20f85d978e10babaec9d54b9277f8cc28e0a0179fb5c52f04a7cfab9d05",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid30_v2.pt",
+      "rows": 7488,
+      "sha256": "d2ba0d27ddd8febc2f43c659c81a31071ffc0c0f983bedff4c83663db31ce851",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid30_v2.pt",
+      "rows": 7386,
+      "sha256": "405acedebae812831929d6a1a7884b91456fa3911852439a88fd3548a738cd4b",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid30_v2.pt",
+      "rows": 7412,
+      "sha256": "c7ce1eafe6f32bb9ce00242b12f55fdd6775267d020b98f53ae4463ce2f54f15",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid30_v2.pt",
+      "rows": 7342,
+      "sha256": "aced9fa0f11cc2fcbc58c01cf99b8659a05b3c6433ff0406124ce27fe2123118",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid30_v2.pt",
+      "rows": 808,
+      "sha256": "1bb121fa4e07772917b8517bde4bca9b618e045905be04e6ea1ab0ba78de9169",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9000-9009_bid32_v2.pt",
+      "rows": 7510,
+      "sha256": "4a67cce1f7d304316080d9a2c1f71ba6ca46ecfded4a56f9a31353e5d37d0830",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid32_v2.pt",
+      "rows": 7492,
+      "sha256": "06b4d8c08b7cbc59765e99548e4aa2ca80b0034c1e679b3026f9bc4e1be53aa2",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid32_v2.pt",
+      "rows": 7434,
+      "sha256": "fa0db188cd2b850ae71e8680c01286813b7defa0256460d8badc7e0afdb64622",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid32_v2.pt",
+      "rows": 7347,
+      "sha256": "de2b858ffc18dd37a817c74b8e7a7f96f59f7625397913512368f67f85a14195",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid32_v2.pt",
+      "rows": 7365,
+      "sha256": "3e086ca26f6d1b86c53d512da7067c721186a28103ed83fa44fa58a9da34c0c5",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid32_v2.pt",
+      "rows": 790,
+      "sha256": "f08e31c68268ea9576941e444c0f8fb514d63224d0111206e63e04426686696f",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9000-9009_bid35_v2.pt",
+      "rows": 7377,
+      "sha256": "feeac0ca5bfa4e5ee29efafd13e1bcaf36ef547a3f0f452e73327d913d9a4aa7",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid35_v2.pt",
+      "rows": 7539,
+      "sha256": "08966344726b2892881960432fdedfe63183280115a9164ba07db3a14aa71233",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid35_v2.pt",
+      "rows": 7374,
+      "sha256": "e9970e1695cb0d5a911dc43b78e366e952e22c9dec466b1ff2d7c8308964e9fb",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid35_v2.pt",
+      "rows": 7371,
+      "sha256": "f754bf5666b6d30061149001483ca5e7400650689739bd8e338e99b1fb0afefe",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid35_v2.pt",
+      "rows": 7375,
+      "sha256": "08b69c3cd3d92d8ab14cc215409fa6e73f0358a3e9389e0b4fba96000f6f4179",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid35_v2.pt",
+      "rows": 792,
+      "sha256": "b095ee47cb98787f3f9e0e41a8fffa7678e5a3f72c4e3e4eff4098ba04042b54",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9000-9009_bid36_v2.pt",
+      "rows": 7380,
+      "sha256": "c9bb773bed6244da21af07d21629e775f23ff0a7e5741f68d796a7061e0e5519",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid36_v2.pt",
+      "rows": 7513,
+      "sha256": "2e396fe5dcf3cb94e98600a8486dc01718e38547d085d3a6fb3e8ead7c9531c0",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid36_v2.pt",
+      "rows": 7430,
+      "sha256": "6385ef00a798d3499954e3ca5117fff1fb42010b9f8b2b0b8781d482193f2e53",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid36_v2.pt",
+      "rows": 7312,
+      "sha256": "d32d42eb0b693c3bf2beac819bdce9f46a7ec3eae40df01e0780947bca339146",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid36_v2.pt",
+      "rows": 7345,
+      "sha256": "bb077d94e31fa3cc7fe404a4f3ddd25a3be1648f5a9f3cdc87bdce754c1e1cfa",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid36_v2.pt",
+      "rows": 786,
+      "sha256": "cc2e6f9175db8d6e609f5933aad8334753277b3b3c296aa439c3fe0b5c5202fc",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9000-9009_bid39_v2.pt",
+      "rows": 7493,
+      "sha256": "ddb303abebc2e3c7ae939ffdb5be3cad600b41dbc0f9c6d405f3872c25bebe77",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid39_v2.pt",
+      "rows": 7525,
+      "sha256": "83bc537cf2c389451d0be1a3226dab4551cbe8e0c9770aaccc2bd5925a7c30da",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid39_v2.pt",
+      "rows": 7409,
+      "sha256": "3f92d14d831485eca2026c6dd38b6920787cca797dec49752d332a3088139942",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid39_v2.pt",
+      "rows": 7384,
+      "sha256": "4cc0eadb30dcfd6652654011a282d58ab4448f62e939856ef9f63910b995ee70",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid39_v2.pt",
+      "rows": 7443,
+      "sha256": "2fe18d6deaae276ad26a8ffd8c8f2e4fb5e54ac1e677718e2e64a2239de14a5d",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid39_v2.pt",
+      "rows": 783,
+      "sha256": "8a2dfbf96cbf1a90153e64091deb5f8fdf9b4068deba2add2da49819225bce5d",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9000-9009_bid42_v2.pt",
+      "rows": 7477,
+      "sha256": "e1c1c9bd86c4b34fea935049d89740c862c5fae15df8f949d2d64170bcb8a404",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid42_v2.pt",
+      "rows": 7492,
+      "sha256": "b9bf11c91c78c67d4d9c75208378afbfe1e064b57eddd7258f4ee112f2d450a5",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid42_v2.pt",
+      "rows": 7393,
+      "sha256": "65f2fea399e108f81ac6d77e6ec572f2af068d382f43f0f5ace0e057f3dae036",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid42_v2.pt",
+      "rows": 7313,
+      "sha256": "914cd06fd9bcdc4800fdd4a07667d301031321035807d517608ad82172dc094a",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid42_v2.pt",
+      "rows": 7428,
+      "sha256": "789dab287e6c8aad1e71b35b44abfa4c8e163f6ca9bfb001aacde8cd7bd4268d",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid42_v2.pt",
+      "rows": 797,
+      "sha256": "dec6d329498077feadcc6f490376c10be2cfdd7578f471810e95add6c86fe752",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9000-9009_bid84_v2.pt",
+      "rows": 7527,
+      "sha256": "0bc8d24b43dc4d248068a13690030c67ca21299056ad4b94e6d4c6a6bd094507",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9010-9019_bid84_v2.pt",
+      "rows": 7475,
+      "sha256": "d74f1433ec079b1df07be0485d54498642b15dabd394d6178ee948edd64ca864",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9020-9029_bid84_v2.pt",
+      "rows": 7394,
+      "sha256": "22be39a26e3f19561a4fb2ffeee1b24ce06775b5f31e27919ee6d17f8d7f6343",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9030-9039_bid84_v2.pt",
+      "rows": 7378,
+      "sha256": "aeae9e0dab0d21ad711db33a2ea029bc6dcedb49b1b20a8bc688105f4c57dbfc",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9040-9049_bid84_v2.pt",
+      "rows": 7383,
+      "sha256": "44b2055625c35365521ba3f37d83c2c73cda8c49279cf2c38eb5ae5a1a244dda",
+      "status": "ok"
+    },
+    {
+      "file": "eq_pdf_seeds9430-9430_bid84_v2.pt",
+      "rows": 794,
+      "sha256": "a15fa8d411c386532e54356eb5469f9e01777c9b02284a54fa86ce4c9243ec67",
+      "status": "ok"
+    }
+  ],
+  "mark_ev_divergence": {
+    "by_bid": {
+      "30": {
+        "headline": "bid=30: mm=1, tq_off=18, mean_mark_ev=-0.549, mean_tm=0.442, divergence(mark_ev vs 2*tm-1)=0.432",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.4319,
+        "mean_mark_ev": -0.5485,
+        "mean_p_make": 0.2257,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4417,
+        "n_rows": 36940,
+        "r_mark_ev_threshold_mass": 0.528,
+        "threshold_q_for_offense": 18
+      },
+      "32": {
+        "headline": "bid=32: mm=1, tq_off=22, mean_mark_ev=-0.624, mean_tm=0.447, divergence(mark_ev vs 2*tm-1)=0.519",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.5189,
+        "mean_mark_ev": -0.6243,
+        "mean_p_make": 0.1879,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4473,
+        "n_rows": 37148,
+        "r_mark_ev_threshold_mass": 0.4257,
+        "threshold_q_for_offense": 22
+      },
+      "35": {
+        "headline": "bid=35: mm=1, tq_off=28, mean_mark_ev=-0.729, mean_tm=0.452, divergence(mark_ev vs 2*tm-1)=0.634",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.6339,
+        "mean_mark_ev": -0.7294,
+        "mean_p_make": 0.1353,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4523,
+        "n_rows": 37036,
+        "r_mark_ev_threshold_mass": 0.2863,
+        "threshold_q_for_offense": 28
+      },
+      "36": {
+        "headline": "bid=36: mm=1, tq_off=30, mean_mark_ev=-0.774, mean_tm=0.449, divergence(mark_ev vs 2*tm-1)=0.672",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.6719,
+        "mean_mark_ev": -0.774,
+        "mean_p_make": 0.113,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.449,
+        "n_rows": 36980,
+        "r_mark_ev_threshold_mass": 0.2456,
+        "threshold_q_for_offense": 30
+      },
+      "39": {
+        "headline": "bid=39: mm=1, tq_off=36, mean_mark_ev=-0.872, mean_tm=0.457, divergence(mark_ev vs 2*tm-1)=0.786",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.786,
+        "mean_mark_ev": -0.8725,
+        "mean_p_make": 0.0638,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4567,
+        "n_rows": 37254,
+        "r_mark_ev_threshold_mass": 0.1359,
+        "threshold_q_for_offense": 36
+      },
+      "42": {
+        "headline": "bid=42: mm=1, tq_off=42, mean_mark_ev=-1.000, mean_tm=0.444, divergence(mark_ev vs 2*tm-1)=0.889",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.8887,
+        "mean_mark_ev": -1.0,
+        "mean_p_make": 0.0,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4443,
+        "n_rows": 37103,
+        "r_mark_ev_threshold_mass": null,
+        "threshold_q_for_offense": 42
+      },
+      "84": {
+        "headline": "bid=84: mm=2, tq_off=42, mean_mark_ev=-2.000, mean_tm=0.442, divergence(mark_ev vs 2*tm-1)=3.769",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 2,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 3.7685,
+        "mean_mark_ev": -2.0,
+        "mean_p_make": 0.0,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4421,
+        "n_rows": 37157,
+        "r_mark_ev_threshold_mass": null,
+        "threshold_q_for_offense": 42
+      }
+    },
+    "cross_bid_flip_rates_vs_bid30": {
+      "32": {
+        "mark_ev_change_rate": 0.6561,
+        "n_actual_actions": 14000,
+        "n_mark_ev_changed": 9185
+      },
+      "35": {
+        "mark_ev_change_rate": 0.6449,
+        "n_actual_actions": 14000,
+        "n_mark_ev_changed": 9028
+      },
+      "36": {
+        "mark_ev_change_rate": 0.6364,
+        "n_actual_actions": 14000,
+        "n_mark_ev_changed": 8910
+      },
+      "39": {
+        "mark_ev_change_rate": 0.629,
+        "n_actual_actions": 14000,
+        "n_mark_ev_changed": 8806
+      },
+      "42": {
+        "mark_ev_change_rate": 0.618,
+        "n_actual_actions": 14000,
+        "n_mark_ev_changed": 8652
+      },
+      "84": {
+        "mark_ev_change_rate": 1.0,
+        "n_actual_actions": 14000,
+        "n_mark_ev_changed": 14000
+      }
+    }
+  },
+  "rejoin_note": "Re-joined to include seed 9430 validation .pt files for validation step. bid_aware_actions.csv contains only seeds 9000-9049 (main corpus). Validation was re-run on rows from seeds 9000-9049 + 9430.",
+  "repo_commit": "ed4049a0b763b72ee25f4f056794bfc61f2be0c2",
+  "run_label": "full_sweep_wave2b2",
+  "schema_version": "w42.bookval.wave2.bid_aware_atlas.v1.batched",
+  "seed_batches": [
+    {
+      "end": 9009,
+      "n": 10,
+      "start": 9000
+    },
+    {
+      "end": 9019,
+      "n": 10,
+      "start": 9010
+    },
+    {
+      "end": 9029,
+      "n": 10,
+      "start": 9020
+    },
+    {
+      "end": 9039,
+      "n": 10,
+      "start": 9030
+    },
+    {
+      "end": 9049,
+      "n": 10,
+      "start": 9040
+    }
+  ],
+  "totals": {
+    "bid_row_counts": {
+      "30": 36940,
+      "32": 37148,
+      "35": 37036,
+      "36": 36980,
+      "39": 37254,
+      "42": 37103,
+      "84": 37157
+    },
+    "n_action_rows": 259618,
+    "n_bid_values": 7,
+    "n_decl_per_seed": 10,
+    "n_seeds": 50,
+    "n_total_games": 3500
+  },
+  "validation_bid30": {
+    "match_rate": 1.0,
+    "n_decl_ids_compared": 10,
+    "n_discrepant": 0,
+    "n_within_noise": 10,
+    "note": "Validation compares aggregate per-(seed,decl_id) mean EV of actual-action decisions, not per-decision scalar EVs. Two stochastic oracle runs on the same seed diverge in game trajectory after decision 0, so direct per-(decision_idx,slot) comparison is not appropriate.",
+    "pass": true,
+    "status": "completed",
+    "target_seed": 9430
+  },
+  "wall_seconds": 1939.93
+}

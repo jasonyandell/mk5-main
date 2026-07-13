@@ -1,0 +1,108 @@
+{
+  "schema_version": "w42.doubles_no_trump_claim_validation.v1",
+  "owner_bead": "t42-csw6.22",
+  "created_at": "2026-05-02T03:01:55.753734+00:00",
+  "commit_sha": "f746b93f4ea0bacc697ed27b9dbf2fbd9ef8e744",
+  "command": "python w42/doubles_no_trump_claim_validation/validate_doubles_no_trump.py",
+  "method": {
+    "evidence_mode": "deterministic ruleset predicates plus exact static hand enumeration",
+    "ruleset_score_mode": "straight 42; doubles-as-trump id 7; doubles-suit no-trump variant id 8 excluded; standard no-trump id 9",
+    "statistical_test": "exact enumeration; no confidence interval needed for full-population hand counts",
+    "oracle_regret_slice": "not available in this worktree; existing v0 artifacts expose only a broad declaration group and no isolated no-trump/doubles rows"
+  },
+  "data_inputs": {
+    "wiki_pages": [
+      "wiki/experiments/winning42-ch09-doubles-no-trump.md",
+      "wiki/experiments/w42-odds-ruleset-claim-validation.md",
+      "wiki/experiments/w42-detector-tests.md",
+      "wiki/experiments/w42-concept-bucket-regret.md",
+      "wiki/experiments/w42-claim-ledger.md"
+    ],
+    "source_corpora": "not applicable"
+  },
+  "random_seeds": "not applicable",
+  "ruleset_checks": {
+    "n": 5,
+    "supported": 5,
+    "failed": 0
+  },
+  "key_static_slices": {
+    "doubles_trump_candidate_4plus": {
+      "slice": "doubles_trump_candidate_4plus",
+      "n": 51108,
+      "denominator": 1184040,
+      "pct": 4.316408229451707,
+      "status": "context-limited",
+      "interpretation": "Four-plus doubles are rare enough to be a candidate gate, not a strategy verdict."
+    },
+    "dt_candidate_missing_6_6": {
+      "slice": "dt_candidate_missing_6_6",
+      "n": 21231,
+      "denominator": 51108,
+      "pct": 41.54144165297018,
+      "status": "context-limited",
+      "interpretation": "Many four-plus-double hands lack the top double, so double count alone is insufficient."
+    },
+    "dt_candidate_missing_top_double": {
+      "slice": "dt_candidate_missing_top_double",
+      "n": 35602,
+      "denominator": 51108,
+      "pct": 69.66032715034828,
+      "status": "context-limited",
+      "interpretation": "A stricter high-double gate still filters a large share of doubles-trump candidates."
+    },
+    "dt_candidate_off_count_liability": {
+      "slice": "dt_candidate_off_count_liability",
+      "n": 8960,
+      "denominator": 51108,
+      "pct": 17.531501917508024,
+      "status": "context-limited",
+      "interpretation": "Off-count exposure remains common among candidate doubles-trump hands."
+    },
+    "dt_candidate_has_dual_top_6_5": {
+      "slice": "dt_candidate_has_dual_top_6_5",
+      "n": 7077,
+      "denominator": 51108,
+      "pct": 13.847147217656726,
+      "status": "context-limited",
+      "interpretation": "6-5 dual-top protection is measurable but not common enough to be assumed."
+    },
+    "no_trump_support_proxy": {
+      "slice": "no_trump_support_proxy",
+      "n": 527559,
+      "denominator": 1184040,
+      "pct": 44.55584270801662,
+      "status": "underpowered",
+      "interpretation": "Static proxy for no-trump support doubles; needs oracle rollout for strategy status."
+    },
+    "regime_switch_proxy_nt_over_dt": {
+      "slice": "regime_switch_proxy_nt_over_dt",
+      "n": 21884,
+      "denominator": 51108,
+      "pct": 42.81912812084214,
+      "status": "underpowered",
+      "interpretation": "Candidate same-hand regime-switch bucket: 4+ doubles, weak high-double coverage, and no-trump support proxy."
+    }
+  },
+  "wandb": {
+    "enabled": true,
+    "available": true,
+    "mode": "online",
+    "project": "w42",
+    "entity": "jasonyandell-forge42",
+    "group": "w42-doubles-no-trump-claim-validation",
+    "name": "t42-csw6.22-winning42-sna-f746b93",
+    "id": "0kop3jhk",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/0kop3jhk",
+    "dir": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-22/w42/doubles_no_trump_claim_validation/wandb/wandb/run-20260501_220133-0kop3jhk/files"
+  },
+  "hf_links": "not applicable",
+  "claim_ledger_impact": "schema-shaped artifact only; no central claim-ledger rewrite",
+  "artifacts": {
+    "summary_json": "w42/doubles_no_trump_claim_validation/summary.json",
+    "ruleset_regime_checks_csv": "w42/doubles_no_trump_claim_validation/ruleset_regime_checks.csv",
+    "hand_regime_proxy_slices_csv": "w42/doubles_no_trump_claim_validation/hand_regime_proxy_slices.csv",
+    "examples_json": "w42/doubles_no_trump_claim_validation/examples.json",
+    "claim_ledger_delta_json": "w42/doubles_no_trump_claim_validation/claim_ledger_delta.json"
+  }
+}

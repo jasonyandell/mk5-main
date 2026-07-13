@@ -1,0 +1,260 @@
+{
+  "audit_verdict": {
+    "can_phase4_close_conservatively": true,
+    "remaining_future_work_kind": "bounded follow-up generators and ledger reconciliation, not missing claim ownership",
+    "verdict": "Phase 4 can close conservatively: every one of the 64 rows has current evidence and/or an explicit bounded blocker/generator requirement. Do not promote broad book claims beyond the stated slices."
+  },
+  "counts": {
+    "claims_with_evidence_sources": 64,
+    "claims_with_explicit_blocker_or_scope_bound": 64,
+    "claims_with_no_evidence_and_no_blocker": 0,
+    "completion_bucket_counts": {
+      "active_phase4": 30,
+      "complete_contradicted": 1,
+      "complete_direct_empirical": 3,
+      "complete_static_contradicted": 1,
+      "complete_static_supported": 20,
+      "needs_phase4_or_new_scope": 3,
+      "phase3_context_limited": 4,
+      "review_for_ledger_update": 2
+    },
+    "ledger_review_candidates": 2,
+    "ledger_status_counts": {
+      "context-limited": 12,
+      "contradicted": 2,
+      "not-yet-tested": 6,
+      "supported": 23,
+      "underpowered": 21
+    },
+    "phase4_claim_ids_with_worker_artifacts": 43,
+    "unresolved_or_bounded_rows_written": 39
+  },
+  "created_at_utc": "2026-05-03T15:34:25.421944+00:00",
+  "no_evidence_no_blocker_claim_ids": [],
+  "parsed_file_checks": {
+    "w42/auction_bid_discipline_claim_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 11
+    },
+    "w42/bid_only_enough_claim_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 10
+    },
+    "w42/claim_analysis_matrix/summary.json": {
+      "exists": true,
+      "rows_or_keys": 18
+    },
+    "w42/claim_analysis_synthesis/summary.json": {
+      "exists": true,
+      "rows_or_keys": 10
+    },
+    "w42/eighty_four_seed_mining/summary.json": {
+      "exists": true,
+      "rows_or_keys": 11
+    },
+    "w42/joined_claim_row_model_table/summary.json": {
+      "exists": true,
+      "rows_or_keys": 11
+    },
+    "w42/phase4_84_dynamic_seed_tests/blocker_table.csv": {
+      "exists": true,
+      "rows_or_keys": 4
+    },
+    "w42/phase4_84_dynamic_seed_tests/dynamic_84_paired_contrasts.csv": {
+      "exists": true,
+      "rows_or_keys": 3
+    },
+    "w42/phase4_84_dynamic_seed_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 10
+    },
+    "w42/phase4_bidding_count_exposure_tests/blocker_rows.csv": {
+      "exists": true,
+      "rows_or_keys": 7
+    },
+    "w42/phase4_bidding_count_exposure_tests/claim_summary.csv": {
+      "exists": true,
+      "rows_or_keys": 7
+    },
+    "w42/phase4_bidding_count_exposure_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 10
+    },
+    "w42/phase4_claim_completion_board/completion_board.csv": {
+      "exists": true,
+      "rows_or_keys": 64
+    },
+    "w42/phase4_claim_completion_board/summary.json": {
+      "exists": true,
+      "rows_or_keys": 14
+    },
+    "w42/phase4_doubles_notrump_regime_tests/claim_contrasts.csv": {
+      "exists": true,
+      "rows_or_keys": 8
+    },
+    "w42/phase4_doubles_notrump_regime_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 13
+    },
+    "w42/phase4_laydown_rule_accounting/laydown_results.csv": {
+      "exists": true,
+      "rows_or_keys": 6
+    },
+    "w42/phase4_laydown_rule_accounting/rule_results.csv": {
+      "exists": true,
+      "rows_or_keys": 23
+    },
+    "w42/phase4_laydown_rule_accounting/summary.json": {
+      "exists": true,
+      "rows_or_keys": 7
+    },
+    "w42/phase4_scoring_objective_tests/blockers.csv": {
+      "exists": true,
+      "rows_or_keys": 3
+    },
+    "w42/phase4_scoring_objective_tests/claim_summary.csv": {
+      "exists": true,
+      "rows_or_keys": 9
+    },
+    "w42/phase4_scoring_objective_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 10
+    },
+    "w42/phase4_sequence_handshape_tests/blocker_table.csv": {
+      "exists": true,
+      "rows_or_keys": 8
+    },
+    "w42/phase4_sequence_handshape_tests/paired_contrasts.csv": {
+      "exists": true,
+      "rows_or_keys": 10
+    },
+    "w42/phase4_sequence_handshape_tests/summary.json": {
+      "exists": true,
+      "rows_or_keys": 12
+    },
+    "w42/sequence_seat_counterfactuals/summary.json": {
+      "exists": true,
+      "rows_or_keys": 11
+    },
+    "w42/statistics_claims_ledger/claims.csv": {
+      "exists": true,
+      "rows_or_keys": 64
+    },
+    "w42/statistics_claims_ledger/summary.json": {
+      "exists": true,
+      "rows_or_keys": 14
+    }
+  },
+  "phase4_worker_claim_id_sets": {
+    "bidding_count_exposure_from_summary": [
+      "ch02-double-side-protection",
+      "ch02-four-five-off-danger",
+      "ch02-risk-budget-threshold",
+      "ch02-strong-trump-bad-risk-trap",
+      "ch02-three-plus-trumps-good-start",
+      "ch12-natural-bid-bucket-anomaly",
+      "ch16-partner-two-plus-doubles-prior"
+    ],
+    "doubles_notrump_by_board_route": [
+      "ch09-doubles-trump-candidate-4plus",
+      "ch09-no-trump-support-proxy",
+      "ch09-regime-switch-proxy-nt-over-dt"
+    ],
+    "eighty_four_dynamic_by_board_route": [
+      "ch07-84-contract-regime",
+      "ch07-protected-one-off-84-shape",
+      "ch07-score-42-vs-84-gate",
+      "ch07-straight-off-two-to-one-double",
+      "ch08-abandon-dead-assets",
+      "ch08-double-ahead-needs-same-suit-pair",
+      "ch08-one-to-four-last-trick-weapons",
+      "ch08-throwaway-priority-ladder"
+    ],
+    "laydown_by_board_route": [
+      "ch03-laydown-correctness"
+    ],
+    "scoring_objective_from_summary": [
+      "ch10-early-terminal-under-marks",
+      "ch10-low-bid-score-distortion",
+      "ch10-nonbidder-partial-points-erased",
+      "ch10-point-system-skill-signal",
+      "ch10-score-mode-objective",
+      "ch10-set-severity-compression",
+      "ch10-special-bid-mark-multiplier",
+      "ch10-timed-marks-advancement-objective",
+      "ch10-tournament-speed-tradeoff"
+    ],
+    "sequence_handshape_by_board_route": [
+      "ch03-count-inventory",
+      "ch03-off-timing",
+      "ch03-reentry-preservation",
+      "ch03-trump-pull-sequencing",
+      "ch04-avoid-disruptive-partner-trump-lead",
+      "ch04-lead-away-from-count-damage",
+      "ch04-lead-capture-for-support",
+      "ch04-low-trump-trap-against-count-dump",
+      "ch04-safe-partner-count-donation",
+      "ch05-count-calling-lead",
+      "ch05-count-protection",
+      "ch05-extra-count-to-set",
+      "ch05-trump-rich-count-intervention",
+      "ch12-setter-pounce-high-bid-off",
+      "ch16-four-trump-boss-first-policy"
+    ]
+  },
+  "schema_version": "w42.phase4_final_claim_audit.v1",
+  "scope": "Audit only; no central ledger/wiki/.beads edits. Write scope limited to w42/phase4_final_claim_audit/.",
+  "suspect_overclaims": [
+    {
+      "claim_id": "ch02-bid-only-enough",
+      "conservative_status": "context-limited supported slice or ledger-review candidate",
+      "risk": "Do not call broadly supported. Phase-3/board evidence supports minimum-winning-bid direction under synthetic auction-pressure and bidder-hand Monte Carlo labels; no real four-hand auction policy response."
+    },
+    {
+      "claim_id": "ch07-protected-one-off-shape-frequency",
+      "conservative_status": "context-limited frequency/surface evidence",
+      "risk": "Seed/frequency evidence should not become 84 bidding advice or action-value proof."
+    },
+    {
+      "claim_id": "ch10-tournament-speed-tradeoff",
+      "conservative_status": "context-limited proxy support",
+      "risk": "Supported-for-generated-trace-proxy is not human wall-clock tournament evidence."
+    },
+    {
+      "claim_id": "ch09-doubles-trump-candidate-4plus",
+      "conservative_status": "context-limited, caveat-structured evidence",
+      "risk": "Same-hand regime tests weaken any simple many-doubles => doubles-trump rule; no-trump often wins unless high/top-double control is present."
+    },
+    {
+      "claim_id": "ch03-laydown-correctness",
+      "conservative_status": "supported fixture/proof-checker substrate; broader application blocked",
+      "risk": "Executable proof fixtures exist, but arbitrary engine snapshots and Burl claim false-positive rates are not wired."
+    },
+    {
+      "claim_id": "ch04-safe-partner-count-donation",
+      "conservative_status": "context-limited to exact closure/current-control slices",
+      "risk": "Closure count donation is strong; before-closure donation is weak/CI crosses zero. Broad partner-support wording would overclaim."
+    },
+    {
+      "claim_id": "ch05-pounce-count-before-certainty",
+      "conservative_status": "supported only for operationalized row-local pounce label",
+      "risk": "Pounce/take-count-now and reckless-count controls are strong, but high-bid/off-window and exact bid-margin variants remain blocked."
+    },
+    {
+      "claim_id": "ch02-strong-trump-bad-risk-trap",
+      "conservative_status": "static surface supported, outcome mixed",
+      "risk": "Phase-4 supports the exposure/bid-ceiling trap surface, but generated make rate remains high in the trap slice."
+    }
+  ],
+  "validation": {
+    "all_requested_core_files_parsed": true,
+    "board_minus_ledger": [],
+    "completion_board_rows": 64,
+    "completion_board_unique_claim_ids": 64,
+    "ledger_minus_board": [],
+    "ledger_rows": 64,
+    "ledger_unique_claim_ids": 64,
+    "parsed_csv_files": 13,
+    "parsed_json_files": 15
+  }
+}

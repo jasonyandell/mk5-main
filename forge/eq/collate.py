@@ -9,7 +9,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-from forge.eq.generate import GameRecordGPU, DecisionRecordGPU
+from forge.eq.generate.types import GameRecordGPU, DecisionRecordGPU
 from forge.eq.transcript_tokenize import tokenize_transcript, MAX_TOKENS, N_FEATURES
 
 

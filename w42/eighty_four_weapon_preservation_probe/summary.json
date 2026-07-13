@@ -1,0 +1,52 @@
+{
+  "schema_version": "w42.eighty_four_weapon_preservation_probe.v1",
+  "owner_bead": "t42-5m82.6",
+  "created_at": "2026-05-02T21:16:45.139711+00:00",
+  "commit_sha": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "evidence_mode": "label and fixture design from existing static 84 validation; no new oracle rollout",
+  "prior_static_validation": {
+    "source_summary": "w42/eighty_four_claim_validation/summary.json",
+    "headline_metrics": {
+      "hand_declaration_pairs": 8288280,
+      "one_off_candidate_pct": 2.1739130434782608,
+      "protected_one_off_pct": 1.588628762541806,
+      "straight_one_off_pct": 0.5852842809364548,
+      "three_trump_three_double_one_off_pct": 0.8867943650552346,
+      "two_off_same_suit_with_protector_pct": 2.508361204013378,
+      "straight_weapon_pool_sizes": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "named_matching_double_opponent_team_probability_pct": 66.66666666666666,
+      "either_matching_double_opponent_team_probability_pct": 90.0
+    },
+    "claim_statuses": {
+      "ch07-84-contract-regime": "context-limited",
+      "ch07-protected-one-off-84-shape": "underpowered",
+      "ch07-straight-off-two-to-one-double": "context-limited",
+      "ch07-score-42-vs-84-gate": "not-yet-tested",
+      "ch08-one-to-four-last-trick-weapons": "context-limited",
+      "ch08-double-ahead-needs-same-suit-pair": "underpowered",
+      "ch08-abandon-dead-assets": "not-yet-tested",
+      "ch08-throwaway-priority-ladder": "not-yet-tested"
+    }
+  },
+  "probe_status": "design-ready; dynamic regret and E[Q] PDF labels not yet generated",
+  "claim_ledger_impact": "no central claim-ledger change; this bead defines direct labels and next measurements",
+  "wandb": "not applicable: report/spec-only, no training run",
+  "huggingface": "not applicable",
+  "artifacts": {
+    "label_spec_csv": "w42/eighty_four_weapon_preservation_probe/label_spec.csv",
+    "fixture_cases_csv": "w42/eighty_four_weapon_preservation_probe/fixture_cases.csv",
+    "measurement_axes_csv": "w42/eighty_four_weapon_preservation_probe/measurement_axes.csv",
+    "summary_json": "w42/eighty_four_weapon_preservation_probe/summary.json",
+    "manifest_json": "w42/eighty_four_weapon_preservation_probe/manifest.json"
+  }
+}

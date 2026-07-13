@@ -1,0 +1,23 @@
+{
+  "schema_version": "w42.artifact_manifest.v1",
+  "dataset_id": "w42-eighty-four-weapon-preservation-probe",
+  "created_at": "2026-05-02T21:16:45.139711+00:00",
+  "owner_bead": "t42-5m82.6",
+  "source_inputs": [
+    "wiki/experiments/winning42-ch07-taking-every-trick-84.md",
+    "wiki/experiments/winning42-ch08-setting-84.md",
+    "wiki/experiments/w42-84-claim-validation.md",
+    "w42/eighty_four_claim_validation/summary.json",
+    "w42/eighty_four_claim_validation/example_cases.csv",
+    "w42/eighty_four_claim_validation/abandonment_trigger_table.csv"
+  ],
+  "outputs": {
+    "label_spec_csv": "w42/eighty_four_weapon_preservation_probe/label_spec.csv",
+    "fixture_cases_csv": "w42/eighty_four_weapon_preservation_probe/fixture_cases.csv",
+    "measurement_axes_csv": "w42/eighty_four_weapon_preservation_probe/measurement_axes.csv",
+    "summary_json": "w42/eighty_four_weapon_preservation_probe/summary.json",
+    "manifest_json": "w42/eighty_four_weapon_preservation_probe/manifest.json"
+  },
+  "leakage_boundary": "hidden ownership labels are offline diagnostics only; live features must use public state or learned beliefs",
+  "exact_command": "python w42/eighty_four_weapon_preservation_probe/build_probe.py"
+}

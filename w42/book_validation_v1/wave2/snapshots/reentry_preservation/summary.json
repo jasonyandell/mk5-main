@@ -1,0 +1,15 @@
+{
+  "N_pairs": 200,
+  "ev_delta_mean": -1.6191867655329406,
+  "ev_delta_ci95_lo": -2.9325066398100876,
+  "ev_delta_ci95_hi": -0.3058668912557938,
+  "ev_delta_direction": "consume > preserve",
+  "cvar_delta_mean": -0.5393333370983601,
+  "cvar_delta_ci95_lo": -2.3342137715993503,
+  "cvar_delta_ci95_hi": 1.2555470974026304,
+  "threshold_mass_delta_mean": -0.025399998892098666,
+  "n_preserve_better": 89,
+  "pct_preserve_better": 44.5,
+  "claim_ledger_impact": "underpowered",
+  "claim_ledger_rationale": "200 snapshots from random play, single seed corpus. Directional signal present but CV R\u00b2 not computed; underpowered pending full atlas sweep."
+}

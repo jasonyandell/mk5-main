@@ -1,0 +1,5 @@
+matchup,hands,mean_point_net_team0,mean_mark_net_team0,point_team0_win_rate,mark_team0_win_rate,point_mark_hand_winner_disagreement_rate,point_net_std,mark_net_std
+control_greedy_vs_random,1000,8.879,0.149,0.568,0.568,0.0,60.26103,1.186679
+control_greedy_vs_weak_count_dumper,1000,14.026,0.23,0.62,0.62,0.0,61.086257,1.223355
+count_saver_vs_random,1000,4.966,0.07,0.542,0.542,0.0,62.206998,1.230697
+random_vs_weak_count_dumper,1000,6.985,0.122,0.554,0.554,0.0,61.921814,1.245258

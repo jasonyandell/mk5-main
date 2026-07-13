@@ -1,0 +1,67 @@
+{
+  "bead": "t42-dqow",
+  "schema_version": "w42.phase2_decision_table.summary.v0",
+  "created_at_utc": "2026-05-02T21:58:19.322779+00:00",
+  "repo_commit": "b9fc7ef9623fe21e0e120c26e5753e8d97b323a7",
+  "source_records": 5,
+  "decision_state_rows": 140,
+  "legal_action_rows": 346,
+  "samples_per_pdf_values": [
+    1000
+  ],
+  "role_counts": {
+    "bidder": 35,
+    "bidder_partner": 35,
+    "left_setter": 35,
+    "right_setter": 35
+  },
+  "distribution_findings": {
+    "decision_scalar_ev_lying_by_omission_count": 68,
+    "decision_multi_peak_pdf_count": 118,
+    "action_distribution_tag_counts": {
+      "high_std": 241,
+      "high_variance_close_mean": 87,
+      "large_lower_tail": 177,
+      "multi_peak_pdf": 309,
+      "scalar_ev_lying_by_omission": 68,
+      "wide_shelf_gap": 259
+    },
+    "actual_action_top_mean_count": 133,
+    "actual_action_top_threshold_count": 128,
+    "actual_action_safest_lower_tail_count": 114,
+    "mean_legal_action_count": 2.4714,
+    "max_legal_action_count": 7,
+    "max_std": 31.046
+  },
+  "strategy_surface": {
+    "detector_counts": {
+      "bidder_first_lead_plan": 35,
+      "defender_damage_lead_class": 46,
+      "first_setter_pounce_window": 9,
+      "first_trick_public_belief_update": 281,
+      "last_to_act_closure_policy": 68,
+      "late_trick_threshold_closure": 101,
+      "partner_forcedness_and_safety": 13,
+      "partner_third_seat_safe_donation": 13,
+      "setter_count_before_certainty": 30
+    },
+    "direct_label_readiness_values": [
+      "distribution_labels_ready",
+      "needs_bid_and_set_margin",
+      "needs_overtrump_belief",
+      "public_context_ready"
+    ],
+    "missing_fields_all_rows": [
+      "bid_amount",
+      "bid_margin",
+      "hidden_world_ownership"
+    ]
+  },
+  "scientific_status": {
+    "training_run": false,
+    "wandb": "not applicable",
+    "hf": "not applicable",
+    "claim_ledger_impact": "no claim-ledger movement",
+    "interpretation": "This is a v0 bridge table from an inspectable 5-game E[Q] PDF sample. It is ready for schema review and small-slice analysis, not final claim conclusions."
+  }
+}

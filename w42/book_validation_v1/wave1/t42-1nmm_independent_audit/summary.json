@@ -1,0 +1,81 @@
+{
+  "schema_version": "w42.book_validation_v1.wave1.independent_audit.summary.v1",
+  "bead": "t42-1nmm",
+  "wave": "wave1",
+  "created_at_utc": "2026-05-03T17:37:53.603262+00:00",
+  "question": "Is the phase-4 final claim audit reproducible from artifacts? Where does an independent rebuild disagree?",
+  "method": "Independent parse of 64-row ledger, worker-vs-ledger status comparison, artifact path verification, validation script reruns, overclaim re-derivation.",
+  "prior_audit_baseline": {
+    "supported": 23,
+    "underpowered": 21,
+    "context-limited": 12,
+    "not-yet-tested": 6,
+    "contradicted": 2,
+    "overclaim_risks": 8
+  },
+  "independent_audit": {
+    "supported": 23,
+    "underpowered": 20,
+    "context-limited": 14,
+    "not-yet-tested": 5,
+    "contradicted": 2,
+    "overclaim_risks_confirmed": 8
+  },
+  "artifact_checks": {
+    "all_28_cited_files_exist": true,
+    "all_64_ledger_artifact_paths_exist": true,
+    "board_ledger_id_set_symmetric_difference": 0,
+    "board_ledger_status_mismatches": 0
+  },
+  "validation_reruns": {
+    "scripts_run": 7,
+    "passed": 7,
+    "failed": 0,
+    "note": "All 7 phase-4 validate_outputs.py scripts pass with exit code 0"
+  },
+  "disagreements_with_prior_audit": 3,
+  "disagreement_summary": [
+    {
+      "claim_id": "ch10-point-system-skill-signal",
+      "prior_status": "underpowered",
+      "independent_status": "context-limited",
+      "basis": "Phase-4 scoring worker ran 4 heuristic policy pairs; observed different point/mark separation. Crosses the underpowered threshold.",
+      "recommended_action": "Orchestrator to consider promoting to context-limited; small-N policy evidence exists."
+    },
+    {
+      "claim_id": "ch10-timed-marks-advancement-objective",
+      "prior_status": "not-yet-tested",
+      "independent_status": "context-limited",
+      "basis": "Phase-4 scoring worker ran 160 synthetic timed trials (advancement_disagreement_rate=0.15). Goes beyond not-yet-tested.",
+      "recommended_action": "Orchestrator to consider promoting to context-limited; bounded by synthetic round-robin model."
+    },
+    {
+      "claim_id": "ch10-tournament-speed-tradeoff",
+      "prior_status": "context-limited",
+      "independent_status": "context-limited",
+      "basis": "Worker used non-standard status string \"supported-for-generated-trace-proxy\". This is a taxonomy violation, not a status change. Ledger context-limited is correct.",
+      "recommended_action": "No status change. Flag worker artifact for non-standard status string."
+    }
+  ],
+  "overclaim_risk_assessment": "All 8 prior overclaim risks independently confirmed. No new overclaim risks identified.",
+  "context_limited_blocker_check": {
+    "total_context_limited": 12,
+    "blockers_still_hold": 12,
+    "note": "All 12 context-limited blockers in unresolved_or_blocked_claims.csv remain valid: no new evidence eliminates any of the stated scope/policy counterfactual requirements."
+  },
+  "headline": "The prior audit holds up. Artifact baseline is intact (28/28 cited files exist, 64/64 ledger paths exist, 7/7 validation scripts pass, 0 board-ledger status mismatches). Two status promotions are independently supported (ch10-point-system-skill-signal: underpowered->context-limited; ch10-timed-marks-advancement-objective: not-yet-tested->context-limited). All 8 prior overclaim risks confirmed.",
+  "caveats": [
+    "This wave does not propose ledger-status changes; it documents findings for orchestrator reconciliation.",
+    "The two status divergences are based on phase-4 worker evidence produced in the same session as the prior audit (2026-05-03); no new external data was collected.",
+    "ch03-laydown-correctness: note that 6 passing fixture proofs now exist; the not-yet-tested label may understate the fixture-substrate scope."
+  ],
+  "outputs": {
+    "independent_audit_json": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/independent_audit.json",
+    "audit_diff_csv": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/audit_diff.csv",
+    "validation_rerun_results_csv": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/validation_rerun_results.csv",
+    "overclaim_risk_diff_csv": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/overclaim_risk_diff.csv",
+    "manifest_json": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/manifest.json",
+    "readme": "w42/book_validation_v1/wave1/t42-1nmm_independent_audit/README.md"
+  },
+  "wiki_page": "wiki/experiments/w42-bookval-v1-wave1-independent-audit.md"
+}

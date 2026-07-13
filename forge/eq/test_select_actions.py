@@ -111,6 +111,40 @@ class TestPMakeThresholds:
         assert actions[0].item() == 1, "P1 should pick action with Q>=-17"
         assert actions[1].item() == 1, "P3 should pick action with Q>=-17"
 
+    def test_bid_value_moves_offense_threshold(self):
+        """At bid 36, offense needs Q >= 30 -> bin 72+."""
+        from forge.eq.generate import _select_actions
+
+        current_players = [0]
+        legal_masks = torch.ones(1, 7, dtype=torch.bool)
+        states = make_mock_states(current_players, legal_masks)
+
+        e_q_pdf = torch.zeros(1, 7, 85)
+        e_q_pdf[0, 0, 60] = 1.0  # Q=18, makes bid 30 but not bid 36
+        e_q_pdf[0, 1, 72] = 1.0  # Q=30, makes bid 36
+        e_q = torch.tensor([[18.0, 30.0, -42.0, -42.0, -42.0, -42.0, -42.0]])
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True, bid_values=[36])
+
+        assert actions[0].item() == 1, "Bid 36 offense should pick Q>=30"
+
+    def test_bid_value_moves_defense_threshold(self):
+        """At bid 36, defense uses the matching set threshold bin 13+."""
+        from forge.eq.generate import _select_actions
+
+        current_players = [1]
+        legal_masks = torch.ones(1, 7, dtype=torch.bool)
+        states = make_mock_states(current_players, legal_masks)
+
+        e_q_pdf = torch.zeros(1, 7, 85)
+        e_q_pdf[0, 0, 12] = 1.0  # Q=-30, just below bid-36 defense threshold
+        e_q_pdf[0, 1, 13] = 1.0  # Q=-29, at bid-36 defense threshold
+        e_q = torch.tensor([[-30.0, -29.0, -42.0, -42.0, -42.0, -42.0, -42.0]])
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True, bid_values=[36])
+
+        assert actions[0].item() == 1, "Bid 36 defense should pick Q>=-29"
+
 
 class TestPMakeBeatsEQ:
     """Test that p_make takes priority over E[Q]."""

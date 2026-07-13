@@ -1,0 +1,50 @@
+{
+  "schema_version": "w42.world-sampler-audit.v1",
+  "checkpoint": "forge/models/domino-qval-3.3M-shuffle-qgap0.074-qmae0.96.ckpt",
+  "oracle_chunk_size": 256,
+  "sample_count": 100000,
+  "empirical_seed": 20260711,
+  "historical_claim": {
+    "value_q": 6.8,
+    "state_description": "trick 6 on seed 900013 after 20 random legal plays",
+    "source_commit": "73219520e1771c4a6e28c4cdace5e5efad857656",
+    "source_wiki": [
+      "wiki/sources/7321952.md",
+      "wiki/entities/burl.md",
+      "wiki/topics/consumption-ledger.md",
+      "wiki/questions/open.md"
+    ]
+  },
+  "instrument_boundary": {
+    "historical_status_at_7321952": "q_comparison_confounded",
+    "historical_sampled_path": "remaining-only opponent hands",
+    "historical_enumerated_path": "played-known plus remaining opponent hands",
+    "current_status": "fixed in the surrounding research session: both Burl paths now use remaining-only worlds",
+    "primary_audit_encoding": "production remaining-only representation with canonical opponent slot order",
+    "sensitivity_control": "played-plus-remaining full initial deals",
+    "consequence": "the surviving ~6.8-Q note is not a clean sampler-only estimate; current audit values are newly measured"
+  },
+  "fixtures": [
+    {
+      "name": "historical-seed-900013-p20",
+      "deal_seed": 900013,
+      "n_plays": 20,
+      "rollout_seed": 900013,
+      "provenance": "burl/tools/test_eq_distribution_candlewax.py at 7321952"
+    },
+    {
+      "name": "late-panel-seed-900017-p20",
+      "deal_seed": 900017,
+      "n_plays": 20,
+      "rollout_seed": 900017,
+      "provenance": "fixed audit panel"
+    },
+    {
+      "name": "late-panel-seed-900029-p20",
+      "deal_seed": 900029,
+      "n_plays": 20,
+      "rollout_seed": 900029,
+      "provenance": "fixed audit panel"
+    }
+  ]
+}

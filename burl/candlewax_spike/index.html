@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Candlewax runs — dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #2ea043;
+    --yellow: #d9b21a;
+    --orange: #f0883e;
+    --red: #f85149;
+    --purple: #8250df;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: var(--bg); color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; line-height: 1.5;
+  }
+  h1 { font-size: 16px; margin: 0 0 6px; }
+  .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; color: var(--muted); }
+  .bar .stat { padding: 3px 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 80px repeat(2, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+  .grid-header {
+    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .grid-idx {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    padding: 14px 8px; text-align: center;
+    border-right: 1px solid var(--border);
+    background: #0f1620;
+    position: relative;
+  }
+  .grid-idx .decl {
+    display: block; font-size: 10px; color: var(--muted); font-weight: normal;
+    margin-top: 6px;
+  }
+  .grid-idx .bot {
+    display: block; font-size: 11px; color: var(--yellow); margin-top: 4px;
+  }
+  .run {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    min-height: 140px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .run:hover { border-color: var(--blue); background: #1a2130; }
+  .run.empty { border-style: dashed; color: var(--muted); font-style: italic; cursor: default; }
+  .run.empty:hover { background: var(--panel); border-color: var(--border); }
+  .run .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .run .play {
+    font-size: 15px; font-weight: 700;
+  }
+  .run .play.match { color: var(--green); }
+  .run .play.diff { color: var(--orange); }
+  .run .play.miss { color: var(--red); }
+  .run .mode-tag {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 2px 6px; border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .run .mode-tag.plain { background: #30363d; color: var(--text); }
+  .run .mode-tag.multimodal { background: var(--purple); color: #fff; }
+  .run .stats { color: var(--muted); font-size: 11px; }
+  .run .stats .sep { opacity: 0.4; margin: 0 4px; }
+  .run .preview {
+    color: var(--text);
+    font-size: 12px;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    border-left: 2px solid var(--border);
+    padding-left: 8px;
+    white-space: pre-wrap;
+  }
+  .run.running .preview { color: var(--muted); font-style: italic; }
+  .run.multimodal .preview { border-left-color: var(--purple); }
+  .run.plain .preview { border-left-color: var(--muted); }
+  .run.fail { border-color: var(--red); }
+  .run.fail .play { color: var(--red); }
+
+  .flash {
+    position: fixed; bottom: 12px; right: 12px;
+    background: var(--panel); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px; color: var(--muted);
+    font-size: 11px; opacity: 0; transition: opacity 0.3s;
+  }
+  .flash.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Candlewax — all runs</h1>
+<div class="bar">
+  <span id="stat-root" class="stat">root=?</span>
+  <span id="stat-total" class="stat">runs: —</span>
+  <span id="stat-match" class="stat">bot-match: —</span>
+  <span id="stat-mm" class="stat">multimodal: — / —</span>
+  <span id="stat-plain" class="stat">plain: — / —</span>
+  <span id="stat-cost" class="stat">cost: —</span>
+  <span id="stat-updated" class="stat">updated —</span>
+  <span class="stat">view: <a href="?root=live_opus" style="color:var(--blue)">opus</a> · <a href="?root=live_haiku" style="color:var(--blue)">haiku</a> · <a href="?root=live" style="color:var(--blue)">live</a></span>
+</div>
+
+<div class="grid" id="grid">
+  <div class="grid-header">decision</div>
+  <div class="grid-header">plain</div>
+  <div class="grid-header">multimodal</div>
+</div>
+
+<div class="flash" id="flash">polling…</div>
+
+<script>
+(() => {
+  const DOMINO_LABELS = [
+    "0-0","1-0","1-1","2-0","2-1","2-2","3-0","3-1","3-2","3-3",
+    "4-0","4-1","4-2","4-3","4-4","5-0","5-1","5-2","5-3","5-4",
+    "5-5","6-0","6-1","6-2","6-3","6-4","6-5","6-6",
+  ];
+  const dlabel = d => (d >= 0 && d < 28) ? DOMINO_LABELS[d] : String(d);
+  const DECL_NAMES = {
+    0: "blanks", 1: "ones", 2: "twos", 3: "threes", 4: "fours",
+    5: "fives", 6: "sixes", 7: "doubles-trump", 8: "doubles-suit", 9: "notrump",
+  };
+
+  const params = new URLSearchParams(location.search);
+  const ROOT = params.get("root") || "live_opus";
+  document.getElementById("stat-root").textContent = `root=${ROOT}`;
+
+  const gridEl = document.getElementById("grid");
+  const flashEl = document.getElementById("flash");
+
+  let manifest = [];
+  let runsByKey = new Map();   // `${idx}_${mode}` -> {final_play, elapsed_s, ok, error}
+  let runEvents = new Map();   // `${idx}_${mode}` -> events[] (loaded lazily)
+  let tiles = new Map();       // `${idx}_${mode}` -> DOM element
+
+  function flash(text) {
+    flashEl.textContent = text;
+    flashEl.classList.add("show");
+    clearTimeout(flashEl._t);
+    flashEl._t = setTimeout(() => flashEl.classList.remove("show"), 700);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function buildGrid() {
+    // Clear existing tiles (keep headers).
+    while (gridEl.children.length > 3) gridEl.removeChild(gridEl.lastChild);
+    tiles.clear();
+
+    manifest.forEach(entry => {
+      const padIdx = String(entry.idx).padStart(3, "0");
+      const idxCell = document.createElement("div");
+      idxCell.className = "grid-idx";
+      idxCell.innerHTML =
+        `d${padIdx}` +
+        `<span class="decl">${escHtml(DECL_NAMES[entry.declaration] || entry.declaration)}` +
+        ` · seed ${entry.seed}</span>` +
+        `<span class="bot">bot: ${escHtml(dlabel(entry.bot_play))}` +
+        ` (E[Q]=${(+entry.bot_eq).toFixed(1)})</span>` +
+        `<span class="decl">gap ${(+entry.eq_gap).toFixed(2)}</span>`;
+      gridEl.appendChild(idxCell);
+
+      for (const mode of ["plain", "multimodal"]) {
+        const tile = document.createElement("div");
+        tile.className = `run empty ${mode}`;
+        tile.innerHTML = `<div class="stats">not run yet</div>`;
+        tile.dataset.idx = String(entry.idx);
+        tile.dataset.padIdx = padIdx;
+        tile.dataset.mode = mode;
+        tile.dataset.botPlay = String(entry.bot_play);
+        gridEl.appendChild(tile);
+        tiles.set(`${padIdx}_${mode}`, tile);
+      }
+    });
+  }
+
+  function renderTile(key) {
+    const tile = tiles.get(key);
+    if (!tile) return;
+    const idx = +tile.dataset.idx;
+    const mode = tile.dataset.mode;
+    const botPlay = +tile.dataset.botPlay;
+    const summary = runsByKey.get(key);
+    const events = runEvents.get(key) || [];
+
+    // Decide status.
+    const committed = events.find(e => e.kind === "commit");
+    const result = events.find(e => e.kind === "result");
+    const errorEvt = events.find(e => e.kind === "error");
+
+    let cls = `run ${mode}`;
+    let topHtml = "";
+    let statsHtml = "";
+    let previewHtml = "";
+
+    if (committed) {
+      const play = committed.final_play;
+      const label = committed.label || dlabel(play);
+      const match = (play === botPlay) ? "match" : "diff";
+      topHtml = `<span class="play ${match}">${escHtml(label)}</span>` +
+                `<span class="mode-tag ${mode}">${mode}</span>` +
+                (play === botPlay ? `<span class="stats">= bot</span>`
+                                  : `<span class="stats">≠ bot (${escHtml(dlabel(botPlay))})</span>`);
+    } else if (errorEvt) {
+      cls += " fail";
+      topHtml = `<span class="play miss">error</span>` +
+                `<span class="mode-tag ${mode}">${mode}</span>`;
+      previewHtml = escHtml(errorEvt.message || "failed");
+    } else if (events.length > 0) {
+      cls += " running";
+      topHtml = `<span class="play" style="color:var(--yellow)">running…</span>` +
+                `<span class="mode-tag ${mode}">${mode}</span>`;
+    } else if (summary && !summary.ok) {
+      cls += " fail";
+      topHtml = `<span class="play miss">failed</span>` +
+                `<span class="mode-tag ${mode}">${mode}</span>`;
+      previewHtml = escHtml(summary.error || "unknown");
+    } else {
+      // empty
+      cls += " empty";
+      topHtml = `<span class="stats">not run yet</span>` +
+                `<span class="mode-tag ${mode}">${mode}</span>`;
+    }
+
+    if (result) {
+      const cost = +result.cost_usd || 0;
+      const turns = result.num_turns || 0;
+      const ms = result.duration_ms || 0;
+      statsHtml = `<span class="stats">$${cost.toFixed(3)}<span class="sep">·</span>` +
+                  `${turns}t<span class="sep">·</span>${(ms/1000).toFixed(1)}s</span>`;
+    } else if (summary && summary.elapsed_s) {
+      statsHtml = `<span class="stats">${summary.elapsed_s.toFixed(1)}s</span>`;
+    }
+
+    if (!previewHtml) {
+      // Prefer the last assistant_text, then the last thinking, then anything.
+      const last = [...events].reverse().find(e =>
+        e.kind === "assistant_text" && e.content && e.content.trim());
+      const thinking = [...events].reverse().find(e =>
+        e.kind === "thinking" && e.content && e.content.trim());
+      if (last) previewHtml = escHtml(last.content);
+      else if (thinking) previewHtml = escHtml(thinking.content);
+      else if (events.find(e => e.kind === "prompt_user")) previewHtml = "—";
+    }
+
+    // Post-commit simulation: actual trick outcome per the engine.
+    let simHtml = "";
+    const sim = events.find(e => e.kind === "post_commit_sim");
+    if (sim && !sim.error) {
+      const mine = sim.count_to_my_team ?? 0;
+      const theirs = sim.count_to_opponents ?? 0;
+      const winSeat = sim.trick_winner_seat;
+      const mineColor = mine > 0 ? "var(--green)" : "var(--muted)";
+      const theirsColor = theirs > 0 ? "var(--red)" : "var(--muted)";
+      simHtml = `<div class="stats" style="border-top:1px dashed var(--border);padding-top:4px;margin-top:4px;">
+        engine: seat ${winSeat} won ·
+        <span style="color:${mineColor}">mine +${mine}</span> ·
+        <span style="color:${theirsColor}">opp +${theirs}</span>
+      </div>`;
+    } else if (sim && sim.error) {
+      simHtml = `<div class="stats" style="color:var(--muted);">engine sim: ${escHtml(sim.error)}</div>`;
+    }
+
+    tile.className = cls;
+    tile.innerHTML =
+      `<div class="top">${topHtml}</div>` +
+      statsHtml +
+      simHtml +
+      (previewHtml ? `<div class="preview">${previewHtml}</div>` : "");
+    // Link through to the single-run viewer.
+    const padIdx = tile.dataset.padIdx || idx.toString().padStart(3, "0");
+    tile.onclick = () => {
+      if (events.length === 0 && !summary) return;
+      location.href = `viewer.html?run=${padIdx}_${mode}`;
+    };
+  }
+
+  function updateStats() {
+    const vals = [...tiles.keys()].map(k => {
+      const events = runEvents.get(k) || [];
+      const commit = events.find(e => e.kind === "commit");
+      const result = events.find(e => e.kind === "result");
+      const tile = tiles.get(k);
+      const botPlay = +tile.dataset.botPlay;
+      return {
+        mode: tile.dataset.mode,
+        committed: commit ? commit.final_play : null,
+        bot: botPlay,
+        cost: result ? (+result.cost_usd || 0) : 0,
+      };
+    });
+    const done = vals.filter(v => v.committed !== null);
+    const matched = done.filter(v => v.committed === v.bot);
+    const mm = done.filter(v => v.mode === "multimodal");
+    const mmMatch = mm.filter(v => v.committed === v.bot);
+    const pl = done.filter(v => v.mode === "plain");
+    const plMatch = pl.filter(v => v.committed === v.bot);
+    const cost = vals.reduce((a, v) => a + v.cost, 0);
+
+    document.getElementById("stat-total").textContent = `runs: ${done.length} / ${vals.length}`;
+    document.getElementById("stat-match").textContent =
+      `bot-match: ${matched.length}/${done.length}`;
+    document.getElementById("stat-mm").textContent =
+      `multimodal: ${mmMatch.length} / ${mm.length}`;
+    document.getElementById("stat-plain").textContent =
+      `plain: ${plMatch.length} / ${pl.length}`;
+    document.getElementById("stat-cost").textContent =
+      `cost: $${cost.toFixed(2)}`;
+    document.getElementById("stat-updated").textContent =
+      `updated ${new Date().toLocaleTimeString()}`;
+  }
+
+  async function loadManifest() {
+    try {
+      const resp = await fetch(`./snapshots/index.jsonl?t=${Date.now()}`,
+                               {cache: "no-store"});
+      const text = await resp.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      manifest = lines.map(l => JSON.parse(l));
+      manifest.sort((a, b) => a.idx - b.idx);
+      buildGrid();
+    } catch (e) {
+      console.error("manifest load failed", e);
+    }
+  }
+
+  async function pollBatchSummary() {
+    try {
+      const resp = await fetch(`./${ROOT}/batch_summary.jsonl?t=${Date.now()}`,
+                               {cache: "no-store"});
+      if (!resp.ok) return;
+      const text = await resp.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      runsByKey.clear();
+      for (const line of lines) {
+        try {
+          const row = JSON.parse(line);
+          runsByKey.set(row.run_id, row);
+        } catch {}
+      }
+    } catch {}
+  }
+
+  async function pollEventsFor(key) {
+    try {
+      const [idxStr, mode] = key.split("_");
+      const resp = await fetch(`./${ROOT}/${key}/events.jsonl?t=${Date.now()}`,
+                               {cache: "no-store"});
+      if (!resp.ok) return false;
+      const text = await resp.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      const events = [];
+      for (const line of lines) {
+        try { events.push(JSON.parse(line)); } catch {}
+      }
+      runEvents.set(key, events);
+      return true;
+    } catch { return false; }
+  }
+
+  async function pollAll() {
+    if (!manifest.length) await loadManifest();
+    await pollBatchSummary();
+    // For each tile, try to load its events.
+    const keys = [...tiles.keys()];
+    await Promise.all(keys.map(pollEventsFor));
+    for (const k of keys) renderTile(k);
+    updateStats();
+    flash("updated");
+  }
+
+  loadManifest().then(() => {
+    pollAll();
+    setInterval(pollAll, 2000);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+asset_pool_size,final_off_cases,interpretation,single_defender_mean_weapons,single_defender_p_more_than_four,single_defender_p_one_to_four,single_defender_p_zero
+2,7,static last-trick weapon inventory before play pressure,0.666667,0.0,56.666667,43.333333
+3,7,static last-trick weapon inventory before play pressure,1.0,0.0,72.631579,27.368421
+4,14,static last-trick weapon inventory before play pressure,1.333333,0.0,83.274854,16.725146
+5,14,static last-trick weapon inventory before play pressure,1.666667,0.103199,90.05848,9.838321
+6,21,static last-trick weapon inventory before play pressure,2.0,0.554696,93.911249,5.534056
+7,14,static last-trick weapon inventory before play pressure,2.333333,1.728586,95.319917,2.951496
+8,14,static last-trick weapon inventory before play pressure,2.666667,4.076367,94.447884,1.475748
+9,7,static last-trick weapon inventory before play pressure,3.0,8.049536,91.26935,0.681115
+10,7,static last-trick weapon inventory before play pressure,3.333333,14.009288,85.706914,0.283798
+single named matching double,all straight-off cases,opponent-team ownership of one specific missing double is exactly two-to-one,not applicable,not applicable,66.666667,not applicable
+either of two matching doubles,straight off with two unheld same-suit doubles,"opponent-team ownership of at least one of two missing doubles is 90%, not a two-to-one event",not applicable,not applicable,90.0,not applicable

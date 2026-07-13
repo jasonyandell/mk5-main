@@ -1,0 +1,5 @@
+{
+  "model_repo": "mlx-community/gemma-4-e2b-it-bf16",
+  "adapter_path": null,
+  "max_tokens": 2048
+}

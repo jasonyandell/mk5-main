@@ -1,0 +1,24 @@
+{
+  "bead_id": "t42-8na4",
+  "wave": "wave2",
+  "probe": "t42-8na4_ch10_action_level",
+  "created_at_utc": "2026-05-03T21:53:03.069790Z",
+  "inputs": {
+    "bid_aware_actions_csv": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv",
+    "bid_aware_actions_sha256": "5338805dd136bd9e9728ca99535a55acba86d68a2d30ba3e8a4112a67b288f29"
+  },
+  "outputs": [
+    "action_flip_rates.csv",
+    "multiplier_strategic_effect.csv",
+    "cross_utility_matrix.csv",
+    "slice_breakdown.csv",
+    "summary.json",
+    "manifest.json",
+    "README.md"
+  ],
+  "command": "python3 /Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-8na4_ch10_action_level/run_ch10_action_level.py",
+  "python_version": "3.12.13 (main, Apr 14 2026, 14:33:40) [Clang 22.1.3 ]",
+  "n_decisions": 14000,
+  "n_bootstrap": 2000,
+  "rng_seed": 42
+}

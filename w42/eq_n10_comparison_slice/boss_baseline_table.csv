@@ -1,0 +1,5 @@
+policy,configuration,mean_regret,match_rate,near_tie_rate_regret_lt_0_5,eval_n,artifact
+oracle best e_q ceiling,full marginal e_q argmax,0.0,1.0,1.0,560,w42/raw_public_state_baseline/metrics.json
+E[Q] N=10 first worlds,"first 10 per-world Q rows, deterministic",0.11796871679169792,0.9,0.95,560,w42/raw_public_state_baseline/metrics.json
+raw public-state/action model best epoch 3,raw tokens plus attention mask plus voids plus candidate action id,2.4710691724504743,0.5964285714285714,0.675,560,w42/raw_public_state_baseline/run.json
+raw public-state/action model final epoch 8,raw tokens plus attention mask plus voids plus candidate action id,2.833551515851702,0.5660714285714286,0.65,560,w42/raw_public_state_baseline/run.json

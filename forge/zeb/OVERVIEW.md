@@ -553,14 +553,27 @@ a principled statistical approach backed by perfect-information analysis.
 
 ### Running Evaluations
 
-The unified eval CLI (`forge.zeb.eval`) supports any player matchup with consistent
-methodology, team-symmetric evaluation (n/2 games per seat assignment), and normalized results.
+**Quick start — eval a named HF model against E[Q]:**
+```bash
+# E[Q] vs large-belief (from HuggingFace) — include .pt extension
+python -u -m forge.zeb.eval_eq --vs-zeb hf --weights-name large-belief.pt --n-games 1000
 
+# E[Q] vs large (original, no belief head)
+python -u -m forge.zeb.eval_eq --vs-zeb hf --weights-name large.pt --n-games 1000
+
+# E[Q] vs default model (model.pt)
+python -u -m forge.zeb.eval_eq --vs-zeb hf --n-games 1000
+
+# E[Q] vs random (baseline sanity check)
+python -u -m forge.zeb.eval_eq --n-games 1000
+```
+
+**Unified CLI** — any matchup, including named HF models:
 ```bash
 # Single matchup
 python -u -m forge.zeb.eval random vs heuristic --n-games 1000
 python -u -m forge.zeb.eval "eq:n=100" vs "zeb:source=hf" --n-games 500 --json
-python -u -m forge.zeb.eval random vs "eq:n=50" --n-games 500
+python -u -m forge.zeb.eval "eq:n=50" vs "zeb:source=hf,weights_name=large-belief.pt" --n-games 500
 
 # All-pairs matrix
 python -u -m forge.zeb.eval --matrix random heuristic zeb "eq:n=50" --n-games 200
@@ -570,7 +583,8 @@ python -u -m forge.zeb.eval --matrix "eq:n=10" "eq:n=50" "eq:n=100" --n-games 20
 ```
 
 **Player spec format**: `KIND[:KEY=VAL,...]` — kinds are `random`, `heuristic`, `zeb`, `eq`.
-Examples: `random`, `eq:n=50`, `zeb:source=hf,weights_name=large`.
+Examples: `random`, `eq:n=50`, `zeb:source=hf,weights_name=large-belief.pt`.
+Note: `--weights-name` and `weights_name=` require the `.pt` extension.
 
 **Dispatch**: The engine automatically selects the optimal batched GPU path for each pair
 (eq-vs-random, eq-vs-zeb, eq-vs-eq, zeb-vs-random) and falls back to the generic
@@ -626,14 +640,86 @@ Even N=10 is competitive at 55.3%. This is consistent across seat assignments.
   statistical analysis (100 oracle queries per decision)
 - N=50 is the sweet spot for E[Q] evaluation — best accuracy and still fast
 
+**Structural asymmetry in random vs random**: Random vs random does NOT converge to
+50% — it stabilizes at ~47.8% for team 0 (bidder's team) over 270K+ games (SE ~0.1%).
+The ~2.2% disadvantage for the leading team likely stems from information asymmetry:
+the trick leader commits first, and followers benefit from seeing the led suit even
+when playing randomly. This is why the eval framework always runs both team assignments.
+
+### Modal Eval Matrix (GPU Tournaments)
+
+Run pairwise tournaments on Modal T4 GPUs with Bradley-Terry Elo ratings and W&B logging:
+
+```bash
+# Full tournament — all players, 5000 games per matchup
+modal run forge/modal_app.py::eval_matrix_entry \
+    --players "random;heuristic;eq:n=10;eq:n=50;eq:n=100;eq:n=500;zeb:source=hf,weights_name=large.pt;zeb:source=hf,weights_name=large-belief.pt" \
+    --n-games 5000 --batch-size 50
+
+# Quick check — fewer players or games
+modal run forge/modal_app.py::eval_matrix_entry \
+    --players "random;eq:n=100;zeb:source=hf,weights_name=large-belief.pt" \
+    --n-games 1000
+```
+
+Results are logged to W&B project `zeb-eval` with Elo ratings keyed by `training_step`,
+enabling Elo tracking over training progress.
+
+#### T4 Throughput Calibration (Feb 9, 2026)
+
+Measured on Modal T4 (100 games each, steady-state after one-time calibration warmup):
+
+| Bottleneck player | Throughput | 5000 games |
+|---|---|---|
+| random / heuristic | ~2000+ g/s | ~3 sec |
+| zeb (neural, single fwd pass) | ~48 g/s | ~2 min |
+| eq:n=100 | ~11-13 g/s | ~7 min |
+| eq:n=500 | ~3.0-3.5 g/s | ~25 min |
+
+Matchup speed ≈ speed of the slowest player. Calibration warmup adds ~40s on first
+oracle matchup (chunk size auto-tuning), amortized across all subsequent matchups.
+
+#### Tournament Cost Estimates (T4 @ $0.59/hr)
+
+**Tier 1 — 8-player full matrix** (random, heuristic, eq:n=10/50/100/500, zeb-large,
+zeb-large-belief), 56 matchups × 5000 games:
+
+| Bottleneck group | Matchups | Est. time |
+|---|---|---|
+| eq:n=500 involved | 14 | ~6.0 hrs |
+| eq:n=100 (no 500) | 12 | ~1.5 hrs |
+| eq:n=50 and below | 20 | ~1.0 hrs |
+| Fast only (zeb/random/heuristic) | 10 | ~0.1 hrs |
+| **Total** | **56** | **~8.5 hrs ≈ $5.00** |
+
+**Tier 2 — eq:n=1000 calibration** (vs eq:n=100, eq:n=500, zeb-large, zeb-large-belief
+only), 8 matchups × 5000 games: est. ~6.5 hrs ≈ $3.80.
+
+**Grand total: ~$8.80** for full tournament through eq:n=1000.
+
+#### Calibration Snapshot (Feb 9, 2026, 100 games — noisy)
+
+Elo ratings (anchored: eq:n=100 = 1600):
+
+| Player | Elo | Notes |
+|---|---|---|
+| eq(n=100) | 1600 | anchor |
+| zeb-large-belief | 1579 | step 1660, 1M training games |
+| eq(n=500) | 1561 | |
+| random | 1386 | floor |
+
+large-belief at 1M training games is already neck-and-neck with eq:n=100 (50% win rate
+head-to-head). A 5000-game tournament will pin down the precise ranking.
+
 ### Key Files
 
 - `eval/` — Unified eval package: CLI, engine, player specs, result types
   - `eval/__main__.py` — CLI: `python -u -m forge.zeb.eval`
   - `eval/engine.py` — Dispatch to optimal batched path per player pair
   - `eval/players.py` — `PlayerSpec` parsing and `build_player()` construction
-  - `eval/results.py` — `MatchResult`/`HalfResult` data types, formatting
+  - `eval/results.py` — `MatchResult`/`HalfResult` data types, formatting, Elo computation
   - `eval/loading.py` — Shared model loading (oracle + Zeb)
+  - `eval/test_elo.py` — Unit tests for Bradley-Terry Elo computation
 - `eq_player.py` — `EQPlayer` class, `zeb_states_to_game_state_tensor()` bridge,
   batched eval functions (`evaluate_eq_vs_random`, `evaluate_eq_vs_zeb`, `evaluate_eq_vs_eq`)
 - `eval_eq.py` — Original CLI (imports loading from `eval/`): `python -u -m forge.zeb.eval_eq`
@@ -796,9 +882,10 @@ Multiple workers use different `--worker-id` values. No shared filesystem needed
 **Training examples** flow through HuggingFace Hub:
 ```
 jasonyandell/zeb-42-examples/
-├── worker-0_1707123456_a1b2c3d4.pt    # Worker uploads atomically
-├── worker-0_1707123520_e5f6a7b8.pt
-└── worker-1_1707123489_c9d0e1f2.pt    # Multiple workers OK
+├── worker-0_1707123456_a1b2c3d4.pt         # self-play worker uploads atomically
+├── worker-1_1707123489_c9d0e1f2.pt
+├── eval-aux-0_1707123520_e5f6a7b8.pt       # eval EQ-vs-Zeb worker uploads
+└── eval-aux-1_1707123599_f1e2d3c4.pt
 ```
 
 Each `.pt` file contains an `TrainingExamples`:
@@ -806,9 +893,13 @@ Each `.pt` file contains an `TrainingExamples`:
 - `masks`: [N, 36] bool
 - `hand_indices`: [N, 7] int64
 - `hand_masks`: [N, 7] bool
-- `policy_targets`: [N, 7] float32 (MCTS visit distributions)
+- `policy_targets`: [N, 7] float32 (self-play MCTS visits; eval-aux may be actor one-hot or EQ PDF)
 - `value_targets`: [N] float32 (game outcomes in [-1, 1])
-- `metadata`: {worker_id, model_step, n_games, timestamp}
+- `metadata`: {worker_id, model_step, n_games, timestamp, source}
+
+Source values:
+- `selfplay-mcts`: default self-play stream (policy+value+belief objectives)
+- `eval-eq-zeb`: eval-aux stream (value+belief by default, policy weight 0)
 
 With `--games-per-batch 1280`: each file contains ~35k examples (~42MB).
 The learner tracks seen filenames and only downloads new files.
@@ -828,6 +919,18 @@ weights if the step hasn't changed. HF's ETag caching makes polling free.
 For `--weights-name large`, files become `large.pt`, `large-config.json`,
 `large-state.json`, and examples go under `large/` in the examples repo. Multiple
 models share the same repos without collision. See `forge/zeb/learner/RUNBOOK.md`.
+
+### Eval-aux Rollout
+
+Eval-aux should be rolled out in stages: 0 percent -> 5 percent -> 10 percent
+effective mix. Use the source-aware learner flags:
+- `--eval-aux-enabled/--no-eval-aux-enabled`
+- `--eval-aux-batch-fraction`
+- `--eval-aux-max-model-lag`
+- `--eval-aux-lag-half-life`
+- `--eval-aux-min-keep-weight`
+
+Use the copy-paste rollout and rollback commands in `forge/zeb/learner/RUNBOOK.md`.
 
 ### Replay Buffer Sizing
 

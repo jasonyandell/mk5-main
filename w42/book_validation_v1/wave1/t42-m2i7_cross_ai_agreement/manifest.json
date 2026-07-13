@@ -1,0 +1,38 @@
+{
+  "bead": "t42-m2i7",
+  "wave": "1.4",
+  "created_at_utc": "2026-05-03T17:40:08.273479+00:00",
+  "command": "python3 /Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/run_cross_ai_agreement.py",
+  "inputs": {
+    "joined_claim_action_rows": {
+      "path": "/Users/jason/code/mk5-main/w42/joined_claim_row_model_table/joined_claim_action_rows.csv",
+      "sha256": "5e9a4458978d7efb7898109289ac87c1ca4b3792b5ed53f8be270caed644af60"
+    },
+    "labeled_handshape_action_rows": {
+      "path": "/Users/jason/code/mk5-main/w42/phase4_sequence_handshape_tests/labeled_handshape_action_rows.csv",
+      "sha256": "94a6c400e0eb07ee2c7e4f34428f79c915271252b02812b2d948e2b4eb81c04c"
+    },
+    "paired_contrasts": {
+      "path": "/Users/jason/code/mk5-main/w42/phase4_sequence_handshape_tests/paired_contrasts.csv",
+      "sha256": "174de78fdfeab1f005fc47341a55dcc1b344ad7e0ebc35d33fbe9dce3790d873"
+    },
+    "branch_atlas_decision_actions": {
+      "path": "/Users/jason/code/mk5-main/w42/branch_atlas_scaled_v0/decision_actions.csv",
+      "sha256": "112cc9624417fd93c76b0d4621a8763b45a3ad69071c42acc31e01c5b31d0bcb"
+    },
+    "wave11_action_utility_scalars": {
+      "path": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-ybo6_distribution_lens_reranker/action_utility_scalars.csv",
+      "sha256": "00be3001b72f30d8c48f5bca3da019fae4e668f6c0c9518f4b7b74d4b13fedc1"
+    }
+  },
+  "outputs": [
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/per_action_source_picks.csv",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/agreement_matrix.csv",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/divisive_decisions.csv",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/spot_check_pack.json",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/per_claim_family_agreement.csv",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/summary.json",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/manifest.json",
+    "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-m2i7_cross_ai_agreement/README.md"
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "artifacts": {
+    "decision_actions_csv": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/decision_actions.csv",
+    "decision_states_csv": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/decision_states.csv",
+    "examples_json": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/examples.json",
+    "hidden_threat_rows_csv": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/hidden_threat_rows.csv",
+    "manifest_json": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/manifest.json"
+  },
+  "bead_id": "t42-0b4l.7",
+  "branch_findings": {
+    "action_distribution_tag_counts": {
+      "hidden_threat_large_impact": 270,
+      "high_std": 146,
+      "high_variance_close_mean": 234,
+      "large_lower_tail": 275,
+      "multi_peak_pdf": 317,
+      "scalar_ev_lying_by_omission": 95,
+      "wide_shelf_gap": 217
+    },
+    "actual_action_safest_lower_tail_count": 88,
+    "actual_action_top_mean_count": 147,
+    "actual_action_top_threshold_count": 90,
+    "decision_multi_peak_pdf_count": 84,
+    "decision_multi_peak_pdf_rate": 0.5,
+    "decision_scalar_ev_lying_by_omission_count": 95,
+    "decision_scalar_ev_lying_by_omission_rate": 0.5654761904761905,
+    "max_hidden_impact": 38.230483174324036,
+    "max_std": 32.31985092163086,
+    "mean_top_hidden_impact": 8.690541500631706
+  },
+  "command": "w42/branch_atlas_v1/build_branch_atlas.py /Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/targeted_84_games.pt --output-dir /Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas --bead-id t42-0b4l.7 --experiment w42-eighty-four-dynamic-branch-lab --top-k 8 --examples 16 --log-every-decisions 2 --wandb-mode online --wandb-group w42-eighty-four-dynamic-branch-lab --wandb-name t42-0b4l.7-dynamic-84-branch-lab",
+  "coverage": {
+    "inspected_decisions": 168,
+    "joint_world_decision_rate": 1.0,
+    "processed_joint_world_decisions": 168,
+    "sample_counts_by_decision": {
+      "256": 168
+    },
+    "skipped_no_joint_worlds": 0,
+    "skipped_no_legal_actions": 0
+  },
+  "created_at_utc": "2026-05-03T03:37:01.631751+00:00",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M burl/chat/server/tools_runner.py\n M w42/statistics_claims_ledger/build_statistics_claims_ledger.py\n M w42/statistics_claims_ledger/claims.csv\n M w42/statistics_claims_ledger/manifest.json\n M w42/statistics_claims_ledger/summary.json\n M wiki/entities/w42.md\n M wiki/experiments/w42-doubles-no-trump-claim-validation.md\n M wiki/experiments/w42-partner-support-claim-validation.md\n M wiki/experiments/w42-phase2-distribution-aware-ev-report.md\n M wiki/experiments/w42-phase2-hidden-domino-threat-attribution.md\n M wiki/experiments/w42-phase2-setter-pounce-direct-label-probe.md\n M wiki/experiments/w42-phase2-statistics-claims-ledger.md\n M wiki/experiments/w42-setter-defense-claim-validation.md\n M wiki/index.md\n M wiki/log.md\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/skills/analyze-hand/\n?? .agents/skills/clustering/\n?? .agents/skills/comprehension-test/\n?? .agents/skills/ecological/\n?? .agents/skills/minirocket/\n?? .agents/skills/modal/\n?? .agents/skills/pdf/\n?? .agents/skills/pymc/\n?? .agents/skills/pytorch-lightning/\n?? .agents/skills/pytorch/\n?? .agents/skills/ralph-loop/\n?? .agents/skills/shap/\n?? .agents/skills/statistical-rigor/\n?? .agents/skills/survival-forest/\n?? .agents/skills/texas-42-analytics/\n?? .agents/skills/texas-42-forge/\n?? .agents/skills/umap/\n?? .agents/skills/volcano-plots/\n?? .agents/skills/word2vec/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/claim_analysis/\n?? w42/claim_analysis_matrix/\n?? w42/claim_analysis_smoke/\n?? w42/claim_data_inventory/\n?? w42/doubles_no_trump_legacy_mining/\n?? w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/\n?? w42/eighty_four_weapon_preservation_probe/run_dynamic_branch_lab.py\n?? w42/gus_corpus_claim_deep_dive/\n?? w42/hidden_threat_legacy_mining/\n?? w42/tactical_claim_replication/\n?? w42/tactical_claim_replication_smoke/\n?? wiki/experiments/w42-claim-data-inventory.md\n?? wiki/experiments/w42-doubles-no-trump-legacy-mining.md\n?? wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md\n?? wiki/experiments/w42-hidden-threat-legacy-mining.md\n?? wiki/experiments/w42-phase2-claim-analysis-harness.md\n?? wiki/experiments/w42-phase2-claim-analysis-matrix.md\n?? wiki/experiments/w42-tactical-claim-replication.md",
+  "repo_commit": "f70a849ad62b6ae75e5ce6b08e960cad46f3860d",
+  "rows": {
+    "action_rows": 584,
+    "decision_rows": 168,
+    "hidden_threat_rows": 4497
+  },
+  "schema_version": "w42.branch_atlas_v1.summary.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "no claim-ledger movement",
+    "hf": "not applicable",
+    "interpretation": "Powered branch-atlas pilot. It measures branch shape and offline hidden-owner impact on a generated joint-world E[Q] slice; it does not validate book claims or train a policy by itself.",
+    "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+    "training_run": false,
+    "wandb": {
+      "available": true,
+      "dir": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/wandb/wandb/run-20260502_223659-f7uzoo7f/files",
+      "enabled": true,
+      "entity": "jasonyandell-forge42",
+      "group": "w42-eighty-four-dynamic-branch-lab",
+      "id": "f7uzoo7f",
+      "mode": "online",
+      "name": "t42-0b4l.7-dynamic-84-branch-lab",
+      "project": "w42",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/f7uzoo7f"
+    }
+  },
+  "source": {
+    "bid_value_counts": {
+      "84": 6
+    },
+    "bid_value_status": "fixed recorded bid_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "input_games": 6,
+    "n_samples": 256,
+    "path": "/Users/jason/code/mk5-main/w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/targeted_84_games.pt",
+    "schema": "v2",
+    "seeds": [
+      840700,
+      840701,
+      840702,
+      840703,
+      840704,
+      840705
+    ],
+    "sha256": "88626b7e6f00c074f39283cb0819daaa04c88b6bdcc6b9ba4e4396b46015c19a",
+    "start_seed": null
+  },
+  "strategy_surface": {
+    "detector_counts": {
+      "bidder_first_lead_plan": 42,
+      "defender_damage_lead_class": 12,
+      "first_setter_pounce_window": 31,
+      "first_trick_public_belief_update": 435,
+      "last_to_act_closure_policy": 162,
+      "late_trick_threshold_closure": 134,
+      "partner_forcedness_and_safety": 30,
+      "partner_third_seat_safe_donation": 34,
+      "setter_count_before_certainty": 17
+    },
+    "direct_label_readiness_values": [
+      "distribution_labels_ready",
+      "hidden_threat_offline_label_ready",
+      "needs_belief_model",
+      "needs_real_bid_margin",
+      "public_context_ready"
+    ],
+    "missing_fields_all_rows": [
+      "bid_margin"
+    ],
+    "role_counts": {
+      "bidder": 42,
+      "bidder_partner": 42,
+      "left_setter": 42,
+      "right_setter": 42
+    }
+  },
+  "wall_seconds": 0.8152313749305904
+}

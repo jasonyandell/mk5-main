@@ -14,25 +14,30 @@ DEFAULT_ORACLE = 'forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt'
 
 
 def load_oracle(checkpoint_path: str, device: str):
-    """Load Stage 1 oracle, bypassing Lightning RNG state issues."""
-    from forge.ml.module import DominoLightningModule
+    """Load Stage 1 oracle from a Lightning checkpoint using pure PyTorch.
+
+    Extracts DominoTransformer weights directly, avoiding any Lightning dependency.
+    """
+    from forge.ml.transformer import DominoTransformer
 
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     hparams = checkpoint['hyper_parameters']
-    model = DominoLightningModule(
+    model = DominoTransformer(
         embed_dim=hparams.get('embed_dim', 64),
         n_heads=hparams.get('n_heads', 4),
         n_layers=hparams.get('n_layers', 2),
         ff_dim=hparams.get('ff_dim', 128),
         dropout=hparams.get('dropout', 0.1),
-        lr=hparams.get('lr', 1e-3),
     )
     state_dict = checkpoint['state_dict']
-    if any(k.startswith('model._orig_mod.') for k in state_dict.keys()):
-        state_dict = {
-            k.replace('._orig_mod.', '.'): v for k, v in state_dict.items()
-        }
-    model.load_state_dict(state_dict)
+    # Strip Lightning wrapper prefix (model.X -> X) and torch.compile prefix
+    cleaned = {}
+    for k, v in state_dict.items():
+        k = k.replace('._orig_mod.', '.')
+        if k.startswith('model.'):
+            k = k[len('model.'):]
+        cleaned[k] = v
+    model.load_state_dict(cleaned)
     model.eval()
     model.to(device)
     return model

@@ -1,0 +1,102 @@
+{
+  "schema_version": "w42.seat_position_strategy_map.manifest.v1",
+  "bead": "t42-5m82.2",
+  "title": "w42 phase 2: seat and position strategy map",
+  "created_utc": "2026-05-02T21:15:14Z",
+  "repo_commit_at_drafting": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "status": "map-only",
+  "claim_ledger_impact": "no claim-ledger change",
+  "fresh_analysis_or_model_validation_script_run": false,
+  "evidence_mode": "structured synthesis of existing chapter pages, w42 detector maps, and E[Q] visualizer provenance",
+  "source_wiki_pages": [
+    "wiki/AGENTS.md",
+    "wiki/entities/w42.md",
+    "wiki/experiments/w42-final-empirical-strategy-report.md",
+    "wiki/experiments/winning42-strategy-measurement.md",
+    "wiki/experiments/winning42-ch01-in-a-nutshell.md",
+    "wiki/experiments/winning42-ch02-bidding.md",
+    "wiki/experiments/winning42-ch03-bidder-play.md",
+    "wiki/experiments/winning42-ch04-partner-support.md",
+    "wiki/experiments/winning42-ch05-setter-defense.md",
+    "wiki/experiments/winning42-ch06-concentration-style.md",
+    "wiki/experiments/winning42-ch07-taking-every-trick-84.md",
+    "wiki/experiments/winning42-ch08-setting-84.md",
+    "wiki/experiments/winning42-ch09-doubles-no-trump.md",
+    "wiki/experiments/winning42-ch10-tournament-scoring.md",
+    "wiki/experiments/winning42-ch11-table-talk.md",
+    "wiki/experiments/winning42-ch12-advanced-bidding-playing.md",
+    "wiki/experiments/winning42-ch13-optional-variations.md",
+    "wiki/experiments/winning42-ch14-history-tournaments.md",
+    "wiki/experiments/winning42-ch15-celebrities-style.md",
+    "wiki/experiments/winning42-ch16-statistical-odds.md",
+    "wiki/experiments/eq-browser-visualizers.md"
+  ],
+  "source_artifacts": [
+    "w42/strategy_tags_v0/tag_schema.json",
+    "w42/strategy_tags_v1_map/detector_map.json",
+    "w42/concept_bucket_regret_report/manifest.json",
+    "w42/belief_attention_concept_buckets/manifest.json",
+    "w42/style_partnership_concept_buckets/manifest.json",
+    "w42/setter_defense_claim_validation/missing_detectors.csv",
+    "w42/eighty_four_claim_validation/summary.json",
+    "w42/doubles_no_trump_claim_validation/summary.json",
+    "forge/analysis/scripts/export_eq_visualizer_data.py",
+    "forge/analysis/results/web/eq_pdf_discs.html"
+  ],
+  "visualizer_provenance": {
+    "documented_export_command": "python forge/analysis/scripts/export_eq_visualizer_data.py --limit 5",
+    "documented_output_files": [
+      "forge/analysis/results/data/27b_eq_per_game.jsonl",
+      "forge/analysis/results/data/eq_pdf_v3_sample.jsonl"
+    ],
+    "documented_source_tensor": "forge/data/eq_pdf_s9200-9201_d10_10s.pt",
+    "walkthrough_record_used": "Game 1/5, blanks, P0 lead 6-0, P1 0-0, P2 4-2, P3 4-0, P1 wins trick",
+    "provenance_note": "The walkthrough records the local visualizer sample data already known in repo context. It is tied to the exporter and documented data contract rather than screenshot-only evidence."
+  },
+  "outputs": [
+    "w42/seat_position_strategy_map/position_strategy_matrix.csv",
+    "w42/seat_position_strategy_map/summary.json",
+    "w42/seat_position_strategy_map/manifest.json",
+    "wiki/experiments/w42-phase2-seat-position-strategy-map.md"
+  ],
+  "public_state_boundary": {
+    "online_safe": [
+      "public auction, bid, declaration, score mode, and ruleset metadata",
+      "current player's own hand",
+      "legal action mask",
+      "public trick history and current trick",
+      "public count/trump/suit depletion",
+      "public void evidence",
+      "belief estimates trained only from legal public evidence"
+    ],
+    "report_only": [
+      "true hidden owners",
+      "partner/opponent private hands",
+      "oracle E[Q] labels",
+      "per-world outcome branches",
+      "completed-hand set attribution",
+      "future action outcomes"
+    ]
+  },
+  "random_seeds": {
+    "fresh_run": "not applicable",
+    "visualizer_sample": "documented source tensor eq_pdf_s9200-9201_d10_10s.pt; exporter limit 5"
+  },
+  "wandb_links": "not applicable",
+  "hf_links": "not applicable",
+  "validation": {
+    "json_csv_validation_required": true,
+    "expected_matrix_rows": 17,
+    "expected_matrix_columns": [
+      "role",
+      "phase",
+      "public_state_prerequisites",
+      "book_concept",
+      "current_detector_coverage",
+      "missing_detector",
+      "suggested_metric",
+      "leakage_risk",
+      "phase2_stats_distribution_dependencies"
+    ]
+  }
+}

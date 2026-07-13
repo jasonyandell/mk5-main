@@ -1,0 +1,36 @@
+{
+  "command": "w42/tactical_claim_replication/run_tactical_replication.py --output-dir w42/tactical_claim_replication --bootstrap-samples 2000 --min-slice-n 20 --min-paired-slice-n 20 --wandb-mode online --wandb-group w42-tactical-claim-replication --wandb-name t42-0b4l.3-tactical-replication-v0",
+  "created_at_utc": "2026-05-03T00:50:07.941979+00:00",
+  "leakage_boundary": "Public role/trick/action labels are report features. E[Q], q_per_world, world_hands, and sampled-world outcomes are offline labels and diagnostics only.",
+  "outputs": {
+    "all_action_rows": "w42/tactical_claim_replication/all_action_rows.jsonl",
+    "claim_metrics": "w42/tactical_claim_replication/claim_metrics.csv",
+    "examples": "w42/tactical_claim_replication/examples.json",
+    "harness_outputs": {
+      "claim_specs": "w42/tactical_claim_replication/harness/claim_specs.csv",
+      "examples": "w42/tactical_claim_replication/harness/examples.json",
+      "label_counts": "w42/tactical_claim_replication/harness/label_counts.csv",
+      "label_metrics": "w42/tactical_claim_replication/harness/label_metrics.csv",
+      "manifest": "w42/tactical_claim_replication/harness/manifest.json",
+      "paired_contrasts": "w42/tactical_claim_replication/harness/paired_contrasts.csv",
+      "summary": "w42/tactical_claim_replication/harness/summary.json"
+    },
+    "paired_contrasts": "w42/tactical_claim_replication/paired_contrasts.csv",
+    "paired_contrasts_by_slice": "w42/tactical_claim_replication/paired_contrasts_by_slice.csv",
+    "slice_metrics": "w42/tactical_claim_replication/slice_metrics.csv",
+    "summary": "w42/tactical_claim_replication/summary.json"
+  },
+  "schema_version": "w42.tactical_claim_replication.manifest.v1",
+  "wandb": {
+    "available": true,
+    "dir": "w42/tactical_claim_replication/wandb/wandb/run-20260502_194956-jv9luhgp/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-tactical-claim-replication",
+    "id": "jv9luhgp",
+    "mode": "online",
+    "name": "t42-0b4l.3-tactical-replication-v0",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/jv9luhgp"
+  }
+}

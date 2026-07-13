@@ -1,0 +1,23 @@
+[
+  {
+    "name": "legal_plays",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `legal_plays()` when you need the exact legal candidate domino_ids before committing or evaluating plays."
+  },
+  {
+    "name": "play_brief",
+    "protocol_role": "candidate_eval",
+    "protocol_phrase": "Call `play_brief(play=X)` for a legal candidate play to get a concise outcome summary."
+  },
+  {
+    "name": "belief_trajectory",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `belief_trajectory()` if hidden ownership could distinguish otherwise close legal candidates."
+  },
+  {
+    "name": "board_snapshot",
+    "protocol_role": "diagnostic",
+    "protocol_phrase": "Call `board_snapshot()` only if you need to reread or refresh the state summary already provided in the user prompt."
+  },
+  "commit_play"
+]

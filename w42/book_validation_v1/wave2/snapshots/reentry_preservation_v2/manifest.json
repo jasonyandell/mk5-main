@@ -1,0 +1,43 @@
+{
+  "corpus": "reentry_preservation_v2",
+  "schema_version": "forge.eq.snapshot.v1",
+  "source": "oracle-greedy legacy corpus",
+  "n_snapshots": 500,
+  "n_candidates_scanned": 22801,
+  "n_chunks_used": 9,
+  "source_chunks": [
+    "corpus_train_chunk_0-99.pt",
+    "corpus_train_chunk_100-199.pt",
+    "corpus_train_chunk_1000-1099.pt",
+    "corpus_train_chunk_1100-1199.pt",
+    "corpus_train_chunk_1200-1299.pt",
+    "corpus_train_chunk_1300-1399.pt",
+    "corpus_train_chunk_1400-1499.pt",
+    "corpus_train_chunk_1500-1599.pt",
+    "corpus_train_chunk_1600-1699.pt"
+  ],
+  "filter_definition": {
+    "bidder_turn": true,
+    "n_trumps_remaining_exact": 1,
+    "min_distinct_off_suits": 2,
+    "min_trick_number": 2,
+    "decl_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "note": "Reentry preservation: 1 trump left, >=2 off suits, trick>=2, bidder on lead"
+  },
+  "validation": {
+    "n_valid": 500,
+    "n_invalid": 0,
+    "method": "GameStateTensor.from_snapshot"
+  },
+  "claim_tested": "ch03-reentry-preservation",
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/reentry_preservation_v2/snapshots.jsonl",
+  "sha256": "60d56b932c9a1c9d50b5acd8e20997312d41c7e71293a798a9459dd8f9ba538e"
+}

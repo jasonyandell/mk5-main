@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from forge.eq.collate import collate_game_record, collate_batch
-from forge.eq.generate import GameRecordGPU, DecisionRecordGPU
+from forge.eq.generate.types import GameRecordGPU, DecisionRecordGPU
 from forge.eq.transcript_tokenize import (
     N_FEATURES,
     MAX_TOKENS,
@@ -288,15 +288,9 @@ def test_integration_with_gpu_pipeline():
 
     This test requires a trained Stage 1 model and may be slow.
     """
-    pytest.importorskip("forge.eq.generate_gpu")
-    pytest.importorskip("forge.eq.oracle")
-
-    try:
-        from forge.eq.oracle import Stage1Oracle
-        from forge.oracle.rng import deal_from_seed
-        from forge.eq.generate_gpu import generate_eq_games_gpu
-    except ImportError:
-        pytest.skip("Required modules not available")
+    from forge.eq.oracle import Stage1Oracle
+    from forge.oracle.rng import deal_from_seed
+    from forge.eq.generate.pipeline import generate_eq_games_gpu
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 

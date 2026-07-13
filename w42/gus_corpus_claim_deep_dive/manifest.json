@@ -1,0 +1,27 @@
+{
+  "command": "w42/gus_corpus_claim_deep_dive/analyze_gus_claims.py --bootstrap-samples 5000 --wandb-mode online --wandb-group w42-gus-corpus-claim-deep-dive --wandb-name w42-gus-corpus-claim-deep-dive-v0-stable",
+  "created_at_utc": "2026-05-03T00:02:37.193472+00:00",
+  "leakage_boundary": "Public role/trick/action labels are report features. E[Q], q_per_world, and sampled-world outcomes are offline labels and diagnostics only.",
+  "outputs": {
+    "claim_action_rows": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/claim_action_rows.jsonl",
+    "claim_metrics": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/claim_metrics.csv",
+    "examples": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/examples.json",
+    "paired_contrasts": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/paired_contrasts.csv",
+    "paired_examples": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/paired_examples.json",
+    "slice_metrics_by_decl": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/slice_metrics_by_decl.csv",
+    "summary": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/summary.json"
+  },
+  "schema_version": "w42.gus_corpus_claim_deep_dive.manifest.v0",
+  "wandb": {
+    "available": true,
+    "dir": "/Users/jason/code/mk5-main/w42/gus_corpus_claim_deep_dive/wandb/wandb/run-20260502_190229-zm3jdrnj/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-gus-corpus-claim-deep-dive",
+    "id": "zm3jdrnj",
+    "mode": "online",
+    "name": "w42-gus-corpus-claim-deep-dive-v0-stable",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/zm3jdrnj"
+  }
+}

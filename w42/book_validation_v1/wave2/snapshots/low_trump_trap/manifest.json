@@ -1,0 +1,53 @@
+{
+  "corpus": "low_trump_trap",
+  "schema_version": "forge.eq.snapshot.v1",
+  "source": "oracle-greedy legacy corpus",
+  "n_snapshots": 300,
+  "n_candidates_scanned": 51950,
+  "n_chunks_used": 19,
+  "source_chunks": [
+    "corpus_train_chunk_0-99.pt",
+    "corpus_train_chunk_100-199.pt",
+    "corpus_train_chunk_1000-1099.pt",
+    "corpus_train_chunk_1100-1199.pt",
+    "corpus_train_chunk_1200-1299.pt",
+    "corpus_train_chunk_1300-1399.pt",
+    "corpus_train_chunk_1400-1499.pt",
+    "corpus_train_chunk_1500-1599.pt",
+    "corpus_train_chunk_1600-1699.pt",
+    "corpus_train_chunk_1700-1799.pt",
+    "corpus_train_chunk_1800-1899.pt",
+    "corpus_train_chunk_1900-1999.pt",
+    "corpus_train_chunk_200-299.pt",
+    "corpus_train_chunk_2000-2099.pt",
+    "corpus_train_chunk_2100-2199.pt",
+    "corpus_train_chunk_2200-2299.pt",
+    "corpus_train_chunk_2300-2399.pt",
+    "corpus_train_chunk_2400-2499.pt",
+    "corpus_train_chunk_2500-2599.pt"
+  ],
+  "filter_definition": {
+    "role": "bidder (player 0)",
+    "position": "following (trick already started)",
+    "min_trick_number": 1,
+    "decl_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "condition": "bidder is void in led suit OR led suit is trump, bidder holds dominant trump AND >= 1 other trump",
+    "note": "Tests ch04: low trump trap - should bidder throw dominant trump?"
+  },
+  "validation": {
+    "n_valid": 300,
+    "n_invalid": 0,
+    "method": "GameStateTensor.from_snapshot"
+  },
+  "claim_tested": "ch04-low-trump-trap-against-count-dump",
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/low_trump_trap/snapshots.jsonl",
+  "sha256": "eedf97c707261aab8c5f2909905904532ee537d54622ba8f96274f35900108e3"
+}

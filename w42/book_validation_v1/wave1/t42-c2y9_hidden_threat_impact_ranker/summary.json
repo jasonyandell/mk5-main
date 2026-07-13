@@ -1,0 +1,185 @@
+{
+  "N": {
+    "detector_correlation_rows": 24,
+    "inferable_rows": 100,
+    "single_tile_dominant_rows": 100,
+    "top_k_rows": 1549,
+    "total_hidden_threat_rows": 6981,
+    "unique_decision_action_pairs": 895,
+    "unique_decisions": 324
+  },
+  "artifacts": {
+    "detector_correlation": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/detector_correlation.csv",
+    "inferable_vs_not": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/inferable_vs_not.csv",
+    "manifest": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/manifest.json",
+    "per_decision_top_k_tiles": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/per_decision_top_k_tiles.csv",
+    "single_tile_dominant_decisions": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave1/t42-c2y9_hidden_threat_impact_ranker/single_tile_dominant_decisions.csv"
+  },
+  "bead_id": "t42-c2y9",
+  "caveats": [
+    "Only 324 decisions across two small generated game slices (seeds 9420/9421/9430).",
+    "No row-level join to joined_claim_action_rows (seeds 0-99); cross-tab is categorical only.",
+    "Inferability heuristic uses conditioned_mass only \u2014 does not use actual game history.",
+    "impact_score formula reused verbatim from hidden_threat_legacy_mining; no modification.",
+    "Hidden-holder labels are offline eval only; not proposed as live features."
+  ],
+  "claim_ledger_impact": "underpowered",
+  "claim_ledger_impact_note": "Wave 1.3 provides offline tile-ranking labels and categorical cross-tab evidence. No row-level join to book-chapter detectors is possible (seed mismatch). Evidence is a diagnostic marker only; no claim status promoted to 'supported'.",
+  "created_at_utc": "2026-05-03T17:36:40.016772+00:00",
+  "git_commit": "12064bf1e67052bb1515fe59f4393104f2a3766b",
+  "headline": {
+    "concentration_threshold_used": 0.6,
+    "direction_distribution": {
+      "harmful": 0.1636,
+      "helpful": 0.7068,
+      "neutral": 0.1296
+    },
+    "inferability_distribution_top100": {
+      "hard_to_infer": 0.31,
+      "moderately_inferable": 0.69
+    },
+    "legacy_mining_top5_impact_drivers": [
+      {
+        "decl_name": "fives",
+        "hidden_domino": "5-5",
+        "holder_role": "right_setter",
+        "mean_score": 36.903362106072215,
+        "seat_role": "left_setter"
+      },
+      {
+        "decl_name": "fives",
+        "hidden_domino": "5-5",
+        "holder_role": "bidder",
+        "mean_score": 35.28095288785801,
+        "seat_role": "bidder_partner"
+      },
+      {
+        "decl_name": "fives",
+        "hidden_domino": "5-5",
+        "holder_role": "left_setter",
+        "mean_score": 33.8801314213825,
+        "seat_role": "right_setter"
+      },
+      {
+        "decl_name": "fives",
+        "hidden_domino": "5-5",
+        "holder_role": "bidder_partner",
+        "mean_score": 33.50863514182761,
+        "seat_role": "bidder"
+      },
+      {
+        "decl_name": "no-trump",
+        "hidden_domino": "6-4",
+        "holder_role": "bidder_partner",
+        "mean_score": 32.843339276283096,
+        "seat_role": "bidder"
+      }
+    ],
+    "pct_decisions_single_tile_dominant": 0.0185,
+    "tile_category_distribution_top1": {
+      "count_tile": 0.037,
+      "offsuit_double": 0.1728,
+      "plain_tile": 0.284,
+      "trump_count": 0.0617,
+      "trump_double": 0.216,
+      "trump_plain": 0.2284
+    },
+    "tile_category_enrichment": [
+      {
+        "enrichment_ratio": 1.325,
+        "n_all_topk": 199,
+        "n_top1": 70,
+        "rate_as_top1": 0.114,
+        "rate_in_topk": 0.086,
+        "tile_category": "trump_double"
+      },
+      {
+        "enrichment_ratio": 1.018,
+        "n_all_topk": 74,
+        "n_top1": 20,
+        "rate_as_top1": 0.0326,
+        "rate_in_topk": 0.032,
+        "tile_category": "trump_count"
+      },
+      {
+        "enrichment_ratio": 0.948,
+        "n_all_topk": 294,
+        "n_top1": 74,
+        "rate_as_top1": 0.1205,
+        "rate_in_topk": 0.1271,
+        "tile_category": "trump_plain"
+      },
+      {
+        "enrichment_ratio": 0.608,
+        "n_all_topk": 347,
+        "n_top1": 56,
+        "rate_as_top1": 0.0912,
+        "rate_in_topk": 0.15,
+        "tile_category": "offsuit_double"
+      },
+      {
+        "enrichment_ratio": 0.538,
+        "n_all_topk": 84,
+        "n_top1": 12,
+        "rate_as_top1": 0.0195,
+        "rate_in_topk": 0.0363,
+        "tile_category": "count_tile"
+      },
+      {
+        "enrichment_ratio": 0.629,
+        "n_all_topk": 551,
+        "n_top1": 92,
+        "rate_as_top1": 0.1498,
+        "rate_in_topk": 0.2382,
+        "tile_category": "plain_tile"
+      }
+    ],
+    "top_load_bearing_tile_overall": [
+      {
+        "absolute_holder_role": "left_setter",
+        "count": 4,
+        "hidden_domino": "6-4",
+        "mean": 37.71428972482681
+      },
+      {
+        "absolute_holder_role": "bidder_partner",
+        "count": 9,
+        "hidden_domino": "4-4",
+        "mean": 37.46777471899986
+      },
+      {
+        "absolute_holder_role": "right_setter",
+        "count": 5,
+        "hidden_domino": "6-4",
+        "mean": 36.184765721857545
+      },
+      {
+        "absolute_holder_role": "bidder_partner",
+        "count": 1,
+        "hidden_domino": "5-2",
+        "mean": 34.471345484256744
+      },
+      {
+        "absolute_holder_role": "bidder",
+        "count": 3,
+        "hidden_domino": "4-4",
+        "mean": 32.22829828659693
+      }
+    ]
+  },
+  "metric": {
+    "concentration": "impact_fraction_of_total = top1_impact / sum(all_tile_impacts_in_decision)",
+    "inferability": "conditioned_mass (fraction of worlds with tile at that position)",
+    "primary": "impact_score = |mean_q_delta| + 10*(|tail_low_mass_delta| + |shelf_high_mass_delta|)"
+  },
+  "paired_or_unpaired": "unpaired within-decision tile ranking; cross-tab by shared categorical context",
+  "parent_epic": "t42-4zi6",
+  "question": "For each decision where hidden-holder labels exist, which specific unseen tile (in which seat) drives the largest swing in the outcome distribution, and is that 'load-bearing tile' predictable from book-detector vocabulary?",
+  "schema_version": "w42.book_validation_v1.wave1.hidden_threat_impact_ranker.v0",
+  "slice": {
+    "corpus_scaled": "/Users/jason/code/mk5-main/w42/branch_atlas_scaled_v0/hidden_threat_rows.csv",
+    "corpus_v1": "/Users/jason/code/mk5-main/w42/branch_atlas_v1/hidden_threat_rows.csv",
+    "joined_claims": "/Users/jason/code/mk5-main/w42/joined_claim_row_model_table/joined_claim_action_rows.csv",
+    "note": "hidden_threat corpora use seeds 9420/9421/9430 (not in joined_claim seeds 0-99); cross-tab bridges via (decl_name, seat_role) categorical context, not row-level join."
+  }
+}

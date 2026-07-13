@@ -1,0 +1,139 @@
+{
+  "artifacts": {
+    "decision_actions_csv": "w42/branch_atlas_scaled_v0/decision_actions.csv",
+    "decision_states_csv": "w42/branch_atlas_scaled_v0/decision_states.csv",
+    "examples_json": "w42/branch_atlas_scaled_v0/examples.json",
+    "hidden_threat_rows_csv": "w42/branch_atlas_scaled_v0/hidden_threat_rows.csv",
+    "manifest_json": "w42/branch_atlas_scaled_v0/manifest.json"
+  },
+  "bead_id": "t42-uptc",
+  "branch_findings": {
+    "action_distribution_tag_counts": {
+      "hidden_threat_large_impact": 642,
+      "high_std": 457,
+      "high_variance_close_mean": 233,
+      "large_lower_tail": 392,
+      "multi_peak_pdf": 666,
+      "scalar_ev_lying_by_omission": 147,
+      "wide_shelf_gap": 569
+    },
+    "actual_action_safest_lower_tail_count": 216,
+    "actual_action_top_mean_count": 251,
+    "actual_action_top_threshold_count": 234,
+    "decision_multi_peak_pdf_count": 230,
+    "decision_multi_peak_pdf_rate": 0.8214285714285714,
+    "decision_scalar_ev_lying_by_omission_count": 147,
+    "decision_scalar_ev_lying_by_omission_rate": 0.525,
+    "max_hidden_impact": 56.823032557964325,
+    "max_std": 34.410030364990234,
+    "mean_top_hidden_impact": 18.45910676665754
+  },
+  "command": "w42/branch_atlas_v1/build_branch_atlas.py w42/branch_atlas_scaled_v0/eq_pdf_s9430_d10_bid30_joint_1000s_v2.pt --output-dir w42/branch_atlas_scaled_v0 --bead-id t42-uptc --experiment w42-branch-atlas-scaled-v0 --top-k 8 --examples 16 --log-every-decisions 20 --wandb-mode online --wandb-group w42-branch-atlas-scaled-v0 --wandb-name t42-uptc-branch-atlas-scaled-v0-s9430-d10-n1000",
+  "coverage": {
+    "inspected_decisions": 280,
+    "joint_world_decision_rate": 1.0,
+    "processed_joint_world_decisions": 280,
+    "sample_counts_by_decision": {
+      "1000": 280
+    },
+    "skipped_no_joint_worlds": 0,
+    "skipped_no_legal_actions": 0
+  },
+  "created_at_utc": "2026-05-02T23:30:39.050975+00:00",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M burl/chat/server/tools_runner.py\n M forge/eq/generate/__init__.py\n M forge/eq/generate/actions.py\n M forge/eq/generate/cli.py\n M forge/eq/generate/pipeline.py\n M forge/eq/test_select_actions.py\n M w42/branch_atlas_v1/build_branch_atlas.py\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/skills/analyze-hand/\n?? .agents/skills/clustering/\n?? .agents/skills/comprehension-test/\n?? .agents/skills/ecological/\n?? .agents/skills/minirocket/\n?? .agents/skills/modal/\n?? .agents/skills/pdf/\n?? .agents/skills/pymc/\n?? .agents/skills/pytorch-lightning/\n?? .agents/skills/pytorch/\n?? .agents/skills/ralph-loop/\n?? .agents/skills/shap/\n?? .agents/skills/statistical-rigor/\n?? .agents/skills/survival-forest/\n?? .agents/skills/texas-42-analytics/\n?? .agents/skills/texas-42-forge/\n?? .agents/skills/umap/\n?? .agents/skills/volcano-plots/\n?? .agents/skills/word2vec/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/branch_atlas_scaled_v0/",
+  "repo_commit": "eb2c6bf2e68e490aa735f4bc4ac62ab8e97963ff",
+  "rows": {
+    "action_rows": 773,
+    "decision_rows": 280,
+    "hidden_threat_rows": 5955
+  },
+  "schema_version": "w42.branch_atlas_v1.summary.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "no claim-ledger movement",
+    "hf": "not applicable",
+    "interpretation": "Powered branch-atlas pilot. It measures branch shape and offline hidden-owner impact on a generated joint-world E[Q] slice; it does not validate book claims or train a policy by itself.",
+    "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+    "training_run": false,
+    "wandb": {
+      "available": true,
+      "dir": "w42/branch_atlas_scaled_v0/wandb/wandb/run-20260502_183036-7fwi2zwn/files",
+      "enabled": true,
+      "entity": "jasonyandell-forge42",
+      "group": "w42-branch-atlas-scaled-v0",
+      "id": "7fwi2zwn",
+      "mode": "online",
+      "name": "t42-uptc-branch-atlas-scaled-v0-s9430-d10-n1000",
+      "project": "w42",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/7fwi2zwn"
+    }
+  },
+  "source": {
+    "bid_value_counts": {
+      "30": 10
+    },
+    "bid_value_status": "fixed recorded bid_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "input_games": 10,
+    "n_samples": 1000,
+    "path": "w42/branch_atlas_scaled_v0/eq_pdf_s9430_d10_bid30_joint_1000s_v2.pt",
+    "schema": "v2",
+    "seeds": [
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430
+    ],
+    "sha256": "c0d124b0733dedd08227de7a3a4ca8cb200a9900d585721d654b461b798af9b8",
+    "start_seed": 9430
+  },
+  "strategy_surface": {
+    "detector_counts": {
+      "bidder_first_lead_plan": 70,
+      "defender_damage_lead_class": 85,
+      "doubles_regime_plan": 75,
+      "first_setter_pounce_window": 17,
+      "first_trick_public_belief_update": 649,
+      "last_to_act_closure_policy": 194,
+      "late_trick_threshold_closure": 215,
+      "no_trump_lead_control_and_support": 86,
+      "partner_forcedness_and_safety": 20,
+      "partner_third_seat_safe_donation": 17,
+      "setter_count_before_certainty": 68
+    },
+    "direct_label_readiness_values": [
+      "distribution_labels_ready",
+      "hidden_threat_offline_label_ready",
+      "needs_belief_model",
+      "needs_real_bid_margin",
+      "public_context_ready"
+    ],
+    "missing_fields_all_rows": [
+      "bid_margin"
+    ],
+    "role_counts": {
+      "bidder": 70,
+      "bidder_partner": 70,
+      "left_setter": 70,
+      "right_setter": 70
+    }
+  },
+  "wall_seconds": 1.2972249169833958
+}

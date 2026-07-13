@@ -1,0 +1,157 @@
+{
+  "bid_value": 30,
+  "offense_bin": 60,
+  "defense_bin": 25,
+  "n_bins": 85,
+  "pdf_axis_note": "bin index b -> outcome margin Q = b - 42, Q in [-42, +42]",
+  "belief_ckpt": "scratch/champion-run/run24_measure/v2_auction_s0.pt",
+  "oracle_ckpt": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+  "n_candidates_scanned": 18,
+  "n_usable": 18,
+  "positions": [
+    {
+      "id": "b1000_i1_tp12",
+      "npz_path": "/Users/jason/code/mk5-main/scratch/jud_demo/data/pos_b1000_i1_tp12.npz",
+      "move_number": 12,
+      "current_player": 2,
+      "bidder": 0,
+      "decl_id": 3,
+      "is_offense": true,
+      "n_legal": 4,
+      "ess_melted": 128.0,
+      "ess_sharpened": 10.511528015136719,
+      "sharpening_score": 0.5852142721414566,
+      "pmake_shift": 0.4146084189414978,
+      "rank_score": 1.0678820878267288,
+      "M": 128,
+      "note": "action 2 (2-0) sharpened most (TV=0.608); comb narrowed: std 23.5->21.4 bins, peak height 0.102@bin6 -> 0.255@bin77; p_make (offense, thr bin 60) 0.195 -> 0.610 (ESS 128.0 -> 10.51)"
+    },
+    {
+      "id": "b1000_i2_tp12",
+      "npz_path": "/Users/jason/code/mk5-main/scratch/jud_demo/data/pos_b1000_i2_tp12.npz",
+      "move_number": 12,
+      "current_player": 1,
+      "bidder": 1,
+      "decl_id": 7,
+      "is_offense": true,
+      "n_legal": 4,
+      "ess_melted": 128.0,
+      "ess_sharpened": 4.2971673011779785,
+      "sharpening_score": 0.613505095243454,
+      "pmake_shift": 0.16280214488506317,
+      "rank_score": 0.9848346818238496,
+      "M": 128,
+      "note": "action 6 (6-3) sharpened most (TV=0.647); comb narrowed: std 23.2->17.1 bins, peak height 0.141@bin7 -> 0.446@bin34; p_make (offense, thr bin 60) 0.227 -> 0.067 (ESS 128.0 -> 4.30)"
+    },
+    {
+      "id": "b2000_i2_tp16",
+      "npz_path": "/Users/jason/code/mk5-main/scratch/jud_demo/data/pos_b2000_i2_tp16.npz",
+      "move_number": 16,
+      "current_player": 2,
+      "bidder": 0,
+      "decl_id": 1,
+      "is_offense": true,
+      "n_legal": 3,
+      "ess_melted": 128.0,
+      "ess_sharpened": 14.323943138122559,
+      "sharpening_score": 0.47601374983787537,
+      "pmake_shift": 0.43631815910339355,
+      "rank_score": 0.9606010876595974,
+      "M": 128,
+      "note": "action 3 (5-4) sharpened most (TV=0.504); comb narrowed: std 27.4->21.2 bins, peak height 0.234@bin76 -> 0.651@bin76; p_make (offense, thr bin 60) 0.328 -> 0.744 (ESS 128.0 -> 14.32)"
+    }
+  ],
+  "ranking": [
+    {
+      "id": "b1000_i1_tp12",
+      "rank": 0,
+      "rank_score": 1.0678820878267288
+    },
+    {
+      "id": "b1000_i2_tp12",
+      "rank": 1,
+      "rank_score": 0.9848346818238496
+    },
+    {
+      "id": "b2000_i2_tp16",
+      "rank": 2,
+      "rank_score": 0.9606010876595974
+    },
+    {
+      "id": "b3000_i1_tp16",
+      "rank": 3,
+      "rank_score": 0.9050357619921368
+    },
+    {
+      "id": "b2000_i1_tp16",
+      "rank": 4,
+      "rank_score": 0.8812972971548636
+    },
+    {
+      "id": "b2000_i2_tp12",
+      "rank": 5,
+      "rank_score": 0.8784809723496436
+    },
+    {
+      "id": "b1000_i0_tp16",
+      "rank": 6,
+      "rank_score": 0.8483378380537033
+    },
+    {
+      "id": "b1000_i1_tp16",
+      "rank": 7,
+      "rank_score": 0.7394304662942887
+    },
+    {
+      "id": "b3000_i1_tp12",
+      "rank": 8,
+      "rank_score": 0.7281675279140473
+    },
+    {
+      "id": "b2000_i1_tp12",
+      "rank": 9,
+      "rank_score": 0.719459779560566
+    },
+    {
+      "id": "b2000_i0_tp12",
+      "rank": 10,
+      "rank_score": 0.7187686085700988
+    },
+    {
+      "id": "b1000_i2_tp16",
+      "rank": 11,
+      "rank_score": 0.6970256231725216
+    },
+    {
+      "id": "b3000_i0_tp12",
+      "rank": 12,
+      "rank_score": 0.684142854809761
+    },
+    {
+      "id": "b3000_i2_tp16",
+      "rank": 13,
+      "rank_score": 0.6732600102821986
+    },
+    {
+      "id": "b1000_i0_tp12",
+      "rank": 14,
+      "rank_score": 0.6712801471352577
+    },
+    {
+      "id": "b3000_i2_tp12",
+      "rank": 15,
+      "rank_score": 0.5600708708167076
+    },
+    {
+      "id": "b3000_i0_tp16",
+      "rank": 16,
+      "rank_score": 0.4584160397450129
+    },
+    {
+      "id": "b2000_i0_tp16",
+      "rank": 17,
+      "rank_score": 0.36977083484331763
+    }
+  ],
+  "best_position_id": "b1000_i1_tp12"
+}

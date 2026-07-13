@@ -1,0 +1,57 @@
+{
+  "N_pairs": 500,
+  "p_set_delta_mean": 0.008719998646527529,
+  "p_set_delta_ci95_lo": -0.0017520917267025513,
+  "p_set_delta_ci95_hi": 0.019192089019757608,
+  "p_set_direction": "void > preserve",
+  "n_p_set_higher_void": 186,
+  "pct_p_set_higher_void": 37.2,
+  "ev_delta_setter_mean": 0.7666304247304797,
+  "ev_delta_ci95_lo": 0.11773522571774919,
+  "ev_delta_ci95_hi": 1.4155256237432101,
+  "ev_direction": "void > preserve",
+  "n_void_ev_better": 263,
+  "pct_void_ev_better": 52.6,
+  "cvar_delta_mean": 0.17072853891551495,
+  "threshold_mass_delta_mean": -0.008720000583678484,
+  "claim_ledger_impact": "context-limited",
+  "claim_ledger_rationale": "N=500 paired contrasts (follow-position) from oracle-greedy legacy corpus. Mean p_set delta=+0.0087, mean EV delta (setter)=+0.77 95% CI [+0.12, +1.42], 52.6% of contrasts favor void creation.",
+  "slices": {
+    "phase=early": {
+      "N": 208,
+      "p_set_delta_mean": 0.006682693716496802,
+      "ev_delta_setter_mean": 0.3655641617683264,
+      "pct_void_better": 52.88461538461539
+    },
+    "phase=mid": {
+      "N": 292,
+      "p_set_delta_mean": 0.010171229555590511,
+      "ev_delta_setter_mean": 1.0523214613610548,
+      "pct_void_better": 52.3972602739726
+    },
+    "count_exposure=count_exposed": {
+      "N": 30,
+      "p_set_delta_mean": 0.06333332757155101,
+      "ev_delta_setter_mean": 0.46307154521346094,
+      "pct_void_better": 43.333333333333336
+    },
+    "count_exposure=no_count": {
+      "N": 470,
+      "p_set_delta_mean": 0.005234041481100498,
+      "ev_delta_setter_mean": 0.7860065234230554,
+      "pct_void_better": 53.191489361702125
+    },
+    "trick_lead=bidder_winning": {
+      "N": 326,
+      "p_set_delta_mean": 0.0051226997633744605,
+      "ev_delta_setter_mean": 0.791087541992039,
+      "pct_void_better": 52.760736196319016
+    },
+    "trick_lead=setter_winning": {
+      "N": 174,
+      "p_set_delta_mean": 0.01545976551956144,
+      "ev_delta_setter_mean": 0.7208084694013513,
+      "pct_void_better": 52.29885057471264
+    }
+  }
+}

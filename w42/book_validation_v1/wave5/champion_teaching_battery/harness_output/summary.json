@@ -1,0 +1,29 @@
+{
+  "action_rows": 19264,
+  "bead": "wave5-champion-teaching-battery",
+  "bootstrap_samples": 1000,
+  "claim_ledger_impact": "no claim-ledger movement; harness smoke/report only",
+  "created_at_utc": "2026-06-13T05:18:06.089948+00:00",
+  "decision_rows": 7168,
+  "input_paths": [
+    "w42/book_validation_v1/wave5/champion_teaching_battery/action_rows.csv"
+  ],
+  "label_fields": [
+    "labels"
+  ],
+  "label_metric_rows": 6,
+  "leakage_boundary": "Rows may contain oracle/distribution/hidden-world labels, but this harness treats them as offline labels and does not expose them as live detector inputs.",
+  "paired_contrast_rows": 6,
+  "registered_claim_specs": 6,
+  "schema_version": "w42.claim_analysis.run_result.v1",
+  "source_kind": "champion_play_rows",
+  "top_label_counts": {
+    "ch04_partner_safe_count_donation_current_control": 224,
+    "ch04_partner_unsafe_count_to_defense": 303,
+    "ch05_reckless_count_to_bidder": 812,
+    "ch05_setter_pounce_count": 145,
+    "ch05_setter_pounce_count_before_certainty": 111,
+    "ch05_setter_pounce_count_sets_now": 26
+  },
+  "wandb": null
+}

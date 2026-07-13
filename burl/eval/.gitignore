@@ -1,0 +1,8 @@
+# Ignore everything in results/ except tracked perf-bench summaries.
+# Note: ignoring `results/` outright would prevent git from descending,
+# so we ignore wildcard contents and re-allow specific summary files.
+results/*
+!results/.gitkeep
+!results/perf_ledger.csv
+!results/perf_*.json
+!results/perf_full560_*.md

@@ -1,0 +1,9 @@
+split,quadrant,n,mean_outcome_var,mean_fragility,mean_sharpness,gus_matches_mode
+eval,drama,146,18.2903,4.9521,0.0117,0.5685
+eval,easy-high-stakes,68,15.2992,3.8529,0.0331,0.5735
+eval,easy-robust,208,8.4513,1.3077,0.1442,0.8942
+eval,foggy-forced,138,14.6282,1.471,0.0138,0.8551
+train,drama,73411,18.2409,4.8776,0.0119,0.5258
+train,easy-high-stakes,34053,14.2274,3.9629,0.0304,0.465
+train,easy-robust,105947,7.5944,1.286,0.1419,0.8654
+train,foggy-forced,66589,15.7896,1.4402,0.0138,0.8502

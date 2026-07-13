@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Candlewax live</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #2ea043;
+    --yellow: #d9b21a;
+    --orange: #f0883e;
+    --red: #f85149;
+    --purple: #8250df;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: var(--bg); color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; line-height: 1.55;
+  }
+  h1 { font-size: 15px; margin: 0 0 6px; color: var(--text); }
+  .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .bar .meta { color: var(--muted); font-size: 12px; }
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tag.ok { background: var(--green); color: #fff; }
+  .tag.err { background: var(--red); color: #fff; }
+  .tag.mode { background: var(--purple); color: #fff; }
+  img.candlewax {
+    max-width: 100%; border: 1px solid var(--border); border-radius: 6px;
+    display: block; margin: 14px 0 20px;
+  }
+  .event {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 12px;
+    background: var(--panel);
+  }
+  .event .head {
+    display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px;
+    color: var(--muted); font-size: 11px;
+  }
+  .event .kind {
+    font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .event .ts { font-variant-numeric: tabular-nums; }
+  .event .body {
+    white-space: pre-wrap; word-break: break-word;
+    font-family: inherit; font-size: 13px;
+  }
+  .event.thinking       { border-left: 4px solid var(--yellow); }
+  .event.thinking .kind { color: var(--yellow); }
+  .event.assistant_text       { border-left: 4px solid var(--green); }
+  .event.assistant_text .kind { color: var(--green); }
+  .event.tool_call          { border-left: 4px solid var(--blue); }
+  .event.tool_call .kind    { color: var(--blue); }
+  .event.tool_result        { border-left: 4px solid var(--blue); background: #0f1821; }
+  .event.tool_result .kind  { color: var(--blue); }
+  .event.commit          { border-left: 4px solid var(--red); background: #2a1a16; }
+  .event.commit .kind    { color: var(--red); }
+  .event.commit .body    { font-size: 16px; font-weight: 600; }
+  .event.result          { border-left: 4px solid var(--purple); }
+  .event.result .kind    { color: var(--purple); }
+  .event.error           { border-left: 4px solid var(--red); background: #2a0f0f; }
+  .event.error .kind     { color: var(--red); }
+  .event.prompt_system, .event.prompt_user { background: #0f1820; }
+  .event.prompt_system .body, .event.prompt_user .body { color: var(--muted); }
+  details > summary {
+    cursor: pointer; color: var(--blue); font-size: 12px;
+    margin-bottom: 6px; user-select: none;
+  }
+  .pill {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    background: #21262d; color: var(--text); font-size: 11px;
+    margin-right: 4px;
+  }
+  .legal-row { margin: 6px 0; }
+  .flash {
+    position: fixed; bottom: 12px; right: 12px;
+    background: var(--panel); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px; color: var(--muted);
+    font-size: 11px; opacity: 0; transition: opacity 0.3s;
+  }
+  .flash.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <h1>Candlewax live</h1>
+  <span class="tag mode" id="tag-mode">—</span>
+  <span class="meta" id="meta-run">run=?</span>
+  <span class="meta" id="meta-seed">seed=?</span>
+  <span class="meta" id="meta-decl">decl=?</span>
+  <span class="meta" id="meta-bot">bot=?</span>
+  <span class="meta" id="meta-gap">gap=?</span>
+  <span class="meta" id="meta-status">loading…</span>
+</div>
+
+<div id="legal" class="legal-row"></div>
+
+<img id="candlewax" class="candlewax" style="display:none" />
+
+<div id="events"></div>
+<div class="flash" id="flash">polling…</div>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const run = params.get('run') || '002_multimodal';
+  const ROOT = params.get('root') || 'live_opus';
+  document.getElementById('meta-run').textContent = `${ROOT}/${run}`;
+
+  let seenLines = 0;
+  let metaLoaded = false;
+  const eventsEl = document.getElementById('events');
+  const flashEl = document.getElementById('flash');
+
+  function flash() {
+    flashEl.classList.add('show');
+    clearTimeout(flashEl._t);
+    flashEl._t = setTimeout(() => flashEl.classList.remove('show'), 600);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function jsonBlock(v) {
+    let s;
+    try { s = JSON.stringify(v, null, 2); } catch { s = String(v); }
+    return escHtml(s);
+  }
+
+  function flatText(c) {
+    if (typeof c === 'string') return c;
+    if (Array.isArray(c)) {
+      return c.map(b => {
+        if (b && typeof b === 'object' && b.type === 'text') return b.text || '';
+        return JSON.stringify(b);
+      }).join('\n');
+    }
+    return JSON.stringify(c, null, 2);
+  }
+
+  function renderMeta(m) {
+    metaLoaded = true;
+    document.getElementById('tag-mode').textContent = m.mode || '?';
+    document.getElementById('meta-seed').textContent = `seed=${m.seed}`;
+    document.getElementById('meta-decl').textContent = `decl=${m.declaration}`;
+    document.getElementById('meta-bot').textContent =
+      `bot=${m.bot_label} (E[Q]=${(+m.bot_eq).toFixed(2)})`;
+    document.getElementById('meta-gap').textContent = `gap=${(+m.eq_gap).toFixed(2)}`;
+
+    // Legal-play summary bar.
+    const legalEl = document.getElementById('legal');
+    const summary = m.per_play_summary || {};
+    const pills = (m.legal_plays || []).map((p, i) => {
+      const label = (m.legal_labels && m.legal_labels[i]) || p;
+      const info = summary[String(p)] || summary[p] || {};
+      const isBot = p === m.bot_play ? ' • bot' : '';
+      const shape = info.shape ? ` ${info.shape}` : '';
+      const mu = (info.mean !== undefined) ? `μ=${(+info.mean).toFixed(1)}` : '';
+      const pk = (info.p_make !== undefined) ? `p=${Math.round(info.p_make*100)}%` : '';
+      return `<span class="pill">${escHtml(String(label))}${escHtml(isBot)} · ${escHtml(mu)} ${escHtml(pk)}${escHtml(shape)}</span>`;
+    }).join('');
+    legalEl.innerHTML = pills;
+
+    if (m.image) {
+      const img = document.getElementById('candlewax');
+      img.src = `./${ROOT}/${run}/${m.image}?t=${Date.now()}`;
+      img.style.display = 'block';
+    }
+  }
+
+  function renderEvent(evt) {
+    if (evt.kind === 'meta') { renderMeta(evt); return; }
+
+    const div = document.createElement('div');
+    div.className = 'event ' + evt.kind;
+    const head = document.createElement('div');
+    head.className = 'head';
+    head.innerHTML =
+      `<span class="kind">${escHtml(evt.kind)}</span>` +
+      `<span class="ts">t+${(+evt.ts_rel).toFixed(2)}s</span>`;
+    div.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'body';
+    let text = '';
+    let collapsible = false;
+
+    if (evt.kind === 'thinking' || evt.kind === 'assistant_text') {
+      text = evt.content || '';
+    } else if (evt.kind === 'prompt_system' || evt.kind === 'prompt_user') {
+      text = evt.content || '';
+      collapsible = true;
+    } else if (evt.kind === 'tool_call') {
+      text = `${evt.tool}(${JSON.stringify(evt.args || {})})`;
+    } else if (evt.kind === 'tool_result') {
+      text = flatText(evt.content);
+    } else if (evt.kind === 'commit') {
+      text = `FINAL PLAY: ${evt.final_play} (${evt.label})`;
+    } else if (evt.kind === 'result') {
+      text = `cost=$${(+evt.cost_usd).toFixed(3)} · turns=${evt.num_turns} · duration=${evt.duration_ms}ms · is_error=${evt.is_error}`;
+    } else if (evt.kind === 'error') {
+      text = evt.message || JSON.stringify(evt);
+    } else {
+      text = jsonBlock(evt);
+    }
+
+    if (collapsible) {
+      const summary = document.createElement('summary');
+      summary.textContent = `expand (${text.length} chars)`;
+      const details = document.createElement('details');
+      details.appendChild(summary);
+      const pre = document.createElement('pre');
+      pre.style.margin = 0;
+      pre.style.whiteSpace = 'pre-wrap';
+      pre.style.wordBreak = 'break-word';
+      pre.textContent = text;
+      details.appendChild(pre);
+      body.appendChild(details);
+    } else {
+      body.textContent = text;
+    }
+    div.appendChild(body);
+    eventsEl.appendChild(div);
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+  }
+
+  async function tick() {
+    try {
+      const url = `./${ROOT}/${run}/events.jsonl?t=${Date.now()}`;
+      const resp = await fetch(url, {cache: 'no-store'});
+      if (!resp.ok) {
+        document.getElementById('meta-status').textContent = `not found (${resp.status})`;
+        return;
+      }
+      const text = await resp.text();
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length > seenLines) {
+        for (let i = seenLines; i < lines.length; i++) {
+          try {
+            const evt = JSON.parse(lines[i]);
+            renderEvent(evt);
+          } catch (e) { /* skip malformed */ }
+        }
+        seenLines = lines.length;
+        flash();
+      }
+      const status = metaLoaded ? `events=${seenLines}` : 'waiting…';
+      document.getElementById('meta-status').textContent = status;
+    } catch (e) {
+      document.getElementById('meta-status').textContent = `err: ${e.message}`;
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

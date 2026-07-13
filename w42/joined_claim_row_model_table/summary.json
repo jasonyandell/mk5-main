@@ -1,0 +1,90 @@
+{
+  "bead": "t42-qtwb.4",
+  "coverage": {
+    "action_rows": 75079,
+    "auction_join_rows": 7216,
+    "decision_rows": 28000,
+    "eighty_four_public_join_rows": 5365,
+    "feature_label_count": 128
+  },
+  "created_at_utc": "2026-05-03T15:08:33.929327+00:00",
+  "elapsed_seconds": 9.732,
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M wiki/entities/w42.md\n M wiki/experiments/w42-bidding-risk-budget-claim-validation.md\n M wiki/experiments/w42-phase2-84-weapon-preservation-probe.md\n M wiki/experiments/w42-phase2-seat-position-strategy-map.md\n M wiki/experiments/winning42-ch03-bidder-play.md\n M wiki/index.md\n M wiki/log.md\n?? w42/auction_bid_discipline_claim_tests/\n?? w42/bid_only_enough_claim_tests/\n?? w42/claim_analysis_synthesis/\n?? w42/claim_tag_model_probe/\n?? w42/eighty_four_seed_mining/\n?? w42/joined_claim_row_model_table/\n?? w42/seat_position_claim_tests/\n?? w42/sequence_seat_counterfactuals/\n?? wiki/experiments/w42-claim-analysis-synthesis-report.md\n?? wiki/experiments/w42-claim-tag-model-probe.md\n?? wiki/experiments/w42-phase3-84-seed-mining-corpus.md\n?? wiki/experiments/w42-phase3-auction-bid-discipline-corpus.md\n?? wiki/experiments/w42-phase3-sequence-seat-counterfactuals.md",
+  "headline": {
+    "all_claim_families_delta_vs_public": -0.234055,
+    "all_claim_families_match_rate": 0.681071,
+    "all_claim_families_mean_regret": 1.125741,
+    "best_available_variant": "drop_hidden_public_proxy",
+    "public_match_rate": 0.644643,
+    "public_mean_regret": 1.359796
+  },
+  "schema_version": "w42.joined_claim_row_model_table.v1",
+  "scientific_status": {
+    "claim_ledger_impact": "no central claim status movement",
+    "interpretation": "Joined public/action-local claim-family tags can be ablated on one legal-action split. This is model-feature evidence and routing evidence, not proof of broad book claims.",
+    "leakage_boundary": "Features exclude oracle mean/regret, threshold mass, lower-tail mass, future outcomes, hidden owners, q_per_world, and full-deal opponent asset labels. Eval-only labels are written for auditing but never used as model features."
+  },
+  "split": {
+    "eval_action_rows": 15226,
+    "eval_decisions": 5600,
+    "eval_seed_mod": 4,
+    "eval_seeds": [
+      4,
+      9,
+      14,
+      19,
+      24,
+      29,
+      34,
+      39,
+      44,
+      49,
+      54,
+      59,
+      64,
+      69,
+      74,
+      79,
+      84,
+      89,
+      94,
+      99
+    ],
+    "seed_mod_base": 5,
+    "train_action_rows": 59853,
+    "train_decisions": 22400,
+    "train_seeds": [
+      0,
+      1,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8
+    ],
+    "train_seeds_tail": [
+      90,
+      91,
+      92,
+      93,
+      95,
+      96,
+      97,
+      98
+    ]
+  },
+  "wandb": {
+    "available": true,
+    "dir": "w42/joined_claim_row_model_table/wandb/wandb/run-20260503_100824-jvjuld7m/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-joined-claim-row-model-table",
+    "id": "jvjuld7m",
+    "mode": "online",
+    "name": "t42-qtwb.4-joined-claim-row-model-table-v0",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/jvjuld7m"
+  }
+}

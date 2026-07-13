@@ -24,8 +24,9 @@ from typing import Iterator
 import numpy as np
 import torch
 
-from forge.eq import Stage1Oracle
-from forge.eq.generate import generate_eq_games_gpu, PosteriorConfig, AdaptiveConfig
+from forge.eq.oracle import Stage1Oracle
+from forge.eq.generate.pipeline import generate_eq_games_gpu
+from forge.eq.generate.types import AdaptiveConfig, PosteriorConfig
 from forge.eq.collate import collate_game_record
 from forge.eq.types import ExplorationPolicy
 from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
@@ -71,7 +72,19 @@ def find_missing_seeds(base_dir: Path, start_seed: int, limit: int | None = None
         seed += 1
 
 
-def write_game_pt(examples: list[dict], seed: int, path: Path, metadata: dict) -> None:
+def bid_value_for_seed(spec: str, seed: int) -> int:
+    """Resolve --bid-value for one seed: a fixed value, or 'seed' for a
+    deterministic 30-42 cycle decorrelated from decl_id = seed % 10 (the
+    full decl × bid lattice repeats every 130 seeds)."""
+    if spec == "seed":
+        return 30 + (seed // 10) % 13
+    value = int(spec)
+    if value != 84 and not 30 <= value <= 42:
+        raise ValueError(f"--bid-value must be 30..42, 84, or 'seed' (got {spec})")
+    return value
+
+
+def write_game_pt(examples: list[dict], seed: int, path: Path, metadata: dict, bid_value: int) -> None:
     """Write single game to .pt with atomic rename."""
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -105,9 +118,11 @@ def write_game_pt(examples: list[dict], seed: int, path: Path, metadata: dict) -
         # Adaptive sampling stats
         'n_samples': torch.tensor([ex.get('n_samples') or 0 for ex in examples], dtype=torch.int32),
         'converged': torch.tensor([ex.get('converged') or False for ex in examples], dtype=torch.bool),
+        'bid_value': torch.tensor([bid_value] * len(examples), dtype=torch.long),
         'metadata': {
             'seed': seed,
             'decl_id': seed % 10,
+            'bid_value': bid_value,
             **metadata,
         }
     }
@@ -124,6 +139,9 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32, help="GPU batch size (games per batch)")
     parser.add_argument("--n-samples", type=int, default=50, help="Worlds sampled per decision")
     parser.add_argument("--device", type=str, default="cuda", help="Device (cuda/cpu)")
+    parser.add_argument("--bid-value", type=str, default="30",
+                        help="Contract value shaping action selection: 30..42, 84, "
+                             "or 'seed' for a deterministic per-seed 30-42 cycle")
     parser.add_argument("--output-dir", type=str, default="data/eq-games", help="Output directory")
     parser.add_argument("--dry-run", action="store_true", help="Show missing seeds without generating")
     parser.add_argument("--limit", type=int, default=None, help="Stop after generating N games")
@@ -175,6 +193,7 @@ def main():
     print(f"Output dir: {args.output_dir}")
     print(f"Batch size: {args.batch_size} games")
     print(f"Samples/decision: {args.n_samples}")
+    print(f"Bid value: {args.bid_value}")
     print(f"Start seed: {args.start_seed}")
     if args.limit:
         print(f"Limit: {args.limit} games")
@@ -262,11 +281,13 @@ def main():
             # Prepare batch inputs
             batch_hands = []
             batch_decl_ids = []
+            batch_bid_values = []
             for seed in batch_seeds:
                 hands = deal_from_seed(seed)
                 decl_id = seed % 10
                 batch_hands.append(hands)
                 batch_decl_ids.append(decl_id)
+                batch_bid_values.append(bid_value_for_seed(args.bid_value, seed))
 
             # Generate games on GPU
             game_records = generate_eq_games_gpu(
@@ -280,6 +301,7 @@ def main():
                 adaptive_config=adaptive_config,
                 use_enumeration=args.enumerate,
                 enumeration_threshold=args.enum_threshold,
+                bid_values=batch_bid_values,
             )
 
             # Collate and save each game
@@ -288,7 +310,8 @@ def main():
                 metadata = {
                     'n_samples': args.n_samples,
                     'checkpoint': args.checkpoint,
-                    'version': '2.1',
+                    'bid_mode': args.bid_value,
+                    'version': '2.2',
                     'schema': {
                         'q_semantics': 'minimax_value_to_go',
                         'q_units': 'points',
@@ -314,7 +337,7 @@ def main():
                     },
                     'generated_at': datetime.now().isoformat(),
                 }
-                write_game_pt(examples, seed, path, metadata)
+                write_game_pt(examples, seed, path, metadata, batch_bid_values[i])
 
             # Explicitly free GPU memory between batches
             del game_records

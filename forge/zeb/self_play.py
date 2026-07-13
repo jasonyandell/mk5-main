@@ -13,7 +13,7 @@ from typing import List, Tuple
 from dataclasses import dataclass, field
 
 from .types import ZebGameState, TrajectoryStep, TrajectoryGame
-from .game import new_game, apply_action, is_terminal, get_outcome, current_player, legal_actions
+from .game import new_game, game_seed, apply_action, is_terminal, get_outcome, current_player, legal_actions
 from .observation import observe, get_legal_mask
 from .model import ZebModel
 from .evaluate import RuleBasedPlayer
@@ -55,13 +55,14 @@ def play_games_batched(
     # Initialize all games
     games = [
         GameInstance(
-            state=new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True),
+            state=new_game(seed=game_seed(base_seed, i)),
             game_idx=i,
         )
         for i in range(n_games)
     ]
 
     completed: List[TrajectoryGame] = []
+    step = 0  # For deterministic torch seeding
 
     with torch.no_grad():
         while games:
@@ -90,7 +91,9 @@ def play_games_batched(
             hand_idx_t = torch.stack(batch_hand_indices).to(device)
             hand_mask_t = torch.stack(batch_hand_masks).to(device)
 
-            # Get actions from model
+            # Get actions from model (seeded for reproducibility)
+            torch.manual_seed(hash((base_seed, step)) & 0xFFFFFFFF)
+            step += 1
             actions, log_probs, values = model.get_action(
                 tokens_t, masks_t, hand_idx_t, hand_mask_t,
                 temperature=temperature,
@@ -102,9 +105,9 @@ def play_games_batched(
                 action = actions[i].item()
                 player = batch_players[i]
 
-                # Record step with all observation data for training
+                # Record trajectory step for training
                 # Outcome will be filled after game completion
-                step = TrajectoryStep(
+                traj_step = TrajectoryStep(
                     tokens=batch_tokens[i],
                     mask=batch_masks[i],
                     hand_indices=batch_hand_indices[i],
@@ -113,7 +116,7 @@ def play_games_batched(
                     seat=player,
                     outcome=0.0,  # Placeholder, filled at game end
                 )
-                game.steps.append(step)
+                game.steps.append(traj_step)
 
                 # Apply action to game state
                 game.state = apply_action(game.state, action)
@@ -121,8 +124,8 @@ def play_games_batched(
                 # Check if game is terminal
                 if is_terminal(game.state):
                     # Fill outcomes for all steps based on final result
-                    for step in game.steps:
-                        step.outcome = get_outcome(game.state, step.seat)
+                    for s in game.steps:
+                        s.outcome = get_outcome(game.state, s.seat)
 
                     final_scores = game.state.team_points
                     winner = 0 if final_scores[0] >= final_scores[1] else 1
@@ -169,13 +172,14 @@ def play_games_vs_heuristic(
     # Initialize all games
     games = [
         GameInstance(
-            state=new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True),
+            state=new_game(seed=game_seed(base_seed, i)),
             game_idx=i,
         )
         for i in range(n_games)
     ]
 
     completed: List[TrajectoryGame] = []
+    step = 0  # For deterministic torch seeding
 
     with torch.no_grad():
         while games:
@@ -223,7 +227,9 @@ def play_games_vs_heuristic(
                 hand_idx_t = torch.stack(batch_hand_indices).to(device)
                 hand_mask_t = torch.stack(batch_hand_masks).to(device)
 
-                # Get actions from model
+                # Get actions from model (seeded for reproducibility)
+                torch.manual_seed(hash((base_seed, step)) & 0xFFFFFFFF)
+                step += 1
                 actions, log_probs, values = model.get_action(
                     tokens_t, masks_t, hand_idx_t, hand_mask_t,
                     temperature=temperature,
@@ -235,7 +241,7 @@ def play_games_vs_heuristic(
                     player = batch_players[i]
 
                     # Record step for training
-                    step = TrajectoryStep(
+                    traj_step = TrajectoryStep(
                         tokens=batch_tokens[i],
                         mask=batch_masks[i],
                         hand_indices=batch_hand_indices[i],
@@ -244,7 +250,7 @@ def play_games_vs_heuristic(
                         seat=player,
                         outcome=0.0,  # Filled at game end
                     )
-                    game.steps.append(step)
+                    game.steps.append(traj_step)
 
                     # Apply action
                     game.state = apply_action(game.state, action)
@@ -254,8 +260,8 @@ def play_games_vs_heuristic(
             for game in games:
                 if is_terminal(game.state):
                     # Fill outcomes for model steps only
-                    for step in game.steps:
-                        step.outcome = get_outcome(game.state, step.seat)
+                    for s in game.steps:
+                        s.outcome = get_outcome(game.state, s.seat)
 
                     final_scores = game.state.team_points
                     winner = 0 if final_scores[0] >= final_scores[1] else 1

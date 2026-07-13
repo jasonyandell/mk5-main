@@ -1,0 +1,1049 @@
+{
+  "bead_id": "t42-0b4l.4",
+  "claim_branch_impact_evidence": {
+    "path": "w42/hidden_threat_legacy_mining/claim_branch_impact_evidence.csv",
+    "rows": 8,
+    "status_impact": "marker only; no central claim status movement"
+  },
+  "coverage": {
+    "action_rows": 748305,
+    "actual_not_safest_tail_decisions": 54778,
+    "decision_rows": 280000,
+    "decl_counts": {
+      "0": 1000,
+      "1": 1000,
+      "2": 1000,
+      "3": 1000,
+      "4": 1000,
+      "5": 1000,
+      "6": 1000,
+      "7": 1000,
+      "8": 1000,
+      "9": 1000
+    },
+    "hidden_downside_decisions": 205760,
+    "input_files": 100,
+    "sample_counts": {
+      "1600": 1700,
+      "2400": 19800,
+      "3200": 60600,
+      "4000": 112000,
+      "4800": 58600,
+      "5600": 6500,
+      "6400": 700,
+      "800": 20100
+    },
+    "scalar_omission_decisions": 137029
+  },
+  "created_at_utc": "2026-05-03T02:57:07.371397+00:00",
+  "file_meta": [
+    {
+      "action_rows": 7541,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6343,
+      "load_and_process_seconds": 4.275021417066455,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_0-99.pt"
+    },
+    {
+      "action_rows": 7579,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6396,
+      "load_and_process_seconds": 4.345559583976865,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_100-199.pt"
+    },
+    {
+      "action_rows": 7437,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6382,
+      "load_and_process_seconds": 4.3389291249914095,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1000-1099.pt"
+    },
+    {
+      "action_rows": 7490,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6496,
+      "load_and_process_seconds": 4.136509999982081,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1100-1199.pt"
+    },
+    {
+      "action_rows": 7371,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6340,
+      "load_and_process_seconds": 4.109488833928481,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1200-1299.pt"
+    },
+    {
+      "action_rows": 7449,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6453,
+      "load_and_process_seconds": 4.120037583052181,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1300-1399.pt"
+    },
+    {
+      "action_rows": 7376,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6251,
+      "load_and_process_seconds": 4.041065457975492,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1400-1499.pt"
+    },
+    {
+      "action_rows": 7556,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6413,
+      "load_and_process_seconds": 4.121274832985364,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1500-1599.pt"
+    },
+    {
+      "action_rows": 7457,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6319,
+      "load_and_process_seconds": 4.046997125027701,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1600-1699.pt"
+    },
+    {
+      "action_rows": 7591,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6468,
+      "load_and_process_seconds": 4.282160958042368,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1700-1799.pt"
+    },
+    {
+      "action_rows": 7494,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6330,
+      "load_and_process_seconds": 3.9308614999754354,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1800-1899.pt"
+    },
+    {
+      "action_rows": 7380,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6357,
+      "load_and_process_seconds": 4.348587082931772,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1900-1999.pt"
+    },
+    {
+      "action_rows": 7437,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6389,
+      "load_and_process_seconds": 4.142849124968052,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_200-299.pt"
+    },
+    {
+      "action_rows": 7446,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6371,
+      "load_and_process_seconds": 4.2229825829854235,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2000-2099.pt"
+    },
+    {
+      "action_rows": 7366,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6334,
+      "load_and_process_seconds": 4.195097540970892,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2100-2199.pt"
+    },
+    {
+      "action_rows": 7626,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6534,
+      "load_and_process_seconds": 4.233271208009683,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2200-2299.pt"
+    },
+    {
+      "action_rows": 7510,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6414,
+      "load_and_process_seconds": 4.135023707989603,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2300-2399.pt"
+    },
+    {
+      "action_rows": 7576,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6465,
+      "load_and_process_seconds": 4.016514583025128,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2400-2499.pt"
+    },
+    {
+      "action_rows": 7685,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6498,
+      "load_and_process_seconds": 4.257750040967949,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2500-2599.pt"
+    },
+    {
+      "action_rows": 7459,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6238,
+      "load_and_process_seconds": 4.1376435830025,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2600-2699.pt"
+    },
+    {
+      "action_rows": 7352,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6181,
+      "load_and_process_seconds": 4.34719237498939,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2700-2799.pt"
+    },
+    {
+      "action_rows": 7341,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6209,
+      "load_and_process_seconds": 4.87867866596207,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2800-2899.pt"
+    },
+    {
+      "action_rows": 7460,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6330,
+      "load_and_process_seconds": 4.204605208011344,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2900-2999.pt"
+    },
+    {
+      "action_rows": 7635,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6470,
+      "load_and_process_seconds": 4.123434125096537,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_300-399.pt"
+    },
+    {
+      "action_rows": 7536,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6405,
+      "load_and_process_seconds": 4.178440666059032,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3000-3099.pt"
+    },
+    {
+      "action_rows": 7518,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6344,
+      "load_and_process_seconds": 4.077085957978852,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3100-3199.pt"
+    },
+    {
+      "action_rows": 7430,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6305,
+      "load_and_process_seconds": 4.070671749999747,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3200-3299.pt"
+    },
+    {
+      "action_rows": 7600,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6316,
+      "load_and_process_seconds": 4.236941000097431,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3300-3399.pt"
+    },
+    {
+      "action_rows": 7565,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6561,
+      "load_and_process_seconds": 4.406075292034075,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3400-3499.pt"
+    },
+    {
+      "action_rows": 7446,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6331,
+      "load_and_process_seconds": 4.143509624991566,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3500-3599.pt"
+    },
+    {
+      "action_rows": 7549,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6456,
+      "load_and_process_seconds": 4.414719666005112,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3600-3699.pt"
+    },
+    {
+      "action_rows": 7434,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6260,
+      "load_and_process_seconds": 4.237524250056595,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3700-3799.pt"
+    },
+    {
+      "action_rows": 7365,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6284,
+      "load_and_process_seconds": 4.107492583920248,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3800-3899.pt"
+    },
+    {
+      "action_rows": 7496,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6371,
+      "load_and_process_seconds": 4.2119911659974605,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3900-3999.pt"
+    },
+    {
+      "action_rows": 7476,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6462,
+      "load_and_process_seconds": 4.174264958011918,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_400-499.pt"
+    },
+    {
+      "action_rows": 7386,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6337,
+      "load_and_process_seconds": 4.2186162910657,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4000-4099.pt"
+    },
+    {
+      "action_rows": 7546,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6376,
+      "load_and_process_seconds": 4.413854583981447,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4100-4199.pt"
+    },
+    {
+      "action_rows": 7483,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6325,
+      "load_and_process_seconds": 4.423622834030539,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4200-4299.pt"
+    },
+    {
+      "action_rows": 7387,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6287,
+      "load_and_process_seconds": 4.304816999938339,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4300-4399.pt"
+    },
+    {
+      "action_rows": 7561,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6314,
+      "load_and_process_seconds": 4.184051875025034,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4400-4499.pt"
+    },
+    {
+      "action_rows": 7525,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6440,
+      "load_and_process_seconds": 4.198425790993497,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4500-4599.pt"
+    },
+    {
+      "action_rows": 7507,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6428,
+      "load_and_process_seconds": 4.2524863750441,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4600-4699.pt"
+    },
+    {
+      "action_rows": 7491,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6315,
+      "load_and_process_seconds": 4.020315417088568,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4700-4799.pt"
+    },
+    {
+      "action_rows": 7486,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6402,
+      "load_and_process_seconds": 4.067363125039265,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4800-4899.pt"
+    },
+    {
+      "action_rows": 7432,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6253,
+      "load_and_process_seconds": 4.089173916960135,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4900-4999.pt"
+    },
+    {
+      "action_rows": 7407,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6403,
+      "load_and_process_seconds": 3.9903348330408335,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_500-599.pt"
+    },
+    {
+      "action_rows": 7607,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6447,
+      "load_and_process_seconds": 4.338793624890968,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5000-5099.pt"
+    },
+    {
+      "action_rows": 7591,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6384,
+      "load_and_process_seconds": 4.295403541997075,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5100-5199.pt"
+    },
+    {
+      "action_rows": 7527,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6397,
+      "load_and_process_seconds": 4.2449653330259025,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5200-5299.pt"
+    },
+    {
+      "action_rows": 7469,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6258,
+      "load_and_process_seconds": 4.207268250058405,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5300-5399.pt"
+    },
+    {
+      "action_rows": 7387,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6303,
+      "load_and_process_seconds": 4.0058514170814306,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5400-5499.pt"
+    },
+    {
+      "action_rows": 7469,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6464,
+      "load_and_process_seconds": 4.2935343330027536,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5500-5599.pt"
+    },
+    {
+      "action_rows": 7360,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6328,
+      "load_and_process_seconds": 4.180132957990281,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5600-5699.pt"
+    },
+    {
+      "action_rows": 7488,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6268,
+      "load_and_process_seconds": 3.954627166967839,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5700-5799.pt"
+    },
+    {
+      "action_rows": 7308,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6339,
+      "load_and_process_seconds": 4.1758870830526575,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5800-5899.pt"
+    },
+    {
+      "action_rows": 7423,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6345,
+      "load_and_process_seconds": 3.9357953330036253,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5900-5999.pt"
+    },
+    {
+      "action_rows": 7495,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6384,
+      "load_and_process_seconds": 4.153547166031785,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_600-699.pt"
+    },
+    {
+      "action_rows": 7461,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6409,
+      "load_and_process_seconds": 4.118182000005618,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6000-6099.pt"
+    },
+    {
+      "action_rows": 7581,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6405,
+      "load_and_process_seconds": 4.101910208002664,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6100-6199.pt"
+    },
+    {
+      "action_rows": 7490,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6381,
+      "load_and_process_seconds": 4.116283833049238,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6200-6299.pt"
+    },
+    {
+      "action_rows": 7354,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6311,
+      "load_and_process_seconds": 4.1047497080871835,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6300-6399.pt"
+    },
+    {
+      "action_rows": 7596,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6375,
+      "load_and_process_seconds": 4.280867666937411,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6400-6499.pt"
+    },
+    {
+      "action_rows": 7520,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6462,
+      "load_and_process_seconds": 4.211083750007674,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6500-6599.pt"
+    },
+    {
+      "action_rows": 7454,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6366,
+      "load_and_process_seconds": 4.2563296660082415,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6600-6699.pt"
+    },
+    {
+      "action_rows": 7531,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6494,
+      "load_and_process_seconds": 4.111716457991861,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6700-6799.pt"
+    },
+    {
+      "action_rows": 7503,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6452,
+      "load_and_process_seconds": 4.035763332969509,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6800-6899.pt"
+    },
+    {
+      "action_rows": 7492,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6466,
+      "load_and_process_seconds": 4.317487832973711,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6900-6999.pt"
+    },
+    {
+      "action_rows": 7423,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6294,
+      "load_and_process_seconds": 4.013130458071828,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_700-799.pt"
+    },
+    {
+      "action_rows": 7492,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6392,
+      "load_and_process_seconds": 4.153863999992609,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7000-7099.pt"
+    },
+    {
+      "action_rows": 7462,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6193,
+      "load_and_process_seconds": 4.086334125022404,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7100-7199.pt"
+    },
+    {
+      "action_rows": 7589,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6597,
+      "load_and_process_seconds": 4.027291291044094,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7200-7299.pt"
+    },
+    {
+      "action_rows": 7451,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6413,
+      "load_and_process_seconds": 4.168270958005451,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7300-7399.pt"
+    },
+    {
+      "action_rows": 7524,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6489,
+      "load_and_process_seconds": 4.178657667012885,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7400-7499.pt"
+    },
+    {
+      "action_rows": 7545,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6271,
+      "load_and_process_seconds": 4.058035166934133,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7500-7599.pt"
+    },
+    {
+      "action_rows": 7671,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6387,
+      "load_and_process_seconds": 4.255385500029661,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7600-7699.pt"
+    },
+    {
+      "action_rows": 7457,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6343,
+      "load_and_process_seconds": 4.232002083910629,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7700-7799.pt"
+    },
+    {
+      "action_rows": 7555,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6340,
+      "load_and_process_seconds": 4.139752916060388,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7800-7899.pt"
+    },
+    {
+      "action_rows": 7436,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6225,
+      "load_and_process_seconds": 4.153569333953783,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7900-7999.pt"
+    },
+    {
+      "action_rows": 7499,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6357,
+      "load_and_process_seconds": 4.151014165952802,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_800-899.pt"
+    },
+    {
+      "action_rows": 7579,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6402,
+      "load_and_process_seconds": 4.170940166921355,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8000-8099.pt"
+    },
+    {
+      "action_rows": 7527,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6390,
+      "load_and_process_seconds": 4.10104791703634,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8100-8199.pt"
+    },
+    {
+      "action_rows": 7403,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6329,
+      "load_and_process_seconds": 4.167010999983177,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8200-8299.pt"
+    },
+    {
+      "action_rows": 7498,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6406,
+      "load_and_process_seconds": 4.078905499889515,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8300-8399.pt"
+    },
+    {
+      "action_rows": 7551,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6458,
+      "load_and_process_seconds": 4.049578208010644,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8400-8499.pt"
+    },
+    {
+      "action_rows": 7393,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6345,
+      "load_and_process_seconds": 4.133085499983281,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8500-8599.pt"
+    },
+    {
+      "action_rows": 7455,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6404,
+      "load_and_process_seconds": 4.16487649991177,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8600-8699.pt"
+    },
+    {
+      "action_rows": 7458,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6380,
+      "load_and_process_seconds": 4.1312271249480546,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8700-8799.pt"
+    },
+    {
+      "action_rows": 7580,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6452,
+      "load_and_process_seconds": 4.386818874976598,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8800-8899.pt"
+    },
+    {
+      "action_rows": 7550,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6297,
+      "load_and_process_seconds": 4.206087124999613,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8900-8999.pt"
+    },
+    {
+      "action_rows": 7418,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6381,
+      "load_and_process_seconds": 4.183077584020793,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_900-999.pt"
+    },
+    {
+      "action_rows": 7336,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6291,
+      "load_and_process_seconds": 4.137974415905774,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9000-9099.pt"
+    },
+    {
+      "action_rows": 7406,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6360,
+      "load_and_process_seconds": 4.087782207992859,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9100-9199.pt"
+    },
+    {
+      "action_rows": 7485,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6457,
+      "load_and_process_seconds": 4.127014709054492,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9200-9299.pt"
+    },
+    {
+      "action_rows": 7384,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6438,
+      "load_and_process_seconds": 4.064819624996744,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9300-9399.pt"
+    },
+    {
+      "action_rows": 7506,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6386,
+      "load_and_process_seconds": 4.103989749914035,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9400-9499.pt"
+    },
+    {
+      "action_rows": 7343,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6283,
+      "load_and_process_seconds": 4.094246999942698,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9500-9599.pt"
+    },
+    {
+      "action_rows": 7392,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6382,
+      "load_and_process_seconds": 4.205716499942355,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9600-9699.pt"
+    },
+    {
+      "action_rows": 7593,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6378,
+      "load_and_process_seconds": 4.210690167034045,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9700-9799.pt"
+    },
+    {
+      "action_rows": 7585,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6431,
+      "load_and_process_seconds": 4.17742574994918,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9800-9899.pt"
+    },
+    {
+      "action_rows": 7413,
+      "decision_rows": 2800,
+      "games": 100,
+      "hidden_large_impact_action_rows": 6294,
+      "load_and_process_seconds": 4.2217673329869285,
+      "path": "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9900-9999.pt"
+    }
+  ],
+  "git_commit": "f70a849ad62b6ae75e5ce6b08e960cad46f3860d",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M burl/chat/server/tools_runner.py\n M w42/statistics_claims_ledger/build_statistics_claims_ledger.py\n M w42/statistics_claims_ledger/claims.csv\n M w42/statistics_claims_ledger/manifest.json\n M w42/statistics_claims_ledger/summary.json\n M wiki/entities/w42.md\n M wiki/experiments/w42-doubles-no-trump-claim-validation.md\n M wiki/experiments/w42-partner-support-claim-validation.md\n M wiki/experiments/w42-phase2-setter-pounce-direct-label-probe.md\n M wiki/experiments/w42-phase2-statistics-claims-ledger.md\n M wiki/experiments/w42-setter-defense-claim-validation.md\n M wiki/index.md\n M wiki/log.md\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/skills/analyze-hand/\n?? .agents/skills/clustering/\n?? .agents/skills/comprehension-test/\n?? .agents/skills/ecological/\n?? .agents/skills/minirocket/\n?? .agents/skills/modal/\n?? .agents/skills/pdf/\n?? .agents/skills/pymc/\n?? .agents/skills/pytorch-lightning/\n?? .agents/skills/pytorch/\n?? .agents/skills/ralph-loop/\n?? .agents/skills/shap/\n?? .agents/skills/statistical-rigor/\n?? .agents/skills/survival-forest/\n?? .agents/skills/texas-42-analytics/\n?? .agents/skills/texas-42-forge/\n?? .agents/skills/umap/\n?? .agents/skills/volcano-plots/\n?? .agents/skills/word2vec/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/claim_analysis/\n?? w42/claim_analysis_matrix/\n?? w42/claim_analysis_smoke/\n?? w42/claim_data_inventory/\n?? w42/doubles_no_trump_legacy_mining/\n?? w42/gus_corpus_claim_deep_dive/\n?? w42/hidden_threat_legacy_mining/\n?? w42/hidden_threat_legacy_mining_smoke/\n?? w42/tactical_claim_replication/\n?? w42/tactical_claim_replication_smoke/\n?? wiki/experiments/w42-claim-data-inventory.md\n?? wiki/experiments/w42-doubles-no-trump-legacy-mining.md\n?? wiki/experiments/w42-gus-corpus-tactical-claim-deep-dive.md\n?? wiki/experiments/w42-phase2-claim-analysis-harness.md\n?? wiki/experiments/w42-phase2-claim-analysis-matrix.md\n?? wiki/experiments/w42-tactical-claim-replication.md",
+  "headline": {
+    "hidden_large_impact_action_rate": 0.8515765630324533,
+    "max_top_hidden_downside_score": 72.5683364868164,
+    "max_top_hidden_impact_score": 85.0433349609375,
+    "mean_top_hidden_downside_score": 10.854307849242394,
+    "mean_top_hidden_impact_score": 17.461359079813718
+  },
+  "inputs": [
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_0-99.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_100-199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1000-1099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1100-1199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1200-1299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1300-1399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1400-1499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1500-1599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1600-1699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1700-1799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1800-1899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_1900-1999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_200-299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2000-2099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2100-2199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2200-2299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2300-2399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2400-2499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2500-2599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2600-2699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2700-2799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2800-2899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_2900-2999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_300-399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3000-3099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3100-3199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3200-3299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3300-3399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3400-3499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3500-3599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3600-3699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3700-3799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3800-3899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_3900-3999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_400-499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4000-4099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4100-4199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4200-4299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4300-4399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4400-4499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4500-4599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4600-4699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4700-4799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4800-4899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_4900-4999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_500-599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5000-5099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5100-5199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5200-5299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5300-5399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5400-5499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5500-5599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5600-5699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5700-5799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5800-5899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_5900-5999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_600-699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6000-6099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6100-6199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6200-6299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6300-6399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6400-6499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6500-6599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6600-6699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6700-6799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6800-6899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_6900-6999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_700-799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7000-7099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7100-7199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7200-7299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7300-7399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7400-7499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7500-7599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7600-7699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7700-7799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7800-7899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_7900-7999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_800-899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8000-8099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8100-8199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8200-8299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8300-8399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8400-8499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8500-8599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8600-8699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8700-8799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8800-8899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_8900-8999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_900-999.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9000-9099.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9100-9199.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9200-9299.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9300-9399.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9400-9499.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9500-9599.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9600-9699.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9700-9799.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9800-9899.pt",
+    "/Users/jason/code/mk5-main/gus/data/corpus_train_chunk_9900-9999.pt"
+  ],
+  "paired_mitigation_contrasts": [
+    {
+      "contrast_id": "actual_vs_safest_tail_hidden_downside_decisions",
+      "hidden_downside_score_delta": 0.37335238422514655,
+      "hidden_downside_score_delta_ci95_high": 0.4116949407163948,
+      "hidden_downside_score_delta_ci95_low": 0.3375676594016561,
+      "hidden_impact_score_delta": 0.8301410710948797,
+      "hidden_impact_score_delta_ci95_high": 0.8901711554925326,
+      "hidden_impact_score_delta_ci95_low": 0.7728772764710161,
+      "lower_tail_mass_delta": 0.022063740271058358,
+      "lower_tail_mass_delta_ci95_high": 0.022509067426573034,
+      "lower_tail_mass_delta_ci95_low": 0.021587169488885494,
+      "mean_delta": 1.685568680791345,
+      "mean_delta_ci95_high": 1.726094048563092,
+      "mean_delta_ci95_low": 1.6457128273064838,
+      "paired_decision_n": 42624,
+      "threshold_mass_delta": 0.0413221674734609,
+      "threshold_mass_delta_ci95_high": 0.04234516322656511,
+      "threshold_mass_delta_ci95_low": 0.04032109684686805
+    },
+    {
+      "contrast_id": "low_hidden_downside_vs_high_hidden_downside_close_mean",
+      "hidden_downside_score_delta": -7.491927613326999,
+      "hidden_downside_score_delta_ci95_high": -7.408730069050676,
+      "hidden_downside_score_delta_ci95_low": -7.581097515164422,
+      "hidden_impact_score_delta": -7.577373172256319,
+      "hidden_impact_score_delta_ci95_high": -7.413005800284107,
+      "hidden_impact_score_delta_ci95_low": -7.761792468277947,
+      "lower_tail_mass_delta": -0.03316679708245932,
+      "lower_tail_mass_delta_ci95_high": -0.03104275274572629,
+      "lower_tail_mass_delta_ci95_low": -0.03501880594926272,
+      "mean_delta": -0.02142820986370171,
+      "mean_delta_ci95_high": 0.009338112446690397,
+      "mean_delta_ci95_low": -0.053590387218752984,
+      "paired_decision_n": 4619,
+      "threshold_mass_delta": -0.009268156155799151,
+      "threshold_mass_delta_ci95_high": -0.0070464878957812935,
+      "threshold_mass_delta_ci95_low": -0.011634250970521329
+    },
+    {
+      "contrast_id": "safest_tail_vs_top_mean_hidden_downside_decisions",
+      "hidden_downside_score_delta": -0.07274664671261698,
+      "hidden_downside_score_delta_ci95_high": -0.035561923612223045,
+      "hidden_downside_score_delta_ci95_low": -0.10966973311746155,
+      "hidden_impact_score_delta": -0.05682149416058891,
+      "hidden_impact_score_delta_ci95_high": -0.004857958276852115,
+      "hidden_impact_score_delta_ci95_low": -0.10704727179398583,
+      "lower_tail_mass_delta": -0.0105055038288695,
+      "lower_tail_mass_delta_ci95_high": -0.01024791811055139,
+      "lower_tail_mass_delta_ci95_low": -0.01077001620675535,
+      "mean_delta": -2.5137489237022566,
+      "mean_delta_ci95_high": -2.475556877343444,
+      "mean_delta_ci95_low": -2.5510378050007154,
+      "paired_decision_n": 42536,
+      "threshold_mass_delta": -0.03071550049705776,
+      "threshold_mass_delta_ci95_high": -0.029799103831801628,
+      "threshold_mass_delta_ci95_low": -0.03174497813719483
+    },
+    {
+      "contrast_id": "top_threshold_vs_top_mean_hidden_threat_decisions",
+      "hidden_downside_score_delta": 0.227838230134715,
+      "hidden_downside_score_delta_ci95_high": 0.25744930767727947,
+      "hidden_downside_score_delta_ci95_low": 0.19449063989921483,
+      "hidden_impact_score_delta": 0.7745281020261617,
+      "hidden_impact_score_delta_ci95_high": 0.8271783256919276,
+      "hidden_impact_score_delta_ci95_low": 0.7226904660094075,
+      "lower_tail_mass_delta": 0.019138063002351536,
+      "lower_tail_mass_delta_ci95_high": 0.019809137105689982,
+      "lower_tail_mass_delta_ci95_low": 0.018451660289152627,
+      "mean_delta": -1.764616175912396,
+      "mean_delta_ci95_high": -1.7372380969708452,
+      "mean_delta_ci95_low": -1.7917046682207476,
+      "paired_decision_n": 40435,
+      "threshold_mass_delta": 0.011772169694757056,
+      "threshold_mass_delta_ci95_high": 0.012048785113432723,
+      "threshold_mass_delta_ci95_low": 0.011488958397588156
+    }
+  ],
+  "schema_version": "w42.hidden_threat_legacy_mining.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "No central claim status changes; use as branch-impact evidence for downstream claim families.",
+    "interpretation": "Streaming legacy-corpus hidden-threat mining. It connects branch-atlas hidden-holder impact labels to distribution-aware mitigation contrasts and claim-detector surfaces. It is offline diagnostic evidence, not a live policy feature.",
+    "leakage_boundary": "world_hands, q_per_world, E[Q], and hidden holders are offline labels only.",
+    "wandb": {
+      "available": true,
+      "dir": "w42/hidden_threat_legacy_mining/wandb/wandb/run-20260502_215007-74vfet6o/files",
+      "enabled": true,
+      "entity": "jasonyandell-forge42",
+      "group": "w42-hidden-threat-legacy-mining",
+      "id": "74vfet6o",
+      "mode": "online",
+      "name": "t42-0b4l.4-hidden-threat-legacy-v0",
+      "project": "w42",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/74vfet6o"
+    }
+  },
+  "wall_seconds": 419.50311191601213
+}

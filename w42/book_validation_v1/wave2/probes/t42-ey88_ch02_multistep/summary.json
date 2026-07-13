@@ -1,0 +1,169 @@
+{
+  "bead_id": "t42-ey88",
+  "claim_id": "ch02-bid-only-enough",
+  "question": "Does overbidding hurt monotonically across all adjacent bid steps 30\u219232\u219235\u219236\u219239\u219242?",
+  "slice": "same-contract paired actual-actions, all declarations, seeds 9000-9049, n=50 seeds \u00d7 10 decls",
+  "N_per_step_pair": 14000,
+  "n_bootstrap": 2000,
+  "rng_seed": 42,
+  "generated_utc": "2026-05-03T21:51:07.070531Z",
+  "monotone_result": {
+    "all_steps_ci_exclude_zero_in_book_direction": true,
+    "all_steps_positive_mean_delta_mark_ev": true,
+    "step_pair_mean_deltas": {
+      "30\u219432": 0.074301,
+      "32\u219435": 0.1146,
+      "35\u219436": 0.047615,
+      "36\u219439": 0.103212,
+      "39\u219442": 0.145889
+    }
+  },
+  "step_pair_mark_ev_summary": {
+    "30\u219432": {
+      "mean_delta": 0.074301,
+      "ci_lo": 0.06647,
+      "ci_hi": 0.081875,
+      "ci_supports_book": true,
+      "cohen_d": 0.1863,
+      "p_value": 0.0
+    },
+    "32\u219435": {
+      "mean_delta": 0.1146,
+      "ci_lo": 0.106593,
+      "ci_hi": 0.122115,
+      "ci_supports_book": true,
+      "cohen_d": 0.2991,
+      "p_value": 0.0
+    },
+    "35\u219436": {
+      "mean_delta": 0.047615,
+      "ci_lo": 0.041733,
+      "ci_hi": 0.053587,
+      "ci_supports_book": true,
+      "cohen_d": 0.1579,
+      "p_value": 0.0
+    },
+    "36\u219439": {
+      "mean_delta": 0.103212,
+      "ci_lo": 0.097256,
+      "ci_hi": 0.109496,
+      "ci_supports_book": true,
+      "cohen_d": 0.3369,
+      "p_value": 0.0
+    },
+    "39\u219442": {
+      "mean_delta": 0.145889,
+      "ci_lo": 0.139252,
+      "ci_hi": 0.152868,
+      "ci_supports_book": true,
+      "cohen_d": 0.4721,
+      "p_value": 0.0
+    }
+  },
+  "best_step_pair_mark_ev": "39\u219442",
+  "worst_step_pair_mark_ev": "35\u219436",
+  "best_slice": {
+    "slice_col": "phase",
+    "slice_val": "early",
+    "pair": "39\u219442",
+    "mean_delta_mark_ev": 0.297823
+  },
+  "worst_slice": {
+    "slice_col": "phase",
+    "slice_val": "late",
+    "pair": "39\u219442",
+    "mean_delta_mark_ev": 0.002683
+  },
+  "transitive_check": {
+    "mark_ev": {
+      "direct_30_42": 0.481728,
+      "sum_of_steps": 0.485616,
+      "deviation_pct": 0.81,
+      "additive_approx": true
+    },
+    "p_make": {
+      "direct_30_42": 0.240864,
+      "sum_of_steps": 0.242808,
+      "deviation_pct": 0.81,
+      "additive_approx": true
+    },
+    "threshold_mass": {
+      "direct_30_42": 0.012391,
+      "sum_of_steps": 0.011435,
+      "deviation_pct": 7.71,
+      "additive_approx": true
+    }
+  },
+  "bid84_analysis": {
+    "bid42_vs_bid84": {
+      "mark_ev": {
+        "N": 9208,
+        "mean_delta": 1.0,
+        "ci_lo_95": 1.0,
+        "ci_hi_95": 1.0,
+        "p_value": 0.0,
+        "interpretation": "lower_bid_better"
+      },
+      "p_make": {
+        "N": 9208,
+        "mean_delta": 0.0,
+        "ci_lo_95": 0.0,
+        "ci_hi_95": 0.0,
+        "p_value": NaN,
+        "interpretation": "higher_bid_better"
+      },
+      "threshold_mass": {
+        "N": 9208,
+        "mean_delta": 0.000742,
+        "ci_lo_95": -0.000236,
+        "ci_hi_95": 0.001735,
+        "p_value": 0.146884,
+        "interpretation": "lower_bid_better"
+      },
+      "mean": {
+        "N": 9208,
+        "mean_delta": 0.065051,
+        "ci_lo_95": -0.138639,
+        "ci_hi_95": 0.274134,
+        "p_value": 0.54873,
+        "interpretation": "lower_bid_better"
+      }
+    },
+    "bid30_vs_bid84": {
+      "mark_ev": {
+        "N": 8716,
+        "mean_delta": 1.490118,
+        "ci_lo_95": 1.478468,
+        "ci_hi_95": 1.502307,
+        "p_value": 0.0,
+        "interpretation": "lower_bid_better"
+      },
+      "p_make": {
+        "N": 8716,
+        "mean_delta": 0.245059,
+        "ci_lo_95": 0.239178,
+        "ci_hi_95": 0.250773,
+        "p_value": 0.0,
+        "interpretation": "lower_bid_better"
+      },
+      "threshold_mass": {
+        "N": 8716,
+        "mean_delta": 0.013566,
+        "ci_lo_95": 0.005362,
+        "ci_hi_95": 0.021676,
+        "p_value": 0.000843,
+        "interpretation": "lower_bid_better"
+      },
+      "mean": {
+        "N": 8716,
+        "mean_delta": -0.08489,
+        "ci_lo_95": -0.322916,
+        "ci_hi_95": 0.157884,
+        "p_value": 0.491839,
+        "interpretation": "higher_bid_better"
+      }
+    }
+  },
+  "status_proposal": "supported",
+  "status_justification": "All 5 adjacent step pairs show overbidding penalty (mark_ev delta > 0) with 95% CIs excluding zero in the book-favorable direction, and no step reverses. The effect is monotone and robust across declarations, seat roles, and game phases."
+}

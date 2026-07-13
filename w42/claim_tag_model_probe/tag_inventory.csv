@@ -1,0 +1,7 @@
+family,tag_action_n,status
+pounce_donation,47879,available
+seat_position_closure,420443,available
+bid_risk,0,"not_in_training_table: available as t42-0b4l.5 bid-margin counterfactual rows, but not aligned to the tactical legal-action training table"
+doubles_no_trump,0,"not_in_training_table: available in t42-0b4l.8 legacy mining, but not normalized into this row model input"
+eighty_four_endgame,0,"not_in_training_table: available as a small generated 84 fixture table, but too small and out-of-distribution for this train split"
+hidden_threat_distribution,0,not_in_training_table: offline labels only; hidden truth and q_per_world are not legal live model features

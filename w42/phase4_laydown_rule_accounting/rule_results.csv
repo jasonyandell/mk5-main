@@ -1,0 +1,24 @@
+test_id,family,assertion,expected,observed,status,details
+count_identity_exact_set,count_identity,"Count dominoes are exactly 5-5, 6-4, 4-1, 3-2, and 5-0 with face-sum values.","{""3-2"": 5, ""4-1"": 5, ""5-0"": 5, ""5-5"": 10, ""6-4"": 10}","{""3-2"": 5, ""4-1"": 5, ""5-0"": 5, ""5-5"": 10, ""6-4"": 10}",pass,
+count_total_35,count_identity,All count domino values sum to 35.,35,35,pass,
+hand_total_42,count_identity,Seven trick points plus 35 count points total 42.,42,42,pass,
+doubles_face_total_42,count_identity,The face value of the seven doubles also totals 42.,42,42,pass,
+non_trump_membership_total,suit_membership,Twenty-one non-doubles belong to two suits and seven doubles belong to one.,49,49,pass,
+each_pip_suit_has_seven_tiles,suit_membership,Each of the seven pip suits contains seven dominoes before trump is declared.,"{""0"": 7, ""1"": 7, ""2"": 7, ""3"": 7, ""4"": 7, ""5"": 7, ""6"": 7}","{""0"": 7, ""1"": 7, ""2"": 7, ""3"": 7, ""4"": 7, ""5"": 7, ""6"": 7}",pass,
+doubles_single_suit,suit_membership,Doubles have one natural pip-suit membership.,[],[],pass,
+trump_secondary_suit_excluded,trump_exclusivity,A five-blank is trump when fives are called and cannot follow blanks.,false,false,pass,
+non_trump_secondary_can_follow,trump_exclusivity,A six-blank can follow blanks when fives are called.,true,true,pass,
+called_suit_follow_requires_called_tile,trump_exclusivity,A six-five can follow the called-suit lead when fives are called.,true,true,pass,
+off_double_cannot_follow_called_suit,trump_exclusivity,A double-six cannot follow a fives-trump lead.,false,false,pass,
+legal_mask_trump_lead_requires_trump,follow_suit_mask,"When trump is led, only called-suit tiles can follow if present.","[""6-5""]","[""6-5""]",pass,
+legal_mask_secondary_suit_excludes_trump,follow_suit_mask,A trump tile containing the led pip is not also a blank for follow-suit.,"[""6-0""]","[""6-0""]",pass,
+legal_mask_void_may_play_anything,follow_suit_mask,"A player void in led suit can play any tile, including trump.","[""2-2"", ""3-3"", ""6-5""]","[""2-2"", ""3-3"", ""6-5""]",pass,
+trick_winner_no_trump_high_led_suit_wins,trick_winner,"Without trump, highest tile in led suit wins.",1,1,pass,points=1
+trick_winner_pip_trump_beats_led_suit,trick_winner,Any called-suit trump beats non-trump led-suit tiles.,1,1,pass,points=6
+trick_winner_higher_pip_trump_beats_lower_trump,trick_winner,Highest called-suit trump wins among multiple trumps.,2,2,pass,points=16
+trick_winner_doubles_trump_highest_double_wins,trick_winner,"In doubles-trump, the highest double wins over lower doubles and off tiles.",1,1,pass,points=11
+lead_control_winner_leads_next,lead_control,The winner of a trick leads the next trick.,1,1,pass,P1 wins the threes trick with 6-3.
+trick_points_include_count,count_capture,A trick scores one trick point plus any count dominoes it contains.,31,31,pass,Synthetic all-count trick used only for accounting arithmetic.
+contract_scoring_bid_30_take_33,contract_scoring,Chapter 1 make/set examples separate hand points from failed-bid score.,"{""bidder_score"": 33, ""opponent_score"": 9}","{""bidder_score"": 33, ""opponent_score"": 9}",pass,
+contract_scoring_bid_35_take_33,contract_scoring,Chapter 1 make/set examples separate hand points from failed-bid score.,"{""bidder_score"": 0, ""opponent_score"": 44}","{""bidder_score"": 0, ""opponent_score"": 44}",pass,
+contract_scoring_bid_35_take_30,contract_scoring,Chapter 1 make/set examples separate hand points from failed-bid score.,"{""bidder_score"": 0, ""opponent_score"": 47}","{""bidder_score"": 0, ""opponent_score"": 47}",pass,

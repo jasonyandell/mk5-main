@@ -1,0 +1,4 @@
+static_risk_bucket,n,mean_p_make_30,min_p_make_30,max_p_make_30,mean_mark_swing_30,min_mark_swing_30,max_mark_swing_30,mean_max_profitable_bid,min_max_profitable_bid,max_max_profitable_bid,mean_static_bid_ceiling_proxy,min_static_bid_ceiling_proxy,max_static_bid_ceiling_proxy
+risk_13_20,199,0.386856,0.046875,0.96875,-0.226288,-0.90625,0.9375,8.643216,0.0,42.0,24.361809,22.0,27.0
+risk_gt_20,14,0.331473,0.125,1.0,-0.337054,-0.75,1.0,6.0,0.0,42.0,17.0,17.0,17.0
+risk_le_12,171,0.420687,0.09375,0.9375,-0.158626,-0.8125,0.875,10.666667,0.0,42.0,34.222222,32.0,42.0

@@ -1,0 +1,8 @@
+bid,bid_class,mark_multiplier,mark_break_even_make_probability,ordinary_point_objective_note
+30,ordinary,1,0.5,point threshold depends on defender retained points
+35,ordinary,1,0.5,point threshold depends on defender retained points
+41,ordinary,1,0.5,point threshold depends on defender retained points
+42,all_42,1,0.5,symmetric sweep bid under deterministic score transform
+84,mark_ladder,2,0.5,symmetric sweep bid under deterministic score transform
+126,mark_ladder,3,0.5,symmetric sweep bid under deterministic score transform
+168,mark_ladder,4,0.5,symmetric sweep bid under deterministic score transform

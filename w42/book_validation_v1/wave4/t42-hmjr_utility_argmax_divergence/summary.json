@@ -1,0 +1,27 @@
+{
+  "wave": "wave4",
+  "bead": "t42-hmjr",
+  "claim": "ch05-void-creation-follow",
+  "question": "Does an EV-greedy policy and a p_make-greedy policy disagree at the argmax-action level on these snapshots, or only at the contrast-magnitude level?",
+  "n_snapshots_input": 500,
+  "n_snapshots_valid": 500,
+  "n_snapshots_with_argmax": 500,
+  "n_void_subset": 500,
+  "samples_per_decision": 100,
+  "device": "mps",
+  "runtime_seconds": 207.9,
+  "headline": {
+    "ev_vs_p_make": {
+      "disagree_count": 206,
+      "n": 500,
+      "rate": 0.412,
+      "ci_lo_95": 0.368,
+      "ci_hi_95": 0.456
+    },
+    "ev_void_pmake_preserve_pattern_count": 29,
+    "ev_void_pmake_preserve_pattern_pct": 5.8
+  },
+  "gate_verdict": "disagree_ge_5_meaningful",
+  "gate_decision_text": "DISAGREE >= 5%. Divergence is real at the policy-action level. Recommend scoping rung-2 (utility-tunable searcher) as the next build.",
+  "claim_ledger_impact": "not-applicable (architecture-decision measurement)"
+}

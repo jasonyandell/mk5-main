@@ -1,0 +1,169 @@
+{
+  "what": "Oracle (double-dummy) vs realized (4-seat) best-declaration make-rate, by bid.",
+  "method": {
+    "realized": "data/bidding-results parquet; pmake_{decl}_{bid}=count(points>=bid)/n_samples; max over decl per hand; mean over hands",
+    "oracle": "bid_aware_atlas eq p_make at decision_idx==0; max over action_slot (best lead) then max over decl; mean over hands",
+    "caveat": "different hand pools => distributional gap, not paired. oracle N small. bids>=42 oracle unreliable (atlas top-bid threshold artifact); gap computed on 30-39 only."
+  },
+  "realized_curve": {
+    "30": {
+      "make_rate": 0.5197,
+      "n_hands": 604,
+      "ci_lo": 0.4798,
+      "ci_hi": 0.5593
+    },
+    "31": {
+      "make_rate": 0.4567,
+      "n_hands": 604,
+      "ci_lo": 0.4174,
+      "ci_hi": 0.4966
+    },
+    "32": {
+      "make_rate": 0.4178,
+      "n_hands": 604,
+      "ci_lo": 0.3791,
+      "ci_hi": 0.4575
+    },
+    "33": {
+      "make_rate": 0.4166,
+      "n_hands": 604,
+      "ci_lo": 0.378,
+      "ci_hi": 0.4564
+    },
+    "34": {
+      "make_rate": 0.4046,
+      "n_hands": 604,
+      "ci_lo": 0.3662,
+      "ci_hi": 0.4442
+    },
+    "35": {
+      "make_rate": 0.3644,
+      "n_hands": 604,
+      "ci_lo": 0.327,
+      "ci_hi": 0.4035
+    },
+    "36": {
+      "make_rate": 0.2977,
+      "n_hands": 604,
+      "ci_lo": 0.2626,
+      "ci_hi": 0.3353
+    },
+    "37": {
+      "make_rate": 0.2539,
+      "n_hands": 604,
+      "ci_lo": 0.2208,
+      "ci_hi": 0.2901
+    },
+    "38": {
+      "make_rate": 0.2538,
+      "n_hands": 604,
+      "ci_lo": 0.2208,
+      "ci_hi": 0.29
+    },
+    "39": {
+      "make_rate": 0.2517,
+      "n_hands": 604,
+      "ci_lo": 0.2187,
+      "ci_hi": 0.2878
+    },
+    "40": {
+      "make_rate": 0.2374,
+      "n_hands": 604,
+      "ci_lo": 0.2052,
+      "ci_hi": 0.2729
+    },
+    "41": {
+      "make_rate": 0.1922,
+      "n_hands": 604,
+      "ci_lo": 0.1628,
+      "ci_hi": 0.2255
+    },
+    "42": {
+      "make_rate": 0.1123,
+      "n_hands": 604,
+      "ci_lo": 0.0896,
+      "ci_hi": 0.14
+    }
+  },
+  "oracle_curve": {
+    "30": {
+      "p_make": 0.6397,
+      "n_hands": 50,
+      "std": 0.1791,
+      "reliable": true
+    },
+    "32": {
+      "p_make": 0.5809,
+      "n_hands": 50,
+      "std": 0.178,
+      "reliable": true
+    },
+    "35": {
+      "p_make": 0.498,
+      "n_hands": 50,
+      "std": 0.1867,
+      "reliable": true
+    },
+    "36": {
+      "p_make": 0.4661,
+      "n_hands": 50,
+      "std": 0.175,
+      "reliable": true
+    },
+    "39": {
+      "p_make": 0.3666,
+      "n_hands": 50,
+      "std": 0.1695,
+      "reliable": true
+    },
+    "42": {
+      "p_make": 0.0,
+      "n_hands": 50,
+      "std": 0.0,
+      "reliable": false
+    },
+    "84": {
+      "p_make": 0.0,
+      "n_hands": 50,
+      "std": 0.0,
+      "reliable": false
+    }
+  },
+  "optimism_gap_reliable_range": {
+    "30": {
+      "oracle": 0.6397,
+      "realized": 0.5197,
+      "gap_oracle_minus_realized": 0.12,
+      "ratio_realized_over_oracle": 0.8124
+    },
+    "32": {
+      "oracle": 0.5809,
+      "realized": 0.4178,
+      "gap_oracle_minus_realized": 0.1631,
+      "ratio_realized_over_oracle": 0.7192
+    },
+    "35": {
+      "oracle": 0.498,
+      "realized": 0.3644,
+      "gap_oracle_minus_realized": 0.1336,
+      "ratio_realized_over_oracle": 0.7317
+    },
+    "36": {
+      "oracle": 0.4661,
+      "realized": 0.2977,
+      "gap_oracle_minus_realized": 0.1684,
+      "ratio_realized_over_oracle": 0.6387
+    },
+    "39": {
+      "oracle": 0.3666,
+      "realized": 0.2517,
+      "gap_oracle_minus_realized": 0.1149,
+      "ratio_realized_over_oracle": 0.6866
+    }
+  },
+  "findings": {
+    "realized_make_rate_is_bid_dependent": "0.52 @ bid30 -> 0.11 @ bid42 (N=604); a single global pmake_scale cannot fit this shape",
+    "ratio_is_not_constant": "realized/oracle ratio spans 0.64-0.81 over bids 30-39 (not the single 0.70 the prose claimed)",
+    "prose_0.83_0.58_does_not_reproduce": "closest real analog at bid 30: oracle 0.64 / realized 0.52 (ratio 0.81), not 0.83/0.58 (ratio 0.70). The prose pair was never computed; pmake_scale=0.70 is a tuned knob, not a measured gap."
+  }
+}

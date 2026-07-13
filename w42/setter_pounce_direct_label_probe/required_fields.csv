@@ -1,0 +1,17 @@
+field,source,live_safe,needed_for
+current_player_seat,public state,yes,setter role
+bidder_seat,public auction,yes,setter role and bidder team
+bid_amount,public auction,yes,count-to-set threshold
+declaration,public auction,yes,trump/off classification
+ruleset_id,metadata,yes,contract/scoring semantics
+bidder_team_points_so_far,public trick score before action,yes,points needed to make/set
+defender_team_points_so_far,public trick score before action,yes,threshold accounting
+current_trick_count_points,public current trick,yes,threshold accounting
+led_suit,public current trick,yes,off-window detection
+current_trick_position,public current trick,yes,count-before-certainty
+current_public_winning_seat,public current trick,yes,winner relation
+public_voids_by_seat_suit,public history,yes,public pounce plausibility
+legal_action_set,engine legal mask,yes,action labels
+candidate_count_points,candidate tile,yes,pounce action and count-to-set
+e_q_pdf_or_sampled_world_outcomes,forge offline report,no,threshold/tail metrics
+hidden_domino_owner_truth,sampled/completed worlds,no,offline threat attribution only

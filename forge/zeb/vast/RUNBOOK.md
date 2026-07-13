@@ -18,9 +18,40 @@ vastai logs INSTANCE_ID --tail 50   # check worker output
 ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_up.sh 4
 ./vast_status.sh zeb-large          # only zeb-large-* instances
 ./vast_down.sh zeb-large            # tear down just the large fleet
+
+# Hybrid fleet for zeb-large-belief-eq (2 self-play + 1 eval-aux)
+ZEB_WEIGHTS_NAME=zeb-large-belief-eq ZEB_FLEET=zeb-belief-selfplay ./go-belief.sh 2
+ZEB_WEIGHTS_NAME=zeb-large-belief-eq ZEB_FLEET=zeb-belief-evalaux ./go-experiment.sh 1
+
+# Experiment pattern (recommended, source-aware runs)
+EXP=lb-v-eq-3740
+SP_FLEET=zeb-${EXP}-selfplay
+EA_FLEET=zeb-${EXP}-evalaux
+ZEB_WEIGHTS_NAME=${EXP} ZEB_FLEET=${SP_FLEET} ./go.sh 2
+ZEB_WEIGHTS_NAME=${EXP} ZEB_FLEET=${EA_FLEET} ./go-experiment.sh 1
+python3 monitor_experiment.py --weights-name "${EXP}" --selfplay-fleet "${SP_FLEET}" --evalaux-fleet "${EA_FLEET}"
 ```
 
 ---
+
+## 0. Experiment Identity Rules (Required)
+
+- Treat `--weights-name` as the experiment identity. This is the namespace for worker pulls, learner pushes, and state resume.
+- Keep W&B run coupling aligned with that identity for deterministic resumes. If the HF state already has a `wandb_run_id`, changing only the run name does not start a new lineage.
+- To start a new lineage, create a new experiment name (new `weights-name`), bootstrap once, then keep that name fixed for learner and both worker fleets.
+- Keep fleet names explicit by role:
+  - Self-play: `zeb-${EXP}-selfplay`
+  - Eval-aux: `zeb-${EXP}-evalaux`
+- Launch eval-aux with `./go-experiment.sh`, not raw `vast_monitor.sh`, so curated GPU/DPH/oracle and worker-mode defaults stay intact.
+
+## 0.5 Source-Aware Operating Notes
+
+- Default objective split remains:
+  - Self-play examples: policy + value + belief
+  - Eval-aux examples: value + belief (`eval_aux_policy_weight=0` by default)
+- Keep producer streams separate (self-play fleet and eval-aux fleet). This preserves attribution and simpler failure handling.
+- Prefer faster model push cadence from learner (`--push-every 10`) so workers run fresher weights.
+- During shutdown, stop monitor/replenish loops first, then destroy instances, or they can auto-recreate fleets.
 
 ## 1. Launch Workers
 
@@ -309,11 +340,133 @@ python -u -m forge.zeb.learner.run \
     --examples-repo-id jasonyandell/zeb-42-examples \
     --weights-name large \
     --checkpoint forge/zeb/checkpoints/large-init.pt \
-    --lr 1e-4 --batch-size 64 --replay-buffer-size 50000 \
-    --training-steps-per-cycle 1000 --wandb
+    --lr 1e-4 --batch-size 64 --replay-buffer-size 500000 \
+    --training-steps-per-cycle 1000 \
+    --keep-example-files 128 \
+    --amp --amp-dtype fp16 \
+    --local-replay-cache-enabled \
+    --local-replay-cache-dir ~/.cache/forge/zeb/replay \
+    --local-replay-cache-save-every 25 \
+    --wandb
 
 # 3. Launch workers for the new model
 ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_up.sh 4
+```
+
+### W&B run identity and `weights-name` coupling
+
+Learner W&B identity is intentionally coupled to the HF weights namespace:
+- Learner reads `wandb_run_id` from `<weights-name>-state.json` in the weights repo.
+- Learner calls `wandb.init(..., id=wandb_run_id, resume="allow")`.
+- On push, learner writes the current `wandb_run_id` back to HF state.
+
+Implications:
+- Re-running with the same `--weights-name` resumes the same W&B run lineage.
+- `--run-name` only affects first creation of a run; it does not force a new run if a `wandb_run_id` already exists for that namespace.
+- For a genuinely new experiment log lineage, use a new `--weights-name`.
+
+### Start a new experiment namespace (two bootstrap paths)
+
+Use a unique namespace, e.g. `EXP=zeb-large-belief-eq-v2`.
+
+Important bootstrap rule:
+- `--checkpoint` seeds HF only when that `--weights-name` namespace does not exist yet.
+- After first push, restarts pull from HF for that namespace; the local `--checkpoint` is no longer authoritative.
+
+#### Path A: Fresh random initialization
+
+For non-belief models:
+```bash
+export EXP=zeb-large-v2
+python -m forge.zeb.init_checkpoint --size large --tokenizer v1 \
+  -o forge/zeb/checkpoints/${EXP}-init.pt
+```
+
+For belief-head models:
+```bash
+export EXP=zeb-large-belief-eq-v2
+python - <<'PY'
+import os
+import torch
+from pathlib import Path
+from forge.zeb.model import ZebModel, get_model_config
+
+exp = os.environ["EXP"]
+cfg = get_model_config("large", tokenizer="v1", belief_head=True)
+model = ZebModel(**cfg)
+out = Path(f"forge/zeb/checkpoints/{exp}-init.pt")
+out.parent.mkdir(parents=True, exist_ok=True)
+torch.save(
+    {
+        "model_state_dict": model.state_dict(),
+        "model_config": cfg,
+        "epoch": 0,
+        "total_games": 0,
+    },
+    out,
+)
+print(out)
+PY
+```
+
+Then start learner on the new namespace:
+```bash
+python -u -m forge.zeb.learner.run \
+  --repo-id jasonyandell/zeb-42 \
+  --examples-repo-id jasonyandell/zeb-42-examples \
+  --weights-name ${EXP} \
+  --checkpoint forge/zeb/checkpoints/${EXP}-init.pt \
+  --wandb --wandb-project zeb-mcts --run-name ${EXP}-stage0
+```
+
+#### Path B: Warm-start from an existing checkpoint
+
+From a local training checkpoint:
+```bash
+export EXP=zeb-large-belief-eq-v2
+python -m forge.zeb.export_model \
+  forge/zeb/checkpoints/existing-run-epochNNNN.pt \
+  forge/zeb/checkpoints/${EXP}-bootstrap.pt
+```
+
+Or from an existing HF namespace (e.g. `large-belief`):
+```bash
+export EXP=zeb-large-belief-eq-v2
+python - <<'PY'
+import os
+import torch
+from pathlib import Path
+from forge.zeb.hf import pull_weights
+
+repo = "jasonyandell/zeb-42"
+source_weights_name = "large-belief.pt"
+exp = os.environ["EXP"]
+state_dict, model_config = pull_weights(repo, device="cpu", weights_name=source_weights_name)
+
+out = Path(f"forge/zeb/checkpoints/{exp}-bootstrap.pt")
+out.parent.mkdir(parents=True, exist_ok=True)
+torch.save(
+    {
+        "model_state_dict": state_dict,
+        "model_config": model_config,
+        "epoch": 0,
+        "total_games": 0,
+        "source_weights_name": source_weights_name,
+    },
+    out,
+)
+print(out)
+PY
+```
+
+Then start learner using the new namespace + bootstrap file:
+```bash
+python -u -m forge.zeb.learner.run \
+  --repo-id jasonyandell/zeb-42 \
+  --examples-repo-id jasonyandell/zeb-42-examples \
+  --weights-name ${EXP} \
+  --checkpoint forge/zeb/checkpoints/${EXP}-bootstrap.pt \
+  --wandb --wandb-project zeb-mcts --run-name ${EXP}-stage0
 ```
 
 ### Fleet management with prefixes
@@ -336,6 +489,14 @@ All shell scripts accept an optional fleet prefix:
 | `ZEB_EXAMPLES_REPO_ID` | `jasonyandell/zeb-42-examples` | HF examples repo |
 | `ZEB_WEIGHTS_NAME` | `zeb-557k-1m` | Weights filename stem |
 | `ZEB_FLEET` | `zeb` | Instance label prefix |
+| `ZEB_WORKER_MODE` | `selfplay` | Worker entrypoint: `selfplay` or `eval_aux` |
+| `ZEB_UPLOAD_INTERVAL` | `240` (`vast_up`) / `auto` (`vast_monitor`) | Seconds between folder uploads to HF |
+| `ZEB_ORACLE_CHECKPOINT` | `forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | Eval-aux oracle checkpoint |
+| `ZEB_EQ_N_SAMPLES` | `100` | Eval-aux world samples per E[Q] decision |
+| `ZEB_EQ_GAMES_PER_BATCH` | `128` | Eval-aux games generated per batch |
+| `ZEB_EQ_BATCH_SIZE` | `0` | Eval-aux chunking (`--eval-batch-size`, 0=all-at-once) |
+| `ZEB_EQ_TEMPERATURE` | `0.1` | Zeb sampling temperature for eval-aux games |
+| `ZEB_EQ_POLICY_TARGETS` | `false` | Enable EQ policy PDFs (default off) |
 
 ### HF repo layout with multiple models
 
@@ -461,6 +622,11 @@ export ZEB_WEIGHTS_NAME=large-belief ZEB_FLEET=zeb-belief
 export ZEB_MAX_DPH=0.10
 export ZEB_GPUS="RTX_3070_Ti RTX_3080 RTX_3080_Ti RTX_3090 RTX_4070 RTX_4070_Ti"
 exec vast_monitor.sh 12
+
+# go-experiment.sh — eval-aux worker mode, 1 worker
+export ZEB_WEIGHTS_NAME=zeb-large-belief-eq ZEB_FLEET=zeb-belief-evalaux
+export ZEB_WORKER_MODE=eval_aux
+exec vast_monitor.sh 1
 ```
 
 ### Dry run
@@ -496,9 +662,131 @@ Upload interval is auto-calculated to stay under 100 commits/hr (limit is 128):
 ```
 
 **End of day:**
-- Nothing to do. Workers run indefinitely. Learner checkpoints locally.
+- Nothing to do. Workers run indefinitely. Learner state is in HF; local replay cache snapshots are for warm restarts.
 
 **End of experiment:**
 ```bash
 ./vast_down.sh
 ```
+
+---
+
+## 12. Hybrid Rollout: `zeb-large-belief-eq` (2 Self-Play + 1 Eval-Aux)
+
+This topology keeps producer streams separate and lets the learner sampler control the training mix:
+- `selfplay-mcts` workers: policy + value + belief supervision.
+- `eval-eq-zeb` worker: value + belief supervision (policy weight 0 by default).
+
+### A. Start learner locally (Stage 0: self-play only)
+
+```bash
+python -u -m forge.zeb.learner.run \
+  --repo-id jasonyandell/zeb-42 \
+  --examples-repo-id jasonyandell/zeb-42-examples \
+  --weights-name zeb-large-belief-eq \
+  --checkpoint forge/zeb/checkpoints/zeb-large-belief-eq-random-init.pt \
+  --batch-size 64 \
+  --replay-buffer-size 500000 \
+  --eval-aux-replay-buffer-size 100000 \
+  --training-steps-per-cycle 1000 \
+  --keep-example-files 128 \
+  --amp --amp-dtype fp16 \
+  --local-replay-cache-enabled \
+  --local-replay-cache-dir ~/.cache/forge/zeb/replay \
+  --local-replay-cache-save-every 25 \
+  --no-eval-aux-enabled \
+  --eval-aux-batch-fraction 0.0 \
+  --wandb --wandb-project zeb-mcts --run-name zeb-large-belief-eq-stage0
+```
+
+Wait until the learner has pushed weights and self-play examples are flowing.
+
+### B. Launch Vast self-play fleet (2 workers)
+
+```bash
+cd forge/zeb/vast
+ZEB_WEIGHTS_NAME=zeb-large-belief-eq \
+ZEB_FLEET=zeb-belief-selfplay \
+ZEB_WORKER_MODE=selfplay \
+./go-belief.sh 2
+```
+
+### C. Launch Vast eval-aux fleet (1 worker)
+
+```bash
+cd forge/zeb/vast
+ZEB_WEIGHTS_NAME=zeb-large-belief-eq \
+ZEB_FLEET=zeb-belief-evalaux \
+./go-experiment.sh 1
+```
+
+Optional eval-aux tuning via env vars:
+- `ZEB_EQ_N_SAMPLES` (default `100`)
+- `ZEB_EQ_GAMES_PER_BATCH` (default `128`)
+- `ZEB_EQ_BATCH_SIZE` (default `0`)
+- `ZEB_EQ_TEMPERATURE` (default `0.1`)
+- `ZEB_EQ_POLICY_TARGETS` (default `false`, keep off unless explicitly experimenting)
+
+### D. Promote learner to Stage 1 (enable eval-aux mix)
+
+Restart learner with eval-aux enabled:
+
+```bash
+python -u -m forge.zeb.learner.run \
+  --repo-id jasonyandell/zeb-42 \
+  --examples-repo-id jasonyandell/zeb-42-examples \
+  --weights-name zeb-large-belief-eq \
+  --checkpoint forge/zeb/checkpoints/zeb-large-belief-eq-random-init.pt \
+  --batch-size 64 \
+  --replay-buffer-size 500000 \
+  --eval-aux-replay-buffer-size 100000 \
+  --training-steps-per-cycle 1000 \
+  --keep-example-files 128 \
+  --amp --amp-dtype fp16 \
+  --local-replay-cache-enabled \
+  --local-replay-cache-dir ~/.cache/forge/zeb/replay \
+  --local-replay-cache-save-every 25 \
+  --eval-aux-enabled \
+  --eval-aux-batch-fraction 0.05 \
+  --eval-aux-policy-weight 0.0 \
+  --eval-aux-value-weight 1.0 \
+  --eval-aux-belief-weight 0.5 \
+  --eval-aux-max-model-lag 400 \
+  --eval-aux-lag-half-life 200 \
+  --eval-aux-min-keep-weight 0.10 \
+  --wandb --wandb-project zeb-mcts --run-name zeb-large-belief-eq-stage1
+```
+
+### E. Verify rollout health
+
+1. Worker dry-run checks:
+```bash
+ZEB_WORKER_MODE=selfplay ZEB_WEIGHTS_NAME=zeb-large-belief-eq ./vast_monitor.sh 2 --dry-run
+ZEB_WEIGHTS_NAME=zeb-large-belief-eq ZEB_FLEET=zeb-belief-evalaux ./go-experiment.sh --dry-run
+```
+2. HF examples contain both source families under `zeb-large-belief-eq/`:
+```bash
+python3 - <<'PY'
+from huggingface_hub import list_repo_files
+repo = "jasonyandell/zeb-42-examples"
+ns = "zeb-large-belief-eq/"
+files = [f for f in list_repo_files(repo, repo_type="dataset") if f.startswith(ns)]
+print("total namespace files:", len(files))
+print("self-play files:", sum("/sp-" in f or "worker-vast-" in f for f in files))
+print("eval-aux files:", sum("/eval-" in f or "eval-aux" in f for f in files))
+PY
+```
+3. Learner logs/W&B show:
+- non-zero `mix(self/eval)` close to target (`~0.95/0.05`),
+- `eval_aux_policy_w=0`,
+- source-split value/belief losses and ingest staleness counters.
+
+### F. Fast rollback
+
+If eval-aux destabilizes training, keep workers running but restart learner with:
+
+```bash
+--no-eval-aux-enabled --eval-aux-batch-fraction 0.0
+```
+
+This disables eval-aux training immediately without changing fleet topology.

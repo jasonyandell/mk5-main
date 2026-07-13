@@ -1,0 +1,3 @@
+split,outcome_variance_mean,outcome_variance_median,outcome_variance_<lambda_0>,action_fragility_mean,action_fragility_median,action_fragility_<lambda_0>,belief_sharpness_mean,belief_sharpness_median,belief_sharpness_<lambda_0>,p_make_taken_mean,p_make_taken_median,p_make_taken_<lambda_0>,gus_matches_mode_mean,gus_matches_mode_median,gus_matches_mode_<lambda_0>
+eval,13.3702,14.8415,28.5336,2.6071,2.0,7.0,0.064,0.0199,1.0,0.5056,0.4848,1.0,0.7607,1.0,1.0
+train,13.1414,14.404,29.0578,2.5899,2.0,7.0,0.0638,0.0201,1.0,0.5046,0.4785,1.0,0.7241,1.0,1.0

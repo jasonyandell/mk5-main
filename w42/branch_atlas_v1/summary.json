@@ -1,0 +1,118 @@
+{
+  "artifacts": {
+    "decision_actions_csv": "w42/branch_atlas_v1/decision_actions.csv",
+    "decision_states_csv": "w42/branch_atlas_v1/decision_states.csv",
+    "examples_json": "w42/branch_atlas_v1/examples.json",
+    "hidden_threat_rows_csv": "w42/branch_atlas_v1/hidden_threat_rows.csv",
+    "manifest_json": "w42/branch_atlas_v1/manifest.json"
+  },
+  "bead_id": "t42-gc7m",
+  "branch_findings": {
+    "action_distribution_tag_counts": {
+      "hidden_threat_large_impact": 121,
+      "high_std": 84,
+      "high_variance_close_mean": 41,
+      "large_lower_tail": 79,
+      "multi_peak_pdf": 119,
+      "scalar_ev_lying_by_omission": 25,
+      "wide_shelf_gap": 94
+    },
+    "actual_action_safest_lower_tail_count": 45,
+    "actual_action_top_mean_count": 48,
+    "actual_action_top_threshold_count": 51,
+    "decision_multi_peak_pdf_count": 46,
+    "decision_multi_peak_pdf_rate": 0.8214285714285714,
+    "decision_scalar_ev_lying_by_omission_count": 25,
+    "decision_scalar_ev_lying_by_omission_rate": 0.44642857142857145,
+    "max_hidden_impact": 42.84272915124893,
+    "max_std": 28.28872299194336,
+    "mean_top_hidden_impact": 17.68965144978949
+  },
+  "command": "w42/branch_atlas_v1/build_branch_atlas.py w42/branch_atlas_v1/eq_pdf_s9420-9421_joint_1000s_v2.pt --output-dir w42/branch_atlas_v1 --top-k 8 --examples 12 --log-every-decisions 4 --wandb-mode online --wandb-name t42-gc7m-branch-atlas-v1-s9420-9421-n1000",
+  "coverage": {
+    "inspected_decisions": 56,
+    "joint_world_decision_rate": 1.0,
+    "processed_joint_world_decisions": 56,
+    "sample_counts_by_decision": {
+      "1000": 56
+    },
+    "skipped_no_joint_worlds": 0,
+    "skipped_no_legal_actions": 0
+  },
+  "created_at_utc": "2026-05-02T23:03:14.538205+00:00",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M burl/chat/server/tools_runner.py\n M wiki/playbooks/perf-sprint-levers.md\n M wiki/playbooks/perf-sprint-traps.md\n M wiki/playbooks/perf-sprint.md\n?? .agents/\n?? .claude/worktrees/\n?? burl/chat/server/chain_traces/\n?? burl/chat/server/phase_registry.py\n?? w42/branch_atlas_v1/",
+  "repo_commit": "5d2fd11223c12f3adfa94bc9d47c8d8d54e0bbe5",
+  "rows": {
+    "action_rows": 134,
+    "decision_rows": 56,
+    "hidden_threat_rows": 1026
+  },
+  "schema_version": "w42.branch_atlas_v1.summary.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "no claim-ledger movement",
+    "hf": "not applicable",
+    "interpretation": "Powered branch-atlas pilot. It measures branch shape and offline hidden-owner impact on a generated joint-world E[Q] slice; it does not validate book claims or train a policy by itself.",
+    "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+    "training_run": false,
+    "wandb": {
+      "available": true,
+      "dir": "w42/branch_atlas_v1/wandb/wandb/run-20260502_180312-44z1kl9j/files",
+      "enabled": true,
+      "entity": "jasonyandell-forge42",
+      "group": "w42-powered-branch-atlas-v1",
+      "id": "44z1kl9j",
+      "mode": "online",
+      "name": "t42-gc7m-branch-atlas-v1-s9420-9421-n1000",
+      "project": "w42",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/44z1kl9j"
+    }
+  },
+  "source": {
+    "bid_value_status": "schema_v2_fixed_cli_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      0,
+      1
+    ],
+    "input_games": 2,
+    "n_samples": 1000,
+    "path": "w42/branch_atlas_v1/eq_pdf_s9420-9421_joint_1000s_v2.pt",
+    "schema": "v2",
+    "seeds": [
+      9420,
+      9421
+    ],
+    "sha256": "c6e2a700c3110c84b622014226fdece45bc811d0b3d2ede42a536fcbc5e49c26",
+    "start_seed": 9420
+  },
+  "strategy_surface": {
+    "detector_counts": {
+      "bidder_first_lead_plan": 14,
+      "defender_damage_lead_class": 23,
+      "first_setter_pounce_window": 3,
+      "first_trick_public_belief_update": 104,
+      "last_to_act_closure_policy": 32,
+      "late_trick_threshold_closure": 41,
+      "partner_forcedness_and_safety": 4,
+      "partner_third_seat_safe_donation": 4,
+      "setter_count_before_certainty": 12
+    },
+    "direct_label_readiness_values": [
+      "distribution_labels_ready",
+      "hidden_threat_offline_label_ready",
+      "needs_belief_model",
+      "needs_real_bid_margin",
+      "public_context_ready"
+    ],
+    "missing_fields_all_rows": [
+      "bid_margin"
+    ],
+    "role_counts": {
+      "bidder": 14,
+      "bidder_partner": 14,
+      "left_setter": 14,
+      "right_setter": 14
+    }
+  },
+  "wall_seconds": 0.22366387501824647
+}

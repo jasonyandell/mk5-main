@@ -1,0 +1,45 @@
+{
+  "bead_id": "t42-ey88",
+  "epic_bead": "t42-4zi6",
+  "wave": "2.G",
+  "claim_id": "ch02-bid-only-enough",
+  "short_slug": "ch02_multistep",
+  "generated_utc": "2026-05-03T00:00:00Z",
+  "schema_version": "w42.bookval.wave2.probe.v1",
+  "inputs": {
+    "bid_aware_actions_csv": "w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv",
+    "power_analysis_csv": "w42/book_validation_v1/wave2/bid_aware_atlas/power_analysis.csv",
+    "manifest_json": "w42/book_validation_v1/wave2/bid_aware_atlas/manifest.json"
+  },
+  "input_data_provenance": {
+    "source_bead": "t42-7eop",
+    "n_seeds": 50,
+    "seed_range": "9000-9049",
+    "n_decl_per_seed": 10,
+    "n_total_actual_actions_per_bid": 14000,
+    "bid_values": [30, 32, 35, 36, 39, 42, 84]
+  },
+  "method": {
+    "filter": "is_actual_action == 1 (played actions only)",
+    "pairing_key": ["seed", "decl_id", "decision_idx"],
+    "delta_convention": "lower_bid - higher_bid (positive = lower bid is better for bidder team)",
+    "bootstrap_iterations": 2000,
+    "bootstrap_method": "percentile",
+    "rng_seed": 42,
+    "metrics": ["mark_ev", "p_make", "threshold_mass", "mean"],
+    "slices": ["decl_name", "seat_role", "phase"],
+    "phase_definition": "early=trick_idx<=1, mid=2-4, late>=5"
+  },
+  "outputs": {
+    "step_pair_deltas_csv": "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/step_pair_deltas.csv",
+    "slice_breakdown_csv": "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/slice_breakdown.csv",
+    "transitive_check_csv": "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/transitive_check.csv",
+    "summary_json": "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/summary.json",
+    "readme": "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/README.md",
+    "script": "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/run_ch02_multistep.py"
+  },
+  "reproducibility_command": "python3 w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/run_ch02_multistep.py",
+  "status_proposal": "supported",
+  "status_justification": "All 5 adjacent step pairs show overbidding penalty (mark_ev delta > 0) with 95% CIs excluding zero in the book-favorable direction, and no step reverses. All 85 slice cells support the book direction. Effect is monotone and robust.",
+  "claim_ledger_impact": "promote ch02-bid-only-enough from context-limited to supported on same-hand bid-margin slice"
+}

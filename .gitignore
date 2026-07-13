@@ -64,6 +64,7 @@ scratch/
 .cache/
 .parcel-cache/
 .vite/
+.obsidian/
 
 # Editor directories and files
 .idea
@@ -104,12 +105,44 @@ runs/
 lightning_logs/
 *.tar.gz
 
+# Tracked perf-bench inputs + ledger (small frozen JSONL/CSV/JSON, not bulk data)
+!burl/eval/data/
+!burl/eval/results/
+
 # Zeb training checkpoints (large, use export_model.py for git-friendly snapshots)
 forge/zeb/checkpoints/
+
+# Burl LoRA adapters (100 MB each at rank 16, 400+ MB for a sweep)
+# Regenerate via burl/train/star_mlx.py or the star_iter*.py Modal launchers
+burl/adapters/
+
+# Gus checkpoints (200+ MB; regenerate via gus/train/* runs)
+gus/adapters/
 
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
 
+# Cloudflare wrangler cache (one-off Pages publishes)
+.wrangler/
+
+# Claude Code session state (ephemeral)
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
 wandb/
-history/
+!/.agents/skills/wandb/
+!/.agents/skills/wandb/**
+w42/**/wandb/
+lem/data/
+
+# Wave 2 bid-aware E[Q] sweep tensors (~37 MB each per 5-seed run, ~270 MB total).
+# Reproducible from w42/book_validation_v1/wave2/bid_aware_atlas/manifest.json
+# command lines. The joined bid_aware_actions.csv and validation_check.csv are
+# committed; per-bid .pt files are not.
+w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds*.pt
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

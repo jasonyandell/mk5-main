@@ -1,0 +1,18 @@
+{
+  "bead": "t42-0b4l.6",
+  "command": "w42/seat_position_claim_tests/run_seat_position_claim_tests.py --input w42/tactical_claim_replication/all_action_rows.jsonl --output-dir w42/seat_position_claim_tests --bootstrap-samples 1000 --min-label-n 20 --min-paired-n 20 --min-slice-n 50",
+  "created_at_utc": "2026-05-03T05:52:57.800474+00:00",
+  "input": "w42/tactical_claim_replication/all_action_rows.jsonl",
+  "leakage_boundary": "Derived labels use public/action-local columns from the row artifact. Oracle mean, threshold mass, lower-tail mass, q_per_world, world_hands, and hidden outcomes are offline report labels only, never model features.",
+  "outputs": {
+    "examples": "w42/seat_position_claim_tests/examples.json",
+    "label_metrics": "w42/seat_position_claim_tests/label_metrics.csv",
+    "labeled_action_rows": "w42/seat_position_claim_tests/labeled_action_rows.csv",
+    "manifest": "w42/seat_position_claim_tests/manifest.json",
+    "paired_contrasts": "w42/seat_position_claim_tests/paired_contrasts.csv",
+    "paired_contrasts_by_slice": "w42/seat_position_claim_tests/paired_contrasts_by_slice.csv",
+    "role_position_metrics": "w42/seat_position_claim_tests/role_position_metrics.csv",
+    "summary": "w42/seat_position_claim_tests/summary.json"
+  },
+  "schema_version": "w42.seat_position_claim_tests.manifest.v1"
+}

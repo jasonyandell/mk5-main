@@ -1,0 +1,6 @@
+check_id,label_scope,rule,failure_mode
+public_inputs_only_for_live_labels,live,"Live label computation may read only public state, current hand, legal actions, and public contract metadata.",Using hidden owner truth or future rollout outcomes to create live detector inputs.
+pre_action_score_accounting,live,Count-to-set thresholds use points captured before candidate action plus public current trick count.,Using terminal hand totals or post-action trick winner truth.
+structural_label_not_oracle_label,live,"setter_pounce_action marks legal count in the window, not optimality.",Filtering positives by E[Q] or observed make/set result.
+hidden_labels_offline_only,offline,threshold_mass_delta and disaster_tail_mitigation_delta are report/training targets only.,Adding sampled-world or hidden-tail values as live strategy features.
+bidder_off_public_explainability,live,bidder_off_window must be explainable from public void/legal/trick state.,Marking a pounce because hidden partner owns a winner.

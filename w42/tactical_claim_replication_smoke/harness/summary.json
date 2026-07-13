@@ -1,0 +1,29 @@
+{
+  "action_rows": 7447,
+  "bead": "t42-0b4l.3",
+  "bootstrap_samples": 100,
+  "claim_ledger_impact": "no claim-ledger movement; harness smoke/report only",
+  "created_at_utc": "2026-05-03T00:49:46.366792+00:00",
+  "decision_rows": 2800,
+  "input_paths": [
+    "w42/tactical_claim_replication_smoke/all_action_rows.jsonl"
+  ],
+  "label_fields": [
+    "labels"
+  ],
+  "label_metric_rows": 6,
+  "leakage_boundary": "Rows may contain oracle/distribution/hidden-world labels, but this harness treats them as offline labels and does not expose them as live detector inputs.",
+  "paired_contrast_rows": 6,
+  "registered_claim_specs": 6,
+  "schema_version": "w42.claim_analysis.run_result.v1",
+  "source_kind": "gus_claim_rows",
+  "top_label_counts": {
+    "ch04_partner_safe_count_donation_current_control": 73,
+    "ch04_partner_unsafe_count_to_defense": 68,
+    "ch05_reckless_count_to_bidder": 238,
+    "ch05_setter_pounce_count": 52,
+    "ch05_setter_pounce_count_before_certainty": 41,
+    "ch05_setter_pounce_count_sets_now": 24
+  },
+  "wandb": "not applicable"
+}

@@ -1,0 +1,139 @@
+{
+  "metrics": [
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": "",
+      "delta_vs_public_mean_regret": "",
+      "match_best_mean_rate": 0.892857,
+      "mean_regret": 0.148327,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.932143,
+      "status": "offline_reference",
+      "tail_regret_rate_ge_5": 0.003571,
+      "variant": "actual_policy"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": 0.151971,
+      "delta_vs_public_mean_regret": 0.0,
+      "match_best_mean_rate": 0.667857,
+      "mean_regret": 0.878556,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.807143,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.067857,
+      "variant": "public_features_only"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": 0.0,
+      "delta_vs_public_mean_regret": -0.151971,
+      "match_best_mean_rate": 0.7,
+      "mean_regret": 0.726585,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.814286,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.046429,
+      "variant": "public_plus_all_claim_families"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": 0.0,
+      "delta_vs_public_mean_regret": -0.151971,
+      "match_best_mean_rate": 0.7,
+      "mean_regret": 0.726585,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.814286,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.046429,
+      "variant": "drop_bidding_risk"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": 0.140635,
+      "delta_vs_public_mean_regret": -0.011336,
+      "match_best_mean_rate": 0.678571,
+      "mean_regret": 0.86722,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.803571,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.060714,
+      "variant": "drop_doubles_no_trump"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": 6e-05,
+      "delta_vs_public_mean_regret": -0.151911,
+      "match_best_mean_rate": 0.696429,
+      "mean_regret": 0.726645,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.814286,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.046429,
+      "variant": "drop_eighty_four_public"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": -0.006435,
+      "delta_vs_public_mean_regret": -0.158406,
+      "match_best_mean_rate": 0.7,
+      "mean_regret": 0.72015,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.817857,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.046429,
+      "variant": "drop_hidden_public_proxy"
+    },
+    {
+      "action_n": 710,
+      "decision_n": 280,
+      "delta_vs_full_mean_regret": 0.148527,
+      "delta_vs_public_mean_regret": -0.003444,
+      "match_best_mean_rate": 0.678571,
+      "mean_regret": 0.875112,
+      "median_regret": 0.0,
+      "near_tie_rate_regret_lt_0_5": 0.807143,
+      "status": "available",
+      "tail_regret_rate_ge_5": 0.057143,
+      "variant": "drop_sequence_seat"
+    }
+  ],
+  "split": {
+    "eval_action_rows": 710,
+    "eval_decisions": 280,
+    "eval_seed_mod": 4,
+    "eval_seeds": [
+      4
+    ],
+    "seed_mod_base": 5,
+    "train_action_rows": 5290,
+    "train_decisions": 1994,
+    "train_seeds": [
+      0,
+      1,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8
+    ],
+    "train_seeds_tail": [
+      0,
+      1,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8
+    ]
+  }
+}

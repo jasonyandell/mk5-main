@@ -1,0 +1,27 @@
+{
+  "command": "w42/hidden_threat_legacy_mining/run_hidden_threat_legacy_mining.py --output-dir w42/hidden_threat_legacy_mining --bootstrap-samples 1000 --wandb-mode online --wandb-group w42-hidden-threat-legacy-mining --wandb-name t42-0b4l.4-hidden-threat-legacy-v0 --log-every-files 5",
+  "created_at_utc": "2026-05-03T02:57:07.371397+00:00",
+  "large_row_policy": "No full action-row dump is emitted; rerun from corpus paths for row-level detail.",
+  "leakage_boundary": "world_hands, q_per_world, E[Q], and hidden holders are offline labels only.",
+  "outputs": {
+    "claim_branch_impact_evidence": "w42/hidden_threat_legacy_mining/claim_branch_impact_evidence.csv",
+    "examples": "w42/hidden_threat_legacy_mining/examples.json",
+    "group_metrics": "w42/hidden_threat_legacy_mining/group_metrics.csv",
+    "hidden_driver_rollup": "w42/hidden_threat_legacy_mining/hidden_driver_rollup.csv",
+    "mitigation_contrasts": "w42/hidden_threat_legacy_mining/mitigation_contrasts.csv",
+    "summary": "w42/hidden_threat_legacy_mining/summary.json"
+  },
+  "schema_version": "w42.hidden_threat_legacy_mining.manifest.v0",
+  "wandb": {
+    "available": true,
+    "dir": "w42/hidden_threat_legacy_mining/wandb/wandb/run-20260502_215007-74vfet6o/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-hidden-threat-legacy-mining",
+    "id": "74vfet6o",
+    "mode": "online",
+    "name": "t42-0b4l.4-hidden-threat-legacy-v0",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/74vfet6o"
+  }
+}

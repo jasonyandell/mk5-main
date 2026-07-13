@@ -1,0 +1,52 @@
+probe,claim,utility,N,mean,ci_lo_95,ci_hi_95,positive_is_book_direction,verdict,notes
+reentry_v2,ch03-reentry-preservation,EV,222,-1.23023,-2.61248,0.17748,True,spans_zero,ev_delta = ev_off - ev_trump; positive = preserve trump (book direction)
+reentry_v2,ch03-reentry-preservation,p_make,222,-0.01529,-0.03507,0.00305,True,spans_zero,threshold_mass_delta = tm_off - tm_trump; positive = book direction
+reentry_v2,ch03-reentry-preservation,mark_ev,222,-0.01529,-0.03507,0.00305,True,spans_zero,mark_ev ≡ p_make at bid=30 (Wave1.2); same as threshold_mass
+reentry_v2,ch03-reentry-preservation,CVaR_10,222,-0.50656,-2.28497,1.31487,True,spans_zero,cvar_delta = cvar_off - cvar_trump; positive = book (off-suit better tail)
+reentry_v2,ch03-reentry-preservation,robust_q25,0,,,,True,missing,q25 not recorded
+reentry_v2,ch03-reentry-preservation [late],EV,60,-3.96661,-6.79664,-1.36438,True,contradicted,late-game sub-slice (trick 5-6)
+low_trump_trap,ch04-low-trump-trap,EV,257,-1.94871,-2.96679,-0.94448,True,contradicted,ev_delta = Q(dominant) - Q(low); positive = dominant better = book claim
+low_trump_trap,ch04-low-trump-trap,p_make,0,,,,True,missing,p_make not recorded
+low_trump_trap,ch04-low-trump-trap,mark_ev,0,,,,True,missing,mark_ev not recorded
+low_trump_trap,ch04-low-trump-trap,CVaR_10,0,,,,True,missing,CVaR_10 not recorded
+low_trump_trap,ch04-low-trump-trap,robust_q25,0,,,,True,missing,q25 not recorded
+void_creation,ch05-void-creation-lead,EV,276,-2.62945,-3.43258,-1.84545,True,contradicted,ev_delta_setter = void_ev - preserve_ev from setter; positive = book
+void_creation,ch05-void-creation-lead,p_make,276,-0.01551,-0.02888,-0.00141,True,contradicted,p_set_delta = p_set_void - p_set_preserve; positive = book
+void_creation,ch05-void-creation-lead,mark_ev,276,-0.01551,-0.02888,-0.00141,True,contradicted,mark_ev ≡ p_make at bid=30 (Wave1.2)
+void_creation,ch05-void-creation-lead,CVaR_10,276,-0.2126,-1.46857,1.08448,True,spans_zero,cvar_delta = cvar_preserve - cvar_void from T0 (b-a); positive = book
+void_creation,ch05-void-creation-lead [threshold_mass],p_make,276,0.01551,0.00246,0.02837,True,supported,threshold_mass_delta = tm_preserve - tm_void; positive = book
+void_creation,ch05-void-creation-lead,robust_q25,0,,,,True,missing,q25 not recorded
+void_creation_follow,ch05-void-creation-follow,EV,500,0.76663,0.16984,1.44253,True,supported,ev_delta_setter = void_ev - preserve_ev from setter; positive = book
+void_creation_follow,ch05-void-creation-follow,p_make,500,0.00872,-0.00174,0.0186,True,spans_zero,p_set_delta = p_set_void - p_set_preserve; positive = book
+void_creation_follow,ch05-void-creation-follow,mark_ev,500,0.00872,-0.00174,0.0186,True,spans_zero,mark_ev ≡ p_make at bid=30 (Wave1.2)
+void_creation_follow,ch05-void-creation-follow,CVaR_10,500,0.17073,-0.65481,1.08165,True,spans_zero,cvar_delta = cvar_preserve - cvar_void from T0 (b-a); positive = book
+void_creation_follow,ch05-void-creation-follow [threshold_mass],p_make,500,-0.00872,-0.0195,0.00118,True,spans_zero,threshold_mass_delta = tm_preserve - tm_void (b-a); positive = book
+void_creation_follow,ch05-void-creation-follow,robust_q25,0,,,,True,missing,q25 not recorded
+pounce_bid30,ch12-setter-pounce-bid30,EV,52,3.09168,-0.59914,6.66405,False,spans_zero,ev_delta = pounce - decline from T0; negative = pounce hurts bidder = book
+pounce_bid30,ch12-setter-pounce-bid30,p_make,52,0.0,-0.11538,0.11538,True,spans_zero,p_set_delta_proxy = p_set_pounce - p_set_decline; positive = book
+pounce_bid30,ch12-setter-pounce-bid30,mark_ev,52,0.0,-0.11538,0.11538,True,spans_zero,mark_ev ≡ p_make at bid=30 per Wave1.2; same as p_make
+pounce_bid30,ch12-setter-pounce-bid30 [oracle_rate],p_make,52,0.59615,0.47267,1.0,True,spans_zero,Oracle pounces 31/52=59.6%; binomial p=0.106 (H0=50%)
+pounce_bid30,ch12-setter-pounce-bid30,CVaR_10,0,,,,True,missing,CVaR_10 not recorded in pounce_bid30 probe
+pounce_bid30,ch12-setter-pounce-bid30,robust_q25,0,,,,True,missing,q25 not recorded
+pounce_high_bid,ch12-setter-pounce-high-bid,EV,1140,-10.4204,-11.24945,-9.63724,True,contradicted,ev_delta_setter = pounce_ev - decline_ev from setter; positive = book
+pounce_high_bid,ch12-setter-pounce-high-bid,p_make,1140,-0.04714,-0.05635,-0.03824,True,contradicted,p_set_delta = p_set_pounce - p_set_decline; positive = book
+pounce_high_bid,ch12-setter-pounce-high-bid,mark_ev,1140,-0.04714,-0.05645,-0.03796,True,contradicted,mark_ev proxy via p_set_delta; Wave2.H: positive-affine identity at all bids
+pounce_high_bid,ch12-setter-pounce-high-bid,CVaR_10,1140,4.39797,3.5801,5.27309,False,contradicted,cvar_delta = cvar_pounce - cvar_decline from T0; negative = pounce hurts bidder tail = book
+pounce_high_bid,ch12-setter-pounce-high-bid,robust_q25,0,,,,True,missing,q25 not recorded
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=35],EV,275,-10.08134,-11.74469,-8.46656,True,contradicted,bid=35 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=35],p_make,275,-0.06433,-0.08778,-0.04207,True,contradicted,bid=35 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=35],CVaR_10,275,2.91833,1.27502,4.58192,False,contradicted,bid=35 slice; negative = book direction
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=36],EV,259,-11.31526,-13.12751,-9.59894,True,contradicted,bid=36 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=36],p_make,259,-0.07826,-0.10375,-0.05428,True,contradicted,bid=36 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=36],CVaR_10,259,5.86335,3.9753,7.67948,False,contradicted,bid=36 slice; negative = book direction
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=39],EV,290,-10.14371,-11.84877,-8.45187,True,contradicted,bid=39 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=39],p_make,290,-0.05,-0.06876,-0.03341,True,contradicted,bid=39 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=39],CVaR_10,290,4.33648,2.57889,5.95774,False,contradicted,bid=39 slice; negative = book direction
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=42],EV,316,-10.23593,-11.80314,-8.73013,True,contradicted,bid=42 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=42],p_make,316,-0.00405,-0.00804,0.00057,True,spans_zero,bid=42 slice
+pounce_high_bid,ch12-setter-pounce-high-bid [bid=42],CVaR_10,316,4.54101,2.95625,6.09659,False,contradicted,bid=42 slice; negative = book direction
+bid_only_enough,ch02-bid-only-enough,mark_ev,47492,0.09521,0.04173,0.15287,True,supported,mark_ev(lower) - mark_ev(higher); all 5 step-pairs; positive = book
+bid_only_enough,ch02-bid-only-enough,EV,0,,,,True,missing,EV metric not in step_pair_deltas; mark_ev is primary
+bid_only_enough,ch02-bid-only-enough,p_make,47492,0.09521,0.04173,0.15287,True,supported,p_make proxy via mark_ev (monotone); Wave1.2 confirms identity at bid=30
+bid_only_enough,ch02-bid-only-enough,CVaR_10,0,,,,True,missing,CVaR_10 not recorded
+bid_only_enough,ch02-bid-only-enough,robust_q25,0,,,,True,missing,q25 not recorded

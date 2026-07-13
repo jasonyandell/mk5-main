@@ -1,0 +1,28 @@
+{
+  "corpus": "void_creation",
+  "schema_version": "forge.eq.snapshot.v1",
+  "source": "oracle-greedy legacy corpus",
+  "n_snapshots": 500,
+  "n_candidates_scanned": 6321,
+  "n_chunks_used": 3,
+  "source_chunks": [
+    "corpus_train_chunk_0-99.pt",
+    "corpus_train_chunk_100-199.pt",
+    "corpus_train_chunk_1000-1099.pt"
+  ],
+  "filter_definition": {
+    "role": "setter (player 1 or 3)",
+    "position": "on lead (trick_plays empty)",
+    "min_trick_number": 1,
+    "void_creation_condition": "holds >= 2 distinct suits, at least 1 suit has exactly 1 domino",
+    "note": "Tests ch05-void-creation: leading to void a suit"
+  },
+  "validation": {
+    "n_valid": 500,
+    "n_invalid": 0,
+    "method": "GameStateTensor.from_snapshot"
+  },
+  "claim_tested": "ch05-void-creation",
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/void_creation/snapshots.jsonl",
+  "sha256": "41bba78a1e9a76f033e69906edf869a7b80a360dc23ba6fba6f6dc92c0e3180d"
+}

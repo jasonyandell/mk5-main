@@ -1,0 +1,8 @@
+[
+  "belief_trajectory",
+  "board_snapshot",
+  "legal_plays",
+  "play_brief",
+  "explore_game",
+  "commit_play"
+]

@@ -1,0 +1,4 @@
+claim_family,n_decisions,n_detector_fired,ev_gus_agreement_rate,ev_detector_agreement_rate,mean_detector_regret,gus_error_rate_when_det_vs_ev
+ch03,2761,1705,0.6867,0.2217,4.4369,0.3873
+ch04,7000,1360,0.8047,0.4868,3.0413,0.3066
+ch05,14000,6602,0.7876,0.4821,3.33,0.3764

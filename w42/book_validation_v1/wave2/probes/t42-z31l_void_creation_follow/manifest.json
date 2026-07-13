@@ -1,0 +1,21 @@
+{
+  "bead": "t42-z31l",
+  "claim": "ch05-void-creation-follow",
+  "wave": "wave2",
+  "probe": "void_creation_follow_paired_contrast",
+  "snapshots_path": "w42/book_validation_v1/wave2/snapshots/void_creation_follow/snapshots.jsonl",
+  "snapshots_sha256": "2058eaed07242156f4caea15b7f504c1630d33077fb80a360ac2492fa4f8393a",
+  "checkpoint": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+  "n_snapshots_input": 500,
+  "n_snapshots_with_contrast": 500,
+  "n_pairs_run": 500,
+  "device": "mps",
+  "samples_per_decision": 100,
+  "runtime_seconds": 428.8,
+  "artifacts": {
+    "paired_contrasts": "w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow/paired_contrasts.csv",
+    "slice_breakdown": "w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow/slice_breakdown.csv",
+    "summary": "w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow/summary.json"
+  },
+  "command": "python run_void_creation_follow_probe.py --snapshots w42/book_validation_v1/wave2/snapshots/void_creation_follow/snapshots.jsonl --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt --samples 100 --device mps --output-dir w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow"
+}

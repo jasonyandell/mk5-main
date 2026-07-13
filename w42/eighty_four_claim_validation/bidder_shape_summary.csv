@@ -1,0 +1,7 @@
+bucket,claim_relevance,n,pct_of_all
+all hand/declaration pairs,denominator,8288280,100.0
+one off candidate shape,Chapter 7 canonical 84 search space,180180,2.173913
+protected one off,bidder has same-suit double ahead of final off,131670,1.588629
+straight one off,unprotected final off risk bucket,48510,0.585284
+three trump / at least three doubles / one off,Chapter 7 non-four-trump candidate bucket,73500,0.886794
+two offs same suit with shared protecting double,Chapter 7 two-off ordering bucket,207900,2.508361

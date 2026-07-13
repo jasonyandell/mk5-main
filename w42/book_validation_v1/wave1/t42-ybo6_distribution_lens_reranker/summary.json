@@ -1,0 +1,70 @@
+{
+  "question": "Where does scalar EV rank relative to p_make, p_set, threshold_mass_low/high, CVaR_10, mark_ev, robust_q25?",
+  "slice": "branch_atlas_scaled_v0 (seed=9430, 10 decl, bid=30, 1000 worlds) + branch_atlas_v1 (seeds 9420-9421, 2 decl, bid=30, 1000 worlds)",
+  "N_decisions": 211,
+  "N_action_rows": 907,
+  "N_decisions_with_any_ev_disagree": 137,
+  "ev_lying_rate_any_utility": 0.6493,
+  "per_utility_ev_disagree_rate": {
+    "p_make": 0.3886,
+    "p_set": 0.3886,
+    "threshold_mass_low": 0.3602,
+    "threshold_mass_high": 0.3886,
+    "cvar_10": 0.2559,
+    "mark_ev": 0.3886,
+    "robust_q25": 0.2986
+  },
+  "ev_gap_when_alternative_prefers_different": {
+    "p_make": {
+      "mean_ev_gap": 1.098,
+      "median_ev_gap": 0.228,
+      "n_alt_dominates_ev": 0
+    },
+    "p_set": {
+      "mean_ev_gap": 1.098,
+      "median_ev_gap": 0.228,
+      "n_alt_dominates_ev": 0
+    },
+    "threshold_mass_low": {
+      "mean_ev_gap": 1.444,
+      "median_ev_gap": 0.152,
+      "n_alt_dominates_ev": 0
+    },
+    "threshold_mass_high": {
+      "mean_ev_gap": 1.098,
+      "median_ev_gap": 0.228,
+      "n_alt_dominates_ev": 0
+    },
+    "cvar_10": {
+      "mean_ev_gap": 1.432,
+      "median_ev_gap": 0.256,
+      "n_alt_dominates_ev": 0
+    },
+    "mark_ev": {
+      "mean_ev_gap": 1.098,
+      "median_ev_gap": 0.228,
+      "n_alt_dominates_ev": 0
+    },
+    "robust_q25": {
+      "mean_ev_gap": 1.344,
+      "median_ev_gap": 0.18,
+      "n_alt_dominates_ev": 0
+    }
+  },
+  "make_threshold_used": 18,
+  "lower_tail_threshold_used": -18,
+  "note_on_mark_ev": "mark_ev uses team0-is-bidder assumption (all records in this corpus are bidder=team0, bid=30); mark_multiplier=1 for ordinary bids",
+  "note_on_join": "branch_atlas seed 9430/9420-9421 is disjoint from joined_claim_row_model_table (seeds 0-99); claim-family tags come from decision_actions.csv distribution_shape_tags, strategy_context_tags, matched_position_detectors columns",
+  "paired": "paired \u2014 same decision, same world sample, different utility lens",
+  "metric": "top-1 action rank disagreement rate; EV gap in count-point units",
+  "claim_ledger_impact": "underpowered",
+  "caveats": [
+    "Slice is 1 seed (9430) x 10 declarations x bid=30 only; no variation in bid value or seed.",
+    "mark_ev transform assumes team0=bidder, ordinary bid (multiplier=1). Multi-mark bids (84+) not present in this corpus.",
+    "p_make == threshold_mass_high by construction (both use Q >= 18); they are identical lenses.",
+    "q_per_world encodes oracle-softmax-weighted world draws, not uniformly sampled hands.",
+    "No direct row-join with joined_claim_row_model_table (different seeds); claim-family attribution uses branch_atlas internal tags only."
+  ],
+  "status": "complete",
+  "generated_at": "2026-05-03T17:35:46.441193+00:00"
+}
