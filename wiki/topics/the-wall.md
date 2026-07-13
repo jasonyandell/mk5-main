@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: afd4802
-last_updated: c7f74f5c
+last_updated: b28fb55a
 status: active
 ---
 

@@ -2,7 +2,7 @@
 title: Partnership Wall Research
 kind: trail
 first_seen: bc4eb386
-last_updated: f6b691da
+last_updated: b28fb55a
 status: active
 ---
 

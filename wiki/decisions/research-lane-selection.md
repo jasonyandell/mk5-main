@@ -1,8 +1,8 @@
 ---
 title: Research Lane Selection (2026-07)
 kind: decision
-first_seen: local-2026-07-13
-last_updated: local-2026-07-13
+first_seen: b28fb55a
+last_updated: b28fb55a
 status: active
 ---
 
