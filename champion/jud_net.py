@@ -255,6 +255,24 @@ def aux_target_from_eq(e_q: Tensor) -> Tensor:
     return e_q.float() / MARGIN_SCALE
 
 
+def child_value_target(v_act: float, seat: int, bidder: int) -> float:
+    """Acting-seat per-move E[Q] margin ``v_act`` in [-42, 42] — the value of the
+    CHILD state the mover reaches by playing the taken domino — → the DECLARING
+    team's expected realized points in [0, 42], the space `mean_points` predicts
+    and `arena.jud_play` argmaxes.
+
+    This is the CHILD-side per-move arm (HC): where the aux head (HP) predicts
+    all seven parent-side consequences in acting-seat orientation, the child
+    target drops onto the MAIN head at the post-move state in DECLARING-team
+    orientation, so no separate head is needed. It is the exact inverse of
+    `acting_seat_margin`: ``sign = +1`` if the mover is on the bidding team else
+    ``-1`` (a defender's e_q is already sign-correct), and
+    ``E[pts_declaring] = (sign * v_act + 42) / 2``. At the terminal ply this
+    reduces to the realized declaring points, agreeing with the row's CE label."""
+    sign = 1.0 if int(seat) % 2 == int(bidder) % 2 else -1.0
+    return (sign * float(v_act) + (N_POINTS - 1)) / 2.0  # N_POINTS - 1 == 42
+
+
 # --------------------------------------------------------------------- #
 #  Network                                                                #
 # --------------------------------------------------------------------- #
@@ -365,35 +383,51 @@ def _deal_key(hands, decl_id, bidder, bids) -> tuple:
     return (h, int(decl_id), int(bidder), b)
 
 
-def load_aux_table(pt_path: str | Path) -> dict[tuple, tuple[Tensor, Tensor]]:
-    """Bridge E[Q] corpus (`{"results": [GameRecordGPU, ...]}`) → aux-label table
-    keyed by ``(deal_key, decision_index, acting_seat)`` → (e_q [7], legal_mask [7]).
+def load_aux_table(
+    paths: str | Path | Iterable[str | Path],
+) -> dict[tuple, tuple[Tensor, Tensor]]:
+    """Bridge E[Q] corpus/corpora (`{"results": [GameRecordGPU, ...]}`) → aux-label
+    table keyed by ``(deal_key, decision_index, acting_seat)`` →
+    (e_q [7], legal_mask [7]).
+
+    ``paths`` is a single ``.pt`` path, a glob string, or an iterable of paths
+    (resolved by `margin_net._resolve_paths`, the same expander the corpus arg
+    uses); the per-file tables are MERGED into one. The 3-corpus HC/HP round
+    labels each self-play corpus into its own ``eq_*.pt``, so the join needs
+    their union — distinct deals never collide, and identical deals (paired
+    halves) produce identical labels, so a key collision is a harmless overwrite.
 
     ``decision_index`` is the 0-based ply the oracle produced the record at
     (``enumerate(record.decisions)``); ``acting_seat`` is ``decision.player``.
     Padded/illegal e_q slots (``-inf`` per DecisionRecordGPU) are zeroed under
     the mask so they can never poison the masked MSE. e_q stays in forge
     acting-seat orientation (margin, [-42, 42]); the scale to [-1, 1] happens at
-    join time via `aux_target_from_eq`.
+    join time via `aux_target_from_eq` (parent-side aux head), and the child arm
+    reads the taken slot and converts to declaring points via `child_value_target`.
 
     ALIGNMENT (the load-bearing caveat): the bridge replays the ORACLE's own
     greedy line from the initial deal, so ``decision_index`` k lands on the
     arena's play step k only where the two lines coincide. The ``acting_seat``
     component of the key is the guard — a row whose mover disagrees with the
     oracle's ply-k mover simply misses and stays unsupervised. Measure join
-    coverage before trusting arm HP; for guaranteed alignment, label per-ply
-    snapshots (decisions[0] is then exactly aligned) — see scratch/lane-b/RUNPLAN.md.
+    coverage before trusting arm HP/HC; for guaranteed alignment, generate the
+    E[Q] corpus with ``generate_eq_from_snapshots --teacher-forced`` (decision k
+    is then exactly arena play step k, 100% decision-row coverage).
     """
-    blob = torch.load(str(pt_path), map_location="cpu", weights_only=False)
-    records = blob["results"] if isinstance(blob, dict) else blob
+    files = _resolve_paths(paths)
+    if not files:
+        raise FileNotFoundError(f"no aux-label .pt files matched {paths!r}")
     table: dict[tuple, tuple[Tensor, Tensor]] = {}
-    for rec in records:
-        dkey = _deal_key(rec.hands, rec.decl_id, rec.bidder, rec.bids)
-        for k, dec in enumerate(rec.decisions):
-            mask = dec.legal_mask.detach().cpu().float()
-            e_q = dec.e_q.detach().cpu().float()
-            e_q = torch.where(mask > 0, e_q, torch.zeros_like(e_q))  # kill -inf pads
-            table[(dkey, int(k), int(dec.player))] = (e_q, mask)
+    for pt_path in files:
+        blob = torch.load(str(pt_path), map_location="cpu", weights_only=False)
+        records = blob["results"] if isinstance(blob, dict) else blob
+        for rec in records:
+            dkey = _deal_key(rec.hands, rec.decl_id, rec.bidder, rec.bids)
+            for k, dec in enumerate(rec.decisions):
+                mask = dec.legal_mask.detach().cpu().float()
+                e_q = dec.e_q.detach().cpu().float()
+                e_q = torch.where(mask > 0, e_q, torch.zeros_like(e_q))  # kill -inf pads
+                table[(dkey, int(k), int(dec.player))] = (e_q, mask)
     return table
 
 
@@ -413,8 +447,20 @@ class JudDataset(torch.utils.data.Dataset):
     half of each `hand_samples` pair. It is joined by ``(deal_key, step, pov)``.
     Rows that are child/eval states, or decision rows with no matching E[Q]
     label, get an all-zero mask so they contribute nothing to the aux loss.
-    With ``aux_table=None`` the dataset is byte-for-byte its pre-Lane-B self —
-    `__getitem__`/`tensors` return the same (x, y) pairs.
+
+    ``child_values`` (arm HC, requires ``aux_table``) additionally attaches a
+    scalar CHILD target to each post-move (eval) row — the ``(step, pov)`` whose
+    ``pov == plays[step-1][0]``, i.e. the "after-move" half. The target is the
+    parent decision's e_q at the TAKEN slot converted to declaring-team points
+    (`child_value_target`), which is exactly what `arena.jud_play` argmaxes over
+    child states — so it supervises the MAIN head with no extra head. The k=0
+    root and pure decision rows carry weight 0. This is orthogonal to the aux
+    head: the two can coexist, but the pure HC arm builds the net with
+    ``aux_per_action=False``.
+
+    With ``aux_table=None`` (and ``child_values=False``) the dataset is
+    byte-for-byte its pre-Lane-B self — `__getitem__`/`tensors` return the same
+    (x, y) pairs and the row set is never perturbed by either label join.
     """
 
     def __init__(
@@ -422,14 +468,30 @@ class JudDataset(torch.utils.data.Dataset):
         paths: str | Path | Iterable[str | Path],
         split: str = "all",
         aux_table: dict[tuple, tuple[Tensor, Tensor]] | None = None,
+        child_values: bool = False,
     ) -> None:
         self.split = split
         self.aux = aux_table is not None
+        self.child = bool(child_values)
+        if self.child and aux_table is None:
+            raise ValueError(
+                "child_values=True requires an aux_table — the E[Q] table supplies "
+                "the per-move child targets (pass load_aux_table(...) )."
+            )
         self.samples: list[tuple[Tensor, Tensor]] = []
         self.keys: list[tuple] = []
         self.aux_targets: list[Tensor] = []   # [7] each, in [-1, 1] (0 where unsupervised)
         self.aux_masks: list[Tensor] = []      # [7] each, 1.0 on supervised legal slots
+        self.child_targets: list[Tensor] = []  # [] each, declaring pts [0,42] (0 unsupervised)
+        self.child_weights: list[Tensor] = []  # [] each, 1.0 on supervised child rows
         seen: set[tuple] = set()
+
+        # The taken-slot lookup for child values reuses the canonical
+        # snapshot→slot map (single source of truth with the E[Q] bridge). Import
+        # lazily so the serving path (arena.jud_play → jud_net) never pays for the
+        # forge.eq.generate import; child_values is a training-only join.
+        if self.child:
+            from forge.cli.generate_eq_from_snapshots import forced_actions_from_snapshot
 
         for f in _resolve_paths(paths):
             payload = json.loads(Path(f).read_text())
@@ -453,8 +515,10 @@ class JudDataset(torch.utils.data.Dataset):
                 plays = snap["plays"]
                 dkey = (
                     _deal_key(snap["hands"], snap["decl_id"], snap["bidder"], snap["bids"])
-                    if self.aux else None
+                    if (self.aux or self.child) else None
                 )
+                forced = forced_actions_from_snapshot(snap) if self.child else None
+                bidder = int(snap["bidder"])
                 for step, pov in hand_samples(snap):
                     key = base + (
                         step, pov,
@@ -469,6 +533,12 @@ class JudDataset(torch.utils.data.Dataset):
                         at, am = self._aux_for(aux_table, dkey, step, pov, plays)
                         self.aux_targets.append(at)
                         self.aux_masks.append(am)
+                    if self.child:
+                        ct, cw = self._child_value_for(
+                            aux_table, dkey, step, pov, plays, forced, bidder
+                        )
+                        self.child_targets.append(ct)
+                        self.child_weights.append(cw)
 
     @staticmethod
     def _aux_for(aux_table, dkey, step, pov, plays) -> tuple[Tensor, Tensor]:
@@ -482,10 +552,40 @@ class JudDataset(torch.utils.data.Dataset):
         e_q, mask = hit
         return aux_target_from_eq(e_q), mask
 
+    @staticmethod
+    def _child_value_for(aux_table, dkey, step, pov, plays, forced, bidder):
+        """(target scalar in [0,42], weight scalar in {0,1}) for the CHILD row
+        ``(step, pov)`` — the post-move state `arena.jud_play` prices. Supervised
+        iff the row is the child of ``pov``'s decision at ``step-1``
+        (``pov == plays[step-1][0]``) AND the E[Q] table holds that parent
+        decision's label. The target is the parent's e_q at the TAKEN slot
+        (``forced[step-1]``, the domino→slot map shared with the bridge),
+        converted to declaring-team E[pts] by `child_value_target`. Weight 0
+        (target 0) otherwise, so the k=0 root and pure decision rows never carry
+        a child value."""
+        if step < 1:
+            return torch.zeros(()), torch.zeros(())
+        k = step - 1
+        if k >= len(plays) or int(pov) != int(plays[k][0]):
+            return torch.zeros(()), torch.zeros(())
+        hit = aux_table.get((dkey, int(k), int(pov)))
+        if hit is None:
+            return torch.zeros(()), torch.zeros(())
+        e_q, mask = hit
+        slot = int(forced[k])
+        if not (0 <= slot < N_ACTIONS) or float(mask[slot]) <= 0.0:
+            return torch.zeros(()), torch.zeros(())
+        target = child_value_target(float(e_q[slot]), int(pov), int(bidder))
+        return torch.tensor(float(target)), torch.ones(())
+
     def __len__(self) -> int:
         return len(self.samples)
 
     def __getitem__(self, idx: int):
+        if self.child:
+            x, y = self.samples[idx]
+            return (x, y, self.aux_targets[idx], self.aux_masks[idx],
+                    self.child_targets[idx], self.child_weights[idx])
         if self.aux:
             x, y = self.samples[idx]
             return x, y, self.aux_targets[idx], self.aux_masks[idx]
@@ -516,6 +616,27 @@ class JudDataset(torch.utils.data.Dataset):
             return 0.0
         return float(sum(1 for m in self.aux_masks if float(m.sum()) > 0) / len(self.aux_masks))
 
+    def tensors_child(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+        """Stacked (X [N,350], Y [N], CHILD_T [N], CHILD_W [N]). Requires
+        child_values; CHILD_W rows are 0 where the row is not a supervised child
+        state (the decision half, and any parent-label miss)."""
+        if not self.child:
+            raise RuntimeError("tensors_child requires the dataset to be built with child_values=True")
+        xs, ys = self.tensors()
+        if not self.samples:
+            return xs, ys, torch.empty(0), torch.empty(0)
+        return xs, ys, torch.stack(self.child_targets), torch.stack(self.child_weights)
+
+    def child_coverage(self) -> float:
+        """Fraction of rows carrying a supervised child value — the child-join
+        health check. Sits near 0.5 by design: only the post-move (child) half of
+        each `hand_samples` pair can carry a child target (the decision half and
+        the k=0 root never do), so 100% teacher-forced coverage reads ~0.5 —
+        slightly above when a winner-leads row is deduped onto its decision twin."""
+        if not self.child or not self.child_weights:
+            return 0.0
+        return float(sum(1 for w in self.child_weights if float(w) > 0) / len(self.child_weights))
+
 
 # --------------------------------------------------------------------- #
 #  Training                                                               #
@@ -543,6 +664,22 @@ def masked_action_mse(pred: Tensor, target: Tensor, mask: Tensor) -> Tensor:
     return se.sum() / mask.sum().clamp(min=1.0)
 
 
+def masked_value_mse(mean_pts: Tensor, target: Tensor, weight: Tensor) -> Tensor:
+    """Per-row MSE of the MAIN head's E[declaring pts] against the child-state
+    per-move oracle value (arm HC), over supervised rows (weight==1) only.
+
+    ``mean_pts`` is `mean_points(logits)` and ``target`` the child value, both in
+    declaring-team points [0, 42]; both are normalized by MARGIN_SCALE (42, the
+    max points) before squaring — the same scale discipline as
+    `masked_action_mse`, so a default ``child_lambda=1.0`` weighs this term
+    comparably to the CE (~2–3 nats; a /42 MSE is O(0.1–1)). ``weight.sum()`` is
+    clamped so an all-unsupervised batch yields a finite 0 gradient. This is
+    exactly the quantity `arena.jud_play` argmaxes over post-move child states —
+    consumer-aligned supervision straight onto the head the player reads."""
+    se = ((mean_pts - target) / MARGIN_SCALE) ** 2 * weight
+    return se.sum() / weight.sum().clamp(min=1.0)
+
+
 def train(
     corpus: str | Path | Iterable[str | Path],
     out_model: Path = _DEFAULT_MODEL,
@@ -555,22 +692,43 @@ def train(
     aux_lambda: float = 1.0,
     weight_decay: float = 0.0,
     seed: int | None = None,
+    child_values: bool = False,
+    child_lambda: float = 1.0,
 ) -> dict:
     """Train JudNet on the snapshot corpus; save best-val weights, return metrics.
 
-    ``aux_labels`` (arm HP) is a `load_aux_table` dict or a bridge E[Q] ``.pt``
-    path; when given, a per-legal-action aux head is added and the loss becomes
-    ``CE + aux_lambda * masked_action_mse`` (target/pred scale-normalized to
-    [-1, 1], so ``aux_lambda=1.0`` weighs the two terms comparably). Arm H is
-    ``aux_labels=None`` — the pre-Lane-B path, unchanged. Early stopping still
-    reads the main-head val CE, so the two arms are graded on the same yardstick.
+    Three Lane B arms select through the E[Q] table + two flags:
+
+    * **H** — ``aux_labels=None`` — the pre-Lane-B path, unchanged.
+    * **HP** — ``aux_labels=<table>`` alone: a per-legal-action aux head is
+      added and the loss becomes ``CE + aux_lambda * masked_action_mse`` (aux
+      target/pred scale-normalized to [-1, 1]).
+    * **HC** — ``aux_labels=<table>`` + ``child_values=True``: the SAME table
+      supplies per-move CHILD targets, but NO head is added — the main head's
+      ``mean_points`` on each post-move row is regressed toward the child value
+      (`child_value_target`), the space `arena.jud_play` argmaxes. The loss is
+      ``CE + child_lambda * masked_value_mse``. The aux head is suppressed here
+      so HC stays the pure child arm (`aux_per_action=False`).
+
+    ``aux_labels`` is a `load_aux_table` dict, a bridge E[Q] ``.pt`` path, or a
+    glob/iterable of them (merged). Early stopping reads the main-head val CE, so
+    all arms are graded on the same yardstick.
     """
     aux_table = (
         load_aux_table(aux_labels) if isinstance(aux_labels, (str, Path)) else aux_labels
     )
-    aux_on = aux_table is not None
-    train_ds = JudDataset(corpus, split="train", aux_table=aux_table)
-    val_ds = JudDataset(corpus, split="val", aux_table=aux_table)
+    child_on = bool(child_values)
+    if child_on and aux_table is None:
+        raise ValueError(
+            "child_values=True requires aux_labels — its E[Q] table supplies the "
+            "per-move child targets."
+        )
+    # The parent-side aux HEAD (arm HP) is added only when we are NOT running the
+    # child arm: HC reads the same table for targets but supervises the MAIN head
+    # on child states and adds no head, so the runtime consumers are byte-identical.
+    aux_head_on = aux_table is not None and not child_on
+    train_ds = JudDataset(corpus, split="train", aux_table=aux_table, child_values=child_on)
+    val_ds = JudDataset(corpus, split="val", aux_table=aux_table, child_values=child_on)
     test_ds = JudDataset(corpus, split="test")
     if not len(train_ds):
         raise FileNotFoundError(
@@ -581,10 +739,17 @@ def train(
         f"decision rows (deduped, 90/5/5 by deal hash)",
         flush=True,
     )
-    if aux_on:
+    if aux_head_on:
         print(
             f"Aux head ON (lambda={aux_lambda}): train aux coverage "
             f"{train_ds.aux_coverage():.1%} of rows supervised",
+            flush=True,
+        )
+    if child_on:
+        print(
+            f"Child values ON (lambda={child_lambda}): train child coverage "
+            f"{train_ds.child_coverage():.1%} of rows supervised "
+            f"(~0.5 is full teacher-forced coverage)",
             flush=True,
         )
 
@@ -602,7 +767,7 @@ def train(
     loader = torch.utils.data.DataLoader(
         train_ds, batch_size=batch_size, shuffle=True, generator=gen,
     )
-    model = JudNet(aux_per_action=aux_on).to(device)
+    model = JudNet(aux_per_action=aux_head_on).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     loss_fn = nn.CrossEntropyLoss()
 
@@ -615,7 +780,15 @@ def train(
         model.train()
         total = 0.0
         for batch in loader:
-            if aux_on:
+            if child_on:
+                # Child dataset yields the 6-tuple (x, y, aux_t, aux_m, child_t,
+                # child_w); the aux slots ride along unused (no aux head in HC).
+                x_b, y_b, _at_b, _am_b, cv_b, cw_b = batch
+                logits = model(x_b.to(device))
+                loss = loss_fn(logits, y_b.to(device)) + child_lambda * masked_value_mse(
+                    mean_points(logits), cv_b.to(device), cw_b.to(device)
+                )
+            elif aux_head_on:
                 x_b, y_b, at_b, am_b = batch
                 logits, aux_pred = model.forward_aux(x_b.to(device))
                 loss = loss_fn(logits, y_b.to(device)) + aux_lambda * masked_action_mse(
@@ -657,7 +830,7 @@ def train(
     out_model.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {"model_state": model.state_dict(), "feature_dim": FEATURE_DIM,
-         "aux_per_action": aux_on},
+         "aux_per_action": aux_head_on},
         out_model,
     )
     print(f"Saved model → {out_model}", flush=True)
@@ -773,10 +946,19 @@ if __name__ == "__main__":
     tp.add_argument("--patience", type=int, default=8)
     tp.add_argument("--device", type=str, default="cpu")
     tp.add_argument("--aux-labels", type=str, default=None,
-                    help="Lane B arm HP: bridge E[Q] .pt for the per-action aux head "
-                         "(omit for arm H — aux off)")
+                    help="Lane B: bridge E[Q] .pt (single path, glob, or space of "
+                         "them) — the per-action aux head (arm HP) with --aux-labels "
+                         "alone, or the child-value TABLE (arm HC) with --child-values. "
+                         "Omit for arm H (no E[Q] signal).")
     tp.add_argument("--aux-lambda", type=float, default=1.0,
                     help="weight on the masked-MSE aux term (default 1.0, scale-normalized)")
+    tp.add_argument("--child-values", action="store_true",
+                    help="Lane B arm HC: supervise the MAIN head's mean_points on "
+                         "post-move CHILD rows with per-move E[Q] child values "
+                         "(declaring-team points), the space arena.jud_play argmaxes. "
+                         "Requires --aux-labels for the table; adds no head.")
+    tp.add_argument("--child-lambda", type=float, default=1.0,
+                    help="weight on the child-value MSE term (default 1.0, scale-normalized)")
     tp.add_argument("--weight-decay", type=float, default=0.0,
                     help="Adam weight decay (Lane B: set identically across both arms)")
     tp.add_argument("--seed", type=int, default=None,
@@ -795,6 +977,7 @@ if __name__ == "__main__":
             batch_size=args.batch_size, lr=args.lr, patience=args.patience,
             device=args.device, aux_labels=args.aux_labels, aux_lambda=args.aux_lambda,
             weight_decay=args.weight_decay, seed=args.seed,
+            child_values=args.child_values, child_lambda=args.child_lambda,
         )
     else:
         evaluate(
