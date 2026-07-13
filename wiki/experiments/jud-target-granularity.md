@@ -126,7 +126,17 @@ split, teacher-forced labels):
   marks-vs-`lens:ev` numbers below are not comparable to the r4 protocol
   numbers.
 
-Marks grading (R3–R6): *(battery running)*
+Marks grading (R3–R6): *(battery running; block-1 arms and block-2 greedy/aux
+arms are in; the two block-2 judsearch arms remain)*
+
+Interim guess, registered mid-battery before the block-2 judsearch arms or
+any paired analysis ran: block 1 showed `judsearch:HP` −1.64 vs
+`judsearch:H` −1.98 while greedy showed nothing — my guess is the
+search-consumer delta is **real but small**: combined game-paired
+`Δ(HP−H) ≈ +0.25`, block 2 alone directionally positive with CI including
+zero. If the paired CI includes zero combined, the whole experiment is a
+clean negative at this capacity/corpus and the residual moves to the
+capacity×target interaction ([[partnership-research-gates]] row 2).
 
 ## Links
 
