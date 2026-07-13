@@ -77,7 +77,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from arena.auction import MIN_BID, contract_points
+from arena.auction import MIN_BID, ONE_MARK, contract_points
 from champion.bid_net import FEATURE_DIM as HAND_DIM  # 63
 from champion.bid_net import featurize_hand
 from champion.margin_net import (
@@ -109,6 +109,10 @@ PER_DOMINO = 9                                   # seat one-hot 4 + pos one-hot 
 GLOBAL_DIM = 7                                   # pts x2 + n_played + trick-fill one-hot 4
 PLAY_DIM = N_DOMINOES * PER_DOMINO + GLOBAL_DIM  # 259
 FEATURE_DIM = HAND_DIM + AUCTION_DIM + PLAY_DIM  # 350
+
+# Optional per-legal-action auxiliary head (Lane B — dense E[Q] ranking).
+N_ACTIONS = 7                        # hand slots 0..6 — forge e_q [7]/legal_actions slots
+MARGIN_SCALE = float(ONE_MARK)       # 42; acting-seat point margin lives in [-42, +42]
 
 _DEFAULT_MODEL = Path("champion/jud_net.pt")
 
@@ -211,13 +215,64 @@ def featurize_state(state: ZebGameState, seat: int | None = None) -> Tensor:
 
 
 # --------------------------------------------------------------------- #
+#  Acting-seat orientation — the aux target's #1 foot-gun                 #
+# --------------------------------------------------------------------- #
+#
+# JudNet's 43-bin head predicts the DECLARING team's realized points in
+# [0, 42] (margin_net orientation). `mean_points` gives E[declaring pts];
+# the declaring-team point margin is `2*E[pts] - 42` in [-42, +42]. A
+# defender sits on the other side, so `arena.jud_play` flips the sign at
+# consume time:  value_to_mover = sign * mean_points,  sign = +1 offense /
+# -1 defense.
+#
+# The forge E[Q] tensor (`arena.lens_play` e_q; forge DecisionRecordGPU.e_q)
+# is a DIFFERENT orientation: `query_model` already POV-corrects Q to the
+# ACTING seat ("higher is better" — w42/lens_v1/lens.py), so e_q is the
+# acting seat's OWN point margin in [-42, +42], one entry per legal hand
+# slot 0..6 (the same slot indexing `arena.jud_play` argmaxes over). A
+# defender's e_q is ALREADY sign-correct; there is nothing to flip.
+#
+# The aux head is therefore defined in ACTING-SEAT orientation to match e_q
+# directly: it predicts the acting seat's margin / MARGIN_SCALE per slot,
+# needs NO sign flip at consume time (unlike the main head), and its target
+# is simply `e_q / MARGIN_SCALE`. `acting_seat_margin` is the explicit
+# bridge that lets a test hand-check the two orientations agree.
+
+def acting_seat_margin(decl_pts: int, seat: int, bidder: int) -> int:
+    """Declaring-team realized points (0..42) → the ACTING seat's point margin
+    in [-42, 42]. Offense (seat on the bidder's team) reads the declaring-team
+    margin ``2*decl_pts - 42``; defense negates it. This is the orientation the
+    aux head and forge e_q share; the main 43-bin head is in declaring-team
+    orientation and `arena.jud_play` applies exactly this sign to it."""
+    sign = 1 if int(seat) % 2 == int(bidder) % 2 else -1
+    return sign * (2 * int(decl_pts) - (N_POINTS - 1))  # N_POINTS - 1 == 42
+
+
+def aux_target_from_eq(e_q: Tensor) -> Tensor:
+    """forge acting-seat E[Q] (margin in [-42, 42], per slot) → the aux head's
+    target in [-1, 1]. e_q is ALREADY acting-seat oriented (query_model
+    POV-corrects it), so the only transform is the scale ``1 / MARGIN_SCALE``."""
+    return e_q.float() / MARGIN_SCALE
+
+
+# --------------------------------------------------------------------- #
 #  Network                                                                #
 # --------------------------------------------------------------------- #
 
 class JudNet(nn.Module):
-    """MLP: 350 → 512 → 512 → 43 logits (categorical over declaring-team points)."""
+    """MLP: 350 → 512 → 512 → 43 logits (categorical over declaring-team points).
 
-    def __init__(self, in_dim: int = FEATURE_DIM) -> None:
+    ``aux_per_action`` (default False) adds ONE extra linear head (512 → 7) off
+    the shared trunk that predicts the acting-seat per-slot value (Lane B dense
+    E[Q] ranking auxiliary). With the flag OFF the module holds exactly the
+    ``net.0/2/4`` parameters of every existing checkpoint — same keys, same
+    shapes, byte-compatible load — and `forward` is byte-identical to
+    ``self.net(x)``. The aux head is a training-time trunk-shaping signal only;
+    the runtime consumers (pmake_table, JudPlay, JudSearch) still read the
+    43-bin head via `forward`, so they are untouched whether the flag is on.
+    """
+
+    def __init__(self, in_dim: int = FEATURE_DIM, aux_per_action: bool = False) -> None:
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(in_dim, 512),
@@ -226,10 +281,27 @@ class JudNet(nn.Module):
             nn.ReLU(),
             nn.Linear(512, N_POINTS),
         )
+        self.aux_per_action = bool(aux_per_action)
+        if self.aux_per_action:
+            self.aux = nn.Linear(512, N_ACTIONS)  # acting-seat per-slot value
+
+    def _trunk(self, x: Tensor) -> Tensor:
+        """[B, 512] penultimate activation — the first four layers of ``net``
+        (Linear→ReLU→Linear→ReLU), the input both heads read."""
+        return self.net[:4](x)
 
     def forward(self, x: Tensor) -> Tensor:
-        """x: [B, in_dim] → [B, 43] logits."""
-        return self.net(x)
+        """x: [B, in_dim] → [B, 43] logits. Byte-identical to ``self.net(x)``."""
+        return self.net[4](self._trunk(x))
+
+    def forward_aux(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        """(logits [B, 43], aux [B, 7]) sharing one trunk pass — the training
+        path when ``aux_per_action`` is on. aux is in acting-seat / MARGIN_SCALE
+        orientation (see `aux_target_from_eq`)."""
+        if not self.aux_per_action:
+            raise RuntimeError("forward_aux requires aux_per_action=True")
+        h = self._trunk(x)
+        return self.net[4](h), self.aux(h)
 
     def pmake_table(
         self, hand: Sequence[int], bids: Sequence[int], bidder: int, dealer: int
@@ -257,7 +329,10 @@ class JudNet(nn.Module):
 def load_jud_net(model_path: str | Path = _DEFAULT_MODEL, device: str = "cpu") -> JudNet:
     """Load a trained JudNet checkpoint (mirrors ``value_bidder.load_margin_net``)."""
     ckpt = torch.load(model_path, map_location=device, weights_only=False)
-    model = JudNet(in_dim=ckpt.get("feature_dim", FEATURE_DIM)).to(device)
+    model = JudNet(
+        in_dim=ckpt.get("feature_dim", FEATURE_DIM),
+        aux_per_action=ckpt.get("aux_per_action", False),
+    ).to(device)
     model.load_state_dict(ckpt["model_state"])
     model.eval()
     return model
@@ -277,6 +352,51 @@ def hand_samples(snap: Mapping) -> Iterable[tuple[int, int]]:
         yield k + 1, int(player)
 
 
+def _deal_key(hands, decl_id, bidder, bids) -> tuple:
+    """Deal identity shared by a snapshot row and its E[Q] `GameRecordGPU`.
+
+    The bridge (`forge.cli.generate_eq_from_snapshots`) runs the oracle on the
+    snapshot's seat-ordered deal and stamps back the same ``bids``/``bidder``,
+    so the four fields reconstruct identically on both sides. Note two
+    paired-half hands can share a deal_key — the (deal, step, seat) join below
+    tolerates that (identical deals produce identical oracle labels)."""
+    h = tuple(tuple(int(t) for t in seat) for seat in hands)
+    b = tuple(int(x) for x in bids) if bids is not None else ()
+    return (h, int(decl_id), int(bidder), b)
+
+
+def load_aux_table(pt_path: str | Path) -> dict[tuple, tuple[Tensor, Tensor]]:
+    """Bridge E[Q] corpus (`{"results": [GameRecordGPU, ...]}`) → aux-label table
+    keyed by ``(deal_key, decision_index, acting_seat)`` → (e_q [7], legal_mask [7]).
+
+    ``decision_index`` is the 0-based ply the oracle produced the record at
+    (``enumerate(record.decisions)``); ``acting_seat`` is ``decision.player``.
+    Padded/illegal e_q slots (``-inf`` per DecisionRecordGPU) are zeroed under
+    the mask so they can never poison the masked MSE. e_q stays in forge
+    acting-seat orientation (margin, [-42, 42]); the scale to [-1, 1] happens at
+    join time via `aux_target_from_eq`.
+
+    ALIGNMENT (the load-bearing caveat): the bridge replays the ORACLE's own
+    greedy line from the initial deal, so ``decision_index`` k lands on the
+    arena's play step k only where the two lines coincide. The ``acting_seat``
+    component of the key is the guard — a row whose mover disagrees with the
+    oracle's ply-k mover simply misses and stays unsupervised. Measure join
+    coverage before trusting arm HP; for guaranteed alignment, label per-ply
+    snapshots (decisions[0] is then exactly aligned) — see scratch/lane-b/RUNPLAN.md.
+    """
+    blob = torch.load(str(pt_path), map_location="cpu", weights_only=False)
+    records = blob["results"] if isinstance(blob, dict) else blob
+    table: dict[tuple, tuple[Tensor, Tensor]] = {}
+    for rec in records:
+        dkey = _deal_key(rec.hands, rec.decl_id, rec.bidder, rec.bids)
+        for k, dec in enumerate(rec.decisions):
+            mask = dec.legal_mask.detach().cpu().float()
+            e_q = dec.e_q.detach().cpu().float()
+            e_q = torch.where(mask > 0, e_q, torch.zeros_like(e_q))  # kill -inf pads
+            table[(dkey, int(k), int(dec.player))] = (e_q, mask)
+    return table
+
+
 class JudDataset(torch.utils.data.Dataset):
     """Snapshot-JSON corpus → (350-dim x, realized-points y) per-decision samples.
 
@@ -286,16 +406,29 @@ class JudDataset(torch.utils.data.Dataset):
     the Monte Carlo target). Rows are exact-deduped: paired halves replay
     identical seeds, so identical auctions collapse at step 0, and a
     deterministic A==B self-play collapses entirely.
+
+    ``aux_table`` (optional, from `load_aux_table`) attaches a per-legal-action
+    E[Q] target + legal mask to each DECISION row — the row whose ``(step, pov)``
+    is a real decision point (``pov == plays[step][0]``), i.e. the "before-move"
+    half of each `hand_samples` pair. It is joined by ``(deal_key, step, pov)``.
+    Rows that are child/eval states, or decision rows with no matching E[Q]
+    label, get an all-zero mask so they contribute nothing to the aux loss.
+    With ``aux_table=None`` the dataset is byte-for-byte its pre-Lane-B self —
+    `__getitem__`/`tensors` return the same (x, y) pairs.
     """
 
     def __init__(
         self,
         paths: str | Path | Iterable[str | Path],
         split: str = "all",
+        aux_table: dict[tuple, tuple[Tensor, Tensor]] | None = None,
     ) -> None:
         self.split = split
+        self.aux = aux_table is not None
         self.samples: list[tuple[Tensor, Tensor]] = []
         self.keys: list[tuple] = []
+        self.aux_targets: list[Tensor] = []   # [7] each, in [-1, 1] (0 where unsupervised)
+        self.aux_masks: list[Tensor] = []      # [7] each, 1.0 on supervised legal slots
         seen: set[tuple] = set()
 
         for f in _resolve_paths(paths):
@@ -317,21 +450,45 @@ class JudDataset(torch.utils.data.Dataset):
                     int(snap["decl_id"]),
                 )
                 y = torch.tensor(int(snap["bidder_team_pts"]), dtype=torch.long)
+                plays = snap["plays"]
+                dkey = (
+                    _deal_key(snap["hands"], snap["decl_id"], snap["bidder"], snap["bids"])
+                    if self.aux else None
+                )
                 for step, pov in hand_samples(snap):
                     key = base + (
                         step, pov,
-                        tuple((int(p), int(d)) for p, d in snap["plays"][:step]),
+                        tuple((int(p), int(d)) for p, d in plays[:step]),
                     )
                     if key in seen:
                         continue
                     seen.add(key)
                     self.samples.append((featurize_snapshot(snap, step, pov), y))
                     self.keys.append(key)
+                    if self.aux:
+                        at, am = self._aux_for(aux_table, dkey, step, pov, plays)
+                        self.aux_targets.append(at)
+                        self.aux_masks.append(am)
+
+    @staticmethod
+    def _aux_for(aux_table, dkey, step, pov, plays) -> tuple[Tensor, Tensor]:
+        """(target [7] in [-1,1], mask [7]) for one row. Supervised iff the row
+        is the decision point ``pov == plays[step][0]`` and the E[Q] table holds
+        a matching (deal, step, seat) label; otherwise an all-zero mask."""
+        is_decision = step < len(plays) and int(pov) == int(plays[step][0])
+        hit = aux_table.get((dkey, int(step), int(pov))) if is_decision else None
+        if hit is None:
+            return torch.zeros(N_ACTIONS), torch.zeros(N_ACTIONS)
+        e_q, mask = hit
+        return aux_target_from_eq(e_q), mask
 
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
+    def __getitem__(self, idx: int):
+        if self.aux:
+            x, y = self.samples[idx]
+            return x, y, self.aux_targets[idx], self.aux_masks[idx]
         return self.samples[idx]
 
     def tensors(self) -> tuple[Tensor, Tensor]:
@@ -341,6 +498,23 @@ class JudDataset(torch.utils.data.Dataset):
         xs = torch.stack([x for x, _ in self.samples])
         ys = torch.stack([y for _, y in self.samples])
         return xs, ys
+
+    def tensors_aux(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+        """Stacked (X [N,350], Y [N], AUX_T [N,7], AUX_M [N,7]). Requires an
+        aux_table; AUX_M rows are all-zero where the row was not aux-supervised."""
+        if not self.aux:
+            raise RuntimeError("tensors_aux requires the dataset to carry an aux_table")
+        xs, ys = self.tensors()
+        if not self.samples:
+            return xs, ys, torch.empty(0, N_ACTIONS), torch.empty(0, N_ACTIONS)
+        return xs, ys, torch.stack(self.aux_targets), torch.stack(self.aux_masks)
+
+    def aux_coverage(self) -> float:
+        """Fraction of rows carrying at least one supervised aux slot — the
+        join-alignment health check (see `load_aux_table`)."""
+        if not self.aux or not self.aux_masks:
+            return 0.0
+        return float(sum(1 for m in self.aux_masks if float(m.sum()) > 0) / len(self.aux_masks))
 
 
 # --------------------------------------------------------------------- #
@@ -357,6 +531,18 @@ def _forward_all(model: JudNet, ds: JudDataset, device: str) -> tuple[Tensor, Te
     return logits, ys
 
 
+def masked_action_mse(pred: Tensor, target: Tensor, mask: Tensor) -> Tensor:
+    """Per-legal-action MSE, averaged over supervised (mask==1) slots only.
+
+    ``pred``/``target``/``mask`` are [B, 7]. Both pred and target live in the
+    acting-seat / MARGIN_SCALE space ([-1, 1]); the normalization is what makes
+    a default ``aux_lambda=1.0`` weigh this term comparably to the CE term (both
+    O(1)) — CE is ~2–3 nats, and a [-1,1] MSE is O(0.1–1). ``mask.sum()`` is
+    clamped so an all-unsupervised batch yields a finite 0 gradient."""
+    se = (pred - target) ** 2 * mask
+    return se.sum() / mask.sum().clamp(min=1.0)
+
+
 def train(
     corpus: str | Path | Iterable[str | Path],
     out_model: Path = _DEFAULT_MODEL,
@@ -365,10 +551,26 @@ def train(
     lr: float = 1e-3,
     patience: int = 8,
     device: str = "cpu",
+    aux_labels: str | Path | dict | None = None,
+    aux_lambda: float = 1.0,
+    weight_decay: float = 0.0,
+    seed: int | None = None,
 ) -> dict:
-    """Train JudNet on the snapshot corpus; save best-val weights, return metrics."""
-    train_ds = JudDataset(corpus, split="train")
-    val_ds = JudDataset(corpus, split="val")
+    """Train JudNet on the snapshot corpus; save best-val weights, return metrics.
+
+    ``aux_labels`` (arm HP) is a `load_aux_table` dict or a bridge E[Q] ``.pt``
+    path; when given, a per-legal-action aux head is added and the loss becomes
+    ``CE + aux_lambda * masked_action_mse`` (target/pred scale-normalized to
+    [-1, 1], so ``aux_lambda=1.0`` weighs the two terms comparably). Arm H is
+    ``aux_labels=None`` — the pre-Lane-B path, unchanged. Early stopping still
+    reads the main-head val CE, so the two arms are graded on the same yardstick.
+    """
+    aux_table = (
+        load_aux_table(aux_labels) if isinstance(aux_labels, (str, Path)) else aux_labels
+    )
+    aux_on = aux_table is not None
+    train_ds = JudDataset(corpus, split="train", aux_table=aux_table)
+    val_ds = JudDataset(corpus, split="val", aux_table=aux_table)
     test_ds = JudDataset(corpus, split="test")
     if not len(train_ds):
         raise FileNotFoundError(
@@ -379,10 +581,29 @@ def train(
         f"decision rows (deduped, 90/5/5 by deal hash)",
         flush=True,
     )
+    if aux_on:
+        print(
+            f"Aux head ON (lambda={aux_lambda}): train aux coverage "
+            f"{train_ds.aux_coverage():.1%} of rows supervised",
+            flush=True,
+        )
 
-    loader = torch.utils.data.DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    model = JudNet().to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    # Seed so the two Lane B arms (H vs HP) match everywhere but the aux path.
+    # `JudNet` builds `self.net` before the optional `self.aux`, so seeding
+    # here gives BOTH arms byte-identical trunk init (HP's extra aux draws come
+    # after). A dedicated loader generator keeps the shuffle order independent
+    # of those extra draws, so batch order matches too. weight_decay is the
+    # named regularizer for the overfitting binding constraint (jud v1 §7).
+    if seed is not None:
+        torch.manual_seed(seed)
+    gen = torch.Generator()
+    if seed is not None:
+        gen.manual_seed(seed)
+    loader = torch.utils.data.DataLoader(
+        train_ds, batch_size=batch_size, shuffle=True, generator=gen,
+    )
+    model = JudNet(aux_per_action=aux_on).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     loss_fn = nn.CrossEntropyLoss()
 
     val_logits, val_ys = _forward_all(model, val_ds, device)
@@ -393,9 +614,17 @@ def train(
     for epoch in range(1, epochs + 1):
         model.train()
         total = 0.0
-        for x_b, y_b in loader:
-            logits = model(x_b.to(device))
-            loss = loss_fn(logits, y_b.to(device))
+        for batch in loader:
+            if aux_on:
+                x_b, y_b, at_b, am_b = batch
+                logits, aux_pred = model.forward_aux(x_b.to(device))
+                loss = loss_fn(logits, y_b.to(device)) + aux_lambda * masked_action_mse(
+                    aux_pred, at_b.to(device), am_b.to(device)
+                )
+            else:
+                x_b, y_b = batch
+                logits = model(x_b.to(device))
+                loss = loss_fn(logits, y_b.to(device))
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -426,7 +655,11 @@ def train(
         model.load_state_dict(best_state)
 
     out_model.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"model_state": model.state_dict(), "feature_dim": FEATURE_DIM}, out_model)
+    torch.save(
+        {"model_state": model.state_dict(), "feature_dim": FEATURE_DIM,
+         "aux_per_action": aux_on},
+        out_model,
+    )
     print(f"Saved model → {out_model}", flush=True)
 
     test_logits, test_ys = _forward_all(model, test_ds, device)
@@ -539,6 +772,15 @@ if __name__ == "__main__":
     tp.add_argument("--lr", type=float, default=1e-3)
     tp.add_argument("--patience", type=int, default=8)
     tp.add_argument("--device", type=str, default="cpu")
+    tp.add_argument("--aux-labels", type=str, default=None,
+                    help="Lane B arm HP: bridge E[Q] .pt for the per-action aux head "
+                         "(omit for arm H — aux off)")
+    tp.add_argument("--aux-lambda", type=float, default=1.0,
+                    help="weight on the masked-MSE aux term (default 1.0, scale-normalized)")
+    tp.add_argument("--weight-decay", type=float, default=0.0,
+                    help="Adam weight decay (Lane B: set identically across both arms)")
+    tp.add_argument("--seed", type=int, default=None,
+                    help="seed trunk init + batch order (Lane B: identical across both arms)")
 
     ep = sub.add_parser("eval", help="test-split reliability report (overall + by trick)")
     ep.add_argument("--corpus", required=True, help="glob of snapshot JSON files")
@@ -551,7 +793,8 @@ if __name__ == "__main__":
         train(
             corpus=args.corpus, out_model=args.out_model, epochs=args.epochs,
             batch_size=args.batch_size, lr=args.lr, patience=args.patience,
-            device=args.device,
+            device=args.device, aux_labels=args.aux_labels, aux_lambda=args.aux_lambda,
+            weight_decay=args.weight_decay, seed=args.seed,
         )
     else:
         evaluate(
