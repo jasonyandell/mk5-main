@@ -248,6 +248,20 @@ def parse_play(
         play = JudPlay(load_jud_net(model_path, device="cpu"))  # small MLP; CPU fastest
         print(f"Jud play: {play} (model={model_path})", flush=True)
         return play
+    if name == "judauxplay":
+        # Lane B diagnostic consumer: argmax the per-legal-action aux head on
+        # the CURRENT state (acting-seat orientation, no sign flip).
+        # Spec: judauxplay:model=<path> (checkpoint must carry the aux head).
+        from arena.jud_play import JudAuxPlay
+        from champion.jud_net import load_jud_net
+
+        model_path = "champion/jud_net.pt"
+        for t in (p for p in arg.split(",") if p):
+            if t.startswith("model="):
+                model_path = t[len("model="):]
+        play = JudAuxPlay(load_jud_net(model_path, device="cpu"))
+        print(f"Jud aux play: {play} (model={model_path})", flush=True)
+        return play
     if name == "judsearch":
         # jud v1 search rung (JS1): sample N consistent worlds, roll the current
         # trick to resolution with the jud head playing every seat, average the
