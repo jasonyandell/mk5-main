@@ -93,7 +93,7 @@ Game-theoretic search finds fighting lines even in lost positions
 
 This PIMC baseline is what the E[Q]/ML line measures itself against — the
 caveat that a PIMC-vs-PIMC harness is structurally blind to
-concealment/signaling value lives at [[champion]].
+concealment/signaling value lives at [[champion-design-review]].
 
 ---
 

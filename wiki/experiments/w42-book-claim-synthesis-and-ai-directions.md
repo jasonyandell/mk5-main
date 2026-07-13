@@ -13,7 +13,7 @@ one page to read for what the campaign found. The closure baseline is
 [[w42-book-validation]]. Which clock is this: `phase2/3/4` below is the
 2026-05-02→03 claim-ledger sweep; `Wave 1–5` and bookval `v1`/`v2`/`v3` are the
 2026-05-03 campaign (v2/v3 are utility-lens passes, not versions of the v1
-corpus); neither numbering relates to the 2026-06+ [[champion]]/[[jud]] rungs.
+corpus); neither numbering relates to the 2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 

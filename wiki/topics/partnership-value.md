@@ -33,7 +33,7 @@ cohorts, so this quantity has not yet been measured.
 | Plan persistence | One information-set policy maintains a continuation or partner-visible intent across decisions. | [[book-strategy-player]] defines a plan lifecycle and the book supplies candidate sequences. | Persistent-versus-erased plan state in merged information sets, with partner-visible and partner-blind arms. |
 | Distributional utility | The policy uses the shape of an action-outcome PDF only when future information, score, or role licenses it. | [[w42-lens-v1-utility-head-to-head]] leaves EV as the top-scoring tested fixed collapse; the full E[Q] PDF still contains multimodal structure. | Matched-mean PDF fixtures with exact contextual utility; a generic risk preference is insufficient. |
 | Bidding | Auction actions price contracts and reveal policy-conditioned information. | [[w42-jud-v1]] and [[w42-plateau-probe]] establish realized-outcome bidding as the current marks gain. | Partner-versus-opponent bid semantics, failed bids, pass value, bid lattice, and policy fingerprint. |
-| Match score | Marks-to-go changes auction and continuation utility. It is distinct from raw hand score and raw contract value. | Score is available to [[champion|Champion]] bidding; score-conditioned play lost. No ablation attributes head_8's gain to score. | Same-hand score counterfactuals at `0-0`, `6-6`, `6-0`, and `0-6`, isolated separately for bidding and play. |
+| Match score | Marks-to-go changes auction and continuation utility. It is distinct from raw hand score and raw contract value. | Score is available to [[jud]] bidding; score-conditioned play lost. No ablation attributes head_8's gain to score. | Same-hand score counterfactuals at `0-0`, `6-6`, `6-0`, and `0-6`, isolated separately for bidding and play. |
 
 ## Natural legibility is broader than intentional signaling
 
@@ -61,7 +61,7 @@ legibility.
 
 ## Current champion boundary
 
-The full-match [[champion]] converts available information into two things
+The full-match [[jud]] converts available information into two things
 that are already valuable:
 
 - `lens:ev` ranks moves across worlds consistent with public history;
@@ -120,6 +120,6 @@ unless they cross the final fixed-pair marks seam.
 
 ## Links
 
-[[partnership-wall-research]] [[partnership-research-gates]] [[champion]]
+[[partnership-wall-research]] [[partnership-research-gates]] [[jud]]
 [[expected-q-value]] [[gus]] [[w42]] [[w42-book-second-pass]]
 [[convention-aware-blueprint-search]]

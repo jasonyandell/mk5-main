@@ -235,6 +235,6 @@ Fable's.
 - [[w42-jud-v0]] — the value-native bidder v1 extends from bid-time to every decision
 - [[w42-plateau-probe]] — where the night's best player (`margin:wp`(head_8)) was measured
 - [[rank-vs-price]] — play consumes rankings, bids consume prices; v1 confirms both halves
-- [[champion]] — the player; [[champion-ladder]] — the rung record (this is rung #33); the current best player is stated at [[jud]]
+- [[champion-ladder]] — the rung record (this is rung #33); the current best player is stated at [[jud]]
 - [[expected-q-value]] — E[Q] n=10, the oracle play v1's search could not out-rank; [[pimc]]
 - [[arena]] — the harness; [[forge]] — the solve/oracle a v2 leaf would distill from

@@ -39,7 +39,7 @@ The archaeology's most common distortion is ideas promoted to goals. The standin
 
 - **The goal**: reason with E[Q], do better, with a plan that succeeds. Nothing else.
 - **Instruments**: narration/interpretability (a *verification surface* — get a talker, catch it saying actually-correct things, bootstrap on those; the hope that later turned out to be named STaR. "A player that sounds right is just a means to an end" — Jason, 2026-07-06); belief modeling (the posterior engine feeding decisions, per [[gus]] and champion rung #24); the book ([[w42]], a graded source of candidate plans); self-play (an idea probed by [[zeb]] — "can learning on its own break the wall?" — answered no at that mechanism).
-- **Side benefits**: a player that is fun to sit across from; a player that can teach. Welcome, never load-bearing.
+- **Side benefits**: a player that is fun to sit across from; a player that can teach. Welcome, never load-bearing. The teaching half has a program shape (below) but stays in this tier.
 
 Sessions that lack this page invent their own goals (documented instances: the 2026-06-14 belief-legibility session; era-5's "better narrator" reframe). The corrective: state each experiment's question in question form, subjunctive preserved, and grade it against the goal above.
 
@@ -50,6 +50,21 @@ From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Biddi
 [[jud-target-granularity]] (2026-07-13) sharpened the coordinates: a dense per-move E[Q] auxiliary at fixed capacity triples the leaf's in-distribution ranking and moves marks **nothing** — and argmaxing that ranking directly plays worse than the calibrated value head. The wall is not "the leaf lacks per-move labels"; it is that ranking-label agreement does not order play strength ([[lamir1-ceiling]]'s mechanism, re-measured on a per-move-supervised head). The unbuilt residuals: per-move continuation values on child states, corpus volume, capacity×target interaction, opponents-in-rollout.
 
 The full ruled-in/ruled-out record across all mechanisms: [[consumption-ledger]]. The untried inventory: [[ideated-not-built]] and [[the-wall-biography]] §4.
+
+## The teaching half (side benefit, not the goal)
+
+A maximally strong player is mute; the [[w42]] campaign built the concept
+vocabulary that makes it legible. Run [[jud]] through the detector battery:
+where the book is right, where it is wrong, and what to do instead — with
+receipts. [[burl]] narrates in the Roberson idiom ([[at-risk-points]],
+[[post-commit-q-and-a]]). The distillation chain **oracle → jud → gus → burl →
+lem** is also the pedagogy chain: each level explains the one above to the one
+below. Target artifact: a data-validated strategy guide — *Winning 42, second
+edition*. First receipts landed at rung #28: the player agrees with the book on
+3 of 6 checkable tactical claims, and the two "contradicted" rows are negative
+controls confirming it learned Roberson's prohibitions
+([[w42-champion-teaching-battery]]). Per the hierarchy above, none of this is
+load-bearing for the goal.
 
 ## Registered directions
 

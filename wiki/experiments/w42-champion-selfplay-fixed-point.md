@@ -126,7 +126,7 @@ never shipped or lives somewhere the audit didn't check.
 
 ## Links
 
-- [[champion]] — the player; [[champion-ladder]] — the rung record (rung #26; step 6 of the design build order)
+- [[jud]] — the player; [[champion-ladder]] — the rung record (rung #26; step 6 of the design build order)
 - [[champion-design-review]] — Fable's design + the two load-bearing caveats (info-blind arena;
   score-conditioning belongs at the auction)
 - [[w42-champion-auction-belief]] — rung #24, the belief this loop iterates

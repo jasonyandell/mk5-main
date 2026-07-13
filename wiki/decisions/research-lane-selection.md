@@ -100,4 +100,4 @@ explanations for exactly that purpose.
 [[partnership-wall-research]] [[partnership-research-gates]] [[the-wall]]
 [[auction-decoder]] [[search-literature-transfer]] [[jud]]
 [[belief-weighted-jud-mcts]] [[convention-aware-blueprint-search]]
-[[world-sampler-mrv-audit]] [[champion]]
+[[world-sampler-mrv-audit]]

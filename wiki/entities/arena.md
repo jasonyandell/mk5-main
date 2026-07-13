@@ -115,7 +115,7 @@ batch width, not device, is the throughput lever.
 
 ## Links
 
-- [[champion-ladder]] — the rung record this harness measured; [[champion]] —
+- [[champion-ladder]] — the rung record this harness measured; [[jud]] —
   the player it measures for
 - [[stage-0-closure]] — the reproduced measurement baseline on the repaired
   sampler; [[world-sampler-mrv-audit]] — the audit that forced the repair

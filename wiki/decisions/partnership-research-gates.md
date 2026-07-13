@@ -118,5 +118,5 @@ break the wall, but it is not [[partnership-value]].
 
 ## Links
 
-[[partnership-wall-research]] [[partnership-value]] [[the-wall]] [[champion]]
+[[partnership-wall-research]] [[partnership-value]] [[the-wall]] [[jud]]
 [[w42-jud-v1]] [[champion-design-review]] [[w42-book-second-pass]]

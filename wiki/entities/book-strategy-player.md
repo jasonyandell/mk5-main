@@ -17,7 +17,7 @@ auction by Fable's 2026-06-09 design review (see [[champion-design-review]]);
 this Phase 1 design was never implemented — bead `t42-zrf9` froze
 `in_progress` on 2026-05-04 and no `w42/book_strategy*` directory ever
 appeared on disk. The project's best-player energy moved instead to the
-auction-first [[champion]]/[[jud]] value-net line, an unrelated mechanism.
+auction-first [[jud]] value-net line, an unrelated mechanism.
 BSP may still run someday as a cheap epilogue measurement, not a live plan —
 the algebra below is preserved as a design record, not a build in progress.
 
@@ -453,7 +453,7 @@ plan-compatibility negotiation between simultaneously active plans.
 - **Built:** never — bead `t42-zrf9` froze `in_progress` at 2026-05-04 and was
   never revisited; beads were retired project-wide 2026-06 without it closing.
 - **Strategies encoded:** none.
-- **Superseded:** 2026-06-09, by the auction-first [[champion]]/[[jud]] line
+- **Superseded:** 2026-06-09, by the auction-first [[jud]] line
   (see [[champion-design-review]]). May still run someday as a cheap epilogue
   measurement, not a live plan.
 
@@ -471,5 +471,5 @@ plan-compatibility negotiation between simultaneously active plans.
   overclaiming against.
 - [[champion-design-review]] - Fable's 2026-06-09 review that redirected the
   chassis from play to the auction.
-- [[champion]] · [[jud]] - the mechanism the project's best-player energy
+- [[jud]] - the mechanism the project's best-player energy
   moved to instead.

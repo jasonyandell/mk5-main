@@ -17,7 +17,7 @@ Bridge-AI BMCS, and PRR-TM teammate modeling. (commit messages @ 42a7535, 31e10e
 
 The line ran April 2026 and is **concluded**: the player was built and measured to its
 ceiling, the look-ahead question was closed by exhaustion, and the belief head moved
-forward as the posterior engine of the [[champion]]/[[jud]] frontier. The full
+forward as the posterior engine of the [[jud]] frontier. The full
 walkthrough — every experiment, in order, with findings — is [[gus-line]].
 
 ## Architecture
@@ -42,7 +42,7 @@ seeds 0–99 train, 900000–900099 eval (the LEM/Burl convention); corpora are
 - **Best fast player**: `v3_consistency_10000g` — 0.551 Q-pt regret, 76.07% bot-match
   on 560 held-out decisions; first sub-1.0 regret; the [[consistency-regularizer]]
   scales better than plain distillation ([[gus-v3-consistency-full-run]],
-  [[gus-scaling-ladder]]). Still the best-known single adapter, cited in [[champion]]'s
+  [[gus-scaling-ladder]]). Still the best-known single adapter, cited in [[jud]]'s
   asset map.
 - **Data dominates capacity**; explicit void features are marginal — the transformer
   infers voids attentionally ([[gus-v2-voids-1000g]], [[dense-q-supervision]]).
@@ -65,7 +65,7 @@ seeds 0–99 train, 900000–900099 eval (the LEM/Burl convention); corpora are
 
 ## Where the value went
 
-**[[champion]]** (2026-06): the champion direction makes Gus's belief head the posterior
+**[[jud]]** (2026-06): the jud direction makes Gus's belief head the posterior
 engine of the unified player — conditioned on auction + play history (belief v2, rung
 #24 measured win: +2.59pp, [[w42-champion-auction-belief]]) and wired into oracle world
 sampling. Belief-weighted *play* sampling measured dead (rung #25); belief's value routes

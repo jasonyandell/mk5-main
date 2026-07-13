@@ -181,5 +181,5 @@ unrelated side project — redirected into a likelihood-ratio opponent model ins
 ## Links
 
 [[suit-algebra]] · [[the-oracle]] · [[strategy-fusion]] · [[the-analysis-epic]] ·
-[[forge]] · [[forge-analysis]] · [[pimc]] · [[rank-vs-price]] · [[champion]] · [[gus]] ·
+[[forge]] · [[forge-analysis]] · [[pimc]] · [[rank-vs-price]] · [[jud]] · [[gus]] ·
 [[era2-breakthrough-oracle|conversation digest]]

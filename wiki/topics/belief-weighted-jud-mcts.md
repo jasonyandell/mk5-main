@@ -249,5 +249,5 @@ utility in [[partnership-wall-research]].
 [[jud]] [[w42-jud-v1]] [[convention-aware-blueprint-search]]
 [[partnership-wall-research]] [[partnership-research-gates]]
 [[world-sampler-mrv-audit]] [[gus-qmean-router]] [[lamir1-ceiling]]
-[[alphazero-under-imperfect-information]] [[strategy-fusion]] [[champion]]
+[[alphazero-under-imperfect-information]] [[strategy-fusion]]
 [[search-literature-transfer]] [[auction-decoder]] [[research-lane-selection]]

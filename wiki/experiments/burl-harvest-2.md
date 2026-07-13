@@ -93,7 +93,7 @@ The plateau strongly motivates **changing the loss target**, not just iterating 
 None of these four ran before the family went dormant on 2026-05-07. The plateau this
 page documents was the last word on filter-only STaR for Burl; the project pivoted to
 a perf-sprint, then [[burl-chat]]/[[burl-lab]]/[[burl-microscope]], then
-[[champion]]/[[jud]] rather than changing the loss target as recommended here.
+[[jud]] rather than changing the loss target as recommended here.
 
 ## Caveat
 

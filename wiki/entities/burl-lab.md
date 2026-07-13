@@ -186,7 +186,7 @@ The package was first called `burl/harness/` before the team noticed the collisi
 ## Status
 
 Last commit `465d1af` (2026-05-07); no further `burl/` commits since. The frontier
-moved on 2026-06-09 to [[champion]] / [[w42-jud-v1|jud]] — pure-NN bid/play nets, an
+moved on 2026-06-09 to [[jud]] ([[w42-jud-v1]]) — pure-NN bid/play nets, an
 unrelated architecture. burl-lab never reached the parity milestone that would have
 retired [[burl-chat]].
 

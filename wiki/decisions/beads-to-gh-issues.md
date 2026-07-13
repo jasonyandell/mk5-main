@@ -25,4 +25,4 @@ AGENTS.md, and README.md wiki-first, formalizing "beads → GitHub issues."
 
 ## Links
 
-[[champion]] · [[the-wall]]
+[[champion-ladder]] · [[the-wall]]

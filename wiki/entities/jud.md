@@ -1,5 +1,5 @@
 ---
-title: Jud — the unified belief-conditioned core
+title: Jud — the unified belief-state player
 kind: entity
 first_seen: 2026-06-14
 last_updated: 2026-07-13
@@ -9,14 +9,36 @@ phase: 2026-07-13 — v0 and v1 built and graded; the v0 value-native bidder ove
 
 ## What it is
 
-Jud is the name for the unified belief-conditioned core the [[champion]] work
-points at: one organ that bids and plays as the *same act*, by conditioning
-search on a learned belief and training that belief by self-play over whole
-games. It began as a direction and a vocabulary (2026-06-14); its first two
-slices are now built and graded — the value-native bidder ([[w42-jud-v0]]) and
-the one-organ bid+play net ([[w42-jud-v1]]). The [[champion-ladder]] built the
-pieces as separable artifacts; jud is the conception in which they become one
-thing, and a commitment to precise words so they stop being conflated.
+Jud is the project's player: one organ that bids and plays as the *same act*,
+by conditioning search on a learned belief and training that belief by
+self-play over whole games. It is the unification of pieces that existed as
+separate artifacts — the [[forge]] oracle, [[gus]], the bidding evaluators, the
+mark-utility machinery, and the [[w42]] concept vocabulary — and the same
+object, read from the other side, is the teacher (the teaching half is a
+declared side benefit; [[the-wall]] carries it). It began as a direction and a
+vocabulary (2026-06-14); its first two slices are now built and graded — the
+value-native bidder ([[w42-jud-v0]]) and the one-organ bid+play net
+([[w42-jud-v1]]). The [[champion-ladder]] built the pieces as separable
+artifacts; jud is the conception in which they become one thing, and a
+commitment to precise words so they stop being conflated.
+
+Naming (names doctrine): this push was first named **[[champion]]**,
+aspirationally, before the artifact existed. The wiki page for the player is this one; the old
+name persists on two BUILT artifacts — the GitHub milestone **Champion** (the
+action ladder) and the repo directory `champion/` (utility, margin/jud nets,
+decoders).
+
+At every decision, bid or play: (1) maintain a posterior over the 21 hidden
+tiles conditioned on all evidence — auction, plays, failures to follow suit;
+(2) sample worlds from that posterior, not uniformly over consistent worlds;
+(3) evaluate each world with the solve/oracle ([[expected-q-value]]) or its
+student ([[gus]]) and marginalize; (4) choose under marks-to-7 win probability
+conditioned on the score. This is the belief-conditioned-search architecture
+behind the strongest bridge, Skat, and poker programs; Texas 42 is small for
+the class (7 tricks, ~4×10⁸ worlds at deal collapsing rapidly with voids), so
+near-equilibrium play is a realistic target. The residual [[pimc]] flaw
+([[strategy-fusion]], information value) is mitigated by self-play consistency
+and — optionally, the summit — depth-limited subgame re-solving on late tricks.
 
 ## Vocabulary (use these words precisely)
 
@@ -64,8 +86,9 @@ bid; the same decision deeper is a play; the same on the other side is defense.
 Belief carries information when the opponents *inside a rollout* also update belief
 from actions — the only place signaling can exist. And the belief that conditions
 the search is trained on the whole games the search produces, so it learns toward a
-self-consistent fixed point ([[champion]] self-consistency;
-[[champion-design-review]] forward design; [[belief-conditioned-self-play]]).
+self-consistent fixed point — bidding conventions emerge as equilibrium
+artifacts rather than authored rules ([[champion-design-review]] forward
+design; [[belief-conditioned-self-play]]).
 
 A session sketch (`scratch/jud_demo/`, uncommitted, 2026-06-14) rendered one
 mid-game position's eq blob melted (128 worlds, uniform) and belief-weighted: even
@@ -90,6 +113,37 @@ design; a Fable 5 session (2026-07-05) endorsed it for the pricing path, with
 [[rank-vs-price]] as the mechanism — play consumes rankings (PIMC optimism cancels
 in argmax), bids consume prices (it lands whole). Provenance details:
 [[belief-conditioned-self-play]], [[champion-design-review]].
+
+## Asset map
+
+| Organ | Status | Where |
+|---|---|---|
+| Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |
+| Fast student | **done** | [[gus]] v3-10k, 0.551 regret; 0.49 with routing ([[blunder-detector]]) |
+| One-step utility ceiling | **done** — EV wins | Lens(ev); [[w42-lens-v1-utility-head-to-head]] |
+| Belief posterior | **accuracy won, play-weighting dead** | +2.59pp auction conditioning ([[w42-champion-auction-belief]], #24); belief-weighted *play* sampling a decisive null (#25, [[champion-ladder]]); [[belief-bayes-ceiling]] |
+| Mark utility | **v2**; play-risk measured negative (#27) | `champion/utility.py` (`race_wp`, `MarksToSeven`); rung receipts on [[champion-ladder]] |
+| Bid pricing | **value-native** | `net:wp` distillation (#22) → `V_realized`/`margin:wp` ([[w42-jud-v0]]) |
+| Auction policy | **ladder of four** | `heuristic` → `GusBidder` (#21) → `net:wp` (#22) → `ValueBidder` (v0); receipts on [[champion-ladder]] |
+| Full-game arena | **done** | [[arena]]; decision provenance via [[partnership-decision-record-v1]] |
+| Self-play loop | **converges; value-native form wins** | #26 fixed point ([[w42-champion-selfplay-fixed-point]]) → v0 loop ([[w42-jud-v0]]) |
+| Unified bid+play organ | **built; play mechanism-limited** | [[w42-jud-v1]]; per-move targets null at v1 capacity ([[jud-target-granularity]]) |
+
+## Why the auction dominates
+
+Once card play is near-double-dummy, remaining edge in trick-taking games
+concentrates in auction accuracy and belief quality (the bridge lesson). The
+stack's card play is already near-oracle (0.49–0.55 regret). Marginal-value
+ranking: **auction ≫ belief-weighted worlds > score-conditioned utility ≫
+card-play polish.** Empirically the ranking holds **for the auction**, not for
+play: every CI-excludes-zero arena win is an auction lever (#21, #22, v0's
+#32), and every play-side lever measured dead — score-conditioned play risk
+(#27), belief-weighted play sampling (#25), greedy value play and per-move
+targets at v1 capacity (#33, [[jud-target-granularity]]). So belief and utility
+earn their rank **as bidding and defense inputs**, realized through self-play;
+applied to card play they collapse into the card-play-polish floor.
+[[rank-vs-price]] carries the mechanism; [[champion-ladder]] carries the
+receipts.
 
 ## Current best player
 
@@ -170,8 +224,10 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
 
 ## Links
 
-- [[champion]] — the player-and-teacher this is the core for;
-  [[champion-ladder]] — the rung record that built the pieces
+- [[champion-ladder]] — the rung record (#20–#33) that built the pieces; the
+  era's milestone name, Champion, persists on GitHub
+- [[the-wall]] — the goal this player is graded against; also home of the
+  teaching half (declared side benefit)
 - [[w42-jud-v0]] · [[w42-plateau-probe]] · [[w42-jud-v1]] ·
   [[jud-target-granularity]] — the graded slices
 - [[partnership-wall-research]] · [[partnership-research-gates]] — the

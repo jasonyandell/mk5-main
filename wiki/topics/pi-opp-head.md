@@ -39,11 +39,11 @@ quality (b42669a).
 ## Retired
 
 The head is a real trained artifact (68.57% oracle top-1) but belongs to the abandoned
-[[lamir1]] rollout track. [[jud]]/[[champion]] do not use it — the project's decision-time
+[[lamir1]] rollout track. [[jud]] does not use it — the project's decision-time
 look-ahead question was closed by taking pivot option 4 (self-play, no CFR+), not by
 fixing the rollout this head was built to serve. See [[lamir1-ceiling]] for the full
 pivot record.
 
 ## Links
 
-[[lamir1]] [[lamir1-ceiling]] [[gus-pi-opp-training]] [[gus-lamir1-piopp]] [[student-distillation]] [[gus]] [[champion]]
+[[lamir1]] [[lamir1-ceiling]] [[gus-pi-opp-training]] [[gus-lamir1-piopp]] [[student-distillation]] [[gus]] [[jud]]

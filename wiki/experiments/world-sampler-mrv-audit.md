@@ -87,7 +87,7 @@ valid. The third fixture is the symmetry null.
 - Historical corpus and arena conclusions are not automatically void. Their
   exposure depends on state-specific dead-end probability, valid-world bias,
   Q gap, and consumer.
-- New corpus generation and a fresh [[champion]] reproduction are blocked on a
+- New corpus generation and a fresh [[jud]] reproduction are blocked on a
   sampler that is both valid and uniform, checked against exact enumeration.
 
 This is measurement cleanup, not evidence for CFR, a larger net, an LLM, a
@@ -177,4 +177,4 @@ pytest -q w42/world_sampler_audit/test_audit.py
 ## Links
 
 [[partnership-wall-research]] [[consumption-ledger]] [[expected-q-value]]
-[[burl]] [[forge]] [[champion]] [[the-wall]]
+[[burl]] [[forge]] [[jud]] [[the-wall]]

@@ -163,7 +163,7 @@ Layer 1 (b8116b5) added a full rules primer (1,549 words, 2.7K tokens) and 42-aw
 ## Frontier status
 
 Iter-1 through iter-5 answered some of the above on other pages ([[rules-as-tools]]);
-the project abandoned the tool-orchestration bet entirely for [[champion]] / [[jud]]
+the project abandoned the tool-orchestration bet entirely for [[jud]]
 around 2026-06-09 without formally closing the loop on the rest. The foundational bet
 itself was never resolved as a program-level question — it was superseded by a
 different architecture (pure NN bid/play nets) before the remaining ablations

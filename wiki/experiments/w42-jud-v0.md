@@ -260,7 +260,7 @@ denial-bidding equilibrium reasoning are the value-bidder subagent's.
 
 - [[jud]] — the unified belief-conditioned core this is the first buildable slice of
 - [[rank-vs-price]] — the mechanism: play consumes rankings, bids consume prices; validated at parity here
-- [[champion]] — the player; [[champion-ladder]] — the rung record (this is rung #32)
+- [[champion-ladder]] — the rung record (this is rung #32)
 - [[w42-champion-selfplay-fixed-point]] — #26, the over-bidder v0 dissolves; the loop machinery reused
 - [[champion-design-review]] — Fable's forward design + the two load-bearing caveats
 - [[pimc]] — strategy fusion, the residual the parity plateau may reflect

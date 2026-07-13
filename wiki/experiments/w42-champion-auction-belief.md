@@ -18,7 +18,7 @@ the unlock the rung-#25 belief-weighting null pointed at?
 **Answer: yes, robustly. +2.59pp held-out belief accuracy** (auction student vs an otherwise
 identical voids-only control), consistent across three independent corpora and shown to be
 auction *information*, not added parameters. The improvement does **not** move arena marks
-under oracle play (a clean null), exactly as [[champion]]'s thesis predicts for the
+under oracle play (a clean null), exactly as [[jud]]'s thesis predicts for the
 belief→play link when card play is already near-double-dummy.
 
 This is the first *measured win* in the champion's heavy-training frontier (#24/#26).
@@ -107,7 +107,7 @@ oracle-play arena. The negative arena result is not a shortfall; it is the same 
 
 ## Links
 
-- [[champion]] — the player; [[champion-ladder]] — rungs #24 (belief v2) and #26 (self-play bridge)
+- [[jud]] — the player; [[champion-ladder]] — rungs #24 (belief v2) and #26 (self-play bridge)
 - [[belief-bayes-ceiling]] — the ~39% play-evidence ceiling the auction beats
 - [[arena]] — the marks A/B (null, #25-consistent)
 - [[gus]] — the belief head this conditions

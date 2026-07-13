@@ -12,8 +12,8 @@ The ladder was set by a 2026-06-09 design session and ran rungs #20–#33
 (2026-06-12 → 2026-07-06), followed by the measurement program that closed its
 baseline (2026-07-11 → 2026-07-13). This trail walks it
 rung by rung: what each rung asked, what it measured, the verdict, and the page
-holding the receipt. The player it built is summarized at [[champion]]; the
-current-best-player fact lives at [[jud]].
+holding the receipt. The player it built is summarized at [[jud]], where the
+current-best-player fact lives.
 
 ## Before the ladder — the bidding inventory (pre-wiki, promoted 2026-06-09)
 

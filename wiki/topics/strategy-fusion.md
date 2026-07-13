@@ -152,7 +152,7 @@ so clean.
 
 ## Links
 
-[[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[champion]] [[jud]]
+[[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[jud]]
 [[expected-q-value]] [[argmax-q-ceiling]] [[grok-not-converge]] [[zeb]] [[eq-genesis]]
 [[era2-breakthrough-oracle|conversation digest]]
 [[era3-eq-era|conversation digest]]

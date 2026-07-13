@@ -13,7 +13,7 @@ closure (all 64 rows have evidence and/or bounded blockers). The canonical
 synthesis of everything downstream is
 [[w42-book-claim-synthesis-and-ai-directions]]. Which clock is this: `phase 2`
 here is the 2026-05-02→03 claim-ledger sweep, not the bookval-v1 waves or the
-2026-06+ [[champion]]/[[jud]] rungs.
+2026-06+ [[champion-ladder]] rungs.
 
 ## Question
 

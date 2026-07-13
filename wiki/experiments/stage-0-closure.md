@@ -142,5 +142,5 @@ unblocked.
 ## Links
 
 [[partnership-wall-research]] [[world-sampler-mrv-audit]]
-[[partnership-decision-record-v1]] [[research-lane-selection]] [[champion]]
+[[partnership-decision-record-v1]] [[research-lane-selection]] [[jud]]
 [[w42-jud-v1]] [[partnership-research-gates]]

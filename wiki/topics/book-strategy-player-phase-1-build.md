@@ -7,7 +7,7 @@ status: superseded
 ---
 
 Stub — absorbed into [[book-strategy-player]], a design superseded before
-build by the auction-first [[champion]]/[[jud]] redirection
+build by the auction-first [[jud]] redirection
 ([[champion-design-review]], 2026-06-09); no `w42/book_strategy*` code exists.
 Gist: build order carriers → L1-L10 property tests (T1-T17) → `Lens("ev")`
 fallback → recording → one real strategy → head-to-head vs `Lens("ev")`.

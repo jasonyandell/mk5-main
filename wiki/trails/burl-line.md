@@ -193,7 +193,7 @@ Every historical Burl eval number predates the repair.
 ## 12. Dormancy — why it paused, where the value went
 
 Zero commits have touched `burl/` since 2026-05-07 (`465d1af`). The frontier moved
-on 2026-06-09 to [[champion]] / [[jud]] — pure-NN bid/play nets — rather than
+on 2026-06-09 to [[jud]] — pure-NN bid/play nets — rather than
 answering the line's open questions:
 
 - Does tool-mediated reasoning transfer to tool-less reasoning (ablation)?
@@ -207,7 +207,7 @@ answering the line's open questions:
 Where the value went: the Zeb-negative was independently reconfirmed by
 [[w42-jud-v1|jud v1]] (E[Q] n=10 "champion against every learned challenger since
 Zeb"); the [[candlewax]] consumption question — sharpened by this line's verifier
-wall — became the framing for [[jud]] and [[champion]]; the [[preserve-thoughts]]
+wall — became the framing for [[jud]]; the [[preserve-thoughts]]
 and recipe lessons joined the [[star]] canon; the harvests, adapters, and
 instruments remain on disk under `scratch/` and `burl/`.
 

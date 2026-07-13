@@ -190,7 +190,7 @@ audit.
   advice diverges, and attribution is asymmetric. The two agree: **setter
   defense is the differentiator.**
 - **Tournament facts** (pp. 164–166): first tiebreaker is **total marks**
-  (supports the margin-based [[champion]] objective); the laydown rule is
+  (supports the margin-based [[jud]] objective); the laydown rule is
   adversarially provable ("any possible way the bidder can be set ⇒ forfeit")
   — a certified-win oracle analogue; 25-min qualifiers make tempo a bounded
   resource.
@@ -240,6 +240,6 @@ prior and oracle frequency is itself a finding *and* a teaching correction.
 ## Links
 
 [[w42-book-validation-campaign]] · [[w42-book-claim-synthesis-and-ai-directions]] ·
-[[winning42-strategy-measurement]] · [[jud]] · [[champion]] · [[gus]] ·
+[[winning42-strategy-measurement]] · [[jud]] · [[gus]] ·
 [[belief-trajectory]] · [[pimc]] · [[w42-lens-v1-utility-head-to-head]] ·
 [[w42-bookval-v1-wave2-pounce-high-bid]]

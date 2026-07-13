@@ -54,7 +54,7 @@ Four directions identified at the ceiling (MORNING4_STATUS @ b42669a):
 ## Option 4 taken
 
 This page is the pivot-decision record. The project took **option 4**: self-play/value-native,
-no CFR+, which became [[w42-jud-v1]] and [[champion]] — not a further LAMIR refinement, and not
+no CFR+, which became [[w42-jud-v1]] and [[jud]] — not a further LAMIR refinement, and not
 option 2's look-ahead-compatible V-head. Neither `jud` nor `champion` cite this page back; that
 missing forward link was the most consequential status mismark found in the era-6 gus-family
 audit (2026-07-06). This page is now superseded, not active frontier — the LAMIR-1 track is
@@ -63,4 +63,4 @@ look-ahead in favor of `jud`'s different mechanism.
 
 ## Links
 
-[[lamir1]] [[pi-opp-head]] [[student-distillation]] [[gus]] [[expected-q-value]] [[regret-eval]] [[w42-jud-v1]] [[champion]]
+[[lamir1]] [[pi-opp-head]] [[student-distillation]] [[gus]] [[expected-q-value]] [[regret-eval]] [[w42-jud-v1]] [[jud]]

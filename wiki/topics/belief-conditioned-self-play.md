@@ -150,8 +150,8 @@ action-selection improvements to downstream depth.
 
 ## Links
 
-- [[jud]] — the unified core this trains · [[champion]] — the player-and-teacher ·
-  [[champion-ladder]] — the rung record
+- [[jud]] — the unified core this trains · [[the-wall]] — the goal; carries the
+  teaching half · [[champion-ladder]] — the rung record
 - [[champion-design-review]] — Fable's verbatim forward design + the two caveats
 - [[w42-champion-selfplay-fixed-point]] — the #26 belief-only loop (the shallow fixed
   point) · [[arena]] — the measuring stick

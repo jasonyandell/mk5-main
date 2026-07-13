@@ -32,7 +32,7 @@ one surface where information has already produced marks.
 The evidence lines up unusually well ([[partnership-wall-research]] Stage 2):
 
 - realized-outcome bidding is the champion's only demonstrated learned marks
-  gain (+0.38/+0.42 marks/game, [[w42-plateau-probe]], [[champion]]);
+  gain (+0.38/+0.42 marks/game, [[w42-plateau-probe]], [[jud]]);
 - auction conditioning improved held-out belief accuracy +2.59pp
   ([[w42-champion-auction-belief]]);
 - [[w42-book-second-pass]] uncovered a large bid-to-hand, role/order, score,
@@ -135,6 +135,6 @@ upper lattice without being random:
 [[research-lane-selection]] [[search-literature-transfer]]
 [[partnership-wall-research]] [[partnership-research-gates]]
 [[w42-book-second-pass]] [[w42-champion-auction-belief]]
-[[w42-champion-selfplay-fixed-point]] [[champion]] [[jud]]
+[[w42-champion-selfplay-fixed-point]] [[jud]]
 [[belief-weighted-jud-mcts]] [[convention-aware-blueprint-search]]
 [[pi-opp-head]] [[candlewax]]

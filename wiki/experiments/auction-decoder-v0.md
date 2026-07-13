@@ -80,4 +80,4 @@ matched-auction counterfactual consumer.
 ## Links
 
 [[auction-decoder]] [[research-lane-selection]] [[search-literature-transfer]]
-[[partnership-research-gates]] [[w42-book-second-pass]] [[champion]]
+[[partnership-research-gates]] [[w42-book-second-pass]] [[jud]]

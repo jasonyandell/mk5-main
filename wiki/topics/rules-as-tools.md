@@ -46,7 +46,7 @@ The [[primer-tradeoff]] tradeoff resolves at this frontier: "rules-as-tools + no
 ## Status (dormant since 2026-05)
 
 This 90% win is real and stands as measured, but the whole [[burl]] line has had zero
-commits since 2026-05-07 and was superseded by [[champion]] / [[jud]] (pure NN bid/play
+commits since 2026-05-07 and was superseded by [[jud]] (pure NN bid/play
 nets) around 2026-06-09. "Current Pareto frontier for Burl" no longer describes an
 active program — there is no active Burl frontier to be current for. Separately,
 [[gemma-tool-response-shape]] found that every rollout through iter-3-rules

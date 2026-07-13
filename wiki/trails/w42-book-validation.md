@@ -70,7 +70,7 @@ The sixteen chapter digests (now under `sources/`):
 Which clock is this: three unrelated numbering families cross this ladder.
 `phase 2/3/4` is the 2026-05-02→03 claim-ledger sweep; bookval-v1
 `wave 1/2` plus `v2`/`v3` are the 2026-05-03 campaign (v2/v3 are utility-lens
-passes, not versions of the v1 corpus); the 2026-06+ [[champion]]/[[jud]]
+passes, not versions of the v1 corpus); the 2026-06+ [[champion-ladder]]
 rungs are a third clock this trail hands off to.
 
 The W42 validation ladder is best read as phases:
@@ -146,7 +146,7 @@ loaded first: [[w42-bidder-sequencing-claim-validation]],
 
 The campaign is dormant: [[w42-book-validation-campaign]] has run nothing
 since Wave 5 (2026-06-13), and research attention moved to the
-[[champion]]/[[jud]] line. The canonical synthesis — the page to send a cold
+[[jud]] line. The canonical synthesis — the page to send a cold
 reader to — is [[w42-book-claim-synthesis-and-ai-directions]]; the closure
 baseline is [[w42-phase4-final-claim-audit]]: every one of the 64 book claims
 has evidence and/or explicit bounded blockers; no row is ownerless.
@@ -175,12 +175,12 @@ went.
 
 As of 2026-07-06 the actual frontier is [[jud]] v1 ([[w42-jud-v1]], graded,
 registered-prediction methodology), reached via an intervening Champion
-generation ([[champion]] rungs #20-#28, 2026-06-09 → 06-14) that this trail
+generation ([[champion-ladder]] rungs #20-#28, 2026-06-09 → 06-14) that this trail
 predates and never documented. The auction-first value-net line (champion →
 jud) is unrelated to BSP's symbolic strategy-library thesis; per
 [[champion-design-review]] (Fable, 2026-06-09), "the chassis was later
 repointed from play to the auction." Route readers who want the current
-best-player state to [[jud]] and [[champion]], not to book-strategy-player.
+best-player state to [[jud]], not to book-strategy-player.
 The book-validation evidence pile above (Waves 1-4, Phase 4 closure) remains
 accurate and is the record of a completed research generation; it is not the
 live edge.
@@ -200,6 +200,6 @@ imperfect-information hedge tested against a perfect-information oracle).
 
 [[w42]] · [[winning42-strategy-measurement]] · [[w42-book-validation-campaign]] ·
 [[w42-book-claim-synthesis-and-ai-directions]] · [[w42-lens-v1-utility-head-to-head]]
-· [[book-strategy-player]] · [[champion]] · [[jud]] · [[w42-jud-v1]] ·
+· [[book-strategy-player]] · [[jud]] · [[w42-jud-v1]] ·
 [[w42-promote-or-retire]] · [[gus]] · [[burl]] ·
 [[forge]]

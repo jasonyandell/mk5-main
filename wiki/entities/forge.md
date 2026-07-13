@@ -10,7 +10,7 @@ status: active
 
 Forge is the project's central shared ML infrastructure — the oracle, the E[Q] framework,
 and the training/analysis substrate no single project owns. It was originally built for
-[[lem]] and [[burl]]; its current consumers are [[gus]], [[w42]], [[jud]], and [[champion]]
+[[lem]] and [[burl]]; its current consumers are [[gus]], [[w42]], and [[jud]]
 (`forge/oracle/`, `forge/eq/` — see `wiki/entities/jud.md` lines 19, 31, 321), with LEM and
 Burl now dormant. (lem/narrate/OVERVIEW.md @ a8bccfa; burl/OVERVIEW.md @ 8d26e0d)
 

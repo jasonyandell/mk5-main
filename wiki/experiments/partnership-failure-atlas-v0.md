@@ -20,7 +20,7 @@ equality can be proven. It joins the retained action tables from
 [[w42-phase2-seat-position-strategy-map]], plus
 [[w42-phase4-sequence-handshape-tests]] and the explicitly confounded prior
 attempt at [[w42-bookval-v1-wave1-cross-ai-agreement]]. Relevant [[gus-drama-atlas]],
-[[arena]], and [[champion]] artifacts remain in a checksum inventory when their
+[[arena]], and [[jud]] artifacts remain in a checksum inventory when their
 state namespace or granularity does not support that join.
 
 Every unavailable construct has a blank value and an explicit status. Oracle
@@ -114,4 +114,4 @@ python -m unittest w42.partnership_failure_atlas.test_failure_atlas -v
 ## Links
 
 [[partnership-wall-research]] [[partnership-value]]
-[[partnership-research-gates]] [[w42]] [[champion]] [[gus]] [[arena]]
+[[partnership-research-gates]] [[w42]] [[jud]] [[gus]] [[arena]]

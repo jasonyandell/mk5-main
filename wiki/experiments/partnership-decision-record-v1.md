@@ -120,4 +120,4 @@ python -m arena.cli \
 
 [[partnership-wall-research]] [[partnership-value]]
 [[partnership-research-gates]] [[partnership-failure-atlas-v0]] [[arena]]
-[[champion]] [[world-sampler-mrv-audit]]
+[[jud]] [[world-sampler-mrv-audit]]

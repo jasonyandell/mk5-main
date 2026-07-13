@@ -154,17 +154,17 @@ Format:
 - **Q:** Does the model use conditional_outcome when tool responses are actually visible (post chat-template fix)?
   - Raised: `54f7776` ([[54f7776]])
   - Context: The original 0/145 calls finding was a chat-template confound — tool responses were silently dropped. Whether the model calls conditional_outcome in a correctly wired environment is now genuinely unknown.
-  - Resolved: 2026-07-13 — closed by pivot (never answered); Burl's tool-orchestration line was superseded by [[champion]] / [[jud]]'s pure-NN direction, so the corrected-harness re-test never ran (see [[conditional-outcome-structural-nonuse]]).
+  - Resolved: 2026-07-13 — closed by pivot (never answered); Burl's tool-orchestration line was superseded by [[jud]]'s pure-NN direction, so the corrected-harness re-test never ran (see [[conditional-outcome-structural-nonuse]]).
 
 - **Q:** Does v2's residual −2.4pp gap on `BURL_BREAKS_CONSENSUS` (vs sequential 560) reflect real batched-mode policy drift or sampling noise?
   - Raised: `063fcac` ([[063fcac]])
   - Context: v1's truncation bug inflated that bucket; v2 dropped from 17.3% → 14.9% in the right direction. The 560 decisions in the sequential pilot align with v2 by `(seed, declaration, narrator_seat, legal_plays)` tuples, admitting a paired McNemar test on bucket flips. Not yet run. If the test fails-to-reject, batched-mode parity is settled; if it rejects, there's a residual systematic shift to characterize before treating the v2 corpus as a drop-in replacement for sequential. See [[burl-2000-harvest]].
-  - Resolved: 2026-07-13 — closed by pivot (never answered); the paired McNemar test was never run; the Burl batched-harvest corpus was superseded by [[champion]] / [[jud]] before parity was settled.
+  - Resolved: 2026-07-13 — closed by pivot (never answered); the paired McNemar test was never run; the Burl batched-harvest corpus was superseded by [[jud]] before parity was settled.
 
 - **Q:** How does the [[batched-harvest-resilience]] wave-sentinel + quarantine layer migrate to a continuous-batching dispatcher?
   - Raised: `c002075` ([[burl-perf-phase2]])
   - Context: Phase 2 lever 2 confirmed continuous batching is a 1.8–2.1× wall win at the bench layer, but the production harvest's resilience plumbing assumes a wave abstraction. Forward path: define a "cohort" that fences a logical group of decisions into the dispatcher pool with a shared sentinel, so quarantine semantics ("this cohort failed") survive. Open: whether mlx-lm 0.31.2's broadcast-shapes bug fires differently under continuous mid-flight prefill vs synchronous wave prefill.
-  - Resolved: 2026-07-13 — closed by pivot (never answered); the continuous-batching dispatcher migration never happened; Burl harvest infrastructure was retired at the [[champion]] / [[jud]] pivot.
+  - Resolved: 2026-07-13 — closed by pivot (never answered); the continuous-batching dispatcher migration never happened; Burl harvest infrastructure was retired at the [[jud]] pivot.
 
 - **Q:** Will burl-lab's phase markers stay harness-private as a post-commit-Q&A adapter co-trains, or get tokenized?
   - Raised: 2026-05-02 (burl-lab platform spec)
@@ -179,4 +179,4 @@ Format:
 - **Q:** What additional prompt/tool-response framing lets Gemma choose `19` on Burl microscope case `global_idx=1` without oracle/original-play leakage or human steering?
   - Raised: `local-2026-05-07` ([[burl-microscope]])
   - Context: `board_snapshot()` is a strong first-read surface, but fair no-reference `snapshot-first` and `legal-brief` runs both committed `25` on the `BURL_BREAKS_CONSENSUS` case where oracle/pi/qmean prefer `19`.
-  - Resolved: 2026-07-13 — closed by pivot (never answered); the Burl microscope steering line ended at the [[champion]] / [[jud]] pivot; no further framing experiment ran.
+  - Resolved: 2026-07-13 — closed by pivot (never answered); the Burl microscope steering line ended at the [[jud]] pivot; no further framing experiment ran.

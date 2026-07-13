@@ -37,10 +37,10 @@ oracle features at inference, only oracle labels at training time.
 
 Never wired into champion, arena, or forge (`grep -rl blunder_detector` across the repo
 returns no hits outside `gus/eval/`). The [[detect-and-route]] architecture it was built
-to gate was itself abandoned when the project pivoted to [[jud]]/[[champion]] (self-play,
+to gate was itself abandoned when the project pivoted to [[jud]] (self-play,
 no CFR+) rather than a distilled-value look-ahead/fallback stack. Kept as a
 source-backed record of the blunder-rate analysis, not a live component.
 
 ## Links
 
-[[gus]] [[gus-line]] [[regret-eval]] [[detect-and-route]] [[v-pi-decoupling]] [[champion]]
+[[gus]] [[gus-line]] [[regret-eval]] [[detect-and-route]] [[v-pi-decoupling]] [[jud]]

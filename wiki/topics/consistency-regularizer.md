@@ -54,8 +54,8 @@ the baseline adapter for every LAMIR-1 rollout mode evaluated. LAMIR-1 itself wa
 measured as a dead end (every rollout mode lost to direct π_me; see [[lamir1-ceiling]]),
 so this decision correctly carried the best base model forward — it just carried it into
 a track that didn't pan out. The 0.551-regret / 76.07%-bot-match number remains the
-best-known single adapter, cited unchanged in [[champion]]'s asset map.
+best-known single adapter, cited unchanged in [[jud]]'s asset map.
 
 ## Links
 
-[[gus]] [[gus-line]] [[v-pi-decoupling]] [[dense-q-supervision]] [[regret-eval]] [[gus-v3-consistency-full-run]] [[lamir1-ceiling]] [[champion]]
+[[gus]] [[gus-line]] [[v-pi-decoupling]] [[dense-q-supervision]] [[regret-eval]] [[gus-v3-consistency-full-run]] [[lamir1-ceiling]] [[jud]]

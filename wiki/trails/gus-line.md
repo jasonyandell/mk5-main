@@ -15,7 +15,7 @@ roughly 2026-04-20 to 2026-04-30, produced the project's best single fast player
 (`v3_consistency_10000g`, 0.551 Q-pt regret), proved that belief accuracy is
 information-limited rather than architecture-limited, and closed the look-ahead
 question by measuring it to death. Its belief head is the posterior engine the
-[[champion]]/[[jud]] line now builds on. This trail walks the whole arc; each
+[[jud]] line now builds on. This trail walks the whole arc; each
 experiment below carries its finding on its own page.
 
 ## The arc
@@ -94,7 +94,7 @@ policy head it was meant to improve ([[lamir1]], [[lamir1-ceiling]]).
   the qMAE measurement artifact, not the argmax-flipping noise ([[q-head-augmentation]]).
 
 The project took pivot option 4 — self-play, no CFR+ — which became [[w42-jud-v1]] and
-the [[champion]]/[[jud]] line.
+the [[jud]] line.
 
 ### 8. Belief endgame: ceiling, co-train, and what lies past belief
 
@@ -128,7 +128,7 @@ the [[champion]]/[[jud]] line.
 
 ## Where the value went
 
-The line's assets moved to the [[champion]]/[[jud]] frontier rather than dying with it.
+The line's assets moved to the [[jud]] frontier rather than dying with it.
 The belief head became the champion's posterior engine — auction-conditioned belief
 (rung #24) measured +2.59pp accuracy ([[w42-champion-auction-belief]]); belief-weighted
 *play* sampling measured dead (rung #25), routing belief's value to bidding/defense via
@@ -142,4 +142,4 @@ found its answer in this line's architecture.
 
 ## Links
 
-[[gus]] · [[champion]] · [[jud]] · [[w42]] · [[forge]] · [[joint-world-tensor]] · [[student-distillation]]
+[[gus]] · [[jud]] · [[w42]] · [[forge]] · [[joint-world-tensor]] · [[student-distillation]]

@@ -14,7 +14,7 @@ to closure by [[w42-phase2-statistics-claims-ledger]] and audited by
 [[w42-book-claim-synthesis-and-ai-directions]]. The vocabulary below remains
 the correct reference for every 2026-05 w42 page that cites it. Which clock is
 this: `phase 1–4` here is the 2026-05-02→03 claim-ledger sweep, not the
-bookval-v1 waves or the [[champion]]/[[jud]] rungs.
+bookval-v1 waves or the [[champion-ladder]] rungs.
 
 ## Summary
 

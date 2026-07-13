@@ -30,7 +30,7 @@ adversarial buckets, regret metrics, belief-calibration tests, or training examp
   vs unconfirmed claims, distribution-aware E[Q] alternatives, AI/Burl/Gus directions.
 - [[w42-book-validation-campaign]] — the 2026-05 multi-wave campaign (epic `t42-4zi6`)
   that took ledger rows to paired counterfactuals; dormant since Wave 5, superseded in
-  research attention by [[champion]]/[[jud]].
+  research attention by [[jud]].
 
 ## Analysis Catalog Shape
 

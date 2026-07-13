@@ -47,5 +47,5 @@ OVERVIEW principle (added at [[3781dce]]): *"Go with the model's grain; catch it
 ## Status
 
 Dormant since move-4 (mid-April 2026), superseded along with the rest of [[burl]] by
-[[champion]] / [[jud]]'s pure-NN direction — no native tool-calling harness is used
+[[jud]]'s pure-NN direction — no native tool-calling harness is used
 there.

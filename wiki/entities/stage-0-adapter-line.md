@@ -63,7 +63,7 @@ bot-match ceiling untouched, and neither proposed next lever (14B capacity, STaR
 was ever run — [[lem]] went dormant at `be7efc4` (2026-04-17) and the project pivoted
 mechanisms to [[burl]] (see [[lem-to-burl-handoff]], and [[burl-adapter-line]] for that
 line's adapters). As of jud v1, the project's play mechanism consumes no LoRA adapter at
-all ([[champion]] runs "zero adapter"). The line ended because its consumer was
+all ([[jud]] runs "zero adapter"). The line ended because its consumer was
 abandoned, not because a v11 lost a bake-off.
 
 ## Receipts

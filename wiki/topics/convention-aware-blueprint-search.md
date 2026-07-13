@@ -146,7 +146,7 @@ headroom probe before a blueprint-search build.
 
 ### The target is information-set planning
 
-The [[champion]] does not lack planning in the general sense. [[forge|Forge]] Q
+[[jud]] does not lack planning in the general sense. [[forge|Forge]] Q
 solves through the end of a hand within each exact world. Singleton setup,
 trump pulling, re-entry, count cashing, and other ordinary within-world plans
 are already priced there.
@@ -386,7 +386,7 @@ concrete and testable. It has not displaced the other explanations in
 ## Links
 
 [[partnership-wall-research]] [[partnership-value]]
-[[partnership-research-gates]] [[champion]] [[expected-q-value]]
+[[partnership-research-gates]] [[jud]] [[expected-q-value]]
 [[strategy-fusion]] [[w42-book-second-pass]] [[w42-jud-v1]]
 [[world-sampler-mrv-audit]] [[partnership-decision-record-v1]]
 [[belief-weighted-jud-mcts]] [[search-literature-transfer]]

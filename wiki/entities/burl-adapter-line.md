@@ -47,7 +47,7 @@ confound — Gemma 4's chat template silently dropped `role="tool"` messages, so
 rollout that built and evaluated these adapters ran with tool outputs invisible to the
 model — and [[chat-template-fix-validation]]'s proposed re-test never ran (full caveat
 on [[iter3-rules-adapter]]). As of jud v1, the project's play mechanism consumes no LoRA
-adapter at all ([[champion]] runs "zero adapter"). Like the [[stage-0-adapter-line]],
+adapter at all ([[jud]] runs "zero adapter"). Like the [[stage-0-adapter-line]],
 this line ended because the mechanism it fed was abandoned, not because a successor beat
 it.
 

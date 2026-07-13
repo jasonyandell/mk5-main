@@ -11,10 +11,10 @@ status: superseded
 STaR carried forward from [[lem]] into [[burl]] (see "STaR on Burl's trajectories" below)
 and was the active training mechanism through the Burl replay's 2000-decision harvest and
 [[preserve-thoughts]] work. It is not, however, the path to the strongest player at this
-frontier: the [[champion]] / [[gus]] / jud pure-value-net line that superseded both LEM and
+frontier: the [[jud]] / [[gus]] pure-value-net line that superseded both LEM and
 Burl has no LLM-agent step at all — no model to STaR-train. STaR remains live tooling for
 the legibility/pedagogy track (narrating and explaining play), not for the strength track.
-See [[champion]] ("oracle → champion → gus → burl → lem" pedagogy chain) and
+See [[champion-design-review]] ("oracle → champion → gus → burl → lem" pedagogy chain) and
 [[lem-to-burl-handoff]].
 
 ## Overview

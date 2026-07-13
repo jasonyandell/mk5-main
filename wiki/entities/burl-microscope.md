@@ -103,5 +103,5 @@ journaling.
 
 Last commit in this window is `local-2026-05-07`; the whole [[burl]] line went dormant
 the same day and was never revisited. The instrument works and was never replaced;
-the frontier moved to the [[champion]] / [[w42-jud-v1|jud]] pure-NN direction. See
+the frontier moved to the [[jud]] pure-NN direction ([[w42-jud-v1]]). See
 [[burl-line]].

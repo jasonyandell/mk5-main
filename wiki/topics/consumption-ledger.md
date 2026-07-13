@@ -10,7 +10,7 @@ The record of every mechanism tried against [[the-wall]] — ruled in, ruled
 out, or partial, each verdict with its evidence — to be read before proposing
 anything new. The prior-sweep rule: grep this ledger by mechanism before
 registering any new lever — adjacency reading misses cross-family seams (the
-Kubíček & Lisý warning on the [[gus]]/[[champion]] seam pre-explained
+Kubíček & Lisý warning on the [[gus]]/[[jud]] seam pre-explained
 [[w42-jud-v1]]'s JS3 failure).
 
 Distilled from [[the-wall-biography]] §2; organized by mechanism, not
@@ -178,7 +178,7 @@ chronology.
 - **RULED IN: value-native reasoning at the auction.** `margin:wp`(head_8):
   +0.38 [+0.09,+0.67] and +0.42 [+0.12,+0.72] marks/game over the hand-tuned
   champion — the first learned component ever to beat it — saturating at
-  ≈+0.3–0.4. ([[w42-plateau-probe]], [[champion]].)
+  ≈+0.3–0.4. ([[w42-plateau-probe]], [[jud]].)
 - **RULED IN: the one-organ unification holds at the auction.** [[w42-jud-v1|jud
   v1]]'s info-state → 43-bin realized-points categorical prices contracts; the
   bidder survives the fold.
@@ -254,5 +254,5 @@ chronology.
 ## Links
 
 [[the-wall]] · [[the-wall-biography]] · [[candlewax]] · [[ideated-not-built]]
-· [[expected-q-value]] · [[jud]] · [[champion]] · [[gus]] · [[burl]] ·
+· [[expected-q-value]] · [[jud]] · [[gus]] · [[burl]] ·
 [[lem]] · [[zeb]] · [[w42]]

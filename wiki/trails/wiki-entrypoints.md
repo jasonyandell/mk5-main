@@ -24,12 +24,12 @@ Start with one of these when the user names a major workstream:
 | [[w42]] | Winning 42 book validation, strategy detectors, claim ledger, report-shaped research |
 | [[book-strategy-player]] | multi-step book-plan architecture, algebraic spec, strategy-selector data, and W42 planning-aware validation |
 | [[jud]] | the unified belief-conditioned core direction; bidding+play as one act |
-| [[champion]] | the jud v1 capstone build — zero-adapter, greedy 1-ply value play, oracle-free at runtime |
+| [[w42-jud-v1]] | the jud v1 capstone build — zero-adapter, greedy 1-ply value play, oracle-free at runtime |
 | [[partnership-wall-research]] | the post-Jud evidence map, measurement spine, result vocabulary, competing explanations, and architecture-withholding gates |
 
 **The measured baseline since June 2026** is the jud v1 / Zeb-protocol
 capstone (`afd4802`, `622c1a1`, `1143ebb`, `bdebb82`, `3ac03de`): start at
-[[jud]] or [[champion]] for the graded policy. **The goal page** is
+[[jud]] for the graded policy. **The goal page** is
 [[the-wall]]: it states the goal, the goals-vs-instruments hierarchy, and
 every registered direction — jud v2, the partnership/coordination family,
 the contextual distribution consumer — with the gates that select among

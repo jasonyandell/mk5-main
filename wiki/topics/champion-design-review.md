@@ -6,9 +6,10 @@ last_updated: 2026-07-13
 status: complete
 ---
 
-The [[champion]] direction was set in a single design session (2026-06-09,
-Fable 5). [[champion]] records the **conclusions** — the decision loop, the
-asset map, the marginal-value ranking, the build ladder. This page preserves
+The [[jud]] direction — then named **champion** — was set in a single design
+session (2026-06-09, Fable 5). [[jud]] records the **conclusions** — the
+decision loop, the asset map, the marginal-value ranking — and
+[[champion-ladder]] the build ladder. This page preserves
 the **reasoning**: the verbatim reviews Fable wrote, and a graded ledger of the
 predictions in them, checked against what the rungs actually measured. Fable is
 no longer available; this is the mined record, not a paraphrase. Recovered from
@@ -16,7 +17,7 @@ transcript session `0a708a4e` (the design turns were compacted out of live
 context; primary source is reproduced verbatim at the bottom).
 
 It exists because distillation shears caveats: two of Fable's load-bearing
-qualifications did **not** survive into [[champion]], and their absence was
+qualifications did **not** survive into [[jud]], and their absence was
 quietly steering later sessions toward wrong conclusions (see "Two caveats").
 
 ## The five turns
@@ -56,7 +57,7 @@ mined value — including where the call overshot.
 ## Two caveats (the load-bearing corrections)
 
 These two qualifications were in Fable's reviews, did not make it into
-[[champion]]'s verdicts, and each corrects a live over-claim:
+[[jud]]'s verdicts, and each corrects a live over-claim:
 
 1. **The arena is information-blind by construction.** Both sides of the paired
    match are PIMC (information-blind) players, so the harness *cannot reward
@@ -84,7 +85,7 @@ walked ([[champion-ladder]]). The page stands as the preserved primary source.
 
 ## Links
 
-- [[champion]] — the conclusions this preserves the reasoning for
+- [[jud]] — the conclusions this preserves the reasoning for
 - [[arena]] — the measuring stick built from the forward-design turn
 - [[gus]] · [[forge]] · [[pimc]] · [[belief-bayes-ceiling]] — the organs and the
   belief-ceiling evidence the reviews lean on

@@ -36,11 +36,11 @@ Full setup and numbers on [[gus-belief-co-train]]. Two findings:
 ## Why the second finding outlived the line
 
 q-bootstrap-belief — belief-sampled worlds beat corpus worlds — is the standing evidence
-[[champion]] cites for wiring the Gus belief posterior into oracle world sampling
+[[jud]] cites for wiring the Gus belief posterior into oracle world sampling
 (`--mode q-bootstrap-belief` in `gus/eval/lamir1.py`, reusing
 `gus/model/sample_worlds.py`). The belief-conditioned marginalization idea carried into
 [[belief-conditioned-self-play]] and [[jud]].
 
 ## Links
 
-[[belief-bayes-ceiling]] [[belief-propagation-gap]] [[gus-belief-co-train]] [[gus-belief-calibration-diagnostic]] [[lamir1-ceiling]] [[gus]] [[gus-line]] [[champion]]
+[[belief-bayes-ceiling]] [[belief-propagation-gap]] [[gus-belief-co-train]] [[gus-belief-calibration-diagnostic]] [[lamir1-ceiling]] [[gus]] [[gus-line]] [[jud]]

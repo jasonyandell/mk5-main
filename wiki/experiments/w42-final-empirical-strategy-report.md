@@ -12,7 +12,7 @@ final for the workstream, which continued through [[w42-phase4-final-claim-audit
 [[w42-jud-v1]] champion capstone. See [[w42-book-claim-synthesis-and-ai-directions]]
 for the canonical synthesis. Which clock is this: this page predates all three
 numbering families — the `phase 2/3/4` claim-ledger sweep (2026-05-02→03), the
-bookval-v1 waves (2026-05-03), and the 2026-06+ [[champion]]/[[jud]] rungs.
+bookval-v1 waves (2026-05-03), and the 2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 

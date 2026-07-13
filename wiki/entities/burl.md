@@ -15,7 +15,7 @@ it is not an acronym. (burl/OVERVIEW.md @ 8d26e0d)
 The line ran hard for ~3 weeks (2026-04-18 → 2026-05-07: harness spikes, primer
 ablations, iter-0 through iter-5 STaR, a 2000-decision harvest, a perf sprint, and
 three interactive instruments), then went dormant. Zero commits have touched `burl/`
-since 2026-05-07 (`465d1af`). [[champion]] / [[jud]] superseded the line with a
+since 2026-05-07 (`465d1af`). [[jud]] superseded the line with a
 pure-NN architecture around 2026-06-09.
 
 **Read [[burl-line]] for the full arc in order.** The LEM→Burl pivot is
@@ -113,6 +113,6 @@ predates the repair.
 Dormant. The open questions the line never answered — tool-less transfer,
 `conditional_outcome` leakage, belief capacity, the 90% re-run — are enumerated in
 [[burl-line]] §12, along with where the value went: the Zeb-negative reconfirmed by
-[[w42-jud-v1|jud v1]], the [[candlewax]] consumption question feeding [[jud]] and
-[[champion]], the [[preserve-thoughts]] recipe lessons joining the [[star]] canon,
+[[w42-jud-v1|jud v1]], the [[candlewax]] consumption question feeding [[jud]],
+the [[preserve-thoughts]] recipe lessons joining the [[star]] canon,
 and an ideated [[book-strategy-player]] Model A revival slot.

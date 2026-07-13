@@ -150,7 +150,7 @@ data-starvation reading.
 - [[w42-jud-v0]] — the v0 write-up this extends; its open question 1 (what breaks the
   parity plateau?) is answered here: data starvation, not structure
 - [[jud]] — the unified belief-conditioned core; v0 bidder now beats `net:wp`, v1 in build
-- [[champion]] — the ladder; `margin:wp`(head_8) is the first learned bidder to beat `net:wp`
+- [[champion-ladder]] — the ladder; `margin:wp`(head_8) is the first learned bidder to beat `net:wp`
 - [[rank-vs-price]] — the mechanism the value-native bidder validates; now beats, not ties
 - [[pimc]] — strategy fusion; the structural residual this probe refuted at v0's scale
 - [[w42-champion-selfplay-fixed-point]] — #26, the over-bidder the loop dissolves

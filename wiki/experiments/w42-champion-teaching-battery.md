@@ -163,7 +163,7 @@ python -u w42/book_validation_v1/wave5/probe_champion_teaching_battery.py \
 
 ## Links
 
-- [[champion]] — the player under test; its teaching half is the consumer of
-  this battery ([[champion-ladder]] rung #28)
+- [[jud]] — the player under test; its teaching half ([[the-wall]]) is the
+  consumer of this battery ([[champion-ladder]] rung #28)
 - [[w42]] — the book-validation campaign that built the detectors
 - [[arena]] — the trajectory source (lens:ev play)

@@ -3,7 +3,7 @@
 Grouped by workstream. Route via the family trail first; this is the fallback catalog.
 
 
-## Champion / jud (current frontier)
+## Jud (current frontier; the era's GitHub milestone is named Champion)
 
 - [[experiments/auction-decoder-v0|auction-decoder-v0]] — Lane A instrument validated with pre-registered predictions: hand features decode bids exactly and only for hand-dependent bidder populations (+0.36/+0.28 nats margin/net, ~0 random); population-conditioning +0.24 nats; book bid-semantics fixtures untestable on the bid-thin corpus (complete)
 - [[experiments/jud-target-granularity|jud-target-granularity]] — Lane B graded, two rounds: per-move targets at v1 capacity are marks-null in both forms (parent-side dense aux; child-state values); 3× volume moves calibration only; ranking-label agreement does not order play strength; residual = capacity interaction + on-policy data + opponents-in-rollout (complete)

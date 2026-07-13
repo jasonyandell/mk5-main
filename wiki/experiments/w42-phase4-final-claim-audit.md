@@ -10,7 +10,7 @@ status: complete
 later wave measured movement against. The canonical synthesis is
 [[w42-book-claim-synthesis-and-ai-directions]]. Which clock is this: `phase4`
 here is the 2026-05-02→03 claim-ledger sweep, not the bookval-v1 waves or the
-2026-06+ [[champion]]/[[jud]] rungs.
+2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 

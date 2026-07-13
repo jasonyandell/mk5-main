@@ -72,7 +72,7 @@ Three of the four directions ran and closed: the π_opp head was trained (68.57%
 top-1, [[gus-pi-opp-training]]), multi-step LAMIR was built and lost to direct π_me in
 every rollout mode ([[lamir1-ceiling]]), and 10k-game scaling shipped (0.551 regret,
 v3-10k — in the ladder above). Decision-difficulty-weighted training never ran; the
-line pivoted to [[jud]]/[[champion]] instead.
+line pivoted to [[jud]] instead.
 
 ## Links
 
