@@ -24,7 +24,7 @@ valid-only-bias uniformity, the CUDA-gated `TestMRVSamplerGPU` class) passed
 on CUDA. The single skip is the no-CPU-fallback error test, which by design
 runs only on hosts without CUDA. Zero unexpected skips.
 
-## Throughput (`scratch/stage0/bench_sampler.py`, 3 warmup + 20 timed calls)
+## Throughput (`w42/world_sampler_audit/bench_sampler.py`, 3 warmup + 20 timed calls)
 
 ```
 shape=(32,50)   ms_per_call=30.66  worlds_per_s=52,181   peak_mb=5.4
