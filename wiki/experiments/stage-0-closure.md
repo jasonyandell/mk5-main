@@ -85,7 +85,47 @@ utility, and partner mechanism via `--emit-decisions` fingerprints.
 
 ## Results
 
-*(pending)*
+Every arena arm landed inside its registered band; the CUDA arm passed
+correctness and missed its throughput prediction in an informative direction.
+Run artifacts: `arena/results/{c0_repro,p0_sym,p0_chal}_seed{7000000,9000000}/`
+(summaries + `--emit-decisions` fingerprints on the C0 arms),
+`w42/world_sampler_audit/cuda_bench_2026-07-13.md`,
+`w42/world_sampler_audit/exposure_scan/`.
+
+| arm | registered band | measured | verdict |
+|---|---|---|---|
+| C0-1 (seed 7000000) | CI excludes 0, point in [+0.10,+0.70] | `+0.385 [+0.102,+0.668]` (original `+0.38 [+0.09,+0.67]`) | **PASS** |
+| C0-2 (seed 9000000) | CI excludes 0, point in [+0.12,+0.75] | `+0.486 [+0.199,+0.775]` (original `+0.42 [+0.12,+0.72]`) | **PASS** |
+| P0-sym-1 | CI includes 0 | `-0.004 [-0.281,+0.275]` | **PASS** |
+| P0-sym-2 | CI includes 0 | `-0.076 [-0.361,+0.215]` | **PASS** |
+| P0-chal-1 (judsearch r4) | loses, in [-2.2,-0.6] | `-1.418 [-1.789,-1.043]` (pre-repair `-1.39`) | **PASS** |
+| P0-chal-2 | loses, in [-2.2,-0.6] | `-1.539 [-1.902,-1.160]` | **PASS** |
+| CUDA correctness | all pass, no unexpected skips | 31 passed, 1 by-design skip (no-CUDA-host test) | **PASS** |
+| CUDA throughput | ≥5× CPU at 32×50 | ~30 ms/call flat across shapes — ~7× *slower* than CPU at 32×50; 858k worlds/s at 256×100 | **MISS** (registered): the DP sampler is kernel-launch bound; device is not the lever, batch width is |
+| Exposure Scan A | descriptive | 2.51% (804/32,000) of reconstructed tractable late states carry nonzero legacy malformed mass; nonzero median 0.19, p99 0.80, max 0.83; the historical `1/3` fixture reproduces exactly; zero states intractable | reported |
+
+Wall-time note: the repaired sampler roughly doubles a C0 block on MPS
+(140.7 s / 140.3 s vs the legacy runs' 70.8 s / 75.9 s at identical
+configuration) — the correctness fix was paid for in throughput, consistent
+with the CUDA finding that per-call overhead dominates this sampler.
+
+Scan B (decision-level harm on the 804 nonzero-mass states: argmax flips,
+exact regret) is running on the freed GPU; its report completes this arm's
+scope. The exposure population is a reconstructed proxy (random legal
+playouts), not the literal historical stream — scope and the two more-faithful
+future denominators are stated in
+`w42/world_sampler_audit/exposure_scan/exposure_scan_a.md`.
+
+## Reading
+
+**Stage 0 closes.** The two-block C0 reproduction, the P0 symmetry sanity, the
+challenger re-grade, and the CUDA correctness suite all land inside their
+registered bands on the repaired sampler: the measurement baseline is
+trustworthy, the champion's `+0.4`-ish bidding advantage is real under a
+uniform world distribution, and `lens:ev` remains undefeated at pure play.
+The legacy sampler's defect was real but did not carry the prior conclusions
+(2.5% distributional exposure; no argmax flip yet observed anywhere). Lane
+grading per [[research-lane-selection]] is now unblocked.
 
 ## Links
 

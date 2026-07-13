@@ -125,7 +125,13 @@ unconstrained root count is `21!/(7!^3) = 399,072,960`. The combined sampler,
 audit, and full JudSearch suite passes `46` tests with two CUDA tests skipped.
 On CPU the final sampler takes `4.25 ms` for unconstrained `32 x 50`, `0.63 ms`
 for the historical `1 x 50`, and `1.64 ms` for the low-mass `1 x 10` state where
-rejection exhausted. CUDA throughput and memory remain unmeasured on this Mac.
+rejection exhausted. [[stage-0-closure]] then measured the CUDA path on a
+rented 4090 (`w42/world_sampler_audit/cuda_bench_2026-07-13.md`): every
+device-parameterized regression passes, and the sampler is kernel-launch bound
+(~30 ms/call flat across batch shapes) — ~7× slower than CPU at `32 x 50`,
+paying off only through batch width (`858k` worlds/s at `256 x 100`, ≤63 MB).
+Batch size, not device, is the throughput lever; small-batch consumers
+(JudSearch n=10) belong on CPU.
 
 Review of the shipped repair found one further defect in the same silent-bias
 class it was built to kill: the MPS backend's int64 `gather` rounds the 62-bit
@@ -138,9 +144,17 @@ Fixed at `4123b2d5`: candidate selection uses an exact `where` instead of
 valid), and the dead-end and uniformity regressions now parameterize over
 every available device (CPU/CUDA/MPS).
 
-The repair closes the sampler gate, not the exposure question. A state-level
-historical scan, a two-block C0 reproduction, and a production CUDA benchmark
-remain required.
+The repair closed the sampler gate; [[stage-0-closure]] (2026-07-13) then
+closed the measurement questions it left open. The two-block C0 reproduction
+landed inside its registered bands (`+0.385`/`+0.486` vs original
+`+0.38`/`+0.42`), the P0 symmetry and challenger re-grades reproduced, the
+CUDA suite passed, and the state-level exposure scan
+(`w42/world_sampler_audit/exposure_scan/`) found `2.51%` of a 32,000-state
+reconstructed late-state population carrying nonzero legacy malformed mass
+(nonzero median `0.19`, max `0.83`; the exact-`1/3` fixture reproduces). The
+repaired sampler costs ~2× wall time per C0 block on MPS. Decision-level harm
+(Scan B: argmax flips, exact regret on the exposed subset) reports under
+[[stage-0-closure]].
 
 ## Artifacts and reproduction
 
