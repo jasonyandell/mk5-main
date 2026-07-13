@@ -1,8 +1,8 @@
 ---
 title: Modal
 kind: entity
-first_seen: a8bccfa
-last_updated: b89ff635
+first_seen: 2026-04-09
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -56,7 +56,7 @@ left-padded batching recipe (5-example iteration in 151s). (commit messages @ b9
 
 ## Related
 
-[[experiments/first-gemma-contact]] and [[experiments/stage-0-v1-training]] both ran on
+[[first-gemma-contact]] and [[stage-0-v1-training]] both ran on
 Modal L4. [[lora-unsloth]] is the fine-tuning library invoked inside Modal functions.
 
 `forge/MODAL_ORIENTATION.md` and `forge/MODAL_MONITOR.md` are the live Modal ops

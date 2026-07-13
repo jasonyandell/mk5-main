@@ -1,9 +1,9 @@
 ---
 title: Flexible Grader for Free-Form Responses
 kind: decision
-first_seen: 3c33e86
-last_updated: 3c33e86
-status: active
+first_seen: 2026-04-13
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -24,9 +24,9 @@ Per question type in [[game-context-qa]]:
 
 ## Why
 
-Rigid pattern matching ("Your answer must start with 'Legal moves:'") fails when the model gives a correct answer in a different format. The rigid grader produced `legal_moves` at 0%; the [[decisions/flexible-grader]] raised it to 70% — same model, same adapter, same responses, different grading logic.
+Rigid pattern matching ("Your answer must start with 'Legal moves:'") fails when the model gives a correct answer in a different format. The rigid grader produced `legal_moves` at 0%; the [[flexible-grader]] raised it to 70% — same model, same adapter, same responses, different grading logic.
 
-This mattered concretely: the earlier "~40% overall" result for [[v4-adapter]] was a grader artifact, not a model failure. See [[experiments/stage-0-v4-comprehension-eval]] and [[sources/1d3e1b7]].
+This mattered concretely: the earlier "~40% overall" result for [[v4-adapter]] was a grader artifact, not a model failure. See [[stage-0-v4-comprehension-eval]] and [[1d3e1b7]].
 
 ## Generalizable principle
 
@@ -34,8 +34,8 @@ For knowledge evaluation of LLMs, the eval should parse what the model *means*, 
 
 ## Relation to prior decisions
 
-Complements [[decisions/discard-illegal-traces]]: discard when the model is clearly wrong (illegal move — unambiguously bad); accept when the model is clearly right even if the format is unfamiliar. Both decisions distinguish signal from noise in the training and evaluation loops.
+Complements [[discard-illegal-traces]]: discard when the model is clearly wrong (illegal move — unambiguously bad); accept when the model is clearly right even if the format is unfamiliar. Both decisions distinguish signal from noise in the training and evaluation loops.
 
 ## Related pages
 
-[[experiments/stage-0-v4-comprehension-eval]] · [[v4-adapter]] · [[rules-adapter]] · [[game-context-qa]] · [[sources/3c33e86]]
+[[stage-0-v4-comprehension-eval]] · [[v4-adapter]] · [[rules-adapter]] · [[game-context-qa]] · [[3c33e86]]

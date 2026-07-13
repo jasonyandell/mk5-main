@@ -1,8 +1,8 @@
 ---
 title: Post-commit Q&A — talking with Burl after a hand
 kind: topic
-first_seen: cba521d
-last_updated: cba521d
+first_seen: 2026-04-30
+last_updated: 2026-04-30
 status: retired
 ---
 
@@ -11,7 +11,7 @@ status: retired
 A research direction and product slot: after [[burl]] commits a play, open a conversational channel where a human (or a teacher model) asks Burl questions about that decision. The reply is plain prose, in the family-game register, grounded in the actual tool calls and reasoning Burl produced during the decision.
 
 This is distinct from:
-- **Play-time tool use** — the existing [[topics/tool-orchestration]] / [[topics/rules-as-tools]] surface.
+- **Play-time tool use** — the existing [[tool-orchestration]] / [[rules-as-tools]] surface.
 - **Pre-game commentary** — the explanation-sketcher slot originally framed as the [[lem]] product slot.
 - **Self-rationalization for STaR** — the [[r1-rationalization]] mechanism, which re-grounds a chosen play to a target answer.
 
@@ -37,17 +37,17 @@ Use [[burl-chat]] interactively. For each `BURL_BREAKS_CONSENSUS` / `BURL_INDEPE
 
 ### 3. Auto-generated corpus (Haiku 4.5 reference traces)
 
-Reuse the [[haiku-4-5]] reference-trace pattern from Burl's iter-2 prep ([[topics/reference-trace-distillation]]). Pipe each harvested decision through Haiku 4.5 with the chat-mode primer + a Roberson primer. Generate N questions per decision and Haiku's prose answers. High volume, machine-quality, suitable for SFT on top of an existing Burl adapter.
+Reuse the [[haiku-4-5]] reference-trace pattern from Burl's iter-2 prep ([[reference-trace-distillation]]). Pipe each harvested decision through Haiku 4.5 with the chat-mode primer + a Roberson primer. Generate N questions per decision and Haiku's prose answers. High volume, machine-quality, suitable for SFT on top of an existing Burl adapter.
 
 ## Hard constraints
 
 ### Distillation short-circuit
 
-The original [[burl]] design forbade evaluative tools (`get_eq`, `best_move`, `simulate_plan`) because they leak the answer. Post-commit Q&A faces a similar trap: the corpus must teach "I committed 14 because the at-risk-points framework points there," NOT "I committed 14 because the oracle said so." Roberson's framework is the firewall — concrete, articulable, and not a direct oracle echo. See [[topics/conditional-outcome-structural-nonuse]] for the related concern about evaluative tool calls.
+The original [[burl]] design forbade evaluative tools (`get_eq`, `best_move`, `simulate_plan`) because they leak the answer. Post-commit Q&A faces a similar trap: the corpus must teach "I committed 14 because the at-risk-points framework points there," NOT "I committed 14 because the oracle said so." Roberson's framework is the firewall — concrete, articulable, and not a direct oracle echo. See [[conditional-outcome-structural-nonuse]] for the related concern about evaluative tool calls.
 
 ### Adapter lock-in
 
-Stacking a Q&A adapter on top of an existing play-decision adapter does not work cleanly: [[play-adapter-lock-in]] shows e1-rank16 ([[experiments/iter5-e1-rank-sweep]]) cannot be talked out of `commit_play` even with explicit prompting + a chat-mode primer. The post-commit Q&A adapter has to be co-trained with play decisions (multi-task) or trained from base, not stacked. Open question whether the [[iter3-rules-adapter]] (90% bot-match winner, less aggressive distillation) is more steerable than e1-rank16; not yet tested.
+Stacking a Q&A adapter on top of an existing play-decision adapter does not work cleanly: [[play-adapter-lock-in]] shows e1-rank16 ([[iter5-e1-rank-sweep]]) cannot be talked out of `commit_play` even with explicit prompting + a chat-mode primer. The post-commit Q&A adapter has to be co-trained with play decisions (multi-task) or trained from base, not stacked. Open question whether the [[iter3-rules-adapter]] (90% bot-match winner, less aggressive distillation) is more steerable than e1-rank16; not yet tested.
 
 ### Voice authenticity
 

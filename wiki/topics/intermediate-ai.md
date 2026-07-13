@@ -1,8 +1,8 @@
 ---
 title: Intermediate AI — the shipped PIMC opponent
 kind: topic
-first_seen: ba123884
-last_updated: 522779c5
+first_seen: 2025-11-26
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -93,7 +93,7 @@ Game-theoretic search finds fighting lines even in lost positions
 
 This PIMC baseline is what the E[Q]/ML line measures itself against — the
 caveat that a PIMC-vs-PIMC harness is structurally blind to
-concealment/signaling value lives at [[champion]].
+concealment/signaling value lives at [[champion-design-review]].
 
 ---
 

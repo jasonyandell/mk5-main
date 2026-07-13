@@ -1,8 +1,8 @@
 ---
 title: "Source digest: ed3cfc3 — MLX-LM batch_generate ceiling bench (43 → 1334 tok/s)"
 kind: source
-first_seen: ed3cfc3
-last_updated: ed3cfc3
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -18,8 +18,8 @@ status: active
 > single-stream. 16× aggregate speedup, memory plateau 15 GB on 48 GB.
 > N=500 rollouts ~3.5 min wall time. Reproducer: bench_batch_throughput.py
 
-Benchmark establishing the batch_generate ceiling. Introduces `bench_batch_throughput.py` sweep script and writeup. Full analysis: [[experiments/batch-throughput-bench]].
+Benchmark establishing the batch_generate ceiling. Introduces `bench_batch_throughput.py` sweep script and writeup. Full analysis: [[batch-throughput-bench]].
 
 ## Related pages
 
-[[experiments/batch-throughput-bench]] · [[mlx-lm]] · [[burl]] · [[sources/6a97d55]]
+[[batch-throughput-bench]] · [[mlx-lm]] · [[burl]] · [[6a97d55]]

@@ -1,8 +1,8 @@
 ---
 title: "The Wall: A Biography"
 kind: trail
-first_seen: afd4802
-last_updated: bc4eb386
+first_seen: 2026-07-06
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -144,7 +144,7 @@ bot-match, a STaR/capacity ceiling), Burl (LLM-as-tool-user — one real win at
 direct π_me), [[w42|W42]] (grade the family canon, Roberson's *Winning 42*,
 claim by claim ([[the-book-enters]]) — trustworthy content, one real
 utility-selection result, its promoted architecture never built), and
-[[champion]]/[[jud]] (reason with the oracle at the auction). The era's own
+[[jud]] (reason with the oracle at the auction). The era's own
 summary sentence is Jason's, from the final working-tree commit:
 
 > *"I saw eq, I said sure I could distill it. but for what purpose? no idea
@@ -631,7 +631,7 @@ is the first thing in the project's life that takes the E[Q]-shaped data,
 reasons with it, and does better. jud v1 then folded bid and play into one
 organ and the bidder *survived the fold* — the unification holds at the
 auction. The current best-player recipe is `margin:wp`(head_8) bidding with
-`lens:ev` utilities over E[Q] play ([[champion]]), the first learned bidder
+`lens:ev` utilities over E[Q] play ([[jud]]), the first learned bidder
 ever to beat `net:wp`.
 
 The coordinates: **play is mechanism-limited at the leaf.** Greedy 1-ply value
@@ -683,5 +683,5 @@ the thing that can explain why it plays.
 ## Related pages
 
 [[the-wall]] · [[consumption-ledger]] · [[candlewax]] · [[ideated-not-built]]
-· [[the-gestation]] · [[expected-q-value]] · [[jud]] · [[champion]] ·
+· [[the-gestation]] · [[expected-q-value]] · [[jud]] ·
 [[w42-jud-v1]] · [[lem]] · [[burl]] · [[gus]] · [[zeb]] · [[w42]]

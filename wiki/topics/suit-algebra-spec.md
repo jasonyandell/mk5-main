@@ -1,8 +1,8 @@
 ---
 title: Suit algebra — the formal specification
 kind: topic
-first_seen: 69d636ac
-last_updated: 2ab1a825
+first_seen: 2025-12-28
+last_updated: 2026-07-11
 status: active
 ---
 

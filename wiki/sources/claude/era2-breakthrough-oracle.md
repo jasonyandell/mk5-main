@@ -1,8 +1,8 @@
 ---
 title: Claude.ai Source Digest — Era 2 (Breakthrough + Oracle, Dec 24 - Jan 8)
 kind: source
-first_seen: e39e536
-last_updated: e39e536
+first_seen: 2026-02-09
+last_updated: 2026-02-09
 status: complete
 ---
 

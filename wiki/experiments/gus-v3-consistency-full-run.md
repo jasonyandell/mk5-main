@@ -1,9 +1,9 @@
 ---
 title: Gus v3 Consistency Regularizer — Full 10k Run
 kind: experiment
-first_seen: b4040c5
-last_updated: 31f0ec3
-status: active
+first_seen: 2026-04-21
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -14,9 +14,9 @@ loss rides forward into LAMIR-1. (commit messages @ b4040c5, 31f0ec3)
 
 ## Setup
 
-- **Corpus**: 10,000 games (lazy IterableDataset streaming; peak RSS 3.4 GB — see [[sources/f138069]])
+- **Corpus**: 10,000 games ([[lazy-iterable-dataset]] streaming; peak RSS 3.4 GB — [f138069](../sources/f138069.md))
 - **Architecture**: v3 = v2 (shared transformer + belief + V + π_me + world_encoder + Q) +
-  [[topics/consistency-regularizer]] loss (`w_consistency=0.3`, warmup 10 epochs)
+  [[consistency-regularizer]] loss (`w_consistency=0.3`, warmup 10 epochs)
 - **Model**: 3.4M params, d=256, 6 layers (same as the v2-3k-big best)
 
 ## Results: v2 vs v3 at 10k
@@ -61,4 +61,4 @@ Consistency loss rides forward into LAMIR-1. v3 is the new baseline. (commit mes
 
 ## Links
 
-[[gus]] · [[topics/consistency-regularizer]] · [[topics/v-pi-decoupling]] · [[topics/regret-eval]] · [[experiments/gus-scaling-ladder]]
+[[gus]] · [[consistency-regularizer]] · [[v-pi-decoupling]] · [[regret-eval]] · [[gus-scaling-ladder]]

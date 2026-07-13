@@ -1,4 +1,5 @@
 ---
+kind: experiment
 title: W42 Book Validation Wave 2.G — ch02 Bid-Only-Enough Multi-Step Extension
 bead: t42-ey88
 epic: t42-4zi6
@@ -9,6 +10,8 @@ backlinks:
   - [[winning42-ch02-bidding]]
   - [[w42-bookval-v1-wave2-bid-aware-atlas]]
   - [[w42-phase4-bidding-count-exposure-tests]]
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 ## Summary

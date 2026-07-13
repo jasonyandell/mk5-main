@@ -1,9 +1,9 @@
 ---
 title: Base Model K1 Baseline (10 Examples, Local)
 kind: experiment
-first_seen: f578bfa
-last_updated: f578bfa
-status: active
+first_seen: 2026-04-10
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -39,4 +39,4 @@ This is the number to beat with [[stage-0-adapter]] + STaR iterations.
 
 ## Related pages
 
-[[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[decisions/eval-seed-holdout]] · [[experiments/star-harness-5ex-smoke]] · [[sources/f578bfa]]
+[[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[eval-seed-holdout]] · [[star-harness-5ex-smoke]] · [[f578bfa]]

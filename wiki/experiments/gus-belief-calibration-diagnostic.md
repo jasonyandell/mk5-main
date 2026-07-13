@@ -1,9 +1,9 @@
 ---
 title: Gus Belief Calibration Diagnostic (receipt 15)
 kind: experiment
-first_seen: 137a8e7
-last_updated: 137a8e7
-status: active
+first_seen: 2026-04-21
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -61,7 +61,7 @@ belief targets, the full {belief_head, world_encoder, Q_head} cluster must be co
 together with distribution-belief targets and regular Q loss. Sequential fine-tuning
 creates irreconcilable distribution shift. (commit message @ 137a8e7)
 
-The co-training follow-up was run in §21 ([[experiments/gus-belief-co-train]], cf8ff79):
+The co-training follow-up was run in §21 ([[gus-belief-co-train]], cf8ff79):
 co-training worsened q-bootstrap regret slightly (0.685 → 0.718), falsifying the
 "co-training propagates calibration" hypothesis on that setup — but sampling worlds
 from belief at inference (q-bootstrap-belief, 0.655) became the closest look-ahead
@@ -69,4 +69,4 @@ to the direct baseline.
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[topics/dense-q-supervision]] · [[joint-world-tensor]] · [[experiments/gus-belief-co-train]]
+[[gus]] · [[regret-eval]] · [[dense-q-supervision]] · [[joint-world-tensor]] · [[gus-belief-co-train]]

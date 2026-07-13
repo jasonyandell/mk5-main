@@ -1,8 +1,8 @@
 ---
 title: "Source digest: dbadb5f — session 2026-04-19 capture, iter-3 winner, iter-4 null, forward plan"
 kind: source
-first_seen: dbadb5f
-last_updated: dbadb5f
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -33,4 +33,4 @@ New `burl/ITER4_PLAN.md` documents the ranked experiment queue (E1: LoRA rank sw
 
 ## Related pages
 
-[[burl]] · [[iter3-rules-adapter]] · [[rules-as-tools]] · [[experiments/iter3-comparison]] · [[experiments/iter4-null-preserve-thoughts]] · [[conditional-outcome-structural-nonuse]] · [[selfplay-arena]]
+[[burl]] · [[iter3-rules-adapter]] · [[rules-as-tools]] · [[iter3-comparison]] · [[iter4-null-preserve-thoughts]] · [[conditional-outcome-structural-nonuse]] · [[burl-selfplay-arena]]

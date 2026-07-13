@@ -1,8 +1,8 @@
 ---
 title: Zeb fleet-ops — the self-healing Vast.ai spot-GPU cluster
 kind: entity
-first_seen: bcc549f
-last_updated: 286aa97
+first_seen: 2026-02-07
+last_updated: 2026-02-15
 status: complete
 ---
 
@@ -14,7 +14,7 @@ training curve needed roughly 1M+ self-play games (`a7d6b5b`, 2026-02-06) and la
 (`forge/zeb/models/large-belief-recap.md`, W&B run `waxffg2j`). Jason's framing of the
 spend, which he would not make for paid work: *"I'd never do this for work. ever. but for
 the hobby project? let's gooo"* (2026-02-08T19:41,
-[[sources/claude/era4-zeb-era|conversation digest]]).
+[[era4-zeb-era|conversation digest]]).
 
 ## Components (all present on disk today)
 
@@ -82,4 +82,4 @@ Fleet-ops is infrastructure, not a finding about [[candlewax|the wall]] — it m
 [[full-teacher-eq-experiment]] affordable to run repeatedly, but ruled nothing in or out
 about consuming E[Q] itself.
 
-See [[zeb]] · [[eval-matrix-bradley-terry]] · [[sources/claude/era4-zeb-era|conversation digest]].
+See [[zeb]] · [[eval-matrix-bradley-terry]] · [[era4-zeb-era|conversation digest]].

@@ -3,8 +3,8 @@ title: Jud v0 — the value-native bidder
 kind: experiment
 status: complete
 task_id: gh-32
-first_seen: 4080e07
-last_updated: 0bdd4d5
+first_seen: 2026-07-06
+last_updated: 2026-07-13
 ---
 
 # w42-jud-v0
@@ -260,7 +260,7 @@ denial-bidding equilibrium reasoning are the value-bidder subagent's.
 
 - [[jud]] — the unified belief-conditioned core this is the first buildable slice of
 - [[rank-vs-price]] — the mechanism: play consumes rankings, bids consume prices; validated at parity here
-- [[champion]] — the ladder; this is rung #32's outcome
+- [[champion-ladder]] — the rung record (this is rung #32)
 - [[w42-champion-selfplay-fixed-point]] — #26, the over-bidder v0 dissolves; the loop machinery reused
 - [[champion-design-review]] — Fable's forward design + the two load-bearing caveats
 - [[pimc]] — strategy fusion, the residual the parity plateau may reflect

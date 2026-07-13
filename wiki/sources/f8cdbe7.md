@@ -1,8 +1,8 @@
 ---
 title: "Source digest: f8cdbe7 — Kerry Q&A generator + 15k corpus for Stage 0 v2"
 kind: source
-first_seen: f8cdbe7
-last_updated: f8cdbe7
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 
@@ -48,8 +48,8 @@ Total corpus: 15,000 examples at `lem/rules/qa_corpus_kerry.jsonl`.
 
 ## Target adapter
 
-`jasonyandell/gemma-4-e2b-texas42-stage0-kerry` ([[kerry-adapter]]). Trained in [[sources/43009a4]].
+`jasonyandell/gemma-4-e2b-texas42-stage0-kerry` ([[kerry-adapter]]). Trained in [[43009a4]].
 
 ## Related pages
 
-[[kerry-curriculum]] · [[kerry-adapter]] · [[rules-adapter]] · [[lem]] · [[sources/43009a4]]
+[[kerry-curriculum]] · [[kerry-adapter]] · [[rules-adapter]] · [[lem]] · [[43009a4]]

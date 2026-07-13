@@ -1,8 +1,8 @@
 ---
 title: Native Tool-Use Format (not XML)
 kind: decision
-first_seen: 3781dce
-last_updated: 3781dce
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: superseded
 ---
 
@@ -20,7 +20,7 @@ Burl's harness emits tool calls in Gemma's native `<|tool_call>` format (driven 
 
 When allowed to use native format (`tools=[...]` via chat template), the full tool surface activates: `eq_outcome_distribution` called 15×, `trump_declared` called 9×, zero hallucinations. Bot-match moves from 60% to 88.9% on the same 10 decisions.
 
-See [[experiments/burl-move4-native-spike]] for the full comparison.
+See [[burl-move4-native-spike]] for the full comparison.
 
 ## Harness changes
 
@@ -38,14 +38,14 @@ Native format emits exactly one `<|tool_call>` per turn. XML could pack multiple
 
 The harness should bend to the model's post-training. Forcing a model to emit a synthetic format it wasn't trained for wastes its strongest capabilities. Find the model's natural grammar and meet it there.
 
-OVERVIEW principle (added at [[sources/3781dce]]): *"Go with the model's grain; catch it doing right. Small models have their own instincts... STaR trains the model's own best behavior back into itself — their words, their corrections, their self-checks."*
+OVERVIEW principle (added at [[3781dce]]): *"Go with the model's grain; catch it doing right. Small models have their own instincts... STaR trains the model's own best behavior back into itself — their words, their corrections, their self-checks."*
 
 ## Related pages
 
-[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[experiments/burl-move4-native-spike]] · [[experiments/burl-move3-base]] · [[sources/3781dce]]
+[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[burl-move4-native-spike]] · [[burl-move3-base]] · [[3781dce]]
 
 ## Status
 
 Dormant since move-4 (mid-April 2026), superseded along with the rest of [[burl]] by
-[[champion]] / [[jud]]'s pure-NN direction — no native tool-calling harness is used
+[[jud]]'s pure-NN direction — no native tool-calling harness is used
 there.

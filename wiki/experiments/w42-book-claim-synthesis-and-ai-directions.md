@@ -1,10 +1,19 @@
 ---
 title: w42 Book Claim Synthesis And AI Directions
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: afd4802
-status: active
+first_seen: 2026-05-03
+last_updated: 2026-07-13
+status: complete
 ---
+
+**This is the canonical rollup of the Winning 42 book-validation work** — the
+one page to read for what the campaign found. The closure baseline is
+[[w42-phase4-final-claim-audit]]; the wave-by-wave record is
+[[w42-book-validation-campaign]] (dormant since Wave 5); the curated path is
+[[w42-book-validation]]. Which clock is this: `phase2/3/4` below is the
+2026-05-02→03 claim-ledger sweep; `Wave 1–5` and bookval `v1`/`v2`/`v3` are the
+2026-05-03 campaign (v2/v3 are utility-lens passes, not versions of the v1
+corpus); neither numbering relates to the 2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 
@@ -928,9 +937,7 @@ five composition modes (state-conditioned, chaining, hierarchical,
 opponent-aware, cross-hand), DecisionRecord format, phased build plan,
 and the role-resurrection of [[burl]] / [[gus]] / [[zeb]].
 
-## Links
-
-### Caveats (carried forward)
+## Caveats (carried forward)
 
 - All 500 snapshots are bid=30 (mm=1, mark_ev ≡ p_make by construction).
   The cleanest test of mark_ev divergence requires a bid=84 snapshot

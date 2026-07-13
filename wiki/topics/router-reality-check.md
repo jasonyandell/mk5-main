@@ -1,8 +1,8 @@
 ---
 title: Router Reality-Check (detect-and-route PoC results)
 kind: topic
-first_seen: a09ef43
-last_updated: d1f1633d
+first_seen: 2026-04-21
+last_updated: 2026-07-11
 status: retired
 ---
 
@@ -33,7 +33,7 @@ To ship a no-oracle-inference student at 0.49 regret:
 Route 2 was later realized on the v3 adapter: [[gus-qmean-router]] shows K=100-500 belief-sampled Q-mean, gated by a learned router, reaches the no-oracle goal. The oracle-budget version reached its
 projected regret in eval scripts (a09ef43), but "deployable" overstates it: no oracle-budget
 router was ever wired into champion, arena, or forge. The whole [[detect-and-route]] line was
-abandoned when the project pivoted to `jud`/[[champion]] rather than continuing the LAMIR-era
+abandoned when the project pivoted to [[jud]] rather than continuing the LAMIR-era
 fallback-routing approach.
 
 ## Numbers summary
@@ -50,4 +50,4 @@ fallback-routing approach.
 
 ## Links
 
-[[gus]] [[detect-and-route]] [[blunder-detector]] [[regret-eval]] [[pimc]] [[champion]] [[gus-qmean-router]]
+[[gus]] [[detect-and-route]] [[blunder-detector]] [[regret-eval]] [[pimc]] [[jud]] [[gus-qmean-router]]

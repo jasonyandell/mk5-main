@@ -1,14 +1,15 @@
 ---
 title: Champion design review — Fable 5's recovered reasoning
 kind: topic
-first_seen: local-2026-06-09
-last_updated: local-2026-06-14
-status: active
+first_seen: 2026-06-09
+last_updated: 2026-07-13
+status: complete
 ---
 
-The [[champion]] direction was set in a single design session (2026-06-09,
-Fable 5). [[champion]] records the **conclusions** — the decision loop, the
-asset map, the marginal-value ranking, the build ladder. This page preserves
+The [[jud]] direction — then named **champion** — was set in a single design
+session (2026-06-09, Fable 5). [[jud]] records the **conclusions** — the
+decision loop, the asset map, the marginal-value ranking — and
+[[champion-ladder]] the build ladder. This page preserves
 the **reasoning**: the verbatim reviews Fable wrote, and a graded ledger of the
 predictions in them, checked against what the rungs actually measured. Fable is
 no longer available; this is the mined record, not a paraphrase. Recovered from
@@ -16,7 +17,7 @@ transcript session `0a708a4e` (the design turns were compacted out of live
 context; primary source is reproduced verbatim at the bottom).
 
 It exists because distillation shears caveats: two of Fable's load-bearing
-qualifications did **not** survive into [[champion]], and their absence was
+qualifications did **not** survive into [[jud]], and their absence was
 quietly steering later sessions toward wrong conclusions (see "Two caveats").
 
 ## The five turns
@@ -56,7 +57,7 @@ mined value — including where the call overshot.
 ## Two caveats (the load-bearing corrections)
 
 These two qualifications were in Fable's reviews, did not make it into
-[[champion]]'s verdicts, and each corrects a live over-claim:
+[[jud]]'s verdicts, and each corrects a live over-claim:
 
 1. **The arena is information-blind by construction.** Both sides of the paired
    match are PIMC (information-blind) players, so the harness *cannot reward
@@ -75,12 +76,16 @@ These two qualifications were in Fable's reviews, did not make it into
    opportunity. Note #31's "bid-magnitude → belief is dead" is a *different*
    channel; don't conflate it with score → auction-policy.
 
-Both consequences are folded back into [[champion]]'s ladder (#25, #27) so the
-conclusions there carry their caveats.
+Both consequences are folded back into the rung record (#25, #27 on
+[[champion-ladder]]) so the conclusions there carry their caveats.
+
+The review is concluded: its predictions are graded above, its caveats are
+folded into the pages that needed them, and the ladder it designed has been
+walked ([[champion-ladder]]). The page stands as the preserved primary source.
 
 ## Links
 
-- [[champion]] — the conclusions this preserves the reasoning for
+- [[jud]] — the conclusions this preserves the reasoning for
 - [[arena]] — the measuring stick built from the forward-design turn
 - [[gus]] · [[forge]] · [[pimc]] · [[belief-bayes-ceiling]] — the organs and the
   belief-ceiling evidence the reviews lean on
@@ -102,11 +107,11 @@ Here's what I see. The short version: **you did finish the book.** All 64 Winnin
 
 ## The book campaign — finished
 
-The trail page ([[trails/w42-book-validation]]) records the full arc. Phase 4 ended with a **completion board and an independent final audit confirming every one of the 64 book claims has evidence, explicit bounded blockers, or ledger-review routing — no row ownerless**. Then book-validation v1 ran four waves on top of that baseline and produced real promotions and demotions: *bid-only-enough* was promoted to **supported**, *void creation* turned out position-dependent, and *ch12 high-bid pounce* was **contradicted** once tested at the action-contrast level. The capstone was Lens v1 ([[w42-lens-v1-utility-head-to-head]]): a round-robin of utility functions where **EV won decisively** — beating p_make by +5.42 pts/hand, all confidence intervals excluding zero. That settled the "is the book secretly p_make-optimized?" theory.
+The trail page ([[w42-book-validation]]) records the full arc. Phase 4 ended with a **completion board and an independent final audit confirming every one of the 64 book claims has evidence, explicit bounded blockers, or ledger-review routing — no row ownerless**. Then book-validation v1 ran four waves on top of that baseline and produced real promotions and demotions: *bid-only-enough* was promoted to **supported**, *void creation* turned out position-dependent, and *ch12 high-bid pounce* was **contradicted** once tested at the action-contrast level. The capstone was Lens v1 ([[w42-lens-v1-utility-head-to-head]]): a round-robin of utility functions where **EV won decisively** — beating p_make by +5.42 pts/hand, all confidence intervals excluding zero. That settled the "is the book secretly p_make-optimized?" theory.
 
 ## What grew out of it: BookStrategyPlayer
 
-The campaign's closing insight was that many book claims are *multi-step plans*, while every probe measured isolated decisions. The answer is [[entities/book-strategy-player]] — a fully specified algebraic contract (May 3–4): pure Reader/State/Writer decision core, finite strategy library with a `recognize → commit → execute → retire` lifecycle, monoid-valued shared facts, deterministic arbitration, and the load-bearing identity `BSP(empty, Lens("ev")) == Lens("ev")`. Ten laws, property tests specified, build order written down. **Status: designed, not built.** Bead `t42-zrf9` is the in-progress marker. This is the largest staged piece of work waiting for you.
+The campaign's closing insight was that many book claims are *multi-step plans*, while every probe measured isolated decisions. The answer is [[book-strategy-player]] — a fully specified algebraic contract (May 3–4): pure Reader/State/Writer decision core, finite strategy library with a `recognize → commit → execute → retire` lifecycle, monoid-valued shared facts, deterministic arbitration, and the load-bearing identity `BSP(empty, Lens("ev")) == Lens("ev")`. Ten laws, property tests specified, build order written down. **Status: designed, not built.** Bead `t42-zrf9` is the in-progress marker. This is the largest staged piece of work waiting for you.
 
 ## The Burl thread — the microscope and Burl's own tool requests
 

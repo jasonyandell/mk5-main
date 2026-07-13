@@ -1,9 +1,9 @@
 ---
 title: E[Q] Browser Visualizers
 kind: experiment
-first_seen: local-2026-05-02
-last_updated: local-2026-05-02
-status: active
+first_seen: 2026-05-02
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

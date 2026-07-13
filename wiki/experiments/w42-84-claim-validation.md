@@ -1,20 +1,46 @@
 ---
 title: w42 84 Claim Validation
 kind: experiment
-first_seen: local-2026-05-02
-last_updated: afd4802
+first_seen: 2026-05-02
+last_updated: 2026-07-13
 status: complete
 ---
 
 **Complete for the static-math scope it covers** (exact double-six
-enumeration and hypergeometric proxies are final). Its claim-ledger rows have
-been frozen at `underpowered`/`context-limited`/`not-yet-tested` since
-2026-05-03 while [[w42-phase2-84-weapon-preservation-probe]]'s dynamic branch
-lab and, later, [[w42-phase4-84-dynamic-seed-tests]] and
-[[w42-phase4-final-claim-audit]] moved past it on the dynamic/replay side this
-page explicitly says it cannot measure — no page reconciled this page's rows
-against that later work; read [[w42-phase4-final-claim-audit]] for the
-current closure state of the 64-claim ledger this page feeds into.
+enumeration and hypergeometric proxies are final). The dynamic side this page
+explicitly says it cannot measure continued on three later pages — see
+"Where This Stands" below.
+
+## Where This Stands
+
+This page froze its claim-ledger rows at
+`underpowered`/`context-limited`/`not-yet-tested` on 2026-05-03. The 84 story
+then moved in three steps:
+
+- [[w42-phase2-84-weapon-preservation-probe]] built the first dynamic branch
+  lab: six hand-picked bid-84 fixtures with schema-v2 E[Q] PDFs. First proxy
+  contrasts — preserve over spend `+0.136` mean Q (13 pairs, deliberately
+  thin), offense trump-pull over final-off `+4.01` (23 pairs). Fixture
+  evidence only; no ledger promotion.
+- [[w42-phase3-84-seed-mining-corpus]] replaced hand-picked fixtures with a
+  mined natural-seed menu: 50,000 seeds scanned, 214,229 candidate 84 rows,
+  256 recommended seeds. A powered data route, not an action-value proof.
+- [[w42-phase4-84-dynamic-seed-tests]] ran 24 mined natural seed games (672
+  decisions): preserving expendable/dead assets instead of spending live
+  weapons or protectors is `+1.946` mean Q (62 pairs), dead-asset release
+  `+0.504` (29 pairs), bidder trump-pull before final-off `+4.295` (76 pairs).
+
+The verdict those pages support: 84 preservation is a real action surface —
+on reached natural seed states, preserving live weapons/protectors beats
+spending them, dead-asset release has positive value, and trump-pull before
+final-off is strongly positive ([[w42-book-claim-synthesis-and-ai-directions]]
+carries this as the campaign-level reading). The evidence remains policy-trace
+evidence, not arbitrary late-state injection: final set attribution, full
+throwaway-ladder bottlenecks, score 42-vs-84 terminal counterfactuals, and the
+straight-off "set by good players" population claim stayed blocked in every
+page. This page's frozen rows were never individually reconciled against that
+later evidence; [[w42-phase4-final-claim-audit]] holds the 64-row closure
+state.
 
 ## Summary
 

@@ -1,8 +1,8 @@
 ---
 title: Belief-conditioned self-play — what jud trains and how (Fable's approach)
 kind: topic
-first_seen: local-2026-06-14
-last_updated: d1f1633d
+first_seen: 2026-06-14
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -84,7 +84,7 @@ dominates because it is the game-tree root and the marginal-value peak, because 
 public channel where the fixed point becomes a shared convention, or for some further
 reason, is not established.
 
-What the [[champion]] ladder (#20–#28) built was *not* this. It used a fixed oracle (not
+What the [[champion-ladder]] rungs #20–#28 built was *not* this. It used a fixed oracle (not
 a model that reshapes the game during search), searched fixed perfect-information worlds
 (not belief-conditioned model rollouts), and added a separate bidder over the oracle. The
 over-bidder and the play-side nulls measured those **staples** — not the coherent vision,
@@ -150,8 +150,8 @@ action-selection improvements to downstream depth.
 
 ## Links
 
-- [[jud]] — the unified core this trains · [[champion]] — the player-and-teacher · the
-  ladder
+- [[jud]] — the unified core this trains · [[the-wall]] — the goal; carries the
+  teaching half · [[champion-ladder]] — the rung record
 - [[champion-design-review]] — Fable's verbatim forward design + the two caveats
 - [[w42-champion-selfplay-fixed-point]] — the #26 belief-only loop (the shallow fixed
   point) · [[arena]] — the measuring stick

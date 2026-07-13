@@ -1,9 +1,9 @@
 ---
 title: "Gemma Tool Responses: assistant.tool_responses, not role='tool'"
 kind: decision
-first_seen: 54f7776
-last_updated: 54f7776
-status: active
+first_seen: 2026-04-20
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -26,12 +26,12 @@ This is the largest single retroactive confound in the Burl replay:
 - **"Environment-shape ceiling" from three A/B runs** (JSON → prose → ASCII+if/then+pivot) — all three were conducted with tools invisible. The A/B was measuring Gemma's behavior under zero tool input, not under varying tool formats.
 - **Every pre-fix adapter's measured bot-match** — all confounded. iter-0 through iter-3-rules, the base-model K1 baseline, the spike v2 88.9% — none of these had working tool responses.
 
-Post-fix validation: base Gemma 4 E2B 5/5 bot-match on N=5 held-out trick-6 decisions, faithful numeric quoting, pivot quoted verbatim from tool response. See [[experiments/chat-template-fix-validation]].
+Post-fix validation: base Gemma 4 E2B 5/5 bot-match on N=5 held-out trick-6 decisions, faithful numeric quoting, pivot quoted verbatim from tool response. See [[chat-template-fix-validation]].
 
 ## Generalizable principle
 
-Audit the *rendered prompt*, not the messages dict, before concluding "the model can't do X." Silent-drop via chat template is the quietest failure mode — parallel to [[decisions/sft-max-seq-length]]'s silent truncation and [[decisions/sft-completion-only-loss]]'s gradient waste. Three known TRL/template traps now documented for Burl.
+Audit the *rendered prompt*, not the messages dict, before concluding "the model can't do X." Silent-drop via chat template is the quietest failure mode — parallel to [[sft-max-seq-length]]'s silent truncation and [[sft-completion-only-loss]]'s gradient waste. Three known TRL/template traps now documented for Burl.
 
 ## Related pages
 
-[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[decisions/sft-max-seq-length]] · [[decisions/sft-completion-only-loss]] · [[conditional-outcome-structural-nonuse]] · [[wax-museum]] · [[experiments/chat-template-fix-validation]] · [[sources/54f7776]]
+[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[sft-max-seq-length]] · [[sft-completion-only-loss]] · [[conditional-outcome-structural-nonuse]] · [[wax-museum]] · [[chat-template-fix-validation]] · [[54f7776]]

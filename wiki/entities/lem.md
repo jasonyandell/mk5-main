@@ -1,8 +1,8 @@
 ---
 title: LEM — Little Expert Model
 kind: entity
-first_seen: a8bccfa
-last_updated: be7efc4
+first_seen: 2026-04-09
+last_updated: 2026-04-17
 status: complete
 superseded_by: burl
 ---
@@ -23,6 +23,10 @@ bot's expected outcome. (lem/OVERVIEW.md @ a8bccfa)
 [[expected-q-value]] delta is the sole success metric. Win rate is not tracked; luck does
 not wash out in a single game but does in aggregate, and E[Q] is a cleaner signal.
 (lem/OVERVIEW.md @ a8bccfa)
+
+The Stage 0 adapter chain (stage-0 → kerry → v3 → v4 → v5 → v9 → v10) is summarized with
+a comparative table on [[stage-0-adapter-line]]; per-adapter receipts live in
+`experiments/`.
 
 ## Two-stage plan
 
@@ -125,7 +129,7 @@ Key milestones:
 - 55/55 primer facts verified against the engine (`lem/rules/verify_primer.py`).
 - 3500-example Q&A corpus generated across 7 categories.
 - Loss: 32 → 0.001 in 40 steps; 100% token accuracy by step 50 on [[modal]] L4.
-- [[experiments/second-gemma-contact]]: hand-tracking fixed, final answer legal and correct;
+- [[second-gemma-contact]]: hand-tracking fixed, final answer legal and correct;
   trump membership errors (4-4, 6-4 under fives-trump) remain.
 
 Key insight: trump membership did not transfer from Q&A format to narration-context reasoning.
@@ -134,7 +138,7 @@ correction, not further drilling. (lem/OVERVIEW.md @ 24ae55a)
 
 Stage 1 is unblocked. Next: generate narration dataset in batch, filter to trick-6 decisions,
 build STaR harness, run first E[Q]-delta measurement on held-out seeds.
-See [[experiments/stage-0-v1-training]] for the full training record.
+See [[stage-0-v1-training]] for the full training record.
 
 ### Stage 1 infrastructure (2026-04-10, commit b99c64d)
 
@@ -143,7 +147,7 @@ See [[experiments/stage-0-v1-training]] for the full training record.
   `lem/data/narrations_eval.jsonl` (seeds 900000–900049, 812 examples).
 - **Held-out eval seeds declared** — seeds 900000–909999 are permanently reserved for
   evaluation and must never appear in any training dataset. All [[expected-q-value]] delta
-  measurements use this range. See [[decisions/eval-seed-holdout]].
+  measurements use this range. See [[eval-seed-holdout]].
   Training seeds: 0–899999; within training, `seed % 1000 < 950` → train, `>= 950` → val.
   (lem/OVERVIEW.md @ b99c64d)
 - **Training moves to A100** — Stage 1 training runs on [[modal]] A100 (was L4 for Stage 0).
@@ -155,12 +159,12 @@ See [[experiments/stage-0-v1-training]] for the full training record.
 - **[[star-harness]] built** — Modal batch function implementing the 6-step STaR flow:
   inference → parse → K1 grade → keep or rationalize → JSONL output.
 - **5-example smoke test passed end-to-end** — 1 K1 pass (20%), 2 failures rationalized,
-  2 illegals rationalized, all traces collected. See [[experiments/star-harness-5ex-smoke]].
+  2 illegals rationalized, all traces collected. See [[star-harness-5ex-smoke]].
 - **Base-model K1 baseline measured** — 10 trick-6 decisions, base Gemma (no adapter),
   local llama.cpp: 60% K1 pass / 30% legal-suboptimal / 10% illegal / 0% parse-fail.
   Surprisingly high; suggests many trick-6 decisions are near-argmax-unanimous.
   This is the number Stage 0 adapter + STaR iterations must beat.
-  See [[experiments/base-model-k1-baseline]].
+  See [[base-model-k1-baseline]].
 - **Single-GPU continuous loop** (`star_loop.py`) — HF `model.generate()` batch inference
   + K1 grade + rationalize + LoRA train + HF push, all in one Modal function. (vLLM was
   originally used but abandoned — see infrastructure note below.)
@@ -170,8 +174,8 @@ See [[experiments/stage-0-v1-training]] for the full training record.
 ### Stage 1 iteration 0 (2026-04-10, commits 68a0416–576b694)
 
 **Result**: 30% K1 pass / 40% illegal, 15 min on H100, ~$1.
-The 40% illegal rate lands squarely in the [[decisions/discard-illegal-traces]] prediction
-zone ("~40% = Stage 0 needs more rules work"). See [[experiments/star-iter-0]].
+The 40% illegal rate lands squarely in the [[discard-illegal-traces]] prediction
+zone ("~40% = Stage 0 needs more rules work"). See [[star-iter-0]].
 
 **Compute setup that works at this frontier:**
 - H100 — full STaR loop (`star_loop.py`); ~15 min/iteration
@@ -239,7 +243,7 @@ the warning is architectural, not a bug. No training changes needed.
 
 - **Narration v3** adds a public state block after every trick: all dominoes played so far
   (N/28), count domino status (taken by which team or still out), and the narrator's
-  remaining hand. See [[decisions/public-state-block]]. Cost: ~60 tokens/trick, ~300 extra
+  remaining hand. See [[public-state-block]]. Cost: ~60 tokens/trick, ~300 extra
   per prompt. Rationale: state that is visible at the real table should be given, not
   reconstructed from prose — a 2B model should not bear the bookkeeping burden that no
   human player bears either. (commit message @ 7f1994e)
@@ -256,7 +260,7 @@ both humans and the model. Adapter trained in 150 steps on [[modal]] B200.
   no trump" for 6-2/6-1 correctly), trump membership still partially wrong (6-4 stubbornly
   called trump under fives — same narrowed error from contact 1), strategic reasoning
   dramatically deeper (evaluates both options), final answer legal and correct.
-- See [[experiments/third-gemma-contact]]. (commit messages @ f8cdbe7, 43009a4)
+- See [[third-gemma-contact]]. (commit messages @ f8cdbe7, 43009a4)
 
 ### Kerry STaR and Stage 0 v3 — 2026-04-11, commits a2498e4–8c1bb14
 
@@ -295,16 +299,16 @@ records: `where_is` (track a domino across tricks), `count_status` (count captur
 - **Eval results** (flexible grader, 100 held-out examples): `is_trump` 100%, `where_is`
   90%, `legal_moves` 70%, `count_status` 60%, `what_beats` 15%. Overall **67%**.
 - **Key finding**: two eval bugs (EOS token + left-pad slicing) were masking real model
-  knowledge in earlier iterations. See [[decisions/flexible-grader]] and [[sources/1d3e1b7]].
+  knowledge in earlier iterations. See [[flexible-grader]] and [[1d3e1b7]].
 - **Behavioral change**: thinking mode disabled for inference — base model "I am reasoning
   about Bridge" hallucinations cease with adapter loaded and thinking off.
-- See [[v4-adapter]] and [[experiments/stage-0-v4-comprehension-eval]].
+- See [[v4-adapter]] and [[stage-0-v4-comprehension-eval]].
 
 (commit messages @ 4729dad, 1d3e1b7, 3c33e86, 2f11f32)
 
 ### Stage 0 v5: base model pivot to Qwen 3 1.7B — 2026-04-16, commit 3465e29
 
-Gemma 4 E2B retired as the LEM base model. See [[decisions/base-model-pivot-qwen]].
+Gemma 4 E2B retired as the LEM base model. See [[base-model-pivot-qwen]].
 
 - **Why**: Gemma was both slower (architectural — PLE, KV-sharing, no flash-attention-2)
   and less accurate (60% on comprehension_eval_v5 vs Qwen's 100%). The B200 underutilization
@@ -322,21 +326,21 @@ Gemma 4 E2B retired as the LEM base model. See [[decisions/base-model-pivot-qwen
 **v7→v9 (b857299)**: Curriculum expands from 5 to 14 categories. New structured-reasoning-template
 categories: `conditional_beat` (v7), `beaters_in_unseen`, `partner_response`,
 `intervention_check` (v8), `visibility_audit`, `highest_unseen_in_suit` (v9). A
-[[topics/rationalization-verifier]] (6 engine checks) filters hallucinations out of
+[[rationalization-verifier]] (6 engine checks) filters hallucinations out of
 training data. [[v9-adapter]] hits **83% comprehension** overall. Rationalization plateaus
 at ~68/100 on 1.7B. `visibility_audit` at 0% on all sizes — structural format problem
-(long enumeration), not capacity. See [[experiments/stage-0-v9-14categories]].
+(long enumeration), not capacity. See [[stage-0-v9-14categories]].
 
 **v10 + 14B (0c7392f)**: Two parallel experiments:
 - [[v10-adapter]] joint-trains v9 comprehension + 331 upweighted (10×) clean rationalizations.
   Transition test: **55/100 bot-match**, 96/100 legal, visible reasoning. 83% comprehension preserved.
 - [[qwen3-14b]] (same v9 data): **86% comprehension** (+3pp), **97/100 rationalization** (+43pp over 1.7B).
   Lucid multi-factor reasoning emerges. `partner_response` 48→75%, `beaters_in_unseen` 46→61%.
-  See [[experiments/qwen-14b-capacity]].
+  See [[qwen-14b-capacity]].
 
 **Mask fix (be7efc4)**: TRL's `SFTConfig` default computes loss over prompt+answer — ~50-token
 answer diluted ~9× by memorized prompt tokens. Fix: `prompt`/`completion` format enables
-completion-only loss. [[decisions/sft-completion-only-loss]]. 1.7B v10-maskfix: **86% comprehension**
+completion-only loss. [[sft-completion-only-loss]]. 1.7B v10-maskfix: **86% comprehension**
 (= 14B v9 at 1/3 cost). `intervention_check` 70→88%, `partner_response` 48→58%,
 `beaters_in_unseen` 46→56%. Bot-match **55/100 unchanged** — confirming it is not a
 gradient-allocation problem. Capacity or STaR is the next lever.
@@ -346,7 +350,7 @@ gradient-allocation problem. Capacity or STaR is the next lever.
 - 14B rationalization (97/100) is still the ceiling; mask fix does not close that gap.
 - Open paths: compound 14B + joint training, or STaR on v10/14B.
 
-See [[experiments/v10-maskfix-breakthrough]]. (commit messages @ b857299, 0c7392f, be7efc4)
+See [[v10-maskfix-breakthrough]]. (commit messages @ b857299, 0c7392f, be7efc4)
 
 ## How it ended
 

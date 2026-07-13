@@ -1,14 +1,14 @@
 ---
 title: "Chat-Template Fix Validation (Burl N=5)"
 kind: experiment
-first_seen: 54f7776
-last_updated: 54f7776
-status: superseded
+first_seen: 2026-04-20
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
 
-5 held-out trick-6 decisions run with the tool-response shape fix applied ([[decisions/gemma-tool-response-shape]]). Base [[gemma-4-e2b]] scores 5/5 bot-match with tool responses now visible. Demonstrates what the model can do when the harness actually works.
+5 held-out trick-6 decisions run with the tool-response shape fix applied ([[gemma-tool-response-shape]]). Base [[gemma-4-e2b]] scores 5/5 bot-match with tool responses now visible. Demonstrates what the model can do when the harness actually works.
 
 ([burl/wax_museum/ @ 54f7776](../sources/54f7776.md))
 
@@ -27,7 +27,7 @@ status: superseded
 
 ## Significance
 
-5/5 bot-match from base Gemma with working tools is the clearest evidence that the [[burl]] premise holds — a 2B model can reason effectively about Texas 42 when it can actually see tool outputs. Every prior measurement ([[experiments/burl-move3-base]], [[experiments/burl-move4-native-spike]], all STaR iterations) was confounded by invisible tool responses.
+5/5 bot-match from base Gemma with working tools is the clearest evidence that the [[burl]] premise holds — a 2B model can reason effectively about Texas 42 when it can actually see tool outputs. Every prior measurement ([[burl-move3-base]], [[burl-move4-native-spike]], all STaR iterations) was confounded by invisible tool responses.
 
 The [[iter3-rules-adapter]]'s 90% result remains impressive but now needs reframing: it was achieving near-90% under zero tool-input conditions, not under full tool orchestration. What LoRA learned under the confound is unclear — pattern-match on prompt shape, or genuine tool-orchestration reasoning?
 
@@ -45,4 +45,4 @@ that bug 17 commits (one day) later.
 
 ## Related pages
 
-[[decisions/gemma-tool-response-shape]] · [[wax-museum]] · [[burl]] · [[gemma-4-e2b]] · [[iter3-rules-adapter]] · [[experiments/burl-move4-native-spike]] · [[sources/54f7776]]
+[[gemma-tool-response-shape]] · [[wax-museum]] · [[burl]] · [[gemma-4-e2b]] · [[iter3-rules-adapter]] · [[burl-move4-native-spike]] · [[54f7776]]

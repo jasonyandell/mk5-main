@@ -1,14 +1,14 @@
 ---
 title: Qwen 3 14B Capacity Experiment
 kind: experiment
-first_seen: 0c7392f
-last_updated: 0c7392f
-status: active
+first_seen: 2026-04-17
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
 
-[[qwen3-14b]] base trained on the same v9 corpus (14 categories) with the same hyperparameters as the 1.7B run. Tests whether the ~68/100 rationalization ceiling and weaker list-enumeration scores in [[experiments/stage-0-v9-14categories]] are capacity-limited.
+[[qwen3-14b]] base trained on the same v9 corpus (14 categories) with the same hyperparameters as the 1.7B run. Tests whether the ~68/100 rationalization ceiling and weaker list-enumeration scores in [[stage-0-v9-14categories]] are capacity-limited.
 
 ([sources/0c7392f](../sources/0c7392f.md))
 
@@ -36,14 +36,14 @@ Capacity helps substantially for list-enumeration tasks (`partner_response`, `be
 
 **visibility_audit at 0% on both:** confirms long-enumeration failure is structural (answer format), not a capacity problem. Both models fail equally. See [[single-fact-enumeration]].
 
-**The capacity gap narrows later:** [[experiments/v10-maskfix-breakthrough]] shows that 1.7B with the gradient mask fix reaches 86% comprehension — matching 14B v9 at roughly 1/3 the training compute. This retroactively suggests the earlier 1.7B/14B comprehension gap was partly gradient allocation, not purely capacity.
+**The capacity gap narrows later:** [[v10-maskfix-breakthrough]] shows that 1.7B with the gradient mask fix reaches 86% comprehension — matching 14B v9 at roughly 1/3 the training compute. This retroactively suggests the earlier 1.7B/14B comprehension gap was partly gradient allocation, not purely capacity.
 
 **Open question at this frontier:** does 14B's 97/100 rationalization survive the mask fix? Not tested — but if 1.7B can close the comprehension gap this way, the rationalization gap may also narrow.
 
 ## Cross-commit finding
 
-Parallel 1.7B v10 experiment (same commit): scout 500 decisions on v9 → 331 clean rationalizations (66% pass) → joint training → 55/100 bot-match (crosses 50%), 96/100 legal, 83% comprehension preserved. See [[sources/0c7392f]] for v10 1.7B details.
+Parallel 1.7B v10 experiment (same commit): scout 500 decisions on v9 → 331 clean rationalizations (66% pass) → joint training → 55/100 bot-match (crosses 50%), 96/100 legal, 83% comprehension preserved. See [[0c7392f]] for v10 1.7B details.
 
 ## Related pages
 
-[[qwen3-14b]] · [[qwen3-1.7b]] · [[v9-adapter]] · [[v10-adapter]] · [[single-fact-enumeration]] · [[rationalization-verifier]] · [[r1-rationalization]] · [[experiments/stage-0-v9-14categories]] · [[experiments/v10-maskfix-breakthrough]] · [[sources/0c7392f]]
+[[qwen3-14b]] · [[qwen3-1.7b]] · [[v9-adapter]] · [[v10-adapter]] · [[single-fact-enumeration]] · [[rationalization-verifier]] · [[r1-rationalization]] · [[stage-0-v9-14categories]] · [[v10-maskfix-breakthrough]] · [[0c7392f]]

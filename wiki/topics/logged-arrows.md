@@ -1,8 +1,8 @@
 ---
 title: logged-arrows
 kind: topic
-first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+first_seen: 2026-05-02
+last_updated: 2026-05-02
 status: superseded
 ---
 
@@ -29,5 +29,5 @@ The first `burl/lab` implementation preserved event sourcing and rendered `ToolS
 ## Status
 
 Downstream of [[burl-lab]], which went dormant 2026-05-07 and was superseded by
-[[champion]] / [[jud]]. The design remains correct as documented; it is not carried
+[[jud]]. The design remains correct as documented; it is not carried
 forward into the current architecture.

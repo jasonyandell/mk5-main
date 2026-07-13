@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 (continual-resolving look-ahead)
 kind: topic
-first_seen: 31e10ef
-last_updated: b42669a
+first_seen: 2026-04-20
+last_updated: 2026-04-22
 status: superseded
 ---
 
@@ -10,7 +10,7 @@ status: superseded
 
 LAMIR (Look-Ahead Monte Carlo with Information Re-weighting) is a 2025 technique for doing look-ahead during imperfect-information game play by sampling hidden-state worlds, evaluating each via a neural Q head, and aggregating by the current belief posterior. "LAMIR-1" is the depth-1 variant: a single look-ahead step (31e10ef).
 
-**Superseded.** Every rollout mode built here was measured against direct π_me and lost — see [[lamir1-ceiling]] for the full ladder and root cause. The project took pivot option 4 (self-play/value-native, no CFR+), which became [[w42-jud-v1]]/[[champion]], not a further LAMIR refinement. This page is the frozen historical record of the depth-1 attempt, not an open frontier.
+**Superseded.** Every rollout mode built here was measured against direct π_me and lost — see [[lamir1-ceiling]] for the full ladder and root cause. The project took pivot option 4 (self-play/value-native, no CFR+), which became [[w42-jud-v1]]/[[jud]], not a further LAMIR refinement. This page is the frozen historical record of the depth-1 attempt, not an open frontier.
 
 ## Why it matters for Gus
 
@@ -68,4 +68,4 @@ Both bugs are silent — they produce plausible-looking numbers without crashing
 
 ## Links
 
-[[gus]] [[joint-world-tensor]] [[expected-q-value]] [[student-distillation]] [[forge]] [[pimc]] [[qmae-plateau]] [[pi-opp-head]] [[lamir1-ceiling]] [[w42-jud-v1]] [[champion]]
+[[gus]] [[joint-world-tensor]] [[expected-q-value]] [[student-distillation]] [[forge]] [[pimc]] [[qmae-plateau]] [[pi-opp-head]] [[lamir1-ceiling]] [[w42-jud-v1]] [[jud]]

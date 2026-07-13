@@ -1,9 +1,9 @@
 ---
 title: conditional_outcome structurally unused (confounded — see Reframe)
 kind: topic
-first_seen: 35c75ff
-last_updated: 54f7776
-status: reframed
+first_seen: 2026-04-19
+last_updated: 2026-04-20
+status: complete
 ---
 
 ## Reframe (54f7776)
@@ -49,4 +49,4 @@ With tool responses now visible, does the model reach for `conditional_outcome` 
 
 ## Links
 
-[[burl]] [[zeb]] [[decisions/zeb-parked-eq-primitive]] [[tool-orchestration]] [[selfplay-arena]] [[expected-q-value]]
+[[burl]] [[zeb]] [[zeb-parked-eq-primitive]] [[tool-orchestration]] [[burl-selfplay-arena]] [[expected-q-value]]

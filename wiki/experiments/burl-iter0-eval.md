@@ -1,9 +1,9 @@
 ---
 title: "Phase 4: Burl iter-0 Adapter Eval (Regressed)"
 kind: experiment
-first_seen: 789e14d
-last_updated: 789e14d
-status: active
+first_seen: 2026-04-19
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

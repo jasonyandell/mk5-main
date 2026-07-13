@@ -30,9 +30,9 @@ Two halves, one game:
   Texas 42: `state = replayActions(config, history)`, a unified Layer system, capability-based
   multiplayer. The founding substrate; stable.
 - **The ML frontier** (`forge/`, `gus/`, `champion/`, `arena/`, `w42/`) — a GPU oracle that
-  solves the game, E[Q] under uncertainty, distilled students, and the current push: the
-  **champion**, one belief-state player that bids and plays full games ([[champion]], [[jud]]
-  in the wiki).
+  solves the game, E[Q] under uncertainty, distilled students, and the current push:
+  **jud**, one belief-state player that bids and plays full games ([[jud]] in the wiki;
+  the `champion/` dir and GitHub milestone keep the push's old aspirational name).
 
 ## The wiki is the knowledge base
 
@@ -47,7 +47,7 @@ entire history and current state, with backlinks throughout.
 | The game itself (rules, suit algebra) | `wiki/entities/texas-42.md` |
 | Engine architecture | `wiki/entities/engine.md` |
 | Oracle / E[Q] / training pipeline | `wiki/entities/forge.md` |
-| Champion / jud (current frontier) | `wiki/entities/champion.md`, `wiki/entities/jud.md` |
+| Jud (current frontier) | `wiki/entities/jud.md`, `wiki/trails/champion-ladder.md` |
 | Book validation (Winning 42) | `wiki/entities/w42.md` |
 | Historical projects | `wiki/entities/lem.md`, `wiki/entities/burl.md`, `wiki/entities/gus.md` |
 

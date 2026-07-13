@@ -1,8 +1,8 @@
 ---
 title: Commit-discipline collapse
 kind: topic
-first_seen: 622816a
-last_updated: 522779c5
+first_seen: 2026-04-25
+last_updated: 2026-07-11
 status: active
 ---
 

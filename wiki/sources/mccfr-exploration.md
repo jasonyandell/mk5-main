@@ -1,8 +1,8 @@
 ---
 title: MCCFR exploration postmortem (Dec 2025)
 kind: source
-first_seen: 8699fc8a
-last_updated: e2171816
+first_seen: 2025-12-20
+last_updated: 2026-07-11
 status: active
 ---
 

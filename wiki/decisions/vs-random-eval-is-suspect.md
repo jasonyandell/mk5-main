@@ -1,8 +1,8 @@
 ---
 title: "vs-Random Win Rate Is a Suspect Metric for Marks-to-7 Play"
 kind: decision
-first_seen: era4
-last_updated: era4
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 status: active
 ---
 
@@ -73,4 +73,4 @@ silently misgrade the specific comparisons — capacity ceilings, teacher-signal
 that a project treats as load-bearing.
 
 See [[zeb]] · [[full-teacher-eq-experiment]] · [[eval-matrix-bradley-terry]] ·
-[[sources/claude/era4-zeb-era|conversation digest]].
+[[era4-zeb-era|conversation digest]].

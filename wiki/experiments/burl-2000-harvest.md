@@ -1,8 +1,8 @@
 ---
 title: Burl 2000-decision batched harvest (D_required_first)
 kind: experiment
-first_seen: 063fcac
-last_updated: 02d9096
+first_seen: 2026-04-24
+last_updated: 2026-04-25
 status: complete
 ---
 
@@ -100,4 +100,4 @@ since 2026-05-07.
 
 ## Links
 
-[[burl]] [[wax-museum]] [[gemma-4-e2b]] [[belief-trajectory]] [[gus]] [[star]] [[r1-rationalization]] [[batched-harvest-resilience]] [[max-tokens-2048-floor]] [[sources/063fcac]] [[sources/1bf1885]] [[sources/d858781]]
+[[burl]] [[wax-museum]] [[gemma-4-e2b]] [[belief-trajectory]] [[gus]] [[star]] [[r1-rationalization]] [[batched-harvest-resilience]] [[max-tokens-2048-floor]] [[063fcac]] [[1bf1885]] [[d858781]]

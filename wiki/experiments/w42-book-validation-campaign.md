@@ -1,10 +1,19 @@
 ---
 title: w42 Book Validation Campaign
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-13
 status: superseded
 ---
+
+**Superseded as a rollup.** The canonical synthesis of what this campaign found
+is [[w42-book-claim-synthesis-and-ai-directions]]; the closure baseline it
+started from is [[w42-phase4-final-claim-audit]]. This page remains the
+wave-by-wave operational record. Which clock is this: `Wave 0–5` and bookval
+`v1`/`v2`/`v3` are this 2026-05-03 campaign (v2/v3 are utility-lens passes, not
+versions of the v1 corpus); `phase2/3/4` names the earlier 2026-05-02→03
+claim-ledger sweep; the 2026-06+ [[champion-ladder]] rungs are a third,
+unrelated clock.
 
 ## Mission
 
@@ -21,7 +30,7 @@ the central ledger or the synthesis page.
 ## Status
 
 **Dormant since Wave 5 (2026-05-03); superseded in research attention by
-[[champion]]/[[jud]] (no closure note was written at the time, no further
+[[jud]] (no closure note was written at the time, no further
 waves were planned).** This table was never updated after Wave 4.1 landed;
 the Wave 5 row below was added by the era-6 audit (2026-07-06) from the
 on-disk artifact, which existed but had never been entered.
@@ -226,7 +235,7 @@ the second is the cheap general-purpose tool. Detail in
 
 None of the three were built as planning architectures. [[book-strategy-player]]
 was designed (2026-05-03/04) but never implemented — superseded before build
-by the auction-first [[champion]]/[[jud]] redirection ([[champion-design-review]],
+by the auction-first [[jud]] redirection ([[champion-design-review]],
 2026-06-09). The Wave 5 probe that actually ran, [[w42-champion-teaching-battery]]
 (2026-06-13), answered the book-validation use case a different way: it checks
 book claims against the champion's own realized self-play trajectories,

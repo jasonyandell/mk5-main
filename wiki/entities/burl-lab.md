@@ -1,9 +1,9 @@
 ---
 title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
-first_seen: a2db3c7
-last_updated: local-2026-05-07
-status: superseded
+first_seen: 2026-05-02
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is
@@ -186,7 +186,7 @@ The package was first called `burl/harness/` before the team noticed the collisi
 ## Status
 
 Last commit `465d1af` (2026-05-07); no further `burl/` commits since. The frontier
-moved on 2026-06-09 to [[champion]] / [[w42-jud-v1|jud]] — pure-NN bid/play nets, an
+moved on 2026-06-09 to [[jud]] ([[w42-jud-v1]]) — pure-NN bid/play nets, an
 unrelated architecture. burl-lab never reached the parity milestone that would have
 retired [[burl-chat]].
 

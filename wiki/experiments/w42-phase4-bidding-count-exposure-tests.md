@@ -1,9 +1,9 @@
 ---
 title: w42 Phase4 Bidding Count Exposure Tests
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+first_seen: 2026-05-03
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

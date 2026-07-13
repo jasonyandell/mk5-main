@@ -1,8 +1,8 @@
 ---
 title: wax_museum (hard-gated HATEOAS harness)
 kind: entity
-first_seen: 54f7776
-last_updated: 063fcac
+first_seen: 2026-04-20
+last_updated: 2026-04-24
 status: superseded
 ---
 

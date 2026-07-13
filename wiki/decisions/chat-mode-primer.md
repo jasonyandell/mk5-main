@@ -1,9 +1,9 @@
 ---
 title: Chat-mode primer — synthetic assistant turn after commit
 kind: decision
-first_seen: cba521d
-last_updated: cba521d
-status: active
+first_seen: 2026-04-30
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -16,7 +16,7 @@ The user's first question follows this primer turn, not the raw `commit_play` en
 
 ## Why
 
-[[burl]]'s training distribution is `(system="you are Burl, pick a play", user=state, assistant=thought + tool_calls + commit_play)`. Adapters distilled on this shape (especially [[experiments/iter5-e1-rank-sweep|e1-rank16]]) have been pulled hard toward emitting `commit_play` as the next assistant turn. Even base [[gemma-4-e2b]], without an adapter, shows residual pattern-matching: the system prompt is 5,300 chars of "call tools, commit_play when ready," and the reconstructed reasoning trace ends with `[committed play 14]` — both signals telling the model "you are mid-decision, the next thing is to commit."
+[[burl]]'s training distribution is `(system="you are Burl, pick a play", user=state, assistant=thought + tool_calls + commit_play)`. Adapters distilled on this shape (especially [[iter5-e1-rank-sweep|e1-rank16]]) have been pulled hard toward emitting `commit_play` as the next assistant turn. Even base [[gemma-4-e2b]], without an adapter, shows residual pattern-matching: the system prompt is 5,300 chars of "call tools, commit_play when ready," and the reconstructed reasoning trace ends with `[committed play 14]` — both signals telling the model "you are mid-decision, the next thing is to commit."
 
 A user message at the end ("ask me anything") is one short string against ~14 K tokens of "do tool calls." The flea cannot beat the elephant on a single turn.
 

@@ -1,8 +1,8 @@
 ---
 title: Partnership Research Gates
 kind: decision
-first_seen: bc4eb386
-last_updated: f6b691da
+first_seen: 2026-07-11
+last_updated: 2026-07-12
 status: active
 ---
 
@@ -118,5 +118,5 @@ break the wall, but it is not [[partnership-value]].
 
 ## Links
 
-[[partnership-wall-research]] [[partnership-value]] [[the-wall]] [[champion]]
+[[partnership-wall-research]] [[partnership-value]] [[the-wall]] [[jud]]
 [[w42-jud-v1]] [[champion-design-review]] [[w42-book-second-pass]]

@@ -1,8 +1,8 @@
 ---
 title: forge-analysis (oracle game-tree analytics workstream)
 kind: entity
-first_seen: 5ffdf58
-last_updated: b512324
+first_seen: 2026-01-06
+last_updated: 2026-06-09
 status: active
 ---
 

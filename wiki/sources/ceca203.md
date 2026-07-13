@@ -1,8 +1,8 @@
 ---
 title: "Source digest: ceca203 — iter-5 E1 + E2 writeups"
 kind: source
-first_seen: ceca203
-last_updated: ceca203
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -20,8 +20,8 @@ status: active
 > in E3 rollout (N=500). Blocker is model policy, not tool surface.
 > Writeups include "What I would NOT conclude" sections.
 
-Documentation commit landing two experiment writeups. Full analysis: [[experiments/iter5-e1-rank-sweep]] and [[experiments/iter5-e2-candlewax-null]].
+Documentation commit landing two experiment writeups. Full analysis: [[iter5-e1-rank-sweep]] and [[iter5-e2-candlewax-null]].
 
 ## Related pages
 
-[[experiments/iter5-e1-rank-sweep]] · [[experiments/iter5-e2-candlewax-null]] · [[preserve-thoughts]] · [[candlewax]] · [[burl]]
+[[iter5-e1-rank-sweep]] · [[iter5-e2-candlewax-null]] · [[preserve-thoughts]] · [[candlewax]] · [[burl]]

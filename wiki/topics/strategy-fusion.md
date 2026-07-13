@@ -1,8 +1,8 @@
 ---
 title: "Strategy Fusion — E[max(score)] ≥ max(E[score]), the diagnosis, and the E[Q] founding sentence"
 kind: topic
-first_seen: adb6de51
-last_updated: e2171816
+first_seen: 2026-07-06
+last_updated: 2026-07-11
 status: complete
 ---
 
@@ -152,7 +152,7 @@ so clean.
 
 ## Links
 
-[[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[champion]] [[jud]]
+[[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[jud]]
 [[expected-q-value]] [[argmax-q-ceiling]] [[grok-not-converge]] [[zeb]] [[eq-genesis]]
-[[sources/claude/era2-breakthrough-oracle|conversation digest]]
-[[sources/claude/era3-eq-era|conversation digest]]
+[[era2-breakthrough-oracle|conversation digest]]
+[[era3-eq-era|conversation digest]]

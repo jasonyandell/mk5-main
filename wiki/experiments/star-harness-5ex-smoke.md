@@ -1,9 +1,9 @@
 ---
 title: STaR Harness 5-Example Smoke Test
 kind: experiment
-first_seen: 7538016
-last_updated: 7538016
-status: active
+first_seen: 2026-04-10
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -35,8 +35,8 @@ All 5 traces collected to JSONL output.
 
 Pipeline is end-to-end functional. Every path (pass / K1-fail / illegal) produced a kept trace. No LoRA step was run at this stage — this is a plumbing proof, not a learning measurement.
 
-The 20% K1 pass rate on 5 examples is too small to interpret, but the 40% illegal rate matches the hand-tracking errors seen in [[experiments/second-gemma-contact]] and motivates the continuous iteration loop variant of [[star-harness]] introduced in [[sources/8c5fbca]]. The [[experiments/base-model-k1-baseline]] experiment (10 examples, no adapter) provides a more reliable pass-rate baseline.
+The 20% K1 pass rate on 5 examples is too small to interpret, but the 40% illegal rate matches the hand-tracking errors seen in [[second-gemma-contact]] and motivates the continuous iteration loop variant of [[star-harness]] introduced in [[8c5fbca]]. The [[base-model-k1-baseline]] experiment (10 examples, no adapter) provides a more reliable pass-rate baseline.
 
 ## Related pages
 
-[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[experiments/base-model-k1-baseline]] · [[sources/7538016]]
+[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[stage-0-adapter]] · [[gemma-4-e2b]] · [[modal]] · [[base-model-k1-baseline]] · [[7538016]]

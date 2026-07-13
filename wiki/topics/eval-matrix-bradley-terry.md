@@ -1,8 +1,8 @@
 ---
 title: Eval matrix — Bradley-Terry Elo tournament infra
 kind: topic
-first_seen: 4f4220f
-last_updated: f5cbdc1
+first_seen: 2026-02-09
+last_updated: 2026-02-09
 status: complete
 ---
 
@@ -75,4 +75,4 @@ stronger," not "what should a player do with E[Q]'s output." It made the era's o
 load-bearing finding ([[full-teacher-eq-experiment]]) measurable, not itself a finding
 about [[candlewax|the wall]].
 
-See [[zeb]] · [[full-teacher-eq-experiment]] · [[sources/claude/era4-zeb-era|conversation digest]].
+See [[zeb]] · [[full-teacher-eq-experiment]] · [[era4-zeb-era|conversation digest]].

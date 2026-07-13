@@ -1,8 +1,8 @@
 ---
 title: Burl Perf — Phase 3 (Speculative Decoding + Quantization)
 kind: experiment
-first_seen: 29da3d2
-last_updated: ec46190
+first_seen: 2026-04-27
+last_updated: 2026-04-27
 status: complete
 ---
 
@@ -182,7 +182,7 @@ costs bf16 **11.6 GB**.  That's a 45–56% memory cut — enough to:
 - Run two parallel Burl jobs on a single 24 GB / 36 GB M-series
   unified-memory host without OOM.
 - Free GPU budget for KV-cache growth at higher per-turn token
-  budgets ([[burl-perf-phase1]]'s lever 1 work).
+  budgets (phase 1's lever 1 work; no page — see [[perf-sprint-history]]).
 
 Q8 is faster than Q4 in raw decode tok/s (90.8 vs 61–66) — a paradox
 driven by the M5 Max's memory-bandwidth-bound regime: smaller weights
@@ -308,7 +308,7 @@ acceptance signal we need.  The bench instrumentation that wraps
 `stream_generate(... draft_model=...)` should peel `was_drafted`
 out per step and record per-region totals.  If acceptance rate
 on tool-call regions clears 0.6, that's a wiki-worthy finding —
-extracts to [[topics/spec-decode-acceptance]].
+extracts to a planned spec-decode-acceptance topic page that never landed.
 
 ## Test plan (post-RESUME)
 
@@ -343,7 +343,7 @@ escalation rule:
 8. **Wiki update (10 min).**  Fill the tradeoff matrix with real
    numbers, bump `last_updated`, append [[log]] entry, edit
    [[perf-on-the-table]] levers 4 and 6, edit
-   [[entities/gemma-4-e2b]] with the quant variants benched.
+   [[gemma-4-e2b]] with the quant variants benched.
 
 Total active phase budget: ~60 min wall under the team-lead's
 90-min cap, if no escalation triggers.

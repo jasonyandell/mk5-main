@@ -1,4 +1,5 @@
 ---
+kind: experiment
 title: W42 Book Validation Wave 2.H — Ch10 Mark Multiplier Action-Level Evidence
 status: complete
 bead: t42-8na4
@@ -11,6 +12,8 @@ backlinks:
   - [[winning42-ch10-tournament-scoring]]
   - [[w42-bookval-v1-wave1-mark-utility-transform]]
   - [[w42-bookval-v1-wave2-bid-aware-atlas]]
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 # Wave 2.H — Ch10 Mark Multiplier Action-Level Evidence

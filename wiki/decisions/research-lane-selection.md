@@ -1,8 +1,8 @@
 ---
 title: Research Lane Selection (2026-07)
 kind: decision
-first_seen: b28fb55a
-last_updated: b28fb55a
+first_seen: 2026-07-13
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -11,7 +11,8 @@ research decision selects one causal question from the evidence ledger",
 build-ladder step 3) — taken 2026-07-13. Source: an external deep-research
 synthesis over the wiki record, reviewed against
 [[partnership-wall-research]] and adopted; its literature grounding is filed
-at [[search-literature-transfer]].
+at [[search-literature-transfer]]. Selected lanes run per the
+[[research-night]] playbook.
 
 This decision selects **experiments and their order**, not an architecture.
 Promotion still gates through [[partnership-research-gates]] unchanged.
@@ -99,4 +100,4 @@ explanations for exactly that purpose.
 [[partnership-wall-research]] [[partnership-research-gates]] [[the-wall]]
 [[auction-decoder]] [[search-literature-transfer]] [[jud]]
 [[belief-weighted-jud-mcts]] [[convention-aware-blueprint-search]]
-[[world-sampler-mrv-audit]] [[champion]]
+[[world-sampler-mrv-audit]]

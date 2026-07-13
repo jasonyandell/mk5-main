@@ -4,6 +4,8 @@ kind: source
 commit: a9fa0c6
 date: 2026-04-22
 author: Jason Yandell
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 ---
 
 ## Commit message
@@ -32,4 +34,4 @@ that OOD robustness can be learned post-hoc.
 
 ## Links
 
-[[experiments/gus-q-head-augmentation]] · [[topics/lamir1]]
+[[gus-q-head-augmentation]] · [[lamir1]]

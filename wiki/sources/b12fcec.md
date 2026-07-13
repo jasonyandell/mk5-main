@@ -1,8 +1,8 @@
 ---
 title: "Source digest: b12fcec — relax scratchpad validation to hand-only (counts informational)"
 kind: source
-first_seen: b12fcec
-last_updated: b12fcec
+first_seen: 2026-04-11
+last_updated: 2026-04-11
 status: active
 ---
 
@@ -32,8 +32,8 @@ After 64.5% invalid rate on iteration 0, the COUNTS check is removed as a hard g
 
 An additional leniency: if the model does not output a HAND label but plays from the correct hand, the trace is accepted. This handles models that follow the spirit but not the letter of the scratchpad format.
 
-Superseded minutes later by [[sources/78ba940]], which reverts entirely to simple [[k1-grading]].
+Superseded minutes later by [[78ba940]], which reverts entirely to simple [[k1-grading]].
 
 ## Related pages
 
-[[scratchpad-validation]] · [[k1-grading]] · [[star-harness]] · [[experiments/scratchpad-v2-iter0]] · [[sources/380f3fa]] · [[sources/78ba940]]
+[[scratchpad-validation]] · [[k1-grading]] · [[star-harness]] · [[scratchpad-v2-iter0]] · [[380f3fa]] · [[78ba940]]

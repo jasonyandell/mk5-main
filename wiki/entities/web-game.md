@@ -1,8 +1,8 @@
 ---
 title: The Web Game (Era 1 — prologue)
 kind: entity
-first_seen: b25480b
-last_updated: 522779c5
+first_seen: 2025-07-28
+last_updated: 2026-07-11
 status: retired
 ---
 
@@ -17,7 +17,7 @@ get the rules, the state model, and a working non-ML AI right, and it
 succeeded: the engine (`src/game/`), the [[layer-system]], and
 capability-based multiplayer (`src/multiplayer/`, [[multiplayer-pattern]])
 it produced are still current today — current reference at
-[[engine-architecture]] ([[sources/claude/era1-web-game-prologue|conversation digest]]).
+[[engine-architecture]] ([[era1-web-game-prologue|conversation digest]]).
 
 This page is a retired-era hub. It exists to route to what Era 1 actually
 built, and to preserve two things later eras needed but under-filed: the
@@ -32,7 +32,7 @@ almost entirely deletion (53 files, +624/−10747) of a prior, already-existing
 build. Jason described that predecessor five days earlier: *"I vibe coded a
 giant app to play Texas 42. 60k lines of code and markdown specs of dubious
 completeness. it was built tdd so it has a boatload of tests."*
-([[sources/claude/era1-web-game-prologue|conversation digest]]) At least one full rewrite
+([[era1-web-game-prologue|conversation digest]]) At least one full rewrite
 predates the visible git history. "Eight rewrites" describes a cadence, not a
 single messy project — the era's grammar is delete-and-rebuild, repeated.
 
@@ -79,7 +79,7 @@ canonized as CLAUDE.md's North Star:
 > fundamental rewrites and it gets better every time and now it's sweeeet."*
 > *"I'm building like a crystal palace in the sky over here because that's
 > what's fun! so any little blemish just won't do and I chase it down."*
-> (2025-11-16, [[sources/claude/era1-web-game-prologue|conversation digest]])
+> (2025-11-16, [[era1-web-game-prologue|conversation digest]])
 
 A second, unrelated "Crystal Palace" epic (suit-system unification,
 2025-12-20/21) closes the era: `rules-base.ts` becomes the single source of
@@ -171,4 +171,4 @@ Three things later eras rediscovered instead of reading here:
 ## Related pages
 
 [[the-book-enters]] · [[multiplayer-lineage]] · [[pre-ml-ai-attempts]] ·
-[[pimc]] · [[engine]] · [[texas-42]] · [[sources/claude/era1-web-game-prologue|conversation digest]]
+[[pimc]] · [[engine]] · [[texas-42]] · [[era1-web-game-prologue|conversation digest]]

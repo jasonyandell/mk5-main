@@ -1,8 +1,8 @@
 ---
 title: Qwen 3 1.7B
 kind: entity
-first_seen: 3465e29
-last_updated: be7efc4
+first_seen: 2026-04-16
+last_updated: 2026-04-17
 status: complete
 ---
 
@@ -25,7 +25,7 @@ and lower comprehension accuracy. (commit message @ 3465e29)
 | Fine-tune tooling | Unsloth (with monkey-patch) | Unsloth + xformers |
 
 The B200 underutilization bead (t42-hv08) was resolved by switching models rather than
-tuning GPU/kernel configuration. (commit message @ 3465e29; see [[decisions/base-model-pivot-qwen]])
+tuning GPU/kernel configuration. (commit message @ 3465e29; see [[base-model-pivot-qwen]])
 
 ## Properties
 
@@ -44,7 +44,7 @@ tuning GPU/kernel configuration. (commit message @ 3465e29; see [[decisions/base
 | [[v10-adapter]] (maskfix) | **86%** | = [[qwen3-14b]] v9 at 1/3 cost; bot-match still 55/100 |
 
 Current best: `jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix` — 86% comprehension.
-See [[experiments/v10-maskfix-breakthrough]]. (commit messages @ b857299, 0c7392f, be7efc4)
+See [[v10-maskfix-breakthrough]]. (commit messages @ b857299, 0c7392f, be7efc4)
 
 ## End state
 

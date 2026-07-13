@@ -27,7 +27,7 @@ We track **the frontier**: what the project understood to be true *at this commi
 ```
 wiki/
 ├── AGENTS.md          ← this file
-├── index.md           ← catalog of every page, updated every ingest
+├── index.md           ← thin router; catalogs split per kind in index-<kind>.md
 ├── log.md             ← chronological append-only record of ingests
 ├── entities/          ← named things: projects, people, models, systems, named artifacts
 ├── topics/            ← concepts and methods: STaR, backwards curriculum, K1 grading
@@ -59,6 +59,22 @@ pages as one of three navigation roles:
 This preserves the Karpathy/Obsidian shape: organization still emerges from
 backlinks and curated trails, not from a rigid folder taxonomy.
 
+Routing rules:
+
+- Every `experiments/` page is linked (bare) from its family hub, a trail, or a
+  campaign rollup that is itself so linked. The linter's RT01 check enforces
+  reachability; "linked from the index" does not count as routed.
+- Each campaign has exactly **one** current rollup; all others carry
+  `complete`/`superseded` and a forward link to it. The rollup enumerates every
+  member as a real backlink — never a prose range ("ch01 through ch16" once left
+  fourteen pages with no inbound link from their own trail).
+- Hubs have a size budget: ~150 lines. When a hub exceeds it, extract a trail
+  and thin the hub to summary + routes.
+- When two families share a numbering vocabulary (`phase*`, `wave*`, `v*`,
+  `iter*`, rung `#N`), each rollup opens with a one-line "which clock is this"
+  note. When a body cites a wave/rung with no page, link the page that absorbed
+  it.
+
 ## Page conventions
 
 ### Frontmatter
@@ -69,13 +85,31 @@ Every page starts with YAML frontmatter:
 ---
 title: Human Readable Title
 kind: entity | topic | experiment | decision | source | trail | playbook
-first_seen: <commit-shortsha>
-last_updated: <commit-shortsha>
-status: active | retired | superseded
+first_seen: YYYY-MM-DD
+last_updated: YYYY-MM-DD
+status: active | complete | retired | superseded
 ---
 ```
 
-`status: active` means the frontier still endorses this. `retired` means the project moved on. `superseded` means another page replaced it; link forward.
+- `active` — a live workstream: someone would add to this page this month.
+- `complete` — ran and concluded; the finding stands; nothing replaced it. The
+  terminal state for experiments, campaigns, and era chronicles.
+- `retired` — the frontier abandoned this line; the page is history.
+- `superseded` — a named replacement exists; a forward link is **required**.
+
+Lifecycle rules: an experiment page leaves `active` in the same session its
+result lands — `complete`, `retired`, or `superseded`, never "active by
+default." Verdicts (`contradicted`, `underpowered`, …) are body content, not
+status values. A page may not stay `active` across an era boundary without a
+`last_updated` bump.
+
+`first_seen` and `last_updated` are dates (`YYYY-MM-DD` — the commit date, not
+the sha). Provenance shas live in body citations
+(`([… @ a8bccfa](../sources/a8bccfa.md))`), which pages already carry.
+
+Optional, hubs only: `phase:` is a one-paragraph live tracker of the current
+frontier, and must carry a date. If that date is older than the page body's
+newest claim, the field is stale — fix it in the same session.
 
 ### Body
 
@@ -85,10 +119,34 @@ status: active | retired | superseded
 - **Backlink style: prefer bare in body text.** Obsidian's fuzzy resolution finds the file regardless of directory, and bare links keep pages readable.
   - ✅ Body: `See [[burl-2000-harvest]]; tuned per [[max-tokens-2048-floor]]; resilient via [[batched-harvest-resilience]].`
   - ❌ Body: `See [[experiments/burl-2000-harvest]]; tuned per [[decisions/max-tokens-2048-floor]]; resilient via [[topics/batched-harvest-resilience]].`
-  - Use the fully-qualified form `[[path/name|alias]]` **only** in `index.md`, in log entries that need to disambiguate cross-kind pages, and when two pages share the same bare name (in which case rename one).
+  - Use the fully-qualified form `[[path/name|alias]]` **only** in the index files (`index.md`, `index-*.md`), in log entries that need to disambiguate cross-kind pages, and when two pages share the same bare name (in which case rename one).
   - When you create a new page, link to it bare from every page that mentions it — and audit your existing pages for stale qualified links to it.
 - Cite sources inline: `([lem/OVERVIEW.md @ a8bccfa](../sources/a8bccfa.md))`.
 - Headings: `##` for major sections, `###` for subsections. No `#` — the title is in frontmatter.
+
+### Choosing a kind
+
+Filing a new page, in order:
+
+1. Is it a walkthrough of other pages (a narrative, an era history, a curated
+   reading order)? → `trails/`.
+2. Is it a digest of an external or historical artifact (a commit, a doc, a
+   book chapter, a conversation)? → `sources/`.
+3. Did someone run something and get a result? → `experiments/`. **The finding
+   lives on the experiment page.** A `topics/` page for the underlying concept
+   exists only when ≥2 experiments cite it or the concept outgrew its origin —
+   and then it routes to the experiments rather than restating them.
+4. Is it an explicit choice with alternatives that were rejected? → `decisions/`.
+5. Is it a named, durable system or artifact (repo subproject, model, adapter
+   lineage, external tool)? → `entities/`. A training-run artifact is a receipt
+   (experiment), not an entity; the *lineage* is the entity.
+6. Otherwise — a concept, method, or synthesized piece of knowledge → `topics/`.
+
+### One home per fact
+
+A frontier fact lives on exactly one page; everywhere else links to it. Pages
+that restate the same fact must move in lockstep when the frontier moves — and
+they won't.
 
 ### Filenames
 
@@ -118,7 +176,7 @@ Most sessions start here. Before reading code, check whether the wiki already kn
 2. If the user names a specific concept, jump straight to the likely bare page
    name or use `rg` over `wiki/` to find it. Prefer this to loading the full
    catalog when the slug or phrase is already known.
-3. Use `wiki/index.md` as the catalog fallback and route map, not as mandatory
+3. Use the catalogs (`wiki/index.md` router → `index-<kind>.md`) as the fallback route map, not as mandatory
    first context for every query.
 4. Read the relevant pages. Follow backlinks across roles: frontier hub → trail
    → leaf pages → decisions → source digests.
@@ -148,7 +206,7 @@ For one commit you just made or are ingesting:
    - Update the body so it reads as the current frontier (no hedging, no "previously we thought"). Bump `last_updated` to the commit sha.
    - If the page is being retired/superseded, set `status:` accordingly and add a forward link.
 4. **Create `sources/<sha>.md`** — a compact digest: frontmatter + commit message quote + files-changed table + short "What this commit establishes" narrative + bare `[[backlinks]]` to every touched page.
-5. **Update `index.md`** — add new pages to the catalog, update hooks on pages whose gist changed.
+5. **Update the catalog** — add new pages to the right `index-<kind>.md` (entry shape: `- [[path|name]] — hook (status)`), update hooks on pages whose gist changed. The linter's IX checks enforce bidirectional coverage.
 6. **Append to `log.md`** — one entry in the format below.
 7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop. Skim the touched pages once for `[[kind/name]]` patterns in body text — those should almost always be bare `[[name]]` (see Backlink style above).
 
@@ -161,7 +219,7 @@ For a batch of commits (e.g. catching up after a quiet period, or replaying a tr
 3. **Per ingest, run three roles** (in one session or via a scribe team):
    - **Archivist** reads the raw sources (docs, code diffs, commit message) at the target sha(s) and produces a compact bundle: entities introduced, entities updated, concepts introduced, concepts updated, experiments performed, decisions made, questions raised.
    - **Scribes** update page sets in parallel on disjoint directories (one per `entities/` / `topics/` / `experiments/`). Each receives the bundle + current page contents and rewrites so the page reflects the new frontier.
-   - **Indexer** updates `index.md` (page catalog) and `log.md` (one entry per ingest) and sweeps for dead links + orphans.
+   - **Indexer** updates the `index-<kind>.md` catalogs and `log.md` (one entry per ingest), then runs `scripts/wiki_lint.py`.
 4. **Don't preemptively hedge.** If commit A believed X and commit G reverses it, write A's pages as if X is true; revise at G.
 
 #### Scribe dispatch pattern (for team-based ingests)
@@ -172,9 +230,15 @@ When orchestrating scribes via a team tool:
 - Run the indexer after scribes finish — never in parallel with them — so it sees a stable state.
 - Scribes signal completion by file-on-disk check, not just confirmation messages. If a page's timestamp hasn't moved, the work hasn't landed.
 
-### Lint — occasional health check
+### Lint — mechanical first, judgment second
 
-Run when the wiki feels off, or after a large ingest:
+Run `python -u scripts/wiki_lint.py` (from the repo root) after any session
+that touched `wiki/` — it checks frontmatter validity, dead links, ambiguous
+names, orphanhood, experiment routing, index coverage, and log rotation.
+`--strict` must exit clean before pushing.
+
+Then the judgment checks the linter can't do — run these when the wiki feels
+off, or after a large ingest:
 
 - Contradictions between pages at the same frontier
 - Orphan pages (no inbound links)
@@ -218,6 +282,13 @@ When a later ingest resolves the question, remove it from `questions/open.md` an
 - **Wiki** = synthesis, cross-reference, current frontier. Terse.
 - **Sources** = verbatim doc snapshots at a specific sha, for citation. Long-form raw extracts belong here.
 - When a page needs to quote a source, quote sparingly and link to `sources/<sha>.md` for the full text.
+
+Sources are two shapes: per-commit digests `sources/<sha>.md`, and named
+per-document snapshots `sources/<slug>.md` (postmortems, research beads,
+conversation-era digests, reader reports, book-chapter digests) for artifacts
+with no single commit. Both use `kind: source` and are cataloged in the index.
+Multi-file report bundles live in a dated subdirectory
+(`sources/book-second-pass-2026-07-07/`).
 
 ## Backlinks, not categories
 

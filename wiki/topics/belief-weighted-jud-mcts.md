@@ -1,8 +1,8 @@
 ---
 title: Belief-Weighted Jud MCTS
 kind: topic
-first_seen: f6b691da
-last_updated: b28fb55a
+first_seen: 2026-07-12
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -249,5 +249,5 @@ utility in [[partnership-wall-research]].
 [[jud]] [[w42-jud-v1]] [[convention-aware-blueprint-search]]
 [[partnership-wall-research]] [[partnership-research-gates]]
 [[world-sampler-mrv-audit]] [[gus-qmean-router]] [[lamir1-ceiling]]
-[[alphazero-under-imperfect-information]] [[strategy-fusion]] [[champion]]
+[[alphazero-under-imperfect-information]] [[strategy-fusion]]
 [[search-literature-transfer]] [[auction-decoder]] [[research-lane-selection]]

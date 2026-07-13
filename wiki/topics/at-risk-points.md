@@ -1,9 +1,9 @@
 ---
 title: At-risk points — Roberson's bidding framework
 kind: topic
-first_seen: cba521d
-last_updated: cba521d
-status: active
+first_seen: 2026-04-30
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What
@@ -19,9 +19,9 @@ Two key rules from the chapter:
 
 ## Why it matters here
 
-Roberson's vocabulary is the **canonical 42 voice**, owned by the project via the user's family heritage ([[user_role_and_north_star|user_role_and_north_star]] memory). Any post-commit Q&A corpus ([[post-commit-q-and-a]]) needs to talk in this register, not in Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes).
+Roberson's vocabulary is the **canonical 42 voice**, owned by the project via the user's family heritage (family heritage: Roberson's book names the user's actual relatives). Any post-commit Q&A corpus ([[post-commit-q-and-a]]) needs to talk in this register, not in Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes).
 
-The framework also doubles as a [[topics/rules-as-tools]] target: tool outputs surfacing "you have two offs at five-deuce and ace-blank, your at-risk-points come to 12" would replace raw E[Q] histograms with a Burl-native interpretation layer the model already wants ([[burl-chat-spike]] surfaced this as spontaneous product feedback).
+The framework also doubles as a [[rules-as-tools]] target: tool outputs surfacing "you have two offs at five-deuce and ace-blank, your at-risk-points come to 12" would replace raw E[Q] histograms with a Burl-native interpretation layer the model already wants ([[burl-chat-spike]] surfaced this as spontaneous product feedback).
 
 ## Worked-example corpus
 
@@ -34,5 +34,5 @@ Each "HAND N" in chapters 2-8 is structurally `(hand, declaration, bid)` plus pr
 
 - [[texas-42]] — the game
 - [[post-commit-q-and-a]] — research direction this is the voice anchor for
-- [[topics/rules-as-tools]] — analogous framing applied to evaluative tools
+- [[rules-as-tools]] — analogous framing applied to evaluative tools
 - [[burl-chat-spike]] — Gemma spontaneously suggested the "why over how" framing that matches this

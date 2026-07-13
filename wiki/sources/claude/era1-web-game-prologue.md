@@ -1,8 +1,8 @@
 ---
 title: "Source digest: claude.ai era 1 — Web Game Prologue (2025-07-19 .. 2025-11-30)"
 kind: source
-first_seen: claude-archive-era1
-last_updated: claude-archive-era1
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 status: complete
 ---
 

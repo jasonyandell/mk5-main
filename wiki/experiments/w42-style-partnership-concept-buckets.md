@@ -1,8 +1,8 @@
 ---
 title: w42 Style and Partnership Concept Buckets
 kind: experiment
-first_seen: 1830e5f
-last_updated: afd4802
+first_seen: 2026-05-01
+last_updated: 2026-07-06
 status: complete
 ---
 

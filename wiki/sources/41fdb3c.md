@@ -4,6 +4,8 @@ kind: source
 commit: 41fdb3c
 date: 2026-04-21
 author: Jason Yandell
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 ---
 
 ## Commit message
@@ -31,4 +33,4 @@ blocking LAMIR-1.
 
 ## Links
 
-[[experiments/gus-v3-consistency-full-run]] · [[topics/dense-q-supervision]] · [[gus]]
+[[gus-v3-consistency-full-run]] · [[dense-q-supervision]] · [[gus]]

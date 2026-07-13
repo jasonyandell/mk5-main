@@ -1,8 +1,8 @@
 ---
 title: Reasoning-Coherence Verification (the bottleneck)
 kind: topic
-first_seen: ceca203
-last_updated: 0545342
+first_seen: 2026-04-19
+last_updated: 2026-04-20
 status: superseded
 ---
 
@@ -37,4 +37,4 @@ Coherence verification extends fact-checking to the logical structure of the arg
 
 ## Links
 
-[[rationalization-verifier]] [[candlewax-spike]] [[burl]] [[star]] [[experiments/iter5-e2-candlewax-null]] [[candlewax]]
+[[rationalization-verifier]] [[candlewax-spike]] [[burl]] [[star]] [[iter5-e2-candlewax-null]] [[candlewax]]

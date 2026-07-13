@@ -1,8 +1,8 @@
 ---
 title: W42 Book Validation v1 — Wave 2.E Pounce Window (bid=30)
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-05-03
 status: complete
 bead: t42-ntbe
 parent_epic: t42-4zi6

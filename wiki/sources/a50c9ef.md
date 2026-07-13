@@ -4,6 +4,8 @@ kind: source
 commit: a50c9ef
 date: 2026-04-21
 author: Jason Yandell
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 ---
 
 ## Commit message
@@ -28,4 +30,4 @@ by regret = highest oracle E[Q] spread. The student is not making random errors.
 
 ## Links
 
-[[topics/regret-eval]] · [[experiments/gus-scaling-ladder]]
+[[regret-eval]] · [[gus-scaling-ladder]]

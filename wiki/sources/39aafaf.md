@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 39aafaf — arena --tag + Opus vs Haiku head-to-head"
 kind: source
-first_seen: 39aafaf
-last_updated: 39aafaf
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -20,8 +20,8 @@ status: active
 > Opus 1×. is_legal: Haiku 92× vs Opus 27×. conditional_outcome: 0×
 > both (4th session observation). Lock fix held clean across 28 Opus turns.
 
-`--tag` flag prevents output file clobbery for multi-run arena comparisons. Runs the Opus vs Haiku head-to-head establishing decision quality and tool-use efficiency deltas. Full analysis: [[experiments/opus-vs-haiku-arena]].
+`--tag` flag prevents output file clobbery for multi-run arena comparisons. Runs the Opus vs Haiku head-to-head establishing decision quality and tool-use efficiency deltas. Full analysis: [[opus-vs-haiku-arena]].
 
 ## Related pages
 
-[[experiments/opus-vs-haiku-arena]] · [[selfplay-arena]] · [[conditional-outcome-structural-nonuse]] · [[haiku-4-5]] · [[burl]]
+[[opus-vs-haiku-arena]] · [[burl-selfplay-arena]] · [[conditional-outcome-structural-nonuse]] · [[haiku-4-5]] · [[burl]]

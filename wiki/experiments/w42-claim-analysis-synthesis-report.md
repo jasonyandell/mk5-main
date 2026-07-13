@@ -1,10 +1,16 @@
 ---
 title: w42 Claim Analysis Synthesis Report
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-13
 status: complete
 ---
+
+**Phase-2 rollup, absorbed downstream.** The phase-3 and phase-4 work this
+page scopes ran to closure ([[w42-phase4-final-claim-audit]]); the canonical
+synthesis is [[w42-book-claim-synthesis-and-ai-directions]]. Which clock is
+this: `phase 2/3` here is the 2026-05-02→03 claim-ledger sweep, not the
+bookval-v1 waves or the 2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 

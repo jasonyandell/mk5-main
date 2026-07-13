@@ -1,8 +1,8 @@
 ---
 title: w42 Bidding Risk-Budget Claim Validation
 kind: experiment
-first_seen: c603a0d
-last_updated: afd4802
+first_seen: 2026-05-01
+last_updated: 2026-07-06
 status: superseded
 ---
 

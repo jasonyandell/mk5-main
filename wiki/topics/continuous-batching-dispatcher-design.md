@@ -1,8 +1,8 @@
 ---
 title: Continuous batching dispatcher — design
 kind: topic
-first_seen: 0310b12
-last_updated: 0310b12
+first_seen: 2026-04-27
+last_updated: 2026-04-27
 status: superseded
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: Rank vs price — why PIMC's flaw bites the auction, not the play
 kind: topic
-first_seen: local-2026-07-05
-last_updated: 3ac03de
+first_seen: 2026-07-05
+last_updated: 2026-07-06
 status: active
 ---
 
@@ -22,7 +22,7 @@ decision types consume that blob differently:
   score risk change the *values* without reordering the top action.
 - **Bids consume prices.** A bid decision reads tail mass — P(outcome ≥
   threshold) — and compares it against an external alternative (pass, the
-  [[champion]] `race_wp` utility). Nothing cancels: the inflated tail is
+  [[jud]] `race_wp` utility). Nothing cancels: the inflated tail is
   consumed as a cardinal number, and the optimism lands directly in the
   decision. That is the #26 over-bidder ([[w42-champion-selfplay-fixed-point]]),
   mechanically.
@@ -49,7 +49,7 @@ measurement. Its legs:
 3. The prediction it makes: an evaluator calibrated in absolute terms fixes
    bidding *without touching play*. `net:wp` already half-demonstrates this —
    frozen realized-play calibration, strongest bidder on the board
-   ([[champion]] rung #22). **The full test ran, confirmed it, and then beat the
+   ([[champion-ladder]] rung #22). **The full test ran, confirmed it, and then beat the
    baseline** ([[w42-jud-v0]] → [[w42-plateau-probe]], 2026-07-06): a value trained
    on realized outcomes (`V_realized`), consumed only as a bid-side price with play
    left on `lens:ev`, dissolved the #26 over-bidder. The v0 loop reached parity with
@@ -100,4 +100,4 @@ rankings (play-phase argmax) tolerate optimism that price-consumers cannot.
 - [[w42-jud-v1]] — the play half: greedy value play is a bad ranker; search recovers most (not all) of the gap oracle-free; the oracle's rankings stay unbeaten
 - [[w42-champion-selfplay-fixed-point]] — the over-bidder this explains
 - [[belief-conditioned-self-play]] — the "all about bidding" fragment this resolves
-- [[arena]] · [[champion]] — where the measurements live
+- [[arena]] · [[champion-ladder]] — where the measurements live

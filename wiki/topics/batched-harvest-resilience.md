@@ -1,8 +1,8 @@
 ---
 title: Batched harvest resilience pattern
 kind: topic
-first_seen: 063fcac
-last_updated: 063fcac
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 status: superseded
 ---
 
@@ -64,4 +64,4 @@ The harvest cadence this was built for stopped 2026-04-28; zero STaR-harvest com
 
 ## Links
 
-[[burl-2000-harvest]] · [[wax-museum]] · [[burl]] · [[mlx-lm]] · [[max-tokens-2048-floor]] · [[sources/063fcac]]
+[[burl-2000-harvest]] · [[wax-museum]] · [[burl]] · [[mlx-lm]] · [[max-tokens-2048-floor]] · [[063fcac]]

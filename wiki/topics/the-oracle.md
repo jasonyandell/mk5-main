@@ -1,8 +1,8 @@
 ---
 title: The oracle — three solver generations, one compression, one pivot
 kind: topic
-first_seen: b541a4b
-last_updated: b89ff635
+first_seen: 2025-12-27
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -121,4 +121,4 @@ the highest variance, σ = 28.2M) and doubles-suit the smallest and most predict
 ## Links
 
 [[suit-algebra]] · [[strategy-fusion]] · [[forge]] · [[breakthrough-and-oracle]] ·
-[[the-analysis-epic]] · [[sources/claude/era2-breakthrough-oracle|conversation digest]]
+[[the-analysis-epic]] · [[era2-breakthrough-oracle|conversation digest]]

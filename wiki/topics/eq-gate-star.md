@@ -1,8 +1,8 @@
 ---
 title: EQ-gate STaR (rejection sampling by eq_delta threshold)
 kind: topic
-first_seen: f164796
-last_updated: 761587c
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: retired
 ---
 

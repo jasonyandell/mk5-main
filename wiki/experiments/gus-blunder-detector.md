@@ -1,9 +1,9 @@
 ---
 title: Gus Blunder Detector (oracle-feature + student-feature)
 kind: experiment
-first_seen: f90682c
-last_updated: 5373223
-status: active
+first_seen: 2026-04-21
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -63,10 +63,20 @@ vs all-oracle 70%. Real but meaningfully weaker player.
 
 ## Receipt 12 (109f9e1)
 
-Naive ensembling hurts regret. Voting/softmax-average over 8 adapters boosts bot-match
-(71.3%) but increases regret (1.43-1.55) vs best single (1.39). Averaging dilutes the
-confident-right adapter on sharp decisions. Oracle-per-decision ceiling: 0.36 regret
-(74% reduction) — massive latent adapter diversity. Router, not ensemble.
+Naive ensembling hurts regret. 8 adapters under four strategies on 560 held-out decisions
+(f90682c):
+
+| Strategy | Bot-match | Regret |
+|---|---|---|
+| Best single (v2_voids_3000g_big) | 67.9% | 1.39 |
+| Majority vote | 69.1% | 1.55 ← WORSE |
+| Softmax avg | 71.3% | 1.46 ← WORSE |
+| V-weighted | 71.3% | 1.43 ← WORSE |
+| Oracle-per-decision (ceiling) | 89.6% | 0.36 |
+
+Averaging boosts bot-match but dilutes the confident-right adapter on sharp decisions.
+Oracle-per-decision ceiling (0.36 regret, 74% reduction) confirms massive latent adapter
+diversity. Router, not ensemble.
 
 ## Receipt 13 (109f9e1)
 
@@ -78,9 +88,10 @@ during training, or K=50+ worlds at inference.
 ## Conclusion
 
 Detect-and-route is deployable from student-only features. ~0.5 Q-pt regret is achievable —
-the practical floor for vanilla distillation. See [[experiments/gus-router-pilot]] for the
-end-to-end validation.
+the practical floor for vanilla distillation. The emerging Gus v1.0 shape: fast path
+(student π_me) + blunder-detector gate + oracle fallback on flagged decisions, projected
+~0.49 Q-pt regret. See [[gus-router-pilot]] for the end-to-end validation.
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[topics/v-pi-decoupling]] · [[experiments/gus-router-pilot]] · [[experiments/gus-scaling-ladder]]
+[[gus]] · [[gus-line]] · [[regret-eval]] · [[v-pi-decoupling]] · [[gus-router-pilot]] · [[gus-scaling-ladder]]

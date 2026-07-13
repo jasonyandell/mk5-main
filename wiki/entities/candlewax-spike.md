@@ -1,9 +1,9 @@
 ---
 title: Candlewax Spike (multimodal VL + local MLX LoRA STaR)
 kind: entity
-first_seen: 0545342
-last_updated: 0545342
-status: retired
+first_seen: 2026-04-20
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is
@@ -49,8 +49,8 @@ See [[candlewax]]'s concordance section for the full dating.
 **Away from LLM-as-reasoner.** Reasoning-coherence verification emerged as the bottleneck —
 checking whether a model's reasoning chain is actually consistent with the game state
 requires a multi-week verifier subproject, not a weekend spike. See
-[[topics/reasoning-coherence-verification]].
+[[reasoning-coherence-verification]].
 
 The spike closes the VL question and surfaces the verifier gap. Future work on
-[[topics/candlewax]] must address this before further STaR iterations compound on
+[[candlewax]] must address this before further STaR iterations compound on
 incoherent traces.

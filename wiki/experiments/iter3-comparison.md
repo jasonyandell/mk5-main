@@ -1,9 +1,9 @@
 ---
 title: "iter-3: Three-Mode Enable_Primer Comparison"
 kind: experiment
-first_seen: dbadb5f
-last_updated: dbadb5f
-status: active
+first_seen: 2026-04-19
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -22,14 +22,14 @@ Three STaR adapters trained with the same corpus infrastructure but different pr
 
 ## Key results
 
-**iter-3-v2 (no primer):** 32% retry-exhausted. The "primer-load-bearing" finding from [[experiments/burl-iter1-mixed]] confirmed at scale — dropping the primer without a replacement structural scaffold causes commit discipline to collapse, even after SFT.
+**iter-3-v2 (no primer):** 32% retry-exhausted. The "primer-load-bearing" finding from [[burl-iter1-mixed]] confirmed at scale — dropping the primer without a replacement structural scaffold causes commit discipline to collapse, even after SFT.
 
 **iter-3-rules (rules-as-tools):** 90% bot-match, 0 retry-exhausted, 100% first-legal. **Winner.** `trick_winner_if` usage went UP after SFT — the adapter learned to reach for on-demand rule answers rather than relying on prose memorization. This validates the core [[burl]] premise: tools replace memorization.
 
 ## Significance
 
-iter-3-rules is the Pareto-dominant adapter at this frontier: better commit discipline than iter-1, better bot-match than any prior adapter, and tool-use breadth that increases rather than decreases post-SFT. See [[decisions/primer-tradeoff]] — the resolution is to replace the primer entirely with engine-authoritative tools rather than trimming or keeping it.
+iter-3-rules is the Pareto-dominant adapter at this frontier: better commit discipline than iter-1, better bot-match than any prior adapter, and tool-use breadth that increases rather than decreases post-SFT. See [[primer-tradeoff]] — the resolution is to replace the primer entirely with engine-authoritative tools rather than trimming or keeping it.
 
 ## Related pages
 
-[[iter3-rules-adapter]] · [[rules-as-tools]] · [[burl]] · [[decisions/primer-tradeoff]] · [[decisions/commit-discipline]] · [[experiments/burl-iter1-mixed]] · [[sources/dbadb5f]]
+[[iter3-rules-adapter]] · [[rules-as-tools]] · [[burl]] · [[primer-tradeoff]] · [[commit-discipline]] · [[burl-iter1-mixed]] · [[dbadb5f]]

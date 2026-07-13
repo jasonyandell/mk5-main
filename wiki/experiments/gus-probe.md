@@ -1,9 +1,9 @@
 ---
 title: Gus Interpretability Probes (v3-10k)
 kind: experiment
-first_seen: 245918d
-last_updated: 245918d
-status: active
+first_seen: 2026-04-21
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -20,60 +20,83 @@ has internalized real game structure, not argmax lookup. (commit message @ 24591
 
 ## Probes and findings
 
-### Embedding structure
+### Probe 1 — embedding structure
 
-Doubles, count dominoes, and high-pip clusters form in the learned token embeddings.
-Structural game concepts (trump membership, pip value categories) emerge without
-explicit supervision. (commit message @ 245918d)
+Doubles cluster (avg cos +0.047 vs non-doubles −0.022), counts cluster (+0.037 vs
+−0.021), high-pip families are tighter. Categorical concepts (doubleness, countness,
+magnitude) live in the raw embedding; relational concepts ("6-6 protects 6-4") are
+contextual — encoded in the transformer layers, not the embeddings. (commit message @ 245918d)
 
-### Attention patterns
+### Probe 2 — attention evolution
 
-Multi-layer attention evolves with principled progression:
-- DECL token anchors early layers (declaration context)
-- MINE scan in middle layers (own-hand reasoning)
-- Action commit in final layers (decision formation)
+CLS attention across the 6 encoder layers follows a readable reasoning chain: layer 0
+anchors on the declaration (weight 0.65), layers 1-2 survey the big non-trump 6-4,
+layers 3-4 reconsider toward 1-1, layer 5 concentrates on 1-1 at 0.26. Final π_me
+probability on 1-1: **0.91**. Multi-step reasoning, not one-shot argmax lookup.
+(commit messages @ 31f0ec3, 245918d)
 
-CLS evolves across layers toward the chosen action. (commit message @ 31f0ec3)
+### Probe 3 — counterfactual hand swaps
 
-### Counterfactual V deltas match oracle within 0.5 Q-pts
-
-Swapping individual dominoes in the hypothetical hand and measuring V_head response:
-student V deltas track oracle E[Q] deltas to within 0.5 Q-pts. The model "knows"
-what each domino is worth in context. (commit message @ 245918d)
-
-### 6-6 impact is trumpness-gated
-
-| Context | 6-6 swap delta |
-|---|---|
-| Trump declarations | +17 to +22 Q-pts |
-| Fours (non-trump) | ~0 |
-| Displacing a trump boss | −28 Q-pts (catastrophic) |
-
-The student correctly treats 6-6 as context-dependent — not uniformly valuable. (commit message @ 245918d)
-
-### Hand-level threats and boons
-
-All five threats are trumps. 0-0 location alone accounts for a 26-Q-pt swing:
-"if right-opponent has 0-0 we're sunk" is literally quantified in V_head response.
+Swapping 1-1 → 0-0 raises V +11.7 Q-pts (top trump is gold). Swapping 1-1 → 6-6
+**drops V −5.3 Q-pts** — superficially counter-intuitive since 6-6 is a "bigger" card.
 (commit message @ 245918d)
 
-### Strategy-fusion correction
+### Probe 4 — oracle verification of the counterfactual
 
-Initial diagnosis of a "strategy fusion" pattern on a 1-1→6-6 swap was incorrect.
-Corrected to bilateral-swap asymmetry + depth-vs-breadth saturation. Oracle confirmed
-the direction of the correction. (commit message @ 245918d)
+The 3.3M-param oracle ran on both counterfactual deals (18.9s on MPS). Oracle
+ΔE[Q_max] = −5.83; Gus ΔV = −5.34. **Agreement within 0.5 Q-pts.** The
+counterfactual is correct game theory, not a model artifact: in a defensive hand, 6-6
+displaces 1-1 (which the opponent then holds), and the opponent's gain exceeds P0's
+gain. An initial "strategy-fusion leakage" diagnosis was wrong; bilateral-swap
+asymmetry plus depth-vs-breadth saturation in the 6-suit fully explains the delta.
+(commit message @ 245918d)
+
+### Probe 5 — per-domino impact atlas for 6-6
+
+238 bilateral swaps across 20 eval games:
+
+| Declaration | Mean ΔV | Verdict |
+|---|---:|---|
+| Sixes / doubles / follow-me-8 (trump) | +17 to +22 | Always helpful |
+| Fives / threes / twos / ones | +2 to +4 | Mixed; catastrophe if displaces trump boss |
+| Fours | −0.09 | Essentially neutral |
+| Worst case: 6-6 displaces 5-5 in fives | −27.67 | Trump-boss displacement |
+
+6-6's value is entirely determined by trumpness of the declaration and which card it
+displaces. Gus has not learned "big card = good" — it learned the context-dependent
+value function 42 actually has. (commit message @ 245918d)
+
+### Probe 6 — hand-level threats and boons
+
+Conditioned on the stored [[joint-world-tensor]], no new forward passes needed. For
+game 0 decision 0, baseline E[Q] = −11.15:
+
+| Top boon (partner holds) | Q uplift |
+|---|---:|
+| 0-0 (top trump) | +16.6 |
+| 6-0 (high trump) | +12.5 |
+
+| Top threat (opp holds) | Q drop |
+|---|---:|
+| R-opp holds 0-0 | −9.4 — "if R-opp has the boss we're sunk" (literal) |
+
+0-0 alone contributes a **26-Q-pt swing** based on location. All five top threats and
+all five top boons are trumps — the hand's outcome is determined by trump distribution
+before the first card hits the table. (commit message @ 245918d)
 
 ## Oracle agreement
 
 Despite the nightmare hand, V_head matches the ground-truth oracle to within 0.5 Q-pts.
 This is the strongest interpretability result in the Gus replay: the student is doing
-principled inference, not table lookup.
+principled inference, not table lookup. The [[student-distillation]] approach from
+variance-free oracle labels succeeded in teaching the model to reason about game position.
 
 ## Conclusion
 
-Counterfactual V sensitivity is a usable interpretability tool — promotable from
-`scratch/` to `gus/eval/` if threat-boon analysis becomes a recurring diagnostic.
+Counterfactual V sensitivity is a usable interpretability tool — grounded sensitivity
+estimates without oracle calls; promotable from `scratch/` to `gus/eval/` if
+threat-boon analysis becomes a recurring diagnostic.
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[topics/v-pi-decoupling]] · [[experiments/gus-v3-consistency-full-run]]
+[[gus]] · [[gus-line]] · [[regret-eval]] · [[v-pi-decoupling]] · [[joint-world-tensor]] · [[student-distillation]] · [[gus-v3-consistency-full-run]]

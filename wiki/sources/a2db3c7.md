@@ -1,8 +1,8 @@
 ---
 title: "Source digest: a2db3c7 — burl/lab/ workbench platform"
 kind: source
-first_seen: a2db3c7
-last_updated: a2db3c7
+first_seen: 2026-05-02
+last_updated: 2026-05-02
 status: active
 ---
 

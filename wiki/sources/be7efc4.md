@@ -1,8 +1,8 @@
 ---
 title: "Source digest: be7efc4 — SFT completion-only loss — 1.7B-maskfix hits 86% comprehension"
 kind: source
-first_seen: be7efc4
-last_updated: be7efc4
+first_seen: 2026-04-17
+last_updated: 2026-04-17
 status: active
 ---
 
@@ -51,11 +51,11 @@ status: active
 
 ## Key results
 
-See [[experiments/v10-maskfix-breakthrough]] for the full comparison table. Headline: 1.7B v10-maskfix hits 86% comprehension overall = 14B v9 at ~1/3 B200 compute.
+See [[v10-maskfix-breakthrough]] for the full comparison table. Headline: 1.7B v10-maskfix hits 86% comprehension overall = 14B v9 at ~1/3 B200 compute.
 
 ## Eval grader unification
 
-Prior inline `grade_response()` in both eval scripts covered only 5 of 14 categories, scoring the remaining 9 as 0%. This caused [[modal]] eval to read 35% while `grade_offline.py` read 86% on identical raw responses. Both scripts now dispatch through `grade_offline.GRADERS`. Consistent with [[decisions/flexible-grader]] principle: single source of truth for grading logic.
+Prior inline `grade_response()` in both eval scripts covered only 5 of 14 categories, scoring the remaining 9 as 0%. This caused [[modal]] eval to read 35% while `grade_offline.py` read 86% on identical raw responses. Both scripts now dispatch through `grade_offline.GRADERS`. Consistent with [[flexible-grader]] principle: single source of truth for grading logic.
 
 ## Bead
 
@@ -67,4 +67,4 @@ Loss mask fix applied to 1.7B trainer only. 14B and 5 other trainers still have 
 
 ## Related pages
 
-[[decisions/sft-completion-only-loss]] · [[experiments/v10-maskfix-breakthrough]] · [[v10-adapter]] · [[decisions/flexible-grader]] · [[qwen3-1.7b]] · [[qwen3-14b]] · [[sources/0c7392f]]
+[[sft-completion-only-loss]] · [[v10-maskfix-breakthrough]] · [[v10-adapter]] · [[flexible-grader]] · [[qwen3-1.7b]] · [[qwen3-14b]] · [[0c7392f]]

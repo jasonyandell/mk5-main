@@ -4,6 +4,8 @@ kind: source
 commit: 5cdec8a
 date: 2026-04-21
 author: Jason Yandell
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 ---
 
 ## Commit message
@@ -48,4 +50,4 @@ author: Jason Yandell
 
 ## Links
 
-[[experiments/gus-scaling-ladder]]
+[[gus-scaling-ladder]]

@@ -1,8 +1,8 @@
 ---
 title: "Source digest: c2aa3a7 — async concurrency in STaR rollout (2.5-3.5× speedup)"
 kind: source
-first_seen: c2aa3a7
-last_updated: c2aa3a7
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -30,4 +30,4 @@ Adds `asyncio.to_thread` + semaphore-gated batching to `run_star_rollout`, benef
 
 ## Related pages
 
-[[burl]] · [[star]] · [[modal]] · [[eq-gate-star]] · [[sources/761587c]]
+[[burl]] · [[star]] · [[modal]] · [[eq-gate-star]] · [[761587c]]

@@ -1,4 +1,5 @@
 ---
+kind: experiment
 title: "W42 Book Validation v1 — Wave 2 — Void Creation Follow Position"
 bead: t42-z31l
 parent_bead: t42-4zi6
@@ -7,6 +8,8 @@ status: complete
 claim: ch05-void-creation (follow-position sub-claim)
 verdict: context-limited
 date: 2026-05-03
+first_seen: 2026-05-03
+last_updated: 2026-07-11
 ---
 
 # W42 Book Validation v1 Wave 2 — Void Creation Follow Position

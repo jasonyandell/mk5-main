@@ -1,9 +1,9 @@
 ---
 title: Oracle vs human play (load-bearing epistemic frame)
 kind: topic
-first_seen: 5ffdf58
-last_updated: 4a747f6
-status: active
+first_seen: 2026-01-06
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## The frame

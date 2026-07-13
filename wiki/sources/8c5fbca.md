@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 8c5fbca — single-GPU STaR loop with vLLM batch inference"
 kind: source
-first_seen: 8c5fbca
-last_updated: 8c5fbca
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 
@@ -53,4 +53,4 @@ Bead t42-m84g closed.
 
 ## Related pages
 
-[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[modal]] · [[gemma-4-e2b]] · [[lora-unsloth]] · [[sources/7538016]] · [[sources/6e71df9]]
+[[lem]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[r1-rationalization]] · [[modal]] · [[gemma-4-e2b]] · [[lora-unsloth]] · [[7538016]] · [[6e71df9]]

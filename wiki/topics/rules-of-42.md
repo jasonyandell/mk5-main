@@ -1,8 +1,8 @@
 ---
 title: Rules of Texas 42 — complete ruleset
 kind: topic
-first_seen: f989134f
-last_updated: 2ab1a825
+first_seen: 2025-07-28
+last_updated: 2026-07-11
 status: active
 ---
 

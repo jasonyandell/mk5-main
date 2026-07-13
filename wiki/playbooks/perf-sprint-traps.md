@@ -1,8 +1,8 @@
 ---
 title: Perf Sprint — Trap Recipes
 kind: playbook
-first_seen: fbe798f
-last_updated: forge (iter 33: subprocess-isolation smoke at subset_5 1-cohort PASSED on a 4h-cooled session — confirms the lever works structurally and isolates fresh-interpreter Metal state per child — but the paired baseline at subset_560[:50] cohort=25 silent-died on cohort 2/2 with the same parent+child group-jetsam fingerprint as iter 32 even after a clean cohort 1; the parent supervisor accumulates state across cohort_n → cohort_n+1 that makes the second-cohort sweep deterministic at this N+batch on a heated multi-day-uptime host. Subprocess-per-cohort isolates fresh-interpreter Metal state inside the child but does NOT isolate the long-lived parent from being co-jetsam'd. The lever is workable for **smoke / single-cohort** runs on a cooled session, but cohort-N≥2 production scale needs parent-as-shell rearchitecture (each cohort = fresh top-level python invocation) or an inter-cohort cooldown built into the existing parent. Pre-flight ≥60min cooldown floor still applies but is necessary-not-sufficient for cohort-N≥2.)
+first_seen: 2026-04-27
+last_updated: 2026-05-03
 status: active
 ---
 

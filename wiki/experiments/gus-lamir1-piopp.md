@@ -1,8 +1,8 @@
 ---
 title: LAMIR-1 with π_opp Rollout — Ceiling Finding (§20)
 kind: experiment
-first_seen: 1a1a324
-last_updated: b42669a
+first_seen: 2026-04-22
+last_updated: 2026-07-13
 status: superseded
 ---
 
@@ -16,7 +16,7 @@ about. PRACTICALITIES §20 + MORNING4_STATUS document the ceiling and four pivot
 ## Setup
 
 - **Adapter**: v3_consistency_10k (baseline 0.551 regret, 76.07% bot-match)
-- **π_opp**: PiOppHead at 68.6% oracle accuracy (see [[experiments/gus-pi-opp-training]])
+- **π_opp**: PiOppHead at 68.6% oracle accuracy (see [[gus-pi-opp-training]])
 - **Mode**: lamir1-piopp — same rollout as lamir1-qleaf but opp steps use trained PiOppHead
   instead of rotated π_me; leaf scored by Q_head from trick-winner's POV
 
@@ -73,7 +73,7 @@ Four paths documented in MORNING4_STATUS (commit b42669a):
 
 1. **Accept depth-1 ceiling; ship q-bootstrap as an alternative inference mode** — +25%
    regret vs direct but world-conditioned; could be a second opinion in a router when
-   π_me entropy is high (see [[experiments/gus-router-pilot]])
+   π_me entropy is high (see [[gus-router-pilot]])
 2. **Train a look-ahead-compatible V-head** — train V on expected Q under sampled opp
    play rather than marginal oracle E[Q]
 3. **Implement the LAMIR paper faithfully** — multi-valued states + CFR+ solver; large,
@@ -89,4 +89,4 @@ message @ 8106f01)
 
 ## Links
 
-[[gus]] · [[topics/lamir1]] · [[topics/lamir1-ceiling]] · [[topics/regret-eval]] · [[experiments/gus-pi-opp-training]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-router-pilot]]
+[[gus]] · [[lamir1]] · [[lamir1-ceiling]] · [[regret-eval]] · [[gus-pi-opp-training]] · [[gus-lamir1-mode-comparison]] · [[gus-router-pilot]]

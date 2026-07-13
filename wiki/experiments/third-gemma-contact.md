@@ -1,14 +1,14 @@
 ---
 title: Third Gemma Contact (Kerry Adapter)
 kind: experiment
-first_seen: 43009a4
-last_updated: 43009a4
-status: active
+first_seen: 2026-04-11
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
 
-Third inference pass against [[gemma-4-e2b]], using the same seed/trump/trick-6 prompt used for [[experiments/first-gemma-contact]] and [[experiments/second-gemma-contact]], now with [[kerry-adapter]] loaded. Tests whether the Kerry-structured Stage 0 v2 curriculum narrows the residual rules failure surface.
+Third inference pass against [[gemma-4-e2b]], using the same seed/trump/trick-6 prompt used for [[first-gemma-contact]] and [[second-gemma-contact]], now with [[kerry-adapter]] loaded. Tests whether the Kerry-structured Stage 0 v2 curriculum narrows the residual rules failure surface.
 
 ([lem/gemma_star/train_stage0.py @ 43009a4](../sources/43009a4.md))
 
@@ -46,4 +46,4 @@ Three contacts at the same prompt provide a controlled comparison of what each a
 
 ## Related pages
 
-[[lem]] · [[kerry-adapter]] · [[kerry-curriculum]] · [[rules-adapter]] · [[gemma-4-e2b]] · [[experiments/first-gemma-contact]] · [[experiments/second-gemma-contact]] · [[sources/43009a4]] · [[sources/f8cdbe7]]
+[[lem]] · [[kerry-adapter]] · [[kerry-curriculum]] · [[rules-adapter]] · [[gemma-4-e2b]] · [[first-gemma-contact]] · [[second-gemma-contact]] · [[43009a4]] · [[f8cdbe7]]

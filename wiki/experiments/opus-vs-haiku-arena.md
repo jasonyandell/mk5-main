@@ -1,14 +1,14 @@
 ---
 title: "Opus vs Haiku: Head-to-Head Seed 900010"
 kind: experiment
-first_seen: 39aafaf
-last_updated: 39aafaf
-status: active
+first_seen: 2026-04-19
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
 
-[[selfplay-arena]] head-to-head on seed 900010. Same deal (bad for team 0), same declaration. Opus salvages 7 points where Haiku was shut out. Opus shows better decision quality AND better tool-use economy at 6.5× the cost.
+[[burl-selfplay-arena]] head-to-head on seed 900010. Same deal (bad for team 0), same declaration. Opus salvages 7 points where Haiku was shut out. Opus shows better decision quality AND better tool-use economy at 6.5× the cost.
 
 ([burl/selfplay/arena.py @ 39aafaf](../sources/39aafaf.md))
 
@@ -38,4 +38,4 @@ Confirms Opus's decision quality advantage on bad deals. The `conditional_outcom
 
 ## Related pages
 
-[[selfplay-arena]] · [[haiku-4-5]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[experiments/burl-move4-native-spike]] · [[sources/39aafaf]]
+[[burl-selfplay-arena]] · [[haiku-4-5]] · [[burl]] · [[conditional-outcome-structural-nonuse]] · [[burl-move4-native-spike]] · [[39aafaf]]

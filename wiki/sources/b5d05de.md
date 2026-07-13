@@ -1,8 +1,8 @@
 ---
 title: "Source digest: b5d05de — Haiku N=30 reference-trace runner"
 kind: source
-first_seen: b5d05de
-last_updated: b5d05de
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -26,4 +26,4 @@ Production N=30 [[reference-trace-distillation]] run of [[haiku-4-5]] (29/30 com
 
 ## Related pages
 
-[[reference-trace-distillation]] · [[haiku-4-5]] · [[burl]] · [[sources/1f13f92]]
+[[reference-trace-distillation]] · [[haiku-4-5]] · [[burl]] · [[1f13f92]]

@@ -1,8 +1,8 @@
 ---
 title: TypeScript Game Engine
 kind: entity
-first_seen: 8d26e0d
-last_updated: 522779c5
+first_seen: 2026-04-18
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -18,6 +18,8 @@ Its origin is [[web-game]] (2025-07 .. 2025-12): the pure-functional,
 event-sourced core, the Layer variant system (nello/plunge/sevens/splash),
 and PIMC-minimax as the working AI were all built there, pre-dating [[forge]],
 [[gus]], and [[burl]] by months.
+
+The seven architecture decision records live at [[engine-adrs]].
 
 ## Architecture reference
 

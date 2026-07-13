@@ -1,8 +1,8 @@
 ---
 title: W42 Book Second Pass — what the first extraction missed
 kind: experiment
-first_seen: 5e3f3245
-last_updated: e2171816
+first_seen: 2026-07-07
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -16,7 +16,8 @@ blind spot, [[w42-book-claim-synthesis-and-ai-directions]]), what is in the text
 that the first extraction flattened or never saw?
 
 Raw reader reports (quotes, page numbers, per-finding experiment sketches) are
-preserved at `wiki/sources/book-second-pass-2026-07-07/`.
+preserved at `wiki/sources/book-second-pass-2026-07-07/`: [[reader-A-report]]
+[[reader-B-report]] [[reader-C-report]] [[reader-D-report]].
 
 Headline: the first pass extracted the book's **tactics** and missed the book's
 **information theory**. The auction decoder, the action-choice inference catalog,
@@ -189,7 +190,7 @@ audit.
   advice diverges, and attribution is asymmetric. The two agree: **setter
   defense is the differentiator.**
 - **Tournament facts** (pp. 164–166): first tiebreaker is **total marks**
-  (supports the margin-based [[champion]] objective); the laydown rule is
+  (supports the margin-based [[jud]] objective); the laydown rule is
   adversarially provable ("any possible way the bidder can be set ⇒ forfeit")
   — a certified-win oracle analogue; 25-min qualifiers make tempo a bounded
   resource.
@@ -239,6 +240,6 @@ prior and oracle frequency is itself a finding *and* a teaching correction.
 ## Links
 
 [[w42-book-validation-campaign]] · [[w42-book-claim-synthesis-and-ai-directions]] ·
-[[winning42-strategy-measurement]] · [[jud]] · [[champion]] · [[gus]] ·
+[[winning42-strategy-measurement]] · [[jud]] · [[gus]] ·
 [[belief-trajectory]] · [[pimc]] · [[w42-lens-v1-utility-head-to-head]] ·
 [[w42-bookval-v1-wave2-pounce-high-bid]]

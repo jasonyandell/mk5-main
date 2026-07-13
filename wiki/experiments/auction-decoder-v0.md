@@ -1,9 +1,9 @@
 ---
 title: Auction Decoder v0 — instrument validation
 kind: experiment
-first_seen: e2f56314
-last_updated: e2f56314
-status: active
+first_seen: 2026-07-13
+last_updated: 2026-07-13
+status: complete
 ---
 
 Can a decoder recover hand information from one-round arena auctions — and
@@ -80,4 +80,4 @@ matched-auction counterfactual consumer.
 ## Links
 
 [[auction-decoder]] [[research-lane-selection]] [[search-literature-transfer]]
-[[partnership-research-gates]] [[w42-book-second-pass]] [[champion]]
+[[partnership-research-gates]] [[w42-book-second-pass]] [[jud]]

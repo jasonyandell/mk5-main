@@ -1,8 +1,8 @@
 ---
 title: Multiplayer lineage — evaluated frameworks, distilled pattern
 kind: topic
-first_seen: 850ab49
-last_updated: 522779c5
+first_seen: 2025-08-19
+last_updated: 2026-07-11
 status: retired
 ---
 
@@ -73,4 +73,4 @@ stated "inspired by PartyKit, Colyseus, and boardgame.io"
 
 ## Related pages
 
-[[web-game]] · [[pre-ml-ai-attempts]] · [[sources/claude/era1-web-game-prologue|conversation digest]]
+[[web-game]] · [[pre-ml-ai-attempts]] · [[era1-web-game-prologue|conversation digest]]

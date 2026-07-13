@@ -1,8 +1,8 @@
 ---
 title: Winning 42 Strategy Measurement
 kind: experiment
-first_seen: local-2026-04-30
-last_updated: d1f1633d
+first_seen: 2026-04-30
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -21,16 +21,16 @@ adversarial buckets, regret metrics, belief-calibration tests, or training examp
 - `w42/strategy_measurement_breakdown.md` — project shape, MVP detectors,
   chapter harvest map, first work package, and a lengthy analysis catalog.
 - `scratch/winning42/winning42.with_figures.md` — OCR/preview source used for the chapter harvest.
-- [[experiments/gus-strategy-tags-probe]] — first promoted empirical probe showing that
+- [[gus-strategy-tags-probe]] — first promoted empirical probe showing that
   explicit strategy tags improve a tiny Gus-like policy, though not enough to beat `E[Q] N=10`.
 - [[w42-final-empirical-strategy-report]] — first w42 survey synthesis: strategy tags
   help small models, exact substrate claims can be supported, and most tactical claims
   remain context-limited or underpowered until direct detectors and paired tests land.
-- [[w42-book-claim-synthesis-and-ai-directions]] — post-phase-4 synthesis: confirmed
+- [[w42-book-claim-synthesis-and-ai-directions]] — the canonical synthesis: confirmed
   vs unconfirmed claims, distribution-aware E[Q] alternatives, AI/Burl/Gus directions.
-- [[w42-book-validation-campaign]] — live multi-wave campaign (epic `t42-4zi6`) to take
-  all 64 ledger rows from "evidence on slice" to paired counterfactuals on real auctions
-  or injected late states.
+- [[w42-book-validation-campaign]] — the 2026-05 multi-wave campaign (epic `t42-4zi6`)
+  that took ledger rows to paired counterfactuals; dormant since Wave 5, superseded in
+  research attention by [[jud]].
 
 ## Analysis Catalog Shape
 
@@ -186,5 +186,5 @@ The first report should have three tables:
 
 ## Links
 
-[[gus]] · [[burl]] · [[forge]] · [[topics/regret-eval]] ·
-[[experiments/gus-strategy-tags-probe]] · [[w42-final-empirical-strategy-report]]
+[[gus]] · [[burl]] · [[forge]] · [[regret-eval]] ·
+[[gus-strategy-tags-probe]] · [[w42-final-empirical-strategy-report]]

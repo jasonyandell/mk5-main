@@ -1,9 +1,9 @@
 ---
 title: Joint-World Tensor
 kind: entity
-first_seen: 31e10ef
-last_updated: 31e10ef
-status: active
+first_seen: 2026-04-20
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is
@@ -51,7 +51,14 @@ At inference, when an opponent plays a card and the belief distribution updates,
 look-ahead tree can re-weight: `Σ_m w_m(new_belief) · Q_m` — using the cached world Q
 values rather than re-querying the [[forge]] oracle. This is the piece that makes
 LAMIR-style continual-resolving look-ahead cheap enough to run at game time.
-See [[topics/lamir1]]. (gus/BUILD_PLAN.md @ 31e10ef)
+See [[lamir1]]. (gus/BUILD_PLAN.md @ 31e10ef)
+
+## Public mirror (2026-05-03)
+
+The full v1 + v2 + eval corpus (118.68 GB across 230 files) is published as a public HF
+dataset: [jasonyandell/texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus).
+`MANIFEST.json` carries sha256 + paired generation log for every chunk so re-pulled
+copies can be verified against the local original.
 
 ## Generation command
 

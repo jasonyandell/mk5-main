@@ -1,9 +1,9 @@
 ---
 title: Gus Belief Co-Train + q-bootstrap-belief Mode (§21)
 kind: experiment
-first_seen: 548d32a
-last_updated: e2171816
-status: active
+first_seen: 2026-04-22
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -79,8 +79,9 @@ unresolvable uncertainty. §22 identifies extractable analytics from the existin
 research question: π_me commits to one meta-strategy ("play for the mode of the marginal")
 where humans use several (mode, signal, hedge, gamble). A richer student could output a
 meta-strategy distribution; training data already exists in the oracle's per-world tensor.
-No code written — noted as future direction. (commit message @ 94d8646)
+No code written at the time. (commit message @ 94d8646) The extractable analytics ran
+three days later as [[gus-drama-atlas]]; see [[past-belief-future-direction]].
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[experiments/gus-lamir1-mode-comparison]] · [[experiments/gus-belief-calibration-diagnostic]] · [[joint-world-tensor]]
+[[gus]] · [[regret-eval]] · [[gus-lamir1-mode-comparison]] · [[gus-belief-calibration-diagnostic]] · [[joint-world-tensor]]

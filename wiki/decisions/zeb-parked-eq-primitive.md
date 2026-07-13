@@ -1,8 +1,8 @@
 ---
 title: "Zeb Parked; E[Q] Distribution as Belief Primitive"
 kind: decision
-first_seen: d9baf3b
-last_updated: d9baf3b
+first_seen: 2026-04-18
+last_updated: 2026-04-18
 status: superseded
 ---
 
@@ -12,7 +12,7 @@ status: superseded
 
 ## Why
 
-[[experiments/zeb-calibration-eval]] separated Zeb's prediction accuracy into two populations:
+[[zeb-calibration-eval]] separated Zeb's prediction accuracy into two populations:
 
 - **All 28 dominoes:** 72% top-1 — includes already-played dominoes whose locations are trivially determinable from the play record.
 - **Hidden-only (genuinely uncertain dominoes):** ~39% top-1. Brier 0.224, ECE 0.067.
@@ -35,7 +35,7 @@ When an ML artifact advertises a headline number, inspect what denominator the n
 
 ## Related pages
 
-[[zeb]] · [[burl]] · [[forge]] · [[experiments/zeb-calibration-eval]] · [[tool-orchestration]] · [[sources/d9baf3b]]
+[[zeb]] · [[burl]] · [[forge]] · [[zeb-calibration-eval]] · [[tool-orchestration]] · [[d9baf3b]]
 
 ## Status
 

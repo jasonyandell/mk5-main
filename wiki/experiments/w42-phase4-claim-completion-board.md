@@ -1,10 +1,16 @@
 ---
 title: w42 Phase4 Claim Completion Board
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-13
 status: complete
 ---
+
+**Phase-4 control surface, absorbed downstream.** The closure state it routed
+toward is [[w42-phase4-final-claim-audit]]; the canonical synthesis is
+[[w42-book-claim-synthesis-and-ai-directions]]. Which clock is this: `phase 4`
+here is the 2026-05-02→03 claim-ledger sweep, not the bookval-v1 waves or the
+2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 

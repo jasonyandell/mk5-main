@@ -1,8 +1,8 @@
 ---
 title: "Source digest: fb47ab3 — discard illegal traces instead of rationalizing them"
 kind: source
-first_seen: fb47ab3
-last_updated: fb47ab3
+first_seen: 2026-04-10
+last_updated: 2026-04-10
 status: active
 ---
 
@@ -54,4 +54,4 @@ The commit message credits "ClaudeAI insight" for the policy change. This is the
 
 ## Related pages
 
-[[decisions/discard-illegal-traces]] · [[star]] · [[star-harness]] · [[r1-rationalization]] · [[k1-grading]] · [[modal]] · [[sources/7538016]] · [[sources/8c5fbca]]
+[[discard-illegal-traces]] · [[star]] · [[star-harness]] · [[r1-rationalization]] · [[k1-grading]] · [[modal]] · [[7538016]] · [[8c5fbca]]

@@ -1,15 +1,15 @@
 ---
 title: Perf Sprint — Playbook
 kind: playbook
-first_seen: fbe798f
-last_updated: fbe798f
+first_seen: 2026-04-27
+last_updated: 2026-07-13
 status: active
 ---
 
 The "let's friggin rock this perf problem" entry point.
 
 **Dormant since sprint 2 (2026-04-28).** No perf sprint has run in the ~2 months since;
-frontier work has moved to jud v1 / Zeb (see [[champion]], `wiki/log.md` 2026-07-06
+frontier work has moved to jud v1 / Zeb (see [[jud]], `wiki/log.md` 2026-07-06
 entries). The contract and playbook below are still the right starting point if a perf
 sprint resumes — nothing here is stale, it's just unclaimed.
 
@@ -68,6 +68,8 @@ commit  wall_s  k1_match  regret_delta  peak_gb  status  description
 The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 
 ## How to work
+
+**Mechanics note (2026-07-13):** the `TeamCreate` / `team_name` / `TaskStop` spawn plumbing below predates the current single-team `Agent` / `SendMessage` surface — refresh the kickoff sequence and spawn template against the live tool surface before the next sprint.
 
 **Kickoff (run once at sprint start):**
 

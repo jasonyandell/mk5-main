@@ -1,9 +1,9 @@
 ---
 title: Single-Fact Enumeration (vs Long-Enumeration Failure)
 kind: topic
-first_seen: b857299
-last_updated: 0c7392f
-status: active
+first_seen: 2026-04-17
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview
@@ -28,4 +28,4 @@ This is the design principle behind the single-fact supporting categories (`high
 
 ## Links
 
-[[game-context-qa]] [[rules-adapter]] [[v9-adapter]] [[qwen3-14b]] [[experiments/qwen-14b-capacity]] [[scratchpad-validation]]
+[[game-context-qa]] [[rules-adapter]] [[v9-adapter]] [[qwen3-14b]] [[qwen-14b-capacity]] [[scratchpad-validation]]

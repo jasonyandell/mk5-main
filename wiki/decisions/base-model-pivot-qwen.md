@@ -1,9 +1,9 @@
 ---
 title: "Base Model Pivot: Gemma 4 E2B → Qwen 3 1.7B"
 kind: decision
-first_seen: 3465e29
-last_updated: 3465e29
-status: active
+first_seen: 2026-04-16
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -14,12 +14,12 @@ LEM's base model changes from [[gemma-4-e2b]] to [[qwen3-1.7b]] as of 3465e29 (2
 
 Dual motivation: accuracy and speed.
 
-**Accuracy:** [[qwen3-1.7b]] reaches 100% on `comprehension_eval_v5` after Stage 0 training on the same game-context Q&A corpus where [[gemma-4-e2b]] reached 60%. A 40-point absolute gap on the same data is a strong signal that the base model, not the curriculum, was the remaining bottleneck after [[experiments/stage-0-v4-comprehension-eval]].
+**Accuracy:** [[qwen3-1.7b]] reaches 100% on `comprehension_eval_v5` after Stage 0 training on the same game-context Q&A corpus where [[gemma-4-e2b]] reached 60%. A 40-point absolute gap on the same data is a strong signal that the base model, not the curriculum, was the remaining bottleneck after [[stage-0-v4-comprehension-eval]].
 
 **Speed:** Qwen + Unsloth + xformers achieves 36K tok/s on [[modal]] B200 and completes a full training run in ~19 min. Gemma on the same hardware was substantially slower due to three architectural quirks:
 - PLE (parameter-efficient-embedding) — non-standard embedding layout
-- KV-sharing across layers 15–34 — reuses KV states, complicates PEFT targeting (see [[sources/9571a7b]])
-- No flash-attention-2 support — required the HF generate + SDPA + `torch.compile` recipe (see [[sources/26f5ddf]]) and still underperformed
+- KV-sharing across layers 15–34 — reuses KV states, complicates PEFT targeting (see [[9571a7b]])
+- No flash-attention-2 support — required the HF generate + SDPA + `torch.compile` recipe (see [[26f5ddf]]) and still underperformed
 
 ## Scope
 
@@ -37,4 +37,4 @@ When a GPU looks underutilized despite all standard kernel/batching fixes, consi
 
 ## Related pages
 
-[[gemma-4-e2b]] · [[qwen3-1.7b]] · [[v4-adapter]] · [[v5-adapter]] · [[rules-adapter]] · [[modal]] · [[sources/3465e29]] · [[sources/26f5ddf]] · [[sources/9571a7b]] · [[experiments/stage-0-v4-comprehension-eval]]
+[[gemma-4-e2b]] · [[qwen3-1.7b]] · [[v4-adapter]] · [[v5-adapter]] · [[rules-adapter]] · [[modal]] · [[3465e29]] · [[26f5ddf]] · [[9571a7b]] · [[stage-0-v4-comprehension-eval]]

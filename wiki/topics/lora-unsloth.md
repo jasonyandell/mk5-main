@@ -1,8 +1,8 @@
 ---
 title: LoRA via Unsloth
 kind: topic
-first_seen: a8bccfa
-last_updated: be7efc4
+first_seen: 2026-04-09
+last_updated: 2026-04-17
 status: superseded
 ---
 
@@ -16,7 +16,7 @@ Stage 0 training ran on a [[modal]] L4 GPU (22GB VRAM). [[gemma-4-e2b]] is ~20GB
 
 ## Training recipe (Stage 0 v1)
 
-The following steps are required; omitting any one of them causes silent failure or OOM. See [[stage-0-adapter]] and [[experiments/stage-0-v1-training]] (lem/OVERVIEW.md @ 24ae55a):
+The following steps are required; omitting any one of them causes silent failure or OOM. See [[stage-0-adapter]] and [[stage-0-v1-training]] (lem/OVERVIEW.md @ 24ae55a):
 
 1. **Monkey-patch `Gemma4ClippableLinear`** to inherit from `nn.Linear` before loading. Without this fix, `grad_norm` stays 0 and the adapter never updates. Fix from huggingface/peft#3129.
 
@@ -51,4 +51,4 @@ section, point 3. LEM itself never converged on a rank/LR recipe before pivoting
 
 ## Links
 
-[[gemma-4-e2b]] [[qwen3-1.7b]] [[rules-adapter]] [[lem]] [[burl]] [[modal]] [[stage-0-adapter]] [[star]] [[k1-grading]] [[experiments/stage-0-v1-training]]
+[[gemma-4-e2b]] [[qwen3-1.7b]] [[rules-adapter]] [[lem]] [[burl]] [[modal]] [[stage-0-adapter]] [[star]] [[k1-grading]] [[stage-0-v1-training]]

@@ -1,9 +1,9 @@
 ---
 title: SFT Completion-Only Loss (mask fix)
 kind: decision
-first_seen: be7efc4
-last_updated: be7efc4
-status: active
+first_seen: 2026-04-17
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -29,7 +29,7 @@ Qwen 3 and Gemma 4 chat templates do not include `{% generation %}` markers, so 
 
 ## Impact
 
-1.7B v10-maskfix hits 86% comprehension overall — matching 14B v9 at ~1/3 the training compute on B200. See [[experiments/v10-maskfix-breakthrough]].
+1.7B v10-maskfix hits 86% comprehension overall — matching 14B v9 at ~1/3 the training compute on B200. See [[v10-maskfix-breakthrough]].
 
 Three metrics that had been stuck (`intervention_check`, `partner_response`, `beaters_in_unseen`) moved +10–18pp. One metric (`transition bot-match`) did not — confirming its ceiling is capacity or STaR-iteration, not gradient allocation.
 
@@ -49,4 +49,4 @@ t42-0ynt closed.
 
 ## Related pages
 
-[[v10-adapter]] · [[experiments/v10-maskfix-breakthrough]] · [[lora-unsloth]] · [[sources/be7efc4]] · [[qwen3-1.7b]] · [[qwen3-14b]]
+[[v10-adapter]] · [[v10-maskfix-breakthrough]] · [[lora-unsloth]] · [[be7efc4]] · [[qwen3-1.7b]] · [[qwen3-14b]]

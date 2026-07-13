@@ -4,6 +4,8 @@ kind: source
 commit: 8dbf7f3
 date: 2026-04-20
 author: Jason Yandell
+first_seen: 2026-04-24
+last_updated: 2026-04-24
 ---
 
 ## Commit message
@@ -33,4 +35,4 @@ author: Jason Yandell
 
 ## Links
 
-[[experiments/gus-v0-v1-belief]]
+[[gus-v0-v1-belief]]

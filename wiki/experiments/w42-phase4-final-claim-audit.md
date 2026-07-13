@@ -1,10 +1,16 @@
 ---
 title: w42 Phase4 Final Claim Audit
 kind: experiment
-first_seen: local-2026-05-03
-last_updated: local-2026-05-03
-status: active
+first_seen: 2026-05-03
+last_updated: 2026-07-13
+status: complete
 ---
+
+**This audit is the closure baseline of the 64-claim ledger** — the state every
+later wave measured movement against. The canonical synthesis is
+[[w42-book-claim-synthesis-and-ai-directions]]. Which clock is this: `phase4`
+here is the 2026-05-02→03 claim-ledger sweep, not the bookval-v1 waves or the
+2026-06+ [[champion-ladder]] rungs.
 
 ## Summary
 

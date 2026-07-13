@@ -1,8 +1,8 @@
 ---
 title: PIMC (Perfect-Information Monte Carlo) variants
 kind: topic
-first_seen: 5a4c9b9
-last_updated: local-2026-07-06
+first_seen: 2026-04-21
+last_updated: 2026-07-06
 status: active
 ---
 
@@ -37,7 +37,7 @@ than `lamir1-qleaf`'s 2.006 (rotated-π_me opponent proxy). Single-step PIMC was
 improving Gus's inference-time performance above the policy head ceiling, and neither was the
 multi-step π_opp-enabled variant: every LAMIR-1 rollout mode lost to direct π_me. See
 [[lamir1-ceiling]] for the full ladder and the pivot that followed (option 4: self-play,
-no CFR+ — `jud`/[[champion]]).
+no CFR+ — [[jud]]).
 
 ## Where the flaw bites: rank vs price
 
@@ -52,4 +52,4 @@ oracle in January 2026.
 
 ## Links
 
-[[gus]] [[lamir1]] [[lamir1-ceiling]] [[joint-world-tensor]] [[expected-q-value]] [[regret-eval]] [[student-distillation]] [[web-game]] [[pre-ml-ai-attempts]] [[strategy-fusion]] [[champion]]
+[[gus]] [[lamir1]] [[lamir1-ceiling]] [[joint-world-tensor]] [[expected-q-value]] [[regret-eval]] [[student-distillation]] [[web-game]] [[pre-ml-ai-attempts]] [[strategy-fusion]] [[jud]]

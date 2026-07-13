@@ -1,8 +1,8 @@
 ---
 title: belief_trajectory tool
 kind: entity
-first_seen: d858781
-last_updated: 1bf1885
+first_seen: 2026-04-23
+last_updated: 2026-04-23
 status: superseded
 ---
 

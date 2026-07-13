@@ -4,8 +4,8 @@ kind: experiment
 status: complete
 wave: wave5
 task_id: wave5-champion-teaching-battery
-first_seen: local-2026-06-13
-last_updated: local-2026-06-13
+first_seen: 2026-06-13
+last_updated: 2026-07-13
 ---
 
 # w42-champion-teaching-battery
@@ -160,3 +160,10 @@ python -u w42/book_validation_v1/wave5/probe_champion_teaching_battery.py \
 - Static/ruleset claims (ch09, ch16): no dynamic data needed
 - Any claim requiring opponent hands not held by the champion: structurally impossible
   under the self-selection slice
+
+## Links
+
+- [[jud]] — the player under test; its teaching half ([[the-wall]]) is the
+  consumer of this battery ([[champion-ladder]] rung #28)
+- [[w42]] — the book-validation campaign that built the detectors
+- [[arena]] — the trajectory source (lens:ev play)

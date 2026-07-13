@@ -1,9 +1,9 @@
 ---
 title: Student Distillation (E[Q] oracle → neural multi-head)
 kind: topic
-first_seen: 42a7535
-last_updated: 31e10ef
-status: active
+first_seen: 2026-04-20
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Overview

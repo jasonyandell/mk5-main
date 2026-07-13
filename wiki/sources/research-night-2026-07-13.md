@@ -1,8 +1,8 @@
 ---
 title: Source — research night 2026-07-13
 kind: source
-first_seen: b28fb55a
-last_updated: 242dff1e
+first_seen: 2026-07-13
+last_updated: 2026-07-13
 status: active
 ---
 

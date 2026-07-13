@@ -1,9 +1,9 @@
 ---
 title: w42 Bidder Sequencing Claim Validation
 kind: experiment
-first_seen: c603a0d
-last_updated: c603a0d
-status: active
+first_seen: 2026-05-01
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

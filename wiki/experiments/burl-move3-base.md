@@ -1,9 +1,9 @@
 ---
 title: Burl Move 3 — Base Gemma 4 E2B Baseline
 kind: experiment
-first_seen: 4b3ba3d
-last_updated: 4b3ba3d
-status: active
+first_seen: 2026-04-19
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -44,8 +44,8 @@ Fake `play` tool hallucinated in 80% of trials. Harmless (commit still lands via
 
 ## Significance
 
-Premise survives: base 2B model plays legally at 70% K1 with no fine-tuning. But the tool-use BREADTH that is Burl's whole point — querying `eq_outcome_distribution`, incorporating beliefs about hidden state — does not emerge spontaneously on XML format. This motivates [[experiments/burl-move4-native-spike]]: the harness format, not the model, is the bottleneck.
+Premise survives: base 2B model plays legally at 70% K1 with no fine-tuning. But the tool-use BREADTH that is Burl's whole point — querying `eq_outcome_distribution`, incorporating beliefs about hidden state — does not emerge spontaneously on XML format. This motivates [[burl-move4-native-spike]]: the harness format, not the model, is the bottleneck.
 
 ## Related pages
 
-[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[k1-grading]] · [[modal]] · [[decisions/native-tool-use-format]] · [[experiments/burl-move4-native-spike]] · [[sources/4b3ba3d]]
+[[burl]] · [[gemma-4-e2b]] · [[tool-orchestration]] · [[k1-grading]] · [[modal]] · [[native-tool-use-format]] · [[burl-move4-native-spike]] · [[4b3ba3d]]

@@ -1,8 +1,8 @@
 ---
 title: Suit algebra — absorption vs. power, S₇ symmetry, τ-encoding
 kind: topic
-first_seen: b132ad92
-last_updated: 2ab1a825
+first_seen: 2026-07-06
+last_updated: 2026-07-11
 status: active
 ---
 
@@ -103,4 +103,4 @@ full era narrative.
 
 [[suit-algebra-spec]] · [[play-phase-algebra]] · [[the-oracle]] ·
 [[breakthrough-and-oracle]] · [[forge]] ·
-[[sources/claude/era2-breakthrough-oracle|conversation digest]]
+[[era2-breakthrough-oracle|conversation digest]]

@@ -1,16 +1,16 @@
 ---
 title: Haiku 4.5 (Burl reference-trace generator)
 kind: entity
-first_seen: 1f13f92
-last_updated: b5d05de
-status: active
+first_seen: 2026-04-19
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## What it is
 
 Haiku 4.5 is Anthropic's small model used in [[burl]]'s iter-2 prep as a reference-trace
 generator. It is not Burl's base model; it is a teacher signal — it produces target
-[[topics/tool-orchestration]] traces that Gemma 4 then distills from. (commit messages @
+[[tool-orchestration]] traces that Gemma 4 then distills from. (commit messages @
 1f13f92, b5d05de)
 
 ## Role in Burl
@@ -50,3 +50,9 @@ aim for" anchor.
 The Anthropic Agent SDK falls back to non-streaming `--print` mode when `prompt` is a
 plain string, which silently breaks in-process MCP RPC. Fix: pass prompt as an async
 iterable of stream-json user messages.
+
+## Status
+
+The reference-trace role concluded with the N=30 run above; no distillation from
+these traces ever ran before the [[burl]] line went dormant (2026-05-07). See
+[[burl-line]].

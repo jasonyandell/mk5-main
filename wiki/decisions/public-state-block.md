@@ -1,9 +1,9 @@
 ---
 title: Post-Trick Public State Block
 kind: decision
-first_seen: 7f1994e
-last_updated: 7f1994e
-status: active
+first_seen: 2026-04-11
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -19,7 +19,7 @@ Cost: ~60 tokens per trick, ~300 extra tokens per prompt.
 
 > A 2B model shouldn't reconstruct game state from prose any more than a human should memorize 28 dominoes. In real 42, this information is public and visible at the table. Some variants even exploit the difficulty of tracking it (stacking on 84 bids).
 
-— commit message, [[sources/7f1994e]]
+— commit message, [[7f1994e]]
 
 ## Design philosophy
 
@@ -27,7 +27,7 @@ State that is public and available at the table is the narrator's job to provide
 
 ## Relationship to prior decisions
 
-**Complements [[scratchpad-validation]]:** scratchpad validation held the model accountable for reconstructing state, which proved too strict without format bootstrapping (see [[experiments/scratchpad-v2-iter0]]). The public state block removes the reconstruction problem entirely — state is given, not inferred. When [[scratchpad-validation]] is eventually re-enabled, the HAND section of the scratchpad becomes a copy task rather than a recall task.
+**Complements [[scratchpad-validation]]:** scratchpad validation held the model accountable for reconstructing state, which proved too strict without format bootstrapping (see [[scratchpad-v2-iter0]]). The public state block removes the reconstruction problem entirely — state is given, not inferred. When [[scratchpad-validation]] is eventually re-enabled, the HAND section of the scratchpad becomes a copy task rather than a recall task.
 
 **Relates to [[learned-by-playing]]:** learning from play is most efficient when model attention can focus on strategy rather than state-tracking. Providing public state in the prompt aligns with how humans actually play the game at the table.
 
@@ -37,4 +37,4 @@ Private state (opponents' hands, inferred from bidding and play history) and str
 
 ## Related pages
 
-[[narration]] · [[lem]] · [[learned-by-playing]] · [[scratchpad-validation]] · [[experiments/scratchpad-v2-iter0]] · [[sources/7f1994e]]
+[[narration]] · [[lem]] · [[learned-by-playing]] · [[scratchpad-validation]] · [[scratchpad-v2-iter0]] · [[7f1994e]]

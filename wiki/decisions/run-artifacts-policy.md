@@ -1,8 +1,8 @@
 ---
 title: Run Artifacts Policy — claims in git, measurements ephemeral
 kind: decision
-first_seen: local-2026-07-13
-last_updated: local-2026-07-13
+first_seen: 2026-07-13
+last_updated: 2026-07-13
 status: active
 ---
 
@@ -42,4 +42,4 @@ reference them before removal. New runs never enter git.
 ## Links
 
 [[stage-0-closure]] [[jud-target-granularity]] [[partnership-research-gates]]
-[[arena]]
+[[arena]] [[beads-to-gh-issues]]

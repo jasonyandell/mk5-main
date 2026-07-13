@@ -1,8 +1,8 @@
 ---
 title: Detect-and-Route (blunder-gated inference wrapper)
 kind: topic
-first_seen: eba5103
-last_updated: a09ef43
+first_seen: 2026-04-21
+last_updated: 2026-04-21
 status: retired
 ---
 
@@ -38,7 +38,7 @@ path reached 0.49 regret in eval scripts only; it was never wired into champion,
 forge production. For no-oracle inference, the prerequisite would have been a Q_head that
 survives multi-world averaging — either via multi-world variance regularization during
 training or K=50+ worlds at inference (109f9e1, a09ef43) — but the whole line was abandoned
-when the project pivoted to `jud`/[[champion]] instead of pursuing further LAMIR-era fixes.
+when the project pivoted to [[jud]] instead of pursuing further LAMIR-era fixes.
 
 Router benefit concentrates on mid-game tricks (decisions 0-12, especially 4, 8, 10) where primary regret is 2-6 Q-pts. End-game decisions (24-27) are correctly never flagged (eba5103).
 
@@ -48,4 +48,4 @@ Naïve ensemble (majority vote, softmax average) boosts bot-match but hurts regr
 
 ## Links
 
-[[gus]] [[blunder-detector]] [[regret-eval]] [[router-reality-check]] [[pimc]] [[expected-q-value]] [[champion]]
+[[gus]] [[blunder-detector]] [[regret-eval]] [[router-reality-check]] [[pimc]] [[expected-q-value]] [[jud]]

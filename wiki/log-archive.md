@@ -1,6 +1,6 @@
 # Log — archive
 
-Rolled-out entries from `log.md` (2026-04-09 → 2026-06-14, entries 1–145). Same format, still greppable: `grep "^## \[" log-archive.md`. Newest entries live in [[log]].
+Rolled-out entries from `log.md` (2026-04-09 → 2026-07-10, entries 1–156). Same format, still greppable: `grep "^## \[" log-archive.md`. Newest entries live in [[log]].
 
 ---
 
@@ -3589,7 +3589,7 @@ chain → `complete`/`superseded`; [[burl]] and its lab/chat/microscope/wax-muse
 `superseded`; [[zeb]] → `superseded` (belief work carried by Gus/jud); the Winning-42
 per-chapter book cluster and its phase-2/3/4 probes → `complete`/`superseded` as the
 campaign closed; the LAMIR/router/blunder-detector no-oracle branch → `retired`/`superseded`;
-[[candlewax-spike]] and [[selfplay-arena]] → `retired`. The live frontier
+[[candlewax-spike]] and [[burl-selfplay-arena]] → `retired`. The live frontier
 ([[gus]], [[w42]], [[forge]], [[champion]], [[jud]], [[engine]]) stays `active`.
 
 **Questions opened (raising `afd4802`):**

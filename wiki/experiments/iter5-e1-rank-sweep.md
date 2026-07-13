@@ -1,14 +1,14 @@
 ---
 title: "iter-5 E1: LoRA Rank Sweep with Truncation Fixed"
 kind: experiment
-first_seen: ceca203
-last_updated: ceca203
-status: active
+first_seen: 2026-04-19
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
 
-First real [[preserve-thoughts]] adapter trained with `max_seq_length=4096` (truncation fixed per [[decisions/sft-max-seq-length]]). Sweeps LoRA rank 16/64/128 on a 26-row corpus. Rank-16 is the sweet spot; higher rank degrades catastrophically on small corpora.
+First real [[preserve-thoughts]] adapter trained with `max_seq_length=4096` (truncation fixed per [[sft-max-seq-length]]). Sweeps LoRA rank 16/64/128 on a 26-row corpus. Rank-16 is the sweet spot; higher rank degrades catastrophically on small corpora.
 
 ([burl/experiments/iter5_e1_capacity_eval_writeup.md @ ceca203](../sources/ceca203.md))
 
@@ -35,10 +35,10 @@ The rank-16 improvement (66.7% → 70.0%) is modest but real — the first evide
 
 ## Reframes
 
-Retroactively reframes the iter-4 [[experiments/iter4-null-preserve-thoughts]] result: with `max_seq_length=1024`, both stripped and preserved rows were identical at token 1024. The fix was data-reaching-loss, not LoRA capacity.
+Retroactively reframes the iter-4 [[iter4-null-preserve-thoughts]] result: with `max_seq_length=1024`, both stripped and preserved rows were identical at token 1024. The fix was data-reaching-loss, not LoRA capacity.
 
 Note: the E1 writeup and the ceca203 commit message say the old truncation ceiling was `max_seq_length=2048`; [[sft-max-seq-length]] and the iter-4 pages say TRL's default 1024. This page follows the 1024 account — one of the two source docs is wrong.
 
 ## Related pages
 
-[[burl]] · [[preserve-thoughts]] · [[decisions/sft-max-seq-length]] · [[iter3-rules-adapter]] · [[mlx-lm]] · [[lora-unsloth]] · [[experiments/iter4-null-preserve-thoughts]] · [[sources/ceca203]]
+[[burl]] · [[preserve-thoughts]] · [[sft-max-seq-length]] · [[iter3-rules-adapter]] · [[mlx-lm]] · [[lora-unsloth]] · [[iter4-null-preserve-thoughts]] · [[ceca203]]

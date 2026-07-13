@@ -1,9 +1,9 @@
 ---
 title: max_tokens=2048 is the floor for batched Burl harvest
 kind: decision
-first_seen: 063fcac
-last_updated: e2171816
-status: active
+first_seen: 2026-04-24
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Decision
@@ -63,4 +63,4 @@ Doubling `max_tokens` raises the per-batch memory footprint enough that a Metal 
 
 ## Links
 
-[[burl-2000-harvest]] · [[batched-harvest-resilience]] · [[burl]] · [[gemma-4-e2b]] · [[mlx-lm]] · [[wax-museum]] · [[sources/063fcac]]
+[[burl-2000-harvest]] · [[batched-harvest-resilience]] · [[burl]] · [[gemma-4-e2b]] · [[mlx-lm]] · [[wax-museum]] · [[063fcac]]

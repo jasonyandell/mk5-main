@@ -1,8 +1,8 @@
 ---
 title: BookStrategyPlayer - strategy algebra
 kind: entity
-first_seen: local-2026-05-03
-last_updated: afd4802
+first_seen: 2026-05-03
+last_updated: 2026-07-13
 status: superseded
 phase: algebraic Phase 1 contract (never built)
 supersedes: BookStrategyPlayer - amended Phase 1 design
@@ -17,7 +17,7 @@ auction by Fable's 2026-06-09 design review (see [[champion-design-review]]);
 this Phase 1 design was never implemented — bead `t42-zrf9` froze
 `in_progress` on 2026-05-04 and no `w42/book_strategy*` directory ever
 appeared on disk. The project's best-player energy moved instead to the
-auction-first [[champion]]/[[jud]] value-net line, an unrelated mechanism.
+auction-first [[jud]] value-net line, an unrelated mechanism.
 BSP may still run someday as a cheap epilogue measurement, not a live plan —
 the algebra below is preserved as a design record, not a build in progress.
 
@@ -78,9 +78,10 @@ No IO belongs in the decision logic. A decision may query only its supplied
 environment, game state, and plan state. It returns an action, a new plan state,
 and an append-only record.
 
-Detailed recording fields live in [[book-strategy-player-recording]]. The Phase 1
-build checklist lives in [[book-strategy-player-phase-1-build]]. Future
-extensions live in [[book-strategy-player-extension-points]].
+The recording contract, Phase 1 build contract, and extension points were
+satellite pages, now reduced to stubs with their gists absorbed below
+([[book-strategy-player-recording]], [[book-strategy-player-phase-1-build]],
+[[book-strategy-player-extension-points]]; full text in git history).
 
 ## Carriers
 
@@ -367,7 +368,7 @@ explicit retire delta.
 cannot affect action choice. Records plus seeds, player/library/fallback
 fingerprints, strategy versions, game-state snapshots, legal actions, chosen
 actions, fallback proposals, strategy paths, and deltas must be enough to replay
-the hand. See [[book-strategy-player-recording]].
+the hand. See the recording contract below.
 
 ## Implementation surface
 
@@ -381,13 +382,48 @@ Phase 1 should be implemented in this order:
 6. Head-to-head measurement against `Lens("ev")`.
 
 Do not start with a book tactic before the framework laws pass on fake
-strategies. The starter implementation, property tests, strict/simulation
-error policy, and suggested module layout are in
-[[book-strategy-player-phase-1-build]].
+strategies.
 
 The first strategy can be a negative-control or measurement candidate such as
 `singleton_lead_to_void`; it should not be assumed to rehabilitate
 [[w42-bookval-v1-wave2-void-creation]] before measurement.
+
+## Phase 1 build contract (absorbed)
+
+Build order: core carriers with fake strategies → property tests for L1-L10
+(seventeen named tests, T1-T17: empty-library identity, library-order
+independence, duplicate-name rejection, commit/arbitration discipline,
+bail/retire orthogonality, fact-merge associativity/commutativity,
+naked-scalar rejection, namespace hermeticity, priority finiteness, recording
+purity, replay-field presence) → pure `Lens("ev")` fallback adapter →
+recording → one real strategy → head-to-head against `Lens("ev")`, reusing
+`w42/lens_v1/parallel_match.py` where possible.
+
+Error policy: strict/test mode raises on illegal strategy actions, namespace
+violations, non-finite priorities, and illegal fallback actions; long
+simulation mode may record-and-fallback for illegal strategy actions only.
+Target module layout was `w42/book_strategy/` (never created). The first
+head-to-head report was to include paired-seed point margin, bootstrap CI,
+strategy firing/completion/disruption/bail rates, illegal-action count,
+fallback fraction, and a sample of replayable decision records.
+
+## Recording contract (absorbed)
+
+Records are Writer-only, append-only `DecisionRecord`s carrying identity and
+version fingerprints (player, library, fallback, framework, rules, forge,
+per-strategy versions), seeds and RNG stream positions, lossless game-state
+and plan-state snapshots, legal actions, strategy path, priorities, chosen and
+fallback actions, applied deltas, and per-plan completion statuses. Replay
+sufficiency is the acceptance test: if records cannot deterministically replay
+the hand, downstream training labels are suspect.
+
+`fallback_action` is a cheap local counterfactual proposal — a local baseline
+that enables replay, never exact causal attribution (that needs paired-seed
+replay or a value model). Computing it must not mutate any state or consume
+live RNG. Coverage buckets stay conservative before replay (`uncovered`,
+`covered_same_as_fallback`, `covered_diff_unattributed`, `bailed`,
+`illegal_strategy_action`, `disrupted`); `covered_diff_replay_positive` /
+`_negative` only after replay or model-based value attribution.
 
 ## Extension boundary
 
@@ -399,8 +435,15 @@ The core algebra admits extension without changing the decision equation:
 - opponent-aware facts through an optional observation hook;
 - learned selectors or plan-success predictors after enough records exist.
 
-Those are extension points, not Phase 1 obligations. They are summarized in
-[[book-strategy-player-extension-points]].
+Those are extension points, not Phase 1 obligations. Beyond them: cross-hand
+match memory would need a `MatchState` threaded through the whole strategy
+lifecycle (the design is per-hand because parallel-hand simulation treats
+hands as independent), and the recorded data was to train a strategy selector,
+a plan-success predictor, or an end-to-end distilled policy — [[gus]] as the
+belief-state encoder, [[burl]] plausible once the action space is named
+strategies, [[zeb]] as generator or backup policy target. Hard limits: one
+domino per decision (arbitration picks a single plan), and no automatic
+plan-compatibility negotiation between simultaneously active plans.
 
 ## Status
 
@@ -410,7 +453,7 @@ Those are extension points, not Phase 1 obligations. They are summarized in
 - **Built:** never — bead `t42-zrf9` froze `in_progress` at 2026-05-04 and was
   never revisited; beads were retired project-wide 2026-06 without it closing.
 - **Strategies encoded:** none.
-- **Superseded:** 2026-06-09, by the auction-first [[champion]]/[[jud]] line
+- **Superseded:** 2026-06-09, by the auction-first [[jud]] line
   (see [[champion-design-review]]). May still run someday as a cheap epilogue
   measurement, not a live plan.
 
@@ -421,12 +464,12 @@ Those are extension points, not Phase 1 obligations. They are summarized in
 - [[w42-book-validation-campaign]] - campaign this serves.
 - [[w42-lens-v1-utility-head-to-head]] - EV-as-ceiling result constraining the
   design space.
-- [[book-strategy-player-recording]] - recording and replay contract.
-- [[book-strategy-player-phase-1-build]] - implementer checklist.
-- [[book-strategy-player-extension-points]] - future extension boundaries.
+- [[book-strategy-player-recording]] · [[book-strategy-player-phase-1-build]]
+  · [[book-strategy-player-extension-points]] - satellite stubs; their
+  contracts are absorbed above.
 - [[w42-bookval-v1-wave2-void-creation]] - prior void-creation result to avoid
   overclaiming against.
 - [[champion-design-review]] - Fable's 2026-06-09 review that redirected the
   chassis from play to the auction.
-- [[champion]] · [[jud]] - the mechanism the project's best-player energy
+- [[jud]] - the mechanism the project's best-player energy
   moved to instead.

@@ -1,9 +1,9 @@
 ---
 title: Gus v2 at 1000g with Explicit Voids
 kind: experiment
-first_seen: 3c02d10
-last_updated: 3c02d10
-status: active
+first_seen: 2026-04-21
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
@@ -14,7 +14,7 @@ The transformer was already inferring voids attentionally from play tokens. (com
 
 ## Setup
 
-- **Corpus**: 1000 games (chunked generation; glob-load via [[sources/2e4f586]] fix)
+- **Corpus**: 1000 games (chunked generation; glob-load via [[2e4f586]] fix)
 - **Architecture**: v1 transformer + VoidsEncoder projecting `[24]`-dim void indicator
   (3 opponents × 8 suits) into d_model, added to pooled state_emb before all four heads
 - **Model size**: d=192, 4 layers, 40 epochs
@@ -31,7 +31,7 @@ The transformer was already inferring voids attentionally from play tokens. (com
 | Q MAE | 12.3 | 12.2 | flat |
 
 Note: comparing v1 vs v2 both at 1000g. The 100g → 1000g scaling alone lifted π_me from
-57.9% ([[experiments/gus-4head-baseline]]) to 66.1%.
+57.9% ([[gus-4head-baseline]]) to 66.1%.
 
 ## Interpretation
 
@@ -42,4 +42,4 @@ a larger model. (commit message @ 3c02d10)
 
 ## Links
 
-[[gus]] · [[experiments/gus-4head-baseline]]
+[[gus]] · [[gus-4head-baseline]]

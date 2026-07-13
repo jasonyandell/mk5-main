@@ -1,8 +1,8 @@
 ---
 title: "Source digest: 4b3ba3d — Move 3 shipped — base Gemma 4 E2B 70% K1"
 kind: source
-first_seen: 4b3ba3d
-last_updated: 4b3ba3d
+first_seen: 2026-04-19
+last_updated: 2026-04-19
 status: active
 ---
 
@@ -56,8 +56,8 @@ status: active
 
 ## Results
 
-100% legal, 60% bot-match, 70% K1, $0.09. See [[experiments/burl-move3-base]] for full analysis.
+100% legal, 60% bot-match, 70% K1, $0.09. See [[burl-move3-base]] for full analysis.
 
 ## Related pages
 
-[[experiments/burl-move3-base]] · [[burl]] · [[gemma-4-e2b]] · [[modal]] · [[tool-orchestration]] · [[sources/d9baf3b]] · [[sources/3781dce]]
+[[burl-move3-base]] · [[burl]] · [[gemma-4-e2b]] · [[modal]] · [[tool-orchestration]] · [[d9baf3b]] · [[3781dce]]

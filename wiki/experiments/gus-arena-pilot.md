@@ -1,16 +1,16 @@
 ---
 title: Gus Arena Pilot (game-level eval)
 kind: experiment
-first_seen: 1a2f67f
-last_updated: 1a2f67f
-status: active
+first_seen: 2026-04-21
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary
 
 First game-level evaluation of [[gus]] student against the E[Q] bot. Decision-level
 regret of 1.39 Q-pts compounds to a ~30pp contract-made gap at game level. Blunder
-forensics surfaced the [[topics/v-pi-decoupling]] pattern motivating v3. (commit message @ 1a2f67f)
+forensics surfaced the [[v-pi-decoupling]] pattern motivating v3. (commit message @ 1a2f67f)
 
 ## Setup
 
@@ -43,7 +43,7 @@ decision. Key pattern surfaced: on specific blunder decisions, V_head correctly 
 decoupled — the student "knows" the position is good but acts badly.
 
 This V/π decoupling is the diagnostic that motivates the v3 consistency regularizer.
-See [[topics/v-pi-decoupling]] and [[topics/consistency-regularizer]].
+See [[v-pi-decoupling]] and [[consistency-regularizer]].
 
 ## Eval tooling shipped
 
@@ -54,4 +54,4 @@ See [[topics/v-pi-decoupling]] and [[topics/consistency-regularizer]].
 
 ## Links
 
-[[gus]] · [[topics/regret-eval]] · [[topics/v-pi-decoupling]] · [[experiments/gus-scaling-ladder]]
+[[gus]] · [[regret-eval]] · [[v-pi-decoupling]] · [[gus-scaling-ladder]]

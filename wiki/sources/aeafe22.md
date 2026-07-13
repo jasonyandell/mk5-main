@@ -1,8 +1,8 @@
 ---
 title: "Source digest: aeafe22 — PRACTICALITIES.md split from OVERVIEW"
 kind: source
-first_seen: aeafe22
-last_updated: aeafe22
+first_seen: 2026-04-20
+last_updated: 2026-04-20
 status: active
 ---
 
@@ -28,4 +28,4 @@ New `burl/PRACTICALITIES.md` captures eight operational receipts that belong in 
 
 ## Related pages
 
-[[burl]] · [[iter3-rules-adapter]] · [[conditional-outcome-structural-nonuse]] · [[decisions/sft-max-seq-length]]
+[[burl]] · [[iter3-rules-adapter]] · [[conditional-outcome-structural-nonuse]] · [[sft-max-seq-length]]

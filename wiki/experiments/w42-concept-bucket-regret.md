@@ -1,9 +1,9 @@
 ---
 title: w42 Concept Bucket Regret
 kind: experiment
-first_seen: local-2026-05-02
-last_updated: afd4802
-status: active
+first_seen: 2026-05-02
+last_updated: 2026-07-13
+status: complete
 ---
 
 ## Summary

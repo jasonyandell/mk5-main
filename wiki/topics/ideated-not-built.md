@@ -1,8 +1,8 @@
 ---
 title: Ideated, Not Built — Era 5's Unbuilt Record
 kind: topic
-first_seen: afd4802
-last_updated: afd4802
+first_seen: 2026-07-06
+last_updated: 2026-07-06
 status: complete
 ---
 
@@ -203,4 +203,4 @@ lever in-window. See [[candlewax]] for where the consumption question stands now
 ## Links
 
 [[the-gestation]] [[lem]] [[burl]] [[zeb]] [[jud]] [[candlewax]]
-[[expected-q-value]] [[sources/claude/era5-gestation]]
+[[expected-q-value]] [[era5-gestation]]

@@ -12,7 +12,7 @@ Burl reads "count value" as **pip-sum** (the dots on the domino added together) 
 
 ## Where it surfaced
 
-[[experiments/burl-chat-spike]] §"Session 2" — rerun-fresh on harvest_batched_20260425_072910 decision #1, defense, position 2/4 in trick 1, lead 14(4-4), led suit 4s. Burl needed to pick a 4-x to follow:
+[[burl-chat-spike]] §"Session 2" — rerun-fresh on harvest_batched_20260425_072910 decision #1, defense, position 2/4 in trick 1, lead 14(4-4), led suit 4s. Burl needed to pick a 4-x to follow:
 
 > If I play 4(2-1), it is a low count domino (2 points).
 > If I play 19(5-4), it is medium count (5 points).
@@ -35,7 +35,7 @@ Of the 28 dominoes, the 5 count-carriers are accidentally well-classified by pip
 
 ## Why it happens
 
-A plausible read: the rules primer ([[topics/rules-adapter]]) listed count dominoes as a numeric set, and the post-train distribution learned "domino has high pips → domino is expensive." That's a usable shortcut for laymen and it is right on average for the count-bearing five — but it is the wrong abstraction for Texas 42's two-tier scoring system, where the 5 named count dominoes are categorical and everything else is zero. The model never internalized the discrete label; it kept the continuous proxy.
+A plausible read: the rules primer ([[rules-adapter]]) listed count dominoes as a numeric set, and the post-train distribution learned "domino has high pips → domino is expensive." That's a usable shortcut for laymen and it is right on average for the count-bearing five — but it is the wrong abstraction for Texas 42's two-tier scoring system, where the 5 named count dominoes are categorical and everything else is zero. The model never internalized the discrete label; it kept the continuous proxy.
 
 ## How to detect
 
@@ -47,7 +47,7 @@ Three layers, ranked cheap → expensive:
 
 1. **Improvised tool** — `count_ledger`: for each domino in hand, emit `count_value: 0` or `count_value: 5/10`, with the loose-count budget. The same level of tool intervention as [[improvised-tools]] for legality. Prevents the bug at the surface; doesn't unlearn the bad heuristic.
 2. **System-prompt patch** — add an explicit "Count value vs pip-sum" sentence to the rules section, naming all five count-bearers and stating that nothing else is count. Costs a paragraph of context; reaches all decisions.
-3. **Adapter retraining** — add a count-categorical drill to the [[topics/rules-adapter]] / [[topics/trump-drilling]] corpus. Most expensive, most durable.
+3. **Adapter retraining** — add a count-categorical drill to the [[rules-adapter]] / [[trump-drilling]] corpus. Most expensive, most durable.
 
 Order of operations should be: ship (1), confirm the error pattern disappears in rerun-fresh, then do (2) once the fix is needed across the whole harness; consider (3) only if (2) fails to transfer.
 
@@ -62,5 +62,5 @@ never asked for the count-ledger tool before the line went quiet.
 
 - [[burl-chat-spike]] — where it was first observed
 - [[burl-tool-wishlist]] — the frame for whether to wait for Burl to ask
-- [[topics/rules-adapter]] — likely site of the proxy heuristic's origin
-- [[topics/learned-by-playing]] — adjacent: rules learn by playing, not by tabulation
+- [[rules-adapter]] — likely site of the proxy heuristic's origin
+- [[learned-by-playing]] — adjacent: rules learn by playing, not by tabulation
