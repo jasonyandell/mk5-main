@@ -2,7 +2,7 @@
 title: What You Do Past Belief
 kind: topic
 first_seen: 2026-04-22
-last_updated: 2026-07-13
+last_updated: 2026-07-14
 status: complete
 ---
 
@@ -25,6 +25,8 @@ See [[gus-drama-atlas]] for the full quadrant analysis and findings.
 
 This is noted as a future direction, not blocking anything. See PRACTICALITIES §22.
 
+[[count-fate-ledger]] (2026-07-14) states the decomposition object these meta-strategies would act on: hand value as a belief-weighted ledger of count-fate scenarios.
+
 ## Links
 
-[[belief-bayes-ceiling]] [[belief-co-train]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[expected-q-value]] [[gus-drama-atlas]]
+[[belief-bayes-ceiling]] [[belief-co-train]] [[lamir1-ceiling]] [[student-distillation]] [[gus]] [[expected-q-value]] [[gus-drama-atlas]] [[count-fate-ledger]]

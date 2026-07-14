@@ -2,7 +2,7 @@
 title: w42 Phase 2 Hidden Domino Threat Attribution
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-14
 status: superseded
 ---
 
@@ -145,6 +145,9 @@ Real metric pass:
 - Feed [[w42-hidden-threat-legacy-mining]] mitigation labels into the next
   targeted w42 regime: setter pounce, 84 weapon preservation, or auction
   bid-margin counterfactuals.
+- The first-order `(hidden_domino, holder)` grain is now framed as one factor of
+  [[count-fate-ledger]] row probability (2026-07-14); interaction terms
+  (preconditions + vetoes per row) were never computed at this grain.
 
 ## Links
 
