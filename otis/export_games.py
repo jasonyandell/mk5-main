@@ -1,6 +1,7 @@
-"""CLI: export eq-corpus games to the otis interchange JSONL + a fate-row table.
+"""CLI: export games to the otis interchange JSONL + a fate-row table.
 
-Reads N games from one or more eq-corpus chunk files, then writes two artifacts:
+Source-agnostic: reads games from eq-corpus ``.pt`` chunks (``--chunk``) and/or
+arena snapshot ``.json`` files (``--snapshots``), then writes two artifacts:
 
   1. The **interchange JSONL** (one game per line) that feeds the TypeScript referee:
 
@@ -17,9 +18,16 @@ Usage:
 
     .venv/bin/python -u -m otis.export_games \
         --chunk gus/data/corpus_train_chunk_0-99.pt \
+        --snapshots scratch/otis-night/corpus/chunk_selfplay_0.snapshots.json \
         --limit 20 \
         --out-jsonl scratch/otis-night/games.jsonl \
         --out-fates scratch/otis-night/fates.csv
+
+Snapshot rows carry join/label metadata (seed, game_idx, hand_idx, a_team,
+bidder_team_pts, opp_team_pts, made); those columns populate for snapshot
+sources and are blank for corpus sources. Every snapshot hand's parser-computed
+per-team points are cross-checked against the arena's recorded points (a free
+second referee — raises on mismatch).
 
 All CPU. otis does not own the GPU.
 """
@@ -39,8 +47,10 @@ from otis.fates import (
     domino_id_to_pips,
     parse_game_fates,
 )
+from otis.snapshots import SnapshotMeta, cross_check_points, load_snapshot_hands
 
-# Column order for the fate-row table.
+# Column order for the fate-row table. The trailing block is snapshot-only
+# metadata (blank for corpus sources).
 FATE_COLUMNS: tuple[str, ...] = (
     "game_id",
     "decl_id",
@@ -63,6 +73,15 @@ FATE_COLUMNS: tuple[str, ...] = (
     "team1_tricks",
     "team0_points",
     "team1_points",
+    # snapshot-only join/label metadata
+    "source",
+    "seed",
+    "game_idx",
+    "hand_idx",
+    "a_team",
+    "bidder_team_pts",
+    "opp_team_pts",
+    "made",
 )
 
 
@@ -79,8 +98,38 @@ def game_to_interchange(game: NeutralGame, decl_name: str) -> dict:
     }
 
 
-def fate_rows(fates: GameFates) -> list[dict]:
-    """Flatten a GameFates into one row per count tile."""
+def fate_rows(
+    fates: GameFates, source: str, meta: SnapshotMeta | None = None
+) -> list[dict]:
+    """Flatten a GameFates into one row per count tile.
+
+    ``source`` labels the origin (``"corpus"`` or ``"snapshot"``). When ``meta``
+    is given (snapshot source), its join/label columns are populated; otherwise
+    they are left blank.
+    """
+    meta_cols: dict = {
+        "source": source,
+        "seed": "",
+        "game_idx": "",
+        "hand_idx": "",
+        "a_team": "",
+        "bidder_team_pts": "",
+        "opp_team_pts": "",
+        "made": "",
+    }
+    if meta is not None:
+        meta_cols.update(
+            {
+                "seed": meta.seed,
+                "game_idx": meta.game_idx,
+                "hand_idx": meta.hand_idx,
+                "a_team": meta.a_team,
+                "bidder_team_pts": meta.bidder_team_pts,
+                "opp_team_pts": meta.opp_team_pts,
+                "made": meta.made,
+            }
+        )
+
     rows: list[dict] = []
     for t in fates.tiles:
         rows.append(
@@ -106,6 +155,7 @@ def fate_rows(fates: GameFates) -> list[dict]:
                 "team1_tricks": fates.team1_tricks,
                 "team0_points": fates.team0_points,
                 "team1_points": fates.team1_points,
+                **meta_cols,
             }
         )
     return rows
@@ -133,22 +183,34 @@ def _write_fates(rows: list[dict], out_path: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Export eq-corpus games to otis interchange + fate rows.")
+    parser = argparse.ArgumentParser(
+        description="Export games (eq-corpus .pt and/or arena snapshot .json) to "
+        "otis interchange + fate rows."
+    )
     parser.add_argument(
         "--chunk",
         action="append",
-        required=True,
+        default=[],
         help="Path to an eq-corpus chunk .pt file (repeatable).",
+    )
+    parser.add_argument(
+        "--snapshots",
+        action="append",
+        default=[],
+        help="Path to an arena snapshot .json file (repeatable).",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Total games to export across all chunks (default: all).",
+        help="Total games/hands to export across all inputs (default: all).",
     )
     parser.add_argument("--out-jsonl", required=True, help="Path for the interchange JSONL.")
     parser.add_argument("--out-fates", required=True, help="Path for fate rows (.csv or .parquet).")
     args = parser.parse_args(argv)
+
+    if not args.chunk and not args.snapshots:
+        parser.error("provide at least one --chunk or --snapshots input")
 
     out_jsonl = Path(args.out_jsonl)
     out_fates = Path(args.out_fates)
@@ -159,16 +221,37 @@ def main(argv: list[str] | None = None) -> int:
     n_games = 0
     remaining = args.limit
 
+    def _remaining_exhausted() -> bool:
+        return remaining is not None and remaining <= 0
+
     with out_jsonl.open("w") as jf:
+        # Corpus (.pt) sources: NeutralGame only, no snapshot metadata.
         for chunk in args.chunk:
-            if remaining is not None and remaining <= 0:
+            if _remaining_exhausted():
                 break
             for game in load_corpus_games(chunk, limit=remaining):
-                decl_name = None
                 fates = parse_game_fates(game)  # asserts the P1 identity internally
-                decl_name = fates.decl_name
-                jf.write(json.dumps(game_to_interchange(game, decl_name)) + "\n")
-                all_fate_rows.extend(fate_rows(fates))
+                jf.write(json.dumps(game_to_interchange(game, fates.decl_name)) + "\n")
+                all_fate_rows.extend(fate_rows(fates, source="corpus"))
+                n_games += 1
+                if remaining is not None:
+                    remaining -= 1
+                if n_games % 50 == 0:
+                    print(f"  ...parsed {n_games} games", flush=True)
+
+        # Snapshot (.json) sources: NeutralGame + metadata + free second referee.
+        for snap in args.snapshots:
+            if _remaining_exhausted():
+                break
+            for hand in load_snapshot_hands(snap, limit=remaining):
+                game = hand.game
+                fates = parse_game_fates(game)  # asserts the P1 identity internally
+                # Free second referee: parser points vs arena's recorded points.
+                cross_check_points(fates, hand.meta)
+                jf.write(json.dumps(game_to_interchange(game, fates.decl_name)) + "\n")
+                all_fate_rows.extend(
+                    fate_rows(fates, source="snapshot", meta=hand.meta)
+                )
                 n_games += 1
                 if remaining is not None:
                     remaining -= 1

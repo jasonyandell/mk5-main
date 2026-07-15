@@ -147,3 +147,49 @@ npx tsx otis/referee/check_scores.ts scratch/otis-night/w1_referee_in.jsonl
 ```
 
 Tests: `.venv/bin/python -m pytest otis/ -q` → 14 passed.
+
+---
+
+## W2 arena leg (on-policy self-play, 2026-07-15)
+
+The W1 leg ran on the bid-30-fixed eq corpus. This leg re-runs the exact same
+three-referee gauntlet on **fresh on-policy arena hands** — real auctions under the
+incumbent (`margin:wp(r8)` bidder + `lens:ev` play), the actual otis-v0 training
+distribution.
+
+**Source**: arena snapshot chunks `chunk_selfplay_0..5.snapshots.json` (the six
+oldest, all confirmed complete via their `Wrote N snapshots ->` log lines). Six
+512-game blocks, seeds 41000000..41050000.
+
+| Metric | Value |
+|---|---|
+| Hands exported | **34027** (5709+5649+5671+5673+5684+5641) |
+| Fate rows | 170135 (= 34027 × 5 count tiles) |
+| P1 identity (parser assert: count+tricks sum to 42 both teams) | **34027/34027 = 100%** |
+| Recorded-points cross-check (parser per-team pts == arena recorded pts) | **34027/34027 = 100%** |
+| TS referee hands checked (`check_scores.ts`, full 28-play replay) | **34027** |
+| TS referee per-team points == parser | **34027/34027 = 100%, 0 mismatches** |
+| decl-8 (doubles-suit) hands excluded | **0** (none present in this sample) |
+
+The referee's known decl-8 exclusion (issue #51) was again not exercised: this
+sample contained zero doubles-suit hands (decl distribution: fours 7354, fives 4522,
+blanks 4335, ones 3926, threes 4328, twos 3638, sixes 3904, notrump 2014,
+doubles-trump 6). The 6 doubles-trump (decl 7) hands ARE refereeable and passed.
+
+All three referees agree on all 34027 on-policy hands: parser P1 identity, arena
+recorded points, and the TS engine's full-playout scoring. Zero divergence.
+
+### Reproduce
+
+```bash
+.venv/bin/python -u -m otis.export_games \
+  --snapshots scratch/otis-night/corpus/chunk_selfplay_0.snapshots.json \
+  ... --snapshots scratch/otis-night/corpus/chunk_selfplay_5.snapshots.json \
+  --out-jsonl scratch/otis-night/w2_arena_games.jsonl \
+  --out-fates scratch/otis-night/w2_arena_fates.csv
+
+npx tsx otis/referee/check_scores.ts scratch/otis-night/w2_arena_games.jsonl \
+  > scratch/otis-night/w2_ref_out_full.jsonl   # exit 0; compare team02/team13 vs parser
+```
+
+Tests: `.venv/bin/python -m pytest otis/ -q` → 18 passed.
