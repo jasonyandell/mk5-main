@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-07-13
+last_updated: 2026-07-14
 status: active
 ---
 
@@ -91,7 +91,10 @@ promoting any architecture past [[partnership-research-gates]].
   than sparse intentional signaling; its aggregate value remains untested.
 - **Contextual distribution consumer** — the mode/signal/hedge/gamble
   meta-strategy set of [[past-belief-future-direction]]; its training data
-  already sits in the oracle's per-world tensor.
+  already sits in the oracle's per-world tensor. [[count-fate-ledger]]
+  (2026-07-14) states this direction's consumption object: hand value as a
+  belief-weighted ledger of count-fate scenarios, domino importance as
+  role-weighted participation across it.
 
 The plan correction is load-bearing across all of them. Ordinary within-world
 plans are not missing from Forge Q merely because `lens:ev` chooses again next

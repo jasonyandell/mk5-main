@@ -44,3 +44,7 @@ Format:
 - **Q:** Can belief-weighted information-set MCTS extend JudSearch's demonstrated `+2.28` search gain far enough to beat `lens:ev`, with an additional marks gain attributable specifically to mid-tree belief updates or the shared convention blueprint?
   - Raised: `f6b691da` ([[belief-weighted-jud-mcts]])
   - Context: J0/J1/J2/J3/J4 separates current-trick JudSearch, root belief weighting, deeper determinized MCTS, information-set node sharing with mid-tree belief updates, and the book/learned blueprint. JS1 supports the search/leaf pairing; JS2 says more flat world samples are not the lever; Zeb and LAMIR did not test this combination.
+
+- **Q:** Can tied-strategy rollouts — one action across belief-sampled worlds until the player's own observations differ — price the junk-retention economy (guards and walkers, the insurance/lottery value per-world E[Q] structurally zeroes via [[strategy-fusion]]), and does a [[count-fate-ledger]]-derived retention/discard policy beat the current best player in paired marks?
+  - Raised: [issue #49](https://github.com/jasonyandell/mk5-main/issues/49) (conversation 2026-07-13→14; no raising sha — conversation-sourced, see [[count-fate-ledger]])
+  - Context: All existing attribution is first-order `(domino, holder)` vs baseline; no tool ties one strategy across worlds, so guard/walker retention value has never been measured. Joint-world artifacts already retain `q_per_world` + `world_hands`; the missing mechanism is the tied-strategy evaluator, not new generation.
