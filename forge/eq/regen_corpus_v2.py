@@ -122,6 +122,8 @@ def main() -> int:
     ap.add_argument("--repo", default=REPO_ID)
     ap.add_argument("--keep-local", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--assemble-manifest", action="store_true",
+                    help="fold manifest/*.json sidecars into MANIFEST.json and exit")
     args = ap.parse_args()
 
     from huggingface_hub import HfApi
@@ -131,6 +133,9 @@ def main() -> int:
         print("ERROR: HF_TOKEN not set", flush=True)
         return 1
     api = HfApi(token=token) if not args.dry_run else None
+
+    if args.assemble_manifest:
+        return assemble_manifest(api, args.repo)
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -244,18 +249,18 @@ def main() -> int:
 
 
 def _upload_chunk(api, repo: str, pt: Path, log: Path, name: str, entry: dict) -> None:
-    from huggingface_hub import CommitOperationAdd, hf_hub_download
+    """Commit the chunk plus a per-chunk manifest SIDECAR (manifest/<name>.json).
 
-    manifest: dict = {}
-    try:
-        p = hf_hub_download(repo, "MANIFEST.json", repo_type="dataset",
-                            force_download=True)
-        manifest = json.loads(Path(p).read_text())
-    except Exception:
-        pass
-    manifest[name] = entry
-    tmp = Path("/tmp/regen_manifest.json")
-    tmp.write_text(json.dumps(manifest, indent=2))
+    Workers must never read-modify-write a shared MANIFEST.json: with a fleet
+    of concurrent writers, last-wins commits silently drop each other's
+    entries (the 2026-07-15 run lost 35 of 112 and needed an on-box referee
+    harvest to repair). Sidecar paths are unique per chunk, so concurrent
+    commits compose; `--assemble-manifest` folds them into MANIFEST.json once.
+    """
+    from huggingface_hub import CommitOperationAdd
+
+    tmp = Path(f"/tmp/regen_manifest_{name}.json")
+    tmp.write_text(json.dumps(entry, indent=2))
 
     for attempt in range(4):
         try:
@@ -265,7 +270,8 @@ def _upload_chunk(api, repo: str, pt: Path, log: Path, name: str, entry: dict) -
                 operations=[
                     CommitOperationAdd(path_in_repo=name, path_or_fileobj=str(pt)),
                     CommitOperationAdd(path_in_repo=log.name, path_or_fileobj=str(log)),
-                    CommitOperationAdd(path_in_repo="MANIFEST.json", path_or_fileobj=str(tmp)),
+                    CommitOperationAdd(path_in_repo=f"manifest/{name}.json",
+                                       path_or_fileobj=str(tmp)),
                 ],
                 commit_message=f"regen: {name} (clean; otis phase R)",
             )
@@ -276,6 +282,35 @@ def _upload_chunk(api, repo: str, pt: Path, log: Path, name: str, entry: dict) -
                   f"retrying in {wait}s", flush=True)
             time.sleep(wait)
     raise RuntimeError(f"upload failed after retries: {name}")
+
+
+def assemble_manifest(api, repo: str) -> int:
+    """Fold all manifest/<name>.json sidecars into one MANIFEST.json commit."""
+    from huggingface_hub import CommitOperationAdd, hf_hub_download
+
+    sidecars = [f for f in api.list_repo_files(repo, repo_type="dataset")
+                if f.startswith("manifest/") and f.endswith(".json")]
+    manifest: dict = {}
+    try:
+        p = hf_hub_download(repo, "MANIFEST.json", repo_type="dataset",
+                            force_download=True)
+        manifest = json.loads(Path(p).read_text())
+    except Exception:
+        pass
+    for sc in sorted(sidecars):
+        p = hf_hub_download(repo, sc, repo_type="dataset", force_download=True)
+        manifest[Path(sc).stem] = json.loads(Path(p).read_text())  # "<name>.pt.json" -> "<name>.pt"
+    tmp = Path("/tmp/regen_manifest_assembled.json")
+    tmp.write_text(json.dumps(manifest, indent=2))
+    api.create_commit(
+        repo_id=repo, repo_type="dataset",
+        operations=[CommitOperationAdd(path_in_repo="MANIFEST.json",
+                                       path_or_fileobj=str(tmp))],
+        commit_message=f"assemble MANIFEST.json from {len(sidecars)} sidecars",
+    )
+    print(f"assembled MANIFEST.json from {len(sidecars)} sidecars "
+          f"({len(manifest)} total entries)", flush=True)
+    return 0
 
 
 if __name__ == "__main__":
