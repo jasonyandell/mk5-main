@@ -34,7 +34,31 @@ opaque scalar. Five organs:
    junk-retention economy that clairvoyant per-world evaluation zeroes via
    [[strategy-fusion]] — the open question filed on [[count-fate-ledger]].
 
-## Design commitments (from the 2026-07-14 red-team, binding)
+## Design commitments (binding)
+
+### The emergent-values intent (Jason, 2026-07-15, verbatim-close)
+
+Stated the night the guard-premium probe graded, and binding on Phase 2
+and everything after: **the goal is strictly not to run a bunch of named
+tests.** Named contrasts ([[otis-guard-premium]] and its template) are
+diagnostic instruments — ways to check the system can see — never the
+program. The program is to leverage these situations so the system
+**learns the shape of contexts** where a domino's value rises or falls,
+and how to navigate them within the rules of the game. These contexts
+are subtle, non-obvious, and become visible only in **fair hindsight** —
+hindsight filtered through what was knowable at the decision (the
+belief; no leakage): *"I should have kept that 2 to protect my 3-2"* is
+one teeny illustrative example of protection, not a feature list. **No
+"protect" code, ever**: protection, guards, even voids must never be
+written as named features or hand-coded value terms — their values must
+*arise from training* on lessons of that shape. The levers exist as of
+night 2: belief (could-I-have-known), tied rollouts
+(would-it-have-worked), the fate ledger (what-was-at-stake), the clean
+corpus, and the extractor design. Evaluation asks whether the emergent
+navigation improves and whether these concepts become *legible in the
+learned values* — not whether named tests pass.
+
+### From the 2026-07-14 red-team
 
 - **The collapse stays distributional.** Per-tile fate marginals get the mean of
   total points right and the tails wrong (fates are positively correlated; sweeps

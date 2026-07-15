@@ -102,6 +102,18 @@ The formulation now has empirical receipts:
   [[strategy-fusion]]'s zeroing measured directly. 65.1% of count-carrying
   tricks are walker catches.
 
+## The emergent-values intent (2026-07-15)
+
+The ledger's roles — protagonist, guard, walker — are *analysis
+vocabulary*, never implementation targets. Jason's binding statement
+(full text on [[otis]], Design commitments): named contrasts like
+[[otis-guard-premium]] are diagnostic instruments; the program is a
+system that learns the shape of value-shifting contexts from lessons in
+fair hindsight, where protection, guards, and voids **arise from
+training** rather than being written as code. What the ledger contributes
+is the *label space* that makes such lessons stateable and gradeable —
+not a feature set to hand the student.
+
 ## Open question
 
 The cost half of the filed question is answered: tied-strategy rollouts price
