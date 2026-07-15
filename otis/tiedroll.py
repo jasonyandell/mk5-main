@@ -508,13 +508,16 @@ def belief_weights_for_decision(student, is_voids, game, d_idx, world_hands):
 
     tokens, attn = tokenize_decision(game.hands, int(game.decl_id), game.decisions, d_idx)
     voids = voids_feature_vector(prior, int(game.decl_id), actor)
-    zw = torch.zeros(28, 3)
+    dev = next(student.parameters()).device
+    zw = torch.zeros(28, 3, device=dev)
+    tk = tokens.unsqueeze(0).to(dev)
+    at = attn.unsqueeze(0).to(dev)
     with torch.no_grad():
         if is_voids:
-            out = student(tokens.unsqueeze(0), attn.unsqueeze(0), zw.unsqueeze(0), voids.unsqueeze(0))
+            out = student(tk, at, zw.unsqueeze(0), voids.unsqueeze(0).to(dev))
         else:
-            out = student(tokens.unsqueeze(0), attn.unsqueeze(0), zw.unsqueeze(0))
-    belief_logits = out["belief_logits"][0]
+            out = student(tk, at, zw.unsqueeze(0))
+    belief_logits = out["belief_logits"][0].cpu()
 
     seat_of = world_seat_matrix(world_hands)
     w, ess = belief_weights(belief_logits, seat_of, hidden)
