@@ -61,8 +61,8 @@ team.
 
 | # | claim | band (pass) | falsifier (genuine negative) | graded |
 |---|---|---|---|---|
-| M1 | Trigger fires on-policy | [0.8, 4.0] triggered decisions per hand summed over the overridden team's two seats (W6 prior: 2.2/hand on bid-30 fixtures) | < 0.3/hand — the fixture-derived trigger barely exists on-policy; the lever's surface is too small to gate | |
-| M2 | The lever is non-vacuous | override disagrees with lens:ev's default slough on [15%, 70%] of triggered decisions (each variant separately) | < 5% — vacuous; marks gate skipped for that variant, graded as such | |
+| M1 | Trigger fires on-policy | [0.8, 4.0] triggered decisions per hand summed over the overridden team's two seats (W6 prior: 2.2/hand on bid-30 fixtures) | < 0.3/hand — the fixture-derived trigger barely exists on-policy; the lever's surface is too small to gate | **PASS — 2.37/hand** (843 triggers / 355 hands, 32-game shadow run, seed 5100000) |
+| M2 | The lever is non-vacuous | override disagrees with lens:ev's default slough on [15%, 70%] of triggered decisions (each variant separately) | < 5% — vacuous; marks gate skipped for that variant, graded as such | **PASS (V1) — 54.1%** (456/843); shadow mean claimed margin +0.73 pts among disagreements; 0.27 s median/trigger |
 | V1 | Tied-rollout override, paired marks vs incumbent | REGISTERED MEDIAN: tie — pooled ≥ 2,048 games, \|Δ\| < 0.15 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — the override actively hurts: tied prices on M=50 live worlds do not transfer to table play | |
 | V2 | Fate-head override, paired marks vs incumbent | REGISTERED MEDIAN: tie — 4,096-game block, \|Δ\| < 0.10 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — participation scores at incumbent-parity capacity mis-price retention | |
 | V2-c | Play-state fate head calibrates (gate before V2 may run) | held-out per-tile fate NLL on PLAY states beats the marginal base rate by ≥ 0.15 nats (the [[otis-v0]] P2 band), improving with trick depth | ≤ 0.03 nats — play-state fates not learnable at this capacity; V2 stays unrun and that is the graded finding | |
