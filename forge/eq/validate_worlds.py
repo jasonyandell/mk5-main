@@ -40,13 +40,15 @@ def stored_world_validity(states: GameStateTensor, worlds: Tensor) -> Tensor:
         unseen set.
     """
     n_games, n_worlds = worlds.shape[0], worlds.shape[1]
+    # The adaptive path accumulates worlds on CPU while states live on the
+    # GPU — gather on the states device, then move to the worlds device.
     device = worlds.device
 
     current_players = states.current_player.long()  # [N]
 
     # My remaining hand as a [N, 28] mask.
     player_idx = current_players.view(n_games, 1, 1).expand(n_games, 1, 7)
-    my_hands = torch.gather(states.hands.long(), 1, player_idx).squeeze(1)  # [N, 7]
+    my_hands = torch.gather(states.hands.long(), 1, player_idx).squeeze(1).to(device)  # [N, 7]
     my_mask = torch.zeros(n_games, N_DOMINOES, dtype=torch.bool, device=device)
     in_hand = my_hands >= 0
     batch_idx = torch.arange(n_games, device=device).unsqueeze(1).expand_as(my_hands)

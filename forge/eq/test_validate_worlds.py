@@ -195,6 +195,27 @@ def test_cli_end_to_end(gpu_device, tmp_path):
     assert blob["results"][0].decisions[0].world_weights is not None
 
 
+def test_cli_adaptive_joint_save(gpu_device, tmp_path):
+    """Adaptive + --save-joint-worlds: the accumulated worlds may live on a
+    different device than states (the regen eval-corpus path); the write-time
+    assertion must handle it."""
+    import subprocess
+    import sys
+
+    out = tmp_path / "cli_adaptive_smoke.pt"
+    proc = subprocess.run(
+        [sys.executable, "-u", "-m", "forge.eq.generate",
+         "--start-seed", "424242", "--n-games", "2",
+         "--adaptive", "--min-samples", "20", "--max-samples", "60",
+         "--batch-size", "20", "--sem-threshold", "2.0",
+         "--save-joint-worlds", "--device", gpu_device, "-o", str(out)],
+        capture_output=True, text=True, timeout=600,
+    )
+    assert proc.returncode == 0, proc.stdout[-2000:] + proc.stderr[-2000:]
+    blob = torch.load(out, weights_only=False)
+    assert blob["results"][0].decisions[0].world_hands is not None
+
+
 def test_generation_records_valid_worlds_and_weights(gpu_device):
     """End-to-end micro-generation: stored worlds are real deals (checked by
     an INDEPENDENT set-based referee) and world_weights are normalized."""
