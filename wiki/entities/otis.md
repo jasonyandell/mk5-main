@@ -4,7 +4,7 @@ kind: entity
 first_seen: 2026-07-14
 last_updated: 2026-07-14
 status: active
-phase: 2026-07-15 — v0 BUILT and graded overnight ([[otis-v0]], all seven predictions graded). The player is an incumbent-parity bidder; the decomposition wins at matched arms (+0.29 marks/game pooled, CI excludes zero, round-0) and passes calibration 3× over band; the instrument suite (fate parser with three exact referees, world-bank clustering, tied-rollout retention pricing at ~1 s/decision) is live. No promotion over margin:wp(r8) — parity, both blocks. Corpus contamination found and filed (#52); follow-ups #51, #53.
+phase: 2026-07-15 — v0 BUILT and graded overnight ([[otis-v0]], all seven predictions graded). The player is an incumbent-parity bidder; the decomposition wins at matched arms (+0.29 marks/game pooled, CI excludes zero, round-0) and passes calibration 3× over band; the instrument suite (fate parser with three exact referees, world-bank clustering, tied-rollout retention pricing at ~1 s/decision) is live. No promotion over margin:wp(r8) — parity, both blocks. Corpus contamination found and filed (#52); follow-ups #51, #53; the program-to-the-end bridge is #55 (clean deck on Vast→HF, lesson consumer, lesson extractor, argument loop, promotion-or-graded-negative).
 ---
 
 ## What it is

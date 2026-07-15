@@ -109,7 +109,11 @@ retention at trivial cost ([[otis-v0]] P7). What remains — whether a
 ledger-derived retention/discard policy beats the current best player in paired
 marks — is [issue #53](https://github.com/jasonyandell/mk5-main/issues/53);
 the original thread is
-[issue #49](https://github.com/jasonyandell/mk5-main/issues/49).
+[issue #49](https://github.com/jasonyandell/mk5-main/issues/49). The
+program-to-the-end bridge (clean corpus → lesson consumer → lesson extractor →
+argument loop → promotion or graded negative), with the operating doctrine for
+future implementers, is
+[issue #55](https://github.com/jasonyandell/mk5-main/issues/55).
 
 ## Links
 
