@@ -72,7 +72,28 @@ outcome is decided while corpus lines play all 28). 14 pytest green. P1 eq-corpu
 leg: identity **1000/1000** (10 chunks, all 10 declarations); TS referee match
 **900/900** refereeable. Forge's doubles-suit (decl 8, ~10% of games) is not
 representable in engine base rules — excluded from refereeing, tracked as issue
-#50. Fable review gate: PASS, no must-fix. Arena leg of P1 lands with W2.
+#51. Fable review gate: PASS, no must-fix. Arena leg of P1 lands with W2.
+
+### W2a — arena snapshot adapter + P1 arena leg (2026-07-15)
+
+`otis/snapshots.py` + source-agnostic exporter. **34,027 fresh on-policy hands,
+three independent referees agree at 100%**: parser identity, arena recorded
+points, TS engine full replay. 18 pytest green. P1's arena leg is satisfied.
+
+### W5 — world-bank analysis: bimodality, interaction, ledger cards (2026-07-15)
+
+`otis/analysis/worldbank.py` over schema-v2 chunks (300 qualifying decisions,
+one per game; gus v3 belief weights, ESS median 13.7 with a uniform-weight
+robustness anchor). **P6 data: bimodal fraction 87.3% belief-weighted / 77.3%
+uniform**; strict drama-filtered subset 81.8%/68.8%; strict root-only cell
+97.1%/84.3% — every reading far past the ≥30% band. Ledger cards
+(`otis/reports/w5_ledger_cards.md`) show 40–70 point swings in the 3-2's value
+across contexts — the structure #25's belief-averaging is blind to. Interaction
+structure at trick 0/1 is first-order-dominated (5-5@partner δ=+6.6; pairwise
+|lift| ≤ 1.3; 13 sign-opposing "unless partner holds X" residual cells).
+Band-compliance drift (drama filter absent from the headline metric) found by
+the fable gate and documented with the strict recomputation, not regraded.
+Report: `otis/reports/w5_worldbank.md`. 30 pytest green.
 
 ## Links
 
