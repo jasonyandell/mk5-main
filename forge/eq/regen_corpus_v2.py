@@ -144,46 +144,27 @@ def main() -> int:
     existing = set(api.list_repo_files(args.repo, repo_type="dataset"))
     py = sys.executable
 
-    with Heartbeat() as hb:
-        for i, item in enumerate(plan):
-            name = item["name"]
-            if name in existing:
-                print(f"[{i + 1}/{len(plan)}] SKIP {name} (already on HF)", flush=True)
-                continue
-            pt = out_dir / name
-            log = out_dir / (name.removesuffix(".pt") + ".log")
-            ref_json = out_dir / (name.removesuffix(".pt") + ".referee.json")
+    # Postprocess (CPU referee + upload) runs on a single background worker so
+    # the GPU moves straight to the next chunk. One worker keeps HF commits
+    # serial and memory bounded; a failure aborts the whole run (fail fast).
+    from concurrent.futures import ThreadPoolExecutor
 
-            # 1. Generate
-            hb.status = f"generate {name}"
-            cmd = [py, "-u", "-m", "forge.eq.generate", *item["args"],
-                   "--device", args.device, "-o", str(pt)]
-            print(f"[{i + 1}/{len(plan)}] GEN {name}: {' '.join(cmd)}", flush=True)
-            t0 = time.time()
-            with open(log, "w") as lf:
-                proc = subprocess.run(cmd, stdout=lf, stderr=subprocess.STDOUT)
-            if proc.returncode != 0:
-                print(f"FATAL: generation failed for {name} "
-                      f"(rc={proc.returncode}); see {log}", flush=True)
-                print(Path(log).read_text()[-2000:], flush=True)
-                return 2
-            gen_s = time.time() - t0
+    postprocess_error: list[str] = []
 
-            # 2. Independent referee (abort on DIRTY — stop the line)
-            hb.status = f"referee {name}"
+    def postprocess(idx: int, total: int, name: str, pt: Path, log: Path,
+                    item: dict, gen_s: float) -> None:
+        try:
+            ref_json = pt.with_suffix(".referee.json")
             proc = subprocess.run(
                 [py, "-u", "scripts/referee_worlds.py", str(pt), "--json", str(ref_json)],
             )
             if proc.returncode != 0:
-                print(f"FATAL: referee graded {name} DIRTY — stopping the line "
-                      f"(issue #52 must not recur). Local file kept for autopsy: {pt}",
-                      flush=True)
-                return 3
+                postprocess_error.append(
+                    f"referee graded {name} DIRTY — stopping the line "
+                    f"(issue #52 must not recur). Local file kept for autopsy: {pt}"
+                )
+                return
             report = json.loads(ref_json.read_text())[0]
-
-            # 3. Upload chunk + log + manifest in ONE commit (HF has a
-            # 128-commits/hour ceiling — the zeb fleet lesson).
-            hb.status = f"upload {name}"
             manifest_entry = {
                 "sha256": report["sha256"],
                 "bytes": report["bytes"],
@@ -198,14 +179,51 @@ def main() -> int:
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
             _upload_chunk(api, args.repo, pt, log, name, manifest_entry)
-            existing.add(name)
-
-            print(f"[{i + 1}/{len(plan)}] DONE {name}: {report['games']} games "
-                  f"in {gen_s:.0f}s, {report['worlds']} worlds, 0 invalid, "
+            print(f"[{idx}/{total}] DONE {name}: {report['games']} games in "
+                  f"{gen_s:.0f}s, {report['worlds']} worlds, 0 invalid, "
                   f"sha={report['sha256'][:16]}, uploaded", flush=True)
-
             if not args.keep_local:
                 pt.unlink()
+        except Exception as exc:  # noqa: BLE001 — surfaced via postprocess_error
+            postprocess_error.append(f"postprocess failed for {name}: {exc}")
+
+    with Heartbeat() as hb, ThreadPoolExecutor(max_workers=1) as pool:
+        futures = []
+        for i, item in enumerate(plan):
+            if postprocess_error:
+                break
+            name = item["name"]
+            if name in existing:
+                print(f"[{i + 1}/{len(plan)}] SKIP {name} (already on HF)", flush=True)
+                continue
+            pt = out_dir / name
+            log = out_dir / (name.removesuffix(".pt") + ".log")
+
+            hb.status = f"generate {name}"
+            cmd = [py, "-u", "-m", "forge.eq.generate", *item["args"],
+                   "--device", args.device, "-o", str(pt)]
+            print(f"[{i + 1}/{len(plan)}] GEN {name}: {' '.join(cmd)}", flush=True)
+            t0 = time.time()
+            with open(log, "w") as lf:
+                proc = subprocess.run(cmd, stdout=lf, stderr=subprocess.STDOUT)
+            if proc.returncode != 0:
+                print(f"FATAL: generation failed for {name} "
+                      f"(rc={proc.returncode}); see {log}", flush=True)
+                print(Path(log).read_text()[-2000:], flush=True)
+                return 2
+            gen_s = time.time() - t0
+            futures.append(
+                pool.submit(postprocess, i + 1, len(plan), name, pt, log, item, gen_s)
+            )
+
+        hb.status = "draining postprocess queue"
+        for f in futures:
+            f.result()
+
+    if postprocess_error:
+        for msg in postprocess_error:
+            print(f"FATAL: {msg}", flush=True)
+        return 3
 
     print("ALL_CHUNKS_COMPLETE", flush=True)
     return 0
