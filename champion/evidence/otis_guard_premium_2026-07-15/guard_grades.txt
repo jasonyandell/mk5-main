@@ -1,0 +1,20 @@
+N = 487 priced cells (133 dropped: no legal twin; 620 collected)
+G1 tied-rollout guard premium: mean -0.1556  95% CI [-0.2961, -0.0058]  median -0.0910  positive 44.8%
+G2 fate-head guard premium: mean +0.0072  95% CI [-0.0017, +0.0164]  median +0.0084  positive 53.2%
+G3 mechanism: keep-junk2 raises P(capture 3-2) in 61.0% of cells; mean delta +0.0069, median +0.0048
+  trick 0: n= 67  tied premium -0.599  fate +0.0066
+  trick 1: n=119  tied premium -0.383  fate +0.0068
+  trick 2: n=118  tied premium +0.075  fate -0.0032
+  trick 3: n=134  tied premium -0.055  fate +0.0150
+  trick 4: n= 49  tied premium +0.171  fate +0.0127
+arm A retention margin of junk2: mean +0.321; arm B: +0.477
+tied premium early (tricks 0-1): n=186 mean -0.460 CI [-0.695, -0.227] pos 40%
+tied premium late (tricks 2+): n=301 mean +0.033 CI [-0.147, +0.220] pos 48%
+G3 early: keep-junk2 raises P(cap 3-2) in 68.3%, mean +0.0115
+G3 late: keep-junk2 raises P(cap 3-2) in 56.5%, mean +0.0040
+decl 0: n=56 tied +0.256
+decl 1: n=77 tied -0.240
+decl 4: n=127 tied -0.229
+decl 5: n=115 tied -0.102
+decl 6: n=73 tied -0.424
+decl 9: n=39 tied +0.004

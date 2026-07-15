@@ -69,7 +69,12 @@ consumer — the retention override on `lens:ev`: V1 tied-rollout TIE at power,
 V2 fate-head FALSIFIER at power, mechanism receipts PASS throughout). Phase 2
 (the lesson extractor) inherits both the clean corpus and phase 1's hard
 lesson: claimed retention margins do not predict table value — realized
-outcomes must referee the extractor.
+outcomes must referee the extractor. A same-night coda,
+[[otis-guard-premium]], asked the ledger's founding question directly —
+is the junk two worth more when it guards the 3-2? — and got a graded
+surprise: the protection channel is real and learned (G3) but an order
+of magnitude smaller than an opposing early-hand effect the tied prices
+carry (G1 negative, CI excluding zero).
 
 ## Links
 

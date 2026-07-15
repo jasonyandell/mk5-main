@@ -3,7 +3,7 @@ title: Otis guard-premium probe — is the junk two worth more when it guards th
 kind: experiment
 first_seen: 2026-07-15
 last_updated: 2026-07-15
-status: active
+status: complete
 ---
 
 ## Question
@@ -64,10 +64,10 @@ candidate's successor in arm A.
 
 | # | claim | band (pass) | wrong-test / falsifier | graded |
 |---|---|---|---|---|
-| M-A | The context exists on-policy | ≥ 100 legal matched cells from ≤ 512 collection games | < 30 cells in 512 games — the conditional context is too rare on-policy for this harness; probe redesign needed (constructed fixtures) | |
-| G1 | Tied rollouts price the guard conditionally | mean guard premium > 0, 95% bootstrap CI excluding 0, N ≥ 100 cells. HOPE: mean ≥ +0.3 pts (order of W6's median junk spread 0.68, discounted for an interaction) | N ≥ 150, CI includes 0, \|mean\| < 0.15 — a powered ≈0: the tied instrument does not see the guard premium at this surface; **we have the wrong test** | |
-| G2 | The fate head prices the guard conditionally | same contrast on fate-head margins: mean > 0, CI excluding 0 | same powered-≈0 shape — the learned instrument does not encode the guard | |
-| G3 | The mechanism channel is visible | in arm A, P(my team captures 3-2) is higher under keep-junk-2 than discard-junk-2 in ≥ 60% of cells, mean Δ > 0 | ≤ 50% of cells (coin flip) — the fate head never learned the guard channel; G2 pass would then be for the wrong reason | |
+| M-A | The context exists on-policy | ≥ 100 legal matched cells from ≤ 512 collection games | < 30 cells in 512 games — the conditional context is too rare on-policy for this harness; probe redesign needed (constructed fixtures) | **PASS — 620 cells / 512 games** (4.5% of 13,806 triggers; 487 priced after 21% twin-drop) |
+| G1 | Tied rollouts price the guard conditionally | mean guard premium > 0, 95% bootstrap CI excluding 0, N ≥ 100 cells. HOPE: mean ≥ +0.3 pts (order of W6's median junk spread 0.68, discounted for an interaction) | N ≥ 150, CI includes 0, \|mean\| < 0.15 — a powered ≈0: the tied instrument does not see the guard premium at this surface; **we have the wrong test** | **NEITHER — SIGN SURPRISE: mean −0.156, CI [−0.296, −0.006], N=487** — a CI-excluding *negative*: the tied price of the junk two falls when the 3-2 is in hand, concentrated early (tricks 0–1: −0.460 [−0.695, −0.227]); late (2+): +0.033 [−0.147, +0.220], a tie |
+| G2 | The fate head prices the guard conditionally | same contrast on fate-head margins: mean > 0, CI excluding 0 | same powered-≈0 shape — the learned instrument does not encode the guard | **POWERED ≈0, positive lean — mean +0.0072, CI [−0.0017, +0.0164], N=487** (fate-ledger pts); the net premium does not register |
+| G3 | The mechanism channel is visible | in arm A, P(my team captures 3-2) is higher under keep-junk-2 than discard-junk-2 in ≥ 60% of cells, mean Δ > 0 | ≤ 50% of cells (coin flip) — the fate head never learned the guard channel; G2 pass would then be for the wrong reason | **PASS — 61.0% of cells, mean Δ +0.0069** capture-prob; strongest early (tricks 0–1: 68.3%, +0.0115) — the protection channel is real and learned, worth ≈0.03–0.06 pts of 3-2 value |
 
 Caveat registered up front: a PASS is an **instrument-legibility** result.
 Night 2 measured these same pricers claiming +0.75 pts per override that
@@ -77,7 +77,44 @@ constraint).
 
 ## Receipts
 
-(fills as the probe runs)
+### The run (2026-07-15, same night as registration)
+
+Collection: 512 incumbent self-play games (seed 11000000), 105 s, 5,663
+hands, 13,806 triggers, 620 qualifying cells
+(`scratch/otis-night2/collect_guard_cells.py` in the night-2 worktree).
+Pricing: 487 matched pairs priced in 412 s (133 dropped — no legal neutral
+twin, mostly late-hand); both pricers verbatim from [[otis-phase-1]]
+(`price_guard_cells.py`); receipts `guard_premiums.jsonl`, grades
+`guard_grades.txt`, curated to `champion/evidence/otis_guard_premium_2026-07-15/`.
+
+### Reading
+
+The probe registered — decisively — and the sign is the surprise. Three
+facts, one picture:
+
+1. **The protection channel exists and is learned** (G3): keeping the junk
+   two raises the fate head's P(my team captures the 3-2) in 61% of cells
+   (68% early), worth ≈0.03–0.06 pts. The guard is real.
+2. **The net conditional price runs the other way, early** (G1): with the
+   3-2 in hand, the tied-rollout retention price of the junk two *drops*
+   by ≈0.46 pts in tricks 0–1 (CI excludes zero). Retention margins are
+   positive in BOTH arms (+0.32 with 3-2, +0.48 without) — keeping junk
+   is generally priced good; it is the *conditional* premium that inverts.
+3. **Late-hand, the contrast is a tie** — the direction the guard story
+   wants, but unresolved at this N.
+
+So the protection channel is an order of magnitude smaller than an
+opposing early-hand effect the tied policy prices. Candidate mechanisms
+(unidentified, filed as follow-up): coverage redundancy (the 3-2 already
+covers twos-follows, making the junk two's cheap-follow role duplicative
+while both block twos-voidness), comparator interactions (holding 5 extra
+count shifts the *relative* value of the other discards), or
+count-delivery planning (with 3-2 in hand the tied policy may prefer
+engineering the void to slough the 3-2 onto partner's winners — for which
+the junk two is an obstacle, not a guard). Registered caveat applies with
+force: [[otis-phase-1]] measured these instruments claiming +0.75 pts the
+table did not pay — every sign here is an instrument reading, refereed by
+nothing realized yet.
 
 ## Links
 

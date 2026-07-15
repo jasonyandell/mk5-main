@@ -187,5 +187,7 @@ theory of value was falsified at power, with receipts."
 
 ## Links
 
-[[otis]] · [[otis-v0]] · [[count-fate-ledger]] · [[strategy-fusion]] ·
-[[stage-0-closure]] · [[gus]] · [[jud]]
+[[otis]] · [[otis-v0]] · [[otis-guard-premium]] (same-night coda: the
+conditional guard question, probed with these pricers) ·
+[[count-fate-ledger]] · [[strategy-fusion]] · [[stage-0-closure]] ·
+[[gus]] · [[jud]]
