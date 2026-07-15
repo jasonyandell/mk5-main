@@ -1,0 +1,6 @@
+block                        games  mean Δmarks                 95% CI
+v1_block_7000000               512      -0.1523 [-0.4395, +0.1309]
+  triggers: 13858 triggers, 7533 disagreements (54.4%), mean margin +0.758 pts, median secs 0.27
+v1_block_9000000               512      -0.2793 [-0.5567, +0.0078]
+  triggers: 13804 triggers, 7476 disagreements (54.2%), mean margin +0.737 pts, median secs 0.27
+POOLED                        1024      -0.2158 [-0.4199, -0.0068] *CI excl 0*

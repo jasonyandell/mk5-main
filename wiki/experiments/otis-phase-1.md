@@ -118,7 +118,26 @@ prior gates.
 
 ## Receipts
 
-(fills as runs land)
+### V1 blocks A+B (2026-07-15, LIVE override, 512 paired games each)
+
+Specs pinned as registered; per-block and pooled CI via
+`arena.match._bootstrap_ci_mean` (method-identical to prior gates):
+
+| block | seed | games | mean Δmarks | 95% CI |
+|---|---|---|---|---|
+| A (reserved) | 7000000 | 512 | −0.1523 | [−0.4395, +0.1309] |
+| B (fresh) | 9000000 | 512 | −0.2793 | [−0.5567, +0.0078] |
+| **pooled** | | **1,024** | **−0.2158** | **[−0.4199, −0.0068]** — CI excludes 0 |
+
+Both blocks independently negative; interim pool (half the registered
+2,048) already excludes zero on the loss side. Mechanism receipts from the
+live triggers (27,662 total): 54.3% disagreement, mean claimed margin
+**+0.75 pts** among disagreements, 0.27 s median per trigger — the
+override fires exactly as the shadow run predicted and *claims* value
+every time it acts. The table pays the claim back as a marks loss. Final
+V1 grade waits on the C/D pool to 2,048 (registered power).
+
+(V2 4,096-game block + C/D fill here as runs land)
 
 ## Links
 

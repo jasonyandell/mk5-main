@@ -1,0 +1,62 @@
+{
+  "label_a": "margin:wp,model=champion/margin_net_r8.pt+tiedslough:ev,m=50,student=/Users/jason/code/mk5-main/gus/adapters/v3_consistency_10000g.pt,stats=scratch/otis-night2/gates/v1_block_9000000/triggers.jsonl",
+  "label_b": "margin:wp,model=champion/margin_net_r8.pt+lens:ev",
+  "n_games": 512,
+  "n_hands": 5684,
+  "elapsed_s": 4853.25,
+  "a_wins": 244,
+  "a_game_win_rate": 0.4765625,
+  "a_win_rate_half1": 0.48828125,
+  "a_win_rate_half2": 0.46484375,
+  "mean_mark_margin": -0.279296875,
+  "mark_margin_ci_lo_95": -0.556689453125,
+  "mark_margin_ci_hi_95": 0.0078125,
+  "ci_excludes_zero": 0,
+  "mean_hands_per_game": 11.1015625,
+  "mean_hand_point_margin": -0.6118930330752991,
+  "auction": {
+    "bid_hist": {
+      "30": 1448,
+      "31": 3254,
+      "32": 947,
+      "33": 32,
+      "84": 3
+    },
+    "decl_hist": {
+      "fours": 1181,
+      "fives": 836,
+      "sixes": 708,
+      "threes": 706,
+      "blanks": 682,
+      "ones": 639,
+      "twos": 614,
+      "notrump": 316,
+      "doubles-trump": 2
+    },
+    "a_offense_share": 0.49806474313863475,
+    "forced_hands": 0,
+    "redealt_hands": 81
+  },
+  "contracts": {
+    "a_offense": {
+      "contracts": 2831,
+      "made": 1811,
+      "made_rate": 0.6397032850582833,
+      "mean_bid": 30.965030024726246
+    },
+    "b_offense": {
+      "contracts": 2853,
+      "made": 1893,
+      "made_rate": 0.6635120925341745,
+      "mean_bid": 30.9372590255871
+    }
+  },
+  "cfg": {
+    "marks_to_win": 7,
+    "max_redeals": 3,
+    "base_seed": 9000000,
+    "n_samples": 10,
+    "device": "mps",
+    "fast_batching": true
+  }
+}
