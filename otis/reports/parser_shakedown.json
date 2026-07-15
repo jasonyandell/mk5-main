@@ -1,0 +1,34 @@
+{
+  "source_chunk": "gus/data/corpus_train_chunk_0-99.pt",
+  "n_games_parsed": 100,
+  "n_fate_rows": 500,
+  "p1_identity_all_games_eq_42": true,
+  "n_identity_violations": 0,
+  "played_mode_dist": {
+    "led": 128,
+    "followed": 195,
+    "sloughed": 142,
+    "trumped_in": 35
+  },
+  "capture_side_dist": {
+    "holder_team": 304,
+    "opp_team": 196
+  },
+  "won_by_trump_dist": {
+    "False": 266,
+    "True": 234
+  },
+  "decl_name_dist": {
+    "blanks": 50,
+    "ones": 50,
+    "twos": 50,
+    "threes": 50,
+    "fours": 50,
+    "fives": 50,
+    "sixes": 50,
+    "doubles-trump": 50,
+    "doubles-suit": 50,
+    "notrump": 50
+  },
+  "tests": "14 passed (2 hand-built games + real-corpus round-trip)"
+}

@@ -2,9 +2,20 @@
 title: WorldSamplerMRV audit
 kind: experiment
 first_seen: 2026-07-11
-last_updated: 2026-07-11
+last_updated: 2026-07-15
 status: complete
 ---
+
+**Corpus-scale quantification (2026-07-15, [[otis-v0]]):** the malformed-world
+mechanism below is fossilized in the stored `gus/data/` joint-world corpus,
+generated pre-repair — direct probes measure 66.9% invalid stored worlds at the
+opening lead and 27–39% at plies 1–5 (duplicate tiles via the injected `0-0`,
+actor-hand overlap, wrong unseen set). Consumers of stored
+`world_hands`/`q_per_world` must validity-filter (pattern:
+`otis/tiedroll.py::valid_world_indices`); full cure is corpus regeneration —
+tracked as [issue #52](https://github.com/jasonyandell/mk5-main/issues/52).
+Incidental validation: the [[gus]] belief head already down-weights malformed
+worlds (median ESS 13.7 → 59.3 under filtering, [[otis-v0]] W5).
 
 Stage 0 of [[partnership-wall-research]] turns the surviving “~6.8 Q sampler
 bias” note into an executable measurement. The result does not reproduce that

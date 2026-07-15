@@ -1,0 +1,15 @@
+{
+  "arm": "control",
+  "seed": 42,
+  "source": "selfplay",
+  "best_val_ce": 2.645559549331665,
+  "epochs_run": 15,
+  "train_rows": 102207,
+  "val_rows": 5557,
+  "loss_weights": {
+    "fate": 0.5,
+    "trick": 0.25,
+    "consistency": 0.1
+  },
+  "wall_seconds": 6.3
+}

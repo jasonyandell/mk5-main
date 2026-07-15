@@ -13,6 +13,7 @@ Named things: projects, systems, models, artifacts. Hubs in bold below.
 - [[entities/burl|burl]] — tool-using Texas 42 agent; engine authority on rules, Zeb on beliefs, Burl reasons between (superseded)
 - [[entities/candlewax-spike|candlewax-spike]] — E2E spike: Qwen 3.6-35B-A3B via mlx-vlm; reasoning-coherence verifier; pivots away from LLM-as-reasoner (complete)
 - [[entities/champion|champion]] — superseded name for the player push; the built thing is jud (superseded)
+- [[entities/otis|otis]] — the fate-ledger-native player: exact fate parser, 43-bin pricing head ± fate-head decomposition organs, self-play loop, world-bank analysis, tied-rollout tool; executes issue #49 (active)
 - [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions; hub for the six-topic engine reference cluster from the 2026-07 docs→wiki second pass (active)
 - [[entities/forge-analysis|forge-analysis]] — statistical analysis workstream over forge's ~300M oracle states; produces a publication-shaped report (active)
 - [[entities/forge|forge]] — pipeline with three components: solver, E[Q] framework, E[Q] bot; shared by LEM and Burl (active)
