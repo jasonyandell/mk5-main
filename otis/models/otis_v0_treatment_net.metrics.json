@@ -1,0 +1,15 @@
+{
+  "arm": "treatment",
+  "seed": 42,
+  "source": "selfplay",
+  "best_val_ce": 2.6407320499420166,
+  "epochs_run": 25,
+  "train_rows": 102207,
+  "val_rows": 5557,
+  "loss_weights": {
+    "fate": 0.5,
+    "trick": 0.25,
+    "consistency": 0.1
+  },
+  "wall_seconds": 19.6
+}
