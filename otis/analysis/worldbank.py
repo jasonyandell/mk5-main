@@ -325,11 +325,50 @@ class DecisionView:
     ess: float
     # placement per count tile: dict tile_id -> np.ndarray[M] of codes in {-1,0,1,2}
     placements: dict
+    # sampler-validity accounting (issue #52): worlds kept after strict filtering
+    n_raw: int = 0             # sampled worlds before validity filter
+    n_valid: int = 0           # worlds surviving validity filter (== M when filtered)
+    valid_fraction: float = 1.0
+    # drama-filter fields (gus-drama-atlas), from stored world-independent E[Q]
+    marginal_eq_gap: float = float("inf")   # top1 - top2 E[Q] over legal actions
+    n_legal: int = 0
+    count_unplayed: int = 35   # count POINTS not yet played at this decision
 
 
-def _build_decision_view(model, game, d_idx: int, game_id: str) -> DecisionView | None:
+def world_validity(game, d_idx: int) -> tuple[np.ndarray, int, int]:
+    """Boolean [M] mask of worlds whose reconstruction is a real 28-domino deal.
+
+    Reuses the established validity test (``otis/tiedroll.py:_reconstruct_one``,
+    :237 ``valid_world_indices``): a world is VALID iff every hidden seat's initial
+    hand (recorded prefix plays ∪ sampled remaining tiles) has exactly 7 tiles and
+    the full 4×7 deal is a 28-domino permutation — i.e. no duplicate tiles, no
+    overlap with the actor's real hand, correct hand sizes, tiles exactly the
+    decision's unseen set. The pre-repair WorldSamplerMRV injected domino 00 and
+    leaked tiles, so 27-67% of stored worlds per decision are malformed
+    (``wiki/experiments/world-sampler-mrv-audit.md``). Returns (mask, n_raw,
+    n_valid)."""
+    from otis.tiedroll import _decision_context, _reconstruct_one
+
+    dec = game.decisions[d_idx]
+    wh = dec.world_hands
+    P, _, _, played_by_seat, _ = _decision_context(game, d_idx)
+    M = int(wh.shape[0])
+    mask = np.zeros(M, dtype=bool)
+    for m in range(M):
+        if _reconstruct_one(game, P, played_by_seat, wh[m]) is not None:
+            mask[m] = True
+    return mask, M, int(mask.sum())
+
+
+def _build_decision_view(model, game, d_idx: int, game_id: str,
+                         valid_mask: np.ndarray | None = None) -> DecisionView | None:
     """Run belief, compute per-world weights and count-tile placements for one
-    decision. Returns None if the decision carries no joint-world tensor."""
+    decision. Returns None if the decision carries no joint-world tensor.
+
+    If ``valid_mask`` (boolean [M_raw]) is given, invalid worlds are dropped
+    BEFORE clustering/weighting (issue #52); all per-world arrays index the
+    surviving worlds only. E[Q]/a* come from the decision's stored, world-
+    independent ``e_q`` and are unchanged by filtering."""
     from gus.model.features import reconstruct_prior_plays, extract_belief_target
     from gus.model.tokenize import tokenize_decision
     from gus.model.voids import voids_feature_vector
@@ -340,6 +379,13 @@ def _build_decision_view(model, game, d_idx: int, game_id: str) -> DecisionView 
     actor = int(dec.player)
     wh = dec.world_hands                      # [M,3,7]
     qpw = dec.q_per_world.float().numpy()     # [M,7]
+    n_raw = int(wh.shape[0])
+    if valid_mask is not None:
+        keep = torch.from_numpy(np.asarray(valid_mask, dtype=bool))
+        wh = wh[keep]
+        qpw = qpw[np.asarray(valid_mask, dtype=bool)]
+    n_valid = int(wh.shape[0])
+    valid_fraction = n_valid / n_raw if n_raw else float("nan")
     M = wh.shape[0]
 
     prior_plays = reconstruct_prior_plays(game.hands, game.decisions, d_idx)
@@ -358,13 +404,26 @@ def _build_decision_view(model, game, d_idx: int, game_id: str) -> DecisionView 
     w_belief, ess = belief_weights(belief_logits, seat_of, hidden_ids)
     w_uniform = np.full(M, 1.0 / M)
 
-    # a* = argmax E[Q] over legal actions
+    # a* = argmax E[Q] over legal actions (stored world-independent E[Q])
     e_q = dec.e_q.float().clone()
     legal = dec.legal_mask.bool()
     e_q[~legal] = float("-inf")
     a_star = int(torch.argmax(e_q).item())
     action_taken = int(dec.action_taken)
     q_astar = qpw[:, a_star]
+
+    # Drama fields (gus-drama-atlas): marginal E[Q] gap top1-top2, n_legal,
+    # count points unplayed. Computed from stored e_q, unaffected by world filter.
+    n_legal = int(legal.sum().item())
+    legal_eq = dec.e_q.float()[legal]
+    if legal_eq.numel() >= 2:
+        top2 = torch.topk(legal_eq, 2).values
+        marginal_eq_gap = float((top2[0] - top2[1]).item())
+    else:
+        marginal_eq_gap = float("inf")
+    played_count_pts = sum(COUNT_TILES[int(d)] for (_, d) in prior_plays
+                           if int(d) in COUNT_TILES)
+    count_unplayed = 35 - int(played_count_pts)
 
     own_ids = {int(x) for x in game.hands[actor] if int(x) >= 0}
     played_placement: dict[int, int] = {}
@@ -387,6 +446,8 @@ def _build_decision_view(model, game, d_idx: int, game_id: str) -> DecisionView 
         a_star=a_star, action_taken=action_taken, q_astar=q_astar,
         seat_of=seat_of, w_belief=w_belief, w_uniform=w_uniform, ess=ess,
         placements=placements,
+        n_raw=n_raw, n_valid=n_valid, valid_fraction=valid_fraction,
+        marginal_eq_gap=marginal_eq_gap, n_legal=n_legal, count_unplayed=count_unplayed,
     )
 
 
@@ -404,6 +465,12 @@ class P6Row:
     ess: float
     a_star: int
     action_taken: int
+    n_raw: int
+    n_valid: int
+    valid_fraction: float
+    marginal_eq_gap: float
+    n_legal: int
+    count_unplayed: int
     n_clusters_belief: int
     bimodal_belief: bool
     gap_belief: float
@@ -443,6 +510,9 @@ def analyze_p6_decision(view: DecisionView, merge_threshold: float = 0.02) -> P6
     return P6Row(
         game_id=view.game_id, decl_id=view.decl_id, actor=view.actor, d_idx=view.d_idx,
         n_worlds=view.M, ess=view.ess, a_star=view.a_star, action_taken=view.action_taken,
+        n_raw=view.n_raw, n_valid=view.n_valid, valid_fraction=view.valid_fraction,
+        marginal_eq_gap=view.marginal_eq_gap, n_legal=view.n_legal,
+        count_unplayed=view.count_unplayed,
         n_clusters_belief=len(cl_b), bimodal_belief=bim_b.is_bimodal,
         gap_belief=bim_b.gap, low_mass_belief=bim_b.low_mass, high_mass_belief=bim_b.high_mass,
         n_clusters_uniform=len(cl_u), bimodal_uniform=bim_u.is_bimodal,
@@ -592,6 +662,9 @@ def run_worldbank(
     wall_cap_s: float = 45 * 60,
     log_every_s: float = 30.0,
     seed: int = 0,
+    filter_valid: bool = True,
+    min_valid: int = 40,
+    write_full_report: bool = True,
 ) -> dict:
     from gus.model.load import load_student
 
@@ -610,6 +683,9 @@ def run_worldbank(
     chunks = _default_chunks(data_path)
     print(f"[worldbank] {len(chunks)} candidate chunks", flush=True)
 
+    print(f"[worldbank] valid-world filter {'ON' if filter_valid else 'OFF'} "
+          f"(min_valid={min_valid})", flush=True)
+
     p6_rows: list[P6Row] = []
     p6_games: set = set()
     inter = InteractionAccumulator()
@@ -617,6 +693,12 @@ def run_worldbank(
     chunks_used: list[str] = []
     notes: list[str] = []
     last_log = time.time()
+
+    # Validity accounting (issue #52)
+    p6_valid_fracs: list[float] = []      # per qualifying P6 decision
+    p6_skipped = 0                        # qualifying P6 decisions dropped (< min_valid)
+    inter_valid_fracs: list[float] = []
+    inter_skipped = 0
 
     for chunk in chunks:
         if time.time() - t0 > wall_cap_s:
@@ -640,7 +722,14 @@ def run_worldbank(
             # P6 qualifying decisions
             for d_idx in range(4):
                 if is_p6_qualifying(game, d_idx):
-                    view = _build_decision_view(model, game, d_idx, gid)
+                    vmask = None
+                    if filter_valid:
+                        vmask, n_raw, n_valid = world_validity(game, d_idx)
+                        p6_valid_fracs.append(n_valid / n_raw if n_raw else float("nan"))
+                        if n_valid < min_valid:
+                            p6_skipped += 1
+                            continue
+                    view = _build_decision_view(model, game, d_idx, gid, valid_mask=vmask)
                     if view is not None:
                         p6_rows.append(analyze_p6_decision(view))
                         p6_games.add(gid)
@@ -651,7 +740,14 @@ def run_worldbank(
                     continue
                 inter_seen += 1
                 if inter.n_decisions < max_interaction:
-                    view = _build_decision_view(model, game, d_idx, gid)
+                    vmask = None
+                    if filter_valid:
+                        vmask, n_raw, n_valid = world_validity(game, d_idx)
+                        inter_valid_fracs.append(n_valid / n_raw if n_raw else float("nan"))
+                        if n_valid < min_valid:
+                            inter_skipped += 1
+                            continue
+                    view = _build_decision_view(model, game, d_idx, gid, valid_mask=vmask)
                     if view is not None:
                         inter.add(view)
                 # (past the cap we simply stop adding — a deterministic prefix
@@ -686,6 +782,53 @@ def run_worldbank(
     ess_vals = np.array([r.ess for r in p6_rows]) if n_q else np.array([])
     ess_median = float(np.median(ess_vals)) if n_q else float("nan")
 
+    # --- Strict drama subset (gus-drama-atlas: gap<=1.0, count_unplayed>=15,
+    #     n_legal>=2) and strict-root d_idx=0 subset, both on valid-filtered rows ---
+    def _subset_stats(rows: list[P6Row]) -> dict:
+        n = len(rows)
+        cb = sum(1 for r in rows if r.bimodal_belief)
+        cu = sum(1 for r in rows if r.bimodal_uniform)
+        gaps = [r.marginal_eq_gap for r in rows if np.isfinite(r.marginal_eq_gap)]
+        return dict(
+            n=n,
+            bimodal_frac_belief=(cb / n if n else float("nan")),
+            bimodal_frac_uniform=(cu / n if n else float("nan")),
+            bimodal_count_belief=cb, bimodal_count_uniform=cu,
+            gap_median=(float(np.median(gaps)) if gaps else float("nan")),
+        )
+
+    drama_rows = [r for r in p6_rows if r.marginal_eq_gap <= 1.0
+                  and r.count_unplayed >= 15 and r.n_legal >= 2]
+    d0_rows = [r for r in p6_rows if r.d_idx == 0]
+    drama_stats = _subset_stats(drama_rows)
+    d0_stats = _subset_stats(d0_rows)
+
+    # --- Validity accounting (issue #52) ---
+    def _frac_stats(fracs: list[float]) -> dict:
+        arr = np.array([f for f in fracs if np.isfinite(f)])
+        if arr.size == 0:
+            return dict(n=0, mean=float("nan"), median=float("nan"),
+                        min=float("nan"), max=float("nan"), p25=float("nan"),
+                        p75=float("nan"))
+        return dict(
+            n=int(arr.size), mean=float(arr.mean()), median=float(np.median(arr)),
+            min=float(arr.min()), max=float(arr.max()),
+            p25=float(np.percentile(arr, 25)), p75=float(np.percentile(arr, 75)),
+        )
+
+    validity = dict(
+        filter_valid=filter_valid,
+        min_valid=min_valid,
+        p6_valid_fraction=_frac_stats(p6_valid_fracs),
+        p6_qualifying_scanned=len(p6_valid_fracs),
+        p6_skipped_low_valid=p6_skipped,
+        interaction_valid_fraction=_frac_stats(inter_valid_fracs),
+        interaction_skipped_low_valid=inter_skipped,
+        n_valid_kept_median=(float(np.median([r.n_valid for r in p6_rows]))
+                             if n_q else float("nan")),
+        n_valid_kept_min=(int(min(r.n_valid for r in p6_rows)) if n_q else 0),
+    )
+
     inter_rows = inter.results(min_worlds=30)
 
     # --- Write CSVs ---
@@ -711,6 +854,9 @@ def run_worldbank(
         ess_p75=float(np.percentile(ess_vals, 75)) if n_q else float("nan"),
         interaction_n_decisions=inter.n_decisions,
         interaction_top_cells=top_cells,
+        drama_subset=drama_stats,
+        d0_subset=d0_stats,
+        validity=validity,
         chunks_used=chunks_used,
         adapter=adapter_path,
         wall_s=round(wall_s, 1),
@@ -720,9 +866,12 @@ def run_worldbank(
         json.dump(summary, f, indent=2)
 
     # --- Ledger cards + report ---
-    _write_ledger_cards(report_path / "w5_ledger_cards.md", p6_rows, model_hint=adapter_path)
-    _write_report(report_path / "w5_worldbank.md", summary, p6_rows, inter_rows,
-                  ess_vals)
+    _write_ledger_cards(report_path / "w5_ledger_cards.md", p6_rows,
+                        model_hint=adapter_path, filter_valid=filter_valid,
+                        min_valid=min_valid)
+    report_target = (report_path / "w5_worldbank.md" if write_full_report
+                     else out_path / "w5_worldbank_generated.md")
+    _write_report(report_target, summary, p6_rows, inter_rows, ess_vals)
 
     print(f"[worldbank] DONE n_q={n_q} frac_belief={frac_b:.3f} "
           f"frac_uniform={frac_u:.3f} ess_med={ess_median:.1f} wall={wall_s:.1f}s",
@@ -736,15 +885,18 @@ def run_worldbank(
 
 def _write_p6_csv(path: Path, rows: list[P6Row]):
     import csv
-    cols = ["game_id", "decl_id", "actor", "d_idx", "n_worlds", "ess", "a_star",
-            "action_taken", "n_clusters_belief", "bimodal_belief", "gap_belief",
-            "low_mass_belief", "high_mass_belief", "n_clusters_uniform",
+    cols = ["game_id", "decl_id", "actor", "d_idx", "n_worlds", "n_raw", "n_valid",
+            "valid_fraction", "marginal_eq_gap", "n_legal", "count_unplayed", "ess",
+            "a_star", "action_taken", "n_clusters_belief", "bimodal_belief",
+            "gap_belief", "low_mass_belief", "high_mass_belief", "n_clusters_uniform",
             "bimodal_uniform", "gap_uniform", "low_mass_uniform", "high_mass_uniform"]
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(cols)
         for r in rows:
             w.writerow([r.game_id, r.decl_id, r.actor, r.d_idx, r.n_worlds,
+                        r.n_raw, r.n_valid, f"{r.valid_fraction:.4f}",
+                        f"{r.marginal_eq_gap:.4f}", r.n_legal, r.count_unplayed,
                         f"{r.ess:.3f}", r.a_star, r.action_taken,
                         r.n_clusters_belief, int(r.bimodal_belief), f"{r.gap_belief:.3f}",
                         f"{r.low_mass_belief:.4f}", f"{r.high_mass_belief:.4f}",
@@ -775,7 +927,9 @@ def _cluster_context_words(key: tuple) -> str:
     return ", ".join(parts)
 
 
-def _write_ledger_cards(path: Path, rows: list[P6Row], model_hint: str, top: int = 10):
+def _write_ledger_cards(path: Path, rows: list[P6Row], model_hint: str,
+                        top: int = 10, filter_valid: bool = True,
+                        min_valid: int = 40):
     bimodal = [r for r in rows if r.bimodal_belief]
     # highest-mass = most belief mass explained by the two modes (low+high)
     bimodal.sort(key=lambda r: (r.low_mass_belief + r.high_mass_belief, r.gap_belief),
@@ -784,6 +938,13 @@ def _write_ledger_cards(path: Path, rows: list[P6Row], model_hint: str, top: int
     lines: list[str] = []
     lines.append("# Otis W5 — 3-2 fate ledger cards")
     lines.append("")
+    if filter_valid:
+        lines.append(f"> Regenerated under strict valid-world filtering (issue #52): "
+                     f"clusters are built from ONLY sampler-consistent worlds "
+                     f"(full 28-domino deals; ≥{min_valid} valid worlds required per "
+                     f"decision). Supersedes the pre-filter cards. Each card's "
+                     f"`n_valid` is the surviving world count.")
+        lines.append("")
     lines.append(f"The {len(cards)} highest-mass bimodal P6 decisions (belief-weighted), "
                  f"from the world-bank instrument (`otis/analysis/worldbank.py`). Belief "
                  f"posterior: `{model_hint}`. Each card shows the public context, the "
@@ -799,7 +960,8 @@ def _write_ledger_cards(path: Path, rows: list[P6Row], model_hint: str, top: int
         lines.append("")
         lines.append(f"- Declaration id: {r.decl_id} · trick {r.d_idx // 4} "
                      f"(decision idx {r.d_idx}) · actor seat {r.actor}")
-        lines.append(f"- Worlds M={r.n_worlds} · ESS={r.ess:.1f} · a*=slot {r.a_star} "
+        lines.append(f"- Worlds: {r.n_valid} valid of {r.n_raw} sampled "
+                     f"({r.valid_fraction:.0%}) · ESS={r.ess:.1f} · a*=slot {r.a_star} "
                      f"· action taken=slot {r.action_taken}")
         lines.append(f"- Bimodal split: low mass {r.low_mass_belief:.0%} / high mass "
                      f"{r.high_mass_belief:.0%} · gap {r.gap_belief:.1f} points")
@@ -924,6 +1086,14 @@ def main() -> int:
     ap.add_argument("--max-interaction", type=int, default=2000)
     ap.add_argument("--wall-cap-s", type=float, default=45 * 60)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--no-filter-valid", dest="filter_valid", action="store_false",
+                    help="disable strict valid-world filtering (issue #52); default ON")
+    ap.add_argument("--min-valid", type=int, default=40,
+                    help="skip decisions with fewer than this many valid worlds")
+    ap.add_argument("--no-full-report", dest="write_full_report", action="store_false",
+                    help="write the generated report to out-dir instead of report-dir "
+                         "(preserves a hand-curated w5_worldbank.md)")
+    ap.set_defaults(filter_valid=True, write_full_report=True)
     args = ap.parse_args()
 
     run_worldbank(
@@ -931,6 +1101,8 @@ def main() -> int:
         report_dir=args.report_dir, min_qualifying=args.min_qualifying,
         min_games=args.min_games, max_interaction=args.max_interaction,
         wall_cap_s=args.wall_cap_s, seed=args.seed,
+        filter_valid=args.filter_valid, min_valid=args.min_valid,
+        write_full_report=args.write_full_report,
     )
     return 0
 

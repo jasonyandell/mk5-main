@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from types import SimpleNamespace
+
 from otis.analysis.worldbank import (
     BimodalResult,
     Cluster,
@@ -12,6 +14,7 @@ from otis.analysis.worldbank import (
     cluster_worlds,
     belief_weights,
     world_seat_matrix,
+    world_validity,
     id_to_pips,
     pips_to_id,
     THREE_TWO,
@@ -170,6 +173,51 @@ def test_world_seat_matrix_and_weights():
     assert abs(w.sum() - 1.0) < 1e-6
     assert w[0] > 0.99  # world 0 matches the peaked belief
     assert 1.0 <= ess <= 2.0
+
+
+# --- valid-world filtering (issue #52) ---------------------------------------
+
+def _fake_opening_game(world_hands: torch.Tensor):
+    """Minimal opening-lead (d_idx=0) game: actor P=0 holds dominoes 0..6, the
+    unseen set is 7..27. ``world_hands`` is [M,3,7] relative to P."""
+    dec = SimpleNamespace(player=0, action_taken=0, world_hands=world_hands)
+    hands = [list(range(0, 7)), list(range(7, 14)),
+             list(range(14, 21)), list(range(21, 28))]
+    return SimpleNamespace(decl_id=0, hands=hands, decisions=[dec])
+
+
+def test_world_validity_drops_malformed_worlds():
+    # world 0: valid full deal (rel seats hold 7..13, 14..20, 21..27).
+    # world 1: duplicate tile (7 repeated, 27 missing) -> invalid.
+    # world 2: actor-hand overlap (rel0 holds P's tile 0) -> invalid.
+    wh = torch.empty((3, 3, 7), dtype=torch.long)
+    wh[0, 0] = torch.arange(7, 14)
+    wh[0, 1] = torch.arange(14, 21)
+    wh[0, 2] = torch.arange(21, 28)
+    wh[1, 0] = torch.arange(7, 14)
+    wh[1, 1] = torch.arange(14, 21)
+    wh[1, 2] = torch.tensor([21, 22, 23, 24, 25, 26, 7])  # dup 7, missing 27
+    wh[2, 0] = torch.tensor([0, 8, 9, 10, 11, 12, 13])    # 0 is P's own tile
+    wh[2, 1] = torch.arange(14, 21)
+    wh[2, 2] = torch.arange(21, 28)
+
+    game = _fake_opening_game(wh)
+    mask, n_raw, n_valid = world_validity(game, 0)
+    assert n_raw == 3
+    assert n_valid == 1
+    assert list(mask) == [True, False, False]
+
+
+def test_world_validity_all_valid():
+    wh = torch.empty((2, 3, 7), dtype=torch.long)
+    for m in range(2):
+        wh[m, 0] = torch.arange(7, 14)
+        wh[m, 1] = torch.arange(14, 21)
+        wh[m, 2] = torch.arange(21, 28)
+    game = _fake_opening_game(wh)
+    mask, n_raw, n_valid = world_validity(game, 0)
+    assert (n_raw, n_valid) == (2, 2)
+    assert mask.all()
 
 
 def test_belief_weights_uniform_when_flat():

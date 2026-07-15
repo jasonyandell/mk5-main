@@ -95,6 +95,15 @@ Band-compliance drift (drama filter absent from the headline metric) found by
 the fable gate and documented with the strict recomputation, not regraded.
 Report: `otis/reports/w5_worldbank.md`. 30 pytest green.
 
+**Revalidated under issue #52 filtering** (the eq corpus stores 27–67%
+malformed pre-repair-sampler worlds; see [[world-sampler-mrv-audit]]): P6 holds
+— **86.8% belief / 83.3% uniform** (N=281), strict d_idx=0 cell 98.3%/94.8%,
+interaction shape unchanged. The old low-ESS caveat was a contamination
+artifact: median ESS 13.7 → 59.3 on valid worlds — the belief head was already
+down-weighting malformed worlds. Residual caveat: stored E[Q]/a* aggregates
+remain pre-repair products (noted in the report; full cure = corpus
+regeneration, issue #52).
+
 ### W2b — full-corpus parse + empirical ledger (2026-07-15)
 
 **147,516 hands / 737,580 fate rows** parsed from 26 fresh chunks (selfplay

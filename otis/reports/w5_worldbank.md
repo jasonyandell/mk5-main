@@ -1,5 +1,15 @@
 # Otis W5 — world-bank analysis (P6 + interaction structure)
 
+> **⚠ Revalidated under sampler-contamination filtering (issue #52).** The numbers in
+> the original body below were computed over the FULL stored world bank, which the
+> pre-repair `WorldSamplerMRV` left 27–67% malformed per decision (duplicate tiles via
+> injected domino 0-0, actor-hand leakage, wrong unseen set —
+> `wiki/experiments/world-sampler-mrv-audit.md`). Every headline number below tagged
+> **[SUPERSEDED §52]** is corrected in the **[Sampler-contamination revalidation
+> (issue #52)](#sampler-contamination-revalidation-issue-52)** section at the end of
+> this report; the old numbers are retained in place so the correction is reachable
+> from the error. **The P6 verdict is unchanged: PASS.**
+
 Playout-free rung of issue #49 (items 1+2, prediction P6). Everything below derives from stored `world_hands` [M,3,7] and `q_per_world` [M,7] in the eq corpus — no new game playouts. Instrument: `otis/analysis/worldbank.py`. CPU only.
 
 ## Method
@@ -34,6 +44,8 @@ precisely:
    uniform-bimodal): 0: 70, 97.1%, 84.3% · 1: 40, 90.0%, 90.0% · 2: 100, 85.0%, 79.0%
    · 3: 90, 81.1%, 64.4%. Under the strictest reading (root = opening lead, d_idx=0)
    the fraction is the highest cell, 97.1%/84.3%. Every reading lands PASS-side.
+   **[SUPERSEDED §52: d_idx=0 valid-filtered = 98.3% belief / 94.8% uniform, N=58 (12
+   of 70 skipped for < 40 valid worlds). Still the highest cell; still PASS.]**
 3. **">= 100 worlds" qualifier is implementation-added**, not in the band. Non-binding
    in practice: every v2 decision carries M=200 sampled worlds.
 4. **"Modes" operationalized as a two-group split of exact-context clusters** (each
@@ -52,15 +64,20 @@ The full otis suite passes (30 tests).
 ## P6 result
 
 - Qualifying decisions N = **300** across **300** games (one per game: exactly one
-  seat holds the 3-2 at trick 0).
+  seat holds the 3-2 at trick 0). **[SUPERSEDED §52: N=281; 19 skipped for < 40 valid worlds.]**
 - **Bimodal fraction (belief-weighted) = 87.3%** (262/300) -> **PASS (>=30%)** against
-  the registered P6 band (>=30% PASS, <10% falsifier).
-- **Bimodal fraction (uniform weights) = 77.3%** (232/300).
+  the registered P6 band (>=30% PASS, <10% falsifier). **[SUPERSEDED §52: 86.8% (244/281) — still PASS.]**
+- **Bimodal fraction (uniform weights) = 77.3%** (232/300). **[SUPERSEDED §52: 83.3% (234/281).]**
 - Drama-directed subset (band letter, see above): 81.8% belief / 68.8% uniform, N=77.
+  **[SUPERSEDED §52: 81.8% belief / 76.6% uniform, N=77.]**
 - ESS distribution: median **13.7**, p25 7.4, p75 61.2 (of M=200 worlds); 64.7% of
-  decisions have ESS < 20, 38% have ESS < 10.
+  decisions have ESS < 20, 38% have ESS < 10. **[SUPERSEDED §52: median 59.3, p25 39.7,
+  p75 94.8 — the low ESS was largely the contaminated worlds; filtering resolves the caveat below.]**
 
-**ESS caveat — lean on the uniform variant.** Median ESS 13.7 is below 20: the
+**ESS caveat — lean on the uniform variant.** _[SUPERSEDED §52 — this caveat is
+substantially retired: after valid-world filtering median ESS rises to 59.3 and belief
+and uniform verdicts move within 3.5 pp of each other. The original caveat is kept for
+the record.]_ Median ESS 13.7 is below 20: the
 belief-weighted per-decision numbers rest on ~5-15 effective worlds and are fragile
 (single high-weight worlds can dominate a cluster; card 8 has ESS 2.4). The robust
 anchor is the uniform variant, **77.3%**, which uses all 200 worlds equally and still
@@ -112,7 +129,7 @@ threshold; none approaches the < 10% falsifier. Grading itself happens in W7.
 
 First-order delta(d@s) and pairwise lift(d1@s1, d2@s2) over the five count tiles at relative seats, per-decision centered and pooled over 2000 trick-0/1 decisions. Cells require >= 30 pooled worlds. Full top-50 in `w5_interactions.csv`.
 
-- Sign-opposing 'count tile hurts UNLESS partner holds X' cells flagged: **13** (of 90 qualifying pairwise cells).
+- Sign-opposing 'count tile hurts UNLESS partner holds X' cells flagged: **13** (of 90 qualifying pairwise cells). **[SUPERSEDED §52: 17 of 90; the top interaction cell and first-order-dominance conclusion are unchanged — see revalidation §.]**
 
 **Reading**: at trick 0/1 the count-tile placement effects on E[Q(a*)] are
 first-order dominated — a count tile at partner helps (5-5@partner delta = +6.6),
@@ -123,7 +140,10 @@ sign-opposing cells are the honest residual where "count tile at opponent hurts
 UNLESS partner holds a high count tile" — modest but real, and the kind of
 structure that a per-tile-independent pricer cannot represent.
 
-Top 15 cells by |lift| x mass:
+Top 15 cells by |lift| x mass **[SUPERSEDED §52 — this table is over the contaminated
+bank; the valid-world top-15 is in `scratch/otis-night/w5_worldbank_generated.md` and
+`scratch/otis-night/w5_interactions.csv`. Same top cell (5-5@left-opp × 6-4@right-opp,
+lift −1.29); same first-order dominance.]**:
 
 | # | tile1 @ seat | tile2 @ seat | lift | delta1 | delta2 | mass | n | flag |
 |---|---|---|---|---|---|---|---|---|
@@ -151,3 +171,78 @@ Top 15 cells by |lift| x mass:
   - interaction sample truncated to first 2000 of 2400 trick-0/1 decisions (deterministic prefix)
 
 Ledger cards for the 10 highest-mass bimodal decisions: `otis/reports/w5_ledger_cards.md`. Machine summary: `scratch/otis-night/w5_summary.json`. Drama-subset addendum (band-compliance recompute): `scratch/otis-night/w5_drama_subset.json`.
+
+---
+
+## Sampler-contamination revalidation (issue #52)
+
+The entire analysis above was computed over the FULL stored world bank. The eq corpus
+in `gus/data/` was generated with the **pre-repair `WorldSamplerMRV`**
+(`wiki/experiments/world-sampler-mrv-audit.md`): a fraction of every decision's stored
+worlds are malformed — duplicate tiles (injected domino 0-0), tiles that overlap the
+actor's own hand, wrong unseen set. The world-bank instrument originally weighted and
+clustered ALL of them.
+
+**What changed.** `otis/analysis/worldbank.py` now applies **strict valid-world
+filtering by default** (`--no-filter-valid` to disable). A world is VALID iff its
+reconstruction is a real 28-domino deal: every hidden seat's initial hand
+(recorded prefix plays ∪ sampled remaining tiles) has exactly 7 tiles and the full
+4×7 deal is a permutation of all 28 dominoes — no duplicates, no actor-hand overlap,
+tiles exactly the decision's unseen set. This is the established test
+(`otis/tiedroll.py:_reconstruct_one`, `valid_world_indices` :237), lifted into
+`world_validity(game, d_idx)`. Invalid worlds are dropped **before** clustering and
+belief-weighting; per-decision valid fraction is recorded; a decision with **< 40 valid
+worlds is skipped** entirely. `E[Q]` / `a*` come from the decision's stored,
+world-independent E[Q] and are unchanged by filtering (only the per-world q at that a*
+is re-sampled over valid worlds).
+
+**Contamination measured (this corpus).** Per-decision valid fraction: **median 48%,
+mean 55%, min 15%, max 100%** (p25 30%, p75 100%) over 300 P6-qualifying decisions —
+consistent with the audit's 27–67% malformed. **19 of 300** P6 decisions and **32 of
+2032** interaction decisions were skipped for < 40 valid worlds. Kept P6 decisions
+retain a median of 100 valid worlds (min 40).
+
+### OLD vs NEW — every headline number
+
+| Metric | OLD (full bank, contaminated) | NEW (valid-world filtered) |
+|---|---|---|
+| Qualifying decisions N | 300 (300 games) | **281** (19 skipped) |
+| P6 bimodal — belief-weighted | 87.3% (262/300) → PASS | **86.8% (244/281) → PASS** |
+| P6 bimodal — uniform | 77.3% (232/300) | **83.3% (234/281)** |
+| Drama subset (belief / uniform), N | 81.8% / 68.8%, N=77 | **81.8% / 76.6%, N=77** |
+| Drama subset marginal-E[Q]-gap median | 0.41 | **0.23** |
+| Strict-root d_idx=0 (belief / uniform), N | 97.1% / 84.3%, N=70 | **98.3% / 94.8%, N=58** |
+| ESS median (of M=200) | 13.7 | **59.3** |
+| ESS p25 / p75 | 7.4 / 61.2 | **39.7 / 94.8** |
+| Interaction decisions pooled | 2000 | 2000 |
+| Top interaction cell | 5-5@left-opp × 6-4@right-opp, lift −1.31 | **5-5@left-opp × 6-4@right-opp, lift −1.29** |
+| Conditional-partner-rescue cells flagged | 13 of 90 | **17 of 90** |
+
+### Reading
+
+1. **The P6 verdict is robust to contamination: still PASS.** Belief-weighted bimodal
+   fraction moves 87.3% → 86.8% (well clear of the 30% PASS line; nowhere near the 10%
+   falsifier). Every subset lands PASS-side under filtering, and the strict-root and
+   drama subsets rise or hold.
+2. **The old ESS caveat is largely an artifact of the bad sampler.** Median ESS jumps
+   **13.7 → 59.3**. The malformed worlds (notably those carrying injected domino 0-0)
+   were taking extreme belief weights and collapsing the effective sample; on real
+   worlds the posterior spreads across ~60 effective worlds. The belief and uniform
+   fractions correspondingly converge (gap 10 pp → 3.5 pp), so the "lean on uniform"
+   hedge is no longer load-bearing.
+3. **The uniform fraction rises (77.3% → 83.3%)** because dropping malformed worlds
+   removes low-value phantom contexts that had been diluting clean clusters — the
+   bimodal signal is if anything *sharper* on real worlds.
+4. **Interaction structure is unchanged in shape.** The top cell is the same
+   (5-5 × 6-4 across the opponents, lift ≈ −1.3), lifts remain an order of magnitude
+   below first-order deltas, and the sign-opposing "hurts-unless-partner" residual
+   grows modestly (13 → 17 of 90). Conclusion — first-order-dominated at the root, the
+   modelable joint structure is the clustering, not pairwise synergy — stands.
+
+The ledger cards (`otis/reports/w5_ledger_cards.md`) are regenerated from valid-world
+clusters only (each card now reports `n_valid` of `n_raw` sampled). Machine summary
+with full `validity`, `drama_subset`, and `d0_subset` blocks:
+`scratch/otis-night/w5_summary.json` (pre-filter snapshot preserved at
+`scratch/otis-night/w5_summary_prefilter.json`). Per-decision valid fractions are in
+`scratch/otis-night/w5_p6.csv` (new `n_raw`, `n_valid`, `valid_fraction`,
+`marginal_eq_gap` columns). Unit test: `otis/tests/test_worldbank.py::test_world_validity_drops_malformed_worlds`.
