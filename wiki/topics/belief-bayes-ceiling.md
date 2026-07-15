@@ -2,7 +2,7 @@
 title: Belief Bayes Ceiling
 kind: topic
 first_seen: 2026-04-22
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -10,14 +10,24 @@ status: complete
 
 Gus's belief head has reached the Bayesian optimum for top-1 accuracy given the available information. `gus/eval/belief_ceiling.py` computes the theoretical best top-1 achievable on any eval corpus: for each unseen domino, take `argmax_seat P(seat | oracle sampled worlds)`. Since the oracle's worlds ARE the posterior, this argmax is Bayes-optimal (548d32a).
 
-**Result on `corpus_eval_20.pt` (20 games, 560 decisions, ~2914 worlds/decision)**:
+**Current number (clean deck, 2026-07-15): 40.119%** on the regenerated
+`corpus_eval_20.pt` ([[otis-phase-r]] R2, registered band [39.3, 41.5]).
+The long-standing 39.184% was measured on the April corpus, whose stored
+worlds were 27–67% malformed per decision (issue #52,
+[[world-sampler-mrv-audit]]) — contamination suppressed the measured
+ceiling by ~0.9pp. History:
 
-| | top-1 |
+| corpus | top-1 |
 |---|---:|
-| Bayes-optimal | 39.184% |
-| Gus v3 belief head | ~38-39% |
+| Bayes-optimal, clean deck (regen 2026-07-15, 9 decls) | **40.119%** |
+| Bayes-optimal, April corpus (contaminated) | 39.184% |
+| Gus v3 belief head (measured on the April corpus) | ~38-39% |
 
-Gus matches the Bayes-optimal limit within noise. Zeb's 39% baseline wasn't a plateau to overcome — it was the information ceiling of the game state (548d32a).
+Gus matched the contaminated ceiling within noise; whether it also reaches
+the clean 40.1% is an open re-measurement (the belief head itself trained
+on contaminated worlds). Zeb's 39% baseline wasn't a plateau to overcome —
+it was the information ceiling of the game state as then measurable
+(548d32a).
 
 ## Per-decision breakdown
 
@@ -44,7 +54,11 @@ These are complementary findings: the propagation gap is an architectural proble
 
 **LAMIR / PIMC / BMCS** all consume the full `P(seat | domino)` distribution, not argmax. Better tail calibration → better-weighted world samples → potentially better look-ahead aggregation. But the co-train experiment showed this doesn't propagate additively in the project's distillation pipeline — and the whole LAMIR/PIMC-lookahead line was subsequently abandoned in favor of [[jud]] (see [[lamir1-ceiling]]).
 
-**Corpus-specific caveat**: 39.2% is the ceiling on `corpus_eval_20.pt`. Schema v2 / diverse-seed corpora may differ, but the diagnostic was never re-run on one — [[gen-fleet]], the diverse-seed generator this caveat depended on, never launched. The 10k corpus that did ship (v3-10k) was generated locally on the same schema-v1-shaped pipeline as `corpus_eval_20.pt`, so the caveat remains open but untestable against the originally-envisioned diverse-seed corpus (548d32a).
+**Corpus-specific caveat**: the ceiling is a property of the eval corpus.
+The 2026-07-15 re-derivation ([[otis-phase-r]]) is the same 20 eval seeds
+under the repaired sampler and the 9-declaration mix (decl 8 purged, issue
+#51) — a diverse-seed re-measurement per the original [[gen-fleet]] intent
+remains not run.
 
 ## Diagnostic artifact
 

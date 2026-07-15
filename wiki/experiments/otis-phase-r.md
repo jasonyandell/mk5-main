@@ -39,7 +39,7 @@ instrument (below), not by the graded run.
 | # | claim | band (pass) | falsifier (genuine negative) | graded |
 |---|---|---|---|---|
 | R1 | Writer-side validity assertions hold | 100.000% of stored worlds in every regenerated chunk pass the independent read-side 28-domino-deal referee (exact cover of the unseen set + per-seat cardinality) | any invalid stored world = stop-the-line; the write-time assertion missed a rot class | |
-| R2 | Bayes ceiling rises on the clean deck | `gus/eval/belief_ceiling.py` verbatim on regenerated `corpus_eval_20.pt` lands in **[39.3%, 41.5%]** top-1 (inherited: 39.184% contaminated; proxy prior: 39.949%) | < 39.0% (contamination was inflating the ceiling — reopens the sampler-distribution question) or > 43% (the proxy misunderstands the repaired posterior) | |
+| R2 | Bayes ceiling rises on the clean deck | `gus/eval/belief_ceiling.py` verbatim on regenerated `corpus_eval_20.pt` lands in **[39.3%, 41.5%]** top-1 (inherited: 39.184% contaminated; proxy prior: 39.949%) | < 39.0% (contamination was inflating the ceiling — reopens the sampler-distribution question) or > 43% (the proxy misunderstands the repaired posterior) | **PASS — 40.119%** (5,880 slots, avg 2,686 worlds/decision); prior missed by 0.17pp |
 | R3 | Contamination is zero by the old referee | re-measuring the #52 probe on regenerated counterparts (`corpus_v2_train_20-29` d0, `corpus_train_chunk_0-99` d0) yields 0.000% invalid (was 66.9% / 57.5%) | any nonzero rate | |
 | R4 | Posterior weights recorded | every decision in the weight-recording files (the v2 train chunks — the only fixed-sampling files in the corpus) carries per-world posterior weights, sum = 1 ± 1e-5; ESS distribution reported descriptively (no band — first measurement). *Amended pre-run, before any regen started:* the adaptive-path files (v1 train/eval AND v2 eval, which provenance metadata shows was generated adaptively) do not record weights — past-step tokenization at adaptive world counts is a VRAM hazard and their consumers do not read weights; adaptive-path recording is filed as follow-up work | weights missing or unnormalized on any decision in a weight-recording file | |
 | R5 | Decl mix is clean | 0 decl-8 games in any regenerated file; exactly 9 declarations represented where the recipe enumerates declarations | any decl-8 game | |
@@ -83,7 +83,36 @@ scan (not the writer's own assertion) over every pushed chunk.
 
 ## Receipts
 
-(fills as chunks land)
+### Eval corpora regenerated + R2 graded (2026-07-15)
+
+Vast 4090 (instance at $0.269/hr), `forge.eq.regen_corpus_v2` run:
+`corpus_eval_20.pt` (20 games, 53 s, 1,504,000 worlds) and
+`corpus_v2_eval.pt` (20 games, 195 s, 1,584,000 worlds) both graded
+**CLEAN** by the independent referee (`scripts/referee_worlds.py`): 0
+invalid worlds, 0 decl-8 games; uploaded to the v2 HF repo with shas in
+`MANIFEST.json`. The same referee grades the April `corpus_eval_20.pt`
+**DIRTY**: 18.34% pooled invalid worlds, 2 decl-8 games — the #52
+contamination and the #51 mix defect, one instrument, both directions.
+
+**R2 graded: PASS.** `gus/eval/belief_ceiling.py` verbatim on the clean
+eval corpus: **40.119%** top-1 (was 39.184% contaminated) — inside the
+registered band, direction confirmed, biggest per-d_idx gains early-mid
+hand. The proxy prior (39.949%) was calibrated to within 0.17pp. The old
+number was not the game's information ceiling; it was the ceiling measured
+through a corrupted posterior.
+
+### The referee crash that wasn't a verdict (2026-07-15)
+
+The first regen attempt aborted with the referee reporting DIRTY on both
+eval files — actually a `ModuleNotFoundError` crash (repo root missing
+from `sys.path` when run as a script), conflated with a verdict by the
+runner. Fixed both: the referee bootstraps its path; the runner
+distinguishes referee crash (instrument bug) from DIRTY (corpus verdict).
+Also fixed en route: an import-shadowing `UnboundLocalError` in the
+generate CLI (caught by the first live launch, now covered by a CLI-level
+end-to-end test) and a CUDA/CPU device mismatch in the write-time validity
+check on the adaptive path (caught by the second launch, now covered by an
+adaptive CLI smoke test).
 
 ## Links
 
