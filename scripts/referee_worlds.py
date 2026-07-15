@@ -40,76 +40,98 @@ import torch
 N = 28
 
 
-def referee_file(path: str) -> dict:
+def _scan_game(game) -> dict:
+    """Per-game tallies (top-level so multiprocessing can fork it)."""
+    hands = game.hands
+    out = {
+        "worlds": 0, "invalid": 0, "decisions": 0, "with_worlds": 0,
+        "weights_dec": 0, "weights_bad": 0,
+        "decl8": 1 if int(game.decl_id) == 8 else 0,
+        "by_d": {},
+    }
+    for d_idx, dec in enumerate(game.decisions):
+        out["decisions"] += 1
+        wh = dec.world_hands
+        if wh is None:
+            continue
+        out["with_worlds"] += 1
+
+        # Reconstruct the unseen set + per-seat remaining counts from the
+        # record alone (slot convention: action indexes the initial row).
+        P = int(dec.player)
+        played: set[int] = set()
+        plays_by_seat = [0, 0, 0, 0]
+        for prior in game.decisions[:d_idx]:
+            sp = int(prior.player)
+            tile = int(hands[sp][int(prior.action_taken)])
+            if tile >= 0:
+                played.add(tile)
+            plays_by_seat[sp] += 1
+        my_initial = {int(x) for x in hands[P] if int(x) >= 0}
+        my_remaining = my_initial - played
+        unseen = sorted(set(range(N)) - my_remaining - played)
+        unseen_mask = torch.zeros(N, dtype=torch.bool)
+        unseen_mask[unseen] = True
+
+        wh = wh.long()
+        M = wh.shape[0]
+        in_range = (wh >= 0) & (wh < N)
+        occ = torch.zeros(M, N, dtype=torch.int32)
+        occ.scatter_add_(1, wh.clamp(0, N - 1).reshape(M, -1), in_range.reshape(M, -1).int())
+        cover_ok = (occ[:, unseen_mask] == 1).all(dim=1) & (occ[:, ~unseen_mask] == 0).all(dim=1)
+        expected = torch.tensor(
+            [7 - plays_by_seat[(P + r + 1) % 4] for r in range(3)], dtype=torch.long
+        )
+        rows_ok = (in_range.sum(dim=2) == expected.unsqueeze(0)).all(dim=1)
+        valid = cover_ok & rows_ok
+
+        n_inv = int((~valid).sum())
+        out["worlds"] += M
+        out["invalid"] += n_inv
+        cell = out["by_d"].setdefault(d_idx, [0, 0])
+        cell[0] += n_inv
+        cell[1] += M
+
+        ww = getattr(dec, "world_weights", None)
+        if ww is not None:
+            out["weights_dec"] += 1
+            ok = (
+                ww.shape[0] == M
+                and bool((ww >= 0).all())
+                and abs(float(ww.sum()) - 1.0) <= 1e-4
+            )
+            if not ok:
+                out["weights_bad"] += 1
+    return out
+
+
+def referee_file(path: str, workers: int = 0) -> dict:
+    import multiprocessing as mp
+
     blob = torch.load(path, weights_only=False)
     games = blob["results"]
 
-    total_worlds = 0
-    invalid_worlds = 0
-    total_decisions = 0
-    decisions_with_worlds = 0
-    weights_decisions = 0
-    weights_bad = 0
-    decl8_games = 0
-    by_d_invalid: dict[int, list[int]] = defaultdict(lambda: [0, 0])  # d -> [inv, tot]
+    torch.set_num_threads(1)  # per-decision tensors are small; parallelism is per game
+    if workers <= 0:
+        workers = min(32, mp.cpu_count() or 1)
+    if workers > 1 and len(games) > 1:
+        with mp.get_context("fork").Pool(workers) as pool:
+            partials = pool.map(_scan_game, games, chunksize=1)
+    else:
+        partials = [_scan_game(g) for g in games]
 
-    for game in games:
-        hands = game.hands
-        if int(game.decl_id) == 8:
-            decl8_games += 1
-        for d_idx, dec in enumerate(game.decisions):
-            total_decisions += 1
-            wh = dec.world_hands
-            if wh is None:
-                continue
-            decisions_with_worlds += 1
-
-            # Reconstruct the unseen set + per-seat remaining counts from the
-            # record alone (slot convention: action indexes the initial row).
-            P = int(dec.player)
-            played: set[int] = set()
-            plays_by_seat = [0, 0, 0, 0]
-            for prior in game.decisions[:d_idx]:
-                sp = int(prior.player)
-                tile = int(hands[sp][int(prior.action_taken)])
-                if tile >= 0:
-                    played.add(tile)
-                plays_by_seat[sp] += 1
-            my_initial = {int(x) for x in hands[P] if int(x) >= 0}
-            my_remaining = my_initial - played
-            unseen = sorted(set(range(N)) - my_remaining - played)
-            unseen_mask = torch.zeros(N, dtype=torch.bool)
-            unseen_mask[unseen] = True
-
-            wh = wh.long()
-            M = wh.shape[0]
-            in_range = (wh >= 0) & (wh < N)
-            occ = torch.zeros(M, N, dtype=torch.int32)
-            occ.scatter_add_(1, wh.clamp(0, N - 1).reshape(M, -1), in_range.reshape(M, -1).int())
-            cover_ok = (occ[:, unseen_mask] == 1).all(dim=1) & (occ[:, ~unseen_mask] == 0).all(dim=1)
-            expected = torch.tensor(
-                [7 - plays_by_seat[(P + r + 1) % 4] for r in range(3)], dtype=torch.long
-            )
-            rows_ok = (in_range.sum(dim=2) == expected.unsqueeze(0)).all(dim=1)
-            valid = cover_ok & rows_ok
-
-            n_inv = int((~valid).sum())
-            total_worlds += M
-            invalid_worlds += n_inv
-            cell = by_d_invalid[d_idx]
-            cell[0] += n_inv
-            cell[1] += M
-
-            ww = getattr(dec, "world_weights", None)
-            if ww is not None:
-                weights_decisions += 1
-                ok = (
-                    ww.shape[0] == M
-                    and bool((ww >= 0).all())
-                    and abs(float(ww.sum()) - 1.0) <= 1e-4
-                )
-                if not ok:
-                    weights_bad += 1
+    total_worlds = sum(p["worlds"] for p in partials)
+    invalid_worlds = sum(p["invalid"] for p in partials)
+    total_decisions = sum(p["decisions"] for p in partials)
+    decisions_with_worlds = sum(p["with_worlds"] for p in partials)
+    weights_decisions = sum(p["weights_dec"] for p in partials)
+    weights_bad = sum(p["weights_bad"] for p in partials)
+    decl8_games = sum(p["decl8"] for p in partials)
+    by_d_invalid: dict[int, list[int]] = defaultdict(lambda: [0, 0])
+    for p in partials:
+        for d, (inv, tot) in p["by_d"].items():
+            by_d_invalid[d][0] += inv
+            by_d_invalid[d][1] += tot
 
     sha = hashlib.sha256(Path(path).read_bytes()).hexdigest()
     clean = invalid_worlds == 0 and weights_bad == 0 and decl8_games == 0
