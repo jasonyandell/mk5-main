@@ -2,7 +2,7 @@
 title: Count-Fate Ledger
 kind: topic
 first_seen: 2026-07-14
-last_updated: 2026-07-14
+last_updated: 2026-07-15
 status: active
 ---
 
@@ -14,8 +14,9 @@ Jason's formulation, ratified 2026-07-14 (conversation 2026-07-13→14; tracked 
 > The value of a hand is a belief-weighted ledger of count-fate scenarios, and a
 > domino's importance is its role-weighted participation across that ledger.
 
-Per the names doctrine this is **IDEATED** — conversation-designed, no repo
-artifact. This page is the design record, not a build receipt.
+Per the names doctrine this began **IDEATED** — conversation-designed. The build
+is [[otis]] (started 2026-07-14, overnight); registered predictions and grading
+live at [[otis-v0]]. This page remains the design record, not a build receipt.
 
 ## Three layers — why a corrected scalar is not the object
 
@@ -86,10 +87,12 @@ artifact. This page is the design record, not a build receipt.
 Whether tied-strategy rollouts can price the junk-retention economy at acceptable
 cost, and whether a ledger-derived retention policy beats the current best player,
 is filed in `questions/open.md` and tracked as
-[issue #49](https://github.com/jasonyandell/mk5-main/issues/49).
+[issue #49](https://github.com/jasonyandell/mk5-main/issues/49). [[otis-v0]]'s P7
+attacks the cost half.
 
 ## Links
 
+[[otis]] [[otis-v0]]
 [[the-wall]] [[strategy-fusion]] [[candlewax]] [[expected-q-value]]
 [[past-belief-future-direction]] [[belief-weighted-jud-mcts]] [[gus-drama-atlas]]
 [[w42-phase2-hidden-domino-threat-attribution]] [[winning42-ch01-in-a-nutshell]]

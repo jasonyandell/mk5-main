@@ -5,6 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Jud (current frontier; the era's GitHub milestone is named Champion)
 
+- [[experiments/otis-v0|otis-v0]] — overnight fate-ledger build: registered predictions P1–P7 (parser exactness, fate learnability, marginal-tail mispricing, decomposition-vs-price arms, loop, 3-2 bimodality, tied-rollout cost) graded against the margin:wp(r8)+lens:ev incumbent (active)
 - [[experiments/auction-decoder-v0|auction-decoder-v0]] — Lane A instrument validated with pre-registered predictions: hand features decode bids exactly and only for hand-dependent bidder populations (+0.36/+0.28 nats margin/net, ~0 random); population-conditioning +0.24 nats; book bid-semantics fixtures untestable on the bid-thin corpus (complete)
 - [[experiments/jud-target-granularity|jud-target-granularity]] — Lane B graded, two rounds: per-move targets at v1 capacity are marks-null in both forms (parent-side dense aux; child-state values); 3× volume moves calibration only; ranking-label agreement does not order play strength; residual = capacity interaction + on-policy data + opponents-in-rollout (complete)
 - [[experiments/partnership-decision-record-v1|partnership-decision-record-v1]] — replay-verified Arena decision JSONL with separate public/info/context/world identities, eight mechanism sections, exact policy provenance, and a tested deterministic-deal leakage boundary; missing causal variables remain explicitly unavailable (complete)
