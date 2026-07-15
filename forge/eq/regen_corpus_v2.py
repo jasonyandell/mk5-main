@@ -158,6 +158,14 @@ def main() -> int:
             proc = subprocess.run(
                 [py, "-u", "scripts/referee_worlds.py", str(pt), "--json", str(ref_json)],
             )
+            if proc.returncode not in (0, 1):
+                # Crash (e.g. OOM-killed pool), not a verdict — retry serial.
+                print(f"[postprocess] referee crashed on {name} "
+                      f"(rc={proc.returncode}); retrying serially", flush=True)
+                proc = subprocess.run(
+                    [py, "-u", "scripts/referee_worlds.py", str(pt), "--json", str(ref_json)],
+                    env={**os.environ, "REFEREE_WORKERS": "1"},
+                )
             if proc.returncode == 1:
                 postprocess_error.append(
                     f"referee graded {name} DIRTY — stopping the line "
@@ -166,7 +174,7 @@ def main() -> int:
                 return
             if proc.returncode != 0:
                 postprocess_error.append(
-                    f"referee CRASHED on {name} (rc={proc.returncode}) — "
+                    f"referee CRASHED on {name} even serially (rc={proc.returncode}) — "
                     f"instrument bug, not a corpus verdict. File kept: {pt}"
                 )
                 return

@@ -128,7 +128,13 @@ def referee_file(path: str, workers: int = 0) -> dict:
 
     torch.set_num_threads(1)  # per-decision tensors are small; parallelism is per game
     if workers <= 0:
-        workers = min(32, mp.cpu_count() or 1)
+        import os
+
+        env = os.environ.get("REFEREE_WORKERS")
+        # Default capped at 8: fork-page + shm costs scale with workers, and
+        # the regen box shares RAM with live generation (a 32-worker pool got
+        # OOM-killed there).
+        workers = int(env) if env else min(8, mp.cpu_count() or 1)
     if workers > 1 and len(games) > 1:
         with mp.get_context("fork").Pool(workers) as pool:
             partials = pool.map(_scan_game, games, chunksize=1)
