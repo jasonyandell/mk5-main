@@ -108,6 +108,21 @@ def _scan_game(game) -> dict:
 def referee_file(path: str, workers: int = 0) -> dict:
     import multiprocessing as mp
 
+    # Torch's default fd-based tensor sharing exhausts the fd limit when 100
+    # games of world tensors cross the pool boundary; use /dev/shm files and
+    # raise the soft limit as belt-and-suspenders.
+    try:
+        torch.multiprocessing.set_sharing_strategy("file_system")
+    except Exception:
+        pass
+    try:
+        import resource
+
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        resource.setrlimit(resource.RLIMIT_NOFILE, (min(65536, hard), hard))
+    except Exception:
+        pass
+
     blob = torch.load(path, weights_only=False)
     games = blob["results"]
 
