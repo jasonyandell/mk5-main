@@ -64,7 +64,8 @@ team.
 | M1 | Trigger fires on-policy | [0.8, 4.0] triggered decisions per hand summed over the overridden team's two seats (W6 prior: 2.2/hand on bid-30 fixtures) | < 0.3/hand — the fixture-derived trigger barely exists on-policy; the lever's surface is too small to gate | |
 | M2 | The lever is non-vacuous | override disagrees with lens:ev's default slough on [15%, 70%] of triggered decisions (each variant separately) | < 5% — vacuous; marks gate skipped for that variant, graded as such | |
 | V1 | Tied-rollout override, paired marks vs incumbent | REGISTERED MEDIAN: tie — pooled ≥ 2,048 games, \|Δ\| < 0.15 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — the override actively hurts: tied prices on M=50 live worlds do not transfer to table play | |
-| V2 | Fate-head override, paired marks vs incumbent | REGISTERED MEDIAN: tie — 4,096-game block, \|Δ\| < 0.10 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — participation scores at incumbent-parity capacity mis-price retention | **NOT RUN — structurally unavailable** (see amendment) |
+| V2 | Fate-head override, paired marks vs incumbent | REGISTERED MEDIAN: tie — 4,096-game block, \|Δ\| < 0.10 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — participation scores at incumbent-parity capacity mis-price retention | |
+| V2-c | Play-state fate head calibrates (gate before V2 may run) | held-out per-tile fate NLL on PLAY states beats the marginal base rate by ≥ 0.15 nats (the [[otis-v0]] P2 band), improving with trick depth | ≤ 0.03 nats — play-state fates not learnable at this capacity; V2 stays unrun and that is the graded finding | |
 | V1-m | Mechanism receipt (V1, descriptive) | among disagreements, the tied price of the override's choice exceeds lens:ev's choice by a positive mean margin (the price it claims to cash); reported with its distribution | mean ≤ 0 — the override is not even claiming value where it acts (instrument bug or trigger mismatch) | |
 
 "Best player yet" claims require the two-block standard (reserved 7M AND
@@ -73,19 +74,24 @@ choice, V2's 4,096-game block outranks V1's later pools (declared drop
 order: V1 pooling beyond 1,024 games is the first thing dropped; an
 ungraded pool extension is "not run", never "failed").
 
-## Pre-run amendment: V2 is structurally unavailable (2026-07-15)
+## Pre-run amendment: the play-state fate head (2026-07-15)
 
 Discovered during implementation, before any run: the otis v0 net's
 featurization is the 91-dim declarer-hand ⊕ canonical-auction row, imported
 verbatim from `champion.margin_net` — **bid-time only**. The fate heads
-cannot condition on play history, so there is no per-candidate-discard
-fate-head score at a mid-hand slough decision. Issue #53's V2 shape assumed
-a play-state fate head that v0 never built. V2 therefore grades **not run —
-structurally unavailable at v0 capacity** (the [[otis-v0]] P7 precedent:
-ungraded-for-cause is "not run", never "failed"). The unblocking build — a
-play-state-featurized fate head trained on the same W2b fate rows (the
-labels are per-hand and already parsed at every ply) — is filed as
-follow-up. The night's marks gate is V1.
+cannot condition on play history, so the v0 net has no per-candidate-discard
+score at a mid-hand slough decision; issue #53's V2 shape assumed a
+play-state fate head that v0 never built.
+
+Per Jason's same-session directive, the missing net is built tonight
+rather than parked: **OtisPlayNet** — an info-state featurizer over the
+actor's perspective (remaining hand, played set, current trick, voids,
+declaration, auction context, score) feeding the same five 8-class fate
+heads + trick head, trained on per-ply rows expanded from the
+[[otis-v0]] W2b fate corpus (labels are per-hand; every ply inherits
+them; the deal-hash split is per-hand so no ply leaks across splits).
+V2 may run its marks gate ONLY if V2-c (the calibration gate above,
+registered before training) passes. V2's marks band is unchanged.
 
 ## Method
 
