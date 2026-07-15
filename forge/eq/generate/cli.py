@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 
 from forge.eq.types import ExplorationPolicy
-from forge.oracle.declarations import N_GAME_DECLS
+from forge.oracle.declarations import GAME_DECL_IDS, N_GAME_DECLS
 
 from .pipeline import generate_eq_from_snapshots, generate_eq_games_gpu
 from .types import AdaptiveConfig, PosteriorConfig
@@ -463,7 +463,6 @@ Examples:
     # state diversity (see wiki/entities/forge.md "Training-data doctrine").
     #     hands  = [deal(s0), deal(s0), ..., deal(s0+1), deal(s0+1), ...]
     #     decls  = [GAME_DECL_IDS[0..N-1],  GAME_DECL_IDS[0..N-1],  ...]
-    from forge.oracle.declarations import GAME_DECL_IDS, N_GAME_DECLS
     from forge.oracle.rng import deal_from_seed
     if args.n_decl_per_seed == 1:
         hands = [deal_from_seed(args.start_seed + i) for i in range(args.n_games)]

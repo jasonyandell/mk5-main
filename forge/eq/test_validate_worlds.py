@@ -174,6 +174,27 @@ def gpu_device():
     pytest.skip("Joint-world generation smoke needs a GPU (cuda or mps).")
 
 
+def test_cli_end_to_end(gpu_device, tmp_path):
+    """The actual CLI entry point runs (catches main()-scope bugs the direct
+    pipeline call cannot, e.g. import shadowing)."""
+    import subprocess
+    import sys
+
+    out = tmp_path / "cli_smoke.pt"
+    proc = subprocess.run(
+        [sys.executable, "-u", "-m", "forge.eq.generate",
+         "--start-seed", "424242", "--n-games", "2", "--n-decl-per-seed", "2",
+         "--samples", "10", "--schema", "v2", "--save-joint-worlds",
+         "--record-world-weights", "--device", gpu_device, "-o", str(out)],
+        capture_output=True, text=True, timeout=600,
+    )
+    assert proc.returncode == 0, proc.stdout[-2000:] + proc.stderr[-2000:]
+    blob = torch.load(out, weights_only=False)
+    assert len(blob["results"]) == 2
+    assert all(g.decl_id != 8 for g in blob["results"])
+    assert blob["results"][0].decisions[0].world_weights is not None
+
+
 def test_generation_records_valid_worlds_and_weights(gpu_device):
     """End-to-end micro-generation: stored worlds are real deals (checked by
     an INDEPENDENT set-based referee) and world_weights are normalized."""
