@@ -25,7 +25,7 @@ import torch.nn as nn
 from torch import Tensor
 
 from champion.margin_net import FEATURE_DIM, exceedance, mean_points
-from otis.data import OtisDataset, build_split
+from otis.data import OtisDataset, OtisSplit, build_split
 from otis.model import N_TILES, OtisNet, consistency_penalty
 
 # Fixed treatment loss weights — registered, one-flag honesty, never tuned.
@@ -62,13 +62,20 @@ def _pricing_val_metrics(pricing_logits: Tensor, y: Tensor) -> dict:
 
 
 def train(arm: str, seed: int, out: Path, *, source: str = "selfplay",
-          device: str = "cpu", epochs: int = EPOCHS) -> dict:
+          device: str = "cpu", epochs: int = EPOCHS,
+          tr: OtisSplit | None = None, va: OtisSplit | None = None) -> dict:
     treatment = arm == "treatment"
     if arm not in ("control", "treatment"):
         raise ValueError(f"arm must be control|treatment, got {arm!r}")
 
-    tr = build_split("train", source)
-    va = build_split("val", source)
+    # W3 default: materialize from the W2 master parquets. The W4 loop injects a
+    # pre-built cumulative ``tr`` (W2 train + this arm's round parquets) and reuses
+    # the fixed W2 ``va``; every other knob (seed, hyperparams, aux weights) is
+    # untouched — the ONLY change across rounds is the training data.
+    if tr is None:
+        tr = build_split("train", source)
+    if va is None:
+        va = build_split("val", source)
     print(f"[train] arm={arm} seed={seed} source={source}  "
           f"train={len(tr)} val={len(va)}", flush=True)
 
