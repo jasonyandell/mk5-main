@@ -11,10 +11,17 @@ from gus.model.dataset_seq_world import JointWorldFullDataset
 def _game(bids, bidder, bid_value, decl_id):
     hands = [[0, 1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12, 13],
              [14, 15, 16, 17, 18, 19, 20], [21, 22, 23, 24, 25, 26, 27]]
+    # A valid world for P0's opening decision: unseen = {7..27} split across the
+    # three opponent seats {left_opp=P1, partner=P2, right_opp=P3}. Must be a real
+    # partition — JointWorldFullDataset now filters malformed worlds by default,
+    # and a degenerate all-zero placeholder would be dropped entirely.
+    valid_world = [[7, 8, 9, 10, 11, 12, 13],
+                   [14, 15, 16, 17, 18, 19, 20],
+                   [21, 22, 23, 24, 25, 26, 27]]
     dec = DecisionRecordGPU(
         player=0, e_q=torch.zeros(7), action_taken=0,
         legal_mask=torch.ones(7, dtype=torch.bool),
-        world_hands=torch.zeros(2, 3, 7, dtype=torch.long),
+        world_hands=torch.tensor([valid_world, valid_world], dtype=torch.long),
         q_per_world=torch.zeros(2, 7),
     )
     g = GameRecordGPU(decisions=[dec], hands=hands, decl_id=decl_id)

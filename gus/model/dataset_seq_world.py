@@ -46,6 +46,81 @@ N_DOMINOES = 28
 N_SEATS = 3  # left_opp, partner, right_opp
 
 
+def valid_world_indices_for_decision(game, d_idx: int) -> torch.Tensor:
+    """Indices m into ``game.decisions[d_idx].world_hands`` ([M, 3, 7]) whose
+    stored sampled world is VALID for the decision.
+
+    A world is valid iff, reconstructing the decision's ground truth from the
+    game record alone (initial deal + prior plays):
+
+    - its in-range tiles (0 <= d < 28) form EXACTLY the decision's unseen set as
+      a multiset — occupancy 1 on every unseen domino, 0 everywhere else (so no
+      duplicate, no tile from the actor's own hand, no already-played tile, and
+      nothing missing); and
+    - each relative-seat row r holds exactly ``7 - (plays already made by
+      absolute seat (P + r + 1) % 4)`` in-range tiles, where P is the actor.
+
+    The pre-repair sampler injected domino 0-0 rather than rejecting infeasible
+    draws, so 27-67% of stored worlds per decision are malformed (#52). This
+    predicate is the read-time filter that excludes them from training.
+
+    Vectorized over M; entries outside [0, 28) are treated as padding. Returns a
+    1-D long tensor (possibly empty) on CPU.
+    """
+    decision = game.decisions[d_idx]
+    world_hands = decision.world_hands
+    if world_hands is None:
+        return torch.empty(0, dtype=torch.long)
+    wh = world_hands.detach().to("cpu").long()  # [M, 3, 7]
+    M = wh.shape[0]
+    if M == 0:
+        return torch.empty(0, dtype=torch.long)
+
+    actor = int(decision.player)
+
+    # Replay prior plays from the record: decision j played hands[player][slot].
+    played_by_seat = [0, 0, 0, 0]
+    played_tiles: set[int] = set()
+    for j in range(d_idx):
+        dj = game.decisions[j]
+        pj = int(dj.player)
+        slot = int(dj.action_taken)
+        hand = [int(x) for x in game.hands[pj]]
+        if 0 <= slot < len(hand) and hand[slot] >= 0:
+            played_tiles.add(hand[slot])
+            played_by_seat[pj] += 1
+
+    actor_initial = {int(x) for x in game.hands[actor] if int(x) >= 0}
+
+    # unseen = all 28 dominoes minus the actor's initial hand minus opponents'
+    # prior plays (equivalently: minus the actor's remaining hand and ALL plays).
+    unseen = torch.zeros(N_DOMINOES, dtype=torch.bool)
+    for d in range(N_DOMINOES):
+        if d not in actor_initial and d not in played_tiles:
+            unseen[d] = True
+
+    # Occupancy [M, 28] over in-range tiles via scatter_add (no Python loop over M).
+    flat = wh.reshape(M, N_SEATS * 7)              # [M, 21]
+    in_range = (flat >= 0) & (flat < N_DOMINOES)   # [M, 21]
+    idx = flat.clamp(0, N_DOMINOES - 1)            # out-of-range folded to 0, masked below
+    occ = torch.zeros(M, N_DOMINOES, dtype=torch.long)
+    occ.scatter_add_(1, idx, in_range.long())      # [M, 28]
+
+    # Exact-cover: occ == 1 exactly on the unseen set, 0 elsewhere.
+    unseen_row = unseen.unsqueeze(0)               # [1, 28]
+    cover_ok = torch.where(unseen_row, occ == 1, occ == 0).all(dim=1)  # [M]
+
+    # Row-cardinality: per relative seat r, in-range count == 7 - plays by seat.
+    row_counts = in_range.reshape(M, N_SEATS, 7).sum(dim=2)  # [M, 3]
+    expected = torch.tensor(
+        [7 - played_by_seat[(actor + r + 1) % 4] for r in range(N_SEATS)],
+        dtype=torch.long,
+    )
+    row_ok = (row_counts == expected.unsqueeze(0)).all(dim=1)  # [M]
+
+    return torch.nonzero(cover_ok & row_ok, as_tuple=False).squeeze(1).long()
+
+
 class JointWorldFullDataset(Dataset):
     """One sample per (decision, random-world) pair.
 
@@ -60,6 +135,7 @@ class JointWorldFullDataset(Dataset):
         seed: int | None = None,
         include_strategy_features: bool = False,
         shuffle_bids: bool = False,
+        filter_invalid_worlds: bool = True,
     ):
         # Accept a single .pt path, a glob, or a list of paths/globs.
         from glob import glob
@@ -108,11 +184,45 @@ class JointWorldFullDataset(Dataset):
 
         # Flatten to (game_idx, decision_idx) index. Only include decisions
         # that actually carry a joint-world tensor.
+        #
+        # With filter_invalid_worlds (default), each such decision is screened
+        # by valid_world_indices_for_decision: decisions with ZERO valid stored
+        # worlds are dropped, and per-item sampling in __getitem__ draws only
+        # from the valid indices. self._valid_idx is None when filtering is off,
+        # in which case behavior is bit-identical to the pre-filter dataset.
+        self.filter_invalid_worlds = filter_invalid_worlds
+        self._valid_idx: dict[tuple[int, int], torch.Tensor] | None = None
         self.index: list[tuple[int, int]] = []
-        for g, game in enumerate(self.games):
-            for d_idx, dec in enumerate(game.decisions):
-                if dec.world_hands is not None and dec.q_per_world is not None:
+        if filter_invalid_worlds:
+            self._valid_idx = {}
+            n_dropped = 0
+            frac_sum = 0.0
+            frac_n = 0
+            for g, game in enumerate(self.games):
+                for d_idx, dec in enumerate(game.decisions):
+                    if dec.world_hands is None or dec.q_per_world is None:
+                        continue
+                    valid = valid_world_indices_for_decision(game, d_idx)
+                    M = int(dec.world_hands.shape[0])
+                    if M > 0:
+                        frac_sum += valid.numel() / M
+                        frac_n += 1
+                    if valid.numel() == 0:
+                        n_dropped += 1
+                        continue
                     self.index.append((g, d_idx))
+                    self._valid_idx[(g, d_idx)] = valid
+            mean_frac = frac_sum / frac_n if frac_n else 0.0
+            print(
+                f"[JointWorldFullDataset] filter_invalid_worlds: "
+                f"{n_dropped} decisions dropped (0 valid worlds), "
+                f"{len(self.index)} items kept, mean valid fraction {mean_frac:.3f}"
+            )
+        else:
+            for g, game in enumerate(self.games):
+                for d_idx, dec in enumerate(game.decisions):
+                    if dec.world_hands is not None and dec.q_per_world is not None:
+                        self.index.append((g, d_idx))
 
     def __len__(self) -> int:
         return len(self.index)
@@ -155,11 +265,17 @@ class JointWorldFullDataset(Dataset):
             current_player,
         )
 
-        # Random world from this decision's joint-world tensor
+        # Random world from this decision's joint-world tensor. When filtering,
+        # draw only from the decision's valid world indices.
         world_hands = decision.world_hands  # [M, 3, 7]
         q_per_world = decision.q_per_world  # [M, 7]
         M = world_hands.shape[0]
-        m = int(torch.randint(0, M, (1,), generator=self._rng).item())
+        if self._valid_idx is not None:
+            valid = self._valid_idx[(g_idx, d_idx)]
+            pos = int(torch.randint(0, int(valid.numel()), (1,), generator=self._rng).item())
+            m = int(valid[pos].item())
+        else:
+            m = int(torch.randint(0, M, (1,), generator=self._rng).item())
 
         world_assignment = self._world_to_assignment(world_hands[m])  # [28, 3]
         q_for_world = q_per_world[m].float()  # [7]
@@ -248,6 +364,7 @@ def _build_item(
     d_idx: int,
     rng: torch.Generator,
     include_strategy_features: bool = False,
+    valid_idx: torch.Tensor | None = None,
 ) -> dict[str, torch.Tensor]:
     decision = game.decisions[d_idx]
     current_player = int(decision.player)
@@ -261,7 +378,13 @@ def _build_item(
     world_hands = decision.world_hands  # [M, 3, 7]
     q_per_world = decision.q_per_world  # [M, 7]
     M = world_hands.shape[0]
-    m = int(torch.randint(0, M, (1,), generator=rng).item())
+    # When valid_idx is given, draw the world uniformly from the valid indices;
+    # otherwise draw uniformly over all M (bit-identical to the pre-filter path).
+    if valid_idx is not None:
+        pos = int(torch.randint(0, int(valid_idx.numel()), (1,), generator=rng).item())
+        m = int(valid_idx[pos].item())
+    else:
+        m = int(torch.randint(0, M, (1,), generator=rng).item())
     world_assignment = _world_to_assignment(world_hands[m])
     q_for_world = q_per_world[m].float()
     e_q = decision.e_q.float()
@@ -335,16 +458,22 @@ class JointWorldFullIterable(IterableDataset):
         buffer_size: int = 8192,
         length_cache_path: str | Path | None = None,
         include_strategy_features: bool = False,
+        filter_invalid_worlds: bool = True,
     ):
         self.paths = _expand_paths(corpus_path)
         self.shuffle = shuffle
         self.seed = seed
         self.buffer_size = max(1, buffer_size)
         self.include_strategy_features = include_strategy_features
+        self.filter_invalid_worlds = filter_invalid_worlds
         self._len = self._compute_length(length_cache_path)
 
     def _compute_length(self, cache_path: str | Path | None) -> int:
-        key = "|".join(str(p.resolve()) for p in self.paths)
+        # The filter state is part of the cache key: a cache written with a
+        # different filter setting counts a different set of decisions and must
+        # not be reused (a stale count would make __len__ lie about iteration).
+        filt = "filter=1|" if self.filter_invalid_worlds else "filter=0|"
+        key = filt + "|".join(str(p.resolve()) for p in self.paths)
         cache: dict = {}
         if cache_path and Path(cache_path).exists():
             cache = torch.load(str(cache_path), weights_only=False)
@@ -354,9 +483,15 @@ class JointWorldFullIterable(IterableDataset):
         for p in self.paths:
             blob = torch.load(str(p), weights_only=False)
             for game in blob["results"]:
-                for dec in game.decisions:
-                    if dec.world_hands is not None and dec.q_per_world is not None:
-                        total += 1
+                for d_idx, dec in enumerate(game.decisions):
+                    if dec.world_hands is None or dec.q_per_world is None:
+                        continue
+                    if self.filter_invalid_worlds:
+                        # Count only decisions that keep at least one valid world;
+                        # zero-valid decisions are skipped during iteration.
+                        if valid_world_indices_for_decision(game, d_idx).numel() == 0:
+                            continue
+                    total += 1
             del blob
         if cache_path:
             Path(cache_path).parent.mkdir(parents=True, exist_ok=True)
@@ -396,11 +531,17 @@ class JointWorldFullIterable(IterableDataset):
                 py_rng.shuffle(items)
 
             for g_idx, d_idx in items:
+                valid_idx = None
+                if self.filter_invalid_worlds:
+                    valid_idx = valid_world_indices_for_decision(games[g_idx], d_idx)
+                    if valid_idx.numel() == 0:
+                        continue  # every stored world malformed — skip (keeps __len__ honest)
                 built = _build_item(
                     games[g_idx],
                     d_idx,
                     torch_rng,
                     include_strategy_features=self.include_strategy_features,
+                    valid_idx=valid_idx,
                 )
                 if not self.shuffle:
                     yield built

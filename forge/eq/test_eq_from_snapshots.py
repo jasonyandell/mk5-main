@@ -16,15 +16,22 @@ from forge.eq.generate.types import DecisionRecordGPU, GameRecordGPU
 from forge.oracle.rng import deal_from_seed
 
 
-def _joint_world_decision(player: int = 0, m: int = 2) -> DecisionRecordGPU:
+def _joint_world_decision(hands, player: int = 0, m: int = 2) -> DecisionRecordGPU:
     """A minimal fixed-sampling decision carrying the joint-world tensors that
-    JointWorldFullDataset requires (world_hands [M,3,7], q_per_world [M,7])."""
+    JointWorldFullDataset requires (world_hands [M,3,7], q_per_world [M,7]).
+
+    The stored worlds must be VALID for `player`'s opening decision — the dataset
+    filters malformed worlds by default — so each world is the truthful partition
+    of the unseen tiles across the opponent seats {left_opp, partner, right_opp}.
+    """
+    opp_rows = [[int(x) for x in hands[(player + r + 1) % 4]] for r in range(3)]
+    world_hands = torch.tensor([opp_rows] * m, dtype=torch.long)  # [m, 3, 7]
     return DecisionRecordGPU(
         player=player,
         e_q=torch.zeros(7),
         action_taken=0,
         legal_mask=torch.tensor([True] + [False] * 6),
-        world_hands=torch.zeros(m, 3, 7, dtype=torch.long),
+        world_hands=world_hands,
         q_per_world=torch.zeros(m, 7),
     )
 
@@ -32,7 +39,7 @@ def _joint_world_decision(player: int = 0, m: int = 2) -> DecisionRecordGPU:
 def test_game_record_auction_provenance_roundtrip(tmp_path):
     hands = deal_from_seed(123)
     rec = GameRecordGPU(
-        decisions=[_joint_world_decision()],
+        decisions=[_joint_world_decision(hands)],
         hands=hands,
         decl_id=3,
         bid_value=31,
@@ -71,7 +78,7 @@ def test_bridge_produces_loadable_corpus_with_auction(tmp_path, monkeypatch):
         assert forced_actions is None
         return [
             GameRecordGPU(
-                decisions=[_joint_world_decision()],
+                decisions=[_joint_world_decision(hands[i])],
                 hands=hands[i],
                 decl_id=decl_ids[i],
                 bid_value=bid_values[i],

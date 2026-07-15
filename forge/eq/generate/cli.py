@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 
 from forge.eq.types import ExplorationPolicy
+from forge.oracle.declarations import N_GAME_DECLS
 
 from .pipeline import generate_eq_from_snapshots, generate_eq_games_gpu
 from .types import AdaptiveConfig, PosteriorConfig
@@ -96,6 +97,9 @@ def _run_snapshot_mode(args) -> int:
     if schema_v2 and not args.save_joint_worlds:
         print("Warning: --schema v2 requires --save-joint-worlds. Enabling automatically.", flush=True)
         args.save_joint_worlds = True
+    if args.record_world_weights and not args.save_joint_worlds:
+        print("Error: --record-world-weights requires --save-joint-worlds.", flush=True)
+        return 1
 
     # Configure optional features
     posterior_config = None
@@ -141,6 +145,7 @@ def _run_snapshot_mode(args) -> int:
         adaptive_config=adaptive_config,
         save_joint_worlds=args.save_joint_worlds,
         schema_v2=schema_v2,
+        record_world_weights=args.record_world_weights,
     )
     elapsed = time.perf_counter() - t0
     print(f"Generated {len(results)} games in {elapsed:.1f}s ({len(results)/elapsed:.2f} games/s)", flush=True)
@@ -215,9 +220,10 @@ Examples:
     )
     parser.add_argument(
         "--n-decl-per-seed", type=int, default=1,
-        help="Declarations generated per seed (default: 1, backwards-compat). "
-             "When >1, each seed is expanded across decl_ids 0..N-1. "
-             "n-games must be divisible by this value. Max 10."
+        help="Declarations generated per seed (default: 1). When >1, each "
+             "seed is expanded across the first N entries of GAME_DECL_IDS "
+             "(doubles-suit purged, issue #51). n-games must be divisible "
+             "by this value. Max 9."
     )
 
     # Quality parameters
@@ -254,6 +260,14 @@ Examples:
     parser.add_argument(
         "--posterior-k", type=int, default=4,
         help="Window size for posterior weighting (default: 4)"
+    )
+    parser.add_argument(
+        "--record-world-weights", action="store_true",
+        help="Record per-world posterior weights (world_weights, window k=4) "
+             "on stored joint-world tensors WITHOUT changing E[Q] (which "
+             "stays uniform-marginalized). Requires --save-joint-worlds and "
+             "fixed sampling (not --adaptive). Costs ~4 extra oracle "
+             "forwards per stored world."
     )
 
     # Exploration
@@ -342,10 +356,11 @@ Examples:
     if args.n_decl_per_seed < 1:
         print(f"Error: --n-decl-per-seed must be >= 1 (got {args.n_decl_per_seed}).", flush=True)
         return 1
-    if args.n_decl_per_seed > 10:
+    if args.n_decl_per_seed > N_GAME_DECLS:
         print(
-            f"Error: --n-decl-per-seed must be <= 10 (got {args.n_decl_per_seed}); "
-            f"only 10 distinct declarations exist.",
+            f"Error: --n-decl-per-seed must be <= {N_GAME_DECLS} (got "
+            f"{args.n_decl_per_seed}); only {N_GAME_DECLS} game declarations "
+            f"exist (doubles-suit is purged from enumeration, issue #51).",
             flush=True,
         )
         return 1
@@ -377,6 +392,9 @@ Examples:
             flush=True,
         )
         args.save_joint_worlds = True
+    if args.record_world_weights and not args.save_joint_worlds:
+        print("Error: --record-world-weights requires --save-joint-worlds.", flush=True)
+        return 1
 
     # Resolve device
     device = args.device
@@ -431,27 +449,34 @@ Examples:
     print(f"Loading model from {checkpoint_path}...", flush=True)
     oracle = Stage1Oracle(checkpoint_path, device=device, compile=False)
 
-    # Generate deals.
+    # Generate deals. Declarations come from GAME_DECL_IDS — doubles-suit
+    # (decl 8) is purged from enumeration (issue #51).
     #
-    # Default (n_decl_per_seed=1): one game per seed, decl_ids rotate 0..9.
+    # Default (n_decl_per_seed=1): one game per seed; the decl is a pure
+    # function of the SEED (not the in-run index), so chunked runs assign
+    # the same decl to the same seed regardless of chunk boundaries.
     #     hands  = [deal(s0), deal(s0+1), ...]
-    #     decls  = [0, 1, 2, ...]
+    #     decls  = [GAME_DECL_IDS[s0 % 9], GAME_DECL_IDS[(s0+1) % 9], ...]
     #
-    # Expanded (n_decl_per_seed=N): n_seeds seeds, each expanded across N
-    # declarations 0..N-1. Matches the oracle's training recipe for state
-    # diversity (see wiki/entities/forge.md "Training-data doctrine").
+    # Expanded (n_decl_per_seed=N): n_seeds seeds, each expanded across the
+    # first N game declarations. Matches the oracle's training recipe for
+    # state diversity (see wiki/entities/forge.md "Training-data doctrine").
     #     hands  = [deal(s0), deal(s0), ..., deal(s0+1), deal(s0+1), ...]
-    #     decls  = [0, 1, ..., N-1,       0, 1, ..., N-1,       ...]
+    #     decls  = [GAME_DECL_IDS[0..N-1],  GAME_DECL_IDS[0..N-1],  ...]
+    from forge.oracle.declarations import GAME_DECL_IDS, N_GAME_DECLS
     from forge.oracle.rng import deal_from_seed
     if args.n_decl_per_seed == 1:
         hands = [deal_from_seed(args.start_seed + i) for i in range(args.n_games)]
-        decl_ids = [i % 10 for i in range(args.n_games)]
+        decl_ids = [
+            GAME_DECL_IDS[(args.start_seed + i) % N_GAME_DECLS]
+            for i in range(args.n_games)
+        ]
     else:
         hands = []
         decl_ids = []
         for seed_offset in range(n_seeds):
             deal = deal_from_seed(args.start_seed + seed_offset)
-            for decl in range(args.n_decl_per_seed):
+            for decl in GAME_DECL_IDS[: args.n_decl_per_seed]:
                 hands.append(deal)
                 decl_ids.append(decl)
         assert len(hands) == args.n_games
@@ -513,6 +538,8 @@ Examples:
         print(f"  Exploration: {args.exploration}", flush=True)
     if args.save_joint_worlds:
         print(f"  Joint-world tensor: saving per-decision (world_hands, q_per_world)", flush=True)
+    if args.record_world_weights:
+        print("  World weights: recording per-world posterior weights (k=4; E[Q] stays uniform)", flush=True)
     if schema_v2:
         unique_bids = sorted(set(parsed_bid_values))
         bid_label = unique_bids[0] if len(unique_bids) == 1 else unique_bids
@@ -540,6 +567,7 @@ Examples:
         save_joint_worlds=args.save_joint_worlds,
         schema_v2=schema_v2,
         bid_values=bid_values,
+        record_world_weights=args.record_world_weights,
     )
     elapsed = time.perf_counter() - t0
 
@@ -559,6 +587,7 @@ Examples:
         'enumerate': args.enumerate,
         'posterior': args.posterior,
         'schema': args.schema,
+        'record_world_weights': args.record_world_weights,
     }
     if bid_values is not None:
         save_dict['bid_values'] = bid_values
