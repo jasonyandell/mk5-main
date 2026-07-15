@@ -2,9 +2,9 @@
 title: Otis — the fate-ledger-native player
 kind: entity
 first_seen: 2026-07-14
-last_updated: 2026-07-14
+last_updated: 2026-07-15
 status: active
-phase: 2026-07-15 — v0 BUILT and graded overnight ([[otis-v0]], all seven predictions graded). The player is an incumbent-parity bidder; the decomposition wins at matched arms (+0.29 marks/game pooled, CI excludes zero, round-0) and passes calibration 3× over band; the instrument suite (fate parser with three exact referees, world-bank clustering, tied-rollout retention pricing at ~1 s/decision) is live. No promotion over margin:wp(r8) — parity, both blocks. Corpus contamination found and filed (#52); follow-ups #51, #53; the program-to-the-end bridge is #55 (clean deck on Vast→HF, lesson consumer, lesson extractor, argument loop, promotion-or-graded-negative).
+phase: 2026-07-15 night 2 — Phases R and 1 of the #55 bridge both COMPLETE ([[otis-phase-r]], [[otis-phase-1]]). The clean deck is real: 112 files, 1.04B stored worlds, 0 invalid by independent referee, per-world posterior weights recorded, decl 8 purged; clean Bayes ceiling 40.119% (the contaminated 39.184% was measured through a corrupted posterior); #52 closed, #58 files the remaining re-derivations. The first lesson consumer is GRADED: the retention override fires as predicted (2.4/hand, 54% disagreement, +0.75 claimed pts) and V1 ties at power (−0.13, CI incl 0) while V2 hits its falsifier (−0.235, CI excl 0, 4,096 games) — two unrelated pricers, same loss surface; lens:ev's full E[V] already prices retention better than either dedicated instrument. New assets: OtisPlayNet (play-state fate head, +0.57 nats), online tied-rollout glue (~0.27 s/decision). Next: Phase 2, the lesson extractor — whose would-it-have-worked filter must now be validated against realized outcomes, not claimed margins.
 ---
 
 ## What it is
@@ -61,11 +61,15 @@ tie and the decomposition-tax negative.
 ## The program to the end
 
 [Issue #55](https://github.com/jasonyandell/mk5-main/issues/55) is the bridge
-from v0 to the end of the program. Its first two phases execute overnight
-2026-07-15→16: [[otis-phase-r]] (the clean deck — corpus regen on Vast with
-write-time validity, recorded posterior weights, the decl-8 purge) and
-[[otis-phase-1]] (the first lesson consumer — the retention override on
-`lens:ev`, tied-rollout and fate-head variants).
+from v0 to the end of the program. Its first two phases completed overnight
+2026-07-15→16: [[otis-phase-r]] (the clean deck — all five predictions PASS;
+corpus regenerated on a 10-box Vast fleet with write-time validity, recorded
+posterior weights, the decl-8 purge) and [[otis-phase-1]] (the first lesson
+consumer — the retention override on `lens:ev`: V1 tied-rollout TIE at power,
+V2 fate-head FALSIFIER at power, mechanism receipts PASS throughout). Phase 2
+(the lesson extractor) inherits both the clean corpus and phase 1's hard
+lesson: claimed retention margins do not predict table value — realized
+outcomes must referee the extractor.
 
 ## Links
 
