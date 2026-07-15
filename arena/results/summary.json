@@ -1,65 +1,58 @@
 {
-  "label_a": "belief:scratch/champion-run/run24_measure/v2_auction_s0.pt+lens:ev",
-  "label_b": "net:wp+lens:ev",
+  "label_a": "margin:wp,model=champion/margin_net_r8.pt+tiedslough:ev,m=50,student=/Users/jason/code/mk5-main/gus/adapters/v3_consistency_10000g.pt,stats=scratch/otis-night2/v1_smoke_stats.jsonl",
+  "label_b": "margin:wp,model=champion/margin_net_r8.pt+lens:ev",
   "n_games": 4,
-  "n_hands": 36,
-  "elapsed_s": 31.68,
-  "a_wins": 0,
-  "a_game_win_rate": 0.0,
-  "a_win_rate_half1": 0.0,
-  "a_win_rate_half2": 0.0,
-  "mean_mark_margin": -5.0,
-  "mark_margin_ci_lo_95": -6.0,
-  "mark_margin_ci_hi_95": -4.0,
-  "ci_excludes_zero": 1,
-  "mean_hands_per_game": 9.0,
-  "mean_hand_point_margin": -2.0555555555555554,
+  "n_hands": 41,
+  "elapsed_s": 44.85,
+  "a_wins": 2,
+  "a_game_win_rate": 0.5,
+  "a_win_rate_half1": 0.5,
+  "a_win_rate_half2": 0.5,
+  "mean_mark_margin": 0.25,
+  "mark_margin_ci_lo_95": -3.5,
+  "mark_margin_ci_hi_95": 4.0,
+  "ci_excludes_zero": 0,
+  "mean_hands_per_game": 10.25,
+  "mean_hand_point_margin": 0.0975609756097561,
   "auction": {
     "bid_hist": {
-      "30": 2,
-      "31": 18,
-      "32": 5,
-      "33": 2,
-      "35": 1,
-      "36": 4,
-      "38": 1,
-      "84": 2,
-      "126": 1
+      "30": 10,
+      "31": 21,
+      "32": 10
     },
     "decl_hist": {
-      "blanks": 7,
-      "notrump": 6,
-      "fives": 5,
-      "sixes": 4,
-      "fours": 4,
-      "threes": 3,
-      "twos": 3,
-      "ones": 2,
-      "doubles-trump": 2
+      "fours": 9,
+      "twos": 8,
+      "threes": 6,
+      "sixes": 6,
+      "blanks": 6,
+      "notrump": 4,
+      "ones": 2
     },
-    "a_offense_share": 0.8333333333333334,
+    "a_offense_share": 0.4878048780487805,
     "forced_hands": 0,
-    "redealt_hands": 1
+    "redealt_hands": 0
   },
   "contracts": {
     "a_offense": {
-      "contracts": 30,
-      "made": 8,
-      "made_rate": 0.26666666666666666,
-      "mean_bid": 38.93333333333333
+      "contracts": 20,
+      "made": 16,
+      "made_rate": 0.8,
+      "mean_bid": 31.0
     },
     "b_offense": {
-      "contracts": 6,
-      "made": 4,
-      "made_rate": 0.6666666666666666,
-      "mean_bid": 31.166666666666668
+      "contracts": 21,
+      "made": 16,
+      "made_rate": 0.7619047619047619,
+      "mean_bid": 31.0
     }
   },
   "cfg": {
     "marks_to_win": 7,
     "max_redeals": 3,
-    "base_seed": 0,
+    "base_seed": 5000000,
     "n_samples": 10,
-    "device": "mps"
+    "device": "mps",
+    "fast_batching": true
   }
 }

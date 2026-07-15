@@ -70,12 +70,17 @@ class TiedSloughPlay(LensPlay):
         student_path: str = DEFAULT_STUDENT,
         m_worlds: int = 50,
         stats_path: str | None = None,
+        shadow: bool = False,
     ):
         super().__init__(model, utility=utility, n_samples=n_samples, device=device)
         self._tied = load_tied_policy(student_path, device)
         self._m = m_worlds
         self._world_sampler: WorldSamplerMRV | None = None
         self._stats_path = Path(stats_path) if stats_path else None
+        # Shadow mode: compute + record the override but PLAY the default —
+        # the M1/M2 pre-gate measures the trigger/disagreement distribution
+        # under the INCUMBENT's play distribution (registered protocol).
+        self.shadow = shadow
         self.n_triggers = 0
         self.n_disagreements = 0
         self.n_decisions_seen = 0
@@ -213,7 +218,8 @@ class TiedSloughPlay(LensPlay):
             self.n_triggers += 1
             if receipt["disagree"]:
                 self.n_disagreements += 1
-                actions[i] = s.hands[P].index(chosen_dom)
+                if not self.shadow:
+                    actions[i] = s.hands[P].index(chosen_dom)
             if self._stats_path is not None:
                 with open(self._stats_path, "a") as f:
                     f.write(json.dumps(receipt) + "\n")

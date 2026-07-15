@@ -235,6 +235,30 @@ def parse_play(
             model, utility=arg or "ev", n_samples=n_samples, device=device,
             belief_adapter=gus_adapter,
         )
+    if name == "tiedslough":
+        # otis Phase 1 V1 (issue #53): lens play + tied-rollout retention
+        # override at genuine slough decisions.
+        # Spec: tiedslough[:<utility>][,m=<M>][,student=<path>][,stats=<jsonl>]
+        from arena.slough_override import TiedSloughPlay
+        utility, m_worlds, student, stats, shadow = "ev", 50, None, None, False
+        for t in (p for p in arg.split(",") if p):
+            if t.startswith("m="):
+                m_worlds = int(t[2:])
+            elif t.startswith("student="):
+                student = t[len("student="):]
+            elif t.startswith("stats="):
+                stats = t[len("stats="):]
+            elif t == "shadow":
+                shadow = True
+            else:
+                utility = t
+        kwargs = {"student_path": student} if student else {}
+        play = TiedSloughPlay(
+            model, utility=utility, n_samples=n_samples, device=device,
+            m_worlds=m_worlds, stats_path=stats, shadow=shadow, **kwargs,
+        )
+        print(f"Tied-slough play: {play}", flush=True)
+        return play
     if name == "judplay":
         # jud v1 value-native play: argmax E[pts] over the jud head's post-move
         # info-states, defenders minimize. Spec: judplay[:model=<path>].
@@ -293,7 +317,8 @@ def needs_model(*specs: str) -> bool:
     # The play side needs the oracle (lens family); so does the `belief` bidder,
     # which queries the oracle E[Q] for the hypothetical completed auction.
     plays = any(
-        s.split("+", 1)[1].split(":")[0] in ("lens", "scorelens", "belieflens")
+        s.split("+", 1)[1].split(":")[0]
+        in ("lens", "scorelens", "belieflens", "tiedslough")
         for s in specs
     )
     bidders = any(s.split("+", 1)[0].split(":")[0] == "belief" for s in specs)
