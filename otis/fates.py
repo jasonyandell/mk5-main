@@ -171,6 +171,27 @@ class TileFate:
 
 
 @dataclass(frozen=True)
+class TrickRecord:
+    """Resolution of one trick (for junk-economy analysis).
+
+    ``count_points`` is the count carried by the trick's dominoes (0..10),
+    excluding the trick's own +1 point. ``winner_is_count`` is True iff the
+    winning domino is itself a count tile — a walker catch is a trick with
+    ``count_points > 0`` whose winner is a non-count tile.
+    """
+
+    trick_idx: int
+    leader_seat: int
+    led_suit: int
+    winner_seat: int
+    winner_id: int
+    winner_team: int
+    count_points: int
+    won_by_trump: bool
+    winner_is_count: bool
+
+
+@dataclass(frozen=True)
 class GameFates:
     """Full fate ledger for one game."""
 
@@ -180,6 +201,7 @@ class GameFates:
     bidder: int
     bid_value: int
     tiles: list[TileFate] = field(default_factory=list)
+    tricks: list[TrickRecord] = field(default_factory=list)
     team0_count: int = 0
     team0_tricks: int = 0
     team1_count: int = 0
@@ -226,6 +248,7 @@ def parse_game_fates(game: NeutralGame) -> GameFates:
 
     # Per-tile fate accumulator (filled as tiles are played).
     tile_fate: dict[int, TileFate] = {}
+    trick_records: list[TrickRecord] = []
 
     # Per-team tallies.
     team_count = [0, 0]
@@ -272,6 +295,20 @@ def parse_game_fates(game: NeutralGame) -> GameFates:
 
         team_tricks[winner_team] += 1
         team_count[winner_team] += trick_points - 1  # subtract the trick's own point
+
+        trick_records.append(
+            TrickRecord(
+                trick_idx=trick_idx,
+                leader_seat=lead_seat,
+                led_suit=led_suit,
+                winner_seat=winner_seat,
+                winner_id=winner_id,
+                winner_team=winner_team,
+                count_points=trick_points - 1,
+                won_by_trump=won_by_trump,
+                winner_is_count=DOMINO_COUNT_POINTS[winner_id] > 0,
+            )
+        )
 
         # Record fate for any count tile played this trick.
         for offset, (seat, did) in enumerate(trick):
@@ -335,6 +372,7 @@ def parse_game_fates(game: NeutralGame) -> GameFates:
         bidder=game.bidder,
         bid_value=game.bid_value,
         tiles=tiles,
+        tricks=trick_records,
         team0_count=team_count[0],
         team0_tricks=team_tricks[0],
         team1_count=team_count[1],

@@ -95,6 +95,22 @@ Band-compliance drift (drama filter absent from the headline metric) found by
 the fable gate and documented with the strict recomputation, not regraded.
 Report: `otis/reports/w5_worldbank.md`. 30 pytest green.
 
+### W2b — full-corpus parse + empirical ledger (2026-07-15)
+
+**147,516 hands / 737,580 fate rows** parsed from 26 fresh chunks (selfplay
+113,473 · netwp 17,026 · random 17,017), a third exact identity added
+(`bidder_team_pts = Σ value·X_t + T`, 100%), deal-hash split 132,933/7,196/7,387
+with zero straddles. **P3: CONFIRMED on magnitude, direction amended by the
+data** — every off-diagonal fate correlation is positive (largest X_3-2↔T
+= +0.421), which fattens both tails: independence *overprices* the make at
+thresholds below the mean (−3.57pp at bid 30; crossover ≈ 33, μ = 33.2) and
+*underprices* the true high tail (+17.8pp at ≥41). The registered direction was
+right only above the mean; the mechanism (correlation ⇒ joint head mandatory)
+is confirmed in both directions. Fable gate reproduced all numbers by
+independent brute-force enumeration; effective-N caveat recorded (paired halves
+share auctions). Junk economy: 65.1% of count-carrying tricks are walker
+catches. Report: `otis/reports/w2_corpus.md`. 39 pytest green.
+
 ## Links
 
 [[otis]] · [[count-fate-ledger]] · [[jud]] · [[w42-jud-v0]] ·

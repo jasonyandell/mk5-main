@@ -224,6 +224,45 @@ def test_every_count_tile_has_a_fate(game):
 
 
 # --------------------------------------------------------------------------- #
+# Per-trick records (junk-economy substrate)
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("game", [GAME_A, GAME_B], ids=["A", "B"])
+def test_trick_records_consistent_with_totals(game):
+    f = parse_game_fates(game)
+    assert len(f.tricks) == 7
+    # Trick records must reproduce the per-team count/trick tallies exactly.
+    tricks_by_team = [0, 0]
+    count_by_team = [0, 0]
+    for tr in f.tricks:
+        assert tr.winner_team == tr.winner_seat % 2
+        tricks_by_team[tr.winner_team] += 1
+        count_by_team[tr.winner_team] += tr.count_points
+    assert tricks_by_team == [f.team0_tricks, f.team1_tricks]
+    assert count_by_team == [f.team0_count, f.team1_count]
+    assert sum(tr.count_points for tr in f.tricks) == 35
+
+
+def test_game_a_walker_catch():
+    """GAME_A trick 3: seat 3 leads 6-6 (non-count) and catches seat 2's sloughed
+    3-2 — a count-carrying trick won by a non-count tile."""
+    f = parse_game_fates(GAME_A)
+    tr = f.tricks[3]
+    assert tr.count_points == 5 and tr.winner_is_count is False
+    assert tr.winner_seat == 3 and tr.won_by_trump is False
+
+
+def test_game_b_walker_catch_by_trump():
+    """GAME_B trick 4: seat 3 leads trump 6-3 (non-count) and catches seat 2's
+    sloughed 3-2 — a walker catch won by trump power."""
+    f = parse_game_fates(GAME_B)
+    tr = f.tricks[4]
+    assert tr.count_points == 5 and tr.winner_is_count is False
+    assert tr.won_by_trump is True
+
+
+# --------------------------------------------------------------------------- #
 # Corpus round-trip on real eq-corpus games
 # --------------------------------------------------------------------------- #
 
