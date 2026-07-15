@@ -259,6 +259,26 @@ def parse_play(
         )
         print(f"Tied-slough play: {play}", flush=True)
         return play
+    if name == "fateslough":
+        # otis Phase 1 V2 (issue #53): lens play + instant fate-head retention
+        # override. Spec: fateslough[:<utility>][,model=<playnet>][,stats=<jsonl>][,shadow]
+        from arena.fate_slough_play import FateSloughPlay
+        utility, playnet, stats, shadow = "ev", "otis/models/otis_play_v0.pt", None, False
+        for t in (p for p in arg.split(",") if p):
+            if t.startswith("model="):
+                playnet = t[len("model="):]
+            elif t.startswith("stats="):
+                stats = t[len("stats="):]
+            elif t == "shadow":
+                shadow = True
+            else:
+                utility = t
+        play = FateSloughPlay(
+            model, utility=utility, n_samples=n_samples, device=device,
+            playnet_path=playnet, stats_path=stats, shadow=shadow,
+        )
+        print(f"Fate-slough play: {play}", flush=True)
+        return play
     if name == "judplay":
         # jud v1 value-native play: argmax E[pts] over the jud head's post-move
         # info-states, defenders minimize. Spec: judplay[:model=<path>].
@@ -318,7 +338,7 @@ def needs_model(*specs: str) -> bool:
     # which queries the oracle E[Q] for the hypothetical completed auction.
     plays = any(
         s.split("+", 1)[1].split(":")[0]
-        in ("lens", "scorelens", "belieflens", "tiedslough")
+        in ("lens", "scorelens", "belieflens", "tiedslough", "fateslough")
         for s in specs
     )
     bidders = any(s.split("+", 1)[0].split(":")[0] == "belief" for s in specs)
