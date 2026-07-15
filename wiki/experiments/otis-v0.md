@@ -104,6 +104,23 @@ down-weighting malformed worlds. Residual caveat: stored E[Q]/a* aggregates
 remain pre-repair products (noted in the report; full cure = corpus
 regeneration, issue #52).
 
+### W3 — arms, calibration, round-0 gates (2026-07-15)
+
+OtisNet trunk/pricing bit-exact-exportable into vanilla MarginNet (strict load,
+max_abs_diff 0.0); featurization imported, not copied; RNG parity between arms
+verified. Trained on selfplay 102,207/5,557/5,709 (fixed aux weights 0.5/0.25/0.1,
+registered untuned). **P2 data: fate NLL beats base rate by 0.4775 nats
+CI[0.4669, 0.4862]; top-1 +17.02pp CI[16.21, 17.79]** — both bands passed ~3×
+over; every tile beats its base rate. No decomposition tax: treatment val
+pricing CE 2.6407 vs control 2.6456. Round-0 gates (512 paired games each):
+treatment−control +0.1426 [−0.1230, +0.4219] @8M and +0.1719 [−0.1094, +0.4571]
+@8.5M (same direction, CIs span 0); treatment−incumbent **−0.0703 [−0.3574,
++0.2148]** (parity at round 0); control−incumbent **−0.5664 [−0.8654, −0.2793]**
+(CI excludes 0, incumbent wins) — the round-0 off-policy shape the jud v0 loop
+dissolved; W4 tests it. Fable review PASS (leakage clean, parity verified by
+execution, gates manifest-matched). Reports: `otis/reports/w3_training.md`,
+`w3_gates.md`. 61 pytest green.
+
 ### W2b — full-corpus parse + empirical ledger (2026-07-15)
 
 **147,516 hands / 737,580 fate rows** parsed from 26 fresh chunks (selfplay
