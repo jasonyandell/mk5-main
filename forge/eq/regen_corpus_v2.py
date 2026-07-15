@@ -158,10 +158,16 @@ def main() -> int:
             proc = subprocess.run(
                 [py, "-u", "scripts/referee_worlds.py", str(pt), "--json", str(ref_json)],
             )
-            if proc.returncode != 0:
+            if proc.returncode == 1:
                 postprocess_error.append(
                     f"referee graded {name} DIRTY — stopping the line "
                     f"(issue #52 must not recur). Local file kept for autopsy: {pt}"
+                )
+                return
+            if proc.returncode != 0:
+                postprocess_error.append(
+                    f"referee CRASHED on {name} (rc={proc.returncode}) — "
+                    f"instrument bug, not a corpus verdict. File kept: {pt}"
                 )
                 return
             report = json.loads(ref_json.read_text())[0]

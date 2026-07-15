@@ -31,6 +31,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+# Corpus pickles reference forge classes; running as a script puts scripts/
+# on sys.path instead of the repo root, so add the root explicitly.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import torch
 
 N = 28
