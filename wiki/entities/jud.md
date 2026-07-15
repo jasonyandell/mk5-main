@@ -238,3 +238,7 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
   provenance
 - [[w42-book-second-pass]] — the signaling/concealment queue that is the v2
   opponents-in-rollout target
+- [[otis]] — the fate-ledger sibling (2026-07-15): jud's target-granularity
+  question asked with per-hand fate structure instead of per-move values;
+  reached incumbent parity at v0 with a decisive calibration win
+  ([[otis-v0]])

@@ -82,13 +82,34 @@ live at [[otis-v0]]. This page remains the design record, not a build receipt.
   have known they had X because they would have done Y" made rigorous and
   pre-hand — is a side benefit, never load-bearing.
 
+## Measured (2026-07-15, [[otis-v0]])
+
+The formulation now has empirical receipts:
+
+- **The 3-2's context-bimodality is pervasive**: 86.8% belief-weighted / 83.3%
+  uniform of qualifying opening decisions show ≥2 context modes ≥10 points
+  apart, each ≥20% mass (valid-world filtered per issue #52).
+- **Fates are learnable from information states**: +0.4775 nats over base rate,
+  top-1 +17pp ([[otis]] fate heads) — the ledger is a real predictive object,
+  not only a post-hoc decomposition.
+- **Fate correlations fatten both tails** (all 15 off-diagonals positive;
+  X_3-2↔tricks +0.42): independence overprices the make below the mean points
+  (crossover ≈33) and underprices the true high tail (+17.8pp at ≥41) — the
+  flatten-last doctrine measured.
+- **The junk-retention economy is real and priceable**: tied-strategy rollouts
+  cost ~1.0 s/decision (M=50, MPS); best replicable cell prices keeping a guard
+  at +2.75 points where the clairvoyant prices −0.24 (fusion gap +2.99) —
+  [[strategy-fusion]]'s zeroing measured directly. 65.1% of count-carrying
+  tricks are walker catches.
+
 ## Open question
 
-Whether tied-strategy rollouts can price the junk-retention economy at acceptable
-cost, and whether a ledger-derived retention policy beats the current best player,
-is filed in `questions/open.md` and tracked as
-[issue #49](https://github.com/jasonyandell/mk5-main/issues/49). [[otis-v0]]'s P7
-attacks the cost half.
+The cost half of the filed question is answered: tied-strategy rollouts price
+retention at trivial cost ([[otis-v0]] P7). What remains — whether a
+ledger-derived retention/discard policy beats the current best player in paired
+marks — is [issue #53](https://github.com/jasonyandell/mk5-main/issues/53);
+the original thread is
+[issue #49](https://github.com/jasonyandell/mk5-main/issues/49).
 
 ## Links
 
