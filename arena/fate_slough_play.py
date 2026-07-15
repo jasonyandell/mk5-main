@@ -50,7 +50,7 @@ class FateSloughPlay(LensPlay):
         super().__init__(model, utility=utility, n_samples=n_samples, device=device)
         from otis.play_model import OtisPlayNet
 
-        self._playnet = OtisPlayNet.load(playnet_path, device="cpu")
+        self._playnet = OtisPlayNet.load(playnet_path, map_location="cpu")
         self._playnet.eval()
         self._stats_path = Path(stats_path) if stats_path else None
         self.shadow = shadow
