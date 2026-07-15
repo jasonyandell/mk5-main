@@ -58,8 +58,17 @@ Otis is not a fork of [[jud]]; it is jud v2's target-granularity question
 capacity make the comparison honest; [[otis-v0]] carries the bands, including the
 tie and the decomposition-tax negative.
 
+## The program to the end
+
+[Issue #55](https://github.com/jasonyandell/mk5-main/issues/55) is the bridge
+from v0 to the end of the program. Its first two phases execute overnight
+2026-07-15→16: [[otis-phase-r]] (the clean deck — corpus regen on Vast with
+write-time validity, recorded posterior weights, the decl-8 purge) and
+[[otis-phase-1]] (the first lesson consumer — the retention override on
+`lens:ev`, tied-rollout and fate-head variants).
+
 ## Links
 
-[[count-fate-ledger]] · [[otis-v0]] · [[jud]] · [[w42-jud-v0]] ·
-[[rank-vs-price]] · [[strategy-fusion]] · [[joint-world-tensor]] · [[arena]] ·
-[[the-wall]]
+[[count-fate-ledger]] · [[otis-v0]] · [[otis-phase-r]] · [[otis-phase-1]] ·
+[[jud]] · [[w42-jud-v0]] · [[rank-vs-price]] · [[strategy-fusion]] ·
+[[joint-world-tensor]] · [[arena]] · [[the-wall]]
