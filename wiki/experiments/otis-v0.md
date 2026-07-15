@@ -62,7 +62,17 @@ summaries promote to `otis/reports/`.
 
 ## Receipts
 
-To be filled per phase (W1–W7) with commands, artifacts, and numbers.
+### W1 — fate parser + cross-engine referee (2026-07-15)
+
+`otis/fates.py` (reuses `forge.oracle` rule tables — no reimplemented suit
+algebra), `otis/corpus.py` (GameRecordGPU adapter), `otis/export_games.py`,
+`otis/referee/check_scores.ts` (+ an `otis-full-playout` layer overriding
+`checkHandOutcome`, since the base engine short-circuits to scoring once the bid
+outcome is decided while corpus lines play all 28). 14 pytest green. P1 eq-corpus
+leg: identity **1000/1000** (10 chunks, all 10 declarations); TS referee match
+**900/900** refereeable. Forge's doubles-suit (decl 8, ~10% of games) is not
+representable in engine base rules — excluded from refereeing, tracked as issue
+#50. Fable review gate: PASS, no must-fix. Arena leg of P1 lands with W2.
 
 ## Links
 
