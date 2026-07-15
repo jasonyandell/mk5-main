@@ -1,0 +1,3 @@
+block                        games  mean Δmarks                 95% CI
+v2_block_7000000              4096      -0.2349 [-0.3355, -0.1392] *CI excl 0*
+  triggers: 111803 triggers, 65453 disagreements (58.5%), mean margin +0.436 pts, median secs 0.00

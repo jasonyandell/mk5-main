@@ -64,7 +64,7 @@ team.
 | M1 | Trigger fires on-policy | [0.8, 4.0] triggered decisions per hand summed over the overridden team's two seats (W6 prior: 2.2/hand on bid-30 fixtures) | < 0.3/hand — the fixture-derived trigger barely exists on-policy; the lever's surface is too small to gate | **PASS — 2.37/hand** (843 triggers / 355 hands, 32-game shadow run, seed 5100000) |
 | M2 | The lever is non-vacuous | override disagrees with lens:ev's default slough on [15%, 70%] of triggered decisions (each variant separately) | < 5% — vacuous; marks gate skipped for that variant, graded as such | **PASS (V1) — 54.1%** (456/843); shadow mean claimed margin +0.73 pts among disagreements; 0.27 s median/trigger |
 | V1 | Tied-rollout override, paired marks vs incumbent | REGISTERED MEDIAN: tie — pooled ≥ 2,048 games, \|Δ\| < 0.15 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — the override actively hurts: tied prices on M=50 live worlds do not transfer to table play | |
-| V2 | Fate-head override, paired marks vs incumbent | REGISTERED MEDIAN: tie — 4,096-game block, \|Δ\| < 0.10 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — participation scores at incumbent-parity capacity mis-price retention | |
+| V2 | Fate-head override, paired marks vs incumbent | REGISTERED MEDIAN: tie — 4,096-game block, \|Δ\| < 0.10 marks/game, CI includes 0. HOPE: Δ > 0 with CI excluding 0 | Δ < 0 with CI excluding 0 — participation scores at incumbent-parity capacity mis-price retention | **FALSIFIER — Δ = −0.2349, 95% CI [−0.3355, −0.1392]** (4,096 games, seed 7M; 111,803 triggers, 58.5% disagreement, +0.44 claimed fate-pts, ~0.2 ms/trigger). The registered negative, at full power |
 | V2-c | Play-state fate head calibrates (gate before V2 may run) | held-out per-tile fate NLL on PLAY states beats the marginal base rate by ≥ 0.15 nats (the [[otis-v0]] P2 band), improving with trick depth | ≤ 0.03 nats — play-state fates not learnable at this capacity; V2 stays unrun and that is the graded finding | **PASS — +0.5712 nats** (val 13,965 rows; every tile +0.56 to +0.64; by trick 0→6: 0.47→0.63, monotone) — V2's marks gate is licensed |
 | V1-m | Mechanism receipt (V1, descriptive) | among disagreements, the tied price of the override's choice exceeds lens:ev's choice by a positive mean margin (the price it claims to cash); reported with its distribution | mean ≤ 0 — the override is not even claiming value where it acts (instrument bug or trigger mismatch) | |
 
@@ -137,7 +137,27 @@ override fires exactly as the shadow run predicted and *claims* value
 every time it acts. The table pays the claim back as a marks loss. Final
 V1 grade waits on the C/D pool to 2,048 (registered power).
 
-(V2 4,096-game block + C/D fill here as runs land)
+### V2 block (2026-07-15, 4,096 paired games, seed 7000000)
+
+One 37.7-minute lockstep block (2,262.6 s — the instant pricer adds
+nothing to arena wall time). **Δ = −0.2349 marks/game, 95% CI
+[−0.3355, −0.1392], CI excludes zero at the registered power** — the
+falsifier, graded. Mechanism receipts: 111,803 triggers (≈2.45/hand,
+consistent with M1), 58.5% disagreement, mean claimed margin +0.436
+fate-pts, ~0.2 ms median per trigger.
+
+The convergence is the finding: two unrelated pricers — V1's online
+belief-weighted tied rollouts and V2's learned play-state fate head —
+produce the *same-magnitude loss* (−0.22 vs −0.23) through the same
+trigger surface, each while claiming positive value on every overridden
+decision. The common factor is the override surface itself: at genuine
+slough decisions, `lens:ev`'s default (full E[V] over PIMC worlds,
+n_samples=10) already prices retention better than either dedicated
+retention instrument. What-to-keep is not separable from
+what-the-hand-is-worth — pricing retention *alone* (points captured this
+hand, tricks) discards exactly the information the lens keeps.
+
+(V1 C/D pool receipts fill here)
 
 ## Links
 
