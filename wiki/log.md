@@ -22,6 +22,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-16 | conversation | the belief/policy/value algebra promoted; measurement program filed]
+
+**Touched pages:** [[belief-policy-value-algebra]] [[strategy-fusion]] [[count-fate-ledger]] [[index-topics|index]]
+**Added:** [[belief-policy-value-algebra]] — tilt form (b = u·e^g; eq is the g≡0 limit), coupling theorem, information identity, eq located as "π deleted twice," exact gap and claim-vs-cash decompositions, the (ε, init) family; conclusions tiered CAN (mathematical) vs MIGHT (conjectures, each paired with its deciding probe).
+**Questions opened:** [issue #64](https://github.com/jasonyandell/mk5-main/issues/64) — the M1–M6 measurement program (meaning map, tilt profile, channel bandwidth, accidental-convention detector, realized tiger, field docility).
+
 ## [2026-07-15 | conversation | the argument's referees — Phase 2 grading doctrine ratified]
 
 **Touched pages:** [[count-fate-ledger]] [[strategy-fusion]] [[otis]]

@@ -176,4 +176,4 @@ future implementers, is
 [[the-wall]] [[strategy-fusion]] [[candlewax]] [[expected-q-value]]
 [[past-belief-future-direction]] [[belief-weighted-jud-mcts]] [[gus-drama-atlas]]
 [[w42-phase2-hidden-domino-threat-attribution]] [[winning42-ch01-in-a-nutshell]]
-[[jud]] [[texas-42]]
+[[jud]] [[texas-42]] [[belief-policy-value-algebra]]

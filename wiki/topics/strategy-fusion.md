@@ -170,6 +170,6 @@ recorded at [[count-fate-ledger]] (The argument's referees).
 
 [[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[jud]]
 [[expected-q-value]] [[argmax-q-ceiling]] [[grok-not-converge]] [[zeb]] [[eq-genesis]]
-[[otis]] [[count-fate-ledger]]
+[[otis]] [[count-fate-ledger]] [[belief-policy-value-algebra]]
 [[era2-breakthrough-oracle|conversation digest]]
 [[era3-eq-era|conversation digest]]
