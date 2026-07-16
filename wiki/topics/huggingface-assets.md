@@ -7,7 +7,9 @@ status: active
 ---
 
 Everything the project has published to HuggingFace under `jasonyandell`,
-inventoried 2026-07-15 via the authenticated API (public + private). HF is the
+inventoried 2026-07-15 via the authenticated API. Everything is public
+(all 90 remaining private repos flipped 2026-07-15 — nothing here is a
+secret; it's the opposite). HF is the
 durable home for anything too big for git — [[run-artifacts-policy]] governs
 the split. The established upload path is `scripts/hf_publish/upload.py`.
 
@@ -29,18 +31,18 @@ the split. The established upload path is `scripts/hf_publish/upload.py`.
   (public) — the clean regenerated deck from otis night 2: 1.04B worlds,
   0 invalid, Bayes ceiling 40.119% ([[otis-phase-r]],
   [[belief-bayes-ceiling]]). Written by `forge/eq/regen_corpus_v2.py`.
-- `mk5-fleet-payload` (private) — the zeb fleet-ops payload bundle
+- [`mk5-fleet-payload`](https://huggingface.co/datasets/jasonyandell/mk5-fleet-payload)
+  — the zeb fleet-ops payload bundle
   ([[zeb-fleet-ops]]).
 
 ## Models
 
-**Public:**
 - [`zeb-42`](https://huggingface.co/jasonyandell/zeb-42) — the released Zeb
   model ([[zeb]]).
 - [`zeb-42-examples`](https://huggingface.co/jasonyandell/zeb-42-examples) —
   its worked-examples companion.
 
-**Private adapter families** (~90 repos; each family keeps per-epoch `-ep1..3`
+**Adapter families** (~90 repos; each family keeps per-epoch `-ep1..3`
 or per-iter siblings):
 
 | Family | Repos | Context |
@@ -52,7 +54,7 @@ or per-iter siblings):
 | `qwen3-1.7b-texas42-rationalize-v1*` | 4 | the rationalize lane |
 | `gemma-4-e2b-texas42-burl-*` (smoke, iter0–4) | 7 | Burl iterations ([[burl]], [[burl-iter0-eval]]) |
 
-**Not Texas 42** (public, listed for completeness): `gomoku-9x9`,
+**Not Texas 42** (listed for completeness): `gomoku-9x9`,
 `gomoku-13x13`, `rapfi-arm64` — a separate gomoku project.
 
 ## Referenced but absent
