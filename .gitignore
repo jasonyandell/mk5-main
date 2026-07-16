@@ -147,3 +147,11 @@ w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds*.pt
 *.db
 .beads-credential-key
 arena/results/
+
+# Run-artifacts policy, amended 2026-07-15 (wiki/decisions/run-artifacts-policy.md):
+# bulk measurements never enter git. Receipts stay committed (summary.json,
+# pooled *.txt, plots, *.metrics.json); game-level rows, decision ledgers, and
+# trained heads live on disk and on HuggingFace (wiki/topics/huggingface-assets.md).
+champion/evidence/**/per_game.csv
+champion/evidence/**/*.jsonl
+otis/models/*.pt

@@ -2,13 +2,16 @@
 title: Run Artifacts Policy — claims in git, measurements ephemeral
 kind: decision
 first_seen: 2026-07-13
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: active
 ---
 
 Git holds **claims and the means to reproduce them, not the measurements
 themselves**. Adopted 2026-07-13 during PR review of the research night, on
 Jason's reviewer instinct that arena run data does not belong in git.
+**Amended 2026-07-15** at Jason's direction after otis night 2 shipped ~7k
+rows of per-game CSVs, a 487-line premium ledger, and a `.pt` head through
+the old tier-2 loophole: game-level rows no longer enter git at all.
 
 ## The three tiers
 
@@ -16,28 +19,43 @@ Jason's reviewer instinct that arena run data does not belong in git.
    registered bands, the verdicts, and the exact reproduction command with
    its code sha. This is the scientific record; a result that is not written
    here does not exist.
-2. **A curated evidence bundle** (committed, small) — only for load-bearing
-   claims: `summary.json` per run, plus `per_game.csv` exactly where a
-   paired-CI claim depends on game-level rows. Lives in the area's
+2. **A curated receipts bundle** (committed, small) — only for load-bearing
+   claims, and only *aggregates*: `summary.json` per run, pooled-CI `.txt`
+   receipts, grade files, plots, `*.metrics.json`. Lives in the area's
    `evidence/` directory (`champion/evidence/<experiment>/`,
    `w42/world_sampler_audit/`, …). Promotion is a deliberate act, not an
-   accumulation.
-3. **Everything else** (never committed) — `arena/results/` is gitignored;
-   raw run dirs, per-hand CSVs, decision-record JSONLs, corpora, and trained
-   heads are ephemeral and regenerable from seeds + shas.
+   accumulation. **Row-level data is never tier 2** — no `per_game.csv`, no
+   `.jsonl` ledgers, no `.pt` heads, regardless of how load-bearing the
+   claim is.
+3. **Everything else** (never committed) — raw run dirs, per-game/per-hand
+   CSVs, decision-record JSONLs, corpora, and trained heads. Enforced by
+   `.gitignore` (`arena/results/`, `champion/evidence/**/per_game.csv`,
+   `champion/evidence/**/*.jsonl`, `otis/models/*.pt`). Durable home for
+   anything a claim may need re-examined: a HuggingFace dataset
+   ([[huggingface-assets]]), uploaded via the `scripts/hf_publish/` pattern;
+   otherwise regenerable from seeds + shas.
 
 ## Reproducibility caveat, stated once
 
 Arena runs are byte-deterministic only on the same device (MPS and CUDA RNG
 paths differ); on other hardware, reproduction is statistical, which is
-sufficient because every promoted claim carries a CI. This is why tier 2
-keeps per-game rows for paired claims instead of keeping nothing.
+sufficient because every promoted claim carries a CI. When a paired-CI claim
+depends on game-level rows, those rows go to the HF evidence dataset and the
+experiment page links them — they do not come back into git.
 
 ## Boundary
 
-Pre-policy run dirs remain tracked under `arena/results/` (gitignore does not
-untrack them); they await a small sweep that checks which wiki pages
-reference them before removal. New runs never enter git.
+Pre-policy run dirs remain tracked under `arena/results/` subdirectories
+(`gus_vs_heuristic_128/` etc., cited by [[champion-ladder]]); they await
+HF migration before removal. The rolling root files
+(`arena/results/{per_game.csv,per_hand.csv,summary.json}`) and
+`otis/models/*.pt` were untracked 2026-07-15. New runs never enter git.
+
+## Adding a new data-producing area
+
+When a new area starts writing run outputs, its data directories get
+gitignore entries **in the same commit that creates them** — before the
+first run, not after review catches tracked CSVs.
 
 ## Links
 

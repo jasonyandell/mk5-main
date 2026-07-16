@@ -84,7 +84,8 @@ hands, 13,806 triggers, 620 qualifying cells
 (`scratch/otis-night2/collect_guard_cells.py` in the night-2 worktree).
 Pricing: 487 matched pairs priced in 412 s (133 dropped — no legal neutral
 twin, mostly late-hand); both pricers verbatim from [[otis-phase-1]]
-(`price_guard_cells.py`); receipts `guard_premiums.jsonl`, grades
+(`price_guard_cells.py`); row ledger `guard_premiums.jsonl` (untracked, local
+disk / HF per [[run-artifacts-policy]]), grades
 `guard_grades.txt`, curated to `champion/evidence/otis_guard_premium_2026-07-15/`.
 
 ### Reading

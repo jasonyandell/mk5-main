@@ -9,6 +9,7 @@ catalog file below; the linter (`scripts/wiki_lint.py`) enforces coverage.
 - [[wiki-entrypoints]] — role-based routes into the wiki
 - [[log]] — the changelog; digest at top
 - [[champion]] / [[jud]] — the current frontier hubs
+- [[huggingface-assets]] — where the data lives: every HF dataset/model the project generated
 
 ## Catalogs
 
