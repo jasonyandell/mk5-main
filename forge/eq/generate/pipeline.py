@@ -45,7 +45,7 @@ from .deals import build_hypothetical_deals
 from .enumeration import enumerate_or_sample_worlds
 from .eq_compute import compute_eq_pdf, compute_eq_with_counts
 from .model import query_model
-from .posterior import compute_posterior_weighted_eq
+from .posterior import compute_posterior_weighted_eq, compute_posterior_weights_batch
 from .sampling import sample_worlds_batched
 from .tokenization import tokenize_batched
 from .types import AdaptiveConfig, DecisionRecordGPU, GameRecordGPU, PosteriorConfig
@@ -71,6 +71,7 @@ def generate_eq_games_gpu(
     bid_values: list[int] | None = None,
     bidders: list[int] | None = None,
     forced_actions: list[list[int]] | None = None,
+    record_world_weights: bool = False,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -126,8 +127,28 @@ def generate_eq_games_gpu(
         raise RuntimeError("CUDA not available. GPU-only pipeline requires CUDA.")
     if device == 'mps' and not torch.backends.mps.is_available():
         raise RuntimeError("MPS requested but not available on this machine.")
+    if save_joint_worlds and use_enumeration:
+        raise ValueError(
+            "Joint-world save with enumeration is unsupported: enumerated "
+            "world tensors are count-padded and would store phantom worlds. "
+            "Disable --enumerate or --save-joint-worlds."
+        )
+    if record_world_weights and adaptive_config is not None and adaptive_config.enabled:
+        raise ValueError(
+            "Recording world weights on the adaptive path is unsupported "
+            "(past-step tokenization at adaptive world counts is a VRAM "
+            "hazard). Use fixed sampling (--samples N) with "
+            "--record-world-weights."
+        )
+    if record_world_weights and not save_joint_worlds:
+        raise ValueError("record_world_weights requires save_joint_worlds.")
 
     n_games = len(hands)
+
+    # Weight-recording config (window k=4 default). Weights are RECORDED
+    # only; E[Q] marginalization below never consumes them, so corpus
+    # semantics match the pre-weights lineage (issues #52/#55).
+    weights_config = PosteriorConfig(enabled=True) if record_world_weights else None
 
     # Initialize RNG for exploration (if enabled)
     if exploration_policy is not None:
@@ -195,6 +216,7 @@ def generate_eq_games_gpu(
         # Joint-world tensors for this decision (populated per-branch below).
         jw_hands = None
         jw_q = None
+        jw_weights = None
 
         if use_adaptive and not should_enumerate:
             # Adaptive convergence-based sampling
@@ -263,6 +285,19 @@ def generate_eq_games_gpu(
             if save_joint_worlds:
                 jw_hands = worlds
                 jw_q = q_reshaped
+
+            # Per-world posterior weights, recorded only (issue #55 Phase R).
+            # E[Q] below stays uniform-marginalized.
+            if weights_config is not None and jw_hands is not None:
+                jw_weights, _ = compute_posterior_weights_batch(
+                    states=states,
+                    worlds=worlds,
+                    hypothetical=hypothetical,
+                    model=model,
+                    tokenizer=tokenizer,
+                    posterior_config=weights_config,
+                    device=device,
+                )
 
             if posterior_config and posterior_config.enabled:
                 e_q, e_q_var, e_q_pdf, diagnostics = compute_posterior_weighted_eq(
@@ -345,6 +380,7 @@ def generate_eq_games_gpu(
             oracle_softmax_per_seat=v2_softmax,
             legal_mask_per_seat=v2_legal_mask_per_seat,
             voids_per_seat=v2_voids_per_seat,
+            world_weights=jw_weights,
         )
 
         # 9. Apply actions and advance state
@@ -375,6 +411,7 @@ def generate_eq_from_snapshots(
     use_cuda_graph: bool = False,
     save_joint_worlds: bool = False,
     schema_v2: bool = False,
+    record_world_weights: bool = False,
 ) -> "list[GameRecordGPU]":
     """Generate E[Q] decisions from arbitrary mid-game snapshots.
 
@@ -399,6 +436,8 @@ def generate_eq_from_snapshots(
         use_cuda_graph: Enable CUDA-graph optimisation.
         save_joint_worlds: Save per-world hands and Q-values on records.
         schema_v2: Emit Schema v2 per-seat fields.
+        record_world_weights: Record per-world posterior weights on stored
+            joint-world tensors (E[Q] stays uniform-marginalized).
 
     Returns:
         List of N ``GameRecordGPU``, one per snapshot, containing only the
@@ -408,8 +447,25 @@ def generate_eq_from_snapshots(
         raise RuntimeError("CUDA not available. GPU-only pipeline requires CUDA.")
     if device == 'mps' and not torch.backends.mps.is_available():
         raise RuntimeError("MPS requested but not available on this machine.")
+    if save_joint_worlds and use_enumeration:
+        raise ValueError(
+            "Joint-world save with enumeration is unsupported: enumerated "
+            "world tensors are count-padded and would store phantom worlds. "
+            "Disable --enumerate or --save-joint-worlds."
+        )
+    if record_world_weights and adaptive_config is not None and adaptive_config.enabled:
+        raise ValueError(
+            "Recording world weights on the adaptive path is unsupported "
+            "(past-step tokenization at adaptive world counts is a VRAM "
+            "hazard). Use fixed sampling (--samples N) with "
+            "--record-world-weights."
+        )
+    if record_world_weights and not save_joint_worlds:
+        raise ValueError("record_world_weights requires save_joint_worlds.")
 
     n_games = len(snapshots)
+
+    weights_config = PosteriorConfig(enabled=True) if record_world_weights else None
 
     # Extract metadata needed for collate_records and per-game bookkeeping
     hands: list[list[list[int]]] = [snap["hands"] for snap in snapshots]
@@ -470,6 +526,7 @@ def generate_eq_from_snapshots(
 
         jw_hands = None
         jw_q = None
+        jw_weights = None
 
         if use_adaptive and not should_enumerate:
             if use_posterior:
@@ -527,6 +584,18 @@ def generate_eq_from_snapshots(
                 jw_hands = worlds
                 jw_q = q_reshaped
 
+            # Per-world posterior weights, recorded only (issue #55 Phase R).
+            if weights_config is not None and jw_hands is not None:
+                jw_weights, _ = compute_posterior_weights_batch(
+                    states=states,
+                    worlds=worlds,
+                    hypothetical=hypothetical,
+                    model=model,
+                    tokenizer=tokenizer,
+                    posterior_config=weights_config,
+                    device=device,
+                )
+
             if posterior_config and posterior_config.enabled:
                 e_q, e_q_var, e_q_pdf, diagnostics = compute_posterior_weighted_eq(
                     states=states,
@@ -581,6 +650,7 @@ def generate_eq_from_snapshots(
             oracle_softmax_per_seat=v2_softmax,
             legal_mask_per_seat=v2_legal_mask_per_seat,
             voids_per_seat=v2_voids_per_seat,
+            world_weights=jw_weights,
         )
 
         if actions.device != states.hands.device:

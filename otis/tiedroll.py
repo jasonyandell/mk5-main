@@ -44,6 +44,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from gus.hf_data import resolve
 from forge.oracle.declarations import has_trump_power
 from forge.oracle.tables import (
     can_follow,
@@ -710,7 +711,7 @@ def run_smoke(
     """
     t0 = time.time()
     print(f"[tiedroll] loading corpus {corpus_path}", flush=True)
-    blob = torch.load(corpus_path, map_location="cpu", weights_only=False)
+    blob = torch.load(resolve(corpus_path), map_location="cpu", weights_only=False)
     games = blob["results"]
 
     print("[tiedroll] loading policies", flush=True)

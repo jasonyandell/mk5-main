@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 
 from .context import build_context
-from .declarations import DECL_ID_TO_NAME, N_DECLS
+from .declarations import DECL_ID_TO_NAME, GAME_DECL_IDS
 from .output import output_path_for, write_result
 from .solve import SolveConfig, build_child_index, enumerate_gpu, solve_gpu
 from .timer import SeedTimer
@@ -51,9 +51,13 @@ def _parse_seed_range(value: str) -> tuple[int, int]:
 
 
 def decls_for_seed(seed: int, k: int = 3) -> list[int]:
-    """Reproducibly select k random declarations for a given seed."""
+    """Reproducibly select k random declarations for a given seed.
+
+    Samples from GAME_DECL_IDS — doubles-suit is purged from enumeration
+    (issue #51). Selections for a given seed differ from pre-purge campaigns.
+    """
     rng = random.Random(seed)
-    return sorted(rng.sample(range(N_DECLS), k=k))
+    return sorted(rng.sample(GAME_DECL_IDS, k=k))
 
 
 def main() -> None:

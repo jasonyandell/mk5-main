@@ -54,6 +54,7 @@ from gus.eval.blunder_detector_student import (
     collect_samples,
     FEATURE_NAMES,
 )
+from gus.hf_data import resolve
 from gus.model.load import load_student
 from gus.model.dataset_seq_world import JointWorldFullDataset
 
@@ -95,8 +96,8 @@ def get_detector(
     print(f"[detector]   subsample_frac={subsample_frac}  K_worlds={k_worlds}", flush=True)
 
     X_train, y_regret_train = collect_samples(
-        adapter_path,
-        train_corpus,
+        str(resolve(adapter_path)),
+        [resolve(p) for p in train_corpus],
         device,
         batch_size=batch_size,
         K_worlds=k_worlds,
@@ -215,7 +216,7 @@ def run(args) -> int:
     print(f"fallbacks: {args.fallback}", flush=True)
 
     # --- Load primary student ---
-    primary, primary_voids = load_student(args.adapter, device)
+    primary, primary_voids = load_student(str(resolve(args.adapter)), device)
 
     # --- Load fallback adapter if next-best-adapter is requested ---
     fallback_model = None
@@ -226,7 +227,7 @@ def run(args) -> int:
                   "in --fallback", file=sys.stderr)
             return 1
         print(f"next-best fallback adapter: {args.fallback_adapter}", flush=True)
-        fallback_model, fallback_is_voids = load_student(args.fallback_adapter, device)
+        fallback_model, fallback_is_voids = load_student(str(resolve(args.fallback_adapter)), device)
 
     # --- Train / load detector ---
     cache_path = Path(args.detector_cache)
@@ -243,7 +244,7 @@ def run(args) -> int:
     )
 
     # --- Iterate eval corpus once; collect everything per-decision ---
-    ds = JointWorldFullDataset(args.eval, seed=42)
+    ds = JointWorldFullDataset([resolve(p) for p in args.eval], seed=42)
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False)
     N = len(ds)
     print(f"eval decisions: {N}", flush=True)

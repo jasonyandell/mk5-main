@@ -2,7 +2,7 @@
 title: Gus Q-mean router (belief-sampled second opinion, no oracle)
 kind: experiment
 first_seen: 2026-04-25
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -14,7 +14,8 @@ mean [[regret-eval]] regret from 0.551 to ~0.42-0.43, with the learned router's
 5% cutoff introducing **zero new blunders** across five sampled-world seeds
 (gus/analysis/qmean_router_findings.md @ 233b7dc5;
 also recorded as gus/PRACTICALITIES.md §23 @ 233b7dc5). Adapter: `gus/adapters/v3_consistency_10000g.pt`;
-eval: `gus/data/corpus_eval_20.pt` (20 held-out games, 560 decisions); 2026-04-23.
+eval: `gus/data/corpus_eval_20.pt` (20 held-out games, 560 decisions; on HF at
+[corpus_eval_20.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_eval_20.pt)); 2026-04-23.
 
 This refines [[router-reality-check]]: every non-oracle *replacement* hurts, but a
 belief-sampled Q-mean *second opinion* — consulted only where direct π is uncertain
@@ -44,7 +45,8 @@ some easy direct-π wins.
 Hand gate (`direct != Q-mean` ∧ `pi_peak < 0.5`, eval-tuned): mean regret 0.424
 (range 0.405-0.460) across five seeds, routing 6.25% of decisions.
 
-Learned router, trained on a **separate** 100-game corpus (`corpus_train_100.pt`),
+Learned router, trained on a **separate** 100-game corpus (`corpus_train_100.pt`,
+on HF at [corpus_train_100.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_100.pt)),
 target = "direct π would blunder (regret ≥ 8) and Q-mean would not", evaluated on
 `corpus_eval_20.pt` across five seeds:
 
@@ -103,6 +105,10 @@ python -u gus/eval/eval_qworld_variants.py \
   --eval gus/data/corpus_eval_20.pt \
   --k 100 --seeds 0,1,2,42,99 --device cpu
 ```
+
+The `gus/data/corpus_*.pt` paths above are literal; the corpora live on HF at the
+[texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
+dataset (flat basenames) per [[huggingface-assets]].
 
 Concrete example (seed 900009, decl 9, decision 12): direct π picks 6-0 with a
 split, low-confidence distribution (peak 0.38) for regret 18.44; Q-mean K=200

@@ -2,9 +2,9 @@
 title: Otis — the fate-ledger-native player
 kind: entity
 first_seen: 2026-07-14
-last_updated: 2026-07-14
+last_updated: 2026-07-15
 status: active
-phase: 2026-07-15 — v0 BUILT and graded overnight ([[otis-v0]], all seven predictions graded). The player is an incumbent-parity bidder; the decomposition wins at matched arms (+0.29 marks/game pooled, CI excludes zero, round-0) and passes calibration 3× over band; the instrument suite (fate parser with three exact referees, world-bank clustering, tied-rollout retention pricing at ~1 s/decision) is live. No promotion over margin:wp(r8) — parity, both blocks. Corpus contamination found and filed (#52); follow-ups #51, #53; the program-to-the-end bridge is #55 (clean deck on Vast→HF, lesson consumer, lesson extractor, argument loop, promotion-or-graded-negative).
+phase: 2026-07-15 night 2 — Phases R and 1 of the #55 bridge both COMPLETE ([[otis-phase-r]], [[otis-phase-1]]). The clean deck is real: 112 files, 1.04B stored worlds, 0 invalid by independent referee, per-world posterior weights recorded, decl 8 purged; clean Bayes ceiling 40.119% (the contaminated 39.184% was measured through a corrupted posterior); #52 closed, #58 files the remaining re-derivations. The first lesson consumer is GRADED: the retention override fires as predicted (2.4/hand, 54% disagreement, +0.75 claimed pts) and V1 ties at power (−0.13, CI incl 0) while V2 hits its falsifier (−0.235, CI excl 0, 4,096 games) — two unrelated pricers, same loss surface; lens:ev's full E[V] already prices retention better than either dedicated instrument. New assets: OtisPlayNet (play-state fate head, +0.57 nats), online tied-rollout glue (~0.27 s/decision). Next: Phase 2, the lesson extractor — whose would-it-have-worked filter must now be validated against realized outcomes, not claimed margins.
 ---
 
 ## What it is
@@ -34,7 +34,31 @@ opaque scalar. Five organs:
    junk-retention economy that clairvoyant per-world evaluation zeroes via
    [[strategy-fusion]] — the open question filed on [[count-fate-ledger]].
 
-## Design commitments (from the 2026-07-14 red-team, binding)
+## Design commitments (binding)
+
+### The emergent-values intent (Jason, 2026-07-15, verbatim-close)
+
+Stated the night the guard-premium probe graded, and binding on Phase 2
+and everything after: **the goal is strictly not to run a bunch of named
+tests.** Named contrasts ([[otis-guard-premium]] and its template) are
+diagnostic instruments — ways to check the system can see — never the
+program. The program is to leverage these situations so the system
+**learns the shape of contexts** where a domino's value rises or falls,
+and how to navigate them within the rules of the game. These contexts
+are subtle, non-obvious, and become visible only in **fair hindsight** —
+hindsight filtered through what was knowable at the decision (the
+belief; no leakage): *"I should have kept that 2 to protect my 3-2"* is
+one teeny illustrative example of protection, not a feature list. **No
+"protect" code, ever**: protection, guards, even voids must never be
+written as named features or hand-coded value terms — their values must
+*arise from training* on lessons of that shape. The levers exist as of
+night 2: belief (could-I-have-known), tied rollouts
+(would-it-have-worked), the fate ledger (what-was-at-stake), the clean
+corpus, and the extractor design. Evaluation asks whether the emergent
+navigation improves and whether these concepts become *legible in the
+learned values* — not whether named tests pass.
+
+### From the 2026-07-14 red-team
 
 - **The collapse stays distributional.** Per-tile fate marginals get the mean of
   total points right and the tails wrong (fates are positively correlated; sweeps
@@ -58,8 +82,26 @@ Otis is not a fork of [[jud]]; it is jud v2's target-granularity question
 capacity make the comparison honest; [[otis-v0]] carries the bands, including the
 tie and the decomposition-tax negative.
 
+## The program to the end
+
+[Issue #55](https://github.com/jasonyandell/mk5-main/issues/55) is the bridge
+from v0 to the end of the program. Its first two phases completed overnight
+2026-07-15→16: [[otis-phase-r]] (the clean deck — all five predictions PASS;
+corpus regenerated on a 10-box Vast fleet with write-time validity, recorded
+posterior weights, the decl-8 purge) and [[otis-phase-1]] (the first lesson
+consumer — the retention override on `lens:ev`: V1 tied-rollout TIE at power,
+V2 fate-head FALSIFIER at power, mechanism receipts PASS throughout). Phase 2
+(the lesson extractor) inherits both the clean corpus and phase 1's hard
+lesson: claimed retention margins do not predict table value — realized
+outcomes must referee the extractor. A same-night coda,
+[[otis-guard-premium]], asked the ledger's founding question directly —
+is the junk two worth more when it guards the 3-2? — and got a graded
+surprise: the protection channel is real and learned (G3) but an order
+of magnitude smaller than an opposing early-hand effect the tied prices
+carry (G1 negative, CI excluding zero).
+
 ## Links
 
-[[count-fate-ledger]] · [[otis-v0]] · [[jud]] · [[w42-jud-v0]] ·
-[[rank-vs-price]] · [[strategy-fusion]] · [[joint-world-tensor]] · [[arena]] ·
-[[the-wall]]
+[[count-fate-ledger]] · [[otis-v0]] · [[otis-phase-r]] · [[otis-phase-1]] ·
+[[jud]] · [[w42-jud-v0]] · [[rank-vs-price]] · [[strategy-fusion]] ·
+[[joint-world-tensor]] · [[arena]] · [[the-wall]]

@@ -2,7 +2,7 @@
 title: w42 Phase3 Sequence Seat Counterfactuals
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -49,7 +49,7 @@ W&B: `https://wandb.ai/jasonyandell-forge42/w42/runs/kp0otpdo`.
 | artifact directory | `w42/sequence_seat_counterfactuals/` |
 | runner | `w42/sequence_seat_counterfactuals/run_sequence_seat_counterfactuals.py` |
 | validation | `w42/sequence_seat_counterfactuals/validate_outputs.py` |
-| input | `w42/tactical_claim_replication/all_action_rows.jsonl` |
+| input | `w42/tactical_claim_replication/all_action_rows.jsonl` ([HF run-evidence](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/blob/main/w42/tactical_claim_replication/all_action_rows.jsonl), see [[huggingface-assets]]; not git-tracked) |
 | action rows | 75079 |
 | decision states | 28000 |
 | paired contrasts | 14 |

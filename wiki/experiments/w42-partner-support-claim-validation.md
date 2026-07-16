@@ -2,7 +2,7 @@
 title: w42 Partner Support Claim Validation
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -48,7 +48,10 @@ support, and off-suit/count-exposure inference?
 ## Method
 
 The analyzer loads `gus/data/corpus_eval_20.pt` from the main checkout as a read-only
-input because this independent worktree does not contain the large corpus bytes. It uses
+input because this independent worktree does not contain the large corpus bytes. That
+corpus is now mirrored on the public HF dataset
+`jasonyandell/texas-42-joint-world-corpus`
+([corpus_eval_20.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_eval_20.pt)) — see [[huggingface-assets]]. It uses
 `JointWorldFullDataset(..., include_strategy_features=True)` with eval seed `43`,
 then computes oracle regret for every legal candidate action:
 
@@ -72,7 +75,7 @@ Bootstrap seed: `20260502`. Bootstrap samples: `5000`.
 | evidence mode | oracle E[Q] report slice over public-state strategy tags |
 | decision slice | all 560 held-out eval decisions; partner-support proxies are action-local subsets |
 | manifest path | `w42/partner_support_claim_validation/summary.json` |
-| source corpus | `/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt` |
+| source corpus | `/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt` ([HF](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_eval_20.pt)) |
 | source wiki pages | `wiki/experiments/winning42-ch04-partner-support.md`, `wiki/experiments/w42-strategy-tags-v0.md`, `wiki/experiments/w42-strategy-tags-v1-map.md` |
 | split policy | eval-only seeds `900000-900019`, inherited from w42/Gus eval convention |
 | leakage exclusions checked | oracle E[Q] used only as labels/metrics; no hidden hands, Burl traces, W&B, HF, or table-talk text used as features |

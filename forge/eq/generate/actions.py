@@ -8,6 +8,10 @@ from torch import Tensor
 
 from forge.eq.game_tensor import GameStateTensor
 from forge.eq.types import ExplorationPolicy, PosteriorDiagnostics
+from forge.eq.validate_worlds import (
+    assert_stored_worlds_valid,
+    assert_world_weights_normalized,
+)
 
 from .types import DecisionRecordGPU, GameRecordGPU
 
@@ -355,6 +359,7 @@ def record_decisions(
     oracle_softmax_per_seat: Tensor | None = None,
     legal_mask_per_seat: Tensor | None = None,
     voids_per_seat: Tensor | None = None,
+    world_weights: Tensor | None = None,
 ):
     """Record decisions for each game (in-place).
 
@@ -375,10 +380,23 @@ def record_decisions(
         oracle_softmax_per_seat: Optional [n_games, 4, 7] softmax per seat (Schema v2)
         legal_mask_per_seat: Optional [n_games, 4, 7] legal mask per seat (Schema v2)
         voids_per_seat: Optional [n_games, 4, 3, 8] voids per seat (Schema v2)
+        world_weights: Optional [n_games, M] per-world posterior weights
     """
     n_games = states.n_games
     legal_mask = states.legal_actions()
     current_players = states.current_player
+    active = states.active_games()
+
+    # Write-time integrity (issue #52): a malformed sampled world must be
+    # unable to fossilize silently. Fails loud before anything is recorded.
+    if world_hands is not None:
+        assert_stored_worlds_valid(
+            states, world_hands, active=active, context="record_decisions"
+        )
+    if world_weights is not None:
+        assert_world_weights_normalized(
+            world_weights, active=active, context="record_decisions"
+        )
 
     # Mode mapping for exploration (CPU pipeline convention)
     mode_to_int = {"greedy": 0, "boltzmann": 1, "epsilon": 2, "blunder": 3}
@@ -426,6 +444,7 @@ def record_decisions(
             converged=did_converge,
             world_hands=world_hands[g].cpu() if world_hands is not None else None,
             q_per_world=q_per_world[g].cpu() if q_per_world is not None else None,
+            world_weights=world_weights[g].cpu() if world_weights is not None else None,
             bid_value=bid_values[g] if bid_values is not None else None,
             oracle_softmax_per_seat=oracle_softmax_per_seat[g].cpu() if oracle_softmax_per_seat is not None else None,
             legal_mask_per_seat=legal_mask_per_seat[g].cpu() if legal_mask_per_seat is not None else None,

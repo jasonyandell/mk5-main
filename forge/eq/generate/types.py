@@ -83,6 +83,10 @@ class DecisionRecordGPU:
     # Enables distillation of the joint belief-Q distribution, not just the marginal PDF.
     world_hands: Tensor | None = None  # [M, 3, 7] sampled opponent dominoes per world
     q_per_world: Tensor | None = None  # [M, 7] oracle Q per action per world
+    # Per-world posterior weights (opt-in via --record-world-weights).
+    # Recorded ONLY — e_q/e_q_var/e_q_pdf stay uniform-marginalized so the
+    # corpus semantics match the pre-weights lineage (issues #52/#55).
+    world_weights: Tensor | None = None  # [M] normalized posterior weights
     # Schema v2 fields (opt-in via --schema v2; superset of v1)
     bid_value: int | None = None  # Actual bid amount (30-42, or mark value)
     oracle_softmax_per_seat: Tensor | None = None  # [4, 7] p_make-based softmax per seat

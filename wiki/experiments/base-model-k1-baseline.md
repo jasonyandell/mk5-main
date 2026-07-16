@@ -2,7 +2,7 @@
 title: Base Model K1 Baseline (10 Examples, Local)
 kind: experiment
 first_seen: 2026-04-10
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -16,7 +16,7 @@ status: complete
 
 - **Model:** base [[gemma-4-e2b]], Q4_K_M GGUF quantization, no adapter
 - **Runtime:** llama.cpp, CPU, local machine (streaming thinking channel)
-- **Examples:** 10 trick-6 decisions from `lem/data/narrations_train.jsonl`
+- **Examples:** 10 trick-6 decisions from `lem/data/narrations_train.jsonl` (not preserved — predates the HF data strategy; see [[huggingface-assets]])
 - **Grading:** same `parse_play` / `grade_k1` functions as the [[modal]] [[star-harness]], ensuring identical grading logic
 - **K1 criterion:** `E[Q][gemma] >= E[Q][bot]`
 
@@ -39,4 +39,4 @@ This is the number to beat with [[stage-0-adapter]] + STaR iterations.
 
 ## Related pages
 
-[[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[eval-seed-holdout]] · [[star-harness-5ex-smoke]] · [[f578bfa]]
+[[lem]] · [[gemma-4-e2b]] · [[star]] · [[star-harness]] · [[k1-grading]] · [[expected-q-value]] · [[eval-seed-holdout]] · [[star-harness-5ex-smoke]] · [[huggingface-assets]] · [[f578bfa]]

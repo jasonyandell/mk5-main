@@ -2,7 +2,7 @@
 title: Gus Strategy Tags Probe
 kind: experiment
 first_seen: 2026-04-30
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -75,7 +75,7 @@ python -m gus.eval.strategy_probe \
   --d-model 96 --n-heads 4 --n-layers 2 --ff-dim 192 --random-eq-worlds
 ```
 
-Actual corpus: `corpus_train_100.pt` / `corpus_eval_20.pt`, so `train=2800`, `eval=560`.
+Actual corpus: [corpus_train_100.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_100.pt) / [corpus_eval_20.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_eval_20.pt), so `train=2800`, `eval=560`. Bulk corpora live on HF ([[huggingface-assets]]).
 
 | policy | mean regret | match | near-tie |
 |---|---:|---:|---:|

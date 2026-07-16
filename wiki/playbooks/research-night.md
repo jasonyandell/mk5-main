@@ -41,10 +41,11 @@ example: [[research-night-2026-07-13]].
 4. **Grade each lane against its own first gate.** Held-out ranking / marks /
    calibration as the lane's page specifies; record which registered predictions
    hit and which missed.
-5. **Promote only load-bearing evidence to git.** A curated `summary.json` (and
-   `per_game.csv` where a paired-CI claim needs the game-level rows) lands under
-   the area's `evidence/` dir; raw runs and corpora stay ephemeral
-   ([[run-artifacts-policy]]).
+5. **Promote only load-bearing receipts to git.** A curated `summary.json`
+   (plus pooled `.txt` receipts and plots) lands under the area's `evidence/`
+   dir; game-level rows a paired-CI claim depends on go to the HF evidence
+   dataset, never git; raw runs and corpora stay ephemeral
+   ([[run-artifacts-policy]], [[huggingface-assets]]).
 6. **File the night digest.** One `sources/` digest enumerates what the night
    established and links every experiment page written; corrections found along
    the way are carried onto the pages that held the stale claim.

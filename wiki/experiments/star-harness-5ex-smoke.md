@@ -2,7 +2,7 @@
 title: STaR Harness 5-Example Smoke Test
 kind: experiment
 first_seen: 2026-04-10
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -16,7 +16,7 @@ First end-to-end run of the [[star-harness]] (`lem/gemma_star/star_harness.py`) 
 
 - **Model:** [[gemma-4-e2b]] with [[stage-0-adapter]] loaded
 - **Platform:** [[modal]] function
-- **Examples:** 5 trick-6 decisions from `lem/data/narrations_train.jsonl`
+- **Examples:** 5 trick-6 decisions from `lem/data/narrations_train.jsonl` (not preserved — predates the HF data strategy, see [[huggingface-assets]])
 - **Grading:** [[k1-grading]] — pass iff `E[Q][gemma] >= E[Q][bot]`
 - **Failure handling:** [[r1-rationalization]] — reveal bot action, ask model to justify it, keep that rationale
 

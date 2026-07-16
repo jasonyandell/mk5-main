@@ -39,6 +39,14 @@ ceiling: naive per-batch uploads from 4 workers projected ~960 commits/hour. `25
 interval, cutting the rate to ~4/hr per worker; `7117809`/`f73f3b5` walked the interval up
 further (180s → 240s) as fleet size grew.
 
+A second hub-as-bus hazard surfaced 2026-07-15 ([[otis-phase-r]]'s 10-writer corpus
+regen): **fleet writers must never read-modify-write a shared file on the repo.**
+Each worker updating a common `MANIFEST.json` per chunk lost 35 of 112 entries to
+last-wins races (every data file landed; only the shared index lied). The fix is the
+same shape as the rate-limit one — make worker writes compose: unique per-chunk
+sidecar files (`manifest/<name>.json`), folded into the shared index by a single
+writer at the end (`forge.eq.regen_corpus_v2 --assemble-manifest`).
+
 ## Machine reputation scoring
 
 `7d0746e` (2026-02-10) adds `reputation.py`, persisting per-machine observed-gps, boot

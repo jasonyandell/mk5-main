@@ -2,7 +2,7 @@
 title: E[Q] Browser Visualizers
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -86,8 +86,9 @@ The visualizers support the current E[Q]/w42 discussion:
 
 - The 27a surface is aggregate analysis data, not a single game.
 - The PDF/journey sample uses a small local E[Q] PDF tensor
-  (`forge/data/eq_pdf_s9200-9201_d10_10s.pt`, not checked into the repo) with
-  low per-decision sample count; it is for visual inspection, not final
+  (`forge/data/eq_pdf_s9200-9201_d10_10s.pt`, not preserved — local-only
+  scratch tensor, never checked in and not on HF, see [[huggingface-assets]])
+  with low per-decision sample count; it is for visual inspection, not final
   empirical claims. Without that local file, the export script only rebuilds
   the 27a aggregate surface.
 - Browser visual shape can guide hypotheses, but all policy changes still need

@@ -2,7 +2,7 @@
 title: w42 Phase 2 Hidden Domino Threat Attribution
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-14
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -118,6 +118,11 @@ python w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py \
   --output-dir w42/hidden_domino_threat_attribution \
   --top-k 10
 ```
+
+The `tiny_joint_world_sample.pt` produced by the first command is a local
+generated inspection sample — it is not git-tracked and was not preserved to HF
+(regenerate it from the `forge.eq.generate` recipe above). Durable joint-world
+corpora live on the public HF datasets; see [[huggingface-assets]].
 
 Real metric pass:
 

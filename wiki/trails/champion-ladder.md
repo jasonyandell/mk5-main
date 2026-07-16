@@ -73,7 +73,7 @@ sides, 128 games, seed 0): beats `heuristic` **84/128 (65.6%; halves 73.4% /
 auctions (49.6% offense share) at 65.8% make vs 55.8%, and `doubles-trump`
 reached 40 times — a declaration the pip-only static bidder structurally cannot
 make. Cost ~49 min on MPS (one Gus sim per hand — rung #22's motivation).
-Results: `arena/results/gus_vs_heuristic_128/`.
+Results: [gus_vs_heuristic_128](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/otis-night2-2026-07-15/arena/results/gus_vs_heuristic_128) (HF, [[huggingface-assets]]).
 
 ## Rung #22 — bid-strength net (2026-06-12)
 
@@ -87,7 +87,7 @@ distilled to a hand → (9 decl × 13 bid) p_make MLP (test MAE 0.053, ECE 0.007
 54.1%, *more* selective (42.8% offense share), and it reaches
 `notrump`/`doubles-trump` the 8-decl sim bidder cannot. 0.68 ms/hand, ~1500×
 faster; full-game auction sweeps unblocked. Results:
-`arena/results/net_vs_heuristic_128/`.
+[net_vs_heuristic_128](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/otis-night2-2026-07-15/arena/results/net_vs_heuristic_128) (HF).
 
 ## Rung #23 — bid_value threading (2026-06-12)
 
@@ -140,9 +140,9 @@ construction** — both sides are [[pimc]], so play-marks cannot reward
 belief/concealment value regardless of whether it exists
 ([[champion-design-review]] caveat 1, Fable's flag). Belief value routes
 through bidding/defense (#26), not play reweighting. The mechanism stays built
-and unit-tested (`belief_model=None` ⇒ uniform exactly). Results:
-`arena/results/belieflens_vs_ev_128/`, `belieflens_auction_vs_ev_128/`,
-`belieflens_auction_net_vs_ev_128/`.
+and unit-tested (`belief_model=None` ⇒ uniform exactly). Results (HF):
+[belieflens_vs_ev_128](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/otis-night2-2026-07-15/arena/results/belieflens_vs_ev_128), `belieflens_auction_vs_ev_128/`,
+`belieflens_auction_net_vs_ev_128/` (siblings at the same HF revision).
 
 ## Rung #26 — self-play fixed point (bridge 2026-06-13, full iteration 2026-06-14)
 
@@ -182,8 +182,8 @@ cancel). Caveat ([[champion-design-review]] caveat 2): this tested the *play*
 phase and a pass-model pilot; the auction-side score test (`MarksToSeven`
 thresholds varying with the score) was never run in isolation. Rung #32's A2
 finding later showed the pass hook is structurally a *denial-bidding* lever
-([[w42-jud-v0]]). Results: `arena/results/scorelens_vs_ev_192/`,
-`pass_vs_nopass_128/`.
+([[w42-jud-v0]]). Results (HF): [scorelens_vs_ev_192](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/otis-night2-2026-07-15/arena/results/scorelens_vs_ev_192),
+`pass_vs_nopass_128/` (sibling at the same HF revision).
 
 ## Rung #28 — teaching battery (2026-06-13)
 

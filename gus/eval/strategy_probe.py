@@ -27,6 +27,7 @@ import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Subset
 
+from gus.hf_data import resolve
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.strategy_features import STRATEGY_ACTION_FEATURE_DIM, STRATEGY_FEATURE_DIM
 from gus.model.student import TransformerEncoder, VoidsEncoder
@@ -277,8 +278,8 @@ def main() -> int:
     print(f"device={device}", flush=True)
 
     t0 = time.perf_counter()
-    train_base = JointWorldFullDataset(args.train, seed=args.seed, include_strategy_features=True)
-    eval_base = JointWorldFullDataset(args.eval, seed=args.seed, include_strategy_features=True)
+    train_base = JointWorldFullDataset([resolve(p) for p in args.train], seed=args.seed, include_strategy_features=True)
+    eval_base = JointWorldFullDataset([resolve(p) for p in args.eval], seed=args.seed, include_strategy_features=True)
     train_ds = _subset(train_base, args.train_limit, args.seed)
     eval_ds = _subset(eval_base, args.eval_limit, args.seed + 1)
     eq_eval_ds = _subset(EQNWrapper(eval_base, args.eq_n, seed=args.seed, random_worlds=args.random_eq_worlds), args.eval_limit, args.seed + 1)

@@ -2,7 +2,7 @@
 title: w42 Phase4 Sequence Handshape Tests
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -40,7 +40,7 @@ state fields.
 | artifact directory | `w42/phase4_sequence_handshape_tests/` |
 | runner | `w42/phase4_sequence_handshape_tests/run_sequence_handshape_tests.py` |
 | validation | `w42/phase4_sequence_handshape_tests/validate_outputs.py` |
-| input | `w42/tactical_claim_replication/all_action_rows.jsonl` |
+| input | `w42/tactical_claim_replication/all_action_rows.jsonl` ([HF run-evidence](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/blob/main/w42/tactical_claim_replication/all_action_rows.jsonl), see [[huggingface-assets]]; not git-tracked) |
 | action rows | 75079 |
 | decision rows | 28000 |
 | label metric rows | 47 |

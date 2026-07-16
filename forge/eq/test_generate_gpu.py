@@ -460,7 +460,7 @@ def test_exploration_with_multiple_games(oracle, device):
 
 def test_posterior_weighting_basic(oracle, device):
     """Test that posterior weighting config works and produces valid E[Q]."""
-    from forge.eq.generate import PosteriorConfig
+    from forge.eq.generate.types import PosteriorConfig
 
     hands = deal_from_seed(9000)
     decl_id = 3
@@ -508,7 +508,7 @@ def test_posterior_weighting_basic(oracle, device):
 
 def test_posterior_disabled_vs_enabled(oracle, device):
     """Test that posterior weighting changes E[Q] values compared to uniform."""
-    from forge.eq.generate import PosteriorConfig
+    from forge.eq.generate.types import PosteriorConfig
 
     hands = deal_from_seed(9100)
     decl_id = 3
@@ -570,7 +570,7 @@ def test_posterior_with_mixed_decl_ids(oracle, device):
 
     The fix: both functions now accept per-game decl_ids tensor.
     """
-    from forge.eq.generate import PosteriorConfig
+    from forge.eq.generate.types import PosteriorConfig
 
     n_games = 4
     # Different seeds and DIFFERENT declarations per game

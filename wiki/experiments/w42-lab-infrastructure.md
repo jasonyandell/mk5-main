@@ -2,7 +2,7 @@
 title: w42 Lab Infrastructure
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -253,8 +253,10 @@ Namespace:
 Repository naming:
 
 - Durable dataset repo: `jasonyandell/w42-strategy-corpus`
+  (repo never published / no longer exists — see [[huggingface-assets]] § Referenced but absent)
 - Durable report artifact repo, if a report outgrows git/wiki tables:
   `jasonyandell/w42-report-artifacts`
+  (repo never published / no longer exists — see [[huggingface-assets]] § Referenced but absent)
 - Promoted model repo: `jasonyandell/w42-{model_slug}`
 
 Dataset naming inside manifests:
