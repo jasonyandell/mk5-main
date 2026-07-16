@@ -56,7 +56,9 @@ reported descriptively).
 **Pricers** (both run on every cell): V1's tied-rollout pricer
 (`arena/slough_override.py` internals verbatim: repaired MRV sampling
 M=50, gus v3 belief weights, common random worlds per arm) and V2's fate
-head (`otis/models/otis_play_v0.pt`). G3 additionally reads the mechanism
+head (`otis/models/otis_play_v0.pt`, on HF at
+[otis/models/otis_play_v0.pt](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/blob/main/otis/models/otis_play_v0.pt)
+per [[huggingface-assets]]). G3 additionally reads the mechanism
 channel directly: P(my team captures the 3-2) from the fate head on each
 candidate's successor in arm A.
 

@@ -2,7 +2,7 @@
 title: w42 Phase 2 Seat Position Strategy Map
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -200,6 +200,11 @@ Commands:
   --min-actions 75079 \
   --min-paired-contrasts 8
 ```
+
+The `--input` row table, `w42/tactical_claim_replication/all_action_rows.jsonl`,
+is not git-tracked; it lives on HuggingFace run-evidence at
+[w42/tactical_claim_replication/all_action_rows.jsonl](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/blob/main/w42/tactical_claim_replication/all_action_rows.jsonl)
+(see [[huggingface-assets]]).
 
 Claim-ledger impact: no automatic status change. The run is closeable as a
 seat/position claim-test artifact, with conservative slice evidence for

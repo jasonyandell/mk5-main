@@ -2,7 +2,7 @@
 title: w42 Gus Corpus Tactical Claim Deep Dive
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -20,7 +20,7 @@ families from [[winning42-ch04-partner-support]] and
 - setter pounce / count-before-certainty;
 - safe versus unsafe partner count donation.
 
-The run uses existing `gus/data/corpus_v2_train_*_d0-9.pt` files, not new seed
+The run uses existing [`gus/data/corpus_v2_train_*_d0-9.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2) files (flat basenames at the dataset root; see [[huggingface-assets]]), not new seed
 generation. Those files already retain `q_per_world`, `world_hands`,
 `bid_value`, per-seat legal masks, and all ten declarations at N=200 sampled
 worlds per decision. This makes them sufficient for role-gated direct labels and

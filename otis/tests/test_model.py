@@ -2,7 +2,6 @@
 fate-class derivation, and consistency-penalty math."""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +21,14 @@ from otis.model import (
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 FATES_PARQUET = ROOT / "scratch" / "otis-night" / "master_fates.parquet"
-BASE_RATES_JSON = ROOT / "scratch" / "otis-night" / "fate_base_rates.json"
+# The 8-class fate contract, capture-major then mode-minor. Previously read
+# from scratch/otis-night/fate_base_rates.json (generated, did not survive the
+# scratch clear); the order is the load-bearing fact, so it lives here.
+FATE_CLASSES = [
+    f"{cap}|{mode}"
+    for cap in ("bidding_team", "opp_of_bidder")
+    for mode in ("led", "followed", "trumped_in", "sloughed")
+]
 
 
 # --------------------------------------------------------------------------- #
@@ -99,9 +105,13 @@ def test_export_bidder_module(tmp_path):
 
 
 def test_fate_class_matches_base_rate_ordering():
-    """The 8-class encoding must match fate_base_rates.json's `classes` order —
-    otherwise the P2 NLL compares model logits to the wrong base-rate cells."""
-    classes = json.loads(BASE_RATES_JSON.read_text())["classes"]
+    """The 8-class encoding must match the base-rate `classes` order —
+    otherwise the P2 NLL compares model logits to the wrong base-rate cells.
+
+    The contract is spelled out as a literal (capture-major, mode-minor); it
+    previously came from scratch/otis-night/fate_base_rates.json, which was a
+    generated file (circular) and did not survive the scratch clear."""
+    classes = FATE_CLASSES
     # 3 hand-picked (capture, mode) rows with a hand-computed class index.
     cases = [
         ("bidding_team", "led", 0),        # 0*4 + 0
@@ -116,7 +126,7 @@ def test_fate_class_matches_base_rate_ordering():
 @pytest.mark.skipif(not FATES_PARQUET.exists(), reason="master_fates.parquet absent")
 def test_fate_class_on_real_rows():
     """3 real fate rows: the derived class must round-trip its label strings."""
-    classes = json.loads(BASE_RATES_JSON.read_text())["classes"]
+    classes = FATE_CLASSES
     f = pd.read_parquet(FATES_PARQUET, columns=["capture_bidding", "played_mode"])
     for _, r in f.head(3).iterrows():
         cid = fate_class(r["capture_bidding"], r["played_mode"])

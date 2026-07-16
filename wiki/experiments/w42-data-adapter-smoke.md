@@ -2,7 +2,7 @@
 title: w42 Data Adapter Smoke
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -30,11 +30,11 @@ The smoke checked the declared w42 source shapes from
 
 | path or glob | observed locally |
 |---|---|
-| `gus/data/corpus_train_100.pt` | present; loaded as the smoke source |
-| `gus/data/corpus_train_chunk_*-*.pt` | not consumed in this smoke |
-| `gus/data/corpus_v2_train_*_d0-9.pt` | not consumed in this smoke |
-| `gus/data/corpus_eval_20.pt` | not consumed in this smoke |
-| `gus/data/corpus_v2_eval.pt` | not consumed in this smoke |
+| [`gus/data/corpus_train_100.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_100.pt) | present; loaded as the smoke source (canonical copy on HF, [[huggingface-assets]]) |
+| [`gus/data/corpus_train_chunk_*-*.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/tree/main) | not consumed in this smoke |
+| [`gus/data/corpus_v2_train_*_d0-9.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2/tree/main) | not consumed in this smoke |
+| [`gus/data/corpus_eval_20.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_eval_20.pt) | not consumed in this smoke |
+| [`gus/data/corpus_v2_eval.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2/blob/main/corpus_v2_eval.pt) | not consumed in this smoke |
 | `data/eq-games/train` | not consumed in this smoke |
 | `data/eq-games/val` | not consumed in this smoke |
 | `data/eq-games/test` | not consumed in this smoke |

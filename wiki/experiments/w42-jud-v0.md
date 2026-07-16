@@ -4,7 +4,7 @@ kind: experiment
 status: complete
 task_id: gh-32
 first_seen: 2026-07-06
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 ---
 
 # w42-jud-v0
@@ -69,7 +69,7 @@ for the full round table and the registered-prediction ledger.
   is load-bearing only where prices are consumed. Registered as CLI bidder
   `margin[:wp[,pass[<q>]]][,model=…]` in `arena/cli.py`.
 - **The corpus.** #26's bridge (`arena.cli --emit-snapshots` → stamped `GameRecordGPU`)
-  extended to stamp the realized outcome already recorded in `arena/results/per_hand.csv`.
+  extended to stamp the realized outcome already recorded in [`arena/results/per_hand.csv`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/blob/otis-night2-2026-07-15/arena/results/per_hand.csv) (see [[huggingface-assets]]).
   Round-0 corpus: 20 chunks, 22,001 hands — 12 `net:wp` self-play (on-policy auctions) + 8
   `random`-vs-`random` (coverage), the two regimes giving bimodal realized-outcome support
   across the whole 0–42 range.

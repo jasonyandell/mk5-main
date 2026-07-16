@@ -26,6 +26,7 @@ import torch
 from forge.zeb.game import apply_action
 from forge.zeb.game import current_player as zeb_current_player
 from forge.zeb.types import ZebGameState
+from gus.hf_data import resolve
 
 from .lens_play import LensPlay
 from .slough_override import TiedSloughPlay
@@ -50,7 +51,7 @@ class FateSloughPlay(LensPlay):
         super().__init__(model, utility=utility, n_samples=n_samples, device=device)
         from otis.play_model import OtisPlayNet
 
-        self._playnet = OtisPlayNet.load(playnet_path, map_location="cpu")
+        self._playnet = OtisPlayNet.load(resolve(playnet_path), map_location="cpu")
         self._playnet.eval()
         self._stats_path = Path(stats_path) if stats_path else None
         self.shadow = shadow

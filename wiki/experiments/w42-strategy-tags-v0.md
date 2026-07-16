@@ -2,7 +2,7 @@
 title: w42 Strategy Tags v0
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -30,6 +30,11 @@ a Winning 42 strategy claim, train a model, run W&B, or publish a HF artifact.
 ## Data Slice
 
 The input is the manifest train split using `gus/data/corpus_train_100.pt`.
+These bulk corpus files are not in git; they live on HuggingFace at
+[texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
+(flat basenames at repo root), with `corpus_v2_*` files on
+[texas-42-joint-world-corpus-v2](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2);
+see [[huggingface-assets]].
 The wrapper intentionally consumes only the first available declared corpus path
 for this v0 surface check, so it remains a small deterministic tag-shape run
 rather than a bulk corpus scan.

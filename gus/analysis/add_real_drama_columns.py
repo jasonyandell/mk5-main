@@ -32,6 +32,8 @@ import torch
 import numpy as np
 import pandas as pd
 
+from gus.hf_data import resolve
+
 # Count domino IDs and their pip values (from forge.oracle.tables)
 # domino 8: 3-2 = 5pts, 11: 4-1 = 5pts, 15: 5-0 = 5pts, 20: 5-5 = 10pts, 25: 6-4 = 10pts
 COUNT_POINTS = {8: 5, 11: 5, 15: 5, 20: 10, 25: 10}
@@ -202,7 +204,7 @@ def main():
     # --- Eval pass ---
     _live("EVAL PASS", "corpus_eval_20.pt")
     eval_path = Path(PROJECT_ROOT) / "gus/data/corpus_eval_20.pt"
-    blob = torch.load(str(eval_path), weights_only=False)
+    blob = torch.load(resolve(eval_path), weights_only=False)
     eval_games = blob["results"]
     eval_seeds = blob.get("seeds", list(range(len(eval_games))))
 
@@ -225,7 +227,7 @@ def main():
     games_total = 0
 
     for chunk_i, chunk_path in enumerate(chunk_paths):
-        blob = torch.load(str(chunk_path), weights_only=False)
+        blob = torch.load(resolve(chunk_path), weights_only=False)
         chunk_games = blob["results"]
         chunk_seeds = blob.get("seeds", list(range(len(chunk_games))))
 

@@ -2,13 +2,13 @@
 title: Burl 2000-decision batched harvest (D_required_first)
 kind: experiment
 first_seen: 2026-04-24
-last_updated: 2026-04-25
+last_updated: 2026-07-15
 status: complete
 ---
 
 ## What
 
-A 2000-decision [[burl]] harvest collected on fresh seeds from `gus/data/corpus_train_chunk_0-99.pt`. Every decision runs the [[wax-museum]] tool-loop against [[gemma-4-e2b]] (LoRA-free, base) with the [[belief-trajectory]] tool wired in. Each decision's final play is tagged into one of 14 buckets against the K=200 belief-sampled E[Q] oracle (see [[lamir1]]). Output: `scratch/belief_trajectory_rollout/harvest_batched_20260425_072910/` (gitignored — corpus is 2000 decision dirs).
+A 2000-decision [[burl]] harvest collected on fresh seeds from `gus/data/corpus_train_chunk_0-99.pt` ([HF: corpus_train_chunk_0-99.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_chunk_0-99.pt); bulk corpus lives on HuggingFace, see [[huggingface-assets]]). Every decision runs the [[wax-museum]] tool-loop against [[gemma-4-e2b]] (LoRA-free, base) with the [[belief-trajectory]] tool wired in. Each decision's final play is tagged into one of 14 buckets against the K=200 belief-sampled E[Q] oracle (see [[lamir1]]). Output: `scratch/belief_trajectory_rollout/harvest_batched_20260425_072910/` (gitignored — corpus is 2000 decision dirs).
 
 ## Why
 
@@ -100,4 +100,4 @@ since 2026-05-07.
 
 ## Links
 
-[[burl]] [[wax-museum]] [[gemma-4-e2b]] [[belief-trajectory]] [[gus]] [[star]] [[r1-rationalization]] [[batched-harvest-resilience]] [[max-tokens-2048-floor]] [[063fcac]] [[1bf1885]] [[d858781]]
+[[burl]] [[wax-museum]] [[gemma-4-e2b]] [[belief-trajectory]] [[gus]] [[star]] [[r1-rationalization]] [[batched-harvest-resilience]] [[max-tokens-2048-floor]] [[huggingface-assets]] [[063fcac]] [[1bf1885]] [[d858781]]

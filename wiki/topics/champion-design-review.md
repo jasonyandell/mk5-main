@@ -2,7 +2,7 @@
 title: Champion design review — Fable 5's recovered reasoning
 kind: topic
 first_seen: 2026-06-09
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -90,6 +90,7 @@ walked ([[champion-ladder]]). The page stands as the preserved primary source.
 - [[gus]] · [[forge]] · [[pimc]] · [[belief-bayes-ceiling]] — the organs and the
   belief-ceiling evidence the reviews lean on
 - [[book-strategy-player]] — the algebra the BSP-blueprint turn repointed at the auction
+- [[huggingface-assets]] — where the project's bulk run-evidence and corpora live (the code paths quoted verbatim above are historical layout, not data)
 - [[w42-lens-v1-utility-head-to-head]] — the EV-ceiling result the critical review triangulates from
 
 ---
@@ -156,7 +157,7 @@ The design note in the bead says the negative result is a finding too: if single
 The bead (May 3) and the wiki algebra (refactored May 4) drifted slightly, and the bead's own design field settles it: *"the algebraic specification in [[book-strategy-player]] IS the design."* So we follow the amended wiki where they differ:
 
 - **Protocol**: the bead still says `applies_to`; the amended algebra split that into `recognizes(gs, ps)` for fresh opportunities vs. `name in active_plans` for continuing plans. We build the five-method protocol: `recognizes`, `priority`, `commit_recognition`, `next_action`, `plan_done`.
-- **Layout**: bead says `w42/book_strategy_player/core.py`; the build page says `w42/book_strategy/` with finer-grained modules (`player.py`, `strategy.py`, `plan_state.py`, `facts.py`, `recording.py`, `fallback.py`, `errors.py`). I'd take the wiki layout — it's the later refinement.
+- **Layout**: bead says `w42/book_strategy_player/core.py` *(superseded layout — this path was never built; the file no longer exists / never existed on disk)*; the build page says `w42/book_strategy/` with finer-grained modules (`player.py`, `strategy.py`, `plan_state.py`, `facts.py`, `recording.py`, `fallback.py`, `errors.py`). I'd take the wiki layout — it's the later refinement.
 - **Tests**: the build page's T1–T17 property tests are the concrete expansion of the laws (permuted library orderings, fact-merge associativity/commutativity, namespace hermeticity, NaN priorities, recording purity).
 
 ## The interesting design point: how BSP plugs into the batched simulator

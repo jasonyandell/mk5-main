@@ -87,7 +87,7 @@ scan (not the writer's own assertion) over every pushed chunk.
 
 Vast 4090 (instance at $0.269/hr), `forge.eq.regen_corpus_v2` run:
 `corpus_eval_20.pt` (20 games, 53 s, 1,504,000 worlds) and
-`corpus_v2_eval.pt` (20 games, 195 s, 1,584,000 worlds) both graded
+[`corpus_v2_eval.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2) (20 games, 195 s, 1,584,000 worlds) both graded
 **CLEAN** by the independent referee (`scripts/referee_worlds.py`): 0
 invalid worlds, 0 decl-8 games; uploaded to the v2 HF repo with shas in
 `MANIFEST.json`. The same referee grades the April `corpus_eval_20.pt`
@@ -148,5 +148,5 @@ pattern: **fleet writers must never share a mutable file on the repo.**
 
 [[otis]] · [[otis-v0]] · [[count-fate-ledger]] · [[world-sampler-mrv-audit]] ·
 [[belief-bayes-ceiling]] · [[stage-0-closure]] · [[zeb-fleet-ops]] ·
-[[joint-world-tensor]] · [[run-artifacts-policy]] ·
+[[joint-world-tensor]] · [[run-artifacts-policy]] · [[huggingface-assets]] ·
 [[w42-phase2-hidden-domino-threat-attribution]]

@@ -2,7 +2,7 @@
 title: w42 Tactical Claim Replication
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -63,7 +63,7 @@ action rows, decision rows, claim-action rows, and tactical label counts.
 | paired contrast slices | `w42/tactical_claim_replication/paired_contrasts_by_slice.csv` |
 | examples | `w42/tactical_claim_replication/examples.json` |
 | manifest | `w42/tactical_claim_replication/manifest.json` |
-| full legal-action rows | `w42/tactical_claim_replication/all_action_rows.jsonl` |
+| full legal-action rows | [`all_action_rows.jsonl`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/blob/main/w42/tactical_claim_replication/all_action_rows.jsonl) (on [[huggingface-assets]]; 79 MB, not in git) |
 | harness outputs | `w42/tactical_claim_replication/harness/` |
 
 The full legal-action row export is intentionally useful for follow-up harness

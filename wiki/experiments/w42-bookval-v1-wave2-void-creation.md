@@ -2,7 +2,7 @@
 title: W42 Book Validation v1 Wave 2 — Void Creation
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-05-03
+last_updated: 2026-07-15
 status: complete
 bead: t42-26j8
 parent_epic: t42-4zi6
@@ -33,7 +33,7 @@ See [[w42-bookval-v1-wave2-infra-design]] for campaign methodology.
 
 | Dimension | Value |
 |-----------|-------|
-| Corpus | oracle-greedy legacy (`gus/data/corpus_train_chunk_*.pt`) |
+| Corpus | oracle-greedy legacy (`gus/data/corpus_train_chunk_*.pt`, on HF as flat basenames — [tree](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/tree/main); see [[huggingface-assets]]) |
 | Role | setter (player 1 or 3; bidder fixed at player 0) |
 | Position | on lead (trick_plays empty), trick >= 1 |
 | Filter | setter holds >= 2 distinct suits, >= 1 singleton suit |
@@ -119,7 +119,7 @@ states.
 ## Artifacts
 
 ```
-w42/book_validation_v1/wave2/probes/t42-26j8_void_creation/
+w42/book_validation_v1/wave2/probes/t42-26j8_void_creation/   # git-tracked receipts
 ├── README.md
 ├── manifest.json
 ├── summary.json

@@ -50,6 +50,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from gus.hf_data import resolve
+
 # ---------------------------------------------------------------------------
 # Domino / count-tile constants
 # ---------------------------------------------------------------------------
@@ -710,7 +712,7 @@ def run_worldbank(
             break
 
         print(f"[worldbank] loading chunk {chunk.name}", flush=True)
-        blob = torch.load(str(chunk), weights_only=False)
+        blob = torch.load(resolve(str(chunk)), weights_only=False)
         games = blob["results"]
         seeds = blob.get("seeds", list(range(len(games))))
         chunks_used.append(chunk.name)

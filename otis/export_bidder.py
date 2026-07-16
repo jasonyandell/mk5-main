@@ -16,6 +16,7 @@ from pathlib import Path
 
 import torch
 
+from gus.hf_data import resolve
 from champion.margin_net import FEATURE_DIM, MarginNet
 from champion.value_bidder import load_margin_net
 from otis.model import OtisNet
@@ -24,7 +25,7 @@ DEFAULT_MODELS_DIR = Path(__file__).resolve().parent / "models"
 
 
 def load_otis(ckpt_path: str | Path, device: str = "cpu") -> tuple[OtisNet, dict]:
-    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+    ckpt = torch.load(resolve(ckpt_path), map_location=device, weights_only=False)
     model = OtisNet(in_dim=ckpt.get("feature_dim", FEATURE_DIM),
                     treatment=bool(ckpt.get("treatment", False))).to(device)
     model.load_state_dict(ckpt["model_state"])

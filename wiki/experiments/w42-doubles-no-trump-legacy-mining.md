@@ -2,7 +2,7 @@
 title: w42 Doubles No-Trump Legacy Mining
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -41,7 +41,7 @@ W&B run: `https://wandb.ai/jasonyandell-forge42/w42/runs/o96omty7`.
 
 ## Data Slice
 
-The run processes all 100 legacy `gus/data/corpus_train_chunk_*-*.pt` files.
+The run processes all 100 legacy [`gus/data/corpus_train_chunk_*-*.pt`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus) files (flat basenames at the dataset root; see [[huggingface-assets]]).
 
 | field | value |
 |---|---:|

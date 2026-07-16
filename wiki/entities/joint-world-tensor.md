@@ -2,7 +2,7 @@
 title: Joint-World Tensor
 kind: entity
 first_seen: 2026-04-20
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -76,4 +76,4 @@ Expected: ~10s/game on MPS, ~17 min for 100 games, ~600 MB file.
 
 ## Links
 
-[[gus]] [[forge]] [[lamir1]] [[pi-opp-head]] [[student-distillation]]
+[[gus]] [[forge]] [[lamir1]] [[pi-opp-head]] [[student-distillation]] [[huggingface-assets]]

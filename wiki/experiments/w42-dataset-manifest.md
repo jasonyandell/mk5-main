@@ -2,7 +2,7 @@
 title: w42 Dataset Manifest
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -103,7 +103,12 @@ explicitly in the manifest. Expected source families:
 
 - [[gus]] joint-world corpora, such as `gus/data/corpus_train_100.pt`,
   `gus/data/corpus_train_chunk_*-*.pt`, `gus/data/corpus_v2_train_*_d0-9.pt`,
-  `gus/data/corpus_eval_20.pt`, and `gus/data/corpus_v2_eval.pt`.
+  `gus/data/corpus_eval_20.pt`, and `gus/data/corpus_v2_eval.pt`. These bulk
+  files are not in git; they live on HuggingFace at
+  [texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
+  (flat basenames at repo root), with `corpus_v2_*` files on
+  [texas-42-joint-world-corpus-v2](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2).
+  See [[huggingface-assets]].
 - [[forge]] E[Q] or oracle data, including `data/eq-games/{train,val,test}/`
   outputs from `forge.cli.generate_eq_continuous` and external
   `forge-analysis` shard locations such as `/mnt/d/shards-standard/`.

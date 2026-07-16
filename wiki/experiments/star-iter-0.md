@@ -2,7 +2,7 @@
 title: STaR Stage 1 Iteration 0
 kind: experiment
 first_seen: 2026-04-10
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -16,7 +16,7 @@ First full end-to-end [[star]] iteration on [[gemma-4-e2b]] with [[stage-0-adapt
 
 - **Platform:** [[modal]] H100
 - **Initial adapter:** [[stage-0-adapter]] (`jasonyandell/gemma-4-e2b-texas42-stage0`)
-- **Dataset:** `lem/data/narrations_train.jsonl`, seeds 0–199, 3148 examples (see [[narration]])
+- **Dataset:** `lem/data/narrations_train.jsonl` (not preserved — predates the HF data strategy, see [[huggingface-assets]]), seeds 0–199, 3148 examples (see [[narration]])
 - **Batch size:** 10 examples
 - **Inference:** sequential HF `model.generate()` (vLLM removed in [[8724e93]])
 - **Grading:** [[k1-grading]]; illegal/parse-fail traces discarded per [[discard-illegal-traces]]

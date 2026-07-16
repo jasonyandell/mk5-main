@@ -2,7 +2,7 @@
 title: LEM — Little Expert Model
 kind: entity
 first_seen: 2026-04-09
-last_updated: 2026-04-17
+last_updated: 2026-07-15
 status: complete
 superseded_by: burl
 ---
@@ -144,7 +144,8 @@ See [[stage-0-v1-training]] for the full training record.
 
 - **Batch narration generator online** — 200 seeds → 3148 trick-6 training examples in 8.5 min
   on 3050 Ti. Output: `lem/data/narrations_train.jsonl` (seeds 0–199) and
-  `lem/data/narrations_eval.jsonl` (seeds 900000–900049, 812 examples).
+  `lem/data/narrations_eval.jsonl` (seeds 900000–900049, 812 examples) —
+  not preserved (predates the HF data strategy, see [[huggingface-assets]]).
 - **Held-out eval seeds declared** — seeds 900000–909999 are permanently reserved for
   evaluation and must never appear in any training dataset. All [[expected-q-value]] delta
   measurements use this range. See [[eval-seed-holdout]].
@@ -215,7 +216,8 @@ Wandb: `jasonyandell-forge42/lem-star`.
 Average pass rate ~38–40%. Loss: 31.6 → 11.8 over 10 iters; stable at ~10 through iter 14.
 Data pool at iter 5 grew from 3148 (seeds 0–199) to 7409 (seeds 0–499); pool expanded
 further to 11,672 at 908773a (added seeds 500–799 via
-`lem/data/narrations_train_500_799.jsonl`). 15 adapters pushed to HF:
+`lem/data/narrations_train_500_799.jsonl`, not preserved — see [[huggingface-assets]]).
+15 adapters pushed to HF:
 `jasonyandell/gemma-4-e2b-texas42-star-iter{0..14}`. Total compute cost: ~$25 on B200.
 (lem/OVERVIEW.md @ 908773a)
 

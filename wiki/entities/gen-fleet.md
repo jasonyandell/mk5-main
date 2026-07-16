@@ -2,7 +2,7 @@
 title: GEN_FLEET (Vast.ai distributed corpus generation)
 kind: entity
 first_seen: 2026-04-21
-last_updated: 2026-04-21
+last_updated: 2026-07-15
 status: superseded
 ---
 
@@ -16,7 +16,8 @@ this frontier it is a design doc, not yet launched. (commit message @ a8bc35a)
 
 - **Workers**: stateless processes on interruptible Vast.ai 3090s/4090s. Each covers a
   static seed range. Pushes chunks directly to HF dataset
-  `jasonyandell/gus-42-worlds`.
+  `jasonyandell/gus-42-worlds` (repo never published / no longer exists — see
+  [[huggingface-assets]] § Referenced but absent).
 - **Consumer**: local M5 Max pulls chunks from HF and trains. No learner loop, no
   coordination service — embarrassingly parallel at the seed-range level.
 - No training on the fleet side — generation only.

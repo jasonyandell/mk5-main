@@ -2,7 +2,7 @@
 title: Eval Seed Holdout
 kind: decision
 first_seen: 2026-04-10
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -24,7 +24,7 @@ Seeds 900000–909999 are permanently reserved for evaluation. They must never a
 
 ## Enforcement
 
-The [[narration]] batch generator (`lem/narrate/batch.py`) rejects any seed in 900000–909999 unless `--allow-eval-seeds` is explicitly passed. This flag exists solely to generate `lem/data/narrations_eval.jsonl`; normal generation runs must not use it.
+The [[narration]] batch generator (`lem/narrate/batch.py`) rejects any seed in 900000–909999 unless `--allow-eval-seeds` is explicitly passed. This flag exists solely to generate `lem/data/narrations_eval.jsonl` (not preserved — predates the HF data strategy; see [[huggingface-assets]]); normal generation runs must not use it.
 
 ## Why declared here
 
@@ -32,4 +32,4 @@ Making the boundary explicit in `lem/OVERVIEW.md` prevents ambiguity as the data
 
 ## Related pages
 
-[[lem]] · [[narration]] · [[stage-0-v1-training]] · [[b99c64d]]
+[[lem]] · [[narration]] · [[stage-0-v1-training]] · [[huggingface-assets]] · [[b99c64d]]

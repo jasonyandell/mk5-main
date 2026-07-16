@@ -2,7 +2,7 @@
 title: w42 Multi-Seed Larger-Eval Replication
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-06
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -38,8 +38,8 @@ more random seeds and a materially larger held-out eval set?
 | report owner bead | `t42-csw6.31` |
 | evidence mode | multi-seed w42 model comparison with forge/Gus oracle labels |
 | ruleset / score mode | existing [[gus]] corpus semantics |
-| train corpus | `gus/data/corpus_train_chunk_0-99.pt`; `gus/data/corpus_train_chunk_100-199.pt` |
-| eval corpus | `gus/data/corpus_train_chunk_9000-9099.pt` |
+| train corpus | [corpus_train_chunk_0-99.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_chunk_0-99.pt); [corpus_train_chunk_100-199.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_chunk_100-199.pt) ([[huggingface-assets]]) |
+| eval corpus | [corpus_train_chunk_9000-9099.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_chunk_9000-9099.pt) |
 | train rows | 5,600 decisions |
 | eval rows | 2,800 decisions |
 | seeds | `42, 43, 44, 45, 46` |

@@ -31,6 +31,7 @@ import torch
 import numpy as np
 import pandas as pd
 
+from gus.hf_data import resolve
 from gus.model.load import load_student
 from gus.model.tokenize import tokenize_decision
 from gus.model.features import extract_belief_target, reconstruct_prior_plays
@@ -296,7 +297,7 @@ def main():
 
     device = "cpu"  # Per spec: don't use MPS (arena-runner is on it)
     _update_live("LOADING MODEL", f"adapter: {ADAPTER_PATH.name}")
-    model, is_voids = load_student(str(ADAPTER_PATH), device)
+    model, is_voids = load_student(str(resolve(ADAPTER_PATH)), device)
     _emit_event("model_loaded", {"is_voids": is_voids})
     _tail(f"Model loaded (is_voids={is_voids}), device={device}")
 
@@ -307,7 +308,7 @@ def main():
     # -----------------------------------------------------------------------
     _update_live("EVAL PASS", "Loading corpus_eval_20.pt")
     eval_path = Path(PROJECT_ROOT) / "gus/data/corpus_eval_20.pt"
-    blob = torch.load(str(eval_path), weights_only=False)
+    blob = torch.load(resolve(eval_path), weights_only=False)
     eval_games = blob["results"]
     eval_seeds = blob.get("seeds", list(range(len(eval_games))))
 
@@ -338,7 +339,7 @@ def main():
     chunk_t0 = time.time()
 
     for chunk_i, chunk_path in enumerate(chunk_paths):
-        blob = torch.load(str(chunk_path), weights_only=False)
+        blob = torch.load(resolve(chunk_path), weights_only=False)
         chunk_games = blob["results"]
         chunk_seeds = blob.get("seeds", list(range(len(chunk_games))))
 

@@ -2,13 +2,13 @@
 title: Burl harvest-2 + run-4 — first STaR self-sharpening test
 kind: experiment
 first_seen: 2026-04-26
-last_updated: 2026-04-26
+last_updated: 2026-07-15
 status: complete
 ---
 
 ## What
 
-A 2000-decision [[burl]] harvest collected on fresh seeds from `gus/data/corpus_train_chunk_4100-4199.pt` with the [[burl-star-run3]] **run-3c adapter** in the rollout loop (the [[preserve-thoughts]] winner from iter-1). Same `D_required_first` variant, same batched harness from [[burl-2000-harvest]], `--turn-cap 12` (bumped from cap=8 used in harvest-1, per the FORCED_COMMIT diagnosis). Output: `scratch/belief_trajectory_rollout/harvest_batched_20260426_031338/`.
+A 2000-decision [[burl]] harvest collected on fresh seeds from [corpus_train_chunk_4100-4199.pt](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus/blob/main/corpus_train_chunk_4100-4199.pt) (gus corpus, bulk data on HF — see [[huggingface-assets]]) with the [[burl-star-run3]] **run-3c adapter** in the rollout loop (the [[preserve-thoughts]] winner from iter-1). Same `D_required_first` variant, same batched harness from [[burl-2000-harvest]], `--turn-cap 12` (bumped from cap=8 used in harvest-1, per the FORCED_COMMIT diagnosis). Output: `scratch/belief_trajectory_rollout/harvest_batched_20260426_031338/`.
 
 Followed by **run-4 train**: filter-only SFT on the harvest-2 strict pool with the same recipe as run-3c (rank=8, lr=3e-5, 1 epoch, preserve-thoughts ON). Adapter: `scratch/belief_trajectory_rollout/star/adapters/run4_20260426_163325/`.
 
