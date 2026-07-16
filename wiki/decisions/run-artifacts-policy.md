@@ -45,11 +45,13 @@ experiment page links them — they do not come back into git.
 
 ## Boundary
 
-Pre-policy run dirs remain tracked under `arena/results/` subdirectories
-(`gus_vs_heuristic_128/` etc., cited by [[champion-ladder]]); they await
-HF migration before removal. The rolling root files
-(`arena/results/{per_game.csv,per_hand.csv,summary.json}`) and
-`otis/models/*.pt` were untracked 2026-07-15. New runs never enter git.
+Closed 2026-07-15: everything under `arena/results/` (including the
+pre-policy subdirs cited by [[champion-ladder]]) plus `otis/models/*.pt` was
+mirrored to the public HF evidence dataset at tag `otis-night2-2026-07-15`
+and untracked; the ladder's citations now point at the pinned HF URLs. The
+mirror tool is `scripts/hf_publish/evidence.py` (`up` prints revision-pinned
+URLs for wiki citation; `get` restores into any worktree through the shared
+HF cache). New runs never enter git.
 
 ## Adding a new data-producing area
 

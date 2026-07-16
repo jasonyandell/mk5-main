@@ -39,7 +39,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/eval-matrix-bradley-terry|eval-matrix-bradley-terry]] — Bradley-Terry Elo tournament infra over named players (zeb checkpoints, random, heuristic, eq:n=10/50/100/500) (complete)
 - [[topics/expected-q-value|expected-q-value]] — E[Q]: scalar measuring position value, supplied by forge's Q-value checkpoint (active)
 - [[topics/game-context-qa|game-context-qa]] — 5-type game-context Q&A from real game records, ~170 tok prompts; expanded to 14 categories in v9 (superseded)
-- [[topics/huggingface-assets|huggingface-assets]] — account-verified catalog of every HF repo the project generated (3 datasets, ~95 model repos, plus referenced-but-absent names); the off-git shelf run-artifacts-policy points at (active)
+- [[topics/huggingface-assets|huggingface-assets]] — account-verified catalog of every HF repo the project generated (4 datasets incl. mk5-run-evidence, ~95 model repos, plus referenced-but-absent names); the off-git shelf run-artifacts-policy points at (active)
 - [[topics/ideated-not-built|ideated-not-built]] — Era 5's unbuilt record: ~15 conversations designed a whole generation named but never shipped (Harl / LLem / walker / …) — classified IDEATED, never claimed as artifacts (complete)
 - [[topics/intermediate-ai|intermediate-ai]] — the shipped pre-ML opponent: PIMC world sampling + constraint tracking + partnership minimax (active)
 - [[topics/iter-without-regression|iter-without-regression]] — milestone: harvest-2 + run-4 is the first Burl iteration with no new bug, pathology, or regression; every prior iter introduced one (eq-shy, retry-exhausted, rank-collapse, loss-collapse, three launch failures); foundation for real iter-N comparisons (superseded)

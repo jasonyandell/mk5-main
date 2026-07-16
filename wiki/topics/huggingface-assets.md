@@ -11,7 +11,15 @@ inventoried 2026-07-15 via the authenticated API (public + private). HF is the
 durable home for anything too big for git — [[run-artifacts-policy]] governs
 the split. The established upload path is `scripts/hf_publish/upload.py`.
 
-## Datasets (3)
+## Datasets (4)
+
+- [`mk5-run-evidence`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence)
+  (public) — row-level run evidence mirrored out of git at repo-relative
+  paths ([[run-artifacts-policy]]): per-game CSVs, the guard-premium ledger,
+  `otis/models/*.pt` heads, all of `arena/results/`. Tag
+  `otis-night2-2026-07-15` pins the migration. Mirror tool:
+  `scripts/hf_publish/evidence.py` (`up`/`get`); public means the dataset
+  viewer + `hf://` paths (DuckDB/pandas) read it with no token.
 
 - [`texas-42-joint-world-corpus`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
   (public) — the original joint-world tensor corpus behind Gus belief training
@@ -56,13 +64,6 @@ or deleted) — treat citations of them as broken until resolved:
   [[gen-fleet]], and two `w42/*_claim_validation` scripts.
 - `w42-strategy-corpus`, `w42-report-artifacts` — referenced in
   [[w42-lab-infrastructure]].
-
-## Not yet on HF
-
-Run evidence untracked from git on 2026-07-15 (per-game CSVs, guard-premium
-ledger, `otis/models/*.pt` heads) currently lives only on the M5's disk — the
-proposed home is a private `mk5-run-evidence` dataset; see
-[[run-artifacts-policy]].
 
 ## Links
 
