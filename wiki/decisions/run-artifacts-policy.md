@@ -48,10 +48,10 @@ experiment page links them — they do not come back into git.
 Closed 2026-07-15: everything under `arena/results/` (including the
 pre-policy subdirs cited by [[champion-ladder]]) plus `otis/models/*.pt` was
 mirrored to the public HF evidence dataset at tag `otis-night2-2026-07-15`
-and untracked; the ladder's citations now point at the pinned HF URLs. The
-mirror tool is `scripts/hf_publish/evidence.py` (`up` prints revision-pinned
-URLs for wiki citation; `get` restores into any worktree through the shared
-HF cache). New runs never enter git.
+and untracked; the ladder's citations now point at the pinned HF URLs.
+Moving data needs no custom tooling — the stock `hf` CLI upload/download
+commands are documented at [[huggingface-assets]] § Moving evidence data.
+New runs never enter git.
 
 ## Adding a new data-producing area
 

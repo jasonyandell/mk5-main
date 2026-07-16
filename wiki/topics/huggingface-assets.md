@@ -19,9 +19,9 @@ the split. The established upload path is `scripts/hf_publish/upload.py`.
   (public) — row-level run evidence mirrored out of git at repo-relative
   paths ([[run-artifacts-policy]]): per-game CSVs, the guard-premium ledger,
   `otis/models/*.pt` heads, all of `arena/results/`. Tag
-  `otis-night2-2026-07-15` pins the migration. Mirror tool:
-  `scripts/hf_publish/evidence.py` (`up`/`get`); public means the dataset
-  viewer + `hf://` paths (DuckDB/pandas) read it with no token.
+  `otis-night2-2026-07-15` pins the migration. Moved with the stock `hf`
+  CLI (see below); public means the dataset viewer + `hf://` paths
+  (DuckDB/pandas) read it with no token.
 
 - [`texas-42-joint-world-corpus`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
   (public) — the original joint-world tensor corpus behind Gus belief training
@@ -56,6 +56,25 @@ or per-iter siblings):
 
 **Not Texas 42** (listed for completeness): `gomoku-9x9`,
 `gomoku-13x13`, `rapfi-arm64` — a separate gomoku project.
+
+## Moving evidence data
+
+No custom tooling — the stock `hf` CLI does both directions. Run from the
+repo root so paths mirror:
+
+```bash
+# up: a directory mirrors its relative path automatically
+hf upload jasonyandell/mk5-run-evidence <dir> <dir> --repo-type dataset
+# up: a single FILE defaults to root — pass the path twice (footgun)
+hf upload jasonyandell/mk5-run-evidence <file> <file> --repo-type dataset
+# pin: upload prints the commit URL; or name the revision with a tag
+hf repo tag create jasonyandell/mk5-run-evidence <tag> --repo-type dataset
+# down: restores into the tree through the shared cache (free per-worktree)
+hf download jasonyandell/mk5-run-evidence --repo-type dataset \
+  --include "<path>/**" --revision <tag-or-sha> --local-dir .
+```
+
+Wiki pages cite the tag- or sha-pinned URL the upload prints, never `main`.
 
 ## Referenced but absent
 
