@@ -114,6 +114,49 @@ training** rather than being written as code. What the ledger contributes
 is the *label space* that makes such lessons stateable and gradeable —
 not a feature set to hand the student.
 
+## The argument's referees (2026-07-15)
+
+Ratified in conversation (Jason, 2026-07-15); filed on
+[issue #55](https://github.com/jasonyandell/mk5-main/issues/55) as Phase 2
+amendments, binding on the lesson extractor. Doctrine underneath all of it:
+the era-8 sharpening of [[strategy-fusion]] ("eq is not 42," full statement
+there) — the oracle bootstraps and referees physics (what is reachable) but
+may never grade a lesson; graders are behaviorally information-honest
+rollouts only (tied; every seat a function of its own info-state).
+
+- **Two hindsight leaks, both filtered.** The *deal leak* (a lesson conditions
+  on belief-at-k, never the deal — already in #55) and the *outcome leak*:
+  grading an alternative by replaying it on the realized hand. Sometimes the
+  better move loses this particular hand; grading by the draw ("resulting")
+  punishes correct insurance every time the threat fails to materialize —
+  which is most of the time, which is why insurance is cheap. Registered form:
+  **would it have worked *more often*** — tied rollouts across worlds sampled
+  from the belief at decision k, alternative vs actual, belief-weighted; the
+  realized world enters at its posterior weight and no more.
+- **Triage, not blanket action.** Most sloughs are "meh — play the weakest
+  thing"; a few really matter. Lesson harvesting and any consumer's action
+  surface gate on the belief-weighted dispersion of fate-conditional prices
+  across candidates ([[otis-phase-1]]'s override acted on every trigger —
+  noise on the meh body was part of the price). High-dispersion sloughs and
+  leads are the lesson sites ([[gus-drama-atlas]]: the opening lead dominates).
+- **Three referees, three organs.** *Policy lessons* ("should I have kept the
+  2?") are graded belief-averaged, per the outcome-leak filter. *Belief
+  lessons* ("was my 20%-he's-void right?") are graded against realized deals
+  in aggregate (calibration) — non-negotiable, because belief-averaged grading
+  alone can never discover the belief is wrong; it launders a miscalibrated
+  posterior into policy lessons. *The loop* is refereed by aggregate realized
+  marks on reserved blocks; its tracked metric is the **claim-vs-cash gap**
+  ([[otis-phase-1]] round 0: claimed +0.75 pts/override, table paid −0.13
+  marks/game). Convergence = claims cash. This is the binding reading of
+  Phase 1's exported constraint "realized outcomes must referee" — per organ,
+  never per-lesson outcome-grading.
+- **Field-relativity.** "Works more often" always means *against the current
+  field*, whose oracle-distilled dispositions under-protect and under-attack;
+  protection lessons and predation lessons must co-evolve through the loop.
+  The fate-belief is decision-universal — consulted at bid, defense, slough,
+  and lead alike ([[jud]]'s bidding-and-play-one-act, landing on the ledger);
+  the auction is where its marks-signal is least masked, not where it lives.
+
 ## Open question
 
 The cost half of the filed question is answered: tied-strategy rollouts price

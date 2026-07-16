@@ -58,6 +58,16 @@ corpus, and the extractor design. Evaluation asks whether the emergent
 navigation improves and whether these concepts become *legible in the
 learned values* — not whether named tests pass.
 
+### The argument's referees (2026-07-15)
+
+Phase 2's grading doctrine, ratified same-day and filed on issue #55: the
+*outcome leak* joins the deal leak ("would it have worked *more often*" —
+belief-averaged tied grading, never the realized hand alone),
+dispersion-triaged lesson harvesting, and the three-referee split ending in
+the claim-vs-cash gap. Recorded in full at [[count-fate-ledger]] (The
+argument's referees); underneath it, [[strategy-fusion]]'s sharpened
+statement — "eq is not 42."
+
 ### From the 2026-07-14 red-team
 
 - **The collapse stays distributional.** Per-tile fate marginals get the mean of

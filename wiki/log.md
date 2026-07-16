@@ -22,6 +22,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-15 | conversation | the argument's referees — Phase 2 grading doctrine ratified]
+
+**Touched pages:** [[count-fate-ledger]] [[strategy-fusion]] [[otis]]
+**Added:** "The argument's referees" on [[count-fate-ledger]] — the outcome leak named ("would it have worked *more often*", belief-averaged tied grading), dispersion-triaged lesson harvesting, the three-referee split, the claim-vs-cash gap as the loop's convergence metric; "eq is not 42" coda on [[strategy-fusion]].
+**Updated:** [[otis]] design commitments route to the doctrine; amendments filed as a comment on issue #55.
+
 ## [2026-07-15 | b347897b | otis v0: count-fate ledger built and graded overnight (#49)]
 
 **Touched pages:** [[otis]] [[otis-v0]] [[count-fate-ledger]] [[world-sampler-mrv-audit]] [[jud]] `questions/open.md`

@@ -2,7 +2,7 @@
 title: "Strategy Fusion — E[max(score)] ≥ max(E[score]), the diagnosis, and the E[Q] founding sentence"
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-07-11
+last_updated: 2026-07-15
 status: complete
 ---
 
@@ -150,9 +150,26 @@ description of what was, at the time, pure amazement — and that gap between th
 itself part of the story: the wall was invisible in January precisely because the result felt
 so clean.
 
+## The sharpened statement — "eq is not 42" (2026-07-15)
+
+Jason's era-8 restatement of this page's diagnosis, stated while designing
+[[otis]]'s lesson extractor: eq, conditioned as hard as possible, is still
+playing a different game — one where the opponent *already knows* it doesn't
+have to protect anything, and can therefore make a play with terrible odds in
+the actual game, with total confidence, and win doing it — in the
+perfect-information version. The insurance economy (guards, protection,
+information value) exists only *between* information states; within-world
+backward induction is played in a game where protection is not a concept. So
+E[Q] does not under-price protection — it is computed where the concept is
+absent, and belief-conditioning the sampling sharpens *which* fictions are
+averaged, never that each is a fiction. The operational consequence — the
+oracle bootstraps and referees physics but may never grade a lesson — is
+recorded at [[count-fate-ledger]] (The argument's referees).
+
 ## Links
 
 [[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[jud]]
 [[expected-q-value]] [[argmax-q-ceiling]] [[grok-not-converge]] [[zeb]] [[eq-genesis]]
+[[otis]] [[count-fate-ledger]]
 [[era2-breakthrough-oracle|conversation digest]]
 [[era3-eq-era|conversation digest]]
