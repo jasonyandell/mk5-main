@@ -39,7 +39,8 @@ python3 -u host.py new \
 ```
 
 - Seat drivers: `cf:` human on the relay page · `file:` local mover (the
-  main session or an agent teammate) · `random:` instant baseline.
+  main session or an agent teammate) · `random:` instant baseline ·
+  `jud:` jud v1 (auction + play nets, numbers logged as reasoning).
 - Run it in background (it ticks at 1s, exits at game end or after 30 idle
   minutes — restart manually with the same command? No: each `new` is a new
   game; a died host mid-game is currently a lost game, keep hosts alive).
@@ -84,6 +85,20 @@ adapter speaking move-strings) — tracked in the Champion milestone.
   reasoning goes in the move's `--reasoning` field (logged, discussed at
   review).
 - All-pass hands reshake (dealer rotates; third reshake forces the shaker).
+
+## Traditions (accreted from real nights)
+
+- **The shuffle-pause**: hand ends → talk policy *immediately* — could/
+  should-haves, luck vs skill — while the emotions are live; then shuffle
+  and move on. The lesson extracts at the moment of maximum feeling.
+- **Announce plans mid-hand** ("watch what I do next") — a registered
+  prediction, human edition; grade it at review like a net's pricing.
+- **Say the trump out loud, and verify it from the view, not the chat.**
+  Game night 1 lost four tricks of analysis to a trump misread propagated
+  through table talk. A waiter that doesn't print `decl` is a bug.
+- **"Let me show you what I had"** — mid-game hand photos for the review.
+- Watchers should fire on *your turn only* (poll `view-seat-N.json`,
+  guard on `turn_id`), so table chat never blocks the porch conversation.
 
 ## Review / analyze
 
