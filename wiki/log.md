@@ -113,3 +113,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Touched pages:** [[table42]] [[intermediate-ai]]
 **Added:** [[table42]] — Cloudflare Worker + D1 around HeadlessRoom/replayActions with seat-token filtered views, seed scrub, access-log audit, gated reveal; browser UI for Jason, CLI seat for Claude, Opus-4.8 jeb partners via headless `claude -p`.
 **Updated:** [[intermediate-ai]] — measured: headless bid decisions cost minutes (minimax-to-terminal rollouts per candidate bid), which is why table42's bots are model-brained.
+
+## [2026-07-16 | worktree-table42 | table42 v2: local Python host is the authority; game night playbook]
+
+**Touched pages:** [[table42]] [[table42-game-night]]
+**Added:** [[table42-game-night]] — the one-stop playbook: vibe (feel the game, not competition), host commands, persistent agent-teammate seats with logged reasoning, honor system, review flow.
+**Updated:** [[table42]] — v2 architecture: Python host on zeb engine + arena auction, Cloudflare demoted to dumb glass (hidden hands never leave the machine), v1 worker-authority retired same day; findings kept.

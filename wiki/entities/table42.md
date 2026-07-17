@@ -1,5 +1,5 @@
 ---
-title: table42 — the four-seat online table
+title: table42 — the four-seat table
 kind: entity
 first_seen: 2026-07-16
 last_updated: 2026-07-16
@@ -8,98 +8,62 @@ status: active
 
 ## What it is
 
-A four-seat Texas 42 table on Cloudflare, built 2026-07-16 so Jason and a
-Claude session could play a full game from opposite teams with model-brained
-partners — the first realization of the [[engine]]'s never-built online mode
-([[multiplayer-pattern]]: "designed so a WebSocket/Durable-Object wiring could
-reuse Room and GameClient unchanged; that online mode was never built").
-Purpose: feel the game from the inside, narrate hands live, and record
-everything for post-game analysis against the
-[[belief-policy-value-algebra]] frame.
+The table where Claude sessions (and Jason, when he wants a seat) play real
+Texas 42 — built 2026-07-16 so the game could be felt from the inside,
+narrated live, and fully recorded for analysis against the
+[[belief-policy-value-algebra]] frame. How to run a game night:
+[[table42-game-night]]. Code in `scratch/table42/` of the `table42`
+worktree — gitignored; keep-or-promote is issue #65.
 
-Live at `https://table42.jasonyandell.workers.dev`. Code (~700 lines) in
-`scratch/table42/` of the `table42` worktree — gitignored; keep-or-promote is
-issue-tracked (see below).
+## Architecture (v2 — the local host is the authority)
 
-## Architecture
+- **`host/host.py`** — a Python game authority standing on the project's
+  real Python rules: [[forge]]'s zeb engine for play
+  (`forge/zeb/game.py`: `legal_actions`/`apply_action`, live per-trick
+  `team_points`) plus the arena's auction machinery (`arena/auction.py`:
+  `legal_bids`, `score_hand`, marks) and `deal_from_seed`/`hand_seed` for
+  reproducible deals. It runs the full marks race, reshakes pass-outs,
+  **fast-forwards mathematically decided hands** (set or made — checked on
+  live trick points), and writes everything to `run/<gid>/log.jsonl`:
+  seed + all four hands per deal, every action **with the mover's
+  reasoning**, chat, tricks, scores. 1s tick; 30-minute inactivity exit.
+- **Seats** are pluggable movers: `file:` (a local inbox — the main session
+  or a persistent agent teammate per player, driven through `wait.py` /
+  `act.py`), `cf:` (a human on the relay page), `random:` (baseline).
+  A [[jud]] seat is the intended fourth driver (not yet wired).
+- **Cloudflare relay** (`worker/`, `public/relay.html`) — dumb glass, no
+  game logic, no engine: the host pushes per-seat filtered view blobs up
+  (D1 `relay_views`); the browser renders them and appends moves/chat
+  (`relay_moves`) that the host polls down each tick. **Hidden hands never
+  enter Cloudflare in any form.** Spectator views carry public info only.
+- **Honor system**: the local log is complete and readable; players agree
+  not to look until review. Chosen deliberately over v1's token-gating —
+  full logging beats cheat-proofing for this purpose.
 
-The Worker is a thin, seat-token-gated HTTP shell around the engine's own
-composition — no rule logic is reimplemented:
+## v1 (retired same day)
 
-- **State** = `HeadlessRoom(config)` + `replayActions(history)` per request,
-  exactly the [[engine-architecture]] event-sourcing invariant. D1 stores
-  `(config, history, seq)` per game plus `chat` and `access_log` tables;
-  optimistic concurrency via the `seq` column (409 on conflict).
-- **Views** go through `getVisibleStateForSession` ([[multiplayer-pattern]]
-  capability filtering), plus a table42-specific scrub: `shuffleSeed` and
-  `dealOverrides` are removed from every view — `FilteredGameState` carries
-  them by default because the Svelte app is local single-player, and knowing
-  the seed is knowing the deal.
-- **Actions** are validated by regenerating the seat's menu and matching with
-  the engine's own `actionsMatch` semantics (type/player/bid/trump/dominoId,
-  meta-insensitive), then appended to history.
-- **Clients** are all plain pollers against their own seat token:
-  - `public/index.html` — Jason's browser UI (vanilla JS, 2.5s poll,
-    click-to-play, table-talk chat).
-  - `cli.ts` — a Claude session's seat: `view | act | say | wait | reveal`.
-  - `jebhost.py` — the partner bots ("Jeb"/"Jed"), each decision routed to a
-    regular Claude model (Opus 4.8) via headless `claude -p` in an empty
-    scratch cwd; ~6s per decision. Trivial acknowledgments (agree/complete)
-    skip the model call.
-
-## No-cheating properties
-
-- Per-seat bearer tokens; no unfiltered endpoint exists; every view/act is
-  access-logged in D1.
-- `/reveal` (full config, history, final state, chat, access log) refuses
-  until `phase === 'game_end'` or both human seats post `/end` in chat.
-- The Claude seat's entire play runs through its session transcript — every
-  command on the record for post-game audit. Symmetric caveat: the transcript
-  necessarily contains that seat's hand and reasoning, so the human must not
-  read the session while a game is live.
-
-## Running a game
-
-From `scratch/table42/` in the worktree (deps: repo `npm install`, `wrangler`,
-Keychain token `cloudflare-table42`, `claude` CLI authed):
-
-1. **Deploy** (only after code changes):
-   `CLOUDFLARE_API_TOKEN=$(security find-generic-password -s cloudflare-table42 -w) CLOUDFLARE_ACCOUNT_ID=eb6564e57c2aebe97bbc5d33a0ffe5cb wrangler deploy`
-   (schema: `wrangler d1 execute table42 --remote --file=schema.sql -y`; D1 id
-   `cc513c60-7115-4f97-a14a-2c14188fd8f9`).
-2. **Create a game**: `POST /api/new` with
-   `{"names":["Jason","Claude","Jeb","Jed"]}` → gameId + four seat tokens.
-   Teams are seats 0&2 vs 1&3. Write `{base, gameId, seats}` to
-   `scratch/table42/.game.json` (gitignored; holds all four tokens).
-3. **Hand the human seat 0's URL**: `/?g=<gameId>&t=<token0>`.
-4. **Start the jebs**: `python3 -u jebhost.py` (background; reads
-   `.game.json`, plays seats 2–3, logs to `logs/jebhost.log`, exits at game
-   end).
-5. **Play the Claude seat** via `npx tsx cli.ts view` / `act pass` /
-   `act play 6-4` / `act trump sixes` / `say <text>`; a session Monitor
-   polling the view endpoint emits "MY TURN" / chat events.
-6. **Debrief**: after game end (or mutual `/end`), `npx tsx cli.ts reveal`
-   writes `logs/reveal-<gameId>.json` with the full deal, history, chat, and
-   access log.
-
-Smoke harnesses: `rand.ts` (all-random seats; validated a full 339-move game
-to 7 marks, view latency flat ~150–250ms at full history) and `smoke.ts`
-(PIMC-brained seats).
+The first build inverted the trust shape: the Worker was the authority,
+bundling the TypeScript engine and replaying `(config, history)` from D1
+per request, with capability-filtered views and access-log auditing. It
+worked — full games validated end-to-end — but every logic change was a
+deploy, logs lived in D1, hidden state sat in the cloud, and Jason called
+the HeadlessRoom substrate half-baked for this use. Code preserved in
+`scratch/table42/v1/`; its game logs in `scratch/table42/logs/`.
 
 ## Findings
 
-- **[[intermediate-ai]] bidding is minutes-per-decision headless.** The
-  shipped `BeginnerAIStrategy` bid evaluator rolls out every candidate bid ×
-  `biddingSimulations` with **minimax to terminal from a fresh 28-tile
-  position** (`rolloutToHandEnd` = `minimaxEvaluate`); one bid decision pinned
-  a core at 100% for 6+ minutes. This is why table42's partner bots are
-  model-brained rather than PIMC-brained; the original PIMC poller survives as
-  `jeb.ts`.
-- Worker CPU is a non-issue: full-history replay through the layer system
-  stays ~150–250ms wall per request over a complete game.
+- **[[intermediate-ai]] bidding is minutes-per-decision headless** — each
+  candidate bid × sims rolls minimax to terminal from a fresh 28-tile
+  position; measured 6+ minutes for one bid decision. Why v1's bots were
+  swapped from PIMC to model brains.
+- **The zeb engine hosts interactive play cleanly**: a full random game
+  (auction → 7-mark race, fast-forward included) runs in ~0.6s CPU; the
+  arena's auction module slotted in unchanged.
+- v1 measurements: worker replay-per-request stayed ~150–250ms across a
+  339-move game; Cloudflare's bot check 403s Python's default urllib
+  User-Agent (set a custom one).
 
 ## Links
 
-[[engine]] · [[multiplayer-pattern]] · [[engine-architecture]] ·
-[[intermediate-ai]] · [[client-implementation]] ·
-[[belief-policy-value-algebra]] · [[texas-42]]
+[[table42-game-night]] · [[engine]] · [[forge]] · [[jud]] ·
+[[intermediate-ai]] · [[belief-policy-value-algebra]] · [[texas-42]]
