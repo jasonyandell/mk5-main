@@ -92,6 +92,15 @@ Otis is not a fork of [[jud]]; it is jud v2's target-granularity question
 capacity make the comparison honest; [[otis-v0]] carries the bands, including the
 tie and the decomposition-tax negative.
 
+Incumbent parity **reconfirmed 2026-07-17** (table42 worktree, fresh 512-game
+paired blocks, base_seed=0, both vs `margin:wp`(r8)+`lens:ev` with shared
+`lens:ev` play): round-0 treatment **−0.03 [−0.31, +0.25]** (49.2% in both
+halves; matches the graded −0.07), loop-final treatment r5 **−0.04
+[−0.31, +0.25]**. With the same session's gus h2h (jud +0.62 over `gus:10,wp`),
+the auction ladder at this capacity reads: jud r8 ≈ otis r0 ≈ otis r5 ≫ gus —
+a three-way tie at the top; the fate-decomposition and the jud loop land on the
+same plateau (`scratch/table42/jud_vs_otis/`).
+
 ## The program to the end
 
 [Issue #55](https://github.com/jasonyandell/mk5-main/issues/55) is the bridge
