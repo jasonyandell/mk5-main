@@ -60,7 +60,8 @@ the HeadlessRoom substrate half-baked for this use. Code preserved in
 
 Jason + jud vs Claude (Fable session) + jud; three hands played to marks
 3-0 Jason&Jud, abandoned at hand 4's auction near midnight. Full record
-in `host/run/0716-222859/log.jsonl`. What the table produced:
+in `host/run/0716-222859/log.jsonl`; the seat's first-person account is
+[[playing-from-the-inside]]. What the table produced:
 
 - **Belief contagion between language-users.** Jason misread hand 3's
   declaration (fours) as sixes, said "goes in 6s" in chat, and Claude —

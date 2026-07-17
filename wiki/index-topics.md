@@ -64,6 +64,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/pi-opp-head|pi-opp-head]] — 1,879-param PiOppHead trained on oracle softmax; 68.6% accuracy vs ~55% rotated π_me; real side product of LAMIR-1 work (retired)
 - [[topics/pimc|pimc]] — Perfect-Information Monte Carlo inference variants; direct π_me beats single-step PIMC because policy head already is the marginalized policy (active)
 - [[topics/play-phase-algebra|play-phase-algebra]] — play-phase state model, signed-reward decomposition, graded DAG + backward induction; the mathematics forge/oracle implements (active)
+- [[topics/playing-from-the-inside|playing-from-the-inside]] — first-person session notes from the Fable seat at table42 night 1: three-cartoon-world beliefs, discretion scarcity, bid-reach as felt wound, the belief-contagion incident from inside, register slippage; primary source for candlewax/legibility questions (active)
 - [[topics/post-commit-q-and-a|post-commit-q-and-a]] — fourth surface above play-time tools and pre-game commentary: conversational Q&A with Burl after a hand; Roberson chapters 2-8 are the canonical voice anchor (retired)
 - [[topics/preserve-thoughts|preserve-thoughts]] — confirmed at N=560: thought-block emission 0% → ~95% (phase change), AND a play-quality win on paired n=130 (regret 2.255 vs 3.016, −25%, identical 32.3% FC rate) (complete)
 - [[topics/q-head-augmentation|q-head-augmentation]] — path (a) closed: random depletion ≠ structured causal depletion; 2.216 regret — augmented Q_head worse than pre-fix rollouts (retired)
