@@ -6,6 +6,18 @@ last_updated: 2026-07-15
 status: complete
 ---
 
+**Field-scale quantification (2026-07-17, [[jud-v2-retrain-probe]]):** the
+defect's effect on *generated-game aggregates* is null — a same-seed 500-game
+corpus chunk regenerated on the repaired sampler reproduces the pre-repair
+made-rates, bid and declaration histograms almost exactly, and retraining the
+jud v1 loop on the clean corpus reproduces the contaminated loop's grades
+within CI. The contamination mattered for stored per-world tensors (below) and
+tail-state argmax flips ([[stage-0-closure]]), not for field play quality. A
+new regression test now pins the accelerator path in the float32-unsafe count
+regime the old fixtures never reached
+(`test_float32_unsafe_root_count_regime_valid_and_uniform`, 21-tile pool,
+399M-count root, cpu+mps).
+
 **Corpus-scale quantification (2026-07-15, [[otis-v0]]):** the malformed-world
 mechanism below is fossilized in the stored `gus/data/` joint-world corpus,
 generated pre-repair — direct probes measure 66.9% invalid stored worlds at the

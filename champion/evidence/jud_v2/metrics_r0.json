@@ -1,0 +1,52 @@
+{
+  "round": 0,
+  "head": "champion/jud_net_v2_r0.pt",
+  "ab_full512": {
+    "a_wins": 12,
+    "n_games": 512,
+    "mean_mark_margin": -4.762,
+    "ci_lo": -4.912,
+    "ci_hi": -4.6,
+    "a_offense_share": 0.593,
+    "a_made_rate": 0.2844,
+    "a_mean_bid": 30.71,
+    "point_margin": -10.719,
+    "decl_hist": {
+      "ones": 841,
+      "fours": 816,
+      "blanks": 630,
+      "threes": 600,
+      "notrump": 561,
+      "fives": 529,
+      "twos": 371,
+      "sixes": 340,
+      "doubles-trump": 2
+    }
+  },
+  "ab_bidonly256": {
+    "a_wins": 66,
+    "n_games": 256,
+    "mean_mark_margin": -1.844,
+    "ci_lo": -2.211,
+    "ci_hi": -1.492,
+    "a_offense_share": 0.5904,
+    "a_made_rate": 0.4805,
+    "a_mean_bid": 30.71,
+    "point_margin": -1.246,
+    "decl_hist": {
+      "fours": 491,
+      "ones": 458,
+      "blanks": 403,
+      "threes": 366,
+      "notrump": 334,
+      "fives": 318,
+      "twos": 216,
+      "sixes": 192
+    }
+  },
+  "eval": {
+    "test_ce": 2.2989697456359863,
+    "mae_mean_pts": 5.477222919464111,
+    "ece_p30": 0.03487009471317283
+  }
+}
