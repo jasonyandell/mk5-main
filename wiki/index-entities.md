@@ -31,6 +31,7 @@ Named things: projects, systems, models, artifacts. Hubs in bold below.
 - [[entities/qwen3-14b|qwen3-14b]] — capacity experiment; 97/100 rationalization; visibility_audit 0% structural gap; not adopted as production base (complete)
 - [[entities/stage-0-adapter-line|stage-0-adapter-line]] — LEM Stage 0 adapter lineage (stage-0→kerry→v3…v10) with comparative eval table (complete)
 - [[entities/star-harness|star-harness]] — STaR harness: Modal harness, local llama.cpp runner, single-GPU HF generate loop (vLLM abandoned) (complete)
+- [[entities/table42|table42]] — the four-seat table: local Python host (zeb engine + arena auction) as authority, agent-teammate seats with logged reasoning, Cloudflare as dumb glass (active)
 - [[entities/texas-42|texas-42]] — the game: 28 dominoes, 2 partnerships, 7 tricks, 42 points per hand; hub for the game-of-42 cluster ([[topics/rules-of-42|rules-of-42]] · [[topics/suit-algebra-spec|suit-algebra-spec]] · [[topics/play-phase-algebra|play-phase-algebra]]) (active)
 - [[entities/w42|w42]] — Winning 42 empirical strategy-validation workstream; book claims become detectors, reports, paired tests, and bounded claim statuses (active)
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (superseded)

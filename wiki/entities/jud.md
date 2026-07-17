@@ -2,7 +2,7 @@
 title: Jud — the unified belief-state player
 kind: entity
 first_seen: 2026-06-14
-last_updated: 2026-07-13
+last_updated: 2026-07-17
 status: active
 phase: 2026-07-13 — v0 and v1 built and graded; the v0 value-native bidder over oracle play is the current best player (fact below, reproduced at [[stage-0-closure]]). v1's play half is mechanism-limited; per-move targets at v1 capacity graded marks-null ([[jud-target-granularity]]), narrowing v2's residuals to capacity×target, on-policy loop data, and opponents-in-rollout. Surviving search consumer — [[belief-weighted-jud-mcts]].
 ---
@@ -161,7 +161,11 @@ learned challenger since [[zeb]] (Zeb-protocol reconfirmation, 2026-07-06:
 `judsearch` −1.39, `judplay` −2.73, both losing to `lens:ev`; a bonus pilot put
 `margin:wp`(r8) at +0.59 [−0.19, +1.39] over the live non-distilled `gus:10,wp`
 sim bidder — the bidding crown wasn't hiding behind the distillation;
-[[w42-jud-v1]]).
+[[w42-jud-v1]]). The gus pilot is **confirmed at n=128** (2026-07-17, table42
+worktree, fresh block base_seed=0): `margin:wp`(r8)+`lens:ev` beats
+`gus:10,wp`+`lens:ev` **+0.62 [+0.06, +1.23] marks/game**, 58.6% game win,
+halves 57.8%/59.4% — CI excludes zero; the learned head beats the simulation
+bidder it distilled past (`scratch/table42/jud_vs_gus/n128/`).
 
 ## The build, graded
 
@@ -189,6 +193,36 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
   (−3.44 → −1.16, +2.28) but not parity, and neither more worlds nor a
   better-calibrated head closes the rest. The stack reached −1.43 from −4.37
   oracle-free in one night; the wall is per-move discrimination.
+- **Field report — the table42 auction-calibration case (2026-07-16→17,
+  [[table42]], [issue #66](https://github.com/jasonyandell/mk5-main/issues/66)).**
+  First live-table instance of the head's auction claims being auditable
+  against a replayed seat. At game night 1, the v1 head (ValueBidder over
+  `jud_net.pt`) bid 31-in-fours on two trumps missing the boss, claiming
+  **P(make)=0.68**; a 1000-world replay of the exact information set under
+  jud self-play — the head's *own field*, so no field-mismatch excuse —
+  measured **0.273** (median outcome: set; the realized 39-3 make was
+  ~p90, carried by a partner who had passed holding 4-4+5-5). Predictions
+  were registered before the run: jud 0.68, Jason-by-gut 0.20, Claude 0.4x
+  — the human beat the head 6×. Nuance for the v0 loop-PASS above: the
+  loop dissolved over-bidding to *aggregate* parity; this seat shows
+  per-seat claims can remain wildly inflated inside an aggregate-calibrated
+  head. Probe: `scratch/table42/probe66.py` (table42 worktree). The follow-up
+  grid (`probe66_grid.py`) sharpened it three ways: the inflation is
+  **hand-level, not suit-level** (majority-make claimed in *every* pip
+  suit; blanks claimed 0.60 / measured 0.08); the fours declaration was a
+  **0.003 claimed-tie broken across a 0.17 measured chasm** (sixes measures
+  0.448 — the human's promotion reasoning beat the head's suit choice);
+  and **notrump is calibrated (−0.01) while every pip suit inflates**,
+  localizing the optimism by contract type. Remaining follow-ups on the
+  issue.
+  **Jason's conjecture (MIGHT, deciding probe on #66):** belief-shaping to
+  a self-play fixed point can converge to an internally-consistent,
+  externally-nonsense fixed point; the loop needs *outside* calibration
+  anchors — e.g. a no-beliefs floor (never price a seat above what a
+  u-consistent replay supports without evidence) — to prevent the failure
+  mode. This is [[belief-policy-value-algebra]] CAN-#4 read as a repair
+  path: V-error is repairable by evaluation data alone, and u-replays are
+  exactly such data, cheap (this one took 6 seconds).
 - **v2's residuals ([[jud-target-granularity]], 2026-07-13).** The named cue —
   per-move targets — is **graded a marks null at v1 capacity in both forms**:
   the parent-side dense E[Q] auxiliary triples in-distribution ranking and

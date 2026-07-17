@@ -22,6 +22,7 @@
 
 - [[playbooks/perf-sprint-goal|perf-sprint-goal]] — sticky-goal template for scratch/<sprint>/PERF_GOAL.md (active)
 - [[playbooks/perf-sprint-history|perf-sprint-history]] — append-only sprint post-mortems; results.tsv is the truth, prose is texture (active)
+- [[playbooks/table42-game-night|table42-game-night]] — one-stop for playing 42 from the inside: the vibe, host commands, agent-teammate seat spawning, review flow (active)
 - [[playbooks/perf-sprint-levers|perf-sprint-levers]] — ROI-ordered hypothesis fuel for the loop; closed-lever pre-conditions; PLE quant landmine (active)
 - [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message; supervision heartbeat (status pings, stuck-worker recovery), not the driver (active)
 - [[playbooks/perf-sprint-traps|perf-sprint-traps]] — bench crash recipes, contention detection, comparison-anchor footguns (active)

@@ -22,6 +22,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-16 | conversation | table42 game night 1 — jud seated, humans played, findings filed]
+
+**Touched pages:** [[table42]] [[table42-game-night]] [[playing-from-the-inside]] [[index-topics|index]]
+**Added:** `jud:` seat driver (ValueBidder+JudPlay, numbers-as-reasoning) to the v2 host; game night 1 findings on [[table42]] — belief contagion between language-users (trump misread propagated via chat, survived contradicting evidence), jud's field-fragile partner-pass semantics, count-consolidation as live jud-ism, the family vocabulary (rathouse luck, walker taxonomy, bid scale); traditions section on [[table42-game-night]] (shuffle-pause review, announced plans, verify-trump-from-the-view); [[playing-from-the-inside]] — the seat's first-person phenomenology, filed at Jason's insistence. Registered on #66: jud 0.68 vs Jason 0.20.
+**Questions opened:** [issue #66](https://github.com/jasonyandell/mk5-main/issues/66) — replay jud's hand-3 auction seat: is P(make)=0.68 honest against a human-containing field?
+
 ## [2026-07-16 | conversation | the belief/policy/value algebra promoted; measurement program filed]
 
 **Touched pages:** [[belief-policy-value-algebra]] [[strategy-fusion]] [[count-fate-ledger]] [[index-topics|index]]
@@ -107,3 +113,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Added:** [[count-fate-ledger]] — hand value as a belief-weighted ledger of count-fate scenarios (IDEATED, conversation 2026-07-13→14, issue #49); guards/walkers as one junk-retention economy per-world E[Q] cannot price ([[strategy-fusion]]).
 **Updated:** [[the-wall]] contextual-distribution direction now names its consumption object; threat-attribution grain framed as one factor of row probability.
 **Questions opened:** tied-strategy rollouts pricing guard/walker retention (questions/open.md, issue #49).
+
+## [2026-07-16 | worktree-table42 | table42: the online table built and live; game night in progress]
+
+**Touched pages:** [[table42]] [[intermediate-ai]]
+**Added:** [[table42]] — Cloudflare Worker + D1 around HeadlessRoom/replayActions with seat-token filtered views, seed scrub, access-log audit, gated reveal; browser UI for Jason, CLI seat for Claude, Opus-4.8 jeb partners via headless `claude -p`.
+**Updated:** [[intermediate-ai]] — measured: headless bid decisions cost minutes (minimax-to-terminal rollouts per candidate bid), which is why table42's bots are model-brained.
+
+## [2026-07-16 | worktree-table42 | table42 v2: local Python host is the authority; game night playbook]
+
+**Touched pages:** [[table42]] [[table42-game-night]]
+**Added:** [[table42-game-night]] — the one-stop playbook: vibe (feel the game, not competition), host commands, persistent agent-teammate seats with logged reasoning, honor system, review flow.
+**Updated:** [[table42]] — v2 architecture: Python host on zeb engine + arena auction, Cloudflare demoted to dumb glass (hidden hands never leave the machine), v1 worker-authority retired same day; findings kept.
