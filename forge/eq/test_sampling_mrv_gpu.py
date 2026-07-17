@@ -492,6 +492,43 @@ class TestUniformCompletionRegression:
         # distribution (TVD 0.0333) is far outside it at this sample count.
         assert chi_square < 130.0
 
+    @pytest.mark.parametrize("device", _sampler_devices())
+    def test_float32_unsafe_root_count_regime_valid_and_uniform(self, device):
+        """21-tile unconstrained pool: root count 399,072,960 > 2^24.
+
+        The two audit fixtures above use 6-tile pools whose counts sit inside
+        float32's exact-integer range, so an accelerator int64-through-float32
+        regression (the repaired MPS defect) would keep them green while
+        silently biasing every real early-game pool. This test exercises the
+        exact regime the 2026-07-06 corpus was contaminated in.
+        """
+        pools = torch.arange(21, dtype=torch.int32).unsqueeze(0)
+        hand_sizes = torch.tensor([[7, 7, 7]], dtype=torch.int32)
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool)
+        decl_ids = torch.tensor([0], dtype=torch.int32)
+
+        n_samples = 6_000
+        torch.manual_seed(20260717)
+        result = sample_worlds_mrv_gpu(
+            pools, hand_sizes, voids, decl_ids, n_samples=n_samples, device=device
+        ).cpu()
+
+        worlds = result[0]  # [n_samples, 3, 7]
+        assert worlds.shape == (n_samples, 3, 7)
+        flat = worlds.reshape(n_samples, 21)
+        # Every world is a permutation of the full pool: valid, no duplicates.
+        sorted_tiles = flat.sort(dim=1).values
+        assert (sorted_tiles == torch.arange(21, dtype=worlds.dtype)).all()
+
+        # Ownership marginals: each tile lands with each opponent ~1/3.
+        # se ≈ 0.0061 at n=6000; 0.03 is a ~5-sigma gate against the audited
+        # non-uniformity while staying flake-free.
+        for tile in (0, 10, 20):
+            owner_counts = (worlds == tile).sum(dim=2).float().mean(dim=0)
+            assert torch.allclose(
+                owner_counts, torch.full((3,), 1 / 3), atol=0.03
+            ), f"tile {tile} owner marginal {owner_counts.tolist()} on {device}"
+
     def test_padding_variable_hand_sizes_and_batch_constraints(self):
         pools = torch.tensor(
             [
