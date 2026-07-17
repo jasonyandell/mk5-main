@@ -2,7 +2,7 @@
 title: Intermediate AI — the shipped PIMC opponent
 kind: topic
 first_seen: 2025-11-26
-last_updated: 2026-07-11
+last_updated: 2026-07-16
 status: active
 ---
 
@@ -37,6 +37,10 @@ subscription with no privileged reads ([[multiplayer-pattern]]).
   opponent hands, pick trump for the sampled hand via `determineBestTrump`,
   roll the full hand out, and measure the make rate. Bid the highest value
   whose make rate ≥ 0.50; otherwise pass. Default 5 simulations per bid.
+  Each rollout is minimax to terminal from a fresh 28-tile position, so a
+  single bid decision costs **minutes** of CPU when driven headless — measured
+  2026-07-16 ([[table42]]), which routed its partner bots to a model brain
+  instead.
 - **Trump selection** — heuristic `determineBestTrump`
   (`src/game/ai/hand-strength.ts`): doubles with 3+, else strongest suit.
 - **Play** — full PIMC via `buildConstraints` + `selectBestPlay`: for each

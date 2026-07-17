@@ -107,3 +107,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Added:** [[count-fate-ledger]] — hand value as a belief-weighted ledger of count-fate scenarios (IDEATED, conversation 2026-07-13→14, issue #49); guards/walkers as one junk-retention economy per-world E[Q] cannot price ([[strategy-fusion]]).
 **Updated:** [[the-wall]] contextual-distribution direction now names its consumption object; threat-attribution grain framed as one factor of row probability.
 **Questions opened:** tied-strategy rollouts pricing guard/walker retention (questions/open.md, issue #49).
+
+## [2026-07-16 | worktree-table42 | table42: the online table built and live; game night in progress]
+
+**Touched pages:** [[table42]] [[intermediate-ai]]
+**Added:** [[table42]] — Cloudflare Worker + D1 around HeadlessRoom/replayActions with seat-token filtered views, seed scrub, access-log audit, gated reveal; browser UI for Jason, CLI seat for Claude, Opus-4.8 jeb partners via headless `claude -p`.
+**Updated:** [[intermediate-ai]] — measured: headless bid decisions cost minutes (minimax-to-terminal rollouts per candidate bid), which is why table42's bots are model-brained.
