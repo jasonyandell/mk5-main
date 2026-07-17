@@ -22,6 +22,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver built, gated, graded-in-progress]
+
+**Touched pages:** [[walt]] [[index-entities|index]]
+**Added:** [[walt]] — the 2026-07-17 brainstorm's base layer: exact best response in the information-set game at ≤4 tiles vs the jud field; eq's two deletions un-deleted (info-set-consistent continuation + exact B(σ) as a 0/1 filter); all gates green incl. T2 strategy-enumeration exactness and T6 claim-vs-cash closure; 3.6× perf pass on the M5 Max; walker definition corrected (unbeatable when led, not "promoted trash" — supersedes the [[table42]] gloss).
+**Questions opened:** [issue #71](https://github.com/jasonyandell/mk5-main/issues/71) — registered predictions P1–P4 (marks, window points, term-2 share, walker rate) + the Lisý scar probe as the ladder gate.
+
 ## [2026-07-16 | conversation | the belief/policy/value algebra promoted; measurement program filed]
 
 **Touched pages:** [[belief-policy-value-algebra]] [[strategy-fusion]] [[count-fate-ledger]] [[index-topics|index]]
