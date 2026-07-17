@@ -161,7 +161,11 @@ learned challenger since [[zeb]] (Zeb-protocol reconfirmation, 2026-07-06:
 `judsearch` −1.39, `judplay` −2.73, both losing to `lens:ev`; a bonus pilot put
 `margin:wp`(r8) at +0.59 [−0.19, +1.39] over the live non-distilled `gus:10,wp`
 sim bidder — the bidding crown wasn't hiding behind the distillation;
-[[w42-jud-v1]]).
+[[w42-jud-v1]]). The gus pilot is **confirmed at n=128** (2026-07-17, table42
+worktree, fresh block base_seed=0): `margin:wp`(r8)+`lens:ev` beats
+`gus:10,wp`+`lens:ev` **+0.62 [+0.06, +1.23] marks/game**, 58.6% game win,
+halves 57.8%/59.4% — CI excludes zero; the learned head beats the simulation
+bidder it distilled past (`scratch/table42/jud_vs_gus/n128/`).
 
 ## The build, graded
 
