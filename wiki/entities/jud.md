@@ -202,8 +202,15 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
   — the human beat the head 6×. Nuance for the v0 loop-PASS above: the
   loop dissolved over-bidding to *aggregate* parity; this seat shows
   per-seat claims can remain wildly inflated inside an aggregate-calibrated
-  head. Probe: `scratch/table42/probe66.py` (table42 worktree); follow-ups
-  (bid-conditioned sampling, thin-trump seat sweep) on the issue.
+  head. Probe: `scratch/table42/probe66.py` (table42 worktree). The follow-up
+  grid (`probe66_grid.py`) sharpened it three ways: the inflation is
+  **hand-level, not suit-level** (majority-make claimed in *every* pip
+  suit; blanks claimed 0.60 / measured 0.08); the fours declaration was a
+  **0.003 claimed-tie broken across a 0.17 measured chasm** (sixes measures
+  0.448 — the human's promotion reasoning beat the head's suit choice);
+  and **notrump is calibrated (−0.01) while every pip suit inflates**,
+  localizing the optimism by contract type. Remaining follow-ups on the
+  issue.
   **Jason's conjecture (MIGHT, deciding probe on #66):** belief-shaping to
   a self-play fixed point can converge to an internally-consistent,
   externally-nonsense fixed point; the loop needs *outside* calibration
