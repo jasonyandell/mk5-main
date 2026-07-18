@@ -333,7 +333,7 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     ws.w0 = ksub.weights[waves[0]["sworld"]].astype(np.float64)
     ws.total_w = float(ksub.weights.sum())
     leaf = res["leaf"]
-    ws.leaf_pts = leaf["ptsvd"][leaf["snode"]]
+    ws.leaf_pts = leaf["ptsvd"][leaf["snode"]].astype(np.int16)
     ws.PS, ws.GID, ws.uedge = [], [], []
     ws.iset_ju = {}
     ws.pin_slots = []          # (flat off, probs vector) fixed at pinned isets
@@ -363,7 +363,9 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     for j in range(L):
         wj, wn = waves[j], waves[j + 1]
         snode, sworld, sw = wj["snode"], wj["sworld"], wj["sw"]
-        parn, tile_n, pseat_n = wn["parent"], wn["tile"], wn["pseat"]
+        parn = wn["parent"]                       # int32: index use only
+        tile_n = wn["tile"].astype(np.int64)      # int8 stored; arithmetic
+        pseat_n = wn["pseat"].astype(np.int64)    # needs the wide dtype
         Mj = len(wj["counts"])
 
         # actor per wave-j node = seat of its first child edge

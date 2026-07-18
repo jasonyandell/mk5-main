@@ -554,8 +554,8 @@ class _NetSigmaProvider:
             anc = bn
             for j in range(eng.cw, 0, -1):
                 wj = waves[j]
-                tj = wj["tile"][anc]
-                sj = wj["pseat"][anc]
+                tj = wj["tile"][anc].astype(np.int64)
+                sj = wj["pseat"][anc].astype(np.int64)
                 k = eng.p0 + j - 1
                 base = 9 * tj
                 blocks[arU, base + (sj - povs) % 4] = 1.0
