@@ -235,4 +235,4 @@ Gated sequence, cheap probes first:
 [[walt]] · [[belief-policy-value-algebra]] · [[strategy-fusion]] ·
 [[expected-q-value]] · [[jud]] · [[gus]] · [[count-fate-ledger]] ·
 [[lamir1-ceiling]] · [[champion-design-review]] · [[w42]] · [[the-wall]] ·
-[[candlewax]] · [[the-wall-biography]]
+[[candlewax]] · [[the-wall-biography]] · [[perf]]
