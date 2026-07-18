@@ -128,3 +128,48 @@ loop). Entries a–e above predate the rename and say `walt/kernel` —
 historically correct, left as written (this log is append-only). 40
 tests green post-move; K1 parity fixtures stay in `walt/tests/` (the
 gate is a walt↔hoyt cross-check by nature).
+
+## 2026-07-18g — CFR lane perf day: the RSS hog was python objects
+
+Paired-bench anchor: evalset 555006, cap 256, 40 iters (gap 0.039), quiet
+box (wall reproduced last night's 119.8 s at 120.9). **Anatomy first**
+(law 6): the numpy arrays were innocent — stored waves 1.13 GiB, retained
+iteration structure ~1.2 GiB — the 7-10 GiB peak was **python objects**:
+`exp_entries` (2.75M tuples-of-tuples inc. path tuples) plus TWO resident
+2.75M-entry dict profiles per solve, and ~5.5 s of the 7.8 s build was
+the tuple-building loop.
+
+**Landed** (every step value/gap/trace BIT-IDENTICAL on the anchor; gates
+I1/I2 + P1/P2 + 21 pytest green throughout):
+- `want_strategy=False` in gap pricing (BR strategy was extracted and
+  discarded): br 43.9→41.6 s.
+- **Columnar StochasticProfile** (the day's centerpiece): frozen columnar
+  store keyed (seat<<28|hand, h1, h2) under a mixed 64-bit sort key with
+  exact verification; `set_bulk` loads the whole CFR export in one call —
+  hash keys straight off the walk's rolling 128-bit path hash, zero
+  python objects per entry; `_DictProfileProvider` fully vectorized
+  (searchsorted + segment assembly, identical per-entry composition).
+  **wall 120.9→91.8 s, export 12.2→0.87 s (14×), br 43.9→28.6 s, build
+  7.8→5.4 s, peak RSS 10.6→7.0 GiB.** Every mixed-profile BR (counter-walt
+  #77 included) rides the same path.
+- dtype narrowing: stored waves int32/int8, leaf_pts int16 (RSS
+  6.98→6.76); PS/GID/uedge deliberately KEPT int64 — they feed
+  bincount/fancy-indexing in the hot loop and numpy converts non-intp
+  index arrays per call (narrowing would pessimize).
+
+**Negative results** (append-only honesty): `_rm_plus_update`
+add.at→bincount = wash (numpy 2.x ufunc.at is already fast on sorted
+indices); `_wave_pass` reach-fusion (two fewer slot-size temporaries) =
+wash. Iterate (56.9 s, now 62% of wall) is bandwidth-bound vectorized
+numpy; the next iterate lever is a compiled kernel, declined again per
+the single-source parity doctrine.
+
+**BR anatomy** (kills a queued idea with data): hidden-hero BR walks
+~19M nodes in ~3.8 s/seat vs hero-me 3.2 s at the same node count — the
+~170-per-seat group loop costs only ~0.6 s/seat (~15% of br). Batching
+groups into one walk (wave-0 seeding) is NOT worth the engine change;
+the walk size is the cost. Logged, not built.
+
+Net: cap-256 reference solve 120.9→~92 s (1.31×), peak RSS 10.6→6.7 GiB
+(1.58×) — sweep parallelism on the 48 GiB box goes from ~4 to 5-6
+workers with headroom.

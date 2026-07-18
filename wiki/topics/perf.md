@@ -93,8 +93,10 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far), ~2 min/root at cap-256 after the
-  36.5× traversal vectorization.
+  (scale-invariant in worlds so far); cap-256 median root **~92 s / 6.7
+  GiB peak** after the columnar-profile day ([[perf-log]] 18g: export
+  14×, mixed-profile BR 1.5×, RSS 1.6× — the hog was python objects, not
+  arrays; iterate is now 62% of wall and bandwidth-bound).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

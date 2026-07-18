@@ -63,7 +63,7 @@ info set in about the cost of one ordinary solve — after which:
 | H4 BR re-solve after compile | p50 0.9 ms (45× net wavefront) |
 | H5-cap512 BR | p50 3.5 ms; compile 0.35 s |
 | CFR gap ≤0.05 pts | ≤40 iterations at EVERY root tried — **scale-invariant in worlds** (10 → 33,740) |
-| CFR wall/root, cap-256 | 6–262 s, median ~115 s; peak RSS 7.4 GiB |
+| CFR wall/root, cap-256 | median ~92 s, peak RSS 6.7 GiB after the columnar-profile perf day ([[perf-log]] 18g; was ~115 s / 7.4+ GiB) |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
 | jud rent, 12 evalset roots | walt-BR-vs-jud beats the reference line by median **+1.9 pts/root** (range −0.08…+5.63) |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
