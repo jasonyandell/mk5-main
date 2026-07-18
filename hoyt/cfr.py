@@ -104,6 +104,7 @@ class CFRResult:
     gap: float                         # final measured gap (max single-seat BR gain)
     value: float                       # self-play value of the average profile
     iters_run: int
+    capped: bool = False               # stop was wall_budget_s-driven (gap still exact)
     timings: dict | None = None        # build/iterate/export/br wall seconds
     debug: dict | None = field(default=None, repr=False)
 
@@ -602,7 +603,8 @@ def _wave_pass(ws: _WaveStruct, sig, u, payleaf, cf, xI) -> None:
 def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = None,
               seed: int = 0, br_every: int = 10, impl=None,
               pinned: dict | None = None, debug: bool = False,
-              engine: str = "wave", slot_budget: int | None = None) -> CFRResult:
+              engine: str = "wave", slot_budget: int | None = None,
+              wall_budget_s: float | None = None) -> CFRResult:
     """CFR+ over all four seats' info sets; gap priced by impl.br_solve.
 
     Args:
@@ -627,6 +629,23 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
         slot_budget: forwarded to the kernel walk (wave engine); None keeps
             the kernel default. A KernelMemoryError means chunk or cap —
             escalate, never sample.
+        wall_budget_s: optional wall-clock budget for the WHOLE solve
+            (build included), wave engine only. Checked at every iteration
+            boundary and again after every gap measurement; when exceeded,
+            the gap is measured once more and the solve stops with
+            capped=True. The stop is a QUANTIFIED verdict — the average
+            profile plus its exactly-priced single-seat BR gap — not a
+            failure. A stopping measurement that also satisfies target_gap
+            reports capped=False (convergence wins; when the budget expires
+            exactly at the final iteration capped=True is still reported —
+            the result is identical either way, the flag only names the
+            binding constraint). Wave-only by design: the loop engine is
+            the frozen parity mirror and its gates compare traces across
+            engines; a wall-driven stop is timing-nondeterministic and can
+            never be parity-pinned, so the loop raises ValueError instead
+            of silently diverging (it is toy-sized only, where wall budgets
+            are meaningless anyway). None (default) is behaviorally
+            identical to the pre-knob solver.
     """
     del seed  # deterministic full-width solve; kept for contract stability
     if impl is None:
@@ -641,9 +660,13 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
     pinned = {int(s): p for s, p in (pinned or {}).items()}
     if engine not in ("wave", "loop"):
         raise ValueError(f"engine must be 'wave' or 'loop', got {engine!r}")
+    if wall_budget_s is not None and engine != "wave":
+        raise ValueError("wall_budget_s requires engine='wave' (the loop "
+                         "engine is the frozen parity mirror; wall-driven "
+                         "stops cannot be parity-pinned)")
     if engine == "wave":
         return _solve_wave(subgame, payoff43, iters, target_gap, br_every,
-                           impl, pinned, debug, slot_budget)
+                           impl, pinned, debug, slot_budget, wall_budget_s)
     return _solve_loop(subgame, payoff43, iters, target_gap, br_every,
                        impl, pinned, debug)
 
@@ -679,7 +702,7 @@ def _avg_sig(sig, avg, slot_iset, nlegal_slot, n_isets, unpinned_mask):
 
 
 def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
-                pinned, debug, slot_budget) -> CFRResult:
+                pinned, debug, slot_budget, wall_budget_s=None) -> CFRResult:
     tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
           "value": 0.0}
     t0 = time.time()
@@ -740,6 +763,9 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     trace: list = []
     result = None
     it = 0
+    capped = False
+    over = (lambda: time.time() - t0 > wall_budget_s) \
+        if wall_budget_s is not None else (lambda: False)
     cf = np.empty(ws.Lflat)
     xI = np.empty(ws.n_isets)
     for it in range(1, iters + 1):
@@ -751,13 +777,16 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
             _rm_plus_update(sig, reg, avg, cf, xI, upd[u], ws.slot_iset,
                             ws.nlegal_slot, ws.n_isets, signs[u], it)
         tm["iterate"] += time.time() - t1
-        if it % br_every == 0 or it == iters:
+        if it % br_every == 0 or it == iters or over():
             asig = _avg_sig(sig, avg, ws.slot_iset, ws.nlegal_slot,
                             ws.n_isets, ~slot_pinned)
             prof, vbar, gap = measure(asig)
             trace.append((it, gap))
             result = (prof, vbar, gap)
             if target_gap is not None and gap <= target_gap:
+                break
+            if over():                 # budget-driven stop, gap just priced
+                capped = True
                 break
 
     prof, vbar, gap = result
@@ -771,7 +800,7 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         dbg = {"isets": isets, "reg": reg, "avg": avg, "avg_sig": asig,
                "sig": sig, "n_isets": ws.n_isets}
     return CFRResult(profile=prof, trace=trace, gap=gap, value=vbar,
-                     iters_run=it, timings=tm, debug=dbg)
+                     iters_run=it, capped=capped, timings=tm, debug=dbg)
 
 
 def _solve_loop(subgame, payoff43, iters, target_gap, br_every, impl,

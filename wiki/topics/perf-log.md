@@ -173,3 +173,93 @@ the walk size is the cost. Logged, not built.
 Net: cap-256 reference solve 120.9→~92 s (1.31×), peak RSS 10.6→6.7 GiB
 (1.58×) — sweep parallelism on the 48 GiB box goes from ~4 to 5-6
 workers with headroom.
+
+## 2026-07-18h — the cap-ledger cascade: refsweep + wall-budget verdicts
+
+**Directive (Jason):** "when we're doing perf, it is for the sake of perf...
+I want to optimize 4th-play eval count per wall clock and I'll tolerate cap
+results as early-cap games are an interesting artifact to analyze on their
+own and are available in bulk." Headline metric registered: **H4
+evals/hour**.
+
+**Lineage:** the gomoku VCT cascade labeler (gomoku wiki
+`topics/vct-cascade-labeler.md` + `topics/mega-vct-solver.md`) — solver
+returns result-or-cap as first-class verdicts, every item gets an explicit
+ledger row (no absence-as-state), a budget ladder deepens only the
+shrinking capped-survivor tail, and the deepening curve is itself the
+artifact. 42's cap is STRONGER than gomoku's boolean `hit_cap`: a CFR stop
+at any point is a QUANTIFIED verdict — the average profile plus its
+exactly-measured single-seat BR gap, priced by exact BR. A gap_capped row
+is a usable reference at gap g, not a failure.
+
+**Landed** (working tree, worktree-perf-day; gates P1/P2 + I1/I2 + 34
+pytest green, incl. 13 new):
+
+- `cfr_solve(..., wall_budget_s=)` (hoyt/cfr.py): wall checked at every
+  iteration boundary and after every gap measurement; on expiry the gap is
+  measured once more and the solve stops with `CFRResult.capped=True` —
+  quantified, never silent. Convergence beats the cap (a stop that meets
+  target_gap is capped=False). Wave-only: the loop engine is the frozen
+  parity mirror and wall-driven stops are timing-nondeterministic, so it
+  raises instead of silently diverging. Default-off is behaviorally
+  identical (parity gates stay 0.0e+00). Capped-gap exactness is tested:
+  a wall_budget_s=0 run reproduces bit-for-bit the gap of an uncapped run
+  stopped at the same iteration (impl=hoyt.reference, toys).
+- `profile_value(..., slot_budget=)` (hoyt/br.py): mirrors br_solve's
+  existing knob; a monster root that needed a raised budget in cfr_solve
+  previously had no way to value its exported profile (hardcoded 32M would
+  re-raise at every rung). Default identical.
+- **`hoyt/refsweep.py`** — the cascade harness (production, not scratch:
+  the stable eval reruns forever). Rung ladder (defaults, `--rungs` to
+  override): r0 = iters 80 / gap 0.05 / wall 90s / 32M slots; r1 = 240 /
+  600s / 64M; r2 = 1000 / wall inf / 128M — iters is a backstop only
+  (18e: iteration count to gap 0.05 is world-scale-invariant). Verdicts
+  per (root, rung): converged / gap_capped (usable reference at measured
+  gap; `capped_by_wall` names the binding constraint) / slot_capped
+  (KernelMemoryError; next rung's budget retries) / error (kept, carried
+  forward like a cap). Resume unions all shard ledgers, verdict-aware,
+  never re-enters a (root, rung) with a row. Merge = best verdict per
+  seed → `reference_h4_cap256.jsonl` + deepening curve + evals/hour.
+- **Sharding fixes the day's two observed sins**: the snake rank-aligned
+  monster phases across workers AND let one 64M-slot root block ~20 cheap
+  queued roots ~21 min. Now: sort ascending by n_worlds_sigma, deal
+  round-robin (every queue spans the size range), rotate queue w by w/W of
+  its length — monster phases land at staggered queue positions (measured
+  on the 200-root evalset at W=8: positions 24, 21, 18, ... 3).
+  Memory-aware worker default: 7 GiB/32M-slots (18g anchor) scaled by the
+  rung's slot budget, 25% RAM headroom; explicit `--workers` is honored
+  with a warning.
+
+**Measured (smoke, 2 tiny roots, 1 worker, quiet-ish box during the
+running sweep):** both converged rung 0 (555181: 10 worlds, 4.0 s, gap
+0.016; 555038: 54 worlds, 4.8 s, gap 0.028, rent +1.94 — consistent with
+18e's median +1.9). Full pipeline exercised: worker spawn, ledger rows,
+30 s heartbeat, merge, deepening curve, evals/hour, resume (rerun on a
+finished outdir: "retired=2", zero new rows).
+
+**Deferred, deliberately:** full-scale run and its deepening curve (the
+ad-hoc 200-root sweep was still running; parent validates via
+`python -u -m hoyt.refsweep --dry-run` and the
+`--seeds 555038,555181 --workers 1` smoke, then launches the real sweep);
+whether the rung-1/2 wall+slot defaults are right for the real monster
+tail (first full run will say); per-rung `br_every` tuning (still the
+gap-pricing cost lever from 18e).
+
+## 2026-07-18i — the exact grind killed by its own numbers; cascade takes over
+
+The 8-wide exact 200-root sweep was stopped at **43/200** rows banked
+(~50 min in): recent big-root walls had reached 1245–1837 s — **5–7×
+their quiet-box cost**. Measured contention law (new corollary to law 3):
+**bandwidth-bound monster roots barely parallelize** — 8 concurrent big
+solves aggregate to ≈1.3× ONE quiet worker (workers at 50–74% CPU,
+memory-bandwidth saturated), while the small stratum parallelizes fine.
+Cold strata math said 3–4 more hours; Jason's directive (18h) says that
+shape is exactly what we no longer run. Also observed live: the snake
+sharding rank-aligned monster phases (three ~5-min windows with ZERO
+completions across all 8 workers).
+
+The 43 banked rows are all converged (gap ≤ 0.05) and skew heavy (they
+were every shard's front); grafted into the cascade ledger as rung-0
+converged rows (`rung0_shard99.jsonl`, rung_spec marks the provenance).
+refsweep launched over the remaining 157 with the default ladder;
+deepening curve + evals/hour land in the next entry.
