@@ -14,7 +14,7 @@
 - [[trails/the-analysis-epic|the-analysis-epic]] — the three-day Jan 6-8 launch of `forge/analysis/` (modules 01-26) that became [[entities/forge-analysis|forge-analysis]] (complete)
 - [[trails/the-book-enters|the-book-enters]] — Winning 42 arrives as a rules citation; the extraction that later became the w42 campaign stayed dormant for weeks (retired)
 - [[trails/the-gestation|the-gestation]] — Era 5: the 52-day zero-commit span between the E[Q] capacity-ceiling close and [[entities/lem|lem]]'s first commit (complete)
-- [[trails/the-wall-biography|the-wall-biography]] — capstone of the seven-month archaeology (2025-07-19 → 2026-07-06): the long-form narrative companion to [[topics/the-wall|the-wall]], written over the six era memos and the era-6 reconciliation packets (active)
+- [[trails/the-wall-biography|the-wall-biography]] — capstone of the seven-month archaeology (2025-07-19 → 2026-07-17): the long-form narrative companion to [[topics/the-wall|the-wall]], written over the six era memos and the era-6 reconciliation packets; newest chapter, the door gets a hinge ([[entities/walt|walt]]) (active)
 - [[trails/w42-book-validation|w42-book-validation]] — curated route through the W42 / Winning 42 book-validation cluster, utility-lens work, Lens v1, and planning-aware frontier without loading every leaf page (active)
 - [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: frontier hubs, trails, large leaf clusters, and query shortcuts (active)
 

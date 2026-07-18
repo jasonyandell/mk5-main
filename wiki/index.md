@@ -8,13 +8,13 @@ catalog file below; the linter (`scripts/wiki_lint.py`) enforces coverage.
 - [[the-wall]] — the project's central question (the front door)
 - [[wiki-entrypoints]] — role-based routes into the wiki
 - [[log]] — the changelog; digest at top
-- [[champion]] / [[jud]] — the current frontier hubs
+- [[champion]] / [[jud]] / [[walt]] — the current frontier hubs
 - [[huggingface-assets]] — where the data lives: every HF dataset/model the project generated
 
 ## Catalogs
 
-- [[index-entities|Entities]] (34) — projects, systems, models, artifacts
-- [[index-topics|Topics]] (88) — concepts, methods, findings
+- [[index-entities|Entities]] (36) — projects, systems, models, artifacts
+- [[index-topics|Topics]] (92) — concepts, methods, findings
 - [[index-experiments|Experiments]] (164) — runs and receipts, grouped by workstream
 - [[index-decisions|Decisions]] (26) — design choices
 - [[index-trails-playbooks|Trails & Playbooks]] (15+7) — walkthroughs and procedures
