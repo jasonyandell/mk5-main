@@ -155,3 +155,8 @@ arena/results/
 champion/evidence/**/per_game.csv
 champion/evidence/**/*.jsonl
 otis/models/*.pt
+
+# Parlor salon: raw seat-session logs are tier-3 run data (run-artifacts-policy);
+# they live on disk and on HF (mk5-run-evidence, parlor/ prefix, tag parlor-session-1).
+# The curated transcript.md keepsake stays committed.
+parlor/sessions/

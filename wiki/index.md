@@ -13,7 +13,7 @@ catalog file below; the linter (`scripts/wiki_lint.py`) enforces coverage.
 
 ## Catalogs
 
-- [[index-entities|Entities]] (36) — projects, systems, models, artifacts
+- [[index-entities|Entities]] (37) — projects, systems, models, artifacts
 - [[index-topics|Topics]] (92) — concepts, methods, findings
 - [[index-experiments|Experiments]] (164) — runs and receipts, grouped by workstream
 - [[index-decisions|Decisions]] (26) — design choices

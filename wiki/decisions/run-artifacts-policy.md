@@ -2,7 +2,7 @@
 title: Run Artifacts Policy — claims in git, measurements ephemeral
 kind: decision
 first_seen: 2026-07-13
-last_updated: 2026-07-15
+last_updated: 2026-07-18
 status: active
 ---
 
@@ -53,6 +53,18 @@ Moving data needs no custom tooling — the stock `hf` CLI upload/download
 commands are documented at [[huggingface-assets]] § Moving evidence data.
 New runs never enter git.
 
+## Conversation and session logs
+
+Added 2026-07-18 when [[parlor]] session 1 was promoted. Multi-model
+salon/seat session logs (the `.jsonl` a `pi --session-dir` seat emits,
+agent transcripts, relay records) are **tier 3**: never committed
+(`.gitignore`: `parlor/sessions/`), mirrored to the HF evidence dataset at
+their repo-relative path, cited by pinned tag (`parlor/` @
+`parlor-session-1`). The **curated human-readable transcript** is tier 2:
+committed small (`parlor/transcript.md`), and also mirrored to HF beside
+the raw log so the pinned tag is self-contained.
+`parlor/bin/publish-session.sh` is the established path.
+
 ## Adding a new data-producing area
 
 When a new area starts writing run outputs, its data directories get
@@ -62,4 +74,4 @@ first run, not after review catches tracked CSVs.
 ## Links
 
 [[stage-0-closure]] [[jud-target-granularity]] [[partnership-research-gates]]
-[[arena]] [[beads-to-gh-issues]]
+[[arena]] [[beads-to-gh-issues]] [[parlor]]

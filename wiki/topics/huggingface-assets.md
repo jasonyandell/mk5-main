@@ -2,7 +2,7 @@
 title: HuggingFace Assets — the off-git shelf
 kind: topic
 first_seen: 2026-07-15
-last_updated: 2026-07-15
+last_updated: 2026-07-18
 status: active
 ---
 
@@ -21,7 +21,12 @@ the split. The established upload path is `scripts/hf_publish/upload.py`.
   `otis/models/*.pt` heads, all of `arena/results/`. Tag
   `otis-night2-2026-07-15` pins the migration. Moved with the stock `hf`
   CLI (see below); public means the dataset viewer + `hf://` paths
-  (DuckDB/pandas) read it with no token.
+  (DuckDB/pandas) read it with no token. Also holds the [[parlor]] salon
+  records under `parlor/`: raw seat session `.jsonl` logs plus mirrors of
+  the curated transcript and protocol, pinned at tag
+  [`parlor-session-1`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/parlor-session-1/parlor)
+  ([[run-artifacts-policy]] § Conversation and session logs;
+  `parlor/bin/publish-session.sh` is the upload path).
 
 - [`texas-42-joint-world-corpus`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
   (public) — the original joint-world tensor corpus behind Gus belief training
@@ -89,4 +94,4 @@ or deleted) — treat citations of them as broken until resolved:
 ## Links
 
 [[run-artifacts-policy]] [[joint-world-tensor]] [[otis-phase-r]] [[zeb]]
-[[gus]] [[burl]] [[zeb-fleet-ops]]
+[[gus]] [[burl]] [[zeb-fleet-ops]] [[parlor]]
