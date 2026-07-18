@@ -10,7 +10,6 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
 
 from forge.oracle.tables import resolve_trick, trick_rank  # noqa: E402
 from forge.zeb import game as zeb  # noqa: E402

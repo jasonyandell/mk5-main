@@ -29,10 +29,6 @@ import time
 from pathlib import Path
 from typing import Optional, Sequence
 
-WALT_ROOT = "/Users/jason/code/mk5-main/.claude/worktrees/walt"
-if WALT_ROOT not in sys.path:
-    sys.path.insert(0, WALT_ROOT)
-
 import numpy as np
 
 from walt.contracts import EndgameRoot, HORIZON
@@ -52,8 +48,6 @@ _WORKER_ORACLE = None
 def _worker_init(net_path: str) -> None:
     """Pool initializer: pin threads, build one CPU FieldOracle per worker."""
     global _WORKER_ORACLE
-    if WALT_ROOT not in sys.path:
-        sys.path.insert(0, WALT_ROOT)
     import torch
 
     torch.set_num_threads(1)
@@ -81,9 +75,25 @@ def _make_moves_filter(root: EndgameRoot, horizon: int = HORIZON):
     return moves_filter
 
 
+def _world_cap_rng(root: EndgameRoot, world_cap: int) -> np.random.Generator:
+    """Deterministic rng for the world-cap subsample: a function of the root's
+    information set and K only, so re-solving the same root reproduces the
+    same subsample (and the same move) across runs and processes."""
+    key = (root.me, root.decl_id, root.bidder, tuple(root.my_hand),
+           tuple(root.play_history), world_cap)
+    return np.random.default_rng(abs(hash(key)) % (2**63))
+
+
 def _run_solve(root: EndgameRoot, beliefs: str, payoff: str, oracle,
-               horizon: int = HORIZON):
-    """Enumerate worlds, optionally sigma-filter, solve. Returns SolveResult."""
+               horizon: int = HORIZON, world_cap: int = 0):
+    """Enumerate worlds, optionally sigma-filter, optionally cap, solve.
+
+    world_cap=0 keeps the solve exact-given-worlds. world_cap=K>0 uniformly
+    subsamples (without replacement) whenever more than K worlds survive the
+    filter — MC error measured 2026-07-18 (scratch/worldcap): p90 |dValue|
+    0.45 pts at K=512, 0.58 at K=256; material argmax flips (|dV|>0.5) 0% at
+    K>=512, 1.3% at K=256. Flips below that are near-ties.
+    """
     from walt.worlds import enumerate_worlds
     from walt.solver import solve
 
@@ -99,6 +109,11 @@ def _run_solve(root: EndgameRoot, beliefs: str, payoff: str, oracle,
         # never crashes (logged via walker_flags downstream).
         if len(filtered) > 0:
             worlds = filtered
+    if world_cap and len(worlds) > world_cap:
+        idx = _world_cap_rng(root, world_cap).choice(
+            len(worlds), size=world_cap, replace=False
+        )
+        worlds = worlds[np.sort(idx)]
     n = max(len(worlds), 1)
     weights = np.full(len(worlds), 1.0 / n, dtype=np.float64)
     return solve(root, worlds, weights, oracle, payoff=payoff)
@@ -106,10 +121,11 @@ def _run_solve(root: EndgameRoot, beliefs: str, payoff: str, oracle,
 
 def _solve_task(task):
     """Pool task: (root, beliefs, payoff) -> compact result dict."""
-    root, beliefs, payoff, horizon = task
+    root, beliefs, payoff, horizon, world_cap = task
     t0 = time.perf_counter()
-    res = _run_solve(root, beliefs, payoff, _WORKER_ORACLE, horizon)
+    res = _run_solve(root, beliefs, payoff, _WORKER_ORACLE, horizon, world_cap)
     solve_ms = (time.perf_counter() - t0) * 1e3
+    _WORKER_ORACLE.evict_if_huge()   # solve boundary: safe to drop the memo
     return {
         "best_move": int(res.best_move),
         "value": float(res.value),
@@ -117,6 +133,7 @@ def _solve_task(task):
         "n_nodes": int(res.n_nodes),
         "n_field_queries": int(res.n_field_queries),
         "walker_flags": dict(res.walker_flags),
+        "root_values": {int(k): float(v) for k, v in res.root_values.items()},
         "solve_ms": solve_ms,
     }
 
@@ -145,6 +162,7 @@ class WaltPlay:
         beliefs: str = "sigma",
         payoff: str = "points",
         horizon: int = HORIZON,
+        world_cap: int = 0,
         pool_size: int = 12,
         decisions_path: Optional[str] = None,
     ):
@@ -156,6 +174,7 @@ class WaltPlay:
         self.beliefs = beliefs
         self.payoff = payoff
         self.horizon = int(horizon)
+        self.world_cap = int(world_cap)
         self.pool_size = pool_size
         self.decisions_path = decisions_path
 
@@ -254,7 +273,8 @@ class WaltPlay:
             else:
                 root = self._build_root(s, mover, remaining, bid_values[i])
                 solve_meta.append((i, s, mover, root))
-                tasks.append((root, self.beliefs, self.payoff, self.horizon))
+                tasks.append((root, self.beliefs, self.payoff, self.horizon,
+                              self.world_cap))
 
         # Above-horizon: one batched JudPlay forward pass.
         if jud_states:
@@ -269,9 +289,11 @@ class WaltPlay:
             else:
                 oracle = self._ensure_local_oracle()
                 results = []
-                for root, beliefs, payoff, horizon in tasks:
+                for root, beliefs, payoff, horizon, world_cap in tasks:
                     t0 = time.perf_counter()
-                    res = _run_solve(root, beliefs, payoff, oracle, horizon)
+                    res = _run_solve(root, beliefs, payoff, oracle, horizon,
+                                     world_cap)
+                    oracle.evict_if_huge()
                     results.append({
                         "best_move": int(res.best_move),
                         "value": float(res.value),
@@ -279,6 +301,8 @@ class WaltPlay:
                         "n_nodes": int(res.n_nodes),
                         "n_field_queries": int(res.n_field_queries),
                         "walker_flags": dict(res.walker_flags),
+                        "root_values": {int(k): float(v)
+                                        for k, v in res.root_values.items()},
                         "solve_ms": (time.perf_counter() - t0) * 1e3,
                     })
             for (i, s, mover, root), r in zip(solve_meta, results):
@@ -306,6 +330,7 @@ class WaltPlay:
             "tiles_left": len(root.my_hand),
             "beliefs": self.beliefs,
             "payoff": self.payoff,
+            "world_cap": self.world_cap,
             "n_worlds": r["n_worlds"],
             "n_nodes": r["n_nodes"],
             "n_field_queries": r["n_field_queries"],
@@ -321,6 +346,7 @@ class WaltPlay:
                 "current_trick": list(root.current_trick),
                 "team_points": list(root.team_points),
             },
+            "root_values": r.get("root_values", {}),
             "chosen_id": r["best_move"],
             "jud_would_id": int(jud_id),
             "diverged": int(r["best_move"] != int(jud_id)),
@@ -451,6 +477,10 @@ def main() -> int:
     parser.add_argument("--n-games", type=int, default=64)
     parser.add_argument("--horizon", type=int, default=HORIZON,
                         help="informational; solver consults at <= this many tiles")
+    parser.add_argument("--world-cap", type=int, default=0,
+                        help="0 = exact; K>0 uniformly subsamples worlds to K "
+                             "after the belief filter (measured: K=512 -> p90 "
+                             "|dV| 0.45 pts, zero material argmax flips)")
     parser.add_argument("--beliefs", choices=("u", "sigma"), default="sigma")
     parser.add_argument("--payoff", choices=("points", "make"), default="points")
     parser.add_argument("--pool-size", type=int, default=12)
@@ -478,6 +508,7 @@ def main() -> int:
         beliefs=args.beliefs,
         payoff=args.payoff,
         horizon=args.horizon,
+        world_cap=args.world_cap,
         pool_size=args.pool_size,
         decisions_path=str(out_dir / "decisions.jsonl"),
     )
@@ -487,7 +518,9 @@ def main() -> int:
         max_redeals=args.max_redeals,
         base_seed=args.base_seed,
     )
-    label_a = f"{INCUMBENT_BIDDER}+walt:{args.beliefs},{args.payoff},h{args.horizon}"
+    cap_tag = f",cap{args.world_cap}" if args.world_cap else ""
+    label_a = (f"{INCUMBENT_BIDDER}+walt:{args.beliefs},{args.payoff},"
+               f"h{args.horizon}{cap_tag}")
     label_b = f"{INCUMBENT_BIDDER}+judplay"
 
     print(f"walt grading: {label_a} vs {label_b}  n={args.n_games}", flush=True)
@@ -518,6 +551,7 @@ def main() -> int:
             "beliefs": args.beliefs,
             "payoff": args.payoff,
             "horizon": args.horizon,
+            "world_cap": args.world_cap,
             "field_net": args.field_net,
         },
     }, indent=2) + "\n")

@@ -18,7 +18,6 @@ Gates:
 import sys
 import time
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
 
 import numpy as np
 import torch
@@ -36,7 +35,8 @@ from forge.zeb.game import (
 import walt.field as field
 from walt.field import FieldOracle, PubState, featurize, sigma_consistent
 
-NET = "/Users/jason/code/mk5-main/.claude/worktrees/walt/champion/jud_net.pt"
+from pathlib import Path as _P
+NET = str(_P(__file__).resolve().parents[2] / "champion" / "jud_net.pt")
 
 _fail = 0
 

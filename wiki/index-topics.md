@@ -60,6 +60,8 @@ Concepts, methods, and synthesized findings.
 - [[topics/oracle-vs-human-play|oracle-vs-human-play]] — load-bearing epistemic frame: forge-analysis findings describe perfect-info minimax, not human play; transfer is untested (complete)
 - [[topics/partnership-value|partnership-value]] — fixed-versus-shuffled partner lift as the target metric, preserving uncertainty, role/order, coordination, action-derived inference, plan persistence, distributional utility, bidding, and match score (active)
 - [[topics/past-belief-future-direction|past-belief-future-direction]] — §22: acting well under unresolvable uncertainty; meta-strategy distribution as richer student output; analytics extractable from q_per_world (complete)
+- [[topics/perf|perf]] — the umbrella: eight measured laws from two campaigns (Burl inference 2026-04, walt solver 2026-07) — calibrate to substrate ceiling, batch the accelerator, contention is the master confounder, price approximations by decision damage; current fast-path state (active)
+- [[topics/perf-log|perf-log]] — append-only perf field notes (replaces gh issues for perf work, 2026-07-18): what was tried, how the numbers moved; registered priors before each measurement (active)
 - [[topics/perf-on-the-table|perf-on-the-table]] — Gemma 4 E2B benches at 1334 tok/s; harness runs at ~70 tok/s — six identified levers compound to ~7-10× on M5 Max alone, no model changes (complete)
 - [[topics/pi-opp-head|pi-opp-head]] — 1,879-param PiOppHead trained on oracle softmax; 68.6% accuracy vs ~55% rotated π_me; real side product of LAMIR-1 work (retired)
 - [[topics/pimc|pimc]] — Perfect-Information Monte Carlo inference variants; direct π_me beats single-step PIMC because policy head already is the marginalized policy (active)

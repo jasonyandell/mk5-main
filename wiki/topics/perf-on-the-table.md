@@ -8,7 +8,10 @@ status: complete
 
 The rollup for the 2026-04 Burl perf sprint. The sprint stalled after sprint 2
 (2026-04-28) and never resumed; the "pending re-validation" items below never ran.
-The per-lever findings stand as measured. Resume via [[perf-sprint]].
+The per-lever findings stand as measured. Resume via [[perf-sprint]]. The
+cross-campaign laws this sprint measured (calibrate-to-ceiling, batch the
+accelerator, contention as master confounder, damage-priced approximation)
+are synthesized in [[perf]].
 
 ## Calibration
 

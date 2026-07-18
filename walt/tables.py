@@ -9,14 +9,11 @@ uint32 bitmasks (bit d set == domino id d present).
 """
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
-
-from forge.oracle.tables import (  # noqa: E402
+from forge.oracle.tables import (
     DOMINO_COUNT_POINTS,
     can_follow,
     led_suit_for_lead_domino,

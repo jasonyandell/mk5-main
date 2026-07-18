@@ -102,3 +102,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Added:** [[count-fate-ledger]] — hand value as a belief-weighted ledger of count-fate scenarios (IDEATED, conversation 2026-07-13→14, issue #49); guards/walkers as one junk-retention economy per-world E[Q] cannot price ([[strategy-fusion]]).
 **Updated:** [[the-wall]] contextual-distribution direction now names its consumption object; threat-attribution grain framed as one factor of row probability.
 **Questions opened:** tied-strategy rollouts pricing guard/walker retention (questions/open.md, issue #49).
+
+## [2026-07-18 | worktree-walt-perf | walt wavefront engine + the perf umbrella topic]
+
+**Touched pages:** [[topics/perf|perf]] [[topics/walt-spec|walt-spec]] [[entities/walt|walt]] [[topics/perf-on-the-table|perf-on-the-table]]
+**Added:** [[topics/perf|perf]] — umbrella topic: eight measured laws synthesized from the two perf campaigns (2026-04 Burl inference, 2026-07 walt solver), plus current fast-path state.
+**Updated:** [[topics/walt-spec|walt-spec]] §4 rewritten for the wavefront engine (14.8× at exact parity on 46 golden fixtures; world-cap error curve: material-flip is the right gate, raw flips are near-ties; #74 stage-1 "10×" corrected to 1.7–2.3×); corpus caveat added (§3: pilot arm A banked no serialized roots). [[entities/walt|walt]] engine bullet + index hooks. Receipts: PR #78, issues #74/#73.

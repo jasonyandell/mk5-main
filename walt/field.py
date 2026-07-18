@@ -57,9 +57,8 @@ FEATURE_DIM = HAND_DIM + AUCTION_DIM + PLAY_DIM   # 350
 N_TRICKS = 7
 _GLOBAL_OFF = N_DOMINOES * PER_DOMINO             # 252
 
-_DEFAULT_NET = Path(
-    "/Users/jason/code/mk5-main/.claude/worktrees/walt/champion/jud_net.pt"
-)
+# repo-relative: works in any checkout/worktree this package lives in
+_DEFAULT_NET = Path(__file__).resolve().parents[1] / "champion" / "jud_net.pt"
 
 
 # --------------------------------------------------------------------- #
@@ -429,9 +428,36 @@ class FieldOracle:
             self._h91_cache[key] = got
         return got
 
-    def _forget_if_huge(self) -> None:
-        if len(self.memo) > 4_000_000:
+    def evict_if_huge(self, cap: int = 4_000_000) -> None:
+        """Clear the decision memo when it outgrows ``cap`` entries.
+
+        Call at SOLVE BOUNDARIES only (grade/bench do). Never called mid-solve:
+        the worst observed solve issues 6.2M queries, and a mid-solve clear-all
+        silently re-forwards everything the solve depends on. Memo keys embed
+        the full play history, so entries rarely transfer across hands anyway —
+        boundary eviction loses almost nothing."""
+        if len(self.memo) > cap:
             self.memo.clear()
+
+    def ev_rows(self, X: np.ndarray, chunk: int = 8192) -> np.ndarray:
+        """[R] E[declaring pts] for a large row batch, forwarded in ``chunk``-row
+        pieces (torch cpu gemm peaks ~1M rows/s near 8k rows vs ~65k rows/s at
+        the solver's old avg batch of 4.6). Odd-sized tails are padded to an
+        even row count: B=1 (and sometimes other tiny odd B) takes a bitwise-
+        different gemv kernel; padding keeps every row on the canonical gemm
+        path so identical rows always score identically across calls."""
+        R = int(X.shape[0])
+        out = np.empty(R, dtype=np.float32)
+        for i in range(0, R, chunk):
+            part = X[i:i + chunk]
+            n = int(part.shape[0])
+            if n % 2:
+                out[i:i + n] = self._ev(np.concatenate([part, part[-1:]]))[:n]
+            else:
+                out[i:i + n] = self._ev(part)
+            self.n_forward += 1
+        self.n_rows += R
+        return out
 
     def _ev(self, X: np.ndarray) -> np.ndarray:
         """[B] E[declaring pts] — functional JudNet.forward + mean_points."""
@@ -476,7 +502,8 @@ class FieldOracle:
                     index[v] = i
                     uniq_list.append(v)
                 inv_l.append(i)
-            inv = None if len(uniq_list) == len(vals) and len(uniq_list) == 1 \
+            # all-unique => out is already aligned; skip the identity gather
+            inv = None if len(uniq_list) == len(vals) \
                 else np.asarray(inv_l, dtype=np.int64)
         pubkey = (decl_id, bidder, bids, dealer, ctx.hist)
         out = np.empty(len(uniq_list), dtype=np.int64)
@@ -548,7 +575,6 @@ class FieldOracle:
                 move = legal[best]
                 self.memo[key] = move
                 out[i] = move
-            self._forget_if_huge()
         return out if inv is None else out[inv]
 
     # -- legality (rules tabulated from forge.oracle.tables) --------------

@@ -3,9 +3,9 @@
 See walt/DESIGN.md for the algorithm and rationale. Ground rules that apply
 to every module:
 
-- Interpreter: /Users/jason/code/mk5-main/.venv/bin/python -u, with the walt
-  worktree root (/Users/jason/code/mk5-main/.claude/worktrees/walt) first on
-  sys.path so `forge.*`, `champion.*`, `arena.*` resolve to THIS worktree.
+- Interpreter: the repo's .venv python, run from the repo root. walt is a
+  regular package (walt/__init__.py); no sys.path hacks anywhere — `forge.*`,
+  `champion.*`, `arena.*` resolve from the same checkout walt lives in.
 - Tiles are forge domino ids 0..27 (`forge.oracle.tables.DOMINOES`). Inside
   walt everything speaks DOMINO IDS; the zeb engine's slot indices (0..6
   into a fixed hand tuple) appear only at the arena boundary in grade.py.
@@ -71,6 +71,11 @@ class SolveResult:
     # walker instrumentation: moves (led by me, this decision) that win in
     # every alive world while ranking bottom-half by global beat-count.
     walker_flags: dict = field(default_factory=dict)
+    # exact value of EVERY legal root move (declaring orientation, same unit
+    # as .value), keyed by domino id. The wavefront engine computes these for
+    # free; consumers: top-2 gaps, tie-band width (#77 mixing), dense
+    # distillation targets, count-fate receipts.
+    root_values: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------

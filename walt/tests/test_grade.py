@@ -17,9 +17,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-WALT_ROOT = "/Users/jason/code/mk5-main/.claude/worktrees/walt"
-if WALT_ROOT not in sys.path:
-    sys.path.insert(0, WALT_ROOT)
 
 
 def main() -> int:
