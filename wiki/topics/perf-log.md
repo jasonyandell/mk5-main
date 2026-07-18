@@ -263,3 +263,42 @@ were every shard's front); grafted into the cascade ledger as rung-0
 converged rows (`rung0_shard99.jsonl`, rung_spec marks the provenance).
 refsweep launched over the remaining 157 with the default ladder;
 deepening curve + evals/hour land in the next entry.
+
+## 2026-07-18j — reference_h4_v1_cap256: the anchor's reference line, 200/200 exact
+
+The cascade's first production run closed the whole anchor:
+`hoyt/reference_h4_v1_cap256.jsonl` (committed beside the frozen root set)
+— **200/200 converged at gap ≤ 0.05, no capped residue**. Deepening curve:
+rung 0 (90s/32M, 5 workers) 174/200 = 87%; rung 1 (600s/64M, 2 workers)
+99%; rung 2 (128M, 1 worker) 100%. Total 12.4 machine-hours;
+**rung-0 velocity 224 H4 evals/hour** vs the killed exact grind's ~45.
+
+**Velocity/coverage curves measured** (the cap in win/lose/cap terms):
+resolve-within-cap is three-regime — a cheap quarter (27% by 20s), a
+plateau (nothing resolves 20–30s), a steep middle (34%→82% across
+45–150s), and a thin hard tail that is **predictable a priori from
+n_worlds_sigma** (8/10 of 90s-cap survivors were worlds_used=256). Capped
+verdicts are barely degraded: gap at first measurement p50 0.067, 97%
+≤ 0.2 — an "explore-mode" 30s rung yields ~750 evals/hour within ~0.1 pt.
+Route, don't discover: schedule big-belief games to deep rungs (or to the
+cap-artifact corpus) before paying for them.
+
+**The wedge** (Jason's call: truncate, don't grind): 555090 slot-capped
+32M AND 64M (42M slots at wave 23, 85M at 24); at 128M it converged at
+**gap exactly 0.0, rent −0.0** — the biggest tree in the anchor is a
+fully decided position (29.1 GiB peak; the wall was one exact BR pricing).
+Filed as the first specimen of the hard-game stratum: tree size ⊥ decision
+difficulty.
+
+**Rent distribution, full population** (walt-BR-vs-jud minus reference,
+hero orientation): median **+1.53**, mean +2.02, p90 +5.22, 146/200 over
++0.5. **The mini-reference's "never materially negative" is DEAD**: 18
+roots < −0.5, min **−8.65** (max +15.49) — the 12-root sample missed the
+negative tail. Reading: the rent indicator conflates jud's exploitability
+with opponent-population difference (18e's caveat), and the tail shows the
+population term can dominate with either sign. Rent is ~flat in belief
+width (median +1.44 at ≥200 worlds vs +0.97 at <50). Feeds #72.
+
+Run-notes: two externally-killed driver incidents mid-day — ledger resume
+retired 227 and 228 rows respectively and lost only in-flight work; the
+no-absence-as-state design paid for itself twice on day one.

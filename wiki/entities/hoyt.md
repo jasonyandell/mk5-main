@@ -30,7 +30,9 @@ utility config: the first play-quality yardstick that survives the
 project's own model generations. "Exploitability in points/hand vs the H4
 reference, on the frozen root set" means the same thing in 2027. The
 frozen anchor is `hoyt/evalset_h4_v1.jsonl` — 200 stratified H4 roots,
-never to be edited (v2 may be added; v1 is forever).
+never to be edited (v2 may be added; v1 is forever). Its reference line
+is **built**: `hoyt/reference_h4_v1_cap256.jsonl` — all 200 roots at gap
+≤ 0.05, produced by the `hoyt/refsweep.py` cascade ([[perf-log]] 18h–j).
 
 ## The machine
 
@@ -65,7 +67,8 @@ info set in about the cost of one ordinary solve — after which:
 | CFR gap ≤0.05 pts | ≤40 iterations at EVERY root tried — **scale-invariant in worlds** (10 → 33,740) |
 | CFR wall/root, cap-256 | median ~92 s, peak RSS 6.7 GiB after the columnar-profile perf day ([[perf-log]] 18g; was ~115 s / 7.4+ GiB) |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
-| jud rent, 12 evalset roots | walt-BR-vs-jud beats the reference line by median **+1.9 pts/root** (range −0.08…+5.63) |
+| jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
+| refsweep cascade velocity | rung-0 **224 evals/hour** (5 workers, 90 s cap); explore-mode 30 s cap ≈ 750/hour within ~0.1 pt; deepening 87% → 99% → 100% over three rungs |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
