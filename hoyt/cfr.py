@@ -56,7 +56,8 @@ INJECTABILITY
 cfr_solve touches the subgame ONLY through `.root/.worlds/.weights`, and
 touches the injected `impl` module ONLY through:
 
-    impl.br_solve(subgame, profile, payoff43, hero=seat)  # gap pricing
+    impl.br_solve(subgame, profile, payoff43, hero=seat,
+                  want_strategy=False)                    # gap pricing
     impl.StochasticProfile()                              # export format
     profile.set(seat, hand_mask, node, moves, probs)      # one call per iset
 
@@ -682,7 +683,8 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         t1 = time.time()
         gap = 0.0
         for u in live_seats:
-            bru = impl.br_solve(subgame, prof, payoff43, hero=u).value
+            bru = impl.br_solve(subgame, prof, payoff43, hero=u,
+                                want_strategy=False).value
             gap = max(gap, signs[u] * (bru - vbar))
         tm["br"] += time.time() - t1
         return prof, vbar, gap
@@ -764,7 +766,8 @@ def _solve_loop(subgame, payoff43, iters, target_gap, br_every, impl,
         vbar = float(weights @ _values(t, payoff43, asig)) / total_w
         gap = 0.0
         for u in live_seats:
-            bru = impl.br_solve(subgame, prof, payoff43, hero=u).value
+            bru = impl.br_solve(subgame, prof, payoff43, hero=u,
+                                want_strategy=False).value
             gap = max(gap, signs[u] * (bru - vbar))
         return prof, vbar, gap
 
