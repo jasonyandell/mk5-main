@@ -5,6 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Jud (current frontier; the era's GitHub milestone is named Champion)
 
+- [[experiments/jud-v2-retrain-probe|jud-v2-retrain-probe]] — is jud's play badness MRV-corpus contamination or mechanism? Clean-sampler corpus (same-seed drift null) + ε-explore self-play reproduces v1's grade trajectory within CI; 10-agent audit finds no live line-bug; the 0.68 table claim root-caused to the round-0 checkpoint; play wall = 9-of-350-dim ply-1 signal × greedy 1-ply consumer (complete)
 - [[experiments/otis-v0|otis-v0]] — overnight fate-ledger build, all seven registered predictions graded: parser exact across three referees; fate learnability +0.48 nats; tails confirmed correlation-fattened both directions; decomposition wins at matched arms (+0.29 pooled, CI excl. 0) but incumbent parity, no promotion; 3-2 bimodality 86.8%; tied-rollout retention pricing 1 s/decision, fusion gap +2.99; corpus contamination found (#52) (complete)
 - [[experiments/otis-phase-r|otis-phase-r]] — the clean deck: corpus regen on Vast with write-time validity assertions, per-world posterior weights, decl-8 purge; registered bands for the re-derived Bayes ceiling (prior 39.9% vs contaminated 39.184%) (active)
 - [[experiments/otis-phase-1|otis-phase-1]] — the first lesson consumer (#53): slough override on lens:ev by tied-rollout retention price (V1) and fate-head participation (V2), vacuity pre-gate then paired marks at power; registered median = tie (active)

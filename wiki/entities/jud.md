@@ -4,7 +4,7 @@ kind: entity
 first_seen: 2026-06-14
 last_updated: 2026-07-17
 status: active
-phase: 2026-07-13 — v0 and v1 built and graded; the v0 value-native bidder over oracle play is the current best player (fact below, reproduced at [[stage-0-closure]]). v1's play half is mechanism-limited; per-move targets at v1 capacity graded marks-null ([[jud-target-granularity]]), narrowing v2's residuals to capacity×target, on-policy loop data, and opponents-in-rollout. Surviving search consumer — [[belief-weighted-jud-mcts]].
+phase: 2026-07-13 — v0 and v1 built and graded; the v0 value-native bidder over oracle play is the current best player (fact below, reproduced at [[stage-0-closure]]). v1's play half is mechanism-limited; per-move targets at v1 capacity graded marks-null ([[jud-target-granularity]]), narrowing v2's residuals to capacity×target, on-policy loop data, and opponents-in-rollout. Surviving search consumer — [[belief-weighted-jud-mcts]]. 2026-07-17 — [[walt]], the exact endgame info-set solver, grades +3.00 marks/game over the greedy play head at ≤4 tiles (field-exact caveat; the `lens:ev` meeting is #72).
 ---
 
 ## What it is
@@ -165,7 +165,10 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
 worktree, fresh block base_seed=0): `margin:wp`(r8)+`lens:ev` beats
 `gus:10,wp`+`lens:ev` **+0.62 [+0.06, +1.23] marks/game**, 58.6% game win,
 halves 57.8%/59.4% — CI excludes zero; the learned head beats the simulation
-bidder it distilled past (`scratch/table42/jud_vs_gus/n128/`).
+bidder it distilled past. The newest challenger comes from outside the learned
+family: [[walt]], exact endgame info-set solving, beats jud's greedy play
+head by +3.00 marks/game at ≤4 tiles when the field model is exact — its
+meeting with `lens:ev` (#72) is the pending test.
 
 ## The build, graded
 
@@ -223,6 +226,16 @@ bidder it distilled past (`scratch/table42/jud_vs_gus/n128/`).
   mode. This is [[belief-policy-value-algebra]] CAN-#4 read as a repair
   path: V-error is repairable by evaluation data alone, and u-replays are
   exactly such data, cheap (this one took 6 seconds).
+- **The table42 field case + retrain probe ([[jud-v2-retrain-probe]],
+  2026-07-17).** Game night 1 seated the round-0 checkpoint + greedy judplay —
+  the measured −6.09 configuration — producing the 0.68-claim case (#66). A
+  10-agent audit found **no live line-bug** in the featurize/emit/train/bid
+  path; retraining on a repaired-sampler corpus with ε-explore self-play
+  reproduced v1's grades within CI, grading the [[world-sampler-mrv-audit]]
+  contamination **null at field scale** for jud. The play wall is mechanistic:
+  9-of-350-dim ply-1 signal × greedy 1-ply consumer × single-MC-label targets.
+  Serving rule: seats get the graded champion (`margin:wp`(r8) + `lens:ev`),
+  never a loop artifact (#69).
 - **v2's residuals ([[jud-target-granularity]], 2026-07-13).** The named cue —
   per-move targets — is **graded a marks null at v1 capacity in both forms**:
   the parent-side dense E[Q] auxiliary triples in-distribution ranking and
@@ -276,3 +289,7 @@ bidder it distilled past (`scratch/table42/jud_vs_gus/n128/`).
   question asked with per-hand fate structure instead of per-move values;
   reached incumbent parity at v0 with a decisive calibration win
   ([[otis-v0]])
+- [[walt]] — the exact endgame information-set solver (2026-07-17): +3.00
+  marks/game over the greedy play head at ≤4 tiles with the field modeled
+  exactly (#72 is the transfer test); the ladder above it gates on the
+  [[lamir1-ceiling]] scar probe (#73); spec at [[walt-spec]]

@@ -94,3 +94,4 @@ Concepts, methods, and synthesized findings.
 - [[topics/tool-orchestration|tool-orchestration]] — Burl's core philosophy: engine authority on rules, Zeb on beliefs, Burl reasons between and commits (superseded)
 - [[topics/trump-drilling|trump-drilling]] — 5 drill types (is_trump/list_trumps/which_trumps/trump_or_follow/count_trump); 5k examples added in Stage 0 v3 (superseded)
 - [[topics/v-pi-decoupling|v-pi-decoupling]] — V_head correctly predicts +26 while π_me picks −0.4 play; heads decouple because training objectives only couple them indirectly (complete)
+- [[topics/walt-spec|walt-spec]] — dense technical spec of walt: the algebra location (eq's two deletions un-deleted; term 1 only cashable through term 2), design + gates, perf laws (tail, ×100/tile, determinism-as-compression), pilot grades, the fitted belief net commitments, and the gated trajectory (scar probe → ladder → utility → exploits → opening net) (active)
