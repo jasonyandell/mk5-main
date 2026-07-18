@@ -10,14 +10,11 @@ absolute seat order.
 """
 from __future__ import annotations
 
-import sys
 from itertools import combinations
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
-
-from walt.tables import N_DOMINOES, get_luts  # noqa: E402
+from walt.tables import N_DOMINOES, get_luts
 
 
 def seat_order(root) -> tuple:

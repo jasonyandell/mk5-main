@@ -29,10 +29,6 @@ import time
 from pathlib import Path
 from typing import Optional, Sequence
 
-WALT_ROOT = "/Users/jason/code/mk5-main/.claude/worktrees/walt"
-if WALT_ROOT not in sys.path:
-    sys.path.insert(0, WALT_ROOT)
-
 import numpy as np
 
 from walt.contracts import EndgameRoot, HORIZON
@@ -52,8 +48,6 @@ _WORKER_ORACLE = None
 def _worker_init(net_path: str) -> None:
     """Pool initializer: pin threads, build one CPU FieldOracle per worker."""
     global _WORKER_ORACLE
-    if WALT_ROOT not in sys.path:
-        sys.path.insert(0, WALT_ROOT)
     import torch
 
     torch.set_num_threads(1)
@@ -110,6 +104,7 @@ def _solve_task(task):
     t0 = time.perf_counter()
     res = _run_solve(root, beliefs, payoff, _WORKER_ORACLE, horizon)
     solve_ms = (time.perf_counter() - t0) * 1e3
+    _WORKER_ORACLE.evict_if_huge()   # solve boundary: safe to drop the memo
     return {
         "best_move": int(res.best_move),
         "value": float(res.value),
@@ -272,6 +267,7 @@ class WaltPlay:
                 for root, beliefs, payoff, horizon in tasks:
                     t0 = time.perf_counter()
                     res = _run_solve(root, beliefs, payoff, oracle, horizon)
+                    oracle.evict_if_huge()
                     results.append({
                         "best_move": int(res.best_move),
                         "value": float(res.value),

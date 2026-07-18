@@ -14,11 +14,6 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-from pathlib import Path
-
-WALT_ROOT = "/Users/jason/code/mk5-main/.claude/worktrees/walt"
-if WALT_ROOT not in sys.path:
-    sys.path.insert(0, WALT_ROOT)
 
 import numpy as np
 
@@ -126,6 +121,7 @@ def main() -> int:
                 worlds_pre.append(res.n_worlds)
             else:
                 worlds_post.append(res.n_worlds)
+        oracle.evict_if_huge()
         n_roots += 1
 
         now = time.time()

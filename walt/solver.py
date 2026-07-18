@@ -26,12 +26,10 @@ Design choices:
   O(1) per play instead of an O(history) replay per field query.
 - Per opponent node, every alive world is submitted in ONE
   ``oracle.decisions_at`` call, which dedupes worlds sharing the acting seat's
-  hand (np.unique) before touching the memo/net; the returned per-world moves
-  partition the worlds into observation branches.
-- Memo key is (my_hand_mask, history tuple) at my decision nodes. The
-  alive-world subset (and its weights) is a deterministic function of the
-  history given the root world set + σ, so caching the node's weighted value
-  is sound.
+  hand before touching the memo/net; the returned per-world moves partition
+  the worlds into observation branches.
+- No solver-level memo: node identity is the full public history, unique per
+  recursion-tree node, so such a memo provably never hits (measured 0/19,566).
 
 ``n_field_queries`` counts total per-world oracle decision requests issued
 across the solve (sum of query-batch sizes), including the walker
@@ -40,16 +38,13 @@ instrumentation's trick rollouts; ``n_nodes`` counts recursion nodes
 """
 from __future__ import annotations
 
-import sys
 from typing import Iterator
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
-
-from walt.contracts import SolveResult  # noqa: E402
-from walt.field import NodeCtx, resolve_lut  # noqa: E402
-from walt.tables import (  # noqa: E402
+from walt.contracts import SolveResult
+from walt.field import NodeCtx, resolve_lut
+from walt.tables import (
     get_luts,
     hand_to_mask,
     legal_moves_mask,
@@ -114,7 +109,11 @@ def solve(root, worlds, weights, oracle, payoff: str = "points") -> SolveResult:
 
     total_w = float(weights.sum())
     stats = {"nodes": 0, "queries": 0}
-    memo: dict[tuple, float] = {}
+    # NOTE: no solver-level memo. Node identity is the full public history,
+    # which is unique per node of the recursion tree (paths are append-only),
+    # so a (hand, history)-keyed memo provably never hits — measured 0 hits
+    # in 19,566 lookups on a representative H4 solve. The memo that pays is
+    # the FieldOracle's (seat, hand, pubkey) decision memo.
 
     def leaf_value(banked: tuple) -> float:
         decl_pts = banked[bid_team]
@@ -130,10 +129,6 @@ def solve(root, worlds, weights, oracle, payoff: str = "points") -> SolveResult:
 
         cp = (leader + len(ct)) % 4
         if cp == me:
-            key = (my_mask, ctx.hist)
-            hit = memo.get(key)
-            if hit is not None:
-                return hit
             led = ct[0] if ct else None
             lm = legal_int(my_mask, led)
             best = None
@@ -151,7 +146,6 @@ def solve(root, worlds, weights, oracle, payoff: str = "points") -> SolveResult:
                     v = rec(nctx, nct, leader, banked, nm, rem, w)
                 if best is None or sign * v > sign * best:
                     best = v
-            memo[key] = best
             return best
 
         # opponent (or partner) — all non-me seats roll via σ
@@ -164,7 +158,7 @@ def solve(root, worlds, weights, oracle, payoff: str = "points") -> SolveResult:
             mi = int(m)
             nctx = ctx.advance(cp, mi, bidder, luts)
             nct = ct + (mi,)
-            nrem = rem[g].copy()
+            nrem = rem[g]                 # boolean indexing already copies
             nrem[:, col] &= np.uint32((~(1 << mi)) & 0xFFFFFFFF)
             nw = w[g]
             if len(nct) == 4:
@@ -253,7 +247,7 @@ def _walker_flags(ctx0, my0, worlds, weights, total_w, me, bidder, auction,
         for m in np.unique(mv):
             g = mv == m
             mi = int(m)
-            nrem = rem[g].copy()
+            nrem = rem[g]
             nrem[:, col] &= np.uint32((~(1 << mi)) & 0xFFFFFFFF)
             out += finish_trick(
                 ctx.advance(cp, mi, bidder, luts), ct + (mi,), leader, nrem, w[g]

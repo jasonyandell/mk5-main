@@ -57,9 +57,8 @@ FEATURE_DIM = HAND_DIM + AUCTION_DIM + PLAY_DIM   # 350
 N_TRICKS = 7
 _GLOBAL_OFF = N_DOMINOES * PER_DOMINO             # 252
 
-_DEFAULT_NET = Path(
-    "/Users/jason/code/mk5-main/.claude/worktrees/walt/champion/jud_net.pt"
-)
+# repo-relative: works in any checkout/worktree this package lives in
+_DEFAULT_NET = Path(__file__).resolve().parents[1] / "champion" / "jud_net.pt"
 
 
 # --------------------------------------------------------------------- #
@@ -429,8 +428,15 @@ class FieldOracle:
             self._h91_cache[key] = got
         return got
 
-    def _forget_if_huge(self) -> None:
-        if len(self.memo) > 4_000_000:
+    def evict_if_huge(self, cap: int = 4_000_000) -> None:
+        """Clear the decision memo when it outgrows ``cap`` entries.
+
+        Call at SOLVE BOUNDARIES only (grade/bench do). Never called mid-solve:
+        the worst observed solve issues 6.2M queries, and a mid-solve clear-all
+        silently re-forwards everything the solve depends on. Memo keys embed
+        the full play history, so entries rarely transfer across hands anyway —
+        boundary eviction loses almost nothing."""
+        if len(self.memo) > cap:
             self.memo.clear()
 
     def _ev(self, X: np.ndarray) -> np.ndarray:
@@ -476,7 +482,8 @@ class FieldOracle:
                     index[v] = i
                     uniq_list.append(v)
                 inv_l.append(i)
-            inv = None if len(uniq_list) == len(vals) and len(uniq_list) == 1 \
+            # all-unique => out is already aligned; skip the identity gather
+            inv = None if len(uniq_list) == len(vals) \
                 else np.asarray(inv_l, dtype=np.int64)
         pubkey = (decl_id, bidder, bids, dealer, ctx.hist)
         out = np.empty(len(uniq_list), dtype=np.int64)
@@ -548,7 +555,6 @@ class FieldOracle:
                 move = legal[best]
                 self.memo[key] = move
                 out[i] = move
-            self._forget_if_huge()
         return out if inv is None else out[inv]
 
     # -- legality (rules tabulated from forge.oracle.tables) --------------

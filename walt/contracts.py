@@ -3,9 +3,9 @@
 See walt/DESIGN.md for the algorithm and rationale. Ground rules that apply
 to every module:
 
-- Interpreter: /Users/jason/code/mk5-main/.venv/bin/python -u, with the walt
-  worktree root (/Users/jason/code/mk5-main/.claude/worktrees/walt) first on
-  sys.path so `forge.*`, `champion.*`, `arena.*` resolve to THIS worktree.
+- Interpreter: the repo's .venv python, run from the repo root. walt is a
+  regular package (walt/__init__.py); no sys.path hacks anywhere — `forge.*`,
+  `champion.*`, `arena.*` resolve from the same checkout walt lives in.
 - Tiles are forge domino ids 0..27 (`forge.oracle.tables.DOMINOES`). Inside
   walt everything speaks DOMINO IDS; the zeb engine's slot indices (0..6
   into a fixed hand tuple) appear only at the arena boundary in grade.py.

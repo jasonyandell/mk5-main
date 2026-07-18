@@ -26,7 +26,6 @@ import time
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
 
 from forge.zeb.game import (  # noqa: E402
     apply_action,
