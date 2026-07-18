@@ -302,19 +302,23 @@ class _WaveStruct:
     __slots__ = ("L", "S", "w0", "total_w", "leaf_pts", "PS", "GID", "uedge",
                  "iset_ju", "n_isets", "Lflat", "off", "slot_iset",
                  "nlegal_slot", "i_seat_arr", "woff", "wlen", "pin_slots",
-                 "exp_entries", "dbg")
+                 "exp_entries", "exp_cols", "dbg")
 
 
 def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
-                want_debug: bool) -> _WaveStruct:
+                want_debug: bool, bulk_export: bool = False) -> _WaveStruct:
     from hoyt.subgame import (
         build_subgame as _kernel_subgame,
         expand_full_width,
         paths_of,
     )
+    # bulk export keys entries by the walk's 128-bit rolling path hash
+    # (no python path tuples anywhere); pinned/debug keep the path route.
+    bulk_export = bulk_export and not pinned and not want_debug
     ksub = _kernel_subgame(root, worlds, weights)
     kw = {} if slot_budget is None else {"slot_budget": slot_budget}
-    res = expand_full_width(ksub, keep_slots=True, need_path_ids=False, **kw)
+    res = expand_full_width(ksub, keep_slots=True,
+                            need_path_ids=bulk_export, **kw)
     waves = res["waves"]
     L = len(waves) - 1
     N = int(ksub.worlds.shape[0])
@@ -334,6 +338,9 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     ws.iset_ju = {}
     ws.pin_slots = []          # (flat off, probs vector) fixed at pinned isets
     ws.exp_entries = []        # (seat, hand, path, moves, off, n) — nlegal >= 2
+    ws.exp_cols = None         # columnar export (bulk_export), set in finalize
+    ec = {"seat": [], "hand": [], "h1": [], "h2": [], "off": [], "cnt": [],
+          "mv": []} if bulk_export else None
     ws.woff, ws.wlen = [], []
     ws.dbg = {"i_moves": [], "i_node": [], "i_seat": [], "i_hand": []} \
         if want_debug else None
@@ -424,12 +431,26 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
         i_seat_parts.append(u_seat.astype(np.int64))
         nleg_parts.append(nleg)
 
-        # paths + move tuples where needed: export (nlegal>=2), pinned, debug
+        # exportable isets (nlegal >= 2): columnar when bulk_export (hash
+        # keys straight off the walk); else paths + move tuples (pinned /
+        # debug / reference-impl export)
+        if bulk_export:
+            selE = np.flatnonzero(nleg >= 2)
+            if len(selE):
+                ec["seat"].append(u_seat[selE].astype(np.int8))
+                ec["hand"].append(u_hand[selE])
+                ec["h1"].append(wj["ph1"][u_node[selE]])
+                ec["h2"].append(wj["ph2"][u_node[selE]])
+                ec["off"].append(off[selE])
+                ec["cnt"].append(nleg[selE])
+                bmE = ((lm[selE, None] >> _AR28) & 1).astype(bool)
+                ec["mv"].append(np.nonzero(bmE)[1].astype(np.int8))
+            wj["ph1"] = wj["ph2"] = None
         iset_reached = None
         if pinned:
             iset_reached = np.zeros(nI, dtype=bool)
             np.logical_or.at(iset_reached, inv, reach)
-        need = nleg >= 2
+        need = nleg >= 2 if not bulk_export else np.zeros(nI, dtype=bool)
         pin_sel = np.zeros(nI, dtype=bool)
         if pinned:
             pin_sel = np.isin(u_seat, list(pinned)) & (nleg >= 2) \
@@ -501,6 +522,25 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     waves[L]["sw"] = waves[L]["snode"] = waves[L]["sworld"] = None
     ws.n_isets = n_isets
     ws.Lflat = Lflat
+    if bulk_export:
+        cnt = np.concatenate(ec["cnt"]) if ec["cnt"] else \
+            np.empty(0, dtype=np.int64)
+        off_all = np.concatenate(ec["off"]) if ec["off"] else \
+            np.empty(0, dtype=np.int64)
+        total = int(cnt.sum())
+        ramp = np.arange(total, dtype=np.int64) - np.repeat(
+            np.concatenate(([0], np.cumsum(cnt)))[:-1], cnt)
+        cat = lambda k, d: np.concatenate(ec[k]) if ec[k] else \
+            np.empty(0, dtype=d)  # noqa: E731
+        ws.exp_cols = {
+            "seat": cat("seat", np.int8),
+            "hand": cat("hand", np.int64),
+            "h1": cat("h1", np.uint64),
+            "h2": cat("h2", np.uint64),
+            "moff": np.concatenate(([0], np.cumsum(cnt))),
+            "mv": cat("mv", np.int8),
+            "slot_idx": np.repeat(off_all, cnt) + ramp,
+        }
     nleg_all = np.concatenate(nleg_parts) if nleg_parts else \
         np.empty(0, dtype=np.int64)
     ws.off = np.concatenate(([0], np.cumsum(nleg_all)))[:-1]
@@ -642,7 +682,8 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
           "value": 0.0}
     t0 = time.time()
     ws = _build_wave(subgame.root, subgame.worlds, subgame.weights, pinned,
-                     slot_budget, debug)
+                     slot_budget, debug,
+                     bulk_export=hasattr(impl.StochasticProfile, "set_bulk"))
     tm["build"] = time.time() - t0
 
     bid_team = int(subgame.root.bidder) % 2
@@ -668,9 +709,14 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     def export(asig):
         t1 = time.time()
         prof = impl.StochasticProfile()
-        set_ = prof.set
-        for seat, hand, path, moves, off, n in ws.exp_entries:
-            set_(seat, hand, path, moves, asig[off:off + n])
+        if ws.exp_cols is not None:
+            c = ws.exp_cols
+            prof.set_bulk(c["seat"], c["hand"], c["h1"], c["h2"], c["moff"],
+                          c["mv"], asig[c["slot_idx"]])
+        else:
+            set_ = prof.set
+            for seat, hand, path, moves, off, n in ws.exp_entries:
+                set_(seat, hand, path, moves, asig[off:off + n])
         tm["export"] += time.time() - t1
         return prof
 

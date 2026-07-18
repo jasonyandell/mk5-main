@@ -125,7 +125,7 @@ def _finish_me(sub, waves, vals, sign, want_strategy, n_nodes, meta):
 
 
 def _provider_for(profile: StochasticProfile):
-    if profile.table:
+    if len(profile):
         return _DictProfileProvider(profile), True
     if not profile.uniform_fallback:
         raise ValueError("empty StochasticProfile without uniform_fallback "

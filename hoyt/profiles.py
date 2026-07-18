@@ -157,19 +157,106 @@ def compile_rule_sigma(root, worlds, rule) -> SigmaTable:
 #  StochasticProfile                                                     #
 # --------------------------------------------------------------------- #
 
+# 64-bit odd mixing constants folding (seat, hand) and the second hash
+# lane into one sortable key. Collisions are handled by exact (k0, h1, h2)
+# verification at every lookup — the mix only has to be a good router.
+_MIX_K0 = np.uint64(0xD6E8FEB86659FD93)
+_MIX_H2 = np.uint64(0xCA5A826395121157)
+
+
+class _Cols:
+    """Frozen columnar profile: entries sorted by a mixed 64-bit key with
+    exact key verification. moves/probs are flat with per-entry offsets;
+    zero-probability moves are dropped at freeze time (dict-path parity:
+    lookups there filtered probs > 0 per query)."""
+
+    __slots__ = ("key", "k0", "h1", "h2", "off", "cnt", "mv", "pr",
+                 "mvmask", "n")
+
+    def __init__(self, k0, h1, h2, moff, mv, pr):
+        n = len(k0)
+        if n == 0:
+            self.key = np.empty(0, dtype=np.uint64)
+            self.k0 = np.empty(0, dtype=np.int64)
+            self.h1 = self.h2 = self.key
+            self.off = self.cnt = self.mvmask = np.empty(0, dtype=np.int64)
+            self.mv = np.empty(0, dtype=np.int8)
+            self.pr = np.empty(0, dtype=np.float64)
+            self.n = 0
+            return
+        # drop zero-probability moves (dict-path parity: lookups there
+        # filtered probs > 0 per query), still in original entry order
+        keep = pr > 0.0
+        cnt_k = np.add.reduceat(keep.astype(np.int64), moff[:-1])
+        mv_k = mv[keep]
+        pr_k = pr[keep]
+        koff = np.concatenate(([0], np.cumsum(cnt_k)))[:-1]
+        # sort entries by the mixed key
+        key = h1 ^ (k0.astype(np.uint64) * _MIX_K0) ^ (h2 * _MIX_H2)
+        perm = np.argsort(key, kind="stable")
+        self.key = key[perm]
+        self.k0 = k0[perm]
+        self.h1 = h1[perm]
+        self.h2 = h2[perm]
+        cnt = cnt_k[perm]
+        off = np.concatenate(([0], np.cumsum(cnt)))[:-1]
+        total = int(cnt.sum())
+        ramp = np.arange(total, dtype=np.int64) - np.repeat(off, cnt)
+        src = np.repeat(koff[perm], cnt) + ramp
+        self.mv = mv_k[src].astype(np.int8)
+        self.pr = pr_k[src]
+        self.off = off
+        self.cnt = cnt
+        self.mvmask = np.bitwise_or.reduceat(
+            np.int64(1) << self.mv.astype(np.int64), off) \
+            if total else np.zeros(n, dtype=np.int64)
+        self.n = n
+
+    def lookup(self, qk0, qh1, qh2):
+        """Vectorized exact lookup. Returns (found bool[D], idx int64[D])
+        with idx valid only where found."""
+        if self.n == 0:
+            return np.zeros(len(qk0), dtype=bool), \
+                np.zeros(len(qk0), dtype=np.int64)
+        qkey = qh1 ^ (qk0.astype(np.uint64) * _MIX_K0) ^ (qh2 * _MIX_H2)
+        lo = np.searchsorted(self.key, qkey, side="left")
+        hi = np.searchsorted(self.key, qkey, side="right")
+        idx = np.minimum(lo, self.n - 1)
+        run = hi - lo
+        found = (run == 1) & (self.k0[idx] == qk0) & \
+            (self.h1[idx] == qh1) & (self.h2[idx] == qh2)
+        multi = np.flatnonzero(run > 1)
+        for qi in multi.tolist():           # mixed-key collision: rare scan
+            for j in range(int(lo[qi]), int(hi[qi])):
+                if (self.k0[j] == qk0[qi] and self.h1[j] == qh1[qi]
+                        and self.h2[j] == qh2[qi]):
+                    idx[qi] = j
+                    found[qi] = True
+                    break
+        return found, idx
+
+
 class StochasticProfile:
     """(seat, hand_mask, node) -> probability vector over legal moves.
 
     Node keys are 128-bit rolling path hashes of the public tile path from
     the subgame root (`subgame.path_hash`); `set`/`get` take the path tuple
     and hash internally, so CFR exporters never touch hash internals.
-    Single-legal decisions never need an entry (forced, prob 1)."""
+    Single-legal decisions never need an entry (forced, prob 1).
+
+    Two build paths, one frozen form: `set` stages python-dict entries
+    (toys, reference-compatible export); `set_bulk` loads the whole CFR
+    export as columnar arrays in one call (no python objects per entry).
+    Consumers read through `_frozen()` — vectorized sorted-key lookup."""
 
     def __init__(self, uniform_fallback: bool = False):
         self.table: dict[tuple, tuple[np.ndarray, np.ndarray]] = {}
         self.uniform_fallback = bool(uniform_fallback)
+        self._cols: _Cols | None = None
 
     def set(self, seat, hand_mask, path, moves, probs) -> None:
+        if self._cols is not None:
+            raise ValueError("profile was bulk-loaded; set() would shadow")
         moves = np.asarray(moves, dtype=np.int64).reshape(-1)
         probs = np.asarray(probs, dtype=np.float64).reshape(-1)
         if moves.shape != probs.shape:
@@ -177,12 +264,73 @@ class StochasticProfile:
         h1, h2 = path_hash(path)
         self.table[(int(seat), int(hand_mask), h1, h2)] = (moves, probs)
 
+    def set_bulk(self, seat, hand_mask, h1, h2, moff, moves, probs) -> None:
+        """One-call columnar load: entry i is (seat[i], hand_mask[i],
+        h1[i], h2[i]) with moves/probs[moff[i]:moff[i+1]] ascending.
+        Probabilities must sum to 1 per entry; zero-prob moves are dropped.
+        The profile must be empty (bulk load replaces, never merges)."""
+        if self.table or self._cols is not None:
+            raise ValueError("set_bulk on a non-empty profile")
+        seat = np.asarray(seat, dtype=np.int64).reshape(-1)
+        hand_mask = np.asarray(hand_mask, dtype=np.int64).reshape(-1)
+        h1 = np.asarray(h1, dtype=np.uint64).reshape(-1)
+        h2 = np.asarray(h2, dtype=np.uint64).reshape(-1)
+        moff = np.asarray(moff, dtype=np.int64).reshape(-1)
+        moves = np.asarray(moves, dtype=np.int64).reshape(-1)
+        probs = np.asarray(probs, dtype=np.float64).reshape(-1)
+        if len(moff) != len(seat) + 1 or int(moff[-1]) != len(moves) \
+                or len(moves) != len(probs):
+            raise ValueError("set_bulk: misaligned columnar arrays")
+        if len(seat):
+            segsum = np.add.reduceat(probs, moff[:-1])
+            bad = np.abs(segsum - 1.0) > 1e-9
+            if bad.any():
+                i = int(np.flatnonzero(bad)[0])
+                raise ValueError(
+                    f"set_bulk: probs sum {segsum[i]} != 1 at entry {i}")
+        k0 = (seat << 28) | hand_mask
+        self._cols = _Cols(k0, h1, h2, moff, moves, probs)
+
+    def _frozen(self) -> _Cols:
+        """The columnar view, built from staged dict entries on demand."""
+        if self._cols is None:
+            items = self.table.items()
+            E = len(self.table)
+            k0 = np.empty(E, dtype=np.int64)
+            h1 = np.empty(E, dtype=np.uint64)
+            h2 = np.empty(E, dtype=np.uint64)
+            cnt = np.empty(E, dtype=np.int64)
+            mv_parts, pr_parts = [], []
+            for i, ((s, h, a, b), (mvs, prs)) in enumerate(items):
+                k0[i] = (s << 28) | h
+                h1[i] = a
+                h2[i] = b
+                cnt[i] = len(mvs)
+                mv_parts.append(mvs)
+                pr_parts.append(prs)
+            moff = np.concatenate(([0], np.cumsum(cnt)))
+            mv = np.concatenate(mv_parts) if E else np.empty(0, np.int64)
+            pr = np.concatenate(pr_parts) if E else np.empty(0, np.float64)
+            self._cols = _Cols(k0, h1, h2, moff, mv, pr)
+        return self._cols
+
     def get(self, seat, hand_mask, path):
         h1, h2 = path_hash(path)
-        return self.table.get((int(seat), int(hand_mask), h1, h2))
+        got = self.table.get((int(seat), int(hand_mask), h1, h2))
+        if got is not None or self._cols is None:
+            return got
+        c = self._cols
+        q0 = np.array([(int(seat) << 28) | int(hand_mask)], dtype=np.int64)
+        found, idx = c.lookup(q0, np.array([h1], dtype=np.uint64),
+                              np.array([h2], dtype=np.uint64))
+        if not found[0]:
+            return None
+        i = int(idx[0])
+        sl = slice(int(c.off[i]), int(c.off[i]) + int(c.cnt[i]))
+        return c.mv[sl].astype(np.int64), c.pr[sl].copy()
 
     def __len__(self) -> int:
-        return len(self.table)
+        return len(self.table) if self._cols is None else self._cols.n
 
 
 # --------------------------------------------------------------------- #
@@ -263,10 +411,16 @@ class _FullWidthProvider:
 
 
 class _DictProfileProvider:
-    """StochasticProfile lookups, deduped per unique (node, hand)."""
+    """StochasticProfile lookups, deduped per unique (node, hand), fully
+    vectorized through the profile's frozen columnar view. Per unique
+    decision the emitted (moves, probs) composition matches the historic
+    dict loop exactly: forced -> single legal; table hit -> stored entry
+    (zero-prob moves dropped at freeze); miss -> uniform-over-legal when
+    uniform_fallback, else KeyError."""
 
     def __init__(self, profile: StochasticProfile):
         self.profile = profile
+        self.cols = profile._frozen()
 
     def expand(self, eng, p, pos, sel, nsl, seats, hands):
         sub = eng.sub
@@ -280,49 +434,65 @@ class _DictProfileProvider:
         lm = np.where(lm != 0, lm, u_h)
         seats_u = seats[first]
         D = len(uq)
-        table = self.profile.table
-        fallback = self.profile.uniform_fallback
-        h1 = eng.ph1[u_n].tolist() if table else None
-        h2 = eng.ph2[u_n].tolist() if table else None
-        s_l, uh_l, lm_l = seats_u.tolist(), u_h.tolist(), lm.tolist()
+        c = self.cols
 
-        mv_parts: list = []
-        pr_parts: list = []
-        lens = np.empty(D, dtype=np.int64)
-        for i in range(D):
-            legal = lm_l[i]
-            if legal & (legal - 1) == 0:        # forced move
-                mv_i = [legal.bit_length() - 1]
-                pr_i = [1.0]
-            else:
-                ent = table.get((s_l[i], uh_l[i], h1[i], h2[i])) \
-                    if table else None
-                if ent is not None:
-                    mvs, prs = ent
-                    keep = prs > 0.0
-                    mv_i = mvs[keep].tolist()
-                    pr_i = prs[keep].tolist()
-                    for m in mv_i:
-                        if not (legal >> m) & 1:
-                            raise ValueError(
-                                f"profile plays illegal move {m}")
-                elif fallback:
-                    mv_i = _bits_list(legal)
-                    k = len(mv_i)
-                    pr_i = [1.0 / k] * k
-                else:
-                    raise KeyError(
-                        f"profile has no entry for seat={s_l[i]} "
-                        f"hand={uh_l[i]:#x} at p={p} and "
-                        "uniform_fallback is off")
-            mv_parts.extend(mv_i)
-            pr_parts.extend(pr_i)
-            lens[i] = len(mv_i)
+        forced = (lm & (lm - 1)) == 0
+        found = np.zeros(D, dtype=bool)
+        idx = np.zeros(D, dtype=np.int64)
+        nf = np.flatnonzero(~forced)
+        if len(nf) and c.n:
+            fnd, ix = c.lookup((seats_u[nf] << 28) | u_h[nf],
+                               eng.ph1[u_n[nf]], eng.ph2[u_n[nf]])
+            found[nf] = fnd
+            idx[nf] = ix
+            bad = fnd & ((c.mvmask[ix] & ~lm[nf]) != 0)
+            if bad.any():
+                i = int(nf[np.flatnonzero(bad)[0]])
+                raise ValueError(
+                    f"profile plays illegal move at seat={int(seats_u[i])} "
+                    f"hand={int(u_h[i]):#x} at p={p}")
+        miss = ~forced & ~found
+        if miss.any() and not self.profile.uniform_fallback:
+            i = int(np.flatnonzero(miss)[0])
+            raise KeyError(
+                f"profile has no entry for seat={int(seats_u[i])} "
+                f"hand={int(u_h[i]):#x} at p={p} and "
+                "uniform_fallback is off")
 
-        flat_mv = np.asarray(mv_parts, dtype=np.int64)
-        flat_pr = np.asarray(pr_parts, dtype=np.float64)
+        nleg = np.bitwise_count(lm.astype(np.uint64)).astype(np.int64)
+        lens = np.where(forced, 1, np.where(found, c.cnt[idx], nleg))
         starts_u = np.zeros(D, dtype=np.int64)
         np.cumsum(lens[:-1], out=starts_u[1:])
+        total_u = int(lens.sum())
+        mv_u = np.empty(total_u, dtype=np.int64)
+        pr_u = np.empty(total_u, dtype=np.float64)
+
+        f = np.flatnonzero(forced)
+        if len(f):
+            mv_u[starts_u[f]] = np.bitwise_count(
+                (lm[f] - 1).astype(np.uint64)).astype(np.int64)
+            pr_u[starts_u[f]] = 1.0
+        fd = np.flatnonzero(found)
+        if len(fd):
+            cf = c.cnt[idx[fd]]
+            tf = int(cf.sum())
+            ramp = np.arange(tf, dtype=np.int64) - np.repeat(
+                np.concatenate(([0], np.cumsum(cf)))[:-1], cf)
+            src = np.repeat(c.off[idx[fd]], cf) + ramp
+            dst = np.repeat(starts_u[fd], cf) + ramp
+            mv_u[dst] = c.mv[src]
+            pr_u[dst] = c.pr[src]
+        mi = np.flatnonzero(miss)
+        if len(mi):
+            bmm = ((lm[mi, None] >> _AR28) & 1).astype(bool)
+            _, tt = np.nonzero(bmm)             # row-major: ascending/row
+            cb = nleg[mi]
+            ramp = np.arange(len(tt), dtype=np.int64) - np.repeat(
+                np.concatenate(([0], np.cumsum(cb)))[:-1], cb)
+            dst = np.repeat(starts_u[mi], cb) + ramp
+            mv_u[dst] = tt
+            pr_u[dst] = np.repeat(1.0 / cb, cb)
+
         cnt_slot = lens[inv]
         tot = int(cnt_slot.sum())
         rep = np.repeat(sel, cnt_slot)
@@ -330,7 +500,7 @@ class _DictProfileProvider:
         np.cumsum(cnt_slot[:-1], out=csl[1:])
         posn = np.repeat(starts_u[inv], cnt_slot) \
             + (np.arange(tot) - np.repeat(csl, cnt_slot))
-        return rep, flat_mv[posn], flat_pr[posn], None
+        return rep, mv_u[posn], pr_u[posn], None
 
 
 class _NetSigmaProvider:
