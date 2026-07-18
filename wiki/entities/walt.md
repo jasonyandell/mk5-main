@@ -24,6 +24,9 @@ harvest (up to 25 riding count + the trick) and its emotional value is
 surprise; it can be right to burn a good lead now to *create* a walker two
 tricks later. This supersedes the "promoted trash" gloss on [[table42]].
 
+**The dense technical spec — algebra, design, perf, trajectory, fitted
+belief net — is [[walt-spec]].**
+
 ## Where it sits in the algebra
 
 Per [[belief-policy-value-algebra]]: eq = π deleted twice (CAN-#5). walt

@@ -22,6 +22,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-17 | worktree-walt | walt-spec: the machine on one page]
+
+**Touched pages:** [[walt-spec]] [[walt]] [[index-topics|index]]
+**Added:** [[walt-spec]] — brief dense spec written the night of the build: the object, the algebra location, design + gates, measured perf laws (the tail law, ×100/tile, determinism-as-compression), pilot grades with the field-rent caveat, the fitted-belief-net commitments (no RL gradient on beliefs; u-replay anchors), the gated trajectory, and the edges (no-field is a class change) so nobody re-derives them.
+
 ## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver built, gated, graded-in-progress]
 
 **Touched pages:** [[walt]] [[index-entities|index]]
