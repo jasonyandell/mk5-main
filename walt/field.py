@@ -439,6 +439,26 @@ class FieldOracle:
         if len(self.memo) > cap:
             self.memo.clear()
 
+    def ev_rows(self, X: np.ndarray, chunk: int = 8192) -> np.ndarray:
+        """[R] E[declaring pts] for a large row batch, forwarded in ``chunk``-row
+        pieces (torch cpu gemm peaks ~1M rows/s near 8k rows vs ~65k rows/s at
+        the solver's old avg batch of 4.6). Odd-sized tails are padded to an
+        even row count: B=1 (and sometimes other tiny odd B) takes a bitwise-
+        different gemv kernel; padding keeps every row on the canonical gemm
+        path so identical rows always score identically across calls."""
+        R = int(X.shape[0])
+        out = np.empty(R, dtype=np.float32)
+        for i in range(0, R, chunk):
+            part = X[i:i + chunk]
+            n = int(part.shape[0])
+            if n % 2:
+                out[i:i + n] = self._ev(np.concatenate([part, part[-1:]]))[:n]
+            else:
+                out[i:i + n] = self._ev(part)
+            self.n_forward += 1
+        self.n_rows += R
+        return out
+
     def _ev(self, X: np.ndarray) -> np.ndarray:
         """[B] E[declaring pts] — functional JudNet.forward + mean_points."""
         F = torch.nn.functional
