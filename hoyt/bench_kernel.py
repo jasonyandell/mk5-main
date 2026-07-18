@@ -1,4 +1,4 @@
-"""walt/kernel/bench_kernel.py — K3: the kernel bench (≤10 min wall).
+"""hoyt/bench_kernel.py — K3: the kernel bench (≤10 min wall).
 
 Three sections, every number printed with its comparison denominator:
 
@@ -25,7 +25,7 @@ extraction) and beats P1 by >10×; the only python/numpy-overhead-bound
 path left is the stochastic rewalk, which is a diagnostic stress case, not
 a gate. Pure numpy keeps the parity story single-sourced.
 
-Run: PYTHONPATH=. python -u walt/kernel/bench_kernel.py [--h5-n 20]
+Run: PYTHONPATH=. python -u hoyt/bench_kernel.py [--h5-n 20]
 """
 from __future__ import annotations
 
@@ -88,10 +88,10 @@ def _cap(root, worlds, cap):
 
 
 def bench_fixture_suite(oracle, t_start) -> dict:
-    import walt.kernel as K
+    import hoyt as K
     from walt.solver import solve
 
-    fix_path = Path(__file__).resolve().parents[1] / "tests"
+    fix_path = Path(__file__).resolve().parents[1] / "walt" / "tests"
     recs = [json.loads(l) for l in (fix_path / "fixtures_h4.jsonl").open()]
     exp = {r["seed"]: r for r in map(
         json.loads, (fix_path / "fixtures_h4_expected.jsonl").open())}
@@ -182,7 +182,7 @@ def bench_fixture_suite(oracle, t_start) -> dict:
 
 
 def bench_stochastic(oracle, recs_by_seed, t_start) -> None:
-    import walt.kernel as K
+    import hoyt as K
 
     pay = K.payoff_points()
     prof = K.StochasticProfile(uniform_fallback=True)
@@ -216,7 +216,7 @@ def bench_stochastic(oracle, recs_by_seed, t_start) -> None:
 
 
 def bench_h5(oracle, n_roots, t_start) -> None:
-    import walt.kernel as K
+    import hoyt as K
     from arena.jud_play import JudPlay
     from champion.jud_net import load_jud_net
     from walt.bench import build_root_at_horizon
@@ -268,7 +268,7 @@ def bench_h5(oracle, n_roots, t_start) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="walt kernel bench (K3)")
+    parser = argparse.ArgumentParser(description="hoyt bench (K3)")
     parser.add_argument("--h5-n", type=int, default=20)
     args = parser.parse_args()
 

@@ -122,6 +122,12 @@ All three arms vs JudPlay, `margin:wp`(r8) bidder both teams, base_seed=0:
   correctness subtleties live in [[walt-spec]] §4. Grading now banks
   serialized roots on every decision (pilot arm A never did — its H4
   corpus must be regenerated, which is now cheap).
+- **2026-07-18, the referee split**: the throughput program's net-free
+  kernel outgrew walt and was promoted to [[hoyt]] — walt is the player
+  (best response vs a modeled field), hoyt is the referee (exact values
+  and exploitability with no model in the loop, the stable eval). First
+  hoyt reading on walt: best-responding to jud beats the reference line
+  by median +1.9 pts/root — the field-model rent, priced exactly.
 - The B/C runs' decision logs carry full serialized roots + exact
   values/argmaxes — the seed corpus for the [[lamir1-ceiling]] scar probe
   (distilled-leaf argmax preservation,

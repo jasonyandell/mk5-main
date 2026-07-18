@@ -1,4 +1,4 @@
-"""walt/kernel/br.py — exact best response vs a frozen profile, net-free.
+"""hoyt/br.py — exact best response vs a frozen profile, net-free.
 
 `br_solve(subgame, profile, payoff43, hero)` per CONTRACTS.md. Value is the
 hero-optimal expectation of `payoff43[final declaring points]` in DECLARING
@@ -35,14 +35,14 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from walt.kernel.profiles import (
+from hoyt.profiles import (
     SigmaTable,
     StochasticProfile,
     _DictProfileProvider,
     _TableProvider,
     _UniformProvider,
 )
-from walt.kernel.subgame import (
+from hoyt.subgame import (
     DEFAULT_SLOT_BUDGET,
     KernelMemoryError,
     Subgame,

@@ -8,7 +8,7 @@ nonzero on any FAIL. Run from the repo root:
 
 The injectability contract, exercised for real: cfr_solve(subgame, payoff43,
 impl=...) must produce the SAME trace whether impl is the pure-python
-reference mirror or the fast net-free kernel (walt.kernel). The two br_solve
+reference mirror or the fast net-free kernel (hoyt). The two br_solve
 implementations were built independently in separate lanes; agreement here
 cross-checks both through the full CFR loop (profile export -> exact BR gap
 pricing) on every measurement.
@@ -26,10 +26,10 @@ import sys
 
 import numpy as np
 
-import walt.kernel as K  # noqa: E402
-from walt.kernel import reference as ref  # noqa: E402
-from walt.kernel import toys as T  # noqa: E402
-from walt.kernel.cfr import cfr_solve  # noqa: E402
+import hoyt as K  # noqa: E402
+from hoyt import reference as ref  # noqa: E402
+from hoyt import toys as T  # noqa: E402
+from hoyt.cfr import cfr_solve  # noqa: E402
 
 PAY = T.payoff_points()
 _failures: list[str] = []

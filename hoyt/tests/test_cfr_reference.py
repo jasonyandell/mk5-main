@@ -6,7 +6,7 @@ nonzero on any FAIL. Run from the repo root:
 
     /Users/jason/code/mk5-main/.venv/bin/python -u walt/tests/test_cfr_reference.py
 
-The references here are INDEPENDENT of walt/kernel/reference.py's recursion:
+The references here are INDEPENDENT of hoyt/reference.py's recursion:
 R1 replays every toy world through the real zeb engine; R2/R3 enumerate ALL
 pure info-set strategies of the best responder and simulate each one.
 
@@ -29,8 +29,8 @@ import numpy as np
 from forge.zeb.game import apply_action, current_player, is_terminal  # noqa: E402
 from forge.zeb.types import BidState, GamePhase, ZebGameState  # noqa: E402
 
-from walt.kernel import reference as ref  # noqa: E402
-from walt.kernel import toys as T  # noqa: E402
+from hoyt import reference as ref  # noqa: E402
+from hoyt import toys as T  # noqa: E402
 from walt.tables import hand_to_mask, mask_to_tiles  # noqa: E402
 from walt.worlds import seat_order  # noqa: E402
 

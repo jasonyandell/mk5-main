@@ -1,4 +1,4 @@
-"""walt/kernel — the net-free solve substrate (CONTRACTS.md, 2026-07-18a).
+"""hoyt — the net-free solve substrate (CONTRACTS.md, 2026-07-18a).
 
 Zero-torch kernel over the wavefront engine's SoA shape: bitboard hands,
 `walt.tables` LUT rules, waves. The only net-touching call is
@@ -7,20 +7,20 @@ best response, profiles — is numpy only. See subgame.py / profiles.py /
 br.py module docstrings for the design; cfr/toys/reference are the CFR
 lane's files.
 """
-from walt.kernel.br import (
+from hoyt.br import (
     BRResult,
     br_solve,
     payoff_make,
     payoff_points,
     profile_value,
 )
-from walt.kernel.profiles import (
+from hoyt.profiles import (
     SigmaTable,
     StochasticProfile,
     compile_rule_sigma,
     compile_sigma,
 )
-from walt.kernel.subgame import (
+from hoyt.subgame import (
     DEFAULT_SLOT_BUDGET,
     KernelMemoryError,
     Subgame,

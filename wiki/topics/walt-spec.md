@@ -211,21 +211,13 @@ Gated sequence, cheap probes first:
    (64 detectors) and the family-idiom judge — MIGHT-#5's
    equilibrium-selection role for the book, the small-ε member of the
    (ε, init) family.
-6. **Equilibrium solver as instrument, never player — BUILT 2026-07-18**
-   (`walt/kernel/`, [[perf-log]] 2026-07-18a–e): the net-free kernel (one
-   SoA wave engine, σ behind providers; zero torch outside the one
-   `compile_sigma` call) plus verified CFR+ (bitwise-pinned two-engine
-   implementation, toy battery vs LP/enumeration). Deterministic BR
-   re-solves ~0.9 ms (45× the net wavefront, 24.7 ns/node); CFR reaches
-   gap ≤0.05 pts in ~40 iterations — **scale-invariant in worlds so
-   far** — at ~2 min/root cap-256. Honesty line as registered: team-game,
-   2-player theorems don't transfer; claims are "low-exploitability
-   reference priced by exact single-seat BR." Measured along the way:
-   ~500 toy configurations found zero mixed equilibria — vs deterministic
-   pins, late 42 is pure; mixing must earn through concealment (#77), not
-   game value. Stochastic-field cost is now measured, not argued: tree
-   blowup p50 526×, max 5219× vs deterministic σ. The frozen 200-root
-   anchor `walt/evalset_h4_v1.jsonl` is the forever-comparable eval set.
+6. **Equilibrium solver as instrument, never player — BUILT 2026-07-18
+   and promoted to its own entity: [[hoyt]]** (`hoyt/`, [[perf-log]]
+   2026-07-18a–f). The net-free kernel + verified CFR+ references + the
+   exploitability meter + the frozen eval anchor now live there; hoyt
+   carries the numbers, the honesty line, and the habitat table. The
+   division of labor: walt is a player (best response vs a modeled
+   field); hoyt is the referee (values with no model in the loop).
 
 ## 8. Edges (measured or argued, so nobody re-derives them)
 

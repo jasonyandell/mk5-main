@@ -115,3 +115,16 @@ full 200-root reference sweep (~4–7 h single-process; parallelism is
 RSS-bound at 7.4 GiB/root until int32 narrowing — both queued); overnight
 H4 corpus regen for the scar probe; bulk profile export vectorization
 (~15 % of CFR wall); br_every tuning (halves gap-pricing cost).
+
+## 2026-07-18f — promotion: the kernel is [[hoyt]]
+
+Jason's call: the instrument gets its own name and entity. `walt/kernel/`
+→ `hoyt/` (package + tests + the frozen eval anchor
+`hoyt/evalset_h4_v1.jsonl`), entity page [[hoyt]] carries the full
+synthesis. Named for "according to Hoyle" — the authority you appeal to
+on games; ours is computed. Identity clarified by the split: walt is a
+player (BR vs a modeled field), hoyt is the referee (no model in the
+loop). Entries a–e above predate the rename and say `walt/kernel` —
+historically correct, left as written (this log is append-only). 40
+tests green post-move; K1 parity fixtures stay in `walt/tests/` (the
+gate is a walt↔hoyt cross-check by nature).

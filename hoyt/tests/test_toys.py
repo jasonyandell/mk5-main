@@ -38,7 +38,7 @@ from forge.zeb.game import (
 from forge.zeb.types import BidState, GamePhase, ZebGameState
 
 from walt.contracts import EndgameRoot
-from walt.kernel import (
+from hoyt import (
     StochasticProfile,
     br_solve,
     build_subgame,
@@ -46,7 +46,7 @@ from walt.kernel import (
     payoff_make,
     payoff_points,
 )
-from walt.kernel.subgame import paths_of
+from hoyt.subgame import paths_of
 from walt.tables import hand_to_mask, mask_to_tiles
 from walt.worlds import enumerate_worlds, seat_order
 
@@ -430,7 +430,7 @@ def test_profile_value_and_chunked_mode():
     """profile_value == all-profile expectation reference; a starved slot
     budget must flip br_solve into per-root-move chunking with identical
     value/best_move/root_values."""
-    from walt.kernel import profile_value
+    from hoyt import profile_value
 
     pay = payoff_points()
     prof = StochasticProfile(uniform_fallback=True)
@@ -455,7 +455,7 @@ def test_profile_value_and_chunked_mode():
 
         # chunked fallback parity (slot budget too small for one tree,
         # big enough for per-root-move trees)
-        from walt.kernel import KernelMemoryError
+        from hoyt import KernelMemoryError
 
         br = br_solve(sub, prof, pay)
         for budget in (2000, 700, 300):
@@ -478,7 +478,7 @@ def test_full_width_walk():
     world's leaf-slot count equals its number of consistent full-width
     paths (a world survives a public action iff the acting seat holds the
     tile), and every wave keeps its slot partition + path ids."""
-    from walt.kernel import expand_full_width
+    from hoyt import expand_full_width
 
     done = 0
     for root, worlds in _iter_toys(39000, max_tiles=2, max_worlds=6):
@@ -513,7 +513,7 @@ def test_jud_sigma_toys():
     from walt.field import FieldOracle, PubState
 
     oracle = FieldOracle(device="cpu")
-    from walt.kernel import compile_sigma
+    from hoyt import compile_sigma
 
     pay = payoff_points()
 

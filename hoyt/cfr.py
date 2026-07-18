@@ -1,4 +1,4 @@
-"""walt/kernel/cfr.py — CFR+ over a walt endgame subgame, priced by exact BR.
+"""hoyt/cfr.py — CFR+ over a walt endgame subgame, priced by exact BR.
 
 WHAT THIS CONVERGES TO, AND WHAT IT DOES NOT CLAIM
 --------------------------------------------------
@@ -40,7 +40,7 @@ Two interchangeable iteration engines (identical math, parity-gated in
 walt/tests/test_cfr_parity.py):
 
 - engine="wave" (default): the static public tree + info-set index is
-  reconstructed from `walt.kernel.expand_full_width`'s SoA waves (parent
+  reconstructed from `hoyt.expand_full_width`'s SoA waves (parent
   slots matched by sorted (node, world) keys; per-edge strategy slots by
   masked-popcount move ranks against per-info-set legality). Iterations are
   pure per-wave gathers + bincounts — zero python per-node work.
@@ -61,16 +61,16 @@ touches the injected `impl` module ONLY through:
     profile.set(seat, hand_mask, node, moves, probs)      # one call per iset
 
 where node = tuple of domino ids played since the root (the profile-domain
-convention in walt/kernel/reference.py; the kernel lane hashes it
+convention in hoyt/reference.py; the kernel lane hashes it
 internally). The orchestrator runs the SAME cfr_solve on the fast kernel
 via:
 
-    import walt.kernel as K
+    import hoyt as K
     sub = K.build_subgame(root, worlds, weights)
     res = cfr_solve(sub, payoff43, iters=500, target_gap=0.05, impl=K)
 
-`impl` defaults to walt.kernel (the fast lane); tests inject
-walt.kernel.reference. The wave engine's STRUCTURE always comes from the
+`impl` defaults to hoyt (the fast lane); tests inject
+hoyt.reference. The wave engine's STRUCTURE always comes from the
 kernel's wave walk (net-free, walt.tables rules only); `impl` only prices
 gaps and hosts the export format. Zero torch anywhere in this module.
 """
@@ -82,7 +82,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from walt.kernel.reference import (  # shared public-state algebra + protocol
+from hoyt.reference import (  # shared public-state algebra + protocol
     _pub_step,
     build_subgame as _view_subgame,
     legal_tiles,
@@ -306,7 +306,7 @@ class _WaveStruct:
 
 def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
                 want_debug: bool) -> _WaveStruct:
-    from walt.kernel.subgame import (
+    from hoyt.subgame import (
         build_subgame as _kernel_subgame,
         expand_full_width,
         paths_of,
@@ -574,7 +574,7 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
         br_every: measure the gap (4 exact BR solves) every this many
             iterations; the final iteration is always measured.
         impl: module providing br_solve + StochasticProfile. Defaults to
-            walt.kernel (the fast lane); tests pass walt.kernel.reference.
+            hoyt (the fast lane); tests pass hoyt.reference.
         pinned: optional {seat: profile}; those seats play the fixed profile,
             take no regret updates, and are excluded from the gap max
             (the 2-player-izable toy harness).
@@ -587,11 +587,11 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
     """
     del seed  # deterministic full-width solve; kept for contract stability
     if impl is None:
-        import walt.kernel as impl  # the fast kernel lane
+        import hoyt as impl  # the fast kernel lane
         if not hasattr(impl, "br_solve"):
             raise ImportError(
-                "walt.kernel does not export br_solve yet; pass "
-                "impl=walt.kernel.reference (toys) or the kernel module")
+                "hoyt does not export br_solve yet; pass "
+                "impl=hoyt.reference (toys) or the kernel module")
     payoff43 = np.asarray(payoff43, dtype=np.float64).reshape(-1)
     if payoff43.shape[0] != 43:
         raise ValueError("payoff43 must have 43 entries")

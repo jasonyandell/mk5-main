@@ -6,7 +6,7 @@ solve is the fresh reference, then `compile_sigma` + `br_solve` must
 reproduce best_move identically, value within 1e-9 relative, and EVERY
 per-move root value within 1e-9 — on the cached fast path AND on the
 generic-engine rewalk (which must agree with the fast path exactly).
-The full 46-fixture sweep with timing is walt/kernel/bench_kernel.py.
+The full 46-fixture sweep with timing is hoyt/bench_kernel.py.
 
 Run: PYTHONPATH=. .venv python -m pytest walt/tests/test_kernel_parity.py
 """
@@ -22,11 +22,11 @@ import torch
 from walt.contracts import EndgameRoot
 from walt.field import FieldOracle, sigma_consistent
 from walt.grade import _make_moves_filter
-from walt.kernel import br_solve, build_subgame, compile_sigma, payoff_points
+from hoyt import br_solve, build_subgame, compile_sigma, payoff_points
 from walt.solver import solve
 from walt.worlds import enumerate_worlds
 
-FIX = Path(__file__).parent / "fixtures_h4.jsonl"
+FIX = Path(__file__).parents[2] / "walt" / "tests" / "fixtures_h4.jsonl"
 REL_TOL = 1e-9
 
 SEEDS = (777003, 777004, 777005, 777010, 777016, 777017, 777022,

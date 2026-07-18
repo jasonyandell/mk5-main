@@ -1,4 +1,4 @@
-"""walt/kernel/subgame.py — the net-free wave engine over the H≤5 subgame.
+"""hoyt/subgame.py — the net-free wave engine over the H≤5 subgame.
 
 `build_subgame(root, worlds, weights)` is the CONTRACTS.md entry point. The
 Subgame it returns is deliberately LAZY: it holds the root's parsed public
@@ -523,7 +523,7 @@ def expand_full_width(sub: Subgame, *, keep_slots=True, need_path_ids=True,
     (hero=-1: no seat is best-responding; weights flow un-scaled). Returns
     the raw run_engine result with per-wave slot partitions and 128-bit
     node path ids kept. Memory is the caller's affair — budget-guarded."""
-    from walt.kernel.profiles import _FullWidthProvider
+    from hoyt.profiles import _FullWidthProvider
 
     return run_engine(sub, _FullWidthProvider(), hero=-1,
                       keep_slots=keep_slots, need_path_ids=need_path_ids,

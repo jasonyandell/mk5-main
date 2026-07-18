@@ -88,12 +88,13 @@ issues for perf items per 2026-07-18 directive).
   with `--world-cap 512` the fixture suite ≈ 2.3 s (≈54× vs the pilot
   engine). Bulk H4 corpus generation ≈ 10⁷ solves/day on 12 cores. Stage 3
   (Metal batch-VCT) parked until H5/H6 demands it ([#74](https://github.com/jasonyandell/mk5-main/issues/74)).
-- **net-free kernel** (`walt/kernel/`, [[perf-log]]): after a one-time
-  σ-compile (≈ one net solve), deterministic BR re-solves at **0.9 ms p50**
-  (45× the net wavefront; 24.7 ns/node; payoff AND belief weights swappable
-  free); H5-cap512 BR p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in
-  ~40 iterations (scale-invariant in worlds so far), ~2 min/root at
-  cap-256 after the 36.5× traversal vectorization.
+- **[[hoyt]]** (the net-free referee, promoted from `walt/kernel/`,
+  [[perf-log]]): after a one-time σ-compile (≈ one net solve),
+  deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
+  24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
+  p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
+  (scale-invariant in worlds so far), ~2 min/root at cap-256 after the
+  36.5× traversal vectorization.
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

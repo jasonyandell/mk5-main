@@ -1,4 +1,4 @@
-"""walt/kernel/profiles.py — frozen-profile objects + the one net call.
+"""hoyt/profiles.py — frozen-profile objects + the one net call.
 
 Two profile kinds per CONTRACTS.md, both over the domain of reachable
 (seat, hand_mask, public node) info sets:
@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from walt.kernel.subgame import (
+from hoyt.subgame import (
     _ALL28,
     _AR28,
     Subgame,

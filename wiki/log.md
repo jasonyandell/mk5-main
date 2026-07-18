@@ -19,6 +19,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **jud + the wall** (2026-07-05 → 07-06, 6 archived entries) — jud v0/v1 built and graded ([[jud]], [[champion]], [[w42-jud-v1]], [[w42-plateau-probe]]), the 2.38× arena perf pass, value-native endorsed via [[rank-vs-price]].
 - **The wall named + the archaeology** (2026-07-06 → 07-10, 5 archived entries) — [[the-wall]] stated precisely (distill-for-what, [[candlewax]] concordance); the ~30-page era backfill + ~173-page staleness audit and anti-rot rules; [[w42-book-second-pass]]; the 162-experiment-page artifact audit (43 corrected); the log's changelog-not-chronicle rotation.
 - **Partnership spine + consolidation** (2026-07-11, 6 archived entries) — the [[partnership-wall-research]] measurement spine (sampler audit, result vocabulary, review surface, four gates), the docs→wiki consolidation (game-of-42 + engine reference clusters), prior-sweep completion and review repairs. Hub: [[partnership-wall-research]]. Later 07-12+ entries remain below.
+- **Continuation frontier + research night** (2026-07-12 → 07-13, 7 archived entries) — [[belief-weighted-jud-mcts]] and [[convention-aware-blueprint-search]] preserved with framing rebalanced; [[research-lane-selection]] picked the night's lanes, Stage 0 closed, Lane A ([[auction-decoder]]) v0 validated, Lane B ([[dense-q-supervision]]) graded both rounds. Source: [[sources/research-night-2026-07-13|research-night-2026-07-13]].
 
 ---
 
@@ -49,54 +50,6 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Updated:** [[count-fate-ledger]] (new Measured section; open question narrowed), [[world-sampler-mrv-audit]] (corpus-scale contamination quantified, issue #52), [[jud]] (sibling link)
 **Questions opened:** issues #51 (doubles-suit engine representability), #52 (corpus regeneration on repaired sampler), #53 (retention-policy consumer — the remaining half of #49's question)
 
-## [2026-07-12 | 1a4482fe | convention-aware blueprint search preserved without selection]
-
-**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-value]] [[sources/1a4482fe]] [[index]]
-**Added:** the SPARTA-style blueprint proposal and its separate project-record refinement; neither is promoted to a build.
-**Questions opened:** can [[w42-book-second-pass|Winning 42]] conventions seed a shared codebook while a learned policy supplies the complete blueprint?
-**Frontier:** the design is IDEATED, unbuilt, and unselected; clairvoyance remains a consumer-specific sensitivity probe rather than a universal bound.
-
-## [2026-07-12 | a6590bf6 | book-seeded coordinated initialization promoted into research trail]
-
-**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/a6590bf6]] [[index]]
-**Updated:** Winning 42 becomes a visible candidate codebook overlay; convention value is a sender x partner-reader x opponent-reader interaction, not a double-dummy rejection label.
-**Questions refined:** can the sparse overlay become a complete calibrated blueprint whose partner gain survives opponent decoding and full-match marks?
-**Frontier:** the mechanism is preserved above leaf level but remains IDEATED, unbuilt, unmeasured, and unselected.
-
-## [2026-07-12 | d5816915 | blueprint hypothesis framing rebalanced]
-
-**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/d5816915]] [[index]]
-**Updated:** the surviving structural case now leads; Winning 42 initialization, existing infrastructure, causal attribution, and four-seat inference receive the same weight as the engineering requirements.
-**Corrected:** repeated status caveats no longer imply a negative result; no contrary experiment exists.
-**Frontier:** blueprint search remains one candidate among several, with durable research-trail visibility and no editorial presumption against it.
-
-## [2026-07-12 | f6b691da | belief-weighted Jud MCTS preserved and synthesized]
-
-**Touched pages:** [[belief-weighted-jud-mcts]] [[jud]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/f6b691da]] [[index]]
-**Added:** belief particles → information-set MCTS → blueprint policy → Jud realized-value leaf, grounded by JudSearch's `+2.28` gain and the JS2 worlds-sweep boundary.
-**Separated:** J0-J4 attributes root belief, adaptive depth, information-set updates, and convention value; determinized and information-set MCTS have distinct promotion gates.
-**Frontier:** the idea is a surviving search-consumer hypothesis; Zeb and LAMIR are relevant prior evidence but did not test this combination.
-
-## [2026-07-13 | b28fb55a | continuation-frontier research ingested — lanes selected, MCTS backup semantics corrected]
-
-**Touched pages:** [[research-lane-selection]] [[search-literature-transfer]] [[auction-decoder]] [[belief-weighted-jud-mcts]] [[jud]] [[convention-aware-blueprint-search]] [[the-wall]] [[partnership-wall-research]] [[sources/b28fb55a]] [[index]]
-**Added:** [[research-lane-selection]] (the gates' step-3 experiment selection), [[search-literature-transfer]], [[auction-decoder]].
-**Updated:** [[belief-weighted-jud-mcts]] backup semantics — two legal forms replace partner-max/opponent-min; actor-relative node identity; J3 gated on calibrated likelihoods. [[jud]] v2 per-move targets split into two consumer-distinct signals.
-**Frontier:** Stage 0 closure (CUDA bench, exposure scan, two-block P0/C0) precedes lane grading; Lanes A/B primary.
-
-## [2026-07-13 | research-night | Stage 0 closes; Lane A v0 validates; Lane B armed]
-
-**Touched pages:** [[stage-0-closure]] [[world-sampler-mrv-audit]] [[partnership-wall-research]] [[champion]] [[auction-decoder]] [[auction-decoder-v0]] [[jud-target-granularity]] [[search-literature-transfer]] [[index]]
-**Added:** [[stage-0-closure]] (all six arena arms in registered bands; CUDA correctness PASS + throughput-prediction MISS: sampler is launch-bound; exposure 2.51% distributional, 20/200-worst argmax flips), [[auction-decoder-v0]] (instrument validated, causal signature clean), [[jud-target-granularity]] (R1–R6 registered before evaluation).
-**Updated:** audit + trail + champion pages forward-linked to the closure; exposure question moved to `questions/resolved.md`; literature citations verified against primary sources.
-**Capability:** `--teacher-forced` E[Q] labeling (decision k = recorded play step k; 107,244/107,244 decision coordinates covered on the Lane B corpus).
-
-## [2026-07-13 | research-night close | Lane B graded both rounds; night digest filed]
-
-**Touched pages:** [[jud-target-granularity]] [[jud]] [[consumption-ledger]] [[the-wall]] [[partnership-wall-research]] [[dense-q-supervision]] [[research-lane-selection]] [[sources/research-night-2026-07-13]] [[index]]
-**Verdict:** per-move targets at v1 capacity are marks-null in both forms (parent-side aux; child-state values); 3× volume moves calibration only; ranking-label agreement does not order play strength. The only registered prediction that hit was the one predicting a null.
-**Residual:** capacity×target interaction, on-policy loop data, opponents-in-rollout; a never-significant ~+0.18 search-side trace for CE-lowering leaves.
-**Digest:** [[sources/research-night-2026-07-13]] carries the whole night (Stage 0 closure, Lane A validation, Lane B negative, new capabilities).
 ## [2026-07-13 | wiki-reorg | schema v2, routing trails, status truth, split catalog]
 
 **Schema:** [[AGENTS.md|AGENTS]] amended — 4-value status enum with lifecycle rules, date timestamps, kind decision tree, one-home-per-fact, routing rules, named sources codified; `scripts/wiki_lint.py` enforces mechanically (`--strict` clean at this entry).
@@ -121,3 +74,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Touched pages:** [[topics/perf|perf]] [[topics/walt-spec|walt-spec]] [[entities/walt|walt]] [[topics/perf-on-the-table|perf-on-the-table]]
 **Added:** [[topics/perf|perf]] — umbrella topic: eight measured laws synthesized from the two perf campaigns (2026-04 Burl inference, 2026-07 walt solver), plus current fast-path state.
 **Updated:** [[topics/walt-spec|walt-spec]] §4 rewritten for the wavefront engine (14.8× at exact parity on 46 golden fixtures; world-cap error curve: material-flip is the right gate, raw flips are near-ties; #74 stage-1 "10×" corrected to 1.7–2.3×); corpus caveat added (§3: pilot arm A banked no serialized roots). [[entities/walt|walt]] engine bullet + index hooks. Receipts: PR #78, issues #74/#73.
+
+## [2026-07-18 | worktree-walt-perf | hoyt — the net-free referee, promoted]
+
+**Touched pages:** [[entities/hoyt|hoyt]] [[entities/walt|walt]] [[topics/walt-spec|walt-spec]] [[topics/perf|perf]] [[topics/perf-log|perf-log]]
+**Added:** [[entities/hoyt|hoyt]] — the game's own referee: net-free kernel + verified CFR+ + exploitability meter + frozen eval anchor, promoted out of walt/kernel/ to `hoyt/` the morning after it was built. Named for "according to Hoyle." Player/referee split registered: walt = BR vs a modeled field; hoyt = values with no model in the loop (the stable eval across model generations).
+**Updated:** walt-spec §7.6 now routes to hoyt; walt entity gains the referee-split bullet + first rent reading (median +1.9 pts/root vs jud); perf fast-path state; perf-log 2026-07-18f (promotion entry; a–e left as history per append-only rule).

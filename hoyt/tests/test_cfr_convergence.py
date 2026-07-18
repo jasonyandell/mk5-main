@@ -32,9 +32,9 @@ import sys
 
 import numpy as np
 
-from walt.kernel import reference as ref  # noqa: E402
-from walt.kernel import toys as T  # noqa: E402
-from walt.kernel.cfr import cfr_solve  # noqa: E402
+from hoyt import reference as ref  # noqa: E402
+from hoyt import toys as T  # noqa: E402
+from hoyt.cfr import cfr_solve  # noqa: E402
 
 PAY = T.payoff_points()
 _failures: list[str] = []

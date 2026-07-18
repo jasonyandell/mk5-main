@@ -1,4 +1,4 @@
-"""walt/kernel/reference.py — transparent pure-python mirror of CONTRACTS.md.
+"""hoyt/reference.py — transparent pure-python mirror of CONTRACTS.md.
 
 A small, slow, obviously-correct implementation of the kernel interface
 (`build_subgame` / `br_solve` / `SigmaTable` / `StochasticProfile`) for TOY

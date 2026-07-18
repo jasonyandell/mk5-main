@@ -1,4 +1,4 @@
-# walt/kernel — the net-free kernel (frozen interface, 2026-07-18)
+# hoyt — the net-free kernel (frozen interface, 2026-07-18)
 
 Program registration: wiki/topics/perf-log.md entry 2026-07-18a. The kernel
 is the zero-torch solve substrate: bitboard hands, LUT tricks (from
@@ -63,9 +63,9 @@ team-pair deviation out of scope.
 
 ## File ownership (no collisions)
 
-- KERNEL lane: `walt/kernel/{__init__,subgame,profiles,br,bench_kernel}.py`,
+- KERNEL lane: `hoyt/{__init__,subgame,profiles,br,bench_kernel}.py`,
   `walt/tests/test_kernel_*.py`.
-- CFR lane: `walt/kernel/{cfr,toys,reference}.py`,
+- CFR lane: `hoyt/{cfr,toys,reference}.py`,
   `walt/tests/test_cfr_*.py`. `reference.py` is a tiny pure-python
   implementation of THIS interface for toys only (correctness mirror, no
   perf goals) so the CFR lane never blocks on the kernel lane.
