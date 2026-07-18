@@ -32,7 +32,6 @@ Named things: projects, systems, models, artifacts. Hubs in bold below.
 - [[entities/stage-0-adapter-line|stage-0-adapter-line]] — LEM Stage 0 adapter lineage (stage-0→kerry→v3…v10) with comparative eval table (complete)
 - [[entities/star-harness|star-harness]] — STaR harness: Modal harness, local llama.cpp runner, single-GPU HF generate loop (vLLM abandoned) (complete)
 - [[entities/texas-42|texas-42]] — the game: 28 dominoes, 2 partnerships, 7 tricks, 42 points per hand; hub for the game-of-42 cluster ([[topics/rules-of-42|rules-of-42]] · [[topics/suit-algebra-spec|suit-algebra-spec]] · [[topics/play-phase-algebra|play-phase-algebra]]) (active)
-- [[entities/walt|walt]] — exact endgame information-set solver: best response vs a fixed field over exactly-enumerated worlds at ≤4 tiles; W0/W1 belief ablation = the gap decomposition as an experiment; base layer of the endgame→up ladder, gated on the Lisý scar probe; issue #71 (active)
 - [[entities/w42|w42]] — Winning 42 empirical strategy-validation workstream; book claims become detectors, reports, paired tests, and bounded claim statuses (active)
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (superseded)
 - [[entities/web-game|web-game]] — Era 1 prologue: the pure-functional, event-sourced TypeScript engine (`state = replayActions(config, history)`) that is the project's founding substrate; every later layer inherits its spine (retired)

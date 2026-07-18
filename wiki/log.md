@@ -22,23 +22,6 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-07-17 | worktree-walt | the wall biography: a new chapter — the door gets a hinge]
-
-**Touched pages:** [[the-wall-biography]]
-**Added:** the 2026-07-17 chapter, appended after the preserved ending: the stream-of-consciousness idea located by the algebra, [[walt]] built and gated in one night (T6 = the first artifact that provably carries a plan and cashes it), the +3.00 grading with its field-rent caveat kept exact, the first zero-excluding belief effect ("term 1 is only cashable through term 2"), the walker naming, and the wall's question in its newest form: how much of an exact info-set player's edge survives meeting E[Q] (#72).
-
-## [2026-07-17 | worktree-walt | walt-spec: the machine on one page]
-
-**Touched pages:** [[walt-spec]] [[walt]] [[index-topics|index]]
-**Added:** [[walt-spec]] — brief dense spec written the night of the build: the object, the algebra location, design + gates, measured perf laws (the tail law, ×100/tile, determinism-as-compression), pilot grades with the field-rent caveat, the fitted-belief-net commitments (no RL gradient on beliefs; u-replay anchors), the gated trajectory, and the edges (no-field is a class change) so nobody re-derives them.
-
-## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver built, gated, graded-in-progress]
-
-**Touched pages:** [[walt]] [[index-entities|index]]
-**Added:** [[walt]] — the 2026-07-17 brainstorm's base layer: exact best response in the information-set game at ≤4 tiles vs the jud field; eq's two deletions un-deleted (info-set-consistent continuation + exact B(σ) as a 0/1 filter); all gates green incl. T2 strategy-enumeration exactness and T6 claim-vs-cash closure; 3.6× perf pass on the M5 Max; walker definition corrected (unbeatable when led, not "promoted trash" — supersedes the [[table42]] gloss).
-**Questions opened:** [issue #71](https://github.com/jasonyandell/mk5-main/issues/71) — registered predictions P1–P4 + the Lisý scar probe as the ladder gate.
-**Graded same night:** walt(W1,H4) **+3.00 [2.77, 3.22] marks/game** over jud play (88.1% game wins, n=512 paired; make-rate flip 66.3% vs 37.5%); W0@H3 +1.59, W1@H3 +1.88, paired W1−W0 +0.283 [0.184, 0.391] → MIGHT-#3 graded: **term 2 carries 84.9% of the edge; term 1 is only cashable through term 2**. Scope: field model exact (opponents ARE jud) — transfer test vs lens:ev filed. Numbers on [[walt]].
-
 ## [2026-07-16 | conversation | the belief/policy/value algebra promoted; measurement program filed]
 
 **Touched pages:** [[belief-policy-value-algebra]] [[strategy-fusion]] [[count-fate-ledger]] [[index-topics|index]]
