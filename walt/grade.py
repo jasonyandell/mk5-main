@@ -311,6 +311,16 @@ class WaltPlay:
             "n_field_queries": r["n_field_queries"],
             "solve_ms": round(r["solve_ms"], 3),
             "value": round(r["value"], 4),
+            "root": {
+                "decl_id": root.decl_id, "bidder": root.bidder,
+                "bid_value": root.bid_value, "bids": list(root.bids),
+                "dealer": root.dealer, "me": root.me,
+                "my_hand": list(root.my_hand),
+                "play_history": [list(x) for x in root.play_history],
+                "trick_leader": root.trick_leader,
+                "current_trick": list(root.current_trick),
+                "team_points": list(root.team_points),
+            },
             "chosen_id": r["best_move"],
             "jud_would_id": int(jud_id),
             "diverged": int(r["best_move"] != int(jud_id)),
@@ -358,6 +368,7 @@ class _Heartbeat:
 
 def _run_paired_walt(
     *, n_games: int, cfg, bid, walt_play: WaltPlay, jud_play, heartbeat: _Heartbeat,
+    hand_stream_path=None,
 ):
     """Both halves in one lockstep pool over identical seeds. Team A = walt,
     team B = jud; the same margin bidder fills every seat.
@@ -378,6 +389,10 @@ def _run_paired_walt(
         for a_team in (0, 1)
         for i in range(half)
     ]
+
+    # logging-only: stream each completed hand as a JSONL row (prelim signal)
+    stream_fh = open(hand_stream_path, "a") if hand_stream_path else None
+    streamed = [0] * len(games)
 
     while True:
         live = [g for g in games if not g.done]
@@ -407,6 +422,27 @@ def _run_paired_walt(
             for g, action in zip(side_games, actions):
                 g.apply(action)
 
+        if stream_fh is not None:
+            wrote = False
+            for gi, g in enumerate(games):
+                while streamed[gi] < len(g.hands):
+                    h = g.hands[streamed[gi]]
+                    streamed[gi] += 1
+                    a_pts = h.team_points[h.a_team]
+                    b_pts = h.team_points[1 - h.a_team]
+                    stream_fh.write(json.dumps({
+                        "game": h.game_idx, "hand": h.hand_idx, "seed": h.seed,
+                        "a_team": h.a_team, "bidder": h.bidder,
+                        "bid_value": h.bid_value, "decl_id": h.decl_id,
+                        "made": h.made, "a_pts": a_pts, "b_pts": b_pts,
+                        "marks_after": list(h.marks_after),
+                    }) + "\n")
+                    wrote = True
+            if wrote:
+                stream_fh.flush()
+
+    if stream_fh is not None:
+        stream_fh.close()
     return [g.record() for g in games]
 
 
@@ -463,6 +499,7 @@ def main() -> int:
         games = _run_paired_walt(
             n_games=args.n_games, cfg=cfg, bid=bid,
             walt_play=walt_play, jud_play=jud_play, heartbeat=heartbeat,
+            hand_stream_path=out_dir / "hand_stream.jsonl",
         )
     finally:
         walt_play.close()
