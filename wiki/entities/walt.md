@@ -15,14 +15,20 @@ exactly-enumerated worlds. Code in `walt/` (tracked), issue
 [#71](https://github.com/jasonyandell/mk5-main/issues/71) with registered
 predictions. The name is walker→walt (renameable): the solver whose north-star
 behavior is *seeing* [[texas-42]]'s walkers — and, if the ladder gets
-licensed, learning to *create* them.
+licensed, learning to *create* them. On the [[champion-ladder]] it stands
+above [[jud]]: the first play-side lever in the ladder's record whose CI
+excludes zero (the ladder's every prior play-phase lever measured null or
+negative). The night it was built is the 2026-07-17 chapter of
+[[the-wall-biography]].
 
 **A walker** (definition corrected at the table, 2026-07-17): a tile that is
 **unbeatable when led** — a good lead in any world that matters — while
 ranking as trash by the human beat-count heuristic. Its tactical value is
 harvest (up to 25 riding count + the trick) and its emotional value is
 surprise; it can be right to burn a good lead now to *create* a walker two
-tricks later. This supersedes the "promoted trash" gloss on [[table42]].
+tricks later. The coinage dates to [[the-gestation]] (2026-03-18); this
+definition supersedes the "promoted trash" shorthand the table42 session
+used (correct that page's gloss when it lands in the wiki).
 
 **The dense technical spec — algebra, design, perf, trajectory, fitted
 belief net — is [[walt-spec]].**
@@ -39,8 +45,8 @@ decomposition run as an ablation — term 2 alone vs terms 1+2 — the first
 direct test of MIGHT-#3 (the play edge lives almost entirely in term 2).
 Prior art: [[champion-design-review]] named exactly this door "the summit…
 optional"; [[lamir1-ceiling]] is the scar that gates the ladder's next rung
-(a distilled leaf must preserve argmax before any climbing — follow-up
-issue after grading).
+(a distilled leaf must preserve argmax before any climbing — the scar
+probe, [#73](https://github.com/jasonyandell/mk5-main/issues/73)).
 
 ## The build (2026-07-17, all gates green)
 
@@ -65,7 +71,8 @@ Perf (M5 Max, after a 3.6× surgery pass — 103.6 s → 29.1 s at 14,700
 worlds): W1@H4 filter+solve p50 ≈ 1.0 s, p95 ≈ 10 s; W0@H3 p50 0.36 s; the
 σ-filter costs ~90 ms and cuts u-worlds p50 14,700 → 376. Remaining wall is
 the intrinsic node count (cross-node net batching is the next lever if ever
-needed). Empirical note: σ-consistency barely discriminates on early
+needed — the [#74](https://github.com/jasonyandell/mk5-main/issues/74)
+throughput program). Empirical note: σ-consistency barely discriminates on early
 forced-ish moves and bites late — the coupling theorem's "forced actions
 contribute zero," observed in filter survival curves.
 
@@ -98,8 +105,8 @@ All three arms vs JudPlay, `margin:wp`(r8) bidder both teams, base_seed=0:
   champion plays `lens:ev`, a different and stronger opponent. Licensed
   claim: exact term-2 + exact-belief play beats the 1-ply greedy head by
   ~3 marks/game at H=4 *when the field model is perfect*. The transfer test
-  (walt vs `lens:ev`) measures how much was field-model rent — follow-up
-  issue filed from #71.
+  (walt vs `lens:ev`) measures how much was field-model rent —
+  [#72](https://github.com/jasonyandell/mk5-main/issues/72).
 - **Tail economics** (drives the throughput program): solve time mean
   624 ms vs median 5 ms; 7% of solves (>1 s) hold 91.5% of all solve time.
   The long solves are exactly the uninformative-history nodes (σ never
@@ -108,10 +115,13 @@ All three arms vs JudPlay, `margin:wp`(r8) bidder both teams, base_seed=0:
   discriminate nothing; the filter bites late.
 - The B/C runs' decision logs carry full serialized roots + exact
   values/argmaxes — the seed corpus for the [[lamir1-ceiling]] scar probe
-  (distilled-leaf argmax preservation), which gates the ladder.
+  (distilled-leaf argmax preservation,
+  [#73](https://github.com/jasonyandell/mk5-main/issues/73)), which gates
+  the ladder.
 
 ## Links
 
-[[belief-policy-value-algebra]] · [[strategy-fusion]] ·
-[[expected-q-value]] · [[jud]] · [[table42]] · [[count-fate-ledger]] ·
-[[champion-design-review]] · [[lamir1-ceiling]] · [[the-wall]]
+[[walt-spec]] · [[belief-policy-value-algebra]] · [[strategy-fusion]] ·
+[[expected-q-value]] · [[jud]] · [[champion-ladder]] ·
+[[count-fate-ledger]] · [[champion-design-review]] · [[lamir1-ceiling]] ·
+[[the-gestation]] · [[the-wall]] · [[the-wall-biography]]

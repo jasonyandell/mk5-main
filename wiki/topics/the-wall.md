@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-07-14
+last_updated: 2026-07-17
 status: active
 ---
 
@@ -48,6 +48,19 @@ Sessions that lack this page invent their own goals (documented instances: the 2
 From [[w42-jud-v1]] (`afd4802`): **the wall has a crack and coordinates.** Bidding validates — jud v0's `margin:wp`(head_8) is the first learned component ever to beat the hand-tuned champion on marks (the current-best-player fact, numbers, and repaired-sampler reproduction live at [[jud]]). Play is mechanism-limited at the leaf: `judsearch` recovers two-thirds of the play gap oracle-free and stops; neither more worlds nor a better-calibrated head closes the rest. Verdict sentence: *a 470k MLP on hand-level Monte-Carlo labels cannot out-rank E[Q] n=10's per-move oracle.*
 
 [[jud-target-granularity]] (2026-07-13) sharpened the coordinates: a dense per-move E[Q] auxiliary at fixed capacity triples the leaf's in-distribution ranking and moves marks **nothing** — and argmaxing that ranking directly plays worse than the calibrated value head. The wall is not "the leaf lacks per-move labels"; it is that ranking-label agreement does not order play strength ([[lamir1-ceiling]]'s mechanism, re-measured on a per-move-supervised head). The unbuilt residuals: per-move continuation values on child states, corpus volume, capacity×target interaction, opponents-in-rollout.
+
+[[walt]] (2026-07-17) gives the question its narrowest form yet. An exact
+endgame info-set solver — eq's two deletions un-deleted, per
+[[belief-policy-value-algebra]] — beats jud's greedy play head by +3.00
+marks/game at ≤4 tiles, and is the first artifact in the record that
+provably *has a plan and cashes it* (T6 claim-vs-cash closure at 1e-9,
+meeting the goal's "plan" clause in the traces). The caveat is exact: its
+opponents WERE its field model, and it has not met `lens:ev`. That meeting
+(#72) asks the wall's newest question — *how much of an exact info-set
+player's edge survives meeting E[Q]?* The first CI-excludes-zero belief
+effect at the table rode along: term 1 is only cashable through term 2
+([[walt-spec]]; the story is the 2026-07-17 chapter of
+[[the-wall-biography]]).
 
 The full ruled-in/ruled-out record across all mechanisms: [[consumption-ledger]]. The untried inventory: [[ideated-not-built]] and [[the-wall-biography]] §4.
 

@@ -2,9 +2,9 @@
 title: Jud — the unified belief-state player
 kind: entity
 first_seen: 2026-06-14
-last_updated: 2026-07-13
+last_updated: 2026-07-17
 status: active
-phase: 2026-07-13 — v0 and v1 built and graded; the v0 value-native bidder over oracle play is the current best player (fact below, reproduced at [[stage-0-closure]]). v1's play half is mechanism-limited; per-move targets at v1 capacity graded marks-null ([[jud-target-granularity]]), narrowing v2's residuals to capacity×target, on-policy loop data, and opponents-in-rollout. Surviving search consumer — [[belief-weighted-jud-mcts]].
+phase: 2026-07-13 — v0 and v1 built and graded; the v0 value-native bidder over oracle play is the current best player (fact below, reproduced at [[stage-0-closure]]). v1's play half is mechanism-limited; per-move targets at v1 capacity graded marks-null ([[jud-target-granularity]]), narrowing v2's residuals to capacity×target, on-policy loop data, and opponents-in-rollout. Surviving search consumer — [[belief-weighted-jud-mcts]]. 2026-07-17 — [[walt]], the exact endgame info-set solver, grades +3.00 marks/game over the greedy play head at ≤4 tiles (field-exact caveat; the `lens:ev` meeting is #72).
 ---
 
 ## What it is
@@ -161,7 +161,10 @@ learned challenger since [[zeb]] (Zeb-protocol reconfirmation, 2026-07-06:
 `judsearch` −1.39, `judplay` −2.73, both losing to `lens:ev`; a bonus pilot put
 `margin:wp`(r8) at +0.59 [−0.19, +1.39] over the live non-distilled `gus:10,wp`
 sim bidder — the bidding crown wasn't hiding behind the distillation;
-[[w42-jud-v1]]).
+[[w42-jud-v1]]). The newest challenger comes from outside the learned
+family: [[walt]], exact endgame info-set solving, beats jud's greedy play
+head by +3.00 marks/game at ≤4 tiles when the field model is exact — its
+meeting with `lens:ev` (#72) is the pending test.
 
 ## The build, graded
 
@@ -242,3 +245,7 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
   question asked with per-hand fate structure instead of per-move values;
   reached incumbent parity at v0 with a decisive calibration win
   ([[otis-v0]])
+- [[walt]] — the exact endgame information-set solver (2026-07-17): +3.00
+  marks/game over the greedy play head at ≤4 tiles with the field modeled
+  exactly (#72 is the transfer test); the ladder above it gates on the
+  [[lamir1-ceiling]] scar probe (#73); spec at [[walt-spec]]
