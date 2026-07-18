@@ -1,0 +1,21 @@
+{
+  "a_wins": 66,
+  "n_games": 256,
+  "mean_mark_margin": -1.844,
+  "ci_lo": -2.211,
+  "ci_hi": -1.492,
+  "a_offense_share": 0.5904,
+  "a_made_rate": 0.4805,
+  "a_mean_bid": 30.71,
+  "point_margin": -1.246,
+  "decl_hist": {
+    "fours": 491,
+    "ones": 458,
+    "blanks": 403,
+    "threes": 366,
+    "notrump": 334,
+    "fives": 318,
+    "twos": 216,
+    "sixes": 192
+  }
+}

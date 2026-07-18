@@ -192,6 +192,16 @@ meeting with `lens:ev` (#72) is the pending test.
   (−3.44 → −1.16, +2.28) but not parity, and neither more worlds nor a
   better-calibrated head closes the rest. The stack reached −1.43 from −4.37
   oracle-free in one night; the wall is per-move discrimination.
+- **The table42 field case + retrain probe ([[jud-v2-retrain-probe]],
+  2026-07-17).** Game night 1 seated the round-0 checkpoint + greedy judplay —
+  the measured −6.09 configuration — producing the 0.68-claim case (#66). A
+  10-agent audit found **no live line-bug** in the featurize/emit/train/bid
+  path; retraining on a repaired-sampler corpus with ε-explore self-play
+  reproduced v1's grades within CI, grading the [[world-sampler-mrv-audit]]
+  contamination **null at field scale** for jud. The play wall is mechanistic:
+  9-of-350-dim ply-1 signal × greedy 1-ply consumer × single-MC-label targets.
+  Serving rule: seats get the graded champion (`margin:wp`(r8) + `lens:ev`),
+  never a loop artifact (#69).
 - **v2's residuals ([[jud-target-granularity]], 2026-07-13).** The named cue —
   per-move targets — is **graded a marks null at v1 capacity in both forms**:
   the parent-side dense E[Q] auxiliary triples in-distribution ranking and
