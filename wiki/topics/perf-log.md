@@ -43,3 +43,48 @@ team-pair deviation is harder and explicitly out of scope.
   material — wide prior, 0.5–3 pts/hand at H4.
 - P5: net-free H5-capped(512) BR p50 < 100 ms (kernel makes rung 1 of the
   ladder unnecessary; the ladder starts at H6).
+
+## 2026-07-18b — kernel lane landed (commit 27a3b63b)
+
+K1 46/46 (best_move, value, every root_value ≤1e-9, identical n_nodes).
+**P1 PASS ×9**: 0.188 s/46 fixtures (45× vs the 8.5 s net wavefront, 666×
+vs the recursion), p50 0.90 ms. **P2 confirmed**: compile_sigma = 0.79× one
+net solve (5.2M rows), the only net-touching call; after it, deterministic
+BR is backward-pass-only with payoff43 AND belief weights swappable per
+re-solve (~0.9 ms). **P5 PASS ×28**: H5-cap512 BR p50 3.49 ms (uncached
+rewalk 17 ms also under). 24.7 ns/node vs 1339 net-bound. Stochastic
+full-support stress: blowup p50 526×, max 5219× (777009: 446M nodes, exact
+via per-root-move chunk fallback, 141 s) — [[walt-spec]] §3's "×10²–10⁴"
+now measured. numba DECLINED on profile evidence: deterministic BR is
+bincount/reduceat-bound in pure numpy; keeping parity single-sourced beat
+a speculative jit. Design note: the reachable tree is profile-dependent,
+so the subgame is lazy and one generic wave engine serves six σ-providers
+(net/table/rule/uniform/dict/full-width).
+
+## 2026-07-18c — CFR lane landed (commit 27a3b63b)
+
+CFR+ (RM+, alternating, linear averaging) verified: V1–V5 green — CFR ==
+LP-exact values on 2p-izable toys (|d| ≤ 7.7e-4), make-payoff toy exact,
+773 isets legality-audited, sign-symmetry exact. Cross-implementation
+gate: same cfr_solve bitwise-identical (1e-12 traces) on the pure-python
+reference vs the fast kernel; two independently-built br_solve agree
+at 1e-9. **Measured fact**: ~500 toy seed/pin configurations, zero
+required mixing — late-game 42 vs deterministic pins admits pure
+equilibria everywhere searched (concealment, not game value, is where
+mixing must earn — feeds #77). H4 scale estimate: full-width ~80k
+nodes/world → CFR on world-capped roots (K≤512, ~40M nodes) is the
+doctrine; full-u CFR exceeds memory by design.
+
+## 2026-07-18d — integration first light: P3 split verdict, first rent number
+
+Real H4 root (evalset 555091, 8 worlds, defense): **gap 0.0296 pts in 40
+iterations** — P3's iteration prior holds with 10× room. But wall = 167 s
+at EIGHT worlds (kernel BR at the same root: 0.29 ms): cfr.py's traversal
+is python-recursion-bound, ~1 s/seat-traversal; cap-256 extrapolates to
+hours/root. Killed the cap-256 run; re-tasked the CFR lane to vectorize
+traversal + regret updates over the kernel's SoA tree (gates: toy-trace
+parity vs the verified loop, 555091 rerun ≤5 s, one cap-256 datapoint).
+**First exact rent number**: walt-vs-jud value 17.38 (defense orientation
+gain +2.28 pts) vs CFR reference self-play value 19.65 at the same root —
+the field-model rent priced exactly, single root, direction as predicted
+by the #72 prior.
