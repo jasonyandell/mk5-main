@@ -2,7 +2,7 @@
 title: The walt spec — exact endgame info-set solving, and what it becomes
 kind: topic
 first_seen: 2026-07-17
-last_updated: 2026-07-17
+last_updated: 2026-07-18
 status: active
 ---
 
@@ -83,6 +83,9 @@ Modules (`walt/`, all gates green before any number was believed):
   halves swap teams, bootstrap CI via `arena.match`), per-decision records
   with **full serialized roots** (the distillation corpus accumulates as a
   side effect of grading), walker instrumentation, hand-stream prelims.
+  Corpus caveat: root serialization landed AFTER pilot arm A launched —
+  **A (H4, the +3.00 arm) banked no roots**; only B/C (H3) did. The H4
+  corpus for the scar probe (#73) must come from fresh grading (cheap now).
 
 **Correctness gates**: T1 known-world degeneracy; T2 exactness vs explicit
 enumeration of ALL pure info-set strategies; T3 dominance; T4 weight-split
@@ -98,34 +101,42 @@ class (equilibrium, CFR-shaped, all seats' info sets live). Field
 *determinism* is not optional. Beliefs, by contrast, are droppable at a
 measured cost and purchasable back (§6).
 
-## 4. Performance (M5 Max, 2026-07-17 state)
+## 4. Performance (M5 Max, 2026-07-18: the wavefront engine)
 
-After a 3.6× surgery pass (103.6 s → 29.1 s at 14,700 worlds): lazy POV
-blocks, python-int dedup + inline legality, bit-identical functional
-forward, h91 cache.
+2026-07-18 the recursion was replaced by the **wavefront engine**
+([#74](https://github.com/jasonyandell/mk5-main/issues/74) stage 2, the
+gomoku-derived wavefront-with-net design): level-synchronous waves, all
+node/world-slot state struct-of-arrays numpy, per-wave dedup of σ
+decisions, ONE chunked forward per wave (8k-row chunks; torch cpu gemm
+~1M rows/s there vs ~65k rows/s at the old avg batch of 4.6), bincount /
+segmented-reduceat backward pass. **Exact parity** with the recursion on
+46 stratified golden fixtures (`walt/tests/fixtures_h4.jsonl`): identical
+best_move, value to 1e-9 (bitwise where inspected), identical n_nodes AND
+n_field_queries. Diagnosis that drove it: the old solve was ~all
+overhead — 88 µs/node, ~2 worlds per oracle call — and its (hand,
+history) memo provably never hit (history is unique per tree node;
+measured 0/19,566). Subtlety to respect forever: torch's B=1 gemv kernel
+is ~1-ulp off the gemm path, so `ev_rows` pads odd tails even; the
+fixture tree-count equality is the regression signal for any rebatching.
 
 | quantity | measured |
 |---|---|
-| W1@H4 in-game solve | p50 **5 ms**, mean 624 ms, p95 1.9 s, max 153 s |
-| W0@H4 | p50 ~15–30 s, max 70–153 s |
-| W0@H3 | p50 0.36 s, max 0.78 s; W1@H3 p50 3 ms |
-| tail law | 7% of solves (>1 s) hold **91.5%** of solve time |
-| horizon law | worlds ×~22/tile, cost **×~100–200/tile** (measured H3→H4) |
+| 46-fixture bench (sigma@H4) | 125.4 s → **8.5 s** (14.8×; worst 34.6 s → 2.2 s) |
+| in-game grading solves (n=32 smoke) | p50 4.8 ms, p95 **193 ms**, max 4.0 s (was p95 1.9 s, max 153 s) |
+| end-to-end grading wall | ~1.14 s/game vs 5.6 (≈4.9×; solves no longer dominate) |
+| world-cap K=512 on the engine | **6.1×** more on cap-affected (≥500-world) roots |
+| remaining wall | ~55% GEMM (near-irreducible without breaking decision parity) |
 
-The long solves are exactly the uninformative-history nodes (σ never bit)
-— so a world-cap subsample hurts where beliefs are flattest. Throughput
-program ([#74](https://github.com/jasonyandell/mk5-main/issues/74)):
-(1) world-cap K≈1–2k (~10× off total, verdict-conservative semantics);
-(2) frontier forward batching + compiled tree walk (10–30× → ~1–5M H4
-solves/day); (3) the gomoku-derived stage: NOT the megakernel
-(one-thread-one-board needs a net-free inner loop) but the
-**wavefront-with-net** design — flat SoA frontier, level-sync at the
-mandatory net stage, segment-reduce backup, worlds as the flat parallel
-axis — plus stolen-wholesale: survivor-recirculation budget ladders,
-Parquet-spill cascade for corpus scale, the call-cost law ("one call costs
-one tail — be bulk-synchronous"), golden fixtures. Target ~10M+ H4
-solves/day, H5 bulk at seconds each. The new-hard part with no gomoku
-answer: the decision memo on-device (sort-based per-level dedup).
+**World-cap (stage 1), measured honestly** (2,485 capped-vs-exact solves):
+the issue's "~10× at K=1–2k" was wrong — K=1–2k bought 1.7–2.3× on the
+old engine. Error curve: p90 |ΔV| 0.45 pts @K=512, 0.58 @K=256, bias ~0.
+Raw argmax flips run 12–25% at every K but are **near-ties**: material
+flips (|ΔV|>0.5 pt) go 10.4% (K=64) → 1.3% (K=256) → **0% (K≥512)** —
+raw flip rate is the wrong acceptance gate. `walt.grade --world-cap 512`
+(deterministic per-root subsample, default off) is the endorsed knob;
+K≈64–100 would buy ~10× alone at real decision damage. The breadth of the
+near-tie band is independent evidence for #77's ε-tie mixing headroom.
+Stage 3 (Metal/batch-VCT kernels) stays parked unless H5/H6 bulk needs it.
 
 ## 5. Graded (pilot, n=512 paired each, predictions pre-registered)
 
@@ -210,6 +221,8 @@ Gated sequence, cheap probes first:
 ## 8. Edges (measured or argued, so nobody re-derives them)
 
 - No beliefs: ×~100 at H4, cappable, effect −0.283 marks at H3. Cheap.
+- World-cap: a 3–6× knob, never a 10× one (§4). Choose K by error budget
+  (material-flip rate, not raw flips); K=512 is free, K=256 near-free.
 - No deterministic field: class change, not slowdown. Not repairable by
   throughput (×1600 kernels don't cover ×10⁴/tile compounding).
 - W1 under misspecification: filter extincts → capped-u fallback (already

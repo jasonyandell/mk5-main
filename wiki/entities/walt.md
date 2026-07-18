@@ -2,7 +2,7 @@
 title: walt — the exact endgame information-set solver
 kind: entity
 first_seen: 2026-07-17
-last_updated: 2026-07-17
+last_updated: 2026-07-18
 status: active
 ---
 
@@ -107,12 +107,21 @@ All three arms vs JudPlay, `margin:wp`(r8) bidder both teams, base_seed=0:
   ~3 marks/game at H=4 *when the field model is perfect*. The transfer test
   (walt vs `lens:ev`) measures how much was field-model rent —
   [#72](https://github.com/jasonyandell/mk5-main/issues/72).
-- **Tail economics** (drives the throughput program): solve time mean
-  624 ms vs median 5 ms; 7% of solves (>1 s) hold 91.5% of all solve time.
+- **Tail economics** (drove the throughput program): pilot solve time mean
+  624 ms vs median 5 ms; 7% of solves (>1 s) held 91.5% of all solve time.
   The long solves are exactly the uninformative-history nodes (σ never
   bit), so a world-cap subsample hurts where beliefs are flattest.
   σ-filter survival is the coupling theorem observed: forced early moves
   discriminate nothing; the filter bites late.
+- **2026-07-18, the wavefront engine**: the recursion was replaced by a
+  level-synchronous SoA wavefront with one chunked net forward per wave —
+  **14.8× at exact parity** (46 golden fixtures; worst solve 34.6 s →
+  2.2 s; in-game p95 1.9 s → 193 ms, the missed P-gate perf target now
+  met), plus an opt-in `--world-cap` (K=512: 6.1× more on big roots, zero
+  material argmax flips measured). Numbers, error curves, and the
+  correctness subtleties live in [[walt-spec]] §4. Grading now banks
+  serialized roots on every decision (pilot arm A never did — its H4
+  corpus must be regenerated, which is now cheap).
 - The B/C runs' decision logs carry full serialized roots + exact
   values/argmaxes — the seed corpus for the [[lamir1-ceiling]] scar probe
   (distilled-leaf argmax preservation,
