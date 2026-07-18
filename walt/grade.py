@@ -133,6 +133,7 @@ def _solve_task(task):
         "n_nodes": int(res.n_nodes),
         "n_field_queries": int(res.n_field_queries),
         "walker_flags": dict(res.walker_flags),
+        "root_values": {int(k): float(v) for k, v in res.root_values.items()},
         "solve_ms": solve_ms,
     }
 
@@ -300,6 +301,8 @@ class WaltPlay:
                         "n_nodes": int(res.n_nodes),
                         "n_field_queries": int(res.n_field_queries),
                         "walker_flags": dict(res.walker_flags),
+                        "root_values": {int(k): float(v)
+                                        for k, v in res.root_values.items()},
                         "solve_ms": (time.perf_counter() - t0) * 1e3,
                     })
             for (i, s, mover, root), r in zip(solve_meta, results):
@@ -343,6 +346,7 @@ class WaltPlay:
                 "current_trick": list(root.current_trick),
                 "team_points": list(root.team_points),
             },
+            "root_values": r.get("root_values", {}),
             "chosen_id": r["best_move"],
             "jud_would_id": int(jud_id),
             "diverged": int(r["best_move"] != int(jud_id)),

@@ -71,6 +71,11 @@ class SolveResult:
     # walker instrumentation: moves (led by me, this decision) that win in
     # every alive world while ranking bottom-half by global beat-count.
     walker_flags: dict = field(default_factory=dict)
+    # exact value of EVERY legal root move (declaring orientation, same unit
+    # as .value), keyed by domino id. The wavefront engine computes these for
+    # free; consumers: top-2 gaps, tie-band width (#77 mixing), dense
+    # distillation targets, count-fate receipts.
+    root_values: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------

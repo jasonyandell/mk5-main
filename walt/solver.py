@@ -424,8 +424,10 @@ def solve(root, worlds, weights, oracle, payoff: str = "points") -> SolveResult:
     t1 = waves[1]["tile"]                          # root children, moves ascending
     best_val = None
     best_move = None
+    root_values: dict[int, float] = {}
     for i in range(len(t1)):
         v = float(vals[i])
+        root_values[int(t1[i])] = v / total_w
         if best_val is None or sign * v > sign * best_val:
             best_val = v
             best_move = int(t1[i])
@@ -448,6 +450,7 @@ def solve(root, worlds, weights, oracle, payoff: str = "points") -> SolveResult:
         n_nodes=n_nodes,
         n_field_queries=stats["queries"],
         walker_flags=walker_flags,
+        root_values=root_values,
     )
 
 
