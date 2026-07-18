@@ -165,7 +165,9 @@ sim bidder — the bidding crown wasn't hiding behind the distillation;
 worktree, fresh block base_seed=0): `margin:wp`(r8)+`lens:ev` beats
 `gus:10,wp`+`lens:ev` **+0.62 [+0.06, +1.23] marks/game**, 58.6% game win,
 halves 57.8%/59.4% — CI excludes zero; the learned head beats the simulation
-bidder it distilled past. The newest challenger comes from outside the learned
+bidder it distilled past (rows:
+[HF `table42/jud_vs_gus/n128/`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/table42-gamenight-1/table42/jud_vs_gus/n128)).
+The newest challenger comes from outside the learned
 family: [[walt]], exact endgame info-set solving, beats jud's greedy play
 head by +3.00 marks/game at ≤4 tiles when the field model is exact — its
 meeting with `lens:ev` (#72) is the pending test.
@@ -209,8 +211,10 @@ meeting with `lens:ev` (#72) is the pending test.
   — the human beat the head 6×. Nuance for the v0 loop-PASS above: the
   loop dissolved over-bidding to *aggregate* parity; this seat shows
   per-seat claims can remain wildly inflated inside an aggregate-calibrated
-  head. Probe: `scratch/table42/probe66.py` (table42 worktree). The follow-up
-  grid (`probe66_grid.py`) sharpened it three ways: the inflation is
+  head. Probe: `tools/table42/probe66.py` (promoted 2026-07-18; rows and
+  run records at
+  [HF `table42/`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/table42-gamenight-1/table42)).
+  The follow-up grid (`probe66_grid.py`) sharpened it three ways: the inflation is
   **hand-level, not suit-level** (majority-make claimed in *every* pip
   suit; blanks claimed 0.60 / measured 0.08); the fours declaration was a
   **0.003 claimed-tie broken across a 0.17 measured chasm** (sixes measures
@@ -226,6 +230,13 @@ meeting with `lens:ev` (#72) is the pending test.
   mode. This is [[belief-policy-value-algebra]] CAN-#4 read as a repair
   path: V-error is repairable by evaluation data alone, and u-replays are
   exactly such data, cheap (this one took 6 seconds).
+  **Resolution frame (2026-07-18, filed on #66):** the inflated claim
+  itself was the wrongly-seated round-0 checkpoint (next bullet); what the
+  table genuinely exposed in *every* head of this family is a
+  **field-model error, not dishonesty** — the head prices a partner's pass
+  as jud-shaped weakness, and a human partner's pass means something else
+  (game night 1's partner had passed holding 4-4 + 5-5 + 15 count). A jud
+  property revealed by the table, not a table42 bug.
 - **The table42 field case + retrain probe ([[jud-v2-retrain-probe]],
   2026-07-17).** Game night 1 seated the round-0 checkpoint + greedy judplay —
   the measured −6.09 configuration — producing the 0.68-claim case (#66). A

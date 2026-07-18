@@ -2,7 +2,7 @@
 title: HuggingFace Assets — the off-git shelf
 kind: topic
 first_seen: 2026-07-15
-last_updated: 2026-07-15
+last_updated: 2026-07-18
 status: active
 ---
 
@@ -19,7 +19,13 @@ the split. The established upload path is `scripts/hf_publish/upload.py`.
   (public) — row-level run evidence mirrored out of git at repo-relative
   paths ([[run-artifacts-policy]]): per-game CSVs, the guard-premium ledger,
   `otis/models/*.pt` heads, all of `arena/results/`. Tag
-  `otis-night2-2026-07-15` pins the migration. Moved with the stock `hf`
+  `otis-night2-2026-07-15` pins the migration. Tag
+  [`table42-gamenight-1`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/table42-gamenight-1/table42)
+  pins the [[table42]] salvage (2026-07-18): game night 1's host run dirs
+  (`table42/host/run/*/` — log.jsonl, config, views), the v1-era game
+  logs (`table42/logs/`), and the h2h rows (`table42/jud_vs_otis/*`,
+  `table42/jud_vs_gus/n128/`; `jud_vs_burl` has only its runner script —
+  no per-game CSVs ever existed on disk). Moved with the stock `hf`
   CLI (see below); public means the dataset viewer + `hf://` paths
   (DuckDB/pandas) read it with no token.
 
