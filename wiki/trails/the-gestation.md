@@ -2,7 +2,7 @@
 title: The Gestation (Era 5, 2026-02-17 .. 2026-04-08)
 kind: trail
 first_seen: 2026-07-06
-last_updated: 2026-07-06
+last_updated: 2026-07-17
 status: complete
 ---
 
@@ -78,7 +78,9 @@ account of what was designed here versus what those later, same-named projects b
 
 `[[walker]]` is also coined in this thread (2026-03-18T01:27:37), for a low-value domino
 that quietly wins late tricks because nobody can follow suit: *"you will see the 6-5
-could cost you, you could see the 2-1 is a walker."*
+could cost you, you could see the 2-1 is a walker."* It is the one era-5 coinage that
+later became an artifact: [[walt]] (2026-07-17), the exact endgame info-set solver,
+carries the sharpened definition — unbeatable when led.
 
 ## The honest doubts
 

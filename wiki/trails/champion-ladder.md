@@ -2,7 +2,7 @@
 title: Champion Ladder — the rung-by-rung record
 kind: trail
 first_seen: 2026-07-13
-last_updated: 2026-07-13
+last_updated: 2026-07-17
 status: active
 ---
 
@@ -266,3 +266,14 @@ pattern the ladder kept repeating: every CI-excludes-zero win was an auction
 lever (#21, #22, #32), every null or negative was a play-phase lever
 (#25, #27, #33 play, Lane B) — the marginal-value ranking confirming itself
 from the bottom up.
+
+**Above the ladder (2026-07-17):** [[walt]] — exact best response in the
+information-set game at ≤4 tiles — is the first play-side lever in this
+record whose CI excludes zero: **+3.002 [+2.769, +3.219] marks/game** over
+jud's greedy play head (n=512 paired), with the honest caveat that the
+opponents WERE its field model. Its W1−W0 belief ablation, +0.283 [+0.184,
++0.391], grades MIGHT-#3 — term 2 carries 84.9% of the edge; term 1 is
+only cashable through term 2, the synthesis with the #24/#25 nulls. Two
+gates before any promotion: the `lens:ev` transfer test (#72) and the
+[[lamir1-ceiling]] scar probe (#73). Receipts: [[walt]]; the machine:
+[[walt-spec]].
