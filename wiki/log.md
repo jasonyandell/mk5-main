@@ -22,6 +22,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-17 | worktree-walt | the wall biography: a new chapter — the door gets a hinge]
+
+**Touched pages:** [[the-wall-biography]]
+**Added:** the 2026-07-17 chapter, appended after the preserved ending: the stream-of-consciousness idea located by the algebra, [[walt]] built and gated in one night (T6 = the first artifact that provably carries a plan and cashes it), the +3.00 grading with its field-rent caveat kept exact, the first zero-excluding belief effect ("term 1 is only cashable through term 2"), the walker naming, and the wall's question in its newest form: how much of an exact info-set player's edge survives meeting E[Q] (#72).
+
 ## [2026-07-17 | worktree-walt | walt-spec: the machine on one page]
 
 **Touched pages:** [[walt-spec]] [[walt]] [[index-topics|index]]

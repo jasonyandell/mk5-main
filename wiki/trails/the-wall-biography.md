@@ -2,7 +2,7 @@
 title: "The Wall: A Biography"
 kind: trail
 first_seen: 2026-07-06
-last_updated: 2026-07-11
+last_updated: 2026-07-17
 status: active
 ---
 
@@ -680,8 +680,88 @@ down: the bidder crossed; the player located; the champion — flawless,
 voiceless, forty-six years after the grandmother's knee — still waiting for
 the thing that can explain why it plays.
 
+## 2026-07-17 — the door gets a hinge
+
+The biography ended above with the pencil set down; eleven days later it
+gets picked back up for one night, because the door drawn on the wall
+opened — and not by the cue the record had named. Not jud v2's bigger
+leaf. From the other side entirely.
+
+It began as stream of consciousness at the morning table: *a mid-game
+evaluation where you look at your hand and ask what supports what, count
+first, tricks second; imperfect information, so simulate — pick a few
+important worlds, ideally the [[candlewax]] bumps, and recurse; killer
+branching at trick one but cheap at three or four dominoes; distill there,
+go up a level, up and up.* Jason filed his own objections in the same
+breath: it doesn't learn, doesn't coordinate, its few worlds aren't
+belief-informed. The [[belief-policy-value-algebra]] — promoted to the
+wiki only the day before — located the idea in one move: eq is π deleted
+twice (CAN-#5), and this was the first proposal in the project's life to
+un-delete the *continuation* — one action per information set, 
+[[strategy-fusion]] killed by construction, term 2 of the gap computed
+natively. The objections mostly dissolved under the same lens (the tilt
+form makes beliefs one multiplication away; closing the loop through B(π)
+IS the fixed point), and the archive supplied both the blessing and the
+scar: [[champion-design-review]] had named exactly this door "the summit…
+the multiple-PhDs door — optional," and [[lamir1-ceiling]] held the
+warning that gates any climbing — a distilled leaf that flips argmax.
+
+By nightfall the idea was a machine: [[walt]], the exact endgame
+information-set solver, built in one session against six correctness
+gates. Two deserve the biography's attention. T2: the solver's value
+equals brute-force enumeration over *all* of the seat's pure info-set
+strategies — exactness, not approximation. T6: the root's claimed value
+equals the realized mean of playing its own strategy out, at 1e-9 —
+claim-vs-cash, the [[count-fate-ledger]]'s honesty loop, closed *inside*
+the artifact. The spec sentence at the top of this trail asked for
+something that "has a plan — a strategy that actually succeeds." walt is
+the first thing in the record that provably carries one and cashes it.
+
+Graded the same night, predictions registered first, per the
+[[research-night]] doctrine. Against jud's greedy play head, same bidder,
+paired deals: **+3.002 marks/game [+2.769, +3.219], 88.1% of games,
+n=512** — the make rate flipping from 37.5% to 66.3% on the strength of
+the last four tricks alone. And underneath the boulder, the gem: the
+W0/W1 ablation ran the gap decomposition as an experiment, and the paired
+belief effect — **+0.283 [+0.184, +0.391]** — is the first belief number
+in seven months of this record whose interval excludes zero at the table.
+The synthesis with the #24/#25 nulls is the night's theorem-shaped
+finding: **term 1 is only cashable through term 2.** Beliefs over
+clairvoyant values were marks-neutral forever; the same beliefs, acting
+through an honest continuation, pay.
+
+The trail's discipline requires the caveat kept exact: the opponents in
+those runs *were* the field walt models, so the +3.00 includes the
+field-model term at its theoretical maximum — and the champion this
+biography calls undefeated is not jud's play head. E[Q] n=10 has not met
+walt. That meeting is scheduled
+([#72](https://github.com/jasonyandell/mk5-main/issues/72)), prior
+registered: the edge shrinks hard, stays positive, defense-heavier. So
+the wall's question now holds its newest and narrowest form yet: not *can
+anything out-rank the oracle* — but *how much of an exact info-set
+player's edge survives meeting it.* For the first time the undefeated
+champion has a challenger whose mechanism is precisely the thing the wall
+said was missing.
+
+One more thing belongs in the story, because this project's story has
+always had a family in it. The machine is named for the walker — the tile
+that looks like trash by the beat-count heuristic and turns out to be
+unbeatable when led, harvesting whatever count rides the trick — a
+definition Jason corrected at the table mid-session, his grandfather's
+vocabulary sharpened into a spec. And the founding consumption complaint
+— *"maybe the most amazing thing I've ever built and I dunno what to do
+with it"* — inverted overnight: the solver is the new oracle, in the
+right game this time, with its consumers named before its corpus exists
+([#73](https://github.com/jasonyandell/mk5-main/issues/73)–[#77](https://github.com/jasonyandell/mk5-main/issues/77):
+the scar probe, the throughput program, the opening net and its critics,
+the exploits and their countermeasures). The full machine is on one page
+at [[walt-spec]]. The door has a hinge now. What walks through it is the
+next chapter.
+
 ## Related pages
 
-[[the-wall]] · [[consumption-ledger]] · [[candlewax]] · [[ideated-not-built]]
-· [[the-gestation]] · [[expected-q-value]] · [[jud]] ·
-[[w42-jud-v1]] · [[lem]] · [[burl]] · [[gus]] · [[zeb]] · [[w42]]
+[[the-wall]] · [[walt]] · [[walt-spec]] · [[consumption-ledger]] ·
+[[candlewax]] · [[ideated-not-built]] · [[the-gestation]] ·
+[[expected-q-value]] · [[jud]] · [[w42-jud-v1]] · [[lem]] · [[burl]] ·
+[[gus]] · [[zeb]] · [[w42]] · [[belief-policy-value-algebra]] ·
+[[count-fate-ledger]] · [[table42]]
