@@ -88,3 +88,30 @@ parity vs the verified loop, 555091 rerun ≤5 s, one cap-256 datapoint).
 gain +2.28 pts) vs CFR reference self-play value 19.65 at the same root —
 the field-model rent priced exactly, single root, direction as predicted
 by the #72 prior.
+
+## 2026-07-18e — vectorized CFR (commit follows) + the 12-root mini-reference
+
+CFR lane rewrote its traversal onto the kernel's SoA tree: **bitwise
+parity** vs the verified loop (0.0 drift on traces AND exported profiles;
+both engines kept, loop pinned in test_cfr_parity), 555091 rerun 166.9 s →
+4.57 s (traversal itself ~110×), cap-256 median root 134 s / 7.4 GiB peak.
+Remaining wall is BR-vs-mixed-profile gap pricing, not iteration (1.1
+s/iter at ~15M slots, zero python per node).
+
+**Mini-reference, 12 stratified evalset roots, cap 256** (P3 verdict:
+PASS in full): every root reached gap ≤0.05 pts in ≤40 iterations —
+**iteration count is world-scale-invariant** (10 → 33,740 true worlds);
+wall 6–262 s/root, median ~115 s. **Rent distribution** (walt BR-vs-jud
+value minus CFR reference self-play value, hero orientation): median
+**+1.9 pts/root**, mean +2.2, range −0.08…+5.63, never materially
+negative; two fully-decided roots at exactly 0. Reading: at the exact
+level, ~2 pts/root of walt's H4 edge is jud-specific — the per-root
+version of the #72 transfer question. Caveat kept visible: the comparison
+conflates jud's exploitability with opponent-population difference; it is
+the rent *indicator*, not the graded transfer test.
+
+**Deliberately left on the table** (wall-clock discipline, 4 a.m.): the
+full 200-root reference sweep (~4–7 h single-process; parallelism is
+RSS-bound at 7.4 GiB/root until int32 narrowing — both queued); overnight
+H4 corpus regen for the scar probe; bulk profile export vectorization
+(~15 % of CFR wall); br_every tuning (halves gap-pricing cost).
