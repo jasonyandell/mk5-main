@@ -289,7 +289,12 @@ def br_solve(subgame: Subgame, profile, payoff43, hero: int | None = None) -> BR
         for h in np.unique(hands):
             sel = np.flatnonzero(hands == h)
             legal = legal_tiles(int(h), pub.led_tile, sub.decl_id)
-            moves, probs = profile.dist(actor, int(h), node)
+            if len(legal) == 1:
+                # forced: any valid profile plays it with probability 1, so
+                # profiles never need entries here (kernel-parity contract)
+                moves, probs = legal, (1.0,)
+            else:
+                moves, probs = profile.dist(actor, int(h), node)
             if not set(moves) <= set(legal):
                 raise ValueError(
                     f"profile plays illegal move at seat={actor} hand={h:#x} "
@@ -357,7 +362,10 @@ def profile_value(subgame: Subgame, profiles, payoff43) -> float:
         for h in np.unique(hands):
             sel = np.flatnonzero(hands == h)
             legal = legal_tiles(int(h), pub.led_tile, sub.decl_id)
-            moves, probs = dist_for(actor, int(h), node)
+            if len(legal) == 1:  # forced: no profile entry needed (kernel parity)
+                moves, probs = legal, (1.0,)
+            else:
+                moves, probs = dist_for(actor, int(h), node)
             if not set(moves) <= set(legal):
                 raise ValueError(
                     f"profile plays illegal move at seat={actor} hand={h:#x}")

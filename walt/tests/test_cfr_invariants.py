@@ -60,7 +60,7 @@ def gate_V3() -> None:
         toy = T.get_toy(name)
         sub = toy.build()
         res = cfr_solve(sub, PAY, iters=60, br_every=20, impl=ref, debug=True)
-        t = res.debug["tree"]
+        t = res.debug["isets"]
         reg = res.debug["reg"]
         asig = res.debug["avg_sig"]
         if (reg < 0).any():
@@ -81,9 +81,18 @@ def gate_V3() -> None:
             if tuple(moves) != legal:
                 bad.append(f"{name}: iset {i} moves {moves} != legality {legal}")
                 break
-        # the exported profile must be byte-for-byte the debug average
+        # the exported profile must be byte-for-byte the debug average;
+        # FORCED info sets (single legal move) are never exported — both BR
+        # implementations play them without consulting the profile
         for i in range(res.debug["n_isets"]):
             key = (t.i_seat[i], t.i_hand[i], t.i_node[i])
+            if len(t.i_moves[i]) < 2:
+                try:
+                    res.profile.dist(*key)
+                    bad.append(f"{name}: forced iset {key} was exported")
+                    break
+                except KeyError:
+                    continue
             moves, probs = res.profile.dist(*key)
             lo = int(t.off[i])
             if tuple(moves) != tuple(t.i_moves[i]) or \
