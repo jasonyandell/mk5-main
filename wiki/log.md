@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-07-11, 162 archived entries)
+## Digest (2026-04-09 → 2026-07-12, 166 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -19,8 +19,16 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **jud + the wall** (2026-07-05 → 07-06, 6 archived entries) — jud v0/v1 built and graded ([[jud]], [[champion]], [[w42-jud-v1]], [[w42-plateau-probe]]), the 2.38× arena perf pass, value-native endorsed via [[rank-vs-price]].
 - **The wall named + the archaeology** (2026-07-06 → 07-10, 5 archived entries) — [[the-wall]] stated precisely (distill-for-what, [[candlewax]] concordance); the ~30-page era backfill + ~173-page staleness audit and anti-rot rules; [[w42-book-second-pass]]; the 162-experiment-page artifact audit (43 corrected); the log's changelog-not-chronicle rotation.
 - **Partnership spine + consolidation** (2026-07-11, 6 archived entries) — the [[partnership-wall-research]] measurement spine (sampler audit, result vocabulary, review surface, four gates), the docs→wiki consolidation (game-of-42 + engine reference clusters), prior-sweep completion and review repairs. Hub: [[partnership-wall-research]]. Later 07-12+ entries remain below.
+- **Blueprint/continuation ideation** (2026-07-12, 4 archived entries) — [[convention-aware-blueprint-search]] preserved unselected (book-seeded initialization, framing rebalance) and [[belief-weighted-jud-mcts]] synthesized; all IDEATED, none promoted to builds.
 
 ---
+
+## [2026-07-18 | worktree-parlor-promote | parlor promoted: salon on the wiki, session logs to HF, skill+workflow extracted]
+
+**Touched pages:** [[parlor]] [[huggingface-assets]] [[run-artifacts-policy]] [[index-entities|index]]
+**Added:** [[parlor]] — the four-seat salon (Jason, Fable, Sol, Opus; SSJ turn-taking, PASS/MARGIN/BID); session 1 record: warm-vs-cold readers, the 4-plays postmortem, the table catching its own re-enactment live, the OPEN ledger with wake conditions, the N-models-agree-trust-it-least reflex.
+**Convention:** conversation/session logs classified — raw seat `.jsonl` tier 3 (HF `parlor/` @ tag `parlor-session-1`, gitignored), curated transcript tier 2 (committed + mirrored); [[run-artifacts-policy]] § Conversation and session logs.
+**Reuse:** `.claude/skills/parlor/` (SKILL + workflow) and `parlor/bin/publish-session.sh` close the run → session-log → HF loop.
 
 ## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver — built, graded, integrated]
 
@@ -55,34 +63,6 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Added:** [[otis]] [[otis-v0]] — the fate-ledger-native player, all seven registered predictions graded on the branch `worktree-otis-v0` night
 **Updated:** [[count-fate-ledger]] (new Measured section; open question narrowed), [[world-sampler-mrv-audit]] (corpus-scale contamination quantified, issue #52), [[jud]] (sibling link)
 **Questions opened:** issues #51 (doubles-suit engine representability), #52 (corpus regeneration on repaired sampler), #53 (retention-policy consumer — the remaining half of #49's question)
-
-## [2026-07-12 | 1a4482fe | convention-aware blueprint search preserved without selection]
-
-**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-value]] [[sources/1a4482fe]] [[index]]
-**Added:** the SPARTA-style blueprint proposal and its separate project-record refinement; neither is promoted to a build.
-**Questions opened:** can [[w42-book-second-pass|Winning 42]] conventions seed a shared codebook while a learned policy supplies the complete blueprint?
-**Frontier:** the design is IDEATED, unbuilt, and unselected; clairvoyance remains a consumer-specific sensitivity probe rather than a universal bound.
-
-## [2026-07-12 | a6590bf6 | book-seeded coordinated initialization promoted into research trail]
-
-**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/a6590bf6]] [[index]]
-**Updated:** Winning 42 becomes a visible candidate codebook overlay; convention value is a sender x partner-reader x opponent-reader interaction, not a double-dummy rejection label.
-**Questions refined:** can the sparse overlay become a complete calibrated blueprint whose partner gain survives opponent decoding and full-match marks?
-**Frontier:** the mechanism is preserved above leaf level but remains IDEATED, unbuilt, unmeasured, and unselected.
-
-## [2026-07-12 | d5816915 | blueprint hypothesis framing rebalanced]
-
-**Touched pages:** [[convention-aware-blueprint-search]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/d5816915]] [[index]]
-**Updated:** the surviving structural case now leads; Winning 42 initialization, existing infrastructure, causal attribution, and four-seat inference receive the same weight as the engineering requirements.
-**Corrected:** repeated status caveats no longer imply a negative result; no contrary experiment exists.
-**Frontier:** blueprint search remains one candidate among several, with durable research-trail visibility and no editorial presumption against it.
-
-## [2026-07-12 | f6b691da | belief-weighted Jud MCTS preserved and synthesized]
-
-**Touched pages:** [[belief-weighted-jud-mcts]] [[jud]] [[partnership-wall-research]] [[partnership-research-gates]] [[sources/f6b691da]] [[index]]
-**Added:** belief particles → information-set MCTS → blueprint policy → Jud realized-value leaf, grounded by JudSearch's `+2.28` gain and the JS2 worlds-sweep boundary.
-**Separated:** J0-J4 attributes root belief, adaptive depth, information-set updates, and convention value; determinized and information-set MCTS have distinct promotion gates.
-**Frontier:** the idea is a surviving search-consumer hypothesis; Zeb and LAMIR are relevant prior evidence but did not test this combination.
 
 ## [2026-07-13 | b28fb55a | continuation-frontier research ingested — lanes selected, MCTS backup semantics corrected]
 

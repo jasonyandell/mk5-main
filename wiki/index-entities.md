@@ -27,6 +27,7 @@ Named things: projects, systems, models, artifacts. Hubs in bold below.
 - [[entities/lem|lem]] — the Little Expert Model project: can a small (1.7B-2B) open model learn to play Texas 42 via STaR on a backwards curriculum — 16 ingests from Gemma 4 E2B through Qwen 3 1.7B v10-maskfix (complete)
 - [[entities/mlx-lm|mlx-lm]] — local Apple Silicon inference path; 1.86× wall vs Modal; batch ceiling 43→1334 tok/s (16×) after B9 bench (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
+- [[entities/parlor|parlor]] — four-seat salon (Jason, Fable, Sol, Opus) on SSJ turn-taking with PASS/MARGIN/BID signals; session-1 record, the N-models-agree reflex, OPEN ledger; raw seat logs on HF @ parlor-session-1 (active)
 - [[entities/qwen3-1.7b|qwen3-1.7b]] — current LEM base model; 100% comprehension eval; 36K tok/s on B200 (complete)
 - [[entities/qwen3-14b|qwen3-14b]] — capacity experiment; 97/100 rationalization; visibility_audit 0% structural gap; not adopted as production base (complete)
 - [[entities/stage-0-adapter-line|stage-0-adapter-line]] — LEM Stage 0 adapter lineage (stage-0→kerry→v3…v10) with comparative eval table (complete)
