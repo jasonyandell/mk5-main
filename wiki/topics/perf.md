@@ -11,7 +11,9 @@ campaigns have run — the 2026-04 Burl inference sprint ([[perf-on-the-table]])
 and the 2026-07 walt solver rewrite ([[walt-spec]] §4) — on different
 substrates (mlx-lm token generation vs numpy/torch tree search), and they
 measured the *same laws*. This page carries the laws; the campaign pages
-carry the receipts; the [[perf-sprint]] playbook family carries the process.
+carry the receipts; the [[perf-sprint]] playbook family carries the process;
+live work is tracked in the append-only [[perf-log]] (field notes, replaces
+issues for perf items per 2026-07-18 directive).
 
 ## The laws (each measured at least twice)
 
