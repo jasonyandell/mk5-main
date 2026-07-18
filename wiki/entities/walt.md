@@ -66,13 +66,46 @@ needed). Empirical note: σ-consistency barely discriminates on early
 forced-ish moves and bites late — the coupling theorem's "forced actions
 contribute zero," observed in filter survival curves.
 
-## Grading
+## Graded (2026-07-17 night, n=512 paired each, protocol pre-registered on #71)
 
-Pilot protocol + registered predictions (frozen before any run) are on
-[#71](https://github.com/jasonyandell/mk5-main/issues/71): Run A =
-walt(W1, H=4) vs jud at n=512 paired (P1 marks, P2 window points); Runs
-B/C = W0 vs W1 at H=3 (P3, the term-decomposition bet); P4 walker rate.
-Results land here when the runs finish.
+All three arms vs JudPlay, `margin:wp`(r8) bidder both teams, base_seed=0:
+
+| arm | config | marks/game [95% CI] | game win | wall |
+|---|---|---|---|---|
+| A | W1 exact B(σ), H=4 | **+3.002 [+2.769, +3.219]** | 88.1% | 48 min |
+| B | W0 uniform u, H=3 | +1.594 [+1.334, +1.861] | 70.1% | 4.3 min |
+| C | W1 exact B(σ), H=3 | +1.877 [+1.623, +2.131] | 75.0% | 90 s |
+
+- **Mechanism**: same bidder, same deals — make rate 66.3% when walt's team
+  bids vs 37.5% when jud's (Run A). The ≤4-tile endgame flips ~29 points of
+  contract percentage, both roles (halves symmetric; edge on offense AND
+  defense). walt diverges from jud on 33.6% of endgame decisions.
+- **P3 / MIGHT-#3 graded**: paired W1−W0 at H=3 = **+0.283 [+0.184,
+  +0.391]** — term 2 carries **84.9%** of the edge. Synthesis with the
+  champion-ladder #24/#25 nulls: belief-reweighting over *clairvoyant*
+  values was marks-neutral, but the same beliefs acting through an *honest
+  continuation* are worth +0.28 — **term 1 is only cashable through
+  term 2**.
+- **Prediction grades** (registered before the runs): P1 badly under-called
+  (+0.05..+0.35 predicted, +3.00 actual — the "endgames are mostly forced"
+  prior over-suppressed); P4 pass (walker led 0.191/hand vs ≥0.15 floor);
+  perf target missed (in-run p95 1.9 s vs ≤300 ms). Jason's slots unfilled.
+- **Scope caveat (the honest flag)**: opponents in these runs ARE the field
+  walt models — the field-model term contributes its maximum. The served
+  champion plays `lens:ev`, a different and stronger opponent. Licensed
+  claim: exact term-2 + exact-belief play beats the 1-ply greedy head by
+  ~3 marks/game at H=4 *when the field model is perfect*. The transfer test
+  (walt vs `lens:ev`) measures how much was field-model rent — follow-up
+  issue filed from #71.
+- **Tail economics** (drives the throughput program): solve time mean
+  624 ms vs median 5 ms; 7% of solves (>1 s) hold 91.5% of all solve time.
+  The long solves are exactly the uninformative-history nodes (σ never
+  bit), so a world-cap subsample hurts where beliefs are flattest.
+  σ-filter survival is the coupling theorem observed: forced early moves
+  discriminate nothing; the filter bites late.
+- The B/C runs' decision logs carry full serialized roots + exact
+  values/argmaxes — the seed corpus for the [[lamir1-ceiling]] scar probe
+  (distilled-leaf argmax preservation), which gates the ladder.
 
 ## Links
 
