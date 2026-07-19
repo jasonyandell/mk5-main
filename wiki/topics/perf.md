@@ -106,20 +106,23 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far); cap-256 anchor solve **15.9 s**
-  after the fused iterate + in-struct gap pricing ([[perf-log]] 18l/18m,
-  #82: numba edge kernels + forced-slot compression, 7.1× iterate,
-  bitwise; then exact BR priced on the resident wave structure, 16× —
-  "the fix is not to fuse the walk; it is to stop walking"). P6
-  confirmed, P7/fp32 refuted-and-deleted, P8 16×, P9/P10 green; the
+  (scale-invariant in worlds so far); cap-256 anchor solve **13.0 s**
+  after the fused iterate + in-struct gap pricing + resident-build
+  levers ([[perf-log]] 18l/18m/18n, #82: numba edge kernels +
+  forced-slot compression, 7.1× iterate, bitwise; exact BR priced on
+  the resident wave structure, 16×; then the build stopped re-deriving
+  what the walk already held — pslot/actor resident + numba move fill,
+  2.36× build. "The fix is not to fuse the walk; it is to stop
+  walking"). P6 confirmed, P7/fp32 refuted-and-deleted, P8 16×, P9/P10
+  green, P11 narrowly refuted (1.21× vs its 1.25× bar); the
   regret-bound gap shortcut is dead on theory (the 2p folk bound needs
-  utility linear in one opponent). Same-seed paired sweep: **14.2×
-  worker-time per usable eval**, projected rung-0 ~2,000–2,800
-  evals/hour (was 224). Build is now the top bucket (43%) — numba
-  expand_full_width is the registered lever-after-next. The anchor's
+  utility linear in one opponent). Same-seed paired sweep: **16.9×
+  worker-time per usable eval vs banked**, projected rung-0
+  ~2,400–3,300 evals/hour (was 224). Iterate is back on top (50%) —
+  adaptive gap cadence (L3) is the registered next lever. The anchor's
   full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
   200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
-  shape ([[perf-log]] 18h–m).
+  shape ([[perf-log]] 18h–n).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

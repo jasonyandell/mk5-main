@@ -327,7 +327,8 @@ class _WaveStruct:
 
 
 def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
-                want_debug: bool, bulk_export: bool = False) -> _WaveStruct:
+                want_debug: bool, bulk_export: bool = False,
+                kernels: bool = False) -> _WaveStruct:
     from hoyt.subgame import (
         build_subgame as _kernel_subgame,
         expand_full_width,
@@ -339,10 +340,10 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     ksub = _kernel_subgame(root, worlds, weights)
     kw = {} if slot_budget is None else {"slot_budget": slot_budget}
     res = expand_full_width(ksub, keep_slots=True,
-                            need_path_ids=bulk_export, **kw)
+                            need_path_ids=bulk_export, kernels=kernels,
+                            **kw)
     waves = res["waves"]
     L = len(waves) - 1
-    N = int(ksub.worlds.shape[0])
     me = ksub.me
     col_arr = ksub.col_arr
     LED, CFB = ksub.LED, ksub.CFB
@@ -383,15 +384,14 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
 
     for j in range(L):
         wj, wn = waves[j], waves[j + 1]
-        snode, sworld, sw = wj["snode"], wj["sworld"], wj["sw"]
+        snode, sw = wj["snode"], wj["sw"]
         parn = wn["parent"]                       # int32: index use only
         tile_n = wn["tile"].astype(np.int64)      # int8 stored; arithmetic
         pseat_n = wn["pseat"].astype(np.int64)    # needs the wide dtype
         Mj = len(wj["counts"])
 
-        # actor per wave-j node = seat of its first child edge
-        firstchild = np.searchsorted(parn, np.arange(Mj))
-        actor_n = pseat_n[firstchild]
+        # actor per wave-j node: resident from the walk (int8 stored)
+        actor_n = wj["actor"].astype(np.int64)
 
         # acting hand per slot (me's hand is node-public, replayed)
         acts = actor_n[snode]
@@ -415,22 +415,13 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
         nleg = np.bitwise_count(lm.astype(np.uint64)).astype(np.int64)
         off = Lflat + np.concatenate(([0], np.cumsum(nleg)))[:-1]
 
-        # child edges -> parent slots, by (node, world) key (worlds are
-        # unique within a node and node-major slot order is preserved)
-        snode_c, sworld_c = wn["snode"], wn["sworld"]
+        # child edges -> parent slots: resident from the walk (rows/gidx,
+        # perf-log 18n; formerly re-derived by (node, world) key search —
+        # 2 s of searchsorted on the anchor)
+        snode_c = wn["snode"]
         TC = tile_n[snode_c]
         seat_e = pseat_n[snode_c]
-        kp = snode.astype(np.int64) * N + sworld
-        kc = parn[snode_c].astype(np.int64) * N + sworld_c
-        if kp.size > 1 and not (kp[1:] > kp[:-1]).all():
-            sp = np.argsort(kp, kind="stable")
-            PS = sp[np.searchsorted(kp[sp], kc)]
-        else:
-            PS = np.searchsorted(kp, kc)
-        if not np.array_equal(kp[PS], kc):
-            raise AssertionError(
-                f"wave {j}: parent-slot reconstruction failed (kernel wave "
-                "ordering changed?)")
+        PS = wn["pslot"].astype(np.int64)
         # cross-check: the walk's edge fan-out must equal LUT legality
         cnt_edges = np.bincount(PS, minlength=ws.S[j])
         if not np.array_equal(cnt_edges[fidx], nleg):
@@ -541,8 +532,10 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
 
         # free the slot-level memory hogs as soon as the transition is done
         wj["sw"] = wj["snode"] = wj["sworld"] = None
+        wj["pslot"] = wj["actor"] = None
 
     waves[L]["sw"] = waves[L]["snode"] = waves[L]["sworld"] = None
+    waves[L]["pslot"] = None
     ws.n_isets = n_isets
     ws.Lflat = Lflat
     if bulk_export:
@@ -943,7 +936,8 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     t0 = time.time()
     ws = _build_wave(subgame.root, subgame.worlds, subgame.weights, pinned,
                      slot_budget, debug,
-                     bulk_export=hasattr(impl.StochasticProfile, "set_bulk"))
+                     bulk_export=hasattr(impl.StochasticProfile, "set_bulk"),
+                     kernels=fused)
 
     bid_team = int(subgame.root.bidder) % 2
     signs = {u: sign_of(u, bid_team) for u in range(4)}

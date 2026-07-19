@@ -482,3 +482,68 @@ compile_sigma/br_solve/CFR — a much bigger license, lever-after-next.
 
 Amdahl after 18m: **build 43% / iterate 38% / export+br+value ~13% /
 oracle phases ~6%** — the referee is no longer priced by its pricing.
+
+## 2026-07-18n — the build lever: stop re-deriving what the walk held (pslot/actor resident, numba fill)
+
+The registered lever was "numba expand_full_width" (18m: build 43% of
+worker wall, but shared parity surface under compile_sigma/br_solve/CFR —
+a big license). **Sub-anatomy first (law 6), and it shrank the license.**
+Priors: PB1 walk ≤35% / post-walk ≥50% / _build_fused ≤15% of anchor
+build; PB2 the unique + PS-reconstruction argsorts ≥50% of post-walk.
+Measured (anchor, triad 39–42 GB/s): build 5.90 s = walk 2.28 (39%) +
+post-walk 3.08 (52%) + _build_fused 0.54 (9%) — PB1 confirmed on
+post-walk, hair over on walk. **PB2 half-REFUTED**: np.unique is 0.15 s
+(numpy 2.4's hash-based unique — the argsort fear is stale); the real
+cost is **searchsorted 2.04 s**, re-deriving per wave (a) the parent slot
+of every child slot by (node, world)-key binary search and (b) the actor
+per node via first-child search — both of which `run_engine` already held
+as locals (`rows`/`gidx` ARE the parent-slot indices; `actor` is
+computed per wave). The 18m lesson generalizes: the fix is not to fuse
+the search; it is to stop searching.
+
+**Landed, two parts, both output-identical by construction:**
+- **A (structural, no numba):** `keep_slots` now also stores per-wave
+  `pslot` (int32 parent-slot per child slot) and `actor` (int8 per node).
+  `_build_wave` reads them; the searchsorted reconstruction is deleted
+  (no-legacy). License: additive fields on the CFR-lane-only
+  `keep_slots=True` path — br/compile_sigma call run_engine with
+  keep_slots=False and never execute the new lines. Gate: old derivation
+  replicated in scratch and asserted EXACTLY equal on all 16 anchor waves
+  + a durable toys invariant in test_full_width_walk.
+- **B (numba, provider-scoped):** `hoyt/buildkernel.py::fw_fill` emits
+  (slot, move) pairs straight off the legal bitmasks in np.nonzero's
+  row-major order, killing the per-wave (slots×28) bool matrix + 1.03 s
+  of nonzero. Selected by `_FullWidthProvider(kernels=True)`, threaded
+  as `_build_wave(kernels=fused)` — **the numpy provider stays the
+  pinned mirror and the wave lane stays numba-free** (CONTRACTS.md), so
+  the standing fused-vs-wave bitwise gates now cover the build too.
+  Gate: kernels walk == mirror walk, every field of every wave + leaf,
+  exact.
+
+**Measured (anchor 555006, cap 256, 40 iters):** fused-lane build 5.90 →
+**2.49 s (2.36×)**; solve wall 15.9 → **13.0 s** (88.6 at 18k start:
+**6.8×**). Bitwise PASS (trace/value/gap/profile vs wave; P8 oracle
+3.6e-15; banked row 2.2e-07 within the 1e-6 rounding license). All
+parity gates green (P1–P4, 53 pytest).
+
+**P10-style sweep** (same 20 roots, 5 workers — full cascade this time,
+18m ran --rungs 0): paired both-converged **235 → 194 worker-s = 1.21×
+vs 18m** — registered prior **P11 (≥1.25×) NARROWLY REFUTED**: small
+roots pay fixed overheads (subgame build, jit-warm, worlds) that the
+2.36× doesn't touch; fleet build bucket moved 165.8 → 94.6 s (1.75×),
+not 2.36×. Banked/18n on the paired subset: **14.97×**. Per usable eval
+(19 seeds, ladder accounting): 19.5 → **16.4 worker-s** (1.19× vs 18m,
+**16.9× vs banked**); projected rung-0 velocity ~**2,400–3,300
+evals/hour**. Bonus receipt: the 555090 wedge, slot_capped in every
+rung-0-only sweep, laddered to rung 2 and **converged in 366 s** (banked
+paid 1,799 s for that verdict) — peak RSS 27.0 GiB at cap 1024 on the
+48 GiB box, fine solo but confirms rung-2 solves must not share the box
+with 4 siblings (the L4 kill holds).
+
+Amdahl after 18n (rung-0 fleet, wedge excluded): **iterate 50% / build
+31% / br 12% / export 5%** — the wheel turns back to iterate. Next lever
+per the queue: **L3 adaptive gap cadence** (pricing is 0.4 s; measure
+every 5 iters and stop at first crossing — the tail iterations after
+the gap crosses are pure waste, ~25% of iterate). expand_full_width
+deeper fusion (run_engine's own gathers, 0.87 s/anchor) is now the
+lever-after-next and still carries the shared-surface license.

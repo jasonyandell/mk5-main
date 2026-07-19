@@ -233,6 +233,7 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             waves[cw]["sworld"] = sworld.astype(np.int32)
             waves[cw]["counts"] = counts
             waves[cw]["sw"] = sw.astype(np.int32)
+            waves[cw]["actor"] = actor.astype(np.int8)
         if need_path_ids:
             waves[cw]["ph1"], waves[cw]["ph2"] = ph1, ph2
 
@@ -293,6 +294,7 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             swt_sig = np.empty(0, dtype=np.float64)
             sworld_sig = np.empty(0, dtype=np.int64)
             par_sig = tile_sig = counts_sig = np.empty(0, dtype=np.int64)
+            rows = np.empty(0, dtype=np.int64)
             if capture:
                 cap["mv"].append(np.empty(0, dtype=np.int8))
                 cap["dec"].append(None)
@@ -327,6 +329,7 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             sworld_me = np.empty(0, dtype=np.int64)
             par_me = tile_me = np.empty(0, dtype=np.int64)
             child_me_sizes = np.empty(0, dtype=np.int64)
+            gidx = np.empty(0, dtype=np.int64)
 
         # ---- build the child wave (σ children first, then hero's) --------
         parent_c = np.concatenate((par_sig, par_me))
@@ -395,6 +398,12 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
                       "tile": tile_c.astype(np.int8),
                       "pseat": pseat_c.astype(np.int8),
                       "hero": None})
+        if keep_slots:
+            # parent-slot index per child slot: resident in the walk (rows
+            # for σ children, gidx for hero's), so consumers never re-derive
+            # it by (node, world) key search (perf-log 18n)
+            waves[-1]["pslot"] = \
+                np.concatenate((rows, gidx)).astype(np.int32)
         leader, led, brank, bseat, tcnt = \
             leader_c, led_c, brank_c, bseat_c, tcnt_c
         ptsvd, mymask = ptsvd_c, mymask_c
@@ -526,14 +535,17 @@ def extract_strategy(waves, choice, best_move, hero_is_me) -> dict:
 
 
 def expand_full_width(sub: Subgame, *, keep_slots=True, need_path_ids=True,
-                      slot_budget=DEFAULT_SLOT_BUDGET) -> dict:
+                      slot_budget=DEFAULT_SLOT_BUDGET,
+                      kernels=False) -> dict:
     """The CFR lane's structural walk: ALL FOUR seats full-width, worlds
     surviving a public action iff the acting hidden seat holds the tile
     (hero=-1: no seat is best-responding; weights flow un-scaled). Returns
     the raw run_engine result with per-wave slot partitions and 128-bit
-    node path ids kept. Memory is the caller's affair — budget-guarded."""
+    node path ids kept. Memory is the caller's affair — budget-guarded.
+    kernels=True selects the numba move-emission fill (buildkernel.py,
+    output-identical; the numpy provider stays the pinned mirror)."""
     from hoyt.profiles import _FullWidthProvider
 
-    return run_engine(sub, _FullWidthProvider(), hero=-1,
+    return run_engine(sub, _FullWidthProvider(kernels=kernels), hero=-1,
                       keep_slots=keep_slots, need_path_ids=need_path_ids,
                       slot_budget=slot_budget)

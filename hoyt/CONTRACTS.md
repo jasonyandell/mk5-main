@@ -72,7 +72,9 @@ team-pair deviation out of scope.
 - Neither lane edits existing walt modules, this file, or the other lane's
   files. Python via `/Users/jason/code/mk5-main/.venv/bin/python -u` from
   the worktree root. numba is a RUNTIME dependency since the fused iterate
-  engine (#82, `hoyt/iterkernel.py` — cfr_solve's default engine); install
-  via `uv pip install --python /Users/jason/code/mk5-main/.venv/bin/python
-  numba` (engine="wave"/"loop" stay numba-free).
+  engine (#82, `hoyt/iterkernel.py` — cfr_solve's default engine; the
+  fused lane's structural build also uses `hoyt/buildkernel.py`, perf-log
+  18n); install via `uv pip install --python
+  /Users/jason/code/mk5-main/.venv/bin/python numba`
+  (engine="wave"/"loop" stay numba-free).
   Benches ≤10 min wall. Temp files in scratch/.
