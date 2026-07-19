@@ -2,7 +2,7 @@
 title: Perf — the measured laws of making this project fast
 kind: topic
 first_seen: 2026-07-18
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 status: active
 ---
 
@@ -106,24 +106,27 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far); cap-256 anchor solve **12.6 s**
-  after the fused iterate + in-struct gap pricing + resident-build
-  levers ([[perf-log]] 18l/18m/18n, #82: numba edge kernels +
-  forced-slot compression, 7.1× iterate, bitwise; exact BR priced on
-  the resident wave structure, 16×; then the build stopped re-deriving
-  what the walk already held — pslot/actor resident + numba move fill,
-  2.36× build. "The fix is not to fuse the walk; it is to stop
-  walking"). P6 confirmed, P7/fp32 refuted-and-deleted, P8 16×, P9/P10
-  green, P11 narrowly refuted (1.21× vs its 1.25× bar); the
+  (scale-invariant in worlds so far); cap-256 anchor solve **7.2 s**
+  after the fused iterate + in-struct gap pricing + resident-build +
+  threaded-iterate levers ([[perf-log]] 18l/18m/18n/19a, #82: numba
+  edge kernels + forced-slot compression, 7.1× iterate, bitwise; exact
+  BR priced on the resident wave structure, 16×; the build stopped
+  re-deriving what the walk already held — pslot/actor resident +
+  numba move fill, 2.36× build; then the iterate went parallel while
+  staying bitwise — build-time stable argsorts give every thread a
+  disjoint output range with bincount-order folds, 2.67–3.12× iterate
+  at 4–8 threads). P6 confirmed, P7/fp32 refuted-and-deleted, P8 16×,
+  P9/P10 green, P11/P14/P16 narrowly refuted (quoted flat); the
   regret-bound gap shortcut is dead on theory (the 2p folk bound needs
   utility linear in one opponent); gap_exit prices intermediate
   measurements one seat at a time and exits at the first crossing
   ([[perf-log]] 18o — exact by construction, gate P5). Same-seed paired
-  sweep: **18.9× worker-time per usable eval vs banked**, projected
-  rung-0 ~2,700–3,700 evals/hour (was 224). The anchor's
+  sweep at refsweep's threads=4 default: **23.7× worker-time per
+  usable eval vs banked** (11.7 worker-s), projected rung-0
+  ~3,400–4,650 evals/hour (was 224). The anchor's
   full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
   200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
-  shape ([[perf-log]] 18h–o).
+  shape ([[perf-log]] 18h–19a).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

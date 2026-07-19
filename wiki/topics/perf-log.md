@@ -2,7 +2,7 @@
 title: Perf log — append-only field notes
 kind: topic
 first_seen: 2026-07-18
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 status: active
 ---
 
@@ -646,3 +646,65 @@ with ascending-edge order inside each group. **P13 prior: ≥1.8× iterate
 on the anchor at 4–8 threads, bitwise vs single-thread fused, RSS flat.**
 Risk: numba prange scheduling must not touch output ranges — chunk
 boundaries must be precomputed structure, not runtime heuristics.
+
+## 2026-07-19a — P13 lands: threaded iterate, bitwise by construction; refsweep threads=4
+
+**Sub-anatomy first (law 6), and it refuted the premise before a line of
+kernel code.** Registered PA1 (bwd ≥55% of anchor iterate) — REFUTED:
+fwd 48% / bwd 28% / rm_plus 22% / loop 2%, so rm_plus threading is
+mandatory, not optional. PA3 (PS parent-sorted, 18p's design premise) —
+**REFUTED: PS is neither sorted nor contiguous-by-parent** (mono_frac
+0.78–1.0, runs ≫ uniq on waves 0–11 of the anchor). The 18p design as
+written dies; the surviving design is stronger and simpler: **group
+edges by output owner with build-time stable argsorts** (structure in
+`_FusedLayout`, never runtime heuristics) — by parent for `v_p`, by gid
+for `cf_c`, by iset for the CFR+ update. Each numba `prange` iteration
+owns a disjoint output range and folds its contributions in ascending
+edge order (= np.bincount's fold), so results are **bitwise identical
+at any thread count and any scheduling**. Trick-tail waves 12–15
+(11.9M of 19.1M edges) are parent-bijections — pure-map fast path, no
+permutation stored. Verified before believing: np.maximum returns +0.0
+on ±0.0 ties (mirrored by the clamp), and a +0.0-seeded IEEE fold can
+never produce −0.0, so register-accumulate-then-store is exact.
+
+**Landed:** `cfr_solve(threads=N)` (fused-only; wave/loop mirrors stay
+the pinned single-threaded references and raise), five kernels in
+`hoyt/iterkernel.py` (`fwd_edges_par`, `bwd_v_map`, `bwd_v_seg`,
+`cf_seg`, `rm_update_seg`), perm build in `_build_fused(par=True)`,
+refsweep `--threads` (default 4). **Gate P13 added to the parity
+suite** (threads 3/4 + gap_exit compose, exact-zero drift); P1–P5
+green, 53 pytest green.
+
+**Measured (anchor 555006, cap 256):** iterate **2.67× @4 threads,
+3.12× @8** (prior ≥1.8× CONFIRMED, beaten), bitwise PASS at every
+count; anchor solve 12.6 → **7.2 s**. RSS honestly **+0.21 GiB (+5%)**
+in isolated runs — not strictly flat (perms + numba parallel runtime);
+fleet worker maxima unchanged (28.5/14.4/11.2 → 27.9/13.4/11.4).
+
+**Measured (same 20 roots, 5 workers, full cascade), the thread ladder
+with per-config priors:**
+- **P14 (t2: rung-0 wall ≤240 s) NARROWLY REFUTED at 245.9 s** — by
+  5.9 s; quote it as 1.13×, not a triumph.
+- **P15 (t4: ≤ t2 AND full-run ≤320 s) SPLIT**: rung-0 **221.8 s
+  (1.26× vs 18o's 279.1)** confirmed; full-run 360 s REFUTED — the
+  wedge's solo rung-2 is not iterate-bound (250 → 234 s, t2 → t4).
+- **P16 (t8: rung-0 ≤210 s else t4 default) NARROWLY REFUTED at
+  215.4 s** — t8/t4 = 1.03×, inside the ±4% noise floor at 40 threads
+  on 18 cores. **threads=4 is the production default by P16's own
+  decision rule.**
+
+Zero verdict flips in any config; every stopping gap a full-priced
+≤0.05 certificate. The anchor's 2.67× compresses to fleet 1.26×
+because small roots pay thread overhead (555319: 0.62×) and iterate
+was 45% of fleet wall. Fleet iterate bucket 207.6 → **101.8 worker-s
+(2.04×)**; per usable rung-0 eval **14.7 → 11.7 worker-s (23.7× vs
+banked)**; full-cascade root-wall-cum 578 → 473 s; projected rung-0
+velocity **~3,400–4,650 evals/hour** (was ~2,700–3,700).
+
+Amdahl after 18q (rung-0 fleet, t4): **build 48% / iterate 23% / br
+17% / export 10%** — the wheel turns back to build, and the two big
+build levers are known: run_engine's own gathers (the shared-surface
+license, 18n's lever-after-next) and the per-root fixed overheads that
+kept P11 honest (subgame build, jit-warm, worlds). Cap verdicts kept:
+threads on the solo rung-2 wedge are marginal (234–250 s at any
+count); σ-branch gather kernel stays capped at 3–4% fleet (18p).

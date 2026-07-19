@@ -78,6 +78,13 @@ VERDICT_RANK = {"converged": 0, "gap_capped": 1, "slot_capped": 2, "error": 3}
 USABLE = ("converged", "gap_capped")
 BR_EVERY = 10            # gap-measure cadence (18o: denser is affordable
 #                          with gap_exit — intermediates price ~1 seat)
+THREADS = 4              # numba threads per worker for the fused iterate
+#                          (P13). Measured on the 20-root paired sweep,
+#                          5 workers, M5 Max: rung-0 wall 279.1 (t1) ->
+#                          245.9 (t2) -> 221.8 (t4) -> 215.4 (t8); t8's
+#                          gain over t4 is inside the +-4% noise floor at
+#                          40 threads on 18 cores, so 4 is the default.
+#                          Bitwise identical at any thread count.
 GIB_PER_32M = 7.0        # measured cap-256 worker peak RSS at 32M slots (18g)
 
 
@@ -221,7 +228,7 @@ def _root_of(rd: dict):
 
 
 def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
-               oracle) -> dict:
+               oracle, threads: int | None = None) -> dict:
     """One (root, rung) -> one ledger row. The pipeline mirrors the ad-hoc
     2026-07-18 sweep worker (enumerate_worlds -> sigma_consistent ->
     deterministic world cap -> build_subgame -> compile_sigma -> walt BR ->
@@ -271,7 +278,8 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
                         target_gap=rung.target_gap, br_every=BR_EVERY,
                         gap_exit=True,
                         wall_budget_s=rung.wall_budget_s,
-                        slot_budget=rung.slot_budget)
+                        slot_budget=rung.slot_budget,
+                        threads=threads)
         # the reference value IS the solve's self-play value (measured
         # identical on all 200 banked rows, delta 0.0); profile_value's
         # full stochastic re-walk survives only as a 1-in-20 audit (P9)
@@ -328,7 +336,8 @@ def _worker_main(a) -> int:
             rec = recs[seed]
             print(f"seed {seed} start "
                   f"(worlds_sigma={rec['n_worlds_sigma']})", flush=True)
-            row = solve_root(rec, rung, a.worker_rung, a.cap, oracle)
+            row = solve_root(rec, rung, a.worker_rung, a.cap, oracle,
+                             threads=a.threads or None)
             fh.write(json.dumps(row) + "\n")
             fh.flush()
             print(f"seed {seed} {row['verdict']} wall={row['wall_s']}s "
@@ -498,7 +507,8 @@ def _driver_main(a) -> int:
                    "--worker-rung", str(r), "--shard", str(w),
                    "--seeds", ",".join(map(str, seeds)),
                    "--cap", str(a.cap), "--outdir", str(outdir),
-                   "--evalset", str(evalset), "--net", a.net]
+                   "--evalset", str(evalset), "--net", a.net,
+                   "--threads", str(a.threads)]
             if a.rungs:
                 cmd += ["--rungs", a.rungs]
             procs.append(subprocess.Popen(cmd, stdout=log,
@@ -531,6 +541,11 @@ def main(argv=None) -> int:
     ap.add_argument("--net", default="champion/jud_net.pt")
     ap.add_argument("--seeds", default="",
                     help="restrict to these seeds (smoke runs)")
+    ap.add_argument("--threads", type=int, default=THREADS,
+                    help="numba threads per worker for the fused iterate "
+                         "(P13; 0 = single-threaded kernels). Bitwise "
+                         "identical either way; compose workers x threads "
+                         "against the core budget")
     ap.add_argument("--dry-run", action="store_true",
                     help="print ladder + resume state + shard plan, no solving")
     # worker mode (spawned by the driver; not a user surface)

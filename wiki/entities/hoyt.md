@@ -2,7 +2,7 @@
 title: hoyt — the game's own referee
 kind: entity
 first_seen: 2026-07-18
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 status: active
 ---
 
@@ -76,10 +76,10 @@ info set in about the cost of one ordinary solve — after which:
 | H4 BR re-solve after compile | p50 0.9 ms (45× net wavefront) |
 | H5-cap512 BR | p50 3.5 ms; compile 0.35 s |
 | CFR gap ≤0.05 pts | ≤40 iterations at EVERY root tried — **scale-invariant in worlds** (10 → 33,740) |
-| CFR wall/root, cap-256 | anchor **12.6 s** after the fused iterate + in-struct gap pricing + resident build + walk elisions ([[perf-log]] 18l–p: iterate 7.1×, br 16×, build 2.7×; was 88.6 s at the start of 2026-07-18, ~115 s before that); iterate is the top bucket (45% fleet-level), parallel-iterate (P13) registered |
+| CFR wall/root, cap-256 | anchor **7.2 s** after the fused iterate + in-struct gap pricing + resident build + walk elisions + threaded iterate ([[perf-log]] 18l–19a: iterate 7.1× then 2.67–3.12× more at 4–8 threads (bitwise at any count — P13's disjoint-output structure), br 16×, build 2.7×; was 88.6 s at the start of 2026-07-18, ~115 s before that); build is the top bucket now (48% fleet-level at threads=4) |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
 | jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
-| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–o: same-seed paired sample **18.9× less worker-time per usable eval**, 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (578 s ladder; banked: 1,799 s) → **~2,700–3,700/hour projected** ([[perf-log]] 18o); deepening 87% → 99% → 100% over three rungs pre-kernel |
+| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–19a (threads=4 default): same-seed paired sample **23.7× less worker-time per usable eval** (11.7 worker-s), 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (473 s full-cascade root-wall; banked: 1,799 s) → **~3,400–4,650/hour projected** ([[perf-log]] 19a); deepening 87% → 99% → 100% over three rungs pre-kernel |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
