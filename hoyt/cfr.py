@@ -1045,6 +1045,13 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
           "value": 0.0}
     t0 = time.time()
+    if fused and threads:
+        # set before the build, not just before _build_fused: any numba
+        # parallel kernel reached from _build_wave would otherwise run at
+        # numba's default (all cores) and oversubscribe a multi-worker
+        # sweep (perf-log 19d)
+        import numba
+        numba.set_num_threads(threads)
     ws = _build_wave(subgame.root, subgame.worlds, subgame.weights, pinned,
                      slot_budget, debug,
                      bulk_export=hasattr(impl.StochasticProfile, "set_bulk"),
@@ -1067,9 +1074,6 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     live_seats = [u for u in range(4) if u not in pinned]
 
     if fused:
-        if threads:
-            import numba
-            numba.set_num_threads(threads)
         fl = _build_fused(ws, sig, par=bool(threads))
         sig_c = sig[fl.c_flat].copy()
         reg_c = np.zeros(fl.n_c)

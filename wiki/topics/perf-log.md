@@ -793,3 +793,46 @@ worker-s @5w / 8.2 @3w / solo floor from 19b), which re-prices lever
 every byte not moved pays twice** — once as the root's own wall, once
 as decontention of four co-runners. That is the next lever; its
 anatomy is free (`build_anatomy_big.py`).
+
+## 2026-07-19d — walk gather fusion: built, measured at both scales, refuted at both bars, deleted; the P11 compression law reaches the build
+
+Walk sub-anatomy on 555046 first (priors PW1–PW4,
+`scratch/fused-iterate/pw_prior.md`): walk 5.64 s = expand 1.17 (21%)
++ **argsort 0.22 (4%)** + cat2 0.00 (the hero-less full-width walk
+never concatenates) + remainder 4.25 (75%). PW1 (argsort ≥25%)
+REFUTED — numpy's radix argsort wins a THIRD time (PB2 → PB8 → PW1;
+stop pricing numpy integer sorts by comparison-sort intuition,
+permanently). PW4 (fusable gather surface ≥35%) CONFIRMED at 75%.
+
+**PW5 built**: `walk_gather` numba kernel — the σ-path's six
+slot-scale passes (rows/skey gathers, sw gather + actor/col
+double-gather + bit-clear scatter, swt, sworld) fused into one prange
+map, pure gather-of-gather, disjoint outputs, no folds → bitwise at
+any thread count by construction. Exact-parity gate PASS (three roots,
+threads 1+4, every wave array + leaf + pslot), 53 pytest green.
+
+**Measured, quoted flat: solo bar MISSED** — walk 5.64 → 4.22 s
+(1.34×, bar ≤3.8), build 11.97 → 10.83. **Fleet bars REFUTED** (same
+20-seed paired sweep, w5 t4): build bucket 93.4 → 87.4 worker-s
+(1.07×, bar ≤80); rung-0 root-wall-cum 221.8 → **223.2 s — a wash**
+(bar ≤208); zero verdict flips. The registered honesty clause fired:
+the removed passes did not buy back co-runner decontention — **19c's
+double-pay theory takes its hit**. Deleted same-session (fp32/PB8
+precedent); receipts stay in scratch (walk_anatomy_big.py,
+walk_gather_gate.py — the gate still validates fw_fill's mirror).
+
+**The lesson with a number: solo walk wins compress ~4:1 at fleet** —
+−1.14 s on the specimen became −6.0 worker-s across 19 roots because
+the walk is only the monster-share of build. This is P11's law
+reaching the build bucket: anchor-scale (now specimen-scale) wins
+never fully cash fleet; the compression ratio is the monster-share of
+the touched surface. Post-walk assembly (~4.6 s solo, the biggest
+remaining build chunk) is PRE-PRICED by the same math: expect ~1.05×
+fleet from a 2× solo win — not worth kernel work without a
+structural elision that applies to every root.
+
+**Kept from the spike**: `numba.set_num_threads` hoisted above
+`_build_wave` in `_solve_wave` — it previously ran after the build, so
+any future numba-parallel kernel reached from the walk would default
+to all cores and oversubscribe a 5-worker sweep 5×18-on-18. Real bug,
+zero-cost fix, landed.
