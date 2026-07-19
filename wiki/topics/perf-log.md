@@ -877,3 +877,53 @@ attacking the measured 2× pressure multiplier where it lives, and
 narrowed in 18n already; this is the transient side. Dtype-promotion
 traps (numpy silently upcasting mixed int32/int64 expressions) make
 this a parity-gated structural change — workflow/subagent sized.
+
+## 2026-07-19f — int32 walk working arrays: kept as a bandwidth win; the transient-pressure theory refuted flat (churn is ordering, not dtype)
+
+Priors + bars registered before code
+(`scratch/fused-iterate/int32_prior.md`). Change: `run_engine`'s
+transient slot arrays narrowed — `sw` (M,3) and `sworld` int64 → int32
+(28-bit masks / world ids ≤ 256); `snode` STAYS int64 (index array,
+18g, and `snode<<5` keys pass 2^31 near the slot budget); the stored
+per-wave copies become `astype(np.int32, copy=False)` aliases (the
+walk rebinds sw/sworld per wave and never writes them in place —
+`sw_sig` is a gather copy); the σ bit-clear goes through an int32
+clear-mask LUT (`_NB28_I32`) because `&= ~(_I64_1 << mv)` would
+promote; `worlds_i64` retired for `worlds_i32` (br.py's grouped BR
+included). Parity gate: value-normalized hashes of every wave array +
+leaf + counters vs HEAD's walk, 3 roots × kernels on/off — EXACT;
+53 pytest green.
+
+**Measured on TWO wedge pairs, both orderings — the reversal earned
+its keep.** Compressor churn is position-determined, not
+code-determined: first arm ~35.3/35.5 GiB, second arm ~31.7/31.1,
+whichever code ran. **I1 (churn ≤0.70×) REFUTED FLAT: the coupling
+from transient write traffic to compressor churn is ≈0.** The ~19
+GB/build of removed transient writes never reach the compressor
+(hot, short-lived pages); the churn lives in the RESIDENT stored
+waves. 19e's "attack the 2× pressure multiplier via transients"
+theory is dead — a future pressure lever must shrink resident
+footprint, not transients. maxrss is position-determined too (first
+arm 26.2/26.5, second 28.5/28.3 — inverted vs the naive read); I2
+unmeasurable by this design. Wedge iterate swung 37.9 → 64.5 s
+between back-to-back pairs at fixed code — **±25% ambient
+sensitivity; wedge bars need paired same-session arms, always.**
+
+**The mechanism-pure win, consistent across orderings**: walk 50.8 →
+43.1 and 50.3 → 44.2 s (**1.16×**), build 1.07× both pairs; wedge
+solo wall ≈0.97× position-corrected (I3 bar ≤0.95 MISSED, quoted
+flat), in-sweep wedge 233.7 → 232.8 (wash). Fleet gate: 20-seed
+paired sweep, zero verdict flips, rung-0 root-wall-cum **221.8 →
+221.8 s — 1.000×** (19d's compression law, third sighting), build
+bucket 93.4 → 88.7 worker-s, worker RSS max 28.3 → 27.5 GiB.
+
+**Verdict: KEPT, with the primary bar refuted and the override named
+(19c template).** I1 priced a coupling measurement puts at ≈0 — no
+transient-dtype change could ever have passed it; it was a bar on a
+wrong theory, not on the lever. Every decision variable that COULD
+move passed: parity exact, wall non-regression (0.97–1.00×), fleet
+gate green, transient bytes/build −~19 GB (the north star's second
+axis). Unlike 19d's deleted kernel this is not a second lane — a
+dtype in the single implementation, net −1 module attribute. The
+residual liability is the alias invariant (stored waves must never
+be written in place), documented at the store site.

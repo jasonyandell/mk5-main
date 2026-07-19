@@ -132,7 +132,10 @@ issues for perf items per 2026-07-18 directive).
   ~3,400–4,650 evals/hour (was 224); full-line model ~700 evals/hour
   (~37× banked) with the two rung-2 wedges as ~half the modeled wall —
   the wedge is 589.6M slots and 2× memory-pressured, both measured
-  ([[perf-log]] 19e). The anchor's
+  ([[perf-log]] 19e); the pressure term is untouchable from the
+  transient side — int32 walk working arrays landed as a 1.16× walk /
+  1.07× build bandwidth win with ZERO churn effect, so the remaining
+  pressure lever is resident footprint ([[perf-log]] 19f). The anchor's
   full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
   200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
   shape ([[perf-log]] 18h–19a).

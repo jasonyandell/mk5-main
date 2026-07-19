@@ -201,7 +201,7 @@ def br_solve(subgame: Subgame, profile, payoff43, hero=None, *,
     for hv in np.unique(hands):
         m = hands == hv
         res = run_engine(sub, provider, hero=hero,
-                         worlds=sub.worlds_i64[m], weights=sub.weights[m],
+                         worlds=sub.worlds_i32[m], weights=sub.weights[m],
                          heromask0=int(hv), need_path_ids=needs_ids,
                          slot_budget=slot_budget)
         vals, choice = backward(res["waves"], _leaf_vals(res, payoff43),

@@ -39,6 +39,10 @@ from walt.tables import get_luts, hand_to_mask
 _AR28 = np.arange(28)
 _ALL28 = np.int64((1 << 28) - 1)
 _I64_1 = np.int64(1)
+# per-move clear masks, int32: bits 28-31 stay set after truncation, so
+# 28-bit payloads are unaffected; gathering these avoids the int64
+# promotion an `x &= ~(_I64_1 << mv)` would force on int32 slot arrays
+_NB28_I32 = (~(_I64_1 << np.arange(28))).astype(np.int32)
 
 # 128-bit rolling path hash (two independent 64-bit lanes, wraparound mult).
 _H1_0 = np.uint64(0xCBF29CE484222325)
@@ -84,7 +88,9 @@ class Subgame:
 
         self.root = root
         self.worlds = worlds_u32
-        self.worlds_i64 = worlds_u32.astype(np.int64)
+        # int32, not uint32: the walk's slot arrays are int32 and
+        # uint32/int32 mixing would promote every expression to int64
+        self.worlds_i32 = worlds_u32.astype(np.int32)
         self.weights = weights
         self.total_w = float(weights.sum())
 
@@ -191,13 +197,13 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
     bid_team = sub.bid_team
     p0 = sub.p0
 
-    sw = sub.worlds_i64 if worlds is None else \
-        np.asarray(worlds, dtype=np.int64).reshape(-1, 3)
+    sw = sub.worlds_i32 if worlds is None else \
+        np.asarray(worlds, dtype=np.int32).reshape(-1, 3)
     N = int(sw.shape[0])
     swt = (sub.weights if weights is None else
            np.asarray(weights, dtype=np.float64)).copy()
     snode = np.zeros(N, dtype=np.int64)
-    sworld = np.arange(N, dtype=np.int64)
+    sworld = np.arange(N, dtype=np.int32)
     counts = np.array([N], dtype=np.int64)
 
     leader = np.array([sub.leader0], dtype=np.int64)
@@ -237,13 +243,16 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
         hmask_nodes = actor == hero
         waves[cw]["hero"] = hmask_nodes
         if keep_slots:
-            # narrowed copies: node ids < slot budget, worlds < N, hands are
-            # 28-bit — int32 halves the resident slot payload; the walk's
-            # working arrays stay int64 (one wave at a time)
+            # node ids < slot budget, worlds < N, hands are 28-bit — int32
+            # halves the resident slot payload. sw/sworld working arrays are
+            # int32 too, so copy=False stores an alias (the walk rebinds
+            # them per wave, never writes in place — sw_sig is a gather
+            # copy); snode stays int64 (index array, and snode<<5 keys
+            # can pass 2^31 near the slot budget), so its store copies
             waves[cw]["snode"] = snode.astype(np.int32)
-            waves[cw]["sworld"] = sworld.astype(np.int32)
+            waves[cw]["sworld"] = sworld.astype(np.int32, copy=False)
             waves[cw]["counts"] = counts
-            waves[cw]["sw"] = sw.astype(np.int32)
+            waves[cw]["sw"] = sw.astype(np.int32, copy=False)
             waves[cw]["actor"] = actor.astype(np.int8)
         if need_path_ids:
             waves[cw]["ph1"], waves[cw]["ph2"] = ph1, ph2
@@ -295,16 +304,16 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             seats_o = actor[snode[rows]]
             cols_o = col_arr[seats_o]
             hid = cols_o >= 0                   # me-as-profile: node-level
-            sw_sig[hid, cols_o[hid]] &= ~(_I64_1 << mv_o[hid])
+            sw_sig[hid, cols_o[hid]] &= _NB28_I32[mv_o[hid]]
             if wmul is None:
                 swt_sig = swt[rows]
             else:
                 swt_sig = (swt[rep] * wmul)[order]
             sworld_sig = sworld[rows]
         else:
-            sw_sig = np.empty((0, 3), dtype=np.int64)
+            sw_sig = np.empty((0, 3), dtype=np.int32)
             swt_sig = np.empty(0, dtype=np.float64)
-            sworld_sig = np.empty(0, dtype=np.int64)
+            sworld_sig = np.empty(0, dtype=np.int32)
             par_sig = tile_sig = counts_sig = np.empty(0, dtype=np.int64)
             rows = np.empty(0, dtype=np.int64)
             if capture:
@@ -337,9 +346,9 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             sworld_me = sworld[gidx]
             child_me_sizes = sizes
         else:
-            sw_me = np.empty((0, 3), dtype=np.int64)
+            sw_me = np.empty((0, 3), dtype=np.int32)
             swt_me = np.empty(0, dtype=np.float64)
-            sworld_me = np.empty(0, dtype=np.int64)
+            sworld_me = np.empty(0, dtype=np.int32)
             par_me = tile_me = np.empty(0, dtype=np.int64)
             child_me_sizes = np.empty(0, dtype=np.int64)
             gidx = np.empty(0, dtype=np.int64)
@@ -438,8 +447,9 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
     L = len(waves) - 1
     if keep_slots:
         waves[L]["snode"] = snode.astype(np.int32)
-        waves[L]["sworld"] = sworld.astype(np.int32)
-        waves[L]["counts"], waves[L]["sw"] = counts, sw.astype(np.int32)
+        waves[L]["sworld"] = sworld.astype(np.int32, copy=False)
+        waves[L]["counts"], waves[L]["sw"] = \
+            counts, sw.astype(np.int32, copy=False)
     if need_path_ids:
         waves[L]["ph1"], waves[L]["ph2"] = ph1, ph2
     return {
