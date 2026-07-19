@@ -76,7 +76,7 @@ info set in about the cost of one ordinary solve — after which:
 | H4 BR re-solve after compile | p50 0.9 ms (45× net wavefront) |
 | H5-cap512 BR | p50 3.5 ms; compile 0.35 s |
 | CFR gap ≤0.05 pts | ≤40 iterations at EVERY root tried — **scale-invariant in worlds** (10 → 33,740) |
-| CFR wall/root, cap-256 | anchor **13.0 s** after the fused iterate + in-struct gap pricing + resident build ([[perf-log]] 18l+18m+18n: iterate 7.1×, br 16×, build 2.36×; was 88.6 s at the start of 2026-07-18, ~115 s before that); iterate is back on top (50% fleet-level) |
+| CFR wall/root, cap-256 | anchor **12.6 s** after the fused iterate + in-struct gap pricing + resident build + walk elisions ([[perf-log]] 18l–p: iterate 7.1×, br 16×, build 2.7×; was 88.6 s at the start of 2026-07-18, ~115 s before that); iterate is the top bucket (45% fleet-level), parallel-iterate (P13) registered |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
 | jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
 | refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–o: same-seed paired sample **18.9× less worker-time per usable eval**, 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (578 s ladder; banked: 1,799 s) → **~2,700–3,700/hour projected** ([[perf-log]] 18o); deepening 87% → 99% → 100% over three rungs pre-kernel |

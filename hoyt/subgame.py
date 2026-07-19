@@ -148,6 +148,18 @@ def _empty_wave() -> dict:
     return {"parent": z, "tile": z, "pseat": z, "hero": None}
 
 
+def _cat2(a, b):
+    """concatenate((a, b)) without the full-array copy when either side is
+    empty — the hero=-1 full-width walk concatenates an empty hero side
+    every wave (perf-log 18p). Both inputs are freshly built per wave, so
+    returning one unaliased is safe."""
+    if not len(b):
+        return a
+    if not len(a):
+        return b
+    return np.concatenate((a, b))
+
+
 def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
                weights=None, heromask0=None, capture=False,
                keep_slots=False, need_path_ids=False, net_state=None,
@@ -224,7 +236,6 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
         actor = (leader + pos) % 4
         hmask_nodes = actor == hero
         waves[cw]["hero"] = hmask_nodes
-        starts_node = np.concatenate(([0], np.cumsum(counts)))
         if keep_slots:
             # narrowed copies: node ids < slot budget, worlds < N, hands are
             # 28-bit — int32 halves the resident slot payload; the walk's
@@ -255,9 +266,10 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
                 hands = sw[sel, col_arr[seats]]
             else:
                 cols = col_arr[seats]           # -1 where the actor is me
-                hands = np.where(
-                    seats == me, mymask[nsl],
-                    sw[sel, np.where(cols < 0, 0, cols)])
+                hands = sw[sel, np.where(cols < 0, 0, cols)]
+                m_me = seats == me              # minority write beats a
+                if m_me.any():                  # full-width where (18p)
+                    hands[m_me] = mymask[nsl[m_me]]
             rep, mv, wmul, dec = provider.expand(
                 eng, p, pos, sel, nsl, seats, hands)
             if capture:
@@ -302,6 +314,7 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
         # ---- hero nodes: branch full-width, replicating slots ------------
         men = np.flatnonzero(hmask_nodes)
         if len(men):
+            starts_node = np.concatenate(([0], np.cumsum(counts)))
             lsm = led[men]
             fb = np.where(lsm >= 0, CFB[lsm], _ALL28)
             hm = heromask[men]
@@ -332,8 +345,8 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             gidx = np.empty(0, dtype=np.int64)
 
         # ---- build the child wave (σ children first, then hero's) --------
-        parent_c = np.concatenate((par_sig, par_me))
-        tile_c = np.concatenate((tile_sig, tile_me))
+        parent_c = _cat2(par_sig, par_me)
+        tile_c = _cat2(tile_sig, tile_me)
         pseat_c = actor[parent_c]
         C = len(parent_c)
         n_nodes += C
@@ -402,22 +415,21 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             # parent-slot index per child slot: resident in the walk (rows
             # for σ children, gidx for hero's), so consumers never re-derive
             # it by (node, world) key search (perf-log 18n)
-            waves[-1]["pslot"] = \
-                np.concatenate((rows, gidx)).astype(np.int32)
+            waves[-1]["pslot"] = _cat2(rows, gidx).astype(np.int32)
         leader, led, brank, bseat, tcnt = \
             leader_c, led_c, brank_c, bseat_c, tcnt_c
         ptsvd, mymask = ptsvd_c, mymask_c
         heromask = mymask if hero_is_me else heromask_c
         if track_net:
             ptsfd, ptsff, played = ptsfd_c, ptsff_c, played_c
-        sw = np.concatenate((sw_sig, sw_me))
-        swt = np.concatenate((swt_sig, swt_me))
-        sworld = np.concatenate((sworld_sig, sworld_me))
-        snode = np.concatenate(
-            (np.repeat(np.arange(len(par_sig)), counts_sig),
-             len(par_sig) + np.repeat(np.arange(len(par_me)),
-                                      child_me_sizes)))
-        counts = np.concatenate((counts_sig, child_me_sizes))
+        sw = _cat2(sw_sig, sw_me)
+        swt = _cat2(swt_sig, swt_me)
+        sworld = _cat2(sworld_sig, sworld_me)
+        snode = _cat2(
+            np.repeat(np.arange(len(par_sig)), counts_sig),
+            len(par_sig) + np.repeat(np.arange(len(par_me)),
+                                     child_me_sizes))
+        counts = _cat2(counts_sig, child_me_sizes)
         if sw.shape[0] > slot_budget:
             raise KernelMemoryError(
                 f"wave p={p + 1} holds {sw.shape[0]} slots > budget "

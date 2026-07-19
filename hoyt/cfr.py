@@ -456,9 +456,18 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
                 ec["h1"].append(wj["ph1"][u_node[selE]])
                 ec["h2"].append(wj["ph2"][u_node[selE]])
                 ec["off"].append(off[selE])
-                ec["cnt"].append(nleg[selE])
-                bmE = ((lm[selE, None] >> _AR28) & 1).astype(bool)
-                ec["mv"].append(np.nonzero(bmE)[1].astype(np.int8))
+                cntE = nleg[selE]
+                ec["cnt"].append(cntE)
+                if kernels:
+                    from hoyt.buildkernel import fw_fill
+                    offE = np.concatenate(([0], np.cumsum(cntE)))
+                    siE = np.empty(offE[-1], dtype=np.int64)
+                    mvE = np.empty(offE[-1], dtype=np.int64)
+                    fw_fill(lm[selE], offE, siE, mvE)
+                    ec["mv"].append(mvE.astype(np.int8))
+                else:
+                    bmE = ((lm[selE, None] >> _AR28) & 1).astype(bool)
+                    ec["mv"].append(np.nonzero(bmE)[1].astype(np.int8))
             wj["ph1"] = wj["ph2"] = None
         iset_reached = None
         if pinned:

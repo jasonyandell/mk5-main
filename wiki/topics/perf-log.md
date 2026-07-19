@@ -595,3 +595,54 @@ surface) and the iterate floor itself. Session total on the anchor:
 (predict crossing from gap decay — saves another ~½ step), run_engine
 gather fusion (the big license), or bank the line and spend the
 velocity on H5/evalset-v2 instead.
+
+## 2026-07-18p — walk elisions land small, a buggy anatomy copy refuted honestly, and the parallel-iterate lever registered
+
+**PB5 registered** (walk 1.15 → ≤0.70 s, fused build 2.49 → ≤1.9 s on
+the anchor), on the strength of a timed structural copy of run_engine
+that ran the walk in 0.48 s. **PB5 REFUTED, both clauses — the copy was
+buggy.** It used the hero_is_me hands line, so `col_arr[me] == -1`
+silently negative-indexed the LAST world column instead of mymask —
+wrong hands, wrong legality, an 8.2M-slot tree instead of the real
+19.1M. The phantom 0.6 s of "headroom" was a smaller tree. Law-6
+corollary, earned twice tonight: **an anatomy copy that does not
+reproduce the tree is not an anatomy** — print the tree size before
+believing the clock (the buggy script is kept in scratch as the
+receipt).
+
+**What actually landed (all value-identical, gates green):** lazy
+`starts_node` (only the hero branch consumes it; the hero=-1 walk never
+did), `_cat2` empty-side concatenate elision (the full-width walk
+concatenated an empty hero side into every slot array every wave),
+minority-write `hands` (in-place assignment on me-slots instead of a
+full-width np.where), and the export's move emission routed through
+`fw_fill` (killing the last big (isets×28) bool + nonzero in
+_build_wave). Measured: walk 1.15 → **1.08 s (1.06×)**, fused build
+2.49 → **2.20 s (1.13×)**, anchor solve 13.0 → **12.6 s**, bitwise PASS
+(trace/value/profile vs wave; P8 3.6e-15; banked 2.2e-07). No sweep run:
+1.13× on a 33% bucket ≈ 4% fleet — at the ±4% noise floor
+([[perf]] law; perf-subset-5), the anchor receipts carry it.
+
+**The real walk anatomy** (in-memory instrumentation of run_engine
+itself, NOT a copy): slot-gather+mask 0.31 s / numba fill+legality
+0.20 / prep+hands 0.11 / transitions 0.08 / sort+seg 0.10 / hash+stores
+0.09. It is E-scale-fancy-gather-bound. A fused σ-branch kernel
+(gather+mask+wt+world+pslot in one pass over rows) caps at ~0.3 s/anchor
+≈ 3–4% fleet — **registered as a cap verdict, low priority; do not build
+without a cheaper reason.**
+
+**Registered next lever — parallel fused iterate (P13).** Iterate is
+45% of fleet wall and single-threaded by the 18l bitwise doctrine. The
+doctrine survives threading IF every thread owns a DISJOINT output
+range with unchanged within-range accumulation order: fwd is a pure
+map (trivially parallel); bwd's `v_p[p] +=` partitions at parent-slot
+boundaries (edges are parent-sorted — disjoint outputs, ascending order
+within each parent preserved ⇒ bitwise regardless of scheduling); the
+`cf_c[g] +=` accumulation is the hard part (an iset's slots span
+non-adjacent parents) — precompute a per-wave permutation grouping the
+updating seat's edges by gid at build time (structure, cached in
+_FusedLayout), turning cf into segmented sums parallel by group range
+with ascending-edge order inside each group. **P13 prior: ≥1.8× iterate
+on the anchor at 4–8 threads, bitwise vs single-thread fused, RSS flat.**
+Risk: numba prange scheduling must not touch output ranges — chunk
+boundaries must be precomputed structure, not runtime heuristics.

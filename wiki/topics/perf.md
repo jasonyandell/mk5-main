@@ -106,7 +106,7 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far); cap-256 anchor solve **13.0 s**
+  (scale-invariant in worlds so far); cap-256 anchor solve **12.6 s**
   after the fused iterate + in-struct gap pricing + resident-build
   levers ([[perf-log]] 18l/18m/18n, #82: numba edge kernels +
   forced-slot compression, 7.1× iterate, bitwise; exact BR priced on
