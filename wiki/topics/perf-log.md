@@ -10,7 +10,8 @@ Append-only field notes for performance work, per Jason's 2026-07-18
 directive: this log replaces GitHub issues for the perf program. Entries are
 terse but rich — what was tried, how the numbers moved, what died. Newest at
 the bottom. Laws distilled from here graduate to [[perf]]; never edit old
-entries (corrections are new entries).
+entries (corrections are new entries). Cold readers: the shorthand is
+decoded in [[hoyt-perf-primer]].
 
 ## 2026-07-18a — program registration: the net-free kernel
 

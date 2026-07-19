@@ -153,7 +153,8 @@ issues for perf items per 2026-07-18 directive).
 
 ## Links
 
-[[perf-on-the-table]] · [[walt-spec]] · [[walt]] · [[perf-sprint]] ·
+[[hoyt-perf-primer]] (the campaign's shorthand decoded for cold
+readers) · [[perf-on-the-table]] · [[walt-spec]] · [[walt]] · [[perf-sprint]] ·
 [[perf-sprint-levers]] · [[perf-sprint-traps]] ·
 [[continuous-batching-dispatcher-design]] · [[batch-throughput-bench]] ·
 [[batched-harvest-resilience]] · [[forge]] · [[jud]]
