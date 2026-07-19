@@ -949,3 +949,39 @@ pool + ~233 s wedge ≈ **~12.5 min ≈ ~960 evals/hour (~52× banked)**.
 The soft spot is unchanged (the 174 banked-rung-0 roots' true
 average) — which is the argument for measuring: the split design the
 19e handoff named (two ≤10-min runs) replaces model v2 next.
+
+## 2026-07-19h — the full line, measured: 200/200 converged in 17.0 min — 706 evals/hour, 38× banked; model v1 was right for wrong reasons
+
+Priors FL1–FL4 registered (`scratch/fused-iterate/fl_prior.md`).
+Design: the split the 19e handoff named — 200 evalset roots in two
+interleaved halves, each a full production cascade (w5 t4), each
+**510 s wall** (both under the 10-min bench cap; the split's 2×
+spin-up + 2× rung barriers make it a conservative overstatement of
+single-line wall).
+
+**Headline: 1,020 s total for 200/200 CONVERGED — zero gap-capped
+finals, zero errors (FL3 PASS beyond its bar) = 706 evals/hour
+measured** (banked line 10.8 h ≈ 18.5/hr → **38.1×**). Per-eval:
+2,953 worker-s / 200 = **14.8 worker-s/eval** — the full population
+is ~26% heavier than the 20-seed subset's 11.7; the model's
+174-root soft spot was real.
+
+**FL1 (≤900 s) REFUTED at 1,020. FL2 (±20% of model v2's ~750 s)
+REFUTED at +36% — and model v1's "~17 min ≈ ~700/hr" (19e) was
+accidentally EXACT**: its phantom second wedge (~250 s that does not
+exist, 19g) cancelled its underpriced rung-0 pool (measured ~631 s
+elapsed vs ~515 modeled). Two wrong terms, right sum — a model that
+validates by luck is still wrong; the measurement replaces both
+models.
+
+**FL4 fired, informatively: 555212 LADDERS in production.** Its solo
+rung-0 convergence (72.2 s, 19g) is wall-cap-marginal against the
+90-s rung-0 cap; width-5 contention pushed it over, it gap-capped
+and converged at rung 1 (135 s, width 2, rss 13.4). The cascade
+self-corrects at the price of one failed attempt. In-fleet rung mix:
+**197 / 2 / 1** (rung 1 = 555095 138 s + 555212 135 s; rung 2 =
+555090, 208 s, rss 27.6 — its best time yet). Measured line Amdahl:
+rung-0 pool ~62% of wall, the wedge ~20%, barriers/tails the rest —
+the pool is 19c's closed question, the wedge is 19a's cap verdict.
+**At this altitude the line is priced by measurement; this is the
+measured-exhaustion receipt for the perf push at H4-cap-256.**
