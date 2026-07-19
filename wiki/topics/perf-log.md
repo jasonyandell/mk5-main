@@ -302,3 +302,17 @@ width (median +1.44 at ≥200 worlds vs +0.97 at <50). Feeds #72.
 Run-notes: two externally-killed driver incidents mid-day — ledger resume
 retired 227 and 228 rows respectively and lost only in-flight work; the
 no-absence-as-state design paid for itself twice on day one.
+
+## 2026-07-18k — next lever registered: the fused kernel (#82)
+
+Filed [#82](https://github.com/jasonyandell/mk5-main/issues/82) (stacks on
+PR #81) — design the iterate to the memory wall: forced-slot compression
+(83% of slots are σ=1 dead weight; compressed arrays ~45 MB → SLC
+territory), fp32 licensed by decision damage (law 5), fused
+native-int32 kernel with the numpy path as the pinned mirror. **Priors
+registered before building: P6 forced-slot ≥2× iterate; P7 fp32 gap
+drift ≤1e-3 on the 200-root anchor.** Tuning = short capped refsweep
+runs on the M5 only. B200/Modal port EXPLICITLY DEFERRED until H5 is the
+live frontier (one planned burn, rungs pre-registered). Named consumer:
+distill a student from hoyt reference values; lens:ev grading with the
+reference as leaves.
