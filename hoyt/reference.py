@@ -229,12 +229,15 @@ class BRResult:
     strategy: SigmaTable         # hero's BR strategy over reachable info sets
 
 
-def br_solve(subgame: Subgame, profile, payoff43, hero: int | None = None) -> BRResult:
+def br_solve(subgame: Subgame, profile, payoff43, hero: int | None = None,
+             want_strategy: bool = True) -> BRResult:
     """Exact best response of `hero`; every other seat plays `profile`.
 
     hero defaults to root.me. When hero is a hidden seat, the BR decomposes
     into independent solves per possible root hand of hero (its info sets
     never span two root hands); value is the weighted sum over all classes.
+    want_strategy=False skips recording the BR strategy (gap pricing needs
+    only the value); the returned strategy is then empty.
     """
     sub = subgame
     payoff43 = np.asarray(payoff43, dtype=np.float64).reshape(-1)
@@ -274,7 +277,8 @@ def br_solve(subgame: Subgame, profile, payoff43, hero: int | None = None) -> BR
                     root_values[m] = v / total_w
                 if best is None or sgn * v > sgn * best:
                     best, best_m = v, m
-            strategy.set(hero, hand, node, best_m)
+            if want_strategy:
+                strategy.set(hero, hand, node, best_m)
             if p == sub.p0 and not hero_hidden:
                 root_best[0] = best_m
             return best

@@ -128,3 +128,191 @@ loop). Entries a–e above predate the rename and say `walt/kernel` —
 historically correct, left as written (this log is append-only). 40
 tests green post-move; K1 parity fixtures stay in `walt/tests/` (the
 gate is a walt↔hoyt cross-check by nature).
+
+## 2026-07-18g — CFR lane perf day: the RSS hog was python objects
+
+Paired-bench anchor: evalset 555006, cap 256, 40 iters (gap 0.039), quiet
+box (wall reproduced last night's 119.8 s at 120.9). **Anatomy first**
+(law 6): the numpy arrays were innocent — stored waves 1.13 GiB, retained
+iteration structure ~1.2 GiB — the 7-10 GiB peak was **python objects**:
+`exp_entries` (2.75M tuples-of-tuples inc. path tuples) plus TWO resident
+2.75M-entry dict profiles per solve, and ~5.5 s of the 7.8 s build was
+the tuple-building loop.
+
+**Landed** (every step value/gap/trace BIT-IDENTICAL on the anchor; gates
+I1/I2 + P1/P2 + 21 pytest green throughout):
+- `want_strategy=False` in gap pricing (BR strategy was extracted and
+  discarded): br 43.9→41.6 s.
+- **Columnar StochasticProfile** (the day's centerpiece): frozen columnar
+  store keyed (seat<<28|hand, h1, h2) under a mixed 64-bit sort key with
+  exact verification; `set_bulk` loads the whole CFR export in one call —
+  hash keys straight off the walk's rolling 128-bit path hash, zero
+  python objects per entry; `_DictProfileProvider` fully vectorized
+  (searchsorted + segment assembly, identical per-entry composition).
+  **wall 120.9→91.8 s, export 12.2→0.87 s (14×), br 43.9→28.6 s, build
+  7.8→5.4 s, peak RSS 10.6→7.0 GiB.** Every mixed-profile BR (counter-walt
+  #77 included) rides the same path.
+- dtype narrowing: stored waves int32/int8, leaf_pts int16 (RSS
+  6.98→6.76); PS/GID/uedge deliberately KEPT int64 — they feed
+  bincount/fancy-indexing in the hot loop and numpy converts non-intp
+  index arrays per call (narrowing would pessimize).
+
+**Negative results** (append-only honesty): `_rm_plus_update`
+add.at→bincount = wash (numpy 2.x ufunc.at is already fast on sorted
+indices); `_wave_pass` reach-fusion (two fewer slot-size temporaries) =
+wash. Iterate (56.9 s, now 62% of wall) is bandwidth-bound vectorized
+numpy; the next iterate lever is a compiled kernel, declined again per
+the single-source parity doctrine.
+
+**BR anatomy** (kills a queued idea with data): hidden-hero BR walks
+~19M nodes in ~3.8 s/seat vs hero-me 3.2 s at the same node count — the
+~170-per-seat group loop costs only ~0.6 s/seat (~15% of br). Batching
+groups into one walk (wave-0 seeding) is NOT worth the engine change;
+the walk size is the cost. Logged, not built.
+
+Net: cap-256 reference solve 120.9→~92 s (1.31×), peak RSS 10.6→6.7 GiB
+(1.58×) — sweep parallelism on the 48 GiB box goes from ~4 to 5-6
+workers with headroom.
+
+## 2026-07-18h — the cap-ledger cascade: refsweep + wall-budget verdicts
+
+**Directive (Jason):** "when we're doing perf, it is for the sake of perf...
+I want to optimize 4th-play eval count per wall clock and I'll tolerate cap
+results as early-cap games are an interesting artifact to analyze on their
+own and are available in bulk." Headline metric registered: **H4
+evals/hour**.
+
+**Lineage:** the gomoku VCT cascade labeler (gomoku wiki
+`topics/vct-cascade-labeler.md` + `topics/mega-vct-solver.md`) — solver
+returns result-or-cap as first-class verdicts, every item gets an explicit
+ledger row (no absence-as-state), a budget ladder deepens only the
+shrinking capped-survivor tail, and the deepening curve is itself the
+artifact. 42's cap is STRONGER than gomoku's boolean `hit_cap`: a CFR stop
+at any point is a QUANTIFIED verdict — the average profile plus its
+exactly-measured single-seat BR gap, priced by exact BR. A gap_capped row
+is a usable reference at gap g, not a failure.
+
+**Landed** (working tree, worktree-perf-day; gates P1/P2 + I1/I2 + 34
+pytest green, incl. 13 new):
+
+- `cfr_solve(..., wall_budget_s=)` (hoyt/cfr.py): wall checked at every
+  iteration boundary and after every gap measurement; on expiry the gap is
+  measured once more and the solve stops with `CFRResult.capped=True` —
+  quantified, never silent. Convergence beats the cap (a stop that meets
+  target_gap is capped=False). Wave-only: the loop engine is the frozen
+  parity mirror and wall-driven stops are timing-nondeterministic, so it
+  raises instead of silently diverging. Default-off is behaviorally
+  identical (parity gates stay 0.0e+00). Capped-gap exactness is tested:
+  a wall_budget_s=0 run reproduces bit-for-bit the gap of an uncapped run
+  stopped at the same iteration (impl=hoyt.reference, toys).
+- `profile_value(..., slot_budget=)` (hoyt/br.py): mirrors br_solve's
+  existing knob; a monster root that needed a raised budget in cfr_solve
+  previously had no way to value its exported profile (hardcoded 32M would
+  re-raise at every rung). Default identical.
+- **`hoyt/refsweep.py`** — the cascade harness (production, not scratch:
+  the stable eval reruns forever). Rung ladder (defaults, `--rungs` to
+  override): r0 = iters 80 / gap 0.05 / wall 90s / 32M slots; r1 = 240 /
+  600s / 64M; r2 = 1000 / wall inf / 128M — iters is a backstop only
+  (18e: iteration count to gap 0.05 is world-scale-invariant). Verdicts
+  per (root, rung): converged / gap_capped (usable reference at measured
+  gap; `capped_by_wall` names the binding constraint) / slot_capped
+  (KernelMemoryError; next rung's budget retries) / error (kept, carried
+  forward like a cap). Resume unions all shard ledgers, verdict-aware,
+  never re-enters a (root, rung) with a row. Merge = best verdict per
+  seed → `reference_h4_cap256.jsonl` + deepening curve + evals/hour.
+- **Sharding fixes the day's two observed sins**: the snake rank-aligned
+  monster phases across workers AND let one 64M-slot root block ~20 cheap
+  queued roots ~21 min. Now: sort ascending by n_worlds_sigma, deal
+  round-robin (every queue spans the size range), rotate queue w by w/W of
+  its length — monster phases land at staggered queue positions (measured
+  on the 200-root evalset at W=8: positions 24, 21, 18, ... 3).
+  Memory-aware worker default: 7 GiB/32M-slots (18g anchor) scaled by the
+  rung's slot budget, 25% RAM headroom; explicit `--workers` is honored
+  with a warning.
+
+**Measured (smoke, 2 tiny roots, 1 worker, quiet-ish box during the
+running sweep):** both converged rung 0 (555181: 10 worlds, 4.0 s, gap
+0.016; 555038: 54 worlds, 4.8 s, gap 0.028, rent +1.94 — consistent with
+18e's median +1.9). Full pipeline exercised: worker spawn, ledger rows,
+30 s heartbeat, merge, deepening curve, evals/hour, resume (rerun on a
+finished outdir: "retired=2", zero new rows).
+
+**Deferred, deliberately:** full-scale run and its deepening curve (the
+ad-hoc 200-root sweep was still running; parent validates via
+`python -u -m hoyt.refsweep --dry-run` and the
+`--seeds 555038,555181 --workers 1` smoke, then launches the real sweep);
+whether the rung-1/2 wall+slot defaults are right for the real monster
+tail (first full run will say); per-rung `br_every` tuning (still the
+gap-pricing cost lever from 18e).
+
+## 2026-07-18i — the exact grind killed by its own numbers; cascade takes over
+
+The 8-wide exact 200-root sweep was stopped at **43/200** rows banked
+(~50 min in): recent big-root walls had reached 1245–1837 s — **5–7×
+their quiet-box cost**. Measured contention law (new corollary to law 3):
+**bandwidth-bound monster roots barely parallelize** — 8 concurrent big
+solves aggregate to ≈1.3× ONE quiet worker (workers at 50–74% CPU,
+memory-bandwidth saturated), while the small stratum parallelizes fine.
+Cold strata math said 3–4 more hours; Jason's directive (18h) says that
+shape is exactly what we no longer run. Also observed live: the snake
+sharding rank-aligned monster phases (three ~5-min windows with ZERO
+completions across all 8 workers).
+
+The 43 banked rows are all converged (gap ≤ 0.05) and skew heavy (they
+were every shard's front); grafted into the cascade ledger as rung-0
+converged rows (`rung0_shard99.jsonl`, rung_spec marks the provenance).
+refsweep launched over the remaining 157 with the default ladder;
+deepening curve + evals/hour land in the next entry.
+
+## 2026-07-18j — reference_h4_v1_cap256: the anchor's reference line, 200/200 exact
+
+The cascade's first production run closed the whole anchor:
+`hoyt/reference_h4_v1_cap256.jsonl` (committed beside the frozen root set)
+— **200/200 converged at gap ≤ 0.05, no capped residue**. Deepening curve:
+rung 0 (90s/32M, 5 workers) 174/200 = 87%; rung 1 (600s/64M, 2 workers)
+99%; rung 2 (128M, 1 worker) 100%. Total 12.4 machine-hours;
+**rung-0 velocity 224 H4 evals/hour** vs the killed exact grind's ~45.
+
+**Velocity/coverage curves measured** (the cap in win/lose/cap terms):
+resolve-within-cap is three-regime — a cheap quarter (27% by 20s), a
+plateau (nothing resolves 20–30s), a steep middle (34%→82% across
+45–150s), and a thin hard tail that is **predictable a priori from
+n_worlds_sigma** (8/10 of 90s-cap survivors were worlds_used=256). Capped
+verdicts are barely degraded: gap at first measurement p50 0.067, 97%
+≤ 0.2 — an "explore-mode" 30s rung yields ~750 evals/hour within ~0.1 pt.
+Route, don't discover: schedule big-belief games to deep rungs (or to the
+cap-artifact corpus) before paying for them.
+
+**The wedge** (Jason's call: truncate, don't grind): 555090 slot-capped
+32M AND 64M (42M slots at wave 23, 85M at 24); at 128M it converged at
+**gap exactly 0.0, rent −0.0** — the biggest tree in the anchor is a
+fully decided position (29.1 GiB peak; the wall was one exact BR pricing).
+Filed as the first specimen of the hard-game stratum: tree size ⊥ decision
+difficulty.
+
+**Rent distribution, full population** (walt-BR-vs-jud minus reference,
+hero orientation): median **+1.53**, mean +2.02, p90 +5.22, 146/200 over
++0.5. **The mini-reference's "never materially negative" is DEAD**: 18
+roots < −0.5, min **−8.65** (max +15.49) — the 12-root sample missed the
+negative tail. Reading: the rent indicator conflates jud's exploitability
+with opponent-population difference (18e's caveat), and the tail shows the
+population term can dominate with either sign. Rent is ~flat in belief
+width (median +1.44 at ≥200 worlds vs +0.97 at <50). Feeds #72.
+
+Run-notes: two externally-killed driver incidents mid-day — ledger resume
+retired 227 and 228 rows respectively and lost only in-flight work; the
+no-absence-as-state design paid for itself twice on day one.
+
+## 2026-07-18k — next lever registered: the fused kernel (#82)
+
+Filed [#82](https://github.com/jasonyandell/mk5-main/issues/82) (stacks on
+PR #81) — design the iterate to the memory wall: forced-slot compression
+(83% of slots are σ=1 dead weight; compressed arrays ~45 MB → SLC
+territory), fp32 licensed by decision damage (law 5), fused
+native-int32 kernel with the numpy path as the pinned mirror. **Priors
+registered before building: P6 forced-slot ≥2× iterate; P7 fp32 gap
+drift ≤1e-3 on the 200-root anchor.** Tuning = short capped refsweep
+runs on the M5 only. B200/Modal port EXPLICITLY DEFERRED until H5 is the
+live frontier (one planned burn, rungs pre-registered). Named consumer:
+distill a student from hoyt reference values; lens:ev grading with the
+reference as leaves.

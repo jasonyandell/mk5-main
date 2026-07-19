@@ -125,7 +125,7 @@ def _finish_me(sub, waves, vals, sign, want_strategy, n_nodes, meta):
 
 
 def _provider_for(profile: StochasticProfile):
-    if profile.table:
+    if len(profile):
         return _DictProfileProvider(profile), True
     if not profile.uniform_fallback:
         raise ValueError("empty StochasticProfile without uniform_fallback "
@@ -253,13 +253,16 @@ def _br_me_chunked(sub, provider, needs_ids, payoff43, sign, want_strategy,
 
 
 def profile_value(subgame: Subgame, profile: StochasticProfile,
-                  payoff43) -> float:
+                  payoff43, slot_budget: int = DEFAULT_SLOT_BUDGET) -> float:
     """Expected payoff with ALL FOUR seats on ``profile`` (no best
     responder) — the CFR lane's baseline for gap = BR - value. Declaring
-    orientation, same normalization as br_solve."""
+    orientation, same normalization as br_solve. ``slot_budget`` mirrors
+    br_solve's knob: a root whose cfr_solve needed a raised budget needs
+    the same headroom to value its exported profile."""
     sub = subgame
     payoff43 = np.ascontiguousarray(payoff43, dtype=np.float64)
     provider, needs_ids = _provider_for(profile)
-    res = run_engine(sub, provider, hero=-1, need_path_ids=needs_ids)
+    res = run_engine(sub, provider, hero=-1, need_path_ids=needs_ids,
+                     slot_budget=slot_budget)
     vals, _ = backward(res["waves"], _leaf_vals(res, payoff43), 1.0)
     return float(vals.sum()) / sub.total_w

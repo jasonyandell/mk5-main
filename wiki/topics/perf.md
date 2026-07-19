@@ -76,7 +76,20 @@ issues for perf items per 2026-07-18 directive).
    retracted. Track "share of wall" per component, or compound projections
    lie.
 
-8. **Eviction beats clear-all, and never mid-flight.** The FieldOracle memo
+8. **Cap-and-ledger beats grind-inline** (measured in gomoku's VCT cascade
+   — `~/code/gomoku/wiki/topics/vct-cascade-labeler.md` — and again here,
+   [[perf-log]] 18h–j): solvers return result-or-cap as first-class
+   verdicts, every item gets an explicit ledger row (no absence-as-state),
+   and a budget ladder deepens only the shrinking survivor tail. Corollary
+   measured twice in one day: **bandwidth-bound monsters barely
+   parallelize** (8-wide big-root solves aggregate to ≈1.3× ONE quiet
+   worker) — tune width per rung, never flat. 42's cap verdict is
+   *quantified* (the exactly-priced gap at stop), so capped rows are
+   usable references, and the hard stratum is predictable a priori from
+   belief width. Registered metric ([[perf-log]] 18h): **H4 evals per
+   wall-clock hour** — evals motivate, they don't steer.
+
+9. **Eviction beats clear-all, and never mid-flight.** The FieldOracle memo
    once cleared itself wholesale at 4M entries — reachable *inside* a 6.2M
    query solve, silently re-forwarding everything. Cache eviction belongs at
    work-unit boundaries, sized by what actually transfers (walt memo keys
@@ -93,8 +106,13 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far), ~2 min/root at cap-256 after the
-  36.5× traversal vectorization.
+  (scale-invariant in worlds so far); cap-256 median root **~92 s / 6.7
+  GiB peak** after the columnar-profile day ([[perf-log]] 18g: export
+  14×, mixed-profile BR 1.5×, RSS 1.6× — the hog was python objects, not
+  arrays; iterate is now 62% of wall and bandwidth-bound). The anchor's
+  full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
+  200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
+  shape, rung-0 velocity 224 evals/hour ([[perf-log]] 18h–j).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

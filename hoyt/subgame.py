@@ -226,10 +226,13 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
         waves[cw]["hero"] = hmask_nodes
         starts_node = np.concatenate(([0], np.cumsum(counts)))
         if keep_slots:
-            waves[cw]["snode"] = snode
-            waves[cw]["sworld"] = sworld
+            # narrowed copies: node ids < slot budget, worlds < N, hands are
+            # 28-bit — int32 halves the resident slot payload; the walk's
+            # working arrays stay int64 (one wave at a time)
+            waves[cw]["snode"] = snode.astype(np.int32)
+            waves[cw]["sworld"] = sworld.astype(np.int32)
             waves[cw]["counts"] = counts
-            waves[cw]["sw"] = sw
+            waves[cw]["sw"] = sw.astype(np.int32)
         if need_path_ids:
             waves[cw]["ph1"], waves[cw]["ph2"] = ph1, ph2
 
@@ -385,7 +388,12 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
             ph1 = ph1[parent_c] * _H1_P + t64
             ph2 = (ph2[parent_c] ^ t64) * _H2_P
 
-        waves.append({"parent": parent_c, "tile": tile_c, "pseat": pseat_c,
+        # compact per-node storage (SigmaTable dtypes); working arrays for
+        # the transition above stay int64. Arithmetic consumers cast on read
+        # (int8 tile in expressions like 9*tile would overflow silently).
+        waves.append({"parent": parent_c.astype(np.int32),
+                      "tile": tile_c.astype(np.int8),
+                      "pseat": pseat_c.astype(np.int8),
                       "hero": None})
         leader, led, brank, bseat, tcnt = \
             leader_c, led_c, brank_c, bseat_c, tcnt_c
@@ -408,8 +416,9 @@ def run_engine(sub: Subgame, provider, *, hero=None, worlds=None,
 
     L = len(waves) - 1
     if keep_slots:
-        waves[L]["snode"], waves[L]["sworld"] = snode, sworld
-        waves[L]["counts"], waves[L]["sw"] = counts, sw
+        waves[L]["snode"] = snode.astype(np.int32)
+        waves[L]["sworld"] = sworld.astype(np.int32)
+        waves[L]["counts"], waves[L]["sw"] = counts, sw.astype(np.int32)
     if need_path_ids:
         waves[L]["ph1"], waves[L]["ph2"] = ph1, ph2
     return {

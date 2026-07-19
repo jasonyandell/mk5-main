@@ -56,7 +56,8 @@ INJECTABILITY
 cfr_solve touches the subgame ONLY through `.root/.worlds/.weights`, and
 touches the injected `impl` module ONLY through:
 
-    impl.br_solve(subgame, profile, payoff43, hero=seat)  # gap pricing
+    impl.br_solve(subgame, profile, payoff43, hero=seat,
+                  want_strategy=False)                    # gap pricing
     impl.StochasticProfile()                              # export format
     profile.set(seat, hand_mask, node, moves, probs)      # one call per iset
 
@@ -103,6 +104,7 @@ class CFRResult:
     gap: float                         # final measured gap (max single-seat BR gain)
     value: float                       # self-play value of the average profile
     iters_run: int
+    capped: bool = False               # stop was wall_budget_s-driven (gap still exact)
     timings: dict | None = None        # build/iterate/export/br wall seconds
     debug: dict | None = field(default=None, repr=False)
 
@@ -301,19 +303,23 @@ class _WaveStruct:
     __slots__ = ("L", "S", "w0", "total_w", "leaf_pts", "PS", "GID", "uedge",
                  "iset_ju", "n_isets", "Lflat", "off", "slot_iset",
                  "nlegal_slot", "i_seat_arr", "woff", "wlen", "pin_slots",
-                 "exp_entries", "dbg")
+                 "exp_entries", "exp_cols", "dbg")
 
 
 def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
-                want_debug: bool) -> _WaveStruct:
+                want_debug: bool, bulk_export: bool = False) -> _WaveStruct:
     from hoyt.subgame import (
         build_subgame as _kernel_subgame,
         expand_full_width,
         paths_of,
     )
+    # bulk export keys entries by the walk's 128-bit rolling path hash
+    # (no python path tuples anywhere); pinned/debug keep the path route.
+    bulk_export = bulk_export and not pinned and not want_debug
     ksub = _kernel_subgame(root, worlds, weights)
     kw = {} if slot_budget is None else {"slot_budget": slot_budget}
-    res = expand_full_width(ksub, keep_slots=True, need_path_ids=False, **kw)
+    res = expand_full_width(ksub, keep_slots=True,
+                            need_path_ids=bulk_export, **kw)
     waves = res["waves"]
     L = len(waves) - 1
     N = int(ksub.worlds.shape[0])
@@ -328,11 +334,14 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     ws.w0 = ksub.weights[waves[0]["sworld"]].astype(np.float64)
     ws.total_w = float(ksub.weights.sum())
     leaf = res["leaf"]
-    ws.leaf_pts = leaf["ptsvd"][leaf["snode"]]
+    ws.leaf_pts = leaf["ptsvd"][leaf["snode"]].astype(np.int16)
     ws.PS, ws.GID, ws.uedge = [], [], []
     ws.iset_ju = {}
     ws.pin_slots = []          # (flat off, probs vector) fixed at pinned isets
     ws.exp_entries = []        # (seat, hand, path, moves, off, n) — nlegal >= 2
+    ws.exp_cols = None         # columnar export (bulk_export), set in finalize
+    ec = {"seat": [], "hand": [], "h1": [], "h2": [], "off": [], "cnt": [],
+          "mv": []} if bulk_export else None
     ws.woff, ws.wlen = [], []
     ws.dbg = {"i_moves": [], "i_node": [], "i_seat": [], "i_hand": []} \
         if want_debug else None
@@ -355,7 +364,9 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     for j in range(L):
         wj, wn = waves[j], waves[j + 1]
         snode, sworld, sw = wj["snode"], wj["sworld"], wj["sw"]
-        parn, tile_n, pseat_n = wn["parent"], wn["tile"], wn["pseat"]
+        parn = wn["parent"]                       # int32: index use only
+        tile_n = wn["tile"].astype(np.int64)      # int8 stored; arithmetic
+        pseat_n = wn["pseat"].astype(np.int64)    # needs the wide dtype
         Mj = len(wj["counts"])
 
         # actor per wave-j node = seat of its first child edge
@@ -423,12 +434,26 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
         i_seat_parts.append(u_seat.astype(np.int64))
         nleg_parts.append(nleg)
 
-        # paths + move tuples where needed: export (nlegal>=2), pinned, debug
+        # exportable isets (nlegal >= 2): columnar when bulk_export (hash
+        # keys straight off the walk); else paths + move tuples (pinned /
+        # debug / reference-impl export)
+        if bulk_export:
+            selE = np.flatnonzero(nleg >= 2)
+            if len(selE):
+                ec["seat"].append(u_seat[selE].astype(np.int8))
+                ec["hand"].append(u_hand[selE])
+                ec["h1"].append(wj["ph1"][u_node[selE]])
+                ec["h2"].append(wj["ph2"][u_node[selE]])
+                ec["off"].append(off[selE])
+                ec["cnt"].append(nleg[selE])
+                bmE = ((lm[selE, None] >> _AR28) & 1).astype(bool)
+                ec["mv"].append(np.nonzero(bmE)[1].astype(np.int8))
+            wj["ph1"] = wj["ph2"] = None
         iset_reached = None
         if pinned:
             iset_reached = np.zeros(nI, dtype=bool)
             np.logical_or.at(iset_reached, inv, reach)
-        need = nleg >= 2
+        need = nleg >= 2 if not bulk_export else np.zeros(nI, dtype=bool)
         pin_sel = np.zeros(nI, dtype=bool)
         if pinned:
             pin_sel = np.isin(u_seat, list(pinned)) & (nleg >= 2) \
@@ -500,6 +525,25 @@ def _build_wave(root, worlds, weights, pinned: dict, slot_budget,
     waves[L]["sw"] = waves[L]["snode"] = waves[L]["sworld"] = None
     ws.n_isets = n_isets
     ws.Lflat = Lflat
+    if bulk_export:
+        cnt = np.concatenate(ec["cnt"]) if ec["cnt"] else \
+            np.empty(0, dtype=np.int64)
+        off_all = np.concatenate(ec["off"]) if ec["off"] else \
+            np.empty(0, dtype=np.int64)
+        total = int(cnt.sum())
+        ramp = np.arange(total, dtype=np.int64) - np.repeat(
+            np.concatenate(([0], np.cumsum(cnt)))[:-1], cnt)
+        cat = lambda k, d: np.concatenate(ec[k]) if ec[k] else \
+            np.empty(0, dtype=d)  # noqa: E731
+        ws.exp_cols = {
+            "seat": cat("seat", np.int8),
+            "hand": cat("hand", np.int64),
+            "h1": cat("h1", np.uint64),
+            "h2": cat("h2", np.uint64),
+            "moff": np.concatenate(([0], np.cumsum(cnt))),
+            "mv": cat("mv", np.int8),
+            "slot_idx": np.repeat(off_all, cnt) + ramp,
+        }
     nleg_all = np.concatenate(nleg_parts) if nleg_parts else \
         np.empty(0, dtype=np.int64)
     ws.off = np.concatenate(([0], np.cumsum(nleg_all)))[:-1]
@@ -559,7 +603,8 @@ def _wave_pass(ws: _WaveStruct, sig, u, payleaf, cf, xI) -> None:
 def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = None,
               seed: int = 0, br_every: int = 10, impl=None,
               pinned: dict | None = None, debug: bool = False,
-              engine: str = "wave", slot_budget: int | None = None) -> CFRResult:
+              engine: str = "wave", slot_budget: int | None = None,
+              wall_budget_s: float | None = None) -> CFRResult:
     """CFR+ over all four seats' info sets; gap priced by impl.br_solve.
 
     Args:
@@ -584,6 +629,23 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
         slot_budget: forwarded to the kernel walk (wave engine); None keeps
             the kernel default. A KernelMemoryError means chunk or cap —
             escalate, never sample.
+        wall_budget_s: optional wall-clock budget for the WHOLE solve
+            (build included), wave engine only. Checked at every iteration
+            boundary and again after every gap measurement; when exceeded,
+            the gap is measured once more and the solve stops with
+            capped=True. The stop is a QUANTIFIED verdict — the average
+            profile plus its exactly-priced single-seat BR gap — not a
+            failure. A stopping measurement that also satisfies target_gap
+            reports capped=False (convergence wins; when the budget expires
+            exactly at the final iteration capped=True is still reported —
+            the result is identical either way, the flag only names the
+            binding constraint). Wave-only by design: the loop engine is
+            the frozen parity mirror and its gates compare traces across
+            engines; a wall-driven stop is timing-nondeterministic and can
+            never be parity-pinned, so the loop raises ValueError instead
+            of silently diverging (it is toy-sized only, where wall budgets
+            are meaningless anyway). None (default) is behaviorally
+            identical to the pre-knob solver.
     """
     del seed  # deterministic full-width solve; kept for contract stability
     if impl is None:
@@ -598,9 +660,13 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
     pinned = {int(s): p for s, p in (pinned or {}).items()}
     if engine not in ("wave", "loop"):
         raise ValueError(f"engine must be 'wave' or 'loop', got {engine!r}")
+    if wall_budget_s is not None and engine != "wave":
+        raise ValueError("wall_budget_s requires engine='wave' (the loop "
+                         "engine is the frozen parity mirror; wall-driven "
+                         "stops cannot be parity-pinned)")
     if engine == "wave":
         return _solve_wave(subgame, payoff43, iters, target_gap, br_every,
-                           impl, pinned, debug, slot_budget)
+                           impl, pinned, debug, slot_budget, wall_budget_s)
     return _solve_loop(subgame, payoff43, iters, target_gap, br_every,
                        impl, pinned, debug)
 
@@ -636,12 +702,13 @@ def _avg_sig(sig, avg, slot_iset, nlegal_slot, n_isets, unpinned_mask):
 
 
 def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
-                pinned, debug, slot_budget) -> CFRResult:
+                pinned, debug, slot_budget, wall_budget_s=None) -> CFRResult:
     tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
           "value": 0.0}
     t0 = time.time()
     ws = _build_wave(subgame.root, subgame.worlds, subgame.weights, pinned,
-                     slot_budget, debug)
+                     slot_budget, debug,
+                     bulk_export=hasattr(impl.StochasticProfile, "set_bulk"))
     tm["build"] = time.time() - t0
 
     bid_team = int(subgame.root.bidder) % 2
@@ -667,9 +734,14 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     def export(asig):
         t1 = time.time()
         prof = impl.StochasticProfile()
-        set_ = prof.set
-        for seat, hand, path, moves, off, n in ws.exp_entries:
-            set_(seat, hand, path, moves, asig[off:off + n])
+        if ws.exp_cols is not None:
+            c = ws.exp_cols
+            prof.set_bulk(c["seat"], c["hand"], c["h1"], c["h2"], c["moff"],
+                          c["mv"], asig[c["slot_idx"]])
+        else:
+            set_ = prof.set
+            for seat, hand, path, moves, off, n in ws.exp_entries:
+                set_(seat, hand, path, moves, asig[off:off + n])
         tm["export"] += time.time() - t1
         return prof
 
@@ -682,7 +754,8 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         t1 = time.time()
         gap = 0.0
         for u in live_seats:
-            bru = impl.br_solve(subgame, prof, payoff43, hero=u).value
+            bru = impl.br_solve(subgame, prof, payoff43, hero=u,
+                                want_strategy=False).value
             gap = max(gap, signs[u] * (bru - vbar))
         tm["br"] += time.time() - t1
         return prof, vbar, gap
@@ -690,6 +763,9 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     trace: list = []
     result = None
     it = 0
+    capped = False
+    over = (lambda: time.time() - t0 > wall_budget_s) \
+        if wall_budget_s is not None else (lambda: False)
     cf = np.empty(ws.Lflat)
     xI = np.empty(ws.n_isets)
     for it in range(1, iters + 1):
@@ -701,13 +777,16 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
             _rm_plus_update(sig, reg, avg, cf, xI, upd[u], ws.slot_iset,
                             ws.nlegal_slot, ws.n_isets, signs[u], it)
         tm["iterate"] += time.time() - t1
-        if it % br_every == 0 or it == iters:
+        if it % br_every == 0 or it == iters or over():
             asig = _avg_sig(sig, avg, ws.slot_iset, ws.nlegal_slot,
                             ws.n_isets, ~slot_pinned)
             prof, vbar, gap = measure(asig)
             trace.append((it, gap))
             result = (prof, vbar, gap)
             if target_gap is not None and gap <= target_gap:
+                break
+            if over():                 # budget-driven stop, gap just priced
+                capped = True
                 break
 
     prof, vbar, gap = result
@@ -721,7 +800,7 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         dbg = {"isets": isets, "reg": reg, "avg": avg, "avg_sig": asig,
                "sig": sig, "n_isets": ws.n_isets}
     return CFRResult(profile=prof, trace=trace, gap=gap, value=vbar,
-                     iters_run=it, timings=tm, debug=dbg)
+                     iters_run=it, capped=capped, timings=tm, debug=dbg)
 
 
 def _solve_loop(subgame, payoff43, iters, target_gap, br_every, impl,
@@ -764,7 +843,8 @@ def _solve_loop(subgame, payoff43, iters, target_gap, br_every, impl,
         vbar = float(weights @ _values(t, payoff43, asig)) / total_w
         gap = 0.0
         for u in live_seats:
-            bru = impl.br_solve(subgame, prof, payoff43, hero=u).value
+            bru = impl.br_solve(subgame, prof, payoff43, hero=u,
+                                want_strategy=False).value
             gap = max(gap, signs[u] * (bru - vbar))
         return prof, vbar, gap
 
