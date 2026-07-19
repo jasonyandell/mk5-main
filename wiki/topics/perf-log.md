@@ -701,10 +701,48 @@ was 45% of fleet wall. Fleet iterate bucket 207.6 → **101.8 worker-s
 banked)**; full-cascade root-wall-cum 578 → 473 s; projected rung-0
 velocity **~3,400–4,650 evals/hour** (was ~2,700–3,700).
 
-Amdahl after 18q (rung-0 fleet, t4): **build 48% / iterate 23% / br
+Amdahl after 19a (rung-0 fleet, t4): **build 48% / iterate 23% / br
 17% / export 10%** — the wheel turns back to build, and the two big
 build levers are known: run_engine's own gathers (the shared-surface
 license, 18n's lever-after-next) and the per-root fixed overheads that
 kept P11 honest (subgame build, jit-warm, worlds). Cap verdicts kept:
 threads on the solo rung-2 wedge are marginal (234–250 s at any
 count); σ-branch gather kernel stays capped at 3–4% fleet (18p).
+
+## 2026-07-19b — big-root build anatomy: the fleet build bucket is half contention; PB8's counting sort built, measured, deleted
+
+The P11 lesson applied to the anatomy itself: fleet build is dominated
+by big-TREE roots (555046: 29.8 s build in the t4 sweep for 4.1 s of
+iterate — it converges in 10 iters; 555156: 21.2 s), so the anchor is
+the wrong specimen. Priors registered on 555046 (117.8M slots, solo,
+threads=4): PB6 walk ≥45% of build — **CONFIRMED at 47%** (5.6 s);
+PB7 _build_fused ≤15% — **REFUTED at 17%** (2.0 s). Post-walk 37%.
+
+**The headline is neither bucket: 555046 solo builds in 11.9 s vs
+29.8 s inside the 5-worker sweep — the fleet build bucket is ~2.5×
+DRAM contention, not code.** (Law 3 and the law-8 corollary, measured
+again at rung 0: bandwidth-bound monsters barely parallelize. The
+refsweep already staggers monsters; a width-per-stratum schedule —
+solve the 2–3 big-tree roots at low width first, then flood the small
+tail at 5 workers — is the cheapest untaken build lever and needs no
+kernel work at all.)
+
+**PB8 registered and REFUTED same-session** (fp32 precedent: knob
+built, measured, deleted). Hypothesis: P13's perm-building argsorts
+tax big-root builds; a numba stable counting sort (O(n), provably
+identical perms) would cut ≥0.5 s of 555046's _build_fused. Measured:
+2.02 → 1.92 s — **0.1 s; numpy's stable int32 argsort is already a
+radix sort.** This is PB2's np.unique lesson RE-LEARNED (18n: "the
+argsort fear is stale knowledge") — twice now: **comparison-sort
+intuitions do not price numpy 2.x integer sorts; measure before
+building around them.** The counting-sort kernel was deleted; the
+perm-equality gate script stays in scratch as the receipt
+(perm_gate.py, PASS before deletion).
+
+Next levers for the build bucket, in cheapness order: (1) the
+width-per-stratum sweep schedule (pure scheduling, prior ~1.3–1.6×
+on the fleet build bucket via decontention); (2) run_engine gather
+fusion (0.87 s/anchor scale, shared-surface license); (3) _build_fused
+base layout (1.9 s on the big root — casts and seat loops, threadable
+behind the same P13 structure). None registered yet with bars — the
+successor should anatomy (1) first since it is free.
