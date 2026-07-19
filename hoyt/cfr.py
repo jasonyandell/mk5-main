@@ -36,16 +36,30 @@ seats, per world); an info set's own-reach is constant across its worlds
 (its seat's past probabilities are pinned by the public path), which the
 implementation exploits.
 
-Two interchangeable iteration engines (identical math, parity-gated in
-walt/tests/test_cfr_parity.py):
+Three interchangeable iteration engines (identical math, parity-gated in
+hoyt/tests/test_cfr_parity.py):
 
-- engine="wave" (default): the static public tree + info-set index is
-  reconstructed from `hoyt.expand_full_width`'s SoA waves (parent
-  slots matched by sorted (node, world) keys; per-edge strategy slots by
-  masked-popcount move ranks against per-info-set legality). Iterations are
-  pure per-wave gathers + bincounts — zero python per-node work.
+- engine="fused" (default): numba edge kernels (hoyt/iterkernel.py) over
+  the wave engine's structure, with native int32 indices, forced-edge
+  skips, and a FORCED-SLOT-COMPRESSED strategy space (#82). Forced info
+  sets (single legal move, ~83% at H4 scale) are provably inert in RM+:
+  their sigma is exactly 1.0 forever and their regret update is exactly
+  0.0 (cf - cfv == 0 on a single-slot iset), so reg/avg/cf/xI live only on
+  non-forced slots, grouped per seat so each seat's update is a contiguous
+  slice. fp64 results are BITWISE identical to engine="wave".
+- engine="wave": the numpy vectorized engine over the static public tree +
+  info-set index reconstructed from `hoyt.expand_full_width`'s SoA waves
+  (parent slots matched by sorted (node, world) keys; per-edge strategy
+  slots by masked-popcount move ranks against per-info-set legality).
+  Iterations are pure per-wave gathers + bincounts — zero python per-node
+  work. Kept as the pinned pure-numpy mirror for the fused lane.
 - engine="loop": the original recursive python traversal, kept verbatim as
   the verified correctness mirror for parity tests. Toy sizes only.
+
+The fused lane is fp64 only: an fp32 dtype knob was built and measured
+dead on the anchor (P7 refuted — gap drift 2.6e-3 over the 1e-3 license
+bar AND zero throughput win; the fused loops are gather-latency-bound,
+not float-bandwidth-bound). Receipts: wiki perf-log 18l.
 
 Exported profiles skip FORCED decisions (single legal move): both BR
 implementations play forced moves without consulting the profile, so
@@ -597,13 +611,169 @@ def _wave_pass(ws: _WaveStruct, sig, u, payleaf, cf, xI) -> None:
 
 
 # =========================================================================== #
+#  engine="fused" — numba edge kernels + forced-slot-compressed updates (#82)  #
+# =========================================================================== #
+
+class _FusedLayout:
+    """Per-solve iterate layout for the fused engine, derived from a
+    _WaveStruct. Compressed slot space = non-forced slots only (nlegal >= 2),
+    stable-sorted by seat so each seat's slots and info sets are contiguous
+    slices; within a seat, slot and iset order match the flat wave-major
+    order, so per-iset accumulations happen in the same order as the wave
+    engine's bincounts (bitwise parity). Per wave: int32 parent slots,
+    int32 compressed strategy ids (-1 = forced edge), int8 edge seats."""
+
+    __slots__ = ("n_c", "n_ci", "c_flat", "c_soff", "c_isoff",
+                 "c_isl_loc", "inv_nleg", "sig0_full",
+                 "ps32", "cgid32", "eseat8", "c_iju", "w0",
+                 "rmu", "ru2", "v2")
+
+
+def _build_fused(ws: _WaveStruct, sig0_full) -> _FusedLayout:
+    fl = _FusedLayout()
+    nleg_iset = np.diff(np.append(ws.off, ws.Lflat))
+    slot_seat = ws.i_seat_arr[ws.slot_iset]
+    flat_idx = np.flatnonzero(nleg_iset[ws.slot_iset] >= 2)
+    order = np.argsort(slot_seat[flat_idx], kind="stable")
+    fl.c_flat = flat_idx[order]
+    c_seat = slot_seat[fl.c_flat]
+    fl.n_c = len(fl.c_flat)
+    fl.c_soff = np.searchsorted(c_seat, np.arange(5))
+    cmap = np.full(ws.Lflat, -1, dtype=np.int32)
+    cmap[fl.c_flat] = np.arange(fl.n_c, dtype=np.int32)
+
+    # compressed isets: contiguous slot runs, ascending within each seat
+    c_iset_g = ws.slot_iset[fl.c_flat]
+    starts = np.empty(fl.n_c, dtype=bool)
+    if fl.n_c:
+        starts[0] = True
+        starts[1:] = c_iset_g[1:] != c_iset_g[:-1]
+    c_isl = np.cumsum(starts) - 1              # global compressed iset id
+    fl.n_ci = int(c_isl[-1]) + 1 if fl.n_c else 0
+    fl.c_isoff = np.empty(5, dtype=np.int64)
+    fl.c_isoff[4] = fl.n_ci
+    for u in range(3, -1, -1):
+        lo = fl.c_soff[u]
+        fl.c_isoff[u] = c_isl[lo] if lo < fl.c_soff[u + 1] \
+            else fl.c_isoff[u + 1]
+    fl.c_isl_loc = c_isl - fl.c_isoff[c_seat]  # per-seat-local iset ids
+
+    # same ops as the wave engine's update (1.0 / nlegal), precomputed
+    fl.inv_nleg = 1.0 / ws.nlegal_slot[fl.c_flat]
+    fl.sig0_full = sig0_full                   # fp64; forced 1.0, pins set
+
+    imap = np.full(ws.n_isets, -1, dtype=np.int64)
+    if fl.n_c:
+        imap[c_iset_g[starts]] = np.arange(fl.n_ci)
+    fl.c_iju = {}
+    for (j, u), (ids, reps) in ws.iset_ju.items():
+        ci = imap[ids]
+        keep = ci >= 0
+        if keep.any():
+            fl.c_iju[(j, u)] = (ci[keep], reps[keep])
+
+    fl.ps32 = [p.astype(np.int32) for p in ws.PS]
+    fl.cgid32 = [cmap[g] for g in ws.GID]
+    fl.eseat8 = []
+    for j in range(ws.L):
+        e = np.empty(len(ws.PS[j]), dtype=np.int8)
+        for u, ue in ws.uedge[j].items():
+            e[ue] = u
+        fl.eseat8.append(e)
+
+    fl.w0 = ws.w0
+    fl.rmu = [np.empty(s) for s in ws.S]
+    max_s = max(ws.S)
+    fl.ru2 = (np.empty(max_s), np.empty(max_s))
+    fl.v2 = (np.empty(max_s), np.empty(max_s))
+
+    # warm the jit on 1-edge dummies so compile/cache-load lands in the
+    # build timing bucket, not the first iteration's
+    from hoyt.iterkernel import bwd_edges, fwd_edges
+    z32, f32 = np.zeros(1, np.int32), np.full(1, -1, np.int32)
+    z8 = np.zeros(1, np.int8)
+    d = np.ones(1)
+    fwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
+              np.empty(1), np.empty(1))
+    bwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
+              np.empty(1), d.copy())
+    return fl
+
+
+def _fused_pass(ws: _WaveStruct, fl: _FusedLayout, sig_c, u, payleaf,
+                cf_c, xI_c) -> None:
+    """One update traversal for seat u — the fused twin of _wave_pass."""
+    from hoyt.iterkernel import bwd_edges, fwd_edges
+    L = ws.L
+    fl.rmu[0][:] = fl.w0
+    ru = fl.ru2[0][:ws.S[0]]
+    ru[:] = 1.0
+    for j in range(L):
+        cj = fl.c_iju.get((j, u))
+        if cj is not None:
+            cids, reps = cj
+            xI_c[cids] = ru[reps]
+        ru_n = fl.ru2[(j + 1) & 1][:ws.S[j + 1]]
+        fwd_edges(fl.ps32[j], fl.cgid32[j], fl.eseat8[j], u, sig_c,
+                  fl.rmu[j], ru, fl.rmu[j + 1], ru_n)
+        ru = ru_n
+    v = fl.v2[L & 1][:ws.S[L]]
+    v[:] = payleaf
+    for j in range(L - 1, -1, -1):
+        v_p = fl.v2[j & 1][:ws.S[j]]
+        bwd_edges(fl.ps32[j], fl.cgid32[j], fl.eseat8[j], u, sig_c,
+                  v, fl.rmu[j], v_p, cf_c)
+        v = v_p
+
+
+def _rm_plus_update_c(fl: _FusedLayout, u, sig_c, reg_c, avg_c, cf_c, xI_c,
+                      sign_u, it) -> None:
+    """The CFR+ update block on seat u's compressed contiguous slice —
+    identical math (and, in fp64, identical bits) to _rm_plus_update
+    restricted to seat u's non-forced slots; forced slots are provably
+    inert there (reg == 0, sigma == 1 exactly), so nothing is lost."""
+    sl = slice(fl.c_soff[u], fl.c_soff[u + 1])
+    isl = fl.c_isl_loc[sl]
+    niu = int(fl.c_isoff[u + 1] - fl.c_isoff[u])
+    s = sig_c[sl]
+    c = cf_c[sl]
+    xIl = xI_c[fl.c_isoff[u]:fl.c_isoff[u + 1]]
+    cfv = np.bincount(isl, weights=s * c, minlength=niu)
+    avg_c[sl] += it * xIl[isl] * s
+    reg = np.maximum(reg_c[sl] + sign_u * (c - cfv[isl]), 0.0)
+    reg_c[sl] = reg
+    tot = np.bincount(isl, weights=reg, minlength=niu)
+    has = tot[isl] > 0
+    sig_c[sl] = np.where(has, reg / np.where(has, tot[isl], 1.0),
+                         fl.inv_nleg[sl])
+
+
+def _avg_sig_fused(fl: _FusedLayout, avg_c, live_seats) -> np.ndarray:
+    """Full-slot-space fp64 normalized average — bitwise what _avg_sig
+    returns: forced slots 1.0, pinned slots their fixed probs (both live in
+    sig0_full), live seats' non-forced slots avg/tot (uniform where the
+    iset was never reached)."""
+    out = fl.sig0_full.copy()
+    for u in live_seats:
+        sl = slice(fl.c_soff[u], fl.c_soff[u + 1])
+        isl = fl.c_isl_loc[sl]
+        niu = int(fl.c_isoff[u + 1] - fl.c_isoff[u])
+        a = avg_c[sl]
+        tot = np.bincount(isl, weights=a, minlength=niu)
+        has = tot[isl] > 0
+        out[fl.c_flat[sl]] = np.where(
+            has, a / np.where(has, tot[isl], 1.0), fl.inv_nleg[sl])
+    return out
+
+
+# =========================================================================== #
 #  cfr_solve                                                                   #
 # =========================================================================== #
 
 def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = None,
               seed: int = 0, br_every: int = 10, impl=None,
               pinned: dict | None = None, debug: bool = False,
-              engine: str = "wave", slot_budget: int | None = None,
+              engine: str = "fused", slot_budget: int | None = None,
               wall_budget_s: float | None = None) -> CFRResult:
     """CFR+ over all four seats' info sets; gap priced by impl.br_solve.
 
@@ -624,8 +794,10 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
             take no regret updates, and are excluded from the gap max
             (the 2-player-izable toy harness).
         debug: attach internals (regrets, average, iset table).
-        engine: "wave" (vectorized over the kernel's SoA walk, default) or
-            "loop" (the original recursive mirror, toy sizes only).
+        engine: "fused" (numba edge kernels + forced-slot-compressed
+            updates, default), "wave" (the pure-numpy mirror; fp64 results
+            are bitwise identical to fused), or "loop" (the original
+            recursive mirror, toy sizes only).
         slot_budget: forwarded to the kernel walk (wave engine); None keeps
             the kernel default. A KernelMemoryError means chunk or cap —
             escalate, never sample.
@@ -658,15 +830,17 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
     if payoff43.shape[0] != 43:
         raise ValueError("payoff43 must have 43 entries")
     pinned = {int(s): p for s, p in (pinned or {}).items()}
-    if engine not in ("wave", "loop"):
-        raise ValueError(f"engine must be 'wave' or 'loop', got {engine!r}")
-    if wall_budget_s is not None and engine != "wave":
-        raise ValueError("wall_budget_s requires engine='wave' (the loop "
-                         "engine is the frozen parity mirror; wall-driven "
-                         "stops cannot be parity-pinned)")
-    if engine == "wave":
+    if engine not in ("fused", "wave", "loop"):
+        raise ValueError(
+            f"engine must be 'fused', 'wave' or 'loop', got {engine!r}")
+    if wall_budget_s is not None and engine == "loop":
+        raise ValueError("wall_budget_s requires engine='fused' or 'wave' "
+                         "(the loop engine is the frozen parity mirror; "
+                         "wall-driven stops cannot be parity-pinned)")
+    if engine in ("fused", "wave"):
         return _solve_wave(subgame, payoff43, iters, target_gap, br_every,
-                           impl, pinned, debug, slot_budget, wall_budget_s)
+                           impl, pinned, debug, slot_budget, wall_budget_s,
+                           fused=(engine == "fused"))
     return _solve_loop(subgame, payoff43, iters, target_gap, br_every,
                        impl, pinned, debug)
 
@@ -702,21 +876,19 @@ def _avg_sig(sig, avg, slot_iset, nlegal_slot, n_isets, unpinned_mask):
 
 
 def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
-                pinned, debug, slot_budget, wall_budget_s=None) -> CFRResult:
+                pinned, debug, slot_budget, wall_budget_s=None,
+                fused=False) -> CFRResult:
     tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
           "value": 0.0}
     t0 = time.time()
     ws = _build_wave(subgame.root, subgame.worlds, subgame.weights, pinned,
                      slot_budget, debug,
                      bulk_export=hasattr(impl.StochasticProfile, "set_bulk"))
-    tm["build"] = time.time() - t0
 
     bid_team = int(subgame.root.bidder) % 2
     signs = {u: sign_of(u, bid_team) for u in range(4)}
     payleaf = payoff43[ws.leaf_pts]
 
-    reg = np.zeros(ws.Lflat)
-    avg = np.zeros(ws.Lflat)
     sig = 1.0 / ws.nlegal_slot
     slot_pinned = np.zeros(ws.Lflat, dtype=bool)
     for off, probs in ws.pin_slots:
@@ -727,9 +899,21 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         slot_seat = ws.i_seat_arr[ws.slot_iset]
         for s in pinned:
             slot_pinned |= (slot_seat == s)
-    slot_seat = ws.i_seat_arr[ws.slot_iset]
     live_seats = [u for u in range(4) if u not in pinned]
-    upd = {u: (slot_seat == u) & ~slot_pinned for u in live_seats}
+
+    if fused:
+        fl = _build_fused(ws, sig)
+        sig_c = sig[fl.c_flat].copy()
+        reg_c = np.zeros(fl.n_c)
+        avg_c = np.zeros(fl.n_c)
+        cf_c = np.zeros(fl.n_c)
+        xI_c = np.zeros(fl.n_ci)
+    else:
+        reg = np.zeros(ws.Lflat)
+        avg = np.zeros(ws.Lflat)
+        slot_seat = ws.i_seat_arr[ws.slot_iset]
+        upd = {u: (slot_seat == u) & ~slot_pinned for u in live_seats}
+    tm["build"] = time.time() - t0
 
     def export(asig):
         t1 = time.time()
@@ -766,20 +950,35 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     capped = False
     over = (lambda: time.time() - t0 > wall_budget_s) \
         if wall_budget_s is not None else (lambda: False)
-    cf = np.empty(ws.Lflat)
-    xI = np.empty(ws.n_isets)
+    if not fused:
+        cf = np.empty(ws.Lflat)
+        xI = np.empty(ws.n_isets)
+
+    def averaged():
+        if fused:
+            return _avg_sig_fused(fl, avg_c, live_seats)
+        return _avg_sig(sig, avg, ws.slot_iset, ws.nlegal_slot,
+                        ws.n_isets, ~slot_pinned)
+
     for it in range(1, iters + 1):
         t1 = time.time()
-        for u in live_seats:
-            cf[:] = 0.0
-            xI[:] = 0.0
-            _wave_pass(ws, sig, u, payleaf, cf, xI)
-            _rm_plus_update(sig, reg, avg, cf, xI, upd[u], ws.slot_iset,
-                            ws.nlegal_slot, ws.n_isets, signs[u], it)
+        if fused:
+            for u in live_seats:
+                cf_c[fl.c_soff[u]:fl.c_soff[u + 1]] = 0.0
+                xI_c[fl.c_isoff[u]:fl.c_isoff[u + 1]] = 0.0
+                _fused_pass(ws, fl, sig_c, u, payleaf, cf_c, xI_c)
+                _rm_plus_update_c(fl, u, sig_c, reg_c, avg_c, cf_c, xI_c,
+                                  signs[u], it)
+        else:
+            for u in live_seats:
+                cf[:] = 0.0
+                xI[:] = 0.0
+                _wave_pass(ws, sig, u, payleaf, cf, xI)
+                _rm_plus_update(sig, reg, avg, cf, xI, upd[u], ws.slot_iset,
+                                ws.nlegal_slot, ws.n_isets, signs[u], it)
         tm["iterate"] += time.time() - t1
         if it % br_every == 0 or it == iters or over():
-            asig = _avg_sig(sig, avg, ws.slot_iset, ws.nlegal_slot,
-                            ws.n_isets, ~slot_pinned)
+            asig = averaged()
             prof, vbar, gap = measure(asig)
             trace.append((it, gap))
             result = (prof, vbar, gap)
@@ -792,11 +991,21 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     prof, vbar, gap = result
     dbg = None
     if debug:
-        asig = _avg_sig(sig, avg, ws.slot_iset, ws.nlegal_slot, ws.n_isets,
-                        ~slot_pinned)
+        asig = averaged()
         isets = SimpleNamespace(
             off=ws.off, i_moves=ws.dbg["i_moves"], i_node=ws.dbg["i_node"],
             i_seat=ws.dbg["i_seat"], i_hand=ws.dbg["i_hand"])
+        if fused:
+            # scatter compressed state to full-slot space; forced slots
+            # carry their exact invariants (reg 0.0, sig 1.0). avg differs
+            # from the wave engine's on forced/unreached slots (dead weight
+            # there); avg_sig is the parity-meaningful surface.
+            reg = np.zeros(ws.Lflat)
+            reg[fl.c_flat] = reg_c
+            avg = np.zeros(ws.Lflat)
+            avg[fl.c_flat] = avg_c
+            sig = fl.sig0_full.copy()
+            sig[fl.c_flat] = sig_c
         dbg = {"isets": isets, "reg": reg, "avg": avg, "avg_sig": asig,
                "sig": sig, "n_isets": ws.n_isets}
     return CFRResult(profile=prof, trace=trace, gap=gap, value=vbar,

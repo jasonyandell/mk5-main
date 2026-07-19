@@ -19,6 +19,10 @@ Gates:
   P2 pinned parity  — same, under the 2p-izable pin (the wave tree contains
                       pinned zero-probability subtrees the loop tree prunes;
                       reach-gated export must make the domains identical).
+  P3 fused parity   — engine="fused" (numba kernels + forced-slot-compressed
+                      updates, #82) == engine="loop" on the same toys and
+                      pins, fp64. The fused engine is designed bitwise-equal
+                      to "wave"; this gate pins it to the verified loop.
 """
 from __future__ import annotations
 
@@ -109,9 +113,37 @@ def gate_P2() -> None:
           "; ".join(bad) if bad else " ".join(lines))
 
 
+def gate_P3() -> None:
+    bad = []
+    lines = []
+    for name in ("t2_decl_w3", "t2_def_w3", "t2_decl_w12", "t2_def_w12"):
+        toy = T.get_toy(name)
+        sub = toy.build()
+        kw = dict(iters=60, br_every=20, impl=ref)
+        res_l = cfr_solve(sub, PAY, engine="loop", **kw)
+        res_f = cfr_solve(sub, PAY, engine="fused", **kw)
+        d = _compare(name, res_l, res_f, bad)
+        lines.append(f"{name}:{d:.1e}")
+    for name in ("t2_decl_w3", "t2_def_w12"):
+        toy = T.get_toy(name)
+        sub = toy.build()
+        u, v = sub.me, (sub.me + 1) % 4
+        others = [s for s in range(4) if s not in (u, v)]
+        sigma = T.lowest_legal_sigma(sub, others)
+        pinned = {s: sigma for s in others}
+        kw = dict(iters=80, br_every=20, impl=ref, pinned=pinned)
+        res_l = cfr_solve(sub, PAY, engine="loop", **kw)
+        res_f = cfr_solve(sub, PAY, engine="fused", **kw)
+        d = _compare(f"{name}+pin", res_l, res_f, bad)
+        lines.append(f"{name}+pin:{d:.1e}")
+    _gate(not bad, "P3 fused == loop (4-seat toys + 2p-izable pins)",
+          "; ".join(bad) if bad else " ".join(lines))
+
+
 def main() -> int:
     gate_P1()
     gate_P2()
+    gate_P3()
     if _failures:
         print(f"\n{len(_failures)} gate(s) FAILED: {_failures}")
         return 1
