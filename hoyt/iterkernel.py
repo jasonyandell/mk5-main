@@ -22,9 +22,11 @@ float-bandwidth-bound). Receipts in wiki perf-log 18l.
 """
 from __future__ import annotations
 
-from numba import njit
+from numba import njit, prange
 
-__all__ = ["fwd_edges", "bwd_edges"]
+__all__ = ["fwd_edges", "bwd_edges",
+           "fwd_edges_par", "bwd_v_map", "bwd_v_seg", "cf_seg",
+           "rm_update_seg"]
 
 
 @njit(cache=True, boundscheck=False)
@@ -69,3 +71,99 @@ def bwd_edges(ps, cgid, eseat, u, sig_c, v_c, rmu_p, v_p, cf_c):
             v_p[p] += sig_c[g] * vc
         else:
             v_p[p] += vc
+
+
+# --------------------------------------------------------------------------- #
+#  parallel lane (P13) — same folds, disjoint outputs per prange iteration    #
+# --------------------------------------------------------------------------- #
+# The bitwise doctrine survives threading because every prange iteration owns
+# a DISJOINT output range and accumulates its contributions in the SAME
+# ascending-edge order as the sequential kernels (= np.bincount's fold). The
+# grouping that makes outputs disjoint is precomputed structure built once in
+# _build_fused (stable argsorts), never a runtime heuristic — so results are
+# bitwise identical regardless of thread count or scheduling. Register
+# accumulators seeded at +0.0 store the exact sequential fold: a +0.0-seeded
+# IEEE sum can never produce -0.0, so acc == (0.0 + t1) + t2 + ... bitwise.
+# numba's default strict IEEE mode (no fastmath) holds for parallel=True.
+
+
+@njit(cache=True, parallel=True, boundscheck=False)
+def fwd_edges_par(ps, cgid, eseat, u, sig_c, rmu_p, ru_p, rmu_c, ru_c):
+    """fwd_edges, threaded: a pure map — edge i writes only rmu_c[i]/ru_c[i],
+    so any chunking is bitwise."""
+    for i in prange(ps.shape[0]):
+        p = ps[i]
+        g = cgid[i]
+        pr = sig_c[g] if g >= 0 else 1.0
+        if eseat[i] == u:
+            rmu_c[i] = rmu_p[p]
+            ru_c[i] = ru_p[p] * pr
+        else:
+            rmu_c[i] = rmu_p[p] * pr
+            ru_c[i] = ru_p[p]
+
+
+@njit(cache=True, parallel=True, boundscheck=False)
+def bwd_v_map(ps, cgid, sig_c, v_c, v_p):
+    """Backward v for bijection waves (each parent has exactly ONE edge —
+    the trick-tail waves): a pure map. 0.0 + t reproduces the sequential
+    zero-then-accumulate fold exactly (incl. the sign of zero)."""
+    for i in prange(ps.shape[0]):
+        g = cgid[i]
+        vc = v_c[i]
+        v_p[ps[i]] = 0.0 + (sig_c[g] * vc if g >= 0 else vc)
+
+
+@njit(cache=True, parallel=True, boundscheck=False)
+def bwd_v_seg(poff, perm, cgid, sig_c, v_c, v_p):
+    """Backward v for general waves: parent p owns edges
+    perm[poff[p]:poff[p+1]] (stable argsort of PS — ascending edge order
+    within each parent, the bincount fold)."""
+    for p in prange(v_p.shape[0]):
+        acc = 0.0
+        for k in range(poff[p], poff[p + 1]):
+            i = perm[k]
+            g = cgid[i]
+            acc += sig_c[g] * v_c[i] if g >= 0 else v_c[i]
+        v_p[p] = acc
+
+
+@njit(cache=True, parallel=True, boundscheck=False)
+def cf_seg(goff, gids, perm, ps, rmu_p, v_c, cf_c):
+    """Counterfactual accumulation for the updating seat: group gl owns the
+    seat's non-forced edges of one strategy slot, ascending edge order
+    (stable argsort of cgid). cf_c is zeroed before the pass and each gid
+    lives in exactly one wave, so the store is the full sequential fold."""
+    for gl in prange(gids.shape[0]):
+        acc = 0.0
+        for k in range(goff[gl], goff[gl + 1]):
+            i = perm[k]
+            acc += rmu_p[ps[i]] * v_c[i]
+        cf_c[gids[gl]] = acc
+
+
+@njit(cache=True, parallel=True, boundscheck=False)
+def rm_update_seg(iso, sig_u, reg_u, avg_u, cf_u, xI_u, inv_u, sign_u, it):
+    """The CFR+ update block, threaded by info set: iset iu owns the
+    contiguous slot run iso[iu]:iso[iu+1] and every fold is iset-local
+    (cfv and tot in ascending slot order = the bincount fold; the clamp
+    matches np.maximum's +0.0 on ties)."""
+    for iu in prange(xI_u.shape[0]):
+        a, b = iso[iu], iso[iu + 1]
+        cfv = 0.0
+        for k in range(a, b):
+            cfv += sig_u[k] * cf_u[k]
+        txv = it * xI_u[iu]
+        for k in range(a, b):
+            avg_u[k] += txv * sig_u[k]
+            r = reg_u[k] + sign_u * (cf_u[k] - cfv)
+            reg_u[k] = r if r > 0.0 else 0.0
+        tot = 0.0
+        for k in range(a, b):
+            tot += reg_u[k]
+        if tot > 0.0:
+            for k in range(a, b):
+                sig_u[k] = reg_u[k] / tot
+        else:
+            for k in range(a, b):
+                sig_u[k] = inv_u[k]

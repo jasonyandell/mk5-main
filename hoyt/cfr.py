@@ -688,11 +688,12 @@ class _FusedLayout:
     __slots__ = ("n_c", "n_ci", "c_flat", "c_soff", "c_isoff",
                  "c_isl_loc", "inv_nleg", "sig0_full",
                  "ps32", "cgid32", "eseat8", "c_iju", "w0",
-                 "rmu", "ru2", "v2")
+                 "rmu", "ru2", "v2", "par", "vseg", "cf_ju", "iso")
 
 
-def _build_fused(ws: _WaveStruct, sig0_full) -> _FusedLayout:
+def _build_fused(ws: _WaveStruct, sig0_full, par: bool = False) -> _FusedLayout:
     fl = _FusedLayout()
+    fl.par = par
     nleg_iset = np.diff(np.append(ws.off, ws.Lflat))
     slot_seat = ws.i_seat_arr[ws.slot_iset]
     flat_idx = np.flatnonzero(nleg_iset[ws.slot_iset] >= 2)
@@ -749,6 +750,46 @@ def _build_fused(ws: _WaveStruct, sig0_full) -> _FusedLayout:
     fl.ru2 = (np.empty(max_s), np.empty(max_s))
     fl.v2 = (np.empty(max_s), np.empty(max_s))
 
+    if par:
+        # P13 threading structure: every parallel fold's grouping is built
+        # HERE, once, from the walk's arrays (stable argsorts) — the kernels
+        # then own disjoint output ranges with ascending-edge order inside
+        # each group, which makes them bitwise vs the sequential lane
+        # regardless of thread count or scheduling (see iterkernel.py).
+        fl.vseg = []
+        for j in range(ws.L):
+            ps = fl.ps32[j]
+            cnt = np.bincount(ps, minlength=ws.S[j])
+            if len(ps) == ws.S[j] and cnt.max() == 1:
+                fl.vseg.append(None)       # bijection wave: pure-map path
+            else:
+                poff = np.zeros(ws.S[j] + 1, dtype=np.int64)
+                np.cumsum(cnt, out=poff[1:])
+                perm = np.argsort(ps, kind="stable").astype(np.int32)
+                fl.vseg.append((poff, perm))
+        fl.cf_ju = {}
+        for j in range(ws.L):
+            e8, cg = fl.eseat8[j], fl.cgid32[j]
+            for u in range(4):
+                sel = np.flatnonzero((e8 == u) & (cg >= 0))
+                if not len(sel):
+                    continue
+                g = cg[sel]
+                o = np.argsort(g, kind="stable")
+                gs = g[o]
+                st = np.empty(len(gs), dtype=bool)
+                st[0] = True
+                st[1:] = gs[1:] != gs[:-1]
+                goff = np.append(np.flatnonzero(st),
+                                 len(gs)).astype(np.int64)
+                fl.cf_ju[(j, u)] = (goff, gs[st], sel[o].astype(np.int32))
+        fl.iso = {}
+        for u in range(4):
+            sl = slice(fl.c_soff[u], fl.c_soff[u + 1])
+            niu = int(fl.c_isoff[u + 1] - fl.c_isoff[u])
+            fl.iso[u] = np.searchsorted(
+                fl.c_isl_loc[sl], np.arange(niu + 1)).astype(np.int64)
+
     # warm the jit on 1-edge dummies so compile/cache-load lands in the
     # build timing bucket, not the first iteration's
     from hoyt.iterkernel import bwd_edges, fwd_edges
@@ -759,32 +800,57 @@ def _build_fused(ws: _WaveStruct, sig0_full) -> _FusedLayout:
               np.empty(1), np.empty(1))
     bwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
               np.empty(1), d.copy())
+    if par:
+        from hoyt.iterkernel import (bwd_v_map, bwd_v_seg, cf_seg,
+                                     fwd_edges_par, rm_update_seg)
+        z64 = np.zeros(2, np.int64)
+        fwd_edges_par(z32, f32, z8, 0, d, d.copy(), d.copy(),
+                      np.empty(1), np.empty(1))
+        bwd_v_map(z32, f32, d, d.copy(), np.empty(1))
+        bwd_v_seg(z64, z32, f32, d, d.copy(), np.empty(1))
+        cf_seg(z64, z32, z32, z32, d, d.copy(), np.empty(1))
+        rm_update_seg(z64, d.copy(), d.copy(), d.copy(), d.copy(),
+                      np.empty(0), d.copy(), 1, 1)
     return fl
 
 
 def _fused_pass(ws: _WaveStruct, fl: _FusedLayout, sig_c, u, payleaf,
                 cf_c, xI_c) -> None:
     """One update traversal for seat u — the fused twin of _wave_pass."""
-    from hoyt.iterkernel import bwd_edges, fwd_edges
+    from hoyt.iterkernel import (bwd_edges, bwd_v_map, bwd_v_seg, cf_seg,
+                                 fwd_edges, fwd_edges_par)
     L = ws.L
     fl.rmu[0][:] = fl.w0
     ru = fl.ru2[0][:ws.S[0]]
     ru[:] = 1.0
+    fwd = fwd_edges_par if fl.par else fwd_edges
     for j in range(L):
         cj = fl.c_iju.get((j, u))
         if cj is not None:
             cids, reps = cj
             xI_c[cids] = ru[reps]
         ru_n = fl.ru2[(j + 1) & 1][:ws.S[j + 1]]
-        fwd_edges(fl.ps32[j], fl.cgid32[j], fl.eseat8[j], u, sig_c,
-                  fl.rmu[j], ru, fl.rmu[j + 1], ru_n)
+        fwd(fl.ps32[j], fl.cgid32[j], fl.eseat8[j], u, sig_c,
+            fl.rmu[j], ru, fl.rmu[j + 1], ru_n)
         ru = ru_n
     v = fl.v2[L & 1][:ws.S[L]]
     v[:] = payleaf
     for j in range(L - 1, -1, -1):
         v_p = fl.v2[j & 1][:ws.S[j]]
-        bwd_edges(fl.ps32[j], fl.cgid32[j], fl.eseat8[j], u, sig_c,
-                  v, fl.rmu[j], v_p, cf_c)
+        if fl.par:
+            cfj = fl.cf_ju.get((j, u))
+            if cfj is not None:
+                goff, gids, perm = cfj
+                cf_seg(goff, gids, perm, fl.ps32[j], fl.rmu[j], v, cf_c)
+            seg = fl.vseg[j]
+            if seg is None:
+                bwd_v_map(fl.ps32[j], fl.cgid32[j], sig_c, v, v_p)
+            else:
+                poff, vperm = seg
+                bwd_v_seg(poff, vperm, fl.cgid32[j], sig_c, v, v_p)
+        else:
+            bwd_edges(fl.ps32[j], fl.cgid32[j], fl.eseat8[j], u, sig_c,
+                      v, fl.rmu[j], v_p, cf_c)
         v = v_p
 
 
@@ -795,6 +861,12 @@ def _rm_plus_update_c(fl: _FusedLayout, u, sig_c, reg_c, avg_c, cf_c, xI_c,
     restricted to seat u's non-forced slots; forced slots are provably
     inert there (reg == 0, sigma == 1 exactly), so nothing is lost."""
     sl = slice(fl.c_soff[u], fl.c_soff[u + 1])
+    if fl.par:
+        from hoyt.iterkernel import rm_update_seg
+        rm_update_seg(fl.iso[u], sig_c[sl], reg_c[sl], avg_c[sl], cf_c[sl],
+                      xI_c[fl.c_isoff[u]:fl.c_isoff[u + 1]],
+                      fl.inv_nleg[sl], sign_u, it)
+        return
     isl = fl.c_isl_loc[sl]
     niu = int(fl.c_isoff[u + 1] - fl.c_isoff[u])
     s = sig_c[sl]
@@ -837,7 +909,8 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
               pinned: dict | None = None, debug: bool = False,
               engine: str = "fused", slot_budget: int | None = None,
               wall_budget_s: float | None = None,
-              gap_exit: bool = False) -> CFRResult:
+              gap_exit: bool = False,
+              threads: int | None = None) -> CFRResult:
     """CFR+ over all four seats' info sets; gap priced by impl.br_solve.
 
     Args:
@@ -893,6 +966,13 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
             record the certified-above-target partial max). Deterministic.
             wave/fused only: partial intermediate traces can't be
             parity-pinned against the loop mirror, so the loop raises.
+        threads: run the fused iterate kernels on this many numba threads
+            (perf-log P13). Bitwise identical to threads=None by
+            construction — every parallel fold owns a disjoint output range
+            with unchanged within-range accumulation order (the grouping is
+            precomputed structure in _build_fused, never a runtime
+            heuristic). Fused-only: the wave/loop mirrors are the pinned
+            single-threaded references, so they raise.
     """
     del seed  # deterministic full-width solve; kept for contract stability
     if impl is None:
@@ -916,10 +996,15 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
         raise ValueError("gap_exit requires engine='fused' or 'wave' "
                          "(partial intermediate traces cannot be "
                          "parity-pinned against the loop mirror)")
+    if threads is not None and engine != "fused":
+        raise ValueError("threads requires engine='fused' (the wave and "
+                         "loop mirrors are the pinned single-threaded "
+                         "parity references)")
     if engine in ("fused", "wave"):
         return _solve_wave(subgame, payoff43, iters, target_gap, br_every,
                            impl, pinned, debug, slot_budget, wall_budget_s,
-                           fused=(engine == "fused"), gap_exit=gap_exit)
+                           fused=(engine == "fused"), gap_exit=gap_exit,
+                           threads=threads)
     return _solve_loop(subgame, payoff43, iters, target_gap, br_every,
                        impl, pinned, debug)
 
@@ -956,7 +1041,7 @@ def _avg_sig(sig, avg, slot_iset, nlegal_slot, n_isets, unpinned_mask):
 
 def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
                 pinned, debug, slot_budget, wall_budget_s=None,
-                fused=False, gap_exit=False) -> CFRResult:
+                fused=False, gap_exit=False, threads=None) -> CFRResult:
     tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
           "value": 0.0}
     t0 = time.time()
@@ -982,7 +1067,10 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     live_seats = [u for u in range(4) if u not in pinned]
 
     if fused:
-        fl = _build_fused(ws, sig)
+        if threads:
+            import numba
+            numba.set_num_threads(threads)
+        fl = _build_fused(ws, sig, par=bool(threads))
         sig_c = sig[fl.c_flat].copy()
         reg_c = np.zeros(fl.n_c)
         avg_c = np.zeros(fl.n_c)

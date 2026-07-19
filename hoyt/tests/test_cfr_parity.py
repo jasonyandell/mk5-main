@@ -234,12 +234,42 @@ def gate_P5() -> None:
           " ".join(lines) + f" ({n_intermediate} intermediates)")
 
 
+def gate_P13() -> None:
+    # threaded fused == sequential fused, exactly (perf-log P13): every
+    # parallel fold owns a disjoint output range with unchanged
+    # within-range accumulation order, so thread count must not move a bit.
+    # threads=3 forces uneven chunking; gap_exit composes with threading.
+    bad = []
+    lines = []
+    for name in ("t2_decl_w3", "t2_def_w3", "t2_decl_w12", "t2_def_w12"):
+        toy = T.get_toy(name)
+        sub = toy.build()
+        kw = dict(iters=60, br_every=20, impl=ref)
+        res_s = cfr_solve(sub, PAY, engine="fused", **kw)
+        for th in (3, 4):
+            res_t = cfr_solve(sub, PAY, engine="fused", threads=th, **kw)
+            d = _compare(f"{name}@th{th}", res_s, res_t, bad)
+            if d != 0.0:
+                bad.append(f"{name}@th{th}: max |d| {d:.2e} != 0")
+        kx = dict(iters=60, br_every=5, target_gap=0.0005, impl=ref)
+        res_x = cfr_solve(sub, PAY, engine="fused", gap_exit=True, **kx)
+        res_xt = cfr_solve(sub, PAY, engine="fused", gap_exit=True,
+                           threads=4, **kx)
+        dx = _compare(f"{name}+exit@th4", res_x, res_xt, bad)
+        if dx != 0.0 or res_x.trace != res_xt.trace:
+            bad.append(f"{name}+exit@th4: not exact (|d| {dx:.2e})")
+        lines.append(name)
+    _gate(not bad, "P13 threaded fused == sequential fused (bitwise)",
+          "; ".join(bad) if bad else " ".join(lines))
+
+
 def main() -> int:
     gate_P1()
     gate_P2()
     gate_P3()
     gate_P4()
     gate_P5()
+    gate_P13()
     if _failures:
         print(f"\n{len(_failures)} gate(s) FAILED: {_failures}")
         return 1
