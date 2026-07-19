@@ -316,3 +316,91 @@ runs on the M5 only. B200/Modal port EXPLICITLY DEFERRED until H5 is the
 live frontier (one planned burn, rungs pre-registered). Named consumer:
 distill a student from hoyt reference values; lens:ev grading with the
 reference as leaves.
+
+## 2026-07-18l — the fused iterate landed: 7.1× iterate, bitwise, P6 confirmed / P7 refuted
+
+The [#82](https://github.com/jasonyandell/mk5-main/issues/82) kernel, built
+and gated in one session (branch `fused-iterate`, stacks on PR #81).
+
+**Anatomy first (law 6) — and it inverted the registered picture.** On the
+18g anchor (555006, cap 256): 15.9M isets / 18.8M strategy slots / 19.1M
+edges; forced isets 82.8%, forced slots 70.1% (compress 3.35×), forced
+edges 69.5% — the issue's estimates confirmed. But the phase split
+surprised: `_rm_plus_update` (the slot-space RM+ block) was **72% of
+iterate** (1.06 of 1.47 s/iter), the per-edge wave passes only 0.40 —
+the "gather-multiply-bincount chains" the issue centered were the smaller
+half. The compression lever aimed at exactly the bigger half.
+
+**Landed** (`hoyt/iterkernel.py` + engine="fused", now cfr_solve's
+default; wave stays the pinned pure-numpy mirror, loop the recursive
+oracle):
+
+- **Forced-slot compression, proven exact**: a forced iset is single-slot,
+  so its regret update is cf − cfv ≡ 0 and its σ ≡ 1.0 *exactly*, forever
+  — compression is a bitwise no-op, not an approximation. reg/avg/cf/xI
+  live on non-forced slots only (18.8M → 5.6M), stable-sorted by seat so
+  each seat's update is a contiguous slice (the old block also burned the
+  other three seats' slots every update — 4× more dead work on top of the
+  forced 3.35×).
+- **Fused numba edge kernels**: int32 indices, int8 edge seats, forced
+  edges (cgid = −1) skip the σ gather entirely, pr/pm/pu temporaries never
+  exist. Single-threaded loops replicate numpy's accumulation order
+  (bincount = ascending-edge adds; strict IEEE, no FMA contraction) —
+  **fp64 bitwise parity by construction, verified**: P1/P2/P3 toys+pins
+  0.0e+00, anchor trace/value/gap/exported-profile all exactly equal.
+- Gates: 53 pytest + parity scripts green; jit warm-up runs in the build
+  timing bucket.
+
+**Measured (anchor, quiet box, triad detector 39–46 GB/s throughout):**
+
+| variant | iterate s/iter | vs wave |
+|---|---|---|
+| wave (numpy) | 1.39 (pass 0.39 + update 1.00) | 1× |
+| compression-only (numpy passes + compressed update) | 0.44 | **3.13× — P6 CONFIRMED** (prior: ≥2×) |
+| fused (kernels + compressed update) | 0.196 (pass 0.15 + update 0.046) | **7.1×** |
+
+Anchor solve wall 88.6 → 41.0 s (2.16×). Paired stratified trio (≤10 min
+rule): 555080 2.37×, 555189 2.16×, 555043 1.91× — **1.98× aggregate**,
+bitwise PASS on every root.
+
+**P7 REFUTED, and deleted.** fp32 was built, measured, and removed in the
+same session: gap drift 2.59e-3 on the anchor (over the 1e-3 license bar;
+reference value moved 3.2e-2), AND **zero throughput win** — 0.194 vs
+0.195 s/iter, because the fused loops are gather-latency-bound, not
+float-bandwidth-bound. The 18k framing ("2× on all slot traffic") priced
+bytes, but after fusion the iterate stopped paying in bytes. No speedup +
+no consumer + drift over bar ⇒ the dtype knob is gone (receipts here; the
+possible revisit is the *contended multi-worker* regime, where aggregate
+DRAM pressure — not single-stream latency — is the wall, and only if a
+tighter numerics story caps the drift).
+
+**Amdahl bookkeeping (law 7):** iterate fell from 62% of solve wall to
+~19%; **exact-BR gap pricing is now 65–71% of wall** (26.5 s of 41 on the
+anchor; 84 of 117 on 555043). The next solve-wall lever is the
+mixed-profile BR walk / gap-measure cadence (`br_every`, queued since
+18e), NOT more iterate work. numba is now a runtime dep of the default
+engine (CONTRACTS.md updated; wave/loop remain numba-free).
+
+**Velocity, measured the honest way** (20-root stratified sample = 10% of
+the anchor, 5 workers, rung-0 ladder, production `refsweep` sharding):
+20/20 rows in 360 s — 17 converged, 2 gap_capped, 1 slot_capped (the
+555090 wedge, as banked). Same-seed same-rung pairing vs the 18j
+production ledger: **2,898 → 808 worker-seconds, 3.59×** on the 17
+both-converged roots. The per-root spread (1.24×–9.8×) is the law-8
+corollary in reverse: the banked contention victims (555008 954 s,
+555045 986 s) fell 9–10× because five fused workers no longer saturate
+DRAM — small roots kept completing straight through monster phases
+(loadavg 3–5). Peak worker RSS 5.8 GiB on converged roots (was 7.0).
+Projected rung-0 velocity ≈ 3.6 × 224 ≈ **~800 H4 evals/hour** (the
+sample's naive 190/h is tail underutilization on a 20-root batch — 1,800
+worker-s allocated, 1,231 spent; don't quote it). The projection gets
+banked as a measured number at the next full production sweep (H5 ladder
+or evalset v2) — rerunning the closed v1 line would only reproduce
+bitwise-identical rows.
+
+One verdict flip, by design: 555039 banked *converged* at 1,837 s (it
+blew far past the 90 s budget before its first gap measurement — 
+convergence beats the cap) but *gap_capped* here at 149 s, because the
+faster engine reached a budget checkpoint first. Wall stops are
+timing-dependent (exactly why engine="loop" refuses `wall_budget_s`);
+the cascade carries the root to rung 1 unharmed.
