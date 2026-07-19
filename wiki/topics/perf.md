@@ -83,7 +83,13 @@ issues for perf items per 2026-07-18 directive).
    and a budget ladder deepens only the shrinking survivor tail. Corollary
    measured twice in one day: **bandwidth-bound monsters barely
    parallelize** (8-wide big-root solves aggregate to ≈1.3× ONE quiet
-   worker) — tune width per rung, never flat. 42's cap verdict is
+   worker) — tune width per rung, never flat. Refined by the zero-diff
+   width experiment ([[perf-log]] 19c): decontention is real (1.42×
+   per-root at width 3 vs 5) yet **width beats decontention wherever
+   decontention < width ratio** — on the M5 Max that is every stratum
+   measured, so throughput (Little's law) keeps the flood and
+   per-eval worker-seconds stays a pricing tool, not the objective.
+   42's cap verdict is
    *quantified* (the exactly-priced gap at stop), so capped rows are
    usable references, and the hard stratum is predictable a priori from
    belief width. Registered metric ([[perf-log]] 18h): **H4 evals per

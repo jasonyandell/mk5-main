@@ -746,3 +746,50 @@ fusion (0.87 s/anchor scale, shared-surface license); (3) _build_fused
 base layout (1.9 s on the big root — casts and seat loops, threadable
 behind the same P13 structure). None registered yet with bars — the
 successor should anatomy (1) first since it is free.
+
+## 2026-07-19c — the zero-diff width experiment: decontention is real and still loses to width; width-per-stratum dies before it was built
+
+Prior P17 registered before the run (`scratch/fused-iterate/p17_prior.md`):
+`--workers 3 --threads 6` (18 threads on 18 cores) paired vs
+`sweep20_p13t4`, same 20 seeds. **P17a (rung-0 root-wall-cum ≤200 s vs
+221.8) CONFIRMED, beaten: 156.2 s (1.42×)** — build bucket 93.4 → 62.8
+worker-s, iterate 55.9 → 41.7, br 40.5 → 30.0; every big-tree root
+improved 1.44–1.91×. Zero verdict flips; full-run wall 360 s unchanged
+(the wedge's solo rung 1+2 dominates at any width). Small roots
+regressed at t6 (555258 0.71×, 555124 0.84× — thread spin-up, P13's
+555319 lesson again); worker RSS maxima rose to 15.3 GiB (fatter
+queues: every worker eventually holds a monster). Box contaminant
+logged: mediaanalysisd ~2 E-cores throughout — margins are far from
+every bar, no re-run.
+
+**Adoption DECLINED, against the letter of the pre-registered rule —
+the rule was mis-specified, and the math goes on the record.** P17b's
+elapsed bar ("20/20 rows by the 90 s tick") passed, but 30 s heartbeat
+granularity cannot resolve elapsed at this fleet size, and the metric
+the north star runs on is steady-state throughput (Little's law:
+width / per-eval root-wall). w5t4: 5/11.67 = **0.428 evals/s**. w3t6:
+3/8.22 = **0.365 evals/s** — a 17% throughput regression hiding under
+a 1.42× worker-seconds "win". Decontention 1.42× < width given up
+5/3 = 1.67×. Per-eval worker-seconds is a pricing tool, not the
+objective; adopting by the rule's letter would have shipped the
+regression to every production sweep.
+
+**The same numbers kill the width-per-stratum lever (19b lever 1)
+before a line was written.** Every stratum loses to width: monsters
+sum 160.1 → 102.8 = 1.56× < 1.67×; top-2 monsters 1.44×; small tail
+≤1.33×. Even the monster stratum packs better at width 5 (160.1/5 =
+32.0 s elapsed vs 102.8/3 = 34.3 s). Exactly one root in 19 beats the
+ratio individually (555039, 1.91×). Width-1 monsters would need ≥5×;
+19b's solo anatomy caps build decontention at ~2.5× on ~half the
+monster wall (~1.7× total) — dead at every width. **w5t4 stands as
+refsweep's production default; law 8's corollary sharpens: width beats
+decontention wherever decontention < width ratio, and on this box that
+is every stratum measured.**
+
+What the zero-diff run bought (why it was the right first move): the
+contention ladder is now priced at three widths (per-eval 11.7
+worker-s @5w / 8.2 @3w / solo floor from 19b), which re-prices lever
+(2): **run_engine gather fusion saves DRAM traffic, and at width 5
+every byte not moved pays twice** — once as the root's own wall, once
+as decontention of four co-runners. That is the next lever; its
+anatomy is free (`build_anatomy_big.py`).
