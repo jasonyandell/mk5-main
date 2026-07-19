@@ -71,9 +71,15 @@ cfr_solve touches the subgame ONLY through `.root/.worlds/.weights`, and
 touches the injected `impl` module ONLY through:
 
     impl.br_solve(subgame, profile, payoff43, hero=seat,
-                  want_strategy=False)                    # gap pricing
+                  want_strategy=False)     # gap pricing, engine="loop" only
     impl.StochasticProfile()                              # export format
     profile.set(seat, hand_mask, node, moves, probs)      # one call per iset
+
+The wave/fused engines price gaps IN-STRUCT (`_wave_br`: exact single-seat
+BR as a forward-reach + backward-argmax pass over the resident wave
+structure — no export, no re-walk; perf-log 18m) and export the profile
+once at the stop. impl.br_solve remains the standing pricing oracle via
+the loop engine and the P4 cross-gate (1e-9).
 
 where node = tuple of domino ids played since the root (the profile-domain
 convention in hoyt/reference.py; the kernel lane hashes it
@@ -577,6 +583,60 @@ def _wave_values(ws: _WaveStruct, sig, payleaf) -> np.ndarray:
     return v
 
 
+def _wave_br(ws: _WaveStruct, asig, u, payleaf, sign_u, rmu_store) -> float:
+    """Exact single-seat best response of seat u vs the profile `asig`,
+    computed IN-STRUCT (perf-log 18m, Fable consult L1): the resident wave
+    structure already contains everything exact BR needs, so gap pricing
+    stops re-walking the subgame through impl.br_solve per measurement
+    (which paid the stochastic-profile tree blowup, ~13 s/measurement on
+    the anchor, 65-71% of solve wall).
+
+    Forward: counterfactual reach r_mu (chance x all seats except u; u's
+    edges at prob 1). Backward: at u's info sets, score each strategy slot
+    by bincount of r_mu * child-value over the iset's worlds and pick the
+    per-iset argmax of the SIGNED score (u maximizes its team's
+    orientation); the chosen move's per-world child values propagate
+    unweighted. Elsewhere sigma-weighted expectation. Ties pick the lowest
+    move — value-identical by definition of a tie. Zero-reach isets choose
+    arbitrarily and contribute zero (the same exactness argument as pinned
+    support pruning). Cross-checked against impl.br_solve at 1e-9 (gate P4
+    in test_cfr_parity; the loop engine still prices through br_solve as
+    the standing oracle)."""
+    L = ws.L
+    r_mu = ws.w0
+    for j in range(L):
+        pr = asig[ws.GID[j]]
+        ue = ws.uedge[j][u]
+        rmu_store[j] = r_mu
+        pm = pr
+        if len(ue):
+            pm = pr.copy()
+            pm[ue] = 1.0
+        r_mu = r_mu[ws.PS[j]] * pm
+    v = payleaf
+    for j in range(L - 1, -1, -1):
+        pr = asig[ws.GID[j]]
+        ue = ws.uedge[j][u]
+        w = pr * v
+        if len(ue):
+            gid_l = ws.GID[j][ue] - ws.woff[j]
+            sc = np.bincount(gid_l, weights=rmu_store[j][ws.PS[j][ue]] * v[ue],
+                             minlength=ws.wlen[j])
+            si = ws.slot_iset[ws.woff[j]:ws.woff[j] + ws.wlen[j]]
+            imin = si[0]
+            ssc = sign_u * sc
+            gmax = np.full(int(si[-1]) - int(imin) + 1, -np.inf)
+            np.maximum.at(gmax, si - imin, ssc)
+            chosen = ssc == gmax[si - imin]
+            idxs = np.flatnonzero(chosen)
+            first = idxs[np.unique((si - imin)[idxs], return_index=True)[1]]
+            sel = np.zeros(ws.wlen[j], dtype=bool)
+            sel[first] = True
+            w[ue] = np.where(sel[gid_l], v[ue], 0.0)
+        v = np.bincount(ws.PS[j], weights=w, minlength=ws.S[j])
+    return float(ws.w0 @ v) / ws.total_w
+
+
 def _wave_pass(ws: _WaveStruct, sig, u, payleaf, cf, xI) -> None:
     """One update traversal for seat u: forward reaches, backward values,
     counterfactual accumulation into cf (flat slots) and own-reach into xI."""
@@ -929,8 +989,13 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         tm["export"] += time.time() - t1
         return prof
 
+    rmu_br = [None] * ws.L
+
     def measure(asig):
-        prof = export(asig)
+        # in-struct pricing (perf-log 18m / Fable consult L1): no export,
+        # no impl.br_solve re-walk — the wave structure is already resident.
+        # Cross-gated vs impl.br_solve at 1e-9 (P4); loop engine keeps the
+        # br_solve path as the standing oracle.
         t1 = time.time()
         v0 = _wave_values(ws, asig, payleaf)
         vbar = float(ws.w0 @ v0) / ws.total_w
@@ -938,11 +1003,10 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         t1 = time.time()
         gap = 0.0
         for u in live_seats:
-            bru = impl.br_solve(subgame, prof, payoff43, hero=u,
-                                want_strategy=False).value
+            bru = _wave_br(ws, asig, u, payleaf, signs[u], rmu_br)
             gap = max(gap, signs[u] * (bru - vbar))
         tm["br"] += time.time() - t1
-        return prof, vbar, gap
+        return vbar, gap
 
     trace: list = []
     result = None
@@ -979,16 +1043,17 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         tm["iterate"] += time.time() - t1
         if it % br_every == 0 or it == iters or over():
             asig = averaged()
-            prof, vbar, gap = measure(asig)
+            vbar, gap = measure(asig)
             trace.append((it, gap))
-            result = (prof, vbar, gap)
+            result = (asig, vbar, gap)
             if target_gap is not None and gap <= target_gap:
                 break
             if over():                 # budget-driven stop, gap just priced
                 capped = True
                 break
 
-    prof, vbar, gap = result
+    asig_f, vbar, gap = result
+    prof = export(asig_f)              # once, at the stop — not per measure
     dbg = None
     if debug:
         asig = averaged()

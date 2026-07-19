@@ -106,16 +106,20 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far); cap-256 anchor solve **~41 s**
-  after the fused iterate ([[perf-log]] 18l, #82: numba edge kernels +
-  forced-slot compression, **7.1× iterate**, bitwise vs the numpy
-  mirror; P6 confirmed 3.13× from compression alone, P7/fp32 refuted
-  and deleted — gather-latency-bound, not float-bound). Exact-BR gap
-  pricing is now 65–71% of solve wall (the next lever, law 7). The
-  anchor's full reference line is built
-  (`hoyt/reference_h4_v1_cap256.jsonl`, 200/200 at gap ≤0.05) via the
-  `hoyt/refsweep.py` cascade — law 8's shape, rung-0 velocity 224
-  evals/hour pre-kernel ([[perf-log]] 18h–j; 18l for post-kernel).
+  (scale-invariant in worlds so far); cap-256 anchor solve **15.9 s**
+  after the fused iterate + in-struct gap pricing ([[perf-log]] 18l/18m,
+  #82: numba edge kernels + forced-slot compression, 7.1× iterate,
+  bitwise; then exact BR priced on the resident wave structure, 16× —
+  "the fix is not to fuse the walk; it is to stop walking"). P6
+  confirmed, P7/fp32 refuted-and-deleted, P8 16×, P9/P10 green; the
+  regret-bound gap shortcut is dead on theory (the 2p folk bound needs
+  utility linear in one opponent). Same-seed paired sweep: **14.2×
+  worker-time per usable eval**, projected rung-0 ~2,000–2,800
+  evals/hour (was 224). Build is now the top bucket (43%) — numba
+  expand_full_width is the registered lever-after-next. The anchor's
+  full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
+  200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
+  shape ([[perf-log]] 18h–m).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

@@ -23,6 +23,10 @@ Gates:
                       updates, #82) == engine="loop" on the same toys and
                       pins, fp64. The fused engine is designed bitwise-equal
                       to "wave"; this gate pins it to the verified loop.
+  P4 pricing oracle — the wave/fused engines' in-struct gap pricing
+                      (_wave_br, perf-log 18m) == recomputing the gap on
+                      the exported profile with ref.br_solve, <= 1e-9, on
+                      toys and pins. br_solve stays the standing oracle.
 """
 from __future__ import annotations
 
@@ -140,10 +144,48 @@ def gate_P3() -> None:
           "; ".join(bad) if bad else " ".join(lines))
 
 
+def gate_P4() -> None:
+    from hoyt.reference import sign_of
+    bad = []
+    lines = []
+    cases = [(name, None) for name in
+             ("t2_decl_w3", "t2_def_w3", "t2_decl_w12", "t2_def_w12")]
+    for name in ("t2_decl_w3", "t2_def_w12"):
+        cases.append((name, "pin"))
+    for name, mode in cases:
+        toy = T.get_toy(name)
+        sub = toy.build()
+        kw = dict(iters=60, br_every=20, impl=ref)
+        pinned = {}
+        if mode == "pin":
+            u, v = sub.me, (sub.me + 1) % 4
+            others = [s for s in range(4) if s not in (u, v)]
+            sigma = T.lowest_legal_sigma(sub, others)
+            pinned = {s: sigma for s in others}
+            kw.update(iters=80, pinned=pinned)
+        res = cfr_solve(sub, PAY, engine="fused", **kw)
+        bid_team = int(sub.root.bidder) % 2
+        live = [s for s in range(4) if s not in pinned]
+        gap_ref = 0.0
+        for s in live:
+            bru = ref.br_solve(sub, res.profile, PAY, hero=s,
+                               want_strategy=False).value
+            gap_ref = max(gap_ref, sign_of(s, bid_team) * (bru - res.value))
+        d = abs(res.gap - gap_ref)
+        tag = f"{name}{'+pin' if mode else ''}"
+        lines.append(f"{tag}:{d:.1e}")
+        if d > TOL:
+            bad.append(f"{tag}: in-struct gap {res.gap} vs br_solve "
+                       f"{gap_ref} (|d|={d:.2e})")
+    _gate(not bad, "P4 in-struct pricing == ref.br_solve oracle (<=1e-9)",
+          "; ".join(bad) if bad else " ".join(lines))
+
+
 def main() -> int:
     gate_P1()
     gate_P2()
     gate_P3()
+    gate_P4()
     if _failures:
         print(f"\n{len(_failures)} gate(s) FAILED: {_failures}")
         return 1

@@ -224,8 +224,10 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
     """One (root, rung) -> one ledger row. The pipeline mirrors the ad-hoc
     2026-07-18 sweep worker (enumerate_worlds -> sigma_consistent ->
     deterministic world cap -> build_subgame -> compile_sigma -> walt BR ->
-    cfr_solve -> profile_value); caps and failures are first-class rows
-    instead of inline retries."""
+    cfr_solve); caps and failures are first-class rows instead of inline
+    retries. cfr_reference_value = res.value (profile_value survives only
+    as the deterministic 1-in-20 audit, P9); non-CFR phase walls land in
+    row["phase_s"] (perf-log 18m: the oracle bucket was un-instrumented)."""
     import resource
 
     import numpy as np
@@ -241,11 +243,14 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
                  "rung_spec": rung.spec(),
                  "me_declares": root.me % 2 == root.bidder % 2}
     t0 = time.perf_counter()
+    ph: dict = {}                     # non-CFR phase walls (perf-log 18m)
     try:
         pay = K.payoff_points()
+        t1 = time.perf_counter()
         worlds = enumerate_worlds(root)
         keep = sigma_consistent(root, worlds, oracle,
                                 _make_moves_filter(root))
+        ph["worlds"] = round(time.perf_counter() - t1, 2)
         w = worlds[keep] if keep.any() else worlds
         row["worlds_true"] = int(len(w))
         if len(w) > cap:
@@ -255,14 +260,30 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
         row["worlds_used"] = int(len(w))
         wt = np.full(len(w), 1.0 / len(w))
         sub = K.build_subgame(root, w, wt)
+        t1 = time.perf_counter()
         tab = K.compile_sigma(root, w, oracle)
+        ph["compile_sigma"] = round(time.perf_counter() - t1, 2)
+        t1 = time.perf_counter()
         br = K.br_solve(sub, tab, pay, slot_budget=rung.slot_budget)
+        ph["walt_br"] = round(time.perf_counter() - t1, 2)
         res = cfr_solve(sub, pay, iters=rung.iters,
                         target_gap=rung.target_gap, br_every=BR_EVERY,
                         wall_budget_s=rung.wall_budget_s,
                         slot_budget=rung.slot_budget)
-        ref_val = K.profile_value(sub, res.profile, pay,
-                                  slot_budget=rung.slot_budget)
+        # the reference value IS the solve's self-play value (measured
+        # identical on all 200 banked rows, delta 0.0); profile_value's
+        # full stochastic re-walk survives only as a 1-in-20 audit (P9)
+        ref_val = res.value
+        if rec["seed"] % 20 == 0:
+            t1 = time.perf_counter()
+            pv = K.profile_value(sub, res.profile, pay,
+                                 slot_budget=rung.slot_budget)
+            ph["audit_profile_value"] = round(time.perf_counter() - t1, 2)
+            row["audit_pv_delta"] = abs(pv - res.value)
+            if row["audit_pv_delta"] > 1e-9:
+                raise AssertionError(
+                    f"profile_value audit failed: {pv} vs res.value "
+                    f"{res.value} (P9 — put per-root pricing back)")
         sign = 1.0 if row["me_declares"] else -1.0
         row.update(
             verdict=("converged" if res.gap <= rung.target_gap
@@ -276,6 +297,7 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
             final_gap=round(res.gap, 6),
             trace=[(i, round(g, 6)) for i, g in res.trace],
             timings={k: round(v, 2) for k, v in res.timings.items()},
+            phase_s=ph,
         )
     except K.KernelMemoryError as e:
         row.update(verdict="slot_capped", error=repr(e)[:300])

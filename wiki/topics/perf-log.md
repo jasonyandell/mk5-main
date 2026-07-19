@@ -404,3 +404,81 @@ convergence beats the cap) but *gap_capped* here at 149 s, because the
 faster engine reached a budget checkpoint first. Wall stops are
 timing-dependent (exactly why engine="loop" refuses `wall_budget_s`);
 the cascade carries the root to rung 1 unharmed.
+
+## 2026-07-18m — the Fable consult: stop walking — in-struct gap pricing (16×), the duplicate value, and three honest kills
+
+A fable subagent was consulted for next levers after 18l. Its structural
+finding beats everything the 18k issue listed: **gap pricing re-walked a
+tree that was already resident** — `measure()` exported the profile and
+`impl.br_solve` rebuilt the whole subgame per seat per measurement,
+paying the stochastic-profile blowup (18b: p50 526×) each time. Exact
+single-seat BR needs only a forward-reach + backward-argmax pass over
+the `_WaveStruct` the solve already holds. The fix is not to fuse the
+walk; it is to stop walking.
+
+**Landed (L1)** — `_wave_br` in cfr.py: counterfactual reach forward
+(hero edges at prob 1), backward with per-iset signed argmax at hero
+info sets (chosen move's per-world child values propagate unweighted),
+sigma-weighted expectation elsewhere. Ties → lowest move
+(value-identical); zero-reach isets contribute zero (same exactness
+argument as pinned support pruning). Export moved to the final stop.
+The wave/fused engines share it; **engine="loop" keeps impl.br_solve
+pricing as the standing oracle**, plus new gate P4 (in-struct gap ==
+br_solve gap on the exported profile, ≤1e-9 — measured 0.0e+00 on
+toys/pins, 3.6e-15 on the anchor). Anchor trace reproduces the banked
+ledger row at 2.2e-07 (within its 1e-6 rounding license); fused-vs-wave
+stays bitwise (shared pricing path). **P8 (registered: ≥10× on the
+anchor's 26.4 s br bucket): PASS at 16×** — br 26.5 → 1.65 s; anchor
+solve wall 41.0 → **15.9 s** (88.6 at session start: **5.6× today**).
+
+**Landed (L2)** — the reference value was computed twice: measured on
+ALL 200 banked rows, `value_selfplay == cfr_reference_value` with max
+delta exactly 0.0 (both are exact expectations of the same profile over
+the same worlds). refsweep now uses `res.value`; `profile_value`
+survives as a deterministic 1-in-20 audit that raises on >1e-9 (P9:
+audit never fires). Non-CFR phase walls (enumerate/σ-filter/compile/
+walt-BR) — 6% of the 18j fleet spend and previously un-instrumented
+inside `wall_s` — now land in every ledger row as `phase_s` (law 6).
+
+**P10 sweep** (same 20 stratified roots, 5 workers, rung-0 ladder):
+20/20 rows in **120 s elapsed** (was 360 s at 18l) — **19/20 converged
+at rung 0** (was 17/20; 555039 and 555156 now beat the 90 s cap instead
+of laddering). Same-seed worker-time: banked 2,898 → 18l 808 → **235 s
+(12.3× vs banked, 3.43× vs 18l)** on the both-converged subset; on the
+full-ladder accounting (19 seeds, banked needed rung-1 re-solves) it is
+**277 → 19.5 worker-s per usable eval = 14.2×**. Old contention victims
+fell 35× (555008: 954 → 27 s). Sample-naive velocity 570/h is
+tail-bound (64% utilization on a 20-root batch); fleet-equivalent
+projection: rung-0 **~2,000–2,800 evals/hour** (was 224) — P10 (≥1,600)
+PASS by projection, to be banked at the next full production sweep.
+
+**Kills, all measured or theory-checked (append-only honesty):**
+- **BR-walk numba fusion** (my queued lever): consumer vanished under
+  L1; the stochastic walk is argsort/unique-bound (~200 ns/node vs the
+  fused iterate's ~10 ns/edge) and only #77-class offline work still
+  pays it.
+- **Regret-based gap bounds**: the 2p folk bound (exploitability ≤ Σ
+  avg regrets) needs utility linear in ONE opponent's strategy; with
+  three opponents the average of products ≠ product of averages, so
+  seat u's average regret does NOT bound its BR gain vs the average
+  profile. Dead on theory, and L1 removed the motivation.
+- **Seat-subset early exit**: only helps failing measurements; a capped
+  row's final_gap must price all four seats anyway.
+- **L4 (more workers)**: killed by its own gate — monster-shard peak
+  RSS is 16.3 GiB (L1 actually lowered it from 18l's 21.2: the mixed-BR
+  walk was itself a big allocator) on the 48 GiB box; 5 workers is the
+  right rung-0 default. GIB_PER_32M stays.
+
+**Queued, not built** (Fable's L3/L5/L6): adaptive gap cadence
+(measure every 5–10 iters, stop at first crossing — pricing is now
+~0.4 s so the optimum inverts; worth ~25% of iterate); exact CFR state
+checkpoint for rung survivors — serialize (sig_c, reg_c, avg_c, it) and
+RESUME, bitwise-equal to an uncapped run, NOT profile warm-start (RM+
+with zero regrets resets toward uniform; regret transfer is a numerics
+license we don't need); numba `expand_full_width` — post-L1 anatomy
+says build is now the top bucket (166 s of 386 on the P10 sweep = 43%,
+iterate 38%, br 9%) but it is the shared parity surface under
+compile_sigma/br_solve/CFR — a much bigger license, lever-after-next.
+
+Amdahl after 18m: **build 43% / iterate 38% / export+br+value ~13% /
+oracle phases ~6%** — the referee is no longer priced by its pricing.

@@ -56,8 +56,11 @@ info set in about the cost of one ordinary solve — after which:
   [[perf-log]] 18l), "wave" (the pure-numpy mirror), "loop" (the
   verified recursive oracle). Forced info sets (~83% at H4) are exactly
   inert in RM+ (σ ≡ 1.0, regret ≡ 0), so compressing them out is a
-  bitwise no-op. Verified on toys against scipy-LP / full-strategy
-  enumeration.
+  bitwise no-op. Gap pricing is IN-STRUCT ([[perf-log]] 18m): exact BR
+  as a forward-reach + backward-argmax pass over the resident wave
+  structure — no per-measurement export or re-walk; br_solve stays the
+  pricing oracle via the loop engine and gate P4 (≤1e-9). Verified on
+  toys against scipy-LP / full-strategy enumeration.
 - **Exploitability meter**: BR gain vs any frozen profile — counter-walt
   ([#77](https://github.com/jasonyandell/mk5-main/issues/77)) is this
   meter pointed at walt.
@@ -69,10 +72,10 @@ info set in about the cost of one ordinary solve — after which:
 | H4 BR re-solve after compile | p50 0.9 ms (45× net wavefront) |
 | H5-cap512 BR | p50 3.5 ms; compile 0.35 s |
 | CFR gap ≤0.05 pts | ≤40 iterations at EVERY root tried — **scale-invariant in worlds** (10 → 33,740) |
-| CFR wall/root, cap-256 | anchor 41 s after the fused iterate ([[perf-log]] 18l: iterate 7.1×, solve wall ~2×; was ~92 s post-18g, ~115 s before); gap pricing now 65–71% of wall |
+| CFR wall/root, cap-256 | anchor **15.9 s** after the fused iterate + in-struct gap pricing ([[perf-log]] 18l+18m: iterate 7.1×, br 16×; was 88.6 s at the start of 2026-07-18, ~115 s before that); build is now the top bucket (43%) |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
 | jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
-| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel (5 workers, 90 s cap); post-fused-iterate: same-seed paired sample **3.59× less worker-time** → **~800/hour projected** ([[perf-log]] 18l); deepening 87% → 99% → 100% over three rungs |
+| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l+18m: same-seed paired sample **14.2× less worker-time per usable eval**, 19/20 converge at rung 0 (two roots no longer ladder) → **~2,000–2,800/hour projected** ([[perf-log]] 18m); deepening 87% → 99% → 100% over three rungs pre-kernel |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
