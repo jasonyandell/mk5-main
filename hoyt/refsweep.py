@@ -41,11 +41,18 @@ Resume unions every rung*_shard*.jsonl in --outdir and is verdict-aware: a
 converged row retires the root; any other verdict is done for ITS rung and
 a survivor for the next; a (root, rung) with a row is never re-entered.
 
-Sharding: sort ascending by n_worlds_sigma, deal round-robin (every queue
-spans the full size range), then rotate queue w by w/W of its length so
-monster phases stagger across workers. The snake this replaces both
-rank-aligned monster phases across workers AND let one 64M-slot root block
-~20 cheap queued roots for ~21 min (observed, 2026-07-18 ad-hoc sweep).
+Dispatch: one shared queue ordered by descending n_worlds_sigma, pull-based
+— every worker gets the full rung queue and claims one root at a time via
+atomic claim-file creation. Balance comes from the PULL, not from cost
+precision: paired arms measured static partitions (the round-robin snake)
+at 1.16-1.18x worse rung-0 makespan, and a sharper cost key (banked wall_s,
+rank-corr 0.889) actually LOST to sigma order — exact ranking front-loads
+the true monsters into simultaneous residency and pays ~14% per-seed
+contention inflation, while sigma's noisy ranking decorrelates the heavy
+phases (perf-log 19i; the old snake's stagger insight, reborn inside the
+pull). A worker that dies mid-solve orphans that root's claim for the run;
+the resume retries it, exactly as it retried a dead shard's unfinished
+queue.
 
 CLI (run from the repo root; the driver spawns per-shard subprocess
 workers, torch pinned to 1 thread, heartbeat every 30 s):
@@ -68,6 +75,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -126,26 +134,25 @@ def parse_rungs(spec: str) -> tuple[Rung, ...]:
 #  pure ladder logic (unit-tested without solving)                            #
 # =========================================================================== #
 
-def plan_shards(sized_seeds: list[tuple[int, int]],
-                workers: int) -> list[list[int]]:
-    """[(seed, n_worlds_sigma)] -> per-worker seed queues.
+def dispatch_order(sized_seeds: list[tuple[int, int]]) -> list[int]:
+    """[(seed, n_worlds_sigma)] -> ONE biggest-first queue shared by every
+    worker. Biggest-first because a long root dispatched late is pure
+    tail: the fleet idles behind it. Deterministic; ties break by seed."""
+    return [s for s, _ in sorted(sized_seeds, key=lambda t: (-t[1], t[0]))]
 
-    Sort ascending by size, deal round-robin (queue w = ranks w, w+W, ... —
-    every queue spans the full size range), then rotate queue w by w/W of
-    its length: worker 0 runs small->monster, worker w starts w/W of the
-    way up the size range, so at any moment roughly one worker is in its
-    monster phase instead of all of them at once. Deterministic; ties break
-    by seed."""
-    if not sized_seeds:
-        return []
-    workers = max(1, min(workers, len(sized_seeds)))
-    order = sorted(sized_seeds, key=lambda t: (t[1], t[0]))
-    shards = []
-    for w in range(workers):
-        q = order[w::workers]
-        r = (w * len(q)) // workers
-        shards.append([s for s, _ in q[r:] + q[:r]])
-    return shards
+
+def claim(path: Path) -> bool:
+    """Atomically claim one (root, rung) for this run; False = another
+    worker got it. O_CREAT|O_EXCL on a local fs is the whole protocol."""
+    try:
+        with open(path, "x"):
+            return True
+    except FileExistsError:
+        return False
+
+
+def claims_dir(outdir: Path, rung_idx: int) -> Path:
+    return Path(outdir) / f"rung{rung_idx}_claims"
 
 
 def next_rung(rows_by_rung: dict[int, dict], n_rungs: int) -> int | None:
@@ -330,9 +337,13 @@ def _worker_main(a) -> int:
     recs = _load_evalset(Path(a.evalset))
     oracle = FieldOracle(net_path=a.net, device="cpu")
     out = Path(a.outdir) / f"rung{a.worker_rung}_shard{a.shard}.jsonl"
+    cdir = claims_dir(a.outdir, a.worker_rung)
     seeds = [int(s) for s in a.seeds.split(",")]
+    solved = 0
     with open(out, "a") as fh:
         for seed in seeds:
+            if not claim(cdir / str(seed)):
+                continue
             rec = recs[seed]
             print(f"seed {seed} start "
                   f"(worlds_sigma={rec['n_worlds_sigma']})", flush=True)
@@ -340,9 +351,10 @@ def _worker_main(a) -> int:
                              threads=a.threads or None)
             fh.write(json.dumps(row) + "\n")
             fh.flush()
+            solved += 1
             print(f"seed {seed} {row['verdict']} wall={row['wall_s']}s "
                   f"gap={row.get('final_gap')}", flush=True)
-    print(f"worker done: {len(seeds)} roots -> {out}", flush=True)
+    print(f"worker done: {solved} roots -> {out}", flush=True)
     return 0
 
 
@@ -394,13 +406,10 @@ def _print_plan(recs, ledger, ladder, a) -> None:
             continue
         nw = _rung_workers(a, ladder[r], len(entrants))
         sized = [(s, recs[s]["n_worlds_sigma"]) for s in entrants]
-        print(f"rung {r} shard plan ({len(entrants)} entrants, "
-              f"{nw} workers):")
-        for w, q in enumerate(plan_shards(sized, nw)):
-            sizes = [recs[s]["n_worlds_sigma"] for s in q]
-            print(f"  shard {w}: {len(q)} roots, first->last worlds_sigma "
-                  f"{sizes[0]}->{sizes[-1]}, max {max(sizes)}; "
-                  f"seeds {q[:4]}{'...' if len(q) > 4 else ''}")
+        q = dispatch_order(sized)
+        print(f"rung {r} dispatch queue ({len(entrants)} entrants, "
+              f"{nw} workers, biggest-first by n_worlds_sigma):")
+        print(f"  head {q[:6]}{'...' if len(q) > 6 else ''}")
         break                      # only the next actionable rung is plannable
     print("dry run: no solving.")
 
@@ -497,15 +506,19 @@ def _driver_main(a) -> int:
             continue
         nw = _rung_workers(a, rung, len(entrants))
         sized = [(s, recs[s]["n_worlds_sigma"]) for s in entrants]
-        shards = plan_shards(sized, nw)
+        queue = dispatch_order(sized)
+        cdir = claims_dir(outdir, r)
+        if cdir.exists():
+            shutil.rmtree(cdir)         # claims are per-run; rows are the ledger
+        cdir.mkdir(parents=True)
         print(f"rung {r} [{rung.spec()}]: {len(entrants)} entrants, "
-              f"{len(shards)} workers", flush=True)
+              f"{nw} workers pulling one longest-first queue", flush=True)
         procs = []
-        for w, seeds in enumerate(shards):
+        for w in range(nw):
             log = open(outdir / f"rung{r}_shard{w}.log", "a")
             cmd = [sys.executable, "-u", "-m", "hoyt.refsweep", "--worker",
                    "--worker-rung", str(r), "--shard", str(w),
-                   "--seeds", ",".join(map(str, seeds)),
+                   "--seeds", ",".join(map(str, queue)),
                    "--cap", str(a.cap), "--outdir", str(outdir),
                    "--evalset", str(evalset), "--net", a.net,
                    "--threads", str(a.threads)]

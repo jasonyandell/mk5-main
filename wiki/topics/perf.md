@@ -132,7 +132,13 @@ issues for perf items per 2026-07-18 directive).
   ~3,400–4,650 evals/hour (was 224); **full line MEASURED
   2026-07-19: 200/200 converged in 17.0 min = 706 evals/hour, 38.1×
   banked, 14.8 worker-s/eval** ([[perf-log]] 19h; in-fleet rung mix
-  197/2/1, the models retired) — the one wedge is 589.6M slots and
+  197/2/1, the models retired), re-measured at **727 evals/hour
+  (16.5 min)** after refsweep's static snake shards became one
+  pull-based biggest-first claim queue — rung-0 pools balance to ±1 s,
+  h2's pool 1.245×, line 1.03× quoted flat, per-seed reference values
+  bit-identical; precision cost ordering (banked walls) measured
+  WORSE than sigma order, monster co-residency contention
+  ([[perf-log]] 19i) — the one wedge is 589.6M slots and
   2× memory-pressured, both measured
   ([[perf-log]] 19e); the pressure term is untouchable from the
   transient side — int32 walk working arrays landed as a 1.16× walk /

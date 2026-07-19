@@ -985,3 +985,48 @@ rung-0 pool ~62% of wall, the wedge ~20%, barriers/tails the rest —
 the pool is 19c's closed question, the wedge is 19a's cap verdict.
 **At this altitude the line is priced by measurement; this is the
 measured-exhaustion receipt for the perf push at H4-cap-256.**
+
+## 2026-07-19i — the tail-idle lever: static shards die, pull-based dispatch lands; balance comes from the pull, not the cost model — line re-measured 727 evals/hour
+
+The handoff's one unpriced move: rung-0 fleets dropped to 2/5 alive
+near the tail. Priors TI1–TI5 + FL5 registered before every number
+(`scratch/fused-iterate/ti_prior.md`).
+
+**Stage A (simulation, free)**: the 19h line's 200 measured per-root
+walls replayed under candidate schedulers. Static LPT packing is DEAD
+ON ARRIVAL — by-sigma it *pessimizes* (0.61–0.73× vs the snake:
+estimate error compounds in a fixed partition); even by banked walls
+(rank-corr 0.889 with fresh walls) it's a wash. Pull-based dispatch
+tracks the perfect-balance floor with any reasonable order: ceiling
+1.117× (h1) / 1.282× (h2) of rung-0 makespan.
+
+**Stage B (5 paired arms, h2-even 50 roots, rung-0 only, one
+session)**: static 126.2/125.3 s; dyn-sigma 106.9/108.5 s; dyn-banked
+117.6 s. **Keep bar (≥1.15×) passed in BOTH orderings: 1.181× and
+1.155×.** The night's insight: **the sharper cost model LOST.**
+Banked-wall ordering front-loads the true monsters into simultaneous
+residency and pays +13.6% cum contention inflation; sigma's noisy
+ranking (0.622) decorrelates the heavy phases (+3–5% cum) and the
+pull self-balances regardless — every dynamic arm's shards landed
+within ±1 s. The old snake's stagger insight, reborn inside the pull.
+`--cost-file` built, measured, DELETED (no-legacy). Parity across all
+arms exact (verdict/gap/iters/reference value per seed). Residual
+quoted flat: sigma order can strand one ~37 s root (555233) in the
+last-40 dispatches — ≤~30 s tail exposure, the sim's sigma-vs-oracle
+gap; accepted, contention dominates.
+
+**Ship + full-line re-measure (FL5, same split as 19h)**: h1 540 s +
+h2 450 s = **990 s for 200/200 converged = 727 evals/hour (39.3×
+banked), 15.1 worker-s/eval**. FL5a (≤960 s) REFUTED at 990 — quote
+1.03×, not a triumph: h1's snake partition was already near-balanced
+(1.037× realized) and sigma inflation ate +5.8% of its cum; h2's
+pool, the imbalanced one, gave the real win (347.6 → 279.2 s
+makespan, 1.245×, cum flat). Rung mix 197/2/1 reproduced with the
+SAME three roots (555212 ladders again — its marginality is stable
+under the new order), and **all 200 merged reference values are
+bit-identical to the 19h line**: scheduling moved, nothing else did.
+Code: `plan_shards` → `dispatch_order` + atomic claim files
+(`hoyt/refsweep.py`), net simpler; 53 tests green. The
+measured-exhaustion receipt now includes the scheduling family:
+pools balance to ±1 s, so residual line wall is contention
+inflation + the wedge + barriers — all previously priced.

@@ -2,8 +2,8 @@
 
 Two halves, both toy-fast (no nets, no big roots):
 
-- Pure ladder logic (parse/shard/resume/merge) — the functions refsweep's
-  driver runs, tested without solving anything.
+- Pure ladder logic (parse/dispatch/claim/resume/merge) — the functions
+  refsweep's driver runs, tested without solving anything.
 - cfr_solve wall_budget_s semantics on toys, impl=hoyt.reference: a capped
   stop is a QUANTIFIED verdict (capped=True, gap present and exactly equal
   to an uncapped run stopped at the same iteration — the solver is
@@ -24,10 +24,11 @@ from hoyt.refsweep import (
     DEFAULT_RUNGS,
     Rung,
     best_row,
+    claim,
+    dispatch_order,
     load_ledger,
     next_rung,
     parse_rungs,
-    plan_shards,
 )
 
 PAY = T.payoff_points()
@@ -49,35 +50,26 @@ def test_parse_rungs_rejects_malformed():
         parse_rungs("")
 
 
-def test_plan_shards_exact_partition():
+def test_dispatch_order_longest_first_by_size():
     sized = [(1000 + i, (i * 37) % 400) for i in range(17)]
-    shards = plan_shards(sized, 4)
-    assert len(shards) == 4
-    flat = [s for q in shards for s in q]
-    assert sorted(flat) == sorted(s for s, _ in sized)
-    assert len(set(flat)) == len(sized)
-    # deterministic
-    assert plan_shards(sized, 4) == shards
+    q = dispatch_order(sized)
+    assert sorted(q) == sorted(s for s, _ in sized)
+    sizes = dict(sized)
+    assert [sizes[s] for s in q] == sorted(
+        (z for _, z in sized), reverse=True)
+    assert dispatch_order(sized) == q                  # deterministic
+    assert dispatch_order([]) == []
 
 
-def test_plan_shards_more_workers_than_seeds():
-    sized = [(1, 10), (2, 20)]
-    shards = plan_shards(sized, 8)
-    assert len(shards) == 2
-    assert sorted(s for q in shards for s in q) == [1, 2]
-    assert plan_shards([], 8) == []
+def test_dispatch_order_ties_break_by_seed():
+    assert dispatch_order([(5, 7), (3, 7), (4, 9)]) == [4, 3, 5]
 
 
-def test_plan_shards_staggers_monster_phases():
-    # 40 roots, sizes ascending with seed; 4 workers. Each queue must span
-    # the size range, and the position of each queue's largest root must
-    # NOT be rank-aligned across queues (the snake's sin).
-    sized = [(i, i) for i in range(40)]
-    shards = plan_shards(sized, 4)
-    monster_pos = [q.index(max(q)) for q in shards]
-    assert len(set(monster_pos)) > 1
-    for q in shards:
-        assert max(q) >= 36 and min(q) <= 3     # spans the range
+def test_claim_is_exclusive(tmp_path):
+    p = tmp_path / "555000"
+    assert claim(p) is True
+    assert claim(p) is False                # second claimant loses
+    assert claim(tmp_path / "555001") is True
 
 
 def test_next_rung_ladder():
