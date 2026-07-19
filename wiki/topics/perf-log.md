@@ -547,3 +547,51 @@ every 5 iters and stop at first crossing — the tail iterations after
 the gap crosses are pure waste, ~25% of iterate). expand_full_width
 deeper fusion (run_engine's own gathers, 0.87 s/anchor) is now the
 lever-after-next and still carries the shared-surface license.
+
+## 2026-07-18o — gap_exit: the cadence economics invert when intermediates only answer yes/no
+
+L3 as queued said "measure every 5–10 iters". The trace economics said
+otherwise: a full 4-seat measurement costs 3.5–7 iterations equivalent
+(measured per root, 18n sweep), so k* = √(2·T·c_meas/c_iter) ≈ 16–18 —
+**br_every=20 was already near-optimal for FULL pricing**, and densening
+it would have lost money. The unlock is structural: an intermediate
+measurement only decides continue-vs-stop, and gap > target ⇔ SOME
+seat's BR gain > target — so price seats in descending last-known-gap
+order and **exit at the first crossing**. Intermediates then cost ~1
+seat, the ratio drops to ~1.3–2, and k* ≈ 9–11.
+
+**Landed:** `cfr_solve(gap_exit=True)` (wave/fused; the loop mirror
+raises, wall_budget_s precedent) + refsweep `BR_EVERY 20 → 10`.
+Exactness is by construction, not tolerance: convergence is only
+declared after ALL live seats are priced; any measurement that can end
+the solve without convergence (iters exhausted, wall budget) prices all
+four (a capped row's final_gap stays a full verdict; a budget expiry
+during a partial measurement defers the cap to the next, full, one). So
+the stop iteration and final profile/value/gap are IDENTICAL to
+gap_exit=False at the same cadence — only intermediate trace entries
+change (certified-above-target partial maxima). **Gate P5** (parity
+suite): stop iter + final result exactly unchanged on toys tuned to
+force 23 intermediate exits. All gates green, 53 pytest.
+
+**Measured (same 20 roots, 5 workers, full cascade):** **P12
+(registered: 19-seed rung-0 wall 310.8 → ≤280 s) PASS at 279.1 s — by
+0.9 s; quote it as 1.11×, not a triumph.** Mechanism receipts: 8/19
+roots stop one cadence step earlier (555046: 20 → 10 iters, 61.4 →
+52.3 s), iterate bucket −19% (151.6 → 123.2 s), br bucket flat
+(36.8 → 37.7 s — the doubled cadence fully paid for by seat-exit),
+zero verdict flips, every stopping gap a full-priced ≤0.05
+certificate. The new rows stop less-converged (555258: gap 0.0499 vs
+18n's 0.0286) — that is the protocol working: pay only for the
+certificate, not for polish past it. Per usable eval (19 seeds, ladder
+accounting): 16.4 → **14.7 worker-s = 1.12× vs 18n, 18.9× vs banked**;
+wedge ladder 700 → 578 s cum. Projected rung-0 **~2,700–3,700
+evals/hour**.
+
+Amdahl after 18o: iterate 45% / build 33% / br 14% / export 6%. The
+big single-root buckets are now build's run_engine gathers (shared
+surface) and the iterate floor itself. Session total on the anchor:
+88.6 → 13.0 s solve; fleet per-usable-eval 277 → 14.7 worker-s
+(**18.9×**). Next candidates, none registered yet: adaptive cadence v2
+(predict crossing from gap decay — saves another ~½ step), run_engine
+gather fusion (the big license), or bank the line and spend the
+velocity on H5/evalset-v2 instead.

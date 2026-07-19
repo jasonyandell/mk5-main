@@ -116,13 +116,14 @@ issues for perf items per 2026-07-18 directive).
   walking"). P6 confirmed, P7/fp32 refuted-and-deleted, P8 16×, P9/P10
   green, P11 narrowly refuted (1.21× vs its 1.25× bar); the
   regret-bound gap shortcut is dead on theory (the 2p folk bound needs
-  utility linear in one opponent). Same-seed paired sweep: **16.9×
-  worker-time per usable eval vs banked**, projected rung-0
-  ~2,400–3,300 evals/hour (was 224). Iterate is back on top (50%) —
-  adaptive gap cadence (L3) is the registered next lever. The anchor's
+  utility linear in one opponent); gap_exit prices intermediate
+  measurements one seat at a time and exits at the first crossing
+  ([[perf-log]] 18o — exact by construction, gate P5). Same-seed paired
+  sweep: **18.9× worker-time per usable eval vs banked**, projected
+  rung-0 ~2,700–3,700 evals/hour (was 224). The anchor's
   full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
   200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
-  shape ([[perf-log]] 18h–n).
+  shape ([[perf-log]] 18h–o).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].

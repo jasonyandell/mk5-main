@@ -827,7 +827,8 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
               seed: int = 0, br_every: int = 10, impl=None,
               pinned: dict | None = None, debug: bool = False,
               engine: str = "fused", slot_budget: int | None = None,
-              wall_budget_s: float | None = None) -> CFRResult:
+              wall_budget_s: float | None = None,
+              gap_exit: bool = False) -> CFRResult:
     """CFR+ over all four seats' info sets; gap priced by impl.br_solve.
 
     Args:
@@ -871,6 +872,18 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
             of silently diverging (it is toy-sized only, where wall budgets
             are meaningless anyway). None (default) is behaviorally
             identical to the pre-knob solver.
+        gap_exit: intermediate gap measurements price seats in descending
+            last-known-gap order and stop at the first seat whose BR gain
+            exceeds target_gap (perf-log 18o). Exact by construction: the
+            continue/stop decision only needs "gap > target", convergence
+            is only declared after all live seats are priced, and any
+            measurement that can end the solve without convergence (iters
+            exhausted, wall budget) prices all seats — so the stop
+            iteration, final profile, value, and gap are IDENTICAL to
+            gap_exit=False; only intermediate trace entries change (they
+            record the certified-above-target partial max). Deterministic.
+            wave/fused only: partial intermediate traces can't be
+            parity-pinned against the loop mirror, so the loop raises.
     """
     del seed  # deterministic full-width solve; kept for contract stability
     if impl is None:
@@ -890,10 +903,14 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
         raise ValueError("wall_budget_s requires engine='fused' or 'wave' "
                          "(the loop engine is the frozen parity mirror; "
                          "wall-driven stops cannot be parity-pinned)")
+    if gap_exit and engine == "loop":
+        raise ValueError("gap_exit requires engine='fused' or 'wave' "
+                         "(partial intermediate traces cannot be "
+                         "parity-pinned against the loop mirror)")
     if engine in ("fused", "wave"):
         return _solve_wave(subgame, payoff43, iters, target_gap, br_every,
                            impl, pinned, debug, slot_budget, wall_budget_s,
-                           fused=(engine == "fused"))
+                           fused=(engine == "fused"), gap_exit=gap_exit)
     return _solve_loop(subgame, payoff43, iters, target_gap, br_every,
                        impl, pinned, debug)
 
@@ -930,7 +947,7 @@ def _avg_sig(sig, avg, slot_iset, nlegal_slot, n_isets, unpinned_mask):
 
 def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
                 pinned, debug, slot_budget, wall_budget_s=None,
-                fused=False) -> CFRResult:
+                fused=False, gap_exit=False) -> CFRResult:
     tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
           "value": 0.0}
     t0 = time.time()
@@ -984,21 +1001,32 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         return prof
 
     rmu_br = [None] * ws.L
+    last_gap = {u: np.inf for u in live_seats}   # unpriced ⇒ price first
 
-    def measure(asig):
+    def measure(asig, partial=False):
         # in-struct pricing (perf-log 18m / Fable consult L1): no export,
         # no impl.br_solve re-walk — the wave structure is already resident.
         # Cross-gated vs impl.br_solve at 1e-9 (P4); loop engine keeps the
         # br_solve path as the standing oracle.
+        # partial (gap_exit, perf-log 18o): an INTERMEDIATE measurement only
+        # decides continue-vs-stop, and gap > target ⇔ some seat's BR gain >
+        # target — so price seats (largest last-known gap first) and exit at
+        # the first crossing. Convergence is only ever declared after ALL
+        # live seats priced, so a stopping gap is always the exact full max;
+        # the exit cannot change the stop iteration or the final result.
         t1 = time.time()
         v0 = _wave_values(ws, asig, payleaf)
         vbar = float(ws.w0 @ v0) / ws.total_w
         tm["value"] += time.time() - t1
         t1 = time.time()
         gap = 0.0
-        for u in live_seats:
+        for u in sorted(live_seats, key=lambda s: (-last_gap[s], s)):
             bru = _wave_br(ws, asig, u, payleaf, signs[u], rmu_br)
-            gap = max(gap, signs[u] * (bru - vbar))
+            g = signs[u] * (bru - vbar)
+            last_gap[u] = g
+            gap = max(gap, g)
+            if partial and target_gap is not None and gap > target_gap:
+                break
         tm["br"] += time.time() - t1
         return vbar, gap
 
@@ -1035,16 +1063,24 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
                 _rm_plus_update(sig, reg, avg, cf, xI, upd[u], ws.slot_iset,
                                 ws.nlegal_slot, ws.n_isets, signs[u], it)
         tm["iterate"] += time.time() - t1
-        if it % br_every == 0 or it == iters or over():
+        budget_stop = over()
+        if it % br_every == 0 or it == iters or budget_stop:
             asig = averaged()
-            vbar, gap = measure(asig)
+            # a measurement that can end the solve WITHOUT convergence
+            # (iters exhausted / wall budget) must price all seats — a
+            # capped row's final_gap is a full 4-seat verdict
+            partial = gap_exit and it != iters and not budget_stop
+            vbar, gap = measure(asig, partial)
             trace.append((it, gap))
             result = (asig, vbar, gap)
             if target_gap is not None and gap <= target_gap:
                 break
             if over():                 # budget-driven stop, gap just priced
-                capped = True
-                break
+                if not partial:
+                    capped = True
+                    break
+                # partial measurement can't cap: iterate on; the next
+                # boundary check sees the expired budget and prices fully
 
     asig_f, vbar, gap = result
     prof = export(asig_f)              # once, at the stop — not per measure

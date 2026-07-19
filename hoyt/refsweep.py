@@ -76,7 +76,8 @@ from pathlib import Path
 
 VERDICT_RANK = {"converged": 0, "gap_capped": 1, "slot_capped": 2, "error": 3}
 USABLE = ("converged", "gap_capped")
-BR_EVERY = 20            # gap-measure cadence (perf-log 18e/18g anchor)
+BR_EVERY = 10            # gap-measure cadence (18o: denser is affordable
+#                          with gap_exit — intermediates price ~1 seat)
 GIB_PER_32M = 7.0        # measured cap-256 worker peak RSS at 32M slots (18g)
 
 
@@ -268,6 +269,7 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
         ph["walt_br"] = round(time.perf_counter() - t1, 2)
         res = cfr_solve(sub, pay, iters=rung.iters,
                         target_gap=rung.target_gap, br_every=BR_EVERY,
+                        gap_exit=True,
                         wall_budget_s=rung.wall_budget_s,
                         slot_budget=rung.slot_budget)
         # the reference value IS the solve's self-play value (measured

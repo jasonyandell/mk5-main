@@ -27,6 +27,10 @@ Gates:
                       (_wave_br, perf-log 18m) == recomputing the gap on
                       the exported profile with ref.br_solve, <= 1e-9, on
                       toys and pins. br_solve stays the standing oracle.
+  P5 gap_exit       — partial intermediate pricing (perf-log 18o) leaves
+                      the stop iteration and the final gap/value/profile
+                      exactly unchanged; intermediate partial gaps are
+                      certified > target and <= the full max.
 """
 from __future__ import annotations
 
@@ -181,11 +185,61 @@ def gate_P4() -> None:
           "; ".join(bad) if bad else " ".join(lines))
 
 
+def gate_P5() -> None:
+    # gap_exit invariance (perf-log 18o): partial intermediate pricing must
+    # not move the stop iteration or the final result — final gap/value/
+    # profile identical (exact equality), trace iterations identical, and
+    # every intermediate partial gap <= the full measurement's (it is a
+    # max over a prefix of seats) while still certifying > target.
+    bad = []
+    lines = []
+    n_intermediate = 0
+    for name in ("t2_decl_w3", "t2_def_w3", "t2_decl_w12", "t2_def_w12"):
+        toy = T.get_toy(name)
+        sub = toy.build()
+        # 0.0005 forces 6-9 above-target intermediate measurements on the
+        # w12 toys, so the partial-exit path is genuinely exercised
+        kw = dict(iters=60, br_every=5, target_gap=0.0005, impl=ref)
+        res_f = cfr_solve(sub, PAY, engine="fused", **kw)
+        res_x = cfr_solve(sub, PAY, engine="fused", gap_exit=True, **kw)
+        n_intermediate += len(res_x.trace) - 1
+        if res_x.iters_run != res_f.iters_run:
+            bad.append(f"{name}: stop iter {res_x.iters_run} vs "
+                       f"{res_f.iters_run}")
+            continue
+        if res_x.gap != res_f.gap or res_x.value != res_f.value:
+            bad.append(f"{name}: final gap/value differ "
+                       f"({res_x.gap} vs {res_f.gap})")
+        if [i for i, _ in res_x.trace] != [i for i, _ in res_f.trace]:
+            bad.append(f"{name}: trace iters differ")
+            continue
+        for (i, gx), (_, gf) in zip(res_x.trace[:-1], res_f.trace[:-1]):
+            if gx > gf + 1e-15 or gx <= kw["target_gap"]:
+                bad.append(f"{name}: partial gap {gx} vs full {gf} at {i}")
+        if res_x.trace[-1][1] != res_f.trace[-1][1]:
+            bad.append(f"{name}: stopping gap differs")
+        ex, ef = res_x.profile.entries, res_f.profile.entries
+        if set(ex) != set(ef) or any(
+                ex[k][0] != ef[k][0]
+                or (len(ex[k][1]) and float(np.max(np.abs(
+                    np.asarray(ex[k][1]) - np.asarray(ef[k][1])))) != 0.0)
+                for k in ex):
+            bad.append(f"{name}: profiles differ")
+        lines.append(f"{name}:it{res_x.iters_run}")
+    if n_intermediate < 4:
+        bad.append(f"only {n_intermediate} intermediate measurements — "
+                   "the exit path was not exercised")
+    _gate(not bad, "P5 gap_exit invariance (stop iter + final result exact)",
+          "; ".join(bad) if bad else
+          " ".join(lines) + f" ({n_intermediate} intermediates)")
+
+
 def main() -> int:
     gate_P1()
     gate_P2()
     gate_P3()
     gate_P4()
+    gate_P5()
     if _failures:
         print(f"\n{len(_failures)} gate(s) FAILED: {_failures}")
         return 1

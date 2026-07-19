@@ -79,7 +79,7 @@ info set in about the cost of one ordinary solve — after which:
 | CFR wall/root, cap-256 | anchor **13.0 s** after the fused iterate + in-struct gap pricing + resident build ([[perf-log]] 18l+18m+18n: iterate 7.1×, br 16×, build 2.36×; was 88.6 s at the start of 2026-07-18, ~115 s before that); iterate is back on top (50% fleet-level) |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
 | jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
-| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l+18m+18n: same-seed paired sample **16.9× less worker-time per usable eval**, 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 in 366 s (banked: 1,799 s) → **~2,400–3,300/hour projected** ([[perf-log]] 18n); deepening 87% → 99% → 100% over three rungs pre-kernel |
+| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–o: same-seed paired sample **18.9× less worker-time per usable eval**, 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (578 s ladder; banked: 1,799 s) → **~2,700–3,700/hour projected** ([[perf-log]] 18o); deepening 87% → 99% → 100% over three rungs pre-kernel |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
