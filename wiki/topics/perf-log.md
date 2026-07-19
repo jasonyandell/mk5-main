@@ -927,3 +927,25 @@ axis). Unlike 19d's deleted kernel this is not a second lane — a
 dtype in the single implementation, net −1 module attribute. The
 residual liability is the alias invariant (stored waves must never
 be written in place), documented at the store site.
+
+## 2026-07-19g — the second wedge dissolves: 555212 converges at rung 0; the production model has ONE wedge
+
+Prior registered (`scratch/fused-iterate/sw_prior.md`): SW1 =
+still-wedge-class (slot-caps to rung 2, 180–320 s) vs SW2 = the
+19e-shaped alternative (converges rung ≤1, ≤120 s). **SW2 CONFIRMED
+beyond its bar: 555212 converged AT RUNG 0 — 72.2 s wall, 60 iters,
+gap 0.039 (banked 1332.4 s = 18.5×, the same ratio class as 555095's
+17.8×).** SW1 refuted; the banked-rung-2 stratum was half artifact.
+Caveat carried forward: its rung-0 solve held 27.4 GiB maxrss — in a
+width-5 fleet that co-residency is untested (the memory-aware cap
+only guards rungs 1–2); the full-line run is the test.
+
+**Production model v2 (model, not measurement):** the wedge share of
+the full line halves — 19e's "two wedges ~2×250 s ≈ half the wall"
+becomes ONE wedge (555090, 232.8 s in-sweep post-int32, ~30% of
+wall) plus 555212 folding into the width-5 rung-0 pool (~72
+worker-s, noise at pool scale). Est. full-line wall ~515 s width-5
+pool + ~233 s wedge ≈ **~12.5 min ≈ ~960 evals/hour (~52× banked)**.
+The soft spot is unchanged (the 174 banked-rung-0 roots' true
+average) — which is the argument for measuring: the split design the
+19e handoff named (two ≤10-min runs) replaces model v2 next.

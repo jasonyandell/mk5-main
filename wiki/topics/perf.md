@@ -129,9 +129,10 @@ issues for perf items per 2026-07-18 directive).
   ([[perf-log]] 18o — exact by construction, gate P5). Same-seed paired
   sweep at refsweep's threads=4 default: **23.7× worker-time per
   usable eval vs banked** (11.7 worker-s), projected rung-0
-  ~3,400–4,650 evals/hour (was 224); full-line model ~700 evals/hour
-  (~37× banked) with the two rung-2 wedges as ~half the modeled wall —
-  the wedge is 589.6M slots and 2× memory-pressured, both measured
+  ~3,400–4,650 evals/hour (was 224); full-line model v2 ~960
+  evals/hour (~52× banked) with ONE rung-2 wedge as ~30% of the
+  modeled wall (555212 dissolved to rung 0 at 72 s, [[perf-log]] 19g)
+  — the wedge is 589.6M slots and 2× memory-pressured, both measured
   ([[perf-log]] 19e); the pressure term is untouchable from the
   transient side — int32 walk working arrays landed as a 1.16× walk /
   1.07× build bandwidth win with ZERO churn effect, so the remaining
