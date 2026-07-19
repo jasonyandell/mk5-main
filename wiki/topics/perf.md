@@ -2,7 +2,7 @@
 title: Perf — the measured laws of making this project fast
 kind: topic
 first_seen: 2026-07-18
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 status: active
 ---
 
@@ -83,7 +83,13 @@ issues for perf items per 2026-07-18 directive).
    and a budget ladder deepens only the shrinking survivor tail. Corollary
    measured twice in one day: **bandwidth-bound monsters barely
    parallelize** (8-wide big-root solves aggregate to ≈1.3× ONE quiet
-   worker) — tune width per rung, never flat. 42's cap verdict is
+   worker) — tune width per rung, never flat. Refined by the zero-diff
+   width experiment ([[perf-log]] 19c): decontention is real (1.42×
+   per-root at width 3 vs 5) yet **width beats decontention wherever
+   decontention < width ratio** — on the M5 Max that is every stratum
+   measured, so throughput (Little's law) keeps the flood and
+   per-eval worker-seconds stays a pricing tool, not the objective.
+   42's cap verdict is
    *quantified* (the exactly-priced gap at stop), so capped rows are
    usable references, and the hard stratum is predictable a priori from
    belief width. Registered metric ([[perf-log]] 18h): **H4 evals per
@@ -106,20 +112,49 @@ issues for perf items per 2026-07-18 directive).
   deterministic BR re-solves at **0.9 ms p50** (45× the net wavefront;
   24.7 ns/node; payoff AND belief weights swappable free); H5-cap512 BR
   p50 3.5 ms. CFR+ reference profiles: gap ≤0.05 pts in ~40 iterations
-  (scale-invariant in worlds so far); cap-256 median root **~92 s / 6.7
-  GiB peak** after the columnar-profile day ([[perf-log]] 18g: export
-  14×, mixed-profile BR 1.5×, RSS 1.6× — the hog was python objects, not
-  arrays; iterate is now 62% of wall and bandwidth-bound). The anchor's
+  (scale-invariant in worlds so far); cap-256 anchor solve **7.2 s**
+  after the fused iterate + in-struct gap pricing + resident-build +
+  threaded-iterate levers ([[perf-log]] 18l/18m/18n/19a, #82: numba
+  edge kernels + forced-slot compression, 7.1× iterate, bitwise; exact
+  BR priced on the resident wave structure, 16×; the build stopped
+  re-deriving what the walk already held — pslot/actor resident +
+  numba move fill, 2.36× build; then the iterate went parallel while
+  staying bitwise — build-time stable argsorts give every thread a
+  disjoint output range with bincount-order folds, 2.67–3.12× iterate
+  at 4–8 threads). P6 confirmed, P7/fp32 refuted-and-deleted, P8 16×,
+  P9/P10 green, P11/P14/P16 narrowly refuted (quoted flat); the
+  regret-bound gap shortcut is dead on theory (the 2p folk bound needs
+  utility linear in one opponent); gap_exit prices intermediate
+  measurements one seat at a time and exits at the first crossing
+  ([[perf-log]] 18o — exact by construction, gate P5). Same-seed paired
+  sweep at refsweep's threads=4 default: **23.7× worker-time per
+  usable eval vs banked** (11.7 worker-s), projected rung-0
+  ~3,400–4,650 evals/hour (was 224); **full line MEASURED
+  2026-07-19: 200/200 converged in 17.0 min = 706 evals/hour, 38.1×
+  banked, 14.8 worker-s/eval** ([[perf-log]] 19h; in-fleet rung mix
+  197/2/1, the models retired), re-measured at **727 evals/hour
+  (16.5 min)** after refsweep's static snake shards became one
+  pull-based biggest-first claim queue — rung-0 pools balance to ±1 s,
+  h2's pool 1.245×, line 1.03× quoted flat, per-seed reference values
+  bit-identical; precision cost ordering (banked walls) measured
+  WORSE than sigma order, monster co-residency contention
+  ([[perf-log]] 19i) — the one wedge is 589.6M slots and
+  2× memory-pressured, both measured
+  ([[perf-log]] 19e); the pressure term is untouchable from the
+  transient side — int32 walk working arrays landed as a 1.16× walk /
+  1.07× build bandwidth win with ZERO churn effect, so the remaining
+  pressure lever is resident footprint ([[perf-log]] 19f). The anchor's
   full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
   200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
-  shape, rung-0 velocity 224 evals/hour ([[perf-log]] 18h–j).
+  shape ([[perf-log]] 18h–19a).
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].
 
 ## Links
 
-[[perf-on-the-table]] · [[walt-spec]] · [[walt]] · [[perf-sprint]] ·
+[[hoyt-perf-primer]] (the campaign's shorthand decoded for cold
+readers) · [[perf-on-the-table]] · [[walt-spec]] · [[walt]] · [[perf-sprint]] ·
 [[perf-sprint-levers]] · [[perf-sprint-traps]] ·
 [[continuous-batching-dispatcher-design]] · [[batch-throughput-bench]] ·
 [[batched-harvest-resilience]] · [[forge]] · [[jud]]

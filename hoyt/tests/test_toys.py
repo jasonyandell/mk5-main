@@ -500,6 +500,34 @@ def test_full_width_walk():
         assert got.tolist() == ref_counts
         for w in res["waves"][:-1]:
             assert "snode" in w and "ph1" in w
+
+        # resident pslot/actor (perf-log 18n): pslot must map every child
+        # slot to the parent slot with the same (node, world) key, and
+        # actor must equal the seat of each node's first child edge
+        waves = res["waves"]
+        N = worlds.shape[0]
+        for j in range(len(waves) - 1):
+            wj, wn = waves[j], waves[j + 1]
+            parn = wn["parent"]
+            kp = wj["snode"].astype(np.int64) * N \
+                + wj["sworld"].astype(np.int64)
+            kc = parn[wn["snode"]].astype(np.int64) * N \
+                + wn["sworld"].astype(np.int64)
+            assert np.array_equal(kp[wn["pslot"]], kc)
+            firstchild = np.searchsorted(parn, np.arange(len(wj["counts"])))
+            assert np.array_equal(
+                wj["actor"], wn["pseat"][firstchild])
+
+        # the numba fill walk (fused lane) must equal the numpy mirror
+        res_k = expand_full_width(sub, kernels=True)
+        assert res_k["n_nodes"] == res["n_nodes"]
+        for k in ("snode", "swt", "sworld", "ptsvd"):
+            assert np.array_equal(res_k["leaf"][k], leaf[k])
+        for a, b in zip(res["waves"], res_k["waves"]):
+            for k in ("parent", "tile", "pseat", "hero", "snode", "sworld",
+                      "counts", "sw", "pslot", "actor", "ph1", "ph2"):
+                if k in a or k in b:
+                    assert np.array_equal(a[k], b[k]), k
         done += 1
     assert done >= 6, f"only {done} toys actually checked"
 

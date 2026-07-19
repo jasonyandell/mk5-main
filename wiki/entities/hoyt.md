@@ -2,7 +2,7 @@
 title: hoyt — the game's own referee
 kind: entity
 first_seen: 2026-07-18
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 status: active
 ---
 
@@ -50,10 +50,21 @@ info set in about the cost of one ordinary solve — after which:
   compile to one shape.
 - **CFR+ references** (`cfr_solve`): regret-matching+, alternating
   updates, linear averaging, over all four seats; gap = max single-seat
-  exact-BR gain vs the average, priced by `br_solve`. Two engines,
-  bitwise-pinned (the verified slow loop is kept as the parity oracle for
-  the vectorized wave engine). Verified on toys against scipy-LP /
-  full-strategy enumeration.
+  exact-BR gain vs the average, priced by `br_solve`. Three engines,
+  bitwise-pinned: "fused" (default — numba edge kernels over int32
+  indices with the forced-slot-compressed strategy space, #82,
+  [[perf-log]] 18l), "wave" (the pure-numpy mirror), "loop" (the
+  verified recursive oracle). Forced info sets (~83% at H4) are exactly
+  inert in RM+ (σ ≡ 1.0, regret ≡ 0), so compressing them out is a
+  bitwise no-op. Gap pricing is IN-STRUCT ([[perf-log]] 18m): exact BR
+  as a forward-reach + backward-argmax pass over the resident wave
+  structure — no per-measurement export or re-walk; br_solve stays the
+  pricing oracle via the loop engine and gate P4 (≤1e-9). The build
+  keeps the walk's parent-slot/actor arrays resident instead of
+  re-deriving them by key search, and the fused lane emits legal moves
+  via `buildkernel.py` ([[perf-log]] 18n, output-identical; the numpy
+  provider is the pinned mirror). Verified on
+  toys against scipy-LP / full-strategy enumeration.
 - **Exploitability meter**: BR gain vs any frozen profile — counter-walt
   ([#77](https://github.com/jasonyandell/mk5-main/issues/77)) is this
   meter pointed at walt.
@@ -65,10 +76,10 @@ info set in about the cost of one ordinary solve — after which:
 | H4 BR re-solve after compile | p50 0.9 ms (45× net wavefront) |
 | H5-cap512 BR | p50 3.5 ms; compile 0.35 s |
 | CFR gap ≤0.05 pts | ≤40 iterations at EVERY root tried — **scale-invariant in worlds** (10 → 33,740) |
-| CFR wall/root, cap-256 | median ~92 s, peak RSS 6.7 GiB after the columnar-profile perf day ([[perf-log]] 18g; was ~115 s / 7.4+ GiB) |
+| CFR wall/root, cap-256 | anchor **7.2 s** after the fused iterate + in-struct gap pricing + resident build + walk elisions + threaded iterate ([[perf-log]] 18l–19a: iterate 7.1× then 2.67–3.12× more at 4–8 threads (bitwise at any count — P13's disjoint-output structure), br 16×, build 2.7×; was 88.6 s at the start of 2026-07-18, ~115 s before that); build is the top bucket now (48% fleet-level at threads=4) |
 | stochastic-field tree blowup | p50 526×, max 5219× vs deterministic σ (measured, was argued ×10²–10⁴) |
 | jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
-| refsweep cascade velocity | rung-0 **224 evals/hour** (5 workers, 90 s cap); explore-mode 30 s cap ≈ 750/hour within ~0.1 pt; deepening 87% → 99% → 100% over three rungs |
+| refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–19a (threads=4 default): same-seed paired sample **23.7× less worker-time per usable eval** (11.7 worker-s), 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (473 s full-cascade root-wall; banked: 1,799 s) → **~3,400–4,650/hour projected** ([[perf-log]] 19a); deepening 87% → 99% → 100% over three rungs pre-kernel |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued

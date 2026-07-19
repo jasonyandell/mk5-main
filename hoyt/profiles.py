@@ -397,7 +397,18 @@ class _UniformProvider:
 
 class _FullWidthProvider:
     """All legal moves per slot, weights unscaled — the CFR structural
-    walk (reachability only; profile probabilities are the CFR lane's)."""
+    walk (reachability only; profile probabilities are the CFR lane's).
+
+    kernels=True emits (slot, move) via the numba fill (buildkernel.py,
+    the fused lane); the numpy bm/nonzero path is the pinned mirror —
+    identical output by construction (ascending (slot, move), integer
+    structure), and the wave lane stays numba-free."""
+
+    def __init__(self, kernels: bool = False):
+        self.kernels = kernels
+        if kernels:
+            from hoyt.buildkernel import fw_fill
+            self._fill = fw_fill
 
     def expand(self, eng, p, pos, sel, nsl, seats, hands):
         sub = eng.sub
@@ -405,6 +416,13 @@ class _FullWidthProvider:
         fb = np.where(ls >= 0, sub.CFB[ls], _ALL28)
         lm = hands & fb
         lm = np.where(lm != 0, lm, hands)
+        if self.kernels:
+            cnt = np.bitwise_count(lm.astype(np.uint64)).astype(np.int64)
+            off = np.concatenate(([0], np.cumsum(cnt)))
+            si = np.empty(off[-1], dtype=np.int64)
+            mv = np.empty(off[-1], dtype=np.int64)
+            self._fill(lm, off, si, mv)
+            return sel[si], mv, None, None
         bm = ((lm[:, None] >> _AR28) & 1).astype(bool)
         si, mv = np.nonzero(bm)
         return sel[si], mv.astype(np.int64), None, None
