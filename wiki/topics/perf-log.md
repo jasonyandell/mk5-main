@@ -836,3 +836,44 @@ structural elision that applies to every root.
 any future numba-parallel kernel reached from the walk would default
 to all cores and oversubscribe a 5-worker sweep 5×18-on-18. Real bug,
 zero-cost fix, landed.
+
+## 2026-07-19e — the rung-1 stratum dissolves, the production model turns over, and the wedge is priced: 5× big, 2× memory-pressured
+
+**PR1 (rung-1 pricing) refuted its own framing, which is the finding.**
+Sample = banked rung-1 min/p25/p50/p75/max (555037/555304/555104/
+555071/555095) through the normal cascade: **4 of 5 converge AT RUNG 0
+now** (14.0–37.2 s; banked 109–453 s) — the banked 174/24/2 rung mix
+is an artifact of banked-era speeds, not tree structure. Only the
+banked max still ladders: 555095 rung-1 converged **77.4 s vs 1376.8
+banked (17.8×)**; my mean-bar was ill-posed (one survivor), the
+max-root bar (≤120 s) CONFIRMED, zero verdict flips.
+
+**Production velocity model v1 (model, not measurement — quote it as
+such):** extrapolating the sample, ~193/200 roots are rung-0-class
+post-P13. Est. full-line: ~174×≲10 + ~19×21 + ~5×87 worker-s at
+width 5, plus the two wedges ~2×250 s at width 1 (mem cap) ≈ **~17 min
+wall ≈ ~700 evals/hour full-line — ~37× banked** (banked line: 10.8 h,
+18.5/hr). The full post-P13 line has NOT been run end-to-end (>10-min
+bench cap); the model's soft spot is the 174 banked-rung-0 roots' true
+average. **The wedges are ~half the modeled wall, at width 1 — the
+production Amdahl points at the wedge class, where solo wins cash 1:1
+(19d's compression law does not apply).**
+
+**Wedge anatomy (PW6–PW8 registered, one solo rung-2 solve):** build
+118.6 s of 234 s wall. **PW6 CONFIRMED beyond its bar: 589.6M total
+tree slots — 5.0× 555046** (the slot budget is per-WAVE; totals
+diverge). Per-slot build 201 vs 102 ns/slot → a clean **2× residual**,
+and **PW8 CONFIRMED: 32.7 GiB compressor churn** during the solve
+(maxrss 26.4 GiB on the 48 GiB box; triad degraded 45.5 → 31.8 GB/s
+across the run). The wedge is big×pressured, both terms now measured.
+Walk shape at scale: 50.8 s = expand 13% / argsort 3% / remainder 84%.
+
+**Successor lever (registered in spirit, needs a bar before code):**
+narrow the walk's WORKING arrays — `sw` is (M,3) int64 holding 28-bit
+hand masks (int32 fits exactly), `sworld` int64 for world indices
+≤256. ~16 B/slot less transient churn ≈ ~9 GiB at wedge scale,
+attacking the measured 2× pressure multiplier where it lives, and
+"bytes-per-eval down" is the north star's second axis. Stored waves
+narrowed in 18n already; this is the transient side. Dtype-promotion
+traps (numpy silently upcasting mixed int32/int64 expressions) make
+this a parity-gated structural change — workflow/subagent sized.
