@@ -80,3 +80,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Touched pages:** [[entities/hoyt|hoyt]] [[entities/walt|walt]] [[topics/walt-spec|walt-spec]] [[topics/perf|perf]] [[topics/perf-log|perf-log]]
 **Added:** [[entities/hoyt|hoyt]] — the game's own referee: net-free kernel + verified CFR+ + exploitability meter + frozen eval anchor, promoted out of walt/kernel/ to `hoyt/` the morning after it was built. Named for "according to Hoyle." Player/referee split registered: walt = BR vs a modeled field; hoyt = values with no model in the loop (the stable eval across model generations).
 **Updated:** walt-spec §7.6 now routes to hoyt; walt entity gains the referee-split bullet + first rent reading (median +1.9 pts/root vs jud); perf fast-path state; perf-log 2026-07-18f (promotion entry; a–e left as history per append-only rule).
+
+## [2026-07-20 | worktree-equiv-census | endgame equivalence census — exact fungibility measured]
+
+**Touched pages:** [[topics/endgame-equivalence-census|endgame-equivalence-census]] [[entities/hoyt|hoyt]] [[topics/suit-algebra-spec|suit-algebra-spec]] [[topics/play-phase-algebra|play-phase-algebra]]
+**Added:** [[topics/endgame-equivalence-census|endgame-equivalence-census]] — the residual-signature instrument (`hoyt/equivcensus.py`, certified) and its verdicts: world/root compression exactly 1.000× on the frozen 200-root evalset (co-occurrence theorem — dead at every horizon); within-hand interchangeable pairs in 25/200 roots with 29/29 bitwise value-tie receipts via br_solve.
+**Updated:** suit-algebra-spec §9 lead-direction bullet (only the monotone relabeling transports per-deal play trees; 0/200 measured); play-phase-algebra §8.3 sharpened; hoyt measured table.

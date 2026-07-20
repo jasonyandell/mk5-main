@@ -164,7 +164,11 @@ the oracle fixes the initial leader to seat 0.
 [[suit-algebra-spec]] §9 identifies large pip-relabeling symmetries of the suit incidence
 structure. The full play-phase game breaks most of them: ranks use numeric pip sums, and
 scoring singles out specific counting dominoes. The big $S_7$ symmetry does not lift to the
-scored game.
+scored game — and per-deal it does not even lift to the unscored legality tree, because a
+mixed domino leads its higher end (only the monotone relabeling transports play trees; see
+the lead-direction bullet in [[suit-algebra-spec]] §9). The measured consequence — exact
+equivalence over deals/worlds is empty at H4 while within-hand ties are real — is
+[[endgame-equivalence-census]].
 
 ## §9. Checkable properties
 
