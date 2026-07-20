@@ -86,3 +86,8 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Touched pages:** [[topics/endgame-equivalence-census|endgame-equivalence-census]] [[entities/hoyt|hoyt]] [[topics/suit-algebra-spec|suit-algebra-spec]] [[topics/play-phase-algebra|play-phase-algebra]]
 **Added:** [[topics/endgame-equivalence-census|endgame-equivalence-census]] — the residual-signature instrument (`hoyt/equivcensus.py`, certified) and its verdicts: world/root compression exactly 1.000× on the frozen 200-root evalset (co-occurrence theorem — dead at every horizon); within-hand interchangeable pairs in 25/200 roots with 29/29 bitwise value-tie receipts via br_solve.
 **Updated:** suit-algebra-spec §9 lead-direction bullet (only the monotone relabeling transports per-deal play trees; 0/200 measured); play-phase-algebra §8.3 sharpened; hoyt measured table.
+
+## [2026-07-20 | worktree-equiv-census | cfr-primer — regret at the table]
+
+**Touched pages:** [[topics/cfr-primer|cfr-primer]] [[entities/hoyt|hoyt]] [[index-topics]]
+**Added:** [[topics/cfr-primer|cfr-primer]] — CFR in project units (info sets as table perspectives, counterfactual reach as the cross-seat coupling, RM+ inertness of forced isets, the measured-gap honesty line, one worked trick, code map, reading path incl. GameShrink/PBS anchors for the census lineage).

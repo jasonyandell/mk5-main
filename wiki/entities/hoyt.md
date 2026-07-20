@@ -111,4 +111,5 @@ per-root form of [#72](https://github.com/jasonyandell/mk5-main/issues/72)).
 ## Links
 
 [[walt]] · [[walt-spec]] · [[perf]] · [[perf-log]] · [[jud]] ·
-[[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]]
+[[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]] ·
+[[cfr-primer]] · [[endgame-equivalence-census]]
