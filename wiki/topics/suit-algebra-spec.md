@@ -245,6 +245,7 @@ All pip-trump declarations share **one** following/legality structure, instantia
 
 - *Intra-suit order:* the swap $0 \leftrightarrow 6$ carries trump-0 to trump-6 but sends $\{3,6\}$—the top non-double of suit 3—to $\{3,0\}$, the bottom. Pip sums are not equivariant.
 - *Count points:* $\{5,0\}, \{4,1\}, \{3,2\}, \{5,5\}, \{6,4\}$ are fixed targets, not symmetric under relabeling.
+- *Lead direction:* a mixed domino leads its **higher** end (§5), so $\ell(\phi_g d)$ equals $g(\ell(d))$ only when $g$ preserves the order of $d$'s pips. Only the unique *monotone* relabeling transports a per-deal play tree — even before ranks and counts enter; arbitrary $g$ transports suit membership only (measured: 0/200 pip-relabeled H4 roots matched their originals, [[endgame-equivalence-census]]).
 
 Pip-trump declarations are isomorphic as legality structures, not as games. ([[play-phase-algebra]] §8.3 develops why the full scored game breaks the big symmetry.)
 

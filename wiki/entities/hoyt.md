@@ -81,6 +81,7 @@ info set in about the cost of one ordinary solve — after which:
 | jud rent, ALL 200 evalset roots | median **+1.53 pts/root** (mean +2.02, p90 +5.22, range **−8.65…+15.49**; the 12-root "never negative" died — 18 roots < −0.5, the population term cuts both ways) |
 | refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–19a (threads=4 default): same-seed paired sample **23.7× less worker-time per usable eval** (11.7 worker-s), 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (473 s full-cascade root-wall; banked: 1,799 s) → **~3,400–4,650/hour projected** ([[perf-log]] 19a); deepening 87% → 99% → 100% over three rungs pre-kernel |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
+| exact equivalence ([[endgame-equivalence-census]]) | world/root compression exactly 1.000× (co-occurrence theorem — dead at every horizon); within-hand interchangeable pairs in 25/200 roots, 29/29 bitwise value-tie receipts via `hoyt/equivcensus.py` |
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
 int32 narrowing + small caps; H6+ is a different build (streaming /
@@ -110,4 +111,5 @@ per-root form of [#72](https://github.com/jasonyandell/mk5-main/issues/72)).
 ## Links
 
 [[walt]] · [[walt-spec]] · [[perf]] · [[perf-log]] · [[jud]] ·
-[[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]]
+[[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]] ·
+[[cfr-primer]] · [[endgame-equivalence-census]]

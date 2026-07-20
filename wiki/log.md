@@ -80,3 +80,21 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Touched pages:** [[entities/hoyt|hoyt]] [[entities/walt|walt]] [[topics/walt-spec|walt-spec]] [[topics/perf|perf]] [[topics/perf-log|perf-log]]
 **Added:** [[entities/hoyt|hoyt]] — the game's own referee: net-free kernel + verified CFR+ + exploitability meter + frozen eval anchor, promoted out of walt/kernel/ to `hoyt/` the morning after it was built. Named for "according to Hoyle." Player/referee split registered: walt = BR vs a modeled field; hoyt = values with no model in the loop (the stable eval across model generations).
 **Updated:** walt-spec §7.6 now routes to hoyt; walt entity gains the referee-split bullet + first rent reading (median +1.9 pts/root vs jud); perf fast-path state; perf-log 2026-07-18f (promotion entry; a–e left as history per append-only rule).
+
+## [2026-07-20 | worktree-equiv-census | endgame equivalence census — exact fungibility measured]
+
+**Touched pages:** [[topics/endgame-equivalence-census|endgame-equivalence-census]] [[entities/hoyt|hoyt]] [[topics/suit-algebra-spec|suit-algebra-spec]] [[topics/play-phase-algebra|play-phase-algebra]]
+**Added:** [[topics/endgame-equivalence-census|endgame-equivalence-census]] — the residual-signature instrument (`hoyt/equivcensus.py`, certified) and its verdicts: world/root compression exactly 1.000× on the frozen 200-root evalset (co-occurrence theorem — dead at every horizon); within-hand interchangeable pairs in 25/200 roots with 29/29 bitwise value-tie receipts via br_solve.
+**Updated:** suit-algebra-spec §9 lead-direction bullet (only the monotone relabeling transports per-deal play trees; 0/200 measured); play-phase-algebra §8.3 sharpened; hoyt measured table.
+
+## [2026-07-20 | worktree-equiv-census | cfr-primer — regret at the table]
+
+**Touched pages:** [[topics/cfr-primer|cfr-primer]] [[entities/hoyt|hoyt]] [[index-topics]]
+**Added:** [[topics/cfr-primer|cfr-primer]] — CFR in project units (info sets as table perspectives, counterfactual reach as the cross-seat coupling, RM+ inertness of forced isets, the measured-gap honesty line, one worked trick, code map, reading path incl. GameShrink/PBS anchors for the census lineage).
+
+## [2026-07-20 | worktree-equiv-census | class-CFR incidence census — sizing the merge]
+
+**Touched pages:** [[topics/endgame-equivalence-census|endgame-equivalence-census]]
+**Added:** "Sizing the class-CFR lane" section — own-hand EQUALS predicate over all reachable CFR info sets (four seats, every depth; per-info-set instrument certified reproducing `interchangeable_pairs` incl. the 6-0/6-1/6-2 triple, with rank comparisons dropping own-hand tiles = relax_meme made local). cap-64 primary (10 stratified roots, 39.4M info sets): forced **82.6%**, non-forced strategy slots removed **2.94%**, class-forced 376k (5.5% of non-forced).
+**Verdicts:** prior "incidence rises with depth" **refuted** — falls (4.4%→3.7%→2.9%, last trick 100% forced); slot-reduction prior confirmed but low (~3%, not 15%); class-forced confirmed; merge concentrated in hidden seats (3.60%) vs the visible seat (0.68%). Cap-sensitive: more worlds → slightly less merging (cap-16 3.22% → cap-64 2.94% same roots; cap-256 unrun, out of budget). Verdict: exact + ~1µs to detect, but a ~3% tidy on top of the ~83% forced-slot compression (#82), not a width win.
+**Flag:** cap-64 shrunk to 10 roots (not 20) to stay in budget; cap-16 run on the full 20 for breadth (2.86%). Receipts in `scratch/equiv-census/`.
