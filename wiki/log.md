@@ -91,3 +91,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 **Touched pages:** [[topics/cfr-primer|cfr-primer]] [[entities/hoyt|hoyt]] [[index-topics]]
 **Added:** [[topics/cfr-primer|cfr-primer]] — CFR in project units (info sets as table perspectives, counterfactual reach as the cross-seat coupling, RM+ inertness of forced isets, the measured-gap honesty line, one worked trick, code map, reading path incl. GameShrink/PBS anchors for the census lineage).
+
+## [2026-07-20 | worktree-equiv-census | class-CFR incidence census — sizing the merge]
+
+**Touched pages:** [[topics/endgame-equivalence-census|endgame-equivalence-census]]
+**Added:** "Sizing the class-CFR lane" section — own-hand EQUALS predicate over all reachable CFR info sets (four seats, every depth; per-info-set instrument certified reproducing `interchangeable_pairs` incl. the 6-0/6-1/6-2 triple, with rank comparisons dropping own-hand tiles = relax_meme made local). cap-64 primary (10 stratified roots, 39.4M info sets): forced **82.6%**, non-forced strategy slots removed **2.94%**, class-forced 376k (5.5% of non-forced).
+**Verdicts:** prior "incidence rises with depth" **refuted** — falls (4.4%→3.7%→2.9%, last trick 100% forced); slot-reduction prior confirmed but low (~3%, not 15%); class-forced confirmed; merge concentrated in hidden seats (3.60%) vs the visible seat (0.68%). Cap-sensitive: more worlds → slightly less merging (cap-16 3.22% → cap-64 2.94% same roots; cap-256 unrun, out of budget). Verdict: exact + ~1µs to detect, but a ~3% tidy on top of the ~83% forced-slot compression (#82), not a width win.
+**Flag:** cap-64 shrunk to 10 roots (not 20) to stay in budget; cap-16 run on the full 20 for breadth (2.86%). Receipts in `scratch/equiv-census/`.

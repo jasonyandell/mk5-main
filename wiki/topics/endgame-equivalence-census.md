@@ -89,6 +89,78 @@ Scope: exactness claims are u-lane (physics worlds, uniform weights). The
 σ-filtered production line ([[jud]] in the loop) and rng world caps are not
 signature-respecting; nets read pips.
 
+## Sizing the class-CFR lane
+
+The strongest surviving consumer is **class-CFR**: constrain every seat's
+strategy to be uniform across its own current equals at each info set (one
+regret accumulator per equals-class). Before building the solver lane we
+sized the merge — across *all* reachable [[cfr-primer|CFR]] info sets (four
+seats, every depth), what fraction of NON-FORCED strategy slots would merge?
+
+Priors registered first (2026-07-20): (a) root-level pair incidence for one
+seat ≈12.5% (the 25/200 fact above); (b) incidence RISES with depth (fewer
+live tiles → adjacency easier); (c) fraction of non-forced slots removed:
+single-digit to 15%; (d) some isets become *class-forced* (n_classes = 1
+with n_legal > 1).
+
+The instrument is the per-info-set EQUALS predicate: a pair in the acting
+seat's hand is equal iff it survives the same residual-signature test used
+for the root — with one refinement that carries the theorem to mid-tree
+nodes. **Rank comparisons (Q) drop the acting seat's own-hand tiles** (a
+tile the seat also holds can never resolve a trick against the pair, so it
+must not split them — `relax_meme` made local); follow-legality (C) keeps
+all live tiles; a mid-trick guard adds the tiles already on the table.
+Certified against `interchangeable_pairs` on three anchors including the
+6-0/6-1/6-2 triple — where the naive "compare against every live tile" test
+fails (the middle tile 6-1 splits 6-0/6-2), which is exactly the me-me
+comparison the relaxed signature forbids. Numba predicate ≈0.9 µs/iset.
+
+Sample: 10 stratified roots (every 10th of the evalset). World caps change
+which hidden hands exist, so incidence is cap-sensitive; we measured both
+cap-16 and cap-64 on the same roots. **cap-64 is the primary run at 10 roots,
+not 20 — the full 20-root cap-64 pass exceeds the session budget (≈40M info
+sets at cap-64 already); cap-16 was also run on the full 20 roots for
+breadth (2.86%).** cap-256 was not run (out of budget); the 16→64 axis is
+the sensitivity witness.
+
+| quantity (cap-64, 10 roots) | measured |
+|---|---|
+| total reachable info sets | 39,389,562 |
+| forced (n_legal = 1) | **82.6%** (matches the known ~83% at H4) |
+| non-forced slots removed under own-equals | **2.94%** (14,044,679 → 13,631,733) |
+| non-forced isets with ≥1 merge | 6.00% |
+| class-forced (n_classes = 1, n_legal > 1) | **376,486** = 5.50% of non-forced |
+| per-root spread (non-forced reduction) | min 0.63%, median 3.27%, max 4.79% |
+
+**Prior (c) confirmed but lands low** — the merge is real and single-digit,
+near the bottom of the predicted band (~3%, not 15%). **Prior (b) refuted:
+incidence FALLS with depth**, it does not rise. Non-forced slot reduction by
+trick (cap-64): leading trick (plies 0-3) **4.38%**, plies 4-7 **3.67%**,
+plies 8-11 **2.87%**, last trick (plies 12-15) **100% forced — zero
+non-forced isets** (one tile each, nothing to merge). The room to merge is
+widest where hands are largest, and the last trick contributes nothing.
+**Prior (d) confirmed:** class-forced isets are common (376k), essentially
+all at the 2-tile trick (plies 8-11), where a single merge collapses both
+legal moves into one class — a provable argmax tie CFR can skip.
+
+**Cap sensitivity:** more worlds → slightly *less* merging (cap-16 3.22% →
+cap-64 2.94% on the same 10 roots; cap-16 on 20 roots 2.86%). Extra hidden
+hands introduce more distinguishing tiles, so pairs split more often; the
+headline is robust at ~3% and the full-u value most likely plateaus just
+below 2.9%.
+
+**Surprise:** the merge budget is not evenly spread across seats. The
+visible seat's slots reduce only **0.68%**, the three hidden seats **3.60%**
+(cap-64) — and hidden seats are 75% of all info sets. Class-CFR's savings
+live almost entirely in the hidden half of the strategy space (where each
+seat is enumerated across every consistent world; the visible seat walks one
+known hand). **Verdict for the lane:** own-equals class-CFR is exact and
+cheap to detect (~1 µs/iset, no solve) but buys a ~3% strategy-slot
+reduction on top of the ~83% forced-slot compression already in the fused
+lane (#82) — a correctness-preserving tidy and an indifference-detection
+gate, not a width win. Receipts: `scratch/equiv-census/class_cfr_census.py`,
+`class_cfr_results_n10.json`.
+
 ## Links
 
 [[hoyt]] · [[walt]] · [[suit-algebra-spec]] · [[play-phase-algebra]] ·
