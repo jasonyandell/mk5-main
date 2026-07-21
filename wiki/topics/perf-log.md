@@ -1031,3 +1031,66 @@ Code: `plan_shards` → `dispatch_order` + atomic claim files
 measured-exhaustion receipt now includes the scheduling family:
 pools balance to ±1 s, so residual line wall is contention
 inflation + the wedge + barriers — all previously priced.
+
+## 2026-07-21a — metal_hoyt: the searcher moves to the GPU; the wall moves back to the CPU; the reference value meets the partnership seam
+
+Jason's directive: "we've done what we can with hoyt... time to go full
+metal" — a NEW ENGINE ([[metal-hoyt]], `metal_hoyt/DESIGN.md`), not a
+port, funded by 19h–i's measured exhaustion (727 evals/hour, every CPU
+lever priced). License measured BEFORE building: a 3M-edge segmented
+backward-value pass (the iterate's canonical fold, random gathers) runs
+**0.41 ms/dispatch at ~127 GB/s effective** via `mx.fast.metal_kernel` —
+raw MSL, zero new dependencies.
+
+**Design in one line**: hoyt stays the referee, metal_hoyt is the
+searcher — fp32 CFR+ iterate + steering gap on the M5 Max GPU, structure
+single-sourced from hoyt's verified build (P13's groupings ARE GPU
+segment layouts, three contiguity invariants asserted per root), and
+every banked claim certified by hoyt's fp64 exact BR. A wrong fp32 gap
+can waste iterations, never mis-claim.
+
+**Kernel honesty**: Metal contracts mul+add to FMA, so fold kernels are
+NOT bitwise vs a separate-mul-add numpy mirror — they agree with the
+fp64 same-order fold to **1.8e-7** (FMA is the more accurate rounding)
+and are bitwise-repeatable across runs (no atomics, precomputed
+segments). The map kernel is bitwise fp32. fp32 steering-gap drift vs
+fp64: worst observed **8.5e-3** (near-tied BR argmax flips, not
+accumulation); margin 0.01, M4 gate logs the delta per solve.
+
+**Measured (16-root paired bench, cap-256 rung-0 params, same session)**:
+searcher (iterate + gap) **3.7 s GPU vs 67.7 s CPU = 18.2×**; whole-solve
+wall 1.39× — the predicted Amdahl shift, the solve is now
+build/certify/export-bound. **Wedge pair (enumerated 555090, 140M
+slots)**: iterate 103.0 → **3.0 s (34×)**, gap pricing 47.6 → 0.2 s,
+identical certified result (v +11.000, gap exactly 0.0, dv 0.0000);
+remaining wall build 166.7 + certify 57.1 + upload 13.8 s — all CPU.
+
+**Production line** (`refsweep --engine metal`, same ledger/verdicts/
+resume; 19d's oversubscription trap re-fired in the metal path — numba
+threads now capped before the build): full 200-root evalset in the 19h
+two-halves pattern, **200/200 converged, 960 s vs the CPU line's 990**,
+with h1 pre-fix at 540 s and **h2 post-fix at 420 s — the fastest half
+ever measured on this line** (CPU best: 450). Wall quote is
+ambient-contaminated (14 GiB swap, session load) — the paired bench is
+the clean instrument; quiet-box re-measure rides
+[#87](https://github.com/jasonyandell/mk5-main/issues/87). CPU cost per
+eval: **7.2 user-s (vs 15.1 worker-s banked) — the line does the same
+work for roughly half the CPU**, and the GPU share of the line's 2,546
+root-wall-s is 84 s (3.3%): the next levers are build (1,292 s), fp64
+certify (538 s), export (302 s) — all CPU, all filed in #87; H5/H6
+habitat on the metal engine is
+[#88](https://github.com/jasonyandell/mk5-main/issues/88).
+
+**The 555013 witness (the entry's finding)**: metal references
+cross-checked vs the banked fp64 line — p50 |dv| **0.0040**, 197/200
+inside the summed-gap heuristic bound, but 555013 lands **1.59 pts away
+at gaps of ~0.03** with identical worlds (199/199) and BIT-IDENTICAL
+walt-BR value. This is the registered honesty line measured at scale:
+in a two-team game, single-seat BR gap does not pin the value — distinct
+low-exploitability profiles can sit 1.6 pts apart because team-pair
+deviation is unpriced. The deterministic fp64 line never showed this
+(same trajectory → same basin every run); the metal trajectory surfaces
+the multiplicity that was always there. Consequence: per-root "reference
+value" carries the partnership-seam caveat; the frozen bank stays
+hoyt-produced and bit-stable, metal rows are certified-but-distinct
+references, never replacements. Question filed in [[open]].
