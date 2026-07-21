@@ -235,7 +235,8 @@ def _root_of(rd: dict):
 
 
 def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
-               oracle, threads: int | None = None) -> dict:
+               oracle, threads: int | None = None,
+               engine: str = "fused") -> dict:
     """One (root, rung) -> one ledger row. The pipeline mirrors the ad-hoc
     2026-07-18 sweep worker (enumerate_worlds -> sigma_consistent ->
     deterministic world cap -> build_subgame -> compile_sigma -> walt BR ->
@@ -281,12 +282,24 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
         t1 = time.perf_counter()
         br = K.br_solve(sub, tab, pay, slot_budget=rung.slot_budget)
         ph["walt_br"] = round(time.perf_counter() - t1, 2)
-        res = cfr_solve(sub, pay, iters=rung.iters,
-                        target_gap=rung.target_gap, br_every=BR_EVERY,
-                        gap_exit=True,
-                        wall_budget_s=rung.wall_budget_s,
-                        slot_budget=rung.slot_budget,
-                        threads=threads)
+        if engine == "metal":
+            # the GPU searcher (metal_hoyt/DESIGN.md): fp32 iterate +
+            # steering gap on the GPU, returned gap/value certified fp64
+            # by hoyt's exact BR — same verdict class as the fused lane
+            from metal_hoyt import cfr_solve_metal
+            res = cfr_solve_metal(sub, pay, iters=rung.iters,
+                                  target_gap=rung.target_gap,
+                                  br_every=BR_EVERY,
+                                  wall_budget_s=rung.wall_budget_s,
+                                  slot_budget=rung.slot_budget,
+                                  threads=threads)
+        else:
+            res = cfr_solve(sub, pay, iters=rung.iters,
+                            target_gap=rung.target_gap, br_every=BR_EVERY,
+                            gap_exit=True,
+                            wall_budget_s=rung.wall_budget_s,
+                            slot_budget=rung.slot_budget,
+                            threads=threads)
         # the reference value IS the solve's self-play value (measured
         # identical on all 200 banked rows, delta 0.0); profile_value's
         # full stochastic re-walk survives only as a 1-in-20 audit (P9)
@@ -348,7 +361,7 @@ def _worker_main(a) -> int:
             print(f"seed {seed} start "
                   f"(worlds_sigma={rec['n_worlds_sigma']})", flush=True)
             row = solve_root(rec, rung, a.worker_rung, a.cap, oracle,
-                             threads=a.threads or None)
+                             threads=a.threads or None, engine=a.engine)
             fh.write(json.dumps(row) + "\n")
             fh.flush()
             solved += 1
@@ -521,7 +534,7 @@ def _driver_main(a) -> int:
                    "--seeds", ",".join(map(str, queue)),
                    "--cap", str(a.cap), "--outdir", str(outdir),
                    "--evalset", str(evalset), "--net", a.net,
-                   "--threads", str(a.threads)]
+                   "--threads", str(a.threads), "--engine", a.engine]
             if a.rungs:
                 cmd += ["--rungs", a.rungs]
             procs.append(subprocess.Popen(cmd, stdout=log,
@@ -554,6 +567,10 @@ def main(argv=None) -> int:
     ap.add_argument("--net", default="champion/jud_net.pt")
     ap.add_argument("--seeds", default="",
                     help="restrict to these seeds (smoke runs)")
+    ap.add_argument("--engine", choices=("fused", "metal"), default="fused",
+                    help="CFR engine per root: fused (CPU numba, default) "
+                         "or metal (GPU searcher, fp64-certified — "
+                         "metal_hoyt/DESIGN.md)")
     ap.add_argument("--threads", type=int, default=THREADS,
                     help="numba threads per worker for the fused iterate "
                          "(P13; 0 = single-threaded kernels). Bitwise "

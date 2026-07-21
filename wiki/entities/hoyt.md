@@ -2,7 +2,7 @@
 title: hoyt — the game's own referee
 kind: entity
 first_seen: 2026-07-18
-last_updated: 2026-07-19
+last_updated: 2026-07-21
 status: active
 ---
 
@@ -85,9 +85,15 @@ info set in about the cost of one ordinary solve — after which:
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
 int32 narrowing + small caps; H6+ is a different build (streaming /
-Metal / sampling — parked). Per tile of horizon: BR pays ~1 order of
-magnitude uncapped and ~nothing capped; CFR pays ~1.5 orders in both
-time and memory.
+Metal / sampling). The Metal fork is no longer parked: [[metal-hoyt]]
+(2026-07-21) runs the CFR+ iterate + steering gap on the M5 Max GPU in
+fp32 (searcher 18.2× on the 16-root paired bench, 34× on the wedge
+iterate) with every banked claim still certified by THIS kernel's fp64
+exact BR — hoyt referees metal_hoyt the same way it referees the game.
+`hoyt.refsweep --engine metal` selects it per root.
+
+Per tile of horizon: BR pays ~1 order of magnitude uncapped and ~nothing
+capped; CFR pays ~1.5 orders in both time and memory.
 
 ## The honesty line (registered before building)
 
@@ -110,6 +116,6 @@ per-root form of [#72](https://github.com/jasonyandell/mk5-main/issues/72)).
 
 ## Links
 
-[[walt]] · [[walt-spec]] · [[perf]] · [[perf-log]] · [[jud]] ·
+[[walt]] · [[walt-spec]] · [[perf]] · [[perf-log]] · [[jud]] · [[metal-hoyt]] ·
 [[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]] ·
 [[cfr-primer]] · [[endgame-equivalence-census]]
