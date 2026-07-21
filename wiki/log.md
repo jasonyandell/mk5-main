@@ -30,6 +30,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Gates:** held-out error-bar coverage for value, gap, convergence, and action damage; H5 throughput; H6 throughput; consumable reference artifacts.
 **Non-goals:** bit replication, identical reductions, per-root CPU certification, and any H4-only win.
 
+## [2026-07-21 | working | full-metal iterate survives; dense H6 refuted]
+
+**Touched pages:** [[full-metal-hoyt]] [[perf-log]] `questions/open.md`
+**Landed:** custom-Metal float32 CFR+ iterate/gap passes, exact DP Metal world sampling, shared four-seat sparse sampled CFR, frozen-policy BR forks, candidate-policy artifacts, and conformal value/gap/BR-shortfall calibration primitives.
+**Refuted:** dense H6 exceeded 288,991,264 live slots at one world before iteration; the surviving design is a bounded-memory sampled/streamed estimator with calibrated errors.
+**Measured:** full-population H5 shared CFR + four-seat candidate audit took 13.39 + 13.02 s; H6 took 5.37 + 11.81 s with 305,277 information rows and 27,219 peak frontier states. Candidate statistical bands are finite, but true upper gaps remain infinite until optimization shortfall is calibrated; both verdicts are `unresolved`.
+
 ## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver — built, graded, integrated]
 
 **Touched pages:** [[walt]] [[walt-spec]] [[the-wall-biography]] [[jud]] [[champion-ladder]] [[the-wall]] [[the-gestation]] [[index-entities|index]] [[index-topics|index]]

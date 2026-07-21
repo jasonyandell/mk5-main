@@ -15,6 +15,8 @@ Format:
 - **Q:** Can a fast, device-resident, root-batched [[full-metal-hoyt]] lane make H5 and H6 reference production practical on the M5 Max with error bars calibrated tightly enough to support reference values, gaps, and action choices?
   - Raised: conversation 2026-07-21 ([[full-metal-hoyt]])
   - Context: The #78→#81→#83→#84 stack exhausted H4 CPU micro-performance and exact structural compression: 727 H4 evals/hour, world/root equivalence 1.000×, own-equals class-CFR only ~3% of non-forced slots. H4 is the calibration set; fast H5 and H6 are the goals. Bit replication and per-root CPU certification are non-goals.
+  - *Narrowed 2026-07-21:* Dense full-width H6 is refuted even at one world: the walk exceeded 288,991,264 live slots before iteration. The open mechanism is a bounded-memory sampled/streamed Metal estimator with held-out value, gap, convergence, and action error bars.
+  - *Advanced 2026-07-21:* Exact DP world sampling, shared four-seat sparse CFR, frozen-policy BR forks, and policy artifacts now run on full H5/H6 populations in seconds. The remaining correctness hinge is a transferable one-sided BR-optimization-shortfall bound; without it the H5/H6 convergence verdicts correctly remain unresolved.
 
 - **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
   - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])

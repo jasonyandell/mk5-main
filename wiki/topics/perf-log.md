@@ -2,7 +2,7 @@
 title: Perf log — append-only field notes
 kind: topic
 first_seen: 2026-07-18
-last_updated: 2026-07-19
+last_updated: 2026-07-21
 status: active
 ---
 
@@ -1031,3 +1031,52 @@ Code: `plan_shards` → `dispatch_order` + atomic claim files
 measured-exhaustion receipt now includes the scheduling family:
 pools balance to ±1 s, so residual line wall is contention
 inflation + the wedge + barriers — all previously priced.
+
+## 2026-07-21 — full-metal vertical slice: fast rounds survive; dense H6 dies
+
+Custom MLX Metal kernels now execute the forced-slot-compressed CFR+ forward,
+backward, counterfactual, regret, and average updates in float32. This is an
+accuracy-calibrated lane, not a bit-parity lane. Quiet paired measurements:
+H4/555006 iterate 3.506 → 0.282 s (12.4x), full solve 10.31 → 9.63 s;
+H5/910000/eight-world/ten-round iterate 3.150 → 0.327 s (9.6x), but full solve
+25.4 → 34.8 s because construction, audit, and export remain on CPU. H4
+value/gap drift was 0.0336/0.00129 points; H5 was 0.00539/0.00216.
+
+The architecture gate is decisive: H6/910000 at **one world** exceeded
+288,991,264 live slots at play 21 and tripped a 256M cap before iteration.
+The full hidden universe is 17,153,136 worlds. **Dense full-width Metal is
+REFUTED for H6.** The surviving full-metal problem is a bounded-memory
+sampled/streamed structural estimator with calibrated value, gap, convergence,
+and action error bars. The working kernels remain the iterate substrate; no
+further H4 micro-optimization is licensed by this result.
+
+Follow-on in the same implementation session moved average value + exact-
+in-structure single-seat BR pricing to Metal and vectorized the one final
+profile normalization. Re-measured: H4 full solve **10.31 → 3.77 s (2.74x)**,
+iterate 3.506 → 0.225 s (15.6x), BR 1.820 → 0.013 s; H5/eight-world/ten-round
+full solve **25.4 → 19.4 s (1.31x)**, iterate 3.150 → 0.265 s (11.9x).
+
+The bounded replacement now has an end-to-end candidate + auditor receipt.
+Exact DP world sampling runs on Metal without enumerating populations. A
+shared sparse external-sampling CFR learner alternates all four seats; each
+candidate can be frozen, one seat reset, and a separate candidate BR trained
+against the other three. H3 candidate value/root action match exact CFR. The
+uniform-opponent H4/555184 BR smoke trained 64,000 traversals in 4.03 s and
+returned 10.8560 (SE 0.02275) versus exact 10.7770 with the exact root move.
+
+On the registered Jud-play H5/910000 root (324,324 physical worlds), shared
+CFR trained 25,600 traversals in 13.39 s, evaluated in 0.11 s, used 392,928
+rows, and peaked at 16,442 frontier states. Four frozen-policy candidate BR
+forks plus evaluation took 13.02 s. On paired H6/910000 (17,153,136 worlds),
+shared CFR trained 6,400 traversals in 5.37 s and evaluated in 0.13 s, with
+305,277 rows and a 27,219-state peak; four BR forks took 11.81 s.
+
+The H5/H6 simultaneous bounded-payoff empirical-Bernstein candidate-deviation
+bands were [0, 1.084] and [0, 1.528]. Those are finite-sample statistical
+bands for the independently evaluated fixed candidates, not upper bounds on
+the true best responses. No exchangeable
+optimization-shortfall calibration population exists yet, so the true upper
+gaps are infinity and both verdicts are `unresolved`. This is a full-population
+memory/throughput PASS, not a reference verdict. Host sparse indexing,
+root-fleet batching, current-vs-average policy choice, calibrated BR shortfall,
+and held-out action damage remain open.

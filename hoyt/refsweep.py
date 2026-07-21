@@ -235,7 +235,8 @@ def _root_of(rd: dict):
 
 
 def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
-               oracle, threads: int | None = None) -> dict:
+               oracle, threads: int | None = None,
+               engine: str = "fused") -> dict:
     """One (root, rung) -> one ledger row. The pipeline mirrors the ad-hoc
     2026-07-18 sweep worker (enumerate_worlds -> sigma_consistent ->
     deterministic world cap -> build_subgame -> compile_sigma -> walt BR ->
@@ -286,7 +287,8 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
                         gap_exit=True,
                         wall_budget_s=rung.wall_budget_s,
                         slot_budget=rung.slot_budget,
-                        threads=threads)
+                        threads=threads if engine == "fused" else None,
+                        engine=engine)
         # the reference value IS the solve's self-play value (measured
         # identical on all 200 banked rows, delta 0.0); profile_value's
         # full stochastic re-walk survives only as a 1-in-20 audit (P9)
@@ -315,7 +317,16 @@ def solve_root(rec: dict, rung: Rung, rung_idx: int, cap: int,
             trace=[(i, round(g, 6)) for i, g in res.trace],
             timings={k: round(v, 2) for k, v in res.timings.items()},
             phase_s=ph,
+            engine=engine,
         )
+        root_dist = res.profile.get(root.me, int(sub.my0), ())
+        if root_dist is not None:
+            moves, probs = root_dist
+            order = np.argsort(np.asarray(probs), kind="stable")
+            top = int(order[-1])
+            second = float(probs[order[-2]]) if len(order) > 1 else 0.0
+            row["root_argmax"] = int(moves[top])
+            row["root_margin"] = round(float(probs[top]) - second, 9)
     except K.KernelMemoryError as e:
         row.update(verdict="slot_capped", error=repr(e)[:300])
     except Exception as e:  # noqa: BLE001 — every failure is a ledger row
@@ -348,7 +359,7 @@ def _worker_main(a) -> int:
             print(f"seed {seed} start "
                   f"(worlds_sigma={rec['n_worlds_sigma']})", flush=True)
             row = solve_root(rec, rung, a.worker_rung, a.cap, oracle,
-                             threads=a.threads or None)
+                             threads=a.threads or None, engine=a.engine)
             fh.write(json.dumps(row) + "\n")
             fh.flush()
             solved += 1
@@ -415,6 +426,14 @@ def _print_plan(recs, ledger, ladder, a) -> None:
 
 
 def _rung_workers(a, rung: Rung, n_entrants: int) -> int:
+    if a.engine == "metal":
+        # One process owns the unified Metal command stream. Root-fleet
+        # batching belongs inside that process; concurrent MLX workers merely
+        # contend for the same GPU and can exhaust unified memory.
+        if a.workers_explicit and a.workers != 1:
+            print("warning: --engine metal forces one worker until the "
+                  "root-batched scheduler lands", flush=True)
+        return min(1, n_entrants)
     mem_cap = default_workers(rung.slot_budget)
     if a.workers_explicit and a.workers > mem_cap:
         print(f"warning: --workers {a.workers} exceeds the memory-aware cap "
@@ -521,7 +540,7 @@ def _driver_main(a) -> int:
                    "--seeds", ",".join(map(str, queue)),
                    "--cap", str(a.cap), "--outdir", str(outdir),
                    "--evalset", str(evalset), "--net", a.net,
-                   "--threads", str(a.threads)]
+                   "--threads", str(a.threads), "--engine", a.engine]
             if a.rungs:
                 cmd += ["--rungs", a.rungs]
             procs.append(subprocess.Popen(cmd, stdout=log,
@@ -559,6 +578,9 @@ def main(argv=None) -> int:
                          "(P13; 0 = single-threaded kernels). Bitwise "
                          "identical either way; compose workers x threads "
                          "against the core budget")
+    ap.add_argument("--engine", choices=("fused", "metal"), default="fused",
+                    help="CFR iterate lane; calibrate metal with "
+                         "hoyt.metalcal before production use")
     ap.add_argument("--dry-run", action="store_true",
                     help="print ladder + resume state + shard plan, no solving")
     # worker mode (spawned by the driver; not a user surface)
