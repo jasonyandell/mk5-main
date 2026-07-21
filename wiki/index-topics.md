@@ -41,7 +41,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/eq-gate-star|eq-gate-star]] — staged iter-2/3 workstream: gate STaR keep on E[Q] delta, not just K1 match (retired)
 - [[topics/eval-matrix-bradley-terry|eval-matrix-bradley-terry]] — Bradley-Terry Elo tournament infra over named players (zeb checkpoints, random, heuristic, eq:n=10/50/100/500) (complete)
 - [[topics/expected-q-value|expected-q-value]] — E[Q]: scalar measuring position value, supplied by forge's Q-value checkpoint (active)
-- [[topics/full-metal-hoyt|full-metal-hoyt]] — problem statement for a device-resident, root-batched Metal Hoyt lane that makes H5/H6 reference production practical without weakening fp64-certified gap semantics (active)
+- [[topics/full-metal-hoyt|full-metal-hoyt]] — build a fast, device-resident, root-batched Metal Hoyt that makes H5 and H6 reference solving practical with confident calibrated error bars; bit replication is a non-goal (active)
 - [[topics/game-context-qa|game-context-qa]] — 5-type game-context Q&A from real game records, ~170 tok prompts; expanded to 14 categories in v9 (superseded)
 - [[topics/hoyt-perf-primer|hoyt-perf-primer]] — plain-language decoder for the hoyt perf campaign: H4/anchor/worlds/cap/gap/rent/banked/rungs/wedge/pull-queue defined in birth order, runtime characteristics milestone by milestone (18.5 → 727 evals/hr), and the structural fork (active)
 - [[topics/huggingface-assets|huggingface-assets]] — account-verified catalog of every HF repo the project generated (4 datasets incl. mk5-run-evidence, ~95 model repos, plus referenced-but-absent names); the off-git shelf run-artifacts-policy points at (active)

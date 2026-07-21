@@ -12,9 +12,9 @@ Format:
 
 ---
 
-- **Q:** Can a device-resident, root-batched [[full-metal-hoyt]] lane make H5 and then H6 reference production practical on the M5 Max while preserving Hoyt's fp64-certified single-seat-BR gap contract despite Metal's lack of `double`?
+- **Q:** Can a fast, device-resident, root-batched [[full-metal-hoyt]] lane make H5 and H6 reference production practical on the M5 Max with error bars calibrated tightly enough to support reference values, gaps, and action choices?
   - Raised: conversation 2026-07-21 ([[full-metal-hoyt]])
-  - Context: The #78→#81→#83→#84 stack exhausted H4 CPU micro-performance and exact structural compression: 727 certified H4 evals/hour, world/root equivalence 1.000×, own-equals class-CFR only ~3% of non-forced slots. The open mechanism is fleet-level GPU residency across build + CFR + certificate, not another isolated kernel.
+  - Context: The #78→#81→#83→#84 stack exhausted H4 CPU micro-performance and exact structural compression: 727 H4 evals/hour, world/root equivalence 1.000×, own-equals class-CFR only ~3% of non-forced slots. H4 is the calibration set; fast H5 and H6 are the goals. Bit replication and per-root CPU certification are non-goals.
 
 - **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
   - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])

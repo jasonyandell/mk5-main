@@ -26,9 +26,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-07-21 | conversation | full-metal Hoyt problem statement]
 
 **Touched pages:** [[full-metal-hoyt]] [[hoyt]] [[perf]] `questions/open.md` [[index-topics|index]]
-**Added:** [[full-metal-hoyt]] — the post-#84 structural question: move Hoyt's ragged root fleet, full-width build, CFR+ sweeps, and certificate path into a device-resident Metal lane whose purpose is a practical H5 then H6 reference line.
-**Gates:** exact structural parity; an explicit answer to Metal's missing fp64 after the CPU fp32 license failed; frozen H4 replay with authoritative gap repricing; full-population H5 horizon proof; consumable reference artifact.
-**Kept:** Hoyt's exact-given-worlds single-seat-BR gap claim and team-game honesty line; no H4-only kernel win counts as completion.
+**Added:** [[full-metal-hoyt]] — move Hoyt's ragged root fleet, full-width build, CFR+ sweeps, and reference evaluation into a fast device-resident Metal lane; H4 is calibration, practical H5 and H6 lines are the goals.
+**Gates:** held-out error-bar coverage for value, gap, convergence, and action damage; H5 throughput; H6 throughput; consumable reference artifacts.
+**Non-goals:** bit replication, identical reductions, per-root CPU certification, and any H4-only win.
 
 ## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver — built, graded, integrated]
 

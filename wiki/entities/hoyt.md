@@ -85,11 +85,11 @@ info set in about the cost of one ordinary solve — after which:
 
 Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs a measured
 population baseline plus a new execution lane; H6+ is a different build.
-[[full-metal-hoyt]] states the active structural question: can a
-device-resident, root-batched Metal lane carry build + iteration + gap
-certification far enough to make H5/H6 reference lines practical without
-weakening the referee? Per tile of horizon: BR pays ~1 order of magnitude
-uncapped and ~nothing capped; CFR pays ~1.5 orders in both time and memory.
+[[full-metal-hoyt]] states the active structural question: build a fast,
+device-resident, root-batched Metal lane that makes H5 and H6 reference lines
+practical with calibrated error bars. Bit replication is not part of that
+goal. Per tile of horizon: BR pays ~1 order of magnitude uncapped and ~nothing
+capped; CFR pays ~1.5 orders in both time and memory.
 
 ## The honesty line (registered before building)
 
