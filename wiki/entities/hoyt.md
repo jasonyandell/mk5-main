@@ -2,7 +2,7 @@
 title: hoyt — the game's own referee
 kind: entity
 first_seen: 2026-07-18
-last_updated: 2026-07-19
+last_updated: 2026-07-21
 status: active
 ---
 
@@ -83,11 +83,13 @@ info set in about the cost of one ordinary solve — after which:
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 | exact equivalence ([[endgame-equivalence-census]]) | world/root compression exactly 1.000× (co-occurrence theorem — dead at every horizon); within-hand interchangeable pairs in 25/200 roots, 29/29 bitwise value-tie receipts via `hoyt/equivcensus.py` |
 
-Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
-int32 narrowing + small caps; H6+ is a different build (streaming /
-Metal / sampling — parked). Per tile of horizon: BR pays ~1 order of
-magnitude uncapped and ~nothing capped; CFR pays ~1.5 orders in both
-time and memory.
+Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs a measured
+population baseline plus a new execution lane; H6+ is a different build.
+[[full-metal-hoyt]] states the active structural question: can a
+device-resident, root-batched Metal lane carry build + iteration + gap
+certification far enough to make H5/H6 reference lines practical without
+weakening the referee? Per tile of horizon: BR pays ~1 order of magnitude
+uncapped and ~nothing capped; CFR pays ~1.5 orders in both time and memory.
 
 ## The honesty line (registered before building)
 
@@ -112,4 +114,4 @@ per-root form of [#72](https://github.com/jasonyandell/mk5-main/issues/72)).
 
 [[walt]] · [[walt-spec]] · [[perf]] · [[perf-log]] · [[jud]] ·
 [[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]] ·
-[[cfr-primer]] · [[endgame-equivalence-census]]
+[[cfr-primer]] · [[endgame-equivalence-census]] · [[full-metal-hoyt]]

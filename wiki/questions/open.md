@@ -12,6 +12,10 @@ Format:
 
 ---
 
+- **Q:** Can a device-resident, root-batched [[full-metal-hoyt]] lane make H5 and then H6 reference production practical on the M5 Max while preserving Hoyt's fp64-certified single-seat-BR gap contract despite Metal's lack of `double`?
+  - Raised: conversation 2026-07-21 ([[full-metal-hoyt]])
+  - Context: The #78→#81→#83→#84 stack exhausted H4 CPU micro-performance and exact structural compression: 727 certified H4 evals/hour, world/root equivalence 1.000×, own-equals class-CFR only ~3% of non-forced slots. The open mechanism is fleet-level GPU residency across build + CFR + certificate, not another isolated kernel.
+
 - **Q:** Does switching forge's production `select_actions` from Lens(p_make) to ev-argmax raise the Zeb-Large win rate above the current 55.7% (E[Q] N=100)?
   - Raised: `afd4802` ([[w42-lens-v1-utility-head-to-head]])
   - Context: `forge/eq/generate/actions.py::select_actions` hardcodes p_make-argmax-with-EV-tiebreak — effectively Lens(p_make), the **worst** of the four utilities in the Lens v1 round-robin (Lens(ev) beats Lens(p_make) by +5.42 pts/hand). The recommended one-line switch to ev-argmax is **NOT applied** as of `afd4802` (verified against the current file plus the Zeb-protocol play path in `forge/zeb/eq_player.py`) — open two months on.

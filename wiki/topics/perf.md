@@ -2,7 +2,7 @@
 title: Perf — the measured laws of making this project fast
 kind: topic
 first_seen: 2026-07-18
-last_updated: 2026-07-19
+last_updated: 2026-07-21
 status: active
 ---
 
@@ -146,7 +146,10 @@ issues for perf items per 2026-07-18 directive).
   pressure lever is resident footprint ([[perf-log]] 19f). The anchor's
   full reference line is built (`hoyt/reference_h4_v1_cap256.jsonl`,
   200/200 at gap ≤0.05) via the `hoyt/refsweep.py` cascade — law 8's
-  shape ([[perf-log]] 18h–19a).
+  shape ([[perf-log]] 18h–19a). The next structural problem is
+  [[full-metal-hoyt]]: a device-resident, root-batched build + CFR +
+  certificate lane aimed at H5/H6, with Metal's lack of fp64 and the
+  already-refuted fp32 license treated as the first correctness gate.
 - **Burl inference**: no confirmed continuous-batching win; production
   picks are turn-aware token budgets + PLE-safe Q4 quant (memory, not
   wall). The sprint is dormant; resume via [[perf-sprint]].
@@ -157,4 +160,4 @@ issues for perf items per 2026-07-18 directive).
 readers) · [[perf-on-the-table]] · [[walt-spec]] · [[walt]] · [[perf-sprint]] ·
 [[perf-sprint-levers]] · [[perf-sprint-traps]] ·
 [[continuous-batching-dispatcher-design]] · [[batch-throughput-bench]] ·
-[[batched-harvest-resilience]] · [[forge]] · [[jud]]
+[[batched-harvest-resilience]] · [[forge]] · [[jud]] · [[full-metal-hoyt]]
