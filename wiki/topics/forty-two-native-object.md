@@ -60,6 +60,28 @@ representation side. The deletion-sequence view of a hand IS the
 [[count-fate-ledger]]: a node's fate is when and how it leaves the
 structure.
 
+## How big is the object (measured 2026-07-22, 400 deals × Knuth estimator)
+
+One complete hand, one seat's view: C(21,7)·C(14,7) ≈ 4×10⁸ worlds.
+Naive per-world path bound (7!)⁴ ≈ 10¹⁴·⁸; MEASURED legal sequences per
+deal: median **10⁹·⁷** (p90 10¹⁰·⁷) — legality alone narrows five orders
+of magnitude. Branching by play position is a heartbeat: leads carry the
+width (7.0 → 6.0 → 5.0 → … → 1.0 per trick), follows hum along at ~2.6
+early and collapse to 1.0 by the last trick. **39.5% of all plays are
+forced; 48% of follows are forced and 73% have ≤2 choices; a hand is
+~17 real decisions dressed as 28 plays.** One decl per hand — the ×9
+decl axis lives only in the auction's belief, never in the play object.
+
+Datacenter arithmetic ($10⁹ ≈ 100–250 PB of RAM): the HISTORY-tree
+representation of one hand is tens of exabytes — no by ~100×. The
+native state-DAG with forced-chain collapse (the compression [[hoyt]]
+already performs bitwise at H4, where 83% of info sets are forced) is
+~10¹⁴–10¹⁵ slots ≈ **2–20 PB — one hand of 42 fits in a fraction of
+one datacenter, but ONLY in native coordinates**. The representation
+choice is worth the entire distance between absurd and buildable; and
+nobody needs to build it (CFR gap ≤0.05 in ≤40 iters, world-scale-
+invariant — the cascade exists so this bill is never paid).
+
 ## The perf stance
 
 Where the wrong unit is paid for today: NOT the engine (hoyt/walt
