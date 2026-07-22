@@ -23,6 +23,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-22 | worktree-atlas | atlas: the founding native-object substrate — coordinate, algebra, fiber, roles, narrate]
+
+**Touched pages:** [[atlas]] [[forty-two-native-object]] [[index-entities|index]]
+**Added:** [[atlas]] — the [[forty-two-native-object]] program's first BUILT instance: a hand as an exact `CoordinateV1` (blake2b-128 address), play as `transition` (node deletion), the unknowns as an exact `fiber`, roles over a resident decl-indexed algebra, the 2↔3 arrow as `transport`. numpy-only library (no solver/nets/players; belief quarantined to uniform), rules derived from `forge.oracle.tables`, no walt/roles/hoyt in runtime.
+**Gates (all green, 33/33):** C1 pack/unpack 10k fuzz + cross-process address; C2 engine parity 550 games × 4 viewers, all 10 decls incl. 8; C3 fiber == [[walt]].worlds at >200 boundaries + mid-trick brute force + monotone shrink; **C4 sufficiency** — 20 different histories reaching an equal coordinate give identical [[hoyt]] values to 1e-9 (240 available); C5 role parity vs [[role-threat-tensor]]; C6 the transport law commutes for decls 2/3.
+**Flag:** v1 has zero perf work by design — correctness is the point; consumers (jud-next, auction decoder #42, count-fate referees, narration) build on it. Tracking [#90](https://github.com/jasonyandell/mk5-main/issues/90).
+
 ## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver — built, graded, integrated]
 
 **Touched pages:** [[walt]] [[walt-spec]] [[the-wall-biography]] [[jud]] [[champion-ladder]] [[the-wall]] [[the-gestation]] [[index-entities|index]] [[index-topics|index]]

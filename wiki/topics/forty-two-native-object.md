@@ -82,6 +82,21 @@ choice is worth the entire distance between absurd and buildable; and
 nobody needs to build it (CFR gap ≤0.05 in ≤40 iters, world-scale-
 invariant — the cascade exists so this bill is never paid).
 
+## atlas exists (2026-07-22)
+
+The representation this page argues for is built: [[atlas]] (`atlas/`,
+Python/numpy) is the founding v1 — a hand as an exact `CoordinateV1` with a
+canonical blake2b-128 address, play as `transition` (node deletion), the
+unknowns as an exact `fiber`, roles over the resident decl-indexed algebra,
+and the 2↔3 arrow as `transport`. It is a library (no solver, no nets, no
+players; belief quarantined to the uniform default), correct by construction
+and gated against every authority: engine parity on 550 games × 4 viewers,
+fiber parity vs [[walt]]'s enumerator, role parity vs the
+[[role-threat-tensor]], and — the receipt this page's sufficiency claim
+wanted — C4: 20 different histories reaching an equal coordinate give
+identical [[hoyt]] values to 1e-9. No perf work in v1 by design; the
+P-ENC/P-DEL/P-DECL program and the consumers below build on it.
+
 ## The perf stance
 
 Where the wrong unit is paid for today: NOT the engine (hoyt/walt
