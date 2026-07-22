@@ -68,6 +68,14 @@ the frozen-root stable eval, H5/H6 horizon pushes.
   primitive: exact gap minus independently evaluated sampled-BR upper bound.
   Production convergence requires candidate uncertainty plus this calibrated
   optimization-shortfall bound; otherwise the verdict is `unresolved`.
+- `HoytPlay` (`hoyt/play.py`) is the experimental Arena-shaped player
+  consumer. It projects each `ZebGameState` to an `EndgameRoot` containing
+  only the acting seat's hand and public state, runs a fresh `SampledCFR`, and
+  returns a legal zeb slot. Its default payoff is `payoff_make(bid)`; `points`
+  is optional. It may only enter at H5/H6, schedules batch members serially,
+  and exposes fixed-candidate action intervals without claiming calibrated
+  optimization shortfall. The resumable table stores the full deal under
+  `scratch/` solely for the zeb referee and never renders hidden hands.
 
 ## Gates
 
@@ -91,6 +99,10 @@ the frozen-root stable eval, H5/H6 horizon pushes.
   band and root moves agree; capacity fails closed; four-seat sampled CFR
   matches exact H2 value, visits all actors, and frozen-policy forks reset only
   their updating seat. Candidate policies round-trip as artifacts.
+- **P1 playable boundary**: changing the three non-acting hidden holdings
+  leaves `root_from_state` identical; session save/load is exact; the renderer
+  shows only public history plus the human hand; forced moves do not construct
+  a solver; complete H5/H6 continuations remain zeb-legal.
 
 ## Honesty line (registered)
 
@@ -107,9 +119,10 @@ team-pair deviation out of scope.
   `walt/tests/test_cfr_*.py`. `reference.py` is a tiny pure-python
   implementation of THIS interface for toys only (correctness mirror, no
   perf goals) so the CFR lane never blocks on the kernel lane.
-- Full-metal lane: `hoyt/{metalkernel,worldsample,sampled_br,metalcal}.py` and
-  `hoyt/tests/test_{cfr_metal,worldsample,sampled_br}.py`. MLX is required for
-  these surfaces (`burl/requirements-mlx.txt`); exact CPU defaults do not
+- Full-metal lane:
+  `hoyt/{metalkernel,worldsample,sampled_br,metalcal,play}.py` and
+  `hoyt/tests/test_{cfr_metal,worldsample,sampled_br,play}.py`. MLX is required
+  for these surfaces (`burl/requirements-mlx.txt`); exact CPU defaults do not
   import it eagerly.
 - Neither lane edits existing walt modules, this file, or the other lane's
   files. Python via `/Users/jason/code/mk5-main/.venv/bin/python -u` from

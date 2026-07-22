@@ -2,7 +2,7 @@
 title: Full-metal Hoyt — the H5/H6 problem
 kind: topic
 first_seen: 2026-07-21
-last_updated: 2026-07-21
+last_updated: 2026-07-22
 status: active
 ---
 
@@ -160,6 +160,52 @@ candidate BRs at registered budgets; one-sided shortfall calibration; then
 held-out value, gap, convergence, and action-damage coverage. A new root is
 converged only when candidate uncertainty plus the shortfall bound lies below
 the target; otherwise it remains explicitly unresolved.
+
+## Playable table experiment
+
+`hoyt/play.py` turns the bounded solver into a resumable late-hand player.
+The default table uses [[jud]] only to produce a deterministic two-trick
+prefix, seats the human at the resulting H5 lead, and lets the other three
+seats independently re-solve from their own information sets. The zeb engine
+retains the real deal as referee state; each Hoyt root and its random stream
+depend only on the acting seat's remaining hand plus the public auction and
+play record. A projection gate perturbs the referee's other three hidden hands
+and requires the solver root to remain identical.
+
+The table's default payoff is make/set probability for the live contract
+(`payoff_make`); expected declaring points remains an option. Its displayed
+action bands are simultaneous empirical-Bernstein intervals for evaluation of
+the fixed candidate. They do **not** include optimization shortfall and do not
+upgrade the unresolved reference verdict. Each seat also starts from the
+physical-uniform consistent-world prior: previous actions impose legality and
+void evidence, but are not weighted by a behavior model. This is a real
+imperfect-information player and an intentionally naive belief player.
+
+Two quiet M5 Max end-to-end smokes on seed 910000 established playability, not
+strength:
+
+| entry | remaining plays | forced | Metal re-solves | total solve wall | max one solve |
+|---|---:|---:|---:|---:|---:|
+| H5 | 20 | 12 | 8 | 14.57 s | 4.19 s |
+| H6 | 24 | 13 | 11 | 17.01 s | 3.36 s |
+
+The untouched H5 opening has 324,324 physical worlds. A human-seat hint took
+4.2 s and selected 6-4 over the runner-up by an estimated 1.1 percentage
+points of contract success; the simultaneous evaluation band was ±5.0 points,
+so the table correctly called the choice close. The H5/H6 continuation totals
+above are single warm smokes whose many forced follows make them much cheaper
+than multiplying a root benchmark by every remaining play. They are neither a
+fleet benchmark nor a calibration receipt.
+
+The session is local and resumable:
+
+```bash
+python -u -m hoyt.play --new --interactive --seed 910000 --horizon 5
+```
+
+This consumer answers a question the reference fleet cannot: whether a fuzzy,
+legally information-bounded Hoyt feels coherent at the table. Strength against
+humans or the existing player ladder remains unmeasured.
 
 ## Non-goals
 

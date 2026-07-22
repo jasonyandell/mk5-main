@@ -23,6 +23,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-22 | working | full-metal Hoyt sits at the table]
+
+**Touched pages:** [[full-metal-hoyt]] [[hoyt]] `hoyt/CONTRACTS.md` `questions/open.md`
+**Landed:** `hoyt/play.py` — a resumable human H5/H6 continuation whose bot roots and random streams see only the acting hand plus public state; make/set utility by default; fixed-candidate action bands remain explicitly shortfall-uncalibrated.
+**Smoked:** seed 910000 all-Hoyt continuation: H5 20 remaining plays / 8 Metal re-solves / 14.57 s solve wall; H6 24 / 11 / 17.01 s. These are single playability receipts, not strength or fleet benchmarks.
+**Gate:** perturbing the referee's hidden holdings cannot change the solver root; hidden hands do not render; sessions round-trip; forced moves bypass solving; complete continuations remain zeb-legal.
+
 ## [2026-07-21 | conversation | full-metal Hoyt problem statement]
 
 **Touched pages:** [[full-metal-hoyt]] [[hoyt]] [[perf]] `questions/open.md` [[index-topics|index]]
