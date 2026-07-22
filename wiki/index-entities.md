@@ -3,6 +3,7 @@
 Named things: projects, systems, models, artifacts. Hubs in bold below.
 
 - [[entities/arena|arena]] — full-game harness (arena/): real auctions, marks to 7, paired-seed team rotation; champion rung 1; first physics: static risk-budget bidding beats bid30 by +0.78 marks/game; now also the model-backed `gus` bidder and score-carrying `BidContext`; 2026-07-06 perf pass: 2.38× games/sec on MPS, byte-identical, dispatch-bound not compute-bound; second pass (constant-batch-width refill, byte-identity relaxed) in flight (active)
+- [[entities/atlas|atlas]] — the game as an addressed space: a hand as an exact CoordinateV1 (blake2b-128 address), play as node deletion, the unknowns as an exact fiber, roles over a resident decl-indexed algebra, the 2↔3 arrow as transport; the first built instance of the [[topics/forty-two-native-object|forty-two-native-object]] program, numpy-only library gated against forge.zeb/walt/hoyt/roles; correct by construction, zero perf in v1 (active)
 - [[entities/belief-trajectory|belief-trajectory]] — tool wiring Gus's calibrated belief head into Burl; replaces static E[Q] PDF primitive (superseded)
 - [[entities/book-strategy-player|book-strategy-player]] — algebraic Phase 1 contract for named multi-step strategies over Lens(ev): pure Reader/State/Writer core, finite library, lawful facts, deterministic arbitration, and strict fallback identity (superseded)
 - [[entities/burl-adapter-line|burl-adapter-line]] — Burl adapter lineage (iter0→iter1→iter3-rules) with comparative eval table (complete)
