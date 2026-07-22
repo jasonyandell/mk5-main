@@ -86,7 +86,13 @@ mechanical. Follow-up probes filed in the tracking issue: the
 live-interchangeability horizon curve (auction 0% → H4 12.5%), and a
 policy-factorization probe with a trained head instead of rules.
 
+The tensor turned out to be the first brick of a larger claim — the
+computational unit is the marked substructure, not the domino; see
+[[forty-two-native-object]] (registered 2026-07-22, with the symmetry
+receipt this page's R5 gate foreshadowed).
+
 ## Links
 
 [[count-fate-ledger]] · [[endgame-equivalence-census]] ·
-[[suit-algebra-spec]] · [[hoyt]] · [[w42]] · [[texas-42]]
+[[suit-algebra-spec]] · [[hoyt]] · [[w42]] · [[texas-42]] ·
+[[forty-two-native-object]]
