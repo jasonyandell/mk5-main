@@ -114,6 +114,13 @@ training** rather than being written as code. What the ledger contributes
 is the *label space* that makes such lessons stateable and gradeable —
 not a feature set to hand the student.
 
+The label space is now mechanical: the [[role-threat-tensor]]
+(2026-07-22) computes walker/boss/lead-quality as monotone mask
+predicates (one AND against the outstanding set, 1.1 KB LUT), and its
+probes returned the ledger a receipt from an independent instrument —
+the exact best lead is a held walker only ~55% of the time, i.e.
+harvest *timing* is where the value lives, exactly the ledger's thesis.
+
 ## The argument's referees (2026-07-15)
 
 Ratified in conversation (Jason, 2026-07-15); filed on
