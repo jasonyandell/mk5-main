@@ -2,7 +2,7 @@
 title: hoyt — the game's own referee
 kind: entity
 first_seen: 2026-07-18
-last_updated: 2026-07-19
+last_updated: 2026-07-22
 status: active
 ---
 
@@ -82,12 +82,16 @@ info set in about the cost of one ordinary solve — after which:
 | refsweep cascade velocity | rung-0 **224 evals/hour** pre-kernel; post 18l–19a (threads=4 default): same-seed paired sample **23.7× less worker-time per usable eval** (11.7 worker-s), 19/20 converge at rung 0 and the 555090 wedge now cashes at rung 2 (473 s full-cascade root-wall; banked: 1,799 s) → **~3,400–4,650/hour projected** ([[perf-log]] 19a); deepening 87% → 99% → 100% over three rungs pre-kernel |
 | mixing | ~500 toy configurations, zero mixed equilibria — vs deterministic fields, late 42 is **pure**; mixing must earn via concealment, not value |
 | exact equivalence ([[endgame-equivalence-census]]) | world/root compression exactly 1.000× (co-occurrence theorem — dead at every horizon); within-hand interchangeable pairs in 25/200 roots, 29/29 bitwise value-tie receipts via `hoyt/equivcensus.py` |
+| full-metal first slice (2026-07-21) | dense H4 anchor 10.31→3.77 s; dense H5/eight-world/ten-round 25.4→19.4 s; dense H6 refuted at one world (>288M slots). Shared sampled CFR covers the full H5/H6 world populations in bounded memory: H5 13.39 s train + 13.02 s four-seat audit; H6 5.37 s + 11.81 s, 305,277 rows / 27,219 peak frontier. Both remain unresolved until BR shortfall is calibrated ([[full-metal-hoyt]]) |
+| playable late-hand smoke (2026-07-22) | `hoyt/play.py` seats a human at H5/H6 and independently re-solves the other seats from their own information. Seed 910000 all-Hoyt continuation: H5 20 plays / 8 non-forced solves / 14.57 s solve wall; H6 24 / 11 / 17.01 s. Make/set utility; physical-uniform belief; single smokes, not strength or calibration claims ([[full-metal-hoyt]]) |
 
-Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs the queued
-int32 narrowing + small caps; H6+ is a different build (streaming /
-Metal / sampling — parked). Per tile of horizon: BR pays ~1 order of
-magnitude uncapped and ~nothing capped; CFR pays ~1.5 orders in both
-time and memory.
+Habitat: **H ≤ 4 comfortable** (H3 nearly free); H5 needs a measured
+population baseline plus a new execution lane; H6+ is a different build.
+[[full-metal-hoyt]] now splits the lane: dense Metal is a measured H4/H5
+accelerator, while H6 requires sparse external sampling plus a calibrated
+sampled-BR shortfall bound. Bit replication is not part of the goal. Per tile
+of horizon: dense BR pays ~1 order of magnitude uncapped and ~nothing capped;
+dense CFR pays ~1.5 orders in both time and memory.
 
 ## The honesty line (registered before building)
 
@@ -106,10 +110,12 @@ Exploitability pricing for [#77](https://github.com/jasonyandell/mk5-main/issues
 fact says concealment is mixing's only paycheck); the stable eval for
 every future player generation; reference values for the
 [[count-fate-ledger]] referees; rent-decomposition of walt's edge (the
-per-root form of [#72](https://github.com/jasonyandell/mk5-main/issues/72)).
+per-root form of [#72](https://github.com/jasonyandell/mk5-main/issues/72));
+and an explicitly experimental H5/H6 human table that tests whether the
+bounded candidate behaves coherently before calibration is complete.
 
 ## Links
 
 [[walt]] · [[walt-spec]] · [[perf]] · [[perf-log]] · [[jud]] ·
 [[belief-policy-value-algebra]] · [[count-fate-ledger]] · [[the-wall]] ·
-[[cfr-primer]] · [[endgame-equivalence-census]]
+[[cfr-primer]] · [[endgame-equivalence-census]] · [[full-metal-hoyt]]

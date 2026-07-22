@@ -36,8 +36,13 @@ seats, per world); an info set's own-reach is constant across its worlds
 (its seat's past probabilities are pinned by the public path), which the
 implementation exploits.
 
-Three interchangeable iteration engines (identical math, parity-gated in
-hoyt/tests/test_cfr_parity.py):
+Four interchangeable iteration engines (the three fp64 lanes are
+parity-gated in hoyt/tests/test_cfr_parity.py; Metal is accuracy-calibrated):
+
+- engine="metal": custom Metal kernels over the fused segment layout. CFR+
+  iterate state stays on the GPU between explicit gap-audit boundaries and
+  uses float32 arithmetic. The CPU fp64 lane is its calibration oracle, not a
+  bit-replication target.
 
 - engine="fused" (default): numba edge kernels (hoyt/iterkernel.py) over
   the wave engine's structure, with native int32 indices, forced-edge
@@ -691,7 +696,8 @@ class _FusedLayout:
                  "rmu", "ru2", "v2", "par", "vseg", "cf_ju", "iso")
 
 
-def _build_fused(ws: _WaveStruct, sig0_full, par: bool = False) -> _FusedLayout:
+def _build_fused(ws: _WaveStruct, sig0_full, par: bool = False,
+                 cpu_buffers: bool = True, warm_jit: bool = True) -> _FusedLayout:
     fl = _FusedLayout()
     fl.par = par
     nleg_iset = np.diff(np.append(ws.off, ws.Lflat))
@@ -745,10 +751,13 @@ def _build_fused(ws: _WaveStruct, sig0_full, par: bool = False) -> _FusedLayout:
         fl.eseat8.append(e)
 
     fl.w0 = ws.w0
-    fl.rmu = [np.empty(s) for s in ws.S]
-    max_s = max(ws.S)
-    fl.ru2 = (np.empty(max_s), np.empty(max_s))
-    fl.v2 = (np.empty(max_s), np.empty(max_s))
+    if cpu_buffers:
+        fl.rmu = [np.empty(s) for s in ws.S]
+        max_s = max(ws.S)
+        fl.ru2 = (np.empty(max_s), np.empty(max_s))
+        fl.v2 = (np.empty(max_s), np.empty(max_s))
+    else:
+        fl.rmu = fl.ru2 = fl.v2 = None
 
     if par:
         # P13 threading structure: every parallel fold's grouping is built
@@ -790,27 +799,28 @@ def _build_fused(ws: _WaveStruct, sig0_full, par: bool = False) -> _FusedLayout:
             fl.iso[u] = np.searchsorted(
                 fl.c_isl_loc[sl], np.arange(niu + 1)).astype(np.int64)
 
-    # warm the jit on 1-edge dummies so compile/cache-load lands in the
-    # build timing bucket, not the first iteration's
-    from hoyt.iterkernel import bwd_edges, fwd_edges
-    z32, f32 = np.zeros(1, np.int32), np.full(1, -1, np.int32)
-    z8 = np.zeros(1, np.int8)
-    d = np.ones(1)
-    fwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
-              np.empty(1), np.empty(1))
-    bwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
-              np.empty(1), d.copy())
-    if par:
-        from hoyt.iterkernel import (bwd_v_map, bwd_v_seg, cf_seg,
-                                     fwd_edges_par, rm_update_seg)
-        z64 = np.zeros(2, np.int64)
-        fwd_edges_par(z32, f32, z8, 0, d, d.copy(), d.copy(),
-                      np.empty(1), np.empty(1))
-        bwd_v_map(z32, f32, d, d.copy(), np.empty(1))
-        bwd_v_seg(z64, z32, f32, d, d.copy(), np.empty(1))
-        cf_seg(z64, z32, z32, z32, d, d.copy(), np.empty(1))
-        rm_update_seg(z64, d.copy(), d.copy(), d.copy(), d.copy(),
-                      np.empty(0), d.copy(), 1, 1)
+    if warm_jit:
+        # warm on 1-edge dummies so compile/cache-load lands in build, not
+        # iteration. The Metal lane has separate JIT kernels and skips this.
+        from hoyt.iterkernel import bwd_edges, fwd_edges
+        z32, f32 = np.zeros(1, np.int32), np.full(1, -1, np.int32)
+        z8 = np.zeros(1, np.int8)
+        d = np.ones(1)
+        fwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
+                  np.empty(1), np.empty(1))
+        bwd_edges(z32, f32, z8, 0, d, d.copy(), d.copy(),
+                  np.empty(1), d.copy())
+        if par:
+            from hoyt.iterkernel import (bwd_v_map, bwd_v_seg, cf_seg,
+                                         fwd_edges_par, rm_update_seg)
+            z64 = np.zeros(2, np.int64)
+            fwd_edges_par(z32, f32, z8, 0, d, d.copy(), d.copy(),
+                          np.empty(1), np.empty(1))
+            bwd_v_map(z32, f32, d, d.copy(), np.empty(1))
+            bwd_v_seg(z64, z32, f32, d, d.copy(), np.empty(1))
+            cf_seg(z64, z32, z32, z32, d, d.copy(), np.empty(1))
+            rm_update_seg(z64, d.copy(), d.copy(), d.copy(), d.copy(),
+                          np.empty(0), d.copy(), 1, 1)
     return fl
 
 
@@ -933,7 +943,10 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
         engine: "fused" (numba edge kernels + forced-slot-compressed
             updates, default), "wave" (the pure-numpy mirror; fp64 results
             are bitwise identical to fused), or "loop" (the original
-            recursive mirror, toy sizes only).
+            recursive mirror, toy sizes only). "metal" runs float32 CFR+
+            updates as custom Metal kernels and crosses to the host only at
+            requested gap-audit boundaries; its contract is calibrated error,
+            not fp64 bit replication.
         slot_budget: forwarded to the kernel walk (wave engine); None keeps
             the kernel default. A KernelMemoryError means chunk or cap —
             escalate, never sample.
@@ -985,9 +998,10 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
     if payoff43.shape[0] != 43:
         raise ValueError("payoff43 must have 43 entries")
     pinned = {int(s): p for s, p in (pinned or {}).items()}
-    if engine not in ("fused", "wave", "loop"):
+    if engine not in ("fused", "wave", "loop", "metal"):
         raise ValueError(
-            f"engine must be 'fused', 'wave' or 'loop', got {engine!r}")
+            f"engine must be 'fused', 'wave', 'loop' or 'metal', "
+            f"got {engine!r}")
     if wall_budget_s is not None and engine == "loop":
         raise ValueError("wall_budget_s requires engine='fused' or 'wave' "
                          "(the loop engine is the frozen parity mirror; "
@@ -998,13 +1012,13 @@ def cfr_solve(subgame, payoff43, iters: int = 200, target_gap: float | None = No
                          "parity-pinned against the loop mirror)")
     if threads is not None and engine != "fused":
         raise ValueError("threads requires engine='fused' (the wave and "
-                         "loop mirrors are the pinned single-threaded "
-                         "parity references)")
-    if engine in ("fused", "wave"):
+                         "loop mirrors and calibrated Metal lane do not "
+                         "consume numba thread counts)")
+    if engine in ("fused", "wave", "metal"):
         return _solve_wave(subgame, payoff43, iters, target_gap, br_every,
                            impl, pinned, debug, slot_budget, wall_budget_s,
                            fused=(engine == "fused"), gap_exit=gap_exit,
-                           threads=threads)
+                           threads=threads, metal=(engine == "metal"))
     return _solve_loop(subgame, payoff43, iters, target_gap, br_every,
                        impl, pinned, debug)
 
@@ -1041,9 +1055,11 @@ def _avg_sig(sig, avg, slot_iset, nlegal_slot, n_isets, unpinned_mask):
 
 def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
                 pinned, debug, slot_budget, wall_budget_s=None,
-                fused=False, gap_exit=False, threads=None) -> CFRResult:
-    tm = {"build": 0.0, "iterate": 0.0, "export": 0.0, "br": 0.0,
-          "value": 0.0}
+                fused=False, gap_exit=False, threads=None,
+                metal=False) -> CFRResult:
+    tm = {"build": 0.0, "walk": 0.0, "layout": 0.0,
+          "device_setup": 0.0, "iterate": 0.0, "export": 0.0,
+          "br": 0.0, "value": 0.0}
     t0 = time.time()
     if fused and threads:
         # set before the build, not just before _build_fused: any numba
@@ -1055,7 +1071,8 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     ws = _build_wave(subgame.root, subgame.worlds, subgame.weights, pinned,
                      slot_budget, debug,
                      bulk_export=hasattr(impl.StochasticProfile, "set_bulk"),
-                     kernels=fused)
+                     kernels=fused or metal)
+    tm["walk"] = time.time() - t0
 
     bid_team = int(subgame.root.bidder) % 2
     signs = {u: sign_of(u, bid_team) for u in range(4)}
@@ -1073,8 +1090,17 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
             slot_pinned |= (slot_seat == s)
     live_seats = [u for u in range(4) if u not in pinned]
 
-    if fused:
-        fl = _build_fused(ws, sig, par=bool(threads))
+    if fused or metal:
+        tl = time.time()
+        fl = _build_fused(ws, sig, par=bool(threads) or metal,
+                          cpu_buffers=not metal, warm_jit=not metal)
+        tm["layout"] = time.time() - tl
+    if metal:
+        from hoyt.metalkernel import MetalCFR
+        td = time.time()
+        metal_state = MetalCFR(ws, fl, payleaf, sig, live_seats)
+        tm["device_setup"] = time.time() - td
+    elif fused:
         sig_c = sig[fl.c_flat].copy()
         reg_c = np.zeros(fl.n_c)
         avg_c = np.zeros(fl.n_c)
@@ -1115,6 +1141,14 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         # the first crossing. Convergence is only ever declared after ALL
         # live seats priced, so a stopping gap is always the exact full max;
         # the exit cannot change the stop iteration or the final result.
+        if metal:
+            # Full device-side average value + single-seat BR audit. The
+            # public profile crosses to the host once, after the stopping
+            # iteration; intermediate certificates transfer only scalars.
+            t1 = time.time()
+            vbar, gap = metal_state.measure(signs)
+            tm["br"] += time.time() - t1
+            return vbar, gap
         t1 = time.time()
         v0 = _wave_values(ws, asig, payleaf)
         vbar = float(ws.w0 @ v0) / ws.total_w
@@ -1137,11 +1171,13 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
     capped = False
     over = (lambda: time.time() - t0 > wall_budget_s) \
         if wall_budget_s is not None else (lambda: False)
-    if not fused:
+    if not fused and not metal:
         cf = np.empty(ws.Lflat)
         xI = np.empty(ws.n_isets)
 
     def averaged():
+        if metal:
+            return metal_state.average_numpy()
         if fused:
             return _avg_sig_fused(fl, avg_c, live_seats)
         return _avg_sig(sig, avg, ws.slot_iset, ws.nlegal_slot,
@@ -1149,7 +1185,9 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
 
     for it in range(1, iters + 1):
         t1 = time.time()
-        if fused:
+        if metal:
+            metal_state.round(signs, it)
+        elif fused:
             for u in live_seats:
                 cf_c[fl.c_soff[u]:fl.c_soff[u + 1]] = 0.0
                 xI_c[fl.c_isoff[u]:fl.c_isoff[u + 1]] = 0.0
@@ -1166,7 +1204,7 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         tm["iterate"] += time.time() - t1
         budget_stop = over()
         if it % br_every == 0 or it == iters or budget_stop:
-            asig = averaged()
+            asig = None if metal else averaged()
             # a measurement that can end the solve WITHOUT convergence
             # (iters exhausted / wall budget) must price all seats — a
             # capped row's final_gap is a full 4-seat verdict
@@ -1184,6 +1222,8 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
                 # boundary check sees the expired budget and prices fully
 
     asig_f, vbar, gap = result
+    if metal:
+        asig_f = averaged()
     prof = export(asig_f)              # once, at the stop — not per measure
     dbg = None
     if debug:
@@ -1191,7 +1231,17 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
         isets = SimpleNamespace(
             off=ws.off, i_moves=ws.dbg["i_moves"], i_node=ws.dbg["i_node"],
             i_seat=ws.dbg["i_seat"], i_hand=ws.dbg["i_hand"])
-        if fused:
+        if metal:
+            state = metal_state.debug_numpy()
+            reg = np.zeros(ws.Lflat)
+            reg[fl.c_flat] = state["reg_c"].astype(np.float64)
+            avg = np.zeros(ws.Lflat)
+            avg[fl.c_flat] = state["avg_c"].astype(np.float64)
+            sig = fl.sig0_full.copy()
+            sig[fl.c_flat] = state["sig_c"].astype(np.float64)
+            dbg_extra = {"metal_peak_bytes": metal_state.peak_memory,
+                         "metal_dtype": "float32"}
+        elif fused:
             # scatter compressed state to full-slot space; forced slots
             # carry their exact invariants (reg 0.0, sig 1.0). avg differs
             # from the wave engine's on forced/unreached slots (dead weight
@@ -1202,8 +1252,11 @@ def _solve_wave(subgame, payoff43, iters, target_gap, br_every, impl,
             avg[fl.c_flat] = avg_c
             sig = fl.sig0_full.copy()
             sig[fl.c_flat] = sig_c
+            dbg_extra = {}
+        else:
+            dbg_extra = {}
         dbg = {"isets": isets, "reg": reg, "avg": avg, "avg_sig": asig,
-               "sig": sig, "n_isets": ws.n_isets}
+               "sig": sig, "n_isets": ws.n_isets, **dbg_extra}
     return CFRResult(profile=prof, trace=trace, gap=gap, value=vbar,
                      iters_run=it, capped=capped, timings=tm, debug=dbg)
 

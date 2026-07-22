@@ -23,6 +23,27 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-07-22 | working | full-metal Hoyt sits at the table]
+
+**Touched pages:** [[full-metal-hoyt]] [[hoyt]] `hoyt/CONTRACTS.md` `questions/open.md`
+**Landed:** `hoyt/play.py` — a resumable human H5/H6 continuation whose bot roots and random streams see only the acting hand plus public state; make/set utility by default; fixed-candidate action bands remain explicitly shortfall-uncalibrated.
+**Smoked:** seed 910000 all-Hoyt continuation: H5 20 remaining plays / 8 Metal re-solves / 14.57 s solve wall; H6 24 / 11 / 17.01 s. These are single playability receipts, not strength or fleet benchmarks.
+**Gate:** perturbing the referee's hidden holdings cannot change the solver root; hidden hands do not render; sessions round-trip; forced moves bypass solving; complete continuations remain zeb-legal.
+
+## [2026-07-21 | conversation | full-metal Hoyt problem statement]
+
+**Touched pages:** [[full-metal-hoyt]] [[hoyt]] [[perf]] `questions/open.md` [[index-topics|index]]
+**Added:** [[full-metal-hoyt]] — move Hoyt's ragged root fleet, full-width build, CFR+ sweeps, and reference evaluation into a fast device-resident Metal lane; H4 is calibration, practical H5 and H6 lines are the goals.
+**Gates:** held-out error-bar coverage for value, gap, convergence, and action damage; H5 throughput; H6 throughput; consumable reference artifacts.
+**Non-goals:** bit replication, identical reductions, per-root CPU certification, and any H4-only win.
+
+## [2026-07-21 | working | full-metal iterate survives; dense H6 refuted]
+
+**Touched pages:** [[full-metal-hoyt]] [[perf-log]] `questions/open.md`
+**Landed:** custom-Metal float32 CFR+ iterate/gap passes, exact DP Metal world sampling, shared four-seat sparse sampled CFR, frozen-policy BR forks, candidate-policy artifacts, and conformal value/gap/BR-shortfall calibration primitives.
+**Refuted:** dense H6 exceeded 288,991,264 live slots at one world before iteration; the surviving design is a bounded-memory sampled/streamed estimator with calibrated errors.
+**Measured:** full-population H5 shared CFR + four-seat candidate audit took 13.39 + 13.02 s; H6 took 5.37 + 11.81 s with 305,277 information rows and 27,219 peak frontier states. Candidate statistical bands are finite, but true upper gaps remain infinite until optimization shortfall is calibrated; both verdicts are `unresolved`.
+
 ## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver — built, graded, integrated]
 
 **Touched pages:** [[walt]] [[walt-spec]] [[the-wall-biography]] [[jud]] [[champion-ladder]] [[the-wall]] [[the-gestation]] [[index-entities|index]] [[index-topics|index]]
