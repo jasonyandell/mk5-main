@@ -29,6 +29,7 @@ from forge.oracle.tables import can_follow, led_suit_for_lead_domino
 from atlas.algebra import (
     N_DECLS,
     N_DOMINOES,
+    get_algebra,
     legal_from_hand,
     tiles_of,
     trick_points,
@@ -257,6 +258,43 @@ def transition(coord: CoordinateV1, tile: int) -> CoordinateV1:
         team_points=(team_points[0], team_points[1]),
         bid_value=coord.bid_value, bidder=coord.bidder, dealer=coord.dealer,
         voids=tuple(voids),
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  the one symmetry — transporting a coordinate through the 2<->3 arrow         #
+# --------------------------------------------------------------------------- #
+
+def _permute_mask(mask: int, perm, width: int = N_DOMINOES) -> int:
+    out = 0
+    m = int(mask)
+    for t in range(width):
+        if (m >> t) & 1:
+            out |= 1 << int(perm[t])
+    return out
+
+
+def transport(coord: CoordinateV1) -> CoordinateV1:
+    """Transport a coordinate through the game's one symmetry — the pips
+    2<->3 arrow (tiles + declaration + led-suit domain), which carries the
+    twos-game onto the threes-game (gate R6). Seats, banked points and the
+    auction facts are arrow-invariant. An involution; a game isomorphism only
+    for decl 2 and 3, where it commutes with transition (gate C6)."""
+    alg = get_algebra()
+    at, ad, als = alg.arrow_tile, alg.arrow_decl, alg.arrow_led
+    voids = tuple(
+        _permute_mask(v, als, width=8) if v else 0 for v in coord.voids)
+    return CoordinateV1(
+        version=coord.version,
+        decl_id=int(ad[coord.decl_id]),
+        viewer=coord.viewer,
+        viewer_hand=_permute_mask(coord.viewer_hand, at),
+        played=tuple(_permute_mask(p, at) for p in coord.played),
+        trick_leader=coord.trick_leader,
+        current_trick=tuple(int(at[t]) for t in coord.current_trick),
+        team_points=coord.team_points,
+        bid_value=coord.bid_value, bidder=coord.bidder, dealer=coord.dealer,
+        voids=voids,
     )
 
 
