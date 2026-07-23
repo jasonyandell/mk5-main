@@ -97,6 +97,16 @@ wanted — C4: 20 different histories reaching an equal coordinate give
 identical [[hoyt]] values to 1e-9. No perf work in v1 by design; the
 P-ENC/P-DEL/P-DECL program and the consumers below build on it.
 
+## The factorization (2026-07-22)
+
+The PR #92 review session demoted the coordinate from "the native
+representation" to a *residue*: value factors through `CoordinateV1` as a
+by-construction congruence scoped to non-signaling fields; coarser
+quotients form a field-relative tower; and the primary object is the
+factorization **algebra × location cells × public record × delimited
+ignorance**, with each unknown a delimited `(P, k)` cell and every motion a
+monotone refinement. Home: [[fundamental-factorization]].
+
 ## The perf stance
 
 Where the wrong unit is paid for today: NOT the engine (hoyt/walt

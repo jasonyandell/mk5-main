@@ -82,6 +82,22 @@ in v1. Full suite 33/33.
   coordinate and commutes with `transition` for decls 2 and 3 (where gate R6
   makes 2↔3 a game isomorphism) across >300 steps, addresses included.
 
+## Standing after the review session (2026-07-22)
+
+C4's meaning was sharpened in the PR #92 review: the coordinate is a
+**by-construction congruence** (dynamics read only the packed bytes — no
+channel to the path), value-factoring is a theorem scoped to non-signaling
+fields, and `CoordinateV1` is finer than the value-relevant residue
+(past-play attribution and `dealer` are candidates for provable drywall) —
+the field-relative quotient tower and the founding factorization live at
+[[fundamental-factorization]]. Known v1 defects tracked at
+[#93](https://github.com/jasonyandell/mk5-main/issues/93):
+`CoordinateV0Auction.pack` conflates a mid-sequence pass with padding
+(round-trip failure on address-bearing bytes; fix before #42 consumes it),
+and the SPEC's "already canonical" claim needs scoping to tile relabelings.
+Congruence probes filed at
+[#94](https://github.com/jasonyandell/mk5-main/issues/94).
+
 ## Consumers (later; not v1)
 
 jud-next featurization, the auction decoder
