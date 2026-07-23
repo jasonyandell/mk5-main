@@ -49,3 +49,15 @@ Format:
   - Raised: [issue #49](https://github.com/jasonyandell/mk5-main/issues/49) (conversation 2026-07-13→14; no raising sha — conversation-sourced, see [[count-fate-ledger]])
   - Context: All existing attribution is first-order `(domino, holder)` vs baseline; no tool ties one strategy across worlds, so guard/walker retention value has never been measured. Joint-world artifacts already retain `q_per_world` + `world_hands`; the missing mechanism is the tied-strategy evaluator, not new generation.
   - Narrowed 2026-07-15 ([[otis-v0]] P7): the cost half is ANSWERED — `otis/tiedroll.py` prices retention at ~1.0 s/decision (M=50, MPS), fusion gap +2.99 on the best replicable cell. The remaining half (does a ledger-derived retention policy beat the best player in paired marks) is [issue #53](https://github.com/jasonyandell/mk5-main/issues/53).
+
+- **Q:** Does past-play attribution carry zero game information — do coordinate pairs differing only in *who* played each past tile (same union, counts, voids, trick, points) give identical hoyt values?
+  - Raised: PR #92 review session ([[fundamental-factorization]])
+  - Context: no atlas rule consults attribution beyond counts and voids (`roles.py` reads only the union; `fiber` consumes pool + counts + forbidden masks); certifying this coarsens the valid coordinate one rung down the quotient tower. Probe P-ATTR, [#94](https://github.com/jasonyandell/mk5-main/issues/94).
+
+- **Q:** How large is the history premium — do C4's same-coordinate history pairs diverge in posterior (and best response) under a discretionary field?
+  - Raised: PR #92 review session ([[fundamental-factorization]])
+  - Context: identical physics by construction; any divergence is pure choice-evidence, measuring exactly what the coordinate discards and the path carries. Probe P-HIST, [#94](https://github.com/jasonyandell/mk5-main/issues/94).
+
+- **Q:** Is role-space distance a faithful metric on coordinates — does it predict hoyt-priced |ΔV| where packed-byte and fiber-overlap distances fail?
+  - Raised: PR #92 review session ([[fundamental-factorization]])
+  - Context: proximity is intrinsically transition-generated; any imposed metric is a modeling claim, and the census predicts byte-proximity fails. Probe P-METRIC, [#94](https://github.com/jasonyandell/mk5-main/issues/94).
