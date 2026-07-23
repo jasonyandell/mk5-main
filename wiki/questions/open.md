@@ -53,6 +53,7 @@ Format:
 - **Q:** Does past-play attribution carry zero game information — do coordinate pairs differing only in *who* played each past tile (same union, counts, voids, trick, points) give identical hoyt values?
   - Raised: PR #92 review session ([[fundamental-factorization]])
   - Context: no atlas rule consults attribution beyond counts and voids (`roles.py` reads only the union; `fiber` consumes pool + counts + forbidden masks); certifying this coarsens the valid coordinate one rung down the quotient tower. Probe P-ATTR, [#94](https://github.com/jasonyandell/mk5-main/issues/94).
+  - *Sharpened same session:* seat labels quotient only by the bidder-anchored rotation gauge — bidder-relative offsets are physics, and P-ATTR holds them fixed by construction; the companion gauge probe is P-ROT ([[fundamental-factorization]]).
 
 - **Q:** How large is the history premium — do C4's same-coordinate history pairs diverge in posterior (and best response) under a discretionary field?
   - Raised: PR #92 review session ([[fundamental-factorization]])
