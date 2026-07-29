@@ -218,6 +218,13 @@ def parse_play(
     name, _, arg = spec.partition(":")
     if name == "random":
         return RandomPlay(seed=seed)
+    if name == "rob":
+        # The texas-42 exact solver over the rob_bridge subprocess (no build
+        # dependency; see arena/rob_play.py). Spec: rob[:<bridge-binary>].
+        from arena.rob_play import RobPlay
+        play = RobPlay(**({"binary": arg} if arg else {}))
+        print(f"Rob play: {play}", flush=True)
+        return play
     if name == "lens":
         from arena.lens_play import LensPlay
         return LensPlay(model, utility=arg or "ev", n_samples=n_samples, device=device)
