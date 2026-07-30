@@ -247,11 +247,17 @@ def _run_lockstep(
             a_pts = sum(h.team_points[g.a_team] for g in games for h in g.hands)
             done = [g for g in games if g.done]
             a_games = sum(1 for g in done if g.record().a_won)
+            a_bid = [h for g in games for h in g.hands if h.bidder_team == g.a_team]
+            b_bid = [h for g in games for h in g.hands if h.bidder_team != g.a_team]
+            a_made = sum(1 for h in a_bid if h.made)
+            b_made = sum(1 for h in b_bid if h.made)
             print(
                 f"    t={last_log - t0:5.0f}s  live {len(live)}/{len(games)}  "
                 f"hands {hands}  |  marks A {a_marks} B {b_marks}"
                 + (f" ({a_marks / (a_marks + b_marks):.1%} A)" if a_marks + b_marks else "")
                 + (f"  |  A pts {a_pts / hands:.1f}/hand" if hands else "")
+                + (f"  |  made A {a_made}/{len(a_bid)}" if a_bid else "")
+                + (f" B {b_made}/{len(b_bid)}" if b_bid else "")
                 + f"  |  games A {a_games}-{len(done) - a_games}",
                 flush=True,
             )
