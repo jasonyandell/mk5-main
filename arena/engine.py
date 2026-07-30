@@ -242,9 +242,17 @@ def _run_lockstep(
         if log_every_s is not None and time.time() - last_log >= log_every_s:
             last_log = time.time()
             hands = sum(len(g.hands) for g in games)
+            a_marks = sum(h.marks_delta[g.a_team] for g in games for h in g.hands)
+            b_marks = sum(h.marks_delta[1 - g.a_team] for g in games for h in g.hands)
+            a_pts = sum(h.team_points[g.a_team] for g in games for h in g.hands)
+            done = [g for g in games if g.done]
+            a_games = sum(1 for g in done if g.record().a_won)
             print(
                 f"    t={last_log - t0:5.0f}s  live {len(live)}/{len(games)}  "
-                f"hands {hands}",
+                f"hands {hands}  |  marks A {a_marks} B {b_marks}"
+                + (f" ({a_marks / (a_marks + b_marks):.1%} A)" if a_marks + b_marks else "")
+                + (f"  |  A pts {a_pts / hands:.1f}/hand" if hands else "")
+                + f"  |  games A {a_games}-{len(done) - a_games}",
                 flush=True,
             )
         a_games, b_games = [], []
