@@ -310,7 +310,40 @@ oracle, averaged; it already had the per-world "PDF", the splat's grandparent.
 floor per rung — below m live worlds the viewer stops optimizing over the
 survivors and plays as the rung below would at that record, with a fresh
 sample (the modeled-move construction already used for the other seats).
-Being built as `Rung(..., floor=m)`, arena `f=<m>`.
+Landed as `Rung(n, horizon, floor=m)`, arena `f=<m>` (commit `1406fdae`, 104
+tests; floor 1 is today's player to the bit; the root is never floored).
+
+**The floor calibrates the forecast (2026-10-10, `floor_forecast.py`,
+`marginal3.py`).** Same hand, same lead question, root forecast by floor, and
+real endings when everyone plays the floored player over the same 64 deals:
+
+| floor | root forecast | real endings (64 deals, everyone floored) | nodes | time |
+|---|---|---|---|---|
+| 1 | +30.1 / 83% | +9.6 / 45% | 297M | 26 s |
+| 2 | +16.2 / 47% | — | 141M | 12 s |
+| 4 | +12.8 / 41% | +9.4 / 38% | 127M | 11 s |
+| 8 and above | +10.4 / 35% | +11.5 / 34% (at 16) | 119M | 10.5 s |
+
+Floors 8, 16, 32, 161 are identical: the cells are already thinner than 8 at
+the second own decision, so floor 8 hands every interior decision down. The
+floored forecast matches the real endings within a point or two of margin
+and a point or two of make share — **the splat is now a calibrated forecast**,
+at less than half the nodes and time. The honest plan also changes the lead
+(the 6-1 trump at +10.4 over the 2-2 at +10.0, where the clairvoyant plan
+had the 2-2 four points clear). Whether honesty also *plays* better is the
+arena's question (`f=16` vs floor 1, mirrored, 384 games, in flight).
+
+**What must be true (`whatmustbetrue.py`).** The outcomes are per world and
+paired, so a move's success set has a description in holdings, read off
+without re-solving. The trick-5 hinge at floor 1: the 6-1 makes in 22 of 60
+worlds — in 22 of the 24 where the *partner* holds the 6-6, and in none of
+the 36 where an opponent does; the 6-5 makes in 26 of 60 across several
+holdings and beats the 6-1 world-for-world 48 to 10. Re-weighting under
+"partner holds the 6-6" (24 worlds): 4-1 +8.0, 6-1 +14.5, 6-5 +28.8; under
+the complement: −9.2, −14.6, +5.3. A testable belief per move, for free; the
+root of adaptive sampling among near-ties (paired sign tests, sampling into
+the disagreement set — best-arm identification / racing) and of
+score-aware utilities read off the splat.
 
 **Pruning (the plan, not yet built).** No induction means no table to fill:
 a label is a function called when wanted, and the tail layers — most of the
