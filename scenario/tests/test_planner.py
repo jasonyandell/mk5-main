@@ -1,0 +1,146 @@
+"""The planner solves the represented problem: optimality against a fixed
+field, the information inequality, scale invariance, determinism, legality."""
+import random
+
+from forge.zeb.game import apply_action, current_player, is_terminal, legal_actions, new_game
+
+from arena.engine import ArenaConfig, run_half
+from arena.bidders import HeuristicBidder
+from arena.play import RandomPlay
+from arena.walt_play import WaltPlay, parse_walt_spec
+from scenario.planner import Config, Rung, Walt, _Invocation, _bits
+from scenario.record import record_from_state, remaining_hand
+from scenario.rules import rules_for, tiles_of
+from scenario.tests.test_rules_record import random_playing_states
+
+
+def _mid_hand_states(n: int, seed: int, min_plays: int = 8):
+    out = []
+    for s in random_playing_states(60, seed=seed):
+        if not is_terminal(s) and len(s.played) >= min_plays and len(legal_actions(s)) > 1:
+            out.append(s)
+        if len(out) == n:
+            break
+    return out
+
+
+def _invocation(walt: Walt, state, bid: int) -> _Invocation:
+    rec = record_from_state(state)
+    viewer = rec.seat
+    own = remaining_hand(state, viewer)
+    return walt._invocation(walt.config.level, viewer, own, rec, rules_for(state.decl_id),
+                            bid, state.bidder % 2)
+
+
+def _brute_plan_value(inv: _Invocation, rec, r: int) -> float:
+    """Independent best plan for the viewer in ONE scenario against its tape:
+    plain minimax-free search over the viewer's own choices, the other seats
+    fixed by the dice. The planner's cell recursion must agree exactly."""
+    if inv.make:
+        if rec.banked[inv.bidder_team] >= inv.bid:
+            return 1.0
+        if rec.banked[1 - inv.bidder_team] > 42 - inv.bid:
+            return 0.0
+    if rec.finished:
+        return inv._score(rec)
+    seat = rec.seat
+    world = inv.worlds[r]
+    hand = world[seat] & ~rec.played
+    legal = inv.rules.legal(hand, rec.led)
+    if seat == inv.viewer:
+        vals = [_brute_plan_value(inv, rec.advance(t, inv.rules), r) for t in tiles_of(legal)]
+        return max(vals) if inv.maximize else min(vals)
+    return _brute_plan_value(inv, rec.advance(inv._dice(r, rec, legal), inv.rules), r)
+
+
+def test_single_scenario_value_is_the_optimal_plan_against_the_tape():
+    walt = Walt(Config((Rung(1, None),), "make", seed=3))
+    for state in _mid_hand_states(25, seed=21, min_plays=12):
+        inv = _invocation(walt, state, 30)
+        assert len(inv.worlds) == 1
+        root = inv.root
+        assert inv.value(root, 1) == _brute_plan_value(inv, root, 0)
+
+
+def test_information_inequality_holds_on_every_split():
+    """V(mu1 + mu2) <= V(mu1) + V(mu2): a plan that may use the label of the
+    split can only do better. Exact on the fixed sample tree."""
+    walt = Walt(Config((Rung(8, None),), "make", seed=5))
+    for state in _mid_hand_states(12, seed=31, min_plays=12):
+        inv = _invocation(walt, state, 30)
+        everyone = (1 << len(inv.worlds)) - 1
+        whole = inv.value(inv.root, everyone)
+        rng = random.Random(1)
+        for _ in range(4):
+            a = rng.randrange(1, everyone)
+            b = everyone ^ a
+            assert whole <= inv.value(inv.root, a) + inv.value(inv.root, b) + 1e-9
+        # And the plan on the whole cell is at least as good as any single action
+        # applied to the whole cell (it IS the max over them).
+        q = inv.action_values()
+        best = max(q.values()) if inv.maximize else min(q.values())
+        assert abs(best * inv._mass(everyone) - whole) < 1e-9
+
+
+def test_scale_invariance_of_the_decision():
+    base = Walt(Config((Rung(6, 6),), "points", seed=8))
+    scaled = Walt(Config((Rung(6, 6),), "points", seed=8),
+                  belief=lambda rec, viewer, worlds: [3.0] * len(worlds))
+    for state in _mid_hand_states(10, seed=41):
+        t1, q1 = base.decide(state, 31)
+        t2, q2 = scaled.decide(state, 31)
+        assert t1 == t2
+        assert q1.keys() == q2.keys()
+        for t in q1:
+            assert abs(q1[t] - q2[t]) < 1e-9
+
+
+def test_decisions_are_deterministic_and_legal():
+    walt = Walt(Config((Rung(4, 4), Rung(8, 8)), "make", seed=0))
+    for state in _mid_hand_states(8, seed=51):
+        t1, q1 = walt.decide(state, 30)
+        t2, q2 = walt.decide(state, 30)
+        assert t1 == t2 and q1 == q2
+        seat = current_player(state)
+        assert t1 in [state.hands[seat][a] for a in legal_actions(state)]
+        assert set(q1) == {state.hands[seat][a] for a in legal_actions(state)}
+
+
+def test_make_values_are_probabilities_and_defenders_minimize():
+    walt = Walt(Config((Rung(5, None),), "make", seed=2))
+    for state in _mid_hand_states(10, seed=61, min_plays=14):
+        tile, q = walt.decide(state, 30)
+        assert all(0.0 - 1e-9 <= v <= 1.0 + 1e-9 for v in q.values())
+        on_bidding_side = current_player(state) % 2 == state.bidder % 2
+        target = max(q.values()) if on_bidding_side else min(q.values())
+        assert q[tile] == target
+
+
+def test_forced_moves_skip_the_search():
+    walt = Walt(Config((Rung(4, None),), "make"))
+    for state in random_playing_states(5, seed=71):
+        if is_terminal(state) or len(legal_actions(state)) != 1:
+            continue
+        tile, q = walt.decide(state, 30)
+        assert walt.nodes == 0 and list(q) == [tile]
+        return
+    raise AssertionError("no forced move found in five random games")
+
+
+def test_arena_half_completes_with_walt_in_both_seats():
+    games = run_half(
+        n_games=2, a_team=0,
+        cfg=ArenaConfig(marks_to_win=1, base_seed=123),
+        bid_a=HeuristicBidder(), bid_b=HeuristicBidder(),
+        play_a=WaltPlay(level=0, n_outer=3, horizon=3),
+        play_b=RandomPlay(seed=2),
+    )
+    assert len(games) == 2 and all(g.marks[g.winner_team] >= 1 for g in games)
+
+
+def test_spec_parsing():
+    p = parse_walt_spec("k2,n12,m3,h10,g2,u=points")
+    c = p.walt.config
+    assert c.level == 2 and c.utility == "points"
+    assert c.rungs == (Rung(3, 2), Rung(3, 2), Rung(12, 10))
+    assert parse_walt_spec("hfull,gfull").walt.config.rungs == (Rung(4, None), Rung(16, None))

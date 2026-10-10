@@ -2,7 +2,7 @@
 title: "The Wall: A Biography"
 kind: trail
 first_seen: 2026-07-06
-last_updated: 2026-07-17
+last_updated: 2026-10-09
 status: active
 ---
 
@@ -758,6 +758,49 @@ the scar probe, the throughput program, the opening net and its critics,
 the exploits and their countermeasures). The full machine is on one page
 at [[walt-spec]]. The door has a hinge now. What walks through it is the
 next chapter.
+
+## 2026-10-09 — the wall, named at last; the dream, arrived elsewhere
+
+Eleven weeks of silence on this wiki, and then Jason came back to the
+garage with two things. The first was the diagnosis the whole record had
+circled without saying: **the project's only source of truth was a
+perfect-information value, and in an imperfect-information game that is
+not an approximation of the truth; it is a different game's truth.**
+There is no field-free value of a position in 42 — value lives on
+information sets and depends on the four policies at the table. Every
+student for seven months learned from a god that saw four hands. E[Q] is
+that god averaged over consistent worlds: near the ceiling on the part of
+the game the oracle can see, and carrying zero signal on the residual it
+cannot — insurance, concealment, inference from choice, convention. So
+imitation's ceiling was parity, self-play seeded from oracle play
+inherited a field that never had to protect anything, and the referee was
+the same god in a different hat: against a non-inferring, non-signaling
+opponent most of term 2 is worth nothing by construction. The two wins in
+the record are the proof: the bidder won on realized outcomes, the one
+label that was not an oracle label; [[walt]] won with an exact info-set
+solve, the one evaluator never derived from a complete world. Nothing
+distilled from the oracle ever won anything. The goal sentence contained
+its own refutation — "take the E[Q] data and do better" — and the January
+10th scope cut ("I don't care about signaling, yet") was not a deferral
+but the moment truth source and consumption rule were both fixed to a
+game without hidden information. Doomed as stated, from the founding
+sentence. Not doomed as a garage: Jason's words — the most fun project of
+his life, "great ideas to fix something unfixable."
+
+The second thing was the dream itself. In `~/code/texas-42` and
+`~/code/plunge`, outside this repo, a trick-1 imperfect-information
+player now gives the old-timers a good game of 42 at the family table
+every day; a 7-0 earns a double exclamation mark in the group chat.
+Its construction fits on a page (*Walt: a mathematical account*,
+2026-10-09): plan from one point of view, model the other players as
+doing the same with one less round of reasoning, random legal play at the
+bottom. In this wiki's algebra it un-deletes both of eq's deletions.
+Rebuilt here from the mathematics as [[scenario-player]], so the belief
+levers this record accumulated — the tilt form, the auction decoder, the
+Gus posterior — finally have an honest continuation to cash through.
+What the trail asked for in July, "something that has a plan and
+cashes it," is at the table, named for a grandfather's tile, and the
+next chapter is beliefs.
 
 ## Related pages
 

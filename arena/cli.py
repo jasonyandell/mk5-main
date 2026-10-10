@@ -19,8 +19,12 @@ Player spec: <bidder>+<play>
               and options as margin)
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>]
             | judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]]
+            | walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make|points]
             | random
-            (scorelens = rung #27 v2 score-conditioned play risk;
+            (walt = the scenario player (scenario/): R_live[R_model[U]],
+             contingent plans over sampled hidden worlds, modeled seats one
+             rung down, random legal play at the bottom; no oracle, CPU;
+             scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter;
              judplay = jud v1 value-native play — argmax E[pts] over the jud
              head, defenders minimize; no oracle, no world sampling;
@@ -225,6 +229,13 @@ def parse_play(
         play = RobPlay(**({"binary": arg} if arg else {}))
         print(f"Rob play: {play}", flush=True)
         return play
+    if name == "walt":
+        # The scenario player, written from the mathematics (scenario/).
+        # Spec: walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make|points]
+        from arena.walt_play import parse_walt_spec
+        play = parse_walt_spec(arg)
+        print(f"Walt play: {play}", flush=True)
+        return play
     if name == "lens":
         from arena.lens_play import LensPlay
         return LensPlay(model, utility=arg or "ev", n_samples=n_samples, device=device)
@@ -336,7 +347,8 @@ def parse_play(
     raise ValueError(
         f"Unknown play policy: {spec!r} "
         f"(lens:<utility> | scorelens[:<band>] | belieflens[:<utility>] "
-        f"| judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]] | random)"
+        f"| judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]] "
+        f"| walt[:k<level>,n<outer>,m<inner>,h<horizon>,g<inner horizon>,u=make|points] | random)"
     )
 
 

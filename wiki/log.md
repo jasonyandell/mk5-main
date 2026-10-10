@@ -23,6 +23,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-09 | scenario-player | Walt rebuilt here from the mathematics; the wall diagnosed as the oracle itself]
+
+**Touched pages:** [[scenario-player]] [[the-wall-biography]] [[index-entities|index]]
+**Added:** [[scenario-player]] — `scenario/` (rules, record, exact-uniform fiber, planner) + `arena/walt_play.py`, spec `walt`; 17 tests; trick-1 decision 0.5 s (k0 n40) / 6 s (k1 default) in pure Python; 8/8 vs random.
+**Updated:** [[the-wall-biography]] — the 2026-10-09 chapter: the project's only truth source was a perfect-information value, so every oracle-derived student had a flat gradient toward exactly what E[Q] lacks; the two wins (realized-outcome bidder, exact info-set walt) were the two non-oracle labels. The dream arrived elsewhere: Plunge, played by the family daily.
+**Pending:** paired blocks `walt` vs `lens:ev` (k0 n40 ×32, k1 ×16) running at this entry.
+**Doctrine:** this wiki is a finished book; live frontiers (texas-42, plunge) keep a notebook and frozen dated papers, never a frontier wiki.
+
 ## [2026-07-18 | worktree-parlor-promote | parlor promoted: salon on the wiki, session logs to HF, skill+workflow extracted]
 
 **Touched pages:** [[parlor]] [[huggingface-assets]] [[run-artifacts-policy]] [[index-entities|index]]
