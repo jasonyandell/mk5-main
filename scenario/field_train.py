@@ -1,10 +1,12 @@
 """Train a field net (`scenario.field`) on a pour (`scenario.atlas`).
 
-Target: cross-entropy to softmax(sign·q/τ) over the legal moves, τ = 2 points
-by default — a near-tie leaves the target flat (either move costs little), a
-hinge makes it sharp (the wrong move costs a lot): advantage-weighted by
-construction, and softmax ignores the group mean, so this is the paired
-advantage's distribution. A float MLP in numpy (Adam), then quantized to the
+Target: cross-entropy to softmax(sign·m/τ) over the legal moves, where m is
+each move's belief-weighted mean margin read off the splat (points under
+every utility — a pour planned under `make` still keeps margins, #107) and
+τ = 2 points by default — a near-tie leaves the target flat (either move
+costs little), a hinge makes it sharp (the wrong move costs a lot):
+advantage-weighted by construction, and softmax ignores the group mean, so
+this is the paired advantage's distribution. A float MLP in numpy (Adam), then quantized to the
 integer net both the referee and the core run: power-of-two scales, int16
 weights, the rounding folded into the biases. Validation holds out every
 tenth deal; `regret` is the mean points the net's move gives up against the
@@ -35,9 +37,9 @@ class Data:
 
     x: np.ndarray        # [N, F] uint8 features
     legal: np.ndarray    # [N, 28] bool
-    adv: np.ndarray      # [N, 28] float64: sign·(q − mean q), the mover's advantage; 0 off the legal moves
+    adv: np.ndarray      # [N, 28] float64: sign·(m − mean m), the mover's advantage in points; 0 off the legal moves
     target: np.ndarray   # [N, 28] float32: softmax(adv/τ) over the legal moves
-    hinge: np.ndarray    # [N] bool: the best move's q beats the second's by >= 10 points
+    hinge: np.ndarray    # [N] bool: the best move's margin beats the second's by >= 10 points
     deal: np.ndarray     # [N] the position's deal
 
 
@@ -52,9 +54,10 @@ def dataset(p: Pour, tau: float) -> Data:
         x[i, features(rules, pos.viewer, pos.own, pos.record, pos.bid, pos.bidder % 2)] = 1
         slots = [CANON[pos.decl_id][t] for t in pos.actions]
         legal[i, slots] = True
-        adv[i, slots] = pos.sign * (pos.q - pos.q.mean())
-        q = np.sort(pos.sign * pos.q)
-        hinge[i] = q[-1] - q[-2] >= 10
+        m = pos.outcomes.astype(np.float64) @ pos.weights / pos.weights.sum()   # mean margin per move
+        adv[i, slots] = pos.sign * (m - m.mean())
+        m = np.sort(pos.sign * m)
+        hinge[i] = m[-1] - m[-2] >= 10
     z = np.where(legal, adv / tau, -np.inf)
     e = np.exp(z - z.max(axis=1, keepdims=True))
     return Data(x, legal, adv, (e / e.sum(axis=1, keepdims=True)).astype(np.float32), hinge,

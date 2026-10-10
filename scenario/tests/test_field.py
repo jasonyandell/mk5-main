@@ -188,6 +188,18 @@ def test_dataset_is_the_movers_view(small_pour):
         assert data.target[i, canon[best]] == data.target[i].max()
 
 
+def test_a_make_pour_trains_in_points(tmp_path):
+    """The target is read off the margin splat, so a pour planned under `make`
+    (q in [0, 1]) still gives sharp targets in points — not the flat ones a
+    probability divided by two points would."""
+    walt = parse_walt_spec("k0,n8").walt
+    assert walt.config.utility == "make"
+    p = pour([deal(s) for s in range(1, 5)], 0, 30, _declared_trump, walt)
+    data = dataset(p, tau=2.0)
+    on = np.where(data.legal, data.target, 0.0)
+    assert np.abs(data.adv).max() > 2.0 and on.max(axis=1).max() > 0.9
+
+
 def test_training_is_deterministic_and_the_net_round_trips(small_pour, tmp_path):
     a = train(small_pour, epochs=3, seed=7, hidden=(16, 8))
     b = train(small_pour, epochs=3, seed=7, hidden=(16, 8))
