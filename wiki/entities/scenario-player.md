@@ -348,7 +348,12 @@ plan at three times the root worlds beats the clairvoyant plan at power, in
 about 1.4× the wall. At the 1,024-world cap (`k1,n1024,m8,f=16` vs the same
 old champion): **+0.49 [+0.18, +0.80]**, made 37.9% vs 33.6%, 38 min wall —
 no further gain over 512 for twice the worlds; **512 is the working spec**.
-Attribution (512 vs 160, both honest) is the next block.
+Attribution (`k1,n512,m8,f=16` vs `k1,n160,m8,f=16`, both honest):
+**+0.30 [−0.00, +0.61]**, made 37.3% vs 34.6%, 12.8 min wall. So the root
+worlds carry about +0.3 and the floor about +0.1 (its own block was +0.13);
+neither alone reaches power, together they are the +0.56. And the
+both-honest block ran in half the wall of the mixed ones: the honest player
+is the cheap one.
 
 **What must be true (`whatmustbetrue.py`).** The outcomes are per world and
 paired, so a move's success set has a description in holdings, read off
