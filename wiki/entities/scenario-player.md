@@ -330,8 +330,13 @@ floored forecast matches the real endings within a point or two of margin
 and a point or two of make share — **the splat is now a calibrated forecast**,
 at less than half the nodes and time. The honest plan also changes the lead
 (the 6-1 trump at +10.4 over the 2-2 at +10.0, where the clairvoyant plan
-had the 2-2 four points clear). Whether honesty also *plays* better is the
-arena's question (`f=16` vs floor 1, mirrored, 384 games, in flight).
+had the 2-2 four points clear). Whether honesty also *plays* better: **a null,
+leaning positive** — `f=16` vs floor 1, mirrored deals, 384 games, seed 1:
+**+0.13 marks/game [−0.20, +0.45]**, 195/384 (50.8%), halves 53.6% / 47.9%,
+contracts made 36.8% vs 35.6%. Same play within noise, honest forecast, under
+half the nodes per decision. The freed compute is the lead to pull: spend it
+on *more worlds at the root*, where the cell is joint (`n512`/`n1024` with
+`f=16`), rather than on a clairvoyant tail.
 
 **What must be true (`whatmustbetrue.py`).** The outcomes are per world and
 paired, so a move's success set has a description in holdings, read off

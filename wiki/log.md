@@ -24,6 +24,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | 1406fdae | the cell floor lands: calibrated forecast (+10.4/35% vs real +11.5/34%), play a null leaning positive (+0.13 [−0.20, +0.45]) at under half the nodes]
+
+`Rung(n, horizon, floor=m)`, arena `f=<m>`; below the root a cell thinner
+than m hands the viewer's move to the rung below (resampling inside the
+plan). Floor 8+ ≡ all interior decisions handed down. Floor 1 unchanged to
+the bit; 104 tests. What-must-be-true receipt on the trick-5 hinge (per-world
+paired outcomes → "6-1 makes iff partner holds the 6-6"). See [[scenario-player]].
+
 ## [2026-10-10 | scenario-player | the forecast lies by 20 points and the cells are singletons from the bidder's third decision; cell-size floor is the fix]
 
 Hold-my-hand marginal (64 fiber deals, Walt everywhere): root splat +30 / 83%
