@@ -27,6 +27,7 @@ is the cell count of the last round, for timing work.
 """
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Sequence
 
 from forge.zeb.types import ZebGameState
@@ -45,15 +46,18 @@ def declaration_belief(eps: float = 0.1) -> Belief:
         if sit.bidder == sit.viewer:
             return [1.0] * len(worlds)
         shown = sit.played_by(sit.bidder)
-        out = []
-        for hands in worlds:
-            full = hands[sit.bidder] | shown
-            e = best_trump(tuple(t for t in range(28) if (full >> t) & 1), 0)
-            assert e is not None
-            out.append(eps / 7 + (1.0 - eps) * (1.0 if e.trump == sit.decl_id else 0.0))
-        return out
+        hit, miss = eps / 7 + (1.0 - eps), eps / 7
+        return [hit if _declared_trump(hands[sit.bidder] | shown) == sit.decl_id else miss
+                for hands in worlds]
 
     return belief
+
+
+@lru_cache(maxsize=1 << 18)
+def _declared_trump(full_hand: int) -> int:
+    e = best_trump(tuple(t for t in range(28) if (full_hand >> t) & 1), 0)
+    assert e is not None
+    return e.trump
 
 
 class WaltPlay:
