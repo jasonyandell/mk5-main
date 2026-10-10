@@ -33,8 +33,9 @@ Two halves, one game:
   imperfect-information planner written from the mathematics (Jason's *Walt: a mathematical
   account*, 2026-10-09), with a Rust core that is bit-identical to its Python referee. It
   beats E[Q] at play (+0.74 marks/game, 2026-10-10) without ever consulting the oracle.
-  The current push is **beliefs** on its `Walt(belief=…)` seam and the field of modeled
-  seats ([[scenario-player]] in the wiki).
+  The current push (2026-10-10) is **the atlas**: one known deal's whole position tree,
+  labeled with Walt's honest outcome distributions (`Walt.analyze`, `CompiledWalt.mold`).
+  Beliefs on the `Walt(belief=…)` seam are paused after night 1 ([[scenario-player]]).
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the

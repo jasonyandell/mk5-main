@@ -24,6 +24,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | 332ccfe8 | the atlas: Walt.analyze (per-world outcomes, the splat) and the mold (a deal's 374M positions in 1.9 s); beliefs paused]
+
+Position → outcome distribution on one deal's perfect-information tree, poured
+without peeking. "Reverse DP" resolved to no induction, no direction: labels
+never read children. Two instruments landed, referee ↔ core bit-identical (100
+tests). Mold seed 1: 374,004,900 positions, peak layer 23 at 87.4M. Pour price
+per layer and the first slice measured; pruning plan (cone, hinges, cheat map,
+waves) recorded. See [[scenario-player]].
+
 ## [2026-10-11 | scenario-player | belief night 1: auction and dice inference are nulls vs uniform Walt; the field tilt hurts (−0.96) by effective-sample-size collapse]
 
 Five 384-game blocks, belief vs uniform two-rung Walt (the oracle-free

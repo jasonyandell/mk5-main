@@ -208,6 +208,70 @@ draw, or sample the fiber under the tilt), not reweight 160 uniform draws. That
 is the next build on the seam, and it is what makes any sharp belief (a learned
 head, a convention model) usable at all.
 
+## The atlas (2026-10-10)
+
+Beliefs paused after night 1 (the taste said *uniform again*; a dozen other
+low-hanging things come first). The new object is **the atlas**: one fully known
+deal, the perfect-information game tree the oracle would have walked, and on
+each of its positions Walt's honest evaluation — the distribution of outcomes
+over the scenarios a seat that *cannot* see the other hands would entertain.
+The oracle's mold, poured without peeking.
+
+The idea arrived as "reverse DP fuzzed out from the end" and resolved in
+conversation: a position's label never reads its children (they are values of
+one frozen world, not of the viewer's scenarios), so **there is no induction
+and no direction** — the backward walk only enumerated the positions. What
+Jason wanted was *position → outcome distribution* on the oracle's position
+set; what Walt already was is a backward induction over a *bundle* of
+scenarios sharing one record (the cell), which is the only unit that can host
+imperfect information. See [[strategy-fusion]] for why per-world backup is the
+oracle's sin, and [[the-wall]].
+
+**Two instruments landed (commit `332ccfe8`, referee and core bit-identical,
+100 tests):**
+
+- `Walt.analyze(state, bid) → Analysis(tile, q, worlds, weights, outcomes)` —
+  `decide` opened up: per legal root action, the leaf value every live scenario
+  reaches under the plan (a replay of the solved tree through the memo, zero
+  measurable cost). Σ w·outcome / Σ w = q[a]. The **splat**: with the points
+  utility it is the outcome distribution, and every make-probability is one of
+  its tails (pmake(b) = mass at or above b) — the bid curve for free.
+- `CompiledWalt.mold(hands, decl, leader) → positions per layer` — the shape of
+  one deal's tree with transposition on the full record (128-bit keys, two
+  layers resident, hash-sharded, all cores). `scenario/atlas.py` is the referee.
+
+**The mold, seed-1 deal (decl sixes, bidder leads).** 374,004,900 positions in
+1.9 s wall, 5.7 GB peak. It bows in the middle and tapers hard at both ends,
+as the oracle era remembered:
+
+| layer | 8 | 12 | 16 | 18 | 20 | 23 (peak) | 24 | 27 |
+|---|---|---|---|---|---|---|---|---|
+| positions | 5,081 | 167,405 | 2.66M | 14.3M | 18.3M | 87.4M | 30.4M | 27.3M |
+
+**The pour price** (scratch `atlas1.py`, 192 sampled positions per layer, 18
+cores): rung 0 labels from 3 positions/s at the lead to 500k/s at two tricks
+left (the fiber is exact there); `k1,n160,m8` from 0.04/s to 490k/s. A whole
+deal at rung 0 is under an hour; with the two-rung player, overnight. The
+distilled net ([texas-42 PR #102](https://github.com/jasonyandell/texas-42/pull/102))
+is the way to pour k1 quality at full-deal scale.
+
+**The slice** (Walt at all four seats, every legal move labeled, 28 calls):
+the first look at the object. Opening lead valued +30 margin; the hand went
+down 19–23; the bidder's partner leading trick 3 saw every option negative;
+one hinge (the 6-5 at trick 5) was worth 17 points over its alternatives to a
+viewer who could not see the hands.
+
+**Pruning (the plan, not yet built).** No induction means no table to fill:
+a label is a function called when wanted, and the tail layers — most of the
+374M — never need to exist. Expand the *plausible cone* (children of moves
+within δ points of the best; δ=0 is the Walt-vs-Walt path), *hinges first*
+(alternatives far apart), the *cheat map* (expand where the oracle's
+perfect-information value and the honest label disagree — the one use of the
+oracle: a map of where it was wrong), forced moves free, equivalent tiles
+branched once, the exact tail at no cost. Work proceeds in **waves**: label a
+frontier in one `decide_batch`, keep survivors, the next frontier is known
+before it is asked for (the tape). Mac for the Walt labeler, GPU for the net.
+
 ## Links
 
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
