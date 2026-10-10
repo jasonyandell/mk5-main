@@ -134,7 +134,25 @@ single-threaded bridge processes in lockstep. Jason's 384-game receipt at
 160/8 and Python rung 0 at 160) were killed at Jason's call after one and
 three rounds respectively — too slow to be worth it; early reads were
 bridge 208–176 marks after one round, Python rung 0 574–578 after three.
-The powered replication now runs on the compiled core instead.
+The powered replication ran on the compiled core instead (2026-10-10):
+
+**Walt beats E[Q] here too.** Jason's dropped-30 protocol exactly (`bid30`
+both sides, best-pip-trump declaration, 1 mark/hand, games to 7, mirrored
+pairs, 384 games, seed 1) against `lens:ev` (E[Q] n=10, undefeated at play
+against every learned challenger on this wiki):
+
+| player | games won | marks/game (95% CI) | points/hand | made (bid 30) | wall |
+|---|---|---|---|---|---|
+| `walt:k0,n160` (rung 0: dice field, no partner model) | 203/384 (52.9%) | +0.18 [−0.12, +0.49] | −4.97 | 36.0% vs 34.4% | 124 s |
+| `walt:k1,n160,m8` (two rungs, inner horizon 4 plays) | **233/384 (60.7%)** | **+0.74 [+0.42, +1.05]** | −4.51 | 38.8% vs 32.3% | 17.5 min |
+
+Both halves positive for the two-rung form (65.1% / 56.3%). The signature is
+the one in Jason's 2026-08-17 receipt (+0.38/game per seed with the texas-42
+bridge at 50/8): marks up, points DOWN — the `make` utility cashes contracts,
+not pips. Rung 0 alone is at or just above E[Q]; the second rung — the
+modeled partner (and opponents) — is where the edge lives: "one more level
+and its partner is participating." Uniform belief throughout; every belief
+lever on this page is still untouched in these numbers.
 
 ## Links
 

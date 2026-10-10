@@ -23,6 +23,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | scenario-player | Walt beats E[Q] n=10 at play: +0.74 marks/game [+0.42, +1.05], 384 games, dropped-30]
+
+Compiled two-rung `walt:k1,n160,m8` vs `lens:ev` on Jason's exact protocol:
+233/384 games (60.7%), both halves positive, points −4.5/hand (make utility),
+17.5 min wall. Rung 0 alone: +0.18 [−0.12, +0.49]. The receipt replicates;
+the partner rung is the edge. Uniform belief; belief levers untouched. See
+[[scenario-player]] (the measured table).
+
 ## [2026-10-10 | scenario-player | compiled core lands: Rust/PyO3, bit-identical to the Python planner]
 
 `scenario/core` + `scenario/compiled.py`: the planner and fiber sampler in Rust,
