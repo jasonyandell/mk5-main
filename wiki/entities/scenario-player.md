@@ -87,10 +87,24 @@ First meeting with `lens:ev` — E[Q] n=10, undefeated at play against every
 learned challenger — same heuristic bidders both sides, 32 games to 7 marks,
 seed 7000000: rung 0 at 40 worlds (random-play field, uniform belief) wins
 13/32, **−0.84 marks/game [−2.00, +0.34]**, point margin −5.8/hand, made
-46.6% vs 54.3%, 293 s wall. Underpowered at this size: a dice-field,
-belief-free scenario player is within a mark of the champion and the CI
-spans zero. The k1 (two-response) block and powered blocks are the next
-measurements; every belief lever above is untouched in this number.
+46.6% vs 54.3%, 293 s wall. Same protocol at Jason's shipped outer sample, rung 0 at **160 worlds**:
+wins 18/32 (56.2%, both halves), **+0.34 marks/game [−0.91, +1.59]**, point
+margin −3.2/hand, made 53.2% vs 50.0%, 766 s wall. Underpowered at n=32,
+but a dice-field, belief-free scenario player in pure Python is at or
+above the champion that beat every learned challenger — and every belief
+lever above is untouched in this number.
+
+For reference, the texas-42 repo's own `walt_bridge` binary (level-1,
+bid-blind P(make 30), speaks rob's line protocol so it seats as
+`rob:<path>`) on the identical block: 16/32, **−0.28 [−1.53, +0.94]**,
+made 52.0% vs 54.7%. Same dead heat with E[Q] at this size.
+
+The shipped two-response form is 160 outer / 8 inner worlds. After the
+2026-10-09 speedups (C-speed tape key, integer-unrolled frontier playout;
+4×) its trick-1 decision costs 29 s here — too slow for arena blocks in
+Python by roughly an order of magnitude; the compiled core is the named
+next build if the belief program needs the k1 field (rung 0 is the seam
+for β either way).
 
 ## Links
 
