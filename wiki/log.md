@@ -25,7 +25,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-10-10 | HEAD | leaves keep the margin under every utility (#107): the utility shapes the plan, the splat keeps the margin]
+## [2026-10-10 | 867b2ed6 | leaves keep the margin under every utility (#107): the utility shapes the plan, the splat keeps the margin]
 
 `scenario/planner.py` `_trace`, `scenario/core/src/planner.rs` `trace` (bit-identical), `atlas.in_plan_units`; see [[scenario-player]] § Leaves keep the margin. Re-pour under `make` in flight.
 
