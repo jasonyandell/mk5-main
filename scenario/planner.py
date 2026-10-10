@@ -199,10 +199,14 @@ class Analysis:
     """One decision, opened up. `worlds` are the live rung's scenarios in
     sample order and `weights` the belief over them exactly as the planner
     weighs them (tilt × external evidence, unnormalized). `outcomes[a][r]`
-    is the leaf value scenario r reaches when the root action is a and play
-    continues under the plan — the viewer's moves chosen once per cell, the
-    other seats as modeled, leaves scored as the recursion scores them — so
-    that q[a] = Σ_r weights[r]·outcomes[a][r] / Σ_r weights[r]."""
+    is the bidder-team final margin scenario r reaches when the root action
+    is a and play continues under the plan — the viewer's moves chosen once
+    per cell, the other seats as modeled — under every utility, so that
+    q[a] = Σ_r weights[r]·u(outcomes[a][r]) / Σ_r weights[r] with u the
+    identity under `points` and [margin ≥ 2·bid − 42] under `make`. Where
+    the plan stops before the hand ends (the contract decided under `make`,
+    or the horizon) the rest of the hand is played from the tape: beyond
+    that point the margin is the tape's, not the plan's."""
 
     tile: int
     q: dict[int, float]
@@ -431,14 +435,13 @@ class _Invocation:
         return out
 
     def _trace(self, rec: Record, alive: int, leaf: list[float]) -> None:
-        u = self._settled(rec)
-        if u is not None:
+        if rec.finished:
             for r in _bits(alive):
-                leaf[r] = u
+                leaf[r] = self._margin(rec)
             return
-        if self._at_frontier(rec):
+        if self._settled(rec) is not None or self._at_frontier(rec):
             for r in _bits(alive):
-                leaf[r] = self._playout(r, rec)
+                leaf[r] = self._playout(r, rec, settle=False)
             return
         seat = rec.seat
         if seat == self.viewer:
@@ -486,16 +489,18 @@ class _Invocation:
 
     # -- leaves --------------------------------------------------------------------
 
-    def _playout(self, r: int, rec: Record) -> float:
+    def _playout(self, r: int, rec: Record, settle: bool = True) -> float:
         """The frontier continuation: every seat (the viewer too) plays from
         the tape. The same record semantics as `Record.advance`, unrolled on
         plain integers — this loop is the search's hot spot, and no modeled
-        mind samples inside it, so the void ledger need not be kept."""
+        mind samples inside it, so the void ledger need not be kept. With
+        `settle` the utility is returned as soon as it is decided; without
+        it the hand is played out and the margin returned (the trace)."""
         world = self.worlds[r]
         rules = self.rules
         tape = self.tapes[r]
         bt = self.bidder_team
-        make, bid = self.make, self.bid
+        make, bid = self.make and settle, self.bid
         played, leader, trick = rec.played, rec.leader, list(rec.trick)
         banked = list(rec.banked)
         while played != ALL_TILES:
@@ -528,9 +533,12 @@ class _Invocation:
         return float(banked[bt] - banked[1 - bt])
 
     def _score(self, rec: Record) -> float:
-        bt = self.bidder_team
         if self.make:
-            return 1.0 if rec.banked[bt] >= self.bid else 0.0
+            return 1.0 if rec.banked[self.bidder_team] >= self.bid else 0.0
+        return self._margin(rec)
+
+    def _margin(self, rec: Record) -> float:
+        bt = self.bidder_team
         return float(rec.banked[bt] - rec.banked[1 - bt])
 
     def _mass(self, alive: int) -> float:

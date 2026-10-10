@@ -244,11 +244,11 @@ def test_analysis_outcomes_reweigh_to_the_action_values():
             assert (a.tile, a.q, walt.nodes) == (tile, q, nodes)
             assert len(a.worlds) == len(a.weights) and a.outcomes.keys() == q.keys()
             total = math.fsum(a.weights)
+            u = (lambda m: float(m >= 2 * 30 - 42)) if cfg.utility == "make" else (lambda m: m)
             for t, leaf in a.outcomes.items():
                 assert len(leaf) == len(a.worlds)
-                assert abs(math.fsum(w * o for w, o in zip(a.weights, leaf)) / total - q[t]) < 1e-9
-                if cfg.utility == "make":
-                    assert set(leaf) <= {0.0, 1.0}
+                assert all(o == int(o) and abs(o) <= 42 for o in leaf)
+                assert abs(math.fsum(w * u(o) for w, o in zip(a.weights, leaf)) / total - q[t]) < 1e-9
 
 
 def test_forced_moves_analyze_to_no_scenarios():

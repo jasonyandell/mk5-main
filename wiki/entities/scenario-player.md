@@ -406,6 +406,22 @@ python -u -m scenario.hf publish --repo jasonyandell/texas-42-walt-pour \
   --commit d94c3050
 ```
 
+**Leaves keep the margin (2026-10-10, issue #107).** Jason's framing: *the
+thing to maximize is pmake given options* — and the splat should let any
+utility be read after the fact. Before, a pour under `make` stored leaves as
+0/1 and threw the margin away, while a pour under `points` kept the margin
+but had planned for points, not pmake. Now the trace's leaves are the
+bidder-team final margin under every utility, in referee and core alike; the
+utility shapes only the plan, and `q` stays in the plan's units
+(`atlas.in_plan_units`: identity under `points`, `[margin ≥ 2·bid − 42]`
+under `make`). Where the plan stops before the hand ends — the contract
+decided under `make`, or the horizon — the tape plays the rest out, so beyond
+that point the margin is the tape's, not the plan's; pmake at the planned bid
+is exact, pmake at other bids is read off a partly tape-played tail. One pour
+under the arena's own utility (`make`) therefore yields the bid curve, the
+points splat and dominance together. The dataset is being re-poured under
+`make` (same seeds) for the net-in-the-field run.
+
 **Pruning (the plan, not yet built).** No induction means no table to fill:
 a label is a function called when wanted, and the tail layers — most of the
 374M — never need to exist. Expand the *plausible cone* (children of moves

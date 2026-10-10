@@ -484,7 +484,7 @@ impl Inv {
         }
         if self.at_frontier(&rec) {
             let ctx: &Ctx = ctx;
-            return fsum(alive.iter().map(|r| self.weights[r] * self.playout(ctx, r, &rec)));
+            return fsum(alive.iter().map(|r| self.weights[r] * self.playout(ctx, r, &rec, true)));
         }
         let seat = rec.seat();
         if seat == self.viewer {
@@ -567,16 +567,18 @@ impl Inv {
             .collect()
     }
 
+    /// Leaves of the trace are bidder-team margins under every utility; where
+    /// the plan stopped short of the hand's end, the tape plays it out.
     fn trace(&mut self, ctx: &mut Ctx, rec: Rec, alive: Bits, leaf: &mut [f64]) {
-        if let Some(u) = self.settled(ctx, &rec) {
+        if rec.finished() {
             for r in alive.iter() {
-                leaf[r] = u;
+                leaf[r] = self.margin(ctx, &rec);
             }
             return;
         }
-        if self.at_frontier(&rec) {
+        if self.settled(ctx, &rec).is_some() || self.at_frontier(&rec) {
             for r in alive.iter() {
-                leaf[r] = self.playout(ctx, r, &rec);
+                leaf[r] = self.playout(ctx, r, &rec, false);
             }
             return;
         }
@@ -626,13 +628,15 @@ impl Inv {
 
     // -- leaves ------------------------------------------------------------------
 
-    /// The frontier continuation: every seat (the viewer too) plays from the tape.
-    fn playout(&self, ctx: &Ctx, r: usize, rec: &Rec) -> f64 {
+    /// The frontier continuation: every seat (the viewer too) plays from the
+    /// tape. With `settle` the utility returns as soon as it is decided;
+    /// without it the hand is played out and the margin returned (the trace).
+    fn playout(&self, ctx: &Ctx, r: usize, rec: &Rec, settle: bool) -> f64 {
         let world = self.worlds[r];
         let rules = ctx.rules;
         let tape = self.tapes[r];
         let bt = ctx.bt;
-        let (make, bid) = (ctx.cfg.make, ctx.bid);
+        let (make, bid) = (ctx.cfg.make && settle, ctx.bid);
         let mut played = rec.played;
         let mut leader = rec.leader;
         let mut n = rec.n as usize;
@@ -678,12 +682,16 @@ impl Inv {
     }
 
     fn score(&self, ctx: &Ctx, rec: &Rec) -> f64 {
-        let bt = ctx.bt;
         if ctx.cfg.make {
-            if rec.banked[bt] as i32 >= ctx.bid { 1.0 } else { 0.0 }
+            if rec.banked[ctx.bt] as i32 >= ctx.bid { 1.0 } else { 0.0 }
         } else {
-            rec.banked[bt] as f64 - rec.banked[1 - bt] as f64
+            self.margin(ctx, rec)
         }
+    }
+
+    fn margin(&self, ctx: &Ctx, rec: &Rec) -> f64 {
+        let bt = ctx.bt;
+        rec.banked[bt] as f64 - rec.banked[1 - bt] as f64
     }
 
     fn mass(&self, alive: &Bits) -> f64 {

@@ -25,6 +25,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | HEAD | leaves keep the margin under every utility (#107): the utility shapes the plan, the splat keeps the margin]
+
+`scenario/planner.py` `_trace`, `scenario/core/src/planner.rs` `trace` (bit-identical), `atlas.in_plan_units`; see [[scenario-player]] § Leaves keep the margin. Re-pour under `make` in flight.
+
 ## [2026-10-10 | 567a8b9a | the pour published: jasonyandell/texas-42-walt-pour on Hugging Face, CC0, 5,000-deal train + 200-deal validation]
 
 `scenario/hf.py` (positions / splats / deals Parquet + raw npz + card); see [[scenario-player]] § Published.

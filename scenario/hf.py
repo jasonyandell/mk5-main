@@ -217,7 +217,7 @@ def card(splits: Sequence[Split], rows: dict, out: Path, repo: str) -> str:
     cal = []
     for s in splits:
         c = calibration(s.pour)
-        fm = "—" if c.forecast_margin is None else f"{c.forecast_margin:+.1f}"
+        fm = f"{c.forecast_margin:+.1f}"
         cal.append(f"| `{s.name}` | {c.n:,} | {fm} | {c.real_margin:+.1f} | {c.forecast_make:.0%} | {c.real_make:.0%} |")
     commands = "\n".join(f"# {s.name}\n{_command(s.manifest)}" for s in splits)
     names = ", ".join(f"{i} {x}" for i, x in enumerate(DECLS))
@@ -261,8 +261,9 @@ move is played forward in every world to the end of the hand. The **splat** of a
 [actions × worlds] table of final outcomes, with the worlds and their weights.
 
 **Units: bidder team.** Every outcome is the *bidding team's* final margin, bidder-team points minus
-defender points, an integer in [-42, 42] (the hand has 42 points). `q[a]` is the weighted mean of move
-`a`'s outcomes over the worlds. A defender wants these small. `sign` is +1 when the mover is on the
+defender points, an integer in [-42, 42] (the hand has 42 points), whichever utility the plan optimized.
+`q[a]` is the weighted mean over the worlds of move `a`'s outcomes in the plan's units: the margin itself
+under the `points` utility, the make indicator (margin ≥ 2·bid − 42) under `make`. A defender wants these small. `sign` is +1 when the mover is on the
 bidding team, -1 when it defends, and `advantage = sign * (q - mean(q))`, so a positive advantage is a
 good move *for the seat to play*, with the legal moves as the group. The contract is made when the margin
 is at least `2·bid − 42` (= {2 * p.bid - 42} for bid {p.bid}), so any bid's make probability is a tail of the splat.
@@ -312,7 +313,7 @@ utility `{p.utility}`. Deal *i* of a split is `scenario.atlas.deal(seed + i)`.
 | `hand` | list&lt;int8&gt; | the mover's remaining tiles |
 | `history` | list&lt;struct&lt;seat, tile&gt;&gt; | the plays so far, in order |
 | `actions` | list&lt;int8&gt; | the legal tiles, ascending |
-| `q` | list&lt;float64&gt; | per action, the mean outcome over the worlds (bidder-team margin) |
+| `q` | list&lt;float64&gt; | per action, the weighted mean over the worlds of the outcome in the plan's units (margin under `points`, make indicator under `make`) |
 | `advantage` | list&lt;float64&gt; | per action, `sign·(q − mean(q))`: positive is good for the mover |
 | `chosen` | int8 | the tile Walt played (argmax of `sign·q`) |
 | `n_worlds` | int32 | worlds sampled at this position |
@@ -327,7 +328,8 @@ utility `{p.utility}`. Deal *i* of a split is `scenario.atlas.deal(seed + i)`.
 | `worlds` | list&lt;uint32[4]&gt; | per world, each seat's remaining tiles as a mask; the mover's entry is its real hand |
 | `outcomes` | list&lt;list&lt;int8&gt;&gt; | `[action][world]`: the bidder-team final margin |
 
-`q[a] = Σ_w weights[w]·outcomes[a][w] / Σ_w weights[w]`, exactly as the planner computed it.
+`q[a] = Σ_w weights[w]·u(outcomes[a][w]) / Σ_w weights[w]`, exactly as the planner computed it, with `u` the
+identity under `points` and `[margin ≥ 2·bid − 42]` under `make`.
 
 ### `deals`
 

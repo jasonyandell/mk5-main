@@ -14,7 +14,7 @@ import pytest
 from arena.walt_play import _declared_trump, parse_walt_spec
 from scenario.atlas import (
     Position, _COLUMNS, _main, advantages, calibration, deal, fiber, holding_predictors,
-    load, makes, mold, paired_advantages, play_waves, pour, save, success_set,
+    in_plan_units, load, makes, mold, paired_advantages, play_waves, pour, save, success_set,
 )
 from scenario.compiled import CompiledWalt
 from scenario.planner import Config, Rung
@@ -101,11 +101,16 @@ def test_forced_positions_are_played_but_not_kept(poured):
 
 
 def test_every_splat_reproduces_its_action_values(poured):
+    """Leaves are margins under every utility; `q` is their mean in the plan's
+    units. The default spec plans under `make`, so this is the make case."""
+    assert poured.utility == "make"
+    assert np.abs(poured.outcomes).max() <= 42 and len(np.unique(poured.outcomes)) > 2
     for pos in poured.positions():
         w = pos.weights
         assert pos.outcomes.shape == (len(pos.actions), len(w))
         for a, q in zip(pos.actions, pos.q):
-            assert math.isclose(float(w @ pos.outcomes[pos.actions.index(a)]) / w.sum(), q, abs_tol=1e-9)
+            u = in_plan_units(pos, pos.outcomes[pos.actions.index(a)])
+            assert math.isclose(float(w @ u) / w.sum(), q, abs_tol=1e-9)
         legal = rules_for(pos.decl_id).legal(pos.own, pos.record.led)
         assert pos.actions == tuple(tiles_of(legal))
 
@@ -139,9 +144,10 @@ def test_save_and_load_round_trip_exactly(poured, tmp_path):
 
 def test_calibration_reads_the_opening_leads(poured):
     c = calibration(poured)
-    assert c.n == 3 and c.forecast_margin is None
+    assert c.n == 3 and -42 <= c.forecast_margin <= 42 and 0 <= c.forecast_make <= 1
     bt = np.asarray(poured.banked, dtype=int)
     assert c.real_make == np.mean(bt[:, 0] >= BID)
+    assert c.real_margin == np.mean(bt[:, 0] - bt[:, 1])
 
 
 def test_the_command_line_pours_and_molds(tmp_path, capsys):
@@ -199,12 +205,14 @@ def test_success_sets_read_any_bid_off_a_points_splat():
     assert success_set(pos, a, 15).tolist() == [0, 2]
 
 
-def test_a_make_splat_knows_only_its_contract():
-    pos, (a, _, _, _) = _position("make")
-    pos = dataclasses.replace(pos, outcomes=np.array([[1, 0, 1], [0, 0, 1]], dtype=np.int8))
-    assert makes(pos, a).tolist() == [True, False, True]
-    with pytest.raises(ValueError):
-        success_set(pos, a, 31)
+def test_a_make_splat_reads_any_bid_too():
+    """Under `make` the plan is scored by the make indicator but the leaves
+    still hold margins, so the other bids are tails of the same splat."""
+    pos, (a, b, _, _) = _position("make")
+    assert in_plan_units(pos, pos.outcomes).tolist() == [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+    assert makes(pos, b).tolist() == [False, False, True]
+    assert success_set(pos, b, 31).tolist() == [2]
+    assert success_set(pos, a, 15).tolist() == [0, 2]
 
 
 def test_holding_predictors_say_what_must_be_true():

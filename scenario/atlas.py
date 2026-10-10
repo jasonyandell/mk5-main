@@ -22,12 +22,13 @@ and labels nothing. The record of a position is its deal's first
 `n_plays` plays, so the play sequences are the spine of the dataset and
 every label hangs off one by a single integer.
 
-Values are in the planner's bidder-team units (`scenario.planner`): under
-`make` a leaf is 1 where the bidding side makes and 0 where it is set;
-under `points` it is the bidder team's final margin. Either way every leaf
-is an integer in [-42, 42], which is how `outcomes` is stored. The helpers
-below read a position from the mover's side where a policy would: an
-advantage is positive when the move is good for the seat to play.
+Every leaf is the bidder team's final margin, an integer in [-42, 42],
+under either utility — which is how `outcomes` is stored. The utility
+shapes only the plan: `q` is in the planner's units (`scenario.planner`;
+a make probability under `make`, a mean margin under `points`), and any
+bid's make probability is a tail of the splat. The helpers below read a
+position from the mover's side where a policy would: an advantage is
+positive when the move is good for the seat to play.
 """
 from __future__ import annotations
 
@@ -201,7 +202,7 @@ class Position:
     """One planned position of a pour, with its whole splat. Arrays are
     indexed by action (in `actions` order, ascending tile id) and by
     scenario (the decider's sample order); `q[a]` is the planner's value,
-    Σ_r weights[r]·outcomes[a, r] / Σ_r weights[r]."""
+    Σ_r weights[r]·u(outcomes[a, r]) / Σ_r weights[r] with u `in_plan_units`."""
 
     deal: int
     plays: Plays                 # the plays before this position
@@ -212,7 +213,7 @@ class Position:
     utility: str
     actions: tuple[int, ...]
     q: np.ndarray                # [A] float64
-    outcomes: np.ndarray         # [A, W] int8, bidder-team units
+    outcomes: np.ndarray         # [A, W] int8, bidder-team final margin
     worlds: np.ndarray           # [W, 4] uint32, remaining hands per scenario
     weights: np.ndarray          # [W] float64, the belief, unnormalized
     chosen: int                  # the tile Walt played here
@@ -349,7 +350,7 @@ def pour(
 
 
 def _integral(values: np.ndarray) -> np.ndarray:
-    """Leaf values as int8; every leaf is a make indicator or a margin."""
+    """Leaf margins as int8."""
     out = np.rint(values)
     if not np.array_equal(out, values) or np.abs(out).max(initial=0) > HAND_TOTAL:
         raise AssertionError("a leaf value is not an integer in [-42, 42]")
@@ -382,7 +383,8 @@ def load(out: str | Path) -> Pour:
 
 def advantages(pos: Position) -> dict[int, float]:
     """Each move's value minus the mean over the legal moves (the group), in
-    the mover's units: positive is good for the seat to play."""
+    the mover's units: positive is good for the seat to play. In the plan's
+    units: make probability under `make`, margin under `points`."""
     return dict(zip(pos.actions, (pos.sign * (pos.q - pos.q.mean())).tolist()))
 
 
@@ -395,15 +397,19 @@ def paired_advantages(pos: Position) -> np.ndarray:
     return pos.sign * (o - o.mean(axis=0))
 
 
+def in_plan_units(pos: Position, margins: np.ndarray) -> np.ndarray:
+    """The utility the plan scored these margins with: the make indicator
+    under `make`, the margin itself under `points`. `q` is the belief-weighted
+    mean of this over each action's splat."""
+    if pos.utility == "make":
+        return (margins >= 2 * pos.bid - HAND_TOTAL).astype(np.float64)
+    return margins.astype(np.float64)
+
+
 def makes(pos: Position, action: int, bid: int | None = None) -> np.ndarray:
     """[W] bool: the scenarios in which `action` makes `bid` (the contract
-    by default) for the bidding side. Under `make` the leaves only know the
-    contract; under `points` any bid reads off the margin."""
+    by default) for the bidding side — a tail of the margin splat."""
     o = pos.outcomes[pos.actions.index(action)]
-    if pos.utility == "make":
-        if bid not in (None, pos.bid):
-            raise ValueError("a make-utility splat knows only its own contract")
-        return o == 1
     return o >= 2 * (pos.bid if bid is None else bid) - HAND_TOTAL
 
 
@@ -441,7 +447,7 @@ class Calibration:
     """The bidder's opening decision, forecast against the real endings."""
 
     n: int
-    forecast_margin: float | None    # mean q[chosen]; only `points` forecasts margins
+    forecast_margin: float           # mean belief-weighted margin of the chosen lead's splat
     real_margin: float               # mean bidder-team final margin
     forecast_make: float             # mean belief mass in which the chosen lead makes
     real_make: float                 # share of deals the bidding side made
@@ -452,13 +458,14 @@ def calibration(p: Pour) -> Calibration:
     if not opening:
         raise ValueError("the pour holds no opening decisions")
     bt = p.bidder % 2
-    fm = [float(pos.q[pos.actions.index(pos.chosen)]) for pos in opening]
+    fm = [float(pos.weights @ pos.outcomes[pos.actions.index(pos.chosen)] / pos.weights.sum())
+          for pos in opening]
     fk = [float(pos.weights[makes(pos, pos.chosen)].sum() / pos.weights.sum()) for pos in opening]
     banked = p.banked.astype(np.int64)
     margin = banked[:, bt] - banked[:, 1 - bt]
     return Calibration(
         n=len(opening),
-        forecast_margin=float(np.mean(fm)) if p.utility == "points" else None,
+        forecast_margin=float(np.mean(fm)),
         real_margin=float(margin.mean()),
         forecast_make=float(np.mean(fk)),
         real_make=float(np.mean(banked[:, bt] >= p.bid)),
@@ -466,7 +473,7 @@ def calibration(p: Pour) -> Calibration:
 
 
 def calibration_table(c: Calibration) -> str:
-    fm = "—" if c.forecast_margin is None else f"{c.forecast_margin:+.1f}"
+    fm = f"{c.forecast_margin:+.1f}"
     return "\n".join([
         f"calibration, the bidder's opening lead ({c.n} deals)",
         "                 forecast     real",
