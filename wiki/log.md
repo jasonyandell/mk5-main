@@ -24,6 +24,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | 3ecf46db | the pour: Walt self-play in waves, every legal move's whole splat kept — the advantage dataset]
+
+`scenario/atlas.py`: `play_waves`, `pour`, save/load, `advantages`,
+`paired_advantages`, `success_set`, `holding_predictors`, `calibration`; CLI.
+117 tests. Feeds advantage-weighted policy training (GRPO-shaped, group =
+legal moves) and #94-style pattern mining. See [[scenario-player]].
+
 ## [2026-10-10 | scenario-player | the floor's dividend: `k1,n512,m8,f=16` beats the old champion +0.56 [+0.26, +0.86], 384 mirrored games; honest plan is the arena default]
 
 Compute saved by not searching a clairvoyant tail, spent on root worlds

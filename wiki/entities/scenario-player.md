@@ -359,6 +359,22 @@ root of adaptive sampling among near-ties (paired sign tests, sampling into
 the disagreement set — best-arm identification / racing) and of
 score-aware utilities read off the splat.
 
+**The pour (commit `3ecf46db`, 117 tests).** `scenario/atlas.py` now holds the
+atlas's third instrument: `play_waves` (Walt self-play in lockstep waves, every
+planned decision of a wave in one batch on all cores — the "tape": the next
+frontier is known before it is asked for) and `pour` (keep the whole splat
+for every legal move at every planned position: actions, q, per-world
+outcomes as int8, worlds, weights, plus each deal's real ending), saved as a
+compressed `.npz` + manifest, round-trippable. Readers: `advantages` (q minus
+the group mean, in the mover's units — the GRPO-shaped signal, group = legal
+moves), `paired_advantages` (per world), `success_set` and
+`holding_predictors` (what-must-be-true), `calibration` (forecast vs real).
+CLI `python -u -m scenario.atlas pour --deals N --spec k1,n512,m8,u=points
+--seed S --out DIR`. Smoke: 8 deals at `k1,n160,m8` in 3 s, 0.2 MB. This is
+the **advantage dataset** — the dense signal texas-42 PR #94's constructor
+never had (one make/set bit per deal there; hundreds of paired outcomes per
+move per position here).
+
 **Pruning (the plan, not yet built).** No induction means no table to fill:
 a label is a function called when wanted, and the tail layers — most of the
 374M — never need to exist. Expand the *plausible cone* (children of moves
