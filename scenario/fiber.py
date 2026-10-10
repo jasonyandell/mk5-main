@@ -10,10 +10,17 @@ information state is real (the true deal is always a member).
 """
 from __future__ import annotations
 
-import random
 from functools import lru_cache
+from typing import Protocol
 
 from scenario.rules import ALL_TILES, bit, tiles_of
+
+
+class Uniform(Protocol):
+    """Any source of uniform floats on [0, 1) — `random.Random` or the
+    planner's SplitMix stream."""
+
+    def random(self) -> float: ...
 
 
 @lru_cache(maxsize=4096)
@@ -49,7 +56,7 @@ def fiber_size(pool: int, sizes: tuple[int, int, int],
 
 
 def sample_fiber(pool: int, sizes: tuple[int, int, int],
-                 forbid: tuple[int, int, int], rng: random.Random) -> tuple[int, int, int]:
+                 forbid: tuple[int, int, int], rng: Uniform) -> tuple[int, int, int]:
     """One assignment of the pool to three seats, uniform over the fiber."""
     tiles = tuple(tiles_of(pool))
     ways = _fiber(tiles, sizes, forbid)
@@ -87,7 +94,7 @@ def sample_fiber(pool: int, sizes: tuple[int, int, int],
 
 def sample_worlds(viewer: int, own: int, played: int, sizes4: tuple[int, int, int, int],
                   forbid4: tuple[int, int, int, int], n: int,
-                  rng: random.Random) -> list[tuple[int, int, int, int]]:
+                  rng: Uniform) -> list[tuple[int, int, int, int]]:
     """`n` scenarios from the viewer's fiber, as 4-tuples of remaining-hand
     masks in absolute seat order (the viewer's own hand in its slot)."""
     others = [s for s in range(4) if s != viewer]

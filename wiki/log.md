@@ -23,6 +23,17 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | scenario-player | compiled core lands: Rust/PyO3, bit-identical to the Python planner]
+
+`scenario/core` + `scenario/compiled.py`: the planner and fiber sampler in Rust,
+checked bit for bit against the Python referee (22 tests). Defined randomness
+(SplitMix64 streams, packed record key, CPython-3.12 compensated sums
+mirrored). Rung 0 at 160 worlds: 0.056 s at trick 1 (50× Python); two-response
+160/8 g4: 1.1 s (26×). `decide_batch` plans a lockstep arena round in parallel.
+Arena spec `walt` now runs the core; `py` selects the referee. Diagnosed the
+texas-42 bridge's slowness (BigRational, 16× tie refinement, 8 lockstep
+processes); killed the two six-hour blocks. See [[scenario-player]].
+
 ## [2026-10-09 | scenario-player | Walt rebuilt here from the mathematics; the wall diagnosed as the oracle itself]
 
 **Touched pages:** [[scenario-player]] [[the-wall-biography]] [[index-entities|index]]

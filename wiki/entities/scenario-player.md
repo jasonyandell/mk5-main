@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-09
+last_updated: 2026-10-10
 status: active
 ---
 
@@ -52,9 +52,20 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/record.py` | the public record a cell shares (played, trick, leader, banked, void-derived forbids); `advance` | replay of every engine history matches played/leader/trick/banked; voids never contradict the real hand |
 | `scenario/fiber.py` | exact-uniform sampling of hidden-hand completions by a counting DP — no rejection, no invalid worlds | counts equal brute-force enumeration; empirical uniformity |
 | `scenario/planner.py` | `Rung`, `Config`, `Walt`: the finite planning rule, the ladder, the dice tape, the `make`/`points` utilities | single-scenario value equals an independent best-plan search; the information inequality V(μ₁+μ₂) ≤ V(μ₁)+V(μ₂) on every split; scale invariance; determinism |
-| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points]` | an arena half completes |
+| `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
+| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,py]` (`py` = the pure Python referee) | an arena half completes |
 
-Tests: `python -m pytest scenario/tests -q` (17, CPU, no checkpoint).
+Tests: `python -m pytest scenario/tests -q` (22, CPU, no checkpoint). Build the
+core once with `python -m pip install ./scenario/core` (Rust toolchain).
+
+The Python planner is the referee and the compiled core is the runtime. To
+make that checkable, every random draw is defined: scenario sampling and the
+dice tape run on SplitMix64 streams seeded from the invocation (config seed,
+rung, viewer, hand, packed record, voids), and the record is keyed as one
+integer, not a CPython hash. The core mirrors CPython 3.12's compensated
+`sum()` so even tilted-belief values agree to the last bit. The belief
+weights the live rung only; modeled minds are compatibility-only (g ≡ 0),
+as the shipped player does.
 
 ## The levers (Θ = (G, I, u, β, S, k, H, L, ≺, Γ))
 
@@ -99,12 +110,31 @@ bid-blind P(make 30), speaks rob's line protocol so it seats as
 `rob:<path>`) on the identical block: 16/32, **−0.28 [−1.53, +0.94]**,
 made 52.0% vs 54.7%. Same dead heat with E[Q] at this size.
 
-The shipped two-response form is 160 outer / 8 inner worlds. After the
-2026-10-09 speedups (C-speed tape key, integer-unrolled frontier playout;
-4×) its trick-1 decision costs 29 s here — too slow for arena blocks in
-Python by roughly an order of magnitude; the compiled core is the named
-next build if the belief program needs the k1 field (rung 0 is the seam
-for β either way).
+The shipped two-response form is 160 outer / 8 inner worlds. In pure
+Python its trick-1 decision cost 29 s after the 2026-10-09 speedups. The
+compiled core (2026-10-10), one thread, M5 Max, seconds per decision:
+
+| plays so far | k0 n160 full | k1 n160 m8 g4 | k1 n160 m8 gfull | k1 n640 m8 gfull |
+|---|---|---|---|---|
+| 0 | 0.056 | 1.12 | 10.5 | 41.9 |
+| 4 | 0.011 | 0.30 | 2.0 | 7.9 |
+| 8 | 0.004 | 0.10 | 0.36 | 1.5 |
+
+Rung 0 is now 50× the Python; the two-response form with a 4-play inner
+horizon 26×. The inner rung's horizon is the cost lever: a full-depth
+inner mind (the bridge's shape) is ~10× a 4-play one at trick 1.
+
+**Why the texas-42 bridge is slow** (`walt/walt/src/bin/walt_bridge.rs`,
+read 2026-10-10): its values are exact rationals (`BigRational`), its
+saturation-tie refinement resamples the tied options at 4× and 16× the
+outer count (up to 2,560 worlds at 160), and the arena drives eight
+single-threaded bridge processes in lockstep. Jason's 384-game receipt at
+50/8 took 117 min; at 160/8 here one lockstep hand-round of 384 hands took
+~30 min, i.e. ~6 h per block. Both 2026-10-09 384-game blocks (bridge
+160/8 and Python rung 0 at 160) were killed at Jason's call after one and
+three rounds respectively — too slow to be worth it; early reads were
+bridge 208–176 marks after one round, Python rung 0 574–578 after three.
+The powered replication now runs on the compiled core instead.
 
 ## Links
 

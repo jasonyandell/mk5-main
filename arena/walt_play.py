@@ -6,12 +6,14 @@ construction one rung down, bottoming out in random legal play. See
 `scenario/planner.py` for the mathematics and `scenario/` for the parts.
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
-          [,g<inner horizon>][,u=make|points]
+          [,g<inner horizon>][,u=make|points][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays.
 
 The player is bid-aware (the contract threshold is the utility) and
-score-blind. It runs on the CPU, one decision at a time; `nodes` after a
-call is the cell count of the last decision, for timing work.
+score-blind. By default it runs the compiled core (`scenario/core`), which
+plans a whole arena round in parallel on every core; `py` selects the pure
+Python planner, the referee, one decision at a time. `nodes` after a call
+is the cell count of the last round, for timing work.
 """
 from __future__ import annotations
 
@@ -25,9 +27,15 @@ from scenario.planner import Belief, Config, Rung, Walt
 class WaltPlay:
     def __init__(self, level: int = 1, n_outer: int = 16, n_inner: int = 4,
                  horizon: int | None = None, horizon_inner: int | None = 4,
-                 utility: str = "make", seed: int = 0, belief: Belief | None = None):
+                 utility: str = "make", seed: int = 0, belief: Belief | None = None,
+                 compiled: bool = True):
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon)])
-        self.walt = Walt(Config(rungs, utility, seed), belief=belief)
+        config = Config(rungs, utility, seed)
+        if compiled:
+            from scenario.compiled import CompiledWalt
+            self.walt = CompiledWalt(config, belief=belief)
+        else:
+            self.walt = Walt(config, belief=belief)
         self.last_values: list[dict[int, float]] = []
 
     def choose(
@@ -37,18 +45,21 @@ class WaltPlay:
         marks: Sequence[tuple[int, int]] | None = None,
         marks_to_win: int = 7,
     ) -> list[int]:
+        if hasattr(self.walt, "decide_batch"):
+            decisions = self.walt.decide_batch(states, [int(b) for b in bid_values])
+        else:
+            decisions = [self.walt.decide(s, int(b)) for s, b in zip(states, bid_values)]
+        self.last_values = [q for _, q in decisions]
         slots = []
-        self.last_values = []
-        for state, bid in zip(states, bid_values):
-            tile, q = self.walt.decide(state, int(bid))
-            self.last_values.append(q)
+        for state, (tile, _) in zip(states, decisions):
             seat = (state.trick_leader + len(state.current_trick)) % 4
             slots.append(list(state.hands[seat]).index(tile))
         return slots
 
     def __repr__(self) -> str:
         c = self.walt.config
-        return f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r})"
+        engine = type(self.walt).__name__
+        return f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}, {engine})"
 
 
 def parse_walt_spec(arg: str) -> WaltPlay:
@@ -62,6 +73,8 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw[key] = int(t[1:])
         elif t in ("hfull", "gfull"):
             kw["horizon" if t[0] == "h" else "horizon_inner"] = None
+        elif t == "py":
+            kw["compiled"] = False
         else:
             raise ValueError(f"unknown walt option {t!r}")
     return WaltPlay(**kw)

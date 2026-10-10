@@ -20,6 +20,13 @@ scenario plays one tile at one record in every branch (worlds partition,
 they never multiply). A modeled player's decision is a pure function of
 (rung, seat, its remaining hand, the record) and is cached as such.
 
+The belief β weights the LIVE player's scenarios; modeled minds weight
+theirs uniformly (compatibility only, the g ≡ 0 limit), as the shipped
+player does. Every random draw — scenario sampling and the dice tape — comes
+from SplitMix64 streams seeded by the invocation, so a decision is a pure
+function of (config, state, bid) that any implementation can reproduce
+bit for bit; `scenario/core` is the compiled one, checked against this file.
+
 Values are kept in bidder-team units: with the `make` utility a cell's value
 is the belief mass in which the bidding side makes its contract; with
 `points` it is the mass-weighted signed point margin. A seat on the bidding
@@ -27,7 +34,6 @@ team maximizes, a defender minimizes — the same u read from two sides.
 """
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
 from typing import Callable
 
@@ -43,6 +49,7 @@ Belief = Callable[[Record, int, list[World]], list[float]]  # (record, viewer, w
 
 HAND_TOTAL = 42
 MASK64 = (1 << 64) - 1
+GOLDEN = 0x9E3779B97F4A7C15
 
 
 @dataclass(frozen=True)
@@ -71,7 +78,7 @@ class Config:
 
 
 def _splitmix(x: int) -> int:
-    x = (x + 0x9E3779B97F4A7C15) & MASK64
+    x = (x + GOLDEN) & MASK64
     x = ((x ^ (x >> 30)) * 0xBF58476D1CE4E5B9) & MASK64
     x = ((x ^ (x >> 27)) * 0x94D049BB133111EB) & MASK64
     return x ^ (x >> 31)
@@ -84,10 +91,34 @@ def _mix(*parts: int) -> int:
     return h
 
 
+class SplitMix:
+    """The SplitMix64 stream: `_splitmix` of a state that advances by GOLDEN."""
+
+    __slots__ = ("state",)
+
+    def __init__(self, seed: int):
+        self.state = seed & MASK64
+
+    def next_u64(self) -> int:
+        out = _splitmix(self.state)
+        self.state = (self.state + GOLDEN) & MASK64
+        return out
+
+    def random(self) -> float:
+        """Uniform on [0, 1) with 53 random bits."""
+        return (self.next_u64() >> 11) * 2.0 ** -53
+
+
+def _pack(played: int, leader: int, trick: tuple[int, ...], banked: tuple[int, int]) -> int:
+    """The public record (less voids) as one integer below 2**59: the tape key."""
+    v = played | (leader << 28) | (len(trick) << 30)
+    for i, t in enumerate(trick):
+        v |= t << (32 + 5 * i)
+    return v | (banked[0] << 47) | (banked[1] << 53)
+
+
 def _tape_key(rec: Record) -> int:
-    """The record as one integer, for keying the tape (C-speed tuple hash;
-    deterministic for ints across processes)."""
-    return hash((rec.played, rec.leader, rec.trick, rec.banked)) & MASK64
+    return _pack(rec.played, rec.leader, rec.trick, rec.banked)
 
 
 class Walt:
@@ -123,11 +154,12 @@ class Walt:
     def _invocation(self, k: int, viewer: int, own: int, rec: Record, rules: Rules,
                     bid: int, bidder_team: int) -> "_Invocation":
         rung = self.config.rungs[k]
-        seed = _mix(self.config.seed, k, viewer, own, hash(rec.key()))
-        rng = random.Random(seed)
+        seed = _mix(self.config.seed, k, viewer, own, _tape_key(rec), *rec.forbid)
+        rng = SplitMix(seed)
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
         worlds = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
-        weights = self.belief(rec, viewer, worlds) if self.belief else [1.0] * len(worlds)
+        live = k == self.config.level
+        weights = self.belief(rec, viewer, worlds) if (self.belief and live) else [1.0] * len(worlds)
         tapes = [_mix(seed, i) for i in range(len(worlds))]
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes)
 
@@ -270,7 +302,7 @@ class _Invocation:
                 tile = legal.bit_length() - 1
             else:
                 tiles = tiles_of(legal)
-                key = hash((played, leader, tuple(trick), (banked[0], banked[1]))) & MASK64
+                key = _pack(played, leader, trick, (banked[0], banked[1]))
                 tile = tiles[_splitmix(tape ^ key) % len(tiles)]
             played |= 1 << tile
             trick.append(tile)

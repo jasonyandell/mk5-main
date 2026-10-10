@@ -160,3 +160,6 @@ otis/models/*.pt
 # they live on disk and on HF (mk5-run-evidence, parlor/ prefix, tag parlor-session-1).
 # The curated transcript.md keepsake stays committed.
 parlor/sessions/
+
+# the compiled scenario core builds here
+scenario/core/target/

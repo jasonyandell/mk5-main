@@ -1,0 +1,13 @@
+[build-system]
+requires = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name = "scenario_core"
+version = "0.1.0"
+description = "The compiled core of the scenario player (Walt); install with: python -m pip install ./scenario/core"
+requires-python = ">=3.11"
+
+[tool.maturin]
+module-name = "scenario_core"
+features = ["pyo3/extension-module"]
