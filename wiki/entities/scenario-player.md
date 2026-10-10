@@ -434,7 +434,7 @@ branched once, the exact tail at no cost. Work proceeds in **waves**: label a
 frontier in one `decide_batch`, keep survivors, the next frontier is known
 before it is asked for (the tape). Mac for the Walt labeler, GPU for the net.
 
-## The net in the field (2026-10-10, design + smoke)
+## The net in the field (2026-10-10)
 
 A learned policy as the modeled seats, **and nowhere else** (Jason's binding
 rule: the net never enters a value or a leaf; the live seat still solves).
@@ -448,7 +448,7 @@ rung-0 Walt) but costs more than the champion, not less.
 |---|---|
 | features (330 bits) | the modeled seat's own hand, tiles gone, open trick by who played it (left/partner/right), voids shown by each other seat, count-tile slots, side, trick position, who is winning the trick, thermometers of points the bidder still needs and the defenders still need — exactly the modeled-move cache key, nothing hidden |
 | canon | tiles relabeled so trump is pip 6, other pips in order: one trump suit to learn, not seven. Pip-trump declarations only (the `bid30`/heuristic bidders call nothing else); others refuse |
-| target | cross-entropy to softmax(sign·q/τ) over the legal moves, τ = 2 points: near-ties flat, hinges sharp |
+| target | cross-entropy to softmax(sign·m/τ) over the legal moves, m = each move's mean margin read off the splat (points under every utility, #107), τ = 2 points: near-ties flat, hinges sharp |
 | net | MLP 330→128→64→28, 52k params, numpy + Adam (no torch), every tenth deal held out |
 | parity | integer inference: bit features, int16 weights at power-of-two scales, `max(acc >> s, 0)`, rounding folded into biases, ties to the lowest tile id. Referee and core agree by construction; tested on 300 positions' raw scores and on `decide`/`analyze` across four net-field configs |
 
@@ -472,6 +472,35 @@ lead 62k vs 4.3M cells (70×). Calibration with the net field (fresh 200 deals,
 seed 20001): forecast +6.8 / 38% vs real +9.3 / 42% (champion on the same
 deals +7.0 / 38% vs +8.1 / 40%). A net trained on make mass read off the
 points splat imitated worse in both units; cut.
+
+**The make run (the #107 re-pour, `k1,n512,m8` under `make`, 5,000 deals,
+seeds 1001.., 87,403 positions; opening forecast +6.3 / 38% vs real +6.1 / 37%).**
+First attempt was a units bug worth keeping: the trainer divided the
+advantage by τ = 2 *points* while the make plan's q is a probability, so every
+target was flat (loss stuck at 1.19 = the entropy of a uniform guess, zero
+hinges) and the arena faced a random field: **−1.57 [−1.85, −1.26]**, made
+26.5% vs 40.5%. Not a verdict on anything but the units. Fixed by reading the
+target off the margin splat (what #107 was for); retrained in 9 s, held-out
+regret 0.67 points/decision (random 2.38), 437 hinges in the held-out tenth.
+
+| `bid30+walt:k0,n512,F=make-net` vs champion `bid30+walt:k1,n512,m8` | |
+|---|---|
+| mark margin, 384 mirrored games, seed 1 | **−0.16 [−0.48, +0.14]** |
+| contracts made | 36.4% vs 37.8% |
+| point margin per hand | +0.04 |
+| 200-deal self-play wall (seed 20001) | 14 s vs 53 s (3.8×) |
+| calibration, same 200 deals, net field | forecast +5.9 / 39% vs real +7.6 / 38% |
+| calibration, same 200 deals, champion | forecast +5.6 / 37% vs real +6.9 / 38% |
+
+Same picture as the points-trained net (−0.23): **a cheaper equal, not a
+stronger player.** The field net is the model of the other seats; a better
+imitation of Walt cannot make the planner above it stronger, only cheaper, and
+the champion's field was already a rung-0 Walt. The interval includes zero at
+a quarter of the cost, and the calibration holds. Where it earns its keep is
+the pour price: whole deals and 10× datasets for the same wall. It stays out
+of the champion's lineup; the champion stays `k1,n512,m8`. Data scaling is
+the lever that moved it (200 deals: −0.70; 5,000: −0.16/−0.23), so the next
+net is trained on a bigger pour, poured by this one.
 
 ## Links
 
