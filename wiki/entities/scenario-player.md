@@ -81,9 +81,16 @@ Seconds per decision, three random states each, `make` utility, bid 30:
 | 12 | 0.00 | 0.01 | 0.1 |
 
 Smoke: `heuristic+walt:k0,n24` vs `heuristic+random`, 8 games to 3 marks,
-seed 777: 8/8, +2.25 marks/game [+1.75, +2.62], made 80% vs 20%. The
-meeting with `lens:ev` — E[Q] n=10, undefeated at play against every
-learned challenger — is the pending measurement.
+seed 777: 8/8, +2.25 marks/game [+1.75, +2.62], made 80% vs 20%.
+
+First meeting with `lens:ev` — E[Q] n=10, undefeated at play against every
+learned challenger — same heuristic bidders both sides, 32 games to 7 marks,
+seed 7000000: rung 0 at 40 worlds (random-play field, uniform belief) wins
+13/32, **−0.84 marks/game [−2.00, +0.34]**, point margin −5.8/hand, made
+46.6% vs 54.3%, 293 s wall. Underpowered at this size: a dice-field,
+belief-free scenario player is within a mark of the champion and the CI
+spans zero. The k1 (two-response) block and powered blocks are the next
+measurements; every belief lever above is untouched in this number.
 
 ## Links
 
