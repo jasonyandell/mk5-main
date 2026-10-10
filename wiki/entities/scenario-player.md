@@ -378,7 +378,11 @@ the group mean, in the mover's units — the GRPO-shaped signal, group = legal
 moves), `paired_advantages` (per world), `success_set` and
 `holding_predictors` (what-must-be-true), `calibration` (forecast vs real).
 CLI `python -u -m scenario.atlas pour --deals N --spec k1,n512,m8,u=points
---seed S --out DIR`. Smoke: 8 deals at `k1,n160,m8` in 3 s, 0.2 MB. This is
+--seed S --out DIR`. Smoke: 8 deals at `k1,n160,m8` in 3 s, 0.2 MB. **First real pour (seed 1, 200 deals, `k1,n512,m8,u=points`): 3,494 planned
+positions (2,106 forced) in 75 s wall, 12.9 MB.** Calibration on the bidder's
+opening lead over the 200 deals: forecast +7.0 margin / 37% make vs real
++8.2 / 38%. The honest splat is a calibrated forecast at scale, and the whole
+dataset costs a minute. This is
 the **advantage dataset** — the dense signal texas-42 PR #94's constructor
 never had (one make/set bit per deal there; hundreds of paired outcomes per
 move per position here).
