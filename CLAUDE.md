@@ -29,10 +29,18 @@ Two halves, one game:
 - **The engine** (`src/`) — a pure-functional, event-sourced TypeScript implementation of
   Texas 42: `state = replayActions(config, history)`, a unified Layer system, capability-based
   multiplayer. The founding substrate; stable.
-- **The ML frontier** (`forge/`, `gus/`, `champion/`, `arena/`, `w42/`) — a GPU oracle that
-  solves the game, E[Q] under uncertainty, distilled students, and the current push:
-  **jud**, one belief-state player that bids and plays full games ([[jud]] in the wiki;
-  the `champion/` dir and GitHub milestone keep the push's old aspirational name).
+- **The player** (`scenario/`, `arena/`) — **Walt, the scenario player**: an
+  imperfect-information planner written from the mathematics (Jason's *Walt: a mathematical
+  account*, 2026-10-09), with a Rust core that is bit-identical to its Python referee. It
+  beats E[Q] at play (+0.74 marks/game, 2026-10-10) without ever consulting the oracle.
+  The current push is **beliefs** on its `Walt(belief=…)` seam and the field of modeled
+  seats ([[scenario-player]] in the wiki).
+- **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
+  the game with perfect information, E[Q] under uncertainty, and the distilled students and
+  belief players (jud, champion ladders) built on it. Finished, graded, and kept as the
+  measuring sticks and the archaeology. The oracle is *algorithmia non grata*: it taught every
+  student to play as if it could see all four hands ([[the-wall]]), and nothing new is built
+  on it. Strategy fusion, never again.
 
 ## The wiki is the knowledge base
 
@@ -46,8 +54,9 @@ entire history and current state, with backlinks throughout.
 |---|---|
 | The game itself (rules, suit algebra) | `wiki/entities/texas-42.md` |
 | Engine architecture | `wiki/entities/engine.md` |
-| Oracle / E[Q] / training pipeline | `wiki/entities/forge.md` |
-| Jud (current frontier) | `wiki/entities/jud.md`, `wiki/trails/champion-ladder.md` |
+| Walt, the scenario player (current frontier) | `wiki/entities/scenario-player.md` |
+| Oracle / E[Q] / training pipeline (finished era) | `wiki/entities/forge.md` |
+| Jud and the champion ladders (finished era) | `wiki/entities/jud.md`, `wiki/trails/champion-ladder.md` |
 | Book validation (Winning 42) | `wiki/entities/w42.md` |
 | Historical projects | `wiki/entities/lem.md`, `wiki/entities/burl.md`, `wiki/entities/gus.md` |
 
@@ -61,7 +70,7 @@ significant wiki work.
 
 ## Issue tracking
 
-GitHub issues via `gh` (milestone "Champion" for the current push):
+GitHub issues via `gh` (the "Champion" milestone is the finished oracle era's):
 
 ```bash
 gh issue list --state open       # what's live

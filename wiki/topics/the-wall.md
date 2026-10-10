@@ -2,11 +2,20 @@
 title: The Wall
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-07-17
+last_updated: 2026-10-10
 status: active
 ---
 
 The project's central question, stated precisely. Every era since January 2026 is an attempt on it; every experiment page in this wiki grades against it.
+
+> **2026-10-10 — the wall fell, from the other side.** The wall was the oracle
+> itself: every student learned from a teacher that saw all four hands, so
+> none could learn what only a player who *doesn't* see them needs (see the
+> 2026-10-09 chapter of [[the-wall-biography]]). The [[scenario-player]] — Walt,
+> an imperfect-information planner that never consults the oracle — beats
+> E[Q] n=10 at play, +0.74 marks/game [+0.42, +1.05] over 384 games on the
+> dropped-30 protocol. Everything below this line is the record of the oracle
+> era, kept as it was written.
 
 ## The wall
 
