@@ -85,7 +85,7 @@ def test_information_inequality_holds_on_every_split():
 def test_scale_invariance_of_the_decision():
     base = Walt(Config((Rung(6, 6),), "points", seed=8))
     scaled = Walt(Config((Rung(6, 6),), "points", seed=8),
-                  belief=lambda rec, viewer, worlds: [3.0] * len(worlds))
+                  belief=lambda sit, worlds: [3.0] * len(worlds))
     for state in _mid_hand_states(10, seed=41):
         t1, q1 = base.decide(state, 31)
         t2, q2 = scaled.decide(state, 31)
@@ -144,3 +144,74 @@ def test_spec_parsing():
     assert c.level == 2 and c.utility == "points"
     assert c.rungs == (Rung(3, 2), Rung(3, 2), Rung(12, 10))
     assert parse_walt_spec("hfull,gfull").walt.config.rungs == (Rung(4, None), Rung(16, None))
+
+
+def test_tilt_dice_is_the_product_of_inverse_option_counts():
+    """e^g under the dice field: replaying the hand with the scenario's hands,
+    every discretionary play by a hidden seat with n options contributes 1/n;
+    the viewer's own plays and forced plays contribute nothing."""
+    from scenario.planner import Tilt, situation_from_state
+    from scenario.record import empty_record
+    walt = Walt(Config((Rung(12, None),), "make", seed=3, tilt=Tilt("dice")))
+    for state in _mid_hand_states(10, seed=81, min_plays=8):
+        sit = situation_from_state(state, 30)
+        rules = rules_for(state.decl_id)
+        inv = _invocation(walt, state, 30)
+        w = walt.tilt_weights(sit, inv.worlds, rules)
+        assert all(0 < x <= 1 for x in w)
+        for r, hands in enumerate(inv.worlds):
+            full = [hands[s] | sit.played_by(s) for s in range(4)]
+            rec = empty_record(sit.plays[0][0])
+            expect = 1.0
+            for seat, tile in sit.plays:
+                n = rules.legal(full[seat], rec.led).bit_count()
+                if seat != sit.viewer and n > 1:
+                    expect *= 1.0 / n
+                full[seat] &= ~(1 << tile)
+                rec = rec.advance(tile, rules)
+            assert w[r] == expect
+        # the truth is a scenario of positive weight whenever it is sampled
+        truth = tuple(sum(1 << d for d in state.hands[s] if d not in state.played) for s in range(4))
+        if truth in inv.worlds:
+            assert w[inv.worlds.index(truth)] > 0
+
+
+def test_tilt_field_at_eps_one_is_dice_and_the_field_rewards_its_own_plays():
+    from scenario.planner import Tilt, situation_from_state
+    dice = Walt(Config((Rung(3, 3), Rung(8, None)), "make", seed=4, tilt=Tilt("dice")))
+    field1 = Walt(Config((Rung(3, 3), Rung(8, None)), "make", seed=4, tilt=Tilt("field", eps=1.0)))
+    field = Walt(Config((Rung(3, 3), Rung(8, None)), "make", seed=4, tilt=Tilt("field", eps=0.1)))
+    for state in _mid_hand_states(6, seed=91, min_plays=8):
+        sit = situation_from_state(state, 30)
+        rules = rules_for(state.decl_id)
+        inv = _invocation(dice, state, 30)
+        assert dice.tilt_weights(sit, inv.worlds, rules) == field1.tilt_weights(sit, inv.worlds, rules)
+        w = field.tilt_weights(sit, inv.worlds, rules)
+        assert all(x > 0 for x in w)
+    # a one-rung player cannot model plays with rung 0
+    import pytest
+    from scenario.planner import Tilt as T
+    with pytest.raises(ValueError):
+        Config((Rung(8, None),), "make", tilt=T("field"))
+
+
+def test_declaration_belief_favors_hands_that_would_have_called_the_trump():
+    from arena.hand_metrics import best_trump
+    from arena.walt_play import declaration_belief
+    from scenario.planner import situation_from_state
+    belief = declaration_belief(eps=0.1)
+    walt = Walt(Config((Rung(16, None),), "make", seed=5))
+    seen = False
+    for state in _mid_hand_states(20, seed=101, min_plays=4):
+        sit = situation_from_state(state, 30)
+        inv = _invocation(walt, state, 30)
+        w = belief(sit, inv.worlds)
+        if sit.bidder == sit.viewer:
+            assert w == [1.0] * len(inv.worlds)
+            continue
+        for x, hands in zip(w, inv.worlds):
+            full = hands[sit.bidder] | sit.played_by(sit.bidder)
+            e = best_trump(tuple(t for t in range(28) if (full >> t) & 1), 0)
+            assert x == (0.1 / 7 + 0.9 if e.trump == state.decl_id else 0.1 / 7)
+        seen = seen or len(set(w)) > 1
+    assert seen, "some sample should mix consistent and inconsistent bidder hands"

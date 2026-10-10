@@ -309,10 +309,20 @@ fn tiles(mut mask: u32) -> impl Iterator<Item = u8> {
 
 // -- the ladder -----------------------------------------------------------------
 
+/// The built-in evidence g: how hidden seats' discretionary plays are scored.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum TiltPlays {
+    None,
+    Dice,  // a play with n legal options has likelihood 1/n
+    Field, // ε/n + (1−ε)·[the rung-0 player holding that hand would play it]
+}
+
 pub struct Config {
     pub rungs: Vec<(usize, Option<usize>)>, // (n_worlds, horizon) per rung; the live player is last
     pub make: bool,
     pub seed: u64,
+    pub tilt: TiltPlays,
+    pub eps: f64,
 }
 
 impl Config {
@@ -350,6 +360,46 @@ pub fn root_worlds(cfg: &Config, viewer: u8, own: u32, rec: &Rec) -> Vec<[u32; 4
     worlds_for(cfg, k, viewer, own, rec, invocation_seed(cfg, k, viewer, own, rec))
 }
 
+/// e^g for each scenario: the likelihood of the hidden seats' observed
+/// discretionary plays, replayed from the first lead with each seat holding
+/// the hand the scenario implies it was dealt (`Walt.tilt_weights`).
+fn tilt_weights(ctx: &mut Ctx, viewer: u8, worlds: &[[u32; 4]], plays: &[(u8, u8)]) -> Vec<f64> {
+    let mut w = vec![1.0f64; worlds.len()];
+    if ctx.cfg.tilt == TiltPlays::None || plays.is_empty() {
+        return w;
+    }
+    let dice = ctx.cfg.tilt == TiltPlays::Dice;
+    let eps = ctx.cfg.eps;
+    let mut played_by = [0u32; 4];
+    for &(s, t) in plays {
+        played_by[s as usize] |= 1 << t;
+    }
+    let mut full: Vec<[u32; 4]> = worlds
+        .iter()
+        .map(|h| [h[0] | played_by[0], h[1] | played_by[1], h[2] | played_by[2], h[3] | played_by[3]])
+        .collect();
+    let mut rec = Rec { played: 0, leader: plays[0].0, n: 0, trick: [0; 3], banked: [0; 2], forbid: [0; 4] };
+    for &(seat, tile) in plays {
+        if seat != viewer {
+            for (r, hands) in full.iter_mut().enumerate() {
+                let legal = ctx.rules.legal(hands[seat as usize], rec.led());
+                let n = legal.count_ones();
+                if n > 1 {
+                    if dice {
+                        w[r] *= 1.0 / n as f64;
+                    } else {
+                        let m = ctx.modeled_move(0, seat, hands[seat as usize], &rec);
+                        w[r] *= eps / n as f64 + (1.0 - eps) * if m == tile { 1.0 } else { 0.0 };
+                    }
+                }
+                hands[seat as usize] &= !(1 << tile);
+            }
+        }
+        rec = rec.advance(tile, ctx.rules);
+    }
+    w
+}
+
 /// One planning problem: a viewer, a rung, a sample, and its memo.
 struct Inv {
     k: usize,
@@ -365,13 +415,25 @@ struct Inv {
 }
 
 impl Inv {
-    fn new(ctx: &Ctx, k: usize, viewer: u8, own: u32, rec: &Rec, live_weights: Option<&[f64]>) -> Inv {
+    /// `live` carries the public play history and any external evidence at the
+    /// live rung only: modeled minds weigh their scenarios uniformly.
+    fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec,
+           live: Option<(&[(u8, u8)], Option<&[f64]>)>) -> Inv {
         let cfg = ctx.cfg;
         let seed = invocation_seed(cfg, k, viewer, own, rec);
         let worlds = worlds_for(cfg, k, viewer, own, rec, seed);
-        let weights = match live_weights {
-            Some(w) if k == cfg.level() => w.to_vec(),
-            _ => vec![1.0; worlds.len()],
+        let weights = match live {
+            Some((plays, external)) => {
+                let mut w = tilt_weights(ctx, viewer, &worlds, plays);
+                if let Some(x) = external {
+                    assert_eq!(x.len(), w.len(), "external weights must match the live scenarios");
+                    for (wi, xi) in w.iter_mut().zip(x) {
+                        *wi *= xi;
+                    }
+                }
+                w
+            }
+            None => vec![1.0; worlds.len()],
         };
         let tapes = (0..worlds.len()).map(|i| mix(&[seed, i as u64])).collect();
         Inv {
@@ -591,10 +653,11 @@ pub fn decide(
     rec: &Rec,
     bid: i32,
     bidder_team: u8,
-    weights: Option<&[f64]>,
+    plays: &[(u8, u8)],
+    external: Option<&[f64]>,
 ) -> (u8, Vec<(u8, f64)>, u64) {
     let mut ctx = Ctx { cfg, rules, bid, bt: bidder_team as usize, pi: Map::default(), nodes: 0 };
-    let mut inv = Inv::new(&ctx, cfg.level(), viewer, own, rec, weights);
+    let mut inv = Inv::new(&mut ctx, cfg.level(), viewer, own, rec, Some((plays, external)));
     let q = inv.action_values(&mut ctx);
     (best(&q, inv.maximize), q, ctx.nodes)
 }

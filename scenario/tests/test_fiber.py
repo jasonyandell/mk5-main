@@ -84,3 +84,31 @@ def test_worlds_from_real_states_contain_the_truth():
             assert all(w[s] & rec.forbid[s] == 0 for s in range(4))
             assert w[0] | w[1] | w[2] | w[3] == ALL_TILES & ~rec.played
         assert all(truth[s] & rec.forbid[s] == 0 for s in range(4))
+
+
+def test_enumeration_is_the_whole_fiber_and_replaces_sampling_when_it_fits():
+    from scenario.fiber import enumerate_fiber
+    from scenario.planner import SplitMix
+    rng = random.Random(13)
+    for _ in range(20):
+        tiles = rng.sample(range(28), 9)
+        pool = mask_of(tiles)
+        sizes = (3, 3, 3)
+        forbid = tuple(mask_of(rng.sample(tiles, rng.randint(0, 2))) for _ in range(3))
+        full = enumerate_fiber(pool, sizes, forbid)
+        assert len(full) == len(set(full)) == fiber_size(pool, sizes, forbid)
+        assert set(full) == _brute_force(pool, sizes, forbid)
+    # Six hidden tiles, two each: 90 worlds; asking for 160 yields all 90, once each.
+    for state in random_playing_states(60, seed=17):
+        if len(state.played) == 20 and not state.current_trick:
+            rec = record_from_state(state)
+            viewer = rec.seat
+            own = remaining_hand(state, viewer)
+            sizes = tuple(rec.hand_size(s) for s in range(4))
+            worlds = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, 160, SplitMix(1))
+            assert 1 <= len(worlds) <= 90 and len(set(worlds)) == len(worlds)
+            truth = tuple(remaining_hand(state, s) for s in range(4))
+            assert truth in worlds
+            break
+    else:
+        raise AssertionError("no two-tricks-left state found")

@@ -6,8 +6,18 @@ construction one rung down, bottoming out in random legal play. See
 `scenario/planner.py` for the mathematics and `scenario/` for the parts.
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
-          [,g<inner horizon>][,u=make|points][,py]
-Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays.
+          [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,py]
+Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
+uniform belief.
+
+Beliefs (`b=`, joined with `+`, each a likelihood factor on every scenario):
+  dice     the hidden seats' discretionary plays under random legal play
+           (a play with n options weighs 1/n — forced-looking plays count more)
+  field    the same plays under the rung-0 player: eps/n + (1-eps)·[it would
+           have played that tile]
+  auction  the declaration: eps/7 + (1-eps)·[the bidder's full hand in this
+           scenario would have called this trump] — exact for the bid30 and
+           heuristic bidders, which declare `best_trump` deterministically
 
 The player is bid-aware (the contract threshold is the utility) and
 score-blind. By default it runs the compiled core (`scenario/core`), which
@@ -21,16 +31,38 @@ from typing import Sequence
 
 from forge.zeb.types import ZebGameState
 
-from scenario.planner import Belief, Config, Rung, Walt
+from arena.hand_metrics import best_trump
+from scenario.planner import Belief, Config, Rung, Situation, Tilt, Walt, World
+
+
+def declaration_belief(eps: float = 0.1) -> Belief:
+    """The auction as evidence: in each scenario, would the bidder's dealt
+    hand have declared the trump that was declared? Deterministic under the
+    arena's declaring rule (`best_trump` with no length floor), softened to
+    eps/7 + (1-eps)·[match]; no evidence when the viewer is the bidder."""
+
+    def belief(sit: Situation, worlds: list[World]) -> list[float]:
+        if sit.bidder == sit.viewer:
+            return [1.0] * len(worlds)
+        shown = sit.played_by(sit.bidder)
+        out = []
+        for hands in worlds:
+            full = hands[sit.bidder] | shown
+            e = best_trump(tuple(t for t in range(28) if (full >> t) & 1), 0)
+            assert e is not None
+            out.append(eps / 7 + (1.0 - eps) * (1.0 if e.trump == sit.decl_id else 0.0))
+        return out
+
+    return belief
 
 
 class WaltPlay:
     def __init__(self, level: int = 1, n_outer: int = 16, n_inner: int = 4,
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
-                 compiled: bool = True):
+                 tilt: Tilt = Tilt(), compiled: bool = True):
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon)])
-        config = Config(rungs, utility, seed)
+        config = Config(rungs, utility, seed, tilt)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -59,14 +91,22 @@ class WaltPlay:
     def __repr__(self) -> str:
         c = self.walt.config
         engine = type(self.walt).__name__
-        return f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}, {engine})"
+        belief = "" if self.walt.belief is None else ", +external belief"
+        return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}, "
+                f"tilt={c.tilt.plays}{belief}, {engine})")
 
 
 def parse_walt_spec(arg: str) -> WaltPlay:
     kw: dict = {}
+    beliefs: set[str] = set()
+    eps = 0.1
     for t in (p for p in arg.split(",") if p):
         if t.startswith("u="):
             kw["utility"] = t[2:]
+        elif t.startswith("b="):
+            beliefs |= set(t[2:].split("+"))
+        elif t.startswith("e="):
+            eps = float(t[2:])
         elif t[0] in "knmhg" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
                    "h": "horizon", "g": "horizon_inner"}[t[0]]
@@ -77,4 +117,13 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["compiled"] = False
         else:
             raise ValueError(f"unknown walt option {t!r}")
+    unknown = beliefs - {"dice", "field", "auction"}
+    if unknown:
+        raise ValueError(f"unknown walt belief {sorted(unknown)}")
+    if "dice" in beliefs and "field" in beliefs:
+        raise ValueError("dice and field are two scorings of the same plays; pick one")
+    plays = "dice" if "dice" in beliefs else "field" if "field" in beliefs else "none"
+    kw["tilt"] = Tilt(plays, eps)
+    if "auction" in beliefs:
+        kw["belief"] = declaration_belief(eps)
     return WaltPlay(**kw)

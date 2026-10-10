@@ -7,6 +7,10 @@ counted by a small dynamic program over (next tile, remaining capacities),
 and a sample is drawn tile by tile in proportion to those counts. Uniform
 by construction; no rejection, no invalid worlds, never empty when the
 information state is real (the true deal is always a member).
+
+When the fiber is no larger than the sample asked for — 90 completions with
+two tricks left, 1,680 with three — it is enumerated outright instead: the
+exact belief at no extra cost, and never a duplicate scenario.
 """
 from __future__ import annotations
 
@@ -92,18 +96,50 @@ def sample_fiber(pool: int, sizes: tuple[int, int, int],
     return (masks[0], masks[1], masks[2])
 
 
+def enumerate_fiber(pool: int, sizes: tuple[int, int, int],
+                    forbid: tuple[int, int, int]) -> list[tuple[int, int, int]]:
+    """Every assignment of the pool to three seats, in tile-by-tile,
+    seat-0-first order (the same order the counting table walks)."""
+    tiles = tuple(tiles_of(pool))
+    ways = _fiber(tiles, sizes, forbid)
+    out: list[tuple[int, int, int]] = []
+    caps = list(sizes)
+    masks = [0, 0, 0]
+
+    def walk(i: int) -> None:
+        if i == len(tiles):
+            out.append((masks[0], masks[1], masks[2]))
+            return
+        t = tiles[i]
+        for j in range(3):
+            if caps[j] and not (forbid[j] >> t) & 1:
+                caps[j] -= 1
+                if ways(i + 1, *caps):
+                    masks[j] |= bit(t)
+                    walk(i + 1)
+                    masks[j] ^= bit(t)
+                caps[j] += 1
+
+    walk(0)
+    return out
+
+
 def sample_worlds(viewer: int, own: int, played: int, sizes4: tuple[int, int, int, int],
                   forbid4: tuple[int, int, int, int], n: int,
                   rng: Uniform) -> list[tuple[int, int, int, int]]:
-    """`n` scenarios from the viewer's fiber, as 4-tuples of remaining-hand
-    masks in absolute seat order (the viewer's own hand in its slot)."""
+    """Scenarios from the viewer's fiber, as 4-tuples of remaining-hand masks
+    in absolute seat order (the viewer's own hand in its slot): the whole
+    fiber when it has at most `n` members, else `n` uniform draws."""
     others = [s for s in range(4) if s != viewer]
     pool = ALL_TILES & ~played & ~own
     sizes = (sizes4[others[0]], sizes4[others[1]], sizes4[others[2]])
     forbid = (forbid4[others[0]], forbid4[others[1]], forbid4[others[2]])
+    if fiber_size(pool, sizes, forbid) <= n:
+        drawn = enumerate_fiber(pool, sizes, forbid)
+    else:
+        drawn = [sample_fiber(pool, sizes, forbid, rng) for _ in range(n)]
     worlds = []
-    for _ in range(n):
-        hidden = sample_fiber(pool, sizes, forbid, rng)
+    for hidden in drawn:
         hands = [0, 0, 0, 0]
         hands[viewer] = own
         for s, m in zip(others, hidden):

@@ -23,12 +23,12 @@ use std::sync::Mutex;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use planner::{decide, Config, Rec, Rules, MAX_WORLDS};
+use planner::{decide, Config, Rec, Rules, TiltPlays, MAX_WORLDS};
 
 /// One decision request:
 /// (decl, viewer, own, played, leader, trick, (banked0, banked1),
-///  (forbid0, forbid1, forbid2, forbid3), bid, bidder_team)
-type Req = (u8, u8, u32, u32, u8, Vec<u8>, (u8, u8), (u32, u32, u32, u32), i32, u8);
+///  (forbid0, forbid1, forbid2, forbid3), bid, bidder_team, plays as (seat, tile))
+type Req = (u8, u8, u32, u32, u8, Vec<u8>, (u8, u8), (u32, u32, u32, u32), i32, u8, Vec<(u8, u8)>);
 
 #[pyclass]
 struct Core {
@@ -37,7 +37,7 @@ struct Core {
 }
 
 fn rec_of(req: &Req) -> PyResult<Rec> {
-    let (_, _, _, played, leader, trick, banked, forbid, _, _) = req;
+    let (_, _, _, played, leader, trick, banked, forbid, _, _, _) = req;
     if trick.len() > 3 {
         return Err(PyValueError::new_err("a record's open trick holds at most three tiles"));
     }
@@ -56,7 +56,7 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    fn new(rungs: Vec<(usize, Option<usize>)>, utility: &str, seed: u64) -> PyResult<Self> {
+    fn new(rungs: Vec<(usize, Option<usize>)>, utility: &str, seed: u64, tilt: &str, eps: f64) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
         }
@@ -68,7 +68,17 @@ impl Core {
             "points" => false,
             other => return Err(PyValueError::new_err(format!("unknown utility {other:?}"))),
         };
-        Ok(Core { cfg: Config { rungs, make, seed }, rules: HashMap::new() })
+        let tilt = match tilt {
+            "none" => TiltPlays::None,
+            "dice" => TiltPlays::Dice,
+            "field" if rungs.len() > 1 => TiltPlays::Field,
+            "field" => return Err(PyValueError::new_err("the field tilt needs a modeled rung")),
+            other => return Err(PyValueError::new_err(format!("unknown tilt {other:?}"))),
+        };
+        if !(eps > 0.0 && eps <= 1.0) {
+            return Err(PyValueError::new_err("eps must lie in (0, 1]"));
+        }
+        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps }, rules: HashMap::new() })
     }
 
     /// Register one declaration's tables (tabulated in Python from the rules authority).
@@ -109,8 +119,9 @@ impl Core {
     }
 
     /// Decide every request: (tile, [(tile, Q)], cells evaluated). `weights[i]`
-    /// is the belief over request i's live scenarios, or None for uniform.
-    /// Runs on `threads` OS threads (0 = all cores) with the GIL released.
+    /// is external evidence over request i's live scenarios (multiplied into
+    /// the built-in tilt), or None. Runs on `threads` OS threads (0 = all
+    /// cores) with the GIL released.
     fn solve(
         &self,
         py: Python<'_>,
@@ -121,18 +132,21 @@ impl Core {
         if weights.len() != reqs.len() {
             return Err(PyValueError::new_err("one weights entry per request"));
         }
-        let n_live = self.cfg.rungs[self.cfg.rungs.len() - 1].0;
         let mut jobs = Vec::with_capacity(reqs.len());
         for (req, w) in reqs.iter().zip(&weights) {
+            let rec = rec_of(req)?;
             if let Some(w) = w {
-                if w.len() != n_live {
-                    return Err(PyValueError::new_err("weights must match the live rung's n_worlds"));
+                let n = planner::root_worlds(&self.cfg, req.1, req.2, &rec).len();
+                if w.len() != n {
+                    return Err(PyValueError::new_err(format!(
+                        "weights has {} entries but the live rung holds {n} scenarios", w.len()
+                    )));
                 }
             }
             let rules = self.rules.get(&req.0).ok_or_else(|| {
                 PyValueError::new_err(format!("no rules registered for declaration {}", req.0))
             })?;
-            jobs.push((rules, req.1, req.2, rec_of(req)?, req.8, req.9, w.as_deref()));
+            jobs.push((rules, req.1, req.2, rec, req.8, req.9, req.10.as_slice(), w.as_deref()));
         }
         let cfg = &self.cfg;
         let out: Mutex<Vec<Option<(u8, Vec<(u8, f64)>, u64)>>> = Mutex::new(vec![None; jobs.len()]);
@@ -151,8 +165,8 @@ impl Core {
                         if i >= jobs.len() {
                             break;
                         }
-                        let (rules, viewer, own, rec, bid, bt, w) = jobs[i];
-                        let r = decide(cfg, rules, viewer, own, &rec, bid, bt, w);
+                        let (rules, viewer, own, rec, bid, bt, plays, w) = jobs[i];
+                        let r = decide(cfg, rules, viewer, own, &rec, bid, bt, plays, w);
                         out.lock().unwrap()[i] = Some(r);
                     });
                 }

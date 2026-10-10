@@ -8,7 +8,7 @@ from forge.zeb.game import is_terminal, legal_actions
 
 from arena.walt_play import parse_walt_spec
 from scenario.compiled import CompiledWalt
-from scenario.planner import Config, Rung, Walt
+from scenario.planner import Config, Rung, Tilt, Walt
 from scenario.tests.test_rules_record import random_playing_states
 
 
@@ -58,9 +58,9 @@ def test_compiled_matches_the_planner_at_trick_one():
         _same(ref.decide(state, 30), fast.decide(state, 30))
 
 
-def _tilt(rec, viewer, worlds):
+def _tilt(sit, worlds):
     """A deterministic non-uniform belief: a function of the worlds alone."""
-    return [1.0 + ((w[(viewer + 1) % 4] * 2654435761) % 97) / 50.0 for w in worlds]
+    return [1.0 + ((w[(sit.viewer + 1) % 4] * 2654435761) % 97) / 50.0 for w in worlds]
 
 
 def test_compiled_matches_the_planner_with_a_belief():
@@ -87,6 +87,37 @@ def test_batch_equals_one_at_a_time_and_handles_forced_moves():
             assert math.isnan(got[1][got[0]])
 
 
+def test_compiled_matches_the_planner_with_the_tilt_and_the_auction():
+    from arena.walt_play import declaration_belief
+    cfgs = [
+        Config((Rung(4, 4), Rung(10, None)), "make", seed=6, tilt=Tilt("dice")),
+        Config((Rung(4, 4), Rung(10, None)), "make", seed=7, tilt=Tilt("field", eps=0.2)),
+        Config((Rung(12, None),), "points", seed=8, tilt=Tilt("dice")),
+    ]
+    auction = declaration_belief(0.1)
+    for cfg in cfgs:
+        ref, fast = Walt(cfg, belief=auction), CompiledWalt(cfg, belief=auction)
+        for state in _states(10, seed=41 + cfg.seed, min_plays=4):
+            _same(ref.decide(state, 30), fast.decide(state, 30))
+            assert ref.nodes == fast.nodes
+
+
+def test_compiled_enumerates_the_endgame_exactly_as_the_planner():
+    cfg = Config((Rung(8, None), Rung(160, None)), "make", seed=12, tilt=Tilt("dice"))
+    ref, fast = Walt(cfg), CompiledWalt(cfg)
+    n = 0
+    for state in random_playing_states(80, seed=55):
+        if not is_terminal(state) and len(state.played) >= 18 and len(legal_actions(state)) > 1:
+            _same(ref.decide(state, 30), fast.decide(state, 30))
+            n += 1
+            if n == 8:
+                break
+    assert n == 8
+
+
 def test_spec_selects_the_engine():
     assert type(parse_walt_spec("k0,n8").walt).__name__ == "CompiledWalt"
     assert type(parse_walt_spec("k0,n8,py").walt).__name__ == "Walt"
+    p = parse_walt_spec("k1,n8,m2,b=auction+field,e=0.2")
+    assert p.walt.config.tilt == Tilt("field", 0.2) and p.walt.belief is not None
+    assert parse_walt_spec("k0,n8,b=dice").walt.belief is None

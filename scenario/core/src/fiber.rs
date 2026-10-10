@@ -4,7 +4,8 @@
 //! seats (given their hand sizes and the tiles each provably cannot hold) is
 //! counted by a dynamic program over (next tile, remaining capacities), and a
 //! sample is drawn tile by tile in proportion to those counts. The draws
-//! consume the SplitMix stream exactly as the Python does.
+//! consume the SplitMix stream exactly as the Python does. A fiber no larger
+//! than the sample asked for is enumerated outright, in the Python's order.
 
 use crate::planner::{SplitMix, ALL_TILES};
 
@@ -49,6 +50,34 @@ impl<'a> Fiber<'a> {
         };
         self.memo[slot] = v;
         v
+    }
+
+    /// Every assignment, tile by tile, seat 0 first (`enumerate_fiber`).
+    fn enumerate(&mut self, sizes: [u8; 3]) -> Vec<[u32; 3]> {
+        let mut out = Vec::new();
+        let mut caps = sizes;
+        let mut masks = [0u32; 3];
+        self.walk(0, &mut caps, &mut masks, &mut out);
+        out
+    }
+
+    fn walk(&mut self, i: usize, caps: &mut [u8; 3], masks: &mut [u32; 3], out: &mut Vec<[u32; 3]>) {
+        if i == self.tiles.len() {
+            out.push(*masks);
+            return;
+        }
+        let t = self.tiles[i];
+        for j in 0..3 {
+            if caps[j] > 0 && (self.forbid[j] >> t) & 1 == 0 {
+                caps[j] -= 1;
+                if self.ways(i + 1, *caps) != 0 {
+                    masks[j] |= 1 << t;
+                    self.walk(i + 1, caps, masks, out);
+                    masks[j] ^= 1 << t;
+                }
+                caps[j] += 1;
+            }
+        }
     }
 
     /// One assignment of the pool to the three seats, uniform over the fiber.
@@ -124,9 +153,14 @@ pub fn sample_worlds(
         "pool size must equal the hidden hand sizes"
     );
     let mut fiber = Fiber::new(&tiles, sizes, forbid);
-    (0..n)
-        .map(|_| {
-            let hidden = fiber.sample(sizes, rng);
+    let drawn: Vec<[u32; 3]> = if fiber.ways(0, sizes) as usize <= n {
+        fiber.enumerate(sizes)
+    } else {
+        (0..n).map(|_| fiber.sample(sizes, rng)).collect()
+    };
+    drawn
+        .into_iter()
+        .map(|hidden| {
             let mut hands = [0u32; 4];
             hands[viewer as usize] = own;
             for j in 0..3 {

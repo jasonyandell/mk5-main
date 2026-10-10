@@ -6,9 +6,10 @@ same action values, bit for bit; `scenario/tests/test_compiled.py` holds it
 to that — and adds `decide_batch`, which plans a whole arena round of
 decisions in parallel on all cores with the GIL released.
 
-The belief seam is unchanged: `belief(record, viewer, worlds) -> weights`
-is called once per decision, in Python, on the live rung's scenarios (the
-core samples them, hands them over, and plans with the weights returned).
+The belief seam is unchanged: the config's `Tilt` runs inside the core, and
+`belief(situation, worlds) -> weights` is called once per decision, in
+Python, on the live rung's scenarios (the core samples them, hands them
+over, and multiplies the weights returned into the tilt).
 
 Build: `python -m pip install ./scenario/core` (needs the Rust toolchain).
 """
@@ -20,8 +21,8 @@ from typing import Sequence
 from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
-from scenario.planner import Belief, Config
-from scenario.record import Record, record_from_state, remaining_hand
+from scenario.planner import Belief, Config, Situation, situation_from_state
+from scenario.record import remaining_hand
 from scenario.rules import rules_for, tiles_of
 
 try:
@@ -43,6 +44,7 @@ class CompiledWalt:
         self.threads = threads
         self._core = scenario_core.Core(
             [(r.n_worlds, r.horizon) for r in config.rungs], config.utility, config.seed,
+            config.tilt.plays, config.tilt.eps,
         )
         self._decls: set[int] = set()
         self.nodes = 0  # cells evaluated in the last decide/decide_batch
@@ -65,10 +67,10 @@ class CompiledWalt:
         """One decision per state, planned in parallel."""
         out: list[tuple[int, dict[int, float]] | None] = [None] * len(states)
         reqs: list[tuple] = []
-        recs: list[tuple[int, Record, int]] = []
+        sits: list[tuple[int, Situation]] = []
         for i, (state, bid) in enumerate(zip(states, bids)):
-            rec = record_from_state(state)
-            viewer = rec.seat
+            sit = situation_from_state(state, bid)
+            rec, viewer = sit.record, sit.viewer
             if viewer != current_player(state):
                 raise AssertionError("record seat disagrees with engine")
             own = remaining_hand(state, viewer)
@@ -79,17 +81,16 @@ class CompiledWalt:
             self._rules(state.decl_id)
             reqs.append((
                 state.decl_id, viewer, own, rec.played, rec.leader, list(rec.trick),
-                rec.banked, rec.forbid, int(bid), state.bidder % 2,
+                rec.banked, rec.forbid, sit.bid, sit.bidder_team, list(sit.plays),
             ))
-            recs.append((i, rec, viewer))
+            sits.append((i, sit))
         self.nodes = 0
         if reqs:
             weights: list[list[float] | None] = [None] * len(reqs)
             if self.belief is not None:
                 for j, worlds in enumerate(self._core.sample_roots(reqs)):
-                    _, rec, viewer = recs[j]
-                    weights[j] = [float(w) for w in self.belief(rec, viewer, worlds)]
-            for (i, _, _), (tile, q, nodes) in zip(recs, self._core.solve(reqs, weights, self.threads)):
+                    weights[j] = [float(w) for w in self.belief(sits[j][1], worlds)]
+            for (i, _), (tile, q, nodes) in zip(sits, self._core.solve(reqs, weights, self.threads)):
                 out[i] = (tile, dict(q))
                 self.nodes += nodes
         assert all(o is not None for o in out)

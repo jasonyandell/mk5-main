@@ -22,7 +22,14 @@ they never multiply). A modeled player's decision is a pure function of
 
 The belief β weights the LIVE player's scenarios; modeled minds weight
 theirs uniformly (compatibility only, the g ≡ 0 limit), as the shipped
-player does. Every random draw — scenario sampling and the dice tape — comes
+player does. β has the tilt form b = u·e^g: u is the uniform (exact, no
+invalid worlds — the fiber is enumerated outright when it is no larger than
+the sample), and g is a log-likelihood of what has been observed. The
+built-in `Tilt` scores the hidden seats' discretionary plays under a field
+model — `dice` (each legal tile equally likely, so forced-looking plays
+weigh more) or `field` (the rung-0 player's own choice, ε-greedy); any
+further evidence (the auction, a learned head) multiplies in through
+`Walt(belief=callable)`, which sees the whole public `Situation`. Every random draw — scenario sampling and the dice tape — comes
 from SplitMix64 streams seeded by the invocation, so a decision is a pure
 function of (config, state, bid) that any implementation can reproduce
 bit for bit; `scenario/core` is the compiled one, checked against this file.
@@ -41,11 +48,10 @@ from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
 from scenario.fiber import sample_worlds
-from scenario.record import Record, record_from_state, remaining_hand
-from scenario.rules import ALL_TILES, Rules, rules_for, tiles_of
+from scenario.record import Record, empty_record, record_from_state, remaining_hand
+from scenario.rules import ALL_TILES, Rules, bit, mask_of, rules_for, tiles_of
 
 World = tuple[int, int, int, int]                       # remaining-hand masks, absolute seats
-Belief = Callable[[Record, int, list[World]], list[float]]  # (record, viewer, worlds) -> weights
 
 HAND_TOTAL = 42
 MASK64 = (1 << 64) - 1
@@ -61,16 +67,36 @@ class Rung:
 
 
 @dataclass(frozen=True)
+class Tilt:
+    """g, the built-in evidence: how the hidden seats' discretionary plays are
+    scored in each scenario. `none` is uniform; `dice` gives a play with n
+    legal options likelihood 1/n; `field` gives it ε/n + (1−ε)·[the rung-0
+    player holding that hand would have played it]."""
+
+    plays: str = "none"
+    eps: float = 0.1
+
+    def __post_init__(self) -> None:
+        if self.plays not in ("none", "dice", "field"):
+            raise ValueError(f"unknown tilt {self.plays!r}")
+        if not 0.0 < self.eps <= 1.0:
+            raise ValueError("eps must lie in (0, 1]")
+
+
+@dataclass(frozen=True)
 class Config:
     rungs: tuple[Rung, ...]     # rungs[k] configures D_k; the live player is the last rung
     utility: str = "make"       # "make" (bidding side makes it) or "points" (signed margin)
     seed: int = 0
+    tilt: Tilt = Tilt()
 
     def __post_init__(self) -> None:
         if not self.rungs:
             raise ValueError("a player needs at least one rung")
         if self.utility not in ("make", "points"):
             raise ValueError(f"unknown utility {self.utility!r}")
+        if self.tilt.plays == "field" and self.level == 0:
+            raise ValueError("the field tilt models plays with rung 0; a one-rung player has no modeled rung")
 
     @property
     def level(self) -> int:
@@ -121,6 +147,36 @@ def _tape_key(rec: Record) -> int:
     return _pack(rec.played, rec.leader, rec.trick, rec.banked)
 
 
+@dataclass(frozen=True)
+class Situation:
+    """Everything public at a decision, as the belief sees it."""
+
+    decl_id: int
+    viewer: int
+    bid: int
+    bidder: int                              # the declaring seat
+    record: Record
+    plays: tuple[tuple[int, int], ...]       # (seat, tile) in play order
+
+    @property
+    def bidder_team(self) -> int:
+        return self.bidder % 2
+
+    def played_by(self, seat: int) -> int:
+        return mask_of(t for s, t in self.plays if s == seat)
+
+
+Belief = Callable[[Situation, list[World]], list[float]]  # evidence beyond the tilt: weights per world
+
+
+def situation_from_state(state: ZebGameState, bid: int) -> Situation:
+    rec = record_from_state(state)
+    return Situation(
+        decl_id=state.decl_id, viewer=rec.seat, bid=int(bid), bidder=state.bidder,
+        record=rec, plays=tuple((int(s), int(t)) for s, t in state.play_history),
+    )
+
+
 class Walt:
     """A particular Walt: a Config plus a belief constructor."""
 
@@ -134,8 +190,8 @@ class Walt:
 
     def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
         """Return (tile, action values) for the seat to play in a PLAYING state."""
-        rec = record_from_state(state)
-        viewer = rec.seat
+        sit = situation_from_state(state, bid)
+        rec, viewer = sit.record, sit.viewer
         if viewer != current_player(state):
             raise AssertionError("record seat disagrees with engine")
         own = remaining_hand(state, viewer)
@@ -145,21 +201,55 @@ class Walt:
         self.nodes = 0
         if len(legal) == 1:
             return legal[0], {legal[0]: float("nan")}
-        inv = self._invocation(self.config.level, viewer, own, rec, rules, bid, state.bidder % 2)
+        inv = self._invocation(self.config.level, viewer, own, rec, rules, bid, sit.bidder_team, sit)
         q = inv.action_values()
         return _best(q, inv.maximize), q
+
+    # -- the belief --------------------------------------------------------------
+
+    def tilt_weights(self, sit: Situation, worlds: list[World], rules: Rules) -> list[float]:
+        """e^g for each scenario: the likelihood of the hidden seats' observed
+        discretionary plays, replayed from the first lead with each seat
+        holding the hand the scenario implies it was dealt."""
+        tilt = self.config.tilt
+        w = [1.0] * len(worlds)
+        if tilt.plays == "none" or not sit.plays:
+            return w
+        dice = tilt.plays == "dice"
+        eps = tilt.eps
+        full = [[hands[s] | sit.played_by(s) for s in range(4)] for hands in worlds]
+        rec = empty_record(sit.plays[0][0])
+        for seat, tile in sit.plays:
+            if seat != sit.viewer:
+                for r, hands in enumerate(full):
+                    legal = rules.legal(hands[seat], rec.led)
+                    n = legal.bit_count()
+                    if n > 1:
+                        if dice:
+                            w[r] *= 1.0 / n
+                        else:
+                            m = self._modeled_move(0, seat, hands[seat], rec, rules, sit.bid, sit.bidder_team)
+                            w[r] *= eps / n + (1.0 - eps) * (1.0 if m == tile else 0.0)
+                    hands[seat] &= ~bit(tile)
+            rec = rec.advance(tile, rules)
+        return w
 
     # -- the ladder ------------------------------------------------------------
 
     def _invocation(self, k: int, viewer: int, own: int, rec: Record, rules: Rules,
-                    bid: int, bidder_team: int) -> "_Invocation":
+                    bid: int, bidder_team: int, sit: Situation | None = None) -> "_Invocation":
+        """`sit` is given at the live rung only: modeled minds weigh their
+        scenarios uniformly."""
         rung = self.config.rungs[k]
         seed = _mix(self.config.seed, k, viewer, own, _tape_key(rec), *rec.forbid)
         rng = SplitMix(seed)
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
         worlds = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
-        live = k == self.config.level
-        weights = self.belief(rec, viewer, worlds) if (self.belief and live) else [1.0] * len(worlds)
+        weights = [1.0] * len(worlds)
+        if sit is not None:
+            weights = self.tilt_weights(sit, worlds, rules)
+            if self.belief is not None:
+                weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes)
 
