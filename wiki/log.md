@@ -24,6 +24,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | scenario-player | the forecast lies by 20 points and the cells are singletons from the bidder's third decision; cell-size floor is the fix]
+
+Hold-my-hand marginal (64 fiber deals, Walt everywhere): root splat +30 / 83%
+make vs real endings +10 to +13 / 39–45%, the same against the modeled
+opponent. Cell trace: 3.1 worlds per cell at the second own decision, 100%
+singletons from the third — clairvoyant below trick 2. Horizon sweep recorded.
+Fix in flight: `Rung(floor=m)` hands thin cells to the rung below. See
+[[scenario-player]].
+
 ## [2026-10-10 | 332ccfe8 | the atlas: Walt.analyze (per-world outcomes, the splat) and the mold (a deal's 374M positions in 1.9 s); beliefs paused]
 
 Position → outcome distribution on one deal's perfect-information tree, poured

@@ -281,6 +281,37 @@ for the distribution over the number, in one position.
 Jason: "seeing that is like seeing purest treasure. I've searched for an
 object with this property a long time. blind to these options."
 
+**The forecast lies, and we know why (2026-10-10, `scratch/atlas/marginal1.py`,
+`marginal2.py`, `horizon1.py`, `cells1.py`).** Hold seat 0's hand, vary the
+other 21 tiles over 64 deals, play each with Walt in every chair, merge the
+endings, and compare with what the root splat forecast for the same lead:
+
+| other seats | mean margin | made 30 |
+|---|---|---|
+| root forecast, 160 scenarios | +30.1 | 83% |
+| root forecast, 1,024 scenarios | +27.5 | 77% |
+| real endings, others = the modeled rung-0 player (n=8) | +12.8 | 39% |
+| real endings, others = rung 0 at n=160 | +11.2 | 44% |
+| real endings, others = full two-rung Walt | +9.6 | 45% |
+
+Twenty points of optimism, the same against every opponent including the one
+the forecast imagines — so it is inside the plan. **Mechanism, measured:** the
+cells thin. Along the chosen plan, at the bidder's second decision the 160
+root scenarios sit in cells averaging 3.1 worlds (27% already alone); from the
+bidder's third decision on, **every world is alone in its cell**. A max in a
+one-world cell is perfect-information play for that world: the plan is
+fusion-free at the root and clairvoyant from trick 2. The horizon sweep agrees
+(explicit search H plays then dice: H=16 +29.1, H=12 +24.3, H=8 +15.6, H=4
++2.6 — two lies crossing near the truth, not a fix). Live play is honest only
+because it resamples every turn. The old E[Q] ([[expected-q-value]]) was this
+with no cell at all: ten singleton worlds, each judged by the clairvoyant
+oracle, averaged; it already had the per-world "PDF", the splat's grandparent.
+**The fix (Jason: "big yes on resampling; ban singleton worlds"):** a cell-size
+floor per rung — below m live worlds the viewer stops optimizing over the
+survivors and plays as the rung below would at that record, with a fresh
+sample (the modeled-move construction already used for the other seats).
+Being built as `Rung(..., floor=m)`, arena `f=<m>`.
+
 **Pruning (the plan, not yet built).** No induction means no table to fill:
 a label is a function called when wanted, and the tail layers — most of the
 374M — never need to exist. Expand the *plausible cone* (children of moves
