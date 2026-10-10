@@ -25,7 +25,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-10-10 | HEAD | the net in the field, graded on the make re-pour: −0.16 [−0.48, +0.14] vs the champion at a quarter of the cost — a cheaper equal; the τ-units bug]
+## [2026-10-10 | 882b36fe | the net in the field, graded on the make re-pour: −0.16 [−0.48, +0.14] vs the champion at a quarter of the cost — a cheaper equal; the τ-units bug]
 
 [[scenario-player]] "The net in the field" § The make run; `scenario/field_train.py` target read off the margin splat (#107).
 
