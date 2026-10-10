@@ -2,6 +2,8 @@
 field, the information inequality, scale invariance, determinism, legality."""
 import random
 
+import pytest
+
 from forge.zeb.game import apply_action, current_player, is_terminal, legal_actions, new_game
 
 from arena.engine import ArenaConfig, run_half
@@ -189,7 +191,6 @@ def test_tilt_field_at_eps_one_is_dice_and_the_field_rewards_its_own_plays():
         w = field.tilt_weights(sit, inv.worlds, rules)
         assert all(x > 0 for x in w)
     # a one-rung player cannot model plays with rung 0
-    import pytest
     from scenario.planner import Tilt as T
     with pytest.raises(ValueError):
         Config((Rung(8, None),), "make", tilt=T("field"))
@@ -261,3 +262,42 @@ def test_forced_moves_analyze_to_no_scenarios():
         assert a.worlds == [] and a.weights == [] and a.outcomes == {a.tile: ()}
         return
     raise AssertionError("no forced move found in five random games")
+
+
+def test_a_floor_needs_a_rung_below_and_is_at_least_one():
+    import scenario_core
+    with pytest.raises(ValueError):
+        Rung(8, None, 0)
+    with pytest.raises(ValueError):
+        Config((Rung(8, None, 2),))
+    with pytest.raises(ValueError):
+        Config((Rung(8, None, 2), Rung(8, None)))
+    with pytest.raises(ValueError):
+        scenario_core.Core([(8, None, 2), (8, None, 1)], "make", 0, "none", 0.1)
+    Config((Rung(8, None), Rung(8, None, 9)))  # above the sample is allowed: the root still decides
+
+
+def test_a_floor_above_the_sample_hands_every_interior_decision_down(monkeypatch):
+    seen: list[tuple[int, bool]] = []
+    floored = _Invocation._floored
+
+    def spy(self, alive):
+        out = floored(self, alive)
+        seen.append((self.k, out))
+        return out
+
+    monkeypatch.setattr(_Invocation, "_floored", spy)
+    walt = Walt(Config((Rung(3, 3), Rung(8, None, 9)), "points", seed=5))
+    for state in _mid_hand_states(3, seed=41, min_plays=10):
+        walt.decide(state, 30)
+    live = [out for k, out in seen if k == 1]
+    assert live and all(live)                              # the live seat never maximizes below the root
+    assert all(not out for k, out in seen if k == 0)       # rung 0 keeps its floor of one
+
+
+def test_spec_sets_the_live_floor():
+    rungs = parse_walt_spec("k1,n8,m2,f=4,py").walt.config.rungs
+    assert rungs[-1].floor == 4 and rungs[0].floor == 1
+    assert parse_walt_spec("k1,n8,py").walt.config.rungs[-1].floor == 1
+    with pytest.raises(ValueError):
+        parse_walt_spec("k0,n8,f=2")

@@ -44,7 +44,7 @@ class CompiledWalt:
         self.belief = belief
         self.threads = threads
         self._core = scenario_core.Core(
-            [(r.n_worlds, r.horizon) for r in config.rungs], config.utility, config.seed,
+            [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
             config.tilt.plays, config.tilt.eps,
         )
         self._decls: set[int] = set()

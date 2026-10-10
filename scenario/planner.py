@@ -14,6 +14,16 @@ the distinguishable continuations. At another seat's turn each scenario's
 modeled player acts from its own information, and the cell partitions by
 the tile the deciding player sees.
 
+The max is honest only while the cell holds many scenarios: a max over a
+one-world cell is perfect-information play for that world, so a plan whose
+cells have thinned out is clairvoyant from there on. A rung's `floor` is the
+guard. Below the root, when the deciding player's cell holds fewer than
+`floor` scenarios, it does not maximize; it plays as a rung k-1 player
+holding its own remaining hand at that record would — the move it would
+find by sampling afresh, as a modeled seat does — one move for the whole
+cell, so V(C) = V(C_m). The root decision is never floored: the root cell is
+the whole sample.
+
 The ladder: rung k's modeled seats are rung k-1 players; rung -1 is random
 legal play, drawn from a tape keyed on the public record so that one
 scenario plays one tile at one record in every branch (worlds partition,
@@ -64,6 +74,11 @@ class Rung:
 
     n_worlds: int           # scenarios this rung samples at an invocation
     horizon: int | None     # plays searched explicitly from the invocation root; None = to the end
+    floor: int = 1          # below the root, a cell this thin hands the decider's move down a rung
+
+    def __post_init__(self) -> None:
+        if self.floor < 1:
+            raise ValueError("a cell floor is at least 1")
 
 
 @dataclass(frozen=True)
@@ -97,6 +112,8 @@ class Config:
             raise ValueError(f"unknown utility {self.utility!r}")
         if self.tilt.plays == "field" and self.level == 0:
             raise ValueError("the field tilt models plays with rung 0; a one-rung player has no modeled rung")
+        if self.rungs[0].floor > 1:
+            raise ValueError("rung 0 has no rung below to hand a floored move to")
 
     @property
     def level(self) -> int:
@@ -329,6 +346,7 @@ class _Invocation:
         self.tapes = tapes
         self.make = walt.config.utility == "make"
         self.horizon = walt.config.rungs[k].horizon
+        self.floor = walt.config.rungs[k].floor
         self.root_plays = root.plays_so_far()
         self.memo: dict[tuple, float] = {}
 
@@ -362,6 +380,8 @@ class _Invocation:
             return sum(self.weights[r] * self._playout(r, rec) for r in _bits(alive))
         seat = rec.seat
         if seat == self.viewer:
+            if self._floored(alive):
+                return self.value(rec.advance(self._handed_down(rec), self.rules), alive)
             hand = self.worlds[0][seat] & ~rec.played
             vals = [self.value(rec.advance(t, self.rules), alive)
                     for t in tiles_of(self.rules.legal(hand, rec.led))]
@@ -422,6 +442,9 @@ class _Invocation:
             return
         seat = rec.seat
         if seat == self.viewer:
+            if self._floored(alive):
+                self._trace(rec.advance(self._handed_down(rec), self.rules), alive, leaf)
+                return
             hand = self.worlds[0][seat] & ~rec.played
             q = {t: self.value(rec.advance(t, self.rules), alive)
                  for t in tiles_of(self.rules.legal(hand, rec.led))}
@@ -429,6 +452,20 @@ class _Invocation:
             return
         for t, cell in self._partition(seat, rec, alive).items():
             self._trace(rec.advance(t, self.rules), cell, leaf)
+
+    # -- the floor ----------------------------------------------------------------
+
+    def _floored(self, alive: int) -> bool:
+        """Too few scenarios left in the cell for a max over them to be honest."""
+        return alive.bit_count() < self.floor
+
+    def _handed_down(self, rec: Record) -> int:
+        """The decider's move in a floored cell: the rung k-1 player's, holding
+        the decider's remaining hand (the same in every scenario of the cell)."""
+        hand = self.worlds[0][self.viewer] & ~rec.played
+        return self.walt._modeled_move(
+            self.k - 1, self.viewer, hand, rec, self.rules, self.bid, self.bidder_team,
+        )
 
     # -- the field ----------------------------------------------------------------
 

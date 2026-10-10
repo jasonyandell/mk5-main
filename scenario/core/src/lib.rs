@@ -8,7 +8,8 @@
 //! is the runtime. Nothing here knows the rules of 42: the per-declaration
 //! tables arrive from Python (`forge.oracle.tables` stays the authority).
 //!
-//! Interface (see `scenario/compiled.py`): `Core(rungs, utility, seed)`,
+//! Interface (see `scenario/compiled.py`): `Core(rungs, utility, seed, tilt, eps)`
+//! with rungs as (n_worlds, horizon, floor),
 //! `set_rules(decl, ...)`, `sample_roots(reqs)` for the belief seam,
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released, `analyze` (the same, opened up: the
@@ -92,12 +93,18 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    fn new(rungs: Vec<(usize, Option<usize>)>, utility: &str, seed: u64, tilt: &str, eps: f64) -> PyResult<Self> {
+    fn new(rungs: Vec<(usize, Option<usize>, usize)>, utility: &str, seed: u64, tilt: &str, eps: f64) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
         }
-        if rungs.iter().any(|&(n, _)| n == 0 || n > MAX_WORLDS) {
+        if rungs.iter().any(|&(n, _, _)| n == 0 || n > MAX_WORLDS) {
             return Err(PyValueError::new_err(format!("n_worlds must be in 1..={MAX_WORLDS}")));
+        }
+        if rungs.iter().any(|&(_, _, f)| f == 0) {
+            return Err(PyValueError::new_err("a cell floor is at least 1"));
+        }
+        if rungs[0].2 > 1 {
+            return Err(PyValueError::new_err("rung 0 has no rung below to hand a floored move to"));
         }
         let make = match utility {
             "make" => true,

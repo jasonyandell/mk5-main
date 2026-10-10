@@ -6,9 +6,13 @@ construction one rung down, bottoming out in random legal play. See
 `scenario/planner.py` for the mathematics and `scenario/` for the parts.
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
-          [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,py]
+          [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
-uniform belief.
+uniform belief, f=1.
+
+`f=` is the live rung's cell floor: below the root, where the live seat's
+cell holds fewer than f scenarios it stops maximizing over them and plays
+the rung-below move for its own hand (`Rung.floor`; needs k >= 1).
 
 Beliefs (`b=`, joined with `+`, each a likelihood factor on every scenario):
   dice     the hidden seats' discretionary plays under random legal play
@@ -64,8 +68,8 @@ class WaltPlay:
     def __init__(self, level: int = 1, n_outer: int = 16, n_inner: int = 4,
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
-                 tilt: Tilt = Tilt(), compiled: bool = True):
-        rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon)])
+                 tilt: Tilt = Tilt(), floor: int = 1, compiled: bool = True):
+        rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
         config = Config(rungs, utility, seed, tilt)
         if compiled:
             from scenario.compiled import CompiledWalt
@@ -111,6 +115,8 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             beliefs |= set(t[2:].split("+"))
         elif t.startswith("e="):
             eps = float(t[2:])
+        elif t.startswith("f="):
+            kw["floor"] = int(t[2:])
         elif t[0] in "knmhg" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
                    "h": "horizon", "g": "horizon_inner"}[t[0]]

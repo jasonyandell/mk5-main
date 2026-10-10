@@ -7,7 +7,9 @@
 //!
 //! Rung k's modeled seats are rung k−1 players; rung −1 is random legal play
 //! from a tape keyed on the public record. The belief weights the live
-//! player's scenarios; modeled minds weight theirs uniformly.
+//! player's scenarios; modeled minds weight theirs uniformly. Below the root,
+//! a deciding cell thinner than its rung's floor does not maximize: the
+//! decider plays the rung k−1 move for its own remaining hand.
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
@@ -277,6 +279,9 @@ impl Bits {
     fn set(&mut self, r: usize) {
         self.0[r / 64] |= 1 << (r % 64);
     }
+    fn count(&self) -> usize {
+        self.0.iter().map(|w| w.count_ones() as usize).sum()
+    }
     fn iter(&self) -> impl Iterator<Item = usize> + '_ {
         self.0.iter().enumerate().flat_map(|(i, &w)| {
             let mut w = w;
@@ -318,7 +323,7 @@ pub enum TiltPlays {
 }
 
 pub struct Config {
-    pub rungs: Vec<(usize, Option<usize>)>, // (n_worlds, horizon) per rung; the live player is last
+    pub rungs: Vec<(usize, Option<usize>, usize)>, // (n_worlds, horizon, floor) per rung; the live player is last
     pub make: bool,
     pub seed: u64,
     pub tilt: TiltPlays,
@@ -407,6 +412,7 @@ struct Inv {
     root: Rec,
     maximize: bool,
     horizon: Option<usize>,
+    floor: usize,
     root_plays: u8,
     worlds: Vec<[u32; 4]>,
     weights: Vec<f64>,
@@ -442,6 +448,7 @@ impl Inv {
             root: *rec,
             maximize: (viewer as usize) % 2 == ctx.bt,
             horizon: cfg.rungs[k].1,
+            floor: cfg.rungs[k].2,
             root_plays: rec.plays(),
             worlds,
             weights,
@@ -481,6 +488,10 @@ impl Inv {
         }
         let seat = rec.seat();
         if seat == self.viewer {
+            if self.floored(&alive) {
+                let t = self.handed_down(ctx, &rec);
+                return self.value(ctx, rec.advance(t, ctx.rules), alive);
+            }
             let hand = self.worlds[0][seat as usize] & !rec.played;
             let mut best = if self.maximize { f64::NEG_INFINITY } else { f64::INFINITY };
             for t in tiles(ctx.rules.legal(hand, rec.led())) {
@@ -571,6 +582,11 @@ impl Inv {
         }
         let seat = rec.seat();
         if seat == self.viewer {
+            if self.floored(&alive) {
+                let t = self.handed_down(ctx, &rec);
+                self.trace(ctx, rec.advance(t, ctx.rules), alive, leaf);
+                return;
+            }
             let hand = self.worlds[0][seat as usize] & !rec.played;
             let q: Vec<(u8, f64)> = tiles(ctx.rules.legal(hand, rec.led()))
                 .map(|t| (t, self.value(ctx, rec.advance(t, ctx.rules), alive)))
@@ -582,6 +598,20 @@ impl Inv {
         for (t, cell) in self.partition(ctx, seat, &rec, &alive) {
             self.trace(ctx, rec.advance(t, ctx.rules), cell, leaf);
         }
+    }
+
+    // -- the floor -------------------------------------------------------------
+
+    /// Too few scenarios left in the cell for a max over them to be honest.
+    fn floored(&self, alive: &Bits) -> bool {
+        alive.count() < self.floor
+    }
+
+    /// The decider's move in a floored cell: the rung k−1 player's, holding
+    /// the decider's remaining hand (the same in every scenario of the cell).
+    fn handed_down(&self, ctx: &mut Ctx, rec: &Rec) -> u8 {
+        let hand = self.worlds[0][self.viewer as usize] & !rec.played;
+        ctx.modeled_move(self.k - 1, self.viewer, hand, rec)
     }
 
     // -- the field -------------------------------------------------------------

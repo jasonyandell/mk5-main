@@ -164,3 +164,33 @@ def test_analysis_batch_equals_one_at_a_time_and_handles_forced_moves():
         _same_analysis(fast.analyze(state, bid), got)
         if len(legal_actions(state)) == 1:
             assert got.worlds == [] and got.outcomes == {got.tile: ()} and math.isnan(got.q[got.tile])
+
+
+def _trick_one_state(seed: int, plays: int):
+    """A trick-1 state with `plays` tiles already down and a real choice."""
+    for s in random_playing_states(80, seed=seed):
+        if len(s.played) == plays and len(legal_actions(s)) > 1:
+            return s
+    raise AssertionError("no such state")
+
+
+FLOOR_CASES = [  # (floor, utility, tilt, plays already down) at k1,n160,m8
+    (4, "points", "none", 0),
+    (16, "make", "dice", 2),
+    (160, "points", "field", 3),
+    (4, "make", "field", 12),
+    (16, "points", "dice", 14),
+    (160, "make", "none", 13),
+]
+
+
+def test_compiled_matches_the_planner_under_a_cell_floor():
+    for floor, utility, tilt, plays in FLOOR_CASES:
+        cfg = Config((Rung(8, 4), Rung(160, None, floor)), utility, seed=17, tilt=Tilt(tilt))
+        state = _states(1, seed=71, min_plays=plays)[0] if plays >= 4 else _trick_one_state(73, plays)
+        ref, fast = Walt(cfg), CompiledWalt(cfg)
+        a = ref.analyze(state, 31)
+        _same_analysis(a, fast.analyze(state, 31))
+        assert ref.nodes == fast.nodes
+        _same((a.tile, a.q), fast.decide(state, 31))
+        assert ref.nodes == fast.nodes
