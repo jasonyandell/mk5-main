@@ -261,6 +261,26 @@ down 19–23; the bidder's partner leading trick 3 saw every option negative;
 one hinge (the 6-5 at trick 5) was worth 17 points over its alternatives to a
 viewer who could not see the hands.
 
+**The splat, seen (2026-10-10, `scratch/atlas/splat1.py`, seed 1).** Walt in
+all four chairs; seat 0 bid 30 on sixes with 6-5 6-2 6-1 2-2 1-0 4-0 4-1; the
+hand went down 19–23. At trick 5 the bidder held 4-1, 6-1, 6-5, with 8 banked
+to 1. Sixty scenarios remained — the whole fiber, so this is exact:
+
+```
+play 41: mean  -2.3, pmake  0%   (53% "short", never makes)
+play 61: mean  -2.9, pmake 37%   (37% set hard, 37% made: two-humped)
+play 65: mean +14.7, pmake 43%   (chosen)
+```
+
+Look at the first two. Nearly the same mean. Completely different hands. The
+4-1 is safe and hopeless, the 6-1 is a coin flip between a bad set and making
+it. A scalar player sees them as equal. The splat sees a bidder who is already
+behind choosing between resignation and a gamble. That is the whole argument
+for the distribution over the number, in one position.
+
+Jason: "seeing that is like seeing purest treasure. I've searched for an
+object with this property a long time. blind to these options."
+
 **Pruning (the plan, not yet built).** No induction means no table to fill:
 a label is a function called when wanted, and the tail layers — most of the
 374M — never need to exist. Expand the *plausible cone* (children of moves
