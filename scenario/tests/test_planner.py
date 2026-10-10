@@ -144,8 +144,8 @@ def test_spec_parsing():
     p = parse_walt_spec("k2,n12,m3,h10,g2,u=points")
     c = p.walt.config
     assert c.level == 2 and c.utility == "points"
-    assert c.rungs == (Rung(3, 2), Rung(3, 2), Rung(12, 10))
-    assert parse_walt_spec("hfull,gfull").walt.config.rungs == (Rung(4, None), Rung(16, None))
+    assert c.rungs == (Rung(3, 2), Rung(3, 2), Rung(12, 10, 16))
+    assert parse_walt_spec("hfull,gfull").walt.config.rungs == (Rung(4, None), Rung(16, None, 16))
 
 
 def test_tilt_dice_is_the_product_of_inverse_option_counts():
@@ -298,6 +298,9 @@ def test_a_floor_above_the_sample_hands_every_interior_decision_down(monkeypatch
 def test_spec_sets_the_live_floor():
     rungs = parse_walt_spec("k1,n8,m2,f=4,py").walt.config.rungs
     assert rungs[-1].floor == 4 and rungs[0].floor == 1
-    assert parse_walt_spec("k1,n8,py").walt.config.rungs[-1].floor == 1
+    # the default is the honest plan: floor 16 on the live rung of a k>=1 player, 1 at k=0
+    assert parse_walt_spec("k1,n8,py").walt.config.rungs[-1].floor == 16
+    assert parse_walt_spec("k0,n8,py").walt.config.rungs[-1].floor == 1
+    assert parse_walt_spec("k1,n8,f=1,py").walt.config.rungs[-1].floor == 1
     with pytest.raises(ValueError):
         parse_walt_spec("k0,n8,f=2")

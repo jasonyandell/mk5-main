@@ -311,7 +311,12 @@ floor per rung — below m live worlds the viewer stops optimizing over the
 survivors and plays as the rung below would at that record, with a fresh
 sample (the modeled-move construction already used for the other seats).
 Landed as `Rung(n, horizon, floor=m)`, arena `f=<m>` (commit `1406fdae`, 104
-tests; floor 1 is today's player to the bit; the root is never floored).
+tests; floor 1 is the old player to the bit; the root is never floored).
+**The arena default is the honest plan from 2026-10-10:** `walt:k1,…` means
+`f=16`; `f=1` restores the clairvoyant tail (Jason: "perf with noisy to
+similar outcomes are a win… the aesthetics are a factor too" — the math said
+one action per cell, and a one-world cell was breaking that promise from
+trick 2 on).
 
 **The floor calibrates the forecast (2026-10-10, `floor_forecast.py`,
 `marginal3.py`).** Same hand, same lead question, root forecast by floor, and

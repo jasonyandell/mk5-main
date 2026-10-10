@@ -8,11 +8,16 @@ construction one rung down, bottoming out in random legal play. See
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
-uniform belief, f=1.
+uniform belief, f=16 (f=1 at k=0, which has no rung to hand down to).
 
 `f=` is the live rung's cell floor: below the root, where the live seat's
 cell holds fewer than f scenarios it stops maximizing over them and plays
-the rung-below move for its own hand (`Rung.floor`; needs k >= 1).
+the rung-below move for its own hand (`Rung.floor`; needs k >= 1). The
+default is the honest plan — a max over a thin cell is perfect-information
+play for those few worlds, and at n=160 the cells are singletons from the
+live seat's third decision on (measured 2026-10-10). `f=1` restores the
+clairvoyant tail: same marks within noise, twice the nodes, a forecast that
+runs twenty points hot.
 
 Beliefs (`b=`, joined with `+`, each a likelihood factor on every scenario):
   dice     the hidden seats' discretionary plays under random legal play
@@ -68,7 +73,9 @@ class WaltPlay:
     def __init__(self, level: int = 1, n_outer: int = 16, n_inner: int = 4,
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
-                 tilt: Tilt = Tilt(), floor: int = 1, compiled: bool = True):
+                 tilt: Tilt = Tilt(), floor: int | None = None, compiled: bool = True):
+        if floor is None:
+            floor = 16 if level >= 1 else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
         config = Config(rungs, utility, seed, tilt)
         if compiled:
