@@ -53,6 +53,7 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/fiber.py` | exact-uniform sampling of hidden-hand completions by a counting DP — no rejection, no invalid worlds | counts equal brute-force enumeration; empirical uniformity |
 | `scenario/planner.py` | `Rung`, `Config`, `Walt`: the finite planning rule, the ladder, the dice tape, the `make`/`points` utilities | single-scenario value equals an independent best-plan search; the information inequality V(μ₁+μ₂) ≤ V(μ₁)+V(μ₂) on every split; scale invariance; determinism |
 | `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
+| `scenario/field.py` + `core/src/field.rs` + `scenario/field_train.py` | the field net: a learned integer policy as rung −1 (see "The net in the field") | forward pass bit-identical referee ↔ core; `decide`/`analyze` with the net field bit-identical |
 | `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,py]` (`py` = the pure Python referee) | an arena half completes |
 
 Tests: `python -m pytest scenario/tests -q` (22, CPU, no checkpoint). Build the
@@ -432,6 +433,45 @@ oracle: a map of where it was wrong), forced moves free, equivalent tiles
 branched once, the exact tail at no cost. Work proceeds in **waves**: label a
 frontier in one `decide_batch`, keep survivors, the next frontier is known
 before it is asked for (the tape). Mac for the Walt labeler, GPU for the net.
+
+## The net in the field (2026-10-10, design + smoke)
+
+A learned policy as the modeled seats, **and nowhere else** (Jason's binding
+rule: the net never enters a value or a leaf; the live seat still solves).
+One knob: **rung −1 is the net instead of the dice.** `walt:k0,n512,F=<npz>`
+is a live seat planning against modeled seats that play the net, with rung 0's
+floored moves handed to it too (a floor at rung 0 is now legal iff there is a
+net under it). The leaf playout stays dice. `k1,…,F=` also works (net under a
+rung-0 Walt) but costs more than the champion, not less.
+
+| choice | what |
+|---|---|
+| features (330 bits) | the modeled seat's own hand, tiles gone, open trick by who played it (left/partner/right), voids shown by each other seat, count-tile slots, side, trick position, who is winning the trick, thermometers of points the bidder still needs and the defenders still need — exactly the modeled-move cache key, nothing hidden |
+| canon | tiles relabeled so trump is pip 6, other pips in order: one trump suit to learn, not seven. Pip-trump declarations only (the `bid30`/heuristic bidders call nothing else); others refuse |
+| target | cross-entropy to softmax(sign·q/τ) over the legal moves, τ = 2 points: near-ties flat, hinges sharp |
+| net | MLP 330→128→64→28, 52k params, numpy + Adam (no torch), every tenth deal held out |
+| parity | integer inference: bit features, int16 weights at power-of-two scales, `max(acc >> s, 0)`, rounding folded into biases, ties to the lowest tile id. Referee and core agree by construction; tested on 300 positions' raw scores and on `decide`/`analyze` across four net-field configs |
+
+**Smoke (the 200-deal pour, `pour_s1_n512`).** Training 30 epochs in under a
+second: held-out regret 1.11 points/decision vs 1.94 for a random legal pick
+(the int net picks what the float net picks on 100% of held-out rows).
+`bid30+walt:k0,n512,F=pre200` vs `bid30+walt:k1,n512,m8`, 64 mirrored games,
+seed 1: −0.70 [−1.44, +0.05], made 28.8% vs 35.1%, 225 s. The plumbing works;
+the number is a smoke test, not a verdict.
+
+**Ran before the scope change (points-utility 5,000-deal pour; preliminary,
+to be redone on the #107 `make` re-pour):** trained in 9 s, held-out regret
+0.60 points (random 2.31; hinges 0.99 vs 9.86); as a model of the points
+teacher it beats the champion's own field (rung 0 n8 g4 `make`: 1.54 points,
+1.9 pp of make mass vs the net's 1.2 pp). Arena `k0,n512,F=` vs the champion,
+384 games, seed 1: **−0.23 [−0.54, +0.08]**, made 35.9% vs 38.0%, point margin
++0.03/hand — even on points, behind on marks, which fits a field (and floor
+hand-down) imitating a *points* Walt under a *make* live seat. Self-play wall,
+200 deals: 23 s with the net field vs 82 s for the champion (3.6×); opening
+lead 62k vs 4.3M cells (70×). Calibration with the net field (fresh 200 deals,
+seed 20001): forecast +6.8 / 38% vs real +9.3 / 42% (champion on the same
+deals +7.0 / 38% vs +8.1 / 40%). A net trained on make mass read off the
+points splat imitated worse in both units; cut.
 
 ## Links
 
