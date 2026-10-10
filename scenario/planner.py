@@ -36,7 +36,7 @@ from forge.zeb.types import ZebGameState
 
 from scenario.fiber import sample_worlds
 from scenario.record import Record, record_from_state, remaining_hand
-from scenario.rules import Rules, rules_for, tiles_of
+from scenario.rules import ALL_TILES, Rules, rules_for, tiles_of
 
 World = tuple[int, int, int, int]                       # remaining-hand masks, absolute seats
 Belief = Callable[[Record, int, list[World]], list[float]]  # (record, viewer, worlds) -> weights
@@ -85,10 +85,9 @@ def _mix(*parts: int) -> int:
 
 
 def _tape_key(rec: Record) -> int:
-    packed = 0
-    for t in rec.trick:
-        packed = (packed << 5) | t
-    return _mix(rec.played, rec.leader, packed, rec.banked[0], rec.banked[1])
+    """The record as one integer, for keying the tape (C-speed tuple hash;
+    deterministic for ints across processes)."""
+    return hash((rec.played, rec.leader, rec.trick, rec.banked)) & MASK64
 
 
 class Walt:
@@ -236,26 +235,53 @@ class _Invocation:
 
     def _dice(self, r: int, rec: Record, legal: int) -> int:
         """Random legal play from scenario r's tape, keyed on the record."""
+        if legal & (legal - 1) == 0:  # one legal tile
+            return legal.bit_length() - 1
         tiles = tiles_of(legal)
-        if len(tiles) == 1:
-            return tiles[0]
-        return tiles[_mix(self.tapes[r], _tape_key(rec)) % len(tiles)]
+        return tiles[_splitmix(self.tapes[r] ^ _tape_key(rec)) % len(tiles)]
 
     # -- leaves --------------------------------------------------------------------
 
     def _playout(self, r: int, rec: Record) -> float:
-        """The frontier continuation: every seat (the viewer too) plays from the tape."""
+        """The frontier continuation: every seat (the viewer too) plays from
+        the tape. The same record semantics as `Record.advance`, unrolled on
+        plain integers — this loop is the search's hot spot, and no modeled
+        mind samples inside it, so the void ledger need not be kept."""
         world = self.worlds[r]
-        while not rec.finished:
-            if self.make:
-                if rec.banked[self.bidder_team] >= self.bid:
+        rules = self.rules
+        tape = self.tapes[r]
+        bt = self.bidder_team
+        make, bid = self.make, self.bid
+        played, leader, trick = rec.played, rec.leader, list(rec.trick)
+        banked = list(rec.banked)
+        while played != ALL_TILES:
+            if make:
+                if banked[bt] >= bid:
                     return 1.0
-                if rec.banked[1 - self.bidder_team] > HAND_TOTAL - self.bid:
+                if banked[1 - bt] > HAND_TOTAL - bid:
                     return 0.0
-            seat = rec.seat
-            legal = self.rules.legal(world[seat] & ~rec.played, rec.led)
-            rec = rec.advance(self._dice(r, rec, legal), self.rules)
-        return self._score(rec)
+            seat = (leader + len(trick)) % 4
+            hand = world[seat] & ~played
+            if trick:
+                legal = hand & rules.follow_bits[rules.led_suit[trick[0]]] or hand
+            else:
+                legal = hand
+            if legal & (legal - 1) == 0:
+                tile = legal.bit_length() - 1
+            else:
+                tiles = tiles_of(legal)
+                key = hash((played, leader, tuple(trick), (banked[0], banked[1]))) & MASK64
+                tile = tiles[_splitmix(tape ^ key) % len(tiles)]
+            played |= 1 << tile
+            trick.append(tile)
+            if len(trick) == 4:
+                t4 = (trick[0], trick[1], trick[2], trick[3])
+                leader = (leader + rules.winner_offset(t4)) % 4
+                banked[leader % 2] += rules.trick_points(t4)
+                trick = []
+        if make:
+            return 1.0 if banked[bt] >= bid else 0.0
+        return float(banked[bt] - banked[1 - bt])
 
     def _score(self, rec: Record) -> float:
         bt = self.bidder_team
