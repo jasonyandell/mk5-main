@@ -24,6 +24,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | scenario-player | the floor's dividend: `k1,n512,m8,f=16` beats the old champion +0.56 [+0.26, +0.86], 384 mirrored games; honest plan is the arena default]
+
+Compute saved by not searching a clairvoyant tail, spent on root worlds
+(160 → 512), buys +0.56 marks/game at power (made 38.2% vs 33.1%). Floor 16
+alone was a null (+0.13). `walt:k1,…` now defaults to `f=16`. See
+[[scenario-player]].
+
 ## [2026-10-10 | 1406fdae | the cell floor lands: calibrated forecast (+10.4/35% vs real +11.5/34%), play a null leaning positive (+0.13 [−0.20, +0.45]) at under half the nodes]
 
 `Rung(n, horizon, floor=m)`, arena `f=<m>`; below the root a cell thinner

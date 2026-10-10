@@ -339,9 +339,13 @@ had the 2-2 four points clear). Whether honesty also *plays* better: **a null,
 leaning positive** — `f=16` vs floor 1, mirrored deals, 384 games, seed 1:
 **+0.13 marks/game [−0.20, +0.45]**, 195/384 (50.8%), halves 53.6% / 47.9%,
 contracts made 36.8% vs 35.6%. Same play within noise, honest forecast, under
-half the nodes per decision. The freed compute is the lead to pull: spend it
-on *more worlds at the root*, where the cell is joint (`n512`/`n1024` with
-`f=16`), rather than on a clairvoyant tail.
+half the nodes per decision. The freed compute, spent at the root where the
+cell is joint, **buys marks**: `k1,n512,m8,f=16` vs the old champion
+`k1,n160,m8` (floor 1), mirrored, 384 games, seed 1: **+0.56 marks/game
+[+0.26, +0.86]**, 217/384 (56.5%), halves 60.4% / 52.6%, contracts made
+38.2% vs 33.1%, 26.6 min wall vs 19.4 for the floor-16/160 block. The honest
+plan at three times the root worlds beats the clairvoyant plan at power, in
+about 1.4× the wall. Attribution and the 1,024-world cap are the next blocks.
 
 **What must be true (`whatmustbetrue.py`).** The outcomes are per world and
 paired, so a move's success set has a description in holdings, read off
