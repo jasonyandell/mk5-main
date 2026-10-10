@@ -345,7 +345,10 @@ cell is joint, **buys marks**: `k1,n512,m8,f=16` vs the old champion
 [+0.26, +0.86]**, 217/384 (56.5%), halves 60.4% / 52.6%, contracts made
 38.2% vs 33.1%, 26.6 min wall vs 19.4 for the floor-16/160 block. The honest
 plan at three times the root worlds beats the clairvoyant plan at power, in
-about 1.4× the wall. Attribution and the 1,024-world cap are the next blocks.
+about 1.4× the wall. At the 1,024-world cap (`k1,n1024,m8,f=16` vs the same
+old champion): **+0.49 [+0.18, +0.80]**, made 37.9% vs 33.6%, 38 min wall —
+no further gain over 512 for twice the worlds; **512 is the working spec**.
+Attribution (512 vs 160, both honest) is the next block.
 
 **What must be true (`whatmustbetrue.py`).** The outcomes are per world and
 paired, so a move's success set has a description in holdings, read off
