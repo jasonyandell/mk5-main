@@ -472,24 +472,12 @@ impl Inv {
 
     fn compute(&mut self, ctx: &mut Ctx, rec: Rec, alive: Bits) -> f64 {
         ctx.nodes += 1;
-        let bt = ctx.bt;
-        if ctx.cfg.make {
-            // Decided contracts: the rest of the hand cannot change the outcome.
-            if rec.banked[bt] as i32 >= ctx.bid {
-                return self.mass(&alive);
-            }
-            if rec.banked[1 - bt] as i32 > HAND_TOTAL - ctx.bid {
-                return 0.0;
-            }
+        if let Some(u) = self.settled(ctx, &rec) {
+            return u * self.mass(&alive);
         }
-        if rec.finished() {
-            return self.score(ctx, &rec) * self.mass(&alive);
-        }
-        if let Some(h) = self.horizon {
-            if (rec.plays() - self.root_plays) as usize >= h {
-                let ctx: &Ctx = ctx;
-                return fsum(alive.iter().map(|r| self.weights[r] * self.playout(ctx, r, &rec)));
-            }
+        if self.at_frontier(&rec) {
+            let ctx: &Ctx = ctx;
+            return fsum(alive.iter().map(|r| self.weights[r] * self.playout(ctx, r, &rec)));
         }
         let seat = rec.seat();
         if seat == self.viewer {
@@ -501,12 +489,43 @@ impl Inv {
             }
             return best;
         }
-        // The field acts: partition the cell by the tile the viewer sees,
-        // buckets in first-seen order.
+        let values: Vec<f64> = self
+            .partition(ctx, seat, &rec, &alive)
+            .into_iter()
+            .map(|(t, cell)| self.value(ctx, rec.advance(t, ctx.rules), cell))
+            .collect();
+        fsum(values.into_iter())
+    }
+
+    /// The utility every scenario shares once the hand is over — or, under
+    /// `make`, once the contract is decided and the rest cannot change it.
+    fn settled(&self, ctx: &Ctx, rec: &Rec) -> Option<f64> {
+        let bt = ctx.bt;
+        if ctx.cfg.make {
+            if rec.banked[bt] as i32 >= ctx.bid {
+                return Some(1.0);
+            }
+            if rec.banked[1 - bt] as i32 > HAND_TOTAL - ctx.bid {
+                return Some(0.0);
+            }
+        }
+        if rec.finished() {
+            return Some(self.score(ctx, rec));
+        }
+        None
+    }
+
+    fn at_frontier(&self, rec: &Rec) -> bool {
+        self.horizon.is_some_and(|h| (rec.plays() - self.root_plays) as usize >= h)
+    }
+
+    /// The field acts: the cell split by the tile the viewer sees, in
+    /// first-seen order.
+    fn partition(&self, ctx: &mut Ctx, seat: u8, rec: &Rec, alive: &Bits) -> Vec<(u8, Bits)> {
         let mut buckets: Vec<(u8, Bits)> = Vec::with_capacity(8);
         for r in alive.iter() {
             let hand = self.worlds[r][seat as usize] & !rec.played;
-            let tile = self.field_move(ctx, seat, r, hand, &rec);
+            let tile = self.field_move(ctx, seat, r, hand, rec);
             match buckets.iter_mut().find(|(t, _)| *t == tile) {
                 Some((_, cell)) => cell.set(r),
                 None => {
@@ -516,11 +535,53 @@ impl Inv {
                 }
             }
         }
-        let values: Vec<f64> = buckets
-            .into_iter()
-            .map(|(t, cell)| self.value(ctx, rec.advance(t, ctx.rules), cell))
-            .collect();
-        fsum(values.into_iter())
+        buckets
+    }
+
+    // -- the trace -------------------------------------------------------------
+
+    /// Per legal root action (ascending), the leaf value each scenario reaches
+    /// under the plan: a replay of the solved tree through the memo, one path
+    /// per scenario (`_Invocation.outcomes`).
+    fn outcomes(&mut self, ctx: &mut Ctx) -> Vec<(u8, Vec<f64>)> {
+        let own = self.worlds[0][self.viewer as usize] & !self.root.played;
+        let everyone = Bits::everyone(self.worlds.len());
+        let root = self.root;
+        tiles(ctx.rules.legal(own, root.led()))
+            .map(|t| {
+                let mut leaf = vec![0.0; self.worlds.len()];
+                self.trace(ctx, root.advance(t, ctx.rules), everyone, &mut leaf);
+                (t, leaf)
+            })
+            .collect()
+    }
+
+    fn trace(&mut self, ctx: &mut Ctx, rec: Rec, alive: Bits, leaf: &mut [f64]) {
+        if let Some(u) = self.settled(ctx, &rec) {
+            for r in alive.iter() {
+                leaf[r] = u;
+            }
+            return;
+        }
+        if self.at_frontier(&rec) {
+            for r in alive.iter() {
+                leaf[r] = self.playout(ctx, r, &rec);
+            }
+            return;
+        }
+        let seat = rec.seat();
+        if seat == self.viewer {
+            let hand = self.worlds[0][seat as usize] & !rec.played;
+            let q: Vec<(u8, f64)> = tiles(ctx.rules.legal(hand, rec.led()))
+                .map(|t| (t, self.value(ctx, rec.advance(t, ctx.rules), alive)))
+                .collect();
+            let t = best(&q, self.maximize);
+            self.trace(ctx, rec.advance(t, ctx.rules), alive, leaf);
+            return;
+        }
+        for (t, cell) in self.partition(ctx, seat, &rec, &alive) {
+            self.trace(ctx, rec.advance(t, ctx.rules), cell, leaf);
+        }
     }
 
     // -- the field -------------------------------------------------------------
@@ -660,4 +721,40 @@ pub fn decide(
     let mut inv = Inv::new(&mut ctx, cfg.level(), viewer, own, rec, Some((plays, external)));
     let q = inv.action_values(&mut ctx);
     (best(&q, inv.maximize), q, ctx.nodes)
+}
+
+/// `decide`, opened up (`Walt.analyze`): the decision plus the live
+/// scenarios, their weights, and each root action's per-scenario outcomes.
+pub struct Analysis {
+    pub tile: u8,
+    pub q: Vec<(u8, f64)>,
+    pub nodes: u64,
+    pub worlds: Vec<[u32; 4]>,
+    pub weights: Vec<f64>,
+    pub outcomes: Vec<(u8, Vec<f64>)>,
+}
+
+pub fn analyze(
+    cfg: &Config,
+    rules: &Rules,
+    viewer: u8,
+    own: u32,
+    rec: &Rec,
+    bid: i32,
+    bidder_team: u8,
+    plays: &[(u8, u8)],
+    external: Option<&[f64]>,
+) -> Analysis {
+    let mut ctx = Ctx { cfg, rules, bid, bt: bidder_team as usize, pi: Map::default(), nodes: 0 };
+    let mut inv = Inv::new(&mut ctx, cfg.level(), viewer, own, rec, Some((plays, external)));
+    let q = inv.action_values(&mut ctx);
+    let outcomes = inv.outcomes(&mut ctx);
+    Analysis {
+        tile: best(&q, inv.maximize),
+        q,
+        nodes: ctx.nodes,
+        worlds: std::mem::take(&mut inv.worlds),
+        weights: std::mem::take(&mut inv.weights),
+        outcomes,
+    }
 }

@@ -1,6 +1,6 @@
 """The compiled core is the Python planner, bit for bit: same tile, same
-action values, on random states, across the ladder's configurations, with
-and without a belief, batched or one at a time."""
+action values, same analyses, on random states, across the ladder's
+configurations, with and without a belief, batched or one at a time."""
 import math
 import random
 
@@ -121,3 +121,46 @@ def test_spec_selects_the_engine():
     p = parse_walt_spec("k1,n8,m2,b=auction+field,e=0.2")
     assert p.walt.config.tilt == Tilt("field", 0.2) and p.walt.belief is not None
     assert parse_walt_spec("k0,n8,b=dice").walt.belief is None
+
+
+ANALYSIS_CASES = [
+    (Config((Rung(12, None),), "make", seed=1), None),
+    (Config((Rung(6, 5),), "points", seed=2, tilt=Tilt("dice")), None),
+    (Config((Rung(4, 4), Rung(10, 6)), "make", seed=3, tilt=Tilt("field", eps=0.2)), None),
+    (Config((Rung(4, 4), Rung(10, 6)), "points", seed=13, tilt=Tilt("dice")), _tilt),
+    (Config((Rung(3, 3), Rung(3, 3), Rung(6, None)), "make", seed=4), _tilt),
+]
+
+
+def _same_analysis(a, b):
+    _same((a.tile, a.q), (b.tile, b.q))
+    assert a.worlds == b.worlds
+    assert a.weights == b.weights
+    assert a.outcomes == b.outcomes
+
+
+def test_compiled_analysis_matches_the_planner():
+    for cfg, belief in ANALYSIS_CASES:
+        ref, fast = Walt(cfg, belief=belief), CompiledWalt(cfg, belief=belief)
+        for state in _states(6, seed=61 + cfg.seed, min_plays=6):
+            a, b = ref.analyze(state, 31), fast.analyze(state, 31)
+            _same_analysis(a, b)
+            assert ref.nodes == fast.nodes
+            assert all(type(w) is tuple for w in b.worlds)
+
+
+def test_analysis_batch_equals_one_at_a_time_and_handles_forced_moves():
+    cfg, belief = ANALYSIS_CASES[3]
+    fast = CompiledWalt(cfg, belief=belief)
+    states = []
+    for s in random_playing_states(40, seed=37):
+        if not is_terminal(s) and len(s.played) >= 4:
+            states.append(s)
+        if len(states) == 16:
+            break
+    assert any(len(legal_actions(s)) == 1 for s in states)
+    bids = [30 + i % 5 for i in range(len(states))]
+    for state, bid, got in zip(states, bids, fast.analyze_batch(states, bids)):
+        _same_analysis(fast.analyze(state, bid), got)
+        if len(legal_actions(state)) == 1:
+            assert got.worlds == [] and got.outcomes == {got.tile: ()} and math.isnan(got.q[got.tile])

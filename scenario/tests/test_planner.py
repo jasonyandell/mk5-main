@@ -215,3 +215,49 @@ def test_declaration_belief_favors_hands_that_would_have_called_the_trump():
             assert x == (0.1 / 7 + 0.9 if e.trump == state.decl_id else 0.1 / 7)
         seen = seen or len(set(w)) > 1
     assert seen, "some sample should mix consistent and inconsistent bidder hands"
+
+
+def _belief(sit, worlds):
+    """A deterministic non-uniform belief: a function of the worlds alone."""
+    return [1.0 + ((w[(sit.viewer + 1) % 4] * 2654435761) % 97) / 50.0 for w in worlds]
+
+
+def test_analysis_outcomes_reweigh_to_the_action_values():
+    """Each root action's outcomes, weighed by the belief the planner used,
+    are its action value: the trace routes every scenario to the leaf the
+    recursion credits it with. And the analysis is the decision, opened up."""
+    import math
+    from scenario.planner import Tilt
+    cases = [
+        (Config((Rung(8, None),), "make", seed=1), None),
+        (Config((Rung(6, 5),), "points", seed=2), None),
+        (Config((Rung(3, 3), Rung(8, None)), "make", seed=3, tilt=Tilt("dice")), _belief),
+        (Config((Rung(3, 3), Rung(8, 6)), "points", seed=4, tilt=Tilt("field", eps=0.2)), _belief),
+    ]
+    for cfg, belief in cases:
+        walt = Walt(cfg, belief=belief)
+        for state in _mid_hand_states(6, seed=111 + cfg.seed, min_plays=6):
+            tile, q = walt.decide(state, 30)
+            nodes = walt.nodes
+            a = walt.analyze(state, 30)
+            assert (a.tile, a.q, walt.nodes) == (tile, q, nodes)
+            assert len(a.worlds) == len(a.weights) and a.outcomes.keys() == q.keys()
+            total = math.fsum(a.weights)
+            for t, leaf in a.outcomes.items():
+                assert len(leaf) == len(a.worlds)
+                assert abs(math.fsum(w * o for w, o in zip(a.weights, leaf)) / total - q[t]) < 1e-9
+                if cfg.utility == "make":
+                    assert set(leaf) <= {0.0, 1.0}
+
+
+def test_forced_moves_analyze_to_no_scenarios():
+    import math
+    walt = Walt(Config((Rung(4, None),), "make"))
+    for state in random_playing_states(5, seed=71):
+        if is_terminal(state) or len(legal_actions(state)) != 1:
+            continue
+        a = walt.analyze(state, 30)
+        assert walt.nodes == 0 and list(a.q) == [a.tile] and math.isnan(a.q[a.tile])
+        assert a.worlds == [] and a.weights == [] and a.outcomes == {a.tile: ()}
+        return
+    raise AssertionError("no forced move found in five random games")

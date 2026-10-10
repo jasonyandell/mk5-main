@@ -177,6 +177,23 @@ def situation_from_state(state: ZebGameState, bid: int) -> Situation:
     )
 
 
+@dataclass(frozen=True)
+class Analysis:
+    """One decision, opened up. `worlds` are the live rung's scenarios in
+    sample order and `weights` the belief over them exactly as the planner
+    weighs them (tilt × external evidence, unnormalized). `outcomes[a][r]`
+    is the leaf value scenario r reaches when the root action is a and play
+    continues under the plan — the viewer's moves chosen once per cell, the
+    other seats as modeled, leaves scored as the recursion scores them — so
+    that q[a] = Σ_r weights[r]·outcomes[a][r] / Σ_r weights[r]."""
+
+    tile: int
+    q: dict[int, float]
+    worlds: list[World]
+    weights: list[float]
+    outcomes: dict[int, tuple[float, ...]]
+
+
 class Walt:
     """A particular Walt: a Config plus a belief constructor."""
 
@@ -190,6 +207,24 @@ class Walt:
 
     def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
         """Return (tile, action values) for the seat to play in a PLAYING state."""
+        inv = self._root(state, bid)
+        if isinstance(inv, int):
+            return inv, {inv: float("nan")}
+        q = inv.action_values()
+        return _best(q, inv.maximize), q
+
+    def analyze(self, state: ZebGameState, bid: int) -> "Analysis":
+        """`decide`, opened up: the same tile and action values, plus where
+        each root action sends every live scenario under the plan. A forced
+        move is not planned (as in `decide`): its analysis holds no scenarios."""
+        inv = self._root(state, bid)
+        if isinstance(inv, int):
+            return Analysis(inv, {inv: float("nan")}, [], [], {inv: ()})
+        q = inv.action_values()
+        return Analysis(_best(q, inv.maximize), q, inv.worlds, inv.weights, inv.outcomes())
+
+    def _root(self, state: ZebGameState, bid: int) -> "_Invocation | int":
+        """The live invocation at a decision — or the tile, when it is forced."""
         sit = situation_from_state(state, bid)
         rec, viewer = sit.record, sit.viewer
         if viewer != current_player(state):
@@ -200,10 +235,8 @@ class Walt:
         self._pi.clear()
         self.nodes = 0
         if len(legal) == 1:
-            return legal[0], {legal[0]: float("nan")}
-        inv = self._invocation(self.config.level, viewer, own, rec, rules, bid, sit.bidder_team, sit)
-        q = inv.action_values()
-        return _best(q, inv.maximize), q
+            return legal[0]
+        return self._invocation(self.config.level, viewer, own, rec, rules, bid, sit.bidder_team, sit)
 
     # -- the belief --------------------------------------------------------------
 
@@ -322,15 +355,10 @@ class _Invocation:
 
     def _value(self, rec: Record, alive: int) -> float:
         self.walt.nodes += 1
-        if self.make:
-            # Decided contracts: the rest of the hand cannot change the outcome.
-            if rec.banked[self.bidder_team] >= self.bid:
-                return self._mass(alive)
-            if rec.banked[1 - self.bidder_team] > HAND_TOTAL - self.bid:
-                return 0.0
-        if rec.finished:
-            return self._score(rec) * self._mass(alive)
-        if self.horizon is not None and rec.plays_so_far() - self.root_plays >= self.horizon:
+        u = self._settled(rec)
+        if u is not None:
+            return u * self._mass(alive)
+        if self._at_frontier(rec):
             return sum(self.weights[r] * self._playout(r, rec) for r in _bits(alive))
         seat = rec.seat
         if seat == self.viewer:
@@ -338,12 +366,69 @@ class _Invocation:
             vals = [self.value(rec.advance(t, self.rules), alive)
                     for t in tiles_of(self.rules.legal(hand, rec.led))]
             return max(vals) if self.maximize else min(vals)
+        return sum(self.value(rec.advance(t, self.rules), cell)
+                   for t, cell in self._partition(seat, rec, alive).items())
+
+    def _settled(self, rec: Record) -> float | None:
+        """The utility every scenario shares once the hand is over — or, under
+        `make`, once the contract is decided and the rest cannot change it."""
+        if self.make:
+            if rec.banked[self.bidder_team] >= self.bid:
+                return 1.0
+            if rec.banked[1 - self.bidder_team] > HAND_TOTAL - self.bid:
+                return 0.0
+        if rec.finished:
+            return self._score(rec)
+        return None
+
+    def _at_frontier(self, rec: Record) -> bool:
+        return self.horizon is not None and rec.plays_so_far() - self.root_plays >= self.horizon
+
+    def _partition(self, seat: int, rec: Record, alive: int) -> dict[int, int]:
+        """The field acts: the cell split by the tile the viewer sees, in
+        first-seen order."""
         buckets: dict[int, int] = {}
         for r in _bits(alive):
             hand = self.worlds[r][seat] & ~rec.played
             tile = self._field_move(seat, r, hand, rec)
             buckets[tile] = buckets.get(tile, 0) | (1 << r)
-        return sum(self.value(rec.advance(t, self.rules), cell) for t, cell in buckets.items())
+        return buckets
+
+    # -- the trace ----------------------------------------------------------------
+
+    def outcomes(self) -> dict[int, tuple[float, ...]]:
+        """Per legal root action, the leaf value each scenario reaches under
+        the plan. A replay of the solved tree, not a second solve: every cell
+        it visits is already in the memo, and the policy subtree it walks
+        holds at most one path per scenario."""
+        own = self.worlds[0][self.viewer] & ~self.root.played
+        everyone = (1 << len(self.worlds)) - 1
+        out = {}
+        for t in tiles_of(self.rules.legal(own, self.root.led)):
+            leaf = [0.0] * len(self.worlds)
+            self._trace(self.root.advance(t, self.rules), everyone, leaf)
+            out[t] = tuple(leaf)
+        return out
+
+    def _trace(self, rec: Record, alive: int, leaf: list[float]) -> None:
+        u = self._settled(rec)
+        if u is not None:
+            for r in _bits(alive):
+                leaf[r] = u
+            return
+        if self._at_frontier(rec):
+            for r in _bits(alive):
+                leaf[r] = self._playout(r, rec)
+            return
+        seat = rec.seat
+        if seat == self.viewer:
+            hand = self.worlds[0][seat] & ~rec.played
+            q = {t: self.value(rec.advance(t, self.rules), alive)
+                 for t in tiles_of(self.rules.legal(hand, rec.led))}
+            self._trace(rec.advance(_best(q, self.maximize), self.rules), alive, leaf)
+            return
+        for t, cell in self._partition(seat, rec, alive).items():
+            self._trace(rec.advance(t, self.rules), cell, leaf)
 
     # -- the field ----------------------------------------------------------------
 
