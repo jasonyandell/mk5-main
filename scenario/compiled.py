@@ -22,6 +22,7 @@ from typing import Sequence
 from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
+from scenario.field import CANON
 from scenario.planner import Analysis, Belief, Config, Situation, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for, tiles_of
@@ -46,6 +47,7 @@ class CompiledWalt:
         self._core = scenario_core.Core(
             [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
             config.tilt.plays, config.tilt.eps,
+            None if config.field is None else config.field.core_args(),
         )
         self._decls: set[int] = set()
         self.nodes = 0  # cells evaluated in the last decision or batch
@@ -108,6 +110,8 @@ class CompiledWalt:
                 out[i] = (legal[0], None)
                 continue
             self._rules(state.decl_id)
+            if self.config.field is not None and state.decl_id not in CANON:
+                raise ValueError(f"the field net plays pip-trump declarations only, not {state.decl_id}")
             reqs.append((
                 state.decl_id, viewer, own, rec.played, rec.leader, list(rec.trick),
                 rec.banked, rec.forbid, sit.bid, sit.bidder_team, list(sit.plays),

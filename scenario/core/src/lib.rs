@@ -8,15 +8,18 @@
 //! is the runtime. Nothing here knows the rules of 42: the per-declaration
 //! tables arrive from Python (`forge.oracle.tables` stays the authority).
 //!
-//! Interface (see `scenario/compiled.py`): `Core(rungs, utility, seed, tilt, eps)`
-//! with rungs as (n_worlds, horizon, floor),
+//! Interface (see `scenario/compiled.py`): `Core(rungs, utility, seed, tilt, eps, field)`
+//! with rungs as (n_worlds, horizon, floor) and `field` the field net's
+//! weights (`FieldNet.core_args`) or None,
 //! `set_rules(decl, ...)`, `sample_roots(reqs)` for the belief seam,
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released, `analyze` (the same, opened up: the
 //! scenarios and each root action's per-scenario outcomes), and `mold`,
-//! the per-layer position counts of one deal's perfect-information tree.
+//! the per-layer position counts of one deal's perfect-information tree;
+//! `field_scores` runs the field net alone, for the parity tests.
 
 mod fiber;
+mod field;
 mod mold;
 mod planner;
 
@@ -27,7 +30,31 @@ use std::sync::Mutex;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+use field::{FieldNet, N_FEATURES};
 use planner::{analyze, decide, Config, Rec, Rules, TiltPlays, MAX_WORLDS};
+
+/// The field net as Python hands it over (`FieldNet.core_args`):
+/// (h1, h2, w1, b1, w2, b2, w3, b3, s1, s2, [(decl, canon)]).
+type NetArgs = (usize, usize, Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>, u32, u32, Vec<(u8, Vec<u8>)>);
+
+fn field_net(a: NetArgs) -> PyResult<FieldNet> {
+    let (h1, h2, w1, b1, w2, b2, w3, b3, s1, s2, canons) = a;
+    let shapes = [(w1.len(), N_FEATURES * h1), (b1.len(), h1), (w2.len(), h2 * h1), (b2.len(), h2),
+                  (w3.len(), 28 * h2), (b3.len(), 28)];
+    if shapes.iter().any(|(got, want)| got != want) {
+        return Err(PyValueError::new_err("field net arrays have the wrong shape"));
+    }
+    let mut canon = [None; 10];
+    for (decl, c) in canons {
+        if decl as usize >= canon.len() || c.len() != 28 {
+            return Err(PyValueError::new_err("a canon is 28 tile ids for a declaration in 0..10"));
+        }
+        let mut t = [0u8; 28];
+        t.copy_from_slice(&c);
+        canon[decl as usize] = Some(t);
+    }
+    Ok(FieldNet { h1, h2, w1, b1, w2, b2, w3, b3, s1, s2, canon })
+}
 
 /// One decision request:
 /// (decl, viewer, own, played, leader, trick, (banked0, banked1),
@@ -93,7 +120,9 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    fn new(rungs: Vec<(usize, Option<usize>, usize)>, utility: &str, seed: u64, tilt: &str, eps: f64) -> PyResult<Self> {
+    #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None))]
+    fn new(rungs: Vec<(usize, Option<usize>, usize)>, utility: &str, seed: u64, tilt: &str, eps: f64,
+           field: Option<NetArgs>) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
         }
@@ -103,8 +132,8 @@ impl Core {
         if rungs.iter().any(|&(_, _, f)| f == 0) {
             return Err(PyValueError::new_err("a cell floor is at least 1"));
         }
-        if rungs[0].2 > 1 {
-            return Err(PyValueError::new_err("rung 0 has no rung below to hand a floored move to"));
+        if rungs[0].2 > 1 && field.is_none() {
+            return Err(PyValueError::new_err("rung 0 hands a floored move down only to a field net"));
         }
         let make = match utility {
             "make" => true,
@@ -121,7 +150,8 @@ impl Core {
         if !(eps > 0.0 && eps <= 1.0) {
             return Err(PyValueError::new_err("eps must lie in (0, 1]"));
         }
-        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps }, rules: HashMap::new() })
+        let field = field.map(field_net).transpose()?;
+        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field }, rules: HashMap::new() })
     }
 
     /// Register one declaration's tables (tabulated in Python from the rules authority).
@@ -138,7 +168,7 @@ impl Core {
         {
             return Err(PyValueError::new_err("rules tables have the wrong shape"));
         }
-        let mut r = Rules { led_suit: [0; 28], follow_bits: [0; 8], rank: [[0; 28]; 8], count: [0; 28] };
+        let mut r = Rules { decl, led_suit: [0; 28], follow_bits: [0; 8], rank: [[0; 28]; 8], count: [0; 28] };
         r.led_suit.copy_from_slice(&led_suit);
         r.follow_bits.copy_from_slice(&follow_bits);
         r.count.copy_from_slice(&count);
@@ -196,6 +226,24 @@ impl Core {
             let worlds = a.worlds.into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect();
             (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes)
         }))
+    }
+
+    /// The field net alone on each request's position: (tile, the 28
+    /// canonical scores) — the referee's `FieldNet.move` and `scores`.
+    fn field_scores(&self, reqs: Vec<Req>) -> PyResult<Vec<(u8, Vec<i64>)>> {
+        let net = self.cfg.field.as_ref().ok_or_else(|| PyValueError::new_err("no field net"))?;
+        reqs.iter()
+            .map(|req| {
+                let rules = self.rules_for(req.0)?;
+                if net.canon[rules.decl as usize].is_none() {
+                    return Err(PyValueError::new_err("the field net plays pip-trump declarations only"));
+                }
+                let rec = rec_of(req)?;
+                let bt = req.9 as usize;
+                let z = net.scores(&net.features(rules, req.1, req.2, &rec, req.8, bt));
+                Ok((net.decide(rules, req.1, req.2, &rec, req.8, bt), z))
+            })
+            .collect()
     }
 
     /// Positions per layer of one deal's perfect-information tree, layers

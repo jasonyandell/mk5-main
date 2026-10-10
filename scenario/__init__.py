@@ -14,4 +14,6 @@ Modules:
   fiber    — exact-uniform sampling of hidden-hand completions
   planner  — the finite planning rule and the ladder of players
   atlas    — one known deal's perfect-information tree, to be labeled by Walt
+  field    — the field net: a learned integer policy as rung -1, the modeled seats' bottom
+  field_train — trains a field net on a pour (numpy; advantage-shaped soft targets)
 """

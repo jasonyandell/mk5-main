@@ -6,7 +6,8 @@
 //!          = Σ_o V(C_o)                 another seat acts
 //!
 //! Rung k's modeled seats are rung k−1 players; rung −1 is random legal play
-//! from a tape keyed on the public record. The belief weights the live
+//! from a tape keyed on the public record — or the field net (`field.rs`),
+//! which then also takes rung 0's floored moves. The belief weights the live
 //! player's scenarios; modeled minds weight theirs uniformly. Below the root,
 //! a deciding cell thinner than its rung's floor does not maximize: the
 //! decider plays the rung k−1 move for its own remaining hand.
@@ -15,6 +16,7 @@ use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 
 use crate::fiber::sample_worlds;
+use crate::field::FieldNet;
 
 pub const ALL_TILES: u32 = (1 << 28) - 1;
 pub const HAND_TOTAL: i32 = 42;
@@ -107,6 +109,7 @@ impl SplitMix {
 // -- rules tables -------------------------------------------------------------
 
 pub struct Rules {
+    pub decl: u8,               // the declaration these tables are for
     pub led_suit: [u8; 28],     // led suit when the tile leads
     pub follow_bits: [u32; 8],  // tiles that follow each led suit
     pub rank: [[u8; 28]; 8],    // trick rank under each led suit
@@ -328,6 +331,7 @@ pub struct Config {
     pub seed: u64,
     pub tilt: TiltPlays,
     pub eps: f64,
+    pub field: Option<FieldNet>, // rung −1: the field net, or None for random legal play
 }
 
 impl Config {
@@ -393,7 +397,7 @@ fn tilt_weights(ctx: &mut Ctx, viewer: u8, worlds: &[[u32; 4]], plays: &[(u8, u8
                     if dice {
                         w[r] *= 1.0 / n as f64;
                     } else {
-                        let m = ctx.modeled_move(0, seat, hands[seat as usize], &rec);
+                        let m = ctx.modeled_move(Some(0), seat, hands[seat as usize], &rec);
                         w[r] *= eps / n as f64 + (1.0 - eps) * if m == tile { 1.0 } else { 0.0 };
                     }
                 }
@@ -609,21 +613,20 @@ impl Inv {
         alive.count() < self.floor
     }
 
-    /// The decider's move in a floored cell: the rung k−1 player's, holding
-    /// the decider's remaining hand (the same in every scenario of the cell).
+    /// The decider's move in a floored cell: the rung k−1 player's (the field
+    /// net's at rung 0), holding the decider's remaining hand (the same in every scenario of the cell).
     fn handed_down(&self, ctx: &mut Ctx, rec: &Rec) -> u8 {
         let hand = self.worlds[0][self.viewer as usize] & !rec.played;
-        ctx.modeled_move(self.k - 1, self.viewer, hand, rec)
+        ctx.modeled_move(self.k.checked_sub(1), self.viewer, hand, rec)
     }
 
     // -- the field -------------------------------------------------------------
 
     fn field_move(&self, ctx: &mut Ctx, seat: u8, r: usize, hand: u32, rec: &Rec) -> u8 {
-        let legal = ctx.rules.legal(hand, rec.led());
-        if self.k == 0 {
-            return dice(self.tapes[r], rec.pack(), legal);
+        if self.k == 0 && ctx.cfg.field.is_none() {
+            return dice(self.tapes[r], rec.pack(), ctx.rules.legal(hand, rec.led()));
         }
-        ctx.modeled_move(self.k - 1, seat, hand, rec)
+        ctx.modeled_move(self.k.checked_sub(1), seat, hand, rec)
     }
 
     // -- leaves ------------------------------------------------------------------
@@ -724,19 +727,23 @@ fn best(q: &[(u8, f64)], maximize: bool) -> u8 {
 }
 
 impl<'a> Ctx<'a> {
-    /// What a rung-k player holding `own` at `seat` plays at this record.
-    fn modeled_move(&mut self, k: usize, seat: u8, own: u32, rec: &Rec) -> u8 {
-        let key = (k as u8, seat, own, *rec);
+    /// What a rung-k player holding `own` at `seat` plays at this record;
+    /// `None` is rung −1, the field net.
+    fn modeled_move(&mut self, k: Option<usize>, seat: u8, own: u32, rec: &Rec) -> u8 {
+        let key = (k.map_or(u8::MAX, |k| k as u8), seat, own, *rec);
         if let Some(&t) = self.pi.get(&key) {
             return t;
         }
         let legal = self.rules.legal(own, rec.led());
         let tile = if legal & (legal - 1) == 0 {
             legal.trailing_zeros() as u8
-        } else {
+        } else if let Some(k) = k {
             let mut inv = Inv::new(self, k, seat, own, rec, None);
             let q = inv.action_values(self);
             best(&q, inv.maximize)
+        } else {
+            let net = self.cfg.field.as_ref().expect("rung −1 is random play, not a mind");
+            net.decide(self.rules, seat, own, rec, self.bid, self.bt)
         };
         self.pi.insert(key, tile);
         tile

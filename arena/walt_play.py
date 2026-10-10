@@ -6,9 +6,18 @@ construction one rung down, bottoming out in random legal play. See
 `scenario/planner.py` for the mathematics and `scenario/` for the parts.
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
-          [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>][,py]
+          [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
+          [,F=<field net .npz>][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
-uniform belief, f=16 (f=1 at k=0, which has no rung to hand down to).
+uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
+which leaves no rung to hand down to).
+
+`F=` names a field net (`scenario/field.py`, trained by
+`scenario.field_train`): rung -1, the bottom of the ladder, becomes that
+learned policy instead of random legal play, and rung 0's floored moves go
+to it. `walt:k0,n512,F=<net>` is the one-knob form — the field is the net:
+a live seat planning against modeled seats that play like Walt, with no
+modeled rung solving anything. The net never scores a leaf.
 
 `f=` is the live rung's cell floor: below the root, where the live seat's
 cell holds fewer than f scenarios it stops maximizing over them and plays
@@ -42,6 +51,7 @@ from typing import Sequence
 from forge.zeb.types import ZebGameState
 
 from arena.hand_metrics import best_trump
+from scenario.field import FieldNet
 from scenario.planner import Belief, Config, Rung, Situation, Tilt, Walt, World
 
 
@@ -73,11 +83,12 @@ class WaltPlay:
     def __init__(self, level: int = 1, n_outer: int = 16, n_inner: int = 4,
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
-                 tilt: Tilt = Tilt(), floor: int | None = None, compiled: bool = True):
+                 tilt: Tilt = Tilt(), floor: int | None = None, field: FieldNet | None = None,
+                 compiled: bool = True):
         if floor is None:
-            floor = 16 if level >= 1 else 1
+            floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
-        config = Config(rungs, utility, seed, tilt)
+        config = Config(rungs, utility, seed, tilt, field)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -107,8 +118,9 @@ class WaltPlay:
         c = self.walt.config
         engine = type(self.walt).__name__
         belief = "" if self.walt.belief is None else ", +external belief"
+        field = "random" if c.field is None else "net"
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}, "
-                f"tilt={c.tilt.plays}{belief}, {engine})")
+                f"tilt={c.tilt.plays}{belief}, field={field}, {engine})")
 
 
 def parse_walt_spec(arg: str) -> WaltPlay:
@@ -124,6 +136,8 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             eps = float(t[2:])
         elif t.startswith("f="):
             kw["floor"] = int(t[2:])
+        elif t.startswith("F="):
+            kw["field"] = FieldNet.load(t[2:])
         elif t[0] in "knmhg" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
                    "h": "horizon", "g": "horizon_inner"}[t[0]]

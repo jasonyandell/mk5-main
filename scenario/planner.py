@@ -27,7 +27,11 @@ the whole sample.
 The ladder: rung k's modeled seats are rung k-1 players; rung -1 is random
 legal play, drawn from a tape keyed on the public record so that one
 scenario plays one tile at one record in every branch (worlds partition,
-they never multiply). A modeled player's decision is a pure function of
+they never multiply) — or, when the config names a field net
+(`scenario.field`), rung -1 is that net: a learned policy reading the
+modeled seat's own information, which also takes rung 0's floored moves.
+The net is a field only; leaves are still scored by the recursion and the
+frontier playout. A modeled player's decision is a pure function of
 (rung, seat, its remaining hand, the record) and is cached as such.
 
 The belief β weights the LIVE player's scenarios; modeled minds weight
@@ -57,6 +61,7 @@ from typing import Callable
 from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
+from scenario.field import FieldNet
 from scenario.fiber import sample_worlds
 from scenario.record import Record, empty_record, record_from_state, remaining_hand
 from scenario.rules import ALL_TILES, Rules, bit, mask_of, rules_for, tiles_of
@@ -104,6 +109,7 @@ class Config:
     utility: str = "make"       # "make" (bidding side makes it) or "points" (signed margin)
     seed: int = 0
     tilt: Tilt = Tilt()
+    field: FieldNet | None = None   # rung -1: the field net, or None for random legal play
 
     def __post_init__(self) -> None:
         if not self.rungs:
@@ -112,8 +118,8 @@ class Config:
             raise ValueError(f"unknown utility {self.utility!r}")
         if self.tilt.plays == "field" and self.level == 0:
             raise ValueError("the field tilt models plays with rung 0; a one-rung player has no modeled rung")
-        if self.rungs[0].floor > 1:
-            raise ValueError("rung 0 has no rung below to hand a floored move to")
+        if self.rungs[0].floor > 1 and self.field is None:
+            raise ValueError("rung 0 hands a floored move down only to a field net")
 
     @property
     def level(self) -> int:
@@ -309,13 +315,17 @@ class Walt:
 
     def _modeled_move(self, k: int, seat: int, own: int, rec: Record, rules: Rules,
                       bid: int, bidder_team: int) -> int:
-        """What a rung-k player holding `own` at `seat` plays at this record."""
+        """What a rung-k player holding `own` at `seat` plays at this record;
+        rung -1 is the field net."""
         key = (k, seat, own, rec.key())
         tile = self._pi.get(key)
         if tile is None:
             legal = tiles_of(rules.legal(own, rec.led))
             if len(legal) == 1:
                 tile = legal[0]
+            elif k < 0:
+                assert self.config.field is not None, "rung -1 is random play, not a mind"
+                tile = self.config.field.move(rules, seat, own, rec, bid, bidder_team)
             else:
                 inv = self._invocation(k, seat, own, rec, rules, bid, bidder_team)
                 tile = _best(inv.action_values(), inv.maximize)
@@ -463,8 +473,9 @@ class _Invocation:
         return alive.bit_count() < self.floor
 
     def _handed_down(self, rec: Record) -> int:
-        """The decider's move in a floored cell: the rung k-1 player's, holding
-        the decider's remaining hand (the same in every scenario of the cell)."""
+        """The decider's move in a floored cell: the rung k-1 player's (the
+        field net's at rung 0), holding the decider's remaining hand (the same
+        in every scenario of the cell)."""
         hand = self.worlds[0][self.viewer] & ~rec.played
         return self.walt._modeled_move(
             self.k - 1, self.viewer, hand, rec, self.rules, self.bid, self.bidder_team,
@@ -473,9 +484,8 @@ class _Invocation:
     # -- the field ----------------------------------------------------------------
 
     def _field_move(self, seat: int, r: int, hand: int, rec: Record) -> int:
-        legal = self.rules.legal(hand, rec.led)
-        if self.k == 0:
-            return self._dice(r, rec, legal)
+        if self.k == 0 and self.walt.config.field is None:
+            return self._dice(r, rec, self.rules.legal(hand, rec.led))
         return self.walt._modeled_move(
             self.k - 1, seat, hand, rec, self.rules, self.bid, self.bidder_team,
         )
