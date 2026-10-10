@@ -541,13 +541,24 @@ def _main(argv: Sequence[str] | None = None) -> None:
     finally:
         done.set()
     wall = time.time() - t0
-    save(p, args.out, spec=args.spec, seed=args.seed, fiber=args.fiber,
+    save(p, args.out, spec=args.spec, seed=args.seed, fiber=args.fiber, commit=_git_head(),
          deal_seeds=None if args.fiber else [args.seed + i for i in range(args.deals)],
          wall_seconds=round(wall, 1))
     size = (Path(args.out) / "pour.npz").stat().st_size
     print(f"poured {len(p)} positions ({N_PLAYS * len(p.hands) - len(p)} forced) from "
           f"{len(p.hands)} deals in {wall:.0f}s -> {args.out}/pour.npz ({size / 1e6:.1f} MB)")
     print(calibration_table(calibration(p)))
+
+
+def _git_head() -> str:
+    """The commit the code is at, `-dirty` when tracked files differ from it."""
+    import subprocess
+
+    def git(*args: str) -> str:
+        return subprocess.run(["git", *args], cwd=Path(__file__).parent, capture_output=True,
+                              text=True, check=True).stdout.strip()
+
+    return git("rev-parse", "HEAD") + ("-dirty" if git("status", "--porcelain", "--untracked-files=no") else "")
 
 
 if __name__ == "__main__":

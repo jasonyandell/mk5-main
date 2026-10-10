@@ -1,0 +1,95 @@
+"""A pour, published. The three tables are the pour's columns cut at its
+offsets: every row reads back to its position bit for bit, the advantages
+are the atlas reader's, and the staged repo is a dataset card (CC0, one
+config per table, one split per pour) over Parquet and the raw npz. No
+network: upload is not exercised."""
+import json
+
+import numpy as np
+import pyarrow.parquet as pq
+import pytest
+import yaml
+
+from arena.walt_play import _declared_trump, parse_walt_spec
+from scenario.atlas import _COLUMNS, N_PLAYS, advantages, deal, load, pour, save
+from scenario.hf import _main, read_split, stage, tables
+from scenario.rules import mask_of
+
+SPEC = "k1,n8,m2,u=points"
+
+
+def _poured(seeds):
+    return pour([deal(s) for s in seeds], 0, 30, _declared_trump, parse_walt_spec(SPEC).walt)
+
+
+@pytest.fixture(scope="module")
+def pours(tmp_path_factory):
+    out = {}
+    for name, seeds in (("train", (1, 2, 3)), ("validation", (4, 5))):
+        path = tmp_path_factory.mktemp(name)
+        save(_poured(seeds), path, spec=SPEC, seed=seeds[0], fiber=False, deal_seeds=list(seeds), commit="c0ffee")
+        out[name] = path
+    return out
+
+
+def test_every_row_is_its_position(pours):
+    p = load(pours["train"])
+    t = {k: v.to_pylist() for k, v in tables(p, {"deal_seeds": [1, 2, 3]}).items()}
+    assert len(t["positions"]) == len(t["splats"]) == len(p) and len(t["deals"]) == 3
+    for i, (row, splat) in enumerate(zip(t["positions"], t["splats"])):
+        pos = p.position(i)
+        assert row["position"] == splat["position"] == i and row["deal_seed"] == 1 + pos.deal
+        assert [(h["seat"], h["tile"]) for h in row["history"]] == list(pos.plays)
+        assert (row["seat"], row["sign"], row["decl"]) == (pos.viewer, pos.sign, pos.decl_id)
+        assert mask_of(row["hand"]) == pos.own and row["chosen"] == pos.chosen
+        assert tuple(row["actions"]) == tuple(splat["actions"]) == pos.actions
+        assert row["q"] == pos.q.tolist() and row["n_worlds"] == len(pos.weights)
+        assert np.allclose(row["advantage"], list(advantages(pos).values()), rtol=0, atol=1e-12)
+        assert np.array_equal(np.array(splat["outcomes"], dtype=np.int8), pos.outcomes)
+        assert np.array_equal(np.array(splat["worlds"], dtype=np.uint32), pos.worlds)
+        assert splat["weights"] == pos.weights.tolist()
+    for d, row in enumerate(t["deals"]):
+        assert [mask_of(h) for h in row["hands"]] == [int(h) for h in p.hands[d]]
+        assert [(x["seat"], x["tile"]) for x in row["plays"]] == [tuple(x) for x in p.plays[d].tolist()]
+        assert row["banked"] == p.banked[d].tolist() and len(row["plays"]) == N_PLAYS
+        assert row["made"] == (row["banked"][0] >= 30) and row["margin"] == row["banked"][0] - row["banked"][1]
+
+
+def test_the_staged_repo_is_a_card_over_parquet_and_the_raw_pour(pours, tmp_path):
+    out = stage([read_split(n, d) for n, d in pours.items()], tmp_path / "repo", "someone/walt-pour")
+    text = (out / "README.md").read_text()
+    front = yaml.safe_load(text.split("---")[1])
+    assert front["license"] == "cc0-1.0" and "texas-42" in front["tags"]
+    configs = {c["config_name"]: c for c in front["configs"]}
+    assert set(configs) == {"positions", "splats", "deals"} and configs["positions"]["default"]
+    for name, path in pours.items():
+        p = load(path)
+        for config, rows in (("positions", len(p)), ("splats", len(p)), ("deals", len(p.hands))):
+            files = [f["path"] for f in configs[config]["data_files"] if f["split"] == name]
+            assert files == [f"data/{config}/{name}-*.parquet"]
+            assert sum(pq.read_metadata(f).num_rows for f in out.glob(files[0])) == rows
+        back = load(out / "raw" / name)
+        for c in _COLUMNS:
+            assert np.array_equal(getattr(back, c), getattr(p, c)), c
+        assert json.loads((out / "raw" / name / "manifest.json").read_text())["commit"] == "c0ffee"
+        assert f"| `{name}` | {len(p.hands):,} |" in text
+    assert "CC0 1.0 Universal" in (out / "LICENSE").read_text()
+    sums = (out / "SHA256SUMS").read_text()
+    assert "raw/train/pour.npz" in sums and "data/splats/validation-0000.parquet" in sums
+
+
+def test_publish_refuses_what_would_mislabel(pours, tmp_path):
+    with pytest.raises(SystemExit, match="share a deal"):
+        stage([read_split("a", pours["train"]), read_split("b", pours["train"])], tmp_path, "x/y")
+    bare = tmp_path / "bare"
+    save(load(pours["validation"]), bare, spec=SPEC, deal_seeds=[4, 5])
+    with pytest.raises(SystemExit, match="no commit"):
+        read_split("v", bare)
+    assert read_split("v", bare, commit="abc").manifest["commit"] == "abc"
+
+
+def test_the_command_line_stages_without_uploading(pours, tmp_path, capsys):
+    _main(["publish", "--repo", "someone/walt-pour", "--split", f"train={pours['train']}",
+           "--stage", str(tmp_path / "s"), "--no-upload"])
+    assert "staged train" in capsys.readouterr().out
+    assert (tmp_path / "s" / "data" / "positions" / "train-0000.parquet").exists()

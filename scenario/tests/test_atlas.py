@@ -5,6 +5,7 @@ planner's action values, forced positions label nothing, and the dataset
 survives the disk exactly. The readers: advantages, success sets and
 holding predictors on a hand-built position."""
 import dataclasses
+import json
 import math
 
 import numpy as np
@@ -148,6 +149,7 @@ def test_the_command_line_pours_and_molds(tmp_path, capsys):
     p = load(tmp_path)
     assert p.utility == "points" and len(p.hands) == 2
     assert [int(h) for h in p.hands[1]] == list(deal(6))
+    assert len(json.loads((tmp_path / "manifest.json").read_text())["commit"].removesuffix("-dirty")) == 40
     c = calibration(p)
     assert c.forecast_margin is not None
     _main(["mold", "--seed", "1", "--max-layer", "3"])
