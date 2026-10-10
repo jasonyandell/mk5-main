@@ -3761,3 +3761,44 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Added:** [[count-fate-ledger]] — hand value as a belief-weighted ledger of count-fate scenarios (IDEATED, conversation 2026-07-13→14, issue #49); guards/walkers as one junk-retention economy per-world E[Q] cannot price ([[strategy-fusion]]).
 **Updated:** [[the-wall]] contextual-distribution direction now names its consumption object; threat-attribution grain framed as one factor of row probability.
 **Questions opened:** tied-strategy rollouts pricing guard/walker retention (questions/open.md, issue #49).
+
+## [2026-07-18 | worktree-parlor-promote | parlor promoted: salon on the wiki, session logs to HF, skill+workflow extracted]
+
+**Touched pages:** [[parlor]] [[huggingface-assets]] [[run-artifacts-policy]] [[index-entities|index]]
+**Added:** [[parlor]] — the four-seat salon (Jason, Fable, Sol, Opus; SSJ turn-taking, PASS/MARGIN/BID); session 1 record: warm-vs-cold readers, the 4-plays postmortem, the table catching its own re-enactment live, the OPEN ledger with wake conditions, the N-models-agree-trust-it-least reflex.
+**Convention:** conversation/session logs classified — raw seat `.jsonl` tier 3 (HF `parlor/` @ tag `parlor-session-1`, gitignored), curated transcript tier 2 (committed + mirrored); [[run-artifacts-policy]] § Conversation and session logs.
+**Reuse:** `.claude/skills/parlor/` (SKILL + workflow) and `parlor/bin/publish-session.sh` close the run → session-log → HF loop.
+
+## [2026-07-17 | worktree-walt | walt: exact endgame info-set solver — built, graded, integrated]
+
+**Touched pages:** [[walt]] [[walt-spec]] [[the-wall-biography]] [[jud]] [[champion-ladder]] [[the-wall]] [[the-gestation]] [[index-entities|index]] [[index-topics|index]]
+**Added:** [[walt]] — eq's two deletions un-deleted (info-set-consistent continuation + exact B(σ) as a 0/1 filter) at ≤4 tiles vs the jud field; all gates green incl. T2 strategy-enumeration exactness and T6 claim-vs-cash closure. [[walt-spec]] — the machine on one page. [[the-wall-biography]] chapter: the door gets a hinge.
+**Graded:** walt(W1,H4) **+3.00 [2.77, 3.22] marks/game** over jud play (88.1% game wins, n=512 paired); paired W1−W0 +0.283 [0.184, 0.391] → MIGHT-#3 graded: **term 2 carries 84.9% of the edge; term 1 is only cashable through term 2**. Scope: field model exact (opponents ARE jud); transfer vs `lens:ev` is #72. Numbers on [[walt]].
+**Updated:** walker definition corrected — unbeatable when led, not "promoted trash"; home on [[walt]], coinage forward-linked from [[the-gestation]].
+**Questions opened:** [#71](https://github.com/jasonyandell/mk5-main/issues/71) (predictions P1–P4) and the gated trajectory: [#72](https://github.com/jasonyandell/mk5-main/issues/72) transfer, [#73](https://github.com/jasonyandell/mk5-main/issues/73) scar probe, [#74](https://github.com/jasonyandell/mk5-main/issues/74) throughput, [#75](https://github.com/jasonyandell/mk5-main/issues/75) opening net, [#77](https://github.com/jasonyandell/mk5-main/issues/77) exploits.
+
+## [2026-07-17 | worktree-fix-jud | jud's table badness root-caused; MRV contamination graded field-null]
+
+**Touched pages:** [[jud]] [[world-sampler-mrv-audit]] [[index-experiments|index]]
+**Added:** [[jud-v2-retrain-probe]] — the 0.68 claim was the round-0 checkpoint at the table; 10-agent audit: no live line-bug; clean-sampler + ε-explore retrain reproduces v1 grades within CI; play wall is mechanistic (9-of-350-dim ply-1 signal × greedy 1-ply × single MC labels).
+**Also:** float32-unsafe-regime sampler regression test (cpu+mps); `champion/jud_net_v2_r{0..2}.pt` + evidence under `champion/evidence/jud_v2/`.
+**Receipts:** [#66](https://github.com/jasonyandell/mk5-main/issues/66) · [#69](https://github.com/jasonyandell/mk5-main/issues/69).
+
+## [2026-07-16 | conversation | the belief/policy/value algebra promoted; measurement program filed]
+
+**Touched pages:** [[belief-policy-value-algebra]] [[strategy-fusion]] [[count-fate-ledger]] [[index-topics|index]]
+**Added:** [[belief-policy-value-algebra]] — tilt form (b = u·e^g; eq is the g≡0 limit), coupling theorem, information identity, eq located as "π deleted twice," exact gap and claim-vs-cash decompositions, the (ε, init) family; conclusions tiered CAN (mathematical) vs MIGHT (conjectures, each paired with its deciding probe).
+**Questions opened:** [issue #64](https://github.com/jasonyandell/mk5-main/issues/64) — the M1–M6 measurement program (meaning map, tilt profile, channel bandwidth, accidental-convention detector, realized tiger, field docility).
+
+## [2026-07-15 | conversation | the argument's referees — Phase 2 grading doctrine ratified]
+
+**Touched pages:** [[count-fate-ledger]] [[strategy-fusion]] [[otis]]
+**Added:** "The argument's referees" on [[count-fate-ledger]] — the outcome leak named ("would it have worked *more often*", belief-averaged tied grading), dispersion-triaged lesson harvesting, the three-referee split, the claim-vs-cash gap as the loop's convergence metric; "eq is not 42" coda on [[strategy-fusion]].
+**Updated:** [[otis]] design commitments route to the doctrine; amendments filed as a comment on issue #55.
+
+## [2026-07-15 | b347897b | otis v0: count-fate ledger built and graded overnight (#49)]
+
+**Touched pages:** [[otis]] [[otis-v0]] [[count-fate-ledger]] [[world-sampler-mrv-audit]] [[jud]] `questions/open.md`
+**Added:** [[otis]] [[otis-v0]] — the fate-ledger-native player, all seven registered predictions graded on the branch `worktree-otis-v0` night
+**Updated:** [[count-fate-ledger]] (new Measured section; open question narrowed), [[world-sampler-mrv-audit]] (corpus-scale contamination quantified, issue #52), [[jud]] (sibling link)
+**Questions opened:** issues #51 (doubles-suit engine representability), #52 (corpus regeneration on repaired sampler), #53 (retention-policy consumer — the remaining half of #49's question)

@@ -387,6 +387,25 @@ the **advantage dataset** — the dense signal texas-42 PR #94's constructor
 never had (one make/set bit per deal there; hundreds of paired outcomes per
 move per position here).
 
+**Published (2026-10-10).** The pour is a public dataset,
+[jasonyandell/texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour),
+**CC0 1.0**. Split `train` is a 5,000-deal pour (seeds 1001..6000, 87,403
+positions, 31 min wall, opening forecast +6.1 / 36% vs real +5.6 / 36%);
+split `validation` is the 200-deal seed-1 pour above; same spec
+`k1,n512,m8,u=points`, code at `d94c3050`. Three Parquet configs read off the
+pour's own offsets — `positions` (one row per position: record, legal moves,
+`q`, `advantage`; 4 MB), `splats` (per-world outcomes, worlds, weights; 406 MB),
+`deals` — plus the raw `pour.npz` per split for an exact `atlas.load`. One row
+per position, not per action: the group of legal moves stays together, as a
+group-relative trainer reads it. Repeatable from the repo (`scenario/hf.py`;
+the repo is exactly its arguments, and the pour CLI now records its commit):
+
+```
+python -u -m scenario.hf publish --repo jasonyandell/texas-42-walt-pour \
+  --split train=scratch/atlas/pour_s1001_n512_d5000 --split validation=scratch/atlas/pour_s1_n512 \
+  --commit d94c3050
+```
+
 **Pruning (the plan, not yet built).** No induction means no table to fill:
 a label is a function called when wanted, and the tail layers — most of the
 374M — never need to exist. Expand the *plausible cone* (children of moves
