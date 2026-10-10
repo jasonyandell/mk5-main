@@ -23,6 +23,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-11 | scenario-player | belief night 1: auction and dice inference are nulls vs uniform Walt; the field tilt hurts (−0.96) by effective-sample-size collapse]
+
+Five 384-game blocks, belief vs uniform two-rung Walt (the oracle-free
+measuring stick), mirrored deals: auction −0.05, dice −0.06, auction+dice
+−0.19 (all CI across zero); field ε=0.5 −0.65, ε=0.1 −0.96 (both negative at
+power). ESS measured: field keeps 2–8% of 160 worlds. Lesson for the seam: a
+strong g must be sampled from, not used to reweight a uniform draw. Exact
+endgame enumeration landed. See [[scenario-player]].
+
 ## [2026-10-10 | scenario-player | Walt beats E[Q] n=10 at play: +0.74 marks/game [+0.42, +1.05], 384 games, dropped-30]
 
 Compiled two-rung `walt:k1,n160,m8` vs `lens:ev` on Jason's exact protocol:

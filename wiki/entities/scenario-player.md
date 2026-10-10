@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-10
+last_updated: 2026-10-11
 status: active
 ---
 
@@ -153,6 +153,60 @@ not pips. Rung 0 alone is at or just above E[Q]; the second rung — the
 modeled partner (and opponents) — is where the edge lives: "one more level
 and its partner is participating." Uniform belief throughout; every belief
 lever on this page is still untouched in these numbers.
+
+## The belief program — night 1 (2026-10-10/11)
+
+The first beliefs on the seam, each a likelihood factor on every live scenario
+(the tilt form b = u·e^g), all bit-identical referee ↔ core:
+
+- **dice** — the hidden seats' discretionary plays under random legal play: a
+  play with n options weighs 1/n (forced-looking plays count more).
+- **field** — the same plays under the rung-0 player: ε/n + (1−ε)·[it would
+  have played that tile].
+- **auction** — the declaration: ε/7 + (1−ε)·[the bidder's dealt hand in this
+  scenario would have called this trump]; exact for the `bid30`/heuristic
+  bidders, which declare `best_trump` deterministically.
+
+Also landed: **exact endgame enumeration** — when the fiber is no larger than
+the rung's sample (90 completions with two tricks left, 1,680 with three) it is
+enumerated outright: the exact belief, no duplicate scenarios, faster.
+
+**Measuring stick: uniform two-rung Walt, not E[Q]** (Jason: skip the oracle).
+Same spec both sides (`k1,n160,m8`), mirrored deals, so deal luck cancels and
+the margin is the belief alone. Dropped-30 protocol, 384 games, seed 1:
+
+| belief vs uniform | marks/game (95% CI) | contracts made, belief vs uniform |
+|---|---|---|
+| auction | −0.05 [−0.37, +0.27] | 35.2% vs 35.7% |
+| dice | −0.06 [−0.37, +0.26] | 35.8% vs 36.3% |
+| auction+dice | −0.19 [−0.51, +0.13] | 34.4% vs 36.0% |
+| field ε=0.5 | **−0.65 [−0.96, −0.34]** | 33.3% vs 39.0% |
+| field ε=0.1 | **−0.96 [−1.26, −0.66]** | 32.0% vs 40.5% |
+
+(48-game previews, all five run first, pointed the same way: auction +0.19,
+dice +0.19, auction+dice −0.40, field −0.85, auction+field −1.02.)
+
+**Two findings.** (1) Against this field, exact knowledge of the auction and
+Occam inference over the observed plays buy *nothing measurable* at the table
+— uniform over the void-consistent fiber is already a very good belief for 42,
+as Jason kept finding against his own instinct. (2) The field tilt *hurts*,
+and the mechanism is measured: **effective sample size**. The fraction of the
+160 scenarios the weights effectively keep, by plays so far:
+
+| belief | 4 plays | 8 | 12 | 16 |
+|---|---|---|---|---|
+| dice | 0.83 | 0.86 | 0.89 | 0.83 |
+| auction | 0.54 | 0.84 | 0.85 | 1.00 |
+| field ε=0.5 | 0.26 | 0.14 | 0.12 | 0.08 |
+| field ε=0.1 | 0.08 | 0.02 | 0.02 | 0.03 |
+
+A field-tilted player at ε=0.1 is planning over three to thirteen effective
+worlds by mid-hand. The lesson is general and belongs to the seam itself:
+**weighting a uniform sample is only sound when g is mild. A strong g must be
+sampled from** — draw from b = u·e^g (importance-resample a larger uniform
+draw, or sample the fiber under the tilt), not reweight 160 uniform draws. That
+is the next build on the seam, and it is what makes any sharp belief (a learned
+head, a convention model) usable at all.
 
 ## Links
 
