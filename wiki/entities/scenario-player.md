@@ -659,6 +659,40 @@ walt's level-0 field model, so even θ = 1 overbids at the table",
 field is what makes the live price honest; that is the whole difference. Nothing here is a deployment: Plunge runs texas-42's Walt
 in WASM, and `scenario/` is this repo's core — data crosses, code does not.
 
+**Zeb, the package (2026-10-11).** The cheap player as an npm package,
+[`@jasonyandell/zeb`](https://www.npmjs.com/package/@jasonyandell/zeb)
+(`zeb/`; MIT): the planner and the 250k field net compiled to WebAssembly
+with a JavaScript surface of five calls — `forecast` (one plan per
+declaration from the bidder's chair, pmake at every target 30..42),
+`chooseBid` (the book's rule as a pure function: highest target some
+declaration clears at the cutoff, default 0.8), `play`, `analyze` (each
+legal tile's tails, for hints), and the receipts `version` / `netId`. Built
+by an Opus agent, reviewed by a second one cold; both reports and the fixes
+are in the session. What made it possible: `scenario/core` is now a plain
+Rust library — the rules tables derived in Rust and held equal to
+`forge.oracle.tables` for all ten declarations by a test, the canon a
+function of the declaration, the net one blob (`FieldNet.to_bytes`, magic
+`FNET`, layout `field-v2`, int16 weights, int64 biases) — with pyo3 behind a
+`python` feature, so the WASM and the Python referee compile the same
+planner. Facts a reader can check:
+
+| | |
+|---|---|
+| parity | 34 positions across all nine straight declarations, bit-identical to `scenario/planner.py` on tiles, q, weights and every scenario's margin; the fixture regenerates byte-identically from the pure-Python referee |
+| wasm | 207,640 bytes (137 KB gzipped), 110 KB of it the net; the build reproduces byte-for-byte from a clean target (toolchain 1.95.0 and wasm-pack 0.15.0 pinned, paths remapped) |
+| latency, Node 24, M5 | 7 pip declarations 0.30 s at 160 worlds / 1.2 s at 512; doubles 0.30 s; no-trump 0.23 s; an opening lead 44 ms |
+| input | every play replayed and checked, then the fiber's completion count must be nonzero; the reviewer fuzzed ~1,800 games and ~9,000 mutated records through the WASM with no reachable panic |
+| plans | pip trumps `k0,n<worlds>,F=net` (floor 16); doubles and no-trump `k1,n<worlds>,m8`, since the net is pip-only; declaration 8 (nello's algebra) refused |
+| default | 160 worlds is a phone budget, not the graded setting (512 for pips); the README says so and names the lean it buys |
+
+Publishing: 0.1.0 by hand from this machine (npm requires 2FA; a one-time
+link each for login and publish), then
+`.github/workflows/publish-zeb.yml` publishes every later `zeb-v*` tag with
+provenance through npm's trusted publishing, no token anywhere; the old
+Pages deploy, which had failed on every push for months, is gone. Plunge
+adopting it is Plunge's work: swap the book auction for `forecast` +
+`chooseBid`, keep its partner-pass and forced-30 rules.
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

@@ -26,6 +26,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-11 | 00a51f24 | Zeb, the package: @jasonyandell/zeb 0.1.0 — the cheap player in WebAssembly, bit-identical to the referee on 34 positions, 207 KB, 0.3 s for seven declarations; scenario/core a plain Rust library (rules derived in Rust, net as one blob, pyo3 behind a feature); release workflow via trusted publishing]
+
+[[scenario-player]] § Zeb, the package. `zeb/README.md` is the user's document. Built and cold-reviewed by two Opus agents; the review's two should-fix items and nits all landed.
+
 ## [2026-10-11 | scenario-player | a live bidder graded against Plunge's frozen bid book: 4,680 panels, |Δpmake| 0.052 vs the book's own sd 0.066, calibrated through the middle, 3–5 pp bold at the top; seven declarations in 0.2–1.0 s]
 
 [[scenario-player]] § A live bidder, graded against Plunge's book. Scripts in `scratch/bid/`. Not a deployment.

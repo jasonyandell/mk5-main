@@ -1,0 +1,51 @@
+# Publish @jasonyandell/zeb to npm on a `zeb-v<version>` tag.
+#
+# Trusted publishing: the job proves itself to npm with a short-lived OIDC
+# identity (`id-token: write`), so no npm token exists anywhere. npm must
+# have the trusted publisher configured on the package (owner jasonyandell,
+# repository mk5-main, workflow publish-zeb.yml); the first release went
+# out by hand because npm only accepts a trusted publisher on a package
+# that already exists. The tarball carries provenance back to this run.
+name: Publish Zeb
+
+on:
+  push:
+    tags: ["zeb-v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zeb
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag names the package's version
+        run: test "zeb-v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      # rust-toolchain.toml pins the compiler and the wasm target; rustup
+      # installs them on first use.
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
+      - name: Build and test (pretest builds pkg/)
+        run: npm test
+
+      - name: Native tests
+        run: cargo test --locked
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - name: Publish
+        run: |
+          npm install -g npm@latest
+          npm publish --provenance --access public --ignore-scripts
