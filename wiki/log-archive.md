@@ -3802,3 +3802,57 @@ opponents-in-rollout; opened questions filed into `questions/open.md`.
 **Added:** [[otis]] [[otis-v0]] — the fate-ledger-native player, all seven registered predictions graded on the branch `worktree-otis-v0` night
 **Updated:** [[count-fate-ledger]] (new Measured section; open question narrowed), [[world-sampler-mrv-audit]] (corpus-scale contamination quantified, issue #52), [[jud]] (sibling link)
 **Questions opened:** issues #51 (doubles-suit engine representability), #52 (corpus regeneration on repaired sampler), #53 (retention-policy consumer — the remaining half of #49's question)
+
+## [2026-10-10 | scenario-player | the forecast lies by 20 points and the cells are singletons from the bidder's third decision; cell-size floor is the fix]
+
+Hold-my-hand marginal (64 fiber deals, Walt everywhere): root splat +30 / 83%
+make vs real endings +10 to +13 / 39–45%, the same against the modeled
+opponent. Cell trace: 3.1 worlds per cell at the second own decision, 100%
+singletons from the third — clairvoyant below trick 2. Horizon sweep recorded.
+Fix in flight: `Rung(floor=m)` hands thin cells to the rung below. See
+[[scenario-player]].
+
+## [2026-10-10 | 332ccfe8 | the atlas: Walt.analyze (per-world outcomes, the splat) and the mold (a deal's 374M positions in 1.9 s); beliefs paused]
+
+Position → outcome distribution on one deal's perfect-information tree, poured
+without peeking. "Reverse DP" resolved to no induction, no direction: labels
+never read children. Two instruments landed, referee ↔ core bit-identical (100
+tests). Mold seed 1: 374,004,900 positions, peak layer 23 at 87.4M. Pour price
+per layer and the first slice measured; pruning plan (cone, hinges, cheat map,
+waves) recorded. See [[scenario-player]].
+
+## [2026-10-11 | scenario-player | belief night 1: auction and dice inference are nulls vs uniform Walt; the field tilt hurts (−0.96) by effective-sample-size collapse]
+
+Five 384-game blocks, belief vs uniform two-rung Walt (the oracle-free
+measuring stick), mirrored deals: auction −0.05, dice −0.06, auction+dice
+−0.19 (all CI across zero); field ε=0.5 −0.65, ε=0.1 −0.96 (both negative at
+power). ESS measured: field keeps 2–8% of 160 worlds. Lesson for the seam: a
+strong g must be sampled from, not used to reweight a uniform draw. Exact
+endgame enumeration landed. See [[scenario-player]].
+
+## [2026-10-10 | scenario-player | Walt beats E[Q] n=10 at play: +0.74 marks/game [+0.42, +1.05], 384 games, dropped-30]
+
+Compiled two-rung `walt:k1,n160,m8` vs `lens:ev` on Jason's exact protocol:
+233/384 games (60.7%), both halves positive, points −4.5/hand (make utility),
+17.5 min wall. Rung 0 alone: +0.18 [−0.12, +0.49]. The receipt replicates;
+the partner rung is the edge. Uniform belief; belief levers untouched. See
+[[scenario-player]] (the measured table).
+
+## [2026-10-10 | scenario-player | compiled core lands: Rust/PyO3, bit-identical to the Python planner]
+
+`scenario/core` + `scenario/compiled.py`: the planner and fiber sampler in Rust,
+checked bit for bit against the Python referee (22 tests). Defined randomness
+(SplitMix64 streams, packed record key, CPython-3.12 compensated sums
+mirrored). Rung 0 at 160 worlds: 0.056 s at trick 1 (50× Python); two-response
+160/8 g4: 1.1 s (26×). `decide_batch` plans a lockstep arena round in parallel.
+Arena spec `walt` now runs the core; `py` selects the referee. Diagnosed the
+texas-42 bridge's slowness (BigRational, 16× tie refinement, 8 lockstep
+processes); killed the two six-hour blocks. See [[scenario-player]].
+
+## [2026-10-09 | scenario-player | Walt rebuilt here from the mathematics; the wall diagnosed as the oracle itself]
+
+**Touched pages:** [[scenario-player]] [[the-wall-biography]] [[index-entities|index]]
+**Added:** [[scenario-player]] — `scenario/` (rules, record, exact-uniform fiber, planner) + `arena/walt_play.py`, spec `walt`; 17 tests; trick-1 decision 0.5 s (k0 n40) / 6 s (k1 default) in pure Python; 8/8 vs random.
+**Updated:** [[the-wall-biography]] — the 2026-10-09 chapter: the project's only truth source was a perfect-information value, so every oracle-derived student had a flat gradient toward exactly what E[Q] lacks; the two wins (realized-outcome bidder, exact info-set walt) were the two non-oracle labels. The dream arrived elsewhere: Plunge, played by the family daily.
+**Pending:** paired blocks `walt` vs `lens:ev` (k0 n40 ×32, k1 ×16) running at this entry.
+**Doctrine:** this wiki is a finished book; live frontiers (texas-42, plunge) keep a notebook and frozen dated papers, never a frontier wiki.

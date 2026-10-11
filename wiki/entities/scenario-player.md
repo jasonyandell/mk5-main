@@ -569,6 +569,7 @@ Calibration with the wide net (fresh 200 deals, seed 20001): forecast +5.9 /
 | 200 deals | −0.70 [−1.44, +0.05] (64 games) |
 | 5,000 deals | −0.16 [−0.48, +0.14]; −0.01 [−0.31, +0.30] |
 | 50,000 deals | +0.06 [−0.25, +0.38]; +0.11 [−0.20, +0.40] |
+| 250,000 deals | +0.11 [−0.19, +0.41]; +0.13 [−0.17, +0.44] |
 
 Every step is inside the noise of the last; the trend across three steps is
 not. The point estimate crossed zero and the point margin per hand is now
@@ -578,7 +579,47 @@ the small one does not and costs 2.9× the arena wall (the forward pass is now
 the hot spot), so **the small net is the pour engine**. The pmake target is
 confirmed worse at scale. The champion stays `k1,n512,m8` until a net field
 beats it with an interval clear of zero; the next net trains on the next
-pour, poured by this one — expert iteration, with the net kept in the field.
+pour, poured by this one — expert iteration, with the net kept in the field
+(done the next morning: see the 250,000-deal pour below).
+
+**The 250,000-deal pour (2026-10-11): the data lever stops at parity.**
+Overnight, four more 50,000-deal chunks (seeds 200001, 250001, 300001,
+350001; 869,355 / 870,209 / 869,807 / 869,451 positions; 90–92 min each,
+never one long run) poured by the small 50k net itself — expert iteration's
+second turn. Opening calibration on every chunk: forecast +5.6 / 39% vs
+real +6.1 to +6.3 / 38%. With the first 50k that is 4.34M positions from
+250,000 deals; `field_train` now takes several pours as one dataset
+(7c31bbf9, deals renumbered so the held-out tenth stays whole deals).
+Trained with MLX (dataset 3.7 min, training about 2.3 min each), graded on
+the held-out tenth (434,535 positions) and in the arena against the champion:
+
+| net, 250,000 deals | regret (points) | hinge regret | agree | arena, 384 games, seed 1 | made |
+|---|---|---|---|---|---|
+| margin 128×64 | 0.35 | 0.34 | 53% | **+0.11 [−0.19, +0.41]**, +0.15 pts/hand | 37.4% vs 36.5% |
+| margin 512×256 | **0.26** | **0.19** | 55% | **+0.13 [−0.17, +0.44]**, +0.09 pts/hand | 37.5% vs 36.4% |
+
+The imitation kept improving — the wide net finally has the rows to use its
+capacity (regret 0.38 → 0.26, hinge regret 0.45 → 0.19 from 50k to 250k) —
+and the arena did not move: +0.11 → +0.13, inside the noise of a flat line.
+That is the "cheaper equal" argument arriving as a measurement. The field is
+the model of the other seats; a perfect imitation of the cheap player's own
+play can only make the cheap player's field more like itself, and the
+planner above it is still a one-rung Walt. Five times the data bought a
+better model and the same player. Parity with the two-rung champion at a
+quarter of the cost is the result; a stronger player will not come from
+more of this pour. The champion stays `k1,n512,m8`. The four chunks are
+published as
+[jasonyandell/texas-42-zeb-pour-200k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-200k)
+(CC0; a separate repo because the chunks' pour spec names the 50k net, not
+the 5k one).
+
+Where strength could still come from, now that imitation is not it: the
+live seat (racing among near-ties, a deeper plan priced by the cheap field —
+`k1` over the net field costs more than the champion today), the utility
+(the pours are all bid-30 `make`; a varied-contract pour would give the bid
+row signal), or the modeled seats learning something other than Walt's
+move — #94-style mining of the splats for what must be true. None of these
+is more data of the same kind.
 
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
