@@ -502,6 +502,50 @@ of the champion's lineup; the champion stays `k1,n512,m8`. Data scaling is
 the lever that moved it (200 deals: −0.70; 5,000: −0.16/−0.23), so the next
 net is trained on a bigger pour, poured by this one.
 
+**Two targets, the bid, and a GPU path (2026-10-10, layout `field-v2`).**
+Built for the 50,000-deal pour the net field is writing. *Target `pmake`* is
+texas-42 PR #102's faithful recipe: per legal tile the belief mass in which
+the mover's side gets its way at the pour's bid, read off the margin splat
+(`atlas.makes`), trained by per-tile BCE on sigmoid outputs with the illegal
+tiles masked out. The defender's sign is folded into the target (P(set) =
+1 − P(make)), so the score is the mover's own success logit and the integer
+selector, referee and core, is unchanged. *Target `margin`* is the one above.
+*The bid* joins the features as a 13-row one-hot over 30..42 (a mark bid
+reads as 42), referee and core alike (343 features; old nets refused by
+layout). Every pour so far is bid-30, so the row is constant in training:
+plumbing for a pour with varied contracts, not yet signal. *MLX*
+(`--device mlx`) runs the same init, batches, masked loss and Adam step on
+the GPU, numpy staying the reference; a test holds them to float32 rounding.
+Held-out tenth of the 5,000-deal `make` pour (8,659 positions, 437 hinges;
+random pick gives up 2.44 points and 3.9 pp of make probability):
+
+| net | regret, points | regret, pmake | agrees with Walt's move | hinge regret | train wall numpy / MLX |
+|---|---|---|---|---|---|
+| `margin` 128×64 | **0.65** | **1.3 pp** | 49% | **1.2** | 5 s / 8 s |
+| `margin` 512×256 | 0.70 | 1.4 pp | 48% | 1.7 | 19 s / 9 s |
+| `pmake` 128×64 | 1.38 | 1.9 pp | 45% | 4.5 | 5 s / 6 s |
+| `pmake` 512×256 | 1.25 | 1.7 pp | 46% | 4.0 | 18 s / 7 s |
+
+The margin target is the better model of the `make` teacher *in its own
+units*: under `make` most positions are already decided and their pmake
+vectors are flat, so BCE has nothing to learn there, while the margin still
+ranks the moves the way Walt's tie-broken play does. 512 wide overfits 87k
+rows (validation loss bottoms by epoch 8–16). Arena, the hub's shape (384
+mirrored games, seed 1, vs `k1,n512,m8`, run beside the 50k pour so walls
+are inflated):
+
+| field net | mark margin | made | wall |
+|---|---|---|---|
+| `pmake` 512×256 | **−0.46 [−0.76, −0.15]** | 34.6% vs 38.8% | 70 min |
+| `margin` 128×64 | **−0.01 [−0.31, +0.30]** | 37.0% vs 36.9% | 19 min |
+
+The margin net is the same cheaper equal as before (−0.16 with the old
+layout; the same recipe plus a constant bid row, so the two are one result
+seen twice, inside each other's noise). The faithful target loses at power
+on this pour; #102's +.100 came from a
+teacher whose pmake was not flat (a 64-world search with varied bids, 7.6M
+rows). The 50k pour trains with the margin target first.
+
 ## Links
 
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·

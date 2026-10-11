@@ -25,6 +25,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-10 | f533cb7a | the field net's two targets: faithful pmake BCE −0.46 [−0.76, −0.15], margin −0.01 [−0.31, +0.30]; bid one-hot (field-v2); MLX path]
+
+[[scenario-player]] "The net in the field" § Two targets; `scenario/field_train.py` `--target`, `--device mlx`.
+
 ## [2026-10-10 | 882b36fe | the net in the field, graded on the make re-pour: −0.16 [−0.48, +0.14] vs the champion at a quarter of the cost — a cheaper equal; the τ-units bug]
 
 [[scenario-player]] "The net in the field" § The make run; `scenario/field_train.py` target read off the margin splat (#107).
