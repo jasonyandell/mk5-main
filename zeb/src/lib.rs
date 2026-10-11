@@ -20,12 +20,18 @@ mod position;
 
 pub use position::{Error, Position};
 
+use std::sync::LazyLock;
+
 use position::{hand_mask, refuse, rules_for};
 use scenario_core::field::FieldNet;
 use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, TiltPlays, MAX_WORLDS};
 use serde::Serialize;
 
 include!(concat!(env!("OUT_DIR"), "/net.rs"));
+
+/// The embedded net, parsed once.
+static FIELD: LazyLock<FieldNet> =
+    LazyLock::new(|| FieldNet::from_bytes(NET).expect("the embedded net parses (cargo test checks it)"));
 
 /// Scenarios per decision when a request does not say.
 pub const DEFAULT_WORLDS: usize = 160;
@@ -119,10 +125,8 @@ impl Player {
     /// not play doubles or no-trump, so there the modeled seats are a
     /// one-rung Walt (`walt:k1,n<worlds>,m8`), which costs more.
     fn config(&self, decl: u8) -> Config {
-        // Parsing the embedded net costs microseconds next to any plan.
-        let net = FieldNet::from_bytes(NET).expect("the embedded net parses (cargo test checks it)");
-        let (rungs, field) = if net.plays(decl) {
-            (vec![(self.worlds, None, FLOOR)], Some(net))
+        let (rungs, field) = if FIELD.plays(decl) {
+            (vec![(self.worlds, None, FLOOR)], Some(FIELD.clone()))
         } else {
             (vec![MODELED, (self.worlds, None, FLOOR)], None)
         };

@@ -3,6 +3,7 @@
 //! every scenario's outcome.
 
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 
 use super::*;
 
@@ -13,8 +14,8 @@ const HAND: [u8; 7] = [27, 26, 25, 20, 19, 14, 9];
 fn the_embedded_net_parses_and_its_id_is_its_digest() {
     let net = FieldNet::from_bytes(NET).unwrap();
     assert!((0..=6).all(|d| net.plays(d)) && !net.plays(7) && !net.plays(9));
-    assert_eq!(net_id().len(), 64);
-    assert!(net_id().bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    let digest: String = Sha256::digest(NET).iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(net_id(), digest);
 }
 
 #[test]

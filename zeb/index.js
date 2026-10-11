@@ -8,17 +8,7 @@
  */
 export { default, initSync, forecast, play, analyze, version, netId } from './pkg/zeb.js';
 
-/**
- * The bid a forecast supports: the highest target, at least `need`, that
- * some allowed declaration makes with probability at least `cutoff`, and
- * the declaration most likely to make it (the first listed, on a tie).
- * Null means pass. A plain function of the forecast; the auction's own
- * rules (a partner's pass, a forced 30) are the caller's.
- *
- * @param {readonly import('./pkg/zeb.js').Forecast[]} forecast
- * @param {{ need: number, cutoff?: number, legalDeclarations?: readonly number[] }} options
- * @returns {{ bid: number, decl: number, pmake: number } | null}
- */
+/** The bid a forecast supports, or null to pass: the contract is in index.d.ts. */
 export function chooseBid(forecast, { need, cutoff = 0.8, legalDeclarations } = {}) {
   if (!Array.isArray(forecast)) throw new TypeError('forecast must be the array forecast() returned');
   if (!Number.isInteger(need) || need < 30 || need > 42) {

@@ -31,7 +31,7 @@
 use std::fmt;
 
 use crate::planner::Rec;
-use crate::rules::{pips, tile, Rules, N_DECLS};
+use crate::rules::{pips, tile, Rules};
 
 const N: usize = 28;
 const STEPS: usize = 21; // thermometer thresholds 2, 4, ..., 42 points
@@ -131,6 +131,7 @@ fn tiles(mut mask: u32) -> impl Iterator<Item = usize> {
 
 /// An integer MLP, features → 28 canonical tile scores; built only by
 /// [`FieldNet::from_bytes`], so its shapes always fit.
+#[derive(Clone)]
 pub struct FieldNet {
     h1: usize,
     h2: usize,
@@ -142,7 +143,6 @@ pub struct FieldNet {
     b3: Vec<i64>,
     s1: u32,
     s2: u32,
-    canon: [Option<[u8; N]>; N_DECLS as usize],
 }
 
 impl FieldNet {
@@ -174,18 +174,17 @@ impl FieldNet {
         if !b.0.is_empty() {
             return Err(BlobError("field net blob has trailing bytes"));
         }
-        let canon = std::array::from_fn(|d| canon(d as u8));
-        Ok(FieldNet { h1, h2, w1, b1, w2, b2, w3, b3, s1, s2, canon })
+        Ok(FieldNet { h1, h2, w1, b1, w2, b2, w3, b3, s1, s2 })
     }
 
     /// Whether the net plays declaration `decl` (the pip trumps, 0..=6).
     pub fn plays(&self, decl: u8) -> bool {
-        self.canon.get(decl as usize).is_some_and(Option::is_some)
+        canon(decl).is_some()
     }
 
     /// The active feature indices of a modeled seat's decision (`field.features`).
     pub fn features(&self, rules: &Rules, seat: u8, own: u32, rec: &Rec, bid: i32, bt: usize) -> Vec<usize> {
-        let canon = self.canon[rules.decl as usize].as_ref().expect("the field net plays pip trumps only");
+        let canon = canon(rules.decl).expect("the field net plays pip trumps only");
         let mut on = Vec::with_capacity(64);
         on.extend(tiles(own).map(|t| HAND + canon[t] as usize));
         on.extend(tiles(rec.played).map(|t| GONE + canon[t] as usize));
@@ -260,7 +259,7 @@ impl FieldNet {
     /// The highest-scoring legal tile; ties to the lowest tile id.
     pub fn decide(&self, rules: &Rules, seat: u8, own: u32, rec: &Rec, bid: i32, bt: usize) -> u8 {
         let z = self.scores(&self.features(rules, seat, own, rec, bid, bt));
-        let canon = self.canon[rules.decl as usize].as_ref().expect("the field net plays pip trumps only");
+        let canon = canon(rules.decl).expect("the field net plays pip trumps only");
         let mut best: Option<(usize, i64)> = None;
         for t in tiles(rules.legal(own, rec.led())) {
             let v = z[canon[t] as usize];
@@ -275,6 +274,7 @@ impl FieldNet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rules::N_DECLS;
 
     /// A blob of the given widths: weights 1, biases 0, shifts 0.
     fn blob(h1: u32, h2: u32) -> Vec<u8> {

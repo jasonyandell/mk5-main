@@ -7,7 +7,7 @@ license = "MIT"
 publish = false
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 scenario_core = { path = "../scenario/core", default-features = false }
@@ -22,12 +22,12 @@ sha2 = "0.10"
 
 [dev-dependencies]
 serde_json = { version = "1", features = ["float_roundtrip"] }
+sha2 = "0.10"
 
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
-panic = "abort"
 
 # The planner is the hot path even in tests; keep the debug build quick to run.
 [profile.dev.package.scenario_core]

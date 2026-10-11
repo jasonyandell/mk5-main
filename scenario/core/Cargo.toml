@@ -11,6 +11,8 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 # The pyo3 module `scenario_core` (maturin turns it on; see pyproject.toml).
+# It is tested from Python (`pytest scenario/tests`); `cargo test` runs the
+# plain crate, since a pyo3 test binary cannot load libpython on its own.
 python = ["dep:pyo3"]
 
 [dependencies]

@@ -4,6 +4,8 @@
   "description": "Zeb, the Texas 42 scenario player: bid forecasts, plays and hints from a planner that never sees another seat's hand. WebAssembly, for browsers, Web Workers and Node.",
   "license": "MIT",
   "author": "Jason Yandell",
+  "homepage": "https://github.com/jasonyandell/mk5-main/tree/main/zeb#readme",
+  "bugs": "https://github.com/jasonyandell/mk5-main/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jasonyandell/mk5-main.git",

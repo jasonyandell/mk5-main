@@ -21,8 +21,8 @@ npm install @jasonyandell/zeb
 
 ## Loading
 
-The calls are synchronous and can take up to a second, so run them in a
-Web Worker:
+The calls are synchronous and take about a second at the default 160
+worlds, so run them in a Web Worker:
 
 ```js
 // worker.js
@@ -41,6 +41,9 @@ import wasmUrl from '@jasonyandell/zeb/zeb_bg.wasm?url';
 
 await init({ module_or_path: wasmUrl });
 ```
+
+The other standard fix is to keep the package out of Vite's pre-bundling:
+`optimizeDeps: { exclude: ['@jasonyandell/zeb'] }` in `vite.config.js`.
 
 In Node:
 
@@ -101,13 +104,19 @@ pass. It is a plain function of the forecast. The auction's own rules, such
 as passing behind a partner or a forced 30, are yours to apply around it.
 
 This rule is the one Plunge's frozen bid book uses. The forecast was graded
-against that book (4,680 panels, at 512 worlds). Its mean distance from the
-book's make rate at 30 was 0.052, smaller than the book's own sampling
-error of 0.066. It is calibrated through the middle of the range. At the top
-it runs 3 to 5 points bold (a forecast of 0.85 makes 0.82 of the time, and
-0.95 makes 0.90), so with the 0.8 cutoff it bids one target higher than the
-book on about 7% of hands. A cutoff of 0.85 gives back the book's
-temperament.
+against that book (4,680 panels; 512 worlds for the pip trumps, 160 for
+doubles and no-trump). Its mean distance from the book's make rate at 30
+was 0.052, smaller than the book's own sampling error of 0.066. It is
+calibrated through the middle of the range. At the top it runs 3 to 5
+points bold (a forecast of 0.85 makes 0.82 of the time, and 0.95 makes
+0.90), so with the 0.8 cutoff it bids one target higher than the book on
+about 7% of hands. A cutoff of 0.85 gives back the book's temperament.
+
+The default of 160 worlds is a mobile budget, not the graded setting. At
+160 each tail is noisier, and `chooseBid` takes the best of nine
+declarations at thirteen targets, so the noise leans toward bolder bids on
+top of the measured 3 to 5 points. Pass `worlds: 512` to bid as graded, or
+raise the cutoff a little.
 
 ## Playing: `play` and `analyze`
 
@@ -201,7 +210,8 @@ field, the cheap player is level with the two-rung champion
 ## Building from source
 
 The package lives at `zeb/` in [mk5-main](https://github.com/jasonyandell/mk5-main).
-It needs rustup and wasm-pack ≥ 0.13. The toolchain is pinned in
+It needs rustup and wasm-pack 0.15.0 exactly (`build.sh` checks: wasm-pack
+picks the wasm-opt that shapes the bytes). The compiler is pinned in
 `rust-toolchain.toml`.
 
 ```sh

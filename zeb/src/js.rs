@@ -27,9 +27,9 @@ export type Declaration = number;
 /** A bidder's seven tiles, before the auction closes. */
 export interface ForecastRequest {
   /** The bidder's seven tiles. */
-  hand: Tile[];
+  hand: readonly Tile[];
   /** The declarations to forecast, distinct; default all nine: 0..7 and 9. */
-  declarations?: Declaration[];
+  declarations?: readonly Declaration[];
   /** Scenarios planned per declaration, 1..1024; default 160. */
   worlds?: number;
   /** Seeds every random draw (a non-negative integer below 2^64); default 0. */
@@ -55,9 +55,9 @@ export interface PositionRequest {
   /** The seat to play. */
   seat: number;
   /** The seven tiles the seat was dealt (its plays included). */
-  hand: Tile[];
+  hand: readonly Tile[];
   /** Every play so far as [seat, tile], from the opening lead. */
-  plays: [number, Tile][];
+  plays: readonly (readonly [number, Tile])[];
   /** Scenarios planned, 1..1024; default 160. */
   worlds?: number;
   /** Seeds every random draw (a non-negative integer below 2^64); default 0. */
@@ -87,6 +87,13 @@ export interface Hint extends Move {
 }
 "#;
 
+/// When the module loads: should the planner ever panic, log why to the
+/// console before the trap.
+#[wasm_bindgen(start)]
+fn start() {
+    console_error_panic_hook::set_once();
+}
+
 /// One plan per declaration from the bidder's chair before the opening
 /// lead: how the bidder fares if it wins a 30 bid and declares each. Pip
 /// declarations take tens of milliseconds at 160 worlds; doubles and
@@ -95,10 +102,9 @@ export interface Hint extends Move {
 pub fn forecast(
     #[wasm_bindgen(unchecked_param_type = "ForecastRequest")] request: JsValue,
 ) -> Result<JsValue, JsError> {
-    console_error_panic_hook::set_once();
     let r = Request::new(request, &["hand", "declarations", "worlds", "seed"])?;
     let hand = r.ints("hand", 27)?;
-    let decls = match r.get("declarations") {
+    let decls = match r.get("declarations")? {
         Some(_) => r.ints("declarations", 9)?,
         None => DECLARATIONS.to_vec(),
     };
@@ -108,7 +114,6 @@ pub fn forecast(
 /// The seat's move: the first move of the plan.
 #[wasm_bindgen(unchecked_return_type = "Move")]
 pub fn play(#[wasm_bindgen(unchecked_param_type = "PositionRequest")] request: JsValue) -> Result<JsValue, JsError> {
-    console_error_panic_hook::set_once();
     let (player, position) = read_position(request)?;
     to_js(&player.play(&position))
 }
@@ -116,7 +121,6 @@ pub fn play(#[wasm_bindgen(unchecked_param_type = "PositionRequest")] request: J
 /// The seat's move with each legal tile's tails, for a hint.
 #[wasm_bindgen(unchecked_return_type = "Hint")]
 pub fn analyze(#[wasm_bindgen(unchecked_param_type = "PositionRequest")] request: JsValue) -> Result<JsValue, JsError> {
-    console_error_panic_hook::set_once();
     let (player, position) = read_position(request)?;
     to_js(&player.analyze(&position))
 }
@@ -170,13 +174,17 @@ impl Request {
         Ok(Request(obj))
     }
 
-    /// The field's value; None when it is absent or undefined.
-    fn get(&self, name: &str) -> Option<JsValue> {
-        Reflect::get(&self.0, &JsValue::from_str(name)).ok().filter(|v| !v.is_undefined())
+    /// The field's value; None when it is absent or undefined. A getter
+    /// that throws is the caller's error, reported as such.
+    fn get(&self, name: &str) -> Result<Option<JsValue>, Error> {
+        match Reflect::get(&self.0, &JsValue::from_str(name)) {
+            Ok(v) => Ok(Some(v).filter(|v| !v.is_undefined())),
+            Err(_) => refuse!("reading {name} threw"),
+        }
     }
 
     fn required(&self, name: &str) -> Result<JsValue, Error> {
-        self.get(name).ok_or_else(|| Error(format!("{name} is required")))
+        self.get(name)?.ok_or_else(|| Error(format!("{name} is required")))
     }
 
     fn int(&self, name: &str, range: RangeInclusive<u8>) -> Result<u8, Error> {
@@ -213,14 +221,14 @@ impl Request {
 
     /// The player `worlds` and `seed` ask for.
     fn player(&self) -> Result<Player, Error> {
-        let worlds = match self.get("worlds") {
+        let worlds = match self.get("worlds")? {
             None => DEFAULT_WORLDS,
             Some(v) => match v.as_f64() {
                 Some(x) if x.fract() == 0.0 && (0.0..=u32::MAX as f64).contains(&x) => x as usize,
                 _ => refuse!("worlds must be an integer from 1 to {MAX_WORLDS}"),
             },
         };
-        let seed = match self.get("seed") {
+        let seed = match self.get("seed")? {
             None => 0,
             Some(v) if v.is_bigint() => u64::try_from(v).map_err(|_| Error(SEED.into()))?,
             Some(v) => match v.as_f64() {

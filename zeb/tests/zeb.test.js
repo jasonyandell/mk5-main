@@ -77,6 +77,7 @@ test('bad requests are refused in plain words', () => {
     [() => forecast(null), /a request is an object/],
     [() => forecast([HAND]), /a request is an object/],
     [() => forecast({ hand: HAND, world: 8 }), /unknown field "world"/],
+    [() => forecast({ get hand() { throw new Error('no'); } }), /reading hand threw/],
     [() => forecast({}), /hand is required/],
     [() => forecast({ hand: HAND.slice(1) }), /a hand is 7 tiles, not 6/],
     [() => forecast({ hand: [27, 27, 25, 20, 19, 14, 9] }), /tile 27 appears twice/],

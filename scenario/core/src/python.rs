@@ -132,7 +132,7 @@ impl Core {
             return Err(PyValueError::new_err("eps must lie in (0, 1]"));
         }
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
-        let rules = (0..N_DECLS).filter_map(Rules::new).collect();
+        let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
         Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field }, rules })
     }
 

@@ -5,7 +5,8 @@
 
 Opening leads (the forecast's question) and mid-hand positions across the
 seven pip declarations, doubles-trump and no-trump: bidders and defenders,
-forced moves, every contract from 30 to 42, one seed past 2^53. Play is
+forced moves, twelve of the thirteen contracts (every one but 32), one seed
+past 2^53. Play is
 random legal play by the engine (`forge.zeb.game`), seeded, so the file is
 the same on every run. The net is the blob the package embeds, read from
 zeb/net, and its sha256 is recorded so a stale file is caught.
