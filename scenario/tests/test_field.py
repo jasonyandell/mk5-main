@@ -2,7 +2,7 @@
 forward pass in the core is the referee's to the integer; a Walt whose
 field is the net decides and analyzes identically in both; the spec names
 it; and the trainer learns from a pour, deterministically, into a net that
-survives the disk."""
+survives the disk — on either target, in numpy or on the GPU."""
 import math
 
 import numpy as np
@@ -11,10 +11,10 @@ import pytest
 from forge.zeb.game import is_terminal, legal_actions
 
 from arena.walt_play import _declared_trump, parse_walt_spec
-from scenario.atlas import deal, pour
+from scenario.atlas import deal, in_plan_units, pour
 from scenario.compiled import CompiledWalt
-from scenario.field import CANON, N_FEATURES, FieldNet, features
-from scenario.field_train import dataset, train
+from scenario.field import BIDS, CANON, N_FEATURES, OFFSET, FieldNet, features
+from scenario.field_train import _loss_dlogits, dataset, int_scores, targets, train
 from scenario.planner import Config, Rung, Tilt, Walt, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for
@@ -69,16 +69,30 @@ def test_features_are_distinct_indices_in_range():
         assert len(set(f)) == len(f) and all(0 <= i < N_FEATURES for i in f)
 
 
+def test_the_bid_is_one_hot_and_a_mark_bid_needs_all_42():
+    state = _pip_states(1, seed=3)[0]
+    sit = situation_from_state(state, 30)
+    rules, own = rules_for(state.decl_id), remaining_hand(state, sit.viewer)
+
+    def bid_rows(bid):
+        f = features(rules, sit.viewer, own, sit.record, bid, sit.bidder_team)
+        return [i - OFFSET["bid"] for i in f if i >= OFFSET["bid"]]
+
+    assert [bid_rows(b) for b in BIDS] == [[i] for i in range(len(BIDS))]
+    assert bid_rows(84) == bid_rows(42) and OFFSET["bid"] + len(BIDS) == N_FEATURES
+
+
 def test_core_forward_matches_the_referee_to_the_integer():
     net = random_net(1)
     fast = CompiledWalt(Config((Rung(4, None),), field=net))
     states = _pip_states(300, seed=5, unforced=False)
     for d in {s.decl_id for s in states}:
         fast._rules(d)
-    got = fast._core.field_scores([_req(s, 30 + i % 4) for i, s in enumerate(states)])
+    bids = [*BIDS, 84]
+    got = fast._core.field_scores([_req(s, bids[i % len(bids)]) for i, s in enumerate(states)])
     tiles = set()
     for i, (state, (tile, z)) in enumerate(zip(states, got)):
-        bid = 30 + i % 4
+        bid = bids[i % len(bids)]
         sit = situation_from_state(state, bid)
         rules = rules_for(state.decl_id)
         own = remaining_hand(state, sit.viewer)
@@ -86,6 +100,19 @@ def test_core_forward_matches_the_referee_to_the_integer():
         assert tile == net.move(rules, sit.viewer, own, sit.record, bid, sit.bidder_team)
         tiles.add(tile)
     assert len(tiles) > 10
+
+
+def test_batched_integer_scores_are_the_referees():
+    net = random_net(3)
+    rows = []
+    for state in _pip_states(40, seed=19, unforced=False):
+        sit = situation_from_state(state, 30)
+        rows.append(features(rules_for(state.decl_id), sit.viewer, remaining_hand(state, sit.viewer),
+                             sit.record, 30, sit.bidder_team))
+    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+    for i, f in enumerate(rows):
+        x[i, f] = 1
+    assert np.array_equal(int_scores(net, x), np.array([net.scores(f) for f in rows]))
 
 
 def test_ties_go_to_the_lowest_tile():
@@ -178,14 +205,16 @@ def small_pour():
 
 
 def test_dataset_is_the_movers_view(small_pour):
-    data = dataset(small_pour, tau=2.0)
+    data = dataset(small_pour)
+    target = targets(data, "margin", 2.0)
     assert data.x.shape == (len(small_pour), N_FEATURES)
-    assert np.allclose(data.target.sum(axis=1), 1.0)
-    assert not (data.target[~data.legal] > 0).any()
+    assert np.allclose(target.sum(axis=1), 1.0)
+    assert not (target[~data.legal] > 0).any() and not (data.win[~data.legal] > 0).any()
     for i, pos in enumerate(small_pour.positions()):
         canon = CANON[pos.decl_id]
         best = max(pos.actions, key=lambda t: (pos.sign * pos.q[pos.actions.index(t)], -t))
-        assert data.target[i, canon[best]] == data.target[i].max()
+        assert target[i, canon[best]] == target[i].max()
+        assert data.chosen[i] == canon[pos.chosen]
 
 
 def test_a_make_pour_trains_in_points(tmp_path):
@@ -195,14 +224,54 @@ def test_a_make_pour_trains_in_points(tmp_path):
     walt = parse_walt_spec("k0,n8").walt
     assert walt.config.utility == "make"
     p = pour([deal(s) for s in range(1, 5)], 0, 30, _declared_trump, walt)
-    data = dataset(p, tau=2.0)
-    on = np.where(data.legal, data.target, 0.0)
+    data = dataset(p)
+    on = np.where(data.legal, targets(data, "margin", 2.0), 0.0)
     assert np.abs(data.adv).max() > 2.0 and on.max(axis=1).max() > 0.9
 
 
+@pytest.fixture(scope="module")
+def make_pour():
+    walt = parse_walt_spec("k0,n8").walt
+    return pour([deal(s) for s in range(1, 7)], 0, 30, _declared_trump, walt)
+
+
+def test_the_pmake_target_is_the_movers_success(make_pour):
+    """Under `make` the plan's q is the make probability, so the pmake
+    target read off the margin splat is q for the bidding side and 1 − q
+    for a defender (who wins by setting); the targets are sharp — some
+    position's moves range from hopeless to sure."""
+    data = dataset(make_pour)
+    assert make_pour.utility == "make"
+    spread = 0.0
+    for i, pos in enumerate(make_pour.positions()):
+        slots = [CANON[pos.decl_id][t] for t in pos.actions]
+        q = pos.weights @ in_plan_units(pos, pos.outcomes).T / pos.weights.sum()
+        assert np.allclose(pos.q, q)
+        assert np.allclose(data.win[i, slots], q if pos.sign > 0 else 1 - q, atol=1e-6)
+        spread = max(spread, float(np.ptp(data.win[i, slots])))
+    assert spread > 0.9
+
+
+def test_the_bce_sees_only_the_legal_tiles():
+    rng = np.random.default_rng(0)
+    logits = rng.standard_normal((6, 28)).astype(np.float32) * 3
+    legal = rng.random((6, 28)) < 0.3
+    legal[:, 0] = True
+    target = np.where(legal, rng.random((6, 28)), 0).astype(np.float32)
+    loss, d = _loss_dlogits(logits, legal, target, "pmake")
+    moved = np.where(legal, logits, logits + 50)
+    assert _loss_dlogits(moved, legal, target, "pmake")[0] == pytest.approx(loss)
+    assert not d[~legal].any()
+    p = 1 / (1 + np.exp(-logits.astype(np.float64)))
+    want = -(target * np.log(p) + (1 - target) * np.log(1 - p))[legal].sum() / len(logits)
+    assert loss == pytest.approx(want, rel=1e-5)
+    assert np.allclose(d[legal], ((p - target) / len(logits))[legal], atol=1e-6)
+
+
 def test_training_is_deterministic_and_the_net_round_trips(small_pour, tmp_path):
-    a = train(small_pour, epochs=3, seed=7, hidden=(16, 8))
-    b = train(small_pour, epochs=3, seed=7, hidden=(16, 8))
+    data = dataset(small_pour)
+    a = train(data, epochs=3, seed=7, hidden=(16, 8))
+    b = train(data, epochs=3, seed=7, hidden=(16, 8))
     assert a.losses == b.losses and a.losses[-1] < a.losses[0]
     for k in ("w1", "b1", "w2", "b2", "w3", "b3"):
         assert np.array_equal(getattr(a.net, k), getattr(b.net, k))
@@ -212,3 +281,25 @@ def test_training_is_deterministic_and_the_net_round_trips(small_pour, tmp_path)
     for state in _pip_states(3, seed=17, min_plays=8):
         _same(Walt(cfg).decide(state, 30), CompiledWalt(cfg).decide(state, 30))
     assert 0.0 <= a.metrics["val"]["agree"] <= 1.0 and not math.isnan(a.metrics["val"]["regret"])
+
+
+@pytest.mark.parametrize("target", ["margin", "pmake"])
+def test_mlx_trains_the_numpy_net(make_pour, target):
+    """The GPU path is the same float net: the same init, batches, loss and
+    Adam step, so the losses and weights agree to float32 rounding (Adam
+    amplifies it only where a gradient is rounding noise) and the nets pick
+    the same moves."""
+    data = dataset(make_pour)
+    a = train(data, target, epochs=4, seed=3, hidden=(24, 12))
+    b = train(data, target, epochs=4, seed=3, hidden=(24, 12), device="mlx")
+    assert a.losses[-1] < a.losses[0]
+    assert np.allclose(a.losses, b.losses, rtol=2e-3)
+    for pa, pb in zip(a.params, b.params):
+        assert np.abs(pa - pb).mean() < 1e-2 * np.abs(pa).mean()
+    assert b.metrics["train"]["agree"] == pytest.approx(a.metrics["train"]["agree"], abs=0.03)
+
+
+def test_an_old_net_is_refused(tmp_path):
+    np.savez(tmp_path / "old.npz", layout="field-v1")
+    with pytest.raises(ValueError, match="layout"):
+        FieldNet.load(tmp_path / "old.npz")

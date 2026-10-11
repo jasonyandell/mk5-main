@@ -11,6 +11,7 @@ use crate::planner::{Rec, Rules};
 
 const N: usize = 28;
 const STEPS: usize = 21; // thermometer thresholds 2, 4, ..., 42 points
+const BIDS: usize = 13; // the contract one-hot, 30..=42 points
 
 const HAND: usize = 0;
 const GONE: usize = HAND + N;
@@ -22,7 +23,8 @@ const OPEN: usize = SIDE + 1;
 const WINNING: usize = OPEN + 4;
 const NEED: usize = WINNING + 3;
 const SLACK: usize = NEED + STEPS;
-pub const N_FEATURES: usize = SLACK + STEPS;
+const BID: usize = SLACK + STEPS;
+pub const N_FEATURES: usize = BID + BIDS;
 
 pub struct FieldNet {
     pub h1: usize,
@@ -99,6 +101,7 @@ impl FieldNet {
                 on.push(SLACK + i);
             }
         }
+        on.push(BID + (bid.clamp(30, 42) - 30) as usize);
         on
     }
 

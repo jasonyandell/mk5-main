@@ -9,7 +9,8 @@ seat still solves.
 
 A modeled seat's move is a pure function of what that seat knows — its
 remaining hand, the public record (tiles gone, the open trick, voids shown,
-points banked), the bid and its side — exactly the key the planner caches
+points banked), the bid (read directly and as what each side still needs)
+and its side — exactly the key the planner caches
 modeled moves under. The features are that and nothing more, read from the
 mover's chair (partner, left, right) with the tiles relabeled so the trump
 pip is pip 6 and the other pips keep their order (`canon`): one trump suit
@@ -35,8 +36,9 @@ from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW, DOMINOES
 from scenario.record import Record
 from scenario.rules import N_TILES, Rules, tiles_of
 
-LAYOUT = "field-v1"
+LAYOUT = "field-v2"
 STEPS = tuple(range(2, 43, 2))          # thermometer thresholds, in points
+BIDS = tuple(range(30, 43))             # the contract, in points: a mark bid needs all 42
 
 # Feature blocks, in order: (name, width).
 BLOCKS = (
@@ -50,6 +52,7 @@ BLOCKS = (
     ("winning", 3),                 # who holds the open trick so far (left, partner, right)
     ("need", len(STEPS)),           # the bidding side still needs >= step points to make
     ("slack", len(STEPS)),          # the defenders still need >= step points to set
+    ("bid", len(BIDS)),             # the contract, one-hot (bids above 42 read as 42)
 )
 OFFSET = {}
 _at = 0
@@ -104,6 +107,7 @@ def features(rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_te
     slack = (43 - bid) - rec.banked[1 - bidder_team]
     on += [OFFSET["need"] + i for i, s in enumerate(STEPS) if need >= s]
     on += [OFFSET["slack"] + i for i, s in enumerate(STEPS) if slack >= s]
+    on.append(OFFSET["bid"] + min(max(bid, BIDS[0]), BIDS[-1]) - BIDS[0])
     return on
 
 
