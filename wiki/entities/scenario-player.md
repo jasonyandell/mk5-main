@@ -690,7 +690,10 @@ requires 2FA; a one-time link each for login and publish). The registry
 has it: 10 files, 247,827 bytes unpacked, shasum `30aee968…`, and a clean
 `npm install` runs the forecast. From here
 `.github/workflows/publish-zeb.yml` publishes every later `zeb-v*` tag with
-provenance through npm's trusted publishing, no token anywhere; the old
+provenance through npm's trusted publishing, no token anywhere (connected
+2026-10-11 with "allow npm publish" ticked, so a tag goes live without a
+visit to npmjs.com; npm's newer default stages for a human to promote, a
+knob to flip if the package ever gains maintainers); the old
 Pages deploy, which had failed on every push for months, is gone. Plunge
 adopting it is Plunge's work: swap the book auction for `forecast` +
 `chooseBid`, keep its partner-pass and forced-30 rules.
