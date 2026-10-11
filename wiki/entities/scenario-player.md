@@ -652,7 +652,11 @@ under the 4/5 rule it bids one target higher than the book on about 7% of
 hands. The book's tails are the *deployed* Walt's own play; ours forecast
 the cheap player's, which the pour calibration shows honest against itself.
 A cutoff of 0.85, or more worlds, would close the gap if one wanted the
-book's temperament. Nothing here is a deployment: Plunge runs texas-42's Walt
+book's temperament. Worth knowing: Plunge once had a live Walt bidder and
+switched it off — its field was the dice ("the price curve saturates against
+walt's level-0 field model, so even θ = 1 overbids at the table",
+`src/ai/walt/requests.ts`), so the book was the workaround. The net in the
+field is what makes the live price honest; that is the whole difference. Nothing here is a deployment: Plunge runs texas-42's Walt
 in WASM, and `scenario/` is this repo's core — data crosses, code does not.
 
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
