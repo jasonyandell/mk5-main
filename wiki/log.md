@@ -26,6 +26,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-11 | scenario-player | a live bidder graded against Plunge's frozen bid book: 4,680 panels, |Δpmake| 0.052 vs the book's own sd 0.066, calibrated through the middle, 3–5 pp bold at the top; seven declarations in 0.2–1.0 s]
+
+[[scenario-player]] § A live bidder, graded against Plunge's book. Scripts in `scratch/bid/`. Not a deployment.
+
 ## [2026-10-11 | 7c31bbf9 | Zeb: the 250,000-deal pour (4.34M positions, four overnight chunks poured by the small net) — imitation improves (regret 0.38 → 0.26), the arena does not (+0.11 / +0.13 vs the champion); the data lever stops at parity]
 
 [[scenario-player]] § The 250,000-deal pour; `field_train` takes several pours; dataset jasonyandell/texas-42-zeb-pour-200k (CC0). Champion unchanged.

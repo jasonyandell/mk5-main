@@ -621,6 +621,40 @@ row signal), or the modeled seats learning something other than Walt's
 move — #94-style mining of the splats for what must be true. None of these
 is more data of the same kind.
 
+**A live bidder, graded against Plunge's book (2026-10-11).** Plunge's
+deployed Walt does not bid: it looks up a frozen book — 130 catalogue deals,
+520 hands × 9 declarations, complete-game score tails from 318,472 bid-30
+games — and takes the highest target some declaration clears in 4 games of 5.
+Hence the repeats Jason's players see. A live bid is the same quantity
+computed instead of stored: one root analysis per declaration, the bidder's
+seven tiles only, pmake(b) the chosen lead's tail mass at margin ≥ 2b − 42
+(#107's splat; `scratch/bid/`). Cost on the M5, seven pip declarations:
+cheap player `k0,n512,F=` 0.8–1.0 s, `k0,n160,F=` 0.2–0.25 s, champion 4.7 s.
+Graded on every book panel (4,680; the book's hand and declaration ids are
+the same triangular ids; doubles and no-trump forecast by `k1,n160,m8` since
+the net is pip-only):
+
+| | |
+|---|---|
+| mean \|ours − book\| at target 30, games-weighted | 0.052 (the book's own binomial sd at its sample sizes: 0.066) |
+| correlation across panels, 30 / 36 / 42 | 0.87 / 0.85 / 0.75 |
+| calibration, bins of our pmake30 → book's make rate | 0.16→0.16, 0.24→0.24, 0.35→0.35, 0.45→0.46, 0.55→0.54, 0.64→0.63, 0.75→0.72, 0.85→0.82, 0.95→0.90 |
+| best declaration at 30 agrees | 386 / 520 hands |
+| bid decision under the book's rule | both pass 442; same target 22 (same declaration 21); ours a notch higher 36, lower 3; ours bids where the book passes 15, the reverse 2 |
+
+The forecast disagrees with the book by less than the book disagrees with
+itself, and is calibrated through the middle. Two honest edges: on the
+8-game screened panels the book reads 0.08 where we read 0.21 — the
+campaign stopped those hands early *because* they scored low, so that bias
+is the book's (40-game panels: 0.291 vs 0.291; 160–640: 0.579 vs 0.585); and
+at the top the live forecast runs 3–5 pp bold (0.85 → 0.82, 0.95 → 0.90), so
+under the 4/5 rule it bids one target higher than the book on about 7% of
+hands. The book's tails are the *deployed* Walt's own play; ours forecast
+the cheap player's, which the pour calibration shows honest against itself.
+A cutoff of 0.85, or more worlds, would close the gap if one wanted the
+book's temperament. Nothing here is a deployment: Plunge runs texas-42's Walt
+in WASM, and `scenario/` is this repo's core — data crosses, code does not.
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name
