@@ -217,6 +217,18 @@ def test_dataset_is_the_movers_view(small_pour):
         assert data.chosen[i] == canon[pos.chosen]
 
 
+def test_several_pours_train_as_one(small_pour, make_pour):
+    """A chunked pour is several directories: their rows concatenate in
+    order and the second's deals are numbered after the first's, so the
+    held-out tenth is still whole deals."""
+    a, b, both = dataset(small_pour), dataset(make_pour), dataset(small_pour, make_pour)
+    assert len(both.x) == len(a.x) + len(b.x)
+    assert (both.x[len(a.x):] == b.x).all() and (both.adv[:len(a.x)] == a.adv).all()
+    assert (both.deal[:len(a.x)] == a.deal).all()
+    assert (both.deal[len(a.x):] == b.deal + len(small_pour.hands)).all()
+    assert len(set(both.deal.tolist())) == len(small_pour.hands) + len(make_pour.hands)
+
+
 def test_a_make_pour_trains_in_points(tmp_path):
     """The target is read off the margin splat, so a pour planned under `make`
     (q in [0, 1]) still gives sharp targets in points — not the flat ones a

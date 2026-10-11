@@ -26,8 +26,11 @@ the best move by the mover's pmake, `agree` how often it plays the
 teacher's own move; a hinge is a position whose best move beats the second
 by 10 points or more.
 
-    python -u -m scenario.field_train --pour DIR --out NET.npz [--target margin|pmake]
+    python -u -m scenario.field_train --pour DIR [DIR ...] --out NET.npz [--target margin|pmake]
         [--device numpy|mlx] [--hidden 512,256] [--epochs E] [--tau T]
+
+Several pours train as one dataset (a chunked pour is several directories);
+their deals are renumbered so no two rows share a deal.
 """
 from __future__ import annotations
 
@@ -58,10 +61,23 @@ class Data:
     win: np.ndarray      # [N, 28] float32: the mover's side makes (bidder) or sets (defender), belief mass
     chosen: np.ndarray   # [N] int64: the teacher's move's slot
     hinge: np.ndarray    # [N] bool: the best move's margin beats the second's by >= 10 points
-    deal: np.ndarray     # [N] the position's deal
+    deal: np.ndarray     # [N] the position's deal, unique across the pours
 
 
-def dataset(p: Pour) -> Data:
+def dataset(*pours: Pour) -> Data:
+    """The rows of every pour, in order; the second pour's deals are
+    numbered after the first's."""
+    parts, first = [], 0
+    for p in pours:
+        d = _dataset(p)
+        parts.append(Data(*(getattr(d, f) for f in ("x", "legal", "adv", "win", "chosen", "hinge")), d.deal + first))
+        first += len(p.hands)
+    if len(parts) == 1:
+        return parts[0]
+    return Data(*(np.concatenate([getattr(d, f) for d in parts]) for f in Data.__dataclass_fields__))
+
+
+def _dataset(p: Pour) -> Data:
     n = len(p)
     x = np.zeros((n, N_FEATURES), np.uint8)
     legal = np.zeros((n, N_TILES), bool)
@@ -83,7 +99,7 @@ def dataset(p: Pour) -> Data:
         chosen[i] = canon[pos.chosen]
         m = np.sort(pos.sign * m)
         hinge[i] = m[-1] - m[-2] >= 10
-    return Data(x, legal, adv, win, chosen, hinge, p.deal.copy())
+    return Data(x, legal, adv, win, chosen, hinge, p.deal.astype(np.int64))
 
 
 def targets(data: Data, target: str, tau: float) -> np.ndarray:
@@ -366,7 +382,7 @@ def _main() -> None:
     from scenario.atlas import load
 
     ap = argparse.ArgumentParser(prog="python -u -m scenario.field_train")
-    ap.add_argument("--pour", required=True)
+    ap.add_argument("--pour", required=True, nargs="+", help="one or more pour directories")
     ap.add_argument("--out", required=True, help="the net's .npz; metrics go beside it as .json")
     ap.add_argument("--target", choices=TARGETS, default="margin")
     ap.add_argument("--device", choices=tuple(DEVICES), default="numpy")
@@ -378,12 +394,12 @@ def _main() -> None:
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     t0 = time.time()
-    p = load(args.pour)
+    pours = [load(d) for d in args.pour]
     hidden = tuple(int(h) for h in args.hidden.split(","))
-    print(f"field net: {len(p)} positions from {args.pour}, target {args.target}, hidden {hidden}, "
-          f"{args.device}", flush=True)
-    data = dataset(p)
-    del p
+    print(f"field net: {sum(map(len, pours))} positions from {len(pours)} pour(s) {' '.join(args.pour)}, "
+          f"target {args.target}, hidden {hidden}, {args.device}", flush=True)
+    data = dataset(*pours)
+    del pours
     t1 = time.time()
     print(f"  dataset in {t1 - t0:.0f}s", flush=True)
     t = train(data, args.target, args.epochs, args.seed, hidden, args.tau, args.lr, args.batch,  # type: ignore[arg-type]
