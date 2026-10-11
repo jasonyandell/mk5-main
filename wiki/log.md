@@ -25,7 +25,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-10-10 | HEAD | Zeb: the 50,000-deal pour (864,604 positions) and the field net at parity — +0.11 [−0.20, +0.40] / +0.06 [−0.25, +0.38] vs the champion; the name reclaimed]
+## [2026-10-10 | 99e8ec32 | Zeb: the 50,000-deal pour (864,604 positions) and the field net at parity — +0.11 [−0.20, +0.40] / +0.06 [−0.25, +0.38] vs the champion; the name reclaimed]
 
 [[scenario-player]] § The 50,000-deal run — and the name; [[zeb]] name note; dataset jasonyandell/texas-42-zeb-pour (CC0).
 
