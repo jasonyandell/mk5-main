@@ -7,6 +7,7 @@ import math
 
 import numpy as np
 import pytest
+import scenario_core
 
 from forge.zeb.game import is_terminal, legal_actions
 
@@ -86,8 +87,6 @@ def test_core_forward_matches_the_referee_to_the_integer():
     net = random_net(1)
     fast = CompiledWalt(Config((Rung(4, None),), field=net))
     states = _pip_states(300, seed=5, unforced=False)
-    for d in {s.decl_id for s in states}:
-        fast._rules(d)
     bids = [*BIDS, 84]
     got = fast._core.field_scores([_req(s, bids[i % len(bids)]) for i, s in enumerate(states)])
     tiles = set()
@@ -126,7 +125,6 @@ def test_ties_go_to_the_lowest_tile():
         own = remaining_hand(state, sit.viewer)
         lowest = min(t for t in range(28) if (rules.legal(own, sit.record.led) >> t) & 1)
         assert net.move(rules, sit.viewer, own, sit.record, 30, sit.bidder_team) == lowest
-        fast._rules(state.decl_id)
         assert fast._core.field_scores([_req(state)])[0][0] == lowest
 
 
@@ -315,3 +313,25 @@ def test_an_old_net_is_refused(tmp_path):
     np.savez(tmp_path / "old.npz", layout="field-v1")
     with pytest.raises(ValueError, match="layout"):
         FieldNet.load(tmp_path / "old.npz")
+
+
+def test_the_blob_round_trips_and_refuses_what_it_did_not_write():
+    net = random_net(5)
+    net.w1[0, 0], net.b2[0] = -(1 << 15), 1 << 40      # int16's floor; a bias far past int32
+    blob = net.to_bytes()
+    back = FieldNet.from_bytes(blob)
+    for k in ("w1", "b1", "w2", "b2", "w3", "b3", "s1", "s2"):
+        assert np.array_equal(getattr(back, k), getattr(net, k)), k
+    assert back.to_bytes() == blob
+    for bad in (b"XNET" + blob[4:], blob.replace(b"field-v2", b"field-v1"), blob[:-1], blob + b"\0", blob[:7]):
+        with pytest.raises(ValueError):
+            FieldNet.from_bytes(bad)
+    net.w3[0, 0] = 1 << 15
+    with pytest.raises(ValueError, match="int16"):
+        net.to_bytes()
+
+
+def test_the_core_canon_is_the_referees():
+    for d in range(10):
+        c = scenario_core.canon(d)
+        assert (None if c is None else tuple(c)) == CANON.get(d), d

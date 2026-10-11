@@ -2,7 +2,9 @@
 
 Nothing here restates Texas 42. Every entry is tabulated once per
 declaration by calling `forge.oracle.tables` — the rules authority — and
-the planner only ever reads the tables. Tiles are forge domino ids 0..27;
+the planner only ever reads the tables. The compiled core derives the same
+tables in Rust (`scenario/core/src/rules.rs`), and `test_compiled` holds the
+two equal entry for entry. Tiles are forge domino ids 0..27;
 tile sets are Python int bitmasks (bit d set == domino d present).
 """
 from __future__ import annotations

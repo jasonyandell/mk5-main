@@ -47,19 +47,9 @@ class CompiledWalt:
         self._core = scenario_core.Core(
             [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
             config.tilt.plays, config.tilt.eps,
-            None if config.field is None else config.field.core_args(),
+            None if config.field is None else config.field.to_bytes(),
         )
-        self._decls: set[int] = set()
         self.nodes = 0  # cells evaluated in the last decision or batch
-
-    def _rules(self, decl_id: int) -> None:
-        if decl_id not in self._decls:
-            r = rules_for(decl_id)
-            self._core.set_rules(
-                decl_id, list(r.led_suit), list(r.follow_bits),
-                [list(row) for row in r.rank], list(r.count),
-            )
-            self._decls.add(decl_id)
 
     def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
         return self.decide_batch([state], [bid])[0]
@@ -89,7 +79,6 @@ class CompiledWalt:
     def mold(self, hands: Sequence[int], decl_id: int, leader: int,
              max_layer: int | None = None) -> list[int]:
         """`scenario.atlas.mold`, on all cores."""
-        self._rules(decl_id)
         return self._core.mold(decl_id, tuple(hands), leader, max_layer, self.threads)
 
     def _planned(self, method: str, states: Sequence[ZebGameState], bids: Sequence[int]) -> list[tuple]:
@@ -109,7 +98,6 @@ class CompiledWalt:
             if len(legal) == 1:
                 out[i] = (legal[0], None)
                 continue
-            self._rules(state.decl_id)
             if self.config.field is not None and state.decl_id not in CANON:
                 raise ValueError(f"the field net plays pip-trump declarations only, not {state.decl_id}")
             reqs.append((

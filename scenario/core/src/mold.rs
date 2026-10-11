@@ -20,7 +20,8 @@ use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
-use crate::planner::{splitmix, Rec, Rules};
+use crate::planner::{splitmix, Rec};
+use crate::rules::Rules;
 
 const SHARDS: usize = 512;
 const FLUSH: usize = 1024; // children a thread buffers per shard before taking its lock

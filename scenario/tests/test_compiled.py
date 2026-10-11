@@ -4,11 +4,14 @@ configurations, with and without a belief, batched or one at a time."""
 import math
 import random
 
+import scenario_core
+
 from forge.zeb.game import is_terminal, legal_actions
 
 from arena.walt_play import parse_walt_spec
 from scenario.compiled import CompiledWalt
 from scenario.planner import Config, Rung, Tilt, Walt
+from scenario.rules import rules_for
 from scenario.tests.test_rules_record import random_playing_states
 
 
@@ -38,6 +41,18 @@ def _same(a, b):
     assert qa.keys() == qb.keys()
     for t in qa:
         assert qa[t] == qb[t] or (math.isnan(qa[t]) and math.isnan(qb[t])), (t, qa[t], qb[t])
+
+
+def test_the_core_tables_are_the_rules_authority():
+    """The core derives its own rules tables; they are `forge.oracle.tables`'s,
+    entry for entry, under all ten declarations."""
+    for d in range(10):
+        r = rules_for(d)
+        led_suit, follow_bits, rank, count = scenario_core.rules(d)     # byte tables arrive as bytes
+        assert list(led_suit) == list(r.led_suit), d
+        assert follow_bits == list(r.follow_bits), d
+        assert [list(row) for row in rank] == [list(row) for row in r.rank], d
+        assert list(count) == list(r.count), d
 
 
 def test_compiled_matches_the_planner_without_a_belief():

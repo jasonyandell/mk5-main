@@ -21,10 +21,13 @@ Inference is integer arithmetic, so the referee (this file) and the compiled
 core (`scenario/core/src/field.rs`) agree by construction: the features are
 bits, the first layer sums the active rows, each hidden layer is
 max(acc >> shift, 0), and the move is the highest-scoring legal tile, ties
-to the lowest tile id. Weights live in a `.npz` both load.
+to the lowest tile id. The trainer saves a net as a `.npz`; the core takes it
+as one little-endian blob (`to_bytes`, laid out in `field.rs`).
 """
 from __future__ import annotations
 
+import math
+import struct
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -37,6 +40,8 @@ from scenario.record import Record
 from scenario.rules import N_TILES, Rules, tiles_of
 
 LAYOUT = "field-v2"
+_BLOB_HEAD = b"FNET" + bytes([len(LAYOUT)]) + LAYOUT.encode("ascii")   # magic, then the layout's name
+_BLOB_DTYPES = ("<i2", "<i8", "<i2", "<i8", "<i2", "<i8")              # w1 b1 w2 b2 w3 b3
 STEPS = tuple(range(2, 43, 2))          # thermometer thresholds, in points
 BIDS = tuple(range(30, 43))             # the contract, in points: a mark bid needs all 42
 
@@ -149,6 +154,37 @@ class FieldNet:
         np.savez(path, layout=LAYOUT, w1=self.w1, b1=self.b1, w2=self.w2, b2=self.b2,
                  w3=self.w3, b3=self.b3, s1=self.s1, s2=self.s2)
 
+    def to_bytes(self) -> bytes:
+        """The net as one blob: `FNET`, the layout name (one length byte, then
+        ASCII), h1 h2 s1 s2 as uint32, then w1 b1 w2 b2 w3 b3 in row-major
+        order — weights int16 (the trainer quantizes them to fit), biases
+        int64 (they carry accumulator scale, which no narrower width bounds)
+        — all little-endian. The compiled core and the zeb package parse it."""
+        for w in (self.w1, self.w2, self.w3):
+            if w.min() < -(1 << 15) or w.max() >= 1 << 15:
+                raise ValueError("field net weights must fit int16")
+        head = _BLOB_HEAD + struct.pack("<4I", self.b1.shape[0], self.b2.shape[0], self.s1, self.s2)
+        arrays = zip((self.w1, self.b1, self.w2, self.b2, self.w3, self.b3), _BLOB_DTYPES)
+        return head + b"".join(a.astype(dtype).tobytes() for a, dtype in arrays)
+
+    @staticmethod
+    def from_bytes(blob: bytes) -> FieldNet:
+        """The net `to_bytes` wrote; refuses another magic, layout or size."""
+        at = len(_BLOB_HEAD) + 16
+        if blob[:len(_BLOB_HEAD)] != _BLOB_HEAD or len(blob) < at:
+            raise ValueError(f"not a {LAYOUT} field net blob")
+        h1, h2, s1, s2 = struct.unpack_from("<4I", blob, len(_BLOB_HEAD))
+        shapes = ((N_FEATURES, h1), (h1,), (h2, h1), (h2,), (N_TILES, h2), (N_TILES,))
+        sizes = [math.prod(shape) * np.dtype(dtype).itemsize for shape, dtype in zip(shapes, _BLOB_DTYPES)]
+        if len(blob) != at + sum(sizes):
+            raise ValueError("field net blob is the wrong size for its widths")
+        arrays = []
+        for shape, dtype, size in zip(shapes, _BLOB_DTYPES, sizes):
+            arrays.append(np.frombuffer(blob, dtype=dtype, count=math.prod(shape), offset=at)
+                          .astype(np.int64).reshape(shape))
+            at += size
+        return FieldNet(*arrays, s1, s2)
+
     def scores(self, active: list[int]) -> np.ndarray:
         """[28] int64 scores over canonical tiles."""
         h = np.maximum((self.b1 + self.w1[active].sum(axis=0)) >> self.s1, 0)
@@ -165,12 +201,3 @@ class FieldNet:
             if z[canon[t]] > z[canon[best]]:
                 best = t
         return best
-
-    def core_args(self) -> tuple:
-        """The net as the compiled core takes it."""
-        return (
-            int(self.b1.shape[0]), int(self.b2.shape[0]),
-            self.w1.ravel().tolist(), self.b1.tolist(), self.w2.ravel().tolist(), self.b2.tolist(),
-            self.w3.ravel().tolist(), self.b3.tolist(), self.s1, self.s2,
-            [(d, list(c)) for d, c in CANON.items()],
-        )

@@ -35,7 +35,11 @@ impl<'a> Fiber<'a> {
             return known;
         }
         let v = if i == self.tiles.len() {
-            if c == [0, 0, 0] { 1 } else { 0 }
+            if c == [0, 0, 0] {
+                1
+            } else {
+                0
+            }
         } else {
             let t = self.tiles[i];
             let mut total = 0;
@@ -124,6 +128,43 @@ impl<'a> Fiber<'a> {
     }
 }
 
+/// The viewer's view of the hidden seats: who they are (absolute seats, in
+/// order), the unseen pool, and each one's hand size and provable voids.
+struct Hidden {
+    others: [usize; 3],
+    tiles: Vec<u8>,
+    sizes: [u8; 3],
+    forbid: [u32; 3],
+}
+
+impl Hidden {
+    fn new(viewer: u8, own: u32, played: u32, sizes4: [u8; 4], forbid4: [u32; 4]) -> Hidden {
+        let mut others = [0usize; 3];
+        let mut k = 0;
+        for s in 0..4 {
+            if s != viewer as usize {
+                others[k] = s;
+                k += 1;
+            }
+        }
+        let pool = ALL_TILES & !played & !own;
+        Hidden {
+            others,
+            tiles: (0..28u8).filter(|&t| (pool >> t) & 1 == 1).collect(),
+            sizes: others.map(|s| sizes4[s]),
+            forbid: others.map(|s| forbid4[s]),
+        }
+    }
+}
+
+/// How many lawful deals of the unseen pool to the three hidden seats fit
+/// their hand sizes and the voids they have shown. Zero means no deal
+/// explains the record from the viewer's chair.
+pub fn completions(viewer: u8, own: u32, played: u32, sizes4: [u8; 4], forbid4: [u32; 4]) -> i64 {
+    let h = Hidden::new(viewer, own, played, sizes4, forbid4);
+    Fiber::new(&h.tiles, h.sizes, h.forbid).ways(0, h.sizes)
+}
+
 /// `n` scenarios from the viewer's fiber, as remaining-hand masks in absolute
 /// seat order (the viewer's own hand in its slot).
 pub fn sample_worlds(
@@ -135,18 +176,7 @@ pub fn sample_worlds(
     n: usize,
     rng: &mut SplitMix,
 ) -> Vec<[u32; 4]> {
-    let mut others = [0usize; 3];
-    let mut k = 0;
-    for s in 0..4 {
-        if s != viewer as usize {
-            others[k] = s;
-            k += 1;
-        }
-    }
-    let pool = ALL_TILES & !played & !own;
-    let tiles: Vec<u8> = (0..28u8).filter(|&t| (pool >> t) & 1 == 1).collect();
-    let sizes = [sizes4[others[0]], sizes4[others[1]], sizes4[others[2]]];
-    let forbid = [forbid4[others[0]], forbid4[others[1]], forbid4[others[2]]];
+    let Hidden { others, tiles, sizes, forbid } = Hidden::new(viewer, own, played, sizes4, forbid4);
     assert_eq!(
         sizes.iter().map(|&s| s as usize).sum::<usize>(),
         tiles.len(),

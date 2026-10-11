@@ -1,9 +1,11 @@
 //! The finite planning rule and the ladder — `scenario/planner.py`.
 //!
-//!     V(C) = Σ w·u                      finished
-//!          = Σ w·L                      at the search frontier
-//!          = max_a Σ_o V(C_{a,o})       the deciding player chooses
-//!          = Σ_o V(C_o)                 another seat acts
+//! ```text
+//! V(C) = Σ w·u                      finished
+//!      = Σ w·L                      at the search frontier
+//!      = max_a Σ_o V(C_{a,o})       the deciding player chooses
+//!      = Σ_o V(C_o)                 another seat acts
+//! ```
 //!
 //! Rung k's modeled seats are rung k−1 players; rung −1 is random legal play
 //! from a tape keyed on the public record — or the field net (`field.rs`),
@@ -17,9 +19,13 @@ use std::hash::{BuildHasherDefault, Hash, Hasher};
 
 use crate::fiber::sample_worlds;
 use crate::field::FieldNet;
+use crate::rules::Rules;
 
+/// Every tile: the record of a finished hand.
 pub const ALL_TILES: u32 = (1 << 28) - 1;
+/// Points in a hand: 35 count and one per trick.
 pub const HAND_TOTAL: i32 = 42;
+/// The most scenarios a rung may sample (a cell is a bitset of this width).
 pub const MAX_WORLDS: usize = 1024;
 const WORDS: usize = MAX_WORLDS / 64;
 const HAND_SIZE: u8 = 7;
@@ -29,7 +35,7 @@ const GOLDEN: u64 = 0x9E3779B97F4A7C15;
 
 /// A small multiplicative hasher for the memo tables (keys are a few words).
 #[derive(Default)]
-pub struct Fx(u64);
+struct Fx(u64);
 
 impl Fx {
     #[inline]
@@ -70,6 +76,7 @@ type Map<K, V> = HashMap<K, V, BuildHasherDefault<Fx>>;
 
 // -- randomness ---------------------------------------------------------------
 
+/// One SplitMix64 output for the state `x`.
 #[inline]
 pub fn splitmix(mut x: u64) -> u64 {
     x = x.wrapping_add(GOLDEN);
@@ -90,9 +97,11 @@ fn mix(parts: &[u64]) -> u64 {
 pub struct SplitMix(u64);
 
 impl SplitMix {
+    /// The stream whose first state is `seed`.
     pub fn new(seed: u64) -> Self {
         SplitMix(seed)
     }
+    /// The next 64 random bits.
     #[inline]
     pub fn next_u64(&mut self) -> u64 {
         let out = splitmix(self.0);
@@ -106,61 +115,24 @@ impl SplitMix {
     }
 }
 
-// -- rules tables -------------------------------------------------------------
-
-pub struct Rules {
-    pub decl: u8,               // the declaration these tables are for
-    pub led_suit: [u8; 28],     // led suit when the tile leads
-    pub follow_bits: [u32; 8],  // tiles that follow each led suit
-    pub rank: [[u8; 28]; 8],    // trick rank under each led suit
-    pub count: [u8; 28],        // count points on the tile
-}
-
-impl Rules {
-    #[inline]
-    fn followers(&self, led: u8) -> u32 {
-        self.follow_bits[self.led_suit[led as usize] as usize]
-    }
-    #[inline]
-    pub fn legal(&self, hand: u32, led: Option<u8>) -> u32 {
-        match led {
-            None => hand,
-            Some(l) => {
-                let f = hand & self.followers(l);
-                if f != 0 { f } else { hand }
-            }
-        }
-    }
-    #[inline]
-    fn winner_offset(&self, trick: &[u8; 4]) -> u8 {
-        let ranks = &self.rank[self.led_suit[trick[0] as usize] as usize];
-        let mut best = 0u8;
-        let mut best_rank = ranks[trick[0] as usize];
-        for i in 1..4 {
-            let r = ranks[trick[i] as usize];
-            if r > best_rank {
-                best = i as u8;
-                best_rank = r;
-            }
-        }
-        best
-    }
-    #[inline]
-    fn trick_points(&self, trick: &[u8; 4]) -> u8 {
-        1 + trick.iter().map(|&t| self.count[t as usize]).sum::<u8>()
-    }
-}
-
 // -- the public record --------------------------------------------------------
 
+/// The public record (`scenario/record.py`): everything every seat has
+/// seen, which is everything a cell's scenarios share.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Rec {
+    /// Every tile played so far, the open trick's included.
     pub played: u32,
+    /// The seat that led the open trick.
     pub leader: u8,
-    pub n: u8,            // tiles in the open trick
-    pub trick: [u8; 3],   // slots >= n are zero
+    /// Tiles in the open trick.
+    pub n: u8,
+    /// The open trick in play order; slots >= n are zero.
+    pub trick: [u8; 3],
+    /// Points banked by team 0 (seats 0 and 2) and team 1 (seats 1 and 3).
     pub banked: [u8; 2],
-    pub forbid: [u32; 4], // per seat: tiles it provably cannot hold
+    /// Per seat: the tiles it provably cannot hold, from the suits it failed to follow.
+    pub forbid: [u32; 4],
 }
 
 impl Hash for Rec {
@@ -182,22 +154,35 @@ fn pack(played: u32, leader: u8, trick: &[u8], banked: [u8; 2]) -> u64 {
 }
 
 impl Rec {
+    /// The record before the opening lead, `leader` to lead (`empty_record`).
+    pub fn opening(leader: u8) -> Rec {
+        Rec { played: 0, leader, n: 0, trick: [0; 3], banked: [0; 2], forbid: [0; 4] }
+    }
+    /// The seat to play next.
     #[inline]
     pub fn seat(&self) -> u8 {
         (self.leader + self.n) % 4
     }
+    /// The tile that led the open trick, if one has.
     #[inline]
     pub fn led(&self) -> Option<u8> {
-        if self.n > 0 { Some(self.trick[0]) } else { None }
+        if self.n > 0 {
+            Some(self.trick[0])
+        } else {
+            None
+        }
     }
+    /// All 28 tiles are down.
     #[inline]
     pub fn finished(&self) -> bool {
         self.played == ALL_TILES
     }
+    /// Tiles played so far.
     #[inline]
     pub fn plays(&self) -> u8 {
         self.played.count_ones() as u8
     }
+    /// Tiles `seat` still holds, implied by the record alone.
     pub fn hand_size(&self, seat: u8) -> u8 {
         let completed = (self.plays() - self.n) / 4;
         let in_trick = if (seat + 4 - self.leader) % 4 < self.n { 1 } else { 0 };
@@ -208,6 +193,9 @@ impl Rec {
     pub fn pack(&self) -> u64 {
         pack(self.played, self.leader, &self.trick[..self.n as usize], self.banked)
     }
+    /// The record after the seat to play puts down `tile`: a seat that
+    /// fails to follow is marked void in the led suit, and a fourth tile
+    /// banks the trick for its winner, who leads next.
     pub fn advance(&self, tile: u8, rules: &Rules) -> Rec {
         let seat = self.seat() as usize;
         let mut forbid = self.forbid;
@@ -235,7 +223,7 @@ impl Rec {
 
 /// Σ as CPython's `sum()` computes it for floats (Neumaier's compensated
 /// summation, Python ≥ 3.12), so the referee and the core agree to the bit.
-fn fsum(items: impl Iterator<Item = f64>) -> f64 {
+pub fn fsum(items: impl Iterator<Item = f64>) -> f64 {
     let mut s = 0.0f64;
     let mut c = 0.0f64;
     for x in items {
@@ -257,7 +245,7 @@ fn fsum(items: impl Iterator<Item = f64>) -> f64 {
 
 /// A set of scenario indices (which worlds are alive in a cell).
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Bits([u64; WORDS]);
+struct Bits([u64; WORDS]);
 
 impl Hash for Bits {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -320,18 +308,28 @@ fn tiles(mut mask: u32) -> impl Iterator<Item = u8> {
 /// The built-in evidence g: how hidden seats' discretionary plays are scored.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TiltPlays {
+    /// Every scenario weighs the same.
     None,
-    Dice,  // a play with n legal options has likelihood 1/n
-    Field, // ε/n + (1−ε)·[the rung-0 player holding that hand would play it]
+    /// A play with n legal options has likelihood 1/n.
+    Dice,
+    /// ε/n + (1−ε)·[the rung-0 player holding that hand would play it].
+    Field,
 }
 
+/// A particular Walt (`scenario.planner.Config`): the decision is a pure function of this and the position.
 pub struct Config {
-    pub rungs: Vec<(usize, Option<usize>, usize)>, // (n_worlds, horizon, floor) per rung; the live player is last
+    /// (n_worlds, horizon, floor) per rung; the live player is the last.
+    pub rungs: Vec<(usize, Option<usize>, usize)>,
+    /// The utility: the bidding side makes its contract (true) or the signed point margin.
     pub make: bool,
+    /// Seeds every random stream of every invocation.
     pub seed: u64,
+    /// The built-in evidence on the live rung's scenarios.
     pub tilt: TiltPlays,
+    /// The field tilt's ε.
     pub eps: f64,
-    pub field: Option<FieldNet>, // rung −1: the field net, or None for random legal play
+    /// Rung −1: the field net, or None for random legal play.
+    pub field: Option<FieldNet>,
 }
 
 impl Config {
@@ -352,8 +350,15 @@ struct Ctx<'a> {
 
 fn invocation_seed(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec) -> u64 {
     mix(&[
-        cfg.seed, k as u64, viewer as u64, own as u64, rec.pack(),
-        rec.forbid[0] as u64, rec.forbid[1] as u64, rec.forbid[2] as u64, rec.forbid[3] as u64,
+        cfg.seed,
+        k as u64,
+        viewer as u64,
+        own as u64,
+        rec.pack(),
+        rec.forbid[0] as u64,
+        rec.forbid[1] as u64,
+        rec.forbid[2] as u64,
+        rec.forbid[3] as u64,
     ])
 }
 
@@ -387,7 +392,7 @@ fn tilt_weights(ctx: &mut Ctx, viewer: u8, worlds: &[[u32; 4]], plays: &[(u8, u8
         .iter()
         .map(|h| [h[0] | played_by[0], h[1] | played_by[1], h[2] | played_by[2], h[3] | played_by[3]])
         .collect();
-    let mut rec = Rec { played: 0, leader: plays[0].0, n: 0, trick: [0; 3], banked: [0; 2], forbid: [0; 4] };
+    let mut rec = Rec::opening(plays[0].0);
     for &(seat, tile) in plays {
         if seat != viewer {
             for (r, hands) in full.iter_mut().enumerate() {
@@ -409,6 +414,10 @@ fn tilt_weights(ctx: &mut Ctx, viewer: u8, worlds: &[[u32; 4]], plays: &[(u8, u8
     w
 }
 
+/// What only the live rung sees: the public play history and any external
+/// evidence over its scenarios.
+type Live<'a> = (&'a [(u8, u8)], Option<&'a [f64]>);
+
 /// One planning problem: a viewer, a rung, a sample, and its memo.
 struct Inv {
     k: usize,
@@ -427,8 +436,7 @@ struct Inv {
 impl Inv {
     /// `live` carries the public play history and any external evidence at the
     /// live rung only: modeled minds weigh their scenarios uniformly.
-    fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec,
-           live: Option<(&[(u8, u8)], Option<&[f64]>)>) -> Inv {
+    fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec, live: Option<Live>) -> Inv {
         let cfg = ctx.cfg;
         let seed = invocation_seed(cfg, k, viewer, own, rec);
         let worlds = worlds_for(cfg, k, viewer, own, rec, seed);
@@ -658,7 +666,11 @@ impl Inv {
             let hand = world[seat] & !played;
             let legal = if n > 0 {
                 let f = hand & rules.followers(trick[0]);
-                if f != 0 { f } else { hand }
+                if f != 0 {
+                    f
+                } else {
+                    hand
+                }
             } else {
                 hand
             };
@@ -678,7 +690,11 @@ impl Inv {
             }
         }
         if make {
-            if banked[bt] as i32 >= bid { 1.0 } else { 0.0 }
+            if banked[bt] as i32 >= bid {
+                1.0
+            } else {
+                0.0
+            }
         } else {
             banked[bt] as f64 - banked[1 - bt] as f64
         }
@@ -686,7 +702,11 @@ impl Inv {
 
     fn score(&self, ctx: &Ctx, rec: &Rec) -> f64 {
         if ctx.cfg.make {
-            if rec.banked[ctx.bt] as i32 >= ctx.bid { 1.0 } else { 0.0 }
+            if rec.banked[ctx.bt] as i32 >= ctx.bid {
+                1.0
+            } else {
+                0.0
+            }
         } else {
             self.margin(ctx, rec)
         }
@@ -750,20 +770,38 @@ impl<'a> Ctx<'a> {
     }
 }
 
-/// One decision at the live rung: (tile, action values ascending by tile, cells evaluated).
-pub fn decide(
-    cfg: &Config,
-    rules: &Rules,
-    viewer: u8,
-    own: u32,
-    rec: &Rec,
-    bid: i32,
-    bidder_team: u8,
-    plays: &[(u8, u8)],
-    external: Option<&[f64]>,
-) -> (u8, Vec<(u8, f64)>, u64) {
-    let mut ctx = Ctx { cfg, rules, bid, bt: bidder_team as usize, pi: Map::default(), nodes: 0 };
-    let mut inv = Inv::new(&mut ctx, cfg.level(), viewer, own, rec, Some((plays, external)));
+/// One decision to plan at the live rung: the seat to play, what it holds,
+/// the public record and play history, and the contract.
+#[derive(Clone, Copy)]
+pub struct Decision<'a> {
+    /// The declaration's rules.
+    pub rules: &'a Rules,
+    /// The seat to play: the record's next seat.
+    pub viewer: u8,
+    /// The viewer's remaining hand.
+    pub own: u32,
+    /// The public record.
+    pub rec: Rec,
+    /// The contract, in points (42 for a mark bid).
+    pub bid: i32,
+    /// The bidding side: 0 for seats 0 and 2, 1 for seats 1 and 3.
+    pub bidder_team: u8,
+    /// Every play so far as (seat, tile), from the opening lead.
+    pub plays: &'a [(u8, u8)],
+}
+
+/// The live invocation at a decision and the context it plans in.
+fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (Ctx<'a>, Inv) {
+    let mut ctx = Ctx { cfg, rules: d.rules, bid: d.bid, bt: d.bidder_team as usize, pi: Map::default(), nodes: 0 };
+    let inv = Inv::new(&mut ctx, cfg.level(), d.viewer, d.own, &d.rec, Some((d.plays, external)));
+    (ctx, inv)
+}
+
+/// One decision: (tile, action values ascending by tile, cells evaluated).
+/// `external` is evidence over the live scenarios ([`root_worlds`]),
+/// multiplied into the built-in tilt.
+pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<(u8, f64)>, u64) {
+    let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
     (best(&q, inv.maximize), q, ctx.nodes)
 }
@@ -771,27 +809,23 @@ pub fn decide(
 /// `decide`, opened up (`Walt.analyze`): the decision plus the live
 /// scenarios, their weights, and each root action's per-scenario outcomes.
 pub struct Analysis {
+    /// The decision.
     pub tile: u8,
+    /// Each legal tile's value, ascending by tile.
     pub q: Vec<(u8, f64)>,
+    /// Cells evaluated.
     pub nodes: u64,
+    /// The live scenarios, remaining hands by absolute seat, in sample order.
     pub worlds: Vec<[u32; 4]>,
+    /// The belief over them, unnormalized.
     pub weights: Vec<f64>,
+    /// Per legal tile, ascending: the bidder-team final margin each scenario reaches under the plan.
     pub outcomes: Vec<(u8, Vec<f64>)>,
 }
 
-pub fn analyze(
-    cfg: &Config,
-    rules: &Rules,
-    viewer: u8,
-    own: u32,
-    rec: &Rec,
-    bid: i32,
-    bidder_team: u8,
-    plays: &[(u8, u8)],
-    external: Option<&[f64]>,
-) -> Analysis {
-    let mut ctx = Ctx { cfg, rules, bid, bt: bidder_team as usize, pi: Map::default(), nodes: 0 };
-    let mut inv = Inv::new(&mut ctx, cfg.level(), viewer, own, rec, Some((plays, external)));
+/// `decide`, opened up: see [`Analysis`].
+pub fn analyze(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> Analysis {
+    let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
     let outcomes = inv.outcomes(&mut ctx);
     Analysis {
