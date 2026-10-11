@@ -685,8 +685,10 @@ planner. Facts a reader can check:
 | plans | pip trumps `k0,n<worlds>,F=net` (floor 16); doubles and no-trump `k1,n<worlds>,m8`, since the net is pip-only; declaration 8 (nello's algebra) refused |
 | default | 160 worlds is a phone budget, not the graded setting (512 for pips); the README says so and names the lean it buys |
 
-Publishing: 0.1.0 by hand from this machine (npm requires 2FA; a one-time
-link each for login and publish), then
+Publishing: 0.1.0 went out by hand from this machine on 2026-10-11 (npm
+requires 2FA; a one-time link each for login and publish). The registry
+has it: 10 files, 247,827 bytes unpacked, shasum `30aee968…`, and a clean
+`npm install` runs the forecast. From here
 `.github/workflows/publish-zeb.yml` publishes every later `zeb-v*` tag with
 provenance through npm's trusted publishing, no token anywhere; the old
 Pages deploy, which had failed on every push for months, is gone. Plunge
