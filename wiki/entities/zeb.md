@@ -2,9 +2,17 @@
 title: Zeb — AlphaZero-style self-play player, later Burl's parked belief primitive
 kind: entity
 first_seen: 2026-01-31
-last_updated: 2026-04-23
+last_updated: 2026-10-10
 status: superseded
 ---
+
+## The name, reclaimed (2026-10-10)
+
+Jason took the name back for the family of things built on Walt, the
+[[scenario-player]] — the atlas, the pour, the field net: "Walt is just an
+ingredient." See [[scenario-player]] § "The 50,000-deal run — and the name".
+The page below is the January project, kept as written. No AlphaZero mandate
+travels with the name.
 
 ## What it is
 

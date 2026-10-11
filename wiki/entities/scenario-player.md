@@ -546,6 +546,50 @@ on this pour; #102's +.100 came from a
 teacher whose pmake was not flat (a 64-world search with varied bids, 7.6M
 rows). The 50k pour trains with the margin target first.
 
+**The 50,000-deal run — and the name (2026-10-10, late).** Poured by the
+cheap player itself (`k0,n512,F=make-net-v2`, make utility, seeds 100001..,
+**864,604 planned positions**, 3.2 GB, 2 h 8 min; opening forecast +5.5 / 38%
+vs real +5.8 / 37% — calibrated to a third of a point over fifty thousand
+hands). Trained on it with the MLX path (about 70 s each), graded on the
+held-out tenth and in the arena against the champion `k1,n512,m8`:
+
+| net, 50,000 deals | regret (points) | hinge regret | agree | arena, 384 games, seed 1 | made | arena wall |
+|---|---|---|---|---|---|---|
+| margin 512×256 | **0.38** | **0.45** | 53% | **+0.11 [−0.20, +0.40]**, +0.38 pts/hand | 38.3% vs 37.4% | 2,083 s |
+| margin 128×64 | 0.41 | 0.44 | 53% | **+0.06 [−0.25, +0.38]**, +0.31 pts/hand | 36.8% vs 36.4% | 727 s |
+| pmake 512×256 | 0.97 | 2.52 | 48% | — | — | — |
+
+Calibration with the wide net (fresh 200 deals, seed 20001): forecast +5.9 /
+39% vs real +8.6 / 40%.
+
+**Data is the lever, and it has not stopped working:**
+
+| field net trained on | arena vs champion |
+|---|---|
+| 200 deals | −0.70 [−1.44, +0.05] (64 games) |
+| 5,000 deals | −0.16 [−0.48, +0.14]; −0.01 [−0.31, +0.30] |
+| 50,000 deals | +0.06 [−0.25, +0.38]; +0.11 [−0.20, +0.40] |
+
+Every step is inside the noise of the last; the trend across three steps is
+not. The point estimate crossed zero and the point margin per hand is now
+positive. The cheap player — a one-rung Walt planning against a learned
+field — is at parity with the two-rung champion. The wide net buys nothing
+the small one does not and costs 2.9× the arena wall (the forward pass is now
+the hot spot), so **the small net is the pour engine**. The pmake target is
+confirmed worse at scale. The champion stays `k1,n512,m8` until a net field
+beats it with an interval clear of zero; the next net trains on the next
+pour, poured by this one — expert iteration, with the net kept in the field.
+
+**Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
+ingredient." The family of things built on Walt — the atlas, the pour, the
+field net, whatever comes next — is **Zeb**, the first project's name
+reclaimed ([[zeb]] was the January AlphaZero-style self-play player, superseded
+on fused labels). Not diverging from Walt, evolving; no self-play mandate
+comes with the name. The 50,000-deal pour is published under it:
+[jasonyandell/texas-42-zeb-pour](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour),
+CC0 (a separate repo because `scenario/hf.py` refuses to mix specs in one;
+the k1 pours stay in [texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour)).
+
 ## Links
 
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
