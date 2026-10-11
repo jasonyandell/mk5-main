@@ -1,0 +1,55 @@
+{
+  "name": "@jasonyandell/zeb",
+  "version": "0.1.0",
+  "description": "Zeb, the Texas 42 scenario player: bid forecasts, plays and hints from a planner that never sees another seat's hand. WebAssembly, for browsers, Web Workers and Node.",
+  "license": "MIT",
+  "author": "Jason Yandell",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasonyandell/mk5-main.git",
+    "directory": "zeb"
+  },
+  "keywords": [
+    "texas-42",
+    "42",
+    "dominoes",
+    "domino",
+    "game-ai",
+    "planner",
+    "webassembly",
+    "wasm"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./zeb_bg.wasm": "./pkg/zeb_bg.wasm",
+    "./package.json": "./package.json"
+  },
+  "types": "./index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "pkg/zeb.js",
+    "pkg/zeb.d.ts",
+    "pkg/zeb_bg.wasm",
+    "pkg/zeb_bg.wasm.d.ts",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "./scripts/build.sh",
+    "pretest": "./scripts/build.sh",
+    "test": "node --test 'tests/*.test.js'",
+    "bench": "node scripts/bench.js",
+    "prepack": "./scripts/build.sh"
+  }
+}
