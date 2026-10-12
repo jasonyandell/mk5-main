@@ -26,7 +26,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-10-12 | research-night | Research night: does Zeb find the optimal move in finite time?]
+## [2026-10-12 | cb95168e | Research night: does Zeb find the optimal move in finite time?]
 
 Seven agents (theory, Lean, counter lab, empirical, floor, an independent Fable
 session, a Fable critic). Proved: exact Walt with the field's posterior is an O1 best
