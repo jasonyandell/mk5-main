@@ -35,7 +35,7 @@ in four places, each measured:
 
 | gap | cost | repair | verdict |
 |---|---|---|---|
-| belief: uniform over the void-consistent fiber | **+0.028 ± 0.006 marks/hand** when the other three seats really are the net (2,120 paired deals, 120 flips for / 61 against, p = 1.4e-5); a total loss (0% vs 100%) in a 9-world lab instance | *sample* from the posterior by rejection; reweighting the 512 is worth +0.00 ± 0.15 | real, affordable, and only defined when the model of the other seats has support: with the deterministic net the real deal is filtered out at 586 of 674 self-play positions. The softened likelihood still ranks the real deal at the 71st percentile of the uniform sample, flat in ε and phase (critic): the signal exists in self-play; its value there is unmeasured (+0.010 ± 0.008, interval contains +0.028). |
+| belief: uniform over the void-consistent fiber | **+0.028 ± 0.006 marks/hand** when the other three seats really are the net (2,120 paired deals, 120 flips for / 61 against, p = 1.4e-5); a total loss (0% vs 100%) in a 9-world lab instance | *sample* from the posterior by rejection; reweighting the 512 is worth +0.00 ± 0.15 | real, affordable, and only defined when the model of the other seats has support: with the deterministic net the real deal is filtered out at 586 of 674 self-play positions. The softened likelihood still ranks the real deal at the 71st percentile of the uniform sample, flat in ε and phase (critic): the signal exists in self-play but is weak: at power (ε = 0.8, plays 4–15, 2,400 deals) the softened belief is **null, +0.003 ± 0.004, interval [−0.006, +0.011], the well-specified +0.028 excluded**. The binding constraint is the model of the other seats, not the sample. |
 | sampling: 512 iid worlds | flips the opening lead in 41% of hands at −0.09 ± 0.06 pmake points per decision (null); a 1-in-90 call flips with exact probability 0.234 | a certificate needs ~10⁴ worlds at the median lead; 512 certifies 0% | finite time yes; certified never at a phone budget; regret below a point |
 | floor: thin cells hand the move to the net | changes the root move at 14% of positions and 25 of 40 openings; the floorless plan is 15 pmake points more optimistic at the lead; on an exactly enumerated fiber a pure tax of 0.0009 mean, 0.105 worst | floor off when the fiber is enumerated | built, bit-identical, 92 tests; **null in marks** (−0.02 [−0.35, +0.29] at k0, −0.01 at k1) because it changes 0.9% of late tiles; a Zeb 0.2.0 decision |
 | referent: best response to the net | the net picks Zeb's tile 58% of the time, but 40% of decisions are exact ties and where the gap exceeds 5 pmake points it agrees 88% | a stochastic field; score the net by regret, not agreement | by regret the 250k net already reproduces every decided move, which is why the data lever stopped |
@@ -109,8 +109,7 @@ Three consequences:
 
 Filed as issues #108 (stochastic field), #109 (regret, not agreement), #110 (floor-off-when-exact as Zeb 0.2.0), #111 (posterior sampler in the core, then marks), #112 (rung-independent seed), #113 (O2 vs O1 on endgames).
 
-1. E1c at ε = 0.8, belief at plays 4–15, 2,400 deals (the critic's experiment; run at
-   the end of the night, result in the sources if it landed).
+1. ~~E1c at ε = 0.8, plays 4–15, 2,400 deals~~ done: null at power (above).
 2. The stochastic field with a tape.
 3. Score the net by regret; drop agreement.
 4. Zeb vs a table of nets with the posterior sampler in the core, in marks.

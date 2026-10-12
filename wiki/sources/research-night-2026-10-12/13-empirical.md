@@ -376,3 +376,56 @@ The floor changes the root move at 14% of positions and at 25 of 40 openings. Th
 - **I could not write REPORT.md myself.** The harness blocks report files from subagents, so the lead is assembling it from these messages.
 
 EMPIRICAL DONE (assembled 02:10 CDT).
+
+## E1c-2: the softened net belief in self-play, eps = 0.8, plays 4-15 only, 2,400 deals
+
+This reruns E1c on the cold critic's recommendation. The tested seat builds its belief from 8,000 uniform fiber draws, or the whole fiber when that is no larger. Each world is weighted by the product, over the other seats' discretionary plays, of eps/n + (1 − eps)·[the net picks the played tile], with eps = 0.8. The seat draws 512 systematic resamples by those weights and plans over them on the referee.
+
+The belief applies only at the seat's decisions with 4 to 15 plays so far. At every other decision the seat plays exactly as deployed Zeb on the core. The other three seats are always deployed Zeb. The comparison line puts deployed Zeb in all four seats on the same deals. Zeb is seat 0 (bidder) on even seeds and seat 1 (defender) on odd seeds. A `PHASE=lo,hi` environment flag was added to `e1c.py`; its default leaves earlier runs unchanged.
+
+```
+PHASE=4,15 python -u E/e1c.py 920000 600 0.8 8000 E/e1c2_b1.json 16   # 122.9 s
+PHASE=4,15 python -u E/e1c.py 920600 600 0.8 8000 E/e1c2_b2.json 16   # 129.3 s
+PHASE=4,15 python -u E/e1c.py 921200 600 0.8 8000 E/e1c2_b3.json 16   # 132.5 s
+PHASE=4,15 python -u E/e1c.py 921800 600 0.8 8000 E/e1c2_b4.json 16   # 131.8 s
+python -u E/lines_report.py E/e1c2_b1.json E/e1c2_b2.json E/e1c2_b3.json E/e1c2_b4.json
+```
+
+### Pooled result, 2,400 deals
+
+| Zeb's role | deals | bidder made, belief vs deployed | Zeb marks per hand | flips for / against | sign p | points per hand |
+|---|---|---|---|---|---|---|
+| bids | 1200 | 0.372 vs 0.372 | +0.001 ± 0.006 | 29 / 28 | 1.0 | +0.06 ± 0.25 |
+| defends | 1200 | 0.352 vs 0.357 | +0.005 ± 0.006 | 27 / 21 | 0.47 | +0.04 ± 0.23 |
+| both | 2400 | 0.362 vs 0.365 | **+0.003 ± 0.004** | **56 / 49** | **0.56** | +0.05 ± 0.17 |
+
+**95% interval: [−0.006, +0.011] marks per hand.**
+- Against 0, z = 0.68, consistent with zero.
+- Against +0.028, the setting-B effect, z = −5.9. The well-specified gain is excluded.
+
+### Per batch (both roles)
+
+| batch | seeds | Zeb marks per hand | flips for / against | sign p |
+|---|---|---|---|---|
+| 1 | 920000-920599 | +0.000 ± 0.009 | 13 / 13 | 1.0 |
+| 2 | 920600-921199 | +0.000 ± 0.009 | 14 / 14 | 1.0 |
+| 3 | 921200-921799 | +0.003 ± 0.009 | 15 / 13 | 0.85 |
+| 4 | 921800-922399 | +0.008 ± 0.008 | 14 / 9 | 0.41 |
+
+### Effective sample size of the 8,000-draw pool at the belief's decisions
+
+| plays | decisions | median ESS |
+|---|---|---|
+| 4-7 | 1,777 | 5,594 |
+| 8-11 | 1,723 | 4,436 |
+| 12-15 | 1,722 | 1,528 |
+
+The sample is far from collapsed, so ESS is not the limit here.
+
+### Reading
+
+The belief changed how 518 of the 2,400 hands were played, and the flips cancel: 56 for and 49 against. With the window restricted and the sample well powered, the softened net likelihood buys no measurable marks in self-play. The effect is under about +0.011 marks per hand at 95% confidence, less than half the setting-B gain.
+
+This is consistent with the critic's truth-rank result. Ranking the true deal at the 71st percentile shows a real signal about the hands, but a weak one. A belief tilted by it reorders which worlds the plan sees without moving the decisions that matter.
+
+Together with E1d, the self-play verdict stands: the consistency repair pays (+0.028) when the field really is F, and is null when the field is Zeb. The binding constraint is the model of the other seats, not the sample size.

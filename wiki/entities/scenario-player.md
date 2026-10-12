@@ -708,8 +708,9 @@ Seven agents, one question, see [[research-night-2026-10-12]]. Exact Walt does,
 against a fixed field, when its belief is that field's posterior (proved; Lean at
 `scenario/lean/`, 15 theorems, no sorry). Deployed Zeb does not, in four measured
 ways: the belief (uniform vs the posterior: **+0.028 ± 0.006 marks/hand** when the
-other seats really are the net, p = 1.4e-5; sample it, never reweight; undefined with
-a deterministic net in self-play), sampling (moves flip, value does not), the floor
+other seats really are the net, p = 1.4e-5; sample it, never reweight; null at power
+in self-play, +0.003 ± 0.004 on 2,400 deals, so the binding constraint is the model of
+the other seats), sampling (moves flip, value does not), the floor
 (a pure tax on exact fibers; floor-off-when-exact built and null in marks), and the
 referent (the net reproduces every decided move already, which is why data stopped).
 The fixed-belief ladder settles by the 24th application to a unique fixed point;

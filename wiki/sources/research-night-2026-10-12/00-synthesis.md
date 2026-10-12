@@ -23,7 +23,7 @@ response for one seat to a declared model of the other three. Every other readin
 
 | gap | what Zeb does | what it costs | the repair | verdict |
 |---|---|---|---|---|
-| belief | uniform over the void-consistent fiber | **+0.028 ± 0.006 marks/hand** when the other three seats really are the net (2,120 paired deals, 120 flips for / 61 against, p = 1.4e-5); a total loss in a lab instance (0% vs 100%) | **sample** from the field's posterior by rejection from uniform draws; reweighting the 512 is worth exactly nothing (+0.00 ± 0.15) | real and affordable. With the deterministic net the posterior is empty in self-play (the real deal survives at 88 of 674 positions). The softened likelihood still ranks the real deal at the 71st percentile of the uniform sample, flat in ε and phase (critic), so the signal exists; the self-play value is **unmeasured, not null** (+0.010 ± 0.008, interval contains +0.028). Re-run in progress. |
+| belief | uniform over the void-consistent fiber | **+0.028 ± 0.006 marks/hand** when the other three seats really are the net (2,120 paired deals, 120 flips for / 61 against, p = 1.4e-5); a total loss in a lab instance (0% vs 100%) | **sample** from the field's posterior by rejection from uniform draws; reweighting the 512 is worth exactly nothing (+0.00 ± 0.15) | real and affordable. With the deterministic net the posterior is empty in self-play (the real deal survives at 88 of 674 positions). The softened likelihood still ranks the real deal at the 71st percentile of the uniform sample, flat in ε and phase (critic), so the signal exists; the self-play value is **null at power** (E1c-2: +0.003 ± 0.004 on 2,400 deals, interval [−0.006, +0.011] excludes +0.028). |
 | sampling | 512 iid worlds | flips the opening lead in 41% of hands, costs −0.09 ± 0.06 pmake points per decision (null); a 1-in-90 call flips with exact probability 0.234 | a certificate needs ~10,000 worlds at the median lead; 512 certifies 0% | "finite time" yes; "certified" no at any phone budget; regret below a point |
 | floor | thin cells hand the move to the net | changes the root move at 14% of positions and 25 of 40 openings; the floorless plan is 15 pmake points more optimistic at the lead (the clairvoyance it bans); on an exactly enumerated fiber it is a pure tax, 0.0009 mean, 0.105 worst | floor off when the fiber is enumerated | built, correct, bit-identical, 92 tests; **null in marks** at both k0 and k1 (−0.02 and −0.01, intervals ±0.3) because it changes 0.9% of late tiles. A Zeb 0.2.0 decision for Jason. |
 | referent | best response to the net | the net picks Zeb's own tile 58% of the time, but 40% of decisions are exact ties and where the gap exceeds 5 pmake points it agrees 88% (critic) | a stochastic field, so a posterior is defined; and stop scoring the net by agreement | agreement is the wrong fidelity metric; regret is right, and by regret the 250k net already reproduces every decided move. That is why data stopped. |
@@ -150,7 +150,7 @@ In the order the math points:
 | β^F must be sampled, not reweighted | measured | empirical | +0.53 ± 0.13 vs +0.00 ± 0.15 pmake pts |
 | 0/1 posterior empty in self-play | measured | empirical, fable2 | 88 of 674 positions keep the real deal |
 | true-deal survival ≈ 0.53^m | wrong mid-hand | theory; empirical | 0.178 vs 0.062 at m = 4–5 (correlated within a deal) |
-| softened posterior in self-play | **not established** | empirical | +0.010 ± 0.008; interval contains +0.028 |
+| softened posterior in self-play | **null at power** | empirical (E1c-2, the critic's design) | +0.003 ± 0.004; [−0.006, +0.011] excludes +0.028 |
 | softened likelihood points at the truth in self-play | measured | critic | rank 0.71 ± 0.009, flat in ε and phase |
 | sampling: moves flip, value does not | measured | empirical, counter, fable2 | 41% of leads flip; −0.09 ± 0.06; exact flip 0.234 at gap 0.011 |
 | sampling certificate at the lead | not affordable | fable2, theory | ~10⁴ worlds; 0% certified at 512 |
@@ -166,10 +166,9 @@ In the order the math points:
 
 ## What to do next, ranked by what the math says and what the phone can afford
 
-1. **E1c at ε = 0.8, belief at plays 4–15 only, 2,400 deals** (running now at the
-   critic's recommendation; result appended below if it lands before 7:00). If the
-   point estimate stays near +0.010 the self-play value of the repair is a third of
-   the well-specified one and the decision is Jason's; at +0.02 the lever is back.
+1. ~~E1c at ε = 0.8, plays 4–15, 2,400 deals~~ **Done (02:48): null, +0.003 ± 0.004,
+   the well-specified +0.028 excluded.** The belief repair is settled for self-play
+   until the field changes.
 2. **The stochastic field with a tape** in `_field_move`, referee and core. The one
    change that makes the belief seam a live question again, and the prerequisite for
    anything beyond step 1.
@@ -207,6 +206,17 @@ On 2,771 late positions at k0 the rule changed the tile in 26 (0.9%), none from 
 20 on. Left on branch `worktree-agent-a72be62a882667abe` (`134b253f`, `f4078fa4`),
 not merged: it changes the core's rung tuple and the deployed bytes.
 
-## E1c-2 (the critic's experiment)
+## E1c-2 (the critic's experiment, landed 02:48)
 
-[appended if it lands before 7:00]
+Softened net belief (ε = 0.8, 8,000-draw pool, systematic resampling to 512) applied
+only at plays 4–15, Zeb in all other seats and at all other decisions, 2,400 paired
+deals in four 5-minute batches: **+0.003 ± 0.004 marks/hand, 56 flips for / 49
+against, p = 0.56; 95% interval [−0.006, +0.011]**, which excludes the well-specified
++0.028 at z = −5.9. ESS was healthy (median 5,594 / 4,436 / 1,528 by phase), so the
+sample is not the limit. The belief changed 518 of 2,400 hands and the flips cancel.
+With the critic's truth-rank result (the real deal at the 71st percentile): the
+signal about the hands is real but weak, and a belief tilted by it reorders the worlds
+the plan sees without moving the decisions that matter. **The self-play verdict is
+settled at power: the consistency repair pays when the field really is the net, and
+is null when the field is Zeb. The binding constraint is the model of the other
+seats, not the sample size.** Full table in `empirical/REPORT.md`.
