@@ -9,6 +9,9 @@
   and the floor no longer hands the move down. Late-hand answers (`play`,
   `analyze`) can change; forecasts and early-hand answers do not. Measured
   in the arena it is the same player within noise; it is simply correct.
+- Answers for a given seed change, because the scenarios no longer depend
+  on the rung of the ladder that draws them; the distribution of answers
+  does not.
 - Still bit-identical to the Python referee (`scenario/planner.py`).
 
 ## 0.1.0 — 2026-10-11

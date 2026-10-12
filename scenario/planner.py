@@ -48,7 +48,8 @@ model — `dice` (each legal tile equally likely, so forced-looking plays
 weigh more) or `field` (the rung-0 player's own choice, ε-greedy); any
 further evidence (the auction, a learned head) multiplies in through
 `Walt(belief=callable)`, which sees the whole public `Situation`. Every random draw — scenario sampling and the dice tape — comes
-from SplitMix64 streams seeded by the invocation, so a decision is a pure
+from SplitMix64 streams seeded by the invocation's coordinate (viewer, own
+hand, record; never the rung), so a decision is a pure
 function of (config, state, bid) that any implementation can reproduce
 bit for bit; `scenario/core` is the compiled one, checked against this file.
 
@@ -305,7 +306,9 @@ class Walt:
         """`sit` is given at the live rung only: modeled minds weigh their
         scenarios uniformly."""
         rung = self.config.rungs[k]
-        seed = _mix(self.config.seed, k, viewer, own, _tape_key(rec), *rec.forbid)
+        # Not the rung: every rung draws the same worlds and tapes at a
+        # coordinate, so the ladder iterates one operator (scenario/lean/).
+        seed = _mix(self.config.seed, viewer, own, _tape_key(rec), *rec.forbid)
         rng = SplitMix(seed)
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
         worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)

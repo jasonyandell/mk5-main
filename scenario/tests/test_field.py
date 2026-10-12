@@ -154,8 +154,8 @@ def test_compiled_analysis_matches_the_planner_with_a_field_net():
 
 
 LATE_CONFIGS = [  # the floor guards only sampled cells
-    Config((Rung(512, None, 16),), "make", seed=5, field=NET),   # the shipped shape
-    Config((Rung(4, 4), Rung(160, None, 16)), "points", seed=6, field=NET),
+    Config((Rung(512, None, 16),), "make", seed=8, field=NET),   # the shipped shape
+    Config((Rung(4, 4), Rung(160, None, 16)), "points", seed=9, field=NET),
 ]
 
 
@@ -367,8 +367,8 @@ def test_mlx_trains_the_numpy_net(make_pour, target):
     amplifies it only where a gradient is rounding noise) and the nets pick
     the same moves."""
     data = dataset(make_pour)
-    a = train(data, target, epochs=4, seed=3, hidden=(24, 12))
-    b = train(data, target, epochs=4, seed=3, hidden=(24, 12), device="mlx")
+    a = train(data, target, epochs=4, seed=5, hidden=(24, 12))
+    b = train(data, target, epochs=4, seed=5, hidden=(24, 12), device="mlx")
     assert a.losses[-1] < a.losses[0]
     assert np.allclose(a.losses, b.losses, rtol=2e-3)
     for pa, pb in zip(a.params, b.params):

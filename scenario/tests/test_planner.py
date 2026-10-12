@@ -340,3 +340,22 @@ def test_spec_sets_the_live_floor():
     assert parse_walt_spec("k1,n8,f=1,py").walt.config.rungs[-1].floor == 1
     with pytest.raises(ValueError):
         parse_walt_spec("k0,n8,f=2")
+
+
+def test_every_rung_draws_the_same_worlds_and_tapes_at_a_coordinate():
+    """The ladder iterates ONE operator (scenario/lean/, rung_seeded_no_settle):
+    the seed is the coordinate (viewer, own hand, record), never the rung, so
+    two rungs at the same coordinate plan over the same worlds with the same
+    dice tapes. A smaller rung's sample is the larger's prefix."""
+    same = Walt(Config((Rung(8, 4), Rung(8, None)), "make", seed=7))
+    wide = Walt(Config((Rung(4, 4), Rung(12, None)), "make", seed=7))
+    states = _mid_hand_states(6, seed=29, min_plays=4)
+    assert states
+    for state in states:
+        rec = record_from_state(state)
+        own = remaining_hand(state, rec.seat)
+        rules = rules_for(state.decl_id)
+        lo, hi = (same._invocation(k, rec.seat, own, rec, rules, 30, state.bidder % 2) for k in (0, 1))
+        assert (lo.worlds, lo.tapes) == (hi.worlds, hi.tapes) and len(lo.worlds) == 8
+        lo, hi = (wide._invocation(k, rec.seat, own, rec, rules, 30, state.bidder % 2) for k in (0, 1))
+        assert (lo.worlds, lo.tapes) == (hi.worlds[:4], hi.tapes[:4])

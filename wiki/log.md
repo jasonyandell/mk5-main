@@ -26,6 +26,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | scenario/core | the sample seed no longer mixes the rung: the sampled ladder iterates one operator, as the Lean theorem assumes (#112)]
+
+[[scenario-player]] § The seed no longer mixes the rung. Bytes moved, not distribution. Witness: [[research-night-2026-10-12-sources]] (11-lean).
+
 ## [2026-10-12 | scenario/core | the floor guards only a sample: an enumerated fiber is never floored, the only behavior in both engines; Zeb 0.2.0 (#110)]
 
 [[scenario-player]] § The floor guards only a sample. Null in marks; correctness. Report: [[research-night-2026-10-12-sources]] (14-floor).

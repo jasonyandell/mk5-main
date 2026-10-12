@@ -373,3 +373,7 @@ iterates alternate forever. Consequences:
 - Deployed Zeb is k0 over the net: one application of R_0 to the field. The ladder
   question is moot for it. What it inherits is locality (proved above, floor included)
   and the regret bound of L3.
+
+**Closed 2026-10-12 (#112):** both engines now seed an invocation by its coordinate alone
+(`_mix(config.seed, viewer, own, tape_key(rec), *forbid)`), so every rung with the same
+Rung config is the same operator and L1/L2 describe the sampled ladder.

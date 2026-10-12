@@ -350,10 +350,11 @@ struct Ctx<'a> {
     nodes: u64,
 }
 
-fn invocation_seed(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec) -> u64 {
+/// The seed of an invocation's worlds and tapes: its coordinate, never its
+/// rung, so every rung samples alike and the ladder iterates one operator.
+fn invocation_seed(cfg: &Config, viewer: u8, own: u32, rec: &Rec) -> u64 {
     mix(&[
         cfg.seed,
-        k as u64,
         viewer as u64,
         own as u64,
         rec.pack(),
@@ -374,7 +375,7 @@ fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64
 /// The live rung's scenarios at a root — what `decide` plans over.
 pub fn root_worlds(cfg: &Config, viewer: u8, own: u32, rec: &Rec) -> Vec<[u32; 4]> {
     let k = cfg.level();
-    worlds_for(cfg, k, viewer, own, rec, invocation_seed(cfg, k, viewer, own, rec)).0
+    worlds_for(cfg, k, viewer, own, rec, invocation_seed(cfg, viewer, own, rec)).0
 }
 
 /// e^g for each scenario: the likelihood of the hidden seats' observed
@@ -441,7 +442,7 @@ impl Inv {
     /// live rung only: modeled minds weigh their scenarios uniformly.
     fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec, live: Option<Live>) -> Inv {
         let cfg = ctx.cfg;
-        let seed = invocation_seed(cfg, k, viewer, own, rec);
+        let seed = invocation_seed(cfg, viewer, own, rec);
         let (worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
         let weights = match live {
             Some((plays, external)) => {

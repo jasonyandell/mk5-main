@@ -209,3 +209,16 @@ def test_compiled_matches_the_planner_under_a_cell_floor():
         assert ref.nodes == fast.nodes
         _same((a.tile, a.q), fast.decide(state, 31))
         assert ref.nodes == fast.nodes
+
+
+def test_compiled_matches_the_planner_on_the_champion_ladder():
+    """The champion's shape (`k1,n512,m8`, floor 16) at a cheaper n: the
+    rung-0 minds and the live rung share each coordinate's worlds, in both
+    implementations alike."""
+    ref = parse_walt_spec("k1,n48,m8,py").walt
+    fast = parse_walt_spec("k1,n48,m8").walt
+    assert ref.config == fast.config and ref.config.level == 1
+    for state in _states(5, seed=91, min_plays=4):
+        a = ref.analyze(state, 30)
+        _same_analysis(a, fast.analyze(state, 30))
+        assert ref.nodes == fast.nodes

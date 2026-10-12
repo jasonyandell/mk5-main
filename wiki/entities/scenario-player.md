@@ -746,6 +746,14 @@ changed, and the arena is null (−0.02 [−0.35, +0.29] marks/game at k0,
 strength. `@jasonyandell/zeb` 0.2.0 carries it; its parity fixture gains a position
 where the rule moves q (35 positions).
 
+**The seed no longer mixes the rung (2026-10-12, #112).** A rung's worlds and dice
+tapes are seeded by its coordinate (viewer, own hand, record) and never by k, in
+both engines, bit-identical: every rung at a coordinate plans over the same sample
+(a smaller rung's is the larger's prefix), so the sampled ladder is the iteration of
+one operator and the stabilization theorem in `scenario/lean/` describes the code
+(the rung-mixed seed was its `rung_seeded_no_settle` witness). Bytes moved, the
+distribution did not; Zeb 0.2.0's parity fixture is regenerated.
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name
