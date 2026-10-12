@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — the brief (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Research night, 2026-10-12: does Zeb find the optimal move in finite time?
 
 Jason (the author, asleep; family heritage game, Dijkstra lineage, "beautiful and

@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — theory agent (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Does Zeb find the optimal move in finite time? (theory role)
 
 Research night 2026-10-12. Author: theory role (Opus 5.5). Pure mathematics.

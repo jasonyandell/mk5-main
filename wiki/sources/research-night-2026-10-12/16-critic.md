@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — Fable critic (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Cold critic: does Zeb find the optimal move in finite time?
 
 Research night 2026-10-12, critic role (a separate Fable 5.1 session). Written 02:20 to

@@ -771,6 +771,17 @@ rank 0.74 at plays 1–3, 0.84 at 12–15; ε = 0 reproduces the 586 exclusions)
 Reweighting 512 uniform draws leaves about ten worlds mid-hand, so #111 must sample from
 β^F, not reweight. `scratch/stochastic-field/measure.py` (12 s) and `measure.json`.
 
+**O2 beats O1 on real endgames (2026-10-12, #113).** On 566 three-trick endgames
+from 142 deals (V's hand common knowledge, P's private, opponents the deployed net,
+margin utility), the common-information coordinator O2 beats the Walt partnership map's
+fixed point by +0.027 [+0.022, +0.033] margin per endgame (49% of endgames), and plain
+best-response dynamics by +0.115. Of the Walt gaps diagnosed, 78 of 171 close only when
+*both* partners change moves they actually make: a convention, the first measured here
+(reverse of mini-42, where every gap stood on an unreached set). Cycles of the Walt map
+(149 of 508) are all period 2, off path, value constant. Small in points; decisive about
+the referent: the partnership operator is where the next mathematics is.
+[[endgames-o2-vs-o1-2026-10-12]].
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

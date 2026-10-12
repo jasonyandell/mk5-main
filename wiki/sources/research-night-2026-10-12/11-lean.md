@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — Lean agent (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # LEAN report (research night 2026-10-12)
 
 Assembled by the orchestrator from the Lean role's messages (the subagent report-file

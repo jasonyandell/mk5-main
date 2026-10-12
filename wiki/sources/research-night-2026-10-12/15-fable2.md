@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — Fable session 2 (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # FABLE2 — Zeb as a mathematical object: what it is, what it is not, what it would take
 
 *Research night 2026-10-12. Independent attempt from the brief and the two notes.

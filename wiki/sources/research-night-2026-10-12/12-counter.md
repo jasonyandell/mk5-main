@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — counterexample lab (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Counter: the counterexample lab
 
 *Research night 2026-10-12, COUNTER role. Every number is exact unless marked. Each item is one command from `scratch/research-night/counter/` (all in `run_all.sh`), each under 5 minutes wall; outputs in `out/`. Assembled by the orchestrator from the role's numbered messages (the subagent report-file guard refused its own writes).*

@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-10-10, 184 archived entries)
+## Digest (2026-04-09 → 2026-10-11, 194 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -22,9 +22,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Blueprint/continuation ideation** (2026-07-12, 4 archived entries) — [[convention-aware-blueprint-search]] preserved unselected (book-seeded initialization, framing rebalance) and [[belief-weighted-jud-mcts]] synthesized; all IDEATED, none promoted to builds.
 - **Continuation frontier + otis** (2026-07-13 → 07-14, 6 entries) — the wiki reorg (schema v2, routing trails, status truth), champion folded into [[jud]], the continuation-frontier research night (Stage 0 closes, Lane A validates, Lane B graded both rounds), and the [[count-fate-ledger]] formulated as the consumption object.
 - **Walt, the scenario player, rebuilt** (2026-10-09 → 10-10, 6 archived entries) — [[scenario-player]] rebuilt from the mathematics, the compiled core, Walt beats E[Q] at play (+0.74), belief night 1 nulls, the atlas (splat + mold), the forecast's 20-point lie and the cell floor named. Hub: [[scenario-player]].
+- **Zeb: the floor, the pour, the field net** (2026-10-10 → 10-11, 10 archived entries) — the cell floor and its dividend, the pour published ([[scenario-player]]), the field net at rung −1 and its two targets, the 50,000- and 250,000-deal pours, the live bidder graded against Plunge's bid book.
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-12 | scratch/endgames-o2 | O2 beats the O1 fixed point on real three-trick endgames: +0.027 [+0.022, +0.033] margin vs the Walt partnership map, half of it a convention on reached sets (#113)]
+
+[[endgames-o2-vs-o1-2026-10-12]]; report [[endgames-o2-vs-o1-2026-10-12-report]]. The first nonzero O2 − O1 number; the partnership operator is the next referent.
 
 ## [2026-10-12 | scenario/core | a stochastic field F_σ (field_eps, arena E=), default off, and the exact field likelihood: real deal at the 71st percentile, median ESS 8–16 of 512 mid-hand (#108)]
 
@@ -68,53 +73,3 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-11 | scenario-player | a live bidder graded against Plunge's frozen bid book: 4,680 panels, |Δpmake| 0.052 vs the book's own sd 0.066, calibrated through the middle, 3–5 pp bold at the top; seven declarations in 0.2–1.0 s]
 
 [[scenario-player]] § A live bidder, graded against Plunge's book. Scripts in `scratch/bid/`. Not a deployment.
-
-## [2026-10-11 | 7c31bbf9 | Zeb: the 250,000-deal pour (4.34M positions, four overnight chunks poured by the small net) — imitation improves (regret 0.38 → 0.26), the arena does not (+0.11 / +0.13 vs the champion); the data lever stops at parity]
-
-[[scenario-player]] § The 250,000-deal pour; `field_train` takes several pours; dataset jasonyandell/texas-42-zeb-pour-200k (CC0). Champion unchanged.
-
-## [2026-10-10 | 99e8ec32 | Zeb: the 50,000-deal pour (864,604 positions) and the field net at parity — +0.11 [−0.20, +0.40] / +0.06 [−0.25, +0.38] vs the champion; the name reclaimed]
-
-[[scenario-player]] § The 50,000-deal run — and the name; [[zeb]] name note; dataset jasonyandell/texas-42-zeb-pour (CC0).
-
-## [2026-10-10 | f533cb7a | the field net's two targets: faithful pmake BCE −0.46 [−0.76, −0.15], margin −0.01 [−0.31, +0.30]; bid one-hot (field-v2); MLX path]
-
-[[scenario-player]] "The net in the field" § Two targets; `scenario/field_train.py` `--target`, `--device mlx`.
-
-## [2026-10-10 | 882b36fe | the net in the field, graded on the make re-pour: −0.16 [−0.48, +0.14] vs the champion at a quarter of the cost — a cheaper equal; the τ-units bug]
-
-[[scenario-player]] "The net in the field" § The make run; `scenario/field_train.py` target read off the margin splat (#107).
-
-## [2026-10-10 | scenario-player | the net in the field: rung −1 as a learned integer policy (design + smoke)]
-
-[[scenario-player]] "The net in the field": `scenario/field.py`, `field.rs`, `field_train.py`, arena `F=`; referee ↔ core bit-identical. Smoke only; the real run waits for the #107 `make` re-pour.
-
-## [2026-10-10 | 867b2ed6 | leaves keep the margin under every utility (#107): the utility shapes the plan, the splat keeps the margin]
-
-`scenario/planner.py` `_trace`, `scenario/core/src/planner.rs` `trace` (bit-identical), `atlas.in_plan_units`; see [[scenario-player]] § Leaves keep the margin. Re-pour under `make` in flight.
-
-## [2026-10-10 | 567a8b9a | the pour published: jasonyandell/texas-42-walt-pour on Hugging Face, CC0, 5,000-deal train + 200-deal validation]
-
-`scenario/hf.py` (positions / splats / deals Parquet + raw npz + card); see [[scenario-player]] § Published.
-
-## [2026-10-10 | 3ecf46db | the pour: Walt self-play in waves, every legal move's whole splat kept — the advantage dataset]
-
-`scenario/atlas.py`: `play_waves`, `pour`, save/load, `advantages`,
-`paired_advantages`, `success_set`, `holding_predictors`, `calibration`; CLI.
-117 tests. Feeds advantage-weighted policy training (GRPO-shaped, group =
-legal moves) and #94-style pattern mining. See [[scenario-player]].
-
-## [2026-10-10 | scenario-player | the floor's dividend: `k1,n512,m8,f=16` beats the old champion +0.56 [+0.26, +0.86], 384 mirrored games; honest plan is the arena default]
-
-Compute saved by not searching a clairvoyant tail, spent on root worlds
-(160 → 512), buys +0.56 marks/game at power (made 38.2% vs 33.1%). Floor 16
-alone was a null (+0.13). `walt:k1,…` now defaults to `f=16`. See
-[[scenario-player]].
-
-## [2026-10-10 | 1406fdae | the cell floor lands: calibrated forecast (+10.4/35% vs real +11.5/34%), play a null leaning positive (+0.13 [−0.20, +0.45]) at under half the nodes]
-
-`Rung(n, horizon, floor=m)`, arena `f=<m>`; below the root a cell thinner
-than m hands the viewer's move to the rung below (resampling inside the
-plan). Floor 8+ ≡ all interior decisions handed down. Floor 1 unchanged to
-the bit; 104 tests. What-must-be-true receipt on the trick-5 hinge (per-world
-paired outcomes → "6-1 makes iff partner holds the 6-6"). See [[scenario-player]].

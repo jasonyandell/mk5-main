@@ -15,10 +15,10 @@ catalog file below; the linter (`scripts/wiki_lint.py`) enforces coverage.
 
 - [[index-entities|Entities]] (37) — projects, systems, models, artifacts
 - [[index-topics|Topics]] (92) — concepts, methods, findings
-- [[index-experiments|Experiments]] (164) — runs and receipts, grouped by workstream
+- [[index-experiments|Experiments]] (165) — runs and receipts, grouped by workstream
 - [[index-decisions|Decisions]] (26) — design choices
 - [[index-trails-playbooks|Trails & Playbooks]] (15+7) — walkthroughs and procedures
-- [[index-sources|Sources]] (172) — commit digests and document snapshots
+- [[index-sources|Sources]] (173) — commit digests and document snapshots
 
 ## Open questions
 

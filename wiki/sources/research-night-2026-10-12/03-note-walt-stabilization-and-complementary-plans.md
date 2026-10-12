@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — Jason's note: stabilization and complementary plans (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Walt: Stabilization Rates and Complementary Plans
 
 **Research note — October 12, 2026**

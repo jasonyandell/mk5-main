@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — Jason's note: optimality gap and repairs (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Walt: Finite Stabilization, the Optimality Gap, and Repairs
 
 *Discussion from October 10, 2026.*

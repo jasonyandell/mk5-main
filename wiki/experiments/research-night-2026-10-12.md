@@ -115,7 +115,7 @@ Filed as issues #108 (stochastic field), #109 (regret, not agreement), #110 (flo
 4. Zeb vs a table of nets with the posterior sampler in the core, in marks.
 5. Floor-off-when-exact as a Zeb 0.2.0 correctness change.
 6. A rung-independent seed for the ladder.
-7. O2 vs O1 on three-trick endgames.
+7. ~~O2 vs O1 on three-trick endgames~~ done: +0.027 margin per endgame vs the Walt map, half a convention on reached sets ([[endgames-o2-vs-o1-2026-10-12]]).
 8. Draw the plan tree.
 
 ## Links

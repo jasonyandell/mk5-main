@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — empirical agent (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # Empirical report: C1 and C2 measured on real 42 positions (research night 2026-10-12)
 
 Assembled by the orchestrator from the empirical role's messages (the subagent

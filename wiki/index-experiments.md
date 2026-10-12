@@ -193,3 +193,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/full-teacher-eq-experiment|full-teacher-eq-experiment]] — the era-4 closeout: can mixing oracle-guided (full-teacher) games into Zeb's self-play break the bootstrapping compounding-error problem? (complete)
 - [[experiments/zeb-calibration-eval|zeb-calibration-eval]] — Zeb advertised 72% top-1 → actual 39% hidden-only; calibration gap caused parking decision (complete)
 - [[research-night-2026-10-12]] — does Zeb find the optimal move in finite time? Proved for exact Walt with the field's posterior; four measured gaps in deployed Zeb; Zeb is a one-step rollout of its net (2026-10-12)
+- [[endgames-o2-vs-o1-2026-10-12]] — O2 vs O1 on real three-trick endgames: the coordinator beats the Walt partnership map by +0.027 margin, half of it a convention on reached sets; the first one measured (2026-10-12)
+- [[splat-visualizer]] — the splat visualizer: per-move outcome distributions world by world, what-must-be-true, conditioning on holdings; vanilla SVG, published as an artifact (2026-10-12)

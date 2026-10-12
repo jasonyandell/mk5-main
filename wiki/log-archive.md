@@ -3856,3 +3856,53 @@ processes); killed the two six-hour blocks. See [[scenario-player]].
 **Updated:** [[the-wall-biography]] — the 2026-10-09 chapter: the project's only truth source was a perfect-information value, so every oracle-derived student had a flat gradient toward exactly what E[Q] lacks; the two wins (realized-outcome bidder, exact info-set walt) were the two non-oracle labels. The dream arrived elsewhere: Plunge, played by the family daily.
 **Pending:** paired blocks `walt` vs `lens:ev` (k0 n40 ×32, k1 ×16) running at this entry.
 **Doctrine:** this wiki is a finished book; live frontiers (texas-42, plunge) keep a notebook and frozen dated papers, never a frontier wiki.
+
+## [2026-10-11 | 7c31bbf9 | Zeb: the 250,000-deal pour (4.34M positions, four overnight chunks poured by the small net) — imitation improves (regret 0.38 → 0.26), the arena does not (+0.11 / +0.13 vs the champion); the data lever stops at parity]
+
+[[scenario-player]] § The 250,000-deal pour; `field_train` takes several pours; dataset jasonyandell/texas-42-zeb-pour-200k (CC0). Champion unchanged.
+
+## [2026-10-10 | 99e8ec32 | Zeb: the 50,000-deal pour (864,604 positions) and the field net at parity — +0.11 [−0.20, +0.40] / +0.06 [−0.25, +0.38] vs the champion; the name reclaimed]
+
+[[scenario-player]] § The 50,000-deal run — and the name; [[zeb]] name note; dataset jasonyandell/texas-42-zeb-pour (CC0).
+
+## [2026-10-10 | f533cb7a | the field net's two targets: faithful pmake BCE −0.46 [−0.76, −0.15], margin −0.01 [−0.31, +0.30]; bid one-hot (field-v2); MLX path]
+
+[[scenario-player]] "The net in the field" § Two targets; `scenario/field_train.py` `--target`, `--device mlx`.
+
+## [2026-10-10 | 882b36fe | the net in the field, graded on the make re-pour: −0.16 [−0.48, +0.14] vs the champion at a quarter of the cost — a cheaper equal; the τ-units bug]
+
+[[scenario-player]] "The net in the field" § The make run; `scenario/field_train.py` target read off the margin splat (#107).
+
+## [2026-10-10 | scenario-player | the net in the field: rung −1 as a learned integer policy (design + smoke)]
+
+[[scenario-player]] "The net in the field": `scenario/field.py`, `field.rs`, `field_train.py`, arena `F=`; referee ↔ core bit-identical. Smoke only; the real run waits for the #107 `make` re-pour.
+
+## [2026-10-10 | 867b2ed6 | leaves keep the margin under every utility (#107): the utility shapes the plan, the splat keeps the margin]
+
+`scenario/planner.py` `_trace`, `scenario/core/src/planner.rs` `trace` (bit-identical), `atlas.in_plan_units`; see [[scenario-player]] § Leaves keep the margin. Re-pour under `make` in flight.
+
+## [2026-10-10 | 567a8b9a | the pour published: jasonyandell/texas-42-walt-pour on Hugging Face, CC0, 5,000-deal train + 200-deal validation]
+
+`scenario/hf.py` (positions / splats / deals Parquet + raw npz + card); see [[scenario-player]] § Published.
+
+## [2026-10-10 | 3ecf46db | the pour: Walt self-play in waves, every legal move's whole splat kept — the advantage dataset]
+
+`scenario/atlas.py`: `play_waves`, `pour`, save/load, `advantages`,
+`paired_advantages`, `success_set`, `holding_predictors`, `calibration`; CLI.
+117 tests. Feeds advantage-weighted policy training (GRPO-shaped, group =
+legal moves) and #94-style pattern mining. See [[scenario-player]].
+
+## [2026-10-10 | scenario-player | the floor's dividend: `k1,n512,m8,f=16` beats the old champion +0.56 [+0.26, +0.86], 384 mirrored games; honest plan is the arena default]
+
+Compute saved by not searching a clairvoyant tail, spent on root worlds
+(160 → 512), buys +0.56 marks/game at power (made 38.2% vs 33.1%). Floor 16
+alone was a null (+0.13). `walt:k1,…` now defaults to `f=16`. See
+[[scenario-player]].
+
+## [2026-10-10 | 1406fdae | the cell floor lands: calibrated forecast (+10.4/35% vs real +11.5/34%), play a null leaning positive (+0.13 [−0.20, +0.45]) at under half the nodes]
+
+`Rung(n, horizon, floor=m)`, arena `f=<m>`; below the root a cell thinner
+than m hands the viewer's move to the rung below (resampling inside the
+plan). Floor 8+ ≡ all interior decisions handed down. Floor 1 unchanged to
+the bit; 104 tests. What-must-be-true receipt on the trick-5 hinge (per-world
+paired outcomes → "6-1 makes iff partner holds the 6-6"). See [[scenario-player]].

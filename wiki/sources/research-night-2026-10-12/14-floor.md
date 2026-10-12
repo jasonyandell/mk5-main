@@ -1,3 +1,11 @@
+---
+title: Research night 2026-10-12 — floor agent (verbatim)
+kind: source
+first_seen: 2026-10-12
+last_updated: 2026-10-12
+status: complete
+---
+
 # FLOOR role — "the floor applies only when the worlds were sampled" (2026-10-12)
 
 Branch `worktree-agent-a72be62a882667abe`, commits `134b253f` (the rule + tests) and `f4078fa4` (docstrings: where it reaches).
