@@ -29,10 +29,14 @@ clairvoyant tail: same marks within noise, twice the nodes, a forecast that
 runs twenty points hot.
 
 `x` makes the floor guard only a sample (`Rung.sampled_floor`): when the live
-seat's fiber is small enough to be enumerated outright (two or three tricks
-left at n=512), its cells are the exact posterior, a thin one means the record
-really narrows the worlds that far, and the seat maximizes over it instead of
-handing the move down. Off by default (the floor applies everywhere).
+seat's fiber is small enough to be enumerated outright (at n=512 from the
+third play of trick 6, sooner with voids), its cells are the exact posterior,
+a thin one means the record really narrows the worlds that far, and the seat
+maximizes over it instead of handing the move down. Off by default (the floor
+applies everywhere). Its reach is small: with two tricks left the seat's only
+interior decision is its forced last tile, so the rule acts only where three or
+more tricks are left and the fiber already fits — it changed 26 of 2,771 late
+decisions at k0,n512 with the shipped net (2026-10-12).
 
 Beliefs (`b=`, joined with `+`, each a likelihood factor on every scenario):
   dice     the hidden seats' discretionary plays under random legal play

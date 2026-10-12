@@ -23,7 +23,7 @@ holding its own remaining hand at that record would — the move it would
 find by sampling afresh, as a modeled seat does — one move for the whole
 cell, so V(C) = V(C_m). The root decision is never floored: the root cell is
 the whole sample. With `sampled_floor` the floor guards only a sample: when
-the fiber was small enough to be enumerated (two or three tricks left), every
+the fiber was small enough to be enumerated (late in the hand), every
 cell is the exact posterior under the model, a thin cell means the record
 really does narrow the worlds that far, and the max over it is a best
 response rather than clairvoyance — so an enumerated invocation is never
