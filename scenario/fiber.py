@@ -126,15 +126,18 @@ def enumerate_fiber(pool: int, sizes: tuple[int, int, int],
 
 def sample_worlds(viewer: int, own: int, played: int, sizes4: tuple[int, int, int, int],
                   forbid4: tuple[int, int, int, int], n: int,
-                  rng: Uniform) -> list[tuple[int, int, int, int]]:
+                  rng: Uniform) -> tuple[list[tuple[int, int, int, int]], bool]:
     """Scenarios from the viewer's fiber, as 4-tuples of remaining-hand masks
     in absolute seat order (the viewer's own hand in its slot): the whole
-    fiber when it has at most `n` members, else `n` uniform draws."""
+    fiber when it has at most `n` members, else `n` uniform draws. The flag
+    says which: True when the scenarios ARE the fiber (the exact belief),
+    False when they are a sample of it."""
     others = [s for s in range(4) if s != viewer]
     pool = ALL_TILES & ~played & ~own
     sizes = (sizes4[others[0]], sizes4[others[1]], sizes4[others[2]])
     forbid = (forbid4[others[0]], forbid4[others[1]], forbid4[others[2]])
-    if fiber_size(pool, sizes, forbid) <= n:
+    exact = fiber_size(pool, sizes, forbid) <= n
+    if exact:
         drawn = enumerate_fiber(pool, sizes, forbid)
     else:
         drawn = [sample_fiber(pool, sizes, forbid, rng) for _ in range(n)]
@@ -145,4 +148,4 @@ def sample_worlds(viewer: int, own: int, played: int, sizes4: tuple[int, int, in
         for s, m in zip(others, hidden):
             hands[s] = m
         worlds.append((hands[0], hands[1], hands[2], hands[3]))
-    return worlds
+    return worlds, exact

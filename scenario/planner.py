@@ -22,7 +22,12 @@ guard. Below the root, when the deciding player's cell holds fewer than
 holding its own remaining hand at that record would — the move it would
 find by sampling afresh, as a modeled seat does — one move for the whole
 cell, so V(C) = V(C_m). The root decision is never floored: the root cell is
-the whole sample.
+the whole sample. With `sampled_floor` the floor guards only a sample: when
+the fiber was small enough to be enumerated (two or three tricks left), every
+cell is the exact posterior under the model, a thin cell means the record
+really does narrow the worlds that far, and the max over it is a best
+response rather than clairvoyance — so an enumerated invocation is never
+floored.
 
 The ladder: rung k's modeled seats are rung k-1 players; rung -1 is random
 legal play, drawn from a tape keyed on the public record so that one
@@ -80,6 +85,7 @@ class Rung:
     n_worlds: int           # scenarios this rung samples at an invocation
     horizon: int | None     # plays searched explicitly from the invocation root; None = to the end
     floor: int = 1          # below the root, a cell this thin hands the decider's move down a rung
+    sampled_floor: bool = False   # the floor guards only sampled cells: an enumerated fiber is never floored
 
     def __post_init__(self) -> None:
         if self.floor < 1:
@@ -304,14 +310,15 @@ class Walt:
         seed = _mix(self.config.seed, k, viewer, own, _tape_key(rec), *rec.forbid)
         rng = SplitMix(seed)
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
-        worlds = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
+        worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
         weights = [1.0] * len(worlds)
         if sit is not None:
             weights = self.tilt_weights(sit, worlds, rules)
             if self.belief is not None:
                 weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
-        return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes)
+        floor = 1 if exact and rung.sampled_floor else rung.floor
+        return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor)
 
     def _modeled_move(self, k: int, seat: int, own: int, rec: Record, rules: Rules,
                       bid: int, bidder_team: int) -> int:
@@ -346,7 +353,7 @@ class _Invocation:
 
     def __init__(self, walt: Walt, k: int, viewer: int, root: Record, rules: Rules,
                  bid: int, bidder_team: int, worlds: list[World],
-                 weights: list[float], tapes: list[int]):
+                 weights: list[float], tapes: list[int], floor: int):
         self.walt = walt
         self.k = k
         self.viewer = viewer
@@ -360,7 +367,7 @@ class _Invocation:
         self.tapes = tapes
         self.make = walt.config.utility == "make"
         self.horizon = walt.config.rungs[k].horizon
-        self.floor = walt.config.rungs[k].floor
+        self.floor = floor
         self.root_plays = root.plays_so_far()
         self.memo: dict[tuple, float] = {}
 

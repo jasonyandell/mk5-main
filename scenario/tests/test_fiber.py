@@ -76,7 +76,7 @@ def test_worlds_from_real_states_contain_the_truth():
         viewer = rec.seat
         own = remaining_hand(state, viewer)
         sizes = tuple(rec.hand_size(s) for s in range(4))
-        worlds = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, 5, rng)
+        worlds, _ = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, 5, rng)
         truth = tuple(remaining_hand(state, s) for s in range(4))
         for w in worlds:
             assert w[viewer] == own
@@ -105,8 +105,13 @@ def test_enumeration_is_the_whole_fiber_and_replaces_sampling_when_it_fits():
             viewer = rec.seat
             own = remaining_hand(state, viewer)
             sizes = tuple(rec.hand_size(s) for s in range(4))
-            worlds = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, 160, SplitMix(1))
-            assert 1 <= len(worlds) <= 90 and len(set(worlds)) == len(worlds)
+            worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, 160, SplitMix(1))
+            assert exact and 1 <= len(worlds) <= 90 and len(set(worlds)) == len(worlds)
+            # Asking for fewer than the fiber holds samples instead, and says so.
+            if len(worlds) > 1:
+                _, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid,
+                                         len(worlds) - 1, SplitMix(1))
+                assert not exact
             truth = tuple(remaining_hand(state, s) for s in range(4))
             assert truth in worlds
             break

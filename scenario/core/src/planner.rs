@@ -12,7 +12,9 @@
 //! which then also takes rung 0's floored moves. The belief weights the live
 //! player's scenarios; modeled minds weight theirs uniformly. Below the root,
 //! a deciding cell thinner than its rung's floor does not maximize: the
-//! decider plays the rung k−1 move for its own remaining hand.
+//! decider plays the rung k−1 move for its own remaining hand. With a rung's
+//! `sampled_floor` the floor guards only a sample: an invocation whose fiber
+//! was enumerated outright holds the exact posterior, and is never floored.
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
@@ -318,8 +320,8 @@ pub enum TiltPlays {
 
 /// A particular Walt (`scenario.planner.Config`): the decision is a pure function of this and the position.
 pub struct Config {
-    /// (n_worlds, horizon, floor) per rung; the live player is the last.
-    pub rungs: Vec<(usize, Option<usize>, usize)>,
+    /// (n_worlds, horizon, floor, sampled_floor) per rung; the live player is the last.
+    pub rungs: Vec<(usize, Option<usize>, usize, bool)>,
     /// The utility: the bidding side makes its contract (true) or the signed point margin.
     pub make: bool,
     /// Seeds every random stream of every invocation.
@@ -362,7 +364,8 @@ fn invocation_seed(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec) -> u
     ])
 }
 
-fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64) -> Vec<[u32; 4]> {
+/// The rung's scenarios, and whether they are the whole fiber.
+fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64) -> (Vec<[u32; 4]>, bool) {
     let mut rng = SplitMix::new(seed);
     let sizes = [rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3)];
     sample_worlds(viewer, own, rec.played, sizes, rec.forbid, cfg.rungs[k].0, &mut rng)
@@ -371,7 +374,7 @@ fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64
 /// The live rung's scenarios at a root — what `decide` plans over.
 pub fn root_worlds(cfg: &Config, viewer: u8, own: u32, rec: &Rec) -> Vec<[u32; 4]> {
     let k = cfg.level();
-    worlds_for(cfg, k, viewer, own, rec, invocation_seed(cfg, k, viewer, own, rec))
+    worlds_for(cfg, k, viewer, own, rec, invocation_seed(cfg, k, viewer, own, rec)).0
 }
 
 /// e^g for each scenario: the likelihood of the hidden seats' observed
@@ -439,7 +442,7 @@ impl Inv {
     fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec, live: Option<Live>) -> Inv {
         let cfg = ctx.cfg;
         let seed = invocation_seed(cfg, k, viewer, own, rec);
-        let worlds = worlds_for(cfg, k, viewer, own, rec, seed);
+        let (worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
         let weights = match live {
             Some((plays, external)) => {
                 let mut w = tilt_weights(ctx, viewer, &worlds, plays);
@@ -460,7 +463,7 @@ impl Inv {
             root: *rec,
             maximize: (viewer as usize) % 2 == ctx.bt,
             horizon: cfg.rungs[k].1,
-            floor: cfg.rungs[k].2,
+            floor: if exact && cfg.rungs[k].3 { 1 } else { cfg.rungs[k].2 },
             root_plays: rec.plays(),
             worlds,
             weights,

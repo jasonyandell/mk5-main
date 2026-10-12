@@ -166,7 +166,9 @@ pub fn completions(viewer: u8, own: u32, played: u32, sizes4: [u8; 4], forbid4: 
 }
 
 /// `n` scenarios from the viewer's fiber, as remaining-hand masks in absolute
-/// seat order (the viewer's own hand in its slot).
+/// seat order (the viewer's own hand in its slot): the whole fiber when it has
+/// at most `n` members, else `n` uniform draws. The flag says which: true
+/// when the scenarios ARE the fiber (the exact belief), false for a sample.
 pub fn sample_worlds(
     viewer: u8,
     own: u32,
@@ -175,7 +177,7 @@ pub fn sample_worlds(
     forbid4: [u32; 4],
     n: usize,
     rng: &mut SplitMix,
-) -> Vec<[u32; 4]> {
+) -> (Vec<[u32; 4]>, bool) {
     let Hidden { others, tiles, sizes, forbid } = Hidden::new(viewer, own, played, sizes4, forbid4);
     assert_eq!(
         sizes.iter().map(|&s| s as usize).sum::<usize>(),
@@ -183,12 +185,13 @@ pub fn sample_worlds(
         "pool size must equal the hidden hand sizes"
     );
     let mut fiber = Fiber::new(&tiles, sizes, forbid);
-    let drawn: Vec<[u32; 3]> = if fiber.ways(0, sizes) as usize <= n {
+    let exact = fiber.ways(0, sizes) as usize <= n;
+    let drawn: Vec<[u32; 3]> = if exact {
         fiber.enumerate(sizes)
     } else {
         (0..n).map(|_| fiber.sample(sizes, rng)).collect()
     };
-    drawn
+    let worlds = drawn
         .into_iter()
         .map(|hidden| {
             let mut hands = [0u32; 4];
@@ -198,5 +201,6 @@ pub fn sample_worlds(
             }
             hands
         })
-        .collect()
+        .collect();
+    (worlds, exact)
 }

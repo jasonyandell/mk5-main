@@ -7,7 +7,7 @@ construction one rung down, bottoming out in random legal play. See
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
-          [,F=<field net .npz>][,py]
+          [,x][,F=<field net .npz>][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -27,6 +27,12 @@ play for those few worlds, and at n=160 the cells are singletons from the
 live seat's third decision on (measured 2026-10-10). `f=1` restores the
 clairvoyant tail: same marks within noise, twice the nodes, a forecast that
 runs twenty points hot.
+
+`x` makes the floor guard only a sample (`Rung.sampled_floor`): when the live
+seat's fiber is small enough to be enumerated outright (two or three tricks
+left at n=512), its cells are the exact posterior, a thin one means the record
+really narrows the worlds that far, and the seat maximizes over it instead of
+handing the move down. Off by default (the floor applies everywhere).
 
 Beliefs (`b=`, joined with `+`, each a likelihood factor on every scenario):
   dice     the hidden seats' discretionary plays under random legal play
@@ -84,10 +90,10 @@ class WaltPlay:
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
                  tilt: Tilt = Tilt(), floor: int | None = None, field: FieldNet | None = None,
-                 compiled: bool = True):
+                 compiled: bool = True, sampled_floor: bool = False):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
-        rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
+        rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor, sampled_floor)])
         config = Config(rungs, utility, seed, tilt, field)
         if compiled:
             from scenario.compiled import CompiledWalt
@@ -144,6 +150,8 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw[key] = int(t[1:])
         elif t in ("hfull", "gfull"):
             kw["horizon" if t[0] == "h" else "horizon_inner"] = None
+        elif t == "x":
+            kw["sampled_floor"] = True
         elif t == "py":
             kw["compiled"] = False
         else:

@@ -153,6 +153,32 @@ def test_compiled_analysis_matches_the_planner_with_a_field_net():
             assert ref.nodes == fast.nodes
 
 
+SAMPLED_FLOOR_CONFIGS = [  # the floor guards only sampled cells
+    Config((Rung(512, None, 16, sampled_floor=True),), "make", seed=5, field=NET),   # the shipped shape
+    Config((Rung(4, 4), Rung(160, None, 16, sampled_floor=True)), "points", seed=6, field=NET),
+]
+
+
+def test_compiled_matches_the_planner_under_the_sampled_floor():
+    """Late positions, enumerated and sampled alike (16 plays down is 1,680
+    worlds, sampled at n=512; from about 18 the fiber fits): the rule is the
+    same in both implementations, and it changes the plan somewhere."""
+    changed = 0
+    for cfg in SAMPLED_FLOOR_CONFIGS:
+        live = cfg.rungs[-1]
+        off = Config(cfg.rungs[:-1] + (Rung(live.n_worlds, live.horizon, live.floor),),
+                     cfg.utility, cfg.seed, cfg.tilt, cfg.field)
+        ref, fast, old = Walt(cfg), CompiledWalt(cfg), Walt(off)
+        for state in _pip_states(8, seed=51 + cfg.seed, min_plays=16):
+            a = ref.analyze(state, 31)
+            _same_analysis(a, fast.analyze(state, 31))
+            assert ref.nodes == fast.nodes
+            _same((a.tile, a.q), fast.decide(state, 31))
+            assert ref.nodes == fast.nodes
+            changed += old.analyze(state, 31).q != a.q
+    assert changed
+
+
 def test_the_net_changes_the_field():
     """With the net in the field the live seat plans against a different
     field than the dice: its action values move."""

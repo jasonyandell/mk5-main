@@ -2,7 +2,7 @@
 //! `scenario/compiled.py` drives.
 //!
 //! Interface: `Core(rungs, utility, seed, tilt, eps, field)` with rungs as
-//! (n_worlds, horizon, floor) and `field` the field net's blob
+//! (n_worlds, horizon, floor, sampled_floor) and `field` the field net's blob
 //! (`FieldNet.to_bytes()`) or None; `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
@@ -97,7 +97,7 @@ impl Core {
     #[new]
     #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None))]
     fn new(
-        rungs: Vec<(usize, Option<usize>, usize)>,
+        rungs: Vec<(usize, Option<usize>, usize, bool)>,
         utility: &str,
         seed: u64,
         tilt: &str,
@@ -107,10 +107,10 @@ impl Core {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
         }
-        if rungs.iter().any(|&(n, _, _)| n == 0 || n > MAX_WORLDS) {
+        if rungs.iter().any(|&(n, _, _, _)| n == 0 || n > MAX_WORLDS) {
             return Err(PyValueError::new_err(format!("n_worlds must be in 1..={MAX_WORLDS}")));
         }
-        if rungs.iter().any(|&(_, _, f)| f == 0) {
+        if rungs.iter().any(|&(_, _, f, _)| f == 0) {
             return Err(PyValueError::new_err("a cell floor is at least 1"));
         }
         if rungs[0].2 > 1 && field.is_none() {
