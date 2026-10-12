@@ -19,18 +19,30 @@ A float MLP trained with Adam — in numpy (the reference, the default) or on
 the GPU with MLX (`--device mlx`: the same init, batches, loss and update,
 float32 on the GPU) — then quantized to the integer net both the referee and
 the core run: power-of-two scales, int16 weights, the rounding folded into
-the biases. Validation holds out every tenth deal. Grades, in the mover's
-units: `regret` is the mean points the net's move gives up against the best
-move by mean margin, `regret_pmake` the make probability it gives up against
-the best move by the mover's pmake, `agree` how often it plays the
-teacher's own move; a hinge is a position whose best move beats the second
-by 10 points or more.
+the biases. Validation holds out every tenth deal.
+
+Grades, per decision and in the mover's units, are regrets: the best legal
+move's value minus the value of the move the net picks, so any move of an
+exact tie for best costs 0. `regret_q` reads the value off the splat's own
+`q` — what the planner decided by (a make probability under `make`, a mean
+margin under `points`) — and `at_best` is the share of decisions where the
+net's move is a best move by q; `regret` is the same in points of mean
+margin, and a hinge is a position whose best move beats the second by 10
+points or more. There is no agreement with the teacher's tile, on purpose
+(2026-10-12, critic §3.2 and §4e,
+`wiki/sources/research-night-2026-10-12/16-critic.md`): under `make` 285 of
+714 decisions are exact ties, where the teacher's tile is the lowest tile id
+of a seed-dependent set, so agreement scores the net against a hash — and
+the teacher agrees with itself across seeds only 0.89 of the time, a ceiling
+no imitator can pass.
 
     python -u -m scenario.field_train --pour DIR [DIR ...] --out NET.npz [--target margin|pmake]
         [--device numpy|mlx] [--hidden 512,256] [--epochs E] [--tau T]
+    python -u -m scenario.field_train --pour DIR [DIR ...] --grade NET.npz
 
-Several pours train as one dataset (a chunked pour is several directories);
-their deals are renumbered so no two rows share a deal.
+Several pours of one utility train as one dataset (a chunked pour is
+several directories); their deals are renumbered so no two rows share a
+deal. `--grade` scores a saved net on every row of the pours.
 """
 from __future__ import annotations
 
@@ -59,18 +71,21 @@ class Data:
     legal: np.ndarray    # [N, 28] bool
     adv: np.ndarray      # [N, 28] float32: sign·(m − mean m), the mover's advantage in points
     win: np.ndarray      # [N, 28] float32: the mover's side makes (bidder) or sets (defender), belief mass
-    chosen: np.ndarray   # [N] int64: the teacher's move's slot
+    q: np.ndarray        # [N, 28] float32: sign·q, the splat's value in the plan's units, the mover's way up
     hinge: np.ndarray    # [N] bool: the best move's margin beats the second's by >= 10 points
     deal: np.ndarray     # [N] the position's deal, unique across the pours
 
 
 def dataset(*pours: Pour) -> Data:
     """The rows of every pour, in order; the second pour's deals are
-    numbered after the first's."""
+    numbered after the first's. The pours share a utility, so every row's
+    q is in the same units."""
+    if len({p.utility for p in pours}) > 1:
+        raise ValueError(f"pours of one utility train together, not {sorted({p.utility for p in pours})}")
     parts, first = [], 0
     for p in pours:
         d = _dataset(p)
-        parts.append(Data(*(getattr(d, f) for f in ("x", "legal", "adv", "win", "chosen", "hinge")), d.deal + first))
+        parts.append(Data(*(getattr(d, f) for f in ("x", "legal", "adv", "win", "q", "hinge")), d.deal + first))
         first += len(p.hands)
     if len(parts) == 1:
         return parts[0]
@@ -83,7 +98,7 @@ def _dataset(p: Pour) -> Data:
     legal = np.zeros((n, N_TILES), bool)
     adv = np.zeros((n, N_TILES), np.float32)
     win = np.zeros((n, N_TILES), np.float32)
-    chosen = np.zeros(n, np.int64)
+    q = np.zeros((n, N_TILES), np.float32)
     hinge = np.zeros(n, bool)
     for i, pos in enumerate(p.positions()):
         rules = rules_for(pos.decl_id)
@@ -96,10 +111,10 @@ def _dataset(p: Pour) -> Data:
         adv[i, slots] = pos.sign * (m - m.mean())
         pm = np.array([w[makes(pos, t)].sum() for t in pos.actions])
         win[i, slots] = pm if pos.sign > 0 else 1 - pm
-        chosen[i] = canon[pos.chosen]
+        q[i, slots] = pos.sign * pos.q
         m = np.sort(pos.sign * m)
         hinge[i] = m[-1] - m[-2] >= 10
-    return Data(x, legal, adv, win, chosen, hinge, p.deal.astype(np.int64))
+    return Data(x, legal, adv, win, q, hinge, p.deal.astype(np.int64))
 
 
 def targets(data: Data, target: str, tau: float) -> np.ndarray:
@@ -293,7 +308,7 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
         "target": target, "tau": tau, "hidden": list(hidden), "epochs": epochs, "seed": seed,
         "device": device, "batch": batch, "lr": lr,
         "rows": {"train": int(tr.sum()), "val": int(val.sum())},
-        "train": _grade(data, tr, params, net), "val": _grade(data, val, params, net),
+        "train": _grade(data, tr, net, params), "val": _grade(data, val, net, params),
     }
     return Trained(net, params, losses, val_losses, metrics)
 
@@ -349,30 +364,37 @@ def _pick(scores: np.ndarray, legal: np.ndarray) -> np.ndarray:
     return np.where(legal, scores, -np.inf if scores.dtype.kind == "f" else np.iinfo(np.int64).min).argmax(axis=1)
 
 
-def _grade(data: Data, rows: np.ndarray, params, net: FieldNet) -> dict:
+def regret(value: np.ndarray, legal: np.ndarray, pick: np.ndarray) -> np.ndarray:
+    """[N]: what each picked slot gives up against the best legal slot by
+    `value` ([N, 28], the mover's way up) — 0 whenever the pick is any move
+    of an exact tie for best."""
+    return np.where(legal, value, -np.inf).max(axis=1) - value[np.arange(len(pick)), pick]
+
+
+def _grade(data: Data, rows: np.ndarray, net: FieldNet, params=None) -> dict:
+    """The integer net's regrets on `rows`, against a uniform legal pick's;
+    with the float `params`, also how far quantization moved the picks."""
     if not rows.any():
         return {}
-    x, legal, adv, win = data.x[rows], data.legal[rows], data.adv[rows], data.win[rows]
-    hinge = data.hinge[rows]
-    best = np.where(legal, adv, -np.inf).max(axis=1)
-    best_win = np.where(legal, win, -np.inf).max(axis=1)
-    fp = _pick(_logits(params, x), legal)
+    x, legal, adv, q, hinge = data.x[rows], data.legal[rows], data.adv[rows], data.q[rows], data.hinge[rows]
     ip = _pick(np.concatenate([int_scores(net, x[at:at + CHUNK]) for at in range(0, len(x), CHUNK)]), legal)
-    n = np.arange(len(x))
+    rq, rm = regret(q, legal, ip), regret(adv, legal, ip)
 
-    def regret(pick, mask=slice(None)):
-        return float((best - adv[n, pick])[mask].mean())
+    def uniform(value, mask=slice(None)):    # a uniform legal pick gives up best − mean
+        r = np.where(legal, value, -np.inf).max(axis=1) - np.where(legal, value, 0).sum(axis=1) / legal.sum(axis=1)
+        return float(r[mask].mean())
 
-    return {
+    out = {
         "positions": len(x), "hinges": int(hinge.sum()),
-        "agree": float((ip == data.chosen[rows]).mean()), "int_float_same": float((ip == fp).mean()),
-        "regret": regret(ip), "regret_float": regret(fp), "regret_hinges": regret(ip, hinge),
-        "regret_pmake": float((best_win - win[n, ip]).mean()),
-        # a uniform legal pick gives up best − mean (the advantage's mean is 0)
-        "regret_random": float(best.mean()),
-        "regret_random_hinges": float(best[hinge].mean()) if hinge.any() else math.nan,
-        "regret_pmake_random": float((best_win - win.sum(axis=1) / legal.sum(axis=1)).mean()),
+        "regret_q": float(rq.mean()), "at_best": float((rq == 0).mean()), "regret_q_random": uniform(q),
+        "regret": float(rm.mean()), "regret_random": uniform(adv),
+        "regret_hinges": float(rm[hinge].mean()) if hinge.any() else math.nan,
+        "regret_random_hinges": uniform(adv, hinge) if hinge.any() else math.nan,
     }
+    if params is not None:
+        fp = _pick(_logits(params, x), legal)
+        out.update(int_float_same=float((ip == fp).mean()), regret_float=float(regret(adv, legal, fp).mean()))
+    return out
 
 
 def _main() -> None:
@@ -383,7 +405,9 @@ def _main() -> None:
 
     ap = argparse.ArgumentParser(prog="python -u -m scenario.field_train")
     ap.add_argument("--pour", required=True, nargs="+", help="one or more pour directories")
-    ap.add_argument("--out", required=True, help="the net's .npz; metrics go beside it as .json")
+    job = ap.add_mutually_exclusive_group(required=True)
+    job.add_argument("--out", help="train: the net's .npz; metrics go beside it as .json")
+    job.add_argument("--grade", help="score this saved net's .npz on every row of the pours")
     ap.add_argument("--target", choices=TARGETS, default="margin")
     ap.add_argument("--device", choices=tuple(DEVICES), default="numpy")
     ap.add_argument("--epochs", type=int, default=30)
@@ -395,6 +419,11 @@ def _main() -> None:
     args = ap.parse_args()
     t0 = time.time()
     pours = [load(d) for d in args.pour]
+    if args.grade:
+        data = dataset(*pours)
+        print(json.dumps({"net": args.grade, "pour": args.pour,
+                          **_grade(data, np.ones(len(data.x), bool), FieldNet.load(args.grade))}, indent=2))
+        return
     hidden = tuple(int(h) for h in args.hidden.split(","))
     print(f"field net: {sum(map(len, pours))} positions from {len(pours)} pour(s) {' '.join(args.pour)}, "
           f"target {args.target}, hidden {hidden}, {args.device}", flush=True)

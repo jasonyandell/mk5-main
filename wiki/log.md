@@ -26,6 +26,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | field_train | the field net is graded by regret under the splat's q, not agreement (#109): shipped 250k net 0.0064 make probability per decision, n = 714]
+
+[[scenario-player]] § The net is scored by regret. Source: [[research-night-2026-10-12]] critic §3.2, §4e.
+
 ## [2026-10-12 | cb95168e | Research night: does Zeb find the optimal move in finite time?]
 
 Seven agents (theory, Lean, counter lab, empirical, floor, an independent Fable

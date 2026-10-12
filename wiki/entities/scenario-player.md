@@ -721,6 +721,19 @@ What is missing mathematically: a stochastic field (the prerequisite for any bel
 on the seam), regret instead of agreement as the net's metric, a per-cell certificate,
 and an O2-vs-O1 number on endgames.
 
+**The net is scored by regret (2026-10-12, #109).** `field_train` grades the
+field net by what its move gives up against the best legal move under the
+splat's own q (`regret_q`, in the plan's units: make probability under `make`)
+and by the share of decisions where its move is a best one, any member of an
+exact tie (`at_best`); points regret stays beside them. Agreement with the
+teacher's tile is retired: 285 of 714 `make` decisions are exact ties, where the
+teacher's tile is the lowest id of a seed-dependent set, and the teacher agrees
+with itself across seeds only 0.89 of the time (critic §3.2). The shipped
+`margin_d250k_h128x64` on the 40-deal research-night pour (n = 714 decisions):
+**regret 0.0064 make probability per decision** (a uniform legal pick 0.044),
+at a best move 77.5%, 0.29 points; identical to the referee's own pick.
+`--grade NET.npz` scores any saved net on any pour.
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

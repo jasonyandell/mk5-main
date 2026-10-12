@@ -15,7 +15,7 @@ from arena.walt_play import _declared_trump, parse_walt_spec
 from scenario.atlas import deal, in_plan_units, pour
 from scenario.compiled import CompiledWalt
 from scenario.field import BIDS, CANON, N_FEATURES, OFFSET, FieldNet, features
-from scenario.field_train import _loss_dlogits, dataset, int_scores, targets, train
+from scenario.field_train import _loss_dlogits, dataset, int_scores, regret, targets, train
 from scenario.planner import Config, Rung, Tilt, Walt, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for
@@ -212,19 +212,55 @@ def test_dataset_is_the_movers_view(small_pour):
         canon = CANON[pos.decl_id]
         best = max(pos.actions, key=lambda t: (pos.sign * pos.q[pos.actions.index(t)], -t))
         assert target[i, canon[best]] == target[i].max()
-        assert data.chosen[i] == canon[pos.chosen]
+        slots = [canon[t] for t in pos.actions]
+        assert np.allclose(data.q[i, slots], pos.sign * pos.q, atol=1e-5) and not data.q[i, ~data.legal[i]].any()
 
 
 def test_several_pours_train_as_one(small_pour, make_pour):
     """A chunked pour is several directories: their rows concatenate in
     order and the second's deals are numbered after the first's, so the
-    held-out tenth is still whole deals."""
-    a, b, both = dataset(small_pour), dataset(make_pour), dataset(small_pour, make_pour)
-    assert len(both.x) == len(a.x) + len(b.x)
-    assert (both.x[len(a.x):] == b.x).all() and (both.adv[:len(a.x)] == a.adv).all()
+    held-out tenth is still whole deals. Pours of different utilities do not
+    mix: their q are in different units."""
+    a, both = dataset(small_pour), dataset(small_pour, small_pour)
+    assert len(both.x) == 2 * len(a.x)
+    assert (both.x[len(a.x):] == a.x).all() and (both.q[len(a.x):] == a.q).all()
     assert (both.deal[:len(a.x)] == a.deal).all()
-    assert (both.deal[len(a.x):] == b.deal + len(small_pour.hands)).all()
-    assert len(set(both.deal.tolist())) == len(small_pour.hands) + len(make_pour.hands)
+    assert (both.deal[len(a.x):] == a.deal + len(small_pour.hands)).all()
+    assert len(set(both.deal.tolist())) == 2 * len(small_pour.hands)
+    with pytest.raises(ValueError, match="utility"):
+        dataset(small_pour, make_pour)
+
+
+def test_regret_is_what_the_pick_gives_up_against_the_best_legal_move():
+    """The best move costs nothing; any move of an exact tie for best costs
+    nothing (which of them the teacher played is its tie rule, not play);
+    a worse move costs the gap; an illegal slot's value never counts as best."""
+    value = np.array([[0.2, 0.7, 0.5, 0.0], [0.4, 0.4, 0.1, 0.9], [0.3, 0.3, 0.0, 0.0]])
+    legal = np.array([[1, 1, 1, 0], [1, 1, 1, 0], [1, 1, 0, 0]], bool)
+    assert np.allclose(regret(value, legal, np.array([1, 0, 0])), 0)        # the best; a tie, either member
+    assert regret(value, legal, np.array([1, 1, 1]))[1:].tolist() == [0, 0]  # the tie's other member
+    assert np.allclose(regret(value, legal, np.array([0, 2, 1])), [0.5, 0.3, 0])
+
+
+def test_the_grades_are_regrets_under_the_splats_q(make_pour):
+    """`regret_q` is the mean, over decisions, of the best legal move's
+    sign·q minus the net's move's, recomputed here from the positions
+    themselves; `at_best` is the share where that is 0, ties included."""
+    data = dataset(make_pour)
+    t = train(data, "pmake", epochs=2, seed=5, hidden=(16, 8))
+    g = t.metrics["train"]
+    rows = np.flatnonzero(data.deal % 10 != 0)
+    scores = int_scores(t.net, data.x[rows])
+    gaps = []
+    for r, i in enumerate(rows):
+        pos = make_pour.position(int(i))
+        canon = CANON[pos.decl_id]
+        pick = max(pos.actions, key=lambda a: (scores[r, canon[a]], -canon[a]))   # `_pick`: first slot of a tie
+        v = (pos.sign * pos.q).astype(np.float32)
+        gaps.append(float(v.max() - v[pos.actions.index(pick)]))
+    assert g["positions"] == len(rows)
+    assert g["regret_q"] == pytest.approx(np.mean(gaps), abs=1e-6)
+    assert g["at_best"] == pytest.approx(np.mean(np.array(gaps) == 0))
 
 
 def test_a_make_pour_trains_in_points(tmp_path):
@@ -290,7 +326,7 @@ def test_training_is_deterministic_and_the_net_round_trips(small_pour, tmp_path)
     cfg = Config((Rung(8, None),), "points", seed=1, field=back)
     for state in _pip_states(3, seed=17, min_plays=8):
         _same(Walt(cfg).decide(state, 30), CompiledWalt(cfg).decide(state, 30))
-    assert 0.0 <= a.metrics["val"]["agree"] <= 1.0 and not math.isnan(a.metrics["val"]["regret"])
+    assert 0.0 <= a.metrics["val"]["at_best"] <= 1.0 and not math.isnan(a.metrics["val"]["regret_q"])
 
 
 @pytest.mark.parametrize("target", ["margin", "pmake"])
@@ -306,7 +342,7 @@ def test_mlx_trains_the_numpy_net(make_pour, target):
     assert np.allclose(a.losses, b.losses, rtol=2e-3)
     for pa, pb in zip(a.params, b.params):
         assert np.abs(pa - pb).mean() < 1e-2 * np.abs(pa).mean()
-    assert b.metrics["train"]["agree"] == pytest.approx(a.metrics["train"]["agree"], abs=0.03)
+    assert b.metrics["train"]["at_best"] == pytest.approx(a.metrics["train"]["at_best"], abs=0.03)
 
 
 def test_an_old_net_is_refused(tmp_path):
