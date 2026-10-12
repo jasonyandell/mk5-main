@@ -33,9 +33,12 @@ Two halves, one game:
   imperfect-information planner written from the mathematics (Jason's *Walt: a mathematical
   account*, 2026-10-09), with a Rust core that is bit-identical to its Python referee. It
   beats E[Q] at play (+0.74 marks/game, 2026-10-10) without ever consulting the oracle.
-  The current push (2026-10-10) is **the atlas**: one known deal's whole position tree,
-  labeled with Walt's honest outcome distributions (`Walt.analyze`, `CompiledWalt.mold`).
-  Beliefs on the `Walt(belief=…)` seam are paused after night 1 ([[scenario-player]]).
+  **Zeb** is the family name for everything built on Walt; the cheap player is published as
+  `@jasonyandell/zeb` 0.2.0. Research night 2026-10-12 proved what Zeb computes and measured
+  where it differs; that day's foundation repairs (floor only on sampled fibers, rung-independent
+  seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]). The
+  next focus is the book (Roberson's *Winning 42*, [[w42]]): study its partnership conventions
+  with the honest tools, and adopt the reason, not the rule.
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the

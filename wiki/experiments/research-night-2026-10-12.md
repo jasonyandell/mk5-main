@@ -49,7 +49,7 @@ cycles of period 4, 6 and 12 in mini-42, strict in 8 of 16 configurations. One c
 from reading the theorem against the code: `planner.py:304` mixes the rung index into
 the sample seed, so the sampled ladder iterates a different operator at every rung;
 the theorem covers exact Walt or a rung-independent seed. Deployed Zeb is a single
-application, so this is moot for it.
+application, so this is moot for it. (The seed is rung-independent since #112, the same day.)
 
 **Partnership (C3).** An O1 fixed point need not be O2 (partnership) or O3 (team
 maxmin); note 1's gap of 0.97 checks out. But in mini-42 the Walt partnership map
@@ -110,11 +110,11 @@ Three consequences:
 Filed as issues #108 (stochastic field), #109 (regret, not agreement), #110 (floor-off-when-exact as Zeb 0.2.0), #111 (posterior sampler in the core, then marks), #112 (rung-independent seed), #113 (O2 vs O1 on endgames).
 
 1. ~~E1c at ε = 0.8, plays 4–15, 2,400 deals~~ done: null at power (above).
-2. The stochastic field with a tape.
-3. Score the net by regret; drop agreement.
-4. Zeb vs a table of nets with the posterior sampler in the core, in marks.
-5. Floor-off-when-exact as a Zeb 0.2.0 correctness change.
-6. A rung-independent seed for the ladder.
+2. ~~The stochastic field with a tape~~ done: `field_eps`, default 0 (#108, [[scenario-player]]).
+3. ~~Score the net by regret; drop agreement~~ done: 0.0064 make probability per decision (#109).
+4. ~~Zeb vs a table of nets with the posterior sampler in the core, in marks~~ done: +0.026 ± 0.003 marks/hand, 22,000 paired deals; not turned on (#111).
+5. ~~Floor-off-when-exact as a Zeb 0.2.0 correctness change~~ done: the only behavior, Zeb 0.2.0 (#110).
+6. ~~A rung-independent seed for the ladder~~ done (#112).
 7. ~~O2 vs O1 on three-trick endgames~~ done: +0.027 margin per endgame vs the Walt map, half a convention on reached sets ([[endgames-o2-vs-o1-2026-10-12]]).
 8. Draw the plan tree.
 

@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-11
+last_updated: 2026-10-12
 status: active
 ---
 
@@ -34,6 +34,24 @@ one scenario plays one tile at one record in every branch (worlds
 partition, never multiply). A modeled seat's decision is a pure function
 of (rung, seat, remaining hand, record) and is cached as such.
 
+## Where it stands (2026-10-12)
+
+- **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
+  16). It stays champion until a field-net player beats it with an interval
+  clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).
+- **Deployed Zeb** is `k0,n512,F=margin_d250k_h128x64,f=16` (one rung over
+  the 250k field net; the package defaults to 160 worlds on a phone),
+  published as `@jasonyandell/zeb` **0.2.0**
+  (2026-10-12: the floor spares enumerated fibers, the seed is
+  rung-independent; 35 parity positions). See "Zeb, the package" below.
+- **Defaults after the foundation repair** (below): the cell floor acts only
+  on a sampled fiber, an enumerated one is planned exactly (#110); a rung's
+  sample is seeded by its coordinate, not the rung (#112); the field net is
+  scored by regret under q, not agreement (#109); the field is deterministic
+  unless `field_eps` > 0 (#108); the live worlds are uniform unless
+  `draw="posterior"`, which beats uniform +0.026 ± 0.003 marks/hand against
+  a table of nets (#111) and is not turned on in Zeb or the champion.
+
 ## Why it is not the wall
 
 In the terms of [[belief-policy-value-algebra]]: [[expected-q-value|eq]]
@@ -54,15 +72,17 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/planner.py` | `Rung`, `Config`, `Walt`: the finite planning rule, the ladder, the dice tape, the `make`/`points` utilities | single-scenario value equals an independent best-plan search; the information inequality V(μ₁+μ₂) ≤ V(μ₁)+V(μ₂) on every split; scale invariance; determinism |
 | `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
 | `scenario/field.py` + `core/src/field.rs` + `scenario/field_train.py` | the field net: a learned integer policy as rung −1 (see "The net in the field") | forward pass bit-identical referee ↔ core; `decide`/`analyze` with the net field bit-identical |
-| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,py]` (`py` = the pure Python referee) | an arena half completes |
+| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,py]` (`py` = the pure Python referee) | an arena half completes |
 
-Tests: `python -m pytest scenario/tests -q` (22, CPU, no checkpoint). Build the
+Tests: `python -m pytest scenario/tests -q` (CPU, no checkpoint). Build the
 core once with `python -m pip install ./scenario/core` (Rust toolchain).
 
 The Python planner is the referee and the compiled core is the runtime. To
 make that checkable, every random draw is defined: scenario sampling and the
-dice tape run on SplitMix64 streams seeded from the invocation (config seed,
-rung, viewer, hand, packed record, voids), and the record is keyed as one
+dice tape run on SplitMix64 streams seeded from the invocation's coordinate
+(config seed, viewer, hand, packed record, voids; not the rung since
+2026-10-12, #112, so every rung at a coordinate shares one sample), and the
+record is keyed as one
 integer, not a CPython hash. The core mirrors CPython 3.12's compensated
 `sum()` so even tilted-belief values agree to the last bit. The belief
 weights the live rung only; modeled minds are compatibility-only (g ≡ 0),
@@ -72,7 +92,8 @@ as the shipped player does.
 
 Every choice the mathematics names has a seat in the code: `β` is a
 callable `(record, viewer, worlds) → weights` on `Walt(belief=…)`
-(uniform by default — the g ≡ 0 limit); `k` is the number of rungs; `S`
+(uniform by default — the g ≡ 0 limit; since 2026-10-12 the live worlds can
+instead be drawn from the field's posterior, `draw="posterior"`, #111); `k` is the number of rungs; `S`
 is `n_worlds` per rung; `H` is `horizon` per rung (plays searched
 explicitly; `None` = to the end); `L` is the tape playout at the
 frontier; `u` is `make` or `points`; `≺` is lowest tile id; `Γ` is the
@@ -206,13 +227,15 @@ worlds by mid-hand. The lesson is general and belongs to the seam itself:
 **weighting a uniform sample is only sound when g is mild. A strong g must be
 sampled from** — draw from b = u·e^g (importance-resample a larger uniform
 draw, or sample the fiber under the tilt), not reweight 160 uniform draws. That
-is the next build on the seam, and it is what makes any sharp belief (a learned
-head, a convention model) usable at all.
+is what makes any sharp belief (a learned head, a convention model) usable at
+all; built 2026-10-12 for the field's posterior (#111, "Foundation repair"
+below).
 
 ## The atlas (2026-10-10)
 
 Beliefs paused after night 1 (the taste said *uniform again*; a dozen other
-low-hanging things come first). The new object is **the atlas**: one fully known
+low-hanging things come first; resumed 2026-10-12 as the field's posterior,
+[[research-night-2026-10-12]]). The new object is **the atlas**: one fully known
 deal, the perfect-information game tree the oracle would have walked, and on
 each of its positions Walt's honest evaluation — the distribution of outcomes
 over the scenarios a seat that *cannot* see the other hands would entertain.
@@ -313,6 +336,8 @@ survivors and plays as the rung below would at that record, with a fresh
 sample (the modeled-move construction already used for the other seats).
 Landed as `Rung(n, horizon, floor=m)`, arena `f=<m>` (commit `1406fdae`, 104
 tests; floor 1 is the old player to the bit; the root is never floored).
+Since 2026-10-12 (#110) the floor acts only on a sampled fiber; an enumerated
+one is planned exactly, floor 1 ("Foundation repair" below).
 **The arena default is the honest plan from 2026-10-10:** `walt:k1,…` means
 `f=16`; `f=1` restores the clairvoyant tail (Jason: "perf with noisy to
 similar outcomes are a win… the aesthetics are a factor too" — the math said
@@ -320,7 +345,8 @@ one action per cell, and a one-world cell was breaking that promise from
 trick 2 on).
 
 **The floor calibrates the forecast (2026-10-10, `floor_forecast.py`,
-`marginal3.py`).** Same hand, same lead question, root forecast by floor, and
+`marginal3.py`; every number in this paragraph is the 2026-10-10
+rule, the floor on every thin cell, with the rung-mixed seed).** Same hand, same lead question, root forecast by floor, and
 real endings when everyone plays the floored player over the same 64 deals:
 
 | floor | root forecast | real endings (64 deals, everyone floored) | nodes | time |
@@ -438,7 +464,9 @@ before it is asked for (the tape). Mac for the Walt labeler, GPU for the net.
 
 A learned policy as the modeled seats, **and nowhere else** (Jason's binding
 rule: the net never enters a value or a leaf; the live seat still solves).
-One knob: **rung −1 is the net instead of the dice.** `walt:k0,n512,F=<npz>`
+One knob: **rung −1 is the net instead of the dice** (a deterministic field;
+since 2026-10-12 `field_eps` = ε > 0, arena `E=`, makes it stochastic, F_σ,
+default 0, #108). `walt:k0,n512,F=<npz>`
 is a live seat planning against modeled seats that play the net, with rung 0's
 floored moves handed to it too (a floor at rung 0 is now legal iff there is a
 net under it). The leaf playout stays dice. `k1,…,F=` also works (net under a
@@ -498,7 +526,7 @@ imitation of Walt cannot make the planner above it stronger, only cheaper, and
 the champion's field was already a rung-0 Walt. The interval includes zero at
 a quarter of the cost, and the calibration holds. Where it earns its keep is
 the pour price: whole deals and 10× datasets for the same wall. It stays out
-of the champion's lineup; the champion stays `k1,n512,m8`. Data scaling is
+of the champion's lineup. Data scaling is
 the lever that moved it (200 deals: −0.70; 5,000: −0.16/−0.23), so the next
 net is trained on a bigger pour, poured by this one.
 
@@ -519,7 +547,7 @@ the GPU, numpy staying the reference; a test holds them to float32 rounding.
 Held-out tenth of the 5,000-deal `make` pour (8,659 positions, 437 hinges;
 random pick gives up 2.44 points and 3.9 pp of make probability):
 
-| net | regret, points | regret, pmake | agrees with Walt's move | hinge regret | train wall numpy / MLX |
+| net | regret, points | regret, pmake | agrees with Walt's move (retired 2026-10-12, #109: exact ties make it a coin flip) | hinge regret | train wall numpy / MLX |
 |---|---|---|---|---|---|
 | `margin` 128×64 | **0.65** | **1.3 pp** | 49% | **1.2** | 5 s / 8 s |
 | `margin` 512×256 | 0.70 | 1.4 pp | 48% | 1.7 | 19 s / 9 s |
@@ -553,7 +581,7 @@ vs real +5.8 / 37% — calibrated to a third of a point over fifty thousand
 hands). Trained on it with the MLX path (about 70 s each), graded on the
 held-out tenth and in the arena against the champion `k1,n512,m8`:
 
-| net, 50,000 deals | regret (points) | hinge regret | agree | arena, 384 games, seed 1 | made | arena wall |
+| net, 50,000 deals | regret (points) | hinge regret | agree (retired) | arena, 384 games, seed 1 | made | arena wall |
 |---|---|---|---|---|---|---|
 | margin 512×256 | **0.38** | **0.45** | 53% | **+0.11 [−0.20, +0.40]**, +0.38 pts/hand | 38.3% vs 37.4% | 2,083 s |
 | margin 128×64 | 0.41 | 0.44 | 53% | **+0.06 [−0.25, +0.38]**, +0.31 pts/hand | 36.8% vs 36.4% | 727 s |
@@ -577,10 +605,20 @@ positive. The cheap player — a one-rung Walt planning against a learned
 field — is at parity with the two-rung champion. The wide net buys nothing
 the small one does not and costs 2.9× the arena wall (the forward pass is now
 the hot spot), so **the small net is the pour engine**. The pmake target is
-confirmed worse at scale. The champion stays `k1,n512,m8` until a net field
-beats it with an interval clear of zero; the next net trains on the next
+confirmed worse at scale. The champion rule ("Where it stands") dates from
+here; the next net trains on the next
 pour, poured by this one — expert iteration, with the net kept in the field
 (done the next morning: see the 250,000-deal pour below).
+
+**Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
+ingredient." The family of things built on Walt — the atlas, the pour, the
+field net, whatever comes next — is **Zeb**, the first project's name
+reclaimed ([[zeb]] was the January AlphaZero-style self-play player, superseded
+on fused labels). Not diverging from Walt, evolving; no self-play mandate
+comes with the name. The 50,000-deal pour is published under it:
+[jasonyandell/texas-42-zeb-pour](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour),
+CC0 (a separate repo because `scenario/hf.py` refuses to mix specs in one;
+the k1 pours stay in [texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour)).
 
 **The 250,000-deal pour (2026-10-11): the data lever stops at parity.**
 Overnight, four more 50,000-deal chunks (seeds 200001, 250001, 300001,
@@ -593,7 +631,7 @@ real +6.1 to +6.3 / 38%. With the first 50k that is 4.34M positions from
 Trained with MLX (dataset 3.7 min, training about 2.3 min each), graded on
 the held-out tenth (434,535 positions) and in the arena against the champion:
 
-| net, 250,000 deals | regret (points) | hinge regret | agree | arena, 384 games, seed 1 | made |
+| net, 250,000 deals | regret (points) | hinge regret | agree (retired) | arena, 384 games, seed 1 | made |
 |---|---|---|---|---|---|
 | margin 128×64 | 0.35 | 0.34 | 53% | **+0.11 [−0.19, +0.41]**, +0.15 pts/hand | 37.4% vs 36.5% |
 | margin 512×256 | **0.26** | **0.19** | 55% | **+0.13 [−0.17, +0.44]**, +0.09 pts/hand | 37.5% vs 36.4% |
@@ -607,7 +645,7 @@ play can only make the cheap player's field more like itself, and the
 planner above it is still a one-rung Walt. Five times the data bought a
 better model and the same player. Parity with the two-rung champion at a
 quarter of the cost is the result; a stronger player will not come from
-more of this pour. The champion stays `k1,n512,m8`. The four chunks are
+more of this pour. The four chunks are
 published as
 [jasonyandell/texas-42-zeb-pour-200k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-200k)
 (CC0; a separate repo because the chunks' pour spec names the 50k net, not
@@ -674,7 +712,8 @@ Rust library — the rules tables derived in Rust and held equal to
 function of the declaration, the net one blob (`FieldNet.to_bytes`, magic
 `FNET`, layout `field-v2`, int16 weights, int64 biases) — with pyo3 behind a
 `python` feature, so the WASM and the Python referee compile the same
-planner. Facts a reader can check:
+planner. Facts a reader can check, as of 0.1.0 (0.2.0 adds a 35th parity
+position and changes the wasm bytes; "Foundation repair" below):
 
 | | |
 |---|---|
@@ -682,10 +721,11 @@ planner. Facts a reader can check:
 | wasm | 207,640 bytes (137 KB gzipped), 110 KB of it the net; the build reproduces byte-for-byte from a clean target (toolchain 1.95.0 and wasm-pack 0.15.0 pinned, paths remapped) |
 | latency, Node 24, M5 | 7 pip declarations 0.30 s at 160 worlds / 1.2 s at 512; doubles 0.30 s; no-trump 0.23 s; an opening lead 44 ms |
 | input | every play replayed and checked, then the fiber's completion count must be nonzero; the reviewer fuzzed ~1,800 games and ~9,000 mutated records through the WASM with no reachable panic |
-| plans | pip trumps `k0,n<worlds>,F=net` (floor 16); doubles and no-trump `k1,n<worlds>,m8`, since the net is pip-only; declaration 8 (nello's algebra) refused |
+| plans | pip trumps `k0,n<worlds>,F=net` (floor 16, on sampled fibers only from 0.2.0); doubles and no-trump `k1,n<worlds>,m8`, since the net is pip-only; declaration 8 (nello's algebra) refused |
 | default | 160 worlds is a phone budget, not the graded setting (512 for pips); the README says so and names the lean it buys |
 
-Publishing: 0.1.0 went out by hand from this machine on 2026-10-11 (npm
+Publishing (0.2.0 is current, 2026-10-12): 0.1.0 went out by hand from this
+machine on 2026-10-11 (npm
 requires 2FA; a one-time link each for login and publish). The registry
 has it: 10 files, 247,827 bytes unpacked, shasum `30aee968…`, and a clean
 `npm install` runs the forecast. From here
@@ -703,6 +743,8 @@ browser — every legal move's splat at every planned play, the means alone
 beside them, and the deal's real ending as one line through every forecast:
 [[splat-visualizer]].
 
+## Foundation repair (2026-10-12)
+
 **Research night (2026-10-12): does Zeb find the optimal move in finite time?**
 Seven agents, one question, see [[research-night-2026-10-12]]. Exact Walt does,
 against a fixed field, when its belief is that field's posterior (proved; Lean at
@@ -717,9 +759,10 @@ The fixed-belief ladder settles by the 24th application to a unique fixed point;
 coherent beliefs cycle. The sharpest line: with 512 worlds and floor 16, **the plan
 decides the root and then 0.19 of 2.6 own decisions; Zeb is one policy-iteration step
 of its own net, evaluated by rollout**, and the +0.56 was the worlds, not the floor.
-What is missing mathematically: a stochastic field (the prerequisite for any belief
-on the seam), regret instead of agreement as the net's metric, a per-cell certificate,
-and an O2-vs-O1 number on endgames.
+What was missing mathematically that night: a stochastic field (the prerequisite for
+any belief on the seam), regret instead of agreement as the net's metric, a per-cell
+certificate, and an O2-vs-O1 number on endgames. All but the certificate landed the
+same day, below ([[endgames-o2-vs-o1-2026-10-12]] for the last).
 
 **The net is scored by regret (2026-10-12, #109).** `field_train` grades the
 field net by what its move gives up against the best legal move under the
@@ -808,16 +851,6 @@ best-response dynamics by +0.115. Of the Walt gaps diagnosed, 78 of 171 close on
 (149 of 508) are all period 2, off path, value constant. Small in points; decisive about
 the referent: the partnership operator is where the next mathematics is.
 [[endgames-o2-vs-o1-2026-10-12]].
-
-**Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
-ingredient." The family of things built on Walt — the atlas, the pour, the
-field net, whatever comes next — is **Zeb**, the first project's name
-reclaimed ([[zeb]] was the January AlphaZero-style self-play player, superseded
-on fused labels). Not diverging from Walt, evolving; no self-play mandate
-comes with the name. The 50,000-deal pour is published under it:
-[jasonyandell/texas-42-zeb-pour](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour),
-CC0 (a separate repo because `scenario/hf.py` refuses to mix specs in one;
-the k1 pours stay in [texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour)).
 
 ## Links
 
