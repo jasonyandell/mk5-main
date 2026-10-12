@@ -26,6 +26,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | scenario/viz | what must be true, in the browser: pick a region of a move's splat, see the holdings that explain it; condition the position on up to three holdings; per-world sample (687 KB); zoom + touch stepping]
+
+[[splat-visualizer]] § 2026-10-12. Reads `holding_predictors` / `makes` per world ([[scenario-player]] § What must be true).
+
 ## [2026-10-11 | scenario/viz | the splat visualizer: a pour in the browser — each legal move's splat per planned play, means-only strip, the real ending through every forecast, the hand as a ridgeline; exporter + 5 tests; 79 KB sample]
 
 [[splat-visualizer]] (new); [[scenario-player]] § The splats, drawn. Successor to [[eq-browser-visualizers]].

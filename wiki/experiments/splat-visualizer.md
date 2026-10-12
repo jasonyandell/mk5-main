@@ -2,7 +2,7 @@
 title: The splat visualizer
 kind: experiment
 first_seen: 2026-10-11
-last_updated: 2026-10-11
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -69,6 +69,44 @@ by hand: deal 1 play 10 (seat 1 defending; 6-5 plan set 59% μ +13.9, 6-3
 58% +13.9, 6-2 55% +14.9: three humps at −6, +6, +16 and the deal really
 ended +38), deal 3 play 9 (five moves, means spanning 2.9 points, set
 71–78%), deal 1 play 2.
+
+## 2026-10-12: what must be true, zoom
+
+**The panel.** Under the splats, [[scenario-player]]'s what-must-be-true
+(`holding_predictors`) for any region of any move's splat: the made or set
+side, a hump (valley split, each side ≥ 10% of the mass), a tapped bar, or a
+dragged range. Holdings are ranked by |P(R ∧ h) − P(R)·P(h)| and read in the
+mover's chair (partner, left = plays after it, right = before), with the real
+holder marked: deal 3 play 9, *the 1-0 is set in 134 of 249 worlds where right
+holds the 5-5; always (263 of 263) where partner does*; its +28..+42 hump
+needs right's 5-5 (68 of 249, never otherwise). Clicking a holding conditions
+the position on it (up to three, ANDed): each bar splits into the worlds where
+it holds (bright, below) and the rest (faint, above), and a table gives every
+move's mean and pmake/set if so / otherwise / whole cell, starring the best by
+the plan's utility. The region, conditions and zoom live in the URL hash
+(`#deal=3&play=9&sel=1-0:28:42&if=0:5-5&zoom=2`).
+
+**Data: per world, not precomputed.** Per position `seats` (the three hidden
+from the mover), `hidden` (their tiles), `holders` (one digit per world per
+hidden tile: the index into `seats`); per move `outcomes` (one char per world,
+`chr(48 + bidder points)`); `weights` only when unequal, with a document-level
+`uniform` flag (true for this pour: every world weighs 1). The sample is
+687 KB (234 KB gzipped), so the page computes everything from the worlds;
+tests check the round trip and that the page's arithmetic equals
+`holding_predictors` on made / set / margin ≤ 0 regions at every position.
+
+**Zoom and touch.** ‹ › « » buttons step plays and planned plays; − / + zoom
+the splats and ridges 1×–4× inside their own horizontal scrollers (kept in
+step, one axis), never the page; pinch-zoom is not blocked. At 400 px the page
+has no horizontal scroll. A custom two-finger pinch on the chart was left out:
+it needs `touch-action: none`, which would block the browser's own pinch.
+
+**Checked by hand** against `holding_predictors` and direct weighted means:
+deal 1 play 10 (6-5, set side, 303 of 512: partner's 6-4 184/203, left's 6-4
+60/179, left's 6-1 142/195 — the page's top three, in order); deal 3 play 9
+(1-0 set side as above; under "right holds the 5-5", 249 worlds, the five
+means +19.8 / +20.9 / +19.1 / +19.7 / +17.3 (6-2, 5-4, 3-3, 3-2, 1-0) and set 40.6–53.8%, otherwise
+−18.7 … −23.3 and set 100%).
 
 ## Links
 

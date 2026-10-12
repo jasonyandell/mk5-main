@@ -1,7 +1,8 @@
 """A pour as the splat visualizer's data.
 
-The page draws; it does not compute. Every number it shows is written here,
-read off the pour with `scenario.atlas`, and checked against the pour's own
+The page draws and counts worlds; it does not plan. Every number it shows is
+written here or counted from the worlds written here, read off the pour with
+`scenario.atlas`, and checked against the pour's own
 invariants on the way out (a position's `q` is reproduced from its splat,
 the plays replay to the recorded ending).
 
@@ -10,6 +11,18 @@ hand's 42 points are all banked by someone, so a margin m means the bidding
 side banked (42 + m) / 2 and is always even: the 85 integers -42..42 hold 43
 reachable values. Bin k is "the bidder team banked k points", margin
 2k - 42, and its value is the belief weight of the scenarios that end there.
+
+The splat is also kept world by world, so the page can say what must be true
+for any part of it (`atlas.holding_predictors`) and condition the position on
+a holding. Per position: `seats`, the three seats hidden from the mover
+(ascending); `hidden`, the tiles they hold between them (ascending); and
+`holders`, one string of len(worlds) * len(hidden) digits, world-major, digit
+j of world r naming the index into `seats` of the seat that holds hidden[j]
+in that world. Per move: `outcomes`, one character per world, chr(48 + k)
+for "the bidders banked k" (margin 2k - 42), in world order. `weights` is
+written only when a position's worlds are not equally weighted, and the
+document's `uniform` says that none were (a world's weight is then
+`weight / worlds`).
 
     python -u -m scenario.viz.export scratch/viz/pour_viz_5 --out scenario/viz/data/pour_viz_5.json
 """
@@ -25,7 +38,7 @@ import numpy as np
 from scenario.atlas import N_PLAYS, Pour, Position, in_plan_units, load, makes
 from scenario.planner import HAND_TOTAL
 from scenario.record import empty_record
-from scenario.rules import rules_for, tiles_of
+from scenario.rules import ALL_TILES, rules_for, tiles_of
 
 BINS = HAND_TOTAL + 1  # bin k: the bidder team banked k points
 
@@ -45,6 +58,26 @@ def splat_bins(pos: Position, a: int) -> list[float | int]:
     return [_num(v) for v in np.bincount(k, weights=pos.weights, minlength=BINS)]
 
 
+def outcome_chars(pos: Position, a: int) -> str:
+    """Action index `a`'s outcome in every world, one character each."""
+    k = (pos.outcomes[a].astype(np.int64) + HAND_TOTAL) // 2
+    return bytes((48 + k).astype(np.uint8)).decode("ascii")
+
+
+def cell_doc(pos: Position) -> dict:
+    """The worlds themselves: who holds each tile the mover cannot see."""
+    seats = [s for s in range(4) if s != pos.viewer]
+    hidden = tiles_of(ALL_TILES & ~pos.record.played & ~pos.own)
+    held = np.stack([(pos.worlds[:, seats] >> np.uint32(t)) & 1 for t in hidden], axis=1)  # [W, H, 3]
+    if not np.all(held.sum(axis=2) == 1):
+        raise AssertionError(f"deal {pos.deal} play {len(pos.plays)}: a hidden tile is not in exactly one hidden hand")
+    digits = held.argmax(axis=2).astype(np.uint8) + 48                                   # [W, H]
+    doc = {"seats": seats, "hidden": hidden, "holders": bytes(digits.ravel()).decode("ascii")}
+    if not np.all(pos.weights == pos.weights[0]):
+        doc["weights"] = [_num(w) for w in pos.weights]
+    return doc
+
+
 def position_doc(pos: Position) -> dict:
     total = float(pos.weights.sum())
     moves = []
@@ -58,6 +91,7 @@ def position_doc(pos: Position) -> dict:
             "mean": float(pos.outcomes[a].astype(np.float64) @ pos.weights / total),
             "pmake": float(pos.weights[makes(pos, tile)].sum() / total),
             "bins": splat_bins(pos, a),
+            "outcomes": outcome_chars(pos, a),
         })
     # The real deal seen through the cell: for each tile the viewer could
     # not see, the share of belief on the seat that really holds it.
@@ -72,7 +106,7 @@ def position_doc(pos: Position) -> dict:
     return {
         "play": len(pos.plays), "viewer": pos.viewer, "sign": pos.sign,
         "worlds": len(pos.weights), "weight": _num(total), "chosen": pos.chosen,
-        "moves": moves, "belief": belief,
+        "moves": moves, "belief": belief, **cell_doc(pos),
     }
 
 
@@ -117,6 +151,7 @@ def export(p: Pour, manifest: dict | None = None) -> dict:
         "bidder": p.bidder, "bid": p.bid, "utility": p.utility,
         "threshold": 2 * p.bid - HAND_TOTAL,    # pmake is the mass at margin >= this
         "plays": N_PLAYS,
+        "uniform": all("weights" not in x for dl in deals for x in dl["positions"]),
         "source": {k: manifest[k] for k in ("spec", "seed", "commit", "fiber", "wall_seconds")
                    if k in manifest},
         "deals": deals,
