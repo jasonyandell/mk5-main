@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 — 2026-10-12
+
+- The cell floor now applies only when the scenarios are a sample. Late in
+  a hand, once every deal consistent with the play so far fits in `worlds`
+  (with 512 from the third play of the sixth trick, sooner when a seat has
+  shown a void), Zeb plans over all of them, so each of its cells is exact
+  and the floor no longer hands the move down. Late-hand answers (`play`,
+  `analyze`) can change; forecasts and early-hand answers do not. Measured
+  in the arena it is the same player within noise; it is simply correct.
+- Still bit-identical to the Python referee (`scenario/planner.py`).
+
 ## 0.1.0 — 2026-10-11
 
 The first release: Zeb, the scenario player, in WebAssembly.

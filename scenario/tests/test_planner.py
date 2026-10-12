@@ -273,7 +273,7 @@ def test_a_floor_needs_a_rung_below_and_is_at_least_one():
     with pytest.raises(ValueError):
         Config((Rung(8, None, 2), Rung(8, None)))
     with pytest.raises(ValueError):
-        scenario_core.Core([(8, None, 2, False), (8, None, 1, False)], "make", 0, "none", 0.1)
+        scenario_core.Core([(8, None, 2), (8, None, 1)], "make", 0, "none", 0.1)
     Config((Rung(8, None), Rung(8, None, 9)))  # above the sample is allowed: the root still decides
 
 
@@ -315,31 +315,25 @@ def _live_floor_calls(monkeypatch, cfg: Config, states) -> list[tuple[bool, bool
     return seen
 
 
-def test_the_sampled_floor_spares_an_enumerated_fiber_and_only_it(monkeypatch):
+def test_the_floor_spares_an_enumerated_fiber_and_only_it(monkeypatch):
     # Two tricks left: the 160-world sample is the whole fiber (at most 90 worlds),
     # every cell is the exact posterior, and a floor above the sample would hand
-    # every interior decision down. Under the rule none is handed down.
+    # every interior decision down if it guarded these cells. It guards none.
     late = _mid_hand_states(4, seed=43, min_plays=20)
     assert len(late) == 4
-    old = Config((Rung(3, 3), Rung(160, None, 161)), "points", seed=5)
-    new = Config((Rung(3, 3), Rung(160, None, 161, sampled_floor=True)), "points", seed=5)
-    before = _live_floor_calls(monkeypatch, old, late)
-    after = _live_floor_calls(monkeypatch, new, late)
-    assert before and all(exact for exact, _ in before) and all(out for _, out in before)
-    assert after and not any(out for _, out in after)
+    cfg = Config((Rung(3, 3), Rung(160, None, 161)), "points", seed=5)
+    seen = _live_floor_calls(monkeypatch, cfg, late)
+    assert seen and all(exact and not out for exact, out in seen)
     # A sampled fiber keeps its floor: mid-hand, eight draws from thousands of worlds.
     early = _mid_hand_states(3, seed=41, min_plays=10)
-    sampled = Config((Rung(3, 3), Rung(8, None, 9, sampled_floor=True)), "points", seed=5)
-    seen = _live_floor_calls(monkeypatch, sampled, early)
+    cfg = Config((Rung(3, 3), Rung(8, None, 9)), "points", seed=5)
+    seen = _live_floor_calls(monkeypatch, cfg, early)
     assert seen and all(not exact and out for exact, out in seen)
 
 
 def test_spec_sets_the_live_floor():
     rungs = parse_walt_spec("k1,n8,m2,f=4,py").walt.config.rungs
     assert rungs[-1].floor == 4 and rungs[0].floor == 1
-    assert not rungs[-1].sampled_floor                     # the floor guards every cell by default
-    rungs = parse_walt_spec("k1,n8,m2,x,py").walt.config.rungs
-    assert rungs[-1].sampled_floor and not rungs[0].sampled_floor
     # the default is the honest plan: floor 16 on the live rung of a k>=1 player, 1 at k=0
     assert parse_walt_spec("k1,n8,py").walt.config.rungs[-1].floor == 16
     assert parse_walt_spec("k0,n8,py").walt.config.rungs[-1].floor == 1

@@ -160,7 +160,8 @@ has already shown it lacks. A request that fails any of these throws an
 
 Under a pip trump, the live seat plans alone against the field net. In
 `scenario/` notation that is `walt:k0,n<worlds>,F=<net>`, with the cell
-floor at 16, and it is the cheap player that the 250,000-deal pour was
+floor at 16 (applied only while the deals are a sample; once every deal
+consistent with the play fits in `worlds`, the plan is exact), and it is the cheap player that the 250,000-deal pour was
 poured with. The net only knows pip trumps. Under doubles and no-trump, the
 other seats are instead modeled by a smaller Walt one rung down
 (`walt:k1,n<worlds>,m8`), which costs several times more per declaration.

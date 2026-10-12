@@ -734,6 +734,18 @@ with itself across seeds only 0.89 of the time (critic §3.2). The shipped
 at a best move 77.5%, 0.29 points; identical to the referee's own pick.
 `--grade NET.npz` scores any saved net on any pour.
 
+**The floor guards only a sample (2026-10-12, #110, Zeb 0.2.0).** When the live
+fiber fits in the rung's worlds it is enumerated outright, its cells are the exact
+posterior under the model, and a max over a thin one is a best response, not
+clairvoyance; so an enumerated invocation is never floored. This is now the only
+behavior, in both engines (the night's opt-in `Rung.sampled_floor` / arena `x` is
+gone), bit-identical referee to core. At n=512 it acts from the third play of trick 6
+(sooner with voids) and with three or more tricks left: 26 of 2,771 late decisions
+changed, and the arena is null (−0.02 [−0.35, +0.29] marks/game at k0,
+−0.01 [−0.33, +0.29] at k1; [[research-night-2026-10-12]]). It is correctness, not
+strength. `@jasonyandell/zeb` 0.2.0 carries it; its parity fixture gains a position
+where the rule moves q (35 positions).
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

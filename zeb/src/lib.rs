@@ -44,7 +44,9 @@ pub const TARGETS: [u8; 13] = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 4
 pub const DECLARATIONS: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 9];
 
 /// Below the root, a live cell thinner than this hands the decider's move
-/// down a rung instead of maximizing over a few clairvoyant worlds.
+/// down a rung instead of maximizing over a few clairvoyant worlds — when
+/// the worlds are a sample. An enumerated fiber is the exact posterior and
+/// is never floored.
 const FLOOR: usize = 16;
 
 /// The modeled rung of the plan for doubles and no-trump: 8 scenarios, a

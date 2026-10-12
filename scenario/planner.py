@@ -22,12 +22,11 @@ guard. Below the root, when the deciding player's cell holds fewer than
 holding its own remaining hand at that record would — the move it would
 find by sampling afresh, as a modeled seat does — one move for the whole
 cell, so V(C) = V(C_m). The root decision is never floored: the root cell is
-the whole sample. With `sampled_floor` the floor guards only a sample: when
-the fiber was small enough to be enumerated (late in the hand), every
-cell is the exact posterior under the model, a thin cell means the record
-really does narrow the worlds that far, and the max over it is a best
-response rather than clairvoyance — so an enumerated invocation is never
-floored.
+the whole sample. The floor guards only a sample: when the fiber is small
+enough to be enumerated outright (late in the hand), every cell is the exact
+posterior under the model, a thin cell means the record really does narrow
+the worlds that far, and the max over it is a best response rather than
+clairvoyance — so an enumerated invocation is never floored.
 
 The ladder: rung k's modeled seats are rung k-1 players; rung -1 is random
 legal play, drawn from a tape keyed on the public record so that one
@@ -84,8 +83,7 @@ class Rung:
 
     n_worlds: int           # scenarios this rung samples at an invocation
     horizon: int | None     # plays searched explicitly from the invocation root; None = to the end
-    floor: int = 1          # below the root, a cell this thin hands the decider's move down a rung
-    sampled_floor: bool = False   # the floor guards only sampled cells: an enumerated fiber is never floored
+    floor: int = 1          # below the root, a sampled cell this thin hands the decider's move down a rung
 
     def __post_init__(self) -> None:
         if self.floor < 1:
@@ -317,7 +315,7 @@ class Walt:
             if self.belief is not None:
                 weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
-        floor = 1 if exact and rung.sampled_floor else rung.floor
+        floor = 1 if exact else rung.floor
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor)
 
     def _modeled_move(self, k: int, seat: int, own: int, rec: Record, rules: Rules,

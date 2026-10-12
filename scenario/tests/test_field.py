@@ -153,29 +153,34 @@ def test_compiled_analysis_matches_the_planner_with_a_field_net():
             assert ref.nodes == fast.nodes
 
 
-SAMPLED_FLOOR_CONFIGS = [  # the floor guards only sampled cells
-    Config((Rung(512, None, 16, sampled_floor=True),), "make", seed=5, field=NET),   # the shipped shape
-    Config((Rung(4, 4), Rung(160, None, 16, sampled_floor=True)), "points", seed=6, field=NET),
+LATE_CONFIGS = [  # the floor guards only sampled cells
+    Config((Rung(512, None, 16),), "make", seed=5, field=NET),   # the shipped shape
+    Config((Rung(4, 4), Rung(160, None, 16)), "points", seed=6, field=NET),
 ]
 
 
-def test_compiled_matches_the_planner_under_the_sampled_floor():
+def test_compiled_matches_the_planner_where_the_fiber_is_enumerated(monkeypatch):
     """Late positions, enumerated and sampled alike (16 plays down is 1,680
-    worlds, sampled at n=512; from about 18 the fiber fits): the rule is the
-    same in both implementations, and it changes the plan somewhere."""
-    changed = 0
-    for cfg in SAMPLED_FLOOR_CONFIGS:
-        live = cfg.rungs[-1]
-        off = Config(cfg.rungs[:-1] + (Rung(live.n_worlds, live.horizon, live.floor),),
-                     cfg.utility, cfg.seed, cfg.tilt, cfg.field)
-        ref, fast, old = Walt(cfg), CompiledWalt(cfg), Walt(off)
-        for state in _pip_states(8, seed=51 + cfg.seed, min_plays=16):
+    worlds, sampled at n=512; from about 18 the fiber fits and the floor
+    stands down): the rule is the same in both implementations, and it
+    changes the plan somewhere (against a referee told every fiber is a
+    sample, which floors as before the rule)."""
+    import scenario.planner as planner
+    states = {cfg.seed: _pip_states(8, seed=51 + cfg.seed, min_plays=16) for cfg in LATE_CONFIGS}
+    plans = {}
+    for cfg in LATE_CONFIGS:
+        ref, fast = Walt(cfg), CompiledWalt(cfg)
+        for i, state in enumerate(states[cfg.seed]):
             a = ref.analyze(state, 31)
             _same_analysis(a, fast.analyze(state, 31))
             assert ref.nodes == fast.nodes
             _same((a.tile, a.q), fast.decide(state, 31))
             assert ref.nodes == fast.nodes
-            changed += old.analyze(state, 31).q != a.q
+            plans[cfg.seed, i] = a.q
+    sample_worlds = planner.sample_worlds
+    monkeypatch.setattr(planner, "sample_worlds", lambda *args: (sample_worlds(*args)[0], False))
+    changed = sum(Walt(cfg).analyze(state, 31).q != plans[cfg.seed, i]
+                  for cfg in LATE_CONFIGS for i, state in enumerate(states[cfg.seed]))
     assert changed
 
 

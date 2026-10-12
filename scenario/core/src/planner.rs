@@ -12,9 +12,9 @@
 //! which then also takes rung 0's floored moves. The belief weights the live
 //! player's scenarios; modeled minds weight theirs uniformly. Below the root,
 //! a deciding cell thinner than its rung's floor does not maximize: the
-//! decider plays the rung k−1 move for its own remaining hand. With a rung's
-//! `sampled_floor` the floor guards only a sample: an invocation whose fiber
-//! was enumerated outright holds the exact posterior, and is never floored.
+//! decider plays the rung k−1 move for its own remaining hand. The floor
+//! guards only a sample: an invocation whose fiber was enumerated outright
+//! holds the exact posterior, and is never floored.
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
@@ -320,8 +320,8 @@ pub enum TiltPlays {
 
 /// A particular Walt (`scenario.planner.Config`): the decision is a pure function of this and the position.
 pub struct Config {
-    /// (n_worlds, horizon, floor, sampled_floor) per rung; the live player is the last.
-    pub rungs: Vec<(usize, Option<usize>, usize, bool)>,
+    /// (n_worlds, horizon, floor) per rung; the live player is the last.
+    pub rungs: Vec<(usize, Option<usize>, usize)>,
     /// The utility: the bidding side makes its contract (true) or the signed point margin.
     pub make: bool,
     /// Seeds every random stream of every invocation.
@@ -463,7 +463,7 @@ impl Inv {
             root: *rec,
             maximize: (viewer as usize) % 2 == ctx.bt,
             horizon: cfg.rungs[k].1,
-            floor: if exact && cfg.rungs[k].3 { 1 } else { cfg.rungs[k].2 },
+            floor: if exact { 1 } else { cfg.rungs[k].2 },
             root_plays: rec.plays(),
             worlds,
             weights,
