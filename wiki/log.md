@@ -27,6 +27,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | scenario/core | the convention overlay (Config.convention, arena c=name:S|R|SR): sender + rule-only reader for C1, C2 (two readings), C3; default off; sender prices on 250k deals]
+
+[[scenario-player]] § A convention overlay. Zeb unchanged; price table `scratch/book/wave1/overlay-price.md`.
+
 ## [2026-10-12 | scenario/core | the posterior sampled in the core (Config.draw, arena d=posterior): +0.026 ± 0.003 marks/hand vs a table of nets, 22,000 paired deals (#111)]
 
 [[scenario-player]] § The posterior, sampled in the core. Default uniform; Zeb unchanged.

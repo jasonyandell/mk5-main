@@ -10,10 +10,11 @@
 //! The crate is plain Rust: the rules tables ([`rules`], held equal to
 //! `forge.oracle.tables` by the Python tests), the field net and its blob
 //! format ([`field`]), the hidden-hand sampler ([`fiber`]), the planner
-//! ([`planner`]) and the mold ([`mold`]). The `python` feature adds the
-//! pyo3 module `scenario_core` that `scenario/compiled.py` drives; the
+//! ([`planner`]), the convention overlay ([`convention`]) and the mold
+//! ([`mold`]). The `python` feature adds the pyo3 module `scenario_core` that `scenario/compiled.py` drives; the
 //! browser package `zeb/` builds on the plain crate.
 
+pub mod convention;
 pub mod fiber;
 pub mod field;
 pub mod mold;

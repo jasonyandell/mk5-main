@@ -73,6 +73,16 @@ weighted. A decision that has not found n within `draw_budget` proposals,
 or whose fiber holds no world the field explains, plans over the uniform
 sample instead, and says so (`Walt.fallbacks`).
 
+A convention (`Config.convention`, `scenario.convention`) overlays the live
+seat: as sender, at a gated position it plays the plan's best tile among
+the rule's allowed ones (the q reported is the plan's, unchanged;
+`Walt.sent` says the override was in force); as reader, its worlds are
+drawn from the rule-only posterior — the same rejection from the uniform
+stream, under the 0/1 likelihood that the partner's gated decisions obeyed
+the rule (`convention_likelihood`), no coin drawn, with the same budget and
+fallback. A reader draws from the uniform otherwise, never from β^F: the
+field's likelihood would model the partner's moves a second time.
+
 Every random draw — scenario sampling, the posterior's coins and the dice
 tape — comes from SplitMix64 streams seeded by the invocation's coordinate
 (viewer, own hand, record; never the rung), so a decision is a pure function
@@ -92,6 +102,7 @@ from typing import Callable
 from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
+from scenario.convention import Convention
 from scenario.field import FieldNet
 from scenario.fiber import Fiber, sample_worlds
 from scenario.record import Record, empty_record, record_from_state, remaining_hand
@@ -129,6 +140,7 @@ class Config:
     field_eps: float = 0.0      # ε of the stochastic field F_σ; 0 is the deterministic net
     draw: str = "uniform"       # the live rung's worlds: "uniform" on the fiber, or "posterior" β^F
     draw_budget: int = DRAW_BUDGET
+    convention: Convention | None = None   # the live seat's convention overlay; None is off
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.field_eps <= 1.0:
@@ -147,6 +159,9 @@ class Config:
             raise ValueError("the posterior is the field net's, drawn by a one-rung player")
         if self.draw_budget < 1:
             raise ValueError("the draw budget is at least one proposal")
+        if self.convention is not None and self.convention.read and self.draw != "uniform":
+            raise ValueError("a convention reader draws from the uniform: the field's posterior "
+                             "would model the partner's moves twice")
 
     @property
     def level(self) -> int:
@@ -270,8 +285,9 @@ class Walt:
         self.belief = belief
         self._pi: dict[tuple, int] = {}   # modeled decisions, by (rung, seat, hand, record key)
         self.nodes = 0                     # cells evaluated in the last decision
-        self.proposals = 0                 # posterior: uniform proposals drawn in the last decision
-        self.fallbacks = 0                 # posterior: 1 when the last decision planned over the uniform
+        self.proposals = 0                 # posterior or reader: uniform proposals drawn in the last decision
+        self.fallbacks = 0                 # posterior or reader: 1 when the last decision planned over the uniform
+        self.sent = 0                      # convention: 1 when the sender's rule chose the last decision's tile
 
     # -- the player at the table --------------------------------------------
 
@@ -281,7 +297,7 @@ class Walt:
         if isinstance(inv, int):
             return inv, {inv: float("nan")}
         q = inv.action_values()
-        return _best(q, inv.maximize), q
+        return self._choice(q, inv), q
 
     def analyze(self, state: ZebGameState, bid: int) -> "Analysis":
         """`decide`, opened up: the same tile and action values, plus where
@@ -291,7 +307,20 @@ class Walt:
         if isinstance(inv, int):
             return Analysis(inv, {inv: float("nan")}, [], [], {inv: ()})
         q = inv.action_values()
-        return Analysis(_best(q, inv.maximize), q, inv.worlds, inv.weights, inv.outcomes())
+        return Analysis(self._choice(q, inv), q, inv.worlds, inv.weights, inv.outcomes())
+
+    def _choice(self, q: dict[int, float], inv: "_Invocation") -> int:
+        """The plan's best tile — or, where the convention's sender gate
+        holds, the plan's best among the tiles the rule allows."""
+        conv = self.config.convention
+        if conv is None or not conv.send:
+            return _best(q, inv.maximize)
+        own = inv.worlds[0][inv.viewer]
+        allowed = conv.sends(inv.rules, inv.viewer, inv.bidder, own, inv.root)
+        if allowed is None:
+            return _best(q, inv.maximize)
+        self.sent = 1
+        return _best({t: v for t, v in q.items() if (allowed >> t) & 1}, inv.maximize)
 
     def _root(self, state: ZebGameState, bid: int) -> "_Invocation | int":
         """The live invocation at a decision — or the tile, when it is forced."""
@@ -303,7 +332,7 @@ class Walt:
         rules = rules_for(state.decl_id)
         legal = tiles_of(rules.legal(own, rec.led))
         self._pi.clear()
-        self.nodes = self.proposals = self.fallbacks = 0
+        self.nodes = self.proposals = self.fallbacks = self.sent = 0
         if len(legal) == 1:
             return legal[0]
         return self._invocation(self.config.level, viewer, own, rec, rules, bid, sit.bidder_team, sit)
@@ -332,6 +361,24 @@ class Walt:
             w[r] *= eps / n + (1.0 - eps) * (1.0 if hit else 0.0)
         return w
 
+    def convention_likelihood(self, sit: Situation, worlds: list[World]) -> list[float]:
+        """For each world, 1 if every gated decision the viewer's partner made
+        obeyed the convention's reading — replayed with the hand the world
+        gives the partner — else 0. Ungated decisions, and every decision of
+        the opponents, are not evidence."""
+        conv = self.config.convention
+        if conv is None:
+            raise ValueError("no convention to read")
+        rules = rules_for(sit.decl_id)
+        partner = (sit.viewer + 2) % 4
+        w = [1.0] * len(worlds)
+        for r, seat, hand, rec, tile, _ in _hidden_plays(sit, worlds, rules):
+            if seat == partner and w[r]:
+                allowed = conv.reads(rules, seat, sit.bidder, hand, rec)
+                if allowed is not None and not (allowed >> tile) & 1:
+                    w[r] = 0.0
+        return w
+
     # -- the ladder ------------------------------------------------------------
 
     def _invocation(self, k: int, viewer: int, own: int, rec: Record, rules: Rules,
@@ -346,23 +393,31 @@ class Walt:
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
         worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
         weights = [1.0] * len(worlds)
+        conv = self.config.convention
         if sit is not None and self.config.draw == "posterior":
-            worlds, weights = self._posterior(sit, worlds, exact, seed)
+            worlds, weights = self._drawn(sit, worlds, exact, seed, self.field_likelihood,
+                                          self.config.field_coin > 0)
+        elif sit is not None and conv is not None and conv.read:
+            worlds, weights = self._drawn(sit, worlds, exact, seed, self.convention_likelihood, False)
         if sit is not None and self.belief is not None:
             weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
         floor = 1 if exact else rung.floor
-        return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor)
+        bidder = sit.bidder if sit is not None else None
+        return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor, bidder)
 
-    def _posterior(self, sit: Situation, uniform: list[World], exact: bool,
-                   seed: int) -> tuple[list[World], list[float]]:
-        """The live rung's scenarios under β^F and their weights, given the
-        uniform ones: the fiber weighted by L normalized when `exact`, else
-        n draws by rejection, equally weighted — or the uniform, when the
-        field explains no world of the fiber or the budget runs out."""
+    def _drawn(self, sit: Situation, uniform: list[World], exact: bool, seed: int,
+               likelihood: Belief, coined: bool) -> tuple[list[World], list[float]]:
+        """The live rung's scenarios under uniform × `likelihood` (the field's
+        β^F, or the convention reader's filter) and their weights, given the
+        uniform ones: the fiber weighted by L normalized when `exact`, else n
+        draws by rejection, equally weighted — a proposal is kept when a coin
+        falls below its L ≤ 1 (`coined`), or, with no coin, when L is
+        positive — or the uniform, when L vanishes on the whole fiber or the
+        budget runs out."""
         n = len(uniform)
         if exact:
-            like = self.field_likelihood(sit, uniform)
+            like = likelihood(sit, uniform)
             total = sum(like)
             if total > 0:
                 return uniform, [x / total for x in like]
@@ -372,13 +427,13 @@ class Walt:
         fiber = Fiber(sit.viewer, uniform[0][sit.viewer], rec.played,
                       tuple(rec.hand_size(s) for s in range(4)), rec.forbid)
         rng = SplitMix(seed)
-        coins = SplitMix(_mix(seed, COIN)) if cfg.field_coin else None
+        coins = SplitMix(_mix(seed, COIN)) if coined else None
         kept: list[World] = []
         while len(kept) < n and self.proposals < cfg.draw_budget:
             world = fiber.draw(rng)
             self.proposals += 1
             u = coins.random() if coins is not None else 0.0
-            if u < self.field_likelihood(sit, [world])[0]:
+            if u < likelihood(sit, [world])[0]:
                 kept.append(world)
         if len(kept) < n:
             self.fallbacks = 1
@@ -437,8 +492,9 @@ class _Invocation:
 
     def __init__(self, walt: Walt, k: int, viewer: int, root: Record, rules: Rules,
                  bid: int, bidder_team: int, worlds: list[World],
-                 weights: list[float], tapes: list[int], floor: int):
+                 weights: list[float], tapes: list[int], floor: int, bidder: int | None = None):
         self.walt = walt
+        self.bidder = bidder    # the declaring seat, known at the live rung (the convention's sender reads it)
         self.k = k
         self.viewer = viewer
         self.root = root

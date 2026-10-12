@@ -7,7 +7,8 @@ construction one rung down, bottoming out in random legal play. See
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
-          [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>][,py]
+          [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>]
+          [,c=<convention>:S|R|SR][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -31,6 +32,19 @@ at `E=` — would have played the observed moves in. An enumerated fiber is
 weighted by that likelihood normalized; a sampled one is n draws by
 rejection from the uniform stream, within `D=` proposals (default 2^22),
 else the uniform sample (`CompiledWalt.fallbacks` counts those decisions).
+
+`c=<name>:<arm>` overlays a convention on the live seat (`Config.convention`,
+`scenario/convention.py`, where every gate is stated): `name` is one of
+`handoff` (C2, the table's high-trump handoff), `handoff-singleton` (the
+same sender, the book's reading: a top trump from partner was his only
+one), `biggest` (C3, biggest count first) or `donation` (C1, count only on
+a guaranteed trick); `arm` is `S` (send: at a gated position play the
+plan's best tile among the rule's), `R` (read: draw the worlds from the
+rule-only posterior — keep a world iff the partner's gated decisions
+obeyed the rule in it — within `D=` proposals, else the uniform sample,
+counted in `fallbacks`) or `SR` (both). A reader needs `d=uniform`.
+`CompiledWalt.sent` counts the decisions whose tile the rule chose. Off by
+default.
 
 `f=` is the live rung's cell floor: below the root, where the live seat's
 cell holds fewer than f scenarios it stops maximizing over them and plays
@@ -70,6 +84,7 @@ from typing import Sequence
 from forge.zeb.types import ZebGameState
 
 from arena.hand_metrics import best_trump
+from scenario.convention import Convention
 from scenario.field import FieldNet
 from scenario.planner import DRAW_BUDGET, Belief, Config, Rung, Situation, Walt, World
 
@@ -104,11 +119,11 @@ class WaltPlay:
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
                  floor: int | None = None, field: FieldNet | None = None,
                  field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
-                 compiled: bool = True):
+                 convention: Convention | None = None, compiled: bool = True):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
-        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget)
+        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget, convention)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -139,8 +154,9 @@ class WaltPlay:
         engine = type(self.walt).__name__
         belief = "" if self.walt.belief is None else ", +external belief"
         field = "random" if c.field is None else "net" if c.field_eps == 0 else f"net+eps{c.field_eps:g}"
+        conv = "" if c.convention is None else f", convention={c.convention.name}:{c.convention.arm}"
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}{belief}, "
-                f"field={field}, draw={c.draw}, {engine})")
+                f"field={field}, draw={c.draw}{conv}, {engine})")
 
 
 def parse_walt_spec(arg: str) -> WaltPlay:
@@ -164,6 +180,11 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["draw"] = t[2:]
         elif t.startswith("D="):
             kw["draw_budget"] = int(t[2:])
+        elif t.startswith("c="):
+            name, _, arm = t[2:].partition(":")
+            if arm not in ("S", "R", "SR"):
+                raise ValueError(f"a convention's arm is S, R or SR, not {arm!r}")
+            kw["convention"] = Convention(name, send="S" in arm, read="R" in arm)
         elif t[0] in "knmhg" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
                    "h": "horizon", "g": "horizon_inner"}[t[0]]

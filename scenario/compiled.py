@@ -48,10 +48,13 @@ class CompiledWalt:
             [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
             None if config.field is None else config.field.to_bytes(), config.field_eps,
             config.draw, config.draw_budget,
+            None if config.convention is None else
+            (config.convention.name, config.convention.send, config.convention.read),
         )
         self.nodes = 0      # cells evaluated in the last decision or batch
-        self.proposals = 0  # posterior: uniform proposals drawn in the last decision or batch
-        self.fallbacks = 0  # posterior: decisions of the last batch planned over the uniform
+        self.proposals = 0  # posterior or reader: uniform proposals drawn in the last decision or batch
+        self.fallbacks = 0  # posterior or reader: decisions of the last batch planned over the uniform
+        self.sent = 0       # convention: decisions of the last batch whose tile the sender's rule chose
 
     def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
         return self.decide_batch([state], [bid])[0]
@@ -104,10 +107,10 @@ class CompiledWalt:
                 raise ValueError(f"the field net plays pip-trump declarations only, not {state.decl_id}")
             reqs.append((
                 state.decl_id, viewer, own, rec.played, rec.leader, list(rec.trick),
-                rec.banked, rec.forbid, sit.bid, sit.bidder_team, list(sit.plays),
+                rec.banked, rec.forbid, sit.bid, sit.bidder, list(sit.plays),
             ))
             sits.append((i, sit))
-        self.nodes = self.proposals = self.fallbacks = 0
+        self.nodes = self.proposals = self.fallbacks = self.sent = 0
         if reqs:
             weights: list[list[float] | None] = [None] * len(reqs)
             if self.belief is not None:
@@ -116,7 +119,8 @@ class CompiledWalt:
             for (i, _), res in zip(sits, getattr(self._core, method)(reqs, weights, self.threads)):
                 out[i] = (res[0], res)
                 self.nodes += res[2]
-                self.proposals += res[-2]
-                self.fallbacks += res[-1]
+                self.proposals += res[-3]
+                self.fallbacks += res[-2]
+                self.sent += res[-1]
         assert all(o is not None for o in out)
         return out  # type: ignore[return-value]

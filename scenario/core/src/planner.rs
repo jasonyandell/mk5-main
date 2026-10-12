@@ -23,11 +23,19 @@
 //! instead of the uniform ([`Draw::Posterior`]): the enumerated fiber weighted
 //! by the likelihood L normalized, or n draws by rejection from the uniform
 //! stream, equally weighted; the uniform sample when no world explains the
-//! record or the proposal budget runs out (`Walt._posterior`).
+//! record or the proposal budget runs out (`Walt._drawn`).
+//!
+//! A convention ([`Convention`], `scenario/convention.py`) overlays the live
+//! seat: its sender plays the plan's best tile among the rule's allowed ones
+//! at a gated position (the plan's q unchanged, [`Drawn::sent`] set); its
+//! reader draws the worlds by the same rejection under the 0/1 likelihood
+//! that the partner's gated decisions obeyed the rule, from the uniform draw
+//! only.
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 
+use crate::convention::Convention;
 use crate::fiber::{sample_worlds, Fiber};
 use crate::field::FieldNet;
 use crate::rules::Rules;
@@ -325,17 +333,19 @@ fn tiles(mut mask: u32) -> impl Iterator<Item = u8> {
 pub enum Draw {
     /// Uniform on the fiber.
     Uniform,
-    /// The field's posterior β^F, by rejection within this many uniform proposals.
-    Posterior(u64),
+    /// The field's posterior β^F, by rejection within `Config::draw_budget` uniform proposals.
+    Posterior,
 }
 
-/// How a decision's live scenarios were drawn.
+/// How a decision's live scenarios were drawn, and whether a convention chose its tile.
 #[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 pub struct Drawn {
-    /// Uniform proposals the posterior examined.
+    /// Uniform proposals the posterior (or the convention's reader) examined.
     pub proposals: u64,
-    /// The posterior fell back to the uniform sample.
+    /// The posterior (or the reader) fell back to the uniform sample.
     pub fell_back: bool,
+    /// The convention's sender gate held: the tile is the plan's best among the rule's.
+    pub sent: bool,
 }
 
 /// A particular Walt (`scenario.planner.Config`): the decision is a pure function of this and the position.
@@ -352,6 +362,10 @@ pub struct Config {
     pub field_eps: f64,
     /// The live rung's scenarios: uniform, or the field's posterior.
     pub draw: Draw,
+    /// Uniform proposals a rejection draw (the posterior's or the reader's) may examine.
+    pub draw_budget: u64,
+    /// The live seat's convention overlay; None is off. A reader needs the uniform draw.
+    pub convention: Option<Convention>,
 }
 
 impl Config {
@@ -366,6 +380,7 @@ struct Ctx<'a> {
     rules: &'a Rules,
     bid: i32,
     bt: usize,
+    bidder: u8,
     pi: Map<(u8, u8, u32, Rec), u8>,
     nodes: u64,
     drawn: Drawn,
@@ -458,25 +473,43 @@ fn likelihood(ctx: &mut Ctx, ev: &Evidence, world: &[u32; 4], eps: f64, u: f64) 
     p
 }
 
-/// The live rung's scenarios under β^F and their weights, given the uniform
-/// ones (`Walt._posterior`): the fiber weighted by L normalized when `exact`,
-/// else n draws by rejection, equally weighted — or the uniform, when the
-/// field explains no world of the fiber or the budget runs out.
-fn posterior(
+/// 1 if every gated decision of the viewer's partner obeyed the convention's
+/// reading, replayed with the hand the world gives him, else 0
+/// (`Walt.convention_likelihood`).
+fn reading(ctx: &Ctx, conv: &Convention, ev: &Evidence, viewer: u8, world: &[u32; 4]) -> f64 {
+    let partner = (viewer + 2) % 4;
+    for &(seat, rec, tile, before) in &ev.plays {
+        if seat == partner {
+            let hand = (world[seat as usize] | ev.played_by[seat as usize]) & !before;
+            if conv.reads(ctx.rules, seat, ctx.bidder, hand, &rec).is_some_and(|a| (a >> tile) & 1 == 0) {
+                return 0.0;
+            }
+        }
+    }
+    1.0
+}
+
+/// The live rung's scenarios under uniform × a likelihood — the field's β^F,
+/// or the convention reader's filter — and their weights, given the uniform
+/// ones (`Walt._drawn`): the fiber weighted by L normalized when `exact`,
+/// else n draws by rejection, equally weighted (a coin below L when `coined`,
+/// else L positive) — or the uniform, when L vanishes on the whole fiber or
+/// the budget runs out. `like(ctx, world, u)` may return early once it is ≤ u.
+#[allow(clippy::too_many_arguments)]
+fn drawn(
     ctx: &mut Ctx,
     viewer: u8,
     rec: &Rec,
-    plays: &[(u8, u8)],
     uniform: Vec<[u32; 4]>,
     exact: bool,
     seed: u64,
+    budget: u64,
+    coined: bool,
+    like: impl Fn(&mut Ctx, &[u32; 4], f64) -> f64,
 ) -> (Vec<[u32; 4]>, Vec<f64>) {
-    let Draw::Posterior(budget) = ctx.cfg.draw else { unreachable!("the posterior draw only") };
     let n = uniform.len();
-    let eps = eps_exact(ctx.cfg.field_eps);
-    let ev = Evidence::new(ctx.rules, viewer, plays);
     if exact {
-        let like: Vec<f64> = uniform.iter().map(|w| likelihood(ctx, &ev, w, eps, -1.0)).collect();
+        let like: Vec<f64> = uniform.iter().map(|w| like(ctx, w, -1.0)).collect();
         let total = fsum(like.iter().copied());
         if total > 0.0 {
             return (uniform, like.into_iter().map(|x| x / total).collect());
@@ -487,13 +520,13 @@ fn posterior(
     let sizes = [rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3)];
     let mut fiber = Fiber::new(viewer, uniform[0][viewer as usize], rec.played, sizes, rec.forbid);
     let mut rng = SplitMix::new(seed);
-    let mut coins = (eps > 0.0).then(|| SplitMix::new(mix(&[seed, COIN])));
+    let mut coins = coined.then(|| SplitMix::new(mix(&[seed, COIN])));
     let mut kept = Vec::with_capacity(n);
     while kept.len() < n && ctx.drawn.proposals < budget {
         let world = fiber.draw(&mut rng);
         ctx.drawn.proposals += 1;
         let u = coins.as_mut().map_or(0.0, |c| c.random());
-        if u < likelihood(ctx, &ev, &world, eps, u) {
+        if u < like(ctx, &world, u) {
             kept.push(world);
         }
     }
@@ -533,8 +566,15 @@ impl Inv {
         let weights = match live {
             Some((plays, external)) => {
                 let mut w = vec![1.0; worlds.len()];
-                if cfg.draw != Draw::Uniform {
-                    (worlds, w) = posterior(ctx, viewer, rec, plays, worlds, exact, seed);
+                if cfg.draw == Draw::Posterior {
+                    let eps = eps_exact(cfg.field_eps);
+                    let ev = Evidence::new(ctx.rules, viewer, plays);
+                    let like = |ctx: &mut Ctx, world: &[u32; 4], u: f64| likelihood(ctx, &ev, world, eps, u);
+                    (worlds, w) = drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, eps > 0.0, like);
+                } else if let Some(conv) = cfg.convention.filter(|c| c.read) {
+                    let ev = Evidence::new(ctx.rules, viewer, plays);
+                    let like = |ctx: &mut Ctx, world: &[u32; 4], _: f64| reading(ctx, &conv, &ev, viewer, world);
+                    (worlds, w) = drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, false, like);
                 }
                 if let Some(x) = external {
                     assert_eq!(x.len(), w.len(), "external weights must match the live scenarios");
@@ -889,8 +929,8 @@ pub struct Decision<'a> {
     pub rec: Rec,
     /// The contract, in points (42 for a mark bid).
     pub bid: i32,
-    /// The bidding side: 0 for seats 0 and 2, 1 for seats 1 and 3.
-    pub bidder_team: u8,
+    /// The declaring seat.
+    pub bidder: u8,
     /// Every play so far as (seat, tile), from the opening lead.
     pub plays: &'a [(u8, u8)],
 }
@@ -901,7 +941,8 @@ fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (C
         cfg,
         rules: d.rules,
         bid: d.bid,
-        bt: d.bidder_team as usize,
+        bt: (d.bidder % 2) as usize,
+        bidder: d.bidder,
         pi: Map::default(),
         nodes: 0,
         drawn: Drawn::default(),
@@ -916,7 +957,22 @@ fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (C
 pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<(u8, f64)>, u64, Drawn) {
     let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
-    (best(&q, inv.maximize), q, ctx.nodes, ctx.drawn)
+    let tile = choice(&mut ctx, d, &q, inv.maximize);
+    (tile, q, ctx.nodes, ctx.drawn)
+}
+
+/// The plan's best tile — or, where the convention's sender gate holds, the
+/// plan's best among the tiles the rule allows (`Walt._choice`).
+fn choice(ctx: &mut Ctx, d: &Decision, q: &[(u8, f64)], maximize: bool) -> u8 {
+    let allowed = ctx.cfg.convention.filter(|c| c.send).and_then(|c| c.sends(d.rules, d.viewer, d.bidder, d.own, &d.rec));
+    match allowed {
+        None => best(q, maximize),
+        Some(a) => {
+            ctx.drawn.sent = true;
+            let within: Vec<(u8, f64)> = q.iter().copied().filter(|&(t, _)| (a >> t) & 1 == 1).collect();
+            best(&within, maximize)
+        }
+    }
 }
 
 /// `decide`, opened up (`Walt.analyze`): the decision plus the live
@@ -944,7 +1000,7 @@ pub fn analyze(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> Analysis
     let q = inv.action_values(&mut ctx);
     let outcomes = inv.outcomes(&mut ctx);
     Analysis {
-        tile: best(&q, inv.maximize),
+        tile: choice(&mut ctx, d, &q, inv.maximize),
         q,
         nodes: ctx.nodes,
         worlds: std::mem::take(&mut inv.worlds),

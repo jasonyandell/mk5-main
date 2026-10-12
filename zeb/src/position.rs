@@ -152,7 +152,7 @@ impl Position {
             own: self.own,
             rec: self.rec,
             bid: self.bid as i32,
-            bidder_team: self.bidder % 2,
+            bidder: self.bidder,
             plays: &self.plays,
         }
     }

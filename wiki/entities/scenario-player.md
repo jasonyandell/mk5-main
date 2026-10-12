@@ -844,6 +844,27 @@ back at 2^20, 10 of the 12 at plays 16+), and the softened one was null at power
 is a Walt yet does. `scratch/posterior-arena/` (`table.py`, `probe.py`, `report.py`,
 `arena.log`, `report.json`).
 
+**A convention overlay, default off (2026-10-12).** The book's conventions
+(`scratch/book/CANDIDATES.md`) are joint deviations, so the overlay has two halves
+in both engines, bit-identical referee ↔ core (`scenario/convention.py`, core
+`convention.rs`; `Config.convention = Convention(name, send, read)`, arena
+`c=<name>:S|R|SR`). A rule is a gate in the mover's chair (seat role, own hand,
+record) naming the allowed tiles. *Send*: the plan runs and its q is reported, but
+at a gate the seat plays the plan's best allowed tile (`sent` counts it). *Read*:
+the live seat draws its worlds from the rule-only posterior, #111's rejection from
+the uniform stream under the 0/1 likelihood that the partner's gated decisions
+obeyed the rule in that world (enumerated fiber: the filter normalized; none
+survives or the budget runs out: the uniform, counted in `fallbacks`). A reader
+composes with `draw="uniform"` only. Four rules: `handoff` (C2, the table's
+high-trump handoff), `handoff-singleton` (the same sender, read the book's way:
+a top trump from partner was his only one), `biggest` (C3) and `donation` (C1).
+The decision request now carries the bidder seat, not the team; with no
+convention every byte is main's (Zeb's fixture untouched). The senders' price on
+250,000 Zeb self-play deals (`scratch/book/wave1/overlay-price.md`): the handoff
+fires in 19% of bid hands at −0.039 pmake per firing (55% ties), biggest count
+in 5% at −0.020, the donation in 17% at −0.007 (85% ties). Arms S/R/SR are graded
+separately.
+
 **O2 beats O1 on real endgames (2026-10-12, #113).** On 566 three-trick endgames
 from 142 deals (V's hand common knowledge, P's private, opponents the deployed net,
 margin utility), the common-information coordinator O2 beats the Walt partnership map's

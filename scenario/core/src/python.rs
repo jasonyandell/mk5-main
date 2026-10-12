@@ -2,9 +2,11 @@
 //! `scenario/compiled.py` drives.
 //!
 //! Interface: `Core(rungs, utility, seed, field, field_eps, draw,
-//! draw_budget)` with rungs as (n_worlds, horizon, floor), `field` the field
-//! net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the stochastic
-//! field's ε, and `draw` "uniform" or "posterior" (the live rung's worlds);
+//! draw_budget, convention)` with rungs as (n_worlds, horizon, floor), `field`
+//! the field net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the
+//! stochastic field's ε, `draw` "uniform" or "posterior" (the live rung's
+//! worlds), and `convention` None or (name, send, read), the live seat's
+//! overlay (`scenario.convention`);
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
@@ -19,6 +21,7 @@ use std::sync::Mutex;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+use crate::convention::{Convention, Rule};
 use crate::field::{self, FieldNet};
 use crate::mold;
 use crate::planner::{self, analyze, decide, Config, Decision, Draw, Rec, MAX_WORLDS};
@@ -26,7 +29,8 @@ use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
 /// (decl, viewer, own, played, leader, trick, (banked0, banked1),
-///  (forbid0, forbid1, forbid2, forbid3), bid, bidder_team, plays as (seat, tile))
+///  (forbid0, forbid1, forbid2, forbid3), bid, bidder (the declaring seat),
+///  plays as (seat, tile))
 type Req = (u8, u8, u32, u32, u8, Vec<u8>, (u8, u8), (u32, u32, u32, u32), i32, u8, Vec<(u8, u8)>);
 
 /// One request ready to plan, with its external weights.
@@ -36,12 +40,13 @@ type Job<'a> = (Decision<'a>, Option<&'a [f64]>);
 type World = (u32, u32, u32, u32);
 
 /// A decision as Python receives it: (tile, [(tile, Q)], cells evaluated,
-/// posterior proposals, whether the posterior fell back to the uniform).
-type Decided = (u8, Vec<(u8, f64)>, u64, u64, bool);
+/// rejection proposals, whether the draw fell back to the uniform, whether
+/// the convention's sender chose the tile).
+type Decided = (u8, Vec<(u8, f64)>, u64, u64, bool, bool);
 
 /// An analysis as Python receives it: (tile, [(tile, Q)], cells evaluated,
-/// worlds, weights, [(tile, per-world outcomes)], proposals, fell back).
-type Analyzed = (u8, Vec<(u8, f64)>, u64, Vec<World>, Vec<f64>, Vec<(u8, Vec<f64>)>, u64, bool);
+/// worlds, weights, [(tile, per-world outcomes)], proposals, fell back, sent).
+type Analyzed = (u8, Vec<(u8, f64)>, u64, Vec<World>, Vec<f64>, Vec<(u8, Vec<f64>)>, u64, bool, bool);
 
 /// One declaration's tables: (led_suit, follow_bits, rank, count).
 type Tables = (Vec<u8>, Vec<u32>, Vec<Vec<u8>>, Vec<u8>);
@@ -98,7 +103,8 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET))]
+    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None))]
+    #[allow(clippy::too_many_arguments)]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
         utility: &str,
@@ -107,6 +113,7 @@ impl Core {
         field_eps: f64,
         draw: &str,
         draw_budget: u64,
+        convention: Option<(String, bool, bool)>,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -136,15 +143,29 @@ impl Core {
         }
         let draw = match draw {
             "uniform" => Draw::Uniform,
-            "posterior" if rungs.len() == 1 && field.is_some() => Draw::Posterior(draw_budget),
+            "posterior" if rungs.len() == 1 && field.is_some() => Draw::Posterior,
             "posterior" => {
                 return Err(PyValueError::new_err("the posterior is the field net's, drawn by a one-rung player"))
             }
             other => return Err(PyValueError::new_err(format!("unknown draw {other:?}"))),
         };
+        let convention = match convention {
+            None => None,
+            Some((name, send, read)) => {
+                let rule = Rule::named(&name)
+                    .ok_or_else(|| PyValueError::new_err(format!("unknown convention {name:?}")))?;
+                if !(send || read) {
+                    return Err(PyValueError::new_err("a convention sends, reads, or both"));
+                }
+                if read && draw != Draw::Uniform {
+                    return Err(PyValueError::new_err("a convention reader draws from the uniform"));
+                }
+                Some(Convention { rule, send, read })
+            }
+        };
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw }, rules })
+        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`
@@ -173,7 +194,7 @@ impl Core {
         let cfg = &self.cfg;
         Ok(run(py, &jobs, threads, |(d, w)| {
             let (tile, q, nodes, drawn) = decide(cfg, d, *w);
-            (tile, q, nodes, drawn.proposals, drawn.fell_back)
+            (tile, q, nodes, drawn.proposals, drawn.fell_back, drawn.sent)
         }))
     }
 
@@ -192,7 +213,7 @@ impl Core {
         Ok(run(py, &jobs, threads, |(d, w)| {
             let a = analyze(cfg, d, *w);
             let worlds = a.worlds.into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect();
-            (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes, a.drawn.proposals, a.drawn.fell_back)
+            (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes, a.drawn.proposals, a.drawn.fell_back, a.drawn.sent)
         }))
     }
 
@@ -207,7 +228,7 @@ impl Core {
                     return Err(PyValueError::new_err("the field net plays pip-trump declarations only"));
                 }
                 let rec = rec_of(req)?;
-                let bt = req.9 as usize;
+                let bt = (req.9 % 2) as usize;
                 let z = net.scores(&net.features(rules, req.1, req.2, &rec, req.8, bt));
                 Ok((net.decide(rules, req.1, req.2, &rec, req.8, bt), z))
             })
@@ -254,6 +275,9 @@ impl Core {
         }
         let mut jobs = Vec::with_capacity(reqs.len());
         for (req, w) in reqs.iter().zip(weights) {
+            if req.9 > 3 {
+                return Err(PyValueError::new_err("the bidder is a seat in 0..4"));
+            }
             let rec = rec_of(req)?;
             let d = Decision {
                 rules: self.rules_for(req.0)?,
@@ -261,7 +285,7 @@ impl Core {
                 own: req.2,
                 rec,
                 bid: req.8,
-                bidder_team: req.9,
+                bidder: req.9,
                 plays: &req.10,
             };
             if let Some(w) = w {

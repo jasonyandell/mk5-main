@@ -49,7 +49,7 @@ def _req(state, bid=30):
     sit = situation_from_state(state, bid)
     rec = sit.record
     return (state.decl_id, sit.viewer, remaining_hand(state, sit.viewer), rec.played, rec.leader,
-            list(rec.trick), rec.banked, rec.forbid, bid, sit.bidder_team, list(sit.plays))
+            list(rec.trick), rec.banked, rec.forbid, bid, sit.bidder, list(sit.plays))
 
 
 def test_canon_sends_trump_to_six_and_keeps_the_set():
