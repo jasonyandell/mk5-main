@@ -698,6 +698,11 @@ Pages deploy, which had failed on every push for months, is gone. Plunge
 adopting it is Plunge's work: swap the book auction for `forecast` +
 `chooseBid`, keep its partner-pass and forced-30 rules.
 
+**The splats, drawn (2026-10-11).** `scenario/viz/` draws a pour in the
+browser — every legal move's splat at every planned play, the means alone
+beside them, and the deal's real ending as one line through every forecast:
+[[splat-visualizer]].
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Splats · Zeb</title>
+<style>
+:root {
+  --bg: #0b0d12; --panel: #11141b; --panel2: #151922; --line: #232835; --line2: #2e3442;
+  --ink: #dde0e7; --mute: #8f97a7; --faint: #5a6273;
+  --bid: #f2b35a; --def: #57c4bd; --truth: #ff5c7a;
+  --tile: #ebe5d6; --pip: #17191f;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--sans); }
+body { overflow-x: hidden; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.bid { color: var(--bid); } .def { color: var(--def); } .truth { color: var(--truth); } .mute { color: var(--mute); }
+
+header {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  padding: 10px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand b { font-size: 17px; letter-spacing: .02em; }
+.brand span { color: var(--mute); font-size: 12px; }
+#deals { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font: 12px var(--sans); color: var(--mute); background: transparent; cursor: pointer;
+  border: 1px solid var(--line2); border-radius: 999px; padding: 3px 10px;
+}
+.chip:hover { color: var(--ink); border-color: var(--faint); }
+.chip[aria-current="true"] { color: var(--ink); border-color: var(--ink); background: var(--panel2); }
+.chip .r { font-family: var(--mono); margin-left: 6px; }
+.keys { margin-left: auto; color: var(--faint); font-size: 11.5px; }
+kbd {
+  font: 10.5px var(--mono); color: var(--mute); border: 1px solid var(--line2);
+  border-bottom-width: 2px; border-radius: 4px; padding: 0 4px;
+}
+
+main { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 0; }
+aside { border-right: 1px solid var(--line); padding: 16px 18px 24px; display: flex; flex-direction: column; gap: 18px; }
+#center { padding: 14px 20px 16px; min-width: 0; }
+@media (max-width: 1000px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); }
+  .keys { display: none; }
+}
+
+h3 { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin-bottom: 8px; }
+.deal-line { color: var(--mute); }
+.deal-line b { color: var(--ink); font-weight: 600; }
+.caveat { color: var(--faint); font-size: 11.5px; margin-top: 4px; }
+
+/* the score: 42 points, bidders from the left, defenders from the right */
+.score { position: relative; height: 22px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+.score .fill { position: absolute; top: 0; bottom: 0; }
+.score .mark { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 1px dashed var(--ink); opacity: .55; }
+.score-text { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; }
+
+/* hands */
+.seat { padding: 7px 8px 8px; border: 1px solid transparent; border-radius: 8px; }
+.seat.mover { border-color: var(--line2); background: var(--panel); }
+.seat-head { display: flex; align-items: baseline; gap: 8px; font-size: 12px; margin-bottom: 6px; }
+.seat-head .who { font-weight: 600; }
+.seat-head .tag { font-size: 10.5px; color: var(--bg); border-radius: 3px; padding: 0 5px; font-weight: 600; }
+.seat-head .note { margin-left: auto; color: var(--faint); font-size: 11px; }
+.tiles { display: flex; gap: 4px; }
+.slot { width: 38px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.slot svg { display: block; }
+.slot.gone svg { opacity: .13; }
+.slot .cnt { font: 9.5px var(--mono); color: var(--faint); height: 11px; }
+.seat.veiled .slot:not(.gone) svg { opacity: .5; }
+.belief { width: 38px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.belief i { display: block; height: 100%; background: var(--ink); opacity: .8; }
+
+.trick { display: flex; gap: 10px; min-height: 52px; align-items: flex-start; }
+.trick .p { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; color: var(--mute); }
+.trick .empty { color: var(--faint); font-size: 12px; padding-top: 4px; }
+.log { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+.log div { border: 1px solid var(--line); border-radius: 4px; text-align: center; font-size: 10.5px; padding: 2px 0; color: var(--faint); }
+.log div.cur { border-color: var(--mute); }
+
+details { color: var(--mute); font-size: 12px; }
+details summary { cursor: pointer; color: var(--mute); }
+details p { margin-top: 7px; }
+details b { color: var(--ink); font-weight: 600; }
+
+#pos-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 6px; min-height: 40px; }
+#pos-head .big { font-size: 15px; font-weight: 600; }
+#pos-head .sub { color: var(--mute); }
+#chart { display: block; width: 100%; user-select: none; }
+#chart text { font-family: var(--sans); }
+#chart .n { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+#chart .row-hit { cursor: pointer; }
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; display: none; max-width: 300px;
+  background: #0f1218f2; border: 1px solid var(--line2); border-radius: 6px; padding: 7px 10px;
+  font-size: 12px; color: var(--ink); box-shadow: 0 6px 24px #0008;
+}
+#fail { padding: 40px; color: var(--mute); max-width: 640px; }
+#fail code { color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>Splats</b><span>Zeb · Walt's honest forecast, every legal move, every planned play</span></div>
+  <nav id="deals" aria-label="deals"></nav>
+  <div class="keys"><kbd>←</kbd><kbd>→</kbd> play &nbsp; <kbd>[</kbd><kbd>]</kbd> planned only &nbsp; <kbd>↑</kbd><kbd>↓</kbd> deal &nbsp; click a ridge to jump</div>
+</header>
+<main id="main">
+  <aside>
+    <section>
+      <h3>The deal</h3>
+      <div id="deal-line" class="deal-line"></div>
+      <div class="caveat">Every deal in this pour: seat 0 bids 30 and declares its best trump (the pour's construction, not an auction).</div>
+    </section>
+    <section>
+      <h3>Banked</h3>
+      <div id="score"></div>
+    </section>
+    <section>
+      <h3>The hands</h3>
+      <div id="hands"></div>
+    </section>
+    <section>
+      <h3 id="trick-title">The trick</h3>
+      <div id="trick"></div>
+      <div id="log" class="log"></div>
+    </section>
+    <section>
+      <details>
+        <summary>How to read it</summary>
+        <p>A <b>world</b> is one way the tiles the mover cannot see might lie. The <b>cell</b> is every sampled world that agrees with the public record; Walt chooses one move for the whole cell (the <b>plan</b>), and plays every world out under it.</p>
+        <p>The <b>splat</b> of a move is where those worlds end: the bidding team's final <b>margin</b>, −42 to +42. A margin m means the bidders banked (42 + m)/2 points, so margins are always even and each bar is one exact score. <b>pmake</b> is the mass at margin ≥ <span class="num">+18</span> (the bidders bank 30); for a defender, the good side is the left one, and its number is the set chance.</p>
+        <p>Bars are coloured by which side the ending favours (<span class="bid">made</span>, <span class="def">set</span>); the mover's side is the bright one. The white tick is the move's mean, and the strip above the splats shows the means alone: what a scalar player sees.</p>
+        <p>The <span class="truth">rose line</span> is how the deal really ended. It is the outcome of the line actually played, so on the chosen move it is the forecast's test; on the others it is a landmark.</p>
+        <p>The ridges below are the chosen move's splat at every planned play, each scaled to its own peak, coloured as above. Forced plays (one legal tile) have no plan and no splat.</p>
+        <p>The pour plans under the <b>make</b> utility, so <i>q</i> is pmake. Where the contract is already decided the plan stops and the tape plays the hand out, so margins past that point are the tape's, not the plan's (issue #107). The page shows the four real hands; the mover saw only its own: the other seats are drawn behind glass, with the share of the mover's worlds that put each tile where it really is.</p>
+      </details>
+    </section>
+  </aside>
+  <section id="center">
+    <div id="pos-head"></div>
+    <svg id="chart" role="img" aria-label="splats"></svg>
+  </section>
+</main>
+<div id="tip"></div>
+
+<script type="module">
+// -- the game's small facts ---------------------------------------------------------
+const C = {
+  bg: '#0b0d12', panel: '#11141b', line: '#232835', line2: '#2e3442', ink: '#dde0e7', mute: '#8f97a7',
+  faint: '#5a6273', bid: '#f2b35a', def: '#57c4bd', truth: '#ff5c7a', tile: '#ebe5d6', pip: '#17191f',
+};
+const TRUMP = ['blanks', 'aces', 'deuces', 'treys', 'fours', 'fives', 'sixes'];
+const COUNT = { 20: 10, 25: 10, 15: 5, 11: 5, 8: 5 };      // 5-5, 6-4, 5-0, 4-1, 3-2
+const pipsOf = t => { let h = 0; while ((h + 1) * (h + 2) / 2 <= t) h++; return [h, t - h * (h + 1) / 2]; };
+const nameOf = t => pipsOf(t).join('-');
+const isTrump = (t, decl) => pipsOf(t).includes(decl);
+const team = seat => seat % 2;
+const sideColor = seat => team(seat) === team(DATA.bidder) ? C.bid : C.def;
+const role = seat => seat === DATA.bidder ? 'bidder' : team(seat) === team(DATA.bidder) ? 'partner' : 'defense';
+const pct = x => `${Math.round(100 * x)}%`;
+const signed = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(Number.isInteger(x) ? 0 : 1);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+const PIPS = {
+  0: [], 1: [[.5, .5]], 2: [[.27, .27], [.73, .73]], 3: [[.27, .27], [.5, .5], [.73, .73]],
+  4: [[.27, .27], [.73, .27], [.27, .73], [.73, .73]],
+  5: [[.27, .27], [.73, .27], [.5, .5], [.27, .73], [.73, .73]],
+  6: [[.27, .24], [.27, .5], [.27, .76], [.73, .24], [.73, .5], [.73, .76]],
+};
+function dominoG(t, x, y, w, decl) {
+  const h = w / 2, [a, b] = pipsOf(t), r = Math.max(1.1, w * .045);
+  const edge = isTrump(t, decl) ? `stroke="${C.bid}" stroke-width="1.6"` : `stroke="#b9b2a2" stroke-width=".6"`;
+  let s = `<g transform="translate(${x},${y})"><rect x=".8" y=".8" width="${w - 1.6}" height="${h - 1.6}" rx="${w * .08}" fill="${C.tile}" ${edge}/>`;
+  s += `<line x1="${w / 2}" y1="${h * .18}" x2="${w / 2}" y2="${h * .82}" stroke="#9d9686" stroke-width=".8"/>`;
+  for (const [half, n] of [[0, a], [1, b]])
+    for (const [px, py] of PIPS[n]) s += `<circle cx="${(half + px) * h}" cy="${py * h}" r="${r}" fill="${C.pip}"/>`;
+  return s + '</g>';
+}
+const dominoSvg = (t, w, decl) => `<svg width="${w}" height="${w / 2}" viewBox="0 0 ${w} ${w / 2}">${dominoG(t, 0, 0, w, decl)}</svg>`;
+
+// -- state ---------------------------------------------------------------------------
+let DATA = null;
+const S = { d: 0, k: 0 };
+const deal = () => DATA.deals[S.d];
+const posAt = (dl, k) => dl.positions.find(p => p.play === k) || null;
+const moverAt = (dl, k) => k < DATA.plays ? dl.plays[k][0] : null;
+const $ = id => document.getElementById(id);
+
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  S.d = clamp((parseInt(h.get('deal')) || 1) - 1, 0, DATA.deals.length - 1);
+  S.k = clamp((parseInt(h.get('play')) || 1) - 1, 0, DATA.plays);
+}
+function go(d, k) {
+  S.d = clamp(d, 0, DATA.deals.length - 1);
+  S.k = clamp(k, 0, DATA.plays);
+  history.replaceState(null, '', `#deal=${S.d + 1}&play=${S.k + 1}`);
+  render();
+}
+function planned(step) {
+  const ks = deal().positions.map(p => p.play);
+  const next = step > 0 ? ks.find(k => k > S.k) : [...ks].reverse().find(k => k < S.k);
+  if (next !== undefined) go(S.d, next);
+}
+
+// -- the left column -----------------------------------------------------------------
+function renderDeal() {
+  const dl = deal(), bt = team(DATA.bidder), [b0, b1] = dl.banked[DATA.plays];
+  const bidPts = bt === 0 ? b0 : b1, defPts = 42 - bidPts, made = dl.margin >= DATA.threshold;
+  $('deal-line').innerHTML =
+    `<b>Deal ${S.d + 1}</b>${dl.seed != null ? ` · seed <span class="num">${dl.seed}</span>` : ''}<br>` +
+    `Seat ${DATA.bidder} bid <b class="num">${DATA.bid}</b>, <b>${TRUMP[dl.decl]}</b> are trump.<br>` +
+    `Real ending: <span class="num">${bidPts}–${defPts}</span>, <span class="${made ? 'bid' : 'def'}">${made ? 'made' : 'set'}</span>, ` +
+    `margin <span class="truth num">${signed(dl.margin)}</span>.`;
+
+  const [p0, p1] = dl.banked[S.k], bp = bt === 0 ? p0 : p1, dp = bt === 0 ? p1 : p0;
+  const setAt = 42 - DATA.bid + 1;
+  $('score').innerHTML =
+    `<div class="score"><div class="fill" style="left:0;width:${bp / 42 * 100}%;background:${C.bid}"></div>` +
+    `<div class="fill" style="right:0;width:${dp / 42 * 100}%;background:${C.def}"></div>` +
+    `<div class="mark" style="left:${DATA.bid / 42 * 100}%"></div></div>` +
+    `<div class="score-text"><span><span class="bid num">${bp}</span> <span class="mute">bidders · need ${DATA.bid}</span></span>` +
+    `<span><span class="mute">set at ${setAt} ·</span> <span class="def num">${dp}</span> <span class="mute">defense</span></span></div>`;
+}
+
+function renderHands() {
+  const dl = deal(), k = S.k, mover = moverAt(dl, k), pos = posAt(dl, k);
+  const gone = new Map(dl.plays.slice(0, k).map(([s, t], i) => [t, i]));
+  const belief = new Map((pos ? pos.belief : []).map(([s, t, p]) => [t, p]));
+  const order = [DATA.bidder, (DATA.bidder + 1) % 4, (DATA.bidder + 2) % 4, (DATA.bidder + 3) % 4];
+  $('hands').innerHTML = order.map(seat => {
+    const veiled = mover !== null && seat !== mover;
+    const col = sideColor(seat);
+    const tiles = [...dl.hands[seat]].sort((a, b) => b - a).map(t => {
+      const out = gone.has(t), p = belief.get(t);
+      const tip = out ? `${nameOf(t)} · played at play ${gone.get(t) + 1}`
+        : p !== undefined ? `${nameOf(t)} · ${pct(p)} of seat ${mover}'s ${pos.worlds} worlds put it with seat ${seat}, where it really is`
+        : nameOf(t);
+      const plan = pos && seat === mover && t === pos.chosen;
+      return `<div class="slot${out ? ' gone' : ''}" data-tip="${tip}">` +
+        `<div style="${plan ? `outline:1.5px solid ${C.ink};outline-offset:2px;border-radius:3px` : ''}">${dominoSvg(t, 38, dl.decl)}</div>` +
+        (veiled && pos && !out ? `<div class="belief"><i style="width:${(p ?? 0) * 100}%"></i></div>` : `<div class="cnt">${COUNT[t] && !out ? COUNT[t] : ''}</div>`) +
+        `</div>`;
+    }).join('');
+    const note = mover === null ? '' : seat === mover ? (pos ? 'to play · its own hand is all it sees' : 'to play · one legal tile')
+      : `hidden from seat ${mover}`;
+    return `<div class="seat${seat === mover ? ' mover' : ''}${veiled ? ' veiled' : ''}">` +
+      `<div class="seat-head"><span class="tag" style="background:${col}">${seat}</span>` +
+      `<span class="who" style="color:${col}">${role(seat)}</span><span class="note">${note}</span></div>` +
+      `<div class="tiles">${tiles}</div></div>`;
+  }).join('') + (pos ? `<div class="caveat" style="margin-top:6px">Bar under a hidden tile: the share of the mover's worlds that put it where it really is.</div>` : '');
+}
+
+function renderTrick() {
+  const dl = deal(), k = S.k, ti = Math.floor(k / 4), start = 4 * ti;
+  const done = k === DATA.plays;
+  const tiles = done ? [] : dl.plays.slice(start, k);
+  const leader = done ? null : dl.plays[start][0];
+  $('trick-title').textContent = done ? 'The tricks' : `Trick ${ti + 1} · seat ${leader} leads`;
+  $('trick').innerHTML = done ? '' : tiles.length
+    ? `<div class="trick">${tiles.map(([s, t]) => `<div class="p">${dominoSvg(t, 42, dl.decl)}<span style="color:${sideColor(s)}">seat ${s}</span></div>`).join('')}</div>`
+    : `<div class="trick"><div class="empty">${k ? `Trick ${ti} went to seat ${dl.tricks[ti - 1].winner} for ${dl.tricks[ti - 1].points}.` : 'Nothing played yet.'}</div></div>`;
+  $('log').innerHTML = dl.tricks.map((tr, i) => {
+    const shown = 4 * (i + 1) <= k;
+    return `<div data-tip="trick ${i + 1}${shown ? ` → seat ${tr.winner}, ${tr.points} point${tr.points > 1 ? "s" : ""}` : ""}" class="${i === ti && !done ? "cur" : ""}" style="${shown ? `color:${sideColor(tr.winner)};border-color:${sideColor(tr.winner)}55` : ''}">` +
+      `${shown ? `<span class="num">${tr.points}</span>` : `T${i + 1}`}</div>`;
+  }).join('');
+}
+
+// -- the header over the chart -------------------------------------------------------
+function renderPosHead() {
+  const dl = deal(), k = S.k, pos = posAt(dl, k), mover = moverAt(dl, k);
+  if (k === DATA.plays) {
+    const made = dl.margin >= DATA.threshold;
+    $('pos-head').innerHTML = `<span class="big">The hand is over.</span><span class="sub">The bidders ${made ? 'made it' : 'were set'}: margin <span class="truth num">${signed(dl.margin)}</span>. Step back with ←, or read the ridges below.</span>`;
+    return;
+  }
+  const t = dl.plays[k][1], inTrick = k % 4;
+  const where = `Play <span class="num">${k + 1}</span> of 28 · trick ${Math.floor(k / 4) + 1}, ${['leads', '2nd', '3rd', '4th'][inTrick]}`;
+  const who = `<span style="color:${sideColor(mover)}">seat ${mover} (${role(mover)})</span>`;
+  if (!pos) {
+    $('pos-head').innerHTML = `<span class="big">${where}</span><span class="sub">${who} has one legal tile, the ${nameOf(t)}: forced, no plan, no splat.</span>`;
+    return;
+  }
+  const bidSide = pos.sign > 0;
+  $('pos-head').innerHTML = `<span class="big">${where}</span>` +
+    `<span class="sub">${who} to play · the cell: <span class="num">${pos.worlds}</span> worlds · ` +
+    `wants ${bidSide ? '<span class="bid">made →</span>' : '<span class="def">← set</span>'} · the plan: <b>${nameOf(pos.chosen)}</b></span>`;
+}
+
+// -- the chart: splats on top, the hand's ridges below, one margin axis -------------
+function renderChart() {
+  const svg = $('chart'), dl = deal(), k = S.k, pos = posAt(dl, k), T = DATA.threshold;
+  const W = Math.max(480, svg.clientWidth || svg.parentNode.clientWidth - 40);
+  const LG = 132, RG = 132, PW = W - LG - RG;
+  const X = m => LG + (m + 43) / 86 * PW;                  // bins are 2 wide, centred on even margins
+  const thr = X(T - 1), truth = X(dl.margin);
+
+  const top = svg.getBoundingClientRect().top + window.scrollY;
+  const avail = Math.max(600, window.innerHeight - top - 14);
+  const r = clamp((avail - 170) / (7 + 28 * 0.36), 30, 48);   // a splat row, at seven moves
+  const j = clamp(r * 0.36, 10.5, 16);                       // a ridge row
+  const amp = j * 2.6;
+
+  // the splats share one band, so the hand below never moves as you step
+  const yS = 40, yR = 82, band = 7 * r, yB = yR + band;
+  const n = pos ? pos.moves.length : 1, rh = Math.min(band / n, 2.2 * r);
+  const yR0 = yR + (band - n * rh) / 2;
+  const yJ0 = yB + 50, base = i => yJ0 + amp + i * j;
+  const H = Math.ceil(base(DATA.plays - 1) + 12);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('height', H);
+
+  const o = [];
+  const text = (x, y, s, a = {}) => o.push(`<text x="${x}" y="${y}" fill="${a.fill || C.mute}" font-size="${a.size || 11}" text-anchor="${a.anchor || 'start'}"${a.cls ? ` class="${a.cls}"` : ''}${a.weight ? ` font-weight="${a.weight}"` : ''}${a.halo ? ` paint-order="stroke" stroke="${C.bg}" stroke-width="4"` : ''}>${s}</text>`);
+
+  // the two sides of the contract, faintly, behind everything
+  o.push(`<rect x="${X(-43)}" y="${yS - 8}" width="${thr - X(-43)}" height="${yB - yS + 8}" fill="${C.def}" opacity=".035"/>`);
+  o.push(`<rect x="${thr}" y="${yS - 8}" width="${X(43) - thr}" height="${yB - yS + 8}" fill="${C.bid}" opacity=".045"/>`);
+  o.push(`<rect x="${X(-43)}" y="${yJ0 - 4}" width="${thr - X(-43)}" height="${H - yJ0}" fill="${C.def}" opacity=".025"/>`);
+  o.push(`<rect x="${thr}" y="${yJ0 - 4}" width="${X(43) - thr}" height="${H - yJ0}" fill="${C.bid}" opacity=".03"/>`);
+
+  // top labels: the sides, the contract, the truth
+  text(LG - 10, 14, '← set', { fill: C.def, size: 11.5, anchor: 'end' });
+  text(W - RG + 10, 14, 'made →', { fill: C.bid, size: 11.5 });
+  // the contract's label sits left of its line; the truth's points away from it
+  const crowded = truth < thr && thr - truth < 130;
+  text(thr - 6, crowded ? 28 : 14, `contract · ${DATA.bid}`, { fill: C.bid, anchor: 'end', size: 11, halo: true });
+  const tl = truth < thr || truth > X(30) ? 'end' : 'start';
+  text(truth + (tl === 'start' ? 6 : -6), 14, `real ending ${signed(dl.margin)}`, { fill: C.truth, anchor: tl, size: 11.5, weight: 600, halo: true });
+
+  // grid
+  for (let m = -42; m <= 42; m += 6) {
+    o.push(`<line x1="${X(m)}" x2="${X(m)}" y1="${yS - 6}" y2="${yB}" stroke="${C.line}" stroke-width="1"/>`);
+    o.push(`<line x1="${X(m)}" x2="${X(m)}" y1="${yJ0}" y2="${H - 6}" stroke="${C.line}" stroke-width="1" opacity=".55"/>`);
+  }
+
+  // the means alone
+  text(10, yS + 13, 'means only', { fill: C.mute, size: 11 });
+  text(W - 10, yS + 13, 'what a scalar sees', { fill: C.faint, size: 10.5, anchor: 'end' });
+  o.push(`<line x1="${X(-43)}" x2="${X(43)}" y1="${yS + 9}" y2="${yS + 9}" stroke="${C.line2}"/>`);
+  if (pos) {
+    const ms = pos.moves.map(m => ({ ...m, x: X(m.mean) })).sort((a, b) => a.x - b.x);
+    // the plan's label first, then each other above, else below, else (the means
+    // are bunched, which is the point) nowhere
+    const lanes = [[], []];
+    const byPlanFirst = [...ms].sort((a, b) => (b.tile === pos.chosen) - (a.tile === pos.chosen));
+    for (const m of byPlanFirst) {
+      const chosen = m.tile === pos.chosen;
+      const l = lanes.findIndex(xs => xs.every(x => Math.abs(x - m.x) >= 28));
+      if (l < 0) continue;
+      lanes[l].push(m.x);
+      text(m.x, l === 0 ? yS - 1 : yS + 26, nameOf(m.tile), { fill: chosen ? C.ink : C.mute, size: 10, anchor: 'middle', cls: 'n', weight: chosen ? 600 : 400 });
+    }
+    for (const m of ms) {
+      const chosen = m.tile === pos.chosen;
+      o.push(`<circle cx="${m.x}" cy="${yS + 9}" r="${chosen ? 4.5 : 3.5}" fill="${chosen ? C.ink : C.bg}" stroke="${C.ink}" stroke-width="1.3" data-tip="${nameOf(m.tile)} · mean margin ${signed(m.mean)}"/>`);
+    }
+    const lo = ms[0].mean, hi = ms[ms.length - 1].mean;
+    text(W - RG + 14, yS + 26, `means span ${(hi - lo).toFixed(1)}`, { fill: C.faint, size: 10.5, cls: 'n' });
+  }
+
+  // the splats
+  if (pos) {
+    const total = pos.weight;
+    const peak = Math.max(...pos.moves.flatMap(m => m.bins)) / total;
+    const bidSide = pos.sign > 0;
+    const moves = [...pos.moves].sort((a, b) => b.tile - a.tile);     // high tiles first, as a hand is held
+    moves.forEach((m, i) => {
+      const y0 = yR0 + i * rh, bh = rh - 11, yb = y0 + rh - 5, cy = y0 + rh / 2, chosen = m.tile === pos.chosen;
+      if (chosen) o.push(`<rect x="2" y="${y0 + 1}" width="${W - 4}" height="${rh - 2}" rx="6" fill="#ffffff" opacity=".045"/>` +
+        `<rect x="2" y="${y0 + 4}" width="2.5" height="${rh - 8}" rx="1" fill="${C.ink}"/>`);
+      o.push(dominoG(m.tile, 14, cy - 10, 40, dl.decl));
+      if (chosen) text(62, cy + 4, 'plan', { fill: C.ink, size: 10.5, weight: 600 });
+      o.push(`<line x1="${X(-43)}" x2="${X(43)}" y1="${yb}" y2="${yb}" stroke="${C.line2}"/>`);
+      m.bins.forEach((v, b) => {
+        if (!v) return;
+        const mg = 2 * b - 42, h = Math.max(1, v / total / peak * bh), made = mg >= T;
+        const mine = made === bidSide;
+        const x0 = X(mg - 1) + .6, w = X(mg + 1) - X(mg - 1) - 1.2;
+        const hit = chosen && mg === dl.margin;
+        o.push(`<rect x="${x0}" y="${yb - h}" width="${w}" height="${h}" fill="${made ? C.bid : C.def}" opacity="${mine ? .95 : .42}"` +
+          `${hit ? ` stroke="${C.truth}" stroke-width="1.4"` : ''} data-tip="${nameOf(m.tile)} · margin ${signed(mg)} (bidders bank ${b})<br>` +
+          `${Number.isInteger(v) && Number.isInteger(total) ? `${v} of ${total} worlds · ` : ''}${(100 * v / total).toFixed(1)}%${hit ? '<br><span style=&quot;color:' + C.truth + '&quot;>where the deal really ended</span>' : ''}"/>`);
+      });
+      // the mean, as a tick
+      const xm = X(m.mean);
+      o.push(`<line x1="${xm}" x2="${xm}" y1="${yb - bh}" y2="${yb + 3}" stroke="${C.ink}" stroke-width="1.2" opacity=".75" stroke-dasharray="2 2"/>`);
+      o.push(`<path d="M${xm - 3.5},${yb + 5} L${xm + 3.5},${yb + 5} L${xm},${yb + 1} Z" fill="${C.ink}"/>`);
+      // the mover's number
+      const mine = bidSide ? m.pmake : 1 - m.pmake;
+      text(W - RG + 14, cy + 5, pct(mine), { fill: bidSide ? C.bid : C.def, size: 15, weight: 600, cls: 'n' });
+      text(W - RG + 60, cy - 2, bidSide ? 'pmake' : 'set', { fill: C.faint, size: 10 });
+      text(W - RG + 60, cy + 10, `μ ${signed(m.mean)}`, { fill: C.mute, size: 10.5, cls: 'n' });
+    });
+  } else {
+    const msg = k === DATA.plays ? 'The hand is over. Every forecast is behind it, in the ridges below.'
+      : `Forced: seat ${moverAt(dl, k)} has one legal tile. No plan, no splat.`;
+    text((X(-43) + X(43)) / 2, yR + band / 2, msg, { fill: C.mute, size: 13, anchor: 'middle', halo: true });
+  }
+
+  // the margin axis, and what each margin means in points
+  text(10, yB + 16, 'margin', { fill: C.mute, size: 11 });
+  text(10, yB + 31, 'bidders bank', { fill: C.faint, size: 10.5 });
+  for (let m = -42; m <= 42; m += 12) {
+    text(X(m), yB + 16, signed(m), { fill: C.mute, size: 10.5, anchor: 'middle', cls: 'n' });
+    text(X(m), yB + 31, (42 + m) / 2, { fill: C.faint, size: 10, anchor: 'middle', cls: 'n' });
+  }
+  o.push(`<line x1="${thr}" x2="${thr}" y1="${20}" y2="${yB + 4}" stroke="${C.bid}" stroke-width="1.2" stroke-dasharray="4 3"/>`);
+
+  // the hand, as it was forecast
+  text(10, yJ0 + 4, 'THE HAND', { fill: C.faint, size: 10.5, weight: 600 });
+  text(W - 10, yJ0 + 4, 'pmake', { fill: C.faint, size: 10.5, anchor: 'end' });
+  const byPlay = new Map(dl.positions.map(p => [p.play, p]));
+  const meanPts = [];
+  o.push(`<defs><clipPath id="cl-def"><rect x="0" y="0" width="${thr}" height="${H}"/></clipPath>` +
+    `<clipPath id="cl-bid"><rect x="${thr}" y="0" width="${W}" height="${H}"/></clipPath></defs>`);
+  for (let i = 0; i < DATA.plays; i++) {
+    const yb = base(i), p = byPlay.get(i), [seat, tile] = dl.plays[i], cur = i === k;
+    if (i % 4 === 0) {
+      o.push(`<line x1="6" x2="${LG - 10}" y1="${yb - j + 2}" y2="${yb - j + 2}" stroke="${C.line}"/>`);
+      text(8, yb - 1, `T${i / 4 + 1}`, { fill: C.faint, size: 9.5 });
+    }
+    text(46, yb - 1, i + 1, { fill: cur ? C.ink : C.faint, size: 10, anchor: 'end', cls: 'n' });
+    o.push(`<circle cx="${55}" cy="${yb - 4.5}" r="3.2" fill="${sideColor(seat)}" opacity="${cur ? 1 : .7}"/>`);
+    text(64, yb - 1, nameOf(tile), { fill: cur ? C.ink : C.mute, size: 10.5, cls: 'n', weight: cur ? 600 : 400 });
+    if (!p) {
+      text(94, yb - 1, 'forced', { fill: C.faint, size: 9.5 });
+      o.push(`<line x1="${X(-43)}" x2="${X(43)}" y1="${yb}" y2="${yb}" stroke="${C.line2}" stroke-dasharray="1 3"/>`);
+    } else {
+      const m = p.moves.find(mv => mv.tile === p.chosen), mx = Math.max(...m.bins);
+      let d = `M${X(-43)},${yb}`;
+      m.bins.forEach((v, b) => {
+        const mg = 2 * b - 42, hh = v / mx * amp;
+        d += ` L${X(mg - 1)},${yb - hh} L${X(mg + 1)},${yb - hh}`;
+      });
+      d += ` L${X(43)},${yb} Z`;
+      o.push(`<path d="${d}" fill="${C.bg}"/>`);
+      const op = cur ? .9 : .5;
+      o.push(`<path d="${d}" fill="${C.def}" opacity="${op}" clip-path="url(#cl-def)"/>`);
+      o.push(`<path d="${d}" fill="${C.bid}" opacity="${op}" clip-path="url(#cl-bid)"/>`);
+      o.push(`<path d="${d}" fill="none" stroke="${cur ? C.ink : '#c8ccd6'}" stroke-width="${cur ? 1.4 : .7}" opacity="${cur ? 1 : .55}"/>`);
+      meanPts.push([X(m.mean), yb]);
+      text(W - 10, yb - 1, pct(m.pmake), { fill: cur ? C.ink : C.mute, size: 10.5, anchor: 'end', cls: 'n', weight: cur ? 600 : 400 });
+    }
+    if (cur) o.push(`<path d="M${LG - 1},${yb - 4.5} l-6,-4 v8 z" fill="${C.ink}"/>`);
+    o.push(`<rect class="row-hit" data-k="${i}" x="0" y="${yb - j}" width="${W}" height="${j}" fill="transparent"` +
+      ` data-tip="play ${i + 1} · seat ${seat} played ${nameOf(tile)}${p ? ` · pmake ${pct(p.moves.find(mv => mv.tile === p.chosen).pmake)}, mean ${signed(p.moves.find(mv => mv.tile === p.chosen).mean)}` : ' · forced'}"/>`);
+  }
+  // the scalar story: the chosen move's mean, play by play
+  if (meanPts.length > 1)
+    o.push(`<polyline points="${meanPts.map(([x, y]) => `${x},${y}`).join(' ')}" fill="none" stroke="${C.ink}" stroke-width="1" opacity=".55" stroke-dasharray="3 3"/>`);
+  for (const [x, y] of meanPts) o.push(`<circle cx="${x}" cy="${y}" r="1.8" fill="${C.ink}" opacity=".8"/>`);
+  o.push(`<line x1="${thr}" x2="${thr}" y1="${yJ0 + 8}" y2="${H - 4}" stroke="${C.bid}" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`);
+  text(thr + 4, yJ0 + 4, `made at ${DATA.bid}`, { fill: C.bid, size: 10 });
+
+  // the truth, through everything
+  o.push(`<line x1="${truth}" x2="${truth}" y1="${yS - 6}" y2="${H - 4}" stroke="${C.truth}" stroke-width="1.6" opacity=".9"/>`);
+
+  svg.innerHTML = o.join('');
+}
+
+function renderNav() {
+  $('deals').innerHTML = DATA.deals.map((dl, i) => {
+    const made = dl.margin >= DATA.threshold;
+    return `<button class="chip" data-d="${i}" aria-current="${i === S.d}">${i + 1} · ${TRUMP[dl.decl]}` +
+      `<span class="r ${made ? 'bid' : 'def'}">${signed(dl.margin)}</span></button>`;
+  }).join('');
+}
+
+function render() {
+  renderNav(); renderDeal(); renderHands(); renderTrick(); renderPosHead(); renderChart();
+}
+
+// -- input ---------------------------------------------------------------------------
+addEventListener('keydown', e => {
+  if (!DATA || e.metaKey || e.ctrlKey || e.altKey) return;
+  const map = {
+    ArrowRight: () => go(S.d, S.k + 1), ArrowLeft: () => go(S.d, S.k - 1),
+    ArrowDown: () => go(S.d + 1, S.k), ArrowUp: () => go(S.d - 1, S.k),
+    ']': () => planned(1), '[': () => planned(-1),
+    Home: () => go(S.d, 0), End: () => go(S.d, DATA.plays),
+  };
+  const f = map[e.key] || (/^[1-9]$/.test(e.key) ? () => go(+e.key - 1, S.k) : null);
+  if (f) { e.preventDefault(); f(); }
+});
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-d]'); if (c) return go(+c.dataset.d, S.k);
+  const r = e.target.closest('[data-k]'); if (r) go(S.d, +r.dataset.k);
+});
+const tip = $('tip');
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) { tip.style.display = 'none'; return; }
+  tip.innerHTML = t.getAttribute('data-tip');
+  tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = `${Math.min(e.clientX + 14, innerWidth - w - 8)}px`;
+  tip.style.top = `${e.clientY + 16 + h > innerHeight ? e.clientY - h - 10 : e.clientY + 16}px`;
+});
+new ResizeObserver(() => DATA && renderChart()).observe($('center'));
+addEventListener('hashchange', () => { readHash(); render(); });
+
+// -- data ----------------------------------------------------------------------------
+const src = new URLSearchParams(location.search).get('data') || 'data/pour_viz_5.json';
+try {
+  const res = await fetch(src);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  DATA = await res.json();
+  readHash();
+  render();
+} catch (err) {
+  $('main').innerHTML = `<div id="fail"><p>Could not read <code>${src}</code> (${err.message}).</p>` +
+    `<p style="margin-top:10px">The page fetches its data, so it needs a server. From the repo root: ` +
+    `<code>python -m http.server 8000</code>, then open <code>http://localhost:8000/scenario/viz/</code>.</p></div>`;
+}
+</script>
+</body>
+</html>
