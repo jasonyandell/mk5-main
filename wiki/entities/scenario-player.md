@@ -40,7 +40,9 @@ of (rung, seat, remaining hand, record) and is cached as such.
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).
 - **Deployed Zeb** is `k0,n512,F=margin_d250k_h128x64,f=16` (one rung over
-  the 250k field net; the package defaults to 160 worlds on a phone),
+  the 250k field net, trained on
+  [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k);
+  the package defaults to 160 worlds on a phone),
   published as `@jasonyandell/zeb` **0.2.0**
   (2026-10-12: the floor spares enumerated fibers, the seed is
   rung-independent; 35 parity positions). See "Zeb, the package" below.
@@ -649,7 +651,11 @@ more of this pour. The four chunks are
 published as
 [jasonyandell/texas-42-zeb-pour-200k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-200k)
 (CC0; a separate repo because the chunks' pour spec names the 50k net, not
-the 5k one).
+the 5k one). Republished whole (2026-10-12) as
+[jasonyandell/texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k):
+five splits, the three field nets in `nets/` with sha256, the repo to cite (the
+two earlier cards describe the planner as `k1,m8,u=points`, which it is not);
+[[publish-data-to-huggingface]].
 
 Where strength could still come from, now that imitation is not it: the
 live seat (racing among near-ties, a deeper plan priced by the cheap field —
@@ -746,7 +752,9 @@ beside them, and the deal's real ending as one line through every forecast:
 ## Foundation repair (2026-10-12)
 
 **Research night (2026-10-12): does Zeb find the optimal move in finite time?**
-Seven agents, one question, see [[research-night-2026-10-12]]. Exact Walt does,
+Seven agents, one question, see [[research-night-2026-10-12]] (lab outputs, with
+the day's arenas and endgames: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10),
+published 2026-10-12). Exact Walt does,
 against a fixed field, when its belief is that field's posterior (proved; Lean at
 `scenario/lean/`, 15 theorems, no sorry). Deployed Zeb does not, in four measured
 ways: the belief (uniform vs the posterior: **+0.028 ± 0.006 marks/hand** when the

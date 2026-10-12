@@ -6,7 +6,8 @@ say — a republish replaces every data file:
 
     python -u -m scenario.hf publish --repo jasonyandell/texas-42-walt-pour \\
         --split train=scratch/atlas/pour_s1001_n512_d5000 \\
-        --split validation=scratch/atlas/pour_s1_n512
+        --split validation=scratch/atlas/pour_s1_n512 \\
+        [--title "..."] [--notes NOTES.md] [--net TRAINED.npz]
 
 The staged repo (under `scratch/hf/` unless `--stage` says otherwise) holds
 three Parquet configs read from the pour's own columns — `positions` (one
@@ -15,6 +16,11 @@ advantages), `splats` (the same rows' per-scenario outcomes, worlds and
 weights) and `deals` (each deal and how it really ended) — plus the raw
 `pour.npz` + `manifest.json` per split for an exact round trip through
 `scenario.atlas.load`, a dataset card, the CC0 legal code and SHA256SUMS.
+A field net named by a split's spec (`F=<npz>`) is copied into `nets/` with
+its training sidecar, so the pour can be re-poured from the repo alone; the
+splits must share one planner and contract but may differ in that net (the
+rounds of an expert iteration). `--net` attaches a net trained on the pour,
+`--notes` a provenance section for the card.
 Every list column is a pour column cut at the pour's own offsets, so a row
 is its position's slice of the arrays, bit for bit.
 
@@ -24,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -44,10 +51,32 @@ DECLS = ("blanks", "ones", "twos", "threes", "fours", "fives", "sixes", "doubles
 
 @dataclass(frozen=True)
 class Split:
+    """A pour directory as a split. The pour itself is read when it is
+    staged, one split at a time: a 50,000-deal pour is ~10 GB in memory."""
     name: str
-    pour: Pour
     manifest: dict
     raw: Path            # the pour directory
+
+    def pour(self) -> Pour:
+        return load(self.raw)
+
+    @property
+    def net(self) -> Path | None:
+        """The field net the spec names (`F=<npz>`), if any."""
+        f = re.search(r"(?:^|,)F=([^,]+)", self.manifest["spec"])
+        return None if f is None else (HERE.parent / f[1]).resolve()
+
+
+@dataclass(frozen=True)
+class Facts:
+    """What the card says about one staged split."""
+    deals: int
+    positions: int
+    actions: int
+    worlds: int
+    n_worlds: np.ndarray
+    uniform: bool        # every world weight is 1
+    calibration: object  # scenario.atlas.calibration of the pour
 
 
 def read_split(name: str, path: str | Path, commit: str | None = None) -> Split:
@@ -56,7 +85,12 @@ def read_split(name: str, path: str | Path, commit: str | None = None) -> Split:
     commit = manifest.get("commit") or commit
     if commit is None:
         raise SystemExit(f"{path}/manifest.json records no commit; pass --commit")
-    return Split(name, load(path), {**manifest, "commit": commit}, path)
+    return Split(name, {**manifest, "commit": commit}, path)
+
+
+def _shown(spec: str) -> str:
+    """The spec with a field net named by its file stem, not its local path."""
+    return re.sub(r"(^|,)F=([^,]+)", lambda f: f"{f[1]}F={Path(f[2]).stem}", spec)
 
 
 # -- the tables ----------------------------------------------------------------------
@@ -136,15 +170,34 @@ def tables(p: Pour, manifest: dict) -> dict[str, pa.Table]:
 # -- the staged repo -----------------------------------------------------------------
 
 
-def stage(splits: Sequence[Split], out: str | Path, repo: str) -> Path:
-    """Write the whole repo for `splits` into `out` (emptied first)."""
+def stage(splits: Sequence[Split], out: str | Path, repo: str, title: str = "Texas 42: the Walt pour",
+          notes: str | None = None, nets: Sequence[str | Path] = ()) -> Path:
+    """Write the whole repo for `splits` into `out` (emptied first): the
+    tables, the raw pours, the field nets the specs name and the `nets`
+    attached (each with its `.json` sidecar when there is one), the card
+    (`title`, and `notes` as its provenance section), CC0, SHA256SUMS."""
     _check(splits)
+    attached = [Path(n).resolve() for n in nets]
+    shipped = {s.net for s in splits if s.net} | set(attached)
+    missing = sorted(str(n) for n in shipped if not n.is_file())
+    if missing:
+        raise SystemExit(f"no such field net: {missing}")
+    if len({n.stem for n in shipped}) != len(shipped):
+        raise SystemExit(f"two field nets share a name: {sorted(map(str, shipped))}")
     out = Path(out)
     if out.exists():
         shutil.rmtree(out)
-    rows = {}
+    for n in sorted(shipped):
+        (out / "nets").mkdir(parents=True, exist_ok=True)
+        for f in (n, n.with_suffix(".json")):
+            if f.is_file():
+                shutil.copy(f, out / "nets" / f"{n.stem}{f.suffix}")
+    rows, facts = {}, {}
     for s in splits:
-        for config, table in tables(s.pour, s.manifest).items():
+        p = s.pour()
+        facts[s.name] = Facts(len(p.hands), len(p), len(p.actions), len(p.worlds), p.n_worlds.copy(),
+                              bool(np.all(p.weights == 1)), calibration(p))
+        for config, table in tables(p, s.manifest).items():
             rows[s.name, config] = table.num_rows
             for i, start in enumerate(range(0, max(table.num_rows, 1), SHARD_ROWS[config])):
                 path = out / "data" / config / f"{s.name}-{i:04d}.parquet"
@@ -156,8 +209,9 @@ def stage(splits: Sequence[Split], out: str | Path, repo: str) -> Path:
         for f in ("pour.npz", "manifest.json"):
             shutil.copy(s.raw / f, raw / f)
         (raw / "manifest.json").write_text(json.dumps(s.manifest, indent=2) + "\n")
+        del p
     shutil.copy(HERE / "CC0-1.0.txt", out / "LICENSE")
-    (out / "README.md").write_text(card(splits, rows, out, repo))
+    (out / "README.md").write_text(card(splits, rows, facts, out, repo, title, notes, attached))
     sums = [f"{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.relative_to(out)}"
             for f in sorted(out.rglob("*")) if f.is_file() and f.name != "README.md"]
     (out / "SHA256SUMS").write_text("\n".join(sums) + "\n")
@@ -167,7 +221,8 @@ def stage(splits: Sequence[Split], out: str | Path, repo: str) -> Path:
 def _check(splits: Sequence[Split]) -> None:
     if not splits or len({s.name for s in splits}) != len(splits):
         raise SystemExit("name each split once")
-    same = {(s.manifest["spec"], s.pour.bidder, s.pour.bid, s.pour.utility) for s in splits}
+    same = {(re.sub(r"(^|,)F=[^,]+", r"\1F=", s.manifest["spec"]), s.manifest["bidder"], s.manifest["bid"],
+             s.manifest["utility"]) for s in splits}
     if len(same) != 1:
         raise SystemExit(f"the splits were poured under different specs: {sorted(same)}")
     seeds = [x for s in splits for x in s.manifest.get("deal_seeds") or ()]
@@ -181,7 +236,7 @@ def upload(staged: Path, repo: str, message: str) -> str:
     api = HfApi()
     api.create_repo(repo, repo_type="dataset", exist_ok=True)
     api.upload_folder(repo_id=repo, repo_type="dataset", folder_path=staged, commit_message=message,
-                      delete_patterns=["data/**", "raw/**"])
+                      delete_patterns=["data/**", "raw/**", "nets/**"])
     return f"https://huggingface.co/datasets/{repo}"
 
 
@@ -194,13 +249,59 @@ def _mb(paths) -> str:
 
 def _command(m: dict) -> str:
     seed = f"--seed {m['seed']}" + (" --fiber" if m.get("fiber") else "")
-    return (f"python -u -m scenario.atlas pour --deals {m['deals']} --spec {m['spec']} "
+    spec = re.sub(r"(^|,)F=([^,]+)", lambda f: f"{f[1]}F=nets/{Path(f[2]).stem}.npz", m["spec"])
+    return (f"python -u -m scenario.atlas pour --deals {m['deals']} --spec {spec} "
             f"--bid {m['bid']} --bidder {m['bidder']} {seed} --out DIR")
 
 
-def card(splits: Sequence[Split], rows: dict, out: Path, repo: str) -> str:
+def _planner(spec: str) -> str:
+    """The spec in words, from the letters `arena.walt_play.parse_walt_spec` reads."""
+    t = dict((x[0], x[1:].removeprefix("=")) for x in spec.split(",") if x)
+    k, n, m = int(t.get("k", 1)), int(t.get("n", 16)), int(t.get("m", 4))
+    net = Path(t["F"]).stem if "F" in t else None
+    floor = int(t.get("f", 16 if k >= 1 or net else 1))
+    if k >= 1:
+        field = f"a level-{k - 1} Walt sampling {m} worlds of its own" + (f" over the field net `{net}`" if net else "")
+    elif net:
+        field = (f"the field net `{net}`, a learned integer policy that only predicts the other seats' moves "
+                 "(it never enters a value: the live seat still solves every world)")
+    else:
+        field = "uniform random legal play (the dice)"
+    words = (f"Walt here is the scenario player of [the mk5-main repo]({SOURCE}) at level {k} (`k{k}`): the mover "
+             f"plans over {n} root worlds (`n{n}`) while the other seats are modeled by {field}, with the "
+             f"`{t.get('u', 'make')}` utility")
+    if floor > 1:
+        words += (f" and a cell-size floor of {floor} (a cell of fewer than {floor} worlds hands the decision to "
+                  "the rung below with a fresh sample, so the plan never turns clairvoyant)")
+    rest = sorted(set(t) - {"k", "n", "m", "F", "f", "u"})
+    if rest:
+        words += f"; the spec's other letters ({', '.join(rest)}) are read by `arena/walt_play.py`"
+    return words + "."
+
+
+def _nets(splits: Sequence[Split], attached: Sequence[Path], out: Path) -> str:
+    """The card's table of the field nets shipped in `nets/`."""
+    used = {}
+    for s in splits:
+        if s.net:
+            used.setdefault(s.net, []).append(f"`{s.name}`")
+    rows = []
+    for n in [*used, *(a for a in attached if a not in used)]:
+        role = ("the field of " + ", ".join(used[n])) if n in used else "attached: trained on this pour"
+        sha = hashlib.sha256((out / "nets" / f"{n.stem}.npz").read_bytes()).hexdigest()
+        rows.append(f"| `{n.stem}` | {role} | `{sha}` |")
+    if not rows:
+        return ""
+    return ("\n\n**Field nets.** Shipped under `nets/` (`<name>.npz`, with the training sidecar `<name>.json` "
+            "when there is one; `scenario.field.FieldNet.load` reads the npz):\n\n"
+            "| net | role | sha256 of the npz |\n|---|---|---|\n" + "\n".join(rows))
+
+
+def card(splits: Sequence[Split], rows: dict, facts: dict[str, Facts], out: Path, repo: str,
+         title: str = "Texas 42: the Walt pour", notes: str | None = None, attached: Sequence[Path] = ()) -> str:
     s0 = splits[0]
-    p, m = s0.pour, s0.manifest
+    m, f0 = s0.manifest, facts[s0.name]
+    bidder, bid, utility = m["bidder"], m["bid"], m["utility"]
     configs = "\n".join(
         f"- config_name: {c}\n" + ("  default: true\n" if c == "positions" else "") + "  data_files:\n"
         + "".join(f"  - split: {s.name}\n    path: data/{c}/{s.name}-*.parquet\n" for s in splits)
@@ -209,25 +310,31 @@ def card(splits: Sequence[Split], rows: dict, out: Path, repo: str) -> str:
     size = next(c for b, c in ((1e3, "n<1K"), (1e4, "1K<n<10K"), (1e5, "10K<n<100K"), (1e6, "100K<n<1M"),
                                (1e7, "1M<n<10M"), (1e8, "10M<n<100M")) if n < b)
     split_rows = "\n".join(
-        f"| `{s.name}` | {len(s.pour.hands):,} | {s.manifest['deal_seeds'][0] if s.manifest.get('deal_seeds') else '—'}"
+        f"| `{s.name}` | {facts[s.name].deals:,} | {s.manifest['deal_seeds'][0] if s.manifest.get('deal_seeds') else '—'}"
         f"..{s.manifest['deal_seeds'][-1] if s.manifest.get('deal_seeds') else '—'} | {rows[s.name, 'positions']:,} | "
-        f"{len(s.pour.actions):,} | {len(s.pour.worlds):,} | "
+        f"{facts[s.name].actions:,} | {facts[s.name].worlds:,} | `{s.net.stem if s.net else '—'}` | "
         f"{_mb((out / 'data').glob(f'*/{s.name}-*.parquet'))} | {_mb((out / 'raw' / s.name).glob('*'))} | "
         f"`{s.manifest['commit'][:8]}` | {s.manifest.get('wall_seconds', '—')} s |" for s in splits)
     cal = []
     for s in splits:
-        c = calibration(s.pour)
+        c = facts[s.name].calibration
         fm = f"{c.forecast_margin:+.1f}"
         cal.append(f"| `{s.name}` | {c.n:,} | {fm} | {c.real_margin:+.1f} | {c.forecast_make:.0%} | {c.real_make:.0%} |")
     commands = "\n".join(f"# {s.name}\n{_command(s.manifest)}" for s in splits)
     names = ", ".join(f"{i} {x}" for i, x in enumerate(DECLS))
-    every = np.concatenate([s.pour.n_worlds for s in splits])
+    every = np.concatenate([facts[s.name].n_worlds for s in splits])
     exact = float(np.mean(every < every.max()))
-    weights = "1" if all(np.all(s.pour.weights == 1) for s in splits) else "not uniform"
+    weights = "1" if all(facts[s.name].uniform for s in splits) else "not uniform"
     first = splits[0].name
+    plan = re.sub(r"(^|,)F=[^,]+", r"\1F=<net>", m["spec"]) if any(s.net for s in splits) else m["spec"]
+    one = len({s.net for s in splits}) == 1
+    spec = (f"`{_shown(m['spec'])}`" if one else
+            f"`{plan}`, each split's field net as in the table (`nets/`)")
+    about = f"\n## This release\n\n{notes.strip()}\n" if notes else ""
+    key = re.sub(r"[^a-z0-9]", "", repo.split("/")[-1].lower())
     return f"""---
 license: cc0-1.0
-pretty_name: Texas 42 Walt pour (advantage dataset)
+pretty_name: {json.dumps(title)}
 size_categories:
 - {size}
 task_categories:
@@ -243,14 +350,14 @@ tags:
 configs:
 {configs}---
 
-# Texas 42: the Walt pour
+# {title}
 
 An **advantage dataset** for the trick-taking domino game Texas 42. Walt, an imperfect-information
-planner, plays all four seats of {sum(len(s.pour.hands) for s in splits):,} seeded deals. At every position
+planner, plays all four seats of {sum(facts[s.name].deals for s in splits):,} seeded deals. At every position
 where the seat to move has a real choice, the whole outcome distribution of every legal move is kept, not
 just the move Walt played. Public domain (CC0 1.0), by Jason Yandell; the code that made it is
 [{SOURCE.removeprefix('https://github.com/')}]({SOURCE}) (`scenario/atlas.py`, `scenario/hf.py`).
-
+{about}
 ## What a row is
 
 A **position** is a point in a deal where the seat to move holds two or more legal tiles (a forced play
@@ -266,7 +373,7 @@ defender points, an integer in [-42, 42] (the hand has 42 points), whichever uti
 under the `points` utility, the make indicator (margin ≥ 2·bid − 42) under `make`. A defender wants these small. `sign` is +1 when the mover is on the
 bidding team, -1 when it defends, and `advantage = sign * (q - mean(q))`, so a positive advantage is a
 good move *for the seat to play*, with the legal moves as the group. The contract is made when the margin
-is at least `2·bid − 42` (= {2 * p.bid - 42} for bid {p.bid}), so any bid's make probability is a tail of the splat.
+is at least `2·bid − 42` (= {2 * bid - 42} for bid {bid}), so any bid's make probability is a tail of the splat.
 
 **Paired across worlds.** Every move of a position is played out in the *same* worlds, so per-world
 differences (`outcomes[a] − mean over moves`, times `sign`) remove the luck of the deal that all moves
@@ -284,20 +391,20 @@ Three tables, joined by `position` (the row's index in its split's pour) or by `
 One row per position with list columns (not one row per action) keeps a group of legal moves together,
 which is what a group-relative trainer consumes, and keeps a position's worlds stored once.
 
-| split | deals | deal seeds | positions | actions | worlds | Parquet MB | raw MB | commit | pour wall |
-|---|---|---|---|---|---|---|---|---|---|
+| split | deals | deal seeds | positions | actions | worlds | field net | Parquet MB | raw MB | commit | pour wall |
+|---|---|---|---|---|---|---|---|---|---|---|
 {split_rows}
 
-The splits are disjoint deals poured under the same spec: `{m['spec']}`, seat {p.bidder} bids {p.bid} and
+The splits are disjoint deals poured under the same planner and contract: {spec}; seat {bidder} bids {bid} and
 declares the pip trump the arena's hand heuristic rates strongest (`arena.hand_metrics.best_trump`:
-bid ceiling, then trump length), seat {p.bidder} leads,
-utility `{p.utility}`. Deal *i* of a split is `scenario.atlas.deal(seed + i)`.
+bid ceiling, then trump length), seat {bidder} leads,
+utility `{utility}`. Deal *i* of a split is `scenario.atlas.deal(seed + i)`.
 
 ### Encodings
 
 - **Tiles** are ids 0..27 ordered (0,0) (1,0) (1,1) (2,0) (2,1) (2,2) ... (6,6): id = hi·(hi+1)/2 + lo.
 - **Tile masks** (`worlds`): bit t set means the seat holds tile t.
-- **Seats** 0..3 in play order; teams are {{0, 2}} and {{1, 3}}; seat {p.bidder} is the bidder.
+- **Seats** 0..3 in play order; teams are {{0, 2}} and {{1, 3}}; seat {bidder} is the bidder.
 - **decl** (trump): {names}.
 
 ### `positions`
@@ -380,14 +487,11 @@ advantages(pour.position(0))
 
 ```bash
 {commands}
-python -u -m scenario.hf publish --repo {repo} {' '.join(f'--split {s.name}=DIR' for s in splits)}
+python -u -m scenario.hf publish --repo {repo} {' '.join(f'--split {s.name}=DIR' for s in splits)} --title {json.dumps(title)}{' --notes NOTES.md' if notes else ''}{''.join(f' --net nets/{a.stem}.npz' for a in attached)}
 ```
 
-The `commit` column above is the mk5-main commit the pour ran at. Walt here is the scenario player of
-[the mk5-main repo]({SOURCE}) at level 1 (`k1`): the mover plans over 512 root worlds (`n512`) while the
-other seats are modeled by a level-0 Walt sampling 8 worlds of its own (`m8`), with the points utility and a
-cell-size floor of 16 below the root (a cell of fewer than 16 worlds hands the decision to the rung below
-with a fresh sample, so the plan never turns clairvoyant).
+The `commit` column above is the mk5-main commit the pour ran at. {_planner(_shown(m['spec']) if one else plan)}{_nets(splits, attached, out)}
+
 Walt in all four seats is honest self-play: every seat samples its own worlds at every decision.
 
 **Calibration.** The bidder's opening forecast against how the deals really ended:
@@ -402,18 +506,18 @@ Walt in all four seats is honest self-play: every seat samples its own worlds at
   mover's side; perfect-information ("double-dummy") values of these positions are a different object.
 - **Worlds are samples, until they are not.** A position's worlds are drawn uniformly from its fiber, every
   completion of the hidden hands consistent with the record and the voids it has revealed. When the fiber
-  has fewer than {p.n_worlds.max()} members it is enumerated outright and the splat is exact; that holds for
+  has fewer than {every.max()} members it is enumerated outright and the splat is exact; that holds for
   {exact:.0%} of the positions here, all late in the hand. Every weight is {weights} in this release.
 - **One line per deal.** Positions follow the line Walt actually played, not the deal's whole game tree.
-- **One contract shape.** Seat {p.bidder} always bids {p.bid}; there is no auction and no nello, splash
+- **One contract shape.** Seat {bidder} always bids {bid}; there is no auction and no nello, splash
   or plunge.
 
 ## Citation
 
 ```bibtex
-@misc{{yandell2026waltpour,
+@misc{{yandell2026{key},
   author = {{Jason Yandell}},
-  title  = {{Texas 42: the Walt pour}},
+  title  = {{{title}}},
   year   = {{2026}},
   howpublished = {{\\url{{https://huggingface.co/datasets/{repo}}}}},
   note   = {{Code: {SOURCE}}}
@@ -439,13 +543,17 @@ def _main(argv: Sequence[str] | None = None) -> None:
     pp.add_argument("--split", action="append", required=True, metavar="NAME=DIR", help="a pour directory as a split")
     pp.add_argument("--commit", help="the commit a pour ran at, when its manifest does not record one")
     pp.add_argument("--stage", help="the staging directory (default scratch/hf/<repo name>)")
+    pp.add_argument("--title", default="Texas 42: the Walt pour", help="the card's title")
+    pp.add_argument("--notes", help="a Markdown file: the card's provenance section (\"This release\")")
+    pp.add_argument("--net", action="append", default=[], help="a field net trained on the pour, shipped in nets/")
     pp.add_argument("--no-upload", action="store_true", help="stage only")
     args = ap.parse_args(argv)
 
     splits = [read_split(*s.split("=", 1), args.commit) for s in args.split]
     out = Path(args.stage or HERE.parent / "scratch" / "hf" / args.repo.split("/")[-1])
-    stage(splits, out, args.repo)
-    print(f"staged {', '.join(f'{s.name} ({len(s.pour):,} positions)' for s in splits)} -> {out}", flush=True)
+    notes = Path(args.notes).read_text() if args.notes else None
+    stage(splits, out, args.repo, args.title, notes, args.net)
+    print(f"staged {', '.join(s.name for s in splits)} -> {out}", flush=True)
     if not args.no_upload:
         print(upload(out, args.repo, f"publish {', '.join(s.name for s in splits)}"), flush=True)
 

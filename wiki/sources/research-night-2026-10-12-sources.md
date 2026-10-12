@@ -23,4 +23,6 @@ The reports behind [[research-night-2026-10-12]], verbatim, in
 | `16-critic.md` | the cold critic (Fable 5.1): re-runs, two new experiments, reconciliations, verdict table |
 
 The lab code and every quoted output live under `scratch/research-night/<role>/`
-(gitignored, on the M5).
+(gitignored, on the M5), published 2026-10-12 as
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
+([[publish-data-to-huggingface]]).

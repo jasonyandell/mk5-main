@@ -26,4 +26,5 @@
 - [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message; supervision heartbeat (status pings, stuck-worker recovery), not the driver (active)
 - [[playbooks/perf-sprint-traps|perf-sprint-traps]] — bench crash recipes, contention detection, comparison-anchor footguns (active)
 - [[playbooks/perf-sprint|perf-sprint]] — entry point: one metric, equivalence gate, orchestrator + backgrounded team-worker for context discipline (active)
+- [[playbooks/publish-data-to-huggingface|publish-data-to-huggingface]] — generated data goes to Hugging Face (CC0, one repo per pour, one per study month): when, where, the commands, the card, verify, never (active)
 - [[playbooks/research-night|research-night]] — pre-registered-predictions research procedure: lanes, live-tail logs, same-night grading (active)

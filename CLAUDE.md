@@ -93,6 +93,8 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
 - **Temporary files go in `scratch/`** (gitignored) — never the repo root. Playwright tests
   in scratch/ use `.test.ts` (not `.spec.ts`) and run via
   `npx playwright test --config=playwright.scratch.config.ts`, never in `npm run test:e2e`.
+- **Generated data goes to Hugging Face, not GitHub.** A pour, an arena's per-deal output, a study's
+  results: public, CC0, published the moment a wiki page cites it ([publish-data-to-huggingface](wiki/playbooks/publish-data-to-huggingface.md)).
 - **ES modules only** (`"type": "module"`): `import { x } from './path'`, never `require`.
 - **Python: always `python -u`** so logs stream in real time.
 - **Forge is GPU-only.** No CPU fallback paths in forge training/self-play/MCTS — fail fast

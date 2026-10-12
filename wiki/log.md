@@ -27,6 +27,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | scenario/hf | generated data goes to Hugging Face: the 250k Zeb pour whole, the day's research artifacts, the playbook]
+
+[[publish-data-to-huggingface]] (new); [[scenario-player]] links texas-42-zeb-pour-250k and texas-42-zeb-research-2026-10; CLAUDE.md hard rule. `scenario.hf` ships field nets, titles, notes; splits may differ in the net.
+
 ## [2026-10-12 | scenario/core | the convention overlay (Config.convention, arena c=name:S|R|SR): sender + rule-only reader for C1, C2 (two readings), C3; default off; sender prices on 250k deals]
 
 [[scenario-player]] § A convention overlay. Zeb unchanged; price table `scratch/book/wave1/overlay-price.md`.

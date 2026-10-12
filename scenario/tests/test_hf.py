@@ -93,3 +93,45 @@ def test_the_command_line_stages_without_uploading(pours, tmp_path, capsys):
            "--stage", str(tmp_path / "s"), "--no-upload"])
     assert "staged train" in capsys.readouterr().out
     assert (tmp_path / "s" / "data" / "positions" / "train-0000.parquet").exists()
+
+
+def test_rounds_of_an_expert_iteration_ship_their_nets(pours, tmp_path):
+    """Splits may differ in the field net their spec names, and only there:
+    every net (and one attached) lands in nets/ with its sidecar, the card
+    names each split's net and its sha256, and the spec shows no local path."""
+    import hashlib
+
+    nets = {}
+    for name in ("round1", "round2", "trained"):
+        nets[name] = tmp_path / "local" / f"{name}.npz"
+        nets[name].parent.mkdir(exist_ok=True)
+        nets[name].write_bytes(name.encode())
+    nets["round1"].with_suffix(".json").write_text('{"pour": "earlier"}')
+    splits = []
+    for (name, path), net in zip(pours.items(), ("round1", "round2")):
+        p = tmp_path / name
+        save(load(path), p, spec=f"k0,n8,F={nets[net]}", seed=1, deal_seeds=read_split(name, path).manifest["deal_seeds"],
+             commit="c0ffee")
+        splits.append(read_split(name, p))
+    out = stage(splits, tmp_path / "repo", "someone/zeb-pour", title="Zeb: a pour", notes="Poured overnight.",
+                nets=[nets["trained"]])
+    assert sorted(f.name for f in (out / "nets").iterdir()) == ["round1.json", "round1.npz", "round2.npz", "trained.npz"]
+    text = (out / "README.md").read_text()
+    front = yaml.safe_load(text.split("---")[1])
+    assert front["pretty_name"] == "Zeb: a pour" and "# Zeb: a pour" in text
+    assert "## This release\n\nPoured overnight." in text and str(tmp_path / "local") not in text
+    assert "`k0,n8,F=<net>`, each split's field net as in the table" in text
+    assert "--spec k0,n8,F=nets/round1.npz" in text and "--net nets/trained.npz" in text
+    for net, role in (("round1", "the field of `train`"), ("round2", "the field of `validation`"),
+                      ("trained", "attached: trained on this pour")):
+        assert f"| `{net}` | {role} | `{hashlib.sha256(net.encode()).hexdigest()}` |" in text
+    assert "modeled by the field net `<net>`" in text and "cell-size floor of 16" in text
+    assert "nets/trained.npz" in (out / "SHA256SUMS").read_text()
+    bad = tmp_path / "k1"
+    save(load(pours["validation"]), bad, spec=f"k1,n8,F={nets['round2']}", deal_seeds=[4, 5], commit="c0ffee")
+    with pytest.raises(SystemExit, match="different specs"):
+        stage([splits[0], read_split("validation", bad)], tmp_path / "x", "x/y")
+    gone = tmp_path / "gone"
+    save(load(pours["validation"]), gone, spec="k0,n8,F=/no/such.npz", deal_seeds=[4, 5], commit="c0ffee")
+    with pytest.raises(SystemExit, match="no such field net"):
+        stage([read_split("validation", gone)], tmp_path / "y", "x/y")
