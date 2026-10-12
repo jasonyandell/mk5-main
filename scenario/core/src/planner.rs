@@ -18,11 +18,17 @@
 //! decider plays the rung k−1 move for its own remaining hand. The floor
 //! guards only a sample: an invocation whose fiber was enumerated outright
 //! holds the exact posterior, and is never floored.
+//!
+//! The live rung may draw its scenarios from the field's posterior β^F
+//! instead of the uniform ([`Draw::Posterior`]): the enumerated fiber weighted
+//! by the likelihood L normalized, or n draws by rejection from the uniform
+//! stream, equally weighted; the uniform sample when no world explains the
+//! record or the proposal budget runs out (`Walt._posterior`).
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 
-use crate::fiber::sample_worlds;
+use crate::fiber::{sample_worlds, Fiber};
 use crate::field::FieldNet;
 use crate::rules::Rules;
 
@@ -35,6 +41,10 @@ pub const MAX_WORLDS: usize = 1024;
 const WORDS: usize = MAX_WORLDS / 64;
 const HAND_SIZE: u8 = 7;
 const GOLDEN: u64 = 0x9E3779B97F4A7C15;
+/// "coin": the posterior's acceptance stream is `mix(seed, COIN)`.
+const COIN: u64 = 0x636F_696E;
+/// The posterior's default proposal budget (`scenario.planner.DRAW_BUDGET`).
+pub const DRAW_BUDGET: u64 = 1 << 22;
 
 // -- hashing ------------------------------------------------------------------
 
@@ -321,6 +331,24 @@ pub enum TiltPlays {
     Field,
 }
 
+/// The measure the live rung draws its scenarios from (`Config.draw`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Draw {
+    /// Uniform on the fiber.
+    Uniform,
+    /// The field's posterior β^F, by rejection within this many uniform proposals.
+    Posterior(u64),
+}
+
+/// How a decision's live scenarios were drawn.
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+pub struct Drawn {
+    /// Uniform proposals the posterior examined.
+    pub proposals: u64,
+    /// The posterior fell back to the uniform sample.
+    pub fell_back: bool,
+}
+
 /// A particular Walt (`scenario.planner.Config`): the decision is a pure function of this and the position.
 pub struct Config {
     /// (n_worlds, horizon, floor) per rung; the live player is the last.
@@ -337,6 +365,8 @@ pub struct Config {
     pub field: Option<FieldNet>,
     /// ε of the stochastic field F_σ, in [0, 1]; 0 is the deterministic net.
     pub field_eps: f64,
+    /// The live rung's scenarios: uniform, or the field's posterior.
+    pub draw: Draw,
 }
 
 impl Config {
@@ -353,6 +383,7 @@ struct Ctx<'a> {
     bt: usize,
     pi: Map<(u8, u8, u32, Rec), u8>,
     nodes: u64,
+    drawn: Drawn,
 }
 
 /// The seed of an invocation's worlds and tapes: its coordinate, never its
@@ -378,9 +409,114 @@ fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64
 }
 
 /// The live rung's scenarios at a root — what `decide` plans over.
-pub fn root_worlds(cfg: &Config, viewer: u8, own: u32, rec: &Rec) -> Vec<[u32; 4]> {
-    let k = cfg.level();
-    worlds_for(cfg, k, viewer, own, rec, invocation_seed(cfg, viewer, own, rec)).0
+pub fn root_worlds(cfg: &Config, d: &Decision) -> Vec<[u32; 4]> {
+    let (_, inv) = live(cfg, d, None);
+    inv.worlds
+}
+
+/// How many scenarios the live rung holds at a root: the fiber's size, or n
+/// when it is larger — under either draw.
+pub fn root_count(cfg: &Config, d: &Decision) -> usize {
+    let sizes = [d.rec.hand_size(0), d.rec.hand_size(1), d.rec.hand_size(2), d.rec.hand_size(3)];
+    let size = Fiber::new(d.viewer, d.own, d.rec.played, sizes, d.rec.forbid).size() as usize;
+    size.min(cfg.rungs[cfg.level()].0)
+}
+
+/// F_σ's explore probability ε̂ = ⌈ε·2^53⌉ / 2^53 (`Config.field_eps_exact`).
+fn eps_exact(eps: f64) -> f64 {
+    (eps * (1u64 << 53) as f64).ceil() * (1.0 / (1u64 << 53) as f64)
+}
+
+/// The other seats' plays the field must explain, from the viewer's chair:
+/// (seat, the record before the play, the tile, the tiles that seat had
+/// played before it), and every seat's tiles played so far.
+struct Evidence {
+    plays: Vec<(u8, Rec, u8, u32)>,
+    played_by: [u32; 4],
+}
+
+impl Evidence {
+    fn new(rules: &Rules, viewer: u8, plays: &[(u8, u8)]) -> Evidence {
+        let mut out = Vec::new();
+        let mut played_by = [0u32; 4];
+        if let Some(&(first, _)) = plays.first() {
+            let mut rec = Rec::opening(first);
+            for &(seat, tile) in plays {
+                if seat != viewer {
+                    out.push((seat, rec, tile, played_by[seat as usize]));
+                }
+                played_by[seat as usize] |= 1 << tile;
+                rec = rec.advance(tile, rules);
+            }
+        }
+        Evidence { plays: out, played_by }
+    }
+}
+
+/// L(world) = ∏ P_σ(observed tile | that seat's hand in the world, record)
+/// over the other seats' discretionary plays (`Walt.field_likelihood`) —
+/// returned early, as the partial product, once it is ≤ `u`: every factor is
+/// at most 1, so the product can only fall, and `u < L` is decided.
+fn likelihood(ctx: &mut Ctx, ev: &Evidence, world: &[u32; 4], eps: f64, u: f64) -> f64 {
+    let mut p = 1.0f64;
+    for &(seat, rec, tile, before) in &ev.plays {
+        let hand = (world[seat as usize] | ev.played_by[seat as usize]) & !before;
+        let n = ctx.rules.legal(hand, rec.led()).count_ones();
+        if n > 1 {
+            let hit = eps < 1.0 && ctx.modeled_move(None, seat, hand, &rec) == tile;
+            p *= eps / n as f64 + (1.0 - eps) * if hit { 1.0 } else { 0.0 };
+            if p <= u {
+                return p;
+            }
+        }
+    }
+    p
+}
+
+/// The live rung's scenarios under β^F and their weights, given the uniform
+/// ones (`Walt._posterior`): the fiber weighted by L normalized when `exact`,
+/// else n draws by rejection, equally weighted — or the uniform, when the
+/// field explains no world of the fiber or the budget runs out.
+fn posterior(
+    ctx: &mut Ctx,
+    viewer: u8,
+    rec: &Rec,
+    plays: &[(u8, u8)],
+    uniform: Vec<[u32; 4]>,
+    exact: bool,
+    seed: u64,
+) -> (Vec<[u32; 4]>, Vec<f64>) {
+    let Draw::Posterior(budget) = ctx.cfg.draw else { unreachable!("the posterior draw only") };
+    let n = uniform.len();
+    let eps = eps_exact(ctx.cfg.field_eps);
+    let ev = Evidence::new(ctx.rules, viewer, plays);
+    if exact {
+        let like: Vec<f64> = uniform.iter().map(|w| likelihood(ctx, &ev, w, eps, -1.0)).collect();
+        let total = fsum(like.iter().copied());
+        if total > 0.0 {
+            return (uniform, like.into_iter().map(|x| x / total).collect());
+        }
+        ctx.drawn.fell_back = true;
+        return (uniform, vec![1.0; n]);
+    }
+    let sizes = [rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3)];
+    let mut fiber = Fiber::new(viewer, uniform[0][viewer as usize], rec.played, sizes, rec.forbid);
+    let mut rng = SplitMix::new(seed);
+    let mut coins = (eps > 0.0).then(|| SplitMix::new(mix(&[seed, COIN])));
+    let mut kept = Vec::with_capacity(n);
+    while kept.len() < n && ctx.drawn.proposals < budget {
+        let world = fiber.draw(&mut rng);
+        ctx.drawn.proposals += 1;
+        let u = coins.as_mut().map_or(0.0, |c| c.random());
+        if u < likelihood(ctx, &ev, &world, eps, u) {
+            kept.push(world);
+        }
+    }
+    if kept.len() < n {
+        ctx.drawn.fell_back = true;
+        return (uniform, vec![1.0; n]);
+    }
+    (kept, vec![1.0; n])
 }
 
 /// e^g for each scenario: the likelihood of the hidden seats' observed
@@ -448,10 +584,21 @@ impl Inv {
     fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec, live: Option<Live>) -> Inv {
         let cfg = ctx.cfg;
         let seed = invocation_seed(cfg, viewer, own, rec);
-        let (worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
+        let (mut worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
         let weights = match live {
             Some((plays, external)) => {
+                let mut base = None;
+                if cfg.draw != Draw::Uniform {
+                    let (w, b) = posterior(ctx, viewer, rec, plays, worlds, exact, seed);
+                    worlds = w;
+                    base = Some(b);
+                }
                 let mut w = tilt_weights(ctx, viewer, &worlds, plays);
+                if let Some(b) = base {
+                    for (wi, bi) in w.iter_mut().zip(b) {
+                        *wi *= bi;
+                    }
+                }
                 if let Some(x) = external {
                     assert_eq!(x.len(), w.len(), "external weights must match the live scenarios");
                     for (wi, xi) in w.iter_mut().zip(x) {
@@ -813,18 +960,26 @@ pub struct Decision<'a> {
 
 /// The live invocation at a decision and the context it plans in.
 fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (Ctx<'a>, Inv) {
-    let mut ctx = Ctx { cfg, rules: d.rules, bid: d.bid, bt: d.bidder_team as usize, pi: Map::default(), nodes: 0 };
+    let mut ctx = Ctx {
+        cfg,
+        rules: d.rules,
+        bid: d.bid,
+        bt: d.bidder_team as usize,
+        pi: Map::default(),
+        nodes: 0,
+        drawn: Drawn::default(),
+    };
     let inv = Inv::new(&mut ctx, cfg.level(), d.viewer, d.own, &d.rec, Some((d.plays, external)));
     (ctx, inv)
 }
 
-/// One decision: (tile, action values ascending by tile, cells evaluated).
-/// `external` is evidence over the live scenarios ([`root_worlds`]),
-/// multiplied into the built-in tilt.
-pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<(u8, f64)>, u64) {
+/// One decision: (tile, action values ascending by tile, cells evaluated,
+/// how the scenarios were drawn). `external` is evidence over the live
+/// scenarios ([`root_worlds`]), multiplied into the built-in tilt.
+pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<(u8, f64)>, u64, Drawn) {
     let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
-    (best(&q, inv.maximize), q, ctx.nodes)
+    (best(&q, inv.maximize), q, ctx.nodes, ctx.drawn)
 }
 
 /// `decide`, opened up (`Walt.analyze`): the decision plus the live
@@ -842,6 +997,8 @@ pub struct Analysis {
     pub weights: Vec<f64>,
     /// Per legal tile, ascending: the bidder-team final margin each scenario reaches under the plan.
     pub outcomes: Vec<(u8, Vec<f64>)>,
+    /// How the scenarios were drawn.
+    pub drawn: Drawn,
 }
 
 /// `decide`, opened up: see [`Analysis`].
@@ -856,5 +1013,6 @@ pub fn analyze(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> Analysis
         worlds: std::mem::take(&mut inv.worlds),
         weights: std::mem::take(&mut inv.weights),
         outcomes,
+        drawn: ctx.drawn,
     }
 }

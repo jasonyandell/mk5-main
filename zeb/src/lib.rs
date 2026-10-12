@@ -24,7 +24,7 @@ use std::sync::LazyLock;
 
 use position::{hand_mask, refuse, rules_for};
 use scenario_core::field::FieldNet;
-use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, TiltPlays, MAX_WORLDS};
+use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, TiltPlays, MAX_WORLDS};
 use serde::Serialize;
 
 include!(concat!(env!("OUT_DIR"), "/net.rs"));
@@ -133,8 +133,18 @@ impl Player {
             (vec![MODELED, (self.worlds, None, FLOOR)], None)
         };
         // No tilt: every scenario weighs the same, so the tilt's ε is unused;
-        // the field is the deterministic net (field_eps 0).
-        Config { rungs, make: true, seed: self.seed, tilt: TiltPlays::None, eps: 0.1, field, field_eps: 0.0 }
+        // the field is the deterministic net (field_eps 0), and the worlds
+        // are uniform on the fiber.
+        Config {
+            rungs,
+            make: true,
+            seed: self.seed,
+            tilt: TiltPlays::None,
+            eps: 0.1,
+            field,
+            field_eps: 0.0,
+            draw: Draw::Uniform,
+        }
     }
 
     /// For each declaration in `decls` (distinct, in order), how the bidder
@@ -167,7 +177,7 @@ impl Player {
         match forced(p) {
             Some(tile) => Move { tile, forced: true, q: Vec::new() },
             None => {
-                let (tile, q, _) = decide(&self.config(p.decl()), &p.decision(), None);
+                let (tile, q, _, _) = decide(&self.config(p.decl()), &p.decision(), None);
                 Move { tile, forced: false, q }
             }
         }

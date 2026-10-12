@@ -771,6 +771,33 @@ rank 0.74 at plays 1–3, 0.84 at 12–15; ε = 0 reproduces the 586 exclusions)
 Reweighting 512 uniform draws leaves about ten worlds mid-hand, so #111 must sample from
 β^F, not reweight. `scratch/stochastic-field/measure.py` (12 s) and `measure.json`.
 
+**The posterior, sampled in the core (2026-10-12, #111).** `Config.draw = "posterior"`
+(arena `d=posterior`, budget `D=`, default 2^22; a one-rung player with a field net)
+draws the live seat's worlds from β^F ∝ uniform × `field_likelihood`, bit-identical
+referee ↔ core. An enumerated fiber is weighted by L normalized (the exact posterior,
+never floored); a sampled one is n draws by rejection from the uniform stream itself
+(a proposal is kept when a coin on its own stream falls below L ≤ 1; at ε = 0 L is the
+net's 0/1 filter, no coin, and the uniform sample's consistent worlds are the
+posterior's first), equally weighted; no explained world, or n not found within the
+budget, plans over the uniform sample and is counted. Default `uniform`: every
+deployed byte unchanged (Zeb's fixture untouched). Cost is small because the product
+short-circuits at the first miss and the net's moves are cached: at k0,n512 the
+posterior decision costs 135 / 162 / 91 / 31 / 5 ms at plays 1–3 / 4–7 / 8–11 / 12–15
+/ 16–19 against the uniform's 120 / 125 / 70 / 26 / 4 (median proposals 1.7k / 4.5k /
+17k / 22k; p99 ≤ 0.47 s, max 1.3 s), so E1b's 2–6 s Python referee becomes
+milliseconds. **Arena, E1b's design** (Zeb in one seat, the deterministic net in three,
+seat 0 bids 30, Zeb bidding on even seeds and defending on odd, each deal played by
+both lines): posterior vs uniform Zeb **+0.026 ± 0.003 marks/hand [+0.023, +0.029],
+n = 22,000 paired deals**, 962 flips for / 386 against (sign p ≈ 5e-57), +0.025
+bidding, +0.027 defending; on E1b's own 2,120 seeds +0.022 ± 0.011. Fallbacks 95 of
+98,060 decisions (0.10%; 0.74% at 2^20). So against the net the repair is real and
+the full E1b size. Whether Plunge's Walt partner is "net enough" is the other half:
+in Zeb self-play the deterministic posterior is empty (17 of 36 probe positions fall
+back at 2^20, 10 of the 12 at plays 16+), and the softened one was null at power
+(E1c), so the filter pays only for seats that play like the net, and no seat that
+is a Walt yet does. `scratch/posterior-arena/` (`table.py`, `probe.py`, `report.py`,
+`arena.log`, `report.json`).
+
 **O2 beats O1 on real endgames (2026-10-12, #113).** On 566 three-trick endgames
 from 142 deals (V's hand common knowledge, P's private, opponents the deployed net,
 margin utility), the common-information coordinator O2 beats the Walt partnership map's

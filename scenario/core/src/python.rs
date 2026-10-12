@@ -1,9 +1,10 @@
 //! The Python module `scenario_core` (the `python` feature), which
 //! `scenario/compiled.py` drives.
 //!
-//! Interface: `Core(rungs, utility, seed, tilt, eps, field, field_eps)` with
-//! rungs as (n_worlds, horizon, floor), `field` the field net's blob
-//! (`FieldNet.to_bytes()`) or None, and `field_eps` the stochastic field's ε;
+//! Interface: `Core(rungs, utility, seed, tilt, eps, field, field_eps, draw,
+//! draw_budget)` with rungs as (n_worlds, horizon, floor), `field` the field
+//! net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the stochastic
+//! field's ε, and `draw` "uniform" or "posterior" (the live rung's worlds);
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
@@ -20,7 +21,7 @@ use pyo3::prelude::*;
 
 use crate::field::{self, FieldNet};
 use crate::mold;
-use crate::planner::{self, analyze, decide, Config, Decision, Rec, TiltPlays, MAX_WORLDS};
+use crate::planner::{self, analyze, decide, Config, Decision, Draw, Rec, TiltPlays, MAX_WORLDS};
 use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
@@ -34,12 +35,13 @@ type Job<'a> = (Decision<'a>, Option<&'a [f64]>);
 /// A scenario: the four remaining hands as tile masks, absolute seats.
 type World = (u32, u32, u32, u32);
 
-/// A decision as Python receives it: (tile, [(tile, Q)], cells evaluated).
-type Decided = (u8, Vec<(u8, f64)>, u64);
+/// A decision as Python receives it: (tile, [(tile, Q)], cells evaluated,
+/// posterior proposals, whether the posterior fell back to the uniform).
+type Decided = (u8, Vec<(u8, f64)>, u64, u64, bool);
 
 /// An analysis as Python receives it: (tile, [(tile, Q)], cells evaluated,
-/// worlds, weights, [(tile, per-world outcomes)]).
-type Analyzed = (u8, Vec<(u8, f64)>, u64, Vec<World>, Vec<f64>, Vec<(u8, Vec<f64>)>);
+/// worlds, weights, [(tile, per-world outcomes)], proposals, fell back).
+type Analyzed = (u8, Vec<(u8, f64)>, u64, Vec<World>, Vec<f64>, Vec<(u8, Vec<f64>)>, u64, bool);
 
 /// One declaration's tables: (led_suit, follow_bits, rank, count).
 type Tables = (Vec<u8>, Vec<u32>, Vec<Vec<u8>>, Vec<u8>);
@@ -96,7 +98,8 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None, field_eps=0.0))]
+    #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET))]
+    #[allow(clippy::too_many_arguments)]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
         utility: &str,
@@ -105,6 +108,8 @@ impl Core {
         eps: f64,
         field: Option<&[u8]>,
         field_eps: f64,
+        draw: &str,
+        draw_budget: u64,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -139,21 +144,31 @@ impl Core {
         if field_eps > 0.0 && field.is_none() {
             return Err(PyValueError::new_err("field_eps needs a field net: the random field is the dice already"));
         }
+        if draw_budget < 1 {
+            return Err(PyValueError::new_err("the draw budget is at least one proposal"));
+        }
+        let draw = match draw {
+            "uniform" => Draw::Uniform,
+            "posterior" if rungs.len() == 1 && field.is_some() => Draw::Posterior(draw_budget),
+            "posterior" => {
+                return Err(PyValueError::new_err("the posterior is the field net's, drawn by a one-rung player"))
+            }
+            other => return Err(PyValueError::new_err(format!("unknown draw {other:?}"))),
+        };
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field, field_eps }, rules })
+        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field, field_eps, draw }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`
     /// will plan over — so a belief can weight them.
     fn sample_roots(&self, reqs: Vec<Req>) -> PyResult<Vec<Vec<World>>> {
-        reqs.iter()
-            .map(|req| {
-                let rec = rec_of(req)?;
-                let worlds = planner::root_worlds(&self.cfg, req.1, req.2, &rec);
-                Ok(worlds.into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect())
-            })
-            .collect()
+        let none = vec![None; reqs.len()];
+        Ok(self
+            .jobs(&reqs, &none)?
+            .iter()
+            .map(|(d, _)| planner::root_worlds(&self.cfg, d).into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect())
+            .collect())
     }
 
     /// Decide every request: (tile, [(tile, Q)], cells evaluated). `weights[i]`
@@ -169,7 +184,10 @@ impl Core {
     ) -> PyResult<Vec<Decided>> {
         let jobs = self.jobs(&reqs, &weights)?;
         let cfg = &self.cfg;
-        Ok(run(py, &jobs, threads, |(d, w)| decide(cfg, d, *w)))
+        Ok(run(py, &jobs, threads, |(d, w)| {
+            let (tile, q, nodes, drawn) = decide(cfg, d, *w);
+            (tile, q, nodes, drawn.proposals, drawn.fell_back)
+        }))
     }
 
     /// `solve`, opened up: per request (tile, [(tile, Q)], cells evaluated,
@@ -187,7 +205,7 @@ impl Core {
         Ok(run(py, &jobs, threads, |(d, w)| {
             let a = analyze(cfg, d, *w);
             let worlds = a.worlds.into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect();
-            (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes)
+            (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes, a.drawn.proposals, a.drawn.fell_back)
         }))
     }
 
@@ -250,15 +268,6 @@ impl Core {
         let mut jobs = Vec::with_capacity(reqs.len());
         for (req, w) in reqs.iter().zip(weights) {
             let rec = rec_of(req)?;
-            if let Some(w) = w {
-                let n = planner::root_worlds(&self.cfg, req.1, req.2, &rec).len();
-                if w.len() != n {
-                    return Err(PyValueError::new_err(format!(
-                        "weights has {} entries but the live rung holds {n} scenarios",
-                        w.len()
-                    )));
-                }
-            }
             let d = Decision {
                 rules: self.rules_for(req.0)?,
                 viewer: req.1,
@@ -268,6 +277,15 @@ impl Core {
                 bidder_team: req.9,
                 plays: &req.10,
             };
+            if let Some(w) = w {
+                let n = planner::root_count(&self.cfg, &d);
+                if w.len() != n {
+                    return Err(PyValueError::new_err(format!(
+                        "weights has {} entries but the live rung holds {n} scenarios",
+                        w.len()
+                    )));
+                }
+            }
             jobs.push((d, w.as_deref()));
         }
         Ok(jobs)

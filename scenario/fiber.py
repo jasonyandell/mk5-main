@@ -124,28 +124,45 @@ def enumerate_fiber(pool: int, sizes: tuple[int, int, int],
     return out
 
 
+class Fiber:
+    """The viewer's fiber: the hidden seats (absolute, in order), the unseen
+    pool, and each one's hand size and provable voids. Its members are
+    scenarios — 4-tuples of remaining-hand masks in absolute seat order, the
+    viewer's own hand in its slot."""
+
+    def __init__(self, viewer: int, own: int, played: int, sizes4: tuple[int, int, int, int],
+                 forbid4: tuple[int, int, int, int]):
+        self.viewer, self.own = viewer, own
+        self.others = [s for s in range(4) if s != viewer]
+        self.pool = ALL_TILES & ~played & ~own
+        self.sizes = (sizes4[self.others[0]], sizes4[self.others[1]], sizes4[self.others[2]])
+        self.forbid = (forbid4[self.others[0]], forbid4[self.others[1]], forbid4[self.others[2]])
+        self.size = fiber_size(self.pool, self.sizes, self.forbid)
+
+    def _world(self, hidden: tuple[int, int, int]) -> tuple[int, int, int, int]:
+        hands = [0, 0, 0, 0]
+        hands[self.viewer] = self.own
+        for s, m in zip(self.others, hidden):
+            hands[s] = m
+        return (hands[0], hands[1], hands[2], hands[3])
+
+    def worlds(self) -> list[tuple[int, int, int, int]]:
+        """Every member, in `enumerate_fiber`'s order."""
+        return [self._world(h) for h in enumerate_fiber(self.pool, self.sizes, self.forbid)]
+
+    def draw(self, rng: Uniform) -> tuple[int, int, int, int]:
+        """One member, uniform."""
+        return self._world(sample_fiber(self.pool, self.sizes, self.forbid, rng))
+
+
 def sample_worlds(viewer: int, own: int, played: int, sizes4: tuple[int, int, int, int],
                   forbid4: tuple[int, int, int, int], n: int,
                   rng: Uniform) -> tuple[list[tuple[int, int, int, int]], bool]:
-    """Scenarios from the viewer's fiber, as 4-tuples of remaining-hand masks
-    in absolute seat order (the viewer's own hand in its slot): the whole
-    fiber when it has at most `n` members, else `n` uniform draws. The flag
-    says which: True when the scenarios ARE the fiber (the exact belief),
-    False when they are a sample of it."""
-    others = [s for s in range(4) if s != viewer]
-    pool = ALL_TILES & ~played & ~own
-    sizes = (sizes4[others[0]], sizes4[others[1]], sizes4[others[2]])
-    forbid = (forbid4[others[0]], forbid4[others[1]], forbid4[others[2]])
-    exact = fiber_size(pool, sizes, forbid) <= n
-    if exact:
-        drawn = enumerate_fiber(pool, sizes, forbid)
-    else:
-        drawn = [sample_fiber(pool, sizes, forbid, rng) for _ in range(n)]
-    worlds = []
-    for hidden in drawn:
-        hands = [0, 0, 0, 0]
-        hands[viewer] = own
-        for s, m in zip(others, hidden):
-            hands[s] = m
-        worlds.append((hands[0], hands[1], hands[2], hands[3]))
-    return worlds, exact
+    """Scenarios from the viewer's fiber: the whole fiber when it has at most
+    `n` members, else `n` uniform draws. The flag says which: True when the
+    scenarios ARE the fiber (the exact belief), False when they are a sample
+    of it."""
+    fiber = Fiber(viewer, own, played, sizes4, forbid4)
+    if fiber.size <= n:
+        return fiber.worlds(), True
+    return [fiber.draw(rng) for _ in range(n)], False

@@ -7,7 +7,7 @@ construction one rung down, bottoming out in random legal play. See
 
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
-          [,F=<field net .npz>][,E=<field eps>][,py]
+          [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -24,6 +24,13 @@ seat explores with probability ε, playing a uniform legal tile drawn from
 the scenario's record-keyed tape, else the net's move — P_σ(t) = ε/n +
 (1 − ε)·[t = the net's move] — so the posterior under the field has full
 support. The default, 0, is the deterministic net.
+
+`d=posterior` draws the live seat's worlds from the field's posterior β^F
+instead of the uniform (`Config.draw`; k=0 with `F=`): the worlds the net —
+at `E=` — would have played the observed moves in. An enumerated fiber is
+weighted by that likelihood normalized; a sampled one is n draws by
+rejection from the uniform stream, within `D=` proposals (default 2^22),
+else the uniform sample (`CompiledWalt.fallbacks` counts those decisions).
 
 `f=` is the live rung's cell floor: below the root, where the live seat's
 cell holds fewer than f scenarios it stops maximizing over them and plays
@@ -67,7 +74,7 @@ from forge.zeb.types import ZebGameState
 
 from arena.hand_metrics import best_trump
 from scenario.field import FieldNet
-from scenario.planner import Belief, Config, Rung, Situation, Tilt, Walt, World
+from scenario.planner import DRAW_BUDGET, Belief, Config, Rung, Situation, Tilt, Walt, World
 
 
 def declaration_belief(eps: float = 0.1) -> Belief:
@@ -99,11 +106,12 @@ class WaltPlay:
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
                  tilt: Tilt = Tilt(), floor: int | None = None, field: FieldNet | None = None,
-                 field_eps: float = 0.0, compiled: bool = True):
+                 field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
+                 compiled: bool = True):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
-        config = Config(rungs, utility, seed, tilt, field, field_eps)
+        config = Config(rungs, utility, seed, tilt, field, field_eps, draw, draw_budget)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -135,7 +143,7 @@ class WaltPlay:
         belief = "" if self.walt.belief is None else ", +external belief"
         field = "random" if c.field is None else "net" if c.field_eps == 0 else f"net+eps{c.field_eps:g}"
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}, "
-                f"tilt={c.tilt.plays}{belief}, field={field}, {engine})")
+                f"tilt={c.tilt.plays}{belief}, field={field}, draw={c.draw}, {engine})")
 
 
 def parse_walt_spec(arg: str) -> WaltPlay:
@@ -155,6 +163,10 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["field"] = FieldNet.load(t[2:])
         elif t.startswith("E="):
             kw["field_eps"] = float(t[2:])
+        elif t.startswith("d="):
+            kw["draw"] = t[2:]
+        elif t.startswith("D="):
+            kw["draw_budget"] = int(t[2:])
         elif t[0] in "knmhg" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
                    "h": "horizon", "g": "horizon_inner"}[t[0]]

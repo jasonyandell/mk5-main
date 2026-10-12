@@ -27,6 +27,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | scenario/core | the posterior sampled in the core (Config.draw, arena d=posterior): +0.026 ± 0.003 marks/hand vs a table of nets, 22,000 paired deals (#111)]
+
+[[scenario-player]] § The posterior, sampled in the core. Default uniform; Zeb unchanged.
+
 ## [2026-10-12 | scratch/endgames-o2 | O2 beats the O1 fixed point on real three-trick endgames: +0.027 [+0.022, +0.033] margin vs the Walt partnership map, half of it a convention on reached sets (#113)]
 
 [[endgames-o2-vs-o1-2026-10-12]]; report [[endgames-o2-vs-o1-2026-10-12-report]]. The first nonzero O2 − O1 number; the partnership operator is the next referent.

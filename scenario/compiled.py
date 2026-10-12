@@ -48,8 +48,11 @@ class CompiledWalt:
             [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
             config.tilt.plays, config.tilt.eps,
             None if config.field is None else config.field.to_bytes(), config.field_eps,
+            config.draw, config.draw_budget,
         )
-        self.nodes = 0  # cells evaluated in the last decision or batch
+        self.nodes = 0      # cells evaluated in the last decision or batch
+        self.proposals = 0  # posterior: uniform proposals drawn in the last decision or batch
+        self.fallbacks = 0  # posterior: decisions of the last batch planned over the uniform
 
     def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
         return self.decide_batch([state], [bid])[0]
@@ -105,7 +108,7 @@ class CompiledWalt:
                 rec.banked, rec.forbid, sit.bid, sit.bidder_team, list(sit.plays),
             ))
             sits.append((i, sit))
-        self.nodes = 0
+        self.nodes = self.proposals = self.fallbacks = 0
         if reqs:
             weights: list[list[float] | None] = [None] * len(reqs)
             if self.belief is not None:
@@ -114,5 +117,7 @@ class CompiledWalt:
             for (i, _), res in zip(sits, getattr(self._core, method)(reqs, weights, self.threads)):
                 out[i] = (res[0], res)
                 self.nodes += res[2]
+                self.proposals += res[-2]
+                self.fallbacks += res[-1]
         assert all(o is not None for o in out)
         return out  # type: ignore[return-value]

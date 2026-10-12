@@ -58,11 +58,26 @@ built-in `Tilt` scores the hidden seats' discretionary plays under a field
 model — `dice` (each legal tile equally likely, so forced-looking plays
 weigh more) or `field` (the rung-0 player's own choice, ε-greedy); any
 further evidence (the auction, a learned head) multiplies in through
-`Walt(belief=callable)`, which sees the whole public `Situation`. Every random draw — scenario sampling and the dice tape — comes
-from SplitMix64 streams seeded by the invocation's coordinate (viewer, own
-hand, record; never the rung), so a decision is a pure
-function of (config, state, bid) that any implementation can reproduce
-bit for bit; `scenario/core` is the compiled one, checked against this file.
+`Walt(belief=callable)`, which sees the whole public `Situation`.
+
+The live rung's scenarios themselves may be drawn from the field's
+posterior instead of the uniform (`Config.draw = "posterior"`, a one-rung
+player with a field net): β^F(world | record) ∝ u(world)·L(world), L the
+probability that F_σ plays what the other seats played (`field_likelihood`).
+A strong L must be sampled from, never used to reweight a uniform sample
+(the weights collapse onto a handful of worlds), so: when the fiber is
+enumerated its scenarios are weighted by L normalized — the exact posterior;
+when it is sampled, the scenarios are n draws from β^F by rejection from
+the uniform stream (a proposal is kept when a uniform coin falls below its
+L ≤ 1; at ε = 0, L is the net's 0/1 filter and no coin is drawn), equally
+weighted. A decision that has not found n within `draw_budget` proposals,
+or whose fiber holds no world the field explains, plans over the uniform
+sample instead, and says so (`Walt.fallbacks`).
+
+Every random draw — scenario sampling, the posterior's coins and the dice
+tape — comes from SplitMix64 streams seeded by the invocation's coordinate
+(viewer, own hand, record; never the rung), so a decision is a pure function
+of (config, state, bid) that any implementation can reproduce bit for bit; `scenario/core` is the compiled one, checked against this file.
 
 Values are kept in bidder-team units: with the `make` utility a cell's value
 is the belief mass in which the bidding side makes its contract; with
@@ -79,15 +94,18 @@ from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
 from scenario.field import FieldNet
-from scenario.fiber import sample_worlds
+from scenario.fiber import Fiber, sample_worlds
 from scenario.record import Record, empty_record, record_from_state, remaining_hand
 from scenario.rules import ALL_TILES, Rules, bit, mask_of, rules_for, tiles_of
 
 World = tuple[int, int, int, int]                       # remaining-hand masks, absolute seats
+DRAWS = ("uniform", "posterior")
+DRAW_BUDGET = 1 << 22   # posterior: uniform proposals per decision before falling back
 
 HAND_TOTAL = 42
 MASK64 = (1 << 64) - 1
 GOLDEN = 0x9E3779B97F4A7C15
+COIN = 0x636F696E            # "coin": the posterior's acceptance stream is _mix(seed, COIN)
 
 
 @dataclass(frozen=True)
@@ -128,6 +146,8 @@ class Config:
     tilt: Tilt = Tilt()
     field: FieldNet | None = None   # rung -1: the field net, or None for random legal play
     field_eps: float = 0.0      # ε of the stochastic field F_σ; 0 is the deterministic net
+    draw: str = "uniform"       # the live rung's worlds: "uniform" on the fiber, or "posterior" β^F
+    draw_budget: int = DRAW_BUDGET
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.field_eps <= 1.0:
@@ -142,6 +162,12 @@ class Config:
             raise ValueError("the field tilt models plays with rung 0; a one-rung player has no modeled rung")
         if self.rungs[0].floor > 1 and self.field is None:
             raise ValueError("rung 0 hands a floored move down only to a field net")
+        if self.draw not in DRAWS:
+            raise ValueError(f"unknown draw {self.draw!r}")
+        if self.draw == "posterior" and (self.level != 0 or self.field is None):
+            raise ValueError("the posterior is the field net's, drawn by a one-rung player")
+        if self.draw_budget < 1:
+            raise ValueError("the draw budget is at least one proposal")
 
     @property
     def level(self) -> int:
@@ -265,6 +291,8 @@ class Walt:
         self.belief = belief
         self._pi: dict[tuple, int] = {}   # modeled decisions, by (rung, seat, hand, record key)
         self.nodes = 0                     # cells evaluated in the last decision
+        self.proposals = 0                 # posterior: uniform proposals drawn in the last decision
+        self.fallbacks = 0                 # posterior: 1 when the last decision planned over the uniform
 
     # -- the player at the table --------------------------------------------
 
@@ -296,7 +324,7 @@ class Walt:
         rules = rules_for(state.decl_id)
         legal = tiles_of(rules.legal(own, rec.led))
         self._pi.clear()
-        self.nodes = 0
+        self.nodes = self.proposals = self.fallbacks = 0
         if len(legal) == 1:
             return legal[0]
         return self._invocation(self.config.level, viewer, own, rec, rules, bid, sit.bidder_team, sit)
@@ -356,13 +384,49 @@ class Walt:
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
         worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
         weights = [1.0] * len(worlds)
+        base = None
+        if sit is not None and self.config.draw == "posterior":
+            worlds, base = self._posterior(sit, worlds, exact, seed)
         if sit is not None:
             weights = self.tilt_weights(sit, worlds, rules)
+            if base is not None:
+                weights = [b * w for b, w in zip(base, weights)]
             if self.belief is not None:
                 weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
         floor = 1 if exact else rung.floor
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor)
+
+    def _posterior(self, sit: Situation, uniform: list[World], exact: bool,
+                   seed: int) -> tuple[list[World], list[float]]:
+        """The live rung's scenarios under β^F and their weights, given the
+        uniform ones: the fiber weighted by L normalized when `exact`, else
+        n draws by rejection, equally weighted — or the uniform, when the
+        field explains no world of the fiber or the budget runs out."""
+        n = len(uniform)
+        if exact:
+            like = self.field_likelihood(sit, uniform)
+            total = sum(like)
+            if total > 0:
+                return uniform, [x / total for x in like]
+            self.fallbacks = 1
+            return uniform, [1.0] * n
+        cfg, rec = self.config, sit.record
+        fiber = Fiber(sit.viewer, uniform[0][sit.viewer], rec.played,
+                      tuple(rec.hand_size(s) for s in range(4)), rec.forbid)
+        rng = SplitMix(seed)
+        coins = SplitMix(_mix(seed, COIN)) if cfg.field_coin else None
+        kept: list[World] = []
+        while len(kept) < n and self.proposals < cfg.draw_budget:
+            world = fiber.draw(rng)
+            self.proposals += 1
+            u = coins.random() if coins is not None else 0.0
+            if u < self.field_likelihood(sit, [world])[0]:
+                kept.append(world)
+        if len(kept) < n:
+            self.fallbacks = 1
+            return uniform, [1.0] * n
+        return kept, [1.0] * n
 
     def _modeled_move(self, k: int, seat: int, own: int, rec: Record, rules: Rules,
                       bid: int, bidder_team: int) -> int:

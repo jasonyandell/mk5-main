@@ -9,18 +9,20 @@
 
 use crate::planner::{SplitMix, ALL_TILES};
 
-struct Fiber<'a> {
-    tiles: &'a [u8],
+/// The counting table for assigning `tiles` to three seats with the given
+/// capacities, never giving a seat a forbidden tile.
+struct Counts {
+    tiles: Vec<u8>,
     forbid: [u32; 3],
     dims: [usize; 3],
     memo: Vec<i64>, // -1 = not yet counted
 }
 
-impl<'a> Fiber<'a> {
-    fn new(tiles: &'a [u8], sizes: [u8; 3], forbid: [u32; 3]) -> Self {
+impl Counts {
+    fn new(tiles: Vec<u8>, sizes: [u8; 3], forbid: [u32; 3]) -> Self {
         let dims = [sizes[0] as usize + 1, sizes[1] as usize + 1, sizes[2] as usize + 1];
         let memo = vec![-1; (tiles.len() + 1) * dims[0] * dims[1] * dims[2]];
-        Fiber { tiles, forbid, dims, memo }
+        Counts { tiles, forbid, dims, memo }
     }
 
     #[inline]
@@ -128,17 +130,21 @@ impl<'a> Fiber<'a> {
     }
 }
 
-/// The viewer's view of the hidden seats: who they are (absolute seats, in
-/// order), the unseen pool, and each one's hand size and provable voids.
-struct Hidden {
+/// The viewer's fiber: the hidden seats (absolute, in order), the unseen
+/// pool, and each one's hand size and provable voids (`scenario.fiber.Fiber`).
+/// Its members are scenarios — remaining-hand masks in absolute seat order,
+/// the viewer's own hand in its slot.
+pub struct Fiber {
+    viewer: u8,
+    own: u32,
     others: [usize; 3],
-    tiles: Vec<u8>,
     sizes: [u8; 3],
-    forbid: [u32; 3],
+    counts: Counts,
 }
 
-impl Hidden {
-    fn new(viewer: u8, own: u32, played: u32, sizes4: [u8; 4], forbid4: [u32; 4]) -> Hidden {
+impl Fiber {
+    /// The fiber of `viewer` holding `own`, with `played` down.
+    pub fn new(viewer: u8, own: u32, played: u32, sizes4: [u8; 4], forbid4: [u32; 4]) -> Fiber {
         let mut others = [0usize; 3];
         let mut k = 0;
         for s in 0..4 {
@@ -148,12 +154,38 @@ impl Hidden {
             }
         }
         let pool = ALL_TILES & !played & !own;
-        Hidden {
-            others,
-            tiles: (0..28u8).filter(|&t| (pool >> t) & 1 == 1).collect(),
-            sizes: others.map(|s| sizes4[s]),
-            forbid: others.map(|s| forbid4[s]),
+        let tiles: Vec<u8> = (0..28u8).filter(|&t| (pool >> t) & 1 == 1).collect();
+        let sizes = others.map(|s| sizes4[s]);
+        let counts = Counts::new(tiles, sizes, others.map(|s| forbid4[s]));
+        Fiber { viewer, own, others, sizes, counts }
+    }
+
+    /// How many members: lawful deals of the pool that fit the sizes and voids.
+    pub fn size(&mut self) -> i64 {
+        self.counts.ways(0, self.sizes)
+    }
+
+    fn world(&self, hidden: [u32; 3]) -> [u32; 4] {
+        let mut hands = [0u32; 4];
+        hands[self.viewer as usize] = self.own;
+        for j in 0..3 {
+            hands[self.others[j]] = hidden[j];
         }
+        hands
+    }
+
+    /// Every member, in `enumerate_fiber`'s order.
+    pub fn worlds(&mut self) -> Vec<[u32; 4]> {
+        let sizes = self.sizes;
+        let hidden = self.counts.enumerate(sizes);
+        hidden.into_iter().map(|h| self.world(h)).collect()
+    }
+
+    /// One member, uniform.
+    pub fn draw(&mut self, rng: &mut SplitMix) -> [u32; 4] {
+        let sizes = self.sizes;
+        let hidden = self.counts.sample(sizes, rng);
+        self.world(hidden)
     }
 }
 
@@ -161,14 +193,12 @@ impl Hidden {
 /// their hand sizes and the voids they have shown. Zero means no deal
 /// explains the record from the viewer's chair.
 pub fn completions(viewer: u8, own: u32, played: u32, sizes4: [u8; 4], forbid4: [u32; 4]) -> i64 {
-    let h = Hidden::new(viewer, own, played, sizes4, forbid4);
-    Fiber::new(&h.tiles, h.sizes, h.forbid).ways(0, h.sizes)
+    Fiber::new(viewer, own, played, sizes4, forbid4).size()
 }
 
-/// `n` scenarios from the viewer's fiber, as remaining-hand masks in absolute
-/// seat order (the viewer's own hand in its slot): the whole fiber when it has
-/// at most `n` members, else `n` uniform draws. The flag says which: true
-/// when the scenarios ARE the fiber (the exact belief), false for a sample.
+/// `n` scenarios from the viewer's fiber: the whole fiber when it has at most
+/// `n` members, else `n` uniform draws. The flag says which: true when the
+/// scenarios ARE the fiber (the exact belief), false for a sample.
 pub fn sample_worlds(
     viewer: u8,
     own: u32,
@@ -178,29 +208,15 @@ pub fn sample_worlds(
     n: usize,
     rng: &mut SplitMix,
 ) -> (Vec<[u32; 4]>, bool) {
-    let Hidden { others, tiles, sizes, forbid } = Hidden::new(viewer, own, played, sizes4, forbid4);
+    let mut fiber = Fiber::new(viewer, own, played, sizes4, forbid4);
     assert_eq!(
-        sizes.iter().map(|&s| s as usize).sum::<usize>(),
-        tiles.len(),
+        fiber.sizes.iter().map(|&s| s as usize).sum::<usize>(),
+        fiber.counts.tiles.len(),
         "pool size must equal the hidden hand sizes"
     );
-    let mut fiber = Fiber::new(&tiles, sizes, forbid);
-    let exact = fiber.ways(0, sizes) as usize <= n;
-    let drawn: Vec<[u32; 3]> = if exact {
-        fiber.enumerate(sizes)
+    if fiber.size() as usize <= n {
+        (fiber.worlds(), true)
     } else {
-        (0..n).map(|_| fiber.sample(sizes, rng)).collect()
-    };
-    let worlds = drawn
-        .into_iter()
-        .map(|hidden| {
-            let mut hands = [0u32; 4];
-            hands[viewer as usize] = own;
-            for j in 0..3 {
-                hands[others[j]] = hidden[j];
-            }
-            hands
-        })
-        .collect();
-    (worlds, exact)
+        ((0..n).map(|_| fiber.draw(rng)).collect(), false)
+    }
 }
