@@ -7,10 +7,10 @@ behind the planner's interface.
 forms, which plan a whole arena round of decisions in parallel on all cores
 with the GIL released. `mold` is `scenario.atlas.mold`, compiled.
 
-The belief seam is unchanged: the config's `Tilt` runs inside the core, and
+The belief seam is unchanged: the config's draw runs inside the core, and
 `belief(situation, worlds) -> weights` is called once per decision, in
 Python, on the live rung's scenarios (the core samples them, hands them
-over, and multiplies the weights returned into the tilt).
+over, and multiplies the weights returned into the posterior's).
 
 Build: `python -m pip install ./scenario/core` (needs the Rust toolchain).
 """
@@ -46,7 +46,6 @@ class CompiledWalt:
         self.threads = threads
         self._core = scenario_core.Core(
             [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
-            config.tilt.plays, config.tilt.eps,
             None if config.field is None else config.field.to_bytes(), config.field_eps,
             config.draw, config.draw_budget,
         )

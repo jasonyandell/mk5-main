@@ -24,7 +24,7 @@ use std::sync::LazyLock;
 
 use position::{hand_mask, refuse, rules_for};
 use scenario_core::field::FieldNet;
-use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, TiltPlays, MAX_WORLDS};
+use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, MAX_WORLDS};
 use serde::Serialize;
 
 include!(concat!(env!("OUT_DIR"), "/net.rs"));
@@ -132,15 +132,12 @@ impl Player {
         } else {
             (vec![MODELED, (self.worlds, None, FLOOR)], None)
         };
-        // No tilt: every scenario weighs the same, so the tilt's ε is unused;
-        // the field is the deterministic net (field_eps 0), and the worlds
-        // are uniform on the fiber.
+        // The field is the deterministic net (field_eps 0), and the worlds
+        // are uniform on the fiber: every scenario weighs the same.
         Config {
             rungs,
             make: true,
             seed: self.seed,
-            tilt: TiltPlays::None,
-            eps: 0.1,
             field,
             field_eps: 0.0,
             draw: Draw::Uniform,

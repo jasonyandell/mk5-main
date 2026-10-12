@@ -181,9 +181,9 @@ lever on this page is still untouched in these numbers.
 The first beliefs on the seam, each a likelihood factor on every live scenario
 (the tilt form b = u·e^g), all bit-identical referee ↔ core:
 
-- **dice** — the hidden seats' discretionary plays under random legal play: a
+- **dice** (retired 2026-10-12) — the hidden seats' discretionary plays under random legal play: a
   play with n options weighs 1/n (forced-looking plays count more).
-- **field** — the same plays under the rung-0 player: ε/n + (1−ε)·[it would
+- **field** (retired 2026-10-12) — the same plays under the rung-0 player: ε/n + (1−ε)·[it would
   have played that tile].
 - **auction** — the declaration: ε/7 + (1−ε)·[the bidder's dealt hand in this
   scenario would have called this trump]; exact for the `bid30`/heuristic
@@ -813,6 +813,9 @@ rank 0.74 at plays 1–3, 0.84 at 12–15; ε = 0 reproduces the 586 exclusions)
 512, falling from 118–139 at plays 1–3 to 8–16 at plays 12–15 (1.6–3.2% of the sample).
 Reweighting 512 uniform draws leaves about ten worlds mid-hand, so #111 must sample from
 β^F, not reweight. `scratch/stochastic-field/measure.py` (12 s) and `measure.json`.
+2026-10-12: the old tilt (`Tilt`: `b=dice`, random play, and `b=field`, the rung-0 solver,
+both reweighting a uniform sample) is gone from both engines and the spec, so
+`field_likelihood` is the one likelihood of the plays, applied once, by #111's draw.
 
 **The posterior, sampled in the core (2026-10-12, #111).** `Config.draw = "posterior"`
 (arena `d=posterior`, budget `D=`, default 2^22; a one-rung player with a field net)

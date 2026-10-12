@@ -54,10 +54,9 @@ theirs uniformly (compatibility only, the g ≡ 0 limit), as the shipped
 player does. β has the tilt form b = u·e^g: u is the uniform (exact, no
 invalid worlds — the fiber is enumerated outright when it is no larger than
 the sample), and g is a log-likelihood of what has been observed. The
-built-in `Tilt` scores the hidden seats' discretionary plays under a field
-model — `dice` (each legal tile equally likely, so forced-looking plays
-weigh more) or `field` (the rung-0 player's own choice, ε-greedy); any
-further evidence (the auction, a learned head) multiplies in through
+other seats' plays have one likelihood, the field's (`field_likelihood`),
+and it enters once, as the measure the scenarios are drawn from (below);
+any further evidence (the auction, a learned head) multiplies in through
 `Walt(belief=callable)`, which sees the whole public `Situation`.
 
 The live rung's scenarios themselves may be drawn from the field's
@@ -122,28 +121,10 @@ class Rung:
 
 
 @dataclass(frozen=True)
-class Tilt:
-    """g, the built-in evidence: how the hidden seats' discretionary plays are
-    scored in each scenario. `none` is uniform; `dice` gives a play with n
-    legal options likelihood 1/n; `field` gives it ε/n + (1−ε)·[the rung-0
-    player holding that hand would have played it]."""
-
-    plays: str = "none"
-    eps: float = 0.1
-
-    def __post_init__(self) -> None:
-        if self.plays not in ("none", "dice", "field"):
-            raise ValueError(f"unknown tilt {self.plays!r}")
-        if not 0.0 < self.eps <= 1.0:
-            raise ValueError("eps must lie in (0, 1]")
-
-
-@dataclass(frozen=True)
 class Config:
     rungs: tuple[Rung, ...]     # rungs[k] configures D_k; the live player is the last rung
     utility: str = "make"       # "make" (bidding side makes it) or "points" (signed margin)
     seed: int = 0
-    tilt: Tilt = Tilt()
     field: FieldNet | None = None   # rung -1: the field net, or None for random legal play
     field_eps: float = 0.0      # ε of the stochastic field F_σ; 0 is the deterministic net
     draw: str = "uniform"       # the live rung's worlds: "uniform" on the fiber, or "posterior" β^F
@@ -158,8 +139,6 @@ class Config:
             raise ValueError("a player needs at least one rung")
         if self.utility not in ("make", "points"):
             raise ValueError(f"unknown utility {self.utility!r}")
-        if self.tilt.plays == "field" and self.level == 0:
-            raise ValueError("the field tilt models plays with rung 0; a one-rung player has no modeled rung")
         if self.rungs[0].floor > 1 and self.field is None:
             raise ValueError("rung 0 hands a floored move down only to a field net")
         if self.draw not in DRAWS:
@@ -251,7 +230,7 @@ class Situation:
         return mask_of(t for s, t in self.plays if s == seat)
 
 
-Belief = Callable[[Situation, list[World]], list[float]]  # evidence beyond the tilt: weights per world
+Belief = Callable[[Situation, list[World]], list[float]]  # evidence beyond the plays: weights per world
 
 
 def situation_from_state(state: ZebGameState, bid: int) -> Situation:
@@ -266,7 +245,7 @@ def situation_from_state(state: ZebGameState, bid: int) -> Situation:
 class Analysis:
     """One decision, opened up. `worlds` are the live rung's scenarios in
     sample order and `weights` the belief over them exactly as the planner
-    weighs them (tilt × external evidence, unnormalized). `outcomes[a][r]`
+    weighs them (the posterior's × external evidence, unnormalized). `outcomes[a][r]`
     is the bidder-team final margin scenario r reaches when the root action
     is a and play continues under the plan — the viewer's moves chosen once
     per cell, the other seats as modeled — under every utility, so that
@@ -331,23 +310,6 @@ class Walt:
 
     # -- the belief --------------------------------------------------------------
 
-    def tilt_weights(self, sit: Situation, worlds: list[World], rules: Rules) -> list[float]:
-        """e^g for each scenario: the likelihood of the hidden seats' observed
-        discretionary plays, replayed from the first lead with each seat
-        holding the hand the scenario implies it was dealt."""
-        tilt = self.config.tilt
-        w = [1.0] * len(worlds)
-        if tilt.plays == "none":
-            return w
-        eps = tilt.eps
-        for r, seat, hand, rec, tile, n in _hidden_plays(sit, worlds, rules):
-            if tilt.plays == "dice":
-                w[r] *= 1.0 / n
-            else:
-                m = self._modeled_move(0, seat, hand, rec, rules, sit.bid, sit.bidder_team)
-                w[r] *= eps / n + (1.0 - eps) * (1.0 if m == tile else 0.0)
-        return w
-
     def field_likelihood(self, sit: Situation, worlds: list[World]) -> list[float]:
         """For each world, the probability that the field this one-rung plan
         models — F_σ — plays what the other seats played:
@@ -384,15 +346,10 @@ class Walt:
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
         worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
         weights = [1.0] * len(worlds)
-        base = None
         if sit is not None and self.config.draw == "posterior":
-            worlds, base = self._posterior(sit, worlds, exact, seed)
-        if sit is not None:
-            weights = self.tilt_weights(sit, worlds, rules)
-            if base is not None:
-                weights = [b * w for b, w in zip(base, weights)]
-            if self.belief is not None:
-                weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
+            worlds, weights = self._posterior(sit, worlds, exact, seed)
+        if sit is not None and self.belief is not None:
+            weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
         floor = 1 if exact else rung.floor
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor)

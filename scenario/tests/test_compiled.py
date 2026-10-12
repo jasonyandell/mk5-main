@@ -4,13 +4,14 @@ configurations, with and without a belief, batched or one at a time."""
 import math
 import random
 
+import pytest
 import scenario_core
 
 from forge.zeb.game import is_terminal, legal_actions
 
 from arena.walt_play import parse_walt_spec
 from scenario.compiled import CompiledWalt
-from scenario.planner import Config, Rung, Tilt, Walt
+from scenario.planner import Config, Rung, Walt
 from scenario.rules import rules_for
 from scenario.tests.test_rules_record import random_playing_states
 
@@ -73,14 +74,14 @@ def test_compiled_matches_the_planner_at_trick_one():
         _same(ref.decide(state, 30), fast.decide(state, 30))
 
 
-def _tilt(sit, worlds):
+def _belief(sit, worlds):
     """A deterministic non-uniform belief: a function of the worlds alone."""
     return [1.0 + ((w[(sit.viewer + 1) % 4] * 2654435761) % 97) / 50.0 for w in worlds]
 
 
 def test_compiled_matches_the_planner_with_a_belief():
     for cfg in CONFIGS[:3]:
-        ref, fast = Walt(cfg, belief=_tilt), CompiledWalt(cfg, belief=_tilt)
+        ref, fast = Walt(cfg, belief=_belief), CompiledWalt(cfg, belief=_belief)
         for state in _states(8, seed=21 + cfg.seed, min_plays=8):
             _same(ref.decide(state, 31), fast.decide(state, 31))
 
@@ -102,12 +103,11 @@ def test_batch_equals_one_at_a_time_and_handles_forced_moves():
             assert math.isnan(got[1][got[0]])
 
 
-def test_compiled_matches_the_planner_with_the_tilt_and_the_auction():
+def test_compiled_matches_the_planner_with_the_auction():
     from arena.walt_play import declaration_belief
     cfgs = [
-        Config((Rung(4, 4), Rung(10, None)), "make", seed=6, tilt=Tilt("dice")),
-        Config((Rung(4, 4), Rung(10, None)), "make", seed=7, tilt=Tilt("field", eps=0.2)),
-        Config((Rung(12, None),), "points", seed=8, tilt=Tilt("dice")),
+        Config((Rung(4, 4), Rung(10, None)), "make", seed=6),
+        Config((Rung(12, None),), "points", seed=8),
     ]
     auction = declaration_belief(0.1)
     for cfg in cfgs:
@@ -118,7 +118,7 @@ def test_compiled_matches_the_planner_with_the_tilt_and_the_auction():
 
 
 def test_compiled_enumerates_the_endgame_exactly_as_the_planner():
-    cfg = Config((Rung(8, None), Rung(160, None)), "make", seed=12, tilt=Tilt("dice"))
+    cfg = Config((Rung(8, None), Rung(160, None)), "make", seed=12)
     ref, fast = Walt(cfg), CompiledWalt(cfg)
     n = 0
     for state in random_playing_states(80, seed=55):
@@ -133,17 +133,18 @@ def test_compiled_enumerates_the_endgame_exactly_as_the_planner():
 def test_spec_selects_the_engine():
     assert type(parse_walt_spec("k0,n8").walt).__name__ == "CompiledWalt"
     assert type(parse_walt_spec("k0,n8,py").walt).__name__ == "Walt"
-    p = parse_walt_spec("k1,n8,m2,b=auction+field,e=0.2")
-    assert p.walt.config.tilt == Tilt("field", 0.2) and p.walt.belief is not None
-    assert parse_walt_spec("k0,n8,b=dice").walt.belief is None
+    assert parse_walt_spec("k1,n8,m2,b=auction,e=0.2").walt.belief is not None
+    assert parse_walt_spec("k1,n8,m2").walt.belief is None
+    with pytest.raises(ValueError):
+        parse_walt_spec("k1,n8,m2,b=field")
 
 
 ANALYSIS_CASES = [
     (Config((Rung(12, None),), "make", seed=1), None),
-    (Config((Rung(6, 5),), "points", seed=2, tilt=Tilt("dice")), None),
-    (Config((Rung(4, 4), Rung(10, 6)), "make", seed=3, tilt=Tilt("field", eps=0.2)), None),
-    (Config((Rung(4, 4), Rung(10, 6)), "points", seed=13, tilt=Tilt("dice")), _tilt),
-    (Config((Rung(3, 3), Rung(3, 3), Rung(6, None)), "make", seed=4), _tilt),
+    (Config((Rung(6, 5),), "points", seed=2), None),
+    (Config((Rung(4, 4), Rung(10, 6)), "make", seed=3), None),
+    (Config((Rung(4, 4), Rung(10, 6)), "points", seed=13), _belief),
+    (Config((Rung(3, 3), Rung(3, 3), Rung(6, None)), "make", seed=4), _belief),
 ]
 
 
@@ -189,19 +190,19 @@ def _trick_one_state(seed: int, plays: int):
     raise AssertionError("no such state")
 
 
-FLOOR_CASES = [  # (floor, utility, tilt, plays already down) at k1,n160,m8
-    (4, "points", "none", 0),
-    (16, "make", "dice", 2),
-    (160, "points", "field", 3),
-    (4, "make", "field", 12),
-    (16, "points", "dice", 14),
-    (160, "make", "none", 13),
+FLOOR_CASES = [  # (floor, utility, plays already down) at k1,n160,m8
+    (4, "points", 0),
+    (16, "make", 2),
+    (160, "points", 3),
+    (4, "make", 12),
+    (16, "points", 14),
+    (160, "make", 13),
 ]
 
 
 def test_compiled_matches_the_planner_under_a_cell_floor():
-    for floor, utility, tilt, plays in FLOOR_CASES:
-        cfg = Config((Rung(8, 4), Rung(160, None, floor)), utility, seed=17, tilt=Tilt(tilt))
+    for floor, utility, plays in FLOOR_CASES:
+        cfg = Config((Rung(8, 4), Rung(160, None, floor)), utility, seed=17)
         state = _states(1, seed=71, min_plays=plays)[0] if plays >= 4 else _trick_one_state(73, plays)
         ref, fast = Walt(cfg), CompiledWalt(cfg)
         a = ref.analyze(state, 31)

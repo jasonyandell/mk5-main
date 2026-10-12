@@ -148,18 +148,19 @@ def test_spec_parsing():
     assert parse_walt_spec("hfull,gfull").walt.config.rungs == (Rung(4, None), Rung(16, None, 16))
 
 
-def test_tilt_dice_is_the_product_of_inverse_option_counts():
-    """e^g under the dice field: replaying the hand with the scenario's hands,
-    every discretionary play by a hidden seat with n options contributes 1/n;
-    the viewer's own plays and forced plays contribute nothing."""
-    from scenario.planner import Tilt, situation_from_state
+def test_the_random_fields_likelihood_is_the_product_of_inverse_option_counts():
+    """`field_likelihood` with no field net: replaying the hand with the
+    scenario's hands, every discretionary play by a hidden seat with n
+    options contributes 1/n; the viewer's own plays and forced plays
+    contribute nothing."""
+    from scenario.planner import situation_from_state
     from scenario.record import empty_record
-    walt = Walt(Config((Rung(12, None),), "make", seed=3, tilt=Tilt("dice")))
+    walt = Walt(Config((Rung(12, None),), "make", seed=3))
     for state in _mid_hand_states(10, seed=81, min_plays=8):
         sit = situation_from_state(state, 30)
         rules = rules_for(state.decl_id)
         inv = _invocation(walt, state, 30)
-        w = walt.tilt_weights(sit, inv.worlds, rules)
+        w = walt.field_likelihood(sit, inv.worlds)
         assert all(0 < x <= 1 for x in w)
         for r, hands in enumerate(inv.worlds):
             full = [hands[s] | sit.played_by(s) for s in range(4)]
@@ -176,24 +177,6 @@ def test_tilt_dice_is_the_product_of_inverse_option_counts():
         truth = tuple(sum(1 << d for d in state.hands[s] if d not in state.played) for s in range(4))
         if truth in inv.worlds:
             assert w[inv.worlds.index(truth)] > 0
-
-
-def test_tilt_field_at_eps_one_is_dice_and_the_field_rewards_its_own_plays():
-    from scenario.planner import Tilt, situation_from_state
-    dice = Walt(Config((Rung(3, 3), Rung(8, None)), "make", seed=4, tilt=Tilt("dice")))
-    field1 = Walt(Config((Rung(3, 3), Rung(8, None)), "make", seed=4, tilt=Tilt("field", eps=1.0)))
-    field = Walt(Config((Rung(3, 3), Rung(8, None)), "make", seed=4, tilt=Tilt("field", eps=0.1)))
-    for state in _mid_hand_states(6, seed=91, min_plays=8):
-        sit = situation_from_state(state, 30)
-        rules = rules_for(state.decl_id)
-        inv = _invocation(dice, state, 30)
-        assert dice.tilt_weights(sit, inv.worlds, rules) == field1.tilt_weights(sit, inv.worlds, rules)
-        w = field.tilt_weights(sit, inv.worlds, rules)
-        assert all(x > 0 for x in w)
-    # a one-rung player cannot model plays with rung 0
-    from scenario.planner import Tilt as T
-    with pytest.raises(ValueError):
-        Config((Rung(8, None),), "make", tilt=T("field"))
 
 
 def test_declaration_belief_favors_hands_that_would_have_called_the_trump():
@@ -228,12 +211,11 @@ def test_analysis_outcomes_reweigh_to_the_action_values():
     are its action value: the trace routes every scenario to the leaf the
     recursion credits it with. And the analysis is the decision, opened up."""
     import math
-    from scenario.planner import Tilt
     cases = [
         (Config((Rung(8, None),), "make", seed=1), None),
         (Config((Rung(6, 5),), "points", seed=2), None),
-        (Config((Rung(3, 3), Rung(8, None)), "make", seed=3, tilt=Tilt("dice")), _belief),
-        (Config((Rung(3, 3), Rung(8, 6)), "points", seed=4, tilt=Tilt("field", eps=0.2)), _belief),
+        (Config((Rung(3, 3), Rung(8, None)), "make", seed=3), _belief),
+        (Config((Rung(3, 3), Rung(8, 6)), "points", seed=4), _belief),
     ]
     for cfg, belief in cases:
         walt = Walt(cfg, belief=belief)
@@ -273,7 +255,7 @@ def test_a_floor_needs_a_rung_below_and_is_at_least_one():
     with pytest.raises(ValueError):
         Config((Rung(8, None, 2), Rung(8, None)))
     with pytest.raises(ValueError):
-        scenario_core.Core([(8, None, 2), (8, None, 1)], "make", 0, "none", 0.1)
+        scenario_core.Core([(8, None, 2), (8, None, 1)], "make", 0)
     Config((Rung(8, None), Rung(8, None, 9)))  # above the sample is allowed: the root still decides
 
 

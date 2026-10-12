@@ -320,17 +320,6 @@ fn tiles(mut mask: u32) -> impl Iterator<Item = u8> {
 
 // -- the ladder -----------------------------------------------------------------
 
-/// The built-in evidence g: how hidden seats' discretionary plays are scored.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum TiltPlays {
-    /// Every scenario weighs the same.
-    None,
-    /// A play with n legal options has likelihood 1/n.
-    Dice,
-    /// ε/n + (1−ε)·[the rung-0 player holding that hand would play it].
-    Field,
-}
-
 /// The measure the live rung draws its scenarios from (`Config.draw`).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Draw {
@@ -357,10 +346,6 @@ pub struct Config {
     pub make: bool,
     /// Seeds every random stream of every invocation.
     pub seed: u64,
-    /// The built-in evidence on the live rung's scenarios.
-    pub tilt: TiltPlays,
-    /// The field tilt's ε.
-    pub eps: f64,
     /// Rung −1: the field net, or None for random legal play.
     pub field: Option<FieldNet>,
     /// ε of the stochastic field F_σ, in [0, 1]; 0 is the deterministic net.
@@ -519,46 +504,6 @@ fn posterior(
     (kept, vec![1.0; n])
 }
 
-/// e^g for each scenario: the likelihood of the hidden seats' observed
-/// discretionary plays, replayed from the first lead with each seat holding
-/// the hand the scenario implies it was dealt (`Walt.tilt_weights`).
-fn tilt_weights(ctx: &mut Ctx, viewer: u8, worlds: &[[u32; 4]], plays: &[(u8, u8)]) -> Vec<f64> {
-    let mut w = vec![1.0f64; worlds.len()];
-    if ctx.cfg.tilt == TiltPlays::None || plays.is_empty() {
-        return w;
-    }
-    let dice = ctx.cfg.tilt == TiltPlays::Dice;
-    let eps = ctx.cfg.eps;
-    let mut played_by = [0u32; 4];
-    for &(s, t) in plays {
-        played_by[s as usize] |= 1 << t;
-    }
-    let mut full: Vec<[u32; 4]> = worlds
-        .iter()
-        .map(|h| [h[0] | played_by[0], h[1] | played_by[1], h[2] | played_by[2], h[3] | played_by[3]])
-        .collect();
-    let mut rec = Rec::opening(plays[0].0);
-    for &(seat, tile) in plays {
-        if seat != viewer {
-            for (r, hands) in full.iter_mut().enumerate() {
-                let legal = ctx.rules.legal(hands[seat as usize], rec.led());
-                let n = legal.count_ones();
-                if n > 1 {
-                    if dice {
-                        w[r] *= 1.0 / n as f64;
-                    } else {
-                        let m = ctx.modeled_move(Some(0), seat, hands[seat as usize], &rec);
-                        w[r] *= eps / n as f64 + (1.0 - eps) * if m == tile { 1.0 } else { 0.0 };
-                    }
-                }
-                hands[seat as usize] &= !(1 << tile);
-            }
-        }
-        rec = rec.advance(tile, ctx.rules);
-    }
-    w
-}
-
 /// What only the live rung sees: the public play history and any external
 /// evidence over its scenarios.
 type Live<'a> = (&'a [(u8, u8)], Option<&'a [f64]>);
@@ -587,17 +532,9 @@ impl Inv {
         let (mut worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
         let weights = match live {
             Some((plays, external)) => {
-                let mut base = None;
+                let mut w = vec![1.0; worlds.len()];
                 if cfg.draw != Draw::Uniform {
-                    let (w, b) = posterior(ctx, viewer, rec, plays, worlds, exact, seed);
-                    worlds = w;
-                    base = Some(b);
-                }
-                let mut w = tilt_weights(ctx, viewer, &worlds, plays);
-                if let Some(b) = base {
-                    for (wi, bi) in w.iter_mut().zip(b) {
-                        *wi *= bi;
-                    }
+                    (worlds, w) = posterior(ctx, viewer, rec, plays, worlds, exact, seed);
                 }
                 if let Some(x) = external {
                     assert_eq!(x.len(), w.len(), "external weights must match the live scenarios");
@@ -975,7 +912,7 @@ fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (C
 
 /// One decision: (tile, action values ascending by tile, cells evaluated,
 /// how the scenarios were drawn). `external` is evidence over the live
-/// scenarios ([`root_worlds`]), multiplied into the built-in tilt.
+/// scenarios ([`root_worlds`]), multiplied into the posterior's weights.
 pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<(u8, f64)>, u64, Drawn) {
     let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);

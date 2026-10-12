@@ -1,7 +1,7 @@
 //! The Python module `scenario_core` (the `python` feature), which
 //! `scenario/compiled.py` drives.
 //!
-//! Interface: `Core(rungs, utility, seed, tilt, eps, field, field_eps, draw,
+//! Interface: `Core(rungs, utility, seed, field, field_eps, draw,
 //! draw_budget)` with rungs as (n_worlds, horizon, floor), `field` the field
 //! net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the stochastic
 //! field's ε, and `draw` "uniform" or "posterior" (the live rung's worlds);
@@ -21,7 +21,7 @@ use pyo3::prelude::*;
 
 use crate::field::{self, FieldNet};
 use crate::mold;
-use crate::planner::{self, analyze, decide, Config, Decision, Draw, Rec, TiltPlays, MAX_WORLDS};
+use crate::planner::{self, analyze, decide, Config, Decision, Draw, Rec, MAX_WORLDS};
 use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
@@ -98,14 +98,11 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET))]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
         utility: &str,
         seed: u64,
-        tilt: &str,
-        eps: f64,
         field: Option<&[u8]>,
         field_eps: f64,
         draw: &str,
@@ -128,16 +125,6 @@ impl Core {
             "points" => false,
             other => return Err(PyValueError::new_err(format!("unknown utility {other:?}"))),
         };
-        let tilt = match tilt {
-            "none" => TiltPlays::None,
-            "dice" => TiltPlays::Dice,
-            "field" if rungs.len() > 1 => TiltPlays::Field,
-            "field" => return Err(PyValueError::new_err("the field tilt needs a modeled rung")),
-            other => return Err(PyValueError::new_err(format!("unknown tilt {other:?}"))),
-        };
-        if !(eps > 0.0 && eps <= 1.0) {
-            return Err(PyValueError::new_err("eps must lie in (0, 1]"));
-        }
         if !(0.0..=1.0).contains(&field_eps) {
             return Err(PyValueError::new_err("field_eps must lie in [0, 1]"));
         }
@@ -157,7 +144,7 @@ impl Core {
         };
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field, field_eps, draw }, rules })
+        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`
@@ -173,7 +160,7 @@ impl Core {
 
     /// Decide every request: (tile, [(tile, Q)], cells evaluated). `weights[i]`
     /// is external evidence over request i's live scenarios (multiplied into
-    /// the built-in tilt), or None. Runs on `threads` OS threads (0 = all
+    /// the posterior's weights), or None. Runs on `threads` OS threads (0 = all
     /// cores) with the GIL released.
     fn solve(
         &self,

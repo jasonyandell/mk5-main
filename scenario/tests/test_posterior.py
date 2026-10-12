@@ -15,7 +15,7 @@ from arena.walt_play import parse_walt_spec
 from scenario.compiled import CompiledWalt
 from scenario.planner import DRAW_BUDGET, Config, Rung, Walt, situation_from_state
 from scenario.record import remaining_hand
-from scenario.tests.test_compiled import _same, _same_analysis
+from scenario.tests.test_compiled import _belief, _same, _same_analysis
 from scenario.tests.test_field import NET
 from scenario.tests.test_field_sigma import _net_filter, _net_played
 
@@ -91,6 +91,25 @@ def test_every_drawn_world_reproduces_the_observed_moves_at_eps_zero():
         assert len(kept) < 64 and a.worlds[:len(kept)] == kept
 
 
+def test_the_likelihood_enters_once():
+    """`field_likelihood` is the one likelihood of the plays, and it enters
+    once: a sampled fiber is drawn from it and weighted equally (never
+    reweighted by it again), an enumerated one is weighted by it normalized
+    (above), and an external belief multiplies in exactly once on top.
+    Non-vacuous: at ε > 0 the drawn worlds' likelihoods differ, so a second
+    application would show in the weights."""
+    cfg = POSTERIOR_CONFIGS[1]
+    uneven = 0
+    for state in SAMPLED[:4]:
+        sit = situation_from_state(state, 30)
+        for walt in (Walt(cfg, belief=_belief), CompiledWalt(cfg, belief=_belief)):
+            a = walt.analyze(state, 30)
+            assert not walt.fallbacks
+            assert a.weights == _belief(sit, a.worlds)
+        uneven += len(set(Walt(cfg).field_likelihood(sit, a.worlds))) > 1
+    assert uneven
+
+
 def test_a_spent_budget_and_the_opening_lead_plan_as_the_uniform():
     """With one proposal the posterior falls back to the uniform sample and
     plans exactly as the uniform player; before any other seat has played,
@@ -119,7 +138,7 @@ def test_the_draw_is_validated_and_named_by_the_spec(tmp_path):
     with pytest.raises(ValueError):
         Config((Rung(8, None),), field=NET, draw="posterior", draw_budget=0)
     with pytest.raises(ValueError):
-        scenario_core.Core([(8, None, 1)], "make", 0, "none", 0.1, None, 0.0, "posterior", 10)
+        scenario_core.Core([(8, None, 1)], "make", 0, None, 0.0, "posterior", 10)
     path = tmp_path / "net.npz"
     NET.save(path)
     p = parse_walt_spec(f"k0,n8,F={path},d=posterior,D=500")

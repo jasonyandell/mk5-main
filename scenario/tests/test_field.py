@@ -16,10 +16,10 @@ from scenario.atlas import deal, in_plan_units, pour
 from scenario.compiled import CompiledWalt
 from scenario.field import BIDS, CANON, N_FEATURES, OFFSET, FieldNet, features
 from scenario.field_train import _loss_dlogits, dataset, int_scores, regret, targets, train
-from scenario.planner import Config, Rung, Tilt, Walt, situation_from_state
+from scenario.planner import Config, Rung, Walt, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for
-from scenario.tests.test_compiled import _same, _same_analysis, _tilt
+from scenario.tests.test_compiled import _belief, _same, _same_analysis
 from scenario.tests.test_rules_record import random_playing_states
 
 
@@ -132,7 +132,7 @@ NET = random_net(2)
 FIELD_CONFIGS = [
     Config((Rung(12, None),), "make", seed=1, field=NET),                    # the field is the net
     Config((Rung(16, None, floor=6),), "points", seed=2, field=NET),         # ... and takes the floor
-    Config((Rung(8, 5, floor=4),), "make", seed=3, tilt=Tilt("dice"), field=NET),  # frontier playouts stay dice
+    Config((Rung(8, 5, floor=4),), "make", seed=3, field=NET),               # frontier playouts stay dice
     Config((Rung(4, 4), Rung(10, None, floor=4)), "points", seed=4, field=NET),   # the net under rung 0
 ]
 
@@ -147,7 +147,7 @@ def test_compiled_matches_the_planner_with_a_field_net():
 
 def test_compiled_analysis_matches_the_planner_with_a_field_net():
     for cfg in FIELD_CONFIGS[1:]:
-        ref, fast = Walt(cfg, belief=_tilt), CompiledWalt(cfg, belief=_tilt)
+        ref, fast = Walt(cfg, belief=_belief), CompiledWalt(cfg, belief=_belief)
         for state in _pip_states(5, seed=31 + cfg.seed, min_plays=6):
             _same_analysis(ref.analyze(state, 31), fast.analyze(state, 31))
             assert ref.nodes == fast.nodes
@@ -163,7 +163,7 @@ def test_compiled_matches_the_planner_where_the_fiber_is_enumerated(monkeypatch)
     """Late positions, enumerated and sampled alike (16 plays down is 1,680
     worlds, sampled at n=512; from about 18 the fiber fits and the floor
     stands down): the rule is the same in both implementations, and it
-    changes the plan somewhere (against a referee told every fiber is a
+    changes a plan at every config (against a referee told every fiber is a
     sample, which floors as before the rule)."""
     import scenario.planner as planner
     states = {cfg.seed: _pip_states(8, seed=51 + cfg.seed, min_plays=16) for cfg in LATE_CONFIGS}
@@ -179,9 +179,9 @@ def test_compiled_matches_the_planner_where_the_fiber_is_enumerated(monkeypatch)
             plans[cfg.seed, i] = a.q
     sample_worlds = planner.sample_worlds
     monkeypatch.setattr(planner, "sample_worlds", lambda *args: (sample_worlds(*args)[0], False))
-    changed = sum(Walt(cfg).analyze(state, 31).q != plans[cfg.seed, i]
-                  for cfg in LATE_CONFIGS for i, state in enumerate(states[cfg.seed]))
-    assert changed
+    for cfg in LATE_CONFIGS:
+        assert any(Walt(cfg).analyze(state, 31).q != plans[cfg.seed, i]
+                   for i, state in enumerate(states[cfg.seed])), cfg
 
 
 def test_the_net_changes_the_field():

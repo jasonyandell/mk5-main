@@ -50,11 +50,8 @@ interior decision is its forced last tile, so the rule acts only where three or
 more tricks are left and the fiber already fits — it changed 26 of 2,771 late
 decisions at k0,n512 with the shipped net, a null in marks (2026-10-12).
 
-Beliefs (`b=`, joined with `+`, each a likelihood factor on every scenario):
-  dice     the hidden seats' discretionary plays under random legal play
-           (a play with n options weighs 1/n — forced-looking plays count more)
-  field    the same plays under the rung-0 player: eps/n + (1-eps)·[it would
-           have played that tile]
+Beliefs (`b=`, each a likelihood factor on every scenario; the plays' own
+likelihood is the field's, drawn from by `d=posterior`, never reweighted):
   auction  the declaration: eps/7 + (1-eps)·[the bidder's full hand in this
            scenario would have called this trump] — exact for the bid30 and
            heuristic bidders, which declare `best_trump` deterministically
@@ -74,7 +71,7 @@ from forge.zeb.types import ZebGameState
 
 from arena.hand_metrics import best_trump
 from scenario.field import FieldNet
-from scenario.planner import DRAW_BUDGET, Belief, Config, Rung, Situation, Tilt, Walt, World
+from scenario.planner import DRAW_BUDGET, Belief, Config, Rung, Situation, Walt, World
 
 
 def declaration_belief(eps: float = 0.1) -> Belief:
@@ -105,13 +102,13 @@ class WaltPlay:
     def __init__(self, level: int = 1, n_outer: int = 16, n_inner: int = 4,
                  horizon: int | None = None, horizon_inner: int | None = 4,
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
-                 tilt: Tilt = Tilt(), floor: int | None = None, field: FieldNet | None = None,
+                 floor: int | None = None, field: FieldNet | None = None,
                  field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
                  compiled: bool = True):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
-        config = Config(rungs, utility, seed, tilt, field, field_eps, draw, draw_budget)
+        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -142,8 +139,8 @@ class WaltPlay:
         engine = type(self.walt).__name__
         belief = "" if self.walt.belief is None else ", +external belief"
         field = "random" if c.field is None else "net" if c.field_eps == 0 else f"net+eps{c.field_eps:g}"
-        return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}, "
-                f"tilt={c.tilt.plays}{belief}, field={field}, draw={c.draw}, {engine})")
+        return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}{belief}, "
+                f"field={field}, draw={c.draw}, {engine})")
 
 
 def parse_walt_spec(arg: str) -> WaltPlay:
@@ -177,13 +174,9 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["compiled"] = False
         else:
             raise ValueError(f"unknown walt option {t!r}")
-    unknown = beliefs - {"dice", "field", "auction"}
+    unknown = beliefs - {"auction"}
     if unknown:
         raise ValueError(f"unknown walt belief {sorted(unknown)}")
-    if "dice" in beliefs and "field" in beliefs:
-        raise ValueError("dice and field are two scorings of the same plays; pick one")
-    plays = "dice" if "dice" in beliefs else "field" if "field" in beliefs else "none"
-    kw["tilt"] = Tilt(plays, eps)
     if "auction" in beliefs:
         kw["belief"] = declaration_belief(eps)
     return WaltPlay(**kw)
