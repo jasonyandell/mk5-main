@@ -24,6 +24,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## W42 book validation
 
+- [[experiments/book-study-2026-10-12|book-study-2026-10-12]] — Winning 42 read with the honest tools: 26 candidates priced on the 250k Zeb pour, bid book 25/30 with the forecast, three odds corrected by exact count, conventions graded S/R/SR in the arena — all null or negative; the handoff is a priced signal worth zero to the plan; a reading must be the sender's gate inverted (complete)
 - [[experiments/w42-84-claim-validation|w42-84-claim-validation]] — Chapter 7/8 84-claim validation: exact double-six enumeration + hypergeometric proxies; complete for its static-math scope, superseded on the dynamic side by [[experiments/w42-phase4-final-claim-audit|w42-phase4-final-claim-audit]] (complete)
 - [[experiments/w42-belief-attention-concept-buckets|w42-belief-attention-concept-buckets]] — w42 Belief and Attention Concept Buckets (complete)
 - [[experiments/w42-bidder-sequencing-claim-validation|w42-bidder-sequencing-claim-validation]] — w42 Bidder Sequencing Claim Validation (complete)

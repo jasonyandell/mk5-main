@@ -868,10 +868,15 @@ high-trump handoff), `handoff-singleton` (the same sender, read the book's way:
 a top trump from partner was his only one), `biggest` (C3) and `donation` (C1).
 The decision request now carries the bidder seat, not the team; with no
 convention every byte is main's (Zeb's fixture untouched). The senders' price on
-250,000 Zeb self-play deals (`scratch/book/wave1/overlay-price.md`): the handoff
+250,000 Zeb self-play deals (the research archive's `book/wave1/`): the handoff
 fires in 19% of bid hands at −0.039 pmake per firing (55% ties), biggest count
-in 5% at −0.020, the donation in 17% at −0.007 (85% ties). Arms S/R/SR are graded
-separately.
+in 5% at −0.020, the donation in 17% at −0.007 (85% ties). Graded the same day in
+S/R/SR arms, two Zebs vs two nets, 22,000 paired deals per arm
+([[book-study-2026-10-12]]): the donation is null in every arm; the handoff's sender
+costs −0.013 [−0.016, −0.010] marks/hand and its reading recovers 0.000 ± 0.002 on
+top; the book's singleton reading of the same sender costs −0.031, because a reading
+that is not the sender's gate inverted plans on false worlds. No convention confirmed;
+nothing adopted as a rule; the overlay stays default off.
 
 **O2 beats O1 on real endgames (2026-10-12, #113).** On 566 three-trick endgames
 from 142 deals (V's hand common knowledge, P's private, opponents the deployed net,
