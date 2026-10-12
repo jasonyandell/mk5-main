@@ -132,8 +132,9 @@ impl Player {
         } else {
             (vec![MODELED, (self.worlds, None, FLOOR)], None)
         };
-        // No tilt: every scenario weighs the same, so the tilt's ε is unused.
-        Config { rungs, make: true, seed: self.seed, tilt: TiltPlays::None, eps: 0.1, field }
+        // No tilt: every scenario weighs the same, so the tilt's ε is unused;
+        // the field is the deterministic net (field_eps 0).
+        Config { rungs, make: true, seed: self.seed, tilt: TiltPlays::None, eps: 0.1, field, field_eps: 0.0 }
     }
 
     /// For each declaration in `decls` (distinct, in order), how the bidder

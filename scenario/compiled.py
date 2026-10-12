@@ -47,7 +47,7 @@ class CompiledWalt:
         self._core = scenario_core.Core(
             [(r.n_worlds, r.horizon, r.floor) for r in config.rungs], config.utility, config.seed,
             config.tilt.plays, config.tilt.eps,
-            None if config.field is None else config.field.to_bytes(),
+            None if config.field is None else config.field.to_bytes(), config.field_eps,
         )
         self.nodes = 0  # cells evaluated in the last decision or batch
 

@@ -35,8 +35,19 @@ they never multiply) — or, when the config names a field net
 (`scenario.field`), rung -1 is that net: a learned policy reading the
 modeled seat's own information, which also takes rung 0's floored moves.
 The net is a field only; leaves are still scored by the recursion and the
-frontier playout. A modeled player's decision is a pure function of
-(rung, seat, its remaining hand, the record) and is cached as such.
+frontier playout. The net's field may be made stochastic, F_σ with
+`Config.field_eps` = ε: a modeled seat explores with probability ε, drawing
+uniformly over its legal tiles from the same record-keyed tape as the dice,
+and otherwise plays the net's move, so
+
+    P_σ(t | hand, record, world) = ε/n + (1 − ε)·[t = the net's move]
+
+over the n legal tiles, positive on every one when ε > 0, so the posterior
+under F_σ (`Walt.field_likelihood`) has full support on the fiber. The
+draw is the tape's, so it is one tile per (world, record), and worlds still
+partition. ε = 0 is the deterministic net, byte for byte. A modeled
+player's decision is a pure function of (rung, seat, its remaining hand,
+the record) and is cached as such.
 
 The belief β weights the LIVE player's scenarios; modeled minds weight
 theirs uniformly (compatibility only, the g ≡ 0 limit), as the shipped
@@ -60,6 +71,7 @@ team maximizes, a defender minimizes — the same u read from two sides.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Callable
 
@@ -115,8 +127,13 @@ class Config:
     seed: int = 0
     tilt: Tilt = Tilt()
     field: FieldNet | None = None   # rung -1: the field net, or None for random legal play
+    field_eps: float = 0.0      # ε of the stochastic field F_σ; 0 is the deterministic net
 
     def __post_init__(self) -> None:
+        if not 0.0 <= self.field_eps <= 1.0:
+            raise ValueError("field_eps must lie in [0, 1]")
+        if self.field_eps > 0.0 and self.field is None:
+            raise ValueError("field_eps needs a field net: the random field is the dice already")
         if not self.rungs:
             raise ValueError("a player needs at least one rung")
         if self.utility not in ("make", "points"):
@@ -129,6 +146,20 @@ class Config:
     @property
     def level(self) -> int:
         return len(self.rungs) - 1
+
+    @property
+    def field_coin(self) -> int:
+        """F_σ's explore threshold on a 53-bit draw, ⌈ε·2^53⌉: the coin
+        explores with probability ε̂ = field_coin / 2^53, which is ε for every
+        multiple of 2^-53 (0.5, 0.25, …) and within 2^-53 of it otherwise.
+        Scaling by a power of two is exact, so the core computes the same
+        integer."""
+        return math.ceil(self.field_eps * 2.0 ** 53)
+
+    @property
+    def field_eps_exact(self) -> float:
+        """ε̂, the probability the coin realizes (exact in a double)."""
+        return self.field_coin * 2.0 ** -53
 
 
 def _splitmix(x: int) -> int:
@@ -278,25 +309,37 @@ class Walt:
         holding the hand the scenario implies it was dealt."""
         tilt = self.config.tilt
         w = [1.0] * len(worlds)
-        if tilt.plays == "none" or not sit.plays:
+        if tilt.plays == "none":
             return w
-        dice = tilt.plays == "dice"
         eps = tilt.eps
-        full = [[hands[s] | sit.played_by(s) for s in range(4)] for hands in worlds]
-        rec = empty_record(sit.plays[0][0])
-        for seat, tile in sit.plays:
-            if seat != sit.viewer:
-                for r, hands in enumerate(full):
-                    legal = rules.legal(hands[seat], rec.led)
-                    n = legal.bit_count()
-                    if n > 1:
-                        if dice:
-                            w[r] *= 1.0 / n
-                        else:
-                            m = self._modeled_move(0, seat, hands[seat], rec, rules, sit.bid, sit.bidder_team)
-                            w[r] *= eps / n + (1.0 - eps) * (1.0 if m == tile else 0.0)
-                    hands[seat] &= ~bit(tile)
-            rec = rec.advance(tile, rules)
+        for r, seat, hand, rec, tile, n in _hidden_plays(sit, worlds, rules):
+            if tilt.plays == "dice":
+                w[r] *= 1.0 / n
+            else:
+                m = self._modeled_move(0, seat, hand, rec, rules, sit.bid, sit.bidder_team)
+                w[r] *= eps / n + (1.0 - eps) * (1.0 if m == tile else 0.0)
+        return w
+
+    def field_likelihood(self, sit: Situation, worlds: list[World]) -> list[float]:
+        """For each world, the probability that the field this one-rung plan
+        models — F_σ — plays what the other seats played:
+
+            L(world) = ∏ P_σ(observed tile | that seat's hand in the world, record so far)
+
+        over the modeled seats' past plays, P_σ = ε̂/n + (1 − ε̂)·[the net's
+        move] (`Config.field_eps_exact`), or 1/n under the random field. A
+        forced play has P_σ = 1. With ε > 0 it is positive on every world in
+        the fiber; with ε = 0 it is the 0/1 indicator that the net played
+        every observed move. Prior × this, normalized, is the posterior β^F."""
+        cfg = self.config
+        if cfg.level != 0:
+            raise ValueError("the field likelihood is the one-rung plan's: deeper rungs model seats with a solver")
+        rules = rules_for(sit.decl_id)
+        eps = cfg.field_eps_exact if cfg.field is not None else 1.0
+        w = [1.0] * len(worlds)
+        for r, seat, hand, rec, tile, n in _hidden_plays(sit, worlds, rules):
+            hit = eps < 1.0 and self._modeled_move(-1, seat, hand, rec, rules, sit.bid, sit.bidder_team) == tile
+            w[r] *= eps / n + (1.0 - eps) * (1.0 if hit else 0.0)
         return w
 
     # -- the ladder ------------------------------------------------------------
@@ -339,6 +382,25 @@ class Walt:
                 tile = _best(inv.action_values(), inv.maximize)
             self._pi[key] = tile
         return tile
+
+
+def _hidden_plays(sit: Situation, worlds: list[World], rules: Rules):
+    """The other seats' discretionary plays as each world explains them:
+    (world, seat, the seat's hand then, record before the play, tile, legal
+    count n > 1), replayed from the first lead with each seat holding the
+    hand the world implies it was dealt."""
+    if not sit.plays:
+        return
+    full = [[hands[s] | sit.played_by(s) for s in range(4)] for hands in worlds]
+    rec = empty_record(sit.plays[0][0])
+    for seat, tile in sit.plays:
+        if seat != sit.viewer:
+            for r, hands in enumerate(full):
+                n = rules.legal(hands[seat], rec.led).bit_count()
+                if n > 1:
+                    yield r, seat, hands[seat], rec, tile, n
+                hands[seat] &= ~bit(tile)
+        rec = rec.advance(tile, rules)
 
 
 def _best(q: dict[int, float], maximize: bool) -> int:
@@ -492,11 +554,23 @@ class _Invocation:
     # -- the field ----------------------------------------------------------------
 
     def _field_move(self, seat: int, r: int, hand: int, rec: Record) -> int:
-        if self.k == 0 and self.walt.config.field is None:
+        """The modeled seat's tile in scenario r. At rung 0 the field is the
+        dice, or F_σ: the dice when scenario r's coin at this record explores,
+        else the net (ε = 0 never draws the coin)."""
+        cfg = self.walt.config
+        if self.k == 0 and (cfg.field is None or self._explores(r, rec)):
             return self._dice(r, rec, self.rules.legal(hand, rec.led))
         return self.walt._modeled_move(
             self.k - 1, seat, hand, rec, self.rules, self.bid, self.bidder_team,
         )
+
+    def _explores(self, r: int, rec: Record) -> bool:
+        """F_σ's coin in scenario r at this record: the top 53 bits of one more
+        SplitMix step past the dice's draw, below ⌈ε·2^53⌉. It reads the
+        tape and the record only, never the hand, so it is independent of
+        the dice's uniform tile up to the hash."""
+        coin = self.walt.config.field_coin
+        return coin > 0 and _splitmix(_splitmix(self.tapes[r] ^ _tape_key(rec))) >> 11 < coin
 
     def _dice(self, r: int, rec: Record, legal: int) -> int:
         """Random legal play from scenario r's tape, keyed on the record."""

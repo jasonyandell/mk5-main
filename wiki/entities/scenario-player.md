@@ -754,6 +754,23 @@ one operator and the stabilization theorem in `scenario/lean/` describes the cod
 (the rung-mixed seed was its `rung_seeded_no_settle` witness). Bytes moved, the
 distribution did not; Zeb 0.2.0's parity fixture is regenerated.
 
+**A stochastic field, so the posterior is a real object (2026-10-12, #108).** With the
+deterministic net as F, β^F(world | record) puts zero mass on the real deal at 586 of
+674 self-play positions, so every belief on the seam was degenerate. `Config.field_eps`
+= ε (arena `E=`) makes the net's field F_σ: in each scenario a modeled seat explores
+with probability ε, playing the dice's tile from the record-keyed tape, else the net's
+move, so P_σ(t | hand, record, world) = ε/n + (1 − ε)·[t = the net's move] over the n
+legal tiles. The coin is one more SplitMix step past the dice's draw, compared with
+⌈ε·2^53⌉, integer-exact, so referee = core bit-identical; worlds still partition; floored
+moves stay the net's. Default 0 is the deterministic net byte for byte (Zeb unchanged).
+`Walt.field_likelihood` is the exact likelihood of that field (referee only; the core's is
+#111). On the research-night pour (674 positions after play 0) at ε = 0.05 / 0.1 / 0.2:
+the real deal ranks at the 71st percentile of the 512-world sample at every ε (median
+rank 0.74 at plays 1–3, 0.84 at 12–15; ε = 0 reproduces the 586 exclusions); the weights' median ESS is 7.5 / 9.8 / 16.1 of
+512, falling from 118–139 at plays 1–3 to 8–16 at plays 12–15 (1.6–3.2% of the sample).
+Reweighting 512 uniform draws leaves about ten worlds mid-hand, so #111 must sample from
+β^F, not reweight. `scratch/stochastic-field/measure.py` (12 s) and `measure.json`.
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

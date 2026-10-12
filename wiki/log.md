@@ -26,6 +26,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | scenario/core | a stochastic field F_σ (field_eps, arena E=), default off, and the exact field likelihood: real deal at the 71st percentile, median ESS 8–16 of 512 mid-hand (#108)]
+
+[[scenario-player]] § A stochastic field. Prerequisite for #111.
+
 ## [2026-10-12 | scenario/core | the sample seed no longer mixes the rung: the sampled ladder iterates one operator, as the Lean theorem assumes (#112)]
 
 [[scenario-player]] § The seed no longer mixes the rung. Bytes moved, not distribution. Witness: [[research-night-2026-10-12-sources]] (11-lean).

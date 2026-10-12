@@ -9,7 +9,10 @@
 //!
 //! Rung k's modeled seats are rung k−1 players; rung −1 is random legal play
 //! from a tape keyed on the public record — or the field net (`field.rs`),
-//! which then also takes rung 0's floored moves. The belief weights the live
+//! which then also takes rung 0's floored moves. With `field_eps` = ε > 0
+//! the net's field is F_σ: a modeled seat explores with probability ε,
+//! playing the dice's tile, else the net's move, so
+//! P_σ(t | hand, record, world) = ε/n + (1 − ε)·[t = the net's move]. The belief weights the live
 //! player's scenarios; modeled minds weight theirs uniformly. Below the root,
 //! a deciding cell thinner than its rung's floor does not maximize: the
 //! decider plays the rung k−1 move for its own remaining hand. The floor
@@ -332,6 +335,8 @@ pub struct Config {
     pub eps: f64,
     /// Rung −1: the field net, or None for random legal play.
     pub field: Option<FieldNet>,
+    /// ε of the stochastic field F_σ, in [0, 1]; 0 is the deterministic net.
+    pub field_eps: f64,
 }
 
 impl Config {
@@ -634,8 +639,12 @@ impl Inv {
 
     // -- the field -------------------------------------------------------------
 
+    /// The modeled seat's tile in scenario r. At rung 0 the field is the
+    /// dice, or F_σ: the dice when scenario r's coin at this record explores,
+    /// else the net (ε = 0 never draws the coin).
     fn field_move(&self, ctx: &mut Ctx, seat: u8, r: usize, hand: u32, rec: &Rec) -> u8 {
-        if self.k == 0 && ctx.cfg.field.is_none() {
+        let cfg = ctx.cfg;
+        if self.k == 0 && (cfg.field.is_none() || explores(cfg.field_eps, self.tapes[r], rec.pack())) {
             return dice(self.tapes[r], rec.pack(), ctx.rules.legal(hand, rec.led()));
         }
         ctx.modeled_move(self.k.checked_sub(1), seat, hand, rec)
@@ -724,6 +733,14 @@ impl Inv {
     fn mass(&self, alive: &Bits) -> f64 {
         fsum(alive.iter().map(|r| self.weights[r]))
     }
+}
+
+/// F_σ's coin for a scenario's tape at a record: the top 53 bits of one more
+/// SplitMix step past the dice's draw, below ⌈ε·2^53⌉ (`_Invocation._explores`;
+/// the scaling by a power of two is exact, so both engines hold one integer).
+#[inline]
+fn explores(eps: f64, tape: u64, key: u64) -> bool {
+    eps > 0.0 && splitmix(splitmix(tape ^ key)) >> 11 < (eps * (1u64 << 53) as f64).ceil() as u64
 }
 
 /// Random legal play from a scenario's tape, keyed on the record.

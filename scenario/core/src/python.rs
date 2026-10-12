@@ -1,9 +1,10 @@
 //! The Python module `scenario_core` (the `python` feature), which
 //! `scenario/compiled.py` drives.
 //!
-//! Interface: `Core(rungs, utility, seed, tilt, eps, field)` with rungs as
-//! (n_worlds, horizon, floor) and `field` the field net's blob
-//! (`FieldNet.to_bytes()`) or None; `sample_roots(reqs)` for the belief seam;
+//! Interface: `Core(rungs, utility, seed, tilt, eps, field, field_eps)` with
+//! rungs as (n_worlds, horizon, floor), `field` the field net's blob
+//! (`FieldNet.to_bytes()`) or None, and `field_eps` the stochastic field's ε;
+//! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
 //! scenarios and each root action's per-scenario outcomes); and `mold`, the
@@ -95,7 +96,7 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None))]
+    #[pyo3(signature = (rungs, utility, seed, tilt, eps, field=None, field_eps=0.0))]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
         utility: &str,
@@ -103,6 +104,7 @@ impl Core {
         tilt: &str,
         eps: f64,
         field: Option<&[u8]>,
+        field_eps: f64,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -131,9 +133,15 @@ impl Core {
         if !(eps > 0.0 && eps <= 1.0) {
             return Err(PyValueError::new_err("eps must lie in (0, 1]"));
         }
+        if !(0.0..=1.0).contains(&field_eps) {
+            return Err(PyValueError::new_err("field_eps must lie in [0, 1]"));
+        }
+        if field_eps > 0.0 && field.is_none() {
+            return Err(PyValueError::new_err("field_eps needs a field net: the random field is the dice already"));
+        }
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field }, rules })
+        Ok(Core { cfg: Config { rungs, make, seed, tilt, eps, field, field_eps }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`
