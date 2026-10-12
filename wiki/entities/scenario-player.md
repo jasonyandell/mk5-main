@@ -795,7 +795,7 @@ both engines, bit-identical: every rung at a coordinate plans over the same samp
 (a smaller rung's is the larger's prefix), so the sampled ladder is the iteration of
 one operator and the stabilization theorem in `scenario/lean/` describes the code
 (the rung-mixed seed was its `rung_seeded_no_settle` witness). Bytes moved, the
-distribution did not; Zeb 0.2.0's parity fixture is regenerated.
+distribution did not; Zeb 0.2.0's parity fixture is regenerated. Re-graded on the 0.2.0 bytes (2026-10-12, main `4bd19fc9`): deployed Zeb `k0,n512,F=margin_d250k_h128x64` vs the champion `k1,n512,m8`, the hub's block (384 mirrored games, seed 1), **+0.04 [−0.27, +0.33] marks/game**, 194/384, made 36.9% vs 36.6%, 785 s; the standing block was +0.11 [−0.19, +0.41], so parity holds and the champion stays `k1,n512,m8`.
 
 **A stochastic field, so the posterior is a real object (2026-10-12, #108).** With the
 deterministic net as F, β^F(world | record) puts zero mass on the real deal at 586 of
