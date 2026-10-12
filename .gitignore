@@ -165,3 +165,6 @@ parlor/sessions/
 
 # the compiled scenario core builds here
 scenario/core/target/
+
+# Lean build artifacts (scenario/lean, the stabilization theorems)
+scenario/lean/.lake/

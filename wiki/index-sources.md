@@ -174,3 +174,4 @@ Per-commit digests (`<sha>`) and named per-document snapshots.
 - [[sources/winning42-ch14-history-tournaments|winning42-ch14-history-tournaments]] — tournament and population-ecology detectors from Winning 42 Chapter 14 (retired)
 - [[sources/winning42-ch15-celebrities-style|winning42-ch15-celebrities-style]] — player-style and partnership detectors from Winning 42 Chapter 15 (retired)
 - [[sources/winning42-ch16-statistical-odds|winning42-ch16-statistical-odds]] — statistical-validation detectors from Winning 42 Chapter 16 (complete)
+- [[research-night-2026-10-12-sources]] — the seven reports and Jason's two notes behind the research night (2026-10-12)

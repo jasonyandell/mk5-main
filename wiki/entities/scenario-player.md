@@ -703,6 +703,23 @@ browser — every legal move's splat at every planned play, the means alone
 beside them, and the deal's real ending as one line through every forecast:
 [[splat-visualizer]].
 
+**Research night (2026-10-12): does Zeb find the optimal move in finite time?**
+Seven agents, one question, see [[research-night-2026-10-12]]. Exact Walt does,
+against a fixed field, when its belief is that field's posterior (proved; Lean at
+`scenario/lean/`, 15 theorems, no sorry). Deployed Zeb does not, in four measured
+ways: the belief (uniform vs the posterior: **+0.028 ± 0.006 marks/hand** when the
+other seats really are the net, p = 1.4e-5; sample it, never reweight; undefined with
+a deterministic net in self-play), sampling (moves flip, value does not), the floor
+(a pure tax on exact fibers; floor-off-when-exact built and null in marks), and the
+referent (the net reproduces every decided move already, which is why data stopped).
+The fixed-belief ladder settles by the 24th application to a unique fixed point;
+coherent beliefs cycle. The sharpest line: with 512 worlds and floor 16, **the plan
+decides the root and then 0.19 of 2.6 own decisions; Zeb is one policy-iteration step
+of its own net, evaluated by rollout**, and the +0.56 was the worlds, not the floor.
+What is missing mathematically: a stochastic field (the prerequisite for any belief
+on the seam), regret instead of agreement as the net's metric, a per-cell certificate,
+and an O2-vs-O1 number on endgames.
+
 **Zeb.** Jason (2026-10-10): "can't keep calling this Walt. Walt is just an
 ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name

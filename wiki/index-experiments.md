@@ -192,3 +192,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/eq-browser-visualizers|eq-browser-visualizers]] — local browser-runbook for E[Q] 3D surface, PDF discs, and game-journey visualizers; makes candlewax-shaped near-tie/uncertainty surfaces inspectable (complete)
 - [[experiments/full-teacher-eq-experiment|full-teacher-eq-experiment]] — the era-4 closeout: can mixing oracle-guided (full-teacher) games into Zeb's self-play break the bootstrapping compounding-error problem? (complete)
 - [[experiments/zeb-calibration-eval|zeb-calibration-eval]] — Zeb advertised 72% top-1 → actual 39% hidden-only; calibration gap caused parking decision (complete)
+- [[research-night-2026-10-12]] — does Zeb find the optimal move in finite time? Proved for exact Walt with the field's posterior; four measured gaps in deployed Zeb; Zeb is a one-step rollout of its net (2026-10-12)

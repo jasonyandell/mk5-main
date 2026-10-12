@@ -26,6 +26,17 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | research-night | Research night: does Zeb find the optimal move in finite time?]
+
+Seven agents (theory, Lean, counter lab, empirical, floor, an independent Fable
+session, a Fable critic). Proved: exact Walt with the field's posterior is an O1 best
+response in finite time; the fixed-belief ladder settles by the 24th application
+(Lean, `scenario/lean/`, 15 theorems, no sorry); coherent beliefs cycle. Measured:
+the belief gap is +0.028 marks/hand against a net table; Zeb is a one-step rollout
+of its net after the root; floor-off-when-exact is correct and null. Pages:
+[[research-night-2026-10-12]], sources [[research-night-2026-10-12-sources]]; hub
+[[scenario-player]] gets a dated paragraph.
+
 ## [2026-10-12 | scenario/viz | what must be true, in the browser: pick a region of a move's splat, see the holdings that explain it; condition the position on up to three holdings; per-world sample (687 KB); zoom + touch stepping]
 
 [[splat-visualizer]] § 2026-10-12. Reads `holding_predictors` / `makes` per world ([[scenario-player]] § What must be true).
