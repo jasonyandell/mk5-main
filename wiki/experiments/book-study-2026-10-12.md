@@ -45,9 +45,10 @@ it named was a condition the book states and the encoding lacked.
   with the off's double next-to-last, no count on a lost trick, the safe trick's five, and
   the setter's double lead when one point sets. As the gates were translated it sided with
   C1a, C1b, C8, C13b, C22, C23 and C12A.
-- *No relation to the book* (chance-corrected ≤ 0.08): low from a pair (C13c, a two-tile
-  choice at a coin flip, the same as the book's rule), the trump set (+0.06) and the dead
-  double (+0.08), each with the condition the book states; as gates also the partner never
+- *No relation to the book* (chance-corrected ≤ 0.07): low from a pair (C13c, a two-tile
+  choice at a coin flip, the same as the book's rule) and the trump set (+0.06), with the
+  condition the book states; the dead double (+0.08) falls between this band and the weak
+  one (≥ 0.11), near chance; as gates also the partner never
   leads trump (C9, which the book's partner-leads rule replaces) and lead a singleton (C13d).
 - *The gates are not the book's rules.* Written as [[silas]] policies and replayed on the
   book's own worked deals (`silas/examples/book/`, `silas/tests/book.rs`), at least 10 of
@@ -554,9 +555,9 @@ banked score), since with any point banked the count that sets always fires firs
 **Reading.**
 
 - *Zeb sides with 3 of the 14:* the partner's leads (+0.48), protect the count (+0.45), and
-  win low and keep the double (+0.48). It agrees weakly with 8, shows no relation to 3
-  (low-from-a-pair 0.00, the C13c gate unchanged; the trump set +0.06; the dead double
-  +0.08), and prices against none. Each rule's firing set equally weighted, Zeb's pick is in
+  win low and keep the double (+0.48). It agrees weakly with 8, shows no relation to 2
+  (low-from-a-pair 0.00, the C13c gate unchanged; the trump set +0.06), is near chance on
+  the dead double (+0.08, between the bands), and prices against none. Each rule's firing set equally weighted, Zeb's pick is in
   the book set at 54% against a 40% random floor (chance-corrected 0.23); the 21 gates on
   the whole pour read 53% against 37% (0.25). Reading the book faithfully does not raise
   agreement.
