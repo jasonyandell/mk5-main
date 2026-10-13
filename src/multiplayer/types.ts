@@ -107,7 +107,7 @@ export interface ActionRequest {
  * to avoid any client-side rule evaluation.
  */
 export interface DerivedViewFields {
-  /** Trick winner for current trick (-1 if incomplete) */
+  /** Trick winner for current trick; -1 exactly when rules.isTrickComplete is false */
   currentTrickWinner: number;
 
   /** Tooltip metadata for each domino in hand, pre-computed using rules */

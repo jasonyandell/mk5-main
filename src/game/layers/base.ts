@@ -19,7 +19,6 @@ import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
 import { isValidMarkBid } from '../core/rules';
 import { calculateRoundScore } from '../core/scoring';
-import { composeRules } from './compose';
 import { checkHandOutcome as checkStandardHandOutcome } from '../core/handOutcome';
 import {
   getLedSuitBase,
@@ -33,12 +32,12 @@ import {
  * Does NOT generate bids - those are added by Layers via getValidActions.
  *
  * @param state Current game state
- * @param rules Composed rules for validation (optional, used for getValidPlays)
+ * @param rules Composed rules (trick completion, valid plays)
  * @returns Structural actions only
  */
 export function generateStructuralActions(
   state: GameState,
-  rules?: GameRules
+  rules: GameRules
 ): GameAction[] {
   switch (state.phase) {
     case 'bidding':
@@ -121,16 +120,13 @@ function getTrumpSelectionActions(state: GameState): GameAction[] {
 /**
  * Gets valid playing actions
  */
-function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
+function getPlayingActions(state: GameState, rules: GameRules): GameAction[] {
   const actions: GameAction[] = [];
 
   if (state.trump.type === 'not-selected') return actions;
 
-  // Check if trick is complete (use rules if provided, otherwise default to 4)
-  const isTrickComplete = rules ? rules.isTrickComplete(state) : state.currentTrick.length === 4;
-
   // If trick is complete, add complete-trick action directly
-  if (isTrickComplete) {
+  if (rules.isTrickComplete(state)) {
     actions.push({
       type: 'complete-trick',
       autoExecute: true,
@@ -140,8 +136,7 @@ function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
   }
 
   // Get valid plays for current player using threaded rules
-  const threadedRules = rules || composeRules([baseLayer]);
-  const validPlays = threadedRules.getValidPlays(state, state.currentPlayer);
+  const validPlays = rules.getValidPlays(state, state.currentPlayer);
   validPlays.forEach((domino: Domino) => {
     actions.push({
       type: 'play',

@@ -162,7 +162,7 @@
           <span class="text-xs font-semibold text-success whitespace-nowrap ml-auto px-2 py-1 bg-success/10 rounded-full">P{trick.winner}✓ {trick.points || 0}pts</span>
         </div>
       {/each}
-      {#if $viewProjection.trick.current.plays.filter(p => p !== null).length > 0 && $viewProjection.trick.current.plays.filter(p => p !== null).length < 4 && $viewProjection.phase === 'playing'}
+      {#if $viewProjection.trick.current.plays.some(p => p !== null) && !$viewProjection.trick.current.isComplete && $viewProjection.phase === 'playing'}
         {@const sortedCurrentPlays = $viewProjection.trick.current.plays}
         <div class="flex items-center gap-3 px-3 py-2 rounded-md bg-warning/20 border border-warning mb-2">
           <span class="text-xs font-bold text-base-content/60 w-4">{$viewProjection.trick.number}:</span>

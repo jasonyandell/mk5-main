@@ -222,7 +222,7 @@ export function createViewProjection(
       gameState.currentTrick.find(play => play.player === p) || null
     ),
     winner: derived.currentTrickWinner,
-    isComplete: gameState.currentTrick.length === 4,
+    isComplete: derived.currentTrickWinner !== -1,
     currentPlayer
   };
   

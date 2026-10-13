@@ -366,8 +366,9 @@ function computeDerivedFields(
 ): DerivedViewFields {
   const rules = ctx.rules;
 
-  // Compute current trick winner using rules (only if trick is complete)
-  const currentTrickWinner = coreState.currentTrick.length === 4
+  // Compute current trick winner using rules (only if trick is complete -
+  // three plays in nello, four otherwise: the rules decide)
+  const currentTrickWinner = rules.isTrickComplete(coreState)
     ? rules.calculateTrickWinner(coreState, coreState.currentTrick)
     : -1;
 
