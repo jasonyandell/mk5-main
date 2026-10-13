@@ -17,7 +17,7 @@
 //!
 //! Probabilities are exact over the uniform deal of the tiles the viewer
 //! cannot see, given what the record shows (`Belief::uniform_resolving`,
-//! `Authority::Exact`).
+//! authority `exact`).
 mod common;
 #[path = "common/leads.rs"]
 mod leads;
@@ -105,7 +105,7 @@ fn dd_04() {
     let h = narrated("hand-28");
     let t4 = h.at(4, R::Opponent2);
     h.values(&t4).assert(&[("1-1", 19, 0), ("5-4", 25, 0), ("5-2", 25, 0), ("4-2", 36, 1)]);
-    let at_31 = rebid(h.physics(), &t4, 31);
+    let at_31 = rebid(&t4, 31);
     let v = values(h.physics(), &at_31);
     v.assert(&[("1-1", 19, 0), ("5-4", 25, 0), ("5-2", 25, 0), ("4-2", 36, 1)]);
     let best = v.moves.iter().map(|(_, p, _)| *p).min().unwrap();
@@ -296,15 +296,14 @@ fn dd_11() {
 #[test]
 fn dd_12() {
     let h = narrated("hand-34");
-    let p = h.physics();
     assert_eq!(h.worth(&h.opening), (42, 1));
     h.values(&h.opening).assert(&[("5-5", 30, 0), ("5-4", 42, 1), ("5-2", 42, 1), ("5-0", 42, 1), ("2-2", 42, 1)]);
-    assert_eq!(h.worth(&h.opening.play(p, tile("5-5")).unwrap()).1, 0);
+    assert_eq!(h.worth(&h.opening.play(tile("5-5")).unwrap()).1, 0);
     let (after, _) = h.follow(&h.opening, &[Some("5-4"), None, Some("6-5"), None]);
     assert_eq!(after.leader(), Seat::S2);
     let (before_o1, _) = h.follow(&after, &[Some("6-2"), None, None]);
     assert_eq!(before_o1.next_actor(), Some(Seat::S1));
-    assert_eq!(before_o1.legal(p), tiles(&["6-4"]));
+    assert_eq!(before_o1.legal(), tiles(&["6-4"]));
     h.values(&h.at(3, R::Opponent1)).assert(&[
         ("2-0", 26, 0),
         ("3-0", 26, 0),
@@ -332,7 +331,6 @@ fn dd_12() {
 #[test]
 fn dd_13() {
     let h = narrated("hand-35");
-    let p = h.physics();
     assert_eq!(h.worth(&h.opening), (42, 1));
     h.values(&h.opening).assert(&[("4-4", 36, 0), ("4-3", 42, 1), ("4-0", 42, 1), ("5-5", 42, 1), ("6-6", 42, 1)]);
     let (after, _) = h.follow(&h.opening, &[Some("4-3"), None, Some("5-4"), None]);
@@ -340,7 +338,7 @@ fn dd_13() {
     let (after, _) = h.follow(&after, &[Some("6-2"), Some("6-1"), Some("6-3"), None]);
     assert_eq!(after.leader(), Seat::S0);
     let (before_o2, _) = h.follow(&after, &[Some("6-6"), None, None]);
-    assert_eq!(before_o2.legal(p), tiles(&["6-5"]));
+    assert_eq!(before_o2.legal(), tiles(&["6-5"]));
     for trick in [1, 2] {
         assert!(h.values(&h.at(trick, R::Opponent1)).moves.iter().all(|(_, _, m)| *m == 0));
     }
@@ -387,7 +385,7 @@ fn dd_14() {
     let before = h33.after(23);
     assert_eq!(before.next_actor(), Some(Seat::S3));
     assert_eq!(h33.plays[23], tile("0-0"));
-    assert_eq!(before.legal(h33.physics()), tiles(&["3-1"]));
+    assert_eq!(before.legal(), tiles(&["3-1"]));
     assert_eq!(h33.worth(&before).0, 41);
     assert_eq!(rest("hand-34"), 42);
     let h35 = narrated("hand-35");
@@ -400,13 +398,13 @@ fn narrated_grades(h: &Narrated) -> impl Iterator<Item = Grade> {
     let mut line = Vec::new();
     let mut position = h.opening.clone();
     for d in &h.plays {
-        match position.play(h.physics(), *d) {
+        match position.play(*d) {
             Ok(next) => position = next,
             Err(_) => break,
         }
         line.push(*d);
     }
-    let deal = Deal { physics: h.physics.clone(), contract: h.opening.contract(), hands: h.opening.hands() };
+    let deal = Deal { contract: h.opening.contract().clone(), hands: h.opening.hands() };
     grade_line(&deal, &line).unwrap().into_iter().filter(|g| g.legal.len() > 1)
 }
 
@@ -422,8 +420,7 @@ fn hand_of(id: &str) -> DominoSet {
 }
 
 fn root(decl: &str, hand: DominoSet) -> Frame {
-    let kernel = Kernel::new(Seat::S0, hand, DominoSet::FULL.difference(hand), open_hidden([7, 7, 7])).unwrap();
-    Frame::new(physics(decl), kernel, Seat::S0, vec![], DominoSet::EMPTY).unwrap()
+    opening(&physics(decl), hand)
 }
 
 fn trumps(frame: &Frame) -> DominoSet {
@@ -432,7 +429,7 @@ fn trumps(frame: &Frame) -> DominoSet {
 
 fn resolved(frame: Frame, tiles: DominoSet) -> Belief {
     let belief = Belief::uniform_resolving(frame, tiles, 100_000).unwrap();
-    assert_eq!(belief.authority(), &Authority::Exact);
+    assert!(belief.authority().is_exact());
     belief
 }
 
@@ -467,8 +464,7 @@ fn ex_01() {
         let plays: Vec<(Seat, Domino)> =
             [Seat::S0, Seat::S1, Seat::S2, Seat::S3].into_iter().zip(plays.map(tile)).collect();
         let hand = hand_of(id).difference(DominoSet::single(plays[0].1));
-        let frame =
-            Frame::from_record(physics(decl), Seat::S0, hand, Contract { declarer: Seat::S0, bid }, plays).unwrap();
+        let frame = Frame::from_history(contract(&physics(decl), Seat::S0, bid), Seat::S0, hand, &plays).unwrap();
         let marked = trumps(&frame);
         (marked, resolved(frame, marked))
     };
@@ -570,8 +566,8 @@ fn ex_05() {
     let doubles: DominoSet = straight_off.kernel().pool().iter().filter(|d| d.is_double()).collect();
     assert_eq!(probability(odds!("c07-straight-off-double"), &resolved(straight_off, doubles)), r(2, 3));
     let setter = tiles(&["6-6", "6-5", "4-4", "4-1", "3-3", "3-1", "1-0"]);
-    let contract = Contract { declarer: Seat::S0, bid: 30 };
-    let frame = Frame::from_record(physics("P5"), Seat::S1, setter, contract, vec![(Seat::S0, tile("2-0"))]).unwrap();
+    let contract = contract(&physics("P5"), Seat::S0, 30);
+    let frame = Frame::from_history(contract, Seat::S1, setter, &[(Seat::S0, tile("2-0"))]).unwrap();
     let belief = resolved(frame, tiles(&["2-2"]));
     let winner = odds!("c05-setter-partner-holds-winner");
     assert_eq!(probability(winner, &belief), r(7, 20));

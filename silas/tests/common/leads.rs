@@ -2,16 +2,14 @@
 //! 28-35) as open positions along their narrated lines, every root move valued
 //! double-dummy under both objectives, and the bidder's side's points.
 
-use std::sync::Arc;
-
 use silas::*;
 
 use super::fixture::{Role, book};
 
 /// One full deal and its narrated line, under the line's declaration and bid
-/// (a marks bid is the whole 42). The bidder sits in S0.
+/// (a marks bid needs all 42). The bidder sits in S0.
 pub struct Narrated {
-    pub physics: Arc<dyn Physics>,
+    pub physics: Physics,
     pub opening: OpenPosition,
     /// Every named play of the line's tricks, then of its tail.
     pub plays: Vec<Domino>,
@@ -21,8 +19,8 @@ pub fn narrated(id: &str) -> Narrated {
     let b = book();
     let line = b.line(&format!("{id}/prose"));
     let physics = super::physics(line.declaration.as_deref().expect("a straight declaration"));
-    let contract = Contract { declarer: Seat::S0, bid: line.bid.contract_points() };
-    let opening = OpenPosition::deal(physics.as_ref(), contract, b.example(id).deal()).unwrap();
+    let contract = super::contract(&physics, Seat::S0, line.bid.number());
+    let opening = OpenPosition::deal(contract, b.example(id).deal()).unwrap();
     let mut plays = line.plays();
     if let Some(tail) = &line.tail {
         plays.extend(tail.plays.iter().map(|(_, d)| d.expect("a named tail play")));
@@ -31,13 +29,13 @@ pub fn narrated(id: &str) -> Narrated {
 }
 
 impl Narrated {
-    pub fn physics(&self) -> &dyn Physics {
-        self.physics.as_ref()
+    pub fn physics(&self) -> &Physics {
+        &self.physics
     }
 
     /// The position after the first `n` narrated plays.
     pub fn after(&self, n: usize) -> OpenPosition {
-        self.plays[..n].iter().fold(self.opening.clone(), |p, d| p.play(self.physics(), *d).unwrap())
+        self.plays[..n].iter().fold(self.opening.clone(), |p, d| p.play(*d).unwrap())
     }
 
     /// The position at which `role` decides in trick `trick` (from one) of the
@@ -49,7 +47,7 @@ impl Narrated {
             if tricks == trick && position.next_actor() == Some(seat(role)) {
                 return position;
             }
-            position = position.play(self.physics(), *d).unwrap();
+            position = position.play(*d).unwrap();
             tricks += usize::from(position.trick().is_empty());
         }
         if tricks == trick && position.next_actor() == Some(seat(role)) {
@@ -88,7 +86,7 @@ impl Narrated {
                 None => root.tied_best().iter().next().unwrap(),
             };
             played.push(tile);
-            position = position.play(self.physics(), tile).unwrap();
+            position = position.play(tile).unwrap();
         }
         (position, played)
     }
@@ -109,7 +107,7 @@ pub struct Values {
     pub moves: Vec<(Domino, u32, i32)>,
 }
 
-pub fn values(physics: &dyn Physics, position: &OpenPosition) -> Values {
+pub fn values(physics: &Physics, position: &OpenPosition) -> Values {
     let mut solver = Solver::new(physics);
     let margin = solver.solve(position, Objective::Margin).unwrap();
     let make = solver.solve(position, Objective::Make).unwrap();
@@ -140,15 +138,9 @@ impl Values {
 }
 
 /// The same position under another bid.
-pub fn rebid(physics: &dyn Physics, position: &OpenPosition, bid: u32) -> OpenPosition {
-    let contract = Contract { bid, ..position.contract() };
-    OpenPosition::new(
-        physics,
-        contract,
-        position.hands(),
-        position.leader(),
-        position.trick().to_vec(),
-        position.banked(),
-    )
-    .unwrap()
+pub fn rebid(position: &OpenPosition, bid: u32) -> OpenPosition {
+    let old = position.contract();
+    let contract = Contract::new(old.declarer(), Bid::number(bid).unwrap(), old.declaration().clone()).unwrap();
+    OpenPosition::new(contract, position.hands(), position.leader(), position.trick().to_vec(), position.banked())
+        .unwrap()
 }

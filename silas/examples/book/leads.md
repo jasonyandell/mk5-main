@@ -14,7 +14,7 @@ claims are in our words.
   `Objective::Make` against the deal's bid (a marks bid needs 42). The solver
   sees every hand; these are facts about open positions.
 - **Probability** rows: exact over the uniform deal of the unseen tiles,
-  given the record (`Belief::uniform_resolving`, `Authority::Exact`).
+  given the record (`Belief::uniform_resolving`, authority `exact`).
 - **CONFIRMED**: ours equals the claim. **REFUTED**: it does not; both values
   are given. **BLOCKED**: the claim needs a capability Silas lacks
   ([`GAPS.md`](../../GAPS.md) number); nothing is computed in its place.
