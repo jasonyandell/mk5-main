@@ -207,7 +207,7 @@ For one commit you just made or are ingesting:
    - If the page is being retired/superseded, set `status:` accordingly and add a forward link.
 4. **Create `sources/<sha>.md`** — a compact digest: frontmatter + commit message quote + files-changed table + short "What this commit establishes" narrative + bare `[[backlinks]]` to every touched page.
 5. **Update the catalog** — add new pages to the right `index-<kind>.md` (entry shape: `- [[path|name]] — hook (status)`), update hooks on pages whose gist changed. The linter's IX checks enforce bidirectional coverage.
-6. **Append to `log.md`** — one entry in the format below.
+6. **Add to `log.md`** — one entry in the format below, at the top. Never rotate on a branch (see Log format).
 7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop. Skim the touched pages once for `[[kind/name]]` patterns in body text — those should almost always be bare `[[name]]` (see Backlink style above).
 
 #### Multi-commit replay path
@@ -234,8 +234,9 @@ When orchestrating scribes via a team tool:
 
 Run `python -u scripts/wiki_lint.py` (from the repo root) after any session
 that touched `wiki/` — it checks frontmatter validity, dead links, ambiguous
-names, orphanhood, experiment routing, index coverage, and log rotation.
-`--strict` must exit clean before pushing.
+names, orphanhood, experiment routing, index coverage, and the log (rotation
+due, duplicated entries, the digest's archive count). `--strict` must exit
+clean before pushing; `scripts/check` runs it with every other suite.
 
 Then the judgment checks the linter can't do — run these when the wiki feels
 off, or after a large ingest:
@@ -265,7 +266,9 @@ Entries use this prefix so `grep "^## \[" log.md log-archive.md` gives the full 
 **Questions opened:** ...
 ```
 
-**Rotation (mechanical, no judgment):** `log.md` holds a phase-by-phase digest at the top plus the most recent ~10 entries. When appending pushes it past ~15 entries, in the same session: move the oldest entries verbatim to `log-archive.md` (append at its end), and fold their gist into the digest — one line per phase, links only, no new claims. The entry count is the trigger; do not wait for the file to "feel" long.
+**Adding an entry (every branch):** insert it directly under the `---` that follows the digest, newest first. Touch nothing else in `log.md` or `log-archive.md`: **a branch never rotates.** Parallel branches each add an entry at the same spot, and `.gitattributes` gives both files git's `union` merge driver, so those additions merge without conflict. (Rotating on branches is what broke this: two branches rolled the same entry, the merge conflicted, and its resolution truncated the archive to one entry.)
+
+**Rotation (on main, after merging, by script):** `log.md` holds a phase-by-phase digest plus recent entries. Run `python -u scripts/wiki_log_rotate.py` on main after a merge. It is idempotent: at 15 or fewer entries it changes nothing; past 15 it keeps the newest 10, appends the rest verbatim to `log-archive.md` (oldest first, skipping any already there), re-spaces the log, and sets the digest's archived-entry count. Folding the moved entries into the digest (one line per phase, links only, no new claims) is the one judgment step; do it in the same commit. The lint enforces the rest: LG01 warns when rotation is due, LG02 rejects a duplicated entry, LG03 rejects a digest count that differs from the archive (a truncated archive fails here).
 
 ## Question handling
 

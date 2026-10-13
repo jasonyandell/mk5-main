@@ -4,3 +4,9 @@
 # Use bd merge for beads JSONL files
 .beads/beads.jsonl merge=beads
 .beads/issues.jsonl merge=beads -diff
+
+# The wiki log: parallel branches each add an entry at the same spot. The
+# union driver keeps both sides instead of conflicting. Rotation runs only on
+# main (scripts/wiki_log_rotate.py); wiki_lint.py flags any duplicate entry.
+wiki/log.md merge=union
+wiki/log-archive.md merge=union
