@@ -84,13 +84,19 @@ book was extracted or adopted: Zeb today prices a move, it does not explain one 
   an 84 needs to beat a one-mark bid; counting alone caps it at 0.653, because an opponent
   holds the 6-5 with another five with probability 33/95. This is the study's one worked
   explanation: a counting fact with two drawn deals.
-- *Three odds figures.* The 27 placements of three missing trumps are not equiprobable
-  (a 1–1–1 split weighs 0.043 each, a 2–1 split 0.037, a 3–0 split 0.026): the book's 37%
-  is 33/95 = 0.347 and its 52% is 47/95 = 0.495, a coin flip the bidder's way. The "80%"
-  that an opponent cannot follow the first doubles lead is 23/30 = 0.767. "Partner holds two
-  or more doubles 58% of the time" is the unconditional figure; given the bidder's own two
-  doubles it is 0.557, given three 0.407. The appendix's three-trump and two-high-trump
-  sections (pp. 183–184) were missing from the archive's OCR and were not checked.
+- *The book's odds, exactly.* Every probability the book prints (32 claims) is a [[silas]]
+  query computed exactly against the book's own model (each missing tile equally likely in
+  each of the three other hands) and against the true deal (`silas/examples/book/odds/`).
+  The equal-placement model is the recurring error: four trumps missing the 2nd-highest is
+  33/95 = 0.347, not 37%; missing the 2nd and 3rd is 47/95 = 0.495, a coin flip the
+  bidder's way, not 52%; three trumps, 388/855 = 0.454, not 47%; the doubles-lead "80%"
+  is 23/30. The book's arithmetic also slips inside its own model: 243 placements, not 225;
+  partner holds the 2nd-highest 27/81 = 1/3, not 21/81; partner holds three or more 51/243,
+  not 45; six doubles is about 1/80 percent, not 1/50; two to four doubles is 0.577 (the
+  printed "at least 36 percent" is the two-double row alone). The book prints no figure for
+  partner's doubles; exactly, partner holds two or more 0.581 unconditionally, 0.557 given
+  the bidder's own two, 0.407 given three. Whole-deal frequencies need a deal view Silas
+  lacks (`silas/GAPS.md`) and are enumerated over all 1,184,040 hands instead.
 - *The pounce* (play count before partner can) costs −0.076 pmake as a one-seat rule and
   more, not less, when the count is protected. Its "you'd have lost it anyway" is true
   descriptively (held-back count went to the bidder 62%) and selection-confounded.
