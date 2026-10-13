@@ -97,9 +97,7 @@ fn eval_says_why_each_earlier_rule_passed_and_takes_the_policy_as_its_file() {
     let (ok, out) = silas(&[&["eval", "examples/book/pounce.silas"][..], &args].concat());
     assert!(ok, "{out}");
     assert!(
-        out.contains(
-            "passed: rule no-count-on-a-lost-trick: stops at (some (roles his) (trick-play pard his))"
-        ),
+        out.contains("passed: rule no-count-on-a-lost-trick: stops at (some (roles his) (trick-play pard his))"),
         "{out}"
     );
     assert!(out.contains("passed: rule play-a-ten-now: stops at (count give 10)"), "{out}");
