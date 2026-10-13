@@ -25,9 +25,9 @@ means it needs a hidden hand or a model of another seat's play.
 | # | gap | kind | rules blocked | viewer / world | home |
 |---|---|---|---|---|---|
 | 1 | policy likelihood (#128) | belief operation | 5 readings; 3 places in the rules | world | Silas |
-| 2 | cross-game policy comparison (#130), narrowed | new layer | 4 (2 in part) | world | Silas and Physics |
+| 2 | cross-game policy comparison (#130), narrowed | new layer | 3 (C17 in part) | world | Silas and the arena |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
-| 4 | the auction as information (#134) | frame facts and belief | 3 | world | Silas and Physics |
+| 4 | the auction as information (#134), narrowed | belief | 3 | world | Silas |
 | 5 | aggregate (#135) | language construct | 2 (the crisis's "most out"; the trump set's "as strong") | viewer | Silas |
 
 ## 1. Policy likelihood: reading a convention
@@ -125,14 +125,32 @@ its frame, under both readings wherever points are scored (`examples/book/cross-
   row-by-row split is the coverage archive's, which the spec summarizes and does not
   list.
 
-**Rules still blocked.** C16 (the auction half), C17 (the policy form; its dominance is
-stated), C18 (a belief at the auction under a field: `P_F(make all 42 | shape) > 1/2`),
-C19 (an equilibrium: the field adapts to the policy, so no fixed-field comparison can
-state it; slice 5), and the study's bid book (C24, cluster D's sixty rows: slice 2 for
-the bids as a policy, slice 4 for their price).
+**Narrowed again (slice 2, 2026-10-13).** The bid action is in (README, The auction;
+`docs/cross-game.md` § 4, Slice 2 as built): the auction in the record with the
+contract derived from it, `AuctionConfig` (the marks cap, the forced bid), the auction
+frame and its predicates, `(bidding ...)` and `(declaring ...)` sections, and
+`examples/book/bidding/`. What that moves:
 
-**Smallest addition.** A bid action in policies over an auction frame (slice 2; it is
-also gap 4's structure), then a comparison of two hand policies over a measure of deals
+- **A, bid only enough: statable.** `bid-only-enough.silas` is the rule as the arena
+  plays it (`HeuristicBidder`, reproduced exactly: call for call on the arena's auctions,
+  and on every hand), `never-32-or-33.silas` its "never 32 or 33". The claim that the
+  extra points buy no auction is a property of the field's bidding: measured in slice 4.
+- **D, the bid book: statable as a policy, two rows priced.** `risk-budget.silas` is
+  the book's count as we read it, its table of calls on the study's 30 hands pinned
+  (the book's call on 18; bid or pass on 22, against always bidding's 23). Over all
+  1,184,040 hands its opening histogram is exact: S-0053-d's "about half are not
+  biddable" holds (54.7% pass), and S-0153-a's reasoned bids 30, 31, 35 and 36 are
+  61.5% of its bids. Both are prices of our reading, not of the book's judgment, which
+  no one formula reproduces (its printed risk counts: 8 of 12). The bids' verdicts
+  (whether a call makes) wait on slices 3 and 4.
+
+**Rules still blocked.** C17 (the policy form, "bid 42 not 84", needs the field's
+overcalls after either bid: slice 4; the dominance is stated), C18 (a belief at the
+auction under a field: `P_F(make all 42 | shape) > 1/2`), C19 (an equilibrium: the field
+adapts to the policy, so no fixed-field comparison can state it; slice 5), and the
+verdicts on the bid book's calls (slices 3 and 4). C16's auction half is statable.
+
+**Smallest addition.** A comparison of two hand policies over a measure of deals
 against a named field: exact given the field over a listed set, a fiber or all hands,
 sampled otherwise, with the arena's paired ledgers imported as outcomes that Silas
 settles itself (slices 3 and 4).
@@ -168,16 +186,29 @@ read from the world and the record).
 
 **What.** The bid tells the table about the bidder's hand. In the book's examples, a 35
 means two offs and a 36 means one off; a losing 31 means a double or two (pp. 53–54,
-109). The partner's bid is the only information before play (p. 89). The frame now holds
-the winning contract, but not the other seats' bids, and Silas has no model linking a bid
-to a hand. Reading a bid means conditioning the belief on a bidding policy. That is gap 1
-applied to bids, and it is world information.
+109). The partner's bid is the only information before play (p. 89).
+
+**Narrowed (slice 2 of gap 2, 2026-10-13).** The structure is in. The whole auction is
+in the record, every call attributed, and the contract is derived from it; a play rule
+reads it as public fact: `(shaker c)`, `(bid-of c n)`, `(passed c)`, `(no-bid)`,
+`(high-bid n)`, `(high-bidder c)`. A bid is an action of a policy, a function of the
+auction frame, so a bidding policy is the object a likelihood would invert. So "the
+bidder bid 35" and "the partner passed" are now clauses a rule can state.
+
+**What remains.** Reading a bid as evidence about the hand behind it: conditioning the
+belief on the event that the bidder's bidding policy, at his auction frame in each
+world, makes the call he made. That is policy likelihood (gap 1, #128) applied to the
+`bidding` section; the frame and the policy it needs both exist, so the missing piece is
+gap 1's alone. Two smaller pieces stay too: the play frame does not carry the match
+state, so a play rule cannot read the score a bid was made at (the scoring changes a
+bid's meaning: under marks, 30 to 41 pay the same); and a hand given with its contract
+alone (most of the book's hands, and Zeb's record) has a conventional auction
+(`Auction::won_by`), which a reading must not take for the table's.
 
 **Rules.** C4 and the bid inferences of pp. 53–54 and 109.
 
-**Smallest addition.** The whole auction in the record, a bid action (as for gap 2), and
-policy likelihood (gap 1) over bids. The bid's meaning depends on the scoring, so the
-contract's scoring belongs in `Physics`: under marks, levels from 30 to 41 pay the same.
+**Smallest addition.** `Belief::condition_on_policy` over a seat's bidding section
+(gap 1), and the match state in the play frame.
 
 ## 5. Aggregate: comparing sizes
 
@@ -194,6 +225,11 @@ today, so `to-set` can say "one point sets" but not "this lead's count sets".
 - `trump-set.silas` (p. 52): "trumps as strong as the bidder's" compares two holdings; the
   rule reads it as holding the top trump still out.
 - The 84 watch list's "keep the double with more tiles out" (pp. 66-81) is not encoded.
+- The bid rules (`lib/bidding.silas`) are encoded without it, at a price: each "at most
+  n points at risk" is a set of `none` scopes over the count tiles, each bid level is a
+  rule that derives the risk again, and the arena's declaration compares suit lengths
+  by enumerating up to seven tiles. They are exact, and that is most of their cost
+  (README, The auction).
 
 The book's C15 choice by what sets (pp. 98, 108) is no longer blocked for one called
 tile: the trick's point, the lead's own count and one called five or ten make six sums,
@@ -203,6 +239,15 @@ over several called tiles still needs `card`.
 **Smallest addition.** The `card` clause in the language, and `less(n, m)` on numbers.
 
 ## Closed
+
+Closed by the cross-game spec's slice 2 (2026-10-13; gaps 2 and 4 above):
+
+- **The auction in the record.** Calls, the auction's rules (`AuctionConfig`: the marks
+  cap, the forced bid), legality held to the arena and the engine on every legal prefix,
+  the passed-out hand, and the contract derived from the auction, never given.
+- **The bid action.** `(bidding ...)` and `(declaring ...)` sections over an auction
+  frame (the hand, the auction so far, the match state, the declarations offered),
+  `CompiledPolicy::{bid, declare}`, and the auction's vocabulary (`lib/bidding.silas`).
 
 Closed by the cross-game spec's slice 1 (2026-10-13; gap 2 above):
 

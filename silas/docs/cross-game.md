@@ -307,6 +307,14 @@ shapes: three or four trumps, two or three doubles, one off under its double);
 `(worth v n)` with a literal `n` is the risk budget written as a disjunction of
 literals until gap 5's `card` lands, as `lead-sets` is today.
 
+> **Amendment (slice 2, as built).** The grammar is `(select bid n|pass|least-raise)`
+> and `(select declare answer|q0..q6|doubles|no-trump)`, with the short forms
+> `(rule r (bid ...) clause ...)` and `(rule r (declare t) clause ...)`. `worth` is not
+> one definition but a family per bound (`exposes-at-most-10`, `risk-at-most-7`, in
+> `lib/bidding.silas`), since a bound is a literal; a bid level is a rule. The match
+> state is in the auction frame only. Every choice made against this section is in
+> § 4, Slice 2 as built.
+
 ### 2.3 The deal measure, the seats and the field
 
 ```rust
@@ -623,6 +631,91 @@ hands with the bids the book prints, at all four seats, under both scorings, as
 and an exact table (60 rows move from `blocked-by #130` to a file, their verdicts
 waiting on slice 4); S-0053-d and S-0153-a priced exactly (2). Gap 4 receives its
 structure for free. 69 rows move; 11 close.
+
+#### Slice 2 as built (2026-10-13)
+
+Built: `Call`, `AuctionConfig`, `Auction` (legal by construction), the contract
+derived from the auction (`Frame::new(auction, declaration, ...)`), `AuctionFrame`,
+predicate phases and the auction predicates, the `(bidding ...)` and `(declaring
+...)` sections, `CompiledPolicy::{bid, declare}`, `silas bid`, `lib/bidding.silas`,
+and `examples/book/bidding/` (`bid-only-enough`, `risk-budget`, `never-32-or-33`).
+README § The auction is the reference. Where this spec was silent or did not fit
+the code, the choice made:
+
+1. **The configuration.** `AuctionConfig` is the marks cap and the forced bid. The
+   entry at one or two marks and the one-mark overcall after a marks bid are fixed:
+   rules-of-42, the TypeScript engine, the arena and Lean's `legalBid` all say so, and
+   no source we hold varies them; the "42-steps or 84-steps" knob has no source and is
+   left out. "Both entry rules" in the tests is read as the two all-pass rules: the
+   reshake (four passes, no contract) and the forced shaker.
+2. **The record.** The `Auction` carries its configuration, shaker and calls, and
+   refuses an illegal call, so the contract (`Auction::contract`) needs no legality
+   check of its own. `Contract::new` stays, as Lean's `Contract.ofBid`, for the
+   match's settlements and `dominates`, which need no auction. A hand given with its
+   contract alone (the book's `hands.json`, Zeb's record through Python) gets
+   `Auction::won_by`, the shortest auction its declarer wins; the auction predicates
+   read that convention there, not the table's auction. `PolicyKey` keys on the
+   auction (`PolicyKey.history with bids`).
+3. **Phases.** Every predicate is of the play, the auction or both; a rule naming a
+   predicate of the other phase is refused at compilation, a query at evaluation.
+   The auction's record (`shaker`, `bid-of`, `passed`, `no-bid`, `high-bid`,
+   `high-bidder`) is read in the play too; the match state (`scoring-*`, `score`,
+   `short`, `short-at-most`, `behind`) only at the auction, since the play frame does
+   not yet carry it. `(behind c n)` is "trails by at least `n`". Pips are named by
+   contexts (`(bears d q)`, `(high-pip d q)`), since before the declaration no suit
+   is called.
+4. **Decisions.** The fallback is the least legal call (a pass when legal, 30 for a
+   forced shaker: the arena's forced bid) and the first declaration offered. A
+   declaring rule names declarations by what their tables make trump (`Trump::of`);
+   of those it allows the first offered decides, so the order offered is the
+   tie-break (the arena's higher pip is the order P6 to P0). The declarations
+   offered are on the auction frame and must agree on the count. Rule names are
+   unique across the sections. There is no exact table for bids: "the 30
+   transcribed hands are its exact table" is read as the policy's table of calls on
+   those hands, pinned in `tests/bidding.rs`, not as an exact layer.
+5. **`bid-only-enough` is the arena's `HeuristicBidder`**, bid and declaration,
+   including its tie-breaks (length, then the trump double), so the 16 declaring
+   rules compare suit lengths with scopes of up to seven roles. The role cap rose
+   from 64 to 256 for it.
+6. **`risk-budget` is our reading** of the book's count, since no one formula gives
+   all its worked numbers: each off risks its trick and the count of the suit it
+   leads (its high pip) that the hand lacks and is not trump, counted once; without
+   the trump double one trump trick is at risk, with the count trumps lacked; a
+   trump suit is three tiles or more; bid 42 less the risk to 12, try 30 with two
+   offs to 17, and 84 on the shape. The shape requires the trump double, which every
+   84 the book bids holds and the shape as stated does not say (without it Hand 10,
+   a pass, is an 84). The reading matches 8 of the 12 risk counts `hands.json`
+   prints. The bid book is the study's 30 hands with the tiles of `hands.json`
+   (Hand 20's figure differs from the variant the study read from the prose).
+7. **`never-32-or-33`** raises past them to 34 (the least level above), else passes.
+
+Measured, exact over all 1,184,040 hands (the opening call):
+
+| policy | pass | bids | the levels |
+|---|---:|---:|---|
+| `bid-only-enough` (the arena's arithmetic) | 780,843 (65.9%) | 403,197 | all 30 |
+| `risk-budget` (our reading) | 647,781 (54.7%) | 536,259 | 30: 260,860; 31: 15,465; 32: 4,180; 33: 24,311; 34: 49,637; 35: 42,795; 36: 10,686; 37: 1,993; 38: 14,302; 39: 34,533; 40: 36,101; 41: 11,422; 42: 3,409; 84: 26,565 |
+
+S-0053-d's "about half of all hands are not biddable" holds under the reading
+(54.7%) and not under the arena's arithmetic (65.9%). S-0153-a's reasoned bids, 30,
+31, 35 and 36, are 61.5% of the reading's bids, 30 alone 48.6%; 32 and 33 are 5.3%;
+34 is bid more often than 35, and 39 and 40 nearly as often: the reading's levels
+follow 42 less a count in fives and a few tricks, not the book's four. On the bid book `risk-budget`
+makes the book's call on 18 of 30 (the commonest call, 30, on 8) and agrees on bid
+or pass on 22 (always bid: 23; Zeb's forecast: 25): as a pass-or-bid rule our
+reading does not beat bidding every hand.
+
+Cost: one core decides `bid-only-enough`'s opening in 13 µs a hand, `risk-budget`'s
+in 150 µs and the arena declaration in 210 µs; all hands take 1 s, 15 s and 20 s on
+18 cores (each run alone; the three together in `tests/bidding.rs`, about 40 s). The cost is the encoding, not the arithmetic: a level is a literal, so
+`risk-budget` is fifteen rules that each derive the risk again under every suit;
+each bound enumerates sets of count tiles over the 28 dominoes per role; the
+declaration compares suit lengths by enumeration. Of the time, about three
+quarters is the scope search and clause evaluation and a fifth the predicates'
+dispatch by name; scheduling a scope's clauses at compile time took a third off
+(allocation had been 15%). The lever is gap 5: an aggregate and bound numbers.
+
+What of gap 4 (#134) this closes and what it leaves is `GAPS.md` § 4.
 
 ### Slice 3: the deal measure and the exact play-out (medium-high; two weeks)
 
