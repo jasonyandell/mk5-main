@@ -8,18 +8,13 @@
 ;
 ; GAP deal-view (see c16-four-of-a-suit). The query is the modal cell for
 ;   one known hand under no trump.
-(query (roles (chair v) (domino a) (domino b) (context q))
-  (out)
-  (pattern
-    (viewer v)
-    (double a)
-    (double b)
-    (holds v a)
-    (holds v b)
-    (none (roles (domino c)) (double c) (not (tile c a)) (not (tile c b)) (holds v c))
-    (not (context q q*))
-    (none (roles (domino d)) (in d q) (holds v d))
-    (none (roles (context r))
-      (not (context r q*))
-      (not (context r q))
-      (none (roles (domino e)) (in e r) (holds v e)))))
+(query
+  (viewer v)
+  (double a)
+  (double b)
+  (holds v a)
+  (holds v b)
+  (none (roles c) (double c) (not (tile c a)) (not (tile c b)) (holds v c))
+  (not (context q q*))
+  (none (roles d) (in d q) (holds v d))
+  (none (roles r) (not (context r q*)) (not (context r q)) (none (roles e) (in e r) (holds v e))))

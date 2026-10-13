@@ -9,13 +9,11 @@
 ;
 ; t is the highest trump in a hidden hand; x is an opponent holding it and
 ; another trump.
-(query (roles (chair v) (chair x) (domino t) (domino o))
-  (out)
-  (pattern
-    (viewer v)
-    (opponent v x)
-    (in t q*)
-    (in o q*)
-    (none (roles (domino u) (chair y)) (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
-    (holds x t)
-    (holds x o)))
+(query
+  (viewer v)
+  (opponent v x)
+  (in t q*)
+  (in o q*)
+  (none (roles u y) (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+  (holds x t)
+  (holds x o))

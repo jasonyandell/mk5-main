@@ -8,13 +8,8 @@
 ;
 ; GAP deal-view (see c16-four-of-a-suit). The query is the six-suit bucket,
 ;   exactly one void pip suit, for one known hand under no trump.
-(query (roles (chair v) (context q))
-  (out)
-  (pattern
-    (viewer v)
-    (not (context q q*))
-    (none (roles (domino d)) (in d q) (holds v d))
-    (none (roles (context r))
-      (not (context r q*))
-      (not (context r q))
-      (none (roles (domino e)) (in e r) (holds v e)))))
+(query
+  (viewer v)
+  (not (context q q*))
+  (none (roles d) (in d q) (holds v d))
+  (none (roles r) (not (context r q*)) (not (context r q)) (none (roles e) (in e r) (holds v e))))

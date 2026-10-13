@@ -98,7 +98,7 @@ fn eval_says_why_each_earlier_rule_passed_and_takes_the_policy_as_its_file() {
     assert!(ok, "{out}");
     assert!(
         out.contains(
-            "passed: rule no-count-on-a-lost-trick: stops at (some (roles (domino his)) (trick-play pard his))"
+            "passed: rule no-count-on-a-lost-trick: stops at (some (roles his) (trick-play pard his))"
         ),
         "{out}"
     );
@@ -139,7 +139,7 @@ fn expand_prints_the_core_and_check_prints_warnings() {
     // check takes a file as well as a directory, and warns without failing.
     let (ok, out) = silas(&["check", "examples/book/crisis.silas"]);
     assert!(ok, "{out}");
-    assert!(out.contains("crisis.silas:78:13: warning: always true: his and l"), "{out}");
+    assert!(out.contains("crisis.silas:62:7: warning: always true: his and l"), "{out}");
     assert!(out.contains("1 compiled, 0 failed, 1 warnings"), "{out}");
 }
 

@@ -20,23 +20,16 @@
 (include book)
 
 (policy protect-the-count
-  (fallback lowest-legal)
-  (rule follow-the-master-without-count
-    (select answer)
-    (guard
-      (query
-        (roles (chair me) (chair pard) (domino led) (context q) (domino plain) (domino counted))
-        (out plain)
-        (pattern
-          (viewer me)
-          (setter me)
-          (not (every-trick))
-          (partner me pard)
-          (bidder-led led)
-          (led-context q)
-          (not (loses-in led q))
-          (none (roles) (trump-set pard) (none (roles (domino his)) (trick-play pard his)))
-          (follower plain)
-          (count plain 0)
-          (follower counted)
-          (count-tile counted))))))
+  (rule follow-the-master-without-count (play plain)
+    (viewer me)
+    (setter me)
+    (not (every-trick))
+    (partner me pard)
+    (bidder-led led)
+    (led-context q)
+    (not (loses-in led q))
+    (or (not (trump-set pard)) (some (roles his) (trick-play pard his)))
+    (follower plain)
+    (count plain 0)
+    (follower counted)
+    (count-tile counted)))

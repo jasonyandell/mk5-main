@@ -7,12 +7,10 @@
 ;   dealt uniformly, seven to each other seat.
 ; Exact: 180/323 = 0.5573 given two of his own, 116/285 = 0.4070 given
 ;   three; unconditionally 0.5810. Book model: 131/243 and 11/27.
-(query (roles (chair v) (chair p) (domino a) (domino b))
-  (out)
-  (pattern
-    (viewer v)
-    (partner v p)
-    (double a)
-    (double b)
-    (holds p a)
-    (holds p b)))
+(query
+  (viewer v)
+  (partner v p)
+  (double a)
+  (double b)
+  (holds p a)
+  (holds p b))

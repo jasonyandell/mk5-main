@@ -7,8 +7,6 @@
 ; claims tricks, not the bid: in Hand 32 the bidder is already set when he
 ; claims (lay-down.silas, the bidder's claim of his bid, does not hold there).
 
-(query (roles (chair c))
-  (out)
-  (pattern
-    (viewer c)
-    (lay-down)))
+(query
+  (viewer c)
+  (lay-down))

@@ -2,12 +2,10 @@
 ; 5-5 5-4 5-2 5-0 4-4 4-2 2-2. The book's first way to be set: an opponent
 ; holds the six-five together with another five, so it can follow the first
 ; trump lead and win a trick with the six-five later.
-(query (roles (chair bidder) (chair foe) (domino other))
-  (out)
-  (pattern
-    (viewer bidder)
-    (opponent bidder foe)
-    (holds foe 6-5)
-    (holds foe other)
-    (in other q*)
-    (not (tile other 6-5))))
+(query
+  (viewer bidder)
+  (opponent bidder foe)
+  (holds foe 6-5)
+  (holds foe other)
+  (in other q*)
+  (not (tile other 6-5)))

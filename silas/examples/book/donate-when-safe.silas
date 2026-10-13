@@ -23,54 +23,40 @@
 (include book)
 
 (policy donate-when-safe
-  (fallback lowest-legal)
-  (rule give-a-ten
-    (select answer)
-    (guard
-      (query (roles (chair me) (domino give))
-        (out give)
-        (pattern
-          (viewer me)
-          (bidders-partner me)
-          (safe-trick)
-          (own-legal give)
-          (count give 10))
-        (pattern
-          (viewer me)
-          (setter me)
-          (last-to-play)
-          (partner-winning)
-          (own-legal give)
-          (count give 10)))))
-  (rule give-a-five
-    (select answer)
-    (guard
-      (query (roles (chair me) (domino give))
-        (out give)
-        (pattern
-          (viewer me)
-          (bidders-partner me)
-          (safe-trick)
-          (own-legal give)
-          (count give 5))
-        (pattern
-          (viewer me)
-          (setter me)
-          (last-to-play)
-          (partner-winning)
-          (own-legal give)
-          (count give 5)))))
-  (rule no-count-on-a-trick-that-can-be-lost
-    (select answer)
-    (guard
-      (query (roles (chair me) (domino give) (domino held))
-        (out give)
-        (pattern
-          (viewer me)
-          (bidders-partner me)
-          (bidder-winning)
-          (not (safe-trick))
-          (own-legal give)
-          (count give 0)
-          (own-legal held)
-          (count-tile held))))))
+  (rule give-a-ten (play give)
+    (pattern
+      (viewer me)
+      (bidders-partner me)
+      (safe-trick)
+      (own-legal give)
+      (count give 10))
+    (pattern
+      (viewer me)
+      (setter me)
+      (last-to-play)
+      (partner-winning)
+      (own-legal give)
+      (count give 10)))
+  (rule give-a-five (play give)
+    (pattern
+      (viewer me)
+      (bidders-partner me)
+      (safe-trick)
+      (own-legal give)
+      (count give 5))
+    (pattern
+      (viewer me)
+      (setter me)
+      (last-to-play)
+      (partner-winning)
+      (own-legal give)
+      (count give 5)))
+  (rule no-count-on-a-trick-that-can-be-lost (play give)
+    (viewer me)
+    (bidders-partner me)
+    (bidder-winning)
+    (not (safe-trick))
+    (own-legal give)
+    (count give 0)
+    (own-legal held)
+    (count-tile held)))

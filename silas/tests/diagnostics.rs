@@ -99,7 +99,7 @@ fn the_crates_files_warn_only_where_a_clause_is_redundant() {
     // seat's own lead is not his follow. Redundant, and harmless.
     let warnings: Vec<String> = warnings.into_iter().map(|w| w.0).collect();
     assert_eq!(warnings.len(), 1, "{warnings:#?}");
-    assert!(warnings[0].starts_with("crisis.silas:78:13: warning: always true: his and l"), "{warnings:#?}");
+    assert!(warnings[0].starts_with("crisis.silas:62:7: warning: always true: his and l"), "{warnings:#?}");
 }
 
 /// S0, the declarer under sixes, to lead after one trick in which S1 showed
