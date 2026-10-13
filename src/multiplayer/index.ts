@@ -45,12 +45,11 @@ export {
   CapabilityBuilder,
   filterActionForSession,
   filterActionsForSession,
-  getVisibleStateForSession,
-  resolveSessionForAction
+  getVisibleStateForSession
 } from './capabilities';
 
 // Authorization
-export { canPlayerExecuteAction, authorizeAndExecute } from './authorization';
+export { canPlayerExecuteAction, authorizeAndExecute, executeSystemAction } from './authorization';
 
 // State Lifecycle
 export {

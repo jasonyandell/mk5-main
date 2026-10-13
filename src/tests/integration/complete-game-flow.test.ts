@@ -6,7 +6,10 @@ import { StateBuilder } from '../helpers';
 import { processSequentialConsensus } from '../helpers/consensusHelpers';
 import { BID_TYPES } from '../../game/constants';
 import type { GameState } from '../../game/types';
+import type { ValidAction } from '../../multiplayer/types';
+import { executeAction } from '../../game/core/actions';
 import { simulateGame } from '../../game/ai/gameSimulator';
+import { selectAIAction } from '../../game/ai/actionSelector';
 
 describe('Complete Game Flow Integration', () => {
   async function playCompleteHand(state: GameState): Promise<GameState> {
@@ -384,33 +387,38 @@ describe('Complete Game Flow Integration', () => {
   });
 
   describe('Beginner AI Strategy', () => {
-    // BLOCKED: Minimax rollout takes ~21 seconds per simulation (see t42-b3h)
-    // Even with 1 sim, 14 bid options = ~5 minutes for bidding alone
-    const beginnerConfig = { aiStrategyConfig: { type: 'beginner' as const, monteCarloConfig: { biddingSimulations: 1, playingSimulations: 1 } } };
+    // Smoke test only. A full beginner game takes minutes (a single opening bid
+    // decision rolls out whole hands); late in a hand one decision takes milliseconds.
+    it('selects one legal play by Monte Carlo', () => {
+      const ctx = createTestContext();
+      let state = createInitialState({ shuffleSeed: 12345, playerTypes: ['ai', 'ai', 'ai', 'ai'] });
+      const seatActions = (s: GameState): ValidAction[] =>
+        ctx.getValidActions(s)
+          .filter(action => !('player' in action) || action.player === s.currentPlayer)
+          .map(action => ({ action, label: action.type }));
 
-    it.skip('should complete game with beginner MCTS strategy', async () => {
-      // Beginner strategy uses MCTS for both bidding and plays
-      const initialState = createInitialState({
-        shuffleSeed: 12345,
-        playerTypes: ['ai', 'ai', 'ai', 'ai']
-      });
-
-      const result = await simulateGame(initialState, {
-        maxHands: 1,
-        maxActions: 1000,
-        allAI: true,
-        ...beginnerConfig
-      });
-
-      // Primary goal: no crashes/hangs
-      expect(result.actionsExecuted).toBeGreaterThan(0);
-      expect(result.winner).toBeGreaterThanOrEqual(0);
-      expect(result.winner).toBeLessThan(2);
-
-      // Game may not reach 7 marks - just verify progress
-      if (result.finalState.phase === 'game_end') {
-        expect(result.finalScores[result.winner]).toBeGreaterThanOrEqual(1);
+      // A 30 bid, three passes, sixes trump; first legal actions through two tricks
+      state = executeAction(state, { type: 'bid', player: state.currentPlayer, bid: BID_TYPES.POINTS, value: 30 }, ctx.rules);
+      while (state.phase === 'bidding') {
+        state = executeAction(state, { type: 'pass', player: state.currentPlayer }, ctx.rules);
       }
-    }, 600000); // 10 minutes - but skipped due to performance
+      state = executeAction(state, { type: 'select-trump', player: state.currentPlayer, trump: { type: 'suit', suit: 6 } }, ctx.rules);
+      while (state.tricks.length < 2 || seatActions(state).filter(v => v.action.type === 'play').length < 2) {
+        expect(state.phase).toBe('playing');
+        const next = ctx.getValidActions(state)[0];
+        expect(next).toBeDefined();
+        state = executeAction(state, next!, ctx.rules);
+      }
+
+      const options = seatActions(state);
+      const chosen = selectAIAction(state, state.currentPlayer, options, {
+        type: 'beginner',
+        monteCarloConfig: { biddingSimulations: 1, playingSimulations: 1, seed: 1 }
+      });
+
+      expect(chosen).not.toBeNull();
+      expect(chosen!.action.type).toBe('play');
+      expect(options.map(v => v.action)).toContainEqual(chosen!.action);
+    });
   });
 });

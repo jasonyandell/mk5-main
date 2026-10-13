@@ -64,11 +64,11 @@ export const oneHandLayer: Layer = {
 
     // During trump selection, inject scripted trump choice
     if (state.phase === 'trump_selection') {
-      // Winner of bid (stored in winningBidder) selects trump
+      // The trump selector (currentPlayer, set by rules.getTrumpSelector) selects trump
       return [
         {
           type: 'select-trump' as const,
-          player: state.winningBidder,
+          player: state.currentPlayer,
           trump: { type: 'suit' as const, suit: 4 }, // Fours as trump
           autoExecute: true,
           meta: { scriptId: 'one-hand-setup', step: 5, authority: 'system' as const }

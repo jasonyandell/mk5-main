@@ -4,6 +4,10 @@
  * Core composition: authorization + execution.
  * This is the fundamental operation for multiplayer - ensures only authorized
  * actions can mutate state.
+ *
+ * Authority never comes from a request payload. A request is matched against
+ * the server's own candidates (ctx.getValidActions), and what executes is the
+ * matched candidate - never the client's copy, whose metadata is ignored.
  */
 
 import type { GameState, GameAction } from '../game/types';
@@ -11,7 +15,7 @@ import type { MultiplayerGameState, ActionRequest, Result, PlayerSession } from 
 import type { ExecutionContext } from '../game/types/execution';
 import { ok, err } from './types';
 import { executeAction } from '../game/core/actions';
-import { filterActionsForSession } from './capabilities';
+import { filterActionForSession } from './capabilities';
 
 function actionsMatch(expected: GameAction, actual: GameAction): boolean {
   if (expected.type !== actual.type) {
@@ -43,6 +47,33 @@ function actionsMatch(expected: GameAction, actual: GameAction): boolean {
   }
 }
 
+/** Whether a server-generated candidate declares system authority. */
+function declaresSystemAuthority(candidate: GameAction): boolean {
+  return candidate.meta?.authority === 'system';
+}
+
+/** The server's candidate a session may execute for the requested action, if any. */
+function authorizedCandidate(
+  session: PlayerSession,
+  action: GameAction,
+  candidates: GameAction[]
+): GameAction | undefined {
+  return candidates.find(candidate =>
+    actionsMatch(candidate, action) && filterActionForSession(session, candidate) !== null
+  );
+}
+
+function commit(
+  mpState: MultiplayerGameState,
+  candidate: GameAction,
+  ctx: ExecutionContext
+): Result<MultiplayerGameState> {
+  return ok({
+    ...mpState,
+    coreState: executeAction(mpState.coreState, candidate, ctx.rules)
+  });
+}
+
 /**
  * Checks if a player session is authorized to execute a specific action.
  *
@@ -56,17 +87,14 @@ export function canPlayerExecuteAction(
   state: GameState,
   ctx: ExecutionContext
 ): boolean {
-  const validActions = ctx.getValidActions(state);
-  const visibleActions = filterActionsForSession(session, validActions);
-  return visibleActions.some(candidate => actionsMatch(candidate, action));
+  return authorizedCandidate(session, action, ctx.getValidActions(state)) !== undefined;
 }
 
 /**
- * Core composition: authorization + execution.
+ * Player authority: execute a client's request (the wire path).
  *
- * Two execution paths:
- * 1. System authority: Scripted actions bypass capability checks (e.g., one-hand transformer)
- * 2. Player authority: Standard capability-based authorization (default)
+ * The request must match a valid candidate the session holds capabilities for.
+ * A client never carries system authority, whatever its payload claims.
  */
 export function authorizeAndExecute(
   mpState: MultiplayerGameState,
@@ -74,50 +102,43 @@ export function authorizeAndExecute(
   ctx: ExecutionContext
 ): Result<MultiplayerGameState> {
   const { playerId, action } = request;
-  const { coreState, players } = mpState;
 
-  const session = players.find(p => p.playerId === playerId);
+  const session = mpState.players.find(p => p.playerId === playerId);
   if (!session) {
     return err(`No player found with ID: ${playerId}`);
   }
 
-  const meta = (action as { meta?: unknown }).meta;
-  const hasSystemAuthority = meta && typeof meta === 'object' &&
-    'authority' in meta && meta.authority === 'system';
-
-  if (hasSystemAuthority) {
-    const validActions = ctx.getValidActions(coreState);
-    const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
-    if (!isStructurallyValid) {
-      return err(`Action is not valid in current game state: ${action.type}`);
-    }
-
-    const newCoreState = executeAction(coreState, action, ctx.rules);
-    return ok({
-      ...mpState,
-      coreState: newCoreState
-    });
-  }
-
-  const validActions = ctx.getValidActions(coreState);
-  const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
-  if (!isStructurallyValid) {
+  const candidates = ctx.getValidActions(mpState.coreState);
+  if (!candidates.some(candidate => actionsMatch(candidate, action))) {
     return err(`Action is not valid in current game state: ${action.type}`);
   }
 
-  const allowedActions = filterActionsForSession(session, validActions);
-  const matchedAction = allowedActions.find(candidate => actionsMatch(candidate, action));
-
-  if (!matchedAction) {
-    return err(
-      `Player ${playerId} lacks capability to execute action: ${action.type}`
-    );
+  const candidate = authorizedCandidate(session, action, candidates);
+  if (!candidate) {
+    return err(`Player ${playerId} lacks capability to execute action: ${action.type}`);
   }
 
-  const newCoreState = executeAction(coreState, action, ctx.rules);
+  return commit(mpState, candidate, ctx);
+}
 
-  return ok({
-    ...mpState,
-    coreState: newCoreState
-  });
+/**
+ * System authority: the engine executes one of its own scripted actions
+ * (auto-execute: the one-hand script, redeal, speed-mode forced moves).
+ *
+ * Reachable only from the server context, and only for a candidate the layers
+ * themselves marked `meta.authority: 'system'`. No session is involved.
+ */
+export function executeSystemAction(
+  mpState: MultiplayerGameState,
+  action: GameAction,
+  ctx: ExecutionContext
+): Result<MultiplayerGameState> {
+  const candidate = ctx.getValidActions(mpState.coreState).find(c =>
+    actionsMatch(c, action) && declaresSystemAuthority(c)
+  );
+  if (!candidate) {
+    return err(`No system-authority action available in current game state: ${action.type}`);
+  }
+
+  return commit(mpState, candidate, ctx);
 }
