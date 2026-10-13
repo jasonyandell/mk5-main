@@ -19,6 +19,12 @@
 ; gate has no rule for the other setter (S-0073-c) or for the lead (S-0075-a).
 ; "As strong as the bidder's" compares two holdings; the closest viewer fact
 ; is holding the top trump still out.
+; Coverage (issue 141): the book narrates three trump sets (Hands 32, 34, 35)
+; and no hand where these rules apply; in each the bidder draws the holder's
+; last trump before any double the holder is void in. The ruffs ask, as the
+; gate did, for a second legal trump (the gate's reading of the trump-rich
+; holder); dropping it adds one frame in 3,000 random deals. They fire rarely:
+; 328 of the pour's 4,343,426 positions.
 
 (include book)
 

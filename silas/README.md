@@ -978,8 +978,13 @@ coverage of policy protect-the-count over 205 frames of the book's 33 hands (...
   the fallback decided 203 of 205
 ```
 
-Over 100 random deals, the trump-set rules never fire: a trump set alone is
-rare in random play, and the funnel shows each stops at the setter's ruff.
+The trump-set rules are rare, not mis-guarded (issue 141). Over the book's
+205 frames none decides: it narrates three trump sets (Hands 32, 34, 35) and no
+position where the rules apply, and the three frames that reach the setter's
+ruff hold no trump. Over 3,000 random deals (84,205 frames) the three ruffs
+never fire: 29 frames reach the ruff, one holds a trump, and it holds only one
+(a rule without the second-trump clause would fire there, once); the feed fires
+3 times and the lead 41. In the pour the ruffs fire at 328 of 4,343,426 positions.
 `tests/diagnostics.rs` holds each warning, the funnel and the counts.
 
 ## Examples
