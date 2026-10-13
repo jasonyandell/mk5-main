@@ -7,6 +7,7 @@
 //! over a belief yields exact probabilities, each carrying its [`Authority`].
 //! A [`PolicyProgram`] chooses plays from what the viewer alone can see. A
 //! [`Solver`] is the perfect-information reference: it sees all four hands.
+//! [`forces`] and [`lay_down`] are what the viewer can guarantee without it.
 //!
 //! Silas owns the nouns of the game, the language, and every derived rule. A
 //! rules engine supplies only one declaration's tables, through
@@ -19,6 +20,7 @@ mod eval;
 mod frame;
 mod measure;
 mod nouns;
+mod outcome;
 mod physics;
 mod policy;
 pub mod reference;
@@ -35,6 +37,7 @@ pub use eval::{Answer, Answers, Budget, CompiledQuery, Witness};
 pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
 pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
+pub use outcome::{Goal, OUTCOME_SCAN_CAP, forces, lay_down};
 pub use physics::{Declaration, Physics};
 pub use policy::{
     Allowed, CompiledPolicy, DecisionProvenance, ExactRule, Fallback, GuardWitnesses, PolicyDecisionTrace, PolicyKey,

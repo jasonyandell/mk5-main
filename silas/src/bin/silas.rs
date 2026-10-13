@@ -8,7 +8,8 @@
 //! ```
 //!
 //! A position is a hand of `examples/book/hands.json` (or `--book`): a full
-//! deal at the point of its narrated line where `--seat` (bidder, left,
+//! deal at the point of its narrated line (its tricks, then its tail, up to
+//! the first play the book does not name) where `--seat` (bidder, left,
 //! partner, right) is to play to trick `--trick` (default: the opening lead),
 //! seen from that seat; or a hand the book gives alone, seen by its bidder
 //! before the first lead. The bidder sits in S0.
@@ -148,12 +149,16 @@ fn position(options: &Options) -> Result<(Frame, String)> {
         let frame = Frame::new(contract, Seat::S0, hands[0], vec![])?;
         return Ok((frame, format!("{id}: the bidder's hand before the opening lead")));
     }
+    // The narrated tricks' plays and then the tail's, up to the first the
+    // book does not name.
     let mut narrated = Vec::new();
-    for t in line.map_or(&empty, |l| l["tricks"].as_array().unwrap_or(&empty)) {
+    let tricks = line.map_or(&empty, |l| l["tricks"].as_array().unwrap_or(&empty));
+    let tail = line.map(|l| &l["tail"]).into_iter().filter(|t| t.is_object());
+    'line: for t in tricks.iter().chain(tail) {
         for play in t["plays"].as_array().unwrap_or(&empty) {
             match play[1].as_str() {
                 Some(tile) => narrated.push(tile.parse::<Domino>()?),
-                None => break,
+                None => break 'line,
             }
         }
     }

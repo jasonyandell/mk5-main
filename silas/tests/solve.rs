@@ -6,32 +6,6 @@ use common::*;
 use silas::reference::Straight42;
 use silas::*;
 
-/// A small deterministic generator (splitmix64), so every sampled position is
-/// reproducible from its seed.
-struct Rng(u64);
-
-impl Rng {
-    fn next(&mut self) -> u64 {
-        self.0 = self.0.wrapping_add(0x9e37_79b9_7f4a_7c15);
-        let mut z = self.0;
-        z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-        z ^ (z >> 31)
-    }
-
-    fn below(&mut self, n: usize) -> usize {
-        (self.next() % n as u64) as usize
-    }
-
-    fn shuffled(&mut self) -> Vec<Domino> {
-        let mut tiles = Domino::ALL.to_vec();
-        for i in (1..tiles.len()).rev() {
-            tiles.swap(i, self.below(i + 1));
-        }
-        tiles
-    }
-}
-
 /// A random position with `tricks` tricks still to finish: a random
 /// declaration, declarer, leader, bid and banked points, and a random number
 /// of plays already on the table.

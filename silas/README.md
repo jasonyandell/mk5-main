@@ -150,13 +150,22 @@ transcription would check it against.
   whose reads are all admitted over `uniform_resolving(f, T)` equals its
   summary over `uniform(f)`, exactly, and a refused read is an error, never an
   approximation.
+- **Outcomes quantify over the fiber and the rest of the hand.** `(lay-down)`,
+  `(certain-make)` and `(certain-set)` are Viewer atoms whose truth at `f` is a
+  statement about every world of `f` and every play to the end of the hand:
+  what the viewer can force, from his frame alone, against every play of the
+  other three seats. `(dd-make)` is a World atom: the double-dummy outcome in
+  one world, an upper bound on any such guarantee. Each answers exactly or is
+  refused (Solved outcomes, below).
 
 ## Predicates
 
-All built-ins have horizon zero. Each carries the version in which its
+The core built-ins have horizon zero. Each carries the version in which its
 meaning last changed: `silas-v0/core` for the first set, `silas-v1/core` for
 the record's first predicates, `silas-v2/core` for those that changed or came
-with the one-frame record and the full contract (marked v2). *World* access
+with the one-frame record and the full contract (marked v2). The four outcome
+predicates, version `silas-v3/outcome`, look to the end of the hand (Solved
+outcomes, below). *World* access
 means the predicate reads a hidden world; *Viewer* means it reads only the
 frame.
 
@@ -195,6 +204,9 @@ frame.
 | `played-to(l,c,d)` | Viewer | Seat `c` played `d` to the trick led by `l` (`d` is `l` for its leader). |
 | `trick-of(d,n)` | Viewer | `d` was played to the `n`-th trick. |
 | `shown-void(c,q)` | Viewer | Seat `c` has publicly failed to follow `q`, read off the record. For a hidden seat it is the void that forbids its worlds. |
+| `lay-down()` | Viewer | v3: some fixed sequence of the viewer's tiles wins every remaining trick in every world, against every play of the other three seats; undefined unless the viewer is to play. |
+| `certain-make()`, `certain-set()` | Viewer | v3: the viewer, choosing from his frame alone, forces the make (the set) in every world against every play of the other three seats; undefined unless that is his side's goal. |
+| `dd-make()` | World | v3: in this world the declaring side makes from here under double-dummy play. |
 
 Numbers and teams are literal-only, so `banked` and `to-set` take a chair and
 a trick is named by its lead: "one trump trick so far, led by the bidder" is
@@ -423,6 +435,104 @@ an unpruned search of Hand 28's whole game tree memoized only on exact
 trick-start states, to seat rotation, and to Hand 28's narrated line, which
 it replays to the 25 and 17 the book awards.
 
+## Solved outcomes
+
+The book's tournament rule forfeits a bidder who lays his hand down when some
+hidden layout and some defence could set him (Roberson, *Winning 42*, Ch. 14).
+Its question is not what happens in one world under best play by everyone. It
+is what one player can guarantee without seeing the hidden hands. Four
+predicates answer it and bound it. Each looks to the end of the hand (horizon
+28 plies), and each is exact when it answers and refused, never approximated,
+when the work exceeds its caps.
+
+Let `v` be the viewer, `f` his frame and `W(f)` its fiber. The *goal* of `v`'s
+side is the make if `v` is on the declaring side, the set if not. The hand is
+*settled* for the make once the declaring side has banked its threshold, and
+for the set once the other side has banked the rest of the points plus one;
+one or the other holds once every trick is played.
+
+- **`(lay-down)`** (Viewer; defined when `v` is to play). True when some fixed
+  sequence of `v`'s own tiles wins every remaining trick in every world of
+  `W(f)` against every legal play of the other three seats, his partner's
+  included. The sequence is his play to the open trick, if he is following,
+  then one lead per trick. It is chosen once, from the frame, and reads nothing
+  hidden, so it is a line `v` can play. "Every world, every play" is the rule's
+  "any hidden layout and any defence", so for this one line the guarantee is
+  exact.
+- **`(certain-make)`** (Viewer; defined when `v` is on the declaring side). True
+  when some strategy for `v` makes the contract in every world of `W(f)`
+  against every legal play of the other three seats. A strategy is a choice of
+  tile at each of `v`'s frames, so it is a function of what he sees and never
+  of the world. **`(certain-set)`** is the same for a setter and the set.
+- **`(dd-make)`** (World). True in a world when the declaring side makes from
+  here under double-dummy play: both sides see all four hands and play their
+  best (the `Solver`, `Objective::Make`).
+
+**Whose play is optimized.** In `(certain-make)` and `(certain-set)` it is
+`v`'s alone, over strategies that read only his frame. The setters' plays range
+over every legal play, and so do his partner's: the guarantee stands on `v`'s
+own choices, as a claim does. It is therefore a lower bound on what `v`'s side
+could guarantee with a partner who plays to the same goal from his own
+information. That team guarantee is not computed (`GAPS.md`, 8). In
+`(dd-make)` every seat is optimized, and each world gets its own best line.
+
+**The order.** For a viewer on the declaring side, at a frame where taking
+every remaining trick reaches the threshold:
+
+```text
+(lay-down)  =>  (certain-make)  =>  his side can force the make  =>  (dd-make) in every world
+```
+
+Each implication is strict. The last is the double-dummy bound. In each world
+the declaring side may play a different line, one that reads the hidden hands
+(strategy fusion), so per-world minimax bounds every real guarantee from above
+and is never below one. For a setter, `(certain-set)` implies `(dd-make)` is
+false in every world.
+
+**How `(lay-down)` is decided.** While every lead is `v`'s, a seat's replies
+depend only on its own hand and `v`'s tiles, and the seats do not interact.
+So the line fails if and only if some seat, holding some hand it holds in some
+world, has a sequence of legal replies that leaves it a tile beating `v`'s in
+some trick. Silas lists each hidden seat's possible hands: the fiber's
+projection to that seat, a hand of the right size from the tiles its voids
+allow, whose rest the other two seats can hold (Hall's condition for two). It
+then carries, trick by trick, every hand each seat could still hold, and
+searches the orders of `v`'s tiles depth first. The answer is exact, and the
+work is charged to the budget.
+
+**How `(certain-make)` and `(certain-set)` are decided.** In order:
+
+1. A settled hand, or a goal out of reach even taking every remaining trick,
+   answers at once.
+2. If `v` is to play and `(lay-down)` holds, the answer is true: taking every
+   remaining trick reaches any goal that is still in reach.
+3. Silas looks through the worlds of `W(f)` for one where double-dummy play
+   fails `v`'s goal. It reads at most `OUTCOME_SCAN_CAP` (10,000) of them, in
+   a fixed order that would visit every world once (a stride coprime to the
+   fiber's size). One such world is a proof that the answer is false: the
+   defence that sets every declaring line there sets every strategy of `v`.
+   Nothing is concluded from not finding one.
+4. Otherwise Silas searches `v`'s information states, an and-or search over
+   frames. At `v`'s turn some legal tile must win. At another seat's turn
+   every tile that some world lets it play must lose; such a tile is one
+   whose frame exists. Every play is public, so `v`'s information state after
+   a history is exactly that history's frame, and the worlds still possible
+   are its fiber. The search is therefore exact over `v`'s strategies. It
+   memoizes on the record, stops at step 1 and 2's answers, and is refused
+   when it exceeds the budget.
+
+**Authority.** The three Viewer predicates read the frame and compute over its
+whole fiber; their value is the same at every point of any belief. `(dd-make)`
+reads every hidden tile. Over `uniform_resolving` it is refused unless every
+pool tile is resolved, so `uniform_for` resolves the whole pool and the
+belief's cap refuses a fiber beyond it. An answer over an enumerated fiber is
+exact.
+
+`examples/book/lay-down.silas` is the book's rule. `tests/outcome.rs` holds the
+predicates to brute force on small positions and checks the double-dummy
+bound against them. It also checks the book's lay-downs, Hands 21 and 22, and
+hands that look as strong but can be set.
+
 ## Numbers
 
 Weights are exact rationals (`Weight`, a nonnegative `BigRational`). Silas
@@ -460,8 +570,9 @@ silas check [DIR ...]
 ```
 
 A position is a hand of `examples/book/hands.json`: a full deal at the point
-of its narrated line where `--seat` (`bidder`, `left`, `partner`, `right`) is
-to play to trick `--trick` (default: the opening lead), seen from that seat;
+of its narrated line (its tricks, then its tail, up to the first play the book
+does not name) where `--seat` (`bidder`, `left`, `partner`, `right`) is to
+play to trick `--trick` (default: the opening lead), seen from that seat;
 or a hand the book gives alone, seen by its bidder before the first lead. The
 bidder sits in S0. `eval` prints the position, the deciding layer, the fired
 rule's witnesses and the allowed set:
@@ -481,7 +592,19 @@ policy c01a-top-trump-for-the-donation
 ```
 
 `query` prints the exact answer over the worlds the seat cannot tell apart,
-with its authority, resolving only the tiles the query reads. `fmt` formats
+with its authority, resolving only the tiles the query reads:
+
+```text
+$ silas query examples/book/lay-down.silas --hand hand-21
+hand-21: the bidder's hand before the opening lead
+  straight42/P2 (tables-38dc…); the bidder S0 bids 84: 42 points for 2 mark(s)
+  banked: T0 0, T1 0; hand: 1-1 2-0 2-2 3-3 5-2 5-5 6-2
+query examples/book/lay-down.silas
+  399072960 worlds, as 1 points resolving nothing
+  P(answer) = 1 (exact)
+```
+
+`fmt` formats
 canonically and idempotently: comments kept on their own lines, a form on one
 line when it fits in 100 columns (policies, rules, queries, patterns and
 definitions always take a line per item), at most one blank line kept. Every
@@ -505,7 +628,10 @@ bidder through `declarer` and is tested at all four seatings.
 of what that study priced (`tests/book.rs`); `tests/book_snapshot.rs` pins
 what each gate allows on the book's deals and on 1,600 random ones.
 `examples/book/odds/` holds the odds the book prints, one query per claim
-(`tests/book_odds.rs`). `GAPS.md` lists what the rules still cannot say.
+(`tests/book_odds.rs`). The book's claims of certainty are queries on the
+solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
+book's test for one), `claim-the-rest` and `cannot-be-set`
+(`tests/outcome.rs`). `GAPS.md` lists what the rules still cannot say.
 
 ## Provenance
 

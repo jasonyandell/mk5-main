@@ -100,7 +100,8 @@ impl Registry {
 
     /// The built-in relations. Each carries the version in which its meaning
     /// last changed: `silas-v0/core` for the first set, `silas-v1/core` and
-    /// `silas-v2/core` for those that read the hand's record.
+    /// `silas-v2/core` for those that read the hand's record, and
+    /// `silas-v3/outcome` for the solved outcomes, which look to the hand's end.
     pub fn standard() -> Self {
         use Access::{Viewer, World};
         use Sort::{Chair as C, Context as Q, Domino as D, Number as N, Team as T};
@@ -163,6 +164,9 @@ impl Registry {
                 access,
             };
             registry.register(Builtin(spec)).expect("built-in names are unique and valid");
+        }
+        for outcome in crate::outcome::predicates() {
+            registry.register(outcome).expect("outcome names are unique and valid");
         }
         registry
     }

@@ -3969,3 +3969,7 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-12 | scratch/book | the book graded with the honest tools: rules priced on the pour, bid book 25/30, three odds corrected, conventions null in S/R/SR arms (handoff −0.013 sender, reading +0.000)]
 
 [[book-study-2026-10-12]] (new); [[scenario-player]] § A convention overlay (arena verdicts); [[w42]] (dated paragraph). Data: the research archive's `book/wave1/`, `book/wave2/`. Follow-ups #118.
+
+## [2026-10-12 | scratch/faceoff | the book face-off (#119): at the same gates the oracle's E[Q] n=10 picks the book's tile more often than Zeb (56.4% vs 51.5%), the field net more still; "Zeb and the book agree" corrected to "the book's tile is cheap under Zeb's plan"; the oracle-era verdicts agree in sign where they overlap]
+
+[[book-study-2026-10-12]] § The face-off (new section; summary bullets corrected); [[w42]] paragraph corrected; CLAUDE.md player bullet. Regret under Zeb's q separates strong from weak; book agreement barely does. Ties: 17.6% of gated rows dead (#120). Stronger-Zeb re-plan still running.

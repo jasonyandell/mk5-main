@@ -35,6 +35,28 @@ fn query_prints_the_exact_answer_with_its_authority() {
 }
 
 #[test]
+fn query_states_the_lay_down_and_the_claim_exactly() {
+    let (ok, out) = silas(&["query", "examples/book/lay-down.silas", "--hand", "hand-21"]);
+    assert!(ok && out.contains("399072960 worlds, as 1 points resolving nothing"), "{out}");
+    assert!(out.contains("P(answer) = 1 (exact)"), "{out}");
+    let (ok, out) = silas(&["query", "examples/book/lay-down.silas", "--hand", "hand-34"]);
+    assert!(ok && out.contains("P(answer) = 0 (exact)"), "{out}");
+    // Hand 32's claim is in the narrated line's tail: the 5-4 led, the bidder to play.
+    let args = ["--hand", "hand-32", "--trick", "4", "--seat", "bidder"];
+    let (ok, out) = silas(&[&["query", "examples/book/claim-the-rest.silas"][..], &args].concat());
+    assert!(ok && out.contains("S3:5-4\n") && out.contains("P(answer) = 1 (exact)"), "{out}");
+    // The double-dummy bound reads every hidden tile: refused above the cap.
+    std::fs::write(
+        std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("dd.silas"),
+        "(query (roles)\n  (out)\n  (pattern (dd-make)))\n",
+    )
+    .unwrap();
+    let dd = concat!(env!("CARGO_TARGET_TMPDIR"), "/dd.silas");
+    let (ok, out) = silas(&["query", dd, "--hand", "hand-21"]);
+    assert!(!ok && out.contains("exceeds its cap of 100000 points"), "{out}");
+}
+
+#[test]
 fn check_compiles_every_example_and_fmt_checks_and_rewrites() {
     let (ok, out) = silas(&["check"]);
     assert!(ok && out.contains(" 0 failed"), "{out}");

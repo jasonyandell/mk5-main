@@ -25,7 +25,7 @@
 //! side's points still to come. Those bounds are facts about the state alone,
 //! so one table serves both objectives and every position of a deal.
 
-use crate::frame::Contract;
+use crate::frame::{Contract, Frame, World};
 use crate::nouns::{Context, Domino, DominoSet, Seat};
 use crate::physics::Physics;
 use crate::{Result, error};
@@ -83,6 +83,22 @@ impl OpenPosition {
             return Err(error("the hands' sizes disagree with the trick's plays"));
         }
         Ok(OpenPosition { contract, hands, leader, trick, banked })
+    }
+
+    /// A frame's position in one of its worlds: the world's four hands, and
+    /// the frame's contract, open trick and banked points.
+    pub fn at(frame: &Frame, world: &World) -> Result<OpenPosition> {
+        if !frame.contains(world) {
+            return Err(error("the world is outside this frame's support"));
+        }
+        OpenPosition::of(frame, Seat::ALL.map(|s| world.hand(s)))
+    }
+
+    /// The frame's position with these four hands, which the caller has read
+    /// from one of its worlds.
+    pub(crate) fn of(frame: &Frame, hands: [DominoSet; Seat::COUNT]) -> Result<OpenPosition> {
+        let trick = frame.prefix().to_vec();
+        OpenPosition::new(frame.contract().clone(), hands, frame.leader(), trick, frame.banked())
     }
 
     pub fn contract(&self) -> &Contract {

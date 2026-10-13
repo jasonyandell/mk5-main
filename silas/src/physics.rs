@@ -183,6 +183,18 @@ impl Physics {
         let fiber = Fiber::new(self, kernel);
         (0..fiber.count()).map(move |k| kernel.world(fiber.unrank(k)))
     }
+
+    /// The worlds numbered `order` in [`Physics::worlds`]'s order, each taken
+    /// modulo the number of worlds; none when there are none.
+    pub(crate) fn worlds_at<'a>(
+        &'a self,
+        kernel: &'a Kernel,
+        order: impl Iterator<Item = u128> + 'a,
+    ) -> impl Iterator<Item = World> + 'a {
+        let fiber = Fiber::new(self, kernel);
+        let n = fiber.count();
+        order.take_while(move |_| n > 0).map(move |k| kernel.world(fiber.unrank(k % n)))
+    }
 }
 
 impl Tables {

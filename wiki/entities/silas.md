@@ -154,6 +154,36 @@ defender choosing without seeing the hands, so a short grade is a question for t
 book's reasoning, not a verdict on it. Hand 33's narrated line breaks follow-suit at
 trick six and is graded to there.
 
+## Solved outcomes
+
+The book's claims of certainty (the tournament lay-down rule, "cannot be set") are about
+what one player can guarantee without seeing the hidden hands. They are not about
+best play by everyone in one world. Four predicates (2026-10-13, `silas/README.md`
+§ Solved outcomes) state them:
+
+- `(lay-down)`: one fixed order of the viewer's tiles wins every trick left, in every world
+  and against every play of the other three seats.
+- `(certain-make)` and `(certain-set)`: the viewer, choosing from his frame alone, forces his
+  side's goal against every play of the other three, his partner's included.
+- `(dd-make)`: the per-world double-dummy outcome, an upper bound on any such guarantee.
+
+The first three answer exactly or are refused. A lay-down proves the goal; one
+double-dummy counterexample among 10,000 worlds refutes it. Otherwise an and-or search
+over the viewer's frames decides it, since every play is public and his information
+state is the frame. `tests/outcome.rs` holds them to brute force.
+
+Results:
+
+- Hands 21 and 22 lay down and are certain at every seating. The four-fives 84 of Hand 34
+  is refuted at once.
+- The book's lay-down shape is sufficient, not necessary.
+- Hand 32's claim is of tricks, made already set.
+- Once Hand 26's trumps are cleared, double dummy makes in all 756,756 worlds, but the
+  bidder alone cannot force the make. The book's "cannot be set" is the bound's.
+
+What the partnership can force together with a partner of his own information is open
+(`silas/GAPS.md`, 8).
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the
