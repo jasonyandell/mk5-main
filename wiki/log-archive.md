@@ -3977,3 +3977,38 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-12 | scratch/faceoff | face-off closed: the four "contradicts" verdicts survive a k1,n2048 re-plan (prices unchanged, 91–97% survive); dead rows revived at a live bid put Zeb level with the oracle on the book (55.1% vs 56.4%); the book is the authority on reasoning, a counterexample is the standard for siding against it (#121)]
 
 [[book-study-2026-10-12]] § The face-off (re-plan table, "what agreement should mean"). Data: research archive `book/faceoff/`. #119 closed; #120, #121 open.
+
+## [2026-10-12 | silas | Silas: the relational query and policy language moved from texas-42, renamed, over a Physics boundary; exact numbers with authority labels; the 84 hand at exactly 33/95]
+
+**Added:** [[silas]] (entity); `silas/` crate (54 tests). **Updated:** CLAUDE.md project bullet; index-entities.
+**Ruling:** off-suit plays tie at the bottom of the trick key (texas-42 lean `Declaration.key`), not by pip.
+
+## [2026-10-13 | silas | Silas on Zeb's rules: ZebPhysics over Rules + Fiber, differentially tested against Straight42 (no disagreement); Python bindings in scenario_core; legal_plays keyed by the led tile]
+
+**Updated:** [[silas]] (§ On Zeb's rules, Next). Code: `scenario/core/src/physics.rs`, `python_silas.rs`, `tests/silas_physics.rs`; `scenario/silas.py`, `scenario/tests/test_silas.py`.
+**Flag:** the hub must reinstall the core wheel (`python -m pip install ./scenario/core`): maturin now builds with `silas`.
+
+## [2026-10-13 | silas | the book, rule by rule: 21 gates as Silas policies on the book's own deals; at least 10 of 21 Python gates misread the book; ten gaps filed]
+
+**Updated:** [[silas]] § The book, rule by rule; [[book-study-2026-10-12]] (the per-rule prices are the gates', not the book's). Also landed: Silas on Zeb's rules (`ZebPhysics`, differential test, Python bindings).
+**Issues opened:** #126–#135 (`silas` label), the gaps in `silas/GAPS.md`.
+
+## [2026-10-13 | 0c5d7f66 | Silas slice 3: the record in the frame, `none`, ten record predicates; 20 of 21 book rules encode their gate, at every seating]
+
+**Updated:** [[silas]] § The book, rule by rule, § On Zeb's rules. Code: `silas/` (frame, eval, registry, policy), `silas/GAPS.md` (Closed: #126, #127, #129, #131, #133).
+
+## [2026-10-13 | scratch/silas-reprice | the book's rules as Silas policies, priced on the whole 250k pour: 17 of 21 fire exactly where their gates do; C22 as the book's rule sides more (+0.58, 5% against); C15 and C2 re-measured weak]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as Silas policies (fidelity and price tables; verdict lines for C2, C15, C22 corrected in place); [[w42]], `index-experiments.md` (sides with 8 rules).
+
+## [2026-10-13 | scenario/reason | Zeb's reason report (#124): the plan's line in both engines, opt-in and bit-identical; the separating facts as Silas queries with a noise bar; the 84's reason found by search at 33/95]
+
+**Updated:** [[scenario-player]] § The reason report. Code: `scenario/reason.py`, `Walt.analyze(line=True)` / `core::planner::analyze_line`, `SilasBelief.condition_likelihood`. Worked examples: `scratch/reason/`.
+
+## [2026-10-13 | src/multiplayer | system authority only from the server: a client's forged `meta.authority` is refused; the auto-execute loop runs `executeSystemAction` (#96)]
+
+**Updated:** [[multiplayer-pattern]] § Capability system (two authorization paths; `resolveSessionForAction` retired).
+
+## [2026-10-13 | d83c7b1d | Silas engineering pass: a policy is a function of the frame, one frame with derived views, physics as tables with the fiber Silas's own, the contract's kind and stake, authority a lattice; the book prelude; the `silas` command]
+
+**Updated:** [[silas]] § The engineering pass; `silas/README.md` (§ Semantics, the denotation written down); `silas/GAPS.md` § Closed. Zeb: `ZebPhysics` a table provider, its own rules under differential test. Pins: `silas/tests/book_snapshot.rs`.

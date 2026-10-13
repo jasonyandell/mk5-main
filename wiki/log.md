@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-12, 210 archived entries)
+## Digest (2026-04-09 → 2026-10-13, 218 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -28,12 +28,21 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Zeb 0.1.0, the viz, research night, the first repair** (2026-10-11 → 10-12, 6 archived entries) — the live bidder graded against Plunge's frozen bid book, `@jasonyandell/zeb` 0.1.0 in WebAssembly, the splat visualizer and its region query, research night (T1/T1′/T2, Lean, the counterexample lab; [[research-night-2026-10-12]]), the field net graded by regret not agreement (#109). Hub: [[scenario-player]].
 - **Zeb's foundation repairs and the convention overlay** (2026-10-12, 6 archived entries) — the floor only on sampled fibers (Zeb 0.2.0, #110), the rung-free sample seed (#112), the stochastic field (#108), O2 over the O1 fixed point on endgames ([[endgames-o2-vs-o1-2026-10-12]], #113), the posterior sampler (#111), the convention overlay. Hub: [[scenario-player]].
 - **The book graded with the honest tools** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]]: the rules priced on the pour, the bid book, the conventions null in the arena.
+- **Silas arrives** (2026-10-12 → 10-13, 8 archived entries) — [[silas]] moved from texas-42 and renamed, on Zeb's rules, the 21 gates written and priced, the record in the frame, the engineering pass; Zeb's reason report ([[scenario-player]]); server-only system authority ([[multiplayer-pattern]]).
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-13 | 8d42bf70 | silas short forms (inferred roles; optional out, pattern, fallback; and/or/not; `(play x)`) read to the identical core, pinned for every file; lint warnings and `silas coverage` for rules that never fire; book rules, prelude and examples rewritten (−453 lines), gates kept explicit]
+
+**Touched pages:** [[silas]]
+
+## [2026-10-13 | fae0495a | silas perf: the time was CPU defects, not a GPU gap — fiber count over reachable states, allocation-free clause evaluation (re-price 12 → 4.5 µs/call), debug test profile at opt-level 1 (killed at 300 s → 34 s); exact MPS world counting 450 ms against Silas's 2.2 ms, so no GPU path]
+
+**Touched pages:** [[silas]]
 
 ## [2026-10-13 | scripts/check | one front door for every suite (`scripts/check`, `--fast`); the log merges without conflict and rotates only on main; the archive restored from a bad merge (210 entries)]
 
@@ -66,38 +75,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | silas | the book's rules as the book means them: fourteen policies in `examples/book/`, the 21 gates moved to `examples/book/gates/`; every catalogued mis-encoding tested on the book's own positions, gate failing and rule passing]
 
 [[silas]] § The book, rule by rule (rewritten: the rule table); `silas/GAPS.md` (gap 3 down to the donation lead, gap 5's "what sets" closed for one called tile, three self-contradictions recorded).
-
-## [2026-10-13 | d83c7b1d | Silas engineering pass: a policy is a function of the frame, one frame with derived views, physics as tables with the fiber Silas's own, the contract's kind and stake, authority a lattice; the book prelude; the `silas` command]
-
-**Updated:** [[silas]] § The engineering pass; `silas/README.md` (§ Semantics, the denotation written down); `silas/GAPS.md` § Closed. Zeb: `ZebPhysics` a table provider, its own rules under differential test. Pins: `silas/tests/book_snapshot.rs`.
-
-## [2026-10-13 | src/multiplayer | system authority only from the server: a client's forged `meta.authority` is refused; the auto-execute loop runs `executeSystemAction` (#96)]
-
-**Updated:** [[multiplayer-pattern]] § Capability system (two authorization paths; `resolveSessionForAction` retired).
-
-## [2026-10-13 | scenario/reason | Zeb's reason report (#124): the plan's line in both engines, opt-in and bit-identical; the separating facts as Silas queries with a noise bar; the 84's reason found by search at 33/95]
-
-**Updated:** [[scenario-player]] § The reason report. Code: `scenario/reason.py`, `Walt.analyze(line=True)` / `core::planner::analyze_line`, `SilasBelief.condition_likelihood`. Worked examples: `scratch/reason/`.
-
-## [2026-10-13 | scratch/silas-reprice | the book's rules as Silas policies, priced on the whole 250k pour: 17 of 21 fire exactly where their gates do; C22 as the book's rule sides more (+0.58, 5% against); C15 and C2 re-measured weak]
-
-**Updated:** [[book-study-2026-10-12]] § The book's rules as Silas policies (fidelity and price tables; verdict lines for C2, C15, C22 corrected in place); [[w42]], `index-experiments.md` (sides with 8 rules).
-
-## [2026-10-13 | 0c5d7f66 | Silas slice 3: the record in the frame, `none`, ten record predicates; 20 of 21 book rules encode their gate, at every seating]
-
-**Updated:** [[silas]] § The book, rule by rule, § On Zeb's rules. Code: `silas/` (frame, eval, registry, policy), `silas/GAPS.md` (Closed: #126, #127, #129, #131, #133).
-
-## [2026-10-13 | silas | the book, rule by rule: 21 gates as Silas policies on the book's own deals; at least 10 of 21 Python gates misread the book; ten gaps filed]
-
-**Updated:** [[silas]] § The book, rule by rule; [[book-study-2026-10-12]] (the per-rule prices are the gates', not the book's). Also landed: Silas on Zeb's rules (`ZebPhysics`, differential test, Python bindings).
-**Issues opened:** #126–#135 (`silas` label), the gaps in `silas/GAPS.md`.
-
-## [2026-10-13 | silas | Silas on Zeb's rules: ZebPhysics over Rules + Fiber, differentially tested against Straight42 (no disagreement); Python bindings in scenario_core; legal_plays keyed by the led tile]
-
-**Updated:** [[silas]] (§ On Zeb's rules, Next). Code: `scenario/core/src/physics.rs`, `python_silas.rs`, `tests/silas_physics.rs`; `scenario/silas.py`, `scenario/tests/test_silas.py`.
-**Flag:** the hub must reinstall the core wheel (`python -m pip install ./scenario/core`): maturin now builds with `silas`.
-
-## [2026-10-12 | silas | Silas: the relational query and policy language moved from texas-42, renamed, over a Physics boundary; exact numbers with authority labels; the 84 hand at exactly 33/95]
-
-**Added:** [[silas]] (entity); `silas/` crate (54 tests). **Updated:** CLAUDE.md project bullet; index-entities.
-**Ruling:** off-suit plays tie at the bottom of the trick key (texas-42 lean `Declaration.key`), not by pip.

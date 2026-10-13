@@ -147,6 +147,17 @@ clauses in source order, counting where it stops over the book's lines and rando
 The crate's files raise one warning (a redundant clause in `crisis`); coverage shows the
 trump-set rules never fire in random play, stopping at the setter's ruff.
 
+## Speed (2026-10-13)
+
+Silas counts a fiber without enumerating it. The c12 odds query (352/969 over 399,072,960
+worlds) takes 2.2 ms, against 450 ms for an exact int32 brute force on MPS and 210 ms on 18
+CPU threads, so the GPU is not a lever for Silas. What the time had gone to was CPU defects:
+the count table rebuilt in full on every call, now built over reachable states (per call
+6.6 → 0.6 µs); allocation in clause evaluation (a re-price call 12 → 4.5 µs); and the debug
+test profile, now opt-level 1 (the slowest binaries killed at 300 s → 34 s for the suite).
+BigRational is under 1% of every profile. The one route that could make a GPU worth revisiting
+is compiling guards to bitmask operations, a language-design question.
+
 ## The double-dummy reference
 
 `silas::Solver` (2026-10-13) is an exact perfect-information solver over any `Physics`:
