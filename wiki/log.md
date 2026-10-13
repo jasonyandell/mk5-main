@@ -28,6 +28,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 0c5d7f66 | Silas slice 3: the record in the frame, `none`, ten record predicates; 20 of 21 book rules encode their gate, at every seating]
+
+**Updated:** [[silas]] § The book, rule by rule, § On Zeb's rules. Code: `silas/` (frame, eval, registry, policy), `silas/GAPS.md` (Closed: #126, #127, #129, #131, #133).
+
 ## [2026-10-13 | silas | the book, rule by rule: 21 gates as Silas policies on the book's own deals; at least 10 of 21 Python gates misread the book; ten gaps filed]
 
 **Updated:** [[silas]] § The book, rule by rule; [[book-study-2026-10-12]] (the per-rule prices are the gates', not the book's). Also landed: Silas on Zeb's rules (`ZebPhysics`, differential test, Python bindings).

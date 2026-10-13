@@ -40,7 +40,8 @@ hands and fibers seeded) and holds `DS` to its facts; no disagreement was found.
 legality by Zeb's code, `legal_plays` takes the led tile rather than its context (2026-10-13).
 The `scenario_core` wheel carries the Silas classes (`SilasQuery`, `SilasPolicy`,
 `SilasBelief`, `SilasSummary`, `SilasAuthority`, `silas_compare`); `scenario/silas.py`
-builds a `SilasFrame` from Zeb's `Situation`. Float weights enter only through
+builds a `SilasFrame` from Zeb's `Situation` (the bidder, the bid and the plays) and
+checks Silas's reading of that record against Zeb's `Record`. Float weights enter only through
 `SilasBelief.from_worlds`, labeled `sampled(n, seed)` or `exact_given(model_id)`; summaries
 come back as `fractions.Fraction` (`scenario/tests/test_silas.py`: the 84 hand at 33/95,
 `exact`, through Python).
@@ -66,14 +67,23 @@ opponent holds the 6-5 with another five" at exactly 33/95, `Exact`, over a root
 
 ## The book, rule by rule
 
-The 21 rule gates of [[book-study-2026-10-12]] are Silas policies in `silas/examples/book/`
-(10 encoded fully, 11 partly), tested in `silas/tests/book.rs` mostly on the book's own
-full deals (Hands 28–35), replayed with every play checked legal. On those positions at
-least 10 of the 21 Python gates part from the book, so the per-rule prices on the study
-page are the gates' prices, not the book's (#123). What the book needs and Silas cannot
-yet say is `silas/GAPS.md`, ordered by rules blocked, one issue each (#126–#135): who
-bid (all 21), a negated sub-pattern "no other" (12), a policy likelihood for readings
-(5), the play history (4), cross-game policy comparison (4), and five more.
+The 21 rule gates of [[book-study-2026-10-12]] are Silas policies in `silas/examples/book/`,
+tested in `silas/tests/book.rs` mostly on the book's own full deals (Hands 28–35),
+replayed with every play checked legal, and every check run with the bidder in each of
+the four chairs. On those positions at least 10 of the 21 Python gates part from the
+book, so the per-rule prices on the study page are the gates' prices, not the book's
+(#123).
+
+Slice 3 (2026-10-13, `0c5d7f66`) closed the five viewer-side gaps the book hit hardest:
+the frame now carries the hand's public record (contract and attributed plays, the one
+source of the leader, trick, played set, shown voids and score; `PolicyInput` is gone),
+read by `declarer`, `bid`, `banked`, `to-make`, `to-set`, `trick-number`, `led`,
+`played-to`, `trick-of` and `shown-void`; and the language has `(none (roles …) …)`, a
+stratified, three-valued negated sub-pattern (an undefined body never makes it true).
+With them **20 of the 21 encodings are their gate exactly**; C14 still lacks the gate's
+"most unplayed" (aggregate, #135). The open gaps in `silas/GAPS.md` are all world-side or
+beyond one hand except that one: policy likelihood (#128), cross-game comparison (#130),
+another seat's knowledge (#132), the auction (#134), aggregate (#135).
 
 ## Where it sits
 
@@ -81,8 +91,9 @@ bid (all 21), a negated sub-pattern "no other" (12), a policy likelihood for rea
   query layer of that repo's walt crate; renamed and cut loose from that repo's rules,
   kernel and solver. texas-42's solver-backed teaching layer stayed behind; its answer
   key here is Zeb ([[scenario-player]]).
-- **Next.** The reason report (#124); the book's rules written as Silas policies and
-  checked against the book's own examples (#123) ([[w42]]).
+- **Next.** The reason report (#124); the book's rules past their gates (#123): policy
+  likelihood (#128) and another seat's knowledge (#132) are what the book's own plays
+  need next ([[w42]]).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
   kernel-checked `Texas42` library; Rust is the first implementation it will be held to.
   What the book asks that Silas cannot yet express (cross-game policy comparison, the
