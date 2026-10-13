@@ -28,6 +28,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-12 | silas | Silas: the relational query and policy language moved from texas-42, renamed, over a Physics boundary; exact numbers with authority labels; the 84 hand at exactly 33/95]
+
+**Added:** [[silas]] (entity); `silas/` crate (54 tests). **Updated:** CLAUDE.md project bullet; index-entities.
+**Ruling:** off-suit plays tie at the bottom of the trick key (texas-42 lean `Declaration.key`), not by pip.
+
 ## [2026-10-12 | wiki | the book studies corrected: chance baselines everywhere; neither era established a strategic claim from the book; Zeb prices moves but cannot yet explain one]
 
 **Touched pages:** [[book-study-2026-10-12]] [[w42]] [[w42-book-claim-synthesis-and-ai-directions]] (§ What the evidence is worth) [[w42-book-validation-campaign]] [[w42-phase2-statistics-claims-ledger]] [[w42-book-validation]] and 44 more w42/chapter pages; CLAUDE.md player bullet.

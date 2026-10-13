@@ -42,6 +42,9 @@ Two halves, one game:
   37% random floor (it sides with 9 of 21 rules, prices against 5), the conventions measured
   null, and no reason was extracted — Zeb prices a move, it cannot yet explain one (#124).
   Every agreement number ships with its chance baseline; a tie is not agreement.
+- **Silas** (`silas/`) — a typed relational language over the worlds a seat cannot tell apart:
+  queries, exact beliefs, policies that read only the viewer's information ([[silas]]). The
+  vocabulary for writing the book's rules down and for Zeb's reasons; Lean is the long-run spec.
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the

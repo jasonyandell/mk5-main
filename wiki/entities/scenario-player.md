@@ -876,7 +876,7 @@ S/R/SR arms, two Zebs vs two nets, 22,000 paired deals per arm
 costs −0.013 [−0.016, −0.010] marks/hand and its reading recovers 0.000 ± 0.002 on
 top; the book's singleton reading of the same sender costs −0.031, because a reading
 that is not the sender's gate inverted plans on false worlds. No convention confirmed;
-nothing adopted as a rule; the overlay stays default off.
+nothing adopted as a rule; the overlay stays default off. Its gates are hand-written Python; the book's rules move to [[silas]] policies, text that is the code.
 
 **O2 beats O1 on real endgames (2026-10-12, #113).** On 566 three-trick endgames
 from 142 deals (V's hand common knowledge, P's private, opponents the deployed net,
