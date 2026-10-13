@@ -15,23 +15,29 @@ wrote a ranked list of 26 candidates (7 conventions); an army of Opus agents the
 every rule on the 250,000-deal Zeb pour, checked the bid book against Zeb's forecast,
 recomputed the book's odds by exact count, and graded the conventions in the arena with
 the overlay built the same day ([[scenario-player]] § A convention overlay). The
-oracle-era verdicts ([[w42-book-claim-synthesis-and-ai-directions]]) were discarded, not
-reused: they were scored against perfect information ([[the-wall]]).
+oracle-era verdicts ([[w42-book-claim-synthesis-and-ai-directions]]) were not reused as
+verdicts: they were two-action E[Q] contrasts in points on oracle-greedy positions, a
+different object; where today's gates overlap them they agree in sign (§ The face-off).
 
 **The picture in one line.** The book is mostly exact counting over the hidden hands,
-which Walt already does; its play rules are, almost all, what Zeb's plan does anyway;
-its bid book agrees with Zeb's forecast on 25 of 30 hands; and its partnership
+which Walt already does; its play rules are cheap under Zeb's plan (the book's tile costs
+little or nothing by Zeb's count), though Zeb's own pick is the book's tile only about half
+the time, a little less often than the oracle's is (§ The face-off); its bid book agrees
+with Zeb's forecast on 25 of 30 hands; and its partnership
 conventions, wired into both partners, buy nothing measurable. Nothing was adopted as a
 rule. Three of the book's odds figures were off by about two points, in the direction an
 expert's hand count would be, and are corrected below.
 
 **What held, and the reason it holds**
 
-- *Counting rules hold because the fiber is the object.* Pull trumps first, which trump to
-  lead, the double ahead of the off, the setter's void creation in follow position, low
-  from a pair, trump the bidder's double from the left seat: at 60–90% of gated positions
-  the book's tile is exactly Zeb's best (price 0), and the rest is the fiber's tail the
-  book cannot see. Nothing to adopt: the contingent plan over the cell computes them.
+- *Counting rules are cheap because the fiber is the object.* Pull trumps first, which trump
+  to lead, the double ahead of the off, trump the bidder's double from the left seat: at
+  60–90% of gated positions the book's tile is among Zeb's best (price 0). A sixth of those
+  positions are dead (the contract already decided, so every tile ties); on live positions
+  the share is 52–83% by rule, and low from a pair (52%) and void in follow position (54%)
+  are near coin flips. Cheap is not chosen: Zeb's own pick is the book's tile at 51% of
+  gates, random at 37%, the oracle's E[Q] at 56% (§ The face-off, 2026-10-12 night).
+  Nothing to adopt as a rule: the contingent plan over the cell prices them.
 - *Bid-only-enough holds because one mark is one mark.* 32–34 points fall in 3% of made
   hands in every arena log, so pmake(32) − pmake(35) ≈ 0.03; under marks the level buys
   nothing but the auction.
@@ -171,8 +177,8 @@ book's bid-only-enough would never do (#115).
 
 ## What this means for Zeb
 
-1. **Nothing to adopt as a rule.** Every play rule that holds is the plan over the fiber;
-   every one that fails is a counting or utility fact the book rounded. The three
+1. **Nothing to adopt as a rule.** Every play rule that holds is cheap under the plan over
+   the fiber; every one that fails is a counting or utility fact the book rounded. The three
    corrected odds are the fiber's exact weights, which Zeb already draws from.
 2. **A signal's price is measured, and its information was worth zero here.** The handoff
    pays −0.013 marks/hand to tell the bidder where the top trump is not, and the bidder's
@@ -191,11 +197,56 @@ book's bid-only-enough would never do (#115).
    84 contract; the count-on-a-double void reading (C8) is a setter reading, and the arena
    seats only the bidding team's Zebs.
 
+## The face-off (#119, 2026-10-12 night)
+
+"Zeb's tile is the book's tile at 60–90% of gates" needed a baseline. The same 21 gates,
+up to 1,000 sampled positions each from the pour (20,766 positions), four more players
+asked for a move at each (`scratch/faceoff/`, the research archive's `book/faceoff/`): random
+legal play; the field net alone; jud, the oracle-distilled student; and E[Q] n=10 (`lens:ev`,
+ten sampled worlds judged by the forge oracle and averaged, the oracle era's undefeated play
+policy and the project's PIMC). Two columns per player: book agreement (the pick is in the
+book's allowed set) and regret under Zeb's own plan (q of the pick minus max q, from the
+pour's splat; Zeb's model scoring the others, a stated caveat).
+
+| player | book agreement [95%] | picks Zeb's tile | regret under Zeb's q |
+|---|---|---|---|
+| random | 36.7% [36.1, 37.4] | 27.5% | −0.059 |
+| jud | 42.1% [41.5, 42.7] | 28.3% | −0.052 |
+| Zeb, exact ties broken at random | 51.5% [51.0, 52.0] | 100% | 0 |
+| E[Q] n=10 | 56.4% [55.8, 57.0] | 50.6% | −0.014 |
+| field net alone | 57.8% [57.3, 58.4] | 54.4% | −0.010 |
+
+Zeb as played is 51.1%; the lowest-id tie rule costs it nothing on average. "Ties broken toward
+the book" reaches 62.2% but is an upper bound no other player is held to: 17.6% of gated rows
+are dead (pmake already 0 or 1, every tile ties) and supply nine of those eleven points. On rows
+where Zeb's best is unique the comparison is 52.8% against 56.0%.
+
+- **Book agreement separates strong from weak only weakly, and does not favor Zeb.** The oracle
+  picks the book's tile more often than Zeb, by about five points in every fair treatment, and
+  the Zeb-trained field net more still. Regret is what separates the players: −0.010 and −0.014
+  for the two strong ones against −0.052 and −0.059.
+- **Where the gap lives: Zeb's indifference.** `make` is 0/1 over 512 worlds, so exact ties are
+  common; the book has a rule at those spots and the oracle, playing for points, has a
+  preference, and the two match more than chance (lens picks the book's tile at 59.6% of dead
+  rows, random at 49%). A secondary objective at ties (make, then margin) is the principled
+  candidate; measure first (#120).
+- **"Strong but wrong" is not visible at these gates.** PIMC plays the counting rules as the
+  book does. Zeb's +0.74 marks/game over `lens:ev` was never made here: the project credits it
+  to the `make` utility and the partner rung, and rung 0 alone is level with E[Q].
+- **Three claims reconciled** (`scratch/faceoff/reconcile.md`): the oracle era's "contradicted"
+  verdicts were two-action E[Q] contrasts in points (3 of 64 claims, two static); where today's
+  gates overlap them they agree in sign, and the old "pounce contradicted" was about capturing
+  the bidder's count, a different act from the book's dump-before-partner (C7), which Zeb and the
+  oracle both refuse at 26%. "The oracle disagrees with the book" was the most overstated of the
+  three claims; "Zeb and the book agree" the second; the corrected statement is the one above.
+- **The stronger-Zeb re-plan** of the four "contradicts" verdicts (k1, 2,048 worlds, 300
+  positions per gate) is running; its table is added here when it lands.
+
 ## Data
 
-The measurements (scripts, pour queries, forecasts, per-deal arena output, the report) are
-public in `jasonyandell/texas-42-zeb-research-2026-10` under `book/wave1/` and
-`book/wave2/` ([publish-data-to-huggingface](../playbooks/publish-data-to-huggingface.md)).
+The measurements (scripts, pour queries, forecasts, per-deal arena output, the face-off's
+per-position picks, the reports) are public in `jasonyandell/texas-42-zeb-research-2026-10`
+under `book/wave1/`, `book/wave2/` and `book/faceoff/` ([publish-data-to-huggingface](../playbooks/publish-data-to-huggingface.md)).
 The book's text, page images and transcribed hands are not published. The candidate list
 and briefs quote the book and stay in `scratch/book/`.
 

@@ -36,10 +36,10 @@ Two halves, one game:
   **Zeb** is the family name for everything built on Walt; the cheap player is published as
   `@jasonyandell/zeb` 0.2.0. Research night 2026-10-12 proved what Zeb computes and measured
   where it differs; that day's foundation repairs (floor only on sampled fibers, rung-independent
-  seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]). The
+  seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]).
   The book (Roberson's *Winning 42*, [[w42]]) was studied with those tools the same day
-  ([[book-study-2026-10-12]]): its rules are the plan over the fiber, its conventions measured
-  null; the reason was adopted, never the rule.
+  ([[book-study-2026-10-12]]): its rules are cheap under the plan over the fiber, its conventions
+  measured null; the reason was adopted, never the rule.
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the
