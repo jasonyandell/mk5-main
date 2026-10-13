@@ -29,6 +29,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | silas | the book's rules as the book means them: fourteen policies in `examples/book/`, the 21 gates moved to `examples/book/gates/`; every catalogued mis-encoding tested on the book's own positions, gate failing and rule passing]
+
+[[silas]] § The book, rule by rule (rewritten: the rule table); `silas/GAPS.md` (gap 3 down to the donation lead, gap 5's "what sets" closed for one called tile, three self-contradictions recorded).
+
 ## [2026-10-13 | d83c7b1d | Silas engineering pass: a policy is a function of the frame, one frame with derived views, physics as tables with the fiber Silas's own, the contract's kind and stake, authority a lattice; the book prelude; the `silas` command]
 
 **Updated:** [[silas]] § The engineering pass; `silas/README.md` (§ Semantics, the denotation written down); `silas/GAPS.md` § Closed. Zeb: `ZebPhysics` a table provider, its own rules under differential test. Pins: `silas/tests/book_snapshot.rs`.

@@ -223,11 +223,21 @@ The seats, from the bidder: `(bidder c)`, `(bidders-partner c)`,
 declaration: `(trump-tile d)`, `(trump-led)`, `(trump-out)`,
 `(shown-out-of-trump c)`, `(void-in-trump c)`, `(trump-set c)`,
 `(top-trump d)`, `(next-trump above d)`, `(boss-trump d)`,
-`(lowest-trump-held d)`, `(four-trumps-or-more)`, `(exactly-four-trumps)`.
-The viewer's play: `(follower d)`, `(discard d)`. Leads: `(loses-in d q)`,
-`(can-lose d)`, `(off d)`, `(walker d)`, `(beatable d)`,
-`(calls-for-count d)`, `(calls-for d n)`. Each is documented where it is
-defined. Every rule in `examples/book/` is written with it.
+`(lowest-trump-held d)`, `(four-trumps-or-more)`, `(exactly-four-trumps)`,
+`(exactly-three-trumps)`, `(exactly-two-trumps)`, `(sure-trump d)`,
+`(trump-set-alone c)`. The viewer's play: `(follower d)`, `(discard d)`.
+Leads: `(loses-in d q)`, `(can-lose d)`, `(off d)`, `(walker d)`,
+`(beatable d)`, `(calls-for-count d)`, `(calls-for d n)`,
+`(low-four-five-or-six d)`. The trick: `(last-to-play)`,
+`(partner-winning)`, `(no-setter-trump)`, `(winner-cannot-be-beaten)`,
+`(safe-trick)` (what the partner gives count to), `(partner-may-take-it)`
+(what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`. The
+bidder's offs: `(draws-the-count-for dd o)`, `(strips-the-suit-of dd o)`,
+`(protects dd o)`, `(bare-off o)`; his trouble: `(crisis)`. The bid:
+`(every-trick)` (a bid of marks), `(bid-35-or-more)`, and `(lead-sets d)`,
+whether a lead's own count, one called tile and the trick reach what the
+setters need, as six sums against literal `to-set` values. Each is documented
+where it is defined. Every rule in `examples/book/` is written with it.
 
 ## Beliefs and summaries
 
@@ -484,10 +494,16 @@ declarations. The command is the default `cli` feature (it reads JSON);
 
 `examples/` holds the queries the tests run: `partner-count.silas`,
 `partner-has-count.silas`, `partner-master.silas`, `current-forced-play.silas`
-and `six-five-guarded.silas`. `examples/book/` holds the book's rules as
-policies written with the prelude, each naming the bidder through `declarer`
-and tested at all four seatings (`tests/book.rs`); `tests/book_snapshot.rs`
-pins what each allows on the book's deals and on 1,600 random ones.
+and `six-five-guarded.silas`. `examples/book/` holds the book's rules as the
+book means them, fourteen policies written with the prelude and named by what
+they say (`first-lead`, `bidders-plan`, `crisis`, `donate-when-safe`,
+`partner-leads`, `pounce`, `setter-leads`, ...), each header giving its
+catalog ids, hands and pages and how it differs from the gate it replaces;
+`tests/book_rules.rs` checks each on the book's own positions. Each names the
+bidder through `declarer` and is tested at all four seatings.
+`examples/book/gates/` holds the 2026-10-12 study's 21 rule gates, the record
+of what that study priced (`tests/book.rs`); `tests/book_snapshot.rs` pins
+what each gate allows on the book's deals and on 1,600 random ones.
 `examples/book/odds/` holds the odds the book prints, one query per claim
 (`tests/book_odds.rs`). `GAPS.md` lists what the rules still cannot say.
 

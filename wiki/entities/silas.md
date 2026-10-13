@@ -71,29 +71,47 @@ opponent holds the 6-5 with another five" at exactly 33/95, `Exact`, over a root
 
 ## The book, rule by rule
 
-The 21 rule gates of [[book-study-2026-10-12]] are Silas policies in `silas/examples/book/`,
-tested in `silas/tests/book.rs` mostly on the book's own full deals (Hands 28–35),
-replayed with every play checked legal, and every check run with the bidder in each of
-the four chairs. On those positions at least 10 of the 21 Python gates part from the
-book, so the per-rule prices on the study page are the gates' prices, not the book's
-(#123).
+The book's rules are Silas policies twice over (2026-10-13). The 21 rule gates of
+[[book-study-2026-10-12]] are encoded in `silas/examples/book/gates/`, tested in
+`silas/tests/book.rs` and pinned by `silas/tests/book_snapshot.rs` (every point of the eight
+narrated deals and of 1,600 random deals): they are the record of what that study priced,
+and the published re-price reads them. On the book's own positions at least 10 of those
+gates part from the book (#123); a formal reading of the whole book (a private catalog of
+every rule and worked play, by id) lists every such mis-encoding.
 
-The rules are written with a book prelude (`silas/lib/book.silas`, 2026-10-13): the
-seats from the bidder, the trump said once for every declaration, offs and walkers,
-what a lead calls for; C12's ranks are three calls. What every rule allows is pinned to
-its pre-prelude self at every point of the eight narrated deals (13,760 decisions) and of
-1,600 random deals (`silas/tests/book_snapshot.rs`).
+The rules **as the book means them** are fourteen policies in `silas/examples/book/`,
+named by what they say, each header giving its catalog ids, hands and pages, the rule in
+our words, how it differs from the gate it replaces, its gaps, and where the book
+contradicts itself. `silas/tests/book_rules.rs` asks each at the book's own positions
+(`hands.json`, all four seatings): the book's tile is allowed where it plays the rule, the
+rule is silent where it declines, and every catalogued mis-encoding has a test, named by
+its id, that the gate fails and the rule passes.
 
-Slice 3 (2026-10-13, `0c5d7f66`) closed the five viewer-side gaps the book hit hardest:
-the frame now carries the hand's public record (contract and attributed plays, the one
-source of the leader, trick, played set, shown voids and score; `PolicyInput` is gone),
-read by `declarer`, `bid`, `banked`, `to-make`, `to-set`, `trick-number`, `led`,
-`played-to`, `trick-of` and `shown-void`; and the language has `(none (roles …) …)`, a
-stratified, three-valued negated sub-pattern (an undefined body never makes it true).
-With them **20 of the 21 encodings are their gate exactly**; C14 still lacks the gate's
-"most unplayed" (aggregate, #135). The open gaps in `silas/GAPS.md` are all world-side or
-beyond one hand except that one: policy likelihood (#128), cross-game comparison (#130),
-another seat's knowledge (#132), the auction (#134), aggregate (#135).
+| rule | replaces | what it says, in short | gaps |
+|---|---|---|---|
+| `first-lead` | C10, C12a, C12b | trump first (any of the top sequence); two trumps: the straight off; double-up odds; one off is a permission, never in an 84 | — |
+| `bidders-plan` | C1a, C11 | draw with the top trump; the donation lead; bare offs at once while a trump can win back; else winners first, the off's double next-to-last | knowledge (#132) |
+| `crisis` | C14, C21 | a trump the bidder cannot draw: the 6-5 bait, a count double, away from the trump holder's suit | likelihood, aggregate |
+| `donate-when-safe` | C1b, C3 | count, biggest first, on a trick provably the side's; the last seat's donation; none on a trick that can be lost | — |
+| `partner-leads` | C9, C23 | a double or a walker; then no count, a five, a six; never trump | likelihood |
+| `partner-plays-the-top-trump` | C2 | the worked hand's play (the book's p. 25 reading disagrees) | — |
+| `pounce` | C7 | count only on a trick the setters may take, while able to follow; the double first; no count on a lost trick | — |
+| `protect-the-count` | C8, C13b | no count on the bidder's master lead, the top trump too; not in a trump set | — |
+| `shed-for-a-void` | C13a | a lone tile, never a double, a winner or a count tile's last guard; points bids only | — |
+| `low-from-a-pair` | C13c | as the gate, and the 84 form with count | — |
+| `setter-leads` | C15, C13d | a double when one point sets; the count that sets; count calling for more; think twice at 35 | — |
+| `trump-set` | C22 | the bidder's partner void too; the big doubles; feed the trump holder; lead high | aggregate (closest fact) |
+| `dead-double` | new | throw a double no live tile can lead to; the bidder cashes one while a setter holds trump | likelihood (a decoy) |
+| `helper-stretch` | new | win low with the second tile and keep the double | — |
+
+The prelude (`silas/lib/book.silas`) grew the concepts these rules share: the safe trick,
+the trick the partner may still take, no setter can hold a trump, the dead double, a count
+tile's last guard, the off a double protects and the bare off, a bid of marks, the lead
+whose count sets (six literal sums against `to-set`, which closes the aggregate gap for one
+called tile), and the bidder's crisis. Three passages contradict a worked hand (keeping the
+last trump, the 6-5 off first, the partner's top trump); each rule encodes the worked hand
+and records both. The gaps left, per rule, are in `silas/GAPS.md`: another seat's knowledge
+now blocks only the donation lead, since the partner's own knowledge is the viewer's.
 
 ## The engineering pass (2026-10-13)
 
@@ -147,9 +165,9 @@ trick six and is graded to there.
   each evaluated on Zeb's sampled worlds; the noise bar is Silas's three-valued compare
   on an `Estimate` from `SilasBelief.condition_likelihood` (a binding of Silas's own
   conditioning, added 2026-10-13).
-- **Next.** The book's rules past their gates (#123): policy
-  likelihood (#128), now well defined since a policy is a function of the frame, and
-  another seat's knowledge (#132) are what the book's own plays need next ([[w42]]).
+- **Next.** The book's rules as the book means them are written (§ The book, rule by
+  rule); pricing them under Zeb, and policy likelihood (#128) and another seat's
+  knowledge (#132) for the plays they still cannot follow, are next ([[w42]]).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
   kernel-checked `Texas42` library; Rust is the first implementation it will be held to.
   What the book asks that Silas cannot yet express (cross-game policy comparison, the
