@@ -888,6 +888,64 @@ fn s0074b_usually_and_above_all_the_big_doubles() {
 }
 
 #[test]
+fn s0074c_the_last_setter_trumps_a_double_that_holds_count() {
+    // Ours (p. 51): deuces, the right setter holds the trumps (the bidder's
+    // partner void with the 6-1). The bidder leads the 6-6 and the left setter
+    // puts the 6-4 on it: he trumps. With no count on the trick he does not.
+    let hand = ["5-2", "4-2", "1-1", "3-3", "1-0", "4-0"];
+    let alone = ["2-2", "6-0", "6-1", "2-0"];
+    let at = position("P2", O2, &hand, &[&alone[..], &["6-6", "6-4", "6-3"]].concat());
+    assert_eq!(allows(TRUMP_SET, &at, "trump-in-on-count"), tiles(&["5-2", "4-2"]));
+    let at = position("P2", O2, &hand, &[&alone[..], &["6-6", "6-5", "6-3"]].concat());
+    assert_eq!(fires(TRUMP_SET, &at), None);
+}
+
+#[test]
+fn s0075a_the_setter_on_lead_leads_the_trump_that_beats_the_rest() {
+    // Ours (p. 52): deuces. The bidder leads the 2-0 and the left setter, who
+    // holds the 2-2, takes it with the others void: the trump set, and he is
+    // on lead with the 2-6 the top trump still out.
+    let hand = ["2-6", "2-5", "1-1", "3-3", "1-0", "4-0"];
+    let at = position("P2", O1, &hand, &["2-0", "2-2", "6-1", "5-1"]);
+    assert_eq!(allows(TRUMP_SET, &at, "lead-a-high-trump"), tiles(&["2-6"]));
+    // Without it, a trump below the top still out is not a lead the rule makes.
+    let hand = ["2-5", "2-4", "1-1", "3-3", "1-0", "4-0"];
+    let at = position("P2", O1, &hand, &["2-0", "2-2", "6-1", "5-1"]);
+    assert_eq!(fires(TRUMP_SET, &at), None);
+}
+
+#[test]
+fn the_books_trump_sets_reach_the_ruff_with_no_trump_left_s0072c_s0074a() {
+    // The book narrates three trump sets (Hands 32, 34, 35) and no hand for
+    // the rules above (the diagram of p. 51 gives none). In each the bidder
+    // keeps leading trump and draws the holder's last one before he leads a
+    // double the holder is void in, so every narrated position that reaches
+    // the setter's ruff has nothing to ruff with: Hand 34 trick 5 (the 2-2)
+    // and trick 6 (the 4-4) from the left setter, Hand 35 trick 5 (the 5-5)
+    // from the right. A rule that asks only for a legal trump (no second one)
+    // after a trump set and a non-trump double stays silent at all three, and
+    // answers the constructed set of p. 51.
+    const ANY_TRUMP: &str = "(include book)
+        (policy any-trump
+          (rule r (play t)
+            (viewer me)
+            (trump-set-alone me)
+            (bidder-led doubled)
+            (double doubled)
+            (not (trump-tile doubled))
+            (own-legal t)
+            (trump-tile t)))";
+    for (id, plays, role) in [("hand-34", 17, O1), ("hand-34", 21, O1), ("hand-35", 19, O2)] {
+        let at = book_at(id, plays, role);
+        assert_eq!(fires(ANY_TRUMP, &at), None, "{id} after {plays} plays");
+        assert_eq!(fires(TRUMP_SET, &at), None, "{id} after {plays} plays");
+    }
+    let hand = ["5-2", "4-2", "1-1", "3-3", "1-0", "4-0"];
+    let at = position("P2", O1, &hand, &[&ALONE[..], &["6-6"]].concat());
+    assert_eq!(allows(ANY_TRUMP, &at, "r"), tiles(&["5-2", "4-2"]));
+}
+
+#[test]
 fn s0073c_no_feed_once_the_trump_holder_cannot_trump() {
     // The pour, s300001 deal 43342 ply 17: treys. On the bidder's 5-3 only
     // the right setter followed (the 6-3); every trump is now played. The

@@ -179,6 +179,32 @@ fn coverage_counts_each_rule_and_each_step_over_the_books_hands() {
 }
 
 #[test]
+fn the_trump_set_rules_are_rare_not_broken() {
+    // The book narrates three trump sets and no position where its rules for
+    // them apply: over its 205 frames no rule decides, and the frames that
+    // reach the setter's ruff (one, two and one, by rule) have no trump to
+    // ruff with.
+    let (ok, out) = silas(&["coverage", "examples/book/trump-set.silas"]);
+    assert!(ok, "{out}");
+    for rule in ["trump-a-big-double", "trump-a-double", "trump-in-on-count", "feed-the-trump-holder", "lead-a-high-trump"]
+    {
+        assert!(out.contains(&format!("rule {rule}: decided 0, allowed 0, answered 0 of 205")), "{out}");
+    }
+    assert!(out.contains("   1/205  (own-legal ruff)\n    !      0/205  (trump-tile ruff)"), "{out}");
+    assert!(out.contains("   2/205  (own-legal ruff)\n    !      0/205  (trump-tile ruff)"), "{out}");
+    // Over 1,000 seeded random deals (28,205 frames with the book's) the ruff
+    // rules stop at the setter's ruff, where no frame holds a trump (so the
+    // clause for a second trump is not what silences them); the feed reaches
+    // a holder who may yet trump and finds no count; the lead fires.
+    let (ok, out) = silas(&["coverage", "examples/book/trump-set.silas", "--random", "1000"]);
+    assert!(ok, "{out}");
+    assert!(out.contains("rule trump-a-double: decided 0, allowed 0, answered 0 of 28205"), "{out}");
+    assert!(out.contains("  14/28205  (own-legal ruff)\n    !      0/28205  (trump-tile ruff)"), "{out}");
+    assert!(out.contains("   3/28205  (own-legal give)\n    !      0/28205  (count-tile give)"), "{out}");
+    assert!(out.contains("rule lead-a-high-trump: decided 7, allowed 7, answered 7 of 28205"), "{out}");
+}
+
+#[test]
 fn expand_prints_the_core_and_check_prints_warnings() {
     let (ok, out) = silas(&["expand", "examples/book/lay-down.silas"]);
     assert!(ok && out.contains("(roles (chair b))\n  (out)\n  (pattern\n    (viewer b)\n    (declarer b)"), "{out}");

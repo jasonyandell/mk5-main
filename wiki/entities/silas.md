@@ -145,7 +145,9 @@ equated, more roles than values, a clause with its negation, an answer never ask
 playable) and the funnel (`silas coverage`, and `eval`'s "stops at"): each pattern's
 clauses in source order, counting where it stops over the book's lines and random deals.
 The crate's files raise one warning (a redundant clause in `crisis`); coverage shows the
-trump-set rules never fire in random play, stopping at the setter's ruff.
+trump-set ruffs never fire in random play (3,000 deals, 84,205 frames: 29 reach the ruff,
+one holds a trump) nor in the book's hands (no narrated position applies them), while
+the feed fires 3 times and the lead 41: rare, not mis-guarded (#141).
 
 ## Speed (2026-10-13)
 

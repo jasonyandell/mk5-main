@@ -52,6 +52,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | fd78c782 | silas aggregate (#135): card, points and (<= a b), three-valued by intervals; the bid rules rewritten with it, every call and declaration pinned equal on all 1,184,040 hands (risk-budget 150 → 20 µs); the crisis keeps the double with the most tiles out]
 
 **Touched pages:** [[silas]] § The aggregate. `silas/README.md` § Semantics, Short forms, The auction; `silas/GAPS.md` gap 5 closed for what is built; `silas/docs/cross-game.md` § 4, Slice 2 as built (amendment).
+## [2026-10-13 | 9f371174 | silas: the five trump-set rules are rare, not mis-guarded (#141)]
+- [[silas]]: the book narrates three trump sets (Hands 32, 34, 35) and no position where the rules apply; over 3,000 random deals the three ruffs never fire (29 frames reach the ruff, one holds a trump), the feed fires 3 times and the lead 41; the pour fires the ruffs at 328 of 4,343,426 positions ([[book-study-2026-10-12]]).
+- By population (sampled, 3,000 contracts each, `scratch/study141.rs`; the optimists and the marginal 30 are Silas bid policies, the sim is Rust): a ruff rule answers in 0 games under `bid-only-enough`, `risk-budget` and a marginal 30 (risk 13-14), 30 and 61 under an optimist on the top two tiles of two and of three suits; without the second-trump clause 25, 13, 18 and 146, 250.
+- Added: positive pins for the last-seat ruff and the lead, a pin that the book's trump sets reach the ruff with no trump, and the coverage counts (`silas/tests/book_rules.rs`, `cli.rs`); README § Diagnostics corrected ("never fire" held only at 100 deals).
 
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
 
