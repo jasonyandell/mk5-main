@@ -110,3 +110,14 @@ fn the_fiber_count_matches_its_enumeration() {
     }
     assert_eq!(admitted as u128, rules.count_worlds(kernel));
 }
+
+#[test]
+fn off_suit_plays_tie_at_the_bottom() {
+    // Fours trump, fives led: the 3-1 and the 6-2 neither follow nor trump.
+    let p4: Straight42 = "P4".parse().unwrap();
+    let led = p4.led_context(tile("5-1"));
+    assert_eq!(p4.trick_key(tile("3-1"), led), 0);
+    assert_eq!(p4.trick_key(tile("6-2"), led), 0);
+    assert!(!p4.beats(led, tile("3-1")).contains(tile("6-2")));
+    assert!(p4.beats(led, tile("3-1")).contains(tile("5-0")));
+}

@@ -130,7 +130,9 @@ impl Physics for Straight42 {
         } else if self.follows(tile, led) {
             1
         } else {
-            0
+            // Tier-zero tiles tie at the bottom: an off-suit play takes
+            // nothing and beats nothing (texas-42 lean `Declaration.key`).
+            return 0;
         };
         let rank = match (tile.is_double(), self.decl) {
             (true, Decl::DoublesTrump) => tile.hi().value(),
