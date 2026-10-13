@@ -23,7 +23,9 @@
 ; instance is Hand 28 trick 4, where the book leads the count that sets, and
 ; it is not encoded. Double-dummy, the gate's 1-1 is the better defence in
 ; Hand 28 (19 to the book's 25) and the 4-4 equal in Hand 31 (S-0130-f,
-; S-0140-b): the book counts one trick; this file follows the book.
+; S-0140-b): the book's sum for the lone 1-1 trick is right (12 short of 13);
+; what fails is its premise that the 1-1 is the only chance, since the 1-1
+; keeps the lead for the 5-4. This file follows the book.
 ; "What sets" sums one called tile with the lead's own count and the trick,
 ; against what the setters still need: six literal sums (prelude, lead-sets).
 

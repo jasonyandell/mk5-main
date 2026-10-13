@@ -363,7 +363,8 @@ fn dd_13() {
 /// printed score: Hand 28 the setters 17; Hand 29 the setters 22 after two
 /// tricks; Hand 30 42 to 0; Hand 31 the setters 17; Hand 32 the setters 11;
 /// Hand 33 41 to 1, with the right opponent's trick-6 0-0 a revoke (his only
-/// legal tile is the 3-1); Hand 34 all 42; Hand 35 set on the last trick.
+/// legal tile is the 3-1, and the 0-0 goes at trick 7); Hand 34 all 42; Hand 35
+/// set on the last trick.
 /// (The annotation-order conflicts are the fixture's, `tests/book_fixture.rs`.)
 #[test]
 fn dd_14() {
@@ -695,9 +696,10 @@ fn ex_10() {
 /// CONFIRMED for 1/3; ours for the 53%; BLOCKED for the 5%. With the double
 /// deuce ahead of the deuce-blank (four deuces out), the partner holds the
 /// top deuce 1/3. The 53% needs a follower convention; on `odds/`'s reading
-/// (the partner gives the 3-2, an opponent only when forced) it is exactly
-/// 467/855 = 54.6%, so the lead's "not reproducible without a stated
-/// policy" stands. The 5% is a two-trick play-out: gap 7.
+/// (the partner gives the 3-2, an opponent only when forced) it is 43/81 =
+/// 53.1% on the book's placement model (`tests/book_odds.rs`) and exactly
+/// 467/855 = 54.6% over the uniform deal. The 5% is a two-trick play-out:
+/// gap 7.
 #[test]
 fn ex_11() {
     let frame = root("P6", tiles(&["6-6", "6-5", "6-4", "6-2", "2-2", "2-0", "1-1"]));

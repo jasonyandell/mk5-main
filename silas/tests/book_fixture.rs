@@ -510,10 +510,10 @@ fn the_full_deals_lines_cover_every_trick() {
 #[test]
 fn the_annotation_orders_replay_to_their_recorded_outcomes() {
     // The marks are read as trick numbers. Where they differ from the prose,
-    // the archive's review records the outcome: Hand 28's swapped doubles and
-    // Hand 35's swapped trumps change nothing; Hand 31 marks no bidder tile 2;
-    // by Hand 32's marks the partner wins trick 3; Hand 34's marks break
-    // follow-suit at trick 5.
+    // the outcome is: Hand 28's swapped doubles and Hand 35's swapped trumps
+    // change no winner; Hand 31 marks no bidder tile 2; by Hand 32's marks the
+    // partner wins trick 3, which the printed score rules out; Hand 34's marks
+    // break follow-suit at trick 5, so the prose order is the legal one.
     let b = book();
     let mut lines = 0;
     for line in b.lines.iter().filter(|l| l.source == "annotations") {
@@ -535,13 +535,16 @@ fn the_annotation_orders_replay_to_their_recorded_outcomes() {
 #[test]
 fn the_known_source_conflicts_are_kept() {
     let b = book();
-    // Hand 24: the diagram's bidder holds the 1-1 the prose gives opponent 1.
+    // Hand 24: the diagram's bidder holds the 1-1 the prose gives opponent 1;
+    // the reference reading (the 3-3, `hand-24/review-emendation`) is legal.
     assert!(b.example("hand-24").hand().contains(common::tile("1-1")));
     let (outcome, _) = replay(b, b.line("hand-24/prose"));
     assert_eq!(outcome, Step::Err(Outcome::Conflict { trick: 2, seat: Role::Opponent1, tile: common::tile("1-1") }));
-    // Hand 26: the 5-2 the crisis branch lets an opponent play is the bidder's.
+    // Hand 26: the 5-2 is the bidder's, so the crisis branch where the trump
+    // holder followed with a five and a deuce cannot occur in this deal.
     assert!(b.example("hand-26").hand().contains(common::tile("5-2")));
-    // Hand 31: the 6-5, led second, is marked 6, and no bidder tile is marked 2.
+    // Hand 31: the 6-5, led second in the prose and the only lead the other
+    // seats' marks allow, is marked 6; no bidder tile is marked 2.
     let bidder = b.example("hand-31").seat(Role::Bidder).unwrap();
     let mark = |t: &str| bidder.tiles.iter().position(|d| *d == Some(common::tile(t))).and_then(|i| bidder.marks[i]);
     assert_eq!(mark("6-5"), Some(6));

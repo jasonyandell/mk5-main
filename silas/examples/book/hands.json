@@ -388,7 +388,7 @@
       ],
       "notes": [
         "35 is offered with the partner's help.",
-        "Conflict kept: the diagram gives the bidder the 1-1, and the narrated play has opponent 1 play the 1-1 on trick 2 (shot-0107). See the archive's discrepancy review."
+        "The diagram gives the bidder the 1-1, and the narrated trick 2 has opponent 1 play a double the prose calls an ace (shot-0107). Reference reading: the tile is the 3-3, the one double left to opponent 1, who must play it (adjudicated; the bidder's 1-1 is attested by the diagram and by both of the hand's counts)."
       ]
     },
     {
@@ -437,7 +437,7 @@
       ],
       "notes": [
         "Two trumps. 35 or 36 is offered; 84 only when far behind.",
-        "Conflict kept: the 5-2 is in the bidder's diagram and called his only off, yet a later branch (shot-0124) lets the opponent holding the trump have played the 5-2. See the archive's discrepancy review."
+        "The 5-2 is in the bidder's diagram and called his only off, so the crisis branch in which the trump-holding opponent followed with a five and a deuce (shot-0124) cannot occur in this deal; only the branch where he followed with the 5-3 (bidder leads the 2-2) can. Which example the book meant is not known."
       ]
     },
     {
@@ -697,7 +697,7 @@
       "alternatives": [],
       "notes": [
         "Hand 30's deal with deuces trump.",
-        "The bidder's 6-5 is marked 6 and no bidder tile is marked 2; the prose leads the 6-5 on trick 2."
+        "The bidder's 6-5 is marked 6 and no bidder tile is marked 2. Reference reading: the 6-5 is the bidder's trick-2 lead, as the prose has it; the other seats' trick-2 marks leave no other legal lead."
       ]
     },
     {
@@ -746,7 +746,7 @@
       "at_risk": null,
       "alternatives": [],
       "notes": [
-        "Opponent 2 marks the 3-4 2 and the 3-5 3 and leaves the 3-3 unmarked; the prose plays the 3-5 second and wins trick 3 with the 3-3."
+        "Opponent 2 marks the 3-4 2 and the 3-5 3 and leaves the 3-3 unmarked; the prose plays the 3-5 second and wins trick 3 with the 3-3. Reference reading: the prose line; the printed 47 needs the 3-3 to win trick 3, and either of the 3-5 and 3-4 is a legal trick-2 discard."
       ]
     },
     {
@@ -842,8 +842,8 @@
       "at_risk": null,
       "alternatives": [],
       "notes": [
-        "Opponent 2 marks the 3-6 4 and the 3-2 6; the prose plays the 3-2 fourth and the 6-3 sixth.",
-        "Opponent 2's prose at shot-0147 calls the 6-2 his partner's play; the diagram and the narrated trick give it to the bidder's partner. Kept as printed."
+        "Opponent 2 marks the 3-6 4 and the 3-2 6; the prose plays the 3-2 fourth and the 6-3 sixth. Reference reading: the prose order, the legal one (the marked order revokes at trick 5).",
+        "Opponent 2's prose at shot-0147 calls the 6-2 his partner's play; the diagram and the narrated trick give it to the bidder's partner, the seat on his right."
       ]
     },
     {
@@ -1265,7 +1265,7 @@
       "totals": {"bidder": 41, "setters": 1},
       "expect": {"result": "illegal", "trick": 6, "seat": "opponent-2", "tile": "0-0"},
       "notes": [
-        "On trick 6 opponent 2 is said to be unable to follow the 1-1 and discards the 0-0, but the diagram leaves him the 1-3, unmarked and not yet played: a follow-suit break the archive's discrepancy log does not list. The totals still hold."
+        "On trick 6 opponent 2 is said to be unable to follow the 1-1 and discards the 0-0, but the diagram leaves him the 1-3, unmarked and not yet played, so the 1-3 is forced at trick 6 and the 0-0 goes at trick 7 (on the bidder's 2-1, which he cannot follow). Neither tile is count, so the totals hold."
       ]
     },
     {
@@ -1743,7 +1743,7 @@
       ],
       "totals": {},
       "expect": {"result": "conflict", "trick": 2, "seat": "opponent-1", "tile": "1-1"},
-      "notes": ["The prose gives opponent 1 the 1-1, which the diagram puts in the bidder's hand."]
+      "notes": ["The literal prose gives opponent 1 the 1-1, which the diagram puts in the bidder's hand; the line hand-24/review-emendation is the reference reading."]
     },
     {
       "id": "hand-24/review-emendation",
@@ -1771,7 +1771,7 @@
       ],
       "totals": {},
       "expect": {"result": "legal"},
-      "notes": ["Not the book: the archive review's proposed reading, the 3-3 for the 1-1 on trick 2."]
+      "notes": ["The reference reading, not the literal prose: the 3-3 for the 1-1 on trick 2."]
     },
     {
       "id": "hand-26/prose-a",
@@ -1864,7 +1864,7 @@
       "checkpoints": [{"after": 3, "side": "bidder", "points": 28, "anchor": "shot-0123"}],
       "expect": {"result": "legal"},
       "notes": [
-        "The crisis branch: an opponent holds three trumps. The book then conditions its next lead on that opponent having played the 5-2, which the bidder holds (see the hand's notes)."
+        "The crisis branch: an opponent holds three trumps. The book then conditions its next lead on the five that opponent followed with; the five-deuce case cannot occur because the bidder holds the 5-2, so only the five-trey case (lead the 2-2) is possible (see the hand's notes)."
       ]
     },
     {
