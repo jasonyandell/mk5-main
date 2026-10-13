@@ -433,8 +433,9 @@ The baselines, chance-corrected agreement, dead-row split and like-for-like comp
 recomputed from `scratch/faceoff/out/` by `scratch/book-audit/stats.py`, `kappa.py`,
 `dead_decided.py` and `live_at30.py`. The Silas re-price is recomputed from the pour by
 `scratch/silas-reprice/walk.py` and `analyze.py` (`reconcile.py` checks it against the
-face-off's table); its per-position output is not published. The book's text, page images and transcribed hands
-are not published.
+face-off's table); the scripts, per-position output (fired rule and allowed set at all 4,343,426
+positions) and `results.json` are in the same research repo under `book/silas-reprice/`. The book's
+text, page images and transcribed hands are not published.
 
 ## Links
 
