@@ -1,0 +1,77 @@
+; Repaired: four trumps with the double, missing the second and third: lead
+; low. Winning 42 pp. 183-184 (S-0232-c, S-0232-d, S-0233-a); the C12B gate,
+; first-lead's double-up-lead-low.
+; The book's rule reads only the bidder's own trumps: lead a low trump that is
+; not count and budget the trump trick, unless a trump count tile is out.
+; The condition it omits, from the reason report (#124, 4 of 7 positions priced
+; outside the noise bar): the partner holds the second trump, or a setter holds
+; it with another trump. In Zeb's worlds the low lead beats the double only
+; there; where a setter holds it bare, the double drops it.
+; Counterexample deals, sixes, bid 30, the bidder holding 6-6 6-2 6-1 6-0 5-1
+; 3-3 1-0 (from the report on s200001 deal 43962; tests/book_repaired.rs):
+; - The low lead fails, the double makes. Left setter 6-5 5-2 4-2 3-2 3-0 1-1
+;   0-0; partner 6-4 5-5 5-4 4-1 4-0 2-2 2-1; right setter 6-3 5-3 5-0 4-4 4-3
+;   3-1 2-0. The 6-6 drops all three sixes out, the partner's 6-4 among them:
+;   11 to the bidder, who then holds every trump (double-dummy, all 42). The
+;   6-0 loses to the bare 6-5 with the partner's 6-4 under it: 11 to the
+;   setters; they lead the 0-0, every seat must follow blanks, and the right
+;   setter adds the 5-0: 17, set. The condition is false.
+; - The double fails, the low lead makes. Left setter 6-4 6-3 5-2 4-1 3-2 2-1
+;   1-1; partner 6-5 5-4 5-0 4-4 4-2 3-1 2-2; right setter 5-5 5-3 4-3 4-0 3-0
+;   2-0 0-0. On the 6-6 the left setter keeps the 6-4 behind the 6-3 and the
+;   partner's bare 6-5 falls under his own side's double: the 6-4, a ten,
+;   outranks the bidder's other trumps (double-dummy, set). On the 6-0 the
+;   partner's 6-5 wins, and the 6-6 later pulls the 6-4 (all 42). The
+;   condition is true: the partner holds the 6-5.
+; Double-dummy over the pour's 2,212 deals of the shape: a low lead makes where
+; the double does not at 128, the condition true at 116 (the other 12 put the
+; third trump with the other setter beside another trump); the double makes
+; where every low lead fails at 496. Zeb prices the book's low lead against
+; (23,110 rows: chance-corrected -0.06, 76% against, -0.058).
+; Knowledge: the condition is hidden. Before the first lead the bidder sees only
+; his own hand, and the three trumps out fall among three unseen hands of seven:
+; the condition's probability is exactly 194/285 for every hand of this shape
+; (1/3 for the partner, 33/95 for a setter with another trump, the 84 hand's
+; number). No threshold on it tells one such hand from another, and the
+; condition is where the low lead can win, not where it must. The public
+; evidence that could move it is the auction, which the frame does not hold
+; (GAPS.md 4, #134); policy likelihood (#128) and another seat's knowledge
+; (#132) do not apply before any play.
+; Status: condition only. A query, not a policy.
+
+(include book)
+
+(query (roles (chair b) (domino top) (domino second) (domino third))
+  (out)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (trick-number 1)
+    (next-actor b)
+    (exactly-four-trumps)
+    (top-trump top)
+    (next-trump top second)
+    (next-trump second third)
+    (mine top)
+    (not (mine second))
+    (not (mine third))
+    (some (roles (chair p)) (in second q*) (bidders-partner p) (holds p second)))
+  (pattern
+    (viewer b)
+    (bidder b)
+    (trick-number 1)
+    (next-actor b)
+    (exactly-four-trumps)
+    (top-trump top)
+    (next-trump top second)
+    (next-trump second third)
+    (mine top)
+    (not (mine second))
+    (not (mine third))
+    (some (roles (chair s) (domino other))
+      (in second q*)
+      (setter s)
+      (holds s second)
+      (in other q*)
+      (not (tile other second))
+      (holds s other))))

@@ -628,7 +628,10 @@ bidder through `declarer` and is tested at all four seatings.
 of what that study priced (`tests/book.rs`); `tests/book_snapshot.rs` pins
 what each gate allows on the book's deals and on 1,600 random ones.
 `examples/book/odds/` holds the odds the book prints, one query per claim
-(`tests/book_odds.rs`). The book's claims of certainty are queries on the
+(`tests/book_odds.rs`). `examples/book/repaired/` holds the repaired book: a
+rule with the condition Zeb's reasons show it omits, as a policy where the
+bidder can read the condition from his own belief and as a query where he
+cannot, each with a counterexample deal either way (`tests/book_repaired.rs`). The book's claims of certainty are queries on the
 solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
 book's test for one), `claim-the-rest` and `cannot-be-set`
 (`tests/outcome.rs`). `GAPS.md` lists what the rules still cannot say.

@@ -70,7 +70,8 @@ it named was a condition the book states and the encoding lacked.
   as a permission (−0.055), double-up lead low (−0.058), the six-five bait (−0.058), dumping
   a bare off (−0.064), and the two-trump straight-off lead (91% against). As gates,
   surviving a four-times-stronger re-plan: C3, C7, C10, C12B, C21. These are prices, not
-  contradictions: none has a hand-checkable counterexample deal (#121).
+  contradictions, until a hand-checkable counterexample deal stands (#121); C10 and C12B
+  now have one each way, with the condition each omits (§ The repaired book).
 - *Weak agreement* (0.11–0.37 over the whole pour): eight of the book's rules, among them
   the bidder's plan (+0.33), the crisis (+0.30), donate when safe (+0.25), the pounce with
   its guard (+0.22), the first lead and the setter's leads (+0.18 each), and the top-trump
@@ -613,6 +614,70 @@ candidates, not reasons. On the face-off's C3, C7, C10, C12B and C21 positions t
 report finds a reason for 32 of 44 prices; C12B's recurring one, the guard of the missing
 trump, is a condition the book's rule omits.
 
+## The repaired book (2026-10-13, #121)
+
+A repaired rule is the book's rule, the condition the reason report omits from it
+([[scenario-player]] § The reason report), and a deal from the report's own worlds where
+each lead fails, checked double-dummy by the [[silas]] solver and play by play where a
+trick or two decides it (`silas/examples/book/repaired/`, `silas/tests/book_repaired.rs`).
+The conditions are about hidden hands, so a rule may act on one only as the bidder can
+read it: here an exact probability over his own worlds (`uniform_resolving`).
+
+| rule | the condition the book omits | what the bidder can read | status |
+|---|---|---|---|
+| C12B four trumps missing the 2nd and 3rd: lead low | the partner holds the second trump, or a setter holds it with another trump | exactly 194/285 at every hand of the shape before the first lead; only the auction could move it (GAPS 4, #134) | condition only (a query) |
+| C10 one off and four trumps: the off may go first | the partner is void in the off's suit and holds trump | (C(21−k,7) − C(21−k−m,7)) / C(21,7), k the off's suit tiles out, m the trumps out: at most 7259/14535, under 1/2, and each setter's ruff is as likely | repaired policy: lead trump |
+
+**C12B.** Sixes, bid 30, the bidder holding 6-6 6-2 6-1 6-0 5-1 3-3 1-0 (the report on
+s200001 deal 43962).
+
+- *The low lead fails, the double makes.* The 6-5, 6-4 and 6-3 lie one to a seat. The 6-6
+  drops all three, the partner's 6-4 to his own side (11), and the bidder holds every trump
+  (42). The 6-0 loses to the bare 6-5 with the 6-4 under it (11 to the setters); their 0-0
+  forces the partner's 4-0 and the bidder's 1-0 and draws the 5-0: 17, set. Condition false.
+- *The double fails, the low lead makes.* The left setter holds 6-4 6-3, the partner the
+  bare 6-5. On the 6-6 the setter keeps the 6-4 and the 6-5 falls to its own side; the 6-4,
+  a ten, outranks the bidder's other trumps (set). On the 6-0 the 6-5 wins and the 6-6
+  later pulls the 6-4 (42). Condition true.
+- Double-dummy over the pour's 2,212 deals of the shape, a low lead beats the double at 128,
+  with the condition true at 116 (the other 12 put the third trump with the other setter
+  beside another trump); the double beats every low lead at 496. The condition says where
+  the low lead can win, not which lead to choose: the bidder reads the same 194/285 at every
+  hand of the shape, as the book reads its double-up odds. No policy, no re-price; Zeb's
+  price on the book's rule stands (23,110 rows, −0.06, 23 / 1 / 76, −0.058).
+
+**C10.** Deuces, bid 30, the bidder holding 6-2 5-2 5-1 4-2 2-1 2-0 0-0, five trumps and the
+5-1 off (the report on s350001 deal 31347).
+
+- *The off fails, a trump makes.* The left setter's 5-5 takes the 5-1, the partner must
+  follow with the 6-5 and the right setter with the 5-0: 16, set on the first trick. On the
+  5-2 the left setter's only trump, the 3-2, falls to the partner's 2-2 (42). Condition
+  false: the partner holds a five.
+- *A trump fails, the off makes.* The partner holds no five and one trump, the 3-2. The 5-2
+  pulls it under the right setter's 2-2 with the 5-0 (11); the 5-3 then forces the 5-1
+  under the 5-5: 22, set. On the 5-1 the partner ruffs (11 to his side; made). Condition true.
+- Double-dummy over the pour's 7,001 deals the permission covers, the off beats every trump
+  lead at 252, with the condition true at 98; a trump lead beats the off at 853, true at 1.
+- The repaired rule: the off goes first only where the partner's ruff is more likely than
+  not (the threshold 1/2, set before pricing), which no first lead reaches; it fires where
+  the book's permission fires and allows the sure trumps, or any trump when none is sure.
+  The book's three hands of the shape (12, 14, 32) lead trump.
+
+Re-priced on the pour, with the producing player, metrics, intervals and † of § The book's
+rules as Silas policies (no first-lead row is decided by the score):
+
+| rule | n | random | Zeb | chance-corr. [95%] | for / indiff / against | price [95%] |
+|---|---|---|---|---|---|---|
+| one off may go first (book) | 7,001 | 31% | 42% | +0.16 [+0.15, +0.17] | 41 / 1 / 58 | −0.055 [−0.057, −0.054] |
+| one off, lead trump (repaired) | 7,001 | 49% | 74% | +0.48 [+0.47, +0.50] | 72 / 3 / 25 | −0.011 [−0.012, −0.011]† |
+| first-lead (book) | 243,897 | 30% | 43% | +0.18 [+0.18, +0.19] | 42 / 2 / 56 | −0.024 [−0.024, −0.024] |
+| first-lead (repaired) | 243,897 | 31% | 44% | +0.19 [+0.19, +0.19] | 43 / 2 / 55 | −0.023 [−0.023, −0.023] |
+
+The book rows reproduce `book/book-reprice/` exactly. Zeb does not track the partner's ruff
+itself: the off is in Zeb's best set at 49% of rows where it is under 0.05 (one trump out),
+19% at 0.05–0.10, 14% at 0.10–0.15 and 5% above 0.2; the counts that raise it raise each
+setter's ruff as much. The largest in the pour is 2821/12920.
+
 ## Data
 
 The measurements (scripts, pour queries, forecasts, per-deal arena output, the face-off's
@@ -634,8 +699,13 @@ rows with the book's conditions are recomputed by `scratch/book-reprice-fix/walk
 two rules as first encoded and as fixed), `analyze_fix.py` (which reproduces the first
 encodings' published rows exactly), `diagnose_fix.py` and `union_fix.py`; scripts,
 per-position output, `results.fix.json` and `diagnose.fix.json` are under
-`book/book-reprice-fix/`. The book's text, page images and
-transcribed hands are not published.
+`book/book-reprice-fix/`. The repaired book is recomputed by `scratch/repaired/`:
+`extract.py` (the report positions' deals and worlds), the `dd/` tool (double-dummy values
+and lines), `walk_first.py` (both first-lead policies at every opening lead, the exact
+partner's-ruff probability checked against its closed form, each condition's truth in the
+dealt hands), `run_dd.sh` and `analyze_first.py` (the re-price through `book-reprice`'s own
+`analyze.py`, which it reconciles, and the double-dummy splits); scripts and outputs go to
+`book/repaired/`. The book's text, page images and transcribed hands are not published.
 
 ## Links
 
