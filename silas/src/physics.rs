@@ -15,7 +15,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use crate::frame::{HIDDEN_SEATS, Kernel, MAX_CAPACITY, World};
+use crate::frame::{HIDDEN_SEATS, Kernel, World};
 use crate::nouns::{Context, Domino, DominoSet, Seat};
 use crate::{Result, error};
 
@@ -257,6 +257,11 @@ impl fmt::Debug for Physics {
 /// number of ways to deal the pool's tiles from the `i`-th on so that hidden
 /// slot `j` receives exactly `c[j]` of them. A world is numbered by the order
 /// of its choices, so the `k`-th world is read off the table directly.
+///
+/// The table holds only the states the capacities reach: `c[j]` at most slot
+/// `j`'s capacity, and the parts summing to the tiles left (the capacities
+/// sum to the pool, a [`Kernel`]'s invariant), so `c[2]` is implied and not
+/// stored. Every other state counts zero and is never read.
 struct Fiber {
     tiles: Vec<Domino>,
     allowed: [DominoSet; HIDDEN_SEATS],
@@ -264,36 +269,40 @@ struct Fiber {
     ways: Vec<u128>,
 }
 
-const SIDE: usize = MAX_CAPACITY + 1;
-
 impl Fiber {
     fn new(physics: &Physics, kernel: &Kernel) -> Fiber {
         let tiles: Vec<Domino> = kernel.pool().iter().collect();
+        let capacities = kernel.hidden().map(|h| h.capacity);
         let mut fiber = Fiber {
             allowed: std::array::from_fn(|slot| kernel.allowed(physics, slot)),
-            capacities: kernel.hidden().map(|h| h.capacity),
-            ways: vec![0; (tiles.len() + 1) * SIDE * SIDE * SIDE],
+            ways: vec![0; (tiles.len() + 1) * (capacities[0] + 1) * (capacities[1] + 1)],
+            capacities,
             tiles,
         };
         let n = fiber.tiles.len();
-        fiber.ways[Fiber::at(n, [0; HIDDEN_SEATS])] = 1;
+        let end = fiber.at(n, [0; HIDDEN_SEATS]);
+        fiber.ways[end] = 1;
         for i in (0..n).rev() {
-            for c0 in 0..SIDE {
-                for c1 in 0..SIDE {
-                    for c2 in 0..SIDE {
-                        let c = [c0, c1, c2];
-                        let total =
-                            (0..HIDDEN_SEATS).filter_map(|j| fiber.after(i, c, j)).map(|next| fiber.ways[next]).sum();
-                        fiber.ways[Fiber::at(i, c)] = total;
+            let left = n - i;
+            for c0 in 0..=capacities[0].min(left) {
+                for c1 in 0..=capacities[1].min(left - c0) {
+                    let c = [c0, c1, left - c0 - c1];
+                    if c[2] > capacities[2] {
+                        continue;
                     }
+                    let total =
+                        (0..HIDDEN_SEATS).filter_map(|j| fiber.after(i, c, j)).map(|next| fiber.ways[next]).sum();
+                    let here = fiber.at(i, c);
+                    fiber.ways[here] = total;
                 }
             }
         }
         fiber
     }
 
-    fn at(i: usize, c: [usize; HIDDEN_SEATS]) -> usize {
-        ((i * SIDE + c[0]) * SIDE + c[1]) * SIDE + c[2]
+    /// The entry of `c` before tile `i`; `c[2]` is implied by the tiles left.
+    fn at(&self, i: usize, c: [usize; HIDDEN_SEATS]) -> usize {
+        (i * (self.capacities[0] + 1) + c[0]) * (self.capacities[1] + 1) + c[1]
     }
 
     /// The table entry after giving tile `i` to slot `j`, if that is allowed.
@@ -302,11 +311,11 @@ impl Fiber {
             return None;
         }
         c[j] -= 1;
-        Some(Fiber::at(i + 1, c))
+        Some(self.at(i + 1, c))
     }
 
     fn count(&self) -> u128 {
-        self.ways[Fiber::at(0, self.capacities)]
+        self.ways[self.at(0, self.capacities)]
     }
 
     /// The hidden hands of world number `k`, for `k < count()`.

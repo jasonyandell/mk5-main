@@ -26,15 +26,39 @@ impl Sort {
         matches!(self, Self::Context | Self::Chair | Self::Domino)
     }
 
-    pub(crate) fn values(self) -> Vec<Value> {
+    /// Every value a role of this sort ranges over; none for a literal-only sort.
+    pub(crate) fn values(self) -> &'static [Value] {
         match self {
-            Self::Context => Context::ALL.into_iter().map(Value::Context).collect(),
-            Self::Chair => Seat::ALL.into_iter().map(Value::Chair).collect(),
-            Self::Domino => Domino::ALL.into_iter().map(Value::Domino).collect(),
-            Self::Number | Self::Team => Vec::new(),
+            Self::Context => &CONTEXT_VALUES,
+            Self::Chair => &CHAIR_VALUES,
+            Self::Domino => &DOMINO_VALUES,
+            Self::Number | Self::Team => &[],
         }
     }
 }
+
+const CONTEXT_VALUES: [Value; Context::COUNT] = {
+    let mut out = [Value::Context(Context::ALL[0]); Context::COUNT];
+    let mut i = 0;
+    while i < Context::COUNT {
+        out[i] = Value::Context(Context::ALL[i]);
+        i += 1;
+    }
+    out
+};
+
+const CHAIR_VALUES: [Value; Seat::COUNT] =
+    [Value::Chair(Seat::ALL[0]), Value::Chair(Seat::ALL[1]), Value::Chair(Seat::ALL[2]), Value::Chair(Seat::ALL[3])];
+
+const DOMINO_VALUES: [Value; Domino::COUNT] = {
+    let mut out = [Value::Domino(Domino::ALL[0]); Domino::COUNT];
+    let mut i = 0;
+    while i < Domino::COUNT {
+        out[i] = Value::Domino(Domino::ALL[i]);
+        i += 1;
+    }
+    out
+};
 
 impl fmt::Display for Sort {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
