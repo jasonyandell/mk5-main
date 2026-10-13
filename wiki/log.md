@@ -36,6 +36,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 9f371174 | silas: the five trump-set rules are rare, not mis-guarded (#141)]
+- [[silas]]: the book narrates three trump sets (Hands 32, 34, 35) and no position where the rules apply; over 3,000 random deals the three ruffs never fire (29 frames reach the ruff, one holds a trump), the feed fires 3 times and the lead 41; the pour fires the ruffs at 328 of 4,343,426 positions ([[book-study-2026-10-12]]).
+- Added: positive pins for the last-seat ruff and the lead, a pin that the book's trump sets reach the ruff with no trump, and the coverage counts (`silas/tests/book_rules.rs`, `cli.rs`); README § Diagnostics corrected ("never fire" held only at 100 deals).
+
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
 
 **Touched pages:** [[silas]] § The match and field-free comparison. `silas/README.md` § The auction; `silas/docs/cross-game.md` § 4, Slice 2 as built; `silas/GAPS.md` gaps 2 and 4 narrowed (#134 now needs only #128).
