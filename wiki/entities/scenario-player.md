@@ -459,7 +459,8 @@ within δ points of the best; δ=0 is the Walt-vs-Walt path), *hinges first*
 (alternatives far apart), the *cheat map* (expand where the oracle's
 perfect-information value and the honest label disagree — the one use of the
 oracle: a map of where it was wrong), forced moves free, equivalent tiles
-branched once, the exact tail at no cost. Work proceeds in **waves**: label a
+branched once (own-hand only; hidden tiles never compress, see
+[[endgame-equivalence-census]]), the exact tail at no cost. Work proceeds in **waves**: label a
 frontier in one `decide_batch`, keep survivors, the next frontier is known
 before it is asked for (the tape). Mac for the Walt labeler, GPU for the net.
 

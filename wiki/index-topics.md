@@ -36,6 +36,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/detect-and-route|detect-and-route]] — blunder-gated inference wrapper; oracle fallback 0.49 regret at 25% flag; PIMC-Q and next-best-adapter both hurt (retired)
 - [[topics/engine-architecture|engine-architecture]] — start here for the engine: STATE→ACTION→STATE, event sourcing, kernel, view projection, verified src/ map (active)
 - [[topics/engine-testing-patterns|engine-testing-patterns]] — createTestContext family, HeadlessRoom, StateBuilder, guardrail + architecture tests (active)
+- [[topics/endgame-equivalence-census|endgame-equivalence-census]] — hidden-tile swaps never preserve value at any depth (3,206,646 -> 3,206,646 world orbits); only own-hand equals survive (~3% of non-forced slots); read before proposing to collapse equivalent hidden tiles (complete)
 - [[topics/eq-gate-star|eq-gate-star]] — staged iter-2/3 workstream: gate STaR keep on E[Q] delta, not just K1 match (retired)
 - [[topics/eval-matrix-bradley-terry|eval-matrix-bradley-terry]] — Bradley-Terry Elo tournament infra over named players (zeb checkpoints, random, heuristic, eq:n=10/50/100/500) (complete)
 - [[topics/expected-q-value|expected-q-value]] — E[Q]: scalar measuring position value, supplied by forge's Q-value checkpoint (active)
