@@ -4012,3 +4012,27 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-13 | d83c7b1d | Silas engineering pass: a policy is a function of the frame, one frame with derived views, physics as tables with the fiber Silas's own, the contract's kind and stake, authority a lattice; the book prelude; the `silas` command]
 
 **Updated:** [[silas]] § The engineering pass; `silas/README.md` (§ Semantics, the denotation written down); `silas/GAPS.md` § Closed. Zeb: `ZebPhysics` a table provider, its own rules under differential test. Pins: `silas/tests/book_snapshot.rs`.
+
+## [2026-10-13 | silas | the book's rules as the book means them: fourteen policies in `examples/book/`, the 21 gates moved to `examples/book/gates/`; every catalogued mis-encoding tested on the book's own positions, gate failing and rule passing]
+
+[[silas]] § The book, rule by rule (rewritten: the rule table); `silas/GAPS.md` (gap 3 down to the donation lead, gap 5's "what sets" closed for one called tile, three self-contradictions recorded).
+
+## [2026-10-13 | scratch/book-reprice | the book's 14 rules as the book means them priced on the whole 250k pour: Zeb sides with 3, prices against 2 (dead double, trump set's feed: each fired where a condition the book states fails); only 3 of 21 gates were the book's rule]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, worked reasons; summary verdicts corrected in place); [[w42]], [[silas]] § Where it sits, `index-experiments.md`, `CLAUDE.md`.
+
+## [2026-10-13 | scratch/book-reprice-fix | the dead double and the trump set's feed fixed to the book's conditions and re-priced on the whole pour: neither prices against now; Zeb 54% vs 40% (0.23), no relation on 3, against none]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (two price rows, two rule rows, the reading); [[w42]], [[silas]] (rule table, Where it sits), `index-experiments.md`, `CLAUDE.md`; `silas/lib/book.silas` (`can-take-it`, `may-yet-trump`).
+
+## [2026-10-13 | scenario/reason | the reason report's space grown (position facts, count at risk, the prelude's nouns, every two facts joined) with coverage and a threshold and chance level set before looking: a reason for 32 of 44 face-off prices, none for 12; C12B's recurring reason, the guard of the missing trump, is a condition the book's rule omits]
+
+**Updated:** [[scenario-player]] § The reason report (the grown space, the threshold, results by rule) and the parts table; [[book-study-2026-10-12]] § Worked reasons (three of six clear the chance level); [[silas]] § Where it sits. Outputs: `scratch/reason-v2/`.
+
+## [2026-10-13 | silas | solved outcomes: `(lay-down)`, `(certain-make)`, `(certain-set)` exact or refused, `(dd-make)` the double-dummy bound above them; the book's lay-down rule stated, Hands 21 and 22 certain, Hand 26's "cannot be set" false for the bidder alone though double dummy makes in all 756,756 worlds]
+
+[[silas]] § Solved outcomes (new); `silas/README.md` § Solved outcomes; `silas/GAPS.md` (gaps 8 and 9: the side's guarantee, outcomes other than the contract).
+
+## [2026-10-13 | silas | the repaired book, first two rules (#121): C12B's guard of the second trump as a query (194/285 at every hand of the shape, so no policy), C10's off permission withdrawn by the partner's-ruff probability (never over 1/2); counterexample deals both ways, double-dummy; C10 re-priced +0.16 → +0.48]
+
+**Updated:** [[book-study-2026-10-12]] § The repaired book (new); `silas/examples/book/repaired/` (new), `silas/tests/book_repaired.rs`; `silas/README.md` § Examples. Outputs: `scratch/repaired/`.
