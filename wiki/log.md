@@ -28,6 +28,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | silas | Silas on Zeb's rules: ZebPhysics over Rules + Fiber, differentially tested against Straight42 (no disagreement); Python bindings in scenario_core; legal_plays keyed by the led tile]
+
+**Updated:** [[silas]] (§ On Zeb's rules, Next). Code: `scenario/core/src/physics.rs`, `python_silas.rs`, `tests/silas_physics.rs`; `scenario/silas.py`, `scenario/tests/test_silas.py`.
+**Flag:** the hub must reinstall the core wheel (`python -m pip install ./scenario/core`): maturin now builds with `silas`.
+
 ## [2026-10-12 | silas | Silas: the relational query and policy language moved from texas-42, renamed, over a Physics boundary; exact numbers with authority labels; the 84 hand at exactly 33/95]
 
 **Added:** [[silas]] (entity); `silas/` crate (54 tests). **Updated:** CLAUDE.md project bullet; index-entities.
