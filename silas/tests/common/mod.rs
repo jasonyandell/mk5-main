@@ -5,6 +5,7 @@
 #![allow(dead_code)]
 
 pub mod fixture;
+pub mod rules;
 
 use std::num::NonZeroU64;
 
