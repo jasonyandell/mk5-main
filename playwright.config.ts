@@ -3,8 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = parseInt(process.env.PORT || '60101');
 
 export default defineConfig({
-  testDir: '.',
-  testMatch: ['src/tests/e2e/**/*.spec.ts'],
+  testDir: './src/tests/e2e',
+  testMatch: ['**/*.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

@@ -9,8 +9,8 @@ export default defineConfig({
   ...baseConfig,
   
   // Override for CI optimization
-  testDir: '.',
-  testMatch: ['src/tests/e2e/**/*.spec.ts'],
+  testDir: './src/tests/e2e',
+  testMatch: ['**/*.spec.ts'],
   
   // CI-specific settings
   workers: 1, // GitHub Actions has 2 CPUs, but 1 worker is more stable
