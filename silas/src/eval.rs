@@ -307,21 +307,30 @@ impl CompiledAtom {
     /// it fails, `None` when the predicate is undefined here.
     fn evaluate(&self, reader: Reader<'_>, values: &[Option<Value>], budget: &mut Budget) -> Result<Option<bool>> {
         budget.spend(1)?;
-        let args: Vec<_> = self
-            .terms
-            .iter()
-            .map(|t| match t {
-                Bound::Variable(i) => values[*i].expect("a ready atom"),
-                Bound::Literal(v) => *v,
-            })
-            .collect();
+        let arg = |t: &Bound| match t {
+            Bound::Variable(i) => values[*i].expect("a ready atom"),
+            Bound::Literal(v) => *v,
+        };
+        // The built-ins take at most three arguments: those are read on the
+        // stack, and only a longer registered predicate's are collected.
+        let mut inline = [Value::Number(0); 3];
+        let collected: Vec<Value>;
+        let args: &[Value] = if self.terms.len() <= inline.len() {
+            for (slot, t) in inline.iter_mut().zip(&self.terms) {
+                *slot = arg(t);
+            }
+            &inline[..self.terms.len()]
+        } else {
+            collected = self.terms.iter().map(arg).collect();
+            &collected
+        };
         let context = match (self.access, reader) {
             (Access::Viewer, Reader::Viewer(frame)) => PredicateContext::Viewer(frame),
             (Access::Viewer, Reader::World(holdings)) => PredicateContext::Viewer(holdings.frame()),
             (Access::World, Reader::World(holdings)) => PredicateContext::World(holdings),
             (Access::World, Reader::Viewer(_)) => return Err(error("viewer evaluation refused a world predicate")),
         };
-        Ok(self.predicate.evaluate(context, &args, budget)?.map(|value| value != self.negated))
+        Ok(self.predicate.evaluate(context, args, budget)?.map(|value| value != self.negated))
     }
 }
 
@@ -342,7 +351,13 @@ impl Clause {
     }
 
     fn ready(&self, values: &[Option<Value>]) -> bool {
-        self.vars().iter().all(|v| values[*v].is_some())
+        match self {
+            Clause::Atom(atom) => atom.terms.iter().all(|t| match t {
+                Bound::Variable(v) => values[*v].is_some(),
+                Bound::Literal(_) => true,
+            }),
+            Clause::Scope(scope) => scope.reads.iter().all(|v| values[*v].is_some()),
+        }
     }
 
     fn evaluate(
@@ -437,7 +452,7 @@ impl CompiledScope {
             return Ok(!unsure);
         }
         let v = self.locals[depth];
-        for candidate in sorts[v].values() {
+        for candidate in sorts[v].values().iter().copied() {
             // The roles of one scope are distinct from one another, not from
             // the roles around it.
             if self.locals[..depth].iter().any(|u| values[*u] == Some(candidate)) {
@@ -554,7 +569,7 @@ impl CompiledPattern {
         let mut domains = Vec::new();
         for v in 0..self.outer {
             let mut domain = Vec::new();
-            for candidate in self.sorts[v].values() {
+            for candidate in self.sorts[v].values().iter().copied() {
                 budget.spend(1)?;
                 values[v] = Some(candidate);
                 let mut admitted = true;
