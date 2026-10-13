@@ -1,6 +1,7 @@
 //! Beliefs: exact finite measures over the worlds consistent with a frame,
 //! and what a query says about them.
 
+use std::cell::Cell;
 use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 
@@ -37,7 +38,7 @@ impl Belief {
         entries: impl IntoIterator<Item = (World, Weight)>,
         max_worlds: usize,
     ) -> Result<Self> {
-        if authority == Authority::Exact {
+        if authority.is_exact() {
             return Err(error("caller-supplied weights are ExactGiven or Sampled; Exact is the support's own"));
         }
         Self::assemble(frame, id.into(), authority, DominoSet::EMPTY, entries, max_worlds)
@@ -83,7 +84,7 @@ impl Belief {
             return Err(error(format!("the support has {count} worlds, above the cap of {max_worlds}")));
         }
         let entries: Vec<_> = frame.worlds().map(|w| (w, Weight::one())).collect();
-        Self::assemble(frame, "uniform-full-support".into(), Authority::Exact, DominoSet::EMPTY, entries, max_worlds)
+        Self::assemble(frame, "uniform-full-support".into(), Authority::exact(), DominoSet::EMPTY, entries, max_worlds)
     }
 
     /// The uniform measure on every world consistent with the frame, resolved
@@ -125,7 +126,32 @@ impl Belief {
             &mut point,
         )?;
         let id = format!("uniform-resolving {:?}", DominoSet::from_iter(tiles));
-        Self::assemble(frame, id, Authority::Exact, unresolved, entries, max_points)
+        Self::assemble(frame, id, Authority::exact(), unresolved, entries, max_points)
+    }
+
+    /// The uniform measure resolved on exactly the pool tiles `query` reads:
+    /// starting from none, every tile a refused read needed is resolved, until
+    /// no read is refused. The query's summary over the result is the
+    /// uniform measure's, exactly. Refused above `max_points` points.
+    pub fn uniform_for(frame: Frame, query: &CompiledQuery, max_points: usize, budget: &mut Budget) -> Result<Self> {
+        let mut resolved = DominoSet::EMPTY;
+        loop {
+            let belief = Belief::uniform_resolving(frame.clone(), resolved, max_points)?;
+            let needed = Cell::new(DominoSet::EMPTY);
+            for (world, _) in belief.worlds() {
+                // A refused read records what it needed; any other refusal is
+                // the query's own.
+                if let Err(e) = query.evaluate_in(belief.holdings(world).probing(&needed), budget)
+                    && needed.get().is_empty()
+                {
+                    return Err(e);
+                }
+            }
+            if needed.get().is_empty() {
+                return Ok(belief);
+            }
+            resolved = resolved.union(needed.get());
+        }
     }
 
     pub fn frame(&self) -> &Frame {
@@ -189,7 +215,7 @@ impl Belief {
         model: &str,
         mut likelihood: impl FnMut(Holdings<'_>) -> Result<Weight>,
     ) -> Result<(Self, Estimate)> {
-        let authority = self.authority.meet(&given(model)?)?;
+        let authority = self.authority.meet(&Authority::given(model)?);
         let mut entries = Vec::with_capacity(self.len());
         for (world, weight) in self.worlds() {
             entries.push((*world, weight * &probability(likelihood(self.holdings(world))?)?));
@@ -241,13 +267,6 @@ fn place(
         }
     }
     Ok(())
-}
-
-pub(crate) fn given(model: &str) -> Result<Authority> {
-    if model.trim().is_empty() {
-        return Err(error("a likelihood names its pinned model"));
-    }
-    Ok(Authority::ExactGiven { model: model.to_owned() })
 }
 
 /// A likelihood is a probability: at most one.

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::eval::Budget;
 use crate::frame::{Frame, Holdings};
-use crate::syntax::{Sort, Value, valid_name};
+use crate::syntax::{RESERVED, Sort, Value, valid_name};
 use crate::{Result, error};
 
 /// What a predicate may read.
@@ -62,12 +62,15 @@ pub trait Predicate: Send + Sync {
     fn evaluate(&self, context: PredicateContext<'_>, args: &[Value], budget: &mut Budget) -> Result<Option<bool>>;
 }
 
-/// Words the grammar reserves.
-const RESERVED: [&str; 7] = ["query", "roles", "out", "pattern", "same", "not", "none"];
-
 /// The built-ins added with the record, version `silas-v1/core`.
-const V1: [&str; 10] =
-    ["declarer", "bid", "banked", "to-make", "to-set", "trick-number", "led", "played-to", "trick-of", "shown-void"];
+const V1: [&str; 8] = ["declarer", "banked", "to-make", "to-set", "led", "played-to", "trick-of", "shown-void"];
+
+/// The built-ins whose meaning last changed with the one-frame record and
+/// the full contract, version `silas-v2/core`: `played` is every tile of the
+/// record, `bid` reads the bid as the table says it (84 for two marks),
+/// `trick-number` is undefined once the hand is over; `stake`, `trump` and
+/// `mine` are new.
+const V2: [&str; 6] = ["played", "bid", "trick-number", "stake", "trump", "mine"];
 
 #[derive(Clone, Default)]
 pub struct Registry {
@@ -96,8 +99,8 @@ impl Registry {
     }
 
     /// The built-in relations. Each carries the version in which its meaning
-    /// last changed: `silas-v0/core` for the first set, `silas-v1/core` for
-    /// those that read the hand's record.
+    /// last changed: `silas-v0/core` for the first set, `silas-v1/core` and
+    /// `silas-v2/core` for those that read the hand's record.
     pub fn standard() -> Self {
         use Access::{Viewer, World};
         use Sort::{Chair as C, Context as Q, Domino as D, Number as N, Team as T};
@@ -141,8 +144,17 @@ impl Registry {
             ("played-to", vec![D, C, D], Viewer),
             ("trick-of", vec![D, N], Viewer),
             ("shown-void", vec![C, Q], Viewer),
+            ("stake", vec![N], Viewer),
+            ("trump", vec![Q], Viewer),
+            ("mine", vec![D], Viewer),
         ] {
-            let version = if V1.contains(&name) { "silas-v1/core" } else { "silas-v0/core" };
+            let version = if V2.contains(&name) {
+                "silas-v2/core"
+            } else if V1.contains(&name) {
+                "silas-v1/core"
+            } else {
+                "silas-v0/core"
+            };
             let spec = PredicateSpec {
                 name: name.to_owned(),
                 version: version.to_owned(),
@@ -203,7 +215,7 @@ impl Predicate for Builtin {
             ("played", [D(d)]) => frame.played().contains(*d),
             ("count", [D(d), N(n)]) => physics.count(*d) == *n,
             ("own-legal", [D(d)]) => {
-                if frame.next_actor() != Some(kernel.viewer()) {
+                if frame.next_actor() != Some(frame.viewer()) {
                     return Ok(None);
                 }
                 physics.legal_plays(kernel.viewer_hand(), frame.lead()).contains(*d)
@@ -219,34 +231,28 @@ impl Predicate for Builtin {
                 let legal = physics.legal_plays(world()?.hand(*c)?, frame.lead());
                 if self.0.name == "forced" { legal == crate::DominoSet::single(*d) } else { legal.contains(*d) }
             }
-            ("shown-void", [C(c), Q(q)]) => match kernel.hidden().iter().find(|h| h.seat == *c) {
-                Some(hidden) => hidden.voids.contains(*q),
-                None => match frame.record() {
-                    Some(record) => record.shown_voids(physics, *c).contains(*q),
-                    None => return Ok(None),
-                },
+            ("shown-void", [C(c), Q(q)]) => frame.shown_voids(*c).contains(*q),
+            ("trump", [Q(q)]) => physics.trump() == Some(*q),
+            ("mine", [D(d)]) => kernel.viewer_hand().contains(*d),
+            ("declarer", [C(c)]) => *c == frame.contract().declarer(),
+            ("bid", [N(n)]) => *n == frame.contract().bid().value(),
+            ("stake", [N(n)]) => *n == frame.contract().stake(),
+            ("banked", [C(c), N(n)]) => frame.banked()[c.team().index()] == *n,
+            ("to-make", [N(n)]) => frame.to_make_and_set().0 == *n,
+            ("to-set", [N(n)]) => frame.to_make_and_set().1 == *n,
+            ("trick-number", [N(n)]) => match frame.trick_number() {
+                Some(number) => number == *n as usize,
+                None => return Ok(None),
             },
-            (name, args) => {
-                let Some(record) = frame.record() else { return Ok(None) };
-                let number = |n: &u32| *n as usize;
-                match (name, args) {
-                    ("declarer", [C(c)]) => *c == record.contract().declarer,
-                    ("bid", [N(n)]) => *n == record.contract().bid,
-                    ("banked", [C(c), N(n)]) => record.banked()[c.team().index()] == *n,
-                    ("to-make", [N(n)]) => record.to_make_and_set(physics).0 == *n,
-                    ("to-set", [N(n)]) => record.to_make_and_set(physics).1 == *n,
-                    ("trick-number", [N(n)]) => record.trick_number() == Some(number(n)),
-                    ("led", [C(c), D(d)]) => record.tricks().any(|trick| trick[0] == (*c, *d)),
-                    ("played-to", [D(lead), C(c), D(d)]) => {
-                        record.tricks().any(|trick| trick[0].1 == *lead && trick.contains(&(*c, *d)))
-                    }
-                    ("trick-of", [D(d), N(n)]) => {
-                        let trick = record.tricks().position(|trick| trick.iter().any(|(_, tile)| tile == d));
-                        trick.map(|k| k + 1) == Some(number(n))
-                    }
-                    _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),
-                }
+            ("led", [C(c), D(d)]) => frame.tricks().any(|trick| trick[0] == (*c, *d)),
+            ("played-to", [D(lead), C(c), D(d)]) => {
+                frame.tricks().any(|trick| trick[0].1 == *lead && trick.contains(&(*c, *d)))
             }
+            ("trick-of", [D(d), N(n)]) => {
+                let trick = frame.tricks().position(|trick| trick.iter().any(|(_, tile)| tile == d));
+                trick.map(|k| k + 1) == Some(*n as usize)
+            }
+            _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),
         };
         Ok(Some(value))
     }

@@ -31,14 +31,11 @@ fn typed_play_rejects_wrong_actor_class_and_illegal_world() {
 
 #[test]
 fn frame_step_rejects_viewer_slough_while_viewer_can_follow() {
-    let kernel = Kernel::new(
-        Seat::S0,
-        tiles(&["5-4", "0-0"]),
-        tiles(&["6-6", "4-4", "3-2", "6-4", "2-1"]),
-        open_hidden([2, 2, 1]),
-    )
-    .unwrap();
-    let frame = Frame::new(physics("P6"), kernel, Seat::S3, vec![tile("5-5")], tiles(&["5-5"])).unwrap();
+    // S1 declares and leads the 5-5; S0, last to play, holds the 5-4.
+    let p = physics("P6");
+    let dealt = tiles(&["5-4", "0-0", "1-1", "2-1", "3-1", "4-1", "4-0"]);
+    let plays = vec![tile("5-5"), tile("5-1"), tile("5-0")];
+    let frame = Frame::new(contract(&p, Seat::S1, 30), Seat::S0, dealt, plays).unwrap();
     let fives = "q5".parse::<Context>().unwrap();
     let illegal = ObservedPlay { actor: Seat::S0, tile: tile("0-0"), class: PlayClass::Slough(fives) };
     assert!(step_frame(&frame, illegal, &mut small_budget()).is_err());
@@ -46,11 +43,12 @@ fn frame_step_rejects_viewer_slough_while_viewer_can_follow() {
 
 #[test]
 fn frame_step_rejects_hidden_tile_forbidden_by_an_existing_void() {
-    let mut hidden = open_hidden([2, 2, 2]);
-    hidden[0].voids.insert(Context::Called);
-    let kernel =
-        Kernel::new(Seat::S0, tiles(&["0-0"]), tiles(&["6-5", "5-5", "3-2", "6-4", "2-1", "1-0"]), hidden).unwrap();
-    let frame = Frame::new(physics("P6"), kernel, Seat::S0, vec![tile("6-6")], tiles(&["6-6"])).unwrap();
+    // Sixes trump: S1 shows out on S0's 6-4, then cannot follow the 6-6.
+    let p = physics("P6");
+    let dealt = tiles(&["6-4", "6-6", "0-0", "1-1", "2-0", "3-0", "4-0"]);
+    let plays = ["6-4", "3-2", "6-0", "6-1", "6-6"].map(tile).to_vec();
+    let frame = Frame::new(contract(&p, Seat::S0, 30), Seat::S0, dealt, plays).unwrap();
+    assert!(frame.shown_voids(Seat::S1).contains(Context::Called));
     let impossible = ObservedPlay { actor: Seat::S1, tile: tile("6-5"), class: PlayClass::Follow(Context::Called) };
     assert!(step_frame(&frame, impossible, &mut small_budget()).is_err());
 }
@@ -63,7 +61,7 @@ fn hidden_slough_conditions_support_and_pushes_worlds_forward() {
     let stepped = step_belief(&prior, slough, "slough-posterior", 90, &mut small_budget()).unwrap();
     let p = exact(stepped.evidence_probability.clone());
     assert!(p > r(0, 1) && p < r(1, 1));
-    assert_eq!(stepped.belief.authority(), &Authority::Exact);
+    assert_eq!(stepped.belief.authority(), &Authority::exact());
     assert_eq!(stepped.belief.frame().prefix(), &[tile("6-6"), tile("3-2")]);
     assert!(!stepped.belief.frame().kernel().pool().contains(tile("3-2")));
     let trumps = stepped.belief.frame().physics().incidence(Context::Called);

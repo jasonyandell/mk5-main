@@ -10,9 +10,8 @@
 ; plays this rule with the last trump in the partner's hand, where neither the
 ; gate nor this file fires.
 (policy c11-double-ahead-of-the-off
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-double (in play) (next play) (select answer)
+  (rule lead-the-double (select answer)
     (guard
       (query
         (roles (chair b) (domino doubled) (domino off) (domino over) (context suit))

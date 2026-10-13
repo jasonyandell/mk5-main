@@ -98,9 +98,7 @@ const HAND_25: Hand = ("DT", ["5-0", "5-5", "2-2", "4-4", "1-1", "2-1", "3-3"]);
 // Frames, beliefs, and the two placement models.
 
 fn root((decl, hand): Hand) -> Frame {
-    let hand = tiles(&hand);
-    let kernel = Kernel::new(Seat::S0, hand, DominoSet::FULL.difference(hand), open_hidden([7, 7, 7])).unwrap();
-    Frame::new(physics(decl), kernel, Seat::S0, vec![], DominoSet::EMPTY).unwrap()
+    opening(&physics(decl), tiles(&hand))
 }
 
 /// The tiles following `context` that the viewer cannot see.
@@ -118,7 +116,7 @@ fn big_budget() -> Budget {
 
 fn resolved(frame: Frame, tiles: DominoSet) -> Belief {
     let belief = Belief::uniform_resolving(frame, tiles, 100_000).unwrap();
-    assert_eq!(belief.authority(), &Authority::Exact);
+    assert_eq!(belief.authority(), &Authority::exact());
     belief
 }
 
@@ -512,8 +510,7 @@ fn the_deal_view_queries_agree_with_the_enumeration_hand_by_hand() {
     for bits in every_hand().step_by(4999) {
         hands += 1;
         let hand = DominoSet::from_bits(bits).unwrap();
-        let kernel = Kernel::new(Seat::S0, hand, DominoSet::FULL.difference(hand), open_hidden([7, 7, 7])).unwrap();
-        let frame = Frame::new(physics("NT"), kernel, Seat::S0, vec![], DominoSet::EMPTY).unwrap();
+        let frame = opening(&physics("NT"), hand);
         let belief = resolved(frame, DominoSet::EMPTY);
         let lengths = masks.map(|m| (bits & m).count_ones());
         let voids = lengths.iter().filter(|n| **n == 0).count();
@@ -616,9 +613,8 @@ fn the_setters_hold_the_winner_two_to_one_or_seven_in_twenty() {
     ];
     let not_bidders = "(query (roles (chair b) (context q) (domino d)) (out) (pattern (declarer b) (led-context q) (double d) (in d q) (not (holds b d))))";
     for (decl, hand, lead, winner) in setters {
-        let contract = Contract { declarer: Seat::S0, bid: 30 };
-        let frame =
-            Frame::from_record(physics(decl), Seat::S1, tiles(&hand), contract, vec![(Seat::S0, tile(lead))]).unwrap();
+        let contract = contract(&physics(decl), Seat::S0, 30);
+        let frame = Frame::from_history(contract, Seat::S1, tiles(&hand), &[(Seat::S0, tile(lead))]).unwrap();
         let belief = resolved(frame, tiles(&[winner]));
         assert_eq!(probability(SETTER_PARTNER, &belief), r(7, 20));
         let (known, evidence) = belief.condition(&compile(not_bidders), "not-the-bidders", &mut big_budget()).unwrap();
@@ -684,9 +680,9 @@ fn hand_26_the_five_trey_was_his_only_trey_7_over_33() {
     ]
     .map(|(s, d)| (s, tile(d)))
     .to_vec();
-    let contract = Contract { declarer: Seat::S0, bid: 35 };
+    let contract = contract(&physics("P4"), Seat::S0, 35);
     let hand = tiles(&["3-3", "1-1", "2-2", "5-2"]);
-    let frame = Frame::from_record(physics("P4"), Seat::S0, hand, contract, plays).unwrap();
+    let frame = Frame::from_history(contract, Seat::S0, hand, &plays).unwrap();
     // The left setter holds the 4-2 and three of the other eleven.
     assert_eq!(frame.count_worlds(), 165 * 70);
     let belief = Belief::uniform(frame, 100_000).unwrap();

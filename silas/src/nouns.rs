@@ -172,6 +172,14 @@ impl Team {
     pub const fn index(self) -> usize {
         self as usize
     }
+
+    /// The other partnership.
+    pub const fn other(self) -> Team {
+        match self {
+            Team::T0 => Team::T1,
+            Team::T1 => Team::T0,
+        }
+    }
 }
 
 impl fmt::Display for Seat {

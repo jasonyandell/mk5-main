@@ -35,8 +35,8 @@ impl Rng {
 /// A random position with `tricks` tricks still to finish: a random
 /// declaration, declarer, leader, bid and banked points, and a random number
 /// of plays already on the table.
-fn sample(rng: &mut Rng, tricks: usize) -> (Straight42, OpenPosition) {
-    let rules = Straight42::ALL[rng.below(Straight42::ALL.len())];
+fn sample(rng: &mut Rng, tricks: usize) -> (Physics, OpenPosition) {
+    let rules = Straight42::ALL[rng.below(Straight42::ALL.len())].physics();
     let declarer = Seat::ALL[rng.below(4)];
     let leader = Seat::ALL[rng.below(4)];
     let on_table = rng.below(4);
@@ -48,31 +48,30 @@ fn sample(rng: &mut Rng, tricks: usize) -> (Straight42, OpenPosition) {
         hands[seat.index()] = tiles.by_ref().take(tricks - usize::from(i < on_table)).collect();
     }
     let banked = [rng.below(20) as u32, rng.below(20) as u32];
-    let contract = Contract { declarer, bid: 20 + rng.below(23) as u32 };
-    (rules, OpenPosition::new(&rules, contract, hands, leader, trick, banked).unwrap())
+    let contract = contract(&rules, declarer, 20 + rng.below(23) as u32);
+    (rules, OpenPosition::new(contract, hands, leader, trick, banked).unwrap())
 }
 
 /// The final value under unpruned minimax: every legal play of every seat,
 /// each side choosing its best, with the rules read from the physics's own
 /// methods.
-fn exhaustive(physics: &dyn Physics, position: &OpenPosition, objective: Objective) -> i32 {
-    let side = position.contract().declarer.team();
+fn exhaustive(position: &OpenPosition, objective: Objective) -> i32 {
+    let side = position.contract().declarer().team();
     let Some(seat) = position.next_actor() else {
         let banked = position.banked();
         let ours = banked[side.index()] as i32;
         return match objective {
             Objective::Margin => ours - banked[1 - side.index()] as i32,
-            Objective::Make => i32::from(ours >= position.contract().bid as i32),
+            Objective::Make => i32::from(ours >= position.contract().threshold() as i32),
         };
     };
-    let values =
-        position.legal(physics).iter().map(|d| exhaustive(physics, &position.play(physics, d).unwrap(), objective));
+    let values = position.legal().iter().map(|d| exhaustive(&position.play(d).unwrap(), objective));
     if seat.team() == side { values.max().unwrap() } else { values.min().unwrap() }
 }
 
-fn exhaustive_root(physics: &dyn Physics, position: &OpenPosition, objective: Objective) -> Vec<(Domino, i32)> {
-    let legal = position.legal(physics);
-    legal.iter().map(|d| (d, exhaustive(physics, &position.play(physics, d).unwrap(), objective))).collect()
+fn exhaustive_root(position: &OpenPosition, objective: Objective) -> Vec<(Domino, i32)> {
+    let legal = position.legal();
+    legal.iter().map(|d| (d, exhaustive(&position.play(d).unwrap(), objective))).collect()
 }
 
 #[test]
@@ -84,7 +83,7 @@ fn every_root_value_agrees_with_exhaustive_search_on_sampled_endings() {
             let mut solver = Solver::new(&rules);
             for objective in [Objective::Margin, Objective::Make] {
                 let values = solver.solve(&position, objective).unwrap();
-                assert_eq!(values.moves, exhaustive_root(&rules, &position, objective), "{rules:?} {position:?}");
+                assert_eq!(values.moves, exhaustive_root(&position, objective), "{rules:?} {position:?}");
                 assert_eq!(solver.value(&position, objective), values.best());
             }
         }
@@ -98,10 +97,7 @@ fn every_root_value_agrees_with_exhaustive_search_with_four_tricks_left() {
         let (rules, position) = sample(&mut rng, 4);
         let mut solver = Solver::new(&rules);
         for objective in [Objective::Margin, Objective::Make] {
-            assert_eq!(
-                solver.solve(&position, objective).unwrap().moves,
-                exhaustive_root(&rules, &position, objective)
-            );
+            assert_eq!(solver.solve(&position, objective).unwrap().moves, exhaustive_root(&position, objective));
         }
     }
 }
@@ -113,37 +109,38 @@ fn make_or_set_is_the_margin_read_against_the_bid() {
     let mut rng = Rng(99);
     for _ in 0..200 {
         let (rules, position) = sample(&mut rng, 5);
-        let side = position.contract().declarer.team().index();
-        let total = (position.banked()[0] + position.banked()[1] + position.unbanked(&rules)) as i32;
+        let side = position.contract().declarer().team().index();
+        let total = (position.banked()[0] + position.banked()[1] + position.unbanked()) as i32;
         let mut solver = Solver::new(&rules);
         let make = solver.solve(&position, Objective::Make).unwrap();
         let margin = solver.solve(&position, Objective::Margin).unwrap();
         for ((d, m), (e, v)) in make.moves.iter().zip(&margin.moves) {
             assert_eq!(d, e);
             let ours = (total + v) / 2;
-            assert_eq!(*m, i32::from(ours >= position.contract().bid as i32), "{position:?} side {side}");
+            assert_eq!(*m, i32::from(ours >= position.contract().threshold() as i32), "{position:?} side {side}");
         }
     }
 }
 
 /// The same position with every seat moved `n` chairs clockwise: the teams
 /// trade indices when `n` is odd.
-fn rotated(rules: &Straight42, position: &OpenPosition, n: usize) -> OpenPosition {
+fn rotated(position: &OpenPosition, n: usize) -> OpenPosition {
     let mut hands = [DominoSet::EMPTY; 4];
     for seat in Seat::ALL {
         hands[seat.plus(n).index()] = position.hand(seat);
     }
-    let contract = Contract { declarer: position.contract().declarer.plus(n), ..position.contract() };
+    let old = position.contract();
+    let contract = Contract::new(old.declarer().plus(n), old.bid(), old.declaration().clone()).unwrap();
     let banked = if n % 2 == 1 { [position.banked()[1], position.banked()[0]] } else { position.banked() };
-    OpenPosition::new(rules, contract, hands, position.leader().plus(n), position.trick().to_vec(), banked).unwrap()
+    OpenPosition::new(contract, hands, position.leader().plus(n), position.trick().to_vec(), banked).unwrap()
 }
 
 #[test]
 fn rotating_the_seats_leaves_every_value_unchanged() {
     let mut rng = Rng(2026);
     let deal = hand_28();
-    let rules: Straight42 = "P0".parse().unwrap();
-    let opening = OpenPosition::deal(deal.physics.as_ref(), deal.contract, deal.hands).unwrap();
+    let rules = physics("P0");
+    let opening = OpenPosition::deal(deal.contract.clone(), deal.hands).unwrap();
     let mut positions = vec![(rules, opening)];
     for tricks in [3, 5, 7] {
         positions.extend((0..40).map(|_| sample(&mut rng, tricks)));
@@ -152,7 +149,7 @@ fn rotating_the_seats_leaves_every_value_unchanged() {
         let mut solver = Solver::new(&rules);
         let values = [Objective::Margin, Objective::Make].map(|o| solver.solve(&position, o).unwrap().moves);
         for n in 1..4 {
-            let turned = rotated(&rules, &position, n);
+            let turned = rotated(&position, n);
             let mut fresh = Solver::new(&rules);
             for (o, expected) in [Objective::Margin, Objective::Make].into_iter().zip(&values) {
                 assert_eq!(&fresh.solve(&turned, o).unwrap().moves, expected);
@@ -184,28 +181,24 @@ const HAND_28_LINE: [&str; 28] = [
 ];
 
 fn hand_28() -> Deal {
-    Deal {
-        physics: physics("P0"),
-        contract: Contract { declarer: Seat::S0, bid: 30 },
-        hands: HAND_28.map(|h| tiles(&h)),
-    }
+    Deal { contract: contract(&physics("P0"), Seat::S0, 30), hands: HAND_28.map(|h| tiles(&h)) }
 }
 
 #[test]
 fn hand_28_replayed_through_the_solver_comes_to_25_and_17() {
     let deal = hand_28();
-    let physics = deal.physics.as_ref();
+    let physics = deal.contract.declaration();
     let line: Vec<Domino> = HAND_28_LINE.iter().map(|d| tile(d)).collect();
     let mut solver = Solver::new(physics);
-    let mut position = OpenPosition::deal(physics, deal.contract, deal.hands).unwrap();
+    let mut position = OpenPosition::deal(deal.contract.clone(), deal.hands).unwrap();
     for d in &line[..27] {
-        position = position.play(physics, *d).unwrap();
+        position = position.play(*d).unwrap();
     }
     // The last play is forced, and its value is the line's: 25 to 17.
     let last = solver.solve(&position, Objective::Margin).unwrap();
     assert_eq!(last.moves, vec![(tile("5-2"), 25 - 17)]);
     assert_eq!(solver.solve(&position, Objective::Make).unwrap().moves, vec![(tile("5-2"), 0)]);
-    let end = position.play(physics, line[27]).unwrap();
+    let end = position.play(line[27]).unwrap();
     assert_eq!((end.banked(), end.next_actor()), ([25, 17], None));
     assert_eq!(solver.value(&end, Objective::Margin), 8);
 
@@ -213,15 +206,15 @@ fn hand_28_replayed_through_the_solver_comes_to_25_and_17() {
     // each grade agrees with the root values it was read from.
     let grades = grade_line(&deal, &line).unwrap();
     assert_eq!(grades.len(), 28);
-    let mut position = OpenPosition::deal(physics, deal.contract, deal.hands).unwrap();
+    let mut position = OpenPosition::deal(deal.contract.clone(), deal.hands).unwrap();
     for (g, d) in grades.iter().zip(&line) {
-        assert_eq!((g.tile, Some(g.seat), g.legal), (*d, position.next_actor(), position.legal(physics)));
+        assert_eq!((g.tile, Some(g.seat), g.legal), (*d, position.next_actor(), position.legal()));
         let values = Solver::new(physics).solve(&position, Objective::Margin).unwrap();
         assert_eq!(
             (g.margin.given, g.margin.best, g.margin.tied),
             (values.value(*d).unwrap(), values.best(), values.tied_best())
         );
-        position = position.play(physics, *d).unwrap();
+        position = position.play(*d).unwrap();
     }
 
     // Two of the narrated plays fall short double-dummy, and one of them
@@ -241,21 +234,17 @@ fn hand_28_replayed_through_the_solver_comes_to_25_and_17() {
 /// The declaring side's points still to come, by unpruned minimax memoized
 /// only on exact trick-start states: no alpha-beta, no bounds, no move
 /// ordering, and the rules read through the physics's own methods.
-fn memoized(
-    physics: &dyn Physics,
-    position: &OpenPosition,
-    memo: &mut std::collections::HashMap<([DominoSet; 4], Seat), u32>,
-) -> u32 {
+fn memoized(position: &OpenPosition, memo: &mut std::collections::HashMap<([DominoSet; 4], Seat), u32>) -> u32 {
     let Some(seat) = position.next_actor() else { return 0 };
-    let side = position.contract().declarer.team();
+    let side = position.contract().declarer().team();
     let key = (position.hands(), position.leader());
     if let Some(v) = position.trick().is_empty().then(|| memo.get(&key)).flatten() {
         return *v;
     }
     let before = position.banked()[side.index()];
-    let values = position.legal(physics).iter().map(|d| {
-        let next = position.play(physics, d).unwrap();
-        next.banked()[side.index()] - before + memoized(physics, &next, memo)
+    let values = position.legal().iter().map(|d| {
+        let next = position.play(d).unwrap();
+        next.banked()[side.index()] - before + memoized(&next, memo)
     });
     let v = if seat.team() == side { values.max().unwrap() } else { values.min().unwrap() };
     if position.trick().is_empty() {
@@ -269,15 +258,15 @@ fn memoized(
 #[test]
 fn hand_28_from_the_opening_lead_agrees_with_the_whole_tree() {
     let deal = hand_28();
-    let physics = deal.physics.as_ref();
-    let opening = OpenPosition::deal(physics, deal.contract, deal.hands).unwrap();
+    let physics = deal.contract.declaration();
+    let opening = OpenPosition::deal(deal.contract.clone(), deal.hands).unwrap();
     let mut memo = std::collections::HashMap::new();
     let tree: Vec<(Domino, i32)> = opening
-        .legal(physics)
+        .legal()
         .iter()
         .map(|d| {
-            let next = opening.play(physics, d).unwrap();
-            (d, 2 * (next.banked()[0] + memoized(physics, &next, &mut memo)) as i32 - 42)
+            let next = opening.play(d).unwrap();
+            (d, 2 * (next.banked()[0] + memoized(&next, &mut memo)) as i32 - 42)
         })
         .collect();
     let expected = [("0-0", 42), ("3-1", 8), ("5-0", 42), ("5-3", 8), ("6-0", 42), ("6-1", 26), ("6-6", 26)];

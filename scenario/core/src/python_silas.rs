@@ -10,7 +10,6 @@
 //! the weights handed to `SilasBelief.from_worlds`, each read exactly.
 
 use std::num::NonZeroU64;
-use std::sync::Arc;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -18,8 +17,8 @@ use pyo3::types::{PyDict, PyFrozenSet, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 use silas::{
-    Answer, Authority, Belief, Budget, CompiledPolicy, CompiledQuery, Contract, DominoSet, Estimate, Frame, Physics,
-    PolicyProgram, Query, QuerySummary, Registry, Seat, Value, Verdict, Weight,
+    Answer, Authority, Belief, Bid, Budget, CompiledPolicy, CompiledQuery, Contract, DecisionProvenance, DominoSet,
+    Estimate, Frame, Physics, PolicyProgram, Query, QuerySummary, Registry, Seat, Value, Verdict, Weight,
 };
 
 use crate::physics::{domino, dominoes, mask, seat, tile, ZebPhysics};
@@ -34,8 +33,8 @@ fn invalid(message: impl Into<String>) -> PyErr {
     SilasError::new_err(message.into())
 }
 
-fn physics(decl: u8) -> PyResult<Arc<dyn Physics>> {
-    Ok(Arc::new(ZebPhysics::new(decl).ok_or_else(|| invalid(format!("no declaration {decl}")))?))
+fn physics(decl: u8) -> PyResult<Physics> {
+    Ok(ZebPhysics::new(decl).ok_or_else(|| invalid(format!("no declaration {decl}")))?.physics())
 }
 
 fn tiles(mask: u32) -> PyResult<DominoSet> {
@@ -47,14 +46,11 @@ fn fraction<'py>(py: Python<'py>, value: &impl ToString) -> PyResult<Bound<'py, 
     py.import("fractions")?.getattr("Fraction")?.call1((value.to_string(),))
 }
 
-/// The labels that name an authority: `exact`, `exact_given(<model>)`,
-/// `sampled(<n>, <seed>)`.
+/// The label that names an authority: `exact`; otherwise
+/// `exact_given(<model> + ...)` for its models and `sampled(<n>, <seed>)` for
+/// each sample, joined by `and`.
 fn label(authority: &Authority) -> String {
-    match authority {
-        Authority::Exact => "exact".into(),
-        Authority::ExactGiven { model } => format!("exact_given({model})"),
-        Authority::Sampled { n, seed } => format!("sampled({n}, {seed})"),
-    }
+    authority.to_string()
 }
 
 /// Where a number's exactness comes from. Callers make only the two kinds a
@@ -69,7 +65,7 @@ impl SilasAuthority {
     /// `n` worlds drawn, not enumerated, from the stream seeded `seed`.
     #[staticmethod]
     fn sampled(n: usize, seed: u64) -> Self {
-        SilasAuthority(Authority::Sampled { n, seed })
+        SilasAuthority(Authority::sampled(n, seed))
     }
 
     /// Exact arithmetic on weights from a pinned model. `model_id` must name
@@ -79,7 +75,7 @@ impl SilasAuthority {
         if model_id.trim().is_empty() {
             return Err(invalid("exact_given names its model: content hash, rung and seed"));
         }
-        Ok(SilasAuthority(Authority::ExactGiven { model: model_id.to_owned() }))
+        Authority::given(model_id).map(SilasAuthority).map_err(refused)
     }
 
     #[getter]
@@ -104,18 +100,13 @@ impl SilasAuthority {
 #[pyclass(frozen, module = "scenario_core")]
 pub struct SilasFrame(Frame);
 
-impl SilasFrame {
-    fn record(&self) -> &silas::Record {
-        self.0.record().expect("a SilasFrame is built from its record")
-    }
-}
-
 #[pymethods]
 impl SilasFrame {
     /// `decl` is Zeb's declaration; `viewer` the seat to play, holding the
-    /// tile mask `own`; `bidder` the seat that won the auction, and `bid` the
-    /// points it must take; `plays` every play so far as `(seat, tile)`, in
-    /// order, the bidder leading the first trick.
+    /// tile mask `own`; `bidder` the seat that won the auction, and `bid` its
+    /// bid as the table says it (30 to 41 points; 42, 84, ... marks); `plays`
+    /// every play so far as `(seat, tile)`, in order, the bidder leading the
+    /// first trick.
     #[new]
     fn new(decl: u8, viewer: u8, own: u32, bidder: u8, bid: u32, plays: Vec<(u8, u8)>) -> PyResult<Self> {
         let physics = physics(decl)?;
@@ -124,25 +115,32 @@ impl SilasFrame {
             .iter()
             .map(|&(s, t)| Ok((at(s)?, domino(t).ok_or_else(|| invalid(format!("no tile {t}")))?)))
             .collect::<PyResult<Vec<_>>>()?;
-        let contract = Contract { declarer: at(bidder)?, bid };
-        Frame::from_record(physics, at(viewer)?, tiles(own)?, contract, plays).map(SilasFrame).map_err(refused)
+        let contract = Contract::new(at(bidder)?, Bid::number(bid).map_err(refused)?, physics).map_err(refused)?;
+        Frame::from_history(contract, at(viewer)?, tiles(own)?, &plays).map(SilasFrame).map_err(refused)
     }
 
-    /// The physics identity, such as `zeb/P5`.
+    /// The physics's name, such as `zeb/P5`.
     #[getter]
     fn physics(&self) -> String {
-        self.0.physics().identity()
+        self.0.physics().name().to_owned()
+    }
+
+    /// The physics's identity: a content hash of its tables.
+    #[getter]
+    fn physics_identity(&self) -> String {
+        self.0.physics().identity().to_owned()
     }
 
     /// The seat that won the auction.
     #[getter]
     fn bidder(&self) -> u8 {
-        self.record().contract().declarer.index() as u8
+        self.0.contract().declarer().index() as u8
     }
 
+    /// The bid as the table says it.
     #[getter]
     fn bid(&self) -> u32 {
-        self.record().contract().bid
+        self.0.contract().bid().value()
     }
 
     /// The tiles played so far, as a mask.
@@ -166,7 +164,7 @@ impl SilasFrame {
     /// Each team's points from the closed tricks.
     #[getter]
     fn banked(&self) -> (u32, u32) {
-        let [a, b] = self.record().banked();
+        let [a, b] = self.0.banked();
         (a, b)
     }
 
@@ -174,8 +172,7 @@ impl SilasFrame {
     /// suit k (7 the called suit).
     #[getter]
     fn voids(&self) -> [u8; 4] {
-        let physics = self.0.physics();
-        Seat::ALL.map(|s| self.record().shown_voids(physics, s).iter().fold(0u8, |bits, q| bits | 1 << q.index()))
+        Seat::ALL.map(|s| self.0.shown_voids(s).iter().fold(0u8, |bits, q| bits | 1 << q.index()))
     }
 
     /// Per seat, the tiles it still holds.
@@ -229,6 +226,27 @@ impl SilasPolicy {
     #[getter]
     fn identity(&self) -> String {
         self.0.identity().to_owned()
+    }
+
+    /// What the policy allows at `frame`, where its viewer is to play: the
+    /// layer that decides (`"exact"`, `"fallback"`, or the deciding rule's
+    /// name) and the tiles it allows, as Zeb's tile ids. The policy plays the
+    /// least of them. Spends at most `budget` units of work.
+    #[pyo3(signature = (frame, budget = 10_000_000))]
+    fn allowed(&self, frame: &SilasFrame, budget: u64) -> PyResult<(String, Vec<u8>)> {
+        let allowed = self.0.allowed(&frame.0, &mut Budget::new(budget)).map_err(refused)?;
+        let layer = match allowed.provenance {
+            DecisionProvenance::Exact => "exact".to_owned(),
+            DecisionProvenance::Fallback => "fallback".to_owned(),
+            DecisionProvenance::RelationalRule { name } => name,
+        };
+        Ok((layer, allowed.tiles.iter().map(tile).collect()))
+    }
+
+    /// The tile the policy plays at `frame`, as Zeb's tile id.
+    #[pyo3(signature = (frame, budget = 10_000_000))]
+    fn choose(&self, frame: &SilasFrame, budget: u64) -> PyResult<u8> {
+        self.0.choose(&frame.0, &mut Budget::new(budget)).map(tile).map_err(refused)
     }
 }
 
@@ -437,7 +455,7 @@ fn silas_compare(a: &SilasEstimate, b: &SilasEstimate, band: &Bound<'_, PyAny>) 
         (Ok(n), Ok(Some(d))) => Weight::ratio(n, d),
         _ => return Err(invalid("a band is a nonnegative Fraction below 2**64")),
     };
-    Ok(match silas::compare(&a.0, &b.0, band.rational()).map_err(refused)? {
+    Ok(match silas::compare(&a.0, &b.0, band.rational()).map_err(refused)?.0 {
         Verdict::Better => "better",
         Verdict::Worse => "worse",
         Verdict::Indistinguishable => "indistinguishable",

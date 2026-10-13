@@ -6,9 +6,8 @@
 ; exactly two followers, neither count; the book's tile is the lower.
 ; How this encoding differs: none from the gate.
 (policy c13c-low-from-a-pair
-  (initial play)
   (fallback lowest-legal)
-  (rule follow-low (in play) (next play) (select answer)
+  (rule follow-low (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino low) (domino high) (context led))

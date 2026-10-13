@@ -1,0 +1,154 @@
+; The book's vocabulary (Roberson, Winning 42) as named relations over one
+; frame: the seats named from the bidder, the trump, the count, and what a lead
+; calls for. A query or a policy brings it in with (include book); every rule in
+; examples/book/ is written with it.
+;
+; A definition's parameters stand for whatever the caller passes; a role it
+; needs of its own is declared in a (some ...) or a (none ...), distinct from
+; the others declared with it and not from the roles around it.
+
+; -- The seats, named from the bidder.
+
+; b won the auction.
+(define bidder (roles (chair b))
+  (declarer b))
+
+; p is the bidder's partner.
+(define bidders-partner (roles (chair p))
+  (some (roles (chair b)) (declarer b) (partner b p)))
+
+; s is one of the two setters.
+(define setter (roles (chair s))
+  (some (roles (chair b)) (declarer b) (opponent b s)))
+
+; s plays just after the bidder: the left setter.
+(define left-setter (roles (chair s))
+  (some (roles (chair b)) (declarer b) (successor b s)))
+
+; s plays just before the bidder: the right setter.
+(define right-setter (roles (chair s))
+  (some (roles (chair b)) (declarer b) (successor s b)))
+
+; c leads the next trick.
+(define on-lead (roles (chair c))
+  (leader c)
+  (next-actor c))
+
+; -- The count.
+
+(define count-tile (roles (domino d))
+  (not (count d 0)))
+
+; A tile already on the open trick is count.
+(define count-on-trick (roles)
+  (some (roles (chair c) (domino d)) (trick-play c d) (count-tile d)))
+
+; -- The trump: one context under every declaration that has one, none under
+; no trump.
+
+(define trump-tile (roles (domino d))
+  (some (roles (context t)) (trump t) (in d t)))
+
+; The open trick was led in trump.
+(define trump-led (roles)
+  (some (roles (context t)) (trump t) (led-context t)))
+
+; c has shown void in trump.
+(define shown-out-of-trump (roles (chair c))
+  (some (roles (context t)) (trump t) (shown-void c t)))
+
+; A trump outside the viewer's hand is still live.
+(define trump-out (roles)
+  (some (roles (domino d)) (live d) (not (mine d)) (trump-tile d)))
+
+; d is the top trump: no trump beats it, played or not.
+(define top-trump (roles (domino d))
+  (some (roles (context t)) (trump t) (in d t) (none (roles (domino e)) (in e t) (beats e d t))))
+
+; d is the trump next below `above`, played or not.
+(define next-trump (roles (domino above) (domino d))
+  (some (roles (context t))
+    (trump t)
+    (in above t)
+    (in d t)
+    (beats above d t)
+    (none (roles (domino e)) (in e t) (beats above e t) (beats e d t))))
+
+; d is the highest trump still live.
+(define boss-trump (roles (domino d))
+  (some (roles (context t)) (trump t) (boss d t)))
+
+; d is the viewer's lowest trump.
+(define lowest-trump-held (roles (domino d))
+  (some (roles (context t)) (trump t) (mine d) (in d t) (none (roles (domino e)) (mine e) (in e t) (beats d e t))))
+
+; The viewer holds four trumps or more.
+(define four-trumps-or-more (roles)
+  (some (roles (domino a) (domino b) (domino c) (domino d))
+    (mine a)
+    (trump-tile a)
+    (mine b)
+    (trump-tile b)
+    (mine c)
+    (trump-tile c)
+    (mine d)
+    (trump-tile d)))
+
+; The viewer holds exactly four trumps.
+(define exactly-four-trumps (roles)
+  (some (roles (domino a) (domino b) (domino c) (domino d))
+    (mine a)
+    (trump-tile a)
+    (mine b)
+    (trump-tile b)
+    (mine c)
+    (trump-tile c)
+    (mine d)
+    (trump-tile d)
+    (none (roles (domino e))
+      (mine e)
+      (trump-tile e)
+      (not (tile e a))
+      (not (tile e b))
+      (not (tile e c))
+      (not (tile e d)))))
+
+; -- What a tile can lose, and what a lead calls for. "Outside the viewer's
+; hand" is a live tile the viewer does not hold.
+
+; A live tile outside the viewer's hand beats d in context q.
+(define loses-in (roles (domino d) (context q))
+  (some (roles (domino over)) (live over) (not (mine over)) (in over q) (beats over d q)))
+
+; Led, d can lose its suit to a tile outside the viewer's hand.
+(define can-lose (roles (domino d))
+  (some (roles (context q)) (leads-context d q) (loses-in d q)))
+
+; An off: the viewer's tile, not trump, that can lose.
+(define off (roles (domino d))
+  (mine d)
+  (not (trump-tile d))
+  (can-lose d))
+
+; A live tile beats d in the open trick's context.
+(define beatable (roles (domino d))
+  (some (roles (context q) (domino over)) (led-context q) (live over) (beats over d q)))
+
+; Led, d calls for count: a live count tile outside the viewer's hand follows
+; the suit d leads.
+(define calls-for-count (roles (domino d))
+  (some (roles (context q) (domino called))
+    (leads-context d q)
+    (live called)
+    (not (mine called))
+    (in called q)
+    (count-tile called)))
+
+; Led, d calls for a tile of n count.
+(define calls-for (roles (domino d) (number n))
+  (some (roles (context q) (domino called))
+    (leads-context d q)
+    (live called)
+    (not (mine called))
+    (in called q)
+    (count called n)))

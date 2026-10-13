@@ -104,10 +104,10 @@ impl Bid {
         }
     }
 
-    /// The points the bid needs: a marks bid (84 and up) needs all 42.
-    pub fn contract_points(&self) -> u32 {
+    /// The bid as the book states it: points, or 84 for two marks.
+    pub fn number(&self) -> u32 {
         match self {
-            Bid::Points(b) => (*b).min(42),
+            Bid::Points(b) => *b,
             _ => panic!("no bid to play: {self:?}"),
         }
     }
@@ -140,7 +140,7 @@ impl Example {
         Role::ALL.map(|r| self.seat(r).expect("every role").set())
     }
 
-    pub fn physics(&self) -> std::sync::Arc<dyn Physics> {
+    pub fn physics(&self) -> Physics {
         super::physics(self.declaration.as_deref().expect("a straight declaration"))
     }
 }
@@ -203,6 +203,95 @@ impl Book {
 
     pub fn line(&self, id: &str) -> &Line {
         self.lines.iter().find(|l| l.id == id).unwrap_or_else(|| panic!("no line {id}"))
+    }
+}
+
+/// A position, free of seats: the declaration, the bid as the book states
+/// it, the viewer's role, the hand it was dealt, and the plays so far, the
+/// bidder leading the first trick. [`Position::frame`] seats it.
+#[derive(Clone, Debug)]
+pub struct Position {
+    pub physics: Physics,
+    pub bid: u32,
+    pub viewer: Role,
+    pub dealt: DominoSet,
+    pub plays: Vec<Domino>,
+}
+
+impl Position {
+    /// The viewer's view after `plays`, holding `hand`: its own plays in the
+    /// record are given back to its dealt hand. The other seats' plays are
+    /// checked only against their shown voids: a book that gives one hand
+    /// gives the rest of the record without the hands behind it.
+    pub fn holding(physics: Physics, bid: u32, viewer: Role, hand: DominoSet, plays: Vec<Domino>) -> Position {
+        let roles = super::actors(&physics, Seat::S0, &plays);
+        let own: DominoSet =
+            roles.iter().zip(&plays).filter(|(s, _)| s.index() == viewer.index()).map(|(_, d)| *d).collect();
+        let at = Position { physics, bid, viewer, dealt: hand.union(own), plays };
+        at.frame(Seat::S0);
+        at
+    }
+
+    /// The viewer's view of a full deal (hands in role order) after `plays`,
+    /// every play checked legal from the hand it came from.
+    pub fn dealt(physics: Physics, bid: u32, deal: [DominoSet; 4], viewer: Role, plays: &[Domino]) -> Position {
+        assert_eq!(deal.iter().fold(DominoSet::EMPTY, |all, h| all.union(*h)), DominoSet::FULL);
+        let mut hands = deal;
+        let mut led = None;
+        for (i, (seat, d)) in super::actors(&physics, Seat::S0, plays).into_iter().zip(plays).enumerate() {
+            if i % 4 == 0 {
+                led = Some(*d);
+            }
+            let lead = if i % 4 == 0 { None } else { led };
+            assert!(physics.legal_plays(hands[seat.index()], lead).contains(*d), "play {i}: {seat} cannot play {d}");
+            hands[seat.index()].remove(*d);
+        }
+        Position { physics, bid, viewer, dealt: deal[viewer.index()], plays: plays.to_vec() }
+    }
+
+    /// The role to move, if any.
+    pub fn to_move(&self) -> Option<Role> {
+        self.frame(Seat::S0).next_actor().map(|s| Role::at(s.index()))
+    }
+
+    /// The same position under a contract of `bid`.
+    pub fn bid(self, bid: u32) -> Position {
+        Position { bid, ..self }
+    }
+
+    /// The viewer's frame with the bidder in the chair `declarer`.
+    pub fn frame(&self, declarer: Seat) -> Frame {
+        let contract = Contract::new(declarer, silas::Bid::number(self.bid).unwrap(), self.physics.clone()).unwrap();
+        Frame::new(contract, declarer.plus(self.viewer.index()), self.dealt, self.plays.clone()).unwrap()
+    }
+}
+
+impl Book {
+    /// The book's deal `id` after the first `plays` plays of its narrated
+    /// line, with `role` to move: the book's position in one call.
+    pub fn at(&self, id: &str, plays: usize, role: Role) -> Position {
+        let at = self.dealt(id, role, &self.line(&format!("{id}/prose")).plays()[..plays]);
+        assert_eq!(at.to_move(), Some(role), "{id} after {plays} plays");
+        at
+    }
+
+    /// The book's deal `id` after `plays`, with `role` to move.
+    pub fn dealt(&self, id: &str, role: Role, plays: &[Domino]) -> Position {
+        let example = self.example(id);
+        Position::dealt(example.physics(), example.bid.number(), example.deal(), role, plays)
+    }
+
+    /// The bidder's view of book hand `id` after `plays` (his own among them
+    /// are taken from his hand), at the hand's declaration and the bid its
+    /// narrated play is at.
+    pub fn bidders(&self, id: &str, plays: &[Domino]) -> Position {
+        let example = self.example(id);
+        let bid = match &example.bid {
+            Bid::Points(b) => *b,
+            _ => self.line(&format!("{id}/prose")).bid.number(),
+        };
+        let hand = example.hand().difference(plays.iter().copied().collect());
+        Position::holding(example.physics(), bid, Role::Bidder, hand, plays.to_vec())
     }
 }
 

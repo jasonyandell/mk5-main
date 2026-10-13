@@ -10,9 +10,8 @@
 ; the same protection on trump doubles (Hand 33, p. 111), which the gate
 ; excludes.
 (policy c13b-protect-the-count
-  (initial play)
   (fallback lowest-legal)
-  (rule follow-with-the-guard (in play) (next play) (select answer)
+  (rule follow-with-the-guard (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino doubled) (domino guard) (domino counted) (context led))

@@ -6,9 +6,8 @@
 ; How this encoding differs: none. The book plays it as a crisis lead in one
 ; hand; the gate, and this file, make it a rule on every lead.
 (policy c21-six-five-bait
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-six-five (in play) (next play) (select tile 6-5)
+  (rule lead-the-six-five (select tile 6-5)
     (guard
       (query
         (roles (chair b))

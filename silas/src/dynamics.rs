@@ -5,10 +5,10 @@
 //! policy has latent state must carry that state itself and supply the
 //! resulting likelihood.
 
-use crate::belief::{Belief, given, probability};
+use crate::belief::{Belief, probability};
 use crate::eval::{Answer, Answers, Budget};
-use crate::frame::{Frame, HIDDEN_SEATS, Holdings, Kernel, World};
-use crate::measure::{Estimate, Weight};
+use crate::frame::{Frame, HIDDEN_SEATS, Holdings, World};
+use crate::measure::{Authority, Estimate, Weight};
 use crate::nouns::{Context, Domino, DominoSet, Seat};
 use crate::{Result, error};
 
@@ -49,34 +49,11 @@ fn typed(frame: &Frame, play: ObservedPlay) -> Result<()> {
     }
 }
 
-fn successor_kernel(frame: &Frame, play: ObservedPlay) -> Result<Kernel> {
-    let kernel = frame.kernel();
-    let mut viewer_hand = kernel.viewer_hand();
-    let mut pool = kernel.pool();
-    let mut hidden = *kernel.hidden();
-    if play.actor == kernel.viewer() {
-        if !viewer_hand.remove(play.tile) {
-            return Err(error("the viewer does not hold the observed tile"));
-        }
-    } else {
-        if !pool.remove(play.tile) {
-            return Err(error("the observed tile is outside the hidden pool"));
-        }
-        let slot = hidden.iter_mut().find(|h| h.seat == play.actor).expect("every other seat is hidden");
-        if slot.capacity == 0 {
-            return Err(error("the observed actor has no tiles"));
-        }
-        slot.capacity -= 1;
-        if let PlayClass::Slough(q) = play.class {
-            slot.voids.insert(q);
-        }
-    }
-    Kernel::new(kernel.viewer(), viewer_hand, pool, hidden)
-}
-
-/// Apply a play to the public frame and its support. The play must be legal
-/// in at least one predecessor world. The fourth play closes the trick and
-/// seats its winner as the next leader.
+/// Apply a play to the public frame and its support: the frame of the record
+/// extended by the play. The play must be legal in at least one predecessor
+/// world (for the viewer, legal from its hand; for a hidden seat, a tile it
+/// may hold, with a deal of the rest that fits). The fourth play closes the
+/// trick and seats its winner as the next leader.
 pub fn step_frame(frame: &Frame, play: ObservedPlay, budget: &mut Budget) -> Result<Frame> {
     typed(frame, play)?;
     let kernel = frame.kernel();
@@ -85,25 +62,11 @@ pub fn step_frame(frame: &Frame, play: ObservedPlay, budget: &mut Budget) -> Res
         if !physics.legal_plays(kernel.viewer_hand(), frame.lead()).contains(play.tile) {
             return Err(error("the viewer's play is illegal in the predecessor frame"));
         }
-    } else {
-        let slot = kernel.hidden().iter().position(|h| h.seat == play.actor).expect("every other seat is hidden");
-        if !kernel.allowed(physics, slot).contains(play.tile) {
-            return Err(error("the hidden play contradicts the actor's shown voids"));
-        }
+    } else if !kernel.allowed(physics, kernel.slot(play.actor)).contains(play.tile) {
+        return Err(error("the hidden play contradicts the actor's shown voids, or its tile is not hidden"));
     }
     budget.spend(1)?;
-    let next = successor_kernel(frame, play)?;
-    if physics.count_worlds(&next) == 0 {
-        return Err(error("no predecessor world makes this play legal"));
-    }
-    let mut prefix = frame.prefix().to_vec();
-    prefix.push(play.tile);
-    let mut leader = frame.leader();
-    if let Ok(trick) = <[Domino; 4]>::try_from(prefix.as_slice()) {
-        leader = physics.trick_winner(leader, trick);
-        prefix.clear();
-    }
-    frame.after(next, leader, prefix, (play.actor, play.tile))
+    frame.after(play.tile).map_err(|e| error(format!("no predecessor world makes this play legal: {e}")))
 }
 
 fn legal_in(holdings: Holdings<'_>, play: ObservedPlay) -> Result<bool> {
@@ -121,15 +84,21 @@ pub fn play_is_legal(frame: &Frame, world: &World, play: ObservedPlay) -> bool {
 
 /// Push one legal predecessor world through the play.
 pub fn step_world(frame: &Frame, world: &World, play: ObservedPlay) -> Result<World> {
+    let next = frame.after(play.tile)?;
+    push(frame, &next, world, play)
+}
+
+/// `world` of `frame` in `next`, the frame after `play`.
+fn push(frame: &Frame, next: &Frame, world: &World, play: ObservedPlay) -> Result<World> {
     typed(frame, play)?;
     if !play_is_legal(frame, world, play) {
         return Err(error("the world is outside the play's legal domain"));
     }
-    let next = successor_kernel(frame, play)?;
+    let kernel = next.kernel();
     let hands: [DominoSet; HIDDEN_SEATS] =
-        std::array::from_fn(|slot| world.hand(next.hidden()[slot].seat).difference(DominoSet::single(play.tile)));
-    let world = next.world(hands);
-    if !next.contains(frame.physics(), &world) {
+        std::array::from_fn(|slot| world.hand(kernel.hidden()[slot].seat).difference(DominoSet::single(play.tile)));
+    let world = kernel.world(hands);
+    if !next.contains(&world) {
         return Err(error("the successor world violates the updated support"));
     }
     Ok(world)
@@ -160,7 +129,7 @@ pub fn step_belief_given(
     model: &str,
     likelihood: impl FnMut(Holdings<'_>) -> Result<Weight>,
 ) -> Result<BeliefStep> {
-    let authority = prior.authority().meet(&given(model)?)?;
+    let authority = prior.authority().meet(&Authority::given(model)?);
     step(prior, play, posterior_id.into(), max_worlds, budget, authority, likelihood)
 }
 
@@ -170,7 +139,7 @@ fn step(
     posterior_id: String,
     max_worlds: usize,
     budget: &mut Budget,
-    authority: crate::Authority,
+    authority: Authority,
     mut likelihood: impl FnMut(Holdings<'_>) -> Result<Weight>,
 ) -> Result<BeliefStep> {
     typed(prior.frame(), play)?;
@@ -188,7 +157,7 @@ fn step(
             continue;
         }
         evidence += &weighted;
-        entries.push((step_world(prior.frame(), world, play)?, weighted));
+        entries.push((push(prior.frame(), &frame, world, play)?, weighted));
     }
     if evidence.is_zero() {
         return Err(error("a zero-mass observation under the supplied likelihood"));
@@ -235,10 +204,11 @@ pub fn anchor_back(
     typed(frame, play)?;
     let prior: Vec<_> = prior.into_iter().collect();
     budget.spend(prior.len() as u64)?;
+    let next = frame.after(play.tile)?;
     let mut out: Vec<(World, Answer)> = Vec::new();
     for (world, answer) in prior {
         if play_is_legal(frame, &world, play) {
-            let successor = step_world(frame, &world, play)?;
+            let successor = push(frame, &next, &world, play)?;
             if later.iter().any(|(w, a)| *w == successor && *a == answer) && !out.contains(&(world, answer.clone())) {
                 out.push((world, answer));
             }

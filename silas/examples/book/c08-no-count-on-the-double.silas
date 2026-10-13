@@ -10,9 +10,8 @@
 ; How this encoding differs: none from the gate. The book's own instances are
 ; on trump doubles (Hands 33 and 35, pp. 111, 116), which the gate excludes.
 (policy c08-no-count-on-the-double
-  (initial play)
   (fallback lowest-legal)
-  (rule follow-without-count (in play) (next play) (select answer)
+  (rule follow-without-count (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino doubled) (domino plain) (domino counted) (context led))

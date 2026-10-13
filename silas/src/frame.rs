@@ -1,13 +1,19 @@
-//! What a seat knows (a [`Kernel`] and the public trick residue, together a
-//! [`Frame`], with the hand's public [`Record`] when it is known), the hidden
-//! [`World`]s consistent with it, and [`Holdings`], the only window through
-//! which a query reads a world.
+//! What a seat knows. A [`Frame`] is the hand's public record as one seat
+//! sees it: the [`Contract`] (whose declaration is the [`Physics`]), the
+//! viewer, the hand it was dealt, and every play so far. Everything else (the
+//! leader, the open trick, the played set, the banked points, each seat's
+//! shown voids and remaining size, the viewer's [`Kernel`]) is derived from
+//! those by one replay, never supplied. A [`World`] is one deal of the hidden
+//! tiles consistent with the frame, and [`Holdings`] the only window through
+//! which a query reads one.
 
-use std::sync::Arc;
+use std::cell::Cell;
+use std::fmt;
+use std::str::FromStr;
 
 use crate::nouns::{Context, ContextSet, Domino, DominoSet, Seat, Team};
-use crate::physics::{Physics, total_points};
-use crate::{Result, error};
+use crate::physics::Physics;
+use crate::{Error, Result, error};
 
 /// Three seats are hidden from the one viewer.
 pub const HIDDEN_SEATS: usize = 3;
@@ -25,7 +31,8 @@ pub struct Hidden {
 }
 
 /// The viewer's information, independent of any rules: its own hand, the
-/// hidden pool, and each hidden seat's capacity and shown voids.
+/// hidden pool, and each hidden seat's capacity and shown voids. A frame
+/// derives one; a belief over a part of the pool builds others.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Kernel {
     viewer: Seat,
@@ -89,13 +96,13 @@ impl Kernel {
         if seat == self.viewer { self.viewer_hand.len() } else { self.hidden[self.slot(seat)].capacity }
     }
 
-    fn slot(&self, seat: Seat) -> usize {
+    pub(crate) fn slot(&self, seat: Seat) -> usize {
         self.hidden.iter().position(|h| h.seat == seat).expect("every other seat is hidden")
     }
 
     /// The pool tiles hidden slot `slot` may hold: those that follow none of
     /// its shown voids.
-    pub fn allowed(&self, physics: &dyn Physics, slot: usize) -> DominoSet {
+    pub fn allowed(&self, physics: &Physics, slot: usize) -> DominoSet {
         self.hidden[slot].voids.iter().fold(self.pool, |out, q| out.difference(physics.incidence(q)))
     }
 
@@ -113,7 +120,7 @@ impl Kernel {
     /// Whether `world` is consistent with this kernel: the viewer's hand is its
     /// own, each hidden seat holds exactly its capacity of tiles it may hold,
     /// and the hidden hands partition the pool.
-    pub fn contains(&self, physics: &dyn Physics, world: &World) -> bool {
+    pub fn contains(&self, physics: &Physics, world: &World) -> bool {
         let mut seen = DominoSet::EMPTY;
         for (slot, h) in self.hidden.iter().enumerate() {
             let hand = world.hand(h.seat);
@@ -138,45 +145,355 @@ impl World {
     }
 }
 
-/// What the auction settled: the seat that won it, and the points its side
-/// must take. A marks bid (84 and up) is the whole 42 here; marks are
-/// scoring, which Silas does not have.
+/// A bid as the table says it: a points bid (30 to 41), or a marks bid (42
+/// for one mark, 84 for two, and so on). Range legality is the auction's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Contract {
-    pub declarer: Seat,
-    pub bid: u32,
+pub enum Bid {
+    Points(u32),
+    Marks(u32),
 }
 
-/// The public record of a hand: its contract and every play so far, each
-/// attributed to its seat, in play order. The declarer leads the first trick,
-/// and each trick is a run of four plays. What the record determines (the
-/// banked points, each trick's leader and plays, the shown voids) is derived
-/// from it, never supplied beside it.
+impl Bid {
+    /// The bid the table calls `n`: below 42 a points bid, a multiple of 42 a
+    /// marks bid.
+    pub fn number(n: u32) -> Result<Bid> {
+        match n {
+            0..42 => Ok(Bid::Points(n)),
+            _ if n.is_multiple_of(42) => Ok(Bid::Marks(n / 42)),
+            _ => Err(error(format!("a bid of {n} exceeds the points in a hand, and is not a marks bid (42 per mark)"))),
+        }
+    }
+
+    /// The number the table calls the bid: `n` points, or 42 per mark.
+    pub fn value(self) -> u32 {
+        match self {
+            Bid::Points(n) => n,
+            Bid::Marks(m) => 42 * m,
+        }
+    }
+}
+
+impl fmt::Display for Bid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value())
+    }
+}
+
+impl FromStr for Bid {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Bid> {
+        Bid::number(s.parse().map_err(|_| error(format!("not a bid: {s}")))?)
+    }
+}
+
+/// What the auction settled: the seat that won it, its bid, and the
+/// declaration, whose rules are the hand's [`Physics`]. The points the
+/// declaring side must take (the threshold) and the marks at stake are
+/// derived: a points bid needs its points and pays one mark; a marks bid
+/// needs every point and pays its marks.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Record {
-    contract: Contract,
-    plays: Vec<(Seat, Domino)>,
-    banked: [u32; 2],
+pub struct Contract {
+    declarer: Seat,
+    bid: Bid,
+    declaration: Physics,
 }
 
-impl Record {
-    pub fn contract(&self) -> Contract {
-        self.contract
+impl Contract {
+    /// Refused for a points bid of every point or more (that is a marks bid)
+    /// and for a marks bid of no marks.
+    pub fn new(declarer: Seat, bid: Bid, declaration: Physics) -> Result<Contract> {
+        match bid {
+            Bid::Points(n) if n >= declaration.total_points() => {
+                Err(error(format!("a bid of {n} exceeds the points in a hand; bid every point as marks")))
+            }
+            Bid::Marks(0) => Err(error("a marks bid is for one mark or more")),
+            _ => Ok(Contract { declarer, bid, declaration }),
+        }
+    }
+
+    pub fn declarer(&self) -> Seat {
+        self.declarer
+    }
+
+    pub fn bid(&self) -> Bid {
+        self.bid
+    }
+
+    /// The declaration's rules.
+    pub fn declaration(&self) -> &Physics {
+        &self.declaration
+    }
+
+    /// The points the declaring side must take.
+    pub fn threshold(&self) -> u32 {
+        match self.bid {
+            Bid::Points(n) => n,
+            Bid::Marks(_) => self.declaration.total_points(),
+        }
+    }
+
+    /// The marks the hand is played for.
+    pub fn stake(&self) -> u32 {
+        match self.bid {
+            Bid::Points(_) => 1,
+            Bid::Marks(m) => m,
+        }
+    }
+
+    /// The team that receives the stake when the declaring side ends with
+    /// `points`.
+    pub fn award(&self, points: u32) -> (Team, u32) {
+        let declaring = self.declarer.team();
+        let team = if points >= self.threshold() { declaring } else { declaring.other() };
+        (team, self.stake())
+    }
+}
+
+/// The hand's public record as one seat sees it: the contract, the viewer,
+/// the hand it was dealt, and every play so far, in order. Each play's seat,
+/// each trick's leader, the open trick, the banked points, the shown voids
+/// and the viewer's kernel are derived from these by one replay when the
+/// frame is built, and are never supplied.
+#[derive(Clone)]
+pub struct Frame {
+    contract: Contract,
+    viewer: Seat,
+    dealt: DominoSet,
+    plays: Vec<Domino>,
+    replay: Replay,
+}
+
+/// What the record determines, computed once by [`Frame::new`].
+#[derive(Clone, Debug)]
+struct Replay {
+    history: Vec<(Seat, Domino)>,
+    /// The leader of the open trick, or of the next.
+    leader: Seat,
+    banked: [u32; 2],
+    voids: [ContextSet; Seat::COUNT],
+    kernel: Kernel,
+}
+
+impl PartialEq for Frame {
+    fn eq(&self, other: &Frame) -> bool {
+        (&self.contract, self.viewer, self.dealt, &self.plays)
+            == (&other.contract, other.viewer, other.dealt, &other.plays)
+    }
+}
+
+impl Eq for Frame {}
+
+impl fmt::Debug for Frame {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Frame")
+            .field("physics", &self.contract.declaration)
+            .field("declarer", &self.contract.declarer)
+            .field("bid", &self.contract.bid)
+            .field("viewer", &self.viewer)
+            .field("dealt", &self.dealt)
+            .field("history", &self.replay.history)
+            .finish()
+    }
+}
+
+impl Frame {
+    /// `viewer`'s frame: dealt `dealt` (seven tiles) under `contract`, after
+    /// `plays`. Each play's seat is read off the record: the declarer leads
+    /// the first trick, each trick's winner the next. Refused when a tile is
+    /// played twice, when the viewer plays a tile it was not dealt or plays
+    /// illegally, when another seat plays one of the viewer's tiles, when a
+    /// seat plays a tile of a context it has shown void in, and when no deal
+    /// of the hidden tiles fits.
+    pub fn new(contract: Contract, viewer: Seat, dealt: DominoSet, plays: Vec<Domino>) -> Result<Frame> {
+        Frame::replayed(contract, viewer, dealt, plays, None)
+    }
+
+    /// The same frame from the record as a scorekeeper writes it: the
+    /// viewer's remaining `hand`, and each play attributed to its seat. The
+    /// attribution is checked against the replay.
+    pub fn from_history(
+        contract: Contract,
+        viewer: Seat,
+        hand: DominoSet,
+        history: &[(Seat, Domino)],
+    ) -> Result<Frame> {
+        let mine: DominoSet = history.iter().filter(|(s, _)| *s == viewer).map(|(_, d)| *d).collect();
+        let played: DominoSet = history.iter().map(|(_, d)| *d).collect();
+        if !hand.is_disjoint(played) || hand.len() + mine.len() != MAX_CAPACITY {
+            return Err(error("the viewer's hand disagrees with its plays in the record"));
+        }
+        let seats: Vec<Seat> = history.iter().map(|(s, _)| *s).collect();
+        let plays = history.iter().map(|(_, d)| *d).collect();
+        Frame::replayed(contract, viewer, hand.union(mine), plays, Some(&seats))
+    }
+
+    fn replayed(
+        contract: Contract,
+        viewer: Seat,
+        dealt: DominoSet,
+        plays: Vec<Domino>,
+        attributed: Option<&[Seat]>,
+    ) -> Result<Frame> {
+        if dealt.len() != MAX_CAPACITY {
+            return Err(error(format!(
+                "the viewer's hand disagrees with the record: it was dealt {} tiles, not seven",
+                dealt.len()
+            )));
+        }
+        if plays.len() > Domino::COUNT {
+            return Err(error("a record holds at most 28 plays"));
+        }
+        let physics = contract.declaration();
+        let mut held = dealt;
+        let mut played = DominoSet::EMPTY;
+        let mut remaining = [MAX_CAPACITY; Seat::COUNT];
+        let mut voids = [ContextSet::EMPTY; Seat::COUNT];
+        let mut banked = [0u32; 2];
+        let mut leader = contract.declarer();
+        let mut history = Vec::with_capacity(plays.len());
+        let mut start = 0;
+        for (i, tile) in plays.iter().copied().enumerate() {
+            let seat = leader.plus(i - start);
+            if let Some(claimed) = attributed.map(|seats| seats[i])
+                && claimed != seat
+            {
+                return Err(error(format!("the record's play {claimed} {tile} is out of turn: {seat} is to play")));
+            }
+            if !played.insert(tile) {
+                return Err(error(format!("the record repeats {tile}")));
+            }
+            let lead = (i > start).then(|| plays[start]);
+            if seat == viewer {
+                if !held.contains(tile) {
+                    return Err(error(format!("the record gives the viewer {tile}, which it was not dealt")));
+                }
+                if !physics.legal_plays(held, lead).contains(tile) {
+                    return Err(error(format!("the viewer's play {tile} in the record is illegal")));
+                }
+                held.remove(tile);
+            } else if dealt.contains(tile) {
+                return Err(error(format!("the record gives {seat} the viewer's {tile}")));
+            }
+            if let Some(q) = voids[seat.index()].iter().find(|q| physics.follows(tile, *q)) {
+                return Err(error(format!("{seat} plays {tile}, which follows {q}, after showing void in it")));
+            }
+            if let Some(q) = lead.map(|d| physics.led_context(d))
+                && !physics.follows(tile, q)
+            {
+                voids[seat.index()].insert(q);
+            }
+            remaining[seat.index()] -= 1;
+            history.push((seat, tile));
+            if let Ok(trick) = <[Domino; 4]>::try_from(&plays[start..=i]) {
+                leader = physics.trick_winner(leader, trick);
+                banked[leader.team().index()] += physics.trick_points(trick);
+                start = i + 1;
+            }
+        }
+        let hidden: [Hidden; HIDDEN_SEATS] = std::array::from_fn(|i| {
+            let seat = viewer.plus(i + 1);
+            Hidden { seat, capacity: remaining[seat.index()], voids: voids[seat.index()] }
+        });
+        let kernel = Kernel::new(viewer, held, DominoSet::FULL.difference(held.union(played)), hidden)?;
+        if physics.count_worlds(&kernel) == 0 {
+            return Err(error("no deal of the hidden tiles fits the record"));
+        }
+        let replay = Replay { history, leader, banked, voids, kernel };
+        Ok(Frame { contract, viewer, dealt, plays, replay })
+    }
+
+    /// The frame after one more play.
+    pub fn after(&self, tile: Domino) -> Result<Frame> {
+        let mut plays = self.plays.clone();
+        plays.push(tile);
+        Frame::new(self.contract.clone(), self.viewer, self.dealt, plays)
+    }
+
+    pub fn contract(&self) -> &Contract {
+        &self.contract
+    }
+
+    /// The declaration's rules.
+    pub fn physics(&self) -> &Physics {
+        self.contract.declaration()
+    }
+
+    pub fn viewer(&self) -> Seat {
+        self.viewer
+    }
+
+    /// The seven tiles the viewer was dealt.
+    pub fn dealt(&self) -> DominoSet {
+        self.dealt
     }
 
     /// Every play so far, in order.
-    pub fn plays(&self) -> &[(Seat, Domino)] {
+    pub fn plays(&self) -> &[Domino] {
         &self.plays
     }
 
-    /// The points each team has taken in the closed tricks, by team index.
-    pub fn banked(&self) -> [u32; 2] {
-        self.banked
+    /// Every play so far with the seat that made it.
+    pub fn history(&self) -> &[(Seat, Domino)] {
+        &self.replay.history
     }
 
     /// The tricks so far, the open one last: runs of at most four plays.
     pub fn tricks(&self) -> std::slice::Chunks<'_, (Seat, Domino)> {
-        self.plays.chunks(Seat::COUNT)
+        self.replay.history.chunks(Seat::COUNT)
+    }
+
+    pub fn kernel(&self) -> &Kernel {
+        &self.replay.kernel
+    }
+
+    /// The seat that led the open trick, or leads the next.
+    pub fn leader(&self) -> Seat {
+        self.replay.leader
+    }
+
+    /// The open trick's plays.
+    pub fn prefix(&self) -> &[Domino] {
+        &self.plays[self.plays.len() - self.plays.len() % Seat::COUNT..]
+    }
+
+    /// The tiles played so far.
+    pub fn played(&self) -> DominoSet {
+        self.plays.iter().copied().collect()
+    }
+
+    /// The tile that led the open trick.
+    pub fn lead(&self) -> Option<Domino> {
+        self.prefix().first().copied()
+    }
+
+    pub fn led_context(&self) -> Option<Context> {
+        self.lead().map(|d| self.physics().led_context(d))
+    }
+
+    /// The seat to play next; none once every tile is played.
+    pub fn next_actor(&self) -> Option<Seat> {
+        (self.plays.len() < Domino::COUNT).then(|| self.leader().plus(self.prefix().len()))
+    }
+
+    /// The seat currently taking the open trick: the first of the greatest
+    /// keys.
+    pub fn current_winner(&self) -> Option<Seat> {
+        let led = self.led_context()?;
+        let prefix = self.prefix();
+        let key = |i: usize| self.physics().trick_key(prefix[i], led);
+        let best = (1..prefix.len()).fold(0, |best, i| if key(i) > key(best) { i } else { best });
+        Some(self.leader().plus(best))
+    }
+
+    /// The points each team has taken in the closed tricks, by team index.
+    pub fn banked(&self) -> [u32; 2] {
+        self.replay.banked
+    }
+
+    /// The contexts `seat` has failed to follow.
+    pub fn shown_voids(&self, seat: Seat) -> ContextSet {
+        self.replay.voids[seat.index()]
     }
 
     /// The number of the trick being played or about to be led, from one;
@@ -185,238 +502,28 @@ impl Record {
         (self.plays.len() < Domino::COUNT).then_some(self.plays.len() / Seat::COUNT + 1)
     }
 
-    /// The contexts `seat` has failed to follow, read off the plays.
-    pub fn shown_voids(&self, physics: &dyn Physics, seat: Seat) -> ContextSet {
-        let mut voids = ContextSet::EMPTY;
-        for trick in self.tricks() {
-            let led = physics.led_context(trick[0].1);
-            for (actor, tile) in &trick[1..] {
-                if *actor == seat && !physics.follows(*tile, led) {
-                    voids.insert(led);
-                }
-            }
-        }
-        voids
-    }
-
-    /// The points the declaring side still needs to make its bid (zero once
-    /// made), and the points the other side still needs to set it (zero once
-    /// set), under the physics's count.
-    pub fn to_make_and_set(&self, physics: &dyn Physics) -> (u32, u32) {
-        let declaring = self.contract.declarer.team();
-        let setting = if declaring == Team::T0 { Team::T1 } else { Team::T0 };
-        let to_make = self.contract.bid.saturating_sub(self.banked[declaring.index()]);
-        let to_set = (total_points(physics) + 1 - self.contract.bid).saturating_sub(self.banked[setting.index()]);
+    /// The points the declaring side still needs to reach its threshold
+    /// (zero once made), and the points the other side still needs to set it
+    /// (zero once set).
+    pub fn to_make_and_set(&self) -> (u32, u32) {
+        let declaring = self.contract.declarer().team();
+        let threshold = self.contract.threshold();
+        let to_make = threshold.saturating_sub(self.replay.banked[declaring.index()]);
+        let to_set = (self.physics().total_points() + 1 - threshold)
+            .saturating_sub(self.replay.banked[declaring.other().index()]);
         (to_make, to_set)
-    }
-}
-
-/// A kernel under a physics, with the public residue of the current trick
-/// (its leader, the plays so far, and every tile explicitly known played)
-/// and, when the hand's public record is known, that record.
-/// [`Frame::new`] checks coherence, not reachability from a deal;
-/// [`Frame::from_record`] derives everything public from the record.
-#[derive(Clone, Debug)]
-pub struct Frame {
-    physics: Arc<dyn Physics>,
-    kernel: Kernel,
-    leader: Seat,
-    prefix: Vec<Domino>,
-    played: DominoSet,
-    record: Option<Record>,
-}
-
-impl PartialEq for Frame {
-    fn eq(&self, other: &Frame) -> bool {
-        self.physics.identity() == other.physics.identity()
-            && (&self.kernel, self.leader, &self.prefix, self.played, &self.record)
-                == (&other.kernel, other.leader, &other.prefix, other.played, &other.record)
-    }
-}
-impl Eq for Frame {}
-
-impl Frame {
-    /// A frame without a record. The predicates that read the record (the
-    /// contract, the score, earlier tricks, the viewer's own shown voids) are
-    /// undefined on it.
-    pub fn new(
-        physics: Arc<dyn Physics>,
-        kernel: Kernel,
-        leader: Seat,
-        prefix: Vec<Domino>,
-        played: DominoSet,
-    ) -> Result<Frame> {
-        let unique: DominoSet = prefix.iter().copied().collect();
-        if prefix.len() > 3
-            || unique.len() != prefix.len()
-            || !unique.is_subset_of(played)
-            || !played.is_disjoint(kernel.live())
-        {
-            return Err(error(
-                "incoherent public residue: the prefix must be distinct played tiles, at most three, and no played tile is live",
-            ));
-        }
-        Ok(Frame { physics, kernel, leader, prefix, played, record: None })
-    }
-
-    /// `viewer`'s frame from the public record: the contract, the plays so
-    /// far, and the viewer's remaining `hand`. The leader, the open trick, the
-    /// played set, each hidden seat's capacity and shown voids, and the banked
-    /// points are read off the plays. Refused when the plays break turn order
-    /// (the declarer leads the first trick, each trick's winner the next),
-    /// repeat a tile, give a seat more than seven, follow a context their seat
-    /// has shown void in, or include an illegal play by the viewer; when the
-    /// bid exceeds the points in the hand; and when no deal of the hidden
-    /// tiles fits.
-    pub fn from_record(
-        physics: Arc<dyn Physics>,
-        viewer: Seat,
-        hand: DominoSet,
-        contract: Contract,
-        plays: Vec<(Seat, Domino)>,
-    ) -> Result<Frame> {
-        if contract.bid > total_points(physics.as_ref()) {
-            return Err(error(format!("a bid of {} exceeds the points in a hand", contract.bid)));
-        }
-        let dealt =
-            plays.iter().filter(|(seat, _)| *seat == viewer).fold(hand, |h, (_, d)| h.union(DominoSet::single(*d)));
-        let mut held = dealt;
-        let mut played = DominoSet::EMPTY;
-        let mut remaining = [MAX_CAPACITY; Seat::COUNT];
-        let mut voids = [ContextSet::EMPTY; Seat::COUNT];
-        let mut banked = [0u32; 2];
-        let mut leader = contract.declarer;
-        let mut prefix: Vec<Domino> = Vec::new();
-        for (seat, tile) in plays.iter().copied() {
-            if seat != leader.plus(prefix.len()) || remaining[seat.index()] == 0 || !played.insert(tile) {
-                return Err(error(format!(
-                    "the record's play {seat} {tile} is out of turn, repeated, or one too many"
-                )));
-            }
-            let lead = prefix.first().copied();
-            if seat == viewer {
-                if !physics.legal_plays(held, lead).contains(tile) {
-                    return Err(error(format!("the viewer's play {tile} in the record is illegal")));
-                }
-                held.remove(tile);
-            }
-            if let Some(q) = lead.map(|d| physics.led_context(d)) {
-                if !physics.follows(tile, q) {
-                    voids[seat.index()].insert(q);
-                } else if voids[seat.index()].contains(q) {
-                    return Err(error(format!("{seat} follows {q} with {tile} after showing void in it")));
-                }
-            }
-            remaining[seat.index()] -= 1;
-            prefix.push(tile);
-            if let Ok(trick) = <[Domino; 4]>::try_from(prefix.as_slice()) {
-                leader = physics.trick_winner(leader, trick);
-                banked[leader.team().index()] += physics.trick_points(trick);
-                prefix.clear();
-            }
-        }
-        if !hand.is_disjoint(played) || remaining[viewer.index()] != hand.len() {
-            return Err(error("the viewer's hand disagrees with its plays in the record"));
-        }
-        let hidden: [Hidden; HIDDEN_SEATS] = std::array::from_fn(|i| {
-            let seat = viewer.plus(i + 1);
-            Hidden { seat, capacity: remaining[seat.index()], voids: voids[seat.index()] }
-        });
-        let kernel = Kernel::new(viewer, hand, DominoSet::FULL.difference(hand.union(played)), hidden)?;
-        if physics.count_worlds(&kernel) == 0 {
-            return Err(error("no deal of the hidden tiles fits the record"));
-        }
-        let record = Some(Record { contract, plays, banked });
-        Ok(Frame { physics, kernel, leader, prefix, played, record })
-    }
-
-    /// The hand's public record, when the frame was built from one.
-    pub fn record(&self) -> Option<&Record> {
-        self.record.as_ref()
-    }
-
-    /// The frame after one play whose successor kernel, leader and prefix the
-    /// caller has computed. A frame with a record is rebuilt from its record
-    /// extended by the play, and must agree with them.
-    pub(crate) fn after(
-        &self,
-        kernel: Kernel,
-        leader: Seat,
-        prefix: Vec<Domino>,
-        play: (Seat, Domino),
-    ) -> Result<Frame> {
-        let Some(record) = &self.record else {
-            return Frame::new(
-                self.physics.clone(),
-                kernel,
-                leader,
-                prefix,
-                self.played.union(DominoSet::single(play.1)),
-            );
-        };
-        let mut plays = record.plays.clone();
-        plays.push(play);
-        let next = Frame::from_record(self.physics.clone(), kernel.viewer, kernel.viewer_hand, record.contract, plays)?;
-        if (&next.kernel, next.leader, &next.prefix) != (&kernel, leader, &prefix) {
-            return Err(error("the stepped frame disagrees with its record"));
-        }
-        Ok(next)
-    }
-
-    pub fn physics(&self) -> &dyn Physics {
-        self.physics.as_ref()
-    }
-
-    pub fn kernel(&self) -> &Kernel {
-        &self.kernel
-    }
-
-    pub fn leader(&self) -> Seat {
-        self.leader
-    }
-
-    pub fn prefix(&self) -> &[Domino] {
-        &self.prefix
-    }
-
-    /// Tiles explicitly supplied as played; never inferred from `live`.
-    pub fn played(&self) -> DominoSet {
-        self.played
-    }
-
-    /// The tile that led the current trick.
-    pub fn lead(&self) -> Option<Domino> {
-        self.prefix.first().copied()
-    }
-
-    pub fn led_context(&self) -> Option<Context> {
-        self.lead().map(|d| self.physics.led_context(d))
-    }
-
-    /// The seat to play next, unless it has no tiles left.
-    pub fn next_actor(&self) -> Option<Seat> {
-        let seat = self.leader.plus(self.prefix.len());
-        (self.kernel.capacity(seat) > 0).then_some(seat)
-    }
-
-    /// The seat currently taking the trick: the first of the greatest keys.
-    pub fn current_winner(&self) -> Option<Seat> {
-        let led = self.led_context()?;
-        let key = |i: usize| self.physics.trick_key(self.prefix[i], led);
-        let best = (1..self.prefix.len()).fold(0, |best, i| if key(i) > key(best) { i } else { best });
-        Some(self.leader.plus(best))
     }
 
     pub fn contains(&self, world: &World) -> bool {
-        self.kernel.contains(self.physics(), world)
+        self.kernel().contains(self.physics(), world)
     }
 
     pub fn count_worlds(&self) -> u128 {
-        self.physics.count_worlds(&self.kernel)
+        self.physics().count_worlds(self.kernel())
     }
 
-    pub fn worlds(&self) -> Box<dyn Iterator<Item = World> + '_> {
-        self.physics.worlds(&self.kernel)
+    pub fn worlds(&self) -> impl Iterator<Item = World> + '_ {
+        self.physics().worlds(self.kernel())
     }
 }
 
@@ -430,12 +537,20 @@ pub struct Holdings<'a> {
     frame: &'a Frame,
     world: &'a World,
     unresolved: DominoSet,
+    /// When set, a refused read records the tiles it needed here.
+    needed: Option<&'a Cell<DominoSet>>,
 }
 
 impl<'a> Holdings<'a> {
     pub(crate) fn new(frame: &'a Frame, world: &'a World, unresolved: DominoSet) -> Holdings<'a> {
-        debug_assert!(frame.contains(world) && unresolved.is_subset_of(frame.kernel.pool));
-        Holdings { frame, world, unresolved }
+        debug_assert!(frame.contains(world) && unresolved.is_subset_of(frame.kernel().pool));
+        Holdings { frame, world, unresolved, needed: None }
+    }
+
+    /// The same window, recording into `needed` the tiles any refused read
+    /// needed.
+    pub(crate) fn probing(self, needed: &'a Cell<DominoSet>) -> Holdings<'a> {
+        Holdings { needed: Some(needed), ..self }
     }
 
     pub fn frame(&self) -> &'a Frame {
@@ -444,7 +559,7 @@ impl<'a> Holdings<'a> {
 
     /// The tiles of `tiles` that `seat` holds.
     pub fn hand_within(&self, seat: Seat, tiles: DominoSet) -> Result<DominoSet> {
-        let kernel = &self.frame.kernel;
+        let kernel = self.frame.kernel();
         if seat != kernel.viewer {
             let slot = kernel.slot(seat);
             let open = if kernel.hidden[slot].capacity == 0 {
@@ -453,6 +568,9 @@ impl<'a> Holdings<'a> {
                 tiles.intersection(self.unresolved).intersection(kernel.allowed(self.frame.physics(), slot))
             };
             if !open.is_empty() {
+                if let Some(needed) = self.needed {
+                    needed.set(needed.get().union(open));
+                }
                 return Err(error(format!("reading {seat} needs the unresolved tiles {open:?}; resolve them")));
             }
         }

@@ -1,21 +1,23 @@
-//! `ZebPhysics` against `silas::reference::Straight42`: Zeb's rules and fiber
-//! and Silas's reference are two independent implementations of the nine
-//! straight declarations, and they must agree on everything Silas can ask.
-//! The tables are compared exhaustively; plays, tricks and fibers on seeded
-//! random positions. The tenth declaration, the doubles as their own
-//! unpowered suit, has no reference and is held to its facts. (Built only
-//! with the `silas` feature: `required-features` in Cargo.toml.)
+//! Zeb against Silas. `ZebPhysics` supplies only Zeb's four rule tables;
+//! Silas derives legality, the trick's winner and points, and the fiber from
+//! them. Zeb's tables must be the reference's (`silas::reference::Straight42`)
+//! for the nine straight declarations, so the two physics are one (equal
+//! identities); and Zeb's own legality, winner, points and fiber (the code its
+//! planner runs) must agree with Silas's on everything Silas can ask. The
+//! tables are compared exhaustively; plays, tricks and fibers on seeded random
+//! positions. The tenth declaration, the doubles as their own unpowered suit,
+//! has no reference and is held to its facts. (Built only with the `silas`
+//! feature: `required-features` in Cargo.toml.)
 
 use std::collections::BTreeSet;
-use std::sync::Arc;
 
 use scenario_core::physics::{context, domino, dominoes, led_suit, mask, seat, seat_id, tile, ZebPhysics, DECL_NAMES};
 use scenario_core::planner::SplitMix;
 use scenario_core::rules::{self, Rules, DOUBLES_SUIT, DOUBLES_TRUMP, NO_TRUMP, N_DECLS};
 use silas::reference::{Decl, Straight42};
 use silas::{
-    Belief, Budget, Context, ContextSet, Domino, DominoSet, Frame, Hidden, Kernel, Physics, Pip, Query, Registry, Seat,
-    Team, World,
+    Belief, Bid, Budget, Context, ContextSet, Contract, Declaration, Domino, DominoSet, Frame, Hidden, Kernel, Physics,
+    Pip, Query, Registry, Seat, Team, World,
 };
 
 /// Silas's reference for a Zeb declaration; none for the doubles suit.
@@ -29,9 +31,16 @@ fn reference(decl: u8) -> Option<Straight42> {
     Some(Straight42::new(decl))
 }
 
-/// The nine declarations both implement, as (Zeb's, the reference).
-fn shared() -> Vec<(ZebPhysics, Straight42)> {
-    (0..N_DECLS).filter_map(|d| Some((ZebPhysics::new(d).unwrap(), reference(d)?))).collect()
+/// The nine declarations both implement, as (Zeb's, Silas's physics of
+/// Zeb's tables, the reference's physics).
+fn shared() -> Vec<(ZebPhysics, Physics, Physics)> {
+    (0..N_DECLS)
+        .filter_map(|d| {
+            let zeb = ZebPhysics::new(d).unwrap();
+            let physics = zeb.physics();
+            Some((zeb, physics, reference(d)?.physics()))
+        })
+        .collect()
 }
 
 fn d(s: &str) -> Domino {
@@ -123,18 +132,24 @@ fn seats_play_clockwise_and_pair_across() {
 
 #[test]
 fn ten_declarations_ten_identities() {
-    let ids: BTreeSet<String> = (0..N_DECLS).map(|d| ZebPhysics::new(d).unwrap().identity()).collect();
+    let ids: BTreeSet<String> =
+        (0..N_DECLS).map(|d| ZebPhysics::new(d).unwrap().physics().identity().to_owned()).collect();
     assert_eq!(ids.len(), 10);
     assert!(ZebPhysics::new(N_DECLS).is_none());
-    assert_eq!(ZebPhysics::new(5).unwrap().identity(), "zeb/P5");
-    assert_eq!(ZebPhysics::new(DOUBLES_SUIT).unwrap().identity(), "zeb/DS");
+    assert_eq!(ZebPhysics::new(5).unwrap().name(), "zeb/P5");
+    assert_eq!(ZebPhysics::new(DOUBLES_SUIT).unwrap().physics().name(), "zeb/DS");
     assert!(ids.iter().all(|id| !id.contains(|c: char| c.is_whitespace() || "();".contains(c))));
-    // The nine shared names are the reference's own.
-    for (zeb, reference) in shared() {
-        assert_eq!(zeb.identity().strip_prefix("zeb/"), reference.identity().strip_prefix("straight42/"));
+    // The nine shared names are the reference's own, and so are the tables:
+    // Zeb's physics and the reference's are one physics, by identity.
+    for (zeb, physics, reference) in shared() {
+        assert_eq!(zeb.name().strip_prefix("zeb/"), reference.name().strip_prefix("straight42/"));
+        assert_eq!((physics.identity(), &physics), (reference.identity(), &reference));
+        assert_eq!(physics.trump(), reference.trump());
     }
     assert_eq!(shared().len(), 9);
     assert_eq!(DECL_NAMES[DOUBLES_SUIT as usize], "DS");
+    // The doubles as their own suit have no trump.
+    assert_eq!(ZebPhysics::new(DOUBLES_SUIT).unwrap().physics().trump(), None);
 }
 
 // -- the tables, exhaustively ---------------------------------------------------
@@ -142,24 +157,25 @@ fn ten_declarations_ten_identities() {
 #[test]
 fn the_tables_agree_on_every_tile_and_context() {
     let mut checked = [0usize; 5];
-    for (zeb, reference) in shared() {
-        let name = zeb.identity();
+    for (zeb, physics, reference) in shared() {
+        let name = zeb.name();
         for t in Domino::ALL {
             assert_eq!(zeb.led_context(t), reference.led_context(t), "{name} led_context {t}");
             assert_eq!(zeb.count(t), reference.count(t), "{name} count {t}");
-            assert_eq!(zeb.threat(t), reference.threat(t), "{name} threat {t}");
+            assert_eq!(physics.threat(t), reference.threat(t), "{name} threat {t}");
             checked[0] += 1;
         }
         for q in Context::ALL {
             assert_eq!(zeb.incidence(q), reference.incidence(q), "{name} incidence {q}");
             checked[1] += 1;
             for a in Domino::ALL {
-                assert_eq!(zeb.beats(q, a), reference.beats(q, a), "{name} beats {q} {a}");
+                assert_eq!(physics.beats(q, a), reference.beats(q, a), "{name} beats {q} {a}");
                 checked[2] += 1;
                 for b in Domino::ALL {
                     // The keys' values may differ; their order may not.
                     let z = zeb.trick_key(a, q).cmp(&zeb.trick_key(b, q));
                     assert_eq!(z, reference.trick_key(a, q).cmp(&reference.trick_key(b, q)), "{name} {q} {a} {b}");
+                    assert_eq!(z, physics.trick_key(a, q).cmp(&physics.trick_key(b, q)), "{name} {q} {a} {b}");
                     checked[3] += 1;
                 }
             }
@@ -170,15 +186,22 @@ fn the_tables_agree_on_every_tile_and_context() {
 
 // -- plays and tricks, seeded at random -----------------------------------------
 
+/// Zeb's own legal plays, through its tile masks.
+fn zeb_legal(zeb: &ZebPhysics, hand: DominoSet, lead: Option<Domino>) -> DominoSet {
+    dominoes(zeb.rules().legal(mask(hand), lead.map(tile))).unwrap()
+}
+
 #[test]
 fn legal_plays_agree_on_random_hands_and_leads() {
     let mut rng = SplitMix::new(42);
-    for (zeb, reference) in shared() {
+    for (zeb, physics, reference) in shared() {
         for _ in 0..20_000 {
             let deck = shuffled(&mut rng);
             let hand: DominoSet = deck[..1 + below(&mut rng, 7)].iter().copied().collect();
             let lead = (below(&mut rng, 8) > 0).then(|| deck[27]);
-            assert_eq!(zeb.legal_plays(hand, lead), reference.legal_plays(hand, lead), "{zeb:?} {hand:?} {lead:?}");
+            let silas = physics.legal_plays(hand, lead);
+            assert_eq!(zeb_legal(&zeb, hand, lead), silas, "{zeb:?} {hand:?} {lead:?}");
+            assert_eq!(silas, reference.legal_plays(hand, lead), "{zeb:?} {hand:?} {lead:?}");
         }
     }
 }
@@ -187,7 +210,7 @@ fn legal_plays_agree_on_random_hands_and_leads() {
 fn whole_random_hands_agree_trick_by_trick() {
     let mut rng = SplitMix::new(7);
     let mut tricks = 0;
-    for (zeb, reference) in shared() {
+    for (zeb, physics, reference) in shared() {
         for _ in 0..2_000 {
             let deck = shuffled(&mut rng);
             let mut hands: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
@@ -196,15 +219,18 @@ fn whole_random_hands_agree_trick_by_trick() {
                 let mut plays = Vec::new();
                 for i in 0..4 {
                     let s = leader.plus(i);
-                    let legal = zeb.legal_plays(hands[s.index()], plays.first().copied());
+                    let legal = zeb_legal(&zeb, hands[s.index()], plays.first().copied());
                     let t = random_member(&mut rng, legal);
                     hands[s.index()].remove(t);
                     plays.push(t);
                 }
                 let plays: [Domino; 4] = plays.try_into().unwrap();
-                let winner = zeb.trick_winner(leader, plays);
+                let winner = leader.plus(zeb.rules().winner_offset(&plays.map(tile)) as usize);
+                assert_eq!(winner, physics.trick_winner(leader, plays), "{zeb:?} {leader} {plays:?}");
                 assert_eq!(winner, reference.trick_winner(leader, plays), "{zeb:?} {leader} {plays:?}");
-                assert_eq!(zeb.trick_points(plays), reference.trick_points(plays), "{zeb:?} {plays:?}");
+                let points = u32::from(zeb.rules().trick_points(&plays.map(tile)));
+                assert_eq!(points, physics.trick_points(plays), "{zeb:?} {plays:?}");
+                assert_eq!(points, reference.trick_points(plays), "{zeb:?} {plays:?}");
                 leader = winner;
                 tricks += 1;
             }
@@ -218,7 +244,7 @@ fn whole_random_hands_agree_trick_by_trick() {
 /// A kernel from a random hand played `plays` tiles deep under `physics`,
 /// seen by a random seat: its hand, the unseen pool, each other seat's
 /// remaining count and the voids its plays have shown.
-fn played_kernel(rng: &mut SplitMix, physics: &dyn Physics, plays: usize) -> Kernel {
+fn played_kernel(rng: &mut SplitMix, physics: &Physics, plays: usize) -> Kernel {
     let deck = shuffled(rng);
     let mut hands: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
     let mut voids = [ContextSet::EMPTY; 4];
@@ -270,7 +296,7 @@ fn arbitrary_kernel(rng: &mut SplitMix) -> Kernel {
 
 /// Every world of a small kernel by brute force: each pool tile to each
 /// hidden seat, kept when the kernel contains it.
-fn brute_force(kernel: &Kernel, physics: &dyn Physics) -> BTreeSet<World> {
+fn brute_force(kernel: &Kernel, physics: &Physics) -> BTreeSet<World> {
     let tiles: Vec<Domino> = kernel.pool().iter().collect();
     let mut out = BTreeSet::new();
     for code in 0..3usize.pow(tiles.len() as u32) {
@@ -288,13 +314,22 @@ fn brute_force(kernel: &Kernel, physics: &dyn Physics) -> BTreeSet<World> {
     out
 }
 
-/// Zeb's worlds of a kernel, checked to be distinct members of it.
+/// Zeb's own worlds of a kernel (its `Fiber`), checked to be distinct members
+/// of it and as many as Silas counts over Zeb's tables.
 fn zeb_worlds(zeb: &ZebPhysics, kernel: &Kernel) -> BTreeSet<World> {
-    let listed: Vec<World> = zeb.worlds(kernel).collect();
+    let physics = zeb.physics();
+    let mut fiber = zeb.fiber(kernel);
+    let size = fiber.size();
+    let listed: Vec<World> = (0..size)
+        .map(|k| {
+            let hands = fiber.world_at(k);
+            kernel.world(kernel.hidden().map(|h| dominoes(hands[h.seat.index()]).unwrap()))
+        })
+        .collect();
     let worlds: BTreeSet<World> = listed.iter().copied().collect();
     assert_eq!(worlds.len(), listed.len(), "Zeb lists a world twice");
-    assert_eq!(listed.len() as u128, zeb.count_worlds(kernel));
-    assert!(worlds.iter().all(|w| kernel.contains(zeb, w)));
+    assert_eq!(listed.len() as u128, physics.count_worlds(kernel));
+    assert!(worlds.iter().all(|w| kernel.contains(&physics, w)));
     worlds
 }
 
@@ -302,11 +337,12 @@ fn zeb_worlds(zeb: &ZebPhysics, kernel: &Kernel) -> BTreeSet<World> {
 fn the_fibers_agree_on_played_kernels() {
     let mut rng = SplitMix::new(2026);
     let (mut counted, mut listed, mut voided) = (0, 0, 0);
-    for (zeb, reference) in shared() {
+    for (zeb, physics, reference) in shared() {
         for _ in 0..150 {
             let plays = below(&mut rng, 29);
-            let kernel = played_kernel(&mut rng, &zeb, plays);
-            let n = zeb.count_worlds(&kernel);
+            let kernel = played_kernel(&mut rng, &physics, plays);
+            let n = u128::try_from(zeb.fiber(&kernel).size()).unwrap();
+            assert_eq!(n, physics.count_worlds(&kernel), "{zeb:?} {kernel:?}");
             assert!(n > 0, "a played kernel has its own deal");
             assert_eq!(n, reference.count_worlds(&kernel), "{zeb:?} {kernel:?}");
             counted += 1;
@@ -326,14 +362,14 @@ fn the_fibers_agree_on_played_kernels() {
 fn the_fibers_agree_on_arbitrary_kernels() {
     let mut rng = SplitMix::new(31);
     let mut empty = 0;
-    for (zeb, reference) in shared() {
+    for (zeb, physics, reference) in shared() {
         for _ in 0..200 {
             let kernel = arbitrary_kernel(&mut rng);
             let worlds: BTreeSet<World> = reference.worlds(&kernel).collect();
-            assert_eq!(zeb.count_worlds(&kernel), reference.count_worlds(&kernel), "{zeb:?} {kernel:?}");
+            assert_eq!(physics.worlds(&kernel).collect::<BTreeSet<_>>(), worlds, "{zeb:?} {kernel:?}");
             assert_eq!(zeb_worlds(&zeb, &kernel), worlds, "{zeb:?} {kernel:?}");
             if kernel.pool().len() <= 9 {
-                assert_eq!(brute_force(&kernel, &zeb), worlds);
+                assert_eq!(brute_force(&kernel, &physics), worlds);
             }
             empty += worlds.is_empty() as usize;
         }
@@ -344,19 +380,22 @@ fn the_fibers_agree_on_arbitrary_kernels() {
 #[test]
 fn the_doubles_suit_fiber_is_its_brute_force() {
     let zeb = ZebPhysics::new(DOUBLES_SUIT).unwrap();
+    let physics = zeb.physics();
     let mut rng = SplitMix::new(8);
     let mut voided = 0;
     for _ in 0..300 {
         let kernel = arbitrary_kernel(&mut rng);
         if kernel.pool().len() <= 9 {
-            assert_eq!(zeb_worlds(&zeb, &kernel), brute_force(&kernel, &zeb));
+            let truth = brute_force(&kernel, &physics);
+            assert_eq!(zeb_worlds(&zeb, &kernel), truth);
+            assert_eq!(physics.worlds(&kernel).collect::<BTreeSet<_>>(), truth);
             voided += kernel.hidden().iter().any(|h| !h.voids.is_empty()) as usize;
         }
     }
     for _ in 0..100 {
         let plays = 20 + below(&mut rng, 9);
-        let kernel = played_kernel(&mut rng, &zeb, plays);
-        assert_eq!(zeb_worlds(&zeb, &kernel), brute_force(&kernel, &zeb));
+        let kernel = played_kernel(&mut rng, &physics, plays);
+        assert_eq!(zeb_worlds(&zeb, &kernel), brute_force(&kernel, &physics));
         voided += kernel.hidden().iter().any(|h| !h.voids.is_empty()) as usize;
     }
     assert!(voided > 100);
@@ -366,7 +405,7 @@ fn the_doubles_suit_fiber_is_its_brute_force() {
 
 #[test]
 fn the_doubles_form_their_own_suit() {
-    let ds = ZebPhysics::new(DOUBLES_SUIT).unwrap();
+    let ds = ZebPhysics::new(DOUBLES_SUIT).unwrap().physics();
     let doubles: DominoSet = Domino::ALL.into_iter().filter(|t| t.is_double()).collect();
     assert_eq!(ds.incidence(Context::Called), doubles);
     for t in Domino::ALL {
@@ -389,7 +428,8 @@ fn the_doubles_form_their_own_suit() {
 
 #[test]
 fn the_doubles_have_no_trump_power() {
-    let ds = ZebPhysics::new(DOUBLES_SUIT).unwrap();
+    let zeb = ZebPhysics::new(DOUBLES_SUIT).unwrap();
+    let ds = zeb.physics();
     for p in Pip::ALL {
         let q = Context::Natural(p);
         for t in Domino::ALL.into_iter().filter(|t| t.is_double()) {
@@ -405,11 +445,16 @@ fn the_doubles_have_no_trump_power() {
     assert_eq!(ds.trick_points(trick), 1 + 10);
     // Holding the 5-5 and a five, a seat must follow fives with the five;
     // holding only doubles, anything goes.
-    assert_eq!(ds.legal_plays(set(&["5-5", "5-2", "1-1"]), Some(d("5-4"))), set(&["5-2"]));
-    assert_eq!(ds.legal_plays(set(&["5-5", "1-1"]), Some(d("5-4"))), set(&["5-5", "1-1"]));
-    assert_eq!(ds.legal_plays(set(&["5-5", "5-2"]), Some(d("1-1"))), set(&["5-5"]));
+    for (hand, lead, legal) in [
+        (set(&["5-5", "5-2", "1-1"]), d("5-4"), set(&["5-2"])),
+        (set(&["5-5", "1-1"]), d("5-4"), set(&["5-5", "1-1"])),
+        (set(&["5-5", "5-2"]), d("1-1"), set(&["5-5"])),
+    ] {
+        assert_eq!(ds.legal_plays(hand, Some(lead)), legal);
+        assert_eq!(zeb_legal(&zeb, hand, Some(lead)), legal);
+    }
     // Under doubles trump, by contrast, the 6-6 takes the same trick.
-    let dt = ZebPhysics::new(DOUBLES_TRUMP).unwrap();
+    let dt = ZebPhysics::new(DOUBLES_TRUMP).unwrap().physics();
     assert_eq!(dt.trick_winner(Seat::S2, trick), Seat::S3);
 }
 
@@ -417,11 +462,10 @@ fn the_doubles_have_no_trump_power() {
 
 #[test]
 fn the_four_fives_eighty_four_on_zeb_physics() {
-    let physics: Arc<dyn Physics> = Arc::new(ZebPhysics::new(5).unwrap());
+    let physics = ZebPhysics::new(5).unwrap().physics();
     let bidder = set(&["5-5", "5-4", "5-2", "5-0", "4-4", "4-2", "2-2"]);
-    let hidden = [Seat::S1, Seat::S2, Seat::S3].map(|seat| Hidden { seat, capacity: 7, voids: ContextSet::EMPTY });
-    let kernel = Kernel::new(Seat::S0, bidder, DominoSet::FULL.difference(bidder), hidden).unwrap();
-    let root = Frame::new(physics, kernel, Seat::S0, vec![], DominoSet::EMPTY).unwrap();
+    let contract = Contract::new(Seat::S0, Bid::Marks(2), physics).unwrap();
+    let root = Frame::new(contract, Seat::S0, bidder, vec![]).unwrap();
     assert_eq!(root.count_worlds(), 399_072_960);
     let query = include_str!("../../../silas/examples/six-five-guarded.silas")
         .parse::<Query>()
@@ -430,5 +474,5 @@ fn the_four_fives_eighty_four_on_zeb_physics() {
         .unwrap();
     let belief = Belief::uniform_resolving(root, set(&["6-5", "5-1", "5-3"]), 1_000).unwrap();
     let p = query.summarize(&belief, &mut Budget::new(10_000_000)).unwrap().event_probability();
-    assert_eq!((p.value().to_string(), p.authority()), ("33/95".to_string(), &silas::Authority::Exact));
+    assert_eq!((p.value().to_string(), p.authority()), ("33/95".to_string(), &silas::Authority::exact()));
 }

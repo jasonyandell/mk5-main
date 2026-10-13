@@ -1,90 +1,77 @@
-//! Executable policies: exact information-state rules, ordered relational
-//! rules guarded by viewer-only queries, rigid bindings, a controller mode,
-//! and a total fallback.
+//! Executable policies: a pure function of the viewer's information. A
+//! decision tries an exact table keyed by the complete record, then ordered
+//! relational rules guarded by viewer-only queries, then a total fallback.
+//! Nothing is carried from one decision to the next: the same frame always
+//! gets the same decision.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::str::FromStr;
-use std::sync::Arc;
 
-use crate::eval::{Budget, CompiledQuery};
-use crate::frame::{Contract, Frame, Record};
+use crate::eval::{Budget, CompiledQuery, Witness};
+use crate::frame::{Bid, Contract, Frame};
 use crate::nouns::{Domino, DominoSet, Seat};
 use crate::physics::Physics;
 use crate::registry::{Access, Registry};
-use crate::syntax::{Expr, Query, Sort, Value, valid_name};
+use crate::syntax::{Expr, Library, Query, Sort, Span, Value, valid_name};
 use crate::{Error, Result, error};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PolicyProgram {
     pub name: String,
-    pub initial_mode: String,
-    pub bindings: Vec<RigidBinding>,
     pub exact_rules: Vec<ExactRule>,
     pub rules: Vec<PolicyRule>,
     pub fallback: Fallback,
 }
 
-/// The complete viewer information at a decision, under one physics: the
-/// viewer's remaining hand and the hand's public record. Everything else a
-/// frame holds is derived from these.
+/// The complete viewer information at a decision: the frame's own source.
+/// The declaration's physics (by identity), the viewer, the hand it was
+/// dealt, the contract, and every play so far. Everything else a frame holds
+/// is derived from these.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PolicyKey {
     pub physics: String,
     pub viewer: Seat,
-    pub hand: DominoSet,
+    pub dealt: DominoSet,
     pub declarer: Seat,
-    pub bid: u32,
-    pub history: Vec<(Seat, Domino)>,
+    pub bid: Bid,
+    pub history: Vec<Domino>,
 }
 
 impl PolicyKey {
-    /// The key of a frame built from its record; refused for one without.
-    pub fn of(frame: &Frame) -> Result<Self> {
-        let record = recorded(frame)?;
-        let kernel = frame.kernel();
-        Ok(Self {
-            physics: frame.physics().identity(),
-            viewer: kernel.viewer(),
-            hand: kernel.viewer_hand(),
-            declarer: record.contract().declarer,
-            bid: record.contract().bid,
-            history: record.plays().to_vec(),
-        })
+    pub fn of(frame: &Frame) -> PolicyKey {
+        PolicyKey {
+            physics: frame.physics().identity().to_owned(),
+            viewer: frame.viewer(),
+            dealt: frame.dealt(),
+            declarer: frame.contract().declarer(),
+            bid: frame.contract().bid(),
+            history: frame.plays().to_vec(),
+        }
     }
-}
-
-fn recorded(frame: &Frame) -> Result<&Record> {
-    frame.record().ok_or_else(|| error("a policy decides from the hand's public record; this frame has none"))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExactRule {
     pub key: PolicyKey,
     pub action: Domino,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RigidBinding {
-    pub name: String,
-    pub query: Query,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PolicyRule {
     pub name: String,
-    pub in_mode: String,
-    pub next_mode: String,
     pub selector: Selector,
     pub guard: Query,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Selector {
-    /// The least legal domino in the guard's one-column answer relation.
+    /// The least legal domino of the guard's one-column answer relation.
     FirstOutput,
+    /// This tile, when the guard holds and the tile is legal.
     Literal(Domino),
-    Rigid(String),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -94,133 +81,116 @@ pub enum Fallback {
 
 #[derive(Clone)]
 pub struct CompiledPolicy {
-    identity: Arc<str>,
+    identity: String,
     source: PolicyProgram,
-    bindings: Vec<(String, CompiledQuery)>,
     exact: BTreeMap<PolicyKey, Domino>,
     rules: Vec<(PolicyRule, CompiledQuery)>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PolicyController {
-    program_identity: Arc<str>,
-    mode: String,
-    rigid: BTreeMap<String, Value>,
-}
-
-/// Which layer of the policy chose.
+/// Which layer of the policy decided.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DecisionProvenance {
     /// The full information key was in the exact table.
     Exact,
-    /// The named relational rule was the first to select a legal action.
+    /// The named relational rule was the first to allow a legal tile.
     RelationalRule { name: String },
-    /// Nothing else selected, so the total fallback ran.
+    /// Nothing else allowed one, so the total fallback ran.
     Fallback,
+}
+
+/// What a policy allows at a frame: the layer that decides, and the legal
+/// tiles it allows. A rule allows the legal tiles its guard answers (`answer`)
+/// or its tile when the guard holds and the tile is legal (`tile`); the exact
+/// table and the fallback allow one tile each. The decision is the least
+/// allowed tile.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Allowed {
+    pub provenance: DecisionProvenance,
+    pub tiles: DominoSet,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PolicyDecisionTrace {
     pub action: Domino,
     pub provenance: DecisionProvenance,
-    pub mode_before: String,
-    pub mode_after: String,
+    /// Every tile the deciding layer allows.
+    pub allowed: DominoSet,
     /// `Some(true)`: the declaring side has made its bid. `Some(false)`: the
     /// points still unbanked cannot make it.
     pub contract_resolved: Option<bool>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PolicyControllerState {
-    pub mode: String,
-    pub rigid: BTreeMap<String, Value>,
-}
+/// The deciding rule's witnesses: each answer of its guard, and one binding
+/// of the guard's roles that gives it.
+pub type GuardWitnesses = Vec<(Vec<Value>, Witness)>;
+
+/// Layer names a rule may not take.
+const LAYERS: [&str; 2] = ["exact", "fallback"];
 
 impl PolicyProgram {
     /// Compile against a registry. Exact rules are validated under `physics`,
     /// and every exact key must name it; relational rules run under any.
-    pub fn compile(&self, registry: &Registry, physics: &Arc<dyn Physics>) -> Result<CompiledPolicy> {
-        if !valid_name(&self.name) || !valid_name(&self.initial_mode) {
-            return Err(error("a policy's name and initial mode must be valid names"));
-        }
-        let mut names = BTreeSet::new();
-        let mut bindings = Vec::new();
-        for binding in &self.bindings {
-            if !valid_name(&binding.name) || !names.insert(binding.name.as_str()) {
-                return Err(error(format!("invalid or duplicate rigid binding {}", binding.name)));
-            }
-            let query = binding.query.compile(registry)?;
-            viewer_only(&query, &format!("binding {}", binding.name))?;
-            if query.outputs().len() != 1 {
-                return Err(error(format!("binding {} must have one output", binding.name)));
-            }
-            bindings.push((binding.name.clone(), query));
+    pub fn compile(&self, registry: &Registry, physics: &Physics) -> Result<CompiledPolicy> {
+        if !valid_name(&self.name) {
+            return Err(error(format!("{} is not a valid policy name", self.name)));
         }
         let mut exact = BTreeMap::new();
         for rule in &self.exact_rules {
-            let frame = validate_key(&rule.key, physics)?;
+            let frame = validate_key(&rule.key, physics).map_err(|e| rule.span.error(e.0))?;
             if frame.next_actor() != Some(rule.key.viewer)
-                || !physics.legal_plays(rule.key.hand, frame.lead()).contains(rule.action)
+                || !physics.legal_plays(frame.kernel().viewer_hand(), frame.lead()).contains(rule.action)
             {
-                return Err(error(format!("the exact action {} is illegal at its key", rule.action)));
+                return Err(rule.span.error(format!("the exact action {} is illegal at its key", rule.action)));
             }
             if exact.insert(rule.key.clone(), rule.action).is_some() {
-                return Err(error("a duplicate exact policy key"));
+                return Err(rule.span.error("a duplicate exact policy key"));
             }
         }
-        let mut rule_names = BTreeSet::new();
+        let mut names = BTreeSet::new();
         let mut rules = Vec::new();
         for rule in &self.rules {
-            if ![&rule.name, &rule.in_mode, &rule.next_mode].into_iter().all(|n| valid_name(n))
-                || !rule_names.insert(rule.name.as_str())
-            {
-                return Err(error(format!("invalid or duplicate policy rule {}", rule.name)));
-            }
-            if let Selector::Rigid(name) = &rule.selector
-                && !self.bindings.iter().any(|b| b.name == *name)
-            {
-                return Err(error(format!("rule {} names the unknown binding {name}", rule.name)));
+            if !valid_name(&rule.name) || LAYERS.contains(&rule.name.as_str()) || !names.insert(rule.name.as_str()) {
+                return Err(rule.span.error(format!("invalid, reserved or duplicate policy rule {}", rule.name)));
             }
             let guard = rule.guard.compile(registry)?;
-            viewer_only(&guard, &format!("rule {}", rule.name))?;
+            if let Some(spec) = guard.predicate_specs().iter().find(|spec| spec.access == Access::World) {
+                return Err(rule.span.error(format!(
+                    "rule {} uses the world predicate {}; a policy sees only its viewer",
+                    rule.name, spec.name
+                )));
+            }
             let wanted = usize::from(rule.selector == Selector::FirstOutput);
             if guard.outputs().len() != wanted {
-                return Err(error(format!("rule {}'s guard must have {wanted} output(s) for its selector", rule.name)));
+                return Err(rule
+                    .span
+                    .error(format!("rule {}'s guard must have {wanted} output(s) for its selector", rule.name)));
             }
             if wanted == 1 && guard.outputs()[0].sort != Sort::Domino {
-                return Err(error(format!("rule {}'s action output must be a domino", rule.name)));
+                return Err(rule.span.error(format!("rule {}'s action output must be a domino", rule.name)));
             }
             rules.push((rule.clone(), guard));
         }
-        let mut identity = format!("silas-policy-v1\n{self}");
-        for (_, query) in &bindings {
-            identity.push_str("\nbinding-query: ");
-            identity.push_str(&query.identity());
-        }
+        let mut identity = format!("silas-policy-v2\n{self}");
         for (_, query) in &rules {
             identity.push_str("\nrule-query: ");
             identity.push_str(&query.identity());
         }
-        Ok(CompiledPolicy { identity: Arc::from(identity), source: self.clone(), bindings, exact, rules })
+        Ok(CompiledPolicy { identity, source: self.clone(), exact, rules })
     }
 }
 
-fn viewer_only(query: &CompiledQuery, owner: &str) -> Result<()> {
-    match query.predicate_specs().iter().find(|spec| spec.access == Access::World) {
-        Some(spec) => {
-            Err(error(format!("{owner} uses the world predicate {}; a policy sees only its viewer", spec.name)))
-        }
-        None => Ok(()),
-    }
-}
-
-/// Rebuild the key's frame from its record, under the key's physics.
-fn validate_key(key: &PolicyKey, physics: &Arc<dyn Physics>) -> Result<Frame> {
+/// Rebuild the key's frame under the key's physics.
+fn validate_key(key: &PolicyKey, physics: &Physics) -> Result<Frame> {
     if key.physics != physics.identity() {
-        return Err(error(format!("the key's physics {} is not {}", key.physics, physics.identity())));
+        return Err(error(format!(
+            "the key's physics {} is not {} ({})",
+            key.physics,
+            physics.identity(),
+            physics.name()
+        )));
     }
-    let contract = Contract { declarer: key.declarer, bid: key.bid };
-    Frame::from_record(physics.clone(), key.viewer, key.hand, contract, key.history.clone())
+    let contract = Contract::new(key.declarer, key.bid, physics.clone())?;
+    Frame::new(contract, key.viewer, key.dealt, key.history.clone())
 }
 
 impl CompiledPolicy {
@@ -232,239 +202,195 @@ impl CompiledPolicy {
         &self.identity
     }
 
-    /// Start a controller at `frame`, which must carry the hand's record.
-    pub fn initialize(&self, frame: &Frame, budget: &mut Budget) -> Result<PolicyController> {
-        recorded(frame)?;
-        let mut rigid = BTreeMap::new();
-        for (name, query) in &self.bindings {
-            let answers = query.evaluate_viewer(frame, budget)?;
-            match answers.first() {
-                Some(answer) if answers.len() == 1 => rigid.insert(name.clone(), answer.0[0]),
-                _ => {
-                    return Err(error(format!("rigid binding {name} needs exactly one answer, got {}", answers.len())));
-                }
-            };
-        }
-        Ok(PolicyController { program_identity: self.identity.clone(), mode: self.source.initial_mode.clone(), rigid })
+    /// The tile the policy plays at `frame`, where its viewer is to play.
+    pub fn choose(&self, frame: &Frame, budget: &mut Budget) -> Result<Domino> {
+        self.decide(frame, budget).map(|trace| trace.action)
     }
 
-    pub fn choose(&self, controller: &mut PolicyController, frame: &Frame, budget: &mut Budget) -> Result<Domino> {
-        self.choose_traced(controller, frame, budget).map(|trace| trace.action)
+    /// The decision at `frame`, with the layer that made it and every tile
+    /// that layer allows. A function of the frame alone.
+    pub fn decide(&self, frame: &Frame, budget: &mut Budget) -> Result<PolicyDecisionTrace> {
+        let allowed = self.allowed(frame, budget)?;
+        let action = allowed.tiles.iter().next().expect("a deciding layer allows a tile");
+        Ok(PolicyDecisionTrace {
+            action,
+            provenance: allowed.provenance,
+            allowed: allowed.tiles,
+            contract_resolved: contract_resolution(frame),
+        })
     }
 
-    /// Choose as [`Self::choose`] does, recording which layer answered. A
-    /// refusal, including budget exhaustion partway through the rules,
-    /// restores the controller; work already done stays charged.
-    pub fn choose_traced(
-        &self,
-        controller: &mut PolicyController,
-        frame: &Frame,
-        budget: &mut Budget,
-    ) -> Result<PolicyDecisionTrace> {
-        let checkpoint = controller.clone();
-        let result = self.decide(controller, frame, budget);
-        if result.is_err() {
-            *controller = checkpoint;
-        }
-        result
+    /// The layer that decides at `frame` and the tiles it allows.
+    pub fn allowed(&self, frame: &Frame, budget: &mut Budget) -> Result<Allowed> {
+        Ok(self.fired(frame, budget, false)?.0)
     }
 
-    fn decide(
-        &self,
-        controller: &mut PolicyController,
-        frame: &Frame,
-        budget: &mut Budget,
-    ) -> Result<PolicyDecisionTrace> {
-        let key = PolicyKey::of(frame)?;
-        if controller.program_identity != self.identity {
-            return Err(error("the controller belongs to a different compiled policy"));
-        }
-        if frame.next_actor() != Some(frame.kernel().viewer()) {
+    /// [`Self::allowed`], with the deciding rule's witnesses: each answer of
+    /// its guard and one binding of the guard's roles that gives it. Empty for
+    /// the exact table and the fallback.
+    pub fn explain(&self, frame: &Frame, budget: &mut Budget) -> Result<(Allowed, GuardWitnesses)> {
+        self.fired(frame, budget, true)
+    }
+
+    fn fired(&self, frame: &Frame, budget: &mut Budget, explain: bool) -> Result<(Allowed, GuardWitnesses)> {
+        if frame.next_actor() != Some(frame.viewer()) {
             return Err(error("a policy acts only when its viewer is next"));
         }
         let legal = frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.lead());
-        let lowest = legal.iter().next().ok_or_else(|| error("the policy has no legal action"))?;
-        let mode_before = controller.mode.clone();
-        let contract_resolved = contract_resolution(frame);
-        let trace = |action, provenance, mode_after| PolicyDecisionTrace {
-            action,
-            provenance,
-            mode_before: mode_before.clone(),
-            mode_after,
-            contract_resolved,
-        };
-        if let Some(tile) = self.exact.get(&key) {
+        if let Some(tile) = self.exact.get(&PolicyKey::of(frame)) {
             if !legal.contains(*tile) {
                 return Err(error(format!("the exact action {tile} is illegal")));
             }
-            return Ok(trace(*tile, DecisionProvenance::Exact, mode_before.clone()));
+            return Ok((Allowed { provenance: DecisionProvenance::Exact, tiles: DominoSet::single(*tile) }, vec![]));
         }
         for (rule, guard) in &self.rules {
-            if rule.in_mode != controller.mode {
-                continue;
-            }
             let answers = guard.evaluate_viewer(frame, budget)?;
-            let selected = match &rule.selector {
+            let tiles = match &rule.selector {
                 Selector::FirstOutput => answers
                     .iter()
                     .filter_map(|answer| match answer.0.as_slice() {
-                        [Value::Domino(tile)] if legal.contains(*tile) => Some(*tile),
+                        [Value::Domino(tile)] => Some(*tile),
                         _ => None,
                     })
-                    .min(),
-                Selector::Literal(tile) => (!answers.is_empty() && legal.contains(*tile)).then_some(*tile),
-                Selector::Rigid(name) => match controller.rigid.get(name) {
-                    Some(Value::Domino(tile)) => (!answers.is_empty() && legal.contains(*tile)).then_some(*tile),
-                    Some(_) => return Err(error(format!("rigid binding {name} is not a domino"))),
-                    None => return Err(error(format!("missing rigid binding {name}"))),
-                },
+                    .collect::<DominoSet>()
+                    .intersection(legal),
+                Selector::Literal(tile) if !answers.is_empty() => DominoSet::single(*tile).intersection(legal),
+                Selector::Literal(_) => DominoSet::EMPTY,
             };
-            if let Some(tile) = selected {
-                controller.mode = rule.next_mode.clone();
+            if !tiles.is_empty() {
+                let witnesses = if explain {
+                    guard.witnesses(frame, budget)?.into_iter().map(|(answer, w)| (answer.0, w)).collect()
+                } else {
+                    vec![]
+                };
                 let provenance = DecisionProvenance::RelationalRule { name: rule.name.clone() };
-                return Ok(trace(tile, provenance, controller.mode.clone()));
+                return Ok((Allowed { provenance, tiles }, witnesses));
             }
         }
+        let lowest = legal.iter().next().ok_or_else(|| error("the policy has no legal action"))?;
         match self.source.fallback {
-            Fallback::LowestLegal => Ok(trace(lowest, DecisionProvenance::Fallback, mode_before.clone())),
+            Fallback::LowestLegal => {
+                Ok((Allowed { provenance: DecisionProvenance::Fallback, tiles: DominoSet::single(lowest) }, vec![]))
+            }
         }
     }
 }
 
 fn contract_resolution(frame: &Frame) -> Option<bool> {
-    match recorded(frame).ok()?.to_make_and_set(frame.physics()) {
+    match frame.to_make_and_set() {
         (0, _) => Some(true),
         (_, 0) => Some(false),
         _ => None,
     }
 }
 
-impl PolicyController {
-    pub fn mode(&self) -> &str {
-        &self.mode
-    }
-
-    pub fn rigid(&self, name: &str) -> Option<Value> {
-        self.rigid.get(name).copied()
-    }
-
-    pub fn state(&self) -> PolicyControllerState {
-        PolicyControllerState { mode: self.mode.clone(), rigid: self.rigid.clone() }
-    }
-}
-
 /// The body of the one `(tag value)` among `xs`.
-fn one<'a>(xs: &'a [Expr], tag: &str) -> Result<&'a Expr> {
-    let bodies: Vec<_> = xs.iter().filter_map(|x| x.tagged(tag).ok()).collect();
+fn one<'a>(xs: &'a [Expr], tag: &str, at: &Span) -> Result<&'a Expr> {
+    let bodies: Vec<_> = xs.iter().filter(|x| x.head() == Some(tag)).collect();
     match bodies.as_slice() {
-        [[value]] => Ok(value),
-        [_] => Err(error(format!("{tag} takes one value"))),
-        _ => Err(error(format!("expected exactly one ({tag} ...)"))),
+        [form] => match form.tagged(tag)? {
+            [value] => Ok(value),
+            _ => Err(form.span.error(format!("{tag} takes one value"))),
+        },
+        _ => Err(at.error(format!("expected exactly one ({tag} ...)"))),
     }
 }
 
-/// The words of the one `(tag word ...)` among `xs`.
-fn words<'a>(xs: &'a [Expr], tag: &str) -> Result<Vec<&'a str>> {
-    let bodies: Vec<_> = xs.iter().filter_map(|x| x.tagged(tag).ok()).collect();
-    match bodies.as_slice() {
-        [body] => body.iter().map(Expr::word).collect(),
-        _ => Err(error(format!("expected exactly one ({tag} ...)"))),
-    }
+fn parse<T: FromStr>(expr: &Expr, what: &str) -> Result<T> {
+    let word = expr.word()?;
+    word.parse().map_err(|_| expr.span.error(format!("invalid {what}: {word}")))
 }
 
-fn parse<T: FromStr>(word: &str, what: &str) -> Result<T> {
-    word.parse().map_err(|_| error(format!("invalid {what}: {word}")))
-}
-
-fn parse_seat(word: &str) -> Result<Seat> {
+fn parse_seat(expr: &Expr) -> Result<Seat> {
+    let word = expr.word()?;
     word.strip_prefix('S')
         .and_then(|n| n.parse().ok())
         .and_then(Seat::from_index)
-        .ok_or_else(|| error(format!("invalid chair {word}")))
+        .ok_or_else(|| expr.span.error(format!("invalid chair {word}")))
 }
 
-fn parse_bits(word: &str) -> Result<DominoSet> {
-    DominoSet::from_bits(parse(word, "domino bits")?).ok_or_else(|| error("domino bits outside the deck"))
-}
-
-impl FromStr for PolicyProgram {
-    type Err = Error;
-
-    /// At most 4 MiB of text, nested at most 40 deep.
-    fn from_str(source: &str) -> Result<Self> {
-        let tree = Expr::read(source, "policy", 4 << 20, 40)?;
+impl PolicyProgram {
+    /// Parse a policy text, naming it `name` in errors: any `include` and
+    /// `define` forms, then the `(policy ...)`. At most 4 MiB, nested at most
+    /// 40 deep.
+    pub fn parse(text: &str, name: &str) -> Result<PolicyProgram> {
+        let (library, tree) = Library::program(text, name, "policy", 4 << 20, 40)?;
         let forms = tree.tagged("policy")?;
-        let name = forms.first().ok_or_else(|| error("a policy requires a name"))?.word()?.to_owned();
+        let name = forms.first().ok_or_else(|| tree.span.error("a policy requires a name"))?.word()?.to_owned();
         let forms = &forms[1..];
-        let mut counts = BTreeMap::new();
+        let mut program = PolicyProgram { name, exact_rules: vec![], rules: vec![], fallback: Fallback::LowestLegal };
+        let mut fallbacks = 0;
         for form in forms {
-            let tag = form.list()?.first().ok_or_else(|| error("an empty policy form"))?.word()?;
-            if !["initial", "fallback", "bind", "exact", "rule"].contains(&tag) {
-                return Err(error(format!("unknown policy form {tag}")));
-            }
-            *counts.entry(tag).or_insert(0) += 1;
-        }
-        if counts.get("initial") != Some(&1) || counts.get("fallback") != Some(&1) {
-            return Err(error("a policy requires exactly one initial and one fallback form"));
-        }
-        let initial_mode = one(forms, "initial")?.word()?.to_owned();
-        if one(forms, "fallback")?.word()? != "lowest-legal" {
-            return Err(error("the fallback must be lowest-legal"));
-        }
-        let mut program = PolicyProgram {
-            name,
-            initial_mode,
-            bindings: vec![],
-            exact_rules: vec![],
-            rules: vec![],
-            fallback: Fallback::LowestLegal,
-        };
-        for form in forms {
-            if let Ok(body) = form.tagged("bind") {
-                let [name, query] = body else {
-                    return Err(error("bind syntax is (bind name (query ...))"));
-                };
-                program.bindings.push(RigidBinding { name: name.word()?.to_owned(), query: Query::from_expr(query)? });
-            } else if let Ok(body) = form.tagged("rule") {
-                if body.len() != 5 {
-                    return Err(error(
-                        "rule syntax is (rule name (in mode) (next mode) (select ...) (guard (query ...)))",
-                    ));
+            match form.head() {
+                Some("fallback") => {
+                    fallbacks += 1;
+                    if form.tagged("fallback")?.iter().map(Expr::word).collect::<Result<Vec<_>>>()? != ["lowest-legal"]
+                    {
+                        return Err(form.span.error("the fallback is (fallback lowest-legal)"));
+                    }
                 }
-                let fields = &body[1..];
-                let selector = match words(fields, "select")?.as_slice() {
-                    ["answer"] => Selector::FirstOutput,
-                    ["tile", tile] => Selector::Literal(parse(tile, "selector domino")?),
-                    ["rigid", name] => Selector::Rigid((*name).to_owned()),
-                    _ => return Err(error("select is answer, tile D, or rigid NAME")),
-                };
-                program.rules.push(PolicyRule {
-                    name: body[0].word()?.to_owned(),
-                    in_mode: one(fields, "in")?.word()?.to_owned(),
-                    next_mode: one(fields, "next")?.word()?.to_owned(),
-                    selector,
-                    guard: Query::from_expr(one(fields, "guard")?)?,
-                });
-            } else if let Ok(body) = form.tagged("exact") {
-                let [key, play] = body else {
-                    return Err(error("exact syntax is (exact (key ...) (play D))"));
-                };
-                let action = play.tagged("play")?.first().ok_or_else(|| error("play requires a domino"))?.word()?;
-                program.exact_rules.push(ExactRule { key: parse_key(key)?, action: parse(action, "exact action")? });
+                Some("rule") => program.rules.push(rule(&library, form)?),
+                Some("exact") => {
+                    let [key, play] = form.tagged("exact")? else {
+                        return Err(form.span.error("exact syntax is (exact (key ...) (play D))"));
+                    };
+                    let action = match play.tagged("play")? {
+                        [tile] => parse(tile, "exact action")?,
+                        _ => return Err(play.span.error("play takes one domino")),
+                    };
+                    program.exact_rules.push(ExactRule { key: parse_key(key)?, action, span: form.span.clone() });
+                }
+                Some(tag @ ("initial" | "bind")) => {
+                    return Err(form.span.error(format!(
+                        "({tag} ...) is gone: a policy is a function of the frame, with no modes and no bindings"
+                    )));
+                }
+                _ => return Err(form.span.error("a policy form is (fallback ...), (rule ...) or (exact ...)")),
             }
+        }
+        if fallbacks != 1 {
+            return Err(tree.span.error("a policy requires exactly one (fallback lowest-legal)"));
         }
         Ok(program)
     }
 }
 
+/// `(rule name (select ...) (guard (query ...)))`.
+fn rule(library: &Library, form: &Expr) -> Result<PolicyRule> {
+    let body = form.tagged("rule")?;
+    let [name, fields @ ..] = body else {
+        return Err(form.span.error("rule syntax is (rule name (select ...) (guard (query ...)))"));
+    };
+    if fields.len() != 2 || fields.iter().any(|f| !matches!(f.head(), Some("select" | "guard"))) {
+        return Err(form.span.error("rule syntax is (rule name (select ...) (guard (query ...))), with no modes"));
+    }
+    let select = fields.iter().find(|f| f.head() == Some("select")).expect("a select form");
+    let selector = match select.tagged("select")? {
+        [answer] if answer.word()? == "answer" => Selector::FirstOutput,
+        [tile, d] if tile.word()? == "tile" => Selector::Literal(parse(d, "selector domino")?),
+        _ => return Err(select.span.error("select is answer, or tile D")),
+    };
+    Ok(PolicyRule {
+        name: name.word()?.to_owned(),
+        selector,
+        guard: Query::from_expr(library, one(fields, "guard", &form.span)?)?,
+        span: form.span.clone(),
+    })
+}
+
+impl FromStr for PolicyProgram {
+    type Err = Error;
+
+    fn from_str(source: &str) -> Result<Self> {
+        PolicyProgram::parse(source, "policy")
+    }
+}
+
 impl fmt::Display for PolicyProgram {
+    /// The program with every definition expanded: it reads back as itself.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "(policy {}", self.name)?;
-        writeln!(f, "  (initial {})", self.initial_mode)?;
         writeln!(f, "  (fallback lowest-legal)")?;
-        for binding in &self.bindings {
-            writeln!(f, "  (bind {} {})", binding.name, binding.query)?;
-        }
         for rule in &self.exact_rules {
             writeln!(f, "  (exact {} (play {}))", KeyDisplay(&rule.key), rule.action)?;
         }
@@ -472,49 +398,38 @@ impl fmt::Display for PolicyProgram {
             let selector = match &rule.selector {
                 Selector::FirstOutput => "answer".to_owned(),
                 Selector::Literal(d) => format!("tile {d}"),
-                Selector::Rigid(n) => format!("rigid {n}"),
             };
-            writeln!(
-                f,
-                "  (rule {} (in {}) (next {}) (select {selector}) (guard {}))",
-                rule.name, rule.in_mode, rule.next_mode, rule.guard
-            )?;
+            writeln!(f, "  (rule {} (select {selector}) (guard {}))", rule.name, rule.guard)?;
         }
         write!(f, ")")
     }
 }
 
-const KEY_FIELDS: [&str; 6] = ["physics", "viewer", "hand-bits", "declarer", "bid", "history"];
+const KEY_FIELDS: [&str; 6] = ["physics", "viewer", "dealt-bits", "declarer", "bid", "history"];
 
 fn parse_key(expr: &Expr) -> Result<PolicyKey> {
     let xs = expr.tagged("key")?;
-    let tags: BTreeSet<&str> = xs.iter().filter_map(|x| x.list().ok()?.first()?.word().ok()).collect();
+    let tags: BTreeSet<&str> = xs.iter().filter_map(Expr::head).collect();
     if xs.len() != KEY_FIELDS.len() || tags != KEY_FIELDS.into_iter().collect() {
-        return Err(error("an exact key has missing, duplicate, or unknown fields"));
+        return Err(expr.span.error("an exact key has missing, duplicate, or unknown fields"));
     }
-    let scalar = |tag: &str| match words(xs, tag)?.as_slice() {
-        [word] => Ok(*word),
-        _ => Err(error(format!("{tag} takes one value"))),
-    };
-    let history = one_body(xs, "history")?
+    let bits: u32 = parse(one(xs, "dealt-bits", &expr.span)?, "domino bits")?;
+    let history = xs
         .iter()
-        .map(|entry| match entry.list()? {
-            [seat, tile] => Ok((parse_seat(seat.word()?)?, parse(tile.word()?, "history domino")?)),
-            _ => Err(error("a history entry is (chair domino)")),
-        })
+        .find(|x| x.head() == Some("history"))
+        .expect("a history field")
+        .tagged("history")?
+        .iter()
+        .map(|d| parse(d, "history domino"))
         .collect::<Result<_>>()?;
     Ok(PolicyKey {
-        physics: scalar("physics")?.to_owned(),
-        viewer: parse_seat(scalar("viewer")?)?,
-        hand: parse_bits(scalar("hand-bits")?)?,
-        declarer: parse_seat(scalar("declarer")?)?,
-        bid: parse(scalar("bid")?, "bid")?,
+        physics: one(xs, "physics", &expr.span)?.word()?.to_owned(),
+        viewer: parse_seat(one(xs, "viewer", &expr.span)?)?,
+        dealt: DominoSet::from_bits(bits).ok_or_else(|| expr.span.error("domino bits outside the deck"))?,
+        declarer: parse_seat(one(xs, "declarer", &expr.span)?)?,
+        bid: parse(one(xs, "bid", &expr.span)?, "bid")?,
         history,
     })
-}
-
-fn one_body<'a>(xs: &'a [Expr], tag: &str) -> Result<&'a [Expr]> {
-    xs.iter().find_map(|x| x.tagged(tag).ok()).ok_or_else(|| error(format!("missing ({tag} ...)")))
 }
 
 struct KeyDisplay<'a>(&'a PolicyKey);
@@ -524,15 +439,15 @@ impl fmt::Display for KeyDisplay<'_> {
         let k = self.0;
         write!(
             f,
-            "(key (physics {}) (viewer {}) (hand-bits {}) (declarer {}) (bid {}) (history",
+            "(key (physics {}) (viewer {}) (dealt-bits {}) (declarer {}) (bid {}) (history",
             k.physics,
             k.viewer,
-            k.hand.bits(),
+            k.dealt.bits(),
             k.declarer,
             k.bid
         )?;
-        for (seat, d) in &k.history {
-            write!(f, " ({seat} {d})")?;
+        for d in &k.history {
+            write!(f, " {d}")?;
         }
         write!(f, "))")
     }

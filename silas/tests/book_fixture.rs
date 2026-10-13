@@ -7,8 +7,6 @@
 //! asserted as the fixture records it, legal or not.
 mod common;
 
-use std::sync::Arc;
-
 use common::fixture::{Bid, Book, Example, Line, Role, Who, book};
 use serde_json::Value;
 use silas::*;
@@ -65,7 +63,7 @@ struct Bank {
 
 /// A line replayed so far.
 struct Replay {
-    physics: Arc<dyn Physics>,
+    physics: Physics,
     /// The remaining tiles of each seat the book depicts.
     hands: [Option<DominoSet>; SEATS],
     /// Whether every play of the seat so far is named.
@@ -222,14 +220,14 @@ impl Replay {
                 _ => panic!("a tail play names its seat and tile"),
             })
             .collect();
-        wins_out(self.physics.as_ref(), hands, leader, side, &forced)
+        wins_out(&self.physics, hands, leader, side, &forced)
     }
 }
 
 /// Whether `side` can take every trick from here (perfect information): its
 /// seats choose, the others' every legal play is tried.
 fn wins_out(
-    physics: &dyn Physics,
+    physics: &Physics,
     hands: [DominoSet; SEATS],
     leader: Role,
     side: usize,
@@ -239,7 +237,7 @@ fn wins_out(
         return true;
     }
     fn go(
-        physics: &dyn Physics,
+        physics: &Physics,
         hands: [DominoSet; SEATS],
         leader: Role,
         side: usize,

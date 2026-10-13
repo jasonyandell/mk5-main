@@ -17,9 +17,8 @@
 ; GAP aggregate: "the suit with the most unplayed tiles" compares the sizes of
 ; two sets of tiles.
 (policy c14-crisis-cash-the-double
-  (initial play)
   (fallback lowest-legal)
-  (rule cash-a-double (in play) (next play) (select answer)
+  (rule cash-a-double (select answer)
     (guard
       (query
         (roles (chair b) (chair followed) (chair showed) (domino first) (domino doubled) (domino out))

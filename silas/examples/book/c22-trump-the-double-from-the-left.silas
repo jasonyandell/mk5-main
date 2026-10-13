@@ -17,9 +17,8 @@
 ; partner (c, distinct from the other chairs) or by my partner (c the same as
 ; pard): roles declared together are distinct unless `same` joins them.
 (policy c22-trump-the-double-from-the-left
-  (initial play)
   (fallback lowest-legal)
-  (rule trump-in (in play) (next play) (select answer)
+  (rule trump-in (select answer)
     (guard
       (query
         (roles
@@ -47,7 +46,7 @@
           (in ruff q*)
           (own-legal other)
           (in other q*)))))
-  (rule trump-in-on-count (in play) (next play) (select answer)
+  (rule trump-in-on-count (select answer)
     (guard
       (query
         (roles

@@ -16,9 +16,8 @@
 ; "Calls for count": a live count tile outside the hand follows the suit the
 ; tile leads. "Top": no live tile outside the hand outranks it in that suit.
 (policy c15-setter-leads-call-for-count
-  (initial play)
   (fallback lowest-legal)
-  (rule a-double-that-calls-for-count (in play) (next play) (select answer)
+  (rule a-double-that-calls-for-count (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino lead) (domino called) (context suit))
@@ -36,7 +35,7 @@
           (not (own-legal called))
           (in called suit)
           (not (count called 0))))))
-  (rule a-tile-that-calls-for-count (in play) (next play) (select answer)
+  (rule a-tile-that-calls-for-count (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino lead) (domino called) (context suit))
@@ -69,7 +68,7 @@
           (in called suit)
           (not (count called 0))
           (none (roles (domino five)) (live five) (not (own-legal five)) (in five suit) (count five 5))))))
-  (rule one-point-sets-lead-quietly (in play) (next play) (select answer)
+  (rule one-point-sets-lead-quietly (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino lead) (context suit))

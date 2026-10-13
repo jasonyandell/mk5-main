@@ -6,9 +6,8 @@
 ; How this encoding differs: none. The book ranks the top unplayed tile of a
 ; suit with the doubles (p. 40); neither the gate nor this file does.
 (policy c23-partner-leads-doubles
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-a-double (in play) (next play) (select answer)
+  (rule lead-a-double (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino doubled))

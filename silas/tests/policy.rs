@@ -1,8 +1,6 @@
 //! Executable policies over a fixed, fully specified deal.
 mod common;
 
-use std::sync::Arc;
-
 use common::*;
 use silas::*;
 
@@ -16,7 +14,7 @@ const DEAL: [[&str; 7]; 4] = [
 
 /// S0's view of the deal, played out from S0's lead: S0 declares, bidding 30.
 struct Table {
-    physics: Arc<dyn Physics>,
+    physics: Physics,
     hands: [DominoSet; 4],
     frame: Frame,
 }
@@ -26,21 +24,16 @@ impl Table {
         let hands = DEAL.map(|hand| tiles(&hand));
         assert_eq!(hands.iter().fold(DominoSet::EMPTY, |all, h| all.union(*h)), DominoSet::FULL);
         let physics = physics(decl);
-        let contract = Contract { declarer: Seat::S0, bid: 30 };
-        let frame = Frame::from_record(physics.clone(), Seat::S0, hands[0], contract, vec![]).unwrap();
+        let frame = Frame::new(contract(&physics, Seat::S0, 30), Seat::S0, hands[0], vec![]).unwrap();
         Table { physics, hands, frame }
     }
 
-    fn history(&self) -> &[(Seat, Domino)] {
-        self.frame.record().unwrap().plays()
-    }
-
     fn banked(&self) -> [u32; 2] {
-        self.frame.record().unwrap().banked()
+        self.frame.banked()
     }
 
     fn actor(&self) -> Seat {
-        self.frame.leader().plus(self.frame.prefix().len())
+        self.frame.next_actor().unwrap()
     }
 
     fn legal(&self, seat: Seat) -> DominoSet {
@@ -71,25 +64,25 @@ impl Table {
 
     /// S0's frame under a contract of `bid`.
     fn at_bid(&self, bid: u32) -> Frame {
-        let contract = Contract { declarer: Seat::S0, bid };
-        let hand = self.frame.kernel().viewer_hand();
-        Frame::from_record(self.physics.clone(), Seat::S0, hand, contract, self.history().to_vec()).unwrap()
+        Frame::new(contract(&self.physics, Seat::S0, bid), Seat::S0, self.frame.dealt(), self.frame.plays().to_vec())
+            .unwrap()
+    }
+}
+
+fn own_legal_rule() -> PolicyRule {
+    PolicyRule {
+        name: "own-legal".into(),
+        selector: Selector::FirstOutput,
+        guard: "(query (roles (domino action)) (out action) (pattern (own-legal action)))".parse().unwrap(),
+        span: Span::default(),
     }
 }
 
 fn program(key: PolicyKey) -> PolicyProgram {
     PolicyProgram {
         name: "table-and-relation".into(),
-        initial_mode: "fresh".into(),
-        bindings: vec![],
-        exact_rules: vec![ExactRule { key, action: tile("6-6") }],
-        rules: vec![PolicyRule {
-            name: "own-legal".into(),
-            in_mode: "fresh".into(),
-            next_mode: "persistent".into(),
-            selector: Selector::FirstOutput,
-            guard: "(query (roles (domino action)) (out action) (pattern (own-legal action)))".parse().unwrap(),
-        }],
+        exact_rules: vec![ExactRule { key, action: tile("6-6"), span: Span::default() }],
+        rules: vec![own_legal_rule()],
         fallback: Fallback::LowestLegal,
     }
 }
@@ -98,8 +91,10 @@ fn program(key: PolicyKey) -> PolicyProgram {
 fn text_roundtrip_preserves_exact_information_key() {
     for left in [7, 5] {
         let table = Table::deal("P6").until_viewer_holds(left);
-        let source = program(PolicyKey::of(&table.at_bid(31)).unwrap());
+        let source = program(PolicyKey::of(&table.at_bid(31)));
         assert_eq!(source.to_string().parse::<PolicyProgram>().unwrap(), source);
+        let marks = program(PolicyKey::of(&table.at_bid(84)));
+        assert_eq!(marks.to_string().parse::<PolicyProgram>().unwrap(), marks);
     }
 }
 
@@ -107,39 +102,36 @@ fn text_roundtrip_preserves_exact_information_key() {
 fn exact_rule_precedes_relation_and_is_checked_for_legality() {
     let table = Table::deal("P6");
     let input = table.frame.clone();
-    let mut source = program(PolicyKey::of(&input).unwrap());
+    let mut source = program(PolicyKey::of(&input));
     let hand = table.frame.kernel().viewer_hand();
     source.exact_rules[0].action = hand.iter().last().unwrap();
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
     let mut budget = Budget::new(100_000);
-    let mut controller = compiled.initialize(&input, &mut budget).unwrap();
-    let trace = compiled.choose_traced(&mut controller, &input, &mut budget).unwrap();
+    let trace = compiled.decide(&input, &mut budget).unwrap();
     assert_eq!((trace.action, trace.provenance), (source.exact_rules[0].action, DecisionProvenance::Exact));
 
     source.exact_rules[0].action = DominoSet::FULL.difference(hand).iter().next().unwrap();
     assert!(source.compile(&Registry::standard(), &table.physics).is_err());
     // An exact key is bound to the physics it was taken under.
-    assert!(program(PolicyKey::of(&input).unwrap()).compile(&Registry::standard(), &physics("P5")).is_err());
+    assert!(program(PolicyKey::of(&input)).compile(&Registry::standard(), &physics("P5")).is_err());
 }
 
 #[test]
 fn world_predicates_are_refused_and_fallback_is_total() {
     let table = Table::deal("P6");
     let input = table.frame.clone();
-    let mut source = program(PolicyKey::of(&input).unwrap());
+    let mut source = program(PolicyKey::of(&input));
     source.exact_rules.clear();
     source.rules.clear();
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
     let mut budget = Budget::new(100_000);
-    let mut controller = compiled.initialize(&input, &mut budget).unwrap();
-    assert_eq!(compiled.choose(&mut controller, &input, &mut budget).unwrap(), tile("0-0"));
+    assert_eq!(compiled.choose(&input, &mut budget).unwrap(), tile("0-0"));
 
     source.rules.push(PolicyRule {
         name: "peek".into(),
-        in_mode: "fresh".into(),
-        next_mode: "fresh".into(),
         selector: Selector::FirstOutput,
         guard: "(query (roles (domino action)) (out action) (pattern (holds S1 action)))".parse().unwrap(),
+        span: Span::default(),
     });
     assert!(source.compile(&Registry::standard(), &table.physics).is_err());
 }
@@ -152,12 +144,12 @@ fn play_out(
 ) -> Vec<(PolicyKey, Domino, Option<DecisionProvenance>)> {
     let mut table = Table::deal(decl);
     let mut decisions = Vec::new();
-    while table.history().len() < 28 {
+    while table.frame.plays().len() < 28 {
         let actor = table.actor();
         let tile = if actor == Seat::S0 {
             let input = table.frame.clone();
             let (tile, provenance) = choose(&input);
-            decisions.push((PolicyKey::of(&input).unwrap(), tile, provenance));
+            decisions.push((PolicyKey::of(&input), tile, provenance));
             tile
         } else {
             table.legal(actor).iter().next().unwrap()
@@ -176,20 +168,18 @@ fn a_table_policy_exports_and_replays_through_its_serialized_program() {
     assert_eq!(direct.len(), 7);
     let program = PolicyProgram {
         name: "exported-table".into(),
-        initial_mode: "fresh".into(),
-        bindings: vec![],
-        exact_rules: direct.iter().map(|(key, action, _)| ExactRule { key: key.clone(), action: *action }).collect(),
+        exact_rules: direct
+            .iter()
+            .map(|(key, action, _)| ExactRule { key: key.clone(), action: *action, span: Span::default() })
+            .collect(),
         rules: vec![],
         fallback: Fallback::LowestLegal,
     };
     let parsed: PolicyProgram = program.to_string().parse().unwrap();
     assert_eq!(parsed, program);
     let compiled = parsed.compile(&Registry::standard(), &physics("P6")).unwrap();
-    let mut controller = None;
     let replayed = play_out("P6", |input| {
-        let mut budget = Budget::new(100_000);
-        let controller = controller.get_or_insert_with(|| compiled.initialize(input, &mut budget).unwrap());
-        let trace = compiled.choose_traced(controller, input, &mut budget).unwrap();
+        let trace = compiled.decide(input, &mut Budget::new(100_000)).unwrap();
         (trace.action, Some(trace.provenance))
     });
     assert_eq!(replayed.len(), direct.len());
@@ -200,59 +190,56 @@ fn a_table_policy_exports_and_replays_through_its_serialized_program() {
 }
 
 #[test]
-fn controller_provenance_and_mode_updates_are_transactional() {
-    let table = Table::deal("P6");
-    let input = table.frame.clone();
-    let mut first = program(PolicyKey::of(&input).unwrap());
-    first.exact_rules.clear();
-    let mut second = first.clone();
-    second.name = "other-program".into();
-    let first = first.compile(&Registry::standard(), &table.physics).unwrap();
-    let second = second.compile(&Registry::standard(), &table.physics).unwrap();
-    let mut controller = first.initialize(&input, &mut Budget::new(10_000)).unwrap();
-    assert!(second.choose(&mut controller, &input, &mut Budget::new(10_000)).is_err());
-    assert_eq!(controller.mode(), "fresh");
-    assert!(first.choose(&mut controller, &input, &mut Budget::new(0)).is_err());
-    assert_eq!(controller.mode(), "fresh");
-    let trace = first.choose_traced(&mut controller, &input, &mut Budget::new(10_000)).unwrap();
-    assert_eq!(trace.provenance, DecisionProvenance::RelationalRule { name: "own-legal".into() });
-    assert_eq!((trace.mode_before.as_str(), controller.mode()), ("fresh", "persistent"));
+fn a_decision_is_a_function_of_the_frame() {
+    // The same frame gets the same decision, however often and in whatever
+    // order it is asked, and from whichever path the frame was built.
+    let table = Table::deal("P6").until_viewer_holds(4);
+    let mut source = program(PolicyKey::of(&table.frame));
+    source.exact_rules.clear();
+    let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
+    let first = compiled.decide(&table.frame, &mut Budget::new(10_000)).unwrap();
+    assert_eq!(first.provenance, DecisionProvenance::RelationalRule { name: "own-legal".into() });
+    let earlier = Table::deal("P6").frame;
+    let other = compiled.decide(&earlier, &mut Budget::new(10_000)).unwrap();
+    for _ in 0..3 {
+        assert_eq!(compiled.decide(&table.frame, &mut Budget::new(10_000)).unwrap(), first);
+        assert_eq!(compiled.decide(&earlier, &mut Budget::new(10_000)).unwrap(), other);
+    }
+    let rebuilt =
+        Frame::new(table.frame.contract().clone(), Seat::S0, table.frame.dealt(), table.frame.plays().to_vec())
+            .unwrap();
+    assert_eq!(compiled.decide(&rebuilt, &mut Budget::new(10_000)).unwrap(), first);
+    // A refusal (here, an exhausted budget) leaves nothing behind.
+    assert!(compiled.choose(&table.frame, &mut Budget::new(0)).is_err());
+    assert_eq!(compiled.decide(&table.frame, &mut Budget::new(10_000)).unwrap(), first);
+    // The allowed set is the rule's legal answers, and the decision its least.
+    let allowed = compiled.allowed(&table.frame, &mut Budget::new(10_000)).unwrap();
+    let legal = table.physics.legal_plays(table.frame.kernel().viewer_hand(), table.frame.lead());
+    assert_eq!(allowed, Allowed { provenance: first.provenance.clone(), tiles: legal });
+    assert_eq!((first.allowed, first.action), (legal, legal.iter().next().unwrap()));
 }
 
 #[test]
-fn malformed_schema_history_and_empty_binding_are_refused() {
+fn malformed_schema_history_and_modes_are_refused() {
     for source in [
-        "(policy p (initial a) (initial b) (fallback lowest-legal))",
-        "(policy p (initial a) (fallback lowest-legal) (mystery x))",
+        "(policy p (fallback lowest-legal) (fallback lowest-legal))",
+        "(policy p (fallback lowest-legal) (mystery x))",
+        "(policy p)",
+        // A policy has no modes and no bindings: it is a function of the frame.
+        "(policy p (initial a) (fallback lowest-legal))",
+        "(policy p (fallback lowest-legal) (bind top (query (roles (domino d)) (out d))))",
+        "(policy p (fallback lowest-legal) (rule r (in a) (next a) (select answer) (guard (query (roles (domino d)) (out d)))))",
+        "(policy p (fallback lowest-legal) (rule exact (select answer) (guard (query (roles (domino d)) (out d)))))",
     ] {
-        assert!(source.parse::<PolicyProgram>().is_err(), "{source}");
+        let refused = source.parse::<PolicyProgram>().and_then(|p| p.compile(&Registry::standard(), &physics("P6")));
+        assert!(refused.is_err(), "{source}");
     }
 
     let table = Table::deal("P6").until_viewer_holds(6);
-    let mut wrong = PolicyKey::of(&table.frame).unwrap();
-    wrong.history[0].0 = wrong.history[0].0.plus(1);
-    let mut source = program(wrong);
+    let mut wrong = PolicyKey::of(&table.frame);
+    wrong.history.swap(0, 1);
+    let source = program(wrong);
     assert!(source.compile(&Registry::standard(), &table.physics).is_err());
-    source.exact_rules.clear();
-    let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
-    let unrecorded = Frame::new(
-        table.physics.clone(),
-        table.frame.kernel().clone(),
-        table.frame.leader(),
-        table.frame.prefix().to_vec(),
-        table.frame.played(),
-    )
-    .unwrap();
-    assert!(compiled.initialize(&unrecorded, &mut budget()).is_err());
-
-    let input = table.frame.clone();
-    let mut source = program(PolicyKey::of(&input).unwrap());
-    source.exact_rules.clear();
-    source
-        .bindings
-        .push(RigidBinding { name: "missing".into(), query: "(query (roles (domino d)) (out d))".parse().unwrap() });
-    let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
-    assert!(compiled.initialize(&input, &mut Budget::new(10_000)).is_err());
 }
 
 #[test]
@@ -262,21 +249,17 @@ fn contract_resolution_counts_every_point_the_physics_awards() {
     assert!(ours > 0 && theirs > 0, "the fixture banks points on both sides: {:?}", table.banked());
     let source = PolicyProgram {
         name: "fallback-only".into(),
-        initial_mode: "fresh".into(),
-        bindings: vec![],
         exact_rules: vec![],
         rules: vec![],
         fallback: Fallback::LowestLegal,
     };
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
-    let resolved = |bid: u32| {
-        let input = table.at_bid(bid);
-        let mut controller = compiled.initialize(&input, &mut budget()).unwrap();
-        compiled.choose_traced(&mut controller, &input, &mut budget()).unwrap().contract_resolved
-    };
+    let resolved = |bid: u32| compiled.decide(&table.at_bid(bid), &mut budget()).unwrap().contract_resolved;
     // 42 points in all: a point per trick and 35 count.
     assert_eq!(resolved(ours), Some(true));
     assert_eq!(resolved(ours + 1), None);
     assert_eq!(resolved(42 - theirs), None);
     assert_eq!(resolved(42 - theirs + 1), Some(false));
+    // A marks bid needs every point: set the moment the other side scores.
+    assert_eq!(resolved(84), Some(false));
 }

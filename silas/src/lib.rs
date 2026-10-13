@@ -8,9 +8,10 @@
 //! A [`PolicyProgram`] chooses plays from what the viewer alone can see. A
 //! [`Solver`] is the perfect-information reference: it sees all four hands.
 //!
-//! Silas owns the nouns of the game and the language. The rules live behind
-//! the [`Physics`] trait; [`reference::Straight42`] is the reference physics.
-//! See `README.md`.
+//! Silas owns the nouns of the game, the language, and every derived rule. A
+//! rules engine supplies only one declaration's tables, through
+//! [`Declaration`]; Silas reads them into a [`Physics`].
+//! [`reference::Straight42`] is the reference declarations. See `README.md`.
 
 mod belief;
 mod dynamics;
@@ -30,21 +31,22 @@ pub use dynamics::{
     AnswerDynamics, BeliefStep, ObservedPlay, PlayClass, anchor_back, compare_answers, play_is_legal, step_belief,
     step_belief_given, step_frame, step_world, transport_answers,
 };
-pub use eval::{Answer, Answers, Budget, CompiledQuery};
-pub use frame::{Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, Record, World};
-pub use measure::{Authority, Estimate, Verdict, Weight, compare};
+pub use eval::{Answer, Answers, Budget, CompiledQuery, Witness};
+pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
+pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
-pub use physics::Physics;
+pub use physics::{Declaration, Physics};
 pub use policy::{
-    CompiledPolicy, DecisionProvenance, ExactRule, Fallback, PolicyController, PolicyControllerState,
-    PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, RigidBinding, Selector,
+    Allowed, CompiledPolicy, DecisionProvenance, ExactRule, Fallback, GuardWitnesses, PolicyDecisionTrace, PolicyKey,
+    PolicyProgram, PolicyRule, Selector,
 };
 pub use registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};
-pub use syntax::{Atom, NoneClause, Pattern, Query, Role, Sort, Term, Value};
+pub use syntax::{Atom, Pattern, Quantifier, Query, Role, Scope, Sort, Span, Term, Value, format};
 
 /// An invalid program, an invalid input, or a refused computation. Nothing
-/// partial is returned alongside it.
+/// partial is returned alongside it. An error in program text names the
+/// source, line and column, and shows the line with a caret under the fault.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error(pub String);
 

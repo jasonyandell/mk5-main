@@ -9,9 +9,8 @@
 ; Python gate (pour_setter gate_c13d): the same.
 ; How this encoding differs: none from the gate.
 (policy c13d-lead-a-singleton
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-lone-tile (in play) (next play) (select answer)
+  (rule lead-the-lone-tile (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino lone) (context suit))

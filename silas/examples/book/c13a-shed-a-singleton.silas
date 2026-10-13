@@ -9,9 +9,8 @@
 ; How this encoding differs: none from the gate.
 ; Out of trump is read from the hand, as in C1b.
 (policy c13a-shed-a-singleton
-  (initial play)
   (fallback lowest-legal)
-  (rule throw-a-lone-tile (in play) (next play) (select answer)
+  (rule throw-a-lone-tile (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino lone) (context suit))

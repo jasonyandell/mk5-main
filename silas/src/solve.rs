@@ -10,11 +10,11 @@
 //! `the-wall`).
 //!
 //! The solver works over any [`Physics`], from an [`OpenPosition`]: the four
-//! hands, the contract, the trick's leader and plays so far, and the points
-//! each side has banked. It has two objectives ([`Objective`]): the points
+//! hands, the contract (whose declaration is the physics), the trick's leader
+//! and plays so far, and the points each side has banked. It has two objectives ([`Objective`]): the points
 //! margin for the declaring side (theirs minus the defenders', the declaring
 //! side maximizing and the defenders minimizing), and make-or-set against the
-//! bid (one if the declaring side reaches the bid, zero if not), which a
+//! contract (one if the declaring side reaches its threshold, zero if not), which a
 //! null-window search answers without the exact count. It returns the value of
 //! every legal move at the root, so a given move can be graded against the
 //! best.
@@ -25,14 +25,12 @@
 //! side's points still to come. Those bounds are facts about the state alone,
 //! so one table serves both objectives and every position of a deal.
 
-use std::collections::HashMap;
-use std::hash::{BuildHasherDefault, Hasher};
-use std::sync::Arc;
-
 use crate::frame::Contract;
 use crate::nouns::{Context, Domino, DominoSet, Seat};
-use crate::physics::{Physics, total_points};
+use crate::physics::Physics;
 use crate::{Result, error};
+use std::collections::HashMap;
+use std::hash::{BuildHasherDefault, Hasher};
 
 /// A position with every hand face up: the contract, the four remaining
 /// hands, the current trick's leader and plays, and the points each side has
@@ -49,30 +47,26 @@ pub struct OpenPosition {
 impl OpenPosition {
     /// The opening position of a deal: seven tiles to each seat, the declarer
     /// to lead, nothing banked.
-    pub fn deal(physics: &dyn Physics, contract: Contract, hands: [DominoSet; Seat::COUNT]) -> Result<OpenPosition> {
+    pub fn deal(contract: Contract, hands: [DominoSet; Seat::COUNT]) -> Result<OpenPosition> {
         if hands.iter().any(|h| h.len() != Domino::COUNT / Seat::COUNT) {
             return Err(error("a deal gives each seat seven tiles"));
         }
-        OpenPosition::new(physics, contract, hands, contract.declarer, Vec::new(), [0, 0])
+        let leader = contract.declarer();
+        OpenPosition::new(contract, hands, leader, Vec::new(), [0, 0])
     }
 
     /// A position of the play. Checked for coherence: the hands and the
     /// trick's plays are disjoint, at most three tiles are on the table, the
     /// seats that have played to the trick hold one tile fewer than those
-    /// still to play, and the bid is within the hand's points. Whether the
-    /// trick's plays followed suit is not checked: the hands they came from are
-    /// not part of the position.
+    /// still to play. Whether the trick's plays followed suit is not checked:
+    /// the hands they came from are not part of the position.
     pub fn new(
-        physics: &dyn Physics,
         contract: Contract,
         hands: [DominoSet; Seat::COUNT],
         leader: Seat,
         trick: Vec<Domino>,
         banked: [u32; 2],
     ) -> Result<OpenPosition> {
-        if contract.bid > total_points(physics) {
-            return Err(error(format!("a bid of {} exceeds the points in a hand", contract.bid)));
-        }
         let mut seen = DominoSet::EMPTY;
         for d in hands.iter().flat_map(|h| h.iter()).chain(trick.iter().copied()) {
             if !seen.insert(d) {
@@ -91,8 +85,13 @@ impl OpenPosition {
         Ok(OpenPosition { contract, hands, leader, trick, banked })
     }
 
-    pub fn contract(&self) -> Contract {
-        self.contract
+    pub fn contract(&self) -> &Contract {
+        &self.contract
+    }
+
+    /// The declaration's rules.
+    pub fn physics(&self) -> &Physics {
+        self.contract.declaration()
     }
 
     pub fn hand(&self, seat: Seat) -> DominoSet {
@@ -124,18 +123,19 @@ impl OpenPosition {
     }
 
     /// The next actor's legal plays; empty once every tile is played.
-    pub fn legal(&self, physics: &dyn Physics) -> DominoSet {
+    pub fn legal(&self) -> DominoSet {
         self.next_actor()
-            .map_or(DominoSet::EMPTY, |seat| physics.legal_plays(self.hand(seat), self.trick.first().copied()))
+            .map_or(DominoSet::EMPTY, |seat| self.physics().legal_plays(self.hand(seat), self.trick.first().copied()))
     }
 
     /// The position after the next actor plays `tile`, which must be legal.
     /// The fourth play closes the trick: its winner banks its points and leads.
-    pub fn play(&self, physics: &dyn Physics, tile: Domino) -> Result<OpenPosition> {
+    pub fn play(&self, tile: Domino) -> Result<OpenPosition> {
         let Some(seat) = self.next_actor() else {
             return Err(error("every tile is played"));
         };
-        if !self.legal(physics).contains(tile) {
+        let physics = self.physics();
+        if !self.legal().contains(tile) {
             return Err(error(format!("{seat} cannot play {tile}")));
         }
         let mut next = self.clone();
@@ -151,7 +151,8 @@ impl OpenPosition {
 
     /// The points not yet banked: a point for each trick still open or to come
     /// and the count on every tile in the hands or on the table.
-    pub fn unbanked(&self, physics: &dyn Physics) -> u32 {
+    pub fn unbanked(&self) -> u32 {
+        let physics = self.physics();
         let tiles = self.hands.iter().map(|h| h.len()).sum::<usize>() + self.trick.len();
         let count: u32 =
             self.hands.iter().flat_map(|h| h.iter()).chain(self.trick.iter().copied()).map(|d| physics.count(d)).sum();
@@ -160,7 +161,7 @@ impl OpenPosition {
 
     /// The declaring side's team index.
     fn declaring(&self) -> usize {
-        self.contract.declarer.team().index()
+        self.contract.declarer().team().index()
     }
 }
 
@@ -171,7 +172,8 @@ pub enum Objective {
     /// The declaring side's final points less the defenders', banked points
     /// included: an even number from -42 to 42 over a whole deal.
     Margin,
-    /// One if the declaring side's final points reach the bid, zero if not.
+    /// One if the declaring side's final points reach the contract's
+    /// threshold, zero if not.
     Make,
 }
 
@@ -209,20 +211,20 @@ impl RootValues {
 /// The exact double-dummy solver for one physics. Its transposition table
 /// persists across calls, so solving the positions of one deal in turn reuses
 /// the work.
-pub struct Solver<'a> {
-    physics: &'a dyn Physics,
+pub struct Solver {
+    physics: Physics,
     rules: Rules,
     table: HashMap<u128, Bounds, BuildHasherDefault<Mix>>,
     nodes: u64,
 }
 
-impl<'a> Solver<'a> {
-    pub fn new(physics: &'a dyn Physics) -> Solver<'a> {
-        Solver { physics, rules: Rules::new(physics), table: HashMap::default(), nodes: 0 }
+impl Solver {
+    pub fn new(physics: &Physics) -> Solver {
+        Solver { physics: physics.clone(), rules: Rules::new(physics), table: HashMap::default(), nodes: 0 }
     }
 
-    pub fn physics(&self) -> &'a dyn Physics {
-        self.physics
+    pub fn physics(&self) -> &Physics {
+        &self.physics
     }
 
     /// The positions searched so far.
@@ -231,22 +233,36 @@ impl<'a> Solver<'a> {
     }
 
     /// The value of every legal move at `position`. Refused once every tile is
-    /// played.
+    /// played, and for a position under another physics.
     pub fn solve(&mut self, position: &OpenPosition, objective: Objective) -> Result<RootValues> {
         let mover = position.next_actor().ok_or_else(|| error("every tile is played; there is no move to value"))?;
+        self.check(position)?;
         let moves = position
-            .legal(self.physics)
+            .legal()
             .iter()
-            .map(|tile| Ok((tile, self.value(&position.play(self.physics, tile)?, objective))))
+            .map(|tile| Ok((tile, self.value(&position.play(tile)?, objective))))
             .collect::<Result<Vec<_>>>()?;
-        Ok(RootValues { objective, mover, declaring: mover.team() == position.contract.declarer.team(), moves })
+        Ok(RootValues { objective, mover, declaring: mover.team() == position.contract.declarer().team(), moves })
     }
 
-    /// The value of `position` under best play by both sides.
+    fn check(&self, position: &OpenPosition) -> Result<()> {
+        if *position.physics() != self.physics {
+            return Err(error(format!(
+                "the solver is for {} and the position is under {}",
+                self.physics.name(),
+                position.physics().name()
+            )));
+        }
+        Ok(())
+    }
+
+    /// The value of `position` under best play by both sides. The position
+    /// must be under the solver's physics.
     pub fn value(&mut self, position: &OpenPosition, objective: Objective) -> i32 {
+        assert!(self.check(position).is_ok(), "a position under the solver's physics");
         let side = position.declaring();
         let banked = [position.banked[side], position.banked[1 - side]].map(|p| p as i32);
-        let unbanked = position.unbanked(self.physics) as i32;
+        let unbanked = position.unbanked() as i32;
         let node = Node::new(&self.rules, position);
         match objective {
             Objective::Margin => {
@@ -254,7 +270,7 @@ impl<'a> Solver<'a> {
                 banked[0] - banked[1] + 2 * future - unbanked
             }
             Objective::Make => {
-                let need = position.contract.bid as i32 - banked[0];
+                let need = position.contract.threshold() as i32 - banked[0];
                 let made = need <= 0 || (need <= unbanked && self.search(node, need - 1, need) >= need);
                 i32::from(made)
             }
@@ -426,9 +442,8 @@ impl Node {
     }
 }
 
-/// One declaration's tables, read once from the physics's required methods.
-/// The provided methods are derived from the same tables, so these agree with
-/// them (an override must be an equal computation).
+/// One declaration's tables, packed for the search from the physics. Silas
+/// derives legality and the winner from the same tables, so these agree.
 struct Rules {
     led: [u8; Domino::COUNT],
     follow: [u32; Context::COUNT],
@@ -437,7 +452,7 @@ struct Rules {
 }
 
 impl Rules {
-    fn new(physics: &dyn Physics) -> Rules {
+    fn new(physics: &Physics) -> Rules {
         let count = Domino::ALL.map(|d| u8::try_from(physics.count(d)).expect("a tile counts under 256 points"));
         assert!(count.iter().map(|c| u32::from(*c)).sum::<u32>() + 7 <= 127, "a hand's points fit the table's bounds");
         Rules {
@@ -534,11 +549,10 @@ impl Hasher for Mix {
     }
 }
 
-/// A deal with every hand known: the physics, the contract, and the four
-/// hands by seat. A marks bid is the whole 42, as in [`Contract`].
+/// A deal with every hand known: the contract (its declaration the physics)
+/// and the four hands by seat.
 #[derive(Clone, Debug)]
 pub struct Deal {
-    pub physics: Arc<dyn Physics>,
     pub contract: Contract,
     pub hands: [DominoSet; Seat::COUNT],
 }
@@ -584,13 +598,12 @@ pub struct Grade {
 /// Grade every play of `line`, from the deal's opening lead, under both
 /// objectives. Refused at the first illegal play.
 pub fn grade_line(deal: &Deal, line: &[Domino]) -> Result<Vec<Grade>> {
-    let physics = deal.physics.as_ref();
-    let mut solver = Solver::new(physics);
-    let mut position = OpenPosition::deal(physics, deal.contract, deal.hands)?;
+    let mut solver = Solver::new(deal.contract.declaration());
+    let mut position = OpenPosition::deal(deal.contract.clone(), deal.hands)?;
     let mut grades = Vec::with_capacity(line.len());
     for (ply, tile) in line.iter().copied().enumerate() {
-        let legal = position.legal(physics);
-        let next = position.play(physics, tile).map_err(|e| error(format!("play {ply}: {e}")))?;
+        let legal = position.legal();
+        let next = position.play(tile).map_err(|e| error(format!("play {ply}: {e}")))?;
         let judge = |values: RootValues| Judged {
             given: values.value(tile).expect("a legal move has a value"),
             best: values.best(),

@@ -13,9 +13,8 @@
 ; tile is at stake (W42-p183-d); neither the gate nor this file has that
 ; exception.
 (policy c12b-four-trumps-lead-low
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-lowest-trump (in play) (next play) (select answer)
+  (rule lead-the-lowest-trump (select answer)
     (guard
       (query
         (roles (chair b) (domino top) (domino second) (domino third) (domino low) (domino t2) (domino t3))

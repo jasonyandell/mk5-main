@@ -8,9 +8,8 @@
 ; The book states the rule for a trick the partner knows is safe (C1); the gate,
 ; and this encoding, read "the bidder is winning so far", which is weaker.
 (policy c03-biggest-count-first
-  (initial play)
   (fallback lowest-legal)
-  (rule give-a-ten (in play) (next play) (select answer)
+  (rule give-a-ten (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino give) (domino other) (context led))
@@ -26,7 +25,7 @@
           (count give 10)
           (own-legal other)
           (not (count other 0))))))
-  (rule give-a-five (in play) (next play) (select answer)
+  (rule give-a-five (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino give) (domino other) (context led))

@@ -11,9 +11,8 @@
 ; what the partner can know (GAPS.md, another seat's knowledge). See
 ; tests/book.rs.
 (policy c01a-top-trump-for-the-donation
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-top-trump (in play) (next play) (select answer)
+  (rule lead-the-top-trump (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino top) (domino out))

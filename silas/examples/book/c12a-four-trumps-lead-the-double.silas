@@ -11,9 +11,8 @@
 ; The book's pp. 9 and 32 (W42-p009-i, W42-p032-a) lean the other way when the
 ; top two trumps are not both held; p. 183 is the one place it says A.
 (policy c12a-four-trumps-lead-the-double
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-double (in play) (next play) (select answer)
+  (rule lead-the-double (select answer)
     (guard
       (query
         (roles (chair b) (domino top) (domino second) (domino third) (domino t3) (domino t4))

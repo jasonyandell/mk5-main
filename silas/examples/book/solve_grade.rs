@@ -4,12 +4,11 @@
 //!
 //! Reads `examples/book/hands.json` (or the path given as the first argument):
 //! each deal's four hands by role and its narrated (`prose`) line, the bidder
-//! leading the first trick. The bidder sits in S0. A marks bid is the whole 42.
+//! leading the first trick. The bidder sits in S0. A marks bid needs all 42.
 //! A play the prose does not name ends the graded line.
 //!
 //! `cargo run --release --example solve_grade [hands.json]`
 
-use std::sync::Arc;
 use std::time::Instant;
 
 use serde_json::Value;
@@ -42,7 +41,8 @@ fn read(examples: &[Value], lines: &[Value], id: &str) -> Result<(Deal, Vec<(usi
     }
     let decl: Straight42 = text(&line["declaration"], "the declaration")?.parse()?;
     let bid = line["bid"].as_u64().ok_or_else(|| Error(format!("{id}: no numeric bid")))?;
-    let contract = Contract { declarer: Seat::S0, bid: bid.min(42) as u32 };
+    let bid = Bid::number(u32::try_from(bid).map_err(|_| Error(format!("{id}: a bid of {bid}")))?)?;
+    let contract = Contract::new(Seat::S0, bid, decl.physics())?;
     let tricks = line["tricks"].as_array().into_iter().flatten().map(|t| &t["plays"]);
     let plays = tricks.chain(std::iter::once(&line["tail"]["plays"])).flat_map(|p| p.as_array().into_iter().flatten());
     let mut narrated = Vec::new();
@@ -52,7 +52,7 @@ fn read(examples: &[Value], lines: &[Value], id: &str) -> Result<(Deal, Vec<(usi
             _ => break,
         }
     }
-    Ok((Deal { physics: Arc::new(decl), contract, hands }, narrated))
+    Ok((Deal { contract, hands }, narrated))
 }
 
 fn shown(set: DominoSet) -> String {
@@ -72,8 +72,8 @@ fn main() -> Result<()> {
     for id in DEALS {
         let (deal, narrated) = read(&examples, &lines, id)?;
         let started = Instant::now();
-        let physics = deal.physics.as_ref();
-        let opening = OpenPosition::deal(physics, deal.contract, deal.hands)?;
+        let physics = deal.contract.declaration();
+        let opening = OpenPosition::deal(deal.contract.clone(), deal.hands)?;
         let value = Solver::new(physics).value(&opening, Objective::Margin);
         let opening_time = started.elapsed();
         // The line is graded up to its first illegal play, if it has one.
@@ -81,7 +81,7 @@ fn main() -> Result<()> {
         let mut position = opening.clone();
         let mut broken = None;
         for (ply, d) in line.iter().enumerate() {
-            match position.play(physics, *d) {
+            match position.play(*d) {
                 Ok(next) => position = next,
                 Err(e) => {
                     broken = Some(format!(
@@ -98,8 +98,8 @@ fn main() -> Result<()> {
         println!(
             "\n{id}: {}, the bidders need {}; double-dummy from the opening lead: margin {value:+} ({} to the bidders); \
              solved in {:.1?}, line graded in {:.1?}",
-            physics.identity(),
-            deal.contract.bid,
+            physics.name(),
+            deal.contract.threshold(),
             (42 + value) / 2,
             opening_time,
             started.elapsed()

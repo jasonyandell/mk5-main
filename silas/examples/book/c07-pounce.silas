@@ -13,9 +13,8 @@
 ; book's "more urgent against 35 and 36" (p. 110) ranks the rule's urgency; it
 ; does not change the tile.
 (policy c07-pounce
-  (initial play)
   (fallback lowest-legal)
-  (rule play-count-now (in play) (next play) (select answer)
+  (rule play-count-now (select answer)
     (guard
       (query
         (roles (chair b) (chair me) (domino give) (context led))

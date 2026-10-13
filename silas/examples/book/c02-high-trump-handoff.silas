@@ -9,9 +9,8 @@
 ; sender's, and its reading is false there. The reading is a query:
 ; c02-reading-singleton.silas.
 (policy c02-high-trump-handoff
-  (initial play)
   (fallback lowest-legal)
-  (rule play-the-top-trump (in play) (next play) (select answer)
+  (rule play-the-top-trump (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino top))

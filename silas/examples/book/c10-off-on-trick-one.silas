@@ -11,9 +11,8 @@
 ; non-trump tile some tile outside the hand outranks in the suit it leads.
 ; How this encoding differs: none from the gate.
 (policy c10-off-on-trick-one
-  (initial play)
   (fallback lowest-legal)
-  (rule lead-the-off (in play) (next play) (select answer)
+  (rule lead-the-off (select answer)
     (guard
       (query
         (roles

@@ -1,5 +1,6 @@
-//! `Straight42`: the reference physics. Plain, spec-faithful and slow; the
-//! oracle the tests run against.
+//! `Straight42`: the reference declarations. Plain and spec-faithful: the
+//! tables the tests run against, read into a [`Physics`] by
+//! [`Straight42::physics`].
 //!
 //! It covers the nine straight declarations: a pip suit trump (`P0`..`P6`),
 //! doubles trump (`DT`), and no trump (`NT`). Doubles as their own suit
@@ -21,9 +22,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::frame::{HIDDEN_SEATS, Kernel, World};
 use crate::nouns::{Context, Domino, DominoSet, Pip};
-use crate::physics::Physics;
+use crate::physics::{Declaration, Physics};
 use crate::{Error, Result, error};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -105,8 +105,15 @@ impl FromStr for Straight42 {
     }
 }
 
-impl Physics for Straight42 {
-    fn identity(&self) -> String {
+impl Straight42 {
+    /// These rules as a [`Physics`].
+    pub fn physics(self) -> Physics {
+        Physics::new(&self).expect("the reference tables are well formed")
+    }
+}
+
+impl Declaration for Straight42 {
+    fn name(&self) -> String {
         format!("straight42/{}", self.decl)
     }
 
@@ -127,7 +134,7 @@ impl Physics for Straight42 {
     fn trick_key(&self, tile: Domino, led: Context) -> u8 {
         let tier = if self.called(tile) {
             2
-        } else if self.follows(tile, led) {
+        } else if self.incidence(led).contains(tile) {
             1
         } else {
             // Tier-zero tiles tie at the bottom: an off-suit play takes
@@ -149,91 +156,5 @@ impl Physics for Straight42 {
             10 => 10,
             _ => 0,
         }
-    }
-
-    fn count_worlds(&self, kernel: &Kernel) -> u128 {
-        Fiber::new(self, kernel).count()
-    }
-
-    fn worlds<'a>(&'a self, kernel: &'a Kernel) -> Box<dyn Iterator<Item = World> + 'a> {
-        let fiber = Fiber::new(self, kernel);
-        Box::new((0..fiber.count()).map(move |k| kernel.world(fiber.unrank(k))))
-    }
-}
-
-/// The hidden worlds of a kernel, counted tile by tile: `ways[i][c]` is the
-/// number of ways to deal the pool's tiles from the `i`-th on so that hidden
-/// slot `j` receives exactly `c[j]` of them. A world is numbered by the order
-/// of its choices, so the `k`-th world is read off the table directly.
-struct Fiber {
-    tiles: Vec<Domino>,
-    allowed: [DominoSet; HIDDEN_SEATS],
-    capacities: [usize; HIDDEN_SEATS],
-    ways: Vec<u128>,
-}
-
-const SIDE: usize = crate::frame::MAX_CAPACITY + 1;
-
-impl Fiber {
-    fn new(physics: &dyn Physics, kernel: &Kernel) -> Fiber {
-        let tiles: Vec<Domino> = kernel.pool().iter().collect();
-        let mut fiber = Fiber {
-            allowed: std::array::from_fn(|slot| kernel.allowed(physics, slot)),
-            capacities: kernel.hidden().map(|h| h.capacity),
-            ways: vec![0; (tiles.len() + 1) * SIDE * SIDE * SIDE],
-            tiles,
-        };
-        let n = fiber.tiles.len();
-        let at = Fiber::at(n, [0; HIDDEN_SEATS]);
-        fiber.ways[at] = 1;
-        for i in (0..n).rev() {
-            for c0 in 0..SIDE {
-                for c1 in 0..SIDE {
-                    for c2 in 0..SIDE {
-                        let c = [c0, c1, c2];
-                        let total =
-                            (0..HIDDEN_SEATS).filter_map(|j| fiber.after(i, c, j)).map(|next| fiber.ways[next]).sum();
-                        fiber.ways[Fiber::at(i, c)] = total;
-                    }
-                }
-            }
-        }
-        fiber
-    }
-
-    fn at(i: usize, c: [usize; HIDDEN_SEATS]) -> usize {
-        ((i * SIDE + c[0]) * SIDE + c[1]) * SIDE + c[2]
-    }
-
-    /// The table entry after giving tile `i` to slot `j`, if that is allowed.
-    fn after(&self, i: usize, mut c: [usize; HIDDEN_SEATS], j: usize) -> Option<usize> {
-        if c[j] == 0 || !self.allowed[j].contains(self.tiles[i]) {
-            return None;
-        }
-        c[j] -= 1;
-        Some(Fiber::at(i + 1, c))
-    }
-
-    fn count(&self) -> u128 {
-        self.ways[Fiber::at(0, self.capacities)]
-    }
-
-    /// The hidden hands of world number `k`, for `k < count()`.
-    fn unrank(&self, mut k: u128) -> [DominoSet; HIDDEN_SEATS] {
-        let mut hands = [DominoSet::EMPTY; HIDDEN_SEATS];
-        let mut c = self.capacities;
-        for (i, tile) in self.tiles.iter().enumerate() {
-            for j in 0..HIDDEN_SEATS {
-                if let Some(next) = self.after(i, c, j) {
-                    if k < self.ways[next] {
-                        hands[j].insert(*tile);
-                        c[j] -= 1;
-                        break;
-                    }
-                    k -= self.ways[next];
-                }
-            }
-        }
-        hands
     }
 }

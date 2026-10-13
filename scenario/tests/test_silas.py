@@ -156,14 +156,16 @@ def test_exact_is_refused_for_float_weights():
 
 def test_conditioning_on_a_likelihood_gives_its_evidence_exactly():
     """`condition_likelihood`: the evidence is Σ w·L / Σ w exactly, under the
-    meet of the belief's authority and the model's (a sample stays a
-    sample); every world needs one likelihood, and zero mass is refused."""
+    meet of the belief's authority and the model's (a sample stays a sample,
+    and names the model beside it); every world needs one likelihood, and
+    zero mass is refused."""
     f, worlds, weights, sampled = _sampled()
     belief = SilasBelief.from_worlds(f, worlds, weights, sampled)
     like = [(i % 4) / 4 for i in range(len(worlds))]
     posterior, evidence = belief.condition_likelihood("quarters", "test model v1", worlds, like)
     expected = sum(Fraction(w) * Fraction(x) for w, x in zip(weights, like)) / sum(Fraction(w) for w in weights)
-    assert evidence.value == expected and evidence.authority == sampled and posterior.authority == sampled
+    assert evidence.value == expected and evidence.authority == posterior.authority
+    assert posterior.authority.label == "exact_given(test model v1) and sampled(64, 5)"
     assert posterior.total_mass == sum(Fraction(w) * Fraction(x) for w, x in zip(weights, like))
     with pytest.raises(SilasError, match="no likelihood"):
         belief.condition_likelihood("short", "test model v1", worlds[1:], like[1:])
@@ -204,8 +206,8 @@ def test_text_compiles_or_is_refused_with_silas_message():
         SilasQuery("(query (roles (chair c)) (out c) (pattern (mystery c)))")
     with pytest.raises(SilasError):
         SilasQuery("(query")
-    policy = ("(policy doubles (initial a) (fallback lowest-legal)"
-              " (rule lead-double (in a) (next a) (select answer)"
+    policy = ("(policy doubles (fallback lowest-legal)"
+              " (rule lead-double (select answer)"
               "  (guard (query (roles (domino d)) (out d) (pattern (own-legal d) (double d))))))")
     for decl in range(10):
         assert SilasPolicy(policy, decl).identity
@@ -213,6 +215,31 @@ def test_text_compiles_or_is_refused_with_silas_message():
         SilasPolicy(policy.replace("(double d)", "(holds S1 d)"), 5)
     with pytest.raises(SilasError, match="no declaration"):
         SilasPolicy(policy, 10)
+    with pytest.raises(SilasError, match="no modes"):
+        SilasPolicy(policy.replace("(fallback lowest-legal)", "(initial a) (fallback lowest-legal)"), 5)
+    # A parse or compile error points at its line and column, with a caret.
+    with pytest.raises(SilasError, match=r"query:1:43: unregistered predicate mystery\n.*\n.*\n.*\^"):
+        SilasQuery("(query (roles (chair c)) (out c) (pattern (mystery c)))")
+
+
+def test_a_policy_allows_and_chooses_as_a_function_of_the_frame():
+    """`SilasPolicy.allowed`: the deciding layer and every tile it allows, the
+    same however often it is asked; `choose` plays the least of them."""
+    policy = SilasPolicy(
+        "(include book)"
+        " (policy book-doubles (fallback lowest-legal)"
+        "  (rule lead-a-double (select answer)"
+        "   (guard (query (roles (chair me) (domino d)) (out d)"
+        "    (pattern (viewer me) (on-lead me) (own-legal d) (double d) (not (trump-tile d)))))))", 5)
+    own = mask_of(tile(h, l) for h, l in [(5, 5), (5, 4), (6, 6), (4, 4), (3, 1), (2, 0), (1, 1)])
+    sit = Situation(decl_id=5, viewer=0, bid=84, bidder=0, record=empty_record(0), plays=())
+    f = frame(sit, own)
+    assert f.bid == 84
+    layer, allowed = policy.allowed(f)
+    assert layer == "lead-a-double" and set(allowed) == {tile(6, 6), tile(4, 4), tile(1, 1)}
+    assert policy.allowed(f) == (layer, allowed) and policy.choose(f) == min(allowed)
+    follower = SilasFrame(5, 1, mask_of(range(7)), 0, 84, [(0, tile(5, 5))])
+    assert policy.allowed(follower)[0] == "fallback"
 
 
 def test_frames_refuse_incoherent_records():

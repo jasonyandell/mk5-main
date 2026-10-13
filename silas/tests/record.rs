@@ -2,8 +2,6 @@
 //! the `none` clause.
 mod common;
 
-use std::sync::Arc;
-
 use common::*;
 use silas::*;
 
@@ -17,7 +15,7 @@ const DEAL: [[&str; 7]; 4] = [
 
 /// The deal played lowest-legal for `n` plays from `declarer`'s lead, under
 /// `decl`: the record's plays.
-fn lowest_plays(physics: &dyn Physics, declarer: Seat, n: usize) -> Vec<(Seat, Domino)> {
+fn lowest_plays(physics: &Physics, declarer: Seat, n: usize) -> Vec<(Seat, Domino)> {
     let mut hands = DEAL.map(|hand| tiles(&hand));
     let mut leader = declarer;
     let mut trick: Vec<Domino> = Vec::new();
@@ -39,12 +37,12 @@ fn lowest_plays(physics: &dyn Physics, declarer: Seat, n: usize) -> Vec<(Seat, D
 /// `viewer`'s frame after `n` lowest-legal plays, `declarer` bidding `bid`.
 fn recorded(decl: &str, viewer: Seat, declarer: Seat, bid: u32, n: usize) -> Frame {
     let physics = physics(decl);
-    let plays = lowest_plays(physics.as_ref(), declarer, n);
+    let plays = lowest_plays(&physics, declarer, n);
     let hand = plays
         .iter()
         .filter(|(s, _)| *s == viewer)
         .fold(tiles(&DEAL[viewer.index()]), |h, (_, d)| h.difference(DominoSet::single(*d)));
-    Frame::from_record(physics, viewer, hand, Contract { declarer, bid }, plays).unwrap()
+    Frame::from_history(contract(&physics, declarer, bid), viewer, hand, &plays).unwrap()
 }
 
 fn holds(frame: &Frame, query: &str) -> bool {
@@ -62,9 +60,9 @@ fn both(frame: &Frame, atom: &str) -> (bool, bool) {
 #[test]
 fn a_record_frame_derives_the_residue_the_steps_produce() {
     let physics = physics("P6");
-    let plays = lowest_plays(physics.as_ref(), Seat::S0, 11);
-    let contract = Contract { declarer: Seat::S0, bid: 30 };
-    let mut stepped = Frame::from_record(physics.clone(), Seat::S0, tiles(&DEAL[0]), contract, vec![]).unwrap();
+    let plays = lowest_plays(&physics, Seat::S0, 11);
+    let contract = contract(&physics, Seat::S0, 30);
+    let mut stepped = Frame::from_history(contract.clone(), Seat::S0, tiles(&DEAL[0]), &[]).unwrap();
     for (n, (actor, tile)) in plays.iter().copied().enumerate() {
         let class = match stepped.led_context() {
             None => PlayClass::Lead,
@@ -73,26 +71,28 @@ fn a_record_frame_derives_the_residue_the_steps_produce() {
         };
         stepped = step_frame(&stepped, ObservedPlay { actor, tile, class }, &mut budget()).unwrap();
         let hand = stepped.kernel().viewer_hand();
-        let direct = Frame::from_record(physics.clone(), Seat::S0, hand, contract, plays[..=n].to_vec()).unwrap();
+        let direct = Frame::from_history(contract.clone(), Seat::S0, hand, &plays[..=n]).unwrap();
         assert_eq!(stepped, direct);
+        // The same frame from the dealt hand and the tiles alone.
+        let tiles_only = plays[..=n].iter().map(|(_, d)| *d).collect();
+        assert_eq!(Frame::new(contract.clone(), Seat::S0, tiles(&DEAL[0]), tiles_only).unwrap(), direct);
     }
-    let record = stepped.record().unwrap();
-    assert_eq!(record.plays(), plays.as_slice());
-    assert_eq!(record.trick_number(), Some(3));
+    assert_eq!(stepped.history(), plays.as_slice());
+    assert_eq!(stepped.trick_number(), Some(3));
     assert_eq!(stepped.prefix().len(), 3);
     // Every closed trick's points are banked: a point a trick plus its count.
-    let closed: u32 = record
+    let closed: u32 = stepped
         .tricks()
         .filter(|t| t.len() == 4)
         .map(|t| 1 + t.iter().map(|(_, d)| physics.count(*d)).sum::<u32>())
         .sum();
-    assert_eq!(record.banked().iter().sum::<u32>(), closed);
+    assert_eq!(stepped.banked().iter().sum::<u32>(), closed);
 }
 
 #[test]
 fn incoherent_records_are_refused() {
     let physics = physics("P6");
-    let plays = lowest_plays(physics.as_ref(), Seat::S0, 8);
+    let plays = lowest_plays(&physics, Seat::S0, 8);
     let hand = |plays: &[(Seat, Domino)]| {
         plays
             .iter()
@@ -100,10 +100,12 @@ fn incoherent_records_are_refused() {
             .fold(tiles(&DEAL[0]), |h, (_, d)| h.difference(DominoSet::single(*d)))
     };
     let at = |plays: Vec<(Seat, Domino)>, bid| {
-        Frame::from_record(physics.clone(), Seat::S0, hand(&plays), Contract { declarer: Seat::S0, bid }, plays)
+        let contract = Contract::new(Seat::S0, Bid::number(bid)?, physics.clone())?;
+        Frame::from_history(contract, Seat::S0, hand(&plays), &plays)
     };
     assert!(at(plays.clone(), 42).is_ok());
     assert!(at(plays.clone(), 43).is_err(), "a bid above the hand's 42 points");
+    assert!(at(plays.clone(), 84).is_ok(), "two marks");
     let mut wrong = plays.clone();
     wrong.swap(1, 2);
     assert!(at(wrong, 30).is_err(), "out of turn");
@@ -111,23 +113,15 @@ fn incoherent_records_are_refused() {
     wrong[5].1 = wrong[1].1;
     assert!(at(wrong, 30).is_err(), "a repeated tile");
     // The declarer leads the first trick.
-    let contract = Contract { declarer: Seat::S1, bid: 30 };
-    assert!(Frame::from_record(physics.clone(), Seat::S0, hand(&plays), contract, plays.clone()).is_err());
+    let s1 = contract(&physics, Seat::S1, 30);
+    assert!(Frame::from_history(s1, Seat::S0, hand(&plays), &plays).is_err());
     // The viewer's hand must be what its dealt hand left.
-    assert!(
-        Frame::from_record(
-            physics.clone(),
-            Seat::S0,
-            tiles(&DEAL[0]),
-            Contract { declarer: Seat::S0, bid: 30 },
-            plays.clone()
-        )
-        .is_err()
-    );
+    assert!(Frame::from_history(contract(&physics, Seat::S0, 30), Seat::S0, tiles(&DEAL[0]), &plays).is_err());
     // Blanks trump: the other seats' plays are checked against their shown
     // voids only, the viewer's against its hand. S1 shows void in trump, then
     // follows trump.
-    let contract = Contract { declarer: Seat::S0, bid: 30 };
+    let p0 = common::physics("P0");
+    let s0 = contract(&p0, Seat::S0, 30);
     let reneges = vec![
         (Seat::S0, tile("0-0")),
         (Seat::S1, tile("2-2")),
@@ -136,25 +130,34 @@ fn incoherent_records_are_refused() {
         (Seat::S0, tile("2-0")),
         (Seat::S1, tile("1-0")),
     ];
-    assert!(
-        Frame::from_record(common::physics("P0"), Seat::S0, hand(&reneges[..5]), contract, reneges[..5].to_vec())
-            .is_ok()
-    );
-    assert!(Frame::from_record(common::physics("P0"), Seat::S0, hand(&reneges), contract, reneges).is_err());
+    assert!(Frame::from_history(s0.clone(), Seat::S0, hand(&reneges[..5]), &reneges[..5]).is_ok());
+    assert!(Frame::from_history(s0.clone(), Seat::S0, hand(&reneges), &reneges).is_err());
+    // A seat that has shown void in a context plays none of its tiles again,
+    // whether it follows, sloughs or leads: S2 trumps S1's six and then leads
+    // a six.
+    let s1 = contract(&p0, Seat::S1, 30);
+    let led_after_void = vec![
+        (Seat::S1, tile("6-5")),
+        (Seat::S2, tile("4-0")),
+        (Seat::S3, tile("6-2")),
+        (Seat::S0, tile("6-4")),
+        (Seat::S2, tile("6-1")),
+    ];
+    let at = |plays: &[(Seat, Domino)]| Frame::from_history(s1.clone(), Seat::S0, hand(plays), plays);
+    assert!(at(&led_after_void[..4]).is_ok());
+    assert!(at(&led_after_void).is_err());
     // The viewer may not slough a trump lead while holding trump.
     let mut viewer =
         vec![(Seat::S1, tile("1-0")), (Seat::S2, tile("4-0")), (Seat::S3, tile("5-0")), (Seat::S0, tile("1-1"))];
-    let contract = Contract { declarer: Seat::S1, bid: 30 };
-    assert!(Frame::from_record(common::physics("P0"), Seat::S0, hand(&viewer), contract, viewer.clone()).is_err());
+    assert!(Frame::from_history(s1.clone(), Seat::S0, hand(&viewer), &viewer).is_err());
     viewer[3].1 = tile("2-0");
-    assert!(Frame::from_record(common::physics("P0"), Seat::S0, hand(&viewer), contract, viewer).is_ok());
+    assert!(Frame::from_history(s1, Seat::S0, hand(&viewer), &viewer).is_ok());
 }
 
 #[test]
 fn the_contract_and_score_read_as_the_book_reads() {
     let frame = recorded("P6", Seat::S2, Seat::S2, 34, 12);
-    let record = frame.record().unwrap();
-    let [t0, t1] = record.banked();
+    let [t0, t1] = frame.banked();
     assert!(t0 > 0 && t1 > 0, "both sides have banked: {t0} {t1}");
     assert_eq!(both(&frame, "(declarer S2)"), (true, false));
     assert_eq!(both(&frame, "(declarer S0)"), (false, true));
@@ -175,8 +178,7 @@ fn the_contract_and_score_read_as_the_book_reads() {
 #[test]
 fn history_names_earlier_tricks_by_their_lead() {
     let frame = recorded("P6", Seat::S1, Seat::S3, 30, 9);
-    let record = frame.record().unwrap();
-    let plays = record.plays().to_vec();
+    let plays = frame.history().to_vec();
     assert_eq!(both(&frame, "(trick-number 3)"), (true, false));
     assert_eq!(both(&frame, "(trick-number 2)"), (false, true));
     let (first_leader, first_lead) = plays[0];
@@ -215,46 +217,81 @@ fn history_names_earlier_tricks_by_their_lead() {
 }
 
 #[test]
-fn without_a_record_its_predicates_are_undefined_not_false() {
+fn every_frame_has_its_record_and_the_hand_ends_undefined() {
+    // Every frame is built from a record, so its predicates are defined: an
+    // atom or its negation holds.
     let frame = small_frame(physics("P6"));
-    assert!(frame.record().is_none());
     for atom in [
         "(declarer S0)",
         "(bid 30)",
+        "(stake 1)",
         "(banked S0 0)",
         "(to-make 30)",
         "(to-set 13)",
-        "(trick-number 1)",
+        "(trick-number 6)",
         "(led S0 6-6)",
         "(played-to 6-6 S0 6-6)",
         "(trick-of 6-6 1)",
         "(shown-void S0 q6)",
+        "(shown-void S1 q6)",
     ] {
-        assert_eq!(both(&frame, atom), (false, false), "{atom}");
+        let (yes, no) = both(&frame, atom);
+        assert!(yes != no, "{atom}");
     }
-    // A hidden seat's shown voids are the kernel's, record or not.
-    assert_eq!(both(&frame, "(shown-void S1 q6)"), (false, true));
+    // Once all seven tricks have closed, no trick is being played: the trick
+    // number is undefined, neither n nor not n, and no seat is next.
+    let done = recorded("P6", Seat::S0, Seat::S0, 30, 28);
+    assert_eq!((done.trick_number(), done.next_actor()), (None, None));
+    for n in [7, 8] {
+        assert_eq!(both(&done, &format!("(trick-number {n})")), (false, false), "{n}");
+    }
+    assert_eq!(both(&done, "(trick-number 1)"), (false, false));
+    assert!(!holds(&done, "(query (roles (chair c)) (out) (pattern (next-actor c)))"));
+}
+
+#[test]
+fn the_contract_carries_kind_stake_and_declaration() {
+    let p = physics("P5");
+    let points = contract(&p, Seat::S1, 35);
+    let one_mark = contract(&p, Seat::S1, 42);
+    let two_marks = contract(&p, Seat::S1, 84);
+    assert_eq!((points.bid(), one_mark.bid(), two_marks.bid()), (Bid::Points(35), Bid::Marks(1), Bid::Marks(2)));
+    assert_eq!((points.threshold(), points.stake()), (35, 1));
+    assert_eq!((one_mark.threshold(), one_mark.stake()), (42, 1));
+    assert_eq!((two_marks.threshold(), two_marks.stake()), (42, 2));
+    assert_eq!(two_marks.declaration(), &p);
+    // Made, the stake goes to the declaring side; set, to the other.
+    assert_eq!((two_marks.award(42), two_marks.award(41)), ((Team::T1, 2), (Team::T0, 2)));
+    assert_eq!((points.award(35), points.award(34)), ((Team::T1, 1), (Team::T0, 1)));
+    assert!(Bid::number(43).is_err() && Bid::number(85).is_err());
+    assert_eq!("126".parse::<Bid>().unwrap(), Bid::Marks(3));
+    assert!(Contract::new(Seat::S0, Bid::Points(42), p.clone()).is_err(), "every point is a marks bid");
+    assert!(Contract::new(Seat::S0, Bid::Marks(0), p.clone()).is_err());
+    // A rule can guard on the 84: the bid reads as the table says it.
+    let plays = lowest_plays(&p, Seat::S1, 4);
+    let hand = tiles(&DEAL[1]).difference(plays.iter().filter(|(s, _)| *s == Seat::S1).map(|(_, d)| *d).collect());
+    let frame = Frame::from_history(two_marks, Seat::S1, hand, &plays).unwrap();
+    assert_eq!(both(&frame, "(bid 84)"), (true, false));
+    assert_eq!(both(&frame, "(bid 42)"), (false, true));
+    assert_eq!(both(&frame, "(stake 2)"), (true, false));
+    let [ours, theirs] = [frame.banked()[1], frame.banked()[0]];
+    assert_eq!(both(&frame, &format!("(to-make {})", 42 - ours)), (true, false));
+    assert_eq!(both(&frame, &format!("(to-set {})", 1u32.saturating_sub(theirs))), (true, false));
 }
 
 #[test]
 fn shown_voids_are_the_kernels_and_imply_the_world_void() {
     for decl in ["P6", "P0", "DT", "NT"] {
         let frame = recorded(decl, Seat::S0, Seat::S0, 30, 17);
-        let record = frame.record().unwrap();
         for h in frame.kernel().hidden() {
-            assert_eq!(h.voids, record.shown_voids(frame.physics(), h.seat), "{decl} {}", h.seat);
+            assert_eq!(h.voids, frame.shown_voids(h.seat), "{decl} {}", h.seat);
         }
         let shown = compile("(query (roles (chair c) (context q)) (out c q) (pattern (shown-void c q)))")
             .evaluate_viewer(&frame, &mut budget())
             .unwrap();
         let expected: Answers = Seat::ALL
             .into_iter()
-            .flat_map(|c| {
-                record
-                    .shown_voids(frame.physics(), c)
-                    .iter()
-                    .map(move |q| Answer(vec![Value::Chair(c), Value::Context(q)]))
-            })
+            .flat_map(|c| frame.shown_voids(c).iter().map(move |q| Answer(vec![Value::Chair(c), Value::Context(q)])))
             .collect();
         assert_eq!(shown, expected, "{decl}");
         let belief = Belief::uniform(frame.clone(), 10_000_000).unwrap();
@@ -274,7 +311,7 @@ fn a_void_in_every_world_need_not_be_shown() {
     let plays =
         vec![(Seat::S0, tile("6-6")), (Seat::S1, tile("6-5")), (Seat::S2, tile("2-2")), (Seat::S3, tile("3-3"))];
     let hand = tiles(&["6-4", "6-3", "6-2", "6-1", "6-0", "1-1"]);
-    let frame = Frame::from_record(p, Seat::S0, hand, Contract { declarer: Seat::S0, bid: 30 }, plays).unwrap();
+    let frame = Frame::from_history(contract(&p, Seat::S0, 30), Seat::S0, hand, &plays).unwrap();
     assert_eq!(both(&frame, "(shown-void S2 q6)"), (true, false));
     assert_eq!(both(&frame, "(shown-void S1 q6)"), (false, true));
     let belief = Belief::uniform_resolving(frame, DominoSet::EMPTY, 10).unwrap();
@@ -356,9 +393,9 @@ fn none_is_checked_like_any_clause() {
         assert!(refused.is_err(), "{s}");
     }
     // Viewer-only exactly when the body is.
-    let world = "(policy p (initial a) (fallback lowest-legal) (rule r (in a) (next a) (select answer)
+    let world = "(policy p (fallback lowest-legal) (rule r (select answer)
                    (guard (query (roles (domino d)) (out d) (pattern (own-legal d) (none (roles (chair c)) (holds c d)))))))";
-    let p: Arc<dyn Physics> = physics("P6");
+    let p = physics("P6");
     assert!(world.parse::<PolicyProgram>().unwrap().compile(&Registry::standard(), &p).is_err());
     let viewer = world.replace("(holds c d)", "(shown-void c q6)");
     assert!(viewer.parse::<PolicyProgram>().unwrap().compile(&Registry::standard(), &p).is_ok());

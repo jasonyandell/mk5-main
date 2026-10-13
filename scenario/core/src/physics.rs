@@ -1,5 +1,5 @@
-//! Silas over Zeb (the `silas` feature): [`ZebPhysics`], one declaration's
-//! [`Rules`] and Zeb's [`Fiber`] behind Silas's `Physics` trait.
+//! Silas over Zeb (the `silas` feature): [`ZebPhysics`], one declaration of
+//! Zeb's [`Rules`] as a table provider for Silas.
 //!
 //! The two crates number the game the same way, and the maps below say so
 //! explicitly rather than by coincidence:
@@ -13,22 +13,22 @@
 //!   (`(leader + i) % 4` is `leader.plus(i)`) and pair `s` with `s + 2`
 //!   (Zeb banks a trick to team `seat % 2`, Silas's `Team` is `T{s % 2}`).
 //!
-//! Every rule comes from Zeb's own code: the four tables of [`Rules`] are
-//! the required methods, and `legal_plays`, `trick_winner` and
-//! `trick_points` are overridden with [`Rules::legal`],
-//! [`Rules::winner_offset`] and [`Rules::trick_points`], so Silas reads Zeb's
-//! rules rather than re-deriving them. The fiber of hidden worlds is Zeb's
-//! counting table: `count_worlds` is [`Fiber::size`] and `worlds` reads
-//! [`Fiber::world_at`] in [`Fiber::worlds`]'s order, lazily.
+//! Zeb supplies only the four tables of [`Rules`] (led suit, follow sets,
+//! rank, count) through Silas's `Declaration`; Silas reads them into a
+//! `Physics` ([`ZebPhysics::physics`]) and derives legality, the trick's
+//! winner and points, and the fiber of hidden worlds itself. Zeb's own
+//! [`Rules::legal`], [`Rules::winner_offset`], [`Rules::trick_points`] and
+//! [`Fiber`] are an independent implementation of the same rules, held to
+//! Silas's by `tests/silas_physics.rs`.
 
 use std::fmt;
 
-use silas::{Context, Domino, DominoSet, Kernel, Physics, Seat, World};
+use silas::{Context, Declaration, Domino, DominoSet, Kernel, Physics, Seat};
 
 use crate::fiber::Fiber;
 use crate::rules::{Rules, N_DECLS};
 
-/// Each declaration's name in a physics identity (`zeb/P5`): the pip suits
+/// Each declaration's name in a physics's name (`zeb/P5`): the pip suits
 /// trump `P0`..`P6` (the names `silas::reference::Straight42` uses), doubles
 /// trump `DT`, the doubles as their own unpowered suit `DS` (nello's
 /// algebra), and no trump `NT`.
@@ -89,10 +89,15 @@ impl ZebPhysics {
         &self.rules
     }
 
-    /// Zeb's fiber of the kernel: the played tiles are those not live, each
-    /// hidden seat's size is its capacity, and its forbidden tiles are the
+    /// These tables, read by Silas.
+    pub fn physics(&self) -> Physics {
+        Physics::new(self).expect("Zeb's tables are well formed")
+    }
+
+    /// Zeb's own fiber of the kernel: the played tiles are those not live,
+    /// each hidden seat's size is its capacity, and its forbidden tiles are the
     /// followers of its shown voids.
-    fn fiber(&self, kernel: &Kernel) -> Fiber {
+    pub fn fiber(&self, kernel: &Kernel) -> Fiber {
         let viewer = seat_id(kernel.viewer());
         let mut sizes = [0u8; 4];
         let mut forbid = [0u32; 4];
@@ -112,13 +117,8 @@ impl fmt::Debug for ZebPhysics {
     }
 }
 
-/// A world of the kernel from Zeb's four remaining hands, absolute seats.
-fn world(kernel: &Kernel, hands: [u32; 4]) -> World {
-    kernel.world(kernel.hidden().map(|h| dominoes(hands[h.seat.index()]).expect("Zeb's hands are tile masks")))
-}
-
-impl Physics for ZebPhysics {
-    fn identity(&self) -> String {
+impl Declaration for ZebPhysics {
+    fn name(&self) -> String {
         format!("zeb/{}", DECL_NAMES[self.rules.decl as usize])
     }
 
@@ -136,26 +136,5 @@ impl Physics for ZebPhysics {
 
     fn count(&self, d: Domino) -> u32 {
         u32::from(self.rules.count[d.index()])
-    }
-
-    fn count_worlds(&self, kernel: &Kernel) -> u128 {
-        u128::try_from(self.fiber(kernel).size()).expect("a count is nonnegative")
-    }
-
-    fn worlds<'a>(&'a self, kernel: &'a Kernel) -> Box<dyn Iterator<Item = World> + 'a> {
-        let mut fiber = self.fiber(kernel);
-        Box::new((0..fiber.size()).map(move |k| world(kernel, fiber.world_at(k))))
-    }
-
-    fn legal_plays(&self, hand: DominoSet, lead: Option<Domino>) -> DominoSet {
-        dominoes(self.rules.legal(mask(hand), lead.map(tile))).expect("a legal set is part of the hand")
-    }
-
-    fn trick_winner(&self, leader: Seat, plays: [Domino; 4]) -> Seat {
-        leader.plus(self.rules.winner_offset(&plays.map(tile)) as usize)
-    }
-
-    fn trick_points(&self, plays: [Domino; 4]) -> u32 {
-        u32::from(self.rules.trick_points(&plays.map(tile)))
     }
 }

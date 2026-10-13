@@ -11,9 +11,8 @@
 ; Out of trump is read from the hand: following a trump lead, a legal tile that
 ; is not trump proves the viewer holds no trump.
 (policy c01b-partner-count-on-a-trump-lead
-  (initial play)
   (fallback lowest-legal)
-  (rule not-top-lead-no-count (in play) (next play) (select answer)
+  (rule not-top-lead-no-count (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino give) (domino led) (domino over) (domino held))
@@ -32,7 +31,7 @@
           (count give 0)
           (own-legal held)
           (not (count held 0))))))
-  (rule top-lead-give-ten (in play) (next play) (select answer)
+  (rule top-lead-give-ten (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino give) (domino led))
@@ -48,7 +47,7 @@
           (own-legal give)
           (not (in give q*))
           (count give 10)))))
-  (rule top-lead-give-five (in play) (next play) (select answer)
+  (rule top-lead-give-five (select answer)
     (guard
       (query
         (roles (chair b) (chair p) (domino give) (domino led))

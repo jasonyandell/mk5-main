@@ -92,7 +92,7 @@ fn joins_match_direct_relations_on_every_world_under_all_nine_declarations() {
         (pattern (viewer me) (partner me partner) (holds partner d) (in d suit)))",
     );
     for rules in Straight42::ALL {
-        let b = Belief::uniform(small_frame(std::sync::Arc::new(rules)), 90).unwrap();
+        let b = Belief::uniform(small_frame(rules.physics()), 90).unwrap();
         for (world, _) in b.worlds() {
             let expected: Answers = world
                 .hand(Seat::S2)
@@ -208,7 +208,7 @@ fn duplicate_worlds_merge_but_bad_measures_and_caps_are_refused() {
     assert_eq!(merged.len(), 1);
     assert_eq!(*merged.total_mass(), w(1, 1));
     assert!(Belief::from_weights(b.frame().clone(), "empty", model.clone(), [(w0, w(0, 1))], 1).is_err());
-    assert!(Belief::from_weights(b.frame().clone(), "claims exact", Authority::Exact, [(w0, w(1, 1))], 1).is_err());
+    assert!(Belief::from_weights(b.frame().clone(), "claims exact", Authority::exact(), [(w0, w(1, 1))], 1).is_err());
     assert!(Belief::uniform(b.frame().clone(), 89).is_err());
     let invalid = b.frame().kernel().world([DominoSet::EMPTY; 3]);
     assert!(Belief::from_weights(b.frame().clone(), "invalid world", model, [(invalid, w(1, 1))], 1).is_err());
@@ -228,10 +228,10 @@ fn answer_equivalence_is_stronger_than_boolean_equivalence() {
 }
 
 #[test]
-fn declared_public_residue_drives_partial_trick_queries() {
-    let f = small_frame(physics("P6"));
-    let kernel = Kernel::new(Seat::S0, tiles(&["0-0"]), f.kernel().pool(), *f.kernel().hidden()).unwrap();
-    let f = Frame::new(physics("P6"), kernel, Seat::S0, vec![tile("6-6")], tiles(&["6-6"])).unwrap();
+fn the_records_open_trick_drives_partial_trick_queries() {
+    // S0 leads the 6-6 from the small frame.
+    let f = small_frame(physics("P6")).after(tile("6-6")).unwrap();
+    assert_eq!((f.kernel().viewer_hand(), f.prefix()), (tiles(&["0-0"]), &[tile("6-6")][..]));
     let b = Belief::uniform(f, 90).unwrap();
     let forced = compile(FORCED);
     let rules: Straight42 = "P6".parse().unwrap();
@@ -293,7 +293,7 @@ impl Predicate for ViewerProbe {
 fn extension_registry_freezes_semantics_and_enforces_information_access() {
     let mut registry = Registry::standard();
     let spec = PredicateSpec {
-        name: "mine".to_owned(),
+        name: "in-hand".to_owned(),
         version: "test-v1".to_owned(),
         parameters: vec![Sort::Domino],
         horizon_plies: 0,
@@ -301,8 +301,11 @@ fn extension_registry_freezes_semantics_and_enforces_information_access() {
     };
     registry.register(ViewerProbe(spec.clone())).unwrap();
     assert!(registry.register(ViewerProbe(spec)).is_err());
-    let query =
-        "(query (roles (domino d)) (out d) (pattern (mine d)))".parse::<Query>().unwrap().compile(&registry).unwrap();
+    let query = "(query (roles (domino d)) (out d) (pattern (in-hand d)))"
+        .parse::<Query>()
+        .unwrap()
+        .compile(&registry)
+        .unwrap();
     let s = query.summarize(&uniform(), &mut budget()).unwrap();
     assert_eq!(s.certainty.constant_multiplicity, Some(2));
     assert!(query.identity().contains("test-v1"));
@@ -333,22 +336,26 @@ fn zero_weight_worlds_do_not_affect_belief_certainty() {
 /// receipt hand 0, trick 6, reproduced here so the test stands alone). Threes
 /// are trump; S1 led the 0-0, S2 and S3 have shown void in blanks and in
 /// trumps, and S0 is to play. Three tiles are hidden, one per seat, and the
-/// only live count tile is 4-1.
+/// only live count tile is 4-1. The record: S0 draws trump three times (S2
+/// and S3 show out on the first), S1 takes the fourth trick with the 6-6 and
+/// the fifth with the last trump, and leads the 0-0.
 fn receipt_coordinate() -> Frame {
-    let mut hidden = open_hidden([1, 1, 1]);
+    let plays = [
+        "3-3", "3-0", "1-0", "5-4", // T1: S0 leads; S2 and S3 show out of trump
+        "6-3", "5-3", "4-0", "5-5", // T2
+        "4-3", "3-2", "5-0", "6-0", // T3
+        "6-5", "6-6", "6-4", "6-2", // T4: S1 takes it
+        "3-1", "5-1", "6-1", "1-1", // T5: S1's last trump
+        "0-0", "5-2", "4-4", // T6: S2 and S3 show out of blanks
+    ];
+    let p = physics("P3");
+    let dealt = tiles(&["2-0", "4-2", "3-3", "6-3", "4-3", "6-5", "1-1"]);
+    let frame = Frame::new(contract(&p, Seat::S0, 30), Seat::S0, dealt, plays.map(tile).to_vec()).unwrap();
     let shown: ContextSet = ["q0", "q*"].iter().map(|q| q.parse::<Context>().unwrap()).collect();
-    hidden[1].voids = shown;
-    hidden[2].voids = shown;
-    let kernel = Kernel::new(Seat::S0, tiles(&["2-0", "4-2"]), tiles(&["2-1", "2-2", "4-1"]), hidden).unwrap();
-    let live = kernel.live();
-    Frame::new(
-        physics("P3"),
-        kernel,
-        Seat::S1,
-        vec![tile("0-0"), tile("5-2"), tile("4-4")],
-        DominoSet::FULL.difference(live),
-    )
-    .unwrap()
+    assert_eq!((frame.leader(), frame.prefix().len(), frame.next_actor()), (Seat::S1, 3, Some(Seat::S0)));
+    assert_eq!(frame.kernel().hidden().map(|h| h.voids), [ContextSet::EMPTY, shown, shown]);
+    assert_eq!(frame.kernel().pool(), tiles(&["2-1", "2-2", "4-1"]));
+    frame
 }
 
 #[test]
@@ -380,7 +387,7 @@ fn mastery_beating_and_negative_joins_match_direct_set_queries() {
     );
     for rules in Straight42::ALL {
         let key = |d: Domino, q: Context| rules.trick_key(d, q);
-        let b = Belief::uniform(small_frame(std::sync::Arc::new(rules)), 90).unwrap();
+        let b = Belief::uniform(small_frame(rules.physics()), 90).unwrap();
         let live = b.frame().kernel().live();
         // A master is live and no live tile outranks it in the context it leads.
         let expected_masters: Answers = live
@@ -405,16 +412,24 @@ fn mastery_beating_and_negative_joins_match_direct_set_queries() {
 }
 
 #[test]
-fn frames_reject_incoherent_history_and_do_not_invent_played_tiles() {
+fn frames_reject_incoherent_records_and_played_is_the_record() {
     let f = small_frame(physics("NT"));
-    let p = || physics("NT");
-    let k = || f.kernel().clone();
-    assert!(Frame::new(p(), k(), Seat::S0, vec![tile("6-6")], tiles(&["6-6"])).is_err());
-    assert!(Frame::new(p(), k(), Seat::S0, vec![tile("4-4")], DominoSet::EMPTY).is_err());
-    assert!(Frame::new(p(), k(), Seat::S0, vec![tile("4-4"), tile("4-4")], tiles(&["4-4"])).is_err());
+    let again = |plays: Vec<Domino>| Frame::new(f.contract().clone(), Seat::S0, f.dealt(), plays);
+    // A tile played twice, or a viewer's tile played by another seat.
+    let mut twice = f.plays().to_vec();
+    twice.push(f.plays()[0]);
+    assert!(again(twice).is_err());
+    let mut stolen = f.plays()[..1].to_vec();
+    stolen.push(tile("6-6"));
+    assert!(again(stolen).is_err());
+    // A tile is played exactly when it is not live: the record is the one
+    // source of both.
     let b = Belief::uniform(f.clone(), 90).unwrap();
-    let event = compile("(query (roles) (out) (pattern (not (live 4-4)) (not (played 4-4))))");
-    assert_eq!(exact(event.summarize(&b, &mut budget()).unwrap().event_probability()), r(1, 1));
+    for d in Domino::ALL {
+        let both = compile(&format!("(query (roles) (out) (pattern (not (live {d})) (not (played {d}))))"));
+        assert_eq!(exact(both.summarize(&b, &mut budget()).unwrap().event_probability()), r(0, 1), "{d}");
+        assert_eq!(f.played().contains(d), !f.kernel().live().contains(d));
+    }
 }
 
 #[test]
