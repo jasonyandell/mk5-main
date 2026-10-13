@@ -39,7 +39,7 @@ Two halves, one game:
   seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]).
   The book (Roberson's *Winning 42*, [[w42]]) was studied with those tools the same day
   ([[book-study-2026-10-12]]): Zeb's pick is the book's move at 52% of gated positions against a
-  37% random floor (it sides with 9 of 21 rules, prices against 5), the conventions measured
+  37% random floor (as the gates were translated, it sides with 8 of 21 rules and prices against 5; at least 10 of the 21 gates misread the book on its own deals), the conventions measured
   null, and no reason was extracted — Zeb prices a move, it cannot yet explain one (#124).
   Every agreement number ships with its chance baseline; a tie is not agreement.
 - **Silas** (`silas/`) — a typed relational language over the worlds a seat cannot tell apart:
