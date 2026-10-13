@@ -275,6 +275,24 @@ class Analysis:
     worlds: list[World]
     weights: list[float]
     outcomes: dict[int, tuple[float, ...]]
+    line: dict[int, tuple["Step", ...]] | None = None   # per root action, the plan's line, when asked
+
+
+@dataclass(frozen=True)
+class Step:
+    """One cell of the plan's line where the viewer moves: the plays since
+    the root that reach it (the root action first; the other seats' tiles
+    among them are the observations the plan branched on to get here), the
+    tile the plan plays there, the scenarios in the cell (indices into
+    `Analysis.worlds`, ascending), and whether the floor handed the move
+    down a rung instead of maximizing. A root action's steps come in the
+    trace's depth-first order, the observed tiles at a branch in first-seen
+    order."""
+
+    plays: tuple[tuple[int, int], ...]      # (seat, tile), from the root action on
+    tile: int
+    cell: tuple[int, ...]
+    floored: bool
 
 
 class Walt:
@@ -299,15 +317,22 @@ class Walt:
         q = inv.action_values()
         return self._choice(q, inv), q
 
-    def analyze(self, state: ZebGameState, bid: int) -> "Analysis":
+    def analyze(self, state: ZebGameState, bid: int, line: bool = False) -> "Analysis":
         """`decide`, opened up: the same tile and action values, plus where
-        each root action sends every live scenario under the plan. A forced
-        move is not planned (as in `decide`): its analysis holds no scenarios."""
+        each root action sends every live scenario under the plan — and, with
+        `line`, the plan's line itself (`Step`s): what the viewer plays at
+        each of its cells, and on which observations the plan branches. The
+        line is read off the same replay, so asking for it changes nothing
+        else. A forced move is not planned (as in `decide`): its analysis
+        holds no scenarios."""
         inv = self._root(state, bid)
         if isinstance(inv, int):
-            return Analysis(inv, {inv: float("nan")}, [], [], {inv: ()})
+            return Analysis(inv, {inv: float("nan")}, [], [], {inv: ()}, {inv: ()} if line else None)
         q = inv.action_values()
-        return Analysis(self._choice(q, inv), q, inv.worlds, inv.weights, inv.outcomes())
+        steps: dict[int, list[Step]] | None = {} if line else None
+        outcomes = inv.outcomes(steps)
+        return Analysis(self._choice(q, inv), q, inv.worlds, inv.weights, outcomes,
+                        None if steps is None else {t: tuple(v) for t, v in steps.items()})
 
     def _choice(self, q: dict[int, float], inv: "_Invocation") -> int:
         """The plan's best tile — or, where the convention's sender gate
@@ -577,21 +602,26 @@ class _Invocation:
 
     # -- the trace ----------------------------------------------------------------
 
-    def outcomes(self) -> dict[int, tuple[float, ...]]:
+    def outcomes(self, line: dict[int, list[Step]] | None = None) -> dict[int, tuple[float, ...]]:
         """Per legal root action, the leaf value each scenario reaches under
         the plan. A replay of the solved tree, not a second solve: every cell
         it visits is already in the memo, and the policy subtree it walks
-        holds at most one path per scenario."""
+        holds at most one path per scenario. Given `line`, each root
+        action's viewer cells are recorded into it, as `Step`s, on the way."""
         own = self.worlds[0][self.viewer] & ~self.root.played
         everyone = (1 << len(self.worlds)) - 1
         out = {}
         for t in tiles_of(self.rules.legal(own, self.root.led)):
             leaf = [0.0] * len(self.worlds)
-            self._trace(self.root.advance(t, self.rules), everyone, leaf)
+            steps = None
+            if line is not None:
+                steps = line[t] = []
+            self._trace(self.root.advance(t, self.rules), everyone, leaf, steps, ((self.viewer, t),))
             out[t] = tuple(leaf)
         return out
 
-    def _trace(self, rec: Record, alive: int, leaf: list[float]) -> None:
+    def _trace(self, rec: Record, alive: int, leaf: list[float],
+               steps: list[Step] | None = None, path: tuple[tuple[int, int], ...] = ()) -> None:
         if rec.finished:
             for r in _bits(alive):
                 leaf[r] = self._margin(rec)
@@ -602,16 +632,22 @@ class _Invocation:
             return
         seat = rec.seat
         if seat == self.viewer:
-            if self._floored(alive):
-                self._trace(rec.advance(self._handed_down(rec), self.rules), alive, leaf)
-                return
-            hand = self.worlds[0][seat] & ~rec.played
-            q = {t: self.value(rec.advance(t, self.rules), alive)
-                 for t in tiles_of(self.rules.legal(hand, rec.led))}
-            self._trace(rec.advance(_best(q, self.maximize), self.rules), alive, leaf)
+            floored = self._floored(alive)
+            if floored:
+                tile = self._handed_down(rec)
+            else:
+                hand = self.worlds[0][seat] & ~rec.played
+                q = {t: self.value(rec.advance(t, self.rules), alive)
+                     for t in tiles_of(self.rules.legal(hand, rec.led))}
+                tile = _best(q, self.maximize)
+            if steps is not None:
+                steps.append(Step(path, tile, tuple(_bits(alive)), floored))
+                path = path + ((seat, tile),)
+            self._trace(rec.advance(tile, self.rules), alive, leaf, steps, path)
             return
         for t, cell in self._partition(seat, rec, alive).items():
-            self._trace(rec.advance(t, self.rules), cell, leaf)
+            self._trace(rec.advance(t, self.rules), cell, leaf, steps,
+                        path + ((seat, t),) if steps is not None else path)
 
     # -- the floor ----------------------------------------------------------------
 

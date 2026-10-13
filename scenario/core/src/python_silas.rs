@@ -303,6 +303,47 @@ impl SilasBelief {
         fraction(py, self.0.total_mass())
     }
 
+    /// Condition on caller-declared evidence (Silas's
+    /// `Belief::condition_likelihood`): each world's weight times its
+    /// likelihood in `[0, 1]`, a number from the pinned `model`, named
+    /// completely as for `exact_given`. `worlds` (four remaining-hand masks,
+    /// absolute seats) and `likelihoods` give every world of the belief its
+    /// likelihood, each float read exactly; a world given none, or two
+    /// different ones, is refused. Returns the posterior and the evidence's
+    /// prior probability, a `SilasEstimate` under the meet of the belief's
+    /// authority and the model's. A zero-mass posterior is refused.
+    fn condition_likelihood(
+        &self,
+        posterior_id: &str,
+        model: &str,
+        worlds: Vec<[u32; 4]>,
+        likelihoods: Vec<f64>,
+    ) -> PyResult<(SilasBelief, SilasEstimate)> {
+        if worlds.len() != likelihoods.len() {
+            return Err(invalid(format!("{} worlds but {} likelihoods", worlds.len(), likelihoods.len())));
+        }
+        let mut given: std::collections::HashMap<[u32; 4], Weight> = std::collections::HashMap::new();
+        for (hands, x) in worlds.into_iter().zip(likelihoods) {
+            let x = Weight::from_f64_exact(x).map_err(refused)?;
+            match given.get(&hands) {
+                Some(y) if *y != x => return Err(invalid("a world is given two different likelihoods")),
+                Some(_) => {}
+                None => {
+                    given.insert(hands, x);
+                }
+            }
+        }
+        let likelihood = |h: silas::Holdings<'_>| -> silas::Result<Weight> {
+            let mut key = [0u32; 4];
+            for s in Seat::ALL {
+                key[s.index()] = mask(h.hand(s)?);
+            }
+            given.get(&key).cloned().ok_or_else(|| silas::Error("a world of the belief is given no likelihood".into()))
+        };
+        let (posterior, evidence) = self.0.condition_likelihood(posterior_id, model, likelihood).map_err(refused)?;
+        Ok((SilasBelief(posterior), SilasEstimate(evidence)))
+    }
+
     fn __len__(&self) -> usize {
         self.0.len()
     }

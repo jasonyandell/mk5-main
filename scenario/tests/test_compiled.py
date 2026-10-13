@@ -153,6 +153,7 @@ def _same_analysis(a, b):
     assert a.worlds == b.worlds
     assert a.weights == b.weights
     assert a.outcomes == b.outcomes
+    assert a.line == b.line
 
 
 def test_compiled_analysis_matches_the_planner():
@@ -223,3 +224,27 @@ def test_compiled_matches_the_planner_on_the_champion_ladder():
         a = ref.analyze(state, 30)
         _same_analysis(a, fast.analyze(state, 30))
         assert ref.nodes == fast.nodes
+
+
+def test_compiled_line_matches_the_planner():
+    """The plan's line (`analyze(line=True)`) is the referee's, step for step:
+    the same viewer cells in the same order, the same tiles, the same
+    observations, the same floored moves — and asking for it moves nothing
+    else: tile, values, worlds, weights, outcomes and nodes are the plain
+    analysis's, in both implementations."""
+    cases = ANALYSIS_CASES + [(Config((Rung(8, 4), Rung(160, None, f)), u, seed=17), None)
+                              for f, u, _ in FLOOR_CASES[:3]]
+    floored = 0
+    for cfg, belief in cases:
+        ref, fast = Walt(cfg, belief=belief), CompiledWalt(cfg, belief=belief)
+        for state in _states(3, seed=61 + cfg.seed, min_plays=6):
+            plain = fast.analyze(state, 31)
+            nodes = fast.nodes
+            a, b = ref.analyze(state, 31, line=True), fast.analyze(state, 31, line=True)
+            assert plain.line is None and fast.nodes == ref.nodes == nodes
+            assert (b.tile, b.q, b.worlds, b.weights, b.outcomes) == \
+                (plain.tile, plain.q, plain.worlds, plain.weights, plain.outcomes)
+            _same_analysis(a, b)
+            assert a.line == b.line and a.line.keys() == a.q.keys()
+            floored += sum(s.floored for steps in a.line.values() for s in steps)
+    assert floored > 0, "some line should cross a floored cell"

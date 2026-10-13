@@ -341,3 +341,50 @@ def test_every_rung_draws_the_same_worlds_and_tapes_at_a_coordinate():
         assert (lo.worlds, lo.tapes) == (hi.worlds, hi.tapes) and len(lo.worlds) == 8
         lo, hi = (wide._invocation(k, rec.seat, own, rec, rules, 30, state.bidder % 2) for k in (0, 1))
         assert (lo.worlds, lo.tapes) == (hi.worlds[:4], hi.tapes[:4])
+
+
+def test_the_line_is_each_scenarios_path_through_the_plan():
+    """`analyze(line=True)`: for every root action, each scenario's steps form
+    one chain — each step's plays extend the last step's by the tile the
+    plan played there and then the other seats' tiles only — the observed tiles are that scenario's own, the
+    plan's tiles are legal, and cells at the same depth never overlap. (A
+    root action that settles the contract reaches no later viewer cell.)"""
+    cases = [
+        (Config((Rung(8, None),), "make", seed=1), 30),
+        (Config((Rung(3, 3), Rung(10, None, 4)), "points", seed=4), 31),
+    ]
+    seen = 0
+    for cfg, bid in cases:
+        walt = Walt(cfg)
+        for state in _mid_hand_states(4, seed=131 + cfg.seed, min_plays=5):
+            a = walt.analyze(state, bid, line=True)
+            viewer = current_player(state)
+            rules = rules_for(state.decl_id)
+            rec0 = record_from_state(state)
+            for root, steps in a.line.items():
+                seen += len(steps)
+                depth: dict[int, int] = {}
+                for r in range(len(a.worlds)):
+                    mine = [s for s in steps if r in s.cell]
+                    prefix = ((viewer, root),)
+                    for s in mine:
+                        assert s.plays[:len(prefix)] == prefix, (s.plays, prefix)
+                        assert all(seat != viewer for seat, _ in s.plays[len(prefix):])
+                        prefix = s.plays + ((viewer, s.tile),)
+                    for s in mine:
+                        rec = rec0
+                        for seat, tile in s.plays:
+                            assert seat == rec.seat
+                            if seat != viewer:
+                                assert (a.worlds[r][seat] >> tile) & 1, "observations are the scenario's own"
+                            rec = rec.advance(tile, rules)
+                        own = a.worlds[0][viewer] & ~rec.played
+                        assert (rules.legal(own, rec.led) >> s.tile) & 1
+                for s in steps:
+                    assert s.cell == tuple(sorted(s.cell)) and s.cell
+                    k = len(s.plays)
+                    for r in s.cell:
+                        assert depth.get(r, -1) != k, "one cell per scenario at each depth"
+                        depth[r] = k
+            assert walt.analyze(state, bid).line is None
+    assert seen > 50, seen

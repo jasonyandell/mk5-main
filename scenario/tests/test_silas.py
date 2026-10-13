@@ -154,6 +154,29 @@ def test_exact_is_refused_for_float_weights():
         SilasBelief.from_worlds(f, [swapped], [1.0], given)
 
 
+def test_conditioning_on_a_likelihood_gives_its_evidence_exactly():
+    """`condition_likelihood`: the evidence is Σ w·L / Σ w exactly, under the
+    meet of the belief's authority and the model's (a sample stays a
+    sample); every world needs one likelihood, and zero mass is refused."""
+    f, worlds, weights, sampled = _sampled()
+    belief = SilasBelief.from_worlds(f, worlds, weights, sampled)
+    like = [(i % 4) / 4 for i in range(len(worlds))]
+    posterior, evidence = belief.condition_likelihood("quarters", "test model v1", worlds, like)
+    expected = sum(Fraction(w) * Fraction(x) for w, x in zip(weights, like)) / sum(Fraction(w) for w in weights)
+    assert evidence.value == expected and evidence.authority == sampled and posterior.authority == sampled
+    assert posterior.total_mass == sum(Fraction(w) * Fraction(x) for w, x in zip(weights, like))
+    with pytest.raises(SilasError, match="no likelihood"):
+        belief.condition_likelihood("short", "test model v1", worlds[1:], like[1:])
+    with pytest.raises(SilasError, match="two different"):
+        belief.condition_likelihood("twice", "test model v1", worlds + worlds[:1], like + [0.5 if like[0] != 0.5 else 0.25])
+    with pytest.raises(SilasError):
+        belief.condition_likelihood("none", "test model v1", worlds, [0.0] * len(worlds))
+    with pytest.raises(SilasError):
+        belief.condition_likelihood("big", "test model v1", worlds, [1.5] * len(worlds))
+    with pytest.raises(SilasError):
+        belief.condition_likelihood("anon", " ", worlds, like)
+
+
 def test_the_three_valued_comparison():
     root = eighty_four()
     belief = SilasBelief.uniform_resolving(root, mask_of([tile(6, 5), tile(5, 1), tile(5, 3)]), 1000)
