@@ -57,6 +57,21 @@ fn query_states_the_lay_down_and_the_claim_exactly() {
 }
 
 #[test]
+fn query_decides_a_dominance_exactly_without_a_hand() {
+    let (ok, out) = silas(&["query", "examples/book/cross-game/last-mark-points.silas"]);
+    assert!(ok && out.contains("10500 states, 43 outcomes"), "{out}");
+    assert!(out.contains("bid alone (S-0082-a)") && out.contains("  holds (exact)"), "{out}");
+    let (ok, out) = silas(&["query", "examples/book/cross-game/two-marks-out.silas"]);
+    assert!(ok, "{out}");
+    assert!(
+        out.contains(
+            "fails (exact): from 5-0, the hand ending 42 to 0: the first leaves 6-0 and the second 7-0 (won by T0)"
+        ),
+        "{out}"
+    );
+}
+
+#[test]
 fn check_compiles_every_example_and_fmt_checks_and_rewrites() {
     let (ok, out) = silas(&["check"]);
     assert!(ok && out.contains(" 0 failed"), "{out}");

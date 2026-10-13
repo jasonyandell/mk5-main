@@ -3,6 +3,7 @@
 //! ```text
 //! silas eval  --hand ID [--trick N] [--seat ROLE] --policy FILE [--book FILE]
 //! silas query FILE --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+//! silas query DOMINANCE-FILE
 //! silas fmt   [--check] FILE ...
 //! silas check [DIR ...]
 //! ```
@@ -18,6 +19,9 @@
 //! (each answer and one binding of the guard's roles) and the allowed set.
 //! `query` prints the query's exact probability over the worlds the seat
 //! cannot tell apart, with its authority, resolving only the tiles it reads.
+//! On a `(dominates ...)` file it needs no hand: it decides the form by
+//! enumerating the hand's outcomes, exactly, and prints the first
+//! counterexample when there is one.
 //! `fmt` formats canonically, in place (or reports with `--check`). `check`
 //! compiles every `.silas` file (policies under all nine straight
 //! declarations).
@@ -45,7 +49,8 @@ fn main() -> ExitCode {
         Some("check") => check(&args[1..]),
         _ => Err(fail(
             "usage: silas eval --hand ID [--trick N] [--seat ROLE] --policy FILE | silas query FILE --hand ID \
-             [--trick N] [--seat ROLE] [--cap N] | silas fmt [--check] FILE ... | silas check [DIR ...]",
+             [--trick N] [--seat ROLE] [--cap N] | silas query DOMINANCE-FILE | silas fmt [--check] FILE ... | \
+             silas check [DIR ...]",
         )),
     };
     match result {
@@ -241,8 +246,13 @@ fn query(args: &[String]) -> Result<bool> {
     let [path] = options.words.as_slice() else {
         return Err(fail("silas query FILE --hand ID ..."));
     };
+    let text = read(path)?;
+    let query = match Program::parse(&text, path)? {
+        Program::Query(query) => query.compile(&Registry::standard())?,
+        Program::Dominance(dominance) => return dominate(&dominance),
+        Program::Policy(_) => return Err(fail(format!("{path} is a policy: silas eval --policy {path} ..."))),
+    };
     let (frame, heading) = position(&options)?;
-    let query = Query::parse(&read(path)?, path)?.compile(&Registry::standard())?;
     describe(&frame, &heading);
     let cap = options.number("cap", 100_000)?;
     let mut budget = Budget::new(1_000_000_000);
@@ -262,6 +272,44 @@ fn query(args: &[String]) -> Result<bool> {
         let shown: Vec<String> = answer.0.iter().map(Value::to_string).collect();
         let p = summary.presence_probability(answer);
         println!("  P({}) = {} ({})", shown.join(" "), p.value(), p.authority());
+    }
+    Ok(true)
+}
+
+/// Decide a dominance over the 43 outcomes of a hand of 42 points (the
+/// declaration enters only through its total).
+fn dominate(dominance: &Dominance) -> Result<bool> {
+    let declaration = Straight42::ALL[0].physics();
+    let decision = dominance.decide(&declaration)?;
+    let spelled = |bid: Bid| match bid {
+        Bid::Points(n) => format!("(points {n})"),
+        Bid::Marks(m) => format!("(marks {m})"),
+    };
+    let [first, second] = dominance.contracts;
+    println!("dominates {}: {} over {}, bid by S0", dominance.name, spelled(first), spelled(second));
+    let place = match dominance.place {
+        Place::Any => "anywhere short of the target".to_owned(),
+        Place::Short(n) => format!("short {n}"),
+        Place::ShortAtMost(n) => format!("short {n} or less"),
+        Place::Score(a, b) => format!("at {a} to {b}"),
+    };
+    println!(
+        "  {}, the bidder's side {place}: {} states, {} outcomes",
+        dominance.scoring, decision.states, decision.outcomes
+    );
+    let by = match dominance.criterion {
+        Criterion::Marks => "the hand's net marks",
+        Criterion::Points => "the hand's net points",
+        Criterion::MatchWin => "the match-win order (at least as good under every match-win value)",
+    };
+    println!("  by {by}");
+    if !decision.readings.is_empty() {
+        let readings: Vec<String> = decision.readings.iter().map(SetReading::to_string).collect();
+        println!("  a set marks bid read as {}", readings.join(" and as "));
+    }
+    match &decision.counterexample {
+        None => println!("  holds ({})", decision.authority()),
+        Some(c) => println!("  fails ({}): {c}", decision.authority()),
     }
     Ok(true)
 }
@@ -339,6 +387,12 @@ fn check(args: &[String]) -> Result<bool> {
                         policy.compile(&registry, &rules.physics())?;
                     }
                     Ok("policy")
+                }
+                Program::Dominance(dominance) => {
+                    for rules in Straight42::ALL {
+                        dominance.contracts(&rules.physics())?;
+                    }
+                    Ok("dominance")
                 }
             }
         })();

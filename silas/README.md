@@ -46,7 +46,7 @@ reads and nothing else: 27 points.
 ```text
 file     := form ... final
 form     := (include library) | (define name (roles param ...) clause ...)
-final    := query | policy
+final    := query | policy                ; a dominance is its own file (The match)
 query    := (query (roles role ...) (out name ...) pattern ...)
 role     := (sort name)
 sort     := chair | domino | context
@@ -533,6 +533,86 @@ predicates to brute force on small positions and checks the double-dummy
 bound against them. It also checks the book's lay-downs, Hands 21 and 22, and
 hands that look as strong but can be set.
 
+## The match
+
+The book's rules compare whole contracts and policies under a scoring and a
+match score, not plays in one hand. This is the frame they need
+(`docs/cross-game.md`, slice 1); the bid action, the deal measure and the
+comparison of policies over deals come later (`GAPS.md`, 2).
+
+```rust
+pub enum Scoring { Points { target: u32 }, Marks { target: u32 } }  // POINTS: 250; MARKS: 7
+pub struct Outcome { declaring: u32, other: u32 }                   // the hand's 42 points, split
+impl Contract {
+    pub fn settle(&self, scoring: Scoring, outcome: Outcome) -> Result<Transfer>;
+}
+impl MatchState {
+    pub fn apply(&self, contract: &Contract, outcome: Outcome) -> Result<MatchState>;
+    pub fn won(&self) -> Option<Team>;
+    pub fn short(&self, team: Team) -> u32;
+    pub fn at_least(&self, other: &MatchState, team: Team) -> bool;
+}
+pub enum Utility { Marks, Points, MatchWin(WinValue) }
+```
+
+- **Settlement.** Under marks, `settle` is the contract's award: the stake to
+  the side that gets it. Under points it is the book's rule (S-0017-c): made,
+  the bidder's side scores the points it took (a marks bid, its value, 42 a
+  mark) and the other side the points it took; set, the bidder's side scores
+  nothing and the other side the bid's value plus the points it took. The book
+  also says a set 84 gives the setters 84 (S-0082-a), without their points;
+  `settle_reading` takes either `SetReading`, and the two differ only for a
+  set marks bid under points. An outcome must split the hand's points.
+- **The match.** A `MatchState` is a scoring, the score by team and the
+  winner: the first side to reach the target, or, when both reach it on one
+  hand (under points), the side that bid it. `apply` refuses a decided match.
+- **Utility.** `Marks` and `Points` are the hand's net transfer to a side.
+  `MatchWin(V)` is the side's chance of winning the match from the state the
+  hand leaves. A `WinValue` is one on states the side has won, zero on states
+  it has lost, and on the undecided states a table of exact rationals that
+  Silas checks lies in [0, 1], never rises with the other side's score at a
+  fixed own score, and never falls with the side's own at a fixed other. A
+  table without those properties is refused; its authority names its model.
+  `WinValue::solve` builds one from a hand-outcome model (the law of the
+  contract reached and its outcome, from each undecided state) by a dynamic
+  programme over the score grid, 7 by 7 under marks and 250 by 250 under
+  points: every hand raises the total score, so the states are solved from
+  the highest total down. Its authority is `exact_given(model)`.
+  `Utility::expect` is the expectation over a hand's law, with the law's
+  model met with the value's.
+- **The match-win order.** `a.at_least(b, T)` holds when `a` is won by `T`,
+  or `b` is lost by `T`, or neither is decided and `a` gives `T` no fewer
+  points and the other side no more. It is exactly "`V(a) ≥ V(b)` for every
+  `WinValue` `V` of `T`": the properties chain through the undecided state
+  between `a` and `b`, and when the order fails a step value or a constant
+  one half separates them.
+
+```text
+dominance := (dominates name (contracts contract contract) (frame (scoring kind n) place) (utility u))
+contract  := (points n) | (marks m)
+kind      := points | marks
+place     := (short n) | (short-at-most n) | (score n m)       ; optional: every undecided state
+u         := marks | points | match-win
+```
+
+A `dominates` file holds that one form. Both contracts are bid by S0 under
+one declaration; the place is where the bidder's side stands, the other side
+anywhere short of the target. The form **holds** when from every state of the
+place, for every outcome of the hand (the 43 splits of 42 points) and, wherever
+points are scored, under both readings of a set marks bid, the first contract
+is at least as good for the bidder's side as the second: by its net marks or
+points, or by the match-win order. The last needs no value, since the order
+is every value at once. The answer is an enumeration over outcomes, with no
+deal, belief or field, so it is `exact`; when the form fails, `decide` gives
+the first counterexample. `examples/book/cross-game/` holds the book's: one
+mark from the game, 42 dominates 84 (`last-mark`, S-0170-a; under points,
+within 42 of 250, `last-mark-points`, S-0089-b); two marks out it does not
+(`two-marks-out`); a lower point bid dominates a higher one under both
+scorings (`bid-only-enough`, the contract half of cluster A); and in linear
+marks the 84 is a belief statement, not a dominance (`eighty-four-in-marks`).
+`tests/cross_game.rs` checks the settlement on the book's own vectors, the
+award, the set's floor of 43, every example and the programme.
+
 ## Numbers
 
 Weights are exact rationals (`Weight`, a nonnegative `BigRational`). Silas
@@ -565,6 +645,7 @@ a model or a sample: exact numbers are never blurred.
 ```text
 silas eval  --hand ID [--trick N] [--seat ROLE] --policy FILE [--book FILE]
 silas query FILE --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+silas query DOMINANCE-FILE
 silas fmt   [--check] FILE ...
 silas check [DIR ...]
 ```
@@ -604,14 +685,26 @@ query examples/book/lay-down.silas
   P(answer) = 1 (exact)
 ```
 
+On a `(dominates ...)` file, `query` needs no hand: it decides the form and
+prints what it enumerated, the readings it checked and the verdict:
+
+```text
+$ silas query examples/book/cross-game/two-marks-out.silas
+dominates two-marks-out: (marks 1) over (marks 2), bid by S0
+  marks to 7, the bidder's side short 2: 7 states, 43 outcomes
+  by the match-win order (at least as good under every match-win value)
+  fails (exact): from 5-0, the hand ending 42 to 0: the first leaves 6-0 and the second 7-0 (won by T0)
+```
+
 `fmt` formats
 canonically and idempotently: comments kept on their own lines, a form on one
-line when it fits in 100 columns (policies, rules, queries, patterns and
-definitions always take a line per item), at most one blank line kept. Every
-`.silas` file in the crate is in that form (`tests/language.rs`). `check`
-compiles every example and the prelude, each policy under all nine straight
-declarations. The command is the default `cli` feature (it reads JSON);
-`cargo install --path silas` installs it.
+line when it fits in 100 columns (policies, rules, queries, patterns,
+definitions and dominances always take a line per item), at most one blank
+line kept. Every `.silas` file in the crate is in that form
+(`tests/language.rs`). `check` compiles every example and the prelude, each
+policy, and each dominance's contracts, under all nine straight declarations.
+The command is the default `cli` feature (it reads JSON); `cargo install
+--path silas` installs it.
 
 ## Examples
 
@@ -631,7 +724,9 @@ what each gate allows on the book's deals and on 1,600 random ones.
 (`tests/book_odds.rs`). The book's claims of certainty are queries on the
 solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
 book's test for one), `claim-the-rest` and `cannot-be-set`
-(`tests/outcome.rs`). `GAPS.md` lists what the rules still cannot say.
+(`tests/outcome.rs`). `examples/book/cross-game/` holds the book's
+field-free comparisons of contracts as `dominates` forms (The match).
+`GAPS.md` lists what the rules still cannot say.
 
 ## Provenance
 

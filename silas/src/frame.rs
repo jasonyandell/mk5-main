@@ -241,11 +241,17 @@ impl Contract {
         }
     }
 
+    /// Whether the declaring side, ending the hand with `points`, makes: it
+    /// has taken the threshold.
+    pub fn makes(&self, points: u32) -> bool {
+        points >= self.threshold()
+    }
+
     /// The team that receives the stake when the declaring side ends with
     /// `points`.
     pub fn award(&self, points: u32) -> (Team, u32) {
         let declaring = self.declarer.team();
-        let team = if points >= self.threshold() { declaring } else { declaring.other() };
+        let team = if self.makes(points) { declaring } else { declaring.other() };
         (team, self.stake())
     }
 }

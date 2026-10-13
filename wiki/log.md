@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-10-12, 208 archived entries)
+## Digest (2026-04-09 → 2026-10-12, 209 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -27,10 +27,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Zeb's foundation repairs and the convention overlay** (2026-10-12, 6 archived entries) — the floor only on sampled fibers (Zeb 0.2.0, #110), the rung-free sample seed (#112), the stochastic field (#108), O2 over the O1 fixed point on endgames ([[endgames-o2-vs-o1-2026-10-12]], #113), the posterior sampler (#111), the convention overlay. Hub: [[scenario-player]].
 - **The book graded with the honest tools** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]]: the rules priced on the pour, the bid book, the conventions null in the arena.
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
-- **The book face-off** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net.
+- **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; the contradicting verdicts survive a re-plan (#121).
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-13 | silas | cross-game slice 1: the match frame (points to 250, marks to seven, the settlement under both and both readings of a set 84), checked match-win values and the score-grid programme, and `(dominates ...)` exact over the hand's 43 outcomes; the last mark's 42-over-84 decided under both scorings]
+
+[[silas]] § The match and field-free comparison (new); `silas/README.md` § The match; `silas/GAPS.md` gap 2 narrowed (cluster F closed, B's three dominance rows and A's contract half stated, G re-tagged); `silas/examples/book/cross-game/`.
 
 ## [2026-10-13 | silas | solved outcomes: `(lay-down)`, `(certain-make)`, `(certain-set)` exact or refused, `(dd-make)` the double-dummy bound above them; the book's lay-down rule stated, Hands 21 and 22 certain, Hand 26's "cannot be set" false for the bidder alone though double dummy makes in all 756,756 worlds]
 
@@ -92,7 +96,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Touched pages:** [[book-study-2026-10-12]] [[w42]] [[w42-book-claim-synthesis-and-ai-directions]] (§ What the evidence is worth) [[w42-book-validation-campaign]] [[w42-phase2-statistics-claims-ledger]] [[w42-book-validation]] and 44 more w42/chapter pages; CLAUDE.md player bullet.
 **Updated:** Zeb era — 52% vs a 37% random floor, per-gate for/indifferent/against, "level" and the dead-row revival withdrawn. Oracle era — "supported" is arithmetic/definitions/controls/a tautology/a null; setter-side verdicts withdrawn (#122).
 **Issues opened:** #122 (E[Q] sign), #123 (the book's examples as positions), #124 (Zeb's reason report), #125 (ledger CSV).
-
-## [2026-10-12 | scratch/faceoff | face-off closed: the four "contradicts" verdicts survive a k1,n2048 re-plan (prices unchanged, 91–97% survive); dead rows revived at a live bid put Zeb level with the oracle on the book (55.1% vs 56.4%); the book is the authority on reasoning, a counterexample is the standard for siding against it (#121)]
-
-[[book-study-2026-10-12]] § The face-off (re-plan table, "what agreement should mean"). Data: research archive `book/faceoff/`. #119 closed; #120, #121 open.

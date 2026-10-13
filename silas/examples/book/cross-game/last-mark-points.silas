@@ -1,0 +1,12 @@
+; The last mark under points: within 42 of the game, bid 42, not 84. Winning 42
+; (S-0089-b), the book's own version of S-0170-a. Cluster B of docs/cross-game.md.
+;
+; The book's condition is "within 42 points of 250", not "one mark from the game".
+; Made, either contract takes the bidder's side past 250. Set, the setters gain 42
+; under the one and 84 under the other, with or without their own points: the
+; dominance is decided under both readings of a set marks bid (the rule's bid plus
+; points, S-0017-c, and S-0082-a's "they get 84"). Exact.
+(dominates last-mark-points
+  (contracts (marks 1) (marks 2))
+  (frame (scoring points 250) (short-at-most 42))
+  (utility match-win))

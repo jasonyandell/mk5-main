@@ -1,0 +1,14 @@
+; Bid only enough: the contract half. Winning 42 (S-0036-e, S-0152-c+S-0153-b,
+; S-0153-a, S-0053-a, S-0137-e, S-0034-a, S-0033-b, S-0028-d, S-0128-c). Cluster
+; A of docs/cross-game.md.
+;
+; Holding the contract, a lower point level is at least as good as a higher one in
+; every outcome: under marks every level pays one mark and the lower one makes
+; whenever the higher does. This is the half of the rule that needs no field. The
+; other half, that the extra points buy no auction the lower bid would have lost
+; (never 32 or 33; the reasoned bids 30, 31, 35, 36), is a property of the field's
+; bidding and waits on the auction (slice 2) and its measurement (slice 4).
+(dominates bid-only-enough
+  (contracts (points 31) (points 33))
+  (frame (scoring marks 7))
+  (utility match-win))

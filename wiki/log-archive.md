@@ -3973,3 +3973,7 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-12 | scratch/faceoff | the book face-off (#119): at the same gates the oracle's E[Q] n=10 picks the book's tile more often than Zeb (56.4% vs 51.5%), the field net more still; "Zeb and the book agree" corrected to "the book's tile is cheap under Zeb's plan"; the oracle-era verdicts agree in sign where they overlap]
 
 [[book-study-2026-10-12]] § The face-off (new section; summary bullets corrected); [[w42]] paragraph corrected; CLAUDE.md player bullet. Regret under Zeb's q separates strong from weak; book agreement barely does. Ties: 17.6% of gated rows dead (#120). Stronger-Zeb re-plan still running.
+
+## [2026-10-12 | scratch/faceoff | face-off closed: the four "contradicts" verdicts survive a k1,n2048 re-plan (prices unchanged, 91–97% survive); dead rows revived at a live bid put Zeb level with the oracle on the book (55.1% vs 56.4%); the book is the authority on reasoning, a counterexample is the standard for siding against it (#121)]
+
+[[book-study-2026-10-12]] § The face-off (re-plan table, "what agreement should mean"). Data: research archive `book/faceoff/`. #119 closed; #120, #121 open.

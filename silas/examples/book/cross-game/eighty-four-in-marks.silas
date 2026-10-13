@@ -1,0 +1,12 @@
+; The 84 in linear marks is not a dominance. Winning 42 (S-0170-a, its first half:
+; bid 84 whenever the hand is worth it). Cluster B of docs/cross-game.md.
+;
+; Counted in marks a hand, an 84 pays two where a 42 pays one, made or set, so the
+; 42 does not dominate and this form fails on the hand made. The claim is a belief
+; statement: with make probability p for both, the 84 nets 2(2p - 1) against
+; 2p - 1, better exactly when p > 1/2, the (2p' + 1)/4 line with p' = p
+; (tests/cross_game.rs, at p = 3/5 and 2/5). Its p is a field's (slices 3 and 4).
+(dominates eighty-four-in-marks
+  (contracts (marks 1) (marks 2))
+  (frame (scoring marks 7))
+  (utility marks))
