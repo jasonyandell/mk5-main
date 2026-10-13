@@ -64,7 +64,7 @@ Names begin with an ASCII letter and continue with letters, digits, `_` or
 contexts `q0`–`q6` and `q*` (the called suit), teams `T0` and `T1`, and
 nonnegative integers. A literal spelling is never a role name. `;` starts a
 comment. Text is bounded (1 MiB for a query, 4 MiB for a policy) and so is
-nesting, and a query to 64 roles, its scopes' included. Unknown predicates,
+nesting, and a query to 256 roles, its scopes' included. Unknown predicates,
 wrong argument sorts, duplicate roles or outputs, and mixed-sort `same` groups
 are refused at compilation, before any evaluation. Every error in program text
 names its source, line and column, and shows the line with a caret under the
@@ -215,9 +215,17 @@ meaning last changed: `silas-v0/core` for the first set, `silas-v1/core` for
 the record's first predicates, `silas-v2/core` for those that changed or came
 with the one-frame record and the full contract (marked v2). The four outcome
 predicates, version `silas-v3/outcome`, look to the end of the hand (Solved
-outcomes, below). *World* access
-means the predicate reads a hidden world; *Viewer* means it reads only the
-frame.
+outcomes, below). The auction's, version `silas-v4/auction`, are in The
+auction, below. *World* access means the predicate reads a hidden world;
+*Viewer* means it reads only the frame.
+
+Every predicate also has a *phase*: the play (a `Frame`, after the
+declaration), the auction (an `AuctionFrame`, before it), or both. The
+predicates below are of the play, except the tiles' and seats' own facts
+(`double`, `tile`, `chair`, `context`, `team`, `partner`, `opponent`,
+`successor`), `viewer`, `mine` (the dealt hand, at the auction) and `count`,
+which are of both. A query naming a predicate of the other phase is refused at
+a frame before any work, and a policy rule naming one at compilation.
 
 | Predicate | Access | Meaning |
 |---|---|---|
@@ -343,16 +351,18 @@ policy   := (policy name [(fallback lowest-legal)] form ...)
 form     := (rule name (select selector) (guard query))
           | (rule name (play action) body)     ; short form
           | (exact key (play domino))
+          | (bidding brule ...) | (declaring drule ...)   ; The auction, below
 selector := answer | tile domino
 action   := name | domino
 key      := (key (physics identity) (viewer chair) (dealt-bits n)
-                 (declarer chair) (bid n) (history domino ...))
+                 (auction (max-marks m) (forced yes|no) (shaker chair) (calls call ...))
+                 (history domino ...))
 ```
 
 A policy is a function of the frame: the same frame always gets the same
 decision, and nothing is carried from one decision to the next. A decision
 tries, in order: the exact table, keyed by the frame's own source (the
-physics's identity, the viewer, its dealt hand, the contract and every play);
+physics's identity, the viewer, its dealt hand, the auction and every play);
 the relational rules, in order; and the lowest legal tile. A rule's guard is a
 query that may use only `Viewer` predicates. A rule *allows* the legal tiles
 its guard answers (`answer`) or its tile when the guard holds and the tile is
@@ -392,10 +402,12 @@ policy has no modes and no bindings (2026-10-13).
 
 ## Frames and the record
 
-A `Frame` is the hand's public record as one seat sees it: the `Contract`, the
-viewer, the seven tiles it was dealt, and every play so far, as tiles, in
-order. `Frame::new(contract, viewer, dealt, plays)` replays the record once:
-the declarer leads the first trick and each trick's winner the next, so each
+A `Frame` is the hand's public record as one seat sees it: the `Auction`, the
+declaration (a `Physics`), the viewer, the seven tiles it was dealt, and every
+play so far, as tiles, in order. `Frame::new(auction, declaration, viewer,
+dealt, plays)` derives the `Contract` from the auction (its last bidder at his
+bid; refused while the auction is under way or passed out) and replays the
+record once: the declarer leads the first trick and each trick's winner the next, so each
 play's seat is read off the record; the leader, the open trick, the played
 set, each seat's remaining size and shown voids, the banked points and the
 viewer's `Kernel` are derived there, never supplied. `Frame::from_history`
@@ -408,14 +420,128 @@ tile of a context it has shown void in (leads included), or leaves no deal of
 the hidden tiles.
 
 A `Contract` is the declarer, the `Bid` and the declaration, whose rules are
-the frame's `Physics`. A bid is `Points(n)` (30 to 41) or `Marks(m)`;
-`Bid::number(84)` is two marks. The threshold (the points the declaring side
-must take: `n`, or every point for marks), the stake (one mark, or `m`) and
-the award are derived.
+the frame's `Physics` (Lean's `Contract.ofBid`; `Contract::new` builds one for
+the match's settlements, which need no auction). A bid is `Points(n)` (30 to
+41) or `Marks(m)`; `Bid::number(84)` is two marks. The threshold (the points
+the declaring side must take: `n`, or every point for marks), the stake (one
+mark, or `m`) and the award are derived. A hand given with its contract alone
+(the book's `hands.json`, Zeb's record through Python) is framed with
+`Auction::won_by(declarer, bid)`, the shortest auction the declarer wins: he
+speaks first and the others pass, the seats before him raising from 84 a
+mark at a time for three marks or more. What the auction predicates read on
+such a frame is that convention, not the table's auction.
 
 A `Kernel` is pure information: the viewer, its hand, the hidden pool, and
 each hidden seat's capacity and shown voids. A frame derives one; a resolving
 belief builds others for parts of the pool.
+
+## The auction
+
+The hand's contract comes out of an auction (`docs/cross-game.md`, slice 2):
+each seat calls once, from the shaker's left, a pass or a bid above the high
+bid. A `Call` is `Pass` or `Bid(bid)`, ordered as the auction orders them.
+`Auction::new(config, shaker, calls)` refuses a call that was illegal when
+made, so an auction is legal by construction; `legal_calls`, `least_raise`,
+`actor`, `high` and `result` read it, and `contract(declaration)` is its
+last bidder at his bid.
+
+Legality is texas-42's Lean `AuctionState.legalBid`, as `wiki/topics/rules-of-42.md`
+§ Bidding states it: a point bid is 30 to 41 and above the high bid; before
+any marks bid, one or two marks (42, 84) may be bid; after a marks bid only
+one mark more. An `AuctionConfig` holds what varies: the marks cap (`STRAIGHT`
+has none below the five that four calls can reach, Lean's `mark_le_ceiling`;
+the TypeScript engine offers four) and the forced bid (the shaker may not pass
+over three passes, the common variation; without it four passes are a
+passed-out hand, no contract, and the next seat shakes). `tests/auction.rs`
+holds the legal calls after every one of the 834 legal prefixes, at every
+shaker, to the arena's (`tests/data/auction-legal.txt`, written from
+`arena/auction.py` by `arena/test_silas_fixtures.py`); the engine is held to
+the same file in `src/tests/rules/bidding/silas-auction-fixture.test.ts`.
+
+An `AuctionFrame` is the auction as one seat sees it before the declaration:
+the auction so far, the viewer, its seven tiles, the `MatchState`, and the
+declarations the winner may choose from (they must agree on the count, the one
+table read before a declaration). A bid or declaring rule reads it and
+nothing else, so a bid policy is a function of the auction frame.
+
+| Predicate | Phase | Meaning |
+|---|---|---|
+| `bears(d,q)` | both | `d` bears the pip of suit `q` (`q0` to `q6`; never `q*`). |
+| `high-pip(d,q)` | both | `q` is `d`'s higher pip: the suit it leads when no trump calls it. |
+| `shaker(c)` | both | `c` shook. |
+| `bid-of(c,n)`, `passed(c)` | both | `c`'s call: the bid the table calls `n`, or a pass. |
+| `no-bid()` | both | No seat has bid yet (false in the play). |
+| `high-bid(n)`, `high-bidder(c)` | both | The high bid so far, and its bidder. |
+| `legal-bid(n)`, `least-raise(n)` | auction | `n` is a legal bid, the least one; undefined unless the viewer is to call. |
+| `scoring-marks()`, `scoring-points()` | auction | How the match is scored. |
+| `score(c,n)`, `short(c,n)`, `short-at-most(c,n)` | auction | `c`'s side has `n`; needs `n` (at most `n`) to win. |
+| `behind(c,n)` | auction | `c`'s side trails by at least `n` (one or more). |
+
+The play frame reads the auction's record too (who bid what), but not yet
+the match state: the score predicates are of the auction alone.
+
+```text
+section  := (bidding brule ...) | (declaring drule ...)
+brule    := (rule name (select bid choice) (guard query))
+          | (rule name (bid choice) body)          ; short form
+choice   := n | pass | least-raise                 ; n: 30 to 41, or 42 per mark
+drule    := (rule name (select declare kind) (guard query))
+          | (rule name (declare kind) body)        ; short form; a name is answer
+kind     := answer | q0 ... q6 | doubles | no-trump
+```
+
+`CompiledPolicy::bid(&AuctionFrame)` is the first bidding rule whose guard
+holds and whose call is legal (`least-raise` is the least legal bid), else the
+fallback: the least legal call, a pass when it is legal and 30 for a forced
+shaker. `declare` is, of the declarations offered that the first declaring
+rule to name one allows, the first offered (an `answer` rule names the pip
+suits its guard answers, one context column), else the first offered. A
+declaration is named by what its tables make trump (`Trump::of`: one pip's
+tiles, the doubles, or nothing), so the order the declarations are offered
+in is the tie-break. A bidding or declaring rule may name no `World`
+predicate and none of the play; rule names are unique across the sections.
+`explain_bid` and `explain_declare` add the deciding rule's witnesses; `silas
+bid` prints them.
+
+`lib/bidding.silas` (`(include bidding)`) is the auction's vocabulary: a
+suit's length, its double, its offs, the count an off exposes, and the book's
+count of what is at risk. Numbers are literal-only and Silas has no aggregate
+(`GAPS.md`, 5), so "at most 10 points exposed" is written as "no exposed set
+worth more", a handful of `none` scopes over the count tiles, and a bid level
+is a rule. `examples/book/bidding/` holds three policies:
+
+```text
+(rule raise-to-32 (bid least-raise)
+  (or (least-raise 30) (least-raise 31) (least-raise 32))
+  (some (roles t) (suit-at-least-3 t) (exposes-at-most-10 t)))
+```
+
+- `bid-only-enough` (S-0036-e) is the arena's `HeuristicBidder`: raise to the
+  least legal bid while the hand is worth it, 42 less the count its offs
+  expose under its best suit of three, and declare that suit. It reproduces
+  the arena call for call and declaration for declaration on the arena's own
+  auctions (400 deals at every shaker, raises and forced bids included,
+  `tests/data/heuristic-bidder.txt`) and on all 1,184,040 hands
+  (`tests/bidding.rs`). It opens on 403,197 of them (34.05%).
+- `risk-budget` is the bid book's count as we read it (its header): each off
+  risks its trick and the uncovered count of the suit it leads, the trump
+  trick is at risk without the trump double, bid 42 less the risk to 12, try
+  30 with two offs to 17, and 84 on the 84 shape. It is its reading on every
+  hand. Its opening call over all 1,184,040 hands, exactly: a pass on 647,781
+  (54.7%, S-0053-d's "about half"); 30 on 260,860, nearly half the bids; 30,
+  31, 35 and 36 on 61.5% of them; 32 and 33 on 5.3%; 84 on 26,565. On the
+  bid book's 30 hands it makes the book's call on 18 (always 30: 8) and agrees
+  on bid or pass on 22 (always bid: 23; Zeb's forecast: 25); its count is the
+  book's printed one on 8 of the 12 hands that print one.
+- `never-32-or-33` (S-0152-c) raises past them to 34, or passes.
+
+Cost. One core decides `bid-only-enough`'s opening in 13 µs a hand,
+`risk-budget`'s in 150 µs and `bid-only-enough`'s declaration in 210 µs; over
+all hands on 18 cores, 1 s, 15 s and 20 s. The cost is the encoding: a bid is
+a literal, so `risk-budget` is fifteen rules that each derive the risk again
+for every suit; each bound is an enumeration over sets of count tiles, and
+the declaration's tie-break compares suit lengths with scopes of up to seven
+roles. An aggregate (`card`, gap 5) would say each in one clause.
 
 ## The Physics boundary
 
@@ -613,8 +739,9 @@ hands that look as strong but can be set.
 
 The book's rules compare whole contracts and policies under a scoring and a
 match score, not plays in one hand. This is the frame they need
-(`docs/cross-game.md`, slice 1); the bid action, the deal measure and the
-comparison of policies over deals come later (`GAPS.md`, 2).
+(`docs/cross-game.md`, slice 1); the bid action is The auction (slice 2),
+and the deal measure and the comparison of policies over deals come later
+(`GAPS.md`, 2).
 
 ```rust
 pub enum Scoring { Points { target: u32 }, Marks { target: u32 } }  // POINTS: 250; MARKS: 7
@@ -720,6 +847,7 @@ a model or a sample: exact numbers are never blurred.
 
 ```text
 silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
+silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
 silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
 silas query    DOMINANCE
 silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
@@ -779,12 +907,16 @@ dominates two-marks-out: (marks 1) over (marks 2), bid by S0
   fails (exact): from 5-0, the hand ending 42 to 0: the first leaves 6-0 and the second 7-0 (won by T0)
 ```
 
+`bid` puts a book hand's seat at its turn in the auction after `--calls`
+(none by default) and prints the policy's call, the deciding rule with its
+witnesses, and the declaration it would make if the others then passed.
 `expand` prints a file's core: every definition expanded and every short
 form spelled out. `fmt` formats canonically and idempotently: comments kept
 on their own lines, a form on one line when it fits in 100 columns
-(policies, rules, queries, patterns, definitions and dominances always take a
-line per item, with a leading `(roles ...)`, `(out ...)` or `(play ...)` on
-the first), at most one blank line kept. Every `.silas` file in the crate is
+(policies, their bidding and declaring sections, rules, queries, patterns,
+definitions and dominances always take a line per item, with a leading
+`(roles ...)`, `(out ...)` or `(play ...)`, or a rule's `(bid ...)` or `(declare
+...)`, on the first), at most one blank line kept. Every `.silas` file in the crate is
 in that form (`tests/language.rs`). `check` compiles every example and the
 prelude (or the files and directories it is given), each policy, and each
 dominance's contracts, under all nine straight declarations, and prints each
@@ -874,7 +1006,8 @@ cannot, each with a counterexample deal either way (`tests/book_repaired.rs`). T
 solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
 book's test for one), `claim-the-rest` and `cannot-be-set`
 (`tests/outcome.rs`). `examples/book/cross-game/` holds the book's
-field-free comparisons of contracts as `dominates` forms (The match).
+field-free comparisons of contracts as `dominates` forms (The match), and
+`examples/book/bidding/` its bid rules as policies over the auction (The auction).
 `GAPS.md` lists what the rules still cannot say.
 
 ## Provenance

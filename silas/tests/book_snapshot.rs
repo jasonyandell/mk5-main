@@ -95,7 +95,7 @@ fn narrated() -> String {
                 let viewer = next_actor(&physics, declarer, prefix);
                 let role = (viewer.index() + 4 - declarer.index()) % 4;
                 let contract = contract(&physics, declarer, example.bid.number());
-                let frame = Frame::new(contract, viewer, deal[role], prefix.to_vec()).unwrap();
+                let frame = framed(&contract, viewer, deal[role], prefix.to_vec()).unwrap();
                 for (name, policy) in &policies {
                     writeln!(out, "{id} {n} {declarer} role{role} {name} {}", allowed(policy, &frame)).unwrap();
                 }
@@ -146,7 +146,7 @@ fn random() -> String {
         for _ in 0..28 {
             let viewer = next_actor(physics, declarer, &plays);
             let contract = contract(physics, declarer, bid);
-            let frame = Frame::new(contract, viewer, deal[viewer.index()], plays.clone()).unwrap();
+            let frame = framed(&contract, viewer, deal[viewer.index()], plays.clone()).unwrap();
             for (name, policy) in policies {
                 writeln!(out, "game{game} {} {} {name} {}", plays.len(), viewer, allowed(policy, &frame)).unwrap();
             }

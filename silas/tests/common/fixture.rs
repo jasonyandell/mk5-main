@@ -262,7 +262,7 @@ impl Position {
     /// The viewer's frame with the bidder in the chair `declarer`.
     pub fn frame(&self, declarer: Seat) -> Frame {
         let contract = Contract::new(declarer, silas::Bid::number(self.bid).unwrap(), self.physics.clone()).unwrap();
-        Frame::new(contract, declarer.plus(self.viewer.index()), self.dealt, self.plays.clone()).unwrap()
+        super::framed(&contract, declarer.plus(self.viewer.index()), self.dealt, self.plays.clone()).unwrap()
     }
 }
 

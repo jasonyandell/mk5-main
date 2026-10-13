@@ -3,8 +3,11 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use crate::auction::{Auction, AuctionFrame, Call};
 use crate::eval::Budget;
-use crate::frame::{Frame, Holdings};
+use crate::frame::{Bid, Frame, Holdings};
+use crate::nouns::{Context, Pip, Seat};
+use crate::scoring::Scoring;
 use crate::syntax::{RESERVED, Sort, Value, valid_name};
 use crate::{Result, error};
 
@@ -17,6 +20,35 @@ pub enum Access {
     World,
 }
 
+/// Where a predicate is defined: at a frame of the play (after the
+/// declaration), at an auction frame (before it), or at both. A policy's play
+/// rules may name only `Play` and `Both` predicates, its bidding and
+/// declaring rules only `Auction` and `Both`; a query is refused at a frame of
+/// the other phase before any work.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Phase {
+    Play,
+    Auction,
+    Both,
+}
+
+impl Phase {
+    /// Whether a predicate of this phase is defined at a frame of `at`.
+    pub fn reads(self, at: Phase) -> bool {
+        self == Phase::Both || self == at
+    }
+}
+
+impl std::fmt::Display for Phase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Phase::Play => "the play",
+            Phase::Auction => "the auction",
+            Phase::Both => "the play and the auction",
+        })
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PredicateSpec {
     pub name: String,
@@ -27,26 +59,40 @@ pub struct PredicateSpec {
     /// continuations.
     pub horizon_plies: u32,
     pub access: Access,
+    pub phase: Phase,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub enum PredicateContext<'a> {
     Viewer(&'a Frame),
     World(Holdings<'a>),
+    /// A seat's view of the auction, before the declaration.
+    Auction(&'a AuctionFrame),
 }
 
 impl<'a> PredicateContext<'a> {
-    pub fn frame(self) -> &'a Frame {
+    /// The play frame. Refused at the auction, where no predicate of the
+    /// play is asked (its phase is checked first).
+    pub fn frame(self) -> Result<&'a Frame> {
         match self {
-            Self::Viewer(frame) => frame,
-            Self::World(holdings) => holdings.frame(),
+            Self::Viewer(frame) => Ok(frame),
+            Self::World(holdings) => Ok(holdings.frame()),
+            Self::Auction(_) => Err(error("a predicate of the play was asked at the auction")),
         }
     }
 
     pub fn world(self) -> Option<Holdings<'a>> {
         match self {
-            Self::Viewer(_) => None,
+            Self::Viewer(_) | Self::Auction(_) => None,
             Self::World(holdings) => Some(holdings),
+        }
+    }
+
+    /// The auction frame, before the declaration.
+    pub fn auction(self) -> Option<&'a AuctionFrame> {
+        match self {
+            Self::Auction(frame) => Some(frame),
+            _ => None,
         }
     }
 }
@@ -71,6 +117,50 @@ const V1: [&str; 8] = ["declarer", "banked", "to-make", "to-set", "led", "played
 /// `trick-number` is undefined once the hand is over; `stake`, `trump` and
 /// `mine` are new.
 const V2: [&str; 6] = ["played", "bid", "trick-number", "stake", "trump", "mine"];
+
+/// The built-ins that came with the auction, version `silas-v4/auction`.
+const V4: [&str; 16] = [
+    "bears",
+    "high-pip",
+    "shaker",
+    "bid-of",
+    "passed",
+    "no-bid",
+    "high-bid",
+    "high-bidder",
+    "legal-bid",
+    "least-raise",
+    "scoring-marks",
+    "scoring-points",
+    "score",
+    "short",
+    "short-at-most",
+    "behind",
+];
+
+/// The built-ins defined at the auction as well as in the play: the tiles'
+/// own facts, the seats, the dealt hand, the count, and the auction's record.
+const BOTH: [&str; 19] = [
+    "double",
+    "tile",
+    "chair",
+    "context",
+    "team",
+    "partner",
+    "opponent",
+    "successor",
+    "viewer",
+    "mine",
+    "count",
+    "bears",
+    "high-pip",
+    "shaker",
+    "bid-of",
+    "passed",
+    "no-bid",
+    "high-bid",
+    "high-bidder",
+];
 
 #[derive(Clone, Default)]
 pub struct Registry {
@@ -148,8 +238,33 @@ impl Registry {
             ("stake", vec![N], Viewer),
             ("trump", vec![Q], Viewer),
             ("mine", vec![D], Viewer),
+            ("bears", vec![D, Q], Viewer),
+            ("high-pip", vec![D, Q], Viewer),
+            ("shaker", vec![C], Viewer),
+            ("bid-of", vec![C, N], Viewer),
+            ("passed", vec![C], Viewer),
+            ("no-bid", vec![], Viewer),
+            ("high-bid", vec![N], Viewer),
+            ("high-bidder", vec![C], Viewer),
+            ("legal-bid", vec![N], Viewer),
+            ("least-raise", vec![N], Viewer),
+            ("scoring-marks", vec![], Viewer),
+            ("scoring-points", vec![], Viewer),
+            ("score", vec![C, N], Viewer),
+            ("short", vec![C, N], Viewer),
+            ("short-at-most", vec![C, N], Viewer),
+            ("behind", vec![C, N], Viewer),
         ] {
-            let version = if V2.contains(&name) {
+            let phase = if BOTH.contains(&name) {
+                Phase::Both
+            } else if V4.contains(&name) {
+                Phase::Auction
+            } else {
+                Phase::Play
+            };
+            let version = if V4.contains(&name) {
+                "silas-v4/auction"
+            } else if V2.contains(&name) {
                 "silas-v2/core"
             } else if V1.contains(&name) {
                 "silas-v1/core"
@@ -162,6 +277,7 @@ impl Registry {
                 parameters,
                 horizon_plies: 0,
                 access,
+                phase,
             };
             registry.register(Builtin(spec)).expect("built-in names are unique and valid");
         }
@@ -180,17 +296,26 @@ impl Predicate for Builtin {
     }
 
     fn evaluate(&self, context: PredicateContext<'_>, args: &[Value], _: &mut Budget) -> Result<Option<bool>> {
-        use Value::{Chair as C, Context as Q, Domino as D, Number as N, Team as T};
-        let frame = context.frame();
+        use Value::{Chair as C, Context as Q, Domino as D, Number as N};
+        let name = self.0.name.as_str();
+        if let Some(value) = tile_fact(name, args) {
+            return Ok(Some(value));
+        }
+        if let PredicateContext::Auction(frame) = context {
+            return at_auction(frame, name, args);
+        }
+        let frame = context.frame()?;
+        if let Some(value) = auction_fact(frame.auction(), name, args) {
+            return Ok(Some(value));
+        }
         let physics = frame.physics();
         let kernel = frame.kernel();
         let live = kernel.live();
         let world = || context.world().ok_or_else(|| error("a world predicate requires a world"));
-        let value = match (self.0.name.as_str(), args) {
+        let value = match (name, args) {
             ("live", [D(d)]) => live.contains(*d),
             ("holds", [C(c), D(d)]) => world()?.holds(*c, *d)?,
             ("in", [D(d), Q(q)]) => physics.follows(*d, *q),
-            ("double", [D(d)]) => d.is_double(),
             ("beats", [D(a), D(b), Q(q)]) => physics.trick_key(*a, *q) > physics.trick_key(*b, *q),
             ("boss", [D(d), Q(q)]) => {
                 live.contains(*d) && physics.follows(*d, *q) && physics.beats(*q, *d).is_disjoint(live)
@@ -198,13 +323,6 @@ impl Predicate for Builtin {
             ("master", [D(d)]) => live.contains(*d) && physics.threat(*d).is_disjoint(live),
             ("void", [C(c), Q(q)]) => world()?.hand_within(*c, physics.incidence(*q))?.is_empty(),
             ("quota", [C(c), N(n)]) => kernel.capacity(*c) == *n as usize,
-            ("tile", [D(a), D(b)]) => a == b,
-            ("chair", [C(a), C(b)]) => a == b,
-            ("context", [Q(a), Q(b)]) => a == b,
-            ("team", [C(c), T(t)]) => c.team() == *t,
-            ("partner", [C(a), C(b)]) => a.partner() == *b,
-            ("opponent", [C(a), C(b)]) => a.team() != b.team(),
-            ("successor", [C(a), C(b)]) => a.successor() == *b,
             ("viewer", [C(c)]) => *c == kernel.viewer(),
             ("leader", [C(c)]) => *c == frame.leader(),
             ("next-actor", [C(c)]) => frame.next_actor() == Some(*c),
@@ -260,4 +378,74 @@ impl Predicate for Builtin {
         };
         Ok(Some(value))
     }
+}
+
+/// The natural pip of a context; none for the called suit.
+fn pip_of(q: Context) -> Option<Pip> {
+    match q {
+        Context::Natural(p) => Some(p),
+        Context::Called => None,
+    }
+}
+
+/// The facts of the tiles and the seats themselves, the same at every frame.
+fn tile_fact(name: &str, args: &[Value]) -> Option<bool> {
+    use Value::{Chair as C, Context as Q, Domino as D, Team as T};
+    Some(match (name, args) {
+        ("double", [D(d)]) => d.is_double(),
+        ("tile", [D(a), D(b)]) => a == b,
+        ("chair", [C(a), C(b)]) => a == b,
+        ("context", [Q(a), Q(b)]) => a == b,
+        ("team", [C(c), T(t)]) => c.team() == *t,
+        ("partner", [C(a), C(b)]) => a.partner() == *b,
+        ("opponent", [C(a), C(b)]) => a.team() != b.team(),
+        ("successor", [C(a), C(b)]) => a.successor() == *b,
+        ("bears", [D(d), Q(q)]) => pip_of(*q).is_some_and(|p| d.has(p)),
+        ("high-pip", [D(d), Q(q)]) => pip_of(*q) == Some(d.hi()),
+        _ => return None,
+    })
+}
+
+/// The auction's record, at every frame: complete in the play, under way at
+/// the auction. `None` when `name` is not such a fact.
+fn auction_fact(auction: &Auction, name: &str, args: &[Value]) -> Option<bool> {
+    use Value::{Chair as C, Number as N};
+    let high = auction.high();
+    Some(match (name, args) {
+        ("shaker", [C(c)]) => auction.shaker() == *c,
+        ("bid-of", [C(c), N(n)]) => Bid::number(*n).is_ok_and(|bid| auction.call_of(*c) == Some(Call::Bid(bid))),
+        ("passed", [C(c)]) => auction.call_of(*c) == Some(Call::Pass),
+        ("no-bid", []) => high.is_none(),
+        ("high-bid", [N(n)]) => high.is_some_and(|(_, bid)| bid.value() == *n),
+        ("high-bidder", [C(c)]) => high.is_some_and(|(seat, _)| seat == *c),
+        _ => return None,
+    })
+}
+
+/// A predicate at the auction frame: the viewer's dealt hand, the count, the
+/// auction's record and its legal bids, and the match state.
+fn at_auction(frame: &AuctionFrame, name: &str, args: &[Value]) -> Result<Option<bool>> {
+    use Value::{Chair as C, Domino as D, Number as N};
+    let auction = frame.auction();
+    if let Some(value) = auction_fact(auction, name, args) {
+        return Ok(Some(value));
+    }
+    let state = frame.state();
+    let side = |c: &Seat| c.team();
+    let value = match (name, args) {
+        ("viewer", [C(c)]) => *c == frame.viewer(),
+        ("mine", [D(d)]) => frame.dealt().contains(*d),
+        ("count", [D(d), N(n)]) => frame.count(*d) == *n,
+        ("legal-bid" | "least-raise", [N(_)]) if auction.actor() != Some(frame.viewer()) => return Ok(None),
+        ("legal-bid", [N(n)]) => Bid::number(*n).is_ok_and(|bid| auction.legal(Call::Bid(bid))),
+        ("least-raise", [N(n)]) => auction.least_raise().is_some_and(|bid| bid.value() == *n),
+        ("scoring-marks", []) => matches!(state.scoring(), Scoring::Marks { .. }),
+        ("scoring-points", []) => matches!(state.scoring(), Scoring::Points { .. }),
+        ("score", [C(c), N(n)]) => state.score(side(c)) == *n,
+        ("short", [C(c), N(n)]) => state.short(side(c)) == *n,
+        ("short-at-most", [C(c), N(n)]) => state.short(side(c)) <= *n,
+        ("behind", [C(c), N(n)]) => *n > 0 && state.score(side(c).other()) >= state.score(side(c)) + *n,
+        _ => return Err(error(format!("{name} is not defined at the auction (an invalid compiled query)"))),
+    };
+    Ok(Some(value))
 }

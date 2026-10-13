@@ -17,7 +17,7 @@ use pyo3::types::{PyDict, PyFrozenSet, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 use silas::{
-    Answer, Authority, Belief, Bid, Budget, CompiledPolicy, CompiledQuery, Contract, DecisionProvenance, DominoSet,
+    Answer, Auction, Authority, Belief, Bid, Budget, CompiledPolicy, CompiledQuery, DecisionProvenance, DominoSet,
     Estimate, Frame, Physics, PolicyProgram, Query, QuerySummary, Registry, Seat, Value, Verdict, Weight,
 };
 
@@ -106,7 +106,8 @@ impl SilasFrame {
     /// tile mask `own`; `bidder` the seat that won the auction, and `bid` its
     /// bid as the table says it (30 to 41 points; 42, 84, ... marks); `plays`
     /// every play so far as `(seat, tile)`, in order, the bidder leading the
-    /// first trick.
+    /// first trick. Zeb's record carries the contract, not the auction, so the
+    /// frame's auction is the shortest one the bidder wins with the bid.
     #[new]
     fn new(decl: u8, viewer: u8, own: u32, bidder: u8, bid: u32, plays: Vec<(u8, u8)>) -> PyResult<Self> {
         let physics = physics(decl)?;
@@ -115,8 +116,8 @@ impl SilasFrame {
             .iter()
             .map(|&(s, t)| Ok((at(s)?, domino(t).ok_or_else(|| invalid(format!("no tile {t}")))?)))
             .collect::<PyResult<Vec<_>>>()?;
-        let contract = Contract::new(at(bidder)?, Bid::number(bid).map_err(refused)?, physics).map_err(refused)?;
-        Frame::from_history(contract, at(viewer)?, tiles(own)?, &plays).map(SilasFrame).map_err(refused)
+        let auction = Auction::won_by(at(bidder)?, Bid::number(bid).map_err(refused)?).map_err(refused)?;
+        Frame::from_history(auction, physics, at(viewer)?, tiles(own)?, &plays).map(SilasFrame).map_err(refused)
     }
 
     /// The physics's name, such as `zeb/P5`.

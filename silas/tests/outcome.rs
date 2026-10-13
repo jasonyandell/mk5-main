@@ -27,7 +27,7 @@ fn holds(source: &str, frame: &Frame) -> bool {
 
 /// The bidder's frame before the first lead, the bidder in `chair`.
 fn bidders(decl: &str, bid: u32, chair: Seat, hand: DominoSet) -> Frame {
-    Frame::new(contract(&physics(decl), chair, bid), chair, hand, vec![]).unwrap()
+    framed(&contract(&physics(decl), chair, bid), chair, hand, vec![]).unwrap()
 }
 
 /// The book hand `id` as its bidder sees it before the first lead.
@@ -162,7 +162,7 @@ fn a_settled_hand_answers_at_once_and_the_other_side_is_undefined() {
         }
     };
     let frame = |viewer: Seat| {
-        Frame::new(contract(&physics("P6"), Seat::S0, 84), viewer, deal[viewer.index()], plays.clone()).unwrap()
+        framed(&contract(&physics("P6"), Seat::S0, 84), viewer, deal[viewer.index()], plays.clone()).unwrap()
     };
     let mut nothing = Budget::new(3);
     assert!(forces(&frame(Seat::S1), Goal::Set, &mut nothing).unwrap());
@@ -205,7 +205,7 @@ fn random_frame(rng: &mut Rng, plays: usize) -> Frame {
         .unwrap()
         .next_actor()
         .unwrap();
-    Frame::new(contract, viewer, deal[viewer.index()], record).unwrap()
+    framed(&contract, viewer, deal[viewer.index()], record).unwrap()
 }
 
 /// Every play of the viewer's from `line` in turn, every legal play of the
@@ -330,7 +330,7 @@ fn the_viewers_information_state_is_his_frame() {
         let plays = if round % 30 == 0 { 12 } else { [16, 20, 20][round % 3] } + rng.below(4);
         let (contract, deal, record) = random_deal(&mut rng, plays);
         let viewer = Seat::ALL[rng.below(4)];
-        let frame = Frame::new(contract, viewer, deal[viewer.index()], record).unwrap();
+        let frame = framed(&contract, viewer, deal[viewer.index()], record).unwrap();
         let goal = Goal::of(&frame, viewer);
         let forced = forces(&frame, goal, &mut big()).unwrap();
         assert_eq!(forced, brute_forces(&worlds_of(&frame), viewer, goal), "{frame:?}");

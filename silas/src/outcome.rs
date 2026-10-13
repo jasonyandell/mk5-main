@@ -10,7 +10,7 @@ use crate::eval::Budget;
 use crate::frame::{Frame, HIDDEN_SEATS, Holdings, Kernel};
 use crate::nouns::{Domino, DominoSet, Seat};
 use crate::physics::Physics;
-use crate::registry::{Access, Predicate, PredicateContext, PredicateSpec};
+use crate::registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec};
 use crate::solve::{Objective, OpenPosition, Solver};
 use crate::syntax::Value;
 use crate::{Result, error};
@@ -317,6 +317,7 @@ pub(crate) fn predicates() -> [Outcome; 4] {
             parameters: vec![],
             horizon_plies: Domino::COUNT as u32,
             access,
+            phase: Phase::Play,
         },
         kind,
         last: Mutex::new(None),
@@ -359,7 +360,7 @@ impl Predicate for Outcome {
             let holdings = context.world().ok_or_else(|| error("a world predicate requires a world"))?;
             return double_dummy_in(holdings, budget).map(Some);
         }
-        let frame = context.frame();
+        let frame = context.frame()?;
         let mut last = self.last.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some((seen, answer)) = last.as_ref()
             && seen == frame

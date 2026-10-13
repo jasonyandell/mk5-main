@@ -16,7 +16,7 @@ use scenario_core::planner::SplitMix;
 use scenario_core::rules::{self, Rules, DOUBLES_SUIT, DOUBLES_TRUMP, NO_TRUMP, N_DECLS};
 use silas::reference::{Decl, Straight42};
 use silas::{
-    Belief, Bid, Budget, Context, ContextSet, Contract, Declaration, Domino, DominoSet, Frame, Hidden, Kernel, Physics,
+    Auction, Belief, Bid, Budget, Context, ContextSet, Declaration, Domino, DominoSet, Frame, Hidden, Kernel, Physics,
     Pip, Query, Registry, Seat, Team, World,
 };
 
@@ -464,8 +464,8 @@ fn the_doubles_have_no_trump_power() {
 fn the_four_fives_eighty_four_on_zeb_physics() {
     let physics = ZebPhysics::new(5).unwrap().physics();
     let bidder = set(&["5-5", "5-4", "5-2", "5-0", "4-4", "4-2", "2-2"]);
-    let contract = Contract::new(Seat::S0, Bid::Marks(2), physics).unwrap();
-    let root = Frame::new(contract, Seat::S0, bidder, vec![]).unwrap();
+    let auction = Auction::won_by(Seat::S0, Bid::Marks(2)).unwrap();
+    let root = Frame::new(auction, physics, Seat::S0, bidder, vec![]).unwrap();
     assert_eq!(root.count_worlds(), 399_072_960);
     let query = include_str!("../../../silas/examples/six-five-guarded.silas")
         .parse::<Query>()

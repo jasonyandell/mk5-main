@@ -243,8 +243,34 @@ study that cite #130 into seven clusters and plans five slices. Slice 1 (2026-10
 
 That closes the scoring definitions (cluster F), states the three dominance rows of
 cluster B and the contract half of cluster A, and re-tags the fourteen 84 play rules
-(cluster G) to the gaps that hold them. What the rest needs, a bid action, a deal
-measure under a named field and the arena's paired ledgers, is `silas/GAPS.md` gap 2.
+(cluster G) to the gaps that hold them.
+
+Slice 2 (2026-10-13, `silas/README.md` § The auction; its choices are
+`silas/docs/cross-game.md` § 4, Slice 2 as built) is the bid action:
+
+- **The auction in the record.** Each seat's call, under an `AuctionConfig` (the marks
+  cap, the forced bid), legal by construction; the contract is derived from the
+  auction, never given. Legality is held to the arena's and the TypeScript engine's on
+  all 834 legal prefixes of an auction. A hand known only by its contract gets the
+  shortest auction its declarer wins.
+- **Bidding and declaring in policies.** `(bidding ...)` and `(declaring ...)` rules
+  read an auction frame (the hand, the auction so far, the match state, the
+  declarations offered); predicates carry a phase, so a bid rule cannot read the play.
+- **The bid book as policies** (`silas/examples/book/bidding/`). `bid-only-enough` is
+  the arena's `HeuristicBidder`, exactly: call for call on the arena's own auctions and
+  on all 1,184,040 hands, bid and declaration. `risk-budget` is the book's count of
+  what is at risk as one reading; over all hands its opening call is exact: 54.7% pass
+  (the book's "about half"), and 61.5% of its bids are the book's reasoned 30, 31, 35
+  and 36. On the study's 30 bid-book hands it makes the book's call on 18 and agrees
+  on bid or pass on 22, below always bidding's 23 ([[book-study-2026-10-12]]: Zeb's
+  forecast, 25).
+- **Cost.** Literal-only numbers make a bid level a rule and a points bound an
+  enumeration: the reading costs 150 µs a hand on one core (15 s over all hands on 18).
+  The lever is an aggregate (gap 5).
+
+What remains, a deal measure under a named field and the arena's paired ledgers, is
+`silas/GAPS.md` gap 2; reading a bid as evidence about the hand (#134) now needs only
+policy likelihood (#128).
 
 ## Where it sits
 
@@ -265,9 +291,9 @@ measure under a named field and the arena's paired ledgers, is `silas/GAPS.md` g
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 14 and prices against none, once the
   dead double's throw and the trump set's feed carry the conditions the book states).
-  Policy likelihood (#128) and another seat's knowledge (#132) are next ([[w42]]), with
-  the cross-game slices after the match frame: the bid action and the auction frame
-  (also gap 4's structure), then comparison over deals (§ The match and field-free
+  Policy likelihood (#128) and another seat's knowledge (#132) are next ([[w42]]);
+  #128 over a bidding section is also what reading the auction needs. The cross-game
+  slices go on from the auction to comparison over deals (§ The match and field-free
   comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
   kernel-checked `Texas42` library; Rust is the first implementation it will be held to.

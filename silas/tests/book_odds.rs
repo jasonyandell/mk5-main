@@ -614,7 +614,7 @@ fn the_setters_hold_the_winner_two_to_one_or_seven_in_twenty() {
     let not_bidders = "(query (roles (chair b) (context q) (domino d)) (out) (pattern (declarer b) (led-context q) (double d) (in d q) (not (holds b d))))";
     for (decl, hand, lead, winner) in setters {
         let contract = contract(&physics(decl), Seat::S0, 30);
-        let frame = Frame::from_history(contract, Seat::S1, tiles(&hand), &[(Seat::S0, tile(lead))]).unwrap();
+        let frame = framed_history(&contract, Seat::S1, tiles(&hand), &[(Seat::S0, tile(lead))]).unwrap();
         let belief = resolved(frame, tiles(&[winner]));
         assert_eq!(probability(SETTER_PARTNER, &belief), r(7, 20));
         let (known, evidence) = belief.condition(&compile(not_bidders), "not-the-bidders", &mut big_budget()).unwrap();
@@ -682,7 +682,7 @@ fn hand_26_the_five_trey_was_his_only_trey_7_over_33() {
     .to_vec();
     let contract = contract(&physics("P4"), Seat::S0, 35);
     let hand = tiles(&["3-3", "1-1", "2-2", "5-2"]);
-    let frame = Frame::from_history(contract, Seat::S0, hand, &plays).unwrap();
+    let frame = framed_history(&contract, Seat::S0, hand, &plays).unwrap();
     // The left setter holds the 4-2 and three of the other eleven.
     assert_eq!(frame.count_worlds(), 165 * 70);
     let belief = Belief::uniform(frame, 100_000).unwrap();

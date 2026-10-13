@@ -551,7 +551,8 @@ struct Define {
 }
 
 /// The built-in libraries `(include name)` may name.
-const LIBRARIES: [(&str, &str); 1] = [("book", include_str!("../lib/book.silas"))];
+const LIBRARIES: [(&str, &str); 2] =
+    [("book", include_str!("../lib/book.silas")), ("bidding", include_str!("../lib/bidding.silas"))];
 
 /// The definitions in force while a text is read.
 #[derive(Clone, Debug, Default)]
@@ -986,7 +987,7 @@ impl fmt::Display for Query {
 const WIDTH: usize = 100;
 
 /// Heads whose forms always take a line per item.
-const BROKEN: [&str; 6] = ["policy", "rule", "query", "pattern", "define", "dominates"];
+const BROKEN: [&str; 8] = ["policy", "rule", "query", "pattern", "define", "dominates", "bidding", "declaring"];
 
 /// Format Silas text canonically: comments kept, each on its own line;
 /// blank lines kept where the source has one (at most one); a form on one
@@ -1055,7 +1056,8 @@ fn write_form(expr: &Expr, indent: usize, out: &mut String) {
     }
     if !first
         && let Some((x, tail)) = rest.split_first()
-        && matches!(x.head(), Some("roles" | "out" | "play"))
+        && (matches!(x.head(), Some("roles" | "out" | "play"))
+            || (expr.head() == Some("rule") && matches!(x.head(), Some("bid" | "declare"))))
         && let Some(line) = flat(x).filter(|line| column(out) + 1 + line.len() <= WIDTH)
     {
         out.push(' ');

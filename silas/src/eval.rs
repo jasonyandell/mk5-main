@@ -3,9 +3,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
+use crate::auction::AuctionFrame;
 use crate::frame::{Frame, Holdings, World};
 use crate::nouns::DominoSet;
-use crate::registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
+use crate::registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 use crate::syntax::{
     Atom, Pattern, Quantifier, Query, Role, Scope as ScopeClause, Sort, Span, Term, Value, valid_name,
 };
@@ -48,7 +49,7 @@ pub struct Answer(pub Vec<Value>);
 pub type Answers = BTreeSet<Answer>;
 
 /// The most roles a query may declare, its `none` clauses' included.
-const MAX_ROLES: usize = 64;
+const MAX_ROLES: usize = 256;
 
 #[derive(Clone)]
 enum Bound {
@@ -72,6 +73,11 @@ struct CompiledScope {
     locals: Vec<usize>,
     body: Vec<Clause>,
     reads: BTreeSet<usize>,
+    /// The body clauses that become ready at each depth of the search, in
+    /// source order: `schedule[d]` once the first `d` locals are bound. A
+    /// scope is read only once every enclosing role it names is bound, so
+    /// when a clause is ready depends on its locals alone.
+    schedule: Vec<Vec<usize>>,
 }
 
 #[derive(Clone)]
@@ -226,7 +232,13 @@ impl Compiler<'_> {
         let locals: BTreeSet<usize> = classes.iter().copied().collect();
         let body = self.clauses(&clause.body, &inner)?;
         let reads = body.iter().flat_map(Clause::vars).filter(|v| !locals.contains(v)).collect();
-        Ok(CompiledScope { quantifier: clause.quantifier, locals: locals.into_iter().collect(), body, reads })
+        let locals: Vec<usize> = locals.into_iter().collect();
+        let mut schedule = vec![Vec::new(); locals.len() + 1];
+        for (i, c) in body.iter().enumerate() {
+            let depth = c.vars().iter().filter_map(|v| locals.iter().position(|l| l == v)).map(|k| k + 1).max();
+            schedule[depth.unwrap_or(0)].push(i);
+        }
+        Ok(CompiledScope { quantifier: clause.quantifier, locals, body, reads, schedule })
     }
 }
 
@@ -295,11 +307,13 @@ impl Query {
     }
 }
 
-/// Where atoms read from: the frame alone, or a world through its holdings.
+/// Where atoms read from: the frame alone, a world through its holdings, or
+/// a seat's view of the auction.
 #[derive(Clone, Copy)]
 enum Reader<'a> {
     Viewer(&'a Frame),
     World(Holdings<'a>),
+    Auction(&'a AuctionFrame),
 }
 
 impl CompiledAtom {
@@ -328,7 +342,10 @@ impl CompiledAtom {
             (Access::Viewer, Reader::Viewer(frame)) => PredicateContext::Viewer(frame),
             (Access::Viewer, Reader::World(holdings)) => PredicateContext::Viewer(holdings.frame()),
             (Access::World, Reader::World(holdings)) => PredicateContext::World(holdings),
-            (Access::World, Reader::Viewer(_)) => return Err(error("viewer evaluation refused a world predicate")),
+            (Access::World, Reader::Viewer(_) | Reader::Auction(_)) => {
+                return Err(error("viewer evaluation refused a world predicate"));
+            }
+            (Access::Viewer, Reader::Auction(frame)) => PredicateContext::Auction(frame),
         };
         Ok(self.predicate.evaluate(context, args, budget)?.map(|value| value != self.negated))
     }
@@ -399,8 +416,7 @@ impl CompiledScope {
         budget: &mut Budget,
     ) -> Result<Option<bool>> {
         let mut undefined = false;
-        let pending: Vec<usize> = (0..self.body.len()).collect();
-        let found = self.witness(0, reader, sorts, values, &pending, false, &mut undefined, budget);
+        let found = self.witness(0, reader, sorts, values, false, &mut undefined, budget);
         for v in &self.locals {
             values[*v] = None;
         }
@@ -418,9 +434,9 @@ impl CompiledScope {
     }
 
     /// Whether some extension of the binding so far satisfies the body.
-    /// Clauses are checked as soon as their roles are bound; a failed one
-    /// refutes every extension, an undefined one leaves them unrefuted unless
-    /// a later clause fails.
+    /// Clauses are checked as soon as their roles are bound (the schedule);
+    /// a failed one refutes every extension, an undefined one leaves them
+    /// unrefuted unless a later clause fails.
     #[allow(clippy::too_many_arguments)]
     fn witness(
         &self,
@@ -428,19 +444,14 @@ impl CompiledScope {
         reader: Reader<'_>,
         sorts: &[Sort],
         values: &mut [Option<Value>],
-        pending: &[usize],
         mut unsure: bool,
         undefined: &mut bool,
         budget: &mut Budget,
     ) -> Result<bool> {
         budget.spend(1)?;
-        let mut rest = Vec::new();
-        for i in pending {
+        for i in &self.schedule[depth] {
             let clause = &self.body[*i];
-            if !clause.ready(values) {
-                rest.push(*i);
-                continue;
-            }
+            debug_assert!(clause.ready(values), "a scheduled clause is ready");
             match clause.evaluate(reader, sorts, values, budget)? {
                 Some(true) => {}
                 Some(false) => return Ok(false),
@@ -459,7 +470,7 @@ impl CompiledScope {
                 continue;
             }
             values[v] = Some(candidate);
-            if self.witness(depth + 1, reader, sorts, values, &rest, unsure, undefined, budget)? {
+            if self.witness(depth + 1, reader, sorts, values, unsure, undefined, budget)? {
                 return Ok(true);
             }
         }
@@ -488,6 +499,33 @@ impl CompiledQuery {
         format!("silas-query-v1\n{}\nregistry: {:?}", self.source, self.specs)
     }
 
+    /// The phase every predicate the query names is defined in: the play,
+    /// the auction, or both. Refused when it names one of each.
+    pub fn phase(&self) -> Result<Phase> {
+        let reads = |at: Phase| self.specs.iter().all(|spec| spec.phase.reads(at));
+        match (reads(Phase::Play), reads(Phase::Auction)) {
+            (true, true) => Ok(Phase::Both),
+            (true, false) => Ok(Phase::Play),
+            (false, true) => Ok(Phase::Auction),
+            (false, false) => Err(error("the query names predicates of the play and of the auction together")),
+        }
+    }
+
+    /// Refused, before any work, when the query names a predicate not
+    /// defined at a frame of `at`, or (`viewer`) a `World` predicate.
+    fn admits(&self, at: Phase, viewer: bool) -> Result<()> {
+        if let Some(spec) = self.specs.iter().find(|spec| !spec.phase.reads(at)) {
+            return Err(error(format!(
+                "{} is a predicate of {}, and is not defined at a frame of {at}",
+                spec.name, spec.phase
+            )));
+        }
+        if viewer && let Some(spec) = self.specs.iter().find(|spec| spec.access == Access::World) {
+            return Err(error(format!("viewer evaluation refused the world predicate {}", spec.name)));
+        }
+        Ok(())
+    }
+
     /// The answers in one world consistent with `frame`.
     pub fn evaluate(&self, frame: &Frame, world: &World, budget: &mut Budget) -> Result<Answers> {
         if !frame.contains(world) {
@@ -497,30 +535,44 @@ impl CompiledQuery {
     }
 
     pub(crate) fn evaluate_in(&self, holdings: Holdings<'_>, budget: &mut Budget) -> Result<Answers> {
+        self.admits(Phase::Play, false)?;
         self.run(Reader::World(holdings), budget)
     }
 
     /// Evaluate a query that reads no world. Refused, before any work, if it
-    /// names a `World` predicate.
+    /// names a `World` predicate or one of the auction alone.
     pub fn evaluate_viewer(&self, frame: &Frame, budget: &mut Budget) -> Result<Answers> {
-        if let Some(spec) = self.specs.iter().find(|spec| spec.access == Access::World) {
-            return Err(error(format!("viewer evaluation refused the world predicate {}", spec.name)));
-        }
+        self.admits(Phase::Play, true)?;
         self.run(Reader::Viewer(frame), budget)
+    }
+
+    /// Evaluate a query at a seat's view of the auction. Refused, before any
+    /// work, if it names a `World` predicate or one of the play alone.
+    pub fn evaluate_auction(&self, frame: &AuctionFrame, budget: &mut Budget) -> Result<Answers> {
+        self.admits(Phase::Auction, true)?;
+        self.run(Reader::Auction(frame), budget)
     }
 
     /// The answers at a frame, as [`Self::evaluate_viewer`], each with one
     /// witness: a binding of every role of the query (outputs and existential
     /// roles alike) that satisfies a pattern. The first found is shown.
     pub fn witnesses(&self, frame: &Frame, budget: &mut Budget) -> Result<Vec<(Answer, Witness)>> {
-        if let Some(spec) = self.specs.iter().find(|spec| spec.access == Access::World) {
-            return Err(error(format!("viewer evaluation refused the world predicate {}", spec.name)));
-        }
+        self.admits(Phase::Play, true)?;
+        self.witnessed(Reader::Viewer(frame), budget)
+    }
+
+    /// [`Self::witnesses`] at a seat's view of the auction.
+    pub fn witnesses_at_auction(&self, frame: &AuctionFrame, budget: &mut Budget) -> Result<Vec<(Answer, Witness)>> {
+        self.admits(Phase::Auction, true)?;
+        self.witnessed(Reader::Auction(frame), budget)
+    }
+
+    fn witnessed(&self, reader: Reader<'_>, budget: &mut Budget) -> Result<Vec<(Answer, Witness)>> {
         let mut witnesses = BTreeMap::new();
         budget.spend(1)?;
         let mut answers = Answers::new();
         for pattern in &self.patterns {
-            pattern.evaluate(Reader::Viewer(frame), budget, &mut answers, Some(&mut witnesses))?;
+            pattern.evaluate(reader, budget, &mut answers, Some(&mut witnesses))?;
         }
         Ok(witnesses.into_iter().collect())
     }

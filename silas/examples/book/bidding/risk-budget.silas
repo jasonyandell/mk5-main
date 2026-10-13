@@ -1,0 +1,103 @@
+; The bid book's rule: count what is at risk under a trump, and bid 42 less it.
+; Winning 42, Ch. 2 and 7 (cluster D of docs/cross-game.md; the overrides
+; S-0026-a, S-0031-a, S-0028-b; the 84 shape S-0083-a). Our reading of the
+; count, since the book prices by judgment and no one formula gives all its
+; worked numbers (tests/bidding.rs counts how many it does):
+;
+; - a trump suit is one of three tiles or more;
+; - each off (a tile neither trump nor double) risks its trick, and the count of
+;   the suit it leads (its high pip) that the viewer lacks and is not trump,
+;   each count tile once;
+; - without the trump double one trump trick is at risk, with the count trumps
+;   the viewer lacks;
+; - bid 42 less the risk when the risk is 12 or less (one mark at no risk);
+; - with two offs or more, try 30 up to 17 at risk, counting on the partner for
+;   a trick (S-0031-a, S-0028-b); one off at 16 is a pass (S-0026-a), which the
+;   12 already says;
+; - with the 84 shape (three or four trumps, two or three doubles besides, at
+;   most one off and that one under its double), bid 84.
+;
+; Each level is bid only while it is legal, so over a higher bid the rule
+; passes. The declaration is the suit the bid was made on: the 84 shape for
+; an 84, else the least at risk, ties to the first suit offered.
+(include bidding)
+
+(policy risk-budget
+  (bidding
+    (rule eighty-four (bid 84)
+      (some (roles t) (eighty-four-shape t)))
+    (rule one-mark (bid 42)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-0 t)))
+    (rule bid-41 (bid 41)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-1 t)))
+    (rule bid-40 (bid 40)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-2 t)))
+    (rule bid-39 (bid 39)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-3 t)))
+    (rule bid-38 (bid 38)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-4 t)))
+    (rule bid-37 (bid 37)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-5 t)))
+    (rule bid-36 (bid 36)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-6 t)))
+    (rule bid-35 (bid 35)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-7 t)))
+    (rule bid-34 (bid 34)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-8 t)))
+    (rule bid-33 (bid 33)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-9 t)))
+    (rule bid-32 (bid 32)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-10 t)))
+    (rule bid-31 (bid 31)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-11 t)))
+    (rule bid-30 (bid 30)
+      (some (roles t) (suit-at-least-3 t) (risk-at-most-12 t)))
+    (rule two-offs-at-17 (bid 30)
+      (some (roles t) (suit-at-least-3 t) (not (offs-at-most-1 t)) (risk-at-most-17 t))))
+  (declaring
+    (rule the-eighty-four-suit (declare t)
+      (viewer v)
+      (bid-of v 84)
+      (eighty-four-shape t))
+    (rule suit-at-risk-0 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-0 t))
+    (rule suit-at-risk-1 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-1 t))
+    (rule suit-at-risk-2 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-2 t))
+    (rule suit-at-risk-3 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-3 t))
+    (rule suit-at-risk-4 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-4 t))
+    (rule suit-at-risk-5 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-5 t))
+    (rule suit-at-risk-6 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-6 t))
+    (rule suit-at-risk-7 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-7 t))
+    (rule suit-at-risk-8 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-8 t))
+    (rule suit-at-risk-9 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-9 t))
+    (rule suit-at-risk-10 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-10 t))
+    (rule suit-at-risk-11 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-11 t))
+    (rule suit-at-risk-12 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-12 t))
+    (rule suit-at-risk-17 (declare t)
+      (suit-at-least-3 t)
+      (risk-at-most-17 t))))

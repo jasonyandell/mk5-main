@@ -52,7 +52,7 @@ fn the_readme_example_runs_as_written() -> Result<()> {
     let bidder: DominoSet =
         ["5-5", "5-4", "5-2", "5-0", "4-4", "4-2", "2-2"].iter().map(|d| d.parse()).collect::<Result<_>>()?;
     let contract = Contract::new(Seat::S0, Bid::number(84)?, fives)?;
-    let root = Frame::new(contract, Seat::S0, bidder, vec![])?;
+    let root = framed(&contract, Seat::S0, bidder, vec![])?;
 
     let query = include_str!("../examples/six-five-guarded.silas").parse::<Query>()?.compile(&Registry::standard())?;
     let belief = Belief::uniform_for(root, &query, 1000, &mut Budget::new(10_000_000))?;
