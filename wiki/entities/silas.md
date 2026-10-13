@@ -14,30 +14,34 @@ hold in each hidden world consistent with what a seat knows; a **pattern** is on
 conjunctive case of a query, and cases combine by union. A **belief** is an exact
 weighted set of those worlds; a query summarized over it gives exact event probabilities
 and per-answer masses, and conditioning on a query gives the posterior. A **policy** is
-an executable rule over the viewer's information alone: a rule that reads a hidden hand
-does not compile. Comparing two queries returns the first concrete world where they
-differ. Grammar, predicate table and examples: `silas/README.md`, `silas/examples/`.
+a function of the frame, the viewer's information alone: a rule that reads a hidden hand
+does not compile, and the same frame always gets the same decision. Comparing two
+queries returns the first concrete world where they differ. Grammar, semantics,
+predicate table and examples: `silas/README.md`, `silas/examples/`.
 
-Silas owns the game's nouns (dominoes, seats, teams, led contexts) and no rules. A
-`Physics` (`silas/src/physics.rs`) supplies one declaration's four tables (led context,
-follow sets, trick key, count) and the fiber of hidden worlds (count and enumerate);
-legal plays, trick winner and points, beats and threat sets derive from the tables.
-`silas::reference::Straight42` is the spec-faithful test physics (nine straight
-declarations); off-suit plays tie at the bottom of the trick key, as texas-42's Lean
-`Declaration.key` defines.
+A **frame** is one record: the contract (declarer, bid, declaration), the viewer, its
+dealt hand and the plays; everything else (seats of the plays, leader, trick, voids,
+score, the viewer's kernel) is derived by one replay. Silas owns the game's nouns, the
+language and every derived rule. A rules engine supplies only one declaration's four
+tables through `Declaration` (led context, follow sets, trick key, count); Silas reads
+them into a `Physics` value whose identity is a content hash of the tables, and computes
+legality, trick winner and points, the trump and the fiber of hidden worlds itself, so
+`Exact` rests on Silas's code alone. `silas::reference::Straight42` is the spec-faithful
+reference (nine straight declarations); off-suit plays tie at the bottom of the trick
+key, as texas-42's Lean `Declaration.key` defines.
 
 ## On Zeb's rules
 
-`scenario/core` (feature `silas`, off by default) carries `ZebPhysics`: one of Zeb's ten
-declarations (`Rules`) and Zeb's `Fiber` behind the `Physics` trait, with `legal_plays`,
-`trick_winner` and `trick_points` overridden by Zeb's own `legal`, `winner_offset` and
-`trick_points`. The numbering is shared and mapped explicitly: tile id = domino index
-(triangular), Zeb's led suit k = context `q{k}` with 7 = `q*`, seat s = `S{s}`. Identities are
-`zeb/P0`..`zeb/P6`, `zeb/DT`, `zeb/DS` (doubles as their own suit), `zeb/NT`.
-`scenario/core/tests/silas_physics.rs` holds it to `Straight42` on the nine shared
-declarations (every table entry and trick-key order exhaustively; legal plays, whole random
-hands and fibers seeded) and holds `DS` to its facts; no disagreement was found. To key
-legality by Zeb's code, `legal_plays` takes the led tile rather than its context (2026-10-13).
+`scenario/core` (feature `silas`, off by default) carries `ZebPhysics`, a table provider:
+one of Zeb's ten declarations (`Rules`) as a Silas `Declaration`. The numbering is shared
+and mapped explicitly: tile id = domino index (triangular), Zeb's led suit k = context
+`q{k}` with 7 = `q*`, seat s = `S{s}`. Names are `zeb/P0`..`zeb/P6`, `zeb/DT`, `zeb/DS`
+(doubles as their own suit), `zeb/NT`; on the nine shared declarations Zeb's tables are
+the reference's, so the two physics have one identity. `scenario/core/tests/silas_physics.rs`
+holds Zeb's own `legal`, `winner_offset`, `trick_points` and `Fiber` (the code its planner
+runs) to Silas's derivations, and Silas's to `Straight42` (tables exhaustively; legal
+plays, whole random hands and fibers seeded), and holds `DS` to its facts (no trump);
+no disagreement was found. Zeb's default build is byte-identical with the feature off.
 The `scenario_core` wheel carries the Silas classes (`SilasQuery`, `SilasPolicy`,
 `SilasBelief`, `SilasSummary`, `SilasAuthority`, `silas_compare`); `scenario/silas.py`
 builds a `SilasFrame` from Zeb's `Situation` (the bidder, the bid and the plays) and
@@ -51,12 +55,12 @@ come back as `fractions.Fraction` (`scenario/tests/test_silas.py`: the 84 hand a
 Silas never computes in floating point. A float enters only through
 `Weight::from_f32_exact` / `from_f64_exact`, which return the dyadic rational the float
 denotes, bit for bit; every weight after that is an exact rational. Every belief and
-summary carries an **authority**: `Exact` (enumerated or combinatorial support, no
-model), `ExactGiven(model)` (weights from a pinned model; the model is an assumption,
-the arithmetic exact), or `Sampled(n, seed)`; combining labels yields the weakest, and
-nothing derived from a model or a sample is `Exact`. Comparisons on model or sampled
-values are three-valued (better, worse, indistinguishable) against an explicit band; an
-exact value's band must be zero.
+summary carries an **authority**, a provenance lattice: the set of pinned models whose
+weights entered it and the set of samples it was drawn from. Neither is `exact`; the
+meet of two authorities is the union of each (total, never upgrades; a model's identity
+survives a sample, which it once did not). Comparisons are three-valued (better, worse,
+indistinguishable) against an explicit band, return the meet, and an exact pair's band
+must be zero.
 
 `Belief::uniform_resolving` answers questions about a few named tiles at the root
 without enumerating the hand: one point per placement of the named tiles, weighted by
@@ -74,6 +78,12 @@ the four chairs. On those positions at least 10 of the 21 Python gates part from
 book, so the per-rule prices on the study page are the gates' prices, not the book's
 (#123).
 
+The rules are written with a book prelude (`silas/lib/book.silas`, 2026-10-13): the
+seats from the bidder, the trump said once for every declaration, offs and walkers,
+what a lead calls for; C12's ranks are three calls. What every rule allows is pinned to
+its pre-prelude self at every point of the eight narrated deals (13,760 decisions) and of
+1,600 random deals (`silas/tests/book_snapshot.rs`).
+
 Slice 3 (2026-10-13, `0c5d7f66`) closed the five viewer-side gaps the book hit hardest:
 the frame now carries the hand's public record (contract and attributed plays, the one
 source of the leader, trick, played set, shown voids and score; `PolicyInput` is gone),
@@ -84,6 +94,21 @@ With them **20 of the 21 encodings are their gate exactly**; C14 still lacks the
 "most unplayed" (aggregate, #135). The open gaps in `silas/GAPS.md` are all world-side or
 beyond one hand except that one: policy likelihood (#128), cross-game comparison (#130),
 another seat's knowledge (#132), the auction (#134), aggregate (#135).
+
+## The engineering pass (2026-10-13)
+
+A peer review through a Lean lens (`scratch/silas-lean/REVIEW.md`, unpublished) found the
+query core sound and three structural defects, none yet a wrong number: a policy carried
+modes across calls, so one frame could get two decisions; `Exact` rested on a physics's
+own fiber methods and a string identity; and a frame had two constructors with two
+meanings of `played` and `shown-void`. The pass fixed all three, gave the contract its
+kind, stake and declaration (`(bid 84)`, `(stake 2)`), made authority a lattice, made
+`trick-number` undefined once the hand is over, and wrote the denotational semantics into
+the README (Kleene atoms, `some`/`none`, injective assignment with Bell-number
+completeness, existential projection, the admissibility of `uniform_resolving`). For
+working with it: `(define ...)` and `(include book)`, the `silas` command (`eval` with
+witnesses and the allowed set, `query`, `fmt`, `check`), errors with line, column and
+caret, `CompiledPolicy::allowed` (and `SilasPolicy.allowed` in Python).
 
 ## The double-dummy reference
 
@@ -123,8 +148,8 @@ trick six and is graded to there.
   on an `Estimate` from `SilasBelief.condition_likelihood` (a binding of Silas's own
   conditioning, added 2026-10-13).
 - **Next.** The book's rules past their gates (#123): policy
-  likelihood (#128) and another seat's knowledge (#132) are what the book's own plays
-  need next ([[w42]]).
+  likelihood (#128), now well defined since a policy is a function of the frame, and
+  another seat's knowledge (#132) are what the book's own plays need next ([[w42]]).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
   kernel-checked `Texas42` library; Rust is the first implementation it will be held to.
   What the book asks that Silas cannot yet express (cross-game policy comparison, the

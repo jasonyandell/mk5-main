@@ -43,3 +43,22 @@ fn the_answer_does_not_depend_on_how_much_is_resolved() {
     let narrow = Belief::uniform_resolving(root(), tiles(&["6-5"]), 1_000).unwrap();
     assert!(query.summarize(&narrow, &mut budget()).is_err());
 }
+
+/// The README's opening example, as written there.
+#[test]
+fn the_readme_example_runs_as_written() -> Result<()> {
+    use silas::reference::Straight42;
+    let fives = "P5".parse::<Straight42>()?.physics();
+    let bidder: DominoSet =
+        ["5-5", "5-4", "5-2", "5-0", "4-4", "4-2", "2-2"].iter().map(|d| d.parse()).collect::<Result<_>>()?;
+    let contract = Contract::new(Seat::S0, Bid::number(84)?, fives)?;
+    let root = Frame::new(contract, Seat::S0, bidder, vec![])?;
+
+    let query = include_str!("../examples/six-five-guarded.silas").parse::<Query>()?.compile(&Registry::standard())?;
+    let belief = Belief::uniform_for(root, &query, 1000, &mut Budget::new(10_000_000))?;
+    let p = query.summarize(&belief, &mut Budget::new(10_000_000))?.event_probability();
+    assert_eq!((p.value().to_string(), p.authority().is_exact()), ("33/95".to_string(), true));
+    // It resolved the three tiles the query reads, and nothing else.
+    assert_eq!((belief.len(), belief.unresolved().len()), (27, 18));
+    Ok(())
+}

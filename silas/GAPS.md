@@ -42,8 +42,9 @@ the likelihood must be the sender's gate exactly inverted.
 - C21 (p. 107): the bait tells the partner where the 6-4 is.
 
 **Smallest addition.** `Belief::condition_on_policy(&belief, seat, &CompiledPolicy)`.
-The record is now in the frame, and each seat's past frames follow from a `World` and the
-record, so nothing else is missing.
+The record is the frame, each seat's past frames follow from a `World` and the record,
+and a policy is now a function of the frame (no modes or bindings, 2026-10-13), so the
+likelihood of a play is determined by (policy, world, record): nothing else is missing.
 
 ## 2. Cross-game policy comparison (Ch. 2, 7, 12)
 
@@ -55,19 +56,17 @@ policies over many deals, under a scoring and a match state:
 - keep good setters honest with an occasional straight-off 84 (p. 65).
 
 Silas policies choose plays inside one hand. They have no bid or declaration action, no
-contract scoring (a marks bid is the whole 42 in a `Contract`), no match score, and no
-comparison of two policies' value over a distribution of deals. Silas can compare two
-queries, not two policies. The last rule is about opponents who adapt, so its "value" is
-over a population of opponents.
+match score, and no comparison of two policies' value over a distribution of deals. Silas
+can compare two queries, not two policies. The last rule is about opponents who adapt, so
+its "value" is over a population of opponents. The contract now carries its kind, stake
+and declaration (`Bid::Points` or `Bid::Marks`, `threshold`, `stake`, `award`; 2026-10-13),
+so one hand's mark transfer is defined.
 
 **Rules.** C16, C17, C18, C19, and the study's bid book (C24).
 
-**Smallest addition.** Two pieces:
-- In `Physics`: the contract's scoring (marks, 84 = two marks, the game at seven), next
-  to the trick tables.
-- In Silas: a bid action in policies, the match state in the frame, and an exact or
-  sampled comparison of two policies' marks over a belief of deals, carrying its
-  authority.
+**Smallest addition.** A bid action in policies, the match state (the game at seven),
+and an exact or sampled comparison of two policies' marks over a belief of deals,
+carrying its authority. The hand's award is `Contract::award`.
 
 ## 3. Another seat's knowledge
 
@@ -88,7 +87,8 @@ consistent with `c`'s view of it.
 **Rules.** C1a, C1b and C3 (pp. 25, 37–38).
 
 **Smallest addition.** A modal clause `(knows c ...)` evaluated by building seat `c`'s
-frame from the world and the record (`Frame::from_record` with `c` as viewer).
+frame from the world and the record (`Frame::new` with `c` as viewer and its dealt hand
+read from the world and the record).
 
 ## 4. The auction as information (Ch. 2, 12)
 
@@ -122,6 +122,19 @@ today, so `to-set` can say "one point sets" but not "this lead's count sets".
 **Smallest addition.** The `card` clause in the language, and `less(n, m)` on numbers.
 
 ## Closed
+
+Closed in the engineering pass after the Lean-lens review (2026-10-13):
+
+- **Modes and rigid bindings are gone.** A policy is a function of the frame; no book rule
+  used either. This was a soundness defect, not a gap: the same frame could get two
+  decisions.
+- **The contract's kind and stake.** `(bid 84)` reads as the table says it, `(stake n)` is
+  the marks at stake, and `to-make`/`to-set` read the threshold. It blocked no gate; it
+  was a prerequisite of gaps 2 and 4.
+- **The book's vocabulary.** `lib/book.silas` names the seats from the bidder, the trump
+  (one predicate, `(trump q)`, under every declaration), the count, offs and walkers, and
+  what a lead calls for; every rule is written with it, and what each allows is pinned
+  unchanged (`tests/book_snapshot.rs`).
 
 Closed in `0c5d7f66` (2026-10-13). The rules they blocked are re-encoded with them.
 

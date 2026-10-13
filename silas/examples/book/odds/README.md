@@ -11,7 +11,7 @@ Three numbers per claim:
 - **book model**: each missing tile equally likely in each of the three other
   hands, so all 3^m placements of m tiles count the same;
 - **exact**: the uniform deal of the 21 unseen tiles, seven to a hand, given
-  the stated hand (`Authority::Exact`, from `Belief::uniform_resolving`), and
+  the stated hand (authority `exact`, from `Belief::uniform_resolving`), and
   derived a second time in plain Rust by weighting each placement by its
   completions.
 

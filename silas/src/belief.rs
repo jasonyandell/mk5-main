@@ -39,7 +39,7 @@ impl Belief {
         max_worlds: usize,
     ) -> Result<Self> {
         if authority.is_exact() {
-            return Err(error("caller-supplied weights are ExactGiven or Sampled; Exact is the support's own"));
+            return Err(error("caller-supplied weights name a model or a sample; Exact is the support's own"));
         }
         Self::assemble(frame, id.into(), authority, DominoSet::EMPTY, entries, max_worlds)
     }

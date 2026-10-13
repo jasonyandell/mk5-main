@@ -29,6 +29,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | c17c8605 | Silas engineering pass: a policy is a function of the frame, one frame with derived views, physics as tables with the fiber Silas's own, the contract's kind and stake, authority a lattice; the book prelude; the `silas` command]
+
+**Updated:** [[silas]] § The engineering pass; `silas/README.md` (§ Semantics, the denotation written down); `silas/GAPS.md` § Closed. Zeb: `ZebPhysics` a table provider, its own rules under differential test. Pins: `silas/tests/book_snapshot.rs`.
+
 ## [2026-10-13 | src/multiplayer | system authority only from the server: a client's forged `meta.authority` is refused; the auto-execute loop runs `executeSystemAction` (#96)]
 
 **Updated:** [[multiplayer-pattern]] § Capability system (two authorization paths; `resolveSessionForAction` retired).
