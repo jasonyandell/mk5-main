@@ -35,6 +35,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | scripts/check | one front door for every suite (`scripts/check`, `--fast`); the log merges without conflict and rotates only on main; the archive restored from a bad merge (210 entries)]
+
+**Updated:** `wiki/AGENTS.md` § Log format and Lint (branches never rotate; `scripts/wiki_log_rotate.py` on main; LG02, LG03); `CLAUDE.md` § Quality gates; [[log-archive]] restored.
+
 ## [2026-10-13 | silas | cross-game slice 1: the match frame (points to 250, marks to seven, the settlement under both and both readings of a set 84), checked match-win values and the score-grid programme, and `(dominates ...)` exact over the hand's 43 outcomes; the last mark's 42-over-84 decided under both scorings]
 
 [[silas]] § The match and field-free comparison (new); `silas/README.md` § The match; `silas/GAPS.md` gap 2 narrowed (cluster F closed, B's three dominance rows and A's contract half stated, G re-tagged); `silas/examples/book/cross-game/`.

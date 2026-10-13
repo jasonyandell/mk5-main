@@ -1,0 +1,16 @@
+# The Python environment scripts/check builds in scratch/venv (one per checkout).
+# Everything the CPU suites import: scenario/, walt/, and the oracle era's
+# arena/, champion/, gus/, otis/, w42/. scenario_core is built from this
+# checkout's scenario/core by scripts/check itself, never from PyPI.
+numpy>=1.26
+pyarrow>=14.0
+huggingface_hub>=0.30
+pandas>=2.2
+scipy>=1.13
+scikit-learn>=1.5
+torch>=2.6
+lightning>=2.0
+pyyaml>=6.0
+pytest>=8.0
+maturin>=1.5,<2
+mlx>=0.29; sys_platform == 'darwin' and platform_machine == 'arm64'
