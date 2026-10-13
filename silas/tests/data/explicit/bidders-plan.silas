@@ -1,0 +1,213 @@
+; The bidder's plan after the first lead. Winning 42 pp. 23-29 (S-0038-b,
+; S-0039-b, S-0041-d, S-0041-f, S-0042-b, S-0043-c, S-0043-e, S-0044-b,
+; S-0047-c, S-0047-d), pp. 11, 18-19 and 24 (S-0024-a, S-0033-b, S-0034-b,
+; S-0040-b), p. 31 (S-0052-a), pp. 60-63 (S-0085-a, S-0086-a, S-0087-a),
+; pp. 75-81 (S-0104-a, S-0105-c, S-0105-d, S-0107-b, S-0107-c, S-0109-b,
+; S-0110-c), pp. 91-95 (S-0121-d, S-0122-b, S-0122-c, S-0122-e, S-0126-d),
+; and the worked deals, Hands 12, 14, 15, 16, 23, 25, 26 and 28 to 35
+; (S-0046-b, S-0046-c, S-0051-c, S-0130-a, S-0130-d, S-0131-c, S-0134-c,
+; S-0136-c, S-0137-a, S-0142-h, S-0142-k, S-0144-g, S-0144-k, S-0148-b). The
+; bidder's four steps (p. 26), in our words: trumps in; then, if it helps,
+; one trump more for the partner's count, or the off's double first for its
+; count; then the offs; then back in to take the rest.
+; Rule, in our words, the bidder on lead after trick one, not in a crisis
+; (crisis.silas):
+; - while a setter may hold a trump, lead the highest trump still out;
+; - once no trump is out, lead the highest trump once more if count is still
+;   out and the partner has not yet had a trump trick to give it on; but keep
+;   a trump until after the offs, unless all you hold besides it is winners
+;   and one off, which can go last (Hand 33 trick 5);
+; - holding a trump to win the lead back (and a bid of points): lead at once
+;   the off whose own suit's double you lack, the one that calls for least
+;   count (Hand 28 trick 3: the 3-1, which risks a five, not the 5-3's ten),
+;   or a double of another suit that may pull its count (a permission: Hands
+;   8, 9 and 14 propose it, Hand 32 trick 3 leads the off); once every off has
+;   its double, the double first (Hand 30 trick 5, the last trump the
+;   partner's);
+; - with no trump to win the lead back, in a bid of marks, or at no trump: the
+;   off goes last. Take your other winners first (a double that may draw an
+;   off's count from another suit among them), then the double of the off's
+;   own suit next-to-last (Hands 16, 17, 18, 19, 25, 26, 28, 34, 35).
+; Replaces gates/c01a-top-trump-for-the-donation.silas and
+; gates/c11-double-ahead-of-the-off.silas. How it differs: C1a reads the
+; bidder's knowledge (partner shown void, a trump out); the book leads the top
+; trump for the partner whenever the partner cannot know the trick is safe
+; any other way: with the partner not shown void (Hands 12, 15, 23, 26, 28,
+; 30) and with no trump out (Hands 15, 23, 33). C11 takes only the double of
+; the off's own suit and fires the moment trumps are drawn; the book also
+; leads another suit's double for the off's count (Hands 8, 9, 14, 18, 23),
+; strips first and saves the off's double for next-to-last when it cannot win
+; the lead back (Hands 16, 17, 18, 19, 25, 26), dumps a bare off before the
+; double ahead of another (Hand 28 trick 3, where C11 leads the 6-6), and
+; leads the double with the last trump in the partner's hand (Hand 30).
+; GAP knowledge: the donation lead's condition is what the partner can know
+; (S-0047-d states it); this file reads it as the partner not yet having
+; discarded on one of the bidder's trump leads, and no trump out at all (a
+; trump out with the partner, as in Hand 30, means he must follow).
+; The book contradicts itself on keeping the last trump. Hand 13 (S-0044-b,
+; p. 27) keeps it rather than fish for the partner's count, stating as a rule
+; that a trump stays until the offs are gone; Hand 33 (S-0144-k, p. 111) leads
+; it for the donation while holding the 2-1 off. This file encodes Hand 33 (a
+; full deal; Hand 13's first two tricks are not given): the last trump may go
+; when the rest of the hand is winners and one off.
+
+(include book)
+
+(policy bidders-plan
+  (fallback lowest-legal)
+  (rule draw-the-trumps
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (not (trick-number 1))
+          (not (crisis))
+          (not (no-setter-trump))
+          (own-legal lead)
+          (boss-trump lead)))))
+  (rule the-donation-lead
+    (select answer)
+    (guard
+      (query (roles (chair b) (chair p) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (not (trick-number 1))
+          (bidders-partner p)
+          (not (trump-out))
+          (own-legal lead)
+          (boss-trump lead)
+          (some (roles (domino out)) (live out) (not (mine out)) (count-tile out))
+          (none (roles (domino l) (domino his))
+            (led b l)
+            (trump-tile l)
+            (played-to l p his)
+            (not (trump-tile his)))
+          (none (roles)
+            (none (roles (domino other)) (mine other) (trump-tile other) (not (tile other lead)))
+            (some (roles (domino o) (domino o2)) (off o) (off o2)))))))
+  (rule dump-a-bare-off-calling-no-count
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (not (every-trick))
+          (some (roles (domino kept)) (mine kept) (trump-tile kept))
+          (own-legal lead)
+          (bare-off lead)
+          (not (calls-for-count lead))))))
+  (rule dump-a-bare-off-calling-a-five
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (not (every-trick))
+          (some (roles (domino kept)) (mine kept) (trump-tile kept))
+          (own-legal lead)
+          (bare-off lead)
+          (not (calls-for lead 10)))
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (not (every-trick))
+          (some (roles (domino kept)) (mine kept) (trump-tile kept))
+          (own-legal lead)
+          (some (roles (domino o)) (bare-off o) (not (calls-for o 10)) (draws-the-count-for lead o))))))
+  (rule dump-a-bare-off
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (not (every-trick))
+          (some (roles (domino kept)) (mine kept) (trump-tile kept))
+          (own-legal lead)
+          (bare-off lead))
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (not (every-trick))
+          (some (roles (domino kept)) (mine kept) (trump-tile kept))
+          (own-legal lead)
+          (some (roles (domino o)) (bare-off o) (draws-the-count-for lead o))))))
+  (rule the-double-ahead-of-the-off
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead) (domino off))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (not (every-trick))
+          (some (roles (domino kept)) (mine kept) (trump-tile kept))
+          (own-legal lead)
+          (protects lead off)))))
+  (rule cash-the-other-winners
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (none (roles) (some (roles (domino t)) (mine t) (trump-tile t)) (not (every-trick)))
+          (some (roles (domino o)) (off o))
+          (own-legal lead)
+          (not (can-lose lead))
+          (none (roles (domino o)) (off o) (strips-the-suit-of lead o))))))
+  (rule the-double-of-the-offs-suit
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead) (domino off))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (none (roles) (some (roles (domino t)) (mine t) (trump-tile t)) (not (every-trick)))
+          (own-legal lead)
+          (double lead)
+          (off off)
+          (strips-the-suit-of lead off)))))
+  (rule take-the-rest
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (no-setter-trump)
+          (none (roles (domino o)) (off o))
+          (own-legal lead)
+          (not (can-lose lead)))))))

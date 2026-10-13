@@ -31,6 +31,7 @@ pub mod reference;
 mod registry;
 mod scoring;
 mod solve;
+mod sugar;
 mod syntax;
 
 pub use belief::{Belief, Certainty, Comparison, Difference, QuerySummary, Selection, SelectionLaw};
