@@ -2,7 +2,7 @@
 title: The book, read with the honest tools — Winning 42's rules priced on the pour and its conventions graded in the arena (2026-10-12)
 kind: experiment
 first_seen: 2026-10-12
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 status: complete
 ---
 
@@ -19,8 +19,9 @@ the same day ([[scenario-player]] § A convention overlay). The oracle-era verdi
 from the book (the "supported" rows are arithmetic, definitions, negative controls, a
 tautology and one null).
 
-**The picture in one line.** Of 21 gated rules, Zeb's plan sides with the book on 9, shows
-no relation to it on 3, prices against it on 5 (robustly), and agrees weakly on 4; overall
+**The picture in one line.** Of 21 gated rules, Zeb's plan sides with the book on 8, shows
+no relation to it on 3, prices against it on 5 (robustly), and agrees weakly on 5 (whole
+pour, § The book's rules as Silas policies); overall
 Zeb's pick is the book's move at 52% of gated positions against a 37% random floor
 (chance-corrected 0.23), and each strong player tested misses the book's move at about 45%
 of them. The bid book's 25 of 30 is two hands better than "always bid"; the conventions
@@ -34,13 +35,14 @@ book was extracted or adopted: Zeb today prices a move, it does not explain one 
   the face-off sample the 62% at price 0 splits into 43% Zeb strictly prefers a book tile,
   20% Zeb is indifferent between a book and a non-book tile (including every dead row), and
   38% Zeb strictly prefers a non-book tile (§ The face-off, per-gate table).
-- *Zeb's plan sides with the book* (chance-corrected ≥ 0.44): the bidder's top-trump
-  donation lead (C1a), the partner's count on a top-trump lead and sluff otherwise (C1b),
-  no count on the bidder's double (C8), protect count (C13b), count-calling setter leads
-  (C15), trump the bidder's double from the left (C22), the partner leads doubles (C23),
-  and with four trumps holding the third, lead the double (C12A).
+- *Zeb's plan sides with the book* (chance-corrected ≥ 0.44 over the whole pour): the
+  bidder's top-trump donation lead (C1a), the partner's count on a top-trump lead and sluff
+  otherwise (C1b), no count on the bidder's double (C8), protect count (C13b), trump the
+  bidder's double from the left (C22, priced as the book's own rule: +0.58, 5% against),
+  the partner leads doubles (C23), and with four trumps holding the third, lead the double
+  (C12A).
 - *No relation to the book* (chance-corrected ≤ 0.07): the partner never leads trump (C9;
-  random already scores 70% there), low from a pair (C13c, a two-tile choice at a coin
+  random already scores 63–70% there), low from a pair (C13c, a two-tile choice at a coin
   flip), lead a singleton (C13d).
 - *The gates are not the book's rules.* Written as [[silas]] policies and replayed on the
   book's own worked deals (`silas/examples/book/`, `silas/tests/book.rs`), at least 10 of
@@ -49,16 +51,20 @@ book was extracted or adopted: Zeb today prices a move, it does not explain one 
   can know; the trick-1 off lead (C10) is permitted, not prescribed (Hand 14 leads trump);
   four trumps missing the 2nd and 3rd (C12B) is played with three trumps in the book's
   examples; and C8, C11, C13b, C13d, C14, C15, C22 differ too. The handoff's book reading
-  (C2) is false in the book's own Hand 30. Every per-rule verdict on this page prices the
-  gate, not the book's rule, until the gate is re-checked (#123).
+  (C2) is false in the book's own Hand 30. Over the whole pour the Silas encodings fire
+  exactly where 17 of the 21 gates fire, with the same allowed tiles, so those verdicts
+  price the gate, not the book's rule (#123); C22 is priced as the book's rule, C15 with
+  its one-point exception, C14 without its "most unplayed" (§ The book's rules as Silas
+  policies).
 - *Zeb's plan prices against the book* (−0.05 pmake per decision or worse, surviving a
   four-times-stronger re-plan): biggest count first (C3), the pounce (C7), the trick-1 off
   lead (C10), four trumps missing the 2nd and 3rd, lead low (C12B), the six-five bait
   (C21). These are prices, not contradictions: no gate was checked against the book's own
   examples of the rule (#123) and none has a hand-checkable counterexample deal (#121).
-- *Weak agreement* (0.19–0.30): the high-trump handoff (C2), double ahead of the off (C11,
-  mostly indifference: 33 for / 39 indifferent / 28 against), void in follow position
-  (C13a), crisis cash-the-double (C14).
+- *Weak agreement* (0.11–0.37 over the whole pour): the high-trump handoff (C2, +0.11:
+  46 for / 8 indifferent / 46 against), double ahead of the off (C11, 41 / 26 / 33),
+  void in follow position (C13a), crisis cash-the-double (C14), count-calling setter leads
+  (C15, +0.37; +0.46 on the face-off sample, which left out the dead rows).
 - *Small prices are below Zeb's own noise.* Zeb's pick costs −0.005 to −0.016 pmake per
   decision when re-scored by a stronger copy of itself, so a mean price above about −0.015
   is unreadable per decision. Converted to marks per hand the page's own way (price × firing
@@ -186,9 +192,9 @@ for / indifferent / against split and the chance-corrected agreement are in § T
 | C12 four trumps, lead the double (holding the 3rd) | bidder | 4,113 | −0.014 | 55% | 54% | sides with the book's double over its low lead (−0.125); missing the 2nd and 3rd, the book's low lead prices against (−0.096) |
 | C13 setter: void in follow position, protect count, low from a pair, lead a singleton | setter | 39,947–349,682 | −0.009 to −0.024 | 65–83% | 45–76% | protect count sides with the book; void in follow weak; low from a pair and lead a singleton no relation |
 | C14 crisis: cash the double with most unplayed | bidder | 38,779 | −0.028 | 54% | 46% | weak; Zeb leans the book's way (the trump lead is −0.052) |
-| C15 setter leads that call for count | setter | 318,488 | −0.014 | 79% | 50% | sides with the book, 40% indifferent; the one-point exception is real (quiet lead strictly best 38% there) |
+| C15 setter leads that call for count | setter | 318,488 | −0.014 | 79% | 50% | agrees weakly (+0.37 over the whole pour); the one-point exception is real (quiet lead strictly best 38% there) |
 | C21 the six-five bait lead | bidder | 1,010 | −0.053 | 17% | 11% | prices against |
-| C22 trump the bidder's double from the left | setter | 45,115 | −0.009 | 83% | 66% | sides with the book (left seat 91% price 0; last seat 75%) |
+| C22 trump the bidder's double from the left | setter | 45,115 | −0.009 | 83% | 66% | the gate sides with the book (left seat 91% price 0; last seat 75%); the book's rule fires at 5% of these and sides more (§ The book's rules as Silas policies) |
 | C23 the partner leads doubles | partner | 203,133 | −0.013 | 80% | 70% | sides with the book |
 
 **The bid book.** Bid or pass agrees on 25 of 30 hands; the book bids 23 of the 30, so
@@ -322,6 +328,102 @@ Zeb's exact-best set: book tiles only / book and non-book tiles tied / non-book 
   bid-30 contract, the plan stopping at `_settled`, or the gate's translation of the book.
   A tie is none of these. The reason report is #124; the repaired book as a page is #121.
 
+## The book's rules as Silas policies (2026-10-13)
+
+At positions where the book's rule, written as a [[silas]] policy, applies, how does Zeb's
+plan value the tiles it allows? And how far is the policy's firing set from the gate's?
+
+**Setup.** The 20 policies of `silas/examples/book/` (21 rules; C1b's two branches share
+one file), compiled through `scenario_core`'s Silas bindings, asked at every one of the
+4,343,426 planned positions of the 250,000-deal pour (the wave-1 population; the face-off's
+20,977 rows are inside it with the same gate and book set). Each frame is built from the
+record (declarer seat 0, bid 30, attributed plays); its `own-legal` set equals the pour's
+legal tiles at every position. `SilasPolicy` binds no decision in Python, and a decision
+returns one tile, not the allowed set; so each policy is compiled by `SilasPolicy` (which
+proves it reads only the viewer) and its rules' guards, verbatim, are run with `SilasQuery`
+in rule order, as `CompiledPolicy::decide` runs them: the first rule whose guard returns a
+legal tile fires, and those legal tiles are its allowed set. Cost: 66 s per 50,000-deal
+chunk, five chunks in parallel, about 5.5 CPU-minutes (`scratch/silas-reprice/`).
+
+*Zeb* here is the pour player, `k0,n512`, utility `make`, bid 30, over the field net
+`field_make_d5000_v2` (seeds 100,001 up, code `31ecd76d`) and `v2/margin_d50k_h128x64`
+(seeds 200,001 up, code `b30603ad`), before the #110 and #112 fixes. Every q is a sampled
+estimate over 512 worlds.
+
+**Gate fidelity.** Per rule over all 4,343,426 positions: both fire, Silas only, gate only;
+Jaccard; and where both fire, the share with the same allowed set.
+
+| rule | both fire | Silas only | gate only | Jaccard | same allowed set |
+|---|---|---|---|---|---|
+| each of 17 rules (C1a, C1b ×2, C2, C3, C7, C8, C10, C11, C12A, C12B, C13a–d, C21, C23) | 1,010 to 349,682; 1,353,540 in all | 0 | 0 | 1.000 | 100% |
+| C9 | 165,382 | 0 | 2,990 | 0.982 | 100% |
+| C14 | 38,779 | 0 | 0 | 1.000 | 71% |
+| C15 | 318,488 | 15,749 | 0 | 0.953 | 100% |
+| C22 | 2,390 | 0 | 42,725 | 0.053 | 100% |
+
+- The encodings were written to be their gates (Silas slice 3), and over the whole pour
+  they are, at 17 of 21. This measures how well Silas encodes the gates, not how far the
+  gates are from the book: "at least 10 of 21 gates misread the book" stays a finding on
+  the book's own deals (`silas/tests/book.rs`).
+- C9's 2,990 gate-only rows are the gate's ordering at its last tier with no trump held:
+  the gate allows every legal tile there; the policy does not fire. C14's sets differ at
+  11,257 positions, the policy's always a superset (every non-trump double; GAP aggregate).
+  C15's Silas-only rows are the one-point exception, a third rule the gate lacked.
+- C22 is the one encoding of the book's rule rather than the gate: a trump set, and from
+  the last seat only on count already played. It fires at 5% of the gate's positions
+  (1,837 left seat, 553 last seat).
+
+**Prices on the Silas firing set.** pmake for the mover's team per decision. Rows decided
+by the banked score (the bidder's side at 30, or the setters past 12) are dropped (393,736
+rows over all rules; the hand is over); rows decided only in Zeb's worlds are kept as Zeb
+indifferent, never revived. *Random* = book set ÷ legal; *Zeb* = Zeb's exact-best set
+inside the book set, ties broken at random; chance-corrected = (Zeb − random) ÷ (1 −
+random); *for / indiff / against* = Zeb's exact-best set only book tiles / both / only
+non-book tiles, in %; price = max over the book set − max over legal. Brackets: 95%
+cluster bootstrap over deals (1,000 resamples); they do not include the 512-world sampling
+noise. † = above −0.015, unreadable per decision: the pour player's own pick costs −0.005
+to −0.016 under a four-times-stronger plan (§ The face-off).
+
+| rule | n | legal | book | random | Zeb | chance-corr. [95%] | for / indiff / against | price [95%] |
+|---|---|---|---|---|---|---|---|---|
+| C1a | 8,285 | 4.90 | 1.00 | 22% | 73% | +0.65 [+0.64, +0.66] | 66 / 18 / 17 | −0.011 [−0.012, −0.010]† |
+| C1b-top | 19,609 | 4.99 | 1.09 | 25% | 60% | +0.46 [+0.46, +0.47] | 54 / 12 / 34 | −0.020 [−0.020, −0.019] |
+| C1b-nontop | 27,684 | 5.53 | 4.24 | 74% | 86% | +0.47 [+0.46, +0.48] | 79 / 13 / 8 | −0.004 [−0.004, −0.003]† |
+| C2 | 49,393 | 2.42 | 1.00 | 43% | 50% | +0.11 [+0.10, +0.12] | 46 / 8 / 46 | −0.040 [−0.041, −0.039] |
+| C3 | 24,721 | 5.59 | 1.35 | 27% | 41% | +0.20 [+0.19, +0.21] | 37 / 10 / 53 | −0.068 [−0.069, −0.066] |
+| C7 | 103,206 | 4.84 | 1.23 | 29% | 26% | −0.04 [−0.05, −0.04] | 21 / 12 / 68 | −0.082 [−0.083, −0.081] |
+| C8 | 53,396 | 2.30 | 1.29 | 55% | 76% | +0.48 [+0.47, +0.48] | 72 / 9 / 20 | −0.011 [−0.011, −0.011]† |
+| C9 | 138,221 | 4.36 | 2.80 | 63% | 65% | +0.04 [+0.03, +0.05] | 58 / 12 / 30 | −0.020 [−0.021, −0.020] |
+| C10 | 8,929 | 7.00 | 1.00 | 14% | 17% | +0.03 [+0.02, +0.04] | 16 / 2 / 82 | −0.068 [−0.070, −0.067] |
+| C11 | 21,136 | 3.75 | 1.08 | 31% | 50% | +0.28 [+0.27, +0.29] | 41 / 26 / 33 | −0.017 [−0.018, −0.017] |
+| C12A | 4,113 | 7.00 | 1.00 | 14% | 53% | +0.46 [+0.44, +0.47] | 52 / 3 / 45 | −0.014 [−0.015, −0.014]† |
+| C12B | 2,212 | 7.00 | 1.00 | 14% | 9% | −0.07 [−0.08, −0.05] | 8 / 1 / 91 | −0.096 [−0.101, −0.093] |
+| C13a | 137,986 | 4.83 | 1.75 | 43% | 55% | +0.20 [+0.20, +0.21] | 40 / 22 / 38 | −0.015 [−0.015, −0.015]† |
+| C13b | 38,988 | 2.00 | 1.00 | 50% | 78% | +0.56 [+0.55, +0.56] | 73 / 10 / 17 | −0.010 [−0.010, −0.009]† |
+| C13c | 209,369 | 2.00 | 1.00 | 50% | 50% | +0.00 [−0.00, +0.00] | 41 / 18 / 41 | −0.020 [−0.020, −0.020] |
+| C13d | 212,417 | 4.40 | 1.54 | 39% | 40% | +0.02 [+0.01, +0.02] | 32 / 19 / 50 | −0.040 [−0.040, −0.039] |
+| C14 | 35,928 | 4.78 | 1.49 | 33% | 53% | +0.29 [+0.29, +0.30] | 48 / 10 / 42 | −0.027 [−0.027, −0.026] |
+| C15 | 230,611 | 4.60 | 1.59 | 37% | 61% | +0.37 [+0.37, +0.37] | 53 / 17 / 30 | −0.019 [−0.019, −0.019] |
+| C21 | 970 | 6.04 | 1.00 | 18% | 12% | −0.07 [−0.09, −0.04] | 11 / 3 / 86 | −0.055 [−0.058, −0.052] |
+| C22 | 2,263 | 4.51 | 2.26 | 55% | 81% | +0.58 [+0.56, +0.61] | 52 / 43 / 5 | −0.002 [−0.003, −0.002]† |
+| C23 | 171,155 | 4.35 | 1.50 | 37% | 72% | +0.55 [+0.55, +0.55] | 66 / 10 / 23 | −0.015 [−0.015, −0.015]† |
+
+- **On the 17 identical rules the prices are the gates'.** The same metrics on the
+  face-off's own rows reproduce its per-gate table; on the whole pour, with dead rows
+  decided only in the model counted as indifferent, C15 falls from +0.46 to +0.37 and C2
+  from +0.19 to +0.11 (both as gates too), and those two verdicts are corrected above.
+- **C22, as the book's rule, sides with the book more than its gate:** +0.58 and 5%
+  against, price −0.002, against the gate's +0.51, 17% against, −0.009. The gate's extra
+  positions split by seat: from the left seat Zeb agrees (+0.70, 9% against, −0.003); from
+  the last seat with no count on the trick it does not (+0.32, 26% against, −0.016),
+  which is the condition the book adds.
+- **C14 with every non-trump double allowed** reads +0.29, price −0.027, against the
+  gate's +0.25, −0.030: Zeb's preference among doubles is not the gate's "most unplayed".
+- **C15 with the one-point exception** reads as the gate does (+0.37 both; price −0.019
+  against −0.020).
+- The five rules priced against (C3, C7, C10, C12B, C21) and the three with no relation
+  (C9, C13c, C13d) are unchanged; a Silas encoding that is its gate cannot move them.
+
 ## Data
 
 The measurements (scripts, pour queries, forecasts, per-deal arena output, the face-off's
@@ -329,7 +431,9 @@ per-position picks, the reports) are public in `jasonyandell/texas-42-zeb-resear
 under `book/wave1/`, `book/wave2/` and `book/faceoff/` ([publish-data-to-huggingface](../playbooks/publish-data-to-huggingface.md)).
 The baselines, chance-corrected agreement, dead-row split and like-for-like comparison are
 recomputed from `scratch/faceoff/out/` by `scratch/book-audit/stats.py`, `kappa.py`,
-`dead_decided.py` and `live_at30.py`. The book's text, page images and transcribed hands
+`dead_decided.py` and `live_at30.py`. The Silas re-price is recomputed from the pour by
+`scratch/silas-reprice/walk.py` and `analyze.py` (`reconcile.py` checks it against the
+face-off's table); its per-position output is not published. The book's text, page images and transcribed hands
 are not published.
 
 ## Links

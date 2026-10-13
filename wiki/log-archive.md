@@ -3938,3 +3938,26 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 
 [[scenario-player]] § The net is scored by regret. Source: [[research-night-2026-10-12]] critic §3.2, §4e.
 
+## [2026-10-12 | scenario/core | the convention overlay (Config.convention, arena c=name:S|R|SR): sender + rule-only reader for C1, C2 (two readings), C3; default off; sender prices on 250k deals]
+
+[[scenario-player]] § A convention overlay. Zeb unchanged; price table `scratch/book/wave1/overlay-price.md`.
+
+## [2026-10-12 | scenario/core | the posterior sampled in the core (Config.draw, arena d=posterior): +0.026 ± 0.003 marks/hand vs a table of nets, 22,000 paired deals (#111)]
+
+[[scenario-player]] § The posterior, sampled in the core. Default uniform; Zeb unchanged.
+
+## [2026-10-12 | scratch/endgames-o2 | O2 beats the O1 fixed point on real three-trick endgames: +0.027 [+0.022, +0.033] margin vs the Walt partnership map, half of it a convention on reached sets (#113)]
+
+[[endgames-o2-vs-o1-2026-10-12]]; report [[endgames-o2-vs-o1-2026-10-12-report]]. The first nonzero O2 − O1 number; the partnership operator is the next referent.
+
+## [2026-10-12 | scenario/core | a stochastic field F_σ (field_eps, arena E=), default off, and the exact field likelihood: real deal at the 71st percentile, median ESS 8–16 of 512 mid-hand (#108)]
+
+[[scenario-player]] § A stochastic field. Prerequisite for #111.
+
+## [2026-10-12 | scenario/core | the sample seed no longer mixes the rung: the sampled ladder iterates one operator, as the Lean theorem assumes (#112)]
+
+[[scenario-player]] § The seed no longer mixes the rung. Bytes moved, not distribution. Witness: [[research-night-2026-10-12-sources]] (11-lean).
+
+## [2026-10-12 | scenario/core | the floor guards only a sample: an enumerated fiber is never floored, the only behavior in both engines; Zeb 0.2.0 (#110)]
+
+[[scenario-player]] § The floor guards only a sample. Null in marks; correctness. Report: [[research-night-2026-10-12-sources]] (14-floor).

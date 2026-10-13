@@ -24,7 +24,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## W42 book validation
 
-- [[experiments/book-study-2026-10-12|book-study-2026-10-12]] — Winning 42 against Zeb: 21 rule gates priced on the 250k pour — Zeb's pick is the book's move at 52% vs a 37% random floor (E[Q] 56%); sides with 9 rules, no relation on 3, prices against 5; bid book 25/30 vs 23/30 for always-bid; three odds corrected by exact count; conventions all null or negative; no reason extracted (complete)
+- [[experiments/book-study-2026-10-12|book-study-2026-10-12]] — Winning 42 against Zeb: 21 rule gates priced on the 250k pour — Zeb's pick is the book's move at 52% vs a 37% random floor (E[Q] 56%); sides with 8 rules, no relation on 3, prices against 5; bid book 25/30 vs 23/30 for always-bid; three odds corrected by exact count; conventions all null or negative; no reason extracted (complete)
 - [[experiments/w42-84-claim-validation|w42-84-claim-validation]] — Chapter 7/8 84-claim validation: exact double-six enumeration + hypergeometric proxies; complete for its static-math scope, superseded on the dynamic side by [[experiments/w42-phase4-final-claim-audit|w42-phase4-final-claim-audit]] (complete)
 - [[experiments/w42-belief-attention-concept-buckets|w42-belief-attention-concept-buckets]] — w42 Belief and Attention Concept Buckets (complete)
 - [[experiments/w42-bidder-sequencing-claim-validation|w42-bidder-sequencing-claim-validation]] — w42 Bidder Sequencing Claim Validation (complete)

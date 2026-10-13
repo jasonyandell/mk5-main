@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-10-12, 200 archived entries)
+## Digest (2026-04-09 → 2026-10-12, 206 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -24,9 +24,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Walt, the scenario player, rebuilt** (2026-10-09 → 10-10, 6 archived entries) — [[scenario-player]] rebuilt from the mathematics, the compiled core, Walt beats E[Q] at play (+0.74), belief night 1 nulls, the atlas (splat + mold), the forecast's 20-point lie and the cell floor named. Hub: [[scenario-player]].
 - **Zeb: the floor, the pour, the field net** (2026-10-10 → 10-11, 10 archived entries) — the cell floor and its dividend, the pour published ([[scenario-player]]), the field net at rung −1 and its two targets, the 50,000- and 250,000-deal pours, the live bidder graded against Plunge's bid book.
 - **Zeb 0.1.0, the viz, research night, the first repair** (2026-10-11 → 10-12, 6 archived entries) — the live bidder graded against Plunge's frozen bid book, `@jasonyandell/zeb` 0.1.0 in WebAssembly, the splat visualizer and its region query, research night (T1/T1′/T2, Lean, the counterexample lab; [[research-night-2026-10-12]]), the field net graded by regret not agreement (#109). Hub: [[scenario-player]].
+- **Zeb's foundation repairs and the convention overlay** (2026-10-12, 6 archived entries) — the floor only on sampled fibers (Zeb 0.2.0, #110), the rung-free sample seed (#112), the stochastic field (#108), O2 over the O1 fixed point on endgames ([[endgames-o2-vs-o1-2026-10-12]], #113), the posterior sampler (#111), the convention overlay. Hub: [[scenario-player]].
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-13 | scratch/silas-reprice | the book's rules as Silas policies, priced on the whole 250k pour: 17 of 21 fire exactly where their gates do; C22 as the book's rule sides more (+0.58, 5% against); C15 and C2 re-measured weak]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as Silas policies (fidelity and price tables; verdict lines for C2, C15, C22 corrected in place); [[w42]], `index-experiments.md` (sides with 8 rules).
 
 ## [2026-10-13 | 0c5d7f66 | Silas slice 3: the record in the frame, `none`, ten record predicates; 20 of 21 book rules encode their gate, at every seating]
 
@@ -68,28 +73,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-12 | scenario/hf | generated data goes to Hugging Face: the 250k Zeb pour whole, the day's research artifacts, the playbook]
 
 [[publish-data-to-huggingface]] (new); [[scenario-player]] links texas-42-zeb-pour-250k and texas-42-zeb-research-2026-10; CLAUDE.md hard rule. `scenario.hf` ships field nets, titles, notes; splits may differ in the net.
-
-## [2026-10-12 | scenario/core | the convention overlay (Config.convention, arena c=name:S|R|SR): sender + rule-only reader for C1, C2 (two readings), C3; default off; sender prices on 250k deals]
-
-[[scenario-player]] § A convention overlay. Zeb unchanged; price table `scratch/book/wave1/overlay-price.md`.
-
-## [2026-10-12 | scenario/core | the posterior sampled in the core (Config.draw, arena d=posterior): +0.026 ± 0.003 marks/hand vs a table of nets, 22,000 paired deals (#111)]
-
-[[scenario-player]] § The posterior, sampled in the core. Default uniform; Zeb unchanged.
-
-## [2026-10-12 | scratch/endgames-o2 | O2 beats the O1 fixed point on real three-trick endgames: +0.027 [+0.022, +0.033] margin vs the Walt partnership map, half of it a convention on reached sets (#113)]
-
-[[endgames-o2-vs-o1-2026-10-12]]; report [[endgames-o2-vs-o1-2026-10-12-report]]. The first nonzero O2 − O1 number; the partnership operator is the next referent.
-
-## [2026-10-12 | scenario/core | a stochastic field F_σ (field_eps, arena E=), default off, and the exact field likelihood: real deal at the 71st percentile, median ESS 8–16 of 512 mid-hand (#108)]
-
-[[scenario-player]] § A stochastic field. Prerequisite for #111.
-
-## [2026-10-12 | scenario/core | the sample seed no longer mixes the rung: the sampled ladder iterates one operator, as the Lean theorem assumes (#112)]
-
-[[scenario-player]] § The seed no longer mixes the rung. Bytes moved, not distribution. Witness: [[research-night-2026-10-12-sources]] (11-lean).
-
-## [2026-10-12 | scenario/core | the floor guards only a sample: an enumerated fiber is never floored, the only behavior in both engines; Zeb 0.2.0 (#110)]
-
-[[scenario-player]] § The floor guards only a sample. Null in marks; correctness. Report: [[research-night-2026-10-12-sources]] (14-floor).
-
