@@ -29,6 +29,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | scratch/book-reprice | the book's 14 rules as the book means them priced on the whole 250k pour: Zeb sides with 3, prices against 2 (dead double, trump set's feed: each fired where a condition the book states fails); only 3 of 21 gates were the book's rule]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, worked reasons; summary verdicts corrected in place); [[w42]], [[silas]] § Where it sits, `index-experiments.md`, `CLAUDE.md`.
+
 ## [2026-10-13 | silas | the book's rules as the book means them: fourteen policies in `examples/book/`, the 21 gates moved to `examples/book/gates/`; every catalogued mis-encoding tested on the book's own positions, gate failing and rule passing]
 
 [[silas]] § The book, rule by rule (rewritten: the rule table); `silas/GAPS.md` (gap 3 down to the donation lead, gap 5's "what sets" closed for one called tile, three self-contradictions recorded).

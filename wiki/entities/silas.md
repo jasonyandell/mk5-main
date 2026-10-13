@@ -166,8 +166,11 @@ trick six and is graded to there.
   on an `Estimate` from `SilasBelief.condition_likelihood` (a binding of Silas's own
   conditioning, added 2026-10-13).
 - **Next.** The book's rules as the book means them are written (§ The book, rule by
-  rule); pricing them under Zeb, and policy likelihood (#128) and another seat's
-  knowledge (#132) for the plays they still cannot follow, are next ([[w42]]).
+  rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
+  rules as the book means them: Zeb sides with 3 of 14, prices against 2, the dead double's
+  throw and the trump set's feed, each fired where a condition the book states fails).
+  Those two conditions, policy likelihood (#128) and another seat's knowledge (#132) are
+  next ([[w42]]).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
   kernel-checked `Texas42` library; Rust is the first implementation it will be held to.
   What the book asks that Silas cannot yet express (cross-game policy comparison, the

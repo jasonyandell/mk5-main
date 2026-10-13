@@ -38,9 +38,11 @@ Two halves, one game:
   where it differs; that day's foundation repairs (floor only on sampled fibers, rung-independent
   seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]).
   The book (Roberson's *Winning 42*, [[w42]]) was studied with those tools the same day
-  ([[book-study-2026-10-12]]): Zeb's pick is the book's move at 52% of gated positions against a
-  37% random floor (as the gates were translated, it sides with 8 of 21 rules and prices against 5; at least 10 of the 21 gates misread the book on its own deals), the conventions measured
-  null, and no reason was extracted — Zeb prices a move, it cannot yet explain one (#124).
+  ([[book-study-2026-10-12]]): on its 14 rules as the book means them, Zeb's pick is the book's
+  move at 53% of the positions each governs against a 40% random floor (it sides with 3 and
+  prices against 2, each of those fired where a condition the book states fails; only 3 of the
+  21 gates first priced were the book's rule over the pour), the conventions measured null, and
+  no reason from the book was adopted — the reason report (#124) explains Zeb's tile, not the book's.
   Every agreement number ships with its chance baseline; a tie is not agreement.
 - **Silas** (`silas/`) — a typed relational language over the worlds a seat cannot tell apart:
   queries, exact beliefs, policies that read only the viewer's information ([[silas]]). The
