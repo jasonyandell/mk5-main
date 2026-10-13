@@ -36,6 +36,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 2442dcb0 | the private source adjudications carried into the book fixture: Hands 24, 26, 31, 32, 33, 34 read as adjudicated; EX-11's 53% is 43/81 on the book's model; Hand 28's 1-1 premise, not the sum, fails]
+
+**Touched pages:** [[silas]] (`silas/examples/book/hands.json`, `leads.md`, `setter-leads.silas`; `tests/book_fixture.rs`, `tests/book_leads.rs` comments). No pinned value changed; the book tests pass.
+
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
 
 **Touched pages:** [[silas]] § The match and field-free comparison. `silas/README.md` § The auction; `silas/docs/cross-game.md` § 4, Slice 2 as built; `silas/GAPS.md` gaps 2 and 4 narrowed (#134 now needs only #128).
