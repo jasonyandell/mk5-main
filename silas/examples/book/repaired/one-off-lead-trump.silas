@@ -1,0 +1,86 @@
+; Repaired: with one off and four trumps or more, the off may go first.
+; Winning 42 p. 24 (S-0040-c); its hands of that shape lead trump: Hands 12, 14
+; and 32 (S-0043-a, S-0045-a, S-0142-d); the C10 gate, first-lead's
+; one-off-may-go-first, which this rule replaces in first-lead's order.
+; The book's permission reads only the bidder's own hand: one off, four trumps
+; or more, a bid of points. Its stated cost is a setter trumping the off.
+; The condition it omits, from the reason report (#124, 3 of 9 positions priced
+; outside the noise bar): the partner is void in the off's suit and holds a
+; trump, so that he can ruff it (one-off-partner-ruffs.silas). In Zeb's worlds
+; the off wins there and the trump lead elsewhere.
+; Counterexample deals, deuces, bid 30, the bidder holding 6-2 5-2 5-1 4-2 2-1
+; 2-0 0-0 (five trumps, the 5-1 off; from the report on s350001 deal 31347;
+; tests/book_repaired.rs):
+; - The off fails, a trump makes. Left setter 6-6 6-3 5-5 5-4 5-3 3-2 3-0;
+;   partner 6-5 6-4 4-1 4-0 3-1 2-2 1-1; right setter 6-1 6-0 5-0 4-4 4-3 3-3
+;   1-0. On the 5-1 the left setter's 5-5 wins, the partner must follow with
+;   the 6-5, and the right setter adds the 5-0: 16, set on the first trick. On
+;   the 5-2 the left setter's only trump, the 3-2, falls to the partner's 2-2
+;   (double-dummy, all 42). The condition is false: the partner holds a five.
+; - A trump fails, the off makes. Left setter 6-5 6-1 5-5 5-4 5-0 4-4 4-3;
+;   partner 6-6 4-0 3-2 3-1 3-0 1-1 1-0; right setter 6-4 6-3 6-0 5-3 4-1 3-3
+;   2-2. On the 5-2 the partner's only trump, the 3-2, falls under the right
+;   setter's 2-2 with the left setter's 5-0: 11; the right setter leads the
+;   5-3, the bidder must follow with the 5-1, and the 5-5 takes 11 more: 22,
+;   set. On the 5-1 the partner ruffs with the 3-2 over the 5-0: 11 to the
+;   bidder's side (double-dummy, made). The condition is true.
+; Double-dummy over the pour's 7,001 deals the permission covers: the off makes
+; where every trump lead fails at 252, the condition true at 98; a trump lead
+; makes where the off fails at 853, the condition true at 1.
+; Knowledge: the condition is hidden, and before the first lead the bidder sees
+; only his hand. With k tiles of the off's suit and m trumps outside it, the
+; partner's seven of the 21 unseen tiles miss the k and meet the m with
+; probability (C(21-k,7) - C(21-k-m,7)) / C(21,7), exact (uniform_resolving
+; on those tiles agrees). The off can lose, so k >= 1; four trumps leave
+; m <= 3; the largest value is 7259/14535 (k = 1, m = 3), under 1/2. And each
+; setter holds any placement with the partner's probability, so a setter's
+; ruff is never less likely than his. Read as "lead the off when the partner's
+; ruff is more likely than not" (the threshold 1/2, declared before the pour
+; was priced), the permission never applies at the first lead; the bidder
+; leads trump, as the book's three hands of the shape do.
+; Status: repaired policy (a probability threshold over the bidder's own
+; belief, exact). It fires where the book's permission fires and allows the
+; sure trumps, or any trump when he holds no sure trump; never the off.
+; Re-priced on the pour's 7,001 positions (Zeb k0,n512, make, bid 30):
+; chance-corrected +0.16 -> +0.48, for/indifferent/against 41/1/58 -> 72/3/25,
+; price -0.055 -> -0.011. In the pour the partner's ruff is at most 2821/12920,
+; and Zeb leans away from the off as it rises (the setters' ruff rises with it).
+
+(include book)
+
+(policy one-off-lead-trump
+  (fallback lowest-legal)
+  (rule lead-the-top-trumps
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (not (every-trick))
+          (four-trumps-or-more)
+          (some (roles (domino o))
+            (off o)
+            (none (roles (domino other)) (off other) (not (tile other o))))
+          (own-legal lead)
+          (sure-trump lead)))))
+  (rule lead-a-trump
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (not (every-trick))
+          (four-trumps-or-more)
+          (some (roles (domino o))
+            (off o)
+            (none (roles (domino other)) (off other) (not (tile other o))))
+          (own-legal lead)
+          (trump-tile lead))))))

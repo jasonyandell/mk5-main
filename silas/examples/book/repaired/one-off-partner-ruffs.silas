@@ -1,0 +1,23 @@
+; The condition of the repaired one-off-may-go-first (one-off-lead-trump.silas,
+; whose header gives the book's ids, the deals and the status): at the
+; bidder's first lead, with one off and four trumps or more and a bid of
+; points, the partner is void in the suit the off leads and holds a trump.
+; Hidden: a seat reads it only as a probability.
+
+(include book)
+
+(query (roles (chair b) (chair p) (domino o))
+  (out)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (trick-number 1)
+    (next-actor b)
+    (not (every-trick))
+    (four-trumps-or-more)
+    (own-legal o)
+    (off o)
+    (none (roles (domino other)) (off other) (not (tile other o)))
+    (bidders-partner p)
+    (some (roles (context q)) (leads-context o q) (void p q))
+    (some (roles (domino t)) (in t q*) (holds p t))))
