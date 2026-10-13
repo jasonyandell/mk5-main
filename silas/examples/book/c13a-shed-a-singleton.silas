@@ -1,0 +1,34 @@
+; C13a  Winning 42 p. 44 (W42-p044-c) and p. 48 (W42-p048-d); played in
+; Hands 32 and 33 (pp. 109, 111)
+; Rule, in our words: a setter with no trump, when the bidder leads trump,
+; throws a tile that is his only one of some suit (not a count tile), so that
+; he is void there when the bidder's off comes.
+; Python gate (pour_setter gate_c13a): a setter, the bidder led trump, the
+; mover holds no trump; the book's tiles are the non-count tiles that are the
+; mover's only tile of one of their pip suits.
+; How this encoding differs: it cannot say "his only one of that suit" and
+; allows every non-count tile. It is the gate's superset.
+; Out of trump is read from the hand, as in C1b.
+; GAP declarer: the bidder is written in as S0.
+; GAP none: "the only tile I hold of suit q" is "no other tile of mine follows
+; q", a negated existential.
+(policy c13a-shed-a-singleton
+  (initial play)
+  (fallback lowest-legal)
+  (rule throw-a-lone-tile (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair me) (domino lone) (context suit))
+        (out lone)
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader S0)
+          (led-context q*)
+          (own-legal lone)
+          (not (in lone q*))
+          (count lone 0)
+          (in lone suit)
+          (not (context suit q*))
+          ; GAP none: (none (own-legal other) (in other suit)) for another tile other
+          )))))

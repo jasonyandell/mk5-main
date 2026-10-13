@@ -1,0 +1,33 @@
+; C1a  Winning 42 p. 25 (catalog W42-p025-b; played in Hands 28 and 32, pp. 98, 109)
+; Rule, in our words: when the partner can no longer follow trump and a trump
+; is still out, the bidder leads the highest trump not yet played. The trick is
+; then safe, and the partner, knowing it, can give count on it.
+; Python gate (pour_bidder gate_c1a): bidder on lead, partner shown void in
+; trump, a trump outside the bidder's hand; the book's tile is the top unplayed
+; trump, when the bidder holds it.
+; How this encoding differs: it fires more widely than the gate, because it
+; cannot see the partner's void. That wider rule is still the book's play once
+; (Hand 28, trick 2); the gate's "a trump still out" excludes a book play once
+; (Hand 33, trick 5). See tests/book.rs.
+; GAP declarer: no predicate names the bidder; the bidder is written in as S0
+; and the partner as S2, the pour's seats.
+; GAP shown-void: the partner's public void in trump (a fact of the viewer's
+; kernel) has no viewer predicate; `void` reads a world, and a policy may not.
+(policy c01a-top-trump-for-the-donation
+  (initial play)
+  (fallback lowest-legal)
+  (rule lead-the-top-trump (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino top) (domino out))
+        (out top)
+        (pattern
+          (viewer S0)
+          (leader S0)
+          (next-actor S0)
+          ; GAP shown-void: (shown-void S2 q*)
+          (own-legal top)
+          (boss top q*)
+          (live out)
+          (in out q*)
+          (not (own-legal out)))))))

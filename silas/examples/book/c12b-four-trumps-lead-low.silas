@@ -1,0 +1,153 @@
+; C12B  Winning 42 p. 183 (W42-p183-c); the three-trump form is p. 32
+; (W42-p032-a) and p. 183 (W42-p183-g), played in Hands 16 and 29
+; (pp. 31, 101)
+; Rule, in our words: on the first trick, a bidder with exactly four trumps,
+; holding the double but neither the second- nor the third-highest, leads his
+; lowest trump first and budgets the loss of that trick.
+; Python gate (pour_bidder gate_c12, variant B): the same, four trumps only.
+; How this encoding differs: none from the gate. The book's worked examples of
+; the rule hold three trumps (Hand 29, p. 101), where neither fires.
+; With exactly four trumps and the second and third missing, the bidder holds
+; three of the four lowest; the lowest held is the seventh if held, else the
+; sixth. Ranks are written out per pip declaration, as in C12A, and exactly
+; four trumps is four trump roles and three non-trump roles.
+; The book allows the double first when a trump count tile is at stake
+; (W42-p183-d); neither the gate nor this file has that exception.
+; GAP declarer: the bidder is written in as S0.
+; GAP none: with a negated existential, "the lowest trump I hold" and "the
+; second-highest trump" are generic patterns instead of fourteen literal ones.
+(policy c12b-four-trumps-lead-low
+  (initial play)
+  (fallback lowest-legal)
+  (rule lead-the-lowest-trump (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino a) (domino b) (domino c) (domino d) (domino x) (domino y) (domino z))
+        (out a)
+        (pattern ; pip 0 trump: 0-0 6-0 5-0 4-0 3-0 2-0 1-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-0 q*) (in 5-0 q*)
+          (own-legal 0-0) (not (own-legal 6-0)) (not (own-legal 5-0))
+          (own-legal 1-0) (tile a 1-0))
+        (pattern ; pip 0 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-0 q*) (in 5-0 q*)
+          (own-legal 0-0) (not (own-legal 6-0)) (not (own-legal 5-0))
+          (not (own-legal 1-0)) (tile a 2-0))
+        (pattern ; pip 1 trump: 1-1 6-1 5-1 4-1 3-1 2-1 1-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-1 q*) (in 5-1 q*)
+          (own-legal 1-1) (not (own-legal 6-1)) (not (own-legal 5-1))
+          (own-legal 1-0) (tile a 1-0))
+        (pattern ; pip 1 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-1 q*) (in 5-1 q*)
+          (own-legal 1-1) (not (own-legal 6-1)) (not (own-legal 5-1))
+          (not (own-legal 1-0)) (tile a 2-1))
+        (pattern ; pip 2 trump: 2-2 6-2 5-2 4-2 3-2 2-1 2-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-2 q*) (in 5-2 q*)
+          (own-legal 2-2) (not (own-legal 6-2)) (not (own-legal 5-2))
+          (own-legal 2-0) (tile a 2-0))
+        (pattern ; pip 2 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-2 q*) (in 5-2 q*)
+          (own-legal 2-2) (not (own-legal 6-2)) (not (own-legal 5-2))
+          (not (own-legal 2-0)) (tile a 2-1))
+        (pattern ; pip 3 trump: 3-3 6-3 5-3 4-3 3-2 3-1 3-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-3 q*) (in 5-3 q*)
+          (own-legal 3-3) (not (own-legal 6-3)) (not (own-legal 5-3))
+          (own-legal 3-0) (tile a 3-0))
+        (pattern ; pip 3 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-3 q*) (in 5-3 q*)
+          (own-legal 3-3) (not (own-legal 6-3)) (not (own-legal 5-3))
+          (not (own-legal 3-0)) (tile a 3-1))
+        (pattern ; pip 4 trump: 4-4 6-4 5-4 4-3 4-2 4-1 4-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-4 q*) (in 5-4 q*)
+          (own-legal 4-4) (not (own-legal 6-4)) (not (own-legal 5-4))
+          (own-legal 4-0) (tile a 4-0))
+        (pattern ; pip 4 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-4 q*) (in 5-4 q*)
+          (own-legal 4-4) (not (own-legal 6-4)) (not (own-legal 5-4))
+          (not (own-legal 4-0)) (tile a 4-1))
+        (pattern ; pip 5 trump: 5-5 6-5 5-4 5-3 5-2 5-1 5-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-5 q*) (in 5-4 q*)
+          (own-legal 5-5) (not (own-legal 6-5)) (not (own-legal 5-4))
+          (own-legal 5-0) (tile a 5-0))
+        (pattern ; pip 5 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-5 q*) (in 5-4 q*)
+          (own-legal 5-5) (not (own-legal 6-5)) (not (own-legal 5-4))
+          (not (own-legal 5-0)) (tile a 5-1))
+        (pattern ; pip 6 trump: 6-6 6-5 6-4 6-3 6-2 6-1 6-0; the seventh held is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-5 q*) (in 6-4 q*)
+          (own-legal 6-6) (not (own-legal 6-5)) (not (own-legal 6-4))
+          (own-legal 6-0) (tile a 6-0))
+        (pattern ; pip 6 trump, the seventh not held: the sixth is the lowest
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-5 q*) (in 6-4 q*)
+          (own-legal 6-6) (not (own-legal 6-5)) (not (own-legal 6-4))
+          (not (own-legal 6-0)) (tile a 6-1))
+))))

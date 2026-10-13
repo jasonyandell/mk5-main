@@ -1,0 +1,43 @@
+; C10  Winning 42 p. 24 (W42-p024-b)
+; Rule, as the gate reads it: on the first trick, a bidder with exactly one off
+; and four or more trumps leads the off.
+; What the book says, in our words: leading the off before trumps is
+; reasonable on trick one only in that shape, and dangerous otherwise. That is
+; a permission, not an instruction: in Hand 14 (p. 28, W42-p028-b) the bidder
+; holds that shape and leads trump. The gate reads it as an instruction; so
+; does this file, to encode the gate; tests/book.rs records the difference.
+; Python gate (pour_bidder gate_c10, "C10-gate: off lead"): bidder, trick 1,
+; one off and four or more trumps; the book's tiles are the offs. An off is a
+; non-trump tile some tile outside the hand outranks in the suit it leads.
+; How this encoding differs: it cannot say "exactly one off" and fires with
+; two or more offs too. Trick one is "the bidder holds seven tiles".
+; GAP declarer: the bidder is written in as S0.
+; GAP none: "exactly one off" needs "no second off", a negated existential.
+(policy c10-off-on-trick-one
+  (initial play)
+  (fallback lowest-legal)
+  (rule lead-the-off (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles
+          (domino off) (domino over) (context suit)
+          (domino t1) (domino t2) (domino t3) (domino t4))
+        (out off)
+        (pattern
+          (viewer S0)
+          (leader S0)
+          (next-actor S0)
+          (quota S0 7)
+          (own-legal t1) (in t1 q*)
+          (own-legal t2) (in t2 q*)
+          (own-legal t3) (in t3 q*)
+          (own-legal t4) (in t4 q*)
+          (own-legal off)
+          (not (in off q*))
+          (leads-context off suit)
+          (live over)
+          (not (own-legal over))
+          (in over suit)
+          (beats over off suit)
+          ; GAP none: and no second such tile in the hand
+          )))))

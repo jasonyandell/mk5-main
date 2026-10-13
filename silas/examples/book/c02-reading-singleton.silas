@@ -1,0 +1,23 @@
+; C2, the book's reading  Winning 42 p. 25 (W42-p025-a)
+; Reading, in our words: when the partner follows the bidder's trump lead with
+; the highest trump the bidder does not hold, the partner has no trump left.
+; Written from the bidder's chair, inside the trick, after the partner's play.
+; The trigger is the record; the reading is the event "the partner is void in
+; trump". Over the bidder's uniform worlds it is a probability, not a fact: it
+; holds only of a partner who follows the convention (GAPS.md, policy
+; likelihood).
+; GAP declarer: the bidder is written in as S0, the partner as S2.
+; GAP none: "the highest trump the bidder does not hold" is a negated
+; existential over the live tiles; the trigger here is "the partner followed
+; with a trump", and the test supplies a position where it was the top one.
+(query
+  (roles (domino led) (domino his))
+  (out)
+  (pattern
+    (viewer S0)
+    (leader S0)
+    (trick-play S0 led)
+    (in led q*)
+    (trick-play S2 his)
+    (in his q*)
+    (void S2 q*)))

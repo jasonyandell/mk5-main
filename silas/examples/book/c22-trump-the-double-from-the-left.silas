@@ -1,0 +1,35 @@
+; C22  Winning 42 pp. 50-51 (W42-p051-a, W42-p051-b)
+; Rule, in our words: in a trump set, the opponent holding trumps and sitting
+; just after the bidder, void in the suit of the bidder's double, usually
+; trumps it, since count may still fall on the trick; the same opponent in the
+; last seat trumps only if count is already on it.
+; Python gate (pour_setter gate_c22): a setter at either seat, the bidder led a
+; non-trump double, the mover is void in its suit and holds two or more trumps;
+; the book's tiles are his trumps.
+; How this encoding differs: it fires only from the seat after the bidder
+; (S1), as the book says; the gate also fires from the last seat, where the
+; book's rule depends on the count already played. "Holds two or more trumps"
+; is the gate's reading of the book's trump-rich opponent; the book's trigger
+; (only one opponent followed the first trump lead) is not written.
+; Void in the led suit is read from the hand: a legal trump on a non-trump lead.
+; GAP declarer: the bidder is written in as S0, the left seat as S1.
+; GAP history, GAP shown-void: the trump-set trigger, as in C14.
+(policy c22-trump-the-double-from-the-left
+  (initial play)
+  (fallback lowest-legal)
+  (rule trump-in (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino doubled) (domino ruff) (domino other) (context led))
+        (out ruff)
+        (pattern
+          (viewer S1)
+          (leader S0)
+          (trick-play S0 doubled)
+          (double doubled)
+          (not (in doubled q*))
+          (led-context led)
+          (own-legal ruff)
+          (in ruff q*)
+          (own-legal other)
+          (in other q*))))))

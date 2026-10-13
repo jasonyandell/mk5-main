@@ -1,0 +1,25 @@
+; C2  The table's convention, not the book's (Jason, 2026-10-12). The book's
+; nearest statement is Winning 42 p. 25 (W42-p025-a), and it runs the other way.
+; Rule, in our words: the bidder's partner, following the bidder's trump lead
+; and holding the highest trump still unplayed, plays it.
+; Python gate (pour_bidder gate_c2): the same; no difference.
+; The book reads that play as "it was the partner's only trump"; the table's
+; sender plays it with other trumps too. The book's own Hand 30 (p. 103) has
+; the partner play the top trump while holding two more: the book's play is the
+; sender's, and its reading is false there. The reading is a query:
+; c02-reading-singleton.silas.
+; GAP declarer: the bidder is written in as S0, the partner as S2.
+(policy c02-high-trump-handoff
+  (initial play)
+  (fallback lowest-legal)
+  (rule play-the-top-trump (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino top))
+        (out top)
+        (pattern
+          (viewer S2)
+          (leader S0)
+          (led-context q*)
+          (own-legal top)
+          (boss top q*))))))

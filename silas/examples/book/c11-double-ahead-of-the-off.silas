@@ -1,0 +1,37 @@
+; C11  Winning 42 pp. 25-26 (W42-p025-f, W42-p026-a), p. 11 (W42-p011-b),
+; p. 24 (W42-p024-a, the boundary); played in Hands 28 and 30 (pp. 99, 105)
+; Rule, in our words: with trump drawn, a bidder holding an off and the double
+; of the off's suit leads the double first; it may pull the count the off
+; would lose. A double of another suit does not count.
+; Python gate (pour_bidder gate_c11): bidder on lead, no trump outside his
+; hand, a non-trump double and an off of the same suit; the book's tiles are
+; such doubles.
+; How this encoding differs: it cannot say "no trump outside the hand" and
+; fires with trump still out. In Hand 30 (p. 105) the book plays this rule with
+; the last trump in the partner's hand, where the gate does not fire.
+; GAP declarer: the bidder is written in as S0.
+; GAP none: "trumps drawn" is "no live trump outside the hand", a negated
+; existential.
+(policy c11-double-ahead-of-the-off
+  (initial play)
+  (fallback lowest-legal)
+  (rule lead-the-double (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino doubled) (domino off) (domino over) (context suit))
+        (out doubled)
+        (pattern
+          (viewer S0)
+          (leader S0)
+          (next-actor S0)
+          ; GAP none: (none (live t) (in t q*) (not (own-legal t)))
+          (own-legal doubled)
+          (double doubled)
+          (not (in doubled q*))
+          (leads-context doubled suit)
+          (own-legal off)
+          (in off suit)
+          (live over)
+          (not (own-legal over))
+          (in over suit)
+          (beats over off suit))))))

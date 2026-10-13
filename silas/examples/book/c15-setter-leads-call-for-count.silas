@@ -1,0 +1,81 @@
+; C15  Winning 42 pp. 46-48 (W42-p046-f, W42-p047-b, W42-p047-c, W42-p048-c);
+; played in Hands 16, 28, 29 and 31 (pp. 31, 98, 101, 108)
+; Rule, in our words: a setter on lead leads a tile that calls for count: a
+; double whose suit still has count out first; otherwise a tile that calls for
+; count, but not a low tile that calls for a five (it wins only if partner
+; holds the top tile, and then partner cannot add count). A tile that calls for
+; no count is led only when one more point sets the bid.
+; Python gate (pour_setter gate_c15): tier A, the count-calling doubles; else
+; tier B, count-calling tiles except a non-top tile calling for a five. The
+; one-point exception is not in the gate.
+; How this encoding differs: tier A is exact. Tier B is written only where the
+; led tile is the boss of its suit (trumps counted), a strict subset of the
+; gate's B. The book twice leads past tier A to a tile that calls the count
+; that sets (Hand 28 T4, Hand 31 T5); the gate, and this file, lead the double.
+; "Calls for count": a live count tile outside the hand follows the suit the
+; tile leads.
+; GAP declarer: the bidder is written in as S0 (only to name the setters).
+; GAP none: tier B's "not a non-top tile calling for a five" is negated
+; existentials (no higher tile of the suit is out; no five of the suit is out).
+; GAP banked: "one more point sets" needs the banked points and the bid.
+(policy c15-setter-leads-call-for-count
+  (initial play)
+  (fallback lowest-legal)
+  (rule a-double-that-calls-for-count (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair me) (domino lead) (domino called) (context suit))
+        (out lead)
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader me)
+          (next-actor me)
+          (own-legal lead)
+          (double lead)
+          (leads-context lead suit)
+          (live called)
+          (not (own-legal called))
+          (in called suit)
+          (count called 5))
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader me)
+          (next-actor me)
+          (own-legal lead)
+          (double lead)
+          (leads-context lead suit)
+          (live called)
+          (not (own-legal called))
+          (in called suit)
+          (count called 10)))))
+  (rule a-boss-that-calls-for-count (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair me) (domino lead) (domino called) (context suit))
+        (out lead)
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader me)
+          (next-actor me)
+          (own-legal lead)
+          (leads-context lead suit)
+          (boss lead suit)
+          (live called)
+          (not (own-legal called))
+          (in called suit)
+          (count called 5))
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader me)
+          (next-actor me)
+          (own-legal lead)
+          (leads-context lead suit)
+          (boss lead suit)
+          (live called)
+          (not (own-legal called))
+          (in called suit)
+          (count called 10))))))

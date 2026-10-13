@@ -1,0 +1,50 @@
+; C13b  Winning 42 p. 49 (W42-p049-a, W42-p049-b)
+; Rule, in our words: a setter holding exactly two tiles of a suit, one of them
+; count, follows the bidder's double of that suit with the other one, and keeps
+; the count tile guarded for the bidder's off.
+; Python gate (pour_setter gate_c13b): a setter, the bidder led a non-trump
+; double, the mover holds exactly two followers, one count; the book's tile is
+; the non-count one.
+; How this encoding differs: it cannot say "exactly two" and fires with three
+; or more followers, where it is C8 (c08-no-count-on-the-double.silas). The
+; book plays the same protection on trump doubles (Hand 33, p. 111), which the
+; gate excludes.
+; GAP declarer: the bidder is written in as S0.
+; GAP none: "exactly two followers" needs "no third follower", a negated
+; existential.
+(policy c13b-protect-the-count
+  (initial play)
+  (fallback lowest-legal)
+  (rule follow-with-the-guard (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair me) (domino doubled) (domino guard) (domino count-tile) (context led))
+        (out guard)
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader S0)
+          (trick-play S0 doubled)
+          (double doubled)
+          (not (in doubled q*))
+          (led-context led)
+          (own-legal guard)
+          (in guard led)
+          (count guard 0)
+          (own-legal count-tile)
+          (in count-tile led)
+          (count count-tile 5))
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (leader S0)
+          (trick-play S0 doubled)
+          (double doubled)
+          (not (in doubled q*))
+          (led-context led)
+          (own-legal guard)
+          (in guard led)
+          (count guard 0)
+          (own-legal count-tile)
+          (in count-tile led)
+          (count count-tile 10))))))

@@ -1,0 +1,37 @@
+; C7  Winning 42 pp. 45-46 (W42-p045-e, W42-p046-a); played in Hand 32,
+; p. 109 (W42-p109-b)
+; Rule, in our words: a setter who plays right after the bidder, cannot follow
+; the bidder's lead, and holds count, plays the count at once, before knowing
+; whether the partner can take the trick.
+; Python gate (pour_setter gate_c7): seat left of the bidder, the bidder led,
+; mover cannot follow, holds a non-trump count tile; every such tile is the
+; book's.
+; How this encoding differs: none from the gate. The gate (and this file) also
+; fires on a trump lead; the book speaks of the bidder's off. The book's wider
+; companion rule (pp. 43-44, W42-p043-i: with no double, play count even when
+; you can follow) is played in Hand 28 (p. 98) and is not in the gate.
+; GAP declarer: the bidder is written in as S0, the left seat as S1.
+(policy c07-pounce
+  (initial play)
+  (fallback lowest-legal)
+  (rule play-count-now (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino give) (context led))
+        (out give)
+        (pattern
+          (viewer S1)
+          (leader S0)
+          (led-context led)
+          (own-legal give)
+          (not (in give led))
+          (not (in give q*))
+          (count give 10))
+        (pattern
+          (viewer S1)
+          (leader S0)
+          (led-context led)
+          (own-legal give)
+          (not (in give led))
+          (not (in give q*))
+          (count give 5))))))

@@ -1,0 +1,88 @@
+; C12A  Winning 42 p. 183 (W42-p183-b); played in Hand 34, p. 113 (W42-p113-a)
+; Rule, in our words: on the first trick, a bidder with exactly four trumps,
+; holding the double and the third-highest but not the second, leads the
+; double, and does not budget the loss of a trump trick.
+; Python gate (pour_bidder gate_c12, variant A): the same.
+; How this encoding differs: none in what it decides. The trump ranks are
+; written out for each of the seven pip declarations (doubles-trump and
+; no-trump never fire; the gate takes pip trumps only). "Exactly four trumps"
+; is four trump roles and three non-trump roles in a seven-tile hand. The pair
+; (in second q*) (in third q*) pins the declaration.
+; The book's pp. 9 and 32 (W42-p009-i, W42-p032-a) lean the other way when the
+; top two trumps are not both held; p. 183 is the one place it says A.
+; GAP declarer: the bidder is written in as S0.
+; GAP none: with a negated existential, "the second-highest trump" is one
+; generic pattern (a trump only the double outranks) instead of seven
+; literal ones.
+(policy c12a-four-trumps-lead-the-double
+  (initial play)
+  (fallback lowest-legal)
+  (rule lead-the-double (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino a) (domino b) (domino c) (domino d) (domino x) (domino y) (domino z))
+        (out a)
+        (pattern ; pip 0 trump: 0-0 6-0 5-0 4-0 3-0 2-0 1-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-0 q*) (in 5-0 q*)
+          (own-legal 0-0) (not (own-legal 6-0)) (own-legal 5-0)
+          (tile a 0-0))
+        (pattern ; pip 1 trump: 1-1 6-1 5-1 4-1 3-1 2-1 1-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-1 q*) (in 5-1 q*)
+          (own-legal 1-1) (not (own-legal 6-1)) (own-legal 5-1)
+          (tile a 1-1))
+        (pattern ; pip 2 trump: 2-2 6-2 5-2 4-2 3-2 2-1 2-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-2 q*) (in 5-2 q*)
+          (own-legal 2-2) (not (own-legal 6-2)) (own-legal 5-2)
+          (tile a 2-2))
+        (pattern ; pip 3 trump: 3-3 6-3 5-3 4-3 3-2 3-1 3-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-3 q*) (in 5-3 q*)
+          (own-legal 3-3) (not (own-legal 6-3)) (own-legal 5-3)
+          (tile a 3-3))
+        (pattern ; pip 4 trump: 4-4 6-4 5-4 4-3 4-2 4-1 4-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-4 q*) (in 5-4 q*)
+          (own-legal 4-4) (not (own-legal 6-4)) (own-legal 5-4)
+          (tile a 4-4))
+        (pattern ; pip 5 trump: 5-5 6-5 5-4 5-3 5-2 5-1 5-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-5 q*) (in 5-4 q*)
+          (own-legal 5-5) (not (own-legal 6-5)) (own-legal 5-4)
+          (tile a 5-5))
+        (pattern ; pip 6 trump: 6-6 6-5 6-4 6-3 6-2 6-1 6-0
+          (viewer S0) (leader S0) (next-actor S0) (quota S0 7)
+          (own-legal a) (in a q*) (own-legal b) (in b q*)
+          (own-legal c) (in c q*) (own-legal d) (in d q*)
+          (own-legal x) (not (in x q*)) (own-legal y) (not (in y q*))
+          (own-legal z) (not (in z q*))
+          (in 6-5 q*) (in 6-4 q*)
+          (own-legal 6-6) (not (own-legal 6-5)) (own-legal 6-4)
+          (tile a 6-6))
+))))

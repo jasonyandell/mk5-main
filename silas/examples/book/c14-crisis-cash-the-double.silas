@@ -1,0 +1,42 @@
+; C14  Winning 42 pp. 93-96 (W42-p093-c, W42-p096-a; Hands 26 and 27)
+; Rule, in our words: when an opponent turns out to hold trumps the bidder
+; cannot pull, the bidder stops leading trump and cashes a non-trump double,
+; the one whose suit has the most tiles still unplayed, while the trump holder
+; must still follow.
+; Python gate (pour_bidder gate_c14): bidder on lead, exactly one trump trick
+; so far, led by the bidder, in which exactly one opponent followed; trump
+; still out; the book's tiles are the non-trump doubles whose suit has the
+; most unplayed tiles outside the hand.
+; How this encoding differs: it has neither the trigger nor the "most
+; unplayed": it leads any non-trump double while a trump is out. That is a
+; much wider rule, written down only to name what is missing. The book's own
+; crisis (Hand 26) comes after two trump tricks, where the gate does not fire;
+; in Hand 31 (p. 106) the book's crisis lead is an off, not a double.
+; GAP declarer: the bidder is written in as S0.
+; GAP history: "one trump trick so far, led by the bidder" reads earlier
+; tricks; a policy sees only the current trick.
+; GAP shown-void: "exactly one opponent followed it" is one opponent shown
+; void in trump and the other not.
+; GAP aggregate: "the suit with the most unplayed tiles" compares the sizes of
+; two sets of tiles.
+(policy c14-crisis-cash-the-double
+  (initial play)
+  (fallback lowest-legal)
+  (rule cash-a-double (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino doubled) (domino out))
+        (out doubled)
+        (pattern
+          (viewer S0)
+          (leader S0)
+          (next-actor S0)
+          ; GAP history, GAP shown-void: the trigger
+          (live out)
+          (in out q*)
+          (not (own-legal out))
+          (own-legal doubled)
+          (double doubled)
+          (not (in doubled q*))
+          ; GAP aggregate: and no double of mine has more of its suit unplayed
+          )))))

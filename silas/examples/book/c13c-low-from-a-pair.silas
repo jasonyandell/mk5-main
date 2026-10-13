@@ -1,0 +1,31 @@
+; C13c  Winning 42 p. 49 (W42-p049-c); the 84 form is pp. 70-72 (W42-p070-b,
+; W42-p071-b); played in Hand 35, p. 117 (W42-p117-b)
+; Rule, in our words: a setter following a suit in which he holds exactly two
+; tiles, neither of them count, plays the lower and keeps the higher.
+; Python gate (pour_setter gate_c13c): a setter following a non-trump lead with
+; exactly two followers, neither count; the book's tile is the lower.
+; How this encoding differs: it cannot say "exactly two" and, with three or
+; more non-count followers, allows every follower some other one outranks.
+; With two it is the gate.
+; GAP declarer: the bidder is written in as S0 (only to name the setters).
+; GAP none: "exactly two followers" needs "no third follower".
+(policy c13c-low-from-a-pair
+  (initial play)
+  (fallback lowest-legal)
+  (rule follow-low (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair me) (domino low) (domino high) (context led))
+        (out low)
+        (pattern
+          (viewer me)
+          (opponent me S0)
+          (led-context led)
+          (not (context led q*))
+          (own-legal low)
+          (in low led)
+          (count low 0)
+          (own-legal high)
+          (in high led)
+          (count high 0)
+          (beats high low led))))))

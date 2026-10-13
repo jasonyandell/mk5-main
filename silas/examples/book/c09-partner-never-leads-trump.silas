@@ -1,0 +1,31 @@
+; C9  Winning 42 pp. 39-40 (W42-p040-b, W42-p040-c, W42-p040-d); played in
+; Hands 29, 30 and 31 (pp. 101, 103, 107)
+; Rule, in our words: the bidder's partner on lead never leads trump. Among his
+; other tiles he leads one that cannot draw count; failing that, one that can
+; draw only a five; a ten-count suit last.
+; Python gate (pour_bidder gate_c9, "never trump"): partner on lead holding
+; trump and a non-trump; the book's tiles are the non-trumps. The ordering is a
+; second, narrower gate in the same function.
+; How this encoding differs: it writes "never trump" in full; the ordering is
+; not written (GAP none). The book's own exception (every other lead calls a
+; ten) is in neither.
+; GAP declarer: the bidder is written in as S0, the partner as S2.
+; GAP none: "a tile whose suit has no count still out" is a negated existential
+; (no live count tile outside the hand follows that suit), and the ordering
+; needs it.
+(policy c09-partner-never-leads-trump
+  (initial play)
+  (fallback lowest-legal)
+  (rule lead-anything-but-trump (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino lead) (domino trump))
+        (out lead)
+        (pattern
+          (viewer S2)
+          (leader S2)
+          (next-actor S2)
+          (own-legal lead)
+          (not (in lead q*))
+          (own-legal trump)
+          (in trump q*))))))

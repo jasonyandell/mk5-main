@@ -1,0 +1,50 @@
+; C3  Winning 42 p. 37 (W42-p037-h) and p. 106 (W42-p106-c, Hand 31)
+; Rule, in our words: when the bidder's partner gives count on a trick the
+; bidder is taking, he gives his biggest count tile first, a ten before a five.
+; Python gate (pour_bidder gate_c3): partner, cannot follow, bidder currently
+; winning, holding two or more count tiles; the book's tiles are the largest.
+; How this encoding differs: none. "Largest" is rule order (tens, then fives);
+; "two or more" is two distinct roles.
+; The book states the rule for a trick the partner knows is safe (C1); the gate,
+; and this encoding, read "the bidder is winning so far", which is weaker.
+; GAP declarer: the bidder is written in as S0, the partner as S2.
+(policy c03-biggest-count-first
+  (initial play)
+  (fallback lowest-legal)
+  (rule give-a-ten (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino give) (domino other) (context led))
+        (out give)
+        (pattern
+          (viewer S2)
+          (current-winner S0)
+          (led-context led)
+          (own-legal give)
+          (not (in give led))
+          (count give 10)
+          (own-legal other)
+          (count other 10))
+        (pattern
+          (viewer S2)
+          (current-winner S0)
+          (led-context led)
+          (own-legal give)
+          (not (in give led))
+          (count give 10)
+          (own-legal other)
+          (count other 5)))))
+  (rule give-a-five (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (domino give) (domino other) (context led))
+        (out give)
+        (pattern
+          (viewer S2)
+          (current-winner S0)
+          (led-context led)
+          (own-legal give)
+          (not (in give led))
+          (count give 5)
+          (own-legal other)
+          (count other 5))))))
