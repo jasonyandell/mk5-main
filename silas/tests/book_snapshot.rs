@@ -1,4 +1,5 @@
-//! What the book's rules allow, pinned. Every policy of `examples/book/` is
+//! What the study's gate encodings allow, pinned: they are the record of what
+//! the 2026-10-12 study priced. Every policy of `examples/book/gates/` is
 //! asked, through [`CompiledPolicy::allowed`], for its deciding rule and the
 //! tiles that rule allows: at every point of the eight full deals' narrated
 //! lines, from the seat to play, with the bidder in each of the four chairs;
@@ -33,7 +34,7 @@ fn policies() -> &'static [(String, PolicyProgram)] {
 }
 
 fn read_policies() -> Vec<(String, PolicyProgram)> {
-    let dir = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/book"));
+    let dir = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/book/gates"));
     let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
         .unwrap()
         .map(|e| e.unwrap().path())

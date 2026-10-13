@@ -457,7 +457,7 @@ bidder sits in S0. `eval` prints the position, the deciding layer, the fired
 rule's witnesses and the allowed set:
 
 ```text
-$ silas eval --hand hand-32 --trick 2 --seat bidder --policy examples/book/c01a-top-trump-for-the-donation.silas
+$ silas eval --hand hand-32 --trick 2 --seat bidder --policy examples/book/gates/c01a-top-trump-for-the-donation.silas
 hand-32: trick 2, the bidder (S0) to play
   straight42/P0 (tables-92a0…); the bidder S0 bids 36: 36 points for 1 mark(s)
   record: S0:0-0 S1:2-0 S2:4-1 S3:6-2

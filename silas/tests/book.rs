@@ -1,5 +1,8 @@
-//! The book's rules (Roberson, *Winning 42*), written as Silas policies in
-//! `examples/book/` and checked on positions, most of them the book's own.
+//! The study's 21 rule gates (Roberson, *Winning 42*), written as Silas
+//! policies in `examples/book/gates/` and checked on positions, most of them
+//! the book's own. They are the record of what the 2026-10-12 study priced;
+//! the rules as the book means them are `examples/book/*.silas`, checked in
+//! `tests/book_rules.rs`.
 //!
 //! A position names its seats by role, as the book does: the bidder, the seat
 //! after him (the "left" setter), his partner, and the last setter, in play
@@ -21,27 +24,27 @@ use common::fixture::{Position, Role, book};
 use common::*;
 use silas::*;
 
-const C01A: &str = include_str!("../examples/book/c01a-top-trump-for-the-donation.silas");
-const C01B: &str = include_str!("../examples/book/c01b-partner-count-on-a-trump-lead.silas");
-const C02: &str = include_str!("../examples/book/c02-high-trump-handoff.silas");
-const C02_READING: &str = include_str!("../examples/book/c02-reading-singleton.silas");
-const C03: &str = include_str!("../examples/book/c03-biggest-count-first.silas");
-const C07: &str = include_str!("../examples/book/c07-pounce.silas");
-const C08: &str = include_str!("../examples/book/c08-no-count-on-the-double.silas");
-const C09: &str = include_str!("../examples/book/c09-partner-never-leads-trump.silas");
-const C10: &str = include_str!("../examples/book/c10-off-on-trick-one.silas");
-const C11: &str = include_str!("../examples/book/c11-double-ahead-of-the-off.silas");
-const C12A: &str = include_str!("../examples/book/c12a-four-trumps-lead-the-double.silas");
-const C12B: &str = include_str!("../examples/book/c12b-four-trumps-lead-low.silas");
-const C13A: &str = include_str!("../examples/book/c13a-shed-a-singleton.silas");
-const C13B: &str = include_str!("../examples/book/c13b-protect-the-count.silas");
-const C13C: &str = include_str!("../examples/book/c13c-low-from-a-pair.silas");
-const C13D: &str = include_str!("../examples/book/c13d-lead-a-singleton.silas");
-const C14: &str = include_str!("../examples/book/c14-crisis-cash-the-double.silas");
-const C15: &str = include_str!("../examples/book/c15-setter-leads-call-for-count.silas");
-const C21: &str = include_str!("../examples/book/c21-six-five-bait.silas");
-const C22: &str = include_str!("../examples/book/c22-trump-the-double-from-the-left.silas");
-const C23: &str = include_str!("../examples/book/c23-partner-leads-doubles.silas");
+const C01A: &str = include_str!("../examples/book/gates/c01a-top-trump-for-the-donation.silas");
+const C01B: &str = include_str!("../examples/book/gates/c01b-partner-count-on-a-trump-lead.silas");
+const C02: &str = include_str!("../examples/book/gates/c02-high-trump-handoff.silas");
+const C02_READING: &str = include_str!("../examples/book/gates/c02-reading-singleton.silas");
+const C03: &str = include_str!("../examples/book/gates/c03-biggest-count-first.silas");
+const C07: &str = include_str!("../examples/book/gates/c07-pounce.silas");
+const C08: &str = include_str!("../examples/book/gates/c08-no-count-on-the-double.silas");
+const C09: &str = include_str!("../examples/book/gates/c09-partner-never-leads-trump.silas");
+const C10: &str = include_str!("../examples/book/gates/c10-off-on-trick-one.silas");
+const C11: &str = include_str!("../examples/book/gates/c11-double-ahead-of-the-off.silas");
+const C12A: &str = include_str!("../examples/book/gates/c12a-four-trumps-lead-the-double.silas");
+const C12B: &str = include_str!("../examples/book/gates/c12b-four-trumps-lead-low.silas");
+const C13A: &str = include_str!("../examples/book/gates/c13a-shed-a-singleton.silas");
+const C13B: &str = include_str!("../examples/book/gates/c13b-protect-the-count.silas");
+const C13C: &str = include_str!("../examples/book/gates/c13c-low-from-a-pair.silas");
+const C13D: &str = include_str!("../examples/book/gates/c13d-lead-a-singleton.silas");
+const C14: &str = include_str!("../examples/book/gates/c14-crisis-cash-the-double.silas");
+const C15: &str = include_str!("../examples/book/gates/c15-setter-leads-call-for-count.silas");
+const C21: &str = include_str!("../examples/book/gates/c21-six-five-bait.silas");
+const C22: &str = include_str!("../examples/book/gates/c22-trump-the-double-from-the-left.silas");
+const C23: &str = include_str!("../examples/book/gates/c23-partner-leads-doubles.silas");
 
 const POLICIES: [&str; 20] =
     [C01A, C01B, C02, C03, C07, C08, C09, C10, C11, C12A, C12B, C13A, C13B, C13C, C13D, C14, C15, C21, C22, C23];

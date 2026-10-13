@@ -1,0 +1,332 @@
+hand-28 5 S0 role1 c07-pounce.silas play-count-now {3-2, 4-1, 5-5}
+hand-28 5 S1 role1 c07-pounce.silas play-count-now {3-2, 4-1, 5-5}
+hand-28 5 S2 role1 c07-pounce.silas play-count-now {3-2, 4-1, 5-5}
+hand-28 5 S3 role1 c07-pounce.silas play-count-now {3-2, 4-1, 5-5}
+hand-28 7 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-3}
+hand-28 7 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-3}
+hand-28 7 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-3}
+hand-28 7 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-3}
+hand-28 8 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 8 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 8 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 8 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 12 S0 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {1-1}
+hand-28 12 S0 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {1-1}
+hand-28 12 S1 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {1-1}
+hand-28 12 S1 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {1-1}
+hand-28 12 S2 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {1-1}
+hand-28 12 S2 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {1-1}
+hand-28 12 S3 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {1-1}
+hand-28 12 S3 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {1-1}
+hand-28 16 S0 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {3-3}
+hand-28 16 S0 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-28 16 S1 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {3-3}
+hand-28 16 S1 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-28 16 S2 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {3-3}
+hand-28 16 S2 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-28 16 S3 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {3-3}
+hand-28 16 S3 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-28 20 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 20 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 20 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-28 20 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-29 4 S0 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 4 S0 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {2-2}
+hand-29 4 S1 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 4 S1 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {2-2}
+hand-29 4 S2 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 4 S2 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {2-2}
+hand-29 4 S3 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 4 S3 role1 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {2-2}
+hand-29 8 S0 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 8 S1 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 8 S2 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 8 S3 role1 c13d-lead-a-singleton.silas lead-the-lone-tile {1-0}
+hand-29 10 S0 role3 c13c-low-from-a-pair.silas follow-low {3-1}
+hand-29 10 S1 role3 c13c-low-from-a-pair.silas follow-low {3-1}
+hand-29 10 S2 role3 c13c-low-from-a-pair.silas follow-low {3-1}
+hand-29 10 S3 role3 c13c-low-from-a-pair.silas follow-low {3-1}
+hand-29 12 S0 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-0, 6-3}
+hand-29 12 S1 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-0, 6-3}
+hand-29 12 S2 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-0, 6-3}
+hand-29 12 S3 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-0, 6-3}
+hand-29 15 S0 role1 c13c-low-from-a-pair.silas follow-low {6-2}
+hand-29 15 S1 role1 c13c-low-from-a-pair.silas follow-low {6-2}
+hand-29 15 S2 role1 c13c-low-from-a-pair.silas follow-low {6-2}
+hand-29 15 S3 role1 c13c-low-from-a-pair.silas follow-low {6-2}
+hand-30 2 S0 role2 c02-high-trump-handoff.silas play-the-top-trump {6-6}
+hand-30 2 S1 role2 c02-high-trump-handoff.silas play-the-top-trump {6-6}
+hand-30 2 S2 role2 c02-high-trump-handoff.silas play-the-top-trump {6-6}
+hand-30 2 S3 role2 c02-high-trump-handoff.silas play-the-top-trump {6-6}
+hand-30 3 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {4-0}
+hand-30 3 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {4-0}
+hand-30 3 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {4-0}
+hand-30 3 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {4-0}
+hand-30 4 S0 role2 c09-partner-never-leads-trump.silas lead-anything-but-trump {0-0, 3-1, 5-0, 5-3}
+hand-30 4 S0 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-30 4 S1 role2 c09-partner-never-leads-trump.silas lead-anything-but-trump {0-0, 3-1, 5-0, 5-3}
+hand-30 4 S1 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-30 4 S2 role2 c09-partner-never-leads-trump.silas lead-anything-but-trump {0-0, 3-1, 5-0, 5-3}
+hand-30 4 S2 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-30 4 S3 role2 c09-partner-never-leads-trump.silas lead-anything-but-trump {0-0, 3-1, 5-0, 5-3}
+hand-30 4 S3 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-30 8 S0 role2 c09-partner-never-leads-trump.silas lead-from-a-five-suit {3-1}
+hand-30 8 S1 role2 c09-partner-never-leads-trump.silas lead-from-a-five-suit {3-1}
+hand-30 8 S2 role2 c09-partner-never-leads-trump.silas lead-from-a-five-suit {3-1}
+hand-30 8 S3 role2 c09-partner-never-leads-trump.silas lead-from-a-five-suit {3-1}
+hand-30 12 S0 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-30 12 S1 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-30 12 S2 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-30 12 S3 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-30 13 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-1}
+hand-30 13 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-1}
+hand-30 13 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-1}
+hand-30 13 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-1}
+hand-30 15 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-3}
+hand-30 15 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-3}
+hand-30 15 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-3}
+hand-30 15 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-3}
+hand-31 0 S0 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 0 S1 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 0 S2 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 0 S3 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 2 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {5-0}
+hand-31 2 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {5-0}
+hand-31 2 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {5-0}
+hand-31 2 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {5-0}
+hand-31 4 S0 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-2}
+hand-31 4 S0 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 4 S1 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-2}
+hand-31 4 S1 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 4 S2 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-2}
+hand-31 4 S2 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 4 S3 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-2}
+hand-31 4 S3 role0 c21-six-five-bait.silas lead-the-six-five {6-5}
+hand-31 8 S0 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-31 8 S1 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-31 8 S2 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-31 8 S3 role2 c23-partner-leads-doubles.silas lead-a-double {0-0}
+hand-31 12 S0 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-1}
+hand-31 12 S1 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-1}
+hand-31 12 S2 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-1}
+hand-31 12 S3 role2 c09-partner-never-leads-trump.silas lead-from-a-count-safe-suit {3-1}
+hand-31 16 S0 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-31 16 S1 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-31 16 S2 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-31 16 S3 role3 c15-setter-leads-call-for-count.silas a-double-that-calls-for-count {4-4}
+hand-32 0 S0 role0 c10-off-on-trick-one.silas lead-the-off {3-1}
+hand-32 0 S1 role0 c10-off-on-trick-one.silas lead-the-off {3-1}
+hand-32 0 S2 role0 c10-off-on-trick-one.silas lead-the-off {3-1}
+hand-32 0 S3 role0 c10-off-on-trick-one.silas lead-the-off {3-1}
+hand-32 2 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-32 2 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-32 2 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-32 2 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-32 3 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-2}
+hand-32 3 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-2}
+hand-32 3 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-2}
+hand-32 3 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-2}
+hand-32 4 S0 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-0}
+hand-32 4 S0 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-32 4 S1 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-0}
+hand-32 4 S1 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-32 4 S2 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-0}
+hand-32 4 S2 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-32 4 S3 role0 c01a-top-trump-for-the-donation.silas lead-the-top-trump {6-0}
+hand-32 4 S3 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2}
+hand-32 9 S0 role1 c07-pounce.silas play-count-now {5-5, 6-4}
+hand-32 9 S1 role1 c07-pounce.silas play-count-now {5-5, 6-4}
+hand-32 9 S2 role1 c07-pounce.silas play-count-now {5-5, 6-4}
+hand-32 9 S3 role1 c07-pounce.silas play-count-now {5-5, 6-4}
+hand-33 3 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-33 3 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-33 3 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-33 3 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-33 4 S0 role0 c14-crisis-cash-the-double.silas cash-a-double {1-1, 5-5}
+hand-33 4 S1 role0 c14-crisis-cash-the-double.silas cash-a-double {1-1, 5-5}
+hand-33 4 S2 role0 c14-crisis-cash-the-double.silas cash-a-double {1-1, 5-5}
+hand-33 4 S3 role0 c14-crisis-cash-the-double.silas cash-a-double {1-1, 5-5}
+hand-33 6 S0 role2 c02-high-trump-handoff.silas play-the-top-trump {5-4}
+hand-33 6 S1 role2 c02-high-trump-handoff.silas play-the-top-trump {5-4}
+hand-33 6 S2 role2 c02-high-trump-handoff.silas play-the-top-trump {5-4}
+hand-33 6 S3 role2 c02-high-trump-handoff.silas play-the-top-trump {5-4}
+hand-33 7 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-33 7 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-33 7 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-33 7 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-33 8 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 8 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 8 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 8 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 12 S0 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {3-1}
+hand-33 12 S0 role3 c15-setter-leads-call-for-count.silas a-tile-that-calls-for-count {5-0}
+hand-33 12 S1 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {3-1}
+hand-33 12 S1 role3 c15-setter-leads-call-for-count.silas a-tile-that-calls-for-count {5-0}
+hand-33 12 S2 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {3-1}
+hand-33 12 S2 role3 c15-setter-leads-call-for-count.silas a-tile-that-calls-for-count {5-0}
+hand-33 12 S3 role3 c13d-lead-a-singleton.silas lead-the-lone-tile {3-1}
+hand-33 12 S3 role3 c15-setter-leads-call-for-count.silas a-tile-that-calls-for-count {5-0}
+hand-33 16 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 16 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 16 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 16 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 17 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {6-1, 6-3}
+hand-33 17 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {6-1, 6-3}
+hand-33 17 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {6-1, 6-3}
+hand-33 17 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {6-1, 6-3}
+hand-33 18 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-33 18 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-33 18 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-33 18 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-33 19 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-1}
+hand-33 19 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-1}
+hand-33 19 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-1}
+hand-33 19 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {3-1}
+hand-33 20 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 20 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 20 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-33 20 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {1-1}
+hand-34 0 S0 role0 c10-off-on-trick-one.silas lead-the-off {4-2}
+hand-34 0 S0 role0 c12a-four-trumps-lead-the-double.silas lead-the-double {5-5}
+hand-34 0 S1 role0 c10-off-on-trick-one.silas lead-the-off {4-2}
+hand-34 0 S1 role0 c12a-four-trumps-lead-the-double.silas lead-the-double {5-5}
+hand-34 0 S2 role0 c10-off-on-trick-one.silas lead-the-off {4-2}
+hand-34 0 S2 role0 c12a-four-trumps-lead-the-double.silas lead-the-double {5-5}
+hand-34 0 S3 role0 c10-off-on-trick-one.silas lead-the-off {4-2}
+hand-34 0 S3 role0 c12a-four-trumps-lead-the-double.silas lead-the-double {5-5}
+hand-34 2 S0 role2 c02-high-trump-handoff.silas play-the-top-trump {6-5}
+hand-34 2 S1 role2 c02-high-trump-handoff.silas play-the-top-trump {6-5}
+hand-34 2 S2 role2 c02-high-trump-handoff.silas play-the-top-trump {6-5}
+hand-34 2 S3 role2 c02-high-trump-handoff.silas play-the-top-trump {6-5}
+hand-34 4 S0 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2, 4-4}
+hand-34 4 S1 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2, 4-4}
+hand-34 4 S2 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2, 4-4}
+hand-34 4 S3 role0 c14-crisis-cash-the-double.silas cash-a-double {2-2, 4-4}
+hand-34 6 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 6 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 6 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 6 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 7 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-0}
+hand-34 7 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-0}
+hand-34 7 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-0}
+hand-34 7 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {6-0}
+hand-34 8 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 8 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 8 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 8 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 9 S0 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 9 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-34 9 S1 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 9 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-34 9 S2 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 9 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-34 9 S3 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 9 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-34 10 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 10 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 10 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 10 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {4-1}
+hand-34 12 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 12 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 12 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 12 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 13 S0 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 13 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {3-0}
+hand-34 13 S1 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 13 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {3-0}
+hand-34 13 S2 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 13 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {3-0}
+hand-34 13 S3 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 13 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {3-0}
+hand-34 16 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 16 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 16 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 16 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 17 S0 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 17 S1 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 17 S2 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 17 S3 role1 c07-pounce.silas play-count-now {6-4}
+hand-34 20 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 20 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 20 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-34 20 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {4-4}
+hand-35 0 S0 role0 c10-off-on-trick-one.silas lead-the-off {6-3}
+hand-35 0 S1 role0 c10-off-on-trick-one.silas lead-the-off {6-3}
+hand-35 0 S2 role0 c10-off-on-trick-one.silas lead-the-off {6-3}
+hand-35 0 S3 role0 c10-off-on-trick-one.silas lead-the-off {6-3}
+hand-35 1 S0 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 1 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 1 S1 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 1 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 1 S2 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 1 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 1 S3 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 1 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 4 S0 role0 c14-crisis-cash-the-double.silas cash-a-double {5-5, 6-6}
+hand-35 4 S1 role0 c14-crisis-cash-the-double.silas cash-a-double {5-5, 6-6}
+hand-35 4 S2 role0 c14-crisis-cash-the-double.silas cash-a-double {5-5, 6-6}
+hand-35 4 S3 role0 c14-crisis-cash-the-double.silas cash-a-double {5-5, 6-6}
+hand-35 5 S0 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 5 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 5 S1 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 5 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 5 S2 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 5 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 5 S3 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 5 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {1-0, 2-2, 6-0}
+hand-35 6 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 6 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 6 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 6 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 8 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 8 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 8 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 8 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 9 S0 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 9 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-35 9 S1 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 9 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-35 9 S2 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 9 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-35 9 S3 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 9 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2, 6-0}
+hand-35 10 S0 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 10 S1 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 10 S2 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 10 S3 role2 c01b-partner-count-on-a-trump-lead.silas top-lead-give-five {3-2}
+hand-35 11 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 11 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 11 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 11 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 12 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 12 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 12 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 12 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 13 S0 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 13 S0 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-35 13 S1 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 13 S1 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-35 13 S2 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 13 S2 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-35 13 S3 role1 c07-pounce.silas play-count-now {5-0}
+hand-35 13 S3 role1 c13a-shed-a-singleton.silas throw-a-lone-tile {2-2}
+hand-35 15 S0 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 15 S1 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 15 S2 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 15 S3 role3 c13a-shed-a-singleton.silas throw-a-lone-tile {2-0}
+hand-35 16 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 16 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 16 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 16 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 19 S0 role3 c13c-low-from-a-pair.silas follow-low {5-1}
+hand-35 19 S1 role3 c13c-low-from-a-pair.silas follow-low {5-1}
+hand-35 19 S2 role3 c13c-low-from-a-pair.silas follow-low {5-1}
+hand-35 19 S3 role3 c13c-low-from-a-pair.silas follow-low {5-1}
+hand-35 20 S0 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 20 S1 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 20 S2 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 20 S3 role0 c11-double-ahead-of-the-off.silas lead-the-double {6-6}
+hand-35 23 S0 role3 c13c-low-from-a-pair.silas follow-low {6-1}
+hand-35 23 S1 role3 c13c-low-from-a-pair.silas follow-low {6-1}
+hand-35 23 S2 role3 c13c-low-from-a-pair.silas follow-low {6-1}
+hand-35 23 S3 role3 c13c-low-from-a-pair.silas follow-low {6-1}

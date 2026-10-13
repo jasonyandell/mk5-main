@@ -107,6 +107,8 @@ lightning_logs/
 
 # Tracked perf-bench inputs + ledger (small frozen JSONL/CSV/JSON, not bulk data)
 !burl/eval/data/
+# Silas's pinned test tables (small text, read by the tests)
+!silas/tests/data/
 # The splat visualizer's checked-in five-deal sample (79 KB, not bulk data)
 !scenario/viz/data/
 !burl/eval/results/

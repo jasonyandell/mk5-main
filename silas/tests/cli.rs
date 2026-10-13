@@ -14,7 +14,7 @@ fn silas(args: &[&str]) -> (bool, String) {
 
 #[test]
 fn eval_prints_the_fired_rule_its_witnesses_and_the_allowed_set() {
-    let policy = "examples/book/c01a-top-trump-for-the-donation.silas";
+    let policy = "examples/book/gates/c01a-top-trump-for-the-donation.silas";
     let (ok, out) = silas(&["eval", "--hand", "hand-32", "--trick", "2", "--seat", "bidder", "--policy", policy]);
     assert!(ok, "{out}");
     assert!(out.contains("hand-32: trick 2, the bidder (S0) to play"), "{out}");
