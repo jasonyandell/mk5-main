@@ -86,12 +86,25 @@
       "heading": "shot-0030",
       "captures": ["shot-0030", "shot-0031"],
       "prose": ["shot-0031"],
-      "seats": [{"role": "bidder", "label": null, "tiles": ["0-0", "0-1", "0-2", "0-6", "1-2", "6-3", "5-5"]}],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-0", "0-1", "0-5", "0-6", "1-2", "6-3", "5-5"]}],
       "declaration": "P0",
       "bid": 30,
       "at_risk": 17,
       "alternatives": [],
-      "notes": ["The 30 is conditional: only by counting on the partner's help, and no higher."]
+      "notes": [
+        "The 30 is conditional: only by counting on the partner's help, and no higher.",
+        "transcript shot-0031 reads 0-2; image shows 0-5 (verified 2026-10-13)"
+      ],
+      "image_corrections": [
+        {
+          "anchor": "shot-0031",
+          "seat": "bidder",
+          "position": 3,
+          "transcript": "0-2",
+          "image": "0-5",
+          "verified": "2026-10-13"
+        }
+      ]
     },
     {
       "id": "hand-7",

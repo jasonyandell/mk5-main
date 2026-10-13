@@ -549,3 +549,34 @@ fn the_known_source_conflicts_are_kept() {
     assert_eq!(mark("6-5"), Some(6));
     assert!(!bidder.marks.contains(&Some(2)));
 }
+
+#[test]
+fn image_corrections_override_the_transcript() {
+    // Where the page image disagrees with the transcript, the fixture carries
+    // the image's tile and records the transcript's reading beside it.
+    let root: Value = serde_json::from_str(include_str!("../examples/book/hands.json")).unwrap();
+    let b = book();
+    let mut corrections = 0;
+    for e in root["examples"].as_array().unwrap() {
+        for c in e.get("image_corrections").and_then(Value::as_array).into_iter().flatten() {
+            let example = b.example(e["id"].as_str().unwrap());
+            let seat = example.seat(role(c["seat"].as_str().unwrap())).unwrap();
+            let at = c["position"].as_u64().unwrap() as usize - 1;
+            let image: Domino = c["image"].as_str().unwrap().parse().unwrap();
+            let transcript: Domino = c["transcript"].as_str().unwrap().parse().unwrap();
+            assert_eq!(seat.tiles[at], Some(image), "{}", example.id);
+            assert!(!seat.set().contains(transcript), "{}: the transcript's reading survives", example.id);
+            corrections += 1;
+        }
+    }
+    assert_eq!(corrections, 1);
+}
+
+#[test]
+fn hand_6_holds_the_blank_five_the_image_shows() {
+    // shot-0031, row 2, first tile: the transcript reads 0-2, the page image
+    // shows 0-5, and the prose's trump count (the three high blanks) needs it.
+    let hand = book().example("hand-6").seat(Role::Bidder).unwrap();
+    assert_eq!(hand.tiles[2], Some(common::tile("0-5")));
+    assert!(!hand.set().contains(common::tile("0-2")));
+}
