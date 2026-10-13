@@ -23,7 +23,7 @@ from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
 from scenario.field import CANON
-from scenario.planner import Analysis, Belief, Config, Situation, situation_from_state
+from scenario.planner import Analysis, Belief, Config, Situation, Step, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for, tiles_of
 
@@ -68,17 +68,24 @@ class CompiledWalt:
             for tile, res in self._planned("solve", states, bids)
         ]
 
-    def analyze(self, state: ZebGameState, bid: int) -> Analysis:
-        return self.analyze_batch([state], [bid])[0]
+    def analyze(self, state: ZebGameState, bid: int, line: bool = False) -> Analysis:
+        return self.analyze_batch([state], [bid], line)[0]
 
-    def analyze_batch(self, states: Sequence[ZebGameState], bids: Sequence[int]) -> list[Analysis]:
+    def analyze_batch(self, states: Sequence[ZebGameState], bids: Sequence[int],
+                      line: bool = False) -> list[Analysis]:
         """One `Analysis` per state, planned in parallel; a forced move holds
-        no scenarios, as in `Walt.analyze`."""
+        no scenarios, as in `Walt.analyze`. With `line`, each carries the
+        plan's line (`Step`s), as `Walt.analyze(line=True)` does."""
         return [
-            Analysis(tile, {tile: math.nan}, [], [], {tile: ()}) if res is None else Analysis(
+            Analysis(tile, {tile: math.nan}, [], [], {tile: ()}, {tile: ()} if line else None)
+            if res is None else Analysis(
                 res[0], dict(res[1]), list(res[3]), res[4], {t: tuple(o) for t, o in res[5]},
+                None if res[6] is None else {
+                    t: tuple(Step(tuple(plays), move, tuple(cell), floored) for plays, move, cell, floored in steps)
+                    for t, steps in res[6]
+                },
             )
-            for tile, res in self._planned("analyze", states, bids)
+            for tile, res in self._planned("analyze", states, bids, line=line)
         ]
 
     def mold(self, hands: Sequence[int], decl_id: int, leader: int,
@@ -86,10 +93,11 @@ class CompiledWalt:
         """`scenario.atlas.mold`, on all cores."""
         return self._core.mold(decl_id, tuple(hands), leader, max_layer, self.threads)
 
-    def _planned(self, method: str, states: Sequence[ZebGameState], bids: Sequence[int]) -> list[tuple]:
+    def _planned(self, method: str, states: Sequence[ZebGameState], bids: Sequence[int],
+                 **options) -> list[tuple]:
         """(tile, the core's result) per state, with the result None where the
         move is forced and the core is not asked; `method` is the core's
-        `solve` or `analyze`."""
+        `solve` or `analyze`, called with `options`."""
         out: list[tuple | None] = [None] * len(states)
         reqs: list[tuple] = []
         sits: list[tuple[int, Situation]] = []
@@ -116,7 +124,7 @@ class CompiledWalt:
             if self.belief is not None:
                 for j, worlds in enumerate(self._core.sample_roots(reqs)):
                     weights[j] = [float(w) for w in self.belief(sits[j][1], worlds)]
-            for (i, _), res in zip(sits, getattr(self._core, method)(reqs, weights, self.threads)):
+            for (i, _), res in zip(sits, getattr(self._core, method)(reqs, weights, self.threads, **options)):
                 out[i] = (res[0], res)
                 self.nodes += res[2]
                 self.proposals += res[-3]

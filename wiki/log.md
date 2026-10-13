@@ -29,6 +29,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | scenario/reason | Zeb's reason report (#124): the plan's line in both engines, opt-in and bit-identical; the separating facts as Silas queries with a noise bar; the 84's reason found by search at 33/95]
+
+**Updated:** [[scenario-player]] § The reason report. Code: `scenario/reason.py`, `Walt.analyze(line=True)` / `core::planner::analyze_line`, `SilasBelief.condition_likelihood`. Worked examples: `scratch/reason/`.
+
 ## [2026-10-13 | scratch/silas-reprice | the book's rules as Silas policies, priced on the whole 250k pour: 17 of 21 fire exactly where their gates do; C22 as the book's rule sides more (+0.58, 5% against); C15 and C2 re-measured weak]
 
 **Updated:** [[book-study-2026-10-12]] § The book's rules as Silas policies (fidelity and price tables; verdict lines for C2, C15, C22 corrected in place); [[w42]], `index-experiments.md` (sides with 8 rules).

@@ -91,7 +91,12 @@ another seat's knowledge (#132), the auction (#134), aggregate (#135).
   query layer of that repo's walt crate; renamed and cut loose from that repo's rules,
   kernel and solver. texas-42's solver-backed teaching layer stayed behind; its answer
   key here is Zeb ([[scenario-player]]).
-- **Next.** The reason report (#124); the book's rules past their gates (#123): policy
+- **Zeb's reasons.** The reason report (#124, [[scenario-player]] § The reason report)
+  names why Zeb prefers one tile in Silas: a declared space of holding and void queries,
+  each evaluated on Zeb's sampled worlds; the noise bar is Silas's three-valued compare
+  on an `Estimate` from `SilasBelief.condition_likelihood` (a binding of Silas's own
+  conditioning, added 2026-10-13).
+- **Next.** The book's rules past their gates (#123): policy
   likelihood (#128) and another seat's knowledge (#132) are what the book's own plays
   need next ([[w42]]).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's

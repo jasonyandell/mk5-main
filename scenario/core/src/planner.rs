@@ -537,6 +537,28 @@ fn drawn(
     (kept, vec![1.0; n])
 }
 
+/// One cell of the plan's line where the viewer moves (`scenario.planner.Step`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Step {
+    /// The plays since the root that reach the cell, as (seat, tile), the
+    /// root action first; the other seats' tiles among them are the
+    /// observations the plan branched on.
+    pub plays: Vec<(u8, u8)>,
+    /// The tile the plan plays here.
+    pub tile: u8,
+    /// The scenarios in the cell, ascending indices into the live sample.
+    pub cell: Vec<usize>,
+    /// Whether the floor handed the move down a rung instead of maximizing.
+    pub floored: bool,
+}
+
+/// The line being recorded by one root action's trace: the path to the
+/// current cell and the steps so far.
+struct Liner {
+    path: Vec<(u8, u8)>,
+    steps: Vec<Step>,
+}
+
 /// What only the live rung sees: the public play history and any external
 /// evidence over its scenarios.
 type Live<'a> = (&'a [(u8, u8)], Option<&'a [f64]>);
@@ -698,23 +720,30 @@ impl Inv {
 
     /// Per legal root action (ascending), the leaf value each scenario reaches
     /// under the plan: a replay of the solved tree through the memo, one path
-    /// per scenario (`_Invocation.outcomes`).
-    fn outcomes(&mut self, ctx: &mut Ctx) -> Vec<(u8, Vec<f64>)> {
+    /// per scenario (`_Invocation.outcomes`). With `line`, each root action's
+    /// viewer cells are recorded on the way, as [`Step`]s.
+    #[allow(clippy::type_complexity)]
+    fn outcomes(&mut self, ctx: &mut Ctx, line: bool) -> (Vec<(u8, Vec<f64>)>, Option<Vec<(u8, Vec<Step>)>>) {
         let own = self.worlds[0][self.viewer as usize] & !self.root.played;
         let everyone = Bits::everyone(self.worlds.len());
         let root = self.root;
-        tiles(ctx.rules.legal(own, root.led()))
-            .map(|t| {
-                let mut leaf = vec![0.0; self.worlds.len()];
-                self.trace(ctx, root.advance(t, ctx.rules), everyone, &mut leaf);
-                (t, leaf)
-            })
-            .collect()
+        let mut out = Vec::new();
+        let mut lines = line.then(Vec::new);
+        for t in tiles(ctx.rules.legal(own, root.led())) {
+            let mut leaf = vec![0.0; self.worlds.len()];
+            let mut liner = line.then(|| Liner { path: vec![(self.viewer, t)], steps: Vec::new() });
+            self.trace(ctx, root.advance(t, ctx.rules), everyone, &mut leaf, liner.as_mut());
+            out.push((t, leaf));
+            if let (Some(lines), Some(liner)) = (lines.as_mut(), liner) {
+                lines.push((t, liner.steps));
+            }
+        }
+        (out, lines)
     }
 
     /// Leaves of the trace are bidder-team margins under every utility; where
     /// the plan stopped short of the hand's end, the tape plays it out.
-    fn trace(&mut self, ctx: &mut Ctx, rec: Rec, alive: Bits, leaf: &mut [f64]) {
+    fn trace(&mut self, ctx: &mut Ctx, rec: Rec, alive: Bits, leaf: &mut [f64], mut line: Option<&mut Liner>) {
         if rec.finished() {
             for r in alive.iter() {
                 leaf[r] = self.margin(ctx, &rec);
@@ -729,21 +758,34 @@ impl Inv {
         }
         let seat = rec.seat();
         if seat == self.viewer {
-            if self.floored(&alive) {
-                let t = self.handed_down(ctx, &rec);
-                self.trace(ctx, rec.advance(t, ctx.rules), alive, leaf);
-                return;
+            let floored = self.floored(&alive);
+            let t = if floored {
+                self.handed_down(ctx, &rec)
+            } else {
+                let hand = self.worlds[0][seat as usize] & !rec.played;
+                let q: Vec<(u8, f64)> = tiles(ctx.rules.legal(hand, rec.led()))
+                    .map(|t| (t, self.value(ctx, rec.advance(t, ctx.rules), alive)))
+                    .collect();
+                best(&q, self.maximize)
+            };
+            if let Some(l) = line.as_deref_mut() {
+                l.steps.push(Step { plays: l.path.clone(), tile: t, cell: alive.iter().collect(), floored });
+                l.path.push((seat, t));
             }
-            let hand = self.worlds[0][seat as usize] & !rec.played;
-            let q: Vec<(u8, f64)> = tiles(ctx.rules.legal(hand, rec.led()))
-                .map(|t| (t, self.value(ctx, rec.advance(t, ctx.rules), alive)))
-                .collect();
-            let t = best(&q, self.maximize);
-            self.trace(ctx, rec.advance(t, ctx.rules), alive, leaf);
+            self.trace(ctx, rec.advance(t, ctx.rules), alive, leaf, line.as_deref_mut());
+            if let Some(l) = line {
+                l.path.pop();
+            }
             return;
         }
         for (t, cell) in self.partition(ctx, seat, &rec, &alive) {
-            self.trace(ctx, rec.advance(t, ctx.rules), cell, leaf);
+            if let Some(l) = line.as_deref_mut() {
+                l.path.push((seat, t));
+            }
+            self.trace(ctx, rec.advance(t, ctx.rules), cell, leaf, line.as_deref_mut());
+            if let Some(l) = line.as_deref_mut() {
+                l.path.pop();
+            }
         }
     }
 
@@ -991,15 +1033,28 @@ pub struct Analysis {
     pub weights: Vec<f64>,
     /// Per legal tile, ascending: the bidder-team final margin each scenario reaches under the plan.
     pub outcomes: Vec<(u8, Vec<f64>)>,
+    /// Per legal tile, ascending: the plan's line, when asked ([`analyze_line`]).
+    pub line: Option<Vec<(u8, Vec<Step>)>>,
     /// How the scenarios were drawn.
     pub drawn: Drawn,
 }
 
 /// `decide`, opened up: see [`Analysis`].
 pub fn analyze(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> Analysis {
+    analysis(cfg, d, external, false)
+}
+
+/// [`analyze`] with the plan's line: at each viewer cell of each root
+/// action's plan, the tile played and the observations that reach it. Read
+/// off the same replay, so everything else is [`analyze`]'s, bit for bit.
+pub fn analyze_line(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> Analysis {
+    analysis(cfg, d, external, true)
+}
+
+fn analysis(cfg: &Config, d: &Decision, external: Option<&[f64]>, line: bool) -> Analysis {
     let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
-    let outcomes = inv.outcomes(&mut ctx);
+    let (outcomes, line) = inv.outcomes(&mut ctx, line);
     Analysis {
         tile: choice(&mut ctx, d, &q, inv.maximize),
         q,
@@ -1007,6 +1062,7 @@ pub fn analyze(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> Analysis
         worlds: std::mem::take(&mut inv.worlds),
         weights: std::mem::take(&mut inv.weights),
         outcomes,
+        line,
         drawn: ctx.drawn,
     }
 }

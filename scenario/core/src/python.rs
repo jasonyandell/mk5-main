@@ -10,7 +10,8 @@
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
-//! scenarios and each root action's per-scenario outcomes); and `mold`, the
+//! scenarios and each root action's per-scenario outcomes, and with `line`
+//! the plan's line); and `mold`, the
 //! per-layer position counts of one deal's perfect-information tree.
 //! `field_scores` runs the field net alone, and the module functions `rules`
 //! and `canon` hand back the core's own tables, for the parity tests. With
@@ -25,7 +26,7 @@ use pyo3::prelude::*;
 use crate::convention::{Convention, Rule};
 use crate::field::{self, FieldNet};
 use crate::mold;
-use crate::planner::{self, analyze, decide, Config, Decision, Draw, Rec, MAX_WORLDS};
+use crate::planner::{self, analyze, analyze_line, decide, Config, Decision, Draw, Rec, MAX_WORLDS};
 use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
@@ -45,9 +46,25 @@ type World = (u32, u32, u32, u32);
 /// the convention's sender chose the tile).
 type Decided = (u8, Vec<(u8, f64)>, u64, u64, bool, bool);
 
+/// One step of the plan's line: (plays from the root action on as (seat,
+/// tile), the tile played, the cell's scenario indices, floored).
+type StepTuple = (Vec<(u8, u8)>, u8, Vec<usize>, bool);
+
 /// An analysis as Python receives it: (tile, [(tile, Q)], cells evaluated,
-/// worlds, weights, [(tile, per-world outcomes)], proposals, fell back, sent).
-type Analyzed = (u8, Vec<(u8, f64)>, u64, Vec<World>, Vec<f64>, Vec<(u8, Vec<f64>)>, u64, bool, bool);
+/// worlds, weights, [(tile, per-world outcomes)], the line [(tile, [step])]
+/// or None, proposals, fell back, sent).
+type Analyzed = (
+    u8,
+    Vec<(u8, f64)>,
+    u64,
+    Vec<World>,
+    Vec<f64>,
+    Vec<(u8, Vec<f64>)>,
+    Option<Vec<(u8, Vec<StepTuple>)>>,
+    u64,
+    bool,
+    bool,
+);
 
 /// One declaration's tables: (led_suit, follow_bits, rank, count).
 type Tables = (Vec<u8>, Vec<u32>, Vec<Vec<u8>>, Vec<u8>);
@@ -200,21 +217,29 @@ impl Core {
     }
 
     /// `solve`, opened up: per request (tile, [(tile, Q)], cells evaluated,
-    /// the live worlds, their weights, [(tile, per-world outcomes)]) — see
-    /// `scenario.planner.Analysis`.
+    /// the live worlds, their weights, [(tile, per-world outcomes)], and with
+    /// `line` the plan's line, else None) — see `scenario.planner.Analysis`.
+    #[pyo3(signature = (reqs, weights, threads, line=false))]
     fn analyze(
         &self,
         py: Python<'_>,
         reqs: Vec<Req>,
         weights: Vec<Option<Vec<f64>>>,
         threads: usize,
+        line: bool,
     ) -> PyResult<Vec<Analyzed>> {
         let jobs = self.jobs(&reqs, &weights)?;
         let cfg = &self.cfg;
         Ok(run(py, &jobs, threads, |(d, w)| {
-            let a = analyze(cfg, d, *w);
+            let a = if line { analyze_line(cfg, d, *w) } else { analyze(cfg, d, *w) };
             let worlds = a.worlds.into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect();
-            (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes, a.drawn.proposals, a.drawn.fell_back, a.drawn.sent)
+            let steps = a.line.map(|l| {
+                l.into_iter()
+                    .map(|(t, steps)| (t, steps.into_iter().map(|s| (s.plays, s.tile, s.cell, s.floored)).collect()))
+                    .collect()
+            });
+            let drawn = a.drawn;
+            (a.tile, a.q, a.nodes, worlds, a.weights, a.outcomes, steps, drawn.proposals, drawn.fell_back, drawn.sent)
         }))
     }
 
