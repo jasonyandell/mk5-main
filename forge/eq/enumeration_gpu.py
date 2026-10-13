@@ -53,7 +53,7 @@ from torch import Tensor
 
 from forge.eq.sampling_mrv_gpu import SUIT_DOMINO_MASK
 
-# Try importing CUDA enumeration (falls back to CPU hybrid if unavailable)
+# Numba CUDA enumeration; enumerate_worlds_gpu refuses to run without it (no CPU fallback)
 try:
     from forge.eq.enumeration_cuda import (
         enumerate_worlds_cuda,

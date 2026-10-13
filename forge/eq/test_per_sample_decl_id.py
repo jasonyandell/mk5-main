@@ -26,7 +26,7 @@ def test_multi_state_accepts_scalar_decl_id():
     trick_plays_list = [[] for _ in range(5)]
     remaining = np.ones((5, 4), dtype=np.int64) * 0x7F
 
-    # Scalar decl_id (backward compatibility)
+    # Scalar decl_id (scalar form)
     tokens, masks = oracle._tokenize_worlds_multi_state(
         worlds=worlds,
         decl_ids=np.array([3, 3, 3, 3, 3], dtype=np.int32),  # All same
@@ -56,7 +56,7 @@ def test_multi_state_accepts_array_decl_ids():
     trick_plays_list = [[] for _ in range(5)]
     remaining = np.ones((5, 4), dtype=np.int64) * 0x7F
 
-    # Mixed decl_ids (new feature)
+    # Mixed decl_ids (per-sample form)
     decl_ids = np.array([0, 3, 5, 7, 9], dtype=np.int32)
 
     tokens, masks = oracle._tokenize_worlds_multi_state(
@@ -334,6 +334,7 @@ def test_backward_compat_scalar_decl_id_in_api():
 
     oracle.model = MockModel()
     oracle.use_async = False
+    oracle.use_gpu_tokenizer = False
 
     worlds = [deal_from_seed(i) for i in range(5)]
     actors = np.array([0, 1, 2, 3, 0], dtype=np.int32)
@@ -341,7 +342,7 @@ def test_backward_compat_scalar_decl_id_in_api():
     trick_plays_list = [[] for _ in range(5)]
     remaining = np.ones((5, 4), dtype=np.int64) * 0x7F
 
-    # Pass scalar decl_id (backward compatibility)
+    # Pass scalar decl_id (scalar form)
     q_values = oracle.query_batch_multi_state(
         worlds=worlds,
         decl_ids=3,  # Scalar int
@@ -373,6 +374,7 @@ def test_backward_compat_array_decl_id_in_api():
 
     oracle.model = MockModel()
     oracle.use_async = False
+    oracle.use_gpu_tokenizer = False
 
     worlds = [deal_from_seed(i) for i in range(5)]
     actors = np.array([0, 1, 2, 3, 0], dtype=np.int32)
@@ -380,7 +382,7 @@ def test_backward_compat_array_decl_id_in_api():
     trick_plays_list = [[] for _ in range(5)]
     remaining = np.ones((5, 4), dtype=np.int64) * 0x7F
 
-    # Pass array decl_ids (new feature)
+    # Pass array decl_ids (per-sample form)
     decl_ids = np.array([0, 3, 5, 7, 9], dtype=np.int32)
 
     q_values = oracle.query_batch_multi_state(

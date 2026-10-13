@@ -12,6 +12,7 @@ import pytest
 import torch
 
 from forge.eq.game import GameState
+from forge.eq.enumeration_gpu import ENUMERATION_CUDA_AVAILABLE
 from forge.eq.generate import generate_eq_games_gpu
 from forge.eq.oracle import Stage1Oracle
 from forge.oracle.rng import deal_from_seed
@@ -621,6 +622,15 @@ def test_posterior_with_mixed_decl_ids(oracle, device):
 # NOTE: Loop vs vectorized comparison tests removed - loop versions deleted in GPU-only refactor
 
 
+def _run_enumeration(**kwargs):
+    """Run enumeration games; without Numba CUDA assert the clean refusal and return None."""
+    if not ENUMERATION_CUDA_AVAILABLE:
+        with pytest.raises(RuntimeError, match="requires Numba CUDA"):
+            generate_eq_games_gpu(**kwargs)
+        return None
+    return generate_eq_games_gpu(**kwargs)
+
+
 def test_enumeration_basic(oracle, device):
     """Test that enumeration mode produces valid results."""
     # Use a late-game scenario where enumeration is effective
@@ -630,7 +640,7 @@ def test_enumeration_basic(oracle, device):
     decl_ids = [3, 5]  # Different declarations
 
     # Run with enumeration enabled (use lower threshold to avoid OOM on small GPUs)
-    records = generate_eq_games_gpu(
+    records = _run_enumeration(
         model=oracle.model,
         hands=hands,
         decl_ids=decl_ids,
@@ -640,6 +650,8 @@ def test_enumeration_basic(oracle, device):
         use_enumeration=True,
         enumeration_threshold=1_000,  # Small threshold for testing
     )
+    if records is None:
+        return
 
     assert len(records) == n_games
 
@@ -669,7 +681,7 @@ def test_enumeration_multiple_games(oracle, device):
     decl_ids = [0, 3, 5, 9]  # Various declarations
 
     # Run with enumeration
-    records = generate_eq_games_gpu(
+    records = _run_enumeration(
         model=oracle.model,
         hands=hands,
         decl_ids=decl_ids,
@@ -679,6 +691,8 @@ def test_enumeration_multiple_games(oracle, device):
         use_enumeration=True,
         enumeration_threshold=1_000,  # Small threshold for testing
     )
+    if records is None:
+        return
 
     # All games should complete
     assert len(records) == n_games
