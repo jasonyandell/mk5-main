@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-10-11, 194 archived entries)
+## Digest (2026-04-09 → 2026-10-12, 200 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -23,9 +23,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Continuation frontier + otis** (2026-07-13 → 07-14, 6 entries) — the wiki reorg (schema v2, routing trails, status truth), champion folded into [[jud]], the continuation-frontier research night (Stage 0 closes, Lane A validates, Lane B graded both rounds), and the [[count-fate-ledger]] formulated as the consumption object.
 - **Walt, the scenario player, rebuilt** (2026-10-09 → 10-10, 6 archived entries) — [[scenario-player]] rebuilt from the mathematics, the compiled core, Walt beats E[Q] at play (+0.74), belief night 1 nulls, the atlas (splat + mold), the forecast's 20-point lie and the cell floor named. Hub: [[scenario-player]].
 - **Zeb: the floor, the pour, the field net** (2026-10-10 → 10-11, 10 archived entries) — the cell floor and its dividend, the pour published ([[scenario-player]]), the field net at rung −1 and its two targets, the 50,000- and 250,000-deal pours, the live bidder graded against Plunge's bid book.
+- **Zeb 0.1.0, the viz, research night, the first repair** (2026-10-11 → 10-12, 6 archived entries) — the live bidder graded against Plunge's frozen bid book, `@jasonyandell/zeb` 0.1.0 in WebAssembly, the splat visualizer and its region query, research night (T1/T1′/T2, Lean, the counterexample lab; [[research-night-2026-10-12]]), the field net graded by regret not agreement (#109). Hub: [[scenario-player]].
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-12 | scratch/faceoff | face-off closed: the four "contradicts" verdicts survive a k1,n2048 re-plan (prices unchanged, 91–97% survive); dead rows revived at a live bid put Zeb level with the oracle on the book (55.1% vs 56.4%); the book is the authority on reasoning, a counterexample is the standard for siding against it (#121)]
+
+[[book-study-2026-10-12]] § The face-off (re-plan table, "what agreement should mean"). Data: research archive `book/faceoff/`. #119 closed; #120, #121 open.
 
 ## [2026-10-12 | scratch/faceoff | the book face-off (#119): at the same gates the oracle's E[Q] n=10 picks the book's tile more often than Zeb (56.4% vs 51.5%), the field net more still; "Zeb and the book agree" corrected to "the book's tile is cheap under Zeb's plan"; the oracle-era verdicts agree in sign where they overlap]
 
@@ -63,33 +68,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 [[scenario-player]] § The floor guards only a sample. Null in marks; correctness. Report: [[research-night-2026-10-12-sources]] (14-floor).
 
-## [2026-10-12 | field_train | the field net is graded by regret under the splat's q, not agreement (#109): shipped 250k net 0.0064 make probability per decision, n = 714]
-
-[[scenario-player]] § The net is scored by regret. Source: [[research-night-2026-10-12]] critic §3.2, §4e.
-
-## [2026-10-12 | cb95168e | Research night: does Zeb find the optimal move in finite time?]
-
-Seven agents (theory, Lean, counter lab, empirical, floor, an independent Fable
-session, a Fable critic). Proved: exact Walt with the field's posterior is an O1 best
-response in finite time; the fixed-belief ladder settles by the 24th application
-(Lean, `scenario/lean/`, 15 theorems, no sorry); coherent beliefs cycle. Measured:
-the belief gap is +0.028 marks/hand against a net table; Zeb is a one-step rollout
-of its net after the root; floor-off-when-exact is correct and null. Pages:
-[[research-night-2026-10-12]], sources [[research-night-2026-10-12-sources]]; hub
-[[scenario-player]] gets a dated paragraph.
-
-## [2026-10-12 | scenario/viz | what must be true, in the browser: pick a region of a move's splat, see the holdings that explain it; condition the position on up to three holdings; per-world sample (687 KB); zoom + touch stepping]
-
-[[splat-visualizer]] § 2026-10-12. Reads `holding_predictors` / `makes` per world ([[scenario-player]] § What must be true).
-
-## [2026-10-11 | scenario/viz | the splat visualizer: a pour in the browser — each legal move's splat per planned play, means-only strip, the real ending through every forecast, the hand as a ridgeline; exporter + 5 tests; 79 KB sample]
-
-[[splat-visualizer]] (new); [[scenario-player]] § The splats, drawn. Successor to [[eq-browser-visualizers]].
-
-## [2026-10-11 | 00a51f24 | Zeb, the package: @jasonyandell/zeb 0.1.0 — the cheap player in WebAssembly, bit-identical to the referee on 34 positions, 207 KB, 0.3 s for seven declarations; scenario/core a plain Rust library (rules derived in Rust, net as one blob, pyo3 behind a feature); release workflow via trusted publishing]
-
-[[scenario-player]] § Zeb, the package. `zeb/README.md` is the user's document. Built and cold-reviewed by two Opus agents; the review's two should-fix items and nits all landed.
-
-## [2026-10-11 | scenario-player | a live bidder graded against Plunge's frozen bid book: 4,680 panels, |Δpmake| 0.052 vs the book's own sd 0.066, calibrated through the middle, 3–5 pp bold at the top; seven declarations in 0.2–1.0 s]
-
-[[scenario-player]] § A live bidder, graded against Plunge's book. Scripts in `scratch/bid/`. Not a deployment.

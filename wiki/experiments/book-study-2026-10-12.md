@@ -251,8 +251,27 @@ where Zeb's best is unique the comparison is 52.8% against 56.0%.
   from here is "the book's move is among Zeb's exactly tied best moves at a live bid"; for the
   oracle the best set is its pick, since its continuous values never tie exactly
   (`scratch/faceoff/deadrows.py`, `out/deadrows.jsonl`).
-- **The stronger-Zeb re-plan** of the four "contradicts" verdicts (k1, 2,048 worlds, 300
-  positions per gate) is running; its table is added here when it lands.
+- **The stronger-Zeb re-plan keeps every contradiction.** 300 gated positions per rule re-planned
+  at `k1,n2048,m8,f=16` (four times the worlds, a modeled partner; the referee, 3.1 h):
+
+  | rule | book price, pour | book price, strong Zeb | price survives |
+  |---|---|---|---|
+  | C3 biggest count first | −0.052 | −0.051 ± 0.010 | 93% of 142 |
+  | C7 pounce | −0.080 | −0.079 ± 0.014 | 91% of 187 |
+  | C10 trick-one off lead | −0.068 | −0.067 ± 0.006 | 97% of 254 |
+  | C21 six-five bait | −0.059 | −0.052 ± 0.005 | 96% of 257 |
+
+  The prices are the deployed Zeb's to within noise, so the four verdicts are not a 512-world
+  artifact. By the standard Jason set the same night, they are still not a case against the
+  book: the book is the authority on reasoning, and siding against a rule needs a hand-checkable
+  counterexample deal (as the 84 hand got), not a price (#121).
+- **What agreement should mean.** Tile agreement, which the face-off counts, answers "does the
+  player land where the book points." The book is about reasons, so the agreement that matters
+  is reason agreement: at a deviation, does the splat state a counting fact the book missed, a
+  utility difference (marks vs points), or nothing (a tie)? The first is a repair with a
+  counterexample attached; the second a margin note; the third #120. That study, and the
+  repaired book as a page (each rule with its gate, its reason, and its exception deal), is
+  #121.
 
 ## Data
 

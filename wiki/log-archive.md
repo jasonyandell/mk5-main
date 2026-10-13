@@ -1,6 +1,6 @@
 # Log — archive
 
-Rolled-out entries from `log.md` (2026-04-09 → 2026-07-14, entries 1–162). Same format, still greppable: `grep "^## \[" log-archive.md`. Newest entries live in [[log]].
+Rolled-out entries from `log.md` (2026-04-09 → 2026-10-12, entries 1–200). Same format, still greppable: `grep "^## \[" log-archive.md`. Newest entries live in [[log]].
 
 ---
 
@@ -3906,3 +3906,35 @@ than m hands the viewer's move to the rung below (resampling inside the
 plan). Floor 8+ ≡ all interior decisions handed down. Floor 1 unchanged to
 the bit; 104 tests. What-must-be-true receipt on the trick-5 hinge (per-world
 paired outcomes → "6-1 makes iff partner holds the 6-6"). See [[scenario-player]].
+
+## [2026-10-11 | scenario-player | a live bidder graded against Plunge's frozen bid book: 4,680 panels, |Δpmake| 0.052 vs the book's own sd 0.066, calibrated through the middle, 3–5 pp bold at the top; seven declarations in 0.2–1.0 s]
+
+[[scenario-player]] § A live bidder, graded against Plunge's book. Scripts in `scratch/bid/`. Not a deployment.
+
+## [2026-10-11 | 00a51f24 | Zeb, the package: @jasonyandell/zeb 0.1.0 — the cheap player in WebAssembly, bit-identical to the referee on 34 positions, 207 KB, 0.3 s for seven declarations; scenario/core a plain Rust library (rules derived in Rust, net as one blob, pyo3 behind a feature); release workflow via trusted publishing]
+
+[[scenario-player]] § Zeb, the package. `zeb/README.md` is the user's document. Built and cold-reviewed by two Opus agents; the review's two should-fix items and nits all landed.
+
+## [2026-10-11 | scenario/viz | the splat visualizer: a pour in the browser — each legal move's splat per planned play, means-only strip, the real ending through every forecast, the hand as a ridgeline; exporter + 5 tests; 79 KB sample]
+
+[[splat-visualizer]] (new); [[scenario-player]] § The splats, drawn. Successor to [[eq-browser-visualizers]].
+
+## [2026-10-12 | scenario/viz | what must be true, in the browser: pick a region of a move's splat, see the holdings that explain it; condition the position on up to three holdings; per-world sample (687 KB); zoom + touch stepping]
+
+[[splat-visualizer]] § 2026-10-12. Reads `holding_predictors` / `makes` per world ([[scenario-player]] § What must be true).
+
+## [2026-10-12 | cb95168e | Research night: does Zeb find the optimal move in finite time?]
+
+Seven agents (theory, Lean, counter lab, empirical, floor, an independent Fable
+session, a Fable critic). Proved: exact Walt with the field's posterior is an O1 best
+response in finite time; the fixed-belief ladder settles by the 24th application
+(Lean, `scenario/lean/`, 15 theorems, no sorry); coherent beliefs cycle. Measured:
+the belief gap is +0.028 marks/hand against a net table; Zeb is a one-step rollout
+of its net after the root; floor-off-when-exact is correct and null. Pages:
+[[research-night-2026-10-12]], sources [[research-night-2026-10-12-sources]]; hub
+[[scenario-player]] gets a dated paragraph.
+
+## [2026-10-12 | field_train | the field net is graded by regret under the splat's q, not agreement (#109): shipped 250k net 0.0064 make probability per decision, n = 714]
+
+[[scenario-player]] § The net is scored by regret. Source: [[research-night-2026-10-12]] critic §3.2, §4e.
+
