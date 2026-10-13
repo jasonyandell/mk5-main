@@ -244,20 +244,9 @@ impl CompiledPolicy {
             }
             return Ok((Allowed { provenance: DecisionProvenance::Exact, tiles: DominoSet::single(*tile) }, vec![]));
         }
-        for (rule, guard) in &self.rules {
-            let answers = guard.evaluate_viewer(frame, budget)?;
-            let tiles = match &rule.selector {
-                Selector::FirstOutput => answers
-                    .iter()
-                    .filter_map(|answer| match answer.0.as_slice() {
-                        [Value::Domino(tile)] => Some(*tile),
-                        _ => None,
-                    })
-                    .collect::<DominoSet>()
-                    .intersection(legal),
-                Selector::Literal(tile) if !answers.is_empty() => DominoSet::single(*tile).intersection(legal),
-                Selector::Literal(_) => DominoSet::EMPTY,
-            };
+        for k in 0..self.rules.len() {
+            let (rule, guard) = &self.rules[k];
+            let (_, tiles) = self.rule_allows(k, frame, legal, budget)?;
             if !tiles.is_empty() {
                 let witnesses = if explain {
                     guard.witnesses(frame, budget)?.into_iter().map(|(answer, w)| (answer.0, w)).collect()
@@ -274,6 +263,44 @@ impl CompiledPolicy {
                 Ok((Allowed { provenance: DecisionProvenance::Fallback, tiles: DominoSet::single(lowest) }, vec![]))
             }
         }
+    }
+}
+
+impl CompiledPolicy {
+    /// The relational rules, in order, each with its compiled guard.
+    pub fn rules(&self) -> &[(PolicyRule, CompiledQuery)] {
+        &self.rules
+    }
+
+    /// Whether the exact table holds the frame's key.
+    pub(crate) fn has_exact(&self, frame: &Frame) -> bool {
+        self.exact.contains_key(&PolicyKey::of(frame))
+    }
+
+    /// What rule `k` says at `frame`: its guard's answers, and the tiles of
+    /// `legal` it allows. An answer that is not legal is no tile.
+    pub(crate) fn rule_allows(
+        &self,
+        k: usize,
+        frame: &Frame,
+        legal: DominoSet,
+        budget: &mut Budget,
+    ) -> Result<(crate::Answers, DominoSet)> {
+        let (rule, guard) = &self.rules[k];
+        let answers = guard.evaluate_viewer(frame, budget)?;
+        let tiles = match &rule.selector {
+            Selector::FirstOutput => answers
+                .iter()
+                .filter_map(|answer| match answer.0.as_slice() {
+                    [Value::Domino(tile)] => Some(*tile),
+                    _ => None,
+                })
+                .collect::<DominoSet>()
+                .intersection(legal),
+            Selector::Literal(tile) if !answers.is_empty() => DominoSet::single(*tile).intersection(legal),
+            Selector::Literal(_) => DominoSet::EMPTY,
+        };
+        Ok((answers, tiles))
     }
 }
 
@@ -349,19 +376,50 @@ impl PolicyProgram {
                 _ => return Err(form.span.error("a policy form is (fallback ...), (rule ...) or (exact ...)")),
             }
         }
-        if fallbacks != 1 {
-            return Err(tree.span.error("a policy requires exactly one (fallback lowest-legal)"));
+        if fallbacks > 1 {
+            return Err(tree.span.error("a policy has one fallback, (fallback lowest-legal), and may leave it unsaid"));
         }
         Ok(program)
     }
 }
 
-/// `(rule name (select ...) (guard (query ...)))`.
+/// `(rule name (select ...) (guard (query ...)))`, or its short form `(rule
+/// name (play x) query-body ...)`: `(play x)`, `x` a name, is `(select answer)`
+/// with the guard `(query query-body ... )` answering `x`; `(play D)`, `D` a
+/// domino, is `(select tile D)` with the guard `(query query-body ...)`. The
+/// query body is what follows `(out ...)` in a query, `(roles ...)` first if
+/// given.
 fn rule(library: &Library, form: &Expr) -> Result<PolicyRule> {
     let body = form.tagged("rule")?;
     let [name, fields @ ..] = body else {
-        return Err(form.span.error("rule syntax is (rule name (select ...) (guard (query ...)))"));
+        return Err(form.span.error(
+            "rule syntax is (rule name (play ...) clause ...) or (rule name (select ...) (guard (query ...)))",
+        ));
     };
+    if let Some((play, rest)) = fields.split_first().filter(|(f, _)| f.head() == Some("play")) {
+        let [action] = play.tagged("play")? else {
+            return Err(play.span.error("play takes one name or one domino: (play x) or (play 6-4)"));
+        };
+        let word = action.word()?;
+        let at = &form.span;
+        let (selector, outputs) = match Value::literal(word) {
+            Some(Value::Domino(tile)) => (Selector::Literal(tile), vec![]),
+            Some(_) => return Err(action.span.error(format!("{word} is not a domino or a name to play"))),
+            None => (Selector::FirstOutput, vec![action.clone()]),
+        };
+        let (roles, rest) = match rest.split_first() {
+            Some((roles, tail)) if roles.head() == Some("roles") => (vec![roles.clone()], tail),
+            _ => (vec![], rest),
+        };
+        let out = Expr::list_at([vec![Expr::word_at("out", at)], outputs].concat(), at);
+        let query = Expr::list_at([vec![Expr::word_at("query", at)], roles, vec![out], rest.to_vec()].concat(), at);
+        return Ok(PolicyRule {
+            name: name.word()?.to_owned(),
+            selector,
+            guard: Query::from_expr(library, &query)?,
+            span: form.span.clone(),
+        });
+    }
     if fields.len() != 2 || fields.iter().any(|f| !matches!(f.head(), Some("select" | "guard"))) {
         return Err(form.span.error("rule syntax is (rule name (select ...) (guard (query ...))), with no modes"));
     }

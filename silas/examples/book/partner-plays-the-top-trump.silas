@@ -16,16 +16,10 @@
 (include book)
 
 (policy partner-plays-the-top-trump
-  (fallback lowest-legal)
-  (rule play-the-top-trump
-    (select answer)
-    (guard
-      (query (roles (chair p) (domino top))
-        (out top)
-        (pattern
-          (viewer p)
-          (bidders-partner p)
-          (bidders-lead)
-          (trump-led)
-          (own-legal top)
-          (boss-trump top))))))
+  (rule play-the-top-trump (play top)
+    (viewer p)
+    (bidders-partner p)
+    (bidders-lead)
+    (trump-led)
+    (own-legal top)
+    (boss-trump top)))

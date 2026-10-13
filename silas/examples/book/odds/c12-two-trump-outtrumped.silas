@@ -5,14 +5,12 @@
 ; State: Hand 26, fours trump (3-3 1-1 4-4 6-4 5-5 2-2 5-2), nothing played;
 ;   the 21 others dealt uniformly, seven to each other seat.
 ; Exact: 352/969. Book model: 34/81. The complement of c16-2t-favorable.
-(query (roles (chair v) (chair x) (domino a) (domino b) (domino c))
-  (out)
-  (pattern
-    (viewer v)
-    (opponent v x)
-    (in a q*)
-    (in b q*)
-    (in c q*)
-    (holds x a)
-    (holds x b)
-    (holds x c)))
+(query
+  (viewer v)
+  (opponent v x)
+  (in a q*)
+  (in b q*)
+  (in c q*)
+  (holds x a)
+  (holds x b)
+  (holds x c))

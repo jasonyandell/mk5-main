@@ -41,8 +41,7 @@
 
 (include book)
 
-(query (roles (chair b) (domino top) (domino second) (domino third))
-  (out)
+(query
   (pattern
     (viewer b)
     (bidder b)
@@ -55,7 +54,7 @@
     (mine top)
     (not (mine second))
     (not (mine third))
-    (some (roles (chair p)) (in second q*) (bidders-partner p) (holds p second)))
+    (some (roles p) (in second q*) (bidders-partner p) (holds p second)))
   (pattern
     (viewer b)
     (bidder b)
@@ -68,7 +67,7 @@
     (mine top)
     (not (mine second))
     (not (mine third))
-    (some (roles (chair s) (domino other))
+    (some (roles s other)
       (in second q*)
       (setter s)
       (holds s second)

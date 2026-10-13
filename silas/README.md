@@ -77,6 +77,54 @@ rule.silas:3:5: unregistered predicate mystery
   |     ^^^^^^^^^^^
 ```
 
+### Short forms
+
+The grammar above is the core. A text may also use these shorter forms, each
+a rewrite into the core before the core reader sees it, so a short text and
+its spelled-out form are one `Query`: equal as data, printed alike, one
+identity. Nothing below adds meaning.
+
+```text
+query    := (query [(roles entry ...)] [(out name ...)] body)
+entry    := (sort name) | name              ; a bare name: its sort from its uses
+body     := pattern ... | clause ...        ; bare clauses: the query's one pattern
+clause   := ... | (and clause ...) | (or clause ...) | (not clause)
+          | (some (roles entry ...) clause ...) | (none (roles entry ...) clause ...)
+```
+
+- **Roles from their uses.** A bare name in any `(roles ...)` (a query's, a
+  scope's, a definition's) takes the sort of the slot it fills: a
+  predicate's parameter, a definition's parameter, or a `same` partner's.
+  Without `(roles ...)` a query's roles are the free names its patterns use
+  (not bound by a scope inside them), in order of first use, so the
+  distinctness of roles declared together is exactly the explicit form's.
+  A name used as two sorts, used where no slot sorts it, or standing where a
+  number or a team goes is refused at the use.
+- **Defaults.** Without `(out ...)` a query asks yes or no, `(out)`. A query of
+  one pattern may give its clauses bare. A query with no body has no pattern
+  and is false, as before.
+- **Connectives,** by Kleene's laws, which hold in the three-valued semantics:
+  `(and c ...)` is its clauses, spliced into the body around it. `(or c ...)`
+  is `(none (roles) (not c) ...)`. `(not c)` negates any clause: `(not (not
+  c))` is `c`; `(not (some R B))` is `(none R B)` and `(not (none R B))` is
+  `(some R B)`; `(not (and c ...))` is `(none (roles) c ...)`; `(not (or c
+  ...))` is `(not c) ...`. A negated atom or definition call is the core's
+  own `(not ...)`. `(or)` is false and `(and)` true. `and` and `or` are
+  reserved.
+
+So the book's "protect the count" exception, that the partner is not the
+trump setter or has already played, reads three ways and is one clause:
+
+```text
+(or (not (trump-set pard)) (some (roles his) (trick-play pard his)))
+(not (and (trump-set pard) (none (roles his) (trick-play pard his))))
+(none (roles) (trump-set pard) (none (roles (domino his)) (trick-play pard his)))
+```
+
+`silas expand FILE` prints a file's core. `tests/surface.rs` holds every short
+form to its explicit form, and `tests/core_pins.rs` pins the core of every
+file and every prelude definition, taken before the short forms existed.
+
 `Query` and `Pattern` are plain data and can be built in Rust as well as
 parsed; spans are locations, not content, and never affect equality.
 `Query::compile(&Registry)` checks a query and binds its predicates;
@@ -133,7 +181,9 @@ transcription would check it against.
   the names around the call. Called positively, the body's clauses join the
   caller's; negated, the body becomes a `none` (or a negated atom, when it is
   one atom). Definitions are expanded when text is read: a parsed query holds
-  only primitives, prints in them, and its identity is theirs.
+  only primitives, prints in them, and its identity is theirs. The short
+  forms (Queries, above) are read away the same way and are not part of
+  this semantics.
 - **Viewer queries are measurable.** If every predicate a query names reads
   only the frame (`Viewer` access), its answers at `(f, w)` are the same for
   every world `w` of `f`. A policy's guards are such queries, so a policy is a
@@ -289,10 +339,12 @@ other refusal, returns an error and no partial result.
 ## Policies
 
 ```text
-policy   := (policy name (fallback lowest-legal) form ...)
+policy   := (policy name [(fallback lowest-legal)] form ...)
 form     := (rule name (select selector) (guard query))
+          | (rule name (play action) body)     ; short form
           | (exact key (play domino))
 selector := answer | tile domino
+action   := name | domino
 key      := (key (physics identity) (viewer chair) (dealt-bits n)
                  (declarer chair) (bid n) (history domino ...))
 ```
@@ -306,6 +358,30 @@ query that may use only `Viewer` predicates. A rule *allows* the legal tiles
 its guard answers (`answer`) or its tile when the guard holds and the tile is
 legal (`tile`); the first rule that allows a tile decides, and the decision is
 the least tile it allows (the definition: `min (answers ∩ legal)`).
+
+The fallback is the only one and may go unsaid. A rule's short form says
+what it plays: `(rule r (play x) body)` is `(rule r (select answer) (guard
+(query (out x) body)))`, and `(rule r (play 6-4) body)` is `(rule r (select
+tile 6-4) (guard (query body)))`, where `body` is what follows `(out ...)` in
+a query (its `(roles ...)` first, if given). So the book's protect-the-count
+is
+
+```text
+(policy protect-the-count
+  (rule follow-the-master-without-count (play plain)
+    (viewer me)
+    (setter me)
+    (not (every-trick))
+    (partner me pard)
+    (bidder-led led)
+    (led-context q)
+    (not (loses-in led q))
+    (or (not (trump-set pard)) (some (roles his) (trick-play pard his)))
+    (follower plain)
+    (count plain 0)
+    (follower counted)
+    (count-tile counted)))
+```
 
 `CompiledPolicy::allowed(frame)` returns the deciding layer and every tile it
 allows; `decide` adds the decision and whether the contract is resolved;
@@ -643,23 +719,30 @@ a model or a sample: exact numbers are never blurred.
 ## The `silas` command
 
 ```text
-silas eval  --hand ID [--trick N] [--seat ROLE] --policy FILE [--book FILE]
-silas query FILE --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
-silas query DOMINANCE-FILE
-silas fmt   [--check] FILE ...
-silas check [DIR ...]
+silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
+silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+silas query    DOMINANCE
+silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
+silas expand   FILE ...
+silas fmt      [--check] FILE ...
+silas check    [DIR-OR-FILE ...]
 ```
+
+An option a command does not take is refused, with the options it does
+take, and an unknown hand lists the hands. `silas help` prints the usage.
 
 A position is a hand of `examples/book/hands.json`: a full deal at the point
 of its narrated line (its tricks, then its tail, up to the first play the book
 does not name) where `--seat` (`bidder`, `left`, `partner`, `right`) is to
 play to trick `--trick` (default: the opening lead), seen from that seat;
 or a hand the book gives alone, seen by its bidder before the first lead. The
-bidder sits in S0. `eval` prints the position, the deciding layer, the fired
-rule's witnesses and the allowed set:
+bidder sits in S0. `eval` prints the position, where each rule before the
+deciding one stops (the first clause, in source order, that fails at the
+frame: Diagnostics, below), the deciding layer, the fired rule's witnesses and
+the allowed set. Its policy is its file, or `--policy FILE`:
 
 ```text
-$ silas eval --hand hand-32 --trick 2 --seat bidder --policy examples/book/gates/c01a-top-trump-for-the-donation.silas
+$ silas eval examples/book/gates/c01a-top-trump-for-the-donation.silas --hand hand-32 --trick 2 --seat bidder
 hand-32: trick 2, the bidder (S0) to play
   straight42/P0 (tables-92a0…); the bidder S0 bids 36: 36 points for 1 mark(s)
   record: S0:0-0 S1:2-0 S2:4-1 S3:6-2
@@ -696,15 +779,76 @@ dominates two-marks-out: (marks 1) over (marks 2), bid by S0
   fails (exact): from 5-0, the hand ending 42 to 0: the first leaves 6-0 and the second 7-0 (won by T0)
 ```
 
-`fmt` formats
-canonically and idempotently: comments kept on their own lines, a form on one
-line when it fits in 100 columns (policies, rules, queries, patterns,
-definitions and dominances always take a line per item), at most one blank
-line kept. Every `.silas` file in the crate is in that form
-(`tests/language.rs`). `check` compiles every example and the prelude, each
-policy, and each dominance's contracts, under all nine straight declarations.
-The command is the default `cli` feature (it reads JSON); `cargo install
---path silas` installs it.
+`expand` prints a file's core: every definition expanded and every short
+form spelled out. `fmt` formats canonically and idempotently: comments kept
+on their own lines, a form on one line when it fits in 100 columns
+(policies, rules, queries, patterns, definitions and dominances always take a
+line per item, with a leading `(roles ...)`, `(out ...)` or `(play ...)` on
+the first), at most one blank line kept. Every `.silas` file in the crate is
+in that form (`tests/language.rs`). `check` compiles every example and the
+prelude (or the files and directories it is given), each policy, and each
+dominance's contracts, under all nine straight declarations, and prints each
+file's warnings. The command is the default `cli` feature (it reads JSON);
+`cargo install --path silas` installs it.
+
+## Diagnostics
+
+A rule can be wrong in a way nothing refuses: it compiles, it reads well, and
+it never fires. Two diagnostics look for that.
+
+**Warnings** (`Query::lint`, `PolicyProgram::lint`, printed by `check`) are
+read off the core, so a short text and its spelled-out form warn alike. Each
+is located as an error is:
+
+- a role declared and never used (it still takes a value distinct from its
+  sort's other roles), or a scope's role bound and never used;
+- more roles of one sort declared together than the sort has values (five
+  chairs): the pattern never holds;
+- `(tile a b)`, `(chair a b)` or `(context a b)` between two roles declared
+  together and not joined by `same`: never true, or, negated, always true;
+- a clause asked together with its own negation;
+- an existential role used only under a negation: `(none (roles) (trick-play p
+  his))` with `his` a role of the query asks for *some* tile `p` did not play,
+  which almost any tile is; the binding belongs inside, `(none (roles his)
+  ...)`;
+- a rule with no pattern, and a rule whose answer it never asks to be the
+  viewer's (`own-legal` or `mine`): answers the viewer cannot play are dropped
+  without a word.
+
+The crate's files raise one: `crisis.silas`'s `(not (tile his l))`, which
+restates what distinctness already says (a seat's lead is not his follow).
+
+**The funnel** (`Funnel`, `Coverage`, `why_not`) asks where a pattern stops.
+Its steps are the pattern's clauses in source order, a definition call or a
+short form one step; step `k` is the query of the first `k` steps, read under
+the same semantics. Adding a clause only removes assignments, so the steps
+that hold are a prefix, and the first that fails is where the pattern stops.
+`eval` prints it for each rule that passed; `coverage` counts, over every
+point of the book's narrated lines (and `--random N` seeded deals under the
+nine declarations), how often each rule answered, allowed a legal tile and
+decided, and how often each step held, flagging every zero with `!`. A rule
+that answers but never decides is shadowed by an earlier one; one that
+answers more often than it allows is answering tiles the viewer cannot play.
+
+```text
+$ silas coverage examples/book/protect-the-count.silas
+coverage of policy protect-the-count over 205 frames of the book's 33 hands (...), and 0 random deals
+  rule follow-the-master-without-count: decided 2, allowed 2, answered 2 of 205
+         205/205  (viewer me)
+          91/205  (setter me)
+          64/205  (not (every-trick))
+          ...
+          28/205  (or (not (trump-set pard)) (some (roles his) (trick-play pard his)))
+          10/205  (follower plain)
+           8/205  (count plain 0)
+           4/205  (follower counted)
+           2/205  (count-tile counted)
+  the fallback decided 203 of 205
+```
+
+Over 100 random deals, the trump-set rules never fire: a trump set alone is
+rare in random play, and the funnel shows each stops at the setter's ruff.
+`tests/diagnostics.rs` holds each warning, the funnel and the counts.
 
 ## Examples
 
@@ -719,7 +863,9 @@ catalog ids, hands and pages and how it differs from the gate it replaces;
 bidder through `declarer` and is tested at all four seatings.
 `examples/book/gates/` holds the 2026-10-12 study's 21 rule gates, the record
 of what that study priced (`tests/book.rs`); `tests/book_snapshot.rs` pins
-what each gate allows on the book's deals and on 1,600 random ones.
+what each gate allows on the book's deals and on 1,600 random ones. The
+gates keep the explicit forms they were priced in; every other file is
+written in the short forms (Queries, Short forms).
 `examples/book/odds/` holds the odds the book prints, one query per claim
 (`tests/book_odds.rs`). `examples/book/repaired/` holds the repaired book: a
 rule with the condition Zeb's reasons show it omits, as a policy where the

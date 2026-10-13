@@ -128,6 +128,25 @@ working with it: `(define ...)` and `(include book)`, the `silas` command (`eval
 witnesses and the allowed set, `query`, `fmt`, `check`), errors with line, column and
 caret, `CompiledPolicy::allowed` (and `SilasPolicy.allowed` in Python).
 
+## Short forms and diagnostics (2026-10-13)
+
+Silas stays an s-expression language with a small exact core; the short forms are
+tree-to-tree rewrites read away before the core reader, like `define`. Roles take their
+sorts from the slots they fill, and a query may omit `(roles ...)` (its roles are the free
+names in order of first use), `(out)` and a lone `(pattern ...)`; `and`, `or` and `not` of
+any clause rewrite by Kleene's De Morgan laws (`(or a b)` is `(none (roles) (not a) (not
+b))`); a rule says `(rule r (play x) clause ...)`; the fallback may go unsaid. Every book
+rule, the prelude and the odds were rewritten (1,380 lines out, 927 in); the 2026-10-12
+gates keep their explicit forms. `tests/core_pins.rs` pins each file's core from before
+the rewrite, and every pin held. texas-42's Scheme/Fix had no shorthand to bring over
+(every copy of its reader takes only the full form). For rules that silently never fire:
+warnings read off the core (`check`; an unbound role under a negation, distinct roles
+equated, more roles than values, a clause with its negation, an answer never asked to be
+playable) and the funnel (`silas coverage`, and `eval`'s "stops at"): each pattern's
+clauses in source order, counting where it stops over the book's lines and random deals.
+The crate's files raise one warning (a redundant clause in `crisis`); coverage shows the
+trump-set rules never fire in random play, stopping at the setter's ruff.
+
 ## The double-dummy reference
 
 `silas::Solver` (2026-10-13) is an exact perfect-information solver over any `Physics`:

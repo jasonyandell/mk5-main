@@ -18,10 +18,8 @@
 
 (include book)
 
-(query (roles (chair b))
-  (out)
-  (pattern
-    (viewer b)
-    (bidder b)
-    (lay-down)
-    (certain-make)))
+(query
+  (viewer b)
+  (bidder b)
+  (lay-down)
+  (certain-make))

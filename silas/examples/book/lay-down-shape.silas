@@ -15,11 +15,9 @@
 
 (include book)
 
-(query (roles (chair b))
-  (out)
-  (pattern
-    (viewer b)
-    (bidder b)
-    (four-trumps-or-more)
-    (some (roles (domino x) (domino y) (domino z)) (sure-trump x) (sure-trump y) (sure-trump z))
-    (none (roles (domino o)) (off o))))
+(query
+  (viewer b)
+  (bidder b)
+  (four-trumps-or-more)
+  (some (roles x y z) (sure-trump x) (sure-trump y) (sure-trump z))
+  (none (roles o) (off o)))

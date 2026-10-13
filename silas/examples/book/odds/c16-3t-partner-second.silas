@@ -4,11 +4,9 @@
 ;   highest missing trump, so it is the partner who wins with it.
 ; State: as c16-3t-guarded-second.
 ; Exact: 1/3. Book model: 27/81. No reading we tried gives 21 of 81.
-(query (roles (chair v) (chair p) (domino t))
-  (out)
-  (pattern
-    (viewer v)
-    (partner v p)
-    (in t q*)
-    (none (roles (domino u) (chair y)) (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
-    (holds p t)))
+(query
+  (viewer v)
+  (partner v p)
+  (in t q*)
+  (none (roles u y) (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+  (holds p t))

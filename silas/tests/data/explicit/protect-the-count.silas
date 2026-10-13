@@ -1,0 +1,42 @@
+; Protect the count. Winning 42 p. 49 (S-0071-a, S-0071-b) and p. 54
+; (S-0078-c); played in Hand 33 (S-0144-b) and, from the bidder's side, in
+; Hand 26 (S-0122-c). The trump-set exception: p. 50 (S-0073-c).
+; Rule, in our words: a setter following a lead of the bidder's that no live
+; tile outside his hand can beat in its suit (a double, the top trump), with a
+; choice of followers, follows with one that is not count and keeps the count
+; tile guarded for the bidder's off. The exception is the trump set: when his
+; partner holds the trumps and is still to play, the trick may be his, and the
+; count goes on it (pounce, trump-set.silas).
+; Replaces gates/c08-no-count-on-the-double.silas and
+; gates/c13b-protect-the-count.silas. How it differs: the gates take non-trump
+; doubles only, and C13b exactly two followers; the book protects on the top
+; trump too (Hand 33 trick 1: the 4-2 played, the 4-1 kept), and with any
+; number of followers. Neither gate has the trump-set exception, under which
+; the book's reading of a count follow as a void fails (S-0078-c). The reading
+; itself is another seat's play (GAPS.md, policy likelihood). Against a bid
+; of marks count does not matter; the defender keeps his pair instead
+; (low-from-a-pair.silas).
+
+(include book)
+
+(policy protect-the-count
+  (fallback lowest-legal)
+  (rule follow-the-master-without-count
+    (select answer)
+    (guard
+      (query
+        (roles (chair me) (chair pard) (domino led) (context q) (domino plain) (domino counted))
+        (out plain)
+        (pattern
+          (viewer me)
+          (setter me)
+          (not (every-trick))
+          (partner me pard)
+          (bidder-led led)
+          (led-context q)
+          (not (loses-in led q))
+          (none (roles) (trump-set pard) (none (roles (domino his)) (trick-play pard his)))
+          (follower plain)
+          (count plain 0)
+          (follower counted)
+          (count-tile counted))))))

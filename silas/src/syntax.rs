@@ -8,6 +8,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::nouns::{Context, Domino, Seat, Team};
+use crate::sugar::{self, Uses};
 use crate::{Error, Result, error};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -172,6 +173,22 @@ impl Span {
         Some((line, column))
     }
 
+    /// Where in its source the span starts and ends, when it has one.
+    pub(crate) fn range(&self) -> Option<(usize, usize)> {
+        self.source.as_ref().map(|_| (self.start, self.end))
+    }
+
+    /// The source text the span covers, on one line, when it has a source.
+    pub(crate) fn text(&self) -> Option<String> {
+        let text = &self.source.as_ref()?.text[self.start..self.end];
+        Some(text.split_whitespace().collect::<Vec<_>>().join(" "))
+    }
+
+    /// A warning at this span, located and shown as an error is.
+    pub(crate) fn warning(&self, message: impl Into<String>) -> String {
+        self.error(format!("warning: {}", message.into())).0
+    }
+
     /// An error at this span: the message, and when the span has a source,
     /// its name, line and column, the line itself and a caret under the span.
     pub(crate) fn error(&self, message: impl Into<String>) -> Error {
@@ -325,6 +342,16 @@ impl Expr {
         Ok(stack.pop().expect("the top level").1)
     }
 
+    /// A word made by a rewrite, located where its source form was.
+    pub(crate) fn word_at(word: &str, span: &Span) -> Expr {
+        Expr { kind: Kind::Word(word.to_owned()), span: span.clone(), blank_before: false }
+    }
+
+    /// A list made by a rewrite, located where its source form was.
+    pub(crate) fn list_at(items: Vec<Expr>, span: &Span) -> Expr {
+        Expr { kind: Kind::List(items), span: span.clone(), blank_before: false }
+    }
+
     pub(crate) fn word(&self) -> Result<&str> {
         match &self.kind {
             Kind::Word(s) => Ok(s),
@@ -450,25 +477,28 @@ pub(crate) fn valid_name(s: &str) -> bool {
 }
 
 /// Words the grammar reserves: no predicate or definition takes them.
-pub(crate) const RESERVED: [&str; 9] = ["query", "roles", "out", "pattern", "same", "not", "none", "some", "define"];
+pub(crate) const RESERVED: [&str; 11] =
+    ["query", "roles", "out", "pattern", "same", "not", "none", "some", "define", "and", "or"];
+
+/// Reserved words that head a part of a query or a definition, never a clause.
+const NOT_CLAUSES: [&str; 5] = ["query", "roles", "out", "pattern", "define"];
 
 /// Every name visible at a point of a body, with its sort.
 type Names = BTreeMap<String, Sort>;
 
-/// The roles of `(roles (sort name) ...)`.
-fn roles(expr: &Expr) -> Result<Vec<Role>> {
-    sorted(expr, false)
-}
-
-/// The names of `(roles (sort name) ...)`; a definition's parameters may also
-/// be numbers and teams, which its callers pass as literals.
-fn sorted(expr: &Expr, literal_sorts: bool) -> Result<Vec<Role>> {
+/// The entries of `(roles ...)`: each `(sort name)`, or a bare name, whose
+/// sort its uses give (`None` here). A definition's parameters may also be
+/// numbers and teams, which its callers pass as literals.
+fn declared(expr: &Expr, literal_sorts: bool) -> Result<Vec<(String, Option<Sort>, Span)>> {
     expr.tagged("roles")?
         .iter()
         .map(|role| {
-            let pair = role.list()?;
+            let pair = match &role.kind {
+                Kind::Word(name) => return Ok((name.clone(), None, role.span.clone())),
+                _ => role.list()?,
+            };
             if pair.len() != 2 {
-                return Err(role.span.error("role syntax is (sort name)"));
+                return Err(role.span.error("a role is (sort name), or a bare name whose sort its uses give"));
             }
             let sort = match pair[0].word()? {
                 "context" => Sort::Context,
@@ -481,9 +511,35 @@ fn sorted(expr: &Expr, literal_sorts: bool) -> Result<Vec<Role>> {
                 }
                 _ => return Err(pair[0].span.error("a role's sort is context, chair, or domino")),
             };
-            Ok(Role { name: pair[1].word()?.to_owned(), sort, span: role.span.clone() })
+            Ok((pair[1].word()?.to_owned(), Some(sort), role.span.clone()))
         })
         .collect()
+}
+
+/// The standard registry, read once: every built-in predicate's parameter
+/// sorts.
+fn standard() -> &'static crate::Registry {
+    static STANDARD: std::sync::OnceLock<crate::Registry> = std::sync::OnceLock::new();
+    STANDARD.get_or_init(crate::Registry::standard)
+}
+
+/// A query's body: no forms is no pattern; `(pattern ...)` forms are its
+/// patterns; any other forms are the clauses of its one pattern.
+fn patterns<'a>(forms: &'a [Expr], at: &Span) -> Result<Vec<(&'a [Expr], Span)>> {
+    let tagged = forms.iter().filter(|f| f.head() == Some("pattern")).count();
+    if tagged == forms.len() {
+        forms.iter().map(|f| Ok((f.tagged("pattern")?, f.span.clone()))).collect()
+    } else if tagged == 0 {
+        Ok(vec![(forms, at.clone())])
+    } else {
+        let stray = forms.iter().find(|f| f.head() != Some("pattern")).expect("a clause");
+        Err(stray.span.error(match stray.head() {
+            Some(part) if NOT_CLAUSES.contains(&part) => format!(
+                "({part} ...) is out of place: a query is (query (roles ...) (out ...) pattern ...), each part in that order"
+            ),
+            _ => "a query's body is (pattern ...) forms, or the clauses of one pattern, not both".to_owned(),
+        }))
+    }
 }
 
 /// A named definition: its parameters, in order, and its body (one
@@ -562,11 +618,10 @@ impl Library {
             return Err(form.span.error("define syntax is (define name (roles (sort param) ...) clause ...)"));
         };
         let word = name.word()?;
-        let standard = crate::Registry::standard();
         if !valid_name(word)
             || Value::literal(word).is_some()
             || RESERVED.contains(&word)
-            || standard.predicates.contains_key(word)
+            || standard().predicates.contains_key(word)
         {
             return Err(name
                 .span
@@ -575,7 +630,7 @@ impl Library {
         if self.defines.contains_key(word) {
             return Err(name.span.error(format!("{word} is already defined")));
         }
-        let params = sorted(params, true)?;
+        let params = self.roles(params, &[clauses], true)?;
         let mut names = Names::new();
         for p in &params {
             if !valid_name(&p.name)
@@ -595,13 +650,53 @@ impl Library {
         Ok(())
     }
 
-    /// The clauses of a pattern or a scope body, with every definition they
-    /// call expanded.
+    /// The parameter sorts of a definition or a standard predicate.
+    fn signature(&self, head: &str) -> Option<Vec<Sort>> {
+        match self.defines.get(head) {
+            Some(define) => Some(define.params.iter().map(|p| p.sort).collect()),
+            None => standard().predicates.get(head).map(|p| p.spec().parameters.clone()),
+        }
+    }
+
+    /// The free names of `bodies`, in order of first use, with their sorts.
+    fn uses(&self, bodies: &[&[Expr]]) -> Result<Uses> {
+        let mut uses = Uses::default();
+        for body in bodies {
+            uses.walk(body, &[], &|head| self.signature(head))?;
+        }
+        Ok(uses)
+    }
+
+    /// The roles of a `(roles ...)` form, each bare name sorted by its uses
+    /// in `bodies`.
+    fn roles(&self, expr: &Expr, bodies: &[&[Expr]], literal_sorts: bool) -> Result<Vec<Role>> {
+        let entries = declared(expr, literal_sorts)?;
+        let uses = if entries.iter().any(|(_, sort, _)| sort.is_none()) { Some(self.uses(bodies)?) } else { None };
+        entries
+            .into_iter()
+            .map(|(name, sort, span)| {
+                let sort = match sort {
+                    Some(sort) => sort,
+                    None => uses.as_ref().expect("walked").sort(&name, &span, literal_sorts)?,
+                };
+                Ok(Role { name, sort, span })
+            })
+            .collect()
+    }
+
+    /// The clauses of a pattern or a scope body, with the sugar rewritten
+    /// and every definition they call expanded.
     fn body(&self, clauses: &[Expr], names: &Names, span: Span) -> Result<Pattern> {
         let mut pattern = Pattern { span, ..Pattern::default() };
-        for clause in clauses {
+        for clause in &sugar::clauses(clauses)? {
             let xs = clause.list()?;
             match clause.head() {
+                Some(part) if NOT_CLAUSES.contains(&part) => {
+                    return Err(clause.span.error(format!(
+                        "({part} ...) is not a clause: a query is (query (roles ...) (out ...) pattern ...), \
+                         each part in that order"
+                    )));
+                }
                 Some("same") => {
                     if xs.len() < 3 {
                         return Err(clause.span.error("same requires at least two role names"));
@@ -612,7 +707,7 @@ impl Library {
                     let declared = xs.get(1).ok_or_else(|| {
                         clause.span.error(format!("{quantifier} syntax is ({quantifier} (roles ...) clause ...)"))
                     })?;
-                    let roles = roles(declared)?;
+                    let roles = self.roles(declared, &[&xs[2..]], false)?;
                     let mut inner = names.clone();
                     inner.extend(roles.iter().map(|r| (r.name.clone(), r.sort)));
                     let body = self.body(&xs[2..], &inner, clause.span.clone())?;
@@ -767,16 +862,46 @@ fn atom(expr: &Expr) -> Result<Atom> {
 }
 
 impl Query {
+    /// `(query (roles ...) (out ...) pattern ...)`, where each part may be
+    /// left out: without `(roles ...)` the roles are the free names the
+    /// patterns use, in order of first use, each sorted by its uses; without
+    /// `(out ...)` the query asks yes or no; and a query of one pattern may
+    /// give its clauses without `(pattern ...)`.
     pub(crate) fn from_expr(library: &Library, tree: &Expr) -> Result<Query> {
-        let forms = tree.tagged("query")?;
-        if forms.len() < 2 {
-            return Err(tree.span.error("a query requires (roles ...) and (out ...) forms"));
+        let mut forms = tree.tagged("query")?;
+        let declared = forms.first().filter(|f| f.head() == Some("roles"));
+        if declared.is_some() {
+            forms = &forms[1..];
         }
-        let mut query = Query { roles: roles(&forms[0])?, span: tree.span.clone(), ..Query::default() };
-        query.outputs = forms[1].tagged("out")?.iter().map(|x| x.word().map(str::to_owned)).collect::<Result<_>>()?;
-        let names: Names = query.roles.iter().map(|r| (r.name.clone(), r.sort)).collect();
-        for form in &forms[2..] {
-            query.patterns.push(library.body(form.tagged("pattern")?, &names, form.span.clone())?);
+        let mut outputs = Vec::new();
+        if let Some(out) = forms.first().filter(|f| f.head() == Some("out")) {
+            outputs = out.tagged("out")?.iter().map(|x| x.word().map(str::to_owned)).collect::<Result<_>>()?;
+            forms = &forms[1..];
+        }
+        let bodies = patterns(forms, &tree.span)?;
+        let clauses: Vec<&[Expr]> = bodies.iter().map(|(body, _)| *body).collect();
+        let roles = match declared {
+            Some(declared) => library.roles(declared, &clauses, false)?,
+            None => {
+                let uses = library.uses(&clauses)?;
+                let unused = outputs.iter().filter(|o| !uses.names().contains(o)).cloned();
+                uses.names()
+                    .iter()
+                    .cloned()
+                    .chain(unused)
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .map(|name| {
+                        let sort = uses.sort(&name, &tree.span, false)?;
+                        Ok(Role { name, sort, span: tree.span.clone() })
+                    })
+                    .collect::<Result<_>>()?
+            }
+        };
+        let names: Names = roles.iter().map(|r: &Role| (r.name.clone(), r.sort)).collect();
+        let mut query = Query { roles, outputs, span: tree.span.clone(), ..Query::default() };
+        for (body, span) in bodies {
+            query.patterns.push(library.body(body, &names, span)?);
         }
         Ok(query)
     }
@@ -866,9 +991,10 @@ const BROKEN: [&str; 6] = ["policy", "rule", "query", "pattern", "define", "domi
 /// Format Silas text canonically: comments kept, each on its own line;
 /// blank lines kept where the source has one (at most one); a form on one
 /// line when it fits in 100 columns and holds no comment or blank line, and
-/// is not a policy, rule, query, pattern, definition or dominance; otherwise its leading
-/// words (and a following `(roles ...)`) on its first line and each other
-/// item on a line of its own, two columns in. Formatting is idempotent.
+/// is not a policy, rule, query, pattern, definition or dominance; otherwise
+/// its leading words (and a following `(roles ...)`, `(out ...)` or `(play
+/// ...)`, when it fits) on its first line and each other item on a line of
+/// its own, two columns in. Formatting is idempotent.
 pub fn format(text: &str, name: &str) -> Result<String> {
     let forms = Expr::read_all(text, name, 4 << 20, 64, true)?;
     let mut out = String::new();
@@ -929,7 +1055,7 @@ fn write_form(expr: &Expr, indent: usize, out: &mut String) {
     }
     if !first
         && let Some((x, tail)) = rest.split_first()
-        && x.head() == Some("roles")
+        && matches!(x.head(), Some("roles" | "out" | "play"))
         && let Some(line) = flat(x).filter(|line| column(out) + 1 + line.len() <= WIDTH)
     {
         out.push(' ');

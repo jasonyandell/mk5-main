@@ -6,14 +6,12 @@
 ;   uniformly, seven to each other seat.
 ; Exact: 147/323. Book model: 90/243 = 10/27 (there are 243 placements, not
 ;   225; 90/225 is the printed 0.40).
-(query (roles)
-  (out)
-  (pattern
-    (none (roles (domino a) (domino b) (domino c) (chair x))
-      (in a q*)
-      (in b q*)
-      (in c q*)
-      (not (viewer x))
-      (holds x a)
-      (holds x b)
-      (holds x c))))
+(query
+  (none (roles a b c x)
+    (in a q*)
+    (in b q*)
+    (in c q*)
+    (not (viewer x))
+    (holds x a)
+    (holds x b)
+    (holds x c)))

@@ -224,7 +224,6 @@ fn malformed_schema_history_and_modes_are_refused() {
     for source in [
         "(policy p (fallback lowest-legal) (fallback lowest-legal))",
         "(policy p (fallback lowest-legal) (mystery x))",
-        "(policy p)",
         // A policy has no modes and no bindings: it is a function of the frame.
         "(policy p (initial a) (fallback lowest-legal))",
         "(policy p (fallback lowest-legal) (bind top (query (roles (domino d)) (out d))))",
@@ -234,6 +233,8 @@ fn malformed_schema_history_and_modes_are_refused() {
         let refused = source.parse::<PolicyProgram>().and_then(|p| p.compile(&Registry::standard(), &physics("P6")));
         assert!(refused.is_err(), "{source}");
     }
+    // The one fallback may go unsaid.
+    assert_eq!("(policy p)".parse::<PolicyProgram>().unwrap(), "(policy p (fallback lowest-legal))".parse().unwrap());
 
     let table = Table::deal("P6").until_viewer_holds(6);
     let mut wrong = PolicyKey::of(&table.frame);

@@ -8,15 +8,13 @@
 ; State: the bidder's seven tiles, nothing played; the 21 others dealt
 ;   uniformly, seven to each other seat.
 ; Exact: 617/969. Book model: 141/243 = 47/81.
-(query (roles (chair v))
-  (out)
-  (pattern
-    (viewer v)
-    (none (roles (domino a) (domino b) (domino c) (chair x))
-      (in a q*)
-      (in b q*)
-      (in c q*)
-      (opponent v x)
-      (holds x a)
-      (holds x b)
-      (holds x c))))
+(query
+  (viewer v)
+  (none (roles a b c x)
+    (in a q*)
+    (in b q*)
+    (in c q*)
+    (opponent v x)
+    (holds x a)
+    (holds x b)
+    (holds x c)))

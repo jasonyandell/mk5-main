@@ -10,12 +10,10 @@
 ;   are dealt uniformly.
 ; Exact: 7/20; 1/2 if the setter also knows the bidder lacks it. Book model:
 ;   1/3 (or 1/2).
-(query (roles (chair v) (chair p) (context q) (domino d))
-  (out)
-  (pattern
-    (viewer v)
-    (partner v p)
-    (led-context q)
-    (double d)
-    (in d q)
-    (holds p d)))
+(query
+  (viewer v)
+  (partner v p)
+  (led-context q)
+  (double d)
+  (in d q)
+  (holds p d))

@@ -22,27 +22,16 @@
 (include book)
 
 (policy dead-double
-  (fallback lowest-legal)
-  (rule throw-a-dead-double
-    (select answer)
-    (guard
-      (query (roles (chair me) (domino dd))
-        (out dd)
-        (pattern
-          (viewer me)
-          (discard dd)
-          (dead-double dd)
-          (count dd 0)
-          (not (can-take-it))))))
-  (rule cash-a-dead-double
-    (select answer)
-    (guard
-      (query (roles (chair b) (domino dd))
-        (out dd)
-        (pattern
-          (viewer b)
-          (bidder b)
-          (on-lead b)
-          (not (no-setter-trump))
-          (own-legal dd)
-          (dead-double dd))))))
+  (rule throw-a-dead-double (play dd)
+    (viewer me)
+    (discard dd)
+    (dead-double dd)
+    (count dd 0)
+    (not (can-take-it)))
+  (rule cash-a-dead-double (play dd)
+    (viewer b)
+    (bidder b)
+    (on-lead b)
+    (not (no-setter-trump))
+    (own-legal dd)
+    (dead-double dd)))
