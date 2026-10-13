@@ -12,20 +12,20 @@
 ; you can follow) is played in Hand 28 (p. 98) and is not in the gate. The
 ; book's "more urgent against 35 and 36" (p. 110) ranks the rule's urgency; it
 ; does not change the tile.
+
+(include book)
+
 (policy c07-pounce
   (fallback lowest-legal)
-  (rule play-count-now (select answer)
+  (rule play-count-now
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino give) (context led))
+      (query (roles (chair me) (domino give))
         (out give)
         (pattern
           (viewer me)
-          (declarer b)
-          (successor b me)
-          (leader b)
-          (led-context led)
-          (own-legal give)
-          (not (in give led))
-          (not (in give q*))
-          (not (count give 0)))))))
+          (left-setter me)
+          (bidders-lead)
+          (discard give)
+          (not (trump-tile give))
+          (count-tile give))))))

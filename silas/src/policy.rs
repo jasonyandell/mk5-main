@@ -378,6 +378,30 @@ fn rule(library: &Library, form: &Expr) -> Result<PolicyRule> {
     })
 }
 
+/// A Silas text: a query or a policy, after its `include` and `define`
+/// forms.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Program {
+    Query(Query),
+    Policy(PolicyProgram),
+}
+
+impl Program {
+    /// Parse a text whose final form is a `(query ...)` or a `(policy ...)`,
+    /// naming it `name` in errors.
+    pub fn parse(text: &str, name: &str) -> Result<Program> {
+        let forms = Expr::read_all(text, name, 4 << 20, 40, false)?;
+        match forms.last().and_then(Expr::head) {
+            Some("query") => Query::parse(text, name).map(Program::Query),
+            Some("policy") => PolicyProgram::parse(text, name).map(Program::Policy),
+            _ => Err(match forms.last() {
+                Some(last) => last.span.error("expected a final (query ...) or (policy ...) form"),
+                None => error(format!("{name}: expected a (query ...) or a (policy ...), found nothing")),
+            }),
+        }
+    }
+}
+
 impl FromStr for PolicyProgram {
     type Err = Error;
 

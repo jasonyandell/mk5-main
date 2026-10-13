@@ -8,22 +8,24 @@
 ; mover's only tile of one of their pip suits.
 ; How this encoding differs: none from the gate.
 ; Out of trump is read from the hand, as in C1b.
+
+(include book)
+
 (policy c13a-shed-a-singleton
   (fallback lowest-legal)
-  (rule throw-a-lone-tile (select answer)
+  (rule throw-a-lone-tile
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino lone) (context suit))
+      (query (roles (chair me) (domino lone) (context suit))
         (out lone)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader b)
-          (led-context q*)
+          (setter me)
+          (bidders-lead)
+          (trump-led)
           (own-legal lone)
-          (not (in lone q*))
+          (not (trump-tile lone))
           (count lone 0)
           (in lone suit)
-          (not (context suit q*))
+          (not (trump suit))
           (none (roles (domino other)) (own-legal other) (in other suit) (not (tile other lone))))))))

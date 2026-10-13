@@ -9,27 +9,27 @@
 ; it does not fire; C8 (c08-no-count-on-the-double.silas) does. The book plays
 ; the same protection on trump doubles (Hand 33, p. 111), which the gate
 ; excludes.
+
+(include book)
+
 (policy c13b-protect-the-count
   (fallback lowest-legal)
-  (rule follow-with-the-guard (select answer)
+  (rule follow-with-the-guard
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino doubled) (domino guard) (domino counted) (context led))
+      (query (roles (chair me) (domino doubled) (domino guard) (domino counted))
         (out guard)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader b)
-          (trick-play b doubled)
+          (setter me)
+          (bidder-led doubled)
           (double doubled)
-          (not (in doubled q*))
-          (led-context led)
-          (own-legal guard)
-          (in guard led)
+          (not (trump-tile doubled))
+          (follower guard)
           (count guard 0)
-          (own-legal counted)
-          (in counted led)
-          (not (count counted 0))
-          (none (roles (domino third)) (own-legal third) (in third led)
-            (not (tile third guard)) (not (tile third counted))))))))
+          (follower counted)
+          (count-tile counted)
+          (none (roles (domino third))
+            (follower third)
+            (not (tile third guard))
+            (not (tile third counted))))))))

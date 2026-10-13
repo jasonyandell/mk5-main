@@ -38,7 +38,7 @@ pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
 pub use physics::{Declaration, Physics};
 pub use policy::{
     Allowed, CompiledPolicy, DecisionProvenance, ExactRule, Fallback, GuardWitnesses, PolicyDecisionTrace, PolicyKey,
-    PolicyProgram, PolicyRule, Selector,
+    PolicyProgram, PolicyRule, Program, Selector,
 };
 pub use registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};

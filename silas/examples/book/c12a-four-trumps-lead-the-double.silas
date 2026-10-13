@@ -10,31 +10,25 @@
 ; it never fires. "Exactly four" is four trump roles and no fifth.
 ; The book's pp. 9 and 32 (W42-p009-i, W42-p032-a) lean the other way when the
 ; top two trumps are not both held; p. 183 is the one place it says A.
+
+(include book)
+
 (policy c12a-four-trumps-lead-the-double
   (fallback lowest-legal)
-  (rule lead-the-double (select answer)
+  (rule lead-the-double
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (domino top) (domino second) (domino third) (domino t3) (domino t4))
+      (query (roles (chair b) (domino top) (domino second) (domino third))
         (out top)
         (pattern
           (viewer b)
-          (declarer b)
+          (bidder b)
           (trick-number 1)
           (next-actor b)
-          (in top q*)
-          (none (roles (domino above)) (in above q*) (beats above top q*))
-          (in second q*)
-          (beats top second q*)
-          (none (roles (domino above)) (in above q*) (beats above second q*) (not (tile above top)))
-          (in third q*)
-          (beats second third q*)
-          (none (roles (domino above)) (in above q*) (beats above third q*)
-            (not (tile above top)) (not (tile above second)))
+          (exactly-four-trumps)
+          (top-trump top)
+          (next-trump top second)
+          (next-trump second third)
           (own-legal top)
           (not (own-legal second))
-          (own-legal third)
-          (own-legal t3) (in t3 q*)
-          (own-legal t4) (in t4 q*)
-          (none (roles (domino fifth)) (own-legal fifth) (in fifth q*)
-            (not (tile fifth top)) (not (tile fifth third)) (not (tile fifth t3)) (not (tile fifth t4))))))))
+          (own-legal third))))))

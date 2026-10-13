@@ -15,72 +15,53 @@
 ; double (GAPS.md, aggregate).
 ; "Calls for count": a live count tile outside the hand follows the suit the
 ; tile leads. "Top": no live tile outside the hand outranks it in that suit.
+
+(include book)
+
 (policy c15-setter-leads-call-for-count
   (fallback lowest-legal)
-  (rule a-double-that-calls-for-count (select answer)
+  (rule a-double-that-calls-for-count
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino lead) (domino called) (context suit))
+      (query (roles (chair me) (domino lead))
         (out lead)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader me)
-          (next-actor me)
+          (setter me)
+          (on-lead me)
           (own-legal lead)
           (double lead)
-          (leads-context lead suit)
-          (live called)
-          (not (own-legal called))
-          (in called suit)
-          (not (count called 0))))))
-  (rule a-tile-that-calls-for-count (select answer)
+          (calls-for-count lead)))))
+  (rule a-tile-that-calls-for-count
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino lead) (domino called) (context suit))
+      (query (roles (chair me) (domino lead))
         (out lead)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader me)
-          (next-actor me)
+          (setter me)
+          (on-lead me)
           (own-legal lead)
           (not (double lead))
-          (leads-context lead suit)
-          (live called)
-          (not (own-legal called))
-          (in called suit)
-          (not (count called 0))
-          (none (roles (domino above)) (live above) (not (own-legal above)) (in above suit) (beats above lead suit)))
+          (calls-for-count lead)
+          (not (can-lose lead)))
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader me)
-          (next-actor me)
+          (setter me)
+          (on-lead me)
           (own-legal lead)
           (not (double lead))
-          (leads-context lead suit)
-          (live called)
-          (not (own-legal called))
-          (in called suit)
-          (not (count called 0))
-          (none (roles (domino five)) (live five) (not (own-legal five)) (in five suit) (count five 5))))))
-  (rule one-point-sets-lead-quietly (select answer)
+          (calls-for-count lead)
+          (not (calls-for lead 5))))))
+  (rule one-point-sets-lead-quietly
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino lead) (context suit))
+      (query (roles (chair me) (domino lead))
         (out lead)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader me)
-          (next-actor me)
+          (setter me)
+          (on-lead me)
           (to-set 1)
           (own-legal lead)
-          (leads-context lead suit)
-          (none (roles (domino called)) (live called) (not (own-legal called)) (in called suit)
-            (not (count called 0))))))))
+          (not (calls-for-count lead)))))))

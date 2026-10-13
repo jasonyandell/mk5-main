@@ -5,8 +5,7 @@
 ; State: as c16-2t-spread.
 ; Exact: 176/969. Book model: 51/243 = 17/81 (the printed 45 is not the
 ;   count under any placement model we found).
-(query
-  (roles (chair v) (chair p) (domino a) (domino b) (domino c))
+(query (roles (chair v) (chair p) (domino a) (domino b) (domino c))
   (out)
   (pattern
     (viewer v)

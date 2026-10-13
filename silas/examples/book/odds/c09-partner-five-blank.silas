@@ -4,8 +4,7 @@
 ; State: Hand 23, sixes trump (6-1 1-1 6-6 0-0 3-3 5-4 6-5), nothing
 ;   played; the 21 others dealt uniformly, seven to each other seat.
 ; Exact: 1/3. Book model: 1/3.
-(query
-  (roles (chair v) (chair p))
+(query (roles (chair v) (chair p))
   (out)
   (pattern
     (viewer v)

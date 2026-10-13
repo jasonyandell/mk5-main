@@ -8,18 +8,20 @@
 ; the partner play the top trump while holding two more: the book's play is the
 ; sender's, and its reading is false there. The reading is a query:
 ; c02-reading-singleton.silas.
+
+(include book)
+
 (policy c02-high-trump-handoff
   (fallback lowest-legal)
-  (rule play-the-top-trump (select answer)
+  (rule play-the-top-trump
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino top))
+      (query (roles (chair p) (domino top))
         (out top)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader b)
-          (led-context q*)
+          (bidders-partner p)
+          (bidders-lead)
+          (trump-led)
           (own-legal top)
-          (boss top q*))))))
+          (boss-trump top))))))

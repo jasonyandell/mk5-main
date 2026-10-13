@@ -6,8 +6,7 @@
 ;   played; 6-6 and 0-0 are out; the 21 others dealt uniformly, seven to each
 ;   other seat.
 ; Exact: 23/30. Book model: 7/9.
-(query
-  (roles (chair v) (chair x))
+(query (roles (chair v) (chair x))
   (out)
   (pattern
     (viewer v)

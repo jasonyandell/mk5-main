@@ -11,58 +11,49 @@
 ; How this encoding differs: none from the gate. The ordering is rule order:
 ; its first two rules, then "never trump". The book's own exception (every
 ; other lead calls a ten) is in neither.
+
+(include book)
+
 (policy c09-partner-never-leads-trump
   (fallback lowest-legal)
-  (rule lead-from-a-count-safe-suit (select answer)
+  (rule lead-from-a-count-safe-suit
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino lead) (context suit))
+      (query (roles (chair p) (domino lead))
         (out lead)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader p)
-          (next-actor p)
-          (none (roles (domino held)) (own-legal held) (double held) (not (in held q*)))
-          (none (roles (domino walker) (context its))
-            (own-legal walker) (not (in walker q*)) (leads-context walker its)
-            (none (roles (domino over)) (live over) (not (own-legal over)) (in over its) (beats over walker its)))
+          (bidders-partner p)
+          (on-lead p)
+          (none (roles (domino held)) (own-legal held) (double held) (not (trump-tile held)))
+          (none (roles (domino w)) (walker w))
           (own-legal lead)
-          (not (in lead q*))
-          (leads-context lead suit)
-          (none (roles (domino out)) (live out) (not (own-legal out)) (in out suit) (not (count out 0)))))))
-  (rule lead-from-a-five-suit (select answer)
+          (not (trump-tile lead))
+          (not (calls-for-count lead))))))
+  (rule lead-from-a-five-suit
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino lead) (context suit))
+      (query (roles (chair p) (domino lead))
         (out lead)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader p)
-          (next-actor p)
-          (none (roles (domino held)) (own-legal held) (double held) (not (in held q*)))
-          (none (roles (domino walker) (context its))
-            (own-legal walker) (not (in walker q*)) (leads-context walker its)
-            (none (roles (domino over)) (live over) (not (own-legal over)) (in over its) (beats over walker its)))
+          (bidders-partner p)
+          (on-lead p)
+          (none (roles (domino held)) (own-legal held) (double held) (not (trump-tile held)))
+          (none (roles (domino w)) (walker w))
           (own-legal lead)
-          (not (in lead q*))
-          (leads-context lead suit)
-          (none (roles (domino out)) (live out) (not (own-legal out)) (in out suit) (count out 10))))))
-  (rule lead-anything-but-trump (select answer)
+          (not (trump-tile lead))
+          (not (calls-for lead 10))))))
+  (rule lead-anything-but-trump
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino lead) (domino trump))
+      (query (roles (chair p) (domino lead) (domino trump))
         (out lead)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader p)
-          (next-actor p)
+          (bidders-partner p)
+          (on-lead p)
           (own-legal lead)
-          (not (in lead q*))
+          (not (trump-tile lead))
           (own-legal trump)
-          (in trump q*))))))
+          (trump-tile trump))))))

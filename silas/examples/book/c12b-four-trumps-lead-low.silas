@@ -12,34 +12,27 @@
 ; where neither fires. The book allows the top trump first when a trump count
 ; tile is at stake (W42-p183-d); neither the gate nor this file has that
 ; exception.
+
+(include book)
+
 (policy c12b-four-trumps-lead-low
   (fallback lowest-legal)
-  (rule lead-the-lowest-trump (select answer)
+  (rule lead-the-lowest-trump
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (domino top) (domino second) (domino third) (domino low) (domino t2) (domino t3))
+      (query (roles (chair b) (domino top) (domino second) (domino third) (domino low))
         (out low)
         (pattern
           (viewer b)
-          (declarer b)
+          (bidder b)
           (trick-number 1)
           (next-actor b)
-          (in top q*)
-          (none (roles (domino above)) (in above q*) (beats above top q*))
-          (in second q*)
-          (beats top second q*)
-          (none (roles (domino above)) (in above q*) (beats above second q*) (not (tile above top)))
-          (in third q*)
-          (beats second third q*)
-          (none (roles (domino above)) (in above q*) (beats above third q*)
-            (not (tile above top)) (not (tile above second)))
+          (exactly-four-trumps)
+          (top-trump top)
+          (next-trump top second)
+          (next-trump second third)
           (own-legal top)
           (not (own-legal second))
           (not (own-legal third))
           (own-legal low)
-          (in low q*)
-          (none (roles (domino below)) (own-legal below) (in below q*) (beats low below q*))
-          (own-legal t2) (in t2 q*)
-          (own-legal t3) (in t3 q*)
-          (none (roles (domino fifth)) (own-legal fifth) (in fifth q*)
-            (not (tile fifth top)) (not (tile fifth low)) (not (tile fifth t2)) (not (tile fifth t3))))))))
+          (lowest-trump-held low))))))

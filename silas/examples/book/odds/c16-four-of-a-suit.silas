@@ -11,11 +11,16 @@
 ;   event for one known hand (no trump, where a tile follows both of its
 ;   pips); tests/book_odds.rs checks it hand by hand and computes the whole
 ;   deal by enumeration in plain Rust.
-(query
-  (roles (chair v) (context q) (domino a) (domino b) (domino c) (domino d))
+(query (roles (chair v) (context q) (domino a) (domino b) (domino c) (domino d))
   (out)
   (pattern
     (viewer v)
     (not (context q q*))
-    (in a q) (in b q) (in c q) (in d q)
-    (holds v a) (holds v b) (holds v c) (holds v d)))
+    (in a q)
+    (in b q)
+    (in c q)
+    (in d q)
+    (holds v a)
+    (holds v b)
+    (holds v c)
+    (holds v d)))

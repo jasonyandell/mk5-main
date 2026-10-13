@@ -6,8 +6,7 @@
 ; State: Hand 3, fours trump (5-2 4-1 6-6 6-4 4-2 4-3 4-4), nothing played;
 ;   the 21 others dealt uniformly, seven to each other seat.
 ; Exact: 1/3. Book model: 1/3.
-(query
-  (roles (chair v) (chair p))
+(query (roles (chair v) (chair p))
   (out)
   (pattern
     (viewer v)

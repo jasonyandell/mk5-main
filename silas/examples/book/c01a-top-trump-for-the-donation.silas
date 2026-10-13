@@ -10,22 +10,22 @@
 ; trick 2) and with no trump out (Hand 33, trick 5), because what matters is
 ; what the partner can know (GAPS.md, another seat's knowledge). See
 ; tests/book.rs.
+
+(include book)
+
 (policy c01a-top-trump-for-the-donation
   (fallback lowest-legal)
-  (rule lead-the-top-trump (select answer)
+  (rule lead-the-top-trump
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino top) (domino out))
+      (query (roles (chair b) (chair p) (domino top))
         (out top)
         (pattern
           (viewer b)
-          (declarer b)
-          (partner b p)
-          (leader b)
-          (next-actor b)
-          (shown-void p q*)
+          (bidder b)
+          (on-lead b)
+          (bidders-partner p)
+          (shown-out-of-trump p)
           (own-legal top)
-          (boss top q*)
-          (live out)
-          (in out q*)
-          (not (own-legal out)))))))
+          (boss-trump top)
+          (trump-out))))))

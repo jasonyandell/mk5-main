@@ -5,25 +5,27 @@
 ; Python gate (pour_setter gate_c13c): a setter following a non-trump lead with
 ; exactly two followers, neither count; the book's tile is the lower.
 ; How this encoding differs: none from the gate.
+
+(include book)
+
 (policy c13c-low-from-a-pair
   (fallback lowest-legal)
-  (rule follow-low (select answer)
+  (rule follow-low
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino low) (domino high) (context led))
+      (query (roles (chair me) (domino low) (domino high) (context led))
         (out low)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
+          (setter me)
           (led-context led)
-          (not (context led q*))
-          (own-legal low)
-          (in low led)
+          (not (trump led))
+          (follower low)
           (count low 0)
-          (own-legal high)
-          (in high led)
+          (follower high)
           (count high 0)
           (beats high low led)
-          (none (roles (domino third)) (own-legal third) (in third led)
-            (not (tile third low)) (not (tile third high))))))))
+          (none (roles (domino third))
+            (follower third)
+            (not (tile third low))
+            (not (tile third high))))))))

@@ -9,25 +9,23 @@
 ; book's tiles are the non-count followers.
 ; How this encoding differs: none from the gate. The book's own instances are
 ; on trump doubles (Hands 33 and 35, pp. 111, 116), which the gate excludes.
+
+(include book)
+
 (policy c08-no-count-on-the-double
   (fallback lowest-legal)
-  (rule follow-without-count (select answer)
+  (rule follow-without-count
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino doubled) (domino plain) (domino counted) (context led))
+      (query (roles (chair me) (domino doubled) (domino plain) (domino counted))
         (out plain)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader b)
-          (trick-play b doubled)
+          (setter me)
+          (bidder-led doubled)
           (double doubled)
-          (not (in doubled q*))
-          (led-context led)
-          (own-legal plain)
-          (in plain led)
+          (not (trump-tile doubled))
+          (follower plain)
           (count plain 0)
-          (own-legal counted)
-          (in counted led)
-          (not (count counted 0)))))))
+          (follower counted)
+          (count-tile counted))))))

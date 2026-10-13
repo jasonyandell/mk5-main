@@ -34,6 +34,30 @@
   (leader c)
   (next-actor c))
 
+; The bidder led the open trick (or leads the next).
+(define bidders-lead (roles)
+  (some (roles (chair b)) (declarer b) (leader b)))
+
+; The bidder led d to the open trick.
+(define bidder-led (roles (domino d))
+  (some (roles (chair b)) (declarer b) (leader b) (trick-play b d)))
+
+; The bidder is taking the open trick so far.
+(define bidder-winning (roles)
+  (some (roles (chair b)) (declarer b) (current-winner b)))
+
+; -- The viewer's play to the open trick.
+
+; d is a legal play that follows the suit led.
+(define follower (roles (domino d))
+  (own-legal d)
+  (some (roles (context q)) (led-context q) (in d q)))
+
+; d is a legal play that does not follow the suit led: the viewer is void.
+(define discard (roles (domino d))
+  (own-legal d)
+  (some (roles (context q)) (led-context q) (not (in d q))))
+
 ; -- The count.
 
 (define count-tile (roles (domino d))
@@ -56,6 +80,22 @@
 ; c has shown void in trump.
 (define shown-out-of-trump (roles (chair c))
   (some (roles (context t)) (trump t) (shown-void c t)))
+
+; c holds no trump, in this world.
+(define void-in-trump (roles (chair c))
+  (some (roles (context t)) (trump t) (void c t)))
+
+; A trump set: the bidder led trump, c followed it, and c's partner did not.
+(define trump-set (roles (chair c))
+  (some (roles (chair b) (chair p) (domino lead) (domino his) (domino partners))
+    (declarer b)
+    (partner c p)
+    (led b lead)
+    (trump-tile lead)
+    (played-to lead c his)
+    (trump-tile his)
+    (played-to lead p partners)
+    (not (trump-tile partners))))
 
 ; A trump outside the viewer's hand is still live.
 (define trump-out (roles)
@@ -80,7 +120,11 @@
 
 ; d is the viewer's lowest trump.
 (define lowest-trump-held (roles (domino d))
-  (some (roles (context t)) (trump t) (mine d) (in d t) (none (roles (domino e)) (mine e) (in e t) (beats d e t))))
+  (some (roles (context t))
+    (trump t)
+    (mine d)
+    (in d t)
+    (none (roles (domino e)) (mine e) (in e t) (beats d e t))))
 
 ; The viewer holds four trumps or more.
 (define four-trumps-or-more (roles)
@@ -129,6 +173,12 @@
   (mine d)
   (not (trump-tile d))
   (can-lose d))
+
+; A walker: the viewer's tile, not trump, that cannot lose.
+(define walker (roles (domino d))
+  (mine d)
+  (not (trump-tile d))
+  (not (can-lose d)))
 
 ; A live tile beats d in the open trick's context.
 (define beatable (roles (domino d))

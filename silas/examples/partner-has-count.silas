@@ -1,6 +1,13 @@
 ; A Boolean event. Several count tiles still contribute a world's mass once.
-(query
-  (roles (chair me) (chair partner) (domino count-tile))
+(query (roles (chair me) (chair partner) (domino count-tile))
   (out)
-  (pattern (viewer me) (partner me partner) (holds partner count-tile) (count count-tile 5))
-  (pattern (viewer me) (partner me partner) (holds partner count-tile) (count count-tile 10)))
+  (pattern
+    (viewer me)
+    (partner me partner)
+    (holds partner count-tile)
+    (count count-tile 5))
+  (pattern
+    (viewer me)
+    (partner me partner)
+    (holds partner count-tile)
+    (count count-tile 10)))

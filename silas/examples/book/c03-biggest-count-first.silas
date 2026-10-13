@@ -7,37 +7,34 @@
 ; "two or more" is two distinct roles.
 ; The book states the rule for a trick the partner knows is safe (C1); the gate,
 ; and this encoding, read "the bidder is winning so far", which is weaker.
+
+(include book)
+
 (policy c03-biggest-count-first
   (fallback lowest-legal)
-  (rule give-a-ten (select answer)
+  (rule give-a-ten
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino give) (domino other) (context led))
+      (query (roles (chair p) (domino give) (domino other))
         (out give)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (current-winner b)
-          (led-context led)
-          (own-legal give)
-          (not (in give led))
+          (bidders-partner p)
+          (bidder-winning)
+          (discard give)
           (count give 10)
           (own-legal other)
-          (not (count other 0))))))
-  (rule give-a-five (select answer)
+          (count-tile other)))))
+  (rule give-a-five
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino give) (domino other) (context led))
+      (query (roles (chair p) (domino give) (domino other))
         (out give)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (current-winner b)
-          (led-context led)
-          (own-legal give)
-          (not (in give led))
+          (bidders-partner p)
+          (bidder-winning)
+          (discard give)
           (count give 5)
           (own-legal other)
           (count other 5))))))

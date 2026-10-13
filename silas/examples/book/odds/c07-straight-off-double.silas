@@ -6,8 +6,7 @@
 ;   trump), not its double; nothing played; the 21 others dealt uniformly,
 ;   seven to each other seat.
 ; Exact: 2/3. Book model: 2/3.
-(query
-  (roles (chair v) (chair x) (domino off) (context q) (domino d))
+(query (roles (chair v) (chair x) (domino off) (context q) (domino d))
   (out)
   (pattern
     (viewer v)

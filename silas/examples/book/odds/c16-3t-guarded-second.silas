@@ -7,15 +7,13 @@
 ; Exact: 388/855. Book model: 38/81.
 ;
 ; The same relation as c16-4t-guarded-second, over a hand one trump shorter.
-(query
-  (roles (chair v) (chair x) (domino t) (domino o))
+(query (roles (chair v) (chair x) (domino t) (domino o))
   (out)
   (pattern
     (viewer v)
     (opponent v x)
     (in t q*)
     (in o q*)
-    (none (roles (domino u) (chair y))
-      (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+    (none (roles (domino u) (chair y)) (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
     (holds x t)
     (holds x o)))

@@ -8,8 +8,7 @@
 ;   out and the book model gives 113/243); nothing played; the 21 others
 ;   dealt uniformly, seven to each other seat.
 ; Exact: 467/855. Book model: 43/81.
-(query
-  (roles (chair v) (chair p) (chair x))
+(query (roles (chair v) (chair p) (chair x))
   (out)
   (pattern
     (viewer v)
@@ -19,5 +18,4 @@
     (viewer v)
     (opponent v x)
     (holds x 3-2)
-    (none (roles (domino d))
-      (in d q2) (not (tile d 3-2)) (holds x d))))
+    (none (roles (domino d)) (in d q2) (not (tile d 3-2)) (holds x d))))

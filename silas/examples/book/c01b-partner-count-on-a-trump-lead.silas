@@ -10,56 +10,52 @@
 ; How this encoding differs: none from the gate.
 ; Out of trump is read from the hand: following a trump lead, a legal tile that
 ; is not trump proves the viewer holds no trump.
+
+(include book)
+
 (policy c01b-partner-count-on-a-trump-lead
   (fallback lowest-legal)
-  (rule not-top-lead-no-count (select answer)
+  (rule not-top-lead-no-count
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino give) (domino led) (domino over) (domino held))
+      (query (roles (chair p) (domino led) (domino give) (domino held))
         (out give)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader b)
-          (led-context q*)
-          (trick-play b led)
-          (live over)
-          (beats over led q*)
+          (bidders-partner p)
+          (trump-led)
+          (bidder-led led)
+          (beatable led)
           (own-legal give)
-          (not (in give q*))
+          (not (trump-tile give))
           (count give 0)
           (own-legal held)
-          (not (count held 0))))))
-  (rule top-lead-give-ten (select answer)
+          (count-tile held)))))
+  (rule top-lead-give-ten
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino give) (domino led))
+      (query (roles (chair p) (domino led) (domino give))
         (out give)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader b)
-          (led-context q*)
-          (trick-play b led)
-          (none (roles (domino over)) (live over) (beats over led q*))
+          (bidders-partner p)
+          (trump-led)
+          (bidder-led led)
+          (not (beatable led))
           (own-legal give)
-          (not (in give q*))
+          (not (trump-tile give))
           (count give 10)))))
-  (rule top-lead-give-five (select answer)
+  (rule top-lead-give-five
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino give) (domino led))
+      (query (roles (chair p) (domino led) (domino give))
         (out give)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader b)
-          (led-context q*)
-          (trick-play b led)
-          (none (roles (domino over)) (live over) (beats over led q*))
+          (bidders-partner p)
+          (trump-led)
+          (bidder-led led)
+          (not (beatable led))
           (own-legal give)
-          (not (in give q*))
+          (not (trump-tile give))
           (count give 5))))))

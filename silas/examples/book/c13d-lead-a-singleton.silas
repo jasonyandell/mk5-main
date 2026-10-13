@@ -8,21 +8,22 @@
 ; book leads otherwise (tests/book.rs).
 ; Python gate (pour_setter gate_c13d): the same.
 ; How this encoding differs: none from the gate.
+
+(include book)
+
 (policy c13d-lead-a-singleton
   (fallback lowest-legal)
-  (rule lead-the-lone-tile (select answer)
+  (rule lead-the-lone-tile
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair me) (domino lone) (context suit))
+      (query (roles (chair me) (domino lone) (context suit))
         (out lone)
         (pattern
           (viewer me)
-          (declarer b)
-          (opponent me b)
-          (leader me)
-          (next-actor me)
+          (setter me)
+          (on-lead me)
           (own-legal lone)
-          (not (in lone q*))
+          (not (trump-tile lone))
           (count lone 0)
           (leads-context lone suit)
           (none (roles (domino other)) (own-legal other) (in other suit) (not (tile other lone))))))))

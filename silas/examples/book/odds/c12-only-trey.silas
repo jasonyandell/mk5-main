@@ -10,8 +10,7 @@
 ;   hidden, four to a seat.
 ; Exact: 7/33 that the 5-3 was his only trey (26/33 that he has another).
 ;   Book model: (2/3)^4 = 16/81. Neither reading is 2/3.
-(query
-  (roles (chair x) (domino l))
+(query (roles (chair x) (domino l))
   (out)
   (pattern
     (played-to l x 5-3)

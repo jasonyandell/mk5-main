@@ -16,30 +16,33 @@
 ; show it.
 ; GAP aggregate: "the suit with the most unplayed tiles" compares the sizes of
 ; two sets of tiles.
+
+(include book)
+
 (policy c14-crisis-cash-the-double
   (fallback lowest-legal)
-  (rule cash-a-double (select answer)
+  (rule cash-a-double
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair followed) (chair showed) (domino first) (domino doubled) (domino out))
+      (query (roles (chair b) (chair followed) (chair showed) (domino first) (domino doubled))
         (out doubled)
         (pattern
           (viewer b)
-          (declarer b)
-          (leader b)
-          (next-actor b)
+          (bidder b)
+          (on-lead b)
           (led b first)
-          (in first q*)
-          (none (roles (chair c) (domino other)) (led c other) (in other q*) (not (tile other first)))
-          (opponent b followed)
-          (opponent b showed)
-          (not (shown-void followed q*))
-          (shown-void showed q*)
-          (live out)
-          (in out q*)
-          (not (own-legal out))
+          (trump-tile first)
+          (none (roles (chair c) (domino other))
+            (led c other)
+            (trump-tile other)
+            (not (tile other first)))
+          (setter followed)
+          (setter showed)
+          (not (shown-out-of-trump followed))
+          (shown-out-of-trump showed)
+          (trump-out)
           (own-legal doubled)
           (double doubled)
-          (not (in doubled q*))
+          (not (trump-tile doubled))
           ; GAP aggregate: and no double of mine has more of its suit unplayed
-          )))))
+        )))))

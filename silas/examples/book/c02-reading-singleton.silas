@@ -7,17 +7,22 @@
 ; holds only of a partner who follows the convention (GAPS.md, policy
 ; likelihood). "The bidder does not hold" reads the bidder's own hand through
 ; `holds`, a world predicate: this is a question about worlds, not a policy.
-(query
-  (roles (chair b) (chair p) (domino led) (domino his))
+
+(include book)
+
+(query (roles (chair b) (chair p) (domino led) (domino his))
   (out)
   (pattern
     (viewer b)
-    (declarer b)
-    (partner b p)
-    (leader b)
-    (trick-play b led)
-    (in led q*)
+    (bidder b)
+    (bidders-partner p)
+    (bidder-led led)
+    (trump-tile led)
     (trick-play p his)
-    (in his q*)
-    (none (roles (domino above)) (live above) (not (holds b above)) (beats above his q*))
-    (void p q*)))
+    (trump-tile his)
+    (none (roles (domino above) (context t))
+      (trump t)
+      (live above)
+      (not (holds b above))
+      (beats above his t))
+    (void-in-trump p)))

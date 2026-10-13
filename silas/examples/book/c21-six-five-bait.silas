@@ -5,19 +5,21 @@
 ; Python gate (pour_bidder gate_c21): the same, on any lead.
 ; How this encoding differs: none. The book plays it as a crisis lead in one
 ; hand; the gate, and this file, make it a rule on every lead.
+
+(include book)
+
 (policy c21-six-five-bait
   (fallback lowest-legal)
-  (rule lead-the-six-five (select tile 6-5)
+  (rule lead-the-six-five
+    (select tile 6-5)
     (guard
-      (query
-        (roles (chair b))
+      (query (roles (chair b))
         (out)
         (pattern
           (viewer b)
-          (declarer b)
-          (leader b)
-          (next-actor b)
+          (bidder b)
+          (on-lead b)
           (own-legal 6-5)
           (own-legal 6-4)
-          (not (in 6-5 q*))
-          (not (in 6-4 q*)))))))
+          (not (trump-tile 6-5))
+          (not (trump-tile 6-4)))))))

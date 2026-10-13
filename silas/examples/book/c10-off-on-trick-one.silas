@@ -10,32 +10,21 @@
 ; one off and four or more trumps; the book's tiles are the offs. An off is a
 ; non-trump tile some tile outside the hand outranks in the suit it leads.
 ; How this encoding differs: none from the gate.
+
+(include book)
+
 (policy c10-off-on-trick-one
   (fallback lowest-legal)
-  (rule lead-the-off (select answer)
+  (rule lead-the-off
+    (select answer)
     (guard
-      (query
-        (roles
-          (chair b)
-          (domino off) (domino over) (context suit)
-          (domino t1) (domino t2) (domino t3) (domino t4))
+      (query (roles (chair b) (domino off))
         (out off)
         (pattern
           (viewer b)
-          (declarer b)
+          (bidder b)
           (trick-number 1)
           (next-actor b)
-          (own-legal t1) (in t1 q*)
-          (own-legal t2) (in t2 q*)
-          (own-legal t3) (in t3 q*)
-          (own-legal t4) (in t4 q*)
-          (own-legal off)
-          (not (in off q*))
-          (leads-context off suit)
-          (live over)
-          (not (own-legal over))
-          (in over suit)
-          (beats over off suit)
-          (none (roles (domino second) (domino above) (context its))
-            (own-legal second) (not (tile second off)) (not (in second q*)) (leads-context second its)
-            (live above) (not (own-legal above)) (in above its) (beats above second its)))))))
+          (four-trumps-or-more)
+          (off off)
+          (none (roles (domino other)) (off other) (not (tile other off))))))))

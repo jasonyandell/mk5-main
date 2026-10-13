@@ -9,26 +9,25 @@
 ; How this encoding differs: none from the gate. In Hand 30 (p. 105) the book
 ; plays this rule with the last trump in the partner's hand, where neither the
 ; gate nor this file fires.
+
+(include book)
+
 (policy c11-double-ahead-of-the-off
   (fallback lowest-legal)
-  (rule lead-the-double (select answer)
+  (rule lead-the-double
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (domino doubled) (domino off) (domino over) (context suit))
+      (query (roles (chair b) (domino doubled) (domino off) (context suit))
         (out doubled)
         (pattern
           (viewer b)
-          (declarer b)
-          (leader b)
-          (next-actor b)
-          (none (roles (domino trump)) (live trump) (in trump q*) (not (own-legal trump)))
+          (bidder b)
+          (on-lead b)
+          (not (trump-out))
           (own-legal doubled)
           (double doubled)
-          (not (in doubled q*))
+          (not (trump-tile doubled))
           (leads-context doubled suit)
           (own-legal off)
           (in off suit)
-          (live over)
-          (not (own-legal over))
-          (in over suit)
-          (beats over off suit))))))
+          (loses-in off suit))))))

@@ -5,19 +5,20 @@
 ; non-trump double; the book's tiles are those doubles.
 ; How this encoding differs: none. The book ranks the top unplayed tile of a
 ; suit with the doubles (p. 40); neither the gate nor this file does.
+
+(include book)
+
 (policy c23-partner-leads-doubles
   (fallback lowest-legal)
-  (rule lead-a-double (select answer)
+  (rule lead-a-double
+    (select answer)
     (guard
-      (query
-        (roles (chair b) (chair p) (domino doubled))
+      (query (roles (chair p) (domino doubled))
         (out doubled)
         (pattern
           (viewer p)
-          (declarer b)
-          (partner b p)
-          (leader p)
-          (next-actor p)
+          (bidders-partner p)
+          (on-lead p)
           (own-legal doubled)
           (double doubled)
-          (not (in doubled q*)))))))
+          (not (trump-tile doubled)))))))
