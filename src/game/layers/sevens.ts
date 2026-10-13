@@ -27,7 +27,7 @@ export const sevensLayer: Layer = {
         ...prev,
         {
           type: 'select-trump',
-          player: state.winningBidder,
+          player: state.currentPlayer, // the trump selector (rules.getTrumpSelector), as in base
           trump: { type: 'sevens' }
         }
       ];
