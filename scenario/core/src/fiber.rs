@@ -86,6 +86,29 @@ impl Counts {
         }
     }
 
+    /// Assignment number `k` in `enumerate`'s order, for `k` below the count:
+    /// the same walk, taking at each tile the seat whose branch holds `k`.
+    fn unrank(&mut self, sizes: [u8; 3], mut k: i64) -> [u32; 3] {
+        let mut caps = sizes;
+        let mut masks = [0u32; 3];
+        for i in 0..self.tiles.len() {
+            let t = self.tiles[i];
+            for j in 0..3 {
+                if caps[j] > 0 && (self.forbid[j] >> t) & 1 == 0 {
+                    caps[j] -= 1;
+                    let w = self.ways(i + 1, caps);
+                    if k < w {
+                        masks[j] |= 1 << t;
+                        break;
+                    }
+                    k -= w;
+                    caps[j] += 1;
+                }
+            }
+        }
+        masks
+    }
+
     /// One assignment of the pool to the three seats, uniform over the fiber.
     fn sample(&mut self, sizes: [u8; 3], rng: &mut SplitMix) -> [u32; 3] {
         let mut caps = sizes;
@@ -181,6 +204,15 @@ impl Fiber {
         hidden.into_iter().map(|h| self.world(h)).collect()
     }
 
+    /// Member number `k` of `worlds()`, for `k` below `size()`, without
+    /// listing the others.
+    pub fn world_at(&mut self, k: i64) -> [u32; 4] {
+        assert!((0..self.size()).contains(&k), "no member {k}");
+        let sizes = self.sizes;
+        let hidden = self.counts.unrank(sizes, k);
+        self.world(hidden)
+    }
+
     /// One member, uniform.
     pub fn draw(&mut self, rng: &mut SplitMix) -> [u32; 4] {
         let sizes = self.sizes;
@@ -218,5 +250,28 @@ pub fn sample_worlds(
         (fiber.worlds(), true)
     } else {
         ((0..n).map(|_| fiber.draw(rng)).collect(), false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rules::{tile, Rules};
+
+    #[test]
+    fn world_at_reads_the_enumeration_by_rank() {
+        // Mid-hand under sixes trump: viewer 1 holds three tiles, eleven are
+        // played, the hidden seats hold 5, 4 and 5, seat 2 has shown void in
+        // trump and seat 3 in threes.
+        let sixes = Rules::new(6).unwrap();
+        let own = [tile(6, 6), tile(4, 1), tile(2, 0)].iter().fold(0u32, |m, &t| m | 1 << t);
+        let played = ((1u32 << 11) - 1) & !own | 1 << tile(5, 5);
+        let forbid = [0, 0, sixes.follow_bits[7], sixes.follow_bits[3]];
+        let mut fiber = Fiber::new(1, own, played, [5, 3, 4, 5], forbid);
+        let worlds = fiber.worlds();
+        assert!(worlds.len() > 100 && worlds.len() as i64 == fiber.size());
+        for (k, w) in worlds.iter().enumerate() {
+            assert_eq!(fiber.world_at(k as i64), *w);
+        }
     }
 }

@@ -12,14 +12,20 @@
 //! format ([`field`]), the hidden-hand sampler ([`fiber`]), the planner
 //! ([`planner`]), the convention overlay ([`convention`]) and the mold
 //! ([`mold`]). The `python` feature adds the pyo3 module `scenario_core` that `scenario/compiled.py` drives; the
-//! browser package `zeb/` builds on the plain crate.
+//! browser package `zeb/` builds on the plain crate. The `silas` feature adds
+//! `physics`, Silas's `Physics` over these rules and this fiber, and with
+//! `python` the Silas classes of `scenario_core` (`scenario/silas.py`).
 
 pub mod convention;
 pub mod fiber;
 pub mod field;
 pub mod mold;
+#[cfg(feature = "silas")]
+pub mod physics;
 pub mod planner;
 pub mod rules;
 
 #[cfg(feature = "python")]
 mod python;
+#[cfg(all(feature = "python", feature = "silas"))]
+mod python_silas;

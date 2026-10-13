@@ -13,7 +13,8 @@
 //! scenarios and each root action's per-scenario outcomes); and `mold`, the
 //! per-layer position counts of one deal's perfect-information tree.
 //! `field_scores` runs the field net alone, and the module functions `rules`
-//! and `canon` hand back the core's own tables, for the parity tests.
+//! and `canon` hand back the core's own tables, for the parity tests. With
+//! the `silas` feature the module also carries Silas (`python_silas`).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
@@ -152,8 +153,8 @@ impl Core {
         let convention = match convention {
             None => None,
             Some((name, send, read)) => {
-                let rule = Rule::named(&name)
-                    .ok_or_else(|| PyValueError::new_err(format!("unknown convention {name:?}")))?;
+                let rule =
+                    Rule::named(&name).ok_or_else(|| PyValueError::new_err(format!("unknown convention {name:?}")))?;
                 if !(send || read) {
                     return Err(PyValueError::new_err("a convention sends, reads, or both"));
                 }
@@ -322,5 +323,7 @@ fn scenario_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rules, m)?)?;
     m.add_function(wrap_pyfunction!(canon, m)?)?;
     m.add("MAX_WORLDS", MAX_WORLDS)?;
+    #[cfg(feature = "silas")]
+    crate::python_silas::register(m)?;
     Ok(())
 }

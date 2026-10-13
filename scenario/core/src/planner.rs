@@ -964,7 +964,8 @@ pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<
 /// The plan's best tile — or, where the convention's sender gate holds, the
 /// plan's best among the tiles the rule allows (`Walt._choice`).
 fn choice(ctx: &mut Ctx, d: &Decision, q: &[(u8, f64)], maximize: bool) -> u8 {
-    let allowed = ctx.cfg.convention.filter(|c| c.send).and_then(|c| c.sends(d.rules, d.viewer, d.bidder, d.own, &d.rec));
+    let allowed =
+        ctx.cfg.convention.filter(|c| c.send).and_then(|c| c.sends(d.rules, d.viewer, d.bidder, d.own, &d.rec));
     match allowed {
         None => best(q, maximize),
         Some(a) => {
