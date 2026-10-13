@@ -3961,3 +3961,7 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-12 | scenario/core | the floor guards only a sample: an enumerated fiber is never floored, the only behavior in both engines; Zeb 0.2.0 (#110)]
 
 [[scenario-player]] § The floor guards only a sample. Null in marks; correctness. Report: [[research-night-2026-10-12-sources]] (14-floor).
+
+## [2026-10-12 | scenario/hf | generated data goes to Hugging Face: the 250k Zeb pour whole, the day's research artifacts, the playbook]
+
+[[publish-data-to-huggingface]] (new); [[scenario-player]] links texas-42-zeb-pour-250k and texas-42-zeb-research-2026-10; CLAUDE.md hard rule. `scenario.hf` ships field nets, titles, notes; splits may differ in the net.

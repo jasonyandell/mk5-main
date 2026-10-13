@@ -220,7 +220,7 @@ The seats, from the bidder: `(bidder c)`, `(bidders-partner c)`,
 `(setter c)`, `(left-setter c)`, `(right-setter c)`, `(on-lead c)`,
 `(bidders-lead)`, `(bidder-led d)`, `(bidder-winning)`. The count:
 `(count-tile d)`, `(count-on-trick)`. The trump, said once for every
-declaration: `(trump-tile d)`, `(trump-led)`, `(trump-out)`,
+declaration: `(trump-tile d)`, `(trump-led)`, `(trump-out)`, `(may-yet-trump c)`,
 `(shown-out-of-trump c)`, `(void-in-trump c)`, `(trump-set c)`,
 `(top-trump d)`, `(next-trump above d)`, `(boss-trump d)`,
 `(lowest-trump-held d)`, `(four-trumps-or-more)`, `(exactly-four-trumps)`,
@@ -229,7 +229,7 @@ declaration: `(trump-tile d)`, `(trump-led)`, `(trump-out)`,
 Leads: `(loses-in d q)`, `(can-lose d)`, `(off d)`, `(walker d)`,
 `(beatable d)`, `(calls-for-count d)`, `(calls-for d n)`,
 `(low-four-five-or-six d)`. The trick: `(last-to-play)`,
-`(partner-winning)`, `(no-setter-trump)`, `(winner-cannot-be-beaten)`,
+`(partner-winning)`, `(can-take-it)`, `(no-setter-trump)`, `(winner-cannot-be-beaten)`,
 `(safe-trick)` (what the partner gives count to), `(partner-may-take-it)`
 (what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`. The
 bidder's offs: `(draws-the-count-for dd o)`, `(strips-the-suit-of dd o)`,

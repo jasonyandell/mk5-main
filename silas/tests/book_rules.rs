@@ -862,6 +862,35 @@ fn s0074b_usually_and_above_all_the_big_doubles() {
     assert_eq!(allows(TRUMP_SET, &at, "trump-a-double"), tiles(&["5-2", "4-2"]));
 }
 
+#[test]
+fn s0073c_no_feed_once_the_trump_holder_cannot_trump() {
+    // The pour, s300001 deal 43342 ply 17: treys. On the bidder's 5-3 only
+    // the right setter followed (the 6-3); every trump is now played. The
+    // bidder leads the 0-0 and the left setter holds the 5-5: nobody can
+    // trump the double, and the book's feed is to a holder who may yet trump.
+    let plays = [
+        "3-3", "4-3", "3-2", "3-0", "5-3", "1-1", "2-0", "6-3", "6-5", "6-1", "4-1", "6-6", "6-0", "6-4", "3-1", "5-4",
+        "0-0",
+    ];
+    assert_eq!(fires(TRUMP_SET, &position("P3", O1, &["5-5", "5-1", "2-2"], &plays)), None);
+    // s200001 deal 9437 ply 21: blanks, the right setter alone on the
+    // bidder's 3-0 (with the 0-0), every trump played; the bidder leads the 4-4.
+    let plays = [
+        "2-0", "1-0", "4-0", "5-0", "2-2", "5-2", "6-2", "2-1", "6-5", "6-6", "6-1", "6-4", "3-0", "5-1", "4-3", "0-0",
+        "1-1", "6-0", "3-1", "5-4", "4-4",
+    ];
+    assert_eq!(fires(TRUMP_SET, &position("P0", O1, &["6-3", "5-5"], &plays)), None);
+}
+
+#[test]
+fn s0073c_the_feed_waits_on_a_trump_still_out() {
+    // Ours (pp. 50, 54): deuces, the trump set of the 6-6 feed above, but the
+    // right setter has since shown out of trump: no feed.
+    let hand = ["6-4", "6-0", "5-5", "3-1", "1-0"];
+    let plays = ["2-2", "6-1", "5-1", "2-0", "2-1", "4-3", "3-3", "1-1", "6-6"];
+    assert_eq!(fires(TRUMP_SET, &position("P2", O1, &hand, &plays)), None);
+}
+
 // -- dead-double (new)
 
 #[test]
@@ -886,6 +915,33 @@ fn s0147a_the_decoy_the_rule_cannot_see() {
     // throws the 1-1 at once.
     let at = book_at("hand-34", 6, P);
     assert_eq!(allows(DEAD_DOUBLE, &at, "throw-a-dead-double"), tiles(&["1-1"]));
+}
+
+/// The pour, s250001 deal 7003 to ply 15: fours; the bidder leads the 2-0 to
+/// trick 4 and the right setter, void in deuces, is to play.
+const RUFF_7003: [&str; 15] =
+    ["2-2", "5-2", "3-2", "2-1", "6-1", "6-5", "6-6", "6-3", "5-5", "5-1", "4-1", "5-0", "2-0", "1-1", "6-0"];
+
+#[test]
+fn s0091b_a_throw_is_on_a_trick_you_do_not_take() {
+    // With the 4-3 he takes the trick by trumping; the 0-0 is dead, but a
+    // ruff is not a throw.
+    assert_eq!(fires(DEAD_DOUBLE, &position("P4", O2, &["6-4", "4-3", "4-2", "0-0"], &RUFF_7003)), None);
+    // Ours: the same trick with no trump to take it; the 0-0 goes.
+    let at = position("P4", O2, &["5-3", "3-1", "3-0", "0-0"], &RUFF_7003);
+    assert_eq!(allows(DEAD_DOUBLE, &at, "throw-a-dead-double"), tiles(&["0-0"]));
+}
+
+#[test]
+fn the_book_throws_no_dead_ten() {
+    // The pour, s200001 deal 25254 ply 19: treys; the 5-4, 5-2, 5-1 and 5-0
+    // are played and the 5-3 is trump, so the right setter's 5-5 is dead. He
+    // cannot follow the fours or take the trick; the book throws no count.
+    let plays = [
+        "2-0", "2-2", "4-2", "2-1", "1-0", "5-4", "5-1", "6-1", "3-3", "3-0", "3-1", "3-2", "1-1", "5-0", "5-2", "4-4",
+        "4-1", "4-0", "4-3",
+    ];
+    assert_eq!(fires(DEAD_DOUBLE, &position("P3", O2, &["6-5", "6-0", "5-5"], &plays)), None);
 }
 
 // -- helper-stretch (new)

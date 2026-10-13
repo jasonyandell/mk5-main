@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-10-12, 206 archived entries)
+## Digest (2026-04-09 → 2026-10-12, 207 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -25,9 +25,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Zeb: the floor, the pour, the field net** (2026-10-10 → 10-11, 10 archived entries) — the cell floor and its dividend, the pour published ([[scenario-player]]), the field net at rung −1 and its two targets, the 50,000- and 250,000-deal pours, the live bidder graded against Plunge's bid book.
 - **Zeb 0.1.0, the viz, research night, the first repair** (2026-10-11 → 10-12, 6 archived entries) — the live bidder graded against Plunge's frozen bid book, `@jasonyandell/zeb` 0.1.0 in WebAssembly, the splat visualizer and its region query, research night (T1/T1′/T2, Lean, the counterexample lab; [[research-night-2026-10-12]]), the field net graded by regret not agreement (#109). Hub: [[scenario-player]].
 - **Zeb's foundation repairs and the convention overlay** (2026-10-12, 6 archived entries) — the floor only on sampled fibers (Zeb 0.2.0, #110), the rung-free sample seed (#112), the stochastic field (#108), O2 over the O1 fixed point on endgames ([[endgames-o2-vs-o1-2026-10-12]], #113), the posterior sampler (#111), the convention overlay. Hub: [[scenario-player]].
+- **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-13 | scratch/book-reprice-fix | the dead double and the trump set's feed fixed to the book's conditions and re-priced on the whole pour: neither prices against now; Zeb 54% vs 40% (0.23), no relation on 3, against none]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (two price rows, two rule rows, the reading); [[w42]], [[silas]] (rule table, Where it sits), `index-experiments.md`, `CLAUDE.md`; `silas/lib/book.silas` (`can-take-it`, `may-yet-trump`).
 
 ## [2026-10-13 | scratch/book-reprice | the book's 14 rules as the book means them priced on the whole 250k pour: Zeb sides with 3, prices against 2 (dead double, trump set's feed: each fired where a condition the book states fails); only 3 of 21 gates were the book's rule]
 
@@ -89,7 +94,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-12 | scratch/book | the book graded with the honest tools: rules priced on the pour, bid book 25/30, three odds corrected, conventions null in S/R/SR arms (handoff −0.013 sender, reading +0.000)]
 
 [[book-study-2026-10-12]] (new); [[scenario-player]] § A convention overlay (arena verdicts); [[w42]] (dated paragraph). Data: the research archive's `book/wave1/`, `book/wave2/`. Follow-ups #118.
-
-## [2026-10-12 | scenario/hf | generated data goes to Hugging Face: the 250k Zeb pour whole, the day's research artifacts, the playbook]
-
-[[publish-data-to-huggingface]] (new); [[scenario-player]] links texas-42-zeb-pour-250k and texas-42-zeb-research-2026-10; CLAUDE.md hard rule. `scenario.hf` ships field nets, titles, notes; splits may differ in the net.

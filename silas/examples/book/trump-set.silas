@@ -6,7 +6,10 @@
 ; holder is void in, he trumps it from the seat after the bidder, usually, and
 ; above all the 6-6, 5-5 and 4-4, which are or call for a ten; from the last
 ; seat he trumps only a trick that already holds count. His partner feeds
-; count onto the bidder's double the trump holder may yet trump. On lead with
+; count onto the bidder's double the trump holder may yet trump: the holder is
+; still to play, has not shown out of trump, and a trump outside the feeder's
+; hand is still live. Once every trump is played the set is over, and so is
+; the feed. On lead with
 ; trumps as strong as the bidder's, he leads a high one at once.
 ; Replaces gates/c22-trump-the-double-from-the-left.silas. How it differs: the
 ; gate (as encoded) reads the trump set as "this setter followed and his
@@ -81,6 +84,7 @@
           (left-setter me)
           (partner me pard)
           (trump-set-alone pard)
+          (may-yet-trump pard)
           (bidder-led doubled)
           (double doubled)
           (not (trump-tile doubled))

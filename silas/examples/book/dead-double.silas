@@ -3,9 +3,13 @@
 ; S-0148-d, S-0150-c, S-0151-a, S-0151-g); declined in Hand 34 (S-0147-a).
 ; Rule, in our words: a double wins only a trick led in its suit, and only a
 ; tile whose higher end is that suit leads it. Once no live tile outside your
-; hand can lead its suit, the double is dead: when you cannot follow, throw it
-; first (the 0-0 is dead in any hand but its holder's; the 1-1 once the 1-0 is
-; gone, the 3-3 once the 3-0, 3-1 and 3-2 are). The bidder on lead with a
+; hand can lead its suit, the double is dead: throw it first on a trick you
+; cannot follow (the 0-0 is dead in any hand but its holder's; the 1-1 once the
+; 1-0 is gone, the 3-3 once the 3-0, 3-1 and 3-2 are). A throw is a tile given
+; to a trick you do not take: in every one of the book's throws the thrower can
+; take nothing, so the rule does not fire where a tile of his would take the
+; trick (a ruff). The book throws no count double: the 5-5 is a ten, and where
+; it goes is the count rules' business. The bidder on lead with a
 ; setter's trump still out cashes a dead double at once: it wins only when he
 ; leads it, and he may not have the lead again (Hand 27 trick 3).
 ; New: no gate has it. In an 84 it is the defender's watch list run dry
@@ -27,7 +31,9 @@
         (pattern
           (viewer me)
           (discard dd)
-          (dead-double dd)))))
+          (dead-double dd)
+          (count dd 0)
+          (not (can-take-it))))))
   (rule cash-a-dead-double
     (select answer)
     (guard

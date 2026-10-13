@@ -126,6 +126,13 @@
 (define trump-out (roles)
   (some (roles (domino d)) (live d) (not (mine d)) (trump-tile d)))
 
+; c may yet trump the open trick: he has not played to it, has not shown void
+; in trump, and a trump outside the viewer's hand is still live.
+(define may-yet-trump (roles (chair c))
+  (none (roles (domino y)) (trick-play c y))
+  (not (shown-out-of-trump c))
+  (trump-out))
+
 ; d is the top trump: no trump beats it, played or not.
 (define top-trump (roles (domino d))
   (some (roles (context t)) (trump t) (in d t) (none (roles (domino e)) (in e t) (beats e d t))))
@@ -313,6 +320,16 @@
 (define safe-trick (roles)
   (partner-winning)
   (none (roles) (not (last-to-play)) (not (winner-cannot-be-beaten))))
+
+; The viewer can take the open trick: a tile he may play beats the tile taking
+; it, following the suit led or trumping it.
+(define can-take-it (roles)
+  (some (roles (domino d) (chair w) (domino win) (context q))
+    (own-legal d)
+    (current-winner w)
+    (trick-play w win)
+    (led-context q)
+    (beats d win q)))
 
 ; The viewer's partner is still to play to the open trick and may hold a tile
 ; that takes it: a live tile outside the viewer's hand beats the winning tile,

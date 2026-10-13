@@ -24,7 +24,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## W42 book validation
 
-- [[experiments/book-study-2026-10-12|book-study-2026-10-12]] — Winning 42 against Zeb: the book's 14 rules as it means them priced on the 250k pour — Zeb's pick is the book's move at 53% vs a 40% random floor; sides with 3, weak on 8, no relation on 1, prices against 2; the 21 gates first priced (52% vs 37%, E[Q] 56%) were the book's rule for only 3; bid book 25/30 vs 23/30 for always-bid; three odds corrected by exact count; conventions all null or negative; no reason extracted (complete)
+- [[experiments/book-study-2026-10-12|book-study-2026-10-12]] — Winning 42 against Zeb: the book's 14 rules as it means them priced on the 250k pour — Zeb's pick is the book's move at 54% vs a 40% random floor; sides with 3, weak on 8, no relation on 3, prices against none; the 21 gates first priced (52% vs 37%, E[Q] 56%) were the book's rule for only 3; bid book 25/30 vs 23/30 for always-bid; three odds corrected by exact count; conventions all null or negative; no reason extracted (complete)
 - [[experiments/w42-84-claim-validation|w42-84-claim-validation]] — Chapter 7/8 84-claim validation: exact double-six enumeration + hypergeometric proxies; complete for its static-math scope, superseded on the dynamic side by [[experiments/w42-phase4-final-claim-audit|w42-phase4-final-claim-audit]] (complete)
 - [[experiments/w42-belief-attention-concept-buckets|w42-belief-attention-concept-buckets]] — w42 Belief and Attention Concept Buckets (complete)
 - [[experiments/w42-bidder-sequencing-claim-validation|w42-bidder-sequencing-claim-validation]] — w42 Bidder Sequencing Claim Validation (complete)
