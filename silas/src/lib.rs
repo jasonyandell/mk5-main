@@ -5,7 +5,8 @@
 //! [`Pattern`] has a satisfying assignment of its roles. A [`Belief`] is an
 //! exact measure over the hidden [`World`]s of a [`Frame`]; a query summarized
 //! over a belief yields exact probabilities, each carrying its [`Authority`].
-//! A [`PolicyProgram`] chooses plays from what the viewer alone can see.
+//! A [`PolicyProgram`] chooses plays from what the viewer alone can see. A
+//! [`Solver`] is the perfect-information reference: it sees all four hands.
 //!
 //! Silas owns the nouns of the game and the language. The rules live behind
 //! the [`Physics`] trait; [`reference::Straight42`] is the reference physics.
@@ -21,6 +22,7 @@ mod physics;
 mod policy;
 pub mod reference;
 mod registry;
+mod solve;
 mod syntax;
 
 pub use belief::{Belief, Certainty, Comparison, Difference, QuerySummary, Selection, SelectionLaw};
@@ -38,6 +40,7 @@ pub use policy::{
     PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, RigidBinding, Selector,
 };
 pub use registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
+pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};
 pub use syntax::{Atom, NoneClause, Pattern, Query, Role, Sort, Term, Value};
 
 /// An invalid program, an invalid input, or a refused computation. Nothing

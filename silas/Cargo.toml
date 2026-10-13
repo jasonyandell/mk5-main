@@ -17,6 +17,10 @@ num-traits = "0.2"
 [dev-dependencies]
 serde_json = "1"
 
+[[example]]
+name = "solve_grade"
+path = "examples/book/solve_grade.rs"
+
 [lints.rust]
 unsafe_code = "forbid"
 
