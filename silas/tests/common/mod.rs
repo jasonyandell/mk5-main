@@ -3,6 +3,8 @@
 //! query compiler, joins, projection and aggregation.
 #![allow(dead_code)]
 
+pub mod fixture;
+
 use std::num::NonZeroU64;
 use std::sync::Arc;
 

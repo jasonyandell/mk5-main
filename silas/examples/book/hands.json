@@ -1,0 +1,1907 @@
+{
+  "about": "Facts from the illustrated examples of Roberson's Winning 42 (6th edition), read from the owner's reviewed transcription (winning42-archive, branch main, commit 664ea8dd). Anchors name capture files (shot-NNNN). No book text is reproduced; notes are ours.",
+  "notation": {
+    "tile": "a-b with 0 for blank, in printed order: top then bottom for a vertical tile, left then right for a horizontal one",
+    "roles": "bidder, opponent-1 (the seat after the bidder), partner, opponent-2; play runs in that order",
+    "declaration": "P0..P6 a pip suit, DT doubles, NT no trump, nello and sevens as named; null when the book does not state it",
+    "bid": "the number the book recommends or the deal is played at; pass; null when not stated. 84 is two marks and needs all 42 points",
+    "annotations": "the small printed number beside a tile, parallel to tiles; null when none",
+    "lines": "plays in narrated order; a null tile or seat is one the prose does not name; 'setter' is an opponent the prose does not identify; a trick's winner and points are given only where the prose states or shows them; a tail is the rest of the deal, claimed by one side"
+  },
+  "examples": [
+    {
+      "id": "hand-1",
+      "label": "Hand 1",
+      "kind": "hand",
+      "heading": "shot-0025",
+      "captures": ["shot-0025"],
+      "prose": ["shot-0025"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["4-4", "1-1", "6-5", "6-6", "0-2", "6-3", "6-4"]}],
+      "declaration": "P6",
+      "bid": 36,
+      "at_risk": 6,
+      "alternatives": [],
+      "notes": []
+    },
+    {
+      "id": "hand-2",
+      "label": "Hand 2",
+      "kind": "hand",
+      "heading": "shot-0025",
+      "captures": ["shot-0025"],
+      "prose": ["shot-0025", "shot-0026"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-0", "3-3", "3-4", "3-6", "6-1", "5-5", "2-2"]}],
+      "declaration": "P3",
+      "bid": 31,
+      "at_risk": 11,
+      "alternatives": [],
+      "notes": []
+    },
+    {
+      "id": "hand-3",
+      "label": "Hand 3",
+      "kind": "hand",
+      "heading": "shot-0026",
+      "captures": ["shot-0026"],
+      "prose": ["shot-0026"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["5-2", "4-1", "6-6", "4-6", "4-2", "4-3", "4-4"]}],
+      "declaration": "P4",
+      "bid": "pass",
+      "at_risk": 16,
+      "alternatives": [],
+      "notes": []
+    },
+    {
+      "id": "hand-4",
+      "label": "Hand 4",
+      "kind": "hand",
+      "heading": "shot-0028",
+      "captures": ["shot-0028", "shot-0029"],
+      "prose": ["shot-0029"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-6", "0-1", "4-1", "4-6", "2-2", "4-3", "4-4"]}],
+      "declaration": "P4",
+      "bid": 35,
+      "at_risk": 7,
+      "alternatives": [],
+      "notes": ["36 is offered as a raise over another seat's 35."]
+    },
+    {
+      "id": "hand-5",
+      "label": "Hand 5",
+      "kind": "hand",
+      "heading": "shot-0029",
+      "captures": ["shot-0029", "shot-0030"],
+      "prose": ["shot-0030"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-2", "5-5", "6-5", "6-6", "4-3", "2-2", "6-3"]}],
+      "declaration": "P6",
+      "bid": 30,
+      "at_risk": 12,
+      "alternatives": [],
+      "notes": ["Up to 35 is offered by counting on the double or the partner; 36 is called a stretch."]
+    },
+    {
+      "id": "hand-6",
+      "label": "Hand 6",
+      "kind": "hand",
+      "heading": "shot-0030",
+      "captures": ["shot-0030", "shot-0031"],
+      "prose": ["shot-0031"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-0", "0-1", "0-5", "0-6", "1-2", "6-3", "5-5"]}],
+      "declaration": "P0",
+      "bid": 30,
+      "at_risk": 17,
+      "alternatives": [],
+      "notes": [
+        "The 30 is conditional: only by counting on the partner's help, and no higher.",
+        "transcript shot-0031 reads 0-2; image shows 0-5 (verified 2026-10-13)"
+      ],
+      "image_corrections": [
+        {
+          "anchor": "shot-0031",
+          "seat": "bidder",
+          "position": 3,
+          "transcript": "0-2",
+          "image": "0-5",
+          "verified": "2026-10-13"
+        }
+      ]
+    },
+    {
+      "id": "hand-7",
+      "label": "Hand 7",
+      "kind": "hand",
+      "heading": "shot-0031",
+      "captures": ["shot-0031"],
+      "prose": ["shot-0031", "shot-0032"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-5", "3-5", "5-5", "5-6", "1-1", "3-6", "3-3"]}],
+      "declaration": "P5",
+      "bid": 31,
+      "at_risk": 11,
+      "alternatives": [
+        {
+          "declaration": "P3",
+          "bid": 31,
+          "anchor": "shot-0032",
+          "at_risk": 17,
+          "note": "Treys are also analyzed (30 or 31); fives are preferred as the safer trump."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "hand-8",
+      "label": "Hand 8",
+      "kind": "hand",
+      "heading": "shot-0033",
+      "captures": ["shot-0033"],
+      "prose": ["shot-0033", "shot-0034"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-2", "3-3", "2-2", "2-1", "3-1", "5-5", "0-1"]}],
+      "declaration": "P3",
+      "bid": 31,
+      "at_risk": 8,
+      "alternatives": [],
+      "notes": ["35 is offered over another seat's 31 or when counting on the partner."]
+    },
+    {
+      "id": "hand-9",
+      "label": "Hand 9",
+      "kind": "hand",
+      "heading": "shot-0034",
+      "captures": ["shot-0034"],
+      "prose": ["shot-0034"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["5-2", "5-1", "5-5", "6-6", "1-1", "3-3", "0-4"]}],
+      "declaration": "P5",
+      "bid": 30,
+      "at_risk": 17,
+      "alternatives": [],
+      "notes": ["31 is called riskier; no more than 31."]
+    },
+    {
+      "id": "hand-10",
+      "label": "Hand 10",
+      "kind": "hand",
+      "heading": "shot-0035",
+      "captures": ["shot-0035"],
+      "prose": ["shot-0035"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["5-2", "5-1", "3-5", "5-4", "3-3", "3-4", "4-4"]}],
+      "declaration": "P5",
+      "bid": "pass",
+      "at_risk": 16,
+      "alternatives": [],
+      "notes": []
+    },
+    {
+      "id": "hand-11",
+      "label": "Hand 11",
+      "kind": "hand",
+      "heading": "shot-0035",
+      "captures": ["shot-0035"],
+      "prose": ["shot-0035", "shot-0036"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["4-5", "1-1", "4-2", "0-4", "3-3", "0-2", "4-6"]}],
+      "declaration": "P4",
+      "bid": 30,
+      "at_risk": 12,
+      "alternatives": [],
+      "notes": ["At least 30 without the partner; 35 if counting on the partner."]
+    },
+    {
+      "id": "hand-12",
+      "label": "Hand 12",
+      "kind": "hand",
+      "heading": "shot-0042",
+      "captures": ["shot-0042", "shot-0043"],
+      "prose": ["shot-0043", "shot-0044"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["4-4", "1-1", "6-5", "6-6", "0-2", "6-3", "6-4"]}],
+      "declaration": "P6",
+      "bid": 36,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["The same seven tiles as hand-1, now played out."]
+    },
+    {
+      "id": "hand-13",
+      "label": "Hand 13",
+      "kind": "hand",
+      "heading": "shot-0044",
+      "captures": ["shot-0044"],
+      "prose": ["shot-0044", "shot-0045"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-0", "3-3", "3-4", "3-6", "6-1", "5-5", "2-2"]}],
+      "declaration": "P3",
+      "bid": 31,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["The same seven tiles as hand-2, now played out."]
+    },
+    {
+      "id": "hand-14",
+      "label": "Hand 14",
+      "kind": "hand",
+      "heading": "shot-0045",
+      "captures": ["shot-0045"],
+      "prose": ["shot-0045", "shot-0046"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["5-2", "4-1", "6-6", "4-6", "4-2", "4-3", "4-4"]}],
+      "declaration": "P4",
+      "bid": "pass",
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "The same seven tiles as hand-3. The book's call is to pass; the play that follows assumes a bid of 30 anyway (see the line's bid)."
+      ]
+    },
+    {
+      "id": "hand-15",
+      "label": "Hand 15",
+      "kind": "hand",
+      "heading": "shot-0047",
+      "captures": ["shot-0047"],
+      "prose": ["shot-0047", "shot-0048", "shot-0049", "shot-0050"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-6", "0-1", "1-4", "4-6", "2-2", "4-3", "4-4"]}],
+      "declaration": "P4",
+      "bid": 35,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["The same seven tiles as hand-4, now played out three ways."]
+    },
+    {
+      "id": "hand-16",
+      "label": "Hand 16",
+      "kind": "hand",
+      "heading": "shot-0050",
+      "captures": ["shot-0050"],
+      "prose": ["shot-0051", "shot-0052", "shot-0053"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-2", "3-3", "2-2", "2-1", "3-1", "5-5", "0-1"]}],
+      "declaration": "P3",
+      "bid": 31,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["The same seven tiles as hand-8, now played out."]
+    },
+    {
+      "id": "hand-17",
+      "label": "Hand 17",
+      "kind": "hand",
+      "heading": "shot-0084",
+      "captures": ["shot-0084"],
+      "prose": ["shot-0084", "shot-0085"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-5", "5-5", "5-6", "3-3", "5-2", "0-1", "1-1"]}],
+      "declaration": "P5",
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "The play sketched after it names tiles but not the seats that play them; it is not recorded as a line."
+      ]
+    },
+    {
+      "id": "hand-18",
+      "label": "Hand 18",
+      "kind": "hand",
+      "heading": "shot-0085",
+      "captures": ["shot-0085", "shot-0086"],
+      "prose": ["shot-0086"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-2", "1-2", "1-5", "0-0", "2-2", "2-6", "5-5"]}],
+      "declaration": "P2",
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["The bid is given for hands 17 and 18 together, in the 84 section."]
+    },
+    {
+      "id": "hand-19",
+      "label": "Hand 19",
+      "kind": "hand",
+      "heading": "shot-0086",
+      "captures": ["shot-0086", "shot-0087"],
+      "prose": ["shot-0086", "shot-0087"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-2", "4-4", "6-5", "6-6", "5-5", "6-2", "3-3"]}],
+      "declaration": null,
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Three trumps, but the suit is never named; left null. A variant swaps the 3-0 in for the 4-4 and is still called an 84 hand."
+      ]
+    },
+    {
+      "id": "hand-20",
+      "label": "Hand 20",
+      "kind": "hand",
+      "heading": "shot-0088",
+      "captures": ["shot-0088"],
+      "prose": ["shot-0088", "shot-0089"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["2-2", "4-4", "6-5", "6-6", "5-3", "6-2", "3-3"]}],
+      "declaration": null,
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["An 84 with an unprotected off (the 5-3); the trump suit is never named, left null."]
+    },
+    {
+      "id": "hand-21",
+      "label": "Hand 21",
+      "kind": "hand",
+      "heading": "shot-0093",
+      "captures": ["shot-0093"],
+      "prose": ["shot-0093"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-2", "2-5", "2-6", "1-1", "2-2", "5-5", "3-3"]}],
+      "declaration": "P2",
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["A lay-down 84."]
+    },
+    {
+      "id": "hand-22",
+      "label": "Hand 22",
+      "kind": "hand",
+      "heading": "shot-0093",
+      "captures": ["shot-0094"],
+      "prose": ["shot-0094"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["6-5", "6-6", "4-5", "4-6", "0-0", "4-3", "4-4"]}],
+      "declaration": "P4",
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["A lay-down 84 with two doubles; the 6-5 is led last."]
+    },
+    {
+      "id": "hand-23",
+      "label": "Hand 23",
+      "kind": "hand",
+      "heading": "shot-0103",
+      "captures": ["shot-0103"],
+      "prose": ["shot-0103", "shot-0104", "shot-0105", "shot-0106"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["6-1", "1-1", "6-6", "0-0", "3-3", "4-5", "6-5"]}],
+      "declaration": "DT",
+      "bid": 31,
+      "at_risk": 22,
+      "alternatives": [
+        {
+          "declaration": "P6",
+          "bid": null,
+          "anchor": "shot-0104",
+          "at_risk": 16,
+          "note": "With sixes, a bid only if the 0-0 is led before the off, and no more than 31."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "hand-24",
+      "label": "Hand 24",
+      "kind": "hand",
+      "heading": "shot-0106",
+      "captures": ["shot-0106"],
+      "prose": ["shot-0106", "shot-0107"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["6-6", "6-4", "5-5", "1-1", "5-1", "1-3", "2-2"]}],
+      "declaration": "DT",
+      "bid": 30,
+      "at_risk": 23,
+      "alternatives": [
+        {
+          "declaration": "P1",
+          "bid": 30,
+          "anchor": "shot-0106",
+          "at_risk": 17,
+          "note": "With aces, 30 only by counting on the partner (31 called very risky)."
+        }
+      ],
+      "notes": [
+        "35 is offered with the partner's help.",
+        "Conflict kept: the diagram gives the bidder the 1-1, and the narrated play has opponent 1 play the 1-1 on trick 2 (shot-0107). See the archive's discrepancy review."
+      ]
+    },
+    {
+      "id": "hand-25",
+      "label": "Hand 25",
+      "kind": "hand",
+      "heading": "shot-0109",
+      "captures": ["shot-0109"],
+      "prose": ["shot-0109", "shot-0110", "shot-0111"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["0-5", "5-5", "2-2", "4-4", "1-1", "2-1", "3-3"]}],
+      "declaration": "NT",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [
+        {
+          "declaration": "DT",
+          "bid": 30,
+          "anchor": "shot-0110",
+          "at_risk": 13,
+          "note": "Doubles trump counts 13 or more at risk; 30 counting on the partner."
+        }
+      ],
+      "notes": [
+        "35 or 36 is offered with the partner's help. Only the bidder's lead order is narrated; no line is recorded."
+      ]
+    },
+    {
+      "id": "hand-26",
+      "label": "Hand 26",
+      "kind": "hand",
+      "heading": "shot-0121",
+      "captures": ["shot-0121"],
+      "prose": ["shot-0121", "shot-0122", "shot-0123", "shot-0124"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-3", "1-1", "4-4", "4-6", "5-5", "2-2", "5-2"]}],
+      "declaration": "P4",
+      "bid": 35,
+      "at_risk": 6,
+      "alternatives": [
+        {
+          "declaration": "DT",
+          "bid": 30,
+          "anchor": "shot-0121",
+          "at_risk": 17,
+          "note": "As doubles trump, no more than 30."
+        }
+      ],
+      "notes": [
+        "Two trumps. 35 or 36 is offered; 84 only when far behind.",
+        "Conflict kept: the 5-2 is in the bidder's diagram and called his only off, yet a later branch (shot-0124) lets the opponent holding the trump have played the 5-2. See the archive's discrepancy review."
+      ]
+    },
+    {
+      "id": "hand-27",
+      "label": "Hand 27",
+      "kind": "hand",
+      "heading": "shot-0124",
+      "captures": ["shot-0125"],
+      "prose": ["shot-0125", "shot-0126", "shot-0127"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-3", "2-6", "4-4", "4-6", "0-0", "2-2", "3-1"]}],
+      "declaration": "P4",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Two trumps; no more than 30. Deuces are mentioned as the other two-trump choice and set aside. As doubles trump the hand would carry 28 at risk."
+      ]
+    },
+    {
+      "id": "hand-28",
+      "label": "Hand 28",
+      "kind": "deal",
+      "heading": "shot-0127",
+      "captures": ["shot-0128"],
+      "prose": ["shot-0128", "shot-0129", "shot-0130", "shot-0131", "shot-0132"],
+      "seats": [
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["4-4", "4-1", "4-0", "5-5", "5-1", "3-3", "3-2"],
+          "annotations": [6, 5, 1, 4, 2, 7, 3]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["5-3", "3-1", "1-6", "6-6", "0-5", "0-6", "0-0"],
+          "annotations": [4, 3, 7, 6, 5, 1, 2]
+        },
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["2-2", "2-6", "0-2", "5-6", "4-6", "3-4", "0-1"],
+          "annotations": [7, 6, 2, 4, 5, 3, 1]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["2-5", "2-4", "2-1", "1-1", "6-3", "5-4", "3-0"],
+          "annotations": [7, 5, 2, 6, 3, 4, 1]
+        }
+      ],
+      "declaration": "P0",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Opponent 1's 4-4 is marked 6 and 3-3 marked 7; the prose plays them the other way round. The prose itself says the order of those two doubles does not matter."
+      ]
+    },
+    {
+      "id": "hand-29",
+      "label": "Hand 29",
+      "kind": "deal",
+      "heading": "shot-0132",
+      "captures": ["shot-0132"],
+      "prose": ["shot-0132", "shot-0133", "shot-0134"],
+      "seats": [
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["2-2", "6-2", "2-0", "6-5", "6-4", "4-3", "1-0"],
+          "annotations": [2, 4, null, null, 1, 5, 3]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["3-2", "3-3", "5-1", "5-5", "0-4", "1-4", "4-4"],
+          "annotations": [2, null, 3, null, 1, 4, 5]
+        },
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["3-0", "4-5", "3-6", "1-1", "2-1", "4-2", "5-2"],
+          "annotations": [null, 5, 4, 3, 2, 1, null]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["3-5", "1-3", "6-1", "6-6", "5-0", "6-0", "0-0"],
+          "annotations": [null, 5, 3, 4, 1, 2, null]
+        }
+      ],
+      "declaration": "P4",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Hand 28's tiles re-seated: the bidder is Hand 28's opponent 1. The 30 is the bid the book lets each of the other two hands play as if it had won (shot-0132)."
+      ]
+    },
+    {
+      "id": "hand-30",
+      "label": "Hand 30",
+      "kind": "deal",
+      "heading": "shot-0134",
+      "captures": ["shot-0135"],
+      "prose": ["shot-0134", "shot-0135", "shot-0136", "shot-0137"],
+      "seats": [
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["0-3", "5-4", "6-3", "1-1", "1-2", "4-2", "5-2"],
+          "annotations": [2, null, 1, null, 3, 4, null]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["1-0", "4-3", "6-4", "6-5", "0-2", "6-2", "2-2"],
+          "annotations": [2, 3, 4, 1, null, null, null]
+        },
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["0-0", "0-6", "0-5", "6-6", "6-1", "3-1", "5-3"],
+          "annotations": [2, 4, null, 1, null, 3, null]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["2-3", "3-3", "5-1", "5-5", "4-0", "4-1", "4-4"],
+          "annotations": [3, 4, 2, null, 1, null, null]
+        }
+      ],
+      "declaration": "P6",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["Hand 28's tiles re-seated: the bidder is Hand 28's partner. The bid is 30; the bidder makes all 42."]
+    },
+    {
+      "id": "hand-30-state",
+      "label": "Hand 30, later state",
+      "kind": "state",
+      "heading": "shot-0134",
+      "captures": ["shot-0136"],
+      "prose": ["shot-0136"],
+      "seats": [
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": [null, "5-4", null, "1-1", null, "4-2", "5-2"],
+          "annotations": [null, null, null, null, null, 4, 5]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": [null, null, "6-4", null, "0-2", "6-2", "2-2"],
+          "annotations": [null, null, 4, null, null, null, 5]
+        },
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": [null, "0-6", "0-5", null, "6-1", null, "5-3"],
+          "annotations": [null, 4, 5, null, null, null, null]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": [null, "3-3", null, "5-5", null, "4-1", "4-4"],
+          "annotations": [null, 4, null, null, null, null, 5]
+        }
+      ],
+      "declaration": "P6",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "The same layout with three tricks gone: null marks an empty position. Annotation 5 appears here on tiles left unmarked in the full diagram."
+      ]
+    },
+    {
+      "id": "hand-31",
+      "label": "Hand 31",
+      "kind": "deal",
+      "heading": "shot-0137",
+      "captures": ["shot-0138"],
+      "prose": ["shot-0138", "shot-0139", "shot-0140", "shot-0141"],
+      "seats": [
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["0-3", "5-4", "6-3", "1-1", "1-2", "4-2", "5-2"],
+          "annotations": [3, 4, 2, null, 1, 5, null]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["1-0", "4-3", "6-4", "6-5", "0-2", "6-2", "2-2"],
+          "annotations": [3, 4, 5, 6, null, null, 1]
+        },
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["0-0", "0-6", "0-5", "6-6", "6-1", "1-3", "5-3"],
+          "annotations": [3, 5, 1, 2, null, 4, null]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["3-2", "3-3", "5-1", "5-5", "4-0", "4-1", "4-4"],
+          "annotations": [1, 4, 3, null, 2, 5, null]
+        }
+      ],
+      "declaration": "P2",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Hand 30's deal with deuces trump.",
+        "The bidder's 6-5 is marked 6 and no bidder tile is marked 2; the prose leads the 6-5 on trick 2."
+      ]
+    },
+    {
+      "id": "hand-32",
+      "label": "Hand 32",
+      "kind": "deal",
+      "heading": "shot-0141",
+      "captures": ["shot-0141"],
+      "prose": ["shot-0141", "shot-0142", "shot-0143"],
+      "seats": [
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["3-3", "3-5", "3-4", "2-3", "5-4", "5-2", "6-2"],
+          "annotations": [null, 3, 2, null, 4, null, 1]
+        },
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["4-2", "4-1", "5-1", "1-6", "3-6", "5-6", "6-6"],
+          "annotations": [2, 1, null, null, 3, null, null]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["0-0", "0-6", "0-5", "0-3", "0-1", "1-3", "2-2"],
+          "annotations": [1, 2, null, null, 4, 3, null]
+        },
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["1-1", "0-2", "0-4", "5-5", "1-2", "4-6", "4-4"],
+          "annotations": [null, 1, 2, null, null, 3, null]
+        }
+      ],
+      "declaration": "P0",
+      "bid": 36,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Opponent 2 marks the 3-4 2 and the 3-5 3 and leaves the 3-3 unmarked; the prose plays the 3-5 second and wins trick 3 with the 3-3."
+      ]
+    },
+    {
+      "id": "hand-33",
+      "label": "Hand 33",
+      "kind": "deal",
+      "heading": "shot-0143",
+      "captures": ["shot-0143"],
+      "prose": ["shot-0143", "shot-0144", "shot-0145"],
+      "seats": [
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["3-3", "3-5", "3-4", "2-3", "5-4", "5-2", "6-2"],
+          "annotations": [null, 4, 1, 5, 2, 3, 6]
+        },
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["4-2", "4-1", "5-1", "1-6", "3-6", "5-6", "6-6"],
+          "annotations": [1, 2, 3, 5, 6, 4, null]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["0-0", "0-6", "0-5", "0-3", "0-1", "1-3", "2-2"],
+          "annotations": [6, 1, 4, 2, 5, null, 3]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["1-1", "0-2", "0-4", "5-5", "1-2", "4-6", "4-4"],
+          "annotations": [6, 3, 5, 4, 7, 2, 1]
+        }
+      ],
+      "declaration": "P4",
+      "bid": 35,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["Hand 32's deal with its first bidder (Hand 32's opponent 1) playing his 35 on fours."]
+    },
+    {
+      "id": "hand-34",
+      "label": "Hand 34",
+      "kind": "deal",
+      "heading": "shot-0145",
+      "captures": ["shot-0146"],
+      "prose": ["shot-0146", "shot-0147", "shot-0148", "shot-0149"],
+      "seats": [
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["4-1", "1-1", "6-2", "4-0", "1-0", "6-6", "6-5"],
+          "annotations": [3, 4, 2, 6, 5, 7, 1]
+        },
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["5-1", "2-0", "3-4", "3-0", "3-5", "3-3", "6-4"],
+          "annotations": [1, 3, 5, 4, 2, 7, 6]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["6-0", "3-6", "0-0", "2-1", "1-6", "3-1", "3-2"],
+          "annotations": [2, 4, 1, 3, 5, 7, 6]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["5-5", "4-5", "5-2", "5-0", "2-2", "4-4", "4-2"],
+          "annotations": [1, 2, 3, 4, 5, 6, 7]
+        }
+      ],
+      "declaration": "P5",
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Opponent 2 marks the 3-6 4 and the 3-2 6; the prose plays the 3-2 fourth and the 6-3 sixth.",
+        "Opponent 2's prose at shot-0147 calls the 6-2 his partner's play; the diagram and the narrated trick give it to the bidder's partner. Kept as printed."
+      ]
+    },
+    {
+      "id": "hand-35",
+      "label": "Hand 35",
+      "kind": "deal",
+      "heading": "shot-0149",
+      "captures": ["shot-0149"],
+      "prose": ["shot-0149", "shot-0150", "shot-0151", "shot-0152"],
+      "seats": [
+        {
+          "role": "partner",
+          "label": "PARTNER",
+          "position": "top",
+          "orientation": "vertical",
+          "tiles": ["3-3", "3-2", "3-1", "5-4", "6-2", "5-2", "2-1"],
+          "annotations": [6, 3, 2, 1, 4, 5, 7]
+        },
+        {
+          "role": "opponent-1",
+          "label": "OPPONENT 1",
+          "position": "left",
+          "orientation": "horizontal",
+          "tiles": ["5-3", "2-2", "0-1", "0-3", "0-5", "0-6", "0-0"],
+          "annotations": [5, 7, 2, 6, 4, 3, 1]
+        },
+        {
+          "role": "opponent-2",
+          "label": "OPPONENT 2",
+          "position": "right",
+          "orientation": "horizontal",
+          "tiles": ["1-1", "5-6", "1-6", "2-0", "1-5", "4-1", "4-2"],
+          "annotations": [3, 7, 6, 4, 5, 1, 2]
+        },
+        {
+          "role": "bidder",
+          "label": "BIDDER",
+          "position": "bottom",
+          "orientation": "vertical",
+          "tiles": ["6-3", "6-6", "5-5", "4-0", "4-3", "4-6", "4-4"],
+          "annotations": [7, 6, 5, 4, 3, 2, 1]
+        }
+      ],
+      "declaration": "P4",
+      "bid": 84,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Opponent 2 marks the 4-1 1 and the 4-2 2; the prose plays the 4-2 first and the 4-1 second.",
+        "Opponent 1 has first bid and is credited with a 31 on blanks; the bottom hand outbids him with 84."
+      ]
+    },
+    {
+      "id": "hand-36",
+      "label": "Hand 36",
+      "kind": "hand",
+      "heading": "shot-0153",
+      "captures": ["shot-0153"],
+      "prose": ["shot-0153", "shot-0154"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["3-1", "4-1", "4-6", "0-2", "3-2", "4-3", "6-2"]}],
+      "declaration": "P4",
+      "bid": 30,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": [
+        "Four offs and not one double. Trump risk 1 and off risk 14 are given separately; the 30 counts on the partner for one trick."
+      ]
+    },
+    {
+      "id": "sample-nelo",
+      "label": "Sample Nel-O hand",
+      "kind": "hand",
+      "heading": "shot-0160",
+      "captures": ["shot-0160"],
+      "prose": ["shot-0159", "shot-0160", "shot-0161"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["1-3", "1-4", "0-5", "0-6", "1-2", "0-3", "2-4"]}],
+      "declaration": "nello",
+      "bid": null,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["Nel-O is not a straight declaration. No bid is stated for the sample."]
+    },
+    {
+      "id": "sample-sevens",
+      "label": "Sample Sevens hand",
+      "kind": "hand",
+      "heading": "shot-0163",
+      "captures": ["shot-0163"],
+      "prose": ["shot-0161", "shot-0162", "shot-0163"],
+      "seats": [{"role": "bidder", "label": null, "tiles": ["4-5", "0-5", "1-5", "3-3", "4-2", "4-3", "0-6"]}],
+      "declaration": "sevens",
+      "bid": null,
+      "at_risk": null,
+      "alternatives": [],
+      "notes": ["Sevens is not a straight declaration. No bid is stated for the sample."]
+    }
+  ],
+  "lines": [
+    {
+      "id": "hand-28/prose",
+      "example": "hand-28",
+      "source": "prose",
+      "declaration": "P0",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0129",
+          "leader": "bidder",
+          "plays": [["bidder", "6-0"], ["opponent-1", "4-0"], ["partner", "1-0"], ["opponent-2", "3-0"]]
+        },
+        {
+          "anchor": "shot-0130",
+          "leader": "bidder",
+          "plays": [["bidder", "0-0"], ["opponent-1", "5-1"], ["partner", "2-0"], ["opponent-2", "2-1"]]
+        },
+        {
+          "anchor": "shot-0130",
+          "leader": "bidder",
+          "plays": [["bidder", "3-1"], ["opponent-1", "3-2"], ["partner", "4-3"], ["opponent-2", "6-3"]],
+          "winner": "opponent-2",
+          "points": 6
+        },
+        {
+          "anchor": "shot-0130",
+          "leader": "opponent-2",
+          "plays": [["opponent-2", "5-4"], ["bidder", "5-3"], ["opponent-1", "5-5"], ["partner", "6-5"]],
+          "winner": "opponent-1",
+          "points": 11
+        },
+        {
+          "anchor": "shot-0131",
+          "leader": "opponent-1",
+          "plays": [["opponent-1", "4-1"], ["partner", "6-4"], ["opponent-2", "4-2"], ["bidder", "5-0"]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0131",
+          "leader": "bidder",
+          "plays": [["bidder", "6-6"], ["opponent-1", "3-3"], ["partner", "6-2"], ["opponent-2", "1-1"]]
+        },
+        {
+          "anchor": "shot-0131",
+          "leader": "bidder",
+          "plays": [["bidder", "6-1"], ["opponent-1", "4-4"], ["partner", "2-2"], ["opponent-2", "5-2"]],
+          "winner": "bidder"
+        }
+      ],
+      "totals": {"setters": 17},
+      "expect": {"result": "legal"},
+      "notes": ["The setters' 17 and their 47 (= 30 + 17) are stated at shot-0132."]
+    },
+    {
+      "id": "hand-28/annotations",
+      "example": "hand-28",
+      "source": "annotations",
+      "states": ["hand-28"],
+      "expect": {
+        "result": "complete",
+        "winners": ["bidder", "bidder", "opponent-2", "opponent-1", "bidder", "bidder", "bidder"],
+        "setters": 17
+      },
+      "notes": [
+        "Tricks 6 and 7 swap opponent 1's two doubles; the archive review finds the swap changes no winner and no points."
+      ]
+    },
+    {
+      "id": "hand-29/prose",
+      "example": "hand-29",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0133",
+          "leader": "bidder",
+          "plays": [["bidder", "4-0"], ["opponent-1", "6-4"], ["partner", "4-2"], ["opponent-2", "5-0"]],
+          "winner": "opponent-1",
+          "points": 16
+        },
+        {
+          "anchor": "shot-0133",
+          "leader": "opponent-1",
+          "plays": [["opponent-1", "2-2"], ["partner", "2-1"], ["opponent-2", "6-0"], ["bidder", "3-2"]],
+          "winner": "opponent-1"
+        },
+        {
+          "anchor": "shot-0133",
+          "leader": "opponent-1",
+          "plays": [["opponent-1", "1-0"], ["partner", "1-1"], ["opponent-2", "6-1"], ["bidder", "5-1"]],
+          "winner": "partner"
+        },
+        {
+          "anchor": "shot-0134",
+          "leader": "partner",
+          "plays": [["partner", "6-3"], ["opponent-2", "6-6"], ["bidder", "4-1"], ["opponent-1", "6-2"]],
+          "winner": "bidder"
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0134",
+        "winner": "bidder",
+        "plays": [["bidder", "4-4"]],
+        "note": "The bidder leads the 4-4 and then wins with the 5-5 and 3-3."
+      },
+      "totals": {"setters": 22},
+      "checkpoints": [{"after": 2, "side": "setters", "points": 22, "anchor": "shot-0133"}],
+      "expect": {"result": "legal"},
+      "notes": ["Opponent 1 is credited with 16 after trick 1 and 22 after trick 2; the final 52 is 22 + 30."]
+    },
+    {
+      "id": "hand-29/annotations",
+      "example": "hand-29",
+      "source": "annotations",
+      "states": ["hand-29"],
+      "expect": {"result": "ends", "trick": 6, "winners": ["opponent-1", "opponent-1", "partner", "bidder", "bidder"]},
+      "notes": ["Marks run to 5 on every seat and agree with the prose."]
+    },
+    {
+      "id": "hand-30/prose",
+      "example": "hand-30",
+      "source": "prose",
+      "declaration": "P6",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0135",
+          "leader": "bidder",
+          "plays": [["bidder", "6-5"], ["opponent-1", "6-3"], ["partner", "6-6"], ["opponent-2", "4-0"]],
+          "winner": "partner"
+        },
+        {
+          "anchor": "shot-0135",
+          "leader": "partner",
+          "plays": [["partner", "0-0"], ["opponent-2", "5-1"], ["bidder", "1-0"], ["opponent-1", "3-0"]]
+        },
+        {
+          "anchor": "shot-0135",
+          "leader": "partner",
+          "plays": [["partner", "3-1"], ["opponent-2", "3-2"], ["bidder", "4-3"], ["opponent-1", "2-1"]],
+          "winner": "bidder",
+          "note": "The 4-3 wins (shot-0136)."
+        },
+        {
+          "anchor": "shot-0136",
+          "leader": "bidder",
+          "plays": [["bidder", "6-4"], ["opponent-1", "4-2"], ["partner", "6-0"], ["opponent-2", "3-3"]]
+        },
+        {
+          "anchor": "shot-0137",
+          "leader": "bidder",
+          "plays": [["bidder", "2-2"], ["opponent-1", "5-2"], ["partner", "5-0"], ["opponent-2", "4-4"]]
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0137",
+        "winner": "bidder",
+        "plays": [],
+        "note": "The bidder's last two tiles are called unbeatable."
+      },
+      "totals": {"bidder": 42, "setters": 0},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-30/annotations",
+      "example": "hand-30",
+      "source": "annotations",
+      "states": ["hand-30", "hand-30-state"],
+      "expect": {"result": "ends", "trick": 6, "winners": ["partner", "partner", "bidder", "bidder", "bidder"]},
+      "notes": ["Marks 1-4 come from the full diagram, mark 5 from the later state."]
+    },
+    {
+      "id": "hand-31/prose",
+      "example": "hand-31",
+      "source": "prose",
+      "declaration": "P2",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0138",
+          "leader": "bidder",
+          "plays": [["bidder", "2-2"], ["opponent-1", "2-1"], ["partner", "5-0"], ["opponent-2", "3-2"]]
+        },
+        {
+          "anchor": "shot-0139",
+          "leader": "bidder",
+          "plays": [["bidder", "6-5"], ["opponent-1", "6-3"], ["partner", "6-6"], ["opponent-2", "4-0"]],
+          "winner": "partner"
+        },
+        {
+          "anchor": "shot-0139",
+          "leader": "partner",
+          "plays": [["partner", "0-0"], ["opponent-2", "5-1"], ["bidder", "1-0"], ["opponent-1", "3-0"]]
+        },
+        {
+          "anchor": "shot-0139",
+          "leader": "partner",
+          "plays": [["partner", "3-1"], ["opponent-2", "3-3"], ["bidder", "4-3"], ["opponent-1", "5-4"]],
+          "winner": "opponent-2"
+        },
+        {
+          "anchor": "shot-0140",
+          "leader": "opponent-2",
+          "plays": [["opponent-2", "4-1"], ["bidder", "6-4"], ["opponent-1", "4-2"], ["partner", "6-0"]],
+          "winner": "opponent-1",
+          "points": 16
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0140",
+        "winner": "bidder",
+        "plays": [],
+        "note": "Opponent 1 reasons that the bidder takes both last tricks whatever he leads."
+      },
+      "totals": {"setters": 17},
+      "checkpoints": [{"after": 4, "side": "setters", "points": 1, "anchor": "shot-0140"}],
+      "expect": {"result": "legal"},
+      "notes": ["The setters' 47 (= 17 + 30) is stated at shot-0141."]
+    },
+    {
+      "id": "hand-31/annotations",
+      "example": "hand-31",
+      "source": "annotations",
+      "states": ["hand-31"],
+      "expect": {"result": "unmarked", "trick": 2, "seat": "bidder", "winners": ["bidder"]},
+      "notes": ["No bidder tile is marked 2; the 6-5 the prose leads second is marked 6."]
+    },
+    {
+      "id": "hand-32/prose",
+      "example": "hand-32",
+      "source": "prose",
+      "declaration": "P0",
+      "bid": 36,
+      "tricks": [
+        {
+          "anchor": "shot-0142",
+          "leader": "bidder",
+          "plays": [["bidder", "0-0"], ["opponent-1", "0-2"], ["partner", "4-1"], ["opponent-2", "6-2"]]
+        },
+        {
+          "anchor": "shot-0142",
+          "leader": "bidder",
+          "plays": [["bidder", "0-6"], ["opponent-1", "0-4"], ["partner", "4-2"], ["opponent-2", "5-3"]]
+        },
+        {
+          "anchor": "shot-0142",
+          "leader": "bidder",
+          "plays": [["bidder", "3-1"], ["opponent-1", "6-4"], ["partner", "3-6"], ["opponent-2", "3-3"]],
+          "winner": "opponent-2",
+          "note": "The 3-3 wins and sets (shot-0143)."
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0143",
+        "winner": "bidder",
+        "plays": [["opponent-2", "5-4"], ["bidder", "0-1"]],
+        "note": "Opponent 2 leads the 5-4, the bidder trumps with the 0-1 and claims the rest."
+      },
+      "totals": {"setters": 11},
+      "expect": {"result": "legal"},
+      "notes": ["The setters' 47 (= 36 + 11) is stated at shot-0143."]
+    },
+    {
+      "id": "hand-32/annotations",
+      "example": "hand-32",
+      "source": "annotations",
+      "states": ["hand-32"],
+      "expect": {"result": "unmarked", "trick": 4, "seat": "partner", "winners": ["bidder", "bidder", "partner"]},
+      "notes": [
+        "By the marks, opponent 2's third play is the 3-5, which loses trick 3 to the partner's 6-3; opponent 2's mark 4 then has no trick to lead."
+      ]
+    },
+    {
+      "id": "hand-33/prose",
+      "example": "hand-33",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 35,
+      "tricks": [
+        {
+          "anchor": "shot-0144",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", "4-2"], ["partner", "4-3"], ["opponent-2", "6-0"]]
+        },
+        {
+          "anchor": "shot-0144",
+          "leader": "bidder",
+          "plays": [["bidder", "4-6"], ["opponent-1", "4-1"], ["partner", "4-5"], ["opponent-2", "3-0"]]
+        },
+        {
+          "anchor": "shot-0144",
+          "leader": "bidder",
+          "plays": [["bidder", "0-2"], ["opponent-1", "5-1"], ["partner", "2-5"], ["opponent-2", "2-2"]],
+          "winner": "opponent-2",
+          "points": 1
+        },
+        {
+          "anchor": "shot-0144",
+          "leader": "opponent-2",
+          "plays": [["opponent-2", "0-5"], ["bidder", "5-5"], ["opponent-1", "5-6"], ["partner", "5-3"]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0144",
+          "leader": "bidder",
+          "plays": [["bidder", "0-4"], ["opponent-1", "6-1"], ["partner", "2-3"], ["opponent-2", "1-0"]]
+        },
+        {
+          "anchor": "shot-0145",
+          "leader": "bidder",
+          "plays": [["bidder", "1-1"], ["opponent-1", "6-3"], ["partner", "6-2"], ["opponent-2", "0-0"]]
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0145",
+        "winner": "bidder",
+        "plays": [["bidder", "2-1"]],
+        "note": "The bidder's last lead, the 2-1, wins."
+      },
+      "totals": {"bidder": 41, "setters": 1},
+      "expect": {"result": "illegal", "trick": 6, "seat": "opponent-2", "tile": "0-0"},
+      "notes": [
+        "On trick 6 opponent 2 is said to be unable to follow the 1-1 and discards the 0-0, but the diagram leaves him the 1-3, unmarked and not yet played: a follow-suit break the archive's discrepancy log does not list. The totals still hold."
+      ]
+    },
+    {
+      "id": "hand-33/annotations",
+      "example": "hand-33",
+      "source": "annotations",
+      "states": ["hand-33"],
+      "expect": {
+        "result": "illegal",
+        "trick": 6,
+        "seat": "opponent-2",
+        "tile": "0-0",
+        "winners": ["bidder", "bidder", "opponent-2", "bidder", "bidder", "bidder"]
+      },
+      "notes": [
+        "Marks agree with the prose, so they share its trick-6 break; the 1-3 is unmarked and only the bidder marks trick 7."
+      ]
+    },
+    {
+      "id": "hand-34/prose",
+      "example": "hand-34",
+      "source": "prose",
+      "declaration": "P5",
+      "bid": 84,
+      "tricks": [
+        {
+          "anchor": "shot-0146",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", "5-1"], ["partner", "5-6"], ["opponent-2", "0-0"]]
+        },
+        {
+          "anchor": "shot-0147",
+          "leader": "bidder",
+          "plays": [["bidder", "5-4"], ["opponent-1", "5-3"], ["partner", "6-2"], ["opponent-2", "6-0"]]
+        },
+        {
+          "anchor": "shot-0147",
+          "leader": "bidder",
+          "plays": [["bidder", "5-2"], ["opponent-1", "2-0"], ["partner", "4-1"], ["opponent-2", "2-1"]]
+        },
+        {
+          "anchor": "shot-0148",
+          "leader": "bidder",
+          "plays": [["bidder", "5-0"], ["opponent-1", "3-0"], ["partner", "1-1"], ["opponent-2", "3-2"]]
+        },
+        {
+          "anchor": "shot-0148",
+          "leader": "bidder",
+          "plays": [["bidder", "2-2"], ["opponent-1", "4-3"], ["partner", "1-0"], ["opponent-2", "6-1"]]
+        },
+        {
+          "anchor": "shot-0148",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", "4-6"], ["partner", "4-0"], ["opponent-2", "3-6"]]
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0149",
+        "winner": "bidder",
+        "plays": [["bidder", "4-2"]],
+        "note": "The bidder's 4-2 is called unbeatable; he takes every trick."
+      },
+      "totals": {"bidder": 42, "setters": 0},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-34/annotations",
+      "example": "hand-34",
+      "source": "annotations",
+      "states": ["hand-34"],
+      "expect": {"result": "illegal", "trick": 5, "seat": "opponent-2", "tile": "1-6"},
+      "notes": [
+        "By the marks opponent 2 still holds the 3-2 at trick 5 and must follow the 2-2 lead with it; the archive review finds the same."
+      ]
+    },
+    {
+      "id": "hand-35/prose",
+      "example": "hand-35",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 84,
+      "tricks": [
+        {
+          "anchor": "shot-0150",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", "0-0"], ["partner", "4-5"], ["opponent-2", "4-2"]]
+        },
+        {
+          "anchor": "shot-0150",
+          "leader": "bidder",
+          "plays": [["bidder", "4-6"], ["opponent-1", "1-0"], ["partner", "3-1"], ["opponent-2", "4-1"]]
+        },
+        {
+          "anchor": "shot-0150",
+          "leader": "bidder",
+          "plays": [["bidder", "4-3"], ["opponent-1", "6-0"], ["partner", "3-2"], ["opponent-2", "1-1"]]
+        },
+        {
+          "anchor": "shot-0151",
+          "leader": "bidder",
+          "plays": [["bidder", "4-0"], ["opponent-1", "5-0"], ["partner", "6-2"], ["opponent-2", "2-0"]]
+        },
+        {
+          "anchor": "shot-0151",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", "5-3"], ["partner", "5-2"], ["opponent-2", "5-1"]]
+        },
+        {
+          "anchor": "shot-0151",
+          "leader": "bidder",
+          "plays": [["bidder", "6-6"], ["opponent-1", "3-0"], ["partner", "3-3"], ["opponent-2", "6-1"]]
+        },
+        {
+          "anchor": "shot-0151",
+          "leader": "bidder",
+          "plays": [["bidder", "6-3"], ["opponent-1", "2-2"], ["partner", "2-1"], ["opponent-2", "6-5"]],
+          "winner": "opponent-2",
+          "note": "The 6-5 sets the 84 (shot-0152)."
+        }
+      ],
+      "totals": {},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-35/annotations",
+      "example": "hand-35",
+      "source": "annotations",
+      "states": ["hand-35"],
+      "expect": {
+        "result": "complete",
+        "winners": ["bidder", "bidder", "bidder", "bidder", "bidder", "bidder", "opponent-2"],
+        "setters": 1
+      },
+      "notes": [
+        "Opponent 2's first two trumps swap; the archive review finds the shown continuation does not depend on their order."
+      ]
+    },
+    {
+      "id": "hand-12/prose",
+      "example": "hand-12",
+      "source": "prose",
+      "declaration": "P6",
+      "bid": 36,
+      "tricks": [
+        {
+          "anchor": "shot-0043",
+          "leader": "bidder",
+          "plays": [["bidder", "6-6"], ["opponent-1", "6-1"], ["partner", "6-0"], ["opponent-2", "1-0"]]
+        },
+        {
+          "anchor": "shot-0043",
+          "leader": "bidder",
+          "plays": [["bidder", null], ["opponent-1", "6-2"], ["partner", "5-0"], ["opponent-2", "3-0"]],
+          "winner": "bidder",
+          "note": "The bidder's lead is 'another six', not named."
+        },
+        {
+          "anchor": "shot-0043",
+          "leader": "bidder",
+          "plays": [["bidder", "0-2"], ["opponent-1", "2-2"], ["partner", "2-4"], ["opponent-2", "2-3"]],
+          "winner": "opponent-1",
+          "points": 6
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0044",
+        "winner": "bidder",
+        "plays": [],
+        "note": "Whatever the opponent leads, the bidder takes the last four tricks."
+      },
+      "totals": {"bidder": 36, "setters": 6},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-13/prose",
+      "example": "hand-13",
+      "source": "prose",
+      "declaration": "P3",
+      "bid": 31,
+      "tricks": [
+        {
+          "anchor": "shot-0045",
+          "leader": "bidder",
+          "plays": [["bidder", "3-3"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "Two trump leads; the other plays are not named. The bidder keeps the lead."
+        },
+        {
+          "anchor": "shot-0045",
+          "leader": "bidder",
+          "plays": [["bidder", null], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0045",
+          "leader": "bidder",
+          "plays": [["bidder", "6-1"], ["opponent-1", "6-4"], ["partner", "6-0"], ["opponent-2", "6-6"]],
+          "winner": "opponent-2",
+          "points": 11
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0045",
+        "winner": "bidder",
+        "plays": [],
+        "note": "The bidder wins the rest with a trump and three doubles."
+      },
+      "totals": {"bidder": 31, "setters": 11},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-14/prose",
+      "example": "hand-14",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0046",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", "4-0"], ["partner", "3-2"], ["opponent-2", "1-0"]]
+        },
+        {
+          "anchor": "shot-0046",
+          "leader": "bidder",
+          "plays": [["bidder", "6-4"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "Opponent 1 is deduced to hold the 4-5, the one trump left; the other two play non-fours."
+        },
+        {
+          "anchor": "shot-0046",
+          "leader": "bidder",
+          "plays": [["bidder", "5-2"], ["opponent-1", "5-5"], ["partner", null], ["opponent-2", "5-0"]],
+          "winner": "opponent-1",
+          "points": 16
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0046",
+        "winner": "bidder",
+        "plays": [],
+        "note": "The bidder holds only doubles and trumps after the off."
+      },
+      "totals": {"setters": 16},
+      "expect": {"result": "legal"},
+      "notes": ["Played at a bid of 30 although the book's call is to pass. The setters' 46 is 30 + 16."]
+    },
+    {
+      "id": "hand-15/prose-a",
+      "example": "hand-15",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 35,
+      "tricks": [
+        {
+          "anchor": "shot-0047",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "Each other seat plays its one trump."
+        },
+        {
+          "anchor": "shot-0047",
+          "leader": "bidder",
+          "plays": [["bidder", "4-6"], ["opponent-1", "2-0"], ["partner", "2-1"], ["opponent-2", "6-1"]],
+          "winner": "bidder",
+          "note": "The bidder's lead is described as his highest four."
+        },
+        {
+          "anchor": "shot-0048",
+          "leader": "bidder",
+          "plays": [["bidder", "6-0"], ["opponent-1", "6-6"], ["partner", "6-2"], ["opponent-2", "6-5"]],
+          "winner": "opponent-1"
+        },
+        {
+          "anchor": "shot-0048",
+          "leader": "opponent-1",
+          "plays": [["opponent-1", "0-0"], ["partner", "0-3"], ["opponent-2", "0-5"], ["bidder", null]],
+          "winner": "opponent-1"
+        }
+      ],
+      "tail": {"anchor": "shot-0048", "winner": "bidder", "plays": []},
+      "totals": {"bidder": 35, "setters": 7},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-15/prose-b",
+      "example": "hand-15",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 35,
+      "tricks": [
+        {
+          "anchor": "shot-0048",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0048",
+          "leader": "bidder",
+          "plays": [["bidder", null], ["opponent-1", null], ["partner", "5-5"], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0048",
+          "leader": "bidder",
+          "plays": [["bidder", "6-0"], ["opponent-1", "6-6"], ["partner", "6-2"], ["opponent-2", "3-2"]],
+          "winner": "opponent-1",
+          "points": 6
+        },
+        {
+          "anchor": "shot-0048",
+          "leader": "opponent-1",
+          "plays": [["opponent-1", "0-0"], ["partner", "0-5"], ["opponent-2", null], ["bidder", "0-1"]],
+          "winner": "opponent-1"
+        }
+      ],
+      "tail": {"anchor": "shot-0048", "winner": "bidder", "plays": []},
+      "totals": {"setters": 12},
+      "expect": {"result": "legal"},
+      "notes": ["The setters' 47 (= 12 + 35) is stated at shot-0049."]
+    },
+    {
+      "id": "hand-15/prose-c",
+      "example": "hand-15",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 35,
+      "tricks": [
+        {
+          "anchor": "shot-0049",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0049",
+          "leader": "bidder",
+          "plays": [["bidder", "4-6"], ["opponent-1", null], ["partner", "5-5"], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "The bidder's lead is described as his highest remaining four."
+        },
+        {
+          "anchor": "shot-0049",
+          "leader": "bidder",
+          "plays": [["bidder", "6-0"], ["opponent-1", "3-2"], ["partner", "6-6"], ["opponent-2", null]],
+          "winner": "partner"
+        },
+        {
+          "anchor": "shot-0049",
+          "leader": "partner",
+          "plays": [["partner", "0-0"], ["opponent-2", "0-5"], ["bidder", "0-1"], ["opponent-1", "0-2"]],
+          "winner": "partner"
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0049",
+        "winner": "bidder",
+        "plays": [],
+        "note": "The partner's next lead cannot hurt; the bidder holds trumps and a double."
+      },
+      "totals": {"bidder": 42, "setters": 0},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-16/prose",
+      "example": "hand-16",
+      "source": "prose",
+      "declaration": "P3",
+      "bid": 31,
+      "tricks": [
+        {
+          "anchor": "shot-0051",
+          "leader": "bidder",
+          "plays": [["bidder", "3-1"], ["opponent-1", null], ["partner", null], ["opponent-2", "3-6"]],
+          "winner": "opponent-2",
+          "note": "An opponent wins with the 3-6; the seat is read from the clockwise order of trick 2."
+        },
+        {
+          "anchor": "shot-0051",
+          "leader": "opponent-2",
+          "plays": [["opponent-2", "1-1"], ["bidder", "1-0"], ["opponent-1", "1-4"], ["partner", "1-5"]],
+          "winner": "opponent-2",
+          "points": 6
+        },
+        {
+          "anchor": "shot-0051",
+          "leader": "opponent-2",
+          "plays": [["opponent-2", "0-0"], ["bidder", "3-2"], ["opponent-1", "0-2"], ["partner", "0-5"]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0052",
+          "leader": "bidder",
+          "plays": [["bidder", "3-3"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0052",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", null], ["partner", "5-2"], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0052",
+          "leader": "bidder",
+          "plays": [["bidder", "2-2"], ["opponent-1", "2-4"], ["partner", "2-6"], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0052",
+          "leader": "bidder",
+          "plays": [["bidder", "2-1"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        }
+      ],
+      "totals": {"bidder": 35, "setters": 7},
+      "checkpoints": [{"after": 2, "side": "setters", "points": 7, "anchor": "shot-0051"}],
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-23/prose",
+      "example": "hand-23",
+      "source": "prose",
+      "declaration": "DT",
+      "bid": 31,
+      "tricks": [
+        {
+          "anchor": "shot-0105",
+          "leader": "bidder",
+          "plays": [["bidder", "1-1"], ["opponent-1", "5-5"], ["partner", "4-4"], ["opponent-2", "3-1"]],
+          "winner": "opponent-1",
+          "points": 11
+        },
+        {
+          "anchor": "shot-0105",
+          "leader": "opponent-1",
+          "plays": [["opponent-1", "5-3"], ["partner", "5-1"], ["opponent-2", "5-0"], ["bidder", "5-4"]],
+          "winner": "bidder"
+        }
+      ],
+      "tail": {
+        "anchor": "shot-0105",
+        "winner": "bidder",
+        "plays": [["bidder", "6-6"]],
+        "note": "The bidder leads the 6-6 and wins the rest."
+      },
+      "totals": {"setters": 11},
+      "expect": {"result": "legal"}
+    },
+    {
+      "id": "hand-24/prose",
+      "example": "hand-24",
+      "source": "prose",
+      "declaration": "DT",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0107",
+          "leader": "bidder",
+          "plays": [["bidder", "6-6"], ["opponent-1", "0-0"], ["partner", "4-4"], ["opponent-2", "5-3"]]
+        },
+        {
+          "anchor": "shot-0107",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", "1-1"], ["partner", "5-2"], ["opponent-2", "1-0"]]
+        },
+        {
+          "anchor": "shot-0107",
+          "leader": "bidder",
+          "plays": [["bidder", "5-1"], ["opponent-1", "5-6"], ["partner", "5-4"], ["opponent-2", "5-0"]],
+          "winner": "opponent-1"
+        }
+      ],
+      "totals": {},
+      "expect": {"result": "conflict", "trick": 2, "seat": "opponent-1", "tile": "1-1"},
+      "notes": ["The prose gives opponent 1 the 1-1, which the diagram puts in the bidder's hand."]
+    },
+    {
+      "id": "hand-24/review-emendation",
+      "example": "hand-24",
+      "source": "emendation",
+      "declaration": "DT",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0107",
+          "leader": "bidder",
+          "plays": [["bidder", "6-6"], ["opponent-1", "0-0"], ["partner", "4-4"], ["opponent-2", "5-3"]]
+        },
+        {
+          "anchor": "shot-0107",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", "3-3"], ["partner", "5-2"], ["opponent-2", "1-0"]]
+        },
+        {
+          "anchor": "shot-0107",
+          "leader": "bidder",
+          "plays": [["bidder", "5-1"], ["opponent-1", "5-6"], ["partner", "5-4"], ["opponent-2", "5-0"]],
+          "winner": "opponent-1"
+        }
+      ],
+      "totals": {},
+      "expect": {"result": "legal"},
+      "notes": ["Not the book: the archive review's proposed reading, the 3-3 for the 1-1 on trick 2."]
+    },
+    {
+      "id": "hand-26/prose-a",
+      "example": "hand-26",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 35,
+      "tricks": [
+        {
+          "anchor": "shot-0122",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0122",
+          "leader": "bidder",
+          "plays": [["bidder", "4-6"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0122",
+          "leader": "bidder",
+          "plays": [["bidder", "1-1"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0122",
+          "leader": "bidder",
+          "plays": [["bidder", "3-3"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0122",
+          "leader": "bidder",
+          "plays": [["bidder", "2-2"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0122",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0123",
+          "leader": "bidder",
+          "plays": [["bidder", "5-2"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "In the author's own deal the 5-2 was the high five left."
+        }
+      ],
+      "totals": {},
+      "checkpoints": [
+        {"after": 2, "side": "bidder", "points": 17, "anchor": "shot-0122"},
+        {"after": 5, "side": "bidder", "points": 25, "anchor": "shot-0122"}
+      ],
+      "expect": {"result": "legal"},
+      "notes": ["Trumps fall in two leads; the doubles then draw the count. Only the bidder's tiles are named."]
+    },
+    {
+      "id": "hand-26/prose-b",
+      "example": "hand-26",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 35,
+      "tricks": [
+        {
+          "anchor": "shot-0123",
+          "leader": "bidder",
+          "plays": [["bidder", "4-4"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder"
+        },
+        {
+          "anchor": "shot-0123",
+          "leader": "bidder",
+          "plays": [["bidder", "4-6"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "One opponent keeps the 4-2, the last trump out."
+        },
+        {
+          "anchor": "shot-0123",
+          "leader": "bidder",
+          "plays": [["bidder", "5-5"], ["opponent-1", null], ["partner", null], ["opponent-2", null]],
+          "winner": "bidder",
+          "note": "All follow; the 0-5 does not fall."
+        }
+      ],
+      "totals": {},
+      "checkpoints": [{"after": 3, "side": "bidder", "points": 28, "anchor": "shot-0123"}],
+      "expect": {"result": "legal"},
+      "notes": [
+        "The crisis branch: an opponent holds three trumps. The book then conditions its next lead on that opponent having played the 5-2, which the bidder holds (see the hand's notes)."
+      ]
+    },
+    {
+      "id": "hand-27/prose",
+      "example": "hand-27",
+      "source": "prose",
+      "declaration": "P4",
+      "bid": 30,
+      "tricks": [
+        {
+          "anchor": "shot-0126",
+          "leader": "bidder",
+          "plays": [["bidder", "6-2"], ["setter", "6-6"]],
+          "winner": "setter",
+          "note": "The opponent seat is not named."
+        },
+        {
+          "anchor": "shot-0126",
+          "leader": "setter",
+          "plays": [["setter", "5-5"], ["bidder", "6-4"]],
+          "winner": "bidder",
+          "note": "That opponent leads; the bidder trumps."
+        },
+        {
+          "anchor": "shot-0126",
+          "leader": "bidder",
+          "plays": [["bidder", "0-0"], [null, "0-5"]],
+          "winner": "bidder",
+          "note": "The seat that plays the 0-5 is not named."
+        }
+      ],
+      "totals": {},
+      "checkpoints": [
+        {"after": 2, "side": "bidder", "points": 21, "anchor": "shot-0126"},
+        {"after": 3, "side": "bidder", "points": 27, "anchor": "shot-0126"}
+      ],
+      "expect": {"result": "legal"}
+    }
+  ]
+}
