@@ -38,6 +38,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ## [2026-10-13 | 9f371174 | silas: the five trump-set rules are rare, not mis-guarded (#141)]
 - [[silas]]: the book narrates three trump sets (Hands 32, 34, 35) and no position where the rules apply; over 3,000 random deals the three ruffs never fire (29 frames reach the ruff, one holds a trump), the feed fires 3 times and the lead 41; the pour fires the ruffs at 328 of 4,343,426 positions ([[book-study-2026-10-12]]).
+- By population (sampled, `scratch/study141.rs`): a ruff rule answers in 0 of 3,000 games under `bid-only-enough` or `risk-budget`, 30 under an optimist with the top two tiles of two suits, 61 of three; without the second-trump clause 25 and 13, 146 and 250.
 - Added: positive pins for the last-seat ruff and the lead, a pin that the book's trump sets reach the ruff with no trump, and the coverage counts (`silas/tests/book_rules.rs`, `cli.rs`); README § Diagnostics corrected ("never fire" held only at 100 deals).
 
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]

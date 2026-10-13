@@ -985,6 +985,12 @@ ruff hold no trump. Over 3,000 random deals (84,205 frames) the three ruffs
 never fire: 29 frames reach the ruff, one holds a trump, and it holds only one
 (a rule without the second-trump clause would fire there, once); the feed fires
 3 times and the lead 41. In the pour the ruffs fire at 328 of 4,343,426 positions.
+Under a contract from a bidding policy (sampled, 3,000 contracts each, the
+bidder drawing trump, defenders keeping theirs) a ruff rule answers in 0 games
+under `bid-only-enough` and under `risk-budget`, and in 30 (one hand in a hundred)
+and 61 (two in a hundred) under a crude optimist, thin trumps with the top two
+tiles of two or of three suits; a sane bidder's setter is left a lone trump, which
+the ruffs' clause for a second trump refuses.
 `tests/diagnostics.rs` holds each warning, the funnel and the counts.
 
 ## Examples
