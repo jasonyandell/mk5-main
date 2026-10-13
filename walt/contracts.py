@@ -3,9 +3,9 @@
 See walt/DESIGN.md for the algorithm and rationale. Ground rules that apply
 to every module:
 
-- Interpreter: /Users/jason/code/mk5-main/.venv/bin/python -u, with the walt
-  worktree root (/Users/jason/code/mk5-main/.claude/worktrees/walt) first on
-  sys.path so `forge.*`, `champion.*`, `arena.*` resolve to THIS worktree.
+- Interpreter: `python -u`, with the checkout's root first on sys.path
+  (each module computes it from its own path) so `forge.*`, `champion.*`,
+  `arena.*` resolve to THIS checkout.
 - Tiles are forge domino ids 0..27 (`forge.oracle.tables.DOMINOES`). Inside
   walt everything speaks DOMINO IDS; the zeb engine's slot indices (0..6
   into a fixed hand tuple) appear only at the arena boundary in grade.py.
@@ -117,7 +117,7 @@ class SolveResult:
 #   class FieldOracle:
 #       """jud argmax as a deterministic field, batched + memoized.
 #
-#       __init__(net_path=<walt worktree>/champion/jud_net.pt, device='cpu')
+#       __init__(net_path=<checkout>/champion/jud_net.pt, device='cpu')
 #       decisions(queries) -> list[int]
 #           queries: list of (seat, hand_mask, pub) where pub is a PubState.
 #           Returns the domino id jud plays for each query. Memoized on

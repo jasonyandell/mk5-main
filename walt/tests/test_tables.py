@@ -1,16 +1,17 @@
 """test_tables.py — parity of walt LUTs against the zeb engine & forge tables.
 
 Plain executable script: prints one PASS/FAIL line per gate, exits nonzero on
-any FAIL. Run:  /Users/jason/code/mk5-main/.venv/bin/python -u test_tables.py
+any FAIL. Run:  python -u walt/tests/test_tables.py
 """
 from __future__ import annotations
 
 import random
 import sys
+from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from forge.oracle.tables import resolve_trick, trick_rank  # noqa: E402
 from forge.zeb import game as zeb  # noqa: E402

@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 from typing import Optional, Sequence
 
-WALT_ROOT = "/Users/jason/code/mk5-main/.claude/worktrees/walt"
+WALT_ROOT = str(Path(__file__).resolve().parents[1])
 if WALT_ROOT not in sys.path:
     sys.path.insert(0, WALT_ROOT)
 

@@ -14,11 +14,12 @@ from __future__ import annotations
 import dataclasses
 import random
 import sys
+from pathlib import Path
 from itertools import combinations
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from forge.oracle.tables import can_follow, led_suit_for_lead_domino  # noqa: E402
 from forge.zeb import game as zeb  # noqa: E402
