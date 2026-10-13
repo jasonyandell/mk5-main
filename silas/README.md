@@ -987,10 +987,12 @@ never fire: 29 frames reach the ruff, one holds a trump, and it holds only one
 3 times and the lead 41. In the pour the ruffs fire at 328 of 4,343,426 positions.
 Under a contract from a bidding policy (sampled, 3,000 contracts each, the
 bidder drawing trump, defenders keeping theirs) a ruff rule answers in 0 games
-under `bid-only-enough` and under `risk-budget`, and in 30 (one hand in a hundred)
-and 61 (two in a hundred) under a crude optimist, thin trumps with the top two
-tiles of two or of three suits; a sane bidder's setter is left a lone trump, which
-the ruffs' clause for a second trump refuses.
+under `bid-only-enough`, `risk-budget` and a marginal 30 (a hand `risk-budget`'s
+count prices at 28 or 29: 13 or 14 at risk), and in 30 and 61 games under an
+optimist who bids 30 on the top two tiles of two, or of three, suits whatever his
+trumps. A sane bidder's setter is left a lone trump, which the ruffs' clause for a
+second trump refuses; without it the games are 25, 13 and 18 (sane, sane, marginal)
+against 146 and 250 (optimists).
 `tests/diagnostics.rs` holds each warning, the funnel and the counts.
 
 ## Examples
