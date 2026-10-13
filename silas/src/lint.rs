@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::policy::{PolicyProgram, Selector};
-use crate::syntax::{Atom, Pattern, Quantifier, Query, Role, Sort, Span, Term};
+use crate::syntax::{Aggregate, Atom, Pattern, Quantifier, Quantity, Query, Role, Sort, Span, Term};
 
 /// A located warning, shown as an error is: the source, line and column, and
 /// the line with a caret under the fault.
@@ -99,20 +99,46 @@ fn body(pattern: &Pattern, out: &mut Vec<Warning>) {
             Quantifier::Some => "this (some ...)",
             Quantifier::None => "this (none ...)",
         };
-        declaration(&scope.roles, &scope.body, &scope.span, what, out);
-        for role in &scope.roles {
-            if !mentions(&scope.body, &role.name) {
-                warn(out, &role.span, format!("{} is bound and never used", role.name));
-            }
-        }
-        body(&scope.body, out);
+        binder(&scope.roles, &scope.body, &scope.span, what, true, out);
+    }
+    for (aggregate, points) in
+        pattern.bounds.iter().flat_map(|b| aggregates(&b.left).into_iter().chain(aggregates(&b.right)))
+    {
+        let what = if points { "this (points ...)" } else { "this (card ...)" };
+        // A points sum reads its domino's count: a use of its own.
+        binder(&aggregate.roles, &aggregate.body, &aggregate.span, what, !points, out);
+    }
+}
+
+/// Warnings about a scope's or an aggregate's own roles and its body.
+fn binder(roles: &[Role], pattern: &Pattern, at: &Span, what: &str, unused: bool, out: &mut Vec<Warning>) {
+    declaration(roles, pattern, at, what, out);
+    for role in roles.iter().filter(|r| unused && !mentions(pattern, &r.name)) {
+        warn(out, &role.span, format!("{} is bound and never used", role.name));
+    }
+    body(pattern, out);
+}
+
+/// The aggregates a quantity reads, each with whether it sums points.
+fn aggregates(quantity: &Quantity) -> Vec<(&Aggregate, bool)> {
+    match quantity {
+        Quantity::Number(_) | Quantity::Parameter(_) => vec![],
+        Quantity::Card(a) => vec![(a, false)],
+        Quantity::Points(a) => vec![(a, true)],
+        Quantity::Sum(parts) => parts.iter().flat_map(aggregates).collect(),
     }
 }
 
 fn mentions(pattern: &Pattern, name: &str) -> bool {
+    let inside = |roles: &[Role], body: &Pattern| !roles.iter().any(|r| r.name == name) && mentions(body, name);
     pattern.equal.iter().flatten().any(|n| n == name)
         || pattern.atoms.iter().any(|a| a.args.contains(&Term::Role(name.to_owned())))
-        || pattern.scopes.iter().any(|s| !s.roles.iter().any(|r| r.name == name) && mentions(&s.body, name))
+        || pattern.scopes.iter().any(|s| inside(&s.roles, &s.body))
+        || pattern
+            .bounds
+            .iter()
+            .flat_map(|b| aggregates(&b.left).into_iter().chain(aggregates(&b.right)))
+            .any(|(a, _)| inside(&a.roles, &a.body))
 }
 
 /// The polarity of each use of `name` in `pattern`: true where a use is
@@ -130,6 +156,17 @@ fn polarities(pattern: &Pattern, name: &str, positive: bool, uses: &mut Vec<(boo
     for scope in &pattern.scopes {
         if !scope.roles.iter().any(|r| r.name == name) {
             polarities(&scope.body, name, positive == (scope.quantifier == Quantifier::Some), uses);
+        }
+    }
+    // A comparison counts its aggregates' bindings up on one side and down
+    // on the other: a use inside one is not a negation.
+    for bound in &pattern.bounds {
+        let inside = aggregates(&bound.left)
+            .into_iter()
+            .chain(aggregates(&bound.right))
+            .any(|(a, _)| !a.roles.iter().any(|r| r.name == name) && mentions(&a.body, name));
+        if inside {
+            uses.push((true, bound.span.clone()));
         }
     }
 }

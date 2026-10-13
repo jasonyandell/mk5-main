@@ -5,7 +5,11 @@
 //! surface sugar (2026-10-13), and a file or prelude added since is pinned as
 //! first written (the auction's: `examples/book/bidding/`, `lib/bidding.silas`);
 //! any rewrite of a file, or of a prelude, into the sugar must read to the same
-//! core, and these pins prove it.
+//! core, and these pins prove it. The auction's files were re-pinned once, when
+//! the aggregate (`card`, `points`) replaced their literal bounds: a new core by
+//! design, whose meaning `tests/bidding.rs` holds to the old on every hand.
+//! `crisis.silas` was re-pinned then too, its meaning changed on purpose: the
+//! aggregate states the "most tiles out" its encoding had left as a gap.
 //!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too.

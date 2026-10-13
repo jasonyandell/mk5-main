@@ -12,12 +12,14 @@ it would go, and the test shows what the rule does there instead. This file list
 open gaps, ordered by how many of the book's rules each one blocks, and then the closed
 ones.
 
-**Where the encodings stand.** 20 of the 21 gates are encoded fully; C14 is partial (gap
-5). Of the fourteen book-faithful rules, nine need no gap; five carry one: the bidder's
-plan (gap 3, the donation lead), the crisis (gaps 1 and 5), the partner's leads and the
-dead double (gap 1), and the trump set (gap 5, its closest viewer fact). Each gap below
-lists the rules it blocks; the gates' misreadings, and the rule that reads each, are the
-last section.
+**Where the encodings stand.** 20 of the 21 gates are encoded fully; C14 is partial, its
+"most tiles out" left out as the study priced it (the gates are a record; the crisis rule
+states it with the aggregate, Closed below). Of the fourteen book-faithful rules, nine need
+no gap; five carry one: the bidder's plan (gap 3, the donation lead), the crisis, the
+partner's leads and the dead double (gap 1), and the trump set (its "trumps as strong as
+the bidder's" reads the bidder's hidden trumps: a belief, gaps 1 and 4, so the policy keeps
+its closest viewer fact). Each gap below lists the rules it blocks; the gates' misreadings,
+and the rule that reads each, are the last section.
 
 "Viewer" means the fact is public, or is the viewer's own: a policy may read it. "World"
 means it needs a hidden hand or a model of another seat's play.
@@ -28,7 +30,6 @@ means it needs a hidden hand or a model of another seat's play.
 | 2 | cross-game policy comparison (#130), narrowed | new layer | 3 (C17 in part) | world | Silas and the arena |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
 | 4 | the auction as information (#134), narrowed | belief | 3 | world | Silas |
-| 5 | aggregate (#135) | language construct | 2 (the crisis's "most out"; the trump set's "as strong") | viewer | Silas |
 
 ## 1. Policy likelihood: reading a convention
 
@@ -120,10 +121,10 @@ its frame, under both readings wherever points are scored (`examples/book/cross-
   the doubles, hold pairs, the discard order) cited #130 only because the contract once
   flattened an 84 to 42; `(bid 84)` and `(stake 2)` are guards now (Closed, below). They
   are play rules, statable now except where another gap holds them: policy likelihood
-  (#128) on four, aggregate (#135) on three, another seat's knowledge (#132) on one,
-  and a play-out over a belief (gap 7) for any claim about such a rule's set rate. The
-  row-by-row split is the coverage archive's, which the spec summarizes and does not
-  list.
+  (#128) on four, another seat's knowledge (#132) on one, and a play-out over a belief
+  (gap 7) for any claim about such a rule's set rate; the three the aggregate (#135) held
+  are statable since it was built. The row-by-row split is the coverage archive's, which
+  the spec summarizes and does not list.
 
 **Narrowed again (slice 2, 2026-10-13).** The bid action is in (README, The auction;
 `docs/cross-game.md` § 4, Slice 2 as built): the auction in the record with the
@@ -210,35 +211,32 @@ alone (most of the book's hands, and Zeb's record) has a conventional auction
 **Smallest addition.** `Belief::condition_on_policy` over a seat's bidding section
 (gap 1), and the match state in the play frame.
 
-## 5. Aggregate: comparing sizes
-
-**What.** "The double whose suit has the most tiles still unplayed" compares the sizes
-of two sets. "The lead whose called count is enough to set" compares a sum with a need.
-Rule order and distinct roles give "at least n"; `none` gives "exactly n". Neither gives
-"more than another set". A clause such as `(card n (roles d) clause ...)` binding `n` to
-a count, plus a comparison predicate on numbers, would do it. Numbers are literal-only
-today, so `to-set` can say "one point sets" but not "this lead's count sets".
-
-**Rules.**
-- C14 (p. 96) and `crisis.silas` (p. 93): "the double whose suit has the most tiles out".
-  The rule allows every count-calling double.
-- `trump-set.silas` (p. 52): "trumps as strong as the bidder's" compares two holdings; the
-  rule reads it as holding the top trump still out.
-- The 84 watch list's "keep the double with more tiles out" (pp. 66-81) is not encoded.
-- The bid rules (`lib/bidding.silas`) are encoded without it, at a price: each "at most
-  n points at risk" is a set of `none` scopes over the count tiles, each bid level is a
-  rule that derives the risk again, and the arena's declaration compares suit lengths
-  by enumerating up to seven tiles. They are exact, and that is most of their cost
-  (README, The auction).
-
-The book's C15 choice by what sets (pp. 98, 108) is no longer blocked for one called
-tile: the trick's point, the lead's own count and one called five or ten make six sums,
-and `to-set` against each is a disjunction of literals (the prelude's `lead-sets`). A sum
-over several called tiles still needs `card`.
-
-**Smallest addition.** The `card` clause in the language, and `less(n, m)` on numbers.
-
 ## Closed
+
+Closed by the aggregate (#135, 2026-10-13; README, Semantics and Short forms):
+
+- **Comparing sizes and sums.** `(card (roles ...) clause ...)` counts the bindings that
+  satisfy a body, `(points (roles d) clause ...)` sums their count, `(+ ...)` adds, and
+  `(<= a b)` compares, with `<`, `>=`, `>`, `=` and `/=` its short forms and a definition's
+  `(number n)` its bound. Three-valued by intervals: decided wherever the body is, so
+  always over the viewer's hand, and in each world over a hidden one. Numbers stay
+  literal-only; nothing binds one. What it moved:
+  - the crisis's "the double whose suit has the most tiles out" (C14's book reading, p. 96;
+    `crisis.silas`, p. 93) is the prelude's `(more-out t s)`, and the crisis's last two rules
+    keep only that double (`tests/book_rules.rs`, Hand 26); the C14 gate keeps its gap, as
+    priced;
+  - the bid rules (`lib/bidding.silas`): each "at most n points" is one `points` bound, a
+    suit's length one `card`, the arena's tie-break one comparison, and the sixteen
+    declaring rules of `bid-only-enough` are two. Every call and declaration of the three
+    policies is pinned equal to the old encodings' on all 1,184,040 hands; `risk-budget`'s
+    call costs 20 µs, not 150.
+- **Statable, not yet written:** the 84 watch list's "keep the double with more tiles out"
+  (pp. 66-81: `more-out`, but no 84 defence rule is encoded), and C15's choice by what sets
+  over several called tiles (`lead-sets` keeps its six literal sums for one called tile; a
+  `points` over the called count tiles states the general case).
+- **Not the aggregate's:** the trump set's "trumps as strong as the bidder's" reads the
+  bidder's hidden trumps, which no policy may; as a query over the setter's belief it is
+  statable now.
 
 Closed by the cross-game spec's slice 2 (2026-10-13; gaps 2 and 4 above):
 

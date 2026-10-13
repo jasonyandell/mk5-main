@@ -16,7 +16,7 @@ use std::str::FromStr;
 
 use crate::auction::{Auction, AuctionConfig, AuctionFrame, Call};
 use crate::dominance::Dominance;
-use crate::eval::{Budget, CompiledQuery, Witness};
+use crate::eval::{Budget, CompiledQuery, Memo, Witness};
 use crate::frame::{Bid, Frame};
 use crate::nouns::{Context, Domino, DominoSet, Pip, Seat};
 use crate::physics::Physics;
@@ -241,9 +241,15 @@ impl PolicyProgram {
         let mut section = |rules: &[PolicyRule], section: Section| -> Result<Vec<(PolicyRule, CompiledQuery)>> {
             rules.iter().map(|rule| compile_rule(rule, section, registry, &mut names)).collect()
         };
-        let rules = section(&self.rules, Section::Play)?;
-        let bidding = section(&self.bidding, Section::Bidding)?;
-        let declaring = section(&self.declaring, Section::Declaring)?;
+        let mut rules = section(&self.rules, Section::Play)?;
+        let mut bidding = section(&self.bidding, Section::Bidding)?;
+        let mut declaring = section(&self.declaring, Section::Declaring)?;
+        // A decision evaluates a section's guards at one frame: an aggregate
+        // written alike in two rules is counted once.
+        let mut shapes = BTreeMap::new();
+        for (_, guard) in rules.iter_mut().chain(&mut bidding).chain(&mut declaring) {
+            guard.intern(&mut shapes);
+        }
         let mut identity = format!("silas-policy-v3\n{self}");
         for (_, query) in rules.iter().chain(&bidding).chain(&declaring) {
             identity.push_str("\nrule-query: ");
@@ -373,6 +379,7 @@ impl CompiledPolicy {
             return Err(error("a policy acts only when its viewer is next"));
         }
         let legal = frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.lead());
+        let memo = Memo::default();
         if let Some(tile) = self.exact.get(&PolicyKey::of(frame)) {
             if !legal.contains(*tile) {
                 return Err(error(format!("the exact action {tile} is illegal")));
@@ -381,7 +388,7 @@ impl CompiledPolicy {
         }
         for k in 0..self.rules.len() {
             let (rule, guard) = &self.rules[k];
-            let (_, tiles) = self.rule_allows(k, frame, legal, budget)?;
+            let (_, tiles) = self.rule_allows(k, frame, legal, &memo, budget)?;
             if !tiles.is_empty() {
                 let witnesses = if explain {
                     guard.witnesses(frame, budget)?.into_iter().map(|(answer, w)| (answer.0, w)).collect()
@@ -419,8 +426,9 @@ impl CompiledPolicy {
             return Err(error(format!("{} is not to call after {auction}", frame.viewer())));
         }
         let legal = auction.legal_calls();
+        let memo = Memo::default();
         for (rule, guard) in &self.bidding {
-            if guard.evaluate_auction(frame, budget)?.is_empty() {
+            if guard.evaluate_auction_with(frame, &memo, budget)?.is_empty() {
                 continue;
             }
             let call = match rule.selector {
@@ -455,8 +463,9 @@ impl CompiledPolicy {
             _ => return Err(error(format!("{} has not won {}", frame.viewer(), frame.auction()))),
         }
         let offered: Vec<(Option<Trump>, &Physics)> = frame.declarations().iter().map(|d| (Trump::of(d), d)).collect();
+        let memo = Memo::default();
         for (rule, guard) in &self.declaring {
-            let answers = guard.evaluate_auction(frame, budget)?;
+            let answers = guard.evaluate_auction_with(frame, &memo, budget)?;
             if answers.is_empty() {
                 continue;
             }
@@ -508,10 +517,11 @@ impl CompiledPolicy {
         k: usize,
         frame: &Frame,
         legal: DominoSet,
+        memo: &Memo,
         budget: &mut Budget,
     ) -> Result<(crate::Answers, DominoSet)> {
         let (rule, guard) = &self.rules[k];
-        let answers = guard.evaluate_viewer(frame, budget)?;
+        let answers = guard.evaluate_viewer_with(frame, memo, budget)?;
         let tiles = match &rule.selector {
             Selector::FirstOutput => answers
                 .iter()

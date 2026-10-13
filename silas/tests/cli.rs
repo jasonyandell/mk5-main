@@ -31,10 +31,7 @@ fn bid_prints_the_call_its_rule_and_the_declaration() {
     assert!(ok, "{out}");
     assert!(out.contains("hand-1: the bidder (S0) to call; S3 shook: no calls; marks to 7"), "{out}");
     assert!(out.contains("calls 36, by rule bid-36"), "{out}");
-    assert!(
-        out.contains("if the rest pass, declares straight42/P6, by rule suit-at-risk-6\n    q6  <=  t=q6"),
-        "{out}"
-    );
+    assert!(out.contains("if the rest pass, declares straight42/P6, by rule least-at-risk\n    q6  <=  t=q6"), "{out}");
     // Over another seat's 35 the partner of Hand 32 passes, by the fallback.
     let args = ["--hand", "hand-32", "--seat", "partner", "--calls", "35", "--scoring", "points"];
     let (ok, out) = silas(&[&["bid", "examples/book/bidding/bid-only-enough.silas"][..], &args].concat());
@@ -156,7 +153,7 @@ fn expand_prints_the_core_and_check_prints_warnings() {
     // check takes a file as well as a directory, and warns without failing.
     let (ok, out) = silas(&["check", "examples/book/crisis.silas"]);
     assert!(ok, "{out}");
-    assert!(out.contains("crisis.silas:62:7: warning: always true: his and l"), "{out}");
+    assert!(out.contains("crisis.silas:63:7: warning: always true: his and l"), "{out}");
     assert!(out.contains("1 compiled, 0 failed, 1 warnings"), "{out}");
 }
 

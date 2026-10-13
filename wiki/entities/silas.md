@@ -91,7 +91,7 @@ its id, that the gate fails and the rule passes.
 |---|---|---|---|
 | `first-lead` | C10, C12a, C12b | trump first (any of the top sequence); two trumps: the straight off; double-up odds; one off is a permission, never in an 84 | — |
 | `bidders-plan` | C1a, C11 | draw with the top trump; the donation lead; bare offs at once while a trump can win back; else winners first, the off's double next-to-last | knowledge (#132) |
-| `crisis` | C14, C21 | a trump the bidder cannot draw: the 6-5 bait, a count double, away from the trump holder's suit | likelihood, aggregate |
+| `crisis` | C14, C21 | a trump the bidder cannot draw: the 6-5 bait, a count double, away from the trump holder's suit, its suit the most out | likelihood |
 | `donate-when-safe` | C1b, C3 | count, biggest first, on a trick provably the side's; the last seat's donation; none on a trick that can be lost | — |
 | `partner-leads` | C9, C23 | a double or a walker; then no count, a five, a six; never trump | likelihood |
 | `partner-plays-the-top-trump` | C2 | the worked hand's play (the book's p. 25 reading disagrees) | — |
@@ -100,7 +100,7 @@ its id, that the gate fails and the rule passes.
 | `shed-for-a-void` | C13a | a lone tile, never a double, a winner or a count tile's last guard; points bids only | — |
 | `low-from-a-pair` | C13c | as the gate, and the 84 form with count | — |
 | `setter-leads` | C15, C13d | a double when one point sets; the count that sets; count calling for more; think twice at 35 | — |
-| `trump-set` | C22 | the bidder's partner void too; the big doubles; feed a holder who may yet trump; lead high | aggregate (closest fact) |
+| `trump-set` | C22 | the bidder's partner void too; the big doubles; feed a holder who may yet trump; lead high | a belief (closest fact) |
 | `dead-double` | new | throw a double no live tile can lead to, on a trick you cannot take, never the 5-5; the bidder cashes one while a setter holds trump | likelihood (a decoy) |
 | `helper-stretch` | new | win low with the second tile and keep the double | — |
 
@@ -264,13 +264,36 @@ Slice 2 (2026-10-13, `silas/README.md` § The auction; its choices are
   and 36. On the study's 30 bid-book hands it makes the book's call on 18 and agrees
   on bid or pass on 22, below always bidding's 23 ([[book-study-2026-10-12]]: Zeb's
   forecast, 25).
-- **Cost.** Literal-only numbers make a bid level a rule and a points bound an
-  enumeration: the reading costs 150 µs a hand on one core (15 s over all hands on 18).
-  The lever is an aggregate (gap 5).
+- **Cost.** Literal-only numbers made a bid level a rule and a points bound an
+  enumeration: the reading cost 150 µs a hand on one core. The aggregate (below) took it
+  to 20 µs.
 
 What remains, a deal measure under a named field and the arena's paired ledgers, is
 `silas/GAPS.md` gap 2; reading a bid as evidence about the hand (#134) now needs only
 policy likelihood (#128).
+
+## The aggregate (2026-10-13)
+
+Silas compares sizes and sums (gap 5, #135; `silas/README.md` § Semantics): `(card (roles
+...) clause ...)` counts the bindings that satisfy a body, `(points (roles d) clause ...)`
+sums their count points, `(+ ...)` adds, and the core's one comparison is `(<= a b)`, with
+`<`, `>=`, `>`, `=` and `/=` as short forms. Numbers stay literal-only: nothing binds one,
+and a definition's `(number n)` parameter takes the bound. The three-valued semantics is
+intervals: a binding whose body is undefined may or may not count, so an aggregate is `[s,
+s + u]`, and a comparison is true or false only when every completion agrees. That makes
+`some` and `none` the thresholds `card ≥ 1` and `card = 0` in all three values, and makes
+an aggregate decided wherever its body is: always over the viewer's own hand, and in each
+world over a hidden one, where a belief gives its law. An aggregate is counted once per
+decision, even across a policy section's rules, since its value is a function of its text
+and the roles it names.
+
+The bid rules were rewritten with it (`suit-at-least`, `exposes-at-most`, `risk-at-most`;
+`bid-only-enough` declares by two rules instead of sixteen), and every call and
+declaration of the three bidding policies is pinned equal to the old encodings' on all
+1,184,040 hands. One core decides the opening in 7.5 µs (13), `risk-budget` in 20 µs (150)
+and the arena declaration in 92 µs (210). The crisis rule now keeps only the double whose
+suit has the most tiles out (the prelude's `more-out`). Still statable but unwritten: the
+84 watch list's double with more out, and C15's sum over several called tiles.
 
 ## Where it sits
 

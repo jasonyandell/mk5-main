@@ -21,7 +21,71 @@ use crate::Result;
 use crate::syntax::{Expr, Kind, Sort, Span, Value};
 
 /// Heads that are clause forms of the core or the sugar, not atoms.
-const FORMS: [&str; 6] = ["same", "some", "none", "not", "and", "or"];
+const FORMS: [&str; 12] = ["same", "some", "none", "not", "and", "or", "<=", "<", ">=", ">", "=", "/="];
+
+/// The comparisons read into the core's `(<= a b)`, each with the
+/// comparison that negates it.
+const COMPARISONS: [(&str, &str); 6] = [("<=", ">"), ("<", ">="), (">=", "<"), (">", "<="), ("=", "/="), ("/=", "=")];
+
+/// `(head a b)`'s two operands.
+fn operands<'a>(x: &'a Expr, head: &str) -> Result<(&'a Expr, &'a Expr)> {
+    match x.list()? {
+        [_, a, b] => Ok((a, b)),
+        _ => Err(x.span.error(format!("{head} compares two numbers: ({head} a b)"))),
+    }
+}
+
+/// `q + 1`: a literal folded, anything else `(+ q 1)`.
+fn plus_one(q: &Expr) -> Expr {
+    match q.word().ok().and_then(|w| w.parse::<u32>().ok()).and_then(|n| n.checked_add(1)) {
+        Some(n) => Expr::word_at(&n.to_string(), &q.span),
+        None => Expr::list_at(vec![Expr::word_at("+", &q.span), q.clone(), Expr::word_at("1", &q.span)], &q.span),
+    }
+}
+
+/// `(<= a b)` at `x`'s place.
+fn at_most(a: Expr, b: Expr, x: &Expr) -> Expr {
+    Expr::list_at(vec![Expr::word_at("<=", &x.span), a, b], &x.span)
+}
+
+/// A comparison's short form as core `(<= ...)` clauses (and, for `/=`, the
+/// `or` it is): over the integers, `a < b` is `a + 1 <= b`, `a >= b` is `b <=
+/// a`, `a > b` is `b + 1 <= a`, `a = b` is both `a <= b` and `b <= a`, and `a
+/// /= b` is `a < b` or `a > b`.
+fn comparison(x: &Expr, head: &str, out: &mut Vec<Expr>) -> Result<()> {
+    let (a, b) = operands(x, head)?;
+    let (a, b) = (a.clone(), b.clone());
+    match head {
+        "<=" => out.push(x.clone()),
+        "<" => out.push(at_most(plus_one(&a), b, x)),
+        ">=" => out.push(at_most(b, a, x)),
+        ">" => out.push(at_most(plus_one(&b), a, x)),
+        "=" => {
+            out.push(at_most(a.clone(), b.clone(), x));
+            out.push(at_most(b, a, x));
+        }
+        _ => {
+            let less = Expr::list_at(vec![Expr::word_at("<", &x.span), a.clone(), b.clone()], &x.span);
+            let more = Expr::list_at(vec![Expr::word_at(">", &x.span), a, b], &x.span);
+            clause(&Expr::list_at(vec![Expr::word_at("or", &x.span), less, more], &x.span), out)?;
+        }
+    }
+    Ok(())
+}
+
+/// A `(roles ...)` whose bare names are dominoes: an aggregate summing count
+/// points binds one.
+pub(crate) fn dominoes(declared: &Expr) -> Result<Expr> {
+    let entries = declared.list()?;
+    let mut out = vec![entries[0].clone()];
+    for entry in &entries[1..] {
+        out.push(match &entry.kind {
+            Kind::Word(_) => Expr::list_at(vec![Expr::word_at("domino", &entry.span), entry.clone()], &entry.span),
+            _ => entry.clone(),
+        });
+    }
+    Ok(Expr::list_at(out, &declared.span))
+}
 
 /// A clause list with every `and`, `or` and compound `not` rewritten, at
 /// this level (a scope's body is rewritten when it is read).
@@ -57,6 +121,7 @@ fn clause(x: &Expr, out: &mut Vec<Expr>) -> Result<()> {
             }
             _ => out.push(x.clone()),
         },
+        Some(head) if COMPARISONS.iter().any(|(c, _)| *c == head) => comparison(x, head, out)?,
         _ => out.push(x.clone()),
     }
     Ok(())
@@ -89,6 +154,11 @@ fn negation(c: &Expr, out: &mut Vec<Expr>) -> Result<()> {
         }
         Some("same") => {
             return Err(c.span.error("same cannot be negated: roles declared together are already distinct"));
+        }
+        Some(head) if COMPARISONS.iter().any(|(c, _)| *c == head) => {
+            let (_, opposite) = COMPARISONS.iter().find(|(c, _)| *c == head).expect("a comparison");
+            operands(c, head)?;
+            out.push(renamed(opposite));
         }
         _ => out.push(Expr::list_at(vec![Expr::word_at("not", &c.span), c.clone()], &c.span)),
     }
@@ -129,16 +199,11 @@ impl Uses {
                     }
                     self.joined.push(group);
                 }
-                Some("some" | "none") => {
-                    let Some(declared) = items.get(1) else { continue };
-                    let mut inner = bound.to_vec();
-                    for role in declared.tagged("roles")? {
-                        inner.push(match &role.kind {
-                            Kind::List(pair) if pair.len() == 2 => pair[1].word()?.to_owned(),
-                            _ => role.word()?.to_owned(),
-                        });
+                Some("some" | "none") => self.scope(items, bound, signature)?,
+                Some("<=") => {
+                    for q in &items[1..] {
+                        self.quantity(q, bound, signature)?;
                     }
-                    self.walk(&items[2..], &inner, signature)?;
                 }
                 Some("not") => {
                     if let [_, atom] = items {
@@ -147,6 +212,39 @@ impl Uses {
                 }
                 _ => self.atom(&x, bound, signature)?,
             }
+        }
+        Ok(())
+    }
+
+    /// `(some|none|card|points (roles ...) clause ...)`: its body, with its
+    /// roles bound.
+    fn scope(&mut self, items: &[Expr], bound: &[String], signature: &dyn Fn(&str) -> Option<Vec<Sort>>) -> Result<()> {
+        let Some(declared) = items.get(1) else { return Ok(()) };
+        let mut inner = bound.to_vec();
+        for role in declared.tagged("roles")? {
+            inner.push(match &role.kind {
+                Kind::List(pair) if pair.len() == 2 => pair[1].word()?.to_owned(),
+                _ => role.word()?.to_owned(),
+            });
+        }
+        self.walk(&items[2..], &inner, signature)
+    }
+
+    /// A comparison's operand: a name standing for a number is a use of the
+    /// number sort; an aggregate's body is walked as a scope's.
+    fn quantity(&mut self, q: &Expr, bound: &[String], signature: &dyn Fn(&str) -> Option<Vec<Sort>>) -> Result<()> {
+        match (&q.kind, q.head()) {
+            (Kind::Word(name), _) if Value::literal(name).is_none() && !bound.iter().any(|b| b == name) => {
+                self.seen(name);
+                self.sorts.get_mut(name.as_str()).expect("seen").push((Sort::Number, q.span.clone()));
+            }
+            (Kind::List(items), Some("+")) => {
+                for p in &items[1..] {
+                    self.quantity(p, bound, signature)?;
+                }
+            }
+            (Kind::List(items), Some("card" | "points")) => self.scope(items, bound, signature)?,
+            _ => {}
         }
         Ok(())
     }

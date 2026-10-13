@@ -10,7 +10,7 @@
 //! Every step is a query of its own, read under the same semantics: nothing
 //! here is a second evaluator.
 
-use crate::eval::{Budget, CompiledQuery};
+use crate::eval::{Budget, CompiledQuery, Memo};
 use crate::frame::Frame;
 use crate::policy::{CompiledPolicy, DecisionProvenance};
 use crate::registry::Registry;
@@ -30,18 +30,20 @@ impl Funnel {
     }
 
     fn new(query: &Query, pattern: &Pattern, registry: &Registry) -> Result<Funnel> {
-        // Each clause with where it came from: atoms first, then scopes, as
+        // Each clause with where it came from: atoms, scopes, then bounds, as
         // the core keeps them; a stable sort by source position restores the
         // text's order, and a clause built in Rust keeps its core place.
         enum Clause<'a> {
             Atom(&'a crate::syntax::Atom),
             Scope(&'a crate::syntax::Scope),
+            AtMost(&'a crate::syntax::AtMost),
         }
         let mut clauses: Vec<(Option<(usize, usize)>, Clause<'_>)> = pattern
             .atoms
             .iter()
             .map(|a| (a.span.range(), Clause::Atom(a)))
             .chain(pattern.scopes.iter().map(|s| (s.span.range(), Clause::Scope(s))))
+            .chain(pattern.bounds.iter().map(|b| (b.span.range(), Clause::AtMost(b))))
             .collect();
         clauses.sort_by_key(|(range, _)| range.map_or(usize::MAX, |r| r.0));
         let mut steps = Vec::new();
@@ -52,12 +54,14 @@ impl Funnel {
             let label = match &clauses[k].1 {
                 Clause::Atom(a) => a.span.text(),
                 Clause::Scope(s) => s.span.text(),
+                Clause::AtMost(b) => b.span.text(),
             };
             // One source form: every clause from the same place.
             loop {
                 match &clauses[k].1 {
                     Clause::Atom(a) => prefix.atoms.push((*a).clone()),
                     Clause::Scope(s) => prefix.scopes.push((*s).clone()),
+                    Clause::AtMost(b) => prefix.bounds.push((*b).clone()),
                 }
                 k += 1;
                 if range.is_none() || clauses.get(k).is_none_or(|c| c.0 != range) {
@@ -157,7 +161,7 @@ impl Coverage {
         self.frames += 1;
         self.exact += u64::from(decided);
         for (k, rule) in self.rules.iter_mut().enumerate() {
-            let (answers, tiles) = policy.rule_allows(k, frame, legal, budget)?;
+            let (answers, tiles) = policy.rule_allows(k, frame, legal, &Memo::default(), budget)?;
             rule.answered += u64::from(!answers.is_empty());
             rule.allowed += u64::from(!tiles.is_empty());
             if !tiles.is_empty() && !decided {
@@ -194,7 +198,7 @@ pub fn why_not(
         if *provenance == (DecisionProvenance::RelationalRule { name: rule.name.clone() }) {
             break;
         }
-        let (answers, _) = policy.rule_allows(k, frame, legal, budget)?;
+        let (answers, _) = policy.rule_allows(k, frame, legal, &Memo::default(), budget)?;
         let reason = if !answers.is_empty() {
             "its guard answered, but no answer is a legal play".to_owned()
         } else {

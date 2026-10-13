@@ -767,6 +767,31 @@ fn s0073d_s0123d_s0123e_s0124a_hand_26s_crisis() {
 }
 
 #[test]
+fn s0124a_of_the_count_doubles_the_suit_with_the_most_tiles_out() {
+    // Hand 26's crisis once the 5-5 is cashed (above): the bidder keeps the
+    // 3-3, 2-2 and 1-1. Twos out: 6-2, 3-2, 2-1, 2-0 (the 4-2 is trump);
+    // threes out: 6-3, 3-2, 3-1. The 2-2's suit has the most out, and the
+    // rule that ignores the trump holder's suit allows it alone, where the
+    // gate's encoding allowed every count-calling double.
+    let plays = ["4-4", "4-0", "4-1", "4-3", "6-4", "4-5", "6-6", "3-0", "5-5", "5-3", "5-1", "6-5"];
+    let at = hand("hand-26", &plays);
+    let more_out = |t: &str, s: &str| {
+        let text = format!("(include book) (query (more-out {t} {s}))");
+        let query = text.parse::<Query>().unwrap().compile(&Registry::standard()).unwrap();
+        !query.evaluate_viewer(&at.frame(Seat::S0), &mut budget()).unwrap().is_empty()
+    };
+    assert!(more_out("q2", "q3") && !more_out("q3", "q2") && !more_out("q2", "q2"));
+    // The third rule set aside (it allows the bidder's 0-0 alone, which he
+    // does not hold), the fourth decides.
+    let without_the_holders_suit = CRISIS.replace(
+        "(rule a-count-double-away-from-his-suit (play dd)",
+        "(rule a-count-double-away-from-his-suit (play dd) (tile dd 0-0)",
+    );
+    assert_ne!(without_the_holders_suit, CRISIS);
+    assert_eq!(allows(&without_the_holders_suit, &at, "a-count-double"), tiles(&["2-2"]));
+}
+
+#[test]
 fn s0127a_the_gates_one_trump_trick_is_not_a_crisis() {
     // Ours (the gate's own trigger): fours, after one trump trick the right
     // setter has shown out, but the bidder's 6-4 still draws both trumps out.

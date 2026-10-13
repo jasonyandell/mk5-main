@@ -333,6 +333,13 @@
   (not (trump-tile d))
   (some (roles q) (leads-context d q) (none (roles x) (live x) (not (mine x)) (leads-context x q))))
 
+; Suit t has more tiles out than suit s: tiles neither played nor the
+; viewer's, following each (an aggregate; the crisis's "most tiles out").
+(define more-out (roles (context t) (context s))
+  (<
+    (card (roles x) (live x) (not (mine x)) (in x s))
+    (card (roles x) (live x) (not (mine x)) (in x t))))
+
 ; The viewer's tile g, not count, is the last spare of a count tile of his in
 ; one of g's suits: without g the count tile stands alone there, where a
 ; double led pulls it. A double needs no guard.

@@ -61,7 +61,9 @@ pub use policy::{
 pub use registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};
-pub use syntax::{Atom, Pattern, Quantifier, Query, Role, Scope, Sort, Span, Term, Value, format};
+pub use syntax::{
+    Aggregate, AtMost, Atom, Pattern, Quantifier, Quantity, Query, Role, Scope, Sort, Span, Term, Value, format,
+};
 
 /// An invalid program, an invalid input, or a refused computation. Nothing
 /// partial is returned alongside it. An error in program text names the

@@ -19,8 +19,9 @@
 ; Hand 26), and lacks the count-at-stake first choice and the override. C21
 ; fires on any lead; the book plays the bait as a crisis lead (its trick-one
 ; 6-5 off of p. 132 is first-lead.silas's question).
-; GAP aggregate: "the suit with the most tiles out" compares two sets' sizes;
-; the last two rules allow every count-calling double.
+; "The suit with the most tiles out" compares two sets' sizes (the
+; prelude's more-out, an aggregate): of such doubles, none whose suit has
+; more tiles neither played nor the bidder's.
 ; GAP likelihood: in Hand 31 the crisis itself is a reading of the right
 ; setter's count play (prelude, trumps-he-cannot-draw).
 
@@ -61,8 +62,14 @@
       (played-to l h his)
       (not (tile his l))
       (in his s))
-    ; GAP aggregate: and no such double has more of its suit still out
-  )
+    (none (roles ee t)
+      (own-legal ee)
+      (double ee)
+      (not (trump-tile ee))
+      (calls-for-count ee)
+      (leads-context ee t)
+      (none (roles h l his) (setter h) (not (shown-out-of-trump h)) (played-to l h his) (in his t))
+      (more-out t s)))
   (rule a-count-double (play dd)
     (viewer b)
     (bidder b)
@@ -72,5 +79,11 @@
     (double dd)
     (not (trump-tile dd))
     (calls-for-count dd)
-    ; GAP aggregate: and no such double has more of its suit still out
-  ))
+    (leads-context dd s)
+    (none (roles ee t)
+      (own-legal ee)
+      (double ee)
+      (not (trump-tile ee))
+      (calls-for-count ee)
+      (leads-context ee t)
+      (more-out t s))))

@@ -715,6 +715,16 @@ quarters is the scope search and clause evaluation and a fifth the predicates'
 dispatch by name; scheduling a scope's clauses at compile time took a third off
 (allocation had been 15%). The lever is gap 5: an aggregate and bound numbers.
 
+**Amendment (the aggregate, 2026-10-13).** Gap 5 is built (README, Semantics:
+`card`, `points`, `+` and `(<= a b)`, three-valued by intervals; numbers stay
+literal-only, so a bid level is still a rule). `lib/bidding.silas` says each bound
+in one clause, `bid-only-enough` declares by two rules instead of sixteen, and an
+aggregate is counted once per decision across a section's rules. Every call and
+declaration of the three policies is pinned equal to the encodings above on all
+1,184,040 hands (`tests/bidding.rs`). One core: the opening 7.5 µs (13), the
+reading 20 µs (150), the arena declaration 92 µs (210); the pinned run of all
+three policies, 31 s on 18 cores against 117 s.
+
 What of gap 4 (#134) this closes and what it leaves is `GAPS.md` § 4.
 
 ### Slice 3: the deal measure and the exact play-out (medium-high; two weeks)

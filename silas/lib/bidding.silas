@@ -7,10 +7,11 @@
 ;
 ; A suit here is a pip suit, named by a context q0..q6: before the
 ; declaration no suit is called, so (bears d t) and (high-pip d t) read the
-; tile's pips, never a declaration. Numbers are literal-only and Silas has no
-; aggregate yet (GAPS.md, 5), so "at most n points" is written as "no set of
-; tiles worth more than n": the count tiles are worth 10 (5-5, 6-4) or 5
-; (5-0, 4-1, 3-2), so a handful of such sets says each bound exactly.
+; tile's pips, never a declaration. Sizes and sums are aggregates (README,
+; Aggregates): (card (roles d) ...) is how many of the viewer's tiles fit,
+; (points (roles c) ...) the count they carry, each over his own hand and the
+; tiles' faces, so always decided. A bound is a literal, passed to a
+; definition's (number n) parameter.
 
 (include book)
 
@@ -25,40 +26,9 @@
   (mine d)
   (bears d t))
 
-; The viewer holds at least one, two, ... seven tiles of suit t.
-(define suit-at-least-1 (roles (context t))
-  (some (roles a) (of-suit a t)))
-
-(define suit-at-least-2 (roles (context t))
-  (some (roles a b) (of-suit a t) (of-suit b t)))
-
-(define suit-at-least-3 (roles (context t))
-  (some (roles a b c) (of-suit a t) (of-suit b t) (of-suit c t)))
-
-(define suit-at-least-4 (roles (context t))
-  (some (roles a b c d) (of-suit a t) (of-suit b t) (of-suit c t) (of-suit d t)))
-
-(define suit-at-least-5 (roles (context t))
-  (some (roles a b c d e) (of-suit a t) (of-suit b t) (of-suit c t) (of-suit d t) (of-suit e t)))
-
-(define suit-at-least-6 (roles (context t))
-  (some (roles a b c d e f)
-    (of-suit a t)
-    (of-suit b t)
-    (of-suit c t)
-    (of-suit d t)
-    (of-suit e t)
-    (of-suit f t)))
-
-(define suit-at-least-7 (roles (context t))
-  (some (roles a b c d e f g)
-    (of-suit a t)
-    (of-suit b t)
-    (of-suit c t)
-    (of-suit d t)
-    (of-suit e t)
-    (of-suit f t)
-    (of-suit g t)))
+; The viewer holds at least n tiles of suit t.
+(define suit-at-least (roles (context t) (number n))
+  (<= n (card (roles d) (of-suit d t))))
 
 ; The viewer holds the double of suit t.
 (define suit-double (roles (context t))
@@ -66,14 +36,7 @@
 
 ; Suit u is longer in the viewer's hand than suit t.
 (define longer-suit (roles (context u) (context t))
-  (or
-    (and (suit-at-least-1 u) (not (suit-at-least-1 t)))
-    (and (suit-at-least-2 u) (not (suit-at-least-2 t)))
-    (and (suit-at-least-3 u) (not (suit-at-least-3 t)))
-    (and (suit-at-least-4 u) (not (suit-at-least-4 t)))
-    (and (suit-at-least-5 u) (not (suit-at-least-5 t)))
-    (and (suit-at-least-6 u) (not (suit-at-least-6 t)))
-    (and (suit-at-least-7 u) (not (suit-at-least-7 t)))))
+  (< (card (roles d) (of-suit d t)) (card (roles d) (of-suit d u))))
 
 ; Suit u outranks suit t as a trump of equal risk: it is longer, or as long
 ; with its double where t lacks one.
@@ -88,18 +51,9 @@
   (not (bears o t))
   (not (double o)))
 
-; Under trump t the viewer holds at most none, one, two or three offs.
-(define offs-at-most-0 (roles (context t))
-  (none (roles o) (off-under o t)))
-
-(define offs-at-most-1 (roles (context t))
-  (none (roles o p) (off-under o t) (off-under p t)))
-
-(define offs-at-most-2 (roles (context t))
-  (none (roles o p q) (off-under o t) (off-under p t) (off-under q t)))
-
-(define offs-at-most-3 (roles (context t))
-  (none (roles o p q r) (off-under o t) (off-under p t) (off-under q t) (off-under r t)))
+; Under trump t the viewer holds at most n offs.
+(define offs-at-most (roles (context t) (number n))
+  (<= (card (roles o) (off-under o t)) n))
 
 ; -- The count an off exposes (the arena's risk budget, arena/hand_metrics.py).
 
@@ -111,38 +65,16 @@
   (not (bears c t))
   (some (roles o p) (off-under o t) (bears o p) (bears c p)))
 
-; The count exposed under trump t is at most 0, 5, ..., 30 points.
-(define exposes-at-most-0 (roles (context t))
-  (none (roles c) (exposed c t)))
+; The count exposed under trump t is at most n points.
+(define exposes-at-most (roles (context t) (number n))
+  (<= (points (roles c) (exposed c t)) n))
 
-(define exposes-at-most-5 (roles (context t))
-  (none (roles c) (exposed c t) (count c 10))
-  (none (roles a b) (exposed a t) (exposed b t)))
-
-(define exposes-at-most-10 (roles (context t))
-  (none (roles a b) (exposed a t) (count a 10) (exposed b t))
-  (none (roles a b c) (exposed a t) (exposed b t) (exposed c t)))
-
-(define exposes-at-most-15 (roles (context t))
-  (none (roles a b) (exposed a t) (count a 10) (exposed b t) (count b 10))
-  (none (roles a b c) (exposed a t) (count a 10) (exposed b t) (exposed c t))
-  (none (roles a b c d) (exposed a t) (exposed b t) (exposed c t) (exposed d t)))
-
-(define exposes-at-most-20 (roles (context t))
-  (none (roles a b c) (exposed a t) (count a 10) (exposed b t) (count b 10) (exposed c t))
-  (none (roles a b c d) (exposed a t) (exposed b t) (exposed c t) (exposed d t)))
-
-(define exposes-at-most-25 (roles (context t))
-  (none (roles a b c d)
-    (exposed a t)
-    (count a 10)
-    (exposed b t)
-    (count b 10)
-    (exposed c t)
-    (exposed d t)))
-
-(define exposes-at-most-30 (roles (context t))
-  (none (roles a b c d e) (exposed a t) (exposed b t) (exposed c t) (exposed d t) (exposed e t)))
+; Suit u is a better trump than suit t for the arena: less count exposed, or
+; as little and it outranks t.
+(define less-exposed (roles (context u) (context t))
+  (or
+    (< (points (roles c) (exposed c u)) (points (roles c) (exposed c t)))
+    (and (<= (points (roles c) (exposed c u)) (points (roles c) (exposed c t))) (outranks u t))))
 
 ; -- The book's count of what is at risk (our reading; docs/cross-game.md,
 ; slice 2). Each off risks its trick and the count of the suit it leads (its
@@ -158,90 +90,27 @@
     (and (bears c t) (not (suit-double t)))
     (and (not (bears c t)) (some (roles o p) (off-under o t) (high-pip o p) (bears c p)))))
 
-; The count at risk under trump t is at most 0, 5, 10 or 15 points.
-(define risk-points-at-most-0 (roles (context t))
-  (none (roles c) (risk-tile c t)))
+; The points at risk under trump t are at most n: the count at risk, a trick
+; for each off, and a trick without the trump double.
+(define risk-at-most (roles (context t) (number n))
+  (<=
+    (+
+      (points (roles c) (risk-tile c t))
+      (card (roles o) (off-under o t))
+      (card (roles) (not (suit-double t))))
+    n))
 
-(define risk-points-at-most-5 (roles (context t))
-  (none (roles c) (risk-tile c t) (count c 10))
-  (none (roles a b) (risk-tile a t) (risk-tile b t)))
-
-(define risk-points-at-most-10 (roles (context t))
-  (none (roles a b) (risk-tile a t) (count a 10) (risk-tile b t))
-  (none (roles a b c) (risk-tile a t) (risk-tile b t) (risk-tile c t)))
-
-(define risk-points-at-most-15 (roles (context t))
-  (none (roles a b) (risk-tile a t) (count a 10) (risk-tile b t) (count b 10))
-  (none (roles a b c) (risk-tile a t) (count a 10) (risk-tile b t) (risk-tile c t))
-  (none (roles a b c d) (risk-tile a t) (risk-tile b t) (risk-tile c t) (risk-tile d t)))
-
-; The tricks at risk under trump t (one per off, and one without the trump
-; double) are at most 0 to 4. With three trumps or more there are at most
-; four offs, so five is never exceeded.
-(define risk-tricks-at-most-0 (roles (context t))
-  (suit-double t)
-  (offs-at-most-0 t))
-
-(define risk-tricks-at-most-1 (roles (context t))
-  (or (and (suit-double t) (offs-at-most-1 t)) (offs-at-most-0 t)))
-
-(define risk-tricks-at-most-2 (roles (context t))
-  (or (and (suit-double t) (offs-at-most-2 t)) (offs-at-most-1 t)))
-
-(define risk-tricks-at-most-3 (roles (context t))
-  (or (and (suit-double t) (offs-at-most-3 t)) (offs-at-most-2 t)))
-
-(define risk-tricks-at-most-4 (roles (context t))
-  (or (suit-double t) (offs-at-most-3 t)))
-
-; The points at risk under trump t (count and tricks) are at most 0 to 12,
-; or 17: a split of the bound between count, in fives, and tricks.
-(define risk-at-most-0 (roles (context t))
-  (risk-points-at-most-0 t)
-  (risk-tricks-at-most-0 t))
-
-(define risk-at-most-1 (roles (context t))
-  (risk-points-at-most-0 t)
-  (risk-tricks-at-most-1 t))
-
-(define risk-at-most-2 (roles (context t))
-  (risk-points-at-most-0 t)
-  (risk-tricks-at-most-2 t))
-
-(define risk-at-most-3 (roles (context t))
-  (risk-points-at-most-0 t)
-  (risk-tricks-at-most-3 t))
-
-(define risk-at-most-4 (roles (context t))
-  (risk-points-at-most-0 t)
-  (risk-tricks-at-most-4 t))
-
-(define risk-at-most-5 (roles (context t))
-  (or (risk-points-at-most-0 t) (and (risk-points-at-most-5 t) (risk-tricks-at-most-0 t))))
-
-(define risk-at-most-6 (roles (context t))
-  (or (risk-points-at-most-0 t) (and (risk-points-at-most-5 t) (risk-tricks-at-most-1 t))))
-
-(define risk-at-most-7 (roles (context t))
-  (or (risk-points-at-most-0 t) (and (risk-points-at-most-5 t) (risk-tricks-at-most-2 t))))
-
-(define risk-at-most-8 (roles (context t))
-  (or (risk-points-at-most-0 t) (and (risk-points-at-most-5 t) (risk-tricks-at-most-3 t))))
-
-(define risk-at-most-9 (roles (context t))
-  (or (risk-points-at-most-0 t) (and (risk-points-at-most-5 t) (risk-tricks-at-most-4 t))))
-
-(define risk-at-most-10 (roles (context t))
-  (or (risk-points-at-most-5 t) (and (risk-points-at-most-10 t) (risk-tricks-at-most-0 t))))
-
-(define risk-at-most-11 (roles (context t))
-  (or (risk-points-at-most-5 t) (and (risk-points-at-most-10 t) (risk-tricks-at-most-1 t))))
-
-(define risk-at-most-12 (roles (context t))
-  (or (risk-points-at-most-5 t) (and (risk-points-at-most-10 t) (risk-tricks-at-most-2 t))))
-
-(define risk-at-most-17 (roles (context t))
-  (or (risk-points-at-most-10 t) (and (risk-points-at-most-15 t) (risk-tricks-at-most-2 t))))
+; Less is at risk under trump u than under trump t.
+(define less-at-risk (roles (context u) (context t))
+  (<
+    (+
+      (points (roles c) (risk-tile c u))
+      (card (roles o) (off-under o u))
+      (card (roles) (not (suit-double u))))
+    (+
+      (points (roles c) (risk-tile c t))
+      (card (roles o) (off-under o t))
+      (card (roles) (not (suit-double t))))))
 
 ; -- The book's 84 (S-0083-a): three or four trumps, the trump double among
 ; them, two or three doubles besides, and at most one off, under its own
@@ -250,22 +119,10 @@
 ; doubles (Hand 10, a pass) would be an 84.
 
 (define eighty-four-shape (roles (context t))
-  (suit-at-least-3 t)
-  (not (suit-at-least-5 t))
+  (suit-at-least t 3)
+  (not (suit-at-least t 5))
   (suit-double t)
-  (some (roles a b) (mine a) (double a) (not (bears a t)) (mine b) (double b) (not (bears b t)))
-  (none (roles a b c d)
-    (mine a)
-    (double a)
-    (not (bears a t))
-    (mine b)
-    (double b)
-    (not (bears b t))
-    (mine c)
-    (double c)
-    (not (bears c t))
-    (mine d)
-    (double d)
-    (not (bears d t)))
-  (offs-at-most-1 t)
+  (<= 2 (card (roles a) (mine a) (double a) (not (bears a t))))
+  (<= (card (roles a) (mine a) (double a) (not (bears a t))) 3)
+  (offs-at-most t 1)
   (none (roles o p) (off-under o t) (high-pip o p) (none (roles d) (mine d) (double d) (bears d p))))

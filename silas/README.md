@@ -55,8 +55,11 @@ pattern  := (pattern clause ...)
 clause   := (same name name ...) | atom | (not atom)
           | (some (roles role ...) clause ...)
           | (none (roles role ...) clause ...)
+          | (<= number number)
 atom     := (predicate argument ...) | (definition argument ...)
 argument := name | literal
+number   := n | (card (roles role ...) clause ...)
+          | (points (roles (domino d)) clause ...) | (+ number ...)
 ```
 
 Names begin with an ASCII letter and continue with letters, digits, `_` or
@@ -90,6 +93,7 @@ entry    := (sort name) | name              ; a bare name: its sort from its use
 body     := pattern ... | clause ...        ; bare clauses: the query's one pattern
 clause   := ... | (and clause ...) | (or clause ...) | (not clause)
           | (some (roles entry ...) clause ...) | (none (roles entry ...) clause ...)
+          | (< a b) | (>= a b) | (> a b) | (= a b) | (/= a b)
 ```
 
 - **Roles from their uses.** A bare name in any `(roles ...)` (a query's, a
@@ -111,6 +115,14 @@ clause   := ... | (and clause ...) | (or clause ...) | (not clause)
   ...))` is `(not c) ...`. A negated atom or definition call is the core's
   own `(not ...)`. `(or)` is false and `(and)` true. `and` and `or` are
   reserved.
+- **Comparisons,** over the integers, into the core's one `(<= a b)`: `(< a
+  b)` is `(<= (+ a 1) b)`, `(>= a b)` is `(<= b a)`, `(> a b)` is `(<= (+ b
+  1) a)`, `(= a b)` is `(<= a b) (<= b a)`, and `(/= a b)` is `(or (< a b)
+  (> a b))`; a literal plus one is folded (`(> x 3)` is `(<= 4 x)`). `(not (<=
+  a b))` is `(> a b)`, and each comparison's negation is its opposite, which
+  the semantics below justifies. A definition's `(number n)` parameter may
+  stand in a comparison and takes its call's literal; `(points (roles d)
+  ...)`'s bare role is a domino.
 
 So the book's "protect the count" exception, that the partner is not the
 trump setter or has already played, reads three ways and is one clause:
@@ -184,6 +196,33 @@ transcription would check it against.
   only primitives, prints in them, and its identity is theirs. The short
   forms (Queries, above) are read away the same way and are not part of
   this semantics.
+- **Aggregates are intervals.** `(card (roles R) B)` and `(points (roles
+  d) B)` are stratified scopes, as `some` is: their roles distinct from one
+  another, not from the roles around them, read once every enclosing role
+  they name is bound. At an assignment each binding of `R` (each injective
+  map from `R`'s classes to values) is *satisfied* when `B` is true,
+  *refuted* when it is false, and *unsettled* when undefined. A binding
+  weighs one under `card`, and under `points` the count of its domino `d`
+  (the frame's count table; nonnegative). The aggregate denotes the interval
+  `[s, s + u]`, `s` the weight of the satisfied bindings and `u` of the
+  unsettled: every value that some completion of the undefined atoms could
+  give. A literal `n` is `[n, n]`, and `(+ a ...)` adds intervals end to end.
+  `(<= a b)` is true when `a`'s high end is at most `b`'s low end (every
+  completion agrees), false when `a`'s low end exceeds `b`'s high end (no
+  completion does), and undefined otherwise. So an aggregate is decided
+  wherever its body is, and in particular over the viewer's own hand and the
+  tiles' faces; over a hidden hand (`holds`) it is decided in each world, and
+  a belief gives its law as for any `World` atom. Undefined is sound, never a
+  guess: a comparison decided on intervals is decided alike in every
+  completion, though one undefined on intervals may be decided in all of
+  them (two aggregates over one undefined atom are bounded apart, as
+  Kleene's `(or a (not a))` is undefined). The quantifiers are the two
+  thresholds: `(some R B)` is `(<= 1 (card R B))` and `(none R B)` is `(<=
+  (card R B) 0)`, in all three values. Negation is exact: not `a <= b` is `b
+  + 1 <= a` on intervals. An aggregate's value at an assignment is a function
+  of its text and the values of the enclosing roles it names, so an
+  evaluation counts each once per binding of those, even across the rules of
+  one policy section at one frame.
 - **Viewer queries are measurable.** If every predicate a query names reads
   only the frame (`Viewer` access), its answers at `(f, w)` are the same for
   every world `w` of `f`. A policy's guards are such queries, so a policy is a
@@ -266,7 +305,8 @@ a frame before any work, and a policy rule naming one at compilation.
 | `certain-make()`, `certain-set()` | Viewer | v3: the viewer, choosing from his frame alone, forces the make (the set) in every world against every play of the other three seats; undefined unless that is his side's goal. |
 | `dd-make()` | World | v3: in this world the declaring side makes from here under double-dummy play. |
 
-Numbers and teams are literal-only, so `banked` and `to-set` take a chair and
+Numbers and teams are literal-only (a number is never a role; the aggregates
+compare sizes and sums without one), so `banked` and `to-set` take a chair and
 a trick is named by its lead: "one trump trick so far, led by the bidder" is
 `(bidder b) (led b first) (trump-tile first)` with a `none` over any other
 trump lead. A shown void implies a void in every world; the converse fails,
@@ -301,7 +341,8 @@ Leads: `(loses-in d q)`, `(can-lose d)`, `(off d)`, `(walker d)`,
 `(low-four-five-or-six d)`. The trick: `(last-to-play)`,
 `(partner-winning)`, `(can-take-it)`, `(no-setter-trump)`, `(winner-cannot-be-beaten)`,
 `(safe-trick)` (what the partner gives count to), `(partner-may-take-it)`
-(what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`. The
+(what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`,
+`(more-out t s)` (suit `t` has more tiles out than `s`, an aggregate). The
 bidder's offs: `(draws-the-count-for dd o)`, `(strips-the-suit-of dd o)`,
 `(protects dd o)`, `(bare-off o)`; his trouble: `(crisis)`. The bid:
 `(every-trick)` (a bid of marks), `(bid-35-or-more)`, and `(lead-sets d)`,
@@ -505,15 +546,19 @@ bid` prints them.
 
 `lib/bidding.silas` (`(include bidding)`) is the auction's vocabulary: a
 suit's length, its double, its offs, the count an off exposes, and the book's
-count of what is at risk. Numbers are literal-only and Silas has no aggregate
-(`GAPS.md`, 5), so "at most 10 points exposed" is written as "no exposed set
-worth more", a handful of `none` scopes over the count tiles, and a bid level
-is a rule. `examples/book/bidding/` holds three policies:
+count of what is at risk. Sizes and sums are aggregates (Semantics, above):
+"at most 10 points exposed" is `(exposes-at-most t 10)`, one `(<= (points
+...) 10)`, and a definition's `(number n)` takes the bound. A bid is still a
+literal, so a bid level is a rule. `examples/book/bidding/` holds three
+policies:
 
 ```text
 (rule raise-to-32 (bid least-raise)
   (or (least-raise 30) (least-raise 31) (least-raise 32))
-  (some (roles t) (suit-at-least-3 t) (exposes-at-most-10 t)))
+  (some (roles t) (suit-at-least t 3) (exposes-at-most t 10)))
+
+(define exposes-at-most (roles (context t) (number n))
+  (<= (points (roles c) (exposed c t)) n))
 ```
 
 - `bid-only-enough` (S-0036-e) is the arena's `HeuristicBidder`: raise to the
@@ -535,13 +580,17 @@ is a rule. `examples/book/bidding/` holds three policies:
   book's printed one on 8 of the 12 hands that print one.
 - `never-32-or-33` (S-0152-c) raises past them to 34, or passes.
 
-Cost. One core decides `bid-only-enough`'s opening in 13 µs a hand,
-`risk-budget`'s in 150 µs and `bid-only-enough`'s declaration in 210 µs; over
-all hands on 18 cores, 1 s, 15 s and 20 s. The cost is the encoding: a bid is
-a literal, so `risk-budget` is fifteen rules that each derive the risk again
-for every suit; each bound is an enumeration over sets of count tiles, and
-the declaration's tie-break compares suit lengths with scopes of up to seven
-roles. An aggregate (`card`, gap 5) would say each in one clause.
+Cost. Before the aggregate each bound was a handful of `none` scopes over
+sets of count tiles, each bid level re-derived the risk, and the declaration
+compared suit lengths with scopes of up to seven roles. Rewritten with `card`
+and `points` (the old and new calls and declarations are pinned equal on
+every hand, `tests/bidding.rs`), one core decides `bid-only-enough`'s opening
+in 7.5 µs a hand (13 before), `risk-budget`'s in 20 µs (150) and
+`bid-only-enough`'s declaration in 92 µs (210): three policies' calls and
+declarations on all hands take 31 s on 18 cores, 117 s before. Most of the
+gain is counting each aggregate once per decision (the risk of a suit is read
+by fifteen rules); what remains is the evaluation of the atoms in the
+aggregates' bodies.
 
 ## The Physics boundary
 
