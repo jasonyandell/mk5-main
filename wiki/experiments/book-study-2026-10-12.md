@@ -42,6 +42,15 @@ book was extracted or adopted: Zeb today prices a move, it does not explain one 
 - *No relation to the book* (chance-corrected ≤ 0.07): the partner never leads trump (C9;
   random already scores 70% there), low from a pair (C13c, a two-tile choice at a coin
   flip), lead a singleton (C13d).
+- *The gates are not the book's rules.* Written as [[silas]] policies and replayed on the
+  book's own worked deals (`silas/examples/book/`, `silas/tests/book.rs`), at least 10 of
+  the 21 Python gates part from the book on its own positions: the pounce (C7) also fires
+  when the setter can follow (Hand 28); the donation lead (C1a) turns on what the partner
+  can know; the trick-1 off lead (C10) is permitted, not prescribed (Hand 14 leads trump);
+  four trumps missing the 2nd and 3rd (C12B) is played with three trumps in the book's
+  examples; and C8, C11, C13b, C13d, C14, C15, C22 differ too. The handoff's book reading
+  (C2) is false in the book's own Hand 30. Every per-rule verdict on this page prices the
+  gate, not the book's rule, until the gate is re-checked (#123).
 - *Zeb's plan prices against the book* (−0.05 pmake per decision or worse, surviving a
   four-times-stronger re-plan): biggest count first (C3), the pounce (C7), the trick-1 off
   lead (C10), four trumps missing the 2nd and 3rd, lead low (C12B), the six-five bait

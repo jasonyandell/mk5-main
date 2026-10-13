@@ -13,16 +13,16 @@ means it needs a hidden hand or a model of another seat's play.
 
 | # | gap | kind | rules blocked | viewer / world | home |
 |---|---|---|---|---|---|
-| 1 | `declarer` | frame fact | all 21 gates | viewer | Silas |
-| 2 | `none` | language construct | 12 gates | viewer (per pattern) | Silas |
-| 3 | policy likelihood | belief operation | 5 readings | world | Silas |
-| 4 | history | frame facts | 4 | viewer | Silas |
-| 5 | cross-game policy comparison | new layer | 4 | world | Silas and Physics |
-| 6 | `shown-void` | predicate | 3 | viewer | Silas |
-| 7 | another seat's knowledge | modal construct | 3 | world | Silas |
-| 8 | banked and bid | frame facts | 3 | viewer | Silas |
-| 9 | the auction as information | frame facts and belief | 3 | world | Silas and Physics |
-| 10 | aggregate | language construct | 2 | viewer | Silas |
+| 1 | `declarer` (#126) | frame fact | all 21 gates | viewer | Silas |
+| 2 | `none` (#127) | language construct | 12 gates | viewer (per pattern) | Silas |
+| 3 | policy likelihood (#128) | belief operation | 5 readings | world | Silas |
+| 4 | history (#129) | frame facts | 4 | viewer | Silas |
+| 5 | cross-game policy comparison (#130) | new layer | 4 | world | Silas and Physics |
+| 6 | `shown-void` (#131) | predicate | 3 | viewer | Silas |
+| 7 | another seat's knowledge (#132) | modal construct | 3 | world | Silas |
+| 8 | banked and bid (#133) | frame facts | 3 | viewer | Silas |
+| 9 | the auction as information (#134) | frame facts and belief | 3 | world | Silas and Physics |
+| 10 | aggregate (#135) | language construct | 2 | viewer | Silas |
 
 ## 1. `declarer`: who bid
 

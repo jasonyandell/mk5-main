@@ -64,6 +64,17 @@ hand (p. 113: the bidder holds 5-5 5-4 5-2 5-0 4-4 4-2 2-2, fives trump) gives "
 opponent holds the 6-5 with another five" at exactly 33/95, `Exact`, over a root of
 399,072,960 worlds ([[book-study-2026-10-12]]).
 
+## The book, rule by rule
+
+The 21 rule gates of [[book-study-2026-10-12]] are Silas policies in `silas/examples/book/`
+(10 encoded fully, 11 partly), tested in `silas/tests/book.rs` mostly on the book's own
+full deals (Hands 28–35), replayed with every play checked legal. On those positions at
+least 10 of the 21 Python gates part from the book, so the per-rule prices on the study
+page are the gates' prices, not the book's (#123). What the book needs and Silas cannot
+yet say is `silas/GAPS.md`, ordered by rules blocked, one issue each (#126–#135): who
+bid (all 21), a negated sub-pattern "no other" (12), a policy likelihood for readings
+(5), the play history (4), cross-game policy comparison (4), and five more.
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the

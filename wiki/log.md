@@ -28,6 +28,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | silas | the book, rule by rule: 21 gates as Silas policies on the book's own deals; at least 10 of 21 Python gates misread the book; ten gaps filed]
+
+**Updated:** [[silas]] § The book, rule by rule; [[book-study-2026-10-12]] (the per-rule prices are the gates', not the book's). Also landed: Silas on Zeb's rules (`ZebPhysics`, differential test, Python bindings).
+**Issues opened:** #126–#135 (`silas` label), the gaps in `silas/GAPS.md`.
+
 ## [2026-10-13 | silas | Silas on Zeb's rules: ZebPhysics over Rules + Fiber, differentially tested against Straight42 (no disagreement); Python bindings in scenario_core; legal_plays keyed by the led tile]
 
 **Updated:** [[silas]] (§ On Zeb's rules, Next). Code: `scenario/core/src/physics.rs`, `python_silas.rs`, `tests/silas_physics.rs`; `scenario/silas.py`, `scenario/tests/test_silas.py`.
