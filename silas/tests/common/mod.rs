@@ -60,6 +60,19 @@ pub fn physics(decl: &str) -> Physics {
     decl.parse::<Straight42>().unwrap().physics()
 }
 
+/// The frame of a hand given with its contract alone: its record is the
+/// shortest auction the declarer wins with the bid (`Auction::won_by`).
+pub fn framed(contract: &Contract, viewer: Seat, dealt: DominoSet, plays: Vec<Domino>) -> Result<Frame> {
+    let auction = Auction::won_by(contract.declarer(), contract.bid())?;
+    Frame::new(auction, contract.declaration().clone(), viewer, dealt, plays)
+}
+
+/// [`framed`] from a scorekeeper's record.
+pub fn framed_history(contract: &Contract, viewer: Seat, hand: DominoSet, history: &[(Seat, Domino)]) -> Result<Frame> {
+    let auction = Auction::won_by(contract.declarer(), contract.bid())?;
+    Frame::from_history(auction, contract.declaration().clone(), viewer, hand, history)
+}
+
 /// `declarer`'s contract at the bid the table calls `bid`, under `physics`.
 pub fn contract(physics: &Physics, declarer: Seat, bid: u32) -> Contract {
     Contract::new(declarer, Bid::number(bid).unwrap(), physics.clone()).unwrap()
@@ -72,7 +85,7 @@ pub fn open_hidden(capacities: [usize; 3]) -> [Hidden; 3] {
 
 /// S0's frame, declaring at 30 with nothing played, dealt `hand`.
 pub fn opening(physics: &Physics, hand: DominoSet) -> Frame {
-    Frame::new(contract(physics, Seat::S0, 30), Seat::S0, hand, vec![]).unwrap()
+    framed(&contract(physics, Seat::S0, 30), Seat::S0, hand, vec![]).unwrap()
 }
 
 /// Five tricks from S0's lead under `physics` after which S0 holds `kept`
@@ -147,7 +160,7 @@ pub fn small_frame(physics: Physics) -> Frame {
     let pool = tiles(&["6-5", "5-5", "3-2", "6-4", "2-1", "1-0"]);
     let plays = five_tricks_to(&physics, kept, pool);
     let dealt = dealt_with(&physics, Seat::S0, kept, &plays);
-    let frame = Frame::new(contract(&physics, Seat::S0, 30), Seat::S0, dealt, plays).unwrap();
+    let frame = framed(&contract(&physics, Seat::S0, 30), Seat::S0, dealt, plays).unwrap();
     assert_eq!((frame.kernel().viewer_hand(), frame.kernel().pool(), frame.count_worlds()), (kept, pool, 90));
     frame
 }

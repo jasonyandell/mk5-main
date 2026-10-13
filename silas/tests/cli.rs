@@ -26,6 +26,25 @@ fn eval_prints_the_fired_rule_its_witnesses_and_the_allowed_set() {
 }
 
 #[test]
+fn bid_prints_the_call_its_rule_and_the_declaration() {
+    let (ok, out) = silas(&["bid", "examples/book/bidding/risk-budget.silas", "--hand", "hand-1"]);
+    assert!(ok, "{out}");
+    assert!(out.contains("hand-1: the bidder (S0) to call; S3 shook: no calls; marks to 7"), "{out}");
+    assert!(out.contains("calls 36, by rule bid-36"), "{out}");
+    assert!(
+        out.contains("if the rest pass, declares straight42/P6, by rule suit-at-risk-6\n    q6  <=  t=q6"),
+        "{out}"
+    );
+    // Over another seat's 35 the partner of Hand 32 passes, by the fallback.
+    let args = ["--hand", "hand-32", "--seat", "partner", "--calls", "35", "--scoring", "points"];
+    let (ok, out) = silas(&[&["bid", "examples/book/bidding/bid-only-enough.silas"][..], &args].concat());
+    assert!(ok && out.contains("S0 shook: S1 35; points to 250"), "{out}");
+    assert!(out.contains("legal: pass 36 37") && out.contains("calls pass, by the fallback"), "{out}");
+    let (ok, out) = silas(&["bid", "examples/book/bidding/risk-budget.silas", "--hand", "hand-1", "--seat", "left"]);
+    assert!(!ok && out.contains("gives only the bidder's hand"), "{out}");
+}
+
+#[test]
 fn query_prints_the_exact_answer_with_its_authority() {
     let (ok, out) = silas(&["query", "examples/six-five-guarded.silas", "--hand", "hand-34"]);
     assert!(ok, "{out}");

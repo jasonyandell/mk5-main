@@ -1,9 +1,9 @@
 //! What a seat knows. A [`Frame`] is the hand's public record as one seat
-//! sees it: the [`Contract`] (whose declaration is the [`Physics`]), the
-//! viewer, the hand it was dealt, and every play so far. Everything else (the
-//! leader, the open trick, the played set, the banked points, each seat's
-//! shown voids and remaining size, the viewer's [`Kernel`]) is derived from
-//! those by one replay, never supplied. A [`World`] is one deal of the hidden
+//! sees it: the [`Auction`], the declaration (the [`Physics`]), the viewer,
+//! the hand it was dealt, and every play so far. Everything else (the
+//! [`Contract`], the leader, the open trick, the played set, the banked
+//! points, each seat's shown voids and remaining size, the viewer's
+//! [`Kernel`]) is derived from those by one replay, never supplied. A [`World`] is one deal of the hidden
 //! tiles consistent with the frame, and [`Holdings`] the only window through
 //! which a query reads one.
 
@@ -11,6 +11,7 @@ use std::cell::Cell;
 use std::fmt;
 use std::str::FromStr;
 
+use crate::auction::Auction;
 use crate::nouns::{Context, ContextSet, Domino, DominoSet, Seat, Team};
 use crate::physics::Physics;
 use crate::{Error, Result, error};
@@ -256,13 +257,15 @@ impl Contract {
     }
 }
 
-/// The hand's public record as one seat sees it: the contract, the viewer,
-/// the hand it was dealt, and every play so far, in order. Each play's seat,
-/// each trick's leader, the open trick, the banked points, the shown voids
-/// and the viewer's kernel are derived from these by one replay when the
-/// frame is built, and are never supplied.
+/// The hand's public record as one seat sees it: the auction, the
+/// declaration, the viewer, the hand it was dealt, and every play so far, in
+/// order. The contract (the auction's last bidder at his bid, under the
+/// declaration), each play's seat, each trick's leader, the open trick, the
+/// banked points, the shown voids and the viewer's kernel are derived from
+/// these by one replay when the frame is built, and are never supplied.
 #[derive(Clone)]
 pub struct Frame {
+    auction: Auction,
     contract: Contract,
     viewer: Seat,
     dealt: DominoSet,
@@ -283,8 +286,8 @@ struct Replay {
 
 impl PartialEq for Frame {
     fn eq(&self, other: &Frame) -> bool {
-        (&self.contract, self.viewer, self.dealt, &self.plays)
-            == (&other.contract, other.viewer, other.dealt, &other.plays)
+        (&self.auction, &self.contract, self.viewer, self.dealt, &self.plays)
+            == (&other.auction, &other.contract, other.viewer, other.dealt, &other.plays)
     }
 }
 
@@ -294,8 +297,7 @@ impl fmt::Debug for Frame {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Frame")
             .field("physics", &self.contract.declaration)
-            .field("declarer", &self.contract.declarer)
-            .field("bid", &self.contract.bid)
+            .field("auction", &self.auction.to_string())
             .field("viewer", &self.viewer)
             .field("dealt", &self.dealt)
             .field("history", &self.replay.history)
@@ -304,22 +306,31 @@ impl fmt::Debug for Frame {
 }
 
 impl Frame {
-    /// `viewer`'s frame: dealt `dealt` (seven tiles) under `contract`, after
-    /// `plays`. Each play's seat is read off the record: the declarer leads
-    /// the first trick, each trick's winner the next. Refused when a tile is
-    /// played twice, when the viewer plays a tile it was not dealt or plays
+    /// `viewer`'s frame: dealt `dealt` (seven tiles), after `auction` and
+    /// its winner's `declaration`, after `plays`. The contract is the
+    /// auction's: its last bidder at his bid. Each play's seat is read off
+    /// the record: the declarer leads the first trick, each trick's winner the
+    /// next. Refused when the auction is under way or passed out, when a tile
+    /// is played twice, when the viewer plays a tile it was not dealt or plays
     /// illegally, when another seat plays one of the viewer's tiles, when a
     /// seat plays a tile of a context it has shown void in, and when no deal
     /// of the hidden tiles fits.
-    pub fn new(contract: Contract, viewer: Seat, dealt: DominoSet, plays: Vec<Domino>) -> Result<Frame> {
-        Frame::replayed(contract, viewer, dealt, plays, None)
+    pub fn new(
+        auction: Auction,
+        declaration: Physics,
+        viewer: Seat,
+        dealt: DominoSet,
+        plays: Vec<Domino>,
+    ) -> Result<Frame> {
+        Frame::replayed(auction, declaration, viewer, dealt, plays, None)
     }
 
     /// The same frame from the record as a scorekeeper writes it: the
     /// viewer's remaining `hand`, and each play attributed to its seat. The
     /// attribution is checked against the replay.
     pub fn from_history(
-        contract: Contract,
+        auction: Auction,
+        declaration: Physics,
         viewer: Seat,
         hand: DominoSet,
         history: &[(Seat, Domino)],
@@ -331,16 +342,18 @@ impl Frame {
         }
         let seats: Vec<Seat> = history.iter().map(|(s, _)| *s).collect();
         let plays = history.iter().map(|(_, d)| *d).collect();
-        Frame::replayed(contract, viewer, hand.union(mine), plays, Some(&seats))
+        Frame::replayed(auction, declaration, viewer, hand.union(mine), plays, Some(&seats))
     }
 
     fn replayed(
-        contract: Contract,
+        auction: Auction,
+        declaration: Physics,
         viewer: Seat,
         dealt: DominoSet,
         plays: Vec<Domino>,
         attributed: Option<&[Seat]>,
     ) -> Result<Frame> {
+        let contract = auction.contract(declaration)?;
         if dealt.len() != MAX_CAPACITY {
             return Err(error(format!(
                 "the viewer's hand disagrees with the record: it was dealt {} tiles, not seven",
@@ -406,16 +419,23 @@ impl Frame {
             return Err(error("no deal of the hidden tiles fits the record"));
         }
         let replay = Replay { history, leader, banked, voids, kernel };
-        Ok(Frame { contract, viewer, dealt, plays, replay })
+        Ok(Frame { auction, contract, viewer, dealt, plays, replay })
     }
 
     /// The frame after one more play.
     pub fn after(&self, tile: Domino) -> Result<Frame> {
         let mut plays = self.plays.clone();
         plays.push(tile);
-        Frame::new(self.contract.clone(), self.viewer, self.dealt, plays)
+        Frame::new(self.auction.clone(), self.physics().clone(), self.viewer, self.dealt, plays)
     }
 
+    /// The auction, complete.
+    pub fn auction(&self) -> &Auction {
+        &self.auction
+    }
+
+    /// The contract: the auction's last bidder at his bid, under the
+    /// declaration.
     pub fn contract(&self) -> &Contract {
         &self.contract
     }

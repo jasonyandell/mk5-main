@@ -8,7 +8,9 @@
 //! A [`PolicyProgram`] chooses plays from what the viewer alone can see. A
 //! [`Solver`] is the perfect-information reference: it sees all four hands.
 //! [`forces`] and [`lay_down`] are what the viewer can guarantee without it.
-//! A [`Contract`] settles a hand under a [`Scoring`] and moves a
+//! An [`Auction`] settles the hand's [`Contract`]; a policy's bidding and
+//! declaring rules read an [`AuctionFrame`]. A [`Contract`] settles a hand
+//! under a [`Scoring`] and moves a
 //! [`MatchState`]; a [`Dominance`] compares two contracts over every outcome
 //! of the hand, exactly.
 //!
@@ -17,6 +19,7 @@
 //! [`Declaration`]; Silas reads them into a [`Physics`].
 //! [`reference::Straight42`] is the reference declarations. See `README.md`.
 
+mod auction;
 mod belief;
 mod coverage;
 mod dominance;
@@ -36,6 +39,7 @@ mod solve;
 mod sugar;
 mod syntax;
 
+pub use auction::{Auction, AuctionConfig, AuctionFrame, Call, MIN_BID};
 pub use belief::{Belief, Certainty, Comparison, Difference, QuerySummary, Selection, SelectionLaw};
 pub use coverage::{Coverage, Funnel, RuleCoverage, why_not};
 pub use dominance::{Counterexample, Criterion, Decision, Dominance, Place};
@@ -51,10 +55,10 @@ pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
 pub use outcome::{Goal, OUTCOME_SCAN_CAP, forces, lay_down};
 pub use physics::{Declaration, Physics};
 pub use policy::{
-    Allowed, CompiledPolicy, DecisionProvenance, ExactRule, Fallback, GuardWitnesses, PolicyDecisionTrace, PolicyKey,
-    PolicyProgram, PolicyRule, Program, Selector,
+    Allowed, Choice, CompiledPolicy, DecisionProvenance, Declared, ExactRule, Fallback, GuardWitnesses,
+    PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, Selector, Trump,
 };
-pub use registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
+pub use registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};
 pub use syntax::{Atom, Pattern, Quantifier, Query, Role, Scope, Sort, Span, Term, Value, format};

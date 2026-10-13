@@ -35,7 +35,7 @@ fn frame_step_rejects_viewer_slough_while_viewer_can_follow() {
     let p = physics("P6");
     let dealt = tiles(&["5-4", "0-0", "1-1", "2-1", "3-1", "4-1", "4-0"]);
     let plays = vec![tile("5-5"), tile("5-1"), tile("5-0")];
-    let frame = Frame::new(contract(&p, Seat::S1, 30), Seat::S0, dealt, plays).unwrap();
+    let frame = framed(&contract(&p, Seat::S1, 30), Seat::S0, dealt, plays).unwrap();
     let fives = "q5".parse::<Context>().unwrap();
     let illegal = ObservedPlay { actor: Seat::S0, tile: tile("0-0"), class: PlayClass::Slough(fives) };
     assert!(step_frame(&frame, illegal, &mut small_budget()).is_err());
@@ -47,7 +47,7 @@ fn frame_step_rejects_hidden_tile_forbidden_by_an_existing_void() {
     let p = physics("P6");
     let dealt = tiles(&["6-4", "6-6", "0-0", "1-1", "2-0", "3-0", "4-0"]);
     let plays = ["6-4", "3-2", "6-0", "6-1", "6-6"].map(tile).to_vec();
-    let frame = Frame::new(contract(&p, Seat::S0, 30), Seat::S0, dealt, plays).unwrap();
+    let frame = framed(&contract(&p, Seat::S0, 30), Seat::S0, dealt, plays).unwrap();
     assert!(frame.shown_voids(Seat::S1).contains(Context::Called));
     let impossible = ObservedPlay { actor: Seat::S1, tile: tile("6-5"), class: PlayClass::Follow(Context::Called) };
     assert!(step_frame(&frame, impossible, &mut small_budget()).is_err());

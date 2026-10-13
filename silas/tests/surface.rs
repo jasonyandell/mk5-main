@@ -198,10 +198,10 @@ fn frames() -> Vec<Frame> {
         for declarer in Seat::ALL {
             let contract = contract(&physics, declarer, example.bid.number());
             for n in 0..plays.len() {
-                let record = Frame::new(contract.clone(), declarer, deal[0], plays[..n].to_vec()).unwrap();
+                let record = framed(&contract.clone(), declarer, deal[0], plays[..n].to_vec()).unwrap();
                 let viewer = record.next_actor().unwrap();
                 let role = (viewer.index() + 4 - declarer.index()) % 4;
-                out.push(Frame::new(contract.clone(), viewer, deal[role], plays[..n].to_vec()).unwrap());
+                out.push(framed(&contract.clone(), viewer, deal[role], plays[..n].to_vec()).unwrap());
             }
         }
     }
@@ -212,9 +212,9 @@ fn frames() -> Vec<Frame> {
         let deal: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
         let contract = contract(&physics, Seat::ALL[rng.below(4)], 30 + rng.below(13) as u32);
         let mut hands = deal;
-        let mut record = Frame::new(contract.clone(), Seat::S0, deal[0], vec![]).unwrap();
+        let mut record = framed(&contract.clone(), Seat::S0, deal[0], vec![]).unwrap();
         while let Some(viewer) = record.next_actor() {
-            out.push(Frame::new(contract.clone(), viewer, deal[viewer.index()], record.plays().to_vec()).unwrap());
+            out.push(framed(&contract.clone(), viewer, deal[viewer.index()], record.plays().to_vec()).unwrap());
             let legal = physics.legal_plays(hands[viewer.index()], record.lead());
             let tile = legal.iter().nth(rng.below(legal.len())).unwrap();
             hands[viewer.index()].remove(tile);

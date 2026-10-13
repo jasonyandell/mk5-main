@@ -1,0 +1,95 @@
+; Bid only enough: at your turn, raise to the least legal bid if the hand is
+; worth it, else pass. Winning 42 (S-0036-e; cluster A of docs/cross-game.md),
+; as the arena's HeuristicBidder plays it (arena/bidders.py, min_trumps 3,
+; caution 0): a hand is worth 42 less the count its offs expose under its best
+; suit of three trumps or more, never more than one mark.
+;
+; The count is in fives, so the least raise is worth it at 30 to 32 when at
+; most 10 is exposed, at 33 to 37 when at most 5, at 38 to 42 when none. A
+; least raise above 42 (after a one-mark bid) is never taken. A pass is the
+; fallback, the least legal call; when the shaker must bid over three passes,
+; the least legal call is 30, which is the arena's forced bid.
+;
+; The declaration is the arena's best suit: of the suits of three or more,
+; the least exposed, then the longest, then one holding its double; the
+; arena's last tie-break, the higher pip, is the order the declarations are
+; offered in (tests/bidding.rs offers P6 first). A forced bid with no suit of
+; three declares the best suit of any length the same way. The contract half
+; of the rule, that a lower level loses nothing once the contract is held, is
+; ../cross-game/bid-only-enough.silas.
+(include bidding)
+
+(policy bid-only-enough
+  (bidding
+    (rule raise-to-32 (bid least-raise)
+      (or (least-raise 30) (least-raise 31) (least-raise 32))
+      (some (roles t) (suit-at-least-3 t) (exposes-at-most-10 t)))
+    (rule raise-to-37 (bid least-raise)
+      (or (least-raise 33) (least-raise 34) (least-raise 35) (least-raise 36) (least-raise 37))
+      (some (roles t) (suit-at-least-3 t) (exposes-at-most-5 t)))
+    (rule raise-to-42 (bid least-raise)
+      (or (least-raise 38) (least-raise 39) (least-raise 40) (least-raise 41) (least-raise 42))
+      (some (roles t) (suit-at-least-3 t) (exposes-at-most-0 t))))
+  (declaring
+    (rule nothing-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-0 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-0 u) (outranks u t)))
+    (rule five-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-5 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-5 u) (outranks u t)))
+    (rule ten-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-10 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-10 u) (outranks u t)))
+    (rule fifteen-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-15 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-15 u) (outranks u t)))
+    (rule twenty-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-20 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-20 u) (outranks u t)))
+    (rule twenty-five-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-25 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-25 u) (outranks u t)))
+    (rule thirty-exposed (declare t)
+      (suit-at-least-3 t)
+      (exposes-at-most-30 t)
+      (none (roles u) (suit-at-least-3 u) (exposes-at-most-30 u) (outranks u t)))
+    (rule all-exposed (declare t)
+      (suit-at-least-3 t)
+      (none (roles u) (suit-at-least-3 u) (outranks u t)))
+    (rule any-nothing-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-0 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-0 u) (outranks u t)))
+    (rule any-five-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-5 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-5 u) (outranks u t)))
+    (rule any-ten-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-10 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-10 u) (outranks u t)))
+    (rule any-fifteen-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-15 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-15 u) (outranks u t)))
+    (rule any-twenty-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-20 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-20 u) (outranks u t)))
+    (rule any-twenty-five-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-25 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-25 u) (outranks u t)))
+    (rule any-thirty-exposed (declare t)
+      (pip-suit t)
+      (exposes-at-most-30 t)
+      (none (roles u) (pip-suit u) (exposes-at-most-30 u) (outranks u t)))
+    (rule any-all-exposed (declare t)
+      (pip-suit t)
+      (none (roles u) (pip-suit u) (outranks u t)))))

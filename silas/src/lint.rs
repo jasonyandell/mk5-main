@@ -186,7 +186,7 @@ impl PolicyProgram {
     /// where answers no hand holds are dropped without a word.
     pub fn lint(&self) -> Vec<Warning> {
         let mut out = Vec::new();
-        for rule in &self.rules {
+        for rule in self.rules.iter().chain(&self.bidding).chain(&self.declaring) {
             out.extend(rule.guard.lint());
             if rule.guard.patterns.is_empty() {
                 warn(&mut out, &rule.span, format!("rule {} has no pattern, so it never fires", rule.name));

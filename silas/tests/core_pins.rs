@@ -2,8 +2,10 @@
 //! to its core: definitions expanded, sugar rewritten, roles and outputs
 //! spelled out. The core prints as itself (`Display`), so equal prints are
 //! equal programs. The pins were taken from the files as they stood before the
-//! surface sugar (2026-10-13); any rewrite of a file, or of the prelude, into
-//! the sugar must read to the same core, and these pins prove it.
+//! surface sugar (2026-10-13), and a file or prelude added since is pinned as
+//! first written (the auction's: `examples/book/bidding/`, `lib/bidding.silas`);
+//! any rewrite of a file, or of a prelude, into the sugar must read to the same
+//! core, and these pins prove it.
 //!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too.
@@ -38,10 +40,17 @@ fn silas_files() -> Vec<PathBuf> {
     files
 }
 
-/// The prelude's definitions, each as a query calling it: `(define name
-/// (roles (sort p) ...)` heads every one, on one line.
+/// The preludes' definitions, each as a query calling it: `(define name
+/// (roles (sort p) ...)` heads every one, on one line. Each is named by its
+/// library's file.
 fn prelude_calls() -> Vec<(String, String)> {
-    let text = include_str!("../lib/book.silas");
+    [("book", include_str!("../lib/book.silas")), ("bidding", include_str!("../lib/bidding.silas"))]
+        .into_iter()
+        .flat_map(|(library, text)| library_calls(library, text))
+        .collect()
+}
+
+fn library_calls(library: &str, text: &str) -> Vec<(String, String)> {
     text.lines()
         .filter_map(|line| line.strip_prefix("(define "))
         .map(|rest| {
@@ -65,11 +74,11 @@ fn prelude_calls() -> Vec<(String, String)> {
                 .map(|(sort, p)| format!("({sort} arg-{p})"))
                 .collect();
             let query = format!(
-                "(include book) (query (roles {}) (out) (pattern ({name} {})))",
+                "(include {library}) (query (roles {}) (out) (pattern ({name} {})))",
                 roles.join(" "),
                 args.join(" ")
             );
-            (name.to_owned(), query)
+            (format!("lib/{library}.silas:{name}"), query)
         })
         .collect()
 }
@@ -92,7 +101,7 @@ fn table() -> String {
     }
     for (name, query) in prelude_calls() {
         let core = query.parse::<Query>().unwrap().to_string();
-        writeln!(out, "lib/book.silas:{name} {:016x}", digest(&core)).unwrap();
+        writeln!(out, "{name} {:016x}", digest(&core)).unwrap();
     }
     out
 }

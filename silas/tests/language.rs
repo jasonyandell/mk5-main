@@ -12,7 +12,7 @@ use silas::*;
 fn led_frame() -> Frame {
     let p = physics("P6");
     let dealt = tiles(&["0-0", "1-1", "2-0", "3-2", "5-5", "6-4", "6-6"]);
-    Frame::new(contract(&p, Seat::S0, 30), Seat::S0, dealt, ["6-4", "1-0", "6-1", "6-2"].map(tile).to_vec()).unwrap()
+    framed(&contract(&p, Seat::S0, 30), Seat::S0, dealt, ["6-4", "1-0", "6-1", "6-2"].map(tile).to_vec()).unwrap()
 }
 
 fn answers(frame: &Frame, query: &str) -> Answers {

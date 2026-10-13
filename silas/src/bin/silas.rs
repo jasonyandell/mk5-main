@@ -2,6 +2,7 @@
 //!
 //! ```text
 //! silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
+//! silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
 //! silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
 //! silas query    DOMINANCE
 //! silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
@@ -20,7 +21,11 @@
 //! `eval` prints the deciding layer of the policy, where each rule before it
 //! stops (the first clause, in source order, that fails), the fired rule's
 //! witnesses (each answer and one binding of the guard's roles) and the
-//! allowed set. `query` prints the query's exact probability over the worlds
+//! allowed set. `bid` puts the seat's hand at its turn in the auction after
+//! `--calls` (the calls before it, in calling order; none by default) under
+//! `--scoring` (marks or points, the match at 0-0), and prints the policy's
+//! call, the rule that made it with its witnesses, and the declaration it
+//! would make if the others then passed. `query` prints the query's exact probability over the worlds
 //! the seat cannot tell apart, with its authority, resolving only the tiles
 //! it reads. On a `(dominates ...)` file it needs no hand: it decides the form
 //! by enumerating the hand's outcomes, exactly, and prints the first
@@ -51,6 +56,7 @@ fn fail(message: impl Into<String>) -> Error {
 const USAGE: &str = "\
 usage:
   silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
+  silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
   silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
   silas query    DOMINANCE
   silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
@@ -67,6 +73,7 @@ fn main() -> ExitCode {
     let rest = args.get(1..).unwrap_or(&[]);
     let result = match args.first().map(String::as_str) {
         Some("eval") => eval(rest),
+        Some("bid") => bid(rest),
         Some("query") => query(rest),
         Some("coverage") => coverage(rest),
         Some("expand") => expand(rest),
@@ -138,12 +145,15 @@ fn read(path: &str) -> Result<String> {
     std::fs::read_to_string(path).map_err(|e| fail(format!("{path}: {e}")))
 }
 
-/// One hand of the book: its contract with the bidder in S0, the four hands
-/// it gives (only the bidder's, for a hand the book gives alone), and the
-/// plays its narrated line names, up to the first it does not.
+/// One hand of the book: its auction, with the bidder in S0, and its
+/// declaration; the four hands it gives (only the bidder's, for a hand the
+/// book gives alone); and the plays its narrated line names, up to the first
+/// it does not. The book gives a hand's contract, not its auction, so the
+/// record is the shortest auction the bidder wins with the contract's bid.
 struct Hand {
     id: String,
-    contract: Contract,
+    auction: Auction,
+    declaration: Physics,
     hands: [DominoSet; 4],
     full: bool,
     narrated: Vec<Domino>,
@@ -167,7 +177,7 @@ fn book(options: &Options) -> Result<Vec<Hand>> {
         let bid = example["bid"].as_u64().or_else(|| line.and_then(|l| l["bid"].as_u64()));
         let (Some(declaration), Some(bid)) = (declaration, bid) else { continue };
         let rules: Straight42 = declaration.parse()?;
-        let contract = Contract::new(Seat::S0, Bid::number(bid as u32)?, rules.physics())?;
+        let auction = Auction::won_by(Seat::S0, Bid::number(bid as u32)?)?;
         let mut hands = [DominoSet::EMPTY; 4];
         for seat in example["seats"].as_array().unwrap_or(&empty) {
             let role = text(&seat["role"]).unwrap_or_default();
@@ -188,7 +198,7 @@ fn book(options: &Options) -> Result<Vec<Hand>> {
                 }
             }
         }
-        out.push(Hand { id, contract, hands, full: example["kind"] == "deal", narrated });
+        out.push(Hand { id, auction, declaration: rules.physics(), hands, full: example["kind"] == "deal", narrated });
     }
     Ok(out)
 }
@@ -196,7 +206,7 @@ fn book(options: &Options) -> Result<Vec<Hand>> {
 impl Hand {
     /// The bidder's frame before the opening lead.
     fn opening(&self) -> Result<Frame> {
-        Frame::new(self.contract.clone(), Seat::S0, self.hands[0], vec![])
+        Frame::new(self.auction.clone(), self.declaration.clone(), Seat::S0, self.hands[0], vec![])
     }
 
     /// Every point of the narrated line, seen by the seat to play: the
@@ -212,7 +222,8 @@ impl Hand {
         };
         for i in 0..=self.narrated.len() {
             let Some(viewer) = record.next_actor() else { break };
-            match Frame::new(self.contract.clone(), viewer, self.hands[viewer.index()], self.narrated[..i].to_vec()) {
+            let (auction, declaration) = (self.auction.clone(), self.declaration.clone());
+            match Frame::new(auction, declaration, viewer, self.hands[viewer.index()], self.narrated[..i].to_vec()) {
                 Ok(frame) => out.push((i, frame)),
                 Err(e) => return (out, Some(fail(format!("{}: after {i} narrated plays: {e}", self.id)))),
             }
@@ -349,6 +360,77 @@ fn eval(args: &[String]) -> Result<bool> {
     Ok(true)
 }
 
+/// The deciding layer at the auction, and the deciding rule's witnesses.
+fn print_choice<T>(choice: &Choice<T>, what: &str, shown: &str) {
+    match &choice.provenance {
+        DecisionProvenance::RelationalRule { name } => {
+            println!("  {what} {shown}, by rule {name}");
+            for (answer, witness) in &choice.witnesses {
+                let answer: Vec<String> = answer.iter().map(Value::to_string).collect();
+                let binding: Vec<String> = witness.iter().map(|(n, v)| format!("{n}={v}")).collect();
+                let held = if answer.is_empty() { "holds".to_owned() } else { answer.join(" ") };
+                println!("    {held}  <=  {}", binding.join(" "));
+            }
+        }
+        _ => println!("  {what} {shown}, by the fallback"),
+    }
+}
+
+fn bid(args: &[String]) -> Result<bool> {
+    let options = Options::parse(args, &[], &["hand", "seat", "calls", "scoring", "policy", "book"])?;
+    let path = file(&options, "silas bid POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S]")?;
+    let program = policy_program(path)?;
+    let hand = hand(&options)?;
+    let role = options.get("seat").unwrap_or("bidder");
+    let seat = ROLES
+        .iter()
+        .position(|r| *r == role)
+        .map(|i| Seat::ALL[i])
+        .ok_or_else(|| fail(format!("--seat is one of {}", ROLES.join(", "))))?;
+    let dealt = hand.hands[seat.index()];
+    if dealt.len() != 7 {
+        return Err(fail(format!("{} gives only the bidder's hand", hand.id)));
+    }
+    let calls: Vec<Call> = match options.get("calls") {
+        Some(text) => text.split([',', ' ']).filter(|w| !w.is_empty()).map(str::parse).collect::<Result<_>>()?,
+        None => vec![],
+    };
+    if calls.len() >= Seat::COUNT {
+        return Err(fail("--calls are the calls before the seat's: at most three"));
+    }
+    let scoring = match options.get("scoring").unwrap_or("marks") {
+        "marks" => Scoring::MARKS,
+        "points" => Scoring::POINTS,
+        other => return Err(fail(format!("--scoring is marks or points, not {other}"))),
+    };
+    let shaker = seat.plus(Seat::COUNT - 1 - calls.len());
+    let auction = Auction::new(AuctionConfig::STRAIGHT, shaker, calls)?;
+    let declarations: std::sync::Arc<[Physics]> = Straight42::ALL.iter().map(|d| d.physics()).collect();
+    let state = MatchState::new(scoring, [0, 0])?;
+    let frame = AuctionFrame::new(auction.clone(), seat, dealt, state, declarations.clone())?;
+    let policy = program.compile(&Registry::standard(), &declarations[0])?;
+    println!("{}: the {role} ({seat}) to call; {auction}; {scoring}", hand.id);
+    println!("  hand: {}", tiles(dealt));
+    let legal: Vec<String> = auction.legal_calls().iter().map(Call::to_string).collect();
+    println!("  legal: {}", legal.join(" "));
+    println!("policy {}", program.name);
+    let mut budget = Budget::new(1_000_000_000);
+    let choice = policy.explain_bid(&frame, &mut budget)?;
+    print_choice(&choice, "calls", &choice.choice.to_string());
+    if choice.choice != Call::Pass {
+        let mut after = auction.after(choice.choice)?;
+        while after.actor().is_some() && after.legal(Call::Pass) {
+            after = after.after(Call::Pass)?;
+        }
+        if after.result().is_some_and(|(winner, _)| winner == seat) {
+            let won = AuctionFrame::new(after, seat, dealt, state, declarations)?;
+            let declared = policy.explain_declare(&won, &mut budget)?;
+            print_choice(&declared, "if the rest pass, declares", declared.choice.name());
+        }
+    }
+    Ok(true)
+}
+
 fn query(args: &[String]) -> Result<bool> {
     let options = Options::parse(args, &[], &["hand", "trick", "seat", "cap", "book"])?;
     let path = file(&options, "silas query FILE --hand ID [--trick N] [--seat ROLE] [--cap N]")?;
@@ -418,11 +500,12 @@ fn coverage_frames(options: &Options) -> Result<(Vec<Frame>, String)> {
             deck.swap(i, next(i + 1));
         }
         let deal: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
-        let contract = Contract::new(Seat::ALL[next(4)], Bid::number(30 + next(13) as u32)?, physics.clone())?;
-        let mut record = Frame::new(contract.clone(), Seat::S0, deal[0], vec![])?;
+        let auction = Auction::won_by(Seat::ALL[next(4)], Bid::number(30 + next(13) as u32)?)?;
+        let mut record = Frame::new(auction.clone(), physics.clone(), Seat::S0, deal[0], vec![])?;
         let mut hands = deal;
         while let Some(viewer) = record.next_actor() {
-            frames.push(Frame::new(contract.clone(), viewer, deal[viewer.index()], record.plays().to_vec())?);
+            let plays = record.plays().to_vec();
+            frames.push(Frame::new(auction.clone(), physics.clone(), viewer, deal[viewer.index()], plays)?);
             let legal = physics.legal_plays(hands[viewer.index()], record.lead());
             let tile = legal.iter().nth(next(legal.len())).expect("a legal play");
             hands[viewer.index()].remove(tile);

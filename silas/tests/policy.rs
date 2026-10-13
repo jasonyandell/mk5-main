@@ -24,7 +24,7 @@ impl Table {
         let hands = DEAL.map(|hand| tiles(&hand));
         assert_eq!(hands.iter().fold(DominoSet::EMPTY, |all, h| all.union(*h)), DominoSet::FULL);
         let physics = physics(decl);
-        let frame = Frame::new(contract(&physics, Seat::S0, 30), Seat::S0, hands[0], vec![]).unwrap();
+        let frame = framed(&contract(&physics, Seat::S0, 30), Seat::S0, hands[0], vec![]).unwrap();
         Table { physics, hands, frame }
     }
 
@@ -64,7 +64,7 @@ impl Table {
 
     /// S0's frame under a contract of `bid`.
     fn at_bid(&self, bid: u32) -> Frame {
-        Frame::new(contract(&self.physics, Seat::S0, bid), Seat::S0, self.frame.dealt(), self.frame.plays().to_vec())
+        framed(&contract(&self.physics, Seat::S0, bid), Seat::S0, self.frame.dealt(), self.frame.plays().to_vec())
             .unwrap()
     }
 }
@@ -83,6 +83,8 @@ fn program(key: PolicyKey) -> PolicyProgram {
         name: "table-and-relation".into(),
         exact_rules: vec![ExactRule { key, action: tile("6-6"), span: Span::default() }],
         rules: vec![own_legal_rule()],
+        bidding: vec![],
+        declaring: vec![],
         fallback: Fallback::LowestLegal,
     }
 }
@@ -173,6 +175,8 @@ fn a_table_policy_exports_and_replays_through_its_serialized_program() {
             .map(|(key, action, _)| ExactRule { key: key.clone(), action: *action, span: Span::default() })
             .collect(),
         rules: vec![],
+        bidding: vec![],
+        declaring: vec![],
         fallback: Fallback::LowestLegal,
     };
     let parsed: PolicyProgram = program.to_string().parse().unwrap();
@@ -206,8 +210,7 @@ fn a_decision_is_a_function_of_the_frame() {
         assert_eq!(compiled.decide(&earlier, &mut Budget::new(10_000)).unwrap(), other);
     }
     let rebuilt =
-        Frame::new(table.frame.contract().clone(), Seat::S0, table.frame.dealt(), table.frame.plays().to_vec())
-            .unwrap();
+        framed(&table.frame.contract().clone(), Seat::S0, table.frame.dealt(), table.frame.plays().to_vec()).unwrap();
     assert_eq!(compiled.decide(&rebuilt, &mut Budget::new(10_000)).unwrap(), first);
     // A refusal (here, an exhausted budget) leaves nothing behind.
     assert!(compiled.choose(&table.frame, &mut Budget::new(0)).is_err());
@@ -245,22 +248,41 @@ fn malformed_schema_history_and_modes_are_refused() {
 
 #[test]
 fn contract_resolution_counts_every_point_the_physics_awards() {
-    let table = Table::deal("P6").until_viewer_holds(3);
-    let [ours, theirs] = table.banked();
-    assert!(ours > 0 && theirs > 0, "the fixture banks points on both sides: {:?}", table.banked());
+    // A position where the bidder's side has made some point bids and the
+    // other side has set others: every bid an auction allows (30 and up) is
+    // resolved by the 42 points the physics awards.
+    let (table, [ours, theirs]) = ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "DT", "NT"]
+        .into_iter()
+        .flat_map(|decl| (1..=6).map(move |left| Table::deal(decl).until_viewer_holds(left)))
+        .map(|table| {
+            let banked = table.banked();
+            (table, banked)
+        })
+        .find(|(_, [ours, theirs])| (31..=40).contains(ours) && (3..=12).contains(theirs))
+        .expect("a position resolving some point bids each way");
     let source = PolicyProgram {
         name: "fallback-only".into(),
         exact_rules: vec![],
         rules: vec![],
+        bidding: vec![],
+        declaring: vec![],
         fallback: Fallback::LowestLegal,
     };
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
     let resolved = |bid: u32| compiled.decide(&table.at_bid(bid), &mut budget()).unwrap().contract_resolved;
     // 42 points in all: a point per trick and 35 count.
-    assert_eq!(resolved(ours), Some(true));
-    assert_eq!(resolved(ours + 1), None);
-    assert_eq!(resolved(42 - theirs), None);
-    assert_eq!(resolved(42 - theirs + 1), Some(false));
+    for bid in 30..=41 {
+        let expected = if bid <= ours {
+            Some(true)
+        } else if theirs >= 43 - bid {
+            Some(false)
+        } else {
+            None
+        };
+        assert_eq!(resolved(bid), expected, "bid {bid} with {ours} to {theirs} banked");
+    }
+    assert_eq!((resolved(ours), resolved(ours + 1)), (Some(true), None));
+    assert_eq!((resolved(42 - theirs), resolved(42 - theirs + 1)), (None, Some(false)));
     // A marks bid needs every point: set the moment the other side scores.
     assert_eq!(resolved(84), Some(false));
 }

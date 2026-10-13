@@ -107,7 +107,7 @@ fn the_crates_files_warn_only_where_a_clause_is_redundant() {
 fn led_frame() -> Frame {
     let p = physics("P6");
     let dealt = tiles(&["0-0", "1-1", "2-0", "3-2", "5-5", "6-4", "6-6"]);
-    Frame::new(contract(&p, Seat::S0, 30), Seat::S0, dealt, ["6-4", "1-0", "6-1", "6-2"].map(tile).to_vec()).unwrap()
+    framed(&contract(&p, Seat::S0, 30), Seat::S0, dealt, ["6-4", "1-0", "6-1", "6-2"].map(tile).to_vec()).unwrap()
 }
 
 #[test]
@@ -171,10 +171,10 @@ fn coverage_counts_each_rule_and_each_step_and_says_why_a_rule_passed() {
         let deck = rng.shuffled();
         let deal: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
         let contract = contract(&p, Seat::S0, 30);
-        let mut record = Frame::new(contract.clone(), Seat::S0, deal[0], vec![]).unwrap();
+        let mut record = framed(&contract.clone(), Seat::S0, deal[0], vec![]).unwrap();
         let mut hands = deal;
         while let Some(viewer) = record.next_actor() {
-            frames.push(Frame::new(contract.clone(), viewer, deal[viewer.index()], record.plays().to_vec()).unwrap());
+            frames.push(framed(&contract.clone(), viewer, deal[viewer.index()], record.plays().to_vec()).unwrap());
             let legal = p.legal_plays(hands[viewer.index()], record.lead());
             let tile = legal.iter().nth(rng.below(legal.len())).unwrap();
             hands[viewer.index()].remove(tile);

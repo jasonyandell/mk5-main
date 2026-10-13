@@ -464,7 +464,7 @@ fn ex_01() {
         let plays: Vec<(Seat, Domino)> =
             [Seat::S0, Seat::S1, Seat::S2, Seat::S3].into_iter().zip(plays.map(tile)).collect();
         let hand = hand_of(id).difference(DominoSet::single(plays[0].1));
-        let frame = Frame::from_history(contract(&physics(decl), Seat::S0, bid), Seat::S0, hand, &plays).unwrap();
+        let frame = framed_history(&contract(&physics(decl), Seat::S0, bid), Seat::S0, hand, &plays).unwrap();
         let marked = trumps(&frame);
         (marked, resolved(frame, marked))
     };
@@ -567,7 +567,7 @@ fn ex_05() {
     assert_eq!(probability(odds!("c07-straight-off-double"), &resolved(straight_off, doubles)), r(2, 3));
     let setter = tiles(&["6-6", "6-5", "4-4", "4-1", "3-3", "3-1", "1-0"]);
     let contract = contract(&physics("P5"), Seat::S0, 30);
-    let frame = Frame::from_history(contract, Seat::S1, setter, &[(Seat::S0, tile("2-0"))]).unwrap();
+    let frame = framed_history(&contract, Seat::S1, setter, &[(Seat::S0, tile("2-0"))]).unwrap();
     let belief = resolved(frame, tiles(&["2-2"]));
     let winner = odds!("c05-setter-partner-holds-winner");
     assert_eq!(probability(winner, &belief), r(7, 20));

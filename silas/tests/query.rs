@@ -283,7 +283,7 @@ impl Predicate for ViewerProbe {
         assert!(ctx.world().is_none(), "a viewer-only computation never sees a world");
         budget.spend(2)?;
         match args {
-            [Value::Domino(d)] => Ok(Some(ctx.frame().kernel().viewer_hand().contains(*d))),
+            [Value::Domino(d)] => Ok(Some(ctx.frame()?.kernel().viewer_hand().contains(*d))),
             _ => panic!("the compiler checked the signature"),
         }
     }
@@ -298,6 +298,7 @@ fn extension_registry_freezes_semantics_and_enforces_information_access() {
         parameters: vec![Sort::Domino],
         horizon_plies: 0,
         access: Access::Viewer,
+        phase: Phase::Play,
     };
     registry.register(ViewerProbe(spec.clone())).unwrap();
     assert!(registry.register(ViewerProbe(spec)).is_err());
@@ -350,7 +351,7 @@ fn receipt_coordinate() -> Frame {
     ];
     let p = physics("P3");
     let dealt = tiles(&["2-0", "4-2", "3-3", "6-3", "4-3", "6-5", "1-1"]);
-    let frame = Frame::new(contract(&p, Seat::S0, 30), Seat::S0, dealt, plays.map(tile).to_vec()).unwrap();
+    let frame = framed(&contract(&p, Seat::S0, 30), Seat::S0, dealt, plays.map(tile).to_vec()).unwrap();
     let shown: ContextSet = ["q0", "q*"].iter().map(|q| q.parse::<Context>().unwrap()).collect();
     assert_eq!((frame.leader(), frame.prefix().len(), frame.next_actor()), (Seat::S1, 3, Some(Seat::S0)));
     assert_eq!(frame.kernel().hidden().map(|h| h.voids), [ContextSet::EMPTY, shown, shown]);
@@ -414,7 +415,7 @@ fn mastery_beating_and_negative_joins_match_direct_set_queries() {
 #[test]
 fn frames_reject_incoherent_records_and_played_is_the_record() {
     let f = small_frame(physics("NT"));
-    let again = |plays: Vec<Domino>| Frame::new(f.contract().clone(), Seat::S0, f.dealt(), plays);
+    let again = |plays: Vec<Domino>| framed(&f.contract().clone(), Seat::S0, f.dealt(), plays);
     // A tile played twice, or a viewer's tile played by another seat.
     let mut twice = f.plays().to_vec();
     twice.push(f.plays()[0]);
