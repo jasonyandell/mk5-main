@@ -1,0 +1,42 @@
+; The dead double. Winning 42 p. 65 (S-0090-b, S-0091-b), p. 95 (S-0126-c);
+; played in Hands 28, 30, 34 and 35 (S-0131-e, S-0136-f, S-0137-c, S-0146-d,
+; S-0148-d, S-0150-c, S-0151-a, S-0151-g); declined in Hand 34 (S-0147-a).
+; Rule, in our words: a double wins only a trick led in its suit, and only a
+; tile whose higher end is that suit leads it. Once no live tile outside your
+; hand can lead its suit, the double is dead: when you cannot follow, throw it
+; first (the 0-0 is dead in any hand but its holder's; the 1-1 once the 1-0 is
+; gone, the 3-3 once the 3-0, 3-1 and 3-2 are). The bidder on lead with a
+; setter's trump still out cashes a dead double at once: it wins only when he
+; leads it, and he may not have the lead again (Hand 27 trick 3).
+; New: no gate has it. In an 84 it is the defender's watch list run dry
+; (S-0090-b): a double is kept while some live tile outside the hand could be
+; the bidder's off in its suit, and dropped when none can.
+; GAP likelihood: in Hand 34 trick 2 the partner throws the 6-2 before his dead
+; 1-1, keeping low fours as a decoy for an opponent's reading (S-0147-a); the
+; rule throws the 1-1 there, which the book throws at trick 4 (S-0148-d).
+
+(include book)
+
+(policy dead-double
+  (fallback lowest-legal)
+  (rule throw-a-dead-double
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino dd))
+        (out dd)
+        (pattern
+          (viewer me)
+          (discard dd)
+          (dead-double dd)))))
+  (rule cash-a-dead-double
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino dd))
+        (out dd)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (not (no-setter-trump))
+          (own-legal dd)
+          (dead-double dd))))))

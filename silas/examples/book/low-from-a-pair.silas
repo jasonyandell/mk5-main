@@ -1,0 +1,56 @@
+; Low from a pair. Winning 42 p. 49 (S-0071-c); the 84 form p. 70
+; (S-0097-c); played in Hand 35 (S-0151-e).
+; Rule, in our words: a setter following a suit, whoever led it, in which he
+; holds exactly two tiles, neither of them count, plays the lower and keeps the
+; higher. Against a bid of marks, where count no longer matters and every
+; trick does, he keeps two tiles of the suit of the bidder's double to the end:
+; he plays the lower on the double, count or not, and keeps the higher for the
+; off.
+; Replaces gates/c13c-low-from-a-pair.silas. How it differs: the first rule is
+; the gate's (the book's leader is anyone, as the gate already reads it). The
+; 84 form is new: the gate needs a pair without count, so it is silent where
+; the book plays low from a pair that holds a count tile.
+
+(include book)
+
+(policy low-from-a-pair
+  (fallback lowest-legal)
+  (rule follow-low
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino low) (domino high) (context led))
+        (out low)
+        (pattern
+          (viewer me)
+          (setter me)
+          (led-context led)
+          (not (trump led))
+          (follower low)
+          (count low 0)
+          (follower high)
+          (count high 0)
+          (beats high low led)
+          (none (roles (domino third))
+            (follower third)
+            (not (tile third low))
+            (not (tile third high)))))))
+  (rule keep-the-higher-for-the-off
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino doubled) (domino low) (domino high) (context led))
+        (out low)
+        (pattern
+          (viewer me)
+          (setter me)
+          (every-trick)
+          (bidder-led doubled)
+          (double doubled)
+          (led-context led)
+          (not (trump led))
+          (follower low)
+          (follower high)
+          (beats high low led)
+          (none (roles (domino third))
+            (follower third)
+            (not (tile third low))
+            (not (tile third high))))))))

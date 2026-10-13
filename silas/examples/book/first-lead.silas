@@ -1,0 +1,175 @@
+; The bidder's first lead. Winning 42 pp. 9-10 (S-0022-b, S-0022-c), pp. 23-24
+; (S-0038-b, S-0040-c), pp. 91-94 (S-0121-d, S-0125-c), pp. 183-184 (S-0232-b,
+; S-0232-c, S-0232-d, S-0233-a, S-0233-d, S-0233-e); played in Hands 12, 14,
+; 16, 17, 18, 23, 27, 29, 31, 32, 33, 34 and 35 (S-0043-a, S-0045-a, S-0050-c,
+; S-0084-b, S-0086-a, S-0105-a, S-0125-c, S-0133-a, S-0138-b, S-0142-d,
+; S-0144-a, S-0146-b, S-0150-b).
+; Rule, in our words: lead trumps first, holding the top ones in sequence any
+; of them (Hand 28 leads the 6-0 holding the 0-0), missing the top any trump.
+; Exceptions, in the book's order of argument:
+; - with two trumps, lead first the off that calls for no count and whose own
+;   double you lack (Hand 27: the 6-2, whose ten is your own trump);
+; - with four trumps, the top and the third but not the second, lead the top:
+;   an opponent can double up on the second only 33/95 of the time;
+; - with the top but not the second (and, holding four, not the third either),
+;   lead a low trump and budget the trick: not the top, and not your trump
+;   count tile, since that must not be the lead that loses (Hands 16, 29);
+;   holding four, you may lead the top first when a trump count tile is out;
+; - with one off and four trumps or more, the off may go first; a permission,
+;   not an instruction (the book's hands of that shape, 12, 14 and 32, lead
+;   trump), and never in a bid of marks, where the off goes last.
+; Replaces gates/c10-off-on-trick-one.silas,
+; gates/c12a-four-trumps-lead-the-double.silas and
+; gates/c12b-four-trumps-lead-low.silas. How it differs: C10 makes the off the
+; only tile (against the book in Hands 12, 14, 17, 18, 23 and 32); C12B takes
+; four trumps only and the lowest trump (the book's examples hold three, and
+; Hand 23 leads the 1-1, not the 0-0), without the count exception; C12A and
+; C12B are silent outside their shapes, where the book still leads trump (Hand
+; 35's 4-4, S-0150-b). C12A is the book's rule; its Hand 34 lead is the
+; book's, and double-dummy it sets a made 84 (S-0146-b): a question for the
+; bidder's information, not for the encoding.
+; The book contradicts itself on the 6-5: p. 132 (S-0167-b) says the bidder
+; most often leads a 6-5 off first, while in Hand 31 (S-0138-b), holding the
+; 6-5 off, it leads the 2-2. This file encodes the worked hand: trump first.
+
+(include book)
+
+(policy first-lead
+  (fallback lowest-legal)
+  (rule two-trumps-lead-the-straight-off
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino off))
+        (out off)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (exactly-two-trumps)
+          (own-legal off)
+          (bare-off off)
+          (not (calls-for-count off))))))
+  (rule double-up-lead-the-double
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino top) (domino second) (domino third))
+        (out top)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (exactly-four-trumps)
+          (top-trump top)
+          (next-trump top second)
+          (next-trump second third)
+          (own-legal top)
+          (not (own-legal second))
+          (own-legal third)))))
+  (rule double-up-lead-low
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (exactly-four-trumps)
+          (some (roles (domino top) (domino second) (domino third))
+            (top-trump top)
+            (next-trump top second)
+            (next-trump second third)
+            (own-legal top)
+            (not (own-legal second))
+            (not (own-legal third))
+            (not (tile lead top)))
+          (own-legal lead)
+          (trump-tile lead)
+          (count lead 0))
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (exactly-three-trumps)
+          (some (roles (domino top) (domino second))
+            (top-trump top)
+            (next-trump top second)
+            (own-legal top)
+            (not (own-legal second))
+            (not (tile lead top)))
+          (own-legal lead)
+          (trump-tile lead)
+          (count lead 0))
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (exactly-four-trumps)
+          (some (roles (domino second) (domino third))
+            (top-trump lead)
+            (next-trump lead second)
+            (next-trump second third)
+            (not (own-legal second))
+            (not (own-legal third)))
+          (some (roles (domino stake))
+            (live stake)
+            (not (mine stake))
+            (trump-tile stake)
+            (count-tile stake))
+          (own-legal lead)))))
+  (rule one-off-may-go-first
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (not (every-trick))
+          (four-trumps-or-more)
+          (own-legal lead)
+          (off lead)
+          (none (roles (domino other)) (off other) (not (tile other lead))))
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (not (every-trick))
+          (four-trumps-or-more)
+          (some (roles (domino o))
+            (off o)
+            (none (roles (domino other)) (off other) (not (tile other o))))
+          (own-legal lead)
+          (sure-trump lead)))))
+  (rule lead-the-top-trumps
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (own-legal lead)
+          (sure-trump lead)))))
+  (rule lead-a-trump
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino lead))
+        (out lead)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (trick-number 1)
+          (next-actor b)
+          (own-legal lead)
+          (trump-tile lead))))))

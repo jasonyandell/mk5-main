@@ -1,0 +1,35 @@
+; Win it low, keep the double. Winning 42 p. 37 (S-0056-b), p. 40 (S-0061-a,
+; S-0061-b); played by the bidder in Hand 23 (S-0105-b).
+; Rule, in our words: on the bidder's side, following a suit no setter can
+; trump (or playing last), win the trick when you can, and with the lowest
+; tile that is sure to win: holding the double and the next-highest tile still
+; out, win with the second and keep the double for a lead of your own
+; (stretching the double).
+; New: no gate has it.
+
+(include book)
+
+(policy helper-stretch
+  (fallback lowest-legal)
+  (rule win-with-the-lowest-sure-tile
+    (select answer)
+    (guard
+      (query (roles (chair me) (chair w) (domino win) (context q) (domino sure))
+        (out sure)
+        (pattern
+          (viewer me)
+          (none (roles) (not (bidder me)) (not (bidders-partner me)))
+          (current-winner w)
+          (opponent me w)
+          (trick-play w win)
+          (led-context q)
+          (not (trump q))
+          (none (roles) (not (no-setter-trump)) (not (last-to-play)))
+          (follower sure)
+          (beats sure win q)
+          (not (loses-in sure q))
+          (none (roles (domino lower))
+            (follower lower)
+            (beats lower win q)
+            (not (loses-in lower q))
+            (beats sure lower q)))))))

@@ -1,0 +1,98 @@
+; The pounce, with its guard. Winning 42 pp. 43-46 (S-0064-a, S-0064-b,
+; S-0064-e, S-0064-f, S-0066-e, S-0067-b) and p. 55 (S-0079-b, S-0079-c);
+; played in Hands 28, 30 and 32 (S-0130-e, S-0136-a, S-0142-l), and lost in
+; Hand 15 (S-0049-b).
+; Rule, in our words: a setter puts count only on a trick his side may take.
+; Playing before his partner to a lead from the bidder's side that his partner
+; may still beat, he plays count at once, a ten before a five, whether or not
+; he can follow (p. 46: play it or lose it). If he holds the double of the
+; suit led and count outside his hand may still fall, he plays the double
+; instead (p. 44); but a double cannot win count he holds himself, so then he
+; plays the count (Hand 28 trick 3). Once his partner has played and the trick
+; is the other side's beyond his reach, he plays no count.
+; Replaces gates/c07-pounce.silas. How it differs: the gate fires whenever the
+; seat after the bidder cannot follow, including a lead nothing can beat (the
+; top trump, a walker, S-0066-e and S-0079-b); the book's premise is a trick
+; the setters may take. The gate needs a void; the book pounces while able to
+; follow (Hands 28 and 30, trick 3). The gate has no rule for the seat after
+; the partner (S-0064-f, S-0079-c) and no double (S-0064-e). The book's "more
+; urgent against 35 and 36" (S-0143-d) ranks the rule; it changes no tile.
+; Hand 30 trick 3 is the rule's DD-visible failure (S-0136-a); it is still the
+; book's play.
+
+(include book)
+
+(policy pounce
+  (fallback lowest-legal)
+  (rule no-count-on-a-lost-trick
+    (select answer)
+    (guard
+      (query
+        (roles
+          (chair me)
+          (chair pard)
+          (chair w)
+          (domino win)
+          (context q)
+          (domino give)
+          (domino held))
+        (out give)
+        (pattern
+          (viewer me)
+          (setter me)
+          (partner me pard)
+          (some (roles (domino his)) (trick-play pard his))
+          (current-winner w)
+          (opponent me w)
+          (trick-play w win)
+          (led-context q)
+          (none (roles (domino over)) (own-legal over) (beats over win q))
+          (own-legal give)
+          (count give 0)
+          (own-legal held)
+          (count-tile held)))))
+  (rule win-with-the-double
+    (select answer)
+    (guard
+      (query (roles (chair me) (chair pard) (chair l) (domino led) (domino dd) (context q))
+        (out dd)
+        (pattern
+          (viewer me)
+          (setter me)
+          (partner me pard)
+          (none (roles (domino his)) (trick-play pard his))
+          (leader l)
+          (opponent me l)
+          (trick-play l led)
+          (led-context q)
+          (own-legal dd)
+          (double dd)
+          (in dd q)
+          (beats dd led q)
+          (calls-for-count led)))))
+  (rule play-a-ten-now
+    (select answer)
+    (guard
+      (query (roles (chair me) (chair l) (domino give))
+        (out give)
+        (pattern
+          (viewer me)
+          (setter me)
+          (leader l)
+          (opponent me l)
+          (partner-may-take-it)
+          (own-legal give)
+          (count give 10)))))
+  (rule play-a-five-now
+    (select answer)
+    (guard
+      (query (roles (chair me) (chair l) (domino give))
+        (out give)
+        (pattern
+          (viewer me)
+          (setter me)
+          (leader l)
+          (opponent me l)
+          (partner-may-take-it)
+          (own-legal give)
+          (count give 5))))))

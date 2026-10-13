@@ -1,0 +1,76 @@
+; Donate when safe. Winning 42 pp. 37-38 (S-0057-c, S-0057-d, S-0058-a,
+; S-0058-b, S-0067-a); played in Hands 12, 14, 23, 30, 31, 32 and 33
+; (S-0043-d, S-0046-a, S-0105-d, S-0137-b, S-0138-d, S-0142-f, S-0144-l), and
+; by the last setter in Hand 29 (S-0133-d). Biggest first: p. 37 and p. 106
+; (S-0057-c, S-0138-e). No count on a trick that can still be lost: Hand 33
+; (S-0144-i).
+; Rule, in our words: count goes only on a trick your side is sure to take.
+; The bidder's partner gives count, the biggest first, when the bidder is
+; taking the trick and no setter still to play can beat him: he led the
+; highest trump still out; or he led trump and the setters have shown out of
+; it; or the setters have shown out of trump and his tile is the top of its
+; suit. A seat playing last gives count to his partner's trick. When the trick
+; can still be lost, the partner plays no count if he has the choice.
+; Replaces gates/c01b-partner-count-on-a-trump-lead.silas and
+; gates/c03-biggest-count-first.silas. How it differs from them: the gates read
+; trump leads only and "the bidder is winning so far". The book's safe trick is
+; any trick the partner can prove from his own chair (a non-trump double after
+; the setters show out of trump, Hand 30 trick 5); a low trump lead is safe
+; once both setters have shown out of trump, where the gate's not-top branch
+; withholds count (S-0058-b, S-0057-d); and the last setter gives count to his
+; partner's trick (Hand 29 trick 1), which no gate has.
+
+(include book)
+
+(policy donate-when-safe
+  (fallback lowest-legal)
+  (rule give-a-ten
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino give))
+        (out give)
+        (pattern
+          (viewer me)
+          (bidders-partner me)
+          (safe-trick)
+          (own-legal give)
+          (count give 10))
+        (pattern
+          (viewer me)
+          (setter me)
+          (last-to-play)
+          (partner-winning)
+          (own-legal give)
+          (count give 10)))))
+  (rule give-a-five
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino give))
+        (out give)
+        (pattern
+          (viewer me)
+          (bidders-partner me)
+          (safe-trick)
+          (own-legal give)
+          (count give 5))
+        (pattern
+          (viewer me)
+          (setter me)
+          (last-to-play)
+          (partner-winning)
+          (own-legal give)
+          (count give 5)))))
+  (rule no-count-on-a-trick-that-can-be-lost
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino give) (domino held))
+        (out give)
+        (pattern
+          (viewer me)
+          (bidders-partner me)
+          (bidder-winning)
+          (not (safe-trick))
+          (own-legal give)
+          (count give 0)
+          (own-legal held)
+          (count-tile held))))))

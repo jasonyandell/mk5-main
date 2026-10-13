@@ -1,0 +1,97 @@
+; Crisis management. Winning 42 p. 50 (S-0073-d), pp. 92-96 (S-0123-d,
+; S-0123-e, S-0124-a, S-0127-a), pp. 106-108 (S-0139-a); played in Hand 26
+; (the second line) and Hand 31 (trick 2).
+; Rule, in our words: when a setter turns out to hold trump the bidder cannot
+; draw, the bidder stops drawing and works around it for count while the trump
+; holder must still follow. Holding the 6-5 and the 6-4, neither trump, he
+; leads the 6-5 as bait: a setter void in sixes may waste a trump on it,
+; fearing the 6-4 is elsewhere, and the partner learns where the 6-4 is. Else
+; he cashes a double that is itself count (the 5-5); else a double that calls
+; for count, away from a suit the trump holder has followed (two to one that
+; tile was his only one, and he could trump the double); else any double that
+; calls for count, the one whose suit has the most tiles still out.
+; Replaces gates/c14-crisis-cash-the-double.silas and
+; gates/c21-six-five-bait.silas. How it differs: C14's trigger is exactly one
+; trump trick in which one opponent followed; the book's crises come after two
+; trump tricks (Hand 26), when a trump the bidder wants was not drawn (Hand
+; 27), or as an off lead (Hand 31). C14 allows every non-trump double,
+; including one that calls for no count (the 1-1 the book calls worthless in
+; Hand 26), and lacks the count-at-stake first choice and the override. C21
+; fires on any lead; the book plays the bait as a crisis lead (its trick-one
+; 6-5 off of p. 132 is first-lead.silas's question).
+; GAP aggregate: "the suit with the most tiles out" compares two sets' sizes;
+; the last two rules allow every count-calling double.
+; GAP likelihood: in Hand 31 the crisis itself is a reading of the right
+; setter's count play (prelude, trumps-he-cannot-draw).
+
+(include book)
+
+(policy crisis
+  (fallback lowest-legal)
+  (rule the-six-five-bait
+    (select tile 6-5)
+    (guard
+      (query (roles (chair b))
+        (out)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (crisis)
+          (own-legal 6-5)
+          (own-legal 6-4)
+          (not (trump-tile 6-5))
+          (not (trump-tile 6-4))))))
+  (rule cash-a-double-that-is-count
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino dd))
+        (out dd)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (crisis)
+          (own-legal dd)
+          (double dd)
+          (not (trump-tile dd))
+          (count-tile dd)))))
+  (rule a-count-double-away-from-his-suit
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino dd) (context s))
+        (out dd)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (crisis)
+          (own-legal dd)
+          (double dd)
+          (not (trump-tile dd))
+          (calls-for-count dd)
+          (leads-context dd s)
+          (none (roles (chair h) (domino l) (domino his))
+            (setter h)
+            (not (shown-out-of-trump h))
+            (played-to l h his)
+            (not (tile his l))
+            (in his s))
+          ; GAP aggregate: and no such double has more of its suit still out
+        ))))
+  (rule a-count-double
+    (select answer)
+    (guard
+      (query (roles (chair b) (domino dd))
+        (out dd)
+        (pattern
+          (viewer b)
+          (bidder b)
+          (on-lead b)
+          (crisis)
+          (own-legal dd)
+          (double dd)
+          (not (trump-tile dd))
+          (calls-for-count dd)
+          ; GAP aggregate: and no such double has more of its suit still out
+        )))))

@@ -1,0 +1,44 @@
+; Shed for a void. Winning 42 pp. 43-48 (S-0064-c, S-0064-d, S-0065-b,
+; S-0065-c, S-0070-d), p. 49 (S-0071-a, S-0071-b) and p. 79 (S-0108-a);
+; played in Hands 32 and 33 (S-0142-g, S-0144-d), and foreseen in Hand 12
+; (S-0044-a).
+; Rule, in our words: a setter with one trump or none, unable to follow the
+; bidder's trump lead or his double, throws a tile that is his only one of
+; some suit, so that he is void there when the bidder's off comes. He keeps
+; what he will want then: his count, his doubles and other tiles that cannot
+; lose (the high tiles under doubles trump), and the last spare guarding a
+; count tile of his.
+; Replaces gates/c13a-shed-a-singleton.silas. How it differs: the gate fires on
+; a trump lead only, and throws a lone double or the last guard of a count tile
+; (the 6-0 alone among blanks but guarding the 6-4); the book keeps both
+; (S-0064-c, S-0071-a: protection ranks above a void). The gate needs no trump
+; held; the book's setter holds one trump or none, and does the same when the
+; bidder leads a double (S-0065-c).
+; Against a bid of marks the book's defenders keep their pairs and throw their
+; dead doubles instead (Hands 34 and 35, S-0146-d, S-0150-c: dead-double.silas);
+; a void for a pounce is worth nothing there, and the rule is for points.
+
+(include book)
+
+(policy shed-for-a-void
+  (fallback lowest-legal)
+  (rule throw-a-lone-tile
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino led) (domino lone) (context suit))
+        (out lone)
+        (pattern
+          (viewer me)
+          (setter me)
+          (not (every-trick))
+          (bidder-led led)
+          (none (roles) (not (trump-tile led)) (not (double led)))
+          (none (roles (domino a) (domino b)) (mine a) (trump-tile a) (mine b) (trump-tile b))
+          (discard lone)
+          (not (trump-tile lone))
+          (count lone 0)
+          (not (walker lone))
+          (not (guards-count lone))
+          (in lone suit)
+          (not (trump suit))
+          (none (roles (domino other)) (mine other) (in other suit) (not (tile other lone))))))))

@@ -1,0 +1,31 @@
+; The partner plays the top trump. Winning 42 p. 25 (S-0041-a) against Hand
+; 30, pp. 102-103 (S-0135-c).
+; Rule, in our words: the bidder's partner, following the bidder's trump lead
+; and holding the highest trump still out, plays it.
+; The book contradicts itself here. Its p. 25 reads a partner's top trump on
+; the bidder's lead as his only one (S-0041-a): a partner who follows that
+; reading plays low from two or more. Its Hand 30 has the partner play the 6-6
+; holding the 6-0 and the 6-1 (S-0135-c), and take the lead to run his
+; doubles. This file encodes the worked hand. The reading, as a probability
+; over the bidder's worlds, is gates/c02-reading-singleton.silas: 26/57 in
+; Hand 30, where it is false; as a fact it needs the partner's policy (GAPS.md,
+; policy likelihood).
+; Replaces gates/c02-high-trump-handoff.silas. How it differs: it does not;
+; the gate was the table's convention, and the worked hand plays it.
+
+(include book)
+
+(policy partner-plays-the-top-trump
+  (fallback lowest-legal)
+  (rule play-the-top-trump
+    (select answer)
+    (guard
+      (query (roles (chair p) (domino top))
+        (out top)
+        (pattern
+          (viewer p)
+          (bidders-partner p)
+          (bidders-lead)
+          (trump-led)
+          (own-legal top)
+          (boss-trump top))))))

@@ -1,0 +1,136 @@
+; The setter's leads. Winning 42 pp. 46-48 (S-0067-c, S-0069-b, S-0069-d,
+; S-0070-c) and p. 51 (S-0074-c); played in Hands 15, 16, 28, 29, 31 and 33
+; (S-0048-b, S-0049-a, S-0051-a, S-0130-f, S-0131-a, S-0133-e, S-0133-i,
+; S-0140-b, S-0144-j).
+; Rule, in our words: a setter on lead leads what can bring in count. When one
+; more point sets the bid, he leads a double, count or not: the trick is what
+; sets. Else the lead whose own count and the count it calls for, with the
+; trick, set the bid, even past a double (Hand 28 trick 4: the 5-4, calling
+; the 5-5 for eleven, over the 1-1 calling the 4-1; Hand 31 trick 5: the 4-1,
+; for fifteen with the 6-4, over the 4-4's ten). Else a double whose suit
+; still has count out; else a tile that calls for count, not a low tile that
+; calls for a five, and, against 35 or more, not a low four, five or six,
+; which may run into the bidder's doubles (think twice: they come next). Once
+; his side has a trick he keeps going for count, set or not: first a count
+; tile that calls for more (Hand 28 trick 5, after the set: the 4-1 for
+; fifteen with the 6-4, over the 4-4's ten), and last a count tile itself.
+; Replaces gates/c15-setter-leads-call-for-count.silas and
+; gates/c13d-lead-a-singleton.silas. How it differs: the C15 gate leads past
+; the count that sets to its count-calling double (Hands 28 and 31); its
+; one-point exception leads any no-count tile and only when nothing calls for
+; count, where the book leads a double (S-0070-c); it has no 35+ caution
+; (S-0069-d) and no count-tile lead (S-0067-c). C13d has no page; its one
+; instance is Hand 28 trick 4, where the book leads the count that sets, and
+; it is not encoded. Double-dummy, the gate's 1-1 is the better defence in
+; Hand 28 (19 to the book's 25) and the 4-4 equal in Hand 31 (S-0130-f,
+; S-0140-b): the book counts one trick; this file follows the book.
+; "What sets" sums one called tile with the lead's own count and the trick,
+; against what the setters still need: six literal sums (prelude, lead-sets).
+
+(include book)
+
+(policy setter-leads
+  (fallback lowest-legal)
+  (rule one-point-sets-lead-a-double
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (to-set 1)
+          (own-legal lead)
+          (double lead)))))
+  (rule lead-the-count-that-sets
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (own-legal lead)
+          (lead-sets lead)))))
+  (rule lead-count-that-calls-for-more
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (not (banked me 0))
+          (own-legal lead)
+          (count lead 5)
+          (calls-for lead 10))
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (not (banked me 0))
+          (own-legal lead)
+          (count lead 10)
+          (calls-for-count lead)))))
+  (rule a-double-that-calls-for-count
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (own-legal lead)
+          (double lead)
+          (calls-for-count lead)))))
+  (rule a-tile-that-calls-for-count
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (own-legal lead)
+          (not (double lead))
+          (calls-for-count lead)
+          (not (can-lose lead)))
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (own-legal lead)
+          (not (double lead))
+          (calls-for-count lead)
+          (not (calls-for lead 5))
+          (none (roles) (bid-35-or-more) (low-four-five-or-six lead))))))
+  (rule think-twice-a-low-four-five-or-six
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (own-legal lead)
+          (not (double lead))
+          (calls-for-count lead)
+          (not (calls-for lead 5))))))
+  (rule lead-a-count-tile
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (not (banked me 0))
+          (own-legal lead)
+          (count-tile lead))))))

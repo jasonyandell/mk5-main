@@ -1,0 +1,82 @@
+; The partner's leads. Winning 42 p. 5 (S-0018-b) and pp. 37-40 (S-0057-b, S-0059-a,
+; S-0059-b, S-0059-c, S-0060-b, S-0060-c); played in Hands 15, 29, 30 and 31
+; (S-0049-b, S-0134-a, S-0135-e, S-0135-h, S-0139-d, S-0139-e).
+; Rule, in our words: the bidder's partner on lead leads, in order: a double
+; or the top unplayed tile of a suit (a walker, as good as a double); else a
+; tile that calls for no count (its suit's count is played, in his own hand,
+; or trump); else one that calls for only a five; else a six, which calls for
+; only a ten, before a four or a five, which can call for both. He never leads
+; trump.
+; Replaces gates/c09-partner-never-leads-trump.silas and
+; gates/c23-partner-leads-doubles.silas. How it differs: the gates lead
+; doubles only, and step aside for a walker without leading it (S-0059-c: the
+; 4-3 once the 4-4, 4-5 and 4-6 are gone); the book ranks the walker with the
+; doubles (S-0060-b). The book's one exception to "never trump" (S-0060-c) is
+; narrower than the gate header's: every other lead is a four, five or six
+; calling big count, and even then a six goes first unless the partner is
+; fairly sure the bidder holds more than one trump.
+; GAP likelihood: that exception reads the bidder's trumps from his bid and
+; play, a belief over his hand; it is not encoded, so trump is never led.
+
+(include book)
+
+(policy partner-leads
+  (fallback lowest-legal)
+  (rule lead-a-double-or-the-top-tile
+    (select answer)
+    (guard
+      (query (roles (chair p) (domino lead))
+        (out lead)
+        (pattern
+          (viewer p)
+          (bidders-partner p)
+          (on-lead p)
+          (own-legal lead)
+          (walker lead)))))
+  (rule lead-what-calls-no-count
+    (select answer)
+    (guard
+      (query (roles (chair p) (domino lead))
+        (out lead)
+        (pattern
+          (viewer p)
+          (bidders-partner p)
+          (on-lead p)
+          (own-legal lead)
+          (not (trump-tile lead))
+          (not (calls-for-count lead))))))
+  (rule lead-what-calls-only-a-five
+    (select answer)
+    (guard
+      (query (roles (chair p) (domino lead))
+        (out lead)
+        (pattern
+          (viewer p)
+          (bidders-partner p)
+          (on-lead p)
+          (own-legal lead)
+          (not (trump-tile lead))
+          (not (calls-for lead 10))))))
+  (rule lead-what-calls-only-a-ten
+    (select answer)
+    (guard
+      (query (roles (chair p) (domino lead))
+        (out lead)
+        (pattern
+          (viewer p)
+          (bidders-partner p)
+          (on-lead p)
+          (own-legal lead)
+          (not (trump-tile lead))
+          (not (calls-for lead 5))))))
+  (rule never-trump
+    (select answer)
+    (guard
+      (query (roles (chair p) (domino lead))
+        (out lead)
+        (pattern
+          (viewer p)
+          (bidders-partner p)
+          (on-lead p)
+          (own-legal lead)
+          (not (trump-tile lead)))))))

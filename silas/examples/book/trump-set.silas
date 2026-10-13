@@ -1,0 +1,100 @@
+; The trump set. Winning 42 pp. 49-52 (S-0072-c, S-0073-c, S-0074-a,
+; S-0074-b, S-0074-c, S-0075-a), p. 54 (S-0078-c).
+; Rule, in our words: the bidder led trump and only one other player followed
+; it: that setter holds the trumps (the bidder's partner was void too), and
+; the bidder has lost control. When the bidder leads a double the trump
+; holder is void in, he trumps it from the seat after the bidder, usually, and
+; above all the 6-6, 5-5 and 4-4, which are or call for a ten; from the last
+; seat he trumps only a trick that already holds count. His partner feeds
+; count onto the bidder's double the trump holder may yet trump. On lead with
+; trumps as strong as the bidder's, he leads a high one at once.
+; Replaces gates/c22-trump-the-double-from-the-left.silas. How it differs: the
+; gate (as encoded) reads the trump set as "this setter followed and his
+; partner did not"; the book's trigger also has the bidder's partner void
+; (S-0074-a). The gate trumps every double alike; the book's "usually,
+; especially the big doubles" is two rules, which allow the same tiles. The
+; gate has no rule for the other setter (S-0073-c) or for the lead (S-0075-a).
+; "As strong as the bidder's" compares two holdings; the closest viewer fact
+; is holding the top trump still out.
+
+(include book)
+
+(policy trump-set
+  (fallback lowest-legal)
+  (rule trump-a-big-double
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino doubled) (domino ruff) (domino other))
+        (out ruff)
+        (pattern
+          (viewer me)
+          (left-setter me)
+          (trump-set-alone me)
+          (bidder-led doubled)
+          (double doubled)
+          (not (trump-tile doubled))
+          (none (roles) (not (tile doubled 6-6)) (not (tile doubled 5-5)) (not (tile doubled 4-4)))
+          (own-legal ruff)
+          (trump-tile ruff)
+          (own-legal other)
+          (trump-tile other)))))
+  (rule trump-a-double
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino doubled) (domino ruff) (domino other))
+        (out ruff)
+        (pattern
+          (viewer me)
+          (left-setter me)
+          (trump-set-alone me)
+          (bidder-led doubled)
+          (double doubled)
+          (not (trump-tile doubled))
+          (own-legal ruff)
+          (trump-tile ruff)
+          (own-legal other)
+          (trump-tile other)))))
+  (rule trump-in-on-count
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino doubled) (domino ruff) (domino other))
+        (out ruff)
+        (pattern
+          (viewer me)
+          (right-setter me)
+          (trump-set-alone me)
+          (bidder-led doubled)
+          (double doubled)
+          (not (trump-tile doubled))
+          (count-on-trick)
+          (own-legal ruff)
+          (trump-tile ruff)
+          (own-legal other)
+          (trump-tile other)))))
+  (rule feed-the-trump-holder
+    (select answer)
+    (guard
+      (query (roles (chair me) (chair pard) (domino doubled) (domino give))
+        (out give)
+        (pattern
+          (viewer me)
+          (left-setter me)
+          (partner me pard)
+          (trump-set-alone pard)
+          (bidder-led doubled)
+          (double doubled)
+          (not (trump-tile doubled))
+          (own-legal give)
+          (count-tile give)))))
+  (rule lead-a-high-trump
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino lead))
+        (out lead)
+        (pattern
+          (viewer me)
+          (setter me)
+          (on-lead me)
+          (trump-set-alone me)
+          (own-legal lead)
+          (boss-trump lead))))))
