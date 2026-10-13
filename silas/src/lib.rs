@@ -32,6 +32,7 @@ mod nouns;
 mod outcome;
 mod physics;
 mod policy;
+mod reading;
 pub mod reference;
 mod registry;
 mod scoring;
@@ -58,6 +59,7 @@ pub use policy::{
     Allowed, Choice, CompiledPolicy, DecisionProvenance, Declared, ExactRule, Fallback, GuardWitnesses,
     PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, Selector, Trump,
 };
+pub use reading::{AuctionEvidence, AuctionReading, SeatEvidence};
 pub use registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};

@@ -51,6 +51,38 @@ fn query_prints_the_exact_answer_with_its_authority() {
 }
 
 #[test]
+fn query_reads_the_auction_as_evidence_exactly_given_the_policies() {
+    // Hand 29, the partner at trick one: the bidder holds two doubles or
+    // more in 2949/4522 of the worlds, and in 1197/1517 of those where
+    // bid-only-enough opens 30 and declares fours from his hand.
+    let file = "examples/book/bidding/bidder-holds-two-doubles.silas";
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--seat", "partner"]);
+    assert!(ok && out.contains("P(answer) = 2949/4522 (exact)"), "{out}");
+    let read = [
+        "--auction",
+        "30,pass,pass,pass",
+        "--read",
+        "bidder=examples/book/bidding/bid-only-enough.silas",
+        "--offered",
+        "P6,P5,P4,P3,P2,P1,P0",
+    ];
+    let (ok, out) = silas(&[&["query", file, "--hand", "hand-29", "--seat", "partner"][..], &read].concat());
+    assert!(ok, "{out}");
+    assert!(out.contains("auction: S3 shook: S0 30, S1 pass, S2 pass, S3 pass"), "{out}");
+    assert!(
+        out.contains("read S0: bid-only-enough calls 30 and declares straight42/P4 from 3034 of the 27132"),
+        "{out}"
+    );
+    assert!(out.contains("P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#"), "{out}");
+    // A book hand's own auction is a convention: a reading names the table's,
+    // and it must be won as the hand's contract is.
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--read", read[3]]);
+    assert!(!ok && out.contains("--auction and --read go together"), "{out}");
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--auction", "pass,30,pass,pass", "--read", read[3]]);
+    assert!(!ok && out.contains("is not won by the bidder (S0) at 30"), "{out}");
+}
+
+#[test]
 fn query_states_the_lay_down_and_the_claim_exactly() {
     let (ok, out) = silas(&["query", "examples/book/lay-down.silas", "--hand", "hand-21"]);
     assert!(ok && out.contains("399072960 worlds, as 1 points resolving nothing"), "{out}");

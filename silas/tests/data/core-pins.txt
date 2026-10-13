@@ -1,5 +1,6 @@
 examples/book/bidders-plan.silas 94032755d9042bd6
 examples/book/bidding/bid-only-enough.silas 0af21f4bf904f6f9
+examples/book/bidding/bidder-holds-two-doubles.silas 58b4a0e33e8f3ce8
 examples/book/bidding/never-32-or-33.silas b72f41e5f088ecef
 examples/book/bidding/risk-budget.silas e5bf4c07ddfee065
 examples/book/cannot-be-set.silas 55d18056a6717dca

@@ -26,10 +26,10 @@ means it needs a hidden hand or a model of another seat's play.
 
 | # | gap | kind | rules blocked | viewer / world | home |
 |---|---|---|---|---|---|
-| 1 | policy likelihood (#128) | belief operation | 5 readings; 3 places in the rules | world | Silas |
+| 1 | policy likelihood (#128), narrowed: the auction's is built | belief operation | 5 readings; 3 places in the rules | world | Silas |
 | 2 | cross-game policy comparison (#130), narrowed | new layer | 3 (C17 in part) | world | Silas and the arena |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
-| 4 | the auction as information (#134), narrowed | belief | 3 | world | Silas |
+| 4 | the auction as information (#134), narrowed again | belief | 1 (pp. 53–54's offs) | world | Silas |
 
 ## 1. Policy likelihood: reading a convention
 
@@ -57,10 +57,24 @@ In the book-faithful rules (each marked `; GAP likelihood`):
 - `dead-double.silas`: in Hand 34 (p. 114) the partner keeps his dead 1-1 a while as a
   decoy for an opponent's reading; the rule throws it at once.
 
-**Smallest addition.** `Belief::condition_on_policy(&belief, seat, &CompiledPolicy)`.
-The record is the frame, each seat's past frames follow from a `World` and the record,
-and a policy is now a function of the frame (no modes or bindings, 2026-10-13), so the
-likelihood of a play is determined by (policy, world, record): nothing else is missing.
+**Narrowed (the auction, 2026-10-13; README, The auction as evidence).** The likelihood
+built from a `PolicyProgram` exists for its bidding and declaring sections:
+`AuctionReading::evidence` keeps, for each read seat, the hands it could hold from which
+its policy makes its call (and its declaration), and `Belief::given_auction` counts the
+worlds whose read hands all agree, exactly, `exact_given` the policies. The sender's gate
+is inverted exactly because it is the same compiled policy. It factorizes because a
+seat's auction frame is its dealt hand and public facts, so whether a world is kept
+depends, seat by seat, on that seat's hand alone.
+
+**What remains: the play's likelihood.** The same factorization holds in the play: a
+seat's frame at each of its past plays is its dealt hand (its hand in the world and the
+tiles it played) and the public record, so whether its plays are its policy's is again a
+fact about its hand alone. The rules above need that check added to the per-seat
+evidence (each past play replayed through the seat's play rules); the counting is
+unchanged. Not built.
+
+**Smallest addition.** In `AuctionReading::evidence`, a read seat's past plays checked
+with its policy at each of its past frames (`CompiledPolicy::choose`), beside its call.
 
 ## 2. Cross-game policy comparison (Ch. 2, 7, 12)
 
@@ -196,22 +210,48 @@ reads it as public fact: `(shaker c)`, `(bid-of c n)`, `(passed c)`, `(no-bid)`,
 auction frame, so a bidding policy is the object a likelihood would invert. So "the
 bidder bid 35" and "the partner passed" are now clauses a rule can state.
 
-**What remains.** Reading a bid as evidence about the hand behind it: conditioning the
-belief on the event that the bidder's bidding policy, at his auction frame in each
-world, makes the call he made. That is policy likelihood (gap 1, #128) applied to the
-`bidding` section; the frame and the policy it needs both exist, so the missing piece is
-gap 1's alone. Two smaller pieces stay too: the play frame does not carry the match
-state, so a play rule cannot read the score a bid was made at (the scoring changes a
-bid's meaning: under marks, 30 to 41 pay the same); and a hand given with its contract
-alone (most of the book's hands, and Zeb's record) has a conventional auction
-(`Auction::won_by`), which a reading must not take for the table's.
+**Narrowed again (the bid as evidence, 2026-10-13; README, The auction as evidence).** A
+seat that has heard the calls conditions its belief on each read seat's calls (and the
+declarer's declaration) being what that seat's bidding policy makes from its hand:
+`AuctionReading`, `Belief::given_auction`, and `silas query ... --auction ... --read ...`.
+Exact by counting, `exact_given` the read policies, never sampled; held to brute force on
+every world of small frames (`tests/reading.rs`). The match state the bids were made at
+and the declarations offered are the reading's arguments, and the auction must be the
+table's (`--auction`), never a contract-only hand's convention. What moved:
 
-**Rules.** C4 and the bid inferences of pp. 53–54 and 109.
+- **C4, the bid as a signal (p. 89): statable as a query.** In Hand 29 the partner reads
+  the bidder's 30 in fours under `bid-only-enough`: the 4-4 from 1/3 to 6,003/8,669, two
+  doubles or more from 313/456 to 6,814/8,669 (`examples/book/bidding/bidder-holds-two-doubles.silas`,
+  `tests/book_auction.rs`).
+- **C12B's condition** (S-0232-c, "only the auction could move it"): 194/285 from the
+  bidder's hand; the three passes after his 30 move it to 69.4% read as
+  `bid-only-enough`, 67.0% as `risk-budget`.
+- **p. 109's "a losing 31 means a double or two"** reads the doubles alone: statable
+  the same way, not yet written.
 
-**Smallest addition.** `Belief::condition_on_policy` over a seat's bidding section
-(gap 1), and the match state in the play frame.
+**What remains.**
+- pp. 53–54's "a 35 means two offs, a 36 one off": a question about a whole hidden hand
+  resolves most of the pool, and a belief's points are placements of what it resolves,
+  so it is refused above the cap. It needs a seat's hand law (the read seat's agreeing
+  hands, each weighted by its completions, which the counting already has) as a belief
+  of its own.
+- A policy acting on a reading: a rule's guard reads its frame, never a belief, so a
+  play rule may state the bid ("partner bid 30") but not its reading; the book's rules
+  that act on one are statable as queries, as the repaired rules are.
+- A seat mid-auction reading the calls before its own: a `Frame` exists only once the
+  auction is won, so the reading is at the play.
+- The match state in the play frame, for a play rule that reads the score.
+
+**Rules.** pp. 53–54's offs.
+
+**Smallest addition.** A seat's hand law as a belief over that seat's hands (the counts
+are there), and the match state in the play frame.
 
 ## Closed
+
+Closed by the bid as evidence (#134 in part, #128 for the auction; 2026-10-13; gaps 1
+and 4 above): conditioning a belief on the calls of named seats, each under its bidding
+policy, exactly.
 
 Closed by the aggregate (#135, 2026-10-13; README, Semantics and Short forms):
 

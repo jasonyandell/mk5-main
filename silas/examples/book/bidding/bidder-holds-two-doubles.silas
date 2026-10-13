@@ -1,0 +1,19 @@
+; The bid as a signal (C4; p. 89, the partner's bid the only information
+; before play): does the bidder hold two doubles or more? Asked from another
+; seat, the hand's own auction read as evidence (README, The auction as
+; evidence):
+;
+;   silas query examples/book/bidding/bidder-holds-two-doubles.silas \
+;     --hand hand-29 --seat partner --auction 30,pass,pass,pass \
+;     --read bidder=examples/book/bidding/bid-only-enough.silas \
+;     --offered P6,P5,P4,P3,P2,P1,P0
+;
+; Hand 29 (fours, 30), the partner at trick one: the uniform deal and the
+; bidder's 30 and fours read as bid-only-enough makes them
+; (tests/book_auction.rs has the partner's numbers before the lead, and
+; tests/cli.rs this one's).
+(include book)
+
+(query
+  (declarer b)
+  (<= 2 (card (roles d) (double d) (holds b d))))

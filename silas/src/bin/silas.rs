@@ -4,6 +4,7 @@
 //! silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
 //! silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
 //! silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+//!                [--auction C,C,C,C [--shaker ROLE] --read ROLE=POLICY,... [--offered D,...] [--scoring S]]
 //! silas query    DOMINANCE
 //! silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
 //! silas expand   FILE ...
@@ -27,7 +28,13 @@
 //! call, the rule that made it with its witnesses, and the declaration it
 //! would make if the others then passed. `query` prints the query's exact probability over the worlds
 //! the seat cannot tell apart, with its authority, resolving only the tiles
-//! it reads. On a `(dominates ...)` file it needs no hand: it decides the form
+//! it reads. With `--auction` (the four calls from the shaker's left;
+//! `--shaker`, by default the right, so the bidder calls first) and `--read`
+//! (seats and the bidding policies they bid by), the worlds are those in
+//! which every read seat's policy makes its call, and declares the hand's
+//! declaration if it won, from its hand: exact given those policies, with
+//! `--offered` the declarations offered (by default the nine straight ones)
+//! and `--scoring` the match (at 0-0). On a `(dominates ...)` file it needs no hand: it decides the form
 //! by enumerating the hand's outcomes, exactly, and prints the first
 //! counterexample when there is one. `coverage` reads a policy (or a query of
 //! the viewer's frame) at every point of the book's narrated lines, and of
@@ -58,6 +65,7 @@ usage:
   silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
   silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
   silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+                 [--auction C,C,C,C [--shaker ROLE] --read ROLE=POLICY,... [--offered D,...] [--scoring S]]
   silas query    DOMINANCE
   silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
   silas expand   FILE ...
@@ -432,7 +440,8 @@ fn bid(args: &[String]) -> Result<bool> {
 }
 
 fn query(args: &[String]) -> Result<bool> {
-    let options = Options::parse(args, &[], &["hand", "trick", "seat", "cap", "book"])?;
+    let named = ["hand", "trick", "seat", "cap", "book", "auction", "shaker", "read", "offered", "scoring"];
+    let options = Options::parse(args, &[], &named)?;
     let path = file(&options, "silas query FILE --hand ID [--trick N] [--seat ROLE] [--cap N]")?;
     let text = read(path)?;
     let query = match Program::parse(&text, path)? {
@@ -441,17 +450,46 @@ fn query(args: &[String]) -> Result<bool> {
         Program::Policy(_) => return Err(fail(format!("{path} is a policy: silas eval {path} --hand ID ..."))),
     };
     let (frame, heading) = position(&options)?;
+    let (frame, reading) = match (options.get("auction"), options.get("read")) {
+        (None, None) => (frame, None),
+        (Some(_), Some(_)) => {
+            let (frame, reading) = auction_read(&options, frame)?;
+            (frame, Some(reading))
+        }
+        _ => {
+            return Err(fail(
+                "--auction and --read go together: a book hand's own auction is a convention \
+                 (its bidder speaks first and the rest pass), not the table's, so a reading names the auction",
+            ));
+        }
+    };
     describe(&frame, &heading);
     let cap = options.number("cap", 100_000)?;
-    let mut budget = Budget::new(1_000_000_000);
-    let belief = Belief::uniform_for(frame.clone(), &query, cap, &mut budget)?;
+    let mut budget = Budget::new(1_000_000_000_000);
+    let belief = match reading {
+        None => Belief::uniform_for(frame.clone(), &query, cap, &mut budget)?,
+        Some(reading) => {
+            println!("  auction: {}", frame.auction());
+            let evidence = reading.evidence(&frame, &mut budget)?;
+            for seat in evidence.seats() {
+                let declares =
+                    if seat.declares { format!(" and declares {}", frame.physics().name()) } else { String::new() };
+                println!(
+                    "  read {}: {} calls {}{declares} from {} of the {} hands it could hold",
+                    seat.seat, seat.policy, seat.call, seat.agreeing, seat.candidates
+                );
+            }
+            Belief::given_auction_for(&evidence, &query, cap, &mut budget)?
+        }
+    };
     let summary = query.summarize(&belief, &mut budget)?;
     let p = summary.event_probability();
     let resolved = frame.kernel().pool().difference(belief.unresolved());
     println!("query {path}");
     println!(
-        "  {} worlds, as {} points resolving {}",
+        "  {} worlds{}, as {} points resolving {}",
         frame.count_worlds(),
+        if belief.authority().is_exact() { String::new() } else { format!(" ({} kept)", belief.total_mass()) },
         belief.len(),
         if resolved.is_empty() { "nothing".to_owned() } else { tiles(resolved) }
     );
@@ -462,6 +500,49 @@ fn query(args: &[String]) -> Result<bool> {
         println!("  P({}) = {} ({})", shown.join(" "), p.value(), p.authority());
     }
     Ok(true)
+}
+
+/// The book position's frame under the auction `--auction` names (won by
+/// the bidder at the hand's bid, as the record needs), and the reading of
+/// the seats `--read` names.
+fn auction_read(options: &Options, frame: Frame) -> Result<(Frame, AuctionReading)> {
+    let seat = |role: &str| {
+        ROLES
+            .iter()
+            .position(|r| *r == role)
+            .map(|i| Seat::ALL[i])
+            .ok_or_else(|| fail(format!("a seat is one of {}, not {role}", ROLES.join(", "))))
+    };
+    let words = |text: &str| text.split([',', ' ']).filter(|w| !w.is_empty()).map(str::to_owned).collect::<Vec<_>>();
+    let calls: Vec<Call> = words(options.need("auction")?).iter().map(|c| c.parse()).collect::<Result<_>>()?;
+    let shaker = seat(options.get("shaker").unwrap_or("right"))?;
+    let auction = Auction::new(AuctionConfig::STRAIGHT, shaker, calls)?;
+    let contract = frame.contract();
+    if auction.result() != Some((contract.declarer(), contract.bid())) {
+        return Err(fail(format!(
+            "{auction} is not won by the bidder (S0) at {}, the hand's contract",
+            contract.bid()
+        )));
+    }
+    let frame = Frame::new(auction, frame.physics().clone(), frame.viewer(), frame.dealt(), frame.plays().to_vec())?;
+    let offered: std::sync::Arc<[Physics]> = match options.get("offered") {
+        Some(text) => {
+            words(text).iter().map(|d| d.parse::<Straight42>().map(|s| s.physics())).collect::<Result<_>>()?
+        }
+        None => Straight42::ALL.iter().map(|d| d.physics()).collect(),
+    };
+    let scoring = match options.get("scoring").unwrap_or("marks") {
+        "marks" => Scoring::MARKS,
+        "points" => Scoring::POINTS,
+        other => return Err(fail(format!("--scoring is marks or points, not {other}"))),
+    };
+    let mut readers = Vec::new();
+    for pair in words(options.need("read")?) {
+        let (role, path) = pair.split_once('=').ok_or_else(|| fail("--read takes ROLE=POLICY, ..."))?;
+        let policy = policy_program(path)?.compile(&Registry::standard(), frame.physics())?;
+        readers.push((seat(role)?, policy));
+    }
+    Ok((frame, AuctionReading::new(readers, MatchState::new(scoring, [0, 0])?, offered)?))
 }
 
 /// The frames coverage reads: every point of the book's narrated lines (or

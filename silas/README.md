@@ -362,6 +362,10 @@ where it is defined. Every rule in `examples/book/` is written with it.
   read needed until nothing is refused.
 - `Belief::from_weights(frame, id, authority, entries, cap)`: a measure from
   the caller. Repeated worlds add their weights; zero weights drop out.
+- `Belief::given_auction(&evidence, tiles, cap)` and
+  `Belief::given_auction_for(&evidence, &query, cap, &mut budget)`: the
+  uniform measure conditioned on the auction, read as its bidders' policies
+  make it (The auction as evidence, below), resolved as the uniform ones are.
 - `query.summarize(&belief, &mut budget)`: event probability, per-answer
   presence mass, the law of whole answer sets, and certainty facts
   (possible, certain, constant multiplicity, constant answers, one answer per
@@ -591,6 +595,77 @@ declarations on all hands take 31 s on 18 cores, 117 s before. Most of the
 gain is counting each aggregate once per decision (the risk of a suit is read
 by fifteen rules); what remains is the evaluation of the atoms in the
 aggregates' bodies.
+
+## The auction as evidence
+
+A seat that has heard the calls knows more than its frame's voids: each
+call is what its caller's bidding policy made from his hand. Given a policy
+`π_P` for each seat `P` read, the belief keeps exactly the worlds `w` in
+which, for every `P`,
+
+```text
+π_P.bid(auction before P's call, P, dealt_P(w), state, offered) = P's call
+π_P.declare(the auction, P, dealt_P(w), state, offered) = the declaration   (P the declarer)
+```
+
+where `dealt_P(w)` is `P`'s hand in `w` and the tiles `P` has played. A
+policy is a deterministic function of its auction frame, so each world's
+likelihood is zero or one, and the posterior is the uniform measure on the
+worlds kept: every kept world weighs one, the total is how many there are.
+
+**How it counts.** Whether a world is kept depends, seat by seat, on that
+seat's hand alone. `AuctionReading::evidence(&frame, &mut budget)` runs each
+read seat's policy once on every hand it could hold (the fiber's projection
+to that seat: at most C(21,7) = 116,280) and keeps the hands that agree.
+`Belief::given_auction` then counts the worlds whose read hands all agree, by
+placement of the tiles the query reads: with one seat read, for each of its
+agreeing hands, the binomial number of ways the other two seats complete the
+deal under each placement; with two or three, for each agreeing hand of the
+seat with the fewest, every hand of the second within what is left, the
+third taking the rest. Nothing is sampled. From the opening, with three seats
+read, running the policies over all their hands takes 0.5 s on 18 cores for
+`bid-only-enough` and 1.3 s for `risk-budget`, and counting the worlds their
+agreeing hands (65,180 each under `bid-only-enough`) leave, under half a
+second more (`tests/book_auction.rs`).
+
+**Authority.** The arithmetic is exact, but the number is the deal's only
+under the hypothesis that each read seat bids by its policy, so it is
+`exact_given` one model per seat: its seat, its policy's name and a digest of
+the policy's identity, the match state and the declarations offered (`S2
+bids by bid-only-enough#cb7d…`). A different policy is a different model and
+a different number. `Exact` stays the uniform deal's alone.
+
+**What it reads.** The frame's auction, as the table's: a hand given with its
+contract alone carries the shortest auction its declarer wins
+(`Auction::won_by`), a convention, so the command line asks for the table's
+auction (`--auction`). The play frame does not hold the match state, so the
+reading takes the state the bids were made at, and the declarations offered,
+as its own arguments. The viewer's own call is no evidence to him and is
+refused. An auction no read hand agrees with is refused, as an impossible
+condition is. A question whose answer reads most of a hidden hand ("he holds
+two offs") resolves most of the pool, and the belief's points are placements
+of what it resolves: such a question is refused above the cap, here as for
+the uniform measure.
+
+`tests/reading.rs` holds it to hand counts (a pass under "raise holding the
+6-5" leaves 60 of 90 worlds; the 6-5 is then each other seat's in half), to a
+policy that always passes (the belief unchanged), to one that bids exactly
+holding the 6-6 (its holder certain: 38,760 × 3,432 worlds), and to brute
+force over every world of a small frame under three auctions, the book's two
+bidding policies and a toy one, and every set of read seats.
+
+The book's readings (`tests/book_auction.rs`, `examples/book/bidding/bidder-holds-two-doubles.silas`):
+
+- **C12B's condition** (the repaired low trump lead, S-0232-c): the bidder's
+  hand alone puts it at 194/285; the three passes after his 30, read as
+  `bid-only-enough` makes them, move it to 18,379,909/26,478,093 (69.4%);
+  read as `risk-budget`, to 4,954,991/7,391,904 (67.0%). The auction moves it,
+  a point either way.
+- **The partner's view of a 30** (C4; p. 89): in Hand 29 (fours, 30), before
+  the lead, the bidder holds the 4-4 in a third of the deals and in 6,003/8,669
+  (69.2%) of those where `bid-only-enough` opens 30 and declares fours; two
+  doubles or more, 313/456 (68.6%) against 6,814/8,669 (78.6%); with the
+  setters' passes read too, 2,198,843/3,237,964 and 5,252,929/6,475,928.
 
 ## The Physics boundary
 
@@ -898,6 +973,7 @@ a model or a sample: exact numbers are never blurred.
 silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
 silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
 silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+               [--auction C,C,C,C [--shaker ROLE] --read ROLE=POLICY,... [--offered D,...] [--scoring S]]
 silas query    DOMINANCE
 silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
 silas expand   FILE ...
@@ -944,6 +1020,28 @@ query examples/book/lay-down.silas
   399072960 worlds, as 1 points resolving nothing
   P(answer) = 1 (exact)
 ```
+
+With `--auction` (the four calls from the shaker's left; `--shaker` is the
+right by default, so the bidder calls first; it must be won by the bidder at
+the hand's bid) and `--read` (the seats read and the bidding policy each bids
+by), `query` reads the auction as evidence (The auction as evidence, above),
+with `--offered` the declarations offered (by default the nine straight ones,
+in `Straight42` order) and `--scoring` the match, at 0-0:
+
+```text
+$ silas query examples/book/bidding/bidder-holds-two-doubles.silas --hand hand-29 --seat partner \
+    --auction 30,pass,pass,pass --read bidder=examples/book/bidding/bid-only-enough.silas \
+    --offered P6,P5,P4,P3,P2,P1,P0
+hand-29: trick 1, the partner (S2) to play
+  ...
+  auction: S3 shook: S0 30, S1 pass, S2 pass, S3 pass
+  read S0: bid-only-enough calls 30 and declares straight42/P4 from 3034 of the 27132 hands it could hold
+query examples/book/bidding/bidder-holds-two-doubles.silas
+  46558512 worlds (5206344 kept), as 726 points resolving 0-0 2-2 3-3 4-4 5-5 6-6
+  P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#cb7d652ef9593f67))
+```
+
+Unread, the same position gives 2949/4522 (`exact`).
 
 On a `(dominates ...)` file, `query` needs no hand: it decides the form and
 prints what it enumerated, the readings it checked and the verdict:
@@ -1056,7 +1154,7 @@ solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
 book's test for one), `claim-the-rest` and `cannot-be-set`
 (`tests/outcome.rs`). `examples/book/cross-game/` holds the book's
 field-free comparisons of contracts as `dominates` forms (The match), and
-`examples/book/bidding/` its bid rules as policies over the auction (The auction).
+`examples/book/bidding/` its bid rules as policies over the auction (The auction) and a bid read as evidence (The auction as evidence).
 `GAPS.md` lists what the rules still cannot say.
 
 ## Provenance

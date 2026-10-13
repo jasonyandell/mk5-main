@@ -269,8 +269,8 @@ Slice 2 (2026-10-13, `silas/README.md` § The auction; its choices are
   to 20 µs.
 
 What remains, a deal measure under a named field and the arena's paired ledgers, is
-`silas/GAPS.md` gap 2; reading a bid as evidence about the hand (#134) now needs only
-policy likelihood (#128).
+`silas/GAPS.md` gap 2; reading a bid as evidence about the hand (#134) is built (§ The
+bid as evidence).
 
 ## The aggregate (2026-10-13)
 
@@ -295,6 +295,30 @@ and the arena declaration in 92 µs (210). The crisis rule now keeps only the do
 suit has the most tiles out (the prelude's `more-out`). Still statable but unwritten: the
 84 watch list's double with more out, and C15's sum over several called tiles.
 
+## The bid as evidence (2026-10-13)
+
+A seat that has heard the calls reads them (#134; #128 for the auction; `silas/README.md`
+§ The auction as evidence): given a bidding policy for each read seat, the belief keeps
+exactly the worlds in which every read seat's policy, from its own hand, makes its call
+and, for the declarer, its declaration. A policy is deterministic, so each world weighs
+zero or one, and whether it is kept depends seat by seat on that seat's hand alone: Silas
+runs each read seat's policy once over every hand it could hold (at most 116,280) and
+counts the worlds whose read hands all agree, by placement of the tiles the query reads,
+never sampling. The number is `exact_given` the policies (one model per seat: its name and
+a digest of its identity, the match state, the declarations offered), since another
+policy is another number. It is held to brute force over every world of small frames.
+
+From the opening, three seats read under `bid-only-enough` take about a second on 18
+cores. C12B's condition, 194/285 from the bidder's hand, moves to 69.4% when the three
+passes after his 30 are read as `bid-only-enough`'s and to 67.0% as `risk-budget`'s: the
+auction moves it a point either way. In Hand 29 the partner reading the bidder's 30 in
+fours puts the 4-4 in his hand at 6,003/8,669 against 1/3. `silas query ... --auction
+... --read ...` asks it at the command line. What it cannot yet ask: a question about a
+whole hidden hand ("a 35 means two offs", pp. 53–54), which needs a seat's hand law; a
+reading inside a policy's guard; a seat mid-auction; and the plays as evidence, which
+factorize the same way (a seat's play frame is its hand and the record) and wait only on
+each past play's check (`silas/GAPS.md` 1 and 4).
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the
@@ -314,8 +338,8 @@ suit has the most tiles out (the prelude's `more-out`). Still statable but unwri
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 14 and prices against none, once the
   dead double's throw and the trump set's feed carry the conditions the book states).
-  Policy likelihood (#128) and another seat's knowledge (#132) are next ([[w42]]);
-  #128 over a bidding section is also what reading the auction needs. The cross-game
+  Policy likelihood for the play (#128; the auction's is built, § The bid as evidence)
+  and another seat's knowledge (#132) are next ([[w42]]). The cross-game
   slices go on from the auction to comparison over deals (§ The match and field-free
   comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
