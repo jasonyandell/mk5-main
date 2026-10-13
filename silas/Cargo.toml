@@ -37,3 +37,8 @@ unsafe_code = "forbid"
 
 [lints.clippy]
 float_arithmetic = "deny"
+
+# Debug builds (the `cargo test` gate) at opt-level 1: the outcome and solver
+# tests are exhaustive searches that run over five minutes unoptimized.
+[profile.dev]
+opt-level = 1
