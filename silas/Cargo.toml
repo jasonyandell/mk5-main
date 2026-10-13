@@ -1,0 +1,21 @@
+[package]
+name = "silas"
+version = "0.1.0"
+edition = "2024"
+description = "Silas: a typed relational query and policy language over the worlds consistent with what a seat of Texas 42 knows"
+license = "CC0-1.0"
+publish = false
+
+# Standalone: depends on no other crate in this repository.
+[workspace]
+
+[dependencies]
+num-bigint = "0.4"
+num-rational = "0.4"
+num-traits = "0.2"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+float_arithmetic = "deny"

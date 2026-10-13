@@ -1,0 +1,5 @@
+; The next actor and its play, when that play is its only legal one.
+(query
+  (roles (chair actor) (domino tile))
+  (out actor tile)
+  (pattern (next-actor actor) (forced actor tile)))
