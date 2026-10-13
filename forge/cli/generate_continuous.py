@@ -23,6 +23,7 @@ from typing import Iterator
 import torch
 
 from forge.oracle.context import build_context
+from forge.oracle.device_check import require_cuda
 from forge.oracle.declarations import DECL_ID_TO_NAME
 from forge.oracle.output import output_path_for, write_result
 from forge.oracle.rng import deal_from_seed
@@ -220,7 +221,7 @@ def main() -> None:
         "--device",
         type=str,
         default="cuda",
-        help="Device for computation (default: cuda)",
+        help="CUDA device (default: cuda); forge is GPU-only",
     )
     parser.add_argument(
         "--dry-run",
@@ -276,9 +277,7 @@ def main() -> None:
         base_dir = Path("data/shards-standard")
         mode_name = "standard"
 
-    device = torch.device(args.device)
-    if device.type == "cuda" and not torch.cuda.is_available():
-        raise SystemExit("CUDA not available. Use --device cpu or install CUDA-enabled PyTorch.")
+    device = require_cuda(args.device)
 
     print(f"=== Continuous Generation ({mode_name}) ===")
     print(f"Output: {base_dir}")

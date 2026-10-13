@@ -42,3 +42,35 @@ def require_exact_int64_ops(device: torch.device | str) -> None:
             "Forge is GPU-only; use CUDA or a torch build where int64 sort/unique are verified."
         )
     _verified.add(key)
+
+
+def require_cuda(device: torch.device | str) -> torch.device:
+    """Return ``device`` if it is a usable CUDA device, else raise RuntimeError.
+
+    Forge is GPU-only: there is no CPU fallback, so entry points fail fast here
+    instead of computing on the wrong device. Also runs the int64 self-check (#137).
+    """
+    dev = torch.device(device)
+    if dev.type != "cuda":
+        raise RuntimeError(f"forge is GPU-only (CUDA); refusing to run on device '{dev}'. There is no CPU fallback.")
+    if not torch.cuda.is_available():
+        raise RuntimeError("forge is GPU-only but CUDA is not available. Install a CUDA-enabled PyTorch build on a GPU host.")
+    require_exact_int64_ops(dev)
+    return dev
+
+
+def require_gpu(device: torch.device | str) -> str:
+    """Return the usable GPU device string for ``device`` (CUDA, or MPS for dev smoke runs).
+
+    A default ``"cuda"`` request on a host without CUDA falls to MPS if present (a GPU,
+    not a CPU path); anything else unavailable, and every CPU request, raises.
+    """
+    dev = torch.device(device)
+    if dev.type == "cuda" and not torch.cuda.is_available() and torch.backends.mps.is_available():
+        print("Warning: CUDA unavailable; using MPS.", flush=True)
+        return "mps"
+    if dev.type == "cuda":
+        return str(require_cuda(dev))
+    if dev.type == "mps" and torch.backends.mps.is_available():
+        return "mps"
+    raise RuntimeError(f"forge is GPU-only; refusing to run on device '{dev}'. There is no CPU fallback.")

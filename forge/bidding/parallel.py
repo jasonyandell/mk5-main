@@ -18,6 +18,8 @@ from typing import List, Tuple
 import torch
 import torch.multiprocessing as mp
 
+from forge.oracle.device_check import require_cuda
+
 from .inference import PolicyModel, DEFAULT_CHECKPOINT
 from .simulator import simulate_games
 
@@ -53,10 +55,9 @@ def _worker_loop(
     Each worker is assigned to a specific GPU (round-robin).
     """
     # Assign this worker to a specific GPU (round-robin across available GPUs)
-    if n_gpus > 0:
-        device = f"cuda:{worker_id % n_gpus}"
-    else:
-        device = "cpu"
+    if n_gpus <= 0:
+        raise RuntimeError("forge is GPU-only: bidding worker started with no CUDA GPUs. There is no CPU fallback.")
+    device = f"cuda:{worker_id % n_gpus}"
 
     # Load model in this process
     # Note: compile_model=False because reduce-overhead mode uses CUDA graphs
@@ -118,11 +119,12 @@ class MultiProcessSimulator:
             model_path: Path to model checkpoint. Uses default if None.
         """
         # Detect available GPUs
-        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+        require_cuda("cuda")
+        n_gpus = torch.cuda.device_count()
 
         if n_workers is None:
-            # Default to one worker per GPU (or 1 for CPU-only)
-            n_workers = max(n_gpus, 1)
+            # Default to one worker per GPU
+            n_workers = n_gpus
 
         if model_path is None:
             model_path = DEFAULT_CHECKPOINT

@@ -9,6 +9,7 @@ import torch
 
 from .declarations import DECL_ID_TO_NAME, ParsedDecls, parse_decl_arg
 from .context import build_context
+from .device_check import require_cuda
 from .output import output_path_for, write_result
 from .solve import SolveConfig, build_child_index, enumerate_gpu, solve_gpu
 from .tables import DOMINO_HIGH, DOMINO_LOW
@@ -94,7 +95,7 @@ def _parse_args() -> argparse.Namespace:
         dest="decl",
         help="Declaration: 0..9, name (e.g. fives), or 'all'",
     )
-    p.add_argument("--device", type=str, default="cuda", help="Device (e.g. cuda, cuda:0, cpu)")
+    p.add_argument("--device", type=str, default="cuda", help="CUDA device (e.g. cuda, cuda:0); forge is GPU-only")
     p.add_argument("--overwrite", action="store_true", help="Recompute even if output exists")
 
     p.add_argument("--child-index-chunk", type=int, default=1_000_000, help="Chunk size for child index build")
@@ -162,9 +163,7 @@ def _log_memory(phase: str, enabled: bool) -> float | None:
 def main() -> None:
     args = _parse_args()
 
-    device = torch.device(args.device)
-    if device.type == "cuda" and not torch.cuda.is_available():
-        raise SystemExit("CUDA not available. Install a CUDA-enabled PyTorch build or use --device cpu.")
+    device = require_cuda(args.device)
 
     parsed: ParsedDecls = parse_decl_arg(args.decl)
     decl_ids = parsed.decl_ids

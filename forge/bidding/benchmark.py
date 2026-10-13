@@ -26,6 +26,7 @@ from typing import Iterator
 import torch
 
 from forge.bidding.inference import PolicyModel
+from forge.oracle.device_check import require_cuda
 from forge.bidding.simulator import (
     BatchedGameState,
     deal_random_hands,
@@ -334,10 +335,9 @@ def main():
     args = parser.parse_args()
 
     # Check for CUDA
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = str(require_cuda("cuda"))
     print(f"Device: {device}")
-    if device == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name()}")
+    print(f"GPU: {torch.cuda.get_device_name()}")
 
     # Cluster mode: one worker per GPU
     if args.cluster:

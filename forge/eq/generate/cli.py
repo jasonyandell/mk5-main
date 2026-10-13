@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 
 from forge.eq.types import ExplorationPolicy
+from forge.oracle.device_check import require_gpu
 from forge.oracle.declarations import GAME_DECL_IDS, N_GAME_DECLS
 
 from .pipeline import generate_eq_from_snapshots, generate_eq_games_gpu
@@ -61,15 +62,7 @@ def _run_snapshot_mode(args) -> int:
     n_games = len(snapshots)
     print(f"Loaded {n_games} snapshots from {snapshot_path}", flush=True)
 
-    # Resolve device
-    device = args.device
-    if device == "cuda" and not torch.cuda.is_available():
-        if torch.backends.mps.is_available():
-            print("Warning: CUDA unavailable; falling back to MPS.", flush=True)
-            device = "mps"
-        else:
-            print("Warning: CUDA unavailable; falling back to CPU (slow).", flush=True)
-            device = "cpu"
+    device = require_gpu(args.device)
 
     # Find checkpoint
     if args.checkpoint:
@@ -338,7 +331,7 @@ Examples:
     # Device
     parser.add_argument(
         "--device", type=str, default="cuda",
-        help="Device to run on (default: cuda)"
+        help="GPU device (default: cuda; falls to mps if CUDA is absent); forge is GPU-only, no CPU"
     )
 
     args = parser.parse_args()
@@ -396,16 +389,7 @@ Examples:
         print("Error: --record-world-weights requires --save-joint-worlds.", flush=True)
         return 1
 
-    # Resolve device
-    device = args.device
-    if device == "cuda" and not torch.cuda.is_available():
-        # Tire-kick fallback: try MPS (Apple Silicon), else CPU.
-        if torch.backends.mps.is_available():
-            print("Warning: CUDA unavailable; falling back to MPS.", flush=True)
-            device = "mps"
-        else:
-            print("Warning: CUDA unavailable; falling back to CPU (slow).", flush=True)
-            device = "cpu"
+    device = require_gpu(args.device)
 
     # Find checkpoint
     if args.checkpoint:

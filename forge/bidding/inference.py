@@ -15,6 +15,7 @@ import torch
 from torch import Tensor
 
 from forge.ml.transformer import DominoTransformer
+from forge.oracle.device_check import require_cuda
 
 
 DEFAULT_CHECKPOINT = Path(__file__).parent.parent / "models" / "domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
@@ -40,7 +41,7 @@ class PolicyModel:
             checkpoint_path = DEFAULT_CHECKPOINT
 
         if device is None:
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            device = require_cuda("cuda")
         self.device = torch.device(device)
 
         # Load checkpoint directly to avoid on_load_checkpoint RNG restoration

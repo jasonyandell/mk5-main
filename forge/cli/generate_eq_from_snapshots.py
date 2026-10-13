@@ -32,6 +32,7 @@ from pathlib import Path
 import torch
 
 from forge.eq.generate.pipeline import generate_eq_games_gpu
+from forge.oracle.device_check import require_gpu
 from forge.eq.generate.types import GameRecordGPU
 
 
@@ -178,7 +179,7 @@ def main() -> int:
     parser.add_argument("--out", required=True,
                         help="Output corpus .pt (loadable by JointWorldFullDataset)")
     parser.add_argument("--device", default="mps",
-                        help="Device: mps (default) / cuda / cpu")
+                        help="GPU device: mps (default) / cuda; forge is GPU-only, no CPU")
     parser.add_argument("--n-samples", type=int, default=50,
                         help="Worlds sampled per decision (default: 50)")
     parser.add_argument("--batch-size", type=int, default=8,
@@ -224,13 +225,7 @@ def main() -> int:
         print("Teacher-forced: replaying recorded play lines (aligned E[Q] labels).",
               flush=True)
 
-    device = args.device
-    if device == "cuda" and not torch.cuda.is_available():
-        print("Error: CUDA requested but unavailable.", flush=True)
-        return 1
-    if device == "mps" and not torch.backends.mps.is_available():
-        print("Error: MPS requested but unavailable.", flush=True)
-        return 1
+    device = require_gpu(args.device)
 
     from forge.eq.oracle import Stage1Oracle
 

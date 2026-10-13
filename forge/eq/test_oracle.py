@@ -20,6 +20,11 @@ from forge.eq.oracle import Stage1Oracle
 from forge.oracle.rng import deal_from_seed
 
 
+REAL_CHECKPOINT = str(
+    Path(__file__).resolve().parents[1] / "models" / "domino-qval-small-816k-qgap0.094-qmae1.49.ckpt"
+)
+
+
 # =============================================================================
 # Mock helpers
 # =============================================================================
@@ -339,14 +344,10 @@ def test_tokenize_normalized_players():
 # =============================================================================
 
 @pytest.mark.slow
-@pytest.mark.skipif(
-    not Path("checkpoints/stage1-latest.ckpt").exists(),
-    reason="No checkpoint found at checkpoints/stage1-latest.ckpt"
-)
 def test_oracle_with_real_checkpoint():
-    """Integration test with real checkpoint (slower, requires checkpoint file)."""
-    checkpoint_path = "checkpoints/stage1-latest.ckpt"
-    oracle = Stage1Oracle(checkpoint_path, device="cpu", compile=False)
+    """Integration test with the small Q-value checkpoint tracked in the repo (#138, #63)."""
+    assert Path(REAL_CHECKPOINT).exists(), f"repo checkpoint missing: {REAL_CHECKPOINT}"
+    oracle = Stage1Oracle(REAL_CHECKPOINT, device="cpu", compile=False)
 
     # Create sample worlds
     worlds = [deal_from_seed(i) for i in range(5)]
@@ -619,20 +620,30 @@ def test_async_mode_produces_same_results(mock_checkpoint):
     assert logits_sync.shape == (10, 7)
 
 
-@pytest.mark.skipif(
-    not torch.cuda.is_available(),
-    reason="CUDA not available"
-)
-def test_async_cuda_mode():
-    """Test async mode on CUDA device (requires actual GPU).
+def test_forge_requires_usable_gpu(mock_checkpoint):
+    """Forge is GPU-only: it refuses to run without a usable CUDA device (#138).
 
-    This test is skipped if CUDA is not available.
-    It verifies that:
-    1. Async mode is enabled on CUDA devices
-    2. Pinned buffers are allocated correctly
-    3. Double buffering works
+    Without CUDA, entry points must raise (no CPU fallback). With CUDA, the async
+    path must come up: async mode on, double buffering, pinned host buffers.
     """
-    pytest.skip("Requires real checkpoint file - see test_oracle_with_real_checkpoint")
+    from forge.oracle.device_check import require_cuda, require_gpu
+
+    with pytest.raises(RuntimeError, match="GPU-only"):
+        require_cuda("cpu")
+    with pytest.raises(RuntimeError, match="GPU-only"):
+        require_gpu("cpu")
+
+    if not torch.cuda.is_available():
+        with pytest.raises(RuntimeError, match="CUDA is not available"):
+            require_cuda("cuda")
+        return
+
+    assert require_cuda("cuda").type == "cuda"
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cuda", compile=False)
+    assert oracle.use_async
+    assert len(oracle._gpu_buffers) == 2
+    tokens, masks = oracle._get_pinned_buffers(8)
+    assert tokens.is_pinned() and masks.is_pinned()
 
 
 def test_tokenize_multi_state_reference_implementation():

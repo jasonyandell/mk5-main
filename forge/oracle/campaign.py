@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 
 from .context import build_context
+from .device_check import require_cuda
 from .declarations import DECL_ID_TO_NAME, GAME_DECL_IDS
 from .output import output_path_for, write_result
 from .solve import SolveConfig, build_child_index, enumerate_gpu, solve_gpu
@@ -29,7 +30,7 @@ def _parse_args() -> argparse.Namespace:
     )
 
     p.add_argument("--decls-per-seed", type=int, default=3, help="Number of random declarations per seed")
-    p.add_argument("--device", type=str, default="cuda", help="Device (e.g. cuda, cuda:0, cpu)")
+    p.add_argument("--device", type=str, default="cuda", help="CUDA device (e.g. cuda, cuda:0); forge is GPU-only")
     p.add_argument("--overwrite", action="store_true", help="Recompute even if output exists")
     p.add_argument("--dry-run", action="store_true", help="Show what would be computed without running")
 
@@ -63,9 +64,7 @@ def decls_for_seed(seed: int, k: int = 3) -> list[int]:
 def main() -> None:
     args = _parse_args()
 
-    device = torch.device(args.device)
-    if device.type == "cuda" and not torch.cuda.is_available():
-        raise SystemExit("CUDA not available. Install a CUDA-enabled PyTorch build or use --device cpu.")
+    device = require_cuda(args.device)
 
     if args.seed is not None:
         seeds = [args.seed]

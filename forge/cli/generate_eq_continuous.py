@@ -24,6 +24,8 @@ from typing import Iterator
 import numpy as np
 import torch
 
+from forge.oracle.device_check import require_cuda
+
 from forge.eq.oracle import Stage1Oracle
 from forge.eq.generate.pipeline import generate_eq_games_gpu
 from forge.eq.generate.types import AdaptiveConfig, PosteriorConfig
@@ -138,7 +140,7 @@ def main():
     parser.add_argument("--start-seed", type=int, default=0, help="Start gap-filling from this seed")
     parser.add_argument("--batch-size", type=int, default=32, help="GPU batch size (games per batch)")
     parser.add_argument("--n-samples", type=int, default=50, help="Worlds sampled per decision")
-    parser.add_argument("--device", type=str, default="cuda", help="Device (cuda/cpu)")
+    parser.add_argument("--device", type=str, default="cuda", help="CUDA device (e.g. cuda, cuda:0); forge is GPU-only")
     parser.add_argument("--bid-value", type=str, default="30",
                         help="Contract value shaping action selection: 30..42, 84, "
                              "or 'seed' for a deterministic per-seed 30-42 cycle")
@@ -211,13 +213,9 @@ def main():
             print(f"  {seed}: {path}")
         return
 
-    # Check CUDA
-    if args.device == "cuda" and not torch.cuda.is_available():
-        print("ERROR: CUDA requested but not available")
-        return
-
-    if args.device == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
+    # GPU-only: fail fast
+    require_cuda(args.device)
+    print(f"GPU: {torch.cuda.get_device_name(torch.device(args.device))}")
 
     # Load oracle
     print("\nLoading Stage 1 oracle...", end=" ", flush=True)
