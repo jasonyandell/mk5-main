@@ -97,6 +97,31 @@
     (played-to lead p partners)
     (not (trump-tile partners))))
 
+; The trump set as the book reads it: on a trump lead of the bidder's, c
+; followed with trump and both other players (c's partner and the bidder's)
+; did not. c holds the trumps.
+(define trump-set-alone (roles (chair c))
+  (some
+    (roles
+      (chair b)
+      (chair p)
+      (chair q)
+      (domino lead)
+      (domino his)
+      (domino theirs)
+      (domino partners))
+    (declarer b)
+    (partner b p)
+    (partner c q)
+    (led b lead)
+    (trump-tile lead)
+    (played-to lead c his)
+    (trump-tile his)
+    (played-to lead q theirs)
+    (not (trump-tile theirs))
+    (played-to lead p partners)
+    (not (trump-tile partners))))
+
 ; A trump outside the viewer's hand is still live.
 (define trump-out (roles)
   (some (roles (domino d)) (live d) (not (mine d)) (trump-tile d)))
@@ -157,6 +182,31 @@
       (not (tile e c))
       (not (tile e d)))))
 
+; The viewer holds exactly three trumps.
+(define exactly-three-trumps (roles)
+  (some (roles (domino a) (domino b) (domino c))
+    (mine a)
+    (trump-tile a)
+    (mine b)
+    (trump-tile b)
+    (mine c)
+    (trump-tile c)
+    (none (roles (domino e))
+      (mine e)
+      (trump-tile e)
+      (not (tile e a))
+      (not (tile e b))
+      (not (tile e c)))))
+
+; The viewer holds exactly two trumps.
+(define exactly-two-trumps (roles)
+  (some (roles (domino a) (domino b))
+    (mine a)
+    (trump-tile a)
+    (mine b)
+    (trump-tile b)
+    (none (roles (domino e)) (mine e) (trump-tile e) (not (tile e a)) (not (tile e b)))))
+
 ; -- What a tile can lose, and what a lead calls for. "Outside the viewer's
 ; hand" is a live tile the viewer does not hold.
 
@@ -180,6 +230,20 @@
   (not (trump-tile d))
   (not (can-lose d)))
 
+; A sure trump: the viewer's trump that no live trump outside his hand beats.
+; Holding the top trumps in sequence, any of them.
+(define sure-trump (roles (domino d))
+  (mine d)
+  (trump-tile d)
+  (not (can-lose d)))
+
+; Led, d is a low four, five or six: it leads one of those suits and can lose.
+(define low-four-five-or-six (roles (domino d))
+  (can-lose d)
+  (some (roles (context q))
+    (leads-context d q)
+    (none (roles) (not (context q q4)) (not (context q q5)) (not (context q q6)))))
+
 ; A live tile beats d in the open trick's context.
 (define beatable (roles (domino d))
   (some (roles (context q) (domino over)) (led-context q) (live over) (beats over d q)))
@@ -202,3 +266,276 @@
     (not (mine called))
     (in called q)
     (count called n)))
+
+; -- The trick as the book's rules read it: who is taking it, and whether that
+; can change.
+
+; The viewer plays last to the open trick: the leader sits after him.
+(define last-to-play (roles)
+  (some (roles (chair me) (chair l)) (viewer me) (leader l) (successor me l)))
+
+; The viewer's partner is taking the open trick so far.
+(define partner-winning (roles)
+  (some (roles (chair me) (chair w)) (viewer me) (partner me w) (current-winner w)))
+
+; No setter can hold a trump: none is outside the viewer's hand, or every
+; setter who might hold one has shown void in trump. Under no trump, always.
+(define no-setter-trump (roles)
+  (none (roles (chair s) (domino t))
+    (setter s)
+    (not (shown-out-of-trump s))
+    (live t)
+    (not (mine t))
+    (trump-tile t)))
+
+; The tile taking the open trick cannot be beaten by a setter still to play,
+; as far as the viewer can tell: no live tile outside his hand that follows the
+; suit led and beats it can be with a setter who has not played to the trick
+; and has not shown void in that suit; and trump was led, or no setter can
+; hold a trump. Read from the bidder's side.
+(define winner-cannot-be-beaten (roles)
+  (some (roles (chair w) (domino win) (context q))
+    (current-winner w)
+    (trick-play w win)
+    (led-context q)
+    (none (roles (chair s) (domino x))
+      (setter s)
+      (none (roles (domino y)) (trick-play s y))
+      (not (shown-void s q))
+      (live x)
+      (not (mine x))
+      (in x q)
+      (beats x win q))
+    (none (roles) (not (trump q)) (not (no-setter-trump)))))
+
+; A safe trick, the one to give count to: the viewer's partner is taking it,
+; and the viewer plays last or the winning tile cannot be beaten.
+(define safe-trick (roles)
+  (partner-winning)
+  (none (roles) (not (last-to-play)) (not (winner-cannot-be-beaten))))
+
+; The viewer's partner is still to play to the open trick and may hold a tile
+; that takes it: a live tile outside the viewer's hand beats the winning tile,
+; following the suit led or trumping it, in a suit the partner has not shown
+; void in. What a setter's pounce needs.
+(define partner-may-take-it (roles)
+  (some (roles (chair me) (chair pard) (chair w) (domino win) (context q) (domino x))
+    (viewer me)
+    (partner me pard)
+    (none (roles (domino y)) (trick-play pard y))
+    (current-winner w)
+    (trick-play w win)
+    (led-context q)
+    (live x)
+    (not (mine x))
+    (beats x win q)
+    (some (roles (context r))
+      (in x r)
+      (none (roles) (not (context r q)) (not (trump r)))
+      (not (shown-void pard r)))))
+
+; d is the viewer's double, not trump, and no live tile outside his hand leads
+; its suit: it can win only a trick it leads itself. Only a tile whose higher
+; end is the suit leads it, so the 0-0 is dead in any hand but its holder's.
+(define dead-double (roles (domino d))
+  (mine d)
+  (double d)
+  (not (trump-tile d))
+  (some (roles (context q))
+    (leads-context d q)
+    (none (roles (domino x)) (live x) (not (mine x)) (leads-context x q))))
+
+; The viewer's tile g, not count, is the last spare of a count tile of his in
+; one of g's suits: without g the count tile stands alone there, where a
+; double led pulls it. A double needs no guard.
+(define guards-count (roles (domino g))
+  (mine g)
+  (count g 0)
+  (some (roles (context s) (domino c))
+    (not (trump s))
+    (in g s)
+    (mine c)
+    (count-tile c)
+    (not (double c))
+    (in c s)
+    (none (roles (domino o)) (mine o) (in o s) (not (tile o g)) (not (tile o c)))))
+
+; -- The bidder's offs and the doubles ahead of them.
+
+; Led, the viewer's double dd may draw a count tile the off o calls for: a live
+; tile outside his hand that follows both dd's suit and the suit o leads.
+(define draws-the-count-for (roles (domino dd) (domino o))
+  (some (roles (context s) (context q) (domino x))
+    (leads-context dd s)
+    (leads-context o q)
+    (live x)
+    (not (mine x))
+    (in x s)
+    (in x q)
+    (count-tile x)))
+
+; The viewer's double dd leads the suit the off o leads: it strips that suit.
+(define strips-the-suit-of (roles (domino dd) (domino o))
+  (some (roles (context q)) (leads-context dd q) (leads-context o q)))
+
+; The off o is protected by the viewer's double dd: dd is the double of o's
+; suit, or dd may draw the count o calls for.
+(define protects (roles (domino dd) (domino o))
+  (mine dd)
+  (double dd)
+  (not (trump-tile dd))
+  (off o)
+  (none (roles) (not (draws-the-count-for dd o)) (not (strips-the-suit-of dd o))))
+
+; An off of the viewer's whose own suit's double he does not hold.
+(define bare-off (roles (domino o))
+  (off o)
+  (none (roles (domino dd)) (mine dd) (double dd) (strips-the-suit-of dd o)))
+
+; -- The bid.
+
+; The bid needs every trick: a bid of marks (42 a mark, 84 for two).
+(define every-trick (roles)
+  (none (roles)
+    (not (bid 42))
+    (not (bid 84))
+    (not (bid 126))
+    (not (bid 168))
+    (not (bid 210))
+    (not (bid 252))
+    (not (bid 294))))
+
+; The bid is 35 or more.
+(define bid-35-or-more (roles)
+  (none (roles)
+    (not (bid 35))
+    (not (bid 36))
+    (not (bid 37))
+    (not (bid 38))
+    (not (bid 39))
+    (not (bid 40))
+    (not (bid 41))
+    (not (every-trick))))
+
+; The setters need at most 6, 11, 16 or 21 more points: what the trick's point,
+; a called five or ten and the lead's own count can reach. Zero (already set)
+; is none of them.
+(define to-set-within-6 (roles)
+  (none (roles)
+    (not (to-set 1))
+    (not (to-set 2))
+    (not (to-set 3))
+    (not (to-set 4))
+    (not (to-set 5))
+    (not (to-set 6))))
+
+(define to-set-within-11 (roles)
+  (none (roles)
+    (not (to-set-within-6))
+    (not (to-set 7))
+    (not (to-set 8))
+    (not (to-set 9))
+    (not (to-set 10))
+    (not (to-set 11))))
+
+(define to-set-within-16 (roles)
+  (none (roles)
+    (not (to-set-within-11))
+    (not (to-set 12))
+    (not (to-set 13))
+    (not (to-set 14))
+    (not (to-set 15))
+    (not (to-set 16))))
+
+(define to-set-within-21 (roles)
+  (none (roles)
+    (not (to-set-within-16))
+    (not (to-set 17))
+    (not (to-set 18))
+    (not (to-set 19))
+    (not (to-set 20))
+    (not (to-set 21))))
+
+; Led, d sets the bid if the count it calls for falls on its trick: its own
+; count, one called tile and the trick's point reach what the setters need.
+(define sets-with-a-five (roles (domino d))
+  (count d 0)
+  (calls-for d 5)
+  (to-set-within-6))
+
+(define sets-with-a-ten (roles (domino d))
+  (count d 0)
+  (calls-for d 10)
+  (to-set-within-11))
+
+(define five-sets-with-a-five (roles (domino d))
+  (count d 5)
+  (calls-for d 5)
+  (to-set-within-11))
+
+(define five-sets-with-a-ten (roles (domino d))
+  (count d 5)
+  (calls-for d 10)
+  (to-set-within-16))
+
+(define ten-sets-with-a-five (roles (domino d))
+  (count d 10)
+  (calls-for d 5)
+  (to-set-within-16))
+
+(define ten-sets-with-a-ten (roles (domino d))
+  (count d 10)
+  (calls-for d 10)
+  (to-set-within-21))
+
+(define lead-sets (roles (domino d))
+  (none (roles)
+    (not (sets-with-a-five d))
+    (not (sets-with-a-ten d))
+    (not (five-sets-with-a-five d))
+    (not (five-sets-with-a-ten d))
+    (not (ten-sets-with-a-five d))
+    (not (ten-sets-with-a-ten d))))
+
+; -- The bidder's trouble: trump he cannot draw.
+
+; A live trump outside the bidder's hand that a setter may hold, and no trump
+; of his beats it.
+(define trump-he-cannot-draw (roles)
+  (some (roles (chair s) (domino x) (context t))
+    (trump t)
+    (setter s)
+    (not (shown-out-of-trump s))
+    (live x)
+    (not (mine x))
+    (in x t)
+    (none (roles (domino a)) (mine a) (in a t) (beats a x t))))
+
+; The partner has shown out of trump and two trumps are out, so the setters
+; hold both; the bidder holds no two trumps that beat the higher, so if one
+; setter holds both, one outlives his draws.
+; GAP likelihood: the book places both with one setter by reading the other's
+; count play to the first trump trick (Hand 31, p. 106).
+(define trumps-he-cannot-draw (roles)
+  (some (roles (chair p) (domino x) (domino y) (context t))
+    (trump t)
+    (bidders-partner p)
+    (shown-out-of-trump p)
+    (live x)
+    (not (mine x))
+    (in x t)
+    (live y)
+    (not (mine y))
+    (in y t)
+    (beats x y t)
+    (none (roles (domino a) (domino b))
+      (mine a)
+      (in a t)
+      (beats a x t)
+      (mine b)
+      (in b t)
+      (beats b x t))))
+
+; The bidder's crisis: a setter holds trump he cannot draw.
+(define crisis (roles)
+  (none (roles) (not (trump-he-cannot-draw)) (not (trumps-he-cannot-draw))))
