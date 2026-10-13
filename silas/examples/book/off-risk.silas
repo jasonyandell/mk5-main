@@ -1,0 +1,42 @@
+; The count an off can lose. Winning 42 p. 10 (S-0023-a, S-0023-b, S-0023-c),
+; p. 29 (S-0047-b) and p. 45 (S-0066-b); the bidding hands of Ch. 2 (Hands
+; 1 to 11) and Hand 15.
+; Claim, in our words: an off, a tile that is neither trump nor a double,
+; belongs to two suits, and the setters can win it in either; on that trick
+; they may play the count of either suit. A six off risks the 6-4, a blank off
+; the 5-0, an ace off the 4-1, a deuce or trey off the 3-2, a four off the
+; 6-4 and the 4-1, a five off the 5-5 and the 5-0. A count tile that is trump
+; leaves its other suit: with fours trump a six or an ace off risks no count
+; (Hand 15), with blanks trump a five off risks only the 5-5, with treys or
+; deuces trump a deuce or trey off risks no 3-2; the setter knows the bidder
+; budgeted nothing for it (p. 45). An off that is count risks itself (Hand
+; 7's 5-0).
+; Reading: (out o c): o is the bidder's off in the book's sense (Ch. 2: not
+; trump, not a double; the prelude's (off o) is narrower, a tile that can
+; still lose), and c is o itself if o is count, or a live count tile outside
+; his hand that follows a suit o follows. The physics drops the trump count
+; from its other suit. Which side the bid prices, the higher only, and once
+; (S-0024-c, S-0024-d), is the bid's arithmetic (bidding/risk-budget.silas);
+; which side his own double protects is off-exposed.silas.
+
+(include book)
+
+(query (out o c)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (mine o)
+    (not (trump-tile o))
+    (not (double o))
+    (count-tile o)
+    (same o c))
+  (pattern
+    (viewer b)
+    (bidder b)
+    (mine o)
+    (not (trump-tile o))
+    (not (double o))
+    (live c)
+    (not (mine c))
+    (count-tile c)
+    (some (roles q) (in o q) (in c q))))

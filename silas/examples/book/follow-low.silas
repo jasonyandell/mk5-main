@@ -1,0 +1,38 @@
+; Follow low. Winning 42, the worked deals: Hands 28, 29, 30, 31, 32, 33 and
+; 34 (S-0129-e, S-0133-c, S-0133-f, S-0136-e, S-0138-c, S-0142-e, S-0144-c,
+; S-0146-c).
+; Rule, in our words: a player following trump who cannot take the trick, and
+; has no count among the trumps he may play, plays his lowest trump. The
+; book's reason, where it gives one (Hand 31 trick 1, the left setter with
+; three trumps): the higher trumps are kept to beat the bidder's lower ones
+; later. The bidder's partner does the same on any suit (Hand 29 trick 2: no
+; count to protect, so the lowest deuce).
+; Reading: "cannot take the trick" is that no tile he may play beats the tile
+; taking it; with count among his choices the count rules decide instead
+; (protect-the-count, donate-when-safe, pounce), and where he holds the top
+; trump on the bidder's lead, partner-plays-the-top-trump. A setter's choice
+; between two followers of another suit is low-from-a-pair.silas.
+; New: no gate has it. The book says either trump will do in Hand 28 trick 1
+; and plays the lower, the 1-0; in every other narrated trump follow the
+; lowest is the book's tile.
+
+(include book)
+
+(policy follow-low
+  (rule the-lowest-trump (play low)
+    (viewer me)
+    (trump-led)
+    (not (can-take-it))
+    (none (roles c) (follower c) (count-tile c))
+    (led-context q)
+    (follower low)
+    (none (roles lower) (follower lower) (beats low lower q)))
+  (rule the-partner-follows-low (play low)
+    (viewer me)
+    (bidders-partner me)
+    (led-context q)
+    (not (trump q))
+    (not (can-take-it))
+    (none (roles c) (follower c) (count-tile c))
+    (follower low)
+    (none (roles lower) (follower lower) (beats low lower q))))

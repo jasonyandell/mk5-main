@@ -4,18 +4,20 @@ The book's rules (Roberson, *Winning 42*) are written as Silas policies twice. T
 rule gates of the book study ([book-study-2026-10-12](../wiki/experiments/book-study-2026-10-12.md))
 are encoded in `examples/book/gates/` and checked in `tests/book.rs`: the record of what
 that study priced. The rules as the book means them, read from the whole book and its
-worked deals (the private coverage study's catalog), are the fourteen policies of
+worked deals (the private coverage study's catalog), are the eighteen policies of
 `examples/book/`, checked in `tests/book_rules.rs` on the book's own positions, each with
-the bidder in all four chairs. A rule that needs something Silas lacks is written as the
+the bidder in all four chairs; the frame facts it narrates (what an off risks, what an
+84's defender watches) are queries, checked in `tests/book_queries.rs`. A rule that needs something Silas lacks is written as the
 closest faithful encoding. Each missing piece is marked `; GAP <name>:` at the spot where
 it would go, and the test shows what the rule does there instead. This file lists the
 open gaps, ordered by how many of the book's rules each one blocks, and then the closed
 ones.
 
 **Where the encodings stand.** 20 of the 21 gates are encoded fully; C14 is partial (gap
-5). Of the fourteen book-faithful rules, nine need no gap; five carry one: the bidder's
+5). Of the eighteen book-faithful rules, twelve need no gap; six carry one: the bidder's
 plan (gap 3, the donation lead), the crisis (gaps 1 and 5), the partner's leads and the
-dead double (gap 1), and the trump set (gap 5, its closest viewer fact). Each gap below
+dead double (gap 1), the trump set (gap 5, its closest viewer fact), and the defence of
+the 84 (gaps 1 and 5). Each gap below
 lists the rules it blocks; the gates' misreadings, and the rule that reads each, are the
 last section.
 
@@ -24,11 +26,11 @@ means it needs a hidden hand or a model of another seat's play.
 
 | # | gap | kind | rules blocked | viewer / world | home |
 |---|---|---|---|---|---|
-| 1 | policy likelihood (#128) | belief operation | 5 readings; 3 places in the rules | world | Silas |
+| 1 | policy likelihood (#128) | belief operation | 5 readings; 4 places in the rules | world | Silas |
 | 2 | cross-game policy comparison (#130), narrowed | new layer | 3 (C17 in part) | world | Silas and the arena |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
 | 4 | the auction as information (#134), narrowed | belief | 3 | world | Silas |
-| 5 | aggregate (#135) | language construct | 2 (the crisis's "most out"; the trump set's "as strong") | viewer | Silas |
+| 5 | aggregate (#135) | language construct | 3 (the crisis's and the 84 defence's "most out"; the trump set's "as strong") | viewer | Silas |
 
 ## 1. Policy likelihood: reading a convention
 
@@ -49,6 +51,10 @@ the likelihood must be the sender's gate exactly inverted.
 - C21 (p. 107): the bait tells the partner where the 6-4 is.
 
 In the book-faithful rules (each marked `; GAP likelihood`):
+- `defend-the-84.silas`: the 84 defender throws first the low tile that tells his partner
+  which double to drop (p. 72), and the bidder's partner keeps low tiles as decoys (p. 66,
+  Hand 34); both read another seat's discards as his policy. The rule allows every tile
+  that wins nothing.
 - `partner-leads.silas`: the one exception to "never lead trump" (p. 40) turns on how
   many trumps the bidder still holds, read from his bid and play; trump is never led.
 - `crisis.silas` (the prelude's `trumps-he-cannot-draw`): in Hand 31 the bidder places
@@ -224,7 +230,9 @@ today, so `to-set` can say "one point sets" but not "this lead's count sets".
   The rule allows every count-calling double.
 - `trump-set.silas` (p. 52): "trumps as strong as the bidder's" compares two holdings; the
   rule reads it as holding the top trump still out.
-- The 84 watch list's "keep the double with more tiles out" (pp. 66-81) is not encoded.
+- `defend-the-84.silas` (pp. 66-73): between two doubles, or two pairs, the 84 defender
+  keeps the suit with more tiles out; the rule allows either. Doubles before pairs needs no
+  aggregate and is encoded.
 - The bid rules (`lib/bidding.silas`) are encoded without it, at a price: each "at most
   n points at risk" is a set of `none` scopes over the count tiles, each bid level is a
   rule that derives the risk again, and the arena's declaration compares suit lengths
@@ -348,6 +356,15 @@ states, marked "ours"): the gate fails the book's play and the rule passes it.
 Double-dummy disagrees with the book at several of these (Hand 28 tricks 3 and 4, the
 opening leads of Hands 34 and 35: `examples/book/leads.md`); the rules follow the book.
 
+- **pounce and bidders-plan, read again (2026-10-13).** The pounce's trick "the partner
+  may still take" counted a ruff, so the rule played the 5-5 on the bidder's partner's 0-0
+  in Hands 30 and 31, where the book's setter throws a plain tile; the book's premise is a
+  lead that can lose its suit (S-0079-b: a tile the top of its suit is as good as a double).
+  The prelude's `partner-may-take-it` now counts only a tile that follows. The bidder's plan
+  dumped the bare off that calls for least count without counting the off's own: in Hand
+  24 it led the 6-4, itself a ten, where the book leads the 5-1 (S-0107-d). Both rules
+  were priced on the pour before these repairs.
+
 ### The book against itself
 
 Where two passages, or a rule and a worked hand, disagree, the rule encodes the worked
@@ -359,6 +376,22 @@ hand and its header records both:
   `first-lead.silas` encodes Hand 31;
 - the partner's top trump: p. 25's reading (S-0041-a) against Hand 30's play (S-0135-c);
   `partner-plays-the-top-trump.silas` encodes Hand 30.
+
+These rules encode the book's stated rule over a worked play it gives no reason for:
+
+- shedding for a void: p. 48 calls the void the first guideline, and Hands 32 and 33 shed
+  so; in Hand 28 trick 2 (S-0130-c) and Hand 33 trick 5 the right setter throws a tile
+  that voids nothing with a lone one in hand. `shed-for-a-void.silas` voids.
+- the pair against the 84: in Hand 35 trick 4 (S-0151-b) the left setter breaks his pair
+  of fives, which still catches the 5-2 or 5-1, and keeps a trey whose last target is gone.
+  `defend-the-84.silas` throws the trey.
+- doubles before pairs (p. 72) against Hand 34's afterword (S-0149-b), which would let the
+  left setter keep two fours over his 3-3 with one trey out to two fours, the case on the
+  narrated order (the archive's adjudication B1). `defend-the-84.silas` keeps the double,
+  as the hand does.
+- low from a pair (p. 49): in Hand 29 trick 3 (S-0133-j) the book says either ace will do
+  and plays the higher, the 6-1, as he has another six; `low-from-a-pair.silas` allows
+  only the 3-1 there.
 
 ## Added by the book's odds (`examples/book/odds/`)
 
@@ -397,7 +430,9 @@ probability of an outcome under policies for the hidden seats, played forward
 world by world.
 
 **Claims.** c03-double-ahead-later; also the straight-off 84's set rate
-(Ch. 7), a play claim rather than a deal claim.
+(Ch. 7), a play claim rather than a deal claim; whether the first way to set Hands 17
+and 18 always sets (c07-three-out-an-opponent); and how often Hand 34's two ways set
+(c12-hand34-route-two), which are holdings the defender must keep to the end.
 
 **Smallest addition.** A play-out over a belief: for each world, play every
 seat's policy at its own information state up to a horizon, then evaluate a

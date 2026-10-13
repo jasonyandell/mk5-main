@@ -1,0 +1,27 @@
+; Follow with the off. Winning 42 p. 24 (S-0040-a); played in Hand 30 trick
+; 2 (S-0135-g), and in Hand 16 trick 2.
+; Rule, in our words: the bidder, following a suit he cannot win, plays an
+; off of that suit whose own suit's double he lacks: the first time the suit
+; is led is the time to lose it, while the others still hold tiles of it. An
+; off his double protects he keeps. In Hand 30 he follows his partner's 0-0
+; with the 1-0 and keeps the 2-0, which the 2-2 protects; in Hand 16 he
+; follows the setter's 1-1 with the 1-0 and keeps the 2-1 under his 2-2.
+; Reading: S-0040-a's sentence reads two ways: as the bidder's lead, the off
+; before a double of another suit (bidders-plan.silas, S-0040-b), and as his
+; follow, which this file encodes. The follow reading never plays the off
+; where the bidder can take the trick: with the double of the suit led he
+; plays the double (p. 11, S-0024-a), which helper-stretch.silas reads where
+; no setter can trump.
+; New: no gate has it.
+
+(include book)
+
+(policy follow-with-the-off
+  (rule play-the-bare-off (play o)
+    (viewer b)
+    (bidder b)
+    (led-context q)
+    (not (trump q))
+    (not (can-take-it))
+    (follower o)
+    (bare-off o)))

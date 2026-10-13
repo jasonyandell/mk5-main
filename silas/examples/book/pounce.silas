@@ -1,7 +1,8 @@
 ; The pounce, with its guard. Winning 42 pp. 43-46 (S-0064-a, S-0064-b,
 ; S-0064-e, S-0064-f, S-0066-e, S-0067-b) and p. 55 (S-0079-b, S-0079-c);
-; played in Hands 28, 30 and 32 (S-0130-e, S-0136-a, S-0142-l), and lost in
-; Hand 15 (S-0049-b).
+; played in Hands 28, 29, 30 and 32 (S-0130-e, S-0133-b, S-0136-a, S-0142-l),
+; and lost in Hand 15 (S-0049-b); its companion's play in Hand 35 trick 1, the
+; 4-2 kept the 4-1 back on the bidder's top trump (S-0150-e, no reason given).
 ; Rule, in our words: a setter puts count only on a trick his side may take.
 ; Playing before his partner to a lead from the bidder's side that his partner
 ; may still beat, he plays count at once, a ten before a five, whether or not
@@ -10,6 +11,13 @@
 ; instead (p. 44); but a double cannot win count he holds himself, so then he
 ; plays the count (Hand 28 trick 3). Once his partner has played and the trick
 ; is the other side's beyond his reach, he plays no count.
+; Reading: the trick his partner may still beat is one the led suit can lose:
+; a live tile outside his hand follows it and beats the tile taking it, and
+; his partner has not shown void there. His partner's possible ruff does not
+; count. A double, or a tile the top of its suit, is as good as a double and
+; no trick to pounce on (S-0079-b), and in Hands 30 and 31 (trick 2 and 3) the
+; setter throws a plain tile on the bidder's partner's 0-0 though his own
+; partner had not shown out of trump (S-0135-f, S-0139-d).
 ; Replaces gates/c07-pounce.silas. How it differs: the gate fires whenever the
 ; seat after the bidder cannot follow, including a lead nothing can beat (the
 ; top trump, a walker, S-0066-e and S-0079-b); the book's premise is a trick

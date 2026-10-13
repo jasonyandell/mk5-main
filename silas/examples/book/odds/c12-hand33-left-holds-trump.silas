@@ -1,0 +1,19 @@
+; c12-hand33-left-holds-trump. Anchor: shot-0144 (Ch. 12, Hand 33 trick 2;
+;   S-0144-e).
+; Printed: certain ("you know").
+; Claim: after the first trump trick the left setter still holds a trump, so
+;   the bidder leads the 6-4 to draw it.
+; State: Hand 33, fours trump, bid 35; the bidder (1-1 2-0 4-0 5-5 2-1 6-4
+;   4-4) has led the 4-4 and seen the 4-2, the 4-3 and the right setter's 6-0;
+;   the 4-1 and 5-4 are out. Eighteen hidden tiles, six to each other seat,
+;   the right setter void in fours.
+; Exact: 17/22 (the partner holds both 5/22). Book model: 3/4. Not certain:
+;   the 4-2 and 4-3 were played by the left setter and the partner, and either
+;   could have held the two fours left. Leading the 6-4 is the draw-the-trumps
+;   rule's play all the same (bidders-plan.silas), which needs no certainty.
+(include book)
+
+(query
+  (left-setter x)
+  (in t q*)
+  (holds x t))

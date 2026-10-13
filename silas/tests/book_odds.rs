@@ -225,6 +225,7 @@ fn opponent_holds(p: &[usize], at_least: usize) -> bool {
 // ---------------------------------------------------------------------------
 // Chapter 16: four trumps (shot-0232, shot-0233).
 
+/// S-0232-a: four trumps, three out, 27 ways (not equally likely).
 #[test]
 fn four_trumps_twenty_seven_placements() {
     for hand in FOUR_NO_SECOND.into_iter().chain(FOUR_NO_SECOND_THIRD) {
@@ -291,6 +292,7 @@ fn four_trumps_both_high_with_one_opponent_six_of_fourteen() {
 // ---------------------------------------------------------------------------
 // Chapter 16: three trumps (shot-0233).
 
+/// S-0233-c: three trumps, four out, 81 ways.
 #[test]
 fn three_trumps_eighty_one_placements() {
     for hand in THREE_NO_SECOND {
@@ -339,6 +341,7 @@ fn three_trumps_an_opponent_holds_three_is_10_over_57_not_18_over_81() {
 // ---------------------------------------------------------------------------
 // Chapter 16 (shot-0233) and Chapter 12 (shot-0121, shot-0123): two top trumps.
 
+/// S-0233-f: two top trumps, five out, 243 ways, not the printed 225.
 #[test]
 fn two_top_trumps_have_243_placements_not_225() {
     for hand in TWO_TOP {
@@ -692,4 +695,133 @@ fn hand_26_the_five_trey_was_his_only_trey_7_over_33() {
     // The book's model, each of the four live treys anywhere: (2/3)^4.
     assert_eq!(book_model(4, |p| p.iter().all(|s| *s != LEFT)), r(16, 81));
     assert!(exact < r(1, 3));
+}
+
+// ---------------------------------------------------------------------------
+// Chapters 3, 5, 7 and 12: trumps out, and two narrated certainties.
+
+const THREE_OUT_ONE_HAND: &str = odds!("c03-three-out-one-hand");
+const THREE_OUT_AN_OPPONENT: &str = odds!("c07-three-out-an-opponent");
+const HAND_12_LAST_TRUMP: &str = odds!("c03-hand12-last-trump");
+const HAND_33_LEFT_TRUMP: &str = odds!("c12-hand33-left-holds-trump");
+const HAND_34_ROUTE_TWO: &str = odds!("c12-hand34-route-two");
+const HAND_34_LAST_ROUTE: &str = odds!("c12-hand34-last-route");
+const HAND_16_LOSING_LAYOUT: &str = odds!("c03-hand16-losing-layout");
+
+/// Four trumps, three out: Hand 12 (sixes) and Hand 7 (fives).
+const FOUR_TRUMPS: [Hand; 2] = [
+    ("P6", ["4-4", "1-1", "6-5", "6-6", "2-0", "6-3", "6-4"]),
+    ("P5", ["5-0", "5-3", "5-5", "6-5", "1-1", "6-3", "3-3"]),
+];
+/// Hands 17 (fives) and 18 (deuces), the 84s with three trumps out.
+const HANDS_17_18: [Hand; 2] = [
+    ("P5", ["5-0", "5-5", "6-5", "3-3", "5-2", "1-0", "1-1"]),
+    ("P2", ["3-2", "2-1", "5-1", "0-0", "2-2", "6-2", "5-5"]),
+];
+const HAND_34: Hand = ("P5", ["5-5", "5-4", "5-2", "5-0", "2-2", "4-4", "4-2"]);
+
+/// The query's exact probability at a book position, resolving what it reads.
+fn at_position(query: &str, position: &common::fixture::Position) -> BigRational {
+    let compiled = compile(query);
+    let belief = Belief::uniform_for(position.frame(Seat::S0), &compiled, 100_000, &mut big_budget()).unwrap();
+    assert_eq!(belief.authority(), &Authority::exact());
+    exact(compiled.summarize(&belief, &mut big_budget()).unwrap().event_probability())
+}
+
+#[test]
+fn s0039a_three_trumps_out_all_in_one_hand_3_over_38() {
+    let all_one = |p: &[usize]| p[0] == p[1] && p[1] == p[2];
+    let exact = on_shape(THREE_OUT_ONE_HAND, FOUR_TRUMPS, trumps);
+    assert_eq!(exact, r(3, 38));
+    assert_eq!(exact, dealt(3, all_one));
+    assert_eq!(book_model(3, all_one), r(1, 9));
+    // A given player: 1/38.
+    assert_eq!(dealt(3, |p| p.iter().all(|s| *s == LEFT)), r(1, 38));
+}
+
+#[test]
+fn s0086b_s0073b_an_opponent_holds_all_three_1_over_19() {
+    let opponent_all = |p: &[usize]| p[0] == p[1] && p[1] == p[2] && opponent(p[0]);
+    let exact = on_shape(THREE_OUT_AN_OPPONENT, HANDS_17_18, trumps);
+    assert_eq!(exact, r(1, 19));
+    assert_eq!(exact, dealt(3, opponent_all));
+    assert_eq!(book_model(3, opponent_all), r(2, 27));
+    // Four out (c16-3t-opponent-three) and five out (the outtrumped two-trump
+    // hand) for the "rare" of p. 50.
+    assert_eq!(dealt(4, |p| opponent_holds(p, 3)), r(10, 57));
+    assert_eq!(dealt(5, |p| opponent_holds(p, 3)), r(352, 969));
+}
+
+#[test]
+fn s0043b_hand_12_the_last_trump_is_with_the_left_setter_or_the_partner() {
+    // Trick 1: the 6-6, the 6-1, the 6-0, the right setter's 1-0.
+    let at = common::fixture::book().bidders("hand-12", &["6-6", "6-1", "6-0", "1-0"].map(tile));
+    assert_eq!(at_position(HAND_12_LAST_TRUMP, &at), BigRational::one());
+}
+
+#[test]
+fn s0144e_hand_33_the_left_setter_holds_a_trump_17_over_22_not_certain() {
+    let at =
+        common::fixture::book().dealt("hand-33", common::fixture::Role::Bidder, &common::rules::prose("hand-33")[..4]);
+    assert_eq!(at_position(HAND_33_LEFT_TRUMP, &at), r(17, 22));
+}
+
+#[test]
+fn s0146a_hand_34_the_second_way_to_set_the_84() {
+    // Two fours with one above the 4-2, in one opponent's hand: 563/855.
+    let fours = |f: &Frame| tiles(&["6-4", "4-3", "4-1", "4-0"]).intersection(f.kernel().pool());
+    let route_two = at(HAND_34_ROUTE_TWO, HAND_34, fours);
+    assert_eq!(route_two, r(563, 855));
+    // Placements of the 6-4, the 4-3, the 4-1 and the 4-0.
+    let pair = |p: &[usize]| [LEFT, RIGHT].iter().any(|s| (p[0] == *s || p[1] == *s) && held(p, *s) >= 2);
+    assert_eq!(dealt(4, pair), route_two);
+    assert_eq!(book_model(4, pair), r(2, 3));
+    // Either way: with the first (an opponent holds the 6-5 and another
+    // five, 33/95), 92101/116280.
+    let either = "(query (or (some (roles v x a) (viewer v) (opponent v x) (holds x 6-5) (in a q*) (not (tile a 6-5)) (holds x a)) \
+         (some (roles v x high other) (viewer v) (opponent v x) (in high q4) (beats high 4-2 q4) (holds x high) \
+         (in other q4) (holds x other))))";
+    let marked = |f: &Frame| tiles(&["6-4", "4-3", "4-1", "4-0"]).union(trumps(f)).intersection(f.kernel().pool());
+    assert_eq!(at(either, HAND_34, marked), r(92101, 116280));
+}
+
+#[test]
+fn s0148i_hand_34_the_last_way_to_set_and_it_is_exact() {
+    use common::fixture::{Role, book};
+    let plays = common::rules::prose("hand-34");
+    // After five tricks: the bidder holds the 4-4 and the 4-2; 90 deals.
+    let at = book().dealt("hand-34", Role::Bidder, &plays[..20]);
+    let frame = at.frame(Seat::S0);
+    assert_eq!(frame.count_worlds(), 90);
+    let belief = Belief::uniform(frame, 90).unwrap();
+    assert_eq!(probability(HAND_34_LAST_ROUTE, &belief), r(2, 15));
+    // After the 4-4 lead, double-dummy play sets the 84 in exactly those deals.
+    let led = book().dealt("hand-34", Role::Bidder, &plays[..21]);
+    let belief = Belief::uniform(led.frame(Seat::S0), 90).unwrap();
+    let set = compile("(query (not (dd-make)))");
+    let difference =
+        compile(HAND_34_LAST_ROUTE).compare(&set, &belief, Comparison::Existence, &mut big_budget()).unwrap();
+    assert_eq!(difference, None);
+}
+
+#[test]
+fn s0052c_hand_16_the_one_layout_that_sets() {
+    // After five tricks (ours where the book names no tile) the bidder holds
+    // the 2-2 and the 2-1, and leads; the 5-5 drew the partner's 5-2.
+    let plays = [
+        "3-1", "3-0", "4-3", "6-3", "1-1", "1-0", "4-1", "5-1", "0-0", "3-2", "2-0", "5-0", "3-3", "5-3", "6-0", "6-1",
+        "5-5", "5-4", "5-2", "6-5",
+    ]
+    .map(tile);
+    let at = common::fixture::book().bidders("hand-16", &plays);
+    let frame = at.frame(Seat::S0);
+    let worlds = frame.count_worlds() as usize;
+    let belief = Belief::uniform(frame, worlds).unwrap();
+    let layout = probability(HAND_16_LOSING_LAYOUT, &belief);
+    assert_eq!((layout, worlds), (r(1, 15), 90));
+    // Double-dummy play from here sets the 31 in exactly those deals.
+    let set = compile("(query (not (dd-make)))");
+    let difference =
+        compile(HAND_16_LOSING_LAYOUT).compare(&set, &belief, Comparison::Existence, &mut big_budget()).unwrap();
+    assert_eq!(difference, None);
 }

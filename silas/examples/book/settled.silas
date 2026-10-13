@@ -1,0 +1,12 @@
+; Settled. Winning 42, Ch. 10, p. 83 (S-0113-b).
+; Claim, in our words: scored by marks, a hand is over the moment the bid is
+; made or set: a 30 made by the third trick, a set on the fourth. The rest of
+; the play changes no mark.
+; Reading: the declaring side has banked its threshold (to-make 0), or the
+; other side the points that set it (to-set 0). The solved outcomes answer a
+; settled hand at once, without search (README, Solved outcomes). In Hand 29
+; the setters' 16 on the first trick set the 30; in Hand 32 the 3-3's trick
+; sets the 36.
+
+(query
+  (or (to-make 0) (to-set 0)))

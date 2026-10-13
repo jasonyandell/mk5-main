@@ -1,22 +1,42 @@
-; Shed for a void. Winning 42 pp. 43-48 (S-0064-c, S-0064-d, S-0065-b,
-; S-0065-c, S-0070-d), p. 49 (S-0071-a, S-0071-b) and p. 79 (S-0108-a);
-; played in Hands 32 and 33 (S-0142-g, S-0144-d), and foreseen in Hand 12
-; (S-0044-a).
+; Shed for a void, and the setter's throwaways. Winning 42 pp. 43-48
+; (S-0064-c, S-0064-d, S-0065-b, S-0065-c, S-0070-d), p. 49 (S-0071-a,
+; S-0071-b) and p. 79 (S-0108-a); played in Hands 32 and 33 (S-0142-g,
+; S-0144-d), and foreseen in Hand 12 (S-0044-a). The throwaways: the worked
+; deals, Hands 28 to 33 (S-0130-b, S-0133-g, S-0135-d, S-0135-f, S-0136-b,
+; S-0136-d, S-0139-c, S-0140-a, S-0142-j, S-0144-f, S-0144-h).
 ; Rule, in our words: a setter with one trump or none, unable to follow the
 ; bidder's trump lead or his double, throws a tile that is his only one of
 ; some suit, so that he is void there when the bidder's off comes. He keeps
 ; what he will want then: his count, his doubles and other tiles that cannot
 ; lose (the high tiles under doubles trump), and the last spare guarding a
 ; count tile of his.
+; On any other throw that puts no count on the trick (he holds none, or the
+; trick is neither one his partner may still take nor his partner's to give
+; to), he throws a tile he need not keep, by the same list: no trump, no
+; count, no double or other tile that cannot lose, not the last guard of a
+; count tile (Hand 30 trick 1: the 4-0, keeping the 5-1 that guards the 4-1).
+; With nothing else left but doubles and count, the guard goes (Hand 31 trick
+; 3: the 5-1, the book says, for want of anything else; Hands 28 and 30,
+; trick 2).
+; In Hand 31 trick 4 the left setter, two trumps in hand, throws the 5-4 under
+; his partner's 3-3: his one tile neither trump nor a double, and, as the book
+; says, it leaves him void in fours and fives to trump them later.
 ; Replaces gates/c13a-shed-a-singleton.silas. How it differs: the gate fires on
 ; a trump lead only, and throws a lone double or the last guard of a count tile
 ; (the 6-0 alone among blanks but guarding the 6-4); the book keeps both
 ; (S-0064-c, S-0071-a: protection ranks above a void). The gate needs no trump
 ; held; the book's setter holds one trump or none, and does the same when the
 ; bidder leads a double (S-0065-c).
+; The book against itself: twice its right setter throws a tile that voids
+; nothing on the bidder's trump lead though a lone one was his to throw (Hand
+; 28 trick 2, the 2-1 with the 6-3 alone among sixes and treys, S-0130-c;
+; Hand 33 trick 5, the 1-0 with the 3-1 alone among treys). It gives no reason;
+; this file follows its stated guideline, the void first (p. 48, which ranks it
+; above the rest), and the other worked throws (Hands 32 and 33, trick 1).
 ; Against a bid of marks the book's defenders keep their pairs and throw their
-; dead doubles instead (Hands 34 and 35, S-0146-d, S-0150-c: dead-double.silas);
-; a void for a pounce is worth nothing there, and the rule is for points.
+; dead doubles instead (Hands 34 and 35, S-0146-d, S-0150-c: dead-double.silas
+; and defend-the-84.silas); a void for a pounce is worth nothing there, and
+; this rule is for points.
 
 (include book)
 
@@ -35,4 +55,27 @@
     (not (guards-count lone))
     (in lone suit)
     (not (trump suit))
-    (none (roles other) (mine other) (in other suit) (not (tile other lone)))))
+    (none (roles other) (mine other) (in other suit) (not (tile other lone))))
+  (rule throw-what-you-need-not-keep (play plain)
+    (viewer me)
+    (setter me)
+    (not (every-trick))
+    (or
+      (none (roles c) (own-legal c) (count-tile c))
+      (and (not (partner-may-take-it)) (not (and (last-to-play) (partner-winning)))))
+    (discard plain)
+    (not (trump-tile plain))
+    (count plain 0)
+    (not (walker plain))
+    (not (guards-count plain)))
+  (rule then-the-guard (play guard)
+    (viewer me)
+    (setter me)
+    (not (every-trick))
+    (or
+      (none (roles c) (own-legal c) (count-tile c))
+      (and (not (partner-may-take-it)) (not (and (last-to-play) (partner-winning)))))
+    (discard guard)
+    (not (trump-tile guard))
+    (count guard 0)
+    (not (walker guard))))

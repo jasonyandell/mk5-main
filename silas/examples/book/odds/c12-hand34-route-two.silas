@@ -1,0 +1,23 @@
+; c12-hand34-route-two. Anchor: shot-0146 (Ch. 12, Hand 34, the bid;
+;   S-0146-a).
+; Printed: no number; one of "only two ways" to set the 84.
+; Claim: an opponent holds two fours he can keep to the last two tricks,
+;   following the bidder's 4-4 with one and taking his 4-2 with the other.
+; Reading: the kept four must outrank the 4-2, so one of the two is the 6-4
+;   or the 4-3; the 4-1 and 4-0 only follow (the archive's adjudication B2).
+;   The first way, an opponent holding the 6-5 and another five, is
+;   examples/six-five-guarded.silas (33/95).
+; State: Hand 34, fives trump, bid 84 (5-5 5-4 5-2 5-0 2-2 4-4 4-2), nothing
+;   played; the 21 others dealt uniformly, seven to each other seat. In the
+;   deal the left setter holds the 6-4 and the 4-3: this way is open.
+; Exact: 563/855 (0.658); either way, 92101/116280 (0.792). Book model: 2/3;
+;   either way, 64/81. These are holdings: the set needs the defender to keep
+;   the right two fours to the end, the guessing game the book means (gap 7).
+(query
+  (viewer v)
+  (opponent v x)
+  (in high q4)
+  (beats high 4-2 q4)
+  (holds x high)
+  (in other q4)
+  (holds x other))

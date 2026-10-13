@@ -1,0 +1,17 @@
+; c03-three-out-one-hand. Anchor: shot-0039 (Ch. 3, guideline 1; S-0039-a).
+; Printed: "highly unlikely", no number.
+; Claim: holding four trumps, the bidder draws the other three in one or two
+;   leads, unless one player holds all three.
+; State: Hand 12, sixes trump (4-4 1-1 6-5 6-6 0-2 6-3 6-4), nothing played;
+;   the 21 others dealt uniformly, seven to each other seat. A shape claim:
+;   the test asks it of Hand 7 (four fives) too.
+; Exact: 3/38, any one of the three other players (1/38 a given one; an
+;   opponent, 1/19, is c07-three-out-an-opponent). Book model: 1/9.
+(query
+  (viewer v)
+  (in a q*)
+  (in b q*)
+  (in c q*)
+  (holds x a)
+  (holds x b)
+  (holds x c))

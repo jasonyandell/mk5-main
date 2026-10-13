@@ -30,13 +30,20 @@ const PROTECT: &str = include_str!("../examples/book/protect-the-count.silas");
 const SETTER_LEADS: &str = include_str!("../examples/book/setter-leads.silas");
 const SHED: &str = include_str!("../examples/book/shed-for-a-void.silas");
 const TRUMP_SET: &str = include_str!("../examples/book/trump-set.silas");
+const DEFEND_84: &str = include_str!("../examples/book/defend-the-84.silas");
+const FOLLOW_LOW: &str = include_str!("../examples/book/follow-low.silas");
+const FOLLOW_OFF: &str = include_str!("../examples/book/follow-with-the-off.silas");
+const TAKE: &str = include_str!("../examples/book/take-the-trick.silas");
 
-const RULES: [&str; 14] = [
+const RULES: [&str; 18] = [
     BIDDERS_PLAN,
     CRISIS,
     DEAD_DOUBLE,
+    DEFEND_84,
     DONATE,
     FIRST_LEAD,
+    FOLLOW_LOW,
+    FOLLOW_OFF,
     HELPER_STRETCH,
     LOW_FROM_A_PAIR,
     PARTNER_LEADS,
@@ -45,6 +52,7 @@ const RULES: [&str; 14] = [
     PROTECT,
     SETTER_LEADS,
     SHED,
+    TAKE,
     TRUMP_SET,
 ];
 
@@ -268,27 +276,29 @@ fn s0065b_never_shed_a_lone_double() {
 #[test]
 fn s0065b_s0071a_never_shed_the_last_guard_of_a_count_tile() {
     // Ours (p. 49): treys trump; the 6-0 is the setter's only blank but the
-    // last spare of his 6-4. The gate throws it; the book keeps it.
+    // last spare of his 6-4. The gate throws it; the book keeps it, and
+    // throws a plain tile instead.
     let at = position("P3", O1, &["6-4", "6-0", "5-5", "2-1", "1-1", "5-1", "4-2"], &["3-3"]);
-    assert_eq!(fires(SHED, &at), None);
+    assert_eq!(allows(SHED, &at, "throw-what-you-need-not-keep"), tiles(&["2-1", "5-1"]));
     assert_eq!(allows(C13A, &at, "throw-a-lone-tile"), tiles(&["6-0"]));
 }
 
 #[test]
 fn s0071b_keep_a_spare_of_each_suit_of_a_count_tile() {
     // Ours (p. 49): treys trump; the 4-2 is the setter's only deuce and the
-    // last spare four behind his 6-4. The gate throws it.
+    // last spare four behind his 6-4. The gate throws it; the rule keeps it.
     let at = position("P3", O1, &["6-4", "6-0", "4-2", "5-5", "5-1", "1-1", "1-0"], &["3-3"]);
-    assert_eq!(fires(SHED, &at), None);
+    assert_eq!(allows(SHED, &at, "throw-what-you-need-not-keep"), tiles(&["5-1", "1-0"]));
     assert_eq!(allows(C13A, &at, "throw-a-lone-tile"), tiles(&["4-2"]));
 }
 
 #[test]
 fn s0108a_under_doubles_keep_the_high_tiles() {
     // Ours (p. 79): doubles trump; the bidder leads the 6-6 and the setter,
-    // void, holds the 6-5, the top six, alone. The gate throws it.
+    // void, holds the 6-5, the top six, alone. The gate throws it; the rule
+    // keeps it.
     let at = position("DT", O1, &["6-5", "4-3", "4-2", "3-1", "2-0", "1-0", "5-1"], &["6-6"]);
-    assert_eq!(fires(SHED, &at), None);
+    assert!(!allows(SHED, &at, "throw-what-you-need-not-keep").contains(tile("6-5")));
     assert_eq!(allows(C13A, &at, "throw-a-lone-tile"), tiles(&["6-5"]));
 }
 
@@ -952,4 +962,330 @@ fn s0105b_win_with_the_lowest_sure_tile() {
     // with the 5-4 and keeps the 6-5.
     let at = hand("hand-23", &["1-1", "5-5", "4-4", "3-1", "5-3", "5-1", "5-0"]);
     assert_eq!(allows(HELPER_STRETCH, &at, "win-with-the-lowest-sure-tile"), tiles(&["5-4"]));
+}
+
+// -- pounce: the trick the setters may take is one the led suit can lose
+
+#[test]
+fn s0135f_s0139d_no_pounce_on_the_partners_double() {
+    // Hands 30 and 31: the bidder's partner leads his 0-0, the top blank; the
+    // right setter, void, throws the 5-1 and keeps the 5-5, though his partner
+    // has not shown out of trump. A ruff is no trick to pounce on.
+    for (id, plays) in [("hand-30", 5), ("hand-31", 9)] {
+        let at = book_at(id, plays, O2);
+        assert_eq!(fires(POUNCE, &at), None, "{id}");
+        assert_eq!(allows(SHED, &at, "then-the-guard"), tiles(&["5-1"]), "{id}");
+    }
+}
+
+#[test]
+fn s0133b_the_left_setter_wins_with_the_ten() {
+    // Hand 29 trick 1: the bidder leads the low 4-0; the left setter plays
+    // the 6-4 at once for the trick and 11.
+    assert_eq!(allows(POUNCE, &book_at("hand-29", 1, O1), "play-a-ten-now"), tiles(&["6-4"]));
+}
+
+// -- shed-for-a-void: the throwaways
+
+#[test]
+fn the_setters_throwaways_s0133g_s0136b_s0136d_s0139c_s0142j_s0144f_s0144h() {
+    for (id, plays, role, thrown) in [
+        ("hand-29", 6, O2, "6-0"),
+        ("hand-30", 11, O1, "2-1"),
+        ("hand-30", 13, O1, "4-2"),
+        ("hand-31", 7, O2, "4-0"),
+        ("hand-32", 7, O2, "5-3"),
+        ("hand-33", 7, O2, "3-0"),
+        ("hand-33", 9, O1, "5-1"),
+    ] {
+        let allowed = allows(SHED, &book_at(id, plays, role), "throw-what-you-need-not-keep");
+        assert!(allowed.contains(tile(thrown)), "{id} after {plays}: {allowed:?}");
+    }
+    // Hand 31 trick 2: the 5-1 guards the 4-1, so the 4-0 goes, alone.
+    assert_eq!(allows(SHED, &book_at("hand-31", 7, O2), "throw-what-you-need-not-keep"), tiles(&["4-0"]));
+    // Hand 33 trick 2: the right setter keeps his 0-0 and his count.
+    let allowed = allows(SHED, &book_at("hand-33", 7, O2), "throw-what-you-need-not-keep");
+    assert_eq!(allowed, tiles(&["3-0", "1-0", "3-1"]));
+}
+
+#[test]
+fn s0130b_with_only_doubles_and_count_besides_the_guard_goes() {
+    // Hand 28 trick 2: the left setter, void in trump, holds the 5-1, the
+    // 3-2, the 5-5, the 4-1, the 3-3 and the 4-4; the 5-1 guards the 4-1 but
+    // is his one tile neither count nor double.
+    assert_eq!(allows(SHED, &book_at("hand-28", 5, O1), "then-the-guard"), tiles(&["5-1"]));
+}
+
+#[test]
+fn s0140a_the_left_setter_throws_the_5_4_under_his_partners_trick() {
+    // Hand 31 trick 4: two trumps in hand, void in treys, his partner taking
+    // the trick with the 3-3: the 5-4, his one plain tile (and the void in
+    // fours and fives the book wants). He does not trump his partner's trick.
+    let at = book_at("hand-31", 15, O1);
+    assert_eq!(allows(SHED, &at, "throw-what-you-need-not-keep"), tiles(&["5-4"]));
+    assert_eq!(fires(TAKE, &at), None);
+}
+
+#[test]
+fn s0130c_the_book_against_its_void_guideline() {
+    // Hand 28 trick 2: on the bidder's trump lead the right setter, void in
+    // trump, throws the 2-1; the 6-3 is his only six and only trey. The book
+    // gives no reason; the rule voids, as the book's guideline says.
+    let at = book_at("hand-28", 7, O2);
+    assert_eq!(allows(SHED, &at, "throw-a-lone-tile"), tiles(&["6-3"]));
+}
+
+// -- follow-low (new)
+
+#[test]
+fn follow_with_the_lowest_trump_s0129e_s0133c_s0136e_s0138c_s0142e_s0144c_s0146c() {
+    for (id, plays, role, low) in [
+        ("hand-28", 2, P, "1-0"),
+        ("hand-29", 2, P, "4-2"),
+        ("hand-30", 14, P, "6-0"),
+        ("hand-31", 1, O1, "2-1"),
+        ("hand-32", 1, O1, "2-0"),
+        ("hand-33", 2, P, "4-3"),
+        ("hand-34", 1, O1, "5-1"),
+    ] {
+        assert_eq!(allows(FOLLOW_LOW, &book_at(id, plays, role), "the-lowest-trump"), tiles(&[low]), "{id}");
+    }
+}
+
+#[test]
+fn s0133f_the_partner_follows_low_with_no_count_to_protect() {
+    // Hand 29 trick 2: the left setter's 2-2; the partner, holding the 2-1 and
+    // the 5-2, plays the lower.
+    assert_eq!(allows(FOLLOW_LOW, &book_at("hand-29", 5, P), "the-partner-follows-low"), tiles(&["2-1"]));
+}
+
+#[test]
+fn follow_low_leaves_count_to_the_count_rules() {
+    // Hand 33 trick 1: the left setter's trumps are the 4-2 and the 4-1, a
+    // five; protect-the-count keeps it (S-0144-b), and this rule is silent.
+    let at = book_at("hand-33", 1, O1);
+    assert_eq!(fires(FOLLOW_LOW, &at), None);
+    assert_eq!(allows(PROTECT, &at, "follow-the-master-without-count"), tiles(&["4-2"]));
+}
+
+// -- take-the-trick (new)
+
+#[test]
+fn take_the_trick_s0134b_s0140c_s0143a() {
+    // Hand 29 trick 4: void in sixes, the bidder trumps the 6-6 with the 4-1,
+    // the lower of the 4-1 and the 4-4.
+    assert_eq!(allows(TAKE, &book_at("hand-29", 14, B), "trump-it"), tiles(&["4-1"]));
+    // Hand 31 trick 5: the left setter trumps the 6-4 with the 4-2 and sets.
+    assert_eq!(allows(TAKE, &book_at("hand-31", 18, O1), "trump-it"), tiles(&["4-2"]));
+    // Hand 32 trick 3: last, the right setter takes the off trick with the
+    // 3-3, the one trey above the partner's 6-3, and sets.
+    assert_eq!(allows(TAKE, &book_at("hand-32", 11, O2), "take-it-last"), tiles(&["3-3"]));
+    // The same play: Hand 28 trick 3 (the 6-3), Hand 33 trick 3 (the 2-2),
+    // Hand 35 trick 7 (the 6-5, setting the 84).
+    for (id, plays, take) in [("hand-28", 11, "6-3"), ("hand-33", 11, "2-2"), ("hand-35", 27, "6-5")] {
+        assert_eq!(allows(TAKE, &book_at(id, plays, O2), "take-it-last"), tiles(&[take]), "{id}");
+    }
+}
+
+#[test]
+fn s0051b_hand_16_trumps_the_0_0_with_the_3_2() {
+    // Hand 16 trick 3 (ours: trick 1's 3-0 and 4-3): the right setter leads
+    // the 0-0; the bidder, out of blanks, trumps with the 3-2 and keeps the
+    // 3-3 to draw the last trump.
+    let at = hand("hand-16", &["3-1", "3-0", "4-3", "6-3", "1-1", "1-0", "4-1", "5-1", "0-0"]);
+    assert_eq!(allows(TAKE, &at, "trump-it"), tiles(&["3-2"]));
+}
+
+#[test]
+fn s0126b_hand_27_trumps_the_5_5_with_the_6_4() {
+    // Hand 27 trick 2 (ours: the setters' tiles but the 6-6 and the 5-5): the
+    // bidder, last and out of fives, trumps with the 6-4, the lower trump.
+    let at = hand("hand-27", &["6-2", "6-6", "6-1", "6-0", "5-5", "5-3", "5-1"]);
+    assert_eq!(allows(TAKE, &at, "take-it-last"), tiles(&["6-4"]));
+}
+
+#[test]
+fn s0074b_the_trump_holder_last_trumps_only_count() {
+    // Ours (p. 51): deuces; only the right setter followed the bidder's 2-2.
+    // On the bidder's 4-4 with no count on it he holds his trumps back; with
+    // the partner's 4-1 on it he trumps, low.
+    let hand = ["5-2", "4-2", "1-1", "1-0", "6-6", "3-1"];
+    let alone = ["2-2", "6-1", "5-1", "2-0"];
+    let at = position("P2", O2, &hand, &[&alone[..], &["4-4", "4-3", "4-0"]].concat());
+    assert_eq!(fires(TAKE, &at), None);
+    let at = position("P2", O2, &hand, &[&alone[..], &["4-4", "4-3", "4-1"]].concat());
+    assert_eq!(allows(TAKE, &at, "take-it-last"), tiles(&["4-2"]));
+}
+
+#[test]
+fn s0131b_the_bidder_trumps_his_partners_trick_and_no_rule_says_so() {
+    // Hand 28 trick 5: the bidder, last, trumps his partner's 6-4 with the
+    // 5-0. The trick was his side's; the rule takes only the other side's.
+    assert_eq!(fires(TAKE, &book_at("hand-28", 19, B)), None);
+}
+
+// -- follow-with-the-off (new)
+
+#[test]
+fn s0135g_s0040a_the_bidder_follows_with_the_off_his_double_does_not_protect() {
+    // Hand 30 trick 2: the partner's 0-0; the bidder plays the 1-0 and keeps
+    // the 2-0 under his 2-2.
+    assert_eq!(allows(FOLLOW_OFF, &book_at("hand-30", 6, B), "play-the-bare-off"), tiles(&["1-0"]));
+    // Hand 16 trick 2 (ours: trick 1's 3-0 and 4-3): the setter's 1-1; the
+    // bidder plays the 1-0 and keeps the 2-1 under his 2-2.
+    let at = hand("hand-16", &["3-1", "3-0", "4-3", "6-3", "1-1"]);
+    assert_eq!(allows(FOLLOW_OFF, &at, "play-the-bare-off"), tiles(&["1-0"]));
+    // Hand 33 trick 4: the bidder can take the trick with the 5-5; no off.
+    assert_eq!(fires(FOLLOW_OFF, &book_at("hand-33", 13, B)), None);
+}
+
+// -- defend-the-84 (new)
+
+#[test]
+fn the_84_throws_s0147b_s0147c_s0148a_s0148c_s0148e_s0150h_s0151d_s0151f() {
+    for (id, plays, role, thrown) in [
+        ("hand-34", 7, O2, "6-0"),
+        ("hand-34", 9, O1, "2-0"),
+        ("hand-34", 11, O2, "2-1"),
+        ("hand-34", 13, O1, "3-0"),
+        ("hand-34", 15, O2, "3-2"),
+        ("hand-35", 9, O1, "6-0"),
+        ("hand-35", 15, O2, "2-0"),
+        ("hand-35", 21, O1, "3-0"),
+    ] {
+        let allowed = allows(DEFEND_84, &book_at(id, plays, role), "throw-what-wins-nothing");
+        assert!(allowed.contains(tile(thrown)), "{id} after {plays}: {allowed:?}");
+    }
+    // Hand 34 trick 4: the right setter keeps the 6-1 and the 3-1 for the
+    // 1-0, and the 6-3 that saves the 6-1 from the partner's 6-6: the 3-2 goes.
+    assert_eq!(allows(DEFEND_84, &book_at("hand-34", 15, O2), "throw-what-wins-nothing"), tiles(&["3-2"]));
+    // Hand 35 trick 4: the right setter's 5-1 guards his 6-5; the 2-0 goes.
+    assert_eq!(allows(DEFEND_84, &book_at("hand-35", 15, O2), "throw-what-wins-nothing"), tiles(&["2-0"]));
+}
+
+#[test]
+fn s0148f_a_double_before_a_pair() {
+    // Hand 34 trick 5: the left setter holds the 3-3 (the 3-1 still out) and
+    // the 4-3 and the 6-4 (the 4-2 and the 4-0 out); nothing else. He gives up
+    // the fours and keeps the double.
+    assert_eq!(allows(DEFEND_84, &book_at("hand-34", 17, O1), "a-pair-before-a-double"), tiles(&["4-3", "6-4"]));
+}
+
+#[test]
+fn s0151b_the_book_against_its_pair_rule() {
+    // Hand 35 trick 4: the left setter holds the 5-3, the 2-2, the 3-0 and
+    // the 5-0. The partner threw the 3-2 on trick 3, the last trey his pair
+    // could take; the 5-3 and the 5-0 still take the 5-2 or the 5-1. The book
+    // throws the 5-0; the rule throws the 3-0, which guards the 5-3 against
+    // the 3-3.
+    let at = book_at("hand-35", 13, O1);
+    assert_eq!(allows(DEFEND_84, &at, "then-a-protector"), tiles(&["3-0"]));
+}
+
+#[test]
+fn s0111f_at_no_trump_the_setter_keeps_his_count_too() {
+    // Ours (p. 82): Hand 25 at no trump; the bidder leads the 4-4 and the left
+    // setter, out of fours, keeps his 6-6 (the 6-4, 6-2 and 6-1 out) and his
+    // count, the 3-2; with three treys for the 3-1 he may spare one.
+    let at = position("NT", O1, &["6-6", "6-0", "3-2", "6-3", "3-0", "1-0", "6-5"], &["4-4"]);
+    let allowed = allows(DEFEND_84, &at, "throw-what-wins-nothing");
+    for kept in ["6-6", "3-2"] {
+        assert!(!allowed.contains(tile(kept)), "{kept}: {allowed:?}");
+    }
+    assert!(allowed.contains(tile("1-0")), "{allowed:?}");
+}
+
+// -- bidders-plan: the plan's other narrated leads
+
+#[test]
+fn s0022a_s0144e_plan_for_the_setters_holding_the_missing_trumps() {
+    // Hand 33 trick 2: the right setter has shown out of fours, two fours are
+    // out, and the partner may hold both (5/22, odds/c12-hand33-left-holds-
+    // trump); the bidder draws as if a setter holds them.
+    assert_eq!(allows(BIDDERS_PLAN, &book_at("hand-33", 4, B), "draw-the-trumps"), tiles(&["6-4"]));
+}
+
+#[test]
+fn s0048a_hand_15_either_off_calls_no_count() {
+    // Hand 15, line A, trick 3 (ours: trick 1's trumps): with fours trump the
+    // 6-0 and the 1-0 call for no count; either may go, and the book leads the
+    // 6-0.
+    let at = hand("hand-15", &["4-4", "4-2", "4-0", "5-4", "6-4", "2-0", "2-1", "6-1"]);
+    assert_eq!(allows(BIDDERS_PLAN, &at, "dump-a-bare-off-calling-no-count"), tiles(&["6-0", "1-0"]));
+}
+
+#[test]
+fn s0107d_hand_24_leads_the_5_1_to_draw_the_6_5() {
+    // Hand 24 trick 3, doubles trump, on the archive's reading of trick 2
+    // (the 3-3, not the 1-1): trumps drawn, the bidder dumps an off at once,
+    // and the 5-1 is one the rule allows; it draws the 6-5, which made the
+    // 6-4 his worst off.
+    let at = hand("hand-24", &["6-6", "0-0", "4-4", "5-3", "5-5", "3-3", "5-2", "1-0"]);
+    let found = fires(BIDDERS_PLAN, &at);
+    assert!(found.as_ref().is_some_and(|(_, allowed)| allowed.contains(tile("5-1"))), "{found:?}");
+}
+
+#[test]
+fn s0052b_hand_16_the_2_1_walks_last() {
+    // Hand 16 (ours where the book names no tile): after the 5-5 and the 2-2
+    // draw the other deuces, the 2-1 cannot lose and goes last.
+    let plays = [
+        "3-1", "3-0", "4-3", "6-3", "1-1", "1-0", "4-1", "5-1", "0-0", "3-2", "2-0", "5-0", "3-3", "5-3", "6-0", "6-1",
+        "5-5", "5-4", "5-2", "6-5", "2-2", "4-2", "6-2", "4-4",
+    ];
+    assert_eq!(allows(BIDDERS_PLAN, &hand("hand-16", &plays), "take-the-rest"), tiles(&["2-1"]));
+}
+
+#[test]
+fn s0145a_hand_33_cashes_the_1_1_and_the_last_deuce() {
+    // Hand 33 trick 6: the 1-1, a winner, before the 2-1; trick 7, on the
+    // archive's reading of trick 6 (the right setter must follow with the
+    // 3-1, not throw the 0-0), the 2-1 is the last deuce and walks.
+    assert_eq!(allows(BIDDERS_PLAN, &book_at("hand-33", 20, B), "cash-the-other-winners"), tiles(&["1-1"]));
+    let plays = then(&prose("hand-33")[..20], &["1-1", "6-3", "6-2", "3-1"]);
+    let at = dealt("hand-33", B, &plays);
+    assert_eq!(allows(BIDDERS_PLAN, &at, "take-the-rest"), tiles(&["2-1"]));
+}
+
+#[test]
+fn s0146e_s0148i_hand_34_runs_trumps_then_the_doubles() {
+    // Once the 6-5 has fallen the bidder leads his trumps and lets the
+    // defenders guess; the 4-4 goes next-to-last, ahead of the 4-2.
+    assert_eq!(allows(BIDDERS_PLAN, &book_at("hand-34", 4, B), "draw-the-trumps"), tiles(&["5-4"]));
+    assert!(allows(BIDDERS_PLAN, &book_at("hand-34", 8, B), "cash-the-other-winners").contains(tile("5-2")));
+    assert!(allows(BIDDERS_PLAN, &book_at("hand-34", 12, B), "cash-the-other-winners").contains(tile("5-0")));
+    assert_eq!(allows(BIDDERS_PLAN, &book_at("hand-34", 16, B), "cash-the-other-winners"), tiles(&["2-2"]));
+    assert_eq!(allows(BIDDERS_PLAN, &book_at("hand-34", 20, B), "the-double-of-the-offs-suit"), tiles(&["4-4"]));
+}
+
+// -- narrated plays the earlier rules already read
+
+#[test]
+fn s0143b_after_the_set_lead_what_calls_for_count() {
+    // Hand 32 trick 4: the setters have set the 36; the right setter leads
+    // the 5-4, which calls for the 5-5, so the bidder must trump rather than
+    // throw another off.
+    let at = dealt("hand-32", O2, &prose("hand-32")[..12]);
+    assert!(fires(SETTER_LEADS, &at).is_some_and(|(_, allowed)| allowed.contains(tile("5-4"))));
+}
+
+#[test]
+fn s0131d_either_dead_double_may_go() {
+    // Hand 28 trick 6: no four or trey is left outside the left setter's
+    // hand; both his doubles are dead, and the book says either may go.
+    assert_eq!(allows(DEAD_DOUBLE, &book_at("hand-28", 21, O1), "throw-a-dead-double"), tiles(&["3-3", "4-4"]));
+}
+
+#[test]
+fn s0151h_the_low_six_keeps_the_6_5() {
+    // Hand 35 trick 6: on the 6-6 the right setter plays the 6-1 and keeps
+    // the 6-5, now the top six, for the bidder's last tile.
+    assert_eq!(allows(LOW_FROM_A_PAIR, &book_at("hand-35", 23, O2), "follow-low"), tiles(&["6-1"]));
+}
+
+#[test]
+fn s0150e_no_count_on_the_bidders_top_trump() {
+    // Hand 35 trick 1: the left setter has thrown; the right setter keeps the
+    // 4-1 back and follows with the 4-2.
+    assert_eq!(allows(POUNCE, &book_at("hand-35", 3, O2), "no-count-on-a-lost-trick"), tiles(&["4-2"]));
 }

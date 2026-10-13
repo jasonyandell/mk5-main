@@ -1,13 +1,15 @@
-; The bidder's plan after the first lead. Winning 42 pp. 23-29 (S-0038-b,
+; The bidder's plan after the first lead. Winning 42 p. 9 (S-0022-a: plan for
+; the setters holding the missing trumps), pp. 23-29 (S-0038-b,
 ; S-0039-b, S-0041-d, S-0041-f, S-0042-b, S-0043-c, S-0043-e, S-0044-b,
 ; S-0047-c, S-0047-d), pp. 11, 18-19 and 24 (S-0024-a, S-0033-b, S-0034-b,
 ; S-0040-b), p. 31 (S-0052-a), pp. 60-63 (S-0085-a, S-0086-a, S-0087-a),
 ; pp. 75-81 (S-0104-a, S-0105-c, S-0105-d, S-0107-b, S-0107-c, S-0109-b,
 ; S-0110-c), pp. 91-95 (S-0121-d, S-0122-b, S-0122-c, S-0122-e, S-0126-d),
-; and the worked deals, Hands 12, 14, 15, 16, 23, 25, 26 and 28 to 35
-; (S-0046-b, S-0046-c, S-0051-c, S-0130-a, S-0130-d, S-0131-c, S-0134-c,
-; S-0136-c, S-0137-a, S-0142-h, S-0142-k, S-0144-g, S-0144-k, S-0148-b). The
-; bidder's four steps (p. 26), in our words: trumps in; then, if it helps,
+; and the worked deals, Hands 12, 14, 15, 16, 23 to 26 and 28 to 35
+; (S-0046-b, S-0046-c, S-0048-a, S-0051-c, S-0052-b, S-0107-d, S-0130-a,
+; S-0130-d, S-0131-c, S-0134-c, S-0136-c, S-0137-a, S-0142-h, S-0142-k,
+; S-0144-g, S-0144-k, S-0145-a, S-0146-e, S-0148-b, S-0148-i). The bidder's
+; four steps (p. 26), in our words: trumps in; then, if it helps,
 ; one trump more for the partner's count, or the off's double first for its
 ; count; then the offs; then back in to take the rest.
 ; Rule, in our words, the bidder on lead after trick one, not in a crisis
@@ -18,8 +20,10 @@
 ;   a trump until after the offs, unless all you hold besides it is winners
 ;   and one off, which can go last (Hand 33 trick 5);
 ; - holding a trump to win the lead back (and a bid of points): lead at once
-;   the off whose own suit's double you lack, the one that calls for least
-;   count (Hand 28 trick 3: the 3-1, which risks a five, not the 5-3's ten),
+;   the off whose own suit's double you lack, the one that risks least count,
+;   its own and what it calls for (Hand 28 trick 3: the 3-1, which risks a
+;   five, not the 5-3's ten; Hand 24 trick 3, S-0107-d: the 5-1, not the
+;   6-4, a ten itself, which the 5-1 makes safe by drawing the 6-5),
 ;   or a double of another suit that may pull its count (a permission: Hands
 ;   8, 9 and 14 propose it, Hand 32 trick 3 leads the off); once every off has
 ;   its double, the double first (Hand 30 trick 5, the last trump the
@@ -86,6 +90,7 @@
     (some (roles kept) (mine kept) (trump-tile kept))
     (own-legal lead)
     (bare-off lead)
+    (count lead 0)
     (not (calls-for-count lead)))
   (rule dump-a-bare-off-calling-a-five (play lead)
     (pattern
@@ -97,7 +102,9 @@
       (some (roles kept) (mine kept) (trump-tile kept))
       (own-legal lead)
       (bare-off lead)
-      (not (calls-for lead 10)))
+      (or
+        (and (count lead 0) (not (calls-for lead 10)))
+        (and (count lead 5) (not (calls-for-count lead)))))
     (pattern
       (viewer b)
       (bidder b)

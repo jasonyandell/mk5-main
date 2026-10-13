@@ -1,0 +1,37 @@
+; The side a double does not protect. Winning 42 p. 11 (S-0024-b), p. 101
+; (S-0133-h) and p. 94 (S-0125-d); the bidding hands of Ch. 2
+; (Hands 10 and 11).
+; Claim, in our words: the bidder's double of a suit protects his off on that
+; side only; led in its other suit the off is exposed. In Hand 29 the 3-3
+; covers the 3-2's trey side and the setters take it on the deuce side; with
+; both sides covered (Hand 10's 4-3 under the 4-4 and the 3-3) an off risks
+; nothing; in Hand 11 the 3-3 does not cover the 2-0 when deuces are led. In
+; Hand 27 the 6-2 off risks one trick (its ten is trump, the 2-2 covers the
+; deuces) and the 3-1 is open on its ace side but risks no count there (the
+; 4-1 is trump).
+; Reading: (out o c) as off-risk.silas, kept to the suits o follows in which
+; the bidder holds no double: a double follows only its own suit, and under
+; doubles trump none.
+
+(include book)
+
+(query (out o c)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (mine o)
+    (not (trump-tile o))
+    (not (double o))
+    (count-tile o)
+    (same o c)
+    (some (roles q) (in o q) (none (roles d) (mine d) (double d) (in d q))))
+  (pattern
+    (viewer b)
+    (bidder b)
+    (mine o)
+    (not (trump-tile o))
+    (not (double o))
+    (live c)
+    (not (mine c))
+    (count-tile c)
+    (some (roles q) (in o q) (in c q) (none (roles d) (mine d) (double d) (in d q)))))

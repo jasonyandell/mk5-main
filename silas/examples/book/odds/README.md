@@ -27,17 +27,17 @@ wrong because hand sizes matter); **ambiguous** (both readings given).
 
 | claim | anchor | printed | book model | exact | verdict |
 |---|---|---|---|---|---|
-| c16-4t-ways (count, in the test) | shot-0232 | 27 | 27 | 27 placements | matches; not equally likely |
+| c16-4t-ways (count, in the test; S-0232-a) | shot-0232 | 27 | 27 | 27 placements | matches; not equally likely |
 | [c16-4t-guarded-second](c16-4t-guarded-second.silas) | shot-0232 | 0.37 | 10/27 = 0.370 | 33/95 = 0.347 | model |
 | [c16-4t-works](c16-4t-works.silas) | shot-0232 | 0.63 | 17/27 = 0.630 | 62/95 = 0.653 | model |
 | [c16-4t-two-of-three](c16-4t-two-of-three.silas) | shot-0232 | 0.52 | 14/27 = 0.519 | 47/95 = 0.495 | model; under one half, so the lean the book draws reverses |
 | [c16-4t-both-high](c16-4t-both-high.silas) | shot-0233 | 6 of 14 | 6/27 = 0.222, or 3/7 = 0.429 inside the 14 | 1/5, or 19/47 = 0.404 given the bad case | ambiguous; model either way |
 | [c16-four-of-a-suit](c16-four-of-a-suit.silas) (GAP) | shot-0233 | 0.28 | none | 0.295 (four or more in a suit), 0.268 (longest suit exactly four) | ambiguous |
-| c16-3t-ways (count, in the test) | shot-0233 | 81 | 81 | 81 placements | matches |
+| c16-3t-ways (count, in the test; S-0233-c) | shot-0233 | 81 | 81 | 81 placements | matches |
 | [c16-3t-guarded-second](c16-3t-guarded-second.silas) | shot-0233 | 0.47 | 38/81 = 0.469 | 388/855 = 0.454 | model |
 | [c16-3t-partner-second](c16-3t-partner-second.silas) | shot-0233 | 0.26 (21 of 81) | 27/81 = 0.333 | 1/3 | arithmetic; the 81 split 38 + 27 + 16, and no event we tried counts 21 |
 | [c16-3t-opponent-three](c16-3t-opponent-three.silas) | shot-0233 | 18 of 81 = 0.222 | 18/81 | 10/57 = 0.175 | model |
-| c16-2t-ways (count, in the test) | shot-0233 | 225 | 243 | 243 placements | arithmetic |
+| c16-2t-ways (count, in the test; S-0233-f) | shot-0233 | 225 | 243 | 243 placements | arithmetic |
 | [c16-2t-spread](c16-2t-spread.silas) | shot-0233 | 0.40 (90 of 225) | 90/243 = 0.370 | 147/323 = 0.455 | arithmetic (90 is right, 225 is not); model too |
 | [c16-2t-partner-three](c16-2t-partner-three.silas) | shot-0233 | 0.20 (45 of 225) | 51/243 = 0.210 | 176/969 = 0.182 | arithmetic; model too |
 | [c16-2t-favorable](c16-2t-favorable.silas) | shot-0233 | 0.60 | 47/81 = 0.580 | 617/969 = 0.637 | arithmetic; model too; the truth is better than printed |
@@ -59,12 +59,25 @@ wrong because hand sizes matter); **ambiguous** (both readings given).
 | [c09-partner-five-blank](c09-partner-five-blank.silas) | shot-0104 | 1/3 | 1/3 | 1/3 | matches |
 | [c09-doubles-trump-void](c09-doubles-trump-void.silas) | shot-0109 | 0.80 | 7/9 = 0.778 | 23/30 = 0.767 | model; 0.80 is a coarse rounding of either |
 | [c12-only-trey](c12-only-trey.silas) | shot-0124 | 2/3 | 16/81 = 0.198 | 7/33 = 0.212 | arithmetic: two to one is one tile's odds; the event needs all four live treys elsewhere (record ours) |
+| [c03-three-out-one-hand](c03-three-out-one-hand.silas) | shot-0039 | highly unlikely | 1/9 | 3/38 = 0.079 (a given player 1/38) | matches |
+| [c07-three-out-an-opponent](c07-three-out-an-opponent.silas) | shot-0086, shot-0073 | highly unlikely; rare | 2/27 | 1/19 = 0.053 (four out 10/57, five out 352/969) | matches for three out |
+| [c03-hand12-last-trump](c03-hand12-last-trump.silas) | shot-0043 | certain | 1 | 1 | matches (a shown void) |
+| [c12-hand33-left-holds-trump](c12-hand33-left-holds-trump.silas) | shot-0144 | certain | 3/4 | 17/22 = 0.773 | not certain: the partner holds both fours 5/22 |
+| [c12-hand34-route-two](c12-hand34-route-two.silas) | shot-0146 | one of only two ways | 2/3; either way 64/81 | 563/855 = 0.658; either way 92101/116280 = 0.792 | no number printed; holdings, not a set rate |
+| [c12-hand34-last-route](c12-hand34-last-route.silas) | shot-0148 | the only way | 2/9 | 2/15, and double-dummy sets in exactly those deals | matches |
+| [c03-hand16-losing-layout](c03-hand16-losing-layout.silas) | shot-0052 | the only way, against the odds | 2/27 | 1/15 (record ours), and double-dummy sets in exactly those deals | matches |
+
+The last five state a narrated certainty or a narrated set route, not a
+printed figure: the number is what the claim is worth from the chair that
+makes it. Hand 34's two ways are holdings: an opponent who holds one of them
+still has to keep the right tiles to the last trick, which is the guessing
+game the book means; how often he does is a play-out (`GAPS.md`, 7).
 
 Not encoded, because they print no number or depend on how the seats play:
-the rare three-trump opponent (shot-0073), "odds very low" (shot-0044), "half
-of the hands" not worth a bid (shot-0054), and the straight-off 84's set rate
-of about two in three against good players (shot-0089), which is the 2/3 above
-only if the double's holder always keeps it to the last trick.
+"odds very low" (shot-0044), "half of the hands" not worth a bid (shot-0054),
+and the straight-off 84's set rate of about two in three against good players
+(shot-0089), which is the 2/3 above only if the double's holder always keeps
+it to the last trick.
 
 ## Against the earlier figures
 

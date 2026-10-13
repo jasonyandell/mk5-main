@@ -1,0 +1,57 @@
+; Defending the 84. Winning 42 pp. 69-73 (S-0095-a, S-0096-a, S-0097-c,
+; S-0098-a, S-0098-c, S-0099-a, S-0099-b, S-0100-a) and p. 82 (S-0111-f, no
+; trump); played in Hands 34 and 35 (S-0147-b, S-0147-c, S-0148-a, S-0148-c,
+; S-0148-f, S-0150-h, S-0151-d, S-0151-f).
+; Rule, in our words: against a bid of every trick the bidder saves one off
+; for the last trick, so a setter keeps what could take it: a double while a
+; tile that leads its suit is still out (its watch list), and a pair, two
+; tiles of a suit whose double is out, the higher above a tile that leads the
+; suit (he follows the double with the lower and takes the off with the
+; higher). When he cannot follow he throws, in order: a tile that can take
+; nothing and guards no pair; then a tile that keeps a pair tile from being
+; forced by the double of its other suit; then a pair tile. A double with
+; tiles still out goes last: doubles before pairs, always (p. 72). At no trump
+; he defends the same way and keeps his count too, which a points bid needs
+; for the set (p. 82).
+; Reading: "watched-by", "pair-target", "keeps-a-pair", "protects-a-pair" and
+; "wins-nothing" in the prelude; watch-list.silas and pair-targets.silas ask
+; them as queries. A throw on the bidder's trump lead is the same throw.
+; GAP aggregate: between two pairs, or two doubles, the book keeps the suit
+; with more tiles out (S-0092-a, S-0097-a, S-0100-a); this file allows either.
+; GAP likelihood: the book throws first a low tile that tells the partner
+; which double he may drop (S-0100-b), and the bidder's partner keeps low
+; tiles as decoys (S-0092-b, S-0147-a); neither is encoded.
+; The book against itself: in Hand 35 trick 4 the left setter says nothing
+; has changed and throws the 5-0, breaking the pair of fives that still
+; catches the 5-2 or the 5-1, and keeps the 3-0 of a pair of treys whose last
+; target, the 3-2, the partner threw on trick 3 (S-0151-b). This file throws
+; the 3-0 there. And Hand 34's lesson (S-0149-b) says the left setter might
+; have kept the fours over his 3-3 with one trey out to two fours; its own
+; rule (p. 72) is doubles over pairs, and on the narrated (legal) order one
+; trey is out to two fours (the archive's adjudication B1). This file keeps
+; the double, as the hand does (S-0148-f).
+; New: no gate has it. The dead double (dead-double.silas) is its first case:
+; a double whose watch list is empty wins nothing.
+
+(include book)
+
+(define defending-the-last-trick (roles)
+  (some (roles me) (viewer me) (setter me))
+  (or (every-trick) (none (roles t) (trump t))))
+
+(policy defend-the-84
+  (rule throw-what-wins-nothing (play t)
+    (defending-the-last-trick)
+    (discard t)
+    (wins-nothing t)
+    (not (protects-a-pair t)))
+  (rule then-a-protector (play t)
+    (defending-the-last-trick)
+    (discard t)
+    (wins-nothing t))
+  (rule a-pair-before-a-double (play t)
+    (defending-the-last-trick)
+    (discard t)
+    (not (trump-tile t))
+    (or (every-trick) (count t 0))
+    (none (roles x) (watched-by t x))))

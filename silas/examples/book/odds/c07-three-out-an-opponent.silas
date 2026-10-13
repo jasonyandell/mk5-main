@@ -1,0 +1,22 @@
+; c07-three-out-an-opponent. Anchors: shot-0086 (Ch. 7, Hands 17 and 18, the
+;   first of the two ways to set them; S-0086-b) and shot-0073 (Ch. 5, the
+;   trump set's rare case; S-0073-b).
+; Printed: "highly unlikely" (shot-0086), "rare" (shot-0073), no number.
+; Claim: an opponent holds all three trumps the bidder lacks.
+; State: Hand 17, fives trump (5-0 5-5 6-5 3-3 5-2 1-0 1-1), nothing played;
+;   the 21 others dealt uniformly, seven to each other seat. The test asks it
+;   of Hand 18 (deuces) too.
+; Exact: 1/19. Book model: 2/27. With four trumps out an opponent holds
+;   three or more 10/57 (c16-3t-opponent-three); with five, 352/969
+;   (c12-two-trump-outtrumped): "rare" is fair for three out, less so beyond.
+; That such a holding always sets the 84 (he keeps a trump above the
+;   bidder's low ones) is a claim about the play: GAPS.md, play-out (gap 7).
+(query
+  (viewer v)
+  (opponent v x)
+  (in a q*)
+  (in b q*)
+  (in c q*)
+  (holds x a)
+  (holds x b)
+  (holds x c))

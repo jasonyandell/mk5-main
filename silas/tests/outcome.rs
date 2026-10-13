@@ -410,3 +410,33 @@ fn hand_26_can_be_set_once_trumps_are_cleared_though_double_dummy_makes() {
     assert!(!forces(&frame, Goal::Make, &mut big()).unwrap());
     assert!(!holds(include_str!("../examples/book/cannot-be-set.silas"), &frame));
 }
+
+#[test]
+fn s0043f_hand_12_no_lead_can_hurt_the_bidder() {
+    // Hand 12 after trick 3 (ours: the bidder's 6-5 on trick 2, the one six
+    // that makes the trick safe for the partner's 5-0): the left setter has
+    // the lead and the setters 6 of the 7 that set the 36. The bidder holds
+    // two trumps and the 4-4 and 1-1: a four or an ace meets its double, any
+    // other lead is trumped. He cannot be set, from his own chair.
+    let plays = ["6-6", "6-1", "6-0", "1-0", "6-5", "6-2", "5-0", "3-0", "2-0", "2-2", "4-2", "3-2"];
+    let at = book().bidders("hand-12", &plays.map(tile));
+    for chair in Seat::ALL {
+        let frame = at.frame(chair);
+        assert_eq!(frame.to_make_and_set(), (29, 1));
+        assert!(forces(&frame, Goal::Make, &mut big()).unwrap());
+        assert!(holds(include_str!("../examples/book/cannot-be-set.silas"), &frame));
+    }
+}
+
+#[test]
+fn s0137d_hand_30_the_last_two_tiles_cannot_be_beaten() {
+    // Hand 30 after trick 5: the bidder leads with the 6-2, the last trump,
+    // and the 2-0, the last deuce; the right setter's 5-5 and 4-1 are out and
+    // fall to him.
+    let at = dealt("hand-30", Role::Bidder, &prose("hand-30"));
+    for chair in Seat::ALL {
+        let frame = at.frame(chair);
+        assert!(holds(CLAIM, &frame));
+        assert!(holds(LAY_DOWN, &frame));
+    }
+}

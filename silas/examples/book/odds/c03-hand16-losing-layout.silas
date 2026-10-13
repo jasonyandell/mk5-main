@@ -1,0 +1,23 @@
+; c03-hand16-losing-layout. Anchor: shot-0052 (Ch. 3, Hand 16 after trick 5;
+;   S-0052-c).
+; Printed: no number; the one layout that would have set the bid, against the
+;   odds.
+; Claim: with the 2-2 and the 2-1 left and only the 6-4 out to set him, the
+;   bidder is set only if one setter holds both deuces still out, the 6-2 and
+;   the 4-2 (one follows the 2-2, the other takes the 2-1), and his partner
+;   holds the 6-4 to throw on that last trick.
+; State: Hand 16, treys trump, bid 31, after five tricks (ours where the book
+;   names no tile): 3-1 3-0 4-3 6-3, 1-1 1-0 4-1 5-1, 0-0 3-2 2-0 5-0, 3-3 5-3
+;   6-0 6-1, 5-5 5-4 5-2 6-5. The setters have 7 of the 12 that set; six tiles
+;   are hidden, two to each other seat: 90 deals.
+; Exact: 1/15. Book model: 2/27. The claim itself is exact: double-dummy play
+;   sets the bid in exactly these deals (tests/book_odds.rs). It needs the 5-5
+;   to have drawn the 5-2 first: before that trick a setter with the 5-2 and
+;   one other deuce can set too.
+(query
+  (viewer v)
+  (opponent v x)
+  (opponent v y)
+  (holds x 6-2)
+  (holds x 4-2)
+  (holds y 6-4))

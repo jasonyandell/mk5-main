@@ -1,0 +1,51 @@
+; Take the trick. Winning 42 p. 37 (S-0056-b: win any trick you can) and
+; p. 43 (S-0064-a: capture the bidder's off tricks); the worked deals, Hands
+; 16, 27, 29, 31 and 32 (S-0051-b, S-0126-b, S-0134-b, S-0140-c, S-0143-a),
+; with the same play in Hands 28 and 33 (trick 3) and 35 (trick 7). The trump
+; set's exception: p. 51 (S-0074-a, S-0074-b).
+; Rule, in our words: when the other side is taking the trick and you can
+; take it, take it with the lowest tile that does: playing last, following
+; or trumping; void in the suit led, with your lowest trump that beats the
+; tile taking it. In Hand 31 the left setter trumps the 6-4 with the 4-2, the
+; lower of his two trumps, for 16 and the set; in Hand 29 the bidder trumps
+; the 6-6 with the 4-1, not the 4-4; in Hand 16, the 0-0 with the 3-2, not the
+; 3-3 he keeps to draw the last trump. Last to play, the right setter takes
+; Hand 32's off trick with the 3-3, the one trey that beats the 6-3, and sets.
+; Exception: a setter holding the trumps (a trump set) who plays last trumps
+; only a trick that already holds count.
+; Reading: the book trumps low even where a later seat might overtrump (Hand
+; 29: the left setter could hold the 4-3; Hand 16: the last trump could be the
+; left setter's), so the rule asks only that the tile beat the one taking the
+; trick now. It never trumps a trick the partner is taking: in Hand 31 trick 4
+; the left setter, void, throws the 5-4 under his partner's 3-3.
+; New: no gate has it. Not encoded: Hand 28 trick 5, where the bidder, last,
+; trumps his own partner's 6-4 with the 5-0 (S-0131-b); the book says he
+; trumps in to win, but the trick was already his side's, and the 5-0 is the
+; one tile his plan (the 6-6 ahead of the 6-1) does not need.
+
+(include book)
+
+(policy take-the-trick
+  (rule take-it-last (play take)
+    (viewer me)
+    (last-to-play)
+    (current-winner w)
+    (opponent me w)
+    (trick-play w win)
+    (led-context q)
+    (own-legal take)
+    (beats take win q)
+    (none (roles lower) (own-legal lower) (beats lower win q) (beats take lower q))
+    (or (count-on-trick) (not (trump-set-alone me)) (trump q) (not (trump-tile take))))
+  (rule trump-it (play ruff)
+    (viewer me)
+    (not (last-to-play))
+    (current-winner w)
+    (opponent me w)
+    (trick-play w win)
+    (led-context q)
+    (not (trump q))
+    (discard ruff)
+    (trump-tile ruff)
+    (beats ruff win q)
+    (none (roles lower) (discard lower) (trump-tile lower) (beats lower win q) (beats ruff lower q))))

@@ -1,0 +1,19 @@
+; c12-hand34-last-route. Anchor: shot-0148 (Ch. 12, Hand 34 trick 6;
+;   S-0148-i).
+; Printed: no number; "the only way" the bidder can still be set.
+; Claim: holding the 4-4 and the 4-2 after five tricks, the bidder is set
+;   now only if one opponent holds both the 6-4 and the 4-0: the 4-0 follows
+;   the 4-4 and the 6-4 takes the 4-2.
+; State: Hand 34, fives trump, bid 84, after the narrated five tricks
+;   (5-5 5-1 6-5 0-0, 5-4 5-3 6-2 6-0, 5-2 2-0 4-1 2-1, 5-0 3-0 1-1 3-2,
+;   2-2 4-3 1-0 6-1); the bidder holds 4-4 and 4-2, and six tiles are hidden,
+;   two to each other seat: 90 deals.
+; Exact: 2/15 (12 of the 90 deals). Book model: 2/9. The claim itself is
+;   exact: after the 4-4 lead, double-dummy play sets the 84 in exactly these
+;   deals (tests/book_odds.rs). The archive's adjudication (B2) corrects the
+;   study, which called the 4-0 loose: it is the tile that follows.
+(query
+  (viewer v)
+  (opponent v x)
+  (holds x 6-4)
+  (holds x 4-0))

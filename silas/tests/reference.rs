@@ -66,6 +66,23 @@ fn trumps_take_led_doubles_and_doubles_top_their_suits() {
     assert_eq!(nt.threat(tile("6-5")), tiles(&["6-6"]));
 }
 
+/// The tournament rules of play (Winning 42 p. 163): at no trump the doubles
+/// are no suit of their own (S-0209-g), and under doubles trump a double led
+/// calls for a double from each player who holds one, any tile from one who
+/// does not (S-0209-h). The variation that a player without a double must
+/// follow the double's pip (p. 80) is not a straight declaration.
+#[test]
+fn the_books_follow_rules_at_no_trump_and_doubles_trump() {
+    let nt = physics("NT");
+    let sixes_led = Some(tile("6-6"));
+    assert_eq!(nt.legal_plays(tiles(&["6-1", "2-2", "5-5"]), sixes_led), tiles(&["6-1"]));
+    assert_eq!(nt.legal_plays(tiles(&["1-1", "2-2"]), Some(tile("2-1"))), tiles(&["2-2"]));
+    let dt = physics("DT");
+    let double_led = Some(tile("5-5"));
+    assert_eq!(dt.legal_plays(tiles(&["3-3", "5-1", "6-5"]), double_led), tiles(&["3-3"]));
+    assert_eq!(dt.legal_plays(tiles(&["5-1", "6-5", "2-0"]), double_led), tiles(&["5-1", "6-5", "2-0"]));
+}
+
 #[test]
 fn the_fiber_count_matches_its_enumeration() {
     let mut voided = open_hidden([2, 3, 2]);

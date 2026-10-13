@@ -1,7 +1,7 @@
 ; The setter's leads. Winning 42 pp. 46-48 (S-0067-c, S-0069-b, S-0069-d,
-; S-0070-c) and p. 51 (S-0074-c); played in Hands 15, 16, 28, 29, 31 and 33
+; S-0070-c) and p. 51 (S-0074-c); played in Hands 15, 16, 28, 29 and 31 to 33
 ; (S-0048-b, S-0049-a, S-0051-a, S-0130-f, S-0131-a, S-0133-e, S-0133-i,
-; S-0140-b, S-0144-j).
+; S-0140-b, S-0143-b, S-0144-j).
 ; Rule, in our words: a setter on lead leads what can bring in count. When one
 ; more point sets the bid, he leads a double, count or not: the trick is what
 ; sets. Else the lead whose own count and the count it calls for, with the
@@ -14,6 +14,9 @@
 ; his side has a trick he keeps going for count, set or not: first a count
 ; tile that calls for more (Hand 28 trick 5, after the set: the 4-1 for
 ; fifteen with the 6-4, over the 4-4's ten), and last a count tile itself.
+; A lead that calls for count also makes the bidder trump rather than throw
+; another off cheaply (p. 46): after Hand 32's set the right setter leads the
+; 5-4 for that (S-0143-b).
 ; Replaces gates/c15-setter-leads-call-for-count.silas and
 ; gates/c13d-lead-a-singleton.silas. How it differs: the C15 gate leads past
 ; the count that sets to its count-calling double (Hands 28 and 31); its
