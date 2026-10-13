@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import torch
 
 from .declarations import N_DECLS
+from .device_check import require_exact_int64_ops
 from .rng import deal_from_seed, deal_with_fixed_p0
 from .tables import can_follow, led_suit_for_lead_domino, resolve_trick
 
@@ -53,6 +54,9 @@ def build_context(
     """
     if not (0 <= decl_id < N_DECLS):
         raise ValueError(f"decl_id out of range: {decl_id}")
+
+    # Fail fast if this device/torch corrupts int64 sort/unique (#137).
+    require_exact_int64_ops(device)
 
     if p0_hand is not None:
         hands = deal_with_fixed_p0(p0_hand, seed)
