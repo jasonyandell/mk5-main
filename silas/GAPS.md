@@ -293,3 +293,62 @@ world by world.
 **Smallest addition.** A play-out over a belief: for each world, play every
 seat's policy at its own information state up to a horizon, then evaluate a
 query, carrying the belief's authority. It needs gap 3's per-seat frames.
+
+## Added by the solved outcomes (`README.md`, Solved outcomes)
+
+The book's claims of certainty need the outcome of the rest of the hand, not a fact about
+the present. The coverage study named this "game value under best defence" and gave it no
+number (S-0054-a + S-0210-a, S-0026-c). It is closed for the claims the book makes about
+one player and narrowed to the two gaps below. The four outcome predicates state the
+rest exactly: `(lay-down)`, `(certain-make)`, `(certain-set)` and the double-dummy bound
+`(dd-make)`. They are tested against brute force in `tests/outcome.rs`.
+
+- **Stated now.** The tournament rule (S-0210-a) and the claim of the rest (S-0054-a) are
+  `lay-down.silas`. The 84 that lays down (S-0082-b, S-0093-b, S-0094-a: Hands 21 and 22,
+  certain at every seating) is there too, as is all seven of a suit (S-0188-a's lay-down;
+  its three marks are gap 2). The book's test for a lay-down (S-0093-a) is
+  `lay-down-shape.silas`: sufficient on every hand of the shape tried, and not necessary.
+  Hand 32's claim (S-0143-c) is `claim-the-rest.silas`, made with the bidder already set.
+  The hand that stops once made or set (S-0113-b) is the settled case, answered without
+  search. Hand 26's "cannot be set once trumps are cleared" (S-0123-b) is
+  `cannot-be-set.silas`: false as the bidder's own guarantee, exactly, though
+  double-dummy play makes in all 756,756 worlds.
+
+| # | gap | kind | claims blocked | viewer / world | home |
+|---|---|---|---|---|---|
+| 8 | the side's guarantee | outcome | 1 (S-0123-b, as the book means it); large positions | world | Silas |
+| 9 | outcomes other than the contract | outcome | 1 (S-0026-c, six tricks) | viewer | Silas |
+
+### 8. The side's guarantee
+
+**What.** `(certain-make)` and `(certain-set)` are what the viewer forces on his own. His
+partner's plays range over every legal play, so a claim stands on the claimer's own
+tiles. What the side can force with a partner who plays to the same goal from his own
+information is different: two players with different information against a third
+(decentralized). Silas does not compute it.
+
+That side guarantee lies between the viewer's guarantee and the double-dummy bound, so it
+is decided wherever the two meet. A lay-down or a forced outcome proves it; a world where
+double-dummy play fails refutes it. Hand 26 is where they part. Once the trumps are
+cleared, double-dummy play makes in every world and the bidder alone cannot force the
+make. Whether the partnership can is open. The coverage study's reading is that the set
+needs the partner to keep a count tile to the end.
+
+The same section covers cost. The viewer's own guarantee is exact but exponential. From
+the opening lead it is decided only by a lay-down or by a double-dummy counterexample among
+the 10,000 worlds scanned. Otherwise the search runs out of budget and is refused.
+
+**Smallest addition.** A search over the pair's strategies, each seat's choice a function
+of its own frame (gap 3's per-seat frames), bounded as the viewer's is. Before that, a
+second refuter: per-world minimax with the viewer alone against the other three. It is
+sound for the viewer's guarantee and tighter than double dummy.
+
+### 9. Outcomes other than the contract
+
+**What.** The outcome predicates read the contract's threshold. "Five fours with the 4-4
+and 6-4 guarantee six tricks" (S-0026-c, Hand 3) is a certainty about tricks, and the
+book's 84 claims are certainties about every trick only because the bid is.
+
+**Smallest addition.** A goal of `n` tricks (or `n` points) for the viewer's side, as a
+literal argument: `(certain-tricks n)`. The search is unchanged; only the settled test
+reads the goal.

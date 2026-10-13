@@ -1,0 +1,27 @@
+; The lay-down. Winning 42, Ch. 3 (S-0054-a: claim the rest by laying the hand
+; down in lead order), Ch. 7 (S-0082-b: the 84 that lays down; Hands 21 and 22,
+; S-0093-b, S-0094-a) and Ch. 14 (S-0210-a: the tournament rule; S-0188-a: all
+; seven of a suit lays down).
+; Rule, in our words: the bidder may lay his hand down and claim his bid only
+; when no hidden layout and no defence could set him. A bidder who claims when
+; one could set him forfeits the hand.
+; Reading: (lay-down) is one fixed order of the bidder's tiles that takes every
+; trick left, in every world he cannot rule out, whatever the other three play
+; (his partner included: a claim stands on the claimer's own tiles).
+; (certain-make) is that he can force the make from his own information; with
+; (lay-down) it says that taking every trick makes the bid. Both are exact or
+; refused (README, Solved outcomes).
+; Hands 21 (deuces) and 22 (fours, the 6-5 led after the 6-6) are lay-downs;
+; the four-fives 84 of Hand 34, which looks as strong, can be set.
+; GAP cross-game: whether to bid the marks the lay-down earns (S-0082-b,
+; S-0188-a's three marks) compares two bids over the deals (GAPS.md, 2).
+
+(include book)
+
+(query (roles (chair b))
+  (out)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (lay-down)
+    (certain-make)))

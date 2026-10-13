@@ -1,0 +1,25 @@
+; The lay-down's shape. Winning 42, Ch. 7 (S-0093-a; Hands 21 and 22, S-0093-b,
+; S-0094-a).
+; Claim, in our words: an 84 lays down with four trumps or more, the top three
+; among them, and every other tile a double or the tile next below a double
+; held.
+; Reading: before the first lead the sure trumps are the top run held, so
+; three of them are the top three; a tile that is not trump and cannot lose its
+; suit is a walker, which before any play is a double or a tile whose every
+; better in its suit is held (the book's "second to a double" and more), so
+; "no off" is every other tile.
+; The shape is the book's test for the lay-down, not its definition:
+; tests/outcome.rs checks that every hand of this shape lays down (the trumps
+; first draw every trump out, then each walker wins), and that some lay-downs
+; have another shape.
+
+(include book)
+
+(query (roles (chair b))
+  (out)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (four-trumps-or-more)
+    (some (roles (domino x) (domino y) (domino z)) (sure-trump x) (sure-trump y) (sure-trump z))
+    (none (roles (domino o)) (off o))))

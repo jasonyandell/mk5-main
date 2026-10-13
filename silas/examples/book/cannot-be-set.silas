@@ -1,0 +1,22 @@
+; Cannot be set. Winning 42, Ch. 12, Hand 26 (S-0123-b): once the trumps are
+; cleared, the bidder cannot be set; and Ch. 14 (S-0210-a), the claim's
+; standard: no hidden layout and no defence sets him.
+; Claim, in our words: from here the bidder makes his bid whatever the hidden
+; hands hold and whatever the others play.
+; Reading: (certain-make) from the bidder's chair: one strategy of his own,
+; chosen from what he sees, makes in every world against every play of the
+; other three, his partner's included (README, Solved outcomes).
+; Checked (tests/outcome.rs) on one record of Hand 26 where the trumps fall in
+; two leads: the claim is false as the bidder's own guarantee, exactly, while
+; double-dummy play makes in every one of the 756,756 worlds. The book's
+; certainty is the double-dummy bound's; the coverage study found the set
+; needs the partner to keep a count tile to the end.
+
+(include book)
+
+(query (roles (chair b))
+  (out)
+  (pattern
+    (viewer b)
+    (bidder b)
+    (certain-make)))
