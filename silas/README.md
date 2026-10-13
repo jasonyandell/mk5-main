@@ -191,7 +191,7 @@ pub trait Physics: Debug + Send + Sync {
     fn follows(&self, tile: Domino, context: Context) -> bool;
     fn beats(&self, led: Context, tile: Domino) -> DominoSet;
     fn threat(&self, tile: Domino) -> DominoSet;
-    fn legal_plays(&self, hand: DominoSet, led: Option<Context>) -> DominoSet;
+    fn legal_plays(&self, hand: DominoSet, lead: Option<Domino>) -> DominoSet;
     fn trick_winner(&self, leader: Seat, plays: [Domino; 4]) -> Seat;
     fn trick_points(&self, plays: [Domino; 4]) -> u32;
 }
@@ -203,7 +203,10 @@ and the fiber of hidden worlds of a `Kernel`. A `Kernel` is pure information:
 the viewer, its hand, the hidden pool, and each hidden seat's capacity and
 shown voids. The physics says what a void forbids. The provided methods derive
 everything else; an implementation may override one only with an equal,
-faster computation. A `Frame` carries its physics as `Arc<dyn Physics>`, so
+faster computation. `legal_plays` takes the tile that led the trick, not its
+context: every trick is led by a tile, and a rules engine that keys its
+legality by the led tile (Zeb's does) can override it with its own code. A
+`Frame` carries its physics as `Arc<dyn Physics>`, so
 queries, beliefs and policies are not generic. The rules sit behind one
 pointer per frame, and a `Predicate` stays an object any extension can
 implement.

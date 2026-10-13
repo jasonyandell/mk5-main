@@ -204,8 +204,13 @@ impl Frame {
         self.played
     }
 
+    /// The tile that led the current trick.
+    pub fn lead(&self) -> Option<Domino> {
+        self.prefix.first().copied()
+    }
+
     pub fn led_context(&self) -> Option<Context> {
-        self.prefix.first().map(|d| self.physics.led_context(*d))
+        self.lead().map(|d| self.physics.led_context(d))
     }
 
     /// The seat to play next, unless it has no tiles left.

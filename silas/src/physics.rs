@@ -56,11 +56,13 @@ pub trait Physics: fmt::Debug + Send + Sync {
         self.beats(self.led_context(tile), tile)
     }
 
-    /// The legal plays from `hand`: anything when leading (`led` is `None`),
-    /// otherwise the tiles that follow the led context, or anything when the
-    /// hand holds none of them.
-    fn legal_plays(&self, hand: DominoSet, led: Option<Context>) -> DominoSet {
-        match led.map(|q| hand.intersection(self.incidence(q))) {
+    /// The legal plays from `hand` in a trick led by the tile `lead`:
+    /// anything when leading (`lead` is `None`), otherwise the tiles that
+    /// follow the context `lead` leads, or anything when the hand holds none
+    /// of them. Keyed by the led tile, not its context: every trick is led by
+    /// a tile, and a context no tile leads has no legal plays to ask about.
+    fn legal_plays(&self, hand: DominoSet, lead: Option<Domino>) -> DominoSet {
+        match lead.map(|t| hand.intersection(self.incidence(self.led_context(t)))) {
             Some(follows) if !follows.is_empty() => follows,
             _ => hand,
         }

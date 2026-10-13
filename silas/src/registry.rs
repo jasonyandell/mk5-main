@@ -189,7 +189,7 @@ impl Predicate for Builtin {
                 if frame.next_actor() != Some(kernel.viewer()) {
                     return Ok(None);
                 }
-                physics.legal_plays(kernel.viewer_hand(), frame.led_context()).contains(*d)
+                physics.legal_plays(kernel.viewer_hand(), frame.lead()).contains(*d)
             }
             ("trick-play", [C(c), D(d)]) => {
                 frame.prefix().iter().enumerate().any(|(i, tile)| frame.leader().plus(i) == *c && tile == d)
@@ -199,7 +199,7 @@ impl Predicate for Builtin {
                 if frame.next_actor() != Some(*c) {
                     return Ok(None);
                 }
-                let legal = physics.legal_plays(world()?.hand(*c)?, frame.led_context());
+                let legal = physics.legal_plays(world()?.hand(*c)?, frame.lead());
                 if self.0.name == "forced" { legal == crate::DominoSet::single(*d) } else { legal.contains(*d) }
             }
             _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),

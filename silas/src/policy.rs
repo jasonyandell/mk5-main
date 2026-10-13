@@ -191,7 +191,7 @@ impl PolicyProgram {
         for rule in &self.exact_rules {
             let frame = validate_key(&rule.key, physics)?;
             if frame.next_actor() != Some(rule.key.viewer)
-                || !physics.legal_plays(rule.key.hand, frame.led_context()).contains(rule.action)
+                || !physics.legal_plays(rule.key.hand, frame.lead()).contains(rule.action)
             {
                 return Err(error(format!("the exact action {} is illegal at its key", rule.action)));
             }
@@ -286,9 +286,10 @@ fn validate_key(key: &PolicyKey, physics: &Arc<dyn Physics>) -> Result<Frame> {
         if *seat != leader.plus(prefix.len()) || remaining[seat.index()] == 0 {
             return Err(error("the history violates turn order or a seat's capacity"));
         }
-        let led = prefix.first().map(|d| physics.led_context(*d));
+        let lead = prefix.first().copied();
+        let led = lead.map(|d| physics.led_context(d));
         if *seat == key.viewer {
-            if !physics.legal_plays(viewer_hand, led).contains(*tile) {
+            if !physics.legal_plays(viewer_hand, lead).contains(*tile) {
                 return Err(error("the history contains an illegal play by the viewer"));
             }
             viewer_hand.remove(*tile);
@@ -384,7 +385,7 @@ impl CompiledPolicy {
         if frame.next_actor() != Some(frame.kernel().viewer()) {
             return Err(error("a policy acts only when its viewer is next"));
         }
-        let legal = frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.led_context());
+        let legal = frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.lead());
         let lowest = legal.iter().next().ok_or_else(|| error("the policy has no legal action"))?;
         let mode_before = controller.mode.clone();
         let contract_resolved = contract_resolution(input);

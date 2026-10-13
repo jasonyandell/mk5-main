@@ -40,7 +40,7 @@ impl Table {
 
     fn legal(&self, seat: Seat) -> DominoSet {
         let held = self.hands[seat.index()].difference(self.frame.played());
-        self.physics.legal_plays(held, self.frame.led_context())
+        self.physics.legal_plays(held, self.frame.lead())
     }
 
     /// Make the next play, tracking S0's frame, the history and the score.
@@ -170,7 +170,7 @@ fn play_out(
 #[test]
 fn a_table_policy_exports_and_replays_through_its_serialized_program() {
     let direct = play_out("P6", |input| {
-        let legal = input.frame.physics().legal_plays(input.frame.kernel().viewer_hand(), input.frame.led_context());
+        let legal = input.frame.physics().legal_plays(input.frame.kernel().viewer_hand(), input.frame.lead());
         (legal.iter().last().unwrap(), None)
     });
     assert_eq!(direct.len(), 7);

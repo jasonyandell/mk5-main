@@ -82,7 +82,7 @@ pub fn step_frame(frame: &Frame, play: ObservedPlay, budget: &mut Budget) -> Res
     let kernel = frame.kernel();
     let physics = frame.physics();
     if play.actor == kernel.viewer() {
-        if !physics.legal_plays(kernel.viewer_hand(), frame.led_context()).contains(play.tile) {
+        if !physics.legal_plays(kernel.viewer_hand(), frame.lead()).contains(play.tile) {
             return Err(error("the viewer's play is illegal in the predecessor frame"));
         }
     } else {
@@ -109,7 +109,7 @@ pub fn step_frame(frame: &Frame, play: ObservedPlay, budget: &mut Budget) -> Res
 fn legal_in(holdings: Holdings<'_>, play: ObservedPlay) -> Result<bool> {
     let frame = holdings.frame();
     typed(frame, play)?;
-    Ok(frame.physics().legal_plays(holdings.hand(play.actor)?, frame.led_context()).contains(play.tile))
+    Ok(frame.physics().legal_plays(holdings.hand(play.actor)?, frame.lead()).contains(play.tile))
 }
 
 /// Whether a world of the frame is in the play's legal domain.
