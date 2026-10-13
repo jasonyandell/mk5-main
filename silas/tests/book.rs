@@ -9,7 +9,9 @@
 //!
 //! A position names the catalog entry it comes from (`W42-pNNN-x`, in the
 //! private study notes) when it is the book's; "ours" marks a position or a
-//! play the book does not give. Each rule gets a position where it fires and
+//! play the book does not give. The book's hands, deals, declarations, bids and
+//! narrated plays are read from `examples/book/hands.json`, the reviewed
+//! transcription's facts, and checked there by `book_fixture.rs`. Each rule gets a position where it fires and
 //! allows the book's tile, and one where it does not fire. Where the book and
 //! the study's Python gate part ways, the test says so: the gate is the
 //! reading of #123 that this file checks.
@@ -17,6 +19,7 @@ mod common;
 
 use std::sync::Arc;
 
+use common::fixture::{Bid, book};
 use common::*;
 use silas::*;
 
@@ -45,119 +48,24 @@ const C23: &str = include_str!("../examples/book/c23-partner-leads-doubles.silas
 const POLICIES: [&str; 20] =
     [C01A, C01B, C02, C03, C07, C08, C09, C10, C11, C12A, C12B, C13A, C13B, C13C, C13D, C14, C15, C21, C22, C23];
 
-// The book's full deals, hands in seat order bidder, left opponent, partner,
-// right opponent, transcribed in the study catalog from the page images.
+// The book's hands, deals, declarations, bids and narrated plays come from
+// `examples/book/hands.json` (see `tests/book_fixture.rs`), read from the
+// reviewed transcription; an id such as `hand-28` names its example there.
 
-/// Hand 28 (pp. 97-100, W42-p097-a): blanks, bid 30, set.
-const HAND_28: [[&str; 7]; 4] = [
-    ["6-0", "0-0", "3-1", "5-3", "5-0", "6-6", "6-1"],
-    ["4-0", "5-1", "3-2", "5-5", "4-1", "3-3", "4-4"],
-    ["1-0", "2-0", "4-3", "6-5", "6-4", "6-2", "2-2"],
-    ["3-0", "2-1", "6-3", "5-4", "4-2", "1-1", "5-2"],
-];
-const HAND_28_PLAY: [&str; 24] = [
-    "6-0", "4-0", "1-0", "3-0", // T1
-    "0-0", "5-1", "2-0", "2-1", // T2
-    "3-1", "3-2", "4-3", "6-3", // T3, right opponent wins
-    "5-4", "5-3", "5-5", "6-5", // T4, left opponent wins
-    "4-1", "6-4", "4-2", "5-0", // T5, bidder trumps in
-    "6-6", "3-3", "6-2", "1-1", // T6
-];
+/// The tiles of a narrated line, in play order.
+fn prose(id: &str) -> Vec<Domino> {
+    book().line(&format!("{id}/prose")).plays()
+}
 
-/// Hand 29 (pp. 100-102, W42-p100-c): the same deal re-seated, fours, set on T1.
-const HAND_29: [[&str; 7]; 4] = [
-    ["4-0", "3-2", "5-1", "4-1", "4-4", "3-3", "5-5"],
-    ["6-4", "2-2", "1-0", "6-2", "4-3", "2-0", "6-5"],
-    ["4-2", "2-1", "1-1", "6-3", "5-4", "3-0", "5-2"],
-    ["5-0", "6-0", "6-1", "6-6", "3-1", "5-3", "0-0"],
-];
-const HAND_29_PLAY: [&str; 8] = [
-    "4-0", "6-4", "4-2", "5-0", // T1, left opponent wins
-    "2-2", "2-1", "6-0", "3-2", // T2
-];
-
-/// Hand 30 (pp. 102-105, W42-p102-c): sixes, made 42.
-const HAND_30: [[&str; 7]; 4] = [
-    ["6-5", "1-0", "4-3", "6-4", "2-2", "2-0", "6-2"],
-    ["6-3", "3-0", "2-1", "4-2", "5-2", "5-4", "1-1"],
-    ["6-6", "0-0", "3-1", "6-0", "5-0", "6-1", "5-3"],
-    ["4-0", "5-1", "3-2", "3-3", "4-4", "5-5", "4-1"],
-];
-const HAND_30_PLAY: [&str; 16] = [
-    "6-5", "6-3", "6-6", "4-0", // T1, partner wins
-    "0-0", "5-1", "1-0", "3-0", // T2
-    "3-1", "3-2", "4-3", "2-1", // T3, bidder wins
-    "6-4", "4-2", "6-0", "3-3", // T4
-];
-
-/// Hand 31 (pp. 105-108, W42-p105-d): Hand 30's cards, deuces, set.
-const HAND_31: [[&str; 7]; 4] = [
-    ["2-2", "6-5", "1-0", "4-3", "6-4", "2-0", "6-2"],
-    ["2-1", "6-3", "3-0", "5-4", "4-2", "1-1", "5-2"],
-    ["5-0", "6-6", "0-0", "3-1", "6-0", "6-1", "5-3"],
-    ["3-2", "4-0", "5-1", "3-3", "4-1", "5-5", "4-4"],
-];
-const HAND_31_PLAY: [&str; 16] = [
-    "2-2", "2-1", "5-0", "3-2", // T1
-    "6-5", "6-3", "6-6", "4-0", // T2, partner wins
-    "0-0", "5-1", "1-0", "3-0", // T3
-    "3-1", "3-3", "4-3", "5-4", // T4, right opponent wins
-];
-
-/// Hand 32 (pp. 108-110, W42-p108-c): blanks, bid 36, set on T3.
-const HAND_32: [[&str; 7]; 4] = [
-    ["0-0", "6-0", "3-1", "1-0", "5-0", "3-0", "2-2"],
-    ["2-0", "4-0", "6-4", "1-1", "5-5", "2-1", "4-4"],
-    ["4-1", "4-2", "6-3", "5-1", "6-1", "6-5", "6-6"],
-    ["6-2", "5-3", "3-3", "5-4", "4-3", "3-2", "5-2"],
-];
-const HAND_32_PLAY: [&str; 8] = [
-    "0-0", "2-0", "4-1", "6-2", // T1
-    "6-0", "4-0", "4-2", "5-3", // T2
-];
-
-/// Hand 33 (pp. 110-112, W42-p110-c): Hand 32's cards, fours, made. The
-/// catalog flags its last two tricks; only T1-T4 are used.
-const HAND_33: [[&str; 7]; 4] = [
-    ["4-4", "6-4", "2-0", "5-5", "4-0", "1-1", "2-1"],
-    ["4-2", "4-1", "5-1", "6-5", "6-1", "6-3", "6-6"],
-    ["4-3", "5-4", "5-2", "5-3", "3-2", "6-2", "3-3"],
-    ["6-0", "3-0", "2-2", "5-0", "1-0", "0-0", "3-1"],
-];
-const HAND_33_PLAY: [&str; 16] = [
-    "4-4", "4-2", "4-3", "6-0", // T1
-    "6-4", "4-1", "5-4", "3-0", // T2
-    "2-0", "5-1", "5-2", "2-2", // T3, right opponent wins
-    "5-0", "5-5", "6-5", "5-3", // T4, bidder wins
-];
-
-/// Hand 34 (pp. 112-115, W42-p112-c): fives, bid 84.
-const HAND_34: [[&str; 7]; 4] = [
-    ["5-5", "5-4", "5-2", "5-0", "2-2", "4-4", "4-2"],
-    ["5-1", "5-3", "2-0", "3-0", "4-3", "6-4", "3-3"],
-    ["6-5", "6-2", "4-1", "1-1", "1-0", "4-0", "6-6"],
-    ["0-0", "6-0", "2-1", "3-2", "6-1", "6-3", "3-1"],
-];
-
-/// Hand 35 (pp. 115-118, W42-p115-f): fours, bid 84, set on the last trick.
-const HAND_35: [[&str; 7]; 4] = [
-    ["4-4", "6-4", "4-3", "4-0", "5-5", "6-6", "6-3"],
-    ["0-0", "1-0", "6-0", "5-0", "5-3", "3-0", "2-2"],
-    ["5-4", "3-1", "3-2", "6-2", "5-2", "3-3", "2-1"],
-    ["4-2", "4-1", "1-1", "2-0", "5-1", "6-1", "6-5"],
-];
-const HAND_35_PLAY: [&str; 19] = [
-    "4-4", "0-0", "5-4", "4-2", // T1
-    "6-4", "1-0", "3-1", "4-1", // T2
-    "4-3", "6-0", "3-2", "1-1", // T3
-    "4-0", "5-0", "6-2", "2-0", // T4
-    "5-5", "5-3", "5-2", // T5, the right opponent to play
-];
+/// `plays` and then `more`.
+fn then(plays: &[Domino], more: &[&str]) -> Vec<Domino> {
+    plays.iter().copied().chain(more.iter().map(|d| tile(d))).collect()
+}
 
 /// A position, free of seats: the declaration, the bid, the viewer's role, its
 /// remaining hand, and the plays so far, the bidder leading the first trick.
 struct Position {
-    decl: &'static str,
+    physics: Arc<dyn Physics>,
     bid: u32,
     viewer: Role,
     hand: DominoSet,
@@ -175,7 +83,7 @@ const O2: Role = Role(3);
 
 impl Position {
     fn physics(&self) -> Arc<dyn Physics> {
-        physics(self.decl)
+        self.physics.clone()
     }
 
     /// The same position under a contract of `bid`.
@@ -214,21 +122,43 @@ fn actors(physics: &dyn Physics, declarer: Seat, plays: &[Domino]) -> Vec<Seat> 
 /// The viewer's view after `plays`, holding `hand`. The other seats' plays are
 /// checked only against their shown voids: a book that gives one hand gives
 /// the rest of the record without the hands behind it.
-fn position(decl: &'static str, viewer: Role, hand: &[&str], plays: &[&str]) -> Position {
-    let at = Position { decl, bid: 30, viewer, hand: tiles(hand), plays: plays.iter().map(|d| tile(d)).collect() };
+fn position(decl: &str, viewer: Role, hand: &[&str], plays: &[&str]) -> Position {
+    let plays: Vec<Domino> = plays.iter().map(|d| tile(d)).collect();
+    seen(physics(decl), 30, viewer, tiles(hand), plays)
+}
+
+fn seen(physics: Arc<dyn Physics>, bid: u32, viewer: Role, hand: DominoSet, plays: Vec<Domino>) -> Position {
+    let at = Position { physics, bid, viewer, hand, plays };
     at.frame(Seat::S0);
     at
 }
 
+/// A book hand, the bidder's, after `plays` (his own among them are taken
+/// from it), at the hand's declaration and the bid its narrated play is at.
+fn book_hand(id: &str, plays: &[Domino]) -> Position {
+    let example = book().example(id);
+    let bid = match &example.bid {
+        Bid::Points(_) => example.bid.contract_points(),
+        _ => book().line(&format!("{id}/prose")).bid.contract_points(),
+    };
+    let hand = example.hand().difference(plays.iter().copied().collect());
+    seen(example.physics(), bid, B, hand, plays.to_vec())
+}
+
+/// The viewer's view of a book deal after `plays`, at its declaration and
+/// bid.
+fn dealt(id: &str, viewer: Role, plays: &[Domino]) -> Position {
+    let example = book().example(id);
+    dealt_from(example.physics(), example.bid.contract_points(), example.deal(), viewer, plays)
+}
+
 /// The viewer's view of a full deal (hands in role order) after `plays`,
 /// every play checked legal against the hand it came from.
-fn dealt(decl: &'static str, deal: &[[&str; 7]; 4], viewer: Role, plays: &[&str]) -> Position {
-    let rules = physics(decl);
-    let mut hands = deal.map(|h| tiles(&h));
+fn dealt_from(rules: Arc<dyn Physics>, bid: u32, deal: [DominoSet; 4], viewer: Role, plays: &[Domino]) -> Position {
+    let mut hands = deal;
     assert_eq!(hands.iter().fold(DominoSet::EMPTY, |all, h| all.union(*h)), DominoSet::FULL);
-    let tiles_played: Vec<Domino> = plays.iter().map(|d| tile(d)).collect();
     let mut led = None;
-    for (i, (seat, d)) in actors(rules.as_ref(), Seat::S0, &tiles_played).into_iter().zip(&tiles_played).enumerate() {
+    for (i, (seat, d)) in actors(rules.as_ref(), Seat::S0, plays).into_iter().zip(plays).enumerate() {
         if i % 4 == 0 {
             led = Some(*d);
         }
@@ -237,9 +167,7 @@ fn dealt(decl: &'static str, deal: &[[&str; 7]; 4], viewer: Role, plays: &[&str]
         assert!(rules.legal_plays(held, lead).contains(*d), "play {i}: {seat} cannot play {d}");
         hands[seat.index()].remove(*d);
     }
-    let hand: Vec<String> = hands[viewer.0].iter().map(|d| d.to_string()).collect();
-    let hand: Vec<&str> = hand.iter().map(String::as_str).collect();
-    position(decl, viewer, &hand, plays)
+    seen(rules, bid, viewer, hands[viewer.0], plays.to_vec())
 }
 
 fn program(source: &str) -> PolicyProgram {
@@ -325,7 +253,7 @@ fn every_book_file_parses_round_trips_and_compiles_under_every_declaration() {
 fn c01a_fires_in_hand_32_and_leads_the_top_blank() {
     // W42-p109-a: after T1 the partner has shown void (he gave the 4-1), the
     // 4-0 is out; the book leads the 6-0. The gate fires here too.
-    let at = dealt("P0", &HAND_32, B, &HAND_32_PLAY[..4]).bid(36);
+    let at = dealt("hand-32", B, &prose("hand-32")[..4]);
     assert_eq!(allows(C01A, &at, "lead-the-top-trump"), tiles(&["6-0"]));
 }
 
@@ -336,7 +264,7 @@ fn c01a_is_the_gate_and_misses_the_book_in_hand_28() {
     // is out; the book leads the 0-0 to pull it, so that the partner can then
     // give count: its condition is what the partner will know (GAPS.md,
     // another seat's knowledge).
-    let at = dealt("P0", &HAND_28, B, &HAND_28_PLAY[..4]);
+    let at = dealt("hand-28", B, &prose("hand-28")[..4]);
     assert_eq!(fires(C01A, &at), None);
 }
 
@@ -347,7 +275,7 @@ fn c01a_does_not_fire_in_hand_33_where_the_book_still_leads_the_trump() {
     // because the partner has not yet had a safe trick to give count on. The
     // gate's "a trump still out" excludes a book play: the book's condition is
     // what the partner knows, not what the bidder knows.
-    let at = dealt("P4", &HAND_33, B, &HAND_33_PLAY);
+    let at = dealt("hand-33", B, &prose("hand-33")[..16]);
     assert_eq!(fires(C01A, &at), None);
 }
 
@@ -357,10 +285,10 @@ fn c01a_does_not_fire_in_hand_33_where_the_book_still_leads_the_trump() {
 fn c01b_top_lead_gives_the_count_in_hands_31_and_32() {
     // W42-p106-a: the bidder leads the 2-2; the partner, void in deuces, gives
     // the 5-0, his only count.
-    let at = dealt("P2", &HAND_31, P, &HAND_31_PLAY[..2]);
+    let at = dealt("hand-31", P, &prose("hand-31")[..2]);
     assert_eq!(allows(C01B, &at, "top-lead-give-five"), tiles(&["5-0"]));
     // W42-p109-a: the bidder leads the 0-0; the partner gives the 4-1.
-    let at = dealt("P0", &HAND_32, P, &HAND_32_PLAY[..2]).bid(36);
+    let at = dealt("hand-32", P, &prose("hand-32")[..2]);
     assert_eq!(allows(C01B, &at, "top-lead-give-five"), tiles(&["4-1"]));
 }
 
@@ -370,17 +298,17 @@ fn c01b_not_top_lead_keeps_the_count() {
     // The partner, void in deuces, cannot know the trick is safe (the 2-2 is
     // live), so he throws anything but his 5-0. The book has no worked
     // example of this branch (W42-p038-d states it).
-    let at = dealt("P2", &HAND_31, P, &["6-2", "2-1"]);
+    let at = dealt("hand-31", P, &then(&[], &["6-2", "2-1"]));
     assert_eq!(allows(C01B, &at, "not-top-lead-no-count"), tiles(&["6-6", "0-0", "3-1", "6-0", "6-1", "5-3"]));
 }
 
 #[test]
 fn c01b_does_not_fire_without_count_or_while_holding_trump() {
     // W42-p109-a, T2: the partner has no count left and throws the 4-2.
-    let at = dealt("P0", &HAND_32, P, &HAND_32_PLAY[..6]).bid(36);
+    let at = dealt("hand-32", P, &prose("hand-32")[..6]);
     assert_eq!(fires(C01B, &at), None);
     // W42-p101-b, Hand 29 T1: the partner holds trump and must follow.
-    let at = dealt("P4", &HAND_29, P, &HAND_29_PLAY[..2]);
+    let at = dealt("hand-29", P, &prose("hand-29")[..2]);
     assert_eq!(fires(C01B, &at), None);
 }
 
@@ -390,7 +318,7 @@ fn c01b_does_not_fire_without_count_or_while_holding_trump() {
 fn c02_fires_in_hand_30_and_the_book_reading_is_false_there() {
     // W42-p102-c, Hand 30 T1: the bidder leads the 6-5; the partner holds the
     // 6-6, the top six, and plays it. The handoff allows exactly that.
-    let at = dealt("P6", &HAND_30, P, &HAND_30_PLAY[..2]).bid(42);
+    let at = dealt("hand-30", P, &prose("hand-30")[..2]);
     assert_eq!(allows(C02, &at, "play-the-top-trump"), tiles(&["6-6"]));
     // The book's p. 25 reads a partner's top trump as his only one. Here he
     // still holds the 6-0 and the 6-1: the reading is false in the book's own
@@ -398,7 +326,7 @@ fn c02_fires_in_hand_30_and_the_book_reading_is_false_there() {
     // partner is void in trump with probability 26/57 (his six tiles miss both
     // live sixes, of nineteen hidden): the reading is a convention, not a
     // fact of the deal.
-    let bidder = dealt("P6", &HAND_30, B, &HAND_30_PLAY[..3]).bid(42);
+    let bidder = dealt("hand-30", B, &prose("hand-30")[..3]);
     let reading = C02_READING.parse::<Query>().unwrap().compile(&Registry::standard()).unwrap();
     for declarer in Seat::ALL {
         let belief = Belief::uniform_resolving(bidder.frame(declarer), tiles(&["6-0", "6-1"]), 100).unwrap();
@@ -411,7 +339,7 @@ fn c02_fires_in_hand_30_and_the_book_reading_is_false_there() {
 fn c02_does_not_fire_in_hand_29() {
     // W42-p101-b, Hand 29 T1: the bidder leads the 4-0; the top four (4-4) is
     // the bidder's own, so the partner, holding 4-2 and 5-4, does not hold it.
-    let at = dealt("P4", &HAND_29, P, &HAND_29_PLAY[..2]);
+    let at = dealt("hand-29", P, &prose("hand-29")[..2]);
     assert_eq!(fires(C02, &at), None);
 }
 
@@ -423,10 +351,13 @@ fn c03_gives_the_ten_before_the_five() {
     // 5-5 would have given it instead of the 5-0. Ours: that partner, Hand
     // 31's deal with the 5-5 and 6-6 exchanged between partner and right
     // opponent. C1b agrees.
-    let mut deal = HAND_31;
-    deal[2][1] = "5-5";
-    deal[3][5] = "6-6";
-    let at = dealt("P2", &deal, P, &HAND_31_PLAY[..2]);
+    let hand = book().example("hand-31");
+    let mut deal = hand.deal();
+    let (double_six, double_five) = (tile("6-6"), tile("5-5"));
+    assert!(deal[P.0].remove(double_six) && deal[O2.0].remove(double_five));
+    deal[P.0].insert(double_five);
+    deal[O2.0].insert(double_six);
+    let at = dealt_from(hand.physics(), 30, deal, P, &prose("hand-31")[..2]);
     assert_eq!(allows(C03, &at, "give-a-ten"), tiles(&["5-5"]));
     assert_eq!(allows(C01B, &at, "top-lead-give-ten"), tiles(&["5-5"]));
 }
@@ -435,7 +366,7 @@ fn c03_gives_the_ten_before_the_five() {
 fn c03_does_not_fire_with_one_count_tile() {
     // W42-p106-a, Hand 31 T1 as dealt: the 5-0 is the partner's only count, so
     // the gate's "two or more" fails; C1b gives it.
-    let at = dealt("P2", &HAND_31, P, &HAND_31_PLAY[..2]);
+    let at = dealt("hand-31", P, &prose("hand-31")[..2]);
     assert_eq!(fires(C03, &at), None);
 }
 
@@ -447,7 +378,7 @@ fn c07_pounces_in_hand_32() {
     // void in treys and out of trump, holds 6-4 and 5-5. The book plays the
     // 6-4 at once (the partner wins with the 3-3 and the bid is set); the 5-5
     // is the same ten.
-    let at = dealt("P0", &HAND_32, O1, &[&HAND_32_PLAY[..], &["3-1"]].concat()).bid(36);
+    let at = dealt("hand-32", O1, &then(&prose("hand-32")[..8], &["3-1"]));
     assert_eq!(allows(C07, &at, "play-count-now"), tiles(&["6-4", "5-5"]));
 }
 
@@ -457,7 +388,7 @@ fn c07_does_not_fire_when_the_setter_can_follow() {
     // 3-2 and 3-3 and can follow. The gate needs a void and does not fire, but
     // the book plays the 3-2 here, count before the partner: its pounce
     // (pp. 43-46) is wider than the gate.
-    let at = dealt("P0", &HAND_28, O1, &HAND_28_PLAY[..9]);
+    let at = dealt("hand-28", O1, &prose("hand-28")[..9]);
     assert_eq!(fires(C07, &at), None);
 }
 
@@ -492,7 +423,7 @@ fn c08_and_c13b_do_not_fire_on_a_trump_double_where_the_book_protects() {
     // opponent holds 4-2 and 4-1 and plays the 4-2, saving the count. The
     // gates take only non-trump doubles, so neither fires on the book's
     // instance of the rule.
-    let at = dealt("P4", &HAND_33, O1, &HAND_33_PLAY[..1]);
+    let at = dealt("hand-33", O1, &prose("hand-33")[..1]);
     assert_eq!(fires(C08, &at), None);
     assert_eq!(fires(C13B, &at), None);
 }
@@ -505,7 +436,7 @@ fn c09_orders_the_lead_in_hand_30_as_the_book_does() {
     // trumps (6-0, 6-1), no double and no walker. Never trump allows the
     // three; the ordering narrows them to the 3-1, whose suit has only a five
     // out (the 3-2), where the fives' suit still has the 5-5: the book's lead.
-    let at = dealt("P6", &HAND_30, P, &HAND_30_PLAY[..8]).bid(42);
+    let at = dealt("hand-30", P, &prose("hand-30")[..8]);
     assert_eq!(allows(C09, &at, "lead-from-a-five-suit"), tiles(&["3-1"]));
 }
 
@@ -513,14 +444,14 @@ fn c09_orders_the_lead_in_hand_30_as_the_book_does() {
 fn c09_orders_the_lead_without_trump_in_hand_31() {
     // W42-p107-b, Hand 31 T4: the partner holds no trump and leads the 3-1.
     // The gate's ordering does not need trump: the treys have no count out.
-    let at = dealt("P2", &HAND_31, P, &HAND_31_PLAY[..12]);
+    let at = dealt("hand-31", P, &prose("hand-31")[..12]);
     assert_eq!(allows(C09, &at, "lead-from-a-count-safe-suit"), tiles(&["3-1"]));
 }
 
 #[test]
 fn c09_does_not_fire_off_lead() {
     // Hand 31 T1: the partner follows the bidder's lead.
-    let at = dealt("P2", &HAND_31, P, &HAND_31_PLAY[..2]);
+    let at = dealt("hand-31", P, &prose("hand-31")[..2]);
     assert_eq!(fires(C09, &at), None);
 }
 
@@ -532,7 +463,7 @@ fn c10_fires_on_hand_14_where_the_book_leads_trump() {
     // (5-2). The gate makes the off the book's tile; the book's p. 24 only
     // permits it, and in this hand the book leads the 4-4 (and is later set on
     // the 5-2). The gate reads a permission as an instruction.
-    let at = position("P4", B, &["5-2", "4-1", "6-6", "6-4", "4-2", "4-3", "4-4"], &[]);
+    let at = book_hand("hand-14", &[]);
     assert_eq!(allows(C10, &at, "lead-the-off"), tiles(&["5-2"]));
 }
 
@@ -549,7 +480,7 @@ fn c10_does_not_fire_on_hand_27() {
     // W42-p094-d, Hand 27: fours with two trumps. Neither the gate nor the
     // encoding fires; the book leads its 6-2 off on trick one anyway, as a
     // stated exception for two-trump hands (W42-p091-c).
-    let at = position("P4", B, &["3-3", "6-2", "4-4", "6-4", "0-0", "2-2", "3-1"], &[]);
+    let at = book_hand("hand-27", &[]);
     assert_eq!(fires(C10, &at), None);
 }
 
@@ -559,7 +490,7 @@ fn c10_does_not_fire_on_hand_27() {
 fn c11_fires_in_hand_28() {
     // W42-p099-b, Hand 28 T6: trumps are gone; the bidder holds 6-6 and the 6-1
     // off (the 6-2 is out) and leads the double.
-    let at = dealt("P0", &HAND_28, B, &HAND_28_PLAY[..20]);
+    let at = dealt("hand-28", B, &prose("hand-28")[..20]);
     assert_eq!(allows(C11, &at, "lead-the-double"), tiles(&["6-6"]));
 }
 
@@ -568,7 +499,7 @@ fn c11_is_the_gate_and_misses_the_book_in_hand_30() {
     // W42-p105-a, Hand 30 T5: the last trump (6-1) is in the partner's hand,
     // so "trumps drawn" fails and neither the gate nor the encoding fires. The
     // book leads the 2-2 ahead of the 2-0 off all the same.
-    let at = dealt("P6", &HAND_30, B, &HAND_30_PLAY).bid(42);
+    let at = dealt("hand-30", B, &prose("hand-30")[..16]);
     assert_eq!(fires(C11, &at), None);
 }
 
@@ -586,7 +517,7 @@ fn c12a_leads_the_double_in_hand_34() {
     // W42-p113-a, Hand 34 T1: fives, the bidder holds 5-5, 5-4, 5-2, 5-0, the
     // double and the third but not the 6-5; the book leads the 5-5. The bid is
     // 84: all 42 points.
-    let at = dealt("P5", &HAND_34, B, &[]).bid(42);
+    let at = dealt("hand-34", B, &[]);
     assert_eq!(allows(C12A, &at, "lead-the-double"), tiles(&["5-5"]));
     assert_eq!(fires(C12B, &at), None);
 }
@@ -609,7 +540,7 @@ fn c12_does_not_fire_on_three_trumps_where_the_book_leads_low() {
     // W42-p101-a, Hand 29 T1: fours, the bidder holds 4-4, 4-1, 4-0 (missing
     // the 6-4 and 5-4) and leads the 4-0 low, the B rule with three trumps
     // (also W42-p183-g). Both gates take four trumps only.
-    let at = dealt("P4", &HAND_29, B, &[]);
+    let at = dealt("hand-29", B, &[]);
     assert_eq!(fires(C12A, &at), None);
     assert_eq!(fires(C12B, &at), None);
 }
@@ -620,18 +551,18 @@ fn c12_does_not_fire_on_three_trumps_where_the_book_leads_low() {
 fn c13a_sheds_the_books_singleton() {
     // W42-p109-a, Hand 32 T1: the right opponent, no blanks, throws the 6-2,
     // his only six: the gate's set, and the encoding's.
-    let at = dealt("P0", &HAND_32, O2, &HAND_32_PLAY[..3]).bid(36);
+    let at = dealt("hand-32", O2, &prose("hand-32")[..3]);
     assert_eq!(allows(C13A, &at, "throw-a-lone-tile"), tiles(&["6-2"]));
     // W42-p111-a, Hand 33 T1: the right opponent throws the 6-0, his only six;
     // the 2-2, his only deuce, is the other lone tile.
-    let at = dealt("P4", &HAND_33, O2, &HAND_33_PLAY[..3]);
+    let at = dealt("hand-33", O2, &prose("hand-33")[..3]);
     assert_eq!(allows(C13A, &at, "throw-a-lone-tile"), tiles(&["6-0", "2-2"]));
 }
 
 #[test]
 fn c13a_does_not_fire_while_the_setter_holds_trump() {
     // Hand 32 T1: the left opponent must follow with a blank.
-    let at = dealt("P0", &HAND_32, O1, &HAND_32_PLAY[..1]).bid(36);
+    let at = dealt("hand-32", O1, &prose("hand-32")[..1]);
     assert_eq!(fires(C13A, &at), None);
 }
 
@@ -642,14 +573,14 @@ fn c13c_follows_low_in_hand_35() {
     // W42-p117-b, Hand 35 T5: the bidder leads the 5-5; the right opponent
     // holds two fives, 5-1 and 6-5, neither count, and plays the 5-1 (the book's
     // reason is to keep his sixes; the tile is the gate's).
-    let at = dealt("P4", &HAND_35, O2, &HAND_35_PLAY).bid(42);
+    let at = dealt("hand-35", O2, &prose("hand-35")[..19]);
     assert_eq!(allows(C13C, &at, "follow-low"), tiles(&["5-1"]));
 }
 
 #[test]
 fn c13c_does_not_fire_when_the_pair_holds_count() {
     // W42-p098-e, Hand 28 T3: the left opponent's treys are 3-2 and 3-3.
-    let at = dealt("P0", &HAND_28, O1, &HAND_28_PLAY[..9]);
+    let at = dealt("hand-28", O1, &prose("hand-28")[..9]);
     assert_eq!(fires(C13C, &at), None);
 }
 
@@ -660,13 +591,13 @@ fn c13d_fires_in_hand_28_where_the_book_leads_the_ten_caller() {
     // W42-p098-f, Hand 28 T4: the right opponent leads holding 5-4, 4-2, 1-1,
     // 5-2. The gate's tile, and the encoding's, is the 1-1, his only ace; the
     // book leads the 5-4, calling for the 5-5 that sets the bid.
-    let at = dealt("P0", &HAND_28, O2, &HAND_28_PLAY[..12]);
+    let at = dealt("hand-28", O2, &prose("hand-28")[..12]);
     assert_eq!(allows(C13D, &at, "lead-the-lone-tile"), tiles(&["1-1"]));
 }
 
 #[test]
 fn c13d_does_not_fire_off_lead() {
-    let at = dealt("P0", &HAND_28, O1, &HAND_28_PLAY[..9]);
+    let at = dealt("hand-28", O1, &prose("hand-28")[..9]);
     assert_eq!(fires(C13D, &at), None);
 }
 
@@ -697,10 +628,10 @@ fn c14_does_not_fire_after_two_trump_tricks_where_the_book_cashes() {
         "6-4", "4-5", "6-6", "3-0", // T2
         "5-5", "5-3", "5-1", "6-5", // T3
     ];
-    let at = position("P4", B, &["3-3", "1-1", "2-2", "5-2"], &plays);
+    let at = book_hand("hand-26", &plays.map(tile));
     assert_eq!(fires(C14, &at), None);
     // W42-p106-d, Hand 31 T2: the book's crisis lead is the 6-5 bait (C21).
-    let at = dealt("P2", &HAND_31, B, &HAND_31_PLAY[..4]);
+    let at = dealt("hand-31", B, &prose("hand-31")[..4]);
     assert_eq!(fires(C14, &at), None);
 }
 
@@ -710,7 +641,7 @@ fn c14_does_not_fire_after_two_trump_tricks_where_the_book_cashes() {
 fn c15_leads_the_count_calling_double_in_hand_29() {
     // W42-p101-c, Hand 29 T2: the left opponent leads the 2-2, calling for the
     // 3-2.
-    let at = dealt("P4", &HAND_29, O1, &HAND_29_PLAY[..4]);
+    let at = dealt("hand-29", O1, &prose("hand-29")[..4]);
     assert_eq!(allows(C15, &at, "a-double-that-calls-for-count"), tiles(&["2-2"]));
 }
 
@@ -719,11 +650,11 @@ fn c15_leads_the_double_where_the_book_leads_the_count_that_sets() {
     // W42-p098-f, Hand 28 T4: the setters hold 6 and need 13. The gate's tier
     // A is the 1-1 (it calls the 4-1); the book leads the 5-4, which calls the
     // 5-5 and sets.
-    let at = dealt("P0", &HAND_28, O2, &HAND_28_PLAY[..12]);
+    let at = dealt("hand-28", O2, &prose("hand-28")[..12]);
     assert_eq!(allows(C15, &at, "a-double-that-calls-for-count"), tiles(&["1-1"]));
     // W42-p108-b, Hand 31 T5: tier A is the 4-4 (it calls the 6-4); the book
     // leads the 4-1, which calls the 6-4 for fifteen.
-    let at = dealt("P2", &HAND_31, O2, &HAND_31_PLAY);
+    let at = dealt("hand-31", O2, &prose("hand-31")[..16]);
     assert_eq!(allows(C15, &at, "a-double-that-calls-for-count"), tiles(&["4-4"]));
 }
 
@@ -731,7 +662,7 @@ fn c15_leads_the_double_where_the_book_leads_the_count_that_sets() {
 fn c15_does_not_fire_without_a_count_calling_lead() {
     // W42-p101-d, Hand 29 T3: no lead calls for count the book allows; the
     // book leads the 1-0 just to see what happens.
-    let at = dealt("P4", &HAND_29, O1, &HAND_29_PLAY);
+    let at = dealt("hand-29", O1, &prose("hand-29")[..8]);
     assert_eq!(fires(C15, &at), None);
 }
 
@@ -756,14 +687,14 @@ fn c15_leads_quietly_only_when_one_point_sets() {
 fn c21_leads_the_six_five_in_hand_31() {
     // W42-p106-d, Hand 31 T2: deuces, the bidder holds 6-5 and 6-4 and leads
     // the 6-5.
-    let at = dealt("P2", &HAND_31, B, &HAND_31_PLAY[..4]);
+    let at = dealt("hand-31", B, &prose("hand-31")[..4]);
     assert_eq!(allows(C21, &at, "lead-the-six-five"), tiles(&["6-5"]));
 }
 
 #[test]
 fn c21_does_not_fire_when_the_six_five_is_trump() {
     // W42-p103-a, Hand 30 T1: sixes; the 6-5 is a trump, led as one.
-    let at = dealt("P6", &HAND_30, B, &[]).bid(42);
+    let at = dealt("hand-30", B, &[]);
     assert_eq!(fires(C21, &at), None);
 }
 
@@ -812,13 +743,13 @@ fn c22_needs_the_trump_set() {
 #[test]
 fn c23_leads_the_double_in_hand_30() {
     // W42-p102-c, Hand 30 T2: the partner, on lead after the 6-6, leads 0-0.
-    let at = dealt("P6", &HAND_30, P, &HAND_30_PLAY[..4]).bid(42);
+    let at = dealt("hand-30", P, &prose("hand-30")[..4]);
     assert_eq!(allows(C23, &at, "lead-a-double"), tiles(&["0-0"]));
 }
 
 #[test]
 fn c23_does_not_fire_out_of_doubles() {
     // W42-p103-d, Hand 30 T3: the partner has no double left.
-    let at = dealt("P6", &HAND_30, P, &HAND_30_PLAY[..8]).bid(42);
+    let at = dealt("hand-30", P, &prose("hand-30")[..8]);
     assert_eq!(fires(C23, &at), None);
 }
