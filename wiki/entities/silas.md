@@ -158,6 +158,8 @@ test profile, now opt-level 1 (the slowest binaries killed at 300 s → 34 s for
 BigRational is under 1% of every profile. The one route that could make a GPU worth revisiting
 is compiling guards to bitmask operations, a language-design question.
 
+Collapsing equivalent hidden tiles is not a speed lever: worlds never compress ([[endgame-equivalence-census]]).
+
 ## The double-dummy reference
 
 `silas::Solver` (2026-10-13) is an exact perfect-information solver over any `Physics`:
