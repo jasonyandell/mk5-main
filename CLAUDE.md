@@ -38,8 +38,10 @@ Two halves, one game:
   where it differs; that day's foundation repairs (floor only on sampled fibers, rung-independent
   seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]).
   The book (Roberson's *Winning 42*, [[w42]]) was studied with those tools the same day
-  ([[book-study-2026-10-12]]): its rules are cheap under the plan over the fiber, its conventions
-  measured null; the reason was adopted, never the rule.
+  ([[book-study-2026-10-12]]): Zeb's pick is the book's move at 52% of gated positions against a
+  37% random floor (it sides with 9 of 21 rules, prices against 5), the conventions measured
+  null, and no reason was extracted — Zeb prices a move, it cannot yet explain one (#124).
+  Every agreement number ships with its chance baseline; a tie is not agreement.
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the

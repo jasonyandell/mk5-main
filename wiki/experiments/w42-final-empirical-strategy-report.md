@@ -2,7 +2,7 @@
 title: w42 Final Empirical Strategy Report
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: superseded
 ---
 
@@ -118,7 +118,7 @@ hidden-domino threats that create them.
 | family | current status | evidence | next test |
 |---|---|---|---|
 | rules and state accounting | supported for checked predicates | Chapter 1 and Chapter 13 deterministic checks passed | keep as regression fixtures |
-| exact odds | supported for checked arithmetic | Chapter 16 hand-count, suit/void, double-count, modal-hand, and four-trump assignment enumeration | package as stable odds fixtures if promoted |
+| exact odds | supported for checked arithmetic, except the four-trump rows | Chapter 16 hand-count, suit/void, double-count, modal-hand, and four-trump assignment enumeration; the four-trump 10/27 and 14/27 assume equiprobable placements, and the exact risks are 33/95 = 34.7% and 47/95 = 49.5% ([[book-study-2026-10-12]]) | package as stable odds fixtures if promoted |
 | scoring objective drift | supported for deterministic scoring algebra; context-limited for tournament speed | Chapter 10 terminal transforms and scoreboard examples | policy-population and tournament simulation |
 | doubles/no-trump ruleset substrate | supported for regime membership/follow predicates; strategy choices underpowered | Chapter 9 deterministic checks and static hand slices | paired declaration/play rollouts |
 | bidding risk budget | detector-supported / context-limited | exact static exposure and duplicate-count enumeration | auction-aware make/set or E[Q] counterfactuals |
@@ -135,7 +135,8 @@ The survey supports only narrow claims where the evidence actually matches the
 claim:
 
 - seven-domino double-six hand count is 1,184,040;
-- checked suit/void, double-count, modal-hand, and four-trump assignment odds;
+- checked suit/void, double-count, and modal-hand odds (the four-trump assignment
+  odds reproduce the book's equiprobability error);
 - Chapter 1 point accounting and follow-suit predicates;
 - Chapter 13 checked ruleset gates;
 - Chapter 9 deterministic doubles/no-trump regime predicates;

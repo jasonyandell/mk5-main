@@ -2,12 +2,12 @@
 title: w42 Book Validation v1 — Wave 2.A.3 Reentry Preservation v2 Probe
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 parent_bead: t42-v9lu
 wave: 2.A.3
 claim_tested: ch03-reentry-preservation
-claim_ledger_impact: context-limited
+claim_ledger_impact: underpowered (null overall)
 predecessor: "[[w42-bookval-v1-wave2-reentry-preservation]]"
 ---
 
@@ -17,10 +17,11 @@ random-play snapshots and flagged its own consume-over-preserve result as a
 probable measurement artifact. This probe's corrected methodology reproduced
 the same direction (consume > preserve; whole-sample CI now spans zero) and
 localized the significant signal to the late game — so the v1 direction was
-not purely artifact, but the verdict that stands is this page's
-`context-limited`: late game (tricks 5–6) contradicts the book with a CI
-excluding zero, mid-game is underpowered, and the early game — the book's
-primary advice context — has no data in either probe. This page is the current
+not purely artifact. The result is null overall; the late-game slice
+(tricks 5–6) excludes zero but was chosen post hoc with no multiplicity
+correction; mid-game is null; and the early game — the book's primary advice
+context — has no data in either probe. The claim was not tested where the book
+makes it; the ledger row reads `underpowered`. This page is the current
 reference for `ch03-reentry-preservation`.
 
 ## Summary
@@ -34,10 +35,12 @@ late-game slice shows a clear signal in the **wrong** direction.
 zero. Overall verdict: inconclusive.
 
 **Late-game result (tricks 5–6, n=60):** EV delta = **−3.97** (95% CI: [**−6.76, −1.17**]).
-CI excludes zero. Consuming the trump is significantly better in late tricks. This **directly
-contradicts** the book's reentry-preservation advice in the late-game context.
+CI excludes zero, but this is one of three post-hoc phase slices with no multiplicity
+correction, in oracle points (E[Q] network labels, qMAE 0.94) at bid 30 with CIs that do not
+cluster by deal. It is not a contradiction of the book, whose advice concerns the early game
+(n=0 here).
 
-**Status: `context-limited`**
+**Status: null overall; untested in the book's context (ledger: `underpowered`).**
 
 ## Claim Under Test
 
@@ -94,7 +97,7 @@ Overall CI spans zero — verdict at whole-sample level: inconclusive.
 |-------|--------|---|---------------|--------|---------|
 | early | 1–2 | 0 | — | — | (no data) |
 | mid | 3–4 | 162 | −0.22 | [−1.79, +1.36] | underpowered |
-| **late** | **5–6** | **60** | **−3.97** | **[−6.76, −1.17]** | **contradicted** |
+| late | 5–6 | 60 | −3.97 | [−6.76, −1.17] | post-hoc slice |
 
 The late-game slice is the most striking: in tricks 5–6, the oracle consistently prefers
 consuming the trump rather than preserving it. This may reflect that by trick 5, the tactical
@@ -118,10 +121,10 @@ to hold.
 
 ## Claim Ledger Impact
 
-**`context-limited`**
+None. The ledger row stays `underpowered`; the probe proposed `context-limited`.
 
-The evidence is phase-dependent:
-- Late-game (tricks 5–6): CI excludes zero, direction contradicts book (consume > preserve).
+By phase:
+- Late-game (tricks 5–6): CI excludes zero against the book on a post-hoc slice.
 - Mid-game (tricks 3–4): CI includes zero, underpowered.
 - Early-game (trick ≤ 2): no data from this corpus.
 

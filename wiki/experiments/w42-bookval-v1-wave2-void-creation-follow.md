@@ -6,10 +6,10 @@ parent_bead: t42-4zi6
 wave: 2
 status: complete
 claim: ch05-void-creation (follow-position sub-claim)
-verdict: context-limited
+verdict: withdrawn pending sign check (#122)
 date: 2026-05-03
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 # W42 Book Validation v1 Wave 2 — Void Creation Follow Position
@@ -23,9 +23,8 @@ an opponent later leads to that suit, you can trump in.
 
 Wave 2.C (bead t42-z31l's predecessor probe [[w42-bookval-v1-wave2-void-creation]])
 tested the *lead-position* variant of void creation — where the setter is on lead and
-chooses to expose their last tile in a suit. That probe found the claim **contradicted**
-at N=276: the oracle consistently prefers preserving the suit over voiding it from the
-lead position (mean EV delta = −2.63 from setter perspective, CI entirely negative).
+chooses to expose their last tile in a suit (N=276, recorded EV delta −2.63). Its
+verdict is withdrawn pending the same sign check as this page's (#122).
 
 The wave 2.C.2 probe (this bead) tests the *follow-position* variant: the canonical
 scenario from the book. Here the setter is **following** a non-trump trick they cannot
@@ -62,55 +61,35 @@ a void) vs. discarding a tile from a different multi-tile suit.
 | bidder_winning_trick | 326 | +0.79 | +0.0051 | 52.8% |
 | setter_winning_trick | 174 | +0.72 | +0.0155 | 52.3% |
 
-## Verdict: context-limited
+## Verdict: withdrawn pending sign check (#122)
 
-The EV CI for the follow-position scenario ([+0.12, +1.42]) **excludes zero on the
-positive side**, pointing weakly in the direction the book predicts. This is a meaningful
-difference from the lead-position probe where the CI was entirely negative. However:
+The probe script negates E[Q] for the setter on the assumption that it is Team 0's
+view (`run_void_creation_follow_probe.py:411-413`); forge documents E[Q] from the
+acting player's view (`forge/eq/generate/actions.py:113,160`). If the sign is
+inverted, the recorded +0.77 is −0.77 and the book's direction is weakly
+contradicted. The verdict is withdrawn until the sign is checked on data.
 
-1. The p_set CI straddles zero (−0.0019 to +0.0192) — the setting-probability signal
-   is not significant.
-2. Only 52.6% of contrasts favor void creation — barely above chance.
-3. The absolute EV advantage (+0.77) is modest compared to the strong contradiction in
-   the lead-position probe (−2.63).
-4. The count_exposed sub-slice (N=30) shows the largest p_set delta (+0.063) but is
-   underpowered for a sub-slice verdict.
+Independent of the sign, the result is not evidence for the book:
 
-**The follow-position void scenario shows a small, real positive signal — the oracle
-agrees the book direction is marginally correct here — but the effect is too noisy and
-too small to endorse as "supported" across the bid=30 corpus.**
+1. +0.77 points is below the ≈0.93-point minimum detectable effect, the sign test
+   gives p=0.26, and 52.6% of contrasts favour void.
+2. On the clean subset (no count, no trump) the delta is +0.08 [−0.37, +0.53].
+3. The p_set CI straddles zero, and `p_set` uses Q ≥ 30 on the ±42 scale where the
+   make line is Q ≥ 18, so it is partly saturated.
+4. When all legal actions are ranked, the EV argmax is the void tile on only 29.4% of
+   these snapshots ([[w42-bookval-v3-utility-argmax-divergence]], which maximizes raw
+   e_q and does not share the sign question).
+5. Labels come from the learned Q network (qMAE 0.94 points), in points, at bid 30, on
+   the April corpus later found 27–67% malformed ([[otis-phase-r]]); CIs do not
+   cluster by deal.
 
-## Comparison to Lead-Position Probe
-
-| Dimension | Lead-position (t42-26j8) | Follow-position (t42-z31l) |
-|-----------|--------------------------|----------------------------|
-| N pairs | 276 | 500 |
-| EV delta (setter) | **−2.63** (CI: [−3.42, −1.84]) | **+0.77** (CI: [+0.12, +1.42]) |
-| p_set delta | −0.0155 (CI: [−0.028, −0.003]) | +0.0087 (CI: [−0.002, +0.019]) |
-| % void better | 32.6% | 52.6% |
-| Verdict | **contradicted** | **context-limited** |
-
-The lead-position void creation claim is robustly contradicted. The follow-position
-claim is the book's canonical scenario, and the oracle weakly supports the direction
-but the effect is small enough that the verdict is context-limited rather than supported.
-
-## Interpretation
-
-The mechanism difference matters: when the setter is on **lead**, discarding their
-singleton creates a void but also announces their weakness and may invite opponents to
-lead into them before the void pays off. When the setter is **following** a trick they
-cannot follow, the discard is forced anyway — the only choice is *which* suit to deplete.
-The positive signal here suggests the oracle finds mild truth in the book's advice: among
-forced discards, voiding a singleton suit is marginally better than depleting a
-multi-tile suit. But the effect is small because the oracle trades away both options
-at near-equal value in most positions.
+The earlier reading of the lead and follow probes as a "position-dependent reversal"
+is withdrawn with both verdicts.
 
 ## Scope caveat
 
 This probe only tests bid=30 from the oracle-greedy corpus. The book's void-creation
-advice is likely more compelling in high-bid games (35+) where the contract margin is
-tighter and opponent void exploitation is more decisive. Wave 2.E.2 (high-bid testing)
-would be the natural follow-on.
+advice was never tested at higher bids.
 
 ## Artifacts
 
@@ -124,7 +103,7 @@ would be the natural follow-on.
 
 ## Related pages
 
-- [[w42-bookval-v1-wave2-void-creation]] — lead-position probe (contradicted, N=276)
+- [[w42-bookval-v1-wave2-void-creation]] — lead-position probe (N=276; withdrawn pending #122)
 - [[winning42-ch05-setter-defense]] — source chapter
 
 ## Reproducibility

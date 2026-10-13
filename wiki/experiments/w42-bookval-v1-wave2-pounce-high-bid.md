@@ -8,7 +8,7 @@ claim: ch12-setter-pounce-high-bid-off
 status: complete
 created: 2026-05-03
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 ## Summary
@@ -17,10 +17,14 @@ Snapshot-level paired-contrast probe for `ch12-setter-pounce-high-bid-off` at
 bids 35/36/39/42. Extends [[w42-bookval-v1-wave2-pounce-window-bid30]] (Wave
 2.E, bid=30) to the high-bid regime.
 
-**Finding**: The decline-better-for-setter pattern found at bid=30 by Wave 2.E
-is **not reversed at high bids** — it is amplified. At all four bid buckets,
-pouncing on exposed count from bidder's team makes the setter strictly worse
-by EV (CI excludes zero, p << 0.001).
+**Verdict: withdrawn pending a sign check (#122).** The script treats the
+generator's E[Q] as Team 0's view and negates it for the setter
+(`run_pounce_high_bid_probe.py:20,426,438`); forge documents E[Q] from the
+acting player's view (`forge/eq/generate/actions.py:113,160`), and the setter
+is the acting player. If the sign is inverted, the recorded −10.42 is +10.42
+for the pounce, matching every actor-perspective corpus pounce contrast
+(+4.10, +3.85, +4.93). The ledger row `ch12-setter-pounce-high-bid-off` was
+demoted to `contradicted` on this probe; that verdict is withdrawn with it.
 
 ## Claim Under Test
 
@@ -48,8 +52,9 @@ corpus_replayer-style state reconstruction. For each decision:
 - **B (decline)**: lowest-cost non-winning play
 
 Run `generate_eq_from_snapshots` n_samples=100 per arm, compute:
-- EV delta = ev_pounce_t0 - ev_decline_t0 (Team 0 perspective)
-- ev_delta_setter = -ev_delta_t0 (positive = pounce better for setter)
+- EV delta = ev_pounce_t0 - ev_decline_t0 (read as Team 0 perspective; unverified, #122)
+- ev_delta_setter = -ev_delta_t0 (positive = pounce better for setter, if the
+  Team 0 reading is right)
 - p_set delta = p_set(pounce) - p_set(decline)
 
 ## Results
@@ -76,7 +81,7 @@ Run `generate_eq_from_snapshots` n_samples=100 per arm, compute:
 | p_set delta | -0.047 | -0.064 | -0.078 | -0.050 | -0.004 |
 | t-stat | -24.52 | -11.75 | -12.70 | -11.81 | -12.77 |
 
-All CIs exclude zero in the decline-better direction.
+All CIs exclude zero; which direction they favour depends on the unverified sign (#122).
 
 ### By Phase and Context
 
@@ -102,9 +107,8 @@ The "setter team led" slice has the weakest signal but still excludes zero.
 | % pounce better | 34.6% | 24.5% |
 | Oracle pounce rate | 59.6% | N/A (fresh inference) |
 
-At bid=30, Wave 2.E found EV delta CI spans zero with direction suggesting
-"decline better", but the t-stat was weak (p=0.104). At high bids, the same
-direction is confirmed with much higher power (N=1140, t=-24.5).
+At bid=30 the contrast was null (p=0.104). Both probes share the unverified
+sign convention.
 
 Note the Wave 2.E bid=30 summary reported the direction convention reversed
 from what this probe uses: their "decline_better_for_setter" corresponds to
@@ -114,50 +118,26 @@ pounce is better in only 24.5% of cases.
 
 ## Interpretation
 
-### Why pounce is wrong-by-EV
+None stands until the sign is checked (#122). The mechanism the probe
+offered (pouncing burns trump control the setter needs later) explained a
+direction that may be inverted. Independent of the sign:
 
-When a setter wins a trick by burning trump or a high-rank tile:
-1. The setter captures the count points in that trick (good)
-2. The setter loses trump control for subsequent tricks (bad)
-3. The bidder team has more leverage in subsequent tricks (bad for setter)
-
-At high bids where the bidder is trying to score 35-42 points, the count tiles
-are concentrated in fewer tricks. Winning one trick to capture 10 pts often
-costs the setter trump control that would have been needed to set the contract
-by blocking bidder's 3-4 remaining winning tricks.
-
-### Why the signal is stronger at high bids
-
-At high bids, the bid requirement is close to or equal to the maximum (42 pts).
-This means the bidder has fewer "extra" points of margin. Paradoxically, this
-makes the count points in any one trick less decisive — whether the setter
-captures 10 pts now or the bidder captures them, the outcome depends on who
-wins the remaining 2-4 tricks. The setter's trump control becomes the decisive
-resource, and burning trump to pounce one count tile is a poor tradeoff.
-
-### Conflict with Wave 2.B.2
-
-Wave 2.B.2 reported that "mark_ev Q-delta evidence shows the signal flips in
-book direction at bid >= 39." That finding was about the aggregate divergence
-between mark_ev and threshold_mass across all actions as bid increases — not
-about pounce-eligible positions specifically. The paired-contrast evidence here
-shows no flip: decline is better across all bid buckets.
+- The test compares two hand-picked actions ("lowest-cost winning play" vs
+  "lowest-cost non-winning play"), not the book's act, and does not measure
+  how often the book's action is the argmax.
+- The evaluator sees all four hands in every sampled world; the book's clause
+  is a hedge for a defender who cannot (caveat 0).
+- Labels come from the learned Q network (qMAE 0.94 points), in points; CIs
+  resample decisions, not the 50 seeds.
+- The Wave 2.B.2 aggregate setter-team Q delta that first promoted the row is
+  not a pounce contrast either.
 
 ## Status Proposal
 
-| Level | Justification |
-|-------|--------------|
-| **`contradicted`** (per-bid) | EV delta CI excludes zero in wrong direction at all 4 buckets |
-| **`context-limited`** (overall) | Evidence is strong but limited to "broad pounce filter" snapshots; a late-game narrow probe might show different results in extreme positions |
-
-The per-bid evidence supports upgrading from the baseline `context-limited`
-(Wave 2.E bid=30 finding) to `contradicted` on the high-bid slice. The book
-instruction to pounce on exposed count is not supported by oracle E[Q] evidence
-at bids 35, 36, 39, or 42.
-
-The orchestrator should weigh whether the "setter team led" subsample (39.6%
-pounce better, N=280) merits a separate probe at a narrower filter before
-finalizing the verdict.
+The probe proposed `contradicted` per bid and `context-limited` overall; the
+orchestrator took `contradicted`. Both proposals are withdrawn pending #122.
+The "promotion guard" rule in `w42/book_validation_v1/AGENTS.md` was drawn
+from this reversal; its precedent is withdrawn with it.
 
 ## Caveats
 
@@ -170,8 +150,9 @@ finalizing the verdict.
    regime in which "pounce regardless" is worse by construction. The
    `contradicted` verdict therefore may be a category error rather than a wrong
    book claim; the proposed re-adjudication is a belief/PIMC defender that does
-   not see hands, scoped to bid ≥ 35 and bidder ≤ 2 offs. Verdict stands until
-   that probe runs, but should be cited with this caveat.
+   not see hands, scoped to bid ≥ 35 and bidder ≤ 2 offs. The Zeb-era study
+   ([[book-study-2026-10-12]]) priced a different act (count before partner
+   can play) and did not reproduce this test.
 1. E[Q] perspective (not mark_ev per position). A future probe should compute
    per-position mark_ev to test whether the mark-probability metric agrees.
 2. Broad filter: includes positions where count was in the last trick (already

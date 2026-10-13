@@ -2,7 +2,7 @@
 title: w42 Phase4 Final Claim Audit
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -25,9 +25,13 @@ evidence and no blocker. The remaining 39 rows are bounded, not ownerless: 37
 have explicit generator or scope bounds, and 2 are ledger-review candidates
 (`ch02-bid-only-enough` and `ch07-protected-one-off-shape-frequency`).
 
-This does not mean every book claim is broadly true. It means every claim is now
-either evidenced on a named slice, contradicted on a named slice, bounded by an
-explicit generator/data requirement, or ready for ledger-reconciliation review.
+Closure meant "has evidence on some slice or a stated blocker", not "was
+tested": 39 of 64 rows closed as bounded or blocked, and no strategic claim
+from the book was established
+([[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]]).
+The guards below were not held: `ch02-bid-only-enough` was promoted to
+`supported` on a test that cannot fail, and pounce-before-certainty stayed
+`supported` though its literal label is null.
 
 ## Overclaim Guards
 
@@ -56,7 +60,9 @@ side of the join). Whether it also reran the seven per-worker
 the ledger/board join. The later independent audit
 (`w42/book_validation_v1/wave1/t42-1nmm_independent_audit/`) reran all seven
 validators (7/7 pass) and confirmed the audit's counts and all eight
-overclaim risks.
+overclaim risks; it demoted none of them. The baseline counts here
+(23/12/2/6/21 in `audit_summary.json`) are not the live counts in the
+hand-edited `claims.csv` (24/14/3/4/19; [[w42-phase2-statistics-claims-ledger]]).
 
 ## Links
 

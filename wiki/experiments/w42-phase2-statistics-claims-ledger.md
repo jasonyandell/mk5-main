@@ -2,7 +2,7 @@
 title: w42 Phase 2 Statistics Claims Ledger
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -14,6 +14,49 @@ synthesis of everything downstream is
 [[w42-book-claim-synthesis-and-ai-directions]]. Which clock is this: `phase 2`
 here is the 2026-05-02→03 claim-ledger sweep, not the bookval-v1 waves or the
 2026-06+ [[champion-ladder]] rungs.
+
+## The ledger as a record
+
+`w42/statistics_claims_ledger/claims.csv` is hand-edited (commits 6eef5ee8,
+05c8718d, 6918aa94, 0b7fb012). Its generator,
+`build_statistics_claims_ledger.py`, hardcodes `ch02-bid-only-enough` as
+`not-yet-tested` and would emit `ch12-setter-pounce-high-bid-off` as
+`underpowered`: re-running it silently reverts the campaign's edits (#125). Its
+summaries disagree with it: `summary.json` says 2 `contradicted`, the CSV has 3;
+`phase4_claim_completion_board/summary.json` (23/2/12/6/21) disagrees with its
+own `completion_board.csv` (24/3/14/4/19). Live CSV counts are supported 24,
+context-limited 14, underpowered 19, not-yet-tested 4, contradicted 3.
+
+What the rows are worth:
+
+- Of the 24 `supported` rows, 20 are arithmetic, rule fixtures or scoring
+  definitions; `ch04-unsafe-partner-count-donation` and
+  `ch05-reckless-count-to-bidder` are near-tautological negative controls (the
+  cost equals the count given away); `ch02-bid-only-enough` is a tautology whose
+  own result field still says no auction-counterfactual artifact exists; and
+  `ch05-pounce-count-before-certainty` is null on its literal label (+0.44
+  [−0.20, +1.10] Q, n=525, [[w42-phase4-sequence-handshape-tests]]). No
+  strategic claim from the book was established.
+- `ch16-four-trump-missing-second` (37.0%) and
+  `ch16-four-trump-missing-next-two` (51.9%) reproduce the book's
+  equiprobable-placement error; the exact figures are 33/95 = 34.7% and
+  47/95 = 49.5% ([[book-study-2026-10-12]]).
+- The three `contradicted` rows are not findings:
+  `ch12-setter-pounce-high-bid-off` is withdrawn pending a setter-side sign check
+  (#122) and its own result field still says `paired_n=0`;
+  `ch04-effective-double-highest-remaining` is one of 12 uncorrected proxies at
+  n=21 (inconclusive); `ch08-either-matching-double-not-two-to-one` refutes a
+  reading the book does not make (not a test).
+- `ch04-lead-away-from-count-damage` (n=22) and `ch05-count-calling-lead` (n=51)
+  still read `underpowered`; the chapter pages carry n=526 (−3.43 Q) and n=1866
+  (+3.03 Q) corpus results that never reached the rows.
+- Every tactical row is in oracle points (E[Q] network labels, qMAE 0.94), on
+  bid-30 positions from 100 deals of the April Gus v2 corpus later found 27–67%
+  malformed ([[otis-phase-r]]), with CIs that do not cluster by deal.
+- 64 rows against at least 277 advice sentences; chapters 1, 6, 11, 13, 14 and
+  15 have none, Ch12 has 2.
+
+Detail: [[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]].
 
 ## Question
 
@@ -83,7 +126,8 @@ directly tests the tactic.
 
 ## Claim Table Summary
 
-The generated ledger has 64 rows.
+The ledger as generated in phase 2 had 64 rows with the counts below (the live,
+hand-edited CSV differs; see above).
 
 | status | count |
 |---|---:|
@@ -99,16 +143,16 @@ High-signal rows:
 |---|---|
 | hand and void odds | `supported`: `C(28,7) = 1,184,040`; void frequencies are 42.314%, 46.982%, 10.349%, and 0.355% for 0-3 void suits. |
 | double-count odds | `supported`: exact double counts match the source table within rounding, including the one-hand seven-double extreme. |
-| four-trump odds | `supported` for 10/27 and 14/27 assignment counts; `underpowered` for the boss-first policy recommendation. |
+| four-trump odds | `supported` for 10/27 and 14/27 assignment counts, but the 27 placements are not equiprobable: the exact figures are 33/95 = 34.7% and 47/95 = 49.5%; the boss-first policy recommendation was never tested. |
 | trump counts | `supported` for fixed candidate trump-count priors; `underpowered` for treating three-plus trumps as a sufficient bidding rule. |
 | count exposure | `supported` for duplicate-exposure arithmetic; `context-limited` for strong-trump/bad-off risk surfaces; `underpowered` for the 12-point bid threshold as a strategy rule. |
 | doubles/no-trump | ruleset predicates are `supported`; declaration choice and regime-switch claims remain `underpowered` or `context-limited`. |
 | scoring | deterministic marks-vs-points transforms are `supported`; skill-signal and timed-advancement claims need policy/tournament data. |
-| 84 stoppers | named missing-double ownership is `context-limited`; applying the two-to-one prior when either of two matching doubles can set is `contradicted` by the 90% exact ownership result. |
+| 84 stoppers | named missing-double ownership is `context-limited`; the `contradicted` "either matching double" row refutes a reading the book does not make (the row's own caveat says so): not a test. |
 | 84 weapons | static one-to-four last-trick weapon inventory is `context-limited`; same-suit pair defense is `underpowered`; abandonment and throwaway priorities are `not-yet-tested`. |
-| setter pounce | `supported` on the operationalized Gus v2 pip-declaration slice: pounce-count actions beat same-decision alternatives by about +4.1 Q; reckless count into the bidder is a supported negative-control warning. |
-| partner count donation | safe donation under current bidder-team control is `context-limited` with a small paired signal; unsafe count into defense control is `supported` as a negative-control warning. |
-| remaining partner/setter/bidder proxies | mostly `underpowered`; the effective-double partner-support proxy is `contradicted` on the available slice. |
+| setter pounce | `supported` on the pooled Gus v2 contrast (+4.1 Q), which includes 100 last-seat pairs where the win is certain; the literal before-certainty label is null (+0.44 [−0.20, +1.10], n=525). Reckless count into the bidder is a near-tautological negative control. |
+| partner count donation | safe donation is `context-limited` at +0.68 Q, below the label network's 0.94 MAE and null outside the last seat (position 2: +0.38 [−0.23, +0.97]); unsafe count into defense control is a near-tautological negative control. |
+| remaining partner/setter/bidder proxies | mostly `underpowered`; the effective-double partner-support proxy is recorded `contradicted` on n=21 from 20 deals, one of 12 uncorrected proxies: inconclusive. |
 
 ## Caveats
 
@@ -170,8 +214,8 @@ move claim statuses by itself.
 full legal-action export and harness pass, but does not broaden the statuses
 beyond the operationalized Gus v2 slice already recorded here.
 
-Deferred parent integration: decide whether any subset of these rows should
-become the canonical central machine-readable claim ledger.
+The parent-integration question was settled by
+[[w42-phase4-final-claim-audit]], which carried these rows to closure.
 
 ## Links
 

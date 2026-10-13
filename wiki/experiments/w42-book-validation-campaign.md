@@ -2,7 +2,7 @@
 title: w42 Book Validation Campaign
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: superseded
 ---
 
@@ -21,6 +21,12 @@ Take all 64 [[w42]] ledger rows from "evidence on a slice" to paired
 counterfactuals on real auctions or injected late states. Book validation
 is the priority. Model improvements are downstream.
 
+The 64 rows cover at least 277 advice sentences in the book unevenly:
+chapters 1, 6, 11, 13, 14 and 15 have zero rows, Ch12 has 2, and the book's
+worked example hands were never used as test positions (#123). What the
+campaign's evidence is worth (E[Q] network labels, points, bid 30, unclustered
+CIs, a malformed corpus) is stated once in [[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]].
+
 The campaign is structured as five waves of background subagents
 orchestrated from the foreground. Each wave's outputs land under
 `w42/book_validation_v1/wave<N>/<bead>_<slug>/` plus one wiki experiment
@@ -29,7 +35,7 @@ the central ledger or the synthesis page.
 
 ## Status
 
-**Dormant since Wave 5 (2026-05-03); superseded in research attention by
+**Dormant since Wave 5 (2026-06-13); superseded in research attention by
 [[jud]] (no closure note was written at the time, no further
 waves were planned).** This table was never updated after Wave 4.1 landed;
 the Wave 5 row below was added by the era-6 audit (2026-07-06) from the
@@ -45,26 +51,21 @@ on-disk artifact, which existed but had never been entered.
 | 1.5 | independent ledger audit re-run | t42-1nmm | closed |
 | 2.A | state-injection harness | t42-rwdj | closed (commit 19fc675) |
 | 2.A.2 | oracle-greedy snapshot mining (5 corpora, 1822 snapshots) | t42-y8b5 | closed (commit 77a8511) |
-| 2.A.3 | reentry probe v2 | t42-v9lu | closed (d9f8dbf) — `context-limited`, late game contradicts book |
+| 2.A.3 | reentry probe v2 | t42-v9lu | closed (d9f8dbf) — null overall; post-hoc late slice negative; early game (the book's context) n=0 |
 | 2.B | bid-aware E[Q] driver smoke | t42-6j3k | closed (0c802d4) |
-| 2.B.2 | bid-aware full 50-seed MPS sweep | t42-7eop | closed (720aa83) — 259,618 rows, validation 10/10 PASS, **2 ledger promotions** |
-| 2.C | void-creation paired contrast (lead) | t42-26j8 | closed (8507b11) — **contradicted** (lead-to-self-void) |
-| 2.C.2 | void-creation paired contrast (follow) | t42-z31l | closed (37a5804) — **context-limited** in book direction (follow position) |
-| 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — `context-limited`, count subgroup symmetric |
-| 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — `context-limited`, p_make/EV split |
-| 2.E.2 | setter-pounce high-bid snapshot probe | t42-8kbh | closed (0b7fb01) — **`ch12-setter-pounce-high-bid-off` DEMOTED to `contradicted`** |
-| 2.G | ch02 multi-step bid-only-enough | t42-ey88 | closed — **`ch02-bid-only-enough` promoted to `supported`** (campaign's first) |
-| 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; ch10 row already `supported`) |
-| 3.0 | utility-lens meta-analysis | t42-f2ur | closed — narrows p_make/EV thread; ch05-void-creation-follow is the only true objective-dependent split; high-bid pounce contradicted under all 4 utilities |
-| 4.0 | utility-argmax divergence (architecture-decision gate) | t42-hmjr | closed — **gate TRIPPED**; EV vs p_make argmax disagrees on 41.2% (CI [36.8%, 45.6%]) of ch05-follow snapshots; Wave 3.0 framing inverted (p_make picks void MORE than EV; EV is the outlier preferring third-option discards); rung-2 utility-tunable searcher justified |
-| 4.1 | Lens v1 utility head-to-head (who wins games?) | t42-4ouu | closed — **EV wins decisively**: round-robin {ev, p_make, cvar_10, robust_q25} × 6 pairings × 1000 hands paired-seed; total ordering ev > robust_q25 ≳ cvar_10 > p_make, all 6 CIs exclude zero, ev beats p_make by +5.42 pts/hand; Wave 4.0 reading inverted (EV's "third-option" picks are point-winning, not noise); production `select_actions` is Lens(p_make) — the worst utility — switching to ev-argmax is a one-line follow-up |
+| 2.B.2 | bid-aware full 50-seed MPS sweep | t42-7eop | closed (720aa83) — 259,618 rows, validation 10/10 PASS; 2 ledger promotions, one on a tautology, one on an aggregate proxy |
+| 2.C | void-creation paired contrast (lead) | t42-26j8 | closed (8507b11) — verdict withdrawn pending setter sign check (#122) |
+| 2.C.2 | void-creation paired contrast (follow) | t42-z31l | closed (37a5804) — verdict withdrawn pending setter sign check (#122) |
+| 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — null in the count subgroup (the book's scenario) |
+| 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — null; withdrawn pending setter sign check (#122) |
+| 2.E.2 | setter-pounce high-bid snapshot probe | t42-8kbh | closed (0b7fb01) — row demoted to `contradicted`; verdict withdrawn pending setter sign check (#122) |
+| 2.G | ch02 multi-step bid-only-enough | t42-ey88 | closed — row promoted to `supported` on a test that cannot fail (tautology) |
+| 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; the row is a scoring definition; the 71% flip rate is an artifact) |
+| 3.0 | utility-lens meta-analysis | t42-f2ur | closed — four of its seven inputs are setter-side probes withdrawn pending #122 |
+| 4.0 | utility-argmax divergence (architecture-decision gate) | t42-hmjr | closed — EV vs p_make argmax disagrees on 41.2% (CI [36.8%, 45.6%]) of ch05-follow snapshots against an ad hoc 5% gate; two random legal pickers disagree 70.4%; EV's argmax is the void tile on 29.4% |
+| 4.1 | Lens v1 utility head-to-head (who wins games?) | t42-4ouu | closed — EV beats the others: round-robin {ev, p_make, cvar_10, robust_q25} × 6 pairings × 1000 hands paired-seed, bid forced to 30; in points all 6 CIs exclude zero (ev +5.42 pts/hand over p_make); in marks only EV's edge survives (+0.110 marks/hand over p_make), the other three pairings are null; Wave 4.0 reading inverted (EV's "third-option" picks are point-winning, not noise); production `select_actions` is Lens(p_make), the lowest-scoring utility in points; switching to ev-argmax is a one-line follow-up |
 | 5 | champion teaching battery (book-claim-checking against champion trajectories) | — | closed (`w42/book_validation_v1/wave5/champion_teaching_battery/`, 2026-06-13, [[w42-champion-teaching-battery]]) — the campaign's only Wave 5 probe; runs the champion's lens:ev self-play trajectories through the ch04/ch05 detectors rather than through a planning-aware architecture (MCTS/Lookahead-Lens/book-strategy-player, all unbuilt); backfilled into this table by the era-6 audit (2026-07-06) — the artifact existed on disk but was never entered here |
-| 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
-| 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
-| 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
-| 2.F | 84-throwaway snapshot corpus + ch08 probe | t42-wikw | blocked on 2.A + 2.B |
-| 2.G | ch02 bid-only-enough paired bids | t42-ey88 | blocked on 2.B |
-| 2.H | ch10 mark-multiplier paired bids | t42-8na4 | blocked on 2.B |
+| 2.F | 84-throwaway snapshot corpus + ch08 probe | t42-wikw | never produced output |
 
 The campaign epic is bead `t42-4zi6`. Detector hygiene follow-ups (filed
 during Wave 1.4 reconciliation): `t42-v0m5`, `t42-2yb5`, `t42-btpg`.
@@ -79,20 +80,25 @@ non-vocabulary status string in a phase-4 worker artifact.
 Wave 2 absorbed 2 net promotions plus 1 promotion-then-demotion:
 
 - `ch02-bid-only-enough`: `not-yet-tested` → `context-limited`
-  (Wave 2.B.2) → **`supported`** (Wave 2.G; 5 step pairs, 85/85 slice
-  cells in book direction)
+  (Wave 2.B.2) → `supported` (Wave 2.G; 5 step pairs, 85/85 slice
+  cells in book direction). The test cannot fail: every bid is scored
+  from the same points sample against a rising threshold
+  (`forge/bidding/estimator.py:72-100`), so P(make) can only fall as the
+  bid rises. The book's auction claim was never tested.
 - `ch12-setter-pounce-high-bid-off`: `underpowered` → `context-limited`
-  (Wave 2.B.2 aggregate proxy) → **`contradicted`** (Wave 2.E.2
-  snapshot-level paired probe reversed it)
+  (Wave 2.B.2 aggregate proxy) → `contradicted` (Wave 2.E.2 two-action
+  snapshot probe). The probe negates E[Q] for the setter as if it were
+  Team 0's view; forge documents it from the acting player's view. The
+  verdict is withdrawn pending a sign check (#122).
 
-The Wave 2.G promotion is the campaign's first crossing into
-`supported` from a non-supported start. The Wave 2.E.2 demotion is
-the first time a Wave-2 promotion was reversed by stronger evidence —
-it triggered a new "promotion guard" rule in `AGENTS.md`: aggregate
-proxies do not qualify for promotion, only paired same-decision
-contrasts on the relevant action shape.
+The Wave 2.E.2 demotion prompted a "promotion guard" rule in
+`w42/book_validation_v1/AGENTS.md` (aggregate proxies do not qualify for
+promotion). The rule stands on its own logic; its precedent is withdrawn
+with the probe.
 
-Status counts after Wave 2.E.2:
+Status counts after Wave 2.E.2 (as recorded; 20 of the 24 `supported` rows
+are arithmetic, rule fixtures or scoring definitions, and no strategic claim
+was established; see [[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]]):
 
 | status | count |
 |---|---:|
@@ -115,20 +121,23 @@ Five offline analyses, all over already-existing per-world Q tensors and
 detector outputs:
 
 - [[w42-bookval-v1-wave1-distribution-lens-reranker]] — utility-family
-  action ranking; CVaR_10 / robust_q25 agree with EV at 82-83% on the
-  branch atlas, while p_make / threshold_mass only at 59%; EV "lies" in
-  64.9% of decisions but never beats alternatives in EV terms.
+  action ranking on one deal; CVaR_10 / robust_q25 agree with EV at 74.4% /
+  70.1% (the synthesis quoted 82-83%), p_make at 61.1%, with forced moves
+  counted and no chance baseline; EV's argmax never loses in EV terms by
+  definition.
 - [[w42-bookval-v1-wave1-mark-utility-transform]] — Ch 10 mark utility
-  applied to existing branch atlas; 3.6% genuine flips on bid=30 corpus;
-  algebraic identity `mark_ev == p_make` at one-mark multiplier; bid-aware
+  applied to existing branch atlas; 4.3% (12/280) genuine flips on one
+  bid=30 deal; `mark_ev` is affine in `p_make` at one-mark multiplier by
+  construction; bid-aware
   generator confirmed as a hard prerequisite for further Ch 10 work.
 - [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] — per-decision
-  top-K load-bearing tile attribution; trump-count tiles are 100%
-  directionally helpful; 5-5-in-twos and 4-4-in-NT identified as
-  load-bearing pseudo-trump in low-pip declarations; setter seats are
-  asymmetric in load-bearing-tile category.
+  top-K load-bearing tile attribution; the "100% directionally helpful"
+  trump-count tiles are 20 partner-held cases from 3 hands; 5-5-in-twos and
+  4-4-in-NT identified as load-bearing pseudo-trump in low-pip declarations;
+  setter-seat asymmetry, which the book itself states (p.51).
 - [[w42-bookval-v1-wave1-cross-ai-agreement]] — EV / Gus / detector /
-  dist-lens agreement matrix; setter seats dominate divisive decisions
+  dist-lens agreement matrix; detector–EV agreement (43.7%) is at the
+  random-legal rate (40.1% on detector-active decisions); setter seats dominate divisive decisions
   (83/100); detector hygiene findings on three Ch 5 / Ch 3 detectors.
 - [[w42-bookval-v1-wave1-independent-audit]] — independent rebuild of the
   64-row audit; baseline holds; two Ch 10 ledger absorptions identified.
@@ -167,98 +176,71 @@ before merge.
   sharpened, not retired.
 - Push at session end. Work is not done until pushed.
 
-## Wave 3.0 reconciliation (revised by Wave 4.0)
+## Wave 3.0 reconciliation
 
 [[w42-bookval-v2-utility-lens-synthesis]] re-processed all 7 closed
-Wave 2 probes through 5 utility lenses. Initial read narrowed the
-emergent p_make/EV thread to one claim. **Wave 4.0 then broadened it.**
+Wave 2 probes through 5 utility lenses. Four of the seven are setter-side
+probes withdrawn pending the sign check (#122), so its reading of the
+p_make/EV thread, including "high-bid pounce contradicted under all 4
+utilities", is withdrawn with them.
 
-- **High-bid pounce hypothesis superseded** (still holds): ch12-setter-
-  pounce-high-bid is contradicted under all 4 available utilities. The
-  Wave 2.E "p_make split" framing was an EV-only-reporting artefact.
-- **Schema decision: ADOPT-DEFERRED.** Per-utility status columns are
-  the right shape, but populating them needs probes to record all 5
-  utilities. Defer adoption until next 3-5 probes record full coverage.
-- **Wave 3.0's "narrowing" was an artefact of paired-contrast statistics**
-  (magnitudes on specific action pairs, not what each utility's argmax
-  actually picks). Wave 4.0 measured argmax directly and found EV
-  disagrees with p_make / mark_ev / CVaR_10 on 41-44% of ch05-follow
-  snapshots. The multi-objective story is real, just not in the
-  direction Wave 3.0 framed it.
-- **Status counts unchanged** (both waves are read-only meta/measurement,
-  no new probe verdicts): supported 24, context-limited 14,
+- **Schema decision: ADOPT-DEFERRED.** Per-utility status columns were
+  never adopted.
+- **Status counts unchanged**: supported 24, context-limited 14,
   underpowered 19, not-yet-tested 4, contradicted 3.
 
 ## Wave 4.1 — Lens v1 head-to-head (who wins games?)
 
 [[w42-lens-v1-utility-head-to-head]] is the cheap rung-1.5 player —
-1-step Q-greedy with utility as a parameter. Round-robin in 7 minutes
-wall.
+1-step Q-greedy with utility as a parameter, every hand forced to bid 30.
 
-- **Total ordering: ev > robust_q25 ≳ cvar_10 > p_make**, all 6 CIs
-  exclude zero. EV beats p_make by **+5.42 pts/hand** ([+4.03, +6.81]).
-- Wave 4.0's "EV is the outlier" framing is inverted: EV's third-
-  option picks are *point-winning*, not noise. The book's void-
-  creation advice aligns with the *worst-scoring* utility (p_make) on
-  this corpus.
-- Sample-sweep at N ∈ {10, 50, 100} confirms ranking is robust to N;
-  N=10 is the right operating point (per Zeb's prior finding).
+- In points, all 6 CIs exclude zero and EV beats p_make by **+5.42
+  pts/hand** ([+4.03, +6.81]). In marks, EV beats each other utility
+  (+0.110 marks/hand over p_make [0.048, 0.168]); the other three pairings
+  are null, so there is no total ordering.
+- EV's third-option picks score points rather than being noise.
+- Sample-sweep at N ∈ {10, 50, 100} preserves the ranking.
 - **Production-code follow-up:** `forge.eq.generate.actions.select_actions`
   hardcodes p_make-argmax-with-EV-tiebreak (effectively Lens(p_make)).
-  Switching to ev-argmax is a one-line change predicted to lift the
-  E[Q]-vs-Zeb-Large win rate. Filed as `t42-10yj`.
+  Switching to ev-argmax is a one-line change; filed as `t42-10yj`, now
+  #45 (open); not applied.
 - **`disaster` follow-up exploration**: a clipped EV that floors all
   sub-threshold samples to Q=−42. Beats p_make by +2.74; loses to ev
-  by ~1.5; ties robust_q25. Confirms EV is the ceiling for fixed
-  pointwise utilities at one-step lookahead.
+  by ~1.5 (CI grazes zero); ties robust_q25.
 
-## Methodology insight — single-decision blind spot
+## Methodology insight — strategy fusion
 
-The campaign's deepest finding is structural, not from any single
-probe: **most book claims are multi-step plans, but most probes are
-single-decision contrasts.** Single-decision EV can be the locally-
-best move yet still lose to a planner that sets up future tricks
-(the book's bread and butter). This means the 19 underpowered + 14
-context-limited claims may be stuck at the wrong abstraction level,
-not because the book is wrong. The "EV wins" Lens v1 result is
-bounded by the test's abstraction level — Lens v1 measured EV's
-individual moves against p_make's individual moves; the book was
-never in that contest because the book plays plans.
+The campaign concluded that most book claims are multi-step plans, that
+single-decision EV cannot see a plan, and that planning-aware probes were
+needed. The diagnosis is wrong: a perfect-information evaluator plans
+perfectly within each sampled world. Its defect is information-set
+inconsistency, one plan per world averaged across worlds the player cannot
+tell apart: strategy fusion ([[the-wall]]). Planning-aware probes over the
+same oracle inherit it; the remedy was an imperfect-information evaluator,
+later used in [[book-study-2026-10-12]]. Detail in
+[[w42-book-claim-synthesis-and-ai-directions#methodology-insight-strategy-fusion-not-a-single-decision-blind-spot]].
 
-Wave 5 frontier: planning-aware probes. Three architectures —
-MCTS over forge, Lookahead-Lens (K=2-3 step), or book-strategy player
-(hand-coded multi-step policies). For the book validation use case,
-the third is most direct (tests specific claims rather than "is
-planning generically good?"); for broader model-design questions,
-the second is the cheap general-purpose tool. Detail in
-[[w42-book-claim-synthesis-and-ai-directions#methodology-insight-the-single-decision-blind-spot]].
-
-None of the three were built as planning architectures. [[book-strategy-player]]
+None of the three proposed planning architectures (MCTS over forge,
+Lookahead-Lens, book-strategy player) was built. [[book-strategy-player]]
 was designed (2026-05-03/04) but never implemented — superseded before build
 by the auction-first [[jud]] redirection ([[champion-design-review]],
 2026-06-09). The Wave 5 probe that actually ran, [[w42-champion-teaching-battery]]
-(2026-06-13), answered the book-validation use case a different way: it checks
-book claims against the champion's own realized self-play trajectories,
-bypassing the planning-architecture question entirely.
+(2026-06-13), checks book claims against the champion's own realized
+self-play trajectories, scored by the same E[Q] the champion plays by.
 
-## Wave 4.0 — architecture-decision gate
+## Wave 4.0 — utility-argmax divergence
 
 [[w42-bookval-v3-utility-argmax-divergence]] computed argmax-under-
 utility for ALL legal actions on the 500 ch05-follow snapshots.
 
-- **Verdict: gate TRIPPED.** EV vs p_make argmax disagrees on 41.2%
-  (CI [36.8%, 45.6%]) — order of magnitude above the 5% gate.
-- **Direction inverts Wave 3.0's framing.** p_make picks void MORE
-  often than EV (38.6% vs 29.4%); CVaR_10 picks void most aggressively
-  (42.6%). EV is the outlier — it more often selects a third-option
-  discard (37.6% "neither" rate). The book's void advice aligns with
-  *risk-aware* utilities, not with mean-EV.
-- **Empirical confirmation of the bid=30 mm=1 affine identity at
-  argmax level:** p_make and mark_ev agree on every single one of 500
-  snapshots (0/500 disagreement).
-- **Recommendation:** scope rung-2 utility-tunable searcher (named
-  decision pending — see [[w42-bookval-v3-utility-argmax-divergence]]).
-  Whether to actually build is a separate prioritization decision.
+- EV vs p_make argmax disagrees on 41.2% (CI [36.8%, 45.6%]), above an ad
+  hoc 5% gate; two random legal pickers disagree 70.4%, and 44% of
+  snapshots have top p_make = 1.0 broken by slot index.
+- EV's argmax is the void tile on 29.4% of snapshots; p_make 38.6%;
+  CVaR_10 42.6%. The book's follow-void advice is not what the EV oracle
+  plays.
+- p_make and mark_ev agree on all 500 snapshots, by construction at bid=30.
+- **Recommendation:** scope rung-2 utility-tunable searcher; never built.
 
 ## Links
 
@@ -271,4 +253,5 @@ utility for ALL legal actions on the 500 ch05-follow snapshots.
 [[w42-bookval-v1-wave1-mark-utility-transform]] |
 [[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] |
 [[w42-bookval-v1-wave1-cross-ai-agreement]] |
-[[w42-bookval-v1-wave1-independent-audit]]
+[[w42-bookval-v1-wave1-independent-audit]] |
+[[the-wall]] | [[book-study-2026-10-12]]

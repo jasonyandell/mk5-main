@@ -11,12 +11,14 @@ backlinks:
   - [[w42-bookval-v1-wave2-bid-aware-atlas]]
   - [[w42-phase4-bidding-count-exposure-tests]]
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 ## Summary
 
-Wave 2.B.2 promoted `ch02-bid-only-enough` from `not-yet-tested` to `context-limited` based on a single step (bid=32 vs bid=30, N=14,000). Wave 2.G extends this to all adjacent bid steps in the 30–42 range and finds the overbidding penalty is **universal, monotone, and robust**. The claim is promoted to **`supported`** on the same-hand bid-margin slice.
+Wave 2.B.2 promoted `ch02-bid-only-enough` from `not-yet-tested` to `context-limited` based on a single step (bid=32 vs bid=30, N=14,000). Wave 2.G extends this to all adjacent bid steps in the 30–42 range; every step and every slice cell shows a penalty, and the row was promoted to `supported`.
+
+**The test cannot fail.** At one-mark scoring `mark_ev = 2·p_make − 1`, and `p_make = P(Q ≥ threshold)` with a threshold that rises with the bid. On the same points distribution a higher threshold can only lower p_make, so every cell had to agree; "85 of 85" is the arithmetic, not the book. The `supported` row rests on a tautology. The book's actual claim is about the auction (outbid by the minimum; the 30/31/35/36 lattice; what a raise tells the table), and it was never tested: no artifact here or anywhere in w42 varies the auction.
 
 ## Claim Under Test
 
@@ -25,7 +27,7 @@ Wave 2.B.2 promoted `ch02-bid-only-enough` from `not-yet-tested` to `context-lim
 
 ## Method
 
-Same approach as [[w42-bookval-v1-wave2-bid-aware-atlas]], restricted to `is_actual_action==1`. Paired contrasts on `(seed, decl_id, decision_idx)` so the same hand and game position is compared across bid thresholds. Delta convention: `lower_bid − higher_bid` (positive = lower bid is better for the bidding team).
+Same approach as [[w42-bookval-v1-wave2-bid-aware-atlas]], restricted to `is_actual_action==1`. Paired contrasts on `(seed, decl_id, decision_idx)`. Trajectories diverge across bid runs (`run_bid_aware_atlas.py:501-503`), so a pair is the same hand and decision index, not the same game position. Delta convention: `lower_bid − higher_bid` (positive = lower bid is better for the bidding team).
 
 Metrics: `mark_ev` (primary), `p_make`, `threshold_mass`, scalar Q mean. Bootstrap CIs: 2000 iterations, percentile method.
 
@@ -39,7 +41,7 @@ Metrics: `mark_ev` (primary), `p_make`, `threshold_mass`, scalar Q mean. Bootstr
 | 36↔39  |  9584| +0.103 | [+0.097, +0.110]     | +0.337  | YES            |
 | 39↔42  |  8168| +0.146 | [+0.139, +0.153]     | +0.472  | YES            |
 
-All five CIs exclude zero in the book direction. p-values are numerically zero (< machine epsilon) for all steps. The penalty is not constant: it grows as the bid approaches 42, consistent with rising threshold difficulty.
+All five CIs exclude zero, as they must: each step raises the threshold on a points distribution the bid barely moves. The penalty grows as the bid approaches 42 because more of the points mass sits below the higher thresholds.
 
 The p_make metric shows the same pattern at roughly half the magnitude (mark_ev = 2 × p_make − 1 identity holds within each bid level).
 
@@ -57,11 +59,11 @@ Does the direct 30→42 delta equal the sum of the five steps?
 | p_make         |       +0.241 |       +0.243 |    −0.81% |
 | threshold_mass |       +0.012 |       +0.011 |    +7.7%  |
 
-Additivity holds within measurement noise. The bid-only-enough penalty is approximately linear in bid step size — no evidence of nonlinear amplification. This simplifies instruction: every extra mark you bid costs roughly the same marginal penalty, regardless of where in the 30–42 range you are.
+Additivity holds within measurement noise, as differences of one cumulative distribution must.
 
 ## Slice Analysis
 
-All 85 slice cells (5 pairs × [10 decls + 4 seat roles + 3 phases]) show the book direction. Not a single cell reversed.
+All 85 slice cells (5 pairs × [10 decls + 4 seat roles + 3 phases]) show the penalty; none could reverse.
 
 **By declaration:** The penalty is largest for "blanks" and "ones" contracts (+0.105) and smallest for "doubles" (+0.084). Doubles contracts are already highly constrained, so extra overbidding changes the Q distribution less.
 
@@ -81,9 +83,7 @@ Conclusion for 84: the overbid penalty is massive and qualitatively different fr
 
 ## Status
 
-**Proposal: `supported`** on the same-hand bid-margin slice.
-
-All five adjacent step pairs in [30, 32, 35, 36, 39, 42] show the overbidding penalty in mark_ev and p_make with 95% CIs excluding zero. The effect is monotone, holds in 85/85 slice cells, and the transitive check confirms near-additivity. The claim does not generalize to cross-contract comparison (choosing between bid=30/blanks vs bid=32/sixes), which is a separate analysis.
+The probe proposed `supported` and the row was promoted. The test is a tautology: under one-mark scoring, raising the bid on a fixed points distribution can only lower P(make). It establishes nothing about the book. The auction claim, and cross-contract choice (bid=30/blanks vs bid=32/sixes), were never tested. Labels are E[Q] network outputs (qMAE 0.94 points); `claims.csv:18` still says no auction-counterfactual artifact exists. See [[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]].
 
 ## Artifacts
 

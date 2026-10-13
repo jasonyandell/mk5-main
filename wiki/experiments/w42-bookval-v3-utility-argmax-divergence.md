@@ -5,12 +5,12 @@ status: complete
 first_seen: 2026-05-03
 bead: t42-hmjr
 parent_epic: t42-4zi6
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 ## Question
 
-Wave 3.0 [[w42-bookval-v2-utility-lens-synthesis]] flagged ch05-void-creation-follow as the most consequential utility-dependent verdict: paired contrasts gave EV delta = +0.77 (CI excludes zero) but p_make delta ≈ 0 (CI spans zero). That is a **contrast-magnitude statistic** — it shows the void-vs-preserve delta differs across utilities. It does not establish that an EV-greedy player and a p_make-greedy player would actually pick different actions at those snapshots.
+Wave 3.0 [[w42-bookval-v2-utility-lens-synthesis]] flagged ch05-void-creation-follow as the most consequential utility-dependent verdict: paired contrasts gave EV delta = +0.77 (CI excludes zero) but p_make delta ≈ 0 (CI spans zero). That is a **contrast-magnitude statistic** — it shows the void-vs-preserve delta differs across utilities. It does not establish that an EV-greedy player and a p_make-greedy player would actually pick different actions at those snapshots. (That follow-void probe negates E[Q] for the setter and is withdrawn pending a sign check, #122. This page maximizes raw e_q from the acting player's view and does not share the sign question.)
 
 This wave measures the policy-action question directly: argmax over **all legal actions** per snapshot under each of five utility lenses, then count pairwise disagreements. The result is a gating measurement for whether a multi-objective architecture (utility-conditioned model heads / utility-tunable searcher) is worth building.
 
@@ -76,7 +76,7 @@ For each utility's argmax, was it the void slot, the preserve slot, or some thir
 
 > **DISAGREE ≥ 5%. Divergence is real at the policy-action level. Recommend scoping rung-2 (utility-tunable searcher) as the next build.**
 
-EV-greedy and p_make-greedy disagree on **41.2%** of snapshots (95% CI [36.8%, 45.6%]) — an order of magnitude above the 5% gate. Wave 3.0's contrast-magnitude split is **not** purely a magnitude-only artefact; the two objectives select different actions at the policy level on this corpus.
+EV-greedy and p_make-greedy disagree on **41.2%** of snapshots (95% CI [36.8%, 45.6%]) — above an ad hoc 5% gate. Two random legal pickers disagree 70.4% of the time on the same snapshots, and 44% of snapshots have top p_make = 1.0, broken by lowest slot index (tie counts not reported). The objectives do select different actions here; the gate was not a calibrated threshold.
 
 A subtlety worth noting in the recommendation: the void-subset breakdown shows **p_make picks the void slot more often than EV does** (38.6% vs 29.4%), which inverts the intuitive Wave 3.0 framing ("EV likes void, p_make is neutral"). The actual story:
 
@@ -133,7 +133,7 @@ Wave 4.0 measurement agent (t42-hmjr). Forge pipeline + bootstrap statistics. In
 
 - [[w42-bookval-v2-utility-lens-synthesis]] — Wave 3.0 finding this measurement gates
 - [[w42-bookval-v1-wave2-void-creation-follow]] — original paired-contrast probe (t42-z31l)
-- [[w42-bookval-v1-wave1-mark-utility-transform]] — Wave1.2 mark_ev ≡ p_make at bid=30 (now confirmed at argmax level)
+- [[w42-bookval-v1-wave1-mark-utility-transform]] — Wave1.2 mark_ev ≡ p_make at bid=30 (by construction; argmax agrees on every snapshot)
 - [[w42-bookval-v1-wave2-ch10-action-level]] — Wave2.H mark_ev affine identity at all bids
 - [[w42-book-validation-campaign]] — parent campaign
 - [[w42-book-claim-synthesis-and-ai-directions]] — campaign synthesis

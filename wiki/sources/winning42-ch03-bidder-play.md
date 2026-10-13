@@ -2,7 +2,7 @@
 title: Winning 42 Ch03 Bidder Play
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-01
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -154,12 +154,12 @@ of the book claims.
 |---|---|---|
 | Trump-first is usually better than off-first for bidder play. | context-limited | `t42-br7n.1` supports commanding called doubles over off leads, but generic non-double called-suit leads are strongly negative. Next bucket by exact trump count, off count, and live count. |
 | One-off/four-trump hands can justify an early off. | context-limited | Enumerate one-off/four-plus-trump shapes and compare off-first tail risk against trump-first void creation. |
-| The bidder should preserve at least one trump until after offs are resolved. | context-limited; phase-conditional | [[w42-bookval-v1-wave2-reentry-v2]] tests this on 222 paired oracle-greedy contrasts. Overall EV delta `-1.23` (CI `[-2.62, +0.16]`, consume-favored direction). The late-game slice (tricks 5-6, n=60) is significantly contradicted: CI `[-6.76, -1.17]`. Mid-game is underpowered. The book's claim does not survive paired counterfactual testing in the late phase where it is most pointed; mid-game and early-game scope still need bigger N. |
+| The bidder should preserve at least one trump until after offs are resolved. | null overall; untested in the early game (ledger: `underpowered`) | [[w42-bookval-v1-wave2-reentry-v2]] tests this on 222 paired oracle-greedy contrasts. Overall EV delta `-1.23` (CI `[-2.62, +0.16]`): null. The late-game slice (tricks 5-6, n=60, CI `[-6.76, -1.17]`) was chosen post hoc with no multiplicity correction. The early game, the book's main context, has n=0. |
 | Partner should donate count only when bidder has a guaranteed winning trick. | context-limited | `t42-qtwb.3` shows small-positive support under bidder-side control and strong negative support into defense; next add guaranteed-trick and partner-free-discard gates. |
 | Leading a double ahead of an off wins the vulnerable count substantially more often than leading the off first. | context-limited | Reproduce the book's double-deuce/deuce-blank style odds by exhaustive enumeration. |
 | Extra trump leads can create opponent voids that set the bidder later. | context-limited | Attribute future off-trick pounces to optional earlier trump leads. |
 | Low-trump-first can preserve command better than boss-trump-first in some hands. | context-limited | Counterfactual oracle rollout on hands with boss trump plus unresolved lower trumps and offs. |
-| A laydown is valid only when every legal continuation wins the rest. | supported-by-fixture-proof, corpus-untested | `t42-br7n.4` implements an exact tiny-state proof checker and rejects false claims, including the final-deuce warning. Next: wire saved engine snapshots and Burl trace claims into the checker. |
+| A laydown is valid only when every legal continuation wins the rest. | not-yet-tested (ledger); a proof checker exists | `t42-br7n.4` implements an exact tiny-state proof checker and rejects false claims, including the final-deuce warning. Next: wire saved engine snapshots and Burl trace claims into the checker. |
 
 ## Links
 

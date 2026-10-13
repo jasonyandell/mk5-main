@@ -2,7 +2,7 @@
 title: W42 Book Validation
 kind: trail
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: active
 ---
 
@@ -35,7 +35,7 @@ The sixteen chapter digests (now under `sources/`):
 - [[winning42-ch01-in-a-nutshell]] — rule/state accounting: trick winner,
   follow obligation, count capture, make/set threshold, walkers.
 - [[winning42-ch02-bidding]] — bidding as risk budget: trump suitability,
-  off-risk, duplicate count, bid-only-enough discipline.
+  off-risk, duplicate count, bid-only-enough discipline (auction claim never tested).
 - [[winning42-ch03-bidder-play]] — bidder sequencing: trump pull, reentry
   preservation, donation windows, setter-pounce creation.
 - [[winning42-ch04-partner-support]] — partner help: safe count donation, lead
@@ -149,23 +149,38 @@ since Wave 5 (2026-06-13), and research attention moved to the
 [[jud]] line. The canonical synthesis — the page to send a cold
 reader to — is [[w42-book-claim-synthesis-and-ai-directions]]; the closure
 baseline is [[w42-phase4-final-claim-audit]]: every one of the 64 book claims
-has evidence and/or explicit bounded blockers; no row is ownerless.
+has evidence or a stated blocker, where closure meant "has an owner or a
+blocker", not "was tested".
 
-Wave 1 added independent audit, utility-lens disagreement, mark-utility,
-hidden-threat ranking, and cross-AI agreement. Wave 2 then produced the first
-hard promotions and demotions under paired contrasts: bid-only-enough is
-supported, void creation is position-dependent, and high-bid pounce is
-contradicted once tested at the action contrast rather than aggregate proxy
-level.
+**No strategic claim from the book was established.** Of 24 `supported`
+rows, 20 are arithmetic, rule fixtures or scoring definitions; two are
+near-tautological negative controls; bid-only-enough is a tautology (every
+bid scored from the same points sample against a rising threshold); and
+pounce-before-certainty is null on its literal label (+0.44 [−0.20, +1.10],
+n=525). The labels came from a learned Q network (qMAE 0.94 points), not a
+solver; every delta is in points, on bid-30 oracle-played positions from 100
+deals, with unclustered CIs, on an April corpus later found 27–67% malformed
+([[otis-phase-r]]) and never rerun. Coverage: 64 rows against at least 277
+advice sentences; chapters 1, 6, 11, 13, 14 and 15 got zero rows, Ch12 got 2,
+and the book's worked example hands were never used as test positions
+(#123). Detail: [[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]].
 
-Wave 3 and Wave 4 narrowed the utility-lens lesson. The original "many claims
-may be p_make-optimized" theory collapsed to one concrete split, but the EV and
-p_make argmax policies still disagree sharply on the ch05 void-creation-follow
-corpus. [[w42-lens-v1-utility-head-to-head]] then showed EV wins the one-step
-utility contest.
+Wave 2's setter-side probes (void creation lead and follow, pounce at bid 30,
+high-bid pounce) negate E[Q] for the setter as if it were Team 0's view;
+forge documents it from the acting player's view. Their verdicts, including
+"high-bid pounce contradicted", are withdrawn pending a sign check (#122).
+Wave 1's agreement rates sit at the chance floor (random legal play matches
+the EV argmax 57.3% overall, 40.1% on detector-active decisions).
+[[w42-lens-v1-utility-head-to-head]] showed EV beats the other one-step
+utilities in points and, recomputed, in marks; the rest of its ordering is
+null in marks.
 
-[[w42-book-claim-synthesis-and-ai-directions]] named the single-decision blind
-spot: many book claims are multi-step plans. [[book-strategy-player]] was the
+[[w42-book-claim-synthesis-and-ai-directions]] blamed a single-decision
+blind spot. The defect is strategy fusion ([[the-wall]]): a
+perfect-information evaluator plans perfectly within each world but
+averages plans across worlds the player cannot tell apart. The book was
+restudied with an imperfect-information player in [[book-study-2026-10-12]].
+[[book-strategy-player]] was the
 route proposed for testing those claims without loading the entire W42 leaf
 pile — a compact algebraic contract (pure Reader/State/Writer decision logic,
 finite strategy library, per-hand `PlanState`, lawful facts, deterministic
@@ -181,9 +196,9 @@ jud) is unrelated to BSP's symbolic strategy-library thesis; per
 [[champion-design-review]] (Fable, 2026-06-09), "the chassis was later
 repointed from play to the auction." Route readers who want the current
 best-player state to [[jud]], not to book-strategy-player.
-The book-validation evidence pile above (Waves 1-4, Phase 4 closure) remains
-accurate and is the record of a completed research generation; it is not the
-live edge.
+The book-validation evidence pile above (Waves 1-4, Phase 4 closure) is the
+record of a completed research generation, read with the corrections above;
+it is not the live edge.
 
 A second close reading of the full book text (2026-07-07,
 [[w42-book-second-pass]]) re-opened the source with the campaign's findings as
@@ -191,10 +206,10 @@ the lens. Headline: the first extraction captured the book's tactics and missed
 its information theory — the auction decoder (bid → hand posteriors, the
 {30,31,35,36} bid lattice), the action-choice inference catalog, the signaling
 conventions, reputation-driven overbidding, and match-score-conditioned
-bidding — all of which map onto [[jud]]'s named untested gaps. It also flags
-the `contradicted` verdict on [[w42-bookval-v1-wave2-pounce-high-bid]] as a
-probable information-regime category error (the book's clause is an
-imperfect-information hedge tested against a perfect-information oracle).
+bidding — all of which map onto [[jud]]'s named untested gaps. It also names
+the information-regime problem in the high-bid pounce test
+([[w42-bookval-v1-wave2-pounce-high-bid]]): the book's clause is an
+imperfect-information hedge tested against a perfect-information oracle.
 
 ## Related pages
 

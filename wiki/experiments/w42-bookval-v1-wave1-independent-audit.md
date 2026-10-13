@@ -7,14 +7,14 @@ wave: wave1
 status: complete
 created: 2026-05-03
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 ## Summary
 
 Wave 1 of the W42 book validation campaign independently rebuilt the 64-row phase-4 claim audit to verify whether the baseline established by [[w42-phase4-final-claim-audit]] is reproducible and trustworthy before downstream waves propose claim-status changes.
 
-**Headline:** The prior audit holds up. All cited artifacts exist, all validation scripts pass, and the board/ledger are internally consistent. Two status divergences were found where phase-4 worker evidence justifies promotions not yet absorbed by the ledger. All 8 prior overclaim risks are independently confirmed.
+**Headline:** The prior audit holds up. All cited artifacts exist, all validation scripts pass, and the board/ledger are internally consistent. Two status divergences were found where phase-4 worker evidence justifies promotions not yet absorbed by the ledger. All 8 prior overclaim risks are independently confirmed, and none was acted on: `ch05-pounce-count-before-certainty` stayed `supported` with its CI crossing zero, and `ch02-bid-only-enough` was later promoted to `supported` on a test that cannot fail ([[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]]). The two promotions this page recommended were absorbed, though the page says it proposes no ledger edits; neither rests on a test of the book (below).
 
 ## Inputs
 
@@ -62,9 +62,9 @@ All 7 phase-4 `validate_outputs.py` scripts rerun and pass:
 
 Two rows where independent evidence supports a status promotion not in the ledger:
 
-**ch10-point-system-skill-signal** (ledger=`underpowered`, independent=`context-limited`): The phase-4 scoring worker (t42-br7n.3) ran 4 heuristic policy pairs over 4000 generated hands and observed different point/mark separation under the two objectives. This is small-N policy-population evidence — not oracle or human — but it crosses the underpowered threshold. Advancement disagreement rate=0.15 in the timed pool.
+**ch10-point-system-skill-signal** (ledger=`underpowered`, independent=`context-limited`): The phase-4 scoring worker (t42-br7n.3) ran 4 heuristic policy pairs over 4000 generated hands and observed different point/mark separation under the two objectives. This is small-N policy-population evidence — not oracle or human — but it crosses the underpowered threshold. Advancement disagreement rate=0.15 in the timed pool. No real player population was involved: the claim is untested.
 
-**ch10-timed-marks-advancement-objective** (ledger=`not-yet-tested`, independent=`context-limited`): The phase-4 scoring worker ran 160 synthetic timed round-robin trials with a trick-budget model. The advancement disagreement rate of 0.15 between point-leader and mark-leader goes beyond not-yet-tested. Bounded: synthetic round-robin, no real bracket or clock.
+**ch10-timed-marks-advancement-objective** (ledger=`not-yet-tested`, independent=`context-limited`): The phase-4 scoring worker ran 160 synthetic timed round-robin trials with a trick-budget model. The advancement disagreement rate of 0.15 between point-leader and mark-leader goes beyond not-yet-tested. Bounded: synthetic round-robin, no real bracket or clock. The 0.15 compares matches of different lengths; hand-level disagreement is 0.0. The claim is untested.
 
 **ch10-tournament-speed-tradeoff** (ledger=`context-limited`, independent=`context-limited`): No status change. The phase-4 scoring worker used a non-standard status string `supported-for-generated-trace-proxy` not in the AGENTS.md taxonomy. The underlying evidence (23.8 trick reduction per match, marks vs points) is real but the ledger `context-limited` is the correct taxonomy label. Prior overclaim risk confirmed.
 

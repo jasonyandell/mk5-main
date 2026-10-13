@@ -3,12 +3,22 @@ title: W42 Book Validation — Utility-Lens Synthesis (Wave 3.0)
 kind: experiment
 status: superseded
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-10-12
 bead: t42-f2ur
 parent_epic: t42-4zi6
 ---
 
 ## Superseded by Wave 4.0/4.1 — read this before the findings below
+
+**Four of the seven inputs are withdrawn.** The void-creation lead and follow
+probes and both pounce probes negate E[Q] for the setter as if it were Team 0's
+view; forge documents E[Q] from the acting player's view
+(`forge/eq/generate/actions.py:113,160`). Their verdicts in every column below
+are withdrawn pending a sign check (#122). The bid-only-enough row is a
+tautology (a higher threshold on the same points distribution cannot raise
+p_make). The p_set / threshold_mass "p_make" columns use Q ≥ 30 on the ±42
+scale where the make line is Q ≥ 18, and 35–58% of p_set values are saturated.
+What remains is reentry (null) and low-trump (null in the book's scenario).
 
 **This page's headline framing was inverted by the same campaign two waves
 later.** [[w42-bookval-v3-utility-argmax-divergence]] (Wave 4.0) measured
@@ -17,8 +27,9 @@ disagrees with p_make/mark_ev/CVaR_10 on 41-44% of them — an order of
 magnitude above this page's implied "narrow" split — and, decisively, that
 **p_make picks void MORE often than EV does**, the opposite of what this
 page's tables below suggest. [[w42-lens-v1-utility-head-to-head]] (Wave 4.1)
-then measured which utility actually wins games and found EV is the
-**best**-scoring of four lenses while p_make is the **worst** — i.e. the
+then measured which utility scores most and found EV is the
+**best**-scoring of four lenses in points while p_make is the **worst** (in
+marks only EV's edge survives) — i.e. the
 book's void-creation advice aligns with the worst-scoring utility on this
 corpus, not the best. The schema recommendation below ("ADOPT") was
 correspondingly downgraded to **"ADOPT-DEFERRED"** by the campaign tracker
@@ -32,7 +43,7 @@ Wave 3.0 re-analyzed all 7 closed Wave 2 probes under 5 utility lenses: EV, p_ma
 
 **Key finding (superseded, see above):** Three of seven claims show utility-dependent verdicts. The most consequential is ch05-void-creation-follow: EV supports the book's void-creation advice in follow position, but p_make, mark_ev, and CVaR_10 all span zero. No claim flips from supported to contradicted (or vice versa) — all flips are between supported/contradicted and spans_zero.
 
-**Most model-design-relevant:** High-bid pounce is contradicted under all 4 available utilities (unanimous, large effect). Low-trump-trap is contradicted under EV only (other utilities not recorded in that probe).
+**Most model-design-relevant (withdrawn):** High-bid pounce was recorded as contradicted under all 4 available utilities; withdrawn pending #122. Low-trump-trap's overall EV contrast excludes zero against the book, but in the book's count-bearing scenario it is null (n=86).
 
 ---
 
@@ -103,11 +114,10 @@ The current `ledger_status` field is EV-conditional (forge oracle E[Q] is the so
 
 ## Implications for Model Design
 
-**Strongest finding for model design:** ch05-void-creation-follow divides by objective. A model with an EV head should learn to create voids in follow position. A model with a p_make head should remain neutral. This is the only place where the two objectives give different training signals for the same situation.
-
-**Unanimous contradicted:** ch12-setter-pounce-high-bid is wrong under every available utility. Any model objective should learn to decline rather than pounce at high bids (35-42).
-
-**Unanimous supported:** ch02-bid-only-enough is right under every available utility. All model objectives should learn lower bids are better.
+None of the original implications stands. The ch05-void-creation-follow split
+and the "unanimous contradicted" high-bid pounce are withdrawn pending #122;
+the "unanimous supported" bid-only-enough row is arithmetic that any utility
+must reproduce.
 
 **Missing utilities problem:** ch04-low-trump-trap has only EV. Conceptually, low-trump is a higher-variance play (accepts lower EV for different risk profile). If p_make prefers the dominant trump more strongly than EV does, the claim would be reinstated under p_make. This is a priority for a future probe.
 

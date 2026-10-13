@@ -2,7 +2,7 @@
 title: w42 Odds Ruleset Claim Validation
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -18,7 +18,8 @@ predicates; not a [[forge]] E[Q], [[gus]], w42 model, [[burl]] trace, W&B, or HF
 Headline: the book/wiki odds and ruleset claims checked here are supported on the tested
 slice. Exact enumeration recovers `C(28, 7) = 1,184,040`, the Chapter 16 hand-shape and
 double-count priors, the modal two-doubles / one-void bucket, and the four-trump `10/27`
-and `14/27` configuration counts. Deterministic predicates also support the Chapter 1
+and `14/27` configuration counts. The configuration counts are not probabilities: the
+placements are not equiprobable, and the exact risks are 34.7% and 49.5%, not 37% and 52%. Deterministic predicates also support the Chapter 1
 accounting/follow-suit substrate and Chapter 13 straight-ruleset gates checked here.
 
 ## Key Question
@@ -71,8 +72,13 @@ enumeration and deterministic checks before any ML modeling?
 | Suit coverage odds are roughly 41/48/10/1. | 42.314% / 46.982% / 10.349% / 0.355% | supported | `hand_shape_priors.csv` |
 | Double-count odds are roughly 10/32/36/18/4/<0.5/0.02/extreme. | 9.821% / 32.081% / 36.091% / 17.692% / 3.931% / 0.372% / 0.0124% / 0.000084% | supported | `double_count_priors.csv` |
 | The modal hand has two doubles and one void. | 213,255 hands; 18.011% | supported | `validation_summary.json` |
-| Four trumps with the double but missing the second-highest has 10/27 setter double-up risk. | 10/27 = 37.037% | supported | `four_trump_assignments.csv` |
-| Four trumps with the double but missing the next two highest has 14/27 setter double-up risk. | 14/27 = 51.852% | supported | `four_trump_assignments.csv` |
+| Four trumps with the double but missing the second-highest has 10/27 setter double-up risk. | 10/27 = 37.037% under 27 equiprobable placements; weighted exact 33/95 = 34.7% | recorded supported; wrong model | `four_trump_assignments.csv` |
+| Four trumps with the double but missing the next two highest has 14/27 setter double-up risk. | 14/27 = 51.852% under 27 equiprobable placements; weighted exact 47/95 = 49.5% | recorded supported; wrong model | `four_trump_assignments.csv` |
+
+The 27 placements of three missing trumps are not equiprobable (a 1–1–1 split weighs
+0.043 each, 2–1 0.037, 3–0 0.026). `validate_odds_ruleset.py` (lines ~155-192) counts
+configurations and so reproduces the book's error; hypergeometric weights give the
+exact figures ([[book-study-2026-10-12]]).
 | Chapter 1 hand accounting gives seven trick points plus 35 count points. | 42 total | supported | `ruleset_checks.csv` |
 | Chapter 1 follow-suit obligation under trump exclusivity is internally consistent. | 4,422,600 / 4,422,600 predicate cases passed | supported | `ruleset_checks.csv` |
 | Chapter 13 direct 84, nontrump first lead, small-end disallowance, high-bid scoring, and variant exclusion predicates pass. | 357 / 357 aggregate predicate fixtures passed | supported | `ruleset_checks.csv` |

@@ -2,7 +2,7 @@
 title: w42 Gus Corpus Tactical Claim Deep Dive
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: superseded
 ---
 
@@ -34,6 +34,14 @@ row-level substrate reusable for later tactical beads.
 
 This is not a model-training run and does not use hidden ownership as a live
 feature. It is a report run over saved oracle distributions.
+
+The source corpus is the April Gus v2 corpus, later found 27–67% malformed
+([[otis-phase-r]]); no contrast here was rerun on the regenerated corpus. All
+deltas are oracle points (E[Q] network labels, 200 worlds, qMAE 0.94) at bid 30,
+class-vs-class, with CIs that resample decisions from 100 deals. The pooled
+pounce contrast includes last-seat pairs where the win is certain; the literal
+before-certainty label is null ([[w42-phase4-sequence-handshape-tests]]). The
+reckless and unsafe rows are near-tautological negative controls.
 
 ## Data Slice
 

@@ -2,7 +2,7 @@
 title: w42 Tactical Claim Replication
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: superseded
 ---
 
@@ -28,8 +28,15 @@ The replication confirms the original narrow result:
 - safe partner count donation has a small positive paired signal;
 - unsafe partner count donation remains strongly negative.
 
-The result does not broaden the claim ledger beyond the existing conservative
-reading. It adds reproducible full-row artifacts, W&B progress series, and slice
+The source corpus is the April Gus v2 corpus, later found 27–67% malformed
+([[otis-phase-r]]); no contrast here was rerun on the regenerated corpus. All
+deltas are oracle points (E[Q] network labels, 200 worlds, qMAE 0.94) at bid 30,
+class-vs-class, with CIs that resample decisions from 100 deals. The pooled
+pounce contrast includes last-seat pairs where the win is certain; the literal
+before-certainty label is null ([[w42-phase4-sequence-handshape-tests]]). The
+reckless and unsafe rows are near-tautological negative controls.
+
+The result does not broaden the claim ledger. It adds reproducible full-row artifacts, W&B progress series, and slice
 tables needed by the next tactical beads.
 
 ## Data Slice

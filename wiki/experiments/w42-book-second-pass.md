@@ -2,7 +2,7 @@
 title: W42 Book Second Pass — what the first extraction missed
 kind: experiment
 first_seen: 2026-07-07
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 status: active
 ---
 
@@ -11,8 +11,9 @@ status: active
 A second close reading of Winning 42 (2026-07-07, four parallel readers over the
 full OCR text in `scratch/winning42/text/`), run with the finished
 [[w42-book-validation-campaign]] as the lens: knowing what the 64-claim ledger
-tested and what the campaign's own retrospective flagged (the single-decision
-blind spot, [[w42-book-claim-synthesis-and-ai-directions]]), what is in the text
+tested and what the campaign's own retrospective flagged (a "single-decision
+blind spot" that is really strategy fusion, [[the-wall]];
+[[w42-book-claim-synthesis-and-ai-directions]]), what is in the text
 that the first extraction flattened or never saw?
 
 Raw reader reports (quotes, page numbers, per-finding experiment sketches) are
@@ -126,10 +127,11 @@ count when it lands — under that regime "pounce regardless" is strictly worse
 by construction. The probe tested the right words in the wrong information
 regime. Proposed re-adjudication: re-run with a belief/PIMC defender that does
 not see hands, scoped to bid ≥ 35 and bidder ≤ 2 offs. Prediction: the
-contradiction dissolves toward neutral-or-positive. Until then the
-`contradicted` row should carry an information-regime caveat — and every other
-verdict where the book's advice hedges against *not knowing* deserves the same
-audit.
+contradiction dissolves toward neutral-or-positive. The verdict is also
+withdrawn on a second ground: the probe negates E[Q] for the setter as if it were
+Team 0's view, while forge documents it from the acting player's view, so the
+recorded effect may be inverted (#122). Every other verdict where the book's
+advice hedges against *not knowing* deserves the same information-regime check.
 
 ## 5. Flattened conditionals (the "unless Z" clauses that got dropped)
 

@@ -2,7 +2,7 @@
 title: Winning 42 Ch12 Advanced Bidding Playing
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-03
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -130,47 +130,22 @@ underpowered until state-injected or high-bid generators exist.
 | The same hand should switch from protector stripping to crisis management when a dangerous trump remains. | underpowered | Run paired oracle rollouts for original-script versus crisis-plan actions across hidden worlds with retained opponent trump. |
 | 84 is justified from some non-perfect 35/36 hands only under score-context desperation. | underpowered | Simulate match utility by score deficit and compare ordinary bid versus 84 escalation. |
 | Doubles are not always the right play; bid margin and dead-suit status can make a non-double superior. | underpowered | Bucket double-available decisions and compare oracle regret for double versus book-recommended non-double. |
-| Count pounces on bidder offs are mandatory against high bids even when the defender is unsure who wins. | **contradicted** at bids 35/36/39/42 | [[w42-bookval-v1-wave2-pounce-high-bid]] snapshot-level paired contrast on n=1,140 high-bid pounce-eligible positions: pooled EV delta `-10.42` (CI `[-11.25, -9.59]`), p_set delta `-0.047` (CI `[-0.056, -0.038]`). All 4 bid buckets contradict; pounce-better fraction 21.6-26.6% across bids; effect 3x larger in magnitude than at bid=30. The earlier `context-limited` promotion (Wave 2.B.2, aggregate Q-delta proxy) was reversed by snapshot-level paired evidence. Final status: `contradicted`. |
+| Count pounces on bidder offs are mandatory against high bids even when the defender is unsure who wins. | withdrawn pending sign check (#122); ledger: `contradicted` | [[w42-bookval-v1-wave2-pounce-high-bid]] compared two hand-picked actions on n=1,140 high-bid positions and recorded setter EV delta `-10.42` (CI `[-11.25, -9.59]`). The probe negates E[Q] for the setter as if it were Team 0's view; forge documents it from the acting player's view, so the effect may favour the pounce by the same margin. The evaluator also sees every hand, which the book's clause explicitly does not ([[w42-book-second-pass]]). The row's own result field still says `paired_n=0`. |
 | 84 defenders should preserve live doubles and same-suit pairs, but discard them once partner play kills the target. | underpowered | Track live asset survival and set attribution in 84 rollouts. |
 | 32/33 bids are usually anomalous except as last-seat raises over 31. | partial empirical bucket evidence | `t42-br7n.7` finds natural 30/31 or 35/36 max-profitable buckets in 66 / 384 generated contract rows; real auction-increment behavior remains untested. |
 | Reputation for disciplined bidding can provoke opponent overcalls and should affect style priors. | context-limited | Needs repeated-player simulation or human logs; not measurable from single independent forge games alone. |
 
 ## Wave 2 Findings (Book Validation v1)
 
-[[w42-bookval-v1-wave2-pounce-window-bid30]] is the most consequential
-Ch 12 finding so far. A paired-contrast probe on 52 oracle-greedy
-snapshots (filtered from 500 candidates by 1-legal-move and
-setter-led-trick exclusions) tested the book's "pounce on bidder
-exposed count" instruction against the oracle's choice and against
-scalar EV.
+Both pounce probes, [[w42-bookval-v1-wave2-pounce-window-bid30]] (bid 30, n=52)
+and [[w42-bookval-v1-wave2-pounce-high-bid]] (bids 35–42, n=1,140), are setter-side
+probes withdrawn pending a sign check (#122). The bid-30 contrast is null either way
+(CI `[-0.57, +6.75]`); its "right under p_make, wrong under EV" split is what an
+inverted sign produces (34.6% is the complement of 65.4%) and is not a finding.
 
-The result splits the book's advice along the objective function:
-
-- **Right under `p_make`**: the oracle (which optimizes `p_make` at
-  the contract threshold) chose pounce in `59.6%` of paired
-  contrasts. The book's instruction is directionally correct under
-  this objective.
-- **Wrong under scalar EV**: scalar EV said decline was better in
-  `65.4%` of paired contrasts. The 10-point count subgroup (n=5)
-  was sharpest: EV delta `+15.68` with CI `[+1.60, +29.76]`
-  (decline strictly better) yet the oracle still pounced `80%` of
-  the time.
-
-Status: `context-limited` for the bid=30 slice. The book's pounce
-instruction encodes an implicit `p_make` objective at the contract
-threshold; under tail-aware utilities (CVaR, robust_q25 — see
-[[w42-bookval-v1-wave1-distribution-lens-reranker]]) it would
-recommend a different action substantially more often. The high-bid
-extension (35/36/39/42 - the regime the chapter most cares about) has
-since run on the bid-aware corpus (bead `t42-8kbh`):
-[[w42-bookval-v1-wave2-pounce-high-bid]] contradicted the claim at all
-four high bids (see Claim Ledger above).
-
-This finding generalizes: several book claims that read as universal
-advice may actually encode `p_make` reasoning that is directionally
-correct at threshold-sharp bids and incorrect under different
-utilities. A future audit pass should re-classify each
-`context-limited` row by which objective function it survives under.
+Coverage: this chapter (about 30% of the book's strategy text, ~71 advice
+sentences) got two ledger rows. Crisis management, protection stripping,
+emergency trump-in and the 84 live-asset preservation were never registered.
 
 ## Links
 

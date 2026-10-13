@@ -2,7 +2,7 @@
 title: w42 Partner Support Claim Validation
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -98,11 +98,11 @@ Bootstrap seed: `20260502`. Bootstrap samples: `5000`.
 
 | claim id | preferred n | alternative n | paired n | preferred mean regret, 95% CI | alternative mean regret, 95% CI | paired preferred-alt regret, 95% CI | report status |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `ch04-safe-partner-count-donation` | 25 | 79 | 0 | 2.743 [0.925, 5.086] | 7.026 [5.087, 9.142] | not applicable | underpowered, directional support only |
-| `ch04-low-trump-trap-against-count-dump` | 24 | 7 | 0 | 2.857 [0.982, 5.396] | 6.808 [1.322, 15.002] | not applicable | underpowered, directional support only |
+| `ch04-safe-partner-count-donation` | 25 | 79 | 0 | 2.743 [0.925, 5.086] | 7.026 [5.087, 9.142] | not applicable | no evidence (unpaired) |
+| `ch04-low-trump-trap-against-count-dump` | 24 | 7 | 0 | 2.857 [0.982, 5.396] | 6.808 [1.322, 15.002] | not applicable | no evidence (unpaired) |
 | `ch04-lead-capture-for-support` | 56 | 1463 | 43 | 6.128 [3.980, 8.530] | 4.578 [4.205, 4.958] | 2.220 [-2.367, 6.660] | underpowered |
 | `ch04-effective-double-highest-remaining` | 60 | 541 | 21 | 3.089 [1.797, 4.653] | 5.571 [4.993, 6.179] | 2.299 [0.161, 4.364] | proxy contradiction; no ledger move |
-| `ch04-lead-away-from-count-damage` | 82 | 157 | 22 | 6.916 [5.632, 8.266] | 8.127 [7.124, 9.100] | -2.228 [-5.891, 0.808] | underpowered, directional support only |
+| `ch04-lead-away-from-count-damage` | 82 | 157 | 22 | 6.916 [5.632, 8.266] | 8.127 [7.124, 9.100] | -2.228 [-5.891, 0.808] | no evidence (CI crosses zero) |
 | `ch04-avoid-disruptive-partner-trump-lead` | 239 | 59 | 36 | 7.711 [6.924, 8.515] | 6.790 [5.372, 8.266] | 0.362 [-1.985, 2.404] | underpowered |
 
 ## Interpretation
@@ -116,9 +116,11 @@ so this is not ledger-grade support.
 400 paired same-decision cases, safe partner count has a mean E[Q] delta of
 `+0.683` with 95% CI `[+0.147, +1.232]` versus other actions. On 559 paired
 cases, unsafe partner count has a mean delta of `-8.428` with 95% CI
-`[-9.268, -7.613]`. This supports the "do not donate count into a losing
-trick" boundary on the Gus v2 slice, while the positive safe-donation claim
-remains context-limited until a true guaranteed-trick detector is added.
+`[-9.268, -7.613]`. The unsafe row is a near-tautological negative control:
+its cost scales with the count given away (5-count −6.0, 10-count −13.8). The
+safe-donation +0.683 is below the label network's 0.94 MAE and splits by
+position: last seat, where the win is certain, n=41 at +3.35; position 2,
+n=359 at +0.378 [−0.23, +0.97]. Under uncertainty the effect is null.
 
 Low-liability off leads also lean in the book's direction, with lower regret than
 count-exposing off leads, but the paired interval crosses zero. The existing `live_count`
@@ -126,9 +128,9 @@ tag is too coarse to decide the count-exposure claim.
 
 The virtual-boss proxy is mixed: virtual-boss candidate actions have lower unpaired mean
 regret than other off non-doubles, but in the 21 decisions where both proxy classes appear,
-the virtual-boss candidate's best regret is higher. This argues that "highest remaining in
-suit" is not sufficient as a recommendation without role, count, trick, and downstream lead
-context.
+the virtual-boss candidate's best regret is higher. On n=21 from 20 deals, one of 12 proxies with no multiplicity correction and no
+role gate, this is inconclusive. The central ledger later recorded the row as
+`contradicted`; this page's evidence does not support that verdict.
 
 The trump-lead and lead-capture tests are not partner-support tests yet. They are included
 because they probe the surfaces Chapter 4 cares about, but the v0 tags do not identify

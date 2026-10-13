@@ -2,7 +2,7 @@
 title: w42 Book Validation v1 Wave2 — Low Trump Trap (ch04)
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-05-03
+last_updated: 2026-10-12
 status: complete
 bead: t42-jysl
 wave: wave2
@@ -15,7 +15,7 @@ Wave 2 probe `t42-jysl` tests the [[winning42-ch04-partner-support]] claim
 that playing a *low* trump when the partner leads or a count tile is dumped
 can be a trap — the opposition's dominant trump then captures the count.
 
-**Status proposal: context-limited.**
+**Result: null in the book's scenario.** (The probe proposed `context-limited`; the ledger row reads `underpowered`.)
 
 257 paired contrasts from 300 oracle-greedy snapshots. The overall oracle
 prefers the low trump over the dominant trump (mean EV delta = −1.95,
@@ -23,8 +23,10 @@ CI [−2.94, −1.07] entirely negative), primarily in non-count situations
 where hoarding the dominant trump for later is the correct play.
 In the book's specific scenario — a count tile already in the trick (N=86) —
 the effect is near zero (mean = −0.02, CI [−2.16, +2.15]), crossing zero
-with no reliable directional signal. The book claim cannot be confirmed or
-contradicted at this sample size for that subgroup.
+with no reliable directional signal; the subgroup is powered only for effects
+of 3 points or more. Overall, the CI excludes zero against the book. All
+values are oracle points (E[Q] network labels, qMAE 0.94) at bid 30 with CIs
+that do not cluster by deal.
 
 ## Claim Under Test
 
@@ -95,9 +97,9 @@ count magnitude, trick position within hand).
 
 ## Status
 
-**context-limited**
+**Null in the core scenario; negative overall.**
 
-The claim is not contradicted in its core scenario but is not confirmed. The
+The claim is neither confirmed nor refuted in its core scenario. The
 evidence base for the count-specific subgroup (N=86) is underpowered for the
 near-zero effect observed. Overall, the oracle prefers low trump broadly,
 which reflects situations outside the book's specific warning scope.

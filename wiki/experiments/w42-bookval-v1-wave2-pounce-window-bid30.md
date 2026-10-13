@@ -2,7 +2,7 @@
 title: W42 Book Validation v1 — Wave 2.E Pounce Window (bid=30)
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-05-03
+last_updated: 2026-10-12
 status: complete
 bead: t42-ntbe
 parent_epic: t42-4zi6
@@ -14,14 +14,17 @@ Paired contrast probe for the `ch12-setter-pounce` claim at bid=30.
 Tests whether the oracle consistently prefers setters to "pounce" (capture trick with
 count tiles exposed by the bidder) versus "decline" (play a non-winning tile).
 
-**Claim-ledger impact: `context-limited`.**
+**Verdict: withdrawn pending a sign check (#122).** The probe reads E[Q] as
+Team 0's view and reinterprets it for the setter; forge documents E[Q] from the
+acting player's view (`forge/eq/generate/actions.py:113,160`), and the setter is
+the acting player.
 
-N=52 paired contrasts. EV delta (pounce − decline, Team 0 perspective):
-mean +3.09, CI95 [−0.57, +6.75], p=0.104. No clear direction by raw E[Q].
-Oracle (p_make metric) chose pounce in 59.6% of paired positions — substantially
-higher than the 34.6% rate where pounce has lower E[Q], revealing a systematic
-p_make vs E[Q] divergence. Correctness of pounce is conditioned on game phase and
-trick leadership.
+N=52 paired contrasts. EV delta (pounce − decline): mean +3.09, CI95
+[−0.57, +6.75], p=0.104: null whichever way the sign falls. The "p_make vs
+E[Q] split" (oracle pounced in 59.6% of positions while "pounce better by
+E[Q]" was 34.6%) is what an inverted sign produces: 34.6% is the complement
+of 65.4%. It is not a finding. Subgroups have N ≤ 27, and the 10-count slice
+N=5.
 
 See [[winning42-ch05-setter-defense]] and [[winning42-ch12-advanced-bidding-playing]].
 
@@ -74,8 +77,9 @@ outcome vs. declining (letting the trick go)?
 | Pounce better by E[Q] | 34.6% (18/52) |
 | Oracle chose pounce | 59.6% (31/52) |
 
-Sign convention: delta = pounce_e_q − decline_e_q from Team 0 perspective.
-Negative = pounce better for setter (lower Team 0 EV).
+Sign convention as recorded: delta = pounce_e_q − decline_e_q, read as Team 0
+perspective, negative = pounce better for setter. That reading is unverified
+(#122); if E[Q] is acting-player perspective, positive = pounce better.
 
 ---
 
@@ -97,67 +101,28 @@ Bold = CI excludes zero.
 
 ---
 
-## Key Findings
+## Reading
 
-### 1. No uniform pounce advantage by E[Q]
-
-The overall CI spans zero (p=0.104). Pounce is better by raw E[Q] in only 34.6% of
-positions. The book's instruction to always pounce on exposed count is **not uniformly
-supported** at bid=30.
-
-### 2. Oracle systematically prefers pounce more than E[Q] alone predicts
-
-Oracle chose pounce 59.6% vs 34.6% where pounce has lower E[Q]. The oracle
-optimizes p_make (probability of setting the contract threshold), not E[Q]. Capturing
-count deterministically improves the threshold probability even when the expected mean
-score is worse — a known behavior at bid=30 where the decision boundary is sharp.
-
-### 3. High-count positions (10pts): pounce burns position, E[Q] strongly favors decline
-
-All 5 positions with 10-pt count exposure showed pounce_delta > 0 (pounce worse for
-setter by E[Q]), with mean +15.68 and CI excluding zero. Inspection shows these involve
-high-pip count tiles (5-5 or 6-4) where capturing requires burning a high trump — trading
-future trump control for immediate count capture. Oracle still pounces 80% of the time
-by p_make reasoning.
-
-### 4. Phase and trick leadership are key moderators
-
-- **Early game + bidder led**: oracle pounces 75%+, but E[Q] clearly prefers decline.
-  The book instruction is most questionable here.
-- **Mid game**: balanced; neither direction reaches significance.
-- **Setter-team led tricks**: near-zero delta (−0.03), suggesting the pounce/decline
-  distinction collapses when setter already controls trick flow.
-
-### 5. Distinguishing ch12-setter-pounce from ch05_reckless_count overfire
-
-The Wave 1.4 cross-AI matrix flagged `ch05_reckless_count` as an overfire pattern.
-This probe tests a narrower claim: pounce specifically on **bidder-exposed** count.
-The filter correctly limits to setter-following positions after bidder count exposure.
-However, the E[Q] evidence suggests even this narrower claim is context-dependent:
-legitimate in late-game setter-controlled tricks, questionable in early bidder-led tricks.
+Every slice's direction depends on the unverified sign (#122), and the overall
+contrast is null. The subgroup CIs that exclude zero (10-count N=5, early N=20,
+bidder-led N=36) are post-hoc slices of 52 pairs with no multiplicity
+correction. Labels come from the learned Q network (qMAE 0.94 points), in
+points, at bid 30, on the April corpus later found 27–67% malformed
+([[otis-phase-r]]).
 
 ---
 
 ## Claim-Ledger Impact
 
-**`context-limited`**
-
-The `ch12-setter-pounce` claim at bid=30 is supported in setter-team-led trick contexts
-(near-zero E[Q] delta, oracle ~50/50) but not in early-game bidder-led contexts where
-the oracle's p_make preference and raw E[Q] diverge most sharply. The book instruction
-overstates by treating pounce as universally correct; it is conditioned on phase and
-trick leadership at bid=30.
-
-The high-bid-off slice (`ch12-setter-pounce-high-bid-off`) remains open as a sibling
-bead (Wave 2.B.2), blocked on bid-aware corpus data.
+None. The page's original `context-limited` reading and its "p_make/EV split"
+are withdrawn pending #122.
 
 ---
 
 ## Caveats
 
-1. E[Q] (Team 0 perspective) and p_make (oracle's actual objective) diverge. This
-   probe uses stored oracle E[Q] from corpus decisions, not fresh inference. Oracle
-   pounce rates reflect p_make optimization.
+1. This probe uses stored oracle E[Q] from corpus decisions, not fresh inference.
+   The oracle that played the corpus maximized p_make, not EV.
 2. N=52 paired contrasts; subgroup slices have N≤9 — interpret cautiously.
 3. Bid=30 only. No bid-aware context in legacy corpus. High-bid behavior deferred.
 4. Filter is broad: 43.4% of positions had only one legal move (no contrast possible).

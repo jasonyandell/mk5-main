@@ -2,7 +2,7 @@
 title: Winning 42 Ch10 Tournament Scoring
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-01
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -103,12 +103,12 @@ tournament advancement.
 | claim | status | evidence and next check |
 |---|---|---|
 | Marks change the objective from exact hand points to a hand-level threshold. | supported | `t42-br7n.3` emits deterministic point-vs-mark terminal transforms and generated traces with divergent labels. |
-| Marks create early terminal states where the rest of the hand need not be played. | supported | Early terminal states appear in `94.5%` of generated hands, saving `4.3805` tricks on average. |
+| Marks create early terminal states where the rest of the hand need not be played. | supported (arithmetic) | Early terminal states appear in `94.5%` of generated hands, saving `4.3805` tricks on average; the rate mostly counts failed contracts by weak heuristic players (made rate 15%). |
 | Marks erase defender partial-point rewards when the bidder makes the contract. | supported | Among made ordinary contracts, defender partial points are erased `84.989%` of the time under marks. |
 | Marks erase set severity except for bid-class mark multipliers. | supported | Ordinary failed bids collapse 41 point-severity values into one mark; 84/126/168 multipliers remain distinct. |
-| Point scoring better hones skill for small groups. | context-limited | Heuristic policy rows show score-label separation, but promotion needs oracle, Gus/Burl, human, or stronger policy-population evidence. |
+| Point scoring better hones skill for small groups. | untested (ledger: context-limited) | Heuristic policy rows show score-label separation; no real player population was measured. |
 | Marks speed tournaments enough to justify the strategic loss. | context-limited | Generated mark matches use `23.814062` fewer played tricks in the proxy, but real wall-clock table time remains unmeasured. |
-| Timed marks can change advancement objectives. | context-limited | Synthetic pools choose different leaders by marks than by points `15%` of the time; real tournament formats and tiebreakers remain blockers. |
+| Timed marks can change advancement objectives. | untested (ledger: context-limited) | Synthetic pools choose different leaders by marks than by points `15%` of the time, but that compares matches of different lengths; hand-level disagreement is 0.0. |
 
 ## Wave 1 Findings (Book Validation v1)
 
@@ -130,7 +130,8 @@ tensors. Two structural findings have direct Ch 10 implications:
   lines and setter lead-pressure opening plays.
 - **Two ledger rows promoted to context-limited** after the independent
   audit absorbed prior phase-4 worker evidence (160 timed trials,
-  4 heuristic policy pairs). See [[w42-bookval-v1-wave1-independent-audit]].
+  4 heuristic policy pairs); neither claim was tested on a real population
+  or format. See [[w42-bookval-v1-wave1-independent-audit]].
 - **The non-vocabulary status string `supported-for-generated-trace-proxy`**
   in `w42/phase4_scoring_objective_tests/claim_summary.csv` was normalized
   to `context-limited`. Ledger statuses are now stable on the AGENTS.md
@@ -142,29 +143,15 @@ tensors. Two structural findings have direct Ch 10 implications:
 action rows across 50 seeds × 10 declarations × 7 bid values on M5
 MPS, with `mark_ev` recomputed at the correct multiplier per bid.
 
-[[w42-bookval-v1-wave2-ch10-action-level]] (Wave 2.H) extends the
-mark-multiplier evidence from deterministic transform support to
-action-level paired demonstration:
-
-- **71% of decisions at bid=42** have a different `mark_ev` top-1
-  action than at bid=30 (n=14,000 paired decisions, CI ~0.8pp).
-  Action-flip rate grows monotonically: 56% at bid=32, 60% at bid=35,
-  70% at bid=39, 71% at bid=42, 71% at bid=84.
-- **bid=84 plateaus at 71%** — same as bid=42 — because both share
-  `threshold_q=42`. The 2× mark multiplier at bid=84 doesn't add
-  strategic differentiation beyond bid=42; the strategic effect
-  operates through `threshold_q` recomputation, not through the `mm`
-  scalar.
-- **`mark_ev ≡ p_make` on top-1 at every bid** — Wave 1.2's algebraic
-  identity confirmed structurally (positive affine transform cannot
-  change argmax regardless of multiplier).
-- Most multiplier-sensitive: **sixes** declaration (74.8% flip at
-  bid=84), **bidder** seat (74.6% flip).
-
-The row stays `supported` (it was already there via deterministic
-transform). The evidence base is now wider: from "the multiplier is
-arithmetically correct" to "the multiplier strategically reorders the
-oracle's optimal play in over two-thirds of decisions at high bids."
+[[w42-bookval-v1-wave2-ch10-action-level]] (Wave 2.H) reported that 71% of
+decisions at bid=42 have a different `mark_ev` top-1 action than at bid=30.
+That is an artifact: at bids 42/84 every action ties on mark_ev and "top-1" is
+the first row; 36.5% of decisions are single-legal and forced moves count as
+flips because trajectories diverge across bid runs; the bid-independent EV
+argmax "flips" 24–29% on the same pairs. The bid-attributable change is roughly
+6–17 percentage points. `mark_ev ≡ p_make` on top-1 holds by construction. The
+row stays `supported` as a definition of marks scoring; there is no
+action-level evidence.
 
 This refines the chapter's framing: the mark-multiplier story is
 really a **threshold-q story** in disguise. The book's emphasis on

@@ -14,7 +14,7 @@ related:
   - [[w42-phase4-claim-completion-board]]
   - [[w42-book-claim-synthesis-and-ai-directions]]
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 ## Question
@@ -42,7 +42,7 @@ decisions to expose structural book-vocabulary gaps.
 
 | Source | Operationalization | Coverage |
 |--------|-------------------|----------|
-| `ev_top_action` | `is_best_mean` from joined table (mean_regret == 0); exact EV oracle | 28,000 decisions |
+| `ev_top_action` | `is_best_mean` from joined table (mean_regret == 0); argmax of E[Q] labels from the learned Q network (qMAE 0.94 points), not an exact solver | 28,000 decisions |
 | `gus_top_action` | `is_best_threshold` from labeled_handshape (proxy — individual model scores not saved) | 28,000 decisions |
 | `detector_endorsed` | Any ch03/ch04/ch05 positive label from `paired_contrasts.csv` fires on this candidate | 9,667 decisions with detector active |
 | `dist_lens_top_action` | Top-1 under any non-EV utility (p_make, cvar_10, mark_ev, robust_q25, threshold) from Wave 1.1 | 280 decisions (1.0% of primary corpus) |
@@ -50,8 +50,9 @@ decisions to expose structural book-vocabulary gaps.
 **Gus proxy note:** The Gus row-model was trained to predict `is_best_mean`.
 Individual candidate scores are not saved in the artifacts; `model_metrics.csv`
 reports only aggregate match rates (64.5% with EV for public_features_only).
-The `is_best_threshold` proxy has an aggregate agreement rate with EV of 78.3%,
-making it the best available row-level stand-in.
+The `is_best_threshold` proxy (the p_make argmax, not Gus) has an aggregate
+agreement rate with EV of 78.3%; the "EV vs Gus" row below is EV vs the p_make
+argmax.
 
 ## Headline Agreement Rates
 
@@ -61,6 +62,15 @@ making it the best available row-level stand-in.
 | EV vs Detector | **43.7%** | 9,667 |
 | Gus vs Detector | **47.0%** | 9,667 |
 | EV vs Dist-lens | **39.5%** | 539 |
+| EV vs random legal move (baseline) | 57.3% | 28,000 |
+| EV vs random legal move, detector-active decisions (baseline) | 40.1% | 9,667 |
+
+**Chance floor.** 35.7% of the 28,000 decisions have exactly one legal move
+(mean 2.68 candidates per decision), and forced moves count as agreement. A
+uniformly random legal move matches the EV argmax 57.3% of the time overall and
+40.1% on detector-active decisions. Detector–EV agreement (43.7%) is at chance:
+the book detectors pick the oracle's move no better than a random legal move.
+EV vs the p_make argmax (78.3%) is 21 points above chance.
 
 Full pairwise matrix (from `agreement_matrix.csv`):
 
@@ -94,11 +104,13 @@ early-to-middle tricks (trick_idx 0–3), and have 4–7 legal actions
 | ch05 (Setter Defense) | 14,000 | 6,602 | 78.8% | 48.2% | 3.33 | 37.6% |
 
 **Interpretation:**
-- **ch03 is most contested:** EV–Detector agreement is only 22.2%, the lowest across families.
-  Bidder lead sequencing rules from the book frequently endorse the wrong domino.
-- **ch04 is most reliable:** EV–Detector agreement 48.7%, lowest mean detector regret (3.04).
-  Partner support plays are more validatable from the book's vocabulary.
-- **ch05 is numerically dominant:** 6,602 detector-fired decisions; 48.2% EV agreement.
+Against a chance floor of about 40% (random legal move on detector-active
+decisions; 43.6% for a uniform pick within the endorsed set):
+- **ch03:** EV–Detector agreement 22.2%, below chance. Bidder lead sequencing
+  detectors endorse a move other than the oracle's more often than a random pick.
+- **ch04:** EV–Detector agreement 48.7%: near chance, not evidence that partner
+  support plays are validatable from the book's vocabulary.
+- **ch05:** 6,602 detector-fired decisions; 48.2% EV agreement, near chance.
   When Gus and the detector disagree with EV, Gus sides with EV 62.4% of the time in ch05.
 
 ## Five Most Surprising Disagreement Patterns
@@ -125,17 +137,18 @@ every candidate in a setter-regime decision, it cannot discriminate the best act
 This is a regressor/detector design gap: regime labels need action-discriminating
 subconditions before they can endorse a specific domino.
 
-### 4. CVaR and robust-Q25 track EV much better than make-rate
-On the 280-decision dist-lens sub-corpus (seed 9430; top-1 argmax agreement with EV,
-utility-side ties broken by row order — EV itself has no tied maxima):
+### 4. CVaR and robust-Q25 agree with EV more often than make-rate (one deal)
+On the 280-decision dist-lens sub-corpus (one deal, seed 9430; top-1 argmax agreement
+with EV, utility-side ties broken by row order — EV itself has no tied maxima; no
+chance baseline computed, forced moves included). The reranker page reports 74.4% /
+70.1% for the same lenses ([[w42-bookval-v1-wave1-distribution-lens-reranker]]):
 - `cvar_10` agrees with EV: **82.5%** (tie-free)
 - `robust_q25` agrees with EV: **81.8%** (tie-free)
 - `p_make` agrees with EV: **74.6%** (91.1% if ties count as agreement)
 - `threshold_mass_low` agrees with EV: only **45.7%** (58.9% if ties count)
 
-Risk-adjusted utilities are near-substitutes for EV; make-rate and especially the
-lower-threshold-mass lens diverge more. This suggests the distribution-lens reranker's
-most EV-consistent lenses are CVaR/robust-Q25, while threshold-mass is the true outlier.
+On one deal, roughly one decision in five disagrees with EV even for the closest
+lenses. This ranks the lenses against each other; it says nothing about the book.
 
 ### 5. Detector endorses 5-5 (the double) against the EV-best non-count
 Twenty of the top-100 most divisive decisions (915 decisions corpus-wide) have the detector

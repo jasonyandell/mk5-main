@@ -2,7 +2,7 @@
 title: w42 Phase4 Sequence Handshape Tests
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -25,10 +25,22 @@ strong (`+3.143` Q across 65 pairs), but partner count before closure is weak
 and uncertain (`+0.308` Q with confidence interval crossing zero). Partner
 count-liability leads are bad (`-3.425` Q). Setter count-calling leads
 (`+3.028` Q), pounce take-count-now (`+2.681` Q), and the reckless-count
-negative control (`-4.921` Q) all move in the book-consistent direction.
+negative control (`-4.921` Q) all move in the book-consistent direction. The
+literal pounce-before-certainty label is null: `+0.438` Q [−0.20, +1.10] over
+525 pairs (`w42/phase4_sequence_handshape_tests/` paired contrasts), yet
+`ch05-pounce-count-before-certainty` stayed `supported` on a pooled contrast
+that includes last-seat pairs where the win is certain.
 
-Claim-ledger impact: several tactical slices gain direct support, but exact
-private hand-shape claims remain context-limited. The current table is fixed at
+Every delta is in points from E[Q] network labels (qMAE 0.94), on bid-30
+oracle-played positions from 100 deals of the April Gus v2 corpus later found
+27–67% malformed ([[otis-phase-r]]); contrasts are class-vs-class (best labeled
+vs best unlabeled action), never "is the book's act the argmax", and CIs do not
+cluster by deal. The reckless-count row is a near-tautological negative
+control. The count-liability (n=526) and count-calling (n=1866) results never
+reached their ledger rows, which still read `underpowered` at n=22 and n=51.
+
+Claim-ledger impact: no row here measures a book strategy under uncertainty;
+exact private hand-shape claims remain untested. The current table is fixed at
 bid `30` and lacks exact reentry, void-creation, and generated high-bid pressure
 state fields.
 
@@ -62,6 +74,7 @@ evaluation labels.
 | partner count-liability lead vs noncount | 526 | `-3.425` |
 | setter reckless count to bidder vs noncount | 2380 | `-4.921` |
 | setter pounce take-count-now vs hold | 368 | `+2.681` |
+| setter pounce before certainty (literal label) vs hold | 525 | `+0.438` [−0.20, +1.10] |
 | setter count-calling lead vs non-count-calling | 1866 | `+3.028` |
 
 ## Blockers

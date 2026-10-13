@@ -7,7 +7,7 @@ wave2b2_bead: t42-7eop
 parent_epic: t42-4zi6
 wave: wave2
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 ---
 ## Summary
 
@@ -261,8 +261,9 @@ CI half-widths all < 0.005. At bid=84, mark_ev changed at every actual decision 
 mark_ev and p_make: raising bid from 30→32 reduces bidder's make probability by ~3.8pp paired.
 threshold_mass: 95% CI crosses zero (borderline) — threshold_mass is a less sensitive proxy.
 **Verdict: sufficient for mark_ev and p_make; borderline for threshold_mass.**
-Interpretation: bidding 32 instead of 30 measurably reduces mark_ev for the bidder — supports
-the book's "bid only enough" advice, but the effect (−0.076 mark_ev units) is small.
+Interpretation: a higher threshold on the same points distribution lowers p_make, and
+mark_ev = 2·p_make − 1 at one mark; the delta could not have had the other sign. It is
+arithmetic, not support for the book's auction advice, which was never tested.
 
 #### ch12-setter-pounce-high-bid-off (setter mean Q delta vs bid=30)
 
@@ -280,14 +281,10 @@ zero (borderline).
 **Verdict at this aggregate-proxy level: sufficient at bid=39 and bid=42; borderline at bid=35/36/84.**
 Caveat: mean Q is a rough proxy; proper test needs snapshot-level setter-side probes.
 
-**Reversed by Wave 2.E.2 (`t42-8kbh`, [[w42-bookval-v1-wave2-pounce-high-bid]]).** The
-snapshot-level probe this page calls for was run and found the opposite of "sufficient":
-`ch12-setter-pounce-high-bid-off` was **demoted to `contradicted`** at all four high-bid
-buckets (N=1,140, all CIs excluding zero in the contradicting direction). The campaign used
-this reversal to write a new methodology guardrail: aggregate proxies like the one above do
-not qualify for ledger promotion, only paired same-decision contrasts do
-([[w42-book-validation-campaign]], "Ledger movement to date"). Treat the "sufficient at
-bid≥39" read above as superseded by that snapshot-level result, not as a standing verdict.
+An aggregate setter-team mean Q over all chosen actions is not a pounce contrast, and the
+"sufficient" read above is not a standing verdict. The snapshot-level probe this page calls
+for ([[w42-bookval-v1-wave2-pounce-high-bid]], `t42-8kbh`) led to a `contradicted` demotion
+that is itself withdrawn pending a setter-side sign check (#122).
 
 ### Infrastructure Note
 
@@ -301,13 +298,14 @@ The driver `run_bid_aware_atlas.py` was not modified.
 | Claim | Status |
 |-------|--------|
 | ch10-special-bid-mark-multiplier | **sufficient** (all bid buckets) |
-| ch02-bid-only-enough | **sufficient** for mark_ev/p_make; borderline for threshold_mass |
-| ch12-setter-pounce-high-bid-off | aggregate-proxy read: sufficient at bid≥39, borderline at bid=35/36/84 — **reversed to `contradicted` by [[w42-bookval-v1-wave2-pounce-high-bid]]'s snapshot-level probe; do not read this row as standing** |
+| ch02-bid-only-enough | tautology: a higher threshold on the same points cannot raise p_make |
+| ch12-setter-pounce-high-bid-off | aggregate proxy only; not a pounce contrast. The snapshot probe's `contradicted` is withdrawn pending #122 |
 
-This corpus has enough power for ledger promotion of ch10 (full multiplier effect) and
-ch02 (mark_ev/p_make paired delta). ch12 promotion requires snapshot-level probes for
-the setter-pounce mechanism at bid=35/36 — those probes ran ([[w42-bookval-v1-wave2-pounce-high-bid]],
-bead `t42-8kbh`) and demoted the claim to `contradicted` rather than promoting it.
+"Sufficient" here is a post-hoc label (n ≥ 100 and a narrow CI); no minimum detectable
+effect was computed. The ch10 row is a scoring definition and the ch02 delta is
+arithmetic, so neither promotion rests on a test. The ch12 snapshot probe
+([[w42-bookval-v1-wave2-pounce-high-bid]], `t42-8kbh`) is withdrawn pending #122. Pairs
+join (seed, decl, decision_idx) across bid runs whose trajectories diverge.
 
 ### Reproduce (Full Sweep, MPS)
 

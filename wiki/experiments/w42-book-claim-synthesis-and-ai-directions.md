@@ -2,7 +2,7 @@
 title: w42 Book Claim Synthesis And AI Directions
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -28,14 +28,92 @@ folk sayings usually need gates: command, closure, current control, live count,
 off exposure, high/top double control, score mode, and whether a claim depends
 on private hand state.
 
-The strongest project-level result is that the book vocabulary carries signal.
-[[w42-phase3-joined-claim-row-model-table]] improves a public-safe legal-action
-row model from `1.3598` to `1.1257` mean regret and from `64.464%` to `68.107%`
-best-mean match. Sequence/seat is the dominant family; bidding and 84 add
-smaller positive signal; hidden public proxy is diagnostic but not yet a model
-feature.
+No strategic claim from the book was established. The `supported` rows are
+arithmetic, rule fixtures, scoring definitions, two near-tautological negative
+controls, one tautology and one null; the evidence is assessed in
+[What the evidence is worth](#what-the-evidence-is-worth) below. Adding book
+detector tags to a public-safe legal-action row model
+([[w42-phase3-joined-claim-row-model-table]]) moved best-mean match from
+`64.464%` to `68.107%` (mean regret `1.3598` → `1.1257`) on one split with no
+CI; random legal play scores 56.5% on that split because 34.6% of decisions are
+forced, and on non-forced decisions the tagged model is about 51% against 34%
+random. The tags are weak features, not validated book strategy.
 
-## Confirmed Or Strongly Supported
+## What the evidence is worth
+
+**Instrument.** Every oracle-era verdict came from E[Q] labels produced by a
+learned Q network (`domino-qval-large-3.3M`, qMAE 0.94 points) averaged over
+50–4800 sampled worlds, not from an exact solver. Every tactical delta is in
+points (Q on the −42..+42 scale), not marks. Every tactical corpus is bid 30
+with the bidder forced to seat 0, played by p_make-greedy E[Q] at n=10, 100
+deals (the eval set: 20 deals); every bootstrap resamples decisions, never
+deals, so the CIs are too narrow. The April Gus v2 corpus behind the phase-3/4
+contrasts was later found 27–67% malformed ([[otis-phase-r]]); no w42 contrast
+was rerun on the regenerated corpus.
+
+**"Supported" means arithmetic.** Of the 24 `supported` ledger rows, 20 are
+arithmetic, rule fixtures or scoring definitions. Two (unsafe partner donation,
+reckless count to the bidder) are near-tautological negative controls: the
+cost equals the count given away (5-count −6.0, 10-count −13.8 Q).
+`ch02-bid-only-enough` is a tautology (below). `ch05-pounce-count-before-certainty`
+is null on its literal label, +0.44 [−0.20, +1.10] Q at n=525
+([[w42-phase4-sequence-handshape-tests]]); the +4.10 it was promoted on pools
+100 last-seat pairs where the win is already certain. No strategic claim from
+the book was established by a test that could have failed and that measured
+the book's act. Two of the arithmetic rows are wrong (odds, below).
+
+**Bid-only-enough cannot fail.** `forge/bidding/estimator.py:72-100` scores
+every bid from the same points sample against a rising threshold, so
+P(points ≥ bid) can only fall as the bid rises, and under one-mark scoring
+`mark_ev = 2·p_make − 1` falls with it. "85 of 85 slice cells", "0/14,976
+positive-margin rows" and the Wave 2.G promotion restate that arithmetic. The
+book's actual auction claim (outbid by the minimum; the 30/31/35/36 lattice;
+what a raise tells the table) was never tested; the ledger row's own result
+field still says no auction-counterfactual artifact exists.
+
+**Setter-side probes withdrawn.** The void-creation lead and follow probes and
+both pounce probes (bid 30, high bid) treat E[Q] as Team 0's view and negate
+it for the setter; forge documents E[Q] from the acting player's view
+(`forge/eq/generate/actions.py:113,160`). The sign is unverified on data.
+Their verdicts, including "high-bid pounce contradicted", are withdrawn
+pending a sign check (#122).
+
+**The other "contradicted" rows are not findings.** The virtual boss
+(`ch04-effective-double-highest-remaining`) is one of 12 uncorrected proxies,
+n=21 from 20 deals: inconclusive. `ch08-either-matching-double-not-two-to-one`
+refutes a reading the book does not make: not a test.
+
+**Agreement rates have a high chance floor.** On the 28,000-decision cross-AI
+corpus 35.7% of decisions are forced; a random legal move matches the EV
+argmax 57.3% of the time overall and 40.1% on detector-active decisions.
+Detector–EV agreement (43.7%; ch04 48.7%) is chance level. The raw
+public-state baseline's 56.6% is the 56.2% random rate.
+
+**Odds.** Ch16's four-trump 37% and 52% assume 27 equiprobable placements of
+the missing trumps; they are not equiprobable. The exact figures are
+33/95 = 34.7% and 47/95 = 49.5% ([[book-study-2026-10-12]]).
+
+**Coverage.** 64 ledger rows against at least 277 advice sentences in the
+book. Chapters 1, 6, 11, 13, 14 and 15 got zero rows; Ch12 (Advanced Bidding &
+Playing, about 30% of the strategy text) got 2; Ch10 (one advice sentence)
+got 9. The book's worked example hands were never used as test positions (#123).
+Results at n=526 (lead-away, −3.43 Q) and n=1866 (count-calling, +3.03 Q)
+sit on the chapter pages and never reached their ledger rows, which still read
+`underpowered` at n=22 and n=51. `claims.csv` itself is hand-edited, its
+generator would revert it, and its summaries disagree with it
+([[w42-phase2-statistics-claims-ledger]], #125).
+
+**Diagnosis.** A perfect-information evaluator plans perfectly within each
+sampled world. What it lacks is information-set consistency: it fuses
+strategies across worlds the player cannot tell apart. That is strategy
+fusion ([[the-wall]]), not the "single-decision blind spot" this page's
+methodology section names. The book was restudied with an
+imperfect-information player in [[book-study-2026-10-12]].
+
+## What The Phase-2/3/4 Pages Recorded
+
+Read every point-delta below through [What the evidence is worth](#what-the-evidence-is-worth):
+E[Q] network labels, points, bid 30, unclustered CIs, the malformed April corpus.
 
 ### Rule and scoring substrate
 
@@ -52,30 +130,32 @@ can disagree with point-score match winners in generated proxies.
 
 ### Tactical play
 
-[[w42-phase4-sequence-handshape-tests]] confirms the gated version of several
-folk rules:
+[[w42-phase4-sequence-handshape-tests]] measured the gated version of several
+folk rules, in oracle points:
 
 - commanding called doubles are good bidder leads;
 - blanket non-double called-suit leads are bad against off alternatives;
 - partner closure count donation is strong;
 - broad partner count donation before closure is weak;
 - partner count-liability leads are bad;
-- setter count-calling leads and pounce take-count-now are strong;
-- reckless setter count into bidder control is bad.
+- setter count-calling leads and pounce take-count-now score positive, but the
+  literal pounce-before-certainty label is null (+0.44 [−0.20, +1.10], n=525);
+- reckless setter count into bidder control is bad (a near-tautological
+  negative control).
 
-This is exactly the right scientific shape: the folk rule survives after being
-made narrower.
+None of these is a measurement of the book's act under uncertainty; most are
+class-vs-class contrasts on positions the oracle reached.
 
 ### 84 and endgame preservation
 
-[[w42-phase4-84-dynamic-seed-tests]] supports 84 preservation as a real action
-surface. On reached natural seed states, preserving live weapons/protectors beats
-spending them, dead-asset release has positive value, and bidder trump-pull
-before final-off is strongly positive.
+[[w42-phase4-84-dynamic-seed-tests]] found that preserving live
+weapons/protectors scores more points than spending them on reached seed states
+(+1.946 Q, no CI). An 84 is all-or-nothing, and the threshold-mass deltas are
+−0.0004, +0.003 and 0.0: the effect on make/set is zero.
 
 ### Doubles and no-trump
 
-[[w42-phase4-doubles-notrump-regime-tests]] confirms the Chapter 9 caution
+[[w42-phase4-doubles-notrump-regime-tests]] (greedy simulation) agrees with the Chapter 9 caution
 against "many doubles means doubles-trump." In generated same-hand paired
 regime tests, no-trump often beats doubles-trump for four-plus-double hands.
 High/top double control is the near-flat pro-doubles slice; missing top doubles
@@ -83,26 +163,26 @@ and no-trump support doubles favor no-trump.
 
 ### Bidding and risk
 
-[[w42-phase4-bidding-count-exposure-tests]] supports the static/generated
-contract versions of Chapter 2:
+[[w42-phase4-bidding-count-exposure-tests]] measured static/generated
+contract versions of Chapter 2 (greedy Monte Carlo, bidder's hand fixed):
 
-- three-plus trumps are a strong biddability prior;
+- three-plus trumps raise simulated p_make (+0.293, no CI, confounded with
+  declaration choice; untested causally);
 - risk <=12 is better but only modestly, so it is not a standalone rule;
-- four/five off exposure is bad;
+- four/five off exposure is prevalent; its outcome effect is underpowered;
 - double-ahead protection is side-specific, not global;
 - partner two-plus-double prior is about `58%`;
 - natural max-profitable bid buckets exist, but are not a full auction story.
 
-[[w42-phase3-auction-bid-discipline-corpus]] gives the cleanest bid-only-enough
-slice: no positive-margin bid improved over the minimum winning bid in the
-generated auction-pressure table.
+[[w42-phase3-auction-bid-discipline-corpus]] found no positive-margin bid
+improving over the minimum winning bid. That cannot fail: every bid is scored
+from the same points sample against a rising threshold. The auction claim was
+never tested.
 
 ## Not Confirmed Yet
 
-The unconfirmed claims are mostly not failures of the book; they are failures of
-the current state representation or generator.
-
-Still needing better tech:
+Nothing strategic is confirmed. The untested claims below were blocked by the
+corpus (bid 30 only, no auctions, no 84 games) and the generator:
 
 - exact private hand-shape causality: reentry preservation, void creation, low
   trump traps, count-protection throwaways, trump-rich setter recognition;
@@ -116,8 +196,8 @@ Still needing better tech:
 - human wall-clock tournament speed and real tournament advancement/tiebreakers;
 - reputation, table style, and repeated-player adaptation.
 
-[[w42-phase4-final-claim-audit]] records these as bounded future work, not
-ownerless gaps.
+[[w42-phase4-final-claim-audit]] records these as bounded future work. Closure
+meant "has an owner or a stated blocker", not "was tested".
 
 ## What This Suggests For E[Q]
 
@@ -221,32 +301,36 @@ already-existing artifacts. Five new wiki pages capture the details:
 
 The wave's structural findings:
 
-- **Scalar EV "lies" in 64.9% of decisions on the seed-9430 branch atlas**, but
-  the alternative-utility pick never beats EV on EV terms. Median EV cost when
+- **Scalar EV and another utility pick differently in 64.9% of decisions on
+  the seed-9430 branch atlas**; the alternative pick never beats EV on EV
+  terms, which is true of any argmax by definition. Median EV cost when
   alternative wins is +0.18-0.26 points. Disagreement is pure risk-framing.
-- **CVaR_10 and robust_q25 agree with EV at 82-83%; p_make and threshold_mass
-  only at 59%.** Tail-aware utilities track the oracle. Make-rate framing does
-  not. The book's "make first" framing is less aligned with optimal play than
-  its "manage tail risk" framing.
+- **CVaR_10 and robust_q25 agree with EV at 82-83% on one deal (n=280); p_make
+  and threshold_mass at 59%.** The reranker page's own figures are 74.4% /
+  70.1% and 61.1%. Forced moves count as agreement and no chance baseline was
+  computed (random legal play matches the EV argmax 57.3% of the time on the
+  cross-AI corpus); one in four or five decisions disagree. This does not show
+  that tail-aware utilities track the oracle, and says nothing about the book.
 - **No-trump shows 90% EV-lying rate**, doubles-trump 39% CVaR disagreement.
   Clean detector signals for "scalar EV is the wrong target here."
-- **mark_ev is algebraically identical to p_make at bid=30 with one-mark
-  multiplier.** The Ch 10 multiplier (`ch10-special-bid-mark-multiplier`) is
+- **mark_ev is an affine function of p_make at bid=30 with one-mark
+  multiplier** (by construction). The Ch 10 multiplier (`ch10-special-bid-mark-multiplier`) is
   unreachable on the fixed-bid corpus. A bid-aware E[Q] generator is now a
   hard prerequisite for further mark-objective work.
-- **Genuine mark-vs-point flips are only 3.6% of decisions** (10/280); 81.5% of
+- **Genuine mark-vs-point flips are 4.3% of decisions** (12/280, one deal); 81.5% of
   nominal flips are surface-flattening artifacts of the binary {-1, 0, +1}
   mark transform near the 30-point make threshold.
 - **The "one tile decides the plan" rhetoric is real but rare**: 1.85% of
   decisions show >=60% impact concentration on a single hidden tile.
-- **Trump-count tiles are 100% directionally helpful as load-bearing tiles** -
-  the easiest belief-attention target to train against.
+- **Trump-count tiles were "100% directionally helpful"** on 20 cases from 3
+  hands, every one a tile held by the actor's partner (knowing partner holds
+  trump raises Q); over the top-5 rows the split is 39 helpful vs 35 harmful.
 - **5-5 in twos and 4-4 in no-trump are the highest-impact non-trump
   load-bearing tiles** - low-pip declarations promote the highest off-suit
   double into the strategic role usually held by trump.
 - **Setter seats are asymmetric**: right-setter load-bearing tiles are ~30%
-  trump doubles; left-setter is ~37% plain tiles. The book treats setters
-  symmetrically; the data does not.
+  trump doubles; left-setter is ~37% plain tiles. The book states the
+  asymmetry itself (p.51).
 - **Detector hygiene**: `ch05_reckless_count` mean regret 9.18 over 2,300
   cases (overfires beyond its qualifying window); `ch03_called_non_double` is
   wrong as an absolute action endorsement 86% of the time (within-pair
@@ -286,16 +370,14 @@ Status counts after Wave 1: supported 23, context-limited 14, underpowered
 
 ## Current Bottom Line
 
-The book taught the project a vocabulary for action reasons. The confirmed
-parts are mostly gated and tactical, not slogans. The unconfirmed parts are
-now precisely technical: state injection, high-bid generation, real auction
-policy, population play, and objective-conditioned utility.
+The book gave the project a vocabulary for action reasons and a set of
+label-free detectors. It did not give a single strategic claim that this
+campaign established: see [What the evidence is worth](#what-the-evidence-is-worth).
+The untested parts needed state injection, high-bid generation, real auction
+policy, population play and, above all, an evaluator without strategy fusion.
 
-That is a good outcome. The book did not become rules; it became a test suite,
-a feature vocabulary, and a roadmap for better agents.
-
-Wave 1 sharpened the path: tail-aware utilities (CVaR, robust_q25) are the
-near-free upgrade over scalar EV; mark-objective work is blocked on bid-aware
+Wave 1's claim that tail-aware utilities (CVaR, robust_q25) are a near-free
+upgrade over scalar EV did not survive Lens v1 (below); mark-objective work is blocked on bid-aware
 generation; hidden-threat attribution has surfaced concrete training targets
 (trump-count, 5-5-in-twos, 4-4-in-no-trump, setter-seat asymmetry); and
 several detectors need refinement before they can serve as direct training
@@ -346,67 +428,30 @@ delta is `-1.23` (CI `[-2.62, +0.16]`, consume direction); the late-game
 slice (tricks 5-6, n=60) is statistically `contradicted` against the
 book at CI `[-6.76, -1.17]` (consume strictly better); mid-game (n=162)
 is underpowered (CI `[-1.79, +1.36]`); no early-game data in the corpus.
-Status: `context-limited`. The book's reentry-preservation advice does
-not survive paired counterfactual testing in the phase where it is most
-pointed.
+Overall the result is null. The late slice was chosen post hoc with no
+multiplicity correction, and the book's main context (the early game) has
+n=0: the claim was not tested where the book makes it.
 
 [[w42-bookval-v1-wave2-low-trump-trap]] — paired contrast on 257
 oracle-greedy snapshots. Overall delta is `-1.95` (CI `[-2.94, -1.07]`),
 but the aggregate is dominated by positions where hoarding the dominant
 trump is broadly correct, not the specific trap the book warns about.
 **In the count-bearing subgroup (n=86, the actual book scenario)**,
-mean delta is `-0.02` with CI `[-2.16, +2.15]` — symmetric, no signal.
-The trap fires in 42.4% of cases (severe in 7.4%) but is offset by the
-larger correct-hoard class. Status: `context-limited`. The probe
-correctly distinguishes the book's narrow claim from the broader
-contrast pulled by the detector vocabulary.
+mean delta is `-0.02` with CI `[-2.16, +2.15]`: null, and powered only for
+effects of 3 points or more. The ledger reads `underpowered`.
 
-[[w42-bookval-v1-wave2-pounce-window-bid30]] — paired contrast on 52
-oracle-greedy snapshots (500 → 52 after filtering 1-legal-move and
-setter-led-trick positions). **Major methodological finding**: the
-book's setter-pounce advice is right for `p_make` but wrong for scalar
-EV at bid=30. The oracle (which optimizes `p_make` at the contract
-threshold) chose pounce in `59.6%` of paired contrasts. Scalar EV said
-decline was better in `65.4%`. The split is sharpest in 10-point count
-cases (n=5): EV delta is `+15.68` with CI `[+1.60, +29.76]`
-(decline strictly better), yet the oracle still pounced `80%` of the
-time. Status: `context-limited`. The book's pounce instruction encodes
-a `p_make` objective at the contract threshold; this matters for any
-agent that evaluates pounce decisions under a non-`p_make` utility.
-
-At the time this wave landed, this looked like the campaign's first
-clear strategic-claim-level p_make/EV split — not just an action-ranking
-disagreement (Wave 1.4 cross-AI matrix at 59%) but a verdict reversal.
-**Wave 3.0 (utility-lens meta-analysis) later narrowed this read.** The
-pounce-bid30 result reproduces in the re-analysis (oracle pounce 60%,
-EV span-zero), but the broader hypothesis that "many book claims encode
-implicit p_make reasoning" did not generalize to the closed probe set.
-See the Wave 3.0 reconciliation section below for the corrected
-formulation; ch05-void-creation-follow is now the cleaner case study.
-
+[[w42-bookval-v1-wave2-pounce-window-bid30]] (n=52),
 [[w42-bookval-v1-wave2-void-creation]] (lead, n=276) and
-[[w42-bookval-v1-wave2-void-creation-follow]] (follow, n=500) together
-yield the campaign's clearest **position-dependent reversal**:
-
-- Lead-position void creation is **contradicted**: EV delta `-2.63`
-  (CI `[-3.42, -1.84]`) — voiding by leading a singleton makes the
-  setter worse off.
-- Follow-position void creation is **`context-limited` in book
-  direction**: EV delta `+0.77` (CI `[+0.12, +1.42]`) — voiding by
-  discarding a singleton when forced off-suit is marginally better.
-
-The mechanism is intuitive in retrospect: leading announces the void
-at a cost; following only chooses which suit to deplete. **The book's
-canonical scenario (follow) survives. The adjacent lead scenario,
-which sounds similar, fails.** This is the campaign's strongest case
-study for why scope precision matters: a single ch05 advice paragraph
-contains two operationalizable scenarios with opposite empirical
-verdicts.
-
-A future synthesis pass should classify every `context-limited` and
-`underpowered` row by which sub-scenarios it survives — many book
-claims likely have similar position-dependent or phase-dependent
-splits.
+[[w42-bookval-v1-wave2-void-creation-follow]] (follow, n=500) are setter-side
+probes whose scripts negate E[Q] for the setter on the assumption that it is
+Team 0's view; forge documents it from the acting player's view. **Their
+verdicts are withdrawn pending a sign check (#122).** The readings once drawn
+from them (a bid-30 "p_make/EV split" on pounce; "lead-void contradicted,
+follow-void survives" as a position-dependent reversal) are not findings.
+Independent of the sign, the bid-30 pounce contrast is null (CI
+`[-0.57, +6.75]`, 10-count slice n=5), and the follow-void effect (+0.77 Q)
+is below the ≈0.93-point minimum detectable effect and null on the clean
+subset (+0.08 [−0.37, +0.53]).
 
 ## Wave 2.B.2 Full Bid-Aware Sweep — Power Analysis
 
@@ -415,177 +460,97 @@ rows from a 50-seed × 10-decl × 7-bid sweep on M5 MPS. Validation at
 bid=30 vs [[w42-branch-atlas-scaled-v0]] passes 10/10. Power analysis
 verdicts:
 
-- `ch10-special-bid-mark-multiplier`: **sufficient** at all bids
-  (n=14,000 paired decisions per bid, CI half-widths < 0.008). Mark_ev
-  changes in 65-100% of decisions as bid rises, with 100% at bid=84.
-  Adds action-level evidence to a row already `supported` via
-  deterministic transform.
-- `ch02-bid-only-enough`: **sufficient** for `mark_ev` and `p_make`
-  paired deltas (bid=32 minus bid=30: `mark_ev` `-0.076` CI
-  `[-0.085, -0.067]`; `p_make` `-0.038` CI `[-0.042, -0.034]`). Both
-  CIs exclude zero in book direction (overbidding hurts). Borderline
-  for `threshold_mass`. **Ledger row promoted: `not-yet-tested` ->
-  `context-limited`** (paired counterfactual evidence on the
-  same-contract one-step bid-margin slice; auction-policy and
-  multi-step bid-margin scopes remain untested).
-- `ch12-setter-pounce-high-bid-off`: **sufficient** at bid=39
-  (delta `+0.376`, CI `[+0.010, +0.751]`) and bid=42 (delta `+0.410`,
-  CI `[+0.068, +0.765]`); borderline at bid=35/36/84. The pounce-Q
-  signal flips from negative at bid=30 (Wave 2.E) to positive at
-  bid >= 39, consistent with the book's "pounce harder at high bids"
-  framing. **Ledger row promoted: `underpowered` ->
-  `context-limited`** (rough proxy on aggregate Q delta, not yet
-  snapshot-level paired contrast). Wave 2.E.2 (bead `t42-8kbh`) will
-  produce snapshot-level evidence.
+- `ch10-special-bid-mark-multiplier`: n=14,000 paired decisions per bid.
+  The row is a definition of marks scoring; the action-level "flip" rate is
+  an artifact (Wave 2.H below).
+- `ch02-bid-only-enough`: bid=32 minus bid=30 gives `mark_ev` `-0.076` and
+  `p_make` `-0.038`. A higher threshold on the same points distribution
+  lowers p_make mechanically, so this could not have come out the other
+  way. It was promoted `not-yet-tested` → `context-limited`, then to
+  `supported` by Wave 2.G; neither move rests on a test.
+- `ch12-setter-pounce-high-bid-off`: aggregate setter-team Q delta of
+  `+0.376` at bid=39 and `+0.410` at bid=42 was taken as a proxy and the row
+  promoted to `context-limited`. An aggregate over all chosen actions is not
+  a pounce contrast.
 
-Status counts after Wave 2.B.2: supported 23, context-limited 16,
-underpowered 19, not-yet-tested 4, contradicted 2. Two rows promoted
-into the active-evidence pool; the campaign now has its first
-non-trivial movement out of `not-yet-tested` and `underpowered` based
-on paired counterfactual evidence.
+The "power analysis" applied post-hoc labels ("sufficient" if n ≥ 100 and the
+CI is narrow); no minimum detectable effect was computed.
 
-## Wave 2.G — First `supported` Promotion
+## Wave 2.G — Bid-Only-Enough Multi-Step (a tautology)
 
 [[w42-bookval-v1-wave2-ch02-multistep]] extended the bid=32-vs-bid=30
-result to all 5 adjacent step pairs in {30, 32, 35, 36, 39, 42}.
-Headline:
+result to all 5 adjacent step pairs in {30, 32, 35, 36, 39, 42}: every step
+lowers mark_ev (n=8,168-10,052 per step), "85 of 85" slice cells agree, and
+the steps add up. `mark_ev = 2·p_make − 1` at one mark, and P(points ≥ bid)
+cannot rise with the bid, so every cell had to agree. The pairing on
+(seed, decl, decision_idx) also joins trajectories that diverge across bid
+runs. The row was promoted to `supported` (status counts after Wave 2.G:
+supported 24, context-limited 15, underpowered 19, not-yet-tested 4,
+contradicted 2); the promotion rests on arithmetic, not on the book. The
+book's auction claim was never tested.
 
-- All 5 step pairs show overbid penalty in mark_ev with 95% CIs
-  excluding zero (deltas `+0.07` to `+0.15`, n=8,168-10,052 per
-  step).
-- Cohen d grows monotonically `0.16` → `0.47`.
-- All **85 of 85** slice cells (decl × seat × phase × step) support
-  book direction.
-- Transitive 30→42 cumulative matches sum-of-steps within 0.81%
-  (additive).
+## Wave 2.E.2 — High-Bid Pounce (withdrawn pending sign check)
 
-**Ledger row promoted: `ch02-bid-only-enough` `context-limited` →
-`supported`.** This is the campaign's first promotion above
-`context-limited` from a non-supported start. Status counts after
-Wave 2.G: supported 24, context-limited 15, underpowered 19,
-not-yet-tested 4, contradicted 2.
+[[w42-bookval-v1-wave2-pounce-high-bid]] compared two hand-picked actions
+("lowest-cost winning play" vs "lowest-cost non-winning play") on 1,140
+high-bid pounce-eligible positions (bids 35/36/39/42): pooled setter EV delta
+`-10.42` (CI `[-11.25, -9.59]`). The row was demoted to `contradicted`
+against the probe's own proposal of `context-limited` overall. The script
+negates E[Q] for the setter on the assumption that it is Team 0's view;
+forge documents it from the acting player's view. If the sign is inverted
+the effect favours the pounce by the same margin. **The verdict is withdrawn
+pending a sign check (#122).** Independently, the probe tests a different act
+from the book's and does so with a perfect-information evaluator
+([[w42-book-second-pass]]).
 
-The remaining caveat is intentional: cross-contract bid choice
-(different declarations at different bids) and full auction-policy
-response remain Wave 3 work.
-
-## Wave 2.E.2 — High-Bid Pounce CONTRADICTED (with Methodology Lesson)
-
-[[w42-bookval-v1-wave2-pounce-high-bid]] tested
-`ch12-setter-pounce-high-bid-off` at the snapshot level on 1,140
-high-bid pounce-eligible positions (bids 35/36/39/42). Result:
-
-- Pooled EV delta `-10.42` (CI `[-11.25, -9.59]`); pooled p_set delta
-  `-0.047` (CI `[-0.056, -0.038]`).
-- All 4 bid buckets contradict: pounce-better fraction 21.6%-26.6%
-  per bid.
-- Effect is 3x larger in magnitude than at bid=30 (Wave 2.E).
-
-**Ledger row demoted: `ch12-setter-pounce-high-bid-off`
-`context-limited` -> `contradicted`** (the earlier Wave 2.B.2
-promotion was based on an aggregate per-team Q-delta proxy and is
-reversed by paired snapshot-level evidence).
-
-**Methodology lesson** worth pulling forward: the Wave 2.B.2 promotion
-relied on aggregate Q-delta showing setter teams perform better at
-high bids in book direction. The Wave 2.B.2 agent flagged this as a
-"rough proxy" requiring snapshot-level confirmation; the orchestrator
-promoted anyway because the CI was clean. Wave 2.E.2's snapshot-level
-paired evidence reverses the verdict completely. The aggregate Q-delta
-and the paired pounce-vs-decline contrast are fundamentally different
-objects:
-
-- Aggregate: setter-team mean Q across all chosen actions in games at
-  bid X. Reflects general game dynamics (high bids over-commit
-  bidders, helping setters in expectation regardless of pounce
-  decisions).
-- Paired: same-snapshot pounce vs decline. Tests the local action
-  question.
-
-Going forward, **aggregate proxies should never trigger ledger
-promotion**; only paired same-snapshot or same-decision contrasts on
-the relevant action shape qualify. This is added to the agent contract
-in `w42/book_validation_v1/AGENTS.md` for future waves.
+The rule drawn from this episode, that aggregate proxies should not trigger
+ledger promotion, is sound on its own terms (an aggregate setter-team Q over
+all chosen actions is not a pounce contrast), but the high-bid pounce
+reversal is not evidence for it until the sign is checked.
 
 Status counts after Wave 2.E.2: supported 24, context-limited 14,
 underpowered 19, not-yet-tested 4, contradicted 3.
 
-## Wave 2.H — Mark-Multiplier Threshold Insight
+## Wave 2.H — Mark-Multiplier Threshold
 
-[[w42-bookval-v1-wave2-ch10-action-level]] reframes the
-mark-multiplier story. Key findings:
+[[w42-bookval-v1-wave2-ch10-action-level]] reported that **71% of
+decisions at bid=42** have a different `mark_ev` top-1 action than at
+bid=30 (n=14,000 paired decisions). That number is an artifact. At bids
+42/84 all actions tie on mark_ev, so "top-1" is the first row; 36.5% of
+decisions are single-legal and 2,162 forced decisions count as flips
+because the states differ across bid runs; the bid-independent EV argmax
+"flips" 24–29% on the same pairs. The bid-attributable change is roughly
+6–17 percentage points.
 
-- **71% of decisions at bid=42** have a different `mark_ev` top-1
-  action than at bid=30 (n=14,000 paired decisions). Action-flip rate
-  grows monotonically through bids 32/35/36/39/42 then **plateaus at
-  bid=84**.
-- **The plateau exists because both bid=42 and bid=84 share
-  `threshold_q=42`**. The 2× mark multiplier at bid=84 cannot change
-  argmax (positive affine transform); the strategic effect operates
-  through `threshold_q` recomputation, not the multiplier scalar.
-- **`mark_ev ≡ p_make` on top-1 at every bid** — Wave 1.2's algebraic
-  identity confirmed structurally and across the bid-aware corpus.
+- Bid=42 and bid=84 share `threshold_q=42`, so the 2× multiplier cannot
+  change argmax (positive affine transform).
+- `mark_ev ≡ p_make` on top-1 at every bid holds by construction.
 
-This is a refinement of the book's framing: the mark-multiplier story
-is really a **threshold-q story** in disguise. Several other
-"mark-aware" chapter claims (set severity compression, special-bid
-multipliers, defender erasure under marks) likely operate through
-threshold-q recomputation rather than the multiplier scalar; future
-analyses should test that hypothesis.
-
-The row stays `supported` (already there); the evidence base is now
-wider. No status counts change from this finding.
+The row stays `supported` because it is a definition of marks scoring.
 
 ## Wave 3.0 — Utility-Lens Meta-Analysis (Reconciliation)
 
 [[w42-bookval-v2-utility-lens-synthesis]] re-processed all seven closed
 Wave 2 probes through 5 utility lenses (EV, p_make, mark_ev, CVaR_10,
-robust_q25). The result **substantially narrows the p_make/EV split
-hypothesis** that Waves 2.E and 1.4 had projected onto the broader
-campaign:
+robust_q25). Four of the seven are setter-side probes withdrawn pending the
+sign check (#122); one is the bid-only-enough tautology. The table records
+what the lenses reported:
 
-**Headline:** of seven claims tested across multiple utilities, only
-**one** shows a true objective-dependent verdict relevant to model
-training signal:
-
-| Claim | EV | p_make | Other | Type |
+| Claim | EV | p_make | Other | Reading |
 |-------|----|--------|-------|------|
-| ch05-void-creation-follow | **supported** | spans_zero | mark_ev/CVaR_10 spans_zero | **Soft flip** (model-relevant) |
-| ch05-void-creation-lead | contradicted | contradicted | CVaR_10 spans_zero | Soft flip (CVaR only — noise) |
-| ch12-setter-pounce-bid30 | spans_zero | spans_zero | — | No flip (claim unresolved at all utilities) |
-| ch12-setter-pounce-high-bid | contradicted | contradicted | mark_ev/CVaR_10 contradicted | **Unanimous contradicted** |
-| ch02-bid-only-enough | (missing) | supported | mark_ev supported | Unanimous supported |
-| ch03-reentry-preservation | spans_zero | spans_zero | mark_ev/CVaR_10 spans_zero | Unresolved at all utilities |
-| ch04-low-trump-trap | contradicted | (missing) | (missing) | Single-utility evidence |
+| ch05-void-creation-follow | supported | spans_zero | mark_ev/CVaR_10 spans_zero | withdrawn (#122) |
+| ch05-void-creation-lead | contradicted | contradicted | CVaR_10 spans_zero | withdrawn (#122) |
+| ch12-setter-pounce-bid30 | spans_zero | spans_zero | — | withdrawn (#122); null either way |
+| ch12-setter-pounce-high-bid | contradicted | contradicted | mark_ev/CVaR_10 contradicted | withdrawn (#122) |
+| ch02-bid-only-enough | (missing) | supported | mark_ev supported | tautology |
+| ch03-reentry-preservation | spans_zero | spans_zero | mark_ev/CVaR_10 spans_zero | null |
+| ch04-low-trump-trap | contradicted | (missing) | (missing) | null in the book's scenario |
 
-No claim flips between `supported` and `contradicted`. All "flips" are
-between a verdict and `spans_zero` — i.e. one utility detects a signal
-and another doesn't.
-
-**Updated read on the p_make/EV thread:** the campaign's earlier
-formulation ("the book may encode p_make-optimized advice at the contract
-threshold, with EV-optimal play differing in some sharp-threshold
-positions") was right *at the claim level* (Wave 2.E setter-pounce-bid30
-showed it; Wave 1.4 cross-AI matrix flagged it) but **does not generalize**
-to the closed probe set. The cleanest expression of the split is now
-ch05-void-creation-follow, where EV-greedy void creation buys the setter
-+0.77 EV but doesn't move P(make the set).
-
-The earlier strong claim that "high-bid pounce is a p_make/EV split"
-(Wave 2.E.2) is **superseded**: the Wave 3.0 re-analysis shows pounce-
-high-bid is contradicted under all 4 available utilities (`-10.42` EV,
-`-0.047` p_make, `-0.047` mark_ev, `+4.40` CVaR_10 — all CIs exclude
-zero in the bidder-helps direction). The book is wrong here irrespective
-of objective. This was hidden in Wave 2.E.2 because that probe only
-reported EV.
-
-**Caveat (algebraic identity reminder):** for high-bid probes where
-mark_multiplier > 1 (bid=84), `mark_ev` should differ from `p_make` by
-the multiplier scalar. Wave 3.0 reports them as identical for several
-high-bid claims; this is consistent with the dataset being dominated by
-mm=1 cases (bids 30-42 where mm=1) but is worth verifying when the
-ledger schema is populated. The argmax-equivalence still holds (positive
-affine), so verdicts are correct; only effect *sizes* would shift.
+The p_set / threshold_mass columns in the wave-2 probes use Q ≥ 30 on the
+±42 differential scale, where the make line is Q ≥ 18; 35–58% of p_set
+values are saturated, so the "spans zero" readings on those columns rest on a
+broken metric. "High-bid pounce is contradicted under all 4 utilities; the
+book is wrong here irrespective of objective" is withdrawn with the probe.
 
 ### Schema decision
 
@@ -605,13 +570,11 @@ land with full coverage.
 
 ### Implications for model design (initial reading — see Wave 4.0 correction below)
 
-The Wave 3.0 reconciliation initially read the evidence as: "ch05-void-
-creation-follow is the only situation in the validated claim set where
-an EV head and a p_make head would disagree on what to learn."
-
-That read was correct at the *paired-contrast / ledger-verdict* level
-but **misleading at the policy-action level**, as Wave 4.0 immediately
-demonstrated.
+The Wave 3.0 reconciliation read ch05-void-creation-follow as the one
+claim where an EV head and a p_make head would disagree on what to learn.
+That probe is withdrawn pending the sign check (#122), and paired contrasts
+on two actions do not show what either utility's argmax picks; Wave 4.0
+measured that directly.
 
 Status counts are unchanged by Wave 3.0 (it is an analysis of existing
 verdicts, not a new probe): supported 24, context-limited 14,
@@ -626,9 +589,11 @@ do EV-greedy and p_make-greedy policies actually pick different actions
 at these snapshots, or only differ in contrast-magnitude?
 
 **Result: EV-argmax and p_make-argmax disagree on 206/500 snapshots
-(41.2%, CI [36.8%, 45.6%])** — an order of magnitude above the 5%
-gate. The Wave 3.0 paired-contrast was *not* a magnitude-only
-artefact; the policy-action divergence is real and substantial.
+(41.2%, CI [36.8%, 45.6%])**, above an ad hoc 5% gate. Two random legal
+pickers disagree 70.4% of the time on the same snapshots, and 44% of
+snapshots have top p_make = 1.0, broken by lowest slot index; tie counts
+were not reported. Wave 4.0 maximizes raw e_q from the actor's view, so it
+does not share the setter-probe sign question.
 
 Full pairwise disagreement matrix (n=500):
 
@@ -643,10 +608,8 @@ Full pairwise disagreement matrix (n=500):
 | CVaR_10 vs robust_q25 | 30.8% | [26.8%, 35.0%] |
 | **p_make vs mark_ev** | **0.0%** | [0.0%, 0.0%] |
 
-The p_make ≡ mark_ev identity at bid=30 (Wave 1.2 / Wave 2.H affine
-algebra) is **empirically confirmed at the argmax level** — every
-single one of 500 snapshots has identical p_make and mark_ev
-selections, as the positive-affine algebra demands.
+p_make and mark_ev select identically on all 500 snapshots, as they must:
+at bid=30 mark_ev is a positive affine function of p_make by construction.
 
 ### Framing inversion (important)
 
@@ -680,20 +643,17 @@ void in EV terms but worse in tail / threshold terms. Voiding gives
 *optionality* (you can trump that suit later), which improves tail
 outcomes more than mean — a sensible structural reason for the split.
 
-This refines the Wave 3.0 reconciliation: the multi-objective story is
-NOT narrowed to one claim. It is **broadened to a 30-44% policy-action
-divergence between EV and risk-aware utilities** on a corpus where the
-book's advice has been validated. Wave 3.0 missed this because paired
-contrasts measure magnitudes on specific action pairs, not what each
-utility's argmax actually picks.
+EV's argmax is the void tile on 29.4% of snapshots: the book's follow-void
+advice is not what the EV oracle plays. The 30–44% divergence between EV and
+risk-aware utilities is a property of the utilities on this bid-30 setter
+corpus; the book's advice was never validated on it.
 
 ### Architecture decision gate: TRIPPED
 
 The Wave 4.0 gate said: ≥5% disagreement with a coherent pattern →
 scope rung-2 (utility-tunable searcher). The actual disagreement is
-~10× the gate (41% vs 5%) and the pattern is coherent (EV is the
-outlier; risk-aware utilities cluster). The gate is decisively
-tripped. Whether to actually build rung-2 is now a separate
+~10× the gate (41% vs 5%), but the gate was chosen ad hoc and no chance
+baseline was set against it. Whether to actually build rung-2 is now a separate
 prioritization decision (held for orchestrator/user review), but the
 evidence base is in place.
 
@@ -721,19 +681,24 @@ with the Wave 4.0 corpus.
 | p_make | robust_q25 | −2.97 | [−4.52, −1.51] | 44.3% |
 | cvar_10 | robust_q25 | −1.71 | [−3.15, −0.27] | 47.4% |
 
-**Every CI excludes zero. Total ordering: ev > robust_q25 ≳ cvar_10
-> p_make.** The Wave 3.0 paired-contrast +0.77 EV gain on void-vs-
-preserve translates into a +5.42 pts/hand head-to-head EV advantage at
-the *full game* level — about 7× larger in normalized magnitude.
+Every CI excludes zero **in points**. Every hand was forced to bid 30
+regardless of the cards. Recomputed in marks from
+`w42/lens_v1/results/per_hand_margins.csv` (make = bidder ≥ 30): EV vs
+p_make +0.110 marks/hand [0.048, 0.168], EV vs CVaR +0.106, EV vs robust
++0.072 [0.006, 0.134]; p_make vs CVaR −0.012 [−0.076, 0.050], p_make vs
+robust −0.052 [−0.114, 0.008], CVaR vs robust −0.06 [−0.122, 0.000]. EV beats
+the others in marks; the "total ordering" does not survive. A snapshot
+contrast on two actions (Wave 3.0's +0.77) does not translate into a
+whole-game matchup margin.
 
 ### The inversion that matters
 
 This **inverts the natural reading of Wave 4.0**. Wave 4.0 said: "the
 book + p_make / CVaR / robust_q25 cluster on void; EV is the outlier
 preferring third-option discards." Lens v1 says: **EV's third-option
-discards are not noise — they win games.** Every risk-aware utility
-loses to mean-EV head-to-head, on every paired comparison, with CIs
-that exclude zero.
+discards are not noise — they score points.** Every risk-aware utility
+loses to mean-EV head-to-head in points; in marks EV's edge holds and the
+other pairings are null.
 
 The book aligns with the *worst-scoring* utility on this corpus
 (p_make, −5.42 vs ev) on the specific scenario where Wave 3.0 / Wave
@@ -824,47 +789,31 @@ represent (soft cliff = EV minus a bias term on a region; same argmax
 modulo a constant). Artifacts: `w42/lens_v1/results/disaster_head_to_head.csv`,
 `w42/lens_v1/run_disaster.py`. Detail: [[w42-lens-v1-utility-head-to-head]].
 
-## Methodology insight — the single-decision blind spot
+## Methodology insight — strategy fusion, not a single-decision blind spot
 
-The deepest finding of this campaign is not in any single probe; it
-is a property of the campaign's measurement shape itself.
+Most book claims are multi-step plans ("lead a singleton on trick 1 to set
+up a void by trick 3", the 84 throwaway ladder, reentry preservation), and
+most probes were single-decision contrasts. The campaign concluded that
+single-decision EV cannot see a plan because "the default future moves inside
+the forge oracle do not include the bidder's own plan."
 
-**Most book claims are multi-step plans, but most probes are single-
-decision contrasts.** "Lead a singleton on trick 1 to set up a void
-by trick 3." "Hold trump 4 until trick 5 to catch the queen." "84-
-throwaway-ladder across the last 3 tricks." "Reentry preservation
-across the next four tricks." "Pounce-window timing." These are
-sequences. The decision-quality of each individual move within a
-plan is often *worse* than the locally-greedy alternative — that is
-the whole point of a setup move. The plan pays off downstream.
+That diagnosis is wrong. A perfect-information evaluator plays optimal
+multi-step continuations inside every sampled world; it plans perfectly
+within each world. Its defect is that each world gets its own plan, chosen
+with knowledge of all four hands, and the plans are averaged: the value is
+not consistent with any strategy a player who cannot see the hands could
+follow. That is strategy fusion ([[the-wall]]). A setup move that pays off
+only because the player does not know where the tiles are is exactly what
+an averaged perfect-information value cannot credit, however deep its search.
 
-Single-decision EV (and Lens(EV) by extension) literally cannot see
-this. EV at one decision asks "given everyone plays default future
-moves, what is the average outcome of action X?" The "default future
-moves" inside the forge oracle do not include the bidder's own plan.
-So EV evaluates each move as if no one (including itself) is plotting
-two tricks ahead.
+So the remedy was never planning-aware probes on the same oracle; it was an
+imperfect-information evaluator. The project built one later and restudied
+the book with it ([[book-study-2026-10-12]]). Lens v1's "ev wins" is a
+comparison among one-step utilities of the same fused value and says nothing
+about the book either way.
 
-This reframes a lot of campaign findings retroactively:
-
-- **Wave 4.0's 41% EV vs p_make argmax disagreement on void-creation-
-  follow** isn't "EV picks weird things." It might be "EV picks the
-  locally-best move; the book picks the move that *sets up the next
-  two tricks*; one-step Q can't tell the difference between those
-  because the rollout assumes default future play by both sides."
-- **The 19 underpowered + 14 context-limited claims in the ledger**
-  are mostly multi-step strategy claims tested at single-decision
-  granularity. They may be stuck not because the book is wrong but
-  because the methodology is too zoomed-in for the claims' real shape.
-- **Lens v1's "ev wins by +5.42 vs p_make"** measured EV's *individual
-  moves* against p_make's *individual moves*. Of course EV won that
-  contest — it's by construction the best per-decision thing. The book
-  was not in that contest at all; the book plays plans, not moves.
-
-So "EV wins" is a finding bounded by the test's abstraction level. To
-fairly test the book's actual strength, **the campaign needs planning-
-aware probes** (probes whose contrast unit is a multi-decision
-sequence, not a single action). Three architectures could supply this:
+The campaign proposed three planning architectures, all over the forge
+oracle and so all subject to the same fusion:
 
 1. **MCTS over forge** — generic K-deep planner, finds any sequence
    the simulator supports. Heavyweight build (~1-2 days). Answers:
@@ -880,20 +829,15 @@ sequence, not a single action). Three architectures could supply this:
    point-positive?" — claim-by-claim, the actual question the campaign
    has been trying to answer.
 
-**For the book validation campaign specifically, #3 is the most directly
-useful.** #1 or #2 would prove planning generically beats EV (almost
-certainly true) but would not tell us *which book claims* are right.
-#3 tests the book directly. The deferred Wave 2.F (84-throwaway,
-[[w42|t42-wikw]]) is exactly this shape and now has a sharper
-motivation than when it was deferred — it's the campaign's first
-concrete multi-step strategy to encode and test.
+The campaign preferred #3 because it tests claims one by one. The deferred
+Wave 2.F (84-throwaway, [[w42|t42-wikw]]) had this shape; it never produced
+output.
 
 For broader model-design questions, #2 is the cheaper general-purpose
 tool.
 
-This insight is the natural Wave 5 frontier: stop testing book claims
-at the single-decision granularity for the strategy-shaped ones, start
-encoding the strategies and testing the *plan*.
+None was built; the one Wave 5 probe that ran was
+[[w42-champion-teaching-battery]].
 
 ### The architectural payoff: strategies are not just probes, they are training data
 
@@ -941,14 +885,15 @@ and the role-resurrection of [[burl]] / [[gus]] / [[zeb]].
 
 - All 500 snapshots are bid=30 (mm=1, mark_ev ≡ p_make by construction).
   The cleanest test of mark_ev divergence requires a bid=84 snapshot
-  corpus. Wave 2.F (84-throwaway) is the open path.
+  corpus. Wave 2.F (84-throwaway) never ran.
 - All to-act players are setters at bid=30, where the make-threshold
   (Q ≥ −17) is loose; CVaR_10 / robust_q25 do more discrimination here
   than they would on offense. A bid-aware mixed-position corpus is the
   natural follow-up scope.
-- 100 worlds per snapshot leaves sample noise on near-tied slots.
-  Bootstrap CIs quantify snapshot-level variance, not per-snapshot
-  resampling variance.
+- 100 worlds per snapshot leaves sample noise on near-tied slots, and the
+  label network's own error (qMAE 0.94) is larger than several reported
+  effects. Bootstrap CIs resample snapshots, not deals, and so understate
+  the uncertainty.
 - Read-only on the claim ledger; no row moves.
 
 ## Links

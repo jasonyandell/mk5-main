@@ -2,7 +2,7 @@
 title: w42 Raw Public-State Baseline
 kind: experiment
 first_seen: 2026-05-01
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -120,7 +120,7 @@ Training history:
 
 | finding | evidence | metric | status |
 |---|---|---|---|
-| Raw public state plus action id learns above random-looking behavior but remains far from the oracle-sampling boss baseline. | `metrics.json` | best mean regret 2.471 vs `E[Q] N=10` 0.118 | underpowered floor baseline |
+| Raw public state plus action id is at the random-legal rate: final match 56.6% against 56.2% for a uniformly random legal move on the same eval set (forced moves count as matches). The best epoch (59.6%) is one of eight on a 560-decision set. | `metrics.json` | final match 56.61% vs random 56.2%; best mean regret 2.471 vs `E[Q] N=10` 0.118 | random-level floor |
 | More epochs did not monotonically improve held-out regret on this tiny slice. | `run.json` history | best epoch 3; final epoch 8 worsened to 2.834 | report-only caveat |
 | The baseline preserves the public-state boundary. | `manifest.json` | only `tokens`, `attention_mask`, `voids`, `candidate_action_id` used as inputs | no leakage found in script-level check |
 

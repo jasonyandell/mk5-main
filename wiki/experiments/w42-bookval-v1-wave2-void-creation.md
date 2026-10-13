@@ -2,7 +2,7 @@
 title: W42 Book Validation v1 Wave 2 — Void Creation
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: complete
 bead: t42-26j8
 parent_epic: t42-4zi6
@@ -14,11 +14,11 @@ Probe for [[winning42-ch05-setter-defense]] claim that setters should deliberate
 void themselves in an off-suit by leading their last tile from a singleton suit, so
 they can later trump in or punish a count tile led to that suit.
 
-Verdict: **contradicted** on this corpus slice.
-
-Oracle-greedy play systematically favors preserving suit over creating a void.
-Both p_set delta and EV delta (setter perspective) are negative with 95% CIs that
-exclude zero.
+Verdict: **withdrawn pending a sign check (#122)**. The probe script treats E[Q] as Team 0's view and
+negates it for the setter; forge documents E[Q] from the acting player's view
+(`forge/eq/generate/actions.py:113,160`). If the sign is inverted, the recorded
+−2.63 is +2.63 for the void lead. Until the sign is checked on data, this page
+carries no verdict about the book.
 
 ## Claim Under Test
 
@@ -53,8 +53,13 @@ For each snapshot, a paired contrast is formed:
 
 `generate_eq_from_snapshots` is called independently per action (100 world samples,
 MRV sampler, greedy continuation). Q-PDFs are read at the action slot from
-`decisions[0]`. All Q values are in Team 0 (bidder) perspective; setter metrics
-are sign-adjusted.
+`decisions[0]`. The script assumes Q values are in Team 0 (bidder)
+perspective and negates them for setter metrics; forge documents them as
+acting-player perspective, and the setter is the acting player (#122). Labels
+come from the learned Q network (qMAE 0.94 points), in points, bid 30. `p_set`
+uses Q ≥ 30 on the ±42 differential scale, where the make line is Q ≥ 18, so
+it is partly saturated. The void tile and the preserve tile also differ in
+identity (count, pips), which confounds the contrast.
 
 ## Headline Results
 
@@ -65,10 +70,8 @@ are sign-adjusted.
 | % contrasts void better (EV) | 32.6% | — | minority |
 | CVaR_10 delta | -0.213 | — | preserve safer |
 
-p_set delta is negative: creating the void lowers the probability of the bidder
-failing to make contract. The EV delta (setter perspective, negated from Team 0)
-is -2.63 points, meaning preserve-suit actions produce ~2.6 more setter-favorable
-points on average.
+The deltas are as recorded under the script's sign convention, which is
+unverified (#122).
 
 ## Slice Breakdown
 
@@ -79,20 +82,17 @@ points on average.
 | count_exposed (bidder holds count in void suit) | 18 | -0.0528 | -3.28 | 22.2% |
 | no_count | 258 | -0.0129 | -2.58 | 33.3% |
 
-The negative signal is consistent across phases. The count-exposed sub-group shows
-the strongest contradiction (p_set delta = -0.053, only 22% of contrasts favor
-void), though N=18 warrants caution.
+The sign of every row depends on the same unverified convention. The
+count-exposed sub-group has N=18.
 
 ## Verdict
 
-**contradicted** — on this corpus slice, oracle-greedy play favors preserving suit
-over creating a void. The effect is consistent across phases and count-exposure
-sub-groups. 95% CIs for both primary metrics exclude zero on the negative side.
-
-Justification: The oracle does not find systematic value in voiding in a suit when
-leading a trick in the positions captured here. The "future trump-in" benefit does
-not outweigh the immediate cost of leading a low-value singleton tile in these
-states.
+**withdrawn pending a sign check (#122)**. The recorded "contradicted" rested on the
+setter-side sign; if the sign is inverted the same data favour the void lead.
+Either way the test is a two-action contrast in oracle points with a
+perfect-information evaluator, on positions from the April Gus v2 corpus later
+found 27–67% malformed ([[otis-phase-r]]), with CIs that do not cluster by
+deal. No ledger row was ever registered for it.
 
 ## Caveats
 

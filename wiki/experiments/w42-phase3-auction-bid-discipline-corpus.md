@@ -2,7 +2,7 @@
 title: w42 Phase3 Auction Bid Discipline Corpus
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -14,19 +14,24 @@ builds full deals, estimates each seat's strongest pip-declaration contracts
 with `forge.bidding`, then expands P0 decisions into opening, partner-high, and
 opponent-high bid/pass/overcall contexts.
 
-The result strengthens the operational "bid only enough" claim: across 14976
-positive-margin bid-action rows, no higher-than-minimum bid improves over the
-minimum winning bid under the same hand/declaration/context label. The broader
-book claims remain narrower. Natural bid buckets are now measurable as empirical
+Across 14976 positive-margin bid-action rows, no higher-than-minimum bid
+improves over the minimum winning bid. That result cannot fail:
+`forge/bidding/estimator.py:72-100` scores every bid from the same points
+sample with p_make = P(points ≥ bid), and the mark swing for bids 30–41 is
+(2p − 1)·1, so raising the bid can only lower or tie it. It is arithmetic, not
+evidence for the book. The book's auction claim (outbid by the minimum, the
+30/31/35/36 lattice, what a raise signals) was not tested: the "auction
+contexts" are offline pass values, not an auction. Natural bid buckets are now measurable as empirical
 max-profitable threshold buckets, but only 17.708% of contract labels land on
 the chapter's natural buckets. Partner bid signal is real-looking but not a
 blanket boost: P0 overcalls partner in 77 of 192 generated partner-high contexts
 under this proxy.
 
-Claim-ledger impact: no broad central ledger promotion. The local recommendation
-is stronger support for the bid-only-enough operational slice, context-limited
-evidence for risk-budget/natural-bucket reporting, and a sharper blocker for
-partner-signal claims until a real or learned auction policy exists.
+Claim-ledger impact: none that rests on a test. The bid-only-enough margin
+table is a tautology; the natural-bucket rate is the median simulated score,
+which says nothing about the auction lattice; partner-signal claims stay
+blocked until a real or learned auction policy exists (the simulator
+randomizes partner's hand, `forge/bidding/simulator.py:571`).
 
 ## Method
 
@@ -75,8 +80,8 @@ four-hand auction engine.
 
 | claim slice | result | interpretation |
 |---|---:|---|
-| Bid above minimum improves over minimum | 0 / 14976 positive-margin rows | Strong support for the operational bid-only-enough slice. |
-| Bid above minimum worsens over minimum | 12872 / 14976 positive-margin rows | Extra margin usually costs value under fixed hand/declaration labels. |
+| Bid above minimum improves over minimum | 0 / 14976 positive-margin rows | Cannot be otherwise: every bid is scored from the same points sample against a rising threshold. |
+| Bid above minimum worsens over minimum | 12872 / 14976 positive-margin rows | Same arithmetic: rows worsen when sampled points fall between the two thresholds. |
 | Bid above minimum ties minimum | 2104 / 14976 positive-margin rows | Ties occur when no sampled points fall between the two thresholds. |
 | Minimum bid beats pass | 337 / 1824 minimum-bid rows | Many generated contexts are still pass contexts; the corpus can separate bid amount from bid/pass decision. |
 | Partner-high overcall | 77 / 192 contexts, 40.104% | Partner signal is conditional, not an automatic pass or automatic confidence boost. |

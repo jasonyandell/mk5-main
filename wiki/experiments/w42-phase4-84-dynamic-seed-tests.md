@@ -2,7 +2,7 @@
 title: w42 Phase4 84 Dynamic Seed Tests
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -25,9 +25,15 @@ paired decisions. Releasing dead doubles instead of spending live assets is
 `+0.504` mean Q across 29 pairs. On the bidder side, trump-pull before final-off
 is `+4.295` mean Q across 76 paired decisions.
 
-Claim-ledger impact: 84 preservation and bidder-plan proxies gain reached-state
-support, but the artifact remains policy-trace evidence. It is not arbitrary
-late-state injection and does not prove final set causality.
+These are points. An 84 is all-or-nothing, and the threshold-mass deltas for
+the same contrasts are −0.0004, +0.003 and 0.0
+(`dynamic_84_paired_contrasts.csv`): preservation has no measured effect on
+make or set. No CI was computed; labels are E[Q] network outputs (128 worlds,
+qMAE 0.94) on 24 games.
+
+Claim-ledger impact: none on the 84 claims. The artifact is policy-trace
+evidence in points; it is not arbitrary late-state injection and does not
+touch final set causality.
 
 ## Method
 

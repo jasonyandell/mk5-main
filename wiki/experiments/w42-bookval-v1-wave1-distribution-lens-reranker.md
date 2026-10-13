@@ -5,16 +5,16 @@ status: complete
 first_seen: 2026-05-03
 bead: t42-ybo6
 parent_epic: t42-4zi6
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 ---
 ## Summary
 
 Scalar EV disagrees with at least one risk-sensitive utility lens in **64.9% of
 decisions** (137/211) on the branch_atlas_scaled_v0 corpus. CVaR_10 (tail-risk
 mean) and robust_q25 (25th percentile) are the most divergent from EV, each
-selecting a different top-1 action roughly 25-30% of the time. Despite the
-disagreements, EV's preferred action never loses in expected-value units — meaning
-the divergence is about risk framing, not expected-value dominance. The no-trump
+selecting a different top-1 action roughly 25-30% of the time. EV's preferred
+action never loses in expected-value units, which is true of an argmax by
+definition. One deal, bid 30, E[Q] network labels, no chance baseline. The no-trump
 regime shows the highest EV-lying rate (90%), followed by large_lower_tail and
 multi_peak_pdf distribution shape tags (67-69%).
 
@@ -82,7 +82,7 @@ Full 8x8 matrix in `utility_disagreement_matrix.csv`.
 ### EV-gap analysis
 
 When an alternative utility picks a different action, EV's preferred choice is
-never strictly dominated in expected value:
+never strictly dominated in expected value (by definition of the EV argmax):
 
 | utility | mean EV gap | n_alt_dominates_ev |
 |---------|-------------|-------------------|

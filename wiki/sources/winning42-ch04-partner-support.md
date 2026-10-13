@@ -2,7 +2,7 @@
 title: Winning 42 Ch04 Partner Support
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-01
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -100,14 +100,17 @@ when helping the bidder.
 public/action-local paired contrasts. It supports count donation only in a
 sharply gated closure setting and warns against broad partner count exposure.
 Private guarantee and exact low-trump trap claims still need richer state fields.
+All deltas are oracle points (E[Q] network labels, qMAE 0.94) on bid-30 positions
+with unclustered CIs; none tests the book's act under uncertainty
+([[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]]).
 
 | claim | source basis | empirical status | next test |
 |---|---|---|---|
 | Partner support is an active role that can decide whether the bidder makes the bid | Chapter summary rules and team-point framing on pages 37-38 | context-limited support | `t42-br7n.1` finds exact closure count donation strongly positive but earlier count donation weak. |
-| Count should be donated only on guaranteed partner-won tricks | Count-donation warning on page 38 | supported as gated timing rule | Closure count donation is `+3.143` Q across 65 pairs; count before closure is only `+0.308` Q with CI crossing zero. |
-| Low trump leads can be traps where count donation is bad | Page 38 warning about low trump forcing a higher trump | context-limited / blocker | The proxy is weak and uncertain; exact low-trump trap needs private outstanding-trump state. |
-| Leads should minimize live count exposure when partner's bidder cannot be directly helped | Pages 38-40 lead-away-from-count examples | supported directionally | Partner count-liability leads are `-3.425` Q across 526 paired lead decisions. |
-| Highest remaining suit tile can substitute for a double | Page 39 four-trey example | underpowered | Detect virtual-boss leads and compare regret when chosen or missed |
+| Count should be donated only on guaranteed partner-won tricks | Count-donation warning on page 38 | null under uncertainty | Closure count donation is `+3.143` Q across 65 pairs, where the win is already certain; count before closure is `+0.308` Q with CI crossing zero. The ledger's safe-donation row (+0.68 Q, `context-limited`) is below the label network's 0.94 MAE. The unsafe-donation `supported` row is a near-tautological negative control. |
+| Low trump leads can be traps where count donation is bad | Page 38 warning about low trump forcing a higher trump | null in the book's scenario (n=86, −0.02 [−2.16, +2.15]); ledger `underpowered` | The proxy is weak and uncertain; exact low-trump trap needs private outstanding-trump state. |
+| Leads should minimize live count exposure when partner's bidder cannot be directly helped | Pages 38-40 lead-away-from-count examples | oracle points favour the book; never absorbed | Partner count-liability leads are `-3.425` Q across 526 paired lead decisions (class-vs-class, oracle points). The ledger row `ch04-lead-away-from-count-damage` still reads `underpowered` at n=22. |
+| Highest remaining suit tile can substitute for a double | Page 39 four-trey example | inconclusive (ledger: `contradicted`) | The ledger row rests on one of 12 uncorrected proxies, n=21 from 20 deals, not role-gated; the source page declined a ledger move. Not evidence against the book. |
 | Partner should usually avoid leading trump while helping bidder | Page 40 warning and exception | underpowered | Measure trump-lead regret in partner-support regime and learn exception boundaries |
 
 ## Wave 2 Findings (Book Validation v1)
@@ -121,9 +124,8 @@ trap the book warns about. **In the count-bearing subgroup (n=86,
 the actual book scenario)**, mean delta is `-0.02` with CI
 `[-2.16, +2.15]` - symmetric, no signal. The trap fires in 42.4%
 of cases (severe in 7.4%) but is offset by the larger correct-hoard
-class. The probe correctly distinguishes the book's narrow claim from
-the broader contrast pulled by the detector vocabulary. Status:
-`context-limited`.
+class. The count-bearing result is null and powered only for effects
+of 3 points or more; the ledger row reads `underpowered`.
 
 ## Wave 1 Findings (Book Validation v1)
 

@@ -2,7 +2,7 @@
 title: w42 Phase4 Claim Completion Board
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -24,6 +24,11 @@ already complete or closeable under current evidence, 30 claims to open phase-4
 child beads, 2 claims to ledger-reconciliation review, and 7 claims to a new
 bidding/count-exposure scope gap. The coordinator opened `t42-br7n.7` for that
 gap rather than leaving those rows unowned.
+
+The board's own `summary.json` (23/2/12/6/21) disagrees with its
+`completion_board.csv` (24/3/14/4/19); its `complete_static_supported` bucket
+holds the 20 `supported` rows that are arithmetic, rule fixtures or scoring
+definitions.
 
 The board is the phase-4 control surface: it records which claims are
 deterministic substrate, which have direct empirical evidence, which are still

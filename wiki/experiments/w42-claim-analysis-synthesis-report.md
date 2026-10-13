@@ -2,7 +2,7 @@
 title: w42 Claim Analysis Synthesis Report
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -22,8 +22,13 @@ next epic is now `t42-qtwb`.
 
 The central lesson is that the book is useful as detector vocabulary, but broad
 strategy claims only become evidence when the operationalization is narrow. The
-best-supported phase-2 claims are action-local: setter pounce, reckless count
-negative controls, closure taking, and no-trump double control. The most
+largest phase-2 contrasts are action-local, and none establishes a book strategy:
+the pooled pounce contrast includes last-seat positions where the win is already
+certain (the literal before-certainty label is null, +0.44 [−0.20, +1.10],
+n=525); the reckless-count and unsafe-donation rows are near-tautological
+negative controls whose cost equals the count given away; closure taking is a
+certain win. All are oracle points on bid-30 positions; see
+[[w42-book-claim-synthesis-and-ai-directions#what-the-evidence-is-worth]]. The most
 important remaining gaps are generated counterfactuals: real auction discipline,
 sequence/seat plans, 84 late-hand tableaux, paired regime tests, and a joined
 claim-row model table.
@@ -38,7 +43,7 @@ synthesis. Narrow result pages record their local recommendations and caveats.
 | claim matrix / harness | `.1`, `.2` | matrix plus reusable analyzer | 64 claims routed; harness emits label metrics and paired contrasts | infrastructure complete | `t42-qtwb.4` |
 | tactical pounce / donation | `.3` | same-decision contrasts | pounce and reckless-count controls replicate strongly; safe donation is small-positive | narrow operationalized support | `t42-qtwb.3` |
 | hidden-threat impact | `.4` | offline branch diagnostics | close-mean lower-hidden-downside choices cut tail mass without mean cost | diagnostic evidence | `t42-qtwb.4` |
-| bidding risk / only enough | `.5` | enumeration plus generated margin probe | static risk arithmetic holds; unnecessary same-contract margin is negative-or-tie in the smoke probe | partial empirical support | `t42-qtwb.1` |
+| bidding risk / only enough | `.5` | enumeration plus generated margin probe | static risk arithmetic holds; unnecessary same-contract margin is negative-or-tie, as it must be when every bid is scored from the same points sample | arithmetic; auction claim untested | `t42-qtwb.1` |
 | seat and position | `.6` | slices plus action-local contrasts | structural roles are slice-only; pounce/support/closure labels pair cleanly | row-level evidence | `t42-qtwb.3` |
 | 84 preservation | `.7` | explicit bid-84 fixtures | measurement surface exists; preserve/spend result is small and targeted | fixture evidence | `t42-qtwb.2` |
 | doubles / no-trump | `.8` | legacy within-regime mining | no-trump double control is strong; broad doubles-trump proxies need sharper gates | within-regime support | `t42-qtwb.4` |
@@ -66,8 +71,9 @@ The strongest empirical movement is tactical and action-local:
 
 The conservative blockers are just as important:
 
-- Bid-only-enough is only partially tested. The same-contract margin direction
-  is clear, but real auction discipline still needs auction histories or a
+- Bid-only-enough is untested. The same-contract margin direction is
+  arithmetic (a higher threshold on the same points sample cannot make more
+  often); real auction discipline still needs auction histories or a
   bid-policy simulator.
 - 84 preservation has generated evidence, but only in six hand-picked fixtures.
   It needs late-hand state injection or large seed mining.
@@ -90,9 +96,9 @@ The conservative blockers are just as important:
 | `t42-qtwb.4` | joined claim-row model table |
 
 `t42-qtwb.1` now has its first completed artifact,
-[[w42-phase3-auction-bid-discipline-corpus]]. It strengthens the
-bid-only-enough operational slice under generated auction pressure and keeps
-natural bucket / partner-signal claims context-limited.
+[[w42-phase3-auction-bid-discipline-corpus]]. Its bid-margin table cannot fail
+(every bid scored from the same points sample against a rising threshold);
+natural bucket and partner-signal claims stay untested.
 
 `t42-qtwb.2` now has [[w42-phase3-84-seed-mining-corpus]], a documented natural
 seed corpus for 84 candidate structures and defender asset patterns. It is a

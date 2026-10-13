@@ -2,7 +2,7 @@
 title: Winning 42 Ch02 Bidding
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-01
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -101,51 +101,24 @@ make/set/E[Q] counterfactuals.
 | claim | status | first empirical check |
 |---|---|---|
 | A conservative bid can be modeled as `42 - at_risk_points`, with bids generally justified when at-risk points are 12 or less. | context-limited support | `t42-br7n.7` finds risk <=12 modestly better than >12: `p_make_30` delta `+0.037471`, mark swing delta `+0.074942`. |
-| Three or more candidate trumps plus doubles is a useful initial biddability prior. | context-limited support | Three-plus trump contracts are much stronger in generated labels (`p_make_30` delta `+0.292901`), but the result is not sufficient by itself. |
+| Three or more candidate trumps plus doubles is a useful initial biddability prior. | untested causally | Three-plus trump contracts make more often in greedy-simulation labels (`p_make_30` delta `+0.292901`, no CI), confounded with declaration choice. |
 | Offs, especially four/five offs, dominate many bidding failures more than trump count does. | context-limited support | Four/five off exposure rows have lower `p_make_30` (`0.336857`) and worse generated value; stronger line-of-play punishment tests remain open. |
 | Double-ahead protection reduces only the protected side of an off, not both sides. | static side detector supported, context-limited | Side-specific protection covers only `16.774838%` of exposed count points; live sequence value remains untested. |
 | Duplicate count exposures should be counted once in the bid risk budget. | context-limited / not run | Unit-testable enumeration against naive risk-sum baseline. |
 | One vulnerable trick should be bid pessimistically, while two or more vulnerable tricks can justify some partner-help expectation. | context-limited / not run | Partner rescue probability and bid-regret interaction by loss-opportunity count. |
-| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | **supported** on same-hand bid-margin slice | [[w42-bookval-v1-wave2-ch02-multistep]] paired all 5 step pairs (30↔32, 32↔35, 35↔36, 36↔39, 39↔42) over n=8,168-10,052 paired decisions per step: mark_ev deltas `+0.048` to `+0.146`, all CIs exclude zero in book direction. Cohen d ranges `0.16`–`0.47` (smallest at 35↔36, largest at 39↔42; not monotone in step order). All 85 slice cells (5 step pairs × [10 decls + 4 seat roles + 3 phases]) support book direction. Transitive 30→42 cumulative matches sum-of-steps within 0.81%. Ledger row promoted from `context-limited` to **`supported`** — the campaign's first promotion above `context-limited` from a non-supported start. Cross-contract bid choice (different declarations at different bids) and full auction-policy testing remain separate scopes. |
+| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | untested (ledger: `supported` on a tautology) | [[w42-bookval-v1-wave2-ch02-multistep]] found a mark_ev penalty at every step from 30 to 42 and in 85 of 85 slice cells. At one-mark scoring `mark_ev = 2·p_make − 1`, and a higher threshold on the same points distribution cannot raise p_make, so the test could not fail. The book's claim is about the auction (outbid by the minimum; the 30/31/35/36 lattice; what a raise tells the table) and was never tested. |
 
 ## Wave 2 Findings (Book Validation v1)
 
-The campaign's first ledger promotion landed here. Wave 2.B.2's
-50-seed bid-aware MPS sweep (259,618 action rows) provides
-**paired same-hand counterfactual evidence** for the bid-only-enough
-principle:
-
-- For every (seed, decl_id, decision_idx) actually-played action across
-  50 seeds × 10 decls, mark_ev and p_make are computed under both
-  bid=30 and bid=32 incentives.
-- The paired delta (bid=32 minus bid=30) is `-0.076` for mark_ev and
-  `-0.038` for p_make. Both have tight CIs that exclude zero in the
-  book direction.
-- N=14,000 paired decisions per bid bucket. Power: sufficient for
-  mark_ev and p_make; borderline for threshold_mass.
-
-This is the cleanest possible same-contract test of the book's claim:
-on the same hand at the same decision, evaluating under bid=32 makes
-you mark-worse than under bid=30 by ~0.08 marks per decision. The
-audit's original overclaim risk was that bid-only-enough should not
-be promoted broadly without auction evidence; this paired-same-hand
-slice is conservative because it tests only the "captured-points
-identity" mechanism the book proposes, not auction strategy.
-
-The high-bid steps (bid=35, 36, 39, 42, 84) and full auction policy
-remain untested. Wave 2.G (bead `t42-ey88`) will extend the analysis to
-multi-step bid margins; auction-policy testing remains in the Wave 3
-plan.
-
-**Update**: Wave 2.G landed at [[w42-bookval-v1-wave2-ch02-multistep]]
-and extended the evidence to all 5 adjacent step pairs in {30, 32, 35,
-36, 39, 42}. Result: overbid penalty in the book direction at every step, no reversals
-(Cohen d `0.16`–`0.47`), 85 of 85 slice cells in book direction,
-transitive cumulative matches sum-of-steps. Ledger row promoted from
-`context-limited` to **`supported`** on the same-hand bid-margin
-slice — the campaign's first non-trivial `supported` promotion. The
-remaining caveat is cross-contract bid choice (different declarations
-at different bids) and real auction-policy response, both Wave 3 work.
+Wave 2.B.2 ([[w42-bookval-v1-wave2-bid-aware-atlas]]) and Wave 2.G
+([[w42-bookval-v1-wave2-ch02-multistep]]) promoted `ch02-bid-only-enough` to
+`supported` on paired bid=30-vs-higher deltas (bid=32 minus bid=30: mark_ev
+`-0.076`, p_make `-0.038`; every step to 42 and all 85 slice cells the same
+way). The promotion rests on arithmetic: E[Q] labels are in points, p_make is
+P(points ≥ threshold), the threshold rises with the bid, and at one mark
+mark_ev is affine in p_make. The bid runs also diverge in trajectory, so the
+"same decision" pairing is the same hand and decision index only. No auction
+was simulated; the chapter's auction advice is untested.
 
 ## Links
 

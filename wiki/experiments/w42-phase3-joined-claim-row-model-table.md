@@ -2,7 +2,7 @@
 title: w42 Phase3 Joined Claim Row Model Table
 kind: experiment
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -23,15 +23,19 @@ doubles/no-trump tags, and public hidden-pressure proxies. Hidden-owner truth,
 84 defender assets, and auction partner/opponent value labels are written only
 as audit/eval-only context, not model features.
 
-The main result is positive model-feature evidence: on a seed-mod split with
-5600 held-out decision states, public features alone select actions at `1.3598`
-mean regret and `64.464%` best-mean match. Adding all public claim families
-improves this to `1.1257` mean regret and `68.107%` best-mean match. Tail regret
-`>=5` falls from `9.536%` to `7.250%`.
+On a seed-mod split with 5600 held-out decision states, public features alone
+select actions at `1.3598` mean regret and `64.464%` best-mean match. Adding all
+public claim families gives `1.1257` mean regret and `68.107%` best-mean match.
+Tail regret `>=5` falls from `9.536%` to `7.250%`. One split, no CI.
 
-Claim-ledger impact: no central claim promotion. This proves that the joined
-claim vocabulary carries action-selection signal, especially sequence/seat
-signal. It does not prove every book claim behind those tags.
+Chance floor: 34.6% of these decisions are forced, and a uniformly random legal
+move matches the best-mean action 56.5% of the time. On non-forced decisions
+random is about 33.5%, public features about 45.6%, and public plus claim tags
+about 51.2%: the tagged model still misses the oracle's move on about half of
+real decisions. "Best" is the argmax of E[Q] network labels (qMAE 0.94 points).
+
+Claim-ledger impact: none. The tags are weak action-selection features; this
+says nothing about whether the book claims behind them are right.
 
 W&B: `https://wandb.ai/jasonyandell-forge42/w42/runs/jvjuld7m`.
 

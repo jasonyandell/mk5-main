@@ -3,7 +3,7 @@ title: W42 Lens v1 — Utility Head-to-Head Round-Robin
 kind: experiment
 status: complete
 first_seen: 2026-05-03
-last_updated: 2026-07-06
+last_updated: 2026-10-12
 bead: t42-4ouu
 parent_epic: t42-4zi6
 ---
@@ -61,7 +61,22 @@ This is a **measurement instrument**, not a claim verdict. The promotion guard f
 | p_make      | robust_q25  | −2.97       | [−4.52, −1.51]    | 44.3%      | 99.8%    | **yes** |
 | cvar_10     | robust_q25  | −1.71       | [−3.15, −0.27]    | 47.4%      | 99.7%    | **yes** |
 
-**Every pairing's 95% CI excludes zero.** Total ordering implied:
+**Every pairing's 95% CI excludes zero in points.** Texas 42 is scored in
+marks. Recomputed in marks from `w42/lens_v1/results/per_hand_margins.csv`
+(make = bidder ≥ 30):
+
+| Team A | Team B | marks / hand | 95% CI |
+|---|---|---:|---|
+| ev | p_make | +0.110 | [0.048, 0.168] |
+| ev | cvar_10 | +0.106 | — |
+| ev | robust_q25 | +0.072 | [0.006, 0.134] |
+| p_make | cvar_10 | −0.012 | [−0.076, 0.050] |
+| p_make | robust_q25 | −0.052 | [−0.114, 0.008] |
+| cvar_10 | robust_q25 | −0.06 | [−0.122, 0.000] |
+
+EV beats each other utility in marks; the other three pairings are null, so the
+ordering below holds only in points. Every hand was forced to bid 30 regardless
+of the cards. Ordering in points:
 
 ```
 ev   >   robust_q25   ≳   cvar_10   >   p_make
@@ -133,7 +148,7 @@ The right argmax-level confirmation of mark_ev ≡ p_make at bid=30 is Wave 4.0'
 
 ## Verdict
 
-> **WINNER: Lens(ev) beats Lens(p_make) by +5.42 pts/hand** (95% CI [+4.03, +6.81]). All 6 round-robin pairings are statistically distinguishable (every CI excludes zero). Implied total ordering: **ev > robust_q25 ≳ cvar_10 > p_make**. The Wave 4.0 architecture-decision question — "is utility-conditioning worth building?" — gets a clean experimental answer at the policy-action level: **EV-greedy is the strongest of the four lenses tested at 1-step lookahead on the bid=30 corpus; p_make-greedy is the weakest by ~5 pts/hand vs EV.** Read this against [[candlewax]]: EV wins *on aggregate*, while the per-decision multi-peaked (candlewax) states are exactly where a mean-collapse hides risk — the reconciliation is aggregate-vs-per-decision, not a contradiction, and any play policy consuming a distributional head should revisit its collapse rule there.
+> **WINNER: Lens(ev) beats Lens(p_make) by +5.42 pts/hand** (95% CI [+4.03, +6.81]); in marks +0.110/hand [0.048, 0.168]. All 6 pairings are distinguishable in points; in marks only EV's three are, so the "total ordering" **ev > robust_q25 ≳ cvar_10 > p_make** holds in points only. The Wave 4.0 architecture-decision question — "is utility-conditioning worth building?" — gets a clean experimental answer at the policy-action level: **EV-greedy is the strongest of the four lenses tested at 1-step lookahead on the bid=30 corpus; p_make-greedy is the weakest by ~5 pts/hand vs EV.** Read this against [[candlewax]]: EV wins *on aggregate*, while the per-decision multi-peaked (candlewax) states are exactly where a mean-collapse hides risk — the reconciliation is aggregate-vs-per-decision, not a contradiction, and any play policy consuming a distributional head should revisit its collapse rule there.
 
 The single most actionable consequence for downstream work: **a utility-conditioned head trained to mimic Lens(ev) is the natural rung-2 target.** A multi-utility head that conditions on {ev, p_make, cvar_10, robust_q25} is also defensible as research infrastructure (Wave 4.0 said it's worth building), but the head-to-head data says Lens(ev) is the best-scoring single lens by a clear margin — there is no "you should use p_make for safety" justification on this corpus.
 

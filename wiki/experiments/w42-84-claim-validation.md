@@ -2,7 +2,7 @@
 title: w42 84 Claim Validation
 kind: experiment
 first_seen: 2026-05-02
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -208,7 +208,8 @@ The report separates three ideas that the prose can blur:
 | `ch08-one-to-four-last-trick-weapons` | chapter harvest | context-limited | static inventory mostly fits but has zero and >4 cases | `defender_last_trick_weapon_distribution.csv` |
 | `ch08-double-ahead-needs-same-suit-pair` | chapter harvest | underpowered | same-suit pair availability counted; no final-two-trick proof | `defender_same_suit_pair_distribution.csv` |
 | `ch08-abandon-dead-assets` | chapter harvest | not-yet-tested | trigger table only | `abandonment_trigger_table.csv` |
-| `ch08-throwaway-priority-ladder` | chapter harvest | not-yet-tested | no legal discard/action regret labels | `claim_summary.csv` |
+| `ch08-throwaway-priority-ladder` | chapter harvest | not-yet-tested | no legal discard/action regret labels; the later probe `t42-wikw` never produced output | `claim_summary.csv` |
+| `ch08-either-matching-double-not-two-to-one` | chapter harvest | ledger later `contradicted` | the 90% "either double" figure refutes a reading the book does not make; not a test of the book | `defender_last_trick_weapon_distribution.csv` |
 
 Claim ledger impact: no central claim-ledger change. The report writes a local delta at
 `w42/eighty_four_claim_validation/claim_ledger_delta.json`.

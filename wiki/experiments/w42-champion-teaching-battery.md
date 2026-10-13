@@ -5,7 +5,7 @@ status: complete
 wave: wave5
 task_id: wave5-champion-teaching-battery
 first_seen: 2026-06-13
-last_updated: 2026-07-13
+last_updated: 2026-10-12
 ---
 
 # w42-champion-teaching-battery
@@ -21,10 +21,15 @@ best player we can run — independently arrives at the book's recommendations.
 
 **Headline (128 seeds × 2 halves, n_worlds=10):**
 
-The champion agrees with the book on 3 of 6 checkable ch04/ch05 tactical claims.
-Both contradicted claims are negative controls (reckless count donation is worse,
-unsafe partner count is worse), which confirms the champion correctly avoids those
-patterns. The within-CI result (safe partner donation) is essentially a draw.
+By effect sign the book is right on 5 of 6 checkable ch04/ch05 claims (3 positive,
+2 negative controls) and 1 is null (safe partner donation, +0.05 [−1.12, +1.20]).
+By behaviour the champion follows the book on about 60% of labeled rows, with no
+random-legal baseline: `champion_obey_rate` averages over labeled rows, not
+decisions, and counts forced moves as obedience. The champion plays the
+"reckless" labeled action in 32% of labeled rows, so it does not avoid that
+pattern, and the reckless detector is the one known to over-fire (`t42-v0m5`).
+The verdicts are scored by the same E[Q] the champion plays by, so they are
+circular.
 
 ## Slice
 
@@ -74,12 +79,13 @@ The "before certainty" variant (not the last player in the trick) shows the same
 pattern at +3.95 pts (N=87). When the pounce would actually set the bidder right
 now, the advantage grows to +10 pts (N=23, CI [+4.6, +15.8]).
 
-**Negative controls confirm champion avoids reckless play.**
+**Negative controls.**
 `ch05_reckless_count_to_bidder` (playing count into offense-won trick without
 beating it) is strongly negative: -7.66 pts CI [-8.62, -6.77], N=550. The champion's
 obey rate is only 32% — meaning the champion mostly declines to play recklessly, but
-when it does, it is substantially worse. This validates the detector and confirms
-the champion learns Roberson's "don't throw count to the bidder" rule.
+when it does, the labeled action scores worse. The champion still plays it in
+about a third of labeled rows, the detector over-fires (`t42-v0m5`), and no
+random-legal rate is given; this does not show the champion learned the rule.
 
 Similarly, `ch04_partner_unsafe_count_to_defense` (partner plays count into defense-
 controlled trick they can't beat) is -9.21 pts CI [-10.96, -7.69], N=201. The champion

@@ -2,7 +2,7 @@
 title: w42 Setter Defense Claim Validation
 kind: experiment
 first_seen: 2026-05-01
-last_updated: 2026-07-15
+last_updated: 2026-10-12
 status: superseded
 ---
 
@@ -23,7 +23,11 @@ The follow-up [[w42-gus-corpus-tactical-claim-deep-dive]] supersedes the pounce
 part of that limitation for the Gus v2 generated-corpus slice. It implements
 role-gated pounce-count labels over 28,000 decisions and finds that pounce count
 beats same-decision alternatives by about +4.1 Q, while reckless count into the
-bidder side is about -8.4 Q. Other Chapter 5 families on this page remain
+bidder side is about -8.4 Q. The pooled pounce contrast includes 100 last-seat
+pairs where the win is certain; the literal before-certainty label is null
+(+0.44 [−0.20, +1.10], n=525, [[w42-phase4-sequence-handshape-tests]]). The
+reckless-count row is a near-tautological negative control, and its detector
+over-fires (`t42-v0m5`, never fixed). Other Chapter 5 families on this page remain
 underpowered or untested.
 
 [[w42-tactical-claim-replication]] confirms that result with a full legal-action

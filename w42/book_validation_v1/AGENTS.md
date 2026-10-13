@@ -49,11 +49,24 @@ Every agent output (CSV/JSON/wiki page) must record:
    - `context-limited` (true only in restricted regime)
    - `underpowered` (sample/proxy too weak for verdict)
 7. **caveats** — what the evidence does *not* cover.
-8. **artifacts** — paths to CSV/JSON/.pt and exact reproducibility command.
+   Always state: the evaluator (the E[Q] labels come from a learned Q network,
+   qMAE 0.94 points, not a solver), the unit (points or marks), the chance
+   baseline for any agreement rate (random legal play; forced moves count as
+   agreement), and the number of independent deals (bootstrap by deal, not by
+   decision).
+8. **perspective** — whose view each E[Q] value is from. Forge documents E[Q]
+   from the acting player's view (`forge/eq/generate/actions.py:113,160`); a
+   probe that negates it for a setter must show, on one snapshot checked by
+   hand, that the generator's output is Team 0's view (#122).
+9. **artifacts** — paths to CSV/JSON/.pt and exact reproducibility command.
 
 Agent must NOT:
 
 - promote a claim to `supported` based on detector creation alone.
+- promote a claim on a test that cannot fail. Scoring every bid from the same
+  points sample against a rising threshold (`forge/bidding/estimator.py:72-100`)
+  can only show that higher bids make less often; that is arithmetic, not the
+  book's auction claim.
 - generalize beyond its slice in the wiki page body.
 - merge new evidence into `phase4_claim_completion_board/` or
   `phase4_final_claim_audit/`. Reconciliation is the foreground orchestrator's
@@ -87,7 +100,7 @@ When all agents in a wave finish, the orchestrator:
 
 No agent edits the central ledger or the synthesis page directly.
 
-## Promotion guard (added 2026-05-03 after Wave 2.E.2 demotion)
+## Promotion guard
 
 A claim may move toward `supported` only on **paired same-decision
 contrast evidence on the relevant action shape**. Aggregate proxies do
@@ -100,12 +113,11 @@ not qualify. Examples:
   actions in games at bid X; per-declaration mean regret across all
   decisions; cross-corpus aggregate flip rate.
 
-The Wave 2.B.2 promotion of `ch12-setter-pounce-high-bid-off` to
-`context-limited` based on aggregate Q-delta was reversed by Wave
-2.E.2's snapshot-level evidence (-10.42 EV CI [-11.25, -9.59], all 4
-bids contradict). The agent had flagged the proxy as insufficient; the
-orchestrator promoted anyway. This guard prevents repeating that
-mistake.
+The guard stands on its own logic: an aggregate over all chosen actions
+is not a contrast on the act. It was prompted by the Wave 2.E.2 reversal
+of `ch12-setter-pounce-high-bid-off`, but that probe's verdict is
+withdrawn pending a sign check (#122), so the reversal is not a
+precedent for it.
 
 ## Utility-coverage requirement (added 2026-05-03 after Wave 3.0)
 

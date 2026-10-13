@@ -2,7 +2,7 @@
 title: Winning 42 Ch05 Setter Defense
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-01
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -166,8 +166,8 @@ trump-rich recognition remain blocked by missing state fields.
 | Setter upside justifies aggressive defensive pressure because sets score bid plus captured points. | lines 2314-2327 | supported directionally by scoring/accounting substrate | Phase 4 verifies scoring mechanics and setter pounce value, but full point EV of successful sets by bid context remains a follow-up. |
 | Bidder usually exposes one or two off windows, and defenders should concentrate count pressure there. | lines 2329-2341 | context-limited / bounded | Phase 4 supports pounce/count pressure in reached row-local states; exact bidder off-window concentration needs richer private hand/state fields. |
 | Creating voids during early trump/double leads improves later pounce chances. | lines 2361-2398 | blocked by missing causal state injection | The row table cannot attribute later pounce windows to earlier void-creating choices; needs paired multi-trick state injection. |
-| Playing count before partner certainty on bidder off is often correct when setting. | lines 2443-2500 | context-limited support | `t42-br7n.1` finds pounce take-count-now `+2.681` Q, while broader before-certainty pressure is weak/uncertain. |
-| Count-calling defensive leads are preferred after winning lead, except for low-lead traps and one-point-to-set cases. | lines 2502-2616 | supported directionally | Setter count-calling/count leads are `+3.028` Q across 1866 paired lead decisions. |
+| Playing count before partner certainty on bidder off is often correct when setting. | lines 2443-2500 | null on the literal label (ledger: `supported`) | The literal before-certainty label is `+0.438` Q [−0.20, +1.10] over 525 pairs. The ledger's `supported` rests on a pooled +4.10 that includes last-seat pairs where the win is certain. Pounce take-count-now is `+2.681` Q. |
+| Count-calling defensive leads are preferred after winning lead, except for low-lead traps and one-point-to-set cases. | lines 2502-2616 | oracle points favour the book; never absorbed | Setter count-calling/count leads are `+3.028` Q across 1866 paired lead decisions (class-vs-class, oracle points, bid 30). The ledger row `ch05-count-calling-lead` still reads `underpowered` at n=51. |
 | Protecting count dominoes with same-suit throwaways reduces bidder ability to pull count with double-ahead leads. | lines 2641-2672 | blocked by missing state fields | Current row table cannot test count-protection throwaways or future forced-count loss. |
 | Only-one-opponent-followed-trump is a strong public trump-set signal requiring partner support. | lines 2692-2728 | blocked by missing belief/state fields | Needs hidden-trump belief update and partner donation decisions after the signal; not available in the current row table. |
 | Trump-rich setters should choose between count attack, trump-in, hold, and high-trump lead based on rank strength, count on trick, and seat position. | lines 2730-2824 | blocked by missing state fields | Current row table lacks exact trump-rich recognition and private remaining-trump state. |
@@ -189,49 +189,19 @@ trump-rich recognition remain blocked by missing state fields.
 
 ## Wave 2 Findings (Book Validation v1)
 
-[[w42-bookval-v1-wave2-pounce-window-bid30]] — paired-contrast probe on
-52 oracle-greedy snapshots (filtered from 500 by 1-legal-move and
-setter-led-trick exclusions). The book's setter-pounce instruction is
-right under `p_make` (oracle pounces 59.6%) but **wrong under scalar EV**
-(decline better in 65.4%). 10-point count cases show EV delta `+15.68`
-with CI `[+1.60, +29.76]` (decline strictly better) yet oracle still
-pounces 80% of the time. Status: `context-limited` for the bid=30 slice;
-the high-bid scope (`ch12-setter-pounce-high-bid-off`) has since been
-probed by Wave 2.E.2 ([[w42-bookval-v1-wave2-pounce-high-bid]], bead
-`t42-8kbh`) on the Wave 2.B.2 full-sweep bid-aware atlas
-([[w42-bookval-v1-wave2-bid-aware-atlas]], bead `t42-7eop`): **contradicted** — the
-decline-better-for-setter pattern is not reversed at bids 35/36/39/42,
-it is amplified (EV CI excludes zero at all four buckets). The chapter's pounce
-recommendation encodes implicit `p_make` reasoning at the contract
-threshold; under tail-aware utilities (CVaR, robust_q25) it would
-recommend a different action substantially more often.
-
-[[w42-bookval-v1-wave2-void-creation]] and
-[[w42-bookval-v1-wave2-void-creation-follow]] together test the book's
-void-creation claim under both **lead** and **follow** positions, with
-a position-dependent reversal:
-
-- **Lead-position (Wave 2.C, n=276): `contradicted`**. Both `p_set`
-  delta (CI `[-0.028, -0.003]`) and EV delta (CI `[-3.42, -1.84]`)
-  exclude zero opposite to the book's direction. Leading a singleton
-  off-suit announces the void at a cost that exceeds the future
-  trump-in value.
-- **Follow-position (Wave 2.C.2, n=500): `context-limited`** in book
-  direction. EV delta `+0.77` (CI `[+0.12, +1.42]`) — CI excludes
-  zero on the positive side. p_set CI straddles zero (`[-0.002,
-  +0.019]`); only 52.6% of contrasts favor voiding. Effect is real
-  but weak; book's canonical scenario survives.
-
-The mechanistic reading: when leading you choose *whether* to declare
-a void at the cost of revealing it; when following without ability to
-follow suit you only choose *which* suit to deplete, so the singleton
-void is a marginally better partition. The book's advice is right in
-the canonical scenario it actually describes. Lead-to-self-void
-should not be conflated with following-and-discarding-singleton.
-
-The campaign's first `contradicted` finding (lead position) is
-intentionally narrow. The broader Ch 05 void-creation concept retains
-weak directional support in its canonical scenario.
+The four setter-side Wave 2 probes —
+[[w42-bookval-v1-wave2-pounce-window-bid30]] (n=52),
+[[w42-bookval-v1-wave2-pounce-high-bid]] (n=1,140, bids 35/36/39/42, on the
+[[w42-bookval-v1-wave2-bid-aware-atlas]]),
+[[w42-bookval-v1-wave2-void-creation]] (lead, n=276) and
+[[w42-bookval-v1-wave2-void-creation-follow]] (follow, n=500) — negate E[Q] for
+the setter on the assumption that it is Team 0's view; forge documents E[Q] from
+the acting player's view. **Their verdicts are withdrawn pending a sign check
+(#122)**: "high-bid pounce contradicted", "lead-void contradicted", "follow-void
+context-limited in book direction", the bid-30 "p_make/EV split", and the
+position-dependent-reversal reading built on them. Independent of the sign, the
+bid-30 pounce contrast is null (CI `[-0.57, +6.75]`) and the follow-void effect
+(+0.77 Q) is below the minimum detectable effect and null on the clean subset.
 
 ## Wave 1 Findings (Book Validation v1)
 
@@ -245,8 +215,8 @@ setter-seat surface from "broadly important" to "concretely structured":
   Detectors, the row model, and oracle EV most often disagree with each
   other in setter-seat positions.
 - **Setter seats are asymmetric**: right-setter load-bearing hidden tiles
-  are ~30% trump doubles; left-setter is ~37% plain tiles. The book's Ch 5
-  treatment is symmetric; the data is not. A future detector pass should
+  are ~30% trump doubles; left-setter is ~37% plain tiles. The book itself
+  states the setter-seat asymmetry (p.51). A future detector pass should
   emit a `seat_pos` feature and not rely on `role_regime=setter` alone.
 - **`ch05_reckless_count_to_bidder_control` overfires**: mean regret 9.18
   over 2,300 fires; the worst three cases all sit on trick-0 setter

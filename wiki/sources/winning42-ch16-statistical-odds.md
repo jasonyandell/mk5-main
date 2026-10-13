@@ -2,7 +2,7 @@
 title: Winning 42 Ch16 Statistical Odds
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-03
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -15,7 +15,7 @@ hypotheses for [[gus]], [[burl]], and [[forge]].
 Chapter 16 is mostly an odds appendix, so its first value is calibration: book claims
 can be checked by exact double-six enumeration before they become strategy tags. A local
 exact enumeration pass on 2026-05-01 supports the chapter's main hand-shape and double
-count priors. The strategic recommendations still need [[forge]] E[Q] checks because
+count priors; its four-trump figures reproduce the book's equiprobability error (below). The strategic recommendations still need [[forge]] E[Q] checks because
 knowing the prior does not prove that a lead or bid threshold is optimal.
 
 ## Work Surface
@@ -65,14 +65,18 @@ all `C(28, 7)` hands.
 | Seven doubles | 0.000084% | supported | Exactly one hand. |
 | Modal joint shape | 18.011% | supported | Two doubles plus one void is the most common `(double_count, void_count)` bucket. |
 
-For the four-trump claims, the 27 configurations are the independent assignments of the
-three missing trumps to partner, left opponent, or right opponent. The source's 10/27 and
-14/27 counts are recovered when partner holdings are not treated as setting threats:
+For the four-trump claims, the book counts 27 assignments of the three missing trumps to
+partner, left opponent, or right opponent and treats them as equiprobable. They are not:
+each other hand has seven slots out of 21 unknown, so a 1–1–1 split weighs 0.043 each, a
+2–1 split 0.037 and a 3–0 split 0.026. Counting configurations reproduces the book's 10/27
+and 14/27; weighting them gives the true risks ([[book-study-2026-10-12]]):
 
-| condition | exact configuration count | status | note |
-|---|---:|---|---|
-| Four trumps, bidder has double, missing second-highest only | 10 / 27 = 37.037% | supported | Count cases where a setter opponent owns the second-highest trump and another missing trump. |
-| Four trumps, bidder has double, missing next two highest | 14 / 27 = 51.852% | supported | Count cases where a setter opponent can keep one of the two high missing trumps after the double lead. |
+| condition | book (27 equiprobable) | exact | note |
+|---|---:|---:|---|
+| Four trumps, bidder has double, missing second-highest only | 10 / 27 = 37.0% | 33/95 = 34.7% | A setter opponent owns the second-highest trump and another missing trump. |
+| Four trumps, bidder has double, missing next two highest | 14 / 27 = 51.9% | 47/95 = 49.5% | A setter opponent can keep one of the two high missing trumps after the double lead; a coin flip the bidder's way, not against. |
+
+The ledger rows for these two figures read `supported`; they reproduce the book's error.
 
 ## Concept Table
 
@@ -82,7 +86,7 @@ three missing trumps to partner, left opponent, or right opponent. The source's 
 | Suit coverage and void prior | Seven-card hand, unique pip count, void count | Exact frequency by suit coverage; corpus chi-square against exact prior | Exhaustive enumeration; Gus/Burl/forge generated games | P0 | Converts "one void is common" into a calibrated prior for hidden-hand belief and table-talk-free inference. | Enumeration checked; oracle not needed; Gus ready; Burl ready. |
 | Double-count prior | Hand, double mask, count of doubles | Exact frequency by double count; corpus chi-square against exact prior | Exhaustive enumeration; generated deals | P0 | Supports the claim that two doubles is the modal double count and prevents overfitting to anecdotal double-heavy hands. | Enumeration checked; oracle not needed; Gus ready; Burl ready. |
 | Modal joint hand shape | Hand, double count, void count | Joint frequency over `(double_count, void_count)` | Exhaustive enumeration; generated deals | P0 | The source's "most common hand" claim is joint, not just two separate marginal modes. | Enumeration checked; oracle not needed; Gus ready; Burl ready. |
-| Four-trump boss-first threshold | Bidder hand, declared trump, trump ranks held/missing, partner/opponent seat distinction | 27-configuration count; E[Q] delta of boss-first versus low-trump-first | Exhaustive missing-trump assignment; forge decision rollouts | P0 | Enumeration supports the source's 10/27 risk only when partner is non-threatening. Strategy value still depends on count, offs, bid margin, and score. | Enumeration checked; oracle ready; Gus ready as action tag; Burl ready as reasoning bucket. |
+| Four-trump boss-first threshold | Bidder hand, declared trump, trump ranks held/missing, partner/opponent seat distinction | 27-configuration count; E[Q] delta of boss-first versus low-trump-first | Exhaustive missing-trump assignment; forge decision rollouts | P0 | The 10/27 count assumes equiprobable placements; the weighted risk is 33/95 = 34.7%. Strategy value still depends on count, offs, bid margin, and score. | Enumeration checked; oracle ready; Gus ready as action tag; Burl ready as reasoning bucket. |
 | Four-trump missing top-two threshold | Bidder hand, declared trump, missing second and third trumps, count-in-trump flag | 27-configuration count; E[Q] threshold with and without trump count | Exhaustive assignment; forge rollouts by count and bid margin | P0 | This is the cleanest "near 50/50" chapter bucket and should become an adversarial eval slice. | Enumeration checked; oracle ready; Gus ready; Burl ready. |
 | Count-in-trump exception | Four-trump threshold state, live count in trump, bid need, current score | Paired regret of double-first risk when count can be cashed versus low-trump safety | Forge E[Q] rollouts; generated games | P1 | The book's exception is not an odds claim alone; it is a value-of-cashing-count claim. | Enumeration informs prior; oracle needed; Gus ready; Burl ready. |
 | Partner double-help prior | Bidder off count, bidder doubles held, remaining doubles, partner unknown hand | Hypergeometric probability partner has at least two remaining doubles; make/set rate by bucket | Exact conditional enumeration; forge rollouts; Gus belief outputs | P1 | The source uses the double prior to justify counting on partner help when bidding with multiple offs. This needs conditioning on the bidder's own hand. | Enumeration ready; oracle ready; Gus belief ready; Burl trace ready. |
@@ -109,7 +113,7 @@ three missing trumps to partner, left opponent, or right opponent. The source's 
 ## Readiness Notes
 
 - Enumeration is complete for the chapter's raw hand-shape, double-count, modal joint-shape,
-  and 27-configuration four-trump claims.
+  and 27-configuration four-trump claims; the four-trump configurations need hypergeometric weights.
 - Oracle rollouts are needed for the action recommendations: boss-first versus low-trump,
   count-in-trump exceptions, and partner-help bidding thresholds.
 - Gus can consume these as cheap public tags and eval buckets: void count, double count,
@@ -127,8 +131,8 @@ three missing trumps to partner, left opponent, or right opponent. The source's 
 | Suit coverage odds are roughly 41/48/10/1. | supported | Exact enumeration gives 42.314/46.982/10.349/0.355. | Decide whether future docs should write the last bucket as less than 1%. |
 | Double-count odds are roughly 10/32/36/18/4/<0.5/0.02/extreme. | supported | Exact enumeration matches the table within rounding. | Add exact priors to a reusable detector table. |
 | The most common hand has two doubles and one void. | supported | Exact joint enumeration gives this bucket at 18.011%, the largest joint cell. | Check generated corpora for the same modal bucket. |
-| Four trumps with the double but missing the second-highest has a 10/27 setter double-up risk. | supported | Exact 27-case assignment gives 10 when partner is not counted as a setting threat. | Run forge rollouts for boss-first versus low-trump under bid/count contexts. |
-| A random partner hand has a decent chance of containing at least two doubles. | context-limited static prior supported | `t42-br7n.7` gives the exact unconditional two-plus-double prior as `58.098713%`, with generated contract partner two-plus rate `57.03125%`. | Full partner bid/play intelligence still needs observed auction policy or state-injected rollouts. |
-| Four trumps with the double but missing the next two highest has a 14/27 setter double-up risk. | supported | Exact 27-case assignment gives 14 under the same partner/non-threat interpretation. | Run forge rollouts and split the count-in-trump exception. |
+| Four trumps with the double but missing the second-highest has a 10/27 setter double-up risk. | wrong figure (ledger: supported) | 10/27 counts equiprobable placements; the weighted risk is 33/95 = 34.7%. | The boss-first policy was never tested. |
+| A random partner hand has a decent chance of containing at least two doubles. | context-limited static prior supported | `t42-br7n.7` gives the exact unconditional two-plus-double prior as `58.098713%`, with generated contract partner two-plus rate `57.03125%`. Given the bidder's own two doubles it is 0.557; given three, 0.407 ([[book-study-2026-10-12]]). | Full partner bid/play intelligence still needs observed auction policy or state-injected rollouts. |
+| Four trumps with the double but missing the next two highest has a 14/27 setter double-up risk. | wrong figure (ledger: supported) | 14/27 counts equiprobable placements; the weighted risk is 47/95 = 49.5%. | Never tested as play. |
 | Bidders with more than one off can count on partner double help. | context-limited | The unconditional double prior is real, but the useful probability is conditional on bidder hand and bid context. | Compute partner conditional prior and correlate with make/set and regret. |
 | The book's odds imply the recommended play is optimal. | underpowered | Exact priors alone do not settle E[Q] because count, bid margin, score, and off protection change value. | Use paired oracle rollouts in the first strategy-tags report. |

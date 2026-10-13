@@ -2,7 +2,7 @@
 title: w42 Bidding Risk-Budget Claim Validation
 kind: experiment
 first_seen: 2026-05-01
-last_updated: 2026-07-06
+last_updated: 2026-10-12
 status: superseded
 ---
 
@@ -26,8 +26,9 @@ bucket, and four-plus-trump hands can still carry more than the Chapter 2
 12-point beginner risk budget. A follow-up `t42-0b4l.5` probe adds a small
 generated bid-margin counterfactual surface: arbitrary generated hands can now
 be evaluated under fixed hand/declaration play outcomes while varying only the
-bid threshold and auction high bid. That partially tests "bid only enough" as a
-same-contract margin claim, but it still does not validate real auction policy,
+bid threshold and auction high bid. That restates arithmetic (a higher
+threshold on the same points sample cannot make more often) and does not test
+"bid only enough"; it does not validate real auction policy,
 partner-help value, opponent response to bid size, or 32/33 natural-bid
 anomalies, because no real auction logs, bid-policy histories, or paired
 auction rollouts were present in this worktree.
@@ -35,8 +36,8 @@ auction rollouts were present in this worktree.
 The phase-3 follow-up [[w42-phase3-auction-bid-discipline-corpus]] now adds a
 generated auction-pressure corpus. It is still not a human auction log, but it
 does compare pass, minimum overcall, and higher bid amounts across partner-high
-and opponent-high contexts. That materially strengthens the bid-only-enough
-slice while keeping natural bucket and partner-signal claims context-limited.
+and opponent-high contexts. Its bid-margin table is the same arithmetic and
+cannot fail; natural bucket and partner-signal claims stay untested.
 
 W&B links: not applicable.
 
@@ -104,8 +105,8 @@ the bidder can actually make a bid, or which bid amount wins the auction.
 | Four/five off exposure is measurable and tail-oriented. | `summary.json` examples plus candidate metrics | 1,480,050 / 8,288,280 candidates, 17.857%; 296,010 / 1,184,040 hands, 25.000%, have a candidate with a `5-4` off under this proxy. | detector supported |
 | Static risk ceilings alone do not validate natural bid buckets. | `bid_ceiling_proxy_distribution.csv` | The proxy emits only 42, 37, 32, 27, 22, 17, and 12 because exposed count is a multiple of five; 30/31/35/36 do not appear without auction/trick-risk modeling. | underpowered |
 | Double-side protection cannot be reduced to a single protected-off Boolean. | `summary.json` side-specific exposure totals | Only 17.751% of side-exposure points are on a side whose same-pip double is held; the other side remains live under the proxy. | context-limited |
-| Bid-only-enough is testable now as a bid-threshold counterfactual, not as full auction discipline. | `w42/bid_only_enough_claim_tests/summary.json` and `margin_summary.csv` | 12 arbitrary hands x 2 static-best pip declarations x 96 policy simulations produced 24 hand/declaration rows, 1224 bid counterfactual rows, and 1104 positive-margin contrasts. Mean delta versus the minimum winning bid was -0.111555 `P(make)` and -0.223109 one-mark swing; 1040 contrasts were worse, 64 tied, and 0 improved. | partial empirical probe |
-| Bid-only-enough survives generated auction pressure. | `w42/auction_bid_discipline_claim_tests/summary.json` and `bid_margin_summary.csv` | 32 generated deals, 384 contract labels, 608 auction contexts, and 16800 bid-action rows. Across 14976 positive-margin rows, 12872 worsened, 2104 tied, and 0 improved versus the minimum winning bid. | narrow operational support |
+| Bid-only-enough is testable now as a bid-threshold counterfactual, not as full auction discipline. | `w42/bid_only_enough_claim_tests/summary.json` and `margin_summary.csv` | 12 arbitrary hands x 2 static-best pip declarations x 96 policy simulations produced 24 hand/declaration rows, 1224 bid counterfactual rows, and 1104 positive-margin contrasts. Mean delta versus the minimum winning bid was -0.111555 `P(make)` and -0.223109 one-mark swing; 1040 contrasts were worse, 64 tied, and 0 improved. | arithmetic; cannot fail |
+| Bid-only-enough margin table under generated auction contexts. | `w42/auction_bid_discipline_claim_tests/summary.json` and `bid_margin_summary.csv` | 32 generated deals, 384 contract labels, 608 auction contexts, and 16800 bid-action rows. Across 14976 positive-margin rows, 12872 worsened, 2104 tied, and 0 improved versus the minimum winning bid. | arithmetic; cannot fail |
 | Partner bid signal is conditional, not automatic. | `w42/auction_bid_discipline_claim_tests/partner_signal_summary.csv` | In partner-high contexts, P0 overcalls partner in 77 / 192 contexts, or 40.104%, under offline Monte Carlo pass-value labels. | context-limited |
 
 ## Bid-Only-Enough Follow-Up
@@ -122,8 +123,8 @@ static hand strength constant while varying only:
 - `unnecessary_bid_margin = actual_bid - minimum_winning_bid`;
 - offline labels `p_make` and one-mark `mark_swing`.
 
-The small run is deliberately a smoke-scale empirical check, not a claim-status
-promotion. It shows the mechanical point behind the book advice: in a one-mark
+The small run is a smoke-scale check, not a claim test. It shows only the
+mechanical point: in a one-mark
 contract, bidding above the amount needed to win cannot improve the same fixed
 play-outcome distribution and often worsens it because the make threshold rises.
 It also proves the required schema is executable in this checkout. Full auction
@@ -161,7 +162,7 @@ Artifacts:
 | `ch02-duplicate-count-exposure` | not-yet-tested/context-limited | no central ledger change; report recommends detector-level supported | Exact enumeration shows duplicate exposure and naive overcount are common. This supports the detector arithmetic, not an outcome strategy. | `w42/bidding_risk_budget_claim_validation/duplicate_overcount_points_distribution.csv` |
 | `ch02-strong-trump-bad-risk-trap` | not-yet-tested/context-limited | no central ledger change; report recommends detector-level supported | Exact enumeration finds four-plus-trump candidates above the 12-point static risk budget. Outcome value still needs E[Q]. | `w42/bidding_risk_budget_claim_validation/strong_trump_bad_risk_points_distribution.csv` |
 | `ch02-four-five-off-danger` | not-yet-tested/context-limited | no central ledger change; report recommends detector-level supported | The `5-4` off proxy is prevalent and produces high exposed-count examples. Make/set cost is untested. | `w42/bidding_risk_budget_claim_validation/summary.json` |
-| `ch02-bid-only-enough` | not-yet-tested/context-limited | no central ledger change; report recommends partial testability only | The follow-up counterfactual run validates the same-contract direction for unnecessary bid margin, but not full auction discipline or opponent/partner bidding behavior. | `w42/bid_only_enough_claim_tests/summary.json` |
+| `ch02-bid-only-enough` | not-yet-tested/context-limited | no central ledger change; report recommends partial testability only | The follow-up run restates arithmetic: every bid is scored from the same points sample against a rising threshold, so it cannot fail. Auction discipline and opponent/partner bidding behavior are untested. | `w42/bid_only_enough_claim_tests/summary.json` |
 | `ch12-natural-bid-bucket-anomaly` | underpowered | no central ledger change | Static exposed-count ceilings cannot produce 30/31/35/36 natural bid centers. This claim needs auction logs or paired bidding rollouts. | `w42/bidding_risk_budget_claim_validation/bid_ceiling_proxy_distribution.csv` |
 | `ch16-partner-double-help-prior` | context-limited | no central ledger change | This run confirms static side exposure and same-pip double protection surfaces, but it does not condition on partner hidden hand or partner bids. | not applicable |
 

@@ -2,7 +2,7 @@
 title: The book enters — Winning 42 as citation, extraction stayed dormant
 kind: trail
 first_seen: 2026-07-06
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 status: retired
 ---
 
@@ -62,7 +62,9 @@ The eventual consumer of this thread — the empirical Winning-42
 strategy-validation campaign, and the Kindle-CDP page-grab that produced
 `scratch/winning42/` — lands outside this window, in April/May 2026. Within
 Era 1, treat "the book enters" as: citation built and durable; extraction of
-content ideated and dormant for the remainder of the era.
+content ideated and dormant for the remainder of the era. The 2026 campaign
+never did it either: the book's worked example hands, Hand 36 included, were
+never encoded as test positions (#123; [[w42-book-claim-synthesis-and-ai-directions]]).
 
 ## What it ruled in / out
 

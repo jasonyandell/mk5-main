@@ -13,7 +13,7 @@ backlinks:
   - [[w42-bookval-v1-wave1-mark-utility-transform]]
   - [[w42-bookval-v1-wave2-bid-aware-atlas]]
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 # Wave 2.H — Ch10 Mark Multiplier Action-Level Evidence
@@ -65,7 +65,7 @@ Implication: mark_ev and p_make are strategically identical. The mark multiplier
 scalar alone does not change which action is optimal within a given bid's
 p_make distribution.
 
-### The multiplier changes optimal play in 71% of decisions at bid=84
+### The 71% "flip rate" is an artifact
 
 The real strategic shift comes from `threshold_q`, the Q-value above which a
 hand is considered a make. Higher bids require more tricks/points, which shifts
@@ -79,6 +79,12 @@ this threshold and reorders the p_make distribution over available actions.
 | 39  | 70.0% | [69.2, 70.8] |
 | 42  | 71.0% | [70.3, 71.8] |
 | 84  | 70.9% | [70.2, 71.7] |
+
+These rates do not measure strategy. At bids 42 and 84 every action ties on
+mark_ev, so "top-1" is the first row; 36.5% of decisions are single-legal, and
+2,162 forced decisions count as flips because the states differ across bid runs
+(trajectories diverge); the bid-independent EV argmax "flips" 24–29% on the same
+pairs. The bid-attributable change is roughly 6–17 percentage points.
 
 The flip rate rises monotonically with bid up to bid=42, then plateaus at bid=84.
 This is mechanically correct: bids 42 and 84 share `threshold_q = 42` (all 42
@@ -135,13 +141,10 @@ at high bids. Doubles-suit is least sensitive — its constrained action set
 
 ## Claim-Ledger Assessment
 
-Row `ch10-special-bid-mark-multiplier` remains `supported`. This probe does not
-change the status. It widens the evidence base from "deterministic algebraic
-identity" to "action-level paired demonstration":
-
-> The mark multiplier — operating through the threshold_q mechanism — changes the
-> oracle's optimal play in **71% of decisions** at bids 42 and 84 relative to
-> a bid=30 baseline. This is not just a scoring arithmetic change.
+Row `ch10-special-bid-mark-multiplier` remains `supported` because it is a
+definition of marks scoring. This probe adds no action-level evidence: the 71%
+flip rate is mostly ties broken by row order, forced moves and divergent
+trajectories (above).
 
 The one nuance the action-level evidence surfaces: the 2× multiplier at bid=84
 does not add strategic differentiation *beyond* bid=42. Both share the same

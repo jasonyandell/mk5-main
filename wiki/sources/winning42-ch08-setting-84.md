@@ -2,7 +2,7 @@
 title: Winning 42 Ch08 Setting 84
 kind: source
 first_seen: 2026-05-01
-last_updated: 2026-05-01
+last_updated: 2026-10-12
 status: complete
 ---
 
@@ -108,9 +108,13 @@ only winning action is preservation rather than point capture.
 ## Claim Ledger
 
 [[w42-phase4-84-dynamic-seed-tests]] now supplies reached-state action evidence
-for 84 defense over mined natural seeds. It supports preservation and dead-asset
-release proxies, while final set attribution, throwaway-ladder bottlenecks, and
-population set-rate claims remain blocked.
+for 84 defense over mined natural seeds. Preservation and dead-asset release
+score more points (+1.946, +0.504 Q, no CI) but have zero measured effect on
+make or set, which is all an 84 scores. Final set attribution, throwaway-ladder
+bottlenecks, and population set-rate claims remain blocked; the throwaway-ladder
+probe (`t42-wikw`) never produced output. The ledger row
+`ch08-either-matching-double-not-two-to-one` (`contradicted`, 66.7% vs 90%)
+refutes a reading the book does not make: it is not a test of the book.
 
 | claim | status | next empirical check |
 |---|---|---|

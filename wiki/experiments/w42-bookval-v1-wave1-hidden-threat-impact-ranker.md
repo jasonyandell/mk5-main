@@ -7,7 +7,7 @@ status: complete
 date: 2026-05-03
 wave: "1.3"
 first_seen: 2026-05-03
-last_updated: 2026-07-11
+last_updated: 2026-10-12
 ---
 
 # Hidden Threat Impact Ranker
@@ -106,9 +106,10 @@ high-impact decisions tend to have distributed threat across several tiles.
 | count_tile | 16.1 | 2.9 | mixed |
 | plain_tile | 13.7 | 3.5 | mixed |
 
-**Trump-count tiles are uniquely directional: 100% helpful.** Knowing the trump-suit
-count tile (e.g., 4-0 and 4-5 in fours) is held by a specific seat always raises the
-actor's Q-distribution mean. This makes trump-count tiles the most "legible" load-bearing
+**Trump-count tiles were 100% helpful on 20 cases from 3 hands.** Every one of them
+is a tile held by the actor's partner, so knowing partner holds a trump raises the
+actor's Q; over the top-5 rows the split is 39 helpful vs 35 harmful. (4-0 is not a
+count tile; the 4-5 is.) This makes trump-count tiles the most "legible" load-bearing
 tile from the perspective of belief-attention: conditioning on them produces a clean
 unidirectional signal, not a mixed one.
 
@@ -159,7 +160,7 @@ Exact row-level join is not possible (seed mismatch). The categorical bridge via
 **Status: `underpowered`**
 
 Evidence is offline diagnostic only. The categorical trump_double enrichment (1.33x) and
-trump_count directional consistency (100% helpful) provide weak support for the claim
+trump_count directional consistency (20 partner-held cases from 3 hands) provide weak support for the claim
 family "one specific unseen tile changes the plan." The 1.85% single-tile-dominant rate
 refutes the strong version of the claim as a systematic property of all decisions. The
 seed mismatch prevents row-level verification against detector-tagged decisions.
