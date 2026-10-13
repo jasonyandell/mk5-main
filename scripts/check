@@ -260,6 +260,7 @@ def tally(text):
         parts.append(f"{theorems} theorems on standard axioms only")
     parts += re.findall(r"(?m)^svelte-check (found .*)$", text)
     parts += re.findall(r"(?m)^(\d+ pages checked: .*)$", text)       # wiki lint
+    parts += re.findall(r"\[WARN\] (log\.md has .*)", text)           # rotation due
     if skipped:
         parts.append(f"{skipped} SKIPPED")
     reasons = sorted(set(re.sub(r"\S*?/scratch/", "scratch/", m)
