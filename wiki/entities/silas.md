@@ -85,6 +85,32 @@ With them **20 of the 21 encodings are their gate exactly**; C14 still lacks the
 beyond one hand except that one: policy likelihood (#128), cross-game comparison (#130),
 another seat's knowledge (#132), the auction (#134), aggregate (#135).
 
+## The double-dummy reference
+
+`silas::Solver` (2026-10-13) is an exact perfect-information solver over any `Physics`:
+integer fail-soft alpha-beta with a transposition table at each trick's start, keyed on
+the exact state, holding proven bounds. It values every legal move at a fully specified
+position under two objectives, the declaring side's points margin and make-or-set
+against the bid (a null-window search). It **sees all four hands**: a reference, never a
+player ([[the-wall]]). It explains a book move only where the book argues from a known
+position; elsewhere it bounds what a real seat can achieve. A full deal solves in a
+median 1.7 ms (worst 29 ms over 900 random deals). It agrees with an unpruned
+exhaustive search on sampled endings, with an unpruned memoized search of whole game
+trees (Hand 28 in the tests; 40 random deals and Hands 34 and 35 in a one-off check),
+and under seat rotation. The forge oracle could not referee it on this machine: on MPS
+(torch 2.11, macOS 26.5) `torch.sort` and `torch.unique` on int64 lose the high bits of
+forge's packed states, so forge's enumeration collapses after two plies.
+
+`grade_line` grades a line play by play; `silas/examples/book/solve_grade.rs` grades the
+narrated lines of Hands 28–35 in under a second. Of 124 narrated plays with a choice, 21
+fall short of the best double-dummy margin and 4 change make-or-set: the bidder's 3-1
+lead to trick three of Hand 28 (any of 5-0, 6-1, 6-6 keeps all 42; the 3-1 sets him),
+the bidder's opening 5-5 in Hand 34 and the left opponent's 4-3 that hands the 84 back
+at trick five, and the bidder's opening 4-4 in Hand 35. Each of those is a bidder or
+defender choosing without seeing the hands, so a short grade is a question for the
+book's reasoning, not a verdict on it. Hand 33's narrated line breaks follow-suit at
+trick six and is graded to there.
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the

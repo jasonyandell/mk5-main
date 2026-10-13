@@ -272,6 +272,53 @@ implement.
 suit (nello) is not a straight declaration and is omitted. Its module
 documentation states the rules it implements.
 
+## The double-dummy reference
+
+`Solver` is an exact perfect-information solver. **It sees all four hands.**
+It is a reference, never a player: it explains a book move only where the
+book's own argument is about a fully known position. Everywhere else its
+value is an upper bound on what any real seat can achieve, and a move it calls
+a mistake may be right for a seat that cannot tell the worlds apart (strategy
+fusion: `wiki/topics/the-wall.md`).
+
+An `OpenPosition` is fully specified: the contract, the four hands, the
+current trick's leader and plays, and each side's banked points
+(`OpenPosition::deal` gives a deal's opening lead; `play` steps it).
+`solver.solve(&position, objective)` returns the value of every legal move at
+the root (`RootValues`: each move's value, the best, and the moves tied at
+best), and `solver.value` the position's own value. Two objectives, both from
+the declaring side's point of view, maximized by it and minimized by the
+defenders:
+
+- `Objective::Margin`: the declaring side's final points less the
+  defenders', banked points included;
+- `Objective::Make`: one if the declaring side reaches the bid, zero if
+  not, found by a null-window search that never computes the exact count.
+
+The search is integer alpha-beta (fail-soft) over any `&dyn Physics`, whose
+four tables it reads once. Its transposition table sits at each trick's start,
+keyed on the exact state (the four hands, the leader and the declaring side),
+and holds proven bounds on the declaring side's points still to come. Those
+bounds are facts about the state, so one table serves both objectives and
+every later position of the deal. Move ordering changes only the speed. On
+this machine (Apple silicon, release build) a full deal from the opening lead
+solves in a median 1.7 ms (90th percentile 5.9 ms, worst 29 ms over 900
+random deals, the nine declarations in turn); the value of every opening move
+takes a median 4.1 ms.
+
+`grade_line(&deal, &line)` grades each play of a line from the deal's
+opening lead: the seat, its legal plays, and under each objective the play's
+value, the best value and the moves tied at best (`Grade`, `Judged`).
+`examples/book/solve_grade.rs` grades every narrated play of the book's eight
+full deals from `examples/book/hands.json`, in well under a second
+(`cargo run --release --example solve_grade`).
+
+`tests/solve.rs` holds it to an unpruned exhaustive search on sampled
+positions with one to four tricks left (every root move, both objectives), to
+an unpruned search of Hand 28's whole game tree memoized only on exact
+trick-start states, to seat rotation, and to Hand 28's narrated line, which
+it replays to the 25 and 17 the book awards.
+
 ## Numbers
 
 Weights are exact rationals (`Weight`, a nonnegative `BigRational`). Silas
