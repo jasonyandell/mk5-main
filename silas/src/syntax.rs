@@ -837,12 +837,12 @@ impl fmt::Display for Query {
 const WIDTH: usize = 100;
 
 /// Heads whose forms always take a line per item.
-const BROKEN: [&str; 5] = ["policy", "rule", "query", "pattern", "define"];
+const BROKEN: [&str; 6] = ["policy", "rule", "query", "pattern", "define", "dominates"];
 
 /// Format Silas text canonically: comments kept, each on its own line;
 /// blank lines kept where the source has one (at most one); a form on one
 /// line when it fits in 100 columns and holds no comment or blank line, and
-/// is not a policy, rule, query, pattern or definition; otherwise its leading
+/// is not a policy, rule, query, pattern, definition or dominance; otherwise its leading
 /// words (and a following `(roles ...)`) on its first line and each other
 /// item on a line of its own, two columns in. Formatting is idempotent.
 pub fn format(text: &str, name: &str) -> Result<String> {

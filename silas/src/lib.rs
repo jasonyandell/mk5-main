@@ -8,6 +8,9 @@
 //! A [`PolicyProgram`] chooses plays from what the viewer alone can see. A
 //! [`Solver`] is the perfect-information reference: it sees all four hands.
 //! [`forces`] and [`lay_down`] are what the viewer can guarantee without it.
+//! A [`Contract`] settles a hand under a [`Scoring`] and moves a
+//! [`MatchState`]; a [`Dominance`] compares two contracts over every outcome
+//! of the hand, exactly.
 //!
 //! Silas owns the nouns of the game, the language, and every derived rule. A
 //! rules engine supplies only one declaration's tables, through
@@ -15,6 +18,7 @@
 //! [`reference::Straight42`] is the reference declarations. See `README.md`.
 
 mod belief;
+mod dominance;
 mod dynamics;
 mod eval;
 mod frame;
@@ -25,10 +29,12 @@ mod physics;
 mod policy;
 pub mod reference;
 mod registry;
+mod scoring;
 mod solve;
 mod syntax;
 
 pub use belief::{Belief, Certainty, Comparison, Difference, QuerySummary, Selection, SelectionLaw};
+pub use dominance::{Counterexample, Criterion, Decision, Dominance, Place};
 pub use dynamics::{
     AnswerDynamics, BeliefStep, ObservedPlay, PlayClass, anchor_back, compare_answers, play_is_legal, step_belief,
     step_belief_given, step_frame, step_world, transport_answers,
@@ -44,6 +50,7 @@ pub use policy::{
     PolicyProgram, PolicyRule, Program, Selector,
 };
 pub use registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
+pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};
 pub use syntax::{Atom, Pattern, Quantifier, Query, Role, Scope, Sort, Span, Term, Value, format};
 

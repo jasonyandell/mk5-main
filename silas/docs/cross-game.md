@@ -251,6 +251,14 @@ estimated in the arena or taken from a declared toy. Properties Silas checks on 
 `V` it is handed, because the theorems need them: `V = 1` on states the side has
 won, `0` on states it has lost, antitone in the opponents' score at a fixed own score.
 
+> **Amendment (slice 1, 3e2d3135).** The match-win utility needs a fourth property: V never
+> falls as the side's own score rises (monotone in own score at a fixed opponents' score).
+> With only the three properties above, "bid only enough" (31 vs 33) provably fails: a made
+> 31 against a set 33 changes both scores, which the order "own score equal, other's no
+> larger" cannot compare. The implemented order holds iff it holds for every admissible V.
+> The Lean `WinUtility` below needs the same field (`mono_own`).
+
+
 ### 2.2 The bid action and the auction frame
 
 ```text

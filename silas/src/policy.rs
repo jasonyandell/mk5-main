@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::str::FromStr;
 
+use crate::dominance::Dominance;
 use crate::eval::{Budget, CompiledQuery, Witness};
 use crate::frame::{Bid, Contract, Frame};
 use crate::nouns::{Domino, DominoSet, Seat};
@@ -384,19 +385,23 @@ fn rule(library: &Library, form: &Expr) -> Result<PolicyRule> {
 pub enum Program {
     Query(Query),
     Policy(PolicyProgram),
+    Dominance(Dominance),
 }
 
 impl Program {
-    /// Parse a text whose final form is a `(query ...)` or a `(policy ...)`,
-    /// naming it `name` in errors.
+    /// Parse a text whose final form is a `(query ...)`, a `(policy ...)` or
+    /// a `(dominates ...)`, naming it `name` in errors.
     pub fn parse(text: &str, name: &str) -> Result<Program> {
         let forms = Expr::read_all(text, name, 4 << 20, 40, false)?;
         match forms.last().and_then(Expr::head) {
             Some("query") => Query::parse(text, name).map(Program::Query),
             Some("policy") => PolicyProgram::parse(text, name).map(Program::Policy),
+            Some("dominates") => Dominance::parse(text, name).map(Program::Dominance),
             _ => Err(match forms.last() {
-                Some(last) => last.span.error("expected a final (query ...) or (policy ...) form"),
-                None => error(format!("{name}: expected a (query ...) or a (policy ...), found nothing")),
+                Some(last) => last.span.error("expected a final (query ...), (policy ...) or (dominates ...) form"),
+                None => {
+                    error(format!("{name}: expected a (query ...), a (policy ...) or a (dominates ...), found nothing"))
+                }
             }),
         }
     }

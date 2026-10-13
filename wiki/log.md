@@ -28,9 +28,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The book graded with the honest tools** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]]: the rules priced on the pour, the bid book, the conventions null in the arena.
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
+- **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-13 | silas | cross-game slice 1: the match frame (points to 250, marks to seven, the settlement under both and both readings of a set 84), checked match-win values and the score-grid programme, and `(dominates ...)` exact over the hand's 43 outcomes; the last mark's 42-over-84 decided under both scorings]
+
+[[silas]] § The match and field-free comparison (new); `silas/README.md` § The match; `silas/GAPS.md` gap 2 narrowed (cluster F closed, B's three dominance rows and A's contract half stated, G re-tagged); `silas/examples/book/cross-game/`.
 
 ## [2026-10-13 | silas | the repaired book, first two rules (#121): C12B's guard of the second trump as a query (194/285 at every hand of the shape, so no policy), C10's off permission withdrawn by the partner's-ruff probability (never over 1/2); counterexample deals both ways, double-dummy; C10 re-priced +0.16 → +0.48]
 
@@ -90,9 +95,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 **Added:** [[silas]] (entity); `silas/` crate (54 tests). **Updated:** CLAUDE.md project bullet; index-entities.
 **Ruling:** off-suit plays tie at the bottom of the trick key (texas-42 lean `Declaration.key`), not by pip.
-
-## [2026-10-12 | wiki | the book studies corrected: chance baselines everywhere; neither era established a strategic claim from the book; Zeb prices moves but cannot yet explain one]
-
-**Touched pages:** [[book-study-2026-10-12]] [[w42]] [[w42-book-claim-synthesis-and-ai-directions]] (§ What the evidence is worth) [[w42-book-validation-campaign]] [[w42-phase2-statistics-claims-ledger]] [[w42-book-validation]] and 44 more w42/chapter pages; CLAUDE.md player bullet.
-**Updated:** Zeb era — 52% vs a 37% random floor, per-gate for/indifferent/against, "level" and the dead-row revival withdrawn. Oracle era — "supported" is arithmetic/definitions/controls/a tautology/a null; setter-side verdicts withdrawn (#122).
-**Issues opened:** #122 (E[Q] sign), #123 (the book's examples as positions), #124 (Zeb's reason report), #125 (ledger CSV).

@@ -184,6 +184,38 @@ Results:
 What the partnership can force together with a partner of his own information is open
 (`silas/GAPS.md`, 8).
 
+## The match and field-free comparison
+
+The book's cross-game rules (bid only enough; one mark from the game, bid 42 not 84;
+the 84 hand; keep the setters honest) compare contracts and policies under a scoring and
+a match score. `silas/docs/cross-game.md` sorts the 140 rows of the private coverage
+study that cite #130 into seven clusters and plans five slices. Slice 1 (2026-10-13,
+`silas/README.md` § The match) is the frame and the comparisons that need no deal:
+
+- **The frame.** Points to 250 (the book's game) and marks to seven (the tournament's),
+  the hand's `Outcome`, and `Contract::settle`: under marks the award, under points the
+  book's rule (made, each side scores what it took; set, the setters score the bid plus
+  their points). The book's "they get 84" for a set 84 is the other `SetReading`; the
+  two part only on a set marks bid under points, where a set 42 pays exactly 42, one
+  under the floor of 43 every set points bid clears. A `MatchState` keeps its winner,
+  since a tie at 250 goes to the deciding hand's bidder.
+- **The value.** A match-win value is one on won states, zero on lost ones, and between
+  never rises with the other side's score nor falls with its own; Silas checks a table
+  and refuses one without those properties. The score-grid programme builds one from a
+  hand-outcome model, `exact_given` that model.
+- **`dominates`.** Two contracts compared over the hand's 43 outcomes from every state of
+  a frame, under both readings, by marks, points or the match-win order (at least as good
+  under every value). Exact, with a counterexample when it fails. Needing the last mark,
+  42 dominates 84 under marks and, within 42 of 250, under points (S-0170-a, S-0089-b);
+  two marks out it does not; a lower point bid dominates a higher one under both
+  scorings (the contract half of "bid only enough"). In linear marks the 84 is a belief,
+  better exactly when the make is likelier than not.
+
+That closes the scoring definitions (cluster F), states the three dominance rows of
+cluster B and the contract half of cluster A, and re-tags the fourteen 84 play rules
+(cluster G) to the gaps that hold them. What the rest needs, a bid action, a deal
+measure under a named field and the arena's paired ledgers, is `silas/GAPS.md` gap 2.
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the
@@ -203,11 +235,16 @@ What the partnership can force together with a partner of his own information is
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 14 and prices against none, once the
   dead double's throw and the trump set's feed carry the conditions the book states).
-  Policy likelihood (#128) and another seat's knowledge (#132) are next ([[w42]]).
+  Policy likelihood (#128) and another seat's knowledge (#132) are next ([[w42]]), with
+  the cross-game slices after the match frame: the bid action and the auction frame
+  (also gap 4's structure), then comparison over deals (§ The match and field-free
+  comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
   kernel-checked `Texas42` library; Rust is the first implementation it will be held to.
   What the book asks that Silas cannot yet express (cross-game policy comparison, the
-  auction) is tracked as issues and becomes that agenda.
+  auction) is tracked as issues and becomes that agenda. The first cross-game theorem
+  for it is the last mark's dominance, stated in `silas/docs/cross-game.md` § 3 and
+  decided in Silas by enumeration.
 
 ## Links
 

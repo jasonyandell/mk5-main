@@ -48,7 +48,7 @@ fn read_policies() -> Vec<(String, PolicyProgram)> {
             let name = f.file_name().unwrap().to_string_lossy().into_owned();
             match Program::parse(&text, &name).unwrap() {
                 Program::Policy(policy) => Some((name, policy)),
-                Program::Query(_) => None,
+                Program::Query(_) | Program::Dominance(_) => None,
             }
         })
         .collect()

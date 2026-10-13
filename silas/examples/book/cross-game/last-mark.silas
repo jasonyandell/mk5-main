@@ -1,0 +1,12 @@
+; The last mark: one mark from the game, bid 42, not 84. Winning 42 (S-0170-a, its
+; second half; S-0082-a, an 84 is two marks). Cluster B of docs/cross-game.md.
+;
+; Both contracts need every point, so the make is the same event under each; only
+; the stake differs. Made, either wins the match. Set, the setters gain one mark
+; under the 42 and two under the 84. So from every state where the bidder's side
+; needs one mark, for every outcome of the hand, the 42 leaves a state at least as
+; good under every match-win value: no deal, belief or field enters. Exact.
+(dominates last-mark
+  (contracts (marks 1) (marks 2))
+  (frame (scoring marks 7) (short 1))
+  (utility match-win))

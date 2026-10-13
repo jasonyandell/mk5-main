@@ -1,0 +1,11 @@
+; Bid only enough under points: the contract half. Winning 42 (S-0036-e,
+; S-0152-c+S-0153-b, S-0153-a, S-0053-a, S-0137-e, S-0034-a, S-0033-b, S-0028-d,
+; S-0128-c), with the points rule of S-0017-c. Cluster A of docs/cross-game.md.
+;
+; Made, a points bid scores the points taken whatever its level, so the lower bid
+; loses nothing when made; set, the setters score the bid plus their points, so
+; the lower bid pays less. Decided from every undecided state of the game to 250.
+(dominates bid-only-enough-points
+  (contracts (points 31) (points 33))
+  (frame (scoring points 250))
+  (utility match-win))

@@ -25,7 +25,7 @@ means it needs a hidden hand or a model of another seat's play.
 | # | gap | kind | rules blocked | viewer / world | home |
 |---|---|---|---|---|---|
 | 1 | policy likelihood (#128) | belief operation | 5 readings; 3 places in the rules | world | Silas |
-| 2 | cross-game policy comparison (#130) | new layer | 4 | world | Silas and Physics |
+| 2 | cross-game policy comparison (#130), narrowed | new layer | 4 (2 in part) | world | Silas and Physics |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
 | 4 | the auction as information (#134) | frame facts and belief | 3 | world | Silas and Physics |
 | 5 | aggregate (#135) | language construct | 2 (the crisis's "most out"; the trump set's "as strong") | viewer | Silas |
@@ -70,18 +70,72 @@ policies over many deals, under a scoring and a match state:
 - with a double protecting the off, an 84 bid is always right (p. 64);
 - keep good setters honest with an occasional straight-off 84 (p. 65).
 
-Silas policies choose plays inside one hand. They have no bid or declaration action, no
-match score, and no comparison of two policies' value over a distribution of deals. Silas
-can compare two queries, not two policies. The last rule is about opponents who adapt, so
-its "value" is over a population of opponents. The contract now carries its kind, stake
-and declaration (`Bid::Points` or `Bid::Marks`, `threshold`, `stake`, `award`; 2026-10-13),
-so one hand's mark transfer is defined.
+The design is `docs/cross-game.md`: four objects (the match frame, a bid action, a
+comparison of policies, an equilibrium claim) built in five slices.
 
-**Rules.** C16, C17, C18, C19, and the study's bid book (C24).
+**Narrowed (slice 1, 2026-10-13).** The match frame is in (README, The match):
+`Scoring` (points to 250, marks to seven), `MatchState` (first to the target; the
+deciding hand's bidder wins a tie at 250), `Outcome`, `Contract::settle` (marks: the
+award; points: the book's rule, S-0017-c, with S-0082-a's "they get 84" for a set marks
+bid as the other `SetReading`), `Utility::{Marks, Points, MatchWin}`, a match-win value
+whose properties Silas checks (one on won states, zero on lost ones, in between never
+rising with the other side's score nor falling with its own), the score-grid programme
+that builds one from a hand-outcome model (`exact_given(model)`), and the `(dominates
+...)` form, decided exactly by enumerating the hand's 43 outcomes from every state of
+its frame, under both readings wherever points are scored (`examples/book/cross-game/`,
+`tests/cross_game.rs`). What that moves, by the spec's clusters:
 
-**Smallest addition.** A bid action in policies, the match state (the game at seven),
-and an exact or sampled comparison of two policies' marks over a belief of deals,
-carrying its authority. The hand's award is `Contract::award`.
+- **F, the scoring frame: closed** (S-0015-c, S-0017-c+S-0132-a, S-0020-a,
+  S-0063-a+S-0154-b, S-0063-b, S-0072-b, S-0073-a, S-0113-a+S-0209-b, S-0114-a,
+  S-0156-a, S-0166-a, S-0166-b, S-0168-b, S-0199-b, S-0208-b, S-0208-c, S-0208-e,
+  S-0210-e). The definitions are the types above, and the contract's stakes (an 84 two
+  marks, 126 three). Its two one-line theorems are tests: a set scores at least 43 for
+  every points bid, the floor reached (S-0063-b), and a set outscores any make. Under
+  S-0082-a's reading a set 42 pays exactly 42, one under the floor: the readings part
+  there and nowhere else. Two of the eighteen keep a number for later: S-0073-a's "trump
+  sets score 60 to 70" is a histogram over deals (slice 3), and the auction's own rules
+  (the bidding limits, the forced bid, the raise steps after 84) are definitions whose
+  legality is slice 2's `AuctionConfig`.
+- **B, the three dominance rows: stated and decided.** S-0170-a's second half,
+  "one mark from the game, 42 not 84", is `last-mark.silas`; S-0089-b, the book's own
+  "within 42 points of 250", is `last-mark-points.silas`; S-0082-a (an 84 is two marks)
+  is `settle`. Both hold, exactly; two marks out the 84 is not dominated
+  (`two-marks-out.silas`). The policy form ("bid 42") adds a field hypothesis, that the
+  field's overcalls after either bid settle in the same order; S-0165-b warns it can
+  fail. It waits on the auction (slice 2) and its measurement (slice 4). The other ten
+  B rows (far behind, gamble; ahead, protect) are expectations under a match-win value
+  from a field's outcome table: the programme is here, the table is slices 3 and 4.
+- **A, the contract half: stated.** Holding the contract, a lower point bid dominates a
+  higher one under both scorings (`bid-only-enough.silas`, `bid-only-enough-points.silas`;
+  by the hand's marks or points too). The nine rows (S-0028-d, S-0033-b, S-0034-a,
+  S-0036-e, S-0053-a, S-0128-c, S-0137-e, S-0152-c+S-0153-b, S-0153-a) move to a file
+  plus a field hypothesis: that the field rarely overcalls a 31 and not a 33 is a
+  property of its bidding (slices 2 and 4).
+- **C, the settlements.** The lay-downs' marks (S-0082-b; S-0188-a, three marks) and
+  the 84 made (S-0149-a) are `settle`'s; the rest of C is a belief at the auction
+  under a field (slices 3 and 4).
+- **G, re-tagged: never this gap's** (S-0085-b, S-0087-b, S-0090-a+S-0096-a,
+  S-0092-a+S-0097-a, S-0092-b, S-0095-a, S-0098-a, S-0098-b, S-0099-a, S-0099-b,
+  S-0100-a, S-0100-b, S-0100-c, S-0101-a). Rules for playing and defending an 84 (save
+  the doubles, hold pairs, the discard order) cited #130 only because the contract once
+  flattened an 84 to 42; `(bid 84)` and `(stake 2)` are guards now (Closed, below). They
+  are play rules, statable now except where another gap holds them: policy likelihood
+  (#128) on four, aggregate (#135) on three, another seat's knowledge (#132) on one,
+  and a play-out over a belief (gap 7) for any claim about such a rule's set rate. The
+  row-by-row split is the coverage archive's, which the spec summarizes and does not
+  list.
+
+**Rules still blocked.** C16 (the auction half), C17 (the policy form; its dominance is
+stated), C18 (a belief at the auction under a field: `P_F(make all 42 | shape) > 1/2`),
+C19 (an equilibrium: the field adapts to the policy, so no fixed-field comparison can
+state it; slice 5), and the study's bid book (C24, cluster D's sixty rows: slice 2 for
+the bids as a policy, slice 4 for their price).
+
+**Smallest addition.** A bid action in policies over an auction frame (slice 2; it is
+also gap 4's structure), then a comparison of two hand policies over a measure of deals
+against a named field: exact given the field over a listed set, a fiber or all hands,
+sampled otherwise, with the arena's paired ledgers imported as outcomes that Silas
+settles itself (slices 3 and 4).
 
 ## 3. Another seat's knowledge
 
@@ -149,6 +203,16 @@ over several called tiles still needs `card`.
 **Smallest addition.** The `card` clause in the language, and `less(n, m)` on numbers.
 
 ## Closed
+
+Closed by the cross-game spec's slice 1 (2026-10-13; gap 2 above):
+
+- **The scoring frame.** Points to 250 and marks to seven, the hand's settlement under
+  either, the match state, and the match-win value with its checked properties. It
+  closes the scoring definitions (cluster F) and makes a hand's marks or points a number
+  Silas computes, never a ledger's.
+- **Field-free comparison of contracts.** `(dominates ...)`, exact over the hand's 43
+  outcomes: the last mark (S-0170-a, S-0089-b) and the contract half of "bid only
+  enough".
 
 Closed in the engineering pass after the Lean-lens review (2026-10-13):
 
@@ -306,7 +370,7 @@ rest exactly: `(lay-down)`, `(certain-make)`, `(certain-set)` and the double-dum
 - **Stated now.** The tournament rule (S-0210-a) and the claim of the rest (S-0054-a) are
   `lay-down.silas`. The 84 that lays down (S-0082-b, S-0093-b, S-0094-a: Hands 21 and 22,
   certain at every seating) is there too, as is all seven of a suit (S-0188-a's lay-down;
-  its three marks are gap 2). The book's test for a lay-down (S-0093-a) is
+  its three marks are `settle`'s, gap 2's slice 1). The book's test for a lay-down (S-0093-a) is
   `lay-down-shape.silas`: sufficient on every hand of the shape tried, and not necessary.
   Hand 32's claim (S-0143-c) is `claim-the-rest.silas`, made with the bidder already set.
   The hand that stops once made or set (S-0113-b) is the settled case, answered without

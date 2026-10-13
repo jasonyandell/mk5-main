@@ -1,0 +1,11 @@
+; Two marks out, the 84 is not dominated (the boundary of S-0170-a and S-0089-b).
+; Cluster B of docs/cross-game.md.
+;
+; Needing two marks, a made 84 wins the match and a made 42 does not, so the 42 is
+; not at least as good in every outcome. This form fails, and `silas query` prints
+; the outcome that refutes it: the hand made. Which bid is right two marks out is a
+; comparison over deals under a field (slices 3 and 4), not a dominance.
+(dominates two-marks-out
+  (contracts (marks 1) (marks 2))
+  (frame (scoring marks 7) (short 2))
+  (utility match-win))
