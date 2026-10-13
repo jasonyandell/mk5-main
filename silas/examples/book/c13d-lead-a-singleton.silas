@@ -7,27 +7,23 @@
 ; 29, p. 101) gives another reason. In Hand 28 (p. 98) the gate fires and the
 ; book leads otherwise (tests/book.rs).
 ; Python gate (pour_setter gate_c13d): the same.
-; How this encoding differs: it cannot say "his only tile of that suit" and
-; allows every non-trump, non-count lead: the gate's superset.
-; GAP declarer: the bidder is written in as S0 (only to name the setters).
-; GAP none: "the only tile I hold that follows the suit it leads" is a negated
-; existential.
+; How this encoding differs: none from the gate.
 (policy c13d-lead-a-singleton
   (initial play)
   (fallback lowest-legal)
   (rule lead-the-lone-tile (in play) (next play) (select answer)
     (guard
       (query
-        (roles (chair me) (domino lone) (context suit))
+        (roles (chair b) (chair me) (domino lone) (context suit))
         (out lone)
         (pattern
           (viewer me)
-          (opponent me S0)
+          (declarer b)
+          (opponent me b)
           (leader me)
           (next-actor me)
           (own-legal lone)
           (not (in lone q*))
           (count lone 0)
           (leads-context lone suit)
-          ; GAP none: (none (own-legal other) (in other suit)) for another tile other
-          )))))
+          (none (roles (domino other)) (own-legal other) (in other suit) (not (tile other lone))))))))

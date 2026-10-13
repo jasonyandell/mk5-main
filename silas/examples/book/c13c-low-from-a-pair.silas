@@ -4,22 +4,19 @@
 ; tiles, neither of them count, plays the lower and keeps the higher.
 ; Python gate (pour_setter gate_c13c): a setter following a non-trump lead with
 ; exactly two followers, neither count; the book's tile is the lower.
-; How this encoding differs: it cannot say "exactly two" and, with three or
-; more non-count followers, allows every follower some other one outranks.
-; With two it is the gate.
-; GAP declarer: the bidder is written in as S0 (only to name the setters).
-; GAP none: "exactly two followers" needs "no third follower".
+; How this encoding differs: none from the gate.
 (policy c13c-low-from-a-pair
   (initial play)
   (fallback lowest-legal)
   (rule follow-low (in play) (next play) (select answer)
     (guard
       (query
-        (roles (chair me) (domino low) (domino high) (context led))
+        (roles (chair b) (chair me) (domino low) (domino high) (context led))
         (out low)
         (pattern
           (viewer me)
-          (opponent me S0)
+          (declarer b)
+          (opponent me b)
           (led-context led)
           (not (context led q*))
           (own-legal low)
@@ -28,4 +25,6 @@
           (own-legal high)
           (in high led)
           (count high 0)
-          (beats high low led))))))
+          (beats high low led)
+          (none (roles (domino third)) (own-legal third) (in third led)
+            (not (tile third low)) (not (tile third high))))))))

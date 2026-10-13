@@ -18,11 +18,11 @@ use pyo3::types::{PyDict, PyFrozenSet, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 use silas::{
-    Answer, Authority, Belief, Budget, CompiledPolicy, CompiledQuery, ContextSet, DominoSet, Estimate, Frame, Hidden,
-    Kernel, Physics, PolicyProgram, Query, QuerySummary, Registry, Value, Verdict, Weight, HIDDEN_SEATS,
+    Answer, Authority, Belief, Budget, CompiledPolicy, CompiledQuery, Contract, DominoSet, Estimate, Frame, Physics,
+    PolicyProgram, Query, QuerySummary, Registry, Seat, Value, Verdict, Weight,
 };
 
-use crate::physics::{context, domino, dominoes, seat, ZebPhysics};
+use crate::physics::{domino, dominoes, mask, seat, tile, ZebPhysics};
 
 pyo3::create_exception!(scenario_core, SilasError, PyValueError, "A refusal from Silas, with its message.");
 
@@ -96,60 +96,92 @@ impl SilasAuthority {
     }
 }
 
-/// What one seat of Zeb knows at a decision, under one declaration.
+/// What one seat of Zeb knows at a decision, under one declaration: the
+/// hand's public record and the seat's remaining hand. Everything else (the
+/// played set, the leader, the open trick, the banked points, each seat's
+/// shown voids and remaining size) Silas reads off the record; the getters
+/// return it for checking against Zeb's own `Record`.
 #[pyclass(frozen, module = "scenario_core")]
 pub struct SilasFrame(Frame);
 
+impl SilasFrame {
+    fn record(&self) -> &silas::Record {
+        self.0.record().expect("a SilasFrame is built from its record")
+    }
+}
+
 #[pymethods]
 impl SilasFrame {
-    /// `decl` is Zeb's declaration; `viewer` and `leader` are seats;
-    /// `own` and `played` tile masks; `trick` the open trick's tiles in play
-    /// order; `voids[s]` the led suits seat `s` has shown void in (bit k for
-    /// Zeb's led suit k, 7 the called suit); `sizes[s]` the tiles seat `s`
-    /// still holds. The pool is every tile neither held by the viewer nor
-    /// played.
+    /// `decl` is Zeb's declaration; `viewer` the seat to play, holding the
+    /// tile mask `own`; `bidder` the seat that won the auction, and `bid` the
+    /// points it must take; `plays` every play so far as `(seat, tile)`, in
+    /// order, the bidder leading the first trick.
     #[new]
-    #[allow(clippy::too_many_arguments)]
-    fn new(
-        decl: u8,
-        viewer: u8,
-        own: u32,
-        played: u32,
-        leader: u8,
-        trick: Vec<u8>,
-        voids: [u8; 4],
-        sizes: [u8; 4],
-    ) -> PyResult<Self> {
+    fn new(decl: u8, viewer: u8, own: u32, bidder: u8, bid: u32, plays: Vec<(u8, u8)>) -> PyResult<Self> {
         let physics = physics(decl)?;
         let at = |s: u8| seat(s).ok_or_else(|| invalid(format!("no seat {s}")));
-        let viewer = at(viewer)?;
-        let leader = at(leader)?;
-        let own = tiles(own)?;
-        let played = tiles(played)?;
-        let trick = trick
+        let plays = plays
             .iter()
-            .map(|&t| domino(t).ok_or_else(|| invalid(format!("no tile {t}"))))
+            .map(|&(s, t)| Ok((at(s)?, domino(t).ok_or_else(|| invalid(format!("no tile {t}")))?)))
             .collect::<PyResult<Vec<_>>>()?;
-        let shown: [ContextSet; 4] = voids.map(|v| (0..8).filter(|k| v >> k & 1 == 1).filter_map(context).collect());
-        if usize::from(sizes[viewer.index()]) != own.len() {
-            return Err(invalid(format!("the viewer holds {} tiles, not {}", own.len(), sizes[viewer.index()])));
-        }
-        if shown[viewer.index()].iter().any(|q| !own.is_disjoint(physics.incidence(q))) {
-            return Err(invalid("the viewer holds a tile of a suit it has shown void in"));
-        }
-        let hidden: [Hidden; HIDDEN_SEATS] = std::array::from_fn(|i| {
-            let seat = viewer.plus(i + 1);
-            Hidden { seat, capacity: usize::from(sizes[seat.index()]), voids: shown[seat.index()] }
-        });
-        let pool = DominoSet::FULL.difference(own).difference(played);
-        let kernel = Kernel::new(viewer, own, pool, hidden).map_err(refused)?;
-        Frame::new(physics, kernel, leader, trick, played).map(SilasFrame).map_err(refused)
+        let contract = Contract { declarer: at(bidder)?, bid };
+        Frame::from_record(physics, at(viewer)?, tiles(own)?, contract, plays).map(SilasFrame).map_err(refused)
     }
 
     /// The physics identity, such as `zeb/P5`.
     #[getter]
     fn physics(&self) -> String {
         self.0.physics().identity()
+    }
+
+    /// The seat that won the auction.
+    #[getter]
+    fn bidder(&self) -> u8 {
+        self.record().contract().declarer.index() as u8
+    }
+
+    #[getter]
+    fn bid(&self) -> u32 {
+        self.record().contract().bid
+    }
+
+    /// The tiles played so far, as a mask.
+    #[getter]
+    fn played(&self) -> u32 {
+        mask(self.0.played())
+    }
+
+    /// The seat that led the open trick, or leads the next.
+    #[getter]
+    fn leader(&self) -> u8 {
+        self.0.leader().index() as u8
+    }
+
+    /// The open trick's tiles, in play order.
+    #[getter]
+    fn trick(&self) -> Vec<u8> {
+        self.0.prefix().iter().map(|d| tile(*d)).collect()
+    }
+
+    /// Each team's points from the closed tricks.
+    #[getter]
+    fn banked(&self) -> (u32, u32) {
+        let [a, b] = self.record().banked();
+        (a, b)
+    }
+
+    /// Per seat, the led suits it has shown void in: bit k for Zeb's led
+    /// suit k (7 the called suit).
+    #[getter]
+    fn voids(&self) -> [u8; 4] {
+        let physics = self.0.physics();
+        Seat::ALL.map(|s| self.record().shown_voids(physics, s).iter().fold(0u8, |bits, q| bits | 1 << q.index()))
+    }
+
+    /// Per seat, the tiles it still holds.
+    #[getter]
+    fn sizes(&self) -> [u8; 4] {
+        Seat::ALL.map(|s| self.0.kernel().capacity(s) as u8)
     }
 
     /// How many hidden worlds fit the frame.

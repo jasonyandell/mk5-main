@@ -4,57 +4,63 @@
 ; trump lead. If the lead is the highest trump still unplayed, the trick is
 ; safe: give count, the biggest first. If a live trump can still beat the lead,
 ; the trick is not safe: give no count.
-; Python gate (pour_bidder gate_c1b): the same two branches. The two gate ids
-; are one rule with two branches, so they share this file.
-; How this encoding differs: the "top" branch is the else of the "not top"
-; branch (negation by rule order). If the lead is not the top trump and every
-; tile the partner holds is count, the not-top rule selects nothing and the top
-; rules give the largest count; the gate does not fire there.
+; Python gate (pour_bidder gate_c1b): the same two branches, when the partner
+; holds count. The two gate ids are one rule with two branches, so they share
+; this file.
+; How this encoding differs: none from the gate.
 ; Out of trump is read from the hand: following a trump lead, a legal tile that
 ; is not trump proves the viewer holds no trump.
-; GAP declarer: the bidder is written in as S0, the partner as S2.
-; GAP none: "the lead is the top trump" is "no live tile beats it", a negated
-; existential; Silas negates single atoms only.
 (policy c01b-partner-count-on-a-trump-lead
   (initial play)
   (fallback lowest-legal)
   (rule not-top-lead-no-count (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino give) (domino led) (domino over))
+        (roles (chair b) (chair p) (domino give) (domino led) (domino over) (domino held))
         (out give)
         (pattern
-          (viewer S2)
-          (leader S0)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader b)
           (led-context q*)
-          (trick-play S0 led)
+          (trick-play b led)
           (live over)
           (beats over led q*)
           (own-legal give)
           (not (in give q*))
-          (count give 0)))))
-  ; GAP none: the two rules below hold only because the rule above did not select.
+          (count give 0)
+          (own-legal held)
+          (not (count held 0))))))
   (rule top-lead-give-ten (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino give))
+        (roles (chair b) (chair p) (domino give) (domino led))
         (out give)
         (pattern
-          (viewer S2)
-          (leader S0)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader b)
           (led-context q*)
+          (trick-play b led)
+          (none (roles (domino over)) (live over) (beats over led q*))
           (own-legal give)
           (not (in give q*))
           (count give 10)))))
   (rule top-lead-give-five (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino give))
+        (roles (chair b) (chair p) (domino give) (domino led))
         (out give)
         (pattern
-          (viewer S2)
-          (leader S0)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader b)
           (led-context q*)
+          (trick-play b led)
+          (none (roles (domino over)) (live over) (beats over led q*))
           (own-legal give)
           (not (in give q*))
           (count give 5))))))

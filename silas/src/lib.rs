@@ -29,16 +29,16 @@ pub use dynamics::{
     step_belief_given, step_frame, step_world, transport_answers,
 };
 pub use eval::{Answer, Answers, Budget, CompiledQuery};
-pub use frame::{Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
+pub use frame::{Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, Record, World};
 pub use measure::{Authority, Estimate, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
 pub use physics::Physics;
 pub use policy::{
     CompiledPolicy, DecisionProvenance, ExactRule, Fallback, PolicyController, PolicyControllerState,
-    PolicyDecisionTrace, PolicyInput, PolicyKey, PolicyProgram, PolicyRule, RigidBinding, Selector,
+    PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, RigidBinding, Selector,
 };
 pub use registry::{Access, Predicate, PredicateContext, PredicateSpec, Registry};
-pub use syntax::{Atom, Pattern, Query, Role, Sort, Term, Value};
+pub use syntax::{Atom, NoneClause, Pattern, Query, Role, Sort, Term, Value};
 
 /// An invalid program, an invalid input, or a refused computation. Nothing
 /// partial is returned alongside it.

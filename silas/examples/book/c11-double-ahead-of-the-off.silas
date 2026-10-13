@@ -6,25 +6,23 @@
 ; Python gate (pour_bidder gate_c11): bidder on lead, no trump outside his
 ; hand, a non-trump double and an off of the same suit; the book's tiles are
 ; such doubles.
-; How this encoding differs: it cannot say "no trump outside the hand" and
-; fires with trump still out. In Hand 30 (p. 105) the book plays this rule with
-; the last trump in the partner's hand, where the gate does not fire.
-; GAP declarer: the bidder is written in as S0.
-; GAP none: "trumps drawn" is "no live trump outside the hand", a negated
-; existential.
+; How this encoding differs: none from the gate. In Hand 30 (p. 105) the book
+; plays this rule with the last trump in the partner's hand, where neither the
+; gate nor this file fires.
 (policy c11-double-ahead-of-the-off
   (initial play)
   (fallback lowest-legal)
   (rule lead-the-double (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino doubled) (domino off) (domino over) (context suit))
+        (roles (chair b) (domino doubled) (domino off) (domino over) (context suit))
         (out doubled)
         (pattern
-          (viewer S0)
-          (leader S0)
-          (next-actor S0)
-          ; GAP none: (none (live t) (in t q*) (not (own-legal t)))
+          (viewer b)
+          (declarer b)
+          (leader b)
+          (next-actor b)
+          (none (roles (domino trump)) (live trump) (in trump q*) (not (own-legal trump)))
           (own-legal doubled)
           (double doubled)
           (not (in doubled q*))

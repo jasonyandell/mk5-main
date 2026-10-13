@@ -2,47 +2,33 @@
 ; Rule, in our words: a setter following the bidder's double, holding a count
 ; tile of the led suit and another tile of it, follows with a tile that is not
 ; count. (The book's reading of the converse, that a setter who follows the
-; double with count has no more of the suit, needs the record of an earlier
-; trick: GAPS.md, history and policy likelihood.)
+; double with count has no more of the suit, reads another seat's play:
+; GAPS.md, policy likelihood.)
 ; Python gate (pour_setter gate_c8): a setter, the bidder led a non-trump
 ; double, the mover holds a count follower and two or more followers; the
 ; book's tiles are the non-count followers.
 ; How this encoding differs: none from the gate. The book's own instances are
 ; on trump doubles (Hands 33 and 35, pp. 111, 116), which the gate excludes.
-; GAP declarer: the bidder is written in as S0.
 (policy c08-no-count-on-the-double
   (initial play)
   (fallback lowest-legal)
   (rule follow-without-count (in play) (next play) (select answer)
     (guard
       (query
-        (roles (chair me) (domino doubled) (domino plain) (domino count-tile) (context led))
+        (roles (chair b) (chair me) (domino doubled) (domino plain) (domino counted) (context led))
         (out plain)
         (pattern
           (viewer me)
-          (opponent me S0)
-          (leader S0)
-          (trick-play S0 doubled)
+          (declarer b)
+          (opponent me b)
+          (leader b)
+          (trick-play b doubled)
           (double doubled)
           (not (in doubled q*))
           (led-context led)
           (own-legal plain)
           (in plain led)
           (count plain 0)
-          (own-legal count-tile)
-          (in count-tile led)
-          (count count-tile 5))
-        (pattern
-          (viewer me)
-          (opponent me S0)
-          (leader S0)
-          (trick-play S0 doubled)
-          (double doubled)
-          (not (in doubled q*))
-          (led-context led)
-          (own-legal plain)
-          (in plain led)
-          (count plain 0)
-          (own-legal count-tile)
-          (in count-tile led)
-          (count count-tile 10))))))
+          (own-legal counted)
+          (in counted led)
+          (not (count counted 0)))))))

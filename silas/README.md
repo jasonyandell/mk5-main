@@ -48,6 +48,7 @@ role     := (sort name)
 sort     := chair | domino | context
 pattern  := (pattern clause ...)
 clause   := (same name name ...) | atom | (not atom)
+          | (none (roles role ...) clause ...)
 atom     := (predicate argument ...)
 argument := name | literal
 ```
@@ -57,13 +58,13 @@ Names begin with an ASCII letter and continue with letters, digits, `_` or
 contexts `q0`–`q6` and `q*` (the called suit), teams `T0` and `T1`, and
 nonnegative integers. A literal spelling is never a role name. `;` starts a
 comment. Text is bounded to 1 MiB and 32 levels of nesting, and a query to 64
-roles. Unknown predicates, wrong argument sorts, duplicate roles or outputs,
-and mixed-sort `same` groups are refused at compilation, before any
-evaluation.
+roles, its `none` clauses' included. Unknown predicates, wrong argument
+sorts, duplicate roles or outputs, and mixed-sort `same` groups are refused
+at compilation, before any evaluation.
 
 The semantics:
 
-- **Distinct roles of one sort denote distinct values** within a pattern,
+- **Distinct roles of one sort, declared together, denote distinct values**
   unless `(same ...)` identifies them; `same` groups close transitively. A
   pattern without `same` and one with it together cover every assignment.
 - Roles range over whole sorts: 28 dominoes, four chairs, eight contexts. Add
@@ -75,6 +76,26 @@ The semantics:
 - `not` negates one atom over the finite world. An atom may be *undefined*
   when its precondition fails (no lead yet, say); then neither it nor its
   negation holds, so negation never manufactures a fact from missing context.
+- `(none (roles r ...) clause ...)` says that no binding of its own roles
+  satisfies its clauses. It is stratified: its body is read once every
+  enclosing role it names is bound, and it binds nothing outside itself. Its
+  roles range over whole sorts and are distinct from one another (unless a
+  `same` inside it joins them), but not from the roles around it: "no other"
+  is written out, as `(not (tile e d))`. A `same` inside a `none` joins only
+  that `none`'s roles, and a `none` may not redeclare a name in scope. Its
+  clauses are atoms, negated atoms, `same` and nested `none`s.
+- **`none` is three-valued, as `not` is.** Each binding of its roles makes
+  its body *satisfied* (every clause holds), *refuted* (some clause fails,
+  defined and false) or *unsettled* (no clause fails, some clause is
+  undefined). `none` holds when every binding is refuted; it fails when some
+  binding is satisfied; otherwise it is undefined, and an undefined clause
+  holds in no pattern. So an undefined atom inside `none` cannot make it
+  true: `(none (roles (domino d)) (own-legal d) (double d))` is undefined when
+  the viewer is not to play, not true. A body clause that is defined and false
+  still refutes its binding whatever the undefined ones say. A nested `none`
+  contributes its own three values the same way.
+- A `none` reads the world exactly when its body does: a pattern whose `none`
+  bodies name only `Viewer` predicates is viewer-only.
 
 `Query` and `Pattern` are plain data and can be built in Rust as well as
 parsed. `Query::compile(&Registry)` checks a query and binds its predicates;
@@ -83,9 +104,12 @@ predicate's version.
 
 ## Predicates
 
-All built-ins have version `silas-v0/core` and horizon zero. *World* access
-means the predicate reads a hidden world; *Viewer* means it reads only the
-frame.
+All built-ins have horizon zero. Each carries the version in which its
+meaning last changed: `silas-v0/core` for the first set, `silas-v1/core` for
+the predicates that read the hand's record (the last ten rows). *World*
+access means the predicate reads a hidden world; *Viewer* means it reads only
+the frame. The record predicates are undefined on a frame without a record
+(see Frames below).
 
 | Predicate | Access | Meaning |
 |---|---|---|
@@ -107,6 +131,22 @@ frame.
 | `trick-play(c,d)` | Viewer | Seat `c` played `d` to the current trick. |
 | `own-legal(d)` | Viewer | `d` is a legal play for the viewer; undefined unless the viewer is next. |
 | `legal(c,d)`, `forced(c,d)` | World | `d` is a legal (the only legal) play for `c`; undefined unless `c` is next. |
+| `declarer(c)` | Viewer | Seat `c` won the auction. |
+| `bid(n)` | Viewer | The contract is `n` points (a marks bid is the whole 42). |
+| `banked(c,n)` | Viewer | Seat `c`'s side has taken `n` points in closed tricks. |
+| `to-make(n)` | Viewer | The declarer's side needs `n` more points to make the bid; zero once made. |
+| `to-set(n)` | Viewer | The other side needs `n` more points to set it; zero once set. |
+| `trick-number(n)` | Viewer | The trick being played or about to be led is the `n`-th, from one; undefined once all seven have closed. |
+| `led(c,d)` | Viewer | Seat `c` led `d` to some trick of the record, the open one included. |
+| `played-to(l,c,d)` | Viewer | Seat `c` played `d` to the trick led by `l` (`d` is `l` for its leader). |
+| `trick-of(d,n)` | Viewer | `d` was played to the `n`-th trick. |
+| `shown-void(c,q)` | Viewer | Seat `c` has publicly failed to follow `q`. For a hidden seat this is the kernel's void, the same fact that forbids its worlds; for the viewer it is read off the record. |
+
+Numbers and teams are literal-only, so `banked` and `to-set` take a chair and
+a trick is named by its lead: "one trump trick so far, led by the bidder" is
+`(declarer b) (led b first) (in first q*)` with a `none` over any other trump
+lead. A shown void implies a void in every world; the converse fails, since
+counting can leave a seat void in every world without its having shown it.
 
 A new relation implements `Predicate` and is registered once under an
 unreserved name with a `PredicateSpec`: semantic version, argument sorts,
@@ -159,21 +199,37 @@ form     := (bind name query)
           | (rule name (in mode) (next mode) (select selector) (guard query))
           | (exact key (play domino))
 selector := answer | tile domino | rigid name
-key      := (key (physics id) (viewer chair) (hand-bits n) (pool-bits n)
-                 (hidden (chair capacity (voids context ...)) ...)
-                 (leader chair) (prefix domino ...) (played-bits n)
-                 (history (chair domino) ...) (banked n n) (bid n)
-                 (declaring-team team))
+key      := (key (physics id) (viewer chair) (hand-bits n) (declarer chair)
+                 (bid n) (history (chair domino) ...))
 ```
 
-A decision tries, in order: the exact table, keyed by the complete public
-information state under one physics; the relational rules of the current
-mode, in order; and the lowest legal tile. A rule's guard is a query that may
-use only `Viewer` predicates; `answer` takes the least legal domino it
-returns, `tile` and `rigid` act when it holds. Bindings are evaluated once,
-when a controller starts. Every action is checked for legality, and
-`choose_traced` reports which layer chose. A refusal leaves the controller as
-it was.
+A policy decides at a frame built from the hand's record (a frame without one
+is refused). A decision tries, in order: the exact table, keyed by the
+complete viewer information under one physics (the viewer's remaining hand
+and the record, from which everything else follows); the relational rules of
+the current mode, in order; and the lowest legal tile. A rule's guard is a
+query that may use only `Viewer` predicates; `answer` takes the least legal
+domino it returns, `tile` and `rigid` act when it holds. Bindings are
+evaluated once, when a controller starts. Every action is checked for
+legality, and `choose_traced` reports which layer chose. A refusal leaves the
+controller as it was.
+
+## Frames and the record
+
+A `Frame` is the viewer's `Kernel` (its hand, the hidden pool, each hidden
+seat's capacity and shown voids) under a physics, with the open trick's
+leader and plays and the played set. `Frame::from_record(physics, viewer,
+hand, Contract { declarer, bid }, plays)` builds it from the hand's public
+record: the contract and every play, attributed to its seat. The declarer
+leads the first trick; everything else public (the leader, the open trick,
+the played set, the hidden capacities and shown voids, the banked points) is
+read off the plays, and the record is the one source of it. The record is
+refused if it breaks turn order, repeats a tile, has a seat follow a context
+it has shown void in, has the viewer play illegally from the hand it was
+dealt, bids more than the hand's points, or leaves no deal of the hidden
+tiles. `step_frame` extends a frame's record by the play. `Frame::new` builds
+a frame without a record, for questions that need none; on it the record's
+predicates are undefined.
 
 ## The Physics boundary
 
@@ -243,7 +299,9 @@ an explicit, nonnegative band, which must be zero when both values are exact.
 
 `examples/` holds the queries the tests run: `partner-count.silas`,
 `partner-has-count.silas`, `partner-master.silas`, `current-forced-play.silas`
-and `six-five-guarded.silas`.
+and `six-five-guarded.silas`. `examples/book/` holds the book's rules as
+policies, each named from the bidder by `declarer` and tested at all four
+seatings (`tests/book.rs`); `GAPS.md` lists what they still cannot say.
 
 ## Provenance
 

@@ -7,41 +7,35 @@
 ; "two or more" is two distinct roles.
 ; The book states the rule for a trick the partner knows is safe (C1); the gate,
 ; and this encoding, read "the bidder is winning so far", which is weaker.
-; GAP declarer: the bidder is written in as S0, the partner as S2.
 (policy c03-biggest-count-first
   (initial play)
   (fallback lowest-legal)
   (rule give-a-ten (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino give) (domino other) (context led))
+        (roles (chair b) (chair p) (domino give) (domino other) (context led))
         (out give)
         (pattern
-          (viewer S2)
-          (current-winner S0)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (current-winner b)
           (led-context led)
           (own-legal give)
           (not (in give led))
           (count give 10)
           (own-legal other)
-          (count other 10))
-        (pattern
-          (viewer S2)
-          (current-winner S0)
-          (led-context led)
-          (own-legal give)
-          (not (in give led))
-          (count give 10)
-          (own-legal other)
-          (count other 5)))))
+          (not (count other 0))))))
   (rule give-a-five (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino give) (domino other) (context led))
+        (roles (chair b) (chair p) (domino give) (domino other) (context led))
         (out give)
         (pattern
-          (viewer S2)
-          (current-winner S0)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (current-winner b)
           (led-context led)
           (own-legal give)
           (not (in give led))

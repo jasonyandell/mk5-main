@@ -9,10 +9,13 @@ classes are `scenario_core`'s own — `SilasQuery`, `SilasPolicy`,
 holds and Rust does not: the decision. `frame(sit, own)` turns Zeb's
 `Situation` and the viewer's remaining hand into a `SilasFrame`.
 
-The record keeps each seat's voids as the tiles it provably lacks
-(`Record.forbid`); Silas keeps the suits it has shown void in. `shown_voids`
-reads those suits off the plays, and `frame` checks that they forbid exactly
-the record's tiles.
+A `SilasFrame` is built from the hand's public record alone: the contract
+(the bidder and the bid) and every play, attributed to its seat. Silas reads
+the rest off the plays, and `frame` checks that reading against Zeb's own
+`Record`: the played set, the leader, the open trick, the banked points, each
+seat's remaining size, and each seat's voids (the record keeps them as the
+tiles a seat provably lacks, `Record.forbid`; Silas keeps the suits it has
+shown void in).
 """
 from __future__ import annotations
 
@@ -22,31 +25,18 @@ from scenario.planner import Situation
 from scenario.rules import rules_for
 
 
-def shown_voids(sit: Situation) -> tuple[int, int, int, int]:
-    """Per seat, the led suits it has failed to follow: bit k for Zeb's led
-    suit k (7 = the called suit)."""
-    rules = rules_for(sit.decl_id)
-    voids = [0, 0, 0, 0]
-    lead = None
-    for i, (seat, tile) in enumerate(sit.plays):
-        if i % 4 == 0:
-            lead = tile
-        elif not rules.follows(tile, lead):
-            voids[seat] |= 1 << rules.led_suit[lead]
-    return (voids[0], voids[1], voids[2], voids[3])
-
-
 def frame(sit: Situation, own: int) -> SilasFrame:
     """The Silas frame of the seat to play at `sit`, holding `own` (its
     remaining hand, a tile mask)."""
     rules, rec = rules_for(sit.decl_id), sit.record
-    voids = shown_voids(sit)
+    f = SilasFrame(sit.decl_id, sit.viewer, own, sit.bidder, sit.bid, list(sit.plays))
+    forbid = [0, 0, 0, 0]
     for seat in range(4):
-        shown = 0
         for k in range(8):
-            if voids[seat] >> k & 1:
-                shown |= rules.follow_bits[k]
-        if shown != rec.forbid[seat]:
-            raise AssertionError(f"seat {seat}'s shown voids disagree with the record")
-    sizes = tuple(rec.hand_size(s) for s in range(4))
-    return SilasFrame(sit.decl_id, sit.viewer, own, rec.played, rec.leader, list(rec.trick), voids, sizes)
+            if f.voids[seat] >> k & 1:
+                forbid[seat] |= rules.follow_bits[k]
+    zeb = (rec.played, rec.leader, rec.trick, rec.banked, rec.forbid, tuple(rec.hand_size(s) for s in range(4)))
+    silas = (f.played, f.leader, tuple(f.trick), f.banked, tuple(forbid), tuple(f.sizes))
+    if zeb != silas:
+        raise AssertionError(f"Silas reads the record as {silas}, Zeb as {zeb}")
+    return f

@@ -5,19 +5,19 @@
 ; The trigger is the record; the reading is the event "the partner is void in
 ; trump". Over the bidder's uniform worlds it is a probability, not a fact: it
 ; holds only of a partner who follows the convention (GAPS.md, policy
-; likelihood).
-; GAP declarer: the bidder is written in as S0, the partner as S2.
-; GAP none: "the highest trump the bidder does not hold" is a negated
-; existential over the live tiles; the trigger here is "the partner followed
-; with a trump", and the test supplies a position where it was the top one.
+; likelihood). "The bidder does not hold" reads the bidder's own hand through
+; `holds`, a world predicate: this is a question about worlds, not a policy.
 (query
-  (roles (domino led) (domino his))
+  (roles (chair b) (chair p) (domino led) (domino his))
   (out)
   (pattern
-    (viewer S0)
-    (leader S0)
-    (trick-play S0 led)
+    (viewer b)
+    (declarer b)
+    (partner b p)
+    (leader b)
+    (trick-play b led)
     (in led q*)
-    (trick-play S2 his)
+    (trick-play p his)
     (in his q*)
-    (void S2 q*)))
+    (none (roles (domino above)) (live above) (not (holds b above)) (beats above his q*))
+    (void p q*)))

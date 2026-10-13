@@ -9,29 +9,24 @@
 ; How this encoding differs: none from the gate. The gate (and this file) also
 ; fires on a trump lead; the book speaks of the bidder's off. The book's wider
 ; companion rule (pp. 43-44, W42-p043-i: with no double, play count even when
-; you can follow) is played in Hand 28 (p. 98) and is not in the gate.
-; GAP declarer: the bidder is written in as S0, the left seat as S1.
+; you can follow) is played in Hand 28 (p. 98) and is not in the gate. The
+; book's "more urgent against 35 and 36" (p. 110) ranks the rule's urgency; it
+; does not change the tile.
 (policy c07-pounce
   (initial play)
   (fallback lowest-legal)
   (rule play-count-now (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino give) (context led))
+        (roles (chair b) (chair me) (domino give) (context led))
         (out give)
         (pattern
-          (viewer S1)
-          (leader S0)
+          (viewer me)
+          (declarer b)
+          (successor b me)
+          (leader b)
           (led-context led)
           (own-legal give)
           (not (in give led))
           (not (in give q*))
-          (count give 10))
-        (pattern
-          (viewer S1)
-          (leader S0)
-          (led-context led)
-          (own-legal give)
-          (not (in give led))
-          (not (in give q*))
-          (count give 5))))))
+          (not (count give 0)))))))

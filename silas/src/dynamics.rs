@@ -103,7 +103,7 @@ pub fn step_frame(frame: &Frame, play: ObservedPlay, budget: &mut Budget) -> Res
         leader = physics.trick_winner(leader, trick);
         prefix.clear();
     }
-    Frame::new(frame.physics_handle().clone(), next, leader, prefix, frame.played().union(DominoSet::single(play.tile)))
+    frame.after(next, leader, prefix, (play.actor, play.tile))
 }
 
 fn legal_in(holdings: Holdings<'_>, play: ObservedPlay) -> Result<bool> {

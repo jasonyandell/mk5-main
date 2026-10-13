@@ -5,19 +5,20 @@
 ; non-trump double; the book's tiles are those doubles.
 ; How this encoding differs: none. The book ranks the top unplayed tile of a
 ; suit with the doubles (p. 40); neither the gate nor this file does.
-; GAP declarer: the partner is written in as S2.
 (policy c23-partner-leads-doubles
   (initial play)
   (fallback lowest-legal)
   (rule lead-a-double (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino doubled))
+        (roles (chair b) (chair p) (domino doubled))
         (out doubled)
         (pattern
-          (viewer S2)
-          (leader S2)
-          (next-actor S2)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader p)
+          (next-actor p)
           (own-legal doubled)
           (double doubled)
           (not (in doubled q*)))))))

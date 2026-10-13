@@ -7,16 +7,13 @@
 ; so far, led by the bidder, in which exactly one opponent followed; trump
 ; still out; the book's tiles are the non-trump doubles whose suit has the
 ; most unplayed tiles outside the hand.
-; How this encoding differs: it has neither the trigger nor the "most
-; unplayed": it leads any non-trump double while a trump is out. That is a
-; much wider rule, written down only to name what is missing. The book's own
-; crisis (Hand 26) comes after two trump tricks, where the gate does not fire;
-; in Hand 31 (p. 106) the book's crisis lead is an off, not a double.
-; GAP declarer: the bidder is written in as S0.
-; GAP history: "one trump trick so far, led by the bidder" reads earlier
-; tricks; a policy sees only the current trick.
-; GAP shown-void: "exactly one opponent followed it" is one opponent shown
-; void in trump and the other not.
+; How this encoding differs: it has the trigger but not the "most unplayed": it
+; allows every non-trump double. The book's own crisis (Hand 26) comes after
+; two trump tricks, where the gate does not fire; in Hand 31 (p. 106) the
+; book's crisis lead is an off, not a double.
+; "Exactly one opponent followed" is one opponent shown void in trump and the
+; other not: with one trump trick so far, that trick is the only one that can
+; show it.
 ; GAP aggregate: "the suit with the most unplayed tiles" compares the sizes of
 ; two sets of tiles.
 (policy c14-crisis-cash-the-double
@@ -25,13 +22,20 @@
   (rule cash-a-double (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino doubled) (domino out))
+        (roles (chair b) (chair followed) (chair showed) (domino first) (domino doubled) (domino out))
         (out doubled)
         (pattern
-          (viewer S0)
-          (leader S0)
-          (next-actor S0)
-          ; GAP history, GAP shown-void: the trigger
+          (viewer b)
+          (declarer b)
+          (leader b)
+          (next-actor b)
+          (led b first)
+          (in first q*)
+          (none (roles (chair c) (domino other)) (led c other) (in other q*) (not (tile other first)))
+          (opponent b followed)
+          (opponent b showed)
+          (not (shown-void followed q*))
+          (shown-void showed q*)
           (live out)
           (in out q*)
           (not (own-legal out))

@@ -116,13 +116,25 @@ pub struct Atom {
     pub negated: bool,
 }
 
-/// One conjunctive branch of a query.
+/// One conjunctive branch of a query, or the body of a `none`.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Pattern {
-    /// Same-sort equality groups, transitively closed when compiled. Roles of
-    /// one sort in different groups denote DISTINCT values.
+    /// Same-sort equality groups over the roles declared with this body,
+    /// transitively closed when compiled. Roles of one sort declared together
+    /// and in different groups denote DISTINCT values.
     pub equal: Vec<Vec<String>>,
     pub atoms: Vec<Atom>,
+    pub nones: Vec<NoneClause>,
+}
+
+/// `(none (roles ...) clause ...)`: no binding of its own roles satisfies its
+/// body, which is read once the enclosing roles are bound. An assignment
+/// whose body is undefined (neither satisfied nor refuted) leaves the clause
+/// undefined, so it never manufactures a fact from missing context.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct NoneClause {
+    pub roles: Vec<Role>,
+    pub body: Pattern,
 }
 
 /// A relation: the set of output tuples for which some pattern has a
@@ -247,14 +259,11 @@ fn atom(expr: &Expr) -> Result<Atom> {
     Ok(Atom { predicate: name.to_owned(), args, negated })
 }
 
-impl Query {
-    pub(crate) fn from_expr(tree: &Expr) -> Result<Query> {
-        let forms = tree.tagged("query")?;
-        if forms.len() < 2 {
-            return Err(error("a query requires roles and out forms"));
-        }
-        let mut query = Query::default();
-        for role in forms[0].tagged("roles")? {
+/// The roles of `(roles (sort name) ...)`.
+fn roles(expr: &Expr) -> Result<Vec<Role>> {
+    expr.tagged("roles")?
+        .iter()
+        .map(|role| {
             let pair = role.list()?;
             if pair.len() != 2 {
                 return Err(error("role syntax is (sort name)"));
@@ -265,23 +274,43 @@ impl Query {
                 "domino" => Sort::Domino,
                 _ => return Err(error("a role's sort is context, chair, or domino")),
             };
-            query.roles.push(Role { name: pair[1].word()?.to_owned(), sort });
+            Ok(Role { name: pair[1].word()?.to_owned(), sort })
+        })
+        .collect()
+}
+
+/// The clauses of a pattern or of a `none` body.
+fn body(clauses: &[Expr]) -> Result<Pattern> {
+    let mut pattern = Pattern::default();
+    for clause in clauses {
+        let xs = clause.list()?;
+        match xs.first().map(Expr::word).transpose()? {
+            Some("same") => {
+                if xs.len() < 3 {
+                    return Err(error("same requires at least two role names"));
+                }
+                pattern.equal.push(xs[1..].iter().map(|x| x.word().map(str::to_owned)).collect::<Result<_>>()?);
+            }
+            Some("none") => {
+                let roles = roles(xs.get(1).ok_or_else(|| error("none syntax is (none (roles ...) clause ...)"))?)?;
+                pattern.nones.push(NoneClause { roles, body: body(&xs[2..])? });
+            }
+            _ => pattern.atoms.push(atom(clause)?),
         }
+    }
+    Ok(pattern)
+}
+
+impl Query {
+    pub(crate) fn from_expr(tree: &Expr) -> Result<Query> {
+        let forms = tree.tagged("query")?;
+        if forms.len() < 2 {
+            return Err(error("a query requires roles and out forms"));
+        }
+        let mut query = Query { roles: roles(&forms[0])?, ..Query::default() };
         query.outputs = forms[1].tagged("out")?.iter().map(|x| x.word().map(str::to_owned)).collect::<Result<_>>()?;
         for form in &forms[2..] {
-            let mut pattern = Pattern::default();
-            for clause in form.tagged("pattern")? {
-                let xs = clause.list()?;
-                if xs.first().map(Expr::word).transpose()? == Some("same") {
-                    if xs.len() < 3 {
-                        return Err(error("same requires at least two role names"));
-                    }
-                    pattern.equal.push(xs[1..].iter().map(|x| x.word().map(str::to_owned)).collect::<Result<_>>()?);
-                } else {
-                    pattern.atoms.push(atom(clause)?);
-                }
-            }
-            query.patterns.push(pattern);
+            query.patterns.push(body(form.tagged("pattern")?)?);
         }
         Ok(query)
     }
@@ -296,33 +325,52 @@ impl FromStr for Query {
     }
 }
 
+fn write_roles(f: &mut fmt::Formatter<'_>, roles: &[Role]) -> fmt::Result {
+    write!(f, "(roles")?;
+    for role in roles {
+        write!(f, " ({} {})", role.sort, role.name)?;
+    }
+    write!(f, ")")
+}
+
+/// A body's clauses, one per line at `indent`: equalities, atoms, then nones.
+fn write_body(f: &mut fmt::Formatter<'_>, pattern: &Pattern, indent: usize) -> fmt::Result {
+    let pad = " ".repeat(indent);
+    for group in &pattern.equal {
+        write!(f, "\n{pad}(same {})", group.join(" "))?;
+    }
+    for atom in &pattern.atoms {
+        let (open, close) = if atom.negated { ("(not ", ")") } else { ("", "") };
+        write!(f, "\n{pad}{open}({}", atom.predicate)?;
+        for arg in &atom.args {
+            match arg {
+                Term::Role(s) => write!(f, " {s}")?,
+                Term::Literal(v) => write!(f, " {v}")?,
+            }
+        }
+        write!(f, "){close}")?;
+    }
+    for none in &pattern.nones {
+        write!(f, "\n{pad}(none ")?;
+        write_roles(f, &none.roles)?;
+        write_body(f, &none.body, indent + 2)?;
+        write!(f, ")")?;
+    }
+    Ok(())
+}
+
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(query\n  (roles")?;
-        for role in &self.roles {
-            write!(f, " ({} {})", role.sort, role.name)?;
-        }
-        write!(f, ")\n  (out")?;
+        write!(f, "(query\n  ")?;
+        write_roles(f, &self.roles)?;
+        write!(f, "\n  (out")?;
         for name in &self.outputs {
             write!(f, " {name}")?;
         }
         write!(f, ")")?;
         for pattern in &self.patterns {
             write!(f, "\n  (pattern")?;
-            for group in &pattern.equal {
-                write!(f, "\n    (same {})", group.join(" "))?;
-            }
-            for atom in &pattern.atoms {
-                let (open, close) = if atom.negated { ("(not ", ")") } else { ("", "") };
-                write!(f, "\n    {open}({}", atom.predicate)?;
-                for arg in &atom.args {
-                    match arg {
-                        Term::Role(s) => write!(f, " {s}")?,
-                        Term::Literal(v) => write!(f, " {v}")?,
-                    }
-                }
-                write!(f, "){close}")?;
-            }
+            write_body(f, pattern, 4)?;
             write!(f, ")")?;
         }
         write!(f, ")")

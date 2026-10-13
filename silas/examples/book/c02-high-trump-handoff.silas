@@ -8,18 +8,19 @@
 ; the partner play the top trump while holding two more: the book's play is the
 ; sender's, and its reading is false there. The reading is a query:
 ; c02-reading-singleton.silas.
-; GAP declarer: the bidder is written in as S0, the partner as S2.
 (policy c02-high-trump-handoff
   (initial play)
   (fallback lowest-legal)
   (rule play-the-top-trump (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino top))
+        (roles (chair b) (chair p) (domino top))
         (out top)
         (pattern
-          (viewer S2)
-          (leader S0)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader b)
           (led-context q*)
           (own-legal top)
           (boss top q*))))))

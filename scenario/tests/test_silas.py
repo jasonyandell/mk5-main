@@ -14,7 +14,7 @@ from forge.zeb.game import is_terminal, legal_actions
 from scenario.planner import Situation, situation_from_state
 from scenario.record import empty_record, remaining_hand
 from scenario.rules import mask_of, rules_for, tiles_of
-from scenario.silas import frame, shown_voids
+from scenario.silas import frame
 from scenario.tests.test_rules_record import random_playing_states
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "silas" / "examples"
@@ -92,7 +92,7 @@ def test_frames_from_decisions_count_zebs_fiber():
             law = SilasQuery(HOLDINGS).summarize(uniform, BUDGET).answer_sets
             assert set(law) == {holdings(w) for w in worlds}
             checked += 1
-            voided += any(shown_voids(sit))
+            voided += any(f.voids)
     assert checked > 20 and voided > 10, (checked, voided)
 
 
@@ -192,14 +192,49 @@ def test_text_compiles_or_is_refused_with_silas_message():
         SilasPolicy(policy, 10)
 
 
-def test_frames_refuse_incoherent_decisions():
+def test_frames_refuse_incoherent_records():
     own = mask_of(range(7))
-    with pytest.raises(SilasError, match="capacities"):
-        SilasFrame(5, 0, own, 0, 0, [], (0, 0, 0, 0), (7, 7, 7, 6))
-    with pytest.raises(SilasError, match="viewer holds"):
-        SilasFrame(5, 0, own, 0, 0, [], (0, 0, 0, 0), (6, 7, 7, 7))
-    with pytest.raises(SilasError, match="shown void"):
-        SilasFrame(9, 0, own, 0, 0, [], (1, 0, 0, 0), (7, 7, 7, 7))
+    with pytest.raises(SilasError, match="exceeds"):
+        SilasFrame(5, 0, own, 0, 43, [])
+    with pytest.raises(SilasError, match="out of turn"):
+        SilasFrame(5, 0, own, 0, 30, [(1, 27)])
+    with pytest.raises(SilasError, match="disagrees"):
+        SilasFrame(5, 0, mask_of(range(6)), 0, 30, [])
+    with pytest.raises(SilasError, match="illegal"):
+        # Blanks trump: seat 0 holds 0-0, 1-0, 2-0, 3-0 and may not slough
+        # the 1-1 on seat 3's blank lead.
+        SilasFrame(0, 0, own & ~(1 << tile(1, 1)), 3, 30, [(3, tile(6, 0)), (0, tile(1, 1))])
     with pytest.raises(SilasError, match="no seat"):
-        SilasFrame(5, 4, own, 0, 0, [], (0, 0, 0, 0), (7, 7, 7, 7))
-    assert SilasFrame(8, 0, own, 0, 0, [], (0, 0, 0, 0), (7, 7, 7, 7)).physics == "zeb/DS"
+        SilasFrame(5, 4, own, 0, 30, [])
+    with pytest.raises(SilasError, match="no tile"):
+        SilasFrame(5, 0, own, 0, 30, [(0, 28)])
+    assert SilasFrame(8, 0, own, 0, 30, []).physics == "zeb/DS"
+
+
+def test_frames_carry_the_contract_and_the_history():
+    """The record's facts reach Silas's predicates: who bid, the bid, the
+    points still needed to set, the trick number and who led which trick,
+    read through a belief that resolves no tile (one exact point)."""
+    checked = 0
+    for state in random_playing_states(12, seed=11):
+        if is_terminal(state) or len(state.played) < 5:
+            continue
+        sit = situation_from_state(state, 34)
+        f = frame(sit, remaining_hand(state, sit.viewer))
+        assert (f.bidder, f.bid) == (sit.bidder, 34)
+        point = SilasBelief.uniform_resolving(f, 0, 1)
+
+        def answers(text):
+            return set(SilasQuery(text).summarize(point, BUDGET).presence)
+
+        assert answers("(query (roles (chair c)) (out c) (pattern (declarer c)))") == {(f"S{sit.bidder}",)}
+        assert answers("(query (roles) (out) (pattern (bid 34)))") == {()}
+        trick = len(sit.plays) // 4 + 1
+        assert answers(f"(query (roles) (out) (pattern (trick-number {trick})))") == {()}
+        leads = {(f"S{s}", name(t)) for i, (s, t) in enumerate(sit.plays) if i % 4 == 0}
+        assert answers("(query (roles (chair c) (domino d)) (out c d) (pattern (led c d)))") == leads
+        setters = sit.record.banked[1 - sit.bidder % 2]
+        to_set = max(0, 42 + 1 - 34 - setters)
+        assert answers(f"(query (roles) (out) (pattern (to-set {to_set})))") == {()}
+        checked += 1
+    assert checked > 5, checked

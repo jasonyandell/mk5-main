@@ -3,28 +3,66 @@
 ; Rule, in our words: the bidder's partner on lead never leads trump. Among his
 ; other tiles he leads one that cannot draw count; failing that, one that can
 ; draw only a five; a ten-count suit last.
-; Python gate (pour_bidder gate_c9, "never trump"): partner on lead holding
-; trump and a non-trump; the book's tiles are the non-trumps. The ordering is a
-; second, narrower gate in the same function.
-; How this encoding differs: it writes "never trump" in full; the ordering is
-; not written (GAP none). The book's own exception (every other lead calls a
-; ten) is in neither.
-; GAP declarer: the bidder is written in as S0, the partner as S2.
-; GAP none: "a tile whose suit has no count still out" is a negated existential
-; (no live count tile outside the hand follows that suit), and the ordering
-; needs it.
+; Python gate (pour_bidder gate_c9): "never trump", partner on lead holding
+; trump and a non-trump, the book's tiles the non-trumps; and the ordering, a
+; narrower gate in the same function, when the partner holds no non-trump
+; double and no walker (a non-trump no unseen tile beats in the suit it leads):
+; the non-trumps whose suit has no count out, else only fives out, else any.
+; How this encoding differs: none from the gate. The ordering is rule order:
+; its first two rules, then "never trump". The book's own exception (every
+; other lead calls a ten) is in neither.
 (policy c09-partner-never-leads-trump
   (initial play)
   (fallback lowest-legal)
+  (rule lead-from-a-count-safe-suit (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair b) (chair p) (domino lead) (context suit))
+        (out lead)
+        (pattern
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader p)
+          (next-actor p)
+          (none (roles (domino held)) (own-legal held) (double held) (not (in held q*)))
+          (none (roles (domino walker) (context its))
+            (own-legal walker) (not (in walker q*)) (leads-context walker its)
+            (none (roles (domino over)) (live over) (not (own-legal over)) (in over its) (beats over walker its)))
+          (own-legal lead)
+          (not (in lead q*))
+          (leads-context lead suit)
+          (none (roles (domino out)) (live out) (not (own-legal out)) (in out suit) (not (count out 0)))))))
+  (rule lead-from-a-five-suit (in play) (next play) (select answer)
+    (guard
+      (query
+        (roles (chair b) (chair p) (domino lead) (context suit))
+        (out lead)
+        (pattern
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader p)
+          (next-actor p)
+          (none (roles (domino held)) (own-legal held) (double held) (not (in held q*)))
+          (none (roles (domino walker) (context its))
+            (own-legal walker) (not (in walker q*)) (leads-context walker its)
+            (none (roles (domino over)) (live over) (not (own-legal over)) (in over its) (beats over walker its)))
+          (own-legal lead)
+          (not (in lead q*))
+          (leads-context lead suit)
+          (none (roles (domino out)) (live out) (not (own-legal out)) (in out suit) (count out 10))))))
   (rule lead-anything-but-trump (in play) (next play) (select answer)
     (guard
       (query
-        (roles (domino lead) (domino trump))
+        (roles (chair b) (chair p) (domino lead) (domino trump))
         (out lead)
         (pattern
-          (viewer S2)
-          (leader S2)
-          (next-actor S2)
+          (viewer p)
+          (declarer b)
+          (partner b p)
+          (leader p)
+          (next-actor p)
           (own-legal lead)
           (not (in lead q*))
           (own-legal trump)

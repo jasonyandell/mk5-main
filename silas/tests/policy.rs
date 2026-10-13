@@ -14,24 +14,29 @@ const DEAL: [[&str; 7]; 4] = [
     ["3-3", "4-2", "4-3", "5-0", "5-3", "5-4", "6-2"],
 ];
 
-/// S0's view of the deal, played out from S0's lead.
+/// S0's view of the deal, played out from S0's lead: S0 declares, bidding 30.
 struct Table {
     physics: Arc<dyn Physics>,
     hands: [DominoSet; 4],
     frame: Frame,
-    history: Vec<(Seat, Domino)>,
-    banked: [u32; 2],
 }
 
 impl Table {
     fn deal(decl: &str) -> Table {
         let hands = DEAL.map(|hand| tiles(&hand));
         assert_eq!(hands.iter().fold(DominoSet::EMPTY, |all, h| all.union(*h)), DominoSet::FULL);
-        let pool = hands[1].union(hands[2]).union(hands[3]);
-        let kernel = Kernel::new(Seat::S0, hands[0], pool, open_hidden([7, 7, 7])).unwrap();
         let physics = physics(decl);
-        let frame = Frame::new(physics.clone(), kernel, Seat::S0, vec![], DominoSet::EMPTY).unwrap();
-        Table { physics, hands, frame, history: vec![], banked: [0, 0] }
+        let contract = Contract { declarer: Seat::S0, bid: 30 };
+        let frame = Frame::from_record(physics.clone(), Seat::S0, hands[0], contract, vec![]).unwrap();
+        Table { physics, hands, frame }
+    }
+
+    fn history(&self) -> &[(Seat, Domino)] {
+        self.frame.record().unwrap().plays()
+    }
+
+    fn banked(&self) -> [u32; 2] {
+        self.frame.record().unwrap().banked()
     }
 
     fn actor(&self) -> Seat {
@@ -43,7 +48,7 @@ impl Table {
         self.physics.legal_plays(held, self.frame.lead())
     }
 
-    /// Make the next play, tracking S0's frame, the history and the score.
+    /// Make the next play, stepping S0's frame and its record.
     fn play(&mut self, tile: Domino) {
         let actor = self.actor();
         assert!(self.legal(actor).contains(tile));
@@ -52,15 +57,7 @@ impl Table {
             Some(q) if self.physics.follows(tile, q) => PlayClass::Follow(q),
             Some(q) => PlayClass::Slough(q),
         };
-        let mut trick: Vec<Domino> = self.frame.prefix().to_vec();
-        trick.push(tile);
-        let leader = self.frame.leader();
         self.frame = step_frame(&self.frame, ObservedPlay { actor, tile, class }, &mut budget()).unwrap();
-        self.history.push((actor, tile));
-        if let Ok(trick) = <[Domino; 4]>::try_from(trick.as_slice()) {
-            let winner = self.physics.trick_winner(leader, trick);
-            self.banked[winner.team().index()] += self.physics.trick_points(trick);
-        }
     }
 
     /// Everyone plays their lowest legal tile until S0 is to act holding `left`.
@@ -72,8 +69,11 @@ impl Table {
         self
     }
 
-    fn input(&self, bid: u8) -> PolicyInput<'_> {
-        PolicyInput::new(&self.frame, &self.history, self.banked, bid, Team::T0).unwrap()
+    /// S0's frame under a contract of `bid`.
+    fn at_bid(&self, bid: u32) -> Frame {
+        let contract = Contract { declarer: Seat::S0, bid };
+        let hand = self.frame.kernel().viewer_hand();
+        Frame::from_record(self.physics.clone(), Seat::S0, hand, contract, self.history().to_vec()).unwrap()
     }
 }
 
@@ -98,7 +98,7 @@ fn program(key: PolicyKey) -> PolicyProgram {
 fn text_roundtrip_preserves_exact_information_key() {
     for left in [7, 5] {
         let table = Table::deal("P6").until_viewer_holds(left);
-        let source = program(PolicyKey::from_input(&table.input(31)));
+        let source = program(PolicyKey::of(&table.at_bid(31)).unwrap());
         assert_eq!(source.to_string().parse::<PolicyProgram>().unwrap(), source);
     }
 }
@@ -106,8 +106,8 @@ fn text_roundtrip_preserves_exact_information_key() {
 #[test]
 fn exact_rule_precedes_relation_and_is_checked_for_legality() {
     let table = Table::deal("P6");
-    let input = table.input(30);
-    let mut source = program(PolicyKey::from_input(&input));
+    let input = table.frame.clone();
+    let mut source = program(PolicyKey::of(&input).unwrap());
     let hand = table.frame.kernel().viewer_hand();
     source.exact_rules[0].action = hand.iter().last().unwrap();
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
@@ -119,14 +119,14 @@ fn exact_rule_precedes_relation_and_is_checked_for_legality() {
     source.exact_rules[0].action = DominoSet::FULL.difference(hand).iter().next().unwrap();
     assert!(source.compile(&Registry::standard(), &table.physics).is_err());
     // An exact key is bound to the physics it was taken under.
-    assert!(program(PolicyKey::from_input(&input)).compile(&Registry::standard(), &physics("P5")).is_err());
+    assert!(program(PolicyKey::of(&input).unwrap()).compile(&Registry::standard(), &physics("P5")).is_err());
 }
 
 #[test]
 fn world_predicates_are_refused_and_fallback_is_total() {
     let table = Table::deal("P6");
-    let input = table.input(30);
-    let mut source = program(PolicyKey::from_input(&input));
+    let input = table.frame.clone();
+    let mut source = program(PolicyKey::of(&input).unwrap());
     source.exact_rules.clear();
     source.rules.clear();
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
@@ -148,16 +148,16 @@ fn world_predicates_are_refused_and_fallback_is_total() {
 /// decisions as (key, action, trace) in order.
 fn play_out(
     decl: &str,
-    mut choose: impl FnMut(&PolicyInput<'_>) -> (Domino, Option<DecisionProvenance>),
+    mut choose: impl FnMut(&Frame) -> (Domino, Option<DecisionProvenance>),
 ) -> Vec<(PolicyKey, Domino, Option<DecisionProvenance>)> {
     let mut table = Table::deal(decl);
     let mut decisions = Vec::new();
-    while table.history.len() < 28 {
+    while table.history().len() < 28 {
         let actor = table.actor();
         let tile = if actor == Seat::S0 {
-            let input = table.input(30);
+            let input = table.frame.clone();
             let (tile, provenance) = choose(&input);
-            decisions.push((PolicyKey::from_input(&input), tile, provenance));
+            decisions.push((PolicyKey::of(&input).unwrap(), tile, provenance));
             tile
         } else {
             table.legal(actor).iter().next().unwrap()
@@ -170,7 +170,7 @@ fn play_out(
 #[test]
 fn a_table_policy_exports_and_replays_through_its_serialized_program() {
     let direct = play_out("P6", |input| {
-        let legal = input.frame.physics().legal_plays(input.frame.kernel().viewer_hand(), input.frame.lead());
+        let legal = input.physics().legal_plays(input.kernel().viewer_hand(), input.lead());
         (legal.iter().last().unwrap(), None)
     });
     assert_eq!(direct.len(), 7);
@@ -202,8 +202,8 @@ fn a_table_policy_exports_and_replays_through_its_serialized_program() {
 #[test]
 fn controller_provenance_and_mode_updates_are_transactional() {
     let table = Table::deal("P6");
-    let input = table.input(30);
-    let mut first = program(PolicyKey::from_input(&input));
+    let input = table.frame.clone();
+    let mut first = program(PolicyKey::of(&input).unwrap());
     first.exact_rules.clear();
     let mut second = first.clone();
     second.name = "other-program".into();
@@ -229,12 +229,24 @@ fn malformed_schema_history_and_empty_binding_are_refused() {
     }
 
     let table = Table::deal("P6").until_viewer_holds(6);
-    let mut wrong = table.history.clone();
-    wrong[0].0 = wrong[0].0.plus(1);
-    assert!(PolicyInput::new(&table.frame, &wrong, table.banked, 30, Team::T0).is_err());
+    let mut wrong = PolicyKey::of(&table.frame).unwrap();
+    wrong.history[0].0 = wrong.history[0].0.plus(1);
+    let mut source = program(wrong);
+    assert!(source.compile(&Registry::standard(), &table.physics).is_err());
+    source.exact_rules.clear();
+    let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
+    let unrecorded = Frame::new(
+        table.physics.clone(),
+        table.frame.kernel().clone(),
+        table.frame.leader(),
+        table.frame.prefix().to_vec(),
+        table.frame.played(),
+    )
+    .unwrap();
+    assert!(compiled.initialize(&unrecorded, &mut budget()).is_err());
 
-    let input = table.input(30);
-    let mut source = program(PolicyKey::from_input(&input));
+    let input = table.frame.clone();
+    let mut source = program(PolicyKey::of(&input).unwrap());
     source.exact_rules.clear();
     source
         .bindings
@@ -246,8 +258,8 @@ fn malformed_schema_history_and_empty_binding_are_refused() {
 #[test]
 fn contract_resolution_counts_every_point_the_physics_awards() {
     let table = Table::deal("P6").until_viewer_holds(3);
-    let [ours, theirs] = table.banked;
-    assert!(ours > 0 && theirs > 0, "the fixture banks points on both sides: {:?}", table.banked);
+    let [ours, theirs] = table.banked();
+    assert!(ours > 0 && theirs > 0, "the fixture banks points on both sides: {:?}", table.banked());
     let source = PolicyProgram {
         name: "fallback-only".into(),
         initial_mode: "fresh".into(),
@@ -258,7 +270,7 @@ fn contract_resolution_counts_every_point_the_physics_awards() {
     };
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
     let resolved = |bid: u32| {
-        let input = table.input(u8::try_from(bid).unwrap());
+        let input = table.at_bid(bid);
         let mut controller = compiled.initialize(&input, &mut budget()).unwrap();
         compiled.choose_traced(&mut controller, &input, &mut budget()).unwrap().contract_resolved
     };

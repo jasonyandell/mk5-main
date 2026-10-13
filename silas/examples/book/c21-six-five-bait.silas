@@ -5,19 +5,19 @@
 ; Python gate (pour_bidder gate_c21): the same, on any lead.
 ; How this encoding differs: none. The book plays it as a crisis lead in one
 ; hand; the gate, and this file, make it a rule on every lead.
-; GAP declarer: the bidder is written in as S0.
 (policy c21-six-five-bait
   (initial play)
   (fallback lowest-legal)
   (rule lead-the-six-five (in play) (next play) (select tile 6-5)
     (guard
       (query
-        (roles)
+        (roles (chair b))
         (out)
         (pattern
-          (viewer S0)
-          (leader S0)
-          (next-actor S0)
+          (viewer b)
+          (declarer b)
+          (leader b)
+          (next-actor b)
           (own-legal 6-5)
           (own-legal 6-4)
           (not (in 6-5 q*))

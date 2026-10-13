@@ -8,9 +8,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::eval::{Budget, CompiledQuery};
-use crate::frame::{Frame, Hidden, Kernel};
-use crate::nouns::{Context, ContextSet, Domino, DominoSet, Seat, Team};
-use crate::physics::{Physics, total_points};
+use crate::frame::{Contract, Frame, Record};
+use crate::nouns::{Domino, DominoSet, Seat};
+use crate::physics::Physics;
 use crate::registry::{Access, Registry};
 use crate::syntax::{Expr, Query, Sort, Value, valid_name};
 use crate::{Error, Result, error};
@@ -25,68 +25,37 @@ pub struct PolicyProgram {
     pub fallback: Fallback,
 }
 
-/// Everything a policy may see at a decision: the viewer's frame and the full
-/// public history, score and contract.
-#[derive(Clone, Debug)]
-pub struct PolicyInput<'a> {
-    pub frame: &'a Frame,
-    pub history: &'a [(Seat, Domino)],
-    pub banked: [u32; 2],
-    pub bid: u8,
-    pub declaring_team: Team,
-}
-
-impl<'a> PolicyInput<'a> {
-    /// Checks that the history is a coherent public predecessor of the frame.
-    pub fn new(
-        frame: &'a Frame,
-        history: &'a [(Seat, Domino)],
-        banked: [u32; 2],
-        bid: u8,
-        declaring_team: Team,
-    ) -> Result<Self> {
-        let input = Self { frame, history, banked, bid, declaring_team };
-        validate_key(&PolicyKey::from_input(&input), frame.physics_handle())?;
-        Ok(input)
-    }
-}
-
-/// The complete viewer information at a decision, under one physics.
+/// The complete viewer information at a decision, under one physics: the
+/// viewer's remaining hand and the hand's public record. Everything else a
+/// frame holds is derived from these.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PolicyKey {
     pub physics: String,
     pub viewer: Seat,
     pub hand: DominoSet,
-    pub pool: DominoSet,
-    pub hidden: Vec<(Seat, usize, Vec<Context>)>,
-    pub leader: Seat,
-    pub prefix: Vec<Domino>,
-    pub played: DominoSet,
+    pub declarer: Seat,
+    pub bid: u32,
     pub history: Vec<(Seat, Domino)>,
-    pub banked: [u32; 2],
-    pub bid: u8,
-    pub declaring_team: Team,
 }
 
 impl PolicyKey {
-    pub fn from_input(input: &PolicyInput<'_>) -> Self {
-        let frame = input.frame;
+    /// The key of a frame built from its record; refused for one without.
+    pub fn of(frame: &Frame) -> Result<Self> {
+        let record = recorded(frame)?;
         let kernel = frame.kernel();
-        Self {
+        Ok(Self {
             physics: frame.physics().identity(),
             viewer: kernel.viewer(),
             hand: kernel.viewer_hand(),
-            pool: kernel.pool(),
-            hidden: kernel.hidden().iter().map(|h| (h.seat, h.capacity, h.voids.iter().collect())).collect(),
-            leader: frame.leader(),
-            prefix: frame.prefix().to_vec(),
-            played: frame.played(),
-            history: input.history.to_vec(),
-            banked: input.banked,
-            bid: input.bid,
-            declaring_team: input.declaring_team,
-        }
+            declarer: record.contract().declarer,
+            bid: record.contract().bid,
+            history: record.plays().to_vec(),
+        })
     }
+}
+
+fn recorded(frame: &Frame) -> Result<&Record> {
+    frame.record().ok_or_else(|| error("a policy decides from the hand's public record; this frame has none"))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -223,7 +192,7 @@ impl PolicyProgram {
             }
             rules.push((rule.clone(), guard));
         }
-        let mut identity = format!("silas-policy-v0\n{self}");
+        let mut identity = format!("silas-policy-v1\n{self}");
         for (_, query) in &bindings {
             identity.push_str("\nbinding-query: ");
             identity.push_str(&query.identity());
@@ -245,82 +214,13 @@ fn viewer_only(query: &CompiledQuery, owner: &str) -> Result<()> {
     }
 }
 
-/// Rebuild the key's frame and replay its history, checking that every part
-/// of the key agrees with it.
+/// Rebuild the key's frame from its record, under the key's physics.
 fn validate_key(key: &PolicyKey, physics: &Arc<dyn Physics>) -> Result<Frame> {
     if key.physics != physics.identity() {
         return Err(error(format!("the key's physics {} is not {}", key.physics, physics.identity())));
     }
-    let hidden: Vec<Hidden> = key
-        .hidden
-        .iter()
-        .map(|(seat, capacity, voids)| {
-            let set: ContextSet = voids.iter().copied().collect();
-            if set.len() != voids.len() {
-                return Err(error("an exact key repeats a void"));
-            }
-            Ok(Hidden { seat: *seat, capacity: *capacity, voids: set })
-        })
-        .collect::<Result<_>>()?;
-    let hidden = hidden.try_into().map_err(|_| error("an exact key describes three hidden seats"))?;
-    let kernel = Kernel::new(key.viewer, key.hand, key.pool, hidden)?;
-    if physics.count_worlds(&kernel) == 0 {
-        return Err(error("the exact key's kernel has no worlds"));
-    }
-    let frame = Frame::new(physics.clone(), kernel, key.leader, key.prefix.clone(), key.played)?;
-    if frame.kernel().live().union(key.played) != DominoSet::FULL {
-        return Err(error("the key's live and played tiles must partition the deck"));
-    }
-    let history: DominoSet = key.history.iter().map(|(_, tile)| *tile).collect();
-    if history.len() != key.history.len() || history != key.played {
-        return Err(error("the history must list every played domino exactly once"));
-    }
-    let mut remaining = [7usize; Seat::COUNT];
-    let mut voids = [ContextSet::EMPTY; Seat::COUNT];
-    let mut banked = [0u32; 2];
-    let mut prefix: Vec<Domino> = Vec::new();
-    let mut leader = key.history.first().map_or(key.leader, |(seat, _)| *seat);
-    let mut viewer_hand =
-        key.hand.union(key.history.iter().filter(|(s, _)| *s == key.viewer).map(|(_, d)| *d).collect());
-    for (seat, tile) in &key.history {
-        if *seat != leader.plus(prefix.len()) || remaining[seat.index()] == 0 {
-            return Err(error("the history violates turn order or a seat's capacity"));
-        }
-        let lead = prefix.first().copied();
-        let led = lead.map(|d| physics.led_context(d));
-        if *seat == key.viewer {
-            if !physics.legal_plays(viewer_hand, lead).contains(*tile) {
-                return Err(error("the history contains an illegal play by the viewer"));
-            }
-            viewer_hand.remove(*tile);
-        }
-        if let Some(q) = led {
-            if !physics.follows(*tile, q) {
-                voids[seat.index()].insert(q);
-            } else if voids[seat.index()].contains(q) {
-                return Err(error("the history follows a context its seat had shown void"));
-            }
-        }
-        remaining[seat.index()] -= 1;
-        prefix.push(*tile);
-        if let Ok(trick) = <[Domino; 4]>::try_from(prefix.as_slice()) {
-            leader = physics.trick_winner(leader, trick);
-            banked[leader.team().index()] += physics.trick_points(trick);
-            prefix.clear();
-        }
-    }
-    if leader != key.leader || prefix != key.prefix || banked != key.banked {
-        return Err(error("the key's leader, prefix, or banked score disagrees with its history"));
-    }
-    if remaining[key.viewer.index()] != key.hand.len() {
-        return Err(error("the viewer's hand size disagrees with the history"));
-    }
-    for (seat, capacity, shown) in &key.hidden {
-        if remaining[seat.index()] != *capacity || voids[seat.index()] != shown.iter().copied().collect() {
-            return Err(error("a hidden capacity or void disagrees with the history"));
-        }
-    }
-    Ok(frame)
+    let contract = Contract { declarer: key.declarer, bid: key.bid };
+    Frame::from_record(physics.clone(), key.viewer, key.hand, contract, key.history.clone())
 }
 
 impl CompiledPolicy {
@@ -332,10 +232,12 @@ impl CompiledPolicy {
         &self.identity
     }
 
-    pub fn initialize(&self, input: &PolicyInput<'_>, budget: &mut Budget) -> Result<PolicyController> {
+    /// Start a controller at `frame`, which must carry the hand's record.
+    pub fn initialize(&self, frame: &Frame, budget: &mut Budget) -> Result<PolicyController> {
+        recorded(frame)?;
         let mut rigid = BTreeMap::new();
         for (name, query) in &self.bindings {
-            let answers = query.evaluate_viewer(input.frame, budget)?;
+            let answers = query.evaluate_viewer(frame, budget)?;
             match answers.first() {
                 Some(answer) if answers.len() == 1 => rigid.insert(name.clone(), answer.0[0]),
                 _ => {
@@ -346,13 +248,8 @@ impl CompiledPolicy {
         Ok(PolicyController { program_identity: self.identity.clone(), mode: self.source.initial_mode.clone(), rigid })
     }
 
-    pub fn choose(
-        &self,
-        controller: &mut PolicyController,
-        input: &PolicyInput<'_>,
-        budget: &mut Budget,
-    ) -> Result<Domino> {
-        self.choose_traced(controller, input, budget).map(|trace| trace.action)
+    pub fn choose(&self, controller: &mut PolicyController, frame: &Frame, budget: &mut Budget) -> Result<Domino> {
+        self.choose_traced(controller, frame, budget).map(|trace| trace.action)
     }
 
     /// Choose as [`Self::choose`] does, recording which layer answered. A
@@ -361,11 +258,11 @@ impl CompiledPolicy {
     pub fn choose_traced(
         &self,
         controller: &mut PolicyController,
-        input: &PolicyInput<'_>,
+        frame: &Frame,
         budget: &mut Budget,
     ) -> Result<PolicyDecisionTrace> {
         let checkpoint = controller.clone();
-        let result = self.decide(controller, input, budget);
+        let result = self.decide(controller, frame, budget);
         if result.is_err() {
             *controller = checkpoint;
         }
@@ -375,10 +272,10 @@ impl CompiledPolicy {
     fn decide(
         &self,
         controller: &mut PolicyController,
-        input: &PolicyInput<'_>,
+        frame: &Frame,
         budget: &mut Budget,
     ) -> Result<PolicyDecisionTrace> {
-        let frame = input.frame;
+        let key = PolicyKey::of(frame)?;
         if controller.program_identity != self.identity {
             return Err(error("the controller belongs to a different compiled policy"));
         }
@@ -388,7 +285,7 @@ impl CompiledPolicy {
         let legal = frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.lead());
         let lowest = legal.iter().next().ok_or_else(|| error("the policy has no legal action"))?;
         let mode_before = controller.mode.clone();
-        let contract_resolved = contract_resolution(input);
+        let contract_resolved = contract_resolution(frame);
         let trace = |action, provenance, mode_after| PolicyDecisionTrace {
             action,
             provenance,
@@ -396,7 +293,7 @@ impl CompiledPolicy {
             mode_after,
             contract_resolved,
         };
-        if let Some(tile) = self.exact.get(&PolicyKey::from_input(input)) {
+        if let Some(tile) = self.exact.get(&key) {
             if !legal.contains(*tile) {
                 return Err(error(format!("the exact action {tile} is illegal")));
             }
@@ -434,17 +331,11 @@ impl CompiledPolicy {
     }
 }
 
-fn contract_resolution(input: &PolicyInput<'_>) -> Option<bool> {
-    let total = total_points(input.frame.physics());
-    let declared = input.banked[input.declaring_team.index()];
-    let unbanked = total - input.banked[0] - input.banked[1];
-    let bid = u32::from(input.bid);
-    if declared >= bid {
-        Some(true)
-    } else if declared + unbanked < bid {
-        Some(false)
-    } else {
-        None
+fn contract_resolution(frame: &Frame) -> Option<bool> {
+    match recorded(frame).ok()?.to_make_and_set(frame.physics()) {
+        (0, _) => Some(true),
+        (_, 0) => Some(false),
+        _ => None,
     }
 }
 
@@ -593,20 +484,7 @@ impl fmt::Display for PolicyProgram {
     }
 }
 
-const KEY_FIELDS: [&str; 12] = [
-    "physics",
-    "viewer",
-    "hand-bits",
-    "pool-bits",
-    "hidden",
-    "leader",
-    "prefix",
-    "played-bits",
-    "history",
-    "banked",
-    "bid",
-    "declaring-team",
-];
+const KEY_FIELDS: [&str; 6] = ["physics", "viewer", "hand-bits", "declarer", "bid", "history"];
 
 fn parse_key(expr: &Expr) -> Result<PolicyKey> {
     let xs = expr.tagged("key")?;
@@ -618,21 +496,6 @@ fn parse_key(expr: &Expr) -> Result<PolicyKey> {
         [word] => Ok(*word),
         _ => Err(error(format!("{tag} takes one value"))),
     };
-    let banked = match words(xs, "banked")?.as_slice() {
-        [a, b] => [parse(a, "banked score")?, parse(b, "banked score")?],
-        _ => return Err(error("banked takes two values")),
-    };
-    let hidden = one_body(xs, "hidden")?
-        .iter()
-        .map(|entry| match entry.list()? {
-            [seat, capacity, voids] => Ok((
-                parse_seat(seat.word()?)?,
-                parse(capacity.word()?, "hidden capacity")?,
-                voids.tagged("voids")?.iter().map(|q| parse(q.word()?, "void context")).collect::<Result<_>>()?,
-            )),
-            _ => Err(error("a hidden entry is (chair capacity (voids ...))")),
-        })
-        .collect::<Result<_>>()?;
     let history = one_body(xs, "history")?
         .iter()
         .map(|entry| match entry.list()? {
@@ -644,19 +507,9 @@ fn parse_key(expr: &Expr) -> Result<PolicyKey> {
         physics: scalar("physics")?.to_owned(),
         viewer: parse_seat(scalar("viewer")?)?,
         hand: parse_bits(scalar("hand-bits")?)?,
-        pool: parse_bits(scalar("pool-bits")?)?,
-        hidden,
-        leader: parse_seat(scalar("leader")?)?,
-        prefix: words(xs, "prefix")?.into_iter().map(|d| parse(d, "prefix domino")).collect::<Result<_>>()?,
-        played: parse_bits(scalar("played-bits")?)?,
-        history,
-        banked,
+        declarer: parse_seat(scalar("declarer")?)?,
         bid: parse(scalar("bid")?, "bid")?,
-        declaring_team: match scalar("declaring-team")? {
-            "T0" => Team::T0,
-            "T1" => Team::T1,
-            other => return Err(error(format!("invalid declaring team {other}"))),
-        },
+        history,
     })
 }
 
@@ -671,27 +524,16 @@ impl fmt::Display for KeyDisplay<'_> {
         let k = self.0;
         write!(
             f,
-            "(key (physics {}) (viewer {}) (hand-bits {}) (pool-bits {}) (hidden",
+            "(key (physics {}) (viewer {}) (hand-bits {}) (declarer {}) (bid {}) (history",
             k.physics,
             k.viewer,
             k.hand.bits(),
-            k.pool.bits()
+            k.declarer,
+            k.bid
         )?;
-        for (seat, capacity, voids) in &k.hidden {
-            write!(f, " ({seat} {capacity} (voids")?;
-            for q in voids {
-                write!(f, " {q}")?;
-            }
-            write!(f, "))")?;
-        }
-        write!(f, ") (leader {}) (prefix", k.leader)?;
-        for d in &k.prefix {
-            write!(f, " {d}")?;
-        }
-        write!(f, ") (played-bits {}) (history", k.played.bits())?;
         for (seat, d) in &k.history {
             write!(f, " ({seat} {d})")?;
         }
-        write!(f, ") (banked {} {}) (bid {}) (declaring-team {}))", k.banked[0], k.banked[1], k.bid, k.declaring_team)
+        write!(f, "))")
     }
 }

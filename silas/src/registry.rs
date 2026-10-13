@@ -63,7 +63,11 @@ pub trait Predicate: Send + Sync {
 }
 
 /// Words the grammar reserves.
-const RESERVED: [&str; 6] = ["query", "roles", "out", "pattern", "same", "not"];
+const RESERVED: [&str; 7] = ["query", "roles", "out", "pattern", "same", "not", "none"];
+
+/// The built-ins added with the record, version `silas-v1/core`.
+const V1: [&str; 10] =
+    ["declarer", "bid", "banked", "to-make", "to-set", "trick-number", "led", "played-to", "trick-of", "shown-void"];
 
 #[derive(Clone, Default)]
 pub struct Registry {
@@ -91,7 +95,9 @@ impl Registry {
         self.predicates.values().map(|p| p.spec().clone()).collect()
     }
 
-    /// The built-in relations, version `silas-v0/core`.
+    /// The built-in relations. Each carries the version in which its meaning
+    /// last changed: `silas-v0/core` for the first set, `silas-v1/core` for
+    /// those that read the hand's record.
     pub fn standard() -> Self {
         use Access::{Viewer, World};
         use Sort::{Chair as C, Context as Q, Domino as D, Number as N, Team as T};
@@ -125,10 +131,21 @@ impl Registry {
             ("own-legal", vec![D], Viewer),
             ("trick-play", vec![C, D], Viewer),
             ("leads-context", vec![D, Q], Viewer),
+            ("declarer", vec![C], Viewer),
+            ("bid", vec![N], Viewer),
+            ("banked", vec![C, N], Viewer),
+            ("to-make", vec![N], Viewer),
+            ("to-set", vec![N], Viewer),
+            ("trick-number", vec![N], Viewer),
+            ("led", vec![C, D], Viewer),
+            ("played-to", vec![D, C, D], Viewer),
+            ("trick-of", vec![D, N], Viewer),
+            ("shown-void", vec![C, Q], Viewer),
         ] {
+            let version = if V1.contains(&name) { "silas-v1/core" } else { "silas-v0/core" };
             let spec = PredicateSpec {
                 name: name.to_owned(),
-                version: "silas-v0/core".to_owned(),
+                version: version.to_owned(),
                 parameters,
                 horizon_plies: 0,
                 access,
@@ -202,7 +219,34 @@ impl Predicate for Builtin {
                 let legal = physics.legal_plays(world()?.hand(*c)?, frame.lead());
                 if self.0.name == "forced" { legal == crate::DominoSet::single(*d) } else { legal.contains(*d) }
             }
-            _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),
+            ("shown-void", [C(c), Q(q)]) => match kernel.hidden().iter().find(|h| h.seat == *c) {
+                Some(hidden) => hidden.voids.contains(*q),
+                None => match frame.record() {
+                    Some(record) => record.shown_voids(physics, *c).contains(*q),
+                    None => return Ok(None),
+                },
+            },
+            (name, args) => {
+                let Some(record) = frame.record() else { return Ok(None) };
+                let number = |n: &u32| *n as usize;
+                match (name, args) {
+                    ("declarer", [C(c)]) => *c == record.contract().declarer,
+                    ("bid", [N(n)]) => *n == record.contract().bid,
+                    ("banked", [C(c), N(n)]) => record.banked()[c.team().index()] == *n,
+                    ("to-make", [N(n)]) => record.to_make_and_set(physics).0 == *n,
+                    ("to-set", [N(n)]) => record.to_make_and_set(physics).1 == *n,
+                    ("trick-number", [N(n)]) => record.trick_number() == Some(number(n)),
+                    ("led", [C(c), D(d)]) => record.tricks().any(|trick| trick[0] == (*c, *d)),
+                    ("played-to", [D(lead), C(c), D(d)]) => {
+                        record.tricks().any(|trick| trick[0].1 == *lead && trick.contains(&(*c, *d)))
+                    }
+                    ("trick-of", [D(d), N(n)]) => {
+                        let trick = record.tricks().position(|trick| trick.iter().any(|(_, tile)| tile == d));
+                        trick.map(|k| k + 1) == Some(number(n))
+                    }
+                    _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),
+                }
+            }
         };
         Ok(Some(value))
     }

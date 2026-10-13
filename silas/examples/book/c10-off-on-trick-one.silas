@@ -9,10 +9,7 @@
 ; Python gate (pour_bidder gate_c10, "C10-gate: off lead"): bidder, trick 1,
 ; one off and four or more trumps; the book's tiles are the offs. An off is a
 ; non-trump tile some tile outside the hand outranks in the suit it leads.
-; How this encoding differs: it cannot say "exactly one off" and fires with
-; two or more offs too. Trick one is "the bidder holds seven tiles".
-; GAP declarer: the bidder is written in as S0.
-; GAP none: "exactly one off" needs "no second off", a negated existential.
+; How this encoding differs: none from the gate.
 (policy c10-off-on-trick-one
   (initial play)
   (fallback lowest-legal)
@@ -20,14 +17,15 @@
     (guard
       (query
         (roles
+          (chair b)
           (domino off) (domino over) (context suit)
           (domino t1) (domino t2) (domino t3) (domino t4))
         (out off)
         (pattern
-          (viewer S0)
-          (leader S0)
-          (next-actor S0)
-          (quota S0 7)
+          (viewer b)
+          (declarer b)
+          (trick-number 1)
+          (next-actor b)
           (own-legal t1) (in t1 q*)
           (own-legal t2) (in t2 q*)
           (own-legal t3) (in t3 q*)
@@ -39,5 +37,6 @@
           (not (own-legal over))
           (in over suit)
           (beats over off suit)
-          ; GAP none: and no second such tile in the hand
-          )))))
+          (none (roles (domino second) (domino above) (context its))
+            (own-legal second) (not (tile second off)) (not (in second q*)) (leads-context second its)
+            (live above) (not (own-legal above)) (in above its) (beats above second its)))))))

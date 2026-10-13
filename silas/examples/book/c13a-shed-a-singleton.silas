@@ -6,29 +6,25 @@
 ; Python gate (pour_setter gate_c13a): a setter, the bidder led trump, the
 ; mover holds no trump; the book's tiles are the non-count tiles that are the
 ; mover's only tile of one of their pip suits.
-; How this encoding differs: it cannot say "his only one of that suit" and
-; allows every non-count tile. It is the gate's superset.
+; How this encoding differs: none from the gate.
 ; Out of trump is read from the hand, as in C1b.
-; GAP declarer: the bidder is written in as S0.
-; GAP none: "the only tile I hold of suit q" is "no other tile of mine follows
-; q", a negated existential.
 (policy c13a-shed-a-singleton
   (initial play)
   (fallback lowest-legal)
   (rule throw-a-lone-tile (in play) (next play) (select answer)
     (guard
       (query
-        (roles (chair me) (domino lone) (context suit))
+        (roles (chair b) (chair me) (domino lone) (context suit))
         (out lone)
         (pattern
           (viewer me)
-          (opponent me S0)
-          (leader S0)
+          (declarer b)
+          (opponent me b)
+          (leader b)
           (led-context q*)
           (own-legal lone)
           (not (in lone q*))
           (count lone 0)
           (in lone suit)
           (not (context suit q*))
-          ; GAP none: (none (own-legal other) (in other suit)) for another tile other
-          )))))
+          (none (roles (domino other)) (own-legal other) (in other suit) (not (tile other lone))))))))
