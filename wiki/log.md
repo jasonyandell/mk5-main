@@ -36,6 +36,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | fd78c782 | silas aggregate (#135): card, points and (<= a b), three-valued by intervals; the bid rules rewritten with it, every call and declaration pinned equal on all 1,184,040 hands (risk-budget 150 → 20 µs); the crisis keeps the double with the most tiles out]
+
+**Touched pages:** [[silas]] § The aggregate. `silas/README.md` § Semantics, Short forms, The auction; `silas/GAPS.md` gap 5 closed for what is built; `silas/docs/cross-game.md` § 4, Slice 2 as built (amendment).
+
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
 
 **Touched pages:** [[silas]] § The match and field-free comparison. `silas/README.md` § The auction; `silas/docs/cross-game.md` § 4, Slice 2 as built; `silas/GAPS.md` gaps 2 and 4 narrowed (#134 now needs only #128).
