@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 status: active
 ---
 
@@ -74,6 +74,7 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/planner.py` | `Rung`, `Config`, `Walt`: the finite planning rule, the ladder, the dice tape, the `make`/`points` utilities | single-scenario value equals an independent best-plan search; the information inequality V(μ₁+μ₂) ≤ V(μ₁)+V(μ₂) on every split; scale invariance; determinism |
 | `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
 | `scenario/field.py` + `core/src/field.rs` + `scenario/field_train.py` | the field net: a learned integer policy as rung −1 (see "The net in the field") | forward pass bit-identical referee ↔ core; `decide`/`analyze` with the net field bit-identical |
+| `scenario/reason.py` | the reason report (#124): one decision, Zeb's tile against a named one — the line, the split, the separating facts in [[silas]], counterexamples, a noise bar (see "The reason report") | the book's 84 finds its own set condition at 33/95 exact; a tie is indifferent; a price inside the bar is indistinguishable; the referee writes the same report |
 | `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,py]` (`py` = the pure Python referee) | an arena half completes |
 
 Tests: `python -m pytest scenario/tests -q` (CPU, no checkpoint). Build the
@@ -888,6 +889,48 @@ best-response dynamics by +0.115. Of the Walt gaps diagnosed, 78 of 171 close on
 (149 of 508) are all period 2, off path, value constant. Small in points; decisive about
 the referent: the partnership operator is where the next mathematics is.
 [[endgames-o2-vs-o1-2026-10-12]].
+
+## The reason report (2026-10-13, #124)
+
+Zeb priced moves but could not say why. **The plan's line** is now exported:
+`analyze(state, bid, line=True)` adds, per root tile, a `Step` for every viewer
+cell of the plan — the plays that reach it (the other seats' tiles among them
+are the observations it branched on), the tile played, the cell's scenarios, and
+whether the floor handed the move down. It is read off the same replay as the
+outcomes, in referee and core alike (`core::planner::analyze_line`), and
+`test_compiled` holds the two step for step. It is in both because the report
+runs at deployed sizes (n512, k1) where only the core is fast; asking for it moves
+no other byte, and the default path, Zeb's fixture included, is unchanged.
+
+`scenario/reason.py` (`reason(state, bid, other, config)`, `render`, CLI
+`python -u -m scenario.reason SPEC --decl --bid --hands --plays --other`) reads
+one decision for a pair of tiles: where they part (A: Zeb's tile succeeds for the
+mover and the other fails; B: the reverse; counts and weight shares), the
+**separating facts** — a declared space of [[silas]] queries (a seat or "an
+opponent" holds t; holds t and another of suit q; is void in q), each evaluated by
+Silas on Zeb's own scenarios and weights labeled `sampled(n, seed)`, ranked by
+|P(fact | A) − P(fact | B)|, with the fact's exact prior over the fiber
+(`uniform_resolving`) — a counterexample world on each side with the plan's path
+through it, and a **noise bar**: the decision re-planned at the next seed and one
+rung stronger; Silas's three-valued compare of P(Zeb's tile beats the other, ties
+halved) against 1/2, at half the bar. Inside the bar: *indistinguishable*, no
+reason; an exact tie: *indifferent* (#120). The estimate comes through a new
+binding, `SilasBelief.condition_likelihood` (Silas's own conditioning, its evidence
+an `Estimate`); `silas/` is unchanged.
+
+**The 84, found by search** (`test_reason.py`, k1 n64 m4, dice field): Zeb's lead
+against the book's double-five, and the top fact of the whole space is the book's
+own set condition, *an opponent holds the 6-5 and another trump*: in every world
+where Zeb's lead makes and the 5-5 does not, and in 2 of 49 of the rest, exactly
+33/95 over the fiber; the book's query file reads the same mass on those worlds. Under the
+deployed plan (`k0,n512,F=margin_d250k`) Zeb leads the 5-5 itself; against the
+5-4 the reason is *an opponent holds the 6-5* (0.75 vs 0), price +0.18 against a
+bar of 0.08 — the double ahead of the off. On the face-off's book positions the
+split is diffuse: C3 deal 3194 (partner donates; the book's 6-4 against Zeb's 4-1)
+prices +0.40 against a bar of 0.03, but no single fact in the space separates more
+than 0.39, and C21 deal 3195 (+0.12, bar 0.012) tops out at 0.26 — a real price
+with no one-holding reason, which says the space, not the price, is what to grow
+next. Reports: `scratch/reason/`.
 
 ## Links
 
