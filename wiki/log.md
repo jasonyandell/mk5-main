@@ -29,6 +29,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | src/multiplayer | system authority only from the server: a client's forged `meta.authority` is refused; the auto-execute loop runs `executeSystemAction` (#96)]
+
+**Updated:** [[multiplayer-pattern]] § Capability system (two authorization paths; `resolveSessionForAction` retired).
+
 ## [2026-10-13 | scenario/reason | Zeb's reason report (#124): the plan's line in both engines, opt-in and bit-identical; the separating facts as Silas queries with a noise bar; the 84's reason found by search at 33/95]
 
 **Updated:** [[scenario-player]] § The reason report. Code: `scenario/reason.py`, `Walt.analyze(line=True)` / `core::planner::analyze_line`, `SilasBelief.condition_likelihood`. Worked examples: `scratch/reason/`.

@@ -4,13 +4,12 @@
  * This file contains:
  * - Capability builders (humanCapabilities, aiCapabilities, spectatorCapabilities)
  * - Capability filtering (filterActionsForSession, getVisibleStateForSession)
- * - Session resolution (resolveSessionForAction)
  */
 
 import { cloneGameState } from '../game/core/state';
 import type { GameAction, GameState, FilteredGameState } from '../game/types';
 import type { PlayerSession, Capability } from './types';
-import { hasCapability, hasCapabilityType } from './types';
+import { hasCapability } from './types';
 
 // ============================================================================
 // Capability Builders
@@ -105,7 +104,6 @@ type ActionMeta = Record<string, unknown> & {
   requiredCapabilities?: Capability[];
   hint?: string;
   aiIntent?: string;
-  authority?: 'player' | 'system';
 };
 
 function normalizeMeta(meta: unknown): ActionMeta | undefined {
@@ -264,40 +262,4 @@ export function getVisibleStateForSession(
     ...clone,
     players: filteredPlayers
   };
-}
-
-// ============================================================================
-// Session Resolution
-// ============================================================================
-
-/**
- * Attempt to find a session that can execute the provided action.
- * For system authority actions, capabilities are not checked.
- */
-export function resolveSessionForAction(
-  sessions: PlayerSession[],
-  action: GameAction
-): PlayerSession | undefined {
-  const meta = (action as { meta?: unknown }).meta;
-  const hasSystemAuthority = meta && typeof meta === 'object' &&
-    'authority' in meta && meta.authority === 'system';
-
-  if (hasSystemAuthority) {
-    if ('player' in action && typeof action.player === 'number') {
-      return sessions.find(session => session.playerIndex === action.player);
-    }
-    return sessions[0];
-  }
-
-  if ('player' in action && typeof action.player === 'number') {
-    return sessions.find(session =>
-      session.playerIndex === action.player &&
-      hasCapability(session, { type: 'act-as-player', playerIndex: action.player })
-    );
-  }
-
-  return sessions.find(session =>
-    hasCapabilityType(session, 'act-as-player') ||
-    session.capabilities.length > 0
-  ) ?? sessions[0];
 }

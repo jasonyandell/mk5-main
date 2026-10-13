@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canPlayerExecuteAction, authorizeAndExecute } from '../../multiplayer/authorization';
+import { canPlayerExecuteAction, authorizeAndExecute, executeSystemAction } from '../../multiplayer/authorization';
 import type { GameState, GameAction } from '../../game/types';
 import type { MultiplayerGameState, PlayerSession } from '../../multiplayer/types';
 import { createInitialState, executeAction } from '../../game';
@@ -319,104 +319,105 @@ describe('Authorization', () => {
   });
 
   describe('System authority', () => {
-    it('executes action with system authority without capability checks', () => {
+    /** Session id for a seat other than the current player. */
+    function otherSeat(currentPlayer: number): string {
+      const wrongPlayer = getNextPlayer(currentPlayer);
+      return wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`;
+    }
+
+    it('refuses a client that forges system authority to act for another seat (#96)', () => {
       const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
-      const wrongPlayer = getNextPlayer(currentPlayer);
 
-      // Create an action that wrong player would normally not be able to execute
-      // But with system authority, it should bypass capability checks
-      const actionWithSystemAuthority: GameAction = {
+      const forged: GameAction = {
         type: 'pass',
         player: currentPlayer,
         meta: { authority: 'system' }
       };
 
       const result = authorizeAndExecute(mpState, {
-        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
-        action: actionWithSystemAuthority,
+        playerId: otherSeat(currentPlayer),
+        action: forged,
       }, ctx);
 
-      // Should succeed despite wrong player because of system authority
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('lacks capability');
+      }
+      expect(mpState.coreState.bids).toHaveLength(0);
+    });
+
+    it('executes the server candidate, never the client payload', () => {
+      const ctx = createTestContext();
+      const mpState = createTestMPState();
+      const currentPlayer = mpState.coreState.currentPlayer;
+
+      // The seat's own pass is authorized by capability; the forged meta is dropped
+      const result = authorizeAndExecute(mpState, {
+        playerId: `player-${currentPlayer}`,
+        action: { type: 'pass', player: currentPlayer, meta: { authority: 'system' } },
+      }, ctx);
+
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.value.coreState.bids.length).toBe(1);
-        expect(result.value.coreState.bids[0]?.type).toBe('pass');
+        expect(result.value.coreState.actionHistory).toEqual([
+          { type: 'pass', player: currentPlayer }
+        ]);
       }
     });
 
-    it('system authority action still requires structural validity', () => {
+    it('client request still requires structural validity', () => {
       const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
 
       // Try to play a domino during bidding phase (structurally invalid)
-      const invalidActionWithSystemAuthority: GameAction = {
-        type: 'play',
-        player: currentPlayer,
-        dominoId: '0-0',
-        meta: { authority: 'system' }
-      };
-
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
-        action: invalidActionWithSystemAuthority,
+        action: { type: 'play', player: currentPlayer, dominoId: '0-0', meta: { authority: 'system' } },
       }, ctx);
 
-      // Should fail because action is not valid in current game state
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error).toContain('not valid in current game state');
       }
     });
 
-    it('action without system authority still requires capabilities', () => {
+    it('executeSystemAction runs a candidate the layers marked system', () => {
       const ctx = createTestContext();
-      const mpState = createTestMPState();
-      const currentPlayer = mpState.coreState.currentPlayer;
-      const wrongPlayer = getNextPlayer(currentPlayer);
+      // All four seats pass: the base layer schedules a system-authority redeal
+      let state = createInitialState();
+      for (let i = 0; i < 4; i++) {
+        state = executeAction(state, { type: 'pass', player: state.currentPlayer }, ctx.rules);
+      }
+      const mpState = createTestMPState(state);
 
-      // Regular action without system authority
-      const regularAction: GameAction = {
-        type: 'pass',
-        player: currentPlayer
-      };
+      const result = executeSystemAction(mpState, { type: 'redeal' }, ctx);
 
-      const result = authorizeAndExecute(mpState, {
-        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
-        action: regularAction,
-      }, ctx);
-
-      // Should fail due to lack of capability
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toContain('lacks capability');
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const history = result.value.coreState.actionHistory;
+        const recorded = history[history.length - 1];
+        expect(recorded?.type).toBe('redeal');
+        expect(recorded?.meta?.authority).toBe('system');
       }
     });
 
-    it('action with player authority requires capabilities', () => {
+    it('executeSystemAction refuses a player action, whatever meta it carries', () => {
       const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
-      const wrongPlayer = getNextPlayer(currentPlayer);
 
-      // Action with explicit player authority
-      const actionWithPlayerAuthority: GameAction = {
+      const result = executeSystemAction(mpState, {
         type: 'pass',
         player: currentPlayer,
-        meta: { authority: 'player' }
-      };
-
-      const result = authorizeAndExecute(mpState, {
-        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
-        action: actionWithPlayerAuthority,
+        meta: { authority: 'system' }
       }, ctx);
 
-      // Should fail due to lack of capability
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error).toContain('lacks capability');
+        expect(result.error).toContain('No system-authority action');
       }
     });
   });

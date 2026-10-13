@@ -2,7 +2,7 @@
 title: Multiplayer Pattern — Socket / GameClient / Room
 kind: topic
 first_seen: 2025-11-25
-last_updated: 2026-07-11
+last_updated: 2026-10-13
 status: active
 ---
 
@@ -80,12 +80,16 @@ Builders in `src/multiplayer/capabilities.ts`: `humanCapabilities(i)` and
 
 Capabilities drive two mechanisms:
 
-- **Authorization** (`src/multiplayer/authorization.ts`,
-  `authorizeAndExecute`): find session, generate valid actions via the
-  composed context, filter by `act-as-player`, execute only if the requested
-  action is in the filtered set. Actions carrying
-  `meta.authority: 'system'` (scripted/auto-executed moves, e.g. from the
-  speed layer) bypass capability checks but are still structurally validated.
+- **Authorization** (`src/multiplayer/authorization.ts`). Two paths, and
+  authority never comes from a request payload. `authorizeAndExecute` is the
+  wire path (player authority): find session, generate valid actions via the
+  composed context, filter by `act-as-player`, and execute the server's
+  matched candidate — never the client's copy, so client-supplied `meta`
+  (a forged `authority: 'system'` included) is ignored (#96).
+  `executeSystemAction` is the server path: the kernel's auto-execute loop
+  runs a candidate the layers themselves marked `meta.authority: 'system'`
+  (one-hand script, redeal, speed-layer forced moves) with no session and no
+  capability check.
 - **Visibility** (`getVisibleStateForSession` in `capabilities.ts`): hands
   not covered by an `observe-hands` token are emptied (`hand: []`); a
   `handCount` field remains visible. Action metadata (hints) is likewise

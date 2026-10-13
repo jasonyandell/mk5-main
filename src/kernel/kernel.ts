@@ -19,8 +19,8 @@ import type {
   HandDominoMeta
 } from '../multiplayer/types';
 import { ok, err } from '../multiplayer/types';
-import { authorizeAndExecute } from '../multiplayer/authorization';
-import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../multiplayer/capabilities';
+import { authorizeAndExecute, executeSystemAction } from '../multiplayer/authorization';
+import { filterActionsForSession, getVisibleStateForSession } from '../multiplayer/capabilities';
 import { updatePlayerSession } from '../multiplayer/stateLifecycle';
 import { cloneGameState, getNextStates } from '../game/core/state';
 import type { ExecutionContext } from '../game/types/execution';
@@ -50,6 +50,7 @@ export function executeKernelAction(
 
 /**
  * Process scripted auto-execute actions until exhausted (pure).
+ * This is the server context: the engine runs its own system-authority actions.
  */
 export function processAutoExecuteActions(
   initialState: MultiplayerGameState,
@@ -67,17 +68,7 @@ export function processAutoExecuteActions(
       break;
     }
 
-    const session = resolveSessionForAction(Array.from(state.players), autoAction);
-
-    if (!session) {
-      break;
-    }
-
-    const result = authorizeAndExecute(
-      state,
-      { playerId: session.playerId, action: autoAction },
-      ctx
-    );
+    const result = executeSystemAction(state, autoAction, ctx);
 
     if (!result.success) {
       break;

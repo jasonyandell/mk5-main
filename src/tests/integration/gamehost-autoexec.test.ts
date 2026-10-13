@@ -72,6 +72,27 @@ describe('Room auto-execute', () => {
     expect(view.state.bids.length).toBeGreaterThanOrEqual(4);
   });
 
+  it('refuses a client that forges system authority over the wire (#96)', () => {
+    const room = createRoom({
+      playerTypes: ['human', 'human', 'human', 'human'],
+      shuffleSeed: 888888
+    });
+    const current = room.getView('player-0').state.currentPlayer;
+    const intruder = (current + 1) % 4;
+
+    const result = room.executeAction(`player-${intruder}`, {
+      type: 'pass',
+      player: current,
+      meta: { authority: 'system' }
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('lacks capability');
+    }
+    expect(room.getView('player-0').state.bids).toHaveLength(0);
+  });
+
   it('redeal action auto-executes after all players pass', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'human', 'human', 'human'],
