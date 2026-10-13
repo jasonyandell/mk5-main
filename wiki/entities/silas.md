@@ -79,7 +79,7 @@ and the published re-price reads them. On the book's own positions at least 10 o
 gates part from the book (#123); a formal reading of the whole book (a private catalog of
 every rule and worked play, by id) lists every such mis-encoding.
 
-The rules **as the book means them** are fourteen policies in `silas/examples/book/`,
+The rules **as the book means them** are eighteen policies in `silas/examples/book/`,
 named by what they say, each header giving its catalog ids, hands and pages, the rule in
 our words, how it differs from the gate it replaces, its gaps, and where the book
 contradicts itself. `silas/tests/book_rules.rs` asks each at the book's own positions
@@ -95,23 +95,57 @@ its id, that the gate fails and the rule passes.
 | `donate-when-safe` | C1b, C3 | count, biggest first, on a trick provably the side's; the last seat's donation; none on a trick that can be lost | — |
 | `partner-leads` | C9, C23 | a double or a walker; then no count, a five, a six; never trump | likelihood |
 | `partner-plays-the-top-trump` | C2 | the worked hand's play (the book's p. 25 reading disagrees) | — |
-| `pounce` | C7 | count only on a trick the setters may take, while able to follow; the double first; no count on a lost trick | — |
+| `pounce` | C7 | count only on a trick the setters may take (a tile that follows can beat it; a ruff does not count), while able to follow; the double first; no count on a lost trick | — |
 | `protect-the-count` | C8, C13b | no count on the bidder's master lead, the top trump too; not in a trump set | — |
-| `shed-for-a-void` | C13a | a lone tile, never a double, a winner or a count tile's last guard; points bids only | — |
+| `shed-for-a-void` | C13a | a lone tile, never a double, a winner or a count tile's last guard; on any throw with no count to give, a tile he need not keep, then the guard; points bids only | — |
 | `low-from-a-pair` | C13c | as the gate, and the 84 form with count | — |
 | `setter-leads` | C15, C13d | a double when one point sets; the count that sets; count calling for more; think twice at 35 | — |
 | `trump-set` | C22 | the bidder's partner void too; the big doubles; feed a holder who may yet trump; lead high | a belief (closest fact) |
 | `dead-double` | new | throw a double no live tile can lead to, on a trick you cannot take, never the 5-5; the bidder cashes one while a setter holds trump | likelihood (a decoy) |
 | `helper-stretch` | new | win low with the second tile and keep the double | — |
+| `follow-low` | new | following trump with no way to take it and no count among the trumps, the lowest; the partner likewise in any suit | — |
+| `take-the-trick` | new | take the other side's trick with the lowest tile that does: last, following or trumping; void, the lowest trump that beats it; the trump-set holder last trumps only count | — |
+| `follow-with-the-off` | new | the bidder following a suit he cannot win plays the off his double does not protect | — |
+| `defend-the-84` | new | against an 84 (or no trump, keeping count): keep doubles with tiles out and pairs with targets; throw what wins nothing, then a pair's guard, then a pair tile, a double last | likelihood, aggregate |
 
 The prelude (`silas/lib/book.silas`) grew the concepts these rules share: the safe trick,
 the trick the partner may still take, no setter can hold a trump, the dead double, a count
 tile's last guard, the off a double protects and the bare off, a bid of marks, the lead
 whose count sets (six literal sums against `to-set`, which closes the aggregate gap for one
-called tile), and the bidder's crisis. Three passages contradict a worked hand (keeping the
-last trump, the 6-5 off first, the partner's top trump); each rule encodes the worked hand
-and records both. The gaps left, per rule, are in `silas/GAPS.md`: another seat's knowledge
-now blocks only the donation lead, since the partner's own knowledge is the viewer's.
+called tile), the bidder's crisis, and the 84 defender's watch list, pair targets and the
+tiles that guard a pair. Three passages contradict a worked hand (keeping the last trump,
+the 6-5 off first, the partner's top trump); each rule encodes the worked hand and records
+both. The gaps left, per rule, are in `silas/GAPS.md`: another seat's knowledge now blocks
+only the donation lead, since the partner's own knowledge is the viewer's. Beside the
+policies, queries state the frame facts the book narrates, checked on its hands
+(`silas/tests/book_queries.rs`): what an off can lose and which side its double protects,
+what an 84's defender watches for, when a hand is settled. The four rules added in the
+second batch (below) are not yet priced.
+
+## The book, second batch (2026-10-13)
+
+Of the 86 rows of the private catalog that Silas could already say and no file had written
+down, the batch encoded 71: what an off risks and which side its double protects (7), the
+odds and narrated certainties (11), the bidder's plan and claims (8), follow low (8), take
+the trick (4), follow with the off (2), the setter's throwaways (11), the defence of the 84
+(11), plays the earlier rules already read (5), and the laws of play (4). Three more are
+recorded where the book breaks its own stated rule, and twelve were left, each with the
+reason (a policy likelihood for a reading, a play-out for a set rate, a frequency over a
+fresh deal, or a narrated play the book gives no condition for). Each was read in the
+reviewed transcription, written with its anchor and the book's condition in our words, and
+asked at the book's own positions: every new rule fires on the book's hands and allows the
+book's tile there, at all four seatings, except where the book breaks its own stated rule,
+which each header records.
+
+Two earlier rules were read again against the book's hands and repaired: the pounce
+counted the partner's possible ruff (Hands 30 and 31 throw a plain tile on the bidder's
+partner's double; S-0079-b), and the bidder's plan dumped an off without counting the off's
+own count (Hand 24 leads the 5-1, not the 6-4). New odds: three trumps out all in one hand
+3/38, an opponent 1/19; Hand 33's "you know" is 17/22; Hand 34's second way to set the 84
+is a holding in 563/855 of the bidder's worlds (either way 92101/116280, the defender still
+to guess right); the "only way" claims of Hands 16 and 34 are exact (1/15 and 2/15), the
+set falling in exactly those deals under double-dummy play. Every new file was checked for
+copied prose (7-word runs against the transcription) before commit.
 
 ## The engineering pass (2026-10-13)
 

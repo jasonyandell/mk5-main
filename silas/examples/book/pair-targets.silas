@@ -1,0 +1,20 @@
+; Pair targets. Winning 42 pp. 70-72 (S-0097-c, S-0098-a, S-0098-b,
+; S-0098-c); counted in Hands 34 and 35 (S-0147-b, S-0147-c, S-0148-a,
+; S-0151-d).
+; Claim, in our words: against the bidder's double ahead of his off, a setter
+; with two tiles of the off's suit can still take it: he follows the double
+; with the lower and the off with the higher. So he watches, for each suit he
+; holds two of, the tiles that lead it below his higher one, while that
+; suit's double is out. Holding the 6-1 and the 6-5 against treys, the 6-4,
+; the 6-2 and the 6-0 (the archive's adjudication: the printed list omits the
+; 6-2). With no doubles in Hand 34 the right setter watches four small tiles,
+; the 1-0, the 2-0, the 3-0 and the 6-2, and drops each suit as its target
+; falls.
+; Reading: (pair-target x q), the prelude's. A pair tile also follows its
+; other suit, and that suit's double can force it out early unless he holds
+; another tile of that suit (S-0098-c): protects-a-pair, in defend-the-84.
+
+(include book)
+
+(query (out x q)
+  (pair-target x q))

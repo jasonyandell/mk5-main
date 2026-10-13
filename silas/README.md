@@ -341,8 +341,11 @@ Leads: `(loses-in d q)`, `(can-lose d)`, `(off d)`, `(walker d)`,
 `(low-four-five-or-six d)`. The trick: `(last-to-play)`,
 `(partner-winning)`, `(can-take-it)`, `(no-setter-trump)`, `(winner-cannot-be-beaten)`,
 `(safe-trick)` (what the partner gives count to), `(partner-may-take-it)`
-(what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`,
-`(more-out t s)` (suit `t` has more tiles out than `s`, an aggregate). The
+(what a pounce needs: a tile that follows can still beat the trick's). Holdings:
+`(dead-double d)`, `(guards-count g)`, `(more-out t s)` (suit `t` has more tiles out than
+`s`, an aggregate). Defending the last trick, an 84 or no
+trump: `(watched-by dd x)`, `(pair-target x q)`, `(keeps-a-pair t)`,
+`(protects-a-pair t)`, `(wins-nothing t)`. The
 bidder's offs: `(draws-the-count-for dd o)`, `(strips-the-suit-of dd o)`,
 `(protects dd o)`, `(bare-off o)`; his trouble: `(crisis)`. The bid:
 `(every-trick)` (a bid of marks), `(bid-35-or-more)`, and `(lead-sets d)`,
@@ -1147,12 +1150,17 @@ against 146 and 250 (optimists).
 `examples/` holds the queries the tests run: `partner-count.silas`,
 `partner-has-count.silas`, `partner-master.silas`, `current-forced-play.silas`
 and `six-five-guarded.silas`. `examples/book/` holds the book's rules as the
-book means them, fourteen policies written with the prelude and named by what
+book means them, eighteen policies written with the prelude and named by what
 they say (`first-lead`, `bidders-plan`, `crisis`, `donate-when-safe`,
-`partner-leads`, `pounce`, `setter-leads`, ...), each header giving its
-catalog ids, hands and pages and how it differs from the gate it replaces;
-`tests/book_rules.rs` checks each on the book's own positions. Each names the
-bidder through `declarer` and is tested at all four seatings.
+`partner-leads`, `pounce`, `setter-leads`, `follow-low`, `take-the-trick`,
+`defend-the-84`, ...), each header giving its catalog ids, hands and pages and
+how it differs from the gate it replaces; `tests/book_rules.rs` checks each on
+the book's own positions. Each names the bidder through `declarer` and is
+tested at all four seatings. The facts of a frame the book narrates are
+queries beside them, checked in `tests/book_queries.rs`: what an off can lose
+(`off-risk`) and which side its double protects (`off-exposed`), what an 84's
+defender watches for with a double (`watch-list`) or a pair (`pair-targets`),
+and when a hand is over (`settled`).
 `examples/book/gates/` holds the 2026-10-12 study's 21 rule gates, the record
 of what that study priced (`tests/book.rs`); `tests/book_snapshot.rs` pins
 what each gate allows on the book's deals and on 1,600 random ones. The

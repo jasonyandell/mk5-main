@@ -106,6 +106,7 @@
           (some (roles (domino kept)) (mine kept) (trump-tile kept))
           (own-legal lead)
           (bare-off lead)
+          (count lead 0)
           (not (calls-for-count lead))))))
   (rule dump-a-bare-off-calling-a-five
     (select answer)
@@ -121,7 +122,9 @@
           (some (roles (domino kept)) (mine kept) (trump-tile kept))
           (own-legal lead)
           (bare-off lead)
-          (not (calls-for lead 10)))
+          (none (roles)
+            (none (roles) (count lead 0) (not (calls-for lead 10)))
+            (none (roles) (count lead 5) (not (calls-for-count lead)))))
         (pattern
           (viewer b)
           (bidder b)

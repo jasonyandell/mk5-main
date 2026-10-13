@@ -1,0 +1,16 @@
+; c03-hand12-last-trump. Anchor: shot-0043 (Ch. 3, Hand 12 after trick 1;
+;   S-0043-b).
+; Printed: certain: the partner or the left setter holds it.
+; Claim: one trump is out, and the right setter, who threw the 1-0 on the
+;   bidder's 6-6, cannot hold it.
+; State: Hand 12, sixes trump, bid 36; the bidder (4-4 1-1 6-5 0-2 6-3 6-4)
+;   led the 6-6 and saw the 6-1, the 6-0 and the 1-0. The 6-2 is out; the
+;   right setter has shown void in sixes.
+; Exact: 1, by the shown void (the left setter 1/2, the partner 1/2). Book
+;   model: 1.
+(include book)
+
+(query
+  (or (left-setter x) (bidders-partner x))
+  (in t q*)
+  (holds x t))

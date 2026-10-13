@@ -287,6 +287,8 @@ fn the_contract_carries_kind_stake_and_declaration() {
     assert_eq!(both(&frame, &format!("(to-set {})", 1u32.saturating_sub(theirs))), (true, false));
 }
 
+/// Winning 42 p. 53 (S-0076-b): a player who fails to follow has none of the
+/// unplayed tiles of that suit.
 #[test]
 fn shown_voids_are_the_kernels_and_imply_the_world_void() {
     for decl in ["P6", "P0", "DT", "NT"] {

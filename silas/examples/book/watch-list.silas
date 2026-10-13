@@ -1,0 +1,24 @@
+; The watch list. Winning 42 pp. 65-66 (S-0090-b, S-0091-a, S-0091-b) and
+; pp. 69-70 (S-0096-c).
+; Claim, in our words: against a bid of every trick, a double can take only
+; the bidder's off led last in its suit, so its holder watches only the tiles
+; outside his hand that lead that suit: the double's lower tiles, less the one
+; that is trump. The double of pip p watches its p lower tiles, one fewer
+; when a lower pip is trump, and one fewer for each of them he holds. At
+; most, then, the 6-6 five (one six is always trump), the 5-5 five, the 4-4
+; four, and so down to the 1-1 one and the 0-0 none; under blanks the 1-1
+; watches nothing. With the 2-2, the 4-4 and the 4-1 against treys he
+; watches four: the 2-1, the 2-0, the 4-2 and the 4-0.
+; Reading: (watched-by dd x), the prelude's: x is live, outside the viewer's
+; hand, and leads the suit dd leads. tests/book_queries.rs holds the table
+; for every double under every trump suit; a trump double watches nothing,
+; and at no trump each double watches all its lower tiles.
+; The book's seven tiles to watch once the 6-1 and the 6-5 join that hand
+; (S-0098-b) are, by the archive's adjudication, the four the doubles watch
+; and three sixes (pair-targets.silas); the printed list of sixes omits the
+; 6-2.
+
+(include book)
+
+(query (out dd x)
+  (watched-by dd x))

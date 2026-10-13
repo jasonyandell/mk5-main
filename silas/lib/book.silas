@@ -308,9 +308,12 @@
     (beats d win q)))
 
 ; The viewer's partner is still to play to the open trick and may hold a tile
-; that takes it: a live tile outside the viewer's hand beats the winning tile,
-; following the suit led or trumping it, in a suit the partner has not shown
-; void in. What a setter's pounce needs.
+; that takes it: a live tile outside the viewer's hand follows the suit led and
+; beats the winning tile, and the partner has not shown void in that suit. What
+; a setter's pounce needs: a lead that can lose its suit. A ruff is not counted:
+; a double or the top tile of its suit, "as good as a double", is no trick to
+; pounce on (S-0079-b), and in Hands 30 and 31 the setter throws on the
+; partner's double though his own partner might trump it (S-0135-f, S-0139-d).
 (define partner-may-take-it (roles)
   (some (roles me pard w win q x)
     (viewer me)
@@ -321,8 +324,9 @@
     (led-context q)
     (live x)
     (not (mine x))
+    (in x q)
     (beats x win q)
-    (some (roles r) (in x r) (or (context r q) (trump r)) (not (shown-void pard r)))))
+    (not (shown-void pard q))))
 
 ; d is the viewer's double, not trump, and no live tile outside his hand leads
 ; its suit: it can win only a trick it leads itself. Only a tile whose higher
@@ -489,3 +493,83 @@
 ; The bidder's crisis: a setter holds trump he cannot draw.
 (define crisis (roles)
   (or (trump-he-cannot-draw) (trumps-he-cannot-draw)))
+
+; -- Defending the last trick: an 84, or no trump (Ch. 8; p. 82). The bidder
+; saves his one off for the last trick and leads it, so a tile can be that off
+; only if it leads its suit: its higher end, unless it is trump.
+
+; x is on the watch list of the viewer's double dd: a live tile outside his
+; hand that leads dd's suit, so dd would take it on the last trick. A double
+; with an empty list is dead (dead-double).
+(define watched-by (roles (domino dd) (domino x))
+  (mine dd)
+  (double dd)
+  (not (trump-tile dd))
+  (live x)
+  (not (mine x))
+  (some (roles q) (leads-context dd q) (leads-context x q)))
+
+; x is a target of the viewer's pair in suit q: x leads q and could be the
+; bidder's off, the double of q not being the viewer's; he holds two tiles
+; following q, one of which beats x. If the bidder leads the double first, he
+; plays the lower on it and takes the off with the higher.
+(define pair-target (roles (domino x) (context q))
+  (live x)
+  (not (mine x))
+  (not (double x))
+  (leads-context x q)
+  (not (trump q))
+  (none (roles dd) (double dd) (leads-context dd q) (mine dd))
+  (some (roles high low)
+    (mine high)
+    (mine low)
+    (in high q)
+    (in low q)
+    (not (trump-tile high))
+    (not (trump-tile low))
+    (beats high x q)))
+
+; Without t the viewer's pair in one of t's suits no longer takes one of its
+; targets: t is one of the two tiles that pair needs.
+(define keeps-a-pair (roles (domino t))
+  (some (roles x q)
+    (pair-target x q)
+    (in t q)
+    (none (roles high low)
+      (mine high)
+      (mine low)
+      (not (tile high t))
+      (not (tile low t))
+      (in high q)
+      (in low q)
+      (not (trump-tile high))
+      (not (trump-tile low))
+      (beats high x q))))
+
+; t guards a tile p that the viewer's pair needs against the double of p's
+; other suit: that double is live outside his hand, and t is his only other
+; tile of that suit, so a lead of the double would force p but for t.
+(define protects-a-pair (roles (domino t))
+  (some (roles p r dd)
+    (mine p)
+    (not (tile p t))
+    (not (double p))
+    (keeps-a-pair p)
+    (in p r)
+    (not (trump r))
+    (none (roles x q) (pair-target x q) (in p q) (context r q))
+    (in t r)
+    (double dd)
+    (in dd r)
+    (live dd)
+    (not (mine dd))
+    (none (roles o) (mine o) (in o r) (not (tile o p)) (not (tile o t)))))
+
+; t can win nothing on the last trick: not trump, not a double with a live
+; watch list, and no pair needs it; at no trump not count either, which the
+; setters still need there (p. 82).
+(define wins-nothing (roles (domino t))
+  (not (trump-tile t))
+  (or (every-trick) (count t 0))
+  (none (roles x) (watched-by t x))
+  (not (keeps-a-pair t)))

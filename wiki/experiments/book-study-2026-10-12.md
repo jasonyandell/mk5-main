@@ -614,6 +614,12 @@ candidates, not reasons. On the face-off's C3, C7, C10, C12B and C21 positions t
 report finds a reason for 32 of 44 prices; C12B's recurring one, the guard of the missing
 trump, is a condition the book's rule omits.
 
+**Since the re-price (2026-10-13).** The 14 rules priced above are as they stood that
+day. Two have since been repaired against the book's own hands, the pounce (a partner's
+ruff no longer counts as a trick the setters may take) and the bidder's plan (an off's own
+count counts toward what it risks), and four were added unpriced: follow low, take the
+trick, follow with the off, and the defence of the 84 ([[silas]] § The book, second batch).
+
 ## The repaired book (2026-10-13, #121)
 
 A repaired rule is the book's rule, the condition the reason report omits from it

@@ -1,5 +1,5 @@
 ; Low from a pair. Winning 42 p. 49 (S-0071-c); the 84 form p. 70
-; (S-0097-c); played in Hand 35 (S-0151-e).
+; (S-0097-c); played in Hand 35 (S-0151-e, S-0151-h).
 ; Rule, in our words: a setter following a suit, whoever led it, in which he
 ; holds exactly two tiles, neither of them count, plays the lower and keeps the
 ; higher. Against a bid of marks, where count no longer matters and every
@@ -10,6 +10,10 @@
 ; the gate's (the book's leader is anyone, as the gate already reads it). The
 ; 84 form is new: the gate needs a pair without count, so it is silent where
 ; the book plays low from a pair that holds a count tile.
+; The book against its rule: in Hand 29 trick 3 (S-0133-j) the right setter
+; holds the 6-1 and the 3-1 on his partner's 1-0; the book says either will
+; do and plays the higher, the 6-1, as he has another six. The rule allows
+; only the 3-1 there.
 
 (include book)
 
