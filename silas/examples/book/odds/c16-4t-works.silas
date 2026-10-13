@@ -1,0 +1,19 @@
+; c16-4t-works. Anchor: shot-0232 (Ch. 16, four trumps).
+; Printed: 0.63.
+; Claim: in the same shape, leading the double first and budgeting no trump
+;   loss succeeds whenever no opponent guards the highest missing trump.
+; State: as c16-4t-guarded-second.
+; Exact: 62/95. Book model: 17/27.
+(query
+  (roles (chair v))
+  (out)
+  (pattern
+    (viewer v)
+    (none (roles (chair x) (domino t) (domino o))
+      (opponent v x)
+      (in t q*)
+      (in o q*)
+      (none (roles (domino u) (chair y))
+        (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+      (holds x t)
+      (holds x o))))

@@ -1,0 +1,21 @@
+; c07-straight-off-double. Anchors: shot-0089 (Ch. 7) and shot-0101 (Ch. 8).
+; Printed: 2/3 (two to one).
+; Claim: bidding 84 with an off whose double he lacks, the bidder finds that
+;   double with an opponent.
+; State: the bidder holds trumps, doubles and one off (a non-double outside
+;   trump), not its double; nothing played; the 21 others dealt uniformly,
+;   seven to each other seat.
+; Exact: 2/3. Book model: 2/3.
+(query
+  (roles (chair v) (chair x) (domino off) (context q) (domino d))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (not (double off))
+    (not (in off q*))
+    (leads-context off q)
+    (holds v off)
+    (double d)
+    (in d q)
+    (holds x d)))

@@ -1,0 +1,15 @@
+; c02-partner-double-five. Anchors: shot-0026 (Ch. 2, Hand 3) and
+;   shot-0047 (Ch. 3, Hand 14, the same seven tiles).
+; Printed: 1/3 (shot-0026: one in three; shot-0047: two to one against).
+; Claim: the partner holds the double-five, the one tile that wins the
+;   bidder's five-deuce off.
+; State: Hand 3, fours trump (5-2 4-1 6-6 6-4 4-2 4-3 4-4), nothing played;
+;   the 21 others dealt uniformly, seven to each other seat.
+; Exact: 1/3. Book model: 1/3.
+(query
+  (roles (chair v) (chair p))
+  (out)
+  (pattern
+    (viewer v)
+    (partner v p)
+    (holds p 5-5)))

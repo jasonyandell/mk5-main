@@ -1,0 +1,13 @@
+; c02-opponent-double-five. Anchor: shot-0027 (Ch. 2, Hand 3).
+; Printed: 2/3 (two to one).
+; Claim: an opponent holds the double-five.
+; State: Hand 3, fours trump (5-2 4-1 6-6 6-4 4-2 4-3 4-4), nothing played;
+;   the 21 others dealt uniformly, seven to each other seat.
+; Exact: 2/3. Book model: 2/3.
+(query
+  (roles (chair v) (chair x))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (holds x 5-5)))

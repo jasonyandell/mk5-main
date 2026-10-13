@@ -1,0 +1,24 @@
+; c16-two-to-four-doubles. Anchor: shot-0234 (Ch. 16, other statistics).
+; Printed: at least 0.36.
+; Claim: a random seven-tile hand holds two, three or four doubles.
+; State: none; a uniformly random hand of seven from the 28.
+; Exact: 683354/1184040 = 341677/592020 = 0.5771. The printed bound holds
+;   but is the two-double bucket alone, not the sum.
+;
+; GAP deal-view (see c16-four-of-a-suit). The query is the event for one
+;   known hand: two doubles held, and no five.
+(query
+  (roles (chair v) (domino a) (domino b))
+  (out)
+  (pattern
+    (viewer v)
+    (double a)
+    (double b)
+    (holds v a)
+    (holds v b)
+    (none (roles (domino c) (domino d) (domino e))
+      (double c) (double d) (double e)
+      (not (tile c a)) (not (tile c b))
+      (not (tile d a)) (not (tile d b))
+      (not (tile e a)) (not (tile e b))
+      (holds v c) (holds v d) (holds v e))))

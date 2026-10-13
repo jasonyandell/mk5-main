@@ -1,0 +1,27 @@
+; c16-modal-hand. Anchor: shot-0234 (Ch. 16, other statistics).
+; Printed: no number; the claim is that one shape is the most frequent.
+; Claim: the commonest hand, by count of doubles and of void pip suits, has
+;   two doubles and one void suit.
+; State: none; a uniformly random hand of seven from the 28.
+; Exact: 213255/1184040 = 0.1801, the largest cell; the next is one double
+;   and no void, 191548/1184040.
+;
+; GAP deal-view (see c16-four-of-a-suit). The query is the modal cell for
+;   one known hand under no trump.
+(query
+  (roles (chair v) (domino a) (domino b) (context q))
+  (out)
+  (pattern
+    (viewer v)
+    (double a)
+    (double b)
+    (holds v a)
+    (holds v b)
+    (none (roles (domino c))
+      (double c) (not (tile c a)) (not (tile c b)) (holds v c))
+    (not (context q q*))
+    (none (roles (domino d)) (in d q) (holds v d))
+    (none (roles (context r))
+      (not (context r q*))
+      (not (context r q))
+      (none (roles (domino e)) (in e r) (holds v e)))))

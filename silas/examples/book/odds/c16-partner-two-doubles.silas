@@ -1,0 +1,19 @@
+; c16-partner-two-doubles. Anchor: shot-0234 (Ch. 16, other statistics).
+; Printed: no number ("a decent chance"); the study's unconditional 0.58 and
+;   conditional 0.557 and 0.407 are checked here.
+; Claim: the bidder, with more than one off, can lean on his partner holding
+;   at least two doubles.
+; State: the bidder's seven tiles, holding k doubles himself; the 21 others
+;   dealt uniformly, seven to each other seat.
+; Exact: 180/323 = 0.5573 given two of his own, 116/285 = 0.4070 given
+;   three; unconditionally 0.5810. Book model: 131/243 and 11/27.
+(query
+  (roles (chair v) (chair p) (domino a) (domino b))
+  (out)
+  (pattern
+    (viewer v)
+    (partner v p)
+    (double a)
+    (double b)
+    (holds p a)
+    (holds p b)))

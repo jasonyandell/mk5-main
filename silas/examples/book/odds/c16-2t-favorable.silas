@@ -1,0 +1,19 @@
+; c16-2t-favorable. Anchors: shot-0233 (Ch. 16, two high trumps) and
+;   shot-0121 (Ch. 12, Hand 26, fours trump).
+; Printed: 0.60 at both anchors (Ch. 16 as 0.40 + 0.20; Ch. 12 as "neither
+;   opponent holds more than two", out of 225 ways).
+; Claim: holding only the two top trumps, neither opponent holds three or
+;   more of the five missing trumps. This is c16-2t-spread or
+;   c16-2t-partner-three, which cannot both hold.
+; State: the bidder's seven tiles, nothing played; the 21 others dealt
+;   uniformly, seven to each other seat.
+; Exact: 617/969. Book model: 141/243 = 47/81.
+(query
+  (roles (chair v))
+  (out)
+  (pattern
+    (viewer v)
+    (none (roles (domino a) (domino b) (domino c) (chair x))
+      (in a q*) (in b q*) (in c q*)
+      (opponent v x)
+      (holds x a) (holds x b) (holds x c))))

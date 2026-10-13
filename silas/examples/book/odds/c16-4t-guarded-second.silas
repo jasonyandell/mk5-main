@@ -1,0 +1,23 @@
+; c16-4t-guarded-second. Anchor: shot-0232 (Ch. 16, four trumps).
+; Printed: 0.37 (10 of 27 placements).
+; Claim: with four trumps, the double among them but not the second-highest,
+;   an opponent holds that trump with another trump beside it, so it survives
+;   the double.
+; State: the bidder's seven tiles, nothing played; the 21 others dealt
+;   uniformly, seven to each other seat.
+; Exact: 33/95. Book model (each missing trump in any of three hands): 10/27.
+;
+; t is the highest trump in a hidden hand; x is an opponent holding it and
+; another trump.
+(query
+  (roles (chair v) (chair x) (domino t) (domino o))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (in t q*)
+    (in o q*)
+    (none (roles (domino u) (chair y))
+      (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+    (holds x t)
+    (holds x o)))

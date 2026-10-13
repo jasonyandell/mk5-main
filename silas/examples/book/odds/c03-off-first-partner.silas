@@ -1,0 +1,17 @@
+; c03-off-first-partner. Anchor: shot-0042 (Ch. 3).
+; Printed: 0.33.
+; Claim: leading the deuce-blank off before the double-deuce, the partner
+;   takes the trick. Our reading: he holds the highest deuce outside the
+;   bidder's hand.
+; State: as c03-double-ahead-forces-count.
+; Exact: 1/3. Book model: 1/3.
+(query
+  (roles (chair v) (chair p) (domino d))
+  (out)
+  (pattern
+    (viewer v)
+    (partner v p)
+    (in d q2)
+    (none (roles (domino u) (chair y))
+      (in u q2) (beats u d q2) (not (viewer y)) (holds y u))
+    (holds p d)))

@@ -1,0 +1,16 @@
+; c16-2t-spread. Anchor: shot-0233 (Ch. 16, two high trumps).
+; Printed: 0.40 (90 of 225 placements).
+; Claim: holding only the two top trumps, no other hand holds more than two
+;   of the five missing trumps.
+; State: the bidder's seven tiles, nothing played; the 21 others dealt
+;   uniformly, seven to each other seat.
+; Exact: 147/323. Book model: 90/243 = 10/27 (there are 243 placements, not
+;   225; 90/225 is the printed 0.40).
+(query
+  (roles)
+  (out)
+  (pattern
+    (none (roles (domino a) (domino b) (domino c) (chair x))
+      (in a q*) (in b q*) (in c q*)
+      (not (viewer x))
+      (holds x a) (holds x b) (holds x c))))

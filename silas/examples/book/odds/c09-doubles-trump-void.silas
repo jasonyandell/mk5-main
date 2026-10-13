@@ -1,0 +1,15 @@
+; c09-doubles-trump-void. Anchor: shot-0109 (Ch. 9, Hand 25).
+; Printed: 0.80.
+; Claim: with doubles trump and only two trumps missing, an opponent holds
+;   no trump and cannot follow the first trump lead.
+; State: Hand 25, doubles trump (5-0 5-5 2-2 4-4 1-1 2-1 3-3), nothing
+;   played; 6-6 and 0-0 are out; the 21 others dealt uniformly, seven to each
+;   other seat.
+; Exact: 23/30. Book model: 7/9.
+(query
+  (roles (chair v) (chair x))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (void x q*)))

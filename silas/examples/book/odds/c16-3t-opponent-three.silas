@@ -1,0 +1,19 @@
+; c16-3t-opponent-three. Anchor: shot-0233 (Ch. 16, three trumps).
+; Printed: 18 of 81 placements (0.22).
+; Claim: with three trumps, one opponent holds three or all four of the
+;   missing trumps.
+; State: the bidder's seven tiles, nothing played; the 21 others dealt
+;   uniformly, seven to each other seat.
+; Exact: 10/57. Book model: 18/81.
+(query
+  (roles (chair v) (chair x) (domino a) (domino b) (domino c))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (in a q*)
+    (in b q*)
+    (in c q*)
+    (holds x a)
+    (holds x b)
+    (holds x c)))

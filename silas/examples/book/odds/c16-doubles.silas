@@ -1,0 +1,22 @@
+; c16-doubles. Anchor: shot-0234 (Ch. 16, other statistics).
+; Printed: 0.10, 0.32, 0.36, 0.18, 0.04, under 0.005, 0.0002 for zero to six
+;   doubles in a hand.
+; Claim: how many doubles a random seven-tile hand holds.
+; State: none; a uniformly random hand of seven from the 28.
+; Exact: C(7,k) C(21,7-k) / C(28,7): 116280, 379848, 427329, 209475, 46550,
+;   4410, 147, 1 of 1184040. Six doubles is 147/1184040 = 0.000124, about
+;   1/80 of a percent, not 1/50.
+;
+; GAP deal-view (see c16-four-of-a-suit). The query is the two-double
+;   bucket for one known hand.
+(query
+  (roles (chair v) (domino a) (domino b))
+  (out)
+  (pattern
+    (viewer v)
+    (double a)
+    (double b)
+    (holds v a)
+    (holds v b)
+    (none (roles (domino c))
+      (double c) (not (tile c a)) (not (tile c b)) (holds v c))))

@@ -1,0 +1,18 @@
+; c16-4t-two-of-three. Anchor: shot-0232 (Ch. 16, four trumps).
+; Printed: 0.52 (14 of 27 placements).
+; Claim: with four trumps, the double among them but neither the second nor
+;   the third highest, some opponent holds at least two of the three missing
+;   trumps and so keeps one past the double.
+; State: the bidder's seven tiles, nothing played; the 21 others dealt
+;   uniformly, seven to each other seat.
+; Exact: 47/95. Book model: 14/27.
+(query
+  (roles (chair v) (chair x) (domino a) (domino b))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (in a q*)
+    (in b q*)
+    (holds x a)
+    (holds x b)))

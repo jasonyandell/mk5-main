@@ -1,0 +1,22 @@
+; c05-setter-partner-holds-winner. Anchor: shot-0066 (Ch. 5).
+; Printed: 2/3 (two to one).
+; Claim: the tile that wins the bidder's off trick sits with one of the two
+;   setters. Ambiguous. Read before the deal, among the three hands other
+;   than the bidder's, it is 2/3 (that is c07-straight-off-double's
+;   relation). Read from the setter who must play first and cannot follow,
+;   so does not hold it, it is his partner's: this query.
+; State: the bidder leads his off; the viewer is the next seat, holding no
+;   tile of the led suit; the bidder's six and the other two hands' seven
+;   are dealt uniformly.
+; Exact: 7/20; 1/2 if the setter also knows the bidder lacks it. Book model:
+;   1/3 (or 1/2).
+(query
+  (roles (chair v) (chair p) (context q) (domino d))
+  (out)
+  (pattern
+    (viewer v)
+    (partner v p)
+    (led-context q)
+    (double d)
+    (in d q)
+    (holds p d)))

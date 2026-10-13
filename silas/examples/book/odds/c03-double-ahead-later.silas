@@ -1,0 +1,14 @@
+; c03-double-ahead-later. Anchor: shot-0042 (Ch. 3).
+; Printed: 0.05, and 0.53 + 0.05 as "nearly 0.60".
+; Claim: when the deuce-trey does not fall on the double, the partner wins
+;   it on the next trick, when the off is led.
+; State: as c03-double-ahead-forces-count.
+; Exact: not computed.
+;
+; GAP play-out: the event is the result of two tricks, so it depends on how
+;   all three other seats choose among their legal deuces, which the book does
+;   not say. One plain reading (the partner gives the 3-2 when he can, else
+;   his lowest deuce, then his highest; opponents keep the 3-2 while they
+;   have another deuce) gives 6/81 under the book model, not 0.05. Silas has
+;   no query over the outcome of a line of play under policies for the
+;   hidden seats. No query is given.

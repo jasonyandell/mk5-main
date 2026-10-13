@@ -1,0 +1,21 @@
+; c16-suits-represented. Anchor: shot-0234 (Ch. 16, other statistics).
+; Printed: 0.41, 0.48, 0.10, 0.01 for seven, six, five and four pip suits
+;   present in a hand.
+; Claim: how many of the seven pip suits a random seven-tile hand touches.
+; State: none; a uniformly random hand of seven from the 28.
+; Exact: 501015, 556290, 122535, 4200 of 1184040
+;   (0.4231, 0.4698, 0.1035, 0.0035).
+;
+; GAP deal-view (see c16-four-of-a-suit). The query is the six-suit bucket,
+;   exactly one void pip suit, for one known hand under no trump.
+(query
+  (roles (chair v) (context q))
+  (out)
+  (pattern
+    (viewer v)
+    (not (context q q*))
+    (none (roles (domino d)) (in d q) (holds v d))
+    (none (roles (context r))
+      (not (context r q*))
+      (not (context r q))
+      (none (roles (domino e)) (in e r) (holds v e)))))

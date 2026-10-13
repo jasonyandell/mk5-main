@@ -1,0 +1,24 @@
+; c16-4t-both-high. Anchor: shot-0233 (Ch. 16, four trumps, continued).
+; Printed: 6 of the 14 bad placements (6/14 if read inside the bad ones,
+;   6/27 if read over all placements).
+; Claim: in the c16-4t-two-of-three shape, one opponent holds both of the two
+;   highest missing trumps.
+; State: as c16-4t-two-of-three; read conditionally, also given that query.
+; Exact: 1/5 over all deals; 19/47 given an opponent holds two missing trumps.
+;   Book model: 6/27 and 3/7.
+;
+; t and s are the two highest trumps in hidden hands.
+(query
+  (roles (chair v) (chair x) (domino t) (domino s))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (in t q*)
+    (in s q*)
+    (none (roles (domino u) (chair y))
+      (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+    (none (roles (domino w) (chair z))
+      (in w q*) (beats w s q*) (not (tile w t)) (not (viewer z)) (holds z w))
+    (holds x t)
+    (holds x s)))

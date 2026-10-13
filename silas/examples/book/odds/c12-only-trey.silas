@@ -1,0 +1,18 @@
+; c12-only-trey. Anchor: shot-0124 (Ch. 12, Hand 26, trump trouble).
+; Printed: 2/3 (two to one).
+; Claim: the opponent who kept the last trump, having followed the
+;   double-five with the five-trey, has no other trey, so he would trump the
+;   double-trey.
+; State: a record of ours that fits the book's account. Fours trump, the
+;   bidder (3-3 1-1 4-4 6-4 5-5 2-2 5-2) bids 35. Trick 1: 4-4, 4-0, 4-1,
+;   4-3. Trick 2: 6-4, 5-4, 6-2, 1-0 (both other seats show no trump, so the
+;   left setter holds the 4-2). Trick 3: 5-5, 5-3, 6-5, 5-1. Twelve tiles
+;   hidden, four to a seat.
+; Exact: 7/33 that the 5-3 was his only trey (26/33 that he has another).
+;   Book model: (2/3)^4 = 16/81. Neither reading is 2/3.
+(query
+  (roles (chair x) (domino l))
+  (out)
+  (pattern
+    (played-to l x 5-3)
+    (none (roles (domino t)) (in t q3) (holds x t))))

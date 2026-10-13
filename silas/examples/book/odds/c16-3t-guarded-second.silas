@@ -1,0 +1,21 @@
+; c16-3t-guarded-second. Anchor: shot-0233 (Ch. 16, three trumps).
+; Printed: 0.47 (38 of 81 placements).
+; Claim: with three trumps, the double among them but not the second-highest,
+;   an opponent holds that trump with another trump beside it.
+; State: the bidder's seven tiles, nothing played; the 21 others dealt
+;   uniformly, seven to each other seat.
+; Exact: 388/855. Book model: 38/81.
+;
+; The same relation as c16-4t-guarded-second, over a hand one trump shorter.
+(query
+  (roles (chair v) (chair x) (domino t) (domino o))
+  (out)
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (in t q*)
+    (in o q*)
+    (none (roles (domino u) (chair y))
+      (in u q*) (beats u t q*) (not (viewer y)) (holds y u))
+    (holds x t)
+    (holds x o)))

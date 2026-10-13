@@ -182,3 +182,46 @@ deal.
 Where the gate and the book agree, the encodings now show it too: the C9 ordering picks
 the book's lead in Hand 30 (p. 103, the 3-1, only a five out) and in Hand 31 (p. 107, the
 3-1, no count out).
+
+## Added by the book's odds (`examples/book/odds/`)
+
+The odds the book prints are encoded one query per claim and checked exactly in
+`tests/book_odds.rs`. Two kinds of claim need what Silas lacks; each such file is
+marked `; GAP <name>:`, and the test computes the number in plain Rust instead.
+
+| # | gap | kind | claims blocked | viewer / world | home |
+|---|---|---|---|---|---|
+| 6 | deal view | frame | 5 (Ch. 16 whole-hand statistics) | world | Silas |
+| 7 | play-out over a belief | belief operation | 1 (Ch. 3, the 5%) | world | Silas |
+
+### 6. Deal view: a probability over the hand the viewer is dealt
+
+**What.** Chapter 16 states frequencies over a fresh hand: four of one suit, how
+many suits are present, how many doubles, the commonest shape. A `Frame` fixes
+the viewer's hand and draws only the three hidden hands, so no measure over the
+viewer's own hand can be built. Each file's query is the event for one known
+hand; the test enumerates all C(28,7) hands and checks the query hand by hand on
+a sample.
+
+**Claims.** c16-four-of-a-suit, c16-suits-represented, c16-doubles,
+c16-two-to-four-doubles, c16-modal-hand.
+
+**Smallest addition.** A deal kernel with four hidden seats and no viewer hand
+(or the viewer's own hand hidden), so `Belief::uniform_resolving` can resolve
+the tiles a whole-hand question reads.
+
+### 7. Play-out over a belief
+
+**What.** The Ch. 3 claim that the partner wins the deuce-trey on the trick
+after the double, five times in a hundred, is the outcome of two tricks, so it
+depends on how each hidden seat chooses among its legal tiles. Silas has
+policies for the viewer and `step_belief` for observed plays, but no
+probability of an outcome under policies for the hidden seats, played forward
+world by world.
+
+**Claims.** c03-double-ahead-later; also the straight-off 84's set rate
+(Ch. 7), a play claim rather than a deal claim.
+
+**Smallest addition.** A play-out over a belief: for each world, play every
+seat's policy at its own information state up to a horizon, then evaluate a
+query, carrying the belief's authority. It needs gap 3's per-seat frames.

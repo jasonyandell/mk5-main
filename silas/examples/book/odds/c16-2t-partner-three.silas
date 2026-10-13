@@ -1,0 +1,19 @@
+; c16-2t-partner-three. Anchor: shot-0233 (Ch. 16, two high trumps).
+; Printed: 0.20 (45 of 225 placements).
+; Claim: holding only the two top trumps, the partner holds three or more of
+;   the five missing trumps.
+; State: as c16-2t-spread.
+; Exact: 176/969. Book model: 51/243 = 17/81 (the printed 45 is not the
+;   count under any placement model we found).
+(query
+  (roles (chair v) (chair p) (domino a) (domino b) (domino c))
+  (out)
+  (pattern
+    (viewer v)
+    (partner v p)
+    (in a q*)
+    (in b q*)
+    (in c q*)
+    (holds p a)
+    (holds p b)
+    (holds p c)))

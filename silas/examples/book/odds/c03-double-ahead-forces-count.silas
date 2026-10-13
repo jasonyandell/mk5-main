@@ -1,0 +1,23 @@
+; c03-double-ahead-forces-count. Anchor: shot-0042 (Ch. 3).
+; Printed: 0.53.
+; Claim: leading the double-deuce before a deuce-blank off brings the
+;   deuce-trey down on the double. Our reading: the partner, holding it,
+;   gives it; an opponent gives it only when it is his one deuce.
+; State: the bidder holds 2-2 and 2-0, and four deuces are out of his hand
+;   and not trump (the reading needs one deuce held or trump, else five are
+;   out and the book model gives 113/243); nothing played; the 21 others
+;   dealt uniformly, seven to each other seat.
+; Exact: 467/855. Book model: 43/81.
+(query
+  (roles (chair v) (chair p) (chair x))
+  (out)
+  (pattern
+    (viewer v)
+    (partner v p)
+    (holds p 3-2))
+  (pattern
+    (viewer v)
+    (opponent v x)
+    (holds x 3-2)
+    (none (roles (domino d))
+      (in d q2) (not (tile d 3-2)) (holds x d))))
