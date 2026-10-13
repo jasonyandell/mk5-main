@@ -11,11 +11,19 @@ under the plan, for every root tile, and the plan's line — and says:
   weight shares. Success is the mover's: the contract made for the bidding
   side, set for the defenders.
 - **What must be true, in Silas.** A declared, finite space of Silas queries
-  over the hidden hands (`candidates`), each evaluated by Silas on the
-  decision's belief — Zeb's own scenarios and weights, labeled
+  over the hidden hands (`space`: holdings, voids, the open trick's seats
+  still to play, count at risk, the book prelude's nouns as holdings; and
+  the conjunction and disjunction of every two), each evaluated by Silas on
+  the decision's belief — Zeb's own scenarios and weights, labeled
   `sampled(n, seed)` — restricted to each side. The facts whose masses on
-  the two sides differ most are the reason. Each comes with its exact
-  probability under the uniform over the fiber, where Silas can resolve it.
+  the two sides differ most are the reason, with the share of each side
+  they explain (coverage). Each comes with its exact probability under the
+  uniform over the fiber, where Silas can resolve it.
+- **Found, or not.** A reason must separate the sides by at least
+  `SEPARATION` (1/2) and by more than the space's best on `RELABELINGS`
+  random relabelings of the same scenarios (its chance level), both set
+  before any position was looked at. Below that the report says *no reason
+  found* and shows the best candidates anyway.
 - **A counterexample world on each side**, as hands, with the plan's path
   through it after each tile.
 - **The noise bar.** The same decision re-planned at another seed and one
@@ -42,12 +50,13 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Sequence
 
+import numpy as np
 from scenario_core import SilasAuthority, SilasBelief, SilasError, SilasQuery, silas_compare
 
 from forge.zeb.types import ZebGameState
 
-from scenario.planner import HAND_TOTAL, Analysis, Belief, Config, Rung, Step, Walt, situation_from_state
-from scenario.record import remaining_hand
+from scenario.planner import HAND_TOTAL, Analysis, Belief, Config, Rung, Situation, Step, Walt, situation_from_state
+from scenario.record import Record, remaining_hand
 from scenario.rules import ALL_TILES, bit, rules_for, tiles_of
 from scenario.silas import frame
 
@@ -55,10 +64,27 @@ BUDGET = 10_000_000          # Silas work units per summary
 PRIOR_CAP = 200_000          # points of an exact prior's resolving belief
 BAR_GRAIN = 10 ** 6          # the bar is rounded up to a multiple of 1/BAR_GRAIN
 STRONGER = Rung(8, 4)        # the rung added below a one-rung plan (the arena's m8, g4)
+TRUTH_BLOCK = 512            # scenarios per Silas pass reading each fact world by world (2^i weights, exact in f64)
+
+# Set before any position was looked at (2026-10-13). A reason separates the
+# two columns by at least SEPARATION, |P(fact | one) − P(fact | two)| ≥ 1/2,
+# and by more than the space's best on every one of RELABELINGS random
+# relabelings of the same scenarios into columns of the same sizes (seeded
+# CHANCE_SEED): the separation a space this size reaches by chance on sides
+# this small (one fact against one-fact relabelings, two against two). The
+# reason is the best single fact that passes, or the best two-fact
+# explanation that passes when it separates strictly more.
+SEPARATION = Fraction(1, 2)
+RELABELINGS = 20
+CHANCE_SEED = 124
 
 INDIFFERENT = "indifferent"            # an exact tie: no reason (#120)
 INDISTINGUISHABLE = "indistinguishable"  # the price lies inside the noise bar: no reason
 REASON = "reason"
+
+ONE_FACT = "one fact"                  # a single fact of the space reaches the threshold
+TWO_FACTS = "two facts"                # a conjunction or disjunction of two does, and separates more
+NO_REASON = "no reason found"          # none does: the best candidates are shown anyway
 
 
 # -- names ----------------------------------------------------------------------------
@@ -106,10 +132,21 @@ class Candidate:
     gloss: str    # the same in words
     reads: int    # the pool tiles it reads (the exact prior resolves these)
     atoms: int    # its size, for breaking ties toward the simpler fact
+    scope: str = ""        # the same fact as one clause, for composing two (`two_fact`)
+    book: bool = False     # it calls the book prelude (`(include book)`)
+    family: str = ""       # the family of the declared space that generated it
+
+
+def _fact(roles: str, body: str, gloss: str, reads: int, atoms: int, family: str, book: bool = False) -> Candidate:
+    """A candidate written as one clause: `body` under its own roles."""
+    scope = f"(some (roles {roles}) {body})" if roles else body
+    head = "(include book) " if book else ""
+    return Candidate(f"{head}(query (roles) (out) (pattern {scope}))", gloss, reads, atoms, scope, book, family)
 
 
 def candidates(decl_id: int, viewer: int, own: int, played: int, sizes: Sequence[int]) -> list[Candidate]:
-    """The declared search space, at a decision of seat `viewer` holding `own`:
+    """The first declared space, holdings and voids, at a decision of seat
+    `viewer` holding `own`:
 
     1. `holds`: seat X holds t — X a hidden seat, t a hidden tile — and an
        opponent (either) holds t;
@@ -119,8 +156,8 @@ def candidates(decl_id: int, viewer: int, own: int, played: int, sizes: Sequence
     3. `void`: X holds no tile of context q, and an opponent is void in q —
        q a context with a hidden tile in it.
 
-    Nothing else is generated. Seats are named absolutely (`S1`); the
-    opponent forms name the viewer's opponents by role (`opponent me foe`)."""
+    Seats are named absolutely (`S1`); the opponent forms name the viewer's
+    opponents by role (`opponent me foe`). `space` adds the rest."""
     rules = rules_for(decl_id)
     hidden = ALL_TILES & ~played & ~own
     seats = [s for s in range(4) if s != viewer and sizes[s] > 0]
@@ -130,16 +167,18 @@ def candidates(decl_id: int, viewer: int, own: int, played: int, sizes: Sequence
     roles = {"foe": "(chair me) (chair foe)"}
     out: list[Candidate] = []
 
-    def query(holder: str, extra_roles: str, body: str) -> str:
+    def fact(holder: str, extra_roles: str, body: str, gloss: str, reads: int, atoms: int, family: str) -> Candidate:
         r = " ".join(x for x in (roles.get(holder, ""), extra_roles) if x)
-        return f"(query (roles{' ' + r if r else ''}) (out) (pattern {body}))"
+        scope = f"(some (roles {r}) {body})" if r else body
+        return Candidate(f"(query (roles{' ' + r if r else ''}) (out) (pattern {body}))",
+                         gloss, reads, atoms, scope, False, family)
 
     for holder, said, lead in who:
         base = 2 if holder == "foe" else 0
         for t in tiles_of(hidden):
             name = tile_name(t)
-            out.append(Candidate(query(holder, "", f"{lead}(holds {holder} {name})"),
-                                 f"{said} holds {name}", bit(t), base + 1))
+            out.append(fact(holder, "", f"{lead}(holds {holder} {name})", f"{said} holds {name}", bit(t), base + 1,
+                            "holds"))
     for holder, said, lead in who:
         base = 2 if holder == "foe" else 0
         for t in tiles_of(hidden):
@@ -151,15 +190,189 @@ def candidates(decl_id: int, viewer: int, own: int, played: int, sizes: Sequence
                 # exact prior resolves only the suit's tiles.
                 body = (f"{lead}(holds {holder} {name}) (in other {context_name(k)}) "
                         f"(not (tile other {name})) (holds {holder} other)")
-                out.append(Candidate(query(holder, "(domino other)", body),
-                                     f"{said} holds {name} and another of {_SUIT[k]}",
-                                     bit(t) | (rules.follow_bits[k] & hidden), base + 4))
+                out.append(fact(holder, "(domino other)", body, f"{said} holds {name} and another of {_SUIT[k]}",
+                                bit(t) | (rules.follow_bits[k] & hidden), base + 4, "holds with"))
     for holder, said, lead in who:
         base = 2 if holder == "foe" else 0
         for k in contexts:
-            out.append(Candidate(query(holder, "", f"{lead}(void {holder} {context_name(k)})"),
-                                 f"{said} is void in {_SUIT[k]}", rules.follow_bits[k] & hidden, base + 1))
+            out.append(fact(holder, "", f"{lead}(void {holder} {context_name(k)})", f"{said} is void in {_SUIT[k]}",
+                            rules.follow_bits[k] & hidden, base + 1, "void"))
     return out
+
+
+def _yet_to_play(viewer: int, rec: Record) -> list[int]:
+    """The seats still to play to the open trick after the viewer, in order."""
+    return [(viewer + i) % 4 for i in range(1, 4 - len(rec.trick))]
+
+
+def _seat_said(s: int, viewer: int, after: Sequence[int]) -> str:
+    side = "partner" if s == (viewer + 2) % 4 else "opponent"
+    if len(after) == 1:
+        side += ", the last to play"
+    elif s == after[0]:
+        side += ", next to play"
+    elif s == after[-1]:
+        side += ", the last to play"
+    return f"S{s} ({side})"
+
+
+def position_facts(decl_id: int, viewer: int, own: int, rec: Record, tiles: Sequence[int]) -> list[Candidate]:
+    """The second declared space: the open trick and the seats still to play
+    to it, each fact a Silas query over the world. `tiles` are the viewer's
+    tiles the facts are relative to (the report's pair); the viewer's legal
+    count tiles are added. With S a seat still to play after the viewer:
+
+    4. `position`: following, S holds a tile of the led suit; S is void in
+       the led suit and holds trump; S can beat the trick as it stands (for
+       the partner: the partner can still win this trick); S can take the
+       trick after the viewer plays t (S may play a tile, following suit or
+       void in it, that beats both t and the trick's winner). Leading, the
+       suit is the one t leads: S can beat t led; S is void in t's suit and
+       holds trump; an opponent can beat t led.
+    5. `count at risk`: a count tile the viewer could give (`own-legal`,
+       `count-tile`) is capturable by the next seat; and the tile-relative
+       facts of 4 for each legal count tile.
+
+    Nothing else is generated; a seat that has played to the trick is not
+    asked about."""
+    rules = rules_for(decl_id)
+    hidden = ALL_TILES & ~rec.played & ~own
+    trumps = rules.follow_bits[7]
+    after = _yet_to_play(viewer, rec)
+    if not after:
+        return []
+    counted = [t for t in tiles_of(rules.legal(own, rec.led)) if rules.count[t]]
+    relative = list(dict.fromkeys([*tiles, *counted]))
+    nxt = f"S{after[0]}"
+    out: list[Candidate] = []
+
+    def playable(s: str) -> str:   # s may play x to this trick: x follows q, or s is void in q
+        return f"(none (roles) (not (in x q)) (not (void {s} q)))"
+
+    def family(t: int) -> str:
+        return "count at risk" if t in counted else "position"
+
+    if rec.trick:
+        k = rules.led_suit[rec.led]
+        reads = (rules.follow_bits[k] | trumps) & hidden
+        win = "(led-context q) (current-winner w) (trick-play w win)"
+        for s in after:
+            said, S = _seat_said(s, viewer, after), f"S{s}"
+            out.append(_fact("(context q) (domino x)", f"(led-context q) (in x q) (holds {S} x)",
+                             f"{said} holds a tile of the led suit ({_SUIT[k]})", rules.follow_bits[k] & hidden, 2,
+                             "position"))
+            if k != 7:
+                out.append(_fact("(context q) (context tr) (domino x)",
+                                 f"(led-context q) (trump tr) (void {S} q) (in x tr) (holds {S} x)",
+                                 f"{said} is void in the led suit ({_SUIT[k]}) and holds trump", reads, 3,
+                                 "position"))
+            can = "can still win this trick" if s == (viewer + 2) % 4 else "can beat the trick as it stands"
+            out.append(_fact("(context q) (chair w) (domino win) (domino x)",
+                             f"{win} (holds {S} x) {playable(S)} (beats x win q)", f"{said} {can}", reads, 3,
+                             "position"))
+            for t in relative:
+                name = tile_name(t)
+                out.append(_fact("(context q) (chair w) (domino win) (domino x)",
+                                 f"{win} (holds {S} x) {playable(S)} (beats x {name} q) (beats x win q)",
+                                 f"{said} can take the trick after I play {name}", reads, 4, family(t)))
+        if counted:
+            out.append(_fact("(domino c) (context q) (chair w) (domino win) (domino x)",
+                             f"(own-legal c) (count-tile c) {win} (holds {nxt} x) {playable(nxt)} "
+                             "(beats x c q) (beats x win q)",
+                             f"a count tile I could give is capturable by the next seat ({nxt})", reads, 5,
+                             "count at risk", book=True))
+        return out
+    for t in relative:
+        name, k = tile_name(t), rules.led_suit[t]
+        reads = (rules.follow_bits[k] | trumps) & hidden
+        for s in after:
+            said, S = _seat_said(s, viewer, after), f"S{s}"
+            out.append(_fact("(context q) (domino x)",
+                             f"(leads-context {name} q) (holds {S} x) {playable(S)} (beats x {name} q)",
+                             f"{said} can beat {name} led", reads, 3, family(t)))
+            if k != 7:
+                out.append(_fact("(context q) (context tr) (domino x)",
+                                 f"(leads-context {name} q) (trump tr) (void {S} q) (in x tr) (holds {S} x)",
+                                 f"{said} is void in the suit {name} leads ({_SUIT[k]}) and holds trump", reads, 4,
+                                 "position"))
+        out.append(_fact("(chair me) (chair s) (context q) (domino x)",
+                         f"(viewer me) (opponent me s) (leads-context {name} q) (holds s x) {playable('s')} "
+                         f"(beats x {name} q)", f"an opponent can beat {name} led", reads, 5, family(t)))
+    if counted:
+        out.append(_fact("(domino c) (context q) (domino x)",
+                         f"(own-legal c) (count-tile c) (leads-context c q) (holds {nxt} x) {playable(nxt)} "
+                         "(beats x c q)", f"a count tile I could lead is capturable by the next seat ({nxt})",
+                         hidden, 5, "count at risk", book=True))
+    return out
+
+
+DOUBLES = sum(bit(h * (h + 1) // 2 + h) for h in range(7))
+
+
+def prelude_facts(decl_id: int, viewer: int, own: int, played: int, sizes: Sequence[int]) -> list[Candidate]:
+    """The third declared space: the book prelude's nouns (`silas/lib/book.silas`)
+    as holdings. A prelude concept that reads only the frame (the safe trick,
+    can-take-it, may-yet-trump, the dead double, can-lose) is the same in
+    every world of one decision, so it cannot separate two sets of them; the
+    prelude enters the space as what a seat holds:
+
+    6. `prelude`: X holds a count tile (`count-tile`), a ten, a trump
+       (`trump-tile`), the boss trump (`boss-trump`), a trump none of the
+       viewer's beats, a double, the top live tile of suit q (`boss`) — X a
+       hidden seat or an opponent (either).
+
+    A trump concept is a scope, read after the atoms around it, so the
+    called suit's `in` binds the tile first and an exact prior resolves
+    only the called suit (under no trump the fact is false and drops out)."""
+    rules = rules_for(decl_id)
+    hidden = ALL_TILES & ~played & ~own
+    trumps = rules.follow_bits[7] & hidden
+    counts = sum(bit(t) for t in tiles_of(hidden) if rules.count[t])
+    tens = sum(bit(t) for t in tiles_of(hidden) if rules.count[t] == 10)
+    seats = [s for s in range(4) if s != viewer and sizes[s] > 0]
+    who = [(f"S{s}", "", "", f"S{s} ({'partner' if s == (viewer + 2) % 4 else 'opponent'})", 0) for s in seats]
+    who.append(("foe", "(chair me) (chair foe) ", "(viewer me) (opponent me foe) ", "an opponent", 2))
+    out: list[Candidate] = []
+    for holder, roles, lead, said, base in who:
+        def add(concept: str, gloss: str, reads: int, atoms: int) -> None:
+            if reads:
+                out.append(_fact(f"{roles}(domino d)", f"{lead}{concept} (holds {holder} d)", f"{said} {gloss}",
+                                 reads, base + atoms, "prelude", book=True))
+        add("(count-tile d)", "holds a count tile", counts, 2)
+        add("(count d 10)", "holds a ten", tens, 2)
+        add("(in d q*) (trump-tile d)", "holds a trump", trumps, 2)
+        add("(in d q*) (boss-trump d)", "holds the boss trump", trumps, 2)
+        add("(in d q*) (trump-tile d) "
+            "(none (roles (domino e)) (mine e) (some (roles (context t)) (trump t) (beats e d t)))",
+            "holds a trump none of mine beats", trumps, 3)
+        add("(double d)", "holds a double", DOUBLES & hidden, 2)
+        for k in range(7):
+            add(f"(boss d {context_name(k)})", f"holds the top live tile of {_SUIT[k]}",
+                rules.follow_bits[k] & hidden & ~trumps, 2)
+    return out
+
+
+def space(sit: Situation, own: int, tiles: Sequence[int]) -> list[Candidate]:
+    """The declared space of single facts at a decision: `candidates`,
+    `position_facts` (relative to `tiles`) and `prelude_facts`. The two-fact
+    candidates are the conjunction and the disjunction of every two of them
+    (`two_fact`). Declared up front; nothing else is searched."""
+    rec = sit.record
+    sizes = [rec.hand_size(s) for s in range(4)]
+    return (candidates(sit.decl_id, sit.viewer, own, rec.played, sizes)
+            + position_facts(sit.decl_id, sit.viewer, own, rec, tiles)
+            + prelude_facts(sit.decl_id, sit.viewer, own, rec.played, sizes))
+
+
+def two_fact(a: Candidate, b: Candidate, op: str) -> Candidate:
+    """`a and b` (one pattern holding both clauses) or `a or b` (a pattern
+    each, Silas's union of cases), as one Silas query. Each fact keeps its
+    roles in its own `some` scope, so the two share none: a scope's roles
+    are distinct from one another, not from the roles around them."""
+    head = "(include book) " if a.book or b.book else ""
+    body = f"(pattern {a.scope} {b.scope})" if op == "and" else f"(pattern {a.scope}) (pattern {b.scope})"
+    return Candidate(f"{head}(query (roles) (out) {body})", f"{a.gloss} {op} {b.gloss}", a.reads | b.reads,
+                     a.atoms + b.atoms, "", a.book or b.book, op)
 
 
 # -- the report -------------------------------------------------------------------------
@@ -181,10 +394,21 @@ class Fact:
     prior: Fraction | None
     authority: str
     prior_authority: str | None
+    alike: tuple[str, ...] = ()   # the other single facts of the space that read the same on both columns
+                                  # ("not ..." when as its negation): the same split, named otherwise
 
     @property
     def separation(self) -> Fraction:
         return abs(self.on_a - self.on_b)
+
+    @property
+    def coverage(self) -> tuple[Fraction, Fraction]:
+        """The share of each column the fact explains, read toward the column
+        where it holds more: the share of that column where it holds, and of
+        the other where it fails. Their sum less one is the separation."""
+        if self.on_a >= self.on_b:
+            return self.on_a, 1 - self.on_b
+        return 1 - self.on_a, self.on_b
 
 
 @dataclass(frozen=True)
@@ -231,7 +455,11 @@ class Reason:
     share_b: Fraction
     columns: tuple[str, str]  # the two sets the facts separate: ("A", "B"), or, when one side is empty,
                               # the other against "the rest" (the scenarios where the tiles agree)
-    facts: tuple[Fact, ...]   # the top separating facts, best first (empty without a reason)
+    facts: tuple[Fact, ...]   # the top single facts, best first (empty when the price gives no reason)
+    pairs: tuple[Fact, ...]   # the top two-fact explanations, best first
+    found: str                # ONE_FACT, TWO_FACTS or NO_REASON ("" when the price gives no reason)
+    chance: tuple[float, float]   # the space's best single and two-fact separation over the relabelings
+    searched: tuple[int, int, int, int]   # single facts declared, distinct on the sample, refused; pairs kept
     examples: tuple[Example | None, Example | None]
     lines: dict[int, tuple[Step, ...]]
     weights: tuple[float, ...]
@@ -324,7 +552,10 @@ def reason(
         compared = silas_compare(left, right, band / 2)
         verdict = REASON if compared != "indistinguishable" else INDISTINGUISHABLE
 
+    found = ""
     facts: tuple[Fact, ...] = ()
+    pairs: tuple[Fact, ...] = ()
+    chance, searched = (0.0, 0.0), (0, 0, 0, 0)
     examples: tuple[Example | None, Example | None] = (None, None)
     columns = ("A", "B")
     if verdict == REASON:
@@ -332,15 +563,16 @@ def reason(
         if not side_a or not side_b:   # one tile dominates: set its side against the worlds where they agree
             agree = tuple(r for r in range(n) if zs[r] == os_[r])
             one, two, columns = (side_a, agree, ("A", "the rest")) if side_a else (agree, side_b, ("the rest", "B"))
-        facts = _separate(f, a, one, two, sampled, sit, own, top)
-        best = facts[0] if facts else None
+        found, facts, pairs, chance, searched = _explain(f, a, one, two, sampled, sit, own, (tile, other), top)
+        best = pairs[0] if found == TWO_FACTS else (facts[0] if facts else None)
         examples = (_example(f, a, side_a, best, True, sampled, (tile, other), viewer),
                     _example(f, a, side_b, best, False, sampled, (tile, other), viewer))
     return Reason(
         decl_id=sit.decl_id, viewer=viewer, bidder=sit.bidder, bid=bid, plays=sit.plays, own=own,
         config=config, tile=tile, other=other, q=dict(a.q), price=price, authority=sampled.label,
         n_worlds=n, side_a=side_a, side_b=side_b, share_a=share_a, share_b=share_b, columns=columns,
-        facts=facts, examples=examples, lines=a.line or {}, weights=tuple(a.weights), arms=tuple(arms),
+        facts=facts, pairs=pairs, found=found, chance=chance, searched=searched,
+        examples=examples, lines=a.line or {}, weights=tuple(a.weights), arms=tuple(arms),
         bar=band, beats=left.value - right.value + Fraction(1, 2), verdict=verdict, compare=compared,
     )
 
@@ -383,42 +615,184 @@ def _side(f, a: Analysis, side: Sequence[int], authority, unit: bool = False):
                                    [1.0] * len(side) if unit else [a.weights[r] for r in side], authority)
 
 
-def _separate(f, a: Analysis, one: Sequence[int], two: Sequence[int], authority, sit, own: int,
-              top: int) -> tuple[Fact, ...]:
-    """Every candidate on both sides, by Silas; the `top` whose probabilities
-    on the two sides differ most (ties: the simpler query, then its text)."""
-    if not one or not two:
-        return ()
-    rec = sit.record
-    space = candidates(sit.decl_id, sit.viewer, own, rec.played, [rec.hand_size(s) for s in range(4)])
-    b1, b2 = _side(f, a, one, authority), _side(f, a, two, authority)
-    scored = []
-    for c in space:
-        query = SilasQuery(c.text)
-        p1 = query.summarize(b1, BUDGET).event_probability.value
-        p2 = query.summarize(b2, BUDGET).event_probability.value
-        if p1 != p2:
-            scored.append((-abs(p1 - p2), c.atoms, c.text, c, query, p1, p2))
-    scored.sort(key=lambda x: x[:3])
-    u1, u2 = _side(f, a, one, authority, unit=True), _side(f, a, two, authority, unit=True)
-    whole = SilasBelief.from_worlds(f, a.worlds, a.weights, authority)
-    out = []
-    for *_, c, query, p1, p2 in scored[:top]:
-        summary = query.summarize(u1, BUDGET)
-        prior = prior_authority = None
+def _truths(f, a: Analysis, facts: Sequence[Candidate], authority) -> tuple[list[tuple[Candidate, int]], int]:
+    """Each fact's truth in every scenario, read by Silas. Over a block of m
+    scenarios weighted 2^i (exact in a float), a fact's probability is
+    Σ 2^i / (2^m − 1) over the scenarios where it holds: its numerator is the
+    fact's truth, scenario by scenario (a world drawn twice merges two
+    weights, and both bits stand). Returns each fact Silas reads within the
+    budget with its truth mask over the scenario indices, and how many it
+    refused."""
+    n = len(a.worlds)
+    blocks = []
+    for start in range(0, n, TRUTH_BLOCK):
+        m = min(TRUTH_BLOCK, n - start)
+        blocks.append((start, m, SilasBelief.from_worlds(f, a.worlds[start:start + m],
+                                                         [float(2 ** i) for i in range(m)], authority)))
+    out, refused = [], 0
+    for c in facts:
+        query, mask = SilasQuery(c.text), 0
         try:
-            exact = query.summarize(SilasBelief.uniform_resolving(f, c.reads, PRIOR_CAP), BUDGET).event_probability
-            prior, prior_authority = exact.value, exact.authority.label
+            for start, m, belief in blocks:
+                bits = query.summarize(belief, BUDGET).event_probability.value * (2 ** m - 1)
+                if bits.denominator != 1:
+                    raise AssertionError(f"Silas's truth read is not a mask: {c.text}")
+                mask |= int(bits) << start
         except SilasError:
-            pass
-        out.append(Fact(
-            candidate=c, on_a=p1, on_b=p2,
-            count_a=int(summary.event_probability.value * len(one)),
-            count_b=int(query.summarize(u2, BUDGET).event_probability.value * len(two)),
-            overall=query.summarize(whole, BUDGET).event_probability.value,
-            prior=prior, authority=summary.authority.label, prior_authority=prior_authority,
-        ))
-    return tuple(out)
+            refused += 1
+            continue
+        out.append((c, mask))
+    return out, refused
+
+
+class _Column:
+    """A column's scenarios and weights: exact probabilities of truth masks."""
+
+    def __init__(self, a: Analysis, side: Sequence[int]):
+        groups: dict[Fraction, int] = {}
+        for r in side:
+            w = Fraction(a.weights[r])
+            groups[w] = groups.get(w, 0) | 1 << r
+        self.groups = tuple(groups.items())
+        self.total = sum(w * m.bit_count() for w, m in self.groups)
+
+    def p(self, mask: int) -> Fraction:
+        return sum((w * (mask & m).bit_count() for w, m in self.groups), Fraction(0)) / self.total
+
+
+def _screen(t: np.ndarray, w: np.ndarray, n1: int):
+    """In floats, every single fact's separation on the columns [:n1] and
+    [n1:] of the truth matrix `t`, and every pair's under `and` and `or`,
+    kept (upper triangle) only where the pair separates more than either of
+    its facts; the rest are zero."""
+    t1, t2 = t[:, :n1], t[:, n1:]
+    w1, w2 = w[:n1] / w[:n1].sum(), w[n1:] / w[n1:].sum()
+    p1, p2 = t1 @ w1, t2 @ w2
+    single = np.abs(p1 - p2)
+    j1, j2 = (t1 * w1) @ t1.T, (t2 * w2) @ t2.T
+    both = np.abs(j1 - j2)
+    either = np.abs((p1[:, None] + p1[None, :] - j1) - (p2[:, None] + p2[None, :] - j2))
+    keep = np.triu(np.ones(both.shape, dtype=bool), 1)
+    floor = np.maximum(single[:, None], single[None, :]) + 1e-9
+    return single, np.where(keep & (both > floor), both, 0.0), np.where(keep & (either > floor), either, 0.0)
+
+
+def _band(values: np.ndarray, top: int) -> np.ndarray:
+    """The indices whose value is within float error of the `top`-th largest
+    nonzero value or above it: the exact ranking is settled among these."""
+    nonzero = values[values > 0]
+    if not nonzero.size:
+        return np.zeros((0, values.ndim), dtype=int) if values.ndim > 1 else np.zeros(0, dtype=int)
+    kth = np.sort(nonzero)[-min(top, nonzero.size)]
+    return np.argwhere(values >= kth - 1e-9) if values.ndim > 1 else np.flatnonzero(values >= kth - 1e-9)
+
+
+def _explain(f, a: Analysis, one: Sequence[int], two: Sequence[int], authority, sit: Situation, own: int,
+             tiles: tuple[int, int], top: int):
+    """The declared space on both columns: every single fact's truth in each
+    scenario read by Silas, the pairs screened in floats and settled exactly,
+    the `top` single facts and two-fact explanations (ties: the simpler, then
+    the text), the chance level from `RELABELINGS` relabelings, and whether a
+    reason is found. Returns (found, facts, pairs, chance, searched)."""
+    declared = space(sit, own, tiles)
+    if not one or not two:
+        return NO_REASON, (), (), (0.0, 0.0), (len(declared), 0, 0, 0)
+    truths, refused = _truths(f, a, declared, authority)
+    cols = [*one, *two]
+    pooled = sum(1 << r for r in cols)
+    distinct: dict[int, tuple[Candidate, int]] = {}
+    named: dict[int, list[str]] = {}
+    for c, mask in sorted(truths, key=lambda x: (x[0].atoms, x[0].text)):
+        if mask & pooled not in (0, pooled):    # a fact constant on both columns separates nothing
+            distinct.setdefault(mask & pooled, (c, mask))   # of facts alike on both columns, the simplest
+            named.setdefault(mask & pooled, []).append(c.gloss)
+
+    def alike(c: Candidate, mask: int) -> tuple[str, ...]:
+        key = mask & pooled
+        return tuple([g for g in named.get(key, ()) if g != c.gloss]
+                     + [f"not: {g}" for g in named.get(pooled ^ key, ())])
+
+    singles = list(distinct.values())
+    c1, c2 = _Column(a, one), _Column(a, two)
+    if not singles:
+        return NO_REASON, (), (), (0.0, 0.0), (len(declared), 0, refused, 0)
+    t = np.array([[(m >> r) & 1 for r in cols] for _, m in singles], dtype=np.float64)
+    w = np.array([a.weights[r] for r in cols], dtype=np.float64)
+    single, both, either = _screen(t, w, len(one))
+    rng = np.random.default_rng(CHANCE_SEED)
+    chance = [0.0, 0.0]
+    for _ in range(RELABELINGS):
+        perm = rng.permutation(len(cols))
+        s, b, e = _screen(t[:, perm], w[perm], len(one))
+        chance = [max(chance[0], float(s.max())), max(chance[1], float(b.max()), float(e.max()))]
+
+    def sep(mask: int) -> Fraction:
+        return abs(c1.p(mask) - c2.p(mask))
+
+    def best(found: list[tuple[Fraction, Candidate, int]], taken: set[int]) -> list[tuple[Candidate, int]]:
+        """The `top` best, exactly, a fact and its complement (which separates
+        as much) shown once."""
+        out = []
+        for _, c, m in sorted(found, key=lambda x: (-x[0], x[1].atoms, x[1].text)):
+            key = m & pooled
+            if key in taken or pooled ^ key in taken:
+                continue
+            taken.add(key)
+            out.append((c, m))
+            if len(out) == top:
+                break
+        return out
+
+    shown: set[int] = set()
+    facts = tuple(dataclasses.replace(_report(f, a, one, two, authority, c, m, c1, c2), alike=alike(c, m))
+                  for c, m in best([(sep(singles[i][1]), *singles[i]) for i in _band(single, 2 * top)], shown))
+    paired = []
+    for op, matrix, combine in (("and", both, int.__and__), ("or", either, int.__or__)):
+        for i, j in _band(np.maximum(both, either), 4 * top):
+            if matrix[i, j] <= 0:
+                continue
+            (ci, mi), (cj, mj) = singles[i], singles[j]
+            mask = combine(mi, mj)
+            s = sep(mask)
+            if s > max(sep(mi), sep(mj)):
+                paired.append((s, two_fact(ci, cj, op), mask))
+    # A pair that reads, on both columns, as a single fact of the space (or its complement) is that fact.
+    pairs = tuple(_report(f, a, one, two, authority, c, m, c1, c2) for c, m in best(paired, set(distinct)))
+    one_fact = bool(facts) and facts[0].separation >= SEPARATION and facts[0].separation > chance[0]
+    two_facts = bool(pairs) and pairs[0].separation >= SEPARATION and pairs[0].separation > chance[1]
+    if two_facts and (not one_fact or pairs[0].separation > facts[0].separation):
+        found = TWO_FACTS
+    else:
+        found = ONE_FACT if one_fact else NO_REASON
+    kept = int(np.count_nonzero(both) + np.count_nonzero(either))
+    return found, facts, pairs, (chance[0], chance[1]), (len(declared), len(singles), refused, kept)
+
+
+def _report(f, a: Analysis, one: Sequence[int], two: Sequence[int], authority, c: Candidate, mask: int,
+            c1: _Column, c2: _Column) -> Fact:
+    """One fact, read by Silas on each column from its own text — which must
+    agree, exactly, with what its truth mask says — with its exact prior
+    over the fiber where Silas resolves it."""
+    query = SilasQuery(c.text)
+    p1 = query.summarize(_side(f, a, one, authority), BUDGET).event_probability.value
+    p2 = query.summarize(_side(f, a, two, authority), BUDGET).event_probability.value
+    if (p1, p2) != (c1.p(mask), c2.p(mask)):
+        raise AssertionError(f"Silas reads {c.gloss} as {p1}, {p2}; its truth mask as {c1.p(mask)}, {c2.p(mask)}")
+    summary = query.summarize(_side(f, a, one, authority, unit=True), BUDGET)
+    prior = prior_authority = None
+    try:
+        exact = query.summarize(SilasBelief.uniform_resolving(f, c.reads, PRIOR_CAP), BUDGET).event_probability
+        prior, prior_authority = exact.value, exact.authority.label
+    except SilasError:
+        pass
+    return Fact(
+        candidate=c, on_a=p1, on_b=p2,
+        count_a=int(summary.event_probability.value * len(one)),
+        count_b=int(query.summarize(_side(f, a, two, authority, unit=True), BUDGET).event_probability.value * len(two)),
+        overall=query.summarize(SilasBelief.from_worlds(f, a.worlds, a.weights, authority), BUDGET)
+        .event_probability.value,
+        prior=prior, authority=summary.authority.label, prior_authority=prior_authority,
+    )
 
 
 def _holds(f, query: SilasQuery, world, authority) -> bool:
@@ -531,25 +905,58 @@ def render(r: Reason) -> str:
         return "\n".join(lines) + "\n"
     one, two = r.columns
     rest = "" if "the rest" not in r.columns else " (one side is empty: the rest are the scenarios where the tiles agree)"
+    declared, distinct, refused, kept = r.searched
     lines += ["", "## What must be true (Silas)", "",
-              "Searched: the declared space of `scenario.reason.candidates` (holdings, a holding with another "
-              f"of a suit, voids; by seat and by 'an opponent'). Ranked by |P(fact | {one}) − P(fact | {two})|"
-              f"{rest}.", "",
-              f"| # | fact | P(· \\| {one}) | P(· \\| {two}) | worlds | P(·) in the sample | exact prior over the fiber |",
-              "|---|---|---|---|---|---|---|"]
-    for i, fact in enumerate(r.facts, 1):
-        prior = "refused" if fact.prior is None else f"{_num(fact.prior)} ({fact.prior_authority})"
-        lines.append(f"| {i} | {fact.candidate.gloss} | {_num(fact.on_a)} | {_num(fact.on_b)} | "
-                     f"{fact.count_a} / {fact.count_b} | {_num(fact.overall)} | {prior} |")
+              f"Searched: the declared space of `scenario.reason.space`, {declared} single facts (holdings, a holding "
+              "with another of a suit, voids, by seat and by 'an opponent'; the open trick's seats still to play; "
+              "count at risk; the book prelude's nouns as holdings), of which "
+              f"{distinct} read differently on these scenarios{f' ({refused} refused by the budget)' if refused else ''}"
+              f"; and the conjunction and disjunction of every two of those, kept where the pair separates more "
+              f"than either fact ({kept}). Ranked by |P(fact | {one}) − P(fact | {two})|, then the simpler{rest}. "
+              f"Coverage: the share of {one} and of {two} the fact explains, read toward the column where it holds "
+              "more.", "",
+              f"Threshold, set before looking: a reason separates the columns by at least {_num(SEPARATION)} and by "
+              f"more than the space's best on {RELABELINGS} random relabelings of these scenarios into columns of the "
+              f"same sizes (chance: {r.chance[0]:.3f} for one fact, {r.chance[1]:.3f} for two); two facts are the "
+              "reason only when they separate strictly more than a single fact that passes.", ""]
+    best = r.facts[0].separation if r.facts else Fraction(0)
+    pair = r.pairs[0].separation if r.pairs else Fraction(0)
+    if r.found == ONE_FACT:
+        lines.append(f"**Reason found: one fact**, separation {float(best):.3f}: {r.facts[0].candidate.gloss}.")
+    elif r.found == TWO_FACTS:
+        lines.append(f"**Reason found: two facts**, separation {float(pair):.3f} (the best single fact, "
+                     f"{float(best):.3f}, falls short or separates less): {r.pairs[0].candidate.gloss}.")
+    else:
+        lines.append(f"**No reason found.** No fact of the declared space reaches the threshold: the best single "
+                     f"fact separates {float(best):.3f} (chance {r.chance[0]:.3f}), the best two {float(pair):.3f} "
+                     f"(chance {r.chance[1]:.3f}). The best candidates anyway:")
+    for title, facts in (("One fact", r.facts), ("Two facts", r.pairs)):
+        lines += ["", f"### {title}", "",
+                  f"| # | fact | P(· \\| {one}) | P(· \\| {two}) | coverage {one} / {two} | worlds | P(·) in the sample "
+                  "| exact prior over the fiber |", "|---|---|---|---|---|---|---|---|"]
+        for i, fact in enumerate(facts, 1):
+            prior = "refused" if fact.prior is None else f"{_num(fact.prior)} ({fact.prior_authority})"
+            cover = " / ".join(f"{float(x):.0%}" for x in fact.coverage)
+            lines.append(f"| {i} | {fact.candidate.gloss} | {_num(fact.on_a)} | {_num(fact.on_b)} | {cover} | "
+                         f"{fact.count_a} / {fact.count_b} | {_num(fact.overall)} | {prior} |")
+        if not facts:
+            lines.append("| — | (none) | | | | | | |")
     lines += ["", f"Side probabilities and the sample column are {r.facts[0].authority if r.facts else lab}.", ""]
-    for i, fact in enumerate(r.facts, 1):
-        lines.append(f"{i}. `{fact.candidate.text}`")
+    for mark, facts in (("", r.facts), ("pair ", r.pairs)):
+        for i, fact in enumerate(facts, 1):
+            lines.append(f"- {mark}{i}: `{fact.candidate.text}`")
+    named = [(i, fact.alike) for i, fact in enumerate(r.facts, 1) if fact.alike]
+    if named:
+        lines += ["", "The same split, named otherwise (other facts of the space that read alike on both columns):", ""]
+        lines += [f"- {i}: {'; '.join(alike[:8])}{f' (and {len(alike) - 8} more)' if len(alike) > 8 else ''}"
+                  for i, alike in named]
+    which = "the two-fact explanation" if r.found == TWO_FACTS else "fact 1"
     lines += ["", "## Counterexample worlds", ""]
     for name, ex in (("A", r.examples[0]), ("B", r.examples[1])):
         if ex is None:
             lines.append(f"- Side {name} is empty.")
             continue
-        fact = "" if ex.fact_holds is None else f" — fact 1 {'holds' if ex.fact_holds else 'fails'} here"
+        fact = "" if ex.fact_holds is None else f" — {which} {'holds' if ex.fact_holds else 'fails'} here"
         lines.append(f"- **Side {name}**, scenario {ex.index} (weight {ex.weight:g}){fact}:")
         lines.append(f"  - hands: {_hands(ex.world, r.viewer)}")
         for t in (r.tile, r.other):

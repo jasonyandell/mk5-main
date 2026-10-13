@@ -3965,3 +3965,7 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-12 | scenario/hf | generated data goes to Hugging Face: the 250k Zeb pour whole, the day's research artifacts, the playbook]
 
 [[publish-data-to-huggingface]] (new); [[scenario-player]] links texas-42-zeb-pour-250k and texas-42-zeb-research-2026-10; CLAUDE.md hard rule. `scenario.hf` ships field nets, titles, notes; splits may differ in the net.
+
+## [2026-10-12 | scratch/book | the book graded with the honest tools: rules priced on the pour, bid book 25/30, three odds corrected, conventions null in S/R/SR arms (handoff −0.013 sender, reading +0.000)]
+
+[[book-study-2026-10-12]] (new); [[scenario-player]] § A convention overlay (arena verdicts); [[w42]] (dated paragraph). Data: the research archive's `book/wave1/`, `book/wave2/`. Follow-ups #118.

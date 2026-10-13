@@ -6,7 +6,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation:** this file holds the digest below plus the most recent ~10 entries. When it grows past ~15, roll the oldest entries verbatim into [[log-archive]] and fold their one-line gist into the digest. Counting entries is the trigger — not judgment.
 
-## Digest (2026-04-09 → 2026-10-12, 207 archived entries)
+## Digest (2026-04-09 → 2026-10-12, 208 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -25,10 +25,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Zeb: the floor, the pour, the field net** (2026-10-10 → 10-11, 10 archived entries) — the cell floor and its dividend, the pour published ([[scenario-player]]), the field net at rung −1 and its two targets, the 50,000- and 250,000-deal pours, the live bidder graded against Plunge's bid book.
 - **Zeb 0.1.0, the viz, research night, the first repair** (2026-10-11 → 10-12, 6 archived entries) — the live bidder graded against Plunge's frozen bid book, `@jasonyandell/zeb` 0.1.0 in WebAssembly, the splat visualizer and its region query, research night (T1/T1′/T2, Lean, the counterexample lab; [[research-night-2026-10-12]]), the field net graded by regret not agreement (#109). Hub: [[scenario-player]].
 - **Zeb's foundation repairs and the convention overlay** (2026-10-12, 6 archived entries) — the floor only on sampled fibers (Zeb 0.2.0, #110), the rung-free sample seed (#112), the stochastic field (#108), O2 over the O1 fixed point on endgames ([[endgames-o2-vs-o1-2026-10-12]], #113), the posterior sampler (#111), the convention overlay. Hub: [[scenario-player]].
+- **The book graded with the honest tools** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]]: the rules priced on the pour, the bid book, the conventions null in the arena.
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 ---
+
+## [2026-10-13 | scenario/reason | the reason report's space grown (position facts, count at risk, the prelude's nouns, every two facts joined) with coverage and a threshold and chance level set before looking: a reason for 32 of 44 face-off prices, none for 12; C12B's recurring reason, the guard of the missing trump, is a condition the book's rule omits]
+
+**Updated:** [[scenario-player]] § The reason report (the grown space, the threshold, results by rule) and the parts table; [[book-study-2026-10-12]] § Worked reasons (three of six clear the chance level); [[silas]] § Where it sits. Outputs: `scratch/reason-v2/`.
 
 ## [2026-10-13 | scratch/book-reprice-fix | the dead double and the trump set's feed fixed to the book's conditions and re-priced on the whole pour: neither prices against now; Zeb 54% vs 40% (0.23), no relation on 3, against none]
 
@@ -90,7 +95,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-12 | scratch/faceoff | the book face-off (#119): at the same gates the oracle's E[Q] n=10 picks the book's tile more often than Zeb (56.4% vs 51.5%), the field net more still; "Zeb and the book agree" corrected to "the book's tile is cheap under Zeb's plan"; the oracle-era verdicts agree in sign where they overlap]
 
 [[book-study-2026-10-12]] § The face-off (new section; summary bullets corrected); [[w42]] paragraph corrected; CLAUDE.md player bullet. Regret under Zeb's q separates strong from weak; book agreement barely does. Ties: 17.6% of gated rows dead (#120). Stronger-Zeb re-plan still running.
-
-## [2026-10-12 | scratch/book | the book graded with the honest tools: rules priced on the pour, bid book 25/30, three odds corrected, conventions null in S/R/SR arms (handoff −0.013 sender, reading +0.000)]
-
-[[book-study-2026-10-12]] (new); [[scenario-player]] § A convention overlay (arena verdicts); [[w42]] (dated paragraph). Data: the research archive's `book/wave1/`, `book/wave2/`. Follow-ups #118.

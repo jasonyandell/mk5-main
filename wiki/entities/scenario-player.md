@@ -74,7 +74,7 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/planner.py` | `Rung`, `Config`, `Walt`: the finite planning rule, the ladder, the dice tape, the `make`/`points` utilities | single-scenario value equals an independent best-plan search; the information inequality V(μ₁+μ₂) ≤ V(μ₁)+V(μ₂) on every split; scale invariance; determinism |
 | `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
 | `scenario/field.py` + `core/src/field.rs` + `scenario/field_train.py` | the field net: a learned integer policy as rung −1 (see "The net in the field") | forward pass bit-identical referee ↔ core; `decide`/`analyze` with the net field bit-identical |
-| `scenario/reason.py` | the reason report (#124): one decision, Zeb's tile against a named one — the line, the split, the separating facts in [[silas]], counterexamples, a noise bar (see "The reason report") | the book's 84 finds its own set condition at 33/95 exact; a tie is indifferent; a price inside the bar is indistinguishable; the referee writes the same report |
+| `scenario/reason.py` | the reason report (#124): one decision, Zeb's tile against a named one — the line, the split, the separating facts in [[silas]] (one fact or two, with coverage, against a threshold and a chance level set before looking), counterexamples, a noise bar (see "The reason report") | the book's 84 finds its own set condition at 33/95 exact, as one fact; a split built from two facts is found as those two; a real price the space cannot carry says *no reason found*; a tie is indifferent; a price inside the bar is indistinguishable; the referee writes the same report |
 | `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,py]` (`py` = the pure Python referee) | an arena half completes |
 
 Tests: `python -m pytest scenario/tests -q` (CPU, no checkpoint). Build the
@@ -925,12 +925,85 @@ where Zeb's lead makes and the 5-5 does not, and in 2 of 49 of the rest, exactly
 33/95 over the fiber; the book's query file reads the same mass on those worlds. Under the
 deployed plan (`k0,n512,F=margin_d250k`) Zeb leads the 5-5 itself; against the
 5-4 the reason is *an opponent holds the 6-5* (0.75 vs 0), price +0.18 against a
-bar of 0.08 — the double ahead of the off. On the face-off's book positions the
-split is diffuse: C3 deal 3194 (partner donates; the book's 6-4 against Zeb's 4-1)
-prices +0.40 against a bar of 0.03, but no single fact in the space separates more
-than 0.39, and C21 deal 3195 (+0.12, bar 0.012) tops out at 0.26 — a real price
-with no one-holding reason, which says the space, not the price, is what to grow
-next. Reports: `scratch/reason/`.
+bar of 0.08 — the double ahead of the off.
+
+**The grown space (2026-10-13).** On the face-off's C3 and C21 positions the first
+space found no one holding that carried the split, so the space grew, still
+declared up front (`reason.space`): to the holdings, a holding with another of a
+suit and the voids it adds **position facts** about the seats still to play to the
+open trick (holds the led suit; void in it and holds trump; can beat the trick as
+it stands, for the partner *can still win this trick*; can take the trick after
+the viewer plays t — leading, can beat t led, an opponent can beat t led), **count
+at risk** (a count tile the viewer could give is capturable by the next seat; the
+tile-relative facts for each legal count tile), and **the book prelude's nouns as
+holdings** (a count tile, a ten, a trump, the boss trump, a trump none of mine
+beats, a double, the top live tile of a suit). The prelude's frame-only concepts
+(the safe trick, can-take-it, may-yet-trump, the dead double) are constant over one
+decision's worlds and cannot separate them; they enter as their world forms. On
+top, the **conjunction and disjunction of every two** single facts, each one Silas
+query (each fact in its own `some` scope), kept where the pair separates more than
+either fact. Each fact's truth in every scenario is read by Silas in one pass (a
+belief weighted 2^i: the probability's numerator is the truth mask), pairs are
+screened in floats and settled exactly, and every reported fact is re-read by
+Silas from its own text and must agree. Each fact carries its **coverage**: the
+share of each side it explains, and the other facts that read alike ("named
+otherwise"). The threshold was set before any position was run: a reason
+separates the sides by at least **1/2** and by more than the space's best on **20
+random relabelings** of the same scenarios into sides of the same sizes (its
+chance level, single against single, pair against pair); two facts are the reason
+only when they separate strictly more than a single fact that passes. Below it the
+report says **no reason found** and shows the best candidates anyway. Tests: the
+84 still finds 33/95 as one fact; on the 84's frame, 128 fixed deals split by *S1
+holds the 6-6 and S3 the 6-5* are found as exactly that pair (separation 1,
+coverage 100% / 100%, exact prior 7/60); a seeded state whose price clears the bar
+says no reason found (best single 0.498, best pair 0.67 under a chance of 0.87).
+
+**On the book study's disagreements** (`scratch/reason-v2/`; the pour player at
+current code, `k0,n512`, `make`, field `margin_d50k_h128x64`, seed 0; ten
+positions per rule from chunks s200001 up where Zeb's exact-best set is outside
+the book set at a price below −0.05, Zeb's tile against the book's best; the six
+worked reasons of [[book-study-2026-10-12]]):
+
+| rule | priced outside the bar | one fact | two facts | no reason found | median best single / pair | median chance, one / two |
+|---|---|---|---|---|---|---|
+| C3 biggest count first | 10 of 10 | 1 | 6 | 3 | 0.79 / 0.82 | 0.41 / 0.52 |
+| C7 pounce | 9 | 0 | 6 | 3 | 0.47 / 0.66 | 0.39 / 0.57 |
+| C10 trick-one off lead | 9 | 1 | 7 | 1 | 0.48 / 0.59 | 0.37 / 0.48 |
+| C12B double-up, lead low | 7 | 0 | 6 | 1 | 0.45 / 0.71 | 0.27 / 0.35 |
+| C21 six-five bait | 9 | 0 | 5 | 4 | 0.34 / 0.51 | 0.31 / 0.42 |
+| worked: feed the trump holder | 3 of 3 | 0 | 1 | 2 | 0.69 / 0.85 | 0.81 / 0.92 |
+| worked: throw a dead double | 3 of 3 | 0 | 2 | 1 | 0.55 / 0.77 | 0.35 / 0.43 |
+
+Of the 44 face-off prices outside the bar, a reason is found for 32 (2 one fact,
+30 two) and none for 12; of the six worked reasons, for 3. The first report's two
+positions, re-planned under this net: C3 deal 3194 (+0.38, bar 0.025) is found as
+two facts (0.81 against a chance of 0.76; the best single, 0.60, is under its
+chance of 0.65); C21 deal 3195's opening lead (+0.12) still has no reason (best
+single 0.33, pair 0.41). Two facts dominate because a single fact rarely clears
+1/2 (18 of 44), and many found pairs are two named holdings, which say where the
+split lies but not why. What recurs, by rule:
+
+- **C12B: the guard of the missing trump.** In 4 of 7 the explanation is *the
+  partner holds the missing top trump, or an opponent holds it with another
+  trump*, true in every world where the book's low lead makes and the double does
+  not: the low lead wins only there, and Zeb's double where that trump is bare
+  with an opponent. The book's rule reads only the
+  bidder's own trumps; the guard, the 84's 33/95 condition again, is one it omits.
+- **C10: the partner's ruff.** In 3 of 9, *the partner is void in the off's suit
+  and holds trump* (the best single in two, 0.52 and 0.66): the book's off lead
+  wins where the partner can ruff it, Zeb's trump lead elsewhere. The book's
+  permission does not name it.
+- **C3: the safe trick.** In 6 of 10 the opponent still to play holds trump or can
+  beat the trick as it stands (one found as *void in fives*, which reads alike):
+  the world form of the book's own safe trick,
+  which the C3 gate omits and `donate-when-safe` states. Not a condition the book
+  omits.
+- **C7: whether the bidder's side can overtake** — specific holdings (7 of 9),
+  named otherwise as the boss trump or a double (2 each): the world truth of the
+  pounce's own guard. **C21:** nothing recurs but guarded holdings of assorted
+  suits; four of nine have no reason. **The worked six:** the feed's late-hand
+  samples (12 and 30 scenarios) leave a chance level of 0.81–1.00, so its perfect
+  separators are not reasons; the dead double's partner holds the boss trump (2 of 3).
 
 ## Links
 

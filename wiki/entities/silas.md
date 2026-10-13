@@ -161,8 +161,12 @@ trick six and is graded to there.
   kernel and solver. texas-42's solver-backed teaching layer stayed behind; its answer
   key here is Zeb ([[scenario-player]]).
 - **Zeb's reasons.** The reason report (#124, [[scenario-player]] § The reason report)
-  names why Zeb prefers one tile in Silas: a declared space of holding and void queries,
-  each evaluated on Zeb's sampled worlds; the noise bar is Silas's three-valued compare
+  names why Zeb prefers one tile in Silas: a declared space of queries (holdings, voids,
+  the open trick's seats still to play, count at risk, the prelude's nouns as holdings,
+  and every two of them joined by `and` or `or`, each fact in its own `some` scope),
+  each evaluated on Zeb's sampled worlds, with a threshold and a chance level set before
+  looking; the prelude's frame-only concepts are constant over one decision's worlds and
+  enter as their world forms; the noise bar is Silas's three-valued compare
   on an `Estimate` from `SilasBelief.condition_likelihood` (a binding of Silas's own
   conditioning, added 2026-10-13).
 - **Next.** The book's rules as the book means them are written (§ The book, rule by

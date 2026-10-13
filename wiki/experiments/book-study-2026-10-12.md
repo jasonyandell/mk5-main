@@ -605,7 +605,13 @@ Zeb's worlds, and Zeb keeps it for a later trick the setters can win, on the hol
 names. Two dead-double positions are a ruff against a throw, and the third throws a ten onto
 the bidder's side's trick. These reasons explain Zeb's tile; each names a condition the
 encoding lacked, not a fault in the book's reasoning. The rules as fixed fire at none of
-the six.
+the six. Read again by the grown report, against a threshold and a chance level set before
+looking ([[scenario-player]] § The reason report), three of the six have a reason, each as
+two facts (one feed, two dead doubles); the other three (12, 30 and 60 scenarios late in
+the hand) do not clear the space's chance level, so the facts above are their best
+candidates, not reasons. On the face-off's C3, C7, C10, C12B and C21 positions the grown
+report finds a reason for 32 of 44 prices; C12B's recurring one, the guard of the missing
+trump, is a condition the book's rule omits.
 
 ## Data
 
