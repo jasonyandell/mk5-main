@@ -221,9 +221,10 @@ the book" reaches 62.2% but is an upper bound no other player is held to: 17.6% 
 are dead (pmake already 0 or 1, every tile ties) and supply nine of those eleven points. On rows
 where Zeb's best is unique the comparison is 52.8% against 56.0%.
 
-- **Book agreement separates strong from weak only weakly, and does not favor Zeb.** The oracle
-  picks the book's tile more often than Zeb, by about five points in every fair treatment, and
-  the Zeb-trained field net more still. Regret is what separates the players: −0.010 and −0.014
+- **Book agreement separates strong from weak only weakly, and does not favor Zeb.** By its
+  pick the oracle lands on the book's tile about five points more often than Zeb; by the exact-
+  best-set definition at a live bid (below) the two are level, and the Zeb-trained field net is
+  a point or two above both. Regret is what separates the players: −0.010 and −0.014
   for the two strong ones against −0.052 and −0.059.
 - **Where the gap lives: Zeb's indifference.** `make` is 0/1 over 512 worlds, so exact ties are
   common; the book has a rule at those spots and the oracle, playing for points, has a
@@ -239,6 +240,17 @@ where Zeb's best is unique the comparison is 52.8% against 56.0%.
   the bidder's count, a different act from the book's dump-before-partner (C7), which Zeb and the
   oracle both refuse at 26%. "The oracle disagrees with the book" was the most overstated of the
   three claims; "Zeb and the book agree" the second; the corrected statement is the one above.
+- **Dead rows revived by changing the bid** (Jason: "if Zeb has nothing to say because the bid
+  is won, let's change the bid"). Each of the 3,684 dead rows was re-planned by the deployed Zeb
+  at the bid closest to 30 that makes the position live (31, 29, 32, 28, …); 2,972 revived
+  (712 are dead at every bid, trick-seven forced and the like), with a nearly unique best set
+  (1.27 tiles; unique at 83%). At the new bid the book's tile is in Zeb's exact-best set at
+  60.1% and is Zeb's pick at 54.4%; the oracle's pick on the same rows is 59.9%, random 46.5%.
+  Over live and revived rows together (20,265), the book's move is in Zeb's exact-best set at
+  55.1%, against the oracle's pick at 56.4%: level. The agreement definition Zeb is held to
+  from here is "the book's move is among Zeb's exactly tied best moves at a live bid"; for the
+  oracle the best set is its pick, since its continuous values never tie exactly
+  (`scratch/faceoff/deadrows.py`, `out/deadrows.jsonl`).
 - **The stronger-Zeb re-plan** of the four "contradicts" verdicts (k1, 2,048 worlds, 300
   positions per gate) is running; its table is added here when it lands.
 
