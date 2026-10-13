@@ -149,6 +149,22 @@ impl Span {
         Some((line, column))
     }
 
+    /// Where in its source the span starts and ends, when it has one.
+    pub(crate) fn range(&self) -> Option<(usize, usize)> {
+        self.source.as_ref().map(|_| (self.start, self.end))
+    }
+
+    /// The source text the span covers, on one line, when it has a source.
+    pub(crate) fn text(&self) -> Option<String> {
+        let text = &self.source.as_ref()?.text[self.start..self.end];
+        Some(text.split_whitespace().collect::<Vec<_>>().join(" "))
+    }
+
+    /// A warning at this span, located and shown as an error is.
+    pub(crate) fn warning(&self, message: impl Into<String>) -> String {
+        self.error(format!("warning: {}", message.into())).0
+    }
+
     /// An error at this span: the message, and when the span has a source,
     /// its name, line and column, the line itself and a caret under the span.
     pub(crate) fn error(&self, message: impl Into<String>) -> Error {

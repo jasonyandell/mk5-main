@@ -18,10 +18,12 @@
 //! [`reference::Straight42`] is the reference declarations. See `README.md`.
 
 mod belief;
+mod coverage;
 mod dominance;
 mod dynamics;
 mod eval;
 mod frame;
+mod lint;
 mod measure;
 mod nouns;
 mod outcome;
@@ -35,6 +37,7 @@ mod sugar;
 mod syntax;
 
 pub use belief::{Belief, Certainty, Comparison, Difference, QuerySummary, Selection, SelectionLaw};
+pub use coverage::{Coverage, Funnel, RuleCoverage, why_not};
 pub use dominance::{Counterexample, Criterion, Decision, Dominance, Place};
 pub use dynamics::{
     AnswerDynamics, BeliefStep, ObservedPlay, PlayClass, anchor_back, compare_answers, play_is_legal, step_belief,
@@ -42,6 +45,7 @@ pub use dynamics::{
 };
 pub use eval::{Answer, Answers, Budget, CompiledQuery, Witness};
 pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
+pub use lint::Warning;
 pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
 pub use outcome::{Goal, OUTCOME_SCAN_CAP, forces, lay_down};

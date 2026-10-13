@@ -272,6 +272,11 @@ impl CompiledPolicy {
         &self.rules
     }
 
+    /// Whether the exact table holds the frame's key.
+    pub(crate) fn has_exact(&self, frame: &Frame) -> bool {
+        self.exact.contains_key(&PolicyKey::of(frame))
+    }
+
     /// What rule `k` says at `frame`: its guard's answers, and the tiles of
     /// `legal` it allows. An answer that is not legal is no tile.
     pub(crate) fn rule_allows(

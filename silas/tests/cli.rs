@@ -90,3 +90,70 @@ fn check_compiles_every_example_and_fmt_checks_and_rewrites() {
     let (ok, out) = silas(&["check", path.parent().unwrap().to_str().unwrap()]);
     assert!(!ok && out.contains("messy.silas:2:18: unregistered predicate mystery"), "{out}");
 }
+
+#[test]
+fn eval_says_why_each_earlier_rule_passed_and_takes_the_policy_as_its_file() {
+    let args = ["--hand", "hand-28", "--trick", "3", "--seat", "left"];
+    let (ok, out) = silas(&[&["eval", "examples/book/pounce.silas"][..], &args].concat());
+    assert!(ok, "{out}");
+    assert!(
+        out.contains(
+            "passed: rule no-count-on-a-lost-trick: stops at (some (roles (domino his)) (trick-play pard his))"
+        ),
+        "{out}"
+    );
+    assert!(out.contains("passed: rule play-a-ten-now: stops at (count give 10)"), "{out}");
+    assert!(out.contains("fired: rule play-a-five-now\n    3-2  <=  me=S1 l=S0 give=3-2"), "{out}");
+    // --policy still names it; a query handed to eval says where it goes.
+    let (ok, same) = silas(&[&["eval", "--policy", "examples/book/pounce.silas"][..], &args].concat());
+    assert!(ok && same == out, "{same}");
+    let (ok, out) = silas(&["eval", "examples/book/lay-down.silas", "--hand", "hand-21"]);
+    assert!(!ok && out.contains("is not a policy: silas query examples/book/lay-down.silas"), "{out}");
+}
+
+#[test]
+fn coverage_counts_each_rule_and_each_step_over_the_books_hands() {
+    let (ok, out) = silas(&["coverage", "examples/book/protect-the-count.silas", "--hand", "hand-33"]);
+    assert!(ok, "{out}");
+    assert!(out.contains("over 24 frames of hand-33, and 0 random deals"), "{out}");
+    assert!(out.contains("rule follow-the-master-without-count: decided 1, allowed 1, answered 1 of 24"), "{out}");
+    assert!(out.contains("  12/24  (setter me)\n"), "{out}");
+    assert!(out.contains("   1/24  (count-tile counted)\n  the fallback decided 23 of 24"), "{out}");
+    // A step that never holds is flagged; so is a rule that never decides.
+    let path = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("never.silas");
+    let never =
+        "(include book)\n(policy never\n  (rule r (play a)\n    (own-legal a)\n    (mine b)\n    (tile a b)))\n";
+    std::fs::write(&path, never).unwrap();
+    let (ok, out) = silas(&["coverage", path.to_str().unwrap(), "--hand", "hand-28"]);
+    assert!(ok && out.contains("! rule r: decided 0") && out.contains("!      0/"), "{out}");
+    assert!(out.lines().any(|l| l.starts_with("    !") && l.ends_with("(tile a b)")), "{out}");
+    // A query is covered too, where it reads only the viewer's frame.
+    let (ok, out) = silas(&["coverage", "examples/book/lay-down.silas", "--hand", "hand-21"]);
+    assert!(ok && out.contains("held at 1 of 1") && out.contains("1/1  (certain-make)"), "{out}");
+}
+
+#[test]
+fn expand_prints_the_core_and_check_prints_warnings() {
+    let (ok, out) = silas(&["expand", "examples/book/lay-down.silas"]);
+    assert!(ok && out.contains("(roles (chair b))\n  (out)\n  (pattern\n    (viewer b)\n    (declarer b)"), "{out}");
+    // check takes a file as well as a directory, and warns without failing.
+    let (ok, out) = silas(&["check", "examples/book/crisis.silas"]);
+    assert!(ok, "{out}");
+    assert!(out.contains("crisis.silas:78:13: warning: always true: his and l"), "{out}");
+    assert!(out.contains("1 compiled, 0 failed, 1 warnings"), "{out}");
+}
+
+#[test]
+fn a_misspelt_option_an_unknown_hand_or_command_is_refused_with_the_choices() {
+    let (ok, out) = silas(&["query", "examples/book/lay-down.silas", "--hand", "hand-21", "--trik", "2"]);
+    assert!(
+        !ok && out.contains("no option --trik here; the options are --hand, --trick, --seat, --cap, --book"),
+        "{out}"
+    );
+    let (ok, out) = silas(&["query", "examples/book/lay-down.silas", "--hand", "hand-99"]);
+    assert!(!ok && out.contains("no hand hand-99 in the book; the hands are hand-1,"), "{out}");
+    let (ok, out) = silas(&["frobnicate"]);
+    assert!(!ok && out.contains("no command frobnicate") && out.contains("silas coverage"), "{out}");
+    let (ok, out) = silas(&["help"]);
+    assert!(ok && out.starts_with("usage:"), "{out}");
+}
