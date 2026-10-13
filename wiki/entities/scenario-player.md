@@ -958,7 +958,7 @@ holds the 6-6 and S3 the 6-5* are found as exactly that pair (separation 1,
 coverage 100% / 100%, exact prior 7/60); a seeded state whose price clears the bar
 says no reason found (best single 0.498, best pair 0.67 under a chance of 0.87).
 
-**On the book study's disagreements** (`scratch/reason-v2/`; the pour player at
+**On the book study's disagreements** (published at `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/reason-v2/`; the pour player at
 current code, `k0,n512`, `make`, field `margin_d50k_h128x64`, seed 0; ten
 positions per rule from chunks s200001 up where Zeb's exact-best set is outside
 the book set at a price below −0.05, Zeb's tile against the book's best; the six
