@@ -5,10 +5,10 @@ use std::sync::Arc;
 
 use crate::auction::AuctionFrame;
 use crate::frame::{Frame, Holdings, World};
-use crate::nouns::DominoSet;
+use crate::nouns::{Domino, DominoSet};
 use crate::registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 use crate::syntax::{
-    Atom, Pattern, Quantifier, Query, Role, Scope as ScopeClause, Sort, Span, Term, Value, valid_name,
+    Atom, Pattern, Quantifier, Quantity, Query, Role, Scope as ScopeClause, Sort, Span, Term, Value, valid_name,
 };
 use crate::{Result, error};
 
@@ -65,11 +65,10 @@ struct CompiledAtom {
     negated: bool,
 }
 
-/// A `some` or `none` clause: its quantifier, its own classes, its body, and
-/// the enclosing classes the body reads.
+/// What a scope or an aggregate binds: its own classes, its body, and the
+/// enclosing classes the body reads.
 #[derive(Clone)]
-struct CompiledScope {
-    quantifier: Quantifier,
+struct Binder {
     locals: Vec<usize>,
     body: Vec<Clause>,
     reads: BTreeSet<usize>,
@@ -80,10 +79,50 @@ struct CompiledScope {
     schedule: Vec<Vec<usize>>,
 }
 
+/// A `some` or `none` clause.
+#[derive(Clone)]
+struct CompiledScope {
+    quantifier: Quantifier,
+    binder: Binder,
+}
+
+/// A number a comparison reads, as an interval: decided when its bounds meet.
+#[derive(Clone)]
+enum CompiledQuantity {
+    Number(u64),
+    Aggregate(CompiledAggregate),
+    Sum(Vec<CompiledQuantity>),
+}
+
+/// `(card ...)` or `(points ...)`. Its value at a frame is a function of
+/// its text and the values of the enclosing roles it names, so it is counted
+/// once per evaluation for each binding of those: `id` numbers its text
+/// among the aggregates evaluated together (one query, or one policy's rules
+/// of a section), and `free` lists the classes of the enclosing names it
+/// reads, in the order of their names.
+#[derive(Clone)]
+struct CompiledAggregate {
+    binder: Binder,
+    /// The class of the domino whose count is summed; none for `card`.
+    points: Option<usize>,
+    shape: String,
+    free: Vec<usize>,
+    id: usize,
+}
+
+/// `(<= left right)`, and the enclosing classes its aggregates read.
+#[derive(Clone)]
+struct CompiledAtMost {
+    left: CompiledQuantity,
+    right: CompiledQuantity,
+    reads: BTreeSet<usize>,
+}
+
 #[derive(Clone)]
 enum Clause {
     Atom(CompiledAtom),
     Scope(CompiledScope),
+    AtMost(Box<CompiledAtMost>),
 }
 
 #[derive(Clone)]
@@ -220,17 +259,31 @@ impl Compiler<'_> {
         for clause in &pattern.scopes {
             out.push(Clause::Scope(self.scope(clause, scope)?));
         }
+        for bound in &pattern.bounds {
+            let left = self.quantity(&bound.left, scope, &bound.span)?;
+            let right = self.quantity(&bound.right, scope, &bound.span)?;
+            let mut reads = left.reads();
+            reads.extend(right.reads());
+            out.push(Clause::AtMost(Box::new(CompiledAtMost { left, right, reads })));
+        }
         Ok(out)
     }
 
     fn scope(&mut self, clause: &ScopeClause, scope: &Scope) -> Result<CompiledScope> {
-        let classes = self.declare(&clause.roles, &clause.body.equal, scope, &clause.span)?;
+        let (binder, _) = self.binder(&clause.roles, &clause.body, scope, &clause.span)?;
+        Ok(CompiledScope { quantifier: clause.quantifier, binder })
+    }
+
+    /// Declare `roles` and compile `body` under them. Returns the binder and
+    /// each role's class.
+    fn binder(&mut self, roles: &[Role], body: &Pattern, scope: &Scope, span: &Span) -> Result<(Binder, Vec<usize>)> {
+        let classes = self.declare(roles, &body.equal, scope, span)?;
         let mut inner = scope.clone();
-        for (role, class) in clause.roles.iter().zip(&classes) {
+        for (role, class) in roles.iter().zip(&classes) {
             inner.insert(role.name.clone(), (*class, role.sort));
         }
         let locals: BTreeSet<usize> = classes.iter().copied().collect();
-        let body = self.clauses(&clause.body, &inner)?;
+        let body = self.clauses(body, &inner)?;
         let reads = body.iter().flat_map(Clause::vars).filter(|v| !locals.contains(v)).collect();
         let locals: Vec<usize> = locals.into_iter().collect();
         let mut schedule = vec![Vec::new(); locals.len() + 1];
@@ -238,7 +291,83 @@ impl Compiler<'_> {
             let depth = c.vars().iter().filter_map(|v| locals.iter().position(|l| l == v)).map(|k| k + 1).max();
             schedule[depth.unwrap_or(0)].push(i);
         }
-        Ok(CompiledScope { quantifier: clause.quantifier, locals, body, reads, schedule })
+        Ok((Binder { locals, body, reads, schedule }, classes))
+    }
+
+    fn quantity(&mut self, quantity: &Quantity, scope: &Scope, span: &Span) -> Result<CompiledQuantity> {
+        Ok(match quantity {
+            Quantity::Number(n) => CompiledQuantity::Number(u64::from(*n)),
+            Quantity::Parameter(name) => {
+                return Err(at(span, format!("{name} is a definition's number parameter, outside its definition")));
+            }
+            Quantity::Card(a) | Quantity::Points(a) => {
+                let points = matches!(quantity, Quantity::Points(_));
+                if points {
+                    if !matches!(&a.roles[..], [role] if role.sort == Sort::Domino) {
+                        return Err(at(&a.span, "points sums the count of one domino role".into()));
+                    }
+                    // The sum reads each tile's count, as the count predicate does.
+                    let count =
+                        self.registry.predicates.get("count").ok_or_else(|| {
+                            at(&a.span, "points reads the count, and the registry has no count".into())
+                        })?;
+                    self.used.insert("count".to_owned(), count.spec().clone());
+                }
+                let (binder, classes) = self.binder(&a.roles, &a.body, scope, &a.span)?;
+                // The enclosing names the aggregate's text reads, in order.
+                let mut names = BTreeSet::new();
+                let own = a.roles.iter().map(|r| r.name.clone()).collect();
+                crate::syntax::free_names(&a.body, &own, &mut names);
+                let free = names.iter().map(|n| scope[n].0).collect();
+                CompiledQuantity::Aggregate(CompiledAggregate {
+                    points: points.then(|| classes[0]),
+                    shape: crate::syntax::quantity_text(quantity),
+                    free,
+                    id: 0,
+                    binder,
+                })
+            }
+            Quantity::Sum(parts) => {
+                CompiledQuantity::Sum(parts.iter().map(|q| self.quantity(q, scope, span)).collect::<Result<_>>()?)
+            }
+        })
+    }
+}
+
+impl CompiledQuantity {
+    /// The enclosing classes its aggregates read.
+    fn reads(&self) -> BTreeSet<usize> {
+        match self {
+            CompiledQuantity::Number(_) => BTreeSet::new(),
+            CompiledQuantity::Aggregate(a) => a.binder.reads.clone(),
+            CompiledQuantity::Sum(parts) => parts.iter().flat_map(CompiledQuantity::reads).collect(),
+        }
+    }
+}
+
+/// Number every aggregate by its text, in `table`: two aggregates of one
+/// text get one number, so an evaluation that reads both counts it once.
+fn intern(clauses: &mut [Clause], table: &mut BTreeMap<String, usize>) {
+    fn quantity(q: &mut CompiledQuantity, table: &mut BTreeMap<String, usize>) {
+        match q {
+            CompiledQuantity::Number(_) => {}
+            CompiledQuantity::Aggregate(a) => {
+                let next = table.len();
+                a.id = *table.entry(a.shape.clone()).or_insert(next);
+                intern(&mut a.binder.body, table);
+            }
+            CompiledQuantity::Sum(parts) => parts.iter_mut().for_each(|p| quantity(p, table)),
+        }
+    }
+    for clause in clauses {
+        match clause {
+            Clause::Atom(_) => {}
+            Clause::Scope(scope) => intern(&mut scope.binder.body, table),
+            Clause::AtMost(bound) => {
+                quantity(&mut bound.left, table);
+                quantity(&mut bound.right, table);
+            }
+        }
     }
 }
 
@@ -289,6 +418,10 @@ impl Query {
                 clauses,
             });
         }
+        let mut shapes = BTreeMap::new();
+        for pattern in &mut patterns {
+            intern(&mut pattern.clauses, &mut shapes);
+        }
         if self.patterns.is_empty() {
             // Still refuse invalid role declarations.
             Compiler { registry, sorts: Vec::new(), roles: 0, used: BTreeMap::new() }.declare(
@@ -316,10 +449,25 @@ enum Reader<'a> {
     Auction(&'a AuctionFrame),
 }
 
+/// What one evaluation reads: the reader, and the aggregates it has counted
+/// so far. An aggregate's interval is a function of the reader and the
+/// values of the enclosing roles it reads, so within one evaluation each is
+/// counted once per binding of those.
+#[derive(Clone, Copy)]
+struct Cx<'a> {
+    reader: Reader<'a>,
+    memo: &'a Memo,
+}
+
+/// Counted aggregates, keyed by the binder (its place in the compiled
+/// query) and the values its reads were bound to: the interval, and whether
+/// the count ran to the end (else it stopped at a cap, its low end there).
+pub(crate) type Memo = std::cell::RefCell<BTreeMap<(usize, Vec<Value>), (u64, u64, bool)>>;
+
 impl CompiledAtom {
     /// `Some(true)` when the atom (or its negation) holds, `Some(false)` when
     /// it fails, `None` when the predicate is undefined here.
-    fn evaluate(&self, reader: Reader<'_>, values: &[Option<Value>], budget: &mut Budget) -> Result<Option<bool>> {
+    fn evaluate(&self, cx: Cx<'_>, values: &[Option<Value>], budget: &mut Budget) -> Result<Option<bool>> {
         budget.spend(1)?;
         let arg = |t: &Bound| match t {
             Bound::Variable(i) => values[*i].expect("a ready atom"),
@@ -338,7 +486,7 @@ impl CompiledAtom {
             collected = self.terms.iter().map(arg).collect();
             &collected
         };
-        let context = match (self.access, reader) {
+        let context = match (self.access, cx.reader) {
             (Access::Viewer, Reader::Viewer(frame)) => PredicateContext::Viewer(frame),
             (Access::Viewer, Reader::World(holdings)) => PredicateContext::Viewer(holdings.frame()),
             (Access::World, Reader::World(holdings)) => PredicateContext::World(holdings),
@@ -348,6 +496,17 @@ impl CompiledAtom {
             (Access::Viewer, Reader::Auction(frame)) => PredicateContext::Auction(frame),
         };
         Ok(self.predicate.evaluate(context, args, budget)?.map(|value| value != self.negated))
+    }
+}
+
+impl Reader<'_> {
+    /// The count points on `tile`, from the frame's tables.
+    fn count(&self, tile: Domino) -> u64 {
+        u64::from(match self {
+            Reader::Viewer(frame) => frame.physics().count(tile),
+            Reader::World(holdings) => holdings.frame().physics().count(tile),
+            Reader::Auction(frame) => frame.count(tile),
+        })
     }
 }
 
@@ -363,7 +522,8 @@ impl Clause {
                     Bound::Literal(_) => None,
                 })
                 .collect(),
-            Clause::Scope(scope) => scope.reads.clone(),
+            Clause::Scope(scope) => scope.binder.reads.clone(),
+            Clause::AtMost(bound) => bound.reads.clone(),
         }
     }
 
@@ -373,32 +533,28 @@ impl Clause {
                 Bound::Variable(v) => values[*v].is_some(),
                 Bound::Literal(_) => true,
             }),
-            Clause::Scope(scope) => scope.reads.iter().all(|v| values[*v].is_some()),
+            Clause::Scope(scope) => scope.binder.reads.iter().all(|v| values[*v].is_some()),
+            Clause::AtMost(bound) => bound.reads.iter().all(|v| values[*v].is_some()),
         }
     }
 
     fn evaluate(
         &self,
-        reader: Reader<'_>,
+        cx: Cx<'_>,
         sorts: &[Sort],
         values: &mut [Option<Value>],
         budget: &mut Budget,
     ) -> Result<Option<bool>> {
         match self {
-            Clause::Atom(atom) => atom.evaluate(reader, values, budget),
-            Clause::Scope(scope) => scope.evaluate(reader, sorts, values, budget),
+            Clause::Atom(atom) => atom.evaluate(cx, values, budget),
+            Clause::Scope(scope) => scope.evaluate(cx, sorts, values, budget),
+            Clause::AtMost(bound) => bound.evaluate(cx, sorts, values, budget),
         }
     }
 
     /// Whether the clause holds: an undefined clause does not.
-    fn holds(
-        &self,
-        reader: Reader<'_>,
-        sorts: &[Sort],
-        values: &mut [Option<Value>],
-        budget: &mut Budget,
-    ) -> Result<bool> {
-        Ok(self.evaluate(reader, sorts, values, budget)? == Some(true))
+    fn holds(&self, cx: Cx<'_>, sorts: &[Sort], values: &mut [Option<Value>], budget: &mut Budget) -> Result<bool> {
+        Ok(self.evaluate(cx, sorts, values, budget)? == Some(true))
     }
 }
 
@@ -410,17 +566,22 @@ impl CompiledScope {
     /// otherwise; `none` is its negation, undefined where it is.
     fn evaluate(
         &self,
-        reader: Reader<'_>,
+        cx: Cx<'_>,
         sorts: &[Sort],
         values: &mut [Option<Value>],
         budget: &mut Budget,
     ) -> Result<Option<bool>> {
-        let mut undefined = false;
-        let found = self.witness(0, reader, sorts, values, false, &mut undefined, budget);
-        for v in &self.locals {
-            values[*v] = None;
-        }
-        let exists = if found? {
+        let (mut found, mut undefined) = (false, false);
+        self.binder.search(cx, sorts, values, budget, &mut |unsure, _| {
+            if unsure {
+                undefined = true;
+                false
+            } else {
+                found = true;
+                true
+            }
+        })?;
+        let exists = if found {
             Some(true)
         } else if undefined {
             None
@@ -432,35 +593,53 @@ impl CompiledScope {
             Quantifier::None => exists.map(|e| !e),
         })
     }
+}
 
-    /// Whether some extension of the binding so far satisfies the body.
-    /// Clauses are checked as soon as their roles are bound (the schedule);
-    /// a failed one refutes every extension, an undefined one leaves them
-    /// unrefuted unless a later clause fails.
+impl Binder {
+    /// Visit every binding of the locals, distinct from one another, that no
+    /// body clause refutes: `visit(unsure, values)`, `unsure` when some
+    /// clause was undefined, until `visit` says stop. Clauses are checked as
+    /// soon as their roles are bound (the schedule), so a refuted clause
+    /// prunes every extension. The locals are unbound again on return.
+    fn search(
+        &self,
+        cx: Cx<'_>,
+        sorts: &[Sort],
+        values: &mut [Option<Value>],
+        budget: &mut Budget,
+        visit: &mut dyn FnMut(bool, &[Option<Value>]) -> bool,
+    ) -> Result<()> {
+        let result = self.extend(0, cx, sorts, values, false, budget, visit);
+        for v in &self.locals {
+            values[*v] = None;
+        }
+        result.map(drop)
+    }
+
+    /// Whether `visit` said stop below this binding so far.
     #[allow(clippy::too_many_arguments)]
-    fn witness(
+    fn extend(
         &self,
         depth: usize,
-        reader: Reader<'_>,
+        cx: Cx<'_>,
         sorts: &[Sort],
         values: &mut [Option<Value>],
         mut unsure: bool,
-        undefined: &mut bool,
         budget: &mut Budget,
+        visit: &mut dyn FnMut(bool, &[Option<Value>]) -> bool,
     ) -> Result<bool> {
         budget.spend(1)?;
         for i in &self.schedule[depth] {
             let clause = &self.body[*i];
             debug_assert!(clause.ready(values), "a scheduled clause is ready");
-            match clause.evaluate(reader, sorts, values, budget)? {
+            match clause.evaluate(cx, sorts, values, budget)? {
                 Some(true) => {}
                 Some(false) => return Ok(false),
                 None => unsure = true,
             }
         }
         if depth == self.locals.len() {
-            *undefined |= unsure;
-            return Ok(!unsure);
+            return Ok(visit(unsure, values));
         }
         let v = self.locals[depth];
         for candidate in sorts[v].values().iter().copied() {
@@ -470,12 +649,114 @@ impl CompiledScope {
                 continue;
             }
             values[v] = Some(candidate);
-            if self.witness(depth + 1, reader, sorts, values, unsure, undefined, budget)? {
+            if self.extend(depth + 1, cx, sorts, values, unsure, budget, visit)? {
                 return Ok(true);
             }
         }
         values[v] = None;
         Ok(false)
+    }
+}
+
+impl CompiledAggregate {
+    /// The aggregate's interval: the weight of the satisfied bindings, and
+    /// that plus the weight of the unsettled ones. Each binding weighs one,
+    /// or the count of its domino for `points`. Once the satisfied weight
+    /// reaches `cap` the count stops: past it the caller's comparison is
+    /// decided.
+    fn interval(
+        &self,
+        cap: Option<u64>,
+        cx: Cx<'_>,
+        sorts: &[Sort],
+        values: &mut [Option<Value>],
+        budget: &mut Budget,
+    ) -> Result<(u64, u64)> {
+        let key = (self.id, self.free.iter().map(|v| values[*v].expect("a read role is bound")).collect());
+        if let Some(&(low, high, whole)) = cx.memo.borrow().get(&key)
+            && (whole || cap.is_some_and(|c| low >= c))
+        {
+            return Ok((low, high));
+        }
+        let (mut satisfied, mut unsettled, mut stopped) = (0u64, 0u64, false);
+        let points = self.points;
+        self.binder.search(cx, sorts, values, budget, &mut |unsure, values| {
+            let weight = match points.map(|class| values[class]) {
+                Some(Some(Value::Domino(tile))) => cx.reader.count(tile),
+                Some(_) => unreachable!("points sums a domino role"),
+                None => 1,
+            };
+            if unsure {
+                unsettled += weight;
+            } else {
+                satisfied += weight;
+            }
+            stopped = cap.is_some_and(|c| satisfied >= c);
+            stopped
+        })?;
+        cx.memo.borrow_mut().insert(key, (satisfied, satisfied + unsettled, !stopped));
+        Ok((satisfied, satisfied + unsettled))
+    }
+}
+
+impl CompiledQuantity {
+    /// The interval of values the quantity takes at this binding: exact
+    /// unless an aggregate's body is undefined at some binding. With `cap`,
+    /// the low end may stop at the cap once it reaches it.
+    fn interval(
+        &self,
+        cap: Option<u64>,
+        cx: Cx<'_>,
+        sorts: &[Sort],
+        values: &mut [Option<Value>],
+        budget: &mut Budget,
+    ) -> Result<(u64, u64)> {
+        match self {
+            CompiledQuantity::Number(n) => Ok((*n, *n)),
+            CompiledQuantity::Aggregate(aggregate) => aggregate.interval(cap, cx, sorts, values, budget),
+            CompiledQuantity::Sum(parts) => {
+                let (mut low, mut high) = (0, 0);
+                for part in parts {
+                    // Every part is nonnegative, so a part at the cap puts
+                    // the sum there too.
+                    let (l, h) = part.interval(cap, cx, sorts, values, budget)?;
+                    (low, high) = (low + l, high + h);
+                    if cap.is_some_and(|c| low >= c) {
+                        break;
+                    }
+                }
+                Ok((low, high))
+            }
+        }
+    }
+}
+
+impl CompiledAtMost {
+    /// `left <= right` over the two intervals: true when every value of the
+    /// left is at most every value of the right, false when none is,
+    /// undefined otherwise. Against a literal the aggregate stops counting
+    /// once that is settled.
+    fn evaluate(
+        &self,
+        cx: Cx<'_>,
+        sorts: &[Sort],
+        values: &mut [Option<Value>],
+        budget: &mut Budget,
+    ) -> Result<Option<bool>> {
+        let ((left_low, left_high), (right_low, right_high)) = match (&self.left, &self.right) {
+            (left, CompiledQuantity::Number(n)) => ((left.interval(Some(n + 1), cx, sorts, values, budget)?), (*n, *n)),
+            (CompiledQuantity::Number(n), right) => ((*n, *n), right.interval(Some(*n), cx, sorts, values, budget)?),
+            (left, right) => {
+                (left.interval(None, cx, sorts, values, budget)?, right.interval(None, cx, sorts, values, budget)?)
+            }
+        };
+        Ok(if left_high <= right_low {
+            Some(true)
+        } else if left_low > right_high {
+            Some(false)
+        } else {
+            None
+        })
     }
 }
 
@@ -542,15 +823,41 @@ impl CompiledQuery {
     /// Evaluate a query that reads no world. Refused, before any work, if it
     /// names a `World` predicate or one of the auction alone.
     pub fn evaluate_viewer(&self, frame: &Frame, budget: &mut Budget) -> Result<Answers> {
+        self.evaluate_viewer_with(frame, &Memo::default(), budget)
+    }
+
+    /// [`Self::evaluate_viewer`], counting each aggregate once with every
+    /// query evaluated at `frame` under `memo` (queries interned together).
+    pub(crate) fn evaluate_viewer_with(&self, frame: &Frame, memo: &Memo, budget: &mut Budget) -> Result<Answers> {
         self.admits(Phase::Play, true)?;
-        self.run(Reader::Viewer(frame), budget)
+        self.run_with(Reader::Viewer(frame), memo, budget)
     }
 
     /// Evaluate a query at a seat's view of the auction. Refused, before any
     /// work, if it names a `World` predicate or one of the play alone.
     pub fn evaluate_auction(&self, frame: &AuctionFrame, budget: &mut Budget) -> Result<Answers> {
+        self.evaluate_auction_with(frame, &Memo::default(), budget)
+    }
+
+    /// [`Self::evaluate_auction`] under a shared `memo`, as
+    /// [`Self::evaluate_viewer_with`].
+    pub(crate) fn evaluate_auction_with(
+        &self,
+        frame: &AuctionFrame,
+        memo: &Memo,
+        budget: &mut Budget,
+    ) -> Result<Answers> {
         self.admits(Phase::Auction, true)?;
-        self.run(Reader::Auction(frame), budget)
+        self.run_with(Reader::Auction(frame), memo, budget)
+    }
+
+    /// Number this query's aggregates by their texts in `table`, shared with
+    /// the other queries that will be evaluated under one memo: equal texts,
+    /// one number.
+    pub(crate) fn intern(&mut self, table: &mut BTreeMap<String, usize>) {
+        for pattern in &mut self.patterns {
+            intern(&mut pattern.clauses, table);
+        }
     }
 
     /// The answers at a frame, as [`Self::evaluate_viewer`], each with one
@@ -570,18 +877,25 @@ impl CompiledQuery {
     fn witnessed(&self, reader: Reader<'_>, budget: &mut Budget) -> Result<Vec<(Answer, Witness)>> {
         let mut witnesses = BTreeMap::new();
         budget.spend(1)?;
+        let memo = Memo::default();
+        let cx = Cx { reader, memo: &memo };
         let mut answers = Answers::new();
         for pattern in &self.patterns {
-            pattern.evaluate(reader, budget, &mut answers, Some(&mut witnesses))?;
+            pattern.evaluate(cx, budget, &mut answers, Some(&mut witnesses))?;
         }
         Ok(witnesses.into_iter().collect())
     }
 
     fn run(&self, reader: Reader<'_>, budget: &mut Budget) -> Result<Answers> {
+        self.run_with(reader, &Memo::default(), budget)
+    }
+
+    fn run_with(&self, reader: Reader<'_>, memo: &Memo, budget: &mut Budget) -> Result<Answers> {
         budget.spend(1)?;
+        let cx = Cx { reader, memo };
         let mut answers = Answers::new();
         for pattern in &self.patterns {
-            pattern.evaluate(reader, budget, &mut answers, None)?;
+            pattern.evaluate(cx, budget, &mut answers, None)?;
         }
         Ok(answers)
     }
@@ -593,7 +907,7 @@ pub type Witness = Vec<(String, Value)>;
 impl CompiledPattern {
     fn evaluate(
         &self,
-        reader: Reader<'_>,
+        cx: Cx<'_>,
         budget: &mut Budget,
         answers: &mut Answers,
         witnesses: Option<&mut BTreeMap<Answer, Witness>>,
@@ -614,7 +928,7 @@ impl CompiledPattern {
             }
         }
         for i in constant {
-            if !self.clauses[i].holds(reader, &self.sorts, &mut values, budget)? {
+            if !self.clauses[i].holds(cx, &self.sorts, &mut values, budget)? {
                 return Ok(());
             }
         }
@@ -626,7 +940,7 @@ impl CompiledPattern {
                 values[v] = Some(candidate);
                 let mut admitted = true;
                 for c in &unary[v] {
-                    if !self.clauses[*c].holds(reader, &self.sorts, &mut values, budget)? {
+                    if !self.clauses[*c].holds(cx, &self.sorts, &mut values, budget)? {
                         admitted = false;
                         break;
                     }
@@ -643,7 +957,7 @@ impl CompiledPattern {
         }
         let mut order: Vec<usize> = (0..self.outer).collect();
         order.sort_by_key(|v| (domains[*v].len(), *v));
-        Search { pattern: self, reader, budget, answers, witnesses, domains: &domains, order: &order }.walk(
+        Search { pattern: self, cx, budget, answers, witnesses, domains: &domains, order: &order }.walk(
             0,
             &mut values,
             &joined,
@@ -653,7 +967,7 @@ impl CompiledPattern {
 
 struct Search<'a, 's> {
     pattern: &'a CompiledPattern,
-    reader: Reader<'s>,
+    cx: Cx<'s>,
     budget: &'a mut Budget,
     answers: &'a mut Answers,
     witnesses: Option<&'a mut BTreeMap<Answer, Witness>>,
@@ -675,7 +989,7 @@ impl Search<'_, '_> {
             let clause = &self.pattern.clauses[*i];
             if !clause.ready(values) {
                 rest.push(*i);
-            } else if !clause.holds(self.reader, &self.pattern.sorts, values, self.budget)? {
+            } else if !clause.holds(self.cx, &self.pattern.sorts, values, self.budget)? {
                 return Ok(());
             }
         }

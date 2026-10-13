@@ -437,7 +437,63 @@ pub struct Pattern {
     pub equal: Vec<Vec<String>>,
     pub atoms: Vec<Atom>,
     pub scopes: Vec<Scope>,
+    /// `(<= a b)` clauses: comparisons of numbers, aggregates among them.
+    pub bounds: Vec<AtMost>,
     pub span: Span,
+}
+
+/// A number a comparison reads. Numbers are never roles: a quantity is a
+/// literal, an aggregate over a scope's bindings, or a sum of quantities.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Quantity {
+    Number(u32),
+    /// A definition's `(number n)` parameter, replaced by its argument when
+    /// the definition is called; never in a query as read.
+    Parameter(String),
+    /// `(card (roles r ...) clause ...)`: how many bindings of the roles
+    /// satisfy the body.
+    Card(Aggregate),
+    /// `(points (roles d) clause ...)`: the count points of the domino `d`,
+    /// summed over the bindings that satisfy the body.
+    Points(Aggregate),
+    /// `(+ q ...)`.
+    Sum(Vec<Quantity>),
+}
+
+/// The bindings an aggregate ranges over: its own roles, distinct from one
+/// another and not from the roles around it, and the body they satisfy. A
+/// stratified scope, as `some` and `none` are.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Aggregate {
+    pub roles: Vec<Role>,
+    pub body: Pattern,
+    pub span: Span,
+}
+
+/// `(<= left right)`: the core's one comparison. The short forms `<`, `>=`,
+/// `>`, `=` and `/=` are read into it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AtMost {
+    pub left: Quantity,
+    pub right: Quantity,
+    pub span: Span,
+}
+
+impl AtMost {
+    /// Its negation, by the semantics: not `a <= b` is `b + 1 <= a`.
+    pub(crate) fn negated(&self) -> AtMost {
+        AtMost { left: self.right.plus_one(), right: self.left.clone(), span: self.span.clone() }
+    }
+}
+
+impl Quantity {
+    /// `q + 1`, a literal folded.
+    pub(crate) fn plus_one(&self) -> Quantity {
+        match self {
+            Quantity::Number(n) if *n < u32::MAX => Quantity::Number(n + 1),
+            q => Quantity::Sum(vec![q.clone(), Quantity::Number(1)]),
+        }
+    }
 }
 
 /// How a scope binds its roles.
@@ -477,8 +533,8 @@ pub(crate) fn valid_name(s: &str) -> bool {
 }
 
 /// Words the grammar reserves: no predicate or definition takes them.
-pub(crate) const RESERVED: [&str; 11] =
-    ["query", "roles", "out", "pattern", "same", "not", "none", "some", "define", "and", "or"];
+pub(crate) const RESERVED: [&str; 13] =
+    ["query", "roles", "out", "pattern", "same", "not", "none", "some", "define", "and", "or", "card", "points"];
 
 /// Reserved words that head a part of a query or a definition, never a clause.
 const NOT_CLAUSES: [&str; 5] = ["query", "roles", "out", "pattern", "define"];
@@ -704,6 +760,18 @@ impl Library {
                     }
                     pattern.equal.push(xs[1..].iter().map(|x| x.word().map(str::to_owned)).collect::<Result<_>>()?);
                 }
+                Some("<=") => {
+                    let [_, left, right] = xs else {
+                        return Err(clause.span.error("<= compares two numbers: (<= a b)"));
+                    };
+                    let (left, right) = (self.quantity(left, names)?, self.quantity(right, names)?);
+                    pattern.bounds.push(AtMost { left, right, span: clause.span.clone() });
+                }
+                Some(part @ ("card" | "points" | "+")) => {
+                    return Err(clause
+                        .span
+                        .error(format!("({part} ...) is a number, not a clause: compare it, as (<= ({part} ...) 3)")));
+                }
                 Some(quantifier @ ("none" | "some")) => {
                     let declared = xs.get(1).ok_or_else(|| {
                         clause.span.error(format!("{quantifier} syntax is ({quantifier} (roles ...) clause ...)"))
@@ -725,6 +793,46 @@ impl Library {
             }
         }
         Ok(pattern)
+    }
+
+    /// A number a comparison reads: a literal, a definition's number
+    /// parameter, `(card (roles ...) clause ...)`, `(points (roles d) clause
+    /// ...)` or `(+ q ...)`.
+    fn quantity(&self, x: &Expr, names: &Names) -> Result<Quantity> {
+        let xs = match &x.kind {
+            Kind::Word(w) => {
+                return match Value::literal(w) {
+                    Some(Value::Number(n)) => Ok(Quantity::Number(n)),
+                    None if names.get(w) == Some(&Sort::Number) => Ok(Quantity::Parameter(w.clone())),
+                    _ => Err(x.span.error(format!(
+                        "{w} is not a number: a number is a literal, (card ...), (points ...) or (+ ...), never a role"
+                    ))),
+                };
+            }
+            _ => x.list()?,
+        };
+        match x.head() {
+            Some("+") => Ok(Quantity::Sum(xs[1..].iter().map(|q| self.quantity(q, names)).collect::<Result<_>>()?)),
+            Some(kind @ ("card" | "points")) => {
+                let declared = xs
+                    .get(1)
+                    .filter(|d| d.head() == Some("roles"))
+                    .ok_or_else(|| x.span.error(format!("{kind} syntax is ({kind} (roles ...) clause ...)")))?;
+                let declared = if kind == "points" { sugar::dominoes(declared)? } else { declared.clone() };
+                let roles = self.roles(&declared, &[&xs[2..]], false)?;
+                if kind == "points" && !matches!(&roles[..], [role] if role.sort == Sort::Domino) {
+                    return Err(declared
+                        .span
+                        .error("points sums the count of one domino: (points (roles d) clause ...)"));
+                }
+                let mut inner = names.clone();
+                inner.extend(roles.iter().map(|r| (r.name.clone(), r.sort)));
+                let body = self.body(&xs[2..], &inner, x.span.clone())?;
+                let aggregate = Aggregate { roles, body, span: x.span.clone() };
+                Ok(if kind == "card" { Quantity::Card(aggregate) } else { Quantity::Points(aggregate) })
+            }
+            _ => Err(x.span.error("a number is a literal, (card ...), (points ...) or (+ ...)")),
+        }
     }
 
     /// A call of a definition, expanded in place: its body with the
@@ -765,12 +873,15 @@ impl Library {
         if !call.negated {
             pattern.atoms.extend(body.atoms);
             pattern.scopes.extend(body.scopes);
-        } else if let ([one], []) = (body.atoms.as_slice(), body.scopes.as_slice()) {
+            pattern.bounds.extend(body.bounds);
+        } else if let ([one], [], []) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice()) {
             pattern.atoms.push(Atom { negated: !one.negated, ..one.clone() });
-        } else if let ([], [one]) = (body.atoms.as_slice(), body.scopes.as_slice())
+        } else if let ([], [one], []) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice())
             && one.quantifier == Quantifier::Some
         {
             pattern.scopes.push(Scope { quantifier: Quantifier::None, ..one.clone() });
+        } else if let ([], [], [one]) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice()) {
+            pattern.bounds.push(one.negated());
         } else {
             pattern.scopes.push(Scope { quantifier: Quantifier::None, roles: vec![], body, span: call.span });
         }
@@ -821,24 +932,72 @@ fn instantiate(
         .scopes
         .iter()
         .map(|s| {
-            let mut inner = substitution.clone();
-            let roles = s
-                .roles
-                .iter()
-                .map(|r| {
-                    let name = fresh(&r.name, taken);
-                    inner.insert(r.name.clone(), Term::Role(name.clone()));
-                    Role { name, sort: r.sort, span: at.clone() }
-                })
-                .collect();
-            Scope { quantifier: s.quantifier, roles, body: instantiate(&s.body, &inner, taken, at), span: at.clone() }
+            let (roles, body) = bind(&s.roles, &s.body, substitution, taken, at);
+            Scope { quantifier: s.quantifier, roles, body, span: at.clone() }
+        })
+        .collect();
+    let bounds = pattern
+        .bounds
+        .iter()
+        .map(|b| AtMost {
+            left: instantiate_quantity(&b.left, substitution, taken, at),
+            right: instantiate_quantity(&b.right, substitution, taken, at),
+            span: at.clone(),
         })
         .collect();
     Pattern {
         equal: pattern.equal.iter().map(|g| g.iter().map(rename).collect()).collect(),
         atoms,
         scopes,
+        bounds,
         span: at.clone(),
+    }
+}
+
+/// A scope's or an aggregate's roles renamed apart, and its body under them.
+fn bind(
+    roles: &[Role],
+    body: &Pattern,
+    substitution: &BTreeMap<String, Term>,
+    taken: &mut BTreeSet<String>,
+    at: &Span,
+) -> (Vec<Role>, Pattern) {
+    let mut inner = substitution.clone();
+    let roles = roles
+        .iter()
+        .map(|r| {
+            let name = fresh(&r.name, taken);
+            inner.insert(r.name.clone(), Term::Role(name.clone()));
+            Role { name, sort: r.sort, span: at.clone() }
+        })
+        .collect();
+    (roles, instantiate(body, &inner, taken, at))
+}
+
+/// A quantity with each number parameter replaced by its argument and each
+/// aggregate's roles renamed apart.
+fn instantiate_quantity(
+    quantity: &Quantity,
+    substitution: &BTreeMap<String, Term>,
+    taken: &mut BTreeSet<String>,
+    at: &Span,
+) -> Quantity {
+    let aggregate = |a: &Aggregate, taken: &mut BTreeSet<String>| {
+        let (roles, body) = bind(&a.roles, &a.body, substitution, taken, at);
+        Aggregate { roles, body, span: at.clone() }
+    };
+    match quantity {
+        Quantity::Number(n) => Quantity::Number(*n),
+        Quantity::Parameter(name) => match substitution.get(name) {
+            Some(Term::Literal(Value::Number(n))) => Quantity::Number(*n),
+            Some(Term::Role(other)) => Quantity::Parameter(other.clone()),
+            _ => Quantity::Parameter(name.clone()),
+        },
+        Quantity::Card(a) => Quantity::Card(aggregate(a, taken)),
+        Quantity::Points(a) => Quantity::Points(aggregate(a, taken)),
+        Quantity::Sum(parts) => {
+            Quantity::Sum(parts.iter().map(|q| instantiate_quantity(q, substitution, taken, at)).collect())
+        }
     }
 }
 
@@ -959,7 +1118,78 @@ fn write_body(f: &mut fmt::Formatter<'_>, pattern: &Pattern, indent: usize) -> f
         write_body(f, &scope.body, indent + 2)?;
         write!(f, ")")?;
     }
+    for bound in &pattern.bounds {
+        write!(f, "\n{pad}(<= ")?;
+        write_quantity(f, &bound.left, indent + 2)?;
+        write!(f, " ")?;
+        write_quantity(f, &bound.right, indent + 2)?;
+        write!(f, ")")?;
+    }
     Ok(())
+}
+
+/// The names a body reads from around it: every role name it uses that no
+/// scope or aggregate inside it binds.
+pub(crate) fn free_names(pattern: &Pattern, bound: &BTreeSet<String>, out: &mut BTreeSet<String>) {
+    let used = pattern.equal.iter().flatten().chain(
+        pattern.atoms.iter().flat_map(|a| &a.args).filter_map(|t| if let Term::Role(n) = t { Some(n) } else { None }),
+    );
+    out.extend(used.filter(|n| !bound.contains(*n)).cloned());
+    let inside = |roles: &[Role], body: &Pattern, out: &mut BTreeSet<String>| {
+        let mut bound = bound.clone();
+        bound.extend(roles.iter().map(|r| r.name.clone()));
+        free_names(body, &bound, out);
+    };
+    for scope in &pattern.scopes {
+        inside(&scope.roles, &scope.body, out);
+    }
+    fn quantity(q: &Quantity, bound: &BTreeSet<String>, out: &mut BTreeSet<String>) {
+        match q {
+            Quantity::Card(a) | Quantity::Points(a) => {
+                let mut bound = bound.clone();
+                bound.extend(a.roles.iter().map(|r| r.name.clone()));
+                free_names(&a.body, &bound, out);
+            }
+            Quantity::Sum(parts) => parts.iter().for_each(|p| quantity(p, bound, out)),
+            Quantity::Number(_) | Quantity::Parameter(_) => {}
+        }
+    }
+    for b in &pattern.bounds {
+        quantity(&b.left, bound, out);
+        quantity(&b.right, bound, out);
+    }
+}
+
+/// A quantity as the core prints it.
+pub(crate) fn quantity_text(quantity: &Quantity) -> String {
+    struct Shown<'a>(&'a Quantity);
+    impl fmt::Display for Shown<'_> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write_quantity(f, self.0, 0)
+        }
+    }
+    Shown(quantity).to_string()
+}
+
+fn write_quantity(f: &mut fmt::Formatter<'_>, quantity: &Quantity, indent: usize) -> fmt::Result {
+    let (tag, aggregate) = match quantity {
+        Quantity::Number(n) => return write!(f, "{n}"),
+        Quantity::Parameter(name) => return write!(f, "{name}"),
+        Quantity::Sum(parts) => {
+            write!(f, "(+")?;
+            for part in parts {
+                write!(f, " ")?;
+                write_quantity(f, part, indent)?;
+            }
+            return write!(f, ")");
+        }
+        Quantity::Card(a) => ("card", a),
+        Quantity::Points(a) => ("points", a),
+    };
+    write!(f, "({tag} ")?;
+    write_roles(f, &aggregate.roles)?;
+    write_body(f, &aggregate.body, indent + 2)?;
+    write!(f, ")")
 }
 
 impl fmt::Display for Query {

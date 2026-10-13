@@ -31,10 +31,7 @@ fn bid_prints_the_call_its_rule_and_the_declaration() {
     assert!(ok, "{out}");
     assert!(out.contains("hand-1: the bidder (S0) to call; S3 shook: no calls; marks to 7"), "{out}");
     assert!(out.contains("calls 36, by rule bid-36"), "{out}");
-    assert!(
-        out.contains("if the rest pass, declares straight42/P6, by rule suit-at-risk-6\n    q6  <=  t=q6"),
-        "{out}"
-    );
+    assert!(out.contains("if the rest pass, declares straight42/P6, by rule least-at-risk\n    q6  <=  t=q6"), "{out}");
     // Over another seat's 35 the partner of Hand 32 passes, by the fallback.
     let args = ["--hand", "hand-32", "--seat", "partner", "--calls", "35", "--scoring", "points"];
     let (ok, out) = silas(&[&["bid", "examples/book/bidding/bid-only-enough.silas"][..], &args].concat());
@@ -51,6 +48,38 @@ fn query_prints_the_exact_answer_with_its_authority() {
     assert!(out.contains("399072960 worlds, as 27 points resolving 5-1 5-3 6-5"), "{out}");
     assert!(out.contains("P(answer) = 33/95 (exact)"), "{out}");
     assert!(out.contains("bids 84: 42 points for 2 mark(s)"), "{out}");
+}
+
+#[test]
+fn query_reads_the_auction_as_evidence_exactly_given_the_policies() {
+    // Hand 29, the partner at trick one: the bidder holds two doubles or
+    // more in 2949/4522 of the worlds, and in 1197/1517 of those where
+    // bid-only-enough opens 30 and declares fours from his hand.
+    let file = "examples/book/bidding/bidder-holds-two-doubles.silas";
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--seat", "partner"]);
+    assert!(ok && out.contains("P(answer) = 2949/4522 (exact)"), "{out}");
+    let read = [
+        "--auction",
+        "30,pass,pass,pass",
+        "--read",
+        "bidder=examples/book/bidding/bid-only-enough.silas",
+        "--offered",
+        "P6,P5,P4,P3,P2,P1,P0",
+    ];
+    let (ok, out) = silas(&[&["query", file, "--hand", "hand-29", "--seat", "partner"][..], &read].concat());
+    assert!(ok, "{out}");
+    assert!(out.contains("auction: S3 shook: S0 30, S1 pass, S2 pass, S3 pass"), "{out}");
+    assert!(
+        out.contains("read S0: bid-only-enough calls 30 and declares straight42/P4 from 3034 of the 27132"),
+        "{out}"
+    );
+    assert!(out.contains("P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#"), "{out}");
+    // A book hand's own auction is a convention: a reading names the table's,
+    // and it must be won as the hand's contract is.
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--read", read[3]]);
+    assert!(!ok && out.contains("--auction and --read go together"), "{out}");
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--auction", "pass,30,pass,pass", "--read", read[3]]);
+    assert!(!ok && out.contains("is not won by the bidder (S0) at 30"), "{out}");
 }
 
 #[test]
@@ -156,7 +185,7 @@ fn expand_prints_the_core_and_check_prints_warnings() {
     // check takes a file as well as a directory, and warns without failing.
     let (ok, out) = silas(&["check", "examples/book/crisis.silas"]);
     assert!(ok, "{out}");
-    assert!(out.contains("crisis.silas:62:7: warning: always true: his and l"), "{out}");
+    assert!(out.contains("crisis.silas:63:7: warning: always true: his and l"), "{out}");
     assert!(out.contains("1 compiled, 0 failed, 1 warnings"), "{out}");
 }
 

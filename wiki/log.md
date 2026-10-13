@@ -43,6 +43,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | 2442dcb0 | the private source adjudications carried into the book fixture: Hands 24, 26, 31, 32, 33, 34 read as adjudicated; EX-11's 53% is 43/81 on the book's model; Hand 28's 1-1 premise, not the sum, fails]
 
 **Touched pages:** [[silas]] (`silas/examples/book/hands.json`, `leads.md`, `setter-leads.silas`; `tests/book_fixture.rs`, `tests/book_leads.rs` comments). No pinned value changed; the book tests pass.
+## [2026-10-13 | 413e5b9d | silas reads the bid as evidence (#134; #128 for the auction): a belief conditioned on named seats' calls under their bidding policies, counted exactly, exact_given the policies; C12B's 194/285 moves a point either way, Hand 29's partner puts the 4-4 with the 30-bidder at 6003/8669]
+
+**Touched pages:** [[silas]] § The bid as evidence. `silas/README.md` § The auction as evidence, The `silas` command; `silas/GAPS.md` gaps 1 and 4 narrowed; `silas/docs/cross-game.md` § 4 (amendment).
+
+## [2026-10-13 | fd78c782 | silas aggregate (#135): card, points and (<= a b), three-valued by intervals; the bid rules rewritten with it, every call and declaration pinned equal on all 1,184,040 hands (risk-budget 150 → 20 µs); the crisis keeps the double with the most tiles out]
+
+**Touched pages:** [[silas]] § The aggregate. `silas/README.md` § Semantics, Short forms, The auction; `silas/GAPS.md` gap 5 closed for what is built; `silas/docs/cross-game.md` § 4, Slice 2 as built (amendment).
 
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
 

@@ -392,6 +392,76 @@ fn bid_only_enough_replays_the_arenas_auctions_call_for_call() {
     assert!(raised > 100 && forced > 100, "{raised} raised, {forced} forced");
 }
 
+// ------------------------------------------- every call and declaration, pinned
+
+/// FNV-1a, 64 bits: a digest of a long text, so a pin is one number.
+fn fnv1a(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3))
+}
+
+/// What the three bidding policies say about one hand: each one's call
+/// opening the auction, over a 31 and over a 36, and the declarations of
+/// `bid-only-enough` (won at 30) and `risk-budget` (won at 30 and at 84).
+fn every_answer(policies: &[CompiledPolicy; 3], menu: &Arc<[Physics]>, hand: DominoSet) -> String {
+    let state = MatchState::new(Scoring::MARKS, [0, 0]).unwrap();
+    let mut line = String::new();
+    for (k, policy) in policies.iter().enumerate() {
+        for before in [vec![], vec![Call::Bid(Bid::Points(31))], vec![Call::Bid(Bid::Points(36))]] {
+            let auction = Auction::new(AuctionConfig::STRAIGHT, Seat::S3, before).unwrap();
+            let viewer = auction.actor().unwrap();
+            let frame = AuctionFrame::new(auction, viewer, hand, state, menu.clone()).unwrap();
+            line += &format!("{} ", policy.bid(&frame, &mut unlimited()).unwrap().choice);
+        }
+        let bids: &[Bid] = match k {
+            0 => &[Bid::Points(30)],
+            1 => &[Bid::Points(30), Bid::Marks(2)],
+            _ => &[],
+        };
+        for bid in bids {
+            line += &format!(
+                "P{} ",
+                pip_of(&policy.declare(&won(Seat::S2, hand, *bid, menu), &mut unlimited()).unwrap().choice)
+            );
+        }
+        line += "| ";
+    }
+    line
+}
+
+#[test]
+fn every_call_and_declaration_is_pinned_on_every_hand() {
+    // The calls and declarations of bid-only-enough, risk-budget and
+    // never-32-or-33 on all 1,184,040 hands, as one digest of one line a
+    // hand. The digest was taken from the encodings before the aggregate
+    // (gap 5, 2026-10-13), which spelled each bound as `none` scopes over the
+    // count tiles; the encodings with `card` and `points` give the same line
+    // on every hand.
+    let policies = [policy("bid-only-enough.silas"), policy("risk-budget.silas"), policy("never-32-or-33.silas")];
+    let menu = arena_menu();
+    let hands: Vec<DominoSet> = every_hand().collect();
+    let started = Instant::now();
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let lines: Vec<String> = std::thread::scope(|s| {
+        let handles: Vec<_> = hands
+            .chunks(hands.len().div_ceil(threads))
+            .map(|part| {
+                let (policies, menu) = (&policies, &menu);
+                s.spawn(move || part.iter().map(|hand| every_answer(policies, menu, *hand)).collect::<Vec<_>>())
+            })
+            .collect();
+        handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
+    });
+    println!("every answer of three policies: {} hands in {:?} on {threads} threads", lines.len(), started.elapsed());
+    assert_eq!(lines.len(), 1_184_040);
+    let digest = fnv1a(lines.join("\n").as_bytes());
+    println!("digest {digest:#018x}; first line: {}", lines[0]);
+    assert_eq!(digest, PINNED_ANSWERS);
+}
+
+/// The digest of [`every_call_and_declaration_is_pinned_on_every_hand`]'s
+/// lines.
+const PINNED_ANSWERS: u64 = 0x927d_9038_f897_51c5;
+
 // ------------------------------------------------------------- measurability
 
 #[test]
@@ -434,9 +504,9 @@ fn a_bid_is_a_function_of_the_auction_frame_alone() {
 
 #[test]
 fn bidding_sections_print_as_they_read_and_short_forms_are_their_core() {
-    let short = "(policy p (bidding (rule r (bid least-raise) (least-raise 30))) (declaring (rule s (declare t) (suit-at-least-3 t))))";
+    let short = "(policy p (bidding (rule r (bid least-raise) (least-raise 30))) (declaring (rule s (declare t) (suit-at-least t 3))))";
     let explicit = "(policy p (bidding (rule r (select bid least-raise) (guard (query (least-raise 30))))) \
-                    (declaring (rule s (select declare answer) (guard (query (out t) (suit-at-least-3 t))))))";
+                    (declaring (rule s (select declare answer) (guard (query (out t) (suit-at-least t 3))))))";
     let short = PolicyProgram::parse(&format!("(include bidding) {short}"), "short").unwrap();
     let explicit = PolicyProgram::parse(&format!("(include bidding) {explicit}"), "explicit").unwrap();
     assert_eq!(short, explicit);

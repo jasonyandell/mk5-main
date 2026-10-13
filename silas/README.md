@@ -55,8 +55,11 @@ pattern  := (pattern clause ...)
 clause   := (same name name ...) | atom | (not atom)
           | (some (roles role ...) clause ...)
           | (none (roles role ...) clause ...)
+          | (<= number number)
 atom     := (predicate argument ...) | (definition argument ...)
 argument := name | literal
+number   := n | (card (roles role ...) clause ...)
+          | (points (roles (domino d)) clause ...) | (+ number ...)
 ```
 
 Names begin with an ASCII letter and continue with letters, digits, `_` or
@@ -90,6 +93,7 @@ entry    := (sort name) | name              ; a bare name: its sort from its use
 body     := pattern ... | clause ...        ; bare clauses: the query's one pattern
 clause   := ... | (and clause ...) | (or clause ...) | (not clause)
           | (some (roles entry ...) clause ...) | (none (roles entry ...) clause ...)
+          | (< a b) | (>= a b) | (> a b) | (= a b) | (/= a b)
 ```
 
 - **Roles from their uses.** A bare name in any `(roles ...)` (a query's, a
@@ -111,6 +115,14 @@ clause   := ... | (and clause ...) | (or clause ...) | (not clause)
   ...))` is `(not c) ...`. A negated atom or definition call is the core's
   own `(not ...)`. `(or)` is false and `(and)` true. `and` and `or` are
   reserved.
+- **Comparisons,** over the integers, into the core's one `(<= a b)`: `(< a
+  b)` is `(<= (+ a 1) b)`, `(>= a b)` is `(<= b a)`, `(> a b)` is `(<= (+ b
+  1) a)`, `(= a b)` is `(<= a b) (<= b a)`, and `(/= a b)` is `(or (< a b)
+  (> a b))`; a literal plus one is folded (`(> x 3)` is `(<= 4 x)`). `(not (<=
+  a b))` is `(> a b)`, and each comparison's negation is its opposite, which
+  the semantics below justifies. A definition's `(number n)` parameter may
+  stand in a comparison and takes its call's literal; `(points (roles d)
+  ...)`'s bare role is a domino.
 
 So the book's "protect the count" exception, that the partner is not the
 trump setter or has already played, reads three ways and is one clause:
@@ -184,6 +196,33 @@ transcription would check it against.
   only primitives, prints in them, and its identity is theirs. The short
   forms (Queries, above) are read away the same way and are not part of
   this semantics.
+- **Aggregates are intervals.** `(card (roles R) B)` and `(points (roles
+  d) B)` are stratified scopes, as `some` is: their roles distinct from one
+  another, not from the roles around them, read once every enclosing role
+  they name is bound. At an assignment each binding of `R` (each injective
+  map from `R`'s classes to values) is *satisfied* when `B` is true,
+  *refuted* when it is false, and *unsettled* when undefined. A binding
+  weighs one under `card`, and under `points` the count of its domino `d`
+  (the frame's count table; nonnegative). The aggregate denotes the interval
+  `[s, s + u]`, `s` the weight of the satisfied bindings and `u` of the
+  unsettled: every value that some completion of the undefined atoms could
+  give. A literal `n` is `[n, n]`, and `(+ a ...)` adds intervals end to end.
+  `(<= a b)` is true when `a`'s high end is at most `b`'s low end (every
+  completion agrees), false when `a`'s low end exceeds `b`'s high end (no
+  completion does), and undefined otherwise. So an aggregate is decided
+  wherever its body is, and in particular over the viewer's own hand and the
+  tiles' faces; over a hidden hand (`holds`) it is decided in each world, and
+  a belief gives its law as for any `World` atom. Undefined is sound, never a
+  guess: a comparison decided on intervals is decided alike in every
+  completion, though one undefined on intervals may be decided in all of
+  them (two aggregates over one undefined atom are bounded apart, as
+  Kleene's `(or a (not a))` is undefined). The quantifiers are the two
+  thresholds: `(some R B)` is `(<= 1 (card R B))` and `(none R B)` is `(<=
+  (card R B) 0)`, in all three values. Negation is exact: not `a <= b` is `b
+  + 1 <= a` on intervals. An aggregate's value at an assignment is a function
+  of its text and the values of the enclosing roles it names, so an
+  evaluation counts each once per binding of those, even across the rules of
+  one policy section at one frame.
 - **Viewer queries are measurable.** If every predicate a query names reads
   only the frame (`Viewer` access), its answers at `(f, w)` are the same for
   every world `w` of `f`. A policy's guards are such queries, so a policy is a
@@ -266,7 +305,8 @@ a frame before any work, and a policy rule naming one at compilation.
 | `certain-make()`, `certain-set()` | Viewer | v3: the viewer, choosing from his frame alone, forces the make (the set) in every world against every play of the other three seats; undefined unless that is his side's goal. |
 | `dd-make()` | World | v3: in this world the declaring side makes from here under double-dummy play. |
 
-Numbers and teams are literal-only, so `banked` and `to-set` take a chair and
+Numbers and teams are literal-only (a number is never a role; the aggregates
+compare sizes and sums without one), so `banked` and `to-set` take a chair and
 a trick is named by its lead: "one trump trick so far, led by the bidder" is
 `(bidder b) (led b first) (trump-tile first)` with a `none` over any other
 trump lead. A shown void implies a void in every world; the converse fails,
@@ -301,7 +341,8 @@ Leads: `(loses-in d q)`, `(can-lose d)`, `(off d)`, `(walker d)`,
 `(low-four-five-or-six d)`. The trick: `(last-to-play)`,
 `(partner-winning)`, `(can-take-it)`, `(no-setter-trump)`, `(winner-cannot-be-beaten)`,
 `(safe-trick)` (what the partner gives count to), `(partner-may-take-it)`
-(what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`. The
+(what a pounce needs). Holdings: `(dead-double d)`, `(guards-count g)`,
+`(more-out t s)` (suit `t` has more tiles out than `s`, an aggregate). The
 bidder's offs: `(draws-the-count-for dd o)`, `(strips-the-suit-of dd o)`,
 `(protects dd o)`, `(bare-off o)`; his trouble: `(crisis)`. The bid:
 `(every-trick)` (a bid of marks), `(bid-35-or-more)`, and `(lead-sets d)`,
@@ -321,6 +362,10 @@ where it is defined. Every rule in `examples/book/` is written with it.
   read needed until nothing is refused.
 - `Belief::from_weights(frame, id, authority, entries, cap)`: a measure from
   the caller. Repeated worlds add their weights; zero weights drop out.
+- `Belief::given_auction(&evidence, tiles, cap)` and
+  `Belief::given_auction_for(&evidence, &query, cap, &mut budget)`: the
+  uniform measure conditioned on the auction, read as its bidders' policies
+  make it (The auction as evidence, below), resolved as the uniform ones are.
 - `query.summarize(&belief, &mut budget)`: event probability, per-answer
   presence mass, the law of whole answer sets, and certainty facts
   (possible, certain, constant multiplicity, constant answers, one answer per
@@ -505,15 +550,19 @@ bid` prints them.
 
 `lib/bidding.silas` (`(include bidding)`) is the auction's vocabulary: a
 suit's length, its double, its offs, the count an off exposes, and the book's
-count of what is at risk. Numbers are literal-only and Silas has no aggregate
-(`GAPS.md`, 5), so "at most 10 points exposed" is written as "no exposed set
-worth more", a handful of `none` scopes over the count tiles, and a bid level
-is a rule. `examples/book/bidding/` holds three policies:
+count of what is at risk. Sizes and sums are aggregates (Semantics, above):
+"at most 10 points exposed" is `(exposes-at-most t 10)`, one `(<= (points
+...) 10)`, and a definition's `(number n)` takes the bound. A bid is still a
+literal, so a bid level is a rule. `examples/book/bidding/` holds three
+policies:
 
 ```text
 (rule raise-to-32 (bid least-raise)
   (or (least-raise 30) (least-raise 31) (least-raise 32))
-  (some (roles t) (suit-at-least-3 t) (exposes-at-most-10 t)))
+  (some (roles t) (suit-at-least t 3) (exposes-at-most t 10)))
+
+(define exposes-at-most (roles (context t) (number n))
+  (<= (points (roles c) (exposed c t)) n))
 ```
 
 - `bid-only-enough` (S-0036-e) is the arena's `HeuristicBidder`: raise to the
@@ -535,13 +584,88 @@ is a rule. `examples/book/bidding/` holds three policies:
   book's printed one on 8 of the 12 hands that print one.
 - `never-32-or-33` (S-0152-c) raises past them to 34, or passes.
 
-Cost. One core decides `bid-only-enough`'s opening in 13 µs a hand,
-`risk-budget`'s in 150 µs and `bid-only-enough`'s declaration in 210 µs; over
-all hands on 18 cores, 1 s, 15 s and 20 s. The cost is the encoding: a bid is
-a literal, so `risk-budget` is fifteen rules that each derive the risk again
-for every suit; each bound is an enumeration over sets of count tiles, and
-the declaration's tie-break compares suit lengths with scopes of up to seven
-roles. An aggregate (`card`, gap 5) would say each in one clause.
+Cost. Before the aggregate each bound was a handful of `none` scopes over
+sets of count tiles, each bid level re-derived the risk, and the declaration
+compared suit lengths with scopes of up to seven roles. Rewritten with `card`
+and `points` (the old and new calls and declarations are pinned equal on
+every hand, `tests/bidding.rs`), one core decides `bid-only-enough`'s opening
+in 7.5 µs a hand (13 before), `risk-budget`'s in 20 µs (150) and
+`bid-only-enough`'s declaration in 92 µs (210): three policies' calls and
+declarations on all hands take 31 s on 18 cores, 117 s before. Most of the
+gain is counting each aggregate once per decision (the risk of a suit is read
+by fifteen rules); what remains is the evaluation of the atoms in the
+aggregates' bodies.
+
+## The auction as evidence
+
+A seat that has heard the calls knows more than its frame's voids: each
+call is what its caller's bidding policy made from his hand. Given a policy
+`π_P` for each seat `P` read, the belief keeps exactly the worlds `w` in
+which, for every `P`,
+
+```text
+π_P.bid(auction before P's call, P, dealt_P(w), state, offered) = P's call
+π_P.declare(the auction, P, dealt_P(w), state, offered) = the declaration   (P the declarer)
+```
+
+where `dealt_P(w)` is `P`'s hand in `w` and the tiles `P` has played. A
+policy is a deterministic function of its auction frame, so each world's
+likelihood is zero or one, and the posterior is the uniform measure on the
+worlds kept: every kept world weighs one, the total is how many there are.
+
+**How it counts.** Whether a world is kept depends, seat by seat, on that
+seat's hand alone. `AuctionReading::evidence(&frame, &mut budget)` runs each
+read seat's policy once on every hand it could hold (the fiber's projection
+to that seat: at most C(21,7) = 116,280) and keeps the hands that agree.
+`Belief::given_auction` then counts the worlds whose read hands all agree, by
+placement of the tiles the query reads: with one seat read, for each of its
+agreeing hands, the binomial number of ways the other two seats complete the
+deal under each placement; with two or three, for each agreeing hand of the
+seat with the fewest, every hand of the second within what is left, the
+third taking the rest. Nothing is sampled. From the opening, with three seats
+read, running the policies over all their hands takes 0.5 s on 18 cores for
+`bid-only-enough` and 1.3 s for `risk-budget`, and counting the worlds their
+agreeing hands (65,180 each under `bid-only-enough`) leave, under half a
+second more (`tests/book_auction.rs`).
+
+**Authority.** The arithmetic is exact, but the number is the deal's only
+under the hypothesis that each read seat bids by its policy, so it is
+`exact_given` one model per seat: its seat, its policy's name and a digest of
+the policy's identity, the match state and the declarations offered (`S2
+bids by bid-only-enough#cb7d…`). A different policy is a different model and
+a different number. `Exact` stays the uniform deal's alone.
+
+**What it reads.** The frame's auction, as the table's: a hand given with its
+contract alone carries the shortest auction its declarer wins
+(`Auction::won_by`), a convention, so the command line asks for the table's
+auction (`--auction`). The play frame does not hold the match state, so the
+reading takes the state the bids were made at, and the declarations offered,
+as its own arguments. The viewer's own call is no evidence to him and is
+refused. An auction no read hand agrees with is refused, as an impossible
+condition is. A question whose answer reads most of a hidden hand ("he holds
+two offs") resolves most of the pool, and the belief's points are placements
+of what it resolves: such a question is refused above the cap, here as for
+the uniform measure.
+
+`tests/reading.rs` holds it to hand counts (a pass under "raise holding the
+6-5" leaves 60 of 90 worlds; the 6-5 is then each other seat's in half), to a
+policy that always passes (the belief unchanged), to one that bids exactly
+holding the 6-6 (its holder certain: 38,760 × 3,432 worlds), and to brute
+force over every world of a small frame under three auctions, the book's two
+bidding policies and a toy one, and every set of read seats.
+
+The book's readings (`tests/book_auction.rs`, `examples/book/bidding/bidder-holds-two-doubles.silas`):
+
+- **C12B's condition** (the repaired low trump lead, S-0232-c): the bidder's
+  hand alone puts it at 194/285; the three passes after his 30, read as
+  `bid-only-enough` makes them, move it to 18,379,909/26,478,093 (69.4%);
+  read as `risk-budget`, to 4,954,991/7,391,904 (67.0%). The auction moves it,
+  a point either way.
+- **The partner's view of a 30** (C4; p. 89): in Hand 29 (fours, 30), before
+  the lead, the bidder holds the 4-4 in a third of the deals and in 6,003/8,669
+  (69.2%) of those where `bid-only-enough` opens 30 and declares fours; two
+  doubles or more, 313/456 (68.6%) against 6,814/8,669 (78.6%); with the
+  setters' passes read too, 2,198,843/3,237,964 and 5,252,929/6,475,928.
 
 ## The Physics boundary
 
@@ -849,6 +973,7 @@ a model or a sample: exact numbers are never blurred.
 silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
 silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
 silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+               [--auction C,C,C,C [--shaker ROLE] --read ROLE=POLICY,... [--offered D,...] [--scoring S]]
 silas query    DOMINANCE
 silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
 silas expand   FILE ...
@@ -895,6 +1020,28 @@ query examples/book/lay-down.silas
   399072960 worlds, as 1 points resolving nothing
   P(answer) = 1 (exact)
 ```
+
+With `--auction` (the four calls from the shaker's left; `--shaker` is the
+right by default, so the bidder calls first; it must be won by the bidder at
+the hand's bid) and `--read` (the seats read and the bidding policy each bids
+by), `query` reads the auction as evidence (The auction as evidence, above),
+with `--offered` the declarations offered (by default the nine straight ones,
+in `Straight42` order) and `--scoring` the match, at 0-0:
+
+```text
+$ silas query examples/book/bidding/bidder-holds-two-doubles.silas --hand hand-29 --seat partner \
+    --auction 30,pass,pass,pass --read bidder=examples/book/bidding/bid-only-enough.silas \
+    --offered P6,P5,P4,P3,P2,P1,P0
+hand-29: trick 1, the partner (S2) to play
+  ...
+  auction: S3 shook: S0 30, S1 pass, S2 pass, S3 pass
+  read S0: bid-only-enough calls 30 and declares straight42/P4 from 3034 of the 27132 hands it could hold
+query examples/book/bidding/bidder-holds-two-doubles.silas
+  46558512 worlds (5206344 kept), as 726 points resolving 0-0 2-2 3-3 4-4 5-5 6-6
+  P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#cb7d652ef9593f67))
+```
+
+Unread, the same position gives 2949/4522 (`exact`).
 
 On a `(dominates ...)` file, `query` needs no hand: it decides the form and
 prints what it enumerated, the readings it checked and the verdict:
@@ -1007,7 +1154,7 @@ solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
 book's test for one), `claim-the-rest` and `cannot-be-set`
 (`tests/outcome.rs`). `examples/book/cross-game/` holds the book's
 field-free comparisons of contracts as `dominates` forms (The match), and
-`examples/book/bidding/` its bid rules as policies over the auction (The auction).
+`examples/book/bidding/` its bid rules as policies over the auction (The auction) and a bid read as evidence (The auction as evidence).
 `GAPS.md` lists what the rules still cannot say.
 
 ## Provenance

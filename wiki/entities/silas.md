@@ -91,7 +91,7 @@ its id, that the gate fails and the rule passes.
 |---|---|---|---|
 | `first-lead` | C10, C12a, C12b | trump first (any of the top sequence); two trumps: the straight off; double-up odds; one off is a permission, never in an 84 | — |
 | `bidders-plan` | C1a, C11 | draw with the top trump; the donation lead; bare offs at once while a trump can win back; else winners first, the off's double next-to-last | knowledge (#132) |
-| `crisis` | C14, C21 | a trump the bidder cannot draw: the 6-5 bait, a count double, away from the trump holder's suit | likelihood, aggregate |
+| `crisis` | C14, C21 | a trump the bidder cannot draw: the 6-5 bait, a count double, away from the trump holder's suit, its suit the most out | likelihood |
 | `donate-when-safe` | C1b, C3 | count, biggest first, on a trick provably the side's; the last seat's donation; none on a trick that can be lost | — |
 | `partner-leads` | C9, C23 | a double or a walker; then no count, a five, a six; never trump | likelihood |
 | `partner-plays-the-top-trump` | C2 | the worked hand's play (the book's p. 25 reading disagrees) | — |
@@ -100,7 +100,7 @@ its id, that the gate fails and the rule passes.
 | `shed-for-a-void` | C13a | a lone tile, never a double, a winner or a count tile's last guard; points bids only | — |
 | `low-from-a-pair` | C13c | as the gate, and the 84 form with count | — |
 | `setter-leads` | C15, C13d | a double when one point sets; the count that sets; count calling for more; think twice at 35 | — |
-| `trump-set` | C22 | the bidder's partner void too; the big doubles; feed a holder who may yet trump; lead high | aggregate (closest fact) |
+| `trump-set` | C22 | the bidder's partner void too; the big doubles; feed a holder who may yet trump; lead high | a belief (closest fact) |
 | `dead-double` | new | throw a double no live tile can lead to, on a trick you cannot take, never the 5-5; the bidder cashes one while a setter holds trump | likelihood (a decoy) |
 | `helper-stretch` | new | win low with the second tile and keep the double | — |
 
@@ -266,13 +266,60 @@ Slice 2 (2026-10-13, `silas/README.md` § The auction; its choices are
   and 36. On the study's 30 bid-book hands it makes the book's call on 18 and agrees
   on bid or pass on 22, below always bidding's 23 ([[book-study-2026-10-12]]: Zeb's
   forecast, 25).
-- **Cost.** Literal-only numbers make a bid level a rule and a points bound an
-  enumeration: the reading costs 150 µs a hand on one core (15 s over all hands on 18).
-  The lever is an aggregate (gap 5).
+- **Cost.** Literal-only numbers made a bid level a rule and a points bound an
+  enumeration: the reading cost 150 µs a hand on one core. The aggregate (below) took it
+  to 20 µs.
 
 What remains, a deal measure under a named field and the arena's paired ledgers, is
-`silas/GAPS.md` gap 2; reading a bid as evidence about the hand (#134) now needs only
-policy likelihood (#128).
+`silas/GAPS.md` gap 2; reading a bid as evidence about the hand (#134) is built (§ The
+bid as evidence).
+
+## The aggregate (2026-10-13)
+
+Silas compares sizes and sums (gap 5, #135; `silas/README.md` § Semantics): `(card (roles
+...) clause ...)` counts the bindings that satisfy a body, `(points (roles d) clause ...)`
+sums their count points, `(+ ...)` adds, and the core's one comparison is `(<= a b)`, with
+`<`, `>=`, `>`, `=` and `/=` as short forms. Numbers stay literal-only: nothing binds one,
+and a definition's `(number n)` parameter takes the bound. The three-valued semantics is
+intervals: a binding whose body is undefined may or may not count, so an aggregate is `[s,
+s + u]`, and a comparison is true or false only when every completion agrees. That makes
+`some` and `none` the thresholds `card ≥ 1` and `card = 0` in all three values, and makes
+an aggregate decided wherever its body is: always over the viewer's own hand, and in each
+world over a hidden one, where a belief gives its law. An aggregate is counted once per
+decision, even across a policy section's rules, since its value is a function of its text
+and the roles it names.
+
+The bid rules were rewritten with it (`suit-at-least`, `exposes-at-most`, `risk-at-most`;
+`bid-only-enough` declares by two rules instead of sixteen), and every call and
+declaration of the three bidding policies is pinned equal to the old encodings' on all
+1,184,040 hands. One core decides the opening in 7.5 µs (13), `risk-budget` in 20 µs (150)
+and the arena declaration in 92 µs (210). The crisis rule now keeps only the double whose
+suit has the most tiles out (the prelude's `more-out`). Still statable but unwritten: the
+84 watch list's double with more out, and C15's sum over several called tiles.
+
+## The bid as evidence (2026-10-13)
+
+A seat that has heard the calls reads them (#134; #128 for the auction; `silas/README.md`
+§ The auction as evidence): given a bidding policy for each read seat, the belief keeps
+exactly the worlds in which every read seat's policy, from its own hand, makes its call
+and, for the declarer, its declaration. A policy is deterministic, so each world weighs
+zero or one, and whether it is kept depends seat by seat on that seat's hand alone: Silas
+runs each read seat's policy once over every hand it could hold (at most 116,280) and
+counts the worlds whose read hands all agree, by placement of the tiles the query reads,
+never sampling. The number is `exact_given` the policies (one model per seat: its name and
+a digest of its identity, the match state, the declarations offered), since another
+policy is another number. It is held to brute force over every world of small frames.
+
+From the opening, three seats read under `bid-only-enough` take about a second on 18
+cores. C12B's condition, 194/285 from the bidder's hand, moves to 69.4% when the three
+passes after his 30 are read as `bid-only-enough`'s and to 67.0% as `risk-budget`'s: the
+auction moves it a point either way. In Hand 29 the partner reading the bidder's 30 in
+fours puts the 4-4 in his hand at 6,003/8,669 against 1/3. `silas query ... --auction
+... --read ...` asks it at the command line. What it cannot yet ask: a question about a
+whole hidden hand ("a 35 means two offs", pp. 53–54), which needs a seat's hand law; a
+reading inside a policy's guard; a seat mid-auction; and the plays as evidence, which
+factorize the same way (a seat's play frame is its hand and the record) and wait only on
+each past play's check (`silas/GAPS.md` 1 and 4).
 
 ## Where it sits
 
@@ -293,8 +340,8 @@ policy likelihood (#128).
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 14 and prices against none, once the
   dead double's throw and the trump set's feed carry the conditions the book states).
-  Policy likelihood (#128) and another seat's knowledge (#132) are next ([[w42]]);
-  #128 over a bidding section is also what reading the auction needs. The cross-game
+  Policy likelihood for the play (#128; the auction's is built, § The bid as evidence)
+  and another seat's knowledge (#132) are next ([[w42]]). The cross-game
   slices go on from the auction to comparison over deals (§ The match and field-free
   comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
