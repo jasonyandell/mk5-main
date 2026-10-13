@@ -16,9 +16,10 @@ Gates:
   (4)  timing: featurization + forward wall for a 1000-world x 1-step batch.
 """
 import sys
+from pathlib import Path
 import time
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import numpy as np
 import torch
@@ -36,7 +37,7 @@ from forge.zeb.game import (
 import walt.field as field
 from walt.field import FieldOracle, PubState, featurize, sigma_consistent
 
-NET = "/Users/jason/code/mk5-main/.claude/worktrees/walt/champion/jud_net.pt"
+NET = str(Path(__file__).resolve().parents[2] / "champion" / "jud_net.pt")
 
 _fail = 0
 

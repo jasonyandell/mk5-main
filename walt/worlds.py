@@ -11,11 +11,12 @@ absolute seat order.
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from itertools import combinations
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from walt.tables import N_DOMINOES, get_luts  # noqa: E402
 

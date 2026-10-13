@@ -110,11 +110,9 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
 
 ## Quality gates
 
-```bash
-npm test              # unit tests (Vitest, node env — pure logic, no DOM)
-npm run typecheck     # TypeScript strict
-npm run test:e2e      # Playwright (production tests only)
-```
+**`scripts/check` runs every suite (TS, Rust, Python, Lean, wiki) and must say GREEN before a merge;
+`--fast` runs only what the diff against origin/main touches.** It builds its own `scratch/venv` (uv)
+with this checkout's `scenario_core`, so a fresh worktree needs only node, cargo, uv, wasm-pack, lake.
 
 ## Session completion
 

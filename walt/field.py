@@ -57,9 +57,7 @@ FEATURE_DIM = HAND_DIM + AUCTION_DIM + PLAY_DIM   # 350
 N_TRICKS = 7
 _GLOBAL_OFF = N_DOMINOES * PER_DOMINO             # 252
 
-_DEFAULT_NET = Path(
-    "/Users/jason/code/mk5-main/.claude/worktrees/walt/champion/jud_net.pt"
-)
+_DEFAULT_NET = Path(__file__).resolve().parents[1] / "champion" / "jud_net.pt"
 
 
 # --------------------------------------------------------------------- #

@@ -33,6 +33,7 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
+    env: { BROWSER: 'none' }, // vite's server.open would pop a browser tab per run
     port: PORT,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,

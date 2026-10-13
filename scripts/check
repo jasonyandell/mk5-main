@@ -1,0 +1,380 @@
+#!/usr/bin/env -S python3 -u
+"""scripts/check — the one front door for every test suite in mk5-main.
+
+    scripts/check              every suite this machine can run
+    scripts/check --fast       only the suites the diff against origin/main touches
+    scripts/check silas wiki   only the named suites
+    scripts/check --list       the suites, what triggers them, and whether they can run
+
+It refuses to run outside a checkout of jasonyandell/mk5-main, and it refuses
+to check a different checkout from the one you are standing in. It prints
+every suite's result: PASS, FAIL, UNAVAILABLE (cannot run on this machine,
+with the reason; not a failure) or NOT RUN (with the reason). Tests that skip
+themselves are counted and their reasons printed. Logs: scratch/check/.
+Exit 0 only when nothing failed.
+
+It sets up what it needs, inside the checkout: node_modules (npm ci) when
+absent or older than package-lock.json, and the Python environment
+scratch/venv (uv, from scripts/check-requirements.txt) with scenario_core
+built from this checkout's scenario/core, so a fresh worktree never tests a
+wheel built from somewhere else.
+
+Standard library only, so it runs before anything is installed.
+"""
+
+import argparse
+import concurrent.futures
+import os
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+LOGS = ROOT / "scratch" / "check"
+VENV = ROOT / "scratch" / "venv"
+VPY = str(VENV / "bin" / "python")
+ORIGIN_RE = re.compile(r"github\.com[:/]jasonyandell/mk5-main(\.git)?/?$")
+TIMEOUT = 300  # seconds, per command
+LEAN_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
+# The slow suites start first so they overlap everything else.
+SLOW_FIRST = ("py-walt", "py-scenario", "silas")
+
+# Triggers are regular expressions matched at the start of a changed path.
+TS = ("src/", "package(-lock)?\\.json$", "tsconfig", "vite\\.config", "vitest\\.config",
+      "svelte\\.config", "eslint\\.config", "index\\.html$", "tailwind\\.config",
+      "postcss\\.config", "scripts/.*\\.ts$")
+# The Python trees import one another (scenario imports arena and forge; walt,
+# otis and arena import champion, gus and forge), so a change to any of them
+# triggers every Python suite.
+PY = ("scenario/", "walt/", "arena/", "champion/", "gus/", "otis/", "w42/",
+      "forge/", "silas/", "scripts/check-requirements\\.txt$")
+
+
+# ---------------------------------------------------------------- the suites
+
+def which(*tools):
+    missing = [t for t in tools if shutil.which(t) is None]
+    return f"needs {', '.join(missing)} on PATH" if missing else None
+
+
+def playwright_browsers():
+    base = os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or (
+        Path.home() / ("Library/Caches" if sys.platform == "darwin" else ".cache") / "ms-playwright")
+    if not any(Path(base).glob("chromium*")):
+        return f"no Playwright Chromium in {base}: run `npx playwright install chromium`"
+    return None
+
+
+def no_cuda():
+    return None if shutil.which("nvidia-smi") else \
+        "forge is GPU-only and needs CUDA (no nvidia-smi); skipped, not a failure"
+
+
+def first(*checks):
+    for c in checks:
+        r = c() if callable(c) else c
+        if r:
+            return r
+    return None
+
+
+class Suite:
+    def __init__(self, name, triggers, steps, setup=(), unavailable=None, not_run=None, what=""):
+        self.name, self.triggers, self.steps, self.setup = name, triggers, steps, setup
+        self.unavailable, self.not_run, self.what = unavailable, not_run, what
+
+
+NPM = lambda *a: ["npm", "run", "--silent", *a]
+PYTEST = lambda *paths: [VPY, "-u", "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", *paths]
+
+SUITES = [
+    Suite("ts-unit", TS, [(".", ["npx", "vitest", "--run"])], ("node",),
+          lambda: which("node", "npm"), what="Vitest, src/tests"),
+    Suite("ts-types", TS, [(".", NPM("typecheck"))], ("node",),
+          lambda: which("node", "npm"), what="tsc --noEmit"),
+    Suite("svelte-check", TS, [(".", NPM("check"))], ("node",),
+          lambda: which("node", "npm"), what="svelte-check --fail-on-warnings"),
+    Suite("eslint", TS, [(".", NPM("lint"))], ("node",),
+          lambda: which("node", "npm"), what="eslint src"),
+    Suite("e2e", TS + ("playwright",), [(".", ["npx", "playwright", "test", "--workers=4", "--reporter=line"])],
+          ("node",), lambda: first(which("node", "npm"), playwright_browsers),
+          what="Playwright, src/tests/e2e, on its own dev-server port"),
+    Suite("silas", ("silas/",), [("silas", ["cargo", "test", "--locked", "--release"])], (),
+          lambda: which("cargo"), what="cargo test (release: the double-dummy tests take minutes in debug)"),
+    Suite("scenario-core", ("scenario/core/", "silas/"),
+          [("scenario/core", ["cargo", "test", "--locked"]),
+           ("scenario/core", ["cargo", "test", "--locked", "--features", "silas"])], (),
+          lambda: which("cargo"), what="cargo test, plain and with Silas"),
+    Suite("zeb", ("zeb/", "scenario/core/"),
+          [("zeb", ["cargo", "test", "--locked"]), ("zeb", ["npm", "test"])], (),
+          lambda: which("cargo", "wasm-pack", "node", "npm"),
+          what="native cargo test, then the wasm build and node --test"),
+    Suite("lean", ("scenario/lean/",),
+          [("scenario/lean", ["lake", "build"]), ("scenario/lean", ["lake", "env", "lean", "Axioms.lean"])],
+          (), lambda: which("lake"), what="lake build; every theorem on the three standard axioms"),
+    Suite("py-scenario", PY + ("scenario/core/",), [(".", PYTEST("scenario/tests"))], ("venv",),
+          lambda: which("uv", "cargo"), what="pytest scenario/tests, against this checkout's scenario_core"),
+    Suite("py-walt", PY,
+          [(".", PYTEST("walt/tests")),
+           *[(".", [VPY, "-u", f"walt/tests/{t}.py"]) for t in ("test_field", "test_grade", "test_solver")]],
+          ("venv",), lambda: which("uv", "cargo"),
+          what="pytest walt/tests, then its three gate scripts"),
+    Suite("py-oracle-era", PY, [(".", PYTEST("arena", "champion", "gus", "otis/tests", "w42"))], ("venv",),
+          lambda: which("uv", "cargo"), what="pytest arena champion gus otis w42 (CPU)"),
+    Suite("forge", ("forge/",), [(".", PYTEST("forge"))], ("venv", "forge"), no_cuda,
+          what="pytest forge (CUDA only)"),
+    Suite("burl", ("burl/",), [], not_run=(
+        "superseded project (wiki/entities/burl.md); its tests need the Gemma 4 MLX weights, "
+        "modal and burl/eval data that no checkout carries"), what="pytest burl"),
+    Suite("wiki", ("wiki/", "scripts/wiki_"), [(".", [sys.executable, "-u", "scripts/wiki_lint.py", "--strict"])],
+          (), what="wiki_lint.py --strict"),
+]
+BY_NAME = {s.name: s for s in SUITES}
+
+
+# ------------------------------------------------------------------ plumbing
+
+def sh(args, cwd=ROOT, env=None, timeout=TIMEOUT):
+    return subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+
+
+def die(msg):
+    print(f"check: {msg}", file=sys.stderr)
+    sys.exit(2)
+
+
+def guard():
+    """This must be a checkout of mk5-main, and the one you are standing in."""
+    try:
+        top = sh(["git", "rev-parse", "--show-toplevel"]).stdout.strip()
+    except FileNotFoundError:
+        die("git is not on PATH")
+    if not top or Path(top).resolve() != ROOT:
+        die(f"{ROOT} is not the top of a git checkout")
+    origin = sh(["git", "remote", "get-url", "origin"]).stdout.strip()
+    if not ORIGIN_RE.search(origin):
+        die(f"this checkout's origin is {origin or '(none)'}, not jasonyandell/mk5-main; refusing")
+    here = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
+    if here and Path(here).resolve() != ROOT:
+        die(f"you are in {here}, but this script checks {ROOT}; run {here}/scripts/check instead")
+    branch = sh(["git", "branch", "--show-current"]).stdout.strip() or "(detached)"
+    head = sh(["git", "rev-parse", "--short", "HEAD"]).stdout.strip()
+    return branch, head
+
+
+def changed_files():
+    if sh(["git", "rev-parse", "--verify", "-q", "origin/main"]).returncode != 0:
+        die("--fast needs origin/main; run `git fetch origin`")
+    base = sh(["git", "merge-base", "HEAD", "origin/main"]).stdout.strip()
+    files = set(sh(["git", "diff", "--name-only", base]).stdout.split())  # commits + working tree
+    files |= set(sh(["git", "ls-files", "--others", "--exclude-standard"]).stdout.split())
+    return sorted(files)
+
+
+def touched(suite, files):
+    if any(f.startswith("scripts/check") for f in files):
+        return True
+    return any(re.match(t, f) for f in files for t in suite.triggers)
+
+
+def free_port():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+# --------------------------------------------------------------------- setup
+
+def setup_node(log):
+    lock, stamp = ROOT / "package-lock.json", ROOT / "node_modules" / ".package-lock.json"
+    if stamp.exists() and stamp.stat().st_mtime >= lock.stat().st_mtime:
+        return "node_modules up to date"
+    # CI=true: postinstall would otherwise download every Playwright browser.
+    run_logged(["npm", "ci"], ROOT, {**os.environ, "CI": "true"}, log)
+    return "node_modules installed (npm ci)"
+
+
+def setup_venv(log):
+    if not (VENV / "bin" / "python").exists():
+        run_logged(["uv", "venv", str(VENV), "--python", "3.12"], ROOT, None, log)
+    run_logged(["uv", "pip", "install", "--python", VPY, "-r", "scripts/check-requirements.txt"], ROOT, None, log)
+    # Always rebuild: cargo decides freshness (well under a second when nothing changed).
+    env = {**os.environ, "VIRTUAL_ENV": str(VENV)}
+    run_logged([str(VENV / "bin" / "maturin"), "develop", "--uv", "--release",
+                "-m", "scenario/core/Cargo.toml"], ROOT, env, log)
+    return "scratch/venv ready; scenario_core built from this checkout"
+
+
+def setup_forge(log):
+    run_logged(["uv", "pip", "install", "--python", VPY, "-r", "forge/requirements.txt"], ROOT, None, log)
+    return "forge requirements installed"
+
+
+SETUP = {"node": setup_node, "venv": setup_venv, "forge": setup_forge}
+
+
+class Failed(Exception):
+    pass
+
+
+def run_logged(argv, cwd, env, log):
+    shown = " ".join([Path(argv[0]).name, *argv[1:4]])
+    with open(log, "a") as fh:
+        fh.write(f"\n$ (cd {Path(cwd).relative_to(ROOT) or '.'}) {' '.join(argv)}\n")
+        fh.flush()
+        try:
+            r = subprocess.run(argv, cwd=cwd, env=env, stdout=fh, stderr=subprocess.STDOUT, timeout=TIMEOUT)
+        except subprocess.TimeoutExpired:
+            raise Failed(f"`{shown}` timed out after {TIMEOUT}s")
+        except FileNotFoundError:
+            raise Failed(f"`{argv[0]}` not found")
+    if r.returncode != 0:
+        raise Failed(f"`{shown}` exited {r.returncode}")
+
+
+# ------------------------------------------------------------------- results
+
+def tally(text):
+    """A one-line count of what the log's test runners reported, and the reasons for any skips."""
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", text)
+    n = lambda pat: sum(int(x) for x in re.findall(pat, text))
+    parts = []
+    passed = (n(r"test result: \w+\. (\d+) passed")                # cargo
+              + n(r"(?m)^(?:=+ )?(?:.*?, )?(\d+) passed")            # pytest
+              + n(r"Tests\s+(\d+) passed")                          # vitest
+              + n(r"(?m)^\s+(\d+) passed \([\d.]+m?s\)")            # playwright
+              + n(r"ℹ pass (\d+)"))                                 # node --test
+    if passed:
+        parts.append(f"{passed} passed")
+    skipped = n(r"(\d+) skipped") + n(r"ℹ skipped (\d+)")
+    gates = len(re.findall(r"(?m)^\s*\[?PASS\]? ", text))           # walt's gate scripts
+    if gates:
+        parts.append(f"{gates} gates")
+    theorems = len(re.findall(r"depends on axioms", text))          # lean
+    if theorems:
+        parts.append(f"{theorems} theorems on standard axioms only")
+    parts += re.findall(r"(?m)^svelte-check (found .*)$", text)
+    parts += re.findall(r"(?m)^(\d+ pages checked: .*)$", text)       # wiki lint
+    parts += re.findall(r"\[WARN\] (log\.md has .*)", text)           # rotation due
+    if skipped:
+        parts.append(f"{skipped} SKIPPED")
+    reasons = sorted(set(re.sub(r"\S*?/scratch/", "scratch/", m)
+                         for m in re.findall(r"SKIPPED \[\d+\] \S+?: (.*)", text)))
+    return ", ".join(parts), skipped, reasons
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Run every mk5-main test suite this machine can run.")
+    ap.add_argument("suites", nargs="*", help="run only these suites")
+    ap.add_argument("--fast", action="store_true", help="only suites touched by the diff against origin/main")
+    ap.add_argument("--list", action="store_true", help="list the suites and stop")
+    ap.add_argument("-j", "--jobs", type=int, default=4, help="suites run at once (default 4)")
+    args = ap.parse_args()
+
+    branch, head = guard()
+    unknown = [s for s in args.suites if s not in BY_NAME]
+    if unknown:
+        die(f"no suite named {', '.join(unknown)}; suites: {', '.join(BY_NAME)}")
+
+    if args.list:
+        for s in SUITES:
+            why = s.not_run or (s.unavailable and s.unavailable())
+            print(f"{s.name:14} {s.what}\n{'':14} triggers: {' '.join(s.triggers)}"
+                  + (f"\n{'':14} cannot run: {why}" if why else ""))
+        return 0
+
+    chosen = [BY_NAME[n] for n in args.suites] if args.suites else list(SUITES)
+    mode = "named suites" if args.suites else "full run"
+    if args.fast:
+        files = changed_files()
+        chosen = [s for s in chosen if touched(s, files)]
+        mode = f"fast: {len(files)} file(s) differ from origin/main"
+    print(f"mk5-main check: {ROOT}\n  branch {branch} @ {head}; {mode}")
+    if not chosen:
+        print("  nothing to run: the diff touches no suite")
+        return 0
+
+    LOGS.mkdir(parents=True, exist_ok=True)
+    results = {}  # name -> (status, detail, seconds)
+    runnable = []
+    for s in chosen:
+        missing = s.unavailable() if s.unavailable else None
+        if s.not_run:
+            results[s.name] = ("NOT RUN", s.not_run, 0.0, 0)
+        elif missing:
+            results[s.name] = ("UNAVAILABLE", missing, 0.0, 0)
+        else:
+            runnable.append(s)
+
+    # Setup, once per kind, before the suites that need it.
+    setup_failed = {}
+    for kind in [k for k in SETUP if any(k in s.setup for s in runnable)]:
+        log = LOGS / f"setup-{kind}.log"
+        log.write_text("")
+        t0 = time.time()
+        try:
+            msg = SETUP[kind](log)
+            print(f"  setup  {msg} ({time.time() - t0:.0f}s)")
+        except Failed as e:
+            setup_failed[kind] = f"setup failed: {e}; see {log.relative_to(ROOT)}"
+            print(f"  setup  {kind} FAILED: {e}; see {log.relative_to(ROOT)}")
+    print()
+
+    lock = threading.Lock()
+
+    def run(s):
+        bad = next((setup_failed[k] for k in s.setup if k in setup_failed), None)
+        if bad:
+            return s.name, ("FAIL", bad, 0.0, 0)
+        log = LOGS / f"{s.name}.log"
+        log.write_text("")
+        # e2e: a port of its own, so it never reuses another checkout's dev server.
+        env = {**os.environ, "PORT": str(free_port())} if s.name == "e2e" else None
+        t0 = time.time()
+        try:
+            for cwd, argv in s.steps:
+                run_logged(argv, ROOT / cwd, env, log)
+            text = log.read_text(errors="replace")
+            if s.name == "lean":
+                axioms = set(re.findall(r"\b[\w.]+\b", " ".join(re.findall(r"depends on axioms: \[(.*?)\]", text))))
+                if axioms - LEAN_AXIOMS:
+                    raise Failed(f"a theorem depends on {', '.join(sorted(axioms - LEAN_AXIOMS))}")
+            count, skipped, reasons = tally(text)
+            detail = count + (f" ({'; '.join(reasons)})" if reasons else "")
+            res = ("PASS", detail, time.time() - t0, skipped)
+        except Failed as e:
+            tail = log.read_text(errors="replace").strip().splitlines()[-15:]
+            res = ("FAIL", f"{e}; log {log.relative_to(ROOT)}\n" + "\n".join("      | " + l for l in tail),
+                   time.time() - t0, 0)
+        with lock:
+            print(f"  {res[0]:<5} {s.name} ({res[2]:.0f}s)")
+        return s.name, res
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
+        order = sorted(runnable, key=lambda s: (s.name not in SLOW_FIRST, SLOW_FIRST.index(s.name)
+                                                 if s.name in SLOW_FIRST else 0))
+        for name, res in pool.map(run, order):
+            results[name] = res
+
+    print("\nSummary")
+    for s in chosen:
+        status, detail, secs, _ = results[s.name]
+        t = f"{secs:4.0f}s" if secs else "     "
+        print(f"  {status:<11} {s.name:<14} {t}  {detail}")
+    count = lambda st: sum(1 for r in results.values() if r[0] == st)
+    skipped = sum(r[3] for r in results.values())
+    failed = count("FAIL")
+    verdict = "FAILED" if failed else "GREEN"
+    print(f"\n{verdict}: {count('PASS')} passed, {failed} failed, {count('UNAVAILABLE')} unavailable, "
+          f"{count('NOT RUN')} not run" + (f"; {skipped} tests skipped themselves (reasons above)" if skipped else "")
+          + f". Logs: {LOGS.relative_to(ROOT)}/")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -10,11 +10,12 @@ uint32 bitmasks (bit d set == domino id d present).
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from dataclasses import dataclass
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from forge.oracle.tables import (  # noqa: E402
     DOMINO_COUNT_POINTS,

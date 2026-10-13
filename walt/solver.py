@@ -41,11 +41,12 @@ instrumentation's trick rollouts; ``n_nodes`` counts recursion nodes
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import Iterator
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from walt.contracts import SolveResult  # noqa: E402
 from walt.field import NodeCtx, resolve_lut  # noqa: E402

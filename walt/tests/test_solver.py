@@ -22,11 +22,12 @@ from __future__ import annotations
 import itertools
 import random
 import sys
+from pathlib import Path
 import time
 
 import numpy as np
 
-sys.path.insert(0, "/Users/jason/code/mk5-main/.claude/worktrees/walt")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from forge.zeb.game import (  # noqa: E402
     apply_action,

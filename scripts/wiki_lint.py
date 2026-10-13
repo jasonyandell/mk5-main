@@ -25,7 +25,10 @@ Checks:
           trails/, directly or via one rollup hop
     IX01  page on disk missing from index.md (ERROR)
     IX02  index.md entry pointing at no file (ERROR)
-    LG01  log.md holds more than 15 entries (rotation overdue)
+    LG01  log.md holds more than 15 entries (rotation due on main; WARN)
+    LG02  a log entry appears twice across log.md and log-archive.md (ERROR)
+    LG03  the digest's archived-entry count differs from log-archive.md (ERROR)
+          — catches an archive truncated by a bad merge
     SC01  sources/ file never linked from any page
 
 AGENTS.md is excluded (it contains placeholder links by design).
@@ -38,6 +41,8 @@ import collections
 import os
 import re
 import sys
+
+from wiki_log_rotate import DIGEST_RE, ROTATE_ABOVE, header_of, split_log
 
 WIKI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "wiki")
 
@@ -198,10 +203,22 @@ def main():
         if t not in basemap and not re.fullmatch(r"index(-[\w-]+)?", t):
             add("IX02", "ERROR", f"[[{t}]]")
 
-    # --- log rotation ---
-    n_entries = len(re.findall(r"^## \[", pages.get("log.md", ""), re.M))
-    if n_entries > 15:
-        add("LG01", "ERROR", f"log.md has {n_entries} entries (rotate at 15)")
+    # --- log: rotation due, duplicates, the digest's count ---
+    _, live = split_log(pages.get("log.md", ""))
+    _, archived = split_log(pages.get("log-archive.md", ""))
+    if len(live) > ROTATE_ABOVE:
+        add("LG01", "WARN", f"log.md has {len(live)} entries; on main, run "
+            f"python -u scripts/wiki_log_rotate.py")
+    seen = collections.Counter(header_of(e) for e in live + archived)
+    for header, n in sorted(seen.items()):
+        if n > 1:
+            add("LG02", "ERROR", f"{n} copies: {header[:100]}")
+    m = DIGEST_RE.search(pages.get("log.md", ""))
+    if m is None:
+        add("LG03", "ERROR", "log.md has no '## Digest (… → …, N archived entries)' line")
+    elif int(m.group(4)) != len(archived):
+        add("LG03", "ERROR", f"digest says {m.group(4)} archived entries; "
+            f"log-archive.md holds {len(archived)}")
 
     # --- unlinked sources ---
     for rel in sorted(pages):
