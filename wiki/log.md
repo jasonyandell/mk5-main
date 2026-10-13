@@ -36,6 +36,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | d3524ec1 | silas book, second batch: 71 of the 86 encodable-now catalog rows written down and asked at the book's own positions; four new rules (follow-low, take-the-trick, follow-with-the-off, defend-the-84), the setter's throwaways, frame-fact queries, seven odds; pounce and bidders-plan repaired against the book's hands]
+
+**Touched pages:** [[silas]] § The book, second batch; [[book-study-2026-10-12]] (the re-price predates the repairs). `silas/GAPS.md` (the book against itself; gaps 1, 5, 7), `silas/README.md` § The book prelude, § Examples; `silas/examples/book/odds/README.md`.
+
 ## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
 
 **Touched pages:** [[silas]] § The match and field-free comparison. `silas/README.md` § The auction; `silas/docs/cross-game.md` § 4, Slice 2 as built; `silas/GAPS.md` gaps 2 and 4 narrowed (#134 now needs only #128).
