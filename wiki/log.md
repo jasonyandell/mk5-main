@@ -43,6 +43,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | bf16fdfe | The book at small n (#154): the near-tie break is free at 16, 64 and 160 worlds; the book's sets cost a 16-world plan 0.21 [−0.02, 0.44] marks/game and a 160-world plan 1.10 [0.93, 1.27]]
+
+**Added:** [[book-small-n-2026-10-14]] (pre-registered at bf16fdfe, 280 batches through `scripts/cpu-slot`, none dropped; D16 −0.01 [−0.18, +0.17], MDE 0.25; A/A −0.03), `scenario/small_n.py`; data `book/small-n/` in texas-42-zeb-research-2026-10. **Updated:** [[book-assumptions]] (A7 measured to 16 worlds; #161 the reader with no plan). Pre-registered, queued: [[deviant-field-2026-10-14]] (#152, `scenario/deviant_field.py`, 98f5d16c).
+
 ## [2026-10-14 | 5807425c | The header audit (#153): the gates are history]
 
 The 21 rows that stayed on a gate are listed in their rule's header or recorded as no rule's; `setter-leads` repaired at Hand 27 (a low tile that calls for a five and no ten goes last); `low-from-a-pair` learns the spare (Hand 29); the three "book against its rule" rows re-read under [[book-authority]]'s presumption, one reconciled. Ledger in [[book-assumptions]] (gate-only 21 → 0); rule table in [[silas]].

@@ -33,7 +33,7 @@ trick.
 | A4 | **The auction is a signal made by a known method**: a bid tells its level's shape | S-0021-a, S-0027-b, S-0027-d, S-0077-c, S-0077-d, S-0078-a, S-0078-b, S-0155-b, S-0165-a | **absent**: worlds uniform given the auction (#117) | pilot below: a deterministic bidder's opening carries 0.93 of 1.58 bits about its hand's strength bucket | #117 / #134; inside #149 |
 | A5 | **The book's game and the match**: points to 250, a set rewarded, bidding that reads the score | S-0015-c, S-0017-c, S-0063-b, S-0114-a, S-0114-b, S-0047-a, S-0080-e, S-0110-a, S-0122-a, S-0129-b, S-0165-b, S-0170-a | **partial**: points to 250 exists (`points_to_win`); Zeb plans for the make, bids score-blind, never bids 84 (#115) | the book as Zeb's near-tie break wins 53.2% [51.1, 55.2] of games to 250, replicated | #115, #77 (marks-race utility), #130 slices 3–4 |
 | A6 | **The field has bidding styles** (overbidders, wild bidders) | S-0080-c, S-0070-a, S-0155-a, S-0155-b, S-0114-b, S-0034-a, S-0184-a, S-0188-b, S-0190-a, S-0191-a | **absent**: both teams `heuristic`, caution 0 | `risk-budget` bidding −0.71 [−1.00, −0.41] marks/game against that style-free field | **#152**, a named deviant field |
-| A7 | **The reader is a bounded human**: the rules are a fast policy, not a replacement for enumeration | the whole book; S-0076-a, S-0078-d | **violated by design**: compared at Zeb's full compute | the book as tie-break wins its game (A5) | **#154**, the book at small n |
+| A7 | **The reader is a bounded human**: the rules are a fast policy, not a replacement for enumeration | the whole book; S-0076-a, S-0078-d | **measured to 16 worlds** (#154): the fallback still plans | the book as tie-break wins its game (A5); as Zeb's near-tie break it neither raises nor costs Zeb at 16, 64 or 160 worlds (D16 −0.01 [−0.18, +0.17], MDE 0.25); inside its sets the cost falls from 1.10 [0.93, 1.27] at 160 worlds to 0.21 [−0.02, 0.44] at 16, the predicted direction, never crossing 0 | **#161**, the reader with no plan (n = 0) |
 | A8 | **A rule is applied with judgment inside its stated scope** | every rule file's header | **partial**: the Silas stack is literal | the census: 44% of the first head-to-head's loss was the encoding; repairs moved +0.47 [+0.33, +0.62] marks/game | #146 done; #153 |
 | A9 | **The value of unpredictability is a response, not a fixed field** (an equilibrium claim) | S-0089-e, S-0081-a, S-0037-a, S-0154-a | **absent**: no mixed policies, no response map | none | #130 slice 5; #116; #149 is the fixed-learner first step |
 | A10 | **The full declaration menu** (doubles as trumps, no trumps) | Ch. 9's 34 rows, Hands 23–25 | **absent**: pip trumps only | none | **#155** |
@@ -71,9 +71,14 @@ trick.
   84 bid (#115).
 - **A6:** the book's bidding has only been measured against the one field in which restraint
   cannot pay by setting an overbidder. Its −0.71 is the scope of that field.
-- **A7, held firmly:** the book is a policy for a player who cannot enumerate. Its one measured
-  win is in exactly that role, breaking ties for a planner. The prediction for #154 is that
-  the book raises a bounded Zeb, by more as n falls.
+- **A7, held, now measured to 16 worlds** ([[book-small-n-2026-10-14]]): the book is a policy for a
+  player who cannot enumerate. Its one measured win is in exactly that role, breaking ties for a
+  planner. #154 predicted the book raises a bounded Zeb by more as n falls; what it saw is that the
+  near-tie break is free at every n (D16 −0.01 [−0.18, +0.17]) and that confining the plan to the
+  book's sets costs 1.10 marks/game at 160 worlds and 0.21 [−0.02, 0.44] at 16, the predicted
+  direction. The sets cost a bounded player on defense, not on its own contracts. Every #154
+  fallback still planned over sampled worlds; the reader the book writes for plans over none, and
+  that arm is #161.
 - **A8:** every residual disagreement between an encoding and the book is presumed to be the
   encoding's until a reason report finds no condition in the header that would reconcile them.
   The three rows filed as "the book against its rule" are re-read under that presumption (#153).
@@ -176,7 +181,7 @@ the book's own hands or left open, never by Zeb's preference.
    and the measurement that would decide it (Hand 28 trick 2, a reason report from the right
    setter's cell). The six encodable rows wait on gap 7 and a record of Hand 25. What is left
    of the encoding is the 149 gapped rows.
-4. **#154, the book at small n**: cheap, and it tests A7 directly.
+4. **#154, the book at small n**: done 2026-10-14, a null at the tie-break and a signed filter trend; **#161** is its n = 0 arm.
 5. **#152, the named deviant field**: cheap arena-side, and it seats the book's bidding against
    its own field.
 6. **#151, the fallible tracker**: medium, and it reports a crossover rather than a verdict.
