@@ -37,25 +37,33 @@ def _belief(sit, worlds):
 
 
 def test_core_matches_the_referee_under_make_then_margin():
+    moved = 0   # the rule is not idle on these states: parity is not vacuous
     for cfg in MARGIN:
-        ref, fast = Walt(cfg), CompiledWalt(cfg)
-        for state in _states(10, seed=71 + cfg.seed, min_plays=4):
+        ref, fast, low = Walt(cfg), CompiledWalt(cfg), CompiledWalt(_with(cfg, tie="lowest"))
+        for state in _states(6, seed=71 + cfg.seed, min_plays=10):
             bid = 30 + state.decl_id % 4
-            _same(ref.decide(state, bid), fast.decide(state, bid))
+            want = ref.decide(state, bid)
+            _same(want, fast.decide(state, bid))
             assert ref.nodes == fast.nodes
             _same_analysis(ref.analyze(state, bid), fast.analyze(state, bid))
+            moved += want[0] != low.decide(state, bid)[0]
+    assert moved > 0
 
 
 def test_core_matches_the_referee_with_a_field_net_a_belief_and_a_batch():
+    moved = 0
     for cfg in FIELD_MARGIN:
         ref, fast = Walt(cfg, belief=_belief), CompiledWalt(cfg, belief=_belief)
-        states = _pip_states(8, seed=81 + cfg.seed, min_plays=4)
+        low = CompiledWalt(_with(cfg, tie="lowest"), belief=_belief)
+        states = _pip_states(5, seed=81 + cfg.seed, min_plays=10)
         batch = fast.decide_batch(states, [31] * len(states))
         for state, got in zip(states, batch):
             want = ref.decide(state, 31)
             _same(want, got)
             _same(want, fast.decide(state, 31))
             _same_analysis(ref.analyze(state, 31, line=True), fast.analyze(state, 31, line=True))
+            moved += want[0] != low.decide(state, 31)[0]
+    assert moved > 0
 
 
 def test_a_convention_sender_breaks_its_ties_by_margin_in_both_engines():
