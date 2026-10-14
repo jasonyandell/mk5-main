@@ -1120,8 +1120,20 @@ a game.
 - **Cost in WASM:** the opening lead (the README's 44 ms / 154 ms row) is unchanged.
   Tricks 1–3 cost 1.3–2.5× the unread median, about 50 ms median at 160 worlds on a quiet
   M5 Max; tricks 4 on cost nothing measurable.
-- **Not published yet.** Version 0.3.0, CHANGELOG and README are in; `npm publish` (or a
-  `zeb-v0.3.0` tag for the trusted-publishing workflow) waits on Jason. License unchanged.
+- **Published** 2026-10-14 to npm as `@jasonyandell/zeb` 0.3.0 (MIT), from the `zeb-v0.3.0` tag through the trusted-publishing workflow.
+
+## Match-aware bidding (2026-10-14)
+
+Zeb's bidder now runs in the arena (`arena/zeb_bid.py`, `zeb:n<w>[,met|marks]`): the package's
+forecast, bit-identical to the parity fixture, and `chooseBid`. Every one-mark call pays one
+mark made or set, so the score never changes which one-mark call is best ([[match-equity]]); it
+enters only through the 84, which `chooseBid` never bids. The `met` option bids 84 when its match
+equity beats the hand-only call's (default off). Against deployed Zeb's bidder it wins 53.4%
+[52.5, 54.3] of games to 7 marks (pre-registered bar: lower bound above 50%). The opponents at 6
+account for about a third of that; upgrading 42s to 84s accounts for half. Against the same 84
+priced by expected marks it still wins 51.4% [50.6, 52.2]. Over an opponent's bid the hand-only
+forecast runs 3–8 points hot. Nothing ships; the option is proposed for the next zeb version
+([[match-aware-bidding-2026-10-14]], #160).
 
 ## Links
 
