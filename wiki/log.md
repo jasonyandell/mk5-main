@@ -48,6 +48,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | 4e98280e | the soft reading's second replication against Zeb (#145): uniform primary +0.37 [+0.24, +0.51] on 318 fresh pairs passes its registered bar; A/A −0.00; games to 250 0.531, null; one batch dropped]
 
 **Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication 2: pre-registration, results, load, winner's curse), [[scenario-player]], `index-experiments.md`. Code: `scenario/reads_soft.py` (`REPLICATION_2`, `replicate --primary`). Data: `zeb/reads-plays-soft-rep2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
 ## [2026-10-14 | 9b5f4dd1 | the farmboy field as Zeb's play field (field_eps = 0.2, #108, ledger row A): null, −0.03 [−0.11, +0.06] marks/game vs deployed Zeb over 1,536 games; 49.2% [47.0, 51.4] to 250; A/A exact; no drops]
 
 **Added:** [[field-eps-play-2026-10-14]] (pre-registered at 9b5f4dd1). **Updated:** [[scenario-player]] (§ A stochastic field), [[brainstorm-2026-10-14-ledger]] (row A, runner-up), `index-experiments.md`. Data: `zeb/field-eps-play/` on the research repo.
