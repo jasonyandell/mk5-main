@@ -152,8 +152,8 @@ def overcall(fc, need: int, odds: Odds, key: tuple[str, int]) -> tuple[int, int,
 # The forecast over an opponent's standing bid, calibrated (`cal`): fitted by maximum
 # likelihood on every over-an-opponent contract that stood in the prior study's BASE and P
 # blocks (HF zeb/match-aware-bidding/; zeb/match-aware-bidding-2/fit_cal.py), frozen
-# before the follow-up's plan ran.
-ZEB_SHRINK = Shrink(0.0, 1.0)
+# before the follow-up's plan ran (out/cal.json).
+ZEB_SHRINK = Shrink(-0.2483, 0.926)  # 2,600 contracts; se (0.049, 0.035); p 0.2 -> 0.178, 0.8 -> 0.738
 
 
 def price(v, odds: Odds, us: int, them: int, nd: int, key: tuple[str, int], c0: int, p_c0: float,
