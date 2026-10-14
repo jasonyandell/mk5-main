@@ -415,6 +415,46 @@ REP_GAMES = 16                               # from the pilot: 24 risked the 300
 SWEEP_EPS = (0.1, 0.5)
 SWEEP_BATCHES = 6
 
+REPLICATION_2 = """The second registered replication, uniform primary (fixed before any
+measured batch of it; the wiki page's § Replication 2 repeats it). The first
+replication's consistent primary failed (+0.12 [−0.02, +0.27]) and its
+registered uniform secondary held (+0.23 [+0.08, +0.37]); this run asks the
+uniform reader alone, on deals neither run has seen. It is the last run of
+this arm unless it passes.
+
+- Deals: fresh base seeds, disjoint from every seed of #145 (1–7, pilot
+  900–904) and of the first replication (101–118, 201–209, pilots 990–991):
+  marks games at `REP2_SEEDS`, the book's 250-point games at
+  `REP2_250_SEEDS`; the timing pilot at `REP2_PILOT`, excluded.
+- Players and table exactly as in `REPLICATION` (`--table zeb`): two uniform
+  readers at ε = `EPS` = 0.28, margin 2^22, against two plain deployed Zebs,
+  `bid30`, paired halves. The A/A arm (plain Zeb at seed `RESEED` against
+  plain) runs at the same seeds in the same run.
+- **Primary**: the uniform reader's margin against plain, marks per game (a
+  game pair's sum / 2), 95% bootstrap over game pairs (4,000 resamples, seed
+  42): `replicate(runs, "uniform")`. **Success: the lower bound > 0.**
+- Registered secondaries: the uniform reader's share of games won in the
+  book's game to 250 points (chance 0.5, the same bootstrap); the A/A margin
+  (expected to include 0); the uniform reader's settled points per game.
+- Size and load: `REP2_GAMES` game pairs per batch, each under `timeout
+  300`, at most `REP2_WORKERS` batches at once (another heavy experiment
+  shares the machine). The pilot put 8 pairs at about 120 s with three
+  batches running; 6 pairs aims under 150 s. 54 batches = 324 game pairs per
+  marks arm, 24 batches = 144 pairs of games to 250.
+- Batch-drop rule: a batch that exits nonzero (an overrun of `timeout 300`
+  exits 124) is dropped, not rerun, and the page lists it; the effects use
+  the game pairs present. No effect is computed until every batch has run;
+  there is no early stop and no top-up.
+- Exploratory, not registered: uniform − A/A on shared pairs; the per-batch
+  signs; a pool with the earlier uniform runs (which carries their winner's
+  curse: their passing is why this run exists).
+"""
+REP2_SEEDS = tuple(range(301, 355))          # 54 batches of REP2_GAMES: 324 game pairs
+REP2_250_SEEDS = tuple(range(401, 425))      # 24 batches of REP2_GAMES: 144 game pairs
+REP2_PILOT = (995, 996)
+REP2_GAMES = 6
+REP2_WORKERS = 6
+
 
 def _wins(runs: Sequence[str]) -> dict[tuple[int, int], float]:
     """(base seed, game) → team A's games won of the pair's two, less 1 (chance 0)."""
@@ -427,8 +467,13 @@ def _wins(runs: Sequence[str]) -> dict[tuple[int, int], float]:
     return out
 
 
-def replicate(runs: Sequence[str]) -> dict:
-    """The replication's effects (`REPLICATION`), from zeb-table runs."""
+def replicate(runs: Sequence[str], primary: str = "consistent") -> dict:
+    """A replication's effects from zeb-table runs: `REPLICATION` (primary
+    consistent) or `REPLICATION_2` (primary uniform). The other reader, when
+    run, is a registered secondary; the game share to 250 is the primary's."""
+    if primary not in ARMS[1:]:
+        raise ValueError(f"no reader {primary}")
+    other = "uniform" if primary == "consistent" else "consistent"
     by: dict[tuple, list[str]] = {}
     for run in runs:
         m = _meta(run)
@@ -438,8 +483,7 @@ def replicate(runs: Sequence[str]) -> dict:
     marks = {k: _pairs(rs, "marks") for k, rs in by.items()}
     points = {k: _pairs(rs, "points") for k, rs in by.items()}
     wins = {k: _wins(rs) for k, rs in by.items()}
-    con, uni, aa, con250 = ("consistent", EPS, None), ("uniform", EPS, None), ("plain", None, None), \
-        ("consistent", EPS, 250)
+    pri, oth, aa, pri250 = (primary, EPS, None), (other, EPS, None), ("plain", None, None), (primary, EPS, 250)
     out: dict = {"eps": EPS, "arms": {}, "registered": {}, "exploratory": {}}
     for k, rs in sorted(by.items(), key=str):
         games = [g for r in rs for g in _games(r)]
@@ -452,20 +496,21 @@ def replicate(runs: Sequence[str]) -> dict:
                            **{x: share[x] + 0.5 for x in ("mean", "lo", "hi")}},   # (won − 1) / 2 + 1/2
         }
     reg, exp = out["registered"], out["exploratory"]
-    if con in by:
-        m = _diff(marks[con], None)
-        reg["primary: consistent vs plain, marks/game"] = {**m, "success": bool(m["lo"] > 0)}
-        reg["consistent vs plain, settled points/game"] = _diff(points[con], None)
-    if uni in by:
-        reg["uniform vs plain, marks/game"] = _diff(marks[uni], None)
-        reg["uniform vs plain, settled points/game"] = _diff(points[uni], None)
+    if pri in by:
+        m = _diff(marks[pri], None)
+        reg[f"primary: {primary} vs plain, marks/game"] = {**m, "success": bool(m["lo"] > 0)}
+        reg[f"{primary} vs plain, settled points/game"] = _diff(points[pri], None)
+    if oth in by:
+        reg[f"{other} vs plain, marks/game"] = _diff(marks[oth], None)
+        reg[f"{other} vs plain, settled points/game"] = _diff(points[oth], None)
     if aa in by:
         reg["A/A: plain at seed 1 vs plain, marks/game"] = _diff(marks[aa], None)
-    if con250 in by:
-        reg["consistent vs plain, share of games to 250 won"] = \
-            out["arms"][f"consistent eps={EPS} to=250"]["game_share"]
-    if con in by and aa in by:
-        exp["consistent - A/A, marks/game"] = _diff(marks[con], marks[aa])
+    if pri250 in by:
+        reg[f"{primary} vs plain, share of games to 250 won"] = \
+            out["arms"][f"{primary} eps={EPS} to=250"]["game_share"]
+    if pri in by and aa in by:
+        exp[f"{primary} - A/A, marks/game"] = _diff(marks[pri], marks[aa])
+    con, uni = ("consistent", EPS, None), ("uniform", EPS, None)
     if uni in by and con in by:
         exp["uniform - consistent, marks/game"] = _diff(marks[uni], marks[con])
     for k in sorted(by, key=str):
@@ -558,6 +603,8 @@ def main() -> None:
         p = sub.add_parser(name)
         p.add_argument("--runs", nargs="+", required=True)
         p.add_argument("--out", required=True)
+    p.add_argument("--primary", choices=ARMS[1:], default="consistent",
+                   help="the registered primary reader (REPLICATION: consistent; REPLICATION_2: uniform)")
     p = sub.add_parser("cost")
     p.add_argument("--net", required=True)
     p.add_argument("--runs", nargs="+", required=True)
@@ -574,7 +621,7 @@ def main() -> None:
         Path(a.out).write_text(json.dumps(r, indent=1) + "\n")
         print(json.dumps(r["by_trick"], indent=1))
     elif a.cmd == "replicate":
-        r = replicate(a.runs)
+        r = replicate(a.runs, a.primary)
         Path(a.out).write_text(json.dumps(r, indent=1) + "\n")
         print(json.dumps({k: r[k] for k in ("registered", "exploratory")}, indent=1))
     elif a.cmd == "cost":

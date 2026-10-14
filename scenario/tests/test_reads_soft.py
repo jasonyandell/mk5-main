@@ -148,3 +148,41 @@ def test_the_replication_reads_the_primary_the_aa_arm_and_the_game_share(tmp_pat
     assert r["arms"]["consistent eps=0.28 to=7 marks"]["game_share"]["mean"] == 1.0
     assert r["exploratory"]["sweep: consistent eps=0.1 - eps=0.28, marks/game"]["game_pairs"] == 1
     assert "uniform vs plain, marks/game" not in r["registered"]
+
+
+def test_the_second_replication_reads_the_uniform_primary_and_its_game_share(tmp_path):
+    """With a uniform primary the registered keys follow the reader: its
+    marks (a success when the lower bound clears 0), its settled points, its
+    share of games to 250, and uniform − A/A as exploratory; the seeds are
+    disjoint from every earlier run of the study."""
+    from scenario.reads_soft import REP2_250_SEEDS, REP2_GAMES, REP2_PILOT, REP2_SEEDS, REP_250_SEEDS, \
+        REP_PILOT, REP_SEEDS, replicate
+
+    def run(name, arm, seed, games, to=None):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "meta.json").write_text(json.dumps({"table": "zeb", "arm": arm, "seed": seed, "eps": EPS,
+                                                 "points_to_win": to}))
+        with open(d / "games.jsonl", "w") as f:
+            for idx, a_team, am, bm, won in games:
+                f.write(json.dumps({"game": idx, "a_team": a_team, "a_marks": am, "b_marks": bm,
+                                    "a_points": 10 * am, "b_points": 10 * bm, "a_won": won, "hands": []}) + "\n")
+        return str(d)
+
+    win, lose = (0, 0, 7, 3, True), (0, 1, 2, 7, False)
+    uni = run("u", "uniform", 301, [win, (0, 1, 7, 5, True), (1, 0, 7, 1, True), (1, 1, 1, 7, False)])
+    aa = run("a", "plain", 301, [win, lose, (1, 0, 3, 7, False), (1, 1, 7, 3, True)])
+    g250 = run("g", "uniform", 401, [win, win], to=250)
+    r = replicate([uni, aa, g250], "uniform")
+    p = r["registered"]["primary: uniform vs plain, marks/game"]
+    # pair 0: (4 + 2) / 2 = 3; pair 1: (6 − 6) / 2 = 0
+    assert p["game_pairs"] == 2 and p["mean"] == 1.5
+    assert r["registered"]["uniform vs plain, settled points/game"]["mean"] == 15.0
+    assert r["registered"]["uniform vs plain, share of games to 250 won"]["mean"] == 1.0
+    # pair 0: (6 − (−1)) / 2; pair 1: (0 − 0) / 2
+    assert r["exploratory"]["uniform - A/A, marks/game"]["mean"] == 1.75
+    assert not any(k.startswith("consistent") for k in r["registered"])
+    earlier = set(range(1, 8)) | set(range(900, 905)) | set(REP_SEEDS) | set(REP_250_SEEDS) | set(REP_PILOT)
+    fresh = set(REP2_SEEDS) | set(REP2_250_SEEDS) | set(REP2_PILOT)
+    assert not earlier & fresh and not set(REP2_SEEDS) & set(REP2_250_SEEDS)
+    assert len(REP2_SEEDS) * REP2_GAMES >= 300
