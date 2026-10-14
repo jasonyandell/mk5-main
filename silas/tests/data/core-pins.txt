@@ -177,6 +177,8 @@ lib/bidding.silas:pip-suit beee27d6954630b3
 lib/bidding.silas:of-suit 0a23285eaf4068c8
 lib/bidding.silas:suit-at-least 12b40103eaeda455
 lib/bidding.silas:suit-double 7584eeed1dea9288
+lib/bidding.silas:top-of-suit 82f3f86e24fe93cb
+lib/bidding.silas:holds-top 0cc7f935ad6cea6e
 lib/bidding.silas:longer-suit 7b351ce7dbf47574
 lib/bidding.silas:outranks b933d9750d9575f6
 lib/bidding.silas:off-under 58cd9ff059e6b1e1

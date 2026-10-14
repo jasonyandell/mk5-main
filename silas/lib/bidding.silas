@@ -34,6 +34,19 @@
 (define suit-double (roles (context t))
   (some (roles d) (of-suit d t) (double d)))
 
+; d is one of the n highest tiles of suit t: fewer than n tiles of the suit
+; rank above it. The order is the suit's faces (ranks-above: the double, then
+; the other pip down), which is how every declaration that does not make t
+; trump ranks the suit's tiles, so it is the suit's order before one is named.
+(define top-of-suit (roles (domino d) (context t) (number n))
+  (bears d t)
+  (< (card (roles e) (ranks-above e d t)) n))
+
+; The viewer holds the n highest tiles of suit t: for two, its double and the
+; next (the 6-5 in sixes, the six of any other suit).
+(define holds-top (roles (context t) (number n))
+  (<= n (card (roles d) (mine d) (top-of-suit d t n))))
+
 ; Suit u is longer in the viewer's hand than suit t.
 (define longer-suit (roles (context u) (context t))
   (< (card (roles d) (of-suit d t)) (card (roles d) (of-suit d u))))

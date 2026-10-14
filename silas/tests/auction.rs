@@ -233,6 +233,56 @@ fn the_auction_frame_reads_the_hand_the_auction_and_the_match() {
 }
 
 #[test]
+fn a_suits_face_order_is_every_declarations_where_it_is_not_trump() {
+    // (ranks-above a b q): a and b bear q's pip and a ranks above b by their
+    // faces, the double first and then the other pip down. Under each of the
+    // nine straight declarations, on the tiles that follow a pip suit q that
+    // is not trump there (and are not trump themselves), it is exactly the
+    // trick key's order in q: the suit's order before trump is named is the
+    // order of every declaration that leaves the suit alone.
+    let order = compile("(query (roles (domino a) (domino b) (context q)) (out a b q) (ranks-above a b q))");
+    let dealt = tiles(&["5-5", "5-4", "5-2", "5-0", "4-4", "2-2", "4-2"]);
+    let auction = Auction::new(AuctionConfig::STRAIGHT, Seat::S3, vec![]).unwrap();
+    let state = MatchState::new(Scoring::MARKS, [0, 0]).unwrap();
+    let at_auction = AuctionFrame::new(auction, Seat::S0, dealt, state, menu()).unwrap();
+    let faces = order.evaluate_auction(&at_auction, &mut budget()).unwrap();
+    let ranked = |a: Domino, b: Domino, q: Context| {
+        faces.contains(&Answer(vec![Value::Domino(a), Value::Domino(b), Value::Context(q)]))
+    };
+    let mut compared = 0;
+    for declaration in menu().iter() {
+        // A tile fact: the same answers in the play, under any declaration.
+        let play = framed(&contract(declaration, Seat::S0, 30), Seat::S0, dealt, vec![]).unwrap();
+        assert_eq!(order.evaluate_viewer(&play, &mut budget()).unwrap(), faces, "{}", declaration.name());
+        let trump = declaration.trump();
+        for p in Pip::ALL {
+            let q = Context::Natural(p);
+            if trump == Some(q) {
+                continue;
+            }
+            let suit: Vec<Domino> = Domino::ALL
+                .into_iter()
+                .filter(|d| d.has(p) && declaration.follows(*d, q) && trump.is_none_or(|t| !declaration.follows(*d, t)))
+                .collect();
+            for &a in &suit {
+                for &b in &suit {
+                    let keys = declaration.trick_key(a, q) > declaration.trick_key(b, q);
+                    assert_eq!(ranked(a, b, q), keys, "{a} over {b} in {q} under {}", declaration.name());
+                    compared += 1;
+                }
+            }
+        }
+    }
+    // The suit's tiles off trump: 7 a suit under no trump, 6 under a pip
+    // trump (the tile bearing both), 6 under doubles (the double).
+    assert_eq!(compared, 7 * 49 + 7 * 6 * 6 * 6 + 7 * 36);
+    // Off the suit, nothing ranks: a tile must bear the pip, and q* has none.
+    assert!(!ranked(Domino::ALL[27], Domino::ALL[0], Context::Natural(Pip::ALL[3])));
+    assert!(faces.iter().all(|a| a.0[2] != Value::Context(Context::Called)));
+    assert_eq!(faces.len(), 7 * 21);
+}
+
+#[test]
 fn an_auction_frame_refuses_what_no_table_deals() {
     let auction = Auction::new(AuctionConfig::STRAIGHT, Seat::S3, vec![]).unwrap();
     let state = MatchState::new(Scoring::POINTS, [0, 0]).unwrap();

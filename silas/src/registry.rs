@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::auction::{Auction, AuctionFrame, Call};
 use crate::eval::Budget;
 use crate::frame::{Bid, Frame, Holdings};
-use crate::nouns::{Context, Pip, Seat};
+use crate::nouns::{Context, Domino, Pip, Seat};
 use crate::scoring::Scoring;
 use crate::syntax::{RESERVED, Sort, Value, valid_name};
 use crate::{Result, error};
@@ -173,9 +173,13 @@ const V4: [&str; 16] = [
     "behind",
 ];
 
+/// The built-ins that came with the suits' face order, version
+/// `silas-v5/suit-order`: a tile fact, so of both phases.
+const V5: [&str; 1] = ["ranks-above"];
+
 /// The built-ins defined at the auction as well as in the play: the tiles'
 /// own facts, the seats, the dealt hand, the count, and the auction's record.
-const BOTH: [&str; 19] = [
+const BOTH: [&str; 20] = [
     "double",
     "tile",
     "chair",
@@ -189,6 +193,7 @@ const BOTH: [&str; 19] = [
     "count",
     "bears",
     "high-pip",
+    "ranks-above",
     "shaker",
     "bid-of",
     "passed",
@@ -225,8 +230,10 @@ impl Registry {
 
     /// The built-in relations. Each carries the version in which its meaning
     /// last changed: `silas-v0/core` for the first set, `silas-v1/core` and
-    /// `silas-v2/core` for those that read the hand's record, and
-    /// `silas-v3/outcome` for the solved outcomes, which look to the hand's end.
+    /// `silas-v2/core` for those that read the hand's record,
+    /// `silas-v3/outcome` for the solved outcomes, which look to the hand's
+    /// end, `silas-v4/auction` for the auction's, and `silas-v5/suit-order` for
+    /// the suits' face order.
     pub fn standard() -> Self {
         use Access::{Viewer, World};
         use Sort::{Chair as C, Context as Q, Domino as D, Number as N, Team as T};
@@ -275,6 +282,7 @@ impl Registry {
             ("mine", vec![D], Viewer),
             ("bears", vec![D, Q], Viewer),
             ("high-pip", vec![D, Q], Viewer),
+            ("ranks-above", vec![D, D, Q], Viewer),
             ("shaker", vec![C], Viewer),
             ("bid-of", vec![C, N], Viewer),
             ("passed", vec![C], Viewer),
@@ -297,7 +305,9 @@ impl Registry {
             } else {
                 Phase::Play
             };
-            let version = if V4.contains(&name) {
+            let version = if V5.contains(&name) {
+                "silas-v5/suit-order"
+            } else if V4.contains(&name) {
                 "silas-v4/auction"
             } else if V2.contains(&name) {
                 "silas-v2/core"
@@ -423,6 +433,20 @@ fn pip_of(q: Context) -> Option<Pip> {
     }
 }
 
+/// A tile's place in the pip suit `p` it bears, by its faces alone: the
+/// double first, then by its other pip, highest first. It is the trick key's
+/// order under every straight declaration in which `p` is not trump, on the
+/// tiles that follow `p` there (`tests/auction.rs`).
+fn suit_rank(d: Domino, p: Pip) -> u8 {
+    if d.is_double() {
+        Pip::COUNT as u8
+    } else if d.hi() == p {
+        d.lo().value()
+    } else {
+        d.hi().value()
+    }
+}
+
 /// The facts of the tiles and the seats themselves, the same at every frame.
 fn tile_fact(name: &str, args: &[Value]) -> Option<bool> {
     use Value::{Chair as C, Context as Q, Domino as D, Team as T};
@@ -437,6 +461,9 @@ fn tile_fact(name: &str, args: &[Value]) -> Option<bool> {
         ("successor", [C(a), C(b)]) => a.successor() == *b,
         ("bears", [D(d), Q(q)]) => pip_of(*q).is_some_and(|p| d.has(p)),
         ("high-pip", [D(d), Q(q)]) => pip_of(*q) == Some(d.hi()),
+        ("ranks-above", [D(a), D(b), Q(q)]) => {
+            pip_of(*q).is_some_and(|p| a.has(p) && b.has(p) && suit_rank(*a, p) > suit_rank(*b, p))
+        }
         _ => return None,
     })
 }
