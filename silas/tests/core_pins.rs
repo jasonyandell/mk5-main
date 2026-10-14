@@ -10,6 +10,13 @@
 //! design, whose meaning `tests/bidding.rs` holds to the old on every hand.
 //! `crisis.silas` was re-pinned then too, its meaning changed on purpose: the
 //! aggregate states the "most tiles out" its encoding had left as a gap.
+//! Twelve pins moved on purpose with the encoding's repairs of 2026-10-14
+//! (#146), each a rule brought back inside its own header's scope and pinned
+//! by a `repair_` test of `tests/book_rules.rs`: the files `crisis`,
+//! `dead-double`, `first-lead`, `follow-with-the-off`, `low-from-a-pair`,
+//! `partner-plays-the-top-trump` and `protect-the-count`; the prelude's
+//! `winner-cannot-be-beaten` and `crisis`; and, reading those, `safe-trick`,
+//! `donate-when-safe` and `bidders-plan` (its text unchanged).
 //!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too.

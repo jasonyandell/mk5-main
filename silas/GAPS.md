@@ -476,6 +476,36 @@ These rules encode the book's stated rule over a worked play it gives no reason 
   and plays the higher, the 6-1, as he has another six; `low-from-a-pair.silas` allows
   only the 3-1 there.
 
+### The book's silences (the encoding's repairs, #146)
+
+The rule-fidelity census of the head-to-head ([book-investigation-2026-10-14](../wiki/experiments/book-investigation-2026-10-14.md))
+found rules firing outside their headers' scope or against the stated order; those were
+repaired, each pinned by a `repair_` test in `tests/book_rules.rs`. Where the census asked for
+a choice the book does not make, the encoding makes none, and the arena's tie-break (least id,
+or Zeb's best tile inside the set) still decides:
+
+- **Which sure trump leads** (`first-lead.silas`, `lead-the-top-trumps`). The book says any of
+  the top run; its hands lead the double, but Hand 28 leads the 6-0 holding the 0-0 as bait
+  (S-0129-d, a reading of the setters: gap 1). No rank is encoded.
+- **Which setting lead** (`setter-leads.silas`, `lead-the-count-that-sets`). The book's two
+  hands choose between a lead that sets and one that does not; among leads that all set it
+  states no order (Hand 28 trick 4 picks by "the odds", not by reach). No order is encoded.
+- **A count off on the setters' trick** (`follow-with-the-off.silas`). The book plays the off
+  the first time its suit is led and does not say whether an off that is itself count goes
+  on a trick the setters are taking. The rule still plays it.
+- **The follower who is not last and can take the trick** (`low-from-a-pair.silas`,
+  `take-the-trick.silas`). The book's pair rule does not treat a higher tile that takes the
+  bidder's side's trick (the catalog's note on S-0071-c); its "win any trick you can" (S-0056-b)
+  is a general precept with no tile named for a follower not last. Low-from-a-pair is now silent
+  there; no rule takes the trick.
+- **Hand 27's crisis** (`crisis.silas`). The crisis now needs the partner shown out of trump.
+  Hand 27 places the undrawn trump with a setter by reading the partner's follow to the
+  bidder's trump lead (gap 1); without that reading the rule waits. Whether a crisis outlives
+  a decided contract the book does not say; the rule does not ask.
+- **The dead double against shed's lone tile** (`dead-double.silas`, `shed-for-a-void.silas`).
+  The headers conflict (the dead double "thrown first"; the void "the first guideline") and the
+  book's throws do not settle it; the stack's order is kept (dead double first).
+
 ## Added by the book's odds (`examples/book/odds/`)
 
 The odds the book prints are encoded one query per claim and checked exactly in

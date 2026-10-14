@@ -12,6 +12,12 @@
 ; where the bidder can take the trick: with the double of the suit led he
 ; plays the double (p. 11, S-0024-a), which helper-stretch.silas reads where
 ; no setter can trump.
+; The off is judged in the suit followed as well as its own: the tile played
+; must be one that can lose there (Hand 30's 1-0 on the 0-0, Hand 16's 1-0 on
+; the 1-1). A tile no live tile beats in the suit led is no off on that trick
+; (2026-10-14, #146; before, only its own suit was asked). The book does not
+; say whether an off that is itself count goes on a trick the setters are
+; taking (GAPS.md, the book's silences); the rule still plays it.
 ; New: no gate has it.
 
 (include book)
@@ -24,4 +30,5 @@
     (not (trump q))
     (not (can-take-it))
     (follower o)
+    (loses-in o q)
     (bare-off o)))

@@ -52,6 +52,8 @@ explains? Where, if anywhere, does it win?
 - **Inside the book's scope it still loses** (S-core −0.057 marks a departure). It ties only
   inside the three rules Zeb's own plan sides with. On its own eight narrated deals its side
   outplays Zeb's, which carries no interval.
+- **After the repairs (#146) the book loses 1.41 marks a game,** 0.47 [0.33, 0.62] less than
+  published, as the census forecast, and wins 38.4% of games to 250 (§ After the repairs).
 - **The benefit of the doubt does not reverse the sign.**
   - The most generous order gains +0.22 marks a game, and the book still loses 1.2.
   - The winner's curse is 12% of Zeb's forecast price.
@@ -497,6 +499,89 @@ Every interval above zero among them:
   at the cap, none failed. Queues were paused and resumed only at batch boundaries; two
   in-flight batches were detached from a stopped queue and completed.
 
+## After the repairs (#146, 2026-10-14)
+
+The census's repairs were made in the Silas book policies and the arena's stack, each rule
+brought back inside its own header's scope and pinned by a `repair_` test
+(`silas/tests/book_rules.rs`, `arena/test_book_play.py`). Where the census asked for a choice
+the book does not make, nothing was guessed; it is recorded in `silas/GAPS.md` § The book's
+silences.
+
+| # | census label | repair |
+|---|---|---|
+| 1 | low-from-a-pair declines a trick (210) | silent where the higher tile takes the bidder's side's trick |
+| 2 | "one off may go first" as an instruction (100) | the permission stays in the header; no rule allows the off, and the book's hands of the shape lead trump |
+| 3 | top-trump handoff that cannot beat the trick (98) | the tile must beat the tile taking the trick |
+| 4 | follow-with-the-off judged by its own suit (43) | the off must also be able to lose in the suit followed; a count off is a recorded silence |
+| 5 | the safe trick counts setters who have played (39) | the prelude's `winner-cannot-be-beaten` asks only setters still to play |
+| 6 | protect-the-count on a lead the mover beats (32) | silent where a tile of his beats the lead |
+| 7 | the no-count rules choose the throw (292) | they only forbid count; the later firing policies choose within them (`arena/book_play.py`, `decide`) |
+| 8 | the dead double cashed before the draw (241) | the cash waits while the bidder holds the highest trump out and is not in crisis |
+| 9 | the crisis without evidence (196) | the prelude's `crisis` needs the partner shown out of trump (never the first lead) |
+| 10 | least-id tile picks (557) | a trump count tile leads only when every trump is count (183); the rank of the sure trumps (156) and the order of setting leads (218) are silences, not encoded |
+
+The dead double over shed's lone tile (344) is unresolved by the headers and kept in the
+stated order. Core pins moved: twelve, listed in `silas/tests/core_pins.rs`.
+
+### Pre-registration (written and committed before any pooled batch of this section)
+
+- *Blocks.* b′: the head-to-head's block b (`book:zeb,least`, Zeb deployed, `heuristic`
+  bidding for both teams, games to 7 marks) with the repaired encoding; P-b′: the same, to 250
+  points settled by the book's rule (II). Base seeds 1–11, 36 games a batch (396 games, 198
+  clusters each), every batch under `timeout 300`; a one-batch pilot at seed 900 is in no
+  number. Intervals as above (cluster bootstrap, 10,000 resamples).
+- *Headline.* b′'s marks/game and P-b′'s game share, each with its interval, beside the
+  chance baseline: Zeb against Zeb reads exactly 0 marks and 50% of games (deterministic per
+  coordinate). The book **loses** where the interval lies below it.
+- *The comparison.* b′ − b (published, −1.88) and P-b′ − P-b (33.3%), paired by cluster. The
+  repairs **moved** the loss where the paired interval lies above 0.
+- *The forecast, from the census's costs (first order):* the repaired labels carry −0.046
+  marks a hand, about 0.50 marks a game, so b′ ≈ −1.4. The same number reads off the other
+  side: the clean disagreements' −1.06 plus the labels left in place (least-id picks inside a
+  set holding Zeb's tile, the two silences, the dead double over the lone tile; about −0.3).
+  The arena alone cannot split b′ into clean and residual without the decomposition's
+  rollouts, which are not re-run; b′ is read against the forecast.
+- *Descriptive:* decisions a hand each policy decides, and its departures (tile ≠ Zeb's),
+  before and after.
+
+### Results
+
+Both blocks ran as registered: 22 batches, none near the cap (slowest 127 s), the pilot
+excluded. The published block b reproduces from its files (−1.884).
+
+| book team, rules else Zeb's tile (b) | marks/game [95%] | game share [95%] | made, book / Zeb | settlement / hand |
+|---|---|---|---|---|
+| published (the head-to-head) | −1.88 [−2.09, −1.66] | 25.0% | 50.0% / 67.5% | |
+| **repaired** | **−1.41 [−1.63, −1.18]** | 32.1% [28.3, 35.9] | 53.6% / 66.5% | |
+| repaired − published, paired | **+0.47 [+0.33, +0.62]** | | | |
+| points to 250 (P-b), published | | 33.3% [29.8, 36.9] | 50.4% / 66.9% | −5.5 [−6.4, −4.6] |
+| **points to 250, repaired** | | **38.4% [34.6, 42.2]** | 53.7% / 66.0% | −3.5 [−4.4, −2.5] |
+| repaired − published, paired | | **+5.1 points [+2.3, +8.1]** | | |
+| Zeb against Zeb (the chance baseline) | 0 | 50% | | 0 |
+
+- *The repairs moved the loss, by what the census said they would.* +0.47 [+0.33, +0.62]
+  marks a game, against the +0.50 forecast from the repaired labels' first-order cost.
+- *The book still loses, in both games.* −1.41 marks a game, and 38% of games to 250, both
+  intervals clear of the baseline.
+- *The clean loss is where the census put it.* What remains is −1.41. The census's
+  accounting has −1.06 for the rules' clean disagreements with Zeb and about −0.3 for the
+  labels left in place (least-id picks inside a set holding Zeb's tile, the two silences, the
+  dead double over the lone tile). The two agree. The clean part itself was not re-decomposed
+  (no rollouts were run), so the −1.06 stands as the census measured it, not re-measured.
+- *What changed at the table.* Per hand: departures 3.37 → 3.20, decisions a rule decides
+  6.89 → 6.76.
+  - the off on the first lead: 166 → 0;
+  - the dead double's cash: 0.109 → 0.039 decisions a hand;
+  - the crisis: 0.121 → 0.063;
+  - low from a pair: 0.487 → 0.404;
+  - the top-trump handoff: 0.082 → 0.056.
+  The draw, the top-trump leads and the other bidder's-plan leads take up what these leave.
+- *In the book's game the repairs are worth two settlement points a hand,* and five points of
+  game share. The book's best fair form before the repairs, (d), won 37.9%; the repaired
+  rules with no tie-break help win 38.4%.
+
+Data: `book/encoding-repairs/` (below).
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `book/investigation/` (CC0, `SHA256SUMS`,
@@ -509,6 +594,10 @@ Every interval above zero among them:
 - the narrated deals (`narrated.json`);
 - the re-plans and continuations (`sel/`);
 - `results.json` and `analysis.log`, and the scripts.
+
+After the repairs (#146): `book/encoding-repairs/` (CC0, `SHA256SUMS`, `CARD.md`): both
+blocks' games, book decisions and summaries (`out/`), the pilot, the logs, `results.json`,
+`analysis.log` and the scripts.
 
 Code: `arena/engine.py` (`points_to_win`), `arena/auction.py` (`settle_points`) and
 `arena/book_play.py` (`ties=union`, `w<eps>`); the reader is 3262eea0's.

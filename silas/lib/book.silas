@@ -274,8 +274,9 @@
 ; The tile taking the open trick cannot be beaten by a setter still to play,
 ; as far as the viewer can tell: no live tile outside his hand that follows the
 ; suit led and beats it can be with a setter who has not played to the trick
-; and has not shown void in that suit; and trump was led, or no setter can
-; hold a trump. Read from the bidder's side.
+; and has not shown void in that suit; and trump was led, or no setter still
+; to play can hold a trump (a setter who has played to the trick can no longer
+; take it: the book's guaranteed trick, S-0057-c). Read from the bidder's side.
 (define winner-cannot-be-beaten (roles)
   (some (roles w win q)
     (current-winner w)
@@ -289,7 +290,15 @@
       (not (mine x))
       (in x q)
       (beats x win q))
-    (or (trump q) (no-setter-trump))))
+    (or
+      (trump q)
+      (none (roles s t)
+        (setter s)
+        (none (roles y) (trick-play s y))
+        (not (shown-out-of-trump s))
+        (live t)
+        (not (mine t))
+        (trump-tile t)))))
 
 ; A safe trick, the one to give count to: the viewer's partner is taking it,
 ; and the viewer plays last or the winning tile cannot be beaten.
@@ -490,8 +499,13 @@
     (beats x y t)
     (none (roles a b) (mine a) (in a t) (beats a x t) (mine b) (in b t) (beats b x t))))
 
-; The bidder's crisis: a setter holds trump he cannot draw.
+; The bidder's crisis: a setter holds trump he cannot draw. The book's crisis
+; is one that has turned out (S-0073-d; Hands 26 and 31): the trump is shown to
+; be a setter's, which the bidder can know when his partner has shown out of
+; trump. A trump out that his partner may hold is no crisis; nor is the first
+; lead, before anyone has shown anything.
 (define crisis (roles)
+  (some (roles p) (bidders-partner p) (shown-out-of-trump p))
   (or (trump-he-cannot-draw) (trumps-he-cannot-draw)))
 
 ; -- Defending the last trick: an 84, or no trump (Ch. 8; p. 82). The bidder

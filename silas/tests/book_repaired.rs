@@ -179,10 +179,14 @@ fn c10(others: [&str; 3]) -> OpenPosition {
 }
 
 #[test]
-fn c10_the_book_permits_the_off_and_the_repair_leads_trump() {
+fn c10_the_book_permits_the_off_and_both_lead_trump() {
+    // The book's text permits the off; its hands of the shape lead trump, and
+    // so does its policy (#146: no rule of first-lead allows the off). The
+    // repair leads trump for its own reason, the partner's ruff below 1/2.
     let at = Position::holding(physics("P2"), 30, B, tiles(&C10_BIDDER.split(' ').collect::<Vec<_>>()), vec![]);
-    assert_eq!(allows(FIRST_LEAD, &at, "one-off-may-go-first"), tiles(&["5-1"]));
-    assert_eq!(allows(ONE_OFF, &at, "lead-a-trump"), tiles(&["6-2", "5-2", "4-2", "2-1", "2-0"]));
+    let trumps = tiles(&["6-2", "5-2", "4-2", "2-1", "2-0"]);
+    assert_eq!(allows(FIRST_LEAD, &at, "lead-a-trump"), trumps);
+    assert_eq!(allows(ONE_OFF, &at, "lead-a-trump"), trumps);
 }
 
 #[test]
@@ -256,7 +260,7 @@ fn c10_the_partners_ruff_is_never_more_likely_than_not_at_the_first_lead() {
         book().bidders("hand-12", &[]).frame(Seat::S0),
         book().bidders("hand-14", &[]).frame(Seat::S0),
     ];
-    let policy = program(FIRST_LEAD);
+    let policy = program(ONE_OFF);
     let compiled: Vec<CompiledPolicy> =
         (0..7).map(|p| policy.compile(&Registry::standard(), &physics(&format!("P{p}"))).unwrap()).collect();
     let mut rng = Rng(20261013);
@@ -266,8 +270,7 @@ fn c10_the_partners_ruff_is_never_more_likely_than_not_at_the_first_lead() {
         let shuffled = rng.shuffled();
         let frame = opening(&physics(&format!("P{p}")), shuffled[..7].iter().copied().collect());
         let allowed = compiled[p].allowed(&frame, &mut budget()).unwrap();
-        if matches!(&allowed.provenance, DecisionProvenance::RelationalRule { name } if name == "one-off-may-go-first")
-        {
+        if matches!(&allowed.provenance, DecisionProvenance::RelationalRule { .. }) {
             frames.push(frame);
             covered += 1;
         }

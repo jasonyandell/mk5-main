@@ -10,6 +10,10 @@
 ; over the bidder's worlds, is gates/c02-reading-singleton.silas: 26/57 in
 ; Hand 30, where it is false; as a fact it needs the partner's policy (GAPS.md,
 ; policy likelihood).
+; The highest trump still out is played to take the trick (Hand 30: he takes
+; the lead to run his doubles), so the rule needs it to beat the tile taking
+; the trick: a live trump can rank below the bidder's own lead, or a setter's
+; trump already played (2026-10-14, #146; before, it fired there too).
 ; Replaces gates/c02-high-trump-handoff.silas. How it differs: it does not;
 ; the gate was the table's convention, and the worked hand plays it.
 
@@ -22,4 +26,8 @@
     (bidders-lead)
     (trump-led)
     (own-legal top)
-    (boss-trump top)))
+    (boss-trump top)
+    (current-winner w)
+    (trick-play w win)
+    (led-context q)
+    (beats top win q)))

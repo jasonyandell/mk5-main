@@ -24,6 +24,13 @@
 ; more tiles neither played nor the bidder's.
 ; GAP likelihood: in Hand 31 the crisis itself is a reading of the right
 ; setter's count play (prelude, trumps-he-cannot-draw).
+; Evidence (2026-10-14, #146): the crisis fires only once the bidder's partner
+; has shown out of trump, so that the trump the bidder cannot draw is a
+; setter's (prelude, crisis); it never fires on the first lead. Hands 26 and
+; 31 meet it. Before, it fired on any trump out that the partner might hold,
+; and on trick one, where first-lead decides. GAP likelihood: Hand 27's crisis
+; (S-0127-a) places the undrawn trump with a setter by reading the partner's
+; follow to the bidder's trump lead; without that reading the rule waits.
 
 (include book)
 
