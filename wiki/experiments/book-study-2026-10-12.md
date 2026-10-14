@@ -776,6 +776,6 @@ dealt hands), `run_dd.sh` and `analyze_first.py` (the re-price through `book-rep
 
 [[w42]] · [[scenario-player]] · [[endgames-o2-vs-o1-2026-10-12]] ·
 [[research-night-2026-10-12]] · [[the-wall]] · [[w42-book-validation-campaign]] ·
-[[book-head-to-head-2026-10-13]] ·
+[[book-head-to-head-2026-10-13]] · [[book-investigation-2026-10-14]] ·
 [[w42-book-claim-synthesis-and-ai-directions]] · [[w42-book-second-pass]] ·
 [[publish-data-to-huggingface]] · [[metasplat-2026-10-13]]

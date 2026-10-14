@@ -247,4 +247,4 @@ scripts (`run.py`, `rollout.py`, `analyze.py`, `run_all.sh`) and logs. Code:
 
 ## Links
 
-[[book-study-2026-10-12]] · [[silas]] · [[scenario-player]] · [[w42]] · [[arena]]
+[[book-study-2026-10-12]] · [[book-investigation-2026-10-14]] · [[silas]] · [[scenario-player]] · [[w42]] · [[arena]]
