@@ -19,7 +19,7 @@ from scenario.rules import tiles_of
 from scenario.tests.test_compiled import _same_analysis
 from scenario.tests.test_field import NET
 from scenario.tests.test_posterior import LATE, SAMPLED
-from scenario.tests.test_reading import EARLY, MARGIN, RANDOM, _fiber
+from scenario.tests.test_reading import EARLY, MARGIN, RANDOM, _fiber, affordable
 
 CONFIGS = [
     Config((Rung(16, None, 6),), "make", seed=3, field=NET, draw="posterior", draw_budget=20_000,
@@ -63,7 +63,7 @@ def test_compiled_matches_the_planner_with_the_auction():
     fell = moved = 0
     for cfg in CONFIGS:
         ref, fast = Walt(cfg), CompiledWalt(cfg)
-        for state in EARLY + SAMPLED[::2] + LATE[::2] + RANDOM[::2]:
+        for state in affordable(EARLY + SAMPLED[::2] + LATE[::2] + RANDOM[::2]):
             auction = _auction(state, rng)
             a = ref.analyze(state, 30, auction=auction)
             _same_analysis(a, fast.analyze(state, 30, auction=auction))
@@ -85,7 +85,7 @@ def test_a_table_of_ones_is_no_evidence():
         for state in SAMPLED[:3] + LATE[:3]:
             plain = fast.analyze(state, 30)
             _same_analysis(plain, fast.analyze(state, 30, auction=(ones, ones, ones, ones)))
-        for state in SAMPLED[:2] + LATE[:2]:
+        for state in affordable(SAMPLED)[:2] + LATE[:2]:
             _same_analysis(fast.analyze(state, 30), Walt(cfg).analyze(state, 30, auction=(ones, None, ones, None)))
 
 

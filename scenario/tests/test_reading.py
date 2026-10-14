@@ -26,6 +26,7 @@ from scenario.tests.test_posterior import LATE, SAMPLED, _positions
 EARLY = _positions([(3, 2), (5, 3), (12, 3), (14, 2)])   # fibers above READ_ENUM: rejection
 
 MARGIN = 10_000_000          # about the 40th percentile of the test net's score gaps
+ENUM_CAP = 150_000          # the referee's enumeration is pure Python: see `affordable`
 EVERY = (1 << 62) - 1        # wider than every gap: the any-legal-tile policy
 
 
@@ -50,6 +51,16 @@ def _fiber(state) -> int:
     return Fiber(sit.viewer, own, rec.played, tuple(rec.hand_size(s) for s in range(4)), rec.forbid).size
 
 
+def affordable(states):
+    """The states whose fiber the Python referee can enumerate in a blink
+    (or does not enumerate: above `READ_ENUM` the draw is by rejection).
+    Its enumeration is pure Python, ~2 s per million worlds per config; the
+    enumerated path is the same code at 125k worlds as at 925k, so the few
+    states above ENUM_CAP (four of the 21 here) only multiply the suite's
+    time. `test_the_largest_enumerated_fiber_matches` keeps one of them."""
+    return [s for s in states if not ENUM_CAP < _fiber(s) <= READ_ENUM]   # rejection is cheap: kept
+
+
 def test_compiled_matches_the_planner_under_a_reading():
     """Every path of the draw, referee = core: the exact fiber (at most n),
     the enumerated draw (at most `READ_ENUM`), rejection above it, and the
@@ -58,7 +69,7 @@ def test_compiled_matches_the_planner_under_a_reading():
     fell = moved = 0
     for cfg in READING_CONFIGS:
         ref, fast = Walt(cfg), CompiledWalt(cfg)
-        for state in EARLY + SAMPLED + LATE:
+        for state in affordable(EARLY + SAMPLED + LATE):
             a = ref.analyze(state, 30)
             _same_analysis(a, fast.analyze(state, 30))
             assert (ref.nodes, ref.proposals, ref.fallbacks) == (fast.nodes, fast.proposals, fast.fallbacks)
@@ -71,6 +82,17 @@ def test_compiled_matches_the_planner_under_a_reading():
             fell += ref.fallbacks
             moved += a.q != Walt(_with(cfg, reading=None)).analyze(state, 30).q
     assert min(paths.values()) >= 3 and fell >= 1 and moved >= 8
+
+
+def test_the_largest_enumerated_fiber_matches():
+    """The biggest fiber the enumerated path takes (above `ENUM_CAP`, at most
+    `READ_ENUM`), under the first config: referee = core to the bit."""
+    state = max((s for s in SAMPLED + RANDOM if _fiber(s) <= READ_ENUM), key=_fiber)
+    assert _fiber(state) > ENUM_CAP
+    cfg = READING_CONFIGS[0]
+    ref, fast = Walt(cfg), CompiledWalt(cfg)
+    _same_analysis(ref.analyze(state, 30), fast.analyze(state, 30))
+    assert (ref.nodes, ref.proposals, ref.fallbacks) == (fast.nodes, fast.proposals, fast.fallbacks)
 
 
 def test_the_enumerated_draw_follows_the_likelihood():
@@ -263,7 +285,7 @@ def test_compiled_matches_the_planner_under_a_soft_reading():
     fell = 0
     for cfg in SOFT_CONFIGS:
         ref, fast = Walt(cfg), CompiledWalt(cfg)
-        for state in EARLY + SAMPLED + LATE + RANDOM:
+        for state in affordable(EARLY + SAMPLED + LATE + RANDOM):
             a = ref.analyze(state, 30)
             _same_analysis(a, fast.analyze(state, 30))
             assert (ref.nodes, ref.proposals, ref.fallbacks) == (fast.nodes, fast.proposals, fast.fallbacks)
@@ -281,7 +303,7 @@ def test_the_soft_posterior_never_empties():
     uniform), the soft one weighs every world positively, the real deal
     among them, and its draw does not fall back."""
     emptied = 0
-    for state in RANDOM + LATE:
+    for state in affordable(RANDOM + LATE):
         sit = situation_from_state(state, 30)
         sharp = Walt(Config((Rung(512, None, 16),), field=NET, draw="posterior", reading=Reading("uniform", 0)))
         soft = Walt(Config((Rung(512, None, 16),), field=NET, draw="posterior", reading=Reading("uniform", 0, 0.1)))

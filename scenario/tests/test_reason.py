@@ -40,7 +40,7 @@ def eighty_four():
     return _state(deal, 0, 42, 5, (), empty_record(0))
 
 
-def test_the_eighty_fours_reason_is_the_guarded_six_five():
+def test_the_eighty_fours_reason_is_the_guarded_six_five(monkeypatch):
     """Zeb's lead against the book's 84 line, the double-five: they part in
     the worlds where an opponent guards the 6-5 with another five — the 5-5
     is set in every one of them — and that fact, found by search, reads on
@@ -48,7 +48,20 @@ def test_the_eighty_fours_reason_is_the_guarded_six_five():
     over the fiber."""
     cfg = Config((Rung(4, None), Rung(64, None)), "make", seed=1)
     state = eighty_four()
+    # The report plans the decision once; the book check below reads the same
+    # analysis (the line is the only thing `line=True` adds) rather than re-plan it.
+    planned = []
+    analyze = CompiledWalt.analyze
+
+    def spy(self, *args, **kw):
+        out = analyze(self, *args, **kw)
+        planned.append(out)
+        return out
+
+    monkeypatch.setattr(CompiledWalt, "analyze", spy)
     r = reason(state, 42, tile(5, 5), cfg, bar=[("seed 2", dataclasses.replace(cfg, seed=2))])
+    monkeypatch.undo()
+    assert len(planned) == 1
     assert r.tile != tile(5, 5) and r.verdict == REASON and r.compare == "better"
     assert r.authority == "sampled(64, 1)" and r.n_worlds == 64
     assert r.price > float(r.bar) > 0 and abs(float(r.share_a - r.share_b) - r.price) < 1e-12
@@ -63,7 +76,8 @@ def test_the_eighty_fours_reason_is_the_guarded_six_five():
     # The book's own text reads the same masses off the same worlds.
     sit = situation_from_state(state, 42)
     f = frame(sit, remaining_hand(state, 0))
-    analysis = CompiledWalt(cfg).analyze(state, 42)
+    analysis = planned[0]
+    assert [r.tile, r.q] == [analysis.tile, analysis.q]
     sampled = SilasAuthority.sampled(64, 1)
     book = SilasQuery(SIX_FIVE_GUARDED.read_text())
     side = SilasBelief.from_worlds(f, [analysis.worlds[i] for i in r.side_a],
