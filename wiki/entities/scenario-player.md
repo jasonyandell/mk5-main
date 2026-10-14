@@ -1008,6 +1008,7 @@ split lies but not why. What recurs, by rule:
 
 ## Links
 
+[[splat-search-bounds]] (searching over splats: what is sound) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]

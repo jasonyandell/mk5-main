@@ -132,4 +132,4 @@ scroll).
 
 ## Links
 
-[[scenario-player]] | [[candlewax]] | [[eq-browser-visualizers]] | [[zeb]] | [[metasplat-2026-10-13]]
+[[scenario-player]] | [[candlewax]] | [[eq-browser-visualizers]] | [[zeb]] | [[metasplat-2026-10-13]] | [[splat-search-bounds]]

@@ -84,6 +84,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/scratchpad-validation|scratchpad-validation]] — attempted structured output + fact-validation in one step; 64.5% invalid; format-bootstrap lesson; code parked for later (retired)
 - [[topics/search-literature-transfer|search-literature-transfer]] — external literature mapped onto the continuation frontier: Skat policy inference transfers directly, SPARTA/LBS transfer as shape, alpha-mu/EPIMC are bounded comparators, team-public-information is the legality spec; ReBeL/whole-game CFR/naive ISMCTS/double-dummy bid labels do not transfer (active)
 - [[topics/single-fact-enumeration|single-fact-enumeration]] — evaluation method: one fact per Q, enables precise category-level accuracy tracking (complete)
+- [[topics/splat-search-bounds|splat-search-bounds]] — searching over splats: world-by-world dominance and lump envelopes are sound under fixed continuations; average DD is not admissible; dominance on sampled cells is not zero-risk; tractable at trick 4+ on full cells (active)
 - [[topics/star|star]] — Self-Taught Reasoner; LEM's Stage 1 training paradigm (superseded)
 - [[topics/strategy-fusion|strategy-fusion]] — E[max(score)] ≥ max(E[score]): the failure mode of a full-info value model under partial information, and the founding sentence behind E[Q] (complete)
 - [[topics/student-distillation|student-distillation]] — Gus training paradigm: distill forge's E[Q] oracle into a small transformer via supervised learning on oracle outputs (complete)
