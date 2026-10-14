@@ -725,6 +725,16 @@ itself: the off is in Zeb's best set at 49% of rows where it is under 0.05 (one 
 19% at 0.05–0.10, 14% at 0.10–0.15 and 5% above 0.2; the counts that raise it raise each
 setter's ruff as much. The largest in the pour is 2821/12920.
 
+## Finer than a price: the metasplat (2026-10-13)
+
+The re-price above is one scalar per position. [[metasplat-2026-10-13]] compares the whole
+splats of Zeb's pick and the book's best tile (or, where Zeb keeps to the book, the best tile
+it rules out) at every live firing of these 18 rules, in nine shapes fixed before counting:
+of 1,592,675 departures, 44% carry a make edge beyond the pour's noise bar (27% dominant at
+every margin, 3% the safer tail at a lower mean), 45% sit at an even make and 11% are ties;
+at a settled contract the book's tile has the higher mean (44% of dead departures, Zeb's
+21%). The donation lead's departures are 60% ties.
+
 ## Data
 
 The measurements (scripts, pour queries, forecasts, per-deal arena output, the face-off's
@@ -758,4 +768,4 @@ dealt hands), `run_dd.sh` and `analyze_first.py` (the re-price through `book-rep
 [[w42]] · [[scenario-player]] · [[endgames-o2-vs-o1-2026-10-12]] ·
 [[research-night-2026-10-12]] · [[the-wall]] · [[w42-book-validation-campaign]] ·
 [[w42-book-claim-synthesis-and-ai-directions]] · [[w42-book-second-pass]] ·
-[[publish-data-to-huggingface]]
+[[publish-data-to-huggingface]] · [[metasplat-2026-10-13]]

@@ -8,7 +8,7 @@
 :root {
   --bg: #0b0d12; --panel: #11141b; --panel2: #151922; --line: #232835; --line2: #2e3442;
   --ink: #dde0e7; --mute: #8f97a7; --faint: #5a6273;
-  --bid: #f2b35a; --def: #57c4bd; --truth: #ff5c7a;
+  --bid: #f2b35a; --def: #57c4bd; --truth: #ff5c7a; --book: #b49cff;
   --tile: #ebe5d6; --pip: #17191f;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -91,6 +91,8 @@ details b { color: var(--ink); font-weight: 600; }
 #pos-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 6px; min-height: 40px; }
 #pos-head .big { font-size: 15px; font-weight: 600; }
 #pos-head .sub { color: var(--mute); }
+#pos-head .book { flex-basis: 100%; color: var(--mute); border-left: 2.5px solid var(--book); padding: 2px 0 2px 10px; }
+#pos-head .book b { color: var(--book); font-weight: 600; }
 #tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; }
 .btns { display: flex; gap: 4px; align-items: center; }
 .btn {
@@ -206,6 +208,7 @@ table.cond-t tr.plan td:first-child { font-weight: 600; }
         <p>The ridges below are the chosen move's splat at every planned play, each scaled to its own peak, coloured as above. Forced plays (one legal tile) have no plan and no splat.</p>
         <p><b>What must be true.</b> Every world is a whole deal, so any part of a splat has a description in <b>holdings</b>: which hidden tile sits with which seat. Pick a region of a move's splat (its made or set side, a hump, or drag across any bars) and the panel under the splats ranks the holdings by how far they move the region's chance: <span class="num">22 of 24</span> where partner holds the tile against the region's base rate (the grey tick), with the rest of the cell (the hollow dot) beside it. Seats are named from the mover's chair: <b>left</b> plays after it, <b>right</b> before it. The real holder is marked, because the page knows the deal; the mover did not.</p>
         <p>Click a holding to <b>condition</b> the position on it: every splat splits into the worlds where it is true (bright, at the bottom of each bar) and the rest (faint, on top), and the table gives each move's mean and pmake on both sides, starring the move that would be best if that were known. Up to three holdings stack. Every number is counted from the pour's worlds; nothing is re-planned.</p>
+        <p><b>Book against Zeb</b> (a metasplat sample, <code>scenario/metasplat.py</code>). Where a book rule fires, the line under the header names it, its allowed tiles and the contrast: the book's best tile where the plan leaves the book, the best tile the book rules out where it keeps to it. The contrast's splat is outlined in <span style="color:var(--book)">violet</span> over the plan's, on the same scale, with its mean dashed. The shape names how the two differ world by world, with Δp (the mover's success) and Δμ (the mover's margin) and their noise bars: twice the paired standard error over the cell's worlds, zero when the cell is the whole fiber. The facts are the reason report's, read on the pour's own worlds.</p>
         <p>The pour plans under the <b>make</b> utility, so <i>q</i> is pmake. Where the contract is already decided the plan stops and the tape plays the hand out, so margins past that point are the tape's, not the plan's (issue #107). The page shows the four real hands; the mover saw only its own: the other seats are drawn behind glass, with the share of the mover's worlds that put each tile where it really is.</p>
       </details>
     </section>
@@ -239,6 +242,7 @@ table.cond-t tr.plan td:first-child { font-weight: 600; }
 const C = {
   bg: '#0b0d12', panel: '#11141b', line: '#232835', line2: '#2e3442', ink: '#dde0e7', mute: '#8f97a7',
   faint: '#5a6273', bid: '#f2b35a', def: '#57c4bd', truth: '#ff5c7a', tile: '#ebe5d6', pip: '#17191f',
+  book: '#b49cff',
 };
 const TRUMP = ['blanks', 'aces', 'deuces', 'treys', 'fours', 'fives', 'sixes'];
 const COUNT = { 20: 10, 25: 10, 15: 5, 11: 5, 8: 5 };      // 5-5, 6-4, 5-0, 4-1, 3-2
@@ -313,6 +317,7 @@ function go(d, k) {
   writeHash();
   render();
 }
+const bookPlay = d => { const dl = DATA.deals[clamp(d, 0, DATA.deals.length - 1)], p = dl.positions.find(x => x.book); return p ? p.play : S.k; };
 function planned(step) {
   const ks = deal().positions.map(p => p.play);
   const next = step > 0 ? ks.find(k => k > S.k) : [...ks].reverse().find(k => k < S.k);
@@ -502,7 +507,29 @@ function renderPosHead() {
   const bidSide = pos.sign > 0;
   $('pos-head').innerHTML = `<span class="big">${where}</span>` +
     `<span class="sub">${who} to play · the cell: <span class="num">${pos.worlds}</span> worlds · ` +
-    `wants ${bidSide ? '<span class="bid">made →</span>' : '<span class="def">← set</span>'} · the plan: <b>${nameOf(pos.chosen)}</b></span>`;
+    `wants ${bidSide ? '<span class="bid">made →</span>' : '<span class="def">← set</span>'} · the plan: <b>${nameOf(pos.chosen)}</b></span>` +
+    (pos.book || []).map(bookLine).join('');
+}
+// A book rule at this position (a metasplat sample): the rule and its tiles, the contrast
+// drawn over the plan's splat, the shape of the difference, and the reason report's facts.
+const fmt = (x, d) => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(d)}`;
+function bookLine(b) {
+  const tiles = b.allowed.map(nameOf).join(' ');
+  const vs = b.agree ? `the best tile the book rules out, the <b>${nameOf(b.contrast)}</b>` : `the book's best, the <b>${nameOf(b.contrast)}</b>`;
+  const bar = (x, e, d) => `${fmt(x, d)} <span class="mute">± ${e.toFixed(d)}</span>`;
+  let s = `<span class="book"><b>${b.rule}</b> · ${b.which.replaceAll('-', ' ')} allows <span class="num">${tiles}</span>; ` +
+    `the plan ${b.agree ? 'keeps to' : 'leaves'} the book. Against ${vs}: <b>${b.shape}</b> · ` +
+    `Δp <span class="num">${bar(b.dp, b.bar_p, 3)}</span> · Δμ <span class="num">${bar(b.dmu, b.bar_mu, 2)}</span>` +
+    `${b.exact ? ' (the whole fiber, no sampling bar)' : ''}.`;
+  const r = b.reason;
+  if (r && r.found !== 'identical') {
+    const best = r.found === 'two facts' ? r.pairs[0] : r.facts[0];
+    s += `<br>Split on the ${r.basis} (${r.columns[0]} ${r.sides[0]} worlds, ${r.columns[1]} ${r.sides[1]}): ` +
+      (best ? `${r.found === 'no reason found' ? 'no reason found; best candidate' : r.found}: <i>${best.gloss}</i> ` +
+        `<span class="num">(${best.on.map(x => { const [a, c] = x.split('/').map(Number); return pct(c ? a / c : a); }).join(' vs ')})</span>` : r.found) +
+      ` <span class="mute">chance ${r.chance[r.found === 'two facts' ? 1 : 0].toFixed(2)}</span>`;
+  }
+  return s + '</span>';
 }
 function renderTools() {
   const ks = deal().positions.map(p => p.play);
@@ -600,6 +627,13 @@ function renderSplats() {
       }
       o.push(dominoG(m.tile, narrow ? 6 : 14, cy - (narrow ? 8 : 10), narrow ? 32 : 40, dl.decl));
       if (chosen && !narrow) text(62, cy + 4, 'plan', { fill: C.ink, size: 10.5, weight: 600 });
+      const note = (pos.book || [])[0];
+      if (note && !narrow) {
+        const tag = m.tile === note.contrast ? 'contrast' : note.allowed.includes(m.tile) ? 'book' : '';
+        if (tag) text(62, cy + (chosen ? 17 : 4), tag, { fill: C.book, size: 10.5, weight: 600 });
+      }
+      if (note && narrow && note.allowed.includes(m.tile))
+        o.push(`<rect x="2" y="${cy - 9}" width="2.5" height="18" rx="1" fill="${C.book}"/>`);
       o.push(`<line x1="${X(-43)}" x2="${X(43)}" y1="${yb}" y2="${yb}" stroke="${C.line2}"/>`);
       m.bins.forEach((v, b) => {
         if (!v) return;
@@ -620,6 +654,17 @@ function renderSplats() {
         o.push(`<rect x="${x0}" y="${yb - h}" width="${w}" height="${h}" fill="${cond ? 'transparent' : col}" opacity="${cond ? 1 : op}"` +
           `${hit ? ` stroke="${C.truth}" stroke-width="1.4"` : ''} data-tip="${tip}"/>`);
       });
+      const over = chosen && note ? pos.moves.find(x => x.tile === note.contrast) : null;
+      if (over) {   // the contrast's splat drawn over the plan's, same scale
+        over.bins.forEach((v, b) => {
+          if (!v) return;
+          const mg = 2 * b - 42, h = Math.max(1, v / total / peak * bh);
+          o.push(`<rect x="${X(mg - 1) + .6}" y="${yb - h}" width="${X(mg + 1) - X(mg - 1) - 1.2}" height="${h}" fill="none" ` +
+            `stroke="${C.book}" stroke-width="1.3" data-tip="${nameOf(over.tile)} (contrast) · margin ${signed(mg)}<br>${count(v)}${(100 * v / total).toFixed(1)}%"/>`);
+        });
+        const xo = X(over.mean);
+        o.push(`<line x1="${xo}" x2="${xo}" y1="${yb - bh}" y2="${yb + 3}" stroke="${C.book}" stroke-width="1.4" stroke-dasharray="2 2"/>`);
+      }
       const xm = X(m.mean);
       o.push(`<line x1="${xm}" x2="${xm}" y1="${yb - bh}" y2="${yb + 3}" stroke="${C.ink}" stroke-width="1.2" opacity=".75" stroke-dasharray="2 2"/>`);
       o.push(`<path d="M${xm - 3.5},${yb + 5} L${xm + 3.5},${yb + 5} L${xm},${yb + 1} Z" fill="${C.ink}"/>`);
@@ -825,7 +870,9 @@ function renderPanel() {
 function renderNav() {
   $('deals').innerHTML = DATA.deals.map((dl, i) => {
     const made = dl.margin >= DATA.threshold;
-    return `<button class="chip" data-d="${i}" aria-current="${i === S.d}">${i + 1} · ${TRUMP[dl.decl]}` +
+    const note = DATA.book ? dl.positions.flatMap(p => p.book || [])[0] : null;
+    return `<button class="chip" data-d="${i}" aria-current="${i === S.d}">${i + 1} · ` +
+      (note ? `${note.shape} <span class="mute">${note.agree ? 'agree' : 'leave'}</span>` : TRUMP[dl.decl]) +
       `<span class="r ${made ? 'bid' : 'def'}">${signed(dl.margin)}</span></button>`;
   }).join('');
 }
@@ -840,7 +887,7 @@ addEventListener('keydown', e => {
   if (!DATA || e.metaKey || e.ctrlKey || e.altKey) return;
   const map = {
     ArrowRight: () => go(S.d, S.k + 1), ArrowLeft: () => go(S.d, S.k - 1),
-    ArrowDown: () => go(S.d + 1, S.k), ArrowUp: () => go(S.d - 1, S.k),
+    ArrowDown: () => go(S.d + 1, DATA.book ? bookPlay(S.d + 1) : S.k), ArrowUp: () => go(S.d - 1, DATA.book ? bookPlay(S.d - 1) : S.k),
     ']': () => planned(1), '[': () => planned(-1),
     Home: () => go(S.d, 0), End: () => go(S.d, DATA.plays),
     '+': () => zoom(1), '=': () => zoom(1), '-': () => zoom(-1),
@@ -859,7 +906,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-d],[data-k],[data-nav],[data-zoom],[data-sel],[data-hold],[data-uncond],[data-all]');
   if (!t) return;
   const ds = t.dataset;
-  if (ds.d !== undefined) return go(+ds.d, S.k);
+  if (ds.d !== undefined) return go(+ds.d, DATA.book ? bookPlay(+ds.d) : S.k);
   if (ds.k !== undefined) return go(S.d, +ds.k);
   if (ds.nav) return ({ p: () => go(S.d, S.k - 1), n: () => go(S.d, S.k + 1), pp: () => planned(-1), np: () => planned(1) })[ds.nav]();
   if (ds.zoom) return zoom(+ds.zoom);

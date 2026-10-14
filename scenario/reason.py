@@ -577,6 +577,24 @@ def reason(
     )
 
 
+@dataclass(frozen=True)
+class Scenarios:
+    """A decision's scenarios and their weights, read off a pour rather than
+    a plan (`scenario.metasplat`): what the fact search reads of an Analysis."""
+
+    worlds: list[tuple[int, int, int, int]]
+    weights: list[float]
+
+
+def explain(sit: Situation, own: int, cell: Scenarios, one: Sequence[int], two: Sequence[int],
+            tiles: tuple[int, int], authority, top: int = 5):
+    """The report's separating-fact search on any two sets of a decision's
+    scenarios — the same declared space, threshold and chance level as
+    `reason` — without re-planning. Returns (found, facts, pairs, chance,
+    searched)."""
+    return _explain(frame(sit, own), cell, one, two, authority, sit, own, tiles, top)
+
+
 def _model(config: Config, what: str) -> str:
     return f"zeb plan ({describe(config)}): {what}"
 

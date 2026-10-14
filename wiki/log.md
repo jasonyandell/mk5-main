@@ -37,6 +37,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 64b3db69 | the metasplat: Zeb's splat against the book's at every live firing, nine shapes fixed before counting; 44% of departures a make edge (27% dominant, 3% safer tail at a lower mean), 45% even make, 11% ties]
+
+**Added:** [[metasplat-2026-10-13]] (`scenario/metasplat.py`, `reason.explain`, the page's book view). **Updated:** [[book-study-2026-10-12]] § Finer than a price, [[splat-visualizer]] § Book against Zeb, `index-experiments.md`. Data: `book/metasplat/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+
 ## [2026-10-13 | scratch/book-reprice-3 | the book's 18 rules as the book means them re-priced on the whole pour at current main, same method and bands: Zeb's pick is the book's move at 56% vs a 43% random floor (0.24); sides with 3, weak on 9, no relation on 2, between on 3, against none]
 
 **Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, carriers, reading; summary verdicts in place); [[w42]], [[silas]], `index-experiments.md`, `CLAUDE.md`. Data: `book/book-reprice-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
