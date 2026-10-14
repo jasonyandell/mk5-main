@@ -60,6 +60,13 @@ Variants (spec `book:<fallback>,<ties>[,w<eps>][/<walt options>]`):
             for the mover's side, the best such tile; else Zeb's tile
             (`book:zeb,zeb,w0`: Zeb's exact ties; needs fallback and ties zeb)
 
+  read=<likelihood>[+calls]
+            the partner reads (#150): Zeb's worlds (the fallback's, the
+            tie-break's) are weighted by the likelihood that the partner
+            played by this stack (`arena/book_read.py`, `consistent` or
+            `uniform`) and, with `+calls`, bid by `bid-only-enough`; the
+            opponents stay uniform. Needs Zeb's uniform draw.
+
 `book:lowest,least` is the pure Silas stack and plans nothing. Every other
 variant asks Zeb (`walt:` options after the slash, as `arena.walt_play`
 reads them) at every decision of its seats, so that the log holds Zeb's tile
@@ -173,7 +180,7 @@ class BookPlay:
     """The book player as an arena `PlayPolicy` (see the module docstring)."""
 
     def __init__(self, fallback: str = "zeb", ties: str = "least", zeb=None, log: bool = False,
-                 within: float | None = None):
+                 within: float | None = None, read: str | None = None, shadow: bool = False):
         if fallback not in FALLBACKS or ties not in TIES:
             raise ValueError(f"book: fallback is one of {FALLBACKS}, ties one of {TIES}")
         if zeb is None and (fallback == "zeb" or ties != "least"):
@@ -182,6 +189,25 @@ class BookPlay:
             raise ValueError("book: w<eps> is Zeb deciding with the book at its near-ties: eps >= 0, zeb,zeb")
         self.fallback, self.ties, self.zeb, self.within = fallback, ties, zeb, within
         self.log: list[dict] | None = [] if log else None
+        self.partner = None
+        if read is not None:
+            from arena.book_read import BookBelief
+            if zeb is None or zeb.walt.belief is not None or zeb.walt.config.draw != "uniform":
+                raise ValueError("book: the partner read weighs plain Zeb's uniform draw, nothing else")
+            likelihood, _, calls = read.partition("+")
+            if calls not in ("", "calls"):
+                raise ValueError(f"book: read=<likelihood>[+calls], not {read!r}")
+            self.partner = BookBelief(likelihood, seats="partner", calls=bool(calls))
+            zeb.walt.belief = self.partner
+        # shadow: also plan each decision unread, on the same sample, and log
+        # whether the read moved the book player's tile (`moved`).
+        self.moved: list[dict] | None = [] if shadow else None
+        self._plain = None
+        if shadow:
+            if self.partner is None:
+                raise ValueError("book: a shadow compares the read with the unread: it needs read=")
+            from scenario.compiled import CompiledWalt
+            self._plain = CompiledWalt(zeb.walt.config)
 
     def choose(
         self,
@@ -191,32 +217,21 @@ class BookPlay:
         marks_to_win: int = 7,
     ) -> list[int]:
         verdicts = [ask(s, int(b)) for s, b in zip(states, bid_values)]
-        zeb = (self.zeb.walt.decide_batch(states, [contract_points(int(b)) for b in bid_values])
+        points = [contract_points(int(b)) for b in bid_values]
+        if self.partner is not None:
+            self.partner.note(states, bid_values)
+        zeb = (self.zeb.walt.decide_batch(states, points)
                if self.zeb is not None else [(None, {})] * len(states))
+        plain = self._plain.decide_batch(states, points) if self._plain is not None else None
         slots = []
-        for state, bid, v, (z_tile, q) in zip(states, bid_values, verdicts, zeb):
+        for k, (state, bid, v, (z_tile, q)) in enumerate(zip(states, bid_values, verdicts, zeb)):
             seat = (state.trick_leader + len(state.current_trick)) % 4
             legal = sorted(state.hands[seat][i] for i in _legal_slots(state))
-            # Zeb's q is the bidding side's make probability: a setter's best is its least.
-            sign = 1.0 if seat % 2 == state.bidder % 2 else -1.0
-            best = lambda tiles: max(tiles, key=lambda t: (sign * q[t], -t))  # noqa: E731
-            policy, rule, allowed = v.policy, v.rule, v.allowed
-            if self.ties == "union" and policy is not None:
-                allowed = tuple(sorted({t for name in v.phase(not state.current_trick) for t in v.fired[name][1]}))
-            if self.within is not None and policy is not None:
-                allowed = tuple(t for t in allowed if sign * q[t] >= sign * q[z_tile] - self.within)
-            if policy is None:
-                tile = legal[0] if self.fallback == "lowest" else z_tile
-            elif not allowed:
-                tile = z_tile  # Zeb decides: no tile of the book's is near its best
-            elif self.ties == "least":
-                tile = allowed[0]
-            else:
-                tile = best(allowed)
-            if self.ties == "union" and policy is not None:
-                # The decision is the first policy of the phase whose set holds the tile.
-                policy = next(n for n in v.phase(not state.current_trick) if tile in v.fired[n][1])
-                rule = v.fired[policy][0]
+            policy, rule, allowed, tile = self._pick(state, v, legal, z_tile, q)
+            if plain is not None and len(legal) > 1:
+                p_tile = self._pick(state, v, legal, *plain[k])[3]
+                self.moved.append(dict(trick=len(state.play_history) // 4, policy=policy,
+                                       zeb=z_tile, plain_zeb=plain[k][0], tile=tile, plain_tile=p_tile))
             if self.log is not None:
                 self.log.append(dict(
                     hands=state.hands, plays=state.play_history, decl=state.decl_id, bidder=state.bidder,
@@ -228,10 +243,37 @@ class BookPlay:
             slots.append(list(state.hands[seat]).index(tile))
         return slots
 
+    def _pick(self, state: ZebGameState, v: Verdict, legal: list[int], z_tile, q: dict):
+        """The book player's (policy, rule, allowed, tile) at one decision, given Zeb's tile and q."""
+        seat = (state.trick_leader + len(state.current_trick)) % 4
+        # Zeb's q is the bidding side's make probability: a setter's best is its least.
+        sign = 1.0 if seat % 2 == state.bidder % 2 else -1.0
+        best = lambda tiles: max(tiles, key=lambda t: (sign * q[t], -t))  # noqa: E731
+        policy, rule, allowed = v.policy, v.rule, v.allowed
+        if self.ties == "union" and policy is not None:
+            allowed = tuple(sorted({t for name in v.phase(not state.current_trick) for t in v.fired[name][1]}))
+        if self.within is not None and policy is not None:
+            allowed = tuple(t for t in allowed if sign * q[t] >= sign * q[z_tile] - self.within)
+        if policy is None:
+            tile = legal[0] if self.fallback == "lowest" else z_tile
+        elif not allowed:
+            tile = z_tile  # Zeb decides: no tile of the book's is near its best
+        elif self.ties == "least":
+            tile = allowed[0]
+        else:
+            tile = best(allowed)
+        if self.ties == "union" and policy is not None:
+            # The decision is the first policy of the phase whose set holds the tile.
+            policy = next(n for n in v.phase(not state.current_trick) if tile in v.fired[n][1])
+            rule = v.fired[policy][0]
+        return policy, rule, allowed, tile
+
     def __repr__(self) -> str:
         zeb = "" if self.zeb is None else f", zeb={self.zeb!r}"
         within = "" if self.within is None else f", within={self.within:g}"
-        return f"BookPlay(fallback={self.fallback}, ties={self.ties}{within}{zeb})"
+        read = ("" if self.partner is None else
+                f", read=partner:{self.partner.likelihood}" + ("+calls" if self.partner.calls else ""))
+        return f"BookPlay(fallback={self.fallback}, ties={self.ties}{within}{read}{zeb})"
 
 
 def _legal_slots(state: ZebGameState) -> tuple[int, ...]:
@@ -240,21 +282,25 @@ def _legal_slots(state: ZebGameState) -> tuple[int, ...]:
 
 
 def parse_book_spec(arg: str, log: bool = False) -> BookPlay:
-    """`<fallback>,<ties>[,w<eps>][/<walt options>]`, e.g. `zeb,least/k0,n512,F=net.npz,f=16`
-    or `zeb,zeb,w0/k0,n512,F=net.npz,f=16`."""
+    """`<fallback>,<ties>[,w<eps>][,read=<likelihood>[+calls]][/<walt options>]`, e.g.
+    `zeb,least/k0,n512,F=net.npz,f=16`, `zeb,zeb,w0/k0,n512,F=net.npz,f=16` or
+    `zeb,least,read=consistent+calls/k0,n512,F=net.npz,f=16`."""
     head, _, walt = arg.partition("/")
     fallback, _, rest = (head or "zeb,least").partition(",")
     ties, *rest = rest.split(",")
-    within = None
+    within, read = None, None
     for t in rest:
-        if not (t.startswith("w") and t[1:]):
+        if t.startswith("read=") and t[5:]:
+            read = t[5:]
+        elif t.startswith("w") and t[1:]:
+            within = float(t[1:])
+        else:
             raise ValueError(f"book: unknown option {t!r}")
-        within = float(t[1:])
     zeb = None
     if walt:
         from arena.walt_play import parse_walt_spec
         zeb = parse_walt_spec(walt)
-    return BookPlay(fallback, ties or "least", zeb, log, within)
+    return BookPlay(fallback, ties or "least", zeb, log, within, read)
 
 
 # ------------------------------------------------------------------ bidding

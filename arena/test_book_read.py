@@ -119,3 +119,99 @@ def test_the_spec_is_plain_zeb_with_the_books_belief():
     assert r.belief.likelihood == "uniform" and r.zeb.walt.belief is r.belief
     with pytest.raises(ValueError):
         parse_bookread_spec("strict/k0,n8")
+
+
+# ------------------------------------------------------------ the partner read (#150)
+
+def test_the_partner_read_never_excludes_a_book_partner():
+    # The book player's partner plays by the stack: the real deal keeps its weight.
+    for seed in range(6):
+        for state in _hands(seed):
+            sit = situation_from_state(state, 30)
+            for likelihood in ("consistent", "uniform"):
+                w, row = book_weights(sit, [_world(state)], 30, likelihood, seats="partner")
+                assert w == [1.0] and not row["fell_back"]
+
+
+def test_the_partner_read_weighs_the_partners_hand_alone():
+    # Worlds that agree on the partner's hand weigh the same, whatever the opponents hold.
+    rng = random.Random(11)
+    checked = 0
+    for seed in range(4):
+        for state in list(_hands(seed))[8:20:3]:
+            sit = situation_from_state(state, 30)
+            rec = sit.record
+            fiber = Fiber(sit.viewer, remaining_hand(state, sit.viewer), rec.played,
+                          tuple(rec.hand_size(s) for s in range(4)), rec.forbid)
+            worlds = [fiber.draw(rng) for _ in range(40)]
+            w, _ = book_weights(sit, worlds, 30, "consistent", seats="partner")
+            p = (sit.viewer + 2) % 4
+            by: dict[int, set[float]] = {}
+            for world, x in zip(worlds, w):
+                by.setdefault(world[p], set()).add(x)
+            assert all(len(v) == 1 for v in by.values())
+            checked += 1
+    assert checked > 8
+
+
+def _auctions():
+    """Every seat's call in heuristic auctions over fresh deals, forced or not."""
+    from arena.auction import run_auction
+    from arena.bidders import HeuristicBidder
+    from forge.oracle.rng import deal_from_seed
+    bidder = HeuristicBidder()
+    for seed in range(120):
+        hands = tuple(tuple(h) for h in deal_from_seed(40_000 + seed))
+        for dealer in range(4):
+            for forced in (False, True):
+                r = run_auction(hands, dealer, (bidder,) * 4, random.Random(0), force_shaker=forced)
+                if r is not None:
+                    yield hands, dealer, r
+
+
+def test_the_calls_read_keeps_the_hand_that_made_them():
+    from arena.book_read import calls_weight
+    n = 0
+    for hands, dealer, r in _auctions():
+        for seat in range(4):
+            assert calls_weight(seat, mask_of(hands[seat]), dealer, r.bids, r.winner, r.high_bid, r.decl_id) == 1.0
+            n += 1
+    assert n > 1000
+
+
+def test_the_calls_read_is_evidence():
+    # Another seat's hand often would not have made this seat's call or declaration.
+    from arena.book_read import calls_weight
+    zero = total = 0
+    for hands, dealer, r in _auctions():
+        for seat in range(4):
+            other = hands[(seat + 1) % 4]
+            zero += calls_weight(seat, mask_of(other), dealer, r.bids, r.winner, r.high_bid, r.decl_id) == 0.0
+            total += 1
+    assert 0.2 < zero / total < 0.95
+
+
+def test_the_book_players_partner_read_is_its_zebs_belief():
+    from arena.book_play import parse_book_spec
+    book = parse_book_spec("zeb,least,read=consistent+calls/k0,n8")
+    assert book.partner is not None and book.zeb.walt.belief is book.partner
+    assert (book.partner.likelihood, book.partner.seats, book.partner.calls) == ("consistent", "partner", True)
+    assert parse_book_spec("zeb,zeb,read=uniform/k0,n8").partner.calls is False
+    assert parse_book_spec("zeb,least/k0,n8").partner is None
+    with pytest.raises(ValueError):
+        parse_book_spec("zeb,least,read=consistent+bids/k0,n8")
+    with pytest.raises(ValueError):
+        parse_book_spec("zeb,least,read=consistent/k0,n8,d=posterior")  # only plain Zeb's draw
+
+
+def test_the_shadow_logs_whether_the_read_moved_the_tile():
+    from arena.book_play import BookPlay
+    from arena.walt_play import parse_walt_spec
+    book = BookPlay("zeb", "least", parse_walt_spec("k0,n16"), read="consistent", shadow=True)
+    state = playing(3, 2, bidder=1)
+    while not is_terminal(state):
+        slot = book.choose([state], [30])[0]
+        state = apply_action(state, slot)
+    assert book.moved and all(r["tile"] == r["plain_tile"] for r in book.moved if r["policy"] is not None)
+    assert all(r["tile"] == r["zeb"] and r["plain_tile"] == r["plain_zeb"]
+               for r in book.moved if r["policy"] is None)
