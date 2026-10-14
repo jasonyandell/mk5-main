@@ -37,13 +37,14 @@ Two halves, one game:
   `@jasonyandell/zeb` 0.2.0. Research night 2026-10-12 proved what Zeb computes and measured
   where it differs; that day's foundation repairs (floor only on sampled fibers, rung-independent
   seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]).
-  The book (Roberson's *Winning 42*, [[w42]]) was studied with those tools the same day
-  ([[book-study-2026-10-12]]): on its 18 rules as the book means them, Zeb's pick is the book's
-  move at 56% of the positions each governs against a 43% random floor (it sides with 3 and
-  prices against none; only 3 of the 21 gates first priced were the book's rule over the
-  pour), the conventions measured null, and
-  no reason from the book was adopted — the reason report (#124) explains Zeb's tile, not the book's.
-  Every agreement number ships with its chance baseline; a tie is not agreement.
+  The book (Roberson's *Winning 42*, [[w42]]) is the project's authority on play, and our
+  measurements of it are the suspect ([[book-authority]]). Where Zeb and the book part, the
+  finding is what our arena cannot yet see. The arena seats no opponent who models you across
+  hands, no partner who reads the book's conventions, and no opponent who ever loses track
+  ([[book-assumptions]]). Where one assumption was restored, the book's own game (points to
+  250), its edge appeared: as Zeb's near-tie break it wins 53.2% [51.1, 55.2] of games,
+  replicated ([[book-investigation-2026-10-14]]). Every number still ships with its interval
+  and its chance baseline; a tie is not agreement.
 - **Silas** (`silas/`) — a typed relational language over the worlds a seat cannot tell apart:
   queries, exact beliefs, policies that read only the viewer's information ([[silas]]). The
   vocabulary for writing the book's rules down and for Zeb's reasons; Lean is the long-run spec.
@@ -69,7 +70,7 @@ entire history and current state, with backlinks throughout.
 | Walt, the scenario player (current frontier) | `wiki/entities/scenario-player.md` |
 | Oracle / E[Q] / training pipeline (finished era) | `wiki/entities/forge.md` |
 | Jud and the champion ladders (finished era) | `wiki/entities/jud.md`, `wiki/trails/champion-ladder.md` |
-| Book validation (Winning 42) | `wiki/entities/w42.md` |
+| The book (Winning 42): the authority, its assumptions | `wiki/topics/book-authority.md`, `wiki/entities/w42.md` |
 | Historical projects | `wiki/entities/lem.md`, `wiki/entities/burl.md`, `wiki/entities/gus.md` |
 
 Cite wiki pages in answers. If the wiki doesn't have it, say so — don't invent.
@@ -104,6 +105,11 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
   file that touches a clairvoyant API carries the token; the ruling, the inventory and
   the sanctioned uses are in [wiki/topics/strategy-fusion-fence.md](wiki/topics/strategy-fusion-fence.md).
   Enforced by `src/tests/architecture/strategy-fusion-fence.test.ts`.
+- **THE BOOK IS THE AUTHORITY.** *Winning 42* is right until our tools can see why. Report a
+  gap between the book and Zeb as the scope of our model: the assumptions the arena violates,
+  and the measurement that would restore them. Never headline "the book loses" or "the book is
+  wrong". The numbers stay honest, with intervals and baselines. The charter, the vocabulary
+  and worked examples are in [wiki/topics/book-authority.md](wiki/topics/book-authority.md).
 - **Temporary files go in `scratch/`** (gitignored) — never the repo root. Playwright tests
   in scratch/ use `.test.ts` (not `.spec.ts`) and run via
   `npx playwright test --config=playwright.scratch.config.ts`, never in `npm run test:e2e`.

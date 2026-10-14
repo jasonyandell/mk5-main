@@ -930,17 +930,20 @@ exploitable one (> 0.50).
 
 [[exploiter-endgames-2026-10-14]].
 
-**The book player against Zeb (2026-10-13).** The book's 18 rules as a [[silas]] policy
-stack (`arena/book_play.py`, `book:` in the arena) lose to deployed Zeb by −1.88 [−2.09,
-−1.66] marks/game when Zeb plays wherever no rule fires; every departure from Zeb's tile,
+**The book player against Zeb (2026-10-13).** Read under [[book-authority]]: the book is the
+authority, and this arena, which has no cross-hand modeling, no partner reading and no fallible
+opponents, is the suspect ([[book-assumptions]]). The book's 18 rules as a [[silas]] policy
+stack (`arena/book_play.py`, `book:` in the arena) score −1.88 [−2.09, −1.66] marks/game
+against deployed Zeb when Zeb plays wherever no rule fires (−1.41 after the encoding's
+repairs); every departure from Zeb's tile,
 rolled out with Zeb continuing, sums exactly to that loss, −0.051 marks a departure, and
 Zeb's forecast of each departure's price is honest in sign
 ([[book-head-to-head-2026-10-13]]). The arena's `WaltPlay` now plans a marks bid as its
 42 points. Investigated ([[book-investigation-2026-10-14]]): the arena gained the book's game
-(`ArenaConfig.points_to_win`, points to 250 by the book's settlement), where the book loses
-too; breaking `make`'s near-ties (within 0.02) by the book's rules wins it for Zeb, 53.2%
-[51.1, 55.2] of games, replicated, with no marks moved (#120). At the book's own table, opponents
-that read the book player by the book (`arena/book_read.py`, `bookread:`) change nothing for it
+(`ArenaConfig.points_to_win`, points to 250 by the book's settlement), where the book player
+also scores below Zeb; restoring that game uncovered the book's first measured edge: breaking `make`'s near-ties (within 0.02) by the book's rules wins it for Zeb, 53.2%
+[51.1, 55.2] of games, replicated, with no marks moved (#120). Opponents that read the book player by the book within one hand
+(`arena/book_read.py`, `bookread:`; not the book's cross-hand opponent) change nothing for it
 (−0.04 [−0.27, +0.19] marks/game), and plain Zeb beats such a reader by +0.50 [+0.26, +0.74]
 ([[book-reads-by-the-book-2026-10-14]], #147).
 

@@ -6,6 +6,13 @@ last_updated: 2026-10-14
 status: complete
 ---
 
+> **Read under [[book-authority]] (2026-10-14).** This page began from the right posture ("the
+> book is right and the measurement wrong until shown otherwise") and its findings support it.
+> Restoring one of the book's assumptions, its own game, uncovered its first measured edge.
+> Half of the first loss was our encoding. The remaining gap is reported here as the scope of an
+> arena that seats no cross-hand modeling (A1), no partner reading (A2), no fallible opponent
+> (A3) and no auction reading (A4) ([[book-assumptions]]). The numbers are unchanged.
+
 ## Question
 
 [[book-head-to-head-2026-10-13]] seated Winning 42's 18 rules ([[w42]], as [[silas]]
@@ -38,31 +45,32 @@ explains? Where, if anywhere, does it win?
   The rules' own disagreements with Zeb, with nothing flagged, cost −0.042 [−0.051, −0.033]
   marks a departure: about 1.1 marks a game to first order, against the published 1.9. The
   same departures gain +0.27 [+0.10, +0.45] points.
-- **The book loses its own game,** points to 250, in every form that plays its rules where they
-  disagree with Zeb. It wins 20.5–37.9% of games; its best fair form wins 37.9% [34.3, 41.4],
+- **In our arena the book player also scores below Zeb in its own game,** points to 250, in every
+  form that plays its rules where they disagree with Zeb. It wins 20.5–37.9% of games; its best fair form wins 37.9% [34.3, 41.4],
   and with its own bidding 20.7%.
-- **The book wins its own game as Zeb's tie-break.** Zeb breaking its near-ties (within
+- **Restoring the book's own game uncovered its first measured edge: as Zeb's tie-break it wins.** Zeb breaking its near-ties (within
   0.02) the book's way wins 53.0% of games to 250, and again on new deals in a registered
   replication (pooled 53.2% [51.1, 55.2], +1.2 settlement points a hand, no marks moved). This
   is measured against Zeb's lowest-id tie rule, not against a points-aware one.
-- **Opponents who read plays by the field net's set change nothing.** The reader's gain
+- **Opponents who read plays within a hand by the field net's set change nothing.** The reader's gain
   against the book less its gain against Zeb is null under both likelihoods, though the
   book's plays leave it without an explaining world more often (21% of its decisions, against
   16%). A reader who reads the book player by the book changes nothing either: −0.04
   [−0.27, +0.19] marks a game, and it loses +0.50 to plain Zeb ([[book-reads-by-the-book-2026-10-14]]).
-- **Inside the book's scope it still loses** (S-core −0.057 marks a departure). It ties only
+- **Inside the book's scope it still scores below Zeb in this arena** (S-core −0.057 marks a departure). It ties only
   inside the three rules Zeb's own plan sides with. On its own eight narrated deals its side
   outplays Zeb's, which carries no interval.
-- **After the repairs (#146) the book loses 1.41 marks a game,** 0.47 [0.33, 0.62] less than
+- **After the repairs (#146) the book player scores −1.41 marks a game against Zeb,** 0.47 [0.33, 0.62] less than
   published, as the census forecast, and wins 38.4% of games to 250 (§ After the repairs).
 - **The benefit of the doubt does not reverse the sign.**
-  - The most generous order gains +0.22 marks a game, and the book still loses 1.2.
+  - The most generous order gains +0.22 marks a game, and the book player still scores −1.2 against Zeb in this arena.
   - The winner's curse is 12% of Zeb's forecast price.
   - Another continuation moves a departure's cost by a hundredth of a mark at most.
   - The game state, the contract level and the seat change nothing in marks.
 
 What this does not show: that the book is wrong at the table it was written for, where
-partners both know it and the opponents are people who read plays and hold expectations; or
+partners both know it and the opponents are people who read plays, hold expectations and
+remember you from hand to hand; or
 that its value as a tie-break exceeds a principled points tie-break. The first was measured
 next, with Zebs as the readers ([[book-reads-by-the-book-2026-10-14]]): the book fares the
 same there.
@@ -256,9 +264,9 @@ these are the head-to-head's hands under another scoring and another end.
 | (t1), seeds 1–22 pooled (792 games) | **53.2% [51.1, 55.2]** | | **+1.22 [+0.76, +1.69]** | | |
 | Zeb against Zeb (control, one batch) | 50% | | 0 | 0 | 62.0% / 62.0% |
 
-- *The book loses its own game in every form that plays its rules where they disagree with
+- *In this arena the book player scores below Zeb in its own game in every form that plays its rules where they disagree with
   Zeb.* Its best fair form, (d), wins 38% of games to 250.
-- *The book's bidding loses in the book's game too,* at 21% with the book's play and 39% with
+- *The book's bidding scores below Zeb's in the book's game too, against a style-free field (A6),* at 21% with the book's play and 39% with
   Zeb's.
 - *Zeb breaking its near-ties the book's way wins the book's game.* It wins 53% of games to
   250 in the first run and again in the registered replication on new deals (pooled 53.2%
@@ -269,7 +277,7 @@ these are the head-to-head's hands under another scoring and another end.
   which knows nothing of the count. Whether the book's rules beat a tie-break that does, such
   as make-then-margin (#120), is not measured.
 - *Deployed Zeb plays for the make.* The make-or-set swing dominates the book's settlement
-  (below), so the book loses its game even to a Zeb that ignores every point past the make.
+  (below), so the book player scores below even a Zeb that ignores every point past the make.
 
 **The departures in the book's units.** These are the head-to-head's decompositions
 re-scored by the book's settlement, with Zeb continuing. Each cell is the change in the
@@ -304,9 +312,9 @@ Games to 7 marks, the book team against Zeb:
 | (t0) Zeb, the book at Zeb's exact ties | −0.03 [−0.08, +0.02] | null | **+0.98 [+0.75, +1.19]** |
 | (t1) Zeb, the book within 0.02 of Zeb's best | −0.04 [−0.20, +0.11] | null | **+1.07 [+0.48, +1.65]** |
 
-- *The priority order is not why the book loses.* (d) bounds every fixed order with Zeb's
+- *The priority order is not why the book player scores below Zeb here.* (d) bounds every fixed order with Zeb's
   tie-break inside the set from above. It is worth +0.22 [+0.07, +0.36] marks a game over (c),
-  paired by cluster, and the book still loses 1.2.
+  paired by cluster, and the book player still scores −1.2.
 - *The book as Zeb's tie-break.* Where Zeb is indifferent, the book's rule costs nothing in
   marks and gains about a point a hand by the book's settlement: it plays for the count Zeb's
   `make` utility does not see. Widening the tie to 0.02 changes neither: the marks stay
@@ -476,8 +484,8 @@ Every interval above zero among them:
   does not see them, and its lowest-id tie rule ignores them. In the book's own game that is
   worth 53% of games against Zeb, replicated. The book is right about something Zeb does not
   see.
-- **Where the contract is open, the book's rules lose to Zeb's plan** in both games and in
-  every scope tested: about a mark a game cleanly in marks to 7, and 2.4 settlement points a
+- **Where the contract is open, the book's rules score below Zeb's plan in our arena** in both
+  games and in every scope tested: about a mark a game cleanly in marks to 7, and 2.4 settlement points a
   departure in points to 250. Under the book's own scoring the make dominates, since a set
   swings 61 points at a 30 and a point after the make is worth two.
 - **About half of what the head-to-head charged to the book was the encoding:** rules firing
@@ -486,12 +494,28 @@ Every interval above zero among them:
   - Encoding: low-from-a-pair, first-lead's *lead a trump* and the dead double's cash.
   - The rules: *the count that sets*, take-the-trick, *double-up, lead low* and *draw the
     trumps*.
-- **The opponent the book assumes changes nothing.** A reader by the net's set neither
-  punishes nor rewards the book's departures, and neither does a reader who knows the book
+- **A within-hand reader changes nothing.** A reader by the net's set neither punishes nor
+  rewards the book's departures, and neither does a reader who knows the book's rules but
+  forgets the player between hands
   ([[book-reads-by-the-book-2026-10-14]], #147).
 - **Nothing is adopted.** The candidate for Zeb is a tie rule, not a book rule: break `make`'s
   near-ties for the count, as #120 proposes, and grade it against the book's tie-break in the
   book's game.
+
+## What our model leaves out
+
+This investigation gave the book the benefit of the doubt in five ways: method, encoding, game,
+scope and order. It held the arena's table fixed. What that table omits ([[book-assumptions]]):
+- **A1, opponents who learn you across hands.** Section IV's readers read within a hand and
+  forget between hands. The book's "throw 'em off" and "keep them honest" have no opponent here
+  to act on. The measurement is #149.
+- **A2, partners who read each other.** The book team sends and never reads. The measurement
+  is #150.
+- **A3, fallible opponents.** Every opponent tracks every tile. The measurement is #151.
+- **A5, a score-aware player.** In section II, play is score-blind on both teams. The book's
+  match-state bidding (S-0080-e, S-0129-b, S-0170-a) is not seated. See #115.
+- **A7, a bounded reader.** Section III's win is the book doing a bounded player's job, breaking
+  ties. Whether it raises a bounded Zeb is #154.
 
 ## Deviations from the pre-registration
 
@@ -565,7 +589,7 @@ excluded. The published block b reproduces from its files (−1.884).
 
 - *The repairs moved the loss, by what the census said they would.* +0.47 [+0.33, +0.62]
   marks a game, against the +0.50 forecast from the repaired labels' first-order cost.
-- *The book still loses, in both games.* −1.41 marks a game, and 38% of games to 250, both
+- *The book player still scores below Zeb in this arena, in both games.* −1.41 marks a game, and 38% of games to 250, both
   intervals clear of the baseline.
 - *The clean loss is where the census put it.* What remains is −1.41. The census's
   accounting has −1.06 for the rules' clean disagreements with Zeb and about −0.3 for the

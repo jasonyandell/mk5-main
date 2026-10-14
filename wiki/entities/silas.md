@@ -429,8 +429,9 @@ Ten repairs (#146) brought each rule back inside them, each pinned by a `repair_
 
 Twelve core pins moved, listed in `tests/core_pins.rs`. Where the census asked for a choice
 the book does not make (which sure trump, which setting lead, a count off), nothing was
-encoded; `GAPS.md` § The book's silences records each. Re-measured, the book player loses
-1.41 marks a game against Zeb, 0.47 less than before, as the census forecast.
+encoded; `GAPS.md` § The book's silences records each. Re-measured, the book player scores
+−1.41 marks a game against Zeb in our arena, 0.47 better than before, as the census forecast
+(read under [[book-authority]]: the arena omits the book's assumptions, [[book-assumptions]]).
 
 ## Functions as numbers (2026-10-14)
 

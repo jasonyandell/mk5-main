@@ -2,11 +2,18 @@
 title: The book, read with the honest tools — Winning 42's rules priced on the pour and its conventions graded in the arena (2026-10-12)
 kind: experiment
 first_seen: 2026-10-12
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: complete
 ---
 
 ## Summary
+
+> **Read under [[book-authority]] (2026-10-14).** This study priced the book's rules in Zeb's
+> own worlds: self-play deals, partners who never follow the book, no opponent who models anyone
+> across hands. "Agreement" and "price" here measure distance from Zeb's plan. They do not
+> measure the book's value at the table it was written for ([[book-assumptions]]). The numbers
+> stand. Where the text says nothing from the book was adopted, read that adoption waits on
+> the measurements that restore the book's assumptions.
 
 Jason, 2026-10-12: "my plan is not to ADOPT these conventions. it is to study them and,
 for the ones that hold, try to find a mathematical reason for that and adopt THAT."
@@ -235,7 +242,9 @@ mark.
    plan's line, separating Silas facts, a noise bar), says why its tile beats another in
    its own worlds; it has no objective at ties (#120). The book's own examples as
    positions are #123.
-2. **A signal's price is measured, and its information was worth zero here.** The handoff
+2. **A signal's price is measured; its information was worth zero to this receiver.** The
+   receiver was a planner whose plan already covered both placements and who did not read by
+   the convention's own rule (A2, [[book-assumptions]]). The handoff
    pays −0.013 marks/hand to tell the bidder where the top trump is not, and the bidder's
    plan, contingent over both placements already, cashes none of it. This is Jason's prior
    ("very few moves are free") with a number.
@@ -664,16 +673,16 @@ trump, is a condition the book's rule omits.
 ## The book at the table (2026-10-13)
 
 The 18 rules as one player, seated against Zeb in the arena: [[book-head-to-head-2026-10-13]].
-With Zeb's tile wherever no rule fires, the book player loses −1.88 [−2.09, −1.66]
-marks/game (−1.41 with Zeb's best tile inside a rule's set; the book's bidding costs
+With Zeb's tile wherever no rule fires, the book player scores −1.88 [−2.09, −1.66]
+marks/game against Zeb in an arena with no cross-hand modeling ([[book-authority]]) (−1.41 with Zeb's best tile inside a rule's set; the book's bidding costs
 −0.71 more). Each departure from Zeb's tile, rolled out on the real deal with Zeb
 continuing, costs −0.051 [−0.058, −0.045] marks and beats a random departure by +0.064
 where that tile is not the book's own; in block b no rule gains, and the cost is spread
 over every stratum with the contract open. Investigated with the book given the benefit
 of the doubt ([[book-investigation-2026-10-14]]): 44% of that loss is the encoding (the
 rules' clean disagreements with Zeb cost −0.042 a departure and gain points), the book
-loses its own game too (points to 250), and as Zeb's tie-break it wins that game (53% of
-games, replicated).
+player scores below Zeb in its own game too (points to 250), and as Zeb's tie-break it wins
+that game (53% of games, replicated).
 
 ## The repaired book (2026-10-13, #121)
 
@@ -748,6 +757,18 @@ of 1,592,675 departures, 44% carry a make edge beyond the pour's noise bar (27% 
 every margin, 3% the safer tail at a lower mean), 45% sit at an even make and 11% are ties;
 at a settled contract the book's tile has the higher mean (44% of dead departures, Zeb's
 21%). The donation lead's departures are 60% ties.
+
+## What our model leaves out
+
+The pour is Zeb self-play and the arena arms seat Zeb partners. What that leaves out
+([[book-assumptions]]):
+- **The book's reader** (A7). Agreement with a 512-world planner is not the bar for a policy
+  written for a player who cannot enumerate.
+- **The convention's receiver** (A2). The overlay's readers were gates, with self-play partners.
+- **The opponent who learns you** (A1). The pour contains no reader, so a lesson about being
+  read prices at zero.
+- **The book's game** (A5). Every rule was priced at bid 30 with a `make` utility, which cannot
+  see the count the book plays for after the make.
 
 ## Data
 

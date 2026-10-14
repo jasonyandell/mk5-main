@@ -6,6 +6,14 @@ last_updated: 2026-10-14
 status: complete
 ---
 
+> **Read under [[book-authority]] (2026-10-14).** The book is the authority and this arena is
+> the suspect. Every number below is the book player against deployed Zeb in an arena where no
+> seat models another across hands (A1), the book team sends its conventions to a partner who
+> never reads them (A2), both opponents track every tile perfectly (A3), the auction is unread
+> (A4), and the field has no bidding styles (A6) ([[book-assumptions]]). The numbers stand as
+> measured. They are the scope of our model, not a verdict on the book. Of the published −1.88,
+> 0.47 was the encoding ([[book-investigation-2026-10-14]] § After the repairs: −1.41 repaired).
+
 ## Question
 
 [[book-study-2026-10-12]] priced the book's rules one decision at a time, in Zeb's own
@@ -92,7 +100,7 @@ each deal plays the same in both orientations). Every block: 396 games, 198 deal
 | Zeb's play, bidding `risk-budget` (the bidding alone) | **−0.71 [−1.00, −0.41]** | 40.9% | 53.0% / 61.6% | 55.7% | 38.7 (177 bids of 84) |
 | Zeb against Zeb (control) | 0 | 50% | 61.1% / 61.1% | 50% | 30.6 |
 
-- **Every variant loses, with intervals far from zero.** Where no rule fires, Zeb's tile
+- **Every variant scores below Zeb in this arena, with intervals far from zero.** Where no rule fires, Zeb's tile
   instead of the lowest legal one is worth +1.10 [+0.89, +1.31] marks/game (paired by
   cluster); inside a rule's set, Zeb's best tile instead of the least one +0.47 [+0.30,
   +0.64]. The rest, −1.41 marks/game, is the rules' sets where they exclude Zeb's tile, part
@@ -187,7 +195,7 @@ beating chance by +0.032); per policy three verdicts move there: donate-when-saf
 (−0.068 [−0.111, −0.025]), follow-low and partner-leads are null (−0.009, 0.000). Every rule,
 block and stratum is in `out/tables.md`.
 
-## Where the book loses
+## Where the departures cost, in this arena
 
 Pooled over all departures of block b (c and b-rb read the same within their intervals):
 
@@ -230,7 +238,7 @@ Two or more policies fire at 16% of the decisions with a choice, with different 
 with shed-for-a-void (1,165), crisis under first-lead at trick 1 (718), dead-double with
 pounce (523) or first-lead (495). The order is a real choice at one decision in eight. Letting
 every firing rule decide, with Zeb's best tile in the union of their sets, is worth +0.22
-[+0.07, +0.36] marks a game over (c), and the book still loses 1.2
+[+0.07, +0.36] marks a game over (c), and the book player still scores −1.2
 ([[book-investigation-2026-10-14]]).
 
 ## Corrections during the run
@@ -247,7 +255,7 @@ every firing rule decide, with Zeb's best tile in the union of their sets, is wo
 
 ## What this means
 
-- **Asked to play its rules at a real table, the book loses to Zeb**: 1.9 marks a game with
+- **Asked to play its rules in our arena, the book player scores below Zeb** (A1–A4 and A6 violated; [[book-assumptions]]): 1.9 marks a game with
   Zeb's tile where no rule fires (b), 1.4 with Zeb's best tile inside a rule's set (c), 2.6
   with its own bidding too (b-rb). Its rules cost wherever they depart from Zeb, about 0.05
   marks a departure at 3.4 departures a hand. The pour priced each rule one decision at a
@@ -255,9 +263,9 @@ every firing rule decide, with Zeb's best tile in the union of their sets, is wo
   at the table those departures add up to −17 marks per 100 hands, of which the rules' own
   disagreements with Zeb, without the encoding's artifacts, carry 56% (−0.042 [−0.051,
   −0.033] marks a departure, [[book-investigation-2026-10-14]]).
-- **The book is not noise.** Its tile beats a random departure at the same positions (+0.064
-  per departure where the random tile is not the book's own): the rules carry real
-  information, less than Zeb's plan.
+- **The book's rules carry real information even here.** Its tile beats a random departure at
+  the same positions (+0.064 per departure where the random tile is not the book's own). Less
+  of that information is visible to our arena than to the book's readers.
 - **Zeb's forecast of a departure is honest in sign and, pooled, roughly in size** (realized
   −0.051 against −0.077 forecast, a third of the gap the winner's curse); per policy it is not
   (the pounce forecast −0.067, realized −0.011; take-the-trick −0.066 and −0.092).
@@ -265,6 +273,24 @@ every firing rule decide, with Zeb's best tile in the union of their sets, is wo
   it: the book player's partner is the book player, and both opponents are Zebs, who read
   no book. The book's own game, readers of plays, its own deals and its scope are
   [[book-investigation-2026-10-14]].
+
+## What our model leaves out
+
+The book's lessons assume a table this arena does not seat ([[book-assumptions]]). Each item
+below is a place the book's edge could live that these blocks price at zero or at its cost alone.
+- **Opponents who learn you across hands** (A1). Both opponents are memoryless Zebs, so the
+  value of being hard to read is zero by construction. The measurement is #149.
+- **A partner who reads the conventions** (A2). The book player's partner is the book player,
+  but its worlds stay uniform. Every convention's cost is charged here and none of its benefit.
+  The measurement is #150.
+- **Opponents who lose track** (A3). Zeb never forgets a tile, so the book's ploys meet their
+  worst case. The measurement is #151.
+- **The auction as a signal** (A4) and **a field with styles** (A6). Both teams bid `heuristic`
+  at caution 0 and nobody reads a bid. The measurements are #117 and #152.
+- **The book's game** (A5). Marks to 7 here; points to 250 is in [[book-investigation-2026-10-14]],
+  where the book as Zeb's near-tie break wins 53.2% of games.
+- **A bounded reader** (A7). The book was written for a player who cannot enumerate 512 worlds a
+  decision. The measurement is #154.
 
 ## Data
 
