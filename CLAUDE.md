@@ -98,6 +98,12 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
 - **No legacy. Ever.** Greenfield project, no external users. Delete deprecated code instead
   of marking it deprecated. Enforced by `src/tests/architecture/no-backwards-compat.test.ts`.
 - **No skipped tests.** All tests pass and are valuable, even when that takes real work.
+- **STRATEGY-FUSION FENCE.** Never use a clairvoyant (double-dummy, perfect-information,
+  oracle, PIMC minimax) value per world as a seat's value; solve information states
+  instead (one choice per information set: Silas's `(certain-make)`, Zeb's plan). Every
+  file that touches a clairvoyant API carries the token; the ruling, the inventory and
+  the sanctioned uses are in [wiki/topics/strategy-fusion-fence.md](wiki/topics/strategy-fusion-fence.md).
+  Enforced by `src/tests/architecture/strategy-fusion-fence.test.ts`.
 - **Temporary files go in `scratch/`** (gitignored) — never the repo root. Playwright tests
   in scratch/ use `.test.ts` (not `.spec.ts`) and run via
   `npx playwright test --config=playwright.scratch.config.ts`, never in `npm run test:e2e`.

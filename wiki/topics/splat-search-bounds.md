@@ -33,7 +33,7 @@ W1 and Kantorovich-Rubinstein (KS) distances bound the difference in mean and in
 
 ### Average DD is not admissible against the fixed field
 
-The average DD value over the cell is not an admissible upper bound against Walt's fixed stochastic field: texas-42 errata C4 (~450) and section 8.2 (729); [[belief-policy-value-algebra]] lines 107-117. What is valid is the mover clairvoyant against the fixed field with the root action common (Lemma E3), gap 6-22 per mille at trick 4 (`walt/FACTOR-BELIEF.md` ~604).
+The average DD value over the cell is not an admissible upper bound against Walt's fixed stochastic field: texas-42 errata C4 (~450) and section 8.2 (729); [[belief-policy-value-algebra]] lines 107-117. What is valid is the mover clairvoyant against the fixed field with the root action common (Lemma E3), gap 6-22 per mille at trick 4 (`walt/FACTOR-BELIEF.md` ~604). Silas's double-dummy solver is fenced for this reason: `ClairvoyantSolver` and `(clairvoyant-dd-make)` sit behind a cargo feature and carry the [[strategy-fusion-fence]] token.
 
 ### Search respects information sets
 
@@ -73,4 +73,4 @@ A trick-4 sandwich over the full cell (at most 2^16 worlds) at k0. Lower side: t
 
 ## Links
 
-[[splat-visualizer]] | [[metasplat-2026-10-13]] | [[candlewax]] | [[scenario-player]] | [[belief-policy-value-algebra]] | [[endgame-equivalence-census]] | [[the-wall]]
+[[splat-visualizer]] | [[metasplat-2026-10-13]] | [[candlewax]] | [[scenario-player]] | [[belief-policy-value-algebra]] | [[endgame-equivalence-census]] | [[the-wall]] | [[strategy-fusion-fence]]

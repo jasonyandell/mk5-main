@@ -2,7 +2,7 @@
 title: "Strategy Fusion — E[max(score)] ≥ max(E[score]), the diagnosis, and the E[Q] founding sentence"
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-07-15
+last_updated: 2026-10-13
 status: complete
 ---
 
@@ -170,6 +170,6 @@ recorded at [[count-fate-ledger]] (The argument's referees).
 
 [[breakthrough-and-oracle]] [[the-oracle]] [[pimc]] [[rank-vs-price]] [[jud]]
 [[expected-q-value]] [[argmax-q-ceiling]] [[grok-not-converge]] [[zeb]] [[eq-genesis]]
-[[otis]] [[count-fate-ledger]] [[belief-policy-value-algebra]]
+[[otis]] [[count-fate-ledger]] [[belief-policy-value-algebra]] [[strategy-fusion-fence]]
 [[era2-breakthrough-oracle|conversation digest]]
 [[era3-eq-era|conversation digest]]
