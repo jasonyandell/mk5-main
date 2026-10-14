@@ -1,5 +1,5 @@
 ; Low from a pair. Winning 42 p. 49 (S-0071-c); the 84 form p. 70
-; (S-0097-c); played in Hand 35 (S-0151-e).
+; (S-0097-c); played in Hand 35 (S-0151-e); the spare, Hand 29 (S-0133-j).
 ; Rule, in our words: a setter following a suit, whoever led it, in which he
 ; holds exactly two tiles, neither of them count, plays the lower and keeps the
 ; higher. Against a bid of marks, where count no longer matters and every
@@ -15,6 +15,40 @@
 
 (policy low-from-a-pair
   (fallback lowest-legal)
+  (rule keep-the-pair-play-the-spare
+    (select answer)
+    (guard
+      (query (roles (chair me) (domino spare) (domino kept) (context led))
+        (out spare)
+        (pattern
+          (viewer me)
+          (setter me)
+          (not (every-trick))
+          (led-context led)
+          (not (trump led))
+          (follower spare)
+          (count spare 0)
+          (follower kept)
+          (count kept 0)
+          (none (roles (domino third))
+            (follower third)
+            (not (tile third spare))
+            (not (tile third kept)))
+          (none (roles (chair w) (domino win))
+            (current-winner w)
+            (opponent me w)
+            (trick-play w win)
+            (or (beats spare win led) (beats kept win led)))
+          (keeps-a-pair kept)
+          (not (keeps-a-pair spare))
+          (some (roles (domino held) (context r))
+            (mine held)
+            (not (tile held spare))
+            (not (tile held kept))
+            (not (in held led))
+            (in spare r)
+            (in held r)
+            (not (can-lose held)))))))
   (rule follow-low
     (select answer)
     (guard

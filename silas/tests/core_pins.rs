@@ -35,6 +35,12 @@
 //! levels one rule, held to them on every hand (`tests/bidding.rs`). The
 //! prelude's `risk` (a number) is pinned new; `risk-at-most`, now `(<= (risk
 //! t) n)`, reads to its old core; `less-at-risk` was removed.
+//! Two pins moved with the header audit (#153, 2026-10-14), each a meaning
+//! changed on purpose and pinned by a test of `tests/book_rules.rs`:
+//! `setter-leads` (the low tile the book avoids is one that calls for a five
+//! and no ten, and it goes last; `s0126a_`) and `low-from-a-pair` (the spare
+//! of a pair whose other suit is already held goes, the pair stays;
+//! `s0133j_`).
 //!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too;

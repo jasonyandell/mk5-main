@@ -42,7 +42,7 @@ examples/book/gates/c23-partner-leads-doubles.silas fb89c8a0166b1753
 examples/book/helper-stretch.silas d38b64dc42135170
 examples/book/lay-down-shape.silas 1605649ff7a3250c
 examples/book/lay-down.silas c1002e0dbc71e878
-examples/book/low-from-a-pair.silas 5ca9cb4522948875
+examples/book/low-from-a-pair.silas 43da78c492bf9d16
 examples/book/odds/c02-opponent-double-five.silas d1d1e2051b1fb325
 examples/book/odds/c02-partner-double-five.silas dc64ab301d2402ba
 examples/book/odds/c03-double-ahead-forces-count.silas d2fb79a2921f82e3
@@ -89,7 +89,7 @@ examples/book/reading/left-setter-holds-the-trumps-out.silas ea8c5c97bd444d7a
 examples/book/repaired/double-up-lead-low.silas 5ea7325551f18201
 examples/book/repaired/one-off-lead-trump.silas 7b0c364f625d7168
 examples/book/repaired/one-off-partner-ruffs.silas 2576338b48d15b66
-examples/book/setter-leads.silas 96d97176b75de9ed
+examples/book/setter-leads.silas fc0e799a7850b7ce
 examples/book/settled.silas 3f00077b5cc1c289
 examples/book/shed-for-a-void.silas 1c63059df2c4a4aa
 examples/book/take-the-trick.silas 7df3ccfc3e188e79

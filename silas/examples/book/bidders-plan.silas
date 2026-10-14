@@ -1,8 +1,12 @@
 ; The bidder's plan after the first lead. Winning 42 p. 9 (S-0022-a: plan for
 ; the setters holding the missing trumps), pp. 23-29 (S-0038-b,
-; S-0039-b, S-0041-d, S-0041-f, S-0042-b, S-0043-c, S-0043-e, S-0044-b,
-; S-0047-c, S-0047-d), pp. 11, 18-19 and 24 (S-0024-a, S-0033-b, S-0034-b,
-; S-0040-b), p. 31 (S-0052-a), pp. 60-63 (S-0085-a, S-0086-a, S-0087-a),
+; S-0039-b, S-0039-c: the six-trey off goes early, before a void setter can
+; add count to it, S-0041-b: the top trump so the partner knows the trick is
+; safe, S-0041-d, S-0041-f, S-0042-b, S-0042-c: Hand 12 played out, S-0043-c,
+; S-0043-e, S-0044-b, S-0047-c, S-0047-d), pp. 11, 18-19 and 24 (S-0024-a,
+; S-0033-b, S-0034-b, S-0040-b, S-0040-d: pull in count before the offs when
+; the partner has one trump or none, or a double stands ahead of an off),
+; p. 31 (S-0052-a), pp. 60-63 (S-0085-a, S-0086-a, S-0087-a),
 ; pp. 75-81 (S-0104-a, S-0105-c, S-0105-d, S-0107-b, S-0107-c, S-0109-b,
 ; S-0110-c), pp. 91-95 (S-0121-d, S-0122-b, S-0122-c, S-0122-e, S-0126-d),
 ; and the worked deals, Hands 12, 14, 15, 16, 23 to 26 and 28 to 35
@@ -45,9 +49,13 @@
 ; double ahead of another (Hand 28 trick 3, where C11 leads the 6-6), and
 ; leads the double with the last trump in the partner's hand (Hand 30).
 ; GAP knowledge: the donation lead's condition is what the partner can know
-; (S-0047-d states it); this file reads it as the partner not yet having
-; discarded on one of the bidder's trump leads, and no trump out at all (a
-; trump out with the partner, as in Hand 30, means he must follow).
+; (S-0041-b and S-0047-d state it: the partner gives count only when he knows
+; the bidder wins, and he knows only on the highest trump still out); this
+; file reads it as the partner not yet having discarded on one of the
+; bidder's trump leads, and no trump out at all (a trump out with the
+; partner, as in Hand 30, means he must follow). S-0040-d's first case, "the
+; partner has one trump or none", is the same reading from the bidder's
+; side: a partner with one trump is a donor after one trump lead.
 ; The book contradicts itself on keeping the last trump. Hand 13 (S-0044-b,
 ; p. 27) keeps it rather than fish for the partner's count, stating as a rule
 ; that a trump stays until the offs are gone; Hand 33 (S-0144-k, p. 111) leads

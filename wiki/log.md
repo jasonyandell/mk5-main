@@ -42,6 +42,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 5807425c | The header audit (#153): the gates are history]
+
+The 21 rows that stayed on a gate are listed in their rule's header or recorded as no rule's; `setter-leads` repaired at Hand 27 (a low tile that calls for a five and no ten goes last); `low-from-a-pair` learns the spare (Hand 29); the three "book against its rule" rows re-read under [[book-authority]]'s presumption, one reconciled. Ledger in [[book-assumptions]] (gate-only 21 → 0); rule table in [[silas]].
+
 ## [2026-10-14 | desks | the standing desks: Mayor, Book, Media, Archive; blob first, link second; the links registry in the feed's db]
 
 **Added:** [[standing-desks]].

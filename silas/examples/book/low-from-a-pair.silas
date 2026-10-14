@@ -16,14 +16,49 @@
 ; the gate's (the book's leader is anyone, as the gate already reads it). The
 ; 84 form is new: the gate needs a pair without count, so it is silent where
 ; the book plays low from a pair that holds a count tile.
-; The book against its rule: in Hand 29 trick 3 (S-0133-j) the right setter
-; holds the 6-1 and the 3-1 on his partner's 1-0; the book says either will
-; do and plays the higher, the 6-1, as he has another six. The rule allows
+; The spare: in Hand 29 trick 3 (S-0133-j) the right setter holds the 6-1 and
+; the 3-1 on his partner's 1-0; the book says either will do and plays the
+; higher, the 6-1, "because you have another six". Re-read 2026-10-14 (#153),
+; presuming the encoding misread: the pair rule keeps the higher for a later
+; lead of the suit followed; here the aces are dead (the 1-1 has just won
+; the trick) and each ace belongs to another suit besides. The 3-1 with the
+; 5-3 is a pair in treys that catches the 3-0 still out (pair-targets.silas);
+; the 6-1 is spare, since the 6-6 in his hand already cannot lose the sixes.
+; The condition the rule omitted is the book's own reason: with two followers
+; of a pair, neither count, play the one whose other suit a tile of yours
+; already holds, and keep the one that keeps a pair. Before, the rule allowed
 ; only the 3-1 there.
 
 (include book)
 
 (policy low-from-a-pair
+  (rule keep-the-pair-play-the-spare (play spare)
+    (roles me spare kept led)
+    (viewer me)
+    (setter me)
+    (not (every-trick))
+    (led-context led)
+    (not (trump led))
+    (follower spare)
+    (count spare 0)
+    (follower kept)
+    (count kept 0)
+    (none (roles third) (follower third) (not (tile third spare)) (not (tile third kept)))
+    (none (roles w win)
+      (current-winner w)
+      (opponent me w)
+      (trick-play w win)
+      (or (beats spare win led) (beats kept win led)))
+    (keeps-a-pair kept)
+    (not (keeps-a-pair spare))
+    (some (roles held r)
+      (mine held)
+      (not (tile held spare))
+      (not (tile held kept))
+      (not (in held led))
+      (in spare r)
+      (in held r)
+      (not (can-lose held))))
   (rule follow-low (play low)
     (roles me low high led)
     (viewer me)

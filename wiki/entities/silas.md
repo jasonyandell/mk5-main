@@ -98,8 +98,8 @@ its id, that the gate fails and the rule passes.
 | `pounce` | C7 | count only on a trick the setters may take (a tile that follows can beat it; a ruff does not count), while able to follow; the double first; no count on a lost trick | — |
 | `protect-the-count` | C8, C13b | no count on the bidder's master lead, the top trump too; not in a trump set | — |
 | `shed-for-a-void` | C13a | a lone tile, never a double, a winner or a count tile's last guard; on any throw with no count to give, a tile he need not keep, then the guard; points bids only | — |
-| `low-from-a-pair` | C13c | as the gate, and the 84 form with count | — |
-| `setter-leads` | C15, C13d | a double when one point sets; the count that sets; count calling for more; think twice at 35 | — |
+| `low-from-a-pair` | C13c | as the gate, and the 84 form with count; the spare of a pair whose other suit is held goes, the pair stays (Hand 29, 2026-10-14) | — |
+| `setter-leads` | C15, C13d | a double when one point sets; the count that sets; count calling for more; think twice at 35; a low tile that calls for a five and no ten last (Hand 27, 2026-10-14) | — |
 | `trump-set` | C22 | the bidder's partner void too; the big doubles; feed a holder who may yet trump; lead high | a belief (closest fact) |
 | `dead-double` | new | throw a double no live tile can lead to, on a trick you cannot take, never the 5-5; the bidder cashes one while a setter holds trump | likelihood (a decoy) |
 | `helper-stretch` | new | win low with the second tile and keep the double | — |
