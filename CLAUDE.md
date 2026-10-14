@@ -38,8 +38,8 @@ Two halves, one game:
   where it differs; that day's foundation repairs (floor only on sampled fibers, rung-independent
   seed, regret metric, stochastic field, posterior sampler) are in ([[scenario-player]]).
   The book (Roberson's *Winning 42*, [[w42]]) was studied with those tools the same day
-  ([[book-study-2026-10-12]]): on its 14 rules as the book means them, Zeb's pick is the book's
-  move at 54% of the positions each governs against a 40% random floor (it sides with 3 and
+  ([[book-study-2026-10-12]]): on its 18 rules as the book means them, Zeb's pick is the book's
+  move at 56% of the positions each governs against a 43% random floor (it sides with 3 and
   prices against none; only 3 of the 21 gates first priced were the book's rule over the
   pour), the conventions measured null, and
   no reason from the book was adopted — the reason report (#124) explains Zeb's tile, not the book's.
