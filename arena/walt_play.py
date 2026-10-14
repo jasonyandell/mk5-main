@@ -8,8 +8,9 @@ construction one rung down, bottoming out in random legal play. See
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
           [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>]
-          [,r=consistent|uniform:<margin>[:<eps>]][,c=<convention>:S|R|SR][,t=lowest|margin[:<band>]][,py]
-Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
+          [,r=consistent|uniform:<margin>[:<eps>]][,c=<convention>:S|R|SR][,t=lowest|margin[:<band>]]
+          [,s<planner seed>][,py]
+Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays, s=0,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
 
@@ -217,9 +218,9 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["tie"], _, band = t[2:].partition(":")
             if band:
                 kw["tie_band"] = float(band)
-        elif t[0] in "knmhg" and t[1:].isdigit():
+        elif t[0] in "knmhgs" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
-                   "h": "horizon", "g": "horizon_inner"}[t[0]]
+                   "h": "horizon", "g": "horizon_inner", "s": "seed"}[t[0]]
             kw[key] = int(t[1:])
         elif t in ("hfull", "gfull"):
             kw["horizon" if t[0] == "h" else "horizon_inner"] = None
