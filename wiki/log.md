@@ -37,6 +37,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | scratch/book-h2h | the book player against Zeb: the 18 rules as a Silas stack lose −1.88 marks/game with Zeb's tile where no rule fires; each departure from Zeb rolled out, −0.051 marks, +0.036 over chance, no rule gains]
+**Added:** [[book-head-to-head-2026-10-13]] (pre-registered; data at texas-42-zeb-research-2026-10 `book/head-to-head/`).
+**Updated:** [[book-study-2026-10-12]] (§ The book at the table), [[scenario-player]] (the book player; marks bids planned as 42), index-experiments.
+**Code:** `arena/book_play.py` (book play, `SilasBidder`), `SilasPolicy.bid`/`declare` in `scenario/core`.
+
 ## [2026-10-13 | scratch/book-reprice-3 | the book's 18 rules as the book means them re-priced on the whole pour at current main, same method and bands: Zeb's pick is the book's move at 56% vs a 43% random floor (0.24); sides with 3, weak on 9, no relation on 2, between on 3, against none]
 
 **Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, carriers, reading; summary verdicts in place); [[w42]], [[silas]], `index-experiments.md`, `CLAUDE.md`. Data: `book/book-reprice-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.

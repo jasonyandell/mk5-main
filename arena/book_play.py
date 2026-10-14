@@ -35,7 +35,9 @@ Variants (spec `book:<fallback>,<ties>[/<walt options>]`):
             zeb     no rule fires: Zeb's tile
   ties      least   a rule allows a set: its least tile (Silas's own decision)
             zeb     a rule allows a set: Zeb's best tile inside it, by Zeb's
-                    q, ties to the lowest id (Zeb constrained by the book)
+                    q for the mover's side (the bidding side's make
+                    probability, or one less it for a setter), ties to the
+                    lowest id (Zeb constrained by the book)
 
 `book:lowest,least` is the pure Silas stack and plans nothing. Every other
 variant asks Zeb (`walt:` options after the slash, as `arena.walt_play`
@@ -150,7 +152,9 @@ class BookPlay:
             if v.policy is None:
                 tile = legal[0] if self.fallback == "lowest" else z_tile
             elif self.ties == "zeb":
-                tile = max(v.allowed, key=lambda t: (q.get(t, float("-inf")), -t))
+                # Zeb's q is the bidding side's make probability: a setter's best is its least.
+                sign = 1.0 if seat % 2 == state.bidder % 2 else -1.0
+                tile = max(v.allowed, key=lambda t: (sign * q.get(t, -sign * float("inf")), -t))
             else:
                 tile = v.allowed[0]
             if self.log is not None:

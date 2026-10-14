@@ -83,7 +83,9 @@ def _pips(t: int) -> tuple[int, int]:
 
 class _StubZeb:
     """Zeb's interface (`.walt.decide_batch`) with a fixed preference: the
-    highest tile id is best, and q ranks every legal tile by its id."""
+    highest tile id is best for the mover. q is the bidding side's make
+    probability, as Zeb's is: rising with the tile id for the bidding side,
+    falling for the setters."""
 
     def __init__(self):
         self.walt = self
@@ -94,7 +96,8 @@ class _StubZeb:
         out = []
         for s in states:
             legal = legal_tiles(s)
-            out.append((max(legal), {t: t / 100 for t in legal}))
+            bidding_side = seat_of(s) % 2 == s.bidder % 2
+            out.append((max(legal), {t: (t if bidding_side else 100 - t) / 100 for t in legal}))
         return out
 
 
@@ -143,7 +146,8 @@ def test_zeb_plays_where_no_rule_fires_and_inside_the_set_with_zeb_ties():
             elif ties == "least":
                 assert row["tile"] == min(row["allowed"])
             else:
-                assert row["tile"] == max(row["allowed"])  # the stub's q ranks by id
+                # Zeb's best inside the set, for the bidding side and the setters alike.
+                assert row["tile"] == max(row["allowed"])
 
 
 def test_zeb_is_asked_the_contracts_points_for_a_marks_bid():

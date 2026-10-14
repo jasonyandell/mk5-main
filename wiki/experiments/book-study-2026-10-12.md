@@ -661,6 +661,15 @@ candidates, not reasons. On the face-off's C3, C7, C10, C12B and C21 positions t
 report finds a reason for 32 of 44 prices; C12B's recurring one, the guard of the missing
 trump, is a condition the book's rule omits.
 
+## The book at the table (2026-10-13)
+
+The 18 rules as one player, seated against Zeb in the arena: [[book-head-to-head-2026-10-13]].
+With Zeb's tile wherever no rule fires, the book player loses −1.88 [−2.09, −1.66]
+marks/game (−1.41 with Zeb's best tile inside a rule's set; the book's bidding costs
+−0.71 more). Each departure from Zeb's tile, rolled out on the real deal with Zeb
+continuing, costs −0.051 [−0.058, −0.045] marks and beats a random departure by +0.036;
+no rule gains, and the cost is spread over every stratum with the contract open.
+
 ## The repaired book (2026-10-13, #121)
 
 A repaired rule is the book's rule, the condition the reason report omits from it
@@ -757,5 +766,6 @@ dealt hands), `run_dd.sh` and `analyze_first.py` (the re-price through `book-rep
 
 [[w42]] · [[scenario-player]] · [[endgames-o2-vs-o1-2026-10-12]] ·
 [[research-night-2026-10-12]] · [[the-wall]] · [[w42-book-validation-campaign]] ·
+[[book-head-to-head-2026-10-13]] ·
 [[w42-book-claim-synthesis-and-ai-directions]] · [[w42-book-second-pass]] ·
 [[publish-data-to-huggingface]]

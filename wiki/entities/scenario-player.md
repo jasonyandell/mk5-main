@@ -891,6 +891,14 @@ best-response dynamics by +0.115. Of the Walt gaps diagnosed, 78 of 171 close on
 the referent: the partnership operator is where the next mathematics is.
 [[endgames-o2-vs-o1-2026-10-12]].
 
+**The book player against Zeb (2026-10-13).** The book's 18 rules as a [[silas]] policy
+stack (`arena/book_play.py`, `book:` in the arena) lose to deployed Zeb by −1.88 [−2.09,
+−1.66] marks/game when Zeb plays wherever no rule fires; every departure from Zeb's tile,
+rolled out with Zeb continuing, sums exactly to that loss, −0.051 marks a departure, and
+Zeb's forecast of each departure's price is honest in sign
+([[book-head-to-head-2026-10-13]]). The arena's `WaltPlay` now plans a marks bid as its
+42 points.
+
 ## The reason report (2026-10-13, #124)
 
 Zeb priced moves but could not say why. **The plan's line** is now exported:
