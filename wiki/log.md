@@ -50,6 +50,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | 5ee71159 | Zeb reads the other seats' plays: consistent and uniform likelihoods both null in marks, restricted choice +0.10 [−0.15, +0.36]]
 
 **Added:** [[reads-plays-2026-10-13]] (`Config.reading`, `scenario/reads_plays.py`). **Updated:** [[scenario-player]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+## [2026-10-14 | 902786f5 | the book against Zeb, investigated: the method holds, 44% of the loss is the encoding, the book loses its own game (points to 250) but wins it as Zeb's tie-break (53%, replicated); readers of plays change nothing]
+
+**Added:** [[book-investigation-2026-10-14]] (pre-registered; data at texas-42-zeb-research-2026-10 `book/investigation/`).
+**Updated:** [[book-head-to-head-2026-10-13]] (corrected in place: the chance baseline, the forecast, the per-rule ranking, block c, b-rb's one gaining rule, the concentration list), [[book-study-2026-10-12]] § The book at the table, [[scenario-player]], index-experiments.
+**Code:** `arena/engine.py` `points_to_win` and `arena/auction.py` `settle_points` (the book's game), `arena/book_play.py` `ties=union` and `w<eps>`, `SilasPolicy.bid`/`declare` take the match's scoring; the reading Zeb of 3262eea0 merged.
+**Issues:** #146 (the encoding's repairs), #147 (a reader by the book's policies).
 
 ## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
 

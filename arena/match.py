@@ -156,6 +156,11 @@ def summarize(result: MatchResult) -> dict:
         "ci_excludes_zero": int(ci_lo > 0 or ci_hi < 0),
         "mean_hands_per_game": len(hands) / n,
         "mean_hand_point_margin": float(pt_margin.mean()),
+        # The book's game: its settlement per hand and the final score, kept in either game.
+        "points_to_win": result.cfg.points_to_win,
+        "mean_game_point_margin": float(np.mean([g.points[g.a_team] - g.points[1 - g.a_team] for g in games])),
+        "mean_hand_settlement_margin": float(np.mean([
+            h.points_delta[h.a_team] - h.points_delta[1 - h.a_team] for h in hands])),
         "auction": {
             "bid_hist": dict(sorted(bid_hist.items())),
             "decl_hist": dict(decl_hist.most_common()),

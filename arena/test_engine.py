@@ -1,4 +1,5 @@
 """Full-game engine tests: CPU-only, random play, real auctions."""
+from arena.auction import settle_points
 from arena.bidders import Bid30Bidder, HeuristicBidder
 from arena.engine import ArenaConfig, run_half
 from arena.match import run_match, summarize
@@ -28,6 +29,35 @@ def test_games_complete_with_exact_winner_marks():
             run[1] += h.marks_delta[1]
             assert tuple(run) == h.marks_after
         assert tuple(run) == g.marks
+
+
+def test_the_books_game_runs_to_its_points():
+    """Points to a target, settled by the book's rule; the marks tally rides along."""
+    for g in _half(points_to_win=250):
+        assert g.points[g.winner_team] >= 250
+        run, marks = [0, 0], [0, 0]
+        for h in g.hands:
+            assert h.points_delta == settle_points(h.bid_value, h.bidder_team, h.team_points)
+            for team in (0, 1):
+                run[team] += h.points_delta[team]
+                marks[team] += h.marks_delta[team]
+            assert tuple(run) == h.points_after and tuple(marks) == h.marks_after
+        assert tuple(run) == g.points and tuple(marks) == g.marks
+        # The game ends on the hand that first reaches the target.
+        assert all(max(h.points_after) < 250 for h in g.hands[:-1])
+
+
+def test_a_tie_at_the_target_goes_to_the_bidder():
+    """Both sides reach the target on one hand: the side that bid it wins.
+    At a target of one point every made hand short of all 42 is such a tie."""
+    ties = 0
+    for g in _half(n_games=16, points_to_win=1):
+        (h,) = g.hands
+        both = min(h.points_after) >= 1
+        ties += both
+        assert both == (h.made and min(h.team_points) > 0)
+        assert g.winner_team == (h.bidder_team if both else max((0, 1), key=lambda t: h.points_after[t]))
+    assert ties
 
 
 def test_hand_bookkeeping():

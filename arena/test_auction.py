@@ -13,6 +13,7 @@ from arena.auction import (
     marks_for_bid,
     run_auction,
     score_hand,
+    settle_points,
 )
 
 
@@ -64,6 +65,27 @@ def test_score_hand():
     # A two-mark contract needs all 42 and swings 2 marks either way
     assert score_hand(84, 0, (42, 0)).marks == (2, 0)
     assert score_hand(84, 0, (41, 1)).marks == (0, 2)
+
+
+def test_settle_points_is_the_books_rule():
+    # Silas's points vectors (silas/tests/cross_game.rs, S-0017-c), for either bidding team:
+    # set, the bidders nothing and the setters the bid plus their points; made, each its own.
+    for team in (0, 1):
+        for bid, ours, theirs, scored in ((35, 30, 12, (0, 47)), (30, 33, 9, (33, 9)), (35, 33, 9, (0, 44))):
+            pts = (ours, theirs) if team == 0 else (theirs, ours)
+            got = settle_points(bid, team, pts)
+            assert (got[team], got[1 - team]) == scored
+    # A mark bid scores its value made; set, the bid and their points, or the bid alone.
+    assert settle_points(84, 1, (0, 42)) == (0, 84)
+    assert settle_points(84, 0, (30, 12)) == (0, 96)
+    assert settle_points(84, 0, (30, 12), bid_alone=True) == (0, 84)
+    assert settle_points(42, 0, (41, 1), bid_alone=True) == (0, 42)
+    # The other reading moves only a set mark bid.
+    assert settle_points(35, 0, (30, 12), bid_alone=True) == (0, 47)
+    # A set is worth at least 43 to the setters, more than any make scores.
+    assert min(settle_points(b, 0, (p, 42 - p))[1] for b in range(30, 43) for p in range(0, min(b, 42))) == 43
+    with pytest.raises(ValueError, match="split 42"):
+        settle_points(30, 0, (30, 11))
 
 
 def test_run_auction_highest_bid_wins():
