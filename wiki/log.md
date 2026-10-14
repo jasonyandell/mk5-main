@@ -39,6 +39,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | d7db9e36 | an exploiter against Zeb on three-trick endgames (#77): G = +0.50 [+0.42, +0.58] margin, neither sturdy nor shown exploitable; half is lowest-id ties after the contract is decided; +0.004 in contract probability]
+
+**Added:** [[exploiter-endgames-2026-10-14]] (pre-registered at d7db9e36). **Updated:** [[scenario-player]], [[brainstorm-2026-10-14-ledger]], `index-experiments.md`. Code: `scenario/exploiter.py`, `scenario/tests/test_exploiter.py`. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/exploiter/`.
+
 ## [2026-10-14 | b0e90912 | brainstorm notes ledger: "Results so far" are ours, the +0.111 is not (+0.11 marks/game, CI includes zero); demon labels/critics fenced; criticality pilot; next: an endgame exploiter against Zeb]
 
 **Added:** [[topics/brainstorm-2026-10-14-ledger|brainstorm-2026-10-14-ledger]] (claim-by-claim ledger, assessments of the exploiter and fusion-free AlphaZero, criticality histogram on two pours, one pre-registered recommendation). **Updated:** `index-topics.md`, [[strategy-fusion-fence]] (link). Cross-game lab cited from `~/code/plunge-walt-bridge/lab/`.
