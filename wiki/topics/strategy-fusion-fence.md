@@ -2,7 +2,7 @@
 title: "The strategy-fusion fence: clairvoyant solvers fenced, information-state solvers welcome"
 kind: topic
 first_seen: 2026-10-13
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: active
 ---
 
@@ -117,6 +117,7 @@ information-state solver, which is allowed. (C) is only a mention.
 | `forge/oracle/` (`solve.py`, `campaign.py`, `generate.py`, `__init__.py`) | the GPU oracle: exact perfect-information solve per deal | A, oracle era | token |
 | `forge/eq/` (`oracle.py` `Stage1Oracle`, `generate/` E[Q]), `forge/zeb/` (`eq_player`, `mcts`, `oracle_value`, …), `forge/cli/`, `forge/modal_app.py` | the network distilled from the oracle, and E[Q]: per-world Q averaged | A, oracle era | token (39 files) |
 | `arena/lens_play.py` and callers (`cli`, `jud_play`, `jud_search`, `midhand_eval`, `slough_override`, `fate_slough_play`, `test_snapshots`) | `LensPlay` = E[Q] n=10, the old champion | A, sanctioned baseline (what Zeb is graded against) | token |
+| `tournament/eq_fenced_seat.py`, `tournament/participants.py` (`EQ_N10`) | E[Q] n=10 seated in the tournament ([[tournament]]) | A, sanctioned baseline (a rated measuring stick; nothing reads its values) | token |
 | `otis/tiedroll.py` | `ClairvoyantPolicy`: the fusion-gap baseline | A, sanctioned (measures fusion) | token |
 | `champion/` (10 files incl. `belief_bidder`, `play`, `jud_net`, `bidder`), `gus/` (2), `w42/` (13), `burl/` (4), `lem/` (4), `scripts/validate_eq_computation.py` | oracle-era players, probes and datasets built on E[Q]/Stage1Oracle | A, oracle era | token |
 | `champion/optimism_meter.py` | oracle make-rate vs realized | A, sanctioned (measures fusion) | token |

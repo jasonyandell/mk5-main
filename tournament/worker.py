@@ -275,10 +275,12 @@ def table(store, ladder: str = "marks7", anchor: str = ANCHOR) -> str:
         for g in rec["games"]:
             w[0 if (g["a_won"] == (sign == 1)) else 1] += 1
     if pairs:
-        lines += ["", "| pair (first − second) | games | wins | marks/game | 95% CI |", "|---|---|---|---|---|"]
+        lines += ["", "| pair (first − second) | duplicate pairs | games | wins | marks/game | 95% CI |",
+                  "|---|---|---|---|---|---|"]
         for (x, y), diffs in sorted(pairs.items()):
             m, lo, hi = paired_margin(diffs)
-            ci = "n/a" if lo != lo else f"[{lo:+.2f}, {hi:+.2f}]"
-            lines.append(f"| `{x}` vs `{y}` | {sum(wins[(x, y)])} | {wins[(x, y)][0]}–{wins[(x, y)][1]} "
-                         f"| {m:+.2f} | {ci} |")
+            # an interval from a handful of pairs estimates its own width badly: none below 5
+            ci = f"[{lo:+.2f}, {hi:+.2f}]" if len(diffs) >= 5 else "too few pairs"
+            lines.append(f"| `{x}` vs `{y}` | {len(diffs)} | {sum(wins[(x, y)])} "
+                         f"| {wins[(x, y)][0]}–{wins[(x, y)][1]} | {m:+.2f} | {ci} |")
     return "\n".join(lines)

@@ -88,6 +88,7 @@ def test_concurrent_writers_never_conflict_and_lose_nothing(tmp_path):
     commits = [c.split() for c in log if c.strip()]
     assert len(commits) == writers * each and all(len(c) == 2 for c in commits)  # one file per commit
     # The race really happened: some pushes were rejected and replayed by rebase.
+    print(f"rejected pushes, each rebased and replayed: {sum(r for _, r, _ in results)}")
     assert sum(r for _, r, _ in results) > 0
 
 
