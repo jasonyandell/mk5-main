@@ -53,6 +53,10 @@ its own dealt tiles and the public record only.
   § Sanctioned uses, "Baselines"): seated only by `tournament/eq_fenced_seat.py`, only on a machine
   with MPS or CUDA (forge is GPU-only), never read by anything else.
 
+Old programs can join the same way: [[legacy-42-bots]] surveys them and designs a `legacy` kind,
+pinned by the sha256 of what was run and never redistributed. The GPL `texas42` 0.46 AI (2003)
+already plays at this referee in a pilot; Win42 is the first target (#157).
+
 Zeb 0.3.0 joins when it is on npm: `add-zeb 0.3.0` reads the registry's integrity and appends
 the record; the scheduler then plays it first (an unplayed participant has the most to teach).
 
@@ -217,4 +221,5 @@ session does not come up on Haiku, send `/model haiku` as its first message.
 
 [[scenario-player]] (hub) · [[eval-matrix-bradley-terry]] (the February predecessor) ·
 [[champion-ladder]] (the paired-halves arena it reuses) · [[strategy-fusion-fence]] (E[Q]'s
-seat) · [[publish-data-to-huggingface]] (where records live)
+seat) · [[publish-data-to-huggingface]] (where records live) · [[legacy-42-bots]] (old
+programs as opponents)

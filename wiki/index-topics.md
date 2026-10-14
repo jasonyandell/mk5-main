@@ -54,6 +54,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/lamir1|lamir1]] — 5 rollout modes + lamir1-piopp; direct 0.551 beats all 8 look-ahead variants; Q_head OOD at depleted leaves is root cause; Bug 6 + Fix 6 documented (superseded)
 - [[topics/layer-system|layer-system]] — the unified Layer system: two composition surfaces, the 10 registry layers, zero-conditional executors (active)
 - [[topics/lazy-iterable-dataset|lazy-iterable-dataset]] — streaming IterableDataset bounds memory to one chunk + buffer; unlocks 10k+ game corpora; --lazy flag on training scripts (complete)
+- [[topics/legacy-42-bots|legacy-42-bots]] — old Texas 42 programs (Win42, texas42 0.46, 42-LX, Palm42, the 2012 iOS app) surveyed as ladder opponents and idea mines: the legal line, revival paths, ranking, first target Win42 via its author-documented protocol (#157), the GPL texas42 AI revived and seated in a pilot, the `legacy` participant design (active)
 - [[topics/learned-by-playing|learned-by-playing]] — key insight: Q&A drilling transfers hand-tracking but not trump membership; rules learn by playing (superseded)
 - [[topics/logged-arrows|logged-arrows]] — Burl Lab harness algebra: input -> optional output plus journalable Moves; composition concatenates logs (superseded)
 - [[topics/lora-unsloth|lora-unsloth]] — parameter-efficient fine-tuning; full reproducible Stage 0 recipe: ClippableLinear patch, bf16, gradient checkpointing, eval disabled, 1 epoch (superseded)

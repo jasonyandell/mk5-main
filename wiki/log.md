@@ -42,6 +42,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | adcc454c | legacy 42 bots surveyed (Win42, texas42 0.46, 42-LX, Palm42, iOS Texas 42, dead GitHub repos); first target Win42 via its author-documented protocol (#157); the GPL texas42 AI seated at the arena in a pilot (854/854 legal plays; a smoke test, not a rating)]
+
+**Added:** [[legacy-42-bots]]. **Updated:** [[tournament]] (§ Participants, Links), `index-topics.md`. Issue: #157. Pilot code and logs in `scratch/legacy-42/` (gitignored; no third-party bytes committed).
+
 ## [2026-10-14 | a0656fe2 | zeb 0.3.0 built: soft uniform reading (ε 0.28, `reading: false` to turn off) + make-then-margin as defaults; pre-registered confirmation vs 0.2.0 +0.21 [+0.08, +0.34] marks/game, passes; not yet published]
 
 **Added:** [[zeb-030-confirmation-2026-10-14]] (pre-registered at 91855dc6). **Updated:** [[scenario-player]] (§ Zeb 0.3.0, § Where it stands, the reading and tie paragraphs), `index-experiments.md`. Code: `zeb/` 0.3.0, `scenario/zeb030.py`. Data: `zeb/release-0.3.0/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
