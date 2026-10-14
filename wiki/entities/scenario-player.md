@@ -46,6 +46,8 @@ of (rung, seat, remaining hand, record) and is cached as such.
   published as `@jasonyandell/zeb` **0.2.0**
   (2026-10-12: the floor spares enumerated fibers, the seed is
   rung-independent; 35 parity positions). See "Zeb, the package" below.
+  **0.3.0** (soft reading + make-then-margin; +0.21 [+0.08, +0.34] marks/game over 0.2.0)
+  is built and waiting to be published (§ Zeb 0.3.0).
 - **Defaults after the foundation repair** (below): the cell floor acts only
   on a sampled fiber, an enumerated one is planned exactly (#110); a rung's
   sample is seeded by its coordinate, not the rung (#112); the field net is
@@ -876,8 +878,8 @@ A second registered replication made uniform the primary: **+0.37 [+0.24, +0.51]
 game pairs, which **passes** (A/A −0.00; games to 250 won 0.531 [0.493, 0.569], null).
 The reading costs up to 1.7× plain's median per decision at tricks 2–3 and nothing measurable
 later. Restricted choice stays null at both tables, so the gain is the soft posterior's, not the
-set size's. Not turned on in Zeb, and the zeb package cannot reach it:
-[[reads-plays-soft-2026-10-14]].
+set size's ([[reads-plays-soft-2026-10-14]]). The uniform form is a default of Zeb 0.3.0,
+with a `reading: false` option (§ Zeb 0.3.0 below).
 
 **A convention overlay, default off (2026-10-12).** The book's conventions
 (`scratch/book/CANDIDATES.md`) are joint deviations, so the overlay has two halves
@@ -957,7 +959,8 @@ points-scoring zeb version is proposed ([[tie-margin-2026-10-14]]). Widening the
 (`Config.tie_band`, δ = 0.01 of make probability) does not beat exact ties: 49.1% [47.7, 50.4]
 of games to 250, marks +0.02 [−0.050, +0.086]. The exploratory δ = 0.02 (53.4% on 384 games)
 failed its registered replication, 51.4% [49.9, 52.9] and marks −0.01 [−0.085, +0.075], so the
-band is closed at exact ties ([[tie-band-2026-10-14]] § Replication).
+band is closed at exact ties ([[tie-band-2026-10-14]] § Replication). Jason took the points
+case: exact-tie make-then-margin is a default of Zeb 0.3.0 (§ Zeb 0.3.0 below).
 
 ## The reason report (2026-10-13, #124)
 
@@ -1084,6 +1087,29 @@ net reads pips and dead tiles. The ladder settles by level 3 with two tricks lef
 net already plays its best move 96% of the time; a warm fine-tune toward it is inside the noise.
 [[constellations-2026-10-14]].
 
+## Zeb 0.3.0 (2026-10-14)
+
+Jason approved two new defaults for `@jasonyandell/zeb`, each measured alone. One is the soft
+uniform reading at ε = 0.28 (`d=posterior,r=uniform:4194304:0.28`, under pip trumps only).
+The other is make-then-margin on exact ties (`t=margin`, every declaration). They were never
+measured together, so a pre-registered match graded them together before release
+([[zeb-030-confirmation-2026-10-14]], registered at `91855dc6`). It played 0.3.0's plan
+against 0.2.0's at the package's default 160 worlds, with `bid30` bidders, games to 7 marks,
+duplicate deals and an A/A arm. Result: **+0.21 [+0.08, +0.34] marks/game** over 384 game
+pairs, which passes the bar (lower bound > 0). A/A +0.06 [−0.07, +0.18]; +37 settled points
+a game.
+
+- **The package** (`a0656fe2`): `Player::new(worlds, seed, reading)`; a position request
+  takes `reading` (default true; false is 0.2.0's uniform draw); a forecast is unchanged by
+  reading, since nothing has been played, but can move with the tie rule. Parity fixture
+  regenerated from the referee: 38 positions, 3 with reading off; reading moves q at 5 and
+  the tie rule moves the tile at 12. Native and WASM are bit-identical to the referee.
+- **Cost in WASM:** the opening lead (the README's 44 ms / 154 ms row) is unchanged.
+  Tricks 1–3 cost 1.3–2.5× the unread median, about 50 ms median at 160 worlds on a quiet
+  M5 Max; tricks 4 on cost nothing measurable.
+- **Not published yet.** Version 0.3.0, CHANGELOG and README are in; `npm publish` (or a
+  `zeb-v0.3.0` tag for the trusted-publishing workflow) waits on Jason. License unchanged.
+
 ## Links
 
 [[exploiter-endgames-2026-10-14]] (an exploiter against Zeb on three-trick endgames: not sturdy in points, small in contracts) ·
@@ -1092,6 +1118,7 @@ net already plays its best move 96% of the time; a warm fine-tune toward it is i
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
 [[reads-plays-2026-10-13]] (Zeb reads the other seats' plays: both likelihoods null in marks) ·
 [[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table; against Zeb the registered consistent replication failed, +0.12 [−0.02, +0.27]; the registered uniform replication passed, +0.37 [+0.24, +0.51]; restricted choice null) ·
+[[zeb-030-confirmation-2026-10-14]] (Zeb 0.3.0's two defaults together against 0.2.0: +0.21 [+0.08, +0.34] marks/game) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]
