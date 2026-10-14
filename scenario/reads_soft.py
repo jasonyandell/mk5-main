@@ -204,12 +204,21 @@ def arena(net_path: str, table: str, arm: str, seed: int, games: int, out: str) 
     from arena.walt_play import parse_walt_spec
     from scenario.reads_plays import specs
 
-    if table not in TABLES or arm not in ARMS or (table == "zeb" and arm == "plain"):
+    if table not in TABLES or arm not in ARMS:
         raise ValueError(f"no arm {table}/{arm}")
     rec = None if arm == "plain" else Recorder(net_path, arm, EPS)
     if table == "net":
         net = NetSeat(net_path)
         play_a, play_b = Table(rec if rec is not None else Plain(net_path), net), net
+    elif rec is None:
+        # The A/A control (added after the measured runs): plain Zeb at
+        # another seed against plain Zeb, through the same harness.
+        from dataclasses import replace
+
+        from scenario.compiled import CompiledWalt
+        from scenario.reads_plays import RESEED
+        play_a, play_b = parse_walt_spec(specs(net_path, None)), parse_walt_spec(specs(net_path, None))
+        play_a.walt = CompiledWalt(replace(play_a.walt.config, seed=RESEED))
     else:
         play_a, play_b = rec, parse_walt_spec(specs(net_path, None))
     t0 = time.time()
@@ -348,6 +357,7 @@ def summarize(runs: Sequence[str]) -> dict:
     effect("zeb: uniform vs plain", ("zeb", "uniform"), None)
     effect("zeb: consistent vs plain", ("zeb", "consistent"), None)
     effect("zeb: uniform - consistent (restricted choice)", ("zeb", "uniform"), ("zeb", "consistent"))
+    effect("zeb: plain at seed 1 vs plain (A/A control, added)", ("zeb", "plain"), None)
     return out
 
 

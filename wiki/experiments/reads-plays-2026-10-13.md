@@ -192,6 +192,9 @@ arithmetic and unpriced at the table at this power.
 
 ## Next (#145)
 
+Done 2026-10-14: [[reads-plays-soft-2026-10-14]]. The softened set pays at a net table and against
+Zeb, with no fallbacks. Restricted choice is null at both tables.
+
 - Soften the set so the real deal never vanishes: F_σ's ε over the set, or a temperature
   on the net's scores in place of a hard δ. Then rerun the arms. The fallback rate and the
   real-deal fit say this is where the null comes from, not the likelihood's form.
