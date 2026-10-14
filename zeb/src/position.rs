@@ -154,6 +154,7 @@ impl Position {
             bid: self.bid as i32,
             bidder: self.bidder,
             plays: &self.plays,
+            auction: None,
         }
     }
 }

@@ -250,10 +250,14 @@ def _run_lockstep(
     """Drive every game to completion in lockstep.
 
     Every iteration routes each live game's current decision to the owning
-    side's play policy, one batched call per side per tick. Games may mix
+    side's play policy, one batched call per side per tick. A policy with
+    `remembers` set also gets `games=` (each state's (game_idx, a_team)) and
+    `observe(game, hand)` at the end of every hand of every game: every hand
+    is played out, so each seat's dealt tiles are public by then. Games may mix
     a_team assignments — routing is per game. With log_every_s, prints a
     progress heartbeat so long runs are never silent.
     """
+    observers = [p for p in {id(play_a): play_a, id(play_b): play_b}.values() if getattr(p, "remembers", False)]
     t0 = last_log = time.time()
     while True:
         live = [g for g in games if not g.done]
@@ -288,14 +292,22 @@ def _run_lockstep(
         for side_games, policy in ((a_games, play_a), (b_games, play_b)):
             if not side_games:
                 continue
+            # A policy that remembers across the hands of a game is told which
+            # game each state belongs to, and is shown each finished hand.
+            keys = {"games": [(g.game_idx, g.a_team) for g in side_games]} if getattr(policy, "remembers", False) else {}
             actions = policy.choose(
                 [g.state for g in side_games],
                 [g.bid_value for g in side_games],
                 [(g.marks[0], g.marks[1]) for g in side_games],
                 marks_to_win,
+                **keys,
             )
             for g, action in zip(side_games, actions):
+                hands = len(g.hands)
                 g.apply(action)
+                if len(g.hands) > hands:
+                    for watcher in observers:
+                        watcher.observe((g.game_idx, g.a_team), g.hands[-1])
 
 
 def run_half(

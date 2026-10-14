@@ -31,7 +31,9 @@ use crate::constellation::{seat_form, world_form, Contract};
 use crate::convention::{Convention, Rule};
 use crate::field::{self, FieldNet};
 use crate::mold;
-use crate::planner::{self, analyze, analyze_line, decide, Config, Decision, Draw, Reading, Rec, Tie, MAX_WORLDS};
+use crate::planner::{
+    self, analyze, analyze_line, decide, Auction, Config, Decision, Draw, Reading, Rec, Tie, AUCTION_SLOTS, MAX_WORLDS,
+};
 use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
@@ -39,6 +41,10 @@ use crate::rules::{Rules, N_DECLS};
 ///  (forbid0, forbid1, forbid2, forbid3), bid, bidder (the declaring seat),
 ///  plays as (seat, tile))
 type Req = (u8, u8, u32, u32, u8, Vec<u8>, (u8, u8), (u32, u32, u32, u32), i32, u8, Vec<(u8, u8)>);
+
+/// One request's auction evidence: per absolute seat, a table of
+/// `AUCTION_SLOTS` likelihoods over the dealt hand's ceiling slot, or None.
+type AuctionReq = Option<Vec<Option<Vec<f64>>>>;
 
 /// One request ready to plan, with its external weights.
 type Job<'a> = (Decision<'a>, Option<&'a [f64]>);
@@ -225,10 +231,12 @@ impl Core {
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`
     /// will plan over — so a belief can weight them.
-    fn sample_roots(&self, reqs: Vec<Req>) -> PyResult<Vec<Vec<World>>> {
+    #[pyo3(signature = (reqs, auctions=None))]
+    fn sample_roots(&self, reqs: Vec<Req>, auctions: Option<Vec<AuctionReq>>) -> PyResult<Vec<Vec<World>>> {
         let none = vec![None; reqs.len()];
+        let auctions = self.auctions(reqs.len(), auctions)?;
         Ok(self
-            .jobs(&reqs, &none)?
+            .jobs(&reqs, &none, &auctions)?
             .iter()
             .map(|(d, _)| planner::root_worlds(&self.cfg, d).into_iter().map(|w| (w[0], w[1], w[2], w[3])).collect())
             .collect())
@@ -237,15 +245,19 @@ impl Core {
     /// Decide every request: (tile, [(tile, Q)], cells evaluated). `weights[i]`
     /// is external evidence over request i's live scenarios (multiplied into
     /// the posterior's weights), or None. Runs on `threads` OS threads (0 = all
-    /// cores) with the GIL released.
+    /// cores) with the GIL released. `auctions[i]`, when given, is request
+    /// i's auction evidence (`Situation.auction`).
+    #[pyo3(signature = (reqs, weights, threads, auctions=None))]
     fn solve(
         &self,
         py: Python<'_>,
         reqs: Vec<Req>,
         weights: Vec<Option<Vec<f64>>>,
         threads: usize,
+        auctions: Option<Vec<AuctionReq>>,
     ) -> PyResult<Vec<Decided>> {
-        let jobs = self.jobs(&reqs, &weights)?;
+        let auctions = self.auctions(reqs.len(), auctions)?;
+        let jobs = self.jobs(&reqs, &weights, &auctions)?;
         let cfg = &self.cfg;
         Ok(run(py, &jobs, threads, |(d, w)| {
             let (tile, q, nodes, drawn) = decide(cfg, d, *w);
@@ -256,7 +268,7 @@ impl Core {
     /// `solve`, opened up: per request (tile, [(tile, Q)], cells evaluated,
     /// the live worlds, their weights, [(tile, per-world outcomes)], and with
     /// `line` the plan's line, else None) — see `scenario.planner.Analysis`.
-    #[pyo3(signature = (reqs, weights, threads, line=false))]
+    #[pyo3(signature = (reqs, weights, threads, line=false, auctions=None))]
     fn analyze(
         &self,
         py: Python<'_>,
@@ -264,8 +276,10 @@ impl Core {
         weights: Vec<Option<Vec<f64>>>,
         threads: usize,
         line: bool,
+        auctions: Option<Vec<AuctionReq>>,
     ) -> PyResult<Vec<Analyzed>> {
-        let jobs = self.jobs(&reqs, &weights)?;
+        let auctions = self.auctions(reqs.len(), auctions)?;
+        let jobs = self.jobs(&reqs, &weights, &auctions)?;
         let cfg = &self.cfg;
         Ok(run(py, &jobs, threads, |(d, w)| {
             let a = if line { analyze_line(cfg, d, *w) } else { analyze(cfg, d, *w) };
@@ -332,12 +346,57 @@ impl Core {
         self.rules.get(decl as usize).ok_or_else(|| PyValueError::new_err(format!("no declaration {decl}")))
     }
 
-    fn jobs<'a>(&'a self, reqs: &'a [Req], weights: &'a [Option<Vec<f64>>]) -> PyResult<Vec<Job<'a>>> {
+    /// The requests' auction evidence, checked: one entry per request, four
+    /// seats, `AUCTION_SLOTS` likelihoods in [0, 1] per read seat, and a
+    /// reading to draw with.
+    fn auctions(&self, n: usize, auctions: Option<Vec<AuctionReq>>) -> PyResult<Vec<Option<Auction>>> {
+        let Some(auctions) = auctions else {
+            return Ok(vec![None; n]);
+        };
+        if auctions.len() != n {
+            return Err(PyValueError::new_err("one auction entry per request"));
+        }
+        auctions
+            .into_iter()
+            .map(|a| {
+                let Some(seats) = a else {
+                    return Ok(None);
+                };
+                if self.cfg.reading.is_none() {
+                    return Err(PyValueError::new_err("the auction is read with a reading's draw: it needs a reading"));
+                }
+                if seats.len() != 4 {
+                    return Err(PyValueError::new_err("an auction holds one entry per seat"));
+                }
+                let mut out: Auction = [None; 4];
+                for (slot, table) in out.iter_mut().zip(seats) {
+                    if let Some(t) = table {
+                        if t.len() != AUCTION_SLOTS || t.iter().any(|x| !(0.0..=1.0).contains(x)) {
+                            return Err(PyValueError::new_err(format!(
+                                "an auction table holds {AUCTION_SLOTS} likelihoods in [0, 1]"
+                            )));
+                        }
+                        let mut arr = [0.0; AUCTION_SLOTS];
+                        arr.copy_from_slice(&t);
+                        *slot = Some(arr);
+                    }
+                }
+                Ok(Some(out))
+            })
+            .collect()
+    }
+
+    fn jobs<'a>(
+        &'a self,
+        reqs: &'a [Req],
+        weights: &'a [Option<Vec<f64>>],
+        auctions: &'a [Option<Auction>],
+    ) -> PyResult<Vec<Job<'a>>> {
         if weights.len() != reqs.len() {
             return Err(PyValueError::new_err("one weights entry per request"));
         }
         let mut jobs = Vec::with_capacity(reqs.len());
-        for (req, w) in reqs.iter().zip(weights) {
+        for ((req, w), auction) in reqs.iter().zip(weights).zip(auctions) {
             if req.9 > 3 {
                 return Err(PyValueError::new_err("the bidder is a seat in 0..4"));
             }
@@ -350,6 +409,7 @@ impl Core {
                 bid: req.8,
                 bidder: req.9,
                 plays: &req.10,
+                auction: auction.as_ref(),
             };
             if let Some(w) = w {
                 let n = planner::root_count(&self.cfg, &d);
@@ -415,13 +475,25 @@ fn canon(decl: u8) -> Option<Vec<u8>> {
     field::canon(decl).map(|c| c.to_vec())
 }
 
+/// The auction slot of a dealt hand ([`planner::ceiling_slot`]): 0 with no
+/// pip suit of three tiles, else 1 + the heuristic bidder's bid ceiling.
+#[pyfunction]
+fn ceiling_slot(hand: u32) -> PyResult<usize> {
+    if hand >> 28 != 0 {
+        return Err(PyValueError::new_err("a hand is a mask of tiles 0..28"));
+    }
+    Ok(planner::ceiling_slot(hand))
+}
+
 #[pymodule]
 fn scenario_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Core>()?;
     m.add_function(wrap_pyfunction!(rules, m)?)?;
     m.add_function(wrap_pyfunction!(canon, m)?)?;
     m.add_function(wrap_pyfunction!(constellation, m)?)?;
+    m.add_function(wrap_pyfunction!(ceiling_slot, m)?)?;
     m.add("MAX_WORLDS", MAX_WORLDS)?;
+    m.add("AUCTION_SLOTS", AUCTION_SLOTS)?;
     #[cfg(feature = "silas")]
     crate::python_silas::register(m)?;
     Ok(())

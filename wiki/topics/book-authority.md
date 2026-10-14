@@ -44,7 +44,11 @@ player: soft play-reading, a crude within-hand model of the other seats, made Ze
 +0.37 [+0.24, +0.51] marks/game against plain Zeb, replicated on fresh deals against an A/A of
 −0.00 ([[reads-plays-soft-2026-10-14]]). That is the first modeling of other players our arena
 has rewarded, and it models them only within one hand. The book's opponents model across
-hands.
+hands. The first cross-hand opponent our arena seats, a regular who learns each seat's bidding
+caution within a game and reads the auction by it, cannot yet see the book's predictability
+lesson: the interaction is +0.04 [−0.15, +0.22] marks/game (A/A −0.02), though the regular
+does identify a deterministic bidder ([[regulars-table-2026-10-14]], #149). Its omissions are
+named there: it never responds, and its memory is one number per seat for one game.
 
 ## Vocabulary
 
@@ -110,4 +114,4 @@ Use: *scope*, *under assumptions*, *our arena cannot yet see*, *the measurement 
 
 [[book-assumptions]] · [[w42]] · [[book-study-2026-10-12]] · [[book-head-to-head-2026-10-13]] ·
 [[book-investigation-2026-10-14]] · [[book-reads-by-the-book-2026-10-14]] ·
-[[reads-plays-soft-2026-10-14]] · [[scenario-player]] · [[silas]] · [[the-wall]]
+[[reads-plays-soft-2026-10-14]] · [[regulars-table-2026-10-14]] · [[scenario-player]] · [[silas]] · [[the-wall]]

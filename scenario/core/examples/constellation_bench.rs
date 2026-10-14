@@ -124,6 +124,7 @@ fn main() {
                 bid: 30,
                 bidder: p.bidder,
                 plays: &p.plays,
+                auction: None,
             };
             std::hint::black_box(decide(&cfg, &d, None));
         }

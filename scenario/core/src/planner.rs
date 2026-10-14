@@ -29,7 +29,10 @@
 //! margin of its best (consistent: 1 or 0), and under the uniform likelihood
 //! it weighs 1/|set| — restricted choice (`Walt.reading_likelihood`); its ε
 //! softens the set as F_σ softens the move, ε/n + (1 − ε)·that, so no world
-//! vanishes (#145).
+//! vanishes (#145). An [`Auction`] (per request, the live rung only) adds
+//! the auction to that likelihood: per read seat, a table over the slot of
+//! the hand the world says it was dealt ([`ceiling_slot`], the heuristic
+//! bidder's bid ceiling), multiplied into the seat's factor (#149).
 //!
 //! A convention ([`Convention`], `scenario/convention.py`) overlays the live
 //! seat: its sender plays the plan's best tile among the rule's allowed ones
@@ -53,7 +56,7 @@ use std::hash::{BuildHasherDefault, Hash, Hasher};
 use crate::convention::Convention;
 use crate::fiber::{sample_worlds, Fiber};
 use crate::field::FieldNet;
-use crate::rules::Rules;
+use crate::rules::{pips, Rules};
 
 /// Every tile: the record of a finished hand.
 pub const ALL_TILES: u32 = (1 << 28) - 1;
@@ -71,6 +74,100 @@ pub const DRAW_BUDGET: u64 = 1 << 22;
 /// A reading draws from the whole fiber, enumerated, when it holds at most
 /// this many members (`scenario.planner.READ_ENUM`); rejection above.
 pub const READ_ENUM: i64 = 1 << 20;
+
+/// Slots of an auction table: 0 for a dealt hand with no pip suit of three
+/// tiles, 1 + c for one whose best bid ceiling is c in 0..=42.
+pub const AUCTION_SLOTS: usize = 44;
+
+/// The auction as evidence on the dealt hands (`Situation.auction`): per
+/// absolute seat, the likelihood of what that seat did in the auction as a
+/// function of its dealt hand's [`ceiling_slot`], each entry in [0, 1]; None
+/// is a seat the auction does not read.
+pub type Auction = [Option<[f64; AUCTION_SLOTS]>; 4];
+
+/// The auction slot of a dealt hand (`scenario.planner.ceiling_slot`): 0 when
+/// no pip trump holds three of its tiles, else 1 + the heuristic bidder's
+/// ceiling, the most over such trumps of 42 less the count the hand's offs
+/// expose (`arena.hand_metrics.best_trump(hand, 3).bid_ceiling`): an off is
+/// a tile with neither pip the trump and not a double, and each of its pips
+/// exposes every count tile of that pip the hand does not hold, the trump's
+/// excepted.
+pub fn ceiling_slot(hand: u32) -> usize {
+    let mut best: Option<u32> = None;
+    for trump in 0..7 {
+        if (hand & SUITS[trump]).count_ones() < 3 {
+            continue;
+        }
+        let mut exposed = 0u32;
+        for off in tiles(hand & !SUITS[trump] & !DOUBLES) {
+            exposed |= EXPOSES[trump][off as usize];
+        }
+        exposed &= !hand;
+        let ceiling = 42 - 10 * (exposed & TENS).count_ones() - 5 * (exposed & FIVES).count_ones();
+        best = best.max(Some(ceiling));
+    }
+    best.map_or(0, |c| 1 + c as usize)
+}
+
+/// The tiles holding each pip.
+const SUITS: [u32; 7] = {
+    let mut out = [0u32; 7];
+    let mut t = 0;
+    while t < 28 {
+        let (h, l) = pips(t);
+        out[h as usize] |= 1 << t;
+        out[l as usize] |= 1 << t;
+        t += 1;
+    }
+    out
+};
+/// The doubles.
+const DOUBLES: u32 = {
+    let mut out = 0u32;
+    let mut t = 0;
+    while t < 28 {
+        let (h, l) = pips(t);
+        if h == l {
+            out |= 1 << t;
+        }
+        t += 1;
+    }
+    out
+};
+/// The count tiles worth 10 (pips summing to 10) and 5 (summing to 5).
+const TENS: u32 = pip_sum(10);
+const FIVES: u32 = pip_sum(5);
+
+const fn pip_sum(sum: u8) -> u32 {
+    let mut out = 0u32;
+    let mut t = 0;
+    while t < 28 {
+        let (h, l) = pips(t);
+        if h + l == sum {
+            out |= 1 << t;
+        }
+        t += 1;
+    }
+    out
+}
+
+/// Under each trump, the count tiles an off tile exposes: those sharing
+/// either of its pips, the trump's excepted (the hand's own are removed after).
+const EXPOSES: [[u32; 28]; 7] = {
+    let mut out = [[0u32; 28]; 7];
+    let mut trump = 0;
+    while trump < 7 {
+        let count = (TENS | FIVES) & !SUITS[trump];
+        let mut t = 0;
+        while t < 28 {
+            let (h, l) = pips(t as u8);
+            out[trump][t] = count & (SUITS[h as usize] | SUITS[l as usize]);
+            t += 1;
+        }
+        trump += 1;
+    }
+    out
+};
 
 // -- hashing ------------------------------------------------------------------
 
@@ -544,11 +641,24 @@ fn likelihood(ctx: &mut Ctx, ev: &Evidence, world: &[u32; 4], eps: f64, u: f64) 
 /// that record (`Walt.reading_likelihood`): built seat by seat — the
 /// likelihood factorizes by seat — each seat's factor the product of its
 /// plays in play order, the factors multiplied in seat order; returned early
-/// once it is 0 or ≤ `u` (every factor is at most 1, so L only falls).
-fn read(ctx: &mut Ctx, ev: &Evidence, viewer: u8, world: &[u32; 4], reading: Reading, u: f64) -> f64 {
+/// once it is 0 or ≤ `u` (every factor is at most 1, so L only falls). With
+/// an [`Auction`], a read seat's factor is then multiplied by its table at
+/// the slot of the hand the world says it was dealt.
+fn read(
+    ctx: &mut Ctx,
+    ev: &Evidence,
+    viewer: u8,
+    world: &[u32; 4],
+    reading: Reading,
+    auction: Option<&Auction>,
+    u: f64,
+) -> f64 {
     let mut p = 1.0f64;
     for seat in (0..4u8).filter(|&s| s != viewer) {
         p *= ctx.factor(ev, seat, world[seat as usize], reading);
+        if let Some(table) = auction.and_then(|a| a[seat as usize].as_ref()) {
+            p *= table[ceiling_slot(world[seat as usize] | ev.played_by[seat as usize])];
+        }
         if p == 0.0 || p <= u {
             return p;
         }
@@ -671,9 +781,9 @@ struct Liner {
     steps: Vec<Step>,
 }
 
-/// What only the live rung sees: the public play history and any external
-/// evidence over its scenarios.
-type Live<'a> = (&'a [(u8, u8)], Option<&'a [f64]>);
+/// What only the live rung sees: the public play history, any external
+/// evidence over its scenarios, and the auction's evidence on the dealt hands.
+type Live<'a> = (&'a [(u8, u8)], Option<&'a [f64]>, Option<&'a Auction>);
 
 /// One planning problem: a viewer, a rung, a sample, and its memo.
 struct Inv {
@@ -698,11 +808,13 @@ impl Inv {
         let seed = invocation_seed(cfg, viewer, own, rec);
         let (mut worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
         let weights = match live {
-            Some((plays, external)) => {
+            Some((plays, external, auction)) => {
                 let mut w = vec![1.0; worlds.len()];
+                assert!(auction.is_none() || cfg.reading.is_some(), "the auction is read with a reading's draw");
                 if let (Draw::Posterior, Some(reading)) = (cfg.draw, cfg.reading) {
                     let ev = Evidence::new(ctx.rules, viewer, plays);
-                    let like = |ctx: &mut Ctx, world: &[u32; 4], u: f64| read(ctx, &ev, viewer, world, reading, u);
+                    let like =
+                        |ctx: &mut Ctx, world: &[u32; 4], u: f64| read(ctx, &ev, viewer, world, reading, auction, u);
                     (worlds, w) =
                         drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, reading.uniform || reading.eps > 0.0, READ_ENUM, like);
                 } else if cfg.draw == Draw::Posterior {
@@ -1158,6 +1270,8 @@ pub struct Decision<'a> {
     pub bidder: u8,
     /// Every play so far as (seat, tile), from the opening lead.
     pub plays: &'a [(u8, u8)],
+    /// The auction's evidence on the dealt hands, read with a [`Reading`]; None is unread.
+    pub auction: Option<&'a Auction>,
 }
 
 /// The live invocation at a decision and the context it plans in.
@@ -1174,7 +1288,7 @@ fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (C
         nodes: 0,
         drawn: Drawn::default(),
     };
-    let inv = Inv::new(&mut ctx, cfg.level(), d.viewer, d.own, &d.rec, Some((d.plays, external)));
+    let inv = Inv::new(&mut ctx, cfg.level(), d.viewer, d.own, &d.rec, Some((d.plays, external, d.auction)));
     (ctx, inv)
 }
 
