@@ -25,8 +25,9 @@ page that explains it; the Hub carries the bytes. Every dataset is public,
   a worktree's scratch dies with it. The 2026-10-12 research archive found two
   hub-cited artifacts already gone (`scratch/stochastic-field/`,
   `scratch/book/wave1/overlay-price.md`). The 2026-10-14 recovery
-  ([[huggingface-assets]] § What stayed local) found eighteen cited paths
-  gone; thirteen had been staged for the Hub first, the rest are lost.
+  ([[huggingface-assets]] § What stayed local) found 28 cited paths gone,
+  one per study or file family: 13 had been staged for the Hub first, 3 can
+  be rebuilt from elsewhere, 12 are lost for good.
 
 Not for: code (git), prose (the wiki), anything under the "Never" list below.
 

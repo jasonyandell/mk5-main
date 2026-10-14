@@ -80,11 +80,13 @@ science line, [[license-line]]).
   `~/data/texas-42/walt-response-ladder` (5.9 GB raw; the curated export is up).
 - **Disposable:** cargo `target/` trees (full-game-speed 21 GB, walt, rob,
   response-ladder), `lean/.lake`, venvs, the tournament's pinned builds.
-- **Lost before recovery** (wiki pages still cite them): `scratch/stochastic-field`,
+- **Lost before recovery** (12 of the 28 cited paths found gone; 13 had been
+  staged for the Hub first, 3 are rebuildable): `scratch/stochastic-field`,
   `scratch/book/wave1/overlay-price.md`, the `otis-night2` scripts,
   `equiv-census/class_cfr_census.py`, `brainstorm/criticality.py`,
   `verify_sft_mask`, `lane-a/PREDICTIONS.md`, `PERF_GOAL.md`, `study141.rs`,
-  `burl-perf-2/iter26` and `iter29_phase2`, `x.json`. Recoverable elsewhere:
+  `burl-perf-2/iter26` and `iter29_phase2`, `x.json`, the reason v1 report
+  (`scratch/reason`; v2 survived). Recoverable elsewhere:
   `viz/pour_viz_5` (the export is in git and on the Hub), the archaeology
   evidence (from the private claude.ai export), the 250k pour notes (the card).
   The Archive desk's notebook (`links/archive-notebook` in the feed,
