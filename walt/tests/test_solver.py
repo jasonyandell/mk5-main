@@ -481,11 +481,14 @@ def gate_T6(n_roots: int = 30, payoff: str = "points") -> bool:
 # --------------------------------------------------------------------------- #
 
 def timing_report():
+    """Informational only (no gate reads it). 4-trick roots with a small world
+    set are rare (~1 in 3000 seeds), so the seed scan is capped at 4000 per
+    trick count: a full 15-sample scan took ~170 s and was most of this file."""
     for tricks in (3, 4):
         times = []
         Ns = []
         seed = 100000
-        while len(times) < 15 and seed < 130000:
+        while len(times) < 15 and seed < 104000:
             seed += 1
             g = gen_root(seed, tricks)
             if g is None:
@@ -499,6 +502,9 @@ def timing_report():
             solve(root, worlds, weights, ORACLE, "points")
             times.append((time.perf_counter() - t0) * 1e3)
             Ns.append(N)
+        if not times:
+            print(f"  timing {tricks}-trick: no roots in the scanned seeds")
+            continue
         times.sort()
         p50 = times[len(times) // 2]
         p95 = times[min(len(times) - 1, int(0.95 * len(times)))]

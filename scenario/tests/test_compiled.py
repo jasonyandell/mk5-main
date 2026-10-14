@@ -191,19 +191,24 @@ def _trick_one_state(seed: int, plays: int):
     raise AssertionError("no such state")
 
 
-FLOOR_CASES = [  # (floor, utility, plays already down) at k1,n160,m8
+# The Python referee costs minutes at n160 from trick one (37 s for one state),
+# so the floor cases run at n=FLOOR_N: still two rungs, and the same three
+# floor regimes (a small floor, a mid floor, a floor at the full world count,
+# where every cell is floored) at the same depths. Floors scale with n.
+FLOOR_N = 40
+FLOOR_CASES = [  # (floor, utility, plays already down) at k1,n40,m8
     (4, "points", 0),
     (16, "make", 2),
-    (160, "points", 3),
+    (FLOOR_N, "points", 3),
     (4, "make", 12),
     (16, "points", 14),
-    (160, "make", 13),
+    (FLOOR_N, "make", 13),
 ]
 
 
 def test_compiled_matches_the_planner_under_a_cell_floor():
     for floor, utility, plays in FLOOR_CASES:
-        cfg = Config((Rung(8, 4), Rung(160, None, floor)), utility, seed=17)
+        cfg = Config((Rung(8, 4), Rung(FLOOR_N, None, floor)), utility, seed=17)
         state = _states(1, seed=71, min_plays=plays)[0] if plays >= 4 else _trick_one_state(73, plays)
         ref, fast = Walt(cfg), CompiledWalt(cfg)
         a = ref.analyze(state, 31)
@@ -232,7 +237,7 @@ def test_compiled_line_matches_the_planner():
     observations, the same floored moves — and asking for it moves nothing
     else: tile, values, worlds, weights, outcomes and nodes are the plain
     analysis's, in both implementations."""
-    cases = ANALYSIS_CASES + [(Config((Rung(8, 4), Rung(160, None, f)), u, seed=17), None)
+    cases = ANALYSIS_CASES + [(Config((Rung(8, 4), Rung(FLOOR_N, None, f)), u, seed=17), None)
                               for f, u, _ in FLOOR_CASES[:3]]
     floored = 0
     for cfg, belief in cases:
