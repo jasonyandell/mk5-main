@@ -34,8 +34,12 @@ fn bid_prints_the_call_its_rule_and_the_declaration() {
     let (ok, out) = silas(&["bid", "examples/book/bidding/risk-budget.silas", "--hand", "hand-1"]);
     assert!(ok, "{out}");
     assert!(out.contains("hand-1: the bidder (S0) to call; S3 shook: no calls; marks to 7"), "{out}");
-    assert!(out.contains("calls 36, by rule bid-36"), "{out}");
+    // The computed call, 42 less the six at risk under sixes, and its witness.
+    assert!(out.contains("calls 36, by rule priced\n    q6  <=  t=q6"), "{out}");
     assert!(out.contains("if the rest pass, declares straight42/P6, by rule least-at-risk\n    q6  <=  t=q6"), "{out}");
+    // Over a 39 the 36 is no legal bid: the rule passes, and so does the hand.
+    let (ok, out) = silas(&["bid", "examples/book/bidding/risk-budget.silas", "--hand", "hand-1", "--calls", "39"]);
+    assert!(ok && out.contains("legal: pass 40 41 42 84") && out.contains("calls pass, by the fallback"), "{out}");
     // Over another seat's 35 the partner of Hand 32 passes, by the fallback.
     let args = ["--hand", "hand-32", "--seat", "partner", "--calls", "35", "--scoring", "points"];
     let (ok, out) = silas(&[&["bid", "examples/book/bidding/bid-only-enough.silas"][..], &args].concat());

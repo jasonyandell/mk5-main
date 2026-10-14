@@ -444,7 +444,7 @@ pub struct Pattern {
 
 /// A number a comparison reads. Numbers are never roles: a quantity is a
 /// literal, a functional predicate's number, an aggregate over a scope's
-/// bindings, or a sum of quantities.
+/// bindings, or a sum or difference of quantities.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Quantity {
     Number(u32),
@@ -462,6 +462,8 @@ pub enum Quantity {
     Points(Aggregate),
     /// `(+ q ...)`.
     Sum(Vec<Quantity>),
+    /// `(- a b ...)`: `a` less each of the rest; two parts or more.
+    Difference(Vec<Quantity>),
 }
 
 /// `(p a ...)`: a functional predicate given every argument but its last.
@@ -554,7 +556,7 @@ pub(crate) const RESERVED: [&str; 15] = [
 const NOT_CLAUSES: [&str; 5] = ["query", "roles", "out", "pattern", "define"];
 
 /// Every name visible at a point of a body, with its sort.
-type Names = BTreeMap<String, Sort>;
+pub(crate) type Names = BTreeMap<String, Sort>;
 
 /// The entries of `(roles ...)`: each `(sort name)`, or a bare name, whose
 /// sort its uses give (`None` here). A definition's parameters may also be
@@ -617,7 +619,17 @@ fn patterns<'a>(forms: &'a [Expr], at: &Span) -> Result<Vec<(&'a [Expr], Span)>>
 #[derive(Clone, Debug)]
 struct Define {
     params: Vec<Role>,
-    body: Pattern,
+    body: Defined,
+}
+
+/// What a definition names: a conjunction of clauses, or a number. A body of
+/// one number form (a literal, `(+ ...)`, `(- ...)`, `(card ...)`, `(points
+/// ...)`, a functional predicate's number, or another number's call) is a
+/// number, read wherever a number is; any other body is clauses.
+#[derive(Clone, Debug)]
+enum Defined {
+    Clauses(Pattern),
+    Number(Quantity),
 }
 
 /// The built-in libraries `(include name)` may name.
@@ -711,26 +723,59 @@ impl Library {
                 return Err(p.span.error(format!("invalid or duplicate parameter {}", p.name)));
             }
         }
+        if let [one] = clauses
+            && self.is_number(one)
+        {
+            let number = self.quantity(one, &names)?;
+            self.defines.insert(word.to_owned(), Define { params, body: Defined::Number(number) });
+            return Ok(());
+        }
         let body = self.body(clauses, &names, form.span.clone())?;
         if !body.equal.is_empty() {
             return Err(form
                 .span
                 .error("a definition's body has no roles of its own to join with same; use (some ...)"));
         }
-        self.defines.insert(word.to_owned(), Define { params, body });
+        self.defines.insert(word.to_owned(), Define { params, body: Defined::Clauses(body) });
         Ok(())
     }
 
-    /// The parameter sorts of a definition or a standard predicate.
+    /// Whether a form is a number, not a clause: a literal, `(+ ...)`, `(-
+    /// ...)`, `(card ...)`, `(points ...)`, a number definition's call, or a
+    /// functional predicate given every argument but its last.
+    fn is_number(&self, x: &Expr) -> bool {
+        match (&x.kind, x.head()) {
+            (Kind::Word(w), _) => matches!(Value::literal(w), Some(Value::Number(_))),
+            (_, Some("+" | "-" | "card" | "points")) => true,
+            (Kind::List(xs), Some(head)) => match self.defines.get(head) {
+                Some(define) => matches!(define.body, Defined::Number(_)),
+                None => standard()
+                    .predicates
+                    .get(head)
+                    .is_some_and(|p| p.functional() && p.spec().parameters.len() == xs.len()),
+            },
+            _ => false,
+        }
+    }
+
+    /// The parameter sorts of a definition or a standard predicate. A number
+    /// definition reads as a functional predicate does, its number the last
+    /// parameter.
     fn signature(&self, head: &str) -> Option<Vec<Sort>> {
         match self.defines.get(head) {
-            Some(define) => Some(define.params.iter().map(|p| p.sort).collect()),
+            Some(define) => {
+                let mut sorts: Vec<Sort> = define.params.iter().map(|p| p.sort).collect();
+                if matches!(define.body, Defined::Number(_)) {
+                    sorts.push(Sort::Number);
+                }
+                Some(sorts)
+            }
             None => standard().predicates.get(head).map(|p| p.spec().parameters.clone()),
         }
     }
 
     /// The free names of `bodies`, in order of first use, with their sorts.
-    fn uses(&self, bodies: &[&[Expr]]) -> Result<Uses> {
+    pub(crate) fn uses(&self, bodies: &[&[Expr]]) -> Result<Uses> {
         let mut uses = Uses::default();
         for body in bodies {
             uses.walk(body, &[], &|head| self.signature(head))?;
@@ -781,7 +826,7 @@ impl Library {
                     let (left, right) = (self.quantity(left, names)?, self.quantity(right, names)?);
                     pattern.bounds.push(AtMost { left, right, span: clause.span.clone() });
                 }
-                Some(part @ ("card" | "points" | "+")) => {
+                Some(part @ ("card" | "points" | "+" | "-")) => {
                     return Err(clause
                         .span
                         .error(format!("({part} ...) is a number, not a clause: compare it, as (<= ({part} ...) 3)")));
@@ -800,6 +845,12 @@ impl Library {
                 _ => {
                     let atom = atom(clause)?;
                     match self.defines.get(&atom.predicate) {
+                        Some(Define { body: Defined::Number(_), .. }) => {
+                            return Err(clause.span.error(format!(
+                                "({} ...) is a number, not a clause: compare it, as (<= ({} ...) 3)",
+                                atom.predicate, atom.predicate
+                            )));
+                        }
                         Some(define) => self.expand(define, atom, names, &mut pattern)?,
                         None => pattern.atoms.push(atom),
                     }
@@ -811,8 +862,9 @@ impl Library {
 
     /// A number a comparison reads: a literal, a definition's number
     /// parameter, `(card (roles ...) clause ...)`, `(points (roles d) clause
-    /// ...)`, `(+ q ...)`, or a functional predicate's number, `(p a ...)`.
-    fn quantity(&self, x: &Expr, names: &Names) -> Result<Quantity> {
+    /// ...)`, `(+ q ...)`, `(- q ...)`, a number definition's call, or a
+    /// functional predicate's number, `(p a ...)`.
+    pub(crate) fn quantity(&self, x: &Expr, names: &Names) -> Result<Quantity> {
         let xs = match &x.kind {
             Kind::Word(w) => {
                 return match Value::literal(w) {
@@ -827,6 +879,12 @@ impl Library {
         };
         match x.head() {
             Some("+") => Ok(Quantity::Sum(xs[1..].iter().map(|q| self.quantity(q, names)).collect::<Result<_>>()?)),
+            Some("-") => {
+                if xs.len() < 3 {
+                    return Err(x.span.error("- takes a number less one or more others: (- a b ...)"));
+                }
+                Ok(Quantity::Difference(xs[1..].iter().map(|q| self.quantity(q, names)).collect::<Result<_>>()?))
+            }
             Some(kind @ ("card" | "points")) => {
                 let declared = xs
                     .get(1)
@@ -845,12 +903,15 @@ impl Library {
                 let aggregate = Aggregate { roles, body, span: x.span.clone() };
                 Ok(if kind == "card" { Quantity::Card(aggregate) } else { Quantity::Points(aggregate) })
             }
+            Some(name) if let Some(define @ Define { body: Defined::Number(_), .. }) = self.defines.get(name) => {
+                self.number_call(define, atom(x)?, names)
+            }
             Some(name) if self.defines.contains_key(name) => Err(x.span.error(format!(
-                "({name} ...) is a definition, a clause; a number is a literal, (card ...), (points ...), (+ ...) \
-                 or a functional predicate's, as (to-set)"
+                "({name} ...) is a definition, a clause; a number is a literal, (card ...), (points ...), (+ ...), \
+                 (- ...), a number definition's call or a functional predicate's, as (to-set)"
             ))),
             Some("not") | None => {
-                Err(x.span.error("a number is a literal, (card ...), (points ...), (+ ...) or (p a ...)"))
+                Err(x.span.error("a number is a literal, (card ...), (points ...), (+ ...), (- ...) or (p a ...)"))
             }
             Some(_) => {
                 let Atom { predicate, args, span, .. } = atom(x)?;
@@ -864,6 +925,47 @@ impl Library {
     /// names around the call. Negated, it becomes a `none` (or a negated atom,
     /// when its body is one atom).
     fn expand(&self, define: &Define, call: Atom, names: &Names, pattern: &mut Pattern) -> Result<()> {
+        let Defined::Clauses(body) = &define.body else { unreachable!("a clause's definition is clauses") };
+        let (substitution, mut taken) = self.arguments(define, &call, names)?;
+        let body = instantiate(body, &substitution, &mut taken, &call.span);
+        if !call.negated {
+            pattern.atoms.extend(body.atoms);
+            pattern.scopes.extend(body.scopes);
+            pattern.bounds.extend(body.bounds);
+        } else if let ([one], [], []) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice()) {
+            pattern.atoms.push(Atom { negated: !one.negated, ..one.clone() });
+        } else if let ([], [one], []) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice())
+            && one.quantifier == Quantifier::Some
+        {
+            pattern.scopes.push(Scope { quantifier: Quantifier::None, ..one.clone() });
+        } else if let ([], [], [one]) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice()) {
+            pattern.bounds.push(one.negated());
+        } else {
+            pattern.scopes.push(Scope { quantifier: Quantifier::None, roles: vec![], body, span: call.span });
+        }
+        Ok(())
+    }
+
+    /// A call of a number definition, in a number's place: its number with
+    /// the arguments for its parameters and its aggregates' roles renamed
+    /// apart from the names around the call.
+    fn number_call(&self, define: &Define, call: Atom, names: &Names) -> Result<Quantity> {
+        let Defined::Number(number) = &define.body else { unreachable!("a number's definition is a number") };
+        if call.negated {
+            return Err(call.span.error(format!("({} ...) is a number, and a number is not negated", call.predicate)));
+        }
+        let (substitution, mut taken) = self.arguments(define, &call, names)?;
+        Ok(instantiate_quantity(number, &substitution, &mut taken, &call.span))
+    }
+
+    /// A call's arguments checked against the definition's parameters: the
+    /// substitution of each parameter, and the names taken around the call.
+    fn arguments(
+        &self,
+        define: &Define,
+        call: &Atom,
+        names: &Names,
+    ) -> Result<(BTreeMap<String, Term>, BTreeSet<String>)> {
         if call.args.len() != define.params.len() {
             return Err(call.span.error(format!(
                 "{} takes {} argument(s), got {}",
@@ -893,23 +995,7 @@ impl Library {
             }
             substitution.insert(param.name.clone(), arg.clone());
         }
-        let body = instantiate(&define.body, &substitution, &mut taken, &call.span);
-        if !call.negated {
-            pattern.atoms.extend(body.atoms);
-            pattern.scopes.extend(body.scopes);
-            pattern.bounds.extend(body.bounds);
-        } else if let ([one], [], []) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice()) {
-            pattern.atoms.push(Atom { negated: !one.negated, ..one.clone() });
-        } else if let ([], [one], []) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice())
-            && one.quantifier == Quantifier::Some
-        {
-            pattern.scopes.push(Scope { quantifier: Quantifier::None, ..one.clone() });
-        } else if let ([], [], [one]) = (body.atoms.as_slice(), body.scopes.as_slice(), body.bounds.as_slice()) {
-            pattern.bounds.push(one.negated());
-        } else {
-            pattern.scopes.push(Scope { quantifier: Quantifier::None, roles: vec![], body, span: call.span });
-        }
-        Ok(())
+        Ok((substitution, taken))
     }
 }
 
@@ -1033,6 +1119,9 @@ fn instantiate_quantity(
         Quantity::Points(a) => Quantity::Points(aggregate(a, taken)),
         Quantity::Sum(parts) => {
             Quantity::Sum(parts.iter().map(|q| instantiate_quantity(q, substitution, taken, at)).collect())
+        }
+        Quantity::Difference(parts) => {
+            Quantity::Difference(parts.iter().map(|q| instantiate_quantity(q, substitution, taken, at)).collect())
         }
     }
 }
@@ -1186,7 +1275,7 @@ pub(crate) fn free_names(pattern: &Pattern, bound: &BTreeSet<String>, out: &mut 
                 bound.extend(a.roles.iter().map(|r| r.name.clone()));
                 free_names(&a.body, &bound, out);
             }
-            Quantity::Sum(parts) => parts.iter().for_each(|p| quantity(p, bound, out)),
+            Quantity::Sum(parts) | Quantity::Difference(parts) => parts.iter().for_each(|p| quantity(p, bound, out)),
             Quantity::Function(f) => out.extend(
                 f.args
                     .iter()
@@ -1201,6 +1290,28 @@ pub(crate) fn free_names(pattern: &Pattern, bound: &BTreeSet<String>, out: &mut 
         quantity(&b.left, bound, out);
         quantity(&b.right, bound, out);
     }
+}
+
+/// The role names a quantity reads from around it.
+pub(crate) fn quantity_names(quantity: &Quantity) -> BTreeSet<String> {
+    let bound = Pattern {
+        bounds: vec![AtMost { left: quantity.clone(), right: Quantity::Number(0), span: Span::default() }],
+        ..Pattern::default()
+    };
+    let mut out = BTreeSet::new();
+    free_names(&bound, &BTreeSet::new(), &mut out);
+    out
+}
+
+/// An aggregate's text up to the names around it: each enclosing name it
+/// reads (`free`, in order) is `#0`, `#1`, ..., and its own roles are renamed
+/// apart as a call would. Two aggregates of one shape are one function of
+/// the values of those names, wherever each is written.
+pub(crate) fn shape_text(quantity: &Quantity, free: &BTreeSet<String>) -> String {
+    let substitution: BTreeMap<String, Term> =
+        free.iter().enumerate().map(|(i, n)| (n.clone(), Term::Role(format!("#{i}")))).collect();
+    let mut taken = BTreeSet::new();
+    quantity_text(&instantiate_quantity(quantity, &substitution, &mut taken, &Span::default()))
 }
 
 /// A quantity as the core prints it.
@@ -1228,8 +1339,8 @@ fn write_quantity(f: &mut fmt::Formatter<'_>, quantity: &Quantity, indent: usize
             }
             return write!(f, ")");
         }
-        Quantity::Sum(parts) => {
-            write!(f, "(+")?;
+        Quantity::Sum(parts) | Quantity::Difference(parts) => {
+            write!(f, "({}", if matches!(quantity, Quantity::Sum(_)) { "+" } else { "-" })?;
             for part in parts {
                 write!(f, " ")?;
                 write_quantity(f, part, indent)?;

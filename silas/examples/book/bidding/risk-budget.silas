@@ -17,54 +17,31 @@
 ; - with the 84 shape (three or four trumps, two or three doubles besides, at
 ;   most one off and that one under its double), bid 84.
 ;
-; Each level is bid only while it is legal, so over a higher bid the rule
-; passes. The declaration is the suit the bid was made on: the 84 shape for
-; an 84; else the least at risk, when that is 12 or less, ties to the first
-; suit offered; else the first offered of those at risk 17 or less, where the
-; 30 was tried.
+; The call is 42 less the least risk, one rule for the thirteen levels (a
+; computed call); it is bid only while it is legal, so over a higher bid the
+; rule passes. The declaration is the suit the bid was made on: the 84 shape
+; for an 84; else the least at risk, when that is 12 or less, ties to the
+; first suit offered; else the first offered of those at risk 17 or less,
+; where the 30 was tried.
 (include bidding)
 
 (policy risk-budget
   (bidding
     (rule eighty-four (bid 84)
       (some (roles t) (eighty-four-shape t)))
-    (rule one-mark (bid 42)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 0)))
-    (rule bid-41 (bid 41)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 1)))
-    (rule bid-40 (bid 40)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 2)))
-    (rule bid-39 (bid 39)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 3)))
-    (rule bid-38 (bid 38)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 4)))
-    (rule bid-37 (bid 37)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 5)))
-    (rule bid-36 (bid 36)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 6)))
-    (rule bid-35 (bid 35)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 7)))
-    (rule bid-34 (bid 34)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 8)))
-    (rule bid-33 (bid 33)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 9)))
-    (rule bid-32 (bid 32)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 10)))
-    (rule bid-31 (bid 31)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 11)))
-    (rule bid-30 (bid 30)
-      (some (roles t) (suit-at-least t 3) (risk-at-most t 12)))
+    (rule priced (bid (- 42 (risk t)))
+      (least t (risk t) (suit-at-least t 3))
+      (<= (risk t) 12))
     (rule two-offs-at-17 (bid 30)
-      (some (roles t) (suit-at-least t 3) (not (offs-at-most t 1)) (risk-at-most t 17))))
+      (some (roles t) (suit-at-least t 3) (not (offs-at-most t 1)) (<= (risk t) 17))))
   (declaring
     (rule the-eighty-four-suit (declare t)
       (viewer v)
       (bid-of v 84)
       (eighty-four-shape t))
     (rule least-at-risk (declare t)
-      (suit-at-least t 3)
-      (risk-at-most t 12)
-      (none (roles u) (suit-at-least u 3) (less-at-risk u t)))
+      (least t (risk t) (suit-at-least t 3))
+      (<= (risk t) 12))
     (rule at-risk-17 (declare t)
       (suit-at-least t 3)
-      (risk-at-most t 17))))
+      (<= (risk t) 17))))

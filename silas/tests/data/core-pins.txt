@@ -2,7 +2,7 @@ examples/book/bidders-plan.silas be1e8e009889710b
 examples/book/bidding/bid-only-enough.silas 871bf4036a292adc
 examples/book/bidding/bidder-holds-two-doubles.silas 58b4a0e33e8f3ce8
 examples/book/bidding/never-32-or-33.silas 9f8409c2c63c9276
-examples/book/bidding/risk-budget.silas e5bf4c07ddfee065
+examples/book/bidding/risk-budget.silas c2e40a0358d21e66
 examples/book/cannot-be-set.silas 55d18056a6717dca
 examples/book/claim-the-rest.silas e77b1c9b4080bc6d
 examples/book/crisis.silas 6371d242d11bc4e8
@@ -180,6 +180,6 @@ lib/bidding.silas:exposed 4b3034a2d0a1598d
 lib/bidding.silas:exposes-at-most 5b8173e704874eb7
 lib/bidding.silas:less-exposed e5dc6faa9f97cac0
 lib/bidding.silas:risk-tile 17a97fc1403dc35b
+lib/bidding.silas:risk f590b4e05b1a16dd
 lib/bidding.silas:risk-at-most f590b4e05b1a16dd
-lib/bidding.silas:less-at-risk c4997655d43ca6ff
 lib/bidding.silas:eighty-four-shape 552699a7c7b6a348

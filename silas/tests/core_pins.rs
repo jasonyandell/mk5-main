@@ -28,9 +28,14 @@
 //! `repaired/one-off-partner-ruffs` (their texts unchanged). Eleven prelude
 //! definitions were removed (`bid-35-or-more`, `to-set-within-*`,
 //! `*-sets-with-*`).
+//! One pin moved with the computed call (#148): `risk-budget`, its thirteen
+//! levels one rule, held to them on every hand (`tests/bidding.rs`). The
+//! prelude's `risk` (a number) is pinned new; `risk-at-most`, now `(<= (risk
+//! t) n)`, reads to its old core; `less-at-risk` was removed.
 //!
 //! Each prelude definition is pinned by the core of a query that calls it on
-//! roles of its parameters' sorts, so a definition no file calls is pinned too.
+//! roles of its parameters' sorts, so a definition no file calls is pinned too;
+//! a number definition by a comparison that reads it, `(<= (name ...) 5)`.
 //!
 //! On a mismatch the test prints the whole table, to compare by eye. A pin
 //! changes only when a file's meaning is meant to change.
@@ -122,7 +127,17 @@ fn table() -> String {
         writeln!(out, "{name} {:016x}", digest(&core)).unwrap();
     }
     for (name, query) in prelude_calls() {
-        let core = query.parse::<Query>().unwrap().to_string();
+        // A number definition is pinned by a comparison that reads it.
+        let core = query
+            .parse::<Query>()
+            .or_else(|e| match query.split_once("(pattern ") {
+                Some((head, call)) if e.0.contains("is a number, not a clause") => {
+                    format!("{head}(pattern (<= {} 5)))", &call[..call.len() - 2]).parse::<Query>()
+                }
+                _ => Err(e),
+            })
+            .unwrap()
+            .to_string();
         writeln!(out, "{name} {:016x}", digest(&core)).unwrap();
     }
     out

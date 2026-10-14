@@ -86,7 +86,8 @@ struct CompiledScope {
     binder: Binder,
 }
 
-/// A number a comparison reads, as an interval: decided when its bounds meet.
+/// A number a comparison reads, as an interval of integers: decided when its
+/// bounds meet.
 #[derive(Clone)]
 enum CompiledQuantity {
     Number(u64),
@@ -94,6 +95,8 @@ enum CompiledQuantity {
     Function(CompiledAtom),
     Aggregate(CompiledAggregate),
     Sum(Vec<CompiledQuantity>),
+    /// The first part less the rest.
+    Difference(Vec<CompiledQuantity>),
 }
 
 /// `(card ...)` or `(points ...)`. Its value at a frame is a function of
@@ -344,7 +347,7 @@ impl Compiler<'_> {
                 let free = names.iter().map(|n| scope[n].0).collect();
                 CompiledQuantity::Aggregate(CompiledAggregate {
                     points: points.then(|| classes[0]),
-                    shape: crate::syntax::quantity_text(quantity),
+                    shape: crate::syntax::shape_text(quantity, &names),
                     free,
                     id: 0,
                     binder,
@@ -353,6 +356,9 @@ impl Compiler<'_> {
             Quantity::Sum(parts) => {
                 CompiledQuantity::Sum(parts.iter().map(|q| self.quantity(q, scope, span)).collect::<Result<_>>()?)
             }
+            Quantity::Difference(parts) => CompiledQuantity::Difference(
+                parts.iter().map(|q| self.quantity(q, scope, span)).collect::<Result<_>>()?,
+            ),
         })
     }
 }
@@ -364,7 +370,9 @@ impl CompiledQuantity {
             CompiledQuantity::Number(_) => BTreeSet::new(),
             CompiledQuantity::Function(f) => Clause::Atom(f.clone()).vars(),
             CompiledQuantity::Aggregate(a) => a.binder.reads.clone(),
-            CompiledQuantity::Sum(parts) => parts.iter().flat_map(CompiledQuantity::reads).collect(),
+            CompiledQuantity::Sum(parts) | CompiledQuantity::Difference(parts) => {
+                parts.iter().flat_map(CompiledQuantity::reads).collect()
+            }
         }
     }
 }
@@ -380,7 +388,9 @@ fn intern(clauses: &mut [Clause], table: &mut BTreeMap<String, usize>) {
                 a.id = *table.entry(a.shape.clone()).or_insert(next);
                 intern(&mut a.binder.body, table);
             }
-            CompiledQuantity::Sum(parts) => parts.iter_mut().for_each(|p| quantity(p, table)),
+            CompiledQuantity::Sum(parts) | CompiledQuantity::Difference(parts) => {
+                parts.iter_mut().for_each(|p| quantity(p, table));
+            }
         }
     }
     for clause in clauses {
@@ -746,16 +756,29 @@ impl CompiledQuantity {
     fn reads_function(&self) -> bool {
         match self {
             CompiledQuantity::Function(_) => true,
-            CompiledQuantity::Sum(parts) => parts.iter().any(CompiledQuantity::reads_function),
+            CompiledQuantity::Sum(parts) | CompiledQuantity::Difference(parts) => {
+                parts.iter().any(CompiledQuantity::reads_function)
+            }
             CompiledQuantity::Number(_) | CompiledQuantity::Aggregate(_) => false,
+        }
+    }
+
+    /// Whether a difference is part of it: then it may fall as a part
+    /// grows, and no part may stop counting at a cap.
+    fn has_difference(&self) -> bool {
+        match self {
+            CompiledQuantity::Difference(_) => true,
+            CompiledQuantity::Sum(parts) => parts.iter().any(CompiledQuantity::has_difference),
+            CompiledQuantity::Number(_) | CompiledQuantity::Function(_) | CompiledQuantity::Aggregate(_) => false,
         }
     }
 
     /// The interval of values the quantity takes at this binding: exact
     /// unless an aggregate's body is undefined at some binding. With `cap`,
-    /// the low end may stop at the cap once it reaches it. `None` when a
-    /// function in it has no number here (undefined, or holding for none):
-    /// a comparison that reads it is undefined.
+    /// the low end may stop at the cap once it reaches it (only where no
+    /// difference is part of it). `None` when a function in it has no number
+    /// here (undefined, or holding for none): a comparison that reads it is
+    /// undefined.
     fn interval(
         &self,
         cap: Option<u64>,
@@ -763,27 +786,47 @@ impl CompiledQuantity {
         sorts: &[Sort],
         values: &mut [Option<Value>],
         budget: &mut Budget,
-    ) -> Result<Option<(u64, u64)>> {
+    ) -> Result<Option<(i64, i64)>> {
         match self {
-            CompiledQuantity::Number(n) => Ok(Some((*n, *n))),
+            CompiledQuantity::Number(n) => Ok(Some((signed(*n), signed(*n)))),
             CompiledQuantity::Function(f) => Ok(match f.value(cx, values, budget)? {
-                NumberAt::Is(n) => Some((u64::from(n), u64::from(n))),
+                NumberAt::Is(n) => Some((i64::from(n), i64::from(n))),
                 NumberAt::Absent | NumberAt::Undefined => None,
             }),
-            CompiledQuantity::Aggregate(aggregate) => aggregate.interval(cap, cx, sorts, values, budget).map(Some),
+            CompiledQuantity::Aggregate(aggregate) => {
+                let (low, high) = aggregate.interval(cap, cx, sorts, values, budget)?;
+                Ok(Some((signed(low), signed(high))))
+            }
+            CompiledQuantity::Difference(parts) => {
+                // a - b over intervals: the least a less the most b, to the
+                // most a less the least b.
+                let Some((mut low, mut high)) = parts[0].interval(None, cx, sorts, values, budget)? else {
+                    return Ok(None);
+                };
+                for part in &parts[1..] {
+                    let Some((l, h)) = part.interval(None, cx, sorts, values, budget)? else {
+                        return Ok(None);
+                    };
+                    (low, high) = (low - h, high - l);
+                }
+                Ok(Some((low, high)))
+            }
             CompiledQuantity::Sum(parts) => {
                 let (mut low, mut high) = (0, 0);
                 for (i, part) in parts.iter().enumerate() {
-                    let Some((l, h)) = part.interval(cap.map(|c| c.saturating_sub(low)), cx, sorts, values, budget)?
-                    else {
+                    let need = cap.map(|c| c.saturating_sub(u64::try_from(low).unwrap_or(0)));
+                    let Some((l, h)) = part.interval(need, cx, sorts, values, budget)? else {
                         return Ok(None);
                     };
                     (low, high) = (low + l, high + h);
-                    // Every part is nonnegative: each counts only to what
-                    // the sum still needs to reach the cap, and once there
-                    // the sum is decided, unless a function after it has no
-                    // number, which leaves the sum none.
-                    if cap.is_some_and(|c| low >= c) && !parts[i + 1..].iter().any(CompiledQuantity::reads_function) {
+                    // With a cap no part is a difference, so every part is
+                    // nonnegative: each counts only to what the sum still
+                    // needs to reach the cap, and once there the sum is
+                    // decided, unless a function after it has no number,
+                    // which leaves the sum none.
+                    if cap.is_some_and(|c| u64::try_from(low).is_ok_and(|low| low >= c))
+                        && !parts[i + 1..].iter().any(CompiledQuantity::reads_function)
+                    {
                         break;
                     }
                 }
@@ -791,6 +834,11 @@ impl CompiledQuantity {
             }
         }
     }
+}
+
+/// A count or a literal as a signed number: differences may go below zero.
+fn signed(n: u64) -> i64 {
+    i64::try_from(n).expect("a number within i64")
 }
 
 impl CompiledAtMost {
@@ -805,12 +853,15 @@ impl CompiledAtMost {
         values: &mut [Option<Value>],
         budget: &mut Budget,
     ) -> Result<Option<bool>> {
+        // A side that holds a difference is counted whole: a part of it
+        // past a cap could still fall.
+        let capped = !self.left.has_difference() && !self.right.has_difference();
         let (left, right) = match (&self.left, &self.right) {
-            (left, CompiledQuantity::Number(n)) => {
-                (left.interval(Some(n + 1), cx, sorts, values, budget)?, Some((*n, *n)))
+            (left, CompiledQuantity::Number(n)) if capped => {
+                (left.interval(Some(n + 1), cx, sorts, values, budget)?, Some((signed(*n), signed(*n))))
             }
-            (CompiledQuantity::Number(n), right) => {
-                (Some((*n, *n)), right.interval(Some(*n), cx, sorts, values, budget)?)
+            (CompiledQuantity::Number(n), right) if capped => {
+                (Some((signed(*n), signed(*n))), right.interval(Some(*n), cx, sorts, values, budget)?)
             }
             (left, right) => {
                 (left.interval(None, cx, sorts, values, budget)?, right.interval(None, cx, sorts, values, budget)?)
@@ -826,6 +877,76 @@ impl CompiledAtMost {
         } else {
             None
         })
+    }
+}
+
+/// A number read at a query's answers: compiled over the roles of its
+/// outputs, which an answer binds, so it is a function of the answer. A
+/// computed call's number (README, The auction).
+#[derive(Clone)]
+pub struct CompiledNumber {
+    source: Quantity,
+    /// The outputs' classes first, then each aggregate's own.
+    sorts: Vec<Sort>,
+    quantity: CompiledQuantity,
+    specs: Vec<PredicateSpec>,
+}
+
+impl CompiledNumber {
+    /// Compile `quantity` over `over`, the roles an answer binds, in order.
+    /// Every role it names must be one of them.
+    pub fn compile(quantity: &Quantity, over: &[Role], span: &Span, registry: &Registry) -> Result<CompiledNumber> {
+        let mut compiler = Compiler { registry, sorts: Vec::new(), roles: 0, used: BTreeMap::new() };
+        let classes = compiler.declare(over, &[], &Scope::new(), span)?;
+        let scope: Scope = over.iter().zip(&classes).map(|(role, c)| (role.name.clone(), (*c, role.sort))).collect();
+        if let Some(name) = crate::syntax::quantity_names(quantity).into_iter().find(|n| !scope.contains_key(n)) {
+            return Err(at(span, format!("the number reads {name}, which is not an answer of its guard")));
+        }
+        let compiled = compiler.quantity(quantity, &scope, span)?;
+        Ok(CompiledNumber {
+            source: quantity.clone(),
+            sorts: compiler.sorts,
+            quantity: compiled,
+            specs: compiler.used.into_values().collect(),
+        })
+    }
+
+    pub fn source(&self) -> &Quantity {
+        &self.source
+    }
+
+    pub fn predicate_specs(&self) -> &[PredicateSpec] {
+        &self.specs
+    }
+
+    /// Number its aggregates by their texts in `table`, with the queries it
+    /// is evaluated alongside.
+    pub(crate) fn intern(&mut self, table: &mut BTreeMap<String, usize>) {
+        let mut clause = [Clause::AtMost(Box::new(CompiledAtMost {
+            left: self.quantity.clone(),
+            right: CompiledQuantity::Number(0),
+            reads: BTreeSet::new(),
+        }))];
+        intern(&mut clause, table);
+        let [Clause::AtMost(bound)] = clause else { unreachable!("one bound") };
+        self.quantity = bound.left;
+    }
+
+    /// The number's interval at a seat's view of the auction, the outputs
+    /// bound to `answer`; `None` where a function in it has no number.
+    pub(crate) fn at_auction(
+        &self,
+        frame: &AuctionFrame,
+        answer: &[Value],
+        memo: &Memo,
+        budget: &mut Budget,
+    ) -> Result<Option<(i64, i64)>> {
+        let cx = Cx { reader: Reader::Auction(frame), memo };
+        let mut values = vec![None; self.sorts.len()];
+        for (slot, value) in values.iter_mut().zip(answer) {
+            *slot = Some(*value);
+        }
+        self.quantity.interval(None, cx, &self.sorts, &mut values, budget)
     }
 }
 
@@ -990,11 +1111,20 @@ impl CompiledPattern {
         let mut values = vec![None; self.sorts.len()];
         // Constant clauses are checked once; single-variable clauses shrink
         // their variable's domain before the join; the rest are checked as
-        // soon as every role they read is bound.
+        // soon as every role they read is bound. A conjunction's order is
+        // not its meaning: atoms first, then comparisons, then scopes, the
+        // likely cheaper first, so a scope runs only where the rest hold.
         let mut constant = Vec::new();
         let mut unary = vec![Vec::new(); self.outer];
         let mut joined = Vec::new();
-        for (i, clause) in self.clauses.iter().enumerate() {
+        let rank = |c: &Clause| match c {
+            Clause::Atom(_) => 0,
+            Clause::AtMost(_) => 1,
+            Clause::Scope(_) => 2,
+        };
+        let mut order: Vec<usize> = (0..self.clauses.len()).collect();
+        order.sort_by_key(|i| rank(&self.clauses[*i]));
+        for (i, clause) in order.into_iter().map(|i| (i, &self.clauses[i])) {
             let vars = clause.vars();
             match (vars.len(), vars.first()) {
                 (0, _) => constant.push(i),

@@ -16,12 +16,12 @@ use std::str::FromStr;
 
 use crate::auction::{Auction, AuctionConfig, AuctionFrame, Call};
 use crate::dominance::Dominance;
-use crate::eval::{Budget, CompiledQuery, Memo, Witness};
+use crate::eval::{Budget, CompiledNumber, CompiledQuery, Memo, Witness};
 use crate::frame::{Bid, Frame};
 use crate::nouns::{Context, Domino, DominoSet, Pip, Seat};
 use crate::physics::Physics;
 use crate::registry::{Phase, Registry};
-use crate::syntax::{Expr, Library, Query, Sort, Span, Value, valid_name};
+use crate::syntax::{Expr, Library, Quantity, Query, Sort, Span, Value, quantity_names, quantity_text, valid_name};
 use crate::{Error, Result, error};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -88,6 +88,11 @@ pub enum Selector {
     Call(Call),
     /// Bidding: the least legal bid, when the guard holds.
     LeastRaise,
+    /// Bidding: a computed call. At each answer of the guard (its outputs
+    /// are the roles the number names) the number is a bid, where it is one
+    /// value and the table calls that value a legal bid; the rule allows
+    /// those bids, and calls the least.
+    Computed(Quantity),
     /// Declaring: a declaration offered, when the guard holds.
     Declare(Declared),
 }
@@ -166,6 +171,8 @@ pub struct CompiledPolicy {
     exact: BTreeMap<PolicyKey, Domino>,
     rules: Vec<(PolicyRule, CompiledQuery)>,
     bidding: Vec<(PolicyRule, CompiledQuery)>,
+    /// Each bidding rule's computed call, if it has one.
+    priced: Vec<Option<CompiledNumber>>,
     declaring: Vec<(PolicyRule, CompiledQuery)>,
 }
 
@@ -238,44 +245,55 @@ impl PolicyProgram {
             }
         }
         let mut names = BTreeSet::new();
-        let mut section = |rules: &[PolicyRule], section: Section| -> Result<Vec<(PolicyRule, CompiledQuery)>> {
+        type Compiled = (PolicyRule, CompiledQuery, Option<CompiledNumber>);
+        let mut section = |rules: &[PolicyRule], section: Section| -> Result<Vec<Compiled>> {
             rules.iter().map(|rule| compile_rule(rule, section, registry, &mut names)).collect()
         };
-        let mut rules = section(&self.rules, Section::Play)?;
-        let mut bidding = section(&self.bidding, Section::Bidding)?;
-        let mut declaring = section(&self.declaring, Section::Declaring)?;
+        let unpriced = |compiled: Vec<Compiled>| -> Vec<(PolicyRule, CompiledQuery)> {
+            compiled.into_iter().map(|(r, q, _)| (r, q)).collect()
+        };
+        let mut rules = unpriced(section(&self.rules, Section::Play)?);
+        let (mut bidding, mut priced): (Vec<_>, Vec<_>) =
+            section(&self.bidding, Section::Bidding)?.into_iter().map(|(r, q, n)| ((r, q), n)).unzip();
+        let mut declaring = unpriced(section(&self.declaring, Section::Declaring)?);
         // A decision evaluates a section's guards at one frame: an aggregate
-        // written alike in two rules is counted once.
+        // written alike in two rules (or in a rule and its computed call) is
+        // counted once.
         let mut shapes = BTreeMap::new();
         for (_, guard) in rules.iter_mut().chain(&mut bidding).chain(&mut declaring) {
             guard.intern(&mut shapes);
+        }
+        for number in priced.iter_mut().flatten() {
+            number.intern(&mut shapes);
         }
         let mut identity = format!("silas-policy-v3\n{self}");
         for (_, query) in rules.iter().chain(&bidding).chain(&declaring) {
             identity.push_str("\nrule-query: ");
             identity.push_str(&query.identity());
         }
-        Ok(CompiledPolicy { identity, source: self.clone(), exact, rules, bidding, declaring })
+        Ok(CompiledPolicy { identity, source: self.clone(), exact, rules, bidding, priced, declaring })
     }
 }
 
 /// One rule, checked against its section: a name of its own, a guard of
 /// viewer predicates defined at the section's frames, and as many outputs as
 /// its selector reads (one domino for a play's `answer`, one context for a
-/// declaring `answer`, none otherwise).
+/// declaring `answer`, the roles a computed call's number names, none
+/// otherwise). A computed call's number is compiled over those outputs, and
+/// held to the guard's terms.
 fn compile_rule(
     rule: &PolicyRule,
     section: Section,
     registry: &Registry,
     names: &mut BTreeSet<String>,
-) -> Result<(PolicyRule, CompiledQuery)> {
+) -> Result<(PolicyRule, CompiledQuery, Option<CompiledNumber>)> {
     if !valid_name(&rule.name) || LAYERS.contains(&rule.name.as_str()) || !names.insert(rule.name.clone()) {
         return Err(rule.span.error(format!("invalid, reserved or duplicate policy rule {}", rule.name)));
     }
     let fits = matches!(
         (&rule.selector, section),
         (Selector::FirstOutput | Selector::Literal(_), Section::Play)
-            | (Selector::Call(_) | Selector::LeastRaise, Section::Bidding)
+            | (Selector::Call(_) | Selector::LeastRaise | Selector::Computed(_), Section::Bidding)
             | (Selector::Declare(_), Section::Declaring)
     );
     if !fits {
@@ -287,7 +305,23 @@ fn compile_rule(
         )));
     }
     let guard = rule.guard.compile(registry)?;
-    if let Some(spec) = guard.predicate_specs().iter().find(|spec| spec.access.reads_world()) {
+    let number = match &rule.selector {
+        Selector::Computed(quantity) => {
+            let read = quantity_names(quantity);
+            let outputs: BTreeSet<String> = guard.outputs().iter().map(|r| r.name.clone()).collect();
+            if read != outputs {
+                return Err(rule.span.error(format!(
+                    "rule {}'s guard must answer the roles its call reads, {}",
+                    rule.name,
+                    if read.is_empty() { "none".to_owned() } else { read.into_iter().collect::<Vec<_>>().join(" ") }
+                )));
+            }
+            Some(CompiledNumber::compile(quantity, guard.outputs(), &rule.span, registry)?)
+        }
+        _ => None,
+    };
+    let specs = guard.predicate_specs().iter().chain(number.iter().flat_map(|n| n.predicate_specs()));
+    if let Some(spec) = specs.clone().find(|spec| spec.access.reads_world()) {
         return Err(rule.span.error(format!(
             "rule {} uses the {} {}; a policy sees only its viewer{}",
             rule.name,
@@ -296,7 +330,7 @@ fn compile_rule(
             spec.access.fence()
         )));
     }
-    if let Some(spec) = guard.predicate_specs().iter().find(|spec| !spec.phase.reads(section.phase())) {
+    if let Some(spec) = specs.clone().find(|spec| !spec.phase.reads(section.phase())) {
         return Err(rule.span.error(format!(
             "rule {} is a {} rule and uses {}, a predicate of {}",
             rule.name,
@@ -308,6 +342,7 @@ fn compile_rule(
     let output = match &rule.selector {
         Selector::FirstOutput => Some(Sort::Domino),
         Selector::Declare(Declared::Answer) => Some(Sort::Context),
+        Selector::Computed(_) => return Ok((rule.clone(), guard, number)),
         _ => None,
     };
     if guard.outputs().len() != usize::from(output.is_some()) {
@@ -322,7 +357,7 @@ fn compile_rule(
     {
         return Err(rule.span.error(format!("rule {}'s answer must be a {sort}", rule.name)));
     }
-    Ok((rule.clone(), guard))
+    Ok((rule.clone(), guard, None))
 }
 
 /// Rebuild the key's frame under the key's physics.
@@ -424,8 +459,9 @@ impl CompiledPolicy {
 
     /// The call the policy makes at `frame`, where its viewer is to call: the
     /// first bidding rule whose guard holds and whose call is legal (a
-    /// `least-raise` rule's call is the least legal bid), else the least legal
-    /// call. A function of the auction frame alone.
+    /// `least-raise` rule's call is the least legal bid; a computed call's,
+    /// the least legal bid its number gives at an answer), else the least
+    /// legal call. A function of the auction frame alone.
     pub fn bid(&self, frame: &AuctionFrame, budget: &mut Budget) -> Result<Choice<Call>> {
         self.bid_explained(frame, budget, false)
     }
@@ -442,17 +478,40 @@ impl CompiledPolicy {
         }
         let legal = auction.legal_calls();
         let memo = Memo::default();
-        for (rule, guard) in &self.bidding {
-            if guard.evaluate_auction_with(frame, &memo, budget)?.is_empty() {
+        for ((rule, guard), number) in self.bidding.iter().zip(&self.priced) {
+            let answers = guard.evaluate_auction_with(frame, &memo, budget)?;
+            if answers.is_empty() {
                 continue;
             }
-            let call = match rule.selector {
-                Selector::Call(call) => Some(call).filter(|c| legal.contains(c)),
-                Selector::LeastRaise => auction.least_raise().map(Call::Bid),
+            let call = match (&rule.selector, number) {
+                (Selector::Call(call), _) => Some(*call).filter(|c| legal.contains(c)),
+                (Selector::LeastRaise, _) => auction.least_raise().map(Call::Bid),
+                (Selector::Computed(_), Some(number)) => {
+                    let mut least: Option<Call> = None;
+                    for answer in &answers {
+                        if let Some(call) =
+                            priced_call(number, frame, &answer.0, &memo, budget)?.filter(|c| legal.contains(c))
+                        {
+                            least = Some(least.map_or(call, |l| l.min(call)));
+                        }
+                    }
+                    least
+                }
                 _ => unreachable!("a bidding rule selects a call"),
             };
             if let Some(call) = call {
-                return chosen(call, rule, guard, frame, budget, explain);
+                let mut choice = chosen(call, rule, guard, frame, budget, explain)?;
+                if let Some(number) = number {
+                    // The witnesses of the answers that call it.
+                    let mut kept = Vec::new();
+                    for (answer, witness) in choice.witnesses {
+                        if priced_call(number, frame, &answer, &memo, budget)? == Some(call) {
+                            kept.push((answer, witness));
+                        }
+                    }
+                    choice.witnesses = kept;
+                }
+                return Ok(choice);
             }
         }
         let least = *legal.first().ok_or_else(|| error("no call is legal"))?;
@@ -551,6 +610,26 @@ impl CompiledPolicy {
         };
         Ok((answers, tiles))
     }
+}
+
+/// The call a computed number gives at one answer: the bid the table calls
+/// its value, where it has one value and that value names a bid (30 to 41
+/// points, or 42 a mark); else none.
+fn priced_call(
+    number: &CompiledNumber,
+    frame: &AuctionFrame,
+    answer: &[Value],
+    memo: &Memo,
+    budget: &mut Budget,
+) -> Result<Option<Call>> {
+    Ok(match number.at_auction(frame, answer, memo, budget)? {
+        Some((low, high)) if low == high => u32::try_from(low)
+            .ok()
+            .filter(|n| *n >= crate::auction::MIN_BID)
+            .and_then(|n| Bid::number(n).ok())
+            .map(Call::Bid),
+        _ => None,
+    })
 }
 
 /// A rule's decision at the auction, with its witnesses when asked for.
@@ -680,31 +759,40 @@ impl PolicyProgram {
     }
 }
 
-/// What a short form's head selects, and the output it names, if any.
-type ShortForm = (Selector, Option<Expr>);
+/// What a short form's head selects, and the outputs it names.
+type ShortForm = (Selector, Vec<Expr>);
 
 /// The short form `(play x)`, `(bid c)` or `(declare k)` of `section`'s
 /// rules: `(play x)`, `x` a name, is `(select answer)` answering `x`; `(play
-/// D)` is `(select tile D)`; `(bid c)` is `(select bid c)`; `(declare t)`, `t`
-/// a name, is `(select declare answer)` answering `t`, and `(declare k)` with
-/// `k` a pip suit (`q0` to `q6`), `doubles` or `no-trump` is `(select declare
-/// k)`.
-fn short_form(head: &Expr, section: Section) -> Result<ShortForm> {
+/// D)` is `(select tile D)`; `(bid c)` is `(select bid c)`, and `(bid N)`, `N`
+/// a number, is `(select bid N)` answering the roles `N` names, in order of
+/// first use (its number is read once the guard's roles are known);
+/// `(declare t)`, `t` a name, is `(select declare answer)` answering `t`,
+/// and `(declare k)` with `k` a pip suit (`q0` to `q6`), `doubles` or
+/// `no-trump` is `(select declare k)`.
+fn short_form(library: &Library, head: &Expr, section: Section) -> Result<ShortForm> {
     let tag = head.head().expect("a short form has a head");
     let [action] = head.tagged(tag)? else {
         return Err(head.span.error(format!("{tag} takes one value")));
     };
+    if (tag, section) == ("bid", Section::Bidding) && action.word().is_err() {
+        let at = &action.span;
+        let read = Expr::list_at(vec![Expr::word_at("<=", at), action.clone(), Expr::word_at("0", at)], at);
+        let uses = library.uses(&[std::slice::from_ref(&read)])?;
+        let outputs = uses.names().iter().map(|n| Expr::word_at(n, at)).collect();
+        return Ok((Selector::Computed(Quantity::Number(0)), outputs));
+    }
     let word = action.word()?;
-    let named = || Some(action.clone());
+    let named = || vec![action.clone()];
     match (tag, section) {
         ("play", Section::Play) => match Value::literal(word) {
-            Some(Value::Domino(tile)) => Ok((Selector::Literal(tile), None)),
+            Some(Value::Domino(tile)) => Ok((Selector::Literal(tile), vec![])),
             Some(_) => Err(action.span.error(format!("{word} is not a domino or a name to play"))),
             None => Ok((Selector::FirstOutput, named())),
         },
-        ("bid", Section::Bidding) => Ok((bid_choice(action)?, None)),
+        ("bid", Section::Bidding) => Ok((bid_choice(action)?, vec![])),
         ("declare", Section::Declaring) => match declared(action) {
-            Ok(kind) => Ok((Selector::Declare(kind), None)),
+            Ok(kind) => Ok((Selector::Declare(kind), vec![])),
             Err(_) if Value::literal(word).is_none() && word != "answer" => {
                 Ok((Selector::Declare(Declared::Answer), named()))
             }
@@ -712,6 +800,12 @@ fn short_form(head: &Expr, section: Section) -> Result<ShortForm> {
         },
         _ => Err(head.span.error(format!("({tag} ...) is not a {} rule's short form", section.name()))),
     }
+}
+
+/// A computed call's number, read with the roles of its guard.
+fn computed(library: &Library, number: &Expr, guard: &Query) -> Result<Selector> {
+    let names = guard.roles.iter().map(|r| (r.name.clone(), r.sort)).collect();
+    Ok(Selector::Computed(library.quantity(number, &names)?))
 }
 
 /// A bid choice: a bid as the table says it, `pass`, or `least-raise`.
@@ -760,45 +854,46 @@ fn rule(library: &Library, form: &Expr, section: Section) -> Result<PolicyRule> 
     if let Some((head, rest)) =
         fields.split_first().filter(|(f, _)| matches!(f.head(), Some("play" | "bid" | "declare")))
     {
-        let (selector, output) = short_form(head, section)?;
+        let (selector, outputs) = short_form(library, head, section)?;
         let at = &form.span;
         let (roles, rest) = match rest.split_first() {
             Some((roles, tail)) if roles.head() == Some("roles") => (vec![roles.clone()], tail),
             _ => (vec![], rest),
         };
-        let out = Expr::list_at([vec![Expr::word_at("out", at)], output.into_iter().collect()].concat(), at);
+        let out = Expr::list_at([vec![Expr::word_at("out", at)], outputs].concat(), at);
         let query = Expr::list_at([vec![Expr::word_at("query", at)], roles, vec![out], rest.to_vec()].concat(), at);
-        return Ok(PolicyRule {
-            name: name.word()?.to_owned(),
-            selector,
-            guard: Query::from_expr(library, &query)?,
-            span: form.span.clone(),
-        });
+        let guard = Query::from_expr(library, &query)?;
+        let selector = match selector {
+            Selector::Computed(_) => computed(library, &head.tagged("bid")?[0], &guard)?,
+            selector => selector,
+        };
+        return Ok(PolicyRule { name: name.word()?.to_owned(), selector, guard, span: form.span.clone() });
     }
     if fields.len() != 2 || fields.iter().any(|f| !matches!(f.head(), Some("select" | "guard"))) {
         return Err(form.span.error("rule syntax is (rule name (select ...) (guard (query ...))), with no modes"));
     }
     let select = fields.iter().find(|f| f.head() == Some("select")).expect("a select form");
     let words = select.tagged("select")?;
+    let guard = Query::from_expr(library, one(fields, "guard", &form.span)?)?;
     let selector = match (section, words) {
         (Section::Play, [answer]) if answer.word()? == "answer" => Selector::FirstOutput,
         (Section::Play, [tile, d]) if tile.word()? == "tile" => Selector::Literal(parse(d, "selector domino")?),
         (Section::Play, _) => return Err(select.span.error("a play rule selects answer, or tile D")),
+        (Section::Bidding, [bid, choice]) if bid.word()? == "bid" && choice.word().is_err() => {
+            computed(library, choice, &guard)?
+        }
         (Section::Bidding, [bid, choice]) if bid.word()? == "bid" => bid_choice(choice)?,
         (Section::Bidding, _) => {
-            return Err(select.span.error("a bidding rule selects bid N, bid pass or bid least-raise"));
+            return Err(select
+                .span
+                .error("a bidding rule selects bid N, bid pass, bid least-raise or bid (number), a computed call"));
         }
         (Section::Declaring, [declare, kind]) if declare.word()? == "declare" => Selector::Declare(declared(kind)?),
         (Section::Declaring, _) => {
             return Err(select.span.error("a declaring rule selects declare answer, q0 to q6, doubles or no-trump"));
         }
     };
-    Ok(PolicyRule {
-        name: name.word()?.to_owned(),
-        selector,
-        guard: Query::from_expr(library, one(fields, "guard", &form.span)?)?,
-        span: form.span.clone(),
-    })
+    Ok(PolicyRule { name: name.word()?.to_owned(), selector, guard, span: form.span.clone() })
 }
 
 /// A Silas text: a query or a policy, after its `include` and `define`
@@ -847,6 +942,7 @@ impl fmt::Display for Choose<'_> {
             Selector::Literal(d) => write!(f, "tile {d}"),
             Selector::Call(call) => write!(f, "bid {call}"),
             Selector::LeastRaise => f.write_str("bid least-raise"),
+            Selector::Computed(number) => write!(f, "bid {}", quantity_text(number)),
             Selector::Declare(Declared::Answer) => f.write_str("declare answer"),
             Selector::Declare(Declared::Suit(p)) => write!(f, "declare q{p}"),
             Selector::Declare(Declared::Doubles) => f.write_str("declare doubles"),

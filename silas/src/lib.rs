@@ -60,7 +60,7 @@ pub use dynamics::{
     AnswerDynamics, BeliefStep, ObservedPlay, PlayClass, anchor_back, compare_answers, play_is_legal, step_belief,
     step_belief_given, step_frame, step_world, transport_answers,
 };
-pub use eval::{Answer, Answers, Budget, CompiledQuery, Witness};
+pub use eval::{Answer, Answers, Budget, CompiledNumber, CompiledQuery, Witness};
 pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
 pub use lint::Warning;
 pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};

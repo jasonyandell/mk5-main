@@ -11,7 +11,8 @@
 ; Aggregates): (card (roles d) ...) is how many of the viewer's tiles fit,
 ; (points (roles c) ...) the count they carry, each over his own hand and the
 ; tiles' faces, so always decided. A bound is a literal, passed to a
-; definition's (number n) parameter.
+; definition's (number n) parameter. A definition whose body is one number is
+; that number, read wherever a number is: (risk t) is the points at risk.
 
 (include book)
 
@@ -103,27 +104,17 @@
     (and (bears c t) (not (suit-double t)))
     (and (not (bears c t)) (some (roles o p) (off-under o t) (high-pip o p) (bears c p)))))
 
-; The points at risk under trump t are at most n: the count at risk, a trick
-; for each off, and a trick without the trump double.
-(define risk-at-most (roles (context t) (number n))
-  (<=
-    (+
-      (points (roles c) (risk-tile c t))
-      (card (roles o) (off-under o t))
-      (card (roles) (not (suit-double t))))
-    n))
+; The points at risk under trump t, a number: the count at risk, a trick for
+; each off, and a trick without the trump double.
+(define risk (roles (context t))
+  (+
+    (points (roles c) (risk-tile c t))
+    (card (roles o) (off-under o t))
+    (card (roles) (not (suit-double t)))))
 
-; Less is at risk under trump u than under trump t.
-(define less-at-risk (roles (context u) (context t))
-  (<
-    (+
-      (points (roles c) (risk-tile c u))
-      (card (roles o) (off-under o u))
-      (card (roles) (not (suit-double u))))
-    (+
-      (points (roles c) (risk-tile c t))
-      (card (roles o) (off-under o t))
-      (card (roles) (not (suit-double t))))))
+; The points at risk under trump t are at most n.
+(define risk-at-most (roles (context t) (number n))
+  (<= (risk t) n))
 
 ; -- The book's 84 (S-0083-a): three or four trumps, the trump double among
 ; them, two or three doubles besides, and at most one off, under its own

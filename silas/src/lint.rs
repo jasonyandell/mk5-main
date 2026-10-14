@@ -125,7 +125,7 @@ fn aggregates(quantity: &Quantity) -> Vec<(&Aggregate, bool)> {
         Quantity::Number(_) | Quantity::Parameter(_) | Quantity::Function(_) => vec![],
         Quantity::Card(a) => vec![(a, false)],
         Quantity::Points(a) => vec![(a, true)],
-        Quantity::Sum(parts) => parts.iter().flat_map(aggregates).collect(),
+        Quantity::Sum(parts) | Quantity::Difference(parts) => parts.iter().flat_map(aggregates).collect(),
     }
 }
 
@@ -133,7 +133,7 @@ fn aggregates(quantity: &Quantity) -> Vec<(&Aggregate, bool)> {
 fn applies(quantity: &Quantity, name: &str) -> bool {
     match quantity {
         Quantity::Function(f) => f.args.contains(&Term::Role(name.to_owned())),
-        Quantity::Sum(parts) => parts.iter().any(|p| applies(p, name)),
+        Quantity::Sum(parts) | Quantity::Difference(parts) => parts.iter().any(|p| applies(p, name)),
         Quantity::Number(_) | Quantity::Parameter(_) | Quantity::Card(_) | Quantity::Points(_) => false,
     }
 }

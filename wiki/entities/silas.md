@@ -456,8 +456,36 @@ the two agree by construction. Comparisons chain as Lisp's do, `(<= 1 (to-set) 6
   `setter-leads`, the prelude's `every-trick` and `lead-sets`, and the eight readers of
   `every-trick` (texts unchanged); eleven prelude definitions were removed. Listed in
   `silas/tests/core_pins.rs`; `risk-budget` and every other pin unchanged.
-- **Not moved.** `risk-budget` stays a rule per level: it jumps (bids 42 less the risk), so
-  the number is in the call, not the guard; one rule needs a computed call (#148).
+- **Not moved then.** `risk-budget` stayed a rule per level: it jumps (bids 42 less the
+  risk), so the number is in the call, not the guard (closed by the computed call, below).
+
+## The computed call (2026-10-14)
+
+A bidding rule's call may be a number of its guard's answer (#148; `silas/README.md` § The
+auction): `(rule priced (bid (- 42 (risk t))) (least t (risk t) (suit-at-least t 3)) (<=
+(risk t) 12))`. `risk-budget`'s thirteen levels are that one rule.
+
+- **Semantics.** The guard answers the roles the number names; at each answer the number is
+  a bid where it is one value the table calls a legal bid, and the rule calls the least
+  such, as a play rule plays the least tile it allows. It is the literal rule `(bid n)` with
+  `(= N n)` added to its guard, for each legal `n`.
+- **Legality: pass, never clamp.** A number that names no bid, no legal bid, or has no value
+  gives no call, and the rule passes to the next, as a literal level over a higher bid does.
+  Clamping to the least legal bid would bid what the hand is not worth; passing is what the
+  levels said, and the later rules and the fallback keep the policy total.
+- **Numbers.** Two additions: the difference `(- a b ...)`, an interval over the integers
+  (it may fall below zero; no part of it is counted only to a cap), and a definition whose
+  body is one number, called where a number goes: the prelude's `(risk t)`, spelled once
+  where the risk was spelled twice; `less-at-risk` is gone.
+- **Proof.** Every call at every least raise (30 to 42, 84, 126, 168, none left) and every
+  declaration won at 30, 42 and 84, pinned equal to the thirteen literal levels' on all
+  1,184,040 hands, the old text held to its old pinned core (`silas/tests/bidding.rs`);
+  the semantics case by case in `silas/tests/computed.rs`.
+- **Pins.** `risk-budget`'s moved; the prelude's `risk` is new and `less-at-risk` removed;
+  `risk-at-most` and every other pin unchanged (`silas/tests/core_pins.rs`).
+- **Elsewhere.** No other policy computes a call: `never-32-or-33` would need a maximum
+  (`(max 34 (least-raise))`) and stays two rules; `marginal-30` could read `(<= 13 (risk t)
+  14)`, a re-pin for wording alone, not taken.
 
 ## Where it sits
 

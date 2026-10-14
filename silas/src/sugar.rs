@@ -323,7 +323,7 @@ impl Uses {
                 self.seen(name);
                 self.sorts.get_mut(name.as_str()).expect("seen").push((Sort::Number, q.span.clone()));
             }
-            (Kind::List(items), Some("+")) => {
+            (Kind::List(items), Some("+" | "-")) => {
                 for p in &items[1..] {
                     self.quantity(p, bound, signature)?;
                 }

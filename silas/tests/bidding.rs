@@ -577,6 +577,138 @@ fn a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did() {
 /// lines, from the rules of literal ranges.
 const PINNED_RAISES: u64 = 0x51e1_17e1_0ab5_8281;
 
+/// `risk-budget` as written before the computed call (#148): a rule per
+/// level, 42 down to 30, each its own literal call, and the prelude's
+/// `less-at-risk` it declared by (gone from the prelude since; `(< (risk u)
+/// (risk t))` says it).
+const LITERAL_LEVELS: &str = "(include bidding)
+    (define less-at-risk (roles (context u) (context t))
+      (<
+        (+
+          (points (roles c) (risk-tile c u))
+          (card (roles o) (off-under o u))
+          (card (roles) (not (suit-double u))))
+        (+
+          (points (roles c) (risk-tile c t))
+          (card (roles o) (off-under o t))
+          (card (roles) (not (suit-double t))))))
+    (policy risk-budget
+      (bidding
+        (rule eighty-four (bid 84)
+          (some (roles t) (eighty-four-shape t)))
+        (rule one-mark (bid 42)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 0)))
+        (rule bid-41 (bid 41)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 1)))
+        (rule bid-40 (bid 40)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 2)))
+        (rule bid-39 (bid 39)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 3)))
+        (rule bid-38 (bid 38)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 4)))
+        (rule bid-37 (bid 37)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 5)))
+        (rule bid-36 (bid 36)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 6)))
+        (rule bid-35 (bid 35)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 7)))
+        (rule bid-34 (bid 34)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 8)))
+        (rule bid-33 (bid 33)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 9)))
+        (rule bid-32 (bid 32)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 10)))
+        (rule bid-31 (bid 31)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 11)))
+        (rule bid-30 (bid 30)
+          (some (roles t) (suit-at-least t 3) (risk-at-most t 12)))
+        (rule two-offs-at-17 (bid 30)
+          (some (roles t) (suit-at-least t 3) (not (offs-at-most t 1)) (risk-at-most t 17))))
+      (declaring
+        (rule the-eighty-four-suit (declare t)
+          (viewer v)
+          (bid-of v 84)
+          (eighty-four-shape t))
+        (rule least-at-risk (declare t)
+          (suit-at-least t 3)
+          (risk-at-most t 12)
+          (none (roles u) (suit-at-least u 3) (less-at-risk u t)))
+        (rule at-risk-17 (declare t)
+          (suit-at-least t 3)
+          (risk-at-most t 17))))";
+
+/// The calls of `policy` on `hand` at each of `auctions`, and its
+/// declarations won at 30, at 42 and at 84, in one line.
+fn calls_and_declarations(
+    policy: &CompiledPolicy,
+    auctions: &[Auction],
+    menu: &Arc<[Physics]>,
+    hand: DominoSet,
+) -> String {
+    let mut line = raises(std::slice::from_ref(policy), auctions, menu, hand);
+    for bid in [Bid::Points(30), Bid::Marks(1), Bid::Marks(2)] {
+        let declared = policy.declare(&won(Seat::S2, hand, bid, menu), &mut unlimited()).unwrap().choice;
+        line += &format!("P{} ", pip_of(&declared));
+    }
+    line
+}
+
+#[test]
+fn risk_budget_computes_its_call_as_its_thirteen_levels_did() {
+    // risk-budget's one priced rule, (bid (- 42 (risk t))) on the least at
+    // risk, and its declarations, on every hand at every least raise (30 to
+    // 42, 84, 126, 168 and none left) and won at 30, 42 and 84: one digest of
+    // one line a hand, taken from the thirteen literal levels it replaces
+    // (`LITERAL_LEVELS`), which are run again on every 97th hand. About
+    // two and a half minutes on 18 cores (the literal levels take three): it
+    // is the proof, 24 million decisions, and the only one at every raise.
+    let auctions = every_least_raise();
+    let menu = arena_menu();
+    let new = policy("risk-budget.silas");
+    let old = PolicyProgram::parse(LITERAL_LEVELS, "literal levels")
+        .unwrap()
+        .compile(&Registry::standard(), &physics("P6"))
+        .unwrap();
+    // The literal levels are the old file's core, as pinned before #148.
+    assert_eq!(fnv1a(old.source().to_string().as_bytes()), 0xe5bf_4c07_ddfe_e065);
+    let hands: Vec<DominoSet> = every_hand().collect();
+    for hand in hands.iter().step_by(97) {
+        assert_eq!(
+            calls_and_declarations(&new, &auctions, &menu, *hand),
+            calls_and_declarations(&old, &auctions, &menu, *hand),
+            "{hand:?}"
+        );
+    }
+    let started = Instant::now();
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let lines: Vec<String> = std::thread::scope(|s| {
+        let handles: Vec<_> = hands
+            .chunks(hands.len().div_ceil(threads))
+            .map(|part| {
+                let (new, auctions, menu) = (&new, &auctions, &menu);
+                s.spawn(move || {
+                    part.iter().map(|hand| calls_and_declarations(new, auctions, menu, *hand)).collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
+    });
+    println!("risk-budget at every least raise: {} hands in {:?} on {threads} threads", lines.len(), started.elapsed());
+    assert_eq!(lines.len(), 1_184_040);
+    let mut calls: BTreeMap<&str, usize> = BTreeMap::new();
+    for line in &lines {
+        *calls.entry(line).or_default() += 1;
+    }
+    println!("{} distinct lines", calls.len());
+    let digest = fnv1a(lines.join("\n").as_bytes());
+    println!("digest {digest:#018x}; first line: {}", lines[0]);
+    assert_eq!(digest, PINNED_LEVELS);
+}
+
+/// The digest of [`risk_budget_computes_its_call_as_its_thirteen_levels_did`]'s
+/// lines, from the thirteen literal levels.
+const PINNED_LEVELS: u64 = 0xe811_d0a0_6259_d24f;
+
 // ------------------------------------------------------------- measurability
 
 #[test]

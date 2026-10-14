@@ -282,15 +282,31 @@ Diagnostics), the friction met writing the bidders of issue 141:
   `examples/populations/` and one command.
 
 **Prelude: what is still a family of literals.** Every bound of the bidding prelude takes a
-`(number n)` (`risk-at-most t 14` needs no definition of its own), and the frame's own
-numbers are functions now (closed below, #144). What remains literal is the call: a rule
-bids a literal, `pass` or the least raise, so `risk-budget`'s "bid 42 less the risk" is
-still a rule per level (thirteen). One rule would need a computed call, a bid that is a
-number of the guard's answer (`(bid (- 42 (risk t)))` with `t` the least at risk), which is
-a change to policies, not to queries (#148). The book prelude's `four-trumps-or-more` and
-`exactly-*-trumps` predate the aggregate and are scopes of distinct roles; restating them as a
+`(number n)` (`risk-at-most t 14` needs no definition of its own), the frame's own numbers
+are functions (#144), and the call is a number (closed below, #148). The book prelude's
+`four-trumps-or-more` and `exactly-*-trumps` predate the aggregate and are scopes of distinct roles; restating them as a
 `card` reads alike but changes the pinned cores of every rule that calls them, so they wait
 for a deliberate re-pin with a proof of equal meaning, as the bidding prelude had.
+
+Closed by the computed call (#148, 2026-10-14; README, The auction): a bidding rule's call
+may be a number of its guard's answer, `(rule priced (bid (- 42 (risk t))) (least t (risk t)
+(suit-at-least t 3)) (<= (risk t) 12))`. At each answer the number is a bid where it is one
+value the table calls a legal bid; the rule calls the least such, and where none is (no
+bid, not legal, no value) it passes to the next rule, as a literal level does: it never
+clamps. Two additions to the numbers went with it: the difference `(- a b ...)`, an
+interval over the integers (a part of a difference is never counted only to a cap), and a
+definition whose body is one number, called where a number goes (`(risk t)`, so the risk is
+spelled once in the prelude where it was spelled twice; `less-at-risk` is gone, `(< (risk
+u) (risk t))` says it). What it moved:
+- `risk-budget`'s thirteen levels are one rule; its calls at every least raise and its
+  declarations won at 30, 42 and 84 are pinned equal to the literal levels' on all 1,184,040
+  hands (`tests/bidding.rs`), and the old text is held to the old pinned core;
+- its pin moved (`tests/core_pins.rs`), the prelude's `risk` is pinned new, `less-at-risk`
+  is removed; `risk-at-most` and every other pin, `marginal-30` among them, are unchanged.
+Not moved: `never-32-or-33` bids 34 over a 32 or 33 and the least raise else, a call that
+is a function of the least raise but not one number of it without a maximum (`(max 34
+(least-raise))`); its two rules are honest as they stand. `marginal-30` could say `(<= 13
+(risk t) 14)` for its two `risk-at-most` clauses, a re-pin for wording alone.
 
 Closed by functions as numbers (#144, 2026-10-14; README, Semantics and Short forms): a
 predicate functional in its last argument, a number (`to-set`, `to-make`, `bid`, `stake`,

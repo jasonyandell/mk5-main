@@ -46,6 +46,7 @@ reads and nothing else: 27 points.
 ```text
 file     := form ... final
 form     := (include library) | (define name (roles param ...) clause ...)
+          | (define name (roles param ...) number)      ; a number of its own
 final    := query | policy                ; a dominance is its own file (The match)
 query    := (query (roles role ...) (out name ...) pattern ...)
 role     := (sort name)
@@ -60,7 +61,9 @@ atom     := (predicate argument ...) | (definition argument ...)
 argument := name | literal
 number   := n | (card (roles role ...) clause ...)
           | (points (roles (domino d)) clause ...) | (+ number ...)
+          | (- number number ...)      ; the first less the rest, below zero too
           | (function argument ...)    ; a functional predicate, its number left out
+          | (definition argument ...)  ; a definition of one number
 ```
 
 Names begin with an ASCII letter and continue with letters, digits, `_` or
@@ -223,10 +226,14 @@ transcription would check it against.
   distinctness of their own) and renames the body's scope roles apart from
   the names around the call. Called positively, the body's clauses join the
   caller's; negated, the body becomes a `none` (or a negated atom, when it is
-  one atom). Definitions are expanded when text is read: a parsed query holds
-  only primitives, prints in them, and its identity is theirs. The short
-  forms (Queries, above) are read away the same way and are not part of
-  this semantics.
+  one atom). A definition whose body is one number (a literal, a sum or a
+  difference, an aggregate, a function, or another such definition's call)
+  names that number instead, and its call stands where a number does, never
+  as a clause: the prelude's `(risk t)` is the points at risk under `t`, and
+  `risk-at-most` is `(<= (risk t) n)`. Definitions are expanded when text is
+  read: a parsed query holds only primitives, prints in them, and its
+  identity is theirs. The short forms (Queries, above) are read away the
+  same way and are not part of this semantics.
 - **Aggregates are intervals.** `(card (roles R) B)` and `(points (roles
   d) B)` are stratified scopes, as `some` is: their roles distinct from one
   another, not from the roles around them, read once every enclosing role
@@ -237,7 +244,9 @@ transcription would check it against.
   (the frame's count table; nonnegative). The aggregate denotes the interval
   `[s, s + u]`, `s` the weight of the satisfied bindings and `u` of the
   unsettled: every value that some completion of the undefined atoms could
-  give. A literal `n` is `[n, n]`, and `(+ a ...)` adds intervals end to end.
+  give. A literal `n` is `[n, n]`, `(+ a ...)` adds intervals end to end,
+  and `(- a b)` is `[a_lo - b_hi, a_hi - b_lo]`: numbers are integers, and a
+  difference may fall below zero (no literal does).
   `(<= a b)` is true when `a`'s high end is at most `b`'s low end (every
   completion agrees), false when `a`'s low end exceeds `b`'s high end (no
   completion does), and undefined otherwise. So an aggregate is decided
@@ -635,6 +644,7 @@ section  := (bidding brule ...) | (declaring drule ...)
 brule    := (rule name (select bid choice) (guard query))
           | (rule name (bid choice) body)          ; short form
 choice   := n | pass | least-raise                 ; n: 30 to 41, or 42 per mark
+          | number                                 ; a computed call: (bid (- 42 (risk t)))
 drule    := (rule name (select declare kind) (guard query))
           | (rule name (declare kind) body)        ; short form; a name is answer
 kind     := answer | q0 ... q6 | doubles | no-trump
@@ -643,7 +653,27 @@ kind     := answer | q0 ... q6 | doubles | no-trump
 `CompiledPolicy::bid(&AuctionFrame)` is the first bidding rule whose guard
 holds and whose call is legal (`least-raise` is the least legal bid), else the
 fallback: the least legal call, a pass when it is legal and 30 for a forced
-shaker. `declare` is, of the declarations offered that the first declaring
+shaker.
+
+A *computed call* is a number (Queries, `number`) in the call's place. Its
+guard answers the roles the number names (the short form `(bid N)` makes
+them its `out`, in order of first use; the explicit `(select bid N)` must
+answer exactly those), so the number is a function of an answer. At each
+answer it is an interval (Semantics, Aggregates); where that is one value
+`n` and the table calls `n` a legal bid (`Bid::number`: 30 to 41, or 42 a
+mark), the answer gives that bid. The rule allows the bids its answers give
+and calls the least, as a play rule plays the least tile it allows; it is
+the rule `(bid n)` with the clause `(= N n)` added to its guard, for each
+legal `n`. A number that names no bid (29, 43, below zero), names one that
+is not legal here (a bid at or under the high bid), or has no value (a
+function with no number, an interval not decided) gives no call, and the
+rule passes to the next as a literal level over a higher bid does. It never
+clamps to the nearest legal bid: over a 40, a hand worth 38 passes, which is
+what it would have said with a rule per level, and a policy stays total by
+its later rules and the fallback. `(bid (least-raise))` decides as `(bid
+least-raise)`. A computed call is a bid's only: a play or a declaration
+names its answer. `explain_bid` keeps the witnesses of the answers that give
+the call. `declare` is, of the declarations offered that the first declaring
 rule to name one allows, the first offered (an `answer` rule names the pip
 suits its guard answers, one context column), else the first offered. A
 declaration is named by what its tables make trump (`Trump::of`: one pip's
@@ -660,19 +690,24 @@ aggregates (Semantics, above): "at most 10 points exposed" is
 `(exposes-at-most t 10)`, one `(<= (points ...) 10)`, and a definition's
 `(number n)` takes the bound, so every bound of the prelude is one
 definition with a number (`suit-at-least`, `offs-at-most`, `exposes-at-most`,
-`risk-at-most`, `top-of-suit`, `holds-top`), never a family of literals. The
-auction's own numbers are functions (Semantics, Functions are numbers): "the
-least raise and the count exposed come to 42 at most" is one comparison, so
-`bid-only-enough`'s three rules of least-raise ranges are one. What is left
-literal is the call: a rule bids a literal, `pass` or the least raise, so a
-bid level is a rule (`GAPS.md`, Prelude). `examples/book/bidding/` holds
-three policies:
+`risk-at-most`, `top-of-suit`, `holds-top`), never a family of literals,
+and the risk itself is a number, `(risk t)`. The auction's own numbers are
+functions (Semantics, Functions are numbers): "the least raise and the count
+exposed come to 42 at most" is one comparison, so `bid-only-enough`'s three
+rules of least-raise ranges are one. The call is a number too (a computed
+call, above): "bid 42 less the risk under the least at risk" is one rule,
+where it was a rule per level, thirteen. `examples/book/bidding/` holds three
+policies:
 
 ```text
 (rule raise (bid least-raise)
   (some (roles t)
     (suit-at-least t 3)
     (<= (+ (least-raise) (points (roles c) (exposed c t))) 42)))
+
+(rule priced (bid (- 42 (risk t)))
+  (least t (risk t) (suit-at-least t 3))
+  (<= (risk t) 12))
 ```
 
 - `bid-only-enough` (S-0036-e) is the arena's `HeuristicBidder`: raise to the
@@ -685,8 +720,11 @@ three policies:
 - `risk-budget` is the bid book's count as we read it (its header): each off
   risks its trick and the uncovered count of the suit it leads, the trump
   trick is at risk without the trump double, bid 42 less the risk to 12, try
-  30 with two offs to 17, and 84 on the 84 shape. It is its reading on every
-  hand. Its opening call over all 1,184,040 hands, exactly: a pass on 647,781
+  30 with two offs to 17, and 84 on the 84 shape: three bidding rules, the
+  levels one computed call, whose every call at every least raise and every
+  declaration won at 30, 42 and 84 is pinned equal to the thirteen literal
+  levels' on all 1,184,040 hands (`tests/bidding.rs`). It is its reading on
+  every hand. Its opening call over all 1,184,040 hands, exactly: a pass on 647,781
   (54.7%, S-0053-d's "about half"); 30 on 260,860, nearly half the bids; 30,
   31, 35 and 36 on 61.5% of them; 32 and 33 on 5.3%; 84 on 26,565. On the
   bid book's 30 hands it makes the book's call on 18 (always 30: 8) and agrees
@@ -704,7 +742,15 @@ in 7.5 µs a hand (13 before), `risk-budget`'s in 20 µs (150) and
 declarations on all hands take 31 s on 18 cores, 117 s before. Most of the
 gain is counting each aggregate once per decision (the risk of a suit is read
 by fifteen rules); what remains is the evaluation of the atoms in the
-aggregates' bodies.
+aggregates' bodies. The computed call reads every suit's risk whole (the
+least has no literal to stop at), and two changes keep it cheaper than the
+levels were: a pattern checks its atoms, then its comparisons, then its
+scopes (a conjunction's order is not its meaning), and an aggregate is
+counted once per shape up to the names around it, so `(risk t)` in a rule,
+in its rival under `least` and in its call is one count a suit.
+`risk-budget`'s calls at all seventeen least raises and three declarations
+take 1.5 ms a hand on one core; the thirteen levels take 2.1 ms on the same
+evaluator, 2.9 ms before those two changes.
 
 ## The record as evidence
 
