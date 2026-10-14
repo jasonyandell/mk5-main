@@ -73,7 +73,7 @@ Verdicts used: **done** (with the citation and result), **partly**, **new**, **f
 | cheap 2: rule-mine only the disagreements | **partly** | Against the book: [[metasplat-2026-10-13]], the reason report (#124), [[book-head-to-head-2026-10-13]]. Against PIMC: not done. E[Q] is a sanctioned baseline to contrast with, never a label. |
 | cheap 3: DSL as deal generator | **partly** | #141 (bidding populations, constructed fibers); [[silas]] enumerates worlds under a condition exactly. |
 | cheap 4: exploiter against the champion | **done** (2026-10-14, [[exploiter-endgames-2026-10-14]]): on three-trick endgames, G = +0.50 [+0.42, +0.58] margin, neither sturdy nor shown exploitable; +0.004 contract probability per endgame. Before that, **new** | #77 probe 2 ("counter-walt"), open since 2026-07-17. Research-night ledger row 12: "train a best-response opposing pair against frozen Zeb; a lower bound on the O3 gap". [[endgames-o2-vs-o1-2026-10-12]]: "O3 not attempted". The only exploiter-shaped results are readers of plays, which are null (#111 in self-play, [[reads-plays-2026-10-13]]). |
-| A. expert iteration keeping the farmboy (net mixed 80/20 with uniform) | **partly** | Expert iteration ran three turns (5k → 50k → 250k pours, each poured by the last net) and stopped at parity. The 80/20 mix exists as `field_eps` = 0.2 (arena `E=0.2`, #108) but has been graded only as a belief, never as Zeb's play field. Untested and cheap. |
+| A. expert iteration keeping the farmboy (net mixed 80/20 with uniform) | **partly** | Expert iteration ran three turns (5k → 50k → 250k pours, each poured by the last net) and stopped at parity. The 80/20 mix exists as `field_eps` = 0.2 (arena `E=0.2`, #108) was graded only as a belief until 2026-10-14. As Zeb's play field it is null: −0.03 [−0.11, +0.06] marks/game against deployed Zeb, 49.2% of games to 250 ([[field-eps-play-2026-10-14]]). |
 | B. AlphaEvolve on the DSL, scored by duplicate games vs the champion | **new** | The scoring harness exists: [[book-head-to-head-2026-10-13]] seats [[silas]] policies in paired games. Every hand-written rule set tried so far lost (−1.1 to −1.9 marks/game) except as Zeb's near-tie break (53.2% of games to 250, [[book-investigation-2026-10-14]]). |
 | C. fusion-free AlphaZero (policy, distributional value, belief heads) | **partly; value head blocked by a house rule** | See the assessment below. |
 | demon labels and critic (Suphx-style oracle guiding) | **fenced** | Labels and critics carry per-world clairvoyant values into the seat's choice. The fence sanctions only bounds, baselines and measuring fusion. Oracle guiding with features faded out still trains on clairvoyant gradients, which is how jud, gus and January's Zeb hit [[the-wall]]. texas-42 PR #102 (open, unmerged), checked in its code on 2026-10-14: its labels come from an information-state search (one tile per public branch, summed over worlds; `ladder/csrc/turbo.cpp`), but with no cell floor, so thinned groups make the continuation clairvoyant on the sample, and it is a best response to the net. It is Zeb's class minus the floor, not per-world double-dummy. Its +.100 is an honest paired play result against texas-42's production Walt. Nothing in mk5-main uses its labels or weights. The deployed field net trains on Zeb's own plan values from pours with the floor at 16, and only the `pmake` target's name was borrowed. |
@@ -216,6 +216,8 @@ is exact in minutes.
 Runner-up, cheaper still: grade the farmboy field as a *play* field, `walt:k0,n512,F=…,E=0.2`
 vs `E=0`, in #111's paired-deal harness at about 1,500 deals a minute. The prediction is null
 or slightly negative: a best response to a sloppier model of a non-sloppy table.
+Measured 2026-10-14 ([[field-eps-play-2026-10-14]]): null, −0.03 [−0.11, +0.06] marks/game
+over 1,536 games, as predicted.
 
 ## Links
 
@@ -223,3 +225,4 @@ or slightly negative: a best response to a sloppier model of a non-sloppy table.
 · [[endgames-o2-vs-o1-2026-10-12]] · [[lumps-voi-2026-10-13]] · [[metasplat-2026-10-13]]
 · [[reads-plays-2026-10-13]] · [[constellations-2026-10-14]] · [[book-investigation-2026-10-14]]
 · [[zeb]] · [[full-teacher-eq-experiment]] · [[splat-search-bounds]] · [[exploiter-endgames-2026-10-14]]
+· [[field-eps-play-2026-10-14]]

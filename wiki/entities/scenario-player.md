@@ -823,6 +823,9 @@ rank 0.74 at plays 1–3, 0.84 at 12–15; ε = 0 reproduces the 586 exclusions)
 512, falling from 118–139 at plays 1–3 to 8–16 at plays 12–15 (1.6–3.2% of the sample).
 Reweighting 512 uniform draws leaves about ten worlds mid-hand, so #111 must sample from
 β^F, not reweight. `scratch/stochastic-field/measure.py` (12 s) and `measure.json`.
+As Zeb's *play* field (the plan's modeled seats at ε = 0.2, the live worlds uniform) it is
+null against deployed Zeb: −0.03 [−0.11, +0.06] marks/game over 1,536 games, 49.2% [47.0, 51.4]
+of games to 250, A/A exact ([[field-eps-play-2026-10-14]], 2026-10-14). Default stays 0.
 2026-10-12: the old tilt (`Tilt`: `b=dice`, random play, and `b=field`, the rung-0 solver,
 both reweighting a uniform sample) is gone from both engines and the spec, so
 `field_likelihood` is the one likelihood of the plays, applied once, by #111's draw.

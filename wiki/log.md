@@ -41,6 +41,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 9b5f4dd1 | the farmboy field as Zeb's play field (field_eps = 0.2, #108, ledger row A): null, −0.03 [−0.11, +0.06] marks/game vs deployed Zeb over 1,536 games; 49.2% [47.0, 51.4] to 250; A/A exact; no drops]
+
+**Added:** [[field-eps-play-2026-10-14]] (pre-registered at 9b5f4dd1). **Updated:** [[scenario-player]] (§ A stochastic field), [[brainstorm-2026-10-14-ledger]] (row A, runner-up), `index-experiments.md`. Data: `zeb/field-eps-play/` on the research repo.
+
 ## [2026-10-14 | 78bbad51 | silas: the computed call (#148): (bid (- 42 (risk t))); risk-budget's thirteen levels one rule, equal on all 1,184,040 hands at every least raise; (- a b), number definitions]
 
 **Updated:** [[silas]] (§ The computed call), `silas/README.md` (§ Queries, Semantics, The auction), `silas/GAPS.md` (§ Closed). One core pin moved, `risk` added, `less-at-risk` removed (`silas/tests/core_pins.rs`). Tests: `silas/tests/computed.rs`, `silas/tests/bidding.rs`.

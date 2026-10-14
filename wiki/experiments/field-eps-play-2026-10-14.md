@@ -3,7 +3,7 @@ title: The farmboy field as a play field — Zeb planning against F_σ at ε = 0
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
-status: pre-registered
+status: complete
 ---
 
 ## Question
@@ -17,6 +17,15 @@ Does Zeb planning against F_σ at ε = 0.2 beat deployed Zeb (ε = 0) at the tab
 
 The ledger's prediction is null or slightly negative: a best response to a sloppier model of a
 table that is not sloppy.
+
+## Summary
+
+**No. Planning against the 80/20 field does not beat deployed Zeb.** The primary misses its bar:
+−0.03 [−0.11, +0.06] marks/game over 1,536 games to 7 marks. The interval holds zero, and it
+also rules out a gain above +0.06. To 250 points it wins 49.2% [47.0, 51.4] of games, −2.1
+[−6.6, +2.4] points a game. The A/A arm is exact. The farmboy field changes Zeb's play in every
+one of the 768 primary deal pairs, but it buys no marks or game share. The prediction (null or
+slightly negative) holds. No default moves. Pre-registered at `9b5f4dd1`.
 
 ## Prior work checked
 
@@ -83,13 +92,49 @@ candidate for the next zeb version, pending Jason. If not, it reports the miss.
 
 ## Results
 
-Pending.
+Deployed Zeb with `E=0.2` (A) against deployed Zeb (B), `bid30` both sides, duplicate deals,
+95% intervals over deal clusters. *Points/hand* is the raw split of a hand's 42. *Settled* is
+the book's settlement.
+
+| block | game | games (clusters) | marks/game [95%] | game share [95%] | points/hand | settled/hand | final score/game | made, A / B |
+|---|---|---|---|---|---|---|---|---|
+| AA (`E=0`) | to 7 marks | 64 (32) | 0 [0, 0] | 50.0% | 0 | 0 | — | 38.3% / 38.3% |
+| **P** | **to 7 marks** | 1,536 (768) | **−0.03 [−0.11, +0.06]** | 49.2% [47.7, 50.8] | +0.10 [−0.06, +0.27] | −0.03 [−0.35, +0.28] | — | 36.9% / 37.2% |
+| S | to 250 | 768 (384) | −0.09 [−0.20, +0.02] | **49.2% [47.0, 51.4]** | +0.10 [−0.18, +0.38] | −0.25 [−0.78, +0.28] | −2.1 [−6.6, +2.4] | 37.6% / 38.6% |
+
+- **A/A.** All 32 clusters are exactly antisymmetric (`aa_check.py`). ε = 0 is deployed Zeb.
+- **P: misses.** The lower bound is −0.11 against a bar of 0. The made rates agree within 0.3
+  points. Per hand, −0.003 [−0.010, +0.005] marks. The realized half-width (±0.085) is tighter
+  than the planned ±0.15, because the two Zebs agree more often than two different Zebs do.
+- **The field does change the play.** None of P's 768 clusters is antisymmetric, so every
+  duplicate pair diverges somewhere. How often the tile changes per decision was not counted.
+- **S (secondary): misses.** 49.2% of games to 250. Every column holds zero, and S's made rate
+  and marks lean a little toward B, inside the noise.
+- **Reading.** The modeled seats here really are nets, or Zebs that play close to the net. A
+  plan that expects a uniform tile 20% of the time spreads weight on lines the table rarely
+  plays. Here that costs nothing measurable and gains nothing. The farmboy field's value, if any,
+  is as a *belief* (a posterior with full support), not as a play field.
+
+**Drops and deviations.** None. 296 batches (AA 8, P 192, S 96), none killed or dropped; batch
+wall time median 50 s, max 69 s, under `timeout 300` at 6 workers on a shared machine. The
+throughput pilot (8 games, seeds 8001 and 8501) belongs to no block and was never read; it is
+published with the data.
+
+**Decision.** P does not clear, so nothing is proposed. `field_eps` stays default 0, and Zeb
+0.2.0 is unchanged.
 
 ## Data
 
-`jasonyandell/texas-42-zeb-research-2026-10` under `zeb/field-eps-play/` (with `SHA256SUMS`),
-once measured. Scripts: `scratch/field-eps-play/` (`grade.py`, `sched.py`, `report_grade.py`,
-`aa_check.py`, `publish.py`), published there.
+`jasonyandell/texas-42-zeb-research-2026-10` under `zeb/field-eps-play/` holds every batch's
+games and per-hand tallies (`out/grade/<block>/s<seed>.json`), the block summaries
+(`summary.json`, `out/grade.md`), the logs (`logs/sched.log` has the kill/drop record) and the
+scripts, with `CARD.md` and `SHA256SUMS`. Recompute:
+
+```bash
+python -u scratch/field-eps-play/sched.py AA P S      # cap in scratch/field-eps-play/maxjobs (default 6)
+python -u scratch/field-eps-play/aa_check.py AA
+python -u scratch/field-eps-play/report_grade.py AA P S
+```
 
 ## Links
 
