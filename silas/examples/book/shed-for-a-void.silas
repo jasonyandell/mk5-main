@@ -1,6 +1,7 @@
 ; Shed for a void, and the setter's throwaways. Winning 42 pp. 43-48
 ; (S-0064-c, S-0064-d, S-0065-b, S-0065-c, S-0070-d), p. 49 (S-0071-a,
-; S-0071-b) and p. 79 (S-0108-a); played in Hands 32 and 33 (S-0142-g,
+; S-0071-b; S-0072-a, the first and third of the five key points: hold
+; doubles and count, create voids) and p. 79 (S-0108-a); played in Hands 32 and 33 (S-0142-g,
 ; S-0144-d), and foreseen in Hand 12 (S-0044-a). The throwaways: the worked
 ; deals, Hands 28 to 33 (S-0130-b, S-0133-g, S-0135-d, S-0135-f, S-0136-b,
 ; S-0136-d, S-0139-c, S-0140-a, S-0142-j, S-0144-f, S-0144-h).
@@ -33,6 +34,16 @@
 ; Hand 33 trick 5, the 1-0 with the 3-1 alone among treys). It gives no reason;
 ; this file follows its stated guideline, the void first (p. 48, which ranks it
 ; above the rest), and the other worked throws (Hands 32 and 33, trick 1).
+; Re-read 2026-10-14 (#153), presuming the encoding misread: in Hand 28 the
+; kept 6-3 is the second trey still out behind the 3-3, and at trick 3 it
+; takes the bidder's 3-1 off for six (S-0130-c's deal as dealt); the
+; candidate condition "keep a lone tile that is the top or second of its suit
+; still out" explains that keep and the throws of Hands 32 and 33, trick 1
+; (the 6-2 fifth among the sixes, the 6-0 last), but not Hand 33 trick 5,
+; where the kept 3-1 is third and takes nothing live. The book states no
+; such condition on pp. 43-49; the row stays the book against its rule, and
+; the measurement that would decide it is a reason report from the right
+; setter's cell at Hand 28 trick 2 (what the 6-3 is worth in his worlds).
 ; Against a bid of marks the book's defenders keep their pairs and throw their
 ; dead doubles instead (Hands 34 and 35, S-0146-d, S-0150-c: dead-double.silas
 ; and defend-the-84.silas); a void for a pounce is worth nothing there, and

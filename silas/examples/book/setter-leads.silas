@@ -1,22 +1,43 @@
-; The setter's leads. Winning 42 pp. 46-48 (S-0067-c, S-0069-b, S-0069-d,
-; S-0070-c) and p. 51 (S-0074-c); played in Hands 15, 16, 28, 29 and 31 to 33
-; (S-0048-b, S-0049-a, S-0051-a, S-0130-f, S-0131-a, S-0133-e, S-0133-i,
-; S-0140-b, S-0143-b, S-0144-j).
+; The setter's leads. Winning 42 p. 40 (S-0060-a: the setters lead fours,
+; fives and sixes for tens, the low suits for fives, as the partner's chapter
+; states it), pp. 46-48 (S-0067-c, S-0068-a: not a double that calls for no
+; count, S-0068-b: a low tile from a live-count suit over a dead double,
+; S-0068-c and S-0068-d: the count-calling lead's two good outcomes, the off
+; lost or a trump spent and the off led later by the bidder himself,
+; S-0069-a: a double that calls for a five, the partner's shown void read
+; as a fact, S-0069-b, S-0069-c: a double that calls for a ten forces the
+; bidder to trump, S-0069-d, S-0070-c), p. 49 (S-0072-a, the fifth of the
+; five key points) and p. 51 (S-0074-c); from the setter's chair in Hand 27,
+; p. 95 (S-0126-a: a five, else a trey or a deuce, never a six or an ace);
+; played in Hands 15, 16, 28, 29 and 31 to 33 (S-0048-b, S-0048-c: Hand 15's
+; line B, the 0-0 at trick 4 for the 5-0, S-0049-a, S-0051-a, S-0130-f,
+; S-0131-a, S-0133-e, S-0133-i, S-0140-b, S-0143-b, S-0144-j).
 ; Rule, in our words: a setter on lead leads what can bring in count. When one
 ; more point sets the bid, he leads a double, count or not: the trick is what
 ; sets. Else the lead whose own count and the count it calls for, with the
 ; trick, set the bid, even past a double (Hand 28 trick 4: the 5-4, calling
 ; the 5-5 for eleven, over the 1-1 calling the 4-1; Hand 31 trick 5: the 4-1,
 ; for fifteen with the 6-4, over the 4-4's ten). Else a double whose suit
-; still has count out; else a tile that calls for count, not a low tile that
-; calls for a five, and, against 35 or more, not a low four, five or six,
-; which may run into the bidder's doubles (think twice: they come next). Once
-; his side has a trick he keeps going for count, set or not: first a count
-; tile that calls for more (Hand 28 trick 5, after the set: the 4-1 for
-; fifteen with the 6-4, over the 4-4's ten), and last a count tile itself.
+; still has count out; else a tile that calls for count, and, against 35 or
+; more, not a low four, five or six, which may run into the bidder's doubles
+; (think twice: they come next); not a low tile that calls for a five and no
+; ten (p. 47: it wins only if the partner holds the top of the suit, and then
+; he cannot add count), which goes only when nothing calls for a ten (Hand
+; 27: a five, which threatens sixteen, without hesitation; else a trey or a
+; deuce, which call the 3-2; a six or an ace, calling nothing, is a big
+; mistake). Once his side has a trick he keeps going for count, set or not:
+; first a count tile that calls for more (Hand 28 trick 5, after the set: the
+; 4-1 for fifteen with the 6-4, over the 4-4's ten), and last a count tile
+; itself.
 ; A lead that calls for count also makes the bidder trump rather than throw
 ; another off cheaply (p. 46): after Hand 32's set the right setter leads the
 ; 5-4 for that (S-0143-b).
+; Repaired 2026-10-14 (#153, the header audit): before, "not a low tile that
+; calls for a five" excluded every tile that calls for any five, a five tile
+; calling the 5-5 and the 5-0 among them, so at Hand 27's position no rule
+; led the five the book leads without hesitation, nor the trey or deuce it
+; leads next; the policy fell back. The book's low tile is one that calls for
+; a five only.
 ; Replaces gates/c15-setter-leads-call-for-count.silas and
 ; gates/c13d-lead-a-singleton.silas. How it differs: the C15 gate leads past
 ; the count that sets to its count-calling double (Hands 28 and 31); its
@@ -87,8 +108,7 @@
       (on-lead me)
       (own-legal lead)
       (not (double lead))
-      (calls-for-count lead)
-      (not (calls-for lead 5))
+      (calls-for lead 10)
       (or (< (bid) 35) (not (low-four-five-or-six lead)))))
   (rule think-twice-a-low-four-five-or-six (play lead)
     (viewer me)
@@ -96,8 +116,16 @@
     (on-lead me)
     (own-legal lead)
     (not (double lead))
+    (calls-for lead 10))
+  (rule a-low-tile-that-calls-for-a-five (play lead)
+    (viewer me)
+    (setter me)
+    (on-lead me)
+    (own-legal lead)
+    (not (double lead))
+    (not (trump-tile lead))
     (calls-for-count lead)
-    (not (calls-for lead 5)))
+    (not (calls-for lead 10)))
   (rule lead-a-count-tile (play lead)
     (viewer me)
     (setter me)

@@ -142,16 +142,17 @@ experiment.
 
 ## The completion ledger
 
-From the private coverage matrix (570 merged rows; 2026-10-13, after batch 1; ids only):
+From the private coverage matrix (570 merged rows; 2026-10-14, after batch 2, the header
+audit of #153; ids only):
 
 | status | rows | what finishes it |
 |---|---:|---|
-| covered by a book rule, query, outcome or test file | 241 | measured at the table only for the 18 rules of the head-to-head; the rest are encoded, not seated |
+| covered by a book rule, query, outcome or test file | 261 | measured at the table only for the 18 rules of the head-to-head; the rest are encoded, not seated |
 | covered by an `odds/` file only | 24 | exact; done |
-| covered by a gate only | 21 | the header audit (#153) |
-| encodable now | 6 | #153 (batch 1 left 12 of its 86 with a stated reason; 6 remain encodable) |
+| covered by a gate only | 0 | the header audit (#153, 2026-10-14): 20 listed in their rule's header, one no rule's |
+| encodable now | 6 | all five with gap 7 on a part and one with no record of Hand 25; re-read 2026-10-14 against #144 and #148, unchanged |
 | blocked by a gap | 149 | #130 is the first-cited gap of about 112: slice 3 (deal measure, play-out; 19 rows priced against a Silas field), slice 4 (the arena ledger; about 98 rows priced, including the bid book's 60 and cluster E's ten against a named field, #152), slice 5 (mixed policies; cluster E's four equilibrium rows, A9). Then #128 (policy likelihood, 19), #134 (the auction, 15), #135 (aggregate, 8), #132 (another seat's knowledge, 1), gap 9 (1) |
-| n/a for an encoding | 129 | not n/a for a lesson: the Ch. 6 style rows, the Ch. 12 closing essay and the Ch. 14 profiles carry A1, A6 and A11, mapped above |
+| n/a for an encoding | 130 | not n/a for a lesson: the Ch. 6 style rows, the Ch. 11 table-talk rows, the Ch. 12 closing essay and the Ch. 14 profiles now name their assumption (A1–A11) in the matrix |
 
 `silas/GAPS.md` § The book's silences records six choices the book does not make: which sure
 trump leads, which setting lead, a count off on the setters' trick, the follower who is not last
@@ -164,7 +165,17 @@ the book's own hands or left open, never by Zeb's preference.
 1. **#149, the regulars' table**: run; a null for a reading-only, fixed-style regular ([[regulars-table-2026-10-14]]). Its successor is a regular that responds (#116 / #130 slice 5).
 2. **#150, book partners read each other**: cheap (it reuses `arena/book_read.py`), and it
    seats the benefit half of every convention the head-to-head charged.
-3. **#153, the header audit and the last encodable rows**: cheap, and it finishes the encoding.
+3. **#153, the header audit and the last encodable rows**: done 2026-10-14 (branch
+   `book/header-audit`). Of the 21 gate-only rows, 19 were their rule's play and are listed;
+   one was not (the setter's five at Hand 27, S-0126-a: `setter-leads.silas` had read p. 47's
+   "low tile that calls for a five" as any tile calling any five, and led nothing; repaired
+   from the book's own words); one is no rule's (the partner's throw with no count). Of the
+   three "book against its rule" rows, one is reconciled by the book's own stated reason
+   (Hand 29's spare ace, now `low-from-a-pair.silas`'s rule), one rests on a premise the book's
+   own record contradicts (Hand 35 trick 4), and one stays open with a candidate condition
+   and the measurement that would decide it (Hand 28 trick 2, a reason report from the right
+   setter's cell). The six encodable rows wait on gap 7 and a record of Hand 25. What is left
+   of the encoding is the 149 gapped rows.
 4. **#154, the book at small n**: cheap, and it tests A7 directly.
 5. **#152, the named deviant field**: cheap arena-side, and it seats the book's bidding against
    its own field.

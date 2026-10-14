@@ -1,9 +1,15 @@
-; Donate when safe. Winning 42 pp. 37-38 (S-0057-c, S-0057-d, S-0058-a,
-; S-0058-b, S-0067-a); played in Hands 12, 14, 23, 30, 31, 32 and 33
-; (S-0043-d, S-0046-a, S-0105-d, S-0137-b, S-0138-d, S-0142-f, S-0144-l), and
-; by the last setter in Hand 29 (S-0133-d). Biggest first: p. 37 and p. 106
-; (S-0057-c, S-0138-e). No count on a trick that can still be lost: Hand 33
-; (S-0144-i).
+; Donate when safe. Winning 42 p. 25 and p. 38 (S-0041-c: a partner with no
+; trumps gives count on the trump double led on trick one), pp. 37-38
+; (S-0056-a's third rule, S-0057-c, S-0057-d, S-0058-a, S-0058-b, S-0067-a);
+; played in Hands 12, 14, 15, 23, 30, 31, 32 and 33 (S-0043-d, S-0046-a,
+; S-0048-c: Hand 15's line B, the 5-5 on the 4-6 at trick 2, and the right
+; setter's 3-2, last, on his partner's 6-6 at trick 3, S-0105-d, S-0137-b,
+; S-0138-d, S-0142-f, S-0144-l), and by the last setter in Hand 29
+; (S-0133-d). Biggest first: p. 37 and p. 106 (S-0057-c, S-0138-e). No count
+; on a trick that can still be lost: Hand 33 (S-0144-i).
+; Not encoded: the partner's throw when he holds no count at all (Hand 32
+; trick 2, the 4-2, S-0142-i; Hand 31 trick 5, the 6-0, S-0140-d): no rule of
+; the book's chooses it, and the book gives no reason; the policy falls back.
 ; Rule, in our words: count goes only on a trick your side is sure to take.
 ; The bidder's partner gives count, the biggest first, when the bidder is
 ; taking the trick and no setter still to play can beat him: he led the

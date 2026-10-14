@@ -869,10 +869,12 @@ fn s0070c_one_point_sets_lead_a_double() {
 #[test]
 fn s0069d_think_twice_about_a_low_six_against_35() {
     // Ours (p. 47): deuces, a bid of 35, already set. The left setter's only
-    // count-calling leads are the low sixes, which call the 6-4; the gate
-    // leads them as a matter of course, the book only after thinking twice.
+    // ten-calling leads are the low sixes, which call the 6-4, and the 4-0,
+    // which calls the 6-4 and the 4-1; the gate leads the sixes as a matter
+    // of course (its tier B excludes any tile that calls for a five, the 4-0
+    // among them), the book only after thinking twice.
     let at = position("P2", O1, &["6-1", "3-0", "4-0", "3-1", "1-0", "6-0"], &["5-5", "2-0", "5-4", "5-3"]).bid(35);
-    assert_eq!(allows(SETTER_LEADS, &at, "think-twice-a-low-four-five-or-six"), tiles(&["6-0", "6-1"]));
+    assert_eq!(allows(SETTER_LEADS, &at, "think-twice-a-low-four-five-or-six"), tiles(&["4-0", "6-0", "6-1"]));
     assert_eq!(allows(C15, &at, "a-tile-that-calls-for-count"), tiles(&["6-0", "6-1"]));
 }
 
@@ -1487,4 +1489,67 @@ fn repair_the_crisis_needs_the_trump_shown_to_be_a_setters() {
     assert_eq!(allows(CRISIS, &at, "cash-a-double-that-is-count"), tiles(&["5-5"]));
     let at = position("P4", B, &["4-3", "4-2", "5-5", "3-3", "2-2", "6-1", "1-0"], &[]);
     assert_eq!(fires(CRISIS, &at), None);
+}
+
+// -- The header audit (#153, 2026-10-14). The 21 rows that stayed on a gate
+// because no rule file listed them: each checked to be the rule's play at the
+// book's position, and listed in its header; the two that were not are
+// repaired or recorded below.
+
+#[test]
+fn s0126a_the_setter_leads_a_five_then_a_trey_or_deuce_never_a_six_or_an_ace() {
+    // Ours (p. 95): fours, Hand 27's first trick. The bidder led the 6-2 and
+    // the left setter won it with the 6-6. A five threatens sixteen (the 5-5
+    // and the 5-0 are out) and goes without hesitation; a trey or a deuce
+    // calls only the 3-2; a six or an ace calls nothing, the 6-4 and the 4-1
+    // being trumps. Before the repair the policy fell back here.
+    let plays = ["6-2", "6-6", "6-0", "6-5"];
+    let at = position("P4", O1, &["5-1", "3-0", "2-1", "6-3", "1-0", "1-1"], &plays);
+    assert_eq!(allows(SETTER_LEADS, &at, "a-tile-that-calls-for-count"), tiles(&["5-1"]));
+    let at = position("P4", O1, &["3-0", "2-1", "6-3", "1-0", "1-1", "6-1"], &plays);
+    assert_eq!(allows(SETTER_LEADS, &at, "a-low-tile-that-calls-for-a-five"), tiles(&["2-1", "3-0"]));
+}
+
+#[test]
+fn s0069b_a_low_tile_that_calls_only_a_five_goes_after_every_ten() {
+    // Ours (p. 47): fours, the same trick. Holding the 5-1 and the 3-0, the
+    // five, which calls a ten, goes first; the trey, which calls only the
+    // 3-2, is the book's lead to avoid while a ten can be called.
+    let at = position("P4", O1, &["5-1", "3-0", "1-0", "1-1", "6-3", "6-1"], &["6-2", "6-6", "6-0", "6-5"]);
+    let allowed = allows(SETTER_LEADS, &at, "a-tile-that-calls-for-count");
+    assert!(allowed.contains(tile("5-1")) && !allowed.contains(tile("3-0")));
+}
+
+#[test]
+fn s0133j_the_spare_ace_goes_and_the_pair_of_treys_stays() {
+    // Hand 29 trick 3: on his partner's 1-0, won by the 1-1, the right setter
+    // holds the 6-1 and the 3-1. The book plays the 6-1 "because you have
+    // another six": the 6-6 cannot lose the sixes, while the 3-1 with the
+    // 5-3 still catches the 3-0. The gate plays low.
+    let at = book_at("hand-29", 10, O2);
+    assert_eq!(allows(LOW_FROM_A_PAIR, &at, "keep-the-pair-play-the-spare"), tiles(&["6-1"]));
+    assert_eq!(allows(C13C, &at, "follow-low"), tiles(&["3-1"]));
+}
+
+#[test]
+fn s0135b_hand_30_leads_the_6_5_a_trump_that_is_not_count() {
+    // Hand 30 trick 1: sixes, missing the 6-6; the 6-5 or the 6-2, never the
+    // 6-4, the ten.
+    assert_eq!(allows(FIRST_LEAD, &book_at("hand-30", 0, B), "lead-a-trump"), tiles(&["6-2", "6-5"]));
+}
+
+#[test]
+fn s0142i_the_partners_throw_with_no_count_is_no_rules() {
+    // Hand 32 trick 2: out of trump and out of count, the partner throws the
+    // 4-2. No rule of the book's chooses it; the policy falls back.
+    assert_eq!(fires(DONATE, &book_at("hand-32", 6, P)), None);
+}
+
+#[test]
+fn s0151b_at_hand_35_trick_4_the_pair_of_fives_is_the_one_still_catching() {
+    // Hand 35 trick 4: the partner threw the 3-2 on trick 3, so the pair of
+    // treys has no target; the pair of fives still catches the 5-1 or the
+    // 5-2. The rule throws the 3-0; the book's "nothing has changed" throws
+    // the 5-0 (the book against its rule, re-read under #153).
+    assert_eq!(allows(DEFEND_84, &book_at("hand-35", 13, O1), "then-a-protector"), tiles(&["3-0"]));
 }
