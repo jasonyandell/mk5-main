@@ -10,6 +10,9 @@
 
 Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
+            | zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks]   (Zeb's forecast +
+              chooseBid, never above 42; met adds 84 when its match equity
+              beats the hand-only call, marks the same by expected marks)
             | silas[:<policy>]   (a bid policy of silas/examples/book/bidding/:
               risk-budget, the default, or bid-only-enough, which is heuristic)
             | gus[:<samples>[,wp][,pass[<q>]][,max]]   (rung #21; wp = marks-to-7
@@ -84,6 +87,10 @@ def parse_bidder(
         return SilasBidder(arg or "risk-budget")
     if name == "random":
         return RandomBidder(float(arg)) if arg else RandomBidder()
+    if name == "zeb":
+        # Zeb's forecast + chooseBid; met / marks add the mark-bid option (arena/zeb_bid.py).
+        from arena.zeb_bid import parse_zeb_bidder
+        return parse_zeb_bidder(arg)
     if name == "gus":
         from champion.bidder import GusBidder, GusPointsEvaluator
         from champion.utility import MarksToSeven
