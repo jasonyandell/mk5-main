@@ -48,6 +48,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
 
 **Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.
+
 ## [2026-10-13 | 49392914 | silas reads the plays as evidence (#128 for the play): consistent likelihood by default, uniform on request, counted exactly; S-0140-e's "you know" is 2/15 from the seat and 1 read under protect-the-count; C21's bait under crisis is 91/167, not certainty]
 
 **Touched pages:** [[silas]] § The plays as evidence. `silas/README.md` § Semantics, The record as evidence, The `silas` command; `silas/GAPS.md` gap 1 narrowed again (a rule acting on a reading remains).
