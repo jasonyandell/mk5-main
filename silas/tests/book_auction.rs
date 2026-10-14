@@ -1,6 +1,6 @@
 //! The book's readings of a bid, exactly (`GAPS.md` 4, #134): the belief of
 //! a seat that has heard the calls, conditioned on each caller bidding by a
-//! named policy (README, The auction as evidence). Each number is exact
+//! named policy (README, The record as evidence). Each number is exact
 //! given those policies, and stands beside the one the auction cannot move,
 //! the uniform deal's.
 mod common;
@@ -36,9 +36,9 @@ fn uniform_and_read(
     let uniform = Belief::uniform_for(frame.clone(), q, 100_000, &mut budget).unwrap();
     let before = q.summarize(&uniform, &mut budget).unwrap().event_probability();
     let readers = readers.iter().map(|(s, p)| (*s, (*p).clone())).collect();
-    let reading = AuctionReading::new(readers, MatchState::new(Scoring::MARKS, [0, 0]).unwrap(), arena()).unwrap();
+    let reading = Reading::calls(readers, MatchState::new(Scoring::MARKS, [0, 0]).unwrap(), arena()).unwrap();
     let evidence = reading.evidence(frame, &mut budget).unwrap();
-    let read = Belief::given_auction_for(&evidence, q, 100_000, &mut budget).unwrap();
+    let read = Belief::given_for(&evidence, q, 100_000, &mut budget).unwrap();
     let after = q.summarize(&read, &mut budget).unwrap().event_probability();
     assert!(before.authority().is_exact());
     assert_eq!(after.authority().models().len(), evidence.seats().len(), "exact given each read policy");

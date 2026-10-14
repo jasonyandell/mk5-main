@@ -59,7 +59,7 @@ pub use policy::{
     Allowed, Choice, CompiledPolicy, DecisionProvenance, Declared, ExactRule, Fallback, GuardWitnesses,
     PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, Selector, Trump,
 };
-pub use reading::{AuctionEvidence, AuctionReading, SeatEvidence};
+pub use reading::{CallEvidence, Evidence, Likelihood, PlayEvidence, Reading, SeatEvidence};
 pub use registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};

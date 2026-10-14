@@ -9,7 +9,7 @@ use crate::eval::{Answer, Answers, Budget, CompiledQuery};
 use crate::frame::{Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, World};
 use crate::measure::{Authority, Estimate, Weight};
 use crate::nouns::{Domino, DominoSet, Seat};
-use crate::reading::AuctionEvidence;
+use crate::reading::Evidence;
 use crate::{Result, error};
 
 /// A finite measure over worlds of one frame. Each point carries an exact
@@ -155,34 +155,36 @@ impl Belief {
         }
     }
 
-    /// The uniform measure on the frame's worlds conditioned on the auction:
-    /// the worlds in which every seat `evidence` reads holds a hand its
-    /// bidding policy agrees with (its call, and its declaration when it is
-    /// the declarer), each weight one, resolved on the pool tiles of
-    /// `resolved` as [`Belief::uniform_resolving`] is. Its authority is
-    /// `exact_given` the read policies. Refused when no world is kept (the
-    /// auction is impossible under those policies) and above `max_points`.
-    pub fn given_auction(evidence: &AuctionEvidence, resolved: DominoSet, max_points: usize) -> Result<Self> {
+    /// The uniform measure on the frame's worlds conditioned on the record as
+    /// `evidence` reads it: each world weighs the product of its read seats'
+    /// weights (one or zero for the calls and for plays read as consistent; a
+    /// product of `1/|allowed|` for plays read as uniform), resolved on the
+    /// pool tiles of `resolved` as [`Belief::uniform_resolving`] is. Its
+    /// authority is `exact_given` the read policies. Refused when no world
+    /// weighs anything (the record is impossible under those policies) and
+    /// above `max_points`.
+    pub fn given(evidence: &Evidence, resolved: DominoSet, max_points: usize) -> Result<Self> {
         let frame = evidence.frame().clone();
         let tiles = resolved.intersection(frame.kernel().pool());
         let unresolved = frame.kernel().pool().difference(tiles);
         let entries = evidence.count(tiles)?;
-        let id = format!("given-auction [{}] resolving {tiles:?}", evidence.authority());
+        let id = format!("given [{}] resolving {tiles:?}", evidence.authority());
         Self::assemble(frame, id, evidence.authority().clone(), unresolved, entries, max_points)
     }
 
-    /// [`Belief::given_auction`] resolved on the tiles `query` reads: those
-    /// [`Belief::uniform_for`] finds, since the auction only removes worlds
-    /// from the classes the uniform measure's points stand for.
-    pub fn given_auction_for(
-        evidence: &AuctionEvidence,
+    /// [`Belief::given`] resolved on the tiles `query` reads: those
+    /// [`Belief::uniform_for`] finds. A point sums the weights of the worlds
+    /// it stands for, and the query is constant on them, so the summary is
+    /// the fully resolved belief's.
+    pub fn given_for(
+        evidence: &Evidence,
         query: &CompiledQuery,
         max_points: usize,
         budget: &mut Budget,
     ) -> Result<Self> {
         let uniform = Belief::uniform_for(evidence.frame().clone(), query, max_points, budget)?;
         let resolved = evidence.frame().kernel().pool().difference(uniform.unresolved());
-        Self::given_auction(evidence, resolved, max_points)
+        Self::given(evidence, resolved, max_points)
     }
 
     pub fn frame(&self) -> &Frame {

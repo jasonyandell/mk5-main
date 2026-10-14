@@ -69,17 +69,50 @@ fn query_reads_the_auction_as_evidence_exactly_given_the_policies() {
     let (ok, out) = silas(&[&["query", file, "--hand", "hand-29", "--seat", "partner"][..], &read].concat());
     assert!(ok, "{out}");
     assert!(out.contains("auction: S3 shook: S0 30, S1 pass, S2 pass, S3 pass"), "{out}");
+    // His lead is read too, and says nothing: the policy has no play rules,
+    // and its fallback is silence.
     assert!(
-        out.contains("read S0: bid-only-enough calls 30 and declares straight42/P4 from 3034 of the 27132"),
+        out.contains(
+            "read S0: bid-only-enough calls 30 and declares straight42/P4, and bid-only-enough allows its plays 4-0, \
+             from 3034 of the 27132"
+        ),
         "{out}"
     );
     assert!(out.contains("P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#"), "{out}");
     // A book hand's own auction is a convention: a reading names the table's,
-    // and it must be won as the hand's contract is.
+    // and it must be won as the hand's contract is. Before any play there is
+    // nothing else to read.
     let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--read", read[3]]);
-    assert!(!ok && out.contains("--auction and --read go together"), "{out}");
+    assert!(!ok && out.contains("nothing to read"), "{out}");
+    let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--auction", "30,pass,pass,pass"]);
+    assert!(!ok && out.contains("go with --read"), "{out}");
     let (ok, out) = silas(&["query", file, "--hand", "hand-29", "--auction", "pass,30,pass,pass", "--read", read[3]]);
     assert!(!ok && out.contains("is not won by the bidder (S0) at 30"), "{out}");
+}
+
+#[test]
+fn query_reads_the_plays_as_evidence_exactly_given_the_policies() {
+    // S-0140-e: Hand 31 trick 6, the left setter on lead. Uniformly the
+    // bidder holds both trumps out in 2 of the 15 worlds; with the right
+    // setter's plays read as protect-the-count's, in both that remain.
+    let file = "examples/book/reading/bidder-holds-the-trumps-out.silas";
+    let at = ["--hand", "hand-31", "--trick", "6", "--seat", "left"];
+    let (ok, out) = silas(&[&["query", file][..], &at].concat());
+    assert!(
+        ok && out.contains("15 worlds, as 4 points resolving 2-0 6-2") && out.contains("P(answer) = 2/15 (exact)"),
+        "{out}"
+    );
+    let read = ["--read", "right=examples/book/protect-the-count.silas"];
+    let (ok, out) = silas(&[&["query", file][..], &at, &read].concat());
+    assert!(ok, "{out}");
+    assert!(out.contains("read S3: protect-the-count allows its plays 3-2 4-0 5-1 3-3 4-1, from 2 of the 9"), "{out}");
+    assert!(out.contains("15 worlds (2 kept)"), "{out}");
+    assert!(out.contains("P(answer) = 1 (exact_given(S3 plays within protect-the-count#"), "{out}");
+    let (ok, out) = silas(&[&["query", file][..], &at, &read, &["--likelihood", "uniform"]].concat());
+    assert!(ok && out.contains("15 worlds (weighing 1/60)"), "{out}");
+    assert!(out.contains("P(answer) = 1 (exact_given(S3 plays uniformly within protect-the-count#"), "{out}");
+    let (ok, out) = silas(&[&["query", file][..], &at, &read, &["--likelihood", "random"]].concat());
+    assert!(!ok && out.contains("--likelihood is consistent or uniform"), "{out}");
 }
 
 #[test]
@@ -186,7 +219,8 @@ fn the_trump_set_rules_are_rare_not_broken() {
     // ruff with.
     let (ok, out) = silas(&["coverage", "examples/book/trump-set.silas"]);
     assert!(ok, "{out}");
-    for rule in ["trump-a-big-double", "trump-a-double", "trump-in-on-count", "feed-the-trump-holder", "lead-a-high-trump"]
+    for rule in
+        ["trump-a-big-double", "trump-a-double", "trump-in-on-count", "feed-the-trump-holder", "lead-a-high-trump"]
     {
         assert!(out.contains(&format!("rule {rule}: decided 0, allowed 0, answered 0 of 205")), "{out}");
     }

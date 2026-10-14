@@ -28,59 +28,70 @@ means it needs a hidden hand or a model of another seat's play.
 
 | # | gap | kind | rules blocked | viewer / world | home |
 |---|---|---|---|---|---|
-| 1 | policy likelihood (#128), narrowed: the auction's is built | belief operation | 5 readings; 4 places in the rules | world | Silas |
+| 1 | policy likelihood (#128), narrowed again: the readings are built; a rule acting on one is not | belief in a guard | 4 places in the rules | world | Silas |
 | 2 | cross-game policy comparison (#130), narrowed | new layer | 3 (C17 in part) | world | Silas and the arena |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
 | 4 | the auction as information (#134), narrowed again | belief | 1 (pp. 53–54's offs) | world | Silas |
 
-## 1. Policy likelihood: reading a convention
+## 1. Policy likelihood: reading a convention, and acting on the reading
 
 **What.** A convention's receiver deletes the worlds in which the sender would not have
-played what he played. Silas has `Belief::condition_likelihood` with a caller's closure.
-What it lacks is the closure built from a `PolicyProgram`: for each world, replay the
-record, and at each of the sender's past decisions ask whether his policy, at his
-information state in that world, allows the tile he played. The sender's information
-state includes his own hand, so this is world information. The arena's lesson is that
-the likelihood must be the sender's gate exactly inverted.
+played what he played: for each world, at each of the sender's past decisions, ask
+whether his policy, at his information state in that world, allows what he did. The
+sender's information state includes his own hand, so this is world information. The
+arena's lesson is that the likelihood must be the sender's gate exactly inverted.
 
-**Rules.**
-- C1, the second receiver (p. 25): no donation means no count.
-- C2, the book's singleton reading (p. 25). `c02-reading-singleton.silas` gives 26/57 in
-  Hand 30, where the reading is false.
-- C3 (p. 106): a five given means no ten held.
-- C8 (p. 54): a count follow means void.
-- C21 (p. 107): the bait tells the partner where the 6-4 is.
+**Built: the readings (2026-10-13; README, The record as evidence).** `Reading` reads
+named seats' calls (`Reading::calls`, the auction, built first) and their past plays
+(`Reading::plays`, `with_plays`), each under a compiled policy, and `Belief::given`
+weighs the worlds by them, exactly, `exact_given` one model per seat and phase. The
+sender's gate is inverted exactly because it is the same compiled policy. It factorizes
+because a seat's frame at each of its past decisions is its dealt hand (its hand in the
+world and the tiles it played) and the public record, so a world's weight is a product
+of per-seat weights, each a function of that seat's hand alone; `tests/play_reading.rs`
+holds the counting to brute force. A play policy allows a set; the reading takes the
+**consistent** likelihood by default (a play weighs one when allowed, zero otherwise: an
+event, so the posterior is a count and a policy that allows everything is no evidence)
+and offers the **uniform** one (`1/|allowed|`: the seat picks at random within the set,
+an extra hypothesis) under its own label. A play the fallback decides is silence. The
+readings moved (`tests/book_reading.rs`, `examples/book/reading/`):
 
-In the book-faithful rules (each marked `; GAP likelihood`):
+- C2, the book's singleton reading (p. 25): 26/57 uniformly in Hand 30; read under the
+  worked hand's sender, still 26/57; under p. 25's sender, 1.
+- C3 (p. 106): a five given means no ten held: Hand 31's 5-0 read under
+  `donate-when-safe` puts the 5-5 with a setter, 5/8 to 1 (S-0138-e's second reading).
+- C8's reading (p. 54: a count follow means no choice) on a trump lead: Hand 31's 3-2 read
+  under `protect-the-count` puts both trumps out with the left setter, 5/22 to 1 (S-0138-e's
+  first reading), and gives the left setter his certainty at trick six (S-0140-e), 2/15 to
+  1. C8's own position (p. 54, a double) is statable the same way and not yet written.
+- C21 (p. 107): the bait read under `crisis` is evidence, not knowledge: 5/16 to 91/167
+  (1549/1777 under the uniform likelihood). The book's certainty needs a bidder who never
+  leads the 6-5 without the 6-4, which no rule it states says.
+- C1, the second receiver (p. 25: no donation means no count), is statable the same way
+  (`donate-when-safe` read on the partner) and not yet written.
+
+**What remains: a rule acting on a reading.** A policy's guard reads its frame, never a
+belief, so a rule cannot say "if the reading puts both trumps with one setter". The book's
+rules that act on a reading are blocked there (each marked `; GAP likelihood`):
+
 - `defend-the-84.silas`: the 84 defender throws first the low tile that tells his partner
   which double to drop (p. 72), and the bidder's partner keeps low tiles as decoys (p. 66,
-  Hand 34); both read another seat's discards as his policy. The rule allows every tile
-  that wins nothing.
+  Hand 34; S-0147-d); both read another seat's discards as his policy. The rule allows
+  every tile that wins nothing.
 - `partner-leads.silas`: the one exception to "never lead trump" (p. 40) turns on how
   many trumps the bidder still holds, read from his bid and play; trump is never led.
 - `crisis.silas` (the prelude's `trumps-he-cannot-draw`): in Hand 31 the bidder places
-  both outstanding trumps with one setter by reading the other's count play (p. 106).
+  both outstanding trumps with one setter by reading the other's count play (p. 106). The
+  reading is now a number (5/22 to 1, above); the rule that acts on it is not.
 - `dead-double.silas`: in Hand 34 (p. 114) the partner keeps his dead 1-1 a while as a
   decoy for an opponent's reading; the rule throws it at once.
 
-**Narrowed (the auction, 2026-10-13; README, The auction as evidence).** The likelihood
-built from a `PolicyProgram` exists for its bidding and declaring sections:
-`AuctionReading::evidence` keeps, for each read seat, the hands it could hold from which
-its policy makes its call (and its declaration), and `Belief::given_auction` counts the
-worlds whose read hands all agree, exactly, `exact_given` the policies. The sender's gate
-is inverted exactly because it is the same compiled policy. It factorizes because a
-seat's auction frame is its dealt hand and public facts, so whether a world is kept
-depends, seat by seat, on that seat's hand alone.
-
-**What remains: the play's likelihood.** The same factorization holds in the play: a
-seat's frame at each of its past plays is its dealt hand (its hand in the world and the
-tiles it played) and the public record, so whether its plays are its policy's is again a
-fact about its hand alone. The rules above need that check added to the per-seat
-evidence (each past play replayed through the seat's play rules); the counting is
-unchanged. Not built.
-
-**Smallest addition.** In `AuctionReading::evidence`, a read seat's past plays checked
-with its policy at each of its past frames (`CompiledPolicy::choose`), beside its call.
+**Smallest addition.** A guard atom that holds when a named reading of the frame puts an
+event at probability one (or above a literal bound), evaluated by `Reading::evidence` and
+`Belief::given` at the frame: a policy that is still a function of the frame, since the
+reading is. Its cost is a reading per decision (README, The record as evidence: 40 ms on
+average at the book's positions, 1.3 s at worst), so a policy that uses it is priced on
+the pour only if the reading is cached by record.
 
 ## 2. Cross-game policy comparison (Ch. 2, 7, 12)
 
@@ -216,10 +227,10 @@ reads it as public fact: `(shaker c)`, `(bid-of c n)`, `(passed c)`, `(no-bid)`,
 auction frame, so a bidding policy is the object a likelihood would invert. So "the
 bidder bid 35" and "the partner passed" are now clauses a rule can state.
 
-**Narrowed again (the bid as evidence, 2026-10-13; README, The auction as evidence).** A
+**Narrowed again (the bid as evidence, 2026-10-13; README, The record as evidence).** A
 seat that has heard the calls conditions its belief on each read seat's calls (and the
 declarer's declaration) being what that seat's bidding policy makes from its hand:
-`AuctionReading`, `Belief::given_auction`, and `silas query ... --auction ... --read ...`.
+`Reading::calls`, `Belief::given`, and `silas query ... --auction ... --read ...`.
 Exact by counting, `exact_given` the read policies, never sampled; held to brute force on
 every world of small frames (`tests/reading.rs`). The match state the bids were made at
 and the declarations offered are the reading's arguments, and the auction must be the
@@ -254,6 +265,12 @@ table's (`--auction`), never a contract-only hand's convention. What moved:
 are there), and the match state in the play frame.
 
 ## Closed
+
+Closed by the plays as evidence (#128 for the readings; 2026-10-13; gap 1 above): a belief
+weighed by named seats' past plays, each under its play policy, exactly, under the
+consistent likelihood (an event) or the uniform one (`1/|allowed|`), with the calls read
+from the same hand. Four of the five readings gap 1 listed are numbers now (C2, C3, C8's
+on a trump lead, C21); C1 is statable.
 
 Closed by the bid as evidence (#134 in part, #128 for the auction; 2026-10-13; gaps 1
 and 4 above): conditioning a belief on the calls of named seats, each under its bidding

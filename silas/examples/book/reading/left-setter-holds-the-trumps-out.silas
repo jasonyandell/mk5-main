@@ -1,0 +1,20 @@
+; A count follow read as no choice (S-0138-e, the bidder's first reading; the
+; same reading as C8, p. 54, S-0078-c). Hand 31 (deuces, 30), the bidder after
+; trick one: he led the 2-2, and the right setter followed with the 3-2, a
+; trump that is count. Read under protect-the-count (a setter following a
+; bidder's lead that cannot lose keeps his count when he has a follower
+; without it), the right setter held no other trump, so every trump the bidder
+; does not hold is the left setter's. Asked from the bidder's seat:
+;
+;   silas query examples/book/reading/left-setter-holds-the-trumps-out.silas \
+;     --hand hand-31 --trick 2 --seat bidder \
+;     --read right=examples/book/protect-the-count.silas
+;
+; Uniform: 5/22. Read: 1, exact given protect-the-count as the right setter's
+; policy (tests/book_reading.rs).
+(include book)
+
+(query
+  (left-setter s)
+  (trump q)
+  (none (roles t) (in t q) (live t) (not (mine t)) (not (holds s t))))

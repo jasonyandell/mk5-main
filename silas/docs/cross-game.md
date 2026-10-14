@@ -728,7 +728,7 @@ three policies, 31 s on 18 cores against 117 s.
 What of gap 4 (#134) this closes and what it leaves is `GAPS.md` § 4.
 
 **Amendment (the bid as evidence, 2026-10-13).** The reading of a bid this slice left to
-#128 is built for the auction (README, The auction as evidence): a belief conditioned
+#128 is built for the auction (README, The record as evidence): a belief conditioned
 on named seats' calls, and the declarer's declaration, being what their bidding
 policies make from their hands, counted exactly and `exact_given` those policies. It is
 the field-free half of a field: the same object a slice-3 field's seats would be, read

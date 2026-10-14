@@ -342,7 +342,7 @@ suit has the most tiles out (the prelude's `more-out`). Still statable but unwri
 ## The bid as evidence (2026-10-13)
 
 A seat that has heard the calls reads them (#134; #128 for the auction; `silas/README.md`
-§ The auction as evidence): given a bidding policy for each read seat, the belief keeps
+§ The record as evidence): given a bidding policy for each read seat, the belief keeps
 exactly the worlds in which every read seat's policy, from its own hand, makes its call
 and, for the declarer, its declaration. A policy is deterministic, so each world weighs
 zero or one, and whether it is kept depends seat by seat on that seat's hand alone: Silas
@@ -359,9 +359,32 @@ auction moves it a point either way. In Hand 29 the partner reading the bidder's
 fours puts the 4-4 in his hand at 6,003/8,669 against 1/3. `silas query ... --auction
 ... --read ...` asks it at the command line. What it cannot yet ask: a question about a
 whole hidden hand ("a 35 means two offs", pp. 53–54), which needs a seat's hand law; a
-reading inside a policy's guard; a seat mid-auction; and the plays as evidence, which
-factorize the same way (a seat's play frame is its hand and the record) and wait only on
-each past play's check (`silas/GAPS.md` 1 and 4).
+reading inside a policy's guard; and a seat mid-auction (`silas/GAPS.md` 1 and 4).
+
+## The plays as evidence (2026-10-13)
+
+The same reading for the play (#128; `silas/README.md` § The record as evidence): each read
+seat's past plays are checked against its play policy at its own frame of the time, built
+from its hand in the world and the record before the play. The weight is still a product of
+per-seat functions of each seat's hand, so the counting is the bid's; `tests/play_reading.rs`
+holds it to brute force over every world of small frames. A play policy allows a set, so
+the likelihood is a stated choice: **consistent** by default (one when every read play is
+allowed, else zero: an event, the posterior a count, a policy that allows everything no
+evidence), **uniform** on request (`1/|allowed|`: the seat picks at random within its set,
+an extra hypothesis under which even a random player is evidence). The labels differ (`S3
+plays within protect-the-count#…`, `… plays uniformly within …`). A play the fallback
+decides is silence. Calls and plays of one seat are read from the one hand.
+
+The book's readings, each beside the uniform deal's ([[w42]]): in Hand 31 the left
+setter's "you know the bidder holds both trumps" at trick six (S-0140-e) is 2/15 from his
+seat and 1 with the right setter's count trump at trick one read under `protect-the-count`;
+the bidder's two readings after trick one (S-0138-e) go 5/22 → 1 and 5/8 → 1; the
+partner's top trump in Hand 30 stays 26/57 under the worked hand's sender and goes to 1
+under p. 25's; the bait (C21) read under `crisis` is 91/167, not the book's certainty
+(1549/1777 under the uniform likelihood). A reading costs 40 ms on average at the book's
+positions with three seats read (18 cores; 1.3 s at worst, in trick one), so cost is not
+the obstacle. What a reading cannot yet do is drive a rule: a guard reads the frame, never
+a belief, and that is gap 1 now (`silas/GAPS.md` 1).
 
 ## Where it sits
 
@@ -382,8 +405,8 @@ each past play's check (`silas/GAPS.md` 1 and 4).
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 18 and prices against none; the dead
   double's throw and the trump set's feed carry the conditions the book states).
-  Policy likelihood for the play (#128; the auction's is built, § The bid as evidence)
-  and another seat's knowledge (#132) are next ([[w42]]). The cross-game
+  A rule acting on a reading (#128's remainder; the readings are built, § The plays as
+  evidence) and another seat's knowledge (#132) are next ([[w42]]). The cross-game
   slices go on from the auction to comparison over deals (§ The match and field-free
   comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's
