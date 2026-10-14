@@ -143,6 +143,7 @@ impl Player {
             draw: Draw::Uniform,
             draw_budget: DRAW_BUDGET,
             convention: None,
+            reading: None,
         }
     }
 
