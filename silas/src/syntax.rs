@@ -533,8 +533,10 @@ pub(crate) fn valid_name(s: &str) -> bool {
 }
 
 /// Words the grammar reserves: no predicate or definition takes them.
-pub(crate) const RESERVED: [&str; 13] =
-    ["query", "roles", "out", "pattern", "same", "not", "none", "some", "define", "and", "or", "card", "points"];
+pub(crate) const RESERVED: [&str; 15] = [
+    "query", "roles", "out", "pattern", "same", "not", "none", "some", "define", "and", "or", "least", "most", "card",
+    "points",
+];
 
 /// Reserved words that head a part of a query or a definition, never a clause.
 const NOT_CLAUSES: [&str; 5] = ["query", "roles", "out", "pattern", "define"];
@@ -745,7 +747,7 @@ impl Library {
     /// and every definition they call expanded.
     fn body(&self, clauses: &[Expr], names: &Names, span: Span) -> Result<Pattern> {
         let mut pattern = Pattern { span, ..Pattern::default() };
-        for clause in &sugar::clauses(clauses)? {
+        for clause in &sugar::clauses(clauses, &|n| names.contains_key(n))? {
             let xs = clause.list()?;
             match clause.head() {
                 Some(part) if NOT_CLAUSES.contains(&part) => {

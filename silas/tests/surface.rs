@@ -139,6 +139,60 @@ fn and_or_and_not_are_kleenes_connectives_spelled_in_the_core() {
 }
 
 #[test]
+fn least_and_most_are_a_candidate_no_rival_beats() {
+    // (least t q c ...) is c ... and no rival meeting c has a smaller q: the
+    // rival a fresh name, t's with a suffix.
+    let length = |t: &str| format!("(card (roles d) (mine d) (bears d {t}))");
+    same_query(
+        &format!("(query (out t) (least t {} (trump t)))", length("t")),
+        &format!(
+            "(query (roles (context t)) (out t) (pattern (trump t)
+               (none (roles (context t-2)) (trump t-2) (< {} {}))))",
+            length("t-2"),
+            length("t")
+        ),
+    );
+    same_query(
+        &format!("(query (out t) (most t {} (trump t)))", length("t")),
+        &format!("(query (out t) (trump t) (none (roles t-2) (trump t-2) (> {} {})))", length("t-2"), length("t")),
+    );
+    // The rival's name is fresh to the form and to the names around it.
+    same_query(
+        "(query (out t) (context t-2 q1) (least t (card (roles t-3) (mine t-3) (bears t-3 t)) (trump t)))",
+        "(query (out t) (context t-2 q1) (trump t)
+           (none (roles t-4) (trump t-4)
+             (< (card (roles t-3) (mine t-3) (bears t-3 t-4)) (card (roles t-3) (mine t-3) (bears t-3 t)))))",
+    );
+    // Negated, it is the negation of its conjunction.
+    same_query(
+        "(query (out t) (trump t) (not (least t 3 (trump t))))",
+        "(query (out t) (trump t) (not (and (trump t) (none (roles t-2) (trump t-2) (< 3 3)))))",
+    );
+    // At a frame: the viewer's shortest and longest pip suits.
+    let frame = opening(&physics("P6"), tiles(&["0-0", "1-1", "2-0", "3-2", "5-5", "6-4", "6-6"]));
+    let answers = |text: &str| -> Vec<String> {
+        query(&format!("(include bidding) {text}"))
+            .compile(&Registry::standard())
+            .unwrap()
+            .evaluate_viewer(&frame, &mut budget())
+            .unwrap()
+            .into_iter()
+            .map(|a| a.0[0].to_string())
+            .collect()
+    };
+    let length = "(card (roles d) (of-suit d t))";
+    assert_eq!(answers(&format!("(query (out t) (most t {length} (pip-suit t)))")), ["q0", "q2", "q6"]);
+    assert_eq!(answers(&format!("(query (out t) (least t {length} (pip-suit t)))")), ["q1", "q3", "q4", "q5"]);
+    assert_eq!(answers(&format!("(query (out t) (least t {length} (pip-suit t) (suit-double t)))")), ["q1", "q5"]);
+    for (text, expected) in [
+        ("(query (least))", "least syntax is (least role number clause ...)"),
+        ("(query (most 6-4 3 (mine 6-4)))", "most ranges a role, and 6-4 is a literal"),
+    ] {
+        assert!(error(text).contains(expected), "{text}: {}", error(text));
+    }
+}
+
+#[test]
 fn a_rule_says_what_it_plays_and_the_fallback_goes_unsaid() {
     let registry = Registry::standard();
     let short = "(include book)

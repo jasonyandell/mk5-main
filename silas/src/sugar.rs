@@ -10,18 +10,26 @@
 //!   is `(none R B)` and `(not (none R B))` is `(some R B)`; `(not (and c
 //!   ...))` is `(none (roles) c ...)`; `(not (or c ...))` is `(not c) ...`. An
 //!   atom or a definition call stays `(not (p ...))`, the core's own negation.
+//! - `(least t q c ...)` says `t` is a least candidate by the number `q`: it
+//!   is `c ...` and `(none (roles u) c' ... (< q' q))`, where `u` is a name
+//!   fresh to the form and to the names around it, and `c'` and `q'` are `c`
+//!   and `q` with `u` for `t`. `(most t q c ...)` is the same with `>`.
 //! - In any `(roles ...)`, a bare name takes its sort from its uses
 //!   ([`Uses`]); a query may omit `(roles ...)`, `(out ...)` and `(pattern
 //!   ...)`, and a policy rule its query (`syntax.rs` and `policy.rs` apply
 //!   these, with the definitions in force).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::Result;
 use crate::syntax::{Expr, Kind, Sort, Span, Value};
 
 /// Heads that are clause forms of the core or the sugar, not atoms.
-const FORMS: [&str; 12] = ["same", "some", "none", "not", "and", "or", "<=", "<", ">=", ">", "=", "/="];
+const FORMS: [&str; 14] =
+    ["same", "some", "none", "not", "and", "or", "least", "most", "<=", "<", ">=", ">", "=", "/="];
+
+/// Whether a name is taken around a clause: a fresh name avoids it.
+pub(crate) type Taken<'a> = &'a dyn Fn(&str) -> bool;
 
 /// The comparisons read into the core's `(<= a b)`, each with the
 /// comparison that negates it.
@@ -52,7 +60,7 @@ fn at_most(a: Expr, b: Expr, x: &Expr) -> Expr {
 /// `or` it is): over the integers, `a < b` is `a + 1 <= b`, `a >= b` is `b <=
 /// a`, `a > b` is `b + 1 <= a`, `a = b` is both `a <= b` and `b <= a`, and `a
 /// /= b` is `a < b` or `a > b`.
-fn comparison(x: &Expr, head: &str, out: &mut Vec<Expr>) -> Result<()> {
+fn comparison(x: &Expr, head: &str, taken: Taken<'_>, out: &mut Vec<Expr>) -> Result<()> {
     let (a, b) = operands(x, head)?;
     let (a, b) = (a.clone(), b.clone());
     match head {
@@ -67,7 +75,7 @@ fn comparison(x: &Expr, head: &str, out: &mut Vec<Expr>) -> Result<()> {
         _ => {
             let less = Expr::list_at(vec![Expr::word_at("<", &x.span), a.clone(), b.clone()], &x.span);
             let more = Expr::list_at(vec![Expr::word_at(">", &x.span), a, b], &x.span);
-            clause(&Expr::list_at(vec![Expr::word_at("or", &x.span), less, more], &x.span), out)?;
+            clause(&Expr::list_at(vec![Expr::word_at("or", &x.span), less, more], &x.span), taken, out)?;
         }
     }
     Ok(())
@@ -89,47 +97,95 @@ pub(crate) fn dominoes(declared: &Expr) -> Result<Expr> {
 
 /// A clause list with every `and`, `or` and compound `not` rewritten, at
 /// this level (a scope's body is rewritten when it is read).
-pub(crate) fn clauses(xs: &[Expr]) -> Result<Vec<Expr>> {
+pub(crate) fn clauses(xs: &[Expr], taken: Taken<'_>) -> Result<Vec<Expr>> {
     let mut out = Vec::new();
     for x in xs {
-        clause(x, &mut out)?;
+        clause(x, taken, &mut out)?;
     }
     Ok(out)
 }
 
-fn clause(x: &Expr, out: &mut Vec<Expr>) -> Result<()> {
+fn clause(x: &Expr, taken: Taken<'_>, out: &mut Vec<Expr>) -> Result<()> {
     match x.head() {
         Some("and") => {
             for c in &x.list()?[1..] {
-                clause(c, out)?;
+                clause(c, taken, out)?;
             }
         }
         Some("or") => {
             let mut body = vec![Expr::list_at(vec![Expr::word_at("roles", &x.span)], &x.span)];
             for c in &x.list()?[1..] {
-                negation(c, &mut body)?;
+                negation(c, taken, &mut body)?;
             }
             out.push(Expr::list_at([vec![Expr::word_at("none", &x.span)], body].concat(), &x.span));
         }
         Some("not") => match x.list()? {
             [_, c] if c.head().is_some_and(|h| FORMS.contains(&h)) => {
                 let mut negated = Vec::new();
-                negation(c, &mut negated)?;
+                negation(c, taken, &mut negated)?;
                 for n in &negated {
-                    clause(n, out)?;
+                    clause(n, taken, out)?;
                 }
             }
             _ => out.push(x.clone()),
         },
-        Some(head) if COMPARISONS.iter().any(|(c, _)| *c == head) => comparison(x, head, out)?,
+        Some(head @ ("least" | "most")) => clause(&extremum(x, head, taken)?, taken, out)?,
+        Some(head) if COMPARISONS.iter().any(|(c, _)| *c == head) => comparison(x, head, taken, out)?,
         _ => out.push(x.clone()),
     }
     Ok(())
 }
 
+/// `(least t q c ...)` as the `and` it is: `t` meets `c ...`, and no
+/// candidate `u` that meets them has a smaller `q` (a larger, for `most`).
+/// `u` is fresh: no word of the form and no name taken around it.
+fn extremum(x: &Expr, head: &str, taken: Taken<'_>) -> Result<Expr> {
+    let [_, role, quantity, candidates @ ..] = x.list()? else {
+        return Err(x.span.error(format!("{head} syntax is ({head} role number clause ...)")));
+    };
+    let name = role.word()?;
+    if Value::literal(name).is_some() {
+        return Err(role.span.error(format!("{head} ranges a role, and {name} is a literal")));
+    }
+    let mut words = BTreeSet::new();
+    collect_words(x, &mut words);
+    let other = (2..).map(|k| format!("{name}-{k}")).find(|n| !words.contains(n) && !taken(n)).expect("an unused name");
+    let at = |w: &str| Expr::word_at(w, &x.span);
+    let compare = if head == "least" { "<" } else { ">" };
+    let mut rival = vec![at("none"), Expr::list_at(vec![at("roles"), at(&other)], &x.span)];
+    rival.extend(candidates.iter().map(|c| substitute(c, name, &other)));
+    rival.push(Expr::list_at(vec![at(compare), substitute(quantity, name, &other), quantity.clone()], &x.span));
+    let mut and = vec![at("and")];
+    and.extend(candidates.iter().cloned());
+    and.push(Expr::list_at(rival, &x.span));
+    Ok(Expr::list_at(and, &x.span))
+}
+
+/// Every word of `x`.
+fn collect_words(x: &Expr, out: &mut BTreeSet<String>) {
+    match &x.kind {
+        Kind::Word(w) => {
+            out.insert(w.clone());
+        }
+        Kind::List(xs) => xs.iter().for_each(|x| collect_words(x, out)),
+        Kind::Comment(_) => {}
+    }
+}
+
+/// `x` with the word `from` read as `to` throughout. A form that declared
+/// `from` again inside would already be refused around it (a scope's role
+/// may not repeat a name in force), so no binding is crossed.
+fn substitute(x: &Expr, from: &str, to: &str) -> Expr {
+    match &x.kind {
+        Kind::Word(w) if w == from => Expr::word_at(to, &x.span),
+        Kind::List(xs) => Expr::list_at(xs.iter().map(|x| substitute(x, from, to)).collect(), &x.span),
+        _ => x.clone(),
+    }
+}
+
 /// The clauses whose conjunction is the negation of `c`, still to be read
 /// as clauses (they may hold sugar of their own).
-fn negation(c: &Expr, out: &mut Vec<Expr>) -> Result<()> {
+fn negation(c: &Expr, taken: Taken<'_>, out: &mut Vec<Expr>) -> Result<()> {
     let xs = c.list()?;
     let renamed = |tag: &str| {
         let mut items = xs.to_vec();
@@ -149,9 +205,10 @@ fn negation(c: &Expr, out: &mut Vec<Expr>) -> Result<()> {
         }
         Some("or") => {
             for d in &xs[1..] {
-                negation(d, out)?;
+                negation(d, taken, out)?;
             }
         }
+        Some(head @ ("least" | "most")) => negation(&extremum(c, head, taken)?, taken, out)?,
         Some("same") => {
             return Err(c.span.error("same cannot be negated: roles declared together are already distinct"));
         }
@@ -185,7 +242,7 @@ impl Uses {
         bound: &[String],
         signature: &dyn Fn(&str) -> Option<Vec<Sort>>,
     ) -> Result<()> {
-        for x in clauses(xs)? {
+        for x in clauses(xs, &|n| bound.iter().any(|b| b == n))? {
             let items = x.list()?;
             match x.head() {
                 Some("same") => {
