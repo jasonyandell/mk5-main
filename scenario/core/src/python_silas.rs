@@ -17,8 +17,9 @@ use pyo3::types::{PyDict, PyFrozenSet, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 use silas::{
-    Answer, Auction, Authority, Belief, Bid, Budget, CompiledPolicy, CompiledQuery, DecisionProvenance, DominoSet,
-    Estimate, Frame, Physics, PolicyProgram, Query, QuerySummary, Registry, Seat, Value, Verdict, Weight,
+    Answer, Auction, AuctionConfig, AuctionFrame, Authority, Belief, Bid, Budget, Call, CompiledPolicy, CompiledQuery,
+    DecisionProvenance, DominoSet, Estimate, Frame, MatchState, Physics, PolicyProgram, Query, QuerySummary, Registry,
+    Scoring, Seat, Value, Verdict, Weight,
 };
 
 use crate::physics::{domino, dominoes, mask, seat, tile, ZebPhysics};
@@ -236,12 +237,7 @@ impl SilasPolicy {
     #[pyo3(signature = (frame, budget = 10_000_000))]
     fn allowed(&self, frame: &SilasFrame, budget: u64) -> PyResult<(String, Vec<u8>)> {
         let allowed = self.0.allowed(&frame.0, &mut Budget::new(budget)).map_err(refused)?;
-        let layer = match allowed.provenance {
-            DecisionProvenance::Exact => "exact".to_owned(),
-            DecisionProvenance::Fallback => "fallback".to_owned(),
-            DecisionProvenance::RelationalRule { name } => name,
-        };
-        Ok((layer, allowed.tiles.iter().map(tile).collect()))
+        Ok((layer(allowed.provenance), allowed.tiles.iter().map(tile).collect()))
     }
 
     /// The tile the policy plays at `frame`, as Zeb's tile id.
@@ -249,6 +245,95 @@ impl SilasPolicy {
     fn choose(&self, frame: &SilasFrame, budget: u64) -> PyResult<u8> {
         self.0.choose(&frame.0, &mut Budget::new(budget)).map(tile).map_err(refused)
     }
+
+    /// The policy's call in the arena's auction (`arena/auction.py`): `shaker`
+    /// shook, `calls` are the calls so far from the shaker's left (0 a pass,
+    /// else the bid as the table says it), and `viewer`, dealt the tile mask
+    /// `dealt`, is to call. `forced`: the shaker may not pass over three
+    /// passes. `score` is the match in marks by team, to `marks_to_win`. The
+    /// winner may declare a pip trump, the higher pip first (the arena's
+    /// menu). Returns the deciding layer (`"fallback"` or the rule's name) and
+    /// the call, 0 for a pass.
+    #[pyo3(signature = (shaker, calls, viewer, dealt, forced = false, score = (0, 0), marks_to_win = 7, budget = 10_000_000))]
+    #[allow(clippy::too_many_arguments)]
+    fn bid(
+        &self,
+        shaker: u8,
+        calls: Vec<u32>,
+        viewer: u8,
+        dealt: u32,
+        forced: bool,
+        score: (u32, u32),
+        marks_to_win: u32,
+        budget: u64,
+    ) -> PyResult<(String, u32)> {
+        let frame = auction_frame(shaker, &calls, viewer, dealt, forced, score, marks_to_win)?;
+        let choice = self.0.bid(&frame, &mut Budget::new(budget)).map_err(refused)?;
+        let call = match choice.choice {
+            Call::Pass => 0,
+            Call::Bid(bid) => bid.value(),
+        };
+        Ok((layer(choice.provenance), call))
+    }
+
+    /// The policy's declaration at the end of the arena's auction, where
+    /// `viewer` won it (the arguments as for `bid`, `calls` all four): the
+    /// deciding layer and Zeb's declaration, a pip trump 0 to 6.
+    #[pyo3(signature = (shaker, calls, viewer, dealt, forced = false, score = (0, 0), marks_to_win = 7, budget = 10_000_000))]
+    #[allow(clippy::too_many_arguments)]
+    fn declare(
+        &self,
+        shaker: u8,
+        calls: Vec<u32>,
+        viewer: u8,
+        dealt: u32,
+        forced: bool,
+        score: (u32, u32),
+        marks_to_win: u32,
+        budget: u64,
+    ) -> PyResult<(String, u8)> {
+        let frame = auction_frame(shaker, &calls, viewer, dealt, forced, score, marks_to_win)?;
+        let choice = self.0.declare(&frame, &mut Budget::new(budget)).map_err(refused)?;
+        let decl = ARENA_MENU
+            .iter()
+            .copied()
+            .find(|&d| physics(d).is_ok_and(|p| p == choice.choice))
+            .ok_or_else(|| invalid(format!("{} is not a pip trump", choice.choice.name())))?;
+        Ok((layer(choice.provenance), decl))
+    }
+}
+
+/// The arena's declarations, the higher pip first (its last tie-break).
+const ARENA_MENU: [u8; 7] = [6, 5, 4, 3, 2, 1, 0];
+
+fn layer(provenance: DecisionProvenance) -> String {
+    match provenance {
+        DecisionProvenance::Exact => "exact".to_owned(),
+        DecisionProvenance::Fallback => "fallback".to_owned(),
+        DecisionProvenance::RelationalRule { name } => name,
+    }
+}
+
+/// The auction as `viewer` sees it, in the arena's terms (`SilasPolicy.bid`).
+fn auction_frame(
+    shaker: u8,
+    calls: &[u32],
+    viewer: u8,
+    dealt: u32,
+    forced: bool,
+    score: (u32, u32),
+    marks_to_win: u32,
+) -> PyResult<AuctionFrame> {
+    let at = |s: u8| seat(s).ok_or_else(|| invalid(format!("no seat {s}")));
+    let calls = calls
+        .iter()
+        .map(|&c| if c == 0 { Ok(Call::Pass) } else { Bid::number(c).map(Call::Bid).map_err(refused) })
+        .collect::<PyResult<Vec<_>>>()?;
+    let config = AuctionConfig::new(AuctionConfig::STRAIGHT.max_marks(), forced).map_err(refused)?;
+    let auction = Auction::new(config, at(shaker)?, calls).map_err(refused)?;
+    let state = MatchState::new(Scoring::Marks { target: marks_to_win }, [score.0, score.1]).map_err(refused)?;
+    let menu = ARENA_MENU.iter().map(|&d| physics(d)).collect::<PyResult<Vec<_>>>()?;
+    AuctionFrame::new(auction, at(viewer)?, tiles(dealt)?, state, menu.into()).map_err(refused)
 }
 
 /// An exact finite measure over the worlds of a frame.

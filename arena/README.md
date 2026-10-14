@@ -19,10 +19,13 @@ A player is `<bidder>+<play>`:
 | `heuristic` | Roberson risk-budget: bid the minimum legal raise while it stays within `42 − unique_exposed_points` for the best ≥3-tile trump; never bids marks. `heuristic:<min_trumps>,<caution>` to tune. |
 | `bid30` | Opens 30 if nothing has been bid, else passes — the arena analogue of the historical forced-bid-30 evals, with a sane declaration. |
 | `random` | Bids a uniform legal point bid with probability p (`random:<p>`); noise floor. |
+| `silas[:<policy>]` | A bid policy of `silas/examples/book/bidding/` (`risk-budget`, the default; `bid-only-enough` is `heuristic` call for call). |
 
 | play | what it does |
 |---|---|
 | `lens:<utility>` | Oracle E[Q] utility-greedy (`ev`, `p_make`, `mark_ev`, `cvar_10`, `robust_q25`, `disaster`), with **real per-game bid values** feeding the utility thresholds. |
+| `walt:<options>` | Walt, the scenario player (`arena/walt_play.py`; Zeb is `walt:k0,n512,F=<net>,f=16`). |
+| `book[:<lowest\|zeb>,<least\|zeb>][/<walt options>]` | The book player (`arena/book_play.py`): the book's 18 rules as a Silas policy stack; where no rule fires, the lowest legal tile or Zeb's; inside a rule's set, its least tile or Zeb's best. |
 | `random` | Uniform legal. |
 
 ## Design
