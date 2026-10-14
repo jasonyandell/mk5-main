@@ -8,7 +8,7 @@ construction one rung down, bottoming out in random legal play. See
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
           [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>]
-          [,r=consistent|uniform:<margin>[:<eps>]][,c=<convention>:S|R|SR][,t=lowest|margin][,py]
+          [,r=consistent|uniform:<margin>[:<eps>]][,c=<convention>:S|R|SR][,t=lowest|margin[:<band>]][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -58,6 +58,9 @@ equal q as doubles in the decision's own sample, no noise bar): `lowest`, the
 default, the lowest tile id; `margin` (make, then margin; `u=make` only) the
 tie with the best mean margin for the decider's side under the plan, then the
 lowest id — at every decision a Walt makes, the modeled rungs' too (#120).
+`t=margin:<band>` widens margin's tied set to every tile whose q lies within
+the band δ of the best (`Config.tie_band`): δ is the make probability the
+decision may give up for margin; `t=margin` is δ = 0, the exact tie.
 
 `f=` is the live rung's cell floor: below the root, where the live seat's
 cell holds fewer than f scenarios it stops maximizing over them and plays
@@ -134,11 +137,12 @@ class WaltPlay:
                  floor: int | None = None, field: FieldNet | None = None,
                  field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
                  convention: Convention | None = None, reading: Reading | None = None, tie: str = "lowest",
-                 compiled: bool = True):
+                 tie_band: float = 0.0, compiled: bool = True):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
-        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget, convention, reading, tie)
+        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget, convention, reading, tie,
+                        tie_band)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -175,7 +179,7 @@ class WaltPlay:
         conv = "" if c.convention is None else f", convention={c.convention.name}:{c.convention.arm}"
         conv += "" if c.reading is None else f", reading={c.reading.likelihood}:{c.reading.margin}"
         conv += "" if c.reading is None or c.reading.eps == 0 else f":{c.reading.eps:g}"
-        tie = "" if c.tie == "lowest" else f", tie={c.tie}"
+        tie = "" if c.tie == "lowest" else f", tie={c.tie}" + (f":{c.tie_band:g}" if c.tie_band else "")
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}{belief}, "
                 f"field={field}, draw={c.draw}{conv}{tie}, {engine})")
 
@@ -210,7 +214,9 @@ def parse_walt_spec(arg: str) -> WaltPlay:
                 raise ValueError(f"a convention's arm is S, R or SR, not {arm!r}")
             kw["convention"] = Convention(name, send="S" in arm, read="R" in arm)
         elif t.startswith("t="):
-            kw["tie"] = t[2:]
+            kw["tie"], _, band = t[2:].partition(":")
+            if band:
+                kw["tie_band"] = float(band)
         elif t[0] in "knmhg" and t[1:].isdigit():
             key = {"k": "level", "n": "n_outer", "m": "n_inner",
                    "h": "horizon", "g": "horizon_inner"}[t[0]]

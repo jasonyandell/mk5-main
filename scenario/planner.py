@@ -110,7 +110,12 @@ root plays t and the plan continues (`Analysis.outcomes`: where the plan
 stops, the contract decided or the horizon, the tape plays the rest), then
 the lowest tile id. It acts at every decision a Walt makes — the live root, a
 modeled rung's, a convention sender's — and never inside the plan, whose
-interior choices keep the lowest id among equal values (#120).
+interior choices keep the lowest id among equal values (#120). Its band δ
+(`Config.tie_band`, default 0, margin only) widens the tied set to the near
+ties: every root action whose q lies within δ of the best q, the decider's
+side read (q ≥ best − δ for the bidding side, q ≤ best + δ for a setter).
+δ is the make probability the decision will give up, at most, for margin;
+δ = 0 is the exact tie (#120 follow-up).
 
 Every random draw — scenario sampling, the posterior's coins and the dice
 tape — comes from SplitMix64 streams seeded by the invocation's coordinate
@@ -212,6 +217,7 @@ class Config:
     convention: Convention | None = None   # the live seat's convention overlay; None is off
     reading: Reading | None = None   # the posterior's likelihood as the net's set; None is F_σ's
     tie: str = "lowest"         # the tie rule among a decision's exact ties: "lowest" or "margin"
+    tie_band: float = 0.0       # δ: margin's tied set is every q within δ of the best; 0 is the exact tie
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.field_eps <= 1.0:
@@ -239,6 +245,10 @@ class Config:
             raise ValueError(f"unknown tie rule {self.tie!r}")
         if self.tie == "margin" and self.utility != "make":
             raise ValueError("make-then-margin breaks ties of the make utility")
+        if not 0.0 <= self.tie_band <= 1.0:
+            raise ValueError("a tie band lies in [0, 1]: it is a make probability")
+        if self.tie_band > 0.0 and self.tie != "margin":
+            raise ValueError("a tie band widens make-then-margin's tied set: it needs tie=\"margin\"")
 
     @property
     def level(self) -> int:
@@ -709,11 +719,14 @@ class _Invocation:
 
     def choose(self, q: dict[int, float]) -> int:
         """The decision among root actions valued `q`: the best, and among
-        exact ties the tie rule's pick (`Config.tie`)."""
+        its ties — exact, or within the band δ (`Config.tie_band`) — the tie
+        rule's pick (`Config.tie`)."""
         tile = _best(q, self.maximize)
-        if self.walt.config.tie == "lowest":
+        cfg = self.walt.config
+        if cfg.tie == "lowest":
             return tile
-        tied = [t for t, v in sorted(q.items()) if v == q[tile]]
+        top, band = q[tile], cfg.tie_band
+        tied = [t for t, v in sorted(q.items()) if (v >= top - band if self.maximize else v <= top + band)]
         if len(tied) < 2:
             return tile
         return _best({t: self.mean_margin(t) for t in tied}, self.maximize)
