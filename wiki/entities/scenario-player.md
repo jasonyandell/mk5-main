@@ -1084,6 +1084,19 @@ net reads pips and dead tiles. The ladder settles by level 3 with two tricks lef
 net already plays its best move 96% of the time; a warm fine-tune toward it is inside the noise.
 [[constellations-2026-10-14]].
 
+## Match-aware bidding (2026-10-14)
+
+Zeb's bidder now runs in the arena (`arena/zeb_bid.py`, `zeb:n<w>[,met|marks]`): the package's
+forecast, bit-identical to the parity fixture, and `chooseBid`. Every one-mark call pays one
+mark made or set, so the score never changes which one-mark call is best ([[match-equity]]); it
+enters only through the 84, which `chooseBid` never bids. The `met` option bids 84 when its match
+equity beats the hand-only call's (default off). Against deployed Zeb's bidder it wins 53.4%
+[52.5, 54.3] of games to 7 marks (pre-registered bar: lower bound above 50%). The opponents at 6
+account for about a third of that; upgrading 42s to 84s accounts for half. Against the same 84
+priced by expected marks it still wins 51.4% [50.6, 52.2]. Over an opponent's bid the hand-only
+forecast runs 3–8 points hot. Nothing ships; the option is proposed for the next zeb version
+([[match-aware-bidding-2026-10-14]], #160).
+
 ## Links
 
 [[exploiter-endgames-2026-10-14]] (an exploiter against Zeb on three-trick endgames: not sturdy in points, small in contracts) ·
