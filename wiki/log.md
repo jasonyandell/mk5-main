@@ -42,6 +42,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 70e2c569 | the license line: the science (engine, Walt, Silas, wiki, data) CC0, Zeb MIT; SPDX on every live code file, REUSE.toml for the rest, `reuse lint` in scripts/check; planner's mixed files CC0-1.0 AND MIT until #158]
+
+**Added:** [[license-line]], `LICENSE` (rewritten), `REUSE.toml`, `LICENSES/`, `docs/powered-by-walt.svg`. **Updated:** [[scenario-player]] (Links), `index-decisions.md`, `CLAUDE.md` (hard rule), READMEs. Issue: #158.
+
 ## [2026-10-14 | adcc454c | legacy 42 bots surveyed (Win42, texas42 0.46, 42-LX, Palm42, iOS Texas 42, dead GitHub repos); first target Win42 via its author-documented protocol (#157); the GPL texas42 AI seated at the arena in a pilot (854/854 legal plays; a smoke test, not a rating)]
 
 **Added:** [[legacy-42-bots]]. **Updated:** [[tournament]] (§ Participants, Links), `index-topics.md`. Issue: #157. Pilot code and logs in `scratch/legacy-42/` (gitignored; no third-party bytes committed).
