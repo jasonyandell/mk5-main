@@ -87,7 +87,7 @@ Lineage page: [[burl-adapter-line]] (the chain's full story + comparative table)
 | [[burl-iter1-adapter]] | 80% on 5 completions, 5/10 exhausted | [[burl-iter1-mixed]] |
 | [[iter3-rules-adapter]] | 90% — headline, confounded, never re-run | [[iter3-comparison]] |
 | e1-rank16 | 70% — first real preserve-thoughts adapter | [[iter5-e1-rank-sweep]] |
-| run-3b / run-3c / run-4 | scratch-only; preserve-thoughts A/B + plateau | [[burl-star-run3]], [[burl-harvest-2]] |
+| run-3b / run-3c / run-4 | preserve-thoughts A/B + plateau; adapters, corpora, evals and the six harvests on the Hub since 2026-10-14 ([texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07) `belief_trajectory_rollout/`) | [[burl-star-run3]], [[burl-harvest-2]] |
 
 ## Instruments and infrastructure
 

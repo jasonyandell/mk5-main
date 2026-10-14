@@ -43,6 +43,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | archive | recover everything to Hugging Face: the Archive desk's inventory and first batch (five repos, ~8 GB, screened, verified by download)]
+
+**Updated:** [[huggingface-assets]] (the full 2026-10-14 inventory: 15 datasets, 106 models, what stayed local and why), [[publish-data-to-huggingface]] (the recovered repos; the lost cited paths). **New repos:** [texas-42-walt-pour-make](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour-make), [texas-42-walt-speed-2026-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-speed-2026-09), [texas-42-walt-lanes-2026-08-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-lanes-2026-08-09), [texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07); [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10) gained `zeb/field_net`, `zeb/splat-search`, `zeb/detective-classes`, `zeb/zeb-splats-artifact`, `zeb/legacy-42`, `zeb/bid`. **Held for Jason:** the seed survey and the raw response-ladder run (regenerable or exported), the licenses on four older public repos, retiring the two superseded pour repos. The desk's notebook is `links/archive-notebook` in the feed ([[standing-desks]]).
+
 ## [2026-10-14 | 5807425c | The header audit (#153): the gates are history]
 
 The 21 rows that stayed on a gate are listed in their rule's header or recorded as no rule's; `setter-leads` repaired at Hand 27 (a low tile that calls for a five and no ten goes last); `low-from-a-pair` learns the spare (Hand 29); the three "book against its rule" rows re-read under [[book-authority]]'s presumption, one reconciled. Ledger in [[book-assumptions]] (gate-only 21 → 0); rule table in [[silas]].

@@ -24,7 +24,9 @@ page that explains it; the Hub carries the bytes. Every dataset is public,
 - **Before a worktree is removed.** `scratch/` is gitignored and per checkout;
   a worktree's scratch dies with it. The 2026-10-12 research archive found two
   hub-cited artifacts already gone (`scratch/stochastic-field/`,
-  `scratch/book/wave1/overlay-price.md`).
+  `scratch/book/wave1/overlay-price.md`). The 2026-10-14 recovery
+  ([[huggingface-assets]] § What stayed local) found eighteen cited paths
+  gone; thirteen had been staged for the Hub first, the rest are lost.
 
 Not for: code (git), prose (the wiki), anything under the "Never" list below.
 
@@ -34,6 +36,7 @@ Not for: code (git), prose (the wiki), anything under the "Never" list below.
 |---|---|---|
 | a pour (one training dataset, all its chunks) | `texas-42-<player>-pour[-<size>]`, one repo per pour, one split per chunk | [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k) |
 | a study's or a month's research artifacts | `texas-42-<family>-research-<yyyy-mm>`, one repo per month, one directory per study | [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10) |
+| an era's evidence recovered after the fact | `texas-42-<family>-research-<yyyy-mm>[-<mm>]`, one directory per scratch directory, many-file directories as `<name>.tar.gz` + `<name>.files.txt` | [texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07) (the oracle and LLM era), [texas-42-walt-lanes-2026-08-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-lanes-2026-08-09) (`~/data/texas-42`), [texas-42-walt-speed-2026-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-speed-2026-09) (texas-42 `experiments/`) |
 
 A pour that grows (expert iteration's next round) is republished as the whole
 pour under one repo, not scattered: the 250k pour first went out as two repos

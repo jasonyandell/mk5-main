@@ -116,6 +116,8 @@ in argmax), bids consume prices (it lands whole). Provenance details:
 
 ## Asset map
 
+The v0 and v1 corpora, loops and nets (`scratch/jud-v0`, `scratch/jud-v1`) and the champion runs 24 and 26 are on the Hub since 2026-10-14: [texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07) ([[huggingface-assets]]).
+
 | Organ | Status | Where |
 |---|---|---|
 | Exact perfect-info value | **done** | [[forge]] oracle; [[expected-q-value]] |

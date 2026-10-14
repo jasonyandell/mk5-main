@@ -101,7 +101,7 @@ Jason's call. The issue lists the steps.
 
 ## Pilot: texas42 0.46 at the arena's table (2026-10-14)
 
-Built in `scratch/legacy-42/` (gitignored). The SourceForge tarball, the original `AiPlayer.cpp`,
+Built in `scratch/legacy-42/` (gitignored; the pilot's script and records are `zeb/legacy-42/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10), the GPL sources and the shim left out until their home is chosen). The SourceForge tarball, the original `AiPlayer.cpp`,
 `Domino.cpp` and `DominoList.cpp` unchanged, a Qt 3 shim (QString, QValueList, QPair, no-op
 QTimer), a stub `Engine` that records the decision, and `seat.cpp`. Each request rebuilds the
 AI's state from the public record (hand, history, current trick by relative seat, trump) and

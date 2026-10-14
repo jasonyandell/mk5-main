@@ -87,6 +87,8 @@ regret 2.012 → 1.181) was promoted to the top-level w42 workstream the next da
 
 ## Routes
 
+The adapters (`gus/adapters/*.pt`, gitignored) are on the Hub since 2026-10-14 as `gus-adapters/` in [texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07); the corpora are [texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus) and [-v2](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2) ([[huggingface-assets]]).
+
 - [[gus-line]] — the trail: full arc, all 22 experiments with hooks.
 - Key leaves: [[gus-scaling-ladder]] (the ladder), [[gus-v3-consistency-full-run]] (best
   adapter), [[lamir1-ceiling]] (the pivot record), [[gus-belief-co-train]] (belief
