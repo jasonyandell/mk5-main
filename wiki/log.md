@@ -42,6 +42,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | d432a216 | the regulars' table (#149): a regular who learns bidding caution within a game; interaction with a varied bidder +0.04 [−0.15, +0.22] marks/game, A/A −0.02; null; the auction in the reading's draw, both engines]
+
+**Added:** [[regulars-table-2026-10-14]] (pre-registered at d432a216; 288 batches, none dropped). **Updated:** [[topics/book-authority|book-authority]], [[topics/book-assumptions|book-assumptions]] (A1 row, #149 result, order), [[scenario-player]], `index-experiments.md`. Code: `Situation.auction` (planner.py + core), `arena/regulars.py`, `VariedBidder`, the engine's `remembers` hook, `scenario/regulars.py`. Data: `book/regulars-table/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
 ## [2026-10-14 | a0656fe2 | zeb 0.3.0 built: soft uniform reading (ε 0.28, `reading: false` to turn off) + make-then-margin as defaults; pre-registered confirmation vs 0.2.0 +0.21 [+0.08, +0.34] marks/game, passes; not yet published]
 
 **Added:** [[zeb-030-confirmation-2026-10-14]] (pre-registered at 91855dc6). **Updated:** [[scenario-player]] (§ Zeb 0.3.0, § Where it stands, the reading and tie paragraphs), `index-experiments.md`. Code: `zeb/` 0.3.0, `scenario/zeb030.py`. Data: `zeb/release-0.3.0/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.

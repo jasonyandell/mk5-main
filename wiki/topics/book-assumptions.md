@@ -27,7 +27,7 @@ trick.
 
 | # | the book assumes | lessons that depend on it (row ids) | the arena | measured nearby | cheapest measurement |
 |---|---|---|---|---|---|
-| A1 | **Opponents model you across hands**: they learn your style and exploit it, so varying your play and keeping a reputation have value | S-0080-b, S-0080-c, S-0081-a, S-0081-b, S-0089-e, S-0156-b, S-0070-a, S-0189-a, S-0037-a, S-0154-a; the bait lead of Hand 28 (S-0129-d) | **absent**: memoryless seats; deterministic Zeb; self-play pour | reads by the book (within hand, tile location only): null. Exploiter endgames: knowing Zeb exactly gains +0.004 contract probability per three-trick endgame | **#149**, the regulars' table |
+| A1 | **Opponents model you across hands**: they learn your style and exploit it, so varying your play and keeping a reputation have value | S-0080-b, S-0080-c, S-0081-a, S-0081-b, S-0089-e, S-0156-b, S-0070-a, S-0189-a, S-0037-a, S-0154-a; the bait lead of Hand 28 (S-0129-d) | **absent**: memoryless seats; deterministic Zeb; self-play pour | reads by the book (within hand, tile location only): null. Exploiter endgames: knowing Zeb exactly gains +0.004 contract probability per three-trick endgame. **#149** (a regular who learns bidding caution within a game, reads only): interaction +0.04 [−0.15, +0.22] marks/game, null ([[regulars-table-2026-10-14]]) | a responding regular (#116, #130 slice 5); play-ε learning |
 | A2 | **Partners play one system and read each other by it** | S-0041-a, S-0041-b, S-0041-e, S-0047-d, S-0056-a, S-0057-a..d, S-0058-a, S-0060-c, S-0099-b, S-0100-b, S-0100-c, S-0148-h, S-0150-d..i, S-0151-g, S-0152-a, S-0180-c | **half**: the book team sends, never reads | convention overlay (gates, self-play partners): null; the handoff priced at −0.013 marks/hand with no reader of its kind | **#150**, book partners read each other |
 | A3 | **Opponents are fallible**: they lose track, misdiscard, can be lured | S-0088-a, S-0083-b, S-0079-a, S-0079-b, S-0169-b, S-0080-a, S-0078-d | **absent**: Zeb never forgets a tile or a void | none | **#151**, the fallible-tracker field and its crossover p* |
 | A4 | **The auction is a signal made by a known method**: a bid tells its level's shape | S-0021-a, S-0027-b, S-0027-d, S-0077-c, S-0077-d, S-0078-a, S-0078-b, S-0155-b, S-0165-a | **absent**: worlds uniform given the auction (#117) | pilot below: a deterministic bidder's opening carries 0.93 of 1.58 bits about its hand's strength bucket | #117 / #134; inside #149 |
@@ -84,6 +84,15 @@ trick.
   for advice whose objective is learning or enjoyment.
 
 ## The ONE next experiment: the regulars' table (#149)
+
+**Run 2026-10-14 ([[regulars-table-2026-10-14]], pre-registered at `d432a216`).** Interaction
++0.04 [−0.15, +0.22] marks/game over 384 game pairs, A/A −0.02 [−0.20, +0.17]: a null at this
+power (MDE about 0.27). The regular identifies a deterministic bidder (0.88 of its belief on
+caution 0 by a game's end, 0.46 on a varied one), and that knowledge, read into the next hand's
+tiles only, moves no marks measurably. In the charter's voice: our cross-hand reader of this
+form cannot yet see the book's edge. It never responds, learns bidding only, and forgets at the
+game's end. The sketch below was refined: the target plays Zeb 0.3.0, and Zv varies its bidding
+only.
 
 This is the experiment that most directly tests whether modeling the opponent across hands is
 where the book's value lives. It is the smallest design that separates "Zeb is better at 42"
@@ -152,7 +161,7 @@ the book's own hands or left open, never by Zeb's preference.
 
 ## Recommended order
 
-1. **#149, the regulars' table**: the stance's central claim, in one 2×2.
+1. **#149, the regulars' table**: run; a null for a reading-only, fixed-style regular ([[regulars-table-2026-10-14]]). Its successor is a regular that responds (#116 / #130 slice 5).
 2. **#150, book partners read each other**: cheap (it reuses `arena/book_read.py`), and it
    seats the benefit half of every convention the head-to-head charged.
 3. **#153, the header audit and the last encodable rows**: cheap, and it finishes the encoding.
@@ -169,5 +178,5 @@ the book's own hands or left open, never by Zeb's preference.
 
 [[book-authority]] · [[w42]] · [[book-study-2026-10-12]] · [[book-head-to-head-2026-10-13]] ·
 [[book-investigation-2026-10-14]] · [[book-reads-by-the-book-2026-10-14]] ·
-[[reads-plays-soft-2026-10-14]] · [[exploiter-endgames-2026-10-14]] · [[silas]] ·
+[[reads-plays-soft-2026-10-14]] · [[regulars-table-2026-10-14]] · [[exploiter-endgames-2026-10-14]] · [[silas]] ·
 [[scenario-player]] · [[strategy-fusion-fence]]

@@ -950,7 +950,10 @@ also scores below Zeb; restoring that game uncovered the book's first measured e
 [51.1, 55.2] of games, replicated, with no marks moved (#120). Opponents that read the book player by the book within one hand
 (`arena/book_read.py`, `bookread:`; not the book's cross-hand opponent) change nothing for it
 (−0.04 [−0.27, +0.19] marks/game), and plain Zeb beats such a reader by +0.50 [+0.26, +0.74]
-([[book-reads-by-the-book-2026-10-14]], #147).
+([[book-reads-by-the-book-2026-10-14]], #147). The first cross-hand opponent, a regular who
+learns each seat's bidding caution within a game and reads the auction into its draw
+(`Situation.auction`, both engines; `arena/regulars.py`), shows no interaction with a varied
+bidder: +0.04 [−0.15, +0.22] marks/game ([[regulars-table-2026-10-14]], #149).
 
 **Make, then margin (2026-10-14, #120).** The tie rule ≺ is now a lever: `Config.tie`
 (arena `t=margin`; default `lowest`, every byte unchanged). It breaks a decision's exact ties
@@ -1126,6 +1129,7 @@ a game.
 [[reads-plays-2026-10-13]] (Zeb reads the other seats' plays: both likelihoods null in marks) ·
 [[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table; against Zeb the registered consistent replication failed, +0.12 [−0.02, +0.27]; the registered uniform replication passed, +0.37 [+0.24, +0.51]; restricted choice null) ·
 [[zeb-030-confirmation-2026-10-14]] (Zeb 0.3.0's two defaults together against 0.2.0: +0.21 [+0.08, +0.34] marks/game) ·
+[[regulars-table-2026-10-14]] (a regular who remembers bidding across hands: the interaction with a varied bidder is null, +0.04 [−0.15, +0.22]) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]
