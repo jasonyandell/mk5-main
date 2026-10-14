@@ -119,8 +119,8 @@ both. The gaps left, per rule, are in `silas/GAPS.md`: another seat's knowledge 
 only the donation lead, since the partner's own knowledge is the viewer's. Beside the
 policies, queries state the frame facts the book narrates, checked on its hands
 (`silas/tests/book_queries.rs`): what an off can lose and which side its double protects,
-what an 84's defender watches for, when a hand is settled. The four rules added in the
-second batch (below) are not yet priced.
+what an 84's defender watches for, when a hand is settled. All eighteen are priced under
+Zeb on the pour ([[book-study-2026-10-12]]); the defence of the 84 never fires at bid 30.
 
 ## The book, second batch (2026-10-13)
 
@@ -374,8 +374,8 @@ each past play's check (`silas/GAPS.md` 1 and 4).
   conditioning, added 2026-10-13).
 - **Next.** The book's rules as the book means them are written (§ The book, rule by
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
-  rules as the book means them: Zeb sides with 3 of 14 and prices against none, once the
-  dead double's throw and the trump set's feed carry the conditions the book states).
+  rules as the book means them: Zeb sides with 3 of 18 and prices against none; the dead
+  double's throw and the trump set's feed carry the conditions the book states).
   Policy likelihood for the play (#128; the auction's is built, § The bid as evidence)
   and another seat's knowledge (#132) are next ([[w42]]). The cross-game
   slices go on from the auction to comparison over deals (§ The match and field-free
