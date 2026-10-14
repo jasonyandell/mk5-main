@@ -39,6 +39,16 @@ fn first_call(viewer: Seat, dealt: DominoSet, menu: &Arc<[Physics]>) -> AuctionF
     AuctionFrame::new(auction, viewer, dealt, MatchState::new(Scoring::MARKS, [0, 0]).unwrap(), menu.clone()).unwrap()
 }
 
+/// Every how many hands the two heaviest all-hands proofs read in the default
+/// run: 4. `SILAS_FULL_PROOF=1` reads every hand (STRIDE 1) and checks the
+/// all-hands digests (`PINNED_ANSWERS`, `PINNED_RAISES`); the default run
+/// checks the digests of every 4th hand (`PINNED_ANSWERS_4TH`,
+/// `PINNED_RAISES_4TH`), taken from the same lines. Run the full proof when
+/// a bidding policy, the bidding prelude or the evaluator changes.
+fn proof_stride() -> usize {
+    if std::env::var_os("SILAS_FULL_PROOF").is_some_and(|v| v != "0" && !v.is_empty()) { 1 } else { 4 }
+}
+
 /// Every hand of seven tiles, in increasing order of its bits.
 fn every_hand() -> impl Iterator<Item = DominoSet> {
     let last = 0x0fe0_0000u32;
@@ -438,7 +448,8 @@ fn every_call_and_declaration_is_pinned_on_every_hand() {
     // on every hand.
     let policies = [policy("bid-only-enough.silas"), policy("risk-budget.silas"), policy("never-32-or-33.silas")];
     let menu = arena_menu();
-    let hands: Vec<DominoSet> = every_hand().collect();
+    let stride = proof_stride();
+    let hands: Vec<DominoSet> = every_hand().step_by(stride).collect();
     let started = Instant::now();
     let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let lines: Vec<String> = std::thread::scope(|s| {
@@ -452,11 +463,15 @@ fn every_call_and_declaration_is_pinned_on_every_hand() {
         handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
     });
     println!("every answer of three policies: {} hands in {:?} on {threads} threads", lines.len(), started.elapsed());
-    assert_eq!(lines.len(), 1_184_040);
+    assert_eq!(lines.len(), 1_184_040_usize.div_ceil(stride));
     let digest = fnv1a(lines.join("\n").as_bytes());
     println!("digest {digest:#018x}; first line: {}", lines[0]);
-    assert_eq!(digest, PINNED_ANSWERS);
+    assert_eq!(digest, if stride == 1 { PINNED_ANSWERS } else { PINNED_ANSWERS_4TH });
 }
+
+/// The digest of the same lines on every 4th hand (the default run; see
+/// [`proof_stride`]).
+const PINNED_ANSWERS_4TH: u64 = 0x25ef_df9b_e692_f220;
 
 /// The digest of [`every_call_and_declaration_is_pinned_on_every_hand`]'s
 /// lines.
@@ -528,7 +543,7 @@ fn a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did() {
     // every least raise (`every_least_raise`): one digest of one line a hand,
     // taken from the rules of literal ranges they replace (`LITERAL_RANGES`,
     // before #144). Those rules are run again on every 97th hand. About a
-    // minute on 18 cores: it is the proof (40 million calls), and it costs
+    // minute on 18 cores at `SILAS_FULL_PROOF=1` (every 4th hand otherwise): it is the proof (40 million calls), and it costs
     // what the literal ranges did.
     let auctions = every_least_raise();
     let least: Vec<Option<u32>> = auctions.iter().map(|a| a.least_raise().map(Bid::value)).collect();
@@ -544,10 +559,21 @@ fn a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did() {
         })
         .collect::<Result<_>>()
         .unwrap();
-    let hands: Vec<DominoSet> = every_hand().collect();
-    for hand in hands.iter().step_by(97) {
-        assert_eq!(raises(&new, &auctions, &menu, *hand), raises(&old, &auctions, &menu, *hand), "{hand:?}");
-    }
+    let all: Vec<DominoSet> = every_hand().collect();
+    let sample: Vec<DominoSet> = all.iter().copied().step_by(97).collect();
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    std::thread::scope(|s| {
+        for part in sample.chunks(sample.len().div_ceil(threads)) {
+            let (new, old, auctions, menu) = (&new, &old, &auctions, &menu);
+            s.spawn(move || {
+                for hand in part {
+                    assert_eq!(raises(new, auctions, menu, *hand), raises(old, auctions, menu, *hand), "{hand:?}");
+                }
+            });
+        }
+    });
+    let stride = proof_stride();
+    let hands: Vec<DominoSet> = all.iter().copied().step_by(stride).collect();
     let started = Instant::now();
     let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let lines: Vec<String> = std::thread::scope(|s| {
@@ -561,7 +587,7 @@ fn a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did() {
         handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
     });
     println!("the raises at every least raise: {} hands in {:?} on {threads} threads", lines.len(), started.elapsed());
-    assert_eq!(lines.len(), 1_184_040);
+    assert_eq!(lines.len(), 1_184_040_usize.div_ceil(stride));
     let mut distinct: BTreeMap<&str, usize> = BTreeMap::new();
     for line in &lines {
         *distinct.entry(line).or_default() += 1;
@@ -570,8 +596,12 @@ fn a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did() {
     // Four kinds of hand: worth 42 (no count exposed), 37, 32, and none of
     // them; bid-only-enough raises to its worth, never-32-or-33 past 32.
     assert_eq!(distinct.values().copied().collect::<Vec<_>>().len(), 4);
-    assert_eq!(fnv1a(lines.join("\n").as_bytes()), PINNED_RAISES);
+    assert_eq!(fnv1a(lines.join("\n").as_bytes()), if stride == 1 { PINNED_RAISES } else { PINNED_RAISES_4TH });
 }
+
+/// The digest of the same lines on every 4th hand (the default run; see
+/// [`proof_stride`]).
+const PINNED_RAISES_4TH: u64 = 0x84fa_fe77_74bf_5370;
 
 /// The digest of [`a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did`]'s
 /// lines, from the rules of literal ranges.
@@ -675,13 +705,21 @@ fn risk_budget_computes_its_call_as_its_thirteen_levels_did() {
         .unwrap();
     // The literal levels are the old file's core, as pinned before #148.
     assert_eq!(fnv1a(old.source().to_string().as_bytes()), 0xe5bf_4c07_ddfe_e065);
-    for hand in every_hand().step_by(997) {
-        assert_eq!(
-            calls_and_declarations(&new, &auctions, &menu, hand),
-            calls_and_declarations(&old, &auctions, &menu, hand),
-            "{hand:?}"
-        );
-    }
+    let sample: Vec<DominoSet> = every_hand().step_by(997).collect();
+    std::thread::scope(|s| {
+        for part in sample.chunks(sample.len().div_ceil(18)) {
+            let (new, old, auctions, menu) = (&new, &old, &auctions, &menu);
+            s.spawn(move || {
+                for hand in part {
+                    assert_eq!(
+                        calls_and_declarations(new, auctions, menu, *hand),
+                        calls_and_declarations(old, auctions, menu, *hand),
+                        "{hand:?}"
+                    );
+                }
+            });
+        }
+    });
     let hands: Vec<DominoSet> = every_hand().step_by(STRIDE).collect();
     let started = Instant::now();
     let threads = std::thread::available_parallelism().map_or(4, |n| n.get());

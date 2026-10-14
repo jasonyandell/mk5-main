@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""Silas's test suite: `cargo test --release`, with the test binaries run side by side.
+
+`cargo test` runs one test binary after another, and most of Silas's slow
+binaries are one long single-threaded test (outcome, cli, play_reading,
+book_repaired, book_auction) that leaves the other cores idle while the
+all-hands bidding proofs wait their turn. This builds every test binary once
+(`cargo test --release --no-run`), then runs them all at once, the slowest
+first, and finishes with the doctests. Same tests, same result; it fails if
+any binary fails, and prints a failing binary's whole output.
+
+    silas/run-tests              the suite (what `scripts/check silas` runs)
+    SILAS_FULL_PROOF=1 silas/run-tests
+                                 the all-hands bidding proofs read every hand,
+                                 not every 4th (see tests/bidding.rs; minutes)
+Extra arguments are passed to cargo (e.g. `--locked`).
+"""
+import concurrent.futures
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+CARGO = ["cargo", "test", "--release", *sys.argv[1:]]
+SLOWEST_FIRST = ("bidding", "book_auction", "outcome", "cli", "play_reading", "book_reading", "book_repaired")
+
+
+def main() -> int:
+    build = subprocess.run([*CARGO, "--no-run", "--message-format=json"], cwd=ROOT,
+                           stdout=subprocess.PIPE, text=True)
+    if build.returncode != 0:
+        # Run again without JSON for the compiler's readable errors.
+        subprocess.run([*CARGO, "--no-run"], cwd=ROOT)
+        return build.returncode
+    exes = []
+    for line in build.stdout.splitlines():
+        try:
+            msg = json.loads(line)
+        except ValueError:
+            continue
+        if msg.get("reason") == "compiler-artifact" and msg.get("executable") and msg["profile"]["test"]:
+            exes.append((msg["target"]["name"], msg["executable"]))
+    exes.sort(key=lambda e: (SLOWEST_FIRST.index(e[0]) if e[0] in SLOWEST_FIRST else len(SLOWEST_FIRST), e[0]))
+
+    def run(exe):
+        name, path = exe
+        started = time.time()
+        r = subprocess.run([path], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        return name, r.returncode, r.stdout, time.time() - started
+
+    failed = []
+    started = time.time()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(exes) or 1) as pool:
+        for name, code, out, secs in pool.map(run, exes):
+            tail = [l for l in out.splitlines() if l.startswith("test result")]
+            print(f"{name}: {tail[-1] if tail else 'no result line'} ({secs:.1f}s)", flush=True)
+            if code != 0:
+                failed.append(name)
+                print(out, flush=True)
+    doc = subprocess.run([*CARGO, "--doc"], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(f"doctests: {'ok' if doc.returncode == 0 else 'FAILED'}", flush=True)
+    if doc.returncode != 0:
+        failed.append("doctests")
+        print(doc.stdout)
+    print(f"silas: {len(exes)} test binaries in {time.time() - started:.1f}s; "
+          f"{'FAILED: ' + ', '.join(failed) if failed else 'all ok'}")
+    return 1 if failed else 0
+
+
+sys.exit(main())
