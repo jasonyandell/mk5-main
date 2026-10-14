@@ -52,6 +52,8 @@ explains? Where, if anywhere, does it win?
 - **Inside the book's scope it still loses** (S-core −0.057 marks a departure). It ties only
   inside the three rules Zeb's own plan sides with. On its own eight narrated deals its side
   outplays Zeb's, which carries no interval.
+- **After the repairs (#146) the book loses 1.41 marks a game,** 0.47 [0.33, 0.62] less than
+  published, as the census forecast, and wins 38.4% of games to 250 (§ After the repairs).
 - **The benefit of the doubt does not reverse the sign.**
   - The most generous order gains +0.22 marks a game, and the book still loses 1.2.
   - The winner's curse is 12% of Zeb's forecast price.
@@ -542,6 +544,44 @@ stated order. Core pins moved: twelve, listed in `silas/tests/core_pins.rs`.
 - *Descriptive:* decisions a hand each policy decides, and its departures (tile ≠ Zeb's),
   before and after.
 
+### Results
+
+Both blocks ran as registered: 22 batches, none near the cap (slowest 127 s), the pilot
+excluded. The published block b reproduces from its files (−1.884).
+
+| book team, rules else Zeb's tile (b) | marks/game [95%] | game share [95%] | made, book / Zeb | settlement / hand |
+|---|---|---|---|---|
+| published (the head-to-head) | −1.88 [−2.09, −1.66] | 25.0% | 50.0% / 67.5% | |
+| **repaired** | **−1.41 [−1.63, −1.18]** | 32.1% [28.3, 35.9] | 53.6% / 66.5% | |
+| repaired − published, paired | **+0.47 [+0.33, +0.62]** | | | |
+| points to 250 (P-b), published | | 33.3% [29.8, 36.9] | 50.4% / 66.9% | −5.5 [−6.4, −4.6] |
+| **points to 250, repaired** | | **38.4% [34.6, 42.2]** | 53.7% / 66.0% | −3.5 [−4.4, −2.5] |
+| repaired − published, paired | | **+5.1 points [+2.3, +8.1]** | | |
+| Zeb against Zeb (the chance baseline) | 0 | 50% | | 0 |
+
+- *The repairs moved the loss, by what the census said they would.* +0.47 [+0.33, +0.62]
+  marks a game, against the +0.50 forecast from the repaired labels' first-order cost.
+- *The book still loses, in both games.* −1.41 marks a game, and 38% of games to 250, both
+  intervals clear of the baseline.
+- *The clean loss is where the census put it.* What remains is −1.41. The census's
+  accounting has −1.06 for the rules' clean disagreements with Zeb and about −0.3 for the
+  labels left in place (least-id picks inside a set holding Zeb's tile, the two silences, the
+  dead double over the lone tile). The two agree. The clean part itself was not re-decomposed
+  (no rollouts were run), so the −1.06 stands as the census measured it, not re-measured.
+- *What changed at the table.* Per hand: departures 3.37 → 3.20, decisions a rule decides
+  6.89 → 6.76.
+  - the off on the first lead: 166 → 0;
+  - the dead double's cash: 0.109 → 0.039 decisions a hand;
+  - the crisis: 0.121 → 0.063;
+  - low from a pair: 0.487 → 0.404;
+  - the top-trump handoff: 0.082 → 0.056.
+  The draw, the top-trump leads and the other bidder's-plan leads take up what these leave.
+- *In the book's game the repairs are worth two settlement points a hand,* and five points of
+  game share. The book's best fair form before the repairs, (d), won 37.9%; the repaired
+  rules with no tie-break help win 38.4%.
+
+Data: `book/encoding-repairs/` (below).
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `book/investigation/` (CC0, `SHA256SUMS`,
@@ -554,6 +594,10 @@ stated order. Core pins moved: twelve, listed in `silas/tests/core_pins.rs`.
 - the narrated deals (`narrated.json`);
 - the re-plans and continuations (`sel/`);
 - `results.json` and `analysis.log`, and the scripts.
+
+After the repairs (#146): `book/encoding-repairs/` (CC0, `SHA256SUMS`, `CARD.md`): both
+blocks' games, book decisions and summaries (`out/`), the pilot, the logs, `results.json`,
+`analysis.log` and the scripts.
 
 Code: `arena/engine.py` (`points_to_win`), `arena/auction.py` (`settle_points`) and
 `arena/book_play.py` (`ties=union`, `w<eps>`); the reader is 3262eea0's.

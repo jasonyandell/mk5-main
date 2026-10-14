@@ -415,6 +415,23 @@ The friction met writing #141's bidder populations, fixed without growing the co
 - **Kept.** The one lint warning (`crisis`'s redundant `(not (tile his l))`) stays: removing
   it keeps the meaning and changes the pinned core.
 
+## The encoding's repairs (2026-10-14)
+
+The rule-fidelity census of the book player's head-to-head
+([[book-investigation-2026-10-14]]) found the encoding firing outside its rules' own headers.
+Ten repairs (#146) brought each rule back inside them, each pinned by a `repair_` test of
+`tests/book_rules.rs` that fails on the old encoding:
+- seven files: low-from-a-pair, first-lead, partner-plays-the-top-trump, follow-with-the-off,
+  protect-the-count, dead-double and crisis;
+- two prelude definitions: `winner-cannot-be-beaten` (only setters still to play) and
+  `crisis` (the partner shown out of trump);
+- the arena's stack: the no-count rules forbid count, and the later throws choose.
+
+Twelve core pins moved, listed in `tests/core_pins.rs`. Where the census asked for a choice
+the book does not make (which sure trump, which setting lead, a count off), nothing was
+encoded; `GAPS.md` § The book's silences records each. Re-measured, the book player loses
+1.41 marks a game against Zeb, 0.47 less than before, as the census forecast.
+
 ## Where it sits
 
 - **Origin.** Moved from texas-42 `1c15cc51` (CC0), where it was written as the
