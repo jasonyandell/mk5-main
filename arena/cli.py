@@ -28,6 +28,7 @@ Player spec: <bidder>+<play>
             | judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]]
             | walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make|points]
             | book[:<lowest|zeb>,<least|zeb>][/<walt options>]
+            | bookread:<consistent|uniform>/<walt options>
             | random
             (walt = the scenario player (scenario/): R_live[R_model[U]],
              contingent plans over sampled hidden worlds, modeled seats one
@@ -35,6 +36,8 @@ Player spec: <bidder>+<play>
              book = Winning 42's rules as a Silas policy stack, with a fallback
              (lowest legal or Zeb) where no rule fires and a tie-break (least
              or Zeb's best) inside the set a rule allows; arena/book_play.py;
+             bookread = Zeb whose worlds are weighted by the book's verdict
+             on its two opponents' plays; arena/book_read.py;
              scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter;
              judplay = jud v1 value-native play — argmax E[pts] over the jud
@@ -250,6 +253,13 @@ def parse_play(
         from arena.book_play import parse_book_spec
         play = parse_book_spec(arg)
         print(f"Book play: {play}", flush=True)
+        return play
+    if name == "bookread":
+        # Zeb reading its opponents by the book (arena/book_read.py, #147).
+        # Spec: bookread:<consistent|uniform>/<walt options>
+        from arena.book_read import parse_bookread_spec
+        play = parse_bookread_spec(arg)
+        print(f"Book reader: {play}", flush=True)
         return play
     if name == "walt":
         # The scenario player, written from the mathematics (scenario/).

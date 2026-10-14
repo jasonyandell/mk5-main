@@ -10,7 +10,8 @@ with the GIL released. `mold` is `scenario.atlas.mold`, compiled.
 The belief seam is unchanged: the config's draw runs inside the core, and
 `belief(situation, worlds) -> weights` is called once per decision, in
 Python, on the live rung's scenarios (the core samples them, hands them
-over, and multiplies the weights returned into the posterior's).
+over, and multiplies the weights returned into the posterior's). A belief
+with a `many(situations, worlds)` method is asked once per batch instead.
 
 Build: `python -m pip install ./scenario/core` (needs the Rust toolchain).
 """
@@ -127,8 +128,12 @@ class CompiledWalt:
         if reqs:
             weights: list[list[float] | None] = [None] * len(reqs)
             if self.belief is not None:
-                for j, worlds in enumerate(self._core.sample_roots(reqs)):
-                    weights[j] = [float(w) for w in self.belief(sits[j][1], worlds)]
+                roots = self._core.sample_roots(reqs)
+                # A belief may weigh a whole batch at once (`many`), e.g. across processes.
+                many = getattr(self.belief, "many", None)
+                ws = (many([s for _, s in sits], roots) if many is not None
+                      else [self.belief(s, worlds) for (_, s), worlds in zip(sits, roots)])
+                weights = [[float(w) for w in x] for x in ws]
             for (i, _), res in zip(sits, getattr(self._core, method)(reqs, weights, self.threads, **options)):
                 out[i] = (res[0], res)
                 self.nodes += res[2]
