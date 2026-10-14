@@ -38,6 +38,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | e94f857f | Silas ergonomics, round 2: a suit's face order before the declaration, least/most, coverage over a bidding policy's contracts with a stated play model]
+
+**Updated:** [[silas]] (§ Ergonomics, round 2), `silas/README.md`, `silas/GAPS.md`. **Added:** `silas/examples/populations/` (#141's bidders and play model, one command instead of Rust).
+
 ## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
 
 **Added:** [[strategy-fusion-fence]] (the ruling, the inventory, the sanctioned uses). **Updated:** [[silas]], [[the-wall]], [[splat-search-bounds]], [[strategy-fusion]], [[intermediate-ai]], `index-topics.md`, `CLAUDE.md` (Hard rules). Guard: `src/tests/architecture/strategy-fusion-fence.test.ts`.

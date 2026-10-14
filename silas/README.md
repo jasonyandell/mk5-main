@@ -94,6 +94,7 @@ body     := pattern ... | clause ...        ; bare clauses: the query's one patt
 clause   := ... | (and clause ...) | (or clause ...) | (not clause)
           | (some (roles entry ...) clause ...) | (none (roles entry ...) clause ...)
           | (< a b) | (>= a b) | (> a b) | (= a b) | (/= a b)
+          | (least name number clause ...) | (most name number clause ...)
 ```
 
 - **Roles from their uses.** A bare name in any `(roles ...)` (a query's, a
@@ -123,6 +124,29 @@ clause   := ... | (and clause ...) | (or clause ...) | (not clause)
   the semantics below justifies. A definition's `(number n)` parameter may
   stand in a comparison and takes its call's literal; `(points (roles d)
   ...)`'s bare role is a domino.
+- **Extremes.** `(least t q c ...)` says `t` is a least candidate by the
+  number `q`: it meets `c ...`, and no rival does with less. It is `c ...`
+  and `(none (roles u) c' ... (< q' q))`, where `u` is `t` with the first
+  suffix `-2`, `-3`, ... that no word of the form and no name around it
+  takes, and `c'` and `q'` are `c` and `q` with `u` for `t`; `(most t q c
+  ...)` is the same with `>`. Every candidate tied at the extreme answers
+  (a declaring rule's tie-break is the order the declarations are offered
+  in). Negated, an extreme is the negation of its conjunction, as an `and`
+  is. `least` and `most` are reserved.
+
+An optimist who declares the suit, of those he holds the top two of, with
+the fewest tiles in hand (`examples/populations/optimist-2.silas`) needed a
+rule per length before `least`; now it is one, and the two are pinned to
+declare alike on every hand (`tests/bidding.rs`):
+
+```text
+(rule two-tiles (declare t) (holds-top t 2) (not (suit-at-least t 3)))
+(rule three-tiles (declare t) (holds-top t 2) (not (suit-at-least t 4)))
+(rule four-tiles (declare t) (holds-top t 2) (not (suit-at-least t 5)))
+(rule more (declare t) (holds-top t 2))
+
+(rule fewest-tiles (declare t) (least t (card (roles d) (of-suit d t)) (holds-top t 2)))
+```
 
 So the book's "protect the count" exception, that the partner is not the
 trump setter or has already played, reads three ways and is one clause:
@@ -287,7 +311,8 @@ the record's first predicates, `silas-v2/core` for those that changed or came
 with the one-frame record and the full contract (marked v2). The outcome
 predicates (three, and a fourth under the `clairvoyant` feature), version `silas-v3/outcome`, look to the end of the hand (Solved
 outcomes, below). The auction's, version `silas-v4/auction`, are in The
-auction, below. *World* access means the predicate reads a hidden world;
+auction, below, with the suits' face order, `ranks-above`, version
+`silas-v5/suit-order`. *World* access means the predicate reads a hidden world;
 *Viewer* means it reads only the frame; *Clairvoyant* means it reads a hidden
 world and plays it out with every seat seeing all four hands. A policy, and a
 viewer evaluation, refuses World and Clairvoyant predicates; the refusal of a
@@ -552,6 +577,7 @@ nothing else, so a bid policy is a function of the auction frame.
 |---|---|---|
 | `bears(d,q)` | both | `d` bears the pip of suit `q` (`q0` to `q6`; never `q*`). |
 | `high-pip(d,q)` | both | `q` is `d`'s higher pip: the suit it leads when no trump calls it. |
+| `ranks-above(a,b,q)` | both | v5: `a` and `b` bear `q`'s pip and `a` ranks above `b` by their faces: the double first, then the other pip, highest first. |
 | `shaker(c)` | both | `c` shook. |
 | `bid-of(c,n)`, `passed(c)` | both | `c`'s call: the bid the table calls `n`, or a pass. |
 | `no-bid()` | both | No seat has bid yet (false in the play). |
@@ -563,6 +589,16 @@ nothing else, so a bid policy is a function of the auction frame.
 
 The play frame reads the auction's record too (who bid what), but not yet
 the match state: the score predicates are of the auction alone.
+
+Before a declaration no suit has a trick key, so a suit's order is its
+faces': `ranks-above` is a tile fact, the same at every frame. It is not a
+convention: under each of the nine straight declarations, on the tiles that
+follow a pip suit the declaration leaves alone (and are not trump), it is
+exactly the trick key's order in that suit (`tests/auction.rs`). So "the top
+two of a suit" is said once for every suit, not anchored to the six-five:
+`(top-of-suit d t n)` is `(bears d t)` with fewer than `n` tiles ranking
+above `d`, a `card`, and `(holds-top t n)` is the viewer holding all `n` of
+them.
 
 ```text
 section  := (bidding brule ...) | (declaring drule ...)
@@ -588,11 +624,16 @@ predicate and none of the play; rule names are unique across the sections.
 bid` prints them.
 
 `lib/bidding.silas` (`(include bidding)`) is the auction's vocabulary: a
-suit's length, its double, its offs, the count an off exposes, and the book's
-count of what is at risk. Sizes and sums are aggregates (Semantics, above):
-"at most 10 points exposed" is `(exposes-at-most t 10)`, one `(<= (points
-...) 10)`, and a definition's `(number n)` takes the bound. A bid is still a
-literal, so a bid level is a rule. `examples/book/bidding/` holds three
+suit's length, its double, its top tiles, its offs, the count an off
+exposes, and the book's count of what is at risk. Sizes and sums are
+aggregates (Semantics, above): "at most 10 points exposed" is
+`(exposes-at-most t 10)`, one `(<= (points ...) 10)`, and a definition's
+`(number n)` takes the bound, so every bound of the prelude is one
+definition with a number (`suit-at-least`, `offs-at-most`, `exposes-at-most`,
+`risk-at-most`, `top-of-suit`, `holds-top`), never a family of literals. What
+is left literal is the auction's own numbers: a bid is a literal, so a bid
+level is a rule, and a range of least raises is an `or` of `least-raise`
+literals (`GAPS.md`, Prelude). `examples/book/bidding/` holds three
 policies:
 
 ```text
@@ -1114,7 +1155,8 @@ silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
                [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 silas query    DOMINANCE
-silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
+silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
+               [--play POLICY]] [--book FILE]
 silas expand   FILE ...
 silas fmt      [--check] FILE ...
 silas check    [DIR-OR-FILE ...]
@@ -1255,6 +1297,8 @@ is located as an error is:
 
 The crate's files raise one: `crisis.silas`'s `(not (tile his l))`, which
 restates what distinctness already says (a seat's lead is not his follow).
+It stays: without it the rule means the same, but its core is not the one
+pinned (`tests/core_pins.rs`).
 
 **The funnel** (`Funnel`, `Coverage`, `why_not`) asks where a pattern stops.
 Its steps are the pattern's clauses in source order, a definition call or a
@@ -1264,9 +1308,35 @@ that hold are a prefix, and the first that fails is where the pattern stops.
 `eval` prints it for each rule that passed; `coverage` counts, over every
 point of the book's narrated lines (and `--random N` seeded deals under the
 nine declarations), how often each rule answered, allowed a legal tile and
-decided, and how often each step held, flagging every zero with `!`. A rule
-that answers but never decides is shadowed by an earlier one; one that
-answers more often than it allows is answering tiles the viewer cannot play.
+decided, and how often each step held, flagging every zero with `!`, and in
+how many of the random deals each rule answered. A rule that answers but
+never decides is shadowed by an earlier one; one that answers more often
+than it allows is answering tiles the viewer cannot play.
+
+A rule can be rare because the hands it is for are rare, and which hands
+come up depends on who bids. `--bidders POLICY` makes each random deal's
+contract the auction a bidding policy makes from it: the shaker drawn, every
+seat calling by the policy under `--scoring` (marks at 0-0 by default), the
+winner declaring by it from `--offered`, and a deal passed out dealt again.
+The book's hands are then left out, since their contracts are not the
+policy's. `--play POLICY` is the play model, stated: every seat draws its
+tile uniformly from what that policy allows, every legal tile where it is
+silent (the set the uniform likelihood reads a play against,
+`CompiledPolicy::permits`); without it each seat plays a uniformly random
+legal tile. `examples/populations/` holds the bidders and the play model of
+issue 141's study, which needed Rust before:
+
+```text
+$ silas coverage examples/book/trump-set.silas --random 3000 \
+    --bidders examples/populations/optimist-2.silas --offered P6,P5,P4,P3,P2,P1,P0 \
+    --play examples/populations/draw-trump.silas
+coverage of policy trump-set over 3000 random deals
+  contracts: optimist-2 makes every call (the shaker drawn, marks to 7) and declares from P6 P5 P4 P3 P2 P1 P0
+    3000 contracts from 19134 deals (16134 passed out); bids 30 x3000
+  play: every seat uniformly within what draw-trump allows (every legal tile where it is silent)
+  rule trump-a-big-double: decided 14, allowed 14, answered 14 of 84000, in 13 of the 3000 random deals
+  ...
+```
 
 ```text
 $ silas coverage examples/book/protect-the-count.silas
@@ -1291,8 +1361,13 @@ ruff hold no trump. Over 3,000 random deals (84,205 frames) the three ruffs
 never fire: 29 frames reach the ruff, one holds a trump, and it holds only one
 (a rule without the second-trump clause would fire there, once); the feed fires
 3 times and the lead 41. In the pour the ruffs fire at 328 of 4,343,426 positions.
-Under a contract from a bidding policy (sampled, 3,000 contracts each, the
-bidder drawing trump, defenders keeping theirs) a ruff rule answers in 0 games
+Under a contract from a bidding policy (the command above, 3,000 contracts
+each, offered P6 to P0, played within `draw-trump`), `trump-a-double` answers
+in 0 deals under `bid-only-enough`, `risk-budget` and `marginal-30`, and in
+19 under `optimist-2`; under the three that are not optimists the only ruff
+that answers at all is `trump-in-on-count`, once, under the marginal 30. The first sampled study, in Rust
+before the command, found the same (3,000 contracts each, the
+bidder drawing trump, defenders keeping theirs): a ruff rule answers in 0 games
 under `bid-only-enough`, `risk-budget` and a marginal 30 (a hand `risk-budget`'s
 count prices at 28 or 29: 13 or 14 at risk), and in 30 and 61 games under an
 optimist who bids 30 on the top two tiles of two, or of three, suits whatever his
@@ -1332,6 +1407,9 @@ book's test for one), `claim-the-rest` and `cannot-be-set`
 (`tests/outcome.rs`). `examples/book/cross-game/` holds the book's
 field-free comparisons of contracts as `dominates` forms (The match), and
 `examples/book/bidding/` its bid rules as policies over the auction (The auction) and a bid read as evidence, and `examples/book/reading/` the plays read as evidence (The record as evidence).
+`examples/populations/` is not the book's: bidders and a play model that
+make populations of contracts for `coverage` (Diagnostics), each held to
+its reading on every hand (`tests/bidding.rs`).
 `GAPS.md` lists what the rules still cannot say.
 
 ## Provenance

@@ -2,7 +2,7 @@
 title: Silas — a typed relational language over the worlds a seat cannot tell apart
 kind: entity
 first_seen: 2026-10-12
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: active
 ---
 
@@ -386,6 +386,34 @@ under p. 25's; the bait (C21) read under `crisis` is 91/167, not the book's cert
 positions with three seats read (18 cores; 1.3 s at worst, in trick one), so cost is not
 the obstacle. What a reading cannot yet do is drive a rule: a guard reads the frame, never
 a belief, and that is gap 1 now (`silas/GAPS.md` 1).
+
+## Ergonomics, round 2 (2026-10-14)
+
+The friction met writing #141's bidder populations, fixed without growing the core
+(`silas/README.md` § Short forms, The auction, Diagnostics; `silas/GAPS.md` § Closed):
+
+- **A suit's order before the declaration.** `(ranks-above a b q)` (`silas-v5/suit-order`)
+  is the suits' face order, a tile fact of both phases: the double, then the other pip down.
+  It is held to the trick key of all nine straight declarations on every suit each leaves
+  alone, so it is the order every declaration agrees on. The bidding prelude's
+  `(top-of-suit d t n)` and `(holds-top t n)` say "the n highest of suit t" with a `card`;
+  the optimists' "top two" no longer anchors to the 6-5.
+- **The extremum.** `(least t q c ...)` and `(most t q c ...)` are short forms: `c ...` and
+  no rival meeting them with a smaller (larger) `q`, the rival a fresh name. The optimist's
+  four declaring rules (one per length) are one, pinned to declare alike on every hand.
+- **Prelude.** Every bidding bound takes a `(number n)`; what stays a family of literals is
+  the frame's own numbers (least-raise ranges, bid levels, `to-set-within-*`), which nothing
+  binds; `silas/GAPS.md` names the smallest addition.
+- **Populations from Silas files.** `silas coverage --random N --bidders POLICY --play
+  POLICY`: the random deals' contracts are a bidding policy's auctions, the play model a
+  stated policy (each seat uniform within what it allows: `CompiledPolicy::permits`, the set
+  the uniform likelihood reads), and the counts say in how many deals each rule answered.
+  #141's study, which needed Rust, is `silas/examples/populations/` and one command: over
+  3,000 contracts each, with the bidder drawing trump and the setters keeping theirs, no
+  ruff rule of `trump-set` answers under `bid-only-enough` or `risk-budget`, one does once
+  under a marginal 30, and under the two-suit optimist `trump-a-double` answers in 19 deals.
+- **Kept.** The one lint warning (`crisis`'s redundant `(not (tile his l))`) stays: removing
+  it keeps the meaning and changes the pinned core.
 
 ## Where it sits
 

@@ -266,6 +266,35 @@ are there), and the match state in the play frame.
 
 ## Closed
 
+Closed by the second ergonomics pass (2026-10-14; README, Short forms, The auction and
+Diagnostics), the friction met writing the bidders of issue 141:
+
+- **A suit's order before the declaration.** `(ranks-above a b q)` is the suits' face order
+  (the double, then the other pip down), a tile fact of both phases, held to the trick key of
+  every straight declaration on each suit it leaves alone; `(top-of-suit d t n)` and
+  `(holds-top t n)` say "the n highest tiles of suit t" with it. The optimists' "top two of a
+  suit" no longer anchors to the 6-5 and `q6`.
+- **The extremum.** `(least t q c ...)` and `(most t q c ...)`, short forms for "a candidate no
+  rival beats on q"; a cascade of declaring rules, one per length, is one rule.
+- **A population of contracts from Silas files alone.** `silas coverage --bidders POLICY
+  --play POLICY`: the random deals' contracts are a bidding policy's auctions and the play
+  model is a stated policy. The study that needed Rust (issue 141's) is
+  `examples/populations/` and one command.
+
+**Prelude: what is still a family of literals.** Every bound of the bidding prelude takes a
+`(number n)` (`risk-at-most t 14` needs no definition of its own). What remains literal is the
+numbers the frame reads through one-argument predicates, which nothing binds: a range of
+least raises is an `or` of `(least-raise n)` (`bid-only-enough`'s three level rules), a bid
+level is a rule (`risk-budget`'s thirteen), and the book prelude's `bid-35-or-more`,
+`every-trick` and `to-set-within-6` to `-21` (with the six `*-sets-with-*` sums over them) are
+`or`s of `bid` and `to-set` literals. The book prelude's `four-trumps-or-more` and
+`exactly-*-trumps` predate the aggregate and are scopes of distinct roles; restating them as a
+`card` reads alike but changes the pinned cores of every rule that calls them, so they wait
+for a deliberate re-pin with a proof of equal meaning, as the bidding prelude had. The
+smallest addition for the first kind (#144): a reading of a functional number predicate as a
+quantity (`(<= (to-set) 21)`), its interval the predicate's one value, or every value where
+it is undefined.
+
 Closed by the plays as evidence (#128 for the readings; 2026-10-13; gap 1 above): a belief
 weighed by named seats' past plays, each under its play policy, exactly, under the
 consistent likelihood (an event) or the uniform one (`1/|allowed|`), with the calls read
