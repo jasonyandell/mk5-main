@@ -74,6 +74,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import time
 from pathlib import Path
 from typing import Sequence
@@ -196,8 +197,12 @@ class Plain:
 
 # -- the arena ----------------------------------------------------------------------
 
-def arena(net_path: str, table: str, arm: str, seed: int, games: int, out: str) -> dict:
-    """One batch: `games` game pairs (2·games games)."""
+def arena(net_path: str, table: str, arm: str, seed: int, games: int, out: str,
+          eps: float = EPS, points_to_win: int | None = None) -> dict:
+    """One batch: `games` game pairs (2·games games). `eps` is the reader's ε
+    (the replication's exploratory sweep; the net seats keep `EPS`);
+    `points_to_win` plays the book's game to that many settled points
+    instead of 7 marks."""
     from arena.bidders import Bid30Bidder
     from arena.engine import ArenaConfig
     from arena.match import run_match
@@ -206,7 +211,7 @@ def arena(net_path: str, table: str, arm: str, seed: int, games: int, out: str) 
 
     if table not in TABLES or arm not in ARMS:
         raise ValueError(f"no arm {table}/{arm}")
-    rec = None if arm == "plain" else Recorder(net_path, arm, EPS)
+    rec = None if arm == "plain" else Recorder(net_path, arm, eps)
     if table == "net":
         net = NetSeat(net_path)
         play_a, play_b = Table(rec if rec is not None else Plain(net_path), net), net
@@ -223,19 +228,22 @@ def arena(net_path: str, table: str, arm: str, seed: int, games: int, out: str) 
         play_a, play_b = rec, parse_walt_spec(specs(net_path, None))
     t0 = time.time()
     result = run_match(bid_a=Bid30Bidder(), bid_b=Bid30Bidder(), play_a=play_a, play_b=play_b,
-                       n_games=2 * games, cfg=ArenaConfig(base_seed=seed), fast_batching=True)
+                       n_games=2 * games, cfg=ArenaConfig(base_seed=seed, points_to_win=points_to_win),
+                       fast_batching=True)
     wall = time.time() - t0
     outdir = Path(out)
     outdir.mkdir(parents=True, exist_ok=True)
     rows = [] if rec is None else rec.rows
-    meta = {"table": table, "arm": arm, "eps": EPS, "seed": seed, "games_per_half": games,
-            "wall_s": round(wall, 1), "margin": MARGIN, "decisions": len(rows),
-            "x": specs(Path(net_path).name, None if arm == "plain" else arm, EPS)}
+    meta = {"table": table, "arm": arm, "eps": eps, "seed": seed, "games_per_half": games,
+            "points_to_win": points_to_win, "wall_s": round(wall, 1), "margin": MARGIN,
+            "decisions": len(rows), "load_avg": list(os.getloadavg()),
+            "x": specs(Path(net_path).name, None if arm == "plain" else arm, eps)}
     (outdir / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
     with open(outdir / "games.jsonl", "w") as f:
         for g in result.games:
             f.write(json.dumps({
                 "game": g.game_idx, "a_team": g.a_team, "a_marks": g.a_marks, "b_marks": g.b_marks,
+                "a_won": g.a_won,
                 "a_points": g.points[g.a_team], "b_points": g.points[1 - g.a_team],
                 "hands": [{"bidder_team": h.bidder_team, "made": h.made, "a_team": h.a_team,
                            "points": list(h.team_points)} for h in g.hands]}) + "\n")
@@ -374,6 +382,158 @@ def _draws(rows: list[dict]) -> dict:
     }
 
 
+# -- the replication ------------------------------------------------------------------
+
+REPLICATION = """The registered replication of the zeb table (fixed before any measured
+replication batch; the wiki page's § Replication repeats it).
+
+- Deals: fresh base seeds, disjoint from every seed the study above used
+  (1–7 and the pilot's 900–904): marks games at `REP_SEEDS`, the book's
+  250-point games at `REP_250_SEEDS`; the timing pilots at `REP_PILOT`,
+  excluded. Each batch is `REP_GAMES` game pairs under `timeout 300`; a
+  batch that overruns is dropped, not rerun, and said so.
+- Players and table exactly as above (`--table zeb`): two readers at ε =
+  `EPS` = 0.28, margin 2^22, against two plain deployed Zebs, `bid30`, paired
+  halves. The A/A arm (plain Zeb at seed `RESEED` against plain) runs at the
+  same seeds in the same run.
+- **Primary**: the consistent reader's margin against plain, marks per game
+  (a game pair's sum / 2), 95% bootstrap over game pairs (4,000 resamples,
+  seed 42). **Success: the interval's lower bound > 0.**
+- Registered secondaries: the uniform reader's margin, marks per game; the
+  A/A margin (expected to include 0); settled points per game (the 250 tally
+  kept on every hand) for each reader; the consistent reader's share of
+  games won in the book's game to 250 points (chance 0.5, the same
+  bootstrap over game pairs).
+- Exploratory, not registered: consistent − A/A and uniform − consistent on
+  the shared game pairs; an ε sweep (`SWEEP_EPS`, consistent reader) at the
+  first `SWEEP_BATCHES` replication seeds; the per-decision cost (`cost`).
+"""
+REP_SEEDS = tuple(range(101, 119))           # 18 batches of REP_GAMES: 288 game pairs
+REP_250_SEEDS = tuple(range(201, 210))       # 9 batches of REP_GAMES: 144 game pairs
+REP_PILOT = (990, 991)
+REP_GAMES = 16                               # from the pilot: 24 risked the 300 s cap at two streams
+SWEEP_EPS = (0.1, 0.5)
+SWEEP_BATCHES = 6
+
+
+def _wins(runs: Sequence[str]) -> dict[tuple[int, int], float]:
+    """(base seed, game) → team A's games won of the pair's two, less 1 (chance 0)."""
+    out: dict[tuple[int, int], float] = {}
+    for run in runs:
+        seed = _meta(run)["seed"]
+        for g in _games(run):
+            k = (seed, g["game"])
+            out[k] = out.get(k, -1.0) + float(g["a_won"])
+    return out
+
+
+def replicate(runs: Sequence[str]) -> dict:
+    """The replication's effects (`REPLICATION`), from zeb-table runs."""
+    by: dict[tuple, list[str]] = {}
+    for run in runs:
+        m = _meta(run)
+        if m["table"] != "zeb":
+            raise ValueError(f"{run}: the replication is the zeb table")
+        by.setdefault((m["arm"], None if m["arm"] == "plain" else m["eps"], m.get("points_to_win")), []).append(run)
+    marks = {k: _pairs(rs, "marks") for k, rs in by.items()}
+    points = {k: _pairs(rs, "points") for k, rs in by.items()}
+    wins = {k: _wins(rs) for k, rs in by.items()}
+    con, uni, aa, con250 = ("consistent", EPS, None), ("uniform", EPS, None), ("plain", None, None), \
+        ("consistent", EPS, 250)
+    out: dict = {"eps": EPS, "arms": {}, "registered": {}, "exploratory": {}}
+    for k, rs in sorted(by.items(), key=str):
+        games = [g for r in rs for g in _games(r)]
+        share = _diff(wins[k], None)
+        out["arms"][f"{k[0]} eps={k[1]} to={k[2] or '7 marks'}"] = {
+            "batches": [{x: _meta(r)[x] for x in ("seed", "wall_s", "load_avg") if x in _meta(r)} for r in rs],
+            "games": len(games), "hands": sum(len(g["hands"]) for g in games),
+            "marks_per_game": _diff(marks[k], None), "points_per_game": _diff(points[k], None),
+            "game_share": {"game_pairs": share["game_pairs"],
+                           **{x: share[x] + 0.5 for x in ("mean", "lo", "hi")}},   # (won − 1) / 2 + 1/2
+        }
+    reg, exp = out["registered"], out["exploratory"]
+    if con in by:
+        m = _diff(marks[con], None)
+        reg["primary: consistent vs plain, marks/game"] = {**m, "success": bool(m["lo"] > 0)}
+        reg["consistent vs plain, settled points/game"] = _diff(points[con], None)
+    if uni in by:
+        reg["uniform vs plain, marks/game"] = _diff(marks[uni], None)
+        reg["uniform vs plain, settled points/game"] = _diff(points[uni], None)
+    if aa in by:
+        reg["A/A: plain at seed 1 vs plain, marks/game"] = _diff(marks[aa], None)
+    if con250 in by:
+        reg["consistent vs plain, share of games to 250 won"] = \
+            out["arms"][f"consistent eps={EPS} to=250"]["game_share"]
+    if con in by and aa in by:
+        exp["consistent - A/A, marks/game"] = _diff(marks[con], marks[aa])
+    if uni in by and con in by:
+        exp["uniform - consistent, marks/game"] = _diff(marks[uni], marks[con])
+    for k in sorted(by, key=str):
+        if k[0] == "consistent" and k[1] != EPS and k[2] is None:
+            exp[f"sweep: consistent eps={k[1]} vs plain, marks/game"] = _diff(marks[k], None)
+            if con in by:
+                exp[f"sweep: consistent eps={k[1]} - eps={EPS}, marks/game"] = _diff(marks[k], marks[con])
+    return out
+
+
+def cost(net_path: str, runs: Sequence[str], per_trick: int = 60, py_per_trick: int = 0,
+         seed: int = 0) -> dict:
+    """Seconds per decision, on one thread, of plain Zeb and of the soft
+    readers (consistent and uniform, ε = `EPS`) at the same states:
+    `per_trick` recorded reader decisions (each with a choice) per trick
+    from `runs`, every player timed at each state in turn so load falls on
+    all alike, and the first `py_per_trick` of them on the Python referee
+    too. The load average is read before and after."""
+    from arena.walt_play import parse_walt_spec
+    from scenario.atlas import _state
+    from scenario.compiled import CompiledWalt
+    from scenario.planner import Walt
+    from scenario.reads_plays import _rows, specs
+    from scenario.record import empty_record
+    from scenario.rules import rules_for
+
+    players = {"plain": specs(net_path, None), "consistent": specs(net_path, "consistent", EPS),
+               "uniform": specs(net_path, "uniform", EPS)}
+    core = {k: CompiledWalt(parse_walt_spec(v).walt.config, threads=1) for k, v in players.items()}
+    py = {k: Walt(c.config) for k, c in core.items()}
+    rows = [r for run in runs for r in _rows(run)]
+    trick = np.array([len(r["plays"]) // 4 + 1 for r in rows])
+    rng = np.random.default_rng(seed)
+    out: dict = {"per_trick": per_trick, "py_per_trick": py_per_trick, "cpu": os.cpu_count(),
+                 "load_avg_before": list(os.getloadavg()), "by_trick": {}}
+
+    def timed(p, state, bid) -> float:
+        t0 = time.perf_counter()
+        p.decide(state, bid)
+        return time.perf_counter() - t0
+
+    for t in range(1, 8):
+        idx = np.flatnonzero(trick == t)
+        if not len(idx):
+            continue
+        pick = rng.choice(idx, size=min(per_trick, len(idx)), replace=False)
+        times: dict[str, list[float]] = {f"{e}:{k}": [] for e in ("core", "py") for k in players}
+        for j, i in enumerate(pick):
+            row = rows[i]
+            rules = rules_for(row["decl"])
+            plays = tuple(tuple(p) for p in row["plays"])
+            rec = empty_record(plays[0][0] if plays else row["bidder"])
+            for _, tile in plays:
+                rec = rec.advance(tile, rules)
+            state = _state(tuple(tuple(h) for h in row["hands"]), row["bidder"], row["bid"], row["decl"], plays, rec)
+            for k in players:
+                times[f"core:{k}"].append(timed(core[k], state, row["bid"]))
+                if j < py_per_trick:
+                    times[f"py:{k}"].append(timed(py[k], state, row["bid"]))
+        out["by_trick"][t] = {k: {"n": len(v), "median_s": float(np.median(v)),
+                                  "p95_s": float(np.percentile(v, 95)), "mean_s": float(np.mean(v))}
+                              for k, v in times.items() if v}
+        print(t, json.dumps({k: [round(v["median_s"], 4), round(v["p95_s"], 4)]
+                             for k, v in out["by_trick"][t].items()}), flush=True)
+    out["load_avg_after"] = list(os.getloadavg())
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -387,23 +547,39 @@ def main() -> None:
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--games", type=int, required=True, help="game pairs")
     p.add_argument("--out", required=True)
+    p.add_argument("--eps", type=float, default=EPS, help="the reader's ε (the replication's ε sweep)")
+    p.add_argument("--points", type=int, default=None, help="play the book's game to this many points")
     p = sub.add_parser("ess")
     p.add_argument("--net", required=True)
     p.add_argument("--runs", nargs="+", required=True)
     p.add_argument("--every", type=int, default=50)
     p.add_argument("--out", required=True)
-    p = sub.add_parser("summarize")
+    for name in ("summarize", "replicate"):
+        p = sub.add_parser(name)
+        p.add_argument("--runs", nargs="+", required=True)
+        p.add_argument("--out", required=True)
+    p = sub.add_parser("cost")
+    p.add_argument("--net", required=True)
     p.add_argument("--runs", nargs="+", required=True)
+    p.add_argument("--per-trick", type=int, default=60)
+    p.add_argument("--py-per-trick", type=int, default=0)
     p.add_argument("--out", required=True)
     a = ap.parse_args()
     if a.cmd == "fit":
         print(json.dumps(fit(a.pour, a.net), indent=1))
     elif a.cmd == "arena":
-        print(json.dumps(arena(a.net, a.table, a.arm, a.seed, a.games, a.out), indent=1))
+        print(json.dumps(arena(a.net, a.table, a.arm, a.seed, a.games, a.out, a.eps, a.points), indent=1))
     elif a.cmd == "ess":
         r = ess(a.net, a.runs, a.every)
         Path(a.out).write_text(json.dumps(r, indent=1) + "\n")
         print(json.dumps(r["by_trick"], indent=1))
+    elif a.cmd == "replicate":
+        r = replicate(a.runs)
+        Path(a.out).write_text(json.dumps(r, indent=1) + "\n")
+        print(json.dumps({k: r[k] for k in ("registered", "exploratory")}, indent=1))
+    elif a.cmd == "cost":
+        r = cost(a.net, a.runs, a.per_trick, a.py_per_trick)
+        Path(a.out).write_text(json.dumps(r, indent=1) + "\n")
     else:
         s = summarize(a.runs)
         Path(a.out).mkdir(parents=True, exist_ok=True)

@@ -866,8 +866,12 @@ poorly late in the hand that half of trick 6 falls back to the uniform: [[reads-
 default 0, both engines bit-identical) weighs a play ε/n + (1 − ε)·[tile ∈ A]·w, F_σ's ε over the
 set, so the posterior never empties. At ε = 0.28 (fitted to Zeb's choices) the fallback rate is 0 at
 every trick. The reader gains +0.23 [+0.05, +0.41] marks/game at a table of seats that play the
-model, and +0.30 / +0.29 against plain Zeb (A/A control −0.03). Restricted choice stays null at
-both tables, so the gain is the soft posterior's, not the set size's. Not turned on in Zeb:
+model. Against plain Zeb it first measured +0.30 / +0.29 (consistent / uniform; A/A control −0.03). The
+registered replication on fresh deals shrank that. The consistent primary came in at **+0.12
+[−0.02, +0.27]**, which **failed** its bar. Uniform held at +0.23 [+0.08, +0.37]; A/A −0.04.
+The reading costs up to 1.7× plain's median per decision at tricks 2–3 and nothing measurable
+later. Restricted choice stays null at both tables, so the gain is the soft posterior's, not the
+set size's. Not turned on in Zeb, and the zeb package cannot reach it:
 [[reads-plays-soft-2026-10-14]].
 
 **A convention overlay, default off (2026-10-12).** The book's conventions
@@ -1078,7 +1082,7 @@ net already plays its best move 96% of the time; a warm fine-tune toward it is i
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
 [[reads-plays-2026-10-13]] (Zeb reads the other seats' plays: both likelihoods null in marks) ·
-[[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table and against Zeb; restricted choice null) ·
+[[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table; against Zeb the registered consistent replication failed, +0.12 [−0.02, +0.27], uniform +0.23; restricted choice null) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]

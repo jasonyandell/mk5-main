@@ -1,5 +1,5 @@
 ---
-title: Zeb reads the plays through a soft set — it pays at a net table and against Zeb (2026-10-14)
+title: Zeb reads the plays through a soft set — it pays at a net table; against Zeb the registered replication failed for consistent and held for uniform (2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
@@ -28,6 +28,14 @@ Zeb's plan over the drawn worlds.
 - *Zeb table* (the reader against plain Zeb): consistent **+0.30 [+0.14, +0.47]**, uniform
   **+0.29 [+0.10, +0.46]** marks/game, 168 game pairs each. The A/A control (plain Zeb at
   another seed through the same harness) is −0.03 [−0.20, +0.15].
+- **Replication** (§ Replication, registered, 256 fresh game pairs): the consistent reader
+  scored **+0.12 [−0.02, +0.27]**. That **fails** the registered bar (lower bound > 0).
+  Uniform held at +0.23 [+0.08, +0.37], over 240 pairs. A/A came in at −0.04
+  [−0.17, +0.09]. The consistent reader won 0.531 [0.503, 0.559] of games to 250. The gain
+  against Zeb is smaller than the first run said, and in the primary form it is not
+  established.
+- **Cost:** up to 1.7× plain Zeb's median per decision at tricks 2–3, and nothing measurable
+  from trick 4 on (native core, one thread). The WebAssembly package cannot reach the reading.
 
 These are a gain the size of #111's (+0.026 marks/hand against nets): +0.021 marks/hand at the
 net table, +0.027 against Zeb. The fallback rate is **0 at every trick** (sharp: 28% / 51% at
@@ -164,7 +172,155 @@ decisions again leads with the **5-5** and **6-4** (+0.05 / +0.04 at the zeb tab
 - **No Zeb default changed.** `Config.reading` stays off; whether to ship it in Zeb is a decision
   for Jason. The soft draw has no early exit: it evaluates every world of an enumerated
   fiber (up to 2^20) and, at tricks 1–2, a median of 2.7k–47k rejection proposals. Its
-  per-decision cost against plain was not timed here.
+  per-decision cost is timed in § Replication (up to 1.7× plain's median at tricks 2–3).
+
+## Replication
+
+The Zeb-table result has to replicate before reading can be a default. This
+section was written and committed before any measured replication batch.
+
+### Pre-registration
+
+Fixed in `scenario/reads_soft.py` (`REPLICATION`, `REP_*`):
+
+- **Fresh deals.** Base seeds 101–118 (marks games) and 201–209 (games to 250).
+  None overlaps the seeds the study above used (1–7, and its pilot's 900–904).
+  The replication's own timing pilots (990, 991) are excluded.
+- **The same players and table.** Two consistent readers (ε = 0.28, margin 2^22)
+  against two plain deployed Zebs `k0,n512,F=margin_d250k_h128x64,f=16`, with
+  `bid30` bidders and paired halves.
+- **The A/A arm** runs in the same run on the same seeds: plain Zeb with planner
+  seed 1 against plain Zeb.
+- **Size.** 18 batches × 16 game pairs = **288 game pairs** per marks arm, and
+  9 × 16 = 144 game pairs of games to 250. The batch size came from the pilot:
+  24 pairs risked the 300 s cap with two streams running. Every batch runs
+  under `timeout 300`. A batch that overruns is dropped, not rerun, and the
+  page will say so.
+- **Primary.** The consistent reader's margin against plain Zeb, in marks per
+  game (a game pair's sum / 2). The 95% bootstrap runs over game pairs (4,000
+  resamples, seed 42). **Success means the interval's lower bound is above 0.**
+- **Registered secondaries.**
+  - The uniform reader's margin, in marks per game.
+  - The A/A margin, which should cover 0.
+  - Settled points per game for each reader.
+  - The consistent reader's share of games won in the book's game to 250
+    points (chance 0.5).
+- **Exploratory, not registered.**
+  - Consistent − A/A and uniform − consistent, on shared pairs.
+  - A sweep of the consistent reader's ε at 0.1 and 0.5, on the first 6 seeds
+    (96 pairs).
+  - The time per decision (`cost`).
+
+### Results
+
+**The registered primary did not replicate.** The consistent reader against plain Zeb was
+**+0.12 [−0.02, +0.27] marks/game** over 256 fresh game pairs. The lower bound is below 0,
+so by the bar fixed in advance this is a failure. The point estimate is positive and about
+two fifths of the original +0.30. The uniform reader, a registered secondary, held up:
++0.23 [+0.08, +0.37]. The A/A arm sits at chance, as it should.
+
+Run at `c9852cf6` (the pre-registration commit), 2026-10-14, 05:06–06:47.
+
+| registered effect | game pairs | estimate | original (seeds 1–7) |
+|---|---|---|---|
+| **primary: consistent vs plain, marks/game** | 256 | **+0.12 [−0.02, +0.27]: fails the bar** | +0.30 [+0.14, +0.47] |
+| consistent vs plain, settled points/game | 256 | +6.0 [+0.2, +11.8] | +11.7 [+5.3, +18.2] |
+| uniform vs plain, marks/game | 240 | **+0.23 [+0.08, +0.37]** | +0.29 [+0.10, +0.46] |
+| uniform vs plain, settled points/game | 240 | +7.4 [+1.4, +13.3] | +13.7 [+6.2, +20.7] |
+| A/A: plain at seed 1 vs plain, marks/game | 288 | −0.04 [−0.17, +0.09] | −0.03 [−0.20, +0.15] |
+| consistent vs plain, share of games to 250 won | 144 | 0.531 [0.503, 0.559] (chance 0.5) | not measured |
+
+**Dropped batches.** Six batches overran `timeout 300` and were dropped under the registered
+rule, not rerun. Five were registered: consistent at seeds 114 and 116, and uniform at
+seeds 113, 114 and 116. One was exploratory: ε = 0.5 at seed 102. Every overrun came while
+other sessions held the machine at a load average of 65–90 on 18 cores. A batch's outcome
+cannot depend on its wall time, because every player is deterministic given the state. So
+dropping a batch loses power but does not bias the result. The A/A arm and the
+games-to-250 arm lost nothing. After 06:11 the exploratory sweep was stopped by hand to
+protect the registered arms. It was resumed after they finished.
+
+Per batch, the consistent reader's margin was positive at 11 of 16 seeds. The uniform
+reader's was positive at 14 of 15, and the A/A arm's at 7 of 18. Contracts made when
+bidding were 38.5% for the consistent reader and 37.4% for plain in the same games. For the
+uniform reader they were 39.0% and 37.0%, and in the A/A arm 38.0% and 38.3%.
+
+**Exploratory** (not registered):
+
+| effect | game pairs | marks/game |
+|---|---|---|
+| consistent − A/A, same pairs | 256 | +0.18 [+0.01, +0.34] |
+| uniform − consistent, same pairs (restricted choice) | 240 | +0.12 [−0.04, +0.29] |
+| original + replication pooled, consistent | 424 | +0.20 [+0.09, +0.30] |
+| original + replication pooled, uniform | 408 | +0.25 [+0.14, +0.37] |
+| original + replication pooled, A/A | 456 | −0.03 [−0.14, +0.07] |
+
+The pooled rows include the original's 168 pairs, which were the reason for replicating. A
+pooled estimate therefore carries their winner's curse, and the replication's own
+intervals are the honest ones.
+
+**What it means.** The reading's gain against Zeb is smaller than #145 reported. The
+consistent form, the pre-registered primary, did not clear 0 on fresh deals. The uniform
+form did clear it, at +0.23 marks/game. It is the arm the net table's primary also used. In
+this run the uniform form led the consistent one by +0.12, but restricted choice is still
+null on the same pairs, as it was in #145. Uniform passing here is a registered secondary.
+It is a reason for a uniform-primary replication, not a finding that the uniform form pays
+on its own.
+
+#### The ε sweep (exploratory)
+
+The consistent reader at ε = 0.1 and ε = 0.5, at the first six replication seeds. Each batch
+holds 16 game pairs. One batch was dropped (ε = 0.5 at seed 102). The arms were run in two
+sittings: stopped by hand at 06:11, then resumed in one stream at 06:49 once the registered
+arms were done.
+
+| ε | game pairs | vs plain, marks/game | − (ε = 0.28) on the same pairs |
+|---|---|---|---|
+| 0.1 | 96 | +0.11 [−0.13, +0.34] | +0.06 [−0.18, +0.30] |
+| 0.28 (registered, all seeds) | 256 | +0.12 [−0.02, +0.27] | |
+| 0.5 | 80 | +0.21 [−0.03, +0.48] | +0.20 [−0.06, +0.49] |
+
+Every interval covers 0. At this size, a sweep can tell neither ε from 0.28. Nothing here
+argues for refitting ε.
+
+#### Cost per decision
+
+`python -u -m scenario.reads_soft cost --runs <consistent s101–105> --per-trick 40
+--py-per-trick 4`. It draws 40 reader decisions per trick from the replication's consistent
+arm (the reader's seat, a choice of at least two tiles). At each state it times plain Zeb,
+the consistent reader and the uniform reader in turn, on one thread, at 512 worlds. The
+first 4 per trick are also timed on the Python referee. The machine was **not quiet**: the
+load average was 30 at the start and 24 at the end, on 18 cores, with other sessions
+running. Read the ratios, not the absolute times.
+
+Compiled core, ms per decision, median / p95:
+
+| trick | plain | consistent | uniform | consistent / plain (median) |
+|---|---|---|---|---|
+| 1 | 126 / 304 | 143 / 336 | 147 / 328 | 1.14 |
+| 2 | 75 / 292 | 127 / 311 | 153 / 328 | 1.69 |
+| 3 | 44 / 89 | 67 / 181 | 60 / 188 | 1.53 |
+| 4 | 31 / 52 | 28 / 53 | 31 / 56 | 0.92 |
+| 5 | 0.1 / 9 | 1.4 / 9 | 1.4 / 11 | (sub-ms) |
+| 6 | 0.1 / 0.3 | 0.2 / 0.7 | 0.2 / 0.7 | (sub-ms) |
+
+On the Python referee, with 4 per trick (so only indicative), the medians at tricks 1–3 were
+0.92 / 0.47 / 0.22 s for plain and 1.01 / 0.66 / 0.43 s for consistent.
+
+The reading costs most at tricks 2–3, the rejection-draw tricks: about 1.5–1.7× plain's
+median there. The p95 changes by at most about 10% at tricks 1–2, but doubles at trick 3
+(89 to 181 ms). From trick 4 on there is no measurable cost. Every decision's p95 stays under
+about 0.35 s on one native thread.
+
+**The deployed budget.** No per-decision time budget is written down. The nearest thing is
+the zeb README's latency table. `@jasonyandell/zeb` in WebAssembly takes 44 ms (160 worlds,
+the phone default) or 154 ms (512 worlds) for an opening lead, on one M5 Max thread. Its
+README calls 160 worlds "a mobile budget". **The reading cannot be reached from the package
+today.** `zeb/src/lib.rs` builds `Config { reading: None, draw: Draw::Uniform, .. }`, and
+`Player` exposes no option for it. So the WebAssembly cost is unmeasured. Scaled by these
+native ratios (an estimate, not a measurement), the reader would put a trick-1 decision near
+0.18 s at 512 worlds, or 0.05 s at 160. At tricks 2–3 it costs up to 1.7× a base that is
+already smaller than the opening lead's. Exposing it would be a new option and an API change for Jason to
+decide on. Nothing here changes a default.
 
 ## Data
 
@@ -189,7 +345,25 @@ Code: the soft reading at mk5-main `77a3b1dd` (`Reading.eps`, both engines; aren
 arm. Tests: `scenario/tests/test_reading.py` (referee = core under ε > 0 on every draw path,
 the soft posterior never empties, ε = 0 is the sharp set, margin 0 is F_σ, Silas's
 restricted-choice counts at any ε) and `scenario/tests/test_reads_soft.py` (the net seat plays
-the model, the table, the pairing).
+the model, the table, the pairing, the replication's effects).
+
+The replication is published in the same repo under `zeb/reads-plays-soft-rep/`. It has
+`SHA256SUMS` and a `NOTES.md`, and holds:
+
+- per batch: `runs/zeb_<arm>[_e<ε>]_s<seed>/` and `runs/zeb250_consistent_s<seed>/`
+- `replication.json`
+- `cost.json`
+- `run_rep.sh` and `run_sweep_resume.sh`
+- `logs/progress.log`, which records every batch's exit and load average, the overruns
+  among them
+
+Pre-registered at `c9852cf6`.
+
+```bash
+python -u -m scenario.reads_soft replicate --runs runs/* --out replication.json
+python -u -m scenario.reads_soft cost --net $NET --runs runs/zeb_consistent_s10[1-5] --per-trick 40 \
+    --py-per-trick 4 --out cost.json
+```
 
 ## Links
 

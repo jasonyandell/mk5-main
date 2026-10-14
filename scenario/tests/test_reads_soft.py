@@ -112,3 +112,39 @@ def test_the_summary_differences_arms_by_game_pair(tmp_path):
     assert e["points_per_game"]["mean"] == ((240 - 190) + (160 + 160)) / 2 / 2
     assert s["arms"]["net/uniform"]["fallback_by_trick"][2] == {"n": 2, "rate": 0.5}
     assert "net: consistent - plain" not in s["effects"]
+
+
+def test_the_replication_reads_the_primary_the_aa_arm_and_the_game_share(tmp_path):
+    """The replication's primary is the consistent reader's mark margin per
+    game, a success when its lower bound clears 0; the game share is the
+    reader's games won of a pair, over 2; a run at another ε is a sweep arm,
+    not the primary."""
+    from scenario.reads_soft import replicate
+
+    def run(name, arm, seed, games, eps=EPS, to=None):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "meta.json").write_text(json.dumps({"table": "zeb", "arm": arm, "seed": seed, "eps": eps,
+                                                 "points_to_win": to}))
+        with open(d / "games.jsonl", "w") as f:
+            for idx, a_team, am, bm, won in games:
+                f.write(json.dumps({"game": idx, "a_team": a_team, "a_marks": am, "b_marks": bm,
+                                    "a_points": 10 * am, "b_points": 10 * bm, "a_won": won, "hands": []}) + "\n")
+        return str(d)
+
+    win, lose = (0, 0, 7, 3, True), (0, 1, 2, 7, False)
+    con = run("c", "consistent", 101, [win, (0, 1, 7, 5, True), (1, 0, 7, 1, True), (1, 1, 7, 6, True)])
+    aa = run("a", "plain", 101, [win, lose, (1, 0, 3, 7, False), (1, 1, 7, 3, True)])
+    swp = run("s", "consistent", 101, [win, lose], eps=0.1)
+    g250 = run("g", "consistent", 201, [win, lose], to=250)
+    r = replicate([con, aa, swp, g250])
+    p = r["registered"]["primary: consistent vs plain, marks/game"]
+    # pair 0: (4 + 2) / 2 = 3; pair 1: (6 + 1) / 2 = 3.5
+    assert p["game_pairs"] == 2 and p["mean"] == 3.25 and p["success"]
+    assert r["registered"]["consistent vs plain, settled points/game"]["mean"] == 32.5
+    # pair 0: (4 − 5) / 2; pair 1: (−4 + 4) / 2
+    assert r["registered"]["A/A: plain at seed 1 vs plain, marks/game"]["mean"] == -0.25
+    assert r["registered"]["consistent vs plain, share of games to 250 won"]["mean"] == 0.5
+    assert r["arms"]["consistent eps=0.28 to=7 marks"]["game_share"]["mean"] == 1.0
+    assert r["exploratory"]["sweep: consistent eps=0.1 - eps=0.28, marks/game"]["game_pairs"] == 1
+    assert "uniform vs plain, marks/game" not in r["registered"]
