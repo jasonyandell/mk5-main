@@ -38,7 +38,9 @@ of (rung, seat, remaining hand, record) and is cached as such.
 
 - **The standing ladder** (2026-10-14): production Walt, Zeb 0.1.0 and 0.2.0 and the fenced
   E[Q] n=10, rated by Bradley–Terry over append-only faceoff records on Hugging Face; Zeb 0.3.0
-  joins by `python -m tournament add-zeb 0.3.0` ([[tournament]]).
+  joins by `python -m tournament add-zeb 0.3.0` ([[tournament]]). Since 2026-10-14 the ladder
+  also seats [[the-demon]], a fenced CPU PIMC player, so Walt and Zeb meet strategy fusion
+  head-on on any machine.
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).

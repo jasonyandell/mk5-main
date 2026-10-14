@@ -90,8 +90,9 @@ seat cannot tell apart.
    fails if a file names a clairvoyant API without the token. It also fails if a defining
    module lacks the token in its first lines, if a guarded pattern stops matching anything,
    if an old unwarning name (`(dd-make)`, `minimaxEvaluate`, `fn grade_line`) comes back,
-   if Silas's default features gain `clairvoyant`, or if this page or the `CLAUDE.md` line
-   goes missing. `scripts/check` runs it in `ts-unit`. It also runs as its own suite,
+   if Silas's default features gain `clairvoyant`, if a crate other than the Demon's turns
+   that feature on, if a player's home names the Demon, or if this page or the `CLAUDE.md`
+   line goes missing. `scripts/check` runs it in `ts-unit`. It also runs as its own suite,
    `fence`, which any code change triggers under `--fast`.
 
 The guard does not catch a new hand-written double-dummy search that uses none of these
@@ -118,6 +119,7 @@ information-state solver, which is allowed. (C) is only a mention.
 | `forge/eq/` (`oracle.py` `Stage1Oracle`, `generate/` E[Q]), `forge/zeb/` (`eq_player`, `mcts`, `oracle_value`, …), `forge/cli/`, `forge/modal_app.py` | the network distilled from the oracle, and E[Q]: per-world Q averaged | A, oracle era | token (39 files) |
 | `arena/lens_play.py` and callers (`cli`, `jud_play`, `jud_search`, `midhand_eval`, `slough_override`, `fate_slough_play`, `test_snapshots`) | `LensPlay` = E[Q] n=10, the old champion | A, sanctioned baseline (what Zeb is graded against) | token |
 | `tournament/eq_fenced_seat.py`, `tournament/participants.py` (`EQ_N10`) | E[Q] n=10 seated in the tournament ([[tournament]]) | A, sanctioned baseline (a rated measuring stick; nothing reads its values) | token |
+| `tournament/demon/` (Rust: `lib.rs`, `main.rs`, tests), `tournament/demon_fenced_seat.py`, its hooks in `seats.py`, `artifacts.py`, `participants.py` (`DEMON_N100`), `tournament/tests/test_demon.py` | the Demon ([[the-demon]]): classic PIMC on the CPU, Walt's sampler plus `ClairvoyantSolver` per world, averaged | A, sanctioned baseline (a rated opponent; nothing reads its values) | token, names, the only crate that turns on Silas's `clairvoyant` feature; guard: no player home may reach it |
 | `otis/tiedroll.py` | `ClairvoyantPolicy`: the fusion-gap baseline | A, sanctioned (measures fusion) | token |
 | `champion/` (10 files incl. `belief_bidder`, `play`, `jud_net`, `bidder`), `gus/` (2), `w42/` (13), `burl/` (4), `lem/` (4), `scripts/validate_eq_computation.py` | oracle-era players, probes and datasets built on E[Q]/Stage1Oracle | A, oracle era | token |
 | `champion/optimism_meter.py` | oracle make-rate vs realized | A, sanctioned (measures fusion) | token |
@@ -150,7 +152,12 @@ information-state solver, which is allowed. (C) is only a mention.
   is its own standard.
   Those are the "cannot be set double dummy" claims the ruling names.
 - **Baselines.** E[Q] n=10 (`LensPlay`) is the opponent Zeb is graded against. The oracle
-  era stays as a measuring stick ([[expected-q-value]], [[the-oracle]]).
+  era stays as a measuring stick ([[expected-q-value]], [[the-oracle]]). **The Demon**
+  ([[the-demon]], 2026-10-14) is the same kind of stick without the GPU: textbook PIMC over
+  Silas's exact solver, seated in the [[tournament]] so Walt and Zeb are rated against strategy
+  fusion head-on. It is an opponent only: its crate is the one place outside Silas's own tests
+  that turns on the `clairvoyant` feature, and the guard fails if anything under `silas/`,
+  `scenario/`, `zeb/`, `arena/`, `walt/` or `src/game/` names it.
 - **Tolerated, not sanctioned:** the game's intermediate AI ([[intermediate-ai]]) plays by
   PIMC. It is fenced and named, and it is better replaced by Zeb.
 
@@ -169,4 +176,4 @@ No core pin changed: no `.silas` file or prelude names the renamed predicate
 
 ## Links
 
-[[strategy-fusion]] | [[the-wall]] | [[silas]] | [[splat-search-bounds]] | [[belief-policy-value-algebra]] | [[scenario-player]] | [[intermediate-ai]] | [[the-oracle]] | [[expected-q-value]] | [[brainstorm-2026-10-14-ledger]] (an outside proposal's "demon labels and critics", assessed against this fence)
+[[strategy-fusion]] | [[the-wall]] | [[silas]] | [[the-demon]] (the sanctioned PIMC opponent) | [[splat-search-bounds]] | [[belief-policy-value-algebra]] | [[scenario-player]] | [[intermediate-ai]] | [[the-oracle]] | [[expected-q-value]] | [[brainstorm-2026-10-14-ledger]] (an outside proposal's "demon labels and critics", assessed against this fence)

@@ -32,6 +32,7 @@ are a function of the participant alone, so two writers adding it write the same
 | `zeb-0.1.0` | `@jasonyandell/zeb` 0.1.0, 160 worlds, cutoff 0.8 | npm integrity `sha512-GyEDG0FE…`, shasum `30aee968…` |
 | `zeb-0.2.0` | `@jasonyandell/zeb` 0.2.0, same settings | npm integrity `sha512-YnlKLquB…`, shasum `12763486…` |
 | `eq-n10-fenced` | E[Q] n=10 (`heuristic+lens:ev`), the oracle era's champion | checkpoint sha256 `5f3f00de…`; the faceoff records the mk5 commit that ran it |
+| `demon-pimc-n100-b88c5432` | the Demon ([[the-demon]]): CPU PIMC, 100 worlds, Silas's double-dummy solve per world, margin tiebreak, `heuristic` bidder | mk5 commit `b88c5432` and the git trees of `silas/` `75b67c11…`, `scenario/core/` `11735eb0…`, `tournament/demon/` `40738d38…`; built from those trees on the worker |
 
 Seating. The referee is the arena (`arena/engine.py`: deal, auction, play, marks to 7). A
 JavaScript participant runs in `tournament/seat/host.mjs`, one process per team per game, sent
@@ -52,6 +53,12 @@ its own dealt tiles and the public record only.
 - **E[Q] n=10** is a fenced measuring stick (STRATEGY-FUSION FENCE, [[strategy-fusion-fence]]
   § Sanctioned uses, "Baselines"): seated only by `tournament/eq_fenced_seat.py`, only on a machine
   with MPS or CUDA (forge is GPU-only), never read by anything else.
+- **The Demon** is the CPU fusion stick (STRATEGY-FUSION FENCE, [[the-demon]]): seated only by
+  `tournament/demon_fenced_seat.py`, a Rust binary per team per game, sent its own tiles and the
+  public record and checked against the table's leader and points. It bids with the arena's
+  `heuristic` bidder, as E[Q] does, so the two fusion players differ only in play. It needs
+  `cargo` and `git`: the worker builds it from the pinned trees (`git archive <tree>`, then
+  `cargo build --release --locked`, about 40 s once per machine), never from the checkout.
 
 Old programs can join the same way: [[legacy-42-bots]] surveys them and designs a `legacy` kind,
 pinned by the sha256 of what was run and never redistributed. The GPL `texas42` 0.46 AI (2003)
@@ -192,7 +199,8 @@ Check claude.ai/settings/usage that usage credits are off.
    ([cloud environments](https://code.claude.com/docs/en/cloud-environments#add-network-secrets)).
    Never an environment variable: every session of the environment can read those.
 3. Network access Trusted, plus `download.pytorch.org` (the arena imports torch; the CPU wheel is
-   small, PyPI's Linux wheel pulls CUDA). The worker seats Walt and Zeb only; E[Q] needs a GPU and
+   small, PyPI's Linux wheel pulls CUDA), and `static.crates.io`/`index.crates.io` for the Demon's
+   build. The worker seats Walt, Zeb and, where `cargo` is on PATH, the Demon; E[Q] needs a GPU and
    runs on the Mac.
 
 **Start it** (from a checkout of the merged main): `claude --cloud --model haiku "Read
@@ -221,5 +229,5 @@ session does not come up on Haiku, send `/model haiku` as its first message.
 
 [[scenario-player]] (hub) · [[eval-matrix-bradley-terry]] (the February predecessor) ·
 [[champion-ladder]] (the paired-halves arena it reuses) · [[strategy-fusion-fence]] (E[Q]'s
-seat) · [[publish-data-to-huggingface]] (where records live) · [[legacy-42-bots]] (old
+seat) · [[the-demon]] (the CPU PIMC stick) · [[publish-data-to-huggingface]] (where records live) · [[legacy-42-bots]] (old
 programs as opponents)
