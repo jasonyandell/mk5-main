@@ -950,7 +950,9 @@ agreement rises from 52.2% to 54.3%. At the table, against deployed Zeb, it is +
 champion it is +0.18 [−0.01, +0.36]. Nothing ships under the pre-registered marks bar; a
 points-scoring zeb version is proposed ([[tie-margin-2026-10-14]]). Widening the tie to a band
 (`Config.tie_band`, δ = 0.01 of make probability) does not beat exact ties: 49.1% [47.7, 50.4]
-of games to 250, marks +0.02 [−0.050, +0.086] ([[tie-band-2026-10-14]]).
+of games to 250, marks +0.02 [−0.050, +0.086]. The exploratory δ = 0.02 (53.4% on 384 games)
+failed its registered replication, 51.4% [49.9, 52.9] and marks −0.01 [−0.085, +0.075], so the
+band is closed at exact ties ([[tie-band-2026-10-14]] § Replication).
 
 ## The reason report (2026-10-13, #124)
 
