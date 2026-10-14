@@ -50,11 +50,13 @@ class CompiledWalt:
             config.draw, config.draw_budget,
             None if config.convention is None else
             (config.convention.name, config.convention.send, config.convention.read),
+            None if config.reading is None else (config.reading.likelihood, config.reading.margin),
         )
         self.nodes = 0      # cells evaluated in the last decision or batch
         self.proposals = 0  # posterior or reader: uniform proposals drawn in the last decision or batch
         self.fallbacks = 0  # posterior or reader: decisions of the last batch planned over the uniform
         self.sent = 0       # convention: decisions of the last batch whose tile the sender's rule chose
+        self.draws: list[tuple[int, int]] = []   # per state of the last batch: (proposals, fell back); (0, 0) when forced
 
     def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
         return self.decide_batch([state], [bid])[0]
@@ -119,6 +121,7 @@ class CompiledWalt:
             ))
             sits.append((i, sit))
         self.nodes = self.proposals = self.fallbacks = self.sent = 0
+        self.draws = [(0, 0)] * len(states)
         if reqs:
             weights: list[list[float] | None] = [None] * len(reqs)
             if self.belief is not None:
@@ -130,5 +133,6 @@ class CompiledWalt:
                 self.proposals += res[-3]
                 self.fallbacks += res[-2]
                 self.sent += res[-1]
+                self.draws[i] = (res[-3], int(res[-2]))
         assert all(o is not None for o in out)
         return out  # type: ignore[return-value]

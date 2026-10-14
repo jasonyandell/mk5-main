@@ -8,7 +8,7 @@ construction one rung down, bottoming out in random legal play. See
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
           [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>]
-          [,c=<convention>:S|R|SR][,py]
+          [,r=consistent|uniform:<margin>][,c=<convention>:S|R|SR][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -32,6 +32,11 @@ at `E=` — would have played the observed moves in. An enumerated fiber is
 weighted by that likelihood normalized; a sampled one is n draws by
 rejection from the uniform stream, within `D=` proposals (default 2^22),
 else the uniform sample (`CompiledWalt.fallbacks` counts those decisions).
+
+`r=<likelihood>:<margin>` (with `d=posterior`) reads the plays by the net's
+set instead of its move (`Config.reading`): a play must lie among the legal
+tiles the net scores within `margin` (integer score units) of its best, and
+weighs 1 (`consistent`) or 1/|set| (`uniform`, restricted choice).
 
 `c=<name>:<arm>` overlays a convention on the live seat (`Config.convention`,
 `scenario/convention.py`, where every gate is stated): `name` is one of
@@ -86,7 +91,7 @@ from forge.zeb.types import ZebGameState
 from arena.hand_metrics import best_trump
 from scenario.convention import Convention
 from scenario.field import FieldNet
-from scenario.planner import DRAW_BUDGET, Belief, Config, Rung, Situation, Walt, World
+from scenario.planner import DRAW_BUDGET, Belief, Config, Reading, Rung, Situation, Walt, World
 
 
 def declaration_belief(eps: float = 0.1) -> Belief:
@@ -119,11 +124,12 @@ class WaltPlay:
                  utility: str = "make", seed: int = 0, belief: Belief | None = None,
                  floor: int | None = None, field: FieldNet | None = None,
                  field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
-                 convention: Convention | None = None, compiled: bool = True):
+                 convention: Convention | None = None, reading: Reading | None = None,
+                 compiled: bool = True):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
-        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget, convention)
+        config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget, convention, reading)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -155,6 +161,7 @@ class WaltPlay:
         belief = "" if self.walt.belief is None else ", +external belief"
         field = "random" if c.field is None else "net" if c.field_eps == 0 else f"net+eps{c.field_eps:g}"
         conv = "" if c.convention is None else f", convention={c.convention.name}:{c.convention.arm}"
+        conv += "" if c.reading is None else f", reading={c.reading.likelihood}:{c.reading.margin}"
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}{belief}, "
                 f"field={field}, draw={c.draw}{conv}, {engine})")
 
@@ -180,6 +187,9 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["draw"] = t[2:]
         elif t.startswith("D="):
             kw["draw_budget"] = int(t[2:])
+        elif t.startswith("r="):
+            likelihood, _, margin = t[2:].partition(":")
+            kw["reading"] = Reading(likelihood, int(margin))
         elif t.startswith("c="):
             name, _, arm = t[2:].partition(":")
             if arm not in ("S", "R", "SR"):

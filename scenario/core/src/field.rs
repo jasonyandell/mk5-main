@@ -269,6 +269,19 @@ impl FieldNet {
         }
         best.expect("a legal play exists").0 as u8
     }
+
+    /// The legal tiles scoring within `margin` of the best legal score, as a
+    /// mask: the set a reading holds the seat to (`FieldNet.allowed`). Margin 0
+    /// is the best score and its ties; a margin wider than every gap is every
+    /// legal tile.
+    #[allow(clippy::too_many_arguments)]
+    pub fn allowed(&self, rules: &Rules, seat: u8, own: u32, rec: &Rec, bid: i32, bt: usize, margin: i64) -> u32 {
+        let z = self.scores(&self.features(rules, seat, own, rec, bid, bt));
+        let canon = canon(rules.decl).expect("the field net plays pip trumps only");
+        let legal = rules.legal(own, rec.led());
+        let best = tiles(legal).map(|t| z[canon[t] as usize]).max().expect("a legal play exists");
+        tiles(legal).filter(|&t| z[canon[t] as usize] >= best.saturating_sub(margin)).fold(0, |a, t| a | 1 << t)
+    }
 }
 
 #[cfg(test)]
