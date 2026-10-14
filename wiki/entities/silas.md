@@ -198,7 +198,7 @@ Collapsing equivalent hidden tiles is not a speed lever: worlds never compress (
 
 ## The double-dummy reference
 
-`silas::Solver` (2026-10-13) is an exact perfect-information solver over any `Physics`:
+`silas::ClairvoyantSolver` (2026-10-13; renamed and gated behind the non-default `clairvoyant` feature by the [[strategy-fusion-fence]]) is an exact perfect-information solver over any `Physics`:
 integer fail-soft alpha-beta with a transposition table at each trick's start, keyed on
 the exact state, holding proven bounds. It values every legal move at a fully specified
 position under two objectives, the declaring side's points margin and make-or-set
@@ -212,7 +212,7 @@ and under seat rotation. The forge oracle could not referee it on this machine: 
 (torch 2.11, macOS 26.5) `torch.sort` and `torch.unique` on int64 lose the high bits of
 forge's packed states, so forge's enumeration collapses after two plies.
 
-`grade_line` grades a line play by play; `silas/examples/book/solve_grade.rs` grades the
+`clairvoyant_grade_line` grades a line play by play; `silas/examples/book/clairvoyant_grade.rs` grades the
 narrated lines of Hands 28–35 in under a second. Of 124 narrated plays with a choice, 21
 fall short of the best double-dummy margin and 4 change make-or-set: the bidder's 3-1
 lead to trick three of Hand 28 (any of 5-0, 6-1, 6-6 keeps all 42; the 3-1 sets him),
@@ -226,14 +226,15 @@ trick six and is graded to there.
 
 The book's claims of certainty (the tournament lay-down rule, "cannot be set") are about
 what one player can guarantee without seeing the hidden hands. They are not about
-best play by everyone in one world. Four predicates (2026-10-13, `silas/README.md`
+best play by everyone in one world. Three predicates, and a fenced fourth, (2026-10-13, `silas/README.md`
 § Solved outcomes) state them:
 
 - `(lay-down)`: one fixed order of the viewer's tiles wins every trick left, in every world
   and against every play of the other three seats.
 - `(certain-make)` and `(certain-set)`: the viewer, choosing from his frame alone, forces his
   side's goal against every play of the other three, his partner's included.
-- `(dd-make)`: the per-world double-dummy outcome, an upper bound on any such guarantee.
+- `(clairvoyant-dd-make)`: the per-world double-dummy outcome, an upper bound on any such
+  guarantee; behind the `clairvoyant` feature, refused in a policy at the [[strategy-fusion-fence]].
 
 The first three answer exactly or are refused. A lay-down proves the goal; one
 double-dummy counterexample among 10,000 worlds refutes it. Otherwise an and-or search
@@ -418,4 +419,4 @@ a belief, and that is gap 1 now (`silas/GAPS.md` 1).
 
 ## Links
 
-[[scenario-player]] · [[w42]] · [[book-study-2026-10-12]] · [[the-wall]]
+[[scenario-player]] · [[w42]] · [[book-study-2026-10-12]] · [[the-wall]] · [[strategy-fusion-fence]]

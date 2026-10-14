@@ -273,8 +273,10 @@ transcription would check it against.
   `(certain-make)` and `(certain-set)` are Viewer atoms whose truth at `f` is a
   statement about every world of `f` and every play to the end of the hand:
   what the viewer can force, from his frame alone, against every play of the
-  other three seats. `(dd-make)` is a World atom: the double-dummy outcome in
-  one world, an upper bound on any such guarantee. Each answers exactly or is
+  other three seats: information-state solves, one choice per frame. Behind
+  the `clairvoyant` feature, `(clairvoyant-dd-make)` is a Clairvoyant atom: the
+  double-dummy outcome in one world, an upper bound on any such guarantee
+  (STRATEGY-FUSION FENCE). Each answers exactly or is
   refused (Solved outcomes, below).
 
 ## Predicates
@@ -282,11 +284,14 @@ transcription would check it against.
 The core built-ins have horizon zero. Each carries the version in which its
 meaning last changed: `silas-v0/core` for the first set, `silas-v1/core` for
 the record's first predicates, `silas-v2/core` for those that changed or came
-with the one-frame record and the full contract (marked v2). The four outcome
-predicates, version `silas-v3/outcome`, look to the end of the hand (Solved
+with the one-frame record and the full contract (marked v2). The outcome
+predicates (three, and a fourth under the `clairvoyant` feature), version `silas-v3/outcome`, look to the end of the hand (Solved
 outcomes, below). The auction's, version `silas-v4/auction`, are in The
 auction, below. *World* access means the predicate reads a hidden world;
-*Viewer* means it reads only the frame.
+*Viewer* means it reads only the frame; *Clairvoyant* means it reads a hidden
+world and plays it out with every seat seeing all four hands. A policy, and a
+viewer evaluation, refuses World and Clairvoyant predicates; the refusal of a
+Clairvoyant one names the STRATEGY-FUSION FENCE.
 
 Every predicate also has a *phase*: the play (a `Frame`, after the
 declaration), the auction (an `AuctionFrame`, before it), or both. The
@@ -333,7 +338,7 @@ a frame before any work, and a policy rule naming one at compilation.
 | `shown-void(c,q)` | Viewer | Seat `c` has publicly failed to follow `q`, read off the record. For a hidden seat it is the void that forbids its worlds. |
 | `lay-down()` | Viewer | v3: some fixed sequence of the viewer's tiles wins every remaining trick in every world, against every play of the other three seats; undefined unless the viewer is to play. |
 | `certain-make()`, `certain-set()` | Viewer | v3: the viewer, choosing from his frame alone, forces the make (the set) in every world against every play of the other three seats; undefined unless that is his side's goal. |
-| `dd-make()` | World | v3: in this world the declaring side makes from here under double-dummy play. |
+| `clairvoyant-dd-make()` | Clairvoyant | v3, `clairvoyant` feature only: in this world the declaring side makes from here under double-dummy play. STRATEGY-FUSION FENCE: never in a policy (`wiki/topics/strategy-fusion-fence.md`). |
 
 Numbers and teams are literal-only (a number is never a role; the aggregates
 compare sizes and sums without one), so `banked` and `to-set` take a chair and
@@ -829,14 +834,28 @@ reads them. Doubles as their own unpowered suit (nello) is not a straight
 declaration and is omitted. Its module documentation states the rules it
 implements.
 
-## The double-dummy reference
+## The clairvoyant (double-dummy) reference
 
-`Solver` is an exact perfect-information solver. **It sees all four hands.**
-It is a reference, never a player: it explains a book move only where the
-book's own argument is about a fully known position. Everywhere else its
-value is an upper bound on what any real seat can achieve, and a move it calls
-a mistake may be right for a seat that cannot tell the worlds apart (strategy
-fusion: `wiki/topics/the-wall.md`).
+**STRATEGY-FUSION FENCE.** `ClairvoyantSolver` is an exact perfect-information
+(double-dummy) solver. **It sees all four hands.** Its value read as the value
+of a move for a seat that cannot see them, world by world and then averaged,
+is strategy fusion: strong but wrong. It is a reference, never a player: it
+explains a book move only where the book's own argument is about a fully
+known position. Everywhere else its value is an upper bound on what any real
+seat can achieve, and a move it calls a mistake may be right for a seat that
+cannot tell the worlds apart. The ruling, the inventory and the sanctioned
+uses: `wiki/topics/strategy-fusion-fence.md`.
+
+The fence has three layers in Silas. The module and every public item
+(`ClairvoyantSolver`, `clairvoyant_grade_line`, `OpenPosition`, `Objective`,
+`RootValues`, `Deal`, `Grade`, `Judged`) and the predicate
+`(clairvoyant-dd-make)` exist only under the non-default `clairvoyant` cargo
+feature; the crate's tests and its showcase enable it explicitly (a
+dev-dependency of the crate on itself), and `scenario/core` does not. The
+names say what they are at every call. A policy that names the predicate is
+refused, and the refusal names the fence. What a player uses instead is an
+information-state solve: `(lay-down)`, `(certain-make)`, `(certain-set)`
+(Solved outcomes, below), or Zeb's plan.
 
 An `OpenPosition` is fully specified: the contract (its declaration the
 physics), the four hands, the current trick's leader and plays, and each
@@ -864,14 +883,14 @@ solves in a median 1.7 ms (90th percentile 5.9 ms, worst 29 ms over 900
 random deals, the nine declarations in turn); the value of every opening move
 takes a median 4.1 ms.
 
-`grade_line(&deal, &line)` grades each play of a line from the deal's
+`clairvoyant_grade_line(&deal, &line)` grades each play of a line from the deal's
 opening lead: the seat, its legal plays, and under each objective the play's
 value, the best value and the moves tied at best (`Grade`, `Judged`).
-`examples/book/solve_grade.rs` grades every narrated play of the book's eight
-full deals from `examples/book/hands.json`, in well under a second
-(`cargo run --release --example solve_grade`).
+`examples/book/clairvoyant_grade.rs` grades every narrated play of the book's
+eight full deals from `examples/book/hands.json`, in well under a second
+(`cargo run --release --features clairvoyant --example clairvoyant_grade`).
 
-`tests/solve.rs` holds it to an unpruned exhaustive search on sampled
+`tests/clairvoyant.rs` holds it to an unpruned exhaustive search on sampled
 positions with one to four tricks left (every root move, both objectives), to
 an unpruned search of Hand 28's whole game tree memoized only on exact
 trick-start states, to seat rotation, and to Hand 28's narrated line, which
@@ -882,8 +901,8 @@ it replays to the 25 and 17 the book awards.
 The book's tournament rule forfeits a bidder who lays his hand down when some
 hidden layout and some defence could set him (Roberson, *Winning 42*, Ch. 14).
 Its question is not what happens in one world under best play by everyone. It
-is what one player can guarantee without seeing the hidden hands. Four
-predicates answer it and bound it. Each looks to the end of the hand (horizon
+is what one player can guarantee without seeing the hidden hands. Three
+predicates answer it, and a fourth, behind the fence, bounds it. Each looks to the end of the hand (horizon
 28 plies), and each is exact when it answers and refused, never approximated,
 when the work exceeds its caps.
 
@@ -906,9 +925,11 @@ one or the other holds once every trick is played.
   against every legal play of the other three seats. A strategy is a choice of
   tile at each of `v`'s frames, so it is a function of what he sees and never
   of the world. **`(certain-set)`** is the same for a setter and the set.
-- **`(dd-make)`** (World). True in a world when the declaring side makes from
-  here under double-dummy play: both sides see all four hands and play their
-  best (the `Solver`, `Objective::Make`).
+- **`(clairvoyant-dd-make)`** (Clairvoyant; the `clairvoyant` feature only).
+  True in a world when the declaring side makes from here under double-dummy
+  play: both sides see all four hands and play their best (the
+  `ClairvoyantSolver`, `Objective::Make`). STRATEGY-FUSION FENCE: a bound and a
+  showcase, never a policy's input.
 
 **Whose play is optimized.** In `(certain-make)` and `(certain-set)` it is
 `v`'s alone, over strategies that read only his frame. The setters' plays range
@@ -916,19 +937,19 @@ over every legal play, and so do his partner's: the guarantee stands on `v`'s
 own choices, as a claim does. It is therefore a lower bound on what `v`'s side
 could guarantee with a partner who plays to the same goal from his own
 information. That team guarantee is not computed (`GAPS.md`, 8). In
-`(dd-make)` every seat is optimized, and each world gets its own best line.
+`(clairvoyant-dd-make)` every seat is optimized, and each world gets its own best line.
 
 **The order.** For a viewer on the declaring side, at a frame where taking
 every remaining trick reaches the threshold:
 
 ```text
-(lay-down)  =>  (certain-make)  =>  his side can force the make  =>  (dd-make) in every world
+(lay-down)  =>  (certain-make)  =>  his side can force the make  =>  (clairvoyant-dd-make) in every world
 ```
 
 Each implication is strict. The last is the double-dummy bound. In each world
 the declaring side may play a different line, one that reads the hidden hands
 (strategy fusion), so per-world minimax bounds every real guarantee from above
-and is never below one. For a setter, `(certain-set)` implies `(dd-make)` is
+and is never below one. For a setter, `(certain-set)` implies `(clairvoyant-dd-make)` is
 false in every world.
 
 **How `(lay-down)` is decided.** While every lead is `v`'s, a seat's replies
@@ -953,7 +974,8 @@ work is charged to the budget.
    a fixed order that would visit every world once (a stride coprime to the
    fiber's size). One such world is a proof that the answer is false: the
    defence that sets every declaring line there sets every strategy of `v`.
-   Nothing is concluded from not finding one.
+   Nothing is concluded from not finding one. (The fence's sanctioned use:
+   the clairvoyant outcome as a bound that refutes, never as a value.)
 4. Otherwise Silas searches `v`'s information states, an and-or search over
    frames. At `v`'s turn some legal tile must win. At another seat's turn
    every tile that some world lets it play must lose; such a tile is one
@@ -964,7 +986,7 @@ work is charged to the budget.
    when it exceeds the budget.
 
 **Authority.** The three Viewer predicates read the frame and compute over its
-whole fiber; their value is the same at every point of any belief. `(dd-make)`
+whole fiber; their value is the same at every point of any belief. `(clairvoyant-dd-make)`
 reads every hidden tile. Over `uniform_resolving` it is refused unless every
 pool tile is resolved, so `uniform_for` resolves the whole pool and the
 belief's cap refuses a fiber beyond it. An answer over an enumerated fiber is

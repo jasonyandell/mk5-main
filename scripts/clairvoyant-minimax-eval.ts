@@ -1,8 +1,13 @@
 #!/usr/bin/env npx tsx
 /**
+ * STRATEGY-FUSION FENCE, a sanctioned use: clairvoyant (double-dummy) minimax
+ * on one fully known deal, to cross-validate the engine against the oracle's
+ * solver. A value it prints is never a seat's value. The ruling:
+ * wiki/topics/strategy-fusion-fence.md.
+ *
  * Evaluate a game state using TypeScript minimax for cross-validation.
  *
- * Usage: npx tsx scripts/minimax-eval.ts <seed> <decl_id>
+ * Usage: npx tsx scripts/clairvoyant-minimax-eval.ts <seed> <decl_id>
  *
  * Output: JSON with team0Points for comparison with Python solver.
  * The Python value should equal 2 * team0Points - 42.
@@ -25,7 +30,7 @@ const SIMULATION_OPTIONS: ExecuteActionOptions = { skipHistory: true };
  * Simple minimax for cross-validation.
  * Plays all 7 tricks without early termination.
  */
-function minimaxFullGame(
+function clairvoyantMinimaxFullGame(
   state: GameState,
   ctx: ExecutionContext,
 ): { team0Points: number; nodesExplored: number } {
@@ -95,7 +100,7 @@ function main() {
   const args = process.argv.slice(2);
 
   if (args.length !== 2) {
-    console.error('Usage: npx tsx scripts/minimax-eval.ts <seed> <decl_id>');
+    console.error('Usage: npx tsx scripts/clairvoyant-minimax-eval.ts <seed> <decl_id>');
     process.exit(1);
   }
 
@@ -132,7 +137,7 @@ function main() {
   });
 
   // Run minimax evaluation (full game, no early termination)
-  const result = minimaxFullGame(state, ctx);
+  const result = clairvoyantMinimaxFullGame(state, ctx);
 
   // Output result
   // Python expects value = 2 * team0Points - 42

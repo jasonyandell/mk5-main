@@ -2,16 +2,28 @@
 //! tell apart, against every play of the other three seats, and the
 //! double-dummy bound above it. The statement, and why each answer is exact,
 //! is the README's "Solved outcomes".
+//!
+//! `(lay-down)`, `(certain-make)` and `(certain-set)` are information-state
+//! solves: one choice of the viewer's per frame, the same in every world of
+//! its fiber. They are what the strategy-fusion fence allows.
+//!
+//! STRATEGY-FUSION FENCE: `(clairvoyant-dd-make)` is the clairvoyant
+//! (double-dummy) outcome in one world: every seat sees all four hands. It is
+//! registered only under the `clairvoyant` feature, and a policy cannot read
+//! it. The refuter below reads the same solver as a bound, never as a value.
+//! The ruling: `wiki/topics/strategy-fusion-fence.md`.
 
 use std::collections::HashMap;
 use std::sync::{Mutex, PoisonError};
 
+use crate::clairvoyant::{ClairvoyantSolver, Objective, OpenPosition};
 use crate::eval::Budget;
-use crate::frame::{Frame, HIDDEN_SEATS, Holdings, Kernel};
+#[cfg(feature = "clairvoyant")]
+use crate::frame::Holdings;
+use crate::frame::{Frame, HIDDEN_SEATS, Kernel};
 use crate::nouns::{Domino, DominoSet, Seat};
 use crate::physics::Physics;
 use crate::registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec};
-use crate::solve::{Objective, OpenPosition, Solver};
 use crate::syntax::Value;
 use crate::{Result, error};
 
@@ -169,12 +181,16 @@ fn settled(frame: &Frame, goal: Goal) -> Option<bool> {
 /// order that would visit each once, fails `goal` under double-dummy play.
 /// The defence that sets every declaring line there sets every strategy of
 /// the viewer's, so one such world refutes `goal`; none found proves nothing.
+///
+/// STRATEGY-FUSION FENCE, a sanctioned use: the clairvoyant outcome here is
+/// an upper bound on every strategy of the viewer's, read only to refute.
+/// It never supplies a value or a choice.
 fn refuted(frame: &Frame, goal: Goal, budget: &mut Budget) -> Result<bool> {
     let n = frame.count_worlds();
     let step = stride(n);
     let order = (0..n.min(OUTCOME_SCAN_CAP)).map(move |i| i * step);
     for world in frame.physics().worlds_at(frame.kernel(), order) {
-        if !goal.reached(double_dummy_make(&OpenPosition::at(frame, &world)?, budget)?) {
+        if !goal.reached(clairvoyant_make(&OpenPosition::at(frame, &world)?, budget)?) {
             return Ok(true);
         }
     }
@@ -199,8 +215,10 @@ fn stride(n: u128) -> u128 {
     step
 }
 
-fn double_dummy_make(position: &OpenPosition, budget: &mut Budget) -> Result<bool> {
-    let mut solver = Solver::new(position.physics());
+/// STRATEGY-FUSION FENCE: whether the declaring side makes from `position`
+/// with every seat seeing all four hands.
+fn clairvoyant_make(position: &OpenPosition, budget: &mut Budget) -> Result<bool> {
+    let mut solver = ClairvoyantSolver::new(position.physics());
     let made = solver.value(position, Objective::Make) == 1;
     budget.spend(solver.nodes())?;
     Ok(made)
@@ -307,33 +325,59 @@ fn without(mut hand: DominoSet, tile: Domino) -> DominoSet {
     hand
 }
 
-/// The outcome predicates, version `silas-v3/outcome`.
-pub(crate) fn predicates() -> [Outcome; 4] {
-    [
+/// STRATEGY-FUSION FENCE: the clairvoyant outcome predicate's name. The
+/// prefix warns at every query that names it.
+pub(crate) const CLAIRVOYANT_MAKE: &str = "clairvoyant-dd-make";
+
+/// The refusal of a predicate no registry holds; for the clairvoyant one, in
+/// a build without the `clairvoyant` feature, the fence.
+pub(crate) fn unregistered(name: &str) -> String {
+    if name == CLAIRVOYANT_MAKE {
+        format!(
+            "unregistered predicate {name}: it is behind the `clairvoyant` feature (STRATEGY-FUSION FENCE: \
+             it sees all four hands; solve information states instead, e.g. (certain-make); \
+             wiki/topics/strategy-fusion-fence.md)"
+        )
+    } else {
+        format!("unregistered predicate {name}")
+    }
+}
+
+/// The outcome predicates, version `silas-v3/outcome`. The three viewer
+/// facts are information-state solves; STRATEGY-FUSION FENCE: the clairvoyant
+/// one, `(clairvoyant-dd-make)`, exists only under the `clairvoyant` feature.
+pub(crate) fn predicates() -> Vec<Outcome> {
+    let outcomes = [
         ("lay-down", Kind::LayDown, Access::Viewer),
         ("certain-make", Kind::Certain(Goal::Make), Access::Viewer),
         ("certain-set", Kind::Certain(Goal::Set), Access::Viewer),
-        ("dd-make", Kind::DoubleDummyMake, Access::World),
     ]
-    .map(|(name, kind, access)| Outcome {
-        spec: PredicateSpec {
-            name: name.to_owned(),
-            version: "silas-v3/outcome".to_owned(),
-            parameters: vec![],
-            horizon_plies: Domino::COUNT as u32,
-            access,
-            phase: Phase::Play,
-        },
-        kind,
-        last: Mutex::new(None),
-    })
+    .into_iter();
+    #[cfg(feature = "clairvoyant")]
+    let outcomes = outcomes.chain([(CLAIRVOYANT_MAKE, Kind::ClairvoyantMake, Access::Clairvoyant)]);
+    outcomes
+        .map(|(name, kind, access)| Outcome {
+            spec: PredicateSpec {
+                name: name.to_owned(),
+                version: "silas-v3/outcome".to_owned(),
+                parameters: vec![],
+                horizon_plies: Domino::COUNT as u32,
+                access,
+                phase: Phase::Play,
+            },
+            kind,
+            last: Mutex::new(None),
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy)]
 enum Kind {
     LayDown,
     Certain(Goal),
-    DoubleDummyMake,
+    /// STRATEGY-FUSION FENCE: the clairvoyant outcome in one world.
+    #[cfg(feature = "clairvoyant")]
+    ClairvoyantMake,
 }
 
 /// One outcome predicate. A viewer fact keeps the last frame's answer: it is
@@ -361,9 +405,10 @@ impl Predicate for Outcome {
     }
 
     fn evaluate(&self, context: PredicateContext<'_>, _: &[Value], budget: &mut Budget) -> Result<Option<bool>> {
-        if let Kind::DoubleDummyMake = self.kind {
-            let holdings = context.world().ok_or_else(|| error("a world predicate requires a world"))?;
-            return double_dummy_in(holdings, budget).map(Some);
+        #[cfg(feature = "clairvoyant")]
+        if let Kind::ClairvoyantMake = self.kind {
+            let holdings = context.world().ok_or_else(|| error("a clairvoyant predicate requires a world"))?;
+            return clairvoyant_in(holdings, budget).map(Some);
         }
         let frame = context.frame()?;
         let mut last = self.last.lock().unwrap_or_else(PoisonError::into_inner);
@@ -378,13 +423,14 @@ impl Predicate for Outcome {
     }
 }
 
-/// Whether the declaring side makes from the frame in this world under
-/// double-dummy play. It reads every hidden hand, so a belief that leaves a
-/// tile unresolved refuses it.
-fn double_dummy_in(holdings: Holdings<'_>, budget: &mut Budget) -> Result<bool> {
+/// STRATEGY-FUSION FENCE: whether the declaring side makes from the frame in
+/// this world when every seat sees all four hands. It reads every hidden
+/// hand, so a belief that leaves a tile unresolved refuses it.
+#[cfg(feature = "clairvoyant")]
+fn clairvoyant_in(holdings: Holdings<'_>, budget: &mut Budget) -> Result<bool> {
     let mut hands = [DominoSet::EMPTY; Seat::COUNT];
     for seat in Seat::ALL {
         hands[seat.index()] = holdings.hand(seat)?;
     }
-    double_dummy_make(&OpenPosition::of(holdings.frame(), hands)?, budget)
+    clairvoyant_make(&OpenPosition::of(holdings.frame(), hands)?, budget)
 }

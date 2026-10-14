@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-10-10
+last_updated: 2026-10-13
 status: active
 ---
 
@@ -16,6 +16,10 @@ The project's central question, stated precisely. Every era since January 2026 i
 > E[Q] n=10 at play, +0.74 marks/game [+0.42, +1.05] over 384 games on the
 > dropped-30 protocol. Everything below this line is the record of the oracle
 > era, kept as it was written.
+>
+> **2026-10-13 — the fence.** Every clairvoyant (double-dummy) solver left in
+> the repo is fenced, named and findable by grep; an exact information-state
+> solve is welcome ([[strategy-fusion-fence]]).
 
 ## The wall
 

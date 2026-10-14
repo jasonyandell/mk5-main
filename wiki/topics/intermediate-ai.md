@@ -2,7 +2,7 @@
 title: Intermediate AI — the shipped PIMC opponent
 kind: topic
 first_seen: 2025-11-26
-last_updated: 2026-07-11
+last_updated: 2026-10-13
 status: active
 ---
 
@@ -69,13 +69,16 @@ constraint-tracking bug and throws with debug info rather than degrading.
 
 ## Per-world evaluation: minimax, not policy rollout
 
-`src/game/ai/minimax.ts` (`minimaxEvaluate`): partnership minimax — players
+`src/game/ai/clairvoyant-minimax.ts` (`clairvoyantMinimaxEvaluate`; renamed 2026-10-13 behind the [[strategy-fusion-fence]]): partnership minimax — players
 0/2 maximize, 1/3 minimize — with alpha-beta pruning and heuristic move
 ordering, searched to the actual terminal state (no evaluation heuristic at
 a depth cutoff). It executes through `ctx.rules`, so special contracts are
 respected, and handles neutral auto-execute actions transparently.
 Simulations override `playerTypes` to all-AI so the consensus layer passes
 through (see `createSimulationContext` in [[engine-testing-patterns]]).
+This is PIMC, so each sampled world gets its own clairvoyant best line and the
+average is strategy fusion. It is fenced: tolerated as the game's opponent AI,
+never a research player, better replaced by Zeb ([[strategy-fusion-fence]]).
 
 Minimax replaced greedy heuristic rollouts at `3e063ff` (2025-12-21), curing
 the "depressed android" — the defeatist AI that dumped count when losing.

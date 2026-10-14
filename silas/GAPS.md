@@ -499,7 +499,7 @@ the present. The coverage study named this "game value under best defence" and g
 number (S-0054-a + S-0210-a, S-0026-c). It is closed for the claims the book makes about
 one player and narrowed to the two gaps below. The four outcome predicates state the
 rest exactly: `(lay-down)`, `(certain-make)`, `(certain-set)` and the double-dummy bound
-`(dd-make)`. They are tested against brute force in `tests/outcome.rs`.
+`(clairvoyant-dd-make)` (behind the `clairvoyant` feature: STRATEGY-FUSION FENCE). They are tested against brute force in `tests/outcome.rs`.
 
 - **Stated now.** The tournament rule (S-0210-a) and the claim of the rest (S-0054-a) are
   `lay-down.silas`. The 84 that lays down (S-0082-b, S-0093-b, S-0094-a: Hands 21 and 22,

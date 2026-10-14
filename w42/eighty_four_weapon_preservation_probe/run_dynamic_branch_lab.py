@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# STRATEGY-FUSION FENCE: this file calls the oracle era's clairvoyant values
+# (the double-dummy solver, Stage1Oracle, E[Q] or LensPlay): per-world perfect-
+# information values, strategy fusion if read as a seat's value. A measuring
+# stick only; build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Run targeted 84 branch-atlas fixtures for stopper/preservation claims.
 
 This is the dynamic follow-up to ``build_probe.py``.  It uses explicit deals,

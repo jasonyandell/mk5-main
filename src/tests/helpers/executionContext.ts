@@ -104,7 +104,7 @@ export function createAITestContext(config?: Partial<GameConfig>): ExecutionCont
  * without needing `agree-trick`/`agree-score` acknowledgments.
  *
  * ## When to Use
- * - Minimax evaluation
+ * - Clairvoyant minimax (the fenced PIMC opponent AI)
  * - Monte Carlo simulations
  * - Any code that executes game actions in a loop without human interaction
  *
@@ -115,12 +115,12 @@ export function createAITestContext(config?: Partial<GameConfig>): ExecutionCont
  *
  * @example
  * ```ts
- * // Minimax evaluation
+ * // A simulation step
  * const ctx = createSimulationContext();
  * const state = StateBuilder.inPlayingPhase(trump)
  *   .withConfig({ playerTypes: ['ai', 'ai', 'ai', 'ai'] })
  *   .build();
- * const result = minimaxEvaluate(state, ctx);
+ * const next = executeAction(state, action, ctx);
  * ```
  */
 export function createSimulationContext(config?: Partial<GameConfig>): ExecutionContext {

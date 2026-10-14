@@ -1,3 +1,7 @@
+# STRATEGY-FUSION FENCE. `query_model` asks the oracle network for each
+# world's clairvoyant Q; averaged over worlds that is strategy fusion. Oracle
+# era only; build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Model inference functions for GPU E[Q] pipeline."""
 
 from __future__ import annotations

@@ -1,3 +1,8 @@
+//! STRATEGY-FUSION FENCE, sanctioned: the clairvoyant solver and
+//! `(clairvoyant-dd-make)` are the upper bound the information-state solves are
+//! held under, and the measure of how loose it is (Hand 26). The ruling:
+//! wiki/topics/strategy-fusion-fence.md.
+//!
 //! Solved outcomes (README, Solved outcomes): the lay-down and what the viewer
 //! can force, held to brute force on small positions and to the double-dummy
 //! bound, and asked of the book's lay-downs (Roberson, *Winning 42*, Ch. 7,
@@ -77,7 +82,7 @@ fn hands_that_look_as_strong_can_be_set() {
         tiles(&["6-5", "5-3", "5-1"]).is_subset_of(right)
     });
     let position = OpenPosition::at(&frame, &set.unwrap()).unwrap();
-    assert_eq!(Solver::new(frame.physics()).value(&position, Objective::Make), 0);
+    assert_eq!(ClairvoyantSolver::new(frame.physics()).value(&position, Objective::Make), 0);
 }
 
 #[test]
@@ -274,7 +279,7 @@ fn double_dummy_reaches(frame: &Frame, goal: Goal) -> Vec<bool> {
         .worlds()
         .map(|w| {
             let position = OpenPosition::at(frame, &w).unwrap();
-            (Solver::new(frame.physics()).value(&position, Objective::Make) == 1) == (goal == Goal::Make)
+            (ClairvoyantSolver::new(frame.physics()).value(&position, Objective::Make) == 1) == (goal == Goal::Make)
         })
         .collect()
 }
@@ -342,7 +347,7 @@ fn the_viewers_information_state_is_his_frame() {
 #[test]
 fn the_double_dummy_bound_as_a_query_is_exact_only_on_the_whole_fiber() {
     let frame = small_frame(physics("P6"));
-    let dd = compile("(query (roles) (out) (pattern (dd-make)))");
+    let dd = compile("(query (roles) (out) (pattern (clairvoyant-dd-make)))");
     let uniform = Belief::uniform(frame.clone(), 90).unwrap();
     let p = dd.summarize(&uniform, &mut big()).unwrap().event_probability();
     let made = double_dummy_reaches(&frame, Goal::Make).iter().filter(|b| **b).count() as i64;
@@ -360,6 +365,43 @@ fn the_double_dummy_bound_as_a_query_is_exact_only_on_the_whole_fiber() {
     let belief = Belief::uniform_for(root, &certain, 1, &mut big()).unwrap();
     let p = certain.summarize(&belief, &mut big()).unwrap().event_probability();
     assert_eq!(exact(p), r(1, 1));
+}
+
+/// STRATEGY-FUSION FENCE: a policy cannot read the clairvoyant predicate, nor
+/// can a viewer evaluation, and each refusal names the fence. A policy that
+/// chose on it would choose per world.
+#[test]
+fn a_policy_that_reads_the_clairvoyant_predicate_is_refused_at_the_fence() {
+    let policy = "(policy peek\n  (fallback lowest-legal)\n  (rule clairvoyant (select answer)\n    \
+                  (guard (query (roles (domino d)) (out d) (pattern (own-legal d) (clairvoyant-dd-make))))))";
+    let error = PolicyProgram::parse(policy, "peek.silas")
+        .and_then(|p| p.compile(&Registry::standard(), &physics("P6")).map(drop))
+        .unwrap_err()
+        .0;
+    assert!(
+        error.starts_with("peek.silas:3:3: rule clairvoyant uses the clairvoyant predicate clairvoyant-dd-make"),
+        "{error}"
+    );
+    assert!(error.contains("STRATEGY-FUSION FENCE") && error.contains("wiki/topics/strategy-fusion-fence.md"));
+    // Through a definition too: the guard's compiled atoms carry the access.
+    let wrapped = "(define peeks (roles)
+  (clairvoyant-dd-make))\n(policy peek\n  (fallback lowest-legal)\n  \
+                   (rule clairvoyant (select answer)\n    (guard (query (roles (domino d)) (out d) (pattern (own-legal d) (peeks))))))";
+    let error = PolicyProgram::parse(wrapped, "peek.silas")
+        .and_then(|p| p.compile(&Registry::standard(), &physics("P6")).map(drop))
+        .unwrap_err()
+        .0;
+    assert!(error.contains("STRATEGY-FUSION FENCE"), "{error}");
+    // A viewer evaluation refuses it before any work, naming the fence.
+    let frame = small_frame(physics("P6"));
+    let dd = compile("(query (roles) (out) (pattern (clairvoyant-dd-make)))");
+    let error = dd.evaluate_viewer(&frame, &mut big()).unwrap_err().0;
+    assert!(error.starts_with("viewer evaluation refused the clairvoyant predicate clairvoyant-dd-make"), "{error}");
+    assert!(error.contains("STRATEGY-FUSION FENCE"), "{error}");
+    // A world predicate's refusal stays plain.
+    let holds = compile("(query (roles) (out) (pattern (holds S1 6-5)))");
+    let error = holds.evaluate_viewer(&frame, &mut big()).unwrap_err().0;
+    assert_eq!(error, "viewer evaluation refused the world predicate holds");
 }
 
 #[test]
@@ -457,7 +499,7 @@ fn hand_26_the_setting_deal_is_a_world_of_the_cleared_position_and_differs_in_th
     // There double-dummy play makes the bid, the partner shedding his count on
     // the bidder's doubles: the bidder's side scores 36.
     let position = OpenPosition::at(&cleared, &world).unwrap();
-    assert_eq!(Solver::new(cleared.physics()).value(&position, Objective::Make), 1);
+    assert_eq!(ClairvoyantSolver::new(cleared.physics()).value(&position, Objective::Make), 1);
     assert_eq!(bidder_side_points(&position, None), 36);
     // The difference is the partner's play. Keeping the 3-2, always a legal
     // choice, sets the bidder even though he sees all four hands: 31, short of

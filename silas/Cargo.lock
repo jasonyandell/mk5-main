@@ -127,6 +127,7 @@ dependencies = [
  "num-rational",
  "num-traits",
  "serde_json",
+ "silas",
 ]
 
 [[package]]

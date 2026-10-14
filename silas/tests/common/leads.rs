@@ -1,3 +1,6 @@
+//! STRATEGY-FUSION FENCE: the clairvoyant solver, for `tests/book_leads.rs`'s
+//! double-dummy rows only. The ruling: wiki/topics/strategy-fusion-fence.md.
+//!
 //! Helpers for `tests/book_leads.rs`: the book's eight full deals (Hands
 //! 28-35) as open positions along their narrated lines, every root move valued
 //! double-dummy under both objectives, and the bidder's side's points.
@@ -64,7 +67,7 @@ impl Narrated {
     /// The value of a position: the bidder's side's points and whether the
     /// bid is made, under best play by all four seats.
     pub fn worth(&self, position: &OpenPosition) -> (u32, i32) {
-        let mut solver = Solver::new(self.physics());
+        let mut solver = ClairvoyantSolver::new(self.physics());
         (points(solver.value(position, Objective::Margin)), solver.value(position, Objective::Make))
     }
 
@@ -72,7 +75,7 @@ impl Narrated {
     /// margin-best value; `None` lets the mover take its least margin-best
     /// tile. Returns the position reached and the tiles played.
     pub fn follow(&self, position: &OpenPosition, script: &[Option<&str>]) -> (OpenPosition, Vec<Domino>) {
-        let mut solver = Solver::new(self.physics());
+        let mut solver = ClairvoyantSolver::new(self.physics());
         let mut position = position.clone();
         let mut played = Vec::new();
         for step in script {
@@ -108,7 +111,7 @@ pub struct Values {
 }
 
 pub fn values(physics: &Physics, position: &OpenPosition) -> Values {
-    let mut solver = Solver::new(physics);
+    let mut solver = ClairvoyantSolver::new(physics);
     let margin = solver.solve(position, Objective::Margin).unwrap();
     let make = solver.solve(position, Objective::Make).unwrap();
     let moves = margin.moves.iter().map(|(d, v)| (*d, points(*v), make.value(*d).unwrap())).collect();

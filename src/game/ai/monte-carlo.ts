@@ -1,8 +1,13 @@
 /**
  * Monte Carlo Evaluator for Intermediate AI
  *
+ * STRATEGY-FUSION FENCE: this is PIMC. It samples worlds, values each by
+ * clairvoyant minimax (clairvoyant-minimax.ts) and averages: strategy fusion.
+ * Tolerated as the game's opponent AI only; better if replaced by an
+ * information-state player (Zeb). The ruling: wiki/topics/strategy-fusion-fence.md.
+ *
  * Evaluates candidate plays by simulating many games forward
- * with sampled opponent hands and beginner AI rollout.
+ * with sampled opponent hands, each finished by clairvoyant minimax.
  *
  * Key insight: We evaluate TEAM outcome, not individual trick wins.
  * Partnership dynamics emerge naturally from the simulation.
@@ -19,7 +24,7 @@ import { executeAction, type ExecuteActionOptions } from '../core/actions';
 import type { ExecutionContext } from '../types/execution';
 import { createDominoes } from '../core/dominoes';
 import { determineBestTrump } from './hand-strength';
-import { minimaxEvaluate, createTerminalState } from './minimax';
+import { clairvoyantMinimaxEvaluate, createTerminalState } from './clairvoyant-minimax';
 
 /** Reusable options object to avoid allocation per call */
 const SIMULATION_OPTIONS: ExecuteActionOptions = { skipHistory: true };
@@ -400,7 +405,7 @@ function rolloutToHandEnd(
   ctx: ExecutionContext
 ): GameState {
   // Use minimax to find optimal outcome
-  const result = minimaxEvaluate(initialState, ctx);
+  const result = clairvoyantMinimaxEvaluate(initialState, ctx);
 
   // Return terminal state with computed scores
   return createTerminalState(initialState, result);

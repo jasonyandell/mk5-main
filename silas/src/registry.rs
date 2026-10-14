@@ -18,6 +18,41 @@ pub enum Access {
     Viewer,
     /// The frame and one hidden world's [`Holdings`].
     World,
+    /// STRATEGY-FUSION FENCE: one hidden world's [`Holdings`], played out to
+    /// the hand's end by all four seats seeing all four hands. Read like
+    /// `World`, and refused wherever `World` is, with the fence named: a
+    /// policy that read it would choose per world, which is strategy fusion
+    /// (`wiki/topics/strategy-fusion-fence.md`).
+    Clairvoyant,
+}
+
+impl Access {
+    /// Whether a predicate of this access reads a hidden world.
+    pub fn reads_world(self) -> bool {
+        self != Access::Viewer
+    }
+
+    /// What a refusal calls a predicate of this access.
+    pub(crate) fn noun(self) -> &'static str {
+        match self {
+            Access::Viewer => "viewer predicate",
+            Access::World => "world predicate",
+            Access::Clairvoyant => "clairvoyant predicate",
+        }
+    }
+
+    /// What a refusal adds for a predicate of this access: the fence, for a
+    /// clairvoyant one.
+    pub(crate) fn fence(self) -> &'static str {
+        match self {
+            Access::Clairvoyant => {
+                " (STRATEGY-FUSION FENCE: it reads all four hands and the best play of every seat in each \
+                 world, so a choice made on it is made per world, which is strategy fusion; solve \
+                 information states instead, e.g. (certain-make); wiki/topics/strategy-fusion-fence.md)"
+            }
+            Access::Viewer | Access::World => "",
+        }
+    }
 }
 
 /// Where a predicate is defined: at a frame of the play (after the

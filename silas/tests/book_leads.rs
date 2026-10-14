@@ -1,3 +1,7 @@
+//! STRATEGY-FUSION FENCE, sanctioned: the double-dummy rows check the book's
+//! claims about its own fully narrated deals. The ruling:
+//! wiki/topics/strategy-fusion-fence.md.
+//!
 //! The study's exact-check leads (the private coverage matrix, § 5), checked
 //! with Silas's own exact tools: 14 double-dummy rows on the book's eight full
 //! deals (Hands 28-35) and 21 probability or arithmetic rows. The leads came
@@ -406,7 +410,7 @@ fn narrated_grades(h: &Narrated) -> impl Iterator<Item = Grade> {
         line.push(*d);
     }
     let deal = Deal { contract: h.opening.contract().clone(), hands: h.opening.hands() };
-    grade_line(&deal, &line).unwrap().into_iter().filter(|g| g.legal.len() > 1)
+    clairvoyant_grade_line(&deal, &line).unwrap().into_iter().filter(|g| g.legal.len() > 1)
 }
 
 // ---------------------------------------------------------------------------

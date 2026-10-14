@@ -1,3 +1,6 @@
+# STRATEGY-FUSION FENCE. Posterior-weighted E[Q]: a better belief, the same
+# per-world clairvoyant Q averaged (strategy fusion). Oracle era only.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Posterior weighting functions for GPU E[Q] pipeline."""
 
 from __future__ import annotations

@@ -1,3 +1,10 @@
+# STRATEGY-FUSION FENCE. The oracle: an exact GPU perfect-information
+# (double-dummy) solver over one fully known deal. Every seat sees all four
+# hands, so its values read as a seat's values, per world and averaged, are
+# strategy fusion: algorithmia non grata. Oracle era; a measuring stick only.
+# Allowed instead: information-state solving (Zeb's plan, Silas's
+# (certain-make)).
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -153,6 +160,11 @@ def solve_one_seed(
     device: torch.device,
     config: SolveConfig,
 ):
+    """Solve one fully known deal by perfect-information minimax, on the GPU.
+
+    STRATEGY-FUSION FENCE: every seat sees all four hands; a value from here is
+    never a seat's value (wiki/topics/strategy-fusion-fence.md).
+    """
     ctx = build_context(seed=seed, decl_id=decl_id, device=device)
     all_states = enumerate_gpu(ctx, config=config)
     child_idx = build_child_index(all_states, ctx, config=config)

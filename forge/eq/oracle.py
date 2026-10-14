@@ -1,3 +1,8 @@
+# STRATEGY-FUSION FENCE. Stage1Oracle: the network distilled from the
+# clairvoyant solver, queried per sampled world. Averaging its Q over worlds
+# (E[Q]) is strategy fusion: algorithmia non grata. Oracle era; a measuring
+# stick only. Allowed instead: information-state solving (Zeb's plan).
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """
 Stage 1 Oracle for E[Q] marginalization.
 
@@ -54,6 +59,10 @@ def _build_domino_features_by_decl() -> list[np.ndarray]:
 
 class Stage1Oracle:
     """Wrapper around trained Stage 1 model for querying Q-values.
+
+    STRATEGY-FUSION FENCE: each Q-value is clairvoyant (the model learned the
+    double-dummy solver); averaged over worlds it is strategy fusion. Never a
+    seat's value (wiki/topics/strategy-fusion-fence.md).
 
     Design:
     - Load checkpoint once on initialization

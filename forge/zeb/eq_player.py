@@ -1,3 +1,7 @@
+# STRATEGY-FUSION FENCE. The E[Q] player: picks by per-world clairvoyant Q
+# averaged over sampled worlds (strategy fusion). Oracle era; an opponent to
+# measure against only. Allowed instead: information-state solving (Zeb).
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """E[Q] player for evaluation - uses Stage 1 oracle with world sampling.
 
 Bridges the Zeb game infrastructure (ZebGameState) with the E[Q] pipeline

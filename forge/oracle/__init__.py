@@ -1,3 +1,7 @@
+# STRATEGY-FUSION FENCE: exports the oracle's clairvoyant solver
+# (`solve_one_seed`) beside the rules tables; the solver's values are never a
+# seat's values. Build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """forge.oracle - Oracle solver for perfect-play analysis."""
 
 from .context import SeedContext, build_context

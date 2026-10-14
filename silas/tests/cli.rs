@@ -1,3 +1,7 @@
+//! STRATEGY-FUSION FENCE: one test asks the command for `(clairvoyant-dd-make)`,
+//! to show it refused above the cap. The ruling:
+//! wiki/topics/strategy-fusion-fence.md.
+//!
 //! The `silas` command on the book's hands.
 
 use std::process::Command;
@@ -129,7 +133,7 @@ fn query_states_the_lay_down_and_the_claim_exactly() {
     // The double-dummy bound reads every hidden tile: refused above the cap.
     std::fs::write(
         std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("dd.silas"),
-        "(query (roles)\n  (out)\n  (pattern (dd-make)))\n",
+        "(query (roles)\n  (out)\n  (pattern (clairvoyant-dd-make)))\n",
     )
     .unwrap();
     let dd = concat!(env!("CARGO_TARGET_TMPDIR"), "/dd.silas");

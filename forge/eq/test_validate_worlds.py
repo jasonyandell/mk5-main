@@ -1,3 +1,8 @@
+# STRATEGY-FUSION FENCE: this file calls the oracle era's clairvoyant values
+# (the double-dummy solver, Stage1Oracle, E[Q] or LensPlay): per-world perfect-
+# information values, strategy fusion if read as a seat's value. A measuring
+# stick only; build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Tests for write-time joint-world validity (issue #52) and the decl-8 purge
 (issue #51).
 

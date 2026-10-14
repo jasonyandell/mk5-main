@@ -101,6 +101,12 @@ SUITES = [
           lambda: which("node", "npm"), what="svelte-check --fail-on-warnings"),
     Suite("eslint", TS, [(".", NPM("lint"))], ("node",),
           lambda: which("node", "npm"), what="eslint src"),
+    # STRATEGY-FUSION FENCE: the guard reads every code file, so any code change triggers it.
+    Suite("fence", TS + PY + ("scenario/", "zeb/", "silas/", "scripts/", "CLAUDE\\.md$",
+                              "wiki/topics/strategy-fusion-fence\\.md$"),
+          [(".", ["npx", "vitest", "--run", "src/tests/architecture/strategy-fusion-fence.test.ts"])],
+          ("node",), lambda: which("node", "npm"),
+          what="the strategy-fusion fence guard (also in ts-unit)"),
     Suite("e2e", TS + ("playwright",), [(".", ["npx", "playwright", "test", "--workers=4", "--reporter=line"])],
           ("node",), lambda: first(which("node", "npm"), playwright_browsers),
           what="Playwright, src/tests/e2e, on its own dev-server port"),

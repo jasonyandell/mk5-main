@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# STRATEGY-FUSION FENCE: this file calls the oracle era's clairvoyant values
+# (the double-dummy solver, Stage1Oracle, E[Q] or LensPlay): per-world perfect-
+# information values, strategy fusion if read as a seat's value. A measuring
+# stick only; build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """GPU-native E[Q] training data generation with per-seed files.
 
 Generates one .pt file per game seed for maximum parallelism and resumability.
