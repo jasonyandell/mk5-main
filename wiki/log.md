@@ -38,6 +38,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 07abdbbf | make, then margin: Zeb's exact ties broken by the plan's margin (#120); marks null, +4.5 points a hand, book agreement 52.2% → 54.3%]
+
+**Added:** [[tie-margin-2026-10-14]] (`Config.tie`, arena `t=margin`, default off). **Updated:** [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-margin/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
 ## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
 
 **Added:** [[strategy-fusion-fence]] (the ruling, the inventory, the sanctioned uses). **Updated:** [[silas]], [[the-wall]], [[splat-search-bounds]], [[strategy-fusion]], [[intermediate-ai]], `index-topics.md`, `CLAUDE.md` (Hard rules). Guard: `src/tests/architecture/strategy-fusion-fence.test.ts`.
