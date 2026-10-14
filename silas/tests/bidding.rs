@@ -462,6 +462,121 @@ fn every_call_and_declaration_is_pinned_on_every_hand() {
 /// lines.
 const PINNED_ANSWERS: u64 = 0x927d_9038_f897_51c5;
 
+/// The raising rules as written before the least raise was a number (#144):
+/// a rule for each range of it, an `or` of its literals.
+const LITERAL_RANGES: [&str; 2] = [
+    "(include bidding)
+    (policy bid-only-enough
+      (bidding
+        (rule raise-to-32 (bid least-raise)
+          (or (least-raise 30) (least-raise 31) (least-raise 32))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 10)))
+        (rule raise-to-37 (bid least-raise)
+          (or (least-raise 33) (least-raise 34) (least-raise 35) (least-raise 36) (least-raise 37))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 5)))
+        (rule raise-to-42 (bid least-raise)
+          (or (least-raise 38) (least-raise 39) (least-raise 40) (least-raise 41) (least-raise 42))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 0)))))",
+    "(include bidding)
+    (policy never-32-or-33
+      (bidding
+        (rule raise-to-31 (bid least-raise)
+          (or (least-raise 30) (least-raise 31))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 10)))
+        (rule past-33 (bid 34)
+          (or (least-raise 32) (least-raise 33))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 5)))
+        (rule raise-to-37 (bid least-raise)
+          (or (least-raise 34) (least-raise 35) (least-raise 36) (least-raise 37))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 5)))
+        (rule raise-to-42 (bid least-raise)
+          (or (least-raise 38) (least-raise 39) (least-raise 40) (least-raise 41) (least-raise 42))
+          (some (roles t) (suit-at-least t 3) (exposes-at-most t 0)))))",
+];
+
+/// An auction at every least raise a seat can face, the viewer to call: 30
+/// (opening) to 41 and 42 over a points bid, 84, 126 and 168 over marks, and
+/// none left once the marks cap is bid.
+fn every_least_raise() -> Vec<Auction> {
+    let bid = |n: u32| Call::Bid(Bid::number(n).unwrap());
+    let straight = |calls: Vec<Call>| Auction::new(AuctionConfig::STRAIGHT, Seat::S3, calls).unwrap();
+    let mut auctions: Vec<Auction> =
+        (29..=42).map(|high| straight(if high < 30 { vec![] } else { vec![bid(high)] })).collect();
+    auctions.push(straight(vec![bid(42), bid(84)]));
+    auctions.push(straight(vec![bid(42), bid(84), bid(126)]));
+    auctions.push(Auction::new(AuctionConfig::new(2, false).unwrap(), Seat::S3, vec![bid(84)]).unwrap());
+    auctions
+}
+
+/// The calls of `policies` on `hand` at each of `auctions`, in one line.
+fn raises(policies: &[CompiledPolicy], auctions: &[Auction], menu: &Arc<[Physics]>, hand: DominoSet) -> String {
+    let state = MatchState::new(Scoring::MARKS, [0, 0]).unwrap();
+    let mut line = String::new();
+    for auction in auctions {
+        let frame = AuctionFrame::new(auction.clone(), auction.actor().unwrap(), hand, state, menu.clone()).unwrap();
+        for policy in policies {
+            line += &format!("{} ", policy.bid(&frame, &mut unlimited()).unwrap().choice);
+        }
+    }
+    line
+}
+
+#[test]
+fn a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did() {
+    // bid-only-enough's one raising rule ("the least raise and the count
+    // exposed come to 42 at most") and never-32-or-33's two, on every hand at
+    // every least raise (`every_least_raise`): one digest of one line a hand,
+    // taken from the rules of literal ranges they replace (`LITERAL_RANGES`,
+    // before #144). Those rules are run again on every 97th hand. About a
+    // minute on 18 cores: it is the proof (40 million calls), and it costs
+    // what the literal ranges did.
+    let auctions = every_least_raise();
+    let least: Vec<Option<u32>> = auctions.iter().map(|a| a.least_raise().map(Bid::value)).collect();
+    let mut expected: Vec<Option<u32>> = (30..=42).chain([84, 126, 168]).map(Some).collect();
+    expected.push(None);
+    assert_eq!(least, expected);
+    let menu = arena_menu();
+    let new = [policy("bid-only-enough.silas"), policy("never-32-or-33.silas")];
+    let old: Vec<CompiledPolicy> = LITERAL_RANGES
+        .iter()
+        .map(|text| {
+            PolicyProgram::parse(text, "literal ranges").unwrap().compile(&Registry::standard(), &physics("P6"))
+        })
+        .collect::<Result<_>>()
+        .unwrap();
+    let hands: Vec<DominoSet> = every_hand().collect();
+    for hand in hands.iter().step_by(97) {
+        assert_eq!(raises(&new, &auctions, &menu, *hand), raises(&old, &auctions, &menu, *hand), "{hand:?}");
+    }
+    let started = Instant::now();
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let lines: Vec<String> = std::thread::scope(|s| {
+        let handles: Vec<_> = hands
+            .chunks(hands.len().div_ceil(threads))
+            .map(|part| {
+                let (new, auctions, menu) = (&new, &auctions, &menu);
+                s.spawn(move || part.iter().map(|hand| raises(new, auctions, menu, *hand)).collect::<Vec<_>>())
+            })
+            .collect();
+        handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
+    });
+    println!("the raises at every least raise: {} hands in {:?} on {threads} threads", lines.len(), started.elapsed());
+    assert_eq!(lines.len(), 1_184_040);
+    let mut distinct: BTreeMap<&str, usize> = BTreeMap::new();
+    for line in &lines {
+        *distinct.entry(line).or_default() += 1;
+    }
+    println!("{distinct:#?}");
+    // Four kinds of hand: worth 42 (no count exposed), 37, 32, and none of
+    // them; bid-only-enough raises to its worth, never-32-or-33 past 32.
+    assert_eq!(distinct.values().copied().collect::<Vec<_>>().len(), 4);
+    assert_eq!(fnv1a(lines.join("\n").as_bytes()), PINNED_RAISES);
+}
+
+/// The digest of [`a_raise_reads_the_least_raise_as_a_number_and_calls_as_its_literals_did`]'s
+/// lines, from the rules of literal ranges.
+const PINNED_RAISES: u64 = 0x51e1_17e1_0ab5_8281;
+
 // ------------------------------------------------------------- measurability
 
 #[test]

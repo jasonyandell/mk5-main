@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::auction::AuctionFrame;
 use crate::frame::{Frame, Holdings, World};
 use crate::nouns::{Domino, DominoSet};
-use crate::registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
+use crate::registry::{Access, NumberAt, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 use crate::syntax::{
     Atom, Pattern, Quantifier, Quantity, Query, Role, Scope as ScopeClause, Sort, Span, Term, Value, valid_name,
 };
@@ -90,6 +90,8 @@ struct CompiledScope {
 #[derive(Clone)]
 enum CompiledQuantity {
     Number(u64),
+    /// A functional predicate's number: the atom of its other arguments.
+    Function(CompiledAtom),
     Aggregate(CompiledAggregate),
     Sum(Vec<CompiledQuantity>),
 }
@@ -166,35 +168,53 @@ fn at(span: &Span, message: String) -> crate::Error {
 
 impl Compiler<'_> {
     fn atom(&mut self, atom: &Atom, scope: &Scope) -> Result<CompiledAtom> {
-        let predicate = self
-            .registry
-            .predicates
-            .get(&atom.predicate)
-            .ok_or_else(|| at(&atom.span, crate::outcome::unregistered(&atom.predicate)))?
-            .clone();
+        self.application(&atom.predicate, &atom.args, atom.negated, false, scope, &atom.span)
+    }
+
+    /// `(p a ...)`, an atom; or, for a `function`, a functional predicate
+    /// given every argument but its last, a number.
+    fn application(
+        &mut self,
+        name: &str,
+        args: &[Term],
+        negated: bool,
+        function: bool,
+        scope: &Scope,
+        span: &Span,
+    ) -> Result<CompiledAtom> {
+        let predicate =
+            self.registry.predicates.get(name).ok_or_else(|| at(span, crate::outcome::unregistered(name)))?.clone();
         let spec = predicate.spec().clone();
-        if spec.parameters.len() != atom.args.len() {
-            return Err(at(
-                &atom.span,
-                format!("{} expects {} arguments, got {}", spec.name, spec.parameters.len(), atom.args.len()),
-            ));
+        let mut parameters = &spec.parameters[..];
+        if function {
+            if !predicate.functional() {
+                return Err(at(
+                    span,
+                    format!(
+                        "{name} is not functional, so ({name} ...) is no number: compare a functional predicate's, as (to-set)"
+                    ),
+                ));
+            }
+            parameters = &parameters[..parameters.len() - 1];
+        }
+        if parameters.len() != args.len() {
+            return Err(at(span, format!("{} expects {} arguments, got {}", spec.name, parameters.len(), args.len())));
         }
         let mut terms = Vec::new();
-        for (arg, expected) in atom.args.iter().zip(&spec.parameters) {
+        for (arg, expected) in args.iter().zip(parameters) {
             let (term, actual) = match arg {
                 Term::Role(name) => {
-                    let (class, sort) =
-                        scope.get(name).ok_or_else(|| at(&atom.span, format!("undeclared role {name}")))?;
+                    let (class, sort) = scope.get(name).ok_or_else(|| at(span, format!("undeclared role {name}")))?;
                     (Bound::Variable(*class), *sort)
                 }
                 Term::Literal(value) => (Bound::Literal(*value), value.sort()),
             };
             if actual != *expected {
-                return Err(at(&atom.span, format!("{} expects {expected}, got {actual}", spec.name)));
+                return Err(at(span, format!("{} expects {expected}, got {actual}", spec.name)));
             }
             terms.push(term);
         }
-        let compiled = CompiledAtom { predicate, access: spec.access, terms, negated: atom.negated };
+        let compiled = CompiledAtom { predicate, access: spec.access, terms, negated };
         self.used.insert(spec.name.clone(), spec);
         Ok(compiled)
     }
@@ -297,6 +317,9 @@ impl Compiler<'_> {
     fn quantity(&mut self, quantity: &Quantity, scope: &Scope, span: &Span) -> Result<CompiledQuantity> {
         Ok(match quantity {
             Quantity::Number(n) => CompiledQuantity::Number(u64::from(*n)),
+            Quantity::Function(f) => {
+                CompiledQuantity::Function(self.application(&f.predicate, &f.args, false, true, scope, &f.span)?)
+            }
             Quantity::Parameter(name) => {
                 return Err(at(span, format!("{name} is a definition's number parameter, outside its definition")));
             }
@@ -339,6 +362,7 @@ impl CompiledQuantity {
     fn reads(&self) -> BTreeSet<usize> {
         match self {
             CompiledQuantity::Number(_) => BTreeSet::new(),
+            CompiledQuantity::Function(f) => Clause::Atom(f.clone()).vars(),
             CompiledQuantity::Aggregate(a) => a.binder.reads.clone(),
             CompiledQuantity::Sum(parts) => parts.iter().flat_map(CompiledQuantity::reads).collect(),
         }
@@ -350,7 +374,7 @@ impl CompiledQuantity {
 fn intern(clauses: &mut [Clause], table: &mut BTreeMap<String, usize>) {
     fn quantity(q: &mut CompiledQuantity, table: &mut BTreeMap<String, usize>) {
         match q {
-            CompiledQuantity::Number(_) => {}
+            CompiledQuantity::Number(_) | CompiledQuantity::Function(_) => {}
             CompiledQuantity::Aggregate(a) => {
                 let next = table.len();
                 a.id = *table.entry(a.shape.clone()).or_insert(next);
@@ -468,6 +492,24 @@ impl CompiledAtom {
     /// `Some(true)` when the atom (or its negation) holds, `Some(false)` when
     /// it fails, `None` when the predicate is undefined here.
     fn evaluate(&self, cx: Cx<'_>, values: &[Option<Value>], budget: &mut Budget) -> Result<Option<bool>> {
+        self.read(cx, values, budget, |predicate, context, args, budget| {
+            Ok(predicate.evaluate(context, args, budget)?.map(|value| value != self.negated))
+        })
+    }
+
+    /// A functional predicate's number at its arguments.
+    fn value(&self, cx: Cx<'_>, values: &[Option<Value>], budget: &mut Budget) -> Result<NumberAt> {
+        self.read(cx, values, budget, |predicate, context, args, budget| predicate.value(context, args, budget))
+    }
+
+    /// `f` of the predicate, its context and its arguments at this binding.
+    fn read<T>(
+        &self,
+        cx: Cx<'_>,
+        values: &[Option<Value>],
+        budget: &mut Budget,
+        f: impl FnOnce(&dyn Predicate, PredicateContext<'_>, &[Value], &mut Budget) -> Result<T>,
+    ) -> Result<T> {
         budget.spend(1)?;
         let arg = |t: &Bound| match t {
             Bound::Variable(i) => values[*i].expect("a ready atom"),
@@ -495,7 +537,7 @@ impl CompiledAtom {
             }
             (Access::Viewer, Reader::Auction(frame)) => PredicateContext::Auction(frame),
         };
-        Ok(self.predicate.evaluate(context, args, budget)?.map(|value| value != self.negated))
+        f(self.predicate.as_ref(), context, args, budget)
     }
 }
 
@@ -700,9 +742,20 @@ impl CompiledAggregate {
 }
 
 impl CompiledQuantity {
+    /// Whether a function's number is part of it.
+    fn reads_function(&self) -> bool {
+        match self {
+            CompiledQuantity::Function(_) => true,
+            CompiledQuantity::Sum(parts) => parts.iter().any(CompiledQuantity::reads_function),
+            CompiledQuantity::Number(_) | CompiledQuantity::Aggregate(_) => false,
+        }
+    }
+
     /// The interval of values the quantity takes at this binding: exact
     /// unless an aggregate's body is undefined at some binding. With `cap`,
-    /// the low end may stop at the cap once it reaches it.
+    /// the low end may stop at the cap once it reaches it. `None` when a
+    /// function in it has no number here (undefined, or holding for none):
+    /// a comparison that reads it is undefined.
     fn interval(
         &self,
         cap: Option<u64>,
@@ -710,22 +763,31 @@ impl CompiledQuantity {
         sorts: &[Sort],
         values: &mut [Option<Value>],
         budget: &mut Budget,
-    ) -> Result<(u64, u64)> {
+    ) -> Result<Option<(u64, u64)>> {
         match self {
-            CompiledQuantity::Number(n) => Ok((*n, *n)),
-            CompiledQuantity::Aggregate(aggregate) => aggregate.interval(cap, cx, sorts, values, budget),
+            CompiledQuantity::Number(n) => Ok(Some((*n, *n))),
+            CompiledQuantity::Function(f) => Ok(match f.value(cx, values, budget)? {
+                NumberAt::Is(n) => Some((u64::from(n), u64::from(n))),
+                NumberAt::Absent | NumberAt::Undefined => None,
+            }),
+            CompiledQuantity::Aggregate(aggregate) => aggregate.interval(cap, cx, sorts, values, budget).map(Some),
             CompiledQuantity::Sum(parts) => {
                 let (mut low, mut high) = (0, 0);
-                for part in parts {
-                    // Every part is nonnegative, so a part at the cap puts
-                    // the sum there too.
-                    let (l, h) = part.interval(cap, cx, sorts, values, budget)?;
+                for (i, part) in parts.iter().enumerate() {
+                    let Some((l, h)) = part.interval(cap.map(|c| c.saturating_sub(low)), cx, sorts, values, budget)?
+                    else {
+                        return Ok(None);
+                    };
                     (low, high) = (low + l, high + h);
-                    if cap.is_some_and(|c| low >= c) {
+                    // Every part is nonnegative: each counts only to what
+                    // the sum still needs to reach the cap, and once there
+                    // the sum is decided, unless a function after it has no
+                    // number, which leaves the sum none.
+                    if cap.is_some_and(|c| low >= c) && !parts[i + 1..].iter().any(CompiledQuantity::reads_function) {
                         break;
                     }
                 }
-                Ok((low, high))
+                Ok(Some((low, high)))
             }
         }
     }
@@ -743,12 +805,19 @@ impl CompiledAtMost {
         values: &mut [Option<Value>],
         budget: &mut Budget,
     ) -> Result<Option<bool>> {
-        let ((left_low, left_high), (right_low, right_high)) = match (&self.left, &self.right) {
-            (left, CompiledQuantity::Number(n)) => ((left.interval(Some(n + 1), cx, sorts, values, budget)?), (*n, *n)),
-            (CompiledQuantity::Number(n), right) => ((*n, *n), right.interval(Some(*n), cx, sorts, values, budget)?),
+        let (left, right) = match (&self.left, &self.right) {
+            (left, CompiledQuantity::Number(n)) => {
+                (left.interval(Some(n + 1), cx, sorts, values, budget)?, Some((*n, *n)))
+            }
+            (CompiledQuantity::Number(n), right) => {
+                (Some((*n, *n)), right.interval(Some(*n), cx, sorts, values, budget)?)
+            }
             (left, right) => {
                 (left.interval(None, cx, sorts, values, budget)?, right.interval(None, cx, sorts, values, budget)?)
             }
+        };
+        let (Some((left_low, left_high)), Some((right_low, right_high))) = (left, right) else {
+            return Ok(None);
         };
         Ok(if left_high <= right_low {
             Some(true)

@@ -141,7 +141,55 @@ pub trait Predicate: Send + Sync {
 
     /// `None` means undefined: neither the atom nor its negation holds.
     fn evaluate(&self, context: PredicateContext<'_>, args: &[Value], budget: &mut Budget) -> Result<Option<bool>>;
+
+    /// Whether the predicate is a function of its other arguments into its
+    /// last, a number: `(p a ... n)` holds for at most one `n`, and where it
+    /// is undefined it is undefined for every `n`. Then `(p a ...)` is a
+    /// number a comparison reads (README, Semantics: functions are numbers).
+    fn functional(&self) -> bool {
+        false
+    }
+
+    /// A functional predicate's number at `args`, every argument but the
+    /// last. It must agree with [`Predicate::evaluate`]: `(p a ... n)` holds
+    /// exactly when this is `Is(n)`, and is undefined exactly when this is
+    /// `Undefined`.
+    fn value(&self, context: PredicateContext<'_>, args: &[Value], budget: &mut Budget) -> Result<NumberAt> {
+        let _ = (context, args, budget);
+        Err(error(format!("{} is not functional: no number is its value", self.spec().name)))
+    }
 }
+
+/// What a functional predicate's number is at a frame.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NumberAt {
+    /// The one `n` for which the relation holds.
+    Is(u32),
+    /// It holds for no `n`: no bid yet, no raise left, a tile not played.
+    Absent,
+    /// It is undefined here: the viewer not to call, the hand over.
+    Undefined,
+}
+
+/// The built-ins that are functions into their last argument, a number. Each
+/// is defined by its number (`number`, below), and its relation by that, so
+/// the two agree by construction.
+const FUNCTIONS: [&str; 14] = [
+    "count",
+    "quota",
+    "bid",
+    "stake",
+    "banked",
+    "to-make",
+    "to-set",
+    "trick-number",
+    "trick-of",
+    "bid-of",
+    "high-bid",
+    "least-raise",
+    "score",
+    "short",
+];
 
 /// The built-ins added with the record, version `silas-v1/core`.
 const V1: [&str; 8] = ["declarer", "banked", "to-make", "to-set", "led", "played-to", "trick-of", "shown-void"];
@@ -340,11 +388,29 @@ impl Predicate for Builtin {
         &self.0
     }
 
+    fn functional(&self) -> bool {
+        FUNCTIONS.contains(&self.0.name.as_str())
+    }
+
+    fn value(&self, context: PredicateContext<'_>, args: &[Value], _: &mut Budget) -> Result<NumberAt> {
+        if !self.functional() {
+            return Err(error(format!("{} is not functional: no number is its value", self.0.name)));
+        }
+        number(context, &self.0.name, args)
+    }
+
     fn evaluate(&self, context: PredicateContext<'_>, args: &[Value], _: &mut Budget) -> Result<Option<bool>> {
         use Value::{Chair as C, Context as Q, Domino as D, Number as N};
         let name = self.0.name.as_str();
         if let Some(value) = tile_fact(name, args) {
             return Ok(Some(value));
+        }
+        if let Some((N(n), rest)) = args.split_last().filter(|_| self.functional()) {
+            return Ok(match number(context, name, rest)? {
+                NumberAt::Is(v) => Some(v == *n),
+                NumberAt::Absent => Some(false),
+                NumberAt::Undefined => None,
+            });
         }
         if let PredicateContext::Auction(frame) = context {
             return at_auction(frame, name, args);
@@ -367,7 +433,6 @@ impl Predicate for Builtin {
             }
             ("master", [D(d)]) => live.contains(*d) && physics.threat(*d).is_disjoint(live),
             ("void", [C(c), Q(q)]) => world()?.hand_within(*c, physics.incidence(*q))?.is_empty(),
-            ("quota", [C(c), N(n)]) => kernel.capacity(*c) == *n as usize,
             ("viewer", [C(c)]) => *c == kernel.viewer(),
             ("leader", [C(c)]) => *c == frame.leader(),
             ("next-actor", [C(c)]) => frame.next_actor() == Some(*c),
@@ -380,7 +445,6 @@ impl Predicate for Builtin {
                 None => return Ok(None),
             },
             ("played", [D(d)]) => frame.played().contains(*d),
-            ("count", [D(d), N(n)]) => physics.count(*d) == *n,
             ("own-legal", [D(d)]) => {
                 if frame.next_actor() != Some(frame.viewer()) {
                     return Ok(None);
@@ -402,27 +466,64 @@ impl Predicate for Builtin {
             ("trump", [Q(q)]) => physics.trump() == Some(*q),
             ("mine", [D(d)]) => kernel.viewer_hand().contains(*d),
             ("declarer", [C(c)]) => *c == frame.contract().declarer(),
-            ("bid", [N(n)]) => *n == frame.contract().bid().value(),
-            ("stake", [N(n)]) => *n == frame.contract().stake(),
-            ("banked", [C(c), N(n)]) => frame.banked()[c.team().index()] == *n,
-            ("to-make", [N(n)]) => frame.to_make_and_set().0 == *n,
-            ("to-set", [N(n)]) => frame.to_make_and_set().1 == *n,
-            ("trick-number", [N(n)]) => match frame.trick_number() {
-                Some(number) => number == *n as usize,
-                None => return Ok(None),
-            },
             ("led", [C(c), D(d)]) => frame.tricks().any(|trick| trick[0] == (*c, *d)),
             ("played-to", [D(lead), C(c), D(d)]) => {
                 frame.tricks().any(|trick| trick[0].1 == *lead && trick.contains(&(*c, *d)))
-            }
-            ("trick-of", [D(d), N(n)]) => {
-                let trick = frame.tricks().position(|trick| trick.iter().any(|(_, tile)| tile == d));
-                trick.map(|k| k + 1) == Some(*n as usize)
             }
             _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),
         };
         Ok(Some(value))
     }
+}
+
+/// A functional built-in's number at `args`, every argument but the last:
+/// the definition of its relation (`Builtin::evaluate`).
+fn number(context: PredicateContext<'_>, name: &str, args: &[Value]) -> Result<NumberAt> {
+    use NumberAt::{Absent, Is, Undefined};
+    use Value::{Chair as C, Domino as D};
+    let of = |value: Option<u32>| value.map_or(Absent, Is);
+    let auction = match context {
+        PredicateContext::Auction(frame) => frame.auction(),
+        _ => context.frame()?.auction(),
+    };
+    // The auction's record, at every frame.
+    match (name, args) {
+        ("bid-of", [C(c)]) => {
+            return Ok(of(match auction.call_of(*c) {
+                Some(Call::Bid(bid)) => Some(bid.value()),
+                _ => None,
+            }));
+        }
+        ("high-bid", []) => return Ok(of(auction.high().map(|(_, bid)| bid.value()))),
+        _ => {}
+    }
+    if let PredicateContext::Auction(frame) = context {
+        let state = frame.state();
+        return Ok(match (name, args) {
+            ("count", [D(d)]) => Is(frame.count(*d)),
+            ("least-raise", []) if auction.actor() != Some(frame.viewer()) => Undefined,
+            ("least-raise", []) => of(auction.least_raise().map(Bid::value)),
+            ("score", [C(c)]) => Is(state.score(c.team())),
+            ("short", [C(c)]) => Is(state.short(c.team())),
+            _ => return Err(error(format!("{name} is not defined at the auction (an invalid compiled query)"))),
+        });
+    }
+    let frame = context.frame()?;
+    let (to_make, to_set) = frame.to_make_and_set();
+    Ok(match (name, args) {
+        ("count", [D(d)]) => Is(frame.physics().count(*d)),
+        ("quota", [C(c)]) => Is(frame.kernel().capacity(*c) as u32),
+        ("bid", []) => Is(frame.contract().bid().value()),
+        ("stake", []) => Is(frame.contract().stake()),
+        ("banked", [C(c)]) => Is(frame.banked()[c.team().index()]),
+        ("to-make", []) => Is(to_make),
+        ("to-set", []) => Is(to_set),
+        ("trick-number", []) => frame.trick_number().map_or(Undefined, |k| Is(k as u32)),
+        ("trick-of", [D(d)]) => {
+            of(frame.tricks().position(|trick| trick.iter().any(|(_, tile)| tile == d)).map(|k| k as u32 + 1))
+        }
+        _ => return Err(error("built-in argument mismatch (an invalid compiled query)")),
+    })
 }
 
 /// The natural pip of a context; none for the called suit.
@@ -471,14 +572,12 @@ fn tile_fact(name: &str, args: &[Value]) -> Option<bool> {
 /// The auction's record, at every frame: complete in the play, under way at
 /// the auction. `None` when `name` is not such a fact.
 fn auction_fact(auction: &Auction, name: &str, args: &[Value]) -> Option<bool> {
-    use Value::{Chair as C, Number as N};
+    use Value::Chair as C;
     let high = auction.high();
     Some(match (name, args) {
         ("shaker", [C(c)]) => auction.shaker() == *c,
-        ("bid-of", [C(c), N(n)]) => Bid::number(*n).is_ok_and(|bid| auction.call_of(*c) == Some(Call::Bid(bid))),
         ("passed", [C(c)]) => auction.call_of(*c) == Some(Call::Pass),
         ("no-bid", []) => high.is_none(),
-        ("high-bid", [N(n)]) => high.is_some_and(|(_, bid)| bid.value() == *n),
         ("high-bidder", [C(c)]) => high.is_some_and(|(seat, _)| seat == *c),
         _ => return None,
     })
@@ -497,14 +596,10 @@ fn at_auction(frame: &AuctionFrame, name: &str, args: &[Value]) -> Result<Option
     let value = match (name, args) {
         ("viewer", [C(c)]) => *c == frame.viewer(),
         ("mine", [D(d)]) => frame.dealt().contains(*d),
-        ("count", [D(d), N(n)]) => frame.count(*d) == *n,
-        ("legal-bid" | "least-raise", [N(_)]) if auction.actor() != Some(frame.viewer()) => return Ok(None),
+        ("legal-bid", [N(_)]) if auction.actor() != Some(frame.viewer()) => return Ok(None),
         ("legal-bid", [N(n)]) => Bid::number(*n).is_ok_and(|bid| auction.legal(Call::Bid(bid))),
-        ("least-raise", [N(n)]) => auction.least_raise().is_some_and(|bid| bid.value() == *n),
         ("scoring-marks", []) => matches!(state.scoring(), Scoring::Marks { .. }),
         ("scoring-points", []) => matches!(state.scoring(), Scoring::Points { .. }),
-        ("score", [C(c), N(n)]) => state.score(side(c)) == *n,
-        ("short", [C(c), N(n)]) => state.short(side(c)) == *n,
         ("short-at-most", [C(c), N(n)]) => state.short(side(c)) <= *n,
         ("behind", [C(c), N(n)]) => *n > 0 && state.score(side(c).other()) >= state.score(side(c)) + *n,
         _ => return Err(error(format!("{name} is not defined at the auction (an invalid compiled query)"))),

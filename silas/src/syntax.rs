@@ -443,10 +443,14 @@ pub struct Pattern {
 }
 
 /// A number a comparison reads. Numbers are never roles: a quantity is a
-/// literal, an aggregate over a scope's bindings, or a sum of quantities.
+/// literal, a functional predicate's number, an aggregate over a scope's
+/// bindings, or a sum of quantities.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Quantity {
     Number(u32),
+    /// `(p a ...)`: the one `n` for which `(p a ... n)` holds, `p` a
+    /// predicate functional in its last argument (`to-set`, `bid`, `count`).
+    Function(Application),
     /// A definition's `(number n)` parameter, replaced by its argument when
     /// the definition is called; never in a query as read.
     Parameter(String),
@@ -458,6 +462,14 @@ pub enum Quantity {
     Points(Aggregate),
     /// `(+ q ...)`.
     Sum(Vec<Quantity>),
+}
+
+/// `(p a ...)`: a functional predicate given every argument but its last.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Application {
+    pub predicate: String,
+    pub args: Vec<Term>,
+    pub span: Span,
 }
 
 /// The bindings an aggregate ranges over: its own roles, distinct from one
@@ -799,7 +811,7 @@ impl Library {
 
     /// A number a comparison reads: a literal, a definition's number
     /// parameter, `(card (roles ...) clause ...)`, `(points (roles d) clause
-    /// ...)` or `(+ q ...)`.
+    /// ...)`, `(+ q ...)`, or a functional predicate's number, `(p a ...)`.
     fn quantity(&self, x: &Expr, names: &Names) -> Result<Quantity> {
         let xs = match &x.kind {
             Kind::Word(w) => {
@@ -833,7 +845,17 @@ impl Library {
                 let aggregate = Aggregate { roles, body, span: x.span.clone() };
                 Ok(if kind == "card" { Quantity::Card(aggregate) } else { Quantity::Points(aggregate) })
             }
-            _ => Err(x.span.error("a number is a literal, (card ...), (points ...) or (+ ...)")),
+            Some(name) if self.defines.contains_key(name) => Err(x.span.error(format!(
+                "({name} ...) is a definition, a clause; a number is a literal, (card ...), (points ...), (+ ...) \
+                 or a functional predicate's, as (to-set)"
+            ))),
+            Some("not") | None => {
+                Err(x.span.error("a number is a literal, (card ...), (points ...), (+ ...) or (p a ...)"))
+            }
+            Some(_) => {
+                let Atom { predicate, args, span, .. } = atom(x)?;
+                Ok(Quantity::Function(Application { predicate, args, span }))
+            }
         }
     }
 
@@ -990,6 +1012,18 @@ fn instantiate_quantity(
     };
     match quantity {
         Quantity::Number(n) => Quantity::Number(*n),
+        Quantity::Function(f) => Quantity::Function(Application {
+            predicate: f.predicate.clone(),
+            args: f
+                .args
+                .iter()
+                .map(|t| match t {
+                    Term::Role(n) => substitution.get(n).cloned().unwrap_or_else(|| t.clone()),
+                    Term::Literal(_) => t.clone(),
+                })
+                .collect(),
+            span: at.clone(),
+        }),
         Quantity::Parameter(name) => match substitution.get(name) {
             Some(Term::Literal(Value::Number(n))) => Quantity::Number(*n),
             Some(Term::Role(other)) => Quantity::Parameter(other.clone()),
@@ -1153,6 +1187,13 @@ pub(crate) fn free_names(pattern: &Pattern, bound: &BTreeSet<String>, out: &mut 
                 free_names(&a.body, &bound, out);
             }
             Quantity::Sum(parts) => parts.iter().for_each(|p| quantity(p, bound, out)),
+            Quantity::Function(f) => out.extend(
+                f.args
+                    .iter()
+                    .filter_map(|t| if let Term::Role(n) = t { Some(n) } else { None })
+                    .filter(|n| !bound.contains(*n))
+                    .cloned(),
+            ),
             Quantity::Number(_) | Quantity::Parameter(_) => {}
         }
     }
@@ -1177,6 +1218,16 @@ fn write_quantity(f: &mut fmt::Formatter<'_>, quantity: &Quantity, indent: usize
     let (tag, aggregate) = match quantity {
         Quantity::Number(n) => return write!(f, "{n}"),
         Quantity::Parameter(name) => return write!(f, "{name}"),
+        Quantity::Function(application) => {
+            write!(f, "({}", application.predicate)?;
+            for arg in &application.args {
+                match arg {
+                    Term::Role(name) => write!(f, " {name}")?,
+                    Term::Literal(value) => write!(f, " {value}")?,
+                }
+            }
+            return write!(f, ")");
+        }
         Quantity::Sum(parts) => {
             write!(f, "(+")?;
             for part in parts {

@@ -4,9 +4,8 @@
 ; caution 0): a hand is worth 42 less the count its offs expose under its best
 ; suit of three trumps or more, never more than one mark.
 ;
-; The count is in fives, so the least raise is worth it at 30 to 32 when at
-; most 10 is exposed, at 33 to 37 when at most 5, at 38 to 42 when none. A
-; least raise above 42 (after a one-mark bid) is never taken. A pass is the
+; So the least raise is worth it when it and the count exposed come to 42 at
+; most; a least raise above 42 (after a one-mark bid) never is. A pass is the
 ; fallback, the least legal call; when the shaker must bid over three passes,
 ; the least legal call is 30, which is the arena's forced bid.
 ;
@@ -21,15 +20,10 @@
 
 (policy bid-only-enough
   (bidding
-    (rule raise-to-32 (bid least-raise)
-      (or (least-raise 30) (least-raise 31) (least-raise 32))
-      (some (roles t) (suit-at-least t 3) (exposes-at-most t 10)))
-    (rule raise-to-37 (bid least-raise)
-      (or (least-raise 33) (least-raise 34) (least-raise 35) (least-raise 36) (least-raise 37))
-      (some (roles t) (suit-at-least t 3) (exposes-at-most t 5)))
-    (rule raise-to-42 (bid least-raise)
-      (or (least-raise 38) (least-raise 39) (least-raise 40) (least-raise 41) (least-raise 42))
-      (some (roles t) (suit-at-least t 3) (exposes-at-most t 0))))
+    (rule raise (bid least-raise)
+      (some (roles t)
+        (suit-at-least t 3)
+        (<= (+ (least-raise) (points (roles c) (exposed c t))) 42))))
   (declaring
     (rule best-suit (declare t)
       (suit-at-least t 3)

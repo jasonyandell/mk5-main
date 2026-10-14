@@ -198,7 +198,7 @@ fn an_aggregate_that_cannot_be_read_says_why() {
         ("(query (<= 1 (points (roles a b) (mine a) (mine b))))", "one domino"),
         ("(query (<= 1 (points (roles (chair c)) (viewer c))))", "one domino"),
         ("(query (<= 1 (card (mine d))))", "(roles ...)"),
-        ("(query (<= 1 2 3))", "compares two numbers"),
+        ("(query (/= 1 2 3))", "compares two numbers"),
         ("(query (< 1))", "compares two numbers"),
         ("(query (<= 1 6-6))", "is not a number"),
     ] {

@@ -43,6 +43,22 @@ fn operands<'a>(x: &'a Expr, head: &str) -> Result<(&'a Expr, &'a Expr)> {
     }
 }
 
+/// A chain `(head a b c ...)`, as Lisp reads it, as the comparisons of each
+/// neighbouring pair, `(head a b) (head b c) ...`; `None` for two operands.
+/// `/=` does not chain: neighbours apart is not all apart.
+fn chain(x: &Expr, head: &str) -> Result<Option<Vec<Expr>>> {
+    let xs = x.list()?;
+    if xs.len() <= 3 {
+        return Ok(None);
+    }
+    if head == "/=" {
+        return Err(x.span.error("/= compares two numbers: (/= a b)"));
+    }
+    Ok(Some(
+        xs[1..].windows(2).map(|w| Expr::list_at(vec![xs[0].clone(), w[0].clone(), w[1].clone()], &x.span)).collect(),
+    ))
+}
+
 /// `q + 1`: a literal folded, anything else `(+ q 1)`.
 fn plus_one(q: &Expr) -> Expr {
     match q.word().ok().and_then(|w| w.parse::<u32>().ok()).and_then(|n| n.checked_add(1)) {
@@ -61,6 +77,12 @@ fn at_most(a: Expr, b: Expr, x: &Expr) -> Expr {
 /// a`, `a > b` is `b + 1 <= a`, `a = b` is both `a <= b` and `b <= a`, and `a
 /// /= b` is `a < b` or `a > b`.
 fn comparison(x: &Expr, head: &str, taken: Taken<'_>, out: &mut Vec<Expr>) -> Result<()> {
+    if let Some(pairs) = chain(x, head)? {
+        for pair in &pairs {
+            comparison(pair, head, taken, out)?;
+        }
+        return Ok(());
+    }
     let (a, b) = operands(x, head)?;
     let (a, b) = (a.clone(), b.clone());
     match head {
@@ -213,6 +235,12 @@ fn negation(c: &Expr, taken: Taken<'_>, out: &mut Vec<Expr>) -> Result<()> {
             return Err(c.span.error("same cannot be negated: roles declared together are already distinct"));
         }
         Some(head) if COMPARISONS.iter().any(|(c, _)| *c == head) => {
+            if let Some(pairs) = chain(c, head)? {
+                // Not every link holds, as a negated `and` is.
+                let roles = Expr::list_at(vec![Expr::word_at("roles", &c.span)], &c.span);
+                out.push(Expr::list_at([vec![Expr::word_at("none", &c.span), roles], pairs].concat(), &c.span));
+                return Ok(());
+            }
             let (_, opposite) = COMPARISONS.iter().find(|(c, _)| *c == head).expect("a comparison");
             operands(c, head)?;
             out.push(renamed(opposite));
@@ -301,6 +329,12 @@ impl Uses {
                 }
             }
             (Kind::List(items), Some("card" | "points")) => self.scope(items, bound, signature)?,
+            // A functional predicate's number: its arguments are its
+            // parameters but the last, the number it is.
+            (Kind::List(items), Some(head)) => {
+                let sorts = signature(head).filter(|s| s.len() == items.len());
+                self.arguments(&items[1..], sorts.as_deref(), bound);
+            }
             _ => {}
         }
         Ok(())
@@ -310,17 +344,23 @@ impl Uses {
         let items = atom.list()?;
         let Some(head) = atom.head() else { return Ok(()) };
         let sorts = signature(head).filter(|s| s.len() + 1 == items.len());
-        for (i, arg) in items[1..].iter().enumerate() {
+        self.arguments(&items[1..], sorts.as_deref(), bound);
+        Ok(())
+    }
+
+    /// The arguments of an atom or a function, each name sorted by its
+    /// parameter when the parameters are known.
+    fn arguments(&mut self, args: &[Expr], sorts: Option<&[Sort]>, bound: &[String]) {
+        for (i, arg) in args.iter().enumerate() {
             let Ok(name) = arg.word() else { continue };
             if Value::literal(name).is_some() || bound.iter().any(|b| b == name) {
                 continue;
             }
             self.seen(name);
-            if let Some(sort) = sorts.as_ref().map(|s| s[i]) {
+            if let Some(sort) = sorts.map(|s| s[i]) {
                 self.sorts.get_mut(name).expect("seen").push((sort, arg.span.clone()));
             }
         }
-        Ok(())
     }
 
     fn seen(&mut self, name: &str) {
