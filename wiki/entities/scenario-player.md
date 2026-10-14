@@ -900,6 +900,20 @@ best-response dynamics by +0.115. Of the Walt gaps diagnosed, 78 of 171 close on
 the referent: the partnership operator is where the next mathematics is.
 [[endgames-o2-vs-o1-2026-10-12]].
 
+**An exploiter against Zeb on the same endgames (2026-10-14, #77).** The opponents and
+the partner are frozen at a Zeb proxy: the planner's rung 0 over the net, with enumerated
+fibers, under `make`. V's exact information-state best response to that table beats V's
+best response to the net, played against the same table, by **+0.50 [+0.42, +0.58] margin
+per endgame**. That fails the pre-registered sturdy bar (< 0.10) and straddles the
+exploitable one (> 0.50).
+- Half of it comes from endgames whose contract is already decided, where `make` ties every
+  tile and Zeb plays the lowest id: points, never marks.
+- In contract terms, knowing Zeb is worth +0.0040 [+0.0028, +0.0054] per endgame, and
+  +0.009 where the contract is open. That is under half of what the same seat takes from
+  the net, and best-responding to the net takes nothing from Zeb.
+
+[[exploiter-endgames-2026-10-14]].
+
 **The book player against Zeb (2026-10-13).** The book's 18 rules as a [[silas]] policy
 stack (`arena/book_play.py`, `book:` in the arena) lose to deployed Zeb by −1.88 [−2.09,
 −1.66] marks/game when Zeb plays wherever no rule fires; every departure from Zeb's tile,
@@ -1049,6 +1063,7 @@ net already plays its best move 96% of the time; a warm fine-tune toward it is i
 
 ## Links
 
+[[exploiter-endgames-2026-10-14]] (an exploiter against Zeb on three-trick endgames: not sturdy in points, small in contracts) ·
 [[constellations-2026-10-14]] (constellations as Zeb's late-hand table) ·
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·

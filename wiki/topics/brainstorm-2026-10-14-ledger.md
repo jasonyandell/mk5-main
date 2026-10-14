@@ -72,7 +72,7 @@ Verdicts used: **done** (with the citation and result), **partly**, **new**, **f
 | cheap 1: criticality histogram | **done** (this page, below) | Partly before: 714 decisions on research night (critic: 40% exact ties, 17% > 5 pp). Oracle-era [[gus-drama-atlas]] is the fenced cousin: oracle disagreement per world. |
 | cheap 2: rule-mine only the disagreements | **partly** | Against the book: [[metasplat-2026-10-13]], the reason report (#124), [[book-head-to-head-2026-10-13]]. Against PIMC: not done. E[Q] is a sanctioned baseline to contrast with, never a label. |
 | cheap 3: DSL as deal generator | **partly** | #141 (bidding populations, constructed fibers); [[silas]] enumerates worlds under a condition exactly. |
-| cheap 4: exploiter against the champion | **new** | #77 probe 2 ("counter-walt"), open since 2026-07-17. Research-night ledger row 12: "train a best-response opposing pair against frozen Zeb; a lower bound on the O3 gap". [[endgames-o2-vs-o1-2026-10-12]]: "O3 not attempted". The only exploiter-shaped results are readers of plays, which are null (#111 in self-play, [[reads-plays-2026-10-13]]). |
+| cheap 4: exploiter against the champion | **done** (2026-10-14, [[exploiter-endgames-2026-10-14]]): on three-trick endgames, G = +0.50 [+0.42, +0.58] margin, neither sturdy nor shown exploitable; +0.004 contract probability per endgame. Before that, **new** | #77 probe 2 ("counter-walt"), open since 2026-07-17. Research-night ledger row 12: "train a best-response opposing pair against frozen Zeb; a lower bound on the O3 gap". [[endgames-o2-vs-o1-2026-10-12]]: "O3 not attempted". The only exploiter-shaped results are readers of plays, which are null (#111 in self-play, [[reads-plays-2026-10-13]]). |
 | A. expert iteration keeping the farmboy (net mixed 80/20 with uniform) | **partly** | Expert iteration ran three turns (5k → 50k → 250k pours, each poured by the last net) and stopped at parity. The 80/20 mix exists as `field_eps` = 0.2 (arena `E=0.2`, #108) but has been graded only as a belief, never as Zeb's play field. Untested and cheap. |
 | B. AlphaEvolve on the DSL, scored by duplicate games vs the champion | **new** | The scoring harness exists: [[book-head-to-head-2026-10-13]] seats [[silas]] policies in paired games. Every hand-written rule set tried so far lost (−1.1 to −1.9 marks/game) except as Zeb's near-tie break (53.2% of games to 250, [[book-investigation-2026-10-14]]). |
 | C. fusion-free AlphaZero (policy, distributional value, belief heads) | **partly; value head blocked by a house rule** | See the assessment below. |
@@ -174,6 +174,11 @@ positions, 10 s.
 
 ## Recommendation: one next experiment
 
+**Run 2026-10-14:** [[exploiter-endgames-2026-10-14]].
+- G = +0.50 [+0.42, +0.58] margin per endgame: not sturdy (the bar was an upper bound < 0.10), and not shown exploitable (the bar was a lower bound > 0.50).
+- Half of G is Zeb's lowest-id tie rule once the contract is decided.
+- In contract probability, knowing Zeb is worth +0.0040 [+0.0028, +0.0054].
+
 **An exploiter on three-trick endgames: a lower bound on Zeb's exploitability.** This is
 #77 probe 2, research-night row 12 and the notes' fairy ask 1, in the only setting where it
 is exact in minutes.
@@ -217,4 +222,4 @@ or slightly negative: a best response to a sloppier model of a non-sloppy table.
 [[the-wall]] · [[strategy-fusion-fence]] · [[scenario-player]] · [[research-night-2026-10-12]]
 · [[endgames-o2-vs-o1-2026-10-12]] · [[lumps-voi-2026-10-13]] · [[metasplat-2026-10-13]]
 · [[reads-plays-2026-10-13]] · [[constellations-2026-10-14]] · [[book-investigation-2026-10-14]]
-· [[zeb]] · [[full-teacher-eq-experiment]] · [[splat-search-bounds]]
+· [[zeb]] · [[full-teacher-eq-experiment]] · [[splat-search-bounds]] · [[exploiter-endgames-2026-10-14]]
