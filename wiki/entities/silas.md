@@ -246,8 +246,13 @@ Results:
   is refuted at once.
 - The book's lay-down shape is sufficient, not necessary.
 - Hand 32's claim is of tricks, made already set.
-- Once Hand 26's trumps are cleared, double dummy makes in all 756,756 worlds, but the
-  bidder alone cannot force the make. The book's "cannot be set" is the bound's.
+- Hand 26 at the position after trick 2 (all seven trumps played, 17 banked, the bidder to
+  lead 3-3 1-1 5-5 2-2 5-2, the other 15 tiles dealt five each in any of 756,756 ways):
+  double dummy makes the 35 in every world, but the bidder alone cannot force the make.
+  The private adjudication's setting deal (A13) is one of those worlds, not an earlier
+  fork: the partner keeps the 3-2 to the last trick and the bidder, seeing all four hands,
+  scores 31; double-dummy play has him shed it for 36. The book's "cannot be set" is the
+  bound's (#143).
 
 What the partnership can force together with a partner of his own information is open
 (`silas/GAPS.md`, 8).

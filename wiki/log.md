@@ -37,6 +37,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
+
+**Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.
+
 ## [2026-10-13 | aefa35be | worlds never compress: endgame equivalence census ported from origin/worktree-equiv-census (aca3dacb, c3e1374c)]
 
 **Touched pages:** [[scenario-player]] [[silas]]

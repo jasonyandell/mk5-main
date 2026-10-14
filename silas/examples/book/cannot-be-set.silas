@@ -9,11 +9,17 @@
 ; other three, his partner's included (README, Solved outcomes).
 ; Hand 12 holds: with two trumps and the 4-4 and 1-1 against a setter's lead,
 ; and every trick left needed, he forces the make (tests/outcome.rs).
-; Checked (tests/outcome.rs) on one record of Hand 26 where the trumps fall in
-; two leads: the claim is false as the bidder's own guarantee, exactly, while
-; double-dummy play makes in every one of the 756,756 worlds. The book's
-; certainty is the double-dummy bound's; the coverage study found the set
-; needs the partner to keep a count tile to the end.
+; Checked (tests/outcome.rs) at one position of Hand 26: after trick 2, all seven
+; trumps played (two leads of the bidder's), 17 banked, the bidder to lead
+; 3-3 1-1 5-5 2-2 5-2 into the other 15 tiles, dealt five to each seat in any
+; of 756,756 ways. There double-dummy play makes the 35 in every layout, the
+; partner shedding his count on the bidder's doubles; and the claim is false
+; as the bidder's own guarantee, exactly. The private source adjudication's
+; setting deal (A13) is one of those layouts, not a different position: the
+; partner keeps the 3-2 to the last trick, a legal choice at every trick,
+; and the bidder, who sees all four hands, scores 31. The book's certainty
+; is the double-dummy bound's, which has the partner play for the bidder's
+; side; the claims agree on the position and differ in the partner's play.
 
 (include book)
 

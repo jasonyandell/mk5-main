@@ -493,7 +493,12 @@ rest exactly: `(lay-down)`, `(certain-make)`, `(certain-set)` and the double-dum
   The hand that stops once made or set (S-0113-b) is the settled case, answered without
   search. Hand 26's "cannot be set once trumps are cleared" (S-0123-b) is
   `cannot-be-set.silas`: false as the bidder's own guarantee, exactly, though
-  double-dummy play makes in all 756,756 worlds.
+  double-dummy play makes in all 756,756 worlds. Both are about one position, after
+  trick 2 with all seven trumps played, 17 banked, the bidder to lead 3-3 1-1 5-5 2-2
+  5-2, the other 15 tiles dealt five each in any way. The private adjudication's
+  setting deal (A13) is one of those worlds, not an earlier fork: it differs in the
+  partner's play (he keeps the 3-2 to the last trick and the bidder scores 31;
+  double-dummy play has him shed it and the bidder scores 36).
 
 | # | gap | kind | claims blocked | viewer / world | home |
 |---|---|---|---|---|---|
@@ -510,9 +515,11 @@ information is different: two players with different information against a third
 
 That side guarantee lies between the viewer's guarantee and the double-dummy bound, so it
 is decided wherever the two meet. A lay-down or a forced outcome proves it; a world where
-double-dummy play fails refutes it. Hand 26 is where they part. Once the trumps are
-cleared, double-dummy play makes in every world and the bidder alone cannot force the
-make. Whether the partnership can is open. The coverage study's reading is that the set
+double-dummy play fails refutes it. Hand 26 is where they part. At its position after
+trick 2 (all seven trumps played, 17 banked, the bidder to lead; 756,756 worlds),
+double-dummy play makes in every world and the bidder alone cannot force the make: in
+one world a partner who keeps the 3-2 to the last trick sets him, though he sees all four
+hands. Whether the partnership can is open. The coverage study's reading is that the set
 needs the partner to keep a count tile to the end.
 
 The same section covers cost. The viewer's own guarantee is exact but exponential. From

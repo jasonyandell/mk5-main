@@ -390,18 +390,85 @@ fn work_beyond_the_budget_is_refused_and_not_remembered() {
     assert!(forces(&frame, goal, &mut Budget::new(budget.spent() - 1)).is_err());
 }
 
-#[test]
-fn hand_26_can_be_set_once_trumps_are_cleared_though_double_dummy_makes() {
-    // S-0123-b. Hand 26 at 35, fours: the bidder's 4-4 and 6-4 draw the five
-    // trumps out (one record of the book's two leads), and he is to lead.
-    let at = common::rules::position(
+/// Hand 26 at 35, fours, after trick 2: the bidder's 4-4 and 6-4 have drawn all
+/// seven trumps (one record of the book's two leads), 17 are banked, and he
+/// leads the 3-3 1-1 5-5 2-2 5-2 into the 15 tiles he cannot place.
+fn hand_26_trumps_cleared() -> common::fixture::Position {
+    common::rules::position(
         "P4",
         Role::Bidder,
         &["3-3", "1-1", "5-5", "2-2", "5-2"],
         &["4-4", "4-3", "4-2", "4-1", "6-4", "5-4", "4-0", "6-6"],
     )
-    .bid(35);
-    let frame = at.frame(Seat::S0);
+    .bid(35)
+}
+
+/// The bidder's side's final points when the bidder maximizes and the setters
+/// minimize. With no tile named, his partner maximizes too (double-dummy
+/// play); with one named, the partner keeps that tile to his last trick, which
+/// is a legal choice at every trick before it, and minimizes otherwise.
+fn bidder_side_points(position: &OpenPosition, keeps: Option<Domino>) -> u32 {
+    let Some(seat) = position.next_actor() else {
+        return position.banked()[Seat::S0.team().index()];
+    };
+    let mut legal: Vec<Domino> = position.legal().iter().collect();
+    if let Some(kept) = keeps.filter(|_| seat == Seat::S2 && legal.len() > 1) {
+        legal.retain(|d| *d != kept);
+    }
+    let values = legal.iter().map(|d| bidder_side_points(&position.play(*d).unwrap(), keeps));
+    if seat == Seat::S0 || (seat == Seat::S2 && keeps.is_none()) {
+        values.max().unwrap()
+    } else {
+        values.min().unwrap()
+    }
+}
+
+#[test]
+fn hand_26_the_setting_deal_is_a_world_of_the_cleared_position_and_differs_in_the_partners_play() {
+    // The private source adjudication (A13) builds a deal that sets the 35
+    // when the partner keeps the 3-2 to the last trick. Its tricks 1 and 2 are
+    // another record (other seats play the trumps), so it does not reach the
+    // position above by its own play; its hidden hands, banked points and
+    // leader are that position's, and they are one of its 756,756 layouts.
+    let deal = [
+        ["3-3", "1-1", "4-4", "6-4", "5-5", "2-2", "5-2"],
+        ["4-0", "4-1", "5-0", "5-1", "1-0", "6-1", "6-2"],
+        ["4-2", "4-3", "3-2", "3-0", "2-0", "3-1", "2-1"],
+        ["4-5", "6-5", "5-3", "6-3", "6-6", "6-0", "0-0"],
+    ]
+    .map(|hand| tiles(&hand));
+    let record = ["4-4", "4-1", "4-2", "4-5", "6-4", "4-0", "4-3", "6-6"].map(tile);
+    let own = common::fixture::Position::dealt(physics("P4"), 35, deal, Role::Bidder, &record).frame(Seat::S0);
+    let cleared = hand_26_trumps_cleared().frame(Seat::S0);
+    assert_ne!(own.plays(), cleared.plays());
+    assert_eq!(
+        (own.kernel().pool(), own.banked(), own.leader()),
+        (cleared.kernel().pool(), cleared.banked(), cleared.leader())
+    );
+    assert_eq!((own.count_worlds(), own.to_make_and_set()), (756_756, (18, 8)));
+    let world = cleared
+        .worlds()
+        .find(|w| {
+            w.hand(Seat::S1) == deal[1].difference(tiles(&["4-0", "4-1"]))
+                && w.hand(Seat::S2) == deal[2].difference(tiles(&["4-2", "4-3"]))
+        })
+        .expect("the setting deal's layout is one of the 756,756");
+    assert_eq!(world.hand(Seat::S3), deal[3].difference(tiles(&["4-5", "6-6"])));
+    // There double-dummy play makes the bid, the partner shedding his count on
+    // the bidder's doubles: the bidder's side scores 36.
+    let position = OpenPosition::at(&cleared, &world).unwrap();
+    assert_eq!(Solver::new(cleared.physics()).value(&position, Objective::Make), 1);
+    assert_eq!(bidder_side_points(&position, None), 36);
+    // The difference is the partner's play. Keeping the 3-2, always a legal
+    // choice, sets the bidder even though he sees all four hands: 31, short of
+    // the 35 and the 36. This one world is why he cannot force the make.
+    assert_eq!(bidder_side_points(&position, Some(tile("3-2"))), 31);
+}
+
+#[test]
+fn hand_26_can_be_set_once_trumps_are_cleared_though_double_dummy_makes() {
+    // S-0123-b, from the position after trick 2 with the trumps gone.
+    let frame = hand_26_trumps_cleared().frame(Seat::S0);
     assert_eq!((frame.count_worlds(), frame.to_make_and_set()), (756_756, (18, 8)));
     // Double dummy makes in every world: the bound says "cannot be set".
     assert!(double_dummy_reaches(&frame, Goal::Make).iter().all(|made| *made));
