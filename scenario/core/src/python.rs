@@ -2,13 +2,14 @@
 //! `scenario/compiled.py` drives.
 //!
 //! Interface: `Core(rungs, utility, seed, field, field_eps, draw,
-//! draw_budget, convention, reading, tie)` with rungs as (n_worlds, horizon, floor), `field`
+//! draw_budget, convention, reading, tie, tie_band)` with rungs as (n_worlds, horizon, floor), `field`
 //! the field net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the
 //! stochastic field's ε, `draw` "uniform" or "posterior" (the live rung's
 //! worlds), `convention` None or (name, send, read), the live seat's
 //! overlay (`scenario.convention`), and `reading` None or (likelihood,
 //! margin, eps), the posterior's likelihood as the net's set (`scenario.planner.Reading`), and `tie` "lowest" or "margin"
-//! (the tie rule among a decision's exact ties, `Config.tie`);
+//! (the tie rule among a decision's exact ties, `Config.tie`) with
+//! `tie_band` its band δ (`Config.tie_band`, margin only);
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
@@ -125,7 +126,7 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None, tie="lowest"))]
+    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None, tie="lowest", tie_band=0.0))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
@@ -138,6 +139,7 @@ impl Core {
         convention: Option<(String, bool, bool)>,
         reading: Option<(String, i64, f64)>,
         tie: &str,
+        tie_band: f64,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -204,9 +206,15 @@ impl Core {
                 other => return Err(PyValueError::new_err(format!("unknown likelihood {other:?}"))),
             },
         };
+        if !(0.0..=1.0).contains(&tie_band) {
+            return Err(PyValueError::new_err("a tie band lies in [0, 1]: it is a make probability"));
+        }
         let tie = match tie {
+            "lowest" if tie_band > 0.0 => {
+                return Err(PyValueError::new_err("a tie band widens make-then-margin's tied set: it needs tie=\"margin\""))
+            }
             "lowest" => Tie::Lowest,
-            "margin" if make => Tie::Margin,
+            "margin" if make => Tie::Margin { band: tie_band },
             "margin" => return Err(PyValueError::new_err("make-then-margin breaks ties of the make utility")),
             other => return Err(PyValueError::new_err(format!("unknown tie rule {other:?}"))),
         };

@@ -43,7 +43,9 @@
 //! then margin — the tie with the best weighted bidder-team margin for the
 //! decider's side under the plan (one root action's outcomes), then the
 //! lowest id. It acts at every decision (the live root, a modeled rung's, a
-//! convention sender's), never inside the plan (#120).
+//! convention sender's), never inside the plan (#120). Make then margin's
+//! band δ widens the tied set to every root action within δ of the best q,
+//! read from the decider's side; δ = 0 is the exact tie.
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
@@ -383,13 +385,16 @@ impl Reading {
     }
 }
 
-/// The tie rule ≺ among a decision's exact ties (`Config.tie`).
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// The tie rule ≺ among a decision's ties (`Config.tie`, `Config.tie_band`).
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Tie {
-    /// The lowest tile id.
+    /// The lowest tile id among the exact ties.
     Lowest,
-    /// Make, then margin: the tie with the best mean margin under the plan, then the lowest id.
-    Margin,
+    /// Make, then margin: among the root actions whose q lies within `band`
+    /// of the best (q ≥ best − band for the bidding side, q ≤ best + band for
+    /// a setter; 0 is the exact tie), the best mean margin under the plan,
+    /// then the lowest id.
+    Margin { band: f64 },
 }
 
 /// How a decision's live scenarios were drawn, and whether a convention chose its tile.
@@ -737,14 +742,16 @@ impl Inv {
     }
 
     /// The decision among root actions valued `q` (ascending by tile): the
-    /// best, and among exact ties the tie rule's pick (`_Invocation.choose`).
+    /// best, and among its ties (exact, or within the band) the tie rule's
+    /// pick (`_Invocation.choose`).
     fn choose(&mut self, ctx: &mut Ctx, q: &[(u8, f64)]) -> u8 {
         let tile = best(q, self.maximize);
-        if ctx.cfg.tie == Tie::Lowest {
+        let Tie::Margin { band } = ctx.cfg.tie else {
             return tile;
-        }
+        };
         let top = q.iter().find(|&&(t, _)| t == tile).expect("the best is a root action").1;
-        let tied: Vec<u8> = q.iter().filter(|&&(_, v)| v == top).map(|&(t, _)| t).collect();
+        let near = |v: f64| if self.maximize { v >= top - band } else { v <= top + band };
+        let tied: Vec<u8> = q.iter().filter(|&&(_, v)| near(v)).map(|&(t, _)| t).collect();
         if tied.len() < 2 {
             return tile;
         }

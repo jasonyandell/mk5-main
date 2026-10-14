@@ -4,7 +4,10 @@ best weighted bidder-team margin for the decider's side under the plan, then
 the lowest id. Referee = core to the bit under `margin` (tile, q, nodes,
 analyses, batch); the margin tile is the one an independent reading of the
 analysis's outcomes names; a one-rung player's q is untouched, so the rule
-moves the tile only inside the tied set; the rule does fire."""
+moves the tile only inside the tied set; the rule does fire. The band δ
+(`Config.tie_band`) widens margin's tied set to the near ties: δ = 0 is the
+exact rule, and a band's pick is bit-identical across engines and is the one
+the analysis names within δ of the best q."""
 import pytest
 import scenario_core
 
@@ -120,3 +123,71 @@ def test_lowest_is_the_default_and_margin_is_make_only():
     assert parse_walt_spec("k0,n8").walt.config.tie == "lowest"
     with pytest.raises(ValueError):
         parse_walt_spec("k0,n8,u=points,t=margin")
+
+
+BAND = [
+    Config((Rung(12, None),), "make", seed=1, tie="margin", tie_band=0.05),
+    Config((Rung(4, 4), Rung(10, None)), "make", seed=3, tie="margin", tie_band=0.1),   # modeled rung's band too
+    Config((Rung(16, None, floor=6),), "make", seed=5, field=NET, tie="margin", tie_band=0.07),
+]
+
+
+def test_core_matches_the_referee_within_a_band():
+    moved = 0   # the band is not idle against the exact rule: parity is not vacuous
+    for cfg in BAND:
+        ref, fast = Walt(cfg, belief=_belief), CompiledWalt(cfg, belief=_belief)
+        exact = CompiledWalt(_with(cfg, tie_band=0.0), belief=_belief)
+        states = _pip_states(6, seed=111 + cfg.seed, min_plays=8)
+        batch = fast.decide_batch(states, [31] * len(states))
+        for state, got in zip(states, batch):
+            want = ref.decide(state, 31)
+            _same(want, got)
+            _same(want, fast.decide(state, 31))
+            assert ref.nodes == fast.nodes
+            _same_analysis(ref.analyze(state, 31), fast.analyze(state, 31))
+            moved += want[0] != exact.decide(state, 31)[0]
+    assert moved > 0
+
+
+def _band_pick(a, maximize: bool, band: float) -> int:
+    """The band read off an analysis: among the q within δ of the best, the
+    best Σ_r w_r·m_r, then the lowest tile."""
+    top = (max if maximize else min)(a.q.values())
+    tied = sorted(t for t, v in a.q.items() if (v >= top - band if maximize else v <= top + band))
+    m = {t: sum(w * x for w, x in zip(a.weights, a.outcomes[t])) for t in tied}
+    best = (max if maximize else min)(m.values())
+    return min(t for t in tied if m[t] == best)
+
+
+def test_a_band_picks_the_analysis_reading_and_zero_is_the_exact_rule():
+    """One rung: q is the lowest rule's under any band. The band's tile is
+    the one the outcomes name within δ, and δ = 0 decides as `t=margin`."""
+    moved = 0
+    for base, band in ((Config((Rung(12, None),), "make", seed=1, tie="margin"), 0.1),
+                       (Config((Rung(16, None, floor=6),), "make", seed=5, field=NET, tie="margin"), 0.2)):
+        exact, zero = CompiledWalt(base), Walt(_with(base, tie_band=0.0))
+        wide = CompiledWalt(_with(base, tie_band=band))
+        for state in _pip_states(40, seed=101 + base.seed, min_plays=8):
+            bid = 30 + state.decl_id % 5
+            a, b = exact.analyze(state, bid), wide.analyze(state, bid)
+            assert a.q == b.q and a.outcomes == b.outcomes
+            seat = (state.trick_leader + len(state.current_trick)) % 4
+            assert b.tile == _band_pick(b, seat % 2 == state.bidder % 2, band)
+            assert a.tile == _band_pick(a, seat % 2 == state.bidder % 2, 0.0) == zero.decide(state, bid)[0]
+            moved += a.tile != b.tile
+    assert moved > 0
+
+
+def test_a_band_is_margin_only_and_parses():
+    assert Config((Rung(4, None),)).tie_band == 0.0
+    for bad in (dict(tie_band=0.01), dict(tie="margin", tie_band=-0.01), dict(tie="margin", tie_band=1.5)):
+        with pytest.raises(ValueError):
+            Config((Rung(4, None),), "make", **bad)
+    for tie, band in (("lowest", 0.01), ("margin", -0.01), ("margin", 1.5)):
+        with pytest.raises(ValueError):
+            scenario_core.Core([(4, None, 1)], "make", 0, tie=tie, tie_band=band)
+    c = parse_walt_spec("k0,n8,t=margin:0.01").walt.config
+    assert (c.tie, c.tie_band) == ("margin", 0.01)
+    assert parse_walt_spec("k0,n8,t=margin").walt.config.tie_band == 0.0
+    with pytest.raises(ValueError):
+        parse_walt_spec("k0,n8,t=lowest:0.01")

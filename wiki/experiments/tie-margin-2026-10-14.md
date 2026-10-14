@@ -185,6 +185,10 @@ study's scripts, so this checkout's arena is unchanged.
   contract exploit unchanged (+0.0038 against +0.0040), and on the two-rung player is +4.1
   points a hand with marks unsettled (+0.08 [−0.47, +0.65]).
 
+- **A near-tie band does not beat exact ties** ([[tie-band-2026-10-14]]). Margin within 0.01
+  of the best make probability, against this rule, wins 49.1% [47.7, 50.4] of games to 250. Its
+  marks are +0.02 [−0.050, +0.086]. Exact ties stand.
+
 ## Caveats
 
 - The margin past a decided contract is the tape's ([[scenario-player]] § the trace, #107),
@@ -216,5 +220,5 @@ Tests: `scenario/tests/test_tie.py`.
 
 ## Links
 
-[[scenario-player]] · [[metasplat-2026-10-13]] · [[book-head-to-head-2026-10-13]] ·
+[[scenario-player]] · [[tie-band-2026-10-14]] · [[metasplat-2026-10-13]] · [[book-head-to-head-2026-10-13]] ·
 [[book-study-2026-10-12]]
