@@ -102,7 +102,7 @@ SUITES = [
     Suite("eslint", TS, [(".", NPM("lint"))], ("node",),
           lambda: which("node", "npm"), what="eslint src"),
     # STRATEGY-FUSION FENCE: the guard reads every code file, so any code change triggers it.
-    Suite("fence", TS + PY + ("scenario/", "zeb/", "silas/", "scripts/", "CLAUDE\\.md$",
+    Suite("fence", TS + PY + ("scenario/", "zeb/", "silas/", "scripts/", "tournament/", "CLAUDE\\.md$",
                               "wiki/topics/strategy-fusion-fence\\.md$"),
           [(".", ["npx", "vitest", "--run", "src/tests/architecture/strategy-fusion-fence.test.ts"])],
           ("node",), lambda: which("node", "npm"),
@@ -132,6 +132,9 @@ SUITES = [
           what="pytest walt/tests, then its three gate scripts"),
     Suite("py-oracle-era", PY, [(".", PYTEST("arena", "champion", "gus", "otis/tests", "w42"))], ("venv",),
           lambda: which("uv", "cargo"), what="pytest arena champion gus otis w42 (CPU)"),
+    Suite("py-tournament", PY + ("tournament/",), [(".", PYTEST("tournament/tests"))], ("venv",),
+          lambda: which("uv", "cargo", "git", "node"),
+          what="pytest tournament/tests: the rating fit, concurrent git writers, kill-and-resume"),
     Suite("forge", ("forge/",), [(".", PYTEST("forge"))], ("venv", "forge"), no_cuda,
           what="pytest forge (CUDA only)"),
     Suite("burl", ("burl/",), [], not_run=(
