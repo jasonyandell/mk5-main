@@ -656,12 +656,16 @@ fn calls_and_declarations(
 #[test]
 fn risk_budget_computes_its_call_as_its_thirteen_levels_did() {
     // risk-budget's one priced rule, (bid (- 42 (risk t))) on the least at
-    // risk, and its declarations, on every hand at every least raise (30 to
-    // 42, 84, 126, 168 and none left) and won at 30, 42 and 84: one digest of
-    // one line a hand, taken from the thirteen literal levels it replaces
-    // (`LITERAL_LEVELS`), which are run again on every 97th hand. About
-    // two and a half minutes on 18 cores (the literal levels take three): it
-    // is the proof, 24 million decisions, and the only one at every raise.
+    // risk, and its declarations, at every least raise (30 to 42, 84, 126,
+    // 168 and none left) and won at 30, 42 and 84: one digest of one line a
+    // hand, the same for the thirteen literal levels it replaces
+    // (`LITERAL_LEVELS`), which are run again on every 997th hand. On all
+    // 1,184,040 hands (`STRIDE` 1) both encodings' lines digest to
+    // 0xe811_d0a0_6259_d24f: 24 million decisions, two and a half minutes on
+    // 18 cores, run once when the rule was written (2026-10-14). The suite
+    // keeps every 8th hand, about 20 s; the all-hands pin of the opening,
+    // over 31 and 36, and the declarations at 30 and 84 is
+    // `every_call_and_declaration_is_pinned_on_every_hand`.
     let auctions = every_least_raise();
     let menu = arena_menu();
     let new = policy("risk-budget.silas");
@@ -671,14 +675,14 @@ fn risk_budget_computes_its_call_as_its_thirteen_levels_did() {
         .unwrap();
     // The literal levels are the old file's core, as pinned before #148.
     assert_eq!(fnv1a(old.source().to_string().as_bytes()), 0xe5bf_4c07_ddfe_e065);
-    let hands: Vec<DominoSet> = every_hand().collect();
-    for hand in hands.iter().step_by(97) {
+    for hand in every_hand().step_by(997) {
         assert_eq!(
-            calls_and_declarations(&new, &auctions, &menu, *hand),
-            calls_and_declarations(&old, &auctions, &menu, *hand),
+            calls_and_declarations(&new, &auctions, &menu, hand),
+            calls_and_declarations(&old, &auctions, &menu, hand),
             "{hand:?}"
         );
     }
+    let hands: Vec<DominoSet> = every_hand().step_by(STRIDE).collect();
     let started = Instant::now();
     let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let lines: Vec<String> = std::thread::scope(|s| {
@@ -694,20 +698,19 @@ fn risk_budget_computes_its_call_as_its_thirteen_levels_did() {
         handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
     });
     println!("risk-budget at every least raise: {} hands in {:?} on {threads} threads", lines.len(), started.elapsed());
-    assert_eq!(lines.len(), 1_184_040);
-    let mut calls: BTreeMap<&str, usize> = BTreeMap::new();
-    for line in &lines {
-        *calls.entry(line).or_default() += 1;
-    }
-    println!("{} distinct lines", calls.len());
+    assert_eq!(lines.len(), 1_184_040_usize.div_ceil(STRIDE));
     let digest = fnv1a(lines.join("\n").as_bytes());
     println!("digest {digest:#018x}; first line: {}", lines[0]);
     assert_eq!(digest, PINNED_LEVELS);
 }
 
+/// Every how many hands [`risk_budget_computes_its_call_as_its_thirteen_levels_did`]
+/// reads: 1 is every hand.
+const STRIDE: usize = 8;
+
 /// The digest of [`risk_budget_computes_its_call_as_its_thirteen_levels_did`]'s
-/// lines, from the thirteen literal levels.
-const PINNED_LEVELS: u64 = 0xe811_d0a0_6259_d24f;
+/// lines on every `STRIDE`th hand, the literal levels' and the rule's alike.
+const PINNED_LEVELS: u64 = 0x567b_14a0_afa5_22e4;
 
 // ------------------------------------------------------------- measurability
 

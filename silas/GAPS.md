@@ -299,8 +299,10 @@ definition whose body is one number, called where a number goes (`(risk t)`, so 
 spelled once in the prelude where it was spelled twice; `less-at-risk` is gone, `(< (risk
 u) (risk t))` says it). What it moved:
 - `risk-budget`'s thirteen levels are one rule; its calls at every least raise and its
-  declarations won at 30, 42 and 84 are pinned equal to the literal levels' on all 1,184,040
-  hands (`tests/bidding.rs`), and the old text is held to the old pinned core;
+  declarations won at 30, 42 and 84 were equal to the literal levels' on all 1,184,040
+  hands (one digest, run once; the suite keeps every 8th hand and the all-hands pin of the
+  opening, over 31 and over 36, `tests/bidding.rs`), and the old text is held to the old
+  pinned core;
 - its pin moved (`tests/core_pins.rs`), the prelude's `risk` is pinned new, `less-at-risk`
   is removed; `risk-at-most` and every other pin, `marginal-30` among them, are unchanged.
 Not moved: `never-32-or-33` bids 34 over a 32 or 33 and the least raise else, a call that

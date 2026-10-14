@@ -478,9 +478,11 @@ auction): `(rule priced (bid (- 42 (risk t))) (least t (risk t) (suit-at-least t
   body is one number, called where a number goes: the prelude's `(risk t)`, spelled once
   where the risk was spelled twice; `less-at-risk` is gone.
 - **Proof.** Every call at every least raise (30 to 42, 84, 126, 168, none left) and every
-  declaration won at 30, 42 and 84, pinned equal to the thirteen literal levels' on all
-  1,184,040 hands, the old text held to its old pinned core (`silas/tests/bidding.rs`);
-  the semantics case by case in `silas/tests/computed.rs`.
+  declaration won at 30, 42 and 84, equal to the thirteen literal levels' on all 1,184,040
+  hands (one digest, 24 million decisions, 2.5 minutes on 18 cores, run once); the suite
+  keeps every 8th hand at every raise and every hand at the opening and over 31 and 36,
+  and holds the old text to its old pinned core (`silas/tests/bidding.rs`); the semantics
+  case by case in `silas/tests/computed.rs`.
 - **Pins.** `risk-budget`'s moved; the prelude's `risk` is new and `less-at-risk` removed;
   `risk-at-most` and every other pin unchanged (`silas/tests/core_pins.rs`).
 - **Elsewhere.** No other policy computes a call: `never-32-or-33` would need a maximum

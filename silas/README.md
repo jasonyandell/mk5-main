@@ -722,8 +722,10 @@ policies:
   trick is at risk without the trump double, bid 42 less the risk to 12, try
   30 with two offs to 17, and 84 on the 84 shape: three bidding rules, the
   levels one computed call, whose every call at every least raise and every
-  declaration won at 30, 42 and 84 is pinned equal to the thirteen literal
-  levels' on all 1,184,040 hands (`tests/bidding.rs`). It is its reading on
+  declaration won at 30, 42 and 84 was the thirteen literal levels' on all
+  1,184,040 hands (one digest, run once; the suite keeps every 8th hand at
+  every raise, and every hand at the opening and over 31 and 36,
+  `tests/bidding.rs`). It is its reading on
   every hand. Its opening call over all 1,184,040 hands, exactly: a pass on 647,781
   (54.7%, S-0053-d's "about half"); 30 on 260,860, nearly half the bids; 30,
   31, 35 and 36 on 61.5% of them; 32 and 33 on 5.3%; 84 on 26,565. On the
