@@ -38,6 +38,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 492fef99 | constellations resurrected as Zeb's late-hand table: a 0.5 µs form in the core, exact under a structural field, not under the net; the late-hand ladder settles by level 3]
+
+**Added:** [[constellations-2026-10-14]]. **Touched pages:** [[scenario-player]] [[endgame-equivalence-census]]. Code: `scenario/core/src/constellation.rs`, `scenario/constellation.py`, `field_train` warm start. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/constellations/`.
+
 ## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
 
 **Added:** [[strategy-fusion-fence]] (the ruling, the inventory, the sanctioned uses). **Updated:** [[silas]], [[the-wall]], [[splat-search-bounds]], [[strategy-fusion]], [[intermediate-ai]], `index-topics.md`, `CLAUDE.md` (Hard rules). Guard: `src/tests/architecture/strategy-fusion-fence.test.ts`.
