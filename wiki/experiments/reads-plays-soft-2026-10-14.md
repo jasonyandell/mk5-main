@@ -322,6 +322,42 @@ native ratios (an estimate, not a measurement), the reader would put a trick-1 d
 already smaller than the opening lead's. Exposing it would be a new option and an API change for Jason to
 decide on. Nothing here changes a default.
 
+## Replication 2
+
+The first replication failed its consistent primary and passed its uniform secondary. This run
+asks the uniform reader alone, as the primary, on fresh deals. It is the last run of this arm
+unless it passes. This section's pre-registration was written and committed before any
+measured batch.
+
+### Pre-registration
+
+Fixed in `scenario/reads_soft.py` (`REPLICATION_2`, `REP2_*`):
+
+- **Fresh deals.** Base seeds 301–354 (marks games) and 401–424 (games to 250). None overlaps a
+  seed of #145 (1–7, pilot 900–904) or of the first replication (101–118, 201–209, pilots 990
+  and 991); the published runs of both were checked. The timing pilot (995, 996) is excluded.
+- **The same players and table.** Two uniform readers (ε = 0.28, margin 2^22) against two plain
+  deployed Zebs `k0,n512,F=margin_d250k_h128x64,f=16`, with `bid30` bidders and paired halves.
+  The A/A arm (plain Zeb at planner seed 1 against plain Zeb) runs at the same seeds in the
+  same run.
+- **Primary.** The uniform reader's margin against plain Zeb, in marks per game (a game pair's
+  sum / 2). The 95% bootstrap runs over game pairs (4,000 resamples, seed 42), as before
+  (`replicate --primary uniform`). **Success means the interval's lower bound is above 0.**
+- **Registered secondaries.**
+  - The uniform reader's share of games won in the book's game to 250 points (chance 0.5).
+  - The A/A margin, which should cover 0.
+  - The uniform reader's settled points per game.
+- **Size and load.** 54 batches × 6 game pairs = **324 game pairs** per marks arm, and 24 × 6 =
+  144 pairs of games to 250. Another heavy experiment shares the machine, so at most 6 batches
+  run at once. The pilot put 8 pairs at about 120 s with three batches running; 6 pairs aims
+  at under 150 s.
+- **Batch-drop rule.** Every batch runs under `timeout 300`. A batch that exits nonzero (an
+  overrun exits 124) is dropped, not rerun, and listed here. The effects use the game pairs
+  present. No effect is computed until every batch has run: no early stop, no top-up.
+- **Exploratory, not registered.** Uniform − A/A on shared pairs; the per-batch signs; a pool
+  with the earlier uniform runs. That pool carries their winner's curse, since their passing
+  is why this run exists.
+
 ## Data
 
 Public in `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/reads-plays-soft/` (CC0,
