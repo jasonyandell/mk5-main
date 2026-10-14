@@ -84,13 +84,25 @@ def best_at(fc, points: int) -> tuple[int, float]:
     return decl, p
 
 
-# The deployed field's law (Zeb bids, Zeb plays, both sides), measured in the
-# baseline block of wiki/experiments/match-aware-bidding-2026-10-14.md
-# (HF zeb/match-aware-bidding/, model/). Filled by scratch/met/fit_model.py.
-ZEB_LAW = HandLaw(((0.0, 0.5), (0.0, 0.5)))
-_KEYS = [(h, k) for h in ("none", "partner", "opp") for k in range(4)]
-ZEB_ODDS = Odds(keep={(*k, band): 0.85 for k in _KEYS for band in ("low", "high")}, over_set=0.3,
-                pass_ours={k: 0.45 for k in _KEYS})
+# The deployed field's law (Zeb bids at n160 and plays, both sides), fitted on the FIT block
+# of wiki/experiments/match-aware-bidding-2026-10-14.md (384 games, 4,251 hands; HF
+# zeb/match-aware-bidding/, out/model.json) and frozen before the primary was planned.
+# win_flip[w][f]: w = the first shaker's side took the mark, f = the next first shaker
+# sits on the other side. A cell under 20 turns holds its holder's pooled value.
+ZEB_LAW = HandLaw(((0.1682, 0.3312), (0.1701, 0.3305)))
+ZEB_ODDS = Odds(
+    keep={("none", 0, "low"): 1.0, ("none", 0, "high"): 1.0, ("none", 1, "low"): 0.9212,
+          ("none", 1, "high"): 0.9913, ("none", 2, "low"): 0.938, ("none", 2, "high"): 0.9891,
+          ("none", 3, "low"): 0.8818, ("none", 3, "high"): 0.9871, ("opp", 0, "low"): 1.0,
+          ("opp", 0, "high"): 1.0, ("opp", 1, "low"): 0.9901, ("opp", 1, "high"): 1.0,
+          ("opp", 2, "low"): 0.9901, ("opp", 2, "high"): 1.0, ("opp", 3, "low"): 0.9901,
+          ("opp", 3, "high"): 0.9901},
+    over_set=0.1727,
+    pass_ours={("none", 0): 0.5049, ("none", 1): 0.4285, ("none", 2): 0.5053, ("none", 3): 0.4445,
+               ("partner", 0): 0.8254, ("partner", 1): 0.7963, ("partner", 2): 0.81,
+               ("partner", 3): 0.81, ("opp", 0): 0.1688, ("opp", 1): 0.1746, ("opp", 2): 0.2037,
+               ("opp", 3): 0.1799},
+)
 
 
 def price(v, odds: Odds, us: int, them: int, nd: int, key: tuple[str, int], c0: int, p_c0: float,
