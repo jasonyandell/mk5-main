@@ -179,6 +179,11 @@ study's scripts, so this checkout's arena is unchanged.
   (55% of games to 250). The case is points, not marks: under a marks-only scoring the
   change is free and pointless. Adopting it changes bytes at ties, so it needs a new zeb
   version and a parity fixture position where the rule moves the tile.
+- **Cross-checked against #77's exploiter** ([[exploiter-endgames-2026-10-14]] § Cross-check
+  result): the rule cuts what knowing Zeb is worth at three-trick endgames from +0.50 to
+  +0.29 [+0.24, +0.34] margin points (paired drop +0.21 [+0.14, +0.28]), leaves the
+  contract exploit unchanged (+0.0038 against +0.0040), and on the two-rung player is +4.1
+  points a hand with marks unsettled (+0.08 [−0.47, +0.65]).
 
 ## Caveats
 
@@ -187,7 +192,7 @@ study's scripts, so this checkout's arena is unchanged.
   rule, about the cost of `points`.
 - The rule acts at every decision a Walt makes. For deployed Zeb (one rung over the net)
   that is the root alone. For a two-rung player it also changes the modeled seats; that
-  player was not graded with the rule.
+  player was graded later, too coarsely to settle marks ([[exploiter-endgames-2026-10-14]]).
 - Step 1's rows are the face-off's sample of Zeb's own pour trajectories, re-planned by
   today's Zeb, so tied sets are today's player's. The pour's 51.1% is quoted, not
   recomputed.
