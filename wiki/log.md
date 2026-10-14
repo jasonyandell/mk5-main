@@ -49,6 +49,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | 2bae0410 | the fly connectome as a 42 player: viable as a toy, not as a player; pre-registered reservoir pilot (5-5's seat, exact uniform posterior): real wiring ties or trails rewired/ER nulls, mb +1.7 [+1.0, +2.4] mnat vs rewired]
 
 **Added:** [[topics/fly-connectome-42|fly-connectome-42]] (sources: FlyWire v783, Shiu LIF, Eon's embodied fly, FlyGM; options ranked; pre-registered at 2bae0410), `scenario/flybrain_pilot.py`. **Updated:** [[scenario-player]] (Links), `index-topics.md`, `index.md`. Data: connectome downloaded to `scratch/fly/data/` (MIT code, FlyWire CC BY 4.0), not committed.
+
 ## [2026-10-14 | d432a216 | the regulars' table (#149): a regular who learns bidding caution within a game; interaction with a varied bidder +0.04 [−0.15, +0.22] marks/game, A/A −0.02; null; the auction in the reading's draw, both engines]
 
 **Added:** [[regulars-table-2026-10-14]] (pre-registered at d432a216; 288 batches, none dropped). **Updated:** [[topics/book-authority|book-authority]], [[topics/book-assumptions|book-assumptions]] (A1 row, #149 result, order), [[scenario-player]], `index-experiments.md`. Code: `Situation.auction` (planner.py + core), `arena/regulars.py`, `VariedBidder`, the engine's `remembers` hook, `scenario/regulars.py`. Data: `book/regulars-table/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
