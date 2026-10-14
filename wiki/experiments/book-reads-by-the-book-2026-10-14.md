@@ -1,10 +1,17 @@
 ---
-title: The book's own table — opponents who read the book player by the book (2026-10-14)
+title: Opponents who read the book player by the book, within one hand (2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
 status: complete
 ---
+
+> **Read under [[book-authority]] (2026-10-14).** This page first called its table "the book's
+> own table". It is not. The book's opponent remembers the player across hands and changes its
+> own play in response; this reader does neither. It uses the book only to place tiles within a
+> hand, and its partner-side reading is off (A1, A2; [[book-assumptions]]). The null below is
+> narrow: within-hand tile location by the book's verdict sets is not where the book's edge
+> lives. The numbers are unchanged.
 
 ## Question
 
@@ -21,8 +28,8 @@ book exploit them more than plain Zeb does?
 
 ## The answer, in short
 
-- **The book's own table changes nothing for the book.** Against Zebs that read it by the book,
-  the book player loses as it does against plain Zeb: −1.31 [−1.56, −1.06] marks a game and
+- **A within-hand reader by the book changes nothing for the book player.** Against Zebs that read it by the book,
+  the book player scores as it does against plain Zeb: −1.31 [−1.56, −1.06] marks a game and
   33% of games, against −1.27 on the same deals. The paired difference is −0.04 [−0.27, +0.19]
   marks a game, and −2.3 [−6.4, +1.9] points of game share to 250. Both are null.
 - **So the converse is null too.** A Zeb that reads the book seats by the book exploits them no
@@ -185,9 +192,10 @@ point):
 
 ## What this means
 
-- **The opponent the book assumes does not rescue it.** A reader who knows the book's rules
-  (the verdict set, read as an event) neither punishes the book player's predictability nor is
-  fooled by it. The book's loss to Zeb is the same at its own table.
+- **A reader who places tiles by the book's rules, within one hand, does not move the book
+  player's score.** That reader takes the verdict set as an event. It neither punishes the book
+  player's predictability nor is fooled by it. The opponent the book assumes is not seated:
+  one who remembers across hands and changes its own play (A1, #149).
 - **Reading by a wrong model is costly, and the cost is measurable.** The same reader that
   breaks even against the book loses half a mark a game to Zeb. Policy blindness, in Jason's
   phrase, is real here, but it is Zeb's: a reader who expects the book is thrown off by a
@@ -200,6 +208,17 @@ point):
   (`analyze.py`, seed 147), checked against the published blocks' numbers.
 - Batches ran beside other sessions' work (load average 27–54 at the start). 44 batches:
   median 99 s, slowest 176 s.
+
+## What our model leaves out
+
+- **Memory across hands** (A1). The reader forgets the book player between hands and never
+  changes its own bidding or play to exploit what it reads, which is the book's S-0080-c (against an
+  overbidder, pass and set him). The measurement is #149.
+- **The book team reading itself** (A2). Its partner-side worlds stay uniform. The measurement
+  is #150.
+- **Exploitation rather than location.** A model of an opponent can be used to place tiles,
+  which is the only use measured here, or to choose plays that the opponent's predictable
+  responses make better. The second use is unmeasured.
 
 ## Caveats
 

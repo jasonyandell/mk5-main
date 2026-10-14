@@ -2,7 +2,7 @@
 title: The Wall
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: active
 ---
 
@@ -20,6 +20,12 @@ The project's central question, stated precisely. Every era since January 2026 i
 > **2026-10-13 — the fence.** Every clairvoyant (double-dummy) solver left in
 > the repo is fenced, named and findable by grep; an exact information-state
 > solve is welcome ([[strategy-fusion-fence]]).
+>
+> **2026-10-14: the book is the authority.** *Winning 42* is right until our tools can see
+> why. A gap between the book and Zeb is the scope of our model, never a verdict on the book
+> ([[book-authority]]). The "where the book is wrong" framing of the teaching half below is
+> oracle-era history. The book's implicit assumptions, and the measurements that would hold
+> them, are in [[book-assumptions]].
 
 ## The wall
 

@@ -3,7 +3,7 @@
 **Read [CLAUDE.md](CLAUDE.md)** — it is the single entrypoint for any agent working in this
 repo: north star, buddy-mode collaboration stance, wiki-first knowledge base, issue
 tracking (GitHub issues; beads is retired), hard rules (no legacy, no skipped tests,
-scratch/ hygiene, ES modules, GPU-only forge), quality gates, and the session-completion
+scratch/ hygiene, ES modules, GPU-only forge, the strategy-fusion fence, the book is the authority), quality gates, and the session-completion
 protocol.
 
 The project's knowledge base is the wiki at `wiki/` — consult it before reading code, and
