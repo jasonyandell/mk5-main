@@ -20,7 +20,7 @@ from scenario.planner import READ_ENUM, Config, Reading, Rung, Situation, Walt, 
 from scenario.record import empty_record, remaining_hand
 from scenario.rules import bit, mask_of, rules_for
 from scenario.tests.test_compiled import _same_analysis
-from scenario.tests.test_field import NET
+from scenario.tests.test_field import NET, _pip_states
 from scenario.tests.test_posterior import LATE, SAMPLED, _positions
 
 EARLY = _positions([(3, 2), (5, 3), (12, 3), (14, 2)])   # fibers above READ_ENUM: rejection
@@ -230,11 +230,130 @@ def test_the_reading_is_validated_and_named_by_the_spec(tmp_path):
     with pytest.raises(ValueError):
         Config((Rung(8, None),), field=NET, reading=Reading("uniform", 1))    # a reading needs the posterior
     with pytest.raises(ValueError):
-        scenario_core.Core([(8, None, 1)], "make", 0, NET.to_bytes(), 0.0, "uniform", 10, None, ("uniform", 1))
+        scenario_core.Core([(8, None, 1)], "make", 0, NET.to_bytes(), 0.0, "uniform", 10, None, ("uniform", 1, 0.0))
     with pytest.raises(ValueError):
-        scenario_core.Core([(8, None, 1)], "make", 0, NET.to_bytes(), 0.0, "posterior", 10, None, ("bayes", 1))
+        scenario_core.Core([(8, None, 1)], "make", 0, NET.to_bytes(), 0.0, "posterior", 10, None, ("bayes", 1, 0.0))
     path = tmp_path / "net.npz"
     NET.save(path)
     p = parse_walt_spec(f"k0,n8,F={path},d=posterior,r=uniform:{MARGIN}")
     assert p.walt.config.reading == Reading("uniform", MARGIN) and f"reading=uniform:{MARGIN}" in repr(p)
     assert parse_walt_spec(f"k0,n8,F={path},d=posterior").walt.config.reading is None
+
+
+# -- the soft reading (#145): ε/n + (1 − ε)·[tile ∈ A]·w never empties --------------
+
+RANDOM = _pip_states(6, seed=17, min_plays=6) + _pip_states(4, seed=29, min_plays=16)   # sharp sets often fail these
+
+SOFT_CONFIGS = [
+    Config((Rung(16, None, 6),), "make", seed=3, field=NET, draw="posterior", draw_budget=20_000,
+           reading=Reading("consistent", MARGIN, 0.1)),
+    Config((Rung(12, None, 4),), "points", seed=5, field=NET, draw="posterior", draw_budget=20_000,
+           reading=Reading("uniform", MARGIN, 0.25)),
+    Config((Rung(16, 6, 6),), "make", seed=7, field=NET, draw="posterior", draw_budget=40,
+           reading=Reading("uniform", 0, 0.05)),                          # the budget runs out
+]
+
+
+def test_compiled_matches_the_planner_under_a_soft_reading():
+    """Referee = core to the bit under ε > 0, on every draw path, on hands
+    the net played and on hands played at random (where the sharp set is
+    often empty); every weight is positive, and the only fallbacks are a
+    rejection budget running out."""
+    paths = {"exact": 0, "enumerated": 0, "rejection": 0}
+    fell = 0
+    for cfg in SOFT_CONFIGS:
+        ref, fast = Walt(cfg), CompiledWalt(cfg)
+        for state in EARLY + SAMPLED + LATE + RANDOM:
+            a = ref.analyze(state, 30)
+            _same_analysis(a, fast.analyze(state, 30))
+            assert (ref.nodes, ref.proposals, ref.fallbacks) == (fast.nodes, fast.proposals, fast.fallbacks)
+            size = _fiber(state)
+            path = "exact" if size <= cfg.rungs[-1].n_worlds else "enumerated" if size <= READ_ENUM else "rejection"
+            if path != "rejection":
+                assert not ref.fallbacks and all(w > 0 for w in a.weights)
+            paths[path] += not ref.fallbacks
+            fell += ref.fallbacks
+    assert min(paths.values()) >= 3 and fell >= 1
+
+
+def test_the_soft_posterior_never_empties():
+    """Where the sharp set leaves no world (the posterior falls back to the
+    uniform), the soft one weighs every world positively, the real deal
+    among them, and its draw does not fall back."""
+    emptied = 0
+    for state in RANDOM + LATE:
+        sit = situation_from_state(state, 30)
+        sharp = Walt(Config((Rung(512, None, 16),), field=NET, draw="posterior", reading=Reading("uniform", 0)))
+        soft = Walt(Config((Rung(512, None, 16),), field=NET, draw="posterior", reading=Reading("uniform", 0, 0.1)))
+        worlds = Walt(Config((Rung(512, None, 16),), field=NET)).analyze(state, 30).worlds
+        real = tuple(remaining_hand(state, s) for s in range(4))
+        assert all(x > 0 for x in soft.reading_likelihood(sit, worlds + [real]))
+        soft.analyze(state, 30)
+        sharp.analyze(state, 30)
+        if _fiber(state) <= READ_ENUM:
+            assert not soft.fallbacks
+            emptied += sharp.fallbacks
+    assert emptied >= 2
+
+
+def test_soft_readings_reduce_to_the_sharp_set_and_to_f_sigma():
+    """ε = 0 is the sharp set, world for world; at margin 0 (the net's move
+    alone, no exact ties) the soft consistent and uniform likelihoods are
+    both F_σ's `field_likelihood` at the same ε; and a set of every legal
+    tile under the uniform likelihood is 1/n per play whatever ε."""
+    for state in SAMPLED + RANDOM:
+        sit = situation_from_state(state, 30)
+        worlds = Walt(Config((Rung(64, None, 16),), field=NET)).analyze(state, 30).worlds
+
+        def like(reading):
+            return Walt(Config((Rung(64, None, 16),), field=NET, draw="posterior", reading=reading)
+                        ).reading_likelihood(sit, worlds)
+
+        field = Walt(Config((Rung(64, None, 16),), field=NET, field_eps=0.25, draw="posterior")
+                     ).field_likelihood(sit, worlds)
+        for lk in ("consistent", "uniform"):
+            assert like(Reading(lk, MARGIN, 0.0)) == like(Reading(lk, MARGIN))
+            assert like(Reading(lk, 0, 0.25)) == pytest.approx(field, rel=1e-12, abs=0)
+        assert like(Reading("uniform", EVERY, 0.3)) == pytest.approx(like(Reading("uniform", EVERY)), rel=1e-12)
+
+
+def test_restricted_choice_reproduces_silas_softened():
+    """On the lumps study's deal with every seat read as allowing every legal
+    tile, the soft uniform likelihood weighs each play ε/n + (1 − ε)/n = 1/n,
+    so it reproduces Silas's uniform counts (615/2708, 715/2031) at any ε."""
+    decl, bidder, viewer = 6, 0, 2
+    rules = rules_for(decl)
+    plays = ((0, _tile("5-4")), (1, _tile("5-0")))
+    rec = empty_record(bidder)
+    for _, t in plays:
+        rec = rec.advance(t, rules)
+    partner = mask_of(_tile(n) for n in ("6-2", "6-1", "6-0", "2-2", "4-3", "4-2", "3-2"))
+    unseen = [t for t in range(28) if not (partner | bit(plays[0][1]) | bit(plays[1][1])) >> t & 1]
+    sit = Situation(decl, viewer, 30, bidder, rec, plays)
+    fives = {_tile(n) for n in ("5-5", "5-3", "5-2", "5-1")}
+    from itertools import combinations
+    worlds = []
+    for left in combinations(unseen, 6):
+        rest = [t for t in unseen if t not in left]
+        worlds.append((mask_of(rest[:6]), mask_of(left), partner, mask_of(rest[6:])))
+    holds55 = [w[1] >> _tile("5-5") & 1 for w in worlds]
+    only = [not any(w[1] >> t & 1 for t in fives) for w in worlds]
+    for eps in (0.05, 0.5, 1.0):
+        walt = Walt(Config((Rung(16, None, 4),), field=NET, draw="posterior",
+                           reading=Reading("uniform", EVERY, eps)))
+        like = walt.reading_likelihood(sit, worlds)
+        assert abs(sum(x for x, e in zip(like, holds55) if e) / sum(like) - 615 / 2708) < 1e-12
+        assert abs(sum(x for x, e in zip(like, only) if e) / sum(like) - 715 / 2031) < 1e-12
+
+
+def test_a_soft_reading_is_validated_and_named_by_the_spec(tmp_path):
+    with pytest.raises(ValueError):
+        Reading("uniform", 1, 1.5)
+    with pytest.raises(ValueError):
+        scenario_core.Core([(8, None, 1)], "make", 0, NET.to_bytes(), 0.0, "posterior", 10, None,
+                           ("uniform", 1, -0.1))
+    path = tmp_path / "net.npz"
+    NET.save(path)
+    p = parse_walt_spec(f"k0,n8,F={path},d=posterior,r=uniform:{MARGIN}:0.1")
+    assert p.walt.config.reading == Reading("uniform", MARGIN, 0.1)
+    assert f"reading=uniform:{MARGIN}:0.1" in repr(p)

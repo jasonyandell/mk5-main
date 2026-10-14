@@ -862,6 +862,13 @@ best — so a play weighs [tile ∈ A] or [tile ∈ A]/|A| (restricted choice), 
 likelihoods (−0.09 and +0.01 marks/game, restricted choice +0.10 [−0.15, +0.36]); it changes
 10–11% of exact-fiber moves, on the 5-5 and 6-4 first, but the net's set fits a Zeb's record so
 poorly late in the hand that half of trick 6 falls back to the uniform: [[reads-plays-2026-10-13]].
+**Softened, it pays (2026-10-14, #145):** `Reading.eps` (arena `r=<likelihood>:<margin>:<eps>`,
+default 0, both engines bit-identical) weighs a play ε/n + (1 − ε)·[tile ∈ A]·w, F_σ's ε over the
+set, so the posterior never empties. At ε = 0.28 (fitted to Zeb's choices) the fallback rate is 0 at
+every trick. The reader gains +0.23 [+0.05, +0.41] marks/game at a table of seats that play the
+model, and +0.30 / +0.29 against plain Zeb (A/A control −0.03). Restricted choice stays null at
+both tables, so the gain is the soft posterior's, not the set size's. Not turned on in Zeb:
+[[reads-plays-soft-2026-10-14]].
 
 **A convention overlay, default off (2026-10-12).** The book's conventions
 (`scratch/book/CANDIDATES.md`) are joint deviations, so the overlay has two halves
@@ -1068,6 +1075,7 @@ net already plays its best move 96% of the time; a warm fine-tune toward it is i
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
 [[reads-plays-2026-10-13]] (Zeb reads the other seats' plays: both likelihoods null in marks) ·
+[[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table and against Zeb; restricted choice null) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]
