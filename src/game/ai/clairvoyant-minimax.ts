@@ -1,5 +1,14 @@
 /**
- * Minimax Evaluator for Perfect Information Game Trees
+ * STRATEGY-FUSION FENCE. A clairvoyant (perfect-information, double-dummy)
+ * minimax: it sees all four hands. The game's intermediate AI (monte-carlo.ts)
+ * runs it on each sampled world and averages, which is strategy fusion: each
+ * world gets its own best line, so the average credits plays no seat can find.
+ * Tolerated only as the game's opponent AI; never a research player and never
+ * a value for one. Allowed instead: information-state solving (Zeb's plan,
+ * Silas's (certain-make)). No compile-time gate: the app's AI imports it on
+ * the live path, so the fence is this token, the name and the guard test
+ * (src/tests/architecture/strategy-fusion-fence.test.ts). The ruling:
+ * wiki/topics/strategy-fusion-fence.md.
  *
  * Searches the game tree to terminal state (hand completion) using
  * alpha-beta pruning. Used by PIMC to evaluate each sampled world.
@@ -23,7 +32,7 @@ const SIMULATION_OPTIONS: ExecuteActionOptions = { skipHistory: true };
 /**
  * Configuration for minimax search
  */
-export interface MinimaxConfig {
+export interface ClairvoyantMinimaxConfig {
   /** Enable alpha-beta pruning (default: true) */
   alphaBeta?: boolean;
 
@@ -37,7 +46,7 @@ export interface MinimaxConfig {
 /**
  * Result of minimax evaluation
  */
-export interface MinimaxResult {
+export interface ClairvoyantMinimaxResult {
   /** Final points for team 0 */
   team0Points: number;
 
@@ -48,14 +57,16 @@ export interface MinimaxResult {
   nodesExplored: number;
 }
 
-const DEFAULT_CONFIG: Required<MinimaxConfig> = {
+const DEFAULT_CONFIG: Required<ClairvoyantMinimaxConfig> = {
   alphaBeta: true,
   moveOrdering: 'heuristic',
   debug: false
 };
 
 /**
- * Evaluate a game state using minimax to hand completion.
+ * STRATEGY-FUSION FENCE: evaluate a game state using clairvoyant minimax to
+ * hand completion. Every seat sees every hand; averaged over sampled worlds it
+ * is strategy fusion (wiki/topics/strategy-fusion-fence.md).
  *
  * Assumes all hands are visible (perfect information within the sampled world).
  * Returns the game-theoretic optimal outcome for both teams.
@@ -65,11 +76,11 @@ const DEFAULT_CONFIG: Required<MinimaxConfig> = {
  * @param config Optional configuration
  * @returns Terminal scores and search statistics
  */
-export function minimaxEvaluate(
+export function clairvoyantMinimaxEvaluate(
   state: GameState,
   ctx: ExecutionContext,
-  config?: MinimaxConfig
-): MinimaxResult {
+  config?: ClairvoyantMinimaxConfig
+): ClairvoyantMinimaxResult {
   const cfg = { ...DEFAULT_CONFIG, ...config };
   let nodesExplored = 0;
 
@@ -278,7 +289,7 @@ function orderMoves(
  */
 export function createTerminalState(
   initialState: GameState,
-  result: MinimaxResult
+  result: ClairvoyantMinimaxResult
 ): GameState {
   return {
     ...initialState,

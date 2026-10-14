@@ -1,5 +1,7 @@
 /**
- * Tests for the Minimax Evaluator
+ * Tests for the clairvoyant minimax evaluator. STRATEGY-FUSION FENCE: it sees
+ * all four hands; these tests hold it to its own definition, never to a seat's
+ * value (wiki/topics/strategy-fusion-fence.md).
  *
  * Verifies that minimax correctly finds optimal play in various scenarios.
  *
@@ -13,12 +15,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { minimaxEvaluate, createTerminalState } from '../../game/ai/minimax';
+import { clairvoyantMinimaxEvaluate, createTerminalState } from '../../game/ai/clairvoyant-minimax';
 import { createSimulationContext } from '../helpers/executionContext';
 import { StateBuilder } from '../helpers/stateBuilder';
 import { ACES, SIXES } from '../../game/types';
 
-describe('minimaxEvaluate', () => {
+describe('clairvoyantMinimaxEvaluate', () => {
   // Shared context for all tests - simulation mode (AI players, no consensus blocking)
   const ctx = createSimulationContext();
 
@@ -44,7 +46,7 @@ describe('minimaxEvaluate', () => {
         points: 0
       }));
 
-      const result = minimaxEvaluate(state, ctx);
+      const result = clairvoyantMinimaxEvaluate(state, ctx);
 
       // Verify we explored some nodes
       expect(result.nodesExplored).toBeGreaterThan(0);
@@ -58,7 +60,7 @@ describe('minimaxEvaluate', () => {
         .inScoringPhase([25, 17])
         .build();
 
-      const result = minimaxEvaluate(state, ctx);
+      const result = clairvoyantMinimaxEvaluate(state, ctx);
 
       expect(result.team0Points).toBe(25);
       expect(result.team1Points).toBe(17);
@@ -85,8 +87,8 @@ describe('minimaxEvaluate', () => {
         points: 0
       }));
 
-      const withPruning = minimaxEvaluate(state, ctx, { alphaBeta: true });
-      const withoutPruning = minimaxEvaluate(state, ctx, { alphaBeta: false });
+      const withPruning = clairvoyantMinimaxEvaluate(state, ctx, { alphaBeta: true });
+      const withoutPruning = clairvoyantMinimaxEvaluate(state, ctx, { alphaBeta: false });
 
       // Both should find same optimal result
       expect(withPruning.team0Points).toBe(withoutPruning.team0Points);
@@ -117,7 +119,7 @@ describe('minimaxEvaluate', () => {
         points: 0
       }));
 
-      const result = minimaxEvaluate(state, ctx);
+      const result = clairvoyantMinimaxEvaluate(state, ctx);
 
       // Minimax should find a valid result
       expect(result.nodesExplored).toBeGreaterThan(0);
@@ -145,8 +147,8 @@ describe('minimaxEvaluate', () => {
         points: 0
       }));
 
-      const withOrdering = minimaxEvaluate(state, ctx, { moveOrdering: 'heuristic' });
-      const noOrdering = minimaxEvaluate(state, ctx, { moveOrdering: 'none' });
+      const withOrdering = clairvoyantMinimaxEvaluate(state, ctx, { moveOrdering: 'heuristic' });
+      const noOrdering = clairvoyantMinimaxEvaluate(state, ctx, { moveOrdering: 'none' });
 
       // Same optimal result
       expect(withOrdering.team0Points).toBe(noOrdering.team0Points);
@@ -193,7 +195,7 @@ describe('minimaxEvaluate', () => {
         points: 0
       }));
 
-      const result = minimaxEvaluate(state, ctx);
+      const result = clairvoyantMinimaxEvaluate(state, ctx);
 
       // Minimax should find optimal play
       expect(result.nodesExplored).toBeGreaterThan(0);
