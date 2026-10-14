@@ -23,7 +23,7 @@ import torch
 from burl.eval.decision_dataset import BurlDecision, _replay_state
 
 
-DEFAULT_CORPUS = Path("/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt")
+DEFAULT_CORPUS = Path(__file__).resolve().parents[2] / "gus/data/corpus_eval_20.pt"
 DECISIONS_PER_GAME = 28
 
 

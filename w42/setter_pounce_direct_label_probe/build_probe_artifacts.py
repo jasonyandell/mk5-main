@@ -469,10 +469,10 @@ def main() -> int:
             "w42/setter_defense_claim_validation/summary.json",
             "w42/strategy_tags_v1_map/detector_map.json",
             "wiki/experiments/w42-final-empirical-strategy-report.md",
-            "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt field inspection",
+            "gus/data/corpus_eval_20.pt field inspection",
         ],
         "current_corpus_inspection": {
-            "eval_corpus": "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt",
+            "eval_corpus": "gus/data/corpus_eval_20.pt",
             "rows": 560,
             "available_item_fields": [
                 "tokens",

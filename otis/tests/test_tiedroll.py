@@ -29,11 +29,12 @@ import pytest
 import torch
 
 from otis import tiedroll as TR
+from gus.hf_data import resolve
+from gus.model.tiny import save_tiny_student
 from otis.fates import COUNT_TILE_PIPS, NeutralGame, parse_game_fates
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-EVAL_CORPUS = REPO_ROOT / "gus" / "data" / "corpus_v2_eval.pt"
-STUDENT = REPO_ROOT / "gus" / "adapters" / "v3_consistency_10000g.pt"
+EVAL_CORPUS = "gus/data/corpus_v2_eval.pt"  # local, else the public HF corpus (gus.hf_data)
 ORACLE = REPO_ROOT / "forge" / "models" / "domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt"
 
 NOTRUMP = 9
@@ -45,25 +46,23 @@ NOTRUMP = 9
 
 
 @pytest.fixture(scope="module")
-def tied_policy():
-    if not STUDENT.exists():
-        pytest.skip("gus student adapter not present")
-    return TR.load_tied_policy(str(STUDENT), "cpu")
+def tied_policy(tmp_path_factory):
+    """A tiny seeded student: every property below (information-state purity,
+    legality, determinism, paired pricing) holds for any weights, so the 14 MB
+    trained adapter is not needed."""
+    adapter = save_tiny_student(tmp_path_factory.mktemp("student") / "tiny.pt", auction=False)
+    return TR.load_tied_policy(str(adapter), "cpu")
 
 
 @pytest.fixture(scope="module")
 def clair_policy():
-    if not ORACLE.exists():
-        pytest.skip("oracle checkpoint not present")
     return TR.load_clairvoyant_policy(str(ORACLE), "cpu", max_batch=8)
 
 
 @pytest.fixture(scope="module")
 def a_decision():
     """A trick-0/1 void-capable decision from the eval corpus (game, d_idx, P)."""
-    if not EVAL_CORPUS.exists():
-        pytest.skip("eval corpus not present")
-    blob = torch.load(str(EVAL_CORPUS), map_location="cpu", weights_only=False)
+    blob = torch.load(str(resolve(EVAL_CORPUS)), map_location="cpu", weights_only=False)
     games = blob["results"]
     picks = TR._find_void_capable_decisions(games, 1, min_worlds=8)
     gi, d_idx, P = picks[0]

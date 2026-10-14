@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 # ── paths ─────────────────────────────────────────────────────────────────────
-PROJECT_ROOT = Path("/Users/jason/code/mk5-main")
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
 JOINED_TABLE = PROJECT_ROOT / "w42/joined_claim_row_model_table/joined_claim_action_rows.csv"
 LABELED_HANDSHAPE = PROJECT_ROOT / "w42/phase4_sequence_handshape_tests/labeled_handshape_action_rows.csv"
 SEQ_CONTRASTS = PROJECT_ROOT / "w42/phase4_sequence_handshape_tests/paired_contrasts.csv"

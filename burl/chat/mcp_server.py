@@ -14,7 +14,7 @@ workbench. Same backend, different transport.
 Wire it into Claude Code with:
 
     claude mcp add burl-chat \
-        /Users/jason/code/mk5-main/.venv/bin/python \
+        <repo>/.venv/bin/python \
         -m burl.chat.mcp_server
 
 The FastAPI server must be running (default http://127.0.0.1:8001).

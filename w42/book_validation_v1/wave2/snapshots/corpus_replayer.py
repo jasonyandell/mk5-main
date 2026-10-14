@@ -11,13 +11,14 @@ BIDDER assumption: In the legacy corpus, player 0 always wins the auction
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Iterator
 
 import torch
 
 # Ensure project root on path before any forge imports
-PROJECT_ROOT = "/Users/jason/code/mk5-main"
+PROJECT_ROOT = str(Path(__file__).resolve().parents[4])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 

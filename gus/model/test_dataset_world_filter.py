@@ -19,6 +19,7 @@ import pytest
 import torch
 
 from forge.eq.generate.types import DecisionRecordGPU, GameRecordGPU
+from gus.hf_data import resolve
 from gus.model.dataset_seq_world import (
     JointWorldFullDataset,
     JointWorldFullIterable,
@@ -256,17 +257,15 @@ def test_iterable_length_cache_invalidated_by_filter_state(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Integration against the real April eval corpus (skip if absent)
+# Integration against the real April eval corpus (fetched from HF if absent)
 # ---------------------------------------------------------------------------
 
-_CORPUS = Path("/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt")
+_CORPUS = "gus/data/corpus_eval_20.pt"  # local, else the public HF corpus (gus.hf_data)
 
 
 @pytest.fixture(scope="module")
 def eval_dataset():
-    if not _CORPUS.exists():
-        pytest.skip(f"corpus not present: {_CORPUS}")
-    return JointWorldFullDataset(str(_CORPUS), seed=0, filter_invalid_worlds=True)
+    return JointWorldFullDataset(str(resolve(_CORPUS)), seed=0, filter_invalid_worlds=True)
 
 
 def test_integration_constructs(eval_dataset):

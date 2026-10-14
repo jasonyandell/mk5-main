@@ -34,7 +34,7 @@ from otis.model import N_FATE_CLASSES, N_TILES, N_TRICKS
 from otis.play_model import FEATURE_DIM, FEATURE_SCHEMA_VERSION, featurize_play_state
 
 # Read-only source data lives in the sibling otis-v0 worktree.
-SIBLING = Path("/Users/jason/code/mk5-main/.claude/worktrees/otis-v0/scratch/otis-night")
+SIBLING = Path(__file__).resolve().parents[1] / ".claude/worktrees/otis-v0/scratch/otis-night"
 DEFAULT_PARQUET_DIR = SIBLING
 DEFAULT_CORPUS_GLOB = str(SIBLING / "corpus" / "chunk_selfplay_*.snapshots.json")
 

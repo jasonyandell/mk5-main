@@ -43,7 +43,7 @@ def _ensure_bridge_on_path() -> None:
     import sys
 
     p = str(
-        Path("/Users/jason/code/mk5-main/scratch/belief_trajectory_rollout/diagnostic")
+        Path(__file__).resolve().parents[3] / "scratch/belief_trajectory_rollout/diagnostic"
     )
     if p not in sys.path:
         sys.path.insert(0, p)

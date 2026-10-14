@@ -33,7 +33,7 @@ import pandas as pd
 import torch
 
 # ── Project root ──────────────────────────────────────────────────────────────
-PROJECT_ROOT = Path("/Users/jason/code/mk5-main")
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 OUT_DIR = PROJECT_ROOT / "w42/book_validation_v1/wave1/t42-ybo6_distribution_lens_reranker"

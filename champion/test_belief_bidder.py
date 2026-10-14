@@ -28,10 +28,10 @@ from arena.auction import PASS, BidContext, legal_bids
 from champion.belief_bidder import BeliefBidder
 from forge.bidding.schema import EVAL_DECLS
 from forge.oracle.rng import deal_from_seed
+from gus.model.tiny import save_tiny_student
 from gus.model.auction import N_AUCTION_FEATURES, auction_feature_vector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BELIEF_ADAPTER = PROJECT_ROOT / "scratch/champion-run/run24_measure/v2_auction_s0.pt"
 DEFAULT_ORACLE = (
     PROJECT_ROOT / "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt"
 )
@@ -245,19 +245,18 @@ def test_pure_oracle_uses_uniform_weights(oracle_and_device):
 # Test 3: the loop CAN move (belief-conditioned bid != hand-only bid)         #
 # --------------------------------------------------------------------------- #
 
-def test_belief_bidder_differs_from_hand_only(oracle_and_device):
-    """A real belief adapter must shift at least one bid vs the hand-only net:wp
+def test_belief_bidder_differs_from_hand_only(oracle_and_device, tmp_path):
+    """A belief adapter (here a tiny seeded one) must shift at least one bid vs the hand-only net:wp
     bidder. If it NEVER differs over 20 hands, the self-play loop is a no-op
     (CRITICAL) — surface that explicitly."""
     model, dev = oracle_and_device
-    if not BELIEF_ADAPTER.exists():
-        pytest.skip(f"belief adapter missing: {BELIEF_ADAPTER}")
+    belief_adapter = save_tiny_student(tmp_path / "belief.pt", auction=True)
 
     from champion.belief import load_belief
     from champion.bidder import GusBidder, NetPointsEvaluator
     from champion.utility import MarksToSeven
 
-    belief_model, is_voids = load_belief(str(BELIEF_ADAPTER), dev)
+    belief_model, is_voids = load_belief(str(belief_adapter), dev)
     belief_bidder = BeliefBidder(
         belief_model, model, is_voids=is_voids, device=dev, n_samples=32,
         utility=MarksToSeven(), maximize=True,
@@ -300,13 +299,12 @@ def test_belief_bidder_differs_from_hand_only(oracle_and_device):
 # Test 4: sanity — strong bids, trash passes, bids always legal               #
 # --------------------------------------------------------------------------- #
 
-def test_strong_bids_trash_passes(oracle_and_device):
+def test_strong_bids_trash_passes(oracle_and_device, tmp_path):
     model, dev = oracle_and_device
-    if not BELIEF_ADAPTER.exists():
-        pytest.skip(f"belief adapter missing: {BELIEF_ADAPTER}")
+    belief_adapter = save_tiny_student(tmp_path / "belief.pt", auction=True)
     from champion.belief import load_belief
 
-    belief_model, is_voids = load_belief(str(BELIEF_ADAPTER), dev)
+    belief_model, is_voids = load_belief(str(belief_adapter), dev)
     bidder = BeliefBidder(
         belief_model, model, is_voids=is_voids, device=dev, n_samples=32,
     )
@@ -321,13 +319,12 @@ def test_strong_bids_trash_passes(oracle_and_device):
     assert b_strong in _ctx(STRONG_HAND).legal
 
 
-def test_all_bids_legal_or_pass(oracle_and_device):
+def test_all_bids_legal_or_pass(oracle_and_device, tmp_path):
     model, dev = oracle_and_device
-    if not BELIEF_ADAPTER.exists():
-        pytest.skip(f"belief adapter missing: {BELIEF_ADAPTER}")
+    belief_adapter = save_tiny_student(tmp_path / "belief.pt", auction=True)
     from champion.belief import load_belief
 
-    belief_model, is_voids = load_belief(str(BELIEF_ADAPTER), dev)
+    belief_model, is_voids = load_belief(str(belief_adapter), dev)
     bidder = BeliefBidder(
         belief_model, model, is_voids=is_voids, device=dev, n_samples=16,
     )

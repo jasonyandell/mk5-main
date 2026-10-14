@@ -23,7 +23,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = "/Users/jason/code/mk5-main"
+PROJECT_ROOT = str(Path(__file__).resolve().parents[4])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
