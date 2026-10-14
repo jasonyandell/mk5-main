@@ -41,7 +41,7 @@ One tile per decision across indistinguishable worlds: mk5 Lemma W (`10-theory.m
 
 ## Probe measurements, 2026-10-13
 
-Every run under `timeout 300`. Code: `scratch/splat-search/` in the main checkout (gitignored, not published).
+Every run under `timeout 300`. Code and outputs: `scratch/splat-search/`, published 2026-10-14 as `zeb/splat-search/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10).
 
 ### Legal moves pruned by dominance
 

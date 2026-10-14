@@ -2,7 +2,7 @@
 title: HuggingFace Assets — the off-git shelf
 kind: topic
 first_seen: 2026-07-15
-last_updated: 2026-07-18
+last_updated: 2026-10-14
 status: active
 ---
 
@@ -13,54 +13,82 @@ secret; it's the opposite). HF is the
 durable home for anything too big for git — [[run-artifacts-policy]] governs
 the split. The established upload path is `scripts/hf_publish/upload.py`.
 
-## Datasets (4)
+## Datasets (19, inventoried 2026-10-14 by the Archive desk)
 
-- [`mk5-run-evidence`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence)
-  (public) — row-level run evidence mirrored out of git at repo-relative
-  paths ([[run-artifacts-policy]]): per-game CSVs, the guard-premium ledger,
-  `otis/models/*.pt` heads, all of `arena/results/`. Tag
-  `otis-night2-2026-07-15` pins the migration. Moved with the stock `hf`
-  CLI (see below); public means the dataset viewer + `hf://` paths
-  (DuckDB/pandas) read it with no token. Also holds the [[parlor]] salon
-  records under `parlor/`: raw seat session `.jsonl` logs plus mirrors of
-  the curated transcript and protocol, pinned at tag
-  [`parlor-session-1`](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence/tree/parlor-session-1/parlor)
-  ([[run-artifacts-policy]] § Conversation and session logs;
-  `parlor/bin/publish-session.sh` is the upload path).
+Sizes from the Hub's file metadata. Every dataset is public except
+`plunge-backups`. The license column is the card's front matter; four older
+repos declare none and a feed ask waits on Jason to make them CC0 (the
+science line, [[license-line]]).
 
-- [`texas-42-joint-world-corpus`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus)
-  (public) — the original joint-world tensor corpus behind Gus belief training
-  ([[joint-world-tensor]], [[gus]]). Superseded for new work by v2 after the
-  contamination finding.
-- [`texas-42-joint-world-corpus-v2`](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2)
-  (public) — the clean regenerated deck from otis night 2: 1.04B worlds,
-  0 invalid, Bayes ceiling 40.119% ([[otis-phase-r]],
-  [[belief-bayes-ceiling]]). Written by `forge/eq/regen_corpus_v2.py`.
-- [`mk5-fleet-payload`](https://huggingface.co/datasets/jasonyandell/mk5-fleet-payload)
-  — the zeb fleet-ops payload bundle
-  ([[zeb-fleet-ops]]).
+| repo | size | license | what | hub |
+|---|---|---|---|---|
+| [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k) | 36.2 GB | CC0 | the Zeb pour, 5 × 50k deals, Parquet + raw + 3 nets | [[scenario-player]] |
+| [texas-42-zeb-pour-200k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-200k), [texas-42-zeb-pour](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour) | 29.0 + 7.2 GB | CC0 | superseded by the 250k pour; retiring them is Jason's call | [[publish-data-to-huggingface]] |
+| [texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour) | 0.76 GB | CC0 | the k1 Walt pour, margin utility | [[scenario-player]] |
+| [texas-42-walt-pour-make](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour-make) | 0.72 GB | CC0 | the k1 Walt pour, make utility (recovered 2026-10-14) | [[scenario-player]] |
+| [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10) | 1.4 GB | CC0 | October's studies, one directory each: `book/`, `zeb/`, `research-night/`, `posterior-arena/`, `endgames-o2/`, `tidy-arena/` | [[book-study-2026-10-12]], [[scenario-player]] |
+| [texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07) | 4.9 GB | CC0 | the oracle and LLM era's evidence (Burl harvests and STaR runs, champion runs, jud, Gus adapters, burl-perf, w42, family hands, resume smoke, candlewax) | [[burl]], [[jud]], [[gus]], [[champion-ladder]] |
+| [texas-42-walt-lanes-2026-08-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-lanes-2026-08-09) | 0.67 GB | CC0 | `~/data/texas-42`: the partnership gym, relational and policy-synthesis campaigns, the sunshine cycles, the Plunge evidence lanes | texas-42 `experiments/partnership`, `experiments/kiln` |
+| [texas-42-walt-speed-2026-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-speed-2026-09) | 0.49 GB | CC0 | texas-42 `experiments/`: full-game-speed results and docs, the response ladder's inputs, the walt42x intake | texas-42 |
+| [texas-42-walt-archive](https://huggingface.co/datasets/jasonyandell/texas-42-walt-archive) | 1.9 GB | none | the walt-factory probe era (2026-08), the kiln snapshots, the tiny-net ladder tarballs | texas-42 `walt/ARCHIVE.md` |
+| [texas-42-walt-response-ladder](https://huggingface.co/datasets/jasonyandell/texas-42-walt-response-ladder) | 0.24 GB | CC0 | the compiled-policy head-to-heads, curated | texas-42 |
+| [texas-42-walt-ladder-labels](https://huggingface.co/datasets/jasonyandell/texas-42-walt-ladder-labels) | 2.2 GB | CC0 | the tiny-net ladder's label piles | texas-42 |
+| [texas-42-tournament](https://huggingface.co/datasets/jasonyandell/texas-42-tournament), [texas-42-tournament-selftest](https://huggingface.co/datasets/jasonyandell/texas-42-tournament-selftest) | 1.6 MB | CC0 | the ladder's participants and faceoffs (live) | [[tournament]] |
+| [texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus), [-v2](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2) | 118.7 + 118.1 GB | MIT | Gus's joint-world corpora (the local `gus/data` is a copy of v1) | [[joint-world-tensor]], [[otis-phase-r]] |
+| [mk5-run-evidence](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence) | 89 MB | none, no card | w42 tactical replication, otis models, table42, arena results, champion, parlor | [[run-artifacts-policy]] |
+| [mk5-fleet-payload](https://huggingface.co/datasets/jasonyandell/mk5-fleet-payload) | 142 MB | none, no card | the fleet payload tarball | [[zeb-fleet-ops]] |
+| plunge-backups | 59 KB | private | age-encrypted D1 dumps of Plunge production; `RESTORE.md` inside | Plunge branch `claude/offsite-backup` |
 
-## Models
+## Models (106)
 
-- [`zeb-42`](https://huggingface.co/jasonyandell/zeb-42) — the released Zeb
-  model ([[zeb]]).
-- [`zeb-42-examples`](https://huggingface.co/jasonyandell/zeb-42-examples) —
-  its worked-examples companion.
+- [`zeb-42`](https://huggingface.co/jasonyandell/zeb-42) (MIT, 74 MB) — the
+  February Zeb model, the old meaning of the name ([[zeb]]);
+  [`zeb-42-examples`](https://huggingface.co/jasonyandell/zeb-42-examples)
+  (no license, 20.6 GB) — its 3,418 worked-example `.pt` files.
+- [`texas-42-walt-tiny-net-ladder`](https://huggingface.co/jasonyandell/texas-42-walt-tiny-net-ladder)
+  (CC0, 265 MB) — the tiny-net ladder weights (texas-42).
 
-**Adapter families** (~90 repos; each family keeps per-epoch `-ep1..3`
-or per-iter siblings):
+**Adapter families** (99 repos, 81 to 268 MB each; each family keeps per-epoch
+`-ep1..3` or per-iter siblings):
 
-| Family | Repos | Context |
-|---|---|---|
-| `gemma-4-e2b-texas42-star-iter0..27` | 28 | the STaR loop ([[star-10-iterations]]) |
-| `gemma-4-e2b-texas42-stage0*` (base, v3, v4-iter/ep, v5, v5-clean, kerry) | ~20 | Stage 0 SFT ladder ([[stage-0-v1-training]], [[kerry-adapter]]) |
-| `qwen3-1.7b-texas42-stage0-v5..v10-maskfix` | ~25 | the Qwen pivot ([[base-model-pivot-qwen]], [[v5-adapter]]) |
-| `qwen3-14b-texas42-stage0-v9*` | 4 | the 14B probe |
-| `qwen3-1.7b-texas42-rationalize-v1*` | 4 | the rationalize lane |
-| `gemma-4-e2b-texas42-burl-*` (smoke, iter0–4) | 7 | Burl iterations ([[burl]], [[burl-iter0-eval]]) |
+| Family | Repos | License | Context |
+|---|---|---|---|
+| `gemma-4-e2b-texas42-star-iter0..27` | 28 | none | the STaR loop ([[star-10-iterations]]) |
+| `gemma-4-e2b-texas42-stage0*` (base, v3, v4-iter/ep, v5, v5-clean, kerry) | 19 | none | Stage 0 SFT ladder ([[stage-0-v1-training]], [[kerry-adapter]]) |
+| `gemma-4-e2b-texas42-burl-*` (smoke, iter0–4) | 7 | none | Burl iterations ([[burl]], [[burl-iter0-eval]]) |
+| `qwen3-1.7b-texas42-stage0-v5..v10-maskfix` | 33 | apache-2.0 | the Qwen pivot ([[base-model-pivot-qwen]], [[v5-adapter]]) |
+| `qwen3-1.7b-texas42-rationalize-v1*` | 4 | apache-2.0 | the rationalize lane |
+| `qwen3-14b-texas42-stage0-v9*` | 4 | apache-2.0 | the 14B probe |
 
 **Not Texas 42** (listed for completeness): `gomoku-9x9`,
 `gomoku-13x13`, `rapfi-arm64` — a separate gomoku project.
+
+## What stayed local, and why (2026-10-14)
+
+- **Never public:** Roberson's *Winning 42* in every form (`scratch/winning42*`,
+  `~/code/winning42-archive`, `scratch/book/{BRIEF,CANDIDATES}.md`, the giveback
+  draft, the book-audit catalogs); the claude.ai conversation export
+  (`scratch/claudeai-archive`); the FlyWire connectome download
+  (`scratch/fly/data`, third-party); session handoff notes that quote Jason.
+- **Already on the Hub in another form:** the staged pour copies in
+  `scratch/hf` (35 GB), `gus/data` (111 GB, corpus v1), the atlas pour chunks
+  (15 GB, the 250k pour's `raw/`), the seven `~/data/texas-42/backups`
+  snapshots (the walt-archive's `kiln/snapshots`), the walt-factory archive's
+  curated set.
+- **Held for Jason:** `~/data/texas-42/seed-survey` (8.6 GB; by its own header a
+  deterministic, SHA-pinned function of committed inputs) and
+  `~/data/texas-42/walt-response-ladder` (5.9 GB raw; the curated export is up).
+- **Disposable:** cargo `target/` trees (full-game-speed 21 GB, walt, rob,
+  response-ladder), `lean/.lake`, venvs, the tournament's pinned builds.
+- **Lost before recovery** (wiki pages still cite them): `scratch/stochastic-field`,
+  `scratch/book/wave1/overlay-price.md`, the `otis-night2` scripts,
+  `equiv-census/class_cfr_census.py`, `brainstorm/criticality.py`,
+  `verify_sft_mask`, `lane-a/PREDICTIONS.md`, `PERF_GOAL.md`, `study141.rs`,
+  `burl-perf-2/iter26` and `iter29_phase2`, `x.json`. Recoverable elsewhere:
+  `viz/pour_viz_5` (the export is in git and on the Hub), the archaeology
+  evidence (from the private claude.ai export), the 250k pour notes (the card).
+  The Archive desk's notebook (`links/archive-notebook` in the feed,
+  [[standing-desks]]) keeps the full table.
 
 ## Moving evidence data
 

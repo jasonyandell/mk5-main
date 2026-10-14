@@ -72,7 +72,7 @@ The same null was reached earlier and independently in texas-42:
 - `wiki/idea-hierarchical-fibers.md` §7, the "rung 2" probe: 28% of 160,012 swaps change the outcome.
 - `walt/CENSUS-RULINGS.md:1364`, Corollary S-rigid (on paper): at the first play the seat-side quotient is the identity, 1,184,040 classes. "Compression in this project is bought with deadness."
 - `lean/Texas42/Transport.lean:95,201` (mechanized): only the identity and the 2<->3 pip swap preserve count.
-- 2026-10-13 re-measurement on random deals with the [[silas]] double-dummy solver (scratch code `scratch/detective-classes/`, not committed):
+- 2026-10-13 re-measurement on random deals with the [[silas]] double-dummy solver (scratch code `scratch/detective-classes/`, not committed; its sources are `zeb/detective-classes/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)):
 
 | position | compression | pattern pairs with differing values |
 |---|---|---|

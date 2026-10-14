@@ -443,6 +443,8 @@ python -u -m scenario.hf publish --repo jasonyandell/texas-42-walt-pour \
   --commit d94c3050
 ```
 
+Its make-utility twin (`pour_make_s1001_n512_d5000`, `pour_make_s1_n512`; the pour `scenario.reads_plays scale` reads) is [jasonyandell/texas-42-walt-pour-make](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour-make) (CC0, recovered 2026-10-14). The field nets and their training runs (`scratch/field_net/`, every version and sidecar, the seed-20001 pours) are `zeb/field_net/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10).
+
 **Leaves keep the margin (2026-10-10, issue #107).** Jason's framing: *the
 thing to maximize is pmake given options* — and the splat should let any
 utility be read after the fact. Before, a pour under `make` stored leaves as
