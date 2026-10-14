@@ -122,7 +122,10 @@ that Zeb would keep (option b).** Four reasons:
    current 192, run through a recurrent graph at every modeled move inside
    rollouts. That is roughly a 10⁴× slowdown per field call, for a prior with
    no argument for why it suits tiles.
-4. **The pilot (below):** *(filled in after the measured run)*.
+4. **The pilot (below) found nothing for the wiring to carry.** On the 5-5
+   belief task, the real connectome reads no better than the same graph
+   rewired or randomized. Through the mushroom body it reads slightly
+   *worse* (+1.7 mnat [+1.0, +2.4] against rewired).
 
 **Viable as a toy:** yes, and the toy is honest science. "Does real wiring
 read a card table better than scrambled wiring?" can be answered in a
@@ -210,9 +213,104 @@ gitignored and never committed):
 | `Completeness_783.csv` | same | same | `bbb847a4…a311` |
 | `neuron_annotations.tsv` | flyconnectome/flywire_annotations `supplemental_files/Supplemental_file1_neuron_annotations.tsv` | none stated on GitHub (Schlegel et al. 2024 supplement) | `b214970b…83cd` |
 
-## Pilot result
+## Pilot result (measured, `--n 6000 --seed 2`): a null for structure
 
-*(pending: the measured run)*
+The pre-registration above was committed at 2bae0410, before the run.
+
+| representation | acc | KL (mnat) |
+|---|---|---|
+| uniform (chance) | 0.329 | 87.4 |
+| hand sizes only | 0.356 | 81.8 |
+| raw bits, linear | 0.409 | 9.1 |
+| MLP 256 | **0.414** | **7.7** |
+| FlyHash 5,177 | 0.408 | 10.4 |
+| **mb: real** / rewired / er | 0.408 / 0.410 / 0.410 | **10.9** / 9.2 / 8.8 |
+| **wb: real** / rewired / er | 0.410 / 0.411 / 0.411 | **9.2** / 9.0 / 8.9 |
+| exact posterior (Bayes) | 0.419 | 0 |
+
+Paired differences on the 1,500 test positions, as mean [95% bootstrap].
+Negative KL means the first representation is better.
+
+| comparison | KL (mnat) | acc |
+|---|---|---|
+| mb: real − rewired | +1.7 [+1.0, +2.4] | −0.001 [−0.003, +0.000] |
+| mb: real − er | +2.0 [+1.3, +2.8] | −0.002 [−0.004, −0.001] |
+| wb: real − rewired | +0.2 [−0.1, +0.5] | −0.002 [−0.004, +0.000] |
+| wb: real − er | +0.3 [+0.1, +0.5] | −0.001 [−0.002, +0.000] |
+| mb: real − raw | +1.7 [+1.0, +2.5] | −0.001 [−0.003, +0.001] |
+| mb: real − FlyHash | +0.4 [−0.3, +1.2] | +0.000 [−0.002, +0.002] |
+| wb: real − raw | +0.1 [−0.1, +0.3] | +0.000 [−0.001, +0.001] |
+| wb: real − FlyHash | −1.2 [−1.7, −0.8] | +0.001 [−0.001, +0.003] |
+| MLP − raw | −1.4 [−2.1, −0.9] | +0.005 [+0.003, +0.007] |
+
+**By the pre-registered rule, the wiring does not earn its keep.** Neither
+arm beats its nulls. The mushroom-body arm is reliably *worse* than both
+nulls by 2 mnat, and the whole-brain arm ties them within 0.5 mnat. Neither
+arm beats raw bits read linearly. The one reservoir win, wb over FlyHash, is
+over the weakest baseline. The only representation that beats raw bits is the
+ordinary MLP, the field net's kind of model.
+
+**Why the mushroom body loses, as a reading, not a test.** Fly olfaction
+pools receptor neurons of one type into one glomerulus. 2,279 ORNs make
+about 53 types per side, so the 164 bits are squeezed through about 100
+channels before they reach a Kenyon cell. Bits that land in the same
+glomerulus are summed together. The rewired and ER graphs have no such
+funnel. This is the encoding problem made concrete: the fly's input wiring
+is built to merge receptors that report the same thing, and 42's bits are
+not that kind of thing. Activity at the Kenyon cells was also 15× larger on
+the real graph than on the rewired one (mean |x| 0.128 against 0.009, on a 64-position check). The
+readout is standardized, so this is a difference in regime, not in scale.
+
+**What this does not show.** The task has little headroom. Raw bits are
+already within 9 mnat of exact. Every representation recovers about 88–95%
+of the accuracy gap from chance to Bayes. So the test can see an edge of a
+few mnat and no more. A harder sub-task, where the linear readout sits far
+from the ceiling, could still find structure helping. It is one seed, one
+gain (G = 2), one step count (T = 4), and a rate model rather than Shiu's
+spiking LIF. A null here is a null for this reservoir on this task, not for
+connectomes in general.
+
+**Cost.** The real graph, pruned exactly to the neurons on input→readout
+paths of at most 3 edges, is 9,255 neurons and 0.79M edges for mb, and
+26,561 neurons and 3.4M edges for wb. The scrambled graphs do not prune:
+40–42k neurons and 5.5M edges. The measured run did not fit one 300-s
+process. It ran as five processes (`--graphs`/`--arms`; the seeds make that
+identical to one run, and the baselines matched bit for bit across all five)
+of about 2–4 min each. The machine's load average was about 60 from other
+sessions. The smoke run at 800 positions took 51 s. Pruning was checked
+exact against the unpruned network: max |Δx| 0 on real and 4·10⁻⁹ on
+rewired. The first one-process attempt at seed 2 hit the 300-s timeout after
+the real graph's two fits. It printed no scores, and the split run is the
+measured one.
+
+Commands:
+
+    for g in real rewired er; do for a in mb wb; do
+      timeout 300 python -u -m scenario.flybrain_pilot --data scratch/fly/data --n 6000 --seed 2 \
+        --graphs $g --arms $a --out scratch/fly/seed2-$g-$a.npz; done; done
+    python -u -m scenario.flybrain_pilot --data - --combine scratch/fly/seed2-*.npz
+
+(The run grouped `real` into one process, with both arms in it.)
+
+## What would come next (if anyone wants it)
+
+The pilot answers the cheap question. The fly's wiring is not a better
+feature map for 42's beliefs than random wiring of the same size. Two
+follow-ups are worth having on file; neither is urgent.
+
+- **Harder task, same nulls.** Use the field net's own target: the pour's
+  margin softmax, graded by regret under q
+  (`scenario/field_train.py`), on a few thousand rows of
+  `texas-42-zeb-pour-250k`. Readouts from the real, rewired and ER reservoirs
+  go against the deployed `margin_d250k_h128x64`. That test has headroom, and
+  it is the one Zeb would care about. Expect a null again. If one appeared,
+  it would be the only route to option (b).
+- **The mushroom body as a learner, not a map.** Option (c) as an
+  opponent-modeling experiment. A random sparse expansion (FlyHash) with a
+  three-factor, dopamine-style rule at the readout would learn one table's
+  habits online across hands. That belongs to the
+  [[book-assumptions]] program (A1/A2), and the pilot says to build it from
+  random wiring, not from the connectome.
 
 **Smoke test, disclosed** (`--n 800 --seed 1`; 200 test positions; not the
 measured run):
@@ -223,7 +321,8 @@ measured run):
 | KL (mnat) | 96.0 | 86.7 | 15.0 | 19.7 | 20.8 | 16.9 / 15.8 / 15.9 | 17.1 / 15.9 / 15.3 | 0 |
 
 It took 51 s wall time on the M5 Max CPU. Every reservoir sits within about
-2 mnat of the others and of raw bits.
+2 mnat of the others and of raw bits. The measured run shows the same picture
+with tighter intervals.
 
 ## Links
 

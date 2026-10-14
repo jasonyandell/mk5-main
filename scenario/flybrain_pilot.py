@@ -43,6 +43,12 @@ x_{t+1} = tanh(G·Ŵx_t + u), Ŵ = W with each row scaled to unit L1 norm,
 u = 1 on the sensory neurons of every set bit, G = 2, T = 4 steps.
 
     python -u -m scenario.flybrain_pilot --data scratch/fly/data [--n 6000] [--seed 1]
+        [--graphs real,rewired,er] [--arms mb,wb] [--out RUN.npz]
+    python -u -m scenario.flybrain_pilot --data - --combine RUN.npz [RUN.npz ...]
+
+A graph's variant and the input map are seeded per graph, so running the
+graphs or arms in separate processes (`--graphs`, `--arms`) gives the same numbers as one run;
+`--combine` reports the union of saved runs.
 
 The data are not in the repo: `Connectivity_783.parquet` and
 `Completeness_783.csv` from github.com/philshiu/Drosophila_brain_model (MIT
@@ -157,18 +163,44 @@ def variant(kind: str, n: int, pre, post, w, rng: np.random.Generator):
     raise ValueError(kind)
 
 
-def reservoir(n, pre, post, w, inputs, readout, X, rng, batch=1024):
+def hops(n, src, dst, start, limit):
+    """Breadth-first distance (in edges src → dst) from the `start` set, capped at limit + 1."""
+    import scipy.sparse as sp
+    A = sp.csr_matrix((np.ones(len(src), np.float32), (dst, src)), shape=(n, n))
+    dist = np.full(n, limit + 1)
+    dist[start] = 0
+    front = np.zeros(n, np.float32)
+    front[start] = 1
+    for k in range(1, limit + 1):
+        reached = (A @ front) > 0
+        new = reached & (dist > limit)
+        dist[new] = k
+        front = new.astype(np.float32)
+    return dist
+
+
+def reservoir(n, pre, post, w, inputs, readout, X, rng, batch=2048):
     import torch
-    torch.set_num_threads(max(1, torch.get_num_threads()))
     row_l1 = np.bincount(post, weights=np.abs(w), minlength=n)
     wn = (w / np.maximum(row_l1[post], 1e-9)).astype(np.float32)
-    W = torch.sparse_coo_tensor(torch.tensor(np.vstack([post, pre])), torch.tensor(wn), (n, n)
-                                ).coalesce().to_sparse_csr()
+    # Exact pruning: x_T on the readout depends on x_t(v) only when v lies on an
+    # input → readout path of at most T − 1 edges, so the rest is never computed.
+    on = (hops(n, pre, post, inputs, T) + hops(n, post, pre, readout, T)) <= T - 1
+    on[readout] = True
+    keep = on[pre] & on[post]
+    sub = -np.ones(n, np.int64)
+    sub[on] = np.arange(on.sum())
+    m = int(on.sum())
+    W = torch.sparse_coo_tensor(torch.tensor(np.vstack([sub[post[keep]], sub[pre[keep]]])),
+                                torch.tensor(wn[keep]), (m, m)).coalesce().to_sparse_csr()
+    print(f"    pruned to {m} neurons, {int(keep.sum())} edges", flush=True)
     # each input bit drives a fixed, disjoint random share of the input neurons
     owner = rng.permutation(len(inputs)) % X.shape[1]
-    U = np.zeros((n, X.shape[1]), np.float32)
-    U[inputs, owner] = 1.0
+    U = np.zeros((m, X.shape[1]), np.float32)
+    live = on[inputs]
+    U[sub[inputs[live]], owner[live]] = 1.0
     U = torch.tensor(U)
+    readout = sub[readout]
     out = []
     for b in range(0, len(X), batch):
         u = U @ torch.tensor(X[b:b + batch]).T
@@ -247,7 +279,17 @@ def main(argv=None):
     ap.add_argument("--data", required=True)
     ap.add_argument("--n", type=int, default=6000)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--graphs", default="real,rewired,er")
+    ap.add_argument("--arms", default="mb,wb")
+    ap.add_argument("--out", help="save every representation's per-position scores (.npz)")
+    ap.add_argument("--combine", nargs="+", help="report from saved .npz runs instead of running")
     args = ap.parse_args(argv)
+    if args.combine:
+        res = {}
+        for f in args.combine:
+            with np.load(f) as z:
+                res.update({k: (z[k][0], z[k][1]) for k in z.files})
+        return report(res)
     t0 = time.time()
     X, P, S = positions(args.n, args.seed)
     print(f"positions {len(X)} in {time.time() - t0:.1f}s", flush=True)
@@ -268,25 +310,35 @@ def main(argv=None):
     n, pre, post, w, sets = connectome(args.data)
     print(f"connectome: {n} neurons, {len(pre)} edges; " +
           ", ".join(f"{k} {len(v)}" for k, v in sets.items()), flush=True)
-    for g in ("real", "rewired", "er"):
+    for g in args.graphs.split(","):
         gp, gq, gw = variant(g, n, pre, post, w, np.random.default_rng(args.seed + 11))
         for arm, (inp, out) in {"mb": ("orn", "kc"), "wb": ("sens", "dn")}.items():
+            if arm not in args.arms.split(","):
+                continue
             F = reservoir(n, gp, gq, gw, sets[inp], sets[out], X, np.random.default_rng(args.seed + 13))
             live = (F.std(0) > 1e-6).mean()
             res[f"{arm}:{g}"], l2 = fit(F, P, tr, va, te)
             print(f"  {arm}:{g} live readout {live:.2f} l2 {l2} {time.time() - t0:.1f}s", flush=True)
+    if args.out:
+        np.savez(args.out, **{k: np.stack(v) for k, v in res.items()})
+    report(res)
+    print(f"\nwall {time.time() - t0:.1f}s")
 
+
+def report(res):
     print(f"\n{'representation':16s} {'acc':>7s} {'KL mnat':>8s}")
     for k, (acc, kl) in res.items():
         print(f"{k:16s} {acc.mean():7.4f} {kl.mean():8.1f}")
     rng = np.random.default_rng(0)
     print("\npaired differences on the test positions (mean [95% bootstrap]); KL: negative = first is better")
-    for a, b in [("mb:real", "mb:rewired"), ("mb:real", "mb:er"), ("mb:real", "flyhash"),
-                 ("wb:real", "wb:rewired"), ("wb:real", "wb:er"), ("mb:real", "raw"), ("mlp", "mb:real")]:
+    pairs = [("mb:real", "mb:rewired"), ("mb:real", "mb:er"), ("wb:real", "wb:rewired"), ("wb:real", "wb:er"),
+             ("mb:real", "raw"), ("mb:real", "flyhash"), ("wb:real", "raw"), ("wb:real", "flyhash"), ("mlp", "raw")]
+    for a, b in pairs:
+        if a not in res or b not in res:
+            continue
         m, lo, hi = boot(res[a][1] - res[b][1], rng)
         ma, loa, hia = boot(res[a][0] - res[b][0], rng)
         print(f"{a:>8s} - {b:<10s} KL {m:+7.1f} [{lo:+7.1f}, {hi:+7.1f}]   acc {ma:+.4f} [{loa:+.4f}, {hia:+.4f}]")
-    print(f"\nwall {time.time() - t0:.1f}s")
 
 
 if __name__ == "__main__":

@@ -42,6 +42,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 2bae0410 | the fly connectome as a 42 player: viable as a toy, not as a player; pre-registered reservoir pilot (5-5's seat, exact uniform posterior): real wiring ties or trails rewired/ER nulls, mb +1.7 [+1.0, +2.4] mnat vs rewired]
+
+**Added:** [[topics/fly-connectome-42|fly-connectome-42]] (sources: FlyWire v783, Shiu LIF, Eon's embodied fly, FlyGM; options ranked; pre-registered at 2bae0410), `scenario/flybrain_pilot.py`. **Updated:** [[scenario-player]] (Links), `index-topics.md`, `index.md`. Data: connectome downloaded to `scratch/fly/data/` (MIT code, FlyWire CC BY 4.0), not committed.
+
 ## [2026-10-14 | a0656fe2 | zeb 0.3.0 built: soft uniform reading (ε 0.28, `reading: false` to turn off) + make-then-margin as defaults; pre-registered confirmation vs 0.2.0 +0.21 [+0.08, +0.34] marks/game, passes; not yet published]
 
 **Added:** [[zeb-030-confirmation-2026-10-14]] (pre-registered at 91855dc6). **Updated:** [[scenario-player]] (§ Zeb 0.3.0, § Where it stands, the reading and tie paragraphs), `index-experiments.md`. Code: `zeb/` 0.3.0, `scenario/zeb030.py`. Data: `zeb/release-0.3.0/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
