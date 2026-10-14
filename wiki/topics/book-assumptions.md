@@ -19,7 +19,7 @@ recommended order.
 The arena as of 2026-10-14, for reference: every seat is memoryless between hands; deployed Zeb
 is deterministic per coordinate (which is why Zeb against Zeb reads exactly 0); its worlds are
 uniform given the auction and every tile played, except where a reader is switched on; the book
-team sends its conventions and reads as plain Zeb; both teams bid `heuristic` (caution 0) unless
+team sends its conventions and reads as plain Zeb unless its partner read is on (`read=`, #150); both teams bid `heuristic` (caution 0) unless
 a block says otherwise; every declaration is a pip trump; every hand is played out to its last
 trick.
 
@@ -28,7 +28,7 @@ trick.
 | # | the book assumes | lessons that depend on it (row ids) | the arena | measured nearby | cheapest measurement |
 |---|---|---|---|---|---|
 | A1 | **Opponents model you across hands**: they learn your style and exploit it, so varying your play and keeping a reputation have value | S-0080-b, S-0080-c, S-0081-a, S-0081-b, S-0089-e, S-0156-b, S-0070-a, S-0189-a, S-0037-a, S-0154-a; the bait lead of Hand 28 (S-0129-d) | **absent**: memoryless seats; deterministic Zeb; self-play pour | reads by the book (within hand, tile location only): null. Exploiter endgames: knowing Zeb exactly gains +0.004 contract probability per three-trick endgame | **#149**, the regulars' table |
-| A2 | **Partners play one system and read each other by it** | S-0041-a, S-0041-b, S-0041-e, S-0047-d, S-0056-a, S-0057-a..d, S-0058-a, S-0060-c, S-0099-b, S-0100-b, S-0100-c, S-0148-h, S-0150-d..i, S-0151-g, S-0152-a, S-0180-c | **half**: the book team sends, never reads | convention overlay (gates, self-play partners): null; the handoff priced at −0.013 marks/hand with no reader of its kind | **#150**, book partners read each other |
+| A2 | **Partners play one system and read each other by it** | S-0041-a, S-0041-b, S-0041-e, S-0047-d, S-0056-a, S-0057-a..d, S-0058-a, S-0060-c, S-0099-b, S-0100-b, S-0100-c, S-0148-h, S-0150-d..i, S-0151-g, S-0152-a, S-0180-c | **restored at the fallback and inside a rule's set** (`read=`, #150); a rule's guard still cannot read (gap 1) | convention overlay (gates, self-play partners): null. Book partners reading each other's plays and calls by the book: +0.10 [−0.06, +0.26] marks/game, null ([[book-partners-read-2026-10-14]]) | a guard that reads a partner posterior (#128; `silas/GAPS.md` 1) |
 | A3 | **Opponents are fallible**: they lose track, misdiscard, can be lured | S-0088-a, S-0083-b, S-0079-a, S-0079-b, S-0169-b, S-0080-a, S-0078-d | **absent**: Zeb never forgets a tile or a void | none | **#151**, the fallible-tracker field and its crossover p* |
 | A4 | **The auction is a signal made by a known method**: a bid tells its level's shape | S-0021-a, S-0027-b, S-0027-d, S-0077-c, S-0077-d, S-0078-a, S-0078-b, S-0155-b, S-0165-a | **absent**: worlds uniform given the auction (#117) | pilot below: a deterministic bidder's opening carries 0.93 of 1.58 bits about its hand's strength bucket | #117 / #134; inside #149 |
 | A5 | **The book's game and the match**: points to 250, a set rewarded, bidding that reads the score | S-0015-c, S-0017-c, S-0063-b, S-0114-a, S-0114-b, S-0047-a, S-0080-e, S-0110-a, S-0122-a, S-0129-b, S-0165-b, S-0170-a | **partial**: points to 250 exists (`points_to_win`); Zeb plans for the make, bids score-blind, never bids 84 (#115) | the book as Zeb's near-tie break wins 53.2% [51.1, 55.2] of games to 250, replicated | #115, #77 (marks-race utility), #130 slices 3–4 |
@@ -56,9 +56,13 @@ trick.
   benefit.** The book team sends (the donation, the top-trump lead, the partner's leads) to a
   partner whose worlds stay uniform. A convention is a joint deviation; pricing the sender alone
   measures half of it. The book study's overlay did pair sender and reader, on the gates rather
-  than the book-faithful rules and with self-play partners, and read null. Expect a modest gain
-  from #150, and the largest information flow in the 84 defence (Hand 35's discards), which
-  waits on #128.
+  than the book-faithful rules and with self-play partners, and read null. **#150 seated the
+  receiving half** ([[book-partners-read-2026-10-14]]): each book partner reads the other's plays
+  by the stack and its calls by `bid-only-enough`, and uses the posterior where the book is
+  silent or inside the set it allows. +0.10 [−0.06, +0.26] marks/game against an A/A of −0.05:
+  null, every registered sign positive. Our reader cannot yet see the edge, because the book's
+  receivers are rules whose guards would need the belief (gap 1). The largest information flow,
+  the 84 defence (Hand 35's discards), waits on #128.
 - **A3 is real and unpriced.** The straight-off 84 and the low-looking master are measured only
   against opponents who never forget, which is their worst case. The honest claim is a
   crossover: "the ploy pays against opponents who lose track more than p*". No human error rate
@@ -153,8 +157,8 @@ the book's own hands or left open, never by Zeb's preference.
 ## Recommended order
 
 1. **#149, the regulars' table**: the stance's central claim, in one 2×2.
-2. **#150, book partners read each other**: cheap (it reuses `arena/book_read.py`), and it
-   seats the benefit half of every convention the head-to-head charged.
+2. ~~#150, book partners read each other~~: done ([[book-partners-read-2026-10-14]]), null at
+   ±0.16; the next step on A2 is a guard that reads (#128).
 3. **#153, the header audit and the last encodable rows**: cheap, and it finishes the encoding.
 4. **#154, the book at small n**: cheap, and it tests A7 directly.
 5. **#152, the named deviant field**: cheap arena-side, and it seats the book's bidding against
@@ -169,5 +173,5 @@ the book's own hands or left open, never by Zeb's preference.
 
 [[book-authority]] · [[w42]] · [[book-study-2026-10-12]] · [[book-head-to-head-2026-10-13]] ·
 [[book-investigation-2026-10-14]] · [[book-reads-by-the-book-2026-10-14]] ·
-[[reads-plays-soft-2026-10-14]] · [[exploiter-endgames-2026-10-14]] · [[silas]] ·
+[[reads-plays-soft-2026-10-14]] · [[book-partners-read-2026-10-14]] · [[exploiter-endgames-2026-10-14]] · [[silas]] ·
 [[scenario-player]] · [[strategy-fusion-fence]]

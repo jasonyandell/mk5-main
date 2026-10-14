@@ -1,15 +1,34 @@
 ---
-title: Book partners read each other by the book — the receiving half of the conventions, seated (2026-10-14)
+title: Book partners read each other by the book — the receiving half of the conventions, seated; +0.10 [−0.06, +0.26] marks/game, a null at this power (2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
-status: active
+status: complete
 ---
 
 > **Read under [[book-authority]].** Assumption A2 of [[book-assumptions]]: the book's partners
 > play one system and read each other by it. Every earlier book block seated the sending half
 > only: the book team sent its conventions to a partner whose worlds stayed uniform. This page
-> seats the receiving half. Pre-registered below; results follow when the batches finish.
+> seats the receiving half. Pre-registered at `cf89472b`, before any measured batch.
+
+## The answer, in short
+
+- **Seated against deployed Zeb 0.3.0 in an arena where no seat models another across hands
+  (A1), opponents never lose track (A3), the field has no bidding styles (A6) and only pip trumps
+  are declared (A10), with A2 restored by this reader, the book team whose partners read each
+  other by the book scores +0.10 [−0.06, +0.26] marks/game more than the same team unread.**
+  That is null at this power. The A/A (a change of the book Zeb's sample alone) reads
+  −0.05 [−0.19, +0.09].
+- **Every registered contrast points the same way and none clears its bar.** Inside the rule's
+  set, form (c): +0.15 [−0.02, +0.33]. To 250 points: +1.9 [−1.1, +4.9] points of game share and
+  +1.7 [−4.1, +7.6] settled points a game.
+- **The reader is well fed and rarely acts.** Its posterior never starves (0.02% fallbacks;
+  about 190 effective worlds of 512 through trick 4, the exact posterior from trick 5). It moves
+  the book player's tile at 3.3% of decisions with a choice in (b) and 7.7% in (c).
+- **What this rules out is narrow.** A reader of this form, with Zeb choosing at the fallback or
+  inside a rule's set over a partner posterior, does not lift the book team by more than about a
+  quarter of a mark. The book's receiving rules, which would need a belief inside a rule's guard,
+  are not seated (`silas/GAPS.md` 1). That is the measurement that would seat them.
 
 ## Question
 
@@ -152,7 +171,109 @@ price of Zeb's choice inside the rule's set against this field.
 
 ## Results
 
-Pending: the batches run after this commit.
+All 154 batches ran as registered and exited 0 (slowest 185 s, at load averages of 18–77 on 18
+cores beside other sessions), so no batch was dropped. The scripts' hashes at analysis match the
+registered ones. Run 13:16–17:04, 2026-10-14, at `cf89472b`.
+
+| arm (team A against deployed Zeb 0.3.0) | marks/game [95%] | games won to 250 | made, A / B | A declares |
+|---|---|---|---|---|
+| U: (b), partner unread | −1.44 [−1.68, −1.19] | | 52.9% / 65.8% | 49.7% |
+| R: (b), partner read by the book | −1.34 [−1.60, −1.08] | | 53.2% / 65.4% | 49.9% |
+| A: U at planner seed 1 (the A/A) | −1.49 [−1.73, −1.25] | | 52.4% / 65.8% | 50.0% |
+| Uc: (c), partner unread | −1.12 [−1.36, −0.87] | | 54.0% / 64.2% | 50.2% |
+| Rc: (c), partner read | −0.97 [−1.24, −0.69] | | 54.9% / 63.9% | 50.4% |
+| P-U: U, to 250 | | 31.8% [27.3, 36.4] | 53.5% / 65.9% | 49.8% |
+| P-R: R, to 250 | | 33.7% [29.2, 38.3] | 54.2% / 65.8% | 50.1% |
+| baseline: Zeb against itself | 0 | 50% | | |
+
+Each arm is 264 games, 132 clusters.
+
+| contrast (paired by cluster, 132 clusters) | estimate [95%] | bar |
+|---|---|---|
+| **primary: R − U, marks/game** | **+0.10 [−0.06, +0.26]** | null |
+| A/A: A − U, marks/game | −0.05 [−0.19, +0.09] | null (as it should be) |
+| Δ_c = Rc − Uc, marks/game | +0.15 [−0.02, +0.33] | null |
+| Δ_P = P-R − P-U, game share to 250 | +1.9 [−1.1, +4.9] points | null |
+| Δ_P, settled points/game | +1.7 [−4.1, +7.6] | null |
+| *exploratory:* (Rc − Uc) − (R − U) | +0.05 [−0.13, +0.25] | null |
+| *exploratory:* R − A | +0.15 [+0.00, +0.31] | at the edge; not registered as a test |
+| *exploratory:* Uc − U, Zeb's choice inside the rule's set | +0.32 [+0.10, +0.54] | pays |
+
+- *The primary is null.* Its half-width came out at 0.16, tighter than the 0.20 planned. It
+  would have shown an effect the size of the soft reading's (+0.37). It cannot separate +0.10
+  from 0.
+- *The signs agree.* R − U, Rc − Uc and both points contrasts are positive, and R − A sits at
+  the edge of its interval. Read together, they suggest a small effect below this study's power.
+  The registered verdict stays null.
+- *Uc − U* repeats the head-to-head's (c) − (b) (+0.47 there, against 0.2.0) against the 0.3.0
+  field: Zeb's choice inside a rule's set beats the least tile by +0.32 [+0.10, +0.54].
+
+**Mechanism** (every book decision with a choice; R, Rc and P-R agree to a point):
+
+| trick | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| ESS fraction of the partner read | 0.48 | 0.38 | 0.37 | 0.38 | 0.44 | 0.60 |
+| effective worlds | 246 | 196 | 189 | 181 | 93 | 10 |
+| fallback | 0% | 0% | 0.1% | 0% | 0% | 0% |
+| exact fiber | 0% | 0% | 0% | 13% | 76% | 100% |
+| read moved the tile, (b) | 2.8% | 4.2% | 4.6% | 4.2% | 3.3% | 1.1% |
+| read moved the tile, (c) | 11.4% | 11.4% | 10.0% | 7.9% | 4.8% | 1.3% |
+
+- *The calls carry the early evidence.* At trick 1 the partner has made at most one play, yet the
+  ESS fraction is already 0.48: the partner's call and declaration under `bid-only-enough`
+  remove about half the sampled worlds.
+- *In (b) the read acts only where no rule fires.* That is 22% of the book player's decisions with
+  a choice. At 15% of those it moves Zeb's tile, which is 3.3% of all its decisions, about
+  three tiles a game. Inside a rule's set the least tile never moves, by construction. In (c) the
+  read also moves 5.6% of rule-decided tiles, 7.7% of all decisions.
+- *Per moved tile* the primary's estimate is about +0.03 marks. That is the size of a single
+  departure's effect in the head-to-head's decomposition, so the read is not inert where it acts.
+  It acts too rarely to show in marks at 132 clusters.
+
+## What this means
+
+- **A2, as this reader restores it, does not visibly lift the book team.** Its partners now read
+  each other's plays and calls by the book, the posterior is right (the real deal never
+  excluded) and well fed, and the team scores +0.10 [−0.06, +0.26] marks/game more. That is the
+  scope of our model: a reader that uses the partner posterior only to choose where the book is
+  silent (b), or inside the set the book allows (c).
+- **The book's receiving half is mostly inside its rules, and our rules cannot read.** The
+  conventions this page sets out to credit are receiving rules: the partner who knows the trick
+  is safe because the top trump was led (S-0041-a/b), the leads that answer a partner's signal
+  (S-0057-a..d), the 84 defender's watch over a partner's discards (S-0150-d..i). In the Silas stack
+  a rule's guard reads the frame, never a belief (gap 1). The stack's guards already compute
+  "provably safe" from the record alone, so the reading here adds information only where the
+  record leaves a placement open and Zeb, not a rule, decides. The measurement that would seat
+  the book's receivers is a guard that may read a partner posterior (#128's policy likelihood,
+  `silas/GAPS.md` 1), and the 84 defence, which needs it most (#128).
+- **Nothing is adopted.** The partner read is an arena option (`read=`); Zeb's defaults are
+  unchanged.
+
+## Deviations from the pre-registration
+
+None in the arms, seeds, batch size, bars or analysis. The queue ran per seed in the registered
+arm order (U, R, A, P-U, P-R, Uc, Rc).
+
+## Caveats
+
+- **Opponents at 160 worlds.** The 0.3.0 opponents play as the package does, at 160 worlds; the
+  book's own Zeb plans at 512. Both arms of every contrast face the same opponents.
+- **One bidding policy read.** The calls are read under `bid-only-enough`, which is how the book
+  team bids here. Under another book bidding policy (`risk-budget`) the read would be another
+  likelihood. The plays and the calls were not separated.
+- **The soft form was not run.** Its fitted ε on a book partner is 0 (above), so it is this reader.
+- **Importance weights on a uniform sample.** Exact draws on sampled fibers were not used, and
+  the planner's cell floor counts worlds, not weight (as in [[book-reads-by-the-book-2026-10-14]]).
+- **The exploratory signs** (R − A at its edge; all four contrasts positive) are not a finding.
+  A replication at about four times the clusters would be needed to resolve +0.10.
+
+## Data
+
+`jasonyandell/texas-42-zeb-research-2026-10` under `book/partners-read/` (CC0, `SHA256SUMS`,
+`CARD.md`): every game of every arm (`out/<arm>/s<seed>.games.jsonl.gz`), every partner-read
+decision's ESS row (`*.reads.jsonl.gz`) and shadow row (`*.moved.jsonl.gz`), the pilot, the logs,
+`results.json`, `analysis.log` and the scripts. Code: `arena/book_play.py` (`read=`, the
+shadow), `arena/book_read.py` (`seats`, `calls_weight`), `arena/test_book_read.py`.
 
 ## Links
 

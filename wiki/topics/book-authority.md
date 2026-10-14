@@ -46,6 +46,14 @@ player: soft play-reading, a crude within-hand model of the other seats, made Ze
 has rewarded, and it models them only within one hand. The book's opponents model across
 hands.
 
+**A2's first restoration (#150).** Seated against deployed Zeb 0.3.0, the book team whose
+partners read each other's plays and calls by the book scores +0.10 [−0.06, +0.26] marks/game
+more than the same team unread, against an A/A of −0.05 [−0.19, +0.09]. That is null at this
+power, with every registered contrast positive. Read it as the scope of our reader: it uses the
+partner posterior only where the book is silent or inside the set a rule allows. The book's own
+receiving rules would need that belief inside a rule's guard, which Silas cannot yet express
+(gap 1, #128) ([[book-partners-read-2026-10-14]]).
+
 ## Vocabulary
 
 | avoid | use instead |
@@ -110,4 +118,4 @@ Use: *scope*, *under assumptions*, *our arena cannot yet see*, *the measurement 
 
 [[book-assumptions]] · [[w42]] · [[book-study-2026-10-12]] · [[book-head-to-head-2026-10-13]] ·
 [[book-investigation-2026-10-14]] · [[book-reads-by-the-book-2026-10-14]] ·
-[[reads-plays-soft-2026-10-14]] · [[scenario-player]] · [[silas]] · [[the-wall]]
+[[reads-plays-soft-2026-10-14]] · [[book-partners-read-2026-10-14]] · [[scenario-player]] · [[silas]] · [[the-wall]]
