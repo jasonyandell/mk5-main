@@ -37,6 +37,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 49392914 | silas reads the plays as evidence (#128 for the play): consistent likelihood by default, uniform on request, counted exactly; S-0140-e's "you know" is 2/15 from the seat and 1 read under protect-the-count; C21's bait under crisis is 91/167, not certainty]
+
+**Touched pages:** [[silas]] § The plays as evidence. `silas/README.md` § Semantics, The record as evidence, The `silas` command; `silas/GAPS.md` gap 1 narrowed again (a rule acting on a reading remains).
+
 ## [2026-10-13 | aefa35be | worlds never compress: endgame equivalence census ported from origin/worktree-equiv-census (aca3dacb, c3e1374c)]
 
 **Touched pages:** [[scenario-player]] [[silas]]
