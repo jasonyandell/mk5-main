@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-PROJECT_ROOT = "/Users/jason/code/mk5-main"
+PROJECT_ROOT = str(Path(__file__).resolve().parents[5])
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -593,7 +593,7 @@ def main():
             "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/summary.json",
             "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/manifest.json",
         ],
-        "reproducibility_command": "cd /Users/jason/code/mk5-main && python w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.py",
+        "reproducibility_command": "cd <repo-root> && python w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.py",
     }
 
     summary_path = OUTPUT_DIR / "summary.json"

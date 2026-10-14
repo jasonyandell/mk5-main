@@ -11,6 +11,7 @@ Sign convention notes (derived from column-level verification):
   - Each probe was checked individually; see per-probe comments.
 - positive_is_book=True means: positive delta value favors the book claim.
 """
+from pathlib import Path
 import json
 import os
 import numpy as np
@@ -18,7 +19,7 @@ import pandas as pd
 from scipy import stats
 
 # ─── paths ───────────────────────────────────────────────────────────────────
-ROOT  = "/Users/jason/code/mk5-main"
+ROOT  = str(Path(__file__).resolve().parents[4])
 WAVE2 = f"{ROOT}/w42/book_validation_v1/wave2/probes"
 OUT   = f"{ROOT}/w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis"
 

@@ -27,7 +27,7 @@ _ORPHAN_MARKERS_RE = re.compile(
 SCRATCH_ROOT = Path(
     os.environ.get(
         "BURL_CHAT_HARVEST_ROOT",
-        "/Users/jason/code/mk5-main/scratch/belief_trajectory_rollout",
+        str(Path(__file__).resolve().parents[3] / "scratch/belief_trajectory_rollout"),
     )
 )
 

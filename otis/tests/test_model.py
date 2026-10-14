@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pytest
 import torch
 
@@ -20,7 +19,7 @@ from otis.model import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-FATES_PARQUET = ROOT / "scratch" / "otis-night" / "master_fates.parquet"
+SNAPSHOTS = ROOT / "otis" / "tests" / "fixtures" / "selfplay_0.snapshots.json"
 # The 8-class fate contract, capture-major then mode-minor. Previously read
 # from scratch/otis-night/fate_base_rates.json (generated, did not survive the
 # scratch clear); the order is the load-bearing fact, so it lives here.
@@ -123,15 +122,23 @@ def test_fate_class_matches_base_rate_ordering():
         assert classes[fate_class(cap, mode)] == f"{cap}|{mode}"
 
 
-@pytest.mark.skipif(not FATES_PARQUET.exists(), reason="master_fates.parquet absent")
 def test_fate_class_on_real_rows():
-    """3 real fate rows: the derived class must round-trip its label strings."""
+    """Real fate rows (arena hands from the checked-in fixture, parsed by
+    otis.fates): the derived class must round-trip its label strings."""
+    from otis.fates import parse_game_fates
+    from otis.snapshots import load_snapshot_hands
+
     classes = FATE_CLASSES
-    f = pd.read_parquet(FATES_PARQUET, columns=["capture_bidding", "played_mode"])
-    for _, r in f.head(3).iterrows():
-        cid = fate_class(r["capture_bidding"], r["played_mode"])
-        assert cid == CAPTURE_IDX[r["capture_bidding"]] * 4 + MODE_IDX[r["played_mode"]]
-        assert classes[cid] == f"{r['capture_bidding']}|{r['played_mode']}"
+    n = 0
+    for h in load_snapshot_hands(SNAPSHOTS, limit=3):
+        bidding_team = h.meta.bidder % 2
+        for t in parse_game_fates(h.game).tiles:
+            capture = "bidding_team" if t.winner_seat % 2 == bidding_team else "opp_of_bidder"
+            cid = fate_class(capture, t.played_mode)
+            assert cid == CAPTURE_IDX[capture] * 4 + MODE_IDX[t.played_mode]
+            assert classes[cid] == f"{capture}|{t.played_mode}"
+            n += 1
+    assert n == 15
 
 
 # --------------------------------------------------------------------------- #

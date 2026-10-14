@@ -60,8 +60,8 @@ logging.basicConfig(
 log = logging.getLogger("burl.lab.smoke")
 
 # Defaults — overridable via env.
-DEFAULT_HARVEST_ROOT = Path("/Users/jason/code/mk5-main/scratch/belief_trajectory_rollout")
-DEFAULT_SESSION_ROOT = Path("/Users/jason/code/mk5-main/scratch/burl-lab-sessions")
+DEFAULT_HARVEST_ROOT = Path(__file__).resolve().parents[3] / "scratch/belief_trajectory_rollout"
+DEFAULT_SESSION_ROOT = Path(__file__).resolve().parents[3] / "scratch/burl-lab-sessions"
 DEFAULT_HARVEST_NAME = "harvest_batched_20260425_072910"
 DEFAULT_DECISION_IDX = 1
 

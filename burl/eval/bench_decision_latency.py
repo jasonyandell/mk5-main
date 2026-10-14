@@ -63,7 +63,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # this fallback can drop.
 _SCRATCH_CANDIDATES = [
     REPO_ROOT / "scratch" / "belief_trajectory_rollout",
-    Path("/Users/jason/code/mk5-main/scratch/belief_trajectory_rollout"),
+    Path(__file__).resolve().parents[2] / "scratch/belief_trajectory_rollout",
 ]
 SCRATCH_HARVEST = next(
     (p for p in _SCRATCH_CANDIDATES if p.exists()),
@@ -1488,7 +1488,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     ap.add_argument(
         "--prune-freq-tsv",
-        default="/Users/jason/code/mk5-main/scratch/burl-perf-2/iter28_emit_token_freqs.tsv",
+        default=str(Path(__file__).resolve().parents[2] / "scratch/burl-perf-2/iter28_emit_token_freqs.tsv"),
         help=(
             "Path to iter28's emit-frequency TSV. Default: the canonical "
             "main-checkout artifact built by iter28_probe.py."
@@ -1550,7 +1550,7 @@ def main(argv: list[str] | None = None) -> int:
         # same gus_eval_bridge path.
         header = {"_meta": True, "subset_name": "perf_subset_560",
                   "corpus_path": str(REPO_ROOT.parent.parent.parent / "gus" / "data" / "corpus_eval_20.pt")
-                  if False else "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt"}
+                  if False else str(Path(__file__).resolve().parents[2] / "gus/data/corpus_eval_20.pt")}
         rows = [{"global_idx": gi} for gi in range(560)]
         subset_label = "560"
     else:
@@ -1643,7 +1643,7 @@ def main(argv: list[str] | None = None) -> int:
     # (gus/adapters/ is gitignored and lives only in the main checkout).
     gus_candidates = [
         REPO_ROOT / "gus" / "adapters" / "v3_consistency_10000g.pt",
-        Path("/Users/jason/code/mk5-main/gus/adapters/v3_consistency_10000g.pt"),
+        Path(__file__).resolve().parents[2] / "gus/adapters/v3_consistency_10000g.pt",
     ]
     gus_path = next((p for p in gus_candidates if p.exists()), None)
     if gus_path is None:

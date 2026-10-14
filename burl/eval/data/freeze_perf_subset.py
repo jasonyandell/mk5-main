@@ -50,7 +50,7 @@ SUBSET_GIS = [0, 36, 72, 104, 136]
 DECISIONS_PER_GAME = 28
 PLAYERS_PER_TRICK = 4
 OUT_PATH = Path(__file__).resolve().parent / "perf_subset_5.jsonl"
-DEFAULT_CORPUS = Path("/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt")
+DEFAULT_CORPUS = Path(__file__).resolve().parents[3] / "gus/data/corpus_eval_20.pt"
 
 
 def sha256_of(path: Path, chunk_bytes: int = 1 << 20) -> str:

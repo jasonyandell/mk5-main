@@ -16,10 +16,10 @@ point identity internally, so a clean parse IS the invariant check).
 
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
 
+from gus.hf_data import resolve
 from otis.fates import (
     COUNT_TILE_PIPS,
     NeutralGame,
@@ -27,8 +27,9 @@ from otis.fates import (
     pips_to_domino_id,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-CORPUS_CHUNK = REPO_ROOT / "gus" / "data" / "corpus_train_chunk_0-99.pt"
+# Same GameRecordGPU schema as the train chunks, at 185 MB instead of 1.1 GB;
+# local if present, else fetched from the public HF corpus (gus.hf_data).
+CORPUS_CHUNK = "gus/data/corpus_eval_20.pt"
 
 
 # --------------------------------------------------------------------------- #
@@ -267,11 +268,10 @@ def test_game_b_walker_catch_by_trump():
 # --------------------------------------------------------------------------- #
 
 
-@pytest.mark.skipif(not CORPUS_CHUNK.exists(), reason="eq corpus chunk not present")
 def test_corpus_roundtrip():
     from otis.corpus import load_corpus_games  # local import: needs torch
 
-    games = list(load_corpus_games(CORPUS_CHUNK, limit=3))
+    games = list(load_corpus_games(resolve(CORPUS_CHUNK), limit=3))
     assert len(games) == 3
     for g in games:
         f = parse_game_fates(g)  # asserts the P1 identity internally

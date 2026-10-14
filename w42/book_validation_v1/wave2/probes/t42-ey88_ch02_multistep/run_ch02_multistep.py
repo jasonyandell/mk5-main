@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-PROJECT_ROOT = "/Users/jason/code/mk5-main"
+PROJECT_ROOT = str(Path(__file__).resolve().parents[5])
 ATLAS_CSV = Path(PROJECT_ROOT) / "w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv"
 OUT_DIR = Path(PROJECT_ROOT) / "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep"
 OUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -16,6 +16,7 @@ Outputs (under this directory):
   README.md
 """
 
+from pathlib import Path
 import json
 import hashlib
 import datetime
@@ -25,7 +26,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-PROJECT_ROOT = "/Users/jason/code/mk5-main"
+PROJECT_ROOT = str(Path(__file__).resolve().parents[5])
 INPUT_CSV = os.path.join(
     PROJECT_ROOT,
     "w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv",

@@ -1,9 +1,9 @@
 # Mark generated files as such for GitHub
 *.generated.ts linguist-generated=true
 
-# Use bd merge for beads JSONL files
-.beads/beads.jsonl merge=beads
-.beads/issues.jsonl merge=beads -diff
+# Beads is retired; .beads/issues.jsonl is a grep-able archive, never merged
+# by a driver. Keep it out of diffs.
+.beads/issues.jsonl -diff
 
 # The wiki log: parallel branches each add an entry at the same spot. The
 # union driver keeps both sides instead of conflicting. Rotation runs only on

@@ -162,7 +162,7 @@ def main() -> int:
     pricer._tied = load_tied_policy(
         str(Path(DEFAULT_STUDENT).resolve()
             if Path(DEFAULT_STUDENT).exists()
-            else "/Users/jason/code/mk5-main/" + DEFAULT_STUDENT),
+            else str(Path(__file__).resolve().parents[3] / DEFAULT_STUDENT)),
         args.device,
     )
     pricer._m = args.m_worlds
