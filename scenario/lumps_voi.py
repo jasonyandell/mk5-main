@@ -67,6 +67,8 @@ SAMPLED = 512
 SEED = 20261013
 DEALS = 10_000
 EPS = 1e-12
+TAIL = (0.02, 0.05)  # VOI_p at least this: the tail's share, beside the null's (added after the first count)
+TOP_MIN_LUMP = 32   # the page's positions: every non-trivial lump at least this many worlds (chosen after the raw top)
 LUMPS = ("left", "partner", "right")   # the seat holding T, relative to the mover: +1, +2, +3
 ROLES = ("bidder", "left setter", "partner", "right setter")   # relative to the bidder
 COLUMNS = ("deal", "k", "pos", "tile", "seat", "decl", "n_worlds", "n_actions", "chosen",
@@ -346,6 +348,11 @@ def summarize(r: dict[str, np.ndarray], bidder: int = 0) -> dict:
             out[f"voi_{v}"] = clustered_mean(r[f"voi_{v}"][sel], cl[sel])
             out[f"null_{v}"] = clustered_mean(r[f"null_{v}"][sel], cl[sel])
             out[f"excess_{v}"] = clustered_mean((r[f"voi_{v}"] - r[f"null_{v}"])[sel], cl[sel])
+        for th in TAIL:     # how often the money is large, against the null's own rate
+            out[f"tail_{th}"] = clustered_mean(r["voi_p"][sel] >= th - EPS, cl[sel])
+            out[f"null_tail_{th}"] = clustered_mean(r["null_p"][sel] >= th - EPS, cl[sel])
+        s = sel & split
+        out["robust_p"] = clustered_mean(r["robust_p"][s], cl[s]) if s.any() else (float("nan"),) * 2
         return out
 
     res["voi"] = {"all": voi(np.ones(len(split), bool)), "split": voi(split)}
@@ -363,17 +370,36 @@ def summarize(r: dict[str, np.ndarray], bidder: int = 0) -> dict:
     res["kind"] = {k: voi(kind == k) for k in sorted(set(kind.tolist()))}
     five5 = r["tile"] == 20
     res["kind_5_5"] = {k: voi(five5 & (kind == k)) for k in sorted(set(kind[five5].tolist()))}
+    # where the money sits: VOI_p is Σ_L mass_L (p_L(best) − p_L(Zeb's)), lump by lump (added after the first count)
+    part = r["mass"].astype(np.float64) * (r["pl_best"].astype(np.float64) - r["pl_z"])
+    res["lump_share"] = {}
+    for name, sel in (("all", np.ones(len(split), bool)), ("5-5", r["tile"] == 20),
+                      ("VOI_p >= 2 pp", r["voi_p"] >= 0.02 - EPS), ("5-5, VOI_p >= 2 pp", (r["tile"] == 20) & (r["voi_p"] >= 0.02 - EPS))):
+        c = part[sel].sum(axis=0)
+        res["lump_share"][name] = dict(n=int(sel.sum()), money=dict(zip(LUMPS, (c / c.sum()).tolist())),
+                                       mass=dict(zip(LUMPS, r["mass"][sel].mean(axis=0).tolist())))
     res["by_trick"] = {str(k): voi(trick == k) for k in range(1, 7)}
     res["by_role"] = {k: voi(role == k) for k in ROLES}
     return res
 
 
-def top_rows(r: dict[str, np.ndarray], n: int = 5, per_deal: int = 1) -> list[int]:
-    """The rows with the largest VOI_p, at most `per_deal` per deal."""
-    order = np.argsort(-r["voi_p"], kind="stable")
+def top_rows(r: dict[str, np.ndarray], n: int = 5, per_deal: int = 1, min_lump: int = 0,
+             sel: np.ndarray | None = None) -> list[int]:
+    """The rows with the largest VOI_p less its null, at most `per_deal` per
+    deal, among `sel` and those whose every non-trivial lump holds at least
+    `min_lump` worlds (with 0, the raw largest VOI_p)."""
+    keep = np.ones(len(r["tile"]), bool) if sel is None else sel.copy()
+    score = r["voi_p"].astype(np.float64)
+    if min_lump:
+        worlds = r["mass"].astype(np.float64) * r["n_worlds"][:, None]
+        keep &= np.all((r["mass"] < MIN_MASS - EPS) | (worlds >= min_lump - 0.5), axis=1)
+        score = score - r["null_p"]
+    order = np.argsort(-np.where(keep, score, -np.inf), kind="stable")
     seen: dict[int, int] = {}
     picks = []
     for i in order:
+        if not keep[i]:
+            break
         d = int(r["deal"][i])
         if seen.get(d, 0) < per_deal:
             seen[d] = seen.get(d, 0) + 1
@@ -383,9 +409,13 @@ def top_rows(r: dict[str, np.ndarray], n: int = 5, per_deal: int = 1) -> list[in
     return picks
 
 
-def describe(r: dict[str, np.ndarray], i: int, bidder: int = 0) -> dict:
+DECL_NAMES = ("blanks", "aces", "deuces", "treys", "fours", "fives", "sixes", "doubles", "doubles (suit)", "no trump")
+
+
+def describe(r: dict[str, np.ndarray], i: int, p: dict[str, np.ndarray] | None = None, bidder: int = 0) -> dict:
     """One row in the mover's words: who holds T in each lump (by the
-    bidder's roles), the best move there by make, and Zeb's pick's cost."""
+    bidder's roles), the best move there by make, and Zeb's pick's cost;
+    with the pour's columns, the mover's hand and the trick on the table."""
     seat = int(r["seat"][i])
     lumps = []
     for l in range(3):
@@ -394,11 +424,23 @@ def describe(r: dict[str, np.ndarray], i: int, bidder: int = 0) -> dict:
                           best=tile_name(int(r["best_p"][i, l])) if r["best_p"][i, l] >= 0 else None,
                           p_best=round(float(r["pl_best"][i, l]), 3), p_zeb=round(float(r["pl_z"][i, l]), 3),
                           mu_best=round(float(r["mul_best"][i, l]), 1), mu_zeb=round(float(r["mul_z"][i, l]), 1)))
-    return dict(deal=int(r["deal"][i]), k=int(r["k"][i]), trick=int(r["k"][i]) // 4 + 1,
-                mover=ROLES[(seat - bidder) % 4], decl=int(r["decl"][i]), tile=tile_name(int(r["tile"][i])),
-                n_worlds=int(r["n_worlds"][i]), zeb=tile_name(int(r["chosen"][i])),
-                p_zeb=round(float(r["p_z"][i]), 3), voi_p=round(float(r["voi_p"][i]), 3),
-                null_p=round(float(r["null_p"][i]), 3), voi_mu=round(float(r["voi_mu"][i]), 2), lumps=lumps)
+    d, k = int(r["deal"][i]), int(r["k"][i])
+    out = dict(deal=d, k=k, trick=k // 4 + 1, mover=ROLES[(seat - bidder) % 4], trump=DECL_NAMES[int(r["decl"][i])],
+               tile=tile_name(int(r["tile"][i])), n_worlds=int(r["n_worlds"][i]), zeb=tile_name(int(r["chosen"][i])),
+               p_zeb=round(float(r["p_z"][i]), 3), voi_p=round(float(r["voi_p"][i]), 3),
+               null_p=round(float(r["null_p"][i]), 3), voi_mu=round(float(r["voi_mu"][i]), 2),
+               null_mu=round(float(r["null_mu"][i]), 2), lumps=lumps)
+    if p is not None:
+        plays = np.asarray(p["plays"][d])
+        played = 0
+        for _, t in plays[:k]:
+            played |= 1 << int(t)
+        out["hand"] = [tile_name(t) for t in tiles_of(int(p["hands"][d][seat]) & ~played)]
+        start = k - k % 4
+        out["table"] = [f"{ROLES[(int(s) - bidder) % 4]} {tile_name(int(t))}" for s, t in plays[start:k]]
+        out["earlier"] = [" ".join(f"{ROLES[(int(s) - bidder) % 4][0].upper()}:{tile_name(int(t))}"
+                                   for s, t in plays[j:j + 4]) for j in range(0, start, 4)]
+    return out
 
 
 def tables(res: dict) -> str:
@@ -418,27 +460,36 @@ def tables(res: dict) -> str:
         for k, e in res["hedge"][axis].items():
             out.append(hrow(f"{axis} {k}", e))
     out.append("")
-    head = ("| | n | VOI_p | null_p | excess_p | VOI_μ | null_μ | excess_μ |\n"
-            "|---|---|---|---|---|---|---|---|")
+    head = ("| | n | VOI_p, pp | null_p | excess_p | VOI_μ, pts | null_μ | excess_μ | VOI_p ≥ 2 pp, % (null) "
+            "| ≥ 5 pp, % (null) | robust, make, % |\n|---|---|---|---|---|---|---|---|---|---|---|")
 
     def vrow(label: str, e: dict) -> str:
-        return (f"| {label} | {e['n']:,} | {ci(e['voi_p'])} | {ci(e['null_p'])} | {ci(e['excess_p'])} | "
-                f"{ci(e['voi_mu'], f='.2f')} | {ci(e['null_mu'], f='.2f')} | {ci(e['excess_mu'], f='.2f')} |")
+        return (f"| {label} | {e['n']:,} | {ci(e['voi_p'], 100, '.2f')} | {ci(e['null_p'], 100, '.2f')} | "
+                f"{ci(e['excess_p'], 100, '.2f')} | {ci(e['voi_mu'], f='.2f')} | {ci(e['null_mu'], f='.2f')} | "
+                f"{ci(e['excess_mu'], f='.2f')} | {100 * e['tail_0.02'][0]:.1f} ({100 * e['null_tail_0.02'][0]:.1f}) | "
+                f"{100 * e['tail_0.05'][0]:.2f} ({100 * e['null_tail_0.05'][0]:.2f}) | {100 * e['robust_p'][0]:.1f} |")
 
     out += ["### VOI by tile (ranked by excess_p)\n", head]
     for name, e in sorted(res["tile"].items(), key=lambda kv: -kv[1]["excess_p"][0]):
         out.append(vrow(name, e))
     out += ["", "### VOI by the tile's part\n", head] + [vrow(k, e) for k, e in res["kind"].items()]
     out += ["", "### the 5-5 by its part\n", head] + [vrow(k, e) for k, e in res["kind_5_5"].items()]
+    out += ["", "### every tile\n", head, vrow("all", res["voi"]["all"]), vrow("split", res["voi"]["split"])]
+    out += ["", "### where the money sits: share of VOI_p by the lump (T with the mover's left / partner / right), "
+            "against the lumps' mean mass\n", "| rows | n | money: left / partner / right | mass: left / partner / right |",
+            "|---|---|---|---|"]
+    for k, e in res["lump_share"].items():
+        out.append(f"| {k} | {e['n']:,} | " + " / ".join(f"{100 * e['money'][x]:.1f}" for x in LUMPS) + " | "
+                   + " / ".join(f"{100 * e['mass'][x]:.1f}" for x in LUMPS) + " |")
     out += ["", "### VOI by trick (every tile)\n", head] + [vrow(f"trick {k}", e) for k, e in res["by_trick"].items()]
     out += ["", "### VOI by mover (every tile)\n", head] + [vrow(k, e) for k, e in res["by_role"].items()]
     for axis in ("by_trick", "by_role", "by_side"):
-        out += ["", f"### excess_p by tile, {axis[3:]} (×1000)\n"]
+        out += ["", f"### excess_p by tile, {axis[3:]} (pp)\n"]
         keys = list(next(iter(res["tile"].values()))[axis])
         out += ["| tile | " + " | ".join(keys) + " |", "|---|" + "---|" * len(keys)]
         for name, e in sorted(res["tile"].items(), key=lambda kv: -kv[1]["excess_p"][0]):
             out.append(f"| {name} | " + " | ".join(
-                "" if not e[axis][k]["n"] else f"{1000 * e[axis][k]['excess_p'][0]:.1f}" for k in keys) + " |")
+                "" if not e[axis][k]["n"] else f"{100 * e[axis][k]['excess_p'][0]:.2f}" for k in keys) + " |")
     return "\n".join(out) + "\n"
 
 
@@ -458,6 +509,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     s = sub.add_parser("summarize", help="results.json, tables.md and top.json from the rows")
     s.add_argument("rows")
     s.add_argument("--out", required=True)
+    s.add_argument("--pour", help="the pour (unpacked), to show the top rows' hands")
     args = ap.parse_args(argv)
     if args.cmd == "unpack":
         unpack(args.pour, args.out)
@@ -472,7 +524,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         out.mkdir(parents=True, exist_ok=True)
         (out / "results.json").write_text(json.dumps(res, indent=1) + "\n")
         (out / "tables.md").write_text(tables(res))
-        (out / "top.json").write_text(json.dumps([describe(r, i) for i in top_rows(r, 12)], indent=1) + "\n")
+        p = open_pour(args.pour) if args.pour else None
+        five5 = r["tile"] == 20
+        top = dict(raw=[describe(r, i, p) for i in top_rows(r, 8)],
+                   excess=[describe(r, i, p) for i in top_rows(r, 8, min_lump=TOP_MIN_LUMP)],
+                   five_five=[describe(r, i, p) for i in top_rows(r, 5, min_lump=TOP_MIN_LUMP, sel=five5)],
+                   five_five_opening=[describe(r, i, p) for i in top_rows(r, 3, min_lump=TOP_MIN_LUMP,
+                                                                           sel=five5 & (r["k"] == 0))])
+        (out / "top.json").write_text(json.dumps(top, indent=1) + "\n")
         print(f"{res['rows']:,} rows, {res['split']:,} split -> {out}")
 
 
