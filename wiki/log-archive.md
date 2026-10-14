@@ -4036,3 +4036,27 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-13 | silas | the repaired book, first two rules (#121): C12B's guard of the second trump as a query (194/285 at every hand of the shape, so no policy), C10's off permission withdrawn by the partner's-ruff probability (never over 1/2); counterexample deals both ways, double-dummy; C10 re-priced +0.16 → +0.48]
 
 **Updated:** [[book-study-2026-10-12]] § The repaired book (new); `silas/examples/book/repaired/` (new), `silas/tests/book_repaired.rs`; `silas/README.md` § Examples. Outputs: `scratch/repaired/`.
+
+## [2026-10-13 | silas | cross-game slice 1: the match frame (points to 250, marks to seven, the settlement under both and both readings of a set 84), checked match-win values and the score-grid programme, and `(dominates ...)` exact over the hand's 43 outcomes; the last mark's 42-over-84 decided under both scorings]
+
+[[silas]] § The match and field-free comparison (new); `silas/README.md` § The match; `silas/GAPS.md` gap 2 narrowed (cluster F closed, B's three dominance rows and A's contract half stated, G re-tagged); `silas/examples/book/cross-game/`.
+
+## [2026-10-13 | scripts/check | one front door for every suite (`scripts/check`, `--fast`); the log merges without conflict and rotates only on main; the archive restored from a bad merge (210 entries)]
+
+**Updated:** `wiki/AGENTS.md` § Log format and Lint (branches never rotate; `scripts/wiki_log_rotate.py` on main; LG02, LG03); `CLAUDE.md` § Quality gates; [[log-archive]] restored.
+
+## [2026-10-13 | fae0495a | silas perf: the time was CPU defects, not a GPU gap — fiber count over reachable states, allocation-free clause evaluation (re-price 12 → 4.5 µs/call), debug test profile at opt-level 1 (killed at 300 s → 34 s); exact MPS world counting 450 ms against Silas's 2.2 ms, so no GPU path]
+
+**Touched pages:** [[silas]]
+
+## [2026-10-13 | 8d42bf70 | silas short forms (inferred roles; optional out, pattern, fallback; and/or/not; `(play x)`) read to the identical core, pinned for every file; lint warnings and `silas coverage` for rules that never fire; book rules, prelude and examples rewritten (−453 lines), gates kept explicit]
+
+**Touched pages:** [[silas]]
+
+## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
+
+**Touched pages:** [[silas]] § The match and field-free comparison. `silas/README.md` § The auction; `silas/docs/cross-game.md` § 4, Slice 2 as built; `silas/GAPS.md` gaps 2 and 4 narrowed (#134 now needs only #128).
+
+## [2026-10-13 | d3524ec1 | silas book, second batch: 71 of the 86 encodable-now catalog rows written down and asked at the book's own positions; four new rules (follow-low, take-the-trick, follow-with-the-off, defend-the-84), the setter's throwaways, frame-fact queries, seven odds; pounce and bidders-plan repaired against the book's hands]
+
+**Touched pages:** [[silas]] § The book, second batch; [[book-study-2026-10-12]] (the re-price predates the repairs). `silas/GAPS.md` (the book against itself; gaps 1, 5, 7), `silas/README.md` § The book prelude, § Examples; `silas/examples/book/odds/README.md`.

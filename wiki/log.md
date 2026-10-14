@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-13, 224 archived entries)
+## Digest (2026-04-09 → 2026-10-13, 230 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -30,6 +30,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The book graded with the honest tools** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]]: the rules priced on the pour, the bid book, the conventions null in the arena.
 - **Silas arrives** (2026-10-12 → 10-13, 8 archived entries) — [[silas]] moved from texas-42 and renamed, on Zeb's rules, the 21 gates written and priced, the record in the frame, the engineering pass; Zeb's reason report ([[scenario-player]]); server-only system authority ([[multiplayer-pattern]]).
 - **The book as the book means it** (2026-10-13, 6 archived entries) — [[book-study-2026-10-12]]: the 14 faithful rules and their re-price (Zeb 54% vs 40%), the dead-double and trump-set encoding fixes, the reason report's grown space ([[scenario-player]]), [[silas]]'s solved outcomes and the first repaired rules (C10, C12B).
+- **Silas grows up** (2026-10-13, 6 archived entries) — [[silas]]: cross-game slice 1 (the match frame), `scripts/check` and the conflict-free log, the perf pass (no GPU path), the short forms and coverage funnel, slice 2 (the auction), the book's second encoding batch (71 rows).
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
@@ -78,27 +79,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - [[silas]]: the book narrates three trump sets (Hands 32, 34, 35) and no position where the rules apply; over 3,000 random deals the three ruffs never fire (29 frames reach the ruff, one holds a trump), the feed fires 3 times and the lead 41; the pour fires the ruffs at 328 of 4,343,426 positions ([[book-study-2026-10-12]]).
 - By population (sampled, 3,000 contracts each, `scratch/study141.rs`; the optimists and the marginal 30 are Silas bid policies, the sim is Rust): a ruff rule answers in 0 games under `bid-only-enough`, `risk-budget` and a marginal 30 (risk 13-14), 30 and 61 under an optimist on the top two tiles of two and of three suits; without the second-trump clause 25, 13, 18 and 146, 250.
 - Added: positive pins for the last-seat ruff and the lead, a pin that the book's trump sets reach the ruff with no trump, and the coverage counts (`silas/tests/book_rules.rs`, `cli.rs`); README § Diagnostics corrected ("never fire" held only at 100 deals).
-
-## [2026-10-13 | d3524ec1 | silas book, second batch: 71 of the 86 encodable-now catalog rows written down and asked at the book's own positions; four new rules (follow-low, take-the-trick, follow-with-the-off, defend-the-84), the setter's throwaways, frame-fact queries, seven odds; pounce and bidders-plan repaired against the book's hands]
-
-**Touched pages:** [[silas]] § The book, second batch; [[book-study-2026-10-12]] (the re-price predates the repairs). `silas/GAPS.md` (the book against itself; gaps 1, 5, 7), `silas/README.md` § The book prelude, § Examples; `silas/examples/book/odds/README.md`.
-
-## [2026-10-13 | 9f40de95 | silas cross-game slice 2: the auction in the record (contract derived, legality held to the arena and the engine), bidding and declaring in policies; bid-only-enough is the arena's HeuristicBidder on every hand; risk-budget's exact opening histogram (54.7% pass)]
-
-**Touched pages:** [[silas]] § The match and field-free comparison. `silas/README.md` § The auction; `silas/docs/cross-game.md` § 4, Slice 2 as built; `silas/GAPS.md` gaps 2 and 4 narrowed (#134 now needs only #128).
-
-## [2026-10-13 | 8d42bf70 | silas short forms (inferred roles; optional out, pattern, fallback; and/or/not; `(play x)`) read to the identical core, pinned for every file; lint warnings and `silas coverage` for rules that never fire; book rules, prelude and examples rewritten (−453 lines), gates kept explicit]
-
-**Touched pages:** [[silas]]
-
-## [2026-10-13 | fae0495a | silas perf: the time was CPU defects, not a GPU gap — fiber count over reachable states, allocation-free clause evaluation (re-price 12 → 4.5 µs/call), debug test profile at opt-level 1 (killed at 300 s → 34 s); exact MPS world counting 450 ms against Silas's 2.2 ms, so no GPU path]
-
-**Touched pages:** [[silas]]
-
-## [2026-10-13 | scripts/check | one front door for every suite (`scripts/check`, `--fast`); the log merges without conflict and rotates only on main; the archive restored from a bad merge (210 entries)]
-
-**Updated:** `wiki/AGENTS.md` § Log format and Lint (branches never rotate; `scripts/wiki_log_rotate.py` on main; LG02, LG03); `CLAUDE.md` § Quality gates; [[log-archive]] restored.
-
-## [2026-10-13 | silas | cross-game slice 1: the match frame (points to 250, marks to seven, the settlement under both and both readings of a set 84), checked match-win values and the score-grid programme, and `(dominates ...)` exact over the hand's 43 outcomes; the last mark's 42-over-84 decided under both scorings]
-
-[[silas]] § The match and field-free comparison (new); `silas/README.md` § The match; `silas/GAPS.md` gap 2 narrowed (cluster F closed, B's three dominance rows and A's contract half stated, G re-tagged); `silas/examples/book/cross-game/`.
