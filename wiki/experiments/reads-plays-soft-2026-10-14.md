@@ -1,5 +1,5 @@
 ---
-title: Zeb reads the plays through a soft set — it pays at a net table; against Zeb the registered replication failed for consistent and held for uniform (2026-10-14)
+title: Zeb reads the plays through a soft set — it pays at a net table; against Zeb the consistent replication failed and the uniform one passed, +0.37 marks/game (2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
@@ -34,6 +34,10 @@ Zeb's plan over the drawn worlds.
   [−0.17, +0.09]. The consistent reader won 0.531 [0.503, 0.559] of games to 250. The gain
   against Zeb is smaller than the first run said, and in the primary form it is not
   established.
+- **Replication 2** (§ Replication 2, registered, uniform primary, 318 fresh game pairs): the
+  uniform reader scored **+0.37 [+0.24, +0.51]**. That **passes** the registered bar. A/A came
+  in at −0.00 [−0.15, +0.14]. The share of games to 250 won was 0.531 [0.493, 0.569], a null.
+  The uniform form's gain against Zeb is established; the consistent form's is not.
 - **Cost:** up to 1.7× plain Zeb's median per decision at tricks 2–3, and nothing measurable
   from trick 4 on (native core, one thread). The WebAssembly package cannot reach the reading.
 
@@ -358,6 +362,66 @@ Fixed in `scenario/reads_soft.py` (`REPLICATION_2`, `REP2_*`):
   with the earlier uniform runs. That pool carries their winner's curse, since their passing
   is why this run exists.
 
+### Results
+
+**The registered primary passed.** The uniform reader against plain Zeb was **+0.37
+[+0.24, +0.51] marks/game** over 318 fresh game pairs. The lower bound is above 0, so by the
+bar fixed in advance the replication succeeds. The A/A arm sits at chance, as it should.
+
+Run at `4e98280e` (the pre-registration commit), 2026-10-14, 07:26–08:56.
+
+| registered effect | game pairs | estimate | replication 1 | #145 (seeds 1–7) |
+|---|---|---|---|---|
+| **primary: uniform vs plain, marks/game** | 318 | **+0.37 [+0.24, +0.51]: passes** | +0.23 [+0.08, +0.37] | +0.29 [+0.10, +0.46] |
+| uniform, share of games to 250 won | 144 | 0.531 [0.493, 0.569] (chance 0.5): null | not measured | not measured |
+| A/A: plain at seed 1 vs plain, marks/game | 324 | −0.00 [−0.15, +0.14] | −0.04 [−0.17, +0.09] | −0.03 [−0.20, +0.15] |
+| uniform vs plain, settled points/game | 318 | +14.7 [+9.1, +20.1] | +7.4 [+1.4, +13.3] | +13.7 [+6.2, +20.7] |
+
+The games-to-250 secondary is a null: its interval just covers 0.5. Its point estimate is the
+same 0.531 the consistent reader won in replication 1.
+
+**Dropped batches.** One, under the registered rule: uniform at seed 301. It exited 124 at
+300 s. Its output had been written (its own wall time was 297 s), but a nonzero exit drops a
+batch, so it is excluded; it is published under `dropped/`. With it included the primary is
++0.37 [+0.24, +0.50] over 324 pairs. The A/A and games-to-250 arms lost nothing.
+
+**Load.** Another heavy experiment ran beside this one, and the batches ran slower than the
+pilot said. With 6 workers the load average reached 100–117 on 18 cores, batches took 128–300
+s, and s301 overran. The queue was stopped by hand at 07:33 and resumed with 3 workers, then
+at 07:50 with 2. Running batches were left to finish, and the remaining jobs ran in the same
+order. **20 of the 132 batches took longer than the 150 s target**, all before 07:51. With 2
+workers every batch took 43–116 s. Every player is deterministic given the state, so a batch's
+wall time cannot change its outcome. `logs/progress.log` records each batch's exit, wall time
+and load.
+
+**Exploratory** (not registered):
+
+| effect | game pairs | marks/game |
+|---|---|---|
+| uniform − A/A, same pairs | 318 | +0.38 [+0.18, +0.57] |
+| replication 1 + 2 pooled, uniform | 558 | +0.31 [+0.22, +0.41] |
+| #145 + both replications pooled, uniform | 726 | +0.31 [+0.22, +0.39] |
+| #145 + both replications pooled, A/A | 780 | −0.02 [−0.11, +0.07] |
+
+Per batch, the uniform reader's margin was positive at 39 of 53 seeds (6 at exactly 0). The
+A/A arm's was positive at 29 of 54 (4 at 0). Contracts made when bidding: 38.3% for the
+reader, 35.0% for plain in the same games; 36.2% for both sides of the A/A arm.
+
+**The winner's curse.** This is the only one of the three uniform estimates that was the
+primary on deals nobody had seen. #145's +0.29 was one of several effects and passed. Replication
+1's +0.23 was a secondary, and its passing is why this run exists. Both were selected for
+passing, so they are the ones a winner's curse would inflate. This run's +0.37 is not
+selected that way, and it came in above both. The pooled +0.31 includes the selected runs, so
+read it as a summary, not a sharper estimate; this run's own interval is the honest one.
+
+**What it means.** The uniform soft reader beats plain deployed Zeb by about a third of a
+mark per game on fresh deals. That holds at the registered bar, with the A/A control at 0.
+The settled points per game agree. The game to 250 does not show it at 144 pairs. This says
+nothing new about restricted choice (uniform − consistent), which this run did not measure
+and which was null in both earlier runs. The consistent primary's failure in replication 1
+still stands. Nothing here turns reading on in Zeb or changes a default. Whether to ship it,
+and how to expose it in the package, is Jason's call.
+
 ## Data
 
 Public in `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/reads-plays-soft/` (CC0,
@@ -394,6 +458,15 @@ The replication is published in the same repo under `zeb/reads-plays-soft-rep/`.
   among them
 
 Pre-registered at `c9852cf6`.
+
+Replication 2 is published under `zeb/reads-plays-soft-rep2/`, with `SHA256SUMS` and a
+`NOTES.md`. It holds `runs/zeb_uniform_s<seed>/`, `runs/zeb_plain_s<seed>/` (A/A),
+`runs/zeb250_uniform_s<seed>/`, `dropped/zeb_uniform_s301/`, `pilot/`, `replication2.json`,
+`logs/progress.log` and the run scripts. Pre-registered at `4e98280e`.
+
+```bash
+python -u -m scenario.reads_soft replicate --primary uniform --runs runs/* --out replication2.json
+```
 
 ```bash
 python -u -m scenario.reads_soft replicate --runs runs/* --out replication.json

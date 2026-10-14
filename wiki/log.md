@@ -41,6 +41,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 4e98280e | the soft reading's second replication against Zeb (#145): uniform primary +0.37 [+0.24, +0.51] on 318 fresh pairs passes its registered bar; A/A −0.00; games to 250 0.531, null; one batch dropped]
+
+**Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication 2: pre-registration, results, load, winner's curse), [[scenario-player]], `index-experiments.md`. Code: `scenario/reads_soft.py` (`REPLICATION_2`, `replicate --primary`). Data: `zeb/reads-plays-soft-rep2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
 ## [2026-10-14 | 78bbad51 | silas: the computed call (#148): (bid (- 42 (risk t))); risk-budget's thirteen levels one rule, equal on all 1,184,040 hands at every least raise; (- a b), number definitions]
 
 **Updated:** [[silas]] (§ The computed call), `silas/README.md` (§ Queries, Semantics, The auction), `silas/GAPS.md` (§ Closed). One core pin moved, `risk` added, `less-at-risk` removed (`silas/tests/core_pins.rs`). Tests: `silas/tests/computed.rs`, `silas/tests/bidding.rs`.

@@ -869,6 +869,8 @@ every trick. The reader gains +0.23 [+0.05, +0.41] marks/game at a table of seat
 model. Against plain Zeb it first measured +0.30 / +0.29 (consistent / uniform; A/A control −0.03). The
 registered replication on fresh deals shrank that. The consistent primary came in at **+0.12
 [−0.02, +0.27]**, which **failed** its bar. Uniform held at +0.23 [+0.08, +0.37]; A/A −0.04.
+A second registered replication made uniform the primary: **+0.37 [+0.24, +0.51]** on 318 fresh
+game pairs, which **passes** (A/A −0.00; games to 250 won 0.531 [0.493, 0.569], null).
 The reading costs up to 1.7× plain's median per decision at tricks 2–3 and nothing measurable
 later. Restricted choice stays null at both tables, so the gain is the soft posterior's, not the
 set size's. Not turned on in Zeb, and the zeb package cannot reach it:
@@ -1084,7 +1086,7 @@ net already plays its best move 96% of the time; a warm fine-tune toward it is i
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
 [[reads-plays-2026-10-13]] (Zeb reads the other seats' plays: both likelihoods null in marks) ·
-[[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table; against Zeb the registered consistent replication failed, +0.12 [−0.02, +0.27], uniform +0.23; restricted choice null) ·
+[[reads-plays-soft-2026-10-14]] (the same set softened: pays at a net table; against Zeb the registered consistent replication failed, +0.12 [−0.02, +0.27]; the registered uniform replication passed, +0.37 [+0.24, +0.51]; restricted choice null) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]
