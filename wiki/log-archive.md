@@ -4166,3 +4166,31 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-14 | 7188cd90 | the reading softened (#145): no fallbacks; +0.23 marks/game at a net table, +0.30 / +0.29 against Zeb; restricted choice null]
 
 **Added:** [[reads-plays-soft-2026-10-14]] (`Reading.eps`, `scenario/reads_soft.py`). **Updated:** [[scenario-player]], [[reads-plays-2026-10-13]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays-soft/` in `jasonyandell/texas-42-zeb-research-2026-10`.
+
+## [2026-10-14 | c9852cf6 | the soft reading's replication against Zeb (#145): consistent +0.12 [−0.02, +0.27] fails its registered bar; uniform +0.23 holds; cost ≤1.7× plain]
+
+**Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication: pre-registration, results, ε sweep, cost), [[scenario-player]], [[reads-plays-2026-10-13]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays-soft-rep/` in `jasonyandell/texas-42-zeb-research-2026-10`.
+
+## [2026-10-14 | 16964d90 | silas: functions are numbers (#144): (to-set), (bid), (least-raise) in comparisons; bid-only-enough one rule, lead-sets one sum; equal on all 1,184,040 hands; risk-budget waits on #148]
+
+**Updated:** [[silas]] (§ Functions as numbers), `silas/README.md` (§ Semantics, Short forms, The auction), `silas/GAPS.md` (§ Closed). Thirteen core pins moved (`silas/tests/core_pins.rs`). Tests: `silas/tests/functions.rs`, `silas/tests/bidding.rs`.
+
+## [2026-10-14 | 501a086a | make-then-margin within a near-tie band (#120 follow-up): δ* = 0.01 misses both bars against exact ties (49.1% [47.7, 50.4] to 250; marks +0.02 [−0.050, +0.086]); A/A exact; δ = 0.02 53.4% exploratory]
+
+**Added:** [[tie-band-2026-10-14]] (pre-registered at 501a086a; `Config.tie_band`, `Tie::Margin { band }`, arena `t=margin:<band>`, default 0). **Updated:** [[tie-margin-2026-10-14]], [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-band/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | 78bbad51 | silas: the computed call (#148): (bid (- 42 (risk t))); risk-budget's thirteen levels one rule, equal on all 1,184,040 hands at every least raise; (- a b), number definitions]
+
+**Updated:** [[silas]] (§ The computed call), `silas/README.md` (§ Queries, Semantics, The auction), `silas/GAPS.md` (§ Closed). One core pin moved, `risk` added, `less-at-risk` removed (`silas/tests/core_pins.rs`). Tests: `silas/tests/computed.rs`, `silas/tests/bidding.rs`.
+
+## [2026-10-14 | 9b5f4dd1 | the farmboy field as Zeb's play field (field_eps = 0.2, #108, ledger row A): null, −0.03 [−0.11, +0.06] marks/game vs deployed Zeb over 1,536 games; 49.2% [47.0, 51.4] to 250; A/A exact; no drops]
+
+**Added:** [[field-eps-play-2026-10-14]] (pre-registered at 9b5f4dd1). **Updated:** [[scenario-player]] (§ A stochastic field), [[brainstorm-2026-10-14-ledger]] (row A, runner-up), `index-experiments.md`. Data: `zeb/field-eps-play/` on the research repo.
+
+## [2026-10-14 | 4e98280e | the soft reading's second replication against Zeb (#145): uniform primary +0.37 [+0.24, +0.51] on 318 fresh pairs passes its registered bar; A/A −0.00; games to 250 0.531, null; one batch dropped]
+
+**Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication 2: pre-registration, results, load, winner's curse), [[scenario-player]], `index-experiments.md`. Code: `scenario/reads_soft.py` (`REPLICATION_2`, `replicate --primary`). Data: `zeb/reads-plays-soft-rep2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | e45238fc | the tie band's registered replication (#120 follow-up): δ = 0.02 against exact-tie margin fails both bars (51.4% [49.9, 52.9] to 250; marks −0.01 [−0.085, +0.075]); A/A exact; no drops; the band is closed]
+
+**Updated:** [[tie-band-2026-10-14]] (§ Replication, pre-registered at e45238fc; § Summary), [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-band-rep/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.

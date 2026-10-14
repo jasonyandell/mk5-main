@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-14, 255 archived entries)
+## Digest (2026-04-09 → 2026-10-14, 262 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -35,6 +35,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The book measured, the solver bounded** (2026-10-13, 6 archived entries) — [[book-study-2026-10-12]]'s re-price 3, the head-to-head ([[book-head-to-head-2026-10-13]]) and the metasplat ([[metasplat-2026-10-13]]); [[splat-search-bounds]]; [[silas]] reconciles Hand 26 (#143); the TS engine's mark-bid cap lifted (#142).
 - **Reading, ties, the fence, the investigation** (2026-10-13 → 10-14, 7 archived entries) — lumps by a hidden tile ([[lumps-voi-2026-10-13]]); [[strategy-fusion-fence]]; make-then-margin ([[tie-margin-2026-10-14]], #120); the book investigated ([[book-investigation-2026-10-14]]); Zeb reads plays ([[reads-plays-2026-10-13]]); constellations ([[constellations-2026-10-14]]); [[silas]] ergonomics round 2.
 - **The overnight shift** (2026-10-14, 6 archived entries) — [[brainstorm-2026-10-14-ledger]]; the exploiter ([[exploiter-endgames-2026-10-14]], #77) and its margin cross-check; the book's encoding repaired (#146) and its own table (#147, [[book-reads-by-the-book-2026-10-14]]); the reading softened ([[reads-plays-soft-2026-10-14]], #145).
+- **Replications and Silas numbers** (2026-10-14, 7 archived entries) — the soft reading's two replications (uniform +0.37, consistent fails; [[reads-plays-soft-2026-10-14]]), the tie band and its replication ([[tie-band-2026-10-14]], closed), the farmboy field ([[field-eps-play-2026-10-14]], null), [[silas]] functions as numbers (#144) and the computed call (#148).
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
@@ -81,31 +82,3 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-14 | 1cbb8417 | the tournament: production Walt, Zeb 0.1.0/0.2.0 and fenced E[Q] n=10 on a Bradley–Terry ladder; append-only records on HF, one commit per faceoff; concurrent writers and kill-resume tested; first round 9 faceoffs]
 
 **Added:** [[tournament]], `tournament/`, the `py-tournament` check suite, dataset `jasonyandell/texas-42-tournament` (+ `-selftest`, the live race). **Updated:** [[scenario-player]] (§ Where it stands, Links), [[strategy-fusion-fence]] (inventory: `tournament/eq_fenced_seat.py`), `index-topics.md`. Follow-ups: #156 (cloud worker, points250, catalogue deals).
-
-## [2026-10-14 | e45238fc | the tie band's registered replication (#120 follow-up): δ = 0.02 against exact-tie margin fails both bars (51.4% [49.9, 52.9] to 250; marks −0.01 [−0.085, +0.075]); A/A exact; no drops; the band is closed]
-
-**Updated:** [[tie-band-2026-10-14]] (§ Replication, pre-registered at e45238fc; § Summary), [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-band-rep/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
-
-## [2026-10-14 | 4e98280e | the soft reading's second replication against Zeb (#145): uniform primary +0.37 [+0.24, +0.51] on 318 fresh pairs passes its registered bar; A/A −0.00; games to 250 0.531, null; one batch dropped]
-
-**Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication 2: pre-registration, results, load, winner's curse), [[scenario-player]], `index-experiments.md`. Code: `scenario/reads_soft.py` (`REPLICATION_2`, `replicate --primary`). Data: `zeb/reads-plays-soft-rep2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
-
-## [2026-10-14 | 9b5f4dd1 | the farmboy field as Zeb's play field (field_eps = 0.2, #108, ledger row A): null, −0.03 [−0.11, +0.06] marks/game vs deployed Zeb over 1,536 games; 49.2% [47.0, 51.4] to 250; A/A exact; no drops]
-
-**Added:** [[field-eps-play-2026-10-14]] (pre-registered at 9b5f4dd1). **Updated:** [[scenario-player]] (§ A stochastic field), [[brainstorm-2026-10-14-ledger]] (row A, runner-up), `index-experiments.md`. Data: `zeb/field-eps-play/` on the research repo.
-
-## [2026-10-14 | 78bbad51 | silas: the computed call (#148): (bid (- 42 (risk t))); risk-budget's thirteen levels one rule, equal on all 1,184,040 hands at every least raise; (- a b), number definitions]
-
-**Updated:** [[silas]] (§ The computed call), `silas/README.md` (§ Queries, Semantics, The auction), `silas/GAPS.md` (§ Closed). One core pin moved, `risk` added, `less-at-risk` removed (`silas/tests/core_pins.rs`). Tests: `silas/tests/computed.rs`, `silas/tests/bidding.rs`.
-
-## [2026-10-14 | 501a086a | make-then-margin within a near-tie band (#120 follow-up): δ* = 0.01 misses both bars against exact ties (49.1% [47.7, 50.4] to 250; marks +0.02 [−0.050, +0.086]); A/A exact; δ = 0.02 53.4% exploratory]
-
-**Added:** [[tie-band-2026-10-14]] (pre-registered at 501a086a; `Config.tie_band`, `Tie::Margin { band }`, arena `t=margin:<band>`, default 0). **Updated:** [[tie-margin-2026-10-14]], [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-band/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
-
-## [2026-10-14 | 16964d90 | silas: functions are numbers (#144): (to-set), (bid), (least-raise) in comparisons; bid-only-enough one rule, lead-sets one sum; equal on all 1,184,040 hands; risk-budget waits on #148]
-
-**Updated:** [[silas]] (§ Functions as numbers), `silas/README.md` (§ Semantics, Short forms, The auction), `silas/GAPS.md` (§ Closed). Thirteen core pins moved (`silas/tests/core_pins.rs`). Tests: `silas/tests/functions.rs`, `silas/tests/bidding.rs`.
-
-## [2026-10-14 | c9852cf6 | the soft reading's replication against Zeb (#145): consistent +0.12 [−0.02, +0.27] fails its registered bar; uniform +0.23 holds; cost ≤1.7× plain]
-
-**Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication: pre-registration, results, ε sweep, cost), [[scenario-player]], [[reads-plays-2026-10-13]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays-soft-rep/` in `jasonyandell/texas-42-zeb-research-2026-10`.
