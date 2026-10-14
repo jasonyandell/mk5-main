@@ -1,3 +1,8 @@
+# STRATEGY-FUSION FENCE, sanctioned: ClairvoyantPolicy is the oracle playing
+# every seat with all four hands seen. Here it is the fusion-gap baseline,
+# measuring strategy fusion against the tied (information-state) rollout;
+# never a player.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Otis tied-strategy rollout — pricing the junk-retention economy (issue #49, P7).
 
 This module builds the *information-honest evaluator* the count-fate ledger
@@ -171,6 +176,9 @@ class TiedPolicy:
 
 class ClairvoyantPolicy:
     """Full-deal oracle: Stage-1 Q per action, tokenized from the live state.
+
+    STRATEGY-FUSION FENCE: the fusion-gap baseline only, never a player
+    (wiki/topics/strategy-fusion-fence.md).
 
     Each world is a full deal, so the oracle plays clairvoyantly — the fusion
     baseline against which the tied evaluator's guard/walker value is measured.

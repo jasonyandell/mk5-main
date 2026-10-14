@@ -1,3 +1,6 @@
+# STRATEGY-FUSION FENCE, sanctioned: this measures strategy fusion itself, the
+# gap between the oracle's double-dummy make-rate and the realized one.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Optimism meter — the oracle-vs-realized make-rate gap, measured from existing data.
 
 WHY THIS EXISTS

@@ -1,3 +1,7 @@
+# STRATEGY-FUSION FENCE. The E[Q] pipeline: per-world clairvoyant Q, averaged
+# (strategy fusion). Oracle era; a measuring stick only. Allowed instead:
+# information-state solving (Zeb).
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """GPU-native E[Q] generation pipeline.
 
 Generates training data by playing games using a Stage 1 oracle to estimate

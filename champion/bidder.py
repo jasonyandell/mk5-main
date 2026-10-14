@@ -1,3 +1,7 @@
+# STRATEGY-FUSION FENCE: GusBidder prices a contract by a P(make) simulated
+# from the oracle era's players (the double-dummy-optimistic price behind the
+# rung-#26 over-bidder). Oracle era; a baseline only.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Auction v0: Gus-backed risk-budget bidding (rung #21).
 
 Roberson Ch 2 as an executable policy ("bid only enough", `supported` at

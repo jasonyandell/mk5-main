@@ -1,3 +1,9 @@
+# STRATEGY-FUSION FENCE, sanctioned as a baseline. LensPlay is E[Q] n=10, the
+# oracle era's champion: per-world clairvoyant Q averaged (strategy fusion).
+# It stays in the arena as the opponent and measuring stick Zeb is graded
+# against; never build a new player on it. Allowed instead: information-state
+# solving (Zeb's plan).
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Oracle-backed utility-greedy play policy (Lens) for the arena.
 
 The same batched E[Q] path as `w42/lens_v1/parallel_match.py`, with one
@@ -41,7 +47,11 @@ def _max_pool_size(states: Sequence[ZebGameState]) -> int:
 
 
 class LensPlay:
-    """Utility-greedy player over the forge E[Q] PDF."""
+    """Utility-greedy player over the forge E[Q] PDF.
+
+    STRATEGY-FUSION FENCE: E[Q] is per-world clairvoyant Q averaged; this is
+    the baseline opponent, never a foundation (wiki/topics/strategy-fusion-fence.md).
+    """
 
     def __init__(self, model, utility: str = "ev", n_samples: int = 10,
                  device: str = "mps"):

@@ -1,3 +1,8 @@
+# STRATEGY-FUSION FENCE: this file calls the oracle era's clairvoyant values
+# (the double-dummy solver, Stage1Oracle, E[Q] or LensPlay): per-world perfect-
+# information values, strategy fusion if read as a seat's value. A measuring
+# stick only; build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """Arena CLI: full-game head-to-head between two (bidder + play) players.
 
     python -u -m arena.cli --team-a heuristic+lens:ev --team-b bid30+lens:ev \

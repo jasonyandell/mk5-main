@@ -1,3 +1,7 @@
+# STRATEGY-FUSION FENCE. E[Q]: the oracle's per-world clairvoyant Q averaged
+# over sampled worlds, the literal form of strategy fusion. Oracle era; a
+# measuring stick only. Allowed instead: information-state solving (Zeb).
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """E[Q] computation functions (mean, variance, PDF)."""
 
 from __future__ import annotations
@@ -75,6 +79,9 @@ def compute_eq_pdf(
     world_counts: Tensor | None = None,  # [N] for enumeration with variable counts
 ) -> Tensor:
     """Compute full PDF of Q-values per action.
+
+    STRATEGY-FUSION FENCE: a distribution of per-world clairvoyant values, never
+    a seat's value distribution (wiki/topics/strategy-fusion-fence.md).
 
     Builds a histogram of Q-values across samples/worlds for each action.
     Q-values in [-42, +42] map to bins [0, 84] (85 bins total).

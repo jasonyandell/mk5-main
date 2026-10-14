@@ -1,3 +1,8 @@
+# STRATEGY-FUSION FENCE: this file calls the oracle era's clairvoyant values
+# (the double-dummy solver, Stage1Oracle, E[Q] or LensPlay): per-world perfect-
+# information values, strategy fusion if read as a seat's value. A measuring
+# stick only; build on information-state solving (Zeb) instead.
+# The ruling: wiki/topics/strategy-fusion-fence.md.
 """JudSearch (jud v1, JS1): value at the leaves of shallow belief-state search.
 
 Where `JudPlay` prices each legal move by one net query on the post-move

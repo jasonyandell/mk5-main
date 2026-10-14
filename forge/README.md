@@ -1,5 +1,12 @@
 # Crystal Forge
 
+**STRATEGY-FUSION FENCE.** Forge is the oracle era: a perfect-information
+(double-dummy) solver and everything distilled or priced from it (Stage1Oracle,
+E[Q]). Its values read as a seat's values are strategy fusion, *algorithmia non
+grata*. Nothing new is built on it; it stays as a measuring stick. Build on
+information-state solving (Zeb) instead. The ruling:
+[wiki/topics/strategy-fusion-fence.md](../wiki/topics/strategy-fusion-fence.md).
+
 Knowledge lives in the wiki — see [wiki/entities/forge.md](../wiki/entities/forge.md)
 for what Forge is, its lineage, and its findings, and
 [wiki/topics/the-oracle.md](../wiki/topics/the-oracle.md) for solver history and the
