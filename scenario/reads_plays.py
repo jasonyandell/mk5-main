@@ -101,9 +101,11 @@ def tile_id(name: str) -> int:
     return DOMINOES.index((max(hi, lo), min(hi, lo)))
 
 
-def specs(net: str, likelihood: str | None) -> str:
+def specs(net: str, likelihood: str | None, eps: float = 0.0) -> str:
+    """Plain Zeb, or the reader under `likelihood`, softened by `eps` (#145, `scenario.reads_soft`)."""
     base = SPEC.format(net=net)
-    return base if likelihood is None else f"{base},d=posterior,r={likelihood}:{MARGIN}"
+    soft = f":{eps:g}" if eps else ""
+    return base if likelihood is None else f"{base},d=posterior,r={likelihood}:{MARGIN}{soft}"
 
 
 # -- the net's integer scale ------------------------------------------------------
@@ -208,15 +210,15 @@ class Recorder:
     the uniform arm, the consistent reader) is asked at the same state; every
     decision with a choice is kept as a row."""
 
-    def __init__(self, net_path: str, likelihood: str):
+    def __init__(self, net_path: str, likelihood: str, eps: float = 0.0):
         from dataclasses import replace
 
         from arena.walt_play import parse_walt_spec
         from scenario.compiled import CompiledWalt
         from scenario.planner import Walt
-        self.reader = parse_walt_spec(specs(net_path, likelihood)).walt
+        self.reader = parse_walt_spec(specs(net_path, likelihood, eps)).walt
         self.plain = parse_walt_spec(specs(net_path, None)).walt
-        self.shadow = parse_walt_spec(specs(net_path, "consistent")).walt if likelihood == "uniform" else None
+        self.shadow = parse_walt_spec(specs(net_path, "consistent", eps)).walt if likelihood == "uniform" else None
         self.reseed = CompiledWalt(replace(self.plain.config, seed=RESEED))
         self.referee = Walt(self.reader.config)
         self.rows: list[dict] = []
@@ -226,12 +228,18 @@ class Recorder:
         from scenario.fiber import Fiber
         from scenario.planner import situation_from_state
         from scenario.record import remaining_hand as rec_own
+        from concurrent.futures import ThreadPoolExecutor
         bids = [int(b) for b in bid_values]
-        read = self.reader.analyze_batch(states, bids)
+        # The four players plan at once (the core releases the GIL): a round's
+        # batch is too small to fill the cores alone.
+        with ThreadPoolExecutor(4) as pool:
+            read = pool.submit(self.reader.analyze_batch, states, bids)
+            plain = pool.submit(self.plain.analyze_batch, states, bids)
+            shadow = pool.submit(self.shadow.decide_batch, states, bids) if self.shadow is not None else None
+            reseed = pool.submit(self.reseed.decide_batch, states, bids)
+            read, plain, reseed = read.result(), plain.result(), reseed.result()
+            shadow = shadow.result() if shadow is not None else None
         draws = list(self.reader.draws)
-        plain = self.plain.analyze_batch(states, bids)
-        shadow = self.shadow.decide_batch(states, bids) if self.shadow is not None else None
-        reseed = self.reseed.decide_batch(states, bids)
         slots = []
         for i, (state, a) in enumerate(zip(states, read)):
             seat = current_player(state)
@@ -250,6 +258,7 @@ class Recorder:
                 "legal": len(a.q), "tile": a.tile, "plain": plain[i].tile,
                 "consistent": -1 if shadow is None else shadow[i][0], "reseed": reseed[i][0],
                 "fiber": fiber, "proposals": draws[i][0], "fell_back": draws[i][1], "real_like": like,
+                "distinct": len(set(a.worlds)),
                 "mass_read": _masses(a.worlds, a.weights, seat).round(5).tolist(),
                 "mass_plain": _masses(plain[i].worlds, plain[i].weights, seat).round(5).tolist(),
             })
