@@ -8,7 +8,7 @@ import pytest
 
 from arena.auction import BidContext, legal_bids
 from arena.match_equity import HandLaw, Linear, MatchEquity, Odds, mark_bid_value, one_mark_value
-from arena.zeb_bid import ZebBidder, choose_bid, forecast
+from arena.zeb_bid import Shrink, ZebBidder, choose_bid, forecast
 
 ROOT = Path(__file__).parent.parent
 PARITY = ROOT / "zeb" / "tests" / "fixtures" / "parity.json"
@@ -126,3 +126,57 @@ def test_partner_is_overcalled_only_by_a_mark_bid():
 
 def test_linear_is_the_mark_margin():
     assert Linear()(5, 2, 0) == 3.0
+
+
+class _Flags(_Fixed):
+    def __init__(self, fc, mode, odds, **kw):
+        ZebBidder.__init__(self, walt=None, mode=mode, law=HandLaw.coin(), odds=odds, **kw)
+        self._fixed = fc
+
+
+# an opponent (seat 0, team 0) holds 30; we are seat 1 (team 1), two seats after us
+_OVER_OPP = dict(high_bid=30, high_seat=0, bids=(30, -1, -1, -1), dealer=3)
+_OPP_ODDS = Odds(keep={(*k, b): 1.0 for k in _K for b in ("low", "high")}, over_set=0.2,
+                 pass_ours={k: 0.45 if k[0] == "none" else 0.2 for k in _K})
+
+
+def test_over_overcalls_when_the_mark_is_likelier_than_passing():
+    """Over an opponent's bid, `over` bids the call with the largest π once it
+    beats passing's π; the 0.8 rule passes the same hand."""
+    fc = [(1, (0.6, 0.35) + (0.1,) * 11), (4, (0.5, 0.3) + (0.05,) * 11)]
+    rng = random.Random(0)
+    assert _Flags(fc, "hand", _OPP_ODDS).bid(_ctx((0, 0), **_OVER_OPP), rng) == 0
+    assert _Flags(fc, "hand", _OPP_ODDS, over=True).bid(_ctx((0, 0), **_OVER_OPP), rng) == 31
+    weak = [(1, (0.6, 0.15) + (0.1,) * 11)]  # 31 makes 15% < passing's 20%
+    assert _Flags(weak, "hand", _OPP_ODDS, over=True).bid(_ctx((0, 0), **_OVER_OPP), rng) == 0
+    # nobody bid: passing is worth 45%, and `over` acts only over an opponent
+    assert _Flags(fc, "hand", _OPP_ODDS, over=True).bid(_ctx((0, 0)), rng) == 0
+
+
+def test_over_is_score_blind():
+    """One mark on every branch: the overcall is the same at every score."""
+    b = _Flags([(1, (0.6, 0.35) + (0.1,) * 11)], "hand", _OPP_ODDS, over=True)
+    calls = {b.bid(_ctx((x, y), **_OVER_OPP), random.Random(0)) for x in range(7) for y in range(7)}
+    assert calls == {31}
+
+
+def test_cal_reads_a_calibrated_forecast_only_over_an_opponent():
+    cool = Shrink(-1.0, 1.0)  # every p lower
+    assert Shrink(0.0, 1.0)(0.3) == pytest.approx(0.3)
+    assert cool(0.3) < 0.3 and cool(0.9) < 0.9 and cool(0.3) < cool(0.31)
+    fc = [(1, (0.9,) * 12 + (0.85,))]
+    rng = random.Random(0)
+    # over an opponent the 0.8 rule reads p̃: 0.9 becomes 0.77, and every bid is gone
+    assert _Flags(fc, "hand", _OPP_ODDS).bid(_ctx((0, 0), **_OVER_OPP), rng) == 42
+    assert _Flags(fc, "hand", _OPP_ODDS, cal=True, shrink=cool).bid(_ctx((0, 0), **_OVER_OPP), rng) == 0
+    # nobody bid: the raw forecast
+    assert _Flags(fc, "hand", _OPP_ODDS, cal=True, shrink=cool).bid(_ctx((0, 0)), rng) == 42
+    # the mark bid is priced with p̃42 over an opponent
+    met = _Flags(fc, "met", _OPP_ODDS, cal=True, shrink=cool)
+    met.bid(_ctx((6, 0), **_OVER_OPP), rng)
+    assert met.decisions[-1].p42 == pytest.approx(cool(0.85))
+
+
+def test_flags_are_off_by_default():
+    b = ZebBidder(walt=None)
+    assert (b.mode, b.over, b.cal) == ("hand", False, False)

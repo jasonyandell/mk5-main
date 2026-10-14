@@ -234,6 +234,93 @@ after the registration, so both are exploratory.
 refitted on the version that ships) for the next zeb version, pending Jason. Zeb 0.2.0 and every
 default stay as they are. Follow-ups: #160 (the pass threshold against an opponent's bid, met vs met, an auction-aware p42).
 
+## Follow-ups (#160): the pass over an opponent, an honest forecast there, a table that bids 84
+
+Three things the results above left open, measured before zeb 0.4 decides on `met`.
+
+### Pre-registration (committed before any measurement)
+
+**The two repairs** (`arena/zeb_bid.py`, both default off, both act only when an opponent
+holds the high bid at the bidder's turn):
+
+- **`over`** (defect a). When the 0.8 rule passes, overcall with the one-mark call 31..42 whose
+  π (the chance our side takes the hand's mark: `Odds.take`, the frozen field model) is largest,
+  if that π beats passing's (`pass_ours`, 17–20% over an opponent). Every branch moves one mark,
+  so the larger π is the better call at every score: score-blind by the theorem on
+  [[match-equity]].
+- **`cal`** (defect b). There the forecast is replaced by p̃ = sigmoid(a + b·logit p), a
+  two-parameter logistic recalibration fitted by maximum likelihood on every over-an-opponent
+  contract that stood in this study's prior blocks (BASE's hand-only point bids and 42s, P's
+  mark bids; `fit_cal.py`). It is fitted on held-out data: none of the follow-up's games exists
+  yet. p̃ is read everywhere the bidder reads the forecast there: the 0.8 rule, `over`, and the
+  mark bid's p42. The map is monotone, so the declaration does not change. **Why this and not
+  Walt's auction read** (#149, `Situation.auction`, `test_auction_read.py`): that read is a
+  likelihood on the *play* planner's world draw. It needs a model of how each opponent bids,
+  and nobody has fitted one for Zeb's bidder. A forecast conditioned on the auction through it
+  is a new estimator, while the shrink is two numbers fitted on data we already have. The
+  shrink is the honest simplest; the auction read is the right long-run object.
+
+**The fixed bidder** is `zeb:n160,met,over,cal`. Off the opponent-held turns it is `met`
+exactly.
+
+**Construction** (the prior study's shortcut, unchanged): the first 768 BASE games of the
+prior study (seeds 1001–1192, all four games of each, by seed and game) are the clusters.
+Every BASE turn an opponent held the bid has its forecast recomputed from the deal seed
+(`refc.py`). Before any arm is planned, the hand-only bidder run on each recomputed forecast
+must give the record's call, p_c0, p42 and priced call to the bit, or the study stops. `plan.py`
+finds each orientation's first turn where the arm's bidders call differently from BASE. Only
+those orientations are played (`sim_games.py`, the same engine from the deal; lockstep
+across seeds, 30 games to a `scripts/cpu-slot` run, one slot at a time).
+
+**Arms** (A on team t, both orientations of every cluster):
+
+- **AA**: met vs met, the first 32 clusters where met diverges, both orientations played.
+  Every cluster must be the same game mirrored (exact antisymmetry). Otherwise it is a harness
+  bug and the study stops. Note: in a two-team game the pairwise share is the whole story. Met
+  vs met is 50% by construction, and deployed Zeb against a met table wins 1 − P = 46.6%. So
+  "met's gain against a table that bids 84" is P's +3.4 already. What the table question can
+  change is the *repairs'* worth, so the realistic estimate is FM.
+- **VALID**: F's bidders on the first 32 never-diverging orientations, played in full. Each
+  must reproduce BASE exactly, or the shortcut is void and the arms are rerun as full games.
+- **F (bar)**: A = `met,over,cal` vs B = deployed hand-only. **Bar: the 95% interval's lower
+  bound > 50%.**
+- **FM (the realistic estimate, reported)**: A = `met,over,cal` vs B = `met`. Here the
+  opponents bid 84 and 126 by match equity too.
+- **O (secondary, last, only if the slot budget allows)**: A = `over,cal` (hand mode) vs B =
+  hand-only. These are the one-mark repairs alone, score-blind. Not running it is reported as
+  not run.
+
+Primary statistic: A's game share over the 2 × 768 orientations. Cluster = one BASE game, with
+both orientations. 95% percentile bootstrap over clusters, 10,000 resamples. Chance 50% (AA).
+Beside each arm: the model's first-order prediction, Σ ΔV at the first differing turn. Then
+`over`'s overcalls, whether our side took the mark more often than passing's π, and the
+calibration of A's over-an-opponent contracts. `over`'s calls are out of sample for the fit;
+the 0.8 rule's calls and mark bids repeat the fit's kinds.
+
+**Size.** The throughput pilot (24 of P's diverging games in one lockstep run; never read for
+outcomes) took 185 s on a loaded machine. All 24 reproduced P's games exactly. Under one slot
+that is about 8 games a minute. 768 clusters, with F and FM diverging in most orientations,
+make about 2,600 games for AA through FM, roughly 5–6 hours. At P's spread the interval
+half-width is about ±1.5 points. The size is not extended.
+
+**Batch-drop rule.** A run that fails or is killed at 300 s is retried at half its games, down
+to one. A game that still fails is DROPPED (logged in `logs/sched.log`), and its orientation is
+counted at BASE.
+
+**Decision rule for 0.4** (Jason's call; this is the recommendation the page will make):
+
+- F clears and FM's lower bound > 50%: recommend `met,over,cal`.
+- F clears and FM's interval holds 50%: recommend `met` alone. The repairs show no gain
+  against a table that bids 84, and every line is a liability.
+- FM's upper bound < 50%, or F fails: recommend `met` alone (P's evidence), and file the
+  repairs.
+
+No zeb crate change here in any case; the release carries it.
+
+Scripts at registration (sha256 prefixes): `sim_games.py` 6fb1b3cfe300, `refc.py`
+6fce0193c427, `plan.py` 396361403de5, `sched.py` 1586f6a0168e, `grade.py` 931c67b3ac88,
+`fit_cal.py` d5c90a653386, `blocks.json` 86cd4628fd99.
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/match-aware-bidding/`: every block's

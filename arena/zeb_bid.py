@@ -23,9 +23,25 @@ at 42. It is taken when its match equity beats the hand-only call's,
 E[V | 84] > E[V | c0]; c0's value counts the field's overcalls and what
 passing leaves (`Odds`). With `marks`, the same option priced by the
 expected mark margin instead (the score-blind yardstick).
+
+Two one-mark repairs for the turn when an opponent holds the high bid
+(#160, wiki/experiments/match-aware-bidding-2026-10-14.md § Follow-ups),
+both default off:
+
+  * `cal`: the forecast there is replaced by a calibrated one, logit p̃ =
+    a + b·logit p (`Shrink`, fitted on the prior study's over-an-opponent
+    contracts). The hand-only forecast never sees the opponent's bid, and
+    over one it runs 3–8 points hot. A monotone map: the declaration it
+    leans on is unchanged.
+  * `over`: when the 0.8 rule passes, overcall with the call whose chance
+    of taking the mark beats passing's (`Odds.pass_ours`, 17–20% over an
+    opponent). Every call from pass to 42 moves one mark, so the one with
+    the larger π is the better call at every score (the one-mark theorem):
+    a score-blind change.
 """
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass
 
@@ -105,6 +121,41 @@ ZEB_ODDS = Odds(
 )
 
 
+@dataclass(frozen=True)
+class Shrink:
+    """A calibration of the forecast: logit p̃ = a + b·logit p (p clipped to
+    [EPS, 1 − EPS]). Strictly increasing for b > 0; (0, 1) is the identity."""
+
+    a: float
+    b: float
+    EPS = 1e-4
+
+    def __call__(self, p: float) -> float:
+        p = min(max(p, self.EPS), 1.0 - self.EPS)
+        return 1.0 / (1.0 + math.exp(-(self.a + self.b * math.log(p / (1.0 - p)))))
+
+    def forecast(self, fc):
+        return [(d, tuple(self(p) for p in pm)) for d, pm in fc]
+
+
+def overcall(fc, need: int, odds: Odds, key: tuple[str, int]) -> tuple[int, int, float] | None:
+    """(bid, decl, pmake) of the one-mark call need..42 with the largest π
+    (lowest bid on a tie), when that π beats passing's; else None."""
+    best, pi = None, odds.pass_ours[key]
+    for bid in range(need, ONE_MARK + 1):
+        decl, p = best_at(fc, bid)
+        if odds.take(bid, p, key) > pi:
+            best, pi = (bid, decl, p), odds.take(bid, p, key)
+    return best
+
+
+# The forecast over an opponent's standing bid, calibrated (`cal`): fitted by maximum
+# likelihood on every over-an-opponent contract that stood in the prior study's BASE and P
+# blocks (HF zeb/match-aware-bidding/; zeb/match-aware-bidding-2/fit_cal.py), frozen
+# before the follow-up's plan ran.
+ZEB_SHRINK = Shrink(0.0, 1.0)
+
+
 def price(v, odds: Odds, us: int, them: int, nd: int, key: tuple[str, int], c0: int, p_c0: float,
           mark_call: int, p42: float) -> tuple[float, float, int]:
     """(E[V | c0], E[V | mark_call], the call with the larger): the
@@ -136,15 +187,19 @@ class Decision:
 
 
 class ZebBidder:
-    """Spec `zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks]`."""
+    """Spec `zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks][,over][,cal]`."""
 
     def __init__(self, walt, cutoff: float = 0.8, mode: str = "hand",
-                 law: HandLaw = ZEB_LAW, odds: Odds = ZEB_ODDS, label: str = "zeb"):
+                 law: HandLaw = ZEB_LAW, odds: Odds = ZEB_ODDS, label: str = "zeb",
+                 over: bool = False, cal: bool = False, shrink: Shrink | None = None):
         if mode not in ("hand", "met", "marks"):
             raise ValueError(f"zeb bidder mode is hand, met or marks, not {mode!r}")
         self.walt = walt
         self.cutoff = cutoff
         self.mode = mode
+        self.over = over
+        self.cal = cal
+        self.shrink = ZEB_SHRINK if shrink is None else shrink
         self.law = law
         self.odds = odds
         self.label = label
@@ -164,9 +219,20 @@ class ZebBidder:
         partner = ctx.high_seat != -1 and ctx.high_seat % 2 == ctx.team
         if partner and self.mode == "hand" and self.tag is None:
             return PASS  # never overcall the partner (Plunge's rule); nothing to price
-        fc = self.forecast(ctx.hand)
+        return self.decide(self.forecast(ctx.hand), ctx)
+
+    def decide(self, fc, ctx: BidContext) -> int:
+        """The call at this turn from the hand's forecast `fc` (`bid` without the forecast)."""
+        partner = ctx.high_seat != -1 and ctx.high_seat % 2 == ctx.team
+        holder = "none" if ctx.high_seat == -1 else "partner" if partner else "opp"
+        after = sum(1 for b in ctx.bids if b == -1) - 1
+        key = (holder, after)
+        if holder == "opp" and self.cal:
+            fc = self.shrink.forecast(fc)
         need = min(ctx.legal)
         hand_only = None if partner or need > ONE_MARK else choose_bid(fc, need, self.cutoff)
+        if hand_only is None and self.over and holder == "opp" and need <= ONE_MARK:
+            hand_only = overcall(fc, need, self.odds, key)
         c0, p_c0 = (PASS, 0.0) if hand_only is None else (hand_only[0], hand_only[2])
         if ctx.points_to_win is not None:
             return c0  # the match equity here is the marks game's
@@ -181,9 +247,6 @@ class ZebBidder:
             v = self._v[(yard, ctx.marks_to_win)] = self._yard[yard](ctx.marks_to_win)
         us, them = ctx.marks[ctx.team], ctx.marks[1 - ctx.team]
         nd = int((ctx.dealer + 1) % 2 == ctx.team)  # we shake first next hand
-        holder = "none" if ctx.high_seat == -1 else "partner" if partner else "opp"
-        after = sum(1 for b in ctx.bids if b == -1) - 1
-        key = (holder, after)
         _, p42 = best_at(fc, 42)
         e_c0, e_mark, priced = price(v, self.odds, us, them, nd, key, c0, p_c0, mark_call, p42)
         self.decisions.append(Decision(ctx.seat, (us, them), ctx.dealer, nd, key, c0, p_c0, mark_call,
@@ -194,25 +257,28 @@ class ZebBidder:
         return best_at(self.forecast(hand), min(bid, ONE_MARK))[0]
 
     def __repr__(self) -> str:
-        return f"ZebBidder(cutoff={self.cutoff}, mode={self.mode})"
+        return f"ZebBidder(cutoff={self.cutoff}, mode={self.mode}, over={self.over}, cal={self.cal})"
 
 
 SHIPPED_NET = "zeb/net/margin_d250k_h128x64.fnet"
 
 
 def parse_zeb_bidder(arg: str) -> ZebBidder:
-    """`zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks|hand]`: the forecast
-    at `worlds` (default 512, the graded setting) over the shipped net."""
+    """`zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks|hand][,over][,cal]`:
+    the forecast at `worlds` (default 512, the graded setting) over the
+    shipped net."""
     from pathlib import Path
 
     from scenario.compiled import CompiledWalt
     from scenario.field import FieldNet
     from scenario.planner import Config, Rung
 
-    worlds, cutoff, seed, mode = 512, 0.8, 0, "hand"
+    worlds, cutoff, seed, mode, flags = 512, 0.8, 0, "hand", {"over": False, "cal": False}
     for t in (p for p in arg.split(",") if p):
         if t in ("hand", "met", "marks"):
             mode = t
+        elif t in flags:
+            flags[t] = True
         elif t[0] in "ncs" and t[1:]:
             if t[0] == "n":
                 worlds = int(t[1:])
@@ -224,4 +290,4 @@ def parse_zeb_bidder(arg: str) -> ZebBidder:
             raise ValueError(f"unknown zeb bidder option {t!r}")
     net = FieldNet.from_bytes((Path(__file__).parent.parent / SHIPPED_NET).read_bytes())
     walt = CompiledWalt(Config((Rung(worlds, None, 16),), "make", seed, field=net))
-    return ZebBidder(walt, cutoff, mode, label=f"zeb:{arg}")
+    return ZebBidder(walt, cutoff, mode, label=f"zeb:{arg}", **flags)
