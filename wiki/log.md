@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-13, 236 archived entries)
+## Digest (2026-04-09 → 2026-10-13, 242 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -32,6 +32,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The book as the book means it** (2026-10-13, 6 archived entries) — [[book-study-2026-10-12]]: the 14 faithful rules and their re-price (Zeb 54% vs 40%), the dead-double and trump-set encoding fixes, the reason report's grown space ([[scenario-player]]), [[silas]]'s solved outcomes and the first repaired rules (C10, C12B).
 - **Silas grows up** (2026-10-13, 6 archived entries) — [[silas]]: cross-game slice 1 (the match frame), `scripts/check` and the conflict-free log, the perf pass (no GPU path), the short forms and coverage funnel, slice 2 (the auction), the book's second encoding batch (71 rows).
 - **Silas reasons from evidence** (2026-10-13, 6 archived entries) — [[silas]]: the aggregate (#135), the bid as evidence (#134), the plays as evidence (#128), the trump-set rules rare not mis-guarded (#141), the private adjudications carried into the book fixture; [[endgame-equivalence-census]] ported (worlds never compress).
+- **The book measured, the solver bounded** (2026-10-13, 6 archived entries) — [[book-study-2026-10-12]]'s re-price 3, the head-to-head ([[book-head-to-head-2026-10-13]]) and the metasplat ([[metasplat-2026-10-13]]); [[splat-search-bounds]]; [[silas]] reconciles Hand 26 (#143); the TS engine's mark-bid cap lifted (#142).
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
@@ -42,6 +43,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | 0dab46ff | the book's encoding repaired (#146): ten rules back inside their headers; block b re-measured −1.41 marks/game (+0.47 [+0.33, +0.62]), 38.4% to 250]
 
 **Updated:** [[book-investigation-2026-10-14]] (§ After the repairs: pre-registration, results), [[silas]] (§ The encoding's repairs), `silas/GAPS.md` (§ The book's silences). Twelve core pins moved (`silas/tests/core_pins.rs`). Data: `book/encoding-repairs/` on the research repo.
+
 ## [2026-10-14 | d7db9e36 | an exploiter against Zeb on three-trick endgames (#77): G = +0.50 [+0.42, +0.58] margin, neither sturdy nor shown exploitable; half is lowest-id ties after the contract is decided; +0.004 in contract probability]
 
 **Added:** [[exploiter-endgames-2026-10-14]] (pre-registered at d7db9e36). **Updated:** [[scenario-player]], [[brainstorm-2026-10-14-ledger]], `index-experiments.md`. Code: `scenario/exploiter.py`, `scenario/tests/test_exploiter.py`. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/exploiter/`.
@@ -80,28 +82,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | 53294297 | lumps by a hidden tile: 96.5% robust beyond the bar, the 5-5 the tile most worth knowing (0.39 pp of make beyond the null), restricted choice exact in Silas]
 
 **Added:** [[lumps-voi-2026-10-13]] (`scenario/lumps_voi.py`). **Updated:** [[metasplat-2026-10-13]], [[scenario-player]], `index-experiments.md`. Data: `zeb/lumps-voi/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
-
-## [2026-10-13 | 9f14a106 | searching over splats: what is sound, what is tractable (dominance, admissible heuristics, lump bounds; probe at tricks 2-4)]
-
-**Added:** [[splat-search-bounds]]. **Updated:** [[scenario-player]], [[metasplat-2026-10-13]], [[splat-visualizer]], `index-topics.md`.
-
-## [2026-10-13 | 64b3db69 | the metasplat: Zeb's splat against the book's at every live firing, nine shapes fixed before counting; 44% of departures a make edge (27% dominant, 3% safer tail at a lower mean), 45% even make, 11% ties]
-
-**Added:** [[metasplat-2026-10-13]] (`scenario/metasplat.py`, `reason.explain`, the page's book view). **Updated:** [[book-study-2026-10-12]] § Finer than a price, [[splat-visualizer]] § Book against Zeb, `index-experiments.md`. Data: `book/metasplat/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
-
-## [2026-10-13 | scratch/book-h2h | the book player against Zeb: the 18 rules as a Silas stack lose −1.88 marks/game with Zeb's tile where no rule fires; each departure from Zeb rolled out, −0.051 marks, +0.036 over chance, no rule gains]
-**Added:** [[book-head-to-head-2026-10-13]] (pre-registered; data at texas-42-zeb-research-2026-10 `book/head-to-head/`).
-**Updated:** [[book-study-2026-10-12]] (§ The book at the table), [[scenario-player]] (the book player; marks bids planned as 42), index-experiments.
-**Code:** `arena/book_play.py` (book play, `SilasBidder`), `SilasPolicy.bid`/`declare` in `scenario/core`.
-
-## [2026-10-13 | scratch/book-reprice-3 | the book's 18 rules as the book means them re-priced on the whole pour at current main, same method and bands: Zeb's pick is the book's move at 56% vs a 43% random floor (0.24); sides with 3, weak on 9, no relation on 2, between on 3, against none]
-
-**Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, carriers, reading; summary verdicts in place); [[w42]], [[silas]], `index-experiments.md`, `CLAUDE.md`. Data: `book/book-reprice-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
-
-## [2026-10-13 | 2fe46194 | the TS engine no longer caps mark bids at four (#142): the enumerator's bound was a literal, the validator and the rules page already let one-mark steps run on; the 834-prefix fixture now agrees on five marks too]
-
-**Touched pages:** [[silas]] (the auction's legality line; `silas/README.md`, `tests/auction.rs`). Engine: `src/game/core/rules.ts` (`highestNamableMarks`), `layers/base.ts`, URL codes for 4 and 5 marks; `src/tests/rules/bidding/mark-bid-ceiling.test.ts`. No config or variant: the cap was a bug.
-
-## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
-
-**Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.

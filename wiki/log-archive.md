@@ -4086,3 +4086,28 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-13 | 49392914 | silas reads the plays as evidence (#128 for the play): consistent likelihood by default, uniform on request, counted exactly; S-0140-e's "you know" is 2/15 from the seat and 1 read under protect-the-count; C21's bait under crisis is 91/167, not certainty]
 
 **Touched pages:** [[silas]] § The plays as evidence. `silas/README.md` § Semantics, The record as evidence, The `silas` command; `silas/GAPS.md` gap 1 narrowed again (a rule acting on a reading remains).
+
+## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
+
+**Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.
+
+## [2026-10-13 | 2fe46194 | the TS engine no longer caps mark bids at four (#142): the enumerator's bound was a literal, the validator and the rules page already let one-mark steps run on; the 834-prefix fixture now agrees on five marks too]
+
+**Touched pages:** [[silas]] (the auction's legality line; `silas/README.md`, `tests/auction.rs`). Engine: `src/game/core/rules.ts` (`highestNamableMarks`), `layers/base.ts`, URL codes for 4 and 5 marks; `src/tests/rules/bidding/mark-bid-ceiling.test.ts`. No config or variant: the cap was a bug.
+
+## [2026-10-13 | scratch/book-reprice-3 | the book's 18 rules as the book means them re-priced on the whole pour at current main, same method and bands: Zeb's pick is the book's move at 56% vs a 43% random floor (0.24); sides with 3, weak on 9, no relation on 2, between on 3, against none]
+
+**Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, carriers, reading; summary verdicts in place); [[w42]], [[silas]], `index-experiments.md`, `CLAUDE.md`. Data: `book/book-reprice-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+
+## [2026-10-13 | scratch/book-h2h | the book player against Zeb: the 18 rules as a Silas stack lose −1.88 marks/game with Zeb's tile where no rule fires; each departure from Zeb rolled out, −0.051 marks, +0.036 over chance, no rule gains]
+**Added:** [[book-head-to-head-2026-10-13]] (pre-registered; data at texas-42-zeb-research-2026-10 `book/head-to-head/`).
+**Updated:** [[book-study-2026-10-12]] (§ The book at the table), [[scenario-player]] (the book player; marks bids planned as 42), index-experiments.
+**Code:** `arena/book_play.py` (book play, `SilasBidder`), `SilasPolicy.bid`/`declare` in `scenario/core`.
+
+## [2026-10-13 | 64b3db69 | the metasplat: Zeb's splat against the book's at every live firing, nine shapes fixed before counting; 44% of departures a make edge (27% dominant, 3% safer tail at a lower mean), 45% even make, 11% ties]
+
+**Added:** [[metasplat-2026-10-13]] (`scenario/metasplat.py`, `reason.explain`, the page's book view). **Updated:** [[book-study-2026-10-12]] § Finer than a price, [[splat-visualizer]] § Book against Zeb, `index-experiments.md`. Data: `book/metasplat/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+
+## [2026-10-13 | 9f14a106 | searching over splats: what is sound, what is tractable (dominance, admissible heuristics, lump bounds; probe at tricks 2-4)]
+
+**Added:** [[splat-search-bounds]]. **Updated:** [[scenario-player]], [[metasplat-2026-10-13]], [[splat-visualizer]], `index-topics.md`.
