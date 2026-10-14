@@ -4111,3 +4111,34 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-13 | 9f14a106 | searching over splats: what is sound, what is tractable (dominance, admissible heuristics, lump bounds; probe at tricks 2-4)]
 
 **Added:** [[splat-search-bounds]]. **Updated:** [[scenario-player]], [[metasplat-2026-10-13]], [[splat-visualizer]], `index-topics.md`.
+
+## [2026-10-13 | 53294297 | lumps by a hidden tile: 96.5% robust beyond the bar, the 5-5 the tile most worth knowing (0.39 pp of make beyond the null), restricted choice exact in Silas]
+
+**Added:** [[lumps-voi-2026-10-13]] (`scenario/lumps_voi.py`). **Updated:** [[metasplat-2026-10-13]], [[scenario-player]], `index-experiments.md`. Data: `zeb/lumps-voi/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+
+## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
+
+**Added:** [[strategy-fusion-fence]] (the ruling, the inventory, the sanctioned uses). **Updated:** [[silas]], [[the-wall]], [[splat-search-bounds]], [[strategy-fusion]], [[intermediate-ai]], `index-topics.md`, `CLAUDE.md` (Hard rules). Guard: `src/tests/architecture/strategy-fusion-fence.test.ts`.
+
+## [2026-10-14 | 07abdbbf | make, then margin: Zeb's exact ties broken by the plan's margin (#120); marks null, +4.5 points a hand, book agreement 52.2% → 54.3%]
+
+**Added:** [[tie-margin-2026-10-14]] (`Config.tie`, arena `t=margin`, default off). **Updated:** [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-margin/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | 902786f5 | the book against Zeb, investigated: the method holds, 44% of the loss is the encoding, the book loses its own game (points to 250) but wins it as Zeb's tie-break (53%, replicated); readers of plays change nothing]
+
+**Added:** [[book-investigation-2026-10-14]] (pre-registered; data at texas-42-zeb-research-2026-10 `book/investigation/`).
+**Updated:** [[book-head-to-head-2026-10-13]] (corrected in place: the chance baseline, the forecast, the per-rule ranking, block c, b-rb's one gaining rule, the concentration list), [[book-study-2026-10-12]] § The book at the table, [[scenario-player]], index-experiments.
+**Code:** `arena/engine.py` `points_to_win` and `arena/auction.py` `settle_points` (the book's game), `arena/book_play.py` `ties=union` and `w<eps>`, `SilasPolicy.bid`/`declare` take the match's scoring; the reading Zeb of 3262eea0 merged.
+**Issues:** #146 (the encoding's repairs), #147 (a reader by the book's policies).
+
+## [2026-10-14 | 5ee71159 | Zeb reads the other seats' plays: consistent and uniform likelihoods both null in marks, restricted choice +0.10 [−0.15, +0.36]]
+
+**Added:** [[reads-plays-2026-10-13]] (`Config.reading`, `scenario/reads_plays.py`). **Updated:** [[scenario-player]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+
+## [2026-10-14 | 492fef99 | constellations resurrected as Zeb's late-hand table: a 0.5 µs form in the core, exact under a structural field, not under the net; the late-hand ladder settles by level 3]
+
+**Added:** [[constellations-2026-10-14]]. **Touched pages:** [[scenario-player]] [[endgame-equivalence-census]]. Code: `scenario/core/src/constellation.rs`, `scenario/constellation.py`, `field_train` warm start. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/constellations/`.
+
+## [2026-10-14 | e94f857f | Silas ergonomics, round 2: a suit's face order before the declaration, least/most, coverage over a bidding policy's contracts with a stated play model]
+
+**Updated:** [[silas]] (§ Ergonomics, round 2), `silas/README.md`, `silas/GAPS.md`. **Added:** `silas/examples/populations/` (#141's bidders and play model, one command instead of Rust).
