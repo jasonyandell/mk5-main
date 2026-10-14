@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """A pour, published. The three tables are the pour's columns cut at its
 offsets: every row reads back to its position bit for bit, the advantages
 are the atlas reader's, and the staged repo is a dataset card (CC0, one

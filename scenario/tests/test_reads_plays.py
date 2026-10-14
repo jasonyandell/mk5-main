@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The reads-plays study's bookkeeping (`scenario.reads_plays`): the lump
 masses read off a weighted sample, the pairing of games into deal clusters,
 the marks per game, restricted choice's paired difference, and the decision

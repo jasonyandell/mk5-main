@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The atlas: fully known deals, their perfect-information game trees, and
 Walt's honest imperfect-information evaluation written on their positions.
 

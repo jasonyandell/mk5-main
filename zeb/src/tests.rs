@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 //! The player natively: the embedded net, the plans, determinism, and
 //! parity with the Python referee on `tests/fixtures/parity.json`, down to
 //! every scenario's outcome.

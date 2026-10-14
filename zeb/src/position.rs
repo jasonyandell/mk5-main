@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 //! A position as a seat sees it, rebuilt from the deal's public plays and
 //! checked play by play — so the planner never sees an impossible record.
 

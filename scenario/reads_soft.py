@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Zeb reads the other seats' plays through a soft set: does the reading pay
 where its model is true? (#145)
 

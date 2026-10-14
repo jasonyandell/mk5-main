@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The first real query: the book's four-fives 84 (Roberson, Winning 42,
 //! p. 113). Fives are trump and the bidder, S0, holds
 //! 5-5 5-4 5-2 5-0 4-4 4-2 2-2; the other 21 tiles are hidden, seven to a seat.

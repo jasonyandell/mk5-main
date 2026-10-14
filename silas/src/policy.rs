@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Executable policies: a pure function of the viewer's information. A
 //! decision tries an exact table keyed by the complete record, then ordered
 //! relational rules guarded by viewer-only queries, then a total fallback.

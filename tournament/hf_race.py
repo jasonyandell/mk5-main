@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The no-conflict property on the real backend: writers racing commits to one HF dataset.
 
     python -u -m tournament.hf_race --repo jasonyandell/texas-42-tournament-selftest

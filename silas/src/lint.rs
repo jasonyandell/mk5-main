@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Warnings: what, on its face, makes a pattern never hold, a clause say
 //! nothing, or a rule never fire. Each is read off the core, so a sugared
 //! text and its spelled-out form warn alike. A warning is advice, not a

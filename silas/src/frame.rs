@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! What a seat knows. A [`Frame`] is the hand's public record as one seat
 //! sees it: the [`Auction`], the declaration (the [`Physics`]), the viewer,
 //! the hand it was dealt, and every play so far. Everything else (the

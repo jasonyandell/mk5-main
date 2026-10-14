@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Constellations over Zeb's late hand: what a lookup keyed on them may hold.
 
 A constellation (`scenario/core/src/constellation.rs`) is a position with

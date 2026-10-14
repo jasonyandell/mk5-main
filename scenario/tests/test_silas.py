@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Silas through Python on Zeb's rules: frames from Zeb's decisions, exact
 beliefs and summaries in Fractions, float weights read exactly and labeled
 by their source, and the three-valued comparison."""

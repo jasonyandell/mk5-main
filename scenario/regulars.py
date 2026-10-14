@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The regulars' table (#149): does an opponent who models Zeb across hands
 make Zeb's determinism cost, and the book's variation pay?
 

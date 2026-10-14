@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { Socket } from './Socket';
 import type { ClientMessage, ServerMessage } from './protocol';
 import type { GameView } from './types';

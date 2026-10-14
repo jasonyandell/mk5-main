@@ -1,4 +1,7 @@
 #!/usr/bin/env npx tsx
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * STRATEGY-FUSION FENCE, a sanctioned use: clairvoyant (double-dummy) minimax
  * on one fully known deal, to cross-validate the engine against the oracle's

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import type { GameState } from '../../../game/types';

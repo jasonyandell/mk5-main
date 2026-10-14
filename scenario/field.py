@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """The field net: a small integer policy that plays the modeled seats.
 
 The ladder's bottom rung is random legal play from the tape. A `FieldNet`

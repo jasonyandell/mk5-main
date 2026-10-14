@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Constellations: one remaining game, whatever came before, and a table of
 Zeb's plan values that is exact where its field reads only constellations."""
 import random

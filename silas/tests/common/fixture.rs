@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The book's illustrated examples (`examples/book/hands.json`), read as data:
 //! every hand and deal the book draws, and the plays its prose narrates. Facts
 //! and capture anchors only; see the file's `about` and `notation`.

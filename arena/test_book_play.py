@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The book player (arena/book_play.py): the Silas stack, its variants, and
 the Silas bidders as arena bid policies."""
 import random

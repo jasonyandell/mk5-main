@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 /**
  * @jasonyandell/zeb — Zeb, the Texas 42 scenario player, in WebAssembly.
  *

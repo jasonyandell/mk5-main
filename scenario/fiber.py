@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The fiber — every hidden-hand completion of an information state — and
 exact-uniform sampling from it.
 

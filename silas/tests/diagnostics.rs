@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Diagnostics for a rule that silently never fires: warnings read off the
 //! core (`Query::lint`, `PolicyProgram::lint`), and the funnel that says
 //! where a pattern stops and how often each step holds (`Funnel`,

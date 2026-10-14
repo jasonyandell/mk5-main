@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The atlas. The mold: the compiled count of a deal's positions per layer
 is the referee's, on seeded random deals. The pour: Walt's self-play line
 replays legally to its recorded ending, every kept splat reproduces the

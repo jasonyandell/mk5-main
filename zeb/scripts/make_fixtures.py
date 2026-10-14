@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """Write the parity fixtures: positions planned by the Python referee
 (`scenario.planner.Walt`) under exactly the configs the zeb package uses.
 

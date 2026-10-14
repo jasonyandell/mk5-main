@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid, Domino } from '../../../game/types';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer, countDoubles } from '../../../game';

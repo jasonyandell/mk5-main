@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Recognition speed: what a constellation lookup costs at a late-hand
 //! decision, against a plain cache probe on the exact record and against
 //! just planning (deployed Zeb: one rung, 512 worlds, floor 16, the field net).

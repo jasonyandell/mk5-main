@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE, sanctioned: the clairvoyant solver checks single
 //! known counterexample deals; a lead that fails even double dummy fails every
 //! real line. The ruling: wiki/topics/strategy-fusion-fence.md.

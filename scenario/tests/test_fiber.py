@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The fiber sampler is exact: lawful always, uniform by count."""
 import random
 from collections import Counter

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Static hand metrics for bid evaluation.
 
 A module-grade port of the wave-2.B validated arithmetic in

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The rules of 42 as tables, one set per declaration — `scenario/rules.py`.
 //!
 //! The Python side tabulates `forge.oracle.tables`, the rules authority;

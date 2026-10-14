@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Nello Layer - Special contract where bidder must lose all tricks.
  *

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Analyze E[Q] predictions vs actual game outcomes.
 
 Compares predicted E[Q] values at each decision to actual game outcomes

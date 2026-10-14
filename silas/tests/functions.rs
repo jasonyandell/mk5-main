@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Functions are numbers (#144; README, Semantics): a predicate functional in
 //! its last argument, a number, read without it, `(to-set)` or `(count d)`, is
 //! that number in a comparison. Held to the relation it reads on frames of

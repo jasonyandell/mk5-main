@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, LedSuit, LedSuitOrNone, Play } from '../types';
 import { BID_TYPES } from '../constants';
 import { calculateTrickPoints } from './scoring';

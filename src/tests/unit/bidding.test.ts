@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import { composeRules, baseLayer, nelloLayer, plungeLayer, splashLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';

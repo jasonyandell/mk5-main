@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 // The package through its WebAssembly: bit-identical to the Python referee
 // on the fixtures, deterministic, and refusing bad requests in plain words.
 // Run with `npm test` (which builds pkg/ first).

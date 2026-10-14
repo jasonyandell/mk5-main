@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Rules tables and the public record agree with the zeb engine, play by play."""
 import random
 

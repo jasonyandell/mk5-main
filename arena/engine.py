@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Full-game arena engine: deal → auction → play → score, first to the target.
 
 Each game is a race between absolute team 0 (seats 0/2) and team 1 (seats

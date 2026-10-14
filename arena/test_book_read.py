@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The book-aware reader (arena/book_read.py, #147): the stack's verdict as the
 book player decides it, the book's likelihood per world, and its batch form."""
 import random

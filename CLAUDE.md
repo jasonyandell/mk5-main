@@ -115,6 +115,9 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
   `npx playwright test --config=playwright.scratch.config.ts`, never in `npm run test:e2e`.
 - **Generated data goes to Hugging Face, not GitHub.** A pour, an arena's per-deal output, a study's
   results: public, CC0, published the moment a wiki page cites it ([publish-data-to-huggingface](wiki/playbooks/publish-data-to-huggingface.md)).
+- **THE LICENSE LINE.** Walt and the science are CC0; Zeb (`zeb/`, Zeb's layer in `scenario/`) is
+  MIT. Every new file gets an SPDX header (or a `REUSE.toml` entry), and `reuse lint` must pass
+  (the `reuse` suite of `scripts/check`). The line in words: [LICENSE](LICENSE).
 - **ES modules only** (`"type": "module"`): `import { x } from './path'`, never `require`.
 - **Python: always `python -u`** so logs stream in real time.
 - **Forge is GPU-only.** No CPU fallback paths in forge training/self-play/MCTS — fail fast
@@ -122,7 +125,7 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
 
 ## Quality gates
 
-**`scripts/check` runs every suite (TS, Rust, Python, Lean, wiki) and must say GREEN before a merge;
+**`scripts/check` runs every suite (TS, Rust, Python, Lean, wiki, licenses) and must say GREEN before a merge;
 `--fast` runs only what the diff against origin/main touches.** It builds its own `scratch/venv` (uv)
 with this checkout's `scenario_core`, so a fresh worktree needs only node, cargo, uv, wasm-pack, lake.
 

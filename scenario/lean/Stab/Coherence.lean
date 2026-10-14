@@ -1,3 +1,6 @@
+-- SPDX-FileCopyrightText: Jason Yandell
+-- SPDX-License-Identifier: CC0-1.0
+
 /-!
 # L3: the best response is a finite, exact argmax; the coherence bound
 (note 1, sections 2-3)

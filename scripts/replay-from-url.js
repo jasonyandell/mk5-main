@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 
 // Use dynamic import with tsx to handle TypeScript
 import { execSync } from 'child_process';

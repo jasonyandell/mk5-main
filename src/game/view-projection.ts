@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { FilteredGameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase, LedSuit } from './types';
 import { GAME_PHASES } from './index';
 import { getSuitName, getTrumpDisplay } from './game-terms';

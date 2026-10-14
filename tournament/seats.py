@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Seat a participant at the arena's table: one (BidPolicy, PlayPolicy) per game.
 
 The referee is the arena (`arena/engine.py`): deal, auction, play, marks. A

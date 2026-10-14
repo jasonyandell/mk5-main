@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The planner solves the represented problem: optimality against a fixed
 field, the information inequality, scale invariance, determinism, legality."""
 import random

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Seeded random number generator using Linear Congruential Generator (LCG)
  * This ensures deterministic randomness for game replay

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Silas: a typed relational language over the worlds consistent with what a
 //! seat of Texas 42 knows.
 //!

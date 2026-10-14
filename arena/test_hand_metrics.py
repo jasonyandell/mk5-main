@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Hand metrics tests, including equivalence with the original w42 hand_eval."""
 import importlib.util
 import random

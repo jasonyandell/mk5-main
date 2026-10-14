@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The metasplat on a real (small) pour, read against a stand-in book rule
 ("play your lowest legal tile"): every row is its position's pair, read by
 the reference `contrast`; the contrast is the best tile on the other side of

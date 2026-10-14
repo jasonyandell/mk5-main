@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The regulars' table (#149): the bidder model, the memory, the varied
 bidder and the engine's per-game memory hook."""
 

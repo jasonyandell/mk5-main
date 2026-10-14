@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """One faceoff: `pairs` duplicate deal pairs between two participants.
 
 A duplicate pair is two games on the same deals with the seats swapped: in

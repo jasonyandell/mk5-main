@@ -291,4 +291,19 @@ rewrites the parity fixtures from the Python referee.
 
 ## License
 
-MIT
+MIT (`LICENSE`), by Jason Yandell. Walt, the planner underneath, is CC0 in the
+[source repository](https://github.com/jasonyandell/mk5-main), and so are the
+field net's weights and the pour they were trained on. The code is free (CC0 / MIT). The names Walt, Zeb,
+and Plunge are not licensed as the name of your product.
+
+## Powered by Walt
+
+![Powered by Walt](https://raw.githubusercontent.com/jasonyandell/mk5-main/main/docs/powered-by-walt.svg)
+
+If Zeb plays in your game, a credit line is welcome and never required:
+
+```
+Powered by Walt — Jason Yandell's scenario player for Texas 42
+```
+
+Shipping something with Zeb? [Say hi](https://github.com/jasonyandell/mk5-main/issues).

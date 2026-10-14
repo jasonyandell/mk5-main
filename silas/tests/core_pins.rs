@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The core every file of the crate reads to, pinned. A Silas text is read
 //! to its core: definitions expanded, sugar rewritten, roles and outputs
 //! spelled out. The core prints as itself (`Display`), so equal prints are

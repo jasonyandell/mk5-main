@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Asking a book rule what it allows at a position, at all four seatings.
 
 use silas::*;

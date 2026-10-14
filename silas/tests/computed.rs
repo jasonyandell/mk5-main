@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! A computed call (#148; README, The auction): a bidding rule whose call is
 //! a number of its guard's answer, `(bid (- 42 (risk t)))`. Held here: the
 //! difference `(- a b ...)` as an interval, its negation exact and its caps

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Zeb reads the other seats' plays: does restricted choice pay?
 
 Deployed Zeb plans over worlds uniform on its cell: how the other seats

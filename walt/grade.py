@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/grade.py — WaltPlay arena policy + paired grading driver (builder B4).
 
 WaltPlay is an arena play policy (``choose(states, bid_values, marks,

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Bid policies for the arena.
 
 All policies declare a pip trump (decl_id 0-6); doubles/no-trump contracts

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Full-game Texas 42 arena: auction + play, games to 7 marks.
 
 The measuring stick for the champion line (GitHub milestone "Champion",

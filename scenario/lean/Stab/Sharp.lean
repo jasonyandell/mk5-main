@@ -1,3 +1,6 @@
+-- SPDX-FileCopyrightText: Jason Yandell
+-- SPDX-License-Identifier: CC0-1.0
+
 import Stab.Ladder
 namespace Stab
 def shiftR (n : Nat) (p : Nat → Bool) : Nat → Bool := fun i => if i < n then p (i + 1) else true

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { Domino, TrumpSelection, SuitCount, SuitRanking, SuitAnalysis } from '../types';
 import { CALLED } from '../types';
 import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from './dominoes';

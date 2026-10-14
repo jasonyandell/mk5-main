@@ -1,21 +1,34 @@
-MIT License
+Texas 42 (mk5) — Copyright Jason Yandell
 
-Copyright (c) 2025 Texas 42 Contributors
+This repository is under two licenses. Every file says which, in its own
+SPDX header or in REUSE.toml, and `reuse lint` checks that none is missing.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+CC0 1.0 (public domain) — the science. Everything by default: the engine
+(src/), Walt, the scenario player (scenario/: the planner, the referee, the
+compiled core, the Lean proofs), Silas (silas/), the arena, the tournament,
+the wiki, the docs, the scripts, the oracle era (forge/, gus/, champion/,
+w42/ and the rest), and the data. Use it for anything; no credit required.
+Full text: LICENSES/CC0-1.0.txt.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+MIT — Zeb, the player built on Walt: the package in zeb/, and Zeb's layer
+in scenario/ (the field net, its training, its posterior draw and reading,
+and the make-then-margin tie rule). Full text: LICENSES/MIT.txt and
+zeb/LICENSE. The field net's weights (zeb/net/) are CC0: they were
+published CC0 on Hugging Face first, with the pour they were trained on.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+A few files carry both (SPDX "CC0-1.0 AND MIT"): scenario/planner.py,
+scenario/compiled.py, scenario/core/src/planner.rs,
+scenario/core/src/python.rs and arena/walt_play.py are Walt with Zeb's layer
+woven through them. Until they are split (issue #158), treat them as MIT.
+
+Not ours: the agent skills that REUSE.toml marks LicenseRef-third-party
+(LICENSES/LicenseRef-third-party.txt), and the quotations from Dennis
+Roberson's Winning 42, which are his and appear here as citation.
+
+The names. The code is free (CC0 / MIT). The names Walt, Zeb, and Plunge are
+not licensed as the name of your product.
+
+Powered by Walt. If you ship something with Walt, a credit line is welcome,
+never required: "Powered by Walt — Jason Yandell's scenario player for
+Texas 42". There is a badge in docs/powered-by-walt.svg. Shipping something
+with Walt? Say hi: https://github.com/jasonyandell/mk5-main/issues

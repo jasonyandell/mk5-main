@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The Physics boundary. A rules engine supplies one declaration's four rule
 //! tables through [`Declaration`]: the led context of each tile, the tiles
 //! following each context, the trick key, and the count. Silas reads them

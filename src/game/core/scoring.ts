@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { GameState, Play } from '../types';
 import { isEmptyBid } from '../types';
 import { BID_TYPES } from '../constants';

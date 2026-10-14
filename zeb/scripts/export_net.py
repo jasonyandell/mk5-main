@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """Export a field net to the blob the zeb package embeds.
 
     python -u -m zeb.scripts.export_net NET.npz [OUT.fnet]

@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0 AND MIT
+# Walt (CC0-1.0) with Zeb's layer woven in (MIT): the field net, the posterior
+# draw and its reading, and the make-then-margin tie rule. See LICENSE.
+
 """The finite planning rule and the ladder of players.
 
 One decision invocation: form a belief (a weighted set of scenarios), solve

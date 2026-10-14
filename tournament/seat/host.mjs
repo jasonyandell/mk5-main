@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 // A tournament seat for a pinned JavaScript/WebAssembly player, one JSON line
 // per decision over stdin/stdout. The Python referee (arena/engine.py) owns the
 // game; this process sees only what its seat may see: its own dealt tiles, the

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Splash Layer - Special 2-3 mark bid requiring 3+ doubles.
  *

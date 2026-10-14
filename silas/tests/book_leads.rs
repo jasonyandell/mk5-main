@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE, sanctioned: the double-dummy rows check the book's
 //! claims about its own fully narrated deals. The ruling:
 //! wiki/topics/strategy-fusion-fence.md.

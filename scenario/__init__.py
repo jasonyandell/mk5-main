@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The scenario player — Walt, written from the mathematics.
 
     Walt = R_live[ R_model[ U ] ]

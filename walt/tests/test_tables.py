@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """test_tables.py — parity of walt LUTs against the zeb engine & forge tables.
 
 Plain executable script: prints one PASS/FAIL line per gate, exits nonzero on

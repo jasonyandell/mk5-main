@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Constellations: the canonical form of a position over the live tiles.
 //!
 //! The remaining game reads a tile only through relations among the tiles

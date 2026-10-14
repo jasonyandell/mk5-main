@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The aggregate (`GAPS.md`, 5): `(card (roles ...) clause ...)` counts the
 //! bindings that satisfy a body, `(points (roles d) clause ...)` sums their
 //! count, and `(<= a b)` compares two of them, literals or sums (README,

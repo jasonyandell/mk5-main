@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Core game configuration types shared across engine, server, and protocol.
  * Lives under src/game to avoid upward dependencies from core modules.

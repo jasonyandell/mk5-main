@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Lumps and the value of knowing one tile: where Zeb's move depends on who
 holds a hidden tile, and how much knowing it would be worth.
 

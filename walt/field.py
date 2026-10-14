@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/field.py (builder B2) — the jud field oracle.
 
 The `jud` play net as a deterministic, batched, memoized field σ for walt's

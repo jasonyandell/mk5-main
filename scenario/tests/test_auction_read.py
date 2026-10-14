@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """The auction in a reading's likelihood (#149, `Situation.auction`): per
 read seat, a table over the slot of the hand the world says it was dealt
 (`ceiling_slot`), multiplied into the seat's factor. The core's slot is the

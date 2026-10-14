@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/solver.py — the exact endgame information-set solver.
 
 `solve()` computes the exact best response of ``root.me`` in the information-set

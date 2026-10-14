@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The book's frame facts as queries (Roberson, *Winning 42*): what an off
 //! can lose and which side a double protects (`off-risk.silas`,
 //! `off-exposed.silas`), what a defender of an 84 watches for

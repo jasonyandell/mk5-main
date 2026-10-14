@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The regulars' table (#149): a reader that reads the auction, and remembers.
 
 The book's opponents are regulars: they learn how you bid, hand by hand, and

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The compiled core is the Python planner, bit for bit: same tile, same
 action values, same analyses, on random states, across the ladder's
 configurations, with and without a belief, batched or one at a time."""

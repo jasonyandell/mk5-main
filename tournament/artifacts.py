@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Materialize a participant's pinned bytes into a local cache, checking every hash.
 
 Nothing is trusted by name: the npm tarball must match its sha512 integrity,

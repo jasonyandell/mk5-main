@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Full-game engine tests: CPU-only, random play, real auctions."""
 from arena.auction import settle_points
 from arena.bidders import Bid30Bidder, HeuristicBidder

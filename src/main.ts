@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import './styles/app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';

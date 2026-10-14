@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/tests/test_solver.py — correctness gates for walt.solver.solve.
 
 Plain executable script (no pytest): prints one PASS/FAIL line per gate and

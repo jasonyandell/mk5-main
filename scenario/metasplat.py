@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The metasplat: how Zeb's splat differs from the book's, finer than a mean.
 
 A position's splat is each legal move's distribution of the bidder team's

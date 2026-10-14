@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The match frame and the field-free cross-game claims (`docs/cross-game.md`,
 //! slice 1): the settlement under both scorings, the book's scoring
 //! definitions (cluster F: S-0015-c, S-0017-c+S-0132-a, S-0020-a,

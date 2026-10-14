@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """The stochastic field F_σ: a modeled seat explores with probability ε,
 playing the dice's tile, else the net's move. ε = 0 is the deterministic net
 byte for byte; the coin and the dice are the same integers in both engines,

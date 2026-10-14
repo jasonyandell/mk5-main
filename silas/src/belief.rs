@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Beliefs: exact finite measures over the worlds consistent with a frame,
 //! and what a query says about them.
 

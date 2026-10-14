@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """Train a field net (`scenario.field`) on a pour (`scenario.atlas`).
 
 Two targets, both read off the margin splat (a pour planned under `make`

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Zeb 0.3.0's confirmation match: do its two new defaults pay together?
 
 Zeb 0.3.0 is Zeb 0.2.0 with two defaults changed, each measured alone:

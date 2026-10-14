@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """#149's table: the arms, the registered jobs, and the interaction estimator."""
 
 from arena.bidders import HeuristicBidder, VariedBidder

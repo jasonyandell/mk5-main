@@ -1,0 +1,45 @@
+# Who owns what, for the files that carry no SPDX header of their own
+# (data, docs, the wiki, generated files, and the finished oracle-era trees).
+# A file's own SPDX header wins over this table; within this table, the last
+# matching entry wins. The boundary in words is in LICENSE.
+version = 1
+
+# The science, the mountain: everything by default.
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "Jason Yandell"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Zeb: the player built on Walt.
+[[annotations]]
+path = "zeb/**"
+SPDX-FileCopyrightText = "Jason Yandell"
+SPDX-License-Identifier = "MIT"
+
+# Zeb's field net weights: the same net is already public, CC0, in the
+# Hugging Face dataset jasonyandell/texas-42-zeb-pour-250k (nets/), and a
+# CC0 dedication cannot be taken back.
+[[annotations]]
+path = "zeb/net/**"
+SPDX-FileCopyrightText = "Jason Yandell"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Agent tooling written by others (see LICENSES/LicenseRef-third-party.txt).
+[[annotations]]
+path = [
+    ".claude/skills/clustering/**", ".agents/skills/clustering/**",
+    ".claude/skills/ecological/**", ".agents/skills/ecological/**",
+    ".claude/skills/minirocket/**", ".agents/skills/minirocket/**",
+    ".claude/skills/pymc/**", ".agents/skills/pymc/**",
+    ".claude/skills/shap/**", ".agents/skills/shap/**",
+    ".claude/skills/statistical-rigor/**", ".agents/skills/statistical-rigor/**",
+    ".claude/skills/survival-forest/**", ".agents/skills/survival-forest/**",
+    ".claude/skills/umap/**", ".agents/skills/umap/**",
+]
+SPDX-FileCopyrightText = "K-Dense Inc."
+SPDX-License-Identifier = "LicenseRef-third-party"
+
+[[annotations]]
+path = [".claude/skills/pdf/**", ".agents/skills/pdf/**"]
+SPDX-FileCopyrightText = "Anthropic, PBC"
+SPDX-License-Identifier = "LicenseRef-third-party"

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The record store: append-only files in a git repository, one commit each.
 
 The tournament's whole state is a directory of immutable JSON files:

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { GameState, StateTransition, GameAction, Domino } from '../types';
 import type { ExecutionContext } from '../types/execution';
 import { GAME_CONSTANTS } from '../constants';

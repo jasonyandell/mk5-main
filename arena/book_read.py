@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The book-aware reader (#147): Zeb whose belief about two named seats is that
 they play by the book.
 

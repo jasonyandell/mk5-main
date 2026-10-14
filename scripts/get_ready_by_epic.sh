@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 # get_ready_by_epic.sh - Returns one ready leaf bead ID from a parent bead
 # Drills down through highest-priority children until reaching a leaf
 # Usage: ./get_ready_by_epic.sh <bead_id>

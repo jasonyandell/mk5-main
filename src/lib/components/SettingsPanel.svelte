@@ -1,3 +1,8 @@
+<!--
+  SPDX-FileCopyrightText: Jason Yandell
+  SPDX-License-Identifier: CC0-1.0
+-->
+
 <script lang="ts">
   import { untrack } from 'svelte';
   import { gameState, game } from '../../stores/gameStore';

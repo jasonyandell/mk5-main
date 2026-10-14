@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The book player: Winning 42's rules as a Silas policy stack, in the arena.
 
 The eighteen book-faithful policies of `silas/examples/book/` ([[silas]]

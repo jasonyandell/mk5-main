@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The reason report: on the book's four-fives 84 the separating fact is the
 book's own set condition, an opponent holding the 6-5 with another five
 (exactly 33/95 over the fiber), found as one fact; a split made of two facts

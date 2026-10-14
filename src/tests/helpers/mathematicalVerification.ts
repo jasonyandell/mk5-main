@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { createInitialState } from '../../game/core/state';
 import { createDominoes, getDominoPoints } from '../../game/core/dominoes';
 import type { GameState, Domino } from '../../game/types';

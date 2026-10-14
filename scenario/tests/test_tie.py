@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """The tie rule ≺ (#120): `lowest` takes the lowest tile id among a
 decision's exact ties; `margin` (make, then margin) takes the tie with the
 best weighted bidder-team margin for the decider's side under the plan, then

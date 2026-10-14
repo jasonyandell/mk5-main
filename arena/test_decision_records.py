@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """CPU-only tests for the canonical Arena decision record."""
 from __future__ import annotations
 

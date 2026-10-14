@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The arena's auction, written down for Silas (silas/tests/data/).
 
 Silas's auction (`silas/src/auction.rs`) and its `bid-only-enough` policy are

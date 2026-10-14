@@ -1,3 +1,6 @@
+-- SPDX-FileCopyrightText: Jason Yandell
+-- SPDX-License-Identifier: CC0-1.0
+
 /-!
 # L1: the dependency-height stabilization theorem (note 2, section 2.1)
 

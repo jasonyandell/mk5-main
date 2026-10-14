@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The record read as evidence: policy likelihood (#128), for the auction and
 //! the play. A seat that has seen the record conditions its belief on named
 //! seats having acted by named policies: their calls (`GAPS.md` 4, #134) and

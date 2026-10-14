@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { defineConfig, devices } from '@playwright/test';
 
 // Import base configuration

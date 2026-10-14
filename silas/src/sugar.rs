@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The surface sugar: shorter forms that rewrite, tree to tree, into the core
 //! forms before the core reader sees them. Nothing here adds meaning. Each
 //! rewrite is an equation of the semantics (Kleene's De Morgan laws, `none`

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Multiplayer Types - Consolidated from game/multiplayer/types.ts and shared/multiplayer/protocol.ts
  *

@@ -1,3 +1,8 @@
+<!--
+  SPDX-FileCopyrightText: Jason Yandell
+  SPDX-License-Identifier: CC0-1.0
+-->
+
 <script lang="ts">
   import type { GamePhase, TrumpSelection } from '../../game/types';
   import { getTrumpDisplay as getTrumpDisplayFromTerms } from '../../game/game-terms';

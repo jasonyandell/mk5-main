@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * STRATEGY-FUSION FENCE. A clairvoyant (perfect-information, double-dummy)
  * minimax: it sees all four hands. The game's intermediate AI (monte-carlo.ts)

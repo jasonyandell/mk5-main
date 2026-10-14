@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The splat visualizer's exporter: a pour becomes the page's JSON without
 losing or inventing a number. Every planned position is there with its
 viewer, legal moves and plan; each move's bins hold exactly its splat (the

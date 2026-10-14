@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import { analyzeSuits, calculateSuitCount, calculateSuitRanking, getStrongestSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';

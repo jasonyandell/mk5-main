@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 
 // Encode game state to URL parameter
 // Usage: node encode-url.js <seed> [action1] [action2] ...

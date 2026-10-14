@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 //! The JavaScript surface. Requests are read field by field with plain
 //! errors (thrown as JS `Error`s); results come back as plain objects and
 //! arrays. Nothing here panics on what a caller passes; should the planner

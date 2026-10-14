@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Finite dynamics: one typed public play applied to a frame, a world, and a
 //! belief. These are extensional transforms on finite states.
 //!

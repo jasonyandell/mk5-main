@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 // Wall time of the calls that matter, in Node on this machine: a forecast
 // over the seven pip declarations, doubles and no-trump on their own, and
 // an opening lead's play, at 160 and 512 worlds, over the fixtures' nine

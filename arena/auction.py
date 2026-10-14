@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Auction rules and marks scoring (wiki/topics/rules-of-42.md §Bidding, §Scoring).
 
 One round of bidding: the player left of the shaker bids first, clockwise,

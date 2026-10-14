@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The surface language: sorts and values, the reader (with source spans and
 //! comments), the `query` form, named definitions (`define`, `include`), and
 //! the canonical formatter.

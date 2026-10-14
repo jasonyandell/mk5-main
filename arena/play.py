@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Play policies for the arena.
 
 A PlayPolicy chooses one action per state for a batch of games — batching

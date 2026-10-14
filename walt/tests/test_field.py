@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/tests/test_field.py — parity + sanity gates for the jud field oracle (B2).
 
 Plain executable script (no pytest). Prints one PASS/FAIL line per gate; exits

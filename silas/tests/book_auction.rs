@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The book's readings of a bid, exactly (`GAPS.md` 4, #134): the belief of
 //! a seat that has heard the calls, conditioned on each caller bidding by a
 //! named policy (README, The record as evidence). Each number is exact

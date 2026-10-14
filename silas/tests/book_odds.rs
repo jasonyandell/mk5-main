@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE, sanctioned: two claims of the form "the only way"
 //! are checked against `(clairvoyant-dd-make)`: the layouts the book names are
 //! exactly those where even double-dummy play sets. The ruling:

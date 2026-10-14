@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """wiki_lint.py — mechanical health checks for wiki/.
 
 Every convention in wiki/AGENTS.md that can be checked mechanically, is.

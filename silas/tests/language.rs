@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The language's surface: `some`, named definitions and the book prelude,
 //! located errors, and the canonical formatter.
 mod common;

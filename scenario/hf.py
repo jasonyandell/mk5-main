@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """A pour, published: the advantage dataset as a Hugging Face dataset repo.
 
 One command turns pour directories (each a split) into a staged repo and

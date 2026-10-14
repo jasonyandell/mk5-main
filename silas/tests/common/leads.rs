@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE: the clairvoyant solver, for `tests/book_leads.rs`'s
 //! double-dummy rows only. The ruling: wiki/topics/strategy-fusion-fence.md.
 //!

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Zeb against Silas. `ZebPhysics` supplies only Zeb's four rule tables;
 //! Silas derives legality, the trick's winner and points, and the fiber from
 //! them. Zeb's tables must be the reference's (`silas::reference::Straight42`)

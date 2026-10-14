@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Capability System - Merged from game/multiplayer/capabilities.ts and capabilityUtils.ts
  *

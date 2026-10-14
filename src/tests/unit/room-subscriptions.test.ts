@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Room } from '../../server/Room';
 import type { GameConfig } from '../../game/types/config';

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Solved outcomes: what the viewer can guarantee in every world he cannot
 //! tell apart, against every play of the other three seats, and the
 //! double-dummy bound above it. The statement, and why each answer is exact,

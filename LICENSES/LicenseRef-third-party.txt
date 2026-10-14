@@ -1,0 +1,12 @@
+Third-party files, not ours to license.
+
+The files that REUSE.toml marks LicenseRef-third-party were written by someone
+else and copied into this repository as agent tooling. They are not covered by
+this repository's CC0-1.0 dedication or its MIT license. Their terms are their
+authors' own; see the copyright holder that REUSE.toml names for each, and the
+upstream project it came from:
+
+- K-Dense Inc.: Claude Scientific Skills
+  (https://github.com/K-Dense-AI/claude-scientific-skills)
+- Anthropic, PBC: the pdf skill of Anthropic's skills
+  (https://github.com/anthropics/skills)

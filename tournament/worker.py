@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The worker loop: read → rate → choose → play → append → repeat.
 
     1. Finish any claim this machine left behind (a faceoff it started).

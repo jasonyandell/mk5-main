@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """wiki_log_rotate.py — roll the oldest wiki/log.md entries into log-archive.md.
 
 Run on main, after merging, never on a branch. Branches only add their entry

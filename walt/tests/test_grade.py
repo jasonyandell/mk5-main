@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Smoke test for walt/grade.py (builder B4).
 
 With HORIZON=4, run a 2-game paired mini-match end-to-end on CPU and assert:

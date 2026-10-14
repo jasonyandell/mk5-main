@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { writable, derived, get, type Readable } from 'svelte/store';
 import type { GameAction, FilteredGameState } from '../game/types';
 import type { GameConfig } from '../game/types/config';

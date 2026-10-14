@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The auction (`docs/cross-game.md`, slice 2): legality held to the arena's
 //! and the engine's, the contract derived from the auction, the passed-out
 //! hand, the forced bid, and the auction frame a bid rule reads.

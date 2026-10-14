@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """rob — the texas-42 exact imperfect-information solver — as a PlayPolicy.
 
 rob lives in a separate repository (jason/code/texas-42) with its own

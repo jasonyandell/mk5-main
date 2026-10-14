@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/worlds.py — exact enumeration of hidden-tile assignments (u).
 
 Given an EndgameRoot (the walt seat's information set), enumerate every

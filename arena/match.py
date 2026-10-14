@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Paired-seed arena match: two halves with rotated team assignment.
 
 Half 1 plays A as absolute team 0, half 2 as team 1, over the same deal

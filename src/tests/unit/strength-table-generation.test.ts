@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
 import { SIXES, CALLED, PLAYED_AS_TRUMP } from '../../game/types';

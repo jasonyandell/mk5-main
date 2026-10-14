@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Ratings, derived: a Bradley–Terry fit over every game in the faceoff records.
 
 Nothing here is stored. `fit` is a pure function of the games, so the table is

@@ -1121,6 +1121,7 @@ a game.
 
 ## Links
 
+[[license-line]] (Walt and the science CC0, Zeb MIT; the planner's five mixed files until #158) ·
 [[tournament]] (the standing ladder: Walt, Zeb releases, fenced E[Q]; Bradley–Terry over append-only records) ·
 [[fly-connectome-42]] (the FlyWire fly brain as a 42 reservoir: viable as a toy, not as a player; the real wiring reads the 5-5's seat no better than rewired wiring) ·
 [[exploiter-endgames-2026-10-14]] (an exploiter against Zeb on three-trick endgames: not sturdy in points, small in contracts) ·

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The plays read as evidence (#128 for the play): a belief weighed by each
 //! read seat's past plays under its play policy, every play checked at that
 //! seat's own frame of the time. Held to its two limits (a policy that allows

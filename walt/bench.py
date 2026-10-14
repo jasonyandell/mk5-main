@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/bench.py — endgame-solve performance bench (builder B4).
 
 Generate R random endgame roots (new_game(seed), then advance with JudPlay

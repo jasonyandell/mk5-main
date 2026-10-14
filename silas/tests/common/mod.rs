@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Fixtures shared by the integration tests. Expected answers in the tests are
 //! built directly from hands and the reference rules, independently of the
 //! query compiler, joins, projection and aggregation. Every frame is built

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 # From a checkout to pkg/: the .wasm, its JavaScript glue and their types.
 #
 # Deterministic: rust-toolchain.toml pins the compiler, Cargo.lock (--locked)

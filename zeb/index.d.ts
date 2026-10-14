@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 export * from './pkg/zeb.js';
 export { default } from './pkg/zeb.js';
 

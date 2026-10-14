@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Build MANIFEST.json for gus/data corpus before HF upload.
 
 Records sha256 + size + mtime + log-tail for every .pt and .log in gus/data/.

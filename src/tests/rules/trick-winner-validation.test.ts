@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import { determineTrickWinner } from '../../game/core/rules';
 import { getLedSuitBase } from '../../game/layers/rules-base';

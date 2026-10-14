@@ -1,3 +1,6 @@
+-- SPDX-FileCopyrightText: Jason Yandell
+-- SPDX-License-Identifier: CC0-1.0
+
 import Stab
 #print axioms Stab.settle
 #print axioms Stab.fixed_point_unique

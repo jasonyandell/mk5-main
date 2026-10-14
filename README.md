@@ -108,4 +108,23 @@ greenfield project and we keep it that way). See
 
 ## License
 
-MIT
+The science is public domain (CC0 1.0): the engine, Walt (the scenario player), Silas, the
+arena, the wiki, the data and everything else, by default. Zeb, the player built on Walt
+(`zeb/` and Zeb's layer in `scenario/`), is MIT. Each file says which in its SPDX header or in
+[`REUSE.toml`](REUSE.toml); [`LICENSE`](LICENSE) draws the line in words.
+
+The code is free (CC0 / MIT). The names Walt, Zeb, and Plunge are not licensed as the name of
+your product.
+
+## Powered by Walt
+
+![Powered by Walt](docs/powered-by-walt.svg)
+
+If you build on Walt, credit is welcome and never required. Copy and paste:
+
+```
+Powered by Walt — Jason Yandell's scenario player for Texas 42
+```
+
+The badge is [`docs/powered-by-walt.svg`](docs/powered-by-walt.svg) (CC0). Shipping something
+with Walt? [Say hi](https://github.com/jasonyandell/mk5-main/issues).

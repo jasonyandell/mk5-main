@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The mold — the shape of one deal's perfect-information tree: how many
 //! distinct positions each layer holds (layer d = d tiles played), with
 //! transposition on the whole public record, as `Record.key()` defines it.

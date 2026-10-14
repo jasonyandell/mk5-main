@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt module contracts — the frozen interfaces the v0 modules build against.
 
 See walt/DESIGN.md for the algorithm and rationale. Ground rules that apply

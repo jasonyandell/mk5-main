@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The compiled core of the scenario player.
 //!
 //! This crate is `scenario/planner.py` and `scenario/fiber.py` in Rust, line

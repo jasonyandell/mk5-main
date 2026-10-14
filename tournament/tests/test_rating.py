@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The rating fit: recovers known strengths, ignores record order, and its
 intervals cover at the stated rate and respond to the duplicate pairing."""
 from __future__ import annotations

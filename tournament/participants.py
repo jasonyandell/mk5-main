@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Participants: immutable records, each pinned to bytes that cannot move.
 
 A participant is a JSON file `participants/<id>.json` in the record store,

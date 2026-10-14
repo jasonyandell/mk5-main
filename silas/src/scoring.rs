@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The match: the scoring, the score, and what one hand settles.
 //!
 //! A hand ends in an [`Outcome`], the points each side took. Its [`Contract`]

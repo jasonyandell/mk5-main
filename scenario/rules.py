@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Rule tables for the scenario player.
 
 Nothing here restates Texas 42. Every entry is tabulated once per

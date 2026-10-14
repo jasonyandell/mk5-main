@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! What the study's gate encodings allow, pinned: they are the record of what
 //! the 2026-10-12 study priced. Every policy of `examples/book/gates/` is
 //! asked, through [`CompiledPolicy::allowed`], for its deciding rule and the

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """test_worlds.py — brute-force cross-check of enumerate_worlds.
 
 For random endgame positions, enumerate ALL unconstrained assignments of the

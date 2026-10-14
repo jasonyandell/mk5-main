@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import { MathematicalVerification } from '../helpers/mathematicalVerification';
 import { createDominoes, getDominoPoints } from '../../game/core/dominoes';

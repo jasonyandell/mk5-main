@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """JudSearch (jud v1, JS1) — CPU, fast.
 
 The load-bearing properties, mirrored from `test_jud_play` but pushed through

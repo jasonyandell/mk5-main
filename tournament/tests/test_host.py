@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The Node seat protocol, against a stand-in for the zeb package (offline).
 
 The stand-in records what it is asked, so the test checks what the host sends

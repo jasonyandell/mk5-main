@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, test, expect } from 'vitest';
 import { createTestContext } from '../helpers/executionContext';
 import { getNextStates } from '../../game/core/state';

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE, a sanctioned showcase: the clairvoyant solver grades
 //! the book's narrated plays of fully known deals, where the book itself argues
 //! from the open hands; a grade here is never a seat's value. The ruling:

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Zeb's reason report (#124): why Zeb plays its tile and not another, in Silas.
 
 One decision, two tiles: Zeb's (the plan's choice) and a named one (the

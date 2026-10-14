@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 //! Embeds the field net: writes `$OUT_DIR/net.rs` with the blob's bytes and
 //! its sha256, so the id `netId()` reports is computed from the very bytes
 //! that ship and cannot drift from them.

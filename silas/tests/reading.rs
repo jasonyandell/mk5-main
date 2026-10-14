@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The auction read as evidence (`GAPS.md` 4, #134): a belief conditioned on
 //! each read seat's calls being what its bidding policy makes. Held to small
 //! cases by hand, to its two limits (a policy that says nothing, a policy

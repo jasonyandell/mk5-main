@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Pure game kernel operations.
  * All functions are pure - no mutations, no side effects, no class methods.

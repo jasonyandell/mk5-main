@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Game simulator for testing seeds and AI strategies.
  * Runs games to completion using AI players.

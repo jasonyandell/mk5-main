@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Upload gus/data/ to HuggingFace as a public dataset.
 
 Three phases:

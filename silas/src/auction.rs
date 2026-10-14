@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The auction: each seat calls once, from the shaker's left, a pass or a bid
 //! above the high bid. The hand's [`Contract`] is derived from it: the last
 //! seat to bid declares, at its bid. An [`AuctionFrame`] is the auction as one

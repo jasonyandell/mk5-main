@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import { getLedSuitBase, rankInTrickBase } from '../../game/layers/rules-base';
 import { composeRules } from '../../game/layers/compose';

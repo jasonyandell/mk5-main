@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 //! The field net — `scenario/field.py`: a small integer policy that plays
 //! rung −1, the modeled seats' bottom rung, in place of the dice.
 //!

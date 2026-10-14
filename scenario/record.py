@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The public record — what every scenario in a cell shares.
 
 A cell of the search holds scenarios that agree on everything the deciding

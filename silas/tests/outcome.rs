@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE, sanctioned: the clairvoyant solver and
 //! `(clairvoyant-dd-make)` are the upper bound the information-state solves are
 //! held under, and the measure of how loose it is (Hand 26). The ruling:

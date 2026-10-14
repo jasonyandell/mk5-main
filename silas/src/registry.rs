@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Predicates: the typed, versioned relations a query may name.
 
 use std::collections::BTreeMap;

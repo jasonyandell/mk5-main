@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The game's nouns: pips, the 28 dominoes, seats and teams, the eight led
 //! contexts, and bitsets over dominoes and contexts. Nothing here knows a
 //! declaration; every rule lives behind [`crate::Physics`].

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Silas at Zeb's decisions: the frame a seat's questions are asked of.
 
 Silas (`silas/`, compiled into `scenario_core` by the `silas` feature) asks

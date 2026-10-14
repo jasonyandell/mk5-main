@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Conventions: a joint deviation of two partners, a sender and a reader.
 
 A convention is a rule a seat may follow at a gated position: a predicate

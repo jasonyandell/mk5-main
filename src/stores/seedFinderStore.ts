@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { writable } from 'svelte/store';
 import type { SeedProgress } from '../game/ai/gameSimulator';
 

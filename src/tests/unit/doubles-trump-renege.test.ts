@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, test, expect } from 'vitest';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 # STRATEGY-FUSION FENCE: this file calls the oracle era's clairvoyant values
 # (the double-dummy solver, Stage1Oracle, E[Q] or LensPlay): per-world perfect-
 # information values, strategy fusion if read as a seat's value. A measuring

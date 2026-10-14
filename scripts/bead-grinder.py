@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """
 Simple bead grinder - processes beads one by one with live logging.
 No worktrees, just runs in the current directory.

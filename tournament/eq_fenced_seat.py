@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 # STRATEGY-FUSION FENCE, sanctioned as a baseline. This seats E[Q] n=10 (LensPlay,
 # the oracle era's champion: per-world clairvoyant Q averaged) in the tournament as
 # a measuring stick, the use wiki/topics/strategy-fusion-fence.md § Sanctioned uses

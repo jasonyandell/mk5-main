@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The metasplat's shapes: each of the nine is what its definition says on a
 hand-built pair; the batch reading is the reference reading on random pairs,
 sampled and exact; the best tile is the most make, then the most margin, then

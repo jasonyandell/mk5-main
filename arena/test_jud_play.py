@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """JudPlay (jud v1) — CPU, fast.
 
 The load-bearing tests are the two correctness properties of value-native

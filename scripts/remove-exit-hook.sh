@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 
 # Script to remove exit-on-stop hook from Claude Code settings
 

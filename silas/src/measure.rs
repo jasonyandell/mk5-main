@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Numbers: exact nonnegative weights, the authority every belief and summary
 //! carries, and the three-valued comparison.
 //!

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Reason: page.waitForFunction() and page.evaluate() run in browser context where TypeScript cannot
 // verify window properties. The use of 'any' for window casts is architectural, not a shortcut.

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The worker loop is interruptible anywhere and never counts a faceoff twice.
 
 Players here are the arena's cheap ones (bid30/heuristic + random play), so a

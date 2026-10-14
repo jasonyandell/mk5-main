@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The study's 21 rule gates (Roberson, *Winning 42*), written as Silas
 //! policies in `examples/book/gates/` and checked on positions, most of them
 //! the book's own. They are the record of what the 2026-10-12 study priced;

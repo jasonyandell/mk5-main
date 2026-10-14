@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Bid and declare policies (`docs/cross-game.md`, slice 2), held to the
 //! arena's bidder and to the book.
 //!

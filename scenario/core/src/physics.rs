@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Silas over Zeb (the `silas` feature): [`ZebPhysics`], one declaration of
 //! Zeb's [`Rules`] as a table provider for Silas.
 //!

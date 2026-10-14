@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The book's readings of a play, exactly (#128 for the play; README, The
 //! record as evidence): a seat's belief conditioned on another seat's past
 //! plays under a named policy. Each number is exact given that policy and

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE: one test asks the command for `(clairvoyant-dd-make)`,
 //! to show it refused above the cap. The ruling:
 //! wiki/topics/strategy-fusion-fence.md.

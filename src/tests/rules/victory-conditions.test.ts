@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GameState } from '../../game/types';
 import { createInitialState, isGameComplete, getWinningTeam } from '../../game';

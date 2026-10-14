@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Tests for the clairvoyant minimax evaluator. STRATEGY-FUSION FENCE: it sees
  * all four hands; these tests hold it to its own definition, never to a seat's

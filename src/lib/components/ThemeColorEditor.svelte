@@ -1,3 +1,8 @@
+<!--
+  SPDX-FileCopyrightText: Jason Yandell
+  SPDX-License-Identifier: CC0-1.0
+-->
+
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { formatHex, parse, converter } from 'culori';

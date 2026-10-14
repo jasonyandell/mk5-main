@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * STRATEGY-FUSION FENCE: the guard that keeps the fence self-enforcing.
  *

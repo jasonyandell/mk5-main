@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """JudAuxPlay picks the legal slot the aux head values highest (acting-seat, no flip)."""
 from __future__ import annotations
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 //! Zeb — the Texas 42 scenario player, compiled to WebAssembly.
 //!
 //! A seat decides by sampling deals of the tiles it cannot see that fit

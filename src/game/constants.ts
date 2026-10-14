@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { GameConstants, TrumpSelection } from './types';
 
 export const GAME_CONSTANTS: GameConstants = {

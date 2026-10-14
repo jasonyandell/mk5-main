@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { GameState, StateTransition } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 

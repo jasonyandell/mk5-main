@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """The field net. Its features read only the mover's information; its
 forward pass in the core is the referee's to the integer; a Walt whose
 field is the net decides and analyzes identically in both; the spec names

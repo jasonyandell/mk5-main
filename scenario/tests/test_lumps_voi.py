@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Lumps by a hidden tile's holder, on a real (small) pour: every row is the
 plain reading of its position (lump by lump, move by move), the VOI is the
 information inequality's gap and never negative, a tile whose seat is known

@@ -1,3 +1,8 @@
+<!--
+  SPDX-FileCopyrightText: Jason Yandell
+  SPDX-License-Identifier: CC0-1.0
+-->
+
 <script lang="ts">
   import { viewProjection, game, modes, availablePerspectives, currentPerspective } from '../../stores/gameStore';
   import { GAME_PHASES } from '../../game';

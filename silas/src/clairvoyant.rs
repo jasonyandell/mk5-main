@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! STRATEGY-FUSION FENCE. An exact perfect-information (double-dummy,
 //! clairvoyant) solver: minimax over every remaining play when all four hands
 //! are face up. It sees all four hands, so its value used as the value of a

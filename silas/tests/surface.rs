@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The surface sugar reads to the core it spells: inferred roles, a default
 //! `(out)`, a query's one pattern without `(pattern ...)`, `and`, `or` and
 //! negation of any clause, a rule's `(play ...)`, and an unsaid fallback.

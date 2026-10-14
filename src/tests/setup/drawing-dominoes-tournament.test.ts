@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, expect, test } from 'vitest';
 import { dealDominoesWithSeed, createDominoes, GAME_CONSTANTS } from '../../game';
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Exact-uniform sampling of hidden-hand completions — `scenario/fiber.py`.
 //!
 //! The number of lawful assignments of the unseen pool to the three hidden

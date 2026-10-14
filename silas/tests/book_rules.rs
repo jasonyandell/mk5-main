@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The book's rules as the book means them (Roberson, *Winning 42*): the
 //! policies of `examples/book/*.silas`, checked on the book's own positions
 //! from `examples/book/hands.json`. Where the book plays a rule, the book's

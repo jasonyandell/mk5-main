@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 # STRATEGY-FUSION FENCE, sanctioned as a baseline. LensPlay is E[Q] n=10, the
 # oracle era's champion: per-world clairvoyant Q averaged (strategy fusion).
 # It stays in the arena as the opponent and measuring stick Zeb is graded

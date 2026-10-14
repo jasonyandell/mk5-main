@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! `Straight42`: the reference declarations. Plain and spec-faithful: the
 //! tables the tests run against, read into a [`Physics`] by
 //! [`Straight42::physics`].

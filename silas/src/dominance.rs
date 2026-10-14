@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The `dominates` form: one contract against another, compared over every
 //! way the hand can end. No deal, belief or field enters, so the answer is
 //! exact (`docs/cross-game.md` § 2.4).

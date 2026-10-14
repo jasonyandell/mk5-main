@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Conventions: a joint deviation of two partners — `scenario/convention.py`,
 //! whose docstring states every gate in the mover's chair.
 //!

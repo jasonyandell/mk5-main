@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: MIT
+
 // chooseBid: a pure function of the forecast, no WebAssembly.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

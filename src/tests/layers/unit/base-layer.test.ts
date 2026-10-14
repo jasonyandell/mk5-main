@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Unit tests for base layer - the 14 core rules that define Texas 42 gameplay.
  * These tests document the foundation that all other layers build upon.

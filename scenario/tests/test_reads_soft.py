@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The soft-reading study's bookkeeping (`scenario.reads_soft`): the net
 seats play the model the reader assumes, deterministically by state; the
 net table routes the team's lower seat to X; and the summary pairs arms by

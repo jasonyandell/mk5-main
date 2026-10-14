@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Canonical, architecture-neutral decision records for Arena matches.
 
 The Arena already retains enough information to replay every completed hand.

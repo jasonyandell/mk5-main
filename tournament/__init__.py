@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The tournament: an append-only, Bradley–Terry-rated ladder of Texas 42 players.
 
 Records are immutable files in a git repository (a Hugging Face dataset), one

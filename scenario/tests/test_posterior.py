@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """The posterior draw: the live rung's worlds from β^F ∝ uniform × the
 likelihood that the field played what the other seats played. An enumerated
 fiber is weighted by that likelihood normalized; a sampled one is n draws by

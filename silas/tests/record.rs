@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The hand's public record in the frame, the predicates that read it, and
 //! the `none` clause.
 mod common;

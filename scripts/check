@@ -1,4 +1,7 @@
 #!/usr/bin/env -S python3 -u
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """scripts/check — the one front door for every test suite in mk5-main.
 
     scripts/check              every suite this machine can run
@@ -142,6 +145,9 @@ SUITES = [
         "modal and burl/eval data that no checkout carries"), what="pytest burl"),
     Suite("wiki", ("wiki/", "scripts/wiki_"), [(".", [sys.executable, "-u", "scripts/wiki_lint.py", "--strict"])],
           (), what="wiki_lint.py --strict"),
+    # Every path triggers it: any new file needs its license (an SPDX header, or REUSE.toml).
+    Suite("reuse", ("",), [(".", [str(VENV / "bin" / "reuse"), "lint"])], ("venv",),
+          lambda: which("uv", "cargo"), what="reuse lint: every file has an SPDX license (LICENSE, REUSE.toml)"),
 ]
 BY_NAME = {s.name: s for s in SUITES}
 

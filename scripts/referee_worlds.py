@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Independent read-side referee for joint-world corpus files.
 
 Grades regenerated corpus chunks for otis Phase R (issues #51/#52/#55):

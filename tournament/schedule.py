@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Which faceoff next: the one that teaches the rating table the most.
 
 One faceoff between i and j adds about w = games · p(1 − p) of Fisher

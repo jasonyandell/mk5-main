@@ -1,4 +1,7 @@
 #!/usr/bin/env tsx
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Generate precomputed strength table for all domino/trump/suit combinations
  * This eliminates runtime computation of domino comparisons

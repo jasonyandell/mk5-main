@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import type { GameState, Bid } from '../types';
 import type { GameRules } from '../layers/types';
 import { BID_TYPES } from '../constants';

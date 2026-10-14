@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The convention overlay: a sender that plays the rule's tile at a gated
 position, a reader that draws its worlds from the rule-only posterior.
 Referee = core to the bit in every arm (S, R, SR), the override flag,

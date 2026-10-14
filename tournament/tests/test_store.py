@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The no-conflict property, played out with real git: separate clones, a shared
 bare remote, concurrent writers racing their pushes.
 

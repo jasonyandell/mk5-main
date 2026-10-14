@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """Does the fly's wiring help read a 42 table? A reservoir pilot (2026-10-14).
 
 The adult Drosophila connectome (FlyWire v783, as packaged by Shiu et al.

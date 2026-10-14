@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """A pour as the splat visualizer's data.
 
 The page draws and counts worlds; it does not plan. Every number it shows is

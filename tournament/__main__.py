@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """The tournament's front door.
 
     python -u -m tournament seed                      # append the roster's participants (idempotent)

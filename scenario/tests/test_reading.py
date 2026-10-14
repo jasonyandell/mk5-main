@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: MIT
+
 """Reading the other seats' plays by the net's set (`Config.reading`): the
 posterior's likelihood is the legal tiles the field net scores within a
 margin of its best, and a play weighs [tile ∈ A] (consistent) or

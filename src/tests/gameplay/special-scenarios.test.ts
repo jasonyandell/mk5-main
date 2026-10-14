@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
 import { calculateGameScore, isGameComplete } from '../../game/core/scoring';

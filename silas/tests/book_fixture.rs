@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! The book's illustrated examples as data (`examples/book/hands.json`),
 //! checked mechanically: every hand is seven distinct tiles, every full deal
 //! is the whole set, and every narrated line replays under `Straight42`

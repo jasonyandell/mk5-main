@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 
 // Get game state from URL parameter using the replay utility
 import { execSync } from 'child_process';

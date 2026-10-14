@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
 """walt/tables.py — rule LUTs, all TABULATED from forge.oracle.tables.
 
 Nothing here reimplements Texas 42 rules; every value is derived by calling

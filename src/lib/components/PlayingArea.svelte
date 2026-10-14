@@ -1,3 +1,8 @@
+<!--
+  SPDX-FileCopyrightText: Jason Yandell
+  SPDX-License-Identifier: CC0-1.0
+-->
+
 <script lang="ts">
   import { game, viewProjection } from '../../stores/gameStore';
   import Domino from './Domino.svelte';

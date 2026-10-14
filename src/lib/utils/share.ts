@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 /**
  * Share content using Web Share API with fallback to clipboard
  * Returns true if content was successfully shared or copied

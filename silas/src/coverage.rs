@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Where a rule stops, and how often each rule and each clause holds: the
 //! diagnostic for a rule that silently never fires.
 //!

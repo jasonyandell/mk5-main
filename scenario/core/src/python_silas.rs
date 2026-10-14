@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Jason Yandell
+// SPDX-License-Identifier: CC0-1.0
+
 //! Silas in `scenario_core` (the `python` and `silas` features): queries and
 //! policies compiled from text, frames over [`ZebPhysics`], exact beliefs,
 //! summaries in `fractions.Fraction`, and the three-valued comparison.
