@@ -90,6 +90,15 @@ most `READ_ENUM` members (enumerated: exact draws however few worlds L
 keeps); rejection from the uniform stream above that (a coin under the
 uniform likelihood).
 
+The auction may join a reading's likelihood (`Situation.auction`, passed per
+decision: `decide(state, bid, auction)`; #149). For each seat it reads, a
+table of `AUCTION_SLOTS` likelihoods in [0, 1] over the slot of the hand the
+world says that seat was dealt (`ceiling_slot`: 0 with no pip suit of three
+tiles, else 1 + the heuristic bidder's bid ceiling); the seat's factor is
+multiplied by its table's entry, after its plays' factor. The table is the
+caller's model of how that seat bids (`arena.regulars`); the planner only
+reads it.
+
 A convention (`Config.convention`, `scenario.convention`) overlays the live
 seat: as sender, at a gated position it plays the plan's best tile among
 the rule's allowed ones (the q reported is the plan's, unchanged;
@@ -132,6 +141,7 @@ from __future__ import annotations
 import math
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
+from functools import lru_cache
 from itertools import accumulate
 from typing import Callable
 
@@ -150,6 +160,7 @@ LIKELIHOODS = ("consistent", "uniform")
 TIES = ("lowest", "margin")   # the tie rule ≺: the lowest tile id, or make then margin
 DRAW_BUDGET = 1 << 22   # posterior: uniform proposals per decision before falling back
 READ_ENUM = 1 << 20     # a reading draws from the whole fiber, enumerated, when it holds at most this many
+AUCTION_SLOTS = 44      # an auction table's slots: 0 (no pip suit of three), 1 + ceiling for ceilings 0..42
 
 HAND_TOTAL = 42
 MASK64 = (1 << 64) - 1
@@ -323,6 +334,7 @@ class Situation:
     bidder: int                              # the declaring seat
     record: Record
     plays: tuple[tuple[int, int], ...]       # (seat, tile) in play order
+    auction: Auction | None = None           # the auction's evidence on the dealt hands; None is unread
 
     @property
     def bidder_team(self) -> int:
@@ -332,14 +344,42 @@ class Situation:
         return mask_of(t for s, t in self.plays if s == seat)
 
 
+Auction = tuple["tuple[float, ...] | None", ...]   # per absolute seat: a table over ceiling slots, or None
+
+
+def ceiling_slot(full: int) -> int:
+    """The auction slot of a dealt hand (a tile mask): 0 when no pip trump
+    holds three of its tiles, else 1 + the heuristic bidder's bid ceiling,
+    `arena.hand_metrics.best_trump(hand, 3).bid_ceiling`."""
+    return _ceiling_slot(full)
+
+
+@lru_cache(maxsize=1 << 18)
+def _ceiling_slot(full: int) -> int:
+    from arena.hand_metrics import best_trump
+
+    best = best_trump(tuple(tiles_of(full)), 3)
+    return 0 if best is None else 1 + best.bid_ceiling
+
+
+def _check_auction(auction: Auction) -> None:
+    if len(auction) != 4:
+        raise ValueError("an auction holds one entry per seat")
+    for table in auction:
+        if table is not None and (len(table) != AUCTION_SLOTS or not all(0.0 <= x <= 1.0 for x in table)):
+            raise ValueError(f"an auction table holds {AUCTION_SLOTS} likelihoods in [0, 1]")
+
+
 Belief = Callable[[Situation, list[World]], list[float]]  # evidence beyond the plays: weights per world
 
 
-def situation_from_state(state: ZebGameState, bid: int) -> Situation:
+def situation_from_state(state: ZebGameState, bid: int, auction: Auction | None = None) -> Situation:
     rec = record_from_state(state)
+    if auction is not None:
+        _check_auction(auction)
     return Situation(
         decl_id=state.decl_id, viewer=rec.seat, bid=int(bid), bidder=state.bidder,
-        record=rec, plays=tuple((int(s), int(t)) for s, t in state.play_history),
+        record=rec, plays=tuple((int(s), int(t)) for s, t in state.play_history), auction=auction,
     )
 
 
@@ -398,15 +438,18 @@ class Walt:
 
     # -- the player at the table --------------------------------------------
 
-    def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
-        """Return (tile, action values) for the seat to play in a PLAYING state."""
-        inv = self._root(state, bid)
+    def decide(self, state: ZebGameState, bid: int,
+               auction: Auction | None = None) -> tuple[int, dict[int, float]]:
+        """Return (tile, action values) for the seat to play in a PLAYING
+        state; `auction` is the auction's evidence (`Situation.auction`)."""
+        inv = self._root(state, bid, auction)
         if isinstance(inv, int):
             return inv, {inv: float("nan")}
         q = inv.action_values()
         return self._choice(q, inv), q
 
-    def analyze(self, state: ZebGameState, bid: int, line: bool = False) -> "Analysis":
+    def analyze(self, state: ZebGameState, bid: int, line: bool = False,
+                auction: Auction | None = None) -> "Analysis":
         """`decide`, opened up: the same tile and action values, plus where
         each root action sends every live scenario under the plan — and, with
         `line`, the plan's line itself (`Step`s): what the viewer plays at
@@ -414,7 +457,7 @@ class Walt:
         line is read off the same replay, so asking for it changes nothing
         else. A forced move is not planned (as in `decide`): its analysis
         holds no scenarios."""
-        inv = self._root(state, bid)
+        inv = self._root(state, bid, auction)
         if isinstance(inv, int):
             return Analysis(inv, {inv: float("nan")}, [], [], {inv: ()}, {inv: ()} if line else None)
         q = inv.action_values()
@@ -436,9 +479,11 @@ class Walt:
         self.sent = 1
         return inv.choose({t: v for t, v in q.items() if (allowed >> t) & 1})
 
-    def _root(self, state: ZebGameState, bid: int) -> "_Invocation | int":
+    def _root(self, state: ZebGameState, bid: int, auction: Auction | None = None) -> "_Invocation | int":
         """The live invocation at a decision — or the tile, when it is forced."""
-        sit = situation_from_state(state, bid)
+        sit = situation_from_state(state, bid, auction)
+        if auction is not None and self.config.reading is None:
+            raise ValueError("the auction is read with a reading's draw: it needs a reading")
         rec, viewer = sit.record, sit.viewer
         if viewer != current_player(state):
             raise AssertionError("record seat disagrees with engine")
@@ -485,18 +530,24 @@ class Walt:
         `Reading.weight` — ε/n + (1 − ε)·[tile ∈ A]·(1 or 1/|A|) — taken seat
         by seat (`_factor`, the product of that seat's plays in play order),
         the seats' factors multiplied in seat order, as Silas's readings
-        factorize."""
+        factorize. With `sit.auction`, a read seat's factor is then
+        multiplied by its table at the slot of the hand the world says it
+        was dealt (`ceiling_slot`)."""
         cfg = self.config
         if cfg.reading is None or cfg.field is None:
             raise ValueError("a reading reads the field net's sets")
         rules = rules_for(sit.decl_id)
         ev = _evidence(sit, rules)
         out = []
+        auction = sit.auction or (None, None, None, None)
         for hands in worlds:
             p = 1.0
             for seat in range(4):
                 if seat != sit.viewer:
                     p *= self._factor(sit, rules, ev, seat, hands[seat])
+                    table = auction[seat]
+                    if table is not None:
+                        p *= table[ceiling_slot(hands[seat] | sit.played_by(seat))]
             out.append(p)
         return out
 

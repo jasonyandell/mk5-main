@@ -24,7 +24,7 @@ from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
 from scenario.field import CANON
-from scenario.planner import Analysis, Belief, Config, Situation, Step, situation_from_state
+from scenario.planner import Analysis, Auction, Belief, Config, Situation, Step, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for, tiles_of
 
@@ -61,23 +61,27 @@ class CompiledWalt:
         self.sent = 0       # convention: decisions of the last batch whose tile the sender's rule chose
         self.draws: list[tuple[int, int]] = []   # per state of the last batch: (proposals, fell back); (0, 0) when forced
 
-    def decide(self, state: ZebGameState, bid: int) -> tuple[int, dict[int, float]]:
-        return self.decide_batch([state], [bid])[0]
+    def decide(self, state: ZebGameState, bid: int,
+               auction: Auction | None = None) -> tuple[int, dict[int, float]]:
+        return self.decide_batch([state], [bid], None if auction is None else [auction])[0]
 
     def decide_batch(
         self, states: Sequence[ZebGameState], bids: Sequence[int],
+        auctions: Sequence[Auction | None] | None = None,
     ) -> list[tuple[int, dict[int, float]]]:
-        """One decision per state, planned in parallel."""
+        """One decision per state, planned in parallel; `auctions[i]` is
+        state i's auction evidence (`Situation.auction`), or None."""
         return [
             (tile, {tile: math.nan}) if res is None else (res[0], dict(res[1]))
-            for tile, res in self._planned("solve", states, bids)
+            for tile, res in self._planned("solve", states, bids, auctions)
         ]
 
-    def analyze(self, state: ZebGameState, bid: int, line: bool = False) -> Analysis:
-        return self.analyze_batch([state], [bid], line)[0]
+    def analyze(self, state: ZebGameState, bid: int, line: bool = False,
+                auction: Auction | None = None) -> Analysis:
+        return self.analyze_batch([state], [bid], line, None if auction is None else [auction])[0]
 
     def analyze_batch(self, states: Sequence[ZebGameState], bids: Sequence[int],
-                      line: bool = False) -> list[Analysis]:
+                      line: bool = False, auctions: Sequence[Auction | None] | None = None) -> list[Analysis]:
         """One `Analysis` per state, planned in parallel; a forced move holds
         no scenarios, as in `Walt.analyze`. With `line`, each carries the
         plan's line (`Step`s), as `Walt.analyze(line=True)` does."""
@@ -90,7 +94,7 @@ class CompiledWalt:
                     for t, steps in res[6]
                 },
             )
-            for tile, res in self._planned("analyze", states, bids, line=line)
+            for tile, res in self._planned("analyze", states, bids, auctions, line=line)
         ]
 
     def mold(self, hands: Sequence[int], decl_id: int, leader: int,
@@ -99,15 +103,17 @@ class CompiledWalt:
         return self._core.mold(decl_id, tuple(hands), leader, max_layer, self.threads)
 
     def _planned(self, method: str, states: Sequence[ZebGameState], bids: Sequence[int],
-                 **options) -> list[tuple]:
+                 auctions: Sequence[Auction | None] | None = None, **options) -> list[tuple]:
         """(tile, the core's result) per state, with the result None where the
         move is forced and the core is not asked; `method` is the core's
         `solve` or `analyze`, called with `options`."""
         out: list[tuple | None] = [None] * len(states)
         reqs: list[tuple] = []
         sits: list[tuple[int, Situation]] = []
-        for i, (state, bid) in enumerate(zip(states, bids)):
-            sit = situation_from_state(state, bid)
+        if auctions is None:
+            auctions = [None] * len(states)
+        for i, (state, bid, auction) in enumerate(zip(states, bids, auctions, strict=True)):
+            sit = situation_from_state(state, bid, auction)
             rec, viewer = sit.record, sit.viewer
             if viewer != current_player(state):
                 raise AssertionError("record seat disagrees with engine")
@@ -126,9 +132,13 @@ class CompiledWalt:
         self.nodes = self.proposals = self.fallbacks = self.sent = 0
         self.draws = [(0, 0)] * len(states)
         if reqs:
+            read = [s.auction for _, s in sits]
+            if any(a is not None for a in read):
+                options["auctions"] = [None if a is None else [None if t is None else list(t) for t in a]
+                                       for a in read]
             weights: list[list[float] | None] = [None] * len(reqs)
             if self.belief is not None:
-                roots = self._core.sample_roots(reqs)
+                roots = self._core.sample_roots(reqs, options.get("auctions"))
                 # A belief may weigh a whole batch at once (`many`), e.g. across processes.
                 many = getattr(self.belief, "many", None)
                 ws = (many([s for _, s in sits], roots) if many is not None

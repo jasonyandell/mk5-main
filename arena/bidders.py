@@ -52,6 +52,25 @@ class HeuristicBidder:
         return f"HeuristicBidder(min_trumps={self.min_trumps}, caution={self.caution})"
 
 
+class VariedBidder(HeuristicBidder):
+    """The heuristic bidder with its caution drawn afresh at every bid,
+    uniformly from `cautions` (#149's varied Zeb): the auction's own rng
+    (keyed on the deal) draws it, so a hand's caution is the same in every
+    arm that deals that hand. Ceilings move in steps of 5, so the default
+    {-5, 0, +5} is three behaviours."""
+
+    def __init__(self, cautions: tuple[int, ...] = (-5, 0, 5), min_trumps: int = 3):
+        super().__init__(min_trumps=min_trumps)
+        self.cautions = tuple(cautions)
+
+    def bid(self, ctx: BidContext, rng: random.Random) -> int:
+        self.caution = rng.choice(self.cautions)
+        return super().bid(ctx, rng)
+
+    def __repr__(self) -> str:
+        return f"VariedBidder(cautions={self.cautions}, min_trumps={self.min_trumps})"
+
+
 class Bid30Bidder:
     """Opens 30 if nothing has been bid, otherwise passes.
 

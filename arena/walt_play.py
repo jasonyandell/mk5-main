@@ -156,14 +156,19 @@ class WaltPlay:
         bid_values: Sequence[int],
         marks: Sequence[tuple[int, int]] | None = None,
         marks_to_win: int = 7,
+        auctions: Sequence | None = None,
     ) -> list[int]:
+        """`auctions[i]`, when given, is state i's auction evidence
+        (`scenario.planner.Situation.auction`; `arena.regulars`)."""
         # The planner's contract is the points the bidder's side must take: a
         # marks bid (84, ...) needs every one of the 42, as the arena scores it.
         bids = [contract_points(int(b)) for b in bid_values]
+        read = {} if auctions is None else {"auctions": list(auctions)}
         if hasattr(self.walt, "decide_batch"):
-            decisions = self.walt.decide_batch(states, bids)
+            decisions = self.walt.decide_batch(states, bids, **read)
         else:
-            decisions = [self.walt.decide(s, b) for s, b in zip(states, bids)]
+            each = read.get("auctions", [None] * len(states))
+            decisions = [self.walt.decide(s, b, a) for s, b, a in zip(states, bids, each)]
         self.last_values = [q for _, q in decisions]
         slots = []
         for state, (tile, _) in zip(states, decisions):
