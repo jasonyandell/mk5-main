@@ -7,7 +7,7 @@
 //! stochastic field's ε, `draw` "uniform" or "posterior" (the live rung's
 //! worlds), `convention` None or (name, send, read), the live seat's
 //! overlay (`scenario.convention`), and `reading` None or (likelihood,
-//! margin), the posterior's likelihood as the net's set (`scenario.planner.Reading`), and `tie` "lowest" or "margin"
+//! margin, eps), the posterior's likelihood as the net's set (`scenario.planner.Reading`), and `tie` "lowest" or "margin"
 //! (the tie rule among a decision's exact ties, `Config.tie`);
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
@@ -136,7 +136,7 @@ impl Core {
         draw: &str,
         draw_budget: u64,
         convention: Option<(String, bool, bool)>,
-        reading: Option<(String, i64)>,
+        reading: Option<(String, i64, f64)>,
         tie: &str,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
@@ -194,10 +194,13 @@ impl Core {
                     "a reading is the posterior's likelihood: it needs draw=\"posterior\"",
                 ))
             }
-            Some((_, margin)) if margin < 0 => return Err(PyValueError::new_err("a reading's margin is non-negative")),
-            Some((likelihood, margin)) => match likelihood.as_str() {
-                "consistent" => Some(Reading { uniform: false, margin }),
-                "uniform" => Some(Reading { uniform: true, margin }),
+            Some((_, margin, _)) if margin < 0 => return Err(PyValueError::new_err("a reading's margin is non-negative")),
+            Some((_, _, eps)) if !(0.0..=1.0).contains(&eps) => {
+                return Err(PyValueError::new_err("a reading's eps lies in [0, 1]"))
+            }
+            Some((likelihood, margin, eps)) => match likelihood.as_str() {
+                "consistent" => Some(Reading { uniform: false, margin, eps }),
+                "uniform" => Some(Reading { uniform: true, margin, eps }),
                 other => return Err(PyValueError::new_err(format!("unknown likelihood {other:?}"))),
             },
         };

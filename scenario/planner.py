@@ -80,8 +80,11 @@ hand in the world, and the play weighs [tile ∈ A] (the consistent
 likelihood) or [tile ∈ A]/|A| (the uniform one: a pick uniform within the
 set, under which the set's size is evidence — restricted choice), as Silas
 reads a policy's allowed set (`silas/README.md`, The record as evidence).
-A reading is a sharp likelihood (the real deal's own seats need not fit
-it), so its draw adds a middle path: L normalized on a fiber of at most n;
+Its `eps` softens the set as F_σ softens the move — a play weighs
+ε/n + (1 − ε)·[tile ∈ A]·(1 or 1/|A|) — so at ε > 0 no world vanishes and
+the posterior never empties (#145); ε = 0 is the sharp set. A sharp reading
+need not fit the real deal's own seats, and a soft one is still sharp
+enough that reweighting collapses, so its draw adds a middle path: L normalized on a fiber of at most n;
 n draws with replacement from the whole fiber weighted by L when it holds at
 most `READ_ENUM` members (enumerated: exact draws however few worlds L
 keeps); rejection from the uniform stream above that (a coin under the
@@ -164,20 +167,37 @@ class Rung:
 
 @dataclass(frozen=True)
 class Reading:
-    """The posterior's likelihood as the field net's set: a play outside the
-    legal tiles the net scores within `margin` of its best weighs 0; one
-    inside weighs 1 (`consistent`) or 1/|set| (`uniform`). `margin` is in the
-    net's integer score units (a margin wider than every gap is every legal
-    tile: the any-legal-tile policy)."""
+    """The posterior's likelihood as the field net's set A, the legal tiles
+    the net scores within `margin` of its best (in the net's integer score
+    units; a margin wider than every gap is every legal tile: the
+    any-legal-tile policy), softened by `eps` as F_σ softens the net's move.
+    A play of one of n legal tiles weighs
+
+        ε/n + (1 − ε)·[tile ∈ A]·w,   w = 1 (`consistent`), 1/|A| (`uniform`)
+
+    so ε = 0 is the sharp set (a play outside A weighs 0) and any ε > 0 is
+    positive on every world: the posterior never empties. Under the uniform
+    likelihood it is the probability that a seat which explores uniformly
+    with probability ε, else picks uniformly within A, plays the tile; at
+    |A| = 1 both are F_σ's P_σ."""
 
     likelihood: str
     margin: int
+    eps: float = 0.0
 
     def __post_init__(self) -> None:
         if self.likelihood not in LIKELIHOODS:
             raise ValueError(f"the likelihood is one of {LIKELIHOODS}, not {self.likelihood!r}")
         if not 0 <= self.margin < 1 << 62:
             raise ValueError("a reading's margin lies in [0, 2^62)")
+        if not 0.0 <= self.eps <= 1.0:
+            raise ValueError("a reading's eps lies in [0, 1]")
+
+    def weight(self, tile: int, allowed: int, n: int) -> float:
+        """The play's factor of the likelihood: tile among n legal tiles, A = `allowed`."""
+        inside = (allowed >> tile) & 1
+        w = 0.0 if not inside else 1.0 if self.likelihood == "consistent" else 1.0 / allowed.bit_count()
+        return self.eps / n + (1.0 - self.eps) * w
 
 
 @dataclass(frozen=True)
@@ -360,7 +380,7 @@ class Walt:
         self.belief = belief
         self._pi: dict[tuple, int] = {}   # modeled decisions, by (rung, seat, hand, record key)
         self._sets: dict[tuple, int] = {}  # a reading's sets, by (seat, hand, record key)
-        self._divs: dict[tuple, int] = {}  # a reading's per-seat divisors, by (seat, hand now, record key)
+        self._facs: dict[tuple, float] = {}  # a reading's per-seat factors, by (seat, hand now, record key)
         self.nodes = 0                     # cells evaluated in the last decision
         self.proposals = 0                 # posterior or reader: uniform proposals drawn in the last decision
         self.fallbacks = 0                 # posterior or reader: 1 when the last decision planned over the uniform
@@ -417,7 +437,7 @@ class Walt:
         legal = tiles_of(rules.legal(own, rec.led))
         self._pi.clear()
         self._sets.clear()
-        self._divs.clear()
+        self._facs.clear()
         self.nodes = self.proposals = self.fallbacks = self.sent = 0
         if len(legal) == 1:
             return legal[0]
@@ -451,11 +471,11 @@ class Walt:
         """For each world, the likelihood of the other seats' plays under the
         config's `Reading`: with A the legal tiles the net scores within the
         margin of its best for that seat's hand in the world at that record,
-
-            L = [every observed play in its A] / D,   D = ∏ |A| (uniform), 1 (consistent)
-
-        over the discretionary plays (a forced play weighs 1). D is an exact
-        integer and factorizes by seat (`_divisor`), as Silas's readings do."""
+        the product over the discretionary plays (a forced play weighs 1) of
+        `Reading.weight` — ε/n + (1 − ε)·[tile ∈ A]·(1 or 1/|A|) — taken seat
+        by seat (`_factor`, the product of that seat's plays in play order),
+        the seats' factors multiplied in seat order, as Silas's readings
+        factorize."""
         cfg = self.config
         if cfg.reading is None or cfg.field is None:
             raise ValueError("a reading reads the field net's sets")
@@ -463,41 +483,40 @@ class Walt:
         ev = _evidence(sit, rules)
         out = []
         for hands in worlds:
-            d = 1
+            p = 1.0
             for seat in range(4):
                 if seat != sit.viewer:
-                    d *= self._divisor(sit, rules, ev, seat, hands[seat])
-            out.append(0.0 if d == 0 else 1.0 / d)
+                    p *= self._factor(sit, rules, ev, seat, hands[seat])
+            out.append(p)
         return out
 
-    def _divisor(self, sit: Situation, rules: Rules, ev: list, seat: int, now: int) -> int:
-        """A seat's factor of the reading's likelihood as a divisor, given the
-        hand it holds now: 0 when one of its plays falls outside the net's
-        set, else ∏ |A| over its discretionary plays (uniform) or 1."""
+    def _factor(self, sit: Situation, rules: Rules, ev: list, seat: int, now: int) -> float:
+        """A seat's factor of the reading's likelihood, given the hand it
+        holds now: the product of `Reading.weight` over its discretionary
+        plays, in play order (0 at the first play outside a sharp set)."""
         key = (seat, now, sit.record.key())
-        d = self._divs.get(key)
-        if d is not None:
-            return d
+        p = self._facs.get(key)
+        if p is not None:
+            return p
         reading, field = self.config.reading, self.config.field
         assert reading is not None and field is not None
-        d, mine = 1, sit.played_by(seat)
+        p, mine = 1.0, sit.played_by(seat)
         for s, rec, tile, before in ev:
             if s != seat:
                 continue
             hand = (now | mine) & ~before
-            if rules.legal(hand, rec.led).bit_count() > 1:
+            n = rules.legal(hand, rec.led).bit_count()
+            if n > 1:
                 skey = (seat, hand, rec.key())
                 a = self._sets.get(skey)
                 if a is None:
                     a = self._sets[skey] = field.allowed(rules, seat, hand, rec, sit.bid, sit.bidder_team,
                                                          reading.margin)
-                if not (a >> tile) & 1:
-                    d = 0
+                p *= reading.weight(tile, a, n)
+                if p == 0.0:
                     break
-                if reading.likelihood == "uniform":
-                    d *= a.bit_count()
-        self._divs[key] = d
-        return d
+        self._facs[key] = p
+        return p
 
     def convention_likelihood(self, sit: Situation, worlds: list[World]) -> list[float]:
         """For each world, 1 if every gated decision the viewer's partner made
@@ -535,7 +554,7 @@ class Walt:
         reading = self.config.reading
         if sit is not None and reading is not None:
             worlds, weights = self._drawn(sit, worlds, exact, seed, self.reading_likelihood,
-                                          reading.likelihood == "uniform", READ_ENUM)
+                                          reading.likelihood == "uniform" or reading.eps > 0.0, READ_ENUM)
         elif sit is not None and self.config.draw == "posterior":
             worlds, weights = self._drawn(sit, worlds, exact, seed, self.field_likelihood,
                                           self.config.field_coin > 0)

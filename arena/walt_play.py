@@ -8,7 +8,7 @@ construction one rung down, bottoming out in random legal play. See
 Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
           [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>]
-          [,r=consistent|uniform:<margin>][,c=<convention>:S|R|SR][,t=lowest|margin][,py]
+          [,r=consistent|uniform:<margin>[:<eps>]][,c=<convention>:S|R|SR][,t=lowest|margin][,py]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -33,10 +33,12 @@ weighted by that likelihood normalized; a sampled one is n draws by
 rejection from the uniform stream, within `D=` proposals (default 2^22),
 else the uniform sample (`CompiledWalt.fallbacks` counts those decisions).
 
-`r=<likelihood>:<margin>` (with `d=posterior`) reads the plays by the net's
-set instead of its move (`Config.reading`): a play must lie among the legal
-tiles the net scores within `margin` (integer score units) of its best, and
-weighs 1 (`consistent`) or 1/|set| (`uniform`, restricted choice).
+`r=<likelihood>:<margin>[:<eps>]` (with `d=posterior`) reads the plays by
+the net's set instead of its move (`Config.reading`): a play must lie among
+the legal tiles the net scores within `margin` (integer score units) of its
+best, and weighs 1 (`consistent`) or 1/|set| (`uniform`, restricted choice).
+`eps` (default 0, the sharp set) softens it as `E=` softens the move: a play
+of one of n legal tiles weighs ε/n + (1 − ε)·that, so no world vanishes.
 
 `c=<name>:<arm>` overlays a convention on the live seat (`Config.convention`,
 `scenario/convention.py`, where every gate is stated): `name` is one of
@@ -172,6 +174,7 @@ class WaltPlay:
         field = "random" if c.field is None else "net" if c.field_eps == 0 else f"net+eps{c.field_eps:g}"
         conv = "" if c.convention is None else f", convention={c.convention.name}:{c.convention.arm}"
         conv += "" if c.reading is None else f", reading={c.reading.likelihood}:{c.reading.margin}"
+        conv += "" if c.reading is None or c.reading.eps == 0 else f":{c.reading.eps:g}"
         tie = "" if c.tie == "lowest" else f", tie={c.tie}"
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}{belief}, "
                 f"field={field}, draw={c.draw}{conv}{tie}, {engine})")
@@ -199,8 +202,8 @@ def parse_walt_spec(arg: str) -> WaltPlay:
         elif t.startswith("D="):
             kw["draw_budget"] = int(t[2:])
         elif t.startswith("r="):
-            likelihood, _, margin = t[2:].partition(":")
-            kw["reading"] = Reading(likelihood, int(margin))
+            likelihood, margin, *eps = t[2:].split(":")
+            kw["reading"] = Reading(likelihood, int(margin), *(float(e) for e in eps))
         elif t.startswith("c="):
             name, _, arm = t[2:].partition(":")
             if arm not in ("S", "R", "SR"):

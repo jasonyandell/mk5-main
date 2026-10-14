@@ -27,7 +27,9 @@
 //! [`Reading`] the likelihood is the net's set instead of its move: an
 //! observed play must lie among the legal tiles the net scores within a
 //! margin of its best (consistent: 1 or 0), and under the uniform likelihood
-//! it weighs 1/|set| — restricted choice (`Walt.reading_likelihood`).
+//! it weighs 1/|set| — restricted choice (`Walt.reading_likelihood`); its ε
+//! softens the set as F_σ softens the move, ε/n + (1 − ε)·that, so no world
+//! vanishes (#145).
 //!
 //! A convention ([`Convention`], `scenario/convention.py`) overlays the live
 //! seat: its sender plays the plan's best tile among the rule's allowed ones
@@ -352,15 +354,33 @@ pub enum Draw {
 }
 
 /// How the posterior reads the other seats' plays when it is the net's set
-/// rather than its move (`scenario.planner.Reading`): a play outside the
-/// legal tiles the net scores within `margin` of its best weighs 0; one
-/// inside weighs 1 (consistent) or 1/|set| (`uniform`).
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// rather than its move (`scenario.planner.Reading`): a play of one of n
+/// legal tiles weighs ε/n + (1 − ε)·[tile in A]·w, A the legal tiles the net
+/// scores within `margin` of its best, w = 1 (consistent) or 1/|A|
+/// (`uniform`). ε = 0 is the sharp set; ε > 0 never empties the posterior.
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Reading {
     /// The uniform likelihood (a pick uniform within the set), else the consistent one.
     pub uniform: bool,
     /// The set's width below the net's best legal score, in the net's integer score units.
     pub margin: i64,
+    /// The softening ε in [0, 1]: the weight of a uniform legal pick.
+    pub eps: f64,
+}
+
+impl Reading {
+    /// The play's factor of the likelihood: `tile` among `n` legal tiles, A =
+    /// `allowed` (`Reading.weight`, the same operations in the same order).
+    fn weight(&self, tile: u8, allowed: u32, n: u32) -> f64 {
+        let w = if (allowed >> tile) & 1 == 0 {
+            0.0
+        } else if self.uniform {
+            1.0 / allowed.count_ones() as f64
+        } else {
+            1.0
+        };
+        self.eps / n as f64 + (1.0 - self.eps) * w
+    }
 }
 
 /// The tie rule ≺ among a decision's exact ties (`Config.tie`).
@@ -422,7 +442,7 @@ struct Ctx<'a> {
     bidder: u8,
     pi: Map<(u8, u8, u32, Rec), u8>,
     sets: Map<(u8, u32, Rec), u32>,
-    divs: Map<(u8, u32), u64>,
+    facs: Map<(u8, u32), f64>,
     nodes: u64,
     drawn: Drawn,
 }
@@ -514,24 +534,21 @@ fn likelihood(ctx: &mut Ctx, ev: &Evidence, world: &[u32; 4], eps: f64, u: f64) 
     p
 }
 
-/// L(world) = [every observed play in its set] / D, D = ∏ |A| over the other
-/// seats' discretionary plays under the uniform likelihood and 1 under the
-/// consistent one, A the net's set for that seat's hand in the world at that
-/// record (`Walt.reading_likelihood`). D is an exact integer (at most 5040
-/// per seat), built seat by seat — the likelihood factorizes by seat — and L
-/// is returned early once it is 0 or ≤ `u` (D only grows).
+/// L(world) = ∏ over the other seats' discretionary plays of
+/// [`Reading::weight`], A the net's set for that seat's hand in the world at
+/// that record (`Walt.reading_likelihood`): built seat by seat — the
+/// likelihood factorizes by seat — each seat's factor the product of its
+/// plays in play order, the factors multiplied in seat order; returned early
+/// once it is 0 or ≤ `u` (every factor is at most 1, so L only falls).
 fn read(ctx: &mut Ctx, ev: &Evidence, viewer: u8, world: &[u32; 4], reading: Reading, u: f64) -> f64 {
-    let mut d = 1u64;
+    let mut p = 1.0f64;
     for seat in (0..4u8).filter(|&s| s != viewer) {
-        d *= ctx.divisor(ev, seat, world[seat as usize], reading);
-        if d == 0 {
-            return 0.0;
-        }
-        if 1.0 / d as f64 <= u {
-            return 1.0 / d as f64;
+        p *= ctx.factor(ev, seat, world[seat as usize], reading);
+        if p == 0.0 || p <= u {
+            return p;
         }
     }
-    1.0 / d as f64
+    p
 }
 
 /// 1 if every gated decision of the viewer's partner obeyed the convention's
@@ -682,7 +699,7 @@ impl Inv {
                     let ev = Evidence::new(ctx.rules, viewer, plays);
                     let like = |ctx: &mut Ctx, world: &[u32; 4], u: f64| read(ctx, &ev, viewer, world, reading, u);
                     (worlds, w) =
-                        drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, reading.uniform, READ_ENUM, like);
+                        drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, reading.uniform || reading.eps > 0.0, READ_ENUM, like);
                 } else if cfg.draw == Draw::Posterior {
                     let eps = eps_exact(cfg.field_eps);
                     let ev = Evidence::new(ctx.rules, viewer, plays);
@@ -1076,34 +1093,31 @@ impl<'a> Ctx<'a> {
         tile
     }
 
-    /// A seat's factor of the reading's likelihood as a divisor, given the hand
-    /// it holds now: 0 when one of its plays falls outside the net's set, else
-    /// ∏ |A| over its discretionary plays (uniform) or 1 (consistent). Cached
-    /// by (seat, hand now): within one decision the record is fixed.
-    fn divisor(&mut self, ev: &Evidence, seat: u8, now: u32, reading: Reading) -> u64 {
-        if let Some(&d) = self.divs.get(&(seat, now)) {
-            return d;
+    /// A seat's factor of the reading's likelihood, given the hand it holds
+    /// now: the product of [`Reading::weight`] over its discretionary plays in
+    /// play order (0 at the first play outside a sharp set). Cached by (seat,
+    /// hand now): within one decision the record is fixed.
+    fn factor(&mut self, ev: &Evidence, seat: u8, now: u32, reading: Reading) -> f64 {
+        if let Some(&p) = self.facs.get(&(seat, now)) {
+            return p;
         }
-        let mut d = 1u64;
+        let mut p = 1.0f64;
         for &(s, rec, tile, before) in &ev.plays {
             if s != seat {
                 continue;
             }
             let hand = (now | ev.played_by[seat as usize]) & !before;
-            let legal = self.rules.legal(hand, rec.led());
-            if legal & (legal - 1) != 0 {
+            let n = self.rules.legal(hand, rec.led()).count_ones();
+            if n > 1 {
                 let a = self.allowed(seat, hand, &rec, reading.margin);
-                if (a >> tile) & 1 == 0 {
-                    d = 0;
+                p *= reading.weight(tile, a, n);
+                if p == 0.0 {
                     break;
-                }
-                if reading.uniform {
-                    d *= a.count_ones() as u64;
                 }
             }
         }
-        self.divs.insert((seat, now), d);
-        d
+        self.facs.insert((seat, now), p);
+        p
     }
 
     /// The net's set for a seat holding `own` at a record ([`FieldNet::allowed`]), cached.
@@ -1149,7 +1163,7 @@ fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (C
         bidder: d.bidder,
         pi: Map::default(),
         sets: Map::default(),
-        divs: Map::default(),
+        facs: Map::default(),
         nodes: 0,
         drawn: Drawn::default(),
     };

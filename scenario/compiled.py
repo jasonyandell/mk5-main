@@ -50,7 +50,8 @@ class CompiledWalt:
             config.draw, config.draw_budget,
             None if config.convention is None else
             (config.convention.name, config.convention.send, config.convention.read),
-            None if config.reading is None else (config.reading.likelihood, config.reading.margin),
+            None if config.reading is None else
+            (config.reading.likelihood, config.reading.margin, config.reading.eps),
             config.tie,
         )
         self.nodes = 0      # cells evaluated in the last decision or batch
