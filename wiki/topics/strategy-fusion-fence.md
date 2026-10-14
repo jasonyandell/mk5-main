@@ -168,4 +168,4 @@ No core pin changed: no `.silas` file or prelude names the renamed predicate
 
 ## Links
 
-[[strategy-fusion]] | [[the-wall]] | [[silas]] | [[splat-search-bounds]] | [[belief-policy-value-algebra]] | [[scenario-player]] | [[intermediate-ai]] | [[the-oracle]] | [[expected-q-value]]
+[[strategy-fusion]] | [[the-wall]] | [[silas]] | [[splat-search-bounds]] | [[belief-policy-value-algebra]] | [[scenario-player]] | [[intermediate-ai]] | [[the-oracle]] | [[expected-q-value]] | [[brainstorm-2026-10-14-ledger]] (an outside proposal's "demon labels and critics", assessed against this fence)
