@@ -253,4 +253,4 @@ its own moves).
 ## Links
 
 [[book-study-2026-10-12]] · [[splat-visualizer]] · [[candlewax]] · [[scenario-player]] ·
-[[w42]] · [[research-night-2026-10-12]]
+[[w42]] · [[research-night-2026-10-12]] · [[splat-search-bounds]]

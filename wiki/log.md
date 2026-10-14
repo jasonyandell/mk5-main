@@ -38,6 +38,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 9f14a106 | searching over splats: what is sound, what is tractable (dominance, admissible heuristics, lump bounds; probe at tricks 2-4)]
+
+**Added:** [[splat-search-bounds]]. **Updated:** [[scenario-player]], [[metasplat-2026-10-13]], [[splat-visualizer]], `index-topics.md`.
+
 ## [2026-10-13 | 64b3db69 | the metasplat: Zeb's splat against the book's at every live firing, nine shapes fixed before counting; 44% of departures a make edge (27% dominant, 3% safer tail at a lower mean), 45% even make, 11% ties]
 
 **Added:** [[metasplat-2026-10-13]] (`scenario/metasplat.py`, `reason.explain`, the page's book view). **Updated:** [[book-study-2026-10-12]] § Finer than a price, [[splat-visualizer]] § Book against Zeb, `index-experiments.md`. Data: `book/metasplat/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
