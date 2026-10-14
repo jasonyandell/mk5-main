@@ -292,6 +292,15 @@ Commands:
 
 (The run grouped `real` into one process, with both arms in it.)
 
+## The Doom demos (September 2026 and spring 2026)
+
+The pilot's sources missed two widely covered game demos. Both are consistent with the verdict.
+
+- **A fly connectome "plays" Doom.** Alex Wormuth connected the newer MaleCNS v1.0 connectome (Google Research and HHMI Janelia; ~166k neurons, ~125M synapses) to 1993's Doom. Game frames drive sensory neurons, and the resulting activity is read out as movement controls. Damage sends a pulse to two dopaminergic PPL1-01 neurons, the mushroom body's punishment pathway, as the reinforcement signal. Coverage reports no clear improvement after 6,385 attempts. The project's own documentation calls learning unproven. Similar hobby setups drive Super Mario 64 and Beat Saber. ([HotHardware](https://hothardware.com/news/google-mapped-a-fruit-fly-brain-so-engineers-taught-it-to-play-doom), [TechSpot](https://www.techspot.com/news/113780-google-mapped-fly-nervous-system-developers-using-play.html), [TweakTown](https://www.tweaktown.com/news/113507/googles-mapped-fruit-fly-brain-has-played-doom-more-than-6000-times-and-still-has-not-beaten-it/index.html))
+- **Living human neurons play Doom.** Cortical Labs' CL1 holds ~200k cultured human neurons on a multi-electrode array. Game state goes in as stimulation, and firing comes out as actions. The neurons play poorly, with some reported in-session adaptation. This is the same group that taught neuron cultures Pong in 2022. ([Military.com](https://secure.military.com/feature/2026/03/10/scientists-teach-human-brain-cells-play-doom-sci-fi-experiment.html), [Decrypt](https://decrypt.co/359697/human-brain-cells-play-doom-cortical-labs-experiment?amp=1))
+
+Neither demo changes the verdict. In both, an engineered encoding and readout carry the game, and the wiring is a fixed substrate. The Doom setup does make option (c) concrete. It shows a dopamine-neuron reinforcement pulse into the mushroom body's own learning pathway as an online learning signal. That is the three-factor rule the mushroom-body follow-up below proposes, built from random wiring rather than the connectome.
+
 ## What would come next (if anyone wants it)
 
 The pilot answers the cheap question. The fly's wiring is not a better
