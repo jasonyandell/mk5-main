@@ -6,8 +6,8 @@
 //! texas-42's Lean `AuctionState.legalBid`. `data/auction-legal.txt` holds the
 //! arena's legal calls after every legal prefix (written and checked by
 //! `arena/test_silas_fixtures.py`); the TypeScript engine is held to the same
-//! file (`src/tests/rules/bidding/silas-auction-fixture.test.ts`), with its cap
-//! of four marks.
+//! file (`src/tests/rules/bidding/silas-auction-fixture.test.ts`), five marks
+//! included.
 
 mod common;
 
@@ -80,14 +80,14 @@ fn the_rules_of_42_hold_on_every_prefix() {
 }
 
 #[test]
-fn the_engines_cap_of_four_marks_and_leans_ceiling_of_five() {
+fn a_marks_cap_is_a_config_and_leans_ceiling_is_five() {
     let four = AuctionConfig::new(4, false).unwrap();
     let raise = |config, calls: &[u32]| {
         let calls = calls.iter().map(|n| Call::Bid(Bid::number(*n).unwrap())).collect();
         Auction::new(config, Seat::S3, calls).map(|a| a.legal_calls())
     };
-    // The arena (and the straight rules) let three raises reach five marks;
-    // the engine offers four marks at most.
+    // The straight rules (the arena, the engine) let three raises reach five
+    // marks; a cap of four, a config of its own, refuses the fifth.
     assert_eq!(raise(AuctionConfig::STRAIGHT, &[84, 126, 168]).unwrap(), vec![Call::Pass, "210".parse().unwrap()]);
     assert_eq!(raise(four, &[84, 126, 168]).unwrap(), vec![Call::Pass]);
     assert!(raise(four, &[84, 126, 168, 210]).is_err());

@@ -497,8 +497,8 @@ Legality is texas-42's Lean `AuctionState.legalBid`, as `wiki/topics/rules-of-42
 § Bidding states it: a point bid is 30 to 41 and above the high bid; before
 any marks bid, one or two marks (42, 84) may be bid; after a marks bid only
 one mark more. An `AuctionConfig` holds what varies: the marks cap (`STRAIGHT`
-has none below the five that four calls can reach, Lean's `mark_le_ceiling`;
-the TypeScript engine offers four) and the forced bid (the shaker may not pass
+has none below the five that four calls can reach, Lean's `mark_le_ceiling`,
+which the TypeScript engine offers too, #142) and the forced bid (the shaker may not pass
 over three passes, the common variation; without it four passes are a
 passed-out hand, no contract, and the next seat shakes). `tests/auction.rs`
 holds the legal calls after every one of the 834 legal prefixes, at every

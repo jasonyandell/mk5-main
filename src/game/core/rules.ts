@@ -31,6 +31,20 @@ export function isValidMarkBid(bid: Bid, lastBid: Bid, _previousBids: Bid[]): bo
 }
 
 /**
+ * The most marks a mark bid can name after these bids. The rules set no ceiling, only
+ * the steps (wiki/topics/rules-of-42.md § Bidding, enforced by isValidMarkBid): two
+ * marks at most as an opening, then one more than the highest mark bid so far. Bids
+ * other than marks do not raise it.
+ */
+export function highestNamableMarks(previousBids: Bid[]): number {
+  const highest = previousBids.reduce(
+    (most, bid) => (bid.type === BID_TYPES.MARKS ? Math.max(most, bid.value ?? 0) : most),
+    0
+  );
+  return Math.max(2, highest + 1);
+}
+
+/**
  * Gets the winner of a trick using the threaded rules system.
  *
  * This is a convenience function that creates a minimal state for the rules.

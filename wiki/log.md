@@ -37,6 +37,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 2fe46194 | the TS engine no longer caps mark bids at four (#142): the enumerator's bound was a literal, the validator and the rules page already let one-mark steps run on; the 834-prefix fixture now agrees on five marks too]
+
+**Touched pages:** [[silas]] (the auction's legality line; `silas/README.md`, `tests/auction.rs`). Engine: `src/game/core/rules.ts` (`highestNamableMarks`), `layers/base.ts`, URL codes for 4 and 5 marks; `src/tests/rules/bidding/mark-bid-ceiling.test.ts`. No config or variant: the cap was a bug.
+
 ## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
 
 **Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.

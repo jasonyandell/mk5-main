@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { stateToUrl, decodeGameUrl, encodeGameUrl } from '../../game/core/url-compression';
+import { stateToUrl, decodeGameUrl, encodeGameUrl, compressEvents, decompressEvents } from '../../game/core/url-compression';
 import { replayFromUrl } from '../../game/utils/urlReplay';
 import { HeadlessRoom } from '../../server/HeadlessRoom';
 import type { GameConfig } from '../../game/types/config';
@@ -186,6 +186,13 @@ describe('URL Roundtrip Isomorphism', () => {
       // URL should NOT have l= param when no layers
       const url = stateToUrl(state);
       expect(url).not.toContain('l=');
+    });
+  });
+
+  describe('mark bids', () => {
+    it('should roundtrip every mark bid an auction can reach, five marks included', () => {
+      const events = ['bid-1-marks', 'bid-2-marks', 'bid-3-marks', 'bid-4-marks', 'bid-5-marks'];
+      expect(decompressEvents(compressEvents(events))).toEqual(events);
     });
   });
 });

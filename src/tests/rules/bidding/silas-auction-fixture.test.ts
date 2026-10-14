@@ -8,9 +8,8 @@ import { createTestContext } from '../../helpers/executionContext';
  * The engine's bids against the arena's and Silas's (silas/tests/data/auction-legal.txt,
  * written from arena/auction.py by arena/test_silas_fixtures.py; silas/tests/auction.rs
  * reads the same file). After every legal prefix of an auction, the engine offers
- * exactly the calls the fixture lists, except five marks: the engine offers marks
- * bids up to four, where the arena and the straight rules let three raises from
- * 84 reach five.
+ * exactly the calls the fixture lists, five marks included: the rules set no
+ * ceiling on mark bids beyond the one-mark steps, and three raises from 84 reach five.
  */
 
 const FIXTURE = new URL('../../../../silas/tests/data/auction-legal.txt', import.meta.url);
@@ -55,7 +54,7 @@ describe('the engine bids as the arena and Silas do', () => {
     if (transition) Object.assign(state, transition.newState);
   }
 
-  test('after every legal prefix, the legal calls are the fixture\'s (five marks aside)', () => {
+  test('after every legal prefix, the legal calls are the fixture\'s', () => {
     const lines = fixture();
     expect(lines.length).toBe(834);
     for (const dealer of [3, 0]) {
@@ -65,8 +64,7 @@ describe('the engine bids as the arena and Silas do', () => {
         const offered = getNextStates(state, ctx)
           .map((t) => called(t.id))
           .filter((c): c is string => c !== null);
-        const expected = legal.filter((c) => c !== '210');
-        expect([...offered].sort(), `after ${prefix.join(' ') || 'no calls'}`).toEqual([...expected].sort());
+        expect([...offered].sort(), `after ${prefix.join(' ') || 'no calls'}`).toEqual([...legal].sort());
       }
     }
   });

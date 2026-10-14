@@ -17,7 +17,7 @@ import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction 
 import type { Layer, GameRules } from './types';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
-import { isValidMarkBid } from '../core/rules';
+import { isValidMarkBid, highestNamableMarks } from '../core/rules';
 import { calculateRoundScore } from '../core/scoring';
 import { checkHandOutcome as checkStandardHandOutcome } from '../core/handOutcome';
 import {
@@ -244,8 +244,9 @@ export const baseLayer: Layer = {
         }
       }
 
-      // Marks bids (1-4)
-      for (let marks = 1; marks <= 4; marks++) {
+      // Marks bids: every count the rules can name, with no ceiling of their own
+      const mostMarks = highestNamableMarks(state.bids.filter(b => b.type !== BID_TYPES.PASS));
+      for (let marks = 1; marks <= mostMarks; marks++) {
         const bid: Bid = { type: BID_TYPES.MARKS, value: marks, player: currentPlayer };
         if (validateBid(bid)) {
           actions.push({ type: 'bid', player: currentPlayer, bid: BID_TYPES.MARKS, value: marks });

@@ -294,7 +294,8 @@ Slice 2 (2026-10-13, `silas/README.md` § The auction; its choices are
 - **The auction in the record.** Each seat's call, under an `AuctionConfig` (the marks
   cap, the forced bid), legal by construction; the contract is derived from the
   auction, never given. Legality is held to the arena's and the TypeScript engine's on
-  all 834 legal prefixes of an auction. A hand known only by its contract gets the
+  all 834 legal prefixes of an auction (five marks included since #142, which found
+  the engine refusing it). A hand known only by its contract gets the
   shortest auction its declarer wins.
 - **Bidding and declaring in policies.** `(bidding ...)` and `(declaring ...)` rules
   read an auction frame (the hand, the auction so far, the match state, the
