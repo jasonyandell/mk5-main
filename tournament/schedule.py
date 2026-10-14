@@ -20,6 +20,7 @@ first, against whoever their result would tell the most about.
 """
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 from itertools import combinations
 from typing import Iterable
@@ -55,6 +56,14 @@ def gains(fit: Fit, games_per_faceoff: int, allowed: Iterable[str]) -> list[Choi
     return out
 
 
-def next_pair(fit: Fit, games_per_faceoff: int, allowed: Iterable[str]) -> Choice | None:
+def next_pair(fit: Fit, games_per_faceoff: int, allowed: Iterable[str],
+              rng: random.Random | None = None, within: float = 0.8) -> Choice | None:
+    """The best pair, or, given an rng, a uniform pick among the pairs whose
+    gain is at least `within` of the best. Workers read the same records, so
+    without the pick they would all play the same pair at once; with it they
+    spread over the near-best ones, and each still teaches nearly the most."""
     ranked = gains(fit, games_per_faceoff, allowed)
-    return ranked[0] if ranked else None
+    if not ranked or rng is None:
+        return ranked[0] if ranked else None
+    near = [c for c in ranked if c.gain >= within * ranked[0].gain]
+    return rng.choice(near)

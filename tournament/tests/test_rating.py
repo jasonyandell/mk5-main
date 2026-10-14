@@ -93,6 +93,14 @@ def test_schedule_prefers_the_newcomer_and_ignores_the_anchor():
     assert len({tuple(v) for v in ranked.values()}) == 1
 
 
+def test_concurrent_workers_spread_over_the_near_best_pairs():
+    players = ["a", "b", "c", "d"]
+    f = fit([], players, "a")  # nothing played: every pair is equally informative
+    picks = {(c.a, c.b) for c in (next_pair(f, 2, players, rng=random.Random(k)) for k in range(60))}
+    assert len(picks) == 6
+    assert next_pair(f, 2, players) == next_pair(f, 2, players)  # no rng: the argmax
+
+
 def test_schedule_prefers_the_less_measured_pair():
     # a-b has 200 games, a-c 20, both even: the next faceoff goes to a-c's doubt.
     games = ([Game("a", "b", k % 2 == 0, f"ab{k}") for k in range(200)]

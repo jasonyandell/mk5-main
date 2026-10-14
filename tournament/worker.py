@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import random
 import secrets
 import shutil
 import subprocess
@@ -227,7 +228,7 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
             log(f"fewer than two participants this machine can seat ({caps}); stopping")
             break
         f = ratings(participants, records, anchor)
-        choice = next_pair(f, 2 * pairs, allowed)
+        choice = next_pair(f, 2 * pairs, allowed, rng=random.SystemRandom())
         spec = FaceoffSpec(ladder, choice.a, choice.b, secrets.randbits(64), pairs, utc_stamp())
         log(f"claim {spec.id} (gain {choice.gain:.3f}, P(a wins) {f.p_win(choice.a, choice.b):.2f})")
         claim = claims.create(spec, {k: participants[k] for k in (spec.a, spec.b)})
