@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
+"""cpu-slot — run one experiment niced, time-capped, and only when a slot is free.
+
+    scripts/cpu-slot [--slots N] [--timeout S] [--nice K] -- <command> [args...]
+
+Every heavy run on this Mac (arena batches, pours, studies) goes through here. It waits
+for one of N slots (default 3, shared by every session through lock files in
+/tmp/mk5-cpu-slots), then runs the command at `nice` K (default 10) under a
+hard timeout of S seconds (default 300). The house rule is five minutes per run unless
+there is a really good reason (Jason, 2026-10-14). The slot is released when the
+command exits, however it exits, because the OS drops the lock with the process.
+
+Exit status is the command's own, or 124 on timeout, matching `timeout(1)`.
+"""
+
+import argparse
+import fcntl
+import os
+import subprocess
+import sys
+import time
+
+parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+parser.add_argument("--slots", type=int, default=int(os.environ.get("MK5_CPU_SLOTS", "3")))
+parser.add_argument("--timeout", type=int, default=300)
+parser.add_argument("--nice", type=int, default=10)
+parser.add_argument("cmd", nargs=argparse.REMAINDER)
+args = parser.parse_args()
+cmd = args.cmd[1:] if args.cmd[:1] == ["--"] else args.cmd
+if not cmd:
+    parser.error("give a command after --")
+
+lock_dir = os.environ.get("MK5_CPU_SLOT_DIR", "/tmp/mk5-cpu-slots")
+os.makedirs(lock_dir, exist_ok=True)
+
+
+def take_slot():
+    waited = False
+    while True:
+        for i in range(args.slots):
+            fd = os.open(os.path.join(lock_dir, f"slot-{i}"), os.O_CREAT | os.O_RDWR, 0o644)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                os.close(fd)
+                continue
+            os.ftruncate(fd, 0)
+            os.write(fd, f"{os.getpid()} {' '.join(cmd)[:200]}\n".encode())
+            return fd, i
+        if not waited:
+            print(f"cpu-slot: all {args.slots} slots busy; waiting", file=sys.stderr, flush=True)
+            waited = True
+        time.sleep(5)
+
+
+fd, slot = take_slot()
+try:
+    proc = subprocess.Popen(cmd, preexec_fn=lambda: os.nice(args.nice))
+    try:
+        sys.exit(proc.wait(timeout=args.timeout))
+    except subprocess.TimeoutExpired:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        print(f"cpu-slot: timed out after {args.timeout}s", file=sys.stderr, flush=True)
+        sys.exit(124)
+finally:
+    os.close(fd)

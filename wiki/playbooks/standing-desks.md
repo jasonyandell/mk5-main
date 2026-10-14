@@ -15,7 +15,7 @@ lifecycles"); the desks are durable.
 
 | Desk | Remote Control name | Beat |
 |---|---|---|
-| **Mayor** | the lead session | Central admin. Priorities and routing; the only writer to `main`; the CPU budget; keeper of the link registry. |
+| **Mayor** | the lead session | Central admin. Priorities and routing; the only writer to `main`; keeper of the link registry. |
 | **Book** | `Book` | The [[book-authority]] role, permanently: *Winning 42*, the private archive, the Silas book encodings, [[book-assumptions]], driving the book to completion. |
 | **Media** | `Media` | The "journalinfluencer". The 42 Feed, reels and front pages, the Haiku cold-read pipeline and the Haiku feed workers. It turns every result into a post. |
 | **Archive** | `Archive` | Data. Hugging Face datasets, the Plunge backups, the tournament store, "recover everything to HF", data hygiene and provenance. |
@@ -65,9 +65,13 @@ first, and let the central authority manage only links and lookups.
 - **Main has one writer: the Mayor.** A desk works in its own git worktree on its own branch
   (`git worktree add .claude/worktrees/<desk>-<topic> -b <desk>/<topic> main`), commits, and
   sends the Mayor the branch name. It never pushes `main`, never merges, never force-pushes.
-- **CPU budget.** Heavy runs (arena batches, pours, long test suites) need the Mayor's OK.
-  At most about two heavy experiments run at once on this Mac. Every run sits under
-  `timeout 300`. Check `uptime` before starting one.
+- **CPU: `scripts/cpu-slot`.** Every heavy run (arena batches, pours, studies) goes
+  through `scripts/cpu-slot -- <command>`. It waits for one of 3 shared slots, runs the command
+  at `nice` 10 and kills it at 300 s. Five minutes per run is the house rule unless there is a
+  really good reason, and the reason gets written down (`--timeout`). A runner that fans out
+  wraps each batch, so one batch takes one slot. Tests, merges and interactive work don't take
+  slots. Nice keeps the shop responsive, and the slots keep wall-clock players (Walt thinks on
+  a clock) from being measured on a crowded machine.
 - **Plunge is production.** Read-only, unless Jason approves a specific change. Plunge merges
   are Jason's call.
 - **Voice.** Plain and short, for a reader on a phone. Every number carries its interval and
