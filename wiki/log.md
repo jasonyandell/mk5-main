@@ -41,7 +41,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-10-14 | pending | the Book Authority: the book is the authority, our measurement the suspect; charter, eleven implicit assumptions, completion ledger, the regulars' table (#149) as the next experiment]
+## [2026-10-14 | 132878a4 | the Book Authority: the book is the authority, our measurement the suspect; charter, eleven implicit assumptions, completion ledger, the regulars' table (#149) as the next experiment]
 
 **Added:** [[topics/book-authority|book-authority]] (the charter, vocabulary, worked examples), [[topics/book-assumptions|book-assumptions]] (the inventory A1–A11, the ledger, the order, #149's sketch and its ≤1-min pilot). **Updated:** `CLAUDE.md` (the project today; hard rule THE BOOK IS THE AUTHORITY), `AGENTS.md`, [[w42]], [[book-study-2026-10-12]], [[book-head-to-head-2026-10-13]], [[book-investigation-2026-10-14]], [[book-reads-by-the-book-2026-10-14]] (each gains a "what our model leaves out" section; numbers unchanged), [[scenario-player]], [[silas]], [[the-wall]], the indexes. Issues: #149–#155.
 
