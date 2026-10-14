@@ -110,7 +110,9 @@ const ESCAPED_EVENT_TO_CHAR: Record<string, string> = {
   'timeout-p1': 'G',
   'timeout-p2': 'H',
   'timeout-p3': 'I',
-  // Room for 56 more future events
+  'bid-4-marks': 'J',
+  'bid-5-marks': 'K',
+  // Room for 54 more future events
 };
 
 // Reverse mapping for escaped events

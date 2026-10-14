@@ -3,7 +3,7 @@
  *
  * Tournament mode restricts play to standard bids only:
  * - Standard point bids (30-42)
- * - Standard mark bids (1-4 marks)
+ * - Standard mark bids (one mark and up, by the bidding steps)
  * - No special contracts: nello, splash, plunge, sevens
  *
  * This is a filtering Layer that:

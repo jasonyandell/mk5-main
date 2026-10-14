@@ -40,6 +40,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | scratch/book-reprice-3 | the book's 18 rules as the book means them re-priced on the whole pour at current main, same method and bands: Zeb's pick is the book's move at 56% vs a 43% random floor (0.24); sides with 3, weak on 9, no relation on 2, between on 3, against none]
 
 **Updated:** [[book-study-2026-10-12]] § The book's rules as the book means them (fidelity, prices, carriers, reading; summary verdicts in place); [[w42]], [[silas]], `index-experiments.md`, `CLAUDE.md`. Data: `book/book-reprice-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+## [2026-10-13 | 2fe46194 | the TS engine no longer caps mark bids at four (#142): the enumerator's bound was a literal, the validator and the rules page already let one-mark steps run on; the 834-prefix fixture now agrees on five marks too]
+
+**Touched pages:** [[silas]] (the auction's legality line; `silas/README.md`, `tests/auction.rs`). Engine: `src/game/core/rules.ts` (`highestNamableMarks`), `layers/base.ts`, URL codes for 4 and 5 marks; `src/tests/rules/bidding/mark-bid-ceiling.test.ts`. No config or variant: the cap was a bug.
+
+## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
+
+**Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.
 
 ## [2026-10-13 | aefa35be | worlds never compress: endgame equivalence census ported from origin/worktree-equiv-census (aca3dacb, c3e1374c)]
 
