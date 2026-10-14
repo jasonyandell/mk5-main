@@ -47,6 +47,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | f1ec6d67 | the exploiter against make-then-margin Zeb (#77 × #120): G +0.50 → +0.29 [+0.24, +0.34], paired drop +0.21 [+0.14, +0.28], contract exploit unchanged; two-rung +4.1 points/hand, marks unsettled]
 
 **Updated:** [[exploiter-endgames-2026-10-14]] (§ Cross-check results and pre-registrations), [[tie-margin-2026-10-14]] (§ Recommendation, Caveats). Code: `scenario/exploiter.py` (`--tie`, `compare`). Data: `zeb/exploiter-margin/` on the research repo.
+
 ## [2026-10-14 | 153a5d0c | the book's own table (#147): opponents who read the book player by the book change nothing for it (−0.04 [−0.27, +0.19] marks/game); plain Zeb beats such a reader +0.50 [+0.26, +0.74]]
 
 **Added:** [[book-reads-by-the-book-2026-10-14]] (pre-registered at 153a5d0c). **Updated:** [[book-investigation-2026-10-14]], [[scenario-player]], `index-experiments.md`. Code: `arena/book_read.py` (`bookread:`), `arena/test_book_read.py`, the batch belief seam in `scenario/compiled.py`. Data: `book/reads-by-the-book/` on the research repo.
