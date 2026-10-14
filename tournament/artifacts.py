@@ -4,7 +4,8 @@
 """Materialize a participant's pinned bytes into a local cache, checking every hash.
 
 Nothing is trusted by name: the npm tarball must match its sha512 integrity,
-each Plunge file its sha256. A mismatch is an error, never a fallback.
+each Plunge file its sha256, the Demon's source each pinned git tree. A
+mismatch is an error, never a fallback.
 """
 from __future__ import annotations
 
@@ -46,6 +47,10 @@ def materialize(p: Participant, cache: Path = DEFAULT_CACHE) -> Path:
             _plunge(p, tmp)
         elif p.kind == "arena":
             _arena(p)
+        elif p.kind == "demon":
+            # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
+            from .demon_fenced_seat import build
+            build(p, tmp, cache / ".demon-target")
         else:
             raise ValueError(f"unknown participant kind {p.kind!r}")
         (tmp / ".verified").write_text(p.id + "\n")

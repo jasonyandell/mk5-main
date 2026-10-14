@@ -17,6 +17,10 @@ Kinds, and what pins each:
 - `arena`        an mk5 arena spec run by this checkout, plus the sha256 of
                  any weights it loads; the faceoff records the mk5 commit
                  that ran it.
+- `demon`        the Demon (STRATEGY-FUSION FENCE: a fenced tournament
+                 opponent; measuring stick only): an mk5 commit and the git
+                 tree of each source directory its binary is built from,
+                 plus its parameters (worlds, tiebreak, bidder).
 
 `needs` names what a worker must have to seat it (`node`, `torch`, `gpu`, `eq-oracle`).
 """
@@ -122,6 +126,33 @@ EQ_N10 = Participant(
           "the arena's heuristic (Roberson risk-budget) bidder. A fenced measuring stick: "
           "per-world clairvoyant Q averaged. Never a foundation."),
 )
+
+
+# STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
+# Classic PIMC on the CPU, seated so Walt and Zeb face strategy fusion head-on
+# (wiki/topics/the-demon.md). Its seat is tournament/demon_fenced_seat.py.
+DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
+
+
+def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
+          bidder: str = "heuristic") -> Participant:
+    tb = "" if margin_tiebreak else "-notb"
+    return Participant(
+        id=f"demon-pimc-n{worlds}{tb}-{commit[:8]}",
+        kind="demon",
+        pin={"repo": "jasonyandell/mk5-main", "commit": commit, "trees": dict(trees)},
+        config={"worlds": worlds, "margin_tiebreak": margin_tiebreak, "bidder": bidder},
+        needs=("cargo",),
+        note=(f"STRATEGY-FUSION FENCE: the Demon, classic PIMC. At each play it draws {worlds} "
+              f"worlds from its fiber (Walt's exact-uniform sampler; the whole fiber when "
+              f"smaller), solves each double dummy (Silas's ClairvoyantSolver, make-or-set of the "
+              f"contract), and plays the tile that makes or sets in the most worlds"
+              f"{', then the best summed double-dummy margin' if margin_tiebreak else ''}, then the "
+              f"lowest tile id. Bids with the arena's `{bidder}` bidder, as E[Q] n=10 does. "
+              f"Built on the CPU from the pinned git trees. A fenced measuring stick, never a "
+              f"foundation."),
+    )
+
 
 ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10)
 ANCHOR = WALT.id

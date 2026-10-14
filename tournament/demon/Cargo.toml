@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: Jason Yandell
+# SPDX-License-Identifier: CC0-1.0
+
+# STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
+# Classic PIMC (sample worlds, solve each one double dummy, average) built from
+# Walt's sampler and Silas's clairvoyant solver, so Walt and Zeb can be rated
+# against strategy fusion head-on. Nothing in Zeb, Walt or Silas may depend on
+# this crate. The ruling: wiki/topics/strategy-fusion-fence.md; the page:
+# wiki/topics/the-demon.md.
+[package]
+name = "demon"
+version = "0.1.0"
+edition = "2024"
+description = "The Demon: a fenced PIMC (strategy-fusion) opponent for the Texas 42 tournament"
+license = "CC0-1.0"
+publish = false
+
+# Standalone: its own workspace, its own lock, its own target.
+[workspace]
+
+[dependencies]
+scenario_core = { path = "../../scenario/core", features = ["silas"] }
+# STRATEGY-FUSION FENCE: Silas's clairvoyant feature, enabled here and only here.
+silas = { path = "../../silas", default-features = false, features = ["clairvoyant"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "unwind"
+
+# `cargo test` runs real searches; unoptimized they crawl.
+[profile.dev]
+opt-level = 2

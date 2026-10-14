@@ -89,6 +89,8 @@ def capabilities() -> set[str]:
     caps = set()
     if shutil.which("node"):
         caps.add("node")
+    if shutil.which("cargo") and shutil.which("git"):
+        caps.add("cargo")  # the Demon builds from its pinned source
     try:
         import torch
 

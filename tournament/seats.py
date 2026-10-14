@@ -129,6 +129,10 @@ def seat(p: Participant, game: str, device: str | None = None):
         return HostSeat(NodeHost("zeb", materialize(p), p.config), game)
     if p.kind == "plunge-walt":
         return HostSeat(NodeHost("walt", materialize(p), p.config), game)
+    if p.kind == "demon":
+        # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
+        from .demon_fenced_seat import DemonSeat
+        return DemonSeat(p, materialize(p), game)
     if p.kind == "arena":
         materialize(p)
         bidder_spec, _, play_spec = p.pin["spec"].partition("+")

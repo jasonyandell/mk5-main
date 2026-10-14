@@ -41,8 +41,13 @@ const CLAIRVOYANT_APIS: Record<string, RegExp> = {
       '|compute_eq_weighted_mean|compute_posterior_weighted_eq|generate_eq_games_gpu' +
       '|generate_eq_from_snapshots|ClairvoyantPolicy|load_clairvoyant_policy|LensPlay' +
       '|evaluate_eq_vs_random|eq_player)\\b'
-  )
+  ),
+  // the Demon: PIMC over Silas's solver, a fenced tournament opponent (wiki/topics/the-demon.md)
+  demon: /\b(demon_fenced_seat|DemonSeat)\b|tournament\/demon\b/
 };
+
+/** Where a player lives: none of these may reach for the Demon. */
+const PLAYER_HOMES = /^(silas|scenario|zeb|arena|src\/game|walt)\//;
 
 /** The modules that define a clairvoyant API: the token sits at the top. */
 const DEFINING_MODULES = [
@@ -60,7 +65,10 @@ const DEFINING_MODULES = [
   'forge/eq/generate/model.py',
   'forge/zeb/eq_player.py',
   'arena/lens_play.py',
-  'otis/tiedroll.py'
+  'otis/tiedroll.py',
+  'tournament/demon/src/lib.rs',
+  'tournament/demon/src/main.rs',
+  'tournament/demon_fenced_seat.py'
 ];
 
 const CODE = /\.(py|rs|ts|tsx|js|mjs|cjs|svelte|sh|toml|silas)$/;
@@ -110,6 +118,23 @@ describe('Architecture: the strategy-fusion fence', () => {
     for (const [home, api] of Object.entries(CLAIRVOYANT_APIS)) {
       expect(files.some(({ text }) => api.test(text)), `no file matches the ${home} pattern`).toBe(true);
     }
+  });
+
+  it('no player reaches for the Demon', () => {
+    // The Demon is an opponent and a measuring stick, never a component of Zeb, Walt or Silas.
+    const reach = files
+      .filter(({ file }) => PLAYER_HOMES.test(file))
+      .filter(({ text }) => CLAIRVOYANT_APIS.demon.test(text) || /\bdemon\s*=\s*\{\s*path/.test(text))
+      .map(({ file }) => file);
+    expect(reach).toEqual([]);
+  });
+
+  it('the Demon crate is the only one that turns on Silas\'s clairvoyant feature', () => {
+    const turnsOn = files
+      .filter(({ file }) => file.endsWith('Cargo.toml') && file !== 'silas/Cargo.toml')
+      .filter(({ text }) => /features\s*=\s*\[[^\]]*"clairvoyant"/.test(text))
+      .map(({ file }) => file);
+    expect(turnsOn).toEqual(['tournament/demon/Cargo.toml']);
   });
 
   it('the old, unwarning names are gone', () => {

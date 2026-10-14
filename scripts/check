@@ -119,6 +119,10 @@ SUITES = [
           [("scenario/core", ["cargo", "test", "--locked"]),
            ("scenario/core", ["cargo", "test", "--locked", "--features", "silas"])], (),
           lambda: which("cargo"), what="cargo test, plain and with Silas"),
+    # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
+    Suite("demon", ("tournament/demon/", "scenario/core/", "silas/"),
+          [("tournament/demon", ["cargo", "test", "--locked"])], (),
+          lambda: which("cargo"), what="cargo test: the Demon's solve against brute force, determinism, legality"),
     Suite("zeb", ("zeb/", "scenario/core/"),
           [("zeb", ["cargo", "test", "--locked"]), ("zeb", ["npm", "test"])], (),
           lambda: which("cargo", "wasm-pack", "node", "npm"),

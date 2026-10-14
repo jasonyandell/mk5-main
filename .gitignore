@@ -167,6 +167,8 @@ parlor/sessions/
 
 # the compiled scenario core builds here
 scenario/core/target/
+# the Demon's binary, when built in place (the tournament builds it under scratch/)
+tournament/demon/target/
 
 # Lean build artifacts (scenario/lean, the stabilization theorems)
 scenario/lean/.lake/
