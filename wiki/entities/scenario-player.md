@@ -897,7 +897,10 @@ stack (`arena/book_play.py`, `book:` in the arena) lose to deployed Zeb by −1.
 rolled out with Zeb continuing, sums exactly to that loss, −0.051 marks a departure, and
 Zeb's forecast of each departure's price is honest in sign
 ([[book-head-to-head-2026-10-13]]). The arena's `WaltPlay` now plans a marks bid as its
-42 points.
+42 points. Investigated ([[book-investigation-2026-10-14]]): the arena gained the book's game
+(`ArenaConfig.points_to_win`, points to 250 by the book's settlement), where the book loses
+too; breaking `make`'s near-ties (within 0.02) by the book's rules wins it for Zeb, 53.2%
+[51.1, 55.2] of games, replicated, with no marks moved (#120).
 
 ## The reason report (2026-10-13, #124)
 

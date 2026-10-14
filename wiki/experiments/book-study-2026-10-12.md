@@ -667,8 +667,13 @@ The 18 rules as one player, seated against Zeb in the arena: [[book-head-to-head
 With Zeb's tile wherever no rule fires, the book player loses −1.88 [−2.09, −1.66]
 marks/game (−1.41 with Zeb's best tile inside a rule's set; the book's bidding costs
 −0.71 more). Each departure from Zeb's tile, rolled out on the real deal with Zeb
-continuing, costs −0.051 [−0.058, −0.045] marks and beats a random departure by +0.036;
-no rule gains, and the cost is spread over every stratum with the contract open.
+continuing, costs −0.051 [−0.058, −0.045] marks and beats a random departure by +0.064
+where that tile is not the book's own; in block b no rule gains, and the cost is spread
+over every stratum with the contract open. Investigated with the book given the benefit
+of the doubt ([[book-investigation-2026-10-14]]): 44% of that loss is the encoding (the
+rules' clean disagreements with Zeb cost −0.042 a departure and gain points), the book
+loses its own game too (points to 250), and as Zeb's tie-break it wins that game (53% of
+games, replicated).
 
 ## The repaired book (2026-10-13, #121)
 

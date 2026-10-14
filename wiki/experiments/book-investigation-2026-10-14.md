@@ -3,7 +3,7 @@ title: The book against Zeb, investigated — the method, the book's own game, i
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
-status: active
+status: complete
 ---
 
 ## Question
@@ -23,6 +23,44 @@ The default posture is that the book is right and the measurement wrong until sh
 otherwise. Is the measurement sound? Who wins the book's own game, points to 250? Does the
 book fare better against opponents who read plays? Does it lose inside the situations it
 explains? Where, if anywhere, does it win?
+
+## The answer, in short
+
+- **The arena and its accounting hold.** The method audit found no code bug and no leak
+  toward Zeb. The published run reproduces exactly, 24 departures re-derive exactly, and the
+  84 fix was in every pooled run.
+- **The encoding does not fully hold: 44% of block b's loss is not the book's rule against
+  Zeb.** Of that loss:
+  - 29% is the encoding firing outside a rule's stated scope or against the headers' order;
+  - 11% is the least tile picked inside a set that also held Zeb's tile;
+  - 4% is unclear.
+
+  The rules' own disagreements with Zeb, with nothing flagged, cost −0.042 [−0.051, −0.033]
+  marks a departure: about 1.1 marks a game to first order, against the published 1.9. The
+  same departures gain +0.27 [+0.10, +0.45] points.
+- **The book loses its own game,** points to 250, in every form that plays its rules where they
+  disagree with Zeb. It wins 20.5–37.9% of games; its best fair form wins 37.9% [34.3, 41.4],
+  and with its own bidding 20.7%.
+- **The book wins its own game as Zeb's tie-break.** Zeb breaking its near-ties (within
+  0.02) the book's way wins 53.0% of games to 250, and again on new deals in a registered
+  replication (pooled 53.2% [51.1, 55.2], +1.2 settlement points a hand, no marks moved). This
+  is measured against Zeb's lowest-id tie rule, not against a points-aware one.
+- **Opponents who read plays by the field net's set change nothing.** The reader's gain
+  against the book less its gain against Zeb is null under both likelihoods, though the
+  book's plays leave it without an explaining world more often (21% of its decisions, against
+  16%). A reader who reads the book player by the book is not built (#147).
+- **Inside the book's scope it still loses** (S-core −0.057 marks a departure). It ties only
+  inside the three rules Zeb's own plan sides with. On its own eight narrated deals its side
+  outplays Zeb's, which carries no interval.
+- **The benefit of the doubt does not reverse the sign.**
+  - The most generous order gains +0.22 marks a game, and the book still loses 1.2.
+  - The winner's curse is 12% of Zeb's forecast price.
+  - Another continuation moves a departure's cost by a hundredth of a mark at most.
+  - The game state, the contract level and the seat change nothing in marks.
+
+What this does not show: that the book is wrong at the table it was written for, where
+partners both know it and the opponents are people who read plays and hold expectations; or
+that its value as a tie-break exceeds a principled points tie-break.
 
 ## Pre-registration (written and committed before any pooled batch of this page)
 
@@ -137,7 +175,7 @@ for game: 36 of 36 games and all 5,726 book decisions are identical. Every point
 its own bookkeeping check: each hand is settled as S-0017-c, the tallies add up, the game ends
 on reaching 250, and the winner is right.
 
-**The method audit found no bug and no leak.**
+**The method audit found no code bug and no leak toward Zeb.**
 - *Routing:* across 233,198 logged decisions, the first firing policy of the phase decides
   and none decides outside its phase.
 - *Fallbacks and tie-breaks:* as specified. The (c) setter sign is right in the code and in
@@ -207,16 +245,24 @@ these are the head-to-head's hands under another scoring and another end.
 | (d) as (c), any firing rule's set | 37.9% [34.3, 41.4] | loses | −3.7 [−4.6, −2.9] | −34.6 | 54.0% / 65.6% |
 | (b) with the book's bidding (`risk-budget`) | 20.7% [17.2, 24.5] | loses | −10.6 [−12.1, −9.2] | −89.8 | 41.1% / 67.6% |
 | Zeb's play with the book's bidding | 39.4% [35.1, 43.7] | loses | −3.6 [−5.0, −2.2] | −31.4 | 53.0% / 62.4% |
-| (t0) Zeb, the book at Zeb's exact ties | **51.0% [49.7, 52.5]** | **ties** | **+0.88 [+0.62, +1.14]** | +8.2 [+5.8, +10.6] | 60.9% / 61.4% |
+| (t0) Zeb, the book at Zeb's exact ties | 51.0% [49.7, 52.5] | ties | **+0.88 [+0.62, +1.14]** | +8.2 [+5.8, +10.6] | 60.9% / 61.4% |
+| (t1) Zeb, the book within 0.02 of Zeb's best | **53.0% [50.3, 56.1]** | **wins** | **+1.04 [+0.37, +1.74]** | +9.6 [+3.4, +16.0] | 61.5% / 61.5% |
+| (t1), the registered replication (seeds 12–22) | **53.3% [50.3, 56.3]** | **wins** | **+1.40 [+0.73, +2.05]** | | |
+| (t1), seeds 1–22 pooled (792 games) | **53.2% [51.1, 55.2]** | | **+1.22 [+0.76, +1.69]** | | |
 | Zeb against Zeb (control, one batch) | 50% | | 0 | 0 | 62.0% / 62.0% |
 
 - *The book loses its own game in every form that plays its rules where they disagree with
   Zeb.* Its best fair form, (d), wins 38% of games to 250.
 - *The book's bidding loses in the book's game too,* at 21% with the book's play and 39% with
   Zeb's.
-- *Only Zeb breaking its own exact ties the book's way plays even.* It scores 0.9 points a
-  hand more by the book's settlement and wins 51.0% of games, a tie by the band fixed above:
-  the book's tile gains points without moving games.
+- *Zeb breaking its near-ties the book's way wins the book's game.* It wins 53% of games to
+  250 in the first run and again in the registered replication on new deals (pooled 53.2%
+  [51.1, 55.2], +1.2 settlement points a hand). The marks stay the same: −0.00 [−0.10, +0.10]
+  marks a game pooled, and t1 is null in the marks game (III). At exact ties only, the edge is
+  +0.9 points a hand and 51.0% of games, a tie by the band.
+- *What that edge is measured against:* deployed Zeb breaks its ties by the lowest tile id,
+  which knows nothing of the count. Whether the book's rules beat a tie-break that does, such
+  as make-then-margin (#120), is not measured.
 - *Deployed Zeb plays for the make.* The make-or-set swing dominates the book's settlement
   (below), so the book loses its game even to a Zeb that ignores every point past the make.
 
@@ -272,12 +318,12 @@ latter is restricted choice). Games to 7 marks:
 | Zeb against two consistent readers | −0.02 [−0.19, +0.16] | 15.8% of its decisions |
 | Zeb against two uniform readers | +0.02 [−0.16, +0.20] | 16.0% |
 | the book (b) against two consistent readers | −1.83 [−2.04, −1.62] | 20.6% |
-| the book (b) against two uniform readers | RBU_M | RBU_F |
+| the book (b) against two uniform readers | −1.90 [−2.11, −1.67] | 20.9% |
 | the book (b) against plain Zeb (the head-to-head) | −1.88 [−2.09, −1.66] | |
 
 - *The pre-registered contrast is null under both likelihoods.* The reader's gain against the
-  book less its gain against Zeb is C = +0.071 [−0.194, +0.323] (consistent) and RBU_C
-  (uniform). A reading opponent is neither thrown off by the book's play more than by Zeb's,
+  book less its gain against Zeb is C = +0.071 [−0.194, +0.323] (consistent) and −0.030
+  [−0.308, +0.250] (uniform). A reading opponent is neither thrown off by the book's play more than by Zeb's,
   nor exploits it more.
 - *The reader gains nothing against Zeb in this table,* so a reader of this kind had little to
   lose to the book in the first place.
@@ -372,9 +418,100 @@ continuations:
   audit's +0.062 [+0.016, +0.111]). Its departures are valued better when the side that led
   the count keeps playing.
 
+## VII. Where the book wins
+
+The cells examined:
+- the departures' per-policy, per-rule and per-contract cells of blocks b and c, each in
+  marks, points and the book's settlement (807 intervals);
+- the scope and game-state strata (34 cells in each unit);
+- the census's labels (17);
+- the head-to-head's per-rule marks of block b-rb (about 100);
+- the 16 arena blocks.
+
+Every interval above zero among them:
+
+- **In marks, almost nowhere.** None among the departures of blocks b and c, in any stratum of
+  scope or game state, or in any arena block where the book's rules decide. The single marks
+  interval above zero is first-lead's *lead the top trumps* in block b-rb (+0.084 [+0.006,
+  +0.166], 308 departures). It is one cell among about three hundred, which is what chance
+  alone gives.
+- **In the book's game, as Zeb's tie-break.** Zeb breaking its near-ties (within 0.02) the
+  book's way wins 53.0% [50.3, 56.1] of games to 250, which the band reads as a win.
+  The registered replication on new deals reads the same: 53.3% [50.3, 56.3], pooled 53.2%
+  [51.1, 55.2] over 792 games. This is the one win the investigation found. It is measured
+  against Zeb's lowest-id tie rule, not against a points-aware one (#120). At Zeb's exact ties it plays even (51.0% [49.7, 52.5]). Both score about a
+  point a hand more by the book's settlement (+0.88 and +1.04). In the marks game they gain
+  as much (+0.98, +1.07) while the marks stay null.
+- **In points, once the contract is decided.** Every departing policy gains there. Pooled,
+  a departure gains +2.28 [+1.95, +2.61] points and +1.27 [+1.09, +1.45] of the book's
+  settlement (block c +1.23). Take-the-trick gains +4.84 points, partner-leads +3.00, the
+  donation +2.55, the pounce +2.28.
+- **In points, the rules that take or give count,** whether the contract is open or not:
+  - take-the-trick +1.88 [+1.19, +2.58] points a departure, while it costs −0.092 marks;
+  - the safe trick's donation +1.06 [+0.22, +1.88], null in marks;
+  - setter-leads' double that calls for count +2.95, and +1.83 of the settlement;
+  - the bidder's cash of his other winners +2.14, and the off's double +5.95.
+- **The rules' clean disagreements with Zeb gain points** (+0.27 [+0.10, +0.45] a departure)
+  while they cost marks (I).
+- **On its own deals** (V), descriptively, its side outplays Zeb's declaring (19 makes to 16)
+  and defending (12 allowed to 16).
+- **Against chance,** the book's tile beats a random other tile by +0.064 [+0.047, +0.080]
+  marks a departure (block b).
+- **Ties, not wins:**
+  - the three rules Zeb's plan sides with, with Zeb's best tile inside the set (block c,
+    −0.006 [−0.055, +0.041]);
+  - partner-leads and follow-low in block c;
+  - both readers.
+
+## What this means
+
+- **Credit the book where it plays for count.** At a decided contract, and among Zeb's
+  near-ties, the book's rules collect points that deployed Zeb throws away: its `make` utility
+  does not see them, and its lowest-id tie rule ignores them. In the book's own game that is
+  worth 53% of games against Zeb, replicated. The book is right about something Zeb does not
+  see.
+- **Where the contract is open, the book's rules lose to Zeb's plan** in both games and in
+  every scope tested: about a mark a game cleanly in marks to 7, and 2.4 settlement points a
+  departure in points to 250. Under the book's own scoring the make dominates, since a set
+  swings 61 points at a 30 and a point after the make is worth two.
+- **About half of what the head-to-head charged to the book was the encoding:** rules firing
+  outside their stated scope, the stack's order, least-id picks (#146). The ranking of rules
+  changes with it.
+  - Encoding: low-from-a-pair, first-lead's *lead a trump* and the dead double's cash.
+  - The rules: *the count that sets*, take-the-trick, *double-up, lead low* and *draw the
+    trumps*.
+- **The opponent the book assumes is still unmeasured.** A reader by the net's set neither
+  punishes nor rewards the book's departures, which says little about a reader who knows the
+  book (#147).
+- **Nothing is adopted.** The candidate for Zeb is a tie rule, not a book rule: break `make`'s
+  near-ties for the count, as #120 proposes, and grade it against the book's tie-break in the
+  book's game.
+
+## Deviations from the pre-registration
+
+- The re-plan at 2,048 worlds ran at 1,024 (seed 2): the compiled core caps a rung at 1,024,
+  and 2,048 needs the Python referee.
+- The replication of P-t1 was added after its first run and registered before any
+  replication batch.
+- Batches ran beside other sessions' work. 177 batches: median 123 s, the slowest 253 s, none
+  at the cap, none failed. Queues were paused and resumed only at batch boundaries; two
+  in-flight batches were detached from a stopped queue and completed.
+
 ## Data
 
-`jasonyandell/texas-42-zeb-research-2026-10` under `book/investigation/` (CC0, `SHA256SUMS`).
+`jasonyandell/texas-42-zeb-research-2026-10` under `book/investigation/` (CC0, `SHA256SUMS`,
+`CARD.md`):
+- every arena block's games, book decisions and summaries (`out/`, the replication in
+  `rep/`);
+- the timing smokes and the reproduced head-to-head batch (`smoke/`, `regress/`);
+- the departures re-scored by scope and game state (`departures.json`);
+- the census's labels and their costs (`fidelity_labels.jsonl`, `fidelity_cost.json`);
+- the narrated deals (`narrated.json`);
+- the re-plans and continuations (`sel/`);
+- `results.json` and `analysis.log`, and the scripts.
+
+Code: `arena/engine.py` (`points_to_win`), `arena/auction.py` (`settle_points`) and
+`arena/book_play.py` (`ties=union`, `w<eps>`); the reader is 3262eea0's.
 
 ## Links
 
