@@ -2,7 +2,7 @@
 title: The splat visualizer
 kind: experiment
 first_seen: 2026-10-11
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 status: complete
 ---
 
@@ -108,6 +108,28 @@ deal 1 play 10 (6-5, set side, 303 of 512: partner's 6-4 184/203, left's 6-4
 means +19.8 / +20.9 / +19.1 / +19.7 / +17.3 (6-2, 5-4, 3-3, 3-2, 1-0) and set 40.6–53.8%, otherwise
 −18.7 … −23.3 and set 100%).
 
+## 2026-10-13: Book against Zeb
+
+A position may carry `book` notes (`scenario.metasplat sample`, the
+[[metasplat-2026-10-13]] sample): a book rule that fires there, its allowed
+tiles, and a contrast tile (the book's best where the plan leaves the book, the
+best tile the book rules out where it keeps to it). The page then tags the
+book's tiles and the contrast beside the dominoes, outlines the contrast's
+splat in violet over the plan's on the same scale with its mean dashed, and
+says under the header the shape of the difference (one of nine, fixed before
+counting), Δp and Δμ with their noise bars, and the reason report's best
+separating fact read on the pour's own worlds. The deal chips name each
+sample's shape and jump to its annotated play.
+
+```bash
+python -m http.server 8000     # from the repo root
+# http://localhost:8000/scenario/viz/?data=data/metasplat_sample.json
+```
+
+The sample (32 positions, 335 KB) is checked in; the test reads every note off
+its own moves. Checked in a browser at 1400 px and 400 px (no horizontal
+scroll).
+
 ## Links
 
-[[scenario-player]] | [[candlewax]] | [[eq-browser-visualizers]] | [[zeb]]
+[[scenario-player]] | [[candlewax]] | [[eq-browser-visualizers]] | [[zeb]] | [[metasplat-2026-10-13]]
