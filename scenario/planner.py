@@ -73,6 +73,20 @@ weighted. A decision that has not found n within `draw_budget` proposals,
 or whose fiber holds no world the field explains, plans over the uniform
 sample instead, and says so (`Walt.fallbacks`).
 
+A `Reading` (`Config.reading`) makes the posterior's likelihood the net's
+set instead of its move: at each of another seat's discretionary plays, A is
+the legal tiles the net scores within `margin` of its best for that seat's
+hand in the world, and the play weighs [tile ∈ A] (the consistent
+likelihood) or [tile ∈ A]/|A| (the uniform one: a pick uniform within the
+set, under which the set's size is evidence — restricted choice), as Silas
+reads a policy's allowed set (`silas/README.md`, The record as evidence).
+A reading is a sharp likelihood (the real deal's own seats need not fit
+it), so its draw adds a middle path: L normalized on a fiber of at most n;
+n draws with replacement from the whole fiber weighted by L when it holds at
+most `READ_ENUM` members (enumerated: exact draws however few worlds L
+keeps); rejection from the uniform stream above that (a coin under the
+uniform likelihood).
+
 A convention (`Config.convention`, `scenario.convention`) overlays the live
 seat: as sender, at a gated position it plays the plan's best tile among
 the rule's allowed ones (the q reported is the plan's, unchanged;
@@ -96,7 +110,9 @@ team maximizes, a defender minimizes — the same u read from two sides.
 from __future__ import annotations
 
 import math
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
+from itertools import accumulate
 from typing import Callable
 
 from forge.zeb.game import current_player
@@ -110,7 +126,9 @@ from scenario.rules import ALL_TILES, Rules, bit, mask_of, rules_for, tiles_of
 
 World = tuple[int, int, int, int]                       # remaining-hand masks, absolute seats
 DRAWS = ("uniform", "posterior")
+LIKELIHOODS = ("consistent", "uniform")
 DRAW_BUDGET = 1 << 22   # posterior: uniform proposals per decision before falling back
+READ_ENUM = 1 << 20     # a reading draws from the whole fiber, enumerated, when it holds at most this many
 
 HAND_TOTAL = 42
 MASK64 = (1 << 64) - 1
@@ -132,6 +150,24 @@ class Rung:
 
 
 @dataclass(frozen=True)
+class Reading:
+    """The posterior's likelihood as the field net's set: a play outside the
+    legal tiles the net scores within `margin` of its best weighs 0; one
+    inside weighs 1 (`consistent`) or 1/|set| (`uniform`). `margin` is in the
+    net's integer score units (a margin wider than every gap is every legal
+    tile: the any-legal-tile policy)."""
+
+    likelihood: str
+    margin: int
+
+    def __post_init__(self) -> None:
+        if self.likelihood not in LIKELIHOODS:
+            raise ValueError(f"the likelihood is one of {LIKELIHOODS}, not {self.likelihood!r}")
+        if not 0 <= self.margin < 1 << 62:
+            raise ValueError("a reading's margin lies in [0, 2^62)")
+
+
+@dataclass(frozen=True)
 class Config:
     rungs: tuple[Rung, ...]     # rungs[k] configures D_k; the live player is the last rung
     utility: str = "make"       # "make" (bidding side makes it) or "points" (signed margin)
@@ -141,6 +177,7 @@ class Config:
     draw: str = "uniform"       # the live rung's worlds: "uniform" on the fiber, or "posterior" β^F
     draw_budget: int = DRAW_BUDGET
     convention: Convention | None = None   # the live seat's convention overlay; None is off
+    reading: Reading | None = None   # the posterior's likelihood as the net's set; None is F_σ's
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.field_eps <= 1.0:
@@ -159,6 +196,8 @@ class Config:
             raise ValueError("the posterior is the field net's, drawn by a one-rung player")
         if self.draw_budget < 1:
             raise ValueError("the draw budget is at least one proposal")
+        if self.reading is not None and self.draw != "posterior":
+            raise ValueError("a reading is the posterior's likelihood: it needs draw=\"posterior\"")
         if self.convention is not None and self.convention.read and self.draw != "uniform":
             raise ValueError("a convention reader draws from the uniform: the field's posterior "
                              "would model the partner's moves twice")
@@ -302,6 +341,8 @@ class Walt:
         self.config = config
         self.belief = belief
         self._pi: dict[tuple, int] = {}   # modeled decisions, by (rung, seat, hand, record key)
+        self._sets: dict[tuple, int] = {}  # a reading's sets, by (seat, hand, record key)
+        self._divs: dict[tuple, int] = {}  # a reading's per-seat divisors, by (seat, hand now, record key)
         self.nodes = 0                     # cells evaluated in the last decision
         self.proposals = 0                 # posterior or reader: uniform proposals drawn in the last decision
         self.fallbacks = 0                 # posterior or reader: 1 when the last decision planned over the uniform
@@ -357,6 +398,8 @@ class Walt:
         rules = rules_for(state.decl_id)
         legal = tiles_of(rules.legal(own, rec.led))
         self._pi.clear()
+        self._sets.clear()
+        self._divs.clear()
         self.nodes = self.proposals = self.fallbacks = self.sent = 0
         if len(legal) == 1:
             return legal[0]
@@ -385,6 +428,58 @@ class Walt:
             hit = eps < 1.0 and self._modeled_move(-1, seat, hand, rec, rules, sit.bid, sit.bidder_team) == tile
             w[r] *= eps / n + (1.0 - eps) * (1.0 if hit else 0.0)
         return w
+
+    def reading_likelihood(self, sit: Situation, worlds: list[World]) -> list[float]:
+        """For each world, the likelihood of the other seats' plays under the
+        config's `Reading`: with A the legal tiles the net scores within the
+        margin of its best for that seat's hand in the world at that record,
+
+            L = [every observed play in its A] / D,   D = ∏ |A| (uniform), 1 (consistent)
+
+        over the discretionary plays (a forced play weighs 1). D is an exact
+        integer and factorizes by seat (`_divisor`), as Silas's readings do."""
+        cfg = self.config
+        if cfg.reading is None or cfg.field is None:
+            raise ValueError("a reading reads the field net's sets")
+        rules = rules_for(sit.decl_id)
+        ev = _evidence(sit, rules)
+        out = []
+        for hands in worlds:
+            d = 1
+            for seat in range(4):
+                if seat != sit.viewer:
+                    d *= self._divisor(sit, rules, ev, seat, hands[seat])
+            out.append(0.0 if d == 0 else 1.0 / d)
+        return out
+
+    def _divisor(self, sit: Situation, rules: Rules, ev: list, seat: int, now: int) -> int:
+        """A seat's factor of the reading's likelihood as a divisor, given the
+        hand it holds now: 0 when one of its plays falls outside the net's
+        set, else ∏ |A| over its discretionary plays (uniform) or 1."""
+        key = (seat, now, sit.record.key())
+        d = self._divs.get(key)
+        if d is not None:
+            return d
+        reading, field = self.config.reading, self.config.field
+        assert reading is not None and field is not None
+        d, mine = 1, sit.played_by(seat)
+        for s, rec, tile, before in ev:
+            if s != seat:
+                continue
+            hand = (now | mine) & ~before
+            if rules.legal(hand, rec.led).bit_count() > 1:
+                skey = (seat, hand, rec.key())
+                a = self._sets.get(skey)
+                if a is None:
+                    a = self._sets[skey] = field.allowed(rules, seat, hand, rec, sit.bid, sit.bidder_team,
+                                                         reading.margin)
+                if not (a >> tile) & 1:
+                    d = 0
+                    break
+                if reading.likelihood == "uniform":
+                    d *= a.bit_count()
+        self._divs[key] = d
+        return d
 
     def convention_likelihood(self, sit: Situation, worlds: list[World]) -> list[float]:
         """For each world, 1 if every gated decision the viewer's partner made
@@ -419,7 +514,11 @@ class Walt:
         worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
         weights = [1.0] * len(worlds)
         conv = self.config.convention
-        if sit is not None and self.config.draw == "posterior":
+        reading = self.config.reading
+        if sit is not None and reading is not None:
+            worlds, weights = self._drawn(sit, worlds, exact, seed, self.reading_likelihood,
+                                          reading.likelihood == "uniform", READ_ENUM)
+        elif sit is not None and self.config.draw == "posterior":
             worlds, weights = self._drawn(sit, worlds, exact, seed, self.field_likelihood,
                                           self.config.field_coin > 0)
         elif sit is not None and conv is not None and conv.read:
@@ -432,12 +531,16 @@ class Walt:
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor, bidder)
 
     def _drawn(self, sit: Situation, uniform: list[World], exact: bool, seed: int,
-               likelihood: Belief, coined: bool) -> tuple[list[World], list[float]]:
+               likelihood: Belief, coined: bool, cap: int = 0) -> tuple[list[World], list[float]]:
         """The live rung's scenarios under uniform × `likelihood` (the field's
-        β^F, or the convention reader's filter) and their weights, given the
-        uniform ones: the fiber weighted by L normalized when `exact`, else n
-        draws by rejection, equally weighted — a proposal is kept when a coin
-        falls below its L ≤ 1 (`coined`), or, with no coin, when L is
+        β^F, the reading's, or the convention reader's filter) and their
+        weights, given the uniform ones: the fiber weighted by L normalized
+        when `exact`; else, when the fiber holds at most `cap` members, n draws
+        with replacement from the whole fiber weighted by L (enumerated, so
+        the draws are exact however sharp L is: a coin on `_mix(seed, COIN)`
+        scaled by the total, the first member whose running sum exceeds it);
+        else n draws by rejection, equally weighted — a proposal is kept when
+        a coin falls below its L ≤ 1 (`coined`), or, with no coin, when L is
         positive — or the uniform, when L vanishes on the whole fiber or the
         budget runs out."""
         n = len(uniform)
@@ -451,6 +554,20 @@ class Walt:
         cfg, rec = self.config, sit.record
         fiber = Fiber(sit.viewer, uniform[0][sit.viewer], rec.played,
                       tuple(rec.hand_size(s) for s in range(4)), rec.forbid)
+        if fiber.size <= cap:
+            every = fiber.worlds()
+            self.proposals = len(every)
+            cum = list(accumulate(likelihood(sit, every)))
+            total = cum[-1]
+            if total > 0:
+                coins = SplitMix(_mix(seed, COIN))
+                kept = []
+                for _ in range(n):
+                    i = bisect_right(cum, coins.random() * total)
+                    kept.append(every[i if i < len(every) else bisect_left(cum, total)])
+                return kept, [1.0] * n
+            self.fallbacks = 1
+            return uniform, [1.0] * n
         rng = SplitMix(seed)
         coins = SplitMix(_mix(seed, COIN)) if coined else None
         kept: list[World] = []
@@ -502,6 +619,21 @@ def _hidden_plays(sit: Situation, worlds: list[World], rules: Rules):
                     yield r, seat, hands[seat], rec, tile, n
                 hands[seat] &= ~bit(tile)
         rec = rec.advance(tile, rules)
+
+
+def _evidence(sit: Situation, rules: Rules) -> list[tuple[int, Record, int, int]]:
+    """The other seats' plays from the viewer's chair: (seat, the record
+    before the play, the tile, the tiles that seat had played before it)."""
+    out: list[tuple[int, Record, int, int]] = []
+    if not sit.plays:
+        return out
+    rec, before = empty_record(sit.plays[0][0]), [0, 0, 0, 0]
+    for seat, tile in sit.plays:
+        if seat != sit.viewer:
+            out.append((seat, rec, tile, before[seat]))
+        before[seat] |= bit(tile)
+        rec = rec.advance(tile, rules)
+    return out
 
 
 def _best(q: dict[int, float], maximize: bool) -> int:

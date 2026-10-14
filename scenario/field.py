@@ -191,6 +191,18 @@ class FieldNet:
         h = np.maximum((self.w2 @ h + self.b2) >> self.s2, 0)
         return self.w3 @ h + self.b3
 
+    def allowed(self, rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_team: int,
+                margin: int) -> int:
+        """The legal tiles scoring within `margin` of the best legal score, as
+        a mask: the set a reading holds the seat to (`planner.Reading`).
+        Margin 0 is the best score and its ties; a margin wider than every
+        gap is every legal tile."""
+        z = self.scores(features(rules, seat, own, rec, bid, bidder_team))
+        canon = CANON[rules.decl_id]
+        legal = tiles_of(rules.legal(own, rec.led))
+        best = max(int(z[canon[t]]) for t in legal)
+        return sum(1 << t for t in legal if int(z[canon[t]]) >= best - margin)
+
     def move(self, rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_team: int) -> int:
         """The highest-scoring legal tile; ties to the lowest tile id."""
         z = self.scores(features(rules, seat, own, rec, bid, bidder_team))

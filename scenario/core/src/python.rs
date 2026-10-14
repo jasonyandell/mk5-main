@@ -2,11 +2,12 @@
 //! `scenario/compiled.py` drives.
 //!
 //! Interface: `Core(rungs, utility, seed, field, field_eps, draw,
-//! draw_budget, convention)` with rungs as (n_worlds, horizon, floor), `field`
+//! draw_budget, convention, reading)` with rungs as (n_worlds, horizon, floor), `field`
 //! the field net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the
 //! stochastic field's ε, `draw` "uniform" or "posterior" (the live rung's
-//! worlds), and `convention` None or (name, send, read), the live seat's
-//! overlay (`scenario.convention`);
+//! worlds), `convention` None or (name, send, read), the live seat's
+//! overlay (`scenario.convention`), and `reading` None or (likelihood,
+//! margin), the posterior's likelihood as the net's set (`scenario.planner.Reading`);
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
@@ -26,7 +27,7 @@ use pyo3::prelude::*;
 use crate::convention::{Convention, Rule};
 use crate::field::{self, FieldNet};
 use crate::mold;
-use crate::planner::{self, analyze, analyze_line, decide, Config, Decision, Draw, Rec, MAX_WORLDS};
+use crate::planner::{self, analyze, analyze_line, decide, Config, Decision, Draw, Reading, Rec, MAX_WORLDS};
 use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
@@ -121,7 +122,7 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None))]
+    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
@@ -132,6 +133,7 @@ impl Core {
         draw: &str,
         draw_budget: u64,
         convention: Option<(String, bool, bool)>,
+        reading: Option<(String, i64)>,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -181,9 +183,23 @@ impl Core {
                 Some(Convention { rule, send, read })
             }
         };
+        let reading = match reading {
+            None => None,
+            Some(_) if draw != Draw::Posterior => {
+                return Err(PyValueError::new_err(
+                    "a reading is the posterior's likelihood: it needs draw=\"posterior\"",
+                ))
+            }
+            Some((_, margin)) if margin < 0 => return Err(PyValueError::new_err("a reading's margin is non-negative")),
+            Some((likelihood, margin)) => match likelihood.as_str() {
+                "consistent" => Some(Reading { uniform: false, margin }),
+                "uniform" => Some(Reading { uniform: true, margin }),
+                other => return Err(PyValueError::new_err(format!("unknown likelihood {other:?}"))),
+            },
+        };
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention }, rules })
+        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention, reading }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`
