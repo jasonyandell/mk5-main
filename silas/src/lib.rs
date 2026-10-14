@@ -5,9 +5,9 @@
 //! [`Pattern`] has a satisfying assignment of its roles. A [`Belief`] is an
 //! exact measure over the hidden [`World`]s of a [`Frame`]; a query summarized
 //! over a belief yields exact probabilities, each carrying its [`Authority`].
-//! A [`PolicyProgram`] chooses plays from what the viewer alone can see. A
-//! [`Solver`] is the perfect-information reference: it sees all four hands.
-//! [`forces`] and [`lay_down`] are what the viewer can guarantee without it.
+//! A [`PolicyProgram`] chooses plays from what the viewer alone can see.
+//! [`forces`] and [`lay_down`] are what the viewer can guarantee: exact
+//! information-state solves, one choice per frame, never one per world.
 //! An [`Auction`] settles the hand's [`Contract`]; a policy's bidding and
 //! declaring rules read an [`AuctionFrame`]. A [`Contract`] settles a hand
 //! under a [`Scoring`] and moves a
@@ -18,9 +18,22 @@
 //! rules engine supplies only one declaration's tables, through
 //! [`Declaration`]; Silas reads them into a [`Physics`].
 //! [`reference::Straight42`] is the reference declarations. See `README.md`.
+//!
+//! STRATEGY-FUSION FENCE: the clairvoyant (double-dummy) reference,
+//! `ClairvoyantSolver`, `clairvoyant_grade_line` and the World atom
+//! `(clairvoyant-dd-make)`, sees all four hands, so its value used as a value
+//! is strategy fusion. It is behind the non-default `clairvoyant` feature and a
+//! policy cannot read it. Allowed instead: information-state solving
+//! ([`forces`], [`lay_down`], Zeb's plan). The ruling:
+//! `wiki/topics/strategy-fusion-fence.md`.
 
 mod auction;
 mod belief;
+// STRATEGY-FUSION FENCE: compiled always, because `forces` refutes with it (a
+// world double-dummy play fails refutes every strategy: an upper bound, never
+// a value); exported only under the `clairvoyant` feature.
+#[cfg_attr(not(feature = "clairvoyant"), allow(dead_code))]
+mod clairvoyant;
 mod coverage;
 mod dominance;
 mod dynamics;
@@ -36,7 +49,6 @@ mod reading;
 pub mod reference;
 mod registry;
 mod scoring;
-mod solve;
 mod sugar;
 mod syntax;
 
@@ -62,7 +74,11 @@ pub use policy::{
 pub use reading::{CallEvidence, Evidence, Likelihood, PlayEvidence, Reading, SeatEvidence};
 pub use registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
-pub use solve::{Deal, Grade, Judged, Objective, OpenPosition, RootValues, Solver, grade_line};
+// STRATEGY-FUSION FENCE: the clairvoyant reference, for tests and showcases only.
+#[cfg(feature = "clairvoyant")]
+pub use clairvoyant::{
+    ClairvoyantSolver, Deal, Grade, Judged, Objective, OpenPosition, RootValues, clairvoyant_grade_line,
+};
 pub use syntax::{
     Aggregate, AtMost, Atom, Pattern, Quantifier, Quantity, Query, Role, Scope, Sort, Span, Term, Value, format,
 };

@@ -13,6 +13,13 @@ publish = false
 default = ["cli"]
 # The `silas` command (src/bin/silas.rs), which reads the book's hands.
 cli = ["dep:serde_json"]
+# STRATEGY-FUSION FENCE: the clairvoyant (double-dummy, perfect-information)
+# reference: `ClairvoyantSolver`, `clairvoyant_grade_line` and the World atom
+# `(clairvoyant-dd-make)`. Each sees all four hands, so its value used as a
+# value is strategy fusion. Off by default: a plain `silas` build does not
+# expose it. Allowed instead: information-state solving (`(certain-make)`,
+# `(certain-set)`, `(lay-down)`, Zeb). The ruling: wiki/topics/strategy-fusion-fence.md.
+clairvoyant = []
 
 [dependencies]
 num-bigint = "0.4"
@@ -22,6 +29,9 @@ serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
 serde_json = "1"
+# STRATEGY-FUSION FENCE: the tests and the showcase enable the clairvoyant
+# reference explicitly; the library's consumers do not get it.
+silas = { path = ".", features = ["clairvoyant"] }
 
 [[bin]]
 name = "silas"
@@ -29,8 +39,9 @@ path = "src/bin/silas.rs"
 required-features = ["cli"]
 
 [[example]]
-name = "solve_grade"
-path = "examples/book/solve_grade.rs"
+name = "clairvoyant_grade"
+path = "examples/book/clairvoyant_grade.rs"
+required-features = ["clairvoyant"]
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -7,7 +7,7 @@ here with Silas's own exact tools, one test per row in
 [`tests/book_leads.rs`](../../tests/book_leads.rs), named by the row id. The
 claims are in our words.
 
-- **Double-dummy** rows: `Solver` root values at the position the narrated
+- **Double-dummy** rows: `ClairvoyantSolver` root values at the position the narrated
   line reaches ([`hands.json`](hands.json), the bidder in S0), under both
   objectives. A value is the bidder's side's final points under best play by
   all four seats (from `Objective::Margin`); *made* / *set* is

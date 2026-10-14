@@ -826,7 +826,7 @@ equilibrium rows. Not scheduled; named so that no fixed-field number is cited fo
    labelled as such. Walt's `make` utility is not the book's points utility: a field
    playing for the make under a points comparison is the wrong referent
    (scenario-player.md records a points-trained field behind on marks for this
-   reason). And the oracle is *algorithmia non grata*: `(dd-make)` bounds cluster C's
+   reason). And the oracle is *algorithmia non grata*: `(clairvoyant-dd-make)` bounds cluster C's
    `p` from above and must never be the field, because the book's reason for the 84
    (the defenders cannot tell what to save) is invisible to it.
 

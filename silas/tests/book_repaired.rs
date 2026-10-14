@@ -1,3 +1,7 @@
+//! STRATEGY-FUSION FENCE, sanctioned: the clairvoyant solver checks single
+//! known counterexample deals; a lead that fails even double dummy fails every
+//! real line. The ruling: wiki/topics/strategy-fusion-fence.md.
+//!
 //! The repaired book (`examples/book/repaired/`): two of the book's rules with
 //! the condition Zeb's reasons show they omit. Each counterexample deal is
 //! checked double-dummy (the solver sees all four hands) and, where the deal
@@ -29,7 +33,7 @@ fn deal(decl: &str, hands: [&str; 4]) -> OpenPosition {
 
 /// Double-dummy: does the bidder's side make after the opening lead `lead`?
 fn makes(position: &OpenPosition, lead: &str) -> bool {
-    let values = Solver::new(position.physics()).solve(position, Objective::Make).unwrap();
+    let values = ClairvoyantSolver::new(position.physics()).solve(position, Objective::Make).unwrap();
     values.value(tile(lead)).unwrap() == 1
 }
 

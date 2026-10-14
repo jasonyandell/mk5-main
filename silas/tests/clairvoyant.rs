@@ -1,3 +1,6 @@
+//! STRATEGY-FUSION FENCE: the tests of the clairvoyant solver itself. The
+//! ruling: wiki/topics/strategy-fusion-fence.md.
+//!
 //! The double-dummy solver against an unpruned exhaustive search, under seat
 //! rotation, and on the book's Hand 28 (Roberson, *Winning 42*, pp. 97-100).
 mod common;
@@ -54,7 +57,7 @@ fn every_root_value_agrees_with_exhaustive_search_on_sampled_endings() {
     for tricks in [1, 2, 3] {
         for _ in 0..1500 {
             let (rules, position) = sample(&mut rng, tricks);
-            let mut solver = Solver::new(&rules);
+            let mut solver = ClairvoyantSolver::new(&rules);
             for objective in [Objective::Margin, Objective::Make] {
                 let values = solver.solve(&position, objective).unwrap();
                 assert_eq!(values.moves, exhaustive_root(&position, objective), "{rules:?} {position:?}");
@@ -69,7 +72,7 @@ fn every_root_value_agrees_with_exhaustive_search_with_four_tricks_left() {
     let mut rng = Rng(7);
     for _ in 0..60 {
         let (rules, position) = sample(&mut rng, 4);
-        let mut solver = Solver::new(&rules);
+        let mut solver = ClairvoyantSolver::new(&rules);
         for objective in [Objective::Margin, Objective::Make] {
             assert_eq!(solver.solve(&position, objective).unwrap().moves, exhaustive_root(&position, objective));
         }
@@ -85,7 +88,7 @@ fn make_or_set_is_the_margin_read_against_the_bid() {
         let (rules, position) = sample(&mut rng, 5);
         let side = position.contract().declarer().team().index();
         let total = (position.banked()[0] + position.banked()[1] + position.unbanked()) as i32;
-        let mut solver = Solver::new(&rules);
+        let mut solver = ClairvoyantSolver::new(&rules);
         let make = solver.solve(&position, Objective::Make).unwrap();
         let margin = solver.solve(&position, Objective::Margin).unwrap();
         for ((d, m), (e, v)) in make.moves.iter().zip(&margin.moves) {
@@ -120,11 +123,11 @@ fn rotating_the_seats_leaves_every_value_unchanged() {
         positions.extend((0..40).map(|_| sample(&mut rng, tricks)));
     }
     for (rules, position) in positions {
-        let mut solver = Solver::new(&rules);
+        let mut solver = ClairvoyantSolver::new(&rules);
         let values = [Objective::Margin, Objective::Make].map(|o| solver.solve(&position, o).unwrap().moves);
         for n in 1..4 {
             let turned = rotated(&position, n);
-            let mut fresh = Solver::new(&rules);
+            let mut fresh = ClairvoyantSolver::new(&rules);
             for (o, expected) in [Objective::Margin, Objective::Make].into_iter().zip(&values) {
                 assert_eq!(&fresh.solve(&turned, o).unwrap().moves, expected);
             }
@@ -163,7 +166,7 @@ fn hand_28_replayed_through_the_solver_comes_to_25_and_17() {
     let deal = hand_28();
     let physics = deal.contract.declaration();
     let line: Vec<Domino> = HAND_28_LINE.iter().map(|d| tile(d)).collect();
-    let mut solver = Solver::new(physics);
+    let mut solver = ClairvoyantSolver::new(physics);
     let mut position = OpenPosition::deal(deal.contract.clone(), deal.hands).unwrap();
     for d in &line[..27] {
         position = position.play(*d).unwrap();
@@ -178,12 +181,12 @@ fn hand_28_replayed_through_the_solver_comes_to_25_and_17() {
 
     // Every play of the line is graded at the position it was made from, and
     // each grade agrees with the root values it was read from.
-    let grades = grade_line(&deal, &line).unwrap();
+    let grades = clairvoyant_grade_line(&deal, &line).unwrap();
     assert_eq!(grades.len(), 28);
     let mut position = OpenPosition::deal(deal.contract.clone(), deal.hands).unwrap();
     for (g, d) in grades.iter().zip(&line) {
         assert_eq!((g.tile, Some(g.seat), g.legal), (*d, position.next_actor(), position.legal()));
-        let values = Solver::new(physics).solve(&position, Objective::Margin).unwrap();
+        let values = ClairvoyantSolver::new(physics).solve(&position, Objective::Margin).unwrap();
         assert_eq!(
             (g.margin.given, g.margin.best, g.margin.tied),
             (values.value(*d).unwrap(), values.best(), values.tied_best())
@@ -245,7 +248,7 @@ fn hand_28_from_the_opening_lead_agrees_with_the_whole_tree() {
         .collect();
     let expected = [("0-0", 42), ("3-1", 8), ("5-0", 42), ("5-3", 8), ("6-0", 42), ("6-1", 26), ("6-6", 26)];
     assert_eq!(tree, expected.map(|(d, v)| (tile(d), v)));
-    let mut solver = Solver::new(physics);
+    let mut solver = ClairvoyantSolver::new(physics);
     assert_eq!(solver.solve(&opening, Objective::Margin).unwrap().moves, tree);
     let make: Vec<(Domino, i32)> = tree.iter().map(|(d, m)| (*d, i32::from((42 + m) / 2 >= 30))).collect();
     assert_eq!(solver.solve(&opening, Objective::Make).unwrap().moves, make);

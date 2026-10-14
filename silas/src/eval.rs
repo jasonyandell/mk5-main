@@ -170,7 +170,7 @@ impl Compiler<'_> {
             .registry
             .predicates
             .get(&atom.predicate)
-            .ok_or_else(|| at(&atom.span, format!("unregistered predicate {}", atom.predicate)))?
+            .ok_or_else(|| at(&atom.span, crate::outcome::unregistered(&atom.predicate)))?
             .clone();
         let spec = predicate.spec().clone();
         if spec.parameters.len() != atom.args.len() {
@@ -489,9 +489,9 @@ impl CompiledAtom {
         let context = match (self.access, cx.reader) {
             (Access::Viewer, Reader::Viewer(frame)) => PredicateContext::Viewer(frame),
             (Access::Viewer, Reader::World(holdings)) => PredicateContext::Viewer(holdings.frame()),
-            (Access::World, Reader::World(holdings)) => PredicateContext::World(holdings),
-            (Access::World, Reader::Viewer(_) | Reader::Auction(_)) => {
-                return Err(error("viewer evaluation refused a world predicate"));
+            (Access::World | Access::Clairvoyant, Reader::World(holdings)) => PredicateContext::World(holdings),
+            (access @ (Access::World | Access::Clairvoyant), Reader::Viewer(_) | Reader::Auction(_)) => {
+                return Err(error(format!("viewer evaluation refused a {}{}", access.noun(), access.fence())));
             }
             (Access::Viewer, Reader::Auction(frame)) => PredicateContext::Auction(frame),
         };
@@ -801,8 +801,14 @@ impl CompiledQuery {
                 spec.name, spec.phase
             )));
         }
-        if viewer && let Some(spec) = self.specs.iter().find(|spec| spec.access == Access::World) {
-            return Err(error(format!("viewer evaluation refused the world predicate {}", spec.name)));
+        if viewer && let Some(spec) = self.specs.iter().find(|spec| spec.access.reads_world()) {
+            let access = spec.access;
+            return Err(error(format!(
+                "viewer evaluation refused the {} {}{}",
+                access.noun(),
+                spec.name,
+                access.fence()
+            )));
         }
         Ok(())
     }

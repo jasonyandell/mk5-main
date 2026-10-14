@@ -1,3 +1,8 @@
+//! STRATEGY-FUSION FENCE, a sanctioned showcase: the clairvoyant solver grades
+//! the book's narrated plays of fully known deals, where the book itself argues
+//! from the open hands; a grade here is never a seat's value. The ruling:
+//! wiki/topics/strategy-fusion-fence.md.
+//!
 //! Grade every narrated play of the book's eight full deals (Hands 28-35)
 //! double-dummy: the solver sees all four hands, so a play it calls a mistake
 //! is a mistake only for a seat that could see them too.
@@ -7,7 +12,7 @@
 //! leading the first trick. The bidder sits in S0. A marks bid needs all 42.
 //! A play the prose does not name ends the graded line.
 //!
-//! `cargo run --release --example solve_grade [hands.json]`
+//! `cargo run --release --features clairvoyant --example clairvoyant_grade [hands.json]`
 
 use std::time::Instant;
 
@@ -74,7 +79,7 @@ fn main() -> Result<()> {
         let started = Instant::now();
         let physics = deal.contract.declaration();
         let opening = OpenPosition::deal(deal.contract.clone(), deal.hands)?;
-        let value = Solver::new(physics).value(&opening, Objective::Margin);
+        let value = ClairvoyantSolver::new(physics).value(&opening, Objective::Margin);
         let opening_time = started.elapsed();
         // The line is graded up to its first illegal play, if it has one.
         let mut line: Vec<Domino> = narrated.iter().map(|(_, d)| *d).collect();
@@ -94,7 +99,7 @@ fn main() -> Result<()> {
                 }
             }
         }
-        let grades = grade_line(&deal, &line)?;
+        let grades = clairvoyant_grade_line(&deal, &line)?;
         println!(
             "\n{id}: {}, the bidders need {}; double-dummy from the opening lead: margin {value:+} ({} to the bidders); \
              solved in {:.1?}, line graded in {:.1?}",

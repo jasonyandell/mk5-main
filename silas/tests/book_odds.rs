@@ -1,3 +1,8 @@
+//! STRATEGY-FUSION FENCE, sanctioned: two claims of the form "the only way"
+//! are checked against `(clairvoyant-dd-make)`: the layouts the book names are
+//! exactly those where even double-dummy play sets. The ruling:
+//! wiki/topics/strategy-fusion-fence.md.
+//!
 //! The book's odds (Roberson, *Winning 42*), exactly: every probability it
 //! prints, as a Silas query in `examples/book/odds/`, summarized over the
 //! uniform deal of the tiles the bidder cannot see. Each claim keeps three
@@ -798,7 +803,7 @@ fn s0148i_hand_34_the_last_way_to_set_and_it_is_exact() {
     // After the 4-4 lead, double-dummy play sets the 84 in exactly those deals.
     let led = book().dealt("hand-34", Role::Bidder, &plays[..21]);
     let belief = Belief::uniform(led.frame(Seat::S0), 90).unwrap();
-    let set = compile("(query (not (dd-make)))");
+    let set = compile("(query (not (clairvoyant-dd-make)))");
     let difference =
         compile(HAND_34_LAST_ROUTE).compare(&set, &belief, Comparison::Existence, &mut big_budget()).unwrap();
     assert_eq!(difference, None);
@@ -820,7 +825,7 @@ fn s0052c_hand_16_the_one_layout_that_sets() {
     let layout = probability(HAND_16_LOSING_LAYOUT, &belief);
     assert_eq!((layout, worlds), (r(1, 15), 90));
     // Double-dummy play from here sets the 31 in exactly those deals.
-    let set = compile("(query (not (dd-make)))");
+    let set = compile("(query (not (clairvoyant-dd-make)))");
     let difference =
         compile(HAND_16_LOSING_LAYOUT).compare(&set, &belief, Comparison::Existence, &mut big_budget()).unwrap();
     assert_eq!(difference, None);

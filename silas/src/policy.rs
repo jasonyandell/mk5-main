@@ -20,7 +20,7 @@ use crate::eval::{Budget, CompiledQuery, Memo, Witness};
 use crate::frame::{Bid, Frame};
 use crate::nouns::{Context, Domino, DominoSet, Pip, Seat};
 use crate::physics::Physics;
-use crate::registry::{Access, Phase, Registry};
+use crate::registry::{Phase, Registry};
 use crate::syntax::{Expr, Library, Query, Sort, Span, Value, valid_name};
 use crate::{Error, Result, error};
 
@@ -287,10 +287,13 @@ fn compile_rule(
         )));
     }
     let guard = rule.guard.compile(registry)?;
-    if let Some(spec) = guard.predicate_specs().iter().find(|spec| spec.access == Access::World) {
+    if let Some(spec) = guard.predicate_specs().iter().find(|spec| spec.access.reads_world()) {
         return Err(rule.span.error(format!(
-            "rule {} uses the world predicate {}; a policy sees only its viewer",
-            rule.name, spec.name
+            "rule {} uses the {} {}; a policy sees only its viewer{}",
+            rule.name,
+            spec.access.noun(),
+            spec.name,
+            spec.access.fence()
         )));
     }
     if let Some(spec) = guard.predicate_specs().iter().find(|spec| !spec.phase.reads(section.phase())) {

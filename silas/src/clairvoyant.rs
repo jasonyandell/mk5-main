@@ -1,13 +1,20 @@
-//! An exact perfect-information (double-dummy) solver: minimax over every
-//! remaining play when all four hands are face up.
+//! STRATEGY-FUSION FENCE. An exact perfect-information (double-dummy,
+//! clairvoyant) solver: minimax over every remaining play when all four hands
+//! are face up. It sees all four hands, so its value used as the value of a
+//! move for a seat that cannot see them, per world and then averaged, is
+//! strategy fusion: "strong but wrong" (Jason, 2026-10-13). It is behind the
+//! non-default `clairvoyant` cargo feature, and a policy cannot read it.
+//! Allowed instead: information-state solving, one choice per information
+//! set and never one per world (`forces`, `lay_down`, `(certain-make)`,
+//! `(certain-set)`; Zeb's plan). The ruling, the inventory and the sanctioned
+//! uses: `wiki/topics/strategy-fusion-fence.md`.
 //!
-//! **This is a reference, never a player.** It sees all four hands, so a value
-//! it reports is what the seat could achieve if it could see them too. It
-//! explains a book move only where the book's own argument is about a fully
-//! known position; everywhere else it is an upper bound on what any real seat
-//! can achieve, and a move it calls a mistake may be the right play for a seat
-//! that cannot tell the worlds apart (strategy fusion; see the wiki's
-//! `the-wall`).
+//! **This is a reference, never a player.** A value it reports is what the
+//! seat could achieve if it could see the hands too. It explains a book move
+//! only where the book's own argument is about a fully known position;
+//! everywhere else it is an upper bound on what any real seat can achieve, and
+//! a move it calls a mistake may be the right play for a seat that cannot tell
+//! the worlds apart.
 //!
 //! The solver works over any [`Physics`], from an [`OpenPosition`]: the four
 //! hands, the contract (whose declaration is the physics), the trick's leader
@@ -224,19 +231,24 @@ impl RootValues {
     }
 }
 
-/// The exact double-dummy solver for one physics. Its transposition table
-/// persists across calls, so solving the positions of one deal in turn reuses
-/// the work.
-pub struct Solver {
+/// STRATEGY-FUSION FENCE: the exact double-dummy (clairvoyant) solver for one
+/// physics. It sees all four hands; its value is never a seat's value, and a
+/// value averaged over worlds is strategy fusion. A reference for tests and
+/// showcases only (`wiki/topics/strategy-fusion-fence.md`); a player solves
+/// information states instead. Its transposition table persists across calls,
+/// so solving the positions of one deal in turn reuses the work.
+pub struct ClairvoyantSolver {
     physics: Physics,
     rules: Rules,
     table: HashMap<u128, Bounds, BuildHasherDefault<Mix>>,
     nodes: u64,
 }
 
-impl Solver {
-    pub fn new(physics: &Physics) -> Solver {
-        Solver { physics: physics.clone(), rules: Rules::new(physics), table: HashMap::default(), nodes: 0 }
+impl ClairvoyantSolver {
+    /// STRATEGY-FUSION FENCE: a clairvoyant solver, which sees all four hands.
+    /// Never a player's value (`wiki/topics/strategy-fusion-fence.md`).
+    pub fn new(physics: &Physics) -> ClairvoyantSolver {
+        ClairvoyantSolver { physics: physics.clone(), rules: Rules::new(physics), table: HashMap::default(), nodes: 0 }
     }
 
     pub fn physics(&self) -> &Physics {
@@ -611,10 +623,12 @@ pub struct Grade {
     pub make: Judged,
 }
 
-/// Grade every play of `line`, from the deal's opening lead, under both
-/// objectives. Refused at the first illegal play.
-pub fn grade_line(deal: &Deal, line: &[Domino]) -> Result<Vec<Grade>> {
-    let mut solver = Solver::new(deal.contract.declaration());
+/// STRATEGY-FUSION FENCE: grade every play of `line`, from the deal's opening
+/// lead, under both objectives, by the clairvoyant solver: a play it calls a
+/// mistake may be right for a seat that cannot see the hands
+/// (`wiki/topics/strategy-fusion-fence.md`). Refused at the first illegal play.
+pub fn clairvoyant_grade_line(deal: &Deal, line: &[Domino]) -> Result<Vec<Grade>> {
+    let mut solver = ClairvoyantSolver::new(deal.contract.declaration());
     let mut position = OpenPosition::deal(deal.contract.clone(), deal.hands)?;
     let mut grades = Vec::with_capacity(line.len());
     for (ply, tile) in line.iter().copied().enumerate() {
