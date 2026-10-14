@@ -120,17 +120,42 @@ def harness() -> dict:
 # ------------------------------------------------------------- claims
 
 class Claims:
+    """This machine's unfinished faceoffs. A worker holds an exclusive flock on
+    each claim it is running, so two workers sharing the directory never run
+    one claim twice; the kernel drops the lock when its process dies, which is
+    exactly when the claim becomes resumable."""
+
     def __init__(self, root: Path):
         self.root = root
+        self._held: dict[Path, object] = {}
 
     def open(self) -> list[Path]:
         if not self.root.exists():
             return []
         return sorted(p for p in self.root.iterdir() if (p / "spec.json").exists())
 
+    def try_lock(self, d: Path) -> bool:
+        import fcntl
+
+        fh = open(d / ".lock", "a")
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            fh.close()
+            return False
+        self._held[d] = fh
+        return True
+
+    def release(self, d: Path) -> None:
+        fh = self._held.pop(d, None)
+        if fh is not None:
+            fh.close()
+
     def create(self, spec: FaceoffSpec, participants: dict) -> Path:
         d = self.root / spec.id
         d.mkdir(parents=True, exist_ok=False)
+        if not self.try_lock(d):  # locked before spec.json exists, so no one can resume it early
+            raise RuntimeError(f"fresh claim {d} is locked")
         tmp = d / "spec.json.tmp"
         tmp.write_text(json.dumps({"spec": spec.__dict__, "participants": participants}, sort_keys=True))
         os.replace(tmp, d / "spec.json")
@@ -185,8 +210,14 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
     t0 = time.time()
     done = 0
     for claim in claims.open():
+        if not claims.try_lock(claim):
+            log(f"claim {claim.name} is being run by another worker; leaving it")
+            continue
         log(f"resuming claim {claim.name}")
-        run_claim(claim, store, parallel=parallel, device=device)
+        try:
+            run_claim(claim, store, parallel=parallel, device=device)
+        finally:
+            claims.release(claim)
         done += 1
     caps = capabilities()
     while (max_faceoffs is None or done < max_faceoffs) and time.time() - t0 < budget_s:
@@ -200,7 +231,10 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
         spec = FaceoffSpec(ladder, choice.a, choice.b, secrets.randbits(64), pairs, utc_stamp())
         log(f"claim {spec.id} (gain {choice.gain:.3f}, P(a wins) {f.p_win(choice.a, choice.b):.2f})")
         claim = claims.create(spec, {k: participants[k] for k in (spec.a, spec.b)})
-        run_claim(claim, store, parallel=parallel, device=device)
+        try:
+            run_claim(claim, store, parallel=parallel, device=device)
+        finally:
+            claims.release(claim)
         done += 1
     return done
 

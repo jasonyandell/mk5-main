@@ -114,6 +114,18 @@ def test_killed_mid_faceoff_resumes_the_same_faceoff_once(store, tmp_path):
     assert [h["hands"] for h in replay["hands"][:n]] == [h["hands"] for h in game["hands"][:n]]
 
 
+def test_a_claim_another_worker_holds_is_left_alone(store, tmp_path):
+    claims = tmp_path / "claims"
+    other = W.Claims(claims)  # another worker, mid-faceoff, holding its claim's lock
+    participants, _ = W.read_state(store, "marks7")
+    spec = F.FaceoffSpec("marks7", "rand-a", "rand-b", 12345, 1, "20261014T000000Z")
+    claim = other.create(spec, {k: participants[k] for k in ("rand-a", "rand-b")})
+    assert run(store, claims, max_faceoffs=0) == 0 and claim.exists() and records(store) == []
+    other.release(claim)  # that worker died: the kernel drops its lock
+    assert run(store, claims, max_faceoffs=0) == 1 and not claim.exists()
+    assert [Path(p).stem for p in records(store)] == [spec.id]
+
+
 def test_killed_after_the_append_does_not_append_again(store, tmp_path, monkeypatch):
     claims = tmp_path / "claims"
     real = W.shutil.rmtree
