@@ -36,6 +36,9 @@ of (rung, seat, remaining hand, record) and is cached as such.
 
 ## Where it stands (2026-10-12)
 
+- **The standing ladder** (2026-10-14): production Walt, Zeb 0.1.0 and 0.2.0 and the fenced
+  E[Q] n=10, rated by Bradley–Terry over append-only faceoff records on Hugging Face; Zeb 0.3.0
+  joins by `python -m tournament add-zeb 0.3.0` ([[tournament]]).
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).
@@ -1115,6 +1118,7 @@ a game.
 
 ## Links
 
+[[tournament]] (the standing ladder: Walt, Zeb releases, fenced E[Q]; Bradley–Terry over append-only records) ·
 [[exploiter-endgames-2026-10-14]] (an exploiter against Zeb on three-trick endgames: not sturdy in points, small in contracts) ·
 [[constellations-2026-10-14]] (constellations as Zeb's late-hand table) ·
 [[splat-search-bounds]] (searching over splats: what is sound) ·

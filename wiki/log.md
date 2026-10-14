@@ -47,6 +47,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | 132878a4 | the Book Authority: the book is the authority, our measurement the suspect; charter, eleven implicit assumptions, completion ledger, the regulars' table (#149) as the next experiment]
 
 **Added:** [[topics/book-authority|book-authority]] (the charter, vocabulary, worked examples), [[topics/book-assumptions|book-assumptions]] (the inventory A1–A11, the ledger, the order, #149's sketch and its ≤1-min pilot). **Updated:** `CLAUDE.md` (the project today; hard rule THE BOOK IS THE AUTHORITY), `AGENTS.md`, [[w42]], [[book-study-2026-10-12]], [[book-head-to-head-2026-10-13]], [[book-investigation-2026-10-14]], [[book-reads-by-the-book-2026-10-14]] (each gains a "what our model leaves out" section; numbers unchanged), [[scenario-player]], [[silas]], [[the-wall]], the indexes. Issues: #149–#155.
+## [2026-10-14 | 1cbb8417 | the tournament: production Walt, Zeb 0.1.0/0.2.0 and fenced E[Q] n=10 on a Bradley–Terry ladder; append-only records on HF, one commit per faceoff; concurrent writers and kill-resume tested; first round 9 faceoffs]
+
+**Added:** [[tournament]], `tournament/`, the `py-tournament` check suite, dataset `jasonyandell/texas-42-tournament` (+ `-selftest`, the live race). **Updated:** [[scenario-player]] (§ Where it stands, Links), [[strategy-fusion-fence]] (inventory: `tournament/eq_fenced_seat.py`), `index-topics.md`. Follow-ups: #156 (cloud worker, points250, catalogue deals).
 
 ## [2026-10-14 | e45238fc | the tie band's registered replication (#120 follow-up): δ = 0.02 against exact-tie margin fails both bars (51.4% [49.9, 52.9] to 250; marks −0.01 [−0.085, +0.075]); A/A exact; no drops; the band is closed]
 

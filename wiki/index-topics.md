@@ -96,6 +96,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/suit-algebra|suit-algebra]] — the factored absorption-vs-power / S₇-symmetry / τ-encoding model that replaced Texas 42's per-mode special-cased ranking code; the formal spec is [[topics/suit-algebra-spec|suit-algebra-spec]] (active)
 - [[topics/the-oracle|the-oracle]] — genesis of `forge/oracle/`: three solver generations, one compression, one pivot to the perfect-information ground-truth solver (active)
 - [[topics/the-wall|the-wall]] — the project's central question, stated precisely; every era since January 2026 is an attempt on it and every experiment grades against it (active)
+- [[topics/tournament|tournament]] — the standing ladder: production Walt, Zeb 0.1/0.2 (0.3 by one command), fenced E[Q] n=10; append-only records on HF (one file, one commit per faceoff), Bradley–Terry ratings derived on read with pairing-aware intervals, kill-anywhere workers, the cloud Haiku worker (active)
 - [[topics/tool-orchestration|tool-orchestration]] — Burl's core philosophy: engine authority on rules, Zeb on beliefs, Burl reasons between and commits (superseded)
 - [[topics/trump-drilling|trump-drilling]] — 5 drill types (is_trump/list_trumps/which_trumps/trump_or_follow/count_trump); 5k examples added in Stage 0 v3 (superseded)
 - [[topics/v-pi-decoupling|v-pi-decoupling]] — V_head correctly predicts +26 while π_me picks −0.4 play; heads decouple because training objectives only couple them indirectly (complete)
