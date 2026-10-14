@@ -253,4 +253,5 @@ its own moves).
 ## Links
 
 [[book-study-2026-10-12]] · [[splat-visualizer]] · [[candlewax]] · [[scenario-player]] ·
-[[w42]] · [[research-night-2026-10-12]] · [[splat-search-bounds]]
+[[w42]] · [[research-night-2026-10-12]] · [[splat-search-bounds]] ·
+[[lumps-voi-2026-10-13]] (the same margins split by who holds one hidden tile: hedges and the value of knowing it)

@@ -1009,6 +1009,7 @@ split lies but not why. What recurs, by rule:
 ## Links
 
 [[splat-search-bounds]] (searching over splats: what is sound) ·
+[[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]

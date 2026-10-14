@@ -38,6 +38,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-13 | 53294297 | lumps by a hidden tile: 96.5% robust beyond the bar, the 5-5 the tile most worth knowing (0.39 pp of make beyond the null), restricted choice exact in Silas]
+
+**Added:** [[lumps-voi-2026-10-13]] (`scenario/lumps_voi.py`). **Updated:** [[metasplat-2026-10-13]], [[scenario-player]], `index-experiments.md`. Data: `zeb/lumps-voi/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
+
 ## [2026-10-13 | 9f14a106 | searching over splats: what is sound, what is tractable (dominance, admissible heuristics, lump bounds; probe at tricks 2-4)]
 
 **Added:** [[splat-search-bounds]]. **Updated:** [[scenario-player]], [[metasplat-2026-10-13]], [[splat-visualizer]], `index-topics.md`.
