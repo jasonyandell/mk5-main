@@ -147,6 +147,13 @@ def export(p: Pour, manifest: dict | None = None) -> dict:
     deals = [deal_doc(p, d, seeds[d]) for d in range(len(p.hands))]
     for pos in p.positions():
         deals[pos.deal]["positions"].append(position_doc(pos))
+    return document(p, deals, manifest)
+
+
+def document(p: Pour, deals: list[dict], manifest: dict | None = None) -> dict:
+    """The page's document around `deals` (`deal_doc`s holding their
+    positions): all of a pour's, or a chosen few (`scenario.metasplat`)."""
+    manifest = manifest or {}
     return {
         "bidder": p.bidder, "bid": p.bid, "utility": p.utility,
         "threshold": 2 * p.bid - HAND_TOTAL,    # pmake is the mass at margin >= this

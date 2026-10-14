@@ -24,11 +24,12 @@ probability less X's; Δμ is Z's mean margin less X's, in points.
 **The noise bar** is the pour's own sampling: twice the paired standard error
 over the position's worlds (`BAR_SE`). Worlds are uniform draws from the
 fiber, and both moves are played in the same worlds, so the paired error is
-the error of the difference. A cell with fewer than `SAMPLED` worlds is the
-whole fiber enumerated (`scenario.fiber`): it has no sampling error and its
-bar is zero. The bar does not include the plan's own error (another seed, a
-stronger rung), which the book study measured at 0.005 to 0.016 pmake: a
-difference outside this bar can still be inside that one.
+the error of the difference. A cell with fewer worlds than the pour samples
+(its spec's n, 512 here) is the whole fiber enumerated (`scenario.fiber`): it
+has no sampling error and its bar is zero. The bar does not include the
+plan's own error (another seed, a stronger rung), which the book study
+measured at 0.005 to 0.016 pmake: a difference outside this bar can still be
+inside that one.
 
 **The distribution test.** At every margin threshold t (the even margins
 −42 … 40), F_X(t) − F_Z(t) is Z's advantage in the mass above t; it is
@@ -69,11 +70,17 @@ rules where the shape has them, and one agreement row.
 """
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 
 from scenario.planner import HAND_TOTAL
+from scenario.record import empty_record
+from scenario.rules import ALL_TILES, rules_for
 
 BAR_SE = 2.0            # the noise bar: this many paired standard errors over the position's worlds
 SAMPLED = 512           # a cell this large is a sample of its fiber; a smaller one is the fiber, enumerated
@@ -265,3 +272,553 @@ def fiber_log2(pool: np.ndarray, sizes: np.ndarray, forbid: np.ndarray) -> np.nd
     if np.any(count < 1):
         raise AssertionError("an empty fiber: the record contradicts itself")
     return np.log2(count)
+
+
+# -- the pour, read against the book ---------------------------------------------------
+
+ROLES = ("bidder", "left setter", "partner", "right setter")   # seat relative to the bidder: +0, +1, +2, +3
+POUR_COLUMNS = ("hands", "decl", "plays", "banked", "deal", "n_plays", "n_actions", "n_worlds", "actions", "q",
+                "outcomes")
+BATCH = 50_000
+
+
+def read_pour(pour_dir: str | Path) -> dict[str, np.ndarray]:
+    """A pour's columns, without the worlds (5 GB a chunk, not needed to
+    compare splats). The weights must be uniform: the shapes assume it."""
+    with np.load(Path(pour_dir) / "pour.npz") as z:
+        if not np.all(z["weights"] == 1):
+            raise ValueError("a pour with unequal world weights: the shapes read uniform worlds")
+        return {c: z[c] for c in POUR_COLUMNS}
+
+
+def read_reprice(reprice_dir: str | Path, label: str) -> tuple[dict[str, np.ndarray], list[str], list[list[str]]]:
+    """The book re-price's per-position output for one chunk, its parts in
+    order: every book rule's and gate's fired rule and allowed set at every
+    planned position (`book/book-reprice-3/out/{label}.p{part}`)."""
+    parts, meta = [], None
+    for f in sorted(Path(reprice_dir).glob(f"{label}.p*.npz")):
+        m = json.loads(f.with_suffix(".json").read_text())
+        if meta is not None and (m["policies"], m["rules"]) != (meta["policies"], meta["rules"]):
+            raise AssertionError(f"{f.name}: the policies differ from the other parts'")
+        meta = m
+        with np.load(f) as z:
+            parts.append({k: z[k] for k in z.files})
+    if not parts or meta is None:
+        raise FileNotFoundError(f"no {label}.p*.npz under {reprice_dir}")
+    arr = {k: np.concatenate([part[k] for part in parts]) for k in parts[0]}
+    return arr, meta["policies"], meta["rules"]
+
+
+def decided(banked: np.ndarray, bid: int) -> np.ndarray:
+    """Rows decided by the banked score (the book study drops them): the
+    bidders have the bid, or the setters have set it."""
+    return (banked[:, 0] >= bid) | (banked[:, 1] > HAND_TOTAL - bid)
+
+
+def action_stats(p: dict[str, np.ndarray], bid: int) -> tuple[np.ndarray, np.ndarray]:
+    """Per action of the pour: the worlds where the bidders make, and the
+    sum of the bidder team's margins over its worlds. Checks that `q` is
+    the make share (the pour planned under `make`)."""
+    na, nw = p["n_actions"].astype(np.int64), p["n_worlds"].astype(np.int64)
+    per_action = np.repeat(nw, na)
+    starts = np.concatenate(([0], np.cumsum(per_action)[:-1]))
+    o = p["outcomes"]
+    make = np.add.reduceat(o >= 2 * bid - HAND_TOTAL, starts, dtype=np.int64)
+    total = np.add.reduceat(o, starts, dtype=np.int64)
+    if not np.allclose(make / per_action, p["q"], rtol=0, atol=1e-12):
+        raise AssertionError("q is not its splat's make share: the pour's utility is not make")
+    return make, total
+
+
+def position_features(p: dict[str, np.ndarray], positions: np.ndarray, bidder: int) -> dict[str, np.ndarray]:
+    """Public facts of each position (pour indices), from its record: the
+    mover's seat and place in the trick, the count on the table, whether the
+    partner is winning the open trick, the banked score, and log2 |fiber|
+    (the cell the mover's belief is uniform over)."""
+    keys = ("seat", "in_trick", "table", "partner_wins", "banked_bidders", "banked_setters")
+    out = {k: np.zeros(len(positions), np.int16) for k in keys}
+    pool = np.zeros(len(positions), np.int64)
+    sizes = np.zeros((len(positions), 3), np.int64)
+    forbid = np.zeros((len(positions), 3), np.int64)
+    by_deal: dict[int, dict[int, int]] = {}
+    for j, q in enumerate(positions):
+        by_deal.setdefault(int(p["deal"][q]), {})[int(p["n_plays"][q])] = j
+    bt = bidder % 2
+    for d, want in by_deal.items():
+        rules = rules_for(int(p["decl"][d]))
+        hands = [int(h) for h in p["hands"][d]]
+        rec = empty_record(bidder)
+        for k in range(max(want) + 1):
+            if k in want:
+                j, seat = want[k], rec.seat
+                out["seat"][j], out["in_trick"][j] = seat, len(rec.trick)
+                out["table"][j] = sum(rules.count[t] for t in rec.trick)
+                if rec.trick:
+                    ranks = rules.rank[rules.led_suit[rec.trick[0]]]
+                    best = max(range(len(rec.trick)), key=lambda x: (ranks[rec.trick[x]], -x))
+                    out["partner_wins"][j] = (rec.leader + best) % 4 == (seat + 2) % 4
+                out["banked_bidders"][j], out["banked_setters"][j] = rec.banked[bt], rec.banked[1 - bt]
+                own = hands[seat] & ~rec.played
+                others = [s for s in range(4) if s != seat]
+                pool[j] = ALL_TILES & ~rec.played & ~own
+                sizes[j] = [rec.hand_size(s) for s in others]
+                forbid[j] = [rec.forbid[s] for s in others]
+            rec = rec.advance(int(p["plays"][d, k, 1]), rules)
+    step = 20_000
+    out["log2_fiber"] = np.concatenate(
+        [np.zeros(0)] + [fiber_log2(pool[s:s + step], sizes[s:s + step], forbid[s:s + step])
+                         for s in range(0, len(positions), step)])
+    return out
+
+
+def chunk_rows(p: dict[str, np.ndarray], book: dict[str, np.ndarray], policies: Sequence[str],
+               rules: Sequence[Sequence[str]], bid: int = 30, bidder: int = 0,
+               sampled: int = SAMPLED) -> dict[str, np.ndarray]:
+    """Every (book rule, position) row of one chunk where a book rule fires
+    and the score has not decided the hand: the pair (Zeb's pick, the
+    contrast), its shape and statistics, and the position's public facts.
+    `book` is `read_reprice`'s rows; each is matched to its pour position
+    and checked against it (legal tiles, values, the tile played)."""
+    D = len(p["hands"])
+    idx = np.full((D, 28), -1, np.int64)
+    idx[p["deal"], p["n_plays"]] = np.arange(len(p["deal"]))
+    pos = idx[book["deal"], book["k"]]
+    if np.any(pos < 0):
+        raise AssertionError("a re-price row has no planned position in the pour")
+    na = p["n_actions"].astype(np.int64)
+    nw = p["n_worlds"].astype(np.int64)
+    a_off = np.concatenate(([0], np.cumsum(na)))
+    o_off = np.concatenate(([0], np.cumsum(na * nw)))
+    make, total = action_stats(p, bid)
+
+    # Per position, its actions padded to 7: tiles, the mover's successes and margin sums.
+    cols = np.arange(7)
+    valid = cols[None, :] < na[pos][:, None]
+    flat = np.where(valid, a_off[pos][:, None] + cols[None, :], 0)
+    tiles = np.where(valid, p["actions"][flat].astype(np.int64), -1)
+    if not np.array_equal(tiles, book["actions"].astype(np.int64)):
+        raise AssertionError("the re-price's legal tiles are not the pour's")
+    if not np.array_equal(np.where(valid, p["q"][flat], 0), np.where(valid, book["q"], 0)):
+        raise AssertionError("the re-price's values are not the pour's")
+    seat = book["seat"].astype(np.int64)
+    sign = np.where(seat % 2 == bidder % 2, 1, -1)
+    n = nw[pos]
+    succ = np.where(valid, np.where(sign[:, None] > 0, make[flat], n[:, None] - make[flat]), -1)
+    msum = np.where(valid, sign[:, None] * total[flat], 0)
+    chosen = p["plays"][p["deal"][pos], p["n_plays"][pos], 1].astype(np.int64)
+    if not np.array_equal(chosen, book["zeb"].astype(np.int64)):
+        raise AssertionError("the re-price's tile played is not the pour's")
+    zcol = (tiles == chosen[:, None]).argmax(axis=1)
+    live = ~decided(book["banked"], bid)
+
+    out: dict[str, list[np.ndarray]] = {}
+    for j, name in enumerate(policies):
+        if not name.startswith("book:"):
+            continue
+        r = np.flatnonzero((book["rule"][:, j] >= 0) & live)
+        if not len(r):
+            continue
+        mask = book["allowed"][r, j].astype(np.int64)
+        inbook = valid[r] & (((mask[:, None] >> np.where(valid[r], tiles[r], 0)) & 1) == 1)
+        agree = inbook[np.arange(len(r)), zcol[r]]
+        pool_x = np.where(agree[:, None], valid[r] & ~inbook, inbook)
+        xcol = best_action(succ[r], msum[r], tiles[r], pool_x)
+        has = xcol >= 0
+        xc = np.maximum(xcol, 0)
+        nz = n[r].astype(np.float64)
+        legal_succ = np.where(valid[r], succ[r], -1)
+        rows = dict(
+            pos=pos[r], deal=book["deal"][r].astype(np.int32), k=book["k"][r].astype(np.int8),
+            policy=np.full(len(r), j, np.int8), rule=book["rule"][r, j].astype(np.int8), allowed=mask.astype(np.uint32),
+            agree=agree, z=chosen[r].astype(np.int8), x=np.where(has, tiles[r, xc], -1).astype(np.int8),
+            n_legal=na[pos[r]].astype(np.int8), n_book=inbook.sum(axis=1).astype(np.int8),
+            n_worlds=n[r].astype(np.int16), exact=n[r] < sampled, sign=sign[r].astype(np.int8), mover=seat[r].astype(np.int16),
+            z_best=succ[r, zcol[r]] == legal_succ.max(axis=1),
+            dead=legal_succ.max(axis=1) == np.where(valid[r], succ[r], 1 << 20).min(axis=1),
+            pz=succ[r, zcol[r]] / nz, mz=msum[r, zcol[r]] / nz,
+            px=np.where(has, succ[r, xc] / nz, np.nan), mx=np.where(has, msum[r, xc] / nz, np.nan),
+        )
+        stats = {k: np.full(len(r), np.nan) for k in ("dp", "bar_p", "dmu", "bar_mu")}
+        stats.update(ahead=np.zeros(len(r), bool), behind=np.zeros(len(r), bool),
+                     shape=np.full(len(r), NO_CONTRAST, np.int8))
+        h = np.flatnonzero(has)
+        w = np.arange(int(nw.max()))[None, :]
+        for s in range(0, len(h), BATCH):
+            b = h[s:s + BATCH]
+            pr = pos[r[b]]
+            nb = nw[pr][:, None]
+            zi = o_off[pr][:, None] + zcol[r[b]][:, None] * nb + np.minimum(w, nb - 1)
+            xi = o_off[pr][:, None] + xcol[b][:, None] * nb + np.minimum(w, nb - 1)
+            c = contrasts(p["outcomes"][zi], p["outcomes"][xi], nw[pr], sign[r[b]], bid, nw[pr] < sampled)
+            for key, v in c.items():
+                stats[key][b] = v
+        rows.update(stats)
+        for key, v in rows.items():
+            out.setdefault(key, []).append(v)
+    res = {k: np.concatenate(v) for k, v in out.items()}
+    upos, inv = np.unique(res["pos"], return_inverse=True)
+    feats = position_features(p, upos, bidder)
+    exact = nw[upos] < sampled
+    if not np.allclose(feats["log2_fiber"][exact], np.log2(nw[upos][exact]), rtol=0, atol=1e-9):
+        raise AssertionError("an enumerated cell is not its fiber")
+    mover = res.pop("mover")
+    for key, v in feats.items():
+        res[key] = v[inv]
+    if not np.array_equal(res["seat"], mover):
+        raise AssertionError("the record's seat to play is not the re-price's")
+    return res
+
+
+def run(pour_dir: str | Path, reprice_dir: str | Path, label: str, out: str | Path,
+        deals: int | None = None) -> dict[str, np.ndarray]:
+    """One chunk: its rows, saved as `out` (npz) with a json sidecar naming
+    the policies and their rules."""
+    book, policies, rules = read_reprice(reprice_dir, label)
+    if deals is not None:
+        book = {k: v[book["deal"] < deals] for k, v in book.items()}
+    p = read_pour(pour_dir)
+    manifest = json.loads((Path(pour_dir) / "manifest.json").read_text())
+    n = re.search(r"(?:^|,)n(\d+)", manifest["spec"])
+    sampled = int(n[1]) if n else SAMPLED
+    res = chunk_rows(p, book, policies, rules, manifest["bid"], manifest["bidder"], sampled)
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(out, **res)
+    out.with_suffix(".json").write_text(json.dumps(dict(
+        label=label, policies=list(policies), rules=[list(r) for r in rules], rows=int(len(res["pos"])),
+        shapes=list(SHAPES), bar_se=BAR_SE, sampled=sampled, deals=deals,
+        pour={k: manifest.get(k) for k in ("spec", "seed", "commit", "deals", "positions", "utility", "bid")},
+    ), indent=1) + "\n")
+    return res
+
+
+# -- the metasplat: the rows, aggregated -------------------------------------------------
+
+Z95 = 1.959964
+
+
+def load_rows(paths: Sequence[str | Path]) -> tuple[dict[str, np.ndarray], list[str], list[list[str]]]:
+    """Chunks' rows concatenated, each deal keyed by its chunk (`cluster`)."""
+    parts, meta = [], None
+    for i, f in enumerate(paths):
+        f = Path(f)
+        m = json.loads(f.with_suffix(".json").read_text())
+        if meta is not None and (m["policies"], m["rules"], m["shapes"]) != (
+                meta["policies"], meta["rules"], meta["shapes"]):
+            raise AssertionError(f"{f.name} was read under other policies or shapes")
+        meta = m
+        with np.load(f) as z:
+            part = {k: z[k] for k in z.files}
+        part["cluster"] = i * 1_000_000 + part["deal"].astype(np.int64)
+        part["chunk"] = np.full(len(part["deal"]), i, np.int8)
+        parts.append(part)
+    if meta is None:
+        raise FileNotFoundError("no rows")
+    if list(meta["shapes"]) != list(SHAPES):
+        raise AssertionError("the rows were classified under other shapes")
+    return {k: np.concatenate([p[k] for p in parts]) for k in parts[0]}, meta["policies"], meta["rules"]
+
+
+def shares(shape: np.ndarray, cluster: np.ndarray) -> dict:
+    """Each shape's count and share of the rows, with a 95% interval that
+    treats a deal's rows as one cluster (the ratio estimator's variance)."""
+    n = len(shape)
+    out = {"n": int(n)}
+    if not n:
+        return out
+    _, inv = np.unique(cluster, return_inverse=True)
+    m = np.bincount(inv).astype(np.float64)
+    for i, name in enumerate(SHAPES):
+        y = np.bincount(inv, weights=(shape == i).astype(np.float64), minlength=len(m))
+        p = y.sum() / n
+        se = float(np.sqrt(((y - p * m) ** 2).sum())) / n
+        out[name] = dict(count=int(y.sum()), share=float(p), lo=max(0.0, p - Z95 * se), hi=min(1.0, p + Z95 * se))
+    return out
+
+
+def _quartiles(v: np.ndarray) -> list[float] | None:
+    v = v[np.isfinite(v)]
+    return [float(x) for x in np.percentile(v, [25, 50, 75])] if len(v) else None
+
+
+def describe_rows(r: dict[str, np.ndarray], sel: np.ndarray) -> dict:
+    """The shape shares of a selection of rows, and per shape the quartiles of
+    Δp, Δμ and their bars (the size of what each shape trades)."""
+    out = shares(r["shape"][sel], r["cluster"][sel])
+    size = {}
+    for i, name in enumerate(SHAPES):
+        s = sel & (r["shape"] == i)
+        if s.any():
+            size[name] = {k: _quartiles(r[k][s]) for k in ("dp", "dmu", "bar_p", "bar_mu")}
+    out["size"] = size
+    return out
+
+
+def _bucket(v: np.ndarray, edges: Sequence[float], names: Sequence[str]) -> np.ndarray:
+    return np.asarray(names, dtype=object)[np.searchsorted(np.asarray(edges), v, side="left")]
+
+
+def axes(r: dict[str, np.ndarray], bid: int = 30, bidder: int = 0) -> dict[str, np.ndarray]:
+    """Where a row lives, as named buckets: the trick, the mover's role and
+    place in it, the count at risk (on the table, plus the larger count of
+    the two tiles compared), the points each side still needs, the belief's
+    size, whether the partner is winning the trick, and the dead rows (every
+    legal tile makes alike in Zeb's worlds)."""
+    count = np.array(rules_for(0).count)
+    risk = r["table"] + np.maximum(count[np.maximum(r["z"], 0)], np.where(r["x"] >= 0, count[np.maximum(r["x"], 0)], 0))
+    need_b = bid - r["banked_bidders"]
+    need_s = HAND_TOTAL - bid + 1 - r["banked_setters"]
+    return {
+        "trick": np.array([f"trick {t + 1}" for t in range(7)], dtype=object)[r["k"] // 4],
+        "role": np.asarray(ROLES, dtype=object)[(r["seat"] - bidder) % 4],
+        "place": np.array(["leads", "2nd", "3rd", "last"], dtype=object)[r["in_trick"]],
+        "count at risk": _bucket(risk, [0, 5, 10, 15], ["0", "5", "10", "15", "20+"]),
+        "bidders need": _bucket(need_b, [10, 20], ["1-10", "11-20", "21-30"]),
+        "setters need": _bucket(need_s, [4, 8], ["1-4", "5-8", "9-13"]),
+        "log2 worlds": _bucket(r["log2_fiber"], [0, 6, 9, 12, 16, 20],
+                               ["0 (one world)", "(0,6]", "(6,9]", "(9,12]", "(12,16]", "(16,20]", ">20"]),
+        "partner winning": np.where(r["in_trick"] == 0, "leads", np.where(r["partner_wins"] == 1, "yes", "no")),
+        "dead": np.where(r["dead"], "dead", "live"),
+    }
+
+
+def summarize(r: dict[str, np.ndarray], policies: Sequence[str], rules: Sequence[Sequence[str]]) -> dict:
+    """The metasplat: shape shares per book rule and per rule inside it, for
+    disagreements and agreements apart; across rules by every axis; and what
+    the agreements are made of."""
+    disagree = r["agree"] == 0
+    contrast = r["shape"] >= 0
+    res = dict(rows=int(len(r["shape"])), positions=int(len(np.unique(r["cluster"] * 32 + r["k"]))),
+               shapes=list(SHAPES), bar_se=BAR_SE,
+               disagree=describe_rows(r, disagree), agree=describe_rows(r, ~disagree & contrast),
+               no_contrast=int((~contrast).sum()), z_not_best=int((~r["z_best"]).sum()), policy={}, axes={})
+    for j, name in enumerate(policies):
+        sel = r["policy"] == j
+        if not sel.any():
+            continue
+        entry = dict(n=int(sel.sum()), disagree=describe_rows(r, sel & disagree),
+                     agree=describe_rows(r, sel & ~disagree & contrast),
+                     no_contrast=int((sel & ~contrast).sum()), rule={})
+        for k, rule in enumerate(rules[j]):
+            s = sel & (r["rule"] == k)
+            if s.any():
+                entry["rule"][rule] = dict(n=int(s.sum()), disagree=shares(r["shape"][s & disagree], r["cluster"][s & disagree]),
+                                           agree=shares(r["shape"][s & ~disagree & contrast],
+                                                        r["cluster"][s & ~disagree & contrast]))
+        res["policy"][name.removeprefix("book:")] = entry
+    for axis, label in axes(r).items():
+        res["axes"][axis] = {}
+        for value in sorted(set(label.tolist())):
+            s = label == value
+            res["axes"][axis][value] = dict(disagree=shares(r["shape"][s & disagree], r["cluster"][s & disagree]),
+                                            agree=shares(r["shape"][s & ~disagree & contrast],
+                                                         r["cluster"][s & ~disagree & contrast]))
+    return res
+
+
+# -- the sample: positions to look at, with the reason report's facts ------------------------
+
+
+def pick_sample(r: dict[str, np.ndarray], chunk: int = 0, seed: int = SAMPLE_SEED,
+                per_shape: int = 3) -> list[int]:
+    """Row indices of the sample (fixed before counting, module docstring):
+    within one chunk, per shape, `per_shape` disagreement rows from different
+    book rules and one agreement row, drawn at random."""
+    rng = np.random.default_rng(seed)
+    picks: list[int] = []
+    inside = r["chunk"] == chunk
+    for code in range(len(SHAPES)):
+        rows = np.flatnonzero(inside & (r["shape"] == code) & (r["agree"] == 0))
+        seen: set[int] = set()
+        for i in rng.permutation(rows):
+            if int(r["policy"][i]) not in seen:
+                seen.add(int(r["policy"][i]))
+                picks.append(int(i))
+                if len(seen) == per_shape:
+                    break
+        agree = np.flatnonzero(inside & (r["shape"] == code) & (r["agree"] == 1))
+        if len(agree):
+            picks.append(int(rng.choice(agree)))
+    return picks
+
+
+def split_of(pos, z: int, x: int) -> tuple[str, list[int], list[int]]:
+    """The worlds that tell Zeb's pick from the contrast at a pour position:
+    where one succeeds for the mover and the other fails, or, when they never
+    part on the contract, where one ends at a better margin. Returns the
+    basis ("make" or "margin") and the two sides (Z's, X's)."""
+    oz, ox = pos.outcomes[pos.actions.index(z)], pos.outcomes[pos.actions.index(x)]
+    t = 2 * pos.bid - HAND_TOTAL
+    sz, sx = (oz >= t) == (pos.sign > 0), (ox >= t) == (pos.sign > 0)
+    one, two = np.flatnonzero(sz & ~sx), np.flatnonzero(sx & ~sz)
+    if len(one) or len(two):
+        return "make", one.tolist(), two.tolist()
+    d = pos.sign * (oz.astype(np.int64) - ox.astype(np.int64))
+    return "margin", np.flatnonzero(d > 0).tolist(), np.flatnonzero(d < 0).tolist()
+
+
+def reason_doc(pos, z: int, x: int, seed: int) -> dict:
+    """The reason report's separating facts (`scenario.reason.explain`) for
+    the split between Zeb's pick and the contrast, read on the pour's own
+    worlds: its declared space, threshold and chance level, no re-plan. When
+    one side is empty, the other is set against the worlds where the two
+    agree, as the report does."""
+    from scenario_core import SilasAuthority
+
+    from scenario.planner import Situation
+    from scenario.reason import Scenarios, explain, tile_name
+
+    basis, one, two = split_of(pos, z, x)
+    columns = ["Zeb's", "the contrast's"]
+    if not one and not two:
+        return dict(basis=basis, found="identical", columns=columns, sides=[0, 0])
+    if not one or not two:
+        side = set(one or two)
+        rest = [i for i in range(len(pos.weights)) if i not in side]
+        one, two, columns = (one, rest, ["Zeb's", "the rest"]) if one else (rest, two, ["the rest", "the contrast's"])
+    sit = Situation(decl_id=pos.decl_id, viewer=pos.viewer, bid=pos.bid, bidder=pos.bidder,
+                    record=pos.record, plays=pos.plays)
+    cell = Scenarios([tuple(int(h) for h in w) for w in pos.worlds], [float(w) for w in pos.weights])
+    found, facts, pairs, chance, _ = explain(sit, pos.own, cell, one, two, (z, x),
+                                              SilasAuthority.sampled(len(cell.worlds), seed))
+
+    def fact(f) -> dict:
+        return dict(gloss=f.candidate.gloss, on=[str(f.on_a), str(f.on_b)], coverage=[str(c) for c in f.coverage],
+                    prior=None if f.prior is None else str(f.prior), alike=list(f.alike[:3]))
+
+    return dict(basis=basis, found=found, columns=columns, sides=[len(one), len(two)],
+                chance=[round(c, 4) for c in chance], facts=[fact(f) for f in facts[:3]],
+                pairs=[fact(f) for f in pairs[:2]], tiles=[tile_name(z), tile_name(x)])
+
+
+def book_doc(r: dict[str, np.ndarray], i: int, policies: Sequence[str], rules: Sequence[Sequence[str]]) -> dict:
+    """One row as the page's annotation of its position."""
+    j = int(r["policy"][i])
+    allowed = int(r["allowed"][i])
+    return dict(
+        rule=policies[j].removeprefix("book:"), which=rules[j][int(r["rule"][i])],
+        allowed=[t for t in range(28) if allowed >> t & 1], agree=bool(r["agree"][i]),
+        contrast=int(r["x"][i]), shape=SHAPES[int(r["shape"][i])],
+        **{k: round(float(r[k][i]), 4) for k in ("dp", "bar_p", "dmu", "bar_mu", "pz", "px", "mz", "mx")},
+        ahead=bool(r["ahead"][i]), behind=bool(r["behind"][i]), exact=bool(r["exact"][i]),
+    )
+
+
+def export_sample(pour_dir: str | Path, r: dict[str, np.ndarray], picks: Sequence[int], policies: Sequence[str],
+                  rules: Sequence[Sequence[str]], reasons: bool = True) -> dict:
+    """The page's document (`scenario.viz.export`) for the sampled rows'
+    deals, each holding only its sampled positions, each annotated with its
+    rows (`book`): the rule, its allowed tiles, the contrast, the shape and
+    its statistics, and the reason report's facts for the split."""
+    from scenario.atlas import load
+    from scenario.viz.export import deal_doc, document, position_doc
+
+    src = Path(pour_dir)
+    manifest = json.loads((src / "manifest.json").read_text())
+    p = load(src)
+    seeds = manifest.get("deal_seeds") or [None] * len(p.hands)
+    by_pos: dict[int, list[int]] = {}
+    for i in picks:
+        by_pos.setdefault(int(r["pos"][i]), []).append(i)
+    deals: dict[int, dict] = {}
+    for q in by_pos:                    # the sample's order: by shape, the deals as they come
+        pos = p.position(q)
+        if pos.deal not in deals:
+            deals[pos.deal] = deal_doc(p, pos.deal, seeds[pos.deal])
+        doc = position_doc(pos)
+        doc["book"] = []
+        for i in by_pos[q]:
+            if (int(r["deal"][i]), int(r["k"][i])) != (pos.deal, len(pos.plays)) or int(r["z"][i]) != pos.chosen:
+                raise AssertionError("a sampled row is not its pour position")
+            note = book_doc(r, i, policies, rules)
+            if reasons and note["shape"] != "identical":
+                note["reason"] = reason_doc(pos, int(r["z"][i]), int(r["x"][i]), int(seeds[pos.deal] or 0))
+            doc["book"].append(note)
+        deals[pos.deal]["positions"].append(doc)
+    for dl in deals.values():
+        dl["positions"].sort(key=lambda x: x["play"])
+    head = document(p, list(deals.values()), manifest)
+    head["source"]["pour"] = src.name
+    head["book"] = dict(shapes=list(SHAPES), bar_se=BAR_SE, seed=SAMPLE_SEED)
+    return head
+
+
+SHORT = ("same", "noise", "behind", "dom", "make>μ", "make>tail", "μ up", "μ down", "spread")
+
+
+def _row(label: str, s: dict) -> str:
+    if not s.get("n"):
+        return f"| {label} | 0 |" + " |" * len(SHAPES)
+    return f"| {label} | {s['n']:,} | " + " | ".join(f"{100 * s[name]['share']:.0f}" for name in SHAPES) + " |"
+
+
+def tables(res: dict) -> str:
+    """The summary as Markdown: shares in percent per book rule, per rule
+    inside it, and per axis, disagreements and agreements apart."""
+    head = "| | n | " + " | ".join(SHORT) + " |\n|---|---|" + "---|" * len(SHAPES)
+    out = []
+    for side in ("disagree", "agree"):
+        out.append(f"### {side}\n\n{head}")
+        out.append(_row("all rules", res[side]))
+        for name, e in sorted(res["policy"].items(), key=lambda kv: -kv[1][side].get("n", 0)):
+            out.append(_row(name, e[side]))
+        out.append("")
+    out.append("### rules inside\n\n" + head)
+    for name, e in res["policy"].items():
+        for rule, x in e["rule"].items():
+            out.append(_row(f"{name}: {rule} (disagree)", x["disagree"]))
+            out.append(_row(f"{name}: {rule} (agree)", x["agree"]))
+    out.append("")
+    for axis, values in res["axes"].items():
+        out.append(f"### {axis}\n\n{head}")
+        for value, x in values.items():
+            out.append(_row(f"{value} (disagree)", x["disagree"]))
+            out.append(_row(f"{value} (agree)", x["agree"]))
+        out.append("")
+    return "\n".join(out) + "\n"
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(prog="python -u -m scenario.metasplat", description=__doc__.split("\n\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    a = sub.add_parser("run", help="one chunk's rows: every firing book rule, Zeb's pick against the contrast")
+    a.add_argument("--pour", required=True, help="the chunk's pour directory")
+    a.add_argument("--reprice", required=True, help="book-reprice-3's out/ directory")
+    a.add_argument("--label", required=True, help="the chunk's label there (s100001, ...)")
+    a.add_argument("--out", required=True, help="rows .npz (a .json sidecar is written beside it)")
+    a.add_argument("--deals", type=int, help="only the first N deals (a smoke run)")
+    s = sub.add_parser("summarize", help="the metasplat: results.json and tables.md from chunks' rows")
+    s.add_argument("rows", nargs="+", help="rows .npz, in chunk order")
+    s.add_argument("--out", required=True, help="a directory")
+    e = sub.add_parser("sample", help="the sampled positions as the splat page's data, with the reasons")
+    e.add_argument("rows", nargs="+", help="rows .npz, in chunk order (the sample is drawn from the first)")
+    e.add_argument("--pour", required=True, help="the first chunk's pour directory")
+    e.add_argument("--out", required=True, help="the page's JSON")
+    e.add_argument("--no-reasons", action="store_true", help="skip the reason report's facts")
+    args = ap.parse_args(argv)
+    if args.cmd == "run":
+        res = run(args.pour, args.reprice, args.label, args.out, args.deals)
+        print(f"{args.label}: {len(res['pos']):,} rows -> {args.out}")
+    elif args.cmd == "summarize":
+        r, policies, rules = load_rows(args.rows)
+        res = summarize(r, policies, rules)
+        res["chunks"] = [Path(f).stem for f in args.rows]
+        out = Path(args.out)
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "results.json").write_text(json.dumps(res, indent=1) + "\n")
+        (out / "tables.md").write_text(tables(res))
+        print(f"{res['rows']:,} rows over {res['positions']:,} positions -> {out}")
+    else:
+        r, policies, rules = load_rows(args.rows)
+        picks = pick_sample(r)
+        doc = export_sample(args.pour, r, picks, policies, rules, reasons=not args.no_reasons)
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(doc, separators=(",", ":")) + "\n")
+        print(f"{len(picks)} rows, {len(doc['deals'])} deals -> {out} ({out.stat().st_size / 1e3:.0f} KB)")
+
+
+if __name__ == "__main__":
+    main()
