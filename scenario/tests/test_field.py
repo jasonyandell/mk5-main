@@ -15,7 +15,7 @@ from arena.walt_play import _declared_trump, parse_walt_spec
 from scenario.atlas import deal, in_plan_units, pour
 from scenario.compiled import CompiledWalt
 from scenario.field import BIDS, CANON, N_FEATURES, OFFSET, FieldNet, features
-from scenario.field_train import _loss_dlogits, dataset, int_scores, regret, targets, train
+from scenario.field_train import _forward, _loss_dlogits, dataset, dequantize, int_scores, regret, targets, train
 from scenario.planner import Config, Rung, Walt, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for
@@ -99,6 +99,22 @@ def test_core_forward_matches_the_referee_to_the_integer():
         assert tile == net.move(rules, sit.viewer, own, sit.record, bid, sit.bidder_team)
         tiles.add(tile)
     assert len(tiles) > 10
+
+
+def test_dequantize_is_the_net_up_to_its_floors():
+    """The warm start computes the integer net's scores, each shift a division."""
+    net = FieldNet.from_bytes(open("zeb/net/margin_d250k_h128x64.fnet", "rb").read())
+    rows = []
+    for state in _pip_states(60, seed=23, unforced=False):
+        sit = situation_from_state(state, 30)
+        rows.append(features(rules_for(state.decl_id), sit.viewer, remaining_hand(state, sit.viewer),
+                             sit.record, 30, sit.bidder_team))
+    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+    for i, f in enumerate(rows):
+        x[i, f] = 1
+    z_int = int_scores(net, x).astype(np.float64)
+    z_float = _forward(dequantize(net), x.astype(np.float32))[2].astype(np.float64)
+    assert np.abs(z_float - z_int).max() <= 1e-2 * np.abs(z_int).max()   # the floors, about 0.2%
 
 
 def test_batched_integer_scores_are_the_referees():
