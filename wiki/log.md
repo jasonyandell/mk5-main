@@ -48,6 +48,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | c9a868cb | match-aware bidding: Zeb's bidder in the arena, the 84 priced by match equity wins 53.4% [52.5, 54.3] of games vs the hand-only bidder; 51.4% [50.6, 52.2] vs the same 84 priced score-blind; A/A exact; no drops]
 
 **Added:** [[match-aware-bidding-2026-10-14]] (pre-registered at c9a868cb, model frozen at ee2c95b7), [[match-equity]]. **Updated:** [[scenario-player]] (§ Match-aware bidding), `index-experiments.md`, `index-topics.md`. Code: `arena/zeb_bid.py`, `arena/match_equity.py` (default off). Data: `zeb/match-aware-bidding/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-ups: #160.
+
 ## [2026-10-14 | bf16fdfe | The book at small n (#154): the near-tie break is free at 16, 64 and 160 worlds; the book's sets cost a 16-world plan 0.21 [−0.02, 0.44] marks/game and a 160-world plan 1.10 [0.93, 1.27]]
 
 **Added:** [[book-small-n-2026-10-14]] (pre-registered at bf16fdfe, 280 batches through `scripts/cpu-slot`, none dropped; D16 −0.01 [−0.18, +0.17], MDE 0.25; A/A −0.03), `scenario/small_n.py`; data `book/small-n/` in texas-42-zeb-research-2026-10. **Updated:** [[book-assumptions]] (A7 measured to 16 worlds; #161 the reader with no plan). Pre-registered, queued: [[deviant-field-2026-10-14]] (#152, `scenario/deviant_field.py`, 98f5d16c).
