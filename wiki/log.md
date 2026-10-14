@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-14, 249 archived entries)
+## Digest (2026-04-09 → 2026-10-14, 255 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -34,6 +34,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Silas reasons from evidence** (2026-10-13, 6 archived entries) — [[silas]]: the aggregate (#135), the bid as evidence (#134), the plays as evidence (#128), the trump-set rules rare not mis-guarded (#141), the private adjudications carried into the book fixture; [[endgame-equivalence-census]] ported (worlds never compress).
 - **The book measured, the solver bounded** (2026-10-13, 6 archived entries) — [[book-study-2026-10-12]]'s re-price 3, the head-to-head ([[book-head-to-head-2026-10-13]]) and the metasplat ([[metasplat-2026-10-13]]); [[splat-search-bounds]]; [[silas]] reconciles Hand 26 (#143); the TS engine's mark-bid cap lifted (#142).
 - **Reading, ties, the fence, the investigation** (2026-10-13 → 10-14, 7 archived entries) — lumps by a hidden tile ([[lumps-voi-2026-10-13]]); [[strategy-fusion-fence]]; make-then-margin ([[tie-margin-2026-10-14]], #120); the book investigated ([[book-investigation-2026-10-14]]); Zeb reads plays ([[reads-plays-2026-10-13]]); constellations ([[constellations-2026-10-14]]); [[silas]] ergonomics round 2.
+- **The overnight shift** (2026-10-14, 6 archived entries) — [[brainstorm-2026-10-14-ledger]]; the exploiter ([[exploiter-endgames-2026-10-14]], #77) and its margin cross-check; the book's encoding repaired (#146) and its own table (#147, [[book-reads-by-the-book-2026-10-14]]); the reading softened ([[reads-plays-soft-2026-10-14]], #145).
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
@@ -44,9 +45,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | a0656fe2 | zeb 0.3.0 built: soft uniform reading (ε 0.28, `reading: false` to turn off) + make-then-margin as defaults; pre-registered confirmation vs 0.2.0 +0.21 [+0.08, +0.34] marks/game, passes; not yet published]
 
 **Added:** [[zeb-030-confirmation-2026-10-14]] (pre-registered at 91855dc6). **Updated:** [[scenario-player]] (§ Zeb 0.3.0, § Where it stands, the reading and tie paragraphs), `index-experiments.md`. Code: `zeb/` 0.3.0, `scenario/zeb030.py`. Data: `zeb/release-0.3.0/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
 ## [2026-10-14 | 132878a4 | the Book Authority: the book is the authority, our measurement the suspect; charter, eleven implicit assumptions, completion ledger, the regulars' table (#149) as the next experiment]
 
 **Added:** [[topics/book-authority|book-authority]] (the charter, vocabulary, worked examples), [[topics/book-assumptions|book-assumptions]] (the inventory A1–A11, the ledger, the order, #149's sketch and its ≤1-min pilot). **Updated:** `CLAUDE.md` (the project today; hard rule THE BOOK IS THE AUTHORITY), `AGENTS.md`, [[w42]], [[book-study-2026-10-12]], [[book-head-to-head-2026-10-13]], [[book-investigation-2026-10-14]], [[book-reads-by-the-book-2026-10-14]] (each gains a "what our model leaves out" section; numbers unchanged), [[scenario-player]], [[silas]], [[the-wall]], the indexes. Issues: #149–#155.
+
 ## [2026-10-14 | 1cbb8417 | the tournament: production Walt, Zeb 0.1.0/0.2.0 and fenced E[Q] n=10 on a Bradley–Terry ladder; append-only records on HF, one commit per faceoff; concurrent writers and kill-resume tested; first round 9 faceoffs]
 
 **Added:** [[tournament]], `tournament/`, the `py-tournament` check suite, dataset `jasonyandell/texas-42-tournament` (+ `-selftest`, the live race). **Updated:** [[scenario-player]] (§ Where it stands, Links), [[strategy-fusion-fence]] (inventory: `tournament/eq_fenced_seat.py`), `index-topics.md`. Follow-ups: #156 (cloud worker, points250, catalogue deals).
@@ -78,27 +81,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | c9852cf6 | the soft reading's replication against Zeb (#145): consistent +0.12 [−0.02, +0.27] fails its registered bar; uniform +0.23 holds; cost ≤1.7× plain]
 
 **Updated:** [[reads-plays-soft-2026-10-14]] (§ Replication: pre-registration, results, ε sweep, cost), [[scenario-player]], [[reads-plays-2026-10-13]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays-soft-rep/` in `jasonyandell/texas-42-zeb-research-2026-10`.
-
-## [2026-10-14 | 7188cd90 | the reading softened (#145): no fallbacks; +0.23 marks/game at a net table, +0.30 / +0.29 against Zeb; restricted choice null]
-
-**Added:** [[reads-plays-soft-2026-10-14]] (`Reading.eps`, `scenario/reads_soft.py`). **Updated:** [[scenario-player]], [[reads-plays-2026-10-13]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays-soft/` in `jasonyandell/texas-42-zeb-research-2026-10`.
-
-## [2026-10-14 | f1ec6d67 | the exploiter against make-then-margin Zeb (#77 × #120): G +0.50 → +0.29 [+0.24, +0.34], paired drop +0.21 [+0.14, +0.28], contract exploit unchanged; two-rung +4.1 points/hand, marks unsettled]
-
-**Updated:** [[exploiter-endgames-2026-10-14]] (§ Cross-check results and pre-registrations), [[tie-margin-2026-10-14]] (§ Recommendation, Caveats). Code: `scenario/exploiter.py` (`--tie`, `compare`). Data: `zeb/exploiter-margin/` on the research repo.
-
-## [2026-10-14 | 153a5d0c | the book's own table (#147): opponents who read the book player by the book change nothing for it (−0.04 [−0.27, +0.19] marks/game); plain Zeb beats such a reader +0.50 [+0.26, +0.74]]
-
-**Added:** [[book-reads-by-the-book-2026-10-14]] (pre-registered at 153a5d0c). **Updated:** [[book-investigation-2026-10-14]], [[scenario-player]], `index-experiments.md`. Code: `arena/book_read.py` (`bookread:`), `arena/test_book_read.py`, the batch belief seam in `scenario/compiled.py`. Data: `book/reads-by-the-book/` on the research repo.
-
-## [2026-10-14 | 0dab46ff | the book's encoding repaired (#146): ten rules back inside their headers; block b re-measured −1.41 marks/game (+0.47 [+0.33, +0.62]), 38.4% to 250]
-
-**Updated:** [[book-investigation-2026-10-14]] (§ After the repairs: pre-registration, results), [[silas]] (§ The encoding's repairs), `silas/GAPS.md` (§ The book's silences). Twelve core pins moved (`silas/tests/core_pins.rs`). Data: `book/encoding-repairs/` on the research repo.
-
-## [2026-10-14 | d7db9e36 | an exploiter against Zeb on three-trick endgames (#77): G = +0.50 [+0.42, +0.58] margin, neither sturdy nor shown exploitable; half is lowest-id ties after the contract is decided; +0.004 in contract probability]
-
-**Added:** [[exploiter-endgames-2026-10-14]] (pre-registered at d7db9e36). **Updated:** [[scenario-player]], [[brainstorm-2026-10-14-ledger]], `index-experiments.md`. Code: `scenario/exploiter.py`, `scenario/tests/test_exploiter.py`. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/exploiter/`.
-
-## [2026-10-14 | b0e90912 | brainstorm notes ledger: "Results so far" are ours, the +0.111 is not (+0.11 marks/game, CI includes zero); demon labels/critics fenced; criticality pilot; next: an endgame exploiter against Zeb]
-
-**Added:** [[topics/brainstorm-2026-10-14-ledger|brainstorm-2026-10-14-ledger]] (claim-by-claim ledger, assessments of the exploiter and fusion-free AlphaZero, criticality histogram on two pours, one pre-registered recommendation). **Updated:** `index-topics.md`, [[strategy-fusion-fence]] (link). Cross-game lab cited from `~/code/plunge-walt-bridge/lab/`.

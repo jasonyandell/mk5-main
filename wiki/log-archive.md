@@ -4142,3 +4142,27 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-14 | e94f857f | Silas ergonomics, round 2: a suit's face order before the declaration, least/most, coverage over a bidding policy's contracts with a stated play model]
 
 **Updated:** [[silas]] (§ Ergonomics, round 2), `silas/README.md`, `silas/GAPS.md`. **Added:** `silas/examples/populations/` (#141's bidders and play model, one command instead of Rust).
+
+## [2026-10-14 | b0e90912 | brainstorm notes ledger: "Results so far" are ours, the +0.111 is not (+0.11 marks/game, CI includes zero); demon labels/critics fenced; criticality pilot; next: an endgame exploiter against Zeb]
+
+**Added:** [[topics/brainstorm-2026-10-14-ledger|brainstorm-2026-10-14-ledger]] (claim-by-claim ledger, assessments of the exploiter and fusion-free AlphaZero, criticality histogram on two pours, one pre-registered recommendation). **Updated:** `index-topics.md`, [[strategy-fusion-fence]] (link). Cross-game lab cited from `~/code/plunge-walt-bridge/lab/`.
+
+## [2026-10-14 | d7db9e36 | an exploiter against Zeb on three-trick endgames (#77): G = +0.50 [+0.42, +0.58] margin, neither sturdy nor shown exploitable; half is lowest-id ties after the contract is decided; +0.004 in contract probability]
+
+**Added:** [[exploiter-endgames-2026-10-14]] (pre-registered at d7db9e36). **Updated:** [[scenario-player]], [[brainstorm-2026-10-14-ledger]], `index-experiments.md`. Code: `scenario/exploiter.py`, `scenario/tests/test_exploiter.py`. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/exploiter/`.
+
+## [2026-10-14 | 0dab46ff | the book's encoding repaired (#146): ten rules back inside their headers; block b re-measured −1.41 marks/game (+0.47 [+0.33, +0.62]), 38.4% to 250]
+
+**Updated:** [[book-investigation-2026-10-14]] (§ After the repairs: pre-registration, results), [[silas]] (§ The encoding's repairs), `silas/GAPS.md` (§ The book's silences). Twelve core pins moved (`silas/tests/core_pins.rs`). Data: `book/encoding-repairs/` on the research repo.
+
+## [2026-10-14 | 153a5d0c | the book's own table (#147): opponents who read the book player by the book change nothing for it (−0.04 [−0.27, +0.19] marks/game); plain Zeb beats such a reader +0.50 [+0.26, +0.74]]
+
+**Added:** [[book-reads-by-the-book-2026-10-14]] (pre-registered at 153a5d0c). **Updated:** [[book-investigation-2026-10-14]], [[scenario-player]], `index-experiments.md`. Code: `arena/book_read.py` (`bookread:`), `arena/test_book_read.py`, the batch belief seam in `scenario/compiled.py`. Data: `book/reads-by-the-book/` on the research repo.
+
+## [2026-10-14 | f1ec6d67 | the exploiter against make-then-margin Zeb (#77 × #120): G +0.50 → +0.29 [+0.24, +0.34], paired drop +0.21 [+0.14, +0.28], contract exploit unchanged; two-rung +4.1 points/hand, marks unsettled]
+
+**Updated:** [[exploiter-endgames-2026-10-14]] (§ Cross-check results and pre-registrations), [[tie-margin-2026-10-14]] (§ Recommendation, Caveats). Code: `scenario/exploiter.py` (`--tie`, `compare`). Data: `zeb/exploiter-margin/` on the research repo.
+
+## [2026-10-14 | 7188cd90 | the reading softened (#145): no fallbacks; +0.23 marks/game at a net table, +0.30 / +0.29 against Zeb; restricted choice null]
+
+**Added:** [[reads-plays-soft-2026-10-14]] (`Reading.eps`, `scenario/reads_soft.py`). **Updated:** [[scenario-player]], [[reads-plays-2026-10-13]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays-soft/` in `jasonyandell/texas-42-zeb-research-2026-10`.
