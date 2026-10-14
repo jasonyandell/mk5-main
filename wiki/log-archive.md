@@ -4060,3 +4060,29 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-13 | d3524ec1 | silas book, second batch: 71 of the 86 encodable-now catalog rows written down and asked at the book's own positions; four new rules (follow-low, take-the-trick, follow-with-the-off, defend-the-84), the setter's throwaways, frame-fact queries, seven odds; pounce and bidders-plan repaired against the book's hands]
 
 **Touched pages:** [[silas]] § The book, second batch; [[book-study-2026-10-12]] (the re-price predates the repairs). `silas/GAPS.md` (the book against itself; gaps 1, 5, 7), `silas/README.md` § The book prelude, § Examples; `silas/examples/book/odds/README.md`.
+
+## [2026-10-13 | 9f371174 | silas: the five trump-set rules are rare, not mis-guarded (#141)]
+- [[silas]]: the book narrates three trump sets (Hands 32, 34, 35) and no position where the rules apply; over 3,000 random deals the three ruffs never fire (29 frames reach the ruff, one holds a trump), the feed fires 3 times and the lead 41; the pour fires the ruffs at 328 of 4,343,426 positions ([[book-study-2026-10-12]]).
+- By population (sampled, 3,000 contracts each, `scratch/study141.rs`; the optimists and the marginal 30 are Silas bid policies, the sim is Rust): a ruff rule answers in 0 games under `bid-only-enough`, `risk-budget` and a marginal 30 (risk 13-14), 30 and 61 under an optimist on the top two tiles of two and of three suits; without the second-trump clause 25, 13, 18 and 146, 250.
+- Added: positive pins for the last-seat ruff and the lead, a pin that the book's trump sets reach the ruff with no trump, and the coverage counts (`silas/tests/book_rules.rs`, `cli.rs`); README § Diagnostics corrected ("never fire" held only at 100 deals).
+
+## [2026-10-13 | fd78c782 | silas aggregate (#135): card, points and (<= a b), three-valued by intervals; the bid rules rewritten with it, every call and declaration pinned equal on all 1,184,040 hands (risk-budget 150 → 20 µs); the crisis keeps the double with the most tiles out]
+
+**Touched pages:** [[silas]] § The aggregate. `silas/README.md` § Semantics, Short forms, The auction; `silas/GAPS.md` gap 5 closed for what is built; `silas/docs/cross-game.md` § 4, Slice 2 as built (amendment).
+
+## [2026-10-13 | 413e5b9d | silas reads the bid as evidence (#134; #128 for the auction): a belief conditioned on named seats' calls under their bidding policies, counted exactly, exact_given the policies; C12B's 194/285 moves a point either way, Hand 29's partner puts the 4-4 with the 30-bidder at 6003/8669]
+
+**Touched pages:** [[silas]] § The bid as evidence. `silas/README.md` § The auction as evidence, The `silas` command; `silas/GAPS.md` gaps 1 and 4 narrowed; `silas/docs/cross-game.md` § 4 (amendment).
+
+## [2026-10-13 | 2442dcb0 | the private source adjudications carried into the book fixture: Hands 24, 26, 31, 32, 33, 34 read as adjudicated; EX-11's 53% is 43/81 on the book's model; Hand 28's 1-1 premise, not the sum, fails]
+
+**Touched pages:** [[silas]] (`silas/examples/book/hands.json`, `leads.md`, `setter-leads.silas`; `tests/book_fixture.rs`, `tests/book_leads.rs` comments). No pinned value changed; the book tests pass.
+
+## [2026-10-13 | aefa35be | worlds never compress: endgame equivalence census ported from origin/worktree-equiv-census (aca3dacb, c3e1374c)]
+
+**Touched pages:** [[scenario-player]] [[silas]]
+**Added:** [[endgame-equivalence-census]]
+
+## [2026-10-13 | 49392914 | silas reads the plays as evidence (#128 for the play): consistent likelihood by default, uniform on request, counted exactly; S-0140-e's "you know" is 2/15 from the seat and 1 read under protect-the-count; C21's bait under crisis is 91/167, not certainty]
+
+**Touched pages:** [[silas]] § The plays as evidence. `silas/README.md` § Semantics, The record as evidence, The `silas` command; `silas/GAPS.md` gap 1 narrowed again (a rule acting on a reading remains).

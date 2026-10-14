@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-13, 230 archived entries)
+## Digest (2026-04-09 → 2026-10-13, 236 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -31,6 +31,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Silas arrives** (2026-10-12 → 10-13, 8 archived entries) — [[silas]] moved from texas-42 and renamed, on Zeb's rules, the 21 gates written and priced, the record in the frame, the engineering pass; Zeb's reason report ([[scenario-player]]); server-only system authority ([[multiplayer-pattern]]).
 - **The book as the book means it** (2026-10-13, 6 archived entries) — [[book-study-2026-10-12]]: the 14 faithful rules and their re-price (Zeb 54% vs 40%), the dead-double and trump-set encoding fixes, the reason report's grown space ([[scenario-player]]), [[silas]]'s solved outcomes and the first repaired rules (C10, C12B).
 - **Silas grows up** (2026-10-13, 6 archived entries) — [[silas]]: cross-game slice 1 (the match frame), `scripts/check` and the conflict-free log, the perf pass (no GPU path), the short forms and coverage funnel, slice 2 (the auction), the book's second encoding batch (71 rows).
+- **Silas reasons from evidence** (2026-10-13, 6 archived entries) — [[silas]]: the aggregate (#135), the bid as evidence (#134), the plays as evidence (#128), the trump-set rules rare not mis-guarded (#141), the private adjudications carried into the book fixture; [[endgame-equivalence-census]] ported (worlds never compress).
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
@@ -41,6 +42,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | e94f857f | Silas ergonomics, round 2: a suit's face order before the declaration, least/most, coverage over a bidding policy's contracts with a stated play model]
 
 **Updated:** [[silas]] (§ Ergonomics, round 2), `silas/README.md`, `silas/GAPS.md`. **Added:** `silas/examples/populations/` (#141's bidders and play model, one command instead of Rust).
+
 ## [2026-10-14 | 492fef99 | constellations resurrected as Zeb's late-hand table: a 0.5 µs form in the core, exact under a structural field, not under the net; the late-hand ladder settles by level 3]
 
 **Added:** [[constellations-2026-10-14]]. **Touched pages:** [[scenario-player]] [[endgame-equivalence-census]]. Code: `scenario/core/src/constellation.rs`, `scenario/constellation.py`, `field_train` warm start. Outputs: `jasonyandell/texas-42-zeb-research-2026-10` `zeb/constellations/`.
@@ -77,29 +79,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | 26f91c07 | Hand 26 "cannot be set" reconciled (#143): the setting deal is a world of the same position, after trick 2; the claims differ in the partner's play, not the position]
 
 **Touched pages:** [[silas]] (`silas/GAPS.md` 8, `examples/book/cannot-be-set.silas`; `tests/outcome.rs` pins both numbers: the bidder's side 36 at double-dummy play, 31 with the 3-2 kept). No claim retracted; the position is now stated.
-
-## [2026-10-13 | 49392914 | silas reads the plays as evidence (#128 for the play): consistent likelihood by default, uniform on request, counted exactly; S-0140-e's "you know" is 2/15 from the seat and 1 read under protect-the-count; C21's bait under crisis is 91/167, not certainty]
-
-**Touched pages:** [[silas]] § The plays as evidence. `silas/README.md` § Semantics, The record as evidence, The `silas` command; `silas/GAPS.md` gap 1 narrowed again (a rule acting on a reading remains).
-
-## [2026-10-13 | aefa35be | worlds never compress: endgame equivalence census ported from origin/worktree-equiv-census (aca3dacb, c3e1374c)]
-
-**Touched pages:** [[scenario-player]] [[silas]]
-**Added:** [[endgame-equivalence-census]]
-
-## [2026-10-13 | 2442dcb0 | the private source adjudications carried into the book fixture: Hands 24, 26, 31, 32, 33, 34 read as adjudicated; EX-11's 53% is 43/81 on the book's model; Hand 28's 1-1 premise, not the sum, fails]
-
-**Touched pages:** [[silas]] (`silas/examples/book/hands.json`, `leads.md`, `setter-leads.silas`; `tests/book_fixture.rs`, `tests/book_leads.rs` comments). No pinned value changed; the book tests pass.
-
-## [2026-10-13 | 413e5b9d | silas reads the bid as evidence (#134; #128 for the auction): a belief conditioned on named seats' calls under their bidding policies, counted exactly, exact_given the policies; C12B's 194/285 moves a point either way, Hand 29's partner puts the 4-4 with the 30-bidder at 6003/8669]
-
-**Touched pages:** [[silas]] § The bid as evidence. `silas/README.md` § The auction as evidence, The `silas` command; `silas/GAPS.md` gaps 1 and 4 narrowed; `silas/docs/cross-game.md` § 4 (amendment).
-
-## [2026-10-13 | fd78c782 | silas aggregate (#135): card, points and (<= a b), three-valued by intervals; the bid rules rewritten with it, every call and declaration pinned equal on all 1,184,040 hands (risk-budget 150 → 20 µs); the crisis keeps the double with the most tiles out]
-
-**Touched pages:** [[silas]] § The aggregate. `silas/README.md` § Semantics, Short forms, The auction; `silas/GAPS.md` gap 5 closed for what is built; `silas/docs/cross-game.md` § 4, Slice 2 as built (amendment).
-
-## [2026-10-13 | 9f371174 | silas: the five trump-set rules are rare, not mis-guarded (#141)]
-- [[silas]]: the book narrates three trump sets (Hands 32, 34, 35) and no position where the rules apply; over 3,000 random deals the three ruffs never fire (29 frames reach the ruff, one holds a trump), the feed fires 3 times and the lead 41; the pour fires the ruffs at 328 of 4,343,426 positions ([[book-study-2026-10-12]]).
-- By population (sampled, 3,000 contracts each, `scratch/study141.rs`; the optimists and the marginal 30 are Silas bid policies, the sim is Rust): a ruff rule answers in 0 games under `bid-only-enough`, `risk-budget` and a marginal 30 (risk 13-14), 30 and 61 under an optimist on the top two tiles of two and of three suits; without the second-trump clause 25, 13, 18 and 146, 250.
-- Added: positive pins for the last-seat ruff and the lead, a pin that the book's trump sets reach the ruff with no trump, and the coverage counts (`silas/tests/book_rules.rs`, `cli.rs`); README § Diagnostics corrected ("never fire" held only at 100 deals).
