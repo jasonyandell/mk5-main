@@ -35,6 +35,7 @@
           (bidder-led led)
           (led-context q)
           (not (loses-in led q))
+          (none (roles (domino over)) (own-legal over) (beats over led q))
           (none (roles) (trump-set pard) (none (roles (domino his)) (trick-play pard his)))
           (follower plain)
           (count plain 0)

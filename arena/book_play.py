@@ -29,6 +29,16 @@ trick (`take-the-trick`, `helper-stretch`); then the throws (`dead-double`,
 which the book throws first, `shed-for-a-void`); then the follows with
 nothing at stake (`low-from-a-pair`, `follow-with-the-off`, `follow-low`).
 
+Two rules say only what the tile must not be: the pounce's
+`no-count-on-a-lost-trick` and the donation's
+`no-count-on-a-trick-that-can-be-lost` allow every tile but count. Which
+no-count tile goes is the later rules' business (the throws, and
+`shed-for-a-void`'s tile he need not keep, are written for exactly that), so
+where one of them decides, its set is narrowed by each later firing policy of
+the phase whose set meets it, in order, and the tile is drawn from what is
+left (#146: before, the least no-count tile went, outside every co-firing
+throw).
+
 Variants (spec `book:<fallback>,<ties>[,w<eps>][/<walt options>]`):
 
   fallback  lowest  no rule fires: the lowest legal tile (Silas's own fallback)
@@ -85,6 +95,11 @@ FOLLOW_ORDER = (
     "low-from-a-pair", "follow-with-the-off", "follow-low",
 )
 POLICIES = tuple(sorted(set(LEAD_ORDER) | set(FOLLOW_ORDER)))
+# The rules that only forbid count: the later firing policies choose within them.
+NO_COUNT = frozenset({
+    ("pounce", "no-count-on-a-lost-trick"),
+    ("donate-when-safe", "no-count-on-a-trick-that-can-be-lost"),
+})
 FALLBACKS = ("lowest", "zeb")
 TIES = ("least", "zeb", "union")
 
@@ -129,11 +144,26 @@ def ask(state: ZebGameState, bid: int) -> Verdict:
         if layer != "fallback":
             fired[name] = (layer, tuple(sorted(tiles)))
     order = LEAD_ORDER if not state.current_trick else FOLLOW_ORDER
-    for name in order:
-        if name in fired:
-            rule, allowed = fired[name]
-            return Verdict(fired, name, rule, allowed)
-    return Verdict(fired, None, None, ())
+    return Verdict(fired, *decide(fired, order))
+
+
+def decide(fired: dict[str, tuple[str, tuple[int, ...]]], order: Sequence[str]):
+    """The deciding policy of the phase `order`, its rule and its set: the first
+    that fired, its set narrowed by the later ones where it only forbids count
+    (`NO_COUNT`). (None, None, ()) where none fired."""
+    firing = [name for name in order if name in fired]
+    if not firing:
+        return None, None, ()
+    policy = firing[0]
+    rule, allowed = fired[policy]
+    if (policy, rule) in NO_COUNT:
+        left = set(allowed)
+        for later in firing[1:]:
+            within = left & set(fired[later][1])
+            if within:
+                left = within
+        allowed = tuple(sorted(left))
+    return policy, rule, allowed
 
 
 class BookPlay:

@@ -497,6 +497,51 @@ Every interval above zero among them:
   at the cap, none failed. Queues were paused and resumed only at batch boundaries; two
   in-flight batches were detached from a stopped queue and completed.
 
+## After the repairs (#146, 2026-10-14)
+
+The census's repairs were made in the Silas book policies and the arena's stack, each rule
+brought back inside its own header's scope and pinned by a `repair_` test
+(`silas/tests/book_rules.rs`, `arena/test_book_play.py`). Where the census asked for a choice
+the book does not make, nothing was guessed; it is recorded in `silas/GAPS.md` § The book's
+silences.
+
+| # | census label | repair |
+|---|---|---|
+| 1 | low-from-a-pair declines a trick (210) | silent where the higher tile takes the bidder's side's trick |
+| 2 | "one off may go first" as an instruction (100) | the permission stays in the header; no rule allows the off, and the book's hands of the shape lead trump |
+| 3 | top-trump handoff that cannot beat the trick (98) | the tile must beat the tile taking the trick |
+| 4 | follow-with-the-off judged by its own suit (43) | the off must also be able to lose in the suit followed; a count off is a recorded silence |
+| 5 | the safe trick counts setters who have played (39) | the prelude's `winner-cannot-be-beaten` asks only setters still to play |
+| 6 | protect-the-count on a lead the mover beats (32) | silent where a tile of his beats the lead |
+| 7 | the no-count rules choose the throw (292) | they only forbid count; the later firing policies choose within them (`arena/book_play.py`, `decide`) |
+| 8 | the dead double cashed before the draw (241) | the cash waits while the bidder holds the highest trump out and is not in crisis |
+| 9 | the crisis without evidence (196) | the prelude's `crisis` needs the partner shown out of trump (never the first lead) |
+| 10 | least-id tile picks (557) | a trump count tile leads only when every trump is count (183); the rank of the sure trumps (156) and the order of setting leads (218) are silences, not encoded |
+
+The dead double over shed's lone tile (344) is unresolved by the headers and kept in the
+stated order. Core pins moved: twelve, listed in `silas/tests/core_pins.rs`.
+
+### Pre-registration (written and committed before any pooled batch of this section)
+
+- *Blocks.* b′: the head-to-head's block b (`book:zeb,least`, Zeb deployed, `heuristic`
+  bidding for both teams, games to 7 marks) with the repaired encoding; P-b′: the same, to 250
+  points settled by the book's rule (II). Base seeds 1–11, 36 games a batch (396 games, 198
+  clusters each), every batch under `timeout 300`; a one-batch pilot at seed 900 is in no
+  number. Intervals as above (cluster bootstrap, 10,000 resamples).
+- *Headline.* b′'s marks/game and P-b′'s game share, each with its interval, beside the
+  chance baseline: Zeb against Zeb reads exactly 0 marks and 50% of games (deterministic per
+  coordinate). The book **loses** where the interval lies below it.
+- *The comparison.* b′ − b (published, −1.88) and P-b′ − P-b (33.3%), paired by cluster. The
+  repairs **moved** the loss where the paired interval lies above 0.
+- *The forecast, from the census's costs (first order):* the repaired labels carry −0.046
+  marks a hand, about 0.50 marks a game, so b′ ≈ −1.4. The same number reads off the other
+  side: the clean disagreements' −1.06 plus the labels left in place (least-id picks inside a
+  set holding Zeb's tile, the two silences, the dead double over the lone tile; about −0.3).
+  The arena alone cannot split b′ into clean and residual without the decomposition's
+  rollouts, which are not re-run; b′ is read against the forecast.
+- *Descriptive:* decisions a hand each policy decides, and its departures (tile ≠ Zeb's),
+  before and after.
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `book/investigation/` (CC0, `SHA256SUMS`,

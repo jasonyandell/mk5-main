@@ -7,6 +7,9 @@
 ; tile guarded for the bidder's off. The exception is the trump set: when his
 ; partner holds the trumps and is still to play, the trick may be his, and the
 ; count goes on it (pounce, trump-set.silas).
+; The lead is the bidder's master only if the setter cannot beat it himself:
+; where a tile of his takes it, the trick is his to take (take-the-trick.silas),
+; and the rule does not fire (2026-10-14, #146; before, it fired there too).
 ; Replaces gates/c08-no-count-on-the-double.silas and
 ; gates/c13b-protect-the-count.silas. How it differs: the gates take non-trump
 ; doubles only, and C13b exactly two followers; the book protects on the top
@@ -28,6 +31,7 @@
     (bidder-led led)
     (led-context q)
     (not (loses-in led q))
+    (none (roles over) (own-legal over) (beats over led q))
     (or (not (trump-set pard)) (some (roles his) (trick-play pard his)))
     (follower plain)
     (count plain 0)

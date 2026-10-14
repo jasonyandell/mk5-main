@@ -409,11 +409,12 @@ fn s0043b_the_singleton_reading_does_not_apply_to_the_lowest_trump() {
 #[test]
 fn s0040c_s0043a_s0042c_s0045a_one_off_with_four_trumps_may_go_first_but_the_book_leads_trump() {
     // Hands 12 and 14: the gate makes the off the only tile; the book leads
-    // the top trump, which the rule allows with the off.
+    // the top trump. The off is the book's permission, kept in the header and
+    // allowed by no rule (#146): the policy leads trump, as the hands do.
     for (id, top, off) in [("hand-12", "6-6", "2-0"), ("hand-14", "4-4", "5-2")] {
         let at = hand(id, &[]);
-        let allowed = allows(FIRST_LEAD, &at, "one-off-may-go-first");
-        assert!(allowed.contains(tile(top)) && allowed.contains(tile(off)), "{id}");
+        let allowed = allows(FIRST_LEAD, &at, "lead-the-top-trumps");
+        assert!(allowed.contains(tile(top)) && !allowed.contains(tile(off)), "{id}");
         assert_eq!(allows(C10, &at, "lead-the-off"), tiles(&[off]), "{id}");
     }
 }
@@ -505,8 +506,9 @@ fn the_first_lead_allows_the_books_tile_in_every_full_deal() {
 fn s0022c_without_the_top_trump_any_trump() {
     // Hand 30: sixes without the 6-6; the book leads the 6-5. Neither C12
     // gate looks without the top trump.
+    // Not the 6-4, a ten: the lead that can lose is not the count (#146).
     let at = book_at("hand-30", 0, B);
-    assert_eq!(allows(FIRST_LEAD, &at, "lead-a-trump"), tiles(&["6-2", "6-4", "6-5"]));
+    assert_eq!(allows(FIRST_LEAD, &at, "lead-a-trump"), tiles(&["6-2", "6-5"]));
     assert_eq!(fires(C12A, &at), None);
     assert_eq!(fires(C12B, &at), None);
 }
@@ -1371,4 +1373,115 @@ fn s0150e_no_count_on_the_bidders_top_trump() {
     // Hand 35 trick 1: the left setter has thrown; the right setter keeps the
     // 4-1 back and follows with the 4-2.
     assert_eq!(allows(POUNCE, &book_at("hand-35", 3, O2), "no-count-on-a-lost-trick"), tiles(&["4-2"]));
+}
+
+// -- The encoding's repairs (#146). The rule-fidelity census of the book
+// player's head-to-head found rules firing outside the scope their own headers
+// state, or against the order they state. Each test pins the corrected scope
+// on a position of ours: the rule is silent where the header's premise fails,
+// and still fires where it holds.
+
+#[test]
+fn repair_low_from_a_pair_gives_no_trick_away() {
+    // Treys. The bidder leads the 6-1; the left setter holds the 6-5 and the
+    // 6-0, neither count. The 6-5 takes the bidder's trick, which the book's
+    // pair (kept for a later lead) does not treat: the rule is silent. On the
+    // 6-6, which the 6-5 cannot take, it plays low.
+    let hand = ["6-5", "6-0", "2-2", "1-1", "4-0", "2-0", "1-0"];
+    assert_eq!(fires(LOW_FROM_A_PAIR, &position("P3", O1, &hand, &["6-1"])), None);
+    assert_eq!(allows(LOW_FROM_A_PAIR, &position("P3", O1, &hand, &["6-6"]), "follow-low"), tiles(&["6-0"]));
+}
+
+#[test]
+fn repair_one_off_and_four_trumps_leads_trump_without_a_sure_trump() {
+    // Deuces, five trumps without the 2-2, and the 5-1 off: the rule that read
+    // the permission allowed the off alone here. The policy leads trump.
+    let at = position("P2", B, &["6-2", "5-2", "5-1", "4-2", "2-1", "2-0", "0-0"], &[]);
+    let (rule, allowed) = fires(FIRST_LEAD, &at).unwrap();
+    assert_eq!(rule, "lead-a-trump");
+    assert!(!allowed.contains(tile("5-1")) && allowed.contains(tile("6-2")));
+}
+
+#[test]
+fn repair_lead_a_count_trump_only_when_every_trump_is_count() {
+    // Fours, without the 4-4: the bidder's trumps are the 6-4 and the 4-1,
+    // both count, and his other tiles doubles. Either may go.
+    let at = position("P4", B, &["6-4", "4-1", "6-6", "5-5", "3-3", "2-2", "1-1"], &[]);
+    assert_eq!(allows(FIRST_LEAD, &at, "lead-a-count-trump"), tiles(&["6-4", "4-1"]));
+}
+
+#[test]
+fn repair_the_partners_top_trump_must_take_the_trick() {
+    // Sixes. The bidder leads the 6-6; the partner's 6-5 is the highest trump
+    // still out but cannot beat it, so the handoff is silent. Likewise where
+    // the left setter's 6-6 is on the bidder's 6-2. On the 6-4 the 6-6 takes.
+    let partner = ["6-5", "6-1", "3-3", "2-2", "1-0", "5-0", "4-0"];
+    assert_eq!(fires(TOP_TRUMP, &position("P6", P, &partner, &["6-6", "6-0"])), None);
+    assert_eq!(fires(TOP_TRUMP, &position("P6", P, &partner, &["6-2", "6-6"])), None);
+    let partner = ["6-6", "6-1", "3-3", "2-2", "1-0", "5-0", "4-0"];
+    assert_eq!(allows(TOP_TRUMP, &position("P6", P, &partner, &["6-4", "6-0"]), "play-the-top-trump"), tiles(&["6-6"]));
+}
+
+#[test]
+fn repair_the_off_is_judged_in_the_suit_followed() {
+    // Treys. The left setter takes the bidder's 2-1 with the 2-2 and leads
+    // the 0-0; the others show out of blanks. The bidder follows with the 6-0
+    // or the 1-0, both bare offs of their own suits. In blanks the 6-0 cannot
+    // lose (the 4-0 and 5-0 are below it), so only the 1-0 is the off here.
+    let plays = ["2-1", "2-2", "2-0", "4-2", "0-0", "6-4", "6-2"];
+    let at = position("P3", B, &["6-0", "1-0", "3-3", "3-1", "5-5", "4-4"], &plays);
+    assert_eq!(allows(FOLLOW_OFF, &at, "play-the-bare-off"), tiles(&["1-0"]));
+}
+
+#[test]
+fn repair_a_setter_who_has_played_cannot_take_the_safe_trick() {
+    // Sixes. The right setter showed out of trump on the bidder's 6-6; now the
+    // bidder leads the 5-5 and the left setter, void in fives, throws the 1-0.
+    // Only the right setter is still to play, and he has no trump: the trick
+    // is safe, and the partner, void in fives, gives count. Where the right
+    // setter followed trump instead, he may still trump this trick: no count.
+    let partner = ["4-1", "3-2", "3-3", "2-0", "4-0", "1-1"];
+    let plays = ["6-6", "6-0", "6-1", "2-1", "5-5", "1-0"];
+    assert_eq!(allows(DONATE, &position("P6", P, &partner, &plays), "give-a-five"), tiles(&["4-1", "3-2"]));
+    let plays = ["6-6", "6-0", "6-1", "6-2", "5-5", "1-0"];
+    let at = position("P6", P, &partner, &plays);
+    assert_eq!(allows(DONATE, &at, "no-count-on-a-trick-that-can-be-lost"), tiles(&["3-3", "2-0", "4-0", "1-1"]));
+}
+
+#[test]
+fn repair_protect_the_count_only_on_a_lead_the_setter_cannot_beat() {
+    // Treys. The bidder leads the 6-5, which nothing outside the left setter's
+    // hand beats; but his own 6-6 does, so it is no master of the bidder's and
+    // the rule is silent. On the 6-6 itself he protects the 6-4.
+    let at = position("P3", O1, &["6-6", "6-4", "6-1", "2-0", "1-1", "4-0", "5-1"], &["6-5"]);
+    assert_eq!(fires(PROTECT, &at), None);
+    let at = position("P3", O1, &["6-5", "6-4", "6-1", "2-0", "1-1", "4-0", "5-1"], &["6-6"]);
+    assert_eq!(allows(PROTECT, &at, "follow-the-master-without-count"), tiles(&["6-1", "6-5"]));
+}
+
+#[test]
+fn repair_the_dead_double_waits_while_the_bidder_can_draw() {
+    // Fours. The bidder's 4-3 takes trick 1, his partner following; trumps
+    // are out. Holding the 4-4, the highest still out, he draws, and the dead
+    // 0-0 waits. Without it he cannot draw, and the 0-0 goes at once.
+    let plays = ["4-3", "4-0", "4-1", "2-1"];
+    let at = position("P4", B, &["4-4", "0-0", "6-6", "5-5", "3-3", "2-2"], &plays);
+    assert_eq!(fires(DEAD_DOUBLE, &at), None);
+    assert_eq!(allows(BIDDERS_PLAN, &at, "draw-the-trumps"), tiles(&["4-4"]));
+    let at = position("P4", B, &["4-2", "0-0", "6-6", "5-5", "3-3", "2-2"], &plays);
+    assert_eq!(allows(DEAD_DOUBLE, &at, "cash-a-dead-double"), tiles(&["0-0"]));
+}
+
+#[test]
+fn repair_the_crisis_needs_the_trump_shown_to_be_a_setters() {
+    // Fours. The bidder's 4-3 takes trick 1; the 4-4, 6-4 and 5-4 are out, and
+    // his 4-2 beats none of them. While his partner follows trump, the trump
+    // may be the partner's: no crisis. Once the partner shows out, it is a
+    // setter's, and the bidder cashes the 5-5. Never on the first lead.
+    let hand = ["4-2", "5-5", "3-3", "2-2", "6-1", "1-0"];
+    assert_eq!(fires(CRISIS, &position("P4", B, &hand, &["4-3", "4-0", "4-1", "6-0"])), None);
+    let at = position("P4", B, &hand, &["4-3", "4-0", "6-2", "4-1"]);
+    assert_eq!(allows(CRISIS, &at, "cash-a-double-that-is-count"), tiles(&["5-5"]));
+    let at = position("P4", B, &["4-3", "4-2", "5-5", "3-3", "2-2", "6-1", "1-0"], &[]);
+    assert_eq!(fires(CRISIS, &at), None);
 }

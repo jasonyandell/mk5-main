@@ -13,7 +13,7 @@ from forge.zeb.types import BidState, GamePhase, ZebGameState
 from arena.auction import run_auction
 from arena.bidders import HeuristicBidder
 from arena.book_play import (
-    FOLLOW_ORDER, LEAD_ORDER, POLICIES, BookPlay, SilasBidder, ask, compiled, parse_book_spec,
+    FOLLOW_ORDER, LEAD_ORDER, POLICIES, BookPlay, SilasBidder, ask, compiled, decide, parse_book_spec,
 )
 from arena.walt_play import WaltPlay
 from scenario.planner import situation_from_state
@@ -65,6 +65,27 @@ def test_the_first_firing_policy_in_the_phase_order_decides():
                 assert v.allowed and set(v.allowed) <= legal
             state = apply_action(state, rng.choice(legal_actions(state)))
     assert decided > 100
+
+
+def test_a_no_count_rule_lets_the_later_throws_choose():
+    # #146: the pounce's and the donation's no-count rules forbid count and
+    # choose nothing; the later firing policies of the phase choose within them.
+    fired = {
+        "pounce": ("no-count-on-a-lost-trick", (1, 3, 9, 12)),
+        "dead-double": ("throw-a-dead-double", (0,)),          # count is not in it: no overlap
+        "shed-for-a-void": ("throw-a-lone-tile", (9, 12)),
+        "follow-low": ("the-lowest-trump", (12, 20)),
+    }
+    assert decide(fired, FOLLOW_ORDER) == ("pounce", "no-count-on-a-lost-trick", (12,))
+    fired["shed-for-a-void"] = ("throw-what-you-need-not-keep", (5,))
+    assert decide(fired, FOLLOW_ORDER) == ("pounce", "no-count-on-a-lost-trick", (12,))
+    # Alone, it allows every no-count tile.
+    alone = {"donate-when-safe": ("no-count-on-a-trick-that-can-be-lost", (2, 4))}
+    assert decide(alone, FOLLOW_ORDER) == ("donate-when-safe", "no-count-on-a-trick-that-can-be-lost", (2, 4))
+    # Any other rule decides with its own set.
+    other = {"pounce": ("play-a-ten-now", (10,)), "shed-for-a-void": ("throw-a-lone-tile", (9,))}
+    assert decide(other, FOLLOW_ORDER) == ("pounce", "play-a-ten-now", (10,))
+    assert decide({}, FOLLOW_ORDER) == (None, None, ())
 
 
 def test_the_bidders_first_lead_is_the_books():

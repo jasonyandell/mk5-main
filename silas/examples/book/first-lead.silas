@@ -15,9 +15,16 @@
 ;   lead a low trump and budget the trick: not the top, and not your trump
 ;   count tile, since that must not be the lead that loses (Hands 16, 29);
 ;   holding four, you may lead the top first when a trump count tile is out;
+;   without the top, likewise any trump but the count: a lead that can lose
+;   must not be the one that loses the count (Hand 30 leads the 6-5, keeping
+;   the 6-4; S-0050-c's reason), unless every trump he holds is count;
 ; - with one off and four trumps or more, the off may go first; a permission,
-;   not an instruction (the book's hands of that shape, 12, 14 and 32, lead
-;   trump), and never in a bid of marks, where the off goes last.
+;   not an instruction, and never in a bid of marks, where the off goes last.
+;   The book's hands of that shape (12, 14 and 32) lead trump, so the policy
+;   leads trump there and the permission stays in this header: no rule allows
+;   the off (2026-10-14, #146; before, a rule allowed it, and where the bidder
+;   held no sure trump it allowed the off alone). The permission's own
+;   condition, and a repair that reads it, are repaired/one-off-lead-trump.silas.
 ; Replaces gates/c10-off-on-trick-one.silas,
 ; gates/c12a-four-trumps-lead-the-double.silas and
 ; gates/c12b-four-trumps-lead-low.silas. How it differs: C10 makes the off the
@@ -28,6 +35,9 @@
 ; 35's 4-4, S-0150-b). C12A is the book's rule; its Hand 34 lead is the
 ; book's, and double-dummy it sets a made 84 (S-0146-b): a question for the
 ; bidder's information, not for the encoding.
+; The book does not rank the sure trumps: it says any of them, and its hands
+; lead the double but for Hand 28's bait (GAPS.md, the book's silences). The
+; policy allows them all.
 ; The book contradicts itself on the 6-5: p. 132 (S-0167-b) says the bidder
 ; most often leads a 6-5 off first, while in Hand 31 (S-0138-b), holding the
 ; 6-5 off, it leads the 2-2. This file encodes the worked hand: trump first.
@@ -103,27 +113,6 @@
         (not (own-legal third)))
       (some (roles stake) (live stake) (not (mine stake)) (trump-tile stake) (count-tile stake))
       (own-legal lead)))
-  (rule one-off-may-go-first (play lead)
-    (pattern
-      (viewer b)
-      (bidder b)
-      (trick-number 1)
-      (next-actor b)
-      (not (every-trick))
-      (four-trumps-or-more)
-      (own-legal lead)
-      (off lead)
-      (none (roles other) (off other) (not (tile other lead))))
-    (pattern
-      (viewer b)
-      (bidder b)
-      (trick-number 1)
-      (next-actor b)
-      (not (every-trick))
-      (four-trumps-or-more)
-      (some (roles o) (off o) (none (roles other) (off other) (not (tile other o))))
-      (own-legal lead)
-      (sure-trump lead)))
   (rule lead-the-top-trumps (play lead)
     (viewer b)
     (bidder b)
@@ -132,6 +121,14 @@
     (own-legal lead)
     (sure-trump lead))
   (rule lead-a-trump (play lead)
+    (viewer b)
+    (bidder b)
+    (trick-number 1)
+    (next-actor b)
+    (own-legal lead)
+    (trump-tile lead)
+    (count lead 0))
+  (rule lead-a-count-trump (play lead)
     (viewer b)
     (bidder b)
     (trick-number 1)

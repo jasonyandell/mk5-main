@@ -6,6 +6,12 @@
 ; trick does, he keeps two tiles of the suit of the bidder's double to the end:
 ; he plays the lower on the double, count or not, and keeps the higher for the
 ; off.
+; Scope: the book's pair is kept for a later lead of the suit; it does not
+; treat the case where the higher tile takes a trick the bidder's side is
+; taking (the catalog's note on S-0071-c). There the first rule does not fire
+; (2026-10-14, #146; before, it played low and gave the trick away). The
+; book's general "win any trick you can" (S-0056-b) is not encoded for a
+; follower who is not last (GAPS.md, the book's silences).
 ; Replaces gates/c13c-low-from-a-pair.silas. How it differs: the first rule is
 ; the gate's (the book's leader is anyone, as the gate already reads it). The
 ; 84 form is new: the gate needs a pair without count, so it is silent where
@@ -29,6 +35,7 @@
     (follower high)
     (count high 0)
     (beats high low led)
+    (none (roles w win) (current-winner w) (opponent me w) (trick-play w win) (beats high win led))
     (none (roles third) (follower third) (not (tile third low)) (not (tile third high))))
   (rule keep-the-higher-for-the-off (play low)
     (roles me doubled low high led)
