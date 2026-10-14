@@ -5,6 +5,8 @@
 
 Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
+            | silas[:<policy>]   (a bid policy of silas/examples/book/bidding/:
+              risk-budget, the default, or bid-only-enough, which is heuristic)
             | gus[:<samples>[,wp][,pass[<q>]][,max]]   (rung #21; wp = marks-to-7
               utility, pass<q> = rung #27 v2 equilibrium-aware pass baseline,
               max = rung #31 utility-MAXIMIZING bid so strong hands reach 84)
@@ -20,10 +22,14 @@ Player spec: <bidder>+<play>
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>]
             | judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]]
             | walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make|points]
+            | book[:<lowest|zeb>,<least|zeb>][/<walt options>]
             | random
             (walt = the scenario player (scenario/): R_live[R_model[U]],
              contingent plans over sampled hidden worlds, modeled seats one
              rung down, random legal play at the bottom; no oracle, CPU;
+             book = Winning 42's rules as a Silas policy stack, with a fallback
+             (lowest legal or Zeb) where no rule fires and a tie-break (least
+             or Zeb's best) inside the set a rule allows; arena/book_play.py;
              scorelens = rung #27 v2 score-conditioned play risk;
              belieflens = rung #25 belief-weighted world sampling, --gus-adapter;
              judplay = jud v1 value-native play — argmax E[pts] over the jud
@@ -64,6 +70,10 @@ def parse_bidder(
         return HeuristicBidder()
     if name == "bid30":
         return Bid30Bidder()
+    if name == "silas":
+        # A bidding policy of silas/examples/book/bidding/ (risk-budget, bid-only-enough, ...).
+        from arena.book_play import SilasBidder
+        return SilasBidder(arg or "risk-budget")
     if name == "random":
         return RandomBidder(float(arg)) if arg else RandomBidder()
     if name == "gus":
@@ -228,6 +238,13 @@ def parse_play(
         from arena.rob_play import RobPlay
         play = RobPlay(**({"binary": arg} if arg else {}))
         print(f"Rob play: {play}", flush=True)
+        return play
+    if name == "book":
+        # The book's rules as a Silas policy stack (arena/book_play.py).
+        # Spec: book[:<lowest|zeb>,<least|zeb>][/<walt options>]
+        from arena.book_play import parse_book_spec
+        play = parse_book_spec(arg)
+        print(f"Book play: {play}", flush=True)
         return play
     if name == "walt":
         # The scenario player, written from the mathematics (scenario/).

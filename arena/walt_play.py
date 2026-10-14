@@ -83,6 +83,7 @@ from typing import Sequence
 
 from forge.zeb.types import ZebGameState
 
+from arena.auction import contract_points
 from arena.hand_metrics import best_trump
 from scenario.convention import Convention
 from scenario.field import FieldNet
@@ -138,10 +139,13 @@ class WaltPlay:
         marks: Sequence[tuple[int, int]] | None = None,
         marks_to_win: int = 7,
     ) -> list[int]:
+        # The planner's contract is the points the bidder's side must take: a
+        # marks bid (84, ...) needs every one of the 42, as the arena scores it.
+        bids = [contract_points(int(b)) for b in bid_values]
         if hasattr(self.walt, "decide_batch"):
-            decisions = self.walt.decide_batch(states, [int(b) for b in bid_values])
+            decisions = self.walt.decide_batch(states, bids)
         else:
-            decisions = [self.walt.decide(s, int(b)) for s, b in zip(states, bid_values)]
+            decisions = [self.walt.decide(s, b) for s, b in zip(states, bids)]
         self.last_values = [q for _, q in decisions]
         slots = []
         for state, (tile, _) in zip(states, decisions):
