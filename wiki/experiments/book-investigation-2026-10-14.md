@@ -48,7 +48,8 @@ explains? Where, if anywhere, does it win?
 - **Opponents who read plays by the field net's set change nothing.** The reader's gain
   against the book less its gain against Zeb is null under both likelihoods, though the
   book's plays leave it without an explaining world more often (21% of its decisions, against
-  16%). A reader who reads the book player by the book is not built (#147).
+  16%). A reader who reads the book player by the book changes nothing either: −0.04
+  [−0.27, +0.19] marks a game, and it loses +0.50 to plain Zeb ([[book-reads-by-the-book-2026-10-14]]).
 - **Inside the book's scope it still loses** (S-core −0.057 marks a departure). It ties only
   inside the three rules Zeb's own plan sides with. On its own eight narrated deals its side
   outplays Zeb's, which carries no interval.
@@ -62,7 +63,9 @@ explains? Where, if anywhere, does it win?
 
 What this does not show: that the book is wrong at the table it was written for, where
 partners both know it and the opponents are people who read plays and hold expectations; or
-that its value as a tie-break exceeds a principled points tie-break.
+that its value as a tie-break exceeds a principled points tie-break. The first was measured
+next, with Zebs as the readers ([[book-reads-by-the-book-2026-10-14]]): the book fares the
+same there.
 
 ## Pre-registration (written and committed before any pooled batch of this page)
 
@@ -333,7 +336,8 @@ latter is restricted choice). Games to 7 marks:
   record under the net's set at 20.6% of the reader's decisions, against 15.8% against Zeb,
   mostly late (the sixth trick: 56% against 48%). The reader then plans over the uniform
   sample, which is plain Zeb.
-- *Not measured: an opponent who reads the book player by the book* (#147).
+- *An opponent who reads the book player by the book* is measured in
+  [[book-reads-by-the-book-2026-10-14]] (#147): null against the book, thrown off by Zeb.
 
 ## V. The book's scope
 
@@ -482,9 +486,9 @@ Every interval above zero among them:
   - Encoding: low-from-a-pair, first-lead's *lead a trump* and the dead double's cash.
   - The rules: *the count that sets*, take-the-trick, *double-up, lead low* and *draw the
     trumps*.
-- **The opponent the book assumes is still unmeasured.** A reader by the net's set neither
-  punishes nor rewards the book's departures, which says little about a reader who knows the
-  book (#147).
+- **The opponent the book assumes changes nothing.** A reader by the net's set neither
+  punishes nor rewards the book's departures, and neither does a reader who knows the book
+  ([[book-reads-by-the-book-2026-10-14]], #147).
 - **Nothing is adopted.** The candidate for Zeb is a tie rule, not a book rule: break `make`'s
   near-ties for the count, as #120 proposes, and grade it against the book's tie-break in the
   book's game.

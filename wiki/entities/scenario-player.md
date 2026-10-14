@@ -923,7 +923,10 @@ Zeb's forecast of each departure's price is honest in sign
 42 points. Investigated ([[book-investigation-2026-10-14]]): the arena gained the book's game
 (`ArenaConfig.points_to_win`, points to 250 by the book's settlement), where the book loses
 too; breaking `make`'s near-ties (within 0.02) by the book's rules wins it for Zeb, 53.2%
-[51.1, 55.2] of games, replicated, with no marks moved (#120).
+[51.1, 55.2] of games, replicated, with no marks moved (#120). At the book's own table, opponents
+that read the book player by the book (`arena/book_read.py`, `bookread:`) change nothing for it
+(−0.04 [−0.27, +0.19] marks/game), and plain Zeb beats such a reader by +0.50 [+0.26, +0.74]
+([[book-reads-by-the-book-2026-10-14]], #147).
 
 **Make, then margin (2026-10-14, #120).** The tie rule ≺ is now a lever: `Config.tie`
 (arena `t=margin`; default `lowest`, every byte unchanged). It breaks a decision's exact ties

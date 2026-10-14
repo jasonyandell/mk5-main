@@ -40,6 +40,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 153a5d0c | the book's own table (#147): opponents who read the book player by the book change nothing for it (−0.04 [−0.27, +0.19] marks/game); plain Zeb beats such a reader +0.50 [+0.26, +0.74]]
+
+**Added:** [[book-reads-by-the-book-2026-10-14]] (pre-registered at 153a5d0c). **Updated:** [[book-investigation-2026-10-14]], [[scenario-player]], `index-experiments.md`. Code: `arena/book_read.py` (`bookread:`), `arena/test_book_read.py`, the batch belief seam in `scenario/compiled.py`. Data: `book/reads-by-the-book/` on the research repo.
+
 ## [2026-10-14 | 0dab46ff | the book's encoding repaired (#146): ten rules back inside their headers; block b re-measured −1.41 marks/game (+0.47 [+0.33, +0.62]), 38.4% to 250]
 
 **Updated:** [[book-investigation-2026-10-14]] (§ After the repairs: pre-registration, results), [[silas]] (§ The encoding's repairs), `silas/GAPS.md` (§ The book's silences). Twelve core pins moved (`silas/tests/core_pins.rs`). Data: `book/encoding-repairs/` on the research repo.
