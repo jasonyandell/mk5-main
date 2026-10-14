@@ -20,14 +20,14 @@ fn the_embedded_net_parses_and_its_id_is_its_digest() {
 
 #[test]
 fn worlds_are_bounded() {
-    assert!(Player::new(0, 0).is_err());
-    assert!(Player::new(MAX_WORLDS + 1, 0).is_err());
-    assert!(Player::new(MAX_WORLDS, 0).is_ok());
+    assert!(Player::new(0, 0, true).is_err());
+    assert!(Player::new(MAX_WORLDS + 1, 0, true).is_err());
+    assert!(Player::new(MAX_WORLDS, 0, true).is_ok());
 }
 
 #[test]
 fn a_forecast_is_a_tail_and_is_deterministic() {
-    let zeb = Player::new(24, 7).unwrap();
+    let zeb = Player::new(24, 7, true).unwrap();
     let f = zeb.forecast(&HAND, &[6, 7, 9]).unwrap();
     assert_eq!(f.iter().map(|f| f.decl).collect::<Vec<_>>(), vec![6, 7, 9]);
     for x in &f {
@@ -35,12 +35,12 @@ fn a_forecast_is_a_tail_and_is_deterministic() {
         assert!((-42.0..=42.0).contains(&x.mean));
     }
     assert_eq!(f, zeb.forecast(&HAND, &[6, 7, 9]).unwrap());
-    assert_ne!(f, Player::new(24, 8).unwrap().forecast(&HAND, &[6, 7, 9]).unwrap());
+    assert_ne!(f, Player::new(24, 8, true).unwrap().forecast(&HAND, &[6, 7, 9]).unwrap());
 }
 
 #[test]
 fn a_forecast_refuses_what_it_cannot_plan() {
-    let zeb = Player::new(8, 0).unwrap();
+    let zeb = Player::new(8, 0, true).unwrap();
     assert!(zeb.forecast(&HAND, &[6, 6]).unwrap_err().0.contains("twice"));
     assert!(zeb.forecast(&HAND, &[8]).unwrap_err().0.contains("nello"));
     assert!(zeb.forecast(&HAND[..6], &[]).unwrap_err().0.contains("7 tiles"));
@@ -54,14 +54,14 @@ fn a_forced_move_is_not_planned() {
     assert_eq!(p.legal().count_ones(), 3);
     // Seat 1 leads 3-0 into seat 0, whose only three is 3-3.
     let p = Position::new(6, 1, 30, 0, &HAND, &[(1, 6), (2, 7), (3, 8)]).unwrap();
-    let zeb = Player::new(16, 0).unwrap();
+    let zeb = Player::new(16, 0, true).unwrap();
     assert_eq!(zeb.play(&p), Move { tile: 9, forced: true, q: vec![] });
     assert_eq!(zeb.analyze(&p), Hint { tile: 9, forced: true, q: vec![], pmake: vec![] });
 }
 
 #[test]
 fn play_and_analyze_agree() {
-    let zeb = Player::new(32, 3).unwrap();
+    let zeb = Player::new(32, 3, true).unwrap();
     for decl in [0, 7] {
         let p = Position::new(decl, 1, 34, 0, &HAND, &[(1, 0), (2, 1), (3, 2)]).unwrap();
         let (m, h) = (zeb.play(&p), zeb.analyze(&p));
@@ -72,6 +72,21 @@ fn play_and_analyze_agree() {
             assert_eq!(*q, tails[34 - 30]);
         }
     }
+}
+
+#[test]
+fn reading_reads_only_plays_under_a_pip_trump() {
+    let (on, off) = (Player::new(48, 2, true).unwrap(), Player::new(48, 2, false).unwrap());
+    // Before the opening lead there is no play to read: the forecast is the same.
+    assert_eq!(on.forecast(&HAND, &[0, 6, 7, 9]).unwrap(), off.forecast(&HAND, &[0, 6, 7, 9]).unwrap());
+    // Doubles and no-trump are never read.
+    for decl in [7, 9] {
+        let p = Position::new(decl, 1, 34, 0, &HAND, &[(1, 0), (2, 1), (3, 2)]).unwrap();
+        assert_eq!(on.analyze(&p), off.analyze(&p));
+    }
+    // Under a pip trump the plays move the plan.
+    let p = Position::new(6, 1, 34, 0, &HAND, &[(1, 0), (2, 1), (3, 2)]).unwrap();
+    assert_ne!(on.analyze(&p), off.analyze(&p));
 }
 
 // -- parity with the referee ------------------------------------------------
@@ -98,6 +113,12 @@ struct Request {
     plays: Vec<(u8, u8)>,
     worlds: usize,
     seed: String,
+    #[serde(default = "on")]
+    reading: bool,
+}
+
+fn on() -> bool {
+    true
 }
 
 #[derive(Deserialize)]
@@ -131,7 +152,7 @@ fn every_scenario_ends_where_the_referee_says() {
     assert!(fixtures.positions.len() >= 24);
     for (i, Case { request: r, referee: want }) in fixtures.positions.iter().enumerate() {
         let p = Position::new(r.decl, r.bidder, r.bid, r.seat, &r.hand, &r.plays).unwrap();
-        let zeb = Player::new(r.worlds, r.seed.parse().unwrap()).unwrap();
+        let zeb = Player::new(r.worlds, r.seed.parse().unwrap(), r.reading).unwrap();
         let hint = zeb.analyze(&p);
         assert_eq!(hint, Hint { tile: want.tile, forced: want.forced, q: want.q.clone(), pmake: want.pmake.clone() });
         assert_eq!(zeb.play(&p), Move { tile: want.tile, forced: want.forced, q: want.q.clone() }, "case {i}");

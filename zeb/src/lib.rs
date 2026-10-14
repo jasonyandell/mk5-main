@@ -9,6 +9,12 @@
 //! they are modeled by a cheaper Walt one rung down. The planner never sees
 //! another seat's hand.
 //!
+//! Under a pip trump the seat also reads the other seats' plays (0.3.0): it
+//! draws its scenarios from a posterior that weighs each play by how likely
+//! the field net, softened, was to make it ([`READING`]). And among tiles
+//! tied exactly for the best chance to make the contract, it plays the one
+//! with the best mean margin under the plan (`Tie::Margin`).
+//!
 //! The JavaScript surface (`forecast`, `play`, `analyze`, `version`,
 //! `netId`) lives in the `js` module; this module is the same player as
 //! plain Rust, which the native tests drive.
@@ -24,7 +30,7 @@ use std::sync::LazyLock;
 
 use position::{hand_mask, refuse, rules_for};
 use scenario_core::field::FieldNet;
-use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, Tie, DRAW_BUDGET, MAX_WORLDS};
+use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, Reading, Tie, DRAW_BUDGET, MAX_WORLDS};
 use serde::Serialize;
 
 include!(concat!(env!("OUT_DIR"), "/net.rs"));
@@ -48,6 +54,14 @@ pub const DECLARATIONS: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 9];
 /// the worlds are a sample. An enumerated fiber is the exact posterior and
 /// is never floored.
 const FLOOR: usize = 16;
+
+/// How the live seat reads the other seats' plays under a pip trump, when
+/// reading is on: a play of one of n legal tiles weighs ε/n + (1 − ε)/|A|
+/// if it lies in A, the legal tiles the field net scores within 2 points of
+/// its best (2^22 in the net's integer units), and ε/n otherwise. ε = 0.28
+/// was fitted to Zeb's own play. No scenario is ever ruled out
+/// (`wiki/experiments/reads-plays-soft-2026-10-14.md`).
+pub const READING: Reading = Reading { uniform: true, margin: 1 << 22, eps: 0.28 };
 
 /// The modeled rung of the plan for doubles and no-trump: 8 scenarios, a
 /// 4-play horizon (`walt:k1,m8`).
@@ -105,46 +119,54 @@ pub struct Hint {
     pub pmake: Vec<(u8, [f64; 13])>,
 }
 
-/// The player: how many scenarios it plans over and the seed every random
-/// draw is keyed on. The same player at the same position always answers
-/// the same, bit for bit, as the Python referee does.
+/// The player: how many scenarios it plans over, the seed every random
+/// draw is keyed on, and whether it reads the other seats' plays. The same
+/// player at the same position always answers the same, bit for bit, as
+/// the Python referee does.
 pub struct Player {
     worlds: usize,
     seed: u64,
+    reading: bool,
 }
 
 impl Player {
-    /// A player planning over `worlds` scenarios (1..=1024) per decision.
-    pub fn new(worlds: usize, seed: u64) -> Result<Player, Error> {
+    /// A player planning over `worlds` scenarios (1..=1024) per decision,
+    /// reading the other seats' plays under a pip trump when `reading`.
+    pub fn new(worlds: usize, seed: u64, reading: bool) -> Result<Player, Error> {
         if !(1..=MAX_WORLDS).contains(&worlds) {
             refuse!("worlds must be an integer from 1 to {MAX_WORLDS}, not {worlds}");
         }
-        Ok(Player { worlds, seed })
+        Ok(Player { worlds, seed, reading })
     }
 
     /// The plan for a declaration. Under a pip trump the live seat plans
-    /// alone over the field net (`walt:k0,n<worlds>,F=<net>`); the net does
-    /// not play doubles or no-trump, so there the modeled seats are a
-    /// one-rung Walt (`walt:k1,n<worlds>,m8`), which costs more.
+    /// alone over the field net (`walt:k0,n<worlds>,F=<net>`), drawing its
+    /// worlds from the reading's posterior when reading is on
+    /// (`d=posterior,r=uniform:4194304:0.28`). The net does not play doubles
+    /// or no-trump, so there the modeled seats are a one-rung Walt
+    /// (`walt:k1,n<worlds>,m8`), which costs more, and the worlds are
+    /// uniform on the fiber. Exact ties go to the best mean margin
+    /// (`t=margin`) under every declaration.
     fn config(&self, decl: u8) -> Config {
-        let (rungs, field) = if FIELD.plays(decl) {
+        let pip = FIELD.plays(decl);
+        let (rungs, field) = if pip {
             (vec![(self.worlds, None, FLOOR)], Some(FIELD.clone()))
         } else {
             (vec![MODELED, (self.worlds, None, FLOOR)], None)
         };
-        // The field is the deterministic net (field_eps 0), and the worlds
-        // are uniform on the fiber: every scenario weighs the same.
+        let reading = (pip && self.reading).then_some(READING);
+        // The field is the deterministic net (field_eps 0).
         Config {
             rungs,
             make: true,
             seed: self.seed,
             field,
             field_eps: 0.0,
-            draw: Draw::Uniform,
+            draw: if reading.is_some() { Draw::Posterior } else { Draw::Uniform },
             draw_budget: DRAW_BUDGET,
             convention: None,
-            reading: None,
-            tie: Tie::Lowest,
+            reading,
+            tie: Tie::Margin { band: 0.0 },
         }
     }
 

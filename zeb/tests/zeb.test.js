@@ -43,6 +43,16 @@ test('the fixtures cover the ground', () => {
   assert.ok(cases.some((c) => c.referee.forced), 'a forced move');
   assert.ok(cases.some((c) => c.request.seat % 2 !== c.request.bidder % 2), 'a defender');
   assert.ok(cases.some((c) => BigInt(c.request.seed) > BigInt(Number.MAX_SAFE_INTEGER)), 'a bigint seed');
+  assert.ok(cases.some((c) => c.request.reading === false && c.request.plays.length > 0), 'reading off');
+});
+
+test('reading is on by default, reads only plays, and only under a pip trump', () => {
+  const pos = { decl: 6, bidder: 1, bid: 34, seat: 0, hand: HAND, plays: [[1, 0], [2, 1], [3, 2]], worlds: 48 };
+  assert.deepEqual(analyze(pos), analyze({ ...pos, reading: true }), 'the default is on');
+  assert.notDeepEqual(analyze(pos), analyze({ ...pos, reading: false }), 'the plays move the plan');
+  assert.deepEqual(analyze({ ...pos, decl: 9 }), analyze({ ...pos, decl: 9, reading: false }), 'no-trump is not read');
+  assert.throws(() => play({ ...pos, reading: 'yes' }), /reading must be true or false/);
+  assert.throws(() => forecast({ hand: HAND, reading: false }), /unknown field "reading"/);
 });
 
 test('the same request gives the same answer; another seed, another sample', () => {

@@ -6,10 +6,14 @@
 Opening leads (the forecast's question) and mid-hand positions across the
 seven pip declarations, doubles-trump and no-trump: bidders and defenders,
 forced moves, twelve of the thirteen contracts (every one but 32), one seed
-past 2^53. Play is
-random legal play by the engine (`forge.zeb.game`), seeded, so the file is
-the same on every run. The net is the blob the package embeds, read from
-zeb/net, and its sha256 is recorded so a stale file is caught.
+past 2^53, and a few pip positions asked with reading off (`reading:
+false`). Play is random legal play by the engine (`forge.zeb.game`),
+seeded, so the file is the same on every run. The net is the blob the
+package embeds, read from zeb/net, and its sha256 is recorded so a stale
+file is caught. It refuses to write a file in which neither of 0.3.0's
+defaults acts: reading must move q at three positions or more, and the tie
+rule the tile at one or more (asked of the compiled core, which the
+fixtures themselves hold to the referee).
 
 `tests/fixtures/parity.json` holds, per position, the request as the
 package takes it (the seed as a decimal string, since JSON numbers stop at
@@ -25,19 +29,21 @@ import hashlib
 import json
 import random
 import time
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
 from forge.zeb.game import apply_action, current_player, is_terminal, legal_actions, new_game
 
 from scenario.field import CANON, FieldNet
-from scenario.planner import Config, Rung, Walt
+from scenario.planner import Config, Reading, Rung, Walt
 
 ZEB = Path(__file__).resolve().parents[1]
 NET = ZEB / "net" / "margin_d250k_h128x64.fnet"
 OUT = ZEB / "tests" / "fixtures" / "parity.json"
 TARGETS = range(30, 43)
 FLOOR = 16
+READING = Reading("uniform", 1 << 22, 0.28)   # zeb/src/lib.rs READING
 
 # (declaration, plays before the position, worlds) per mid-hand case; each
 # case's deal, bidder, contract and play come from its own seeded stream.
@@ -48,17 +54,26 @@ MIDHAND = [
     (7, 2, 160), (7, 6, 32), (7, 12, 24), (7, 20, 16), (9, 3, 160), (9, 8, 32), (9, 14, 24), (9, 22, 16),
     (1, 17, 160),  # the fiber (124 deals) is enumerated, so the floor stands down: q moves (0.2.0)
 ]
+# Mid-hand pip cases asked with reading off (`reading: false`), the 0.2.0 draw.
+UNREAD = [(2, 5, 48), (6, 10, 64), (4, 18, 160)]
+WORKERS = 6                  # positions planned at once, one process each
 # (declaration, worlds) per opening lead, from seat 0 having bid 30.
 OPENING = [(0, 160), (1, 160), (2, 160), (3, 160), (4, 512), (5, 160), (6, 160), (7, 160), (9, 160)]
 BIG_SEED = (1 << 63) + 12345
 
 
-def config(decl: int, worlds: int, seed: int, net: FieldNet) -> Config:
+def config(decl: int, worlds: int, seed: int, net: FieldNet, reading: bool = True, tie: str = "margin") -> Config:
     """The package's plan: the cheap player over the net under a pip trump,
-    a two-rung Walt (m8, a 4-play inner horizon) elsewhere."""
+    drawing its worlds from the soft uniform reading's posterior unless
+    reading is off; a two-rung Walt (m8, a 4-play inner horizon) over
+    uniform worlds elsewhere. Exact ties go to make, then margin (0.3.0);
+    `tie="lowest"` is 0.2.0's rule, asked only to show the fixtures move."""
     if decl in CANON:
-        return Config((Rung(worlds, None, FLOOR),), "make", seed, field=net)
-    return Config((Rung(8, 4), Rung(worlds, None, FLOOR)), "make", seed)
+        if reading:
+            return Config((Rung(worlds, None, FLOOR),), "make", seed, field=net, draw="posterior",
+                          reading=READING, tie=tie)
+        return Config((Rung(worlds, None, FLOOR),), "make", seed, field=net, tie=tie)
+    return Config((Rung(8, 4), Rung(worlds, None, FLOOR)), "make", seed, tie=tie)
 
 
 def tails(margins, weights) -> list[float]:
@@ -79,52 +94,66 @@ def position(game_seed: int, decl: int, depth: int, bid: int | None) -> tuple:
     return state, bid if bid is not None else rng.randint(30, 42)
 
 
-def case(state, bid: int, worlds: int, seed: int, net: FieldNet) -> dict:
+def case(job: tuple) -> tuple[dict, bool, bool]:
+    """One position: the request, the referee's answer, and whether each
+    0.3.0 default moved it — reading (q against the unread plan) and the tie
+    rule (the tile against the lowest id's), those two asked of the core."""
+    from scenario.compiled import CompiledWalt
+
+    game_seed, decl, depth, given_bid, worlds, seed, reading = job
+    net = FieldNet.from_bytes(NET.read_bytes())
+    state, bid = position(game_seed, decl, depth, given_bid)
     seat = current_player(state)
     request = {
         "decl": state.decl_id, "bidder": state.bidder, "bid": bid, "seat": seat,
         "hand": sorted(state.hands[seat]), "plays": [list(p) for p in state.play_history],
         "worlds": worlds, "seed": str(seed),
-    }
-    a = Walt(config(state.decl_id, worlds, seed, net)).analyze(state, bid)
+    } | ({} if reading else {"reading": False})
+    a = Walt(config(decl, worlds, seed, net, reading)).analyze(state, bid)
     forced = not a.worlds
     referee = {"tile": a.tile, "forced": forced}
-    if not forced:
-        assert all(float(m).is_integer() for o in a.outcomes.values() for m in o)
-        referee |= {
-            "q": [[t, a.q[t]] for t in sorted(a.q)],
-            "weights": a.weights,
-            "outcomes": [[t, [int(m) for m in a.outcomes[t]]] for t in sorted(a.outcomes)],
-            "pmake": [[t, tails(a.outcomes[t], a.weights)] for t in sorted(a.outcomes)],
-        }
-        if not state.play_history and state.bidder == seat == 0 and bid == 30:
-            chosen = a.outcomes[a.tile]
-            mean = sum(m * w for m, w in zip(chosen, a.weights)) / sum(a.weights)
-            referee["forecast"] = {"decl": state.decl_id, "mean": mean, "pmake": tails(chosen, a.weights)}
-    return {"request": request, "referee": referee}
+    if forced:
+        return {"request": request, "referee": referee}, False, False
+    unread = CompiledWalt(config(decl, worlds, seed, net, False), threads=1).analyze(state, bid)
+    lowest = CompiledWalt(config(decl, worlds, seed, net, reading, "lowest"), threads=1).analyze(state, bid)
+    assert all(float(m).is_integer() for o in a.outcomes.values() for m in o)
+    referee |= {
+        "q": [[t, a.q[t]] for t in sorted(a.q)],
+        "weights": a.weights,
+        "outcomes": [[t, [int(m) for m in a.outcomes[t]]] for t in sorted(a.outcomes)],
+        "pmake": [[t, tails(a.outcomes[t], a.weights)] for t in sorted(a.outcomes)],
+    }
+    if not state.play_history and state.bidder == seat == 0 and bid == 30:
+        chosen = a.outcomes[a.tile]
+        mean = sum(m * w for m, w in zip(chosen, a.weights)) / sum(a.weights)
+        referee["forecast"] = {"decl": state.decl_id, "mean": mean, "pmake": tails(chosen, a.weights)}
+    read_moved = reading and decl in CANON and unread.q != a.q
+    return {"request": request, "referee": referee}, read_moved, lowest.tile != a.tile
 
 
 def main() -> None:
     blob = NET.read_bytes()
-    net = FieldNet.from_bytes(blob)
-    cases = []
+    jobs = [(1000 + i, decl, 0, 30, worlds, 7 * i + 1, True) for i, (decl, worlds) in enumerate(OPENING)]
+    jobs += [(2000 + i, decl, depth, None, worlds, BIG_SEED if i == 0 else 11 * i + 3, True)
+             for i, (decl, depth, worlds) in enumerate(MIDHAND)]
+    jobs += [(3000 + i, decl, depth, None, worlds, 13 * i + 5, False)
+             for i, (decl, depth, worlds) in enumerate(UNREAD)]
     t0 = time.time()
-    for i, (decl, worlds) in enumerate(OPENING):
-        state, bid = position(1000 + i, decl, 0, 30)
-        cases.append(case(state, bid, worlds, 7 * i + 1, net))
-        print(f"opening decl {decl} n{worlds}: {time.time() - t0:.0f}s", flush=True)
-    for i, (decl, depth, worlds) in enumerate(MIDHAND):
-        state, bid = position(2000 + i, decl, depth, None)
-        seed = BIG_SEED if i == 0 else 11 * i + 3
-        cases.append(case(state, bid, worlds, seed, net))
-        print(f"mid-hand decl {decl} after {depth} plays n{worlds}: {time.time() - t0:.0f}s", flush=True)
+    # The slowest positions (doubles and no-trump: the two-rung referee) start first.
+    order = sorted(range(len(jobs)), key=lambda i: jobs[i][1] in CANON)
+    with ProcessPoolExecutor(WORKERS) as pool:
+        done = dict(zip(order, pool.map(case, [jobs[i] for i in order])))
+    results = [done[i] for i in range(len(jobs))]
+    cases = [c for c, _, _ in results]
+    moved = {"reading": sum(r for _, r, _ in results), "tie": sum(t for _, _, t in results)}
     forced = sum(c["referee"]["forced"] for c in cases)
     assert forced >= 2, f"only {forced} forced positions; pick other depths"
+    assert moved["reading"] >= 3 and moved["tie"] >= 1, f"the fixtures must show both defaults act: {moved}"
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc = {"net": hashlib.sha256(blob).hexdigest(), "positions": cases}
     OUT.write_text(json.dumps(doc, separators=(",", ":")) + "\n")
-    print(f"{OUT}: {len(cases)} positions ({forced} forced), {OUT.stat().st_size:,} bytes, "
-          f"{time.time() - t0:.0f}s")
+    print(f"{OUT}: {len(cases)} positions ({forced} forced; reading moved q at {moved['reading']}, "
+          f"the tie rule moved the tile at {moved['tie']}), {OUT.stat().st_size:,} bytes, {time.time() - t0:.0f}s")
 
 
 if __name__ == "__main__":

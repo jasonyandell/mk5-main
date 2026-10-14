@@ -62,6 +62,13 @@ export interface PositionRequest {
   worlds?: number;
   /** Seeds every random draw (a non-negative integer below 2^64); default 0. */
   seed?: number | bigint;
+  /**
+   * Under a pip trump, read the other seats' plays: draw the scenarios from a posterior
+   * that weighs each play by how likely the field net, softened, was to make it.
+   * Default true; false plans over scenarios uniform on what the table has shown.
+   * Doubles and no-trump are never read.
+   */
+  reading?: boolean;
 }
 
 /** A seat's move. */
@@ -108,7 +115,9 @@ pub fn forecast(
         Some(_) => r.ints("declarations", 9)?,
         None => DECLARATIONS.to_vec(),
     };
-    to_js(&r.player()?.forecast(&hand, &decls)?)
+    // A forecast plans the opening lead: no play has been made, so there is
+    // nothing to read and reading leaves it unchanged.
+    to_js(&r.player(true)?.forecast(&hand, &decls)?)
 }
 
 /// The seat's move: the first move of the plan.
@@ -139,7 +148,7 @@ pub fn net_id() -> String {
 }
 
 fn read_position(request: JsValue) -> Result<(Player, Position), Error> {
-    let r = Request::new(request, &["decl", "bidder", "bid", "seat", "hand", "plays", "worlds", "seed"])?;
+    let r = Request::new(request, &["decl", "bidder", "bid", "seat", "hand", "plays", "worlds", "seed", "reading"])?;
     let position = Position::new(
         r.int("decl", 0..=9)?,
         r.int("bidder", 0..=3)?,
@@ -148,7 +157,11 @@ fn read_position(request: JsValue) -> Result<(Player, Position), Error> {
         &r.ints("hand", 27)?,
         &r.plays()?,
     )?;
-    Ok((r.player()?, position))
+    let reading = match r.get("reading")? {
+        None => true,
+        Some(v) => v.as_bool().ok_or_else(|| Error("reading must be true or false".into()))?,
+    };
+    Ok((r.player(reading)?, position))
 }
 
 fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsError> {
@@ -219,8 +232,8 @@ impl Request {
             .collect()
     }
 
-    /// The player `worlds` and `seed` ask for.
-    fn player(&self) -> Result<Player, Error> {
+    /// The player `worlds` and `seed` ask for, reading the plays or not.
+    fn player(&self, reading: bool) -> Result<Player, Error> {
         let worlds = match self.get("worlds")? {
             None => DEFAULT_WORLDS,
             Some(v) => match v.as_f64() {
@@ -236,7 +249,7 @@ impl Request {
                 _ => refuse!("{SEED}"),
             },
         };
-        Player::new(worlds, seed)
+        Player::new(worlds, seed, reading)
     }
 }
 

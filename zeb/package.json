@@ -1,6 +1,6 @@
 {
   "name": "@jasonyandell/zeb",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Zeb, the Texas 42 scenario player: bid forecasts, plays and hints from a planner that never sees another seat's hand. WebAssembly, for browsers, Web Workers and Node.",
   "license": "MIT",
   "author": "Jason Yandell",

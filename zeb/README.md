@@ -7,7 +7,9 @@ across all of those deals at once and plays the plan's first move. The plan
 is contingent: the seat chooses once for every deal it cannot tell apart, so
 it never gets credit for knowing which deal is the real one. At the bottom
 of the plan, the other three seats are played by the *field net*, a small
-integer network trained on Zeb's own play.
+integer network trained on Zeb's own play. Under a pip trump the seat also
+reads how the others have played: deals in which the net would have made
+those plays count for more.
 
 This package is that player compiled to WebAssembly, for browsers, Web
 Workers and Node. It does three things: it forecasts a hand for bidding, it
@@ -79,12 +81,12 @@ import { forecast, chooseBid } from '@jasonyandell/zeb';
 
 const hand = [27, 26, 24, 20, 17, 12, 2]; // 6-6 6-5 6-3 5-5 5-2 4-2 1-1
 const f = forecast({ hand });
-// [{ decl: 0, mean: -3.6, pmake: [0.2, 0.18, 0.16, ...] },
+// [{ decl: 0, mean: -4.15, pmake: [0.2, 0.16, 0.15, ...] },
 //  ...
-//  { decl: 6, mean: 32.53, pmake: [0.89, 0.86, 0.85, 0.85, 0.85, 0.82, 0.7, ...] },
+//  { decl: 6, mean: 31.95, pmake: [0.9, 0.83, 0.8, 0.8, 0.8, 0.78, 0.68, ...] },
 //  ...]   (numbers rounded)
 
-chooseBid(f, { need: 30 }); // { bid: 35, decl: 6, pmake: 0.81875 }; null would mean pass
+chooseBid(f, { need: 30 }); // { bid: 34, decl: 6, pmake: 0.8 }; null would mean pass
 ```
 
 `forecast({ hand, declarations?, worlds?, seed? })` returns one entry per
@@ -136,10 +138,10 @@ const position = {
 
 play(position);
 // { tile: 11, forced: false,
-//   q: [[8, 0.31], [11, 0.36], [20, 0.33], [21, 0.29], [23, 0.29], [25, 0]] }   (rounded)
+//   q: [[8, 0.38], [11, 0.43], [20, 0.29], [21, 0.29], [23, 0.33], [25, 0]] }   (rounded)
 
 analyze(position);
-// the same, plus pmake: [[8, [0.44, 0.31, 0.31, ...]], [11, [0.52, 0.37, 0.36, ...]], ...]
+// the same, plus pmake: [[8, [0.48, 0.38, 0.38, ...]], [11, [0.56, 0.45, 0.43, ...]], ...]
 ```
 
 `play` returns the seat's move. `q` lists every legal tile in ascending
@@ -148,6 +150,10 @@ if that tile is played. `analyze` returns the same move and adds each legal
 tile's full tail at every target, which is what a hint needs. When only one
 tile is legal, nothing is planned: `forced` is true, and `q` and `pmake` are
 empty.
+
+A position request also takes `worlds` and `seed`, as `forecast` does, and
+`reading` (default `true`; see *Reading the plays* below). `reading: false`
+plans over deals uniform on what the table has shown, as 0.2.0 did.
 
 `hand` is what the seat was *dealt*. Its own plays are taken off as the
 record is replayed. Every play is checked during the replay: the right seat
@@ -179,18 +185,76 @@ nine opening hands; `npm run bench`):
 | `play`, an opening lead, sixes | 44 ms (57 ms) | 154 ms (221 ms) |
 
 A full default forecast covers all nine declarations, so at 160 worlds it
-takes about 0.8 s. Later plays get cheaper as the hand shrinks.
+takes about 0.8 s. Later plays get cheaper as the hand shrinks. (Measured on
+0.2.0; 0.3.0's defaults leave these calls' cost unchanged, since no play has
+been made to read. Reading's own cost is below.)
+
+## Reading the plays, and ties
+
+Two defaults arrived in 0.3.0.
+
+**Reading.** Under a pip trump, `play` and `analyze` draw their deals from a
+posterior over the other seats' plays instead of uniformly
+(`d=posterior,r=uniform:4194304:0.28` in `scenario/` notation). Each play of
+one of n legal tiles weighs ε/n + (1 − ε)/|A| if it lies in A, the legal
+tiles the field net scores within 2 points of its best, and ε/n otherwise.
+ε = 0.28 was fitted to Zeb's own play, so no deal is ever ruled out. Doubles
+and no-trump are not read, because the net does not play them. A forecast is
+unchanged, because it plans before any play. `reading: false` turns it off.
+
+**Ties.** Among the tiles tied exactly for the best `q`, Zeb plays the one
+with the best mean final margin under its plan (the bidding side the
+largest, a defender the smallest), then the lowest id (`t=margin`). It never
+trades an estimated make for points. It applies under every declaration.
+
+The evidence, all against 0.2.0's plan in the arena (`bid30` bidders, games
+to 7 marks, each deal played from both sides, 95% intervals over the paired
+games):
+
+| change | marks a game | other |
+|---|---|---|
+| reading alone, n512, a pre-registered replication on fresh deals | +0.37 [+0.24, +0.51] | +14.7 settled points a game |
+| ties alone, n512 | +0.01 [−0.04, +0.07] | +4.55 points a hand |
+| **both, n160 (0.3.0 as shipped), pre-registered** | **+0.21 [+0.08, +0.34]** | A/A control +0.06 [−0.07, +0.18] |
+
+The write-ups are in the repository's wiki:
+[reading](https://github.com/jasonyandell/mk5-main/blob/main/wiki/experiments/reads-plays-soft-2026-10-14.md),
+[ties](https://github.com/jasonyandell/mk5-main/blob/main/wiki/experiments/tie-margin-2026-10-14.md)
+and [the 0.3.0 confirmation](https://github.com/jasonyandell/mk5-main/blob/main/wiki/experiments/zeb-030-confirmation-2026-10-14.md).
+
+Reading costs the most at tricks 1 to 3, where the posterior is drawn by
+rejection. CPU milliseconds per `play` under sixes in Node 24 on an Apple M5
+Max, median / 90th percentile, with reading on and off, over the nine
+opening hands and every unforced decision of six deals (`npm run bench`).
+The machine was busy with other work, which inflates every cell (the
+opening lead took 70 ms here against 44 ms quiet), so read the ratios:
+
+| | 160 worlds, on | off | 512 worlds, on | off |
+|---|---|---|---|---|
+| opening lead | 70 / 83 | 71 / 84 | 266 / 346 | 264 / 365 |
+| trick 1 | 72 / 156 | 53 / 113 | 204 / 476 | 162 / 405 |
+| trick 2 | 72 / 171 | 39 / 64 | 216 / 372 | 132 / 296 |
+| trick 3 | 78 / 193 | 31 / 59 | 162 / 286 | 96 / 188 |
+| trick 4 | 19 / 40 | 16 / 29 | 36 / 99 | 41 / 95 |
+| trick 5 | 3 / 14 | 2 / 11 | 3 / 24 | 2 / 23 |
+| trick 6 | 1 / 2 | 0 / 1 | 1 / 2 | 0 / 1 |
+
+The opening lead costs the same either way. At tricks 1 to 3 reading costs
+1.3 to 2.5 times the unread median. Scaled to a quiet machine by the
+opening lead, a trick-2 or trick-3 decision at 160 worlds is about 50 ms
+median and 120 ms at the 90th percentile.
 
 ## Determinism and receipts
 
 An answer is a pure function of the request. Together with `version()`,
-`netId()` and the `seed` (default 0; a number up to 2^53 − 1 or any bigint
-below 2^64), the request is the receipt: the same receipt gives the same
-answer, bit for bit, on every platform. No clock, thread or ambient
-randomness enters the answer. It is also the answer that the Python
+`netId()`, the `seed` (default 0; a number up to 2^53 − 1 or any bigint
+below 2^64) and `reading`, the request is the receipt: the same receipt
+gives the same answer, bit for bit, on every platform. No clock, thread or
+ambient randomness enters the answer. It is also the answer that the Python
 referee, `scenario/planner.py`, gives under the same plan. The package's
-tests hold the WebAssembly to the referee to the last bit, on 34 positions
-across every declaration, for each scenario's final margin. `netId()` is the
+tests hold the WebAssembly to the referee to the last bit, on 38 positions
+across every declaration (three with reading off), for each scenario's
+weight and final margin. `netId()` is the
 sha256 of the embedded net, `net/margin_d250k_h128x64.fnet`.
 
 ## Provenance
