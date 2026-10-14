@@ -43,6 +43,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/eq-gate-star|eq-gate-star]] — staged iter-2/3 workstream: gate STaR keep on E[Q] delta, not just K1 match (retired)
 - [[topics/eval-matrix-bradley-terry|eval-matrix-bradley-terry]] — Bradley-Terry Elo tournament infra over named players (zeb checkpoints, random, heuristic, eq:n=10/50/100/500) (complete)
 - [[topics/expected-q-value|expected-q-value]] — E[Q]: scalar measuring position value, supplied by forge's Q-value checkpoint (active)
+- [[topics/fly-connectome-42|fly-connectome-42]] — the FlyWire fruit-fly connectome (Shiu LIF model, Eon's embodied fly) assessed as a 42 player: viable as a toy, not as a player; pre-registered reservoir pilot on the 5-5's seat: the real wiring ties or trails rewired/ER nulls and raw bits (active)
 - [[topics/game-context-qa|game-context-qa]] — 5-type game-context Q&A from real game records, ~170 tok prompts; expanded to 14 categories in v9 (superseded)
 - [[topics/huggingface-assets|huggingface-assets]] — account-verified catalog of every HF repo the project generated (4 datasets incl. mk5-run-evidence, ~95 model repos, plus referenced-but-absent names); the off-git shelf run-artifacts-policy points at (active)
 - [[topics/ideated-not-built|ideated-not-built]] — Era 5's unbuilt record: ~15 conversations designed a whole generation named but never shipped (Harl / LLem / walker / …) — classified IDEATED, never claimed as artifacts (complete)
