@@ -166,6 +166,47 @@ decisions again leads with the **5-5** and **6-4** (+0.05 / +0.04 at the zeb tab
   fiber (up to 2^20) and, at tricks 1–2, a median of 2.7k–47k rejection proposals. Its
   per-decision cost against plain was not timed here.
 
+## Replication
+
+The Zeb-table result has to replicate before reading can be a default. This
+section was written and committed before any measured replication batch.
+
+### Pre-registration
+
+Fixed in `scenario/reads_soft.py` (`REPLICATION`, `REP_*`):
+
+- **Fresh deals.** Base seeds 101–118 (marks games) and 201–209 (games to 250).
+  None overlaps the seeds the study above used (1–7, and its pilot's 900–904).
+  The replication's own timing pilots (990, 991) are excluded.
+- **The same players and table.** Two consistent readers (ε = 0.28, margin 2^22)
+  against two plain deployed Zebs `k0,n512,F=margin_d250k_h128x64,f=16`, with
+  `bid30` bidders and paired halves.
+- **The A/A arm** runs in the same run on the same seeds: plain Zeb with planner
+  seed 1 against plain Zeb.
+- **Size.** 18 batches × 16 game pairs = **288 game pairs** per marks arm, and
+  9 × 16 = 144 game pairs of games to 250. The batch size came from the pilot:
+  24 pairs risked the 300 s cap with two streams running. Every batch runs
+  under `timeout 300`. A batch that overruns is dropped, not rerun, and the
+  page will say so.
+- **Primary.** The consistent reader's margin against plain Zeb, in marks per
+  game (a game pair's sum / 2). The 95% bootstrap runs over game pairs (4,000
+  resamples, seed 42). **Success means the interval's lower bound is above 0.**
+- **Registered secondaries.**
+  - The uniform reader's margin, in marks per game.
+  - The A/A margin, which should cover 0.
+  - Settled points per game for each reader.
+  - The consistent reader's share of games won in the book's game to 250
+    points (chance 0.5).
+- **Exploratory, not registered.**
+  - Consistent − A/A and uniform − consistent, on shared pairs.
+  - A sweep of the consistent reader's ε at 0.1 and 0.5, on the first 6 seeds
+    (96 pairs).
+  - The time per decision (`cost`).
+
+### Results
+
+*Pending: the batches run after this commit.*
+
 ## Data
 
 Public in `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/reads-plays-soft/` (CC0,
