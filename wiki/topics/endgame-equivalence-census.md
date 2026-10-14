@@ -2,7 +2,7 @@
 title: Endgame equivalence census — worlds never compress
 kind: topic
 first_seen: 2026-07-20
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: complete
 ---
 
@@ -81,6 +81,15 @@ The same null was reached earlier and independently in texas-42:
 
 With one representative per pattern at trick 4, the best move flipped once in 13 positions and the mean error reached about 7 points.
 
+## Constellations: swapping a live tile for a dead one
+
+The null above is about hidden *live* tiles. texas-42's constellations exchange a live tile
+for a *dead* one with the same standing among the living, which changes the history and not the
+remaining game. That equivalence holds exactly, and on 2026-10-14 it was rebuilt in the core as
+a key for Zeb's late-hand plan values. It is exact when the field reads only constellations. It
+is not for the deployed net, which reads dead tiles. Classes number about 10^6 with one trick
+left and 10^8 with two. [[constellations-2026-10-14]].
+
 ## Links
 
-[[walt]] · [[scenario-player]] · [[silas]] · [[suit-algebra-spec]] · [[play-phase-algebra]] · [[jud]]
+[[constellations-2026-10-14]] · [[walt]] · [[scenario-player]] · [[silas]] · [[suit-algebra-spec]] · [[play-phase-algebra]] · [[jud]]

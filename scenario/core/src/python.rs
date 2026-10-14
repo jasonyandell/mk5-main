@@ -14,7 +14,8 @@
 //! the plan's line); and `mold`, the
 //! per-layer position counts of one deal's perfect-information tree.
 //! `field_scores` runs the field net alone, and the module functions `rules`
-//! and `canon` hand back the core's own tables, for the parity tests. With
+//! and `canon` hand back the core's own tables, for the parity tests;
+//! `constellation` is a position's canonical form (`constellation.rs`). With
 //! the `silas` feature the module also carries Silas (`python_silas`).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -23,6 +24,7 @@ use std::sync::Mutex;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+use crate::constellation::{seat_form, world_form, Contract};
 use crate::convention::{Convention, Rule};
 use crate::field::{self, FieldNet};
 use crate::mold;
@@ -336,6 +338,42 @@ fn rules(decl: u8) -> PyResult<Tables> {
     Ok((r.led_suit.to_vec(), r.follow_bits.to_vec(), r.rank.iter().map(|row| row.to_vec()).collect(), r.count.to_vec()))
 }
 
+/// A constellation (`constellation.rs`): (the form's words, header first;
+/// the tiles in canonical order; the automorphism count). The seat form of `viewer` holding `own`,
+/// or with `hands` (the four remaining hands) the world form, focal `viewer`.
+/// `make` selects the contract header: True what the bidding side still
+/// needs, False (points) only the viewer's side, None count-free.
+#[pyfunction]
+#[pyo3(signature = (decl, viewer, own, played, leader, trick, banked, forbid, bid, bidder_team, make=Some(true), hands=None))]
+#[allow(clippy::too_many_arguments)]
+fn constellation(
+    decl: u8,
+    viewer: u8,
+    own: u32,
+    played: u32,
+    leader: u8,
+    trick: Vec<u8>,
+    banked: (u8, u8),
+    forbid: (u32, u32, u32, u32),
+    bid: i32,
+    bidder_team: u8,
+    make: Option<bool>,
+    hands: Option<(u32, u32, u32, u32)>,
+) -> PyResult<(Vec<u64>, Vec<u8>, u32)> {
+    let rules = Rules::new(decl).ok_or_else(|| PyValueError::new_err(format!("no declaration {decl}")))?;
+    let rec = rec_of(&(decl, viewer, own, played, leader, trick, banked, forbid, bid, 0, Vec::new()))?;
+    let contract = match make {
+        Some(true) => Contract::Make { bid, bidder_team },
+        Some(false) => Contract::Points { bidder_team },
+        None => Contract::CountFree,
+    };
+    let c = match hands {
+        None => seat_form(&rules, viewer, own, &rec, contract),
+        Some(h) => world_form(&rules, viewer, &[h.0, h.1, h.2, h.3], &rec, contract),
+    };
+    Ok((c.form.words, c.order, c.automorphisms))
+}
+
 /// The field net's tile relabeling for one declaration, or None where the net does not play.
 #[pyfunction]
 fn canon(decl: u8) -> Option<Vec<u8>> {
@@ -347,6 +385,7 @@ fn scenario_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Core>()?;
     m.add_function(wrap_pyfunction!(rules, m)?)?;
     m.add_function(wrap_pyfunction!(canon, m)?)?;
+    m.add_function(wrap_pyfunction!(constellation, m)?)?;
     m.add("MAX_WORLDS", MAX_WORLDS)?;
     #[cfg(feature = "silas")]
     crate::python_silas::register(m)?;

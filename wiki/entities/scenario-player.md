@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: active
 ---
 
@@ -1014,8 +1014,19 @@ split lies but not why. What recurs, by rule:
   samples (12 and 30 scenarios) leave a chance level of 0.81–1.00, so its perfect
   separators are not reasons; the dead double's partner holds the boss trump (2 of 3).
 
+## Constellations as the late-hand table (2026-10-14)
+
+texas-42's constellations, the canonical form of a position over the live tiles, are now in
+the core (`constellation.rs`, about 0.5 µs a form) with a late-hand ladder over a structural
+field keyed by them (`scenario/constellation.py`). Equal constellations plan to equal values
+(0 differences on 2,322 substituted pairs); deployed Zeb does not (3.4–20%), because the field
+net reads pips and dead tiles. The ladder settles by level 3 with two tricks left, and the 250k
+net already plays its best move 96% of the time; a warm fine-tune toward it is inside the noise.
+[[constellations-2026-10-14]].
+
 ## Links
 
+[[constellations-2026-10-14]] (constellations as Zeb's late-hand table) ·
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·

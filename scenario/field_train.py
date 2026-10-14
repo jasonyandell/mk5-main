@@ -272,14 +272,15 @@ DEVICES = {"numpy": _Numpy, "mlx": _MLX}
 
 def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
           hidden: tuple[int, int] = (128, 64), tau: float = 2.0, lr: float = 1e-3, batch: int = 256,
-          decay: float = 1e-4, device: str = "numpy", log=None) -> Trained:
+          decay: float = 1e-4, device: str = "numpy", log=None,
+          init: list[np.ndarray] | None = None) -> Trained:
     if device not in DEVICES:
         raise ValueError(f"device is one of {tuple(DEVICES)}, not {device!r}")
     val = data.deal % 10 == 0
     tr = ~val
     rng = np.random.default_rng(seed)
     h1, h2 = hidden
-    init = [
+    init = init if init is not None else [
         (rng.standard_normal((N_FEATURES, h1)) * math.sqrt(2 / 40)).astype(np.float32), np.zeros(h1, np.float32),
         (rng.standard_normal((h1, h2)) * math.sqrt(2 / h1)).astype(np.float32), np.zeros(h2, np.float32),
         (rng.standard_normal((h2, N_TILES)) * math.sqrt(1 / h2)).astype(np.float32), np.zeros(N_TILES, np.float32),
@@ -306,11 +307,19 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
     net = quantize(params, data.x[tr])
     metrics = {
         "target": target, "tau": tau, "hidden": list(hidden), "epochs": epochs, "seed": seed,
-        "device": device, "batch": batch, "lr": lr,
+        "device": device, "batch": batch, "lr": lr, "warm": init is not None,
         "rows": {"train": int(tr.sum()), "val": int(val.sum())},
         "train": _grade(data, tr, net, params), "val": _grade(data, val, net, params),
     }
     return Trained(net, params, losses, val_losses, metrics)
+
+
+def dequantize(net: FieldNet) -> list[np.ndarray]:
+    """Float parameters that compute `net`'s scores up to its floor shifts
+    (each shift becomes a division by its power of two): a warm start for
+    `train(init=...)`, in the trainer's layout."""
+    f = lambda a, s=0: (a.astype(np.float64) / 2.0 ** s).astype(np.float32)
+    return [f(net.w1, net.s1), f(net.b1, net.s1), f(net.w2.T, net.s2), f(net.b2, net.s2), f(net.w3.T), f(net.b3)]
 
 
 def quantize(params, x: np.ndarray, act_bits: int = 12) -> FieldNet:
