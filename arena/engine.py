@@ -1,8 +1,11 @@
-"""Full-game arena engine: deal → auction → play → marks, first to 7.
+"""Full-game arena engine: deal → auction → play → score, first to the target.
 
-Each game is a race to `marks_to_win` marks between absolute team 0 (seats
-0/2) and team 1 (seats 1/3); `a_team` says which absolute team player A
-occupies, so paired halves rotate the seats under identical deal seeds.
+Each game is a race between absolute team 0 (seats 0/2) and team 1 (seats
+1/3): to `marks_to_win` marks (the tournament's game), or, with
+`points_to_win`, to that many points settled by the book's rule (Winning 42's
+game, to 250; a tie on one hand goes to that hand's bidder). Both tallies are
+kept on every hand. `a_team` says which absolute team player A occupies, so
+paired halves rotate the seats under identical deal seeds.
 Auctions run on CPU at hand boundaries; play decisions run in lockstep
 across all live games so GPU play policies see one batch per tick.
 
@@ -21,7 +24,7 @@ from forge.oracle.rng import deal_from_seed
 from forge.zeb.game import apply_action, current_player, is_terminal
 from forge.zeb.types import BidState, GamePhase, ZebGameState
 
-from .auction import AuctionResult, BidPolicy, run_auction, score_hand
+from .auction import AuctionResult, BidPolicy, run_auction, score_hand, settle_points
 from .play import PlayPolicy
 
 
@@ -30,6 +33,7 @@ class ArenaConfig:
     marks_to_win: int = 7
     max_redeals: int = 3  # pass-out reshakes before the shaker is forced to 30
     base_seed: int = 0
+    points_to_win: int | None = None  # the book's game (250); None: the game is to marks_to_win marks
 
 
 def hand_seed(base_seed: int, game_idx: int, hand_idx: int, redeal: int) -> int:
@@ -59,6 +63,8 @@ class HandRecord:
     made: bool
     marks_delta: tuple[int, int]
     marks_after: tuple[int, int]
+    points_delta: tuple[int, int]  # the book's settlement (arena.auction.settle_points)
+    points_after: tuple[int, int]
 
     @property
     def bidder_team(self) -> int:
@@ -67,16 +73,14 @@ class HandRecord:
 
 @dataclass(frozen=True)
 class GameRecord:
-    """One completed game (race to marks_to_win)."""
+    """One completed game (a race to the config's target)."""
 
     game_idx: int
     a_team: int
     marks: tuple[int, int]  # absolute (team0, team1)
     hands: tuple[HandRecord, ...]
-
-    @property
-    def winner_team(self) -> int:
-        return 0 if self.marks[0] > self.marks[1] else 1
+    points: tuple[int, int]  # absolute (team0, team1), the book's settlement
+    winner_team: int  # the side that reached the target (both at once: the last hand's bidder)
 
     @property
     def a_won(self) -> bool:
@@ -106,6 +110,8 @@ class _LiveGame:
         self.cfg = cfg
         self.bid_policies = bid_policies
         self.marks = [0, 0]
+        self.points = [0, 0]
+        self.winner: int | None = None
         self.dealer = 0
         self.hand_idx = 0
         self.hands: list[HandRecord] = []
@@ -130,6 +136,8 @@ class _LiveGame:
                 force_shaker=redeals >= self.cfg.max_redeals,
                 marks=(self.marks[0], self.marks[1]),
                 marks_to_win=self.cfg.marks_to_win,
+                points=(self.points[0], self.points[1]),
+                points_to_win=self.cfg.points_to_win,
             )
             if result is not None:
                 break
@@ -173,8 +181,10 @@ class _LiveGame:
         score = score_hand(
             auction.high_bid, auction.winner % 2, self.state.team_points,
         )
-        self.marks[0] += score.marks[0]
-        self.marks[1] += score.marks[1]
+        points = settle_points(auction.high_bid, auction.winner % 2, self.state.team_points)
+        for team in (0, 1):
+            self.marks[team] += score.marks[team]
+            self.points[team] += points[team]
         self.hands.append(HandRecord(
             game_idx=self.game_idx,
             hand_idx=self.hand_idx,
@@ -193,9 +203,17 @@ class _LiveGame:
             made=score.made,
             marks_delta=score.marks,
             marks_after=(self.marks[0], self.marks[1]),
+            points_delta=points,
+            points_after=(self.points[0], self.points[1]),
         ))
 
-        if max(self.marks) >= self.cfg.marks_to_win:
+        if self.cfg.points_to_win is None:
+            tally, target = self.marks, self.cfg.marks_to_win
+        else:
+            tally, target = self.points, self.cfg.points_to_win
+        reached = [team for team in (0, 1) if tally[team] >= target]
+        if reached:
+            self.winner = reached[0] if len(reached) == 1 else auction.winner % 2
             self.done = True
             self.state = None
             return
@@ -211,6 +229,8 @@ class _LiveGame:
             a_team=self.a_team,
             marks=(self.marks[0], self.marks[1]),
             hands=tuple(self.hands),
+            points=(self.points[0], self.points[1]),
+            winner_team=self.winner,
         )
 
 

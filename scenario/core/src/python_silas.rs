@@ -250,11 +250,12 @@ impl SilasPolicy {
     /// shook, `calls` are the calls so far from the shaker's left (0 a pass,
     /// else the bid as the table says it), and `viewer`, dealt the tile mask
     /// `dealt`, is to call. `forced`: the shaker may not pass over three
-    /// passes. `score` is the match in marks by team, to `marks_to_win`. The
+    /// passes. `score` is the match by team under `scoring`, `"marks"` (the
+    /// tournament's game) or `"points"` (the book's), to `target`. The
     /// winner may declare a pip trump, the higher pip first (the arena's
     /// menu). Returns the deciding layer (`"fallback"` or the rule's name) and
     /// the call, 0 for a pass.
-    #[pyo3(signature = (shaker, calls, viewer, dealt, forced = false, score = (0, 0), marks_to_win = 7, budget = 10_000_000))]
+    #[pyo3(signature = (shaker, calls, viewer, dealt, forced = false, score = (0, 0), scoring = "marks", target = 7, budget = 10_000_000))]
     #[allow(clippy::too_many_arguments)]
     fn bid(
         &self,
@@ -264,10 +265,11 @@ impl SilasPolicy {
         dealt: u32,
         forced: bool,
         score: (u32, u32),
-        marks_to_win: u32,
+        scoring: &str,
+        target: u32,
         budget: u64,
     ) -> PyResult<(String, u32)> {
-        let frame = auction_frame(shaker, &calls, viewer, dealt, forced, score, marks_to_win)?;
+        let frame = auction_frame(shaker, &calls, viewer, dealt, forced, score, match_scoring(scoring, target)?)?;
         let choice = self.0.bid(&frame, &mut Budget::new(budget)).map_err(refused)?;
         let call = match choice.choice {
             Call::Pass => 0,
@@ -279,7 +281,7 @@ impl SilasPolicy {
     /// The policy's declaration at the end of the arena's auction, where
     /// `viewer` won it (the arguments as for `bid`, `calls` all four): the
     /// deciding layer and Zeb's declaration, a pip trump 0 to 6.
-    #[pyo3(signature = (shaker, calls, viewer, dealt, forced = false, score = (0, 0), marks_to_win = 7, budget = 10_000_000))]
+    #[pyo3(signature = (shaker, calls, viewer, dealt, forced = false, score = (0, 0), scoring = "marks", target = 7, budget = 10_000_000))]
     #[allow(clippy::too_many_arguments)]
     fn declare(
         &self,
@@ -289,10 +291,11 @@ impl SilasPolicy {
         dealt: u32,
         forced: bool,
         score: (u32, u32),
-        marks_to_win: u32,
+        scoring: &str,
+        target: u32,
         budget: u64,
     ) -> PyResult<(String, u8)> {
-        let frame = auction_frame(shaker, &calls, viewer, dealt, forced, score, marks_to_win)?;
+        let frame = auction_frame(shaker, &calls, viewer, dealt, forced, score, match_scoring(scoring, target)?)?;
         let choice = self.0.declare(&frame, &mut Budget::new(budget)).map_err(refused)?;
         let decl = ARENA_MENU
             .iter()
@@ -314,6 +317,16 @@ fn layer(provenance: DecisionProvenance) -> String {
     }
 }
 
+/// The match's scoring by name: `"marks"` (the tournament's) or `"points"`
+/// (the book's game), to `target`.
+fn match_scoring(name: &str, target: u32) -> PyResult<Scoring> {
+    match name {
+        "marks" => Ok(Scoring::Marks { target }),
+        "points" => Ok(Scoring::Points { target }),
+        _ => Err(invalid(format!("a match is scored in \"marks\" or \"points\", not {name:?}"))),
+    }
+}
+
 /// The auction as `viewer` sees it, in the arena's terms (`SilasPolicy.bid`).
 fn auction_frame(
     shaker: u8,
@@ -322,7 +335,7 @@ fn auction_frame(
     dealt: u32,
     forced: bool,
     score: (u32, u32),
-    marks_to_win: u32,
+    scoring: Scoring,
 ) -> PyResult<AuctionFrame> {
     let at = |s: u8| seat(s).ok_or_else(|| invalid(format!("no seat {s}")));
     let calls = calls
@@ -331,7 +344,7 @@ fn auction_frame(
         .collect::<PyResult<Vec<_>>>()?;
     let config = AuctionConfig::new(AuctionConfig::STRAIGHT.max_marks(), forced).map_err(refused)?;
     let auction = Auction::new(config, at(shaker)?, calls).map_err(refused)?;
-    let state = MatchState::new(Scoring::Marks { target: marks_to_win }, [score.0, score.1]).map_err(refused)?;
+    let state = MatchState::new(scoring, [score.0, score.1]).map_err(refused)?;
     let menu = ARENA_MENU.iter().map(|&d| physics(d)).collect::<PyResult<Vec<_>>>()?;
     AuctionFrame::new(auction, at(viewer)?, tiles(dealt)?, state, menu.into()).map_err(refused)
 }

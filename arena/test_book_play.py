@@ -150,6 +150,50 @@ def test_zeb_plays_where_no_rule_fires_and_inside_the_set_with_zeb_ties():
                 assert row["tile"] == max(row["allowed"])
 
 
+def test_union_lets_any_firing_rule_of_the_phase_decide():
+    book = BookPlay("zeb", "union", _StubZeb(), log=True)
+    for seed in range(4):
+        _play_out(book, seed)
+    decided = 0
+    for row in book.log:
+        if row["policy"] is None:
+            assert row["tile"] == row["zeb"]
+            continue
+        decided += 1
+        order = LEAD_ORDER if len(row["plays"]) % 4 == 0 else FOLLOW_ORDER
+        phase = [p for p in order if p in row["fired"]]
+        union = sorted({t for p in phase for t in row["fired"][p][1]})
+        assert row["allowed"] == union and row["tile"] == max(union)  # the stub's best is the highest
+        # Attributed to the first policy of the phase whose set holds the tile.
+        assert row["policy"] == next(p for p in phase if row["tile"] in row["fired"][p][1])
+    assert decided > 50
+
+
+class _FlatZeb(_StubZeb):
+    """Zeb indifferent everywhere: every legal tile at one q, Zeb's tile the lowest id."""
+
+    def decide_batch(self, states, bids):
+        return [(min(legal_tiles(s)), {t: 0.5 for t in legal_tiles(s)}) for s in states]
+
+
+def test_within_eps_the_book_breaks_zebs_near_ties_and_nothing_else():
+    # A strict preference (the stub): no book tile ties Zeb's, so w0 is Zeb at every decision;
+    # a band wider than every gap is variant (c).
+    exact, wide, c = (BookPlay("zeb", "zeb", _StubZeb(), log=True, within=w) for w in (0.0, 1.0, None))
+    for seed in range(4):
+        for book in (exact, wide, c):
+            _play_out(book, seed)
+    assert all(row["tile"] == row["zeb"] for row in exact.log)
+    assert [row["tile"] for row in wide.log] == [row["tile"] for row in c.log]
+    # Indifference everywhere: at w0 every decision a rule makes is the book's least tile.
+    flat = BookPlay("zeb", "zeb", _FlatZeb(), log=True, within=0.0)
+    for seed in range(4):
+        _play_out(flat, seed)
+    for row in flat.log:
+        assert row["tile"] == (min(row["allowed"]) if row["policy"] else row["zeb"])
+    assert any(row["tile"] != row["zeb"] for row in flat.log)
+
+
 def test_zeb_is_asked_the_contracts_points_for_a_marks_bid():
     zeb = _StubZeb()
     _play_out(BookPlay("zeb", "least", zeb), 3, bid=84)
@@ -174,6 +218,13 @@ def test_the_spec_names_fallback_ties_and_zeb():
         parse_book_spec("zeb,least")  # a Zeb fallback with no Zeb
     with pytest.raises(ValueError):
         parse_book_spec("highest,least/k0,n8")
+    book = parse_book_spec("zeb,zeb,w0.02/k0,n8")
+    assert (book.fallback, book.ties, book.within) == ("zeb", "zeb", 0.02)
+    assert parse_book_spec("zeb,union/k0,n8").ties == "union"
+    with pytest.raises(ValueError):
+        parse_book_spec("zeb,least,w0/k0,n8")  # the book breaks Zeb's ties: zeb,zeb only
+    with pytest.raises(ValueError):
+        parse_book_spec("zeb,zeb,x1/k0,n8")
 
 
 def test_silas_bid_only_enough_is_the_arenas_heuristic_bidder():
@@ -196,3 +247,16 @@ def test_silas_risk_budget_bids_legally_and_declares_a_pip():
         assert result is not None and 0 <= result.decl_id <= 6
         seen.add(result.high_bid)
     assert 30 in seen and max(seen) > 30
+
+
+
+def test_risk_budget_reads_no_score_in_either_game():
+    """The book's bidding is the same call in the tournament's game and in its own."""
+    bidder = SilasBidder("risk-budget")
+    for seed in range(60):
+        hands = tuple(tuple(h) for h in deal_from_seed(30_000 + seed))
+        marks = run_auction(hands, seed % 4, (bidder,) * 4, random.Random(0), force_shaker=True,
+                            marks=(6, 5))
+        points = run_auction(hands, seed % 4, (bidder,) * 4, random.Random(0), force_shaker=True,
+                             points=(240, 230), points_to_win=250)
+        assert marks == points

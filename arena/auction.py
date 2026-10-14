@@ -14,6 +14,11 @@ common variation: the shaker must open at 30.
 Marks: a successful bid awards max(1, bid // 42) marks to the bidding team;
 a set awards the same marks to the defenders. A mark bid (42 or above)
 requires all 42 points.
+
+Points (the book's game, Winning 42's first to 250; Silas's `Contract::settle`
+under `Scoring::Points`, S-0017-c): made, each side scores the points it took,
+a mark bid scoring its value (42 a mark); set, the bidders score nothing and
+the setters the bid's value plus the points they took.
 """
 from __future__ import annotations
 
@@ -66,8 +71,10 @@ class BidContext:
     high_bid: int  # 0 if nothing bid yet
     high_seat: int  # -1 if nothing bid yet
     legal: tuple[int, ...]  # legal bid values; PASS is always allowed
-    marks: tuple[int, int] = (0, 0)  # absolute (team0, team1) game score
+    marks: tuple[int, int] = (0, 0)  # absolute (team0, team1) marks tally
     marks_to_win: int = 7
+    points: tuple[int, int] = (0, 0)  # absolute (team0, team1) points tally (the book's game)
+    points_to_win: int | None = None  # the book's game's target; None: the game is to marks_to_win marks
 
     @property
     def team(self) -> int:
@@ -104,6 +111,8 @@ def run_auction(
     force_shaker: bool = False,
     marks: tuple[int, int] = (0, 0),
     marks_to_win: int = 7,
+    points: tuple[int, int] = (0, 0),
+    points_to_win: int | None = None,
 ) -> AuctionResult | None:
     """Run one round of bidding. Returns None if all four players pass.
 
@@ -127,6 +136,8 @@ def run_auction(
             legal=legal,
             marks=marks,
             marks_to_win=marks_to_win,
+            points=points,
+            points_to_win=points_to_win,
         )
         value = policies[seat].bid(ctx, rng)
         if value == PASS and force_shaker and seat == dealer and high_bid == 0:
@@ -173,3 +184,23 @@ def score_hand(bid: int, bidder_team: int, team_points: tuple[int, int]) -> Hand
     marks = [0, 0]
     marks[bidder_team if made else 1 - bidder_team] = m
     return HandScore(marks=(marks[0], marks[1]), made=made)
+
+
+def settle_points(
+    bid: int, bidder_team: int, team_points: tuple[int, int], *, bid_alone: bool = False,
+) -> tuple[int, int]:
+    """The points each team scores in the book's game, (team0, team1): made,
+    each side the points it took, a mark bid its value (42 a mark); set, the
+    bidders nothing and the setters the bid's value plus their points. With
+    `bid_alone`, a set mark bid pays the setters its value alone, the book's
+    other reading ("they get 84", S-0082-a; Silas's `SetReading::BidAlone`)."""
+    if sum(team_points) != ONE_MARK:
+        raise ValueError(f"a hand's points split 42, not {team_points}")
+    setters = 1 - bidder_team
+    out = [0, 0]
+    if team_points[bidder_team] >= contract_points(bid):
+        out[bidder_team] = bid if bid >= ONE_MARK else team_points[bidder_team]
+        out[setters] = team_points[setters]
+    else:
+        out[setters] = bid + (0 if bid_alone and bid >= ONE_MARK else team_points[setters])
+    return out[0], out[1]
