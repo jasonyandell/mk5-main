@@ -42,6 +42,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | desks | the standing desks: Mayor, Book, Media, Archive; blob first, link second; the links registry in the feed's db]
+
+**Added:** [[standing-desks]].
+
 ## [2026-10-14 | b88c5432 | the Demon summoned: a fenced CPU PIMC player (Walt's sampler, Silas's double-dummy solve per world, 100 worlds, margin tiebreak, heuristic bidder) seated as `demon-pimc-n100-b88c5432`; 32 ms a decision; smoke round vs E[Q] n=10 11–9, +0.35 [−0.98, +1.68] marks/game over 10 pairs (close cousins), vs Walt 4–2 and Zeb 0.3.0 1–5 (3 pairs each, a smoke test)]
 
 **Added:** [[the-demon]], `tournament/demon/` (Rust), `tournament/demon_fenced_seat.py`, `tournament/tests/test_demon.py`, the `demon` suite in `scripts/check`. **Updated:** [[strategy-fusion-fence]] (inventory, sanctioned uses, guard), [[tournament]] (participants, seating, cloud worker), [[scenario-player]], `index-topics.md`, the fence guard test (no player may reach the Demon; only its crate turns on `clairvoyant`). Records: 16 faceoffs in `jasonyandell/texas-42-tournament`.
