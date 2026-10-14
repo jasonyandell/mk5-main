@@ -84,6 +84,8 @@ examples/book/partner-leads.silas f09d4e97d7850157
 examples/book/partner-plays-the-top-trump.silas 452cdfa86f4e7824
 examples/book/pounce.silas 77e88f82183af314
 examples/book/protect-the-count.silas 841334e0f53290e6
+examples/book/reading/bidder-holds-the-trumps-out.silas e6eebe0e9c07be23
+examples/book/reading/left-setter-holds-the-trumps-out.silas ea8c5c97bd444d7a
 examples/book/repaired/double-up-lead-low.silas 5ea7325551f18201
 examples/book/repaired/one-off-lead-trump.silas 69f6fb7985eaf982
 examples/book/repaired/one-off-partner-ruffs.silas afa908d063792e68

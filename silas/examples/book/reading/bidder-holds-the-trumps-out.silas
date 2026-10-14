@@ -1,0 +1,23 @@
+; The left setter's certainty at the end of Hand 31 (S-0140-e). Deuces, 30;
+; the left setter has won trick five and leads to trick six, holding the 1-1
+; and the 5-2. The book has him know that the bidder holds both trumps still
+; out, the top one among them, so either lead loses both last tricks. From his
+; public information alone that is not certain: the right setter has shown
+; out of sixes and blanks but not of trump. The knowledge is a reading of the
+; right setter's trick-one 3-2, a trump that is count, under protect-the-count
+; (a setter keeps his count off the bidder's sure trick when he can): the
+; right setter had no other trump, and the partner showed out of trump on the
+; same trick. Asked from the left setter's seat:
+;
+;   silas query examples/book/reading/bidder-holds-the-trumps-out.silas \
+;     --hand hand-31 --trick 6 --seat left \
+;     --read right=examples/book/protect-the-count.silas
+;
+; Uniform: 2/15. Read: 1, exact given protect-the-count as the right setter's
+; policy (tests/book_reading.rs).
+(include book)
+
+(query
+  (bidder b)
+  (trump q)
+  (none (roles t) (in t q) (live t) (not (mine t)) (not (holds b t))))

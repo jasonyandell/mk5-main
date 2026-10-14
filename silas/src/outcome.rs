@@ -209,7 +209,12 @@ fn double_dummy_make(position: &OpenPosition, budget: &mut Budget) -> Result<boo
 /// Every hand hidden slot `slot` holds in some world of `kernel`, each once:
 /// a hand of its capacity from the tiles its voids allow, whose rest the other
 /// two slots can hold (Hall's condition for two).
-fn possible_hands(physics: &Physics, kernel: &Kernel, slot: usize, budget: &mut Budget) -> Result<Vec<DominoSet>> {
+pub(crate) fn possible_hands(
+    physics: &Physics,
+    kernel: &Kernel,
+    slot: usize,
+    budget: &mut Budget,
+) -> Result<Vec<DominoSet>> {
     let allowed: [DominoSet; HIDDEN_SEATS] = std::array::from_fn(|j| kernel.allowed(physics, j));
     let room = kernel.hidden().map(|h| h.capacity);
     let (a, b) = ((slot + 1) % HIDDEN_SEATS, (slot + 2) % HIDDEN_SEATS);

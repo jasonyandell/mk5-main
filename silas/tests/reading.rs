@@ -29,8 +29,8 @@ fn marks() -> MatchState {
     MatchState::new(Scoring::MARKS, [0, 0]).unwrap()
 }
 
-fn reading(readers: &[(Seat, &CompiledPolicy)]) -> AuctionReading {
-    AuctionReading::new(readers.iter().map(|(s, p)| (*s, (*p).clone())).collect(), marks(), offered()).unwrap()
+fn reading(readers: &[(Seat, &CompiledPolicy)]) -> Reading {
+    Reading::calls(readers.iter().map(|(s, p)| (*s, (*p).clone())).collect(), marks(), offered()).unwrap()
 }
 
 fn probability(text: &str, belief: &Belief) -> Estimate {
@@ -43,7 +43,7 @@ fn probability(text: &str, belief: &Belief) -> Estimate {
 fn read(frame: &Frame, readers: &[(Seat, &CompiledPolicy)], query: &str) -> Result<Belief> {
     let evidence = reading(readers).evidence(frame, &mut budget())?;
     let compiled = format!("(include book) {query}").parse::<Query>().unwrap().compile(&Registry::standard()).unwrap();
-    Belief::given_auction_for(&evidence, &compiled, 100_000, &mut budget())
+    Belief::given_for(&evidence, &compiled, 100_000, &mut budget())
 }
 
 /// The same posterior by brute force: every world, each read seat's dealt
@@ -234,7 +234,7 @@ fn the_reading_names_its_policies_and_refuses_what_it_cannot_read() {
     // The viewer's own call is no evidence to him; a seat is read once.
     let refused = reading(&[(Seat::S0, &only)]).evidence(&frame, &mut budget()).err().unwrap();
     assert!(refused.0.contains("viewer"), "{refused}");
-    let twice = AuctionReading::new(vec![(Seat::S1, only.clone()), (Seat::S1, only.clone())], marks(), offered());
+    let twice = Reading::calls(vec![(Seat::S1, only.clone()), (Seat::S1, only.clone())], marks(), offered());
     assert!(twice.err().unwrap().0.contains("twice"));
     // The declarer's declaration is read only when it was offered: S2 won
     // the opening's auction and declared sixes.
@@ -246,7 +246,7 @@ fn the_reading_names_its_policies_and_refuses_what_it_cannot_read() {
     let hand = tiles(&["5-5", "5-4", "4-4", "3-2", "2-0", "1-1", "1-0"]);
     let opening = Frame::new(auction.unwrap(), physics("P6"), Seat::S0, hand, vec![]).unwrap();
     let narrow: Arc<[Physics]> = [physics("P5")].into_iter().collect();
-    let reading = AuctionReading::new(vec![(Seat::S2, only.clone())], marks(), narrow).unwrap();
+    let reading = Reading::calls(vec![(Seat::S2, only.clone())], marks(), narrow).unwrap();
     let message = reading.evidence(&opening, &mut budget()).err().unwrap().0;
     assert!(message.contains("not among those offered"), "{message}");
 }

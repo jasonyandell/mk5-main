@@ -239,6 +239,36 @@ transcription would check it against.
   whose reads are all admitted over `uniform_resolving(f, T)` equals its
   summary over `uniform(f)`, exactly, and a refused read is an error, never an
   approximation.
+- **A reading weighs worlds by the record.** A reading names hidden seats
+  and, for each, a policy it acted by: its calls, its plays, or both. Seat
+  `P`'s *dealt hand* in a world `w` is its hand in `w` and the tiles it has
+  played; its frame at each of its past decisions (its auction frame, and its
+  play frame before each of its plays) is that hand and the public record
+  before the decision. `P`'s weight `L_P(w)` is the product over those
+  decisions: a call (and, for the declarer, the declaration) weighs one when
+  the policy makes it and zero otherwise; a play weighs, under the
+  **consistent** likelihood, one when it is in the set `A` the policy allows
+  and zero otherwise, and under the **uniform** likelihood `1/|A|` when it is
+  in `A` and zero otherwise. Where neither a rule nor the exact table
+  decides, the fallback stands for the policy's silence and `A` is every
+  legal tile. The posterior is the uniform measure on the fiber weighted by
+  `∏ L_P(w)` over the read seats; a seat not read weighs one, whatever it
+  did. Since `L_P(w)` reads `w` only through `P`'s hand, the weight
+  factorizes seat by seat.
+- **The consistent likelihood is the default.** A play policy means the set
+  it allows; its decision, the least tile of the set, is a tie-break by tile
+  order and no part of what a rule says. The consistent likelihood conditions
+  on an event, that every read play is one the policy allows, so the
+  posterior is the uniform measure on the worlds kept, a count, as the
+  auction's reading is. It assumes nothing about how a seat chooses within
+  its set: a rule that allows more says less, and a policy that allows every
+  legal tile (or is silent) leaves the belief unchanged. The uniform
+  likelihood adds a hypothesis no book rule states, that the seat picks
+  uniformly within the set, and with it the size of the set becomes
+  evidence: a seat choosing at random among its legal tiles is not silent
+  (it favours hands with fewer legal tiles), and widening one rule moves the
+  weight of worlds it does not touch. Both are exact arithmetic; they are
+  different models with different labels (The record as evidence, below).
 - **Outcomes quantify over the fiber and the rest of the hand.** `(lay-down)`,
   `(certain-make)` and `(certain-set)` are Viewer atoms whose truth at `f` is a
   statement about every world of `f` and every play to the end of the hand:
@@ -365,10 +395,11 @@ where it is defined. Every rule in `examples/book/` is written with it.
   read needed until nothing is refused.
 - `Belief::from_weights(frame, id, authority, entries, cap)`: a measure from
   the caller. Repeated worlds add their weights; zero weights drop out.
-- `Belief::given_auction(&evidence, tiles, cap)` and
-  `Belief::given_auction_for(&evidence, &query, cap, &mut budget)`: the
-  uniform measure conditioned on the auction, read as its bidders' policies
-  make it (The auction as evidence, below), resolved as the uniform ones are.
+- `Belief::given(&evidence, tiles, cap)` and
+  `Belief::given_for(&evidence, &query, cap, &mut budget)`: the uniform
+  measure weighed by the record, the calls and plays of named seats read
+  under their policies (The record as evidence, below), resolved as the
+  uniform ones are.
 - `query.summarize(&belief, &mut budget)`: event probability, per-answer
   presence mass, the law of whole answer sets, and certainty facts
   (possible, certain, constant multiplicity, constant answers, one answer per
@@ -599,65 +630,120 @@ gain is counting each aggregate once per decision (the risk of a suit is read
 by fifteen rules); what remains is the evaluation of the atoms in the
 aggregates' bodies.
 
-## The auction as evidence
+## The record as evidence
 
-A seat that has heard the calls knows more than its frame's voids: each
-call is what its caller's bidding policy made from his hand. Given a policy
-`π_P` for each seat `P` read, the belief keeps exactly the worlds `w` in
-which, for every `P`,
+A seat that has seen the record knows more than its frame's voids: each call
+is what its caller's bidding policy made from his hand, and each play what
+its player's policy allowed from his. Given a policy for each seat read, the
+belief weighs each world by how well the seat's record fits it (Semantics:
+a reading weighs worlds by the record). A `Reading` names what is read:
+
+```rust
+let reading = Reading::calls(readers, state, offered)?          // the auction
+    .with_plays(readers, Likelihood::Consistent)?;              // and the play
+let reading = Reading::plays(readers, Likelihood::Uniform)?;    // the play alone
+let evidence = reading.evidence(&frame, &mut budget)?;
+let belief = Belief::given_for(&evidence, &query, cap, &mut budget)?;
+```
+
+**The calls.** The belief keeps exactly the worlds `w` in which, for every
+seat `P` whose calls are read,
 
 ```text
 π_P.bid(auction before P's call, P, dealt_P(w), state, offered) = P's call
 π_P.declare(the auction, P, dealt_P(w), state, offered) = the declaration   (P the declarer)
 ```
 
-where `dealt_P(w)` is `P`'s hand in `w` and the tiles `P` has played. A
-policy is a deterministic function of its auction frame, so each world's
-likelihood is zero or one, and the posterior is the uniform measure on the
-worlds kept: every kept world weighs one, the total is how many there are.
+A bidding policy is a deterministic function of its auction frame, so each
+world weighs zero or one, and the posterior is the uniform measure on the
+worlds kept: the total is how many there are. Its fallback, the least legal
+call, is a call it makes: a pass is evidence.
 
-**How it counts.** Whether a world is kept depends, seat by seat, on that
-seat's hand alone. `AuctionReading::evidence(&frame, &mut budget)` runs each
-read seat's policy once on every hand it could hold (the fiber's projection
-to that seat: at most C(21,7) = 116,280) and keeps the hands that agree.
-`Belief::given_auction` then counts the worlds whose read hands all agree, by
-placement of the tiles the query reads: with one seat read, for each of its
-agreeing hands, the binomial number of ways the other two seats complete the
-deal under each placement; with two or three, for each agreeing hand of the
-seat with the fewest, every hand of the second within what is left, the
-third taking the rest. Nothing is sampled. From the opening, with three seats
-read, running the policies over all their hands takes 0.5 s on 18 cores for
-`bid-only-enough` and 1.3 s for `risk-budget`, and counting the worlds their
-agreeing hands (65,180 each under `bid-only-enough`) leave, under half a
-second more (`tests/book_auction.rs`).
+**The plays.** For every seat `P` whose plays are read and each of its past
+plays `d_i`, Silas builds `P`'s frame before the play (the auction, the
+declaration, `P` as viewer, `dealt_P(w)` and the record before `d_i`) and asks
+`P`'s policy what it allows there. Under the consistent likelihood the world
+is kept when every `d_i` is allowed; under the uniform likelihood it weighs
+`∏ 1/|A_i|`. A play the fallback decides is silence (every legal tile), so a
+bidding policy read on the plays says nothing about them, and a play rule
+speaks only where it fires: `protect-the-count`, read on a setter, reads only
+his follows to the bidder's sure leads. A seat may be read on its calls and
+its plays at once, under one policy or two; both read the one dealt hand.
+
+**How it counts.** Whether a world is kept, and its weight, depends seat by
+seat on that seat's hand alone (Semantics). `Reading::evidence(&frame, &mut
+budget)` lists each read seat's possible hands (the fiber's projection to it:
+a hand of its size from the tiles its voids allow, whose rest the other two
+seats can hold, at most C(21,7) = 116,280), runs its policy on each (once for
+the call, once per past play, stopping at the first refusal) and keeps the
+agreeing hands with their weights. `Belief::given` then sums the weights of
+the worlds whose read hands all agree, by placement of the tiles the query
+reads: with one seat read, for each of its agreeing hands, its weight times
+the binomial number of ways the other two seats complete the deal under each
+placement; with two or three, for each agreeing hand of the seat with the
+fewest, every hand of the second within what is left, the third taking the
+rest, each weighed. Nothing is sampled. Under the uniform likelihood a seat's
+weights are `1/d` with `d` a product of allowed sets' sizes, the `k`-th at
+most `8 − k`, so every `d` divides 217,728,000; the sums are integers over
+that scale until the last division, and exact. `tests/play_reading.rs` holds
+the counting to brute force: every world of small frames, each read seat's
+frames built from the world and the record, the policy asked at each, under
+both likelihoods, every set of read seats, mixed policies, with and without
+the calls. That the counted and the brute-force posteriors agree is the
+factorization, tested.
 
 **Authority.** The arithmetic is exact, but the number is the deal's only
-under the hypothesis that each read seat bids by its policy, so it is
-`exact_given` one model per seat: its seat, its policy's name and a digest of
-the policy's identity, the match state and the declarations offered (`S2
-bids by bid-only-enough#cb7d…`). A different policy is a different model and
-a different number. `Exact` stays the uniform deal's alone.
+under the hypothesis that each read seat acts by its policy, so it is
+`exact_given` one model per seat and phase: `S2 bids by bid-only-enough#cb7d…`
+(a digest of the policy's identity, the match state and the declarations
+offered), `S3 plays within protect-the-count#438c…` under the consistent
+likelihood and `S3 plays uniformly within protect-the-count#438c…` under the
+uniform one (a digest of the policy's identity). A different policy, or the
+other likelihood, is a different model and a different number. `Exact` stays
+the uniform deal's alone.
 
 **What it reads.** The frame's auction, as the table's: a hand given with its
 contract alone carries the shortest auction its declarer wins
-(`Auction::won_by`), a convention, so the command line asks for the table's
-auction (`--auction`). The play frame does not hold the match state, so the
-reading takes the state the bids were made at, and the declarations offered,
-as its own arguments. The viewer's own call is no evidence to him and is
-refused. An auction no read hand agrees with is refused, as an impossible
-condition is. A question whose answer reads most of a hidden hand ("he holds
-two offs") resolves most of the pool, and the belief's points are placements
-of what it resolves: such a question is refused above the cap, here as for
-the uniform measure.
+(`Auction::won_by`), a convention, so the command line reads calls only when
+`--auction` names the table's. The play frame does not hold the match state,
+so the reading of the calls takes the state the bids were made at, and the
+declarations offered, as its own arguments. The viewer's own record is no
+evidence to him and is refused. A record no read hand agrees with is refused,
+as an impossible condition is. A question whose answer reads most of a hidden
+hand ("he holds two offs") resolves most of the pool, and the belief's points
+are placements of what it resolves: such a question is refused above the
+cap, here as for the uniform measure. A question over the trumps out reads
+best with the trump bound first, `(trump q) (none (roles t) (in t q) ...)`,
+so that it resolves the trumps alone.
 
-`tests/reading.rs` holds it to hand counts (a pass under "raise holding the
-6-5" leaves 60 of 90 worlds; the 6-5 is then each other seat's in half), to a
-policy that always passes (the belief unchanged), to one that bids exactly
-holding the 6-6 (its holder certain: 38,760 × 3,432 worlds), and to brute
-force over every world of a small frame under three auctions, the book's two
-bidding policies and a toy one, and every set of read seats.
+**Cost.** The calls: from the opening, with three seats read, running the
+policies over all their hands takes 0.5 s on 18 cores for `bid-only-enough`
+and 1.3 s for `risk-budget`, and counting the worlds their agreeing hands
+(65,180 each under `bid-only-enough`) leave, under half a second more
+(`tests/book_auction.rs`). The plays: one policy evaluation per possible hand
+per past play, each building the seat's frame from the record. The hands a
+seat could hold shrink as it plays faster than its plays grow, so the cost is
+at the first tricks. Over every point of the book's eight narrated deals, seen
+from each seat (656 frames), with the three hidden seats read under each of
+`protect-the-count`, `donate-when-safe`, `follow-low`, `bidders-plan` and
+`crisis` and under both likelihoods (6,560 readings, the question asked
+after), a reading took 40 ms on average on 18 cores: 0.18 s in trick one,
+0.05 s in trick two, 0.014 s in trick three, under 2 ms from trick five; the
+slowest, 1.3 s (`crisis`, uniform, in trick one).
 
-The book's readings (`tests/book_auction.rs`, `examples/book/bidding/bidder-holds-two-doubles.silas`):
+`tests/reading.rs` holds the calls to hand counts (a pass under "raise
+holding the 6-5" leaves 60 of 90 worlds; the 6-5 is then each other seat's in
+half), to a policy that always passes (the belief unchanged), to one that bids
+exactly holding the 6-6 (its holder certain: 38,760 × 3,432 worlds), and to
+brute force over every world of a small frame under three auctions, the
+book's two bidding policies and a toy one, and every set of read seats.
+`tests/play_reading.rs` holds the plays to a policy that allows every play
+(the belief unchanged under the consistent likelihood, every set of seats; a
+random player, under the uniform one, is evidence), to one that plays the 6-6
+whenever it can (not having led it, the seat does not hold it: 5/16 to 0),
+to brute force, and the calls and plays to one hand.
+
+The book's readings of a bid (`tests/book_auction.rs`, `examples/book/bidding/bidder-holds-two-doubles.silas`):
 
 - **C12B's condition** (the repaired low trump lead, S-0232-c): the bidder's
   hand alone puts it at 194/285; the three passes after his 30, read as
@@ -669,6 +755,33 @@ The book's readings (`tests/book_auction.rs`, `examples/book/bidding/bidder-hold
   (69.2%) of those where `bid-only-enough` opens 30 and declares fours; two
   doubles or more, 313/456 (68.6%) against 6,814/8,669 (78.6%); with the
   setters' passes read too, 2,198,843/3,237,964 and 5,252,929/6,475,928.
+
+The book's readings of a play (`tests/book_reading.rs`, `examples/book/reading/`),
+with the bidder in every chair, each the same under both likelihoods but the last:
+
+- **The left setter's certainty** (S-0140-e): in Hand 31 (deuces, 30), on lead
+  to trick six with the 1-1 and the 5-2, the left setter knows the bidder
+  holds both trumps still out, so either lead loses both tricks. Over the 15
+  worlds he cannot tell apart it is 2/15: the right setter never showed out of
+  trump. Read under `protect-the-count`, the right setter's 3-2 on the
+  bidder's 2-2 at trick one, a trump that is count, was his only trump: 1.
+- **The bidder's two readings after trick one** (S-0138-e, the same hand): the
+  same 3-2 puts both trumps out with the left setter, 5/22 to 1; the
+  partner's 5-0 on the top trump, read under `donate-when-safe` (the biggest
+  count first), puts the 5-5 with a setter, 5/8 to 1.
+- **The partner's top trump** (C2; p. 25 against Hand 30): from the bidder's
+  chair after the partner's 6-6 on his 6-5, the partner is out of trump in
+  26/57 of the worlds. Read under the worked hand's sender
+  (`partner-plays-the-top-trump`) the play says nothing about his other trumps:
+  26/57 still. Read under p. 25's sender (the top trump only when it is his
+  only one), 1. The two passages are two policies, and two numbers.
+- **The bait** (C21; p. 107, the same hand): the partner, seeing the bidder
+  lead the 6-5 at trick two, knows he holds the 6-4. Uniformly 5/16. Read
+  under `crisis`, whose bait leads the 6-5 holding the 6-4, 91/167: where
+  the rule is silent the bidder might have led anything. Under the uniform
+  likelihood, 1549/1777: a silent lead is one tile in six, the bait one in
+  one. The book's certainty needs a bidder who never leads the 6-5 without
+  the 6-4, which no rule it states says.
 
 ## The Physics boundary
 
@@ -976,7 +1089,8 @@ a model or a sample: exact numbers are never blurred.
 silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
 silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
 silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
-               [--auction C,C,C,C [--shaker ROLE] --read ROLE=POLICY,... [--offered D,...] [--scoring S]]
+               [--read ROLE=POLICY,... [--likelihood consistent|uniform]
+                [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 silas query    DOMINANCE
 silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
 silas expand   FILE ...
@@ -1024,12 +1138,30 @@ query examples/book/lay-down.silas
   P(answer) = 1 (exact)
 ```
 
-With `--auction` (the four calls from the shaker's left; `--shaker` is the
-right by default, so the bidder calls first; it must be won by the bidder at
-the hand's bid) and `--read` (the seats read and the bidding policy each bids
-by), `query` reads the auction as evidence (The auction as evidence, above),
-with `--offered` the declarations offered (by default the nine straight ones,
-in `Straight42` order) and `--scoring` the match, at 0-0:
+With `--read` (the seats read and the policy each acted by), `query` reads
+the record as evidence (The record as evidence, above): every read seat's
+past plays, under `--likelihood` (`consistent`, the default, or `uniform`):
+
+```text
+$ silas query examples/book/reading/bidder-holds-the-trumps-out.silas --hand hand-31 --trick 6 --seat left \
+    --read right=examples/book/protect-the-count.silas
+hand-31: trick 6, the left (S1) to play
+  ...
+  read S3: protect-the-count allows its plays 3-2 4-0 5-1 3-3 4-1, from 2 of the 9 hands it could hold
+query examples/book/reading/bidder-holds-the-trumps-out.silas
+  15 worlds (2 kept), as 1 points resolving 2-0 6-2
+  P(answer) = 1 (exact_given(S3 plays within protect-the-count#438c5fb627cfa9a5))
+```
+
+Unread, 2/15 (`exact`); under `--likelihood uniform` the worlds weigh 1/60
+together and the answer is 1, `exact_given(S3 plays uniformly within ...)`.
+With `--auction` too (the four calls from the shaker's left; `--shaker` is
+the right by default, so the bidder calls first; it must be won by the bidder
+at the hand's bid) each read seat's calls are read as well, under the same
+policy, with `--offered` the declarations offered (by default the nine
+straight ones, in `Straight42` order) and `--scoring` the match, at 0-0. A
+book hand's own auction is a convention, so without `--auction` no call is
+read, and before any play there is nothing to read:
 
 ```text
 $ silas query examples/book/bidding/bidder-holds-two-doubles.silas --hand hand-29 --seat partner \
@@ -1038,13 +1170,15 @@ $ silas query examples/book/bidding/bidder-holds-two-doubles.silas --hand hand-2
 hand-29: trick 1, the partner (S2) to play
   ...
   auction: S3 shook: S0 30, S1 pass, S2 pass, S3 pass
-  read S0: bid-only-enough calls 30 and declares straight42/P4 from 3034 of the 27132 hands it could hold
+  read S0: bid-only-enough calls 30 and declares straight42/P4, and bid-only-enough allows its plays 4-0, from 3034 of the 27132 hands it could hold
 query examples/book/bidding/bidder-holds-two-doubles.silas
   46558512 worlds (5206344 kept), as 726 points resolving 0-0 2-2 3-3 4-4 5-5 6-6
-  P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#cb7d652ef9593f67))
+  P(answer) = 1197/1517 (exact_given(S0 bids by bid-only-enough#cb7d652ef9593f67 + S0 plays within bid-only-enough#4563ff381ae7b32f))
 ```
 
-Unread, the same position gives 2949/4522 (`exact`).
+Unread, the same position gives 2949/4522 (`exact`). The bidder's lead is
+read too and says nothing: `bid-only-enough` has no play rules, and its
+fallback is silence.
 
 On a `(dominates ...)` file, `query` needs no hand: it decides the form and
 prints what it enumerated, the readings it checked and the verdict:
@@ -1175,7 +1309,7 @@ solved outcomes: `lay-down` (the tournament rule), `lay-down-shape` (the
 book's test for one), `claim-the-rest` and `cannot-be-set`
 (`tests/outcome.rs`). `examples/book/cross-game/` holds the book's
 field-free comparisons of contracts as `dominates` forms (The match), and
-`examples/book/bidding/` its bid rules as policies over the auction (The auction) and a bid read as evidence (The auction as evidence).
+`examples/book/bidding/` its bid rules as policies over the auction (The auction) and a bid read as evidence, and `examples/book/reading/` the plays read as evidence (The record as evidence).
 `GAPS.md` lists what the rules still cannot say.
 
 ## Provenance
