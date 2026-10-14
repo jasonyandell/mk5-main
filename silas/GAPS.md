@@ -282,18 +282,34 @@ Diagnostics), the friction met writing the bidders of issue 141:
   `examples/populations/` and one command.
 
 **Prelude: what is still a family of literals.** Every bound of the bidding prelude takes a
-`(number n)` (`risk-at-most t 14` needs no definition of its own). What remains literal is the
-numbers the frame reads through one-argument predicates, which nothing binds: a range of
-least raises is an `or` of `(least-raise n)` (`bid-only-enough`'s three level rules), a bid
-level is a rule (`risk-budget`'s thirteen), and the book prelude's `bid-35-or-more`,
-`every-trick` and `to-set-within-6` to `-21` (with the six `*-sets-with-*` sums over them) are
-`or`s of `bid` and `to-set` literals. The book prelude's `four-trumps-or-more` and
+`(number n)` (`risk-at-most t 14` needs no definition of its own), and the frame's own
+numbers are functions now (closed below, #144). What remains literal is the call: a rule
+bids a literal, `pass` or the least raise, so `risk-budget`'s "bid 42 less the risk" is
+still a rule per level (thirteen). One rule would need a computed call, a bid that is a
+number of the guard's answer (`(bid (- 42 (risk t)))` with `t` the least at risk), which is
+a change to policies, not to queries (#148). The book prelude's `four-trumps-or-more` and
 `exactly-*-trumps` predate the aggregate and are scopes of distinct roles; restating them as a
 `card` reads alike but changes the pinned cores of every rule that calls them, so they wait
-for a deliberate re-pin with a proof of equal meaning, as the bidding prelude had. The
-smallest addition for the first kind (#144): a reading of a functional number predicate as a
-quantity (`(<= (to-set) 21)`), its interval the predicate's one value, or every value where
-it is undefined.
+for a deliberate re-pin with a proof of equal meaning, as the bidding prelude had.
+
+Closed by functions as numbers (#144, 2026-10-14; README, Semantics and Short forms): a
+predicate functional in its last argument, a number (`to-set`, `to-make`, `bid`, `stake`,
+`trick-number`, `trick-of`, `banked`, `quota`, `count`, `bid-of`, `high-bid`, `least-raise`,
+`score`, `short`), read without it, `(to-set)` or `(count d)`, is its number in a
+comparison; where it has none (undefined, or holding for no `n`) the comparison is
+undefined, so negation stays exact. A core form, since a definition's `(number n)` and a
+sum cannot be spelled as literals where they are read; a built-in's relation is defined by
+its number, so the two agree by construction. Comparisons chain as in Lisp, `(<= 1
+(to-set) 6)`. What it moved:
+- `bid-only-enough`'s three rules of least-raise ranges are one, "the least raise and the
+  count exposed come to 42 at most"; `never-32-or-33`'s four are two;
+- the book prelude's `to-set-within-6` to `-21` and the six `*-sets-with-*` sums are gone:
+  `lead-sets` is one sum, `(<= 1 (to-set) (+ (count d) (count called) 1))`; `every-trick`
+  is `(<= 42 (bid))`; `bid-35-or-more` is `(<= 35 (bid))`, written where it was read.
+Every call of the two raising policies at every least raise (30 to 42, 84, 126, 168, and
+none left) is pinned equal to the literal ranges' on all 1,184,040 hands, and the prelude's
+definitions to their literals in all three truth values on every frame of 170 seeded hands
+at every bid (`tests/bidding.rs`, `tests/functions.rs`).
 
 Closed by the plays as evidence (#128 for the readings; 2026-10-13; gap 1 above): a belief
 weighed by named seats' past plays, each under its play policy, exactly, under the
@@ -325,7 +341,7 @@ Closed by the aggregate (#135, 2026-10-13; README, Semantics and Short forms):
 - **Statable, not yet written:** the 84 watch list's "keep the double with more tiles out"
   (pp. 66-81: `more-out`; `defend-the-84.silas` encodes doubles before pairs and allows either
   suit between two doubles or two pairs), and C15's choice by what sets
-  over several called tiles (`lead-sets` keeps its six literal sums for one called tile; a
+  over several called tiles (`lead-sets` sums one called tile, `(count called)`, since #144; a
   `points` over the called count tiles states the general case).
 - **Not the aggregate's:** the trump set's "trumps as strong as the bidder's" reads the
   bidder's hidden trumps, which no policy may; as a query over the setter's belief it is

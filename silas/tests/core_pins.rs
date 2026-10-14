@@ -17,6 +17,17 @@
 //! `partner-plays-the-top-trump` and `protect-the-count`; the prelude's
 //! `winner-cannot-be-beaten` and `crisis`; and, reading those, `safe-trick`,
 //! `donate-when-safe` and `bidders-plan` (its text unchanged).
+//! Thirteen pins moved with functions as numbers (#144), a new core form
+//! read where a family of literals was, each held to the old meaning
+//! (`tests/functions.rs`, `tests/bidding.rs`): the files `bid-only-enough`
+//! and `never-32-or-33` (the least raise as a number) and `setter-leads`
+//! (`lead-sets` and the bid of 35); the prelude's `every-trick` (`(<= 42
+//! (bid))`), `lead-sets` (one sum) and, reading `every-trick`, `wins-nothing`
+//! and the files `bidders-plan`, `defend-the-84`, `low-from-a-pair`,
+//! `protect-the-count`, `shed-for-a-void`, `repaired/one-off-lead-trump` and
+//! `repaired/one-off-partner-ruffs` (their texts unchanged). Eleven prelude
+//! definitions were removed (`bid-35-or-more`, `to-set-within-*`,
+//! `*-sets-with-*`).
 //!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too.

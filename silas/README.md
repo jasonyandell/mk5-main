@@ -60,6 +60,7 @@ atom     := (predicate argument ...) | (definition argument ...)
 argument := name | literal
 number   := n | (card (roles role ...) clause ...)
           | (points (roles (domino d)) clause ...) | (+ number ...)
+          | (function argument ...)    ; a functional predicate, its number left out
 ```
 
 Names begin with an ASCII letter and continue with letters, digits, `_` or
@@ -94,6 +95,7 @@ body     := pattern ... | clause ...        ; bare clauses: the query's one patt
 clause   := ... | (and clause ...) | (or clause ...) | (not clause)
           | (some (roles entry ...) clause ...) | (none (roles entry ...) clause ...)
           | (< a b) | (>= a b) | (> a b) | (= a b) | (/= a b)
+          | (<= a b c ...) | (< a b c ...) | ...     ; a chain, but not /=
           | (least name number clause ...) | (most name number clause ...)
 ```
 
@@ -124,6 +126,11 @@ clause   := ... | (and clause ...) | (or clause ...) | (not clause)
   the semantics below justifies. A definition's `(number n)` parameter may
   stand in a comparison and takes its call's literal; `(points (roles d)
   ...)`'s bare role is a domino.
+- **Chains,** as Lisp reads them: `(<= a b c)` is `(<= a b) (<= b c)`, and so
+  for `<`, `>=`, `>` and `=`, each link read as above; `(<= 30 (least-raise)
+  32)` is the book's "30 to 32". Negated, a chain is `(none (roles) link
+  ...)`, as a negated `and` is. `/=` does not chain (neighbours apart is not
+  all apart).
 - **Extremes.** `(least t q c ...)` says `t` is a least candidate by the
   number `q`: it meets `c ...`, and no rival does with less. It is `c ...`
   and `(none (roles u) c' ... (< q' q))`, where `u` is `t` with the first
@@ -247,6 +254,28 @@ transcription would check it against.
   of its text and the values of the enclosing roles it names, so an
   evaluation counts each once per binding of those, even across the rules of
   one policy section at one frame.
+- **Functions are numbers.** A predicate *functional* in its last argument, a
+  number, holds for at most one `n` at its other arguments, and where it is
+  undefined it is undefined for every `n` (the table in Predicates marks
+  them: `to-set`, `bid`, `least-raise`, `count`, ...). Given every argument
+  but that one, `(p a ...)` is a number: `[n, n]` where `(p a ... n)` holds.
+  Where `p` is undefined at `a ...` (the viewer not to call), or holds for no
+  `n` (no bid yet, no raise left, a tile not played), there is no number, and
+  a comparison that reads it, through any sum, is undefined: its
+  precondition fails, as an atom's does. Negation stays exact (undefined is
+  its own negation), so `(<= (to-set) 6)` is decided exactly where `to-set`
+  has a value, and there it is `(or (to-set 0) ... (to-set 6))`. The interval
+  could instead be every value `p` might take where it is undefined; that
+  would decide only comparisons true of every such value (`(<= 30
+  (least-raise))`), which no rule needs, at the price of a declared range
+  for each function, and with no number at all it bounds nothing. A
+  built-in function's relation is defined by its number (`Predicate::value`),
+  so the two agree by construction. This is a core form, not a short form:
+  a definition's `(number n)` is bound only when it is called, so `(<=
+  (to-set) n)` cannot be spelled as literals where it is read, and a
+  function inside a sum (`(+ (least-raise) (points ...))`) would spell as one
+  disjunct a value; and a spelling as literals is false where the function
+  has no number, so its negation would not be the opposite comparison.
 - **Viewer queries are measurable.** If every predicate a query names reads
   only the frame (`Viewer` access), its answers at `(f, w)` are the same for
   every world `w` of `f`. A policy's guards are such queries, so a policy is a
@@ -340,8 +369,8 @@ a frame before any work, and a policy rule naming one at compilation.
 | `beats(a,b,q)` | Viewer | `a`'s trick key in `q` exceeds `b`'s. |
 | `boss(d,q)` | Viewer | `d` is live, follows `q`, and no live tile beats it in `q`. |
 | `master(d)` | Viewer | `d` is live and no live tile beats it when it is led. |
-| `count(d,n)` | Viewer | `d` carries `n` count points. |
-| `quota(c,n)` | Viewer | Seat `c` holds `n` tiles. |
+| `count(d,n)` | Viewer | `d` carries `n` count points. Functional: `(count d)`. |
+| `quota(c,n)` | Viewer | Seat `c` holds `n` tiles. Functional. |
 | `tile(a,b)`, `chair(a,b)`, `context(a,b)` | Viewer | Equality; anchors a role to a literal. |
 | `team(c,t)`, `partner(a,b)`, `opponent(a,b)`, `successor(a,b)` | Viewer | Partnerships and clockwise order. |
 | `viewer(c)`, `leader(c)` | Viewer | The viewer; the leader of the open trick (or the next). |
@@ -351,22 +380,22 @@ a frame before any work, and a policy rule naming one at compilation.
 | `own-legal(d)` | Viewer | `d` is a legal play for the viewer; undefined unless the viewer is next. |
 | `legal(c,d)`, `forced(c,d)` | World | `d` is a legal (the only legal) play for `c`; undefined unless `c` is next. |
 | `declarer(c)` | Viewer | Seat `c` won the auction. |
-| `bid(n)` | Viewer | v2: the bid as the table says it: 30 to 41 points, 42 per mark (84 for two). |
-| `stake(n)` | Viewer | v2: the hand is played for `n` marks. |
-| `banked(c,n)` | Viewer | Seat `c`'s side has taken `n` points in closed tricks. |
-| `to-make(n)` | Viewer | The declarer's side needs `n` more points to reach its threshold; zero once made. |
-| `to-set(n)` | Viewer | The other side needs `n` more points to set it; zero once set. |
-| `trick-number(n)` | Viewer | v2: the trick being played or about to be led is the `n`-th, from one; undefined once all seven have closed. |
+| `bid(n)` | Viewer | v2: the bid as the table says it: 30 to 41 points, 42 per mark (84 for two). Functional: `(bid)`. |
+| `stake(n)` | Viewer | v2: the hand is played for `n` marks. Functional. |
+| `banked(c,n)` | Viewer | Seat `c`'s side has taken `n` points in closed tricks. Functional. |
+| `to-make(n)` | Viewer | The declarer's side needs `n` more points to reach its threshold; zero once made. Functional. |
+| `to-set(n)` | Viewer | The other side needs `n` more points to set it; zero once set. Functional: `(to-set)`. |
+| `trick-number(n)` | Viewer | v2: the trick being played or about to be led is the `n`-th, from one; undefined once all seven have closed. Functional. |
 | `led(c,d)` | Viewer | Seat `c` led `d` to some trick of the record, the open one included. |
 | `played-to(l,c,d)` | Viewer | Seat `c` played `d` to the trick led by `l` (`d` is `l` for its leader). |
-| `trick-of(d,n)` | Viewer | `d` was played to the `n`-th trick. |
+| `trick-of(d,n)` | Viewer | `d` was played to the `n`-th trick. Functional; no number before `d` is played. |
 | `shown-void(c,q)` | Viewer | Seat `c` has publicly failed to follow `q`, read off the record. For a hidden seat it is the void that forbids its worlds. |
 | `lay-down()` | Viewer | v3: some fixed sequence of the viewer's tiles wins every remaining trick in every world, against every play of the other three seats; undefined unless the viewer is to play. |
 | `certain-make()`, `certain-set()` | Viewer | v3: the viewer, choosing from his frame alone, forces the make (the set) in every world against every play of the other three seats; undefined unless that is his side's goal. |
 | `clairvoyant-dd-make()` | Clairvoyant | v3, `clairvoyant` feature only: in this world the declaring side makes from here under double-dummy play. STRATEGY-FUSION FENCE: never in a policy (`wiki/topics/strategy-fusion-fence.md`). |
 
 Numbers and teams are literal-only (a number is never a role; the aggregates
-compare sizes and sums without one), so `banked` and `to-set` take a chair and
+and the functions compare sizes, sums and the frame's numbers without one), so
 a trick is named by its lead: "one trump trick so far, led by the bidder" is
 `(bidder b) (led b first) (trump-tile first)` with a `none` over any other
 trump lead. A shown void implies a void in every world; the converse fails,
@@ -408,10 +437,11 @@ trump: `(watched-by dd x)`, `(pair-target x q)`, `(keeps-a-pair t)`,
 `(protects-a-pair t)`, `(wins-nothing t)`. The
 bidder's offs: `(draws-the-count-for dd o)`, `(strips-the-suit-of dd o)`,
 `(protects dd o)`, `(bare-off o)`; his trouble: `(crisis)`. The bid:
-`(every-trick)` (a bid of marks), `(bid-35-or-more)`, and `(lead-sets d)`,
-whether a lead's own count, one called tile and the trick reach what the
-setters need, as six sums against literal `to-set` values. Each is documented
-where it is defined. Every rule in `examples/book/` is written with it.
+`(every-trick)` (a bid of marks, `(<= 42 (bid))`), and `(lead-sets d)`,
+whether a lead's own count, one called count tile and the trick reach what
+the setters still need: `(<= 1 (to-set) (+ (count d) (count called) 1))`.
+Each is documented where it is defined. Every rule in `examples/book/` is
+written with it.
 
 ## Beliefs and summaries
 
@@ -579,12 +609,12 @@ nothing else, so a bid policy is a function of the auction frame.
 | `high-pip(d,q)` | both | `q` is `d`'s higher pip: the suit it leads when no trump calls it. |
 | `ranks-above(a,b,q)` | both | v5: `a` and `b` bear `q`'s pip and `a` ranks above `b` by their faces: the double first, then the other pip, highest first. |
 | `shaker(c)` | both | `c` shook. |
-| `bid-of(c,n)`, `passed(c)` | both | `c`'s call: the bid the table calls `n`, or a pass. |
+| `bid-of(c,n)`, `passed(c)` | both | `c`'s call: the bid the table calls `n`, or a pass. `bid-of` is functional. |
 | `no-bid()` | both | No seat has bid yet (false in the play). |
-| `high-bid(n)`, `high-bidder(c)` | both | The high bid so far, and its bidder. |
-| `legal-bid(n)`, `least-raise(n)` | auction | `n` is a legal bid, the least one; undefined unless the viewer is to call. |
+| `high-bid(n)`, `high-bidder(c)` | both | The high bid so far, and its bidder. `high-bid` is functional: `(high-bid)`. |
+| `legal-bid(n)`, `least-raise(n)` | auction | `n` is a legal bid, the least one; undefined unless the viewer is to call. `least-raise` is functional: `(least-raise)`. |
 | `scoring-marks()`, `scoring-points()` | auction | How the match is scored. |
-| `score(c,n)`, `short(c,n)`, `short-at-most(c,n)` | auction | `c`'s side has `n`; needs `n` (at most `n`) to win. |
+| `score(c,n)`, `short(c,n)`, `short-at-most(c,n)` | auction | `c`'s side has `n`; needs `n` (at most `n`) to win. `score` and `short` are functional. |
 | `behind(c,n)` | auction | `c`'s side trails by at least `n` (one or more). |
 
 The play frame reads the auction's record too (who bid what), but not yet
@@ -630,19 +660,19 @@ aggregates (Semantics, above): "at most 10 points exposed" is
 `(exposes-at-most t 10)`, one `(<= (points ...) 10)`, and a definition's
 `(number n)` takes the bound, so every bound of the prelude is one
 definition with a number (`suit-at-least`, `offs-at-most`, `exposes-at-most`,
-`risk-at-most`, `top-of-suit`, `holds-top`), never a family of literals. What
-is left literal is the auction's own numbers: a bid is a literal, so a bid
-level is a rule, and a range of least raises is an `or` of `least-raise`
-literals (`GAPS.md`, Prelude). `examples/book/bidding/` holds three
-policies:
+`risk-at-most`, `top-of-suit`, `holds-top`), never a family of literals. The
+auction's own numbers are functions (Semantics, Functions are numbers): "the
+least raise and the count exposed come to 42 at most" is one comparison, so
+`bid-only-enough`'s three rules of least-raise ranges are one. What is left
+literal is the call: a rule bids a literal, `pass` or the least raise, so a
+bid level is a rule (`GAPS.md`, Prelude). `examples/book/bidding/` holds
+three policies:
 
 ```text
-(rule raise-to-32 (bid least-raise)
-  (or (least-raise 30) (least-raise 31) (least-raise 32))
-  (some (roles t) (suit-at-least t 3) (exposes-at-most t 10)))
-
-(define exposes-at-most (roles (context t) (number n))
-  (<= (points (roles c) (exposed c t)) n))
+(rule raise (bid least-raise)
+  (some (roles t)
+    (suit-at-least t 3)
+    (<= (+ (least-raise) (points (roles c) (exposed c t))) 42)))
 ```
 
 - `bid-only-enough` (S-0036-e) is the arena's `HeuristicBidder`: raise to the

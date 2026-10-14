@@ -72,7 +72,7 @@ pub use policy::{
     PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, Selector, Trump,
 };
 pub use reading::{CallEvidence, Evidence, Likelihood, PlayEvidence, Reading, SeatEvidence};
-pub use registry::{Access, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
+pub use registry::{Access, NumberAt, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 // STRATEGY-FUSION FENCE: the clairvoyant reference, for tests and showcases only.
 #[cfg(feature = "clairvoyant")]

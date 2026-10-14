@@ -30,7 +30,7 @@
 ; what fails is its premise that the 1-1 is the only chance, since the 1-1
 ; keeps the lead for the 5-4. This file follows the book.
 ; "What sets" sums one called tile with the lead's own count and the trick,
-; against what the setters still need: six literal sums (prelude, lead-sets).
+; against what the setters still need (prelude, lead-sets).
 
 (include book)
 
@@ -89,7 +89,7 @@
       (not (double lead))
       (calls-for-count lead)
       (not (calls-for lead 5))
-      (or (not (bid-35-or-more)) (not (low-four-five-or-six lead)))))
+      (or (< (bid) 35) (not (low-four-five-or-six lead)))))
   (rule think-twice-a-low-four-five-or-six (play lead)
     (viewer me)
     (setter me)

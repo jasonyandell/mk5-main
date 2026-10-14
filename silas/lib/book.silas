@@ -404,67 +404,19 @@
 
 ; The bid needs every trick: a bid of marks (42 a mark, 84 for two).
 (define every-trick (roles)
-  (or (bid 42) (bid 84) (bid 126) (bid 168) (bid 210) (bid 252) (bid 294)))
-
-; The bid is 35 or more.
-(define bid-35-or-more (roles)
-  (or (bid 35) (bid 36) (bid 37) (bid 38) (bid 39) (bid 40) (bid 41) (every-trick)))
-
-; The setters need at most 6, 11, 16 or 21 more points: what the trick's point,
-; a called five or ten and the lead's own count can reach. Zero (already set)
-; is none of them.
-(define to-set-within-6 (roles)
-  (or (to-set 1) (to-set 2) (to-set 3) (to-set 4) (to-set 5) (to-set 6)))
-
-(define to-set-within-11 (roles)
-  (or (to-set-within-6) (to-set 7) (to-set 8) (to-set 9) (to-set 10) (to-set 11)))
-
-(define to-set-within-16 (roles)
-  (or (to-set-within-11) (to-set 12) (to-set 13) (to-set 14) (to-set 15) (to-set 16)))
-
-(define to-set-within-21 (roles)
-  (or (to-set-within-16) (to-set 17) (to-set 18) (to-set 19) (to-set 20) (to-set 21)))
+  (<= 42 (bid)))
 
 ; Led, d sets the bid if the count it calls for falls on its trick: its own
-; count, one called tile and the trick's point reach what the setters need.
-(define sets-with-a-five (roles (domino d))
-  (count d 0)
-  (calls-for d 5)
-  (to-set-within-6))
-
-(define sets-with-a-ten (roles (domino d))
-  (count d 0)
-  (calls-for d 10)
-  (to-set-within-11))
-
-(define five-sets-with-a-five (roles (domino d))
-  (count d 5)
-  (calls-for d 5)
-  (to-set-within-11))
-
-(define five-sets-with-a-ten (roles (domino d))
-  (count d 5)
-  (calls-for d 10)
-  (to-set-within-16))
-
-(define ten-sets-with-a-five (roles (domino d))
-  (count d 10)
-  (calls-for d 5)
-  (to-set-within-16))
-
-(define ten-sets-with-a-ten (roles (domino d))
-  (count d 10)
-  (calls-for d 10)
-  (to-set-within-21))
-
+; count, one called count tile and the trick's point reach what the setters
+; still need, which is not zero (already set).
 (define lead-sets (roles (domino d))
-  (or
-    (sets-with-a-five d)
-    (sets-with-a-ten d)
-    (five-sets-with-a-five d)
-    (five-sets-with-a-ten d)
-    (ten-sets-with-a-five d)
-    (ten-sets-with-a-ten d)))
+  (some (roles q called)
+    (leads-context d q)
+    (live called)
+    (not (mine called))
+    (in called q)
+    (count-tile called)
+    (<= 1 (to-set) (+ (count d) (count called) 1))))
 
 ; -- The bidder's trouble: trump he cannot draw.
 

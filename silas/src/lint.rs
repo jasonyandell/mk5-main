@@ -122,10 +122,19 @@ fn binder(roles: &[Role], pattern: &Pattern, at: &Span, what: &str, unused: bool
 /// The aggregates a quantity reads, each with whether it sums points.
 fn aggregates(quantity: &Quantity) -> Vec<(&Aggregate, bool)> {
     match quantity {
-        Quantity::Number(_) | Quantity::Parameter(_) => vec![],
+        Quantity::Number(_) | Quantity::Parameter(_) | Quantity::Function(_) => vec![],
         Quantity::Card(a) => vec![(a, false)],
         Quantity::Points(a) => vec![(a, true)],
         Quantity::Sum(parts) => parts.iter().flat_map(aggregates).collect(),
+    }
+}
+
+/// Whether a quantity gives `name` to a function, as `(count d)` does.
+fn applies(quantity: &Quantity, name: &str) -> bool {
+    match quantity {
+        Quantity::Function(f) => f.args.contains(&Term::Role(name.to_owned())),
+        Quantity::Sum(parts) => parts.iter().any(|p| applies(p, name)),
+        Quantity::Number(_) | Quantity::Parameter(_) | Quantity::Card(_) | Quantity::Points(_) => false,
     }
 }
 
@@ -139,6 +148,7 @@ fn mentions(pattern: &Pattern, name: &str) -> bool {
             .iter()
             .flat_map(|b| aggregates(&b.left).into_iter().chain(aggregates(&b.right)))
             .any(|(a, _)| inside(&a.roles, &a.body))
+        || pattern.bounds.iter().any(|b| applies(&b.left, name) || applies(&b.right, name))
 }
 
 /// The polarity of each use of `name` in `pattern`: true where a use is
@@ -165,7 +175,7 @@ fn polarities(pattern: &Pattern, name: &str, positive: bool, uses: &mut Vec<(boo
             .into_iter()
             .chain(aggregates(&bound.right))
             .any(|(a, _)| !a.roles.iter().any(|r| r.name == name) && mentions(&a.body, name));
-        if inside {
+        if inside || applies(&bound.left, name) || applies(&bound.right, name) {
             uses.push((true, bound.span.clone()));
         }
     }

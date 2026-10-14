@@ -403,7 +403,7 @@ The friction met writing #141's bidder populations, fixed without growing the co
   four declaring rules (one per length) are one, pinned to declare alike on every hand.
 - **Prelude.** Every bidding bound takes a `(number n)`; what stays a family of literals is
   the frame's own numbers (least-raise ranges, bid levels, `to-set-within-*`), which nothing
-  binds; `silas/GAPS.md` names the smallest addition.
+  binds; `silas/GAPS.md` names the smallest addition (built since: § Functions as numbers).
 - **Populations from Silas files.** `silas coverage --random N --bidders POLICY --play
   POLICY`: the random deals' contracts are a bidding policy's auctions, the play model a
   stated policy (each seat uniform within what it allows: `CompiledPolicy::permits`, the set
@@ -431,6 +431,33 @@ Twelve core pins moved, listed in `tests/core_pins.rs`. Where the census asked f
 the book does not make (which sure trump, which setting lead, a count off), nothing was
 encoded; `GAPS.md` § The book's silences records each. Re-measured, the book player loses
 1.41 marks a game against Zeb, 0.47 less than before, as the census forecast.
+
+## Functions as numbers (2026-10-14)
+
+The frame's own numbers were read only through one-argument predicates, so a range of them
+was an `or` of literals (#144; `silas/README.md` § Semantics, Short forms; `silas/GAPS.md`
+§ Closed). Now a predicate functional in its last argument, read without it, is that number
+in a comparison: `(to-set)`, `(bid)`, `(least-raise)`, `(count d)`, fourteen built-ins in
+all. Where it has none (the viewer not to call, no raise left) a comparison reading it is
+undefined, so negation stays exact; each built-in's relation is defined by its number, so
+the two agree by construction. Comparisons chain as Lisp's do, `(<= 1 (to-set) 6)`.
+
+- **A core form, not a short form.** A rewrite into `or`s of literals cannot see a
+  definition's `(number n)` (bound at the call) or a function inside a sum, and is false
+  where the function has no number, which would break "a comparison's negation is its
+  opposite". Existing pins are untouched by the form itself.
+- **What it moved.** `bid-only-enough`'s three least-raise rules are one ("the least raise
+  and the count exposed come to 42 at most"), `never-32-or-33`'s four are two, and the book
+  prelude's ten `to-set-within-*` and `*-sets-with-*` definitions are gone: `lead-sets` is
+  one sum, `every-trick` is `(<= 42 (bid))`. Every call of the raising policies at every
+  least raise is pinned equal to the literal ranges' on all 1,184,040 hands, and the prelude
+  definitions to their literals in all three truth values on 19,720 frames at every bid.
+- **Pins.** Thirteen core pins moved, all meaning-equal rewrites: the two bidding files,
+  `setter-leads`, the prelude's `every-trick` and `lead-sets`, and the eight readers of
+  `every-trick` (texts unchanged); eleven prelude definitions were removed. Listed in
+  `silas/tests/core_pins.rs`; `risk-budget` and every other pin unchanged.
+- **Not moved.** `risk-budget` stays a rule per level: it jumps (bids 42 less the risk), so
+  the number is in the call, not the guard; one rule needs a computed call (#148).
 
 ## Where it sits
 
