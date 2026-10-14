@@ -243,6 +243,47 @@ fn the_trump_set_rules_are_rare_not_broken() {
 }
 
 #[test]
+fn coverage_over_a_bidding_policys_contracts_and_a_play_model() {
+    // Issue 141 from Silas files alone: the contracts an optimist's auctions
+    // make, played with the bidder drawing trump and the setters keeping
+    // theirs. The book's hands are not the policy's and are left out.
+    let args = [
+        "coverage",
+        "examples/book/trump-set.silas",
+        "--random",
+        "300",
+        "--bidders",
+        "examples/populations/optimist-2.silas",
+        "--offered",
+        "P6,P5,P4,P3,P2,P1,P0",
+        "--play",
+        "examples/populations/draw-trump.silas",
+    ];
+    let (ok, out) = silas(&args);
+    assert!(ok, "{out}");
+    assert!(out.starts_with("coverage of policy trump-set over 300 random deals\n"), "{out}");
+    assert!(
+        out.contains("contracts: optimist-2 makes every call (the shaker drawn, marks to 7) and declares from P6 P5"),
+        "{out}"
+    );
+    assert!(out.contains("300 contracts from 1918 deals (1618 passed out); bids 30 x300"), "{out}");
+    assert!(out.contains("play: every seat uniformly within what draw-trump allows"), "{out}");
+    assert!(
+        out.contains("rule trump-a-double: decided 1, allowed 3, answered 3 of 8400, in 3 of the 300 random deals"),
+        "{out}"
+    );
+    // Without --play, uniformly random legal tiles; without --random, nothing
+    // to bid on; and the book's hands are not the policy's.
+    let (ok, out) = silas(&args[..8]);
+    assert!(ok && out.contains("play: every seat a uniformly random legal tile"), "{out}");
+    let (ok, out) =
+        silas(&["coverage", "examples/book/trump-set.silas", "--play", "examples/populations/draw-trump.silas"]);
+    assert!(!ok && out.contains("--bidders and --play make the random deals: give --random N"), "{out}");
+    let (ok, out) = silas(&[&args[..6], &["--hand", "hand-1"]].concat());
+    assert!(!ok && out.contains("--hand does not apply"), "{out}");
+}
+
+#[test]
 fn expand_prints_the_core_and_check_prints_warnings() {
     let (ok, out) = silas(&["expand", "examples/book/lay-down.silas"]);
     assert!(ok && out.contains("(roles (chair b))\n  (out)\n  (pattern\n    (viewer b)\n    (declarer b)"), "{out}");

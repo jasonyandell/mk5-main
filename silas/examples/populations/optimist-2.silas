@@ -1,0 +1,18 @@
+; An optimist: bid 30 on the top two tiles (the double and the next) of two
+; suits, whatever the trump length, and declare the qualifying suit with the
+; fewest tiles in hand, the first offered on a tie. Not a book rule: a
+; population of contracts for asking how often a play rule meets the hands
+; it is for (issue 141; README, Diagnostics):
+;
+;   silas coverage examples/book/trump-set.silas --random 3000 \
+;     --bidders examples/populations/optimist-2.silas --offered P6,P5,P4,P3,P2,P1,P0 \
+;     --play examples/populations/draw-trump.silas
+(include bidding)
+
+(policy optimist-2
+  (bidding
+    (rule two-suits-of-top-two (bid 30)
+      (some (roles s u) (holds-top s 2) (holds-top u 2))))
+  (declaring
+    (rule fewest-tiles (declare t)
+      (least t (card (roles d) (of-suit d t)) (holds-top t 2)))))

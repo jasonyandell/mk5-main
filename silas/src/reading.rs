@@ -53,7 +53,7 @@ use crate::measure::{Authority, Weight};
 use crate::nouns::{Domino, DominoSet, Seat};
 use crate::outcome::possible_hands;
 use crate::physics::Physics;
-use crate::policy::{CompiledPolicy, DecisionProvenance};
+use crate::policy::CompiledPolicy;
 use crate::scoring::MatchState;
 use crate::{Result, error};
 
@@ -394,13 +394,7 @@ impl Reading {
                     for &i in at {
                         let before = frame.plays()[..i].to_vec();
                         let then = Frame::new(auction.clone(), frame.physics().clone(), seat, dealt, before)?;
-                        let allowed = policy.allowed(&then, budget)?;
-                        let allowed = match allowed.provenance {
-                            DecisionProvenance::Fallback => {
-                                then.physics().legal_plays(then.kernel().viewer_hand(), then.lead())
-                            }
-                            _ => allowed.tiles,
-                        };
+                        let allowed = policy.permits(&then, budget)?;
                         if !allowed.contains(frame.plays()[i]) {
                             return Ok(None);
                         }

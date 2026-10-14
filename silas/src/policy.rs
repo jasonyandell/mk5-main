@@ -370,6 +370,18 @@ impl CompiledPolicy {
         Ok(self.fired(frame, budget, false)?.0)
     }
 
+    /// The set the policy means at `frame`: what its deciding layer allows,
+    /// or every legal tile where only the fallback decides, the policy's
+    /// silence. A reading weighs a play against this set, and a play model
+    /// draws from it.
+    pub fn permits(&self, frame: &Frame, budget: &mut Budget) -> Result<DominoSet> {
+        let allowed = self.allowed(frame, budget)?;
+        Ok(match allowed.provenance {
+            DecisionProvenance::Fallback => frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.lead()),
+            _ => allowed.tiles,
+        })
+    }
+
     /// [`Self::allowed`], with the deciding rule's witnesses: each answer of
     /// its guard and one binding of the guard's roles that gives it. Empty for
     /// the exact table and the fallback.

@@ -1,0 +1,13 @@
+; An optimist: bid 30 on the top two tiles (the double and the next) of three
+; suits, whatever the trump length, and declare the qualifying suit with the
+; fewest tiles in hand, the first offered on a tie. A population, as
+; optimist-2.silas is.
+(include bidding)
+
+(policy optimist-3
+  (bidding
+    (rule three-suits-of-top-two (bid 30)
+      (some (roles s u v) (holds-top s 2) (holds-top u 2) (holds-top v 2))))
+  (declaring
+    (rule fewest-tiles (declare t)
+      (least t (card (roles d) (of-suit d t)) (holds-top t 2)))))

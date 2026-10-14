@@ -1,0 +1,18 @@
+; A marginal 30: a hand the bid book's count prices at 28 or 29 (13 or 14 at
+; risk under a suit of three or more, as risk-budget.silas counts it), bid at
+; 30, declaring the first suit offered that it is marginal under. A
+; population, as optimist-2.silas is.
+(include bidding)
+
+(define marginal (roles (context t))
+  (suit-at-least t 3)
+  (risk-at-most t 14)
+  (not (risk-at-most t 12)))
+
+(policy marginal-30
+  (bidding
+    (rule stretch (bid 30)
+      (some (roles t) (marginal t))))
+  (declaring
+    (rule stretch-suit (declare t)
+      (marginal t))))

@@ -1,0 +1,22 @@
+; A play model for a population of contracts (issue 141): the bidder, on
+; lead holding a trump, leads his highest; a setter keeps his trump when the
+; lead is not trump and he has another legal tile. Elsewhere it is silent.
+; `silas coverage --play` draws every seat's tile uniformly from what it
+; allows, and from every legal tile where it is silent.
+(include book)
+
+(policy draw-trump
+  (rule draw-from-the-top (play d)
+    (viewer b)
+    (bidder b)
+    (on-lead b)
+    (trump q)
+    (own-legal d)
+    (in d q)
+    (none (roles e) (mine e) (in e q) (beats e d q)))
+  (rule keep-trump (play d)
+    (viewer s)
+    (setter s)
+    (not (trump-led))
+    (own-legal d)
+    (not (trump-tile d))))

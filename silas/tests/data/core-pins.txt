@@ -99,6 +99,10 @@ examples/current-forced-play.silas 275bf6e70ef1d193
 examples/partner-count.silas e7712f0cf43a39ec
 examples/partner-has-count.silas bc3e200b28e739de
 examples/partner-master.silas f792c0732e9e9d99
+examples/populations/draw-trump.silas b2c9b488bb392f15
+examples/populations/marginal-30.silas 351557168753620f
+examples/populations/optimist-2.silas 295ed1f33374b198
+examples/populations/optimist-3.silas a56a237d5fdc651c
 examples/six-five-guarded.silas 95ee5c43c8ca38a8
 lib/book.silas:bidder 0aa994bc10fe6e6b
 lib/book.silas:bidders-partner 2ddd594609369047

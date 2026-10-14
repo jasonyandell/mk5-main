@@ -746,3 +746,79 @@ fn never_32_or_33_raises_past_them() {
     }
     assert!(skipped > 1000, "{skipped} of {checked}");
 }
+
+// ------------------------------------------- the populations' bidders (#141)
+
+fn population(file: &str) -> CompiledPolicy {
+    let path = format!("{}/examples/populations/{file}", env!("CARGO_MANIFEST_DIR"));
+    let program = PolicyProgram::parse(&std::fs::read_to_string(&path).unwrap(), &path).unwrap();
+    program.compile(&Registry::standard(), &physics("P6")).unwrap()
+}
+
+/// The suits of which `hand` holds the two highest tiles, written in Rust
+/// from the literals the optimists were first anchored to: the double, and
+/// the six of the suit (the 6-5 in sixes).
+fn top_two_suits(hand: DominoSet) -> Vec<Pip> {
+    let pip = |v: u8| Pip::new(v).unwrap();
+    Pip::ALL
+        .into_iter()
+        .filter(|&t| {
+            let next = if t.value() == 6 { pip(5) } else { pip(6) };
+            hand.contains(Domino::new(t, t)) && hand.contains(Domino::new(t, next))
+        })
+        .collect()
+}
+
+/// The optimists' declaration as first written, a rule for each length,
+/// before `least` (`examples/populations/optimist-2.silas`).
+const CASCADE: &str = "(include bidding)
+    (policy cascade
+      (declaring
+        (rule two-tiles (declare t) (holds-top t 2) (not (suit-at-least t 3)))
+        (rule three-tiles (declare t) (holds-top t 2) (not (suit-at-least t 4)))
+        (rule four-tiles (declare t) (holds-top t 2) (not (suit-at-least t 5)))
+        (rule more (declare t) (holds-top t 2))))";
+
+#[test]
+fn the_populations_are_their_reading_on_every_hand() {
+    // The optimists bid 30 on the top two of two (three) suits and declare
+    // the qualifying suit with the fewest tiles, the higher pip on a tie;
+    // the marginal 30 bids on 13 or 14 at risk under a suit of three or
+    // more. Each against its reading in Rust, and the optimists' `least`
+    // against the cascade of rules it replaces, on every hand.
+    let (two, three, marginal) =
+        (population("optimist-2.silas"), population("optimist-3.silas"), population("marginal-30.silas"));
+    let cascade =
+        PolicyProgram::parse(CASCADE, "cascade").unwrap().compile(&Registry::standard(), &physics("P6")).unwrap();
+    let menu = arena_menu();
+    let tally = every_hand_tally("the populations' bidders", |hand| {
+        let frame = first_call(Seat::S0, hand, &menu);
+        let call = |p: &CompiledPolicy| p.bid(&frame, &mut unlimited()).unwrap().choice;
+        let suits = top_two_suits(hand);
+        let thirty = |yes: bool| if yes { Call::Bid(Bid::Points(30)) } else { Call::Pass };
+        let length = |t: Pip| hand.iter().filter(|d| d.has(t)).count();
+        let marginal_suit = |t: Pip| length(t) >= 3 && (13..=14).contains(&book_risk(hand, t).0);
+        let expected =
+            [thirty(suits.len() >= 2), thirty(suits.len() >= 3), thirty(Pip::ALL.into_iter().any(marginal_suit))];
+        let calls = [call(&two), call(&three), call(&marginal)];
+        let outcome = format!("{} {} {}", calls[0], calls[1], calls[2]);
+        let mut mismatch = (calls != expected).then(|| format!("{hand:?}: {calls:?}, expected {expected:?}"));
+        // The declaration, where a suit qualifies (elsewhere no declaring
+        // rule speaks, and the fallback declares the first offered).
+        if let Some(fewest) = suits.iter().copied().min_by_key(|&t| (length(t), 6 - t.value())) {
+            let won = won(Seat::S2, hand, Bid::Points(30), &menu);
+            let declared = pip_of(&two.declare(&won, &mut unlimited()).unwrap().choice);
+            let cascaded = pip_of(&cascade.declare(&won, &mut unlimited()).unwrap().choice);
+            if declared != fewest || cascaded != declared {
+                mismatch = Some(format!("{hand:?}: declares P{declared}, the cascade P{cascaded}, expected P{fewest}"));
+            }
+        }
+        (outcome, mismatch)
+    });
+    // How often each opens, exactly: optimist-2 on 4.2% of hands, optimist-3
+    // on 0.16%, the marginal 30 on 13.7%.
+    let opens = |k: usize| -> usize {
+        tally.outcomes.iter().filter(|(o, _)| o.split(' ').nth(k) == Some("30")).map(|(_, n)| n).sum()
+    };
+    assert_eq!((opens(0), opens(1), opens(2)), (49_310, 1_895, 161_946));
+}

@@ -7,7 +7,8 @@
 //!                [--read ROLE=POLICY,... [--likelihood consistent|uniform]
 //!                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 //! silas query    DOMINANCE
-//! silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
+//! silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
+//!                [--play POLICY]] [--book FILE]
 //! silas expand   FILE ...
 //! silas fmt      [--check] FILE ...
 //! silas check    [DIR-OR-FILE ...]
@@ -44,7 +45,10 @@
 //! the viewer's frame) at every point of the book's narrated lines, and of
 //! `--random` seeded deals, and counts how often each rule answered, allowed a
 //! legal tile and decided, and how often each step of each pattern held: a
-//! zero is a rule or a clause that never holds there. `expand` prints a
+//! zero is a rule or a clause that never holds there. With `--bidders` the
+//! random deals' contracts are the auctions a bidding policy makes from them
+//! (and the book's hands are left out), and with `--play` every seat plays
+//! uniformly within what a play policy allows. `expand` prints a
 //! file's core: definitions expanded, short forms spelled out. `fmt` formats
 //! canonically, in place (or reports with `--check`). `check` compiles every
 //! `.silas` file (policies under all nine straight declarations) and prints
@@ -52,6 +56,7 @@
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use serde_json::Value as Json;
 use silas::reference::Straight42;
@@ -72,7 +77,8 @@ usage:
                  [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                   [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
   silas query    DOMINANCE
-  silas coverage POLICY-OR-QUERY [--hand ID] [--random N] [--book FILE]
+  silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
+                 [--play POLICY]] [--book FILE]
   silas expand   FILE ...
   silas fmt      [--check] FILE ...
   silas check    [DIR-OR-FILE ...]
@@ -411,15 +417,11 @@ fn bid(args: &[String]) -> Result<bool> {
     if calls.len() >= Seat::COUNT {
         return Err(fail("--calls are the calls before the seat's: at most three"));
     }
-    let scoring = match options.get("scoring").unwrap_or("marks") {
-        "marks" => Scoring::MARKS,
-        "points" => Scoring::POINTS,
-        other => return Err(fail(format!("--scoring is marks or points, not {other}"))),
-    };
     let shaker = seat.plus(Seat::COUNT - 1 - calls.len());
     let auction = Auction::new(AuctionConfig::STRAIGHT, shaker, calls)?;
-    let declarations: std::sync::Arc<[Physics]> = Straight42::ALL.iter().map(|d| d.physics()).collect();
-    let state = MatchState::new(scoring, [0, 0])?;
+    let declarations: Arc<[Physics]> = Straight42::ALL.iter().map(|d| d.physics()).collect();
+    let state = match_state(&options)?;
+    let scoring = state.scoring();
     let frame = AuctionFrame::new(auction.clone(), seat, dealt, state, declarations.clone())?;
     let policy = program.compile(&Registry::standard(), &declarations[0])?;
     println!("{}: the {role} ({seat}) to call; {auction}; {scoring}", hand.id);
@@ -576,42 +578,92 @@ fn read_record(options: &Options, frame: Frame) -> Result<(Frame, Reading)> {
         )));
     }
     let frame = Frame::new(auction, frame.physics().clone(), frame.viewer(), frame.dealt(), frame.plays().to_vec())?;
-    let offered: std::sync::Arc<[Physics]> = match options.get("offered") {
-        Some(text) => {
-            words(text).iter().map(|d| d.parse::<Straight42>().map(|s| s.physics())).collect::<Result<_>>()?
-        }
-        None => Straight42::ALL.iter().map(|d| d.physics()).collect(),
-    };
+    let reading = Reading::calls(readers.clone(), match_state(options)?, offered(options)?)?;
+    Ok((frame, reading.with_plays(readers, likelihood)?))
+}
+
+/// The match an auction is called at: `--scoring` (marks, the default, or
+/// points), at 0-0.
+fn match_state(options: &Options) -> Result<MatchState> {
     let scoring = match options.get("scoring").unwrap_or("marks") {
         "marks" => Scoring::MARKS,
         "points" => Scoring::POINTS,
         other => return Err(fail(format!("--scoring is marks or points, not {other}"))),
     };
-    let reading = Reading::calls(readers.clone(), MatchState::new(scoring, [0, 0])?, offered)?;
-    Ok((frame, reading.with_plays(readers, likelihood)?))
+    MatchState::new(scoring, [0, 0])
+}
+
+/// The declarations offered to an auction's winner: `--offered`, by default
+/// the nine straight ones in `Straight42` order. The order is a declaring
+/// policy's tie-break.
+fn offered(options: &Options) -> Result<Arc<[Physics]>> {
+    match options.get("offered") {
+        Some(text) => text
+            .split([',', ' '])
+            .filter(|w| !w.is_empty())
+            .map(|d| d.parse::<Straight42>().map(|s| s.physics()))
+            .collect(),
+        None => Ok(Straight42::ALL.iter().map(|d| d.physics()).collect()),
+    }
+}
+
+/// The frames coverage reads, each with the random deal it comes from (none
+/// for the book's), and what they are.
+struct Frames {
+    frames: Vec<(Option<usize>, Frame)>,
+    /// What the frames are, for the heading.
+    what: String,
+    /// How the random deals were made: their contracts and their play.
+    how: Vec<String>,
+    random: usize,
 }
 
 /// The frames coverage reads: every point of the book's narrated lines (or
 /// of one hand's), seen by the seat to play, and the opening of each hand
-/// the book gives alone; then `random` seeded deals, under the nine straight
-/// declarations in turn, played out by uniformly random legal plays.
-fn coverage_frames(options: &Options) -> Result<(Vec<Frame>, String)> {
-    let hands = match options.get("hand") {
-        Some(_) => vec![hand(options)?],
-        None => book(options)?,
+/// the book gives alone; then `--random` seeded deals, each seen by every
+/// seat at every play.
+///
+/// A random deal's contract is a random seat's at a random bid from 30 to
+/// 42, under the nine straight declarations in turn; or, with `--bidders`,
+/// the auction the policy makes from the deal: the shaker drawn, every seat
+/// calling by it under `--scoring`, and the winner declaring by it among
+/// `--offered`, a deal passed out dealt again. The book's contracts are not
+/// the policy's, so its frames are then left out. Each seat plays a tile
+/// drawn uniformly from its legal ones; or, with `--play`, from the set that
+/// policy allows (every legal tile where it is silent), as the uniform
+/// likelihood reads a play.
+fn coverage_frames(options: &Options) -> Result<Frames> {
+    let registry = Registry::standard();
+    let random = options.number("random", 0)?;
+    let bidders = options.get("bidders").map(policy_program).transpose()?;
+    let players = options.get("play").map(policy_program).transpose()?;
+    if random == 0 && (bidders.is_some() || players.is_some()) {
+        return Err(fail("--bidders and --play make the random deals: give --random N"));
+    }
+    if bidders.is_some() && options.get("hand").is_some() {
+        return Err(fail("--bidders reads its own deals, not the book's: --hand does not apply"));
+    }
+    let hands = match (&bidders, options.get("hand")) {
+        (Some(_), _) => vec![],
+        (None, Some(_)) => vec![hand(options)?],
+        (None, None) => book(options)?,
     };
     // A line the record refuses is read up to the refusal, and named.
     let mut frames = Vec::new();
     let mut partial = Vec::new();
     for hand in &hands {
         let (points, refused) = hand.points();
-        frames.extend(points.into_iter().map(|(_, frame)| frame));
+        frames.extend(points.into_iter().map(|(_, frame)| (None, frame)));
         if refused.is_some() {
             partial.push(hand.id.clone());
         }
     }
     let book_frames = frames.len();
-    let random = options.number("random", 0)?;
+    let state = match_state(options)?;
+    let offered = offered(options)?;
+    let bidders = bidders.map(|p| Ok::<_, Error>((p.name.clone(), p.compile(&registry, &offered[0])?))).transpose()?;
+    let mut players_by_physics = std::collections::BTreeMap::new();
+    let mut budget = Budget::new(u64::MAX);
     let mut rng = 0x5eed_u64;
     let mut next = |n: usize| {
         rng = rng.wrapping_add(0x9e37_79b9_7f4a_7c15);
@@ -620,46 +672,110 @@ fn coverage_frames(options: &Options) -> Result<(Vec<Frame>, String)> {
         z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
         ((z ^ (z >> 31)) % n as u64) as usize
     };
+    let (mut dealt, mut bids) = (0, std::collections::BTreeMap::<Bid, usize>::new());
     for game in 0..random {
-        let physics = Straight42::ALL[game % 9].physics();
-        let mut deck = Domino::ALL.to_vec();
-        for i in (1..28).rev() {
-            deck.swap(i, next(i + 1));
-        }
-        let deal: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
-        let auction = Auction::won_by(Seat::ALL[next(4)], Bid::number(30 + next(13) as u32)?)?;
+        let (deal, auction, physics) = loop {
+            let mut deck = Domino::ALL.to_vec();
+            for i in (1..28).rev() {
+                deck.swap(i, next(i + 1));
+            }
+            let deal: [DominoSet; 4] = std::array::from_fn(|s| deck[7 * s..7 * s + 7].iter().copied().collect());
+            dealt += 1;
+            let Some((_, policy)) = &bidders else {
+                let auction = Auction::won_by(Seat::ALL[next(4)], Bid::number(30 + next(13) as u32)?)?;
+                break (deal, auction, Straight42::ALL[game % 9].physics());
+            };
+            let mut auction = Auction::new(AuctionConfig::STRAIGHT, Seat::ALL[next(4)], vec![])?;
+            while let Some(seat) = auction.actor() {
+                let frame = AuctionFrame::new(auction.clone(), seat, deal[seat.index()], state, offered.clone())?;
+                auction = auction.after(policy.bid(&frame, &mut budget)?.choice)?;
+            }
+            let Some((declarer, _)) = auction.result() else { continue };
+            let won = AuctionFrame::new(auction.clone(), declarer, deal[declarer.index()], state, offered.clone())?;
+            let physics = policy.declare(&won, &mut budget)?.choice;
+            break (deal, auction, physics);
+        };
+        *bids.entry(auction.result().expect("a contract").1).or_default() += 1;
+        let player = match &players {
+            None => None,
+            Some(program) => {
+                let id = physics.identity().to_owned();
+                if !players_by_physics.contains_key(&id) {
+                    players_by_physics.insert(id.clone(), program.compile(&registry, &physics)?);
+                }
+                Some(&players_by_physics[&id])
+            }
+        };
         let mut record = Frame::new(auction.clone(), physics.clone(), Seat::S0, deal[0], vec![])?;
         let mut hands = deal;
         while let Some(viewer) = record.next_actor() {
             let plays = record.plays().to_vec();
-            frames.push(Frame::new(auction.clone(), physics.clone(), viewer, deal[viewer.index()], plays)?);
-            let legal = physics.legal_plays(hands[viewer.index()], record.lead());
-            let tile = legal.iter().nth(next(legal.len())).expect("a legal play");
+            let frame = Frame::new(auction.clone(), physics.clone(), viewer, deal[viewer.index()], plays)?;
+            let drawn = match player {
+                None => physics.legal_plays(hands[viewer.index()], record.lead()),
+                Some(policy) => policy.permits(&frame, &mut budget)?,
+            };
+            frames.push((Some(game), frame));
+            let tile = drawn.iter().nth(next(drawn.len())).expect("a legal play");
             hands[viewer.index()].remove(tile);
             record = record.after(tile)?;
         }
     }
-    let what = match options.get("hand") {
-        Some(id) => id.to_owned(),
-        None if partial.is_empty() => format!("the book's {} hands", hands.len()),
-        None => format!(
-            "the book's {} hands ({} read only up to a play the record refuses)",
-            hands.len(),
-            partial.join(", ")
-        ),
+    let mut how = Vec::new();
+    if let Some((name, _)) = &bidders {
+        let declarations: Vec<&str> = offered.iter().map(|p| p.name().rsplit('/').next().unwrap_or("")).collect();
+        let shown: Vec<String> = bids.iter().map(|(bid, n)| format!("{} x{n}", bid.value())).collect();
+        how.push(format!(
+            "contracts: {name} makes every call (the shaker drawn, {}) and declares from {}",
+            state.scoring(),
+            declarations.join(" ")
+        ));
+        how.push(format!(
+            "  {random} contracts from {dealt} deals ({} passed out); bids {}",
+            dealt - random,
+            shown.join(", ")
+        ));
+    }
+    if random > 0 {
+        how.push(match &players {
+            None => "play: every seat a uniformly random legal tile".to_owned(),
+            Some(program) => format!(
+                "play: every seat uniformly within what {} allows (every legal tile where it is silent)",
+                program.name
+            ),
+        });
+    }
+    let what = match (bidders.is_some(), options.get("hand")) {
+        (true, _) => format!("{random} random deals"),
+        (false, Some(id)) => format!("{book_frames} frames of {id}, and {random} random deals"),
+        (false, None) => {
+            let refused = if partial.is_empty() {
+                String::new()
+            } else {
+                format!(" ({} read only up to a play the record refuses)", partial.join(", "))
+            };
+            format!("{book_frames} frames of the book's {} hands{refused}, and {random} random deals", hands.len())
+        }
     };
-    Ok((frames, format!("{book_frames} frames of {what}, and {random} random deals")))
+    Ok(Frames { frames, what, how, random })
 }
 
 /// How often each rule answered, allowed a legal tile and decided, and where
 /// each pattern stops: the frames where each step of its funnel holds. A
 /// count of zero is a rule or a clause that never holds on these frames.
 fn coverage(args: &[String]) -> Result<bool> {
-    let options = Options::parse(args, &[], &["hand", "random", "book"])?;
-    let path = file(&options, "silas coverage FILE [--hand ID] [--random N]")?;
+    let options = Options::parse(args, &[], &["hand", "random", "bidders", "play", "offered", "scoring", "book"])?;
+    let path = file(
+        &options,
+        "silas coverage FILE [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]] [--play POLICY]]",
+    )?;
     let registry = Registry::standard();
-    let (frames, what) = coverage_frames(&options)?;
+    let Frames { frames, what, how, random } = coverage_frames(&options)?;
     let mut budget = Budget::new(u64::MAX);
+    // The random deals in which a count rose: a rule's, or a query's.
+    let in_deals = |deals: &std::collections::BTreeSet<usize>| {
+        if random == 0 { String::new() } else { format!(", in {} of the {random} random deals", deals.len()) }
+    };
     let show = |counts: &[(String, u64)], of: u64| {
         for (label, n) in counts {
             let flag = if *n == 0 { "!" } else { " " };
@@ -674,26 +790,45 @@ fn coverage(args: &[String]) -> Result<bool> {
     match Program::parse(&read(path)?, path)? {
         Program::Policy(program) => {
             let mut compiled = std::collections::BTreeMap::new();
-            let mut coverage = None;
-            for frame in &frames {
+            let mut coverage: Option<Coverage> = None;
+            let mut answered_in = Vec::new();
+            for (deal, frame) in &frames {
                 let id = frame.physics().identity().to_owned();
                 if !compiled.contains_key(&id) {
                     compiled.insert(id.clone(), program.compile(&registry, frame.physics())?);
                 }
                 let policy = &compiled[&id];
-                if coverage.is_none() {
-                    coverage = Some(Coverage::new(policy, &registry)?);
+                let coverage = match &mut coverage {
+                    Some(coverage) => coverage,
+                    None => {
+                        let made = Coverage::new(policy, &registry)?;
+                        answered_in = vec![std::collections::BTreeSet::new(); made.rules.len()];
+                        coverage.insert(made)
+                    }
+                };
+                let before: Vec<u64> = coverage.rules.iter().map(|r| r.answered).collect();
+                coverage.observe(policy, frame, &mut budget)?;
+                for ((rule, was), deals) in coverage.rules.iter().zip(before).zip(&mut answered_in) {
+                    if let Some(deal) = deal.filter(|_| rule.answered > was) {
+                        deals.insert(deal);
+                    }
                 }
-                coverage.as_mut().expect("made").observe(policy, frame, &mut budget)?;
             }
             println!("coverage of policy {} over {what}", program.name);
+            for line in &how {
+                println!("  {line}");
+            }
             let Some(coverage) = coverage else { return Ok(true) };
             let of = coverage.frames;
-            for rule in &coverage.rules {
+            for (rule, deals) in coverage.rules.iter().zip(&answered_in) {
                 let flag = if rule.decided == 0 { "!" } else { " " };
                 println!(
-                    "{flag} rule {}: decided {}, allowed {}, answered {} of {of}",
-                    rule.name, rule.decided, rule.allowed, rule.answered
+                    "{flag} rule {}: decided {}, allowed {}, answered {} of {of}{}",
+                    rule.name,
+                    rule.decided,
+                    rule.allowed,
+                    rule.answered,
+                    in_deals(deals)
                 );
                 for (i, pattern) in rule.patterns.iter().enumerate() {
                     if rule.patterns.len() > 1 {
@@ -707,11 +842,14 @@ fn coverage(args: &[String]) -> Result<bool> {
         Program::Query(query) => {
             let compiled = query.compile(&registry)?;
             let funnels = Funnel::of(&query, &registry)?;
-            let mut held = 0;
+            let (mut held, mut held_in) = (0, std::collections::BTreeSet::new());
             let mut counts: Vec<Vec<(String, u64)>> =
                 funnels.iter().map(|f| f.labels().into_iter().map(|l| (l.to_owned(), 0)).collect()).collect();
-            for frame in &frames {
-                held += u64::from(!compiled.evaluate_viewer(frame, &mut budget)?.is_empty());
+            for (deal, frame) in &frames {
+                if !compiled.evaluate_viewer(frame, &mut budget)?.is_empty() {
+                    held += 1;
+                    held_in.extend(*deal);
+                }
                 for (funnel, counts) in funnels.iter().zip(&mut counts) {
                     for count in counts.iter_mut().take(funnel.depth(frame, &mut budget)?) {
                         count.1 += 1;
@@ -719,7 +857,10 @@ fn coverage(args: &[String]) -> Result<bool> {
                 }
             }
             println!("coverage of query {path} over {what}");
-            println!("  held at {held} of {}", frames.len());
+            for line in &how {
+                println!("  {line}");
+            }
+            println!("  held at {held} of {}{}", frames.len(), in_deals(&held_in));
             for (i, pattern) in counts.iter().enumerate() {
                 if counts.len() > 1 {
                     println!("    pattern {}", i + 1);
