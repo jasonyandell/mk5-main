@@ -13,7 +13,7 @@ use std::time::Instant;
 
 use scenario_core::constellation::{seat_form, Contract, Form};
 use scenario_core::field::FieldNet;
-use scenario_core::planner::{decide, Config, Decision, Draw, Rec, SplitMix, DRAW_BUDGET};
+use scenario_core::planner::{decide, Config, Decision, Draw, Tie, Rec, SplitMix, DRAW_BUDGET};
 use scenario_core::rules::Rules;
 
 struct Pos {
@@ -76,6 +76,7 @@ fn main() {
         draw_budget: DRAW_BUDGET,
         convention: None,
         reading: None,
+        tie: Tie::Lowest,
     };
     for (lo, label) in [(16u8, "tricks 5-7"), (12u8, "tricks 4-7")] {
         let ps = positions(deals, lo);

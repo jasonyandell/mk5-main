@@ -61,6 +61,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 **Updated:** [[book-head-to-head-2026-10-13]] (corrected in place: the chance baseline, the forecast, the per-rule ranking, block c, b-rb's one gaining rule, the concentration list), [[book-study-2026-10-12]] § The book at the table, [[scenario-player]], index-experiments.
 **Code:** `arena/engine.py` `points_to_win` and `arena/auction.py` `settle_points` (the book's game), `arena/book_play.py` `ties=union` and `w<eps>`, `SilasPolicy.bid`/`declare` take the match's scoring; the reading Zeb of 3262eea0 merged.
 **Issues:** #146 (the encoding's repairs), #147 (a reader by the book's policies).
+## [2026-10-14 | 07abdbbf | make, then margin: Zeb's exact ties broken by the plan's margin (#120); marks null, +4.5 points a hand, book agreement 52.2% → 54.3%]
+
+**Added:** [[tie-margin-2026-10-14]] (`Config.tie`, arena `t=margin`, default off). **Updated:** [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-margin/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
 
 ## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
 

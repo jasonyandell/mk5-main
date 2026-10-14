@@ -35,6 +35,13 @@
 //! reader draws the worlds by the same rejection under the 0/1 likelihood
 //! that the partner's gated decisions obeyed the rule, from the uniform draw
 //! only.
+//!
+//! The tie rule ≺ ([`Tie`]) picks among a decision's exact ties (root
+//! actions whose q is the best q as a double): the lowest tile id, or make
+//! then margin — the tie with the best weighted bidder-team margin for the
+//! decider's side under the plan (one root action's outcomes), then the
+//! lowest id. It acts at every decision (the live root, a modeled rung's, a
+//! convention sender's), never inside the plan (#120).
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
@@ -356,6 +363,15 @@ pub struct Reading {
     pub margin: i64,
 }
 
+/// The tie rule ≺ among a decision's exact ties (`Config.tie`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Tie {
+    /// The lowest tile id.
+    Lowest,
+    /// Make, then margin: the tie with the best mean margin under the plan, then the lowest id.
+    Margin,
+}
+
 /// How a decision's live scenarios were drawn, and whether a convention chose its tile.
 #[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 pub struct Drawn {
@@ -387,6 +403,8 @@ pub struct Config {
     pub reading: Option<Reading>,
     /// The live seat's convention overlay; None is off. A reader needs the uniform draw.
     pub convention: Option<Convention>,
+    /// The tie rule among a decision's exact ties; [`Tie::Margin`] needs `make`.
+    pub tie: Tie,
 }
 
 impl Config {
@@ -701,6 +719,31 @@ impl Inv {
         }
     }
 
+    /// The decision among root actions valued `q` (ascending by tile): the
+    /// best, and among exact ties the tie rule's pick (`_Invocation.choose`).
+    fn choose(&mut self, ctx: &mut Ctx, q: &[(u8, f64)]) -> u8 {
+        let tile = best(q, self.maximize);
+        if ctx.cfg.tie == Tie::Lowest {
+            return tile;
+        }
+        let top = q.iter().find(|&&(t, _)| t == tile).expect("the best is a root action").1;
+        let tied: Vec<u8> = q.iter().filter(|&&(_, v)| v == top).map(|&(t, _)| t).collect();
+        if tied.len() < 2 {
+            return tile;
+        }
+        let m: Vec<(u8, f64)> = tied.into_iter().map(|t| (t, self.mean_margin(ctx, t))).collect();
+        best(&m, self.maximize)
+    }
+
+    /// M(t) = Σ_r w_r·m_r(t): the weighted bidder-team margin the scenarios
+    /// reach when the root plays t and the plan continues, unnormalized.
+    fn mean_margin(&mut self, ctx: &mut Ctx, t: u8) -> f64 {
+        let mut leaf = vec![0.0; self.worlds.len()];
+        let next = self.root.advance(t, ctx.rules);
+        self.trace(ctx, next, Bits::everyone(self.worlds.len()), &mut leaf, None);
+        fsum((0..self.worlds.len()).map(|r| self.weights[r] * leaf[r]))
+    }
+
     /// Q(a) for each legal first action, ascending by tile: value per unit of mass.
     fn action_values(&mut self, ctx: &mut Ctx) -> Vec<(u8, f64)> {
         let own = self.worlds[0][self.viewer as usize] & !self.root.played;
@@ -997,7 +1040,7 @@ fn dice(tape: u64, key: u64, legal: u32) -> u8 {
     tiles(legal).nth(idx as usize).expect("index within the legal tiles")
 }
 
-/// The tie rule: among equal-valued moves, the lowest tile id.
+/// The best move; among equal-valued moves, the lowest tile id.
 fn best(q: &[(u8, f64)], maximize: bool) -> u8 {
     let mut it = q.iter();
     let (mut bt, mut bv) = *it.next().expect("a legal play exists");
@@ -1024,7 +1067,7 @@ impl<'a> Ctx<'a> {
         } else if let Some(k) = k {
             let mut inv = Inv::new(self, k, seat, own, rec, None);
             let q = inv.action_values(self);
-            best(&q, inv.maximize)
+            inv.choose(self, &q)
         } else {
             let net = self.cfg.field.as_ref().expect("rung −1 is random play, not a mind");
             net.decide(self.rules, seat, own, rec, self.bid, self.bt)
@@ -1120,21 +1163,21 @@ fn live<'a>(cfg: &'a Config, d: &'a Decision, external: Option<&'a [f64]>) -> (C
 pub fn decide(cfg: &Config, d: &Decision, external: Option<&[f64]>) -> (u8, Vec<(u8, f64)>, u64, Drawn) {
     let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
-    let tile = choice(&mut ctx, d, &q, inv.maximize);
+    let tile = choice(&mut ctx, &mut inv, d, &q);
     (tile, q, ctx.nodes, ctx.drawn)
 }
 
 /// The plan's best tile — or, where the convention's sender gate holds, the
 /// plan's best among the tiles the rule allows (`Walt._choice`).
-fn choice(ctx: &mut Ctx, d: &Decision, q: &[(u8, f64)], maximize: bool) -> u8 {
+fn choice(ctx: &mut Ctx, inv: &mut Inv, d: &Decision, q: &[(u8, f64)]) -> u8 {
     let allowed =
         ctx.cfg.convention.filter(|c| c.send).and_then(|c| c.sends(d.rules, d.viewer, d.bidder, d.own, &d.rec));
     match allowed {
-        None => best(q, maximize),
+        None => inv.choose(ctx, q),
         Some(a) => {
             ctx.drawn.sent = true;
             let within: Vec<(u8, f64)> = q.iter().copied().filter(|&(t, _)| (a >> t) & 1 == 1).collect();
-            best(&within, maximize)
+            inv.choose(ctx, &within)
         }
     }
 }
@@ -1176,8 +1219,9 @@ fn analysis(cfg: &Config, d: &Decision, external: Option<&[f64]>, line: bool) ->
     let (mut ctx, mut inv) = live(cfg, d, external);
     let q = inv.action_values(&mut ctx);
     let (outcomes, line) = inv.outcomes(&mut ctx, line);
+    let tile = choice(&mut ctx, &mut inv, d, &q);
     Analysis {
-        tile: choice(&mut ctx, d, &q, inv.maximize),
+        tile,
         q,
         nodes: ctx.nodes,
         worlds: std::mem::take(&mut inv.worlds),

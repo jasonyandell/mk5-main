@@ -2,12 +2,13 @@
 //! `scenario/compiled.py` drives.
 //!
 //! Interface: `Core(rungs, utility, seed, field, field_eps, draw,
-//! draw_budget, convention, reading)` with rungs as (n_worlds, horizon, floor), `field`
+//! draw_budget, convention, reading, tie)` with rungs as (n_worlds, horizon, floor), `field`
 //! the field net's blob (`FieldNet.to_bytes()`) or None, `field_eps` the
 //! stochastic field's ε, `draw` "uniform" or "posterior" (the live rung's
 //! worlds), `convention` None or (name, send, read), the live seat's
 //! overlay (`scenario.convention`), and `reading` None or (likelihood,
-//! margin), the posterior's likelihood as the net's set (`scenario.planner.Reading`);
+//! margin), the posterior's likelihood as the net's set (`scenario.planner.Reading`), and `tie` "lowest" or "margin"
+//! (the tie rule among a decision's exact ties, `Config.tie`);
 //! `sample_roots(reqs)` for the belief seam;
 //! `solve(reqs, weights, threads)`, which runs a batch of decisions in
 //! parallel with the GIL released; `analyze` (the same, opened up: the
@@ -29,7 +30,7 @@ use crate::constellation::{seat_form, world_form, Contract};
 use crate::convention::{Convention, Rule};
 use crate::field::{self, FieldNet};
 use crate::mold;
-use crate::planner::{self, analyze, analyze_line, decide, Config, Decision, Draw, Reading, Rec, MAX_WORLDS};
+use crate::planner::{self, analyze, analyze_line, decide, Config, Decision, Draw, Reading, Rec, Tie, MAX_WORLDS};
 use crate::rules::{Rules, N_DECLS};
 
 /// One decision request:
@@ -124,7 +125,7 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None))]
+    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None, tie="lowest"))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
@@ -136,6 +137,7 @@ impl Core {
         draw_budget: u64,
         convention: Option<(String, bool, bool)>,
         reading: Option<(String, i64)>,
+        tie: &str,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -199,9 +201,15 @@ impl Core {
                 other => return Err(PyValueError::new_err(format!("unknown likelihood {other:?}"))),
             },
         };
+        let tie = match tie {
+            "lowest" => Tie::Lowest,
+            "margin" if make => Tie::Margin,
+            "margin" => return Err(PyValueError::new_err("make-then-margin breaks ties of the make utility")),
+            other => return Err(PyValueError::new_err(format!("unknown tie rule {other:?}"))),
+        };
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention, reading }, rules })
+        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention, reading, tie }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`

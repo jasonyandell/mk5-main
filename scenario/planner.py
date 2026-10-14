@@ -97,6 +97,18 @@ the rule (`convention_likelihood`), no coin drawn, with the same budget and
 fallback. A reader draws from the uniform otherwise, never from β^F: the
 field's likelihood would model the partner's moves a second time.
 
+The tie rule ≺ (`Config.tie`) picks among the decision's exact ties: root
+actions whose q is the best q as a double, in the decision's own sample (no
+noise bar; under uniform weights, equal counts of worlds made). `lowest`, the
+default, takes the lowest tile id. `margin` — make, then margin — takes the
+tie with the best mean bidder-team margin for the decider's side under the
+plan, M(t) = Σ_r w_r·m_r(t), m_r(t) the margin scenario r reaches when the
+root plays t and the plan continues (`Analysis.outcomes`: where the plan
+stops, the contract decided or the horizon, the tape plays the rest), then
+the lowest tile id. It acts at every decision a Walt makes — the live root, a
+modeled rung's, a convention sender's — and never inside the plan, whose
+interior choices keep the lowest id among equal values (#120).
+
 Every random draw — scenario sampling, the posterior's coins and the dice
 tape — comes from SplitMix64 streams seeded by the invocation's coordinate
 (viewer, own hand, record; never the rung), so a decision is a pure function
@@ -127,6 +139,7 @@ from scenario.rules import ALL_TILES, Rules, bit, mask_of, rules_for, tiles_of
 World = tuple[int, int, int, int]                       # remaining-hand masks, absolute seats
 DRAWS = ("uniform", "posterior")
 LIKELIHOODS = ("consistent", "uniform")
+TIES = ("lowest", "margin")   # the tie rule ≺: the lowest tile id, or make then margin
 DRAW_BUDGET = 1 << 22   # posterior: uniform proposals per decision before falling back
 READ_ENUM = 1 << 20     # a reading draws from the whole fiber, enumerated, when it holds at most this many
 
@@ -178,6 +191,7 @@ class Config:
     draw_budget: int = DRAW_BUDGET
     convention: Convention | None = None   # the live seat's convention overlay; None is off
     reading: Reading | None = None   # the posterior's likelihood as the net's set; None is F_σ's
+    tie: str = "lowest"         # the tie rule among a decision's exact ties: "lowest" or "margin"
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.field_eps <= 1.0:
@@ -201,6 +215,10 @@ class Config:
         if self.convention is not None and self.convention.read and self.draw != "uniform":
             raise ValueError("a convention reader draws from the uniform: the field's posterior "
                              "would model the partner's moves twice")
+        if self.tie not in TIES:
+            raise ValueError(f"unknown tie rule {self.tie!r}")
+        if self.tie == "margin" and self.utility != "make":
+            raise ValueError("make-then-margin breaks ties of the make utility")
 
     @property
     def level(self) -> int:
@@ -380,13 +398,13 @@ class Walt:
         holds, the plan's best among the tiles the rule allows."""
         conv = self.config.convention
         if conv is None or not conv.send:
-            return _best(q, inv.maximize)
+            return inv.choose(q)
         own = inv.worlds[0][inv.viewer]
         allowed = conv.sends(inv.rules, inv.viewer, inv.bidder, own, inv.root)
         if allowed is None:
-            return _best(q, inv.maximize)
+            return inv.choose(q)
         self.sent = 1
-        return _best({t: v for t, v in q.items() if (allowed >> t) & 1}, inv.maximize)
+        return inv.choose({t: v for t, v in q.items() if (allowed >> t) & 1})
 
     def _root(self, state: ZebGameState, bid: int) -> "_Invocation | int":
         """The live invocation at a decision — or the tile, when it is forced."""
@@ -597,7 +615,7 @@ class Walt:
                 tile = self.config.field.move(rules, seat, own, rec, bid, bidder_team)
             else:
                 inv = self._invocation(k, seat, own, rec, rules, bid, bidder_team)
-                tile = _best(inv.action_values(), inv.maximize)
+                tile = inv.choose(inv.action_values())
             self._pi[key] = tile
         return tile
 
@@ -637,7 +655,7 @@ def _evidence(sit: Situation, rules: Rules) -> list[tuple[int, Record, int, int]
 
 
 def _best(q: dict[int, float], maximize: bool) -> int:
-    """The tie rule: among equal-valued moves, the lowest tile id."""
+    """The best move; among equal-valued moves, the lowest tile id."""
     items = sorted(q.items())
     if maximize:
         return max(items, key=lambda kv: kv[1])[0]
@@ -667,6 +685,27 @@ class _Invocation:
         self.floor = floor
         self.root_plays = root.plays_so_far()
         self.memo: dict[tuple, float] = {}
+
+    # -- the decision -----------------------------------------------------------
+
+    def choose(self, q: dict[int, float]) -> int:
+        """The decision among root actions valued `q`: the best, and among
+        exact ties the tie rule's pick (`Config.tie`)."""
+        tile = _best(q, self.maximize)
+        if self.walt.config.tie == "lowest":
+            return tile
+        tied = [t for t, v in sorted(q.items()) if v == q[tile]]
+        if len(tied) < 2:
+            return tile
+        return _best({t: self.mean_margin(t) for t in tied}, self.maximize)
+
+    def mean_margin(self, t: int) -> float:
+        """M(t) = Σ_r w_r·m_r(t): the weighted bidder-team margin the live
+        scenarios reach when the root plays t and the plan continues (one
+        root action's `outcomes`), unnormalized — every action shares the mass."""
+        leaf = [0.0] * len(self.worlds)
+        self._trace(self.root.advance(t, self.rules), (1 << len(self.worlds)) - 1, leaf)
+        return sum(self.weights[r] * leaf[r] for r in range(len(self.worlds)))
 
     # -- values -------------------------------------------------------------------
 

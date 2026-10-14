@@ -75,7 +75,7 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
 | `scenario/field.py` + `core/src/field.rs` + `scenario/field_train.py` | the field net: a learned integer policy as rung −1 (see "The net in the field") | forward pass bit-identical referee ↔ core; `decide`/`analyze` with the net field bit-identical |
 | `scenario/reason.py` | the reason report (#124): one decision, Zeb's tile against a named one — the line, the split, the separating facts in [[silas]] (one fact or two, with coverage, against a threshold and a chance level set before looking), counterexamples, a noise bar (see "The reason report") | the book's 84 finds its own set condition at 33/95 exact, as one fact; a split built from two facts is found as those two; a real price the space cannot carry says *no reason found*; a tie is indifferent; a price inside the bar is indistinguishable; the referee writes the same report |
-| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,py]` (`py` = the pure Python referee) | an arena half completes |
+| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,t=lowest\|margin][,py]` (`py` = the pure Python referee; `t=` the tie rule, [[tie-margin-2026-10-14]]) | an arena half completes |
 
 Tests: `python -m pytest scenario/tests -q` (CPU, no checkpoint). Build the
 core once with `python -m pip install ./scenario/core` (Rust toolchain).
@@ -99,7 +99,7 @@ callable `(record, viewer, worlds) → weights` on `Walt(belief=…)`
 instead be drawn from the field's posterior, `draw="posterior"`, #111); `k` is the number of rungs; `S`
 is `n_worlds` per rung; `H` is `horizon` per rung (plays searched
 explicitly; `None` = to the end); `L` is the tape playout at the
-frontier; `u` is `make` or `points`; `≺` is lowest tile id; `Γ` is the
+frontier; `u` is `make` or `points`; `≺` is the tie rule, `Config.tie`: lowest tile id by default, or make then the plan's mean margin ([[tie-margin-2026-10-14]], #120); `Γ` is the
 record-keyed tape. The belief seam is the point: it is where the
 [[auction-decoder]], the [[gus]] belief head, and the tilt form
 b = u·e^g plug in — the first time belief-weighting has had an honest
@@ -910,6 +910,17 @@ Zeb's forecast of each departure's price is honest in sign
 (`ArenaConfig.points_to_win`, points to 250 by the book's settlement), where the book loses
 too; breaking `make`'s near-ties (within 0.02) by the book's rules wins it for Zeb, 53.2%
 [51.1, 55.2] of games, replicated, with no marks moved (#120).
+
+**Make, then margin (2026-10-14, #120).** The tie rule ≺ is now a lever: `Config.tie`
+(arena `t=margin`; default `lowest`, every byte unchanged). It breaks a decision's exact ties
+of q, meaning equal make counts in its own sample with no bar, by the plan's mean margin for
+the mover's side, then the lowest id. Both engines are bit-identical. Re-planned on the
+face-off's rows, Zeb has an exact tie for best at 25% (18% dead). The book's tile is the
+margin-best tie at 59.7% against a chance of 51.8%, all of it at decided contracts. Book
+agreement rises from 52.2% to 54.3%. At the table, against deployed Zeb, it is +0.01
+[−0.04, +0.07] marks/game but +4.55 points a hand, and 55% of games to 250. Against the
+champion it is +0.18 [−0.01, +0.36]. Nothing ships under the pre-registered marks bar; a
+points-scoring zeb version is proposed ([[tie-margin-2026-10-14]]).
 
 ## The reason report (2026-10-13, #124)
 

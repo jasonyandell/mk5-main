@@ -24,7 +24,7 @@ use std::sync::LazyLock;
 
 use position::{hand_mask, refuse, rules_for};
 use scenario_core::field::FieldNet;
-use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, DRAW_BUDGET, MAX_WORLDS};
+use scenario_core::planner::{analyze, decide, fsum, Analysis, Config, Draw, Tie, DRAW_BUDGET, MAX_WORLDS};
 use serde::Serialize;
 
 include!(concat!(env!("OUT_DIR"), "/net.rs"));
@@ -144,6 +144,7 @@ impl Player {
             draw_budget: DRAW_BUDGET,
             convention: None,
             reading: None,
+            tie: Tie::Lowest,
         }
     }
 
