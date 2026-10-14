@@ -2,7 +2,7 @@
 title: The scenario player — Walt, rebuilt here from the mathematics
 kind: entity
 first_seen: 2026-10-09
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 status: active
 ---
 
@@ -854,6 +854,15 @@ back at 2^20, 10 of the 12 at plays 16+), and the softened one was null at power
 is a Walt yet does. `scratch/posterior-arena/` (`table.py`, `probe.py`, `report.py`,
 `arena.log`, `report.json`).
 
+**Reading the plays by the net's set (2026-10-14).** `Config.reading` (arena
+`d=posterior,r=consistent|uniform:<margin>`, default off, both engines bit-identical) makes the
+posterior's likelihood the field net's *set* — the legal tiles it scores within a margin of its
+best — so a play weighs [tile ∈ A] or [tile ∈ A]/|A| (restricted choice), and a fiber of at most
+2^20 is enumerated and drawn from exactly. Against plain Zeb the reader is a null under both
+likelihoods (−0.09 and +0.01 marks/game, restricted choice +0.10 [−0.15, +0.36]); it changes
+10–11% of exact-fiber moves, on the 5-5 and 6-4 first, but the net's set fits a Zeb's record so
+poorly late in the hand that half of trick 6 falls back to the uniform: [[reads-plays-2026-10-13]].
+
 **A convention overlay, default off (2026-10-12).** The book's conventions
 (`scratch/book/CANDIDATES.md`) are joint deviations, so the overlay has two halves
 in both engines, bit-identical referee ↔ core (`scenario/convention.py`, core
@@ -1018,6 +1027,7 @@ split lies but not why. What recurs, by rule:
 
 [[splat-search-bounds]] (searching over splats: what is sound) ·
 [[lumps-voi-2026-10-13]] (lumps by a hidden tile: hedge or robust, the value of knowing it, restricted choice) ·
+[[reads-plays-2026-10-13]] (Zeb reads the other seats' plays: both likelihoods null in marks) ·
 [[the-wall]] · [[the-wall-biography]] · [[belief-policy-value-algebra]] ·
 [[strategy-fusion]] · [[expected-q-value]] · [[arena]] · [[walt]] ·
 [[auction-decoder]] · [[gus]] · [[consumption-ledger]]

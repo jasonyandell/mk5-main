@@ -41,6 +41,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-13 | 0241f66f | the strategy-fusion fence: every clairvoyant solver fenced by one grep token, renamed to warn, Silas's gated behind a cargo feature and refused in policies, a guard test; information-state solving welcome]
 
 **Added:** [[strategy-fusion-fence]] (the ruling, the inventory, the sanctioned uses). **Updated:** [[silas]], [[the-wall]], [[splat-search-bounds]], [[strategy-fusion]], [[intermediate-ai]], `index-topics.md`, `CLAUDE.md` (Hard rules). Guard: `src/tests/architecture/strategy-fusion-fence.test.ts`.
+## [2026-10-14 | 5ee71159 | Zeb reads the other seats' plays: consistent and uniform likelihoods both null in marks, restricted choice +0.10 [−0.15, +0.36]]
+
+**Added:** [[reads-plays-2026-10-13]] (`Config.reading`, `scenario/reads_plays.py`). **Updated:** [[scenario-player]], [[lumps-voi-2026-10-13]], `index-experiments.md`. Data: `zeb/reads-plays/` in `jasonyandell/texas-42-zeb-research-2026-10` with a SHA256SUMS manifest.
 
 ## [2026-10-13 | 53294297 | lumps by a hidden tile: 96.5% robust beyond the bar, the 5-5 the tile most worth knowing (0.39 pp of make beyond the null), restricted choice exact in Silas]
 
