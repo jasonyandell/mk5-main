@@ -75,7 +75,7 @@ see the 2026-10-09 chapter of [[the-wall-biography]].
 | `scenario/core/` + `scenario/compiled.py` | the compiled core (Rust, PyO3): the planner and the fiber sampler line for line; `decide_batch` plans an arena round in parallel on every core with the GIL released | **bit-identical** to the Python planner — same tile, same action values, same node count — on random states across rung-0, two-rung and three-rung configs, `make` and `points`, uniform and tilted beliefs, batched and single |
 | `scenario/field.py` + `core/src/field.rs` + `scenario/field_train.py` | the field net: a learned integer policy as rung −1 (see "The net in the field") | forward pass bit-identical referee ↔ core; `decide`/`analyze` with the net field bit-identical |
 | `scenario/reason.py` | the reason report (#124): one decision, Zeb's tile against a named one — the line, the split, the separating facts in [[silas]] (one fact or two, with coverage, against a threshold and a chance level set before looking), counterexamples, a noise bar (see "The reason report") | the book's 84 finds its own set condition at 33/95 exact, as one fact; a split built from two facts is found as those two; a real price the space cannot carry says *no reason found*; a tie is indifferent; a price inside the bar is indistinguishable; the referee writes the same report |
-| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,t=lowest\|margin][,py]` (`py` = the pure Python referee; `t=` the tie rule, [[tie-margin-2026-10-14]]) | an arena half completes |
+| `arena/walt_play.py` | the [[arena]] `PlayPolicy`; spec `walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make\|points][,b=<belief>][,e=<eps>][,f=<floor>][,F=<net>][,E=<field eps>][,d=uniform\|posterior][,D=<budget>][,t=lowest\|margin[:<band>]][,py]` (`py` = the pure Python referee; `t=` the tie rule, [[tie-margin-2026-10-14]]; `:<band>` its near-tie band, [[tie-band-2026-10-14]]) | an arena half completes |
 
 Tests: `python -m pytest scenario/tests -q` (CPU, no checkpoint). Build the
 core once with `python -m pip install ./scenario/core` (Rust toolchain).
@@ -944,7 +944,9 @@ margin-best tie at 59.7% against a chance of 51.8%, all of it at decided contrac
 agreement rises from 52.2% to 54.3%. At the table, against deployed Zeb, it is +0.01
 [−0.04, +0.07] marks/game but +4.55 points a hand, and 55% of games to 250. Against the
 champion it is +0.18 [−0.01, +0.36]. Nothing ships under the pre-registered marks bar; a
-points-scoring zeb version is proposed ([[tie-margin-2026-10-14]]).
+points-scoring zeb version is proposed ([[tie-margin-2026-10-14]]). Widening the tie to a band
+(`Config.tie_band`, δ = 0.01 of make probability) does not beat exact ties: 49.1% [47.7, 50.4]
+of games to 250, marks +0.02 [−0.050, +0.086] ([[tie-band-2026-10-14]]).
 
 ## The reason report (2026-10-13, #124)
 
