@@ -154,7 +154,15 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     )
 
 
-ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10)
+# The Demon as first seated (2026-10-14): 100 worlds, margin tiebreak, heuristic bidder.
+# 100 worlds cost a mean 32 ms a decision on an M-series core (worst opening lead ~3 s).
+DEMON_N100 = demon("b88c5432e16bbc5d32ad8d1a71e010e7144da24c",
+                   {"silas": "75b67c11f21916344960fb5e9b7818197b04d234",
+                    "scenario/core": "11735eb06e3f89c5c9c2d86ece0295a077c2cde8",
+                    "tournament/demon": "40738d38be3880339f0ee49e4da1ab4ad813b791"},
+                   worlds=100)
+
+ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100)
 ANCHOR = WALT.id
 
 
