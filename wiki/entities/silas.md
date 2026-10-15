@@ -384,8 +384,20 @@ partner's top trump in Hand 30 stays 26/57 under the worked hand's sender and go
 under p. 25's; the bait (C21) read under `crisis` is 91/167, not the book's certainty
 (1549/1777 under the uniform likelihood). A reading costs 40 ms on average at the book's
 positions with three seats read (18 cores; 1.3 s at worst, in trick one), so cost is not
-the obstacle. What a reading cannot yet do is drive a rule: a guard reads the frame, never
-a belief, and that is gap 1 now (`silas/GAPS.md` 1).
+the obstacle.
+
+**A guard that reads (#128, 2026-10-14).** A rule now acts on a reading through
+`ReadingPredicate`, a viewer atom `(name)` the host registers. It holds when the named
+reading (chairs counted from the bidder, their play policies, a likelihood) puts an event at
+a probability of at least a literal bound. It is still a function of the frame, because the
+reading is; the viewer's own chair is dropped; an impossible record leaves it undefined; its
+answer is remembered by record. The reading's models are in the predicate's version, so a
+policy's identity changes with them. `silas/tests/guard_reading.rs` holds a rule that leads
+trump into the left setter to firing at Hand 31 trick 2 exactly where the right setter's 3-2,
+read under `protect-the-count`, makes it certain (5/22 unread), at every seating. A reading
+is named in Rust, not yet in a `.silas` file, so the four rules gap 1 lists still wait: the
+text form and the arena's registry are #162. This is the A2 unlock
+[[book-partners-read-2026-10-14]] named.
 
 ## Ergonomics, round 2 (2026-10-14)
 
@@ -509,8 +521,8 @@ auction): `(rule priced (bid (- 42 (risk t))) (least t (risk t) (suit-at-least t
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 18 and prices against none; the dead
   double's throw and the trump set's feed carry the conditions the book states).
-  A rule acting on a reading (#128's remainder; the readings are built, § The plays as
-  evidence) and another seat's knowledge (#132) are next ([[w42]]). The cross-game
+  A reading written in a `.silas` file, so the book's rules can act on one (#162; the guard
+  itself is built, #128), and another seat's knowledge (#132) are next ([[w42]]). The cross-game
   slices go on from the auction to comparison over deals (§ The match and field-free
   comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's

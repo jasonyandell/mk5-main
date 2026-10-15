@@ -74,7 +74,9 @@ pub use policy::{
     Allowed, Choice, CompiledPolicy, DecisionProvenance, Declared, ExactRule, Fallback, GuardWitnesses,
     PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, Selector, Trump,
 };
-pub use reading::{CallEvidence, Evidence, Likelihood, PlayEvidence, Reading, SeatEvidence};
+pub use reading::{
+    CallEvidence, Evidence, Likelihood, PlayEvidence, READING_CAP, ReadChair, Reading, ReadingPredicate, SeatEvidence,
+};
 pub use registry::{Access, NumberAt, Phase, Predicate, PredicateContext, PredicateSpec, Registry};
 pub use scoring::{HandLaw, MatchState, Outcome, Scoring, SetReading, Transfer, Utility, WinValue};
 // STRATEGY-FUSION FENCE: the clairvoyant reference, for tests and showcases only.

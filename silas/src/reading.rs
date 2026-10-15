@@ -639,3 +639,176 @@ fn complete(
 fn binomial(n: usize, k: usize) -> u128 {
     (0..k).fold(1u128, |acc, i| acc * (n - i) as u128 / (i + 1) as u128)
 }
+
+/// A chair counted from the bidder, so that a reading names the same seats
+/// at every seating: the left setter plays just after the bidder, the right
+/// setter just before.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ReadChair {
+    Bidder,
+    LeftSetter,
+    Partner,
+    RightSetter,
+}
+
+impl ReadChair {
+    /// The seat in this chair when `declarer` is the bidder.
+    pub fn seat(self, declarer: Seat) -> Seat {
+        declarer.plus(self as usize)
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            ReadChair::Bidder => "bidder",
+            ReadChair::LeftSetter => "left-setter",
+            ReadChair::Partner => "partner",
+            ReadChair::RightSetter => "right-setter",
+        }
+    }
+}
+
+/// The most points a guard's reading may resolve its event on.
+pub const READING_CAP: usize = 100_000;
+
+/// The most frames a guard's reading remembers its answer for.
+const READING_MEMORY: usize = 4_096;
+
+/// A guard that reads (#128; `GAPS.md` 1): a viewer predicate, `(name)`,
+/// that holds at a frame when a named reading of the record puts an event at
+/// a probability of at least `bound` (one: the reading makes it certain).
+///
+/// At a frame, the chairs read are made seats from the frame's bidder; the
+/// viewer's own chair is dropped, since his record is no evidence to him.
+/// The plays of the rest are read by their policies under the likelihood
+/// ([`Reading::plays`]), and the event, a query with no outputs, is asked of
+/// [`Belief::given_for`] the evidence; with no chair left to read, of the
+/// uniform belief. A record no read hand agrees with is no reading: the atom
+/// is undefined there, so neither it nor its negation holds.
+///
+/// It is a function of the frame, because the reading is, so a policy may
+/// use it: register it in the registry the policy is compiled against. Its
+/// answer is exact given the policies read (their models name it in the
+/// predicate's version, so a policy's identity changes with them). Each
+/// answer is remembered by the frame's record, the policy key, so asking it
+/// again at a frame costs nothing.
+pub struct ReadingPredicate {
+    spec: crate::registry::PredicateSpec,
+    readers: Vec<(ReadChair, CompiledPolicy)>,
+    likelihood: Likelihood,
+    event: crate::eval::CompiledQuery,
+    bound: BigRational,
+    memory: std::sync::Mutex<std::collections::BTreeMap<crate::policy::PolicyKey, Option<bool>>>,
+}
+
+impl ReadingPredicate {
+    /// The guard `name`: the plays of `readers` read under `likelihood`, and
+    /// the `event` at probability at least `bound`. Refused for a chair named
+    /// twice, an event with outputs, a bound outside (0, 1], and a name that
+    /// is not one.
+    pub fn new(
+        name: &str,
+        readers: Vec<(ReadChair, CompiledPolicy)>,
+        likelihood: Likelihood,
+        event: crate::eval::CompiledQuery,
+        bound: BigRational,
+    ) -> Result<ReadingPredicate> {
+        for (i, (chair, _)) in readers.iter().enumerate() {
+            if readers[..i].iter().any(|(c, _)| c == chair) {
+                return Err(error(format!("the {} is read twice", chair.name())));
+            }
+        }
+        if !event.outputs().is_empty() {
+            return Err(error("a reading's event is a query with no outputs: it holds or it does not"));
+        }
+        let zero = BigRational::from_integer(BigInt::from(0));
+        let one = BigRational::from_integer(BigInt::from(1));
+        if bound <= zero || bound > one {
+            return Err(error(format!("a reading's bound is a probability above 0 and at most 1, not {bound}")));
+        }
+        let how = match likelihood {
+            Likelihood::Consistent => "plays within",
+            Likelihood::Uniform => "plays uniformly within",
+        };
+        let models: Vec<String> = readers
+            .iter()
+            .map(|(chair, policy)| {
+                format!("the {} {how} {}#{:016x}", chair.name(), policy.source().name, digest(policy.identity()))
+            })
+            .collect();
+        let version = format!(
+            "silas-v6/reading [{}] event#{:016x} at least {bound}",
+            models.join("; "),
+            digest(&event.identity())
+        );
+        let spec = crate::registry::PredicateSpec {
+            name: name.to_owned(),
+            version,
+            parameters: vec![],
+            horizon_plies: 0,
+            access: crate::registry::Access::Viewer,
+            phase: crate::registry::Phase::Play,
+        };
+        if !crate::syntax::valid_name(name) {
+            return Err(error(format!("{name} is not a valid predicate name")));
+        }
+        Ok(ReadingPredicate { spec, readers, likelihood, event, bound, memory: Default::default() })
+    }
+
+    /// The event's probability at `frame` under the reading, and the
+    /// reading's authority; `None` when the record is impossible under it.
+    pub fn probability(&self, frame: &Frame, budget: &mut Budget) -> Result<Option<(BigRational, Authority)>> {
+        let declarer = frame.contract().declarer();
+        let readers: Vec<(Seat, CompiledPolicy)> = self
+            .readers
+            .iter()
+            .map(|(chair, policy)| (chair.seat(declarer), policy.clone()))
+            .filter(|(seat, _)| *seat != frame.viewer())
+            .collect();
+        let belief = if readers.is_empty() {
+            crate::Belief::uniform_for(frame.clone(), &self.event, READING_CAP, budget)?
+        } else {
+            let evidence = Reading::plays(readers, self.likelihood)?.evidence(frame, budget)?;
+            if evidence.seats().iter().any(|s| s.agreeing == 0) {
+                return Ok(None);
+            }
+            crate::Belief::given_for(&evidence, &self.event, READING_CAP, budget)?
+        };
+        let estimate = self.event.summarize(&belief, budget)?.event_probability();
+        Ok(Some((estimate.value().clone(), estimate.authority().clone())))
+    }
+
+    fn at_frame(&self, frame: &Frame, budget: &mut Budget) -> Result<Option<bool>> {
+        Ok(self.probability(frame, budget)?.map(|(p, _)| p >= self.bound))
+    }
+}
+
+impl crate::registry::Predicate for ReadingPredicate {
+    fn spec(&self) -> &crate::registry::PredicateSpec {
+        &self.spec
+    }
+
+    fn evaluate(
+        &self,
+        context: crate::registry::PredicateContext<'_>,
+        _: &[crate::syntax::Value],
+        budget: &mut Budget,
+    ) -> Result<Option<bool>> {
+        let frame = context.frame()?;
+        let key = crate::policy::PolicyKey::of(frame);
+        let remembered = |memory: &std::sync::Mutex<_>| {
+            let memory: std::sync::MutexGuard<'_, std::collections::BTreeMap<_, _>> =
+                memory.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            memory.get(&key).copied()
+        };
+        if let Some(answer) = remembered(&self.memory) {
+            return Ok(answer);
+        }
+        let answer = self.at_frame(frame, budget)?;
+        let mut memory = self.memory.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        if memory.len() >= READING_MEMORY {
+            memory.clear();
+        }
+        memory.insert(key, answer);
+        Ok(answer)
+    }
+}

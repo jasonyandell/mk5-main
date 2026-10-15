@@ -86,12 +86,20 @@ rules that act on a reading are blocked there (each marked `; GAP likelihood`):
 - `dead-double.silas`: in Hand 34 (p. 114) the partner keeps his dead 1-1 a while as a
   decoy for an opponent's reading; the rule throws it at once.
 
-**Smallest addition.** A guard atom that holds when a named reading of the frame puts an
-event at probability one (or above a literal bound), evaluated by `Reading::evidence` and
-`Belief::given` at the frame: a policy that is still a function of the frame, since the
-reading is. Its cost is a reading per decision (README, The record as evidence: 40 ms on
-average at the book's positions, 1.3 s at worst), so a policy that uses it is priced on
-the pour only if the reading is cached by record.
+**Built: the guard that reads (#128, 2026-10-14; README, The record as evidence).**
+`ReadingPredicate` is a viewer atom, `(name)`, registered by the host: it holds when a
+named reading (chairs counted from the bidder, their play policies, a likelihood) puts an
+event at a probability of at least a literal bound, evaluated by `Reading::evidence` and
+`Belief::given_for` at the frame, the viewer's own chair dropped, undefined on an
+impossible record, remembered by record. `tests/guard_reading.rs` holds a rule that leads
+trump into the left setter to firing exactly where Hand 31's reading is certain.
+
+**What remains: the rules above, written.** A reading is named in Rust, not in a `.silas`
+file: a file cannot yet name another file's policy as a reader, so the four rules above
+still carry `; GAP likelihood`, and each waits on a text form for a reading (a
+`(reading ...)` declaration naming the reader's policy file) and on the arena registering
+it (#162). Its cost is a reading per new record (40 ms on average at the book's positions,
+1.3 s at worst).
 
 ## 2. Cross-game policy comparison (Ch. 2, 7, 12)
 

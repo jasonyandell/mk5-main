@@ -867,6 +867,40 @@ random player, under the uniform one, is evidence), to one that plays the 6-6
 whenever it can (not having led it, the seat does not hold it: 5/16 to 0),
 to brute force, and the calls and plays to one hand.
 
+**A guard that reads (#128).** A rule acts on a reading through a viewer
+predicate the host names and registers: `ReadingPredicate::new(name,
+readers, likelihood, event, bound)`, the readers named by chair from the
+bidder (`ReadChair::RightSetter`, ...), so the one guard serves every
+seating; the event a query with no outputs; the bound a probability in
+(0, 1]. `(name)` holds at a frame when the plays of the readers, read under
+the likelihood, put the event at a probability of at least the bound (1:
+the reading makes it certain). The viewer's own chair is dropped, since his
+record is no evidence to him; with no chair left the event is asked of the
+uniform deal. A record no read hand agrees with is no reading: the atom is
+undefined there, and neither it nor its negation holds. It is a function of
+the frame, because the reading is, so a policy may use it; the reading's
+models are in the predicate's version, so a policy that reads one policy is
+not the policy that reads another. Its answer is remembered by the frame's
+record (the policy key), so a guard asked once per binding, or a policy
+priced over a pour, pays for each record once. The standard registry does
+not know a reading; a policy that names one is compiled against the
+registry that holds it.
+
+```rust
+let right = (ReadChair::RightSetter, protect_the_count);
+let guard = ReadingPredicate::new("left-holds-the-trumps", vec![right],
+    Likelihood::Consistent, left_setter_holds_the_trumps_out, one)?;
+let mut registry = Registry::standard();
+registry.register(guard)?;
+let policy = PolicyProgram::parse(text, name)?.compile(&registry, &physics)?;
+```
+
+`tests/guard_reading.rs` asks the book's two readings of Hand 31 as guards at
+every seating (certain read, 5/22 and 2/15 unread), holds a rule that leads
+trump into the left setter to firing exactly where the reading is certain,
+and holds the viewer's chair, an impossible record, the identity and the
+memory to their statements.
+
 The book's readings of a bid (`tests/book_auction.rs`, `examples/book/bidding/bidder-holds-two-doubles.silas`):
 
 - **C12B's condition** (the repaired low trump lead, S-0232-c): the bidder's

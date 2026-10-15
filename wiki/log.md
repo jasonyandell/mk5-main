@@ -43,6 +43,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | guard-reads | Silas: a guard that reads (#128): a rule acts on a reading of another seat's plays]
+
+**Updated:** [[silas]] (§ the record as evidence; next), `silas/README.md`, `silas/GAPS.md` 1. **Added:** `ReadingPredicate` and `ReadChair` in `silas/src/reading.rs`, `silas/tests/guard_reading.rs` (Hand 31's two readings as guards at every seating). No core pin moved. **Filed:** #162, a reading written in a `.silas` file and registered by the arena.
+
 ## [2026-10-14 | archive | recover everything to Hugging Face: the Archive desk's inventory and first batch (five repos, ~8 GB, screened, verified by download)]
 
 ## [2026-10-14 | c9a868cb | match-aware bidding: Zeb's bidder in the arena, the 84 priced by match equity wins 53.4% [52.5, 54.3] of games vs the hand-only bidder; 51.4% [50.6, 52.2] vs the same 84 priced score-blind; A/A exact; no drops]
