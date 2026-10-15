@@ -9,6 +9,8 @@ fits those facts is a *world*. Silas asks questions of those worlds:
   contexts) for which some pattern of typed atoms has a satisfying assignment;
 - a **belief** is an exact finite measure over worlds; a query summarized over
   a belief gives exact probabilities, each carrying its **authority**;
+- a **construction** counts and materializes complete worlds satisfying a query,
+  uniformly over worlds rather than over query witnesses;
 - a **policy** is a function of what the viewer alone can see: an exact
   information-state table, relational rules guarded by queries, and a total
   fallback.
@@ -26,11 +28,11 @@ use silas::{reference::Straight42, *};
 let fives = "P5".parse::<Straight42>()?.physics();
 let bidder: DominoSet = ["5-5", "5-4", "5-2", "5-0", "4-4", "4-2", "2-2"]
     .iter().map(|d| d.parse()).collect::<Result<_>>()?;
-let contract = Contract::new(Seat::S0, Bid::number(84)?, fives)?;
-let root = Frame::new(contract, Seat::S0, bidder, vec![])?;
+let auction = Auction::won_by(Seat::S0, Bid::number(84)?)?;
+let root = Frame::new(auction, fives, Seat::S0, bidder, vec![])?;
 
 let query = include_str!("examples/six-five-guarded.silas").parse::<Query>()?.compile(&Registry::standard())?;
-let belief = Belief::uniform_for(root, &query, 1000, &mut Budget::new(10_000_000))?;
+let belief = Belief::uniform_for(root.clone(), &query, 1000, &mut Budget::new(10_000_000))?;
 let p = query.summarize(&belief, &mut Budget::new(10_000_000))?.event_probability();
 assert_eq!((p.value().to_string(), p.authority().is_exact()), ("33/95".to_string(), true));
 ```
@@ -491,6 +493,116 @@ analysis.
 
 Every computation draws on an explicit `Budget`. Exhausting it, like every
 other refusal, returns an error and no partial result.
+
+## Constructing worlds
+
+`WorldSpace::new(frame, query, max_cells, budget)` prepares the uniform legal
+fiber conditioned on the **existence** of a query answer. It counts accepted
+worlds, exposes their exact probability under the uniform fiber, and materializes
+any accepted rank with `unrank(rank, budget)`. `sample(next_u64, budget)` draws
+with replacement using integer rejection sampling. The caller supplies uniform
+random words and records their source or seed. A generated world is not an exact
+belief: Monte Carlo estimates built from draws still carry sample provenance.
+
+```rust
+let space = WorldSpace::new(root, &query, 1000, &mut Budget::new(10_000_000))?;
+assert_eq!(space.count(), 138_625_344);
+assert_eq!(space.cell_count(), 10);
+assert_eq!(space.probability().value().to_string(), "33/95");
+let first = space.unrank(0, &mut Budget::new(10_000_000))?;
+assert!(space.frame().contains(&first));
+```
+
+Ownership reads use the evaluator's existing checked `Holdings`: preparation
+resolves the tiles a query actually needs. Each resolved ownership placement
+identifies a disjoint cell, whose residual allocation table counts its legal
+completions. Accepted cells occupy consecutive rank intervals of those lengths.
+Every complete world has exactly one rank, however many answers or witnesses the
+query finds there. This preserves role injectivity, existential projection,
+union, aggregates and three-valued negation. A semantic undefined remains
+undefined; an unresolved ownership read asks preparation to refine the cells.
+Every returned world is checked for frame membership and against the original
+query. Tables are retained between draws. `Physics::prepare_worlds(kernel)` exposes
+an unconditioned `PreparedFiber` with the same checked count/unrank contract and
+ordering as `Physics::worlds`.
+
+`count() == 0` proves that no world satisfies the event. Sampling that space or
+requesting a rank outside `0..count()` is an error. A work or cell cap is a refusal,
+never a zero count, and no partial constructor is returned. The cap bounds visited
+complete ownership placements in each refinement, including rejected ones;
+`cell_count()` reports only the accepted nonempty cells. The shared work budget
+covers placement search, allocation tables, query evaluation and rejection draws.
+A broad query can require exponentially many cells; exactness does not imply a
+practical count under every budget.
+
+### Fresh opening families
+
+`OpeningSpace::new(auction, physics, viewer, query, max_cells, budget)` also lets
+the viewer's hand vary. It takes a parsed `Query`, compiles it with the standard
+registry, and admits only predicates whose opening reads are either fixed public
+facts or checked ownership reads. It returns `(Frame, World)`: a legal opening
+record and its complete deal. The auction must be complete and have a winner;
+it is fixed evidence of legality, with no likelihood model assigned to the calls.
+`restricted` additionally takes four allowed-tile sets for ownership constraints.
+If those make the base empty, `probability()` is `None`; otherwise it is the exact
+accepted fraction of that base.
+
+Use `(viewer v) (holds v d)` for the varying hand. The admitted predicates are
+`holds`, `void`, `legal`, `forced`, and the standard tile, seat, declaration,
+auction-record and play-record facts and numbers. Hand-sensitive viewer
+predicates (`mine`, `own-legal`, solved-outcome predicates), custom predicates and
+auction-only predicates are refused. They can still be used in fixed-frame
+construction where otherwise admissible. No new query semantics or policy access
+rights are introduced. `legal` and `forced` can require resolving a whole hand.
+This fragment constructs openings; it does not invent a legal play history.
+
+`examples/construction/four-fives.silas` says: the viewer holds exactly four fives,
+including 5-5 but not 6-5, and an opponent holds the 6-5 with another five. Under
+fives trump it counts 1,843,717,075,200 full deals in 100 cells, spanning 13,300
+viewer hands. This is an ownership shape, not the book's full criterion for an 84.
+Uniformity is over full deals; in general it is not uniformity over viewer hands.
+
+### Command and records
+
+```sh
+# Fixed hand and record, three reproducible completions.
+cargo run --release --manifest-path silas/Cargo.toml -- construct \
+  silas/examples/six-five-guarded.silas --hand hand-34 --draws 3 --seed 42
+
+# Vary all four hands, with a legally constructed auction won at 84.
+cargo run --release --manifest-path silas/Cargo.toml -- construct \
+  silas/examples/construction/four-fives.silas --opening --declaration P5 --bid 84 \
+  --draws 3 --seed 2026
+```
+
+`--rank K` selects one rank instead of seeded draws; `--draws 0` counts only,
+including an impossible event. `--cap` defaults to 100,000 ownership cells and
+`--budget` to 1,000,000,000,000 work units. Fixed-frame positions take the same
+`--hand`, `--trick`, `--seat` and `--book` options as `query`. Openings take
+`--viewer S0` and `--declarer S0` (defaults), and `--bid 30` (default).
+
+The command prints a single `silas-construction-v1` JSON receipt only after every
+requested world has been checked. It records the query identity, scope, exact
+counts/probability, resolved tiles, RNG algorithm and seed (or rank), and each
+frame's auction, declaration identity, viewer, dealt hand, plays and four remaining
+hands. Counts and ranks are decimal strings. A past play is in `plays`; remaining
+hands never contain it. Tests reconstruct the frames from these records and check
+the completed worlds. The CLI uses the straight auction configuration and the
+book's shortest legal auction convention; it does not infer a bidding policy.
+
+This API intentionally accepts no `Belief` or `Evidence`: uniform completion of a
+cell is generally wrong for a policy-weighted posterior, even if its aggregate
+mass is known. It also supplies no strategic conclusion: a near-miss ownership
+pair need not change the best information-consistent action. To test a policy
+rule, verify that the rule actually decides, allows a legal move, and presents a
+real choice; a true guard alone does not establish those conditions.
+
+`tests/construct.rs` checks independent exhaustive bijections, both source-bundle
+counts, empty/refused cases, and completion/replay at the legal prefixes of all
+eight full book deals in all seatings and viewer chairs. `tests/book_odds.rs`
+checks construction against the existing uniform-fiber lesson probabilities;
+conditioned lessons retain their distinct posterior checks. The full lesson and
+record suites remain the authority for the book fixtures and their known conflicts.
 
 ## Policies
 

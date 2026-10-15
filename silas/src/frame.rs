@@ -568,12 +568,20 @@ pub struct Holdings<'a> {
     unresolved: DominoSet,
     /// When set, a refused read records the tiles it needed here.
     needed: Option<&'a Cell<DominoSet>>,
+    opening: bool,
 }
 
 impl<'a> Holdings<'a> {
     pub(crate) fn new(frame: &'a Frame, world: &'a World, unresolved: DominoSet) -> Holdings<'a> {
         debug_assert!(frame.contains(world) && unresolved.is_subset_of(frame.kernel().pool));
-        Holdings { frame, world, unresolved, needed: None }
+        Holdings { frame, world, unresolved, needed: None, opening: false }
+    }
+
+    /// Used only with the opening constructor's checked standard predicates:
+    /// all four hands may vary, including the representative frame's viewer.
+    pub(crate) fn opening(frame: &'a Frame, world: &'a World, unresolved: DominoSet) -> Self {
+        debug_assert!(frame.plays().is_empty() && frame.contains(world));
+        Self { frame, world, unresolved, needed: None, opening: true }
     }
 
     /// The same window, recording into `needed` the tiles any refused read
@@ -589,7 +597,15 @@ impl<'a> Holdings<'a> {
     /// The tiles of `tiles` that `seat` holds.
     pub fn hand_within(&self, seat: Seat, tiles: DominoSet) -> Result<DominoSet> {
         let kernel = self.frame.kernel();
-        if seat != kernel.viewer {
+        if self.opening {
+            let open = tiles.intersection(self.unresolved);
+            if !open.is_empty() {
+                if let Some(needed) = self.needed {
+                    needed.set(needed.get().union(open));
+                }
+                return Err(error(format!("reading {seat} needs the unresolved tiles {open:?}; resolve them")));
+            }
+        } else if seat != kernel.viewer {
             let slot = kernel.slot(seat);
             let open = if kernel.hidden[slot].capacity == 0 {
                 DominoSet::EMPTY

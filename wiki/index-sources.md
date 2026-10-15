@@ -2,6 +2,7 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/silas-world-constructor-2026-10-14|Silas world constructor]] — supplied prototype and native construction, lesson/record verification contract (complete)
 - [[sources/0168210|0168210]] — 2026-04-19: Phase 3-4 training + primer-tradeoff decision (active)
 - [[sources/0472125|0472125]] — 2026-04-21: MORNING2_STATUS — 2000g scaling results; 1.60 Q-pt regret; scaling lessons (?)
 - [[sources/0545342|0545342]] — 2026-04-20: session close; candlewax/iter-5 cluster docs (active)

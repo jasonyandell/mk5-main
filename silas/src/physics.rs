@@ -174,17 +174,23 @@ impl Physics {
         self.0.trump
     }
 
+    /// Prepare the count table once for checked random access to the kernel's
+    /// worlds. The ordering is the same as [`Physics::worlds`].
+    pub fn prepare_worlds(&self, kernel: &Kernel) -> PreparedFiber {
+        PreparedFiber::new(self, kernel)
+    }
+
     /// The number of hidden worlds consistent with `kernel`: assignments of
     /// its pool to the hidden seats that meet every capacity and respect every
     /// shown void.
     pub fn count_worlds(&self, kernel: &Kernel) -> u128 {
-        Fiber::new(self, kernel).count()
+        PreparedFiber::new(self, kernel).count()
     }
 
     /// Those worlds, each exactly once, lazily, in a fixed order.
     pub fn worlds<'a>(&'a self, kernel: &'a Kernel) -> impl Iterator<Item = World> + 'a {
-        let fiber = Fiber::new(self, kernel);
-        (0..fiber.count()).map(move |k| kernel.world(fiber.unrank(k)))
+        let fiber = PreparedFiber::new(self, kernel);
+        (0..fiber.count()).map(move |k| fiber.unrank_unchecked(k))
     }
 
     /// The worlds numbered `order` in [`Physics::worlds`]'s order, each taken
@@ -194,9 +200,9 @@ impl Physics {
         kernel: &'a Kernel,
         order: impl Iterator<Item = u128> + 'a,
     ) -> impl Iterator<Item = World> + 'a {
-        let fiber = Fiber::new(self, kernel);
+        let fiber = PreparedFiber::new(self, kernel);
         let n = fiber.count();
-        order.take_while(move |_| n > 0).map(move |k| kernel.world(fiber.unrank(k % n)))
+        order.take_while(move |_| n > 0).map(move |k| fiber.unrank_unchecked(k % n))
     }
 }
 
@@ -256,60 +262,95 @@ impl fmt::Debug for Physics {
     }
 }
 
-/// The hidden worlds of a kernel, counted tile by tile: `ways[i][c]` is the
-/// number of ways to deal the pool's tiles from the `i`-th on so that hidden
-/// slot `j` receives exactly `c[j]` of them. A world is numbered by the order
-/// of its choices, so the `k`-th world is read off the table directly.
-///
-/// The table holds only the states the capacities reach: `c[j]` at most slot
-/// `j`'s capacity, and the parts summing to the tiles left (the capacities
-/// sum to the pool, a [`Kernel`]'s invariant), so `c[2]` is implied and not
-/// stored. Every other state counts zero and is never read.
-struct Fiber {
+/// A kernel's reusable count table. Ranks are checked, never reduced modulo
+/// the count. A zero count is a proved empty fiber, not a failed search.
+#[derive(Clone, Debug)]
+pub struct PreparedFiber {
+    kernel: Kernel,
+    allocation: Allocation<HIDDEN_SEATS>,
+}
+
+impl PreparedFiber {
+    fn new(physics: &Physics, kernel: &Kernel) -> Self {
+        Self {
+            kernel: kernel.clone(),
+            allocation: Allocation::new(
+                kernel.pool(),
+                kernel.hidden().map(|h| h.capacity),
+                std::array::from_fn(|slot| kernel.allowed(physics, slot)),
+            ),
+        }
+    }
+
+    pub fn kernel(&self) -> &Kernel {
+        &self.kernel
+    }
+
+    pub fn count(&self) -> u128 {
+        self.allocation.count()
+    }
+
+    pub fn unrank(&self, rank: u128) -> Result<World> {
+        if rank >= self.count() {
+            return Err(error(format!("world rank {rank} is outside 0..{}", self.count())));
+        }
+        Ok(self.unrank_unchecked(rank))
+    }
+
+    fn unrank_unchecked(&self, rank: u128) -> World {
+        self.kernel.world(self.allocation.unrank(rank))
+    }
+}
+
+/// Labelled allocations, for both the three hidden seats and four-seat
+/// opening synthesis. Capacities sum to the pool and are at most seven;
+/// callers establish those invariants. There are at most 28!/(7!)^4 worlds,
+/// well inside u128. The last capacity is implied by the number of tiles left.
+#[derive(Clone, Debug)]
+pub(crate) struct Allocation<const N: usize> {
     tiles: Vec<Domino>,
-    allowed: [DominoSet; HIDDEN_SEATS],
-    capacities: [usize; HIDDEN_SEATS],
+    allowed: [DominoSet; N],
+    capacities: [usize; N],
     ways: Vec<u128>,
 }
 
-impl Fiber {
-    fn new(physics: &Physics, kernel: &Kernel) -> Fiber {
-        let tiles: Vec<Domino> = kernel.pool().iter().collect();
-        let capacities = kernel.hidden().map(|h| h.capacity);
-        let mut fiber = Fiber {
-            allowed: std::array::from_fn(|slot| kernel.allowed(physics, slot)),
-            ways: vec![0; (tiles.len() + 1) * (capacities[0] + 1) * (capacities[1] + 1)],
-            capacities,
-            tiles,
-        };
-        let n = fiber.tiles.len();
-        let end = fiber.at(n, [0; HIDDEN_SEATS]);
-        fiber.ways[end] = 1;
-        for i in (0..n).rev() {
-            let left = n - i;
-            for c0 in 0..=capacities[0].min(left) {
-                for c1 in 0..=capacities[1].min(left - c0) {
-                    let c = [c0, c1, left - c0 - c1];
-                    if c[2] > capacities[2] {
-                        continue;
-                    }
-                    let total =
-                        (0..HIDDEN_SEATS).filter_map(|j| fiber.after(i, c, j)).map(|next| fiber.ways[next]).sum();
-                    let here = fiber.at(i, c);
-                    fiber.ways[here] = total;
-                }
+impl<const N: usize> Allocation<N> {
+    pub(crate) fn new(pool: DominoSet, capacities: [usize; N], allowed: [DominoSet; N]) -> Self {
+        debug_assert!((2..=4).contains(&N));
+        debug_assert_eq!(capacities.iter().sum::<usize>(), pool.len());
+        debug_assert!(capacities.iter().all(|c| *c <= 7));
+        let tiles: Vec<_> = pool.iter().collect();
+        let width: usize = capacities[..N - 1].iter().map(|c| c + 1).product();
+        let mut a = Self { ways: vec![0; (tiles.len() + 1) * width], tiles, capacities, allowed };
+        let end = a.at(a.tiles.len(), [0; N]);
+        a.ways[end] = 1;
+        for i in (0..a.tiles.len()).rev() {
+            a.fill(i, 0, a.tiles.len() - i, &mut [0; N]);
+        }
+        a
+    }
+
+    fn fill(&mut self, i: usize, slot: usize, left: usize, c: &mut [usize; N]) {
+        if slot == N - 1 {
+            if left <= self.capacities[slot] {
+                c[slot] = left;
+                let total = (0..N).filter_map(|j| self.after(i, *c, j)).map(|next| self.ways[next]).sum();
+                let here = self.at(i, *c);
+                self.ways[here] = total;
+            }
+        } else {
+            for n in 0..=self.capacities[slot].min(left) {
+                c[slot] = n;
+                self.fill(i, slot + 1, left - n, c);
             }
         }
-        fiber
     }
 
-    /// The entry of `c` before tile `i`; `c[2]` is implied by the tiles left.
-    fn at(&self, i: usize, c: [usize; HIDDEN_SEATS]) -> usize {
-        (i * (self.capacities[0] + 1) + c[0]) * (self.capacities[1] + 1) + c[1]
+    fn at(&self, i: usize, c: [usize; N]) -> usize {
+        (0..N - 1).fold(i, |at, j| at * (self.capacities[j] + 1) + c[j])
     }
 
-    /// The table entry after giving tile `i` to slot `j`, if that is allowed.
-    fn after(&self, i: usize, mut c: [usize; HIDDEN_SEATS], j: usize) -> Option<usize> {
+    fn after(&self, i: usize, mut c: [usize; N], j: usize) -> Option<usize> {
         if c[j] == 0 || !self.allowed[j].contains(self.tiles[i]) {
             return None;
         }
@@ -317,16 +358,16 @@ impl Fiber {
         Some(self.at(i + 1, c))
     }
 
-    fn count(&self) -> u128 {
+    pub(crate) fn count(&self) -> u128 {
         self.ways[self.at(0, self.capacities)]
     }
 
-    /// The hidden hands of world number `k`, for `k < count()`.
-    fn unrank(&self, mut k: u128) -> [DominoSet; HIDDEN_SEATS] {
-        let mut hands = [DominoSet::EMPTY; HIDDEN_SEATS];
+    pub(crate) fn unrank(&self, mut k: u128) -> [DominoSet; N] {
+        debug_assert!(k < self.count());
+        let mut hands = [DominoSet::EMPTY; N];
         let mut c = self.capacities;
         for (i, tile) in self.tiles.iter().enumerate() {
-            for j in 0..HIDDEN_SEATS {
+            for j in 0..N {
                 if let Some(next) = self.after(i, c, j) {
                     if k < self.ways[next] {
                         hands[j].insert(*tile);

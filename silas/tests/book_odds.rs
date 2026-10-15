@@ -132,11 +132,25 @@ fn probability(query: &str, belief: &Belief) -> BigRational {
     exact(compile(query).summarize(belief, &mut big_budget()).unwrap().event_probability())
 }
 
+/// A uniform-fiber lesson is also a construction contract. Conditioned
+/// beliefs below retain their own tests; their mass is not the uniform fiber.
+fn constructed_probability(query: &str, belief: &Belief) -> BigRational {
+    let compiled = compile(query);
+    let probability = compiled.summarize(belief, &mut big_budget()).unwrap().event_probability();
+    let space = WorldSpace::new(belief.frame().clone(), &compiled, 100_000, &mut big_budget()).unwrap();
+    assert_eq!(space.probability(), probability, "{query}");
+    if space.count() > 0 {
+        space.unrank(0, &mut big_budget()).unwrap();
+        space.unrank(space.count() - 1, &mut big_budget()).unwrap();
+    }
+    exact(probability)
+}
+
 /// The query's exact probability at a hand, resolving `marked` there.
 fn at(query: &str, hand: Hand, marked: fn(&Frame) -> DominoSet) -> BigRational {
     let frame = root(hand);
     let tiles = marked(&frame);
-    probability(query, &resolved(frame, tiles))
+    constructed_probability(query, &resolved(frame, tiles))
 }
 
 /// The query's answer on a shape: equal on both representative hands.
@@ -733,7 +747,7 @@ fn at_position(query: &str, position: &common::fixture::Position) -> BigRational
     let compiled = compile(query);
     let belief = Belief::uniform_for(position.frame(Seat::S0), &compiled, 100_000, &mut big_budget()).unwrap();
     assert_eq!(belief.authority(), &Authority::exact());
-    exact(compiled.summarize(&belief, &mut big_budget()).unwrap().event_probability())
+    constructed_probability(query, &belief)
 }
 
 #[test]

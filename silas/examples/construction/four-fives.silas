@@ -1,0 +1,16 @@
+; SPDX-FileCopyrightText: Jason Yandell
+; SPDX-License-Identifier: CC0-1.0
+;
+; Opening family: exactly four fives in the viewer's hand, including 5-5
+; but excluding 6-5; an opponent holds the 6-5 with another five.
+; A structural family, not the book's whole condition for bidding 84.
+(query
+  (viewer bidder)
+  (holds bidder 5-5)
+  (not (holds bidder 6-5))
+  (= (card (roles d) (in d q*) (holds bidder d)) 4)
+  (opponent bidder foe)
+  (holds foe 6-5)
+  (in other q*)
+  (not (tile other 6-5))
+  (holds foe other))
