@@ -38,8 +38,3 @@ path = [
 ]
 SPDX-FileCopyrightText = "K-Dense Inc."
 SPDX-License-Identifier = "LicenseRef-third-party"
-
-[[annotations]]
-path = [".claude/skills/pdf/**", ".agents/skills/pdf/**"]
-SPDX-FileCopyrightText = "Anthropic, PBC"
-SPDX-License-Identifier = "LicenseRef-third-party"
