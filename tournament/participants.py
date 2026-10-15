@@ -17,6 +17,11 @@ Kinds, and what pins each:
 - `arena`        an mk5 arena spec run by this checkout, plus the sha256 of
                  any weights it loads; the faceoff records the mk5 commit
                  that ran it.
+- `zeb-native`   a Zeb release's shipped JavaScript bidder driving its own Rust
+                 player compiled natively: the release commit, the git tree of
+                 each Rust source directory, the sha256 of each shipped file
+                 and of the native binary. A research seat: `needs` names a
+                 capability no standing worker advertises.
 - `demon`        the Demon (STRATEGY-FUSION FENCE: a fenced tournament
                  opponent; measuring stick only): an mk5 commit and the git
                  tree of each source directory its binary is built from,
@@ -76,7 +81,40 @@ def zeb_npm(version: str, integrity: str, shasum: str, *, worlds: int = 160,
     )
 
 
-PLUNGE_COMMIT = "26043bf93d2d9ac68db393ff4dfb8843a11ef1ef"
+# Zeb as the Demon trials seated it: the release's own JavaScript bidding rule
+# and the identical Rust player compiled natively (wiki/experiments/demon-vs-zeb-2026-10-15.md).
+# 0.4.1 changes no Rust (the trees below are 0.4.0's), so one native binary seats both.
+NATIVE_ZEB_BINARY_SHA256 = "c76303d02f82b3bf7b1ca8856cda0e14e5e1eb17df59002ef04191af92d8661a"
+NATIVE_ZEB_TREES = {"zeb/src": "4d77a3ba2db5f7eb7ac953d4be562070c760dc5c",
+                    "zeb/net": "f25de62037be0317882c3c51fbed5b236d3caf0b",
+                    "scenario/core": "61cd6a5225f664be24bcd2f27d74b6744c71e769"}
+ZEB_WASM_SHA256 = "bebfdfed14c92ce92586b0d2f35520f70cadc50a70f838200e84073c801e9154"
+
+
+def zeb_native(version: str, commit: str, files: dict, *, overcall: bool, worlds: int = 160,
+               cutoff: float = 0.8) -> Participant:
+    """Zeb `version` match-aware, pip declarations as measured, native play; `overcall` is 0.4.1's."""
+    tag = "contested" if overcall else "match"
+    return Participant(
+        id=f"zeb-{version}-{tag}",
+        kind="zeb-native",
+        pin={"repo": "jasonyandell/mk5-main", "commit": commit, "tag": f"zeb-v{version}",
+             "trees": dict(NATIVE_ZEB_TREES), "files": dict(files),
+             "wasm_sha256": ZEB_WASM_SHA256, "native_binary_sha256": NATIVE_ZEB_BINARY_SHA256},
+        config={"worlds": worlds, "cutoff": cutoff, "seed": 0, "matchAware": True,
+                "overcall": overcall, "legalDeclarations": [0, 1, 2, 3, 4, 5, 6], "reading": True},
+        needs=("node", "zeb-native"),
+        note=(f"@jasonyandell/zeb {version} as tag zeb-v{version} ships it: chooseBid with `match`"
+              f"{' and `overcall: true` (the contested constants)' if overcall else ''}, "
+              f"the seven pip declarations as measured, {worlds} worlds, cutoff {cutoff}, seed 0, "
+              f"behind the partner-pass convention; plays through the identical Rust player "
+              f"compiled natively (no search or policy edit). The package's JavaScript is read "
+              f"from the tagged source because the npm tarball may not exist yet; its wasm is "
+              f"0.4.0's, unchanged."),
+    )
+
+
+PLUNGE_COMMIT ="26043bf93d2d9ac68db393ff4dfb8843a11ef1ef"
 
 # The initial roster (2026-10-14). The anchor is production Walt: the player
 # Jason's family plays every day, so its rating is 1500 by definition.
@@ -217,8 +255,22 @@ DEMON_OVERCALL_N100 = demon("2e233d29387c2aea0404adffadcaffac3a845a38",
                              "tournament/demon": "9ddb6a5856af05bada8da8ce1ba6db869386f3ee"},
                             worlds=100, bidder="pimc-over:64:0.875:0.5")
 
+# The overcall's rematch against the Demon (wiki/experiments/rematch-zeb-041-vs-demon-2026-10-15.md):
+# 0.4.1 as shipped, and 0.4.0 match-aware as its equal-deals reference.
+ZEB_040_MATCH = zeb_native(
+    "0.4.0", "29f519953467f6aacd78bd17700f3c67fda6b4eb",
+    {"package/index.js": "c36422b30f31d2a9546906ee76ae95e621d5a7d18180a6aef1163d568f762933",
+     "package/match.js": "4adb52884209db4f82dfa2a918a3c5253786027f97fb5242114da116d49ccc9a"},
+    overcall=False)
+ZEB_041_CONTESTED = zeb_native(
+    "0.4.1", "0b57a8f5dff9fc7b5249c01be88927b7c8c7ecd0",
+    {"package/index.js": "0ee47e61b5c02c0627df0f328747615e723e46cf568bf7eab7a1a93ecce02e3f",
+     "package/match.js": "85aaa9b7242f00386cef77134fd332484228c5aac690280f7f3ec7107e292e61"},
+    overcall=True)
+
 ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
-          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100)
+          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100,
+          ZEB_040_MATCH, ZEB_041_CONTESTED)
 ANCHOR = WALT.id
 
 

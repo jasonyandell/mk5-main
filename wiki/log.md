@@ -48,6 +48,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | rematch | Zeb 0.4.1 vs the overcalling Demon: pre-registered before any game]
+
+**Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). Results follow.
+
 ## [2026-10-15 | book/fallible | The fallible field pre-registered (#151): the book's play against opponents who lose track]
 
 - [[fallible-field-2026-10-15]]: deployed Zeb forgetting a seat's voids with probability p per decision (`void_miss`), p ∈ {0, 0.1, 0.2, 0.4}; primary ΔG(0.4) and p*; 384 batches; `scenario/fallible.py`.
