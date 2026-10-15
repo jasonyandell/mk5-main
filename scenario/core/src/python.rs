@@ -137,7 +137,7 @@ fn rec_of(req: &Req) -> PyResult<Rec> {
 #[pymethods]
 impl Core {
     #[new]
-    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None, tie="lowest", tie_band=0.0))]
+    #[pyo3(signature = (rungs, utility, seed, field=None, field_eps=0.0, draw="uniform", draw_budget=planner::DRAW_BUDGET, convention=None, reading=None, tie="lowest", tie_band=0.0, void_miss=0.0))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         rungs: Vec<(usize, Option<usize>, usize)>,
@@ -151,6 +151,7 @@ impl Core {
         reading: Option<(String, i64, f64)>,
         tie: &str,
         tie_band: f64,
+        void_miss: f64,
     ) -> PyResult<Self> {
         if rungs.is_empty() {
             return Err(PyValueError::new_err("a player needs at least one rung"));
@@ -231,7 +232,10 @@ impl Core {
         };
         let field = field.map(FieldNet::from_bytes).transpose().map_err(|e| PyValueError::new_err(e.to_string()))?;
         let rules = (0..N_DECLS).map(|d| Rules::new(d).expect("every declaration below N_DECLS has rules")).collect();
-        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention, reading, tie }, rules })
+        if !(0.0..=1.0).contains(&void_miss) {
+            return Err(PyValueError::new_err("void_miss must lie in [0, 1]"));
+        }
+        Ok(Core { cfg: Config { rungs, make, seed, field, field_eps, draw, draw_budget, convention, reading, tie, void_miss }, rules })
     }
 
     /// The live rung's scenarios for each request — exactly the worlds `solve`

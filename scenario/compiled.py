@@ -58,7 +58,7 @@ class CompiledWalt:
             (config.convention.name, config.convention.send, config.convention.read),
             None if config.reading is None else
             (config.reading.likelihood, config.reading.margin, config.reading.eps),
-            config.tie, config.tie_band,
+            config.tie, config.tie_band, config.void_miss,
         )
         self.nodes = 0      # cells evaluated in the last decision or batch
         self.proposals = 0  # posterior or reader: uniform proposals drawn in the last decision or batch

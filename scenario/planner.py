@@ -171,6 +171,7 @@ HAND_TOTAL = 42
 MASK64 = (1 << 64) - 1
 GOLDEN = 0x9E3779B97F4A7C15
 COIN = 0x636F696E            # "coin": the posterior's acceptance stream is _mix(seed, COIN)
+VOID = 0x766F6964            # "void": a seat's void coin is _mix(seed, VOID, seat) (`Config.void_miss`)
 
 
 @dataclass(frozen=True)
@@ -234,12 +235,15 @@ class Config:
     reading: Reading | None = None   # the posterior's likelihood as the net's set; None is F_σ's
     tie: str = "lowest"         # the tie rule among a decision's exact ties: "lowest" or "margin"
     tie_band: float = 0.0       # δ: margin's tied set is every q within δ of the best; 0 is the exact tie
+    void_miss: float = 0.0      # p: each hidden seat's shown voids are forgotten with probability p (#151)
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.field_eps <= 1.0:
             raise ValueError("field_eps must lie in [0, 1]")
         if self.field_eps > 0.0 and self.field is None:
             raise ValueError("field_eps needs a field net: the random field is the dice already")
+        if not 0.0 <= self.void_miss <= 1.0:
+            raise ValueError("void_miss must lie in [0, 1]")
         if not self.rungs:
             raise ValueError("a player needs at least one rung")
         if self.utility not in ("make", "points"):
@@ -280,9 +284,30 @@ class Config:
         return math.ceil(self.field_eps * 2.0 ** 53)
 
     @property
+    def void_coin(self) -> int:
+        """The void coin's threshold on a 53-bit draw, ⌈p·2^53⌉, as `field_coin`."""
+        return math.ceil(self.void_miss * 2.0 ** 53)
+
+    @property
     def field_eps_exact(self) -> float:
         """ε̂, the probability the coin realizes (exact in a double)."""
         return self.field_coin * 2.0 ** -53
+
+
+def missed_voids(seed: int, viewer: int, forbid: tuple[int, int, int, int],
+                 coin: int) -> tuple[int, int, int, int]:
+    """The voids a fallible tracker remembers at an invocation (#151,
+    `Config.void_miss`): each hidden seat's shown voids, its whole `forbid`
+    mask, are forgotten when its coin, the top 53 bits of
+    `_splitmix(_mix(seed, VOID, seat))`, falls below `coin`. With coin 0 every
+    void is kept and nothing is drawn. Only the worlds are drawn from what is
+    remembered; the record the plan advances through is the true one."""
+    if coin == 0:
+        return forbid
+    return tuple(  # type: ignore[return-value]
+        0 if s != viewer and _splitmix(_mix(seed, VOID, s)) >> 11 < coin else f
+        for s, f in enumerate(forbid)
+    )
 
 
 def _splitmix(x: int) -> int:
@@ -614,18 +639,19 @@ class Walt:
         seed = _mix(self.config.seed, viewer, own, _tape_key(rec), *rec.forbid)
         rng = SplitMix(seed)
         sizes = (rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3))
-        worlds, exact = sample_worlds(viewer, own, rec.played, sizes, rec.forbid, rung.n_worlds, rng)
+        forbid = missed_voids(seed, viewer, rec.forbid, self.config.void_coin)
+        worlds, exact = sample_worlds(viewer, own, rec.played, sizes, forbid, rung.n_worlds, rng)
         weights = [1.0] * len(worlds)
         conv = self.config.convention
         reading = self.config.reading
         if sit is not None and reading is not None:
             worlds, weights = self._drawn(sit, worlds, exact, seed, self.reading_likelihood,
-                                          reading.likelihood == "uniform" or reading.eps > 0.0, READ_ENUM)
+                                          reading.likelihood == "uniform" or reading.eps > 0.0, READ_ENUM, forbid)
         elif sit is not None and self.config.draw == "posterior":
             worlds, weights = self._drawn(sit, worlds, exact, seed, self.field_likelihood,
-                                          self.config.field_coin > 0)
+                                          self.config.field_coin > 0, 0, forbid)
         elif sit is not None and conv is not None and conv.read:
-            worlds, weights = self._drawn(sit, worlds, exact, seed, self.convention_likelihood, False)
+            worlds, weights = self._drawn(sit, worlds, exact, seed, self.convention_likelihood, False, 0, forbid)
         if sit is not None and self.belief is not None:
             weights = [w * x for w, x in zip(weights, self.belief(sit, worlds))]
         tapes = [_mix(seed, i) for i in range(len(worlds))]
@@ -634,7 +660,8 @@ class Walt:
         return _Invocation(self, k, viewer, rec, rules, bid, bidder_team, worlds, weights, tapes, floor, bidder)
 
     def _drawn(self, sit: Situation, uniform: list[World], exact: bool, seed: int,
-               likelihood: Belief, coined: bool, cap: int = 0) -> tuple[list[World], list[float]]:
+               likelihood: Belief, coined: bool, cap: int = 0,
+               forbid: tuple[int, int, int, int] | None = None) -> tuple[list[World], list[float]]:
         """The live rung's scenarios under uniform × `likelihood` (the field's
         β^F, the reading's, or the convention reader's filter) and their
         weights, given the uniform ones: the fiber weighted by L normalized
@@ -656,7 +683,7 @@ class Walt:
             return uniform, [1.0] * n
         cfg, rec = self.config, sit.record
         fiber = Fiber(sit.viewer, uniform[0][sit.viewer], rec.played,
-                      tuple(rec.hand_size(s) for s in range(4)), rec.forbid)
+                      tuple(rec.hand_size(s) for s in range(4)), rec.forbid if forbid is None else forbid)
         if fiber.size <= cap:
             every = fiber.worlds()
             self.proposals = len(every)

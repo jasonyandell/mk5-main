@@ -170,6 +170,7 @@ impl Player {
             convention: None,
             reading,
             tie: Tie::Margin { band: 0.0 },
+            void_miss: 0.0,
         }
     }
 

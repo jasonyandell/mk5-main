@@ -32,6 +32,12 @@ the scenario's record-keyed tape, else the net's move — P_σ(t) = ε/n +
 (1 − ε)·[t = the net's move] — so the posterior under the field has full
 support. The default, 0, is the deterministic net.
 
+`V=` makes the player a fallible tracker (`Config.void_miss`, #151): at each
+decision each hidden seat's shown voids are forgotten with probability p, by
+a coin keyed on the decision and the seed, and the worlds are drawn from what
+is remembered; the record the plan advances through stays true. The default,
+0, is deployed Zeb byte for byte.
+
 `d=posterior` draws the live seat's worlds from the field's posterior β^F
 instead of the uniform (`Config.draw`; k=0 with `F=`): the worlds the net —
 at `E=` — would have played the observed moves in. An enumerated fiber is
@@ -143,12 +149,12 @@ class WaltPlay:
                  floor: int | None = None, field: FieldNet | None = None,
                  field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
                  convention: Convention | None = None, reading: Reading | None = None, tie: str = "lowest",
-                 tie_band: float = 0.0, compiled: bool = True):
+                 tie_band: float = 0.0, compiled: bool = True, void_miss: float = 0.0):
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
         config = Config(rungs, utility, seed, field, field_eps, draw, draw_budget, convention, reading, tie,
-                        tie_band)
+                        tie_band, void_miss)
         if compiled:
             from scenario.compiled import CompiledWalt
             self.walt = CompiledWalt(config, belief=belief)
@@ -191,6 +197,7 @@ class WaltPlay:
         conv += "" if c.reading is None else f", reading={c.reading.likelihood}:{c.reading.margin}"
         conv += "" if c.reading is None or c.reading.eps == 0 else f":{c.reading.eps:g}"
         tie = "" if c.tie == "lowest" else f", tie={c.tie}" + (f":{c.tie_band:g}" if c.tie_band else "")
+        tie += "" if c.void_miss == 0 else f", void_miss={c.void_miss:g}"
         return (f"WaltPlay(level={c.level}, rungs={list(c.rungs)}, utility={c.utility!r}{belief}, "
                 f"field={field}, draw={c.draw}{conv}{tie}, {engine})")
 
@@ -212,6 +219,8 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["field"] = FieldNet.load(t[2:])
         elif t.startswith("E="):
             kw["field_eps"] = float(t[2:])
+        elif t.startswith("V="):
+            kw["void_miss"] = float(t[2:])
         elif t.startswith("d="):
             kw["draw"] = t[2:]
         elif t.startswith("D="):

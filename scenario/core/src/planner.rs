@@ -74,6 +74,8 @@ const HAND_SIZE: u8 = 7;
 const GOLDEN: u64 = 0x9E3779B97F4A7C15;
 /// "coin": the posterior's acceptance stream is `mix(seed, COIN)`.
 const COIN: u64 = 0x636F_696E;
+/// "void": a hidden seat's void coin is `mix(seed, VOID, seat)` (`Config::void_miss`).
+const VOID: u64 = 0x766F_6964;
 /// The posterior's default proposal budget (`scenario.planner.DRAW_BUDGET`).
 pub const DRAW_BUDGET: u64 = 1 << 22;
 /// A reading draws from the whole fiber, enumerated, when it holds at most
@@ -532,6 +534,9 @@ pub struct Config {
     pub convention: Option<Convention>,
     /// The tie rule among a decision's exact ties; [`Tie::Margin`] needs `make`.
     pub tie: Tie,
+    /// p in [0, 1]: each hidden seat's shown voids are forgotten with
+    /// probability p when the worlds are drawn (#151); 0 is deployed Zeb.
+    pub void_miss: f64,
 }
 
 impl Config {
@@ -569,11 +574,31 @@ fn invocation_seed(cfg: &Config, viewer: u8, own: u32, rec: &Rec) -> u64 {
     ])
 }
 
-/// The rung's scenarios, and whether they are the whole fiber.
-fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64) -> (Vec<[u32; 4]>, bool) {
+/// The voids a fallible tracker remembers at an invocation (#151): each hidden
+/// seat's whole `forbid` mask is forgotten when the top 53 bits of
+/// `splitmix(mix(seed, VOID, seat))` fall below ⌈p·2^53⌉. With p = 0 every
+/// void is kept. Only the worlds are drawn from what is remembered; the record
+/// the plan advances through is the true one. The referee's `missed_voids`.
+pub fn missed_voids(seed: u64, viewer: u8, forbid: [u32; 4], void_miss: f64) -> [u32; 4] {
+    let coin = (void_miss * (1u64 << 53) as f64).ceil() as u64;
+    if coin == 0 {
+        return forbid;
+    }
+    let mut out = forbid;
+    for (s, f) in out.iter_mut().enumerate() {
+        if s != viewer as usize && splitmix(mix(&[seed, VOID, s as u64])) >> 11 < coin {
+            *f = 0;
+        }
+    }
+    out
+}
+
+/// The rung's scenarios, and whether they are the whole fiber, drawn from the
+/// voids remembered (`forbid`).
+fn worlds_for(cfg: &Config, k: usize, viewer: u8, own: u32, rec: &Rec, seed: u64, forbid: [u32; 4]) -> (Vec<[u32; 4]>, bool) {
     let mut rng = SplitMix::new(seed);
     let sizes = [rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3)];
-    sample_worlds(viewer, own, rec.played, sizes, rec.forbid, cfg.rungs[k].0, &mut rng)
+    sample_worlds(viewer, own, rec.played, sizes, forbid, cfg.rungs[k].0, &mut rng)
 }
 
 /// The live rung's scenarios at a root — what `decide` plans over.
@@ -586,7 +611,9 @@ pub fn root_worlds(cfg: &Config, d: &Decision) -> Vec<[u32; 4]> {
 /// when it is larger — under either draw.
 pub fn root_count(cfg: &Config, d: &Decision) -> usize {
     let sizes = [d.rec.hand_size(0), d.rec.hand_size(1), d.rec.hand_size(2), d.rec.hand_size(3)];
-    let size = Fiber::new(d.viewer, d.own, d.rec.played, sizes, d.rec.forbid).size() as usize;
+    let seed = invocation_seed(cfg, d.viewer, d.own, &d.rec);
+    let forbid = missed_voids(seed, d.viewer, d.rec.forbid, cfg.void_miss);
+    let size = Fiber::new(d.viewer, d.own, d.rec.played, sizes, forbid).size() as usize;
     size.min(cfg.rungs[cfg.level()].0)
 }
 
@@ -701,6 +728,7 @@ fn drawn(
     ctx: &mut Ctx,
     viewer: u8,
     rec: &Rec,
+    forbid: [u32; 4],
     uniform: Vec<[u32; 4]>,
     exact: bool,
     seed: u64,
@@ -720,7 +748,7 @@ fn drawn(
         return (uniform, vec![1.0; n]);
     }
     let sizes = [rec.hand_size(0), rec.hand_size(1), rec.hand_size(2), rec.hand_size(3)];
-    let mut fiber = Fiber::new(viewer, uniform[0][viewer as usize], rec.played, sizes, rec.forbid);
+    let mut fiber = Fiber::new(viewer, uniform[0][viewer as usize], rec.played, sizes, forbid);
     if fiber.size() <= cap {
         let all = fiber.worlds();
         ctx.drawn.proposals = all.len() as u64;
@@ -811,7 +839,8 @@ impl Inv {
     fn new(ctx: &mut Ctx, k: usize, viewer: u8, own: u32, rec: &Rec, live: Option<Live>) -> Inv {
         let cfg = ctx.cfg;
         let seed = invocation_seed(cfg, viewer, own, rec);
-        let (mut worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed);
+        let forbid = missed_voids(seed, viewer, rec.forbid, cfg.void_miss);
+        let (mut worlds, exact) = worlds_for(cfg, k, viewer, own, rec, seed, forbid);
         let weights = match live {
             Some((plays, external, auction)) => {
                 let mut w = vec![1.0; worlds.len()];
@@ -821,16 +850,16 @@ impl Inv {
                     let like =
                         |ctx: &mut Ctx, world: &[u32; 4], u: f64| read(ctx, &ev, viewer, world, reading, auction, u);
                     (worlds, w) =
-                        drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, reading.uniform || reading.eps > 0.0, READ_ENUM, like);
+                        drawn(ctx, viewer, rec, forbid, worlds, exact, seed, cfg.draw_budget, reading.uniform || reading.eps > 0.0, READ_ENUM, like);
                 } else if cfg.draw == Draw::Posterior {
                     let eps = eps_exact(cfg.field_eps);
                     let ev = Evidence::new(ctx.rules, viewer, plays);
                     let like = |ctx: &mut Ctx, world: &[u32; 4], u: f64| likelihood(ctx, &ev, world, eps, u);
-                    (worlds, w) = drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, eps > 0.0, 0, like);
+                    (worlds, w) = drawn(ctx, viewer, rec, forbid, worlds, exact, seed, cfg.draw_budget, eps > 0.0, 0, like);
                 } else if let Some(conv) = cfg.convention.filter(|c| c.read) {
                     let ev = Evidence::new(ctx.rules, viewer, plays);
                     let like = |ctx: &mut Ctx, world: &[u32; 4], _: f64| reading(ctx, &conv, &ev, viewer, world);
-                    (worlds, w) = drawn(ctx, viewer, rec, worlds, exact, seed, cfg.draw_budget, false, 0, like);
+                    (worlds, w) = drawn(ctx, viewer, rec, forbid, worlds, exact, seed, cfg.draw_budget, false, 0, like);
                 }
                 if let Some(x) = external {
                     assert_eq!(x.len(), w.len(), "external weights must match the live scenarios");

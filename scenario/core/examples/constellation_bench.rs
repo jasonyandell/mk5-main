@@ -80,6 +80,7 @@ fn main() {
         convention: None,
         reading: None,
         tie: Tie::Lowest,
+        void_miss: 0.0,
     };
     for (lo, label) in [(16u8, "tricks 5-7"), (12u8, "tricks 4-7")] {
         let ps = positions(deals, lo);
