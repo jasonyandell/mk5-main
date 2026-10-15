@@ -4242,3 +4242,25 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-14 | bf16fdfe | The book at small n (#154): the near-tie break is free at 16, 64 and 160 worlds; the book's sets cost a 16-world plan 0.21 [−0.02, 0.44] marks/game and a 160-world plan 1.10 [0.93, 1.27]]
 
 **Added:** [[book-small-n-2026-10-14]] (pre-registered at bf16fdfe, 280 batches through `scripts/cpu-slot`, none dropped; D16 −0.01 [−0.18, +0.17], MDE 0.25; A/A −0.03), `scenario/small_n.py`; data `book/small-n/` in texas-42-zeb-research-2026-10. **Updated:** [[book-assumptions]] (A7 measured to 16 worlds; #161 the reader with no plan). Pre-registered, queued: [[deviant-field-2026-10-14]] (#152, `scenario/deviant_field.py`, 98f5d16c).
+
+## [2026-10-14 | c9a868cb | match-aware bidding: Zeb's bidder in the arena, the 84 priced by match equity wins 53.4% [52.5, 54.3] of games vs the hand-only bidder; 51.4% [50.6, 52.2] vs the same 84 priced score-blind; A/A exact; no drops]
+
+**Added:** [[match-aware-bidding-2026-10-14]] (pre-registered at c9a868cb, model frozen at ee2c95b7), [[match-equity]]. **Updated:** [[scenario-player]] (§ Match-aware bidding), `index-experiments.md`, `index-topics.md`. Code: `arena/zeb_bid.py`, `arena/match_equity.py` (default off). Data: `zeb/match-aware-bidding/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-ups: #160.
+
+## [2026-10-14 | archive | recover everything to Hugging Face: the Archive desk's inventory and first batch (five repos, ~8 GB, screened, verified by download)]
+
+## [2026-10-14 | guard-reads | Silas: a guard that reads (#128): a rule acts on a reading of another seat's plays]
+
+**Updated:** [[silas]] (§ the record as evidence; next), `silas/README.md`, `silas/GAPS.md` 1. **Added:** `ReadingPredicate` and `ReadChair` in `silas/src/reading.rs`, `silas/tests/guard_reading.rs` (Hand 31's two readings as guards at every seating). No core pin moved. **Filed:** #162, a reading written in a `.silas` file and registered by the arena.
+
+## [2026-10-14 | 98f5d16c | The named deviant field (#152): the book's bidding costs 0.92 [0.60, 1.22] marks/game against a field that bids its hand and 0.57 [0.22, 0.91] against one 10 points past it; level in the book's game]
+
+**Updated:** [[deviant-field-2026-10-14]] (complete; 192 batches through `scripts/cpu-slot`, none dropped; C10 − C0 +0.35 [−0.02, +0.71], MDE 0.52; S-0114-b seen in the field's own arms), [[book-assumptions]] (A6 measured in one dimension). Data `book/deviant-field/` in texas-42-zeb-research-2026-10. **Filed:** #163, the book's kind of overbidder, powered.
+
+## [2026-10-14 | reading-text | Silas: a reading written in a policy file (#162); the book's crisis as Hand 31 reads it]
+
+**Updated:** [[silas]], `silas/README.md`, `silas/GAPS.md` 1. **Added:** `(reading ...)` in a policy and `PolicyProgram::compile_reading`; the `silas` command finds a reader beside its file; `examples/book/crisis-read.silas` (one new pin, none moved); `silas/tests/reading_text.rs`. The arena's half of #162 (gated) is next.
+
+## [2026-10-14 | 18ac096d | the Demon: exact search-table locality, compact 100- and 400-world tournament challengers]
+
+**Added:** [[demon-search-tables-2026-10-14]], [[18ac096d]]. **Updated:** [[the-demon]], [[tournament]]; the roster retains the original and adds compact-table builds. Parity, resource measurements, the fixed duplicate-match pilot, and public data are on the experiment page.

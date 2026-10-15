@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-14, 274 archived entries)
+## Digest (2026-04-09 → 2026-10-14, 280 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -43,6 +43,8 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The tournament, the Book Authority, Zeb 0.3.0** (2026-10-14, 6 archived entries) — [[tournament]] (production Walt, Zeb, fenced E[Q] on a Bradley–Terry ladder), [[book-authority]] and [[book-assumptions]] (the charter and eleven assumptions), [[zeb-030-confirmation-2026-10-14]], [[regulars-table-2026-10-14]], the fly connectome as a player, [[legacy-42-bots]].
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
+- **Match bidding, readings and exact search** (2026-10-14, 6 archived entries) — [[match-aware-bidding-2026-10-14]], [[match-equity]], [[publish-data-to-huggingface]], [[silas]], [[deviant-field-2026-10-14]], [[demon-search-tables-2026-10-14]].
+
 ---
 
 ## [2026-10-15 | 7e00788a | Demon candidate frozen against native Zeb]
@@ -53,7 +55,6 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-15 | 1273bc97 | Demon versus Zeb: correct the declaration domain before measuring strength]
 
 **Added:** [[demon-vs-zeb-2026-10-15]] (active; pinned Zeb 0.4.0, whole-seat timing and independent confirmation protocol). **Corrected:** [[demon-next-form-2026-10-14]] (ten-declaration result, not straight 42; promotion withdrawn), [[the-demon]], [[tournament]], [[scenario-player]]. Initial invalid trials preserved publicly; new PIMC identities restrict declarations, workers exclude incompatible records and preserve their pending claims.
-
 
 ## [2026-10-15 | archive/gpl-home | GPL texas42 gets its own repo]
 - [[legacy-42-bots]]: the open question is answered. The GPL sources, shim and seat live in the private `jasonyandell/texas-42-gpl` (upstream tarball verified, tag `upstream-0.46`, headless build, smoke game clean). mk5 stays MIT; it talks to the built seat only over stdin/stdout.
@@ -85,25 +86,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | archive | the two superseded Zeb pours deleted (every chunk matched by SHA-256 in the 250k pour), and the four unlicensed repos dedicated CC0 with cards]
 
 **Updated:** [[huggingface-assets]] (17 datasets; licenses; mk5-fleet-payload belongs to [[otis-phase-r]], not the February fleet), [[scenario-player]] and [[publish-data-to-huggingface]] (the deleted repos named as history). Cards for mk5-run-evidence, mk5-fleet-payload and zeb-42-examples drafted by a Sonnet agent and checked against the Hub before upload.
-
-## [2026-10-14 | 18ac096d | the Demon: exact search-table locality, compact 100- and 400-world tournament challengers]
-
-**Added:** [[demon-search-tables-2026-10-14]], [[18ac096d]]. **Updated:** [[the-demon]], [[tournament]]; the roster retains the original and adds compact-table builds. Parity, resource measurements, the fixed duplicate-match pilot, and public data are on the experiment page.
-
-## [2026-10-14 | reading-text | Silas: a reading written in a policy file (#162); the book's crisis as Hand 31 reads it]
-
-**Updated:** [[silas]], `silas/README.md`, `silas/GAPS.md` 1. **Added:** `(reading ...)` in a policy and `PolicyProgram::compile_reading`; the `silas` command finds a reader beside its file; `examples/book/crisis-read.silas` (one new pin, none moved); `silas/tests/reading_text.rs`. The arena's half of #162 (gated) is next.
-
-## [2026-10-14 | 98f5d16c | The named deviant field (#152): the book's bidding costs 0.92 [0.60, 1.22] marks/game against a field that bids its hand and 0.57 [0.22, 0.91] against one 10 points past it; level in the book's game]
-
-**Updated:** [[deviant-field-2026-10-14]] (complete; 192 batches through `scripts/cpu-slot`, none dropped; C10 − C0 +0.35 [−0.02, +0.71], MDE 0.52; S-0114-b seen in the field's own arms), [[book-assumptions]] (A6 measured in one dimension). Data `book/deviant-field/` in texas-42-zeb-research-2026-10. **Filed:** #163, the book's kind of overbidder, powered.
-
-## [2026-10-14 | guard-reads | Silas: a guard that reads (#128): a rule acts on a reading of another seat's plays]
-
-**Updated:** [[silas]] (§ the record as evidence; next), `silas/README.md`, `silas/GAPS.md` 1. **Added:** `ReadingPredicate` and `ReadChair` in `silas/src/reading.rs`, `silas/tests/guard_reading.rs` (Hand 31's two readings as guards at every seating). No core pin moved. **Filed:** #162, a reading written in a `.silas` file and registered by the arena.
-
-## [2026-10-14 | archive | recover everything to Hugging Face: the Archive desk's inventory and first batch (five repos, ~8 GB, screened, verified by download)]
-
-## [2026-10-14 | c9a868cb | match-aware bidding: Zeb's bidder in the arena, the 84 priced by match equity wins 53.4% [52.5, 54.3] of games vs the hand-only bidder; 51.4% [50.6, 52.2] vs the same 84 priced score-blind; A/A exact; no drops]
-
-**Added:** [[match-aware-bidding-2026-10-14]] (pre-registered at c9a868cb, model frozen at ee2c95b7), [[match-equity]]. **Updated:** [[scenario-player]] (§ Match-aware bidding), `index-experiments.md`, `index-topics.md`. Code: `arena/zeb_bid.py`, `arena/match_equity.py` (default off). Data: `zeb/match-aware-bidding/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-ups: #160.
