@@ -338,7 +338,20 @@ impl ClairvoyantSolver {
         let node = Node::new(&self.rules, position);
         match objective {
             Objective::Margin => {
-                let future = self.search(node, -1, unbanked + 1);
+                // Each null-window query proves an upper or lower bound on
+                // future points. Bisect the integer interval until it is a
+                // singleton, reusing the table between queries.
+                let (mut lower, mut upper) = (0, unbanked);
+                while lower < upper {
+                    let threshold = (lower + upper + 1) / 2;
+                    let v = self.search(node, threshold - 1, threshold);
+                    if v >= threshold {
+                        lower = v;
+                    } else {
+                        upper = v;
+                    }
+                }
+                let future = lower;
                 banked[0] - banked[1] + 2 * future - unbanked
             }
             Objective::Make => {
