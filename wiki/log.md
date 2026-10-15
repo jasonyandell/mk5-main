@@ -47,6 +47,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | demon/overcalls | Contest opponent-held point bids without more search]
+
+**Added:** [[demon-overcalling-2026-10-15]]: explicit opponent cutoff, boundary and whole-game checks, three fixed development arms and fresh attempt-2 protocol. **Updated:** [[the-demon]]; attempt 1 remains complete and unpromoted.
+
 ## [2026-10-15 | demon/attempt-1 | Complete native Zeb confirmation: joint criterion not met]
 
 **Completed:** [[demon-vs-zeb-2026-10-15]]; all 1,024 games and timings published, standard bar clears but match-aware win interval crosses chance. **Added:** [[demon-zeb-attempt-1]]. **Updated:** [[the-demon]] [[scenario-player]]. No candidate promotion; #165 remains open.

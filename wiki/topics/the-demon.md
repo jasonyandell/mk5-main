@@ -40,6 +40,8 @@ nello, outside straight 42. New bidders explicitly restrict declarations to
 The 64-world bidder searches only the requested declarations. Its completed
 native Zeb comparison clears the standard-opponent bar, but the match-aware
 win interval crosses 50%; the joint promotion criterion is not met.
+[[demon-overcalling-2026-10-15]] tests lower thresholds when an opponent
+already holds a point bid, with the same forecast and no added search work.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw
 every hand, and E[max] ≥ max E ([[strategy-fusion]]). That is why the Demon makes a useful

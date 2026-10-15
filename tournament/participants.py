@@ -160,6 +160,9 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
                 f"Bidder `{bidder}`: common-world double-dummy contract forecasts; "
                 f"minimum point raise and partner pass in full bidding mode; "
                 f"the nine straight declarations only (not nello's declaration 8). ")
+    if bidder.startswith("pimc-over:"):
+        bid_note += (f"Uses DD cutoff {bidder.split(':')[3]} over an opponent's point bid "
+                     f"and {bidder.split(':')[2]} when opening; no mark overcalls. ")
     return Participant(
         id=f"demon-pimc-n{worlds}{tb}{suffix}-{commit[:8]}",
         kind="demon",

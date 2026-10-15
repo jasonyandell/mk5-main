@@ -157,7 +157,7 @@ contains every game, timing, trace, report, protocol and audit; both reports,
 the verdict, audit, one raw game and the manifest were freshly downloaded and
 verified. Provenance: [[demon-zeb-attempt-1]].
 
-Further development remains under issue #165. The completed attempt is
+Further development is [[demon-overcalling-2026-10-15]], under issue #165. The completed attempt is
 retained regardless of later outcomes. A new confirmation must freeze its
 candidate, fresh seeds and size before play, with attempt-2 alpha 1/120;
 the old games cannot be added to a new confirmation or selectively discarded.

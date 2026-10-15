@@ -22,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import math
 import shutil
 import subprocess
 import tarfile
@@ -79,6 +80,14 @@ class DemonSeat:
 
         cfg = p.config
         self.bid_spec = cfg["bidder"]
+        if self.bid_spec.startswith("pimc-over"):
+            parts = self.bid_spec.split(":")
+            if len(parts) != 4 or parts[0] != "pimc-over":
+                raise ValueError("pimc-over needs worlds:opening_cutoff:opponent_cutoff")
+            if not 1 <= int(parts[1]) <= 4096 or any(
+                not math.isfinite(float(x)) or not 0 <= float(x) <= 1 for x in parts[2:]
+            ):
+                raise ValueError("pimc-over needs worlds 1..4096 and finite cutoffs in 0..1")
         self.declarations = tuple(cfg.get("declarations", range(10)))
         if not self.declarations or len(set(self.declarations)) != len(self.declarations) or any(
             not isinstance(d, int) or not 0 <= d < 10 for d in self.declarations
@@ -101,7 +110,7 @@ class DemonSeat:
     # BidPolicy
     def bid(self, ctx, rng):
         self._bid_seats[tuple(ctx.hand)] = ctx.seat
-        if self.bid_spec.startswith("pimc:"):
+        if self.bid_spec.startswith(("pimc:", "pimc-over:")):
             # A whole-game experiment: minimum point raise, partner pass,
             # and a stated threshold on the optimistic DD forecast.
             target = min((b for b in ctx.legal if b <= 42), default=None)
@@ -109,6 +118,12 @@ class DemonSeat:
                 return 0
             decl, reply = self._forecast(ctx.hand, ctx.seat, target)
             cutoff = float(self.bid_spec.split(":")[2])
+            if self.bid_spec.startswith("pimc-over:") and ctx.high_seat >= 0:
+                # The partner case returned above. The opponent already holds
+                # the auction, so passing is not the same option as opening.
+                # This is an explicit experimental DD threshold, not a
+                # calibrated claim about the chance of making the contract.
+                cutoff = float(self.bid_spec.split(":")[3])
             return target if reply["makes"][decl] / reply["worlds"] >= cutoff else 0
         return self.bidder.bid(ctx, rng)
 

@@ -46,7 +46,8 @@ def _game(spec: F.FaceoffSpec, participants: dict, progress: Path) -> dict:
 
 
 @pytest.mark.parametrize("bidder,weight", [("heuristic", 1), ("heuristic", 32),
-                                          ("pimc-declare:2", 1), ("pimc:2:0.75", 1)])
+                                          ("pimc-declare:2", 1), ("pimc:2:0.75", 1),
+                                          ("pimc-over:2:0.75:0.5", 1)])
 def test_the_demon_plays_whole_games_legally_and_the_same_game_twice(working_tree_demon, tmp_path, monkeypatch, bidder, weight):
     monkeypatch.setattr(S, "materialize", lambda p: working_tree_demon)
     head = _git("rev-parse", "HEAD")
@@ -99,7 +100,8 @@ def test_new_models_get_distinct_participant_ids():
     base = demon("a" * 40, {}, worlds=100)
     read = demon("a" * 40, {}, worlds=100, declaration_weight=32)
     bid = demon("a" * 40, {}, worlds=100, bidder="pimc:16:0.875")
-    assert len({p.id for p in (base, read, bid)}) == 3
+    over = demon("a" * 40, {}, worlds=100, bidder="pimc-over:16:0.875:0.5")
+    assert len({p.id for p in (base, read, bid, over)}) == 4
     assert "declaration_weight" not in base.config
     assert read.config["declaration_weight"] == 32
     assert bid.config["declarations"] == list(STRAIGHT_DECLARATIONS)
@@ -118,6 +120,54 @@ def test_forecast_cannot_choose_nello_physics_even_when_it_scores_best():
     seat._ask = lambda r: ({"makes": [0, 0, 0, 0, 0, 0, 12, 13, 16, 14], "worlds": 16}
                           if r["op"] == "forecast" else {"decl": 8})
     assert seat._forecast(tuple(range(7)), 0, 30)[0] == 9
+
+
+@pytest.mark.parametrize("seat_id", range(4))
+def test_overcalling_changes_only_opponent_held_point_auctions(seat_id):
+    from arena.auction import BidContext, legal_bids
+
+    seat = object.__new__(DemonSeat)
+    seat._bid_seats = {}
+    seat.bid_spec = "pimc-over:64:0.875:0.5"
+    requests = []
+    count = 32
+
+    def forecast(hand, bidder, target):
+        requests.append((hand, bidder, target))
+        return 6, {"makes": [0] * 6 + [count] + [0, None, 0], "worlds": 64}
+
+    seat._forecast = forecast
+    hand = tuple(range(7))
+
+    def call(holder, high):
+        return seat.bid(BidContext(hand, seat_id, 0, (-1,) * 4, high, holder,
+                                  legal_bids(high)), random.Random(0))
+
+    assert call(-1, 0) == 0  # 50% is not enough to open.
+    count = 56
+    assert call(-1, 0) == 30  # The original 87.5% opening boundary.
+    count = 32
+    assert call((seat_id + 1) % 4, 35) == 36
+    assert requests[-1] == (hand, seat_id, 36)
+    count = 31
+    assert call((seat_id + 3) % 4, 35) == 0
+    count = 64
+    n = len(requests)
+    assert call((seat_id + 2) % 4, 35) == 0  # Never overcall partner.
+    assert call((seat_id + 1) % 4, 42) == 0  # No point raise remains.
+    assert call((seat_id + 1) % 4, 84) == 0
+    assert len(requests) == n
+    seat.bid_spec = "pimc:64:0.875"
+    count = 32
+    assert call((seat_id + 1) % 4, 35) == 0  # Existing pins keep their rule.
+
+
+@pytest.mark.parametrize("spec", ["pimc-over:64:0.875", "pimc-over:0:0.875:0.5",
+                                 "pimc-over:64:nan:0.5", "pimc-over:64:0.875:1.1"])
+def test_invalid_overcall_parameters_fail_before_starting_a_seat(tmp_path, spec):
+    p = Participant("bad", "demon", {}, {"bidder": spec})
+    with pytest.raises(ValueError, match="pimc-over"):
+        DemonSeat(p, tmp_path, "invalid")
 
 
 def test_the_pinned_build_checks_its_trees(tmp_path):
