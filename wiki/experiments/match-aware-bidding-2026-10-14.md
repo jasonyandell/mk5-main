@@ -491,6 +491,29 @@ Scripts at registration (`scratch/m170/`, sha256 prefixes): `sim.py` 57a7e94e9cb
 `sched.py` daab0eb0bd4f, `fit.py` ac9a41c1028d, `grade.py` c8e6d442284c, `blocks.json`
 29eb525c6c7a.
 
+### The refit (frozen before any test game)
+
+FIT: 384 games, 3,908 hands, no failed batch. The field contests: 4,832 of 5,834 turns where an
+opponent held the bid were overcalls (82.8%). `out/refit.json` (sha256 3e939d8659e9),
+frozen value [95% bootstrap over FIT games] against the frozen #160 value:
+
+| constant | #160 (passive field) | refit (field that overcalls) |
+|---|---|---|
+| `pass_ours[opp, 0..3]` | 0.17, 0.17, 0.20, 0.18 | 0.44 [0.40, 0.49], 0.37 [0.32, 0.43], 0.33 [0.27, 0.39], 0.39 [0.36, 0.43] |
+| `pass_ours[partner, 0..3]` | 0.83, 0.80, 0.81, 0.81 | 0.64, 0.69, 0.66, 0.66 (each ±0.05) |
+| `keep[opp, 1, low / high]` | 0.99 / 1.00 | 0.02 [0.01, 0.03] / 0.24 [0.21, 0.28] |
+| `keep[none, 1..3, low]` | 0.92, 0.94, 0.88 | 0.005, 0.01, 0.00 |
+| `keep[none, 1..3, high]` | 0.99, 0.99, 0.99 | 0.19, 0.26, 0.11 |
+| `over_set` | 0.17 | 0.57 [0.55, 0.59] |
+| `shrink` (a, b) | (−0.248, 0.926) | (−0.016 [−0.106, 0.073], 0.924 [0.819, 1.029]) |
+| `win_flip` | ((0.168, 0.331), (0.170, 0.331)) | ((0.165, 0.314), (0.166, 0.354)) |
+
+Every constant `over` reads moves far outside its interval. Passing over an opponent now
+leaves our side the mark 33–44% of the time, not 17–20%. A point bid below 35 almost never
+stands. An overcaller is set 57% of the time, not 17%. The forecast over an opponent's bid is
+now nearly honest (a ≈ 0): an opponent's bid shows less strength when everyone contests. The
+calibration's slope does not move. Whether any of this matters is C's question.
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/match-aware-bidding/`: every block's
