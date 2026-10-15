@@ -1,0 +1,54 @@
+--- a/zeb/Cargo.toml
++++ b/zeb/Cargo.toml
+@@ -7,9 +7,10 @@
+ publish = false
+ 
+ [lib]
+-crate-type = ["cdylib"]
++crate-type = ["cdylib", "rlib"]
+ 
+ [dependencies]
++serde_json = { version = "1", features = ["float_roundtrip"] }
+ scenario_core = { path = "../scenario/core", default-features = false }
+ console_error_panic_hook = "0.1"
+ js-sys = "0.3"
+--- /dev/null
++++ b/zeb/src/bin/zeb-native.rs
+@@ -0,0 +1,37 @@
++// SPDX-FileCopyrightText: Jason Yandell
++// SPDX-License-Identifier: MIT
++use std::io::{self, BufRead, Write};
++use serde::Deserialize;
++use serde_json::{Value, json};
++use zeb::{Player, Position};
++
++#[derive(Deserialize)]
++#[serde(tag="op", rename_all="lowercase", deny_unknown_fields)]
++enum Request {
++    Version,
++    Forecast {hand: Vec<u8>, declarations: Vec<u8>, worlds: usize, seed: u64},
++    Play {hand: Vec<u8>, decl: u8, bidder: u8, bid: u8, seat: u8,
++          plays: Vec<(u8,u8)>, worlds: usize, seed: u64, reading: bool},
++}
++fn call(r: Request) -> Result<Value, Box<dyn std::error::Error>> {
++    Ok(match r {
++        Request::Version => json!({"version":zeb::version(), "net":zeb::net_id()}),
++        Request::Forecast{hand, declarations, worlds, seed} => {
++            serde_json::to_value(Player::new(worlds,seed,true)?.forecast(&hand,&declarations)?)?
++        },
++        Request::Play{hand,decl,bidder,bid,seat,plays,worlds,seed,reading} => {
++            let p=Position::new(decl,bidder,bid,seat,&hand,&plays)?;
++            serde_json::to_value(Player::new(worlds,seed,reading)?.play(&p))?
++        },
++    })
++}
++fn main() {
++    let mut out=io::BufWriter::new(io::stdout().lock());
++    for line in io::stdin().lock().lines() {
++        let answer = (|| -> Result<Value, Box<dyn std::error::Error>> {
++            call(serde_json::from_str(&line?)?)
++        })().unwrap_or_else(|e| json!({"error":e.to_string()}));
++        serde_json::to_writer(&mut out,&answer).unwrap();
++        writeln!(&mut out).unwrap(); out.flush().unwrap();
++    }
++}

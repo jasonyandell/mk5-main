@@ -93,6 +93,9 @@ def capabilities() -> set[str]:
         caps.add("node")
     if shutil.which("cargo") and shutil.which("git"):
         caps.add("cargo")  # the Demon builds from its pinned source
+        if "node" in caps:
+            # native Zeb: its Rust player built from pinned trees, driven by its shipped JavaScript
+            caps.add("zeb-native")
     try:
         import torch
 

@@ -23,6 +23,7 @@ from .artifacts import materialize
 from .participants import Participant
 
 HOST = Path(__file__).resolve().parent / "seat" / "host.mjs"
+NATIVE_HOST = Path(__file__).resolve().parent / "seat" / "native-host.mjs"
 
 
 class HostError(RuntimeError):
@@ -32,9 +33,9 @@ class HostError(RuntimeError):
 class NodeHost:
     """A seat process. Requests are answered in order, one line each."""
 
-    def __init__(self, kind: str, artifacts: Path, config: dict):
+    def __init__(self, kind: str, artifacts: Path, config: dict, script: Path | None = None):
         self.proc = subprocess.Popen(
-            ["node", str(HOST), kind, str(artifacts), json.dumps(config)],
+            ["node", str(script or HOST), kind, str(artifacts), json.dumps(config)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
 
     def ask(self, request: dict) -> dict:
@@ -103,6 +104,23 @@ class HostSeat:
         self.host.close()
 
 
+class NativeZebSeat(HostSeat):
+    """A configured Zeb: the release's JavaScript bidder over its native Rust player.
+
+    The match-aware bidder reads the auction's context (dealer, bids, marks), so
+    the bid request carries it; the host never sees another seat's hand.
+    """
+
+    def bid(self, ctx: BidContext, rng: random.Random) -> int:
+        self._seat_of[tuple(ctx.hand)] = ctx.seat
+        return int(self.host.ask({
+            "op": "bid", "hand": list(ctx.hand), "seat": ctx.seat, "high_bid": ctx.high_bid,
+            "high_seat": ctx.high_seat, "legal": list(ctx.legal), "game": self.game,
+            "hand_no": self.hand_no, "dealer": ctx.dealer, "bids": list(ctx.bids),
+            "marks": list(ctx.marks), "marks_to_win": ctx.marks_to_win,
+            "points_to_win": ctx.points_to_win})["bid"])
+
+
 class ArenaSeat:
     """An mk5 arena player (`<bidder>+<play>`), built in this process."""
 
@@ -127,6 +145,11 @@ def seat(p: Participant, game: str, device: str | None = None):
     """A fresh seat for one team in one game."""
     if p.kind == "zeb-npm":
         return HostSeat(NodeHost("zeb", materialize(p), p.config), game)
+    if p.kind == "zeb-native":
+        from .zeb_native_seat import verify_binary
+        art = materialize(p)
+        return NativeZebSeat(NodeHost("zeb", art, {**p.config, "nativeBinary": str(verify_binary(art))},
+                                      script=NATIVE_HOST), game)
     if p.kind == "plunge-walt":
         return HostSeat(NodeHost("walt", materialize(p), p.config), game)
     if p.kind == "demon":

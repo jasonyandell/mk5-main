@@ -69,6 +69,18 @@ its own dealt tiles and the public record only.
   `cargo` and `git`: the worker builds it from the pinned trees (`git archive <tree>`, then
   `cargo build --release --locked`, about 40 s once per machine), never from the checkout.
 
+- **A configured Zeb is a seat** (`zeb-native`: [[rematch-zeb-041-vs-demon-2026-10-15]]). A config is
+  a participant, two configs two seats, so the ladder measures the strategic tradeoffs between them:
+  `zeb-0.4.0-match` (match-aware, pip declarations as measured) and `zeb-0.4.1-contested`
+  (`overcall: true`). Each pins its release commit, the git tree of each Rust source directory, the
+  sha256 of the shipped `index.js` and `match.js`, and the wasm; the player is the identical Rust
+  built natively from the pinned trees plus the JSON-lines wrapper in `tournament/zeb_native/`
+  (`tournament/zeb_native_seat.py`; needs `node`, `cargo`, `git`, advertised as capability
+  `zeb-native`). A rebuild embeds its own paths, so its binary differs byte-wise from the one the
+  trials measured (`c76303d0`); every input is checked, and the rebuilt binary's own hash is recorded
+  and checked on load. Their ids and records are the rematch's, unchanged. The confirmed overcalling
+  Demon (`demon-pimc-n100-bidc102a137-straight-2e233d29`) is on the roster as a fenced seat.
+
 Old programs can join the same way: [[legacy-42-bots]] surveys them and designs a `legacy` kind,
 pinned by the sha256 of what was run and never redistributed. The GPL `texas42` 0.46 AI (2003)
 already plays at this referee in a pilot; Win42 is the first target (#157).
@@ -209,7 +221,7 @@ Check claude.ai/settings/usage that usage credits are off.
    Never an environment variable: every session of the environment can read those.
 3. Network access Trusted, plus `download.pytorch.org` (the arena imports torch; the CPU wheel is
    small, PyPI's Linux wheel pulls CUDA), and `static.crates.io`/`index.crates.io` for the Demon's
-   build. The worker seats Walt, Zeb and, where `cargo` is on PATH, the Demon; E[Q] needs a GPU and
+   build. The worker seats Walt, Zeb and, where `cargo` is on PATH, the Demon and the configured native Zebs; E[Q] needs a GPU and
    runs on the Mac.
 
 **Start it** (from a checkout of the merged main): `claude --cloud --model haiku "Read

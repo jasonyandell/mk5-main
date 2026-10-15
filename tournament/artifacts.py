@@ -4,7 +4,8 @@
 """Materialize a participant's pinned bytes into a local cache, checking every hash.
 
 Nothing is trusted by name: the npm tarball must match its sha512 integrity,
-each Plunge file its sha256, the Demon's source each pinned git tree. A
+each Plunge file its sha256, the Demon's and native Zeb's source each pinned git
+tree (native Zeb's shipped files and binary by sha256 too). A
 mismatch is an error, never a fallback.
 """
 from __future__ import annotations
@@ -51,6 +52,9 @@ def materialize(p: Participant, cache: Path = DEFAULT_CACHE) -> Path:
             # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
             from .demon_fenced_seat import build
             build(p, tmp, cache / ".demon-target")
+        elif p.kind == "zeb-native":
+            from .zeb_native_seat import build
+            build(p, tmp, cache / ".zeb-native-target")
         else:
             raise ValueError(f"unknown participant kind {p.kind!r}")
         (tmp / ".verified").write_text(p.id + "\n")

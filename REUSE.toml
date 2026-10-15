@@ -16,6 +16,12 @@ path = "zeb/**"
 SPDX-FileCopyrightText = "Jason Yandell"
 SPDX-License-Identifier = "MIT"
 
+# Zeb's native wrapper (a patch adding a JSON-lines CLI to Zeb's crate) is Zeb's layer.
+[[annotations]]
+path = "tournament/zeb_native/**"
+SPDX-FileCopyrightText = "Jason Yandell"
+SPDX-License-Identifier = "MIT"
+
 # Zeb's field net weights: the same net is already public, CC0, in the
 # Hugging Face dataset jasonyandell/texas-42-zeb-pour-250k (nets/), and a
 # CC0 dedication cannot be taken back.
