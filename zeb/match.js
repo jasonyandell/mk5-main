@@ -11,6 +11,11 @@
  * referee: arena/test_zeb_match_parity.py drives both over thousands of
  * contexts and requires values within 1e-12 and identical calls.
  *
+ * 0.4.1 adds the overcall over an opponent's bid (`over` and `cal` in the
+ * arena) with the contested field's constants (ZEB_LAW_CONTESTED,
+ * ZEB_ODDS_CONTESTED, CAL_CONTESTED in arena/zeb_bid.py, the #170 refit), and
+ * a `contested` switch on `matchPrice` that prices with them.
+ *
  * Pure JavaScript, no WebAssembly. A tied value keeps the hand-only call.
  */
 
@@ -50,21 +55,54 @@ const PASS_OURS = {
 };
 
 /** Odds.take: the chance our side takes the hand's one mark after `call` (0 = pass). */
-function take(call, pMake, holder, after) {
+function take(call, pMake, holder, after, model = FROZEN_MODEL) {
   const key = `${holder}:${after}`;
-  if (!(key in PASS_OURS)) throw new RangeError(`no odds for holder ${holder}, passesAfter ${after}`);
-  if (call === 0) return PASS_OURS[key];
-  const keep = call >= ONE_MARK ? 1.0 : KEEP[`${key}:${call < 35 ? 'low' : 'high'}`];
+  if (!(key in model.passOurs)) throw new RangeError(`no odds for holder ${holder}, passesAfter ${after}`);
+  if (call === 0) return model.passOurs[key];
+  const keep = call >= ONE_MARK ? 1.0 : model.keep[`${key}:${call < 35 ? 'low' : 'high'}`];
   if (keep === undefined) throw new RangeError(`no odds for a point bid of ${call} with holder ${holder} (behind a partner the hand-only call is a pass)`);
-  return keep * pMake + (1.0 - keep) * OVER_SET;
+  return keep * pMake + (1.0 - keep) * model.overSet;
 }
+
+/**
+ * The contested field's model: the same three objects refitted on a table
+ * that overcalls back (#170, wiki/experiments/match-aware-bidding-2026-10-14.md;
+ * 384 games, 3,908 hands, 5,834 opponent-held turns, 82.8% of them
+ * overcalls). Source of the numbers: ZEB_LAW_CONTESTED, ZEB_ODDS_CONTESTED and
+ * CAL_CONTESTED in arena/zeb_bid.py (HF zeb/match-aware-bidding-3/out/refit.json).
+ */
+const CONTESTED_LAW = [
+  [0.1653, 0.314],
+  [0.1663, 0.3544],
+];
+const CONTESTED_KEEP = {
+  'none:0:low': 1.0, 'none:0:high': 1.0, 'none:1:low': 0.0049, 'none:1:high': 0.1916,
+  'none:2:low': 0.0117, 'none:2:high': 0.2566, 'none:3:low': 0.0, 'none:3:high': 0.1128,
+  'opp:0:low': 1.0, 'opp:0:high': 1.0, 'opp:1:low': 0.019, 'opp:1:high': 0.2437,
+  'opp:2:low': 0.03, 'opp:2:high': 0.2438, 'opp:3:low': 0.5172, 'opp:3:high': 0.5172,
+};
+const CONTESTED_PASS_OURS = {
+  'none:0': 0.5005, 'none:1': 0.4349, 'none:2': 0.5363, 'none:3': 0.4639,
+  'partner:0': 0.6367, 'partner:1': 0.6893, 'partner:2': 0.6602, 'partner:3': 0.6602,
+  'opp:0': 0.442, 'opp:1': 0.3702, 'opp:2': 0.3256, 'opp:3': 0.3928,
+};
+const CONTESTED_OVER_SET = 0.571;
+/** CAL_CONTESTED: logit p~ = a + b logit p, over an opponent's standing bid. */
+const CAL = { a: -0.0162, b: 0.9237 };
+const CAL_EPS = 1e-4;
+
+const FROZEN_MODEL = { law: ZEB_LAW, keep: KEEP, overSet: OVER_SET, passOurs: PASS_OURS };
+const CONTESTED_MODEL = { law: CONTESTED_LAW, keep: CONTESTED_KEEP, overSet: CONTESTED_OVER_SET, passOurs: CONTESTED_PASS_OURS };
+const modelOf = (contested) => (contested ? CONTESTED_MODEL : FROZEN_MODEL);
 
 const equities = new Map();
 
-/** MatchEquity(ZEB_LAW, target): V(a, b, d), our side at a marks, theirs at b, d = 1 when we shake first. */
-function matchEquity(target) {
-  let v = equities.get(target);
+/** MatchEquity(law, target): V(a, b, d), our side at a marks, theirs at b, d = 1 when we shake first. */
+function matchEquity(target, model) {
+  const cacheKey = `${model === CONTESTED_MODEL ? 'c' : 'f'}${target}`;
+  let v = equities.get(cacheKey);
   if (v !== undefined) return v;
+  const law = model.law;
   const memo = new Map();
   const solve = (a, b, d) => {
     if (a >= target) return 1.0;
@@ -72,7 +110,7 @@ function matchEquity(target) {
     let total = 0.0;
     for (const w of [0, 1]) {
       for (const f of [0, 1]) {
-        const p = ZEB_LAW[w][f];
+        const p = law[w][f];
         if (p === 0.0) continue;
         const ours = w === d;
         const nd = f ? 1 - d : d;
@@ -89,7 +127,7 @@ function matchEquity(target) {
     if (r === undefined) memo.set(k, (r = solve(a, b, d)));
     return r;
   };
-  equities.set(target, at);
+  equities.set(cacheKey, at);
   return at;
 }
 
@@ -102,20 +140,55 @@ const markBidValue = (v, a, b, nd, marks, p) => p * v(a + marks, b, nd) + (1.0 -
  * made with probability `pC0`; `markCall` (84 or more) is made with
  * probability `p42`. `after` is the seats still to speak.
  */
-export function matchPrice({ us, them, marksToWin = 7, weShakeNext, holder, after, c0, pC0, markCall, p42 }) {
-  const v = matchEquity(marksToWin);
+export function matchPrice({ us, them, marksToWin = 7, weShakeNext, holder, after, c0, pC0, markCall, p42, contested = false }) {
+  const model = modelOf(contested);
+  const v = matchEquity(marksToWin, model);
   const nd = weShakeNext ? 1 : 0;
-  const eC0 = oneMarkValue(v, us, them, nd, take(c0, pC0, holder, after));
+  const eC0 = oneMarkValue(v, us, them, nd, take(c0, pC0, holder, after, model));
   const eMark = markBidValue(v, us, them, nd, Math.floor(markCall / ONE_MARK), p42);
   return { eC0, eMark, call: eMark > eC0 ? markCall : c0 };
 }
 
-/** best_at(fc, 42): the declaration most likely to take all 42 (the first listed, on a tie). */
-function bestAt42(allowed) {
+/** `Shrink.forecast` (CAL_CONTESTED): every pmake through logit p~ = a + b logit p, p clipped to [1e-4, 1 - 1e-4]. */
+export function calibrate(forecast) {
+  const cal = (p) => {
+    p = Math.min(Math.max(p, CAL_EPS), 1.0 - CAL_EPS);
+    return 1.0 / (1.0 + Math.exp(-(CAL.a + CAL.b * Math.log(p / (1.0 - p)))));
+  };
+  return forecast.map((f) => ({ ...f, pmake: f.pmake.map(cal) }));
+}
+
+/** best_at(fc, points): the declaration most likely to take `points` (the first listed, on a tie). */
+function bestAt(allowed, points) {
   let best = null;
   for (const f of allowed) {
-    const p = f.pmake[ONE_MARK - 30];
+    const p = f.pmake[points - 30];
     if (best === null || p > best.pmake) best = { decl: f.decl, pmake: p };
+  }
+  return best;
+}
+
+/**
+ * `overcall` in arena/zeb_bid.py, with the contested odds: over an
+ * opponent's bid, when the hand-only rule passes, the one-mark call
+ * `need..42` with the largest chance of our side taking the hand's mark
+ * (`take`, the lowest bid on a tie), if that beats what passing leaves
+ * (`PASS_OURS`); else null. Every call from pass to 42 moves one mark, so the
+ * larger chance is the better call at every score. `allowed` is already
+ * calibrated.
+ */
+export function overcallBid(allowed, need, after) {
+  if (allowed.length === 0) return null;
+  const key = `opp:${after}`;
+  let best = null;
+  let pi = CONTESTED_PASS_OURS[key];
+  for (let bid = need; bid <= ONE_MARK; bid++) {
+    const { decl, pmake } = bestAt(allowed, bid);
+    const t = take(bid, pmake, 'opp', after, CONTESTED_MODEL);
+    if (t > pi) {
+      best = { bid, decl, pmake };
+      pi = t;
+    }
   }
   return best;
 }
@@ -149,16 +222,16 @@ export function checkMatch(match) {
  * or null). Returns the mark-bid choice when its match equity beats the
  * hand-only call's, else `hand`.
  */
-export function chooseWithMatch(allowed, hand, match) {
+export function chooseWithMatch(allowed, hand, match, contested = false) {
   checkMatch(match);
   const { us, them, marksToWin = 7, holder, passesAfter, maxBid, pointsToWin = false } = match;
   // No mark option in a points-to-win game (the equity is the marks game's),
   // when no mark bid is legal, or with nothing forecast to read a p42 from.
   if (pointsToWin || maxBid < TWO_MARKS || allowed.length === 0) return hand;
-  const at42 = bestAt42(allowed);
+  const at42 = bestAt(allowed, ONE_MARK);
   const priced = matchPrice({
     us, them, marksToWin, weShakeNext: match.weShakeNext, holder, after: passesAfter,
-    c0: hand === null ? 0 : hand.bid, pC0: hand === null ? 0.0 : hand.pmake, markCall: maxBid, p42: at42.pmake,
+    c0: hand === null ? 0 : hand.bid, pC0: hand === null ? 0.0 : hand.pmake, markCall: maxBid, p42: at42.pmake, contested,
   });
   return priced.call === maxBid ? { bid: maxBid, decl: at42.decl, pmake: at42.pmake } : hand;
 }

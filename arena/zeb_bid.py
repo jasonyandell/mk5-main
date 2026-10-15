@@ -155,6 +155,29 @@ def overcall(fc, need: int, odds: Odds, key: tuple[str, int]) -> tuple[int, int,
 # before the follow-up's plan ran (out/cal.json).
 ZEB_SHRINK = Shrink(-0.2483, 0.926)  # 2,600 contracts; se (0.049, 0.035); p 0.2 -> 0.178, 0.8 -> 0.738
 
+# The contested field's model (#170, wiki/experiments/match-aware-bidding-2026-10-14.md § #170):
+# the same three objects refitted by #160's estimators on a field that overcalls back (the fixed
+# bidder against itself, FIT block: 384 games, 3,908 hands, 5,834 opponent-held turns of which
+# 82.8% were overcalls; HF zeb/match-aware-bidding-3/, out/refit.json, sha256 3e939d8659e9,
+# the "frozen" object there). Spec token `contested` seats them in place of the frozen set above,
+# which stays as published so #160's experiments reproduce. The package ships these with
+# `overcall: true` (zeb 0.4.1). A cell under 20 turns holds its holder's pooled value.
+ZEB_LAW_CONTESTED = HandLaw(((0.1653, 0.314), (0.1663, 0.3544)))
+ZEB_ODDS_CONTESTED = Odds(
+    keep={("none", 0, "low"): 1.0, ("none", 0, "high"): 1.0, ("none", 1, "low"): 0.0049,
+          ("none", 1, "high"): 0.1916, ("none", 2, "low"): 0.0117, ("none", 2, "high"): 0.2566,
+          ("none", 3, "low"): 0.0, ("none", 3, "high"): 0.1128, ("opp", 0, "low"): 1.0,
+          ("opp", 0, "high"): 1.0, ("opp", 1, "low"): 0.019, ("opp", 1, "high"): 0.2437,
+          ("opp", 2, "low"): 0.03, ("opp", 2, "high"): 0.2438, ("opp", 3, "low"): 0.5172,
+          ("opp", 3, "high"): 0.5172},
+    over_set=0.571,
+    pass_ours={("none", 0): 0.5005, ("none", 1): 0.4349, ("none", 2): 0.5363, ("none", 3): 0.4639,
+               ("partner", 0): 0.6367, ("partner", 1): 0.6893, ("partner", 2): 0.6602,
+               ("partner", 3): 0.6602, ("opp", 0): 0.442, ("opp", 1): 0.3702, ("opp", 2): 0.3256,
+               ("opp", 3): 0.3928},
+)
+CAL_CONTESTED = Shrink(-0.0162, 0.9237)  # 2,613 contracts; 95% a [-0.106, 0.073], b [0.819, 1.029]
+
 
 def price(v, odds: Odds, us: int, them: int, nd: int, key: tuple[str, int], c0: int, p_c0: float,
           mark_call: int, p42: float) -> tuple[float, float, int]:
@@ -187,7 +210,7 @@ class Decision:
 
 
 class ZebBidder:
-    """Spec `zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks][,over][,cal]`."""
+    """Spec `zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks][,over][,cal][,contested]`."""
 
     def __init__(self, walt, cutoff: float = 0.8, mode: str = "hand",
                  law: HandLaw = ZEB_LAW, odds: Odds = ZEB_ODDS, label: str = "zeb",
@@ -264,16 +287,18 @@ SHIPPED_NET = "zeb/net/margin_d250k_h128x64.fnet"
 
 
 def parse_zeb_bidder(arg: str) -> ZebBidder:
-    """`zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks|hand][,over][,cal]`:
+    """`zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks|hand][,over][,cal][,contested]`:
     the forecast at `worlds` (default 512, the graded setting) over the
-    shipped net."""
+    shipped net. `contested` seats the #170 refit (`ZEB_LAW_CONTESTED`,
+    `ZEB_ODDS_CONTESTED`, `CAL_CONTESTED`) in place of the frozen #160 set;
+    `met,over,cal,contested` is the bidder zeb 0.4.1 ships as `overcall: true`."""
     from pathlib import Path
 
     from scenario.compiled import CompiledWalt
     from scenario.field import FieldNet
     from scenario.planner import Config, Rung
 
-    worlds, cutoff, seed, mode, flags = 512, 0.8, 0, "hand", {"over": False, "cal": False}
+    worlds, cutoff, seed, mode, flags = 512, 0.8, 0, "hand", {"over": False, "cal": False, "contested": False}
     for t in (p for p in arg.split(",") if p):
         if t in ("hand", "met", "marks"):
             mode = t
@@ -290,4 +315,6 @@ def parse_zeb_bidder(arg: str) -> ZebBidder:
             raise ValueError(f"unknown zeb bidder option {t!r}")
     net = FieldNet.from_bytes((Path(__file__).parent.parent / SHIPPED_NET).read_bytes())
     walt = CompiledWalt(Config((Rung(worlds, None, 16),), "make", seed, field=net))
-    return ZebBidder(walt, cutoff, mode, label=f"zeb:{arg}", **flags)
+    contested = flags.pop("contested")
+    model = dict(law=ZEB_LAW_CONTESTED, odds=ZEB_ODDS_CONTESTED, shrink=CAL_CONTESTED) if contested else {}
+    return ZebBidder(walt, cutoff, mode, label=f"zeb:{arg}", **flags, **model)

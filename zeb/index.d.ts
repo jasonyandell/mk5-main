@@ -20,6 +20,19 @@ export interface BidOptions {
    * `chooseBid` is the hand-only rule, as in 0.3.0.
    */
   match?: MatchState;
+  /**
+   * Opt in to the overcall, tuned for opponents who contest openings (needs
+   * `match`, whose `holder` and `passesAfter` it reads; the score is read only
+   * by the mark bid). When an opponent holds the high bid: the forecast is
+   * calibrated (logit p~ = -0.0162 + 0.9237 logit p), and a hand-only pass
+   * becomes the one-mark call, `need`..42, with the largest chance of our
+   * side taking the hand's mark, if that beats passing (the lowest bid on a
+   * tie; its `pmake` is the calibrated one). Prices use the contested field's
+   * constants (refit on a table that overcalls back, #170). Against a table
+   * that does not contest, the refit gives back about 3 points of game share
+   * relative to 0.4.0's constants. Default false: 0.4.0's behavior exactly.
+   */
+  overcall?: boolean;
 }
 
 /** The game and the auction at the bidder's turn, for `BidOptions.match`. */
@@ -59,6 +72,8 @@ export interface MatchPriceInput {
   markCall: number;
   /** The forecast's probability of all 42 points (the best declaration's). */
   p42: number;
+  /** Price with the contested field's constants (`BidOptions.overcall`'s); default false, 0.4.0's. */
+  contested?: boolean;
 }
 
 /** The chance our side wins the game after each call, and the call with the larger one. */
@@ -92,5 +107,9 @@ export interface BidChoice {
  * returns it as `{ bid: maxBid, decl, pmake: p42 }` when it beats the
  * hand-only call in match equity. Behind a partner's bid (`holder: 'partner'`)
  * the hand-only call is a pass.
+ *
+ * With `options.overcall` (and `match`), an opponent's bid also calibrates the
+ * forecast, and a hand-only pass over it becomes the one-mark overcall that
+ * beats passing, when there is one.
  */
 export function chooseBid(forecast: readonly Forecast[], options: BidOptions): BidChoice | null;

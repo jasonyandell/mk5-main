@@ -154,6 +154,33 @@ of games [52.47, 54.27] against the hand-only bidder (a coin is 50%); see
 `wiki/experiments/match-aware-bidding-2026-10-14.md` in the repository.
 `matchPrice` returns the two match equities and the call.
 
+### Overcalling an opponent's bid (0.4.1)
+
+Add `overcall: true` to the options (it needs `match`) and, when an opponent
+holds the high bid, two things change. The forecast is calibrated (an
+opponent's bid shows less than the hand-only forecast thinks, and over one it
+runs hot), and where the hand-only rule would pass, `chooseBid` bids the
+one-mark call, `need` to 42, whose chance of our side taking the hand's mark
+beats passing's. Every call from pass to 42 moves one mark, so this choice
+does not read the score. The prices use constants fitted to a table that
+overcalls back, which is the tradeoff: **it is tuned for opponents who
+contest openings.**
+
+```js
+chooseBid(f, { need: 30, legalDeclarations: [0, 1, 2, 3, 4, 5, 6], match: { ...state, holder: 'opp' }, overcall: true });
+```
+
+Measured against a table that contests (games to 7 marks, duplicate deals),
+`over` and `cal` are worth **+5.6 [+1.7, +9.4] points** of game share, and
+0.4.0's constants win only **43.5% [40.8, 46.2]** of games against these
+(chance is 50%). Against a table that mostly passes over an opening, these
+constants give back **3.4 [0.8, 6.0] points** compared with 0.4.0's, and both
+still beat the hand-only bidder by 17 points or more. If your opponents rarely
+contest, leave `overcall` off. Without it, `chooseBid` is 0.4.0's, byte for
+byte. The measured bidder used the seven pip trumps only (see
+`legalDeclarations`), 160 worlds, and
+`wiki/experiments/match-aware-bidding-2026-10-14.md` (#170) has the numbers.
+
 ## Playing: `play` and `analyze`
 
 ```js

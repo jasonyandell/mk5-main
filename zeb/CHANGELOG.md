@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.4.1 - 2026-10-15
+
+**The overcall, opt-in, tuned for opponents who fight back.** `chooseBid`
+takes `overcall: true` (with `match`; it reads `match.holder` and
+`match.passesAfter`). Two things change, both only when an opponent holds the
+high bid:
+
+- **The forecast is calibrated** (`cal`): each make probability goes through
+  logit p~ = -0.0162 + 0.9237 logit p, so the hand-only rule and the mark
+  option read an honest number over an opponent's bid.
+- **A pass becomes an overcall** (`over`): when the hand-only rule would pass,
+  `chooseBid` bids the one-mark call, `need` to 42, whose chance of our side
+  taking the hand's mark is the largest (the lowest bid on a tie), if that
+  beats what passing leaves. Every call from pass to 42 moves one mark, so
+  this does not read the score: the larger chance is the better call at every
+  score. The returned `pmake` is the calibrated one.
+
+`overcall: true` also prices the mark bid and everything else with the
+**contested field's constants**: the hand law, the auction odds and the
+calibration refitted on a table that overcalls back (#170). `matchPrice`
+takes `contested: true` for those odds. Without `overcall`, 0.4.0's frozen
+constants and 0.4.0's answers: byte-identical.
+
+- **Tuned for a table that contests openings, and it costs against one that
+  does not.** The constants were fitted on bidders who overcall back (82.8%
+  of opponent-held turns were overcalls). Against a table that contests,
+  `over` and `cal` keep **+5.6 [+1.7, +9.4] points** of game share (against
+  +14.3 [+11.5, +17.2] against a passive table), and the 0.4.0 constants lose
+  to these, winning **43.5% [40.8, 46.2]** of games (chance is 50%). Against
+  a passive table, one that mostly passes over an opening, the refit gives
+  back **3.4 [0.8, 6.0] points** of game share relative to the 0.4.0
+  constants (exploratory, 192 clusters), though it still beat the hand-only
+  bidder by 17 points or more there. No single set of constants wins both
+  tables; if the opponents you meet mostly pass, leave `overcall` off. Each
+  interval is a 95% bootstrap over duplicate-deal clusters; see
+  `wiki/experiments/match-aware-bidding-2026-10-14.md` (#170) in the
+  repository.
+- **The measured bidder leans on the seven pip trumps only**, and bid at 160
+  worlds, with deployed Zeb playing both sides to 7 marks. Pass
+  `legalDeclarations: [0, 1, 2, 3, 4, 5, 6]` to bid exactly as measured, and
+  `worlds: 160` for the forecast. The default forecast also offers doubles and
+  no-trump, which the overcall can then lean on. That is untested.
+- A parity test in the repository holds `overcall: true` to the arena's
+  `met,over,cal,contested` bidder (`arena/zeb_bid.py`, spec token
+  `contested`): prices within 1e-12 and identical calls.
+- Nothing else changes. The wasm module and every other function are
+  0.4.0's.
+
 ## 0.4.0 — 2026-10-14
 
 **Match-aware bidding, opt-in.** `chooseBid` takes a new `match` option: the

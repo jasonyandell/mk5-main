@@ -69,3 +69,24 @@ test('match: mark bid, ties, and the options that remove it', () => {
   assert.throws(() => chooseBid([sure], { need: 30, match: { ...match, weShakeNext: 0 } }), TypeError);
   assert.throws(() => chooseBid([sure], { need: 43 }), RangeError);
 });
+
+test('overcall: opt-in, needs match, acts only over an opponent', () => {
+  const mid = row(6, (b) => (b <= 33 ? 0.7 : 0.2)); // under the 0.8 rule at every bid
+  const match = { us: 3, them: 3, weShakeNext: true, holder: 'opp', passesAfter: 1, maxBid: 31 };
+  assert.equal(chooseBid([mid], { need: 31, match }), null);
+  const over = chooseBid([mid], { need: 31, match, overcall: true });
+  assert.equal(over.bid, 31);
+  assert.equal(over.decl, 6);
+  assert.ok(over.pmake > 0.6 && over.pmake < 0.7, 'the forecast is calibrated, a little down');
+  // Not behind a partner, not with nobody holding, not without the option.
+  for (const holder of ['partner', 'none']) {
+    assert.equal(chooseBid([mid], { need: 31, match: { ...match, holder }, overcall: true }), null);
+  }
+  assert.throws(() => chooseBid([mid], { need: 31, overcall: true }), TypeError);
+  assert.throws(() => chooseBid([mid], { need: 31, match, overcall: 1 }), TypeError);
+  // A sure hand still bids 42 over an opponent, with the calibrated pmake.
+  const sure = row(6, () => 0.95);
+  const bid = chooseBid([sure], { need: 31, match, overcall: true });
+  assert.equal(bid.bid, 42);
+  assert.ok(bid.pmake < 0.95 && bid.pmake > 0.9);
+});

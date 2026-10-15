@@ -12,10 +12,12 @@ import random
 import subprocess
 from pathlib import Path
 
-
 from arena.auction import BidContext, legal_bids
 from arena.match_equity import MatchEquity
-from arena.zeb_bid import ZEB_LAW, ZEB_ODDS, ZebBidder, price
+import pytest
+
+from arena.zeb_bid import (
+    CAL_CONTESTED, ZEB_LAW, ZEB_LAW_CONTESTED, ZEB_ODDS, ZEB_ODDS_CONTESTED, ZebBidder, choose_bid, parse_zeb_bidder, price)
 
 ZEB = Path(__file__).parent.parent
 TOL = 1e-12
@@ -43,10 +45,18 @@ def node(prices, bids):
     return out["prices"], out["bids"]
 
 
-def test_pricing_grid():
+MODELS = {  # contested -> (law, odds)
+    False: (ZEB_LAW, ZEB_ODDS),
+    True: (ZEB_LAW_CONTESTED, ZEB_ODDS_CONTESTED),
+}
+
+
+@pytest.mark.parametrize("contested", [False, True])
+def test_pricing_grid(contested):
     """`price` over every score pair 0..7, both nd, every holder/after key, and a grid of
     c0, p_c0, p42 and mark_call, and at other targets."""
-    keys = sorted(ZEB_ODDS.pass_ours)
+    law, odds = MODELS[contested]
+    keys = sorted(odds.pass_ours)
     cases = []
     for target in (7, 5, 3):
         for us in range(8):
@@ -63,16 +73,16 @@ def test_pricing_grid():
     assert len(cases) >= 2000
     got, _ = node([
         {"us": us, "them": them, "marksToWin": target, "weShakeNext": bool(nd), "holder": key[0],
-         "after": key[1], "c0": c0, "pC0": p_c0, "markCall": mark_call, "p42": p42}
+         "after": key[1], "c0": c0, "pC0": p_c0, "markCall": mark_call, "p42": p42, "contested": contested}
         for target, us, them, nd, key, c0, p_c0, mark_call, p42 in cases], [])
-    v = {t: MatchEquity(ZEB_LAW, t) for t in (7, 5, 3)}
+    v = {t: MatchEquity(law, t) for t in (7, 5, 3)}
     worst = 0.0
     for (target, us, them, nd, key, c0, p_c0, mark_call, p42), g in zip(cases, got):
-        e_c0, e_mark, call = price(v[target], ZEB_ODDS, us, them, nd, key, c0, p_c0, mark_call, p42)
+        e_c0, e_mark, call = price(v[target], odds, us, them, nd, key, c0, p_c0, mark_call, p42)
         assert g["call"] == call, (target, us, them, nd, key, c0, p_c0, mark_call, p42)
         worst = max(worst, abs(g["eC0"] - e_c0), abs(g["eMark"] - e_mark))
     assert worst <= TOL, worst
-    print(f"pricing parity: {len(cases)} contexts, max deviation {worst:.3g}")
+    print(f"pricing parity (contested={contested}): {len(cases)} contexts, max deviation {worst:.3g}")
 
 
 def _forecast(rng):
@@ -88,12 +98,30 @@ def _forecast(rng):
     return rows
 
 
-def test_bidder_bid_is_chooseBid_with_match():
-    """`ZebBidder(mode="met").bid` against `chooseBid(..., { match })` over random auctions
-    and forecasts: the same bid, every time."""
-    rng = random.Random(42)
+def _bidder(contested):
+    """The arena's `met` bidder, or `met,over,cal,contested` (the spec `parse_zeb_bidder` seats)."""
+    if not contested:
+        return ZebBidder(None, 0.8, "met")
+    return ZebBidder(None, 0.8, "met", law=ZEB_LAW_CONTESTED, odds=ZEB_ODDS_CONTESTED, over=True, cal=True,
+                     shrink=CAL_CONTESTED)
+
+
+def test_spec_token_contested_seats_the_refit():
+    b = parse_zeb_bidder("n8,met,over,cal,contested")
+    assert (b.law, b.odds, b.shrink, b.over, b.cal, b.mode) == (
+        ZEB_LAW_CONTESTED, ZEB_ODDS_CONTESTED, CAL_CONTESTED, True, True, "met")
+    f = parse_zeb_bidder("n8,met,over,cal")
+    assert (f.law, f.odds) == (ZEB_LAW, ZEB_ODDS) and f.shrink != CAL_CONTESTED
+
+
+@pytest.mark.parametrize("contested,n", [(False, 3000), (True, 4000)])
+def test_bidder_bid_is_chooseBid_with_match(contested, n):
+    """`ZebBidder(mode="met")` (contested: `met,over,cal,contested`) against `chooseBid(..., { match })`
+    (contested: `overcall: true`) over random auctions and forecasts: the same bid, every time."""
+    rng = random.Random(42 if not contested else 170)
     contexts, bids = [], []
-    for _ in range(3000):
+    over_marks = overcalls = 0
+    for _ in range(n):
         fc = _forecast(rng)
         seat, dealer = rng.randrange(4), rng.randrange(4)
         high_bid = rng.choice((0, 0, 30, 31, 33, 35, 38, 41, 42, 84, 126))
@@ -118,7 +146,7 @@ def test_bidder_bid_is_chooseBid_with_match():
             hand=(0, 1, 6, 8, 9, 15, 20), seat=seat, dealer=dealer, bids=order, high_bid=high_bid,
             high_seat=high_seat, legal=legal, marks=marks, marks_to_win=rng.choice((7, 7, 5)),
             points_to_win=points_to_win)
-        bidder = ZebBidder(None, 0.8, "met")
+        bidder = _bidder(contested)
         bidder._fc[tuple(sorted(ctx.hand))] = fc
         mine = bidder.bid(ctx, rng)
         team = ctx.team
@@ -130,16 +158,23 @@ def test_bidder_bid_is_chooseBid_with_match():
         if points_to_win is not None:
             match["pointsToWin"] = True
         contexts.append(mine)
+        if contested and holder == "opp":
+            over_marks += 1
+            plain = None if min(legal) > 42 else choose_bid(CAL_CONTESTED.forecast(fc), min(legal), 0.8)
+            overcalls += plain is None and 0 < mine < 84
         bids.append({"forecast": [{"decl": d, "mean": 0, "pmake": list(pm)} for d, pm in fc],
-                     "options": {"need": min(legal), "cutoff": 0.8, "match": match}})
+                     "options": {"need": min(legal), "cutoff": 0.8, "match": match, **({"overcall": True} if contested else {})}})
     _, got = node([], bids)
-    assert len(got) == len(contexts) >= 2000
+    assert len(got) == len(contexts) >= 3000
     marks_bid = 0
     for mine, theirs in zip(contexts, got):
         assert (0 if theirs is None else theirs["bid"]) == mine
         marks_bid += mine >= 84
     assert 100 < marks_bid < len(contexts) - 100, marks_bid  # the grid exercises both sides of the choice
-    print(f"bidder parity: {len(contexts)} auctions, {marks_bid} mark bids")
+    if contested:
+        assert over_marks >= 1000 and overcalls >= 100, (over_marks, overcalls)  # opponent-held bids, and overcalls
+    print(f"bidder parity (contested={contested}): {len(contexts)} auctions, {marks_bid} mark bids, "
+          f"{over_marks} opponent-held, {overcalls} overcalls")
 
 
 def test_the_package_is_built():
