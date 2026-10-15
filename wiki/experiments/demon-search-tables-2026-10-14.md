@@ -65,16 +65,23 @@ baseline. Its marks/game advantage is **+0.175 [-0.303, +0.653]**
 (normal 95% interval over the 20 duplicate-pair means). All 40 games completed;
 interruptions resumed at saved hand boundaries, with no discarded pair.
 
+The published `demon-pimc-n400-18ac096d` also completed its
+[first official duplicate faceoff](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/blob/main/faceoffs/marks7/20261015T011447Z-demon-pimc-n100-b88c5432--demon-pimc-n400-18ac096d-1bfd11f09c7923c2.json)
+against the original, winning both games. The record names a clean `3b54318a`
+harness and the verified `18ac096d` source pin. This is a build-and-seat smoke
+receipt, separate from the fixed 20-pair research pilot above.
+
 The larger sample is a challenger, not a demonstrated strength improvement.
 The pilot is local research; its experimental participant ids and binary hashes
 are preserved, and its games are not relabeled as production tournament games.
 
 ## Evidence and reproduction
 
-[Data, requests, replies, games, scripts and source patch](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/71bd471fe34861a1c8a4bde6291b8edf186b8847/demon/2026-10-14-search-tables)
+[Data, requests, replies, games, scripts and source patch](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/85821dc5f17e5d6a67399c97b0c4518482358c2c/demon/2026-10-14-search-tables)
 are CC0. `report.json` holds the aggregates; the paired replay summaries contain
-binary hashes and resource usage; `manifest.json` names source revisions and the
-machine. `compare.py` asserts parity before recording each paired reply.
+binary hashes and resource usage; `manifest.json` names the measurement revisions and machine; `release.json`
+names the final public commits after rebasing, and `validation/` preserves the
+passing test logs. `compare.py` asserts parity before recording each paired reply.
 
 The benchmark baseline is `a72e629f`; the sampler, rules and clairvoyant search are
 unchanged from the first pinned Demon, `b88c5432`. The match uses the equivalent
