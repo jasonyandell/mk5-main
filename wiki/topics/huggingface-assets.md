@@ -79,8 +79,10 @@ were dedicated CC0 on 2026-10-14 on Jason's word, each with a card and `LICENSE`
   snapshots (the walt-archive's `kiln/snapshots`), the walt-factory archive's
   curated set.
 - **Held for Jason:** `~/data/texas-42/seed-survey` (8.6 GB; by its own header a
-  deterministic, SHA-pinned function of committed inputs) and
-  `~/data/texas-42/walt-response-ladder` (5.9 GB raw; the curated export is up).
+  deterministic, SHA-pinned function of committed inputs).
+- **Decided local:** `~/data/texas-42/walt-response-ladder` (5.9 GB raw run). Jason,
+  2026-10-15: "Curated export is enough"; the export is
+  [texas-42-walt-response-ladder](https://huggingface.co/datasets/jasonyandell/texas-42-walt-response-ladder).
 - **Disposable:** cargo `target/` trees (full-game-speed 21 GB, walt, rob,
   response-ladder), `lean/.lake`, venvs, the tournament's pinned builds.
 - **Lost before recovery** (12 of the 28 cited paths found gone; 13 had been
