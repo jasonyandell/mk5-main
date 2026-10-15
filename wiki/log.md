@@ -48,6 +48,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | book/count-lapse | The field that loses the count pre-registered (#172)]
+
+- [[count-lapse-2026-10-15]]: `arena/count_lapse.py`, a seat's view with a played and a live tile exchanged (a legal game, sticky for the hand); not a fiber, so the shared record is untouched; primary ΔG(0.2), 384 batches. [[book-assumptions]] A3 scope line.
+
 ## [2026-10-15 | archive | the s100001 field net in layout field-v2, published with its hash (#136)]
 - `field_make_d5000_v2` converted once (13 zero bid rows); `31ecd76d` + the converted net and `2577f404` + the original
   both reproduce the published s100001 chunk bit for bit (512 deals, 8,844 positions). The manifest's `31ecd76d` is a

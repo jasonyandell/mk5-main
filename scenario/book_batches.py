@@ -45,6 +45,9 @@ def write_batch(arm: str, seed: int, games: int, out: str, seats: tuple, points:
     peak = getattr(play_a, "peak_work", None)
     if peak is not None:
         meta["a_peak_work"] = peak   # the most Silas work at one decision of team A's
+    lapse = getattr(play_b, "lapse", None)
+    if lapse is not None:
+        meta["b_lapse"] = lapse      # the field's decisions, tiles forgotten and stood in for (#172)
     (outdir / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
     with open(outdir / "games.jsonl", "w") as f:
         for g in result.games:
