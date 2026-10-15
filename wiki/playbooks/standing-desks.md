@@ -38,7 +38,7 @@ first, and let the central authority manage only links and lookups.
    to it. Republish the same file path to keep the URL. Anyone can read the latest at the same
    link.
 4. **The registry.** Every link worth finding again goes into the `links` collection of
-   [The 42 Feed](https://claude.ai/artifact/TQVJu2Wu78adYzPwTJLEdR)'s database (`ArtifactData`):
+   [The 42 Feed](https://claude.ai/artifact/31d1WUYXDvhwu5gRt493J4)'s database (`ArtifactData`):
 
    | field | meaning |
    |---|---|
