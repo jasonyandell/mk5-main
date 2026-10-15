@@ -79,6 +79,11 @@ class DemonSeat:
 
         cfg = p.config
         self.bid_spec = cfg["bidder"]
+        self.declarations = tuple(cfg.get("declarations", range(10)))
+        if not self.declarations or len(set(self.declarations)) != len(self.declarations) or any(
+            not isinstance(d, int) or not 0 <= d < 10 for d in self.declarations
+        ):
+            raise ValueError("declarations must be distinct ids in 0..9")
         self.bidder = parse_bidder("heuristic" if self.bid_spec.startswith("pimc") else self.bid_spec,
                                    device="cpu", gus_adapter=None)
         self._bid_seats = {}
@@ -120,7 +125,7 @@ class DemonSeat:
                                "seat":seat, "bid":bid, "worlds":n,
                                "seed":decision_seed(self.game, self.hand_no, seat, -1)})
             heuristic = self._ask({"op":"declaration_model", "hand_mask":sum(1 << t for t in hand)})["decl"]
-            decl = max(range(10), key=lambda d:(reply["makes"][d], d == heuristic, -d))
+            decl = max(self.declarations, key=lambda d:(reply["makes"][d], d == heuristic, -d))
             self._forecasts[key] = decl, reply
         return self._forecasts[key]
 

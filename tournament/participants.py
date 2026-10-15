@@ -31,6 +31,7 @@ import hashlib
 from dataclasses import dataclass, field
 
 SCHEMA = "texas42-tournament-participant/1"
+STRAIGHT_DECLARATIONS = (0, 1, 2, 3, 4, 5, 6, 7, 9)
 
 
 @dataclass(frozen=True)
@@ -147,6 +148,9 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     if bidder != "heuristic":
         suffix += "-bid" + hashlib.sha256(bidder.encode()).hexdigest()[:8]
     extra = {"declaration_weight": declaration_weight} if declaration_weight != 1 else {}
+    if bidder.startswith("pimc"):
+        suffix += "-straight"
+        extra["declarations"] = list(STRAIGHT_DECLARATIONS)
     belief_note = (f" Declaration evidence uses a soft heuristic model: matching original "
                    f"hands have likelihood {declaration_weight}, others 1; posterior draws are IID "
                    f"by rejection, and small fibers use exact weighted sums."
@@ -154,7 +158,8 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     bid_note = (f"Bids with the arena's `{bidder}` bidder, as E[Q] n=10 does. "
                 if bidder == "heuristic" else
                 f"Bidder `{bidder}`: common-world double-dummy contract forecasts; "
-                f"minimum point raise and partner pass in full bidding mode. ")
+                f"minimum point raise and partner pass in full bidding mode; "
+                f"the nine straight declarations only (not nello's declaration 8). ")
     return Participant(
         id=f"demon-pimc-n{worlds}{tb}{suffix}-{commit[:8]}",
         kind="demon",
@@ -201,19 +206,23 @@ DEMON_DISTINCT_N100 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=100,
 DEMON_DISTINCT_N1600 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=1600,
                              sampler_note=_DISTINCT_SAMPLER)
 
-# PIMC bidding (16 common worlds, cutoff 14/16, partner pass), uniform n100
-# play. Frozen selection confirmed against the prior n100 Demon on 256 fresh
-# duplicate pairs; see wiki/experiments/demon-next-form-2026-10-14.md.
-_DEMON_NEXT_COMMIT = "4454f60361a1ded95a628f9939a5d4a645ef994b"
-_DEMON_NEXT_TREES = {"silas": "2330f0f2e2458f966629830dd7aa091b44872fbb",
-                     "scenario/core": "61cd6a5225f664be24bcd2f27d74b6744c71e769",
-                     "tournament/demon": "1873a3de7f6eaca2b2bfee1eda61d3363aa750c7"}
-DEMON_BID_N100 = demon(_DEMON_NEXT_COMMIT, _DEMON_NEXT_TREES, worlds=100,
-                       bidder="pimc:16:0.875", sampler_note=_DISTINCT_SAMPLER)
-
 ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
-          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_BID_N100)
+          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600)
 ANCHOR = WALT.id
+
+
+def supports_straight_games(record: dict) -> bool:
+    """All live ladders play straight 42; a broader research policy cannot join.
+
+    STRATEGY-FUSION FENCE: the first PIMC bidder's immutable record covered all
+    ten physics, including nello's declaration 8. Keep that historical record
+    readable, but never schedule it in the straight tournament.
+    """
+    cfg = record.get("config", {})
+    if record.get("kind") == "demon" and cfg.get("bidder", "").startswith("pimc"):
+        allowed = cfg.get("declarations", range(10))
+        return bool(allowed) and set(allowed) <= set(STRAIGHT_DECLARATIONS)
+    return True
 
 
 def load_all(store) -> dict[str, Participant]:

@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .faceoff import LADDERS, FaceoffSpec, assemble, play_game
-from .participants import ANCHOR, Participant
+from .participants import ANCHOR, Participant, supports_straight_games
 from .rating import Game, fit
 from .schedule import next_pair
 from .store import dumps
@@ -74,6 +74,8 @@ def read_state(store, ladder: str):
 def games_of(records) -> list[Game]:
     out = []
     for r in records:
+        if not all(supports_straight_games(p) for p in r.get("participants", {}).values()):
+            continue
         for g in r["games"]:
             out.append(Game(r["a"], r["b"], bool(g["a_won"]), f"{r['id']}/{g['pair']}"))
     return out
@@ -107,7 +109,8 @@ def capabilities() -> set[str]:
 
 def runnable(participants: dict, caps: set[str], only: set[str] | None = None) -> list[str]:
     return sorted(pid for pid, r in participants.items()
-                  if set(r.get("needs", ())) <= caps and (only is None or pid in only))
+                  if set(r.get("needs", ())) <= caps and (only is None or pid in only)
+                  and supports_straight_games(r))
 
 
 def harness() -> dict:
@@ -221,6 +224,13 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
             continue
         log(f"resuming claim {claim.name}")
         try:
+            meta = json.loads((claim / "spec.json").read_text())
+            if not all(supports_straight_games(p) for p in meta["participants"].values()):
+                destination = claims.root / "unsupported" / claim.name
+                destination.parent.mkdir(exist_ok=True)
+                os.rename(claim, destination)
+                log(f"preserved unsupported straight-game claim at {destination}")
+                continue
             run_claim(claim, store, parallel=parallel, device=device)
         finally:
             claims.release(claim)

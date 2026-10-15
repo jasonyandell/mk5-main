@@ -2,7 +2,7 @@
 title: "The tournament: an append-only, Bradley–Terry-rated ladder of Texas 42 players"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-15
 status: active
 ---
 
@@ -36,7 +36,7 @@ are a function of the participant alone, so two writers adding it write the same
 | `demon-pimc-n100-18ac096d` | the Demon with compact per-world search tables, 100 worlds, the same values and tie rules | mk5 `18ac096d`, pinned source trees; [[demon-search-tables-2026-10-14]] |
 | `demon-pimc-n400-18ac096d` | the compact Demon at 400 worlds; experimental challenger, strength not established | the same source pin, distinct world-count config and id; [[demon-search-tables-2026-10-14]] |
 | `demon-pimc-n100-228812ff`, `demon-pimc-n1600-228812ff` | exact compact search and distinct uniform worlds; the larger budget remains experimental | mk5 `228812ff`, immutable source trees; [[demon-power-2026-10-14]] |
-| `demon-pimc-n100-bid7ff83929-4454f603` | confirmed PIMC bidder, 16 common forecast worlds and cutoff 0.875; uniform 100-world play | mk5 `4454f603`, immutable source trees and bidder settings; [[demon-next-form-2026-10-14]] |
+| `demon-pimc-n100-bid7ff83929-4454f603` (withdrawn) | historical ten-declaration PIMC bidder; excluded from straight-game scheduling and ratings | immutable record retained; [[demon-vs-zeb-2026-10-15]]'s declaration-domain audit |
 
 Seating. The referee is the arena (`arena/engine.py`: deal, auction, play, marks to 7). A
 JavaScript participant runs in `tournament/seat/host.mjs`, one process per team per game, sent
@@ -59,8 +59,10 @@ its own dealt tiles and the public record only.
   with MPS or CUDA (forge is GPU-only), never read by anything else.
 - **The Demon** is the CPU fusion stick (STRATEGY-FUSION FENCE, [[the-demon]]): seated only by
   `tournament/demon_fenced_seat.py`, a Rust binary per team per game, sent its own tiles and the
-  public record and checked against the table's leader and points. It bids with the arena's
-  `heuristic` bidder, as E[Q] does, so the two fusion players differ only in play. It needs
+  public record and checked against the table's leader and points. The current baseline pins
+  use the arena's `heuristic` bidder. PIMC bidding candidates must explicitly restrict their
+  declarations to the nine straight ones (0–7 and 9); the first ten-declaration pin is
+  incompatible and withdrawn. It needs
   `cargo` and `git`: the worker builds it from the pinned trees (`git archive <tree>`, then
   `cargo build --release --locked`, about 40 s once per machine), never from the checkout.
 

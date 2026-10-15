@@ -20,8 +20,8 @@ import pytest
 
 from tournament import faceoff as F
 from tournament import seats as S
-from tournament.demon_fenced_seat import BINARY, build, decision_seed
-from tournament.participants import DEMON_SOURCE, Participant, demon
+from tournament.demon_fenced_seat import BINARY, DemonSeat, build, decision_seed
+from tournament.participants import DEMON_SOURCE, STRAIGHT_DECLARATIONS, Participant, demon
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGET = ROOT / "scratch" / "demon-target"
@@ -60,6 +60,7 @@ def test_the_demon_plays_whole_games_legally_and_the_same_game_twice(working_tre
     assert first["done"] and max(first["marks"]) >= 7
     # The arena referee checks every play's legality; a whole game is the proof.
     assert first["hands"] == second["hands"], "same faceoff, same seeds: the same game"
+    assert all(h["decl_id"] in STRAIGHT_DECLARATIONS for h in first["hands"])
 
 
 def test_decision_seeds_depend_on_the_place_in_the_faceoff_only():
@@ -88,8 +89,22 @@ def test_new_models_get_distinct_participant_ids():
     assert len({p.id for p in (base, read, bid)}) == 3
     assert "declaration_weight" not in base.config
     assert read.config["declaration_weight"] == 32
+    assert bid.config["declarations"] == list(STRAIGHT_DECLARATIONS)
+    assert "-straight-" in bid.id
     with pytest.raises(ValueError):
         demon("a" * 40, {}, worlds=100, declaration_weight=0)
+
+
+def test_forecast_cannot_choose_nello_physics_even_when_it_scores_best():
+    seat = object.__new__(DemonSeat)
+    seat.hand_no = 1
+    seat.game = "straight"
+    seat.bid_spec = "pimc:16:0.875"
+    seat.declarations = STRAIGHT_DECLARATIONS
+    seat._forecasts = {}
+    seat._ask = lambda r: ({"makes": [0, 0, 0, 0, 0, 0, 12, 13, 16, 14], "worlds": 16}
+                          if r["op"] == "forecast" else {"decl": 8})
+    assert seat._forecast(tuple(range(7)), 0, 30)[0] == 9
 
 
 def test_the_pinned_build_checks_its_trees(tmp_path):

@@ -45,6 +45,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | issue-165 | Demon versus Zeb: correct the declaration domain before measuring strength]
+
+**Added:** [[demon-vs-zeb-2026-10-15]] (active; pinned Zeb 0.4.0, whole-seat timing and independent confirmation protocol). **Corrected:** [[demon-next-form-2026-10-14]] (ten-declaration result, not straight 42; promotion withdrawn), [[the-demon]], [[tournament]], [[scenario-player]]. Initial invalid trials preserved publicly; new PIMC identities restrict declarations, workers exclude incompatible records and preserve their pending claims.
+
 
 ## [2026-10-15 | archive/gpl-home | GPL texas42 gets its own repo]
 - [[legacy-42-bots]]: the open question is answered. The GPL sources, shim and seat live in the private `jasonyandell/texas-42-gpl` (upstream tarball verified, tag `upstream-0.46`, headless build, smoke game clean). mk5 stays MIT; it talks to the built seat only over stdin/stdout.

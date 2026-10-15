@@ -2,12 +2,19 @@
 title: "The Demon's next form: declaration evidence and PIMC bidding"
 kind: experiment
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-15
 status: complete
 ---
 
 **STRATEGY-FUSION FENCE.** The [[the-demon]] remains a sanctioned tournament
 opponent only. No values or labels from this work enter Walt, Zeb or Silas policies.
+
+**Scope correction, 2026-10-15:** the PIMC bidder could select declaration 8,
+the nello-only suit convention. It did so in 87 of the bidder confirmation's
+5,620 hands. The reported result is for a ten-declaration experimental arena,
+**not a valid straight-42 benchmark**. Its tournament promotion is withdrawn;
+the immutable record and raw evidence remain. [[demon-vs-zeb-2026-10-15]] holds
+the audit, corrected declaration restriction and replacement trials.
 
 ## Candidates and invariants
 
@@ -61,10 +68,10 @@ cost is retained. These are fixed-play-budget comparisons, not matched-time test
 
 ## Completed results
 
-The selected bidder establishes a gain against the prior 100-world Demon:
+Within the ten-declaration experimental arena, the selected bidder beat the prior 100-world Demon:
 **324–188 in 512 fresh games**, win fraction **63.28% [59.38%, 67.19%]** against
 the 50% chance baseline, marks/game **+1.020 [+0.760, +1.283]**. Its play still
-uses 100 distinct uniform worlds. The promoted setting is `pimc:16:0.875`:
+uses 100 distinct uniform worlds. The tested setting is `pimc:16:0.875`:
 14 of 16 forecast deals must make. The source pin is [[4454f603]].
 
 All intervals below are 95% duplicate-pair bootstrap intervals, 20,000 resamples,
@@ -87,7 +94,7 @@ bidder on both sides and changes only the reader.
 All 1,360 games finished; no game was dropped and neither confirmation stopped
 early. The reader did not establish a gain. Combining it with the selected
 bidder did not improve development marks, so the plan's conditional combination
-confirmation did not run. The promoted bidder retains uniform play. These
+confirmation did not run. The selected bidder retained uniform play. These
 results compare against the named Demon baselines; broader strength against
 Walt, Zeb or other opponents remains unmeasured for this form.
 
@@ -126,13 +133,14 @@ costs, reports, runners, source provenance and validation logs: 2,774 files,
 11,206,757 bytes, CC0-1.0. Both confirmation reports, one raw confirmation
 game and the SHA-256 manifest were freshly downloaded and hash-verified.
 
-The new immutable tournament participant is
+The historical immutable tournament participant is
 `demon-pimc-n100-bid7ff83929-4454f603`. Its
 [published record](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/blob/f0f16c864c3a70f88ba65edcf903d5e95625cef2/participants/demon-pimc-n100-bid7ff83929-4454f603.json)
 was freshly downloaded and verified against canonical SHA-256
 `e015366afb56f6eb346b05899f37b4d4d12743c8080ba60120d1c8b24c9cf3ea`.
 The research games retain their research identities; they are not relabeled
-as tournament rating observations.
+as tournament rating observations. The declaration audit excludes this
+participant from current straight-game scheduling and ratings.
 
 [Issue #165](https://github.com/jasonyandell/mk5-main/issues/165) tracks the
 remaining matched-compute and pinned-opponent comparisons. Other open knobs

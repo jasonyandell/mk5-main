@@ -21,6 +21,30 @@ from tournament import worker as W
 from tournament.participants import Participant
 from tournament.store import GitStore
 
+
+def test_nonstraight_pimc_is_neither_scheduled_nor_rated():
+    # STRATEGY-FUSION FENCE: research PIMC included nello's physics as a
+    # points contract; those immutable records are not straight-game evidence.
+    bad = Participant("research", "demon", {}, {"bidder": "pimc:16:0.875"}).to_record()
+    good = Participant("straight", "demon", {}, {"bidder": "pimc:16:0.875",
+                       "declarations": [0, 1, 2, 3, 4, 5, 6, 7, 9]}).to_record()
+    assert W.runnable({"research": bad, "straight": good}, set()) == ["straight"]
+    assert W.runnable({"research": bad}, set(), {"research"}) == []
+    assert W.games_of([{"participants": {"research": bad}, "games": [{"a_won": True}]}]) == []
+
+
+def test_unsupported_claim_is_preserved_without_playing(store, tmp_path):
+    # STRATEGY-FUSION FENCE: the worker must not resume an incompatible PIMC game.
+    bad = Participant("research", "demon", {}, {"bidder": "pimc:16:0.875"})
+    claims = W.Claims(tmp_path / "claims")
+    spec = F.FaceoffSpec("marks7", bad.id, CHEAP[0].id, 123, 1, "20261015T000000Z")
+    claim = claims.create(spec, {p.id: p.to_record() for p in (bad, CHEAP[0])})
+    original = (claim / "spec.json").read_bytes()
+    claims.release(claim)
+    assert run(store, claims.root, max_faceoffs=0) == 0
+    assert not claims.open()
+    assert (claims.root / "unsupported" / claim.name / "spec.json").read_bytes() == original
+
 ROOT = Path(__file__).resolve().parents[2]
 CHEAP = [Participant("rand-a", "arena", {"spec": "bid30+random"}),
          Participant("rand-b", "arena", {"spec": "heuristic+random"}),
