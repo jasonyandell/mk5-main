@@ -332,3 +332,12 @@ def test_the_stack_reports_its_work():
     assert player.peak_work == 0
     player.choose([playing(0, 2), playing(1, 2)], [30, 30])
     assert player.peak_work >= v.work
+
+
+def test_a_population_bids_as_a_field():
+    """`SilasBidder` reads a policy that is not the book's from a path under
+    `silas/examples/` (#163's overbidders)."""
+    from arena.book_play import SilasBidder
+
+    for name in ("populations/set-bid", "populations/ten-count-35"):
+        assert SilasBidder(name).name == name

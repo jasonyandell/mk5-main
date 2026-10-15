@@ -348,9 +348,13 @@ class SilasBidder:
     contract (`Auction::won_by`)."""
 
     def __init__(self, name: str):
+        """`name` is a policy of the book's bidding (`risk-budget`), or a path
+        under `silas/examples/` for one that is not the book's
+        (`populations/set-bid`, a field)."""
         from scenario_core import SilasPolicy
         self.name = name
-        self.policy = SilasPolicy((BOOK / "bidding" / f"{name}.silas").read_text(), 6)
+        path = BOOK.parent / f"{name}.silas" if "/" in name else BOOK / "bidding" / f"{name}.silas"
+        self.policy = SilasPolicy(path.read_text(), 6)
 
     def bid(self, ctx: BidContext, rng: random.Random) -> int:
         order = bidding_order(ctx.dealer)

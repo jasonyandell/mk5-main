@@ -1,0 +1,27 @@
+; The habitual overbidder of Winning 42 S-0070-a (in our words): he bids 35
+; holding offs in the ten-count suits, so his offs are more often fours,
+; fives and sixes than a sound bidder's. A population, not the book's advice:
+; the book answers him by leading those suits for the tens. Here: with a suit
+; of three or more under which an off exposes a ten-count tile, bid 35 while
+; it is a legal bid; otherwise bid as bid-only-enough.silas does.
+(include bidding)
+
+(define ten-count-off (roles (context t))
+  (suit-at-least t 3)
+  (some (roles c) (exposed c t) (count c 10)))
+
+(policy ten-count-35
+  (bidding
+    (rule thirty-five-on-a-ten-count-off (bid 35)
+      (some (roles t) (ten-count-off t)))
+    (rule raise (bid least-raise)
+      (some (roles t)
+        (suit-at-least t 3)
+        (<= (+ (least-raise) (points (roles c) (exposed c t))) 42))))
+  (declaring
+    (rule best-suit (declare t)
+      (suit-at-least t 3)
+      (none (roles u) (suit-at-least u 3) (less-exposed u t)))
+    (rule best-of-any-length (declare t)
+      (pip-suit t)
+      (none (roles u) (pip-suit u) (less-exposed u t)))))

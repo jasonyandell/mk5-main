@@ -1113,3 +1113,78 @@ fn the_populations_are_their_reading_on_every_hand() {
     };
     assert_eq!((opens(0), opens(1), opens(2)), (49_310, 1_895, 161_946));
 }
+
+// ------------------------------------------- the book's overbidders (#163)
+
+/// The frame where `viewer`, dealt `hand`, calls after `calls` from the seat
+/// `first` counted from him (1 his left, 3 his right).
+fn after_calls(viewer: Seat, hand: DominoSet, first: usize, calls: &[Call], menu: &Arc<[Physics]>) -> AuctionFrame {
+    let shaker = viewer.plus(first + 3);
+    let auction = Auction::new(AuctionConfig::STRAIGHT, shaker, calls.to_vec()).unwrap();
+    AuctionFrame::new(auction, viewer, hand, MatchState::new(Scoring::MARKS, [0, 0]).unwrap(), menu.clone()).unwrap()
+}
+
+/// Whether `hand` holds a suit of three or more under which an off (its tile,
+/// not a double, not of the suit) shares a pip with a ten-count tile it lacks
+/// that is not of the suit: the 5-5 or the 6-4. Written in Rust.
+fn ten_count_off(hand: DominoSet) -> bool {
+    let tens = [Domino::new(Pip::new(5).unwrap(), Pip::new(5).unwrap()), Domino::new(Pip::new(6).unwrap(), Pip::new(4).unwrap())];
+    Pip::ALL.into_iter().any(|t| {
+        hand.iter().filter(|d| d.has(t)).count() >= 3
+            && tens.iter().any(|&c| {
+                !hand.contains(c)
+                    && !c.has(t)
+                    && hand.iter().any(|o| !o.has(t) && !o.is_double() && Pip::ALL.into_iter().any(|p| o.has(p) && c.has(p)))
+            })
+    })
+}
+
+#[test]
+fn the_overbidders_are_their_reading_on_every_hand() {
+    // The set-bidding fallacy (set-bid) opens exactly as bid-only-enough
+    // does: no opponent has bid. The habitual overbidder (ten-count-35)
+    // opens 35 exactly on a suit of three with a ten-count off, and as
+    // bid-only-enough elsewhere.
+    let (set_bid, ten, enough) =
+        (population("set-bid.silas"), population("ten-count-35.silas"), policy("bid-only-enough.silas"));
+    let menu = arena_menu();
+    let tally = every_hand_tally("the overbidders", |hand| {
+        let frame = first_call(Seat::S0, hand, &menu);
+        let call = |p: &CompiledPolicy| p.bid(&frame, &mut unlimited()).unwrap().choice;
+        let (s, t, e) = (call(&set_bid), call(&ten), call(&enough));
+        let expected_ten = if ten_count_off(hand) { Call::Bid(Bid::Points(35)) } else { e };
+        let mismatch = (s != e || t != expected_ten)
+            .then(|| format!("{hand:?}: set-bid {s}, ten-count-35 {t}, bid-only-enough {e}, expected {expected_ten}"));
+        (format!("{t}"), mismatch)
+    });
+    let thirty_fives: usize = tally.outcomes.iter().filter(|(o, _)| o.as_str() == "35").map(|(_, n)| n).sum();
+    assert!(thirty_fives > 0);
+}
+
+#[test]
+fn the_set_bidding_fallacy_raises_over_an_opponent_only() {
+    // On 2,000 seeded hands: over the partner's 30 the fallacy calls what
+    // bid-only-enough calls; over an opponent's 30 it raises wherever
+    // bid-only-enough does, and on some hands bid-only-enough passes it
+    // raises anyway: the hands worth 25 to 30 points to bid-only-enough.
+    let menu = arena_menu();
+    let (set_bid, enough) = (population("set-bid.silas"), policy("bid-only-enough.silas"));
+    let thirty = Call::Bid(Bid::Points(30));
+    let call = |p: &CompiledPolicy, f: &AuctionFrame| p.bid(f, &mut unlimited()).unwrap().choice;
+    let mut rng = Rng(163);
+    let mut only_the_fallacy = 0;
+    for _ in 0..2000 {
+        let hand: DominoSet = rng.shuffled()[..7].iter().copied().collect();
+        let over_partner = after_calls(Seat::S0, hand, 2, &[thirty, Call::Pass], &menu);
+        assert_eq!(call(&set_bid, &over_partner), call(&enough, &over_partner), "{hand:?} over the partner");
+        let over_opponent = after_calls(Seat::S0, hand, 3, &[thirty], &menu);
+        let (s, e) = (call(&set_bid, &over_opponent), call(&enough, &over_opponent));
+        if e != Call::Pass {
+            assert_eq!(s, e, "{hand:?} over an opponent");
+        } else if s != Call::Pass {
+            assert_eq!(s, Call::Bid(Bid::Points(31)), "{hand:?}");
+            only_the_fallacy += 1;
+        }
+    }
+    assert!(only_the_fallacy > 50, "{only_the_fallacy}");
+}

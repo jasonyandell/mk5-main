@@ -104,6 +104,8 @@ examples/populations/draw-trump.silas b2c9b488bb392f15
 examples/populations/marginal-30.silas 351557168753620f
 examples/populations/optimist-2.silas 295ed1f33374b198
 examples/populations/optimist-3.silas a56a237d5fdc651c
+examples/populations/set-bid.silas 066b73f66085fef2
+examples/populations/ten-count-35.silas e416f0eaec52c162
 examples/six-five-guarded.silas 95ee5c43c8ca38a8
 lib/book.silas:bidder 0aa994bc10fe6e6b
 lib/book.silas:bidders-partner 2ddd594609369047

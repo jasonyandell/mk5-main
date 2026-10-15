@@ -46,6 +46,10 @@
 //! 2026-10-14): `crisis-read`, pinned as first written; its core prints its
 //! `(reading ...)` form, and no other file's core changed.
 //!
+//! Two pins were added with the book's overbidders (#163, 2026-10-14):
+//! `populations/set-bid` and `populations/ten-count-35`, pinned as first
+//! written.
+//!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too;
 //! a number definition by a comparison that reads it, `(<= (name ...) 5)`.

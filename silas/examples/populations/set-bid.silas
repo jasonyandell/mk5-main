@@ -1,0 +1,30 @@
+; The set-bidding fallacy (Winning 42, S-0155-a, in our words): a bidder who,
+; facing an opponent's bid, raises a hand that is not worth it because he
+; doubts he could set the bid. A population, not the book's advice: the book
+; names this bidder to warn against him, and answers him by passing and
+; setting (S-0080-c). As bid-only-enough.silas bids, except that over an
+; opponent's standing bid it raises to the least legal bid while that bid and
+; the count its offs expose come to at most 48: six points, one bidding step
+; and a half, past what the hand is worth to bid-only-enough.
+(include bidding)
+
+(policy set-bid
+  (bidding
+    (rule raise-to-stop-him (bid least-raise)
+      (viewer v)
+      (high-bidder h)
+      (opponent v h)
+      (some (roles t)
+        (suit-at-least t 3)
+        (<= (+ (least-raise) (points (roles c) (exposed c t))) 48)))
+    (rule raise (bid least-raise)
+      (some (roles t)
+        (suit-at-least t 3)
+        (<= (+ (least-raise) (points (roles c) (exposed c t))) 42))))
+  (declaring
+    (rule best-suit (declare t)
+      (suit-at-least t 3)
+      (none (roles u) (suit-at-least u 3) (less-exposed u t)))
+    (rule best-of-any-length (declare t)
+      (pip-suit t)
+      (none (roles u) (pip-suit u) (less-exposed u t)))))
