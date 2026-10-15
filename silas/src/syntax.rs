@@ -1384,7 +1384,8 @@ impl fmt::Display for Query {
 const WIDTH: usize = 100;
 
 /// Heads whose forms always take a line per item.
-const BROKEN: [&str; 8] = ["policy", "rule", "query", "pattern", "define", "dominates", "bidding", "declaring"];
+const BROKEN: [&str; 9] =
+    ["policy", "rule", "reading", "query", "pattern", "define", "dominates", "bidding", "declaring"];
 
 /// Format Silas text canonically: comments kept, each on its own line;
 /// blank lines kept where the source has one (at most one); a form on one

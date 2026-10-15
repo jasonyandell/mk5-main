@@ -42,6 +42,10 @@
 //! of a pair whose other suit is already held goes, the pair stays;
 //! `s0133j_`).
 //!
+//! One pin was added with the reading written in a policy file (#162,
+//! 2026-10-14): `crisis-read`, pinned as first written; its core prints its
+//! `(reading ...)` form, and no other file's core changed.
+//!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too;
 //! a number definition by a comparison that reads it, `(<= (name ...) 5)`.

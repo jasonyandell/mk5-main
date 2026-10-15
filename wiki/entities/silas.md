@@ -395,9 +395,14 @@ answer is remembered by record. The reading's models are in the predicate's vers
 policy's identity changes with them. `silas/tests/guard_reading.rs` holds a rule that leads
 trump into the left setter to firing at Hand 31 trick 2 exactly where the right setter's 3-2,
 read under `protect-the-count`, makes it certain (5/22 unread), at every seating. A reading
-is named in Rust, not yet in a `.silas` file, so the four rules gap 1 lists still wait: the
-text form and the arena's registry are #162. This is the A2 unlock
-[[book-partners-read-2026-10-14]] named.
+can now be written in a policy file too (#162): `(reading name (read chair policy) ...
+clause ...)`, the reader found by name, compiled with `compile_reading`.
+`examples/book/crisis-read.silas` is the book's crisis as Hand 31 reads it: it leads the
+bait at Hand 31 trick 2 as `crisis.silas` does, and waits where `crisis.silas` fires on two
+trumps out that no setter's play places. It is not yet in the book player's stack, since the
+arena compiles each file alone (the gated half of #162); `dead-double`'s and
+`defend-the-84`'s decoys are another seat's reading (#132), not a guard's (`silas/GAPS.md`
+1). This is the A2 unlock [[book-partners-read-2026-10-14]] named.
 
 ## Ergonomics, round 2 (2026-10-14)
 
@@ -521,8 +526,8 @@ auction): `(rule priced (bid (- 42 (risk t))) (least t (risk t) (suit-at-least t
   rule) and priced under Zeb on the whole pour ([[book-study-2026-10-12]] § The book's
   rules as the book means them: Zeb sides with 3 of 18 and prices against none; the dead
   double's throw and the trump set's feed carry the conditions the book states).
-  A reading written in a `.silas` file, so the book's rules can act on one (#162; the guard
-  itself is built, #128), and another seat's knowledge (#132) are next ([[w42]]). The cross-game
+  The arena compiling a policy with its readers, so `crisis-read` joins the book player's
+  stack (#162's gated half), and another seat's knowledge (#132) are next ([[w42]]). The cross-game
   slices go on from the auction to comparison over deals (§ The match and field-free
   comparison).
 - **Lean.** The intended long-run spec for Silas and Zeb both, starting from texas-42's

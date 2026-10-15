@@ -5,6 +5,7 @@ examples/book/bidding/never-32-or-33.silas 9f8409c2c63c9276
 examples/book/bidding/risk-budget.silas c2e40a0358d21e66
 examples/book/cannot-be-set.silas 55d18056a6717dca
 examples/book/claim-the-rest.silas e77b1c9b4080bc6d
+examples/book/crisis-read.silas 231584cfd080bdb2
 examples/book/crisis.silas 6371d242d11bc4e8
 examples/book/cross-game/bid-only-enough-points.silas 4c2642080e2a8f72
 examples/book/cross-game/bid-only-enough.silas e3fa67dda5342fcb

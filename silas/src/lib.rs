@@ -72,7 +72,7 @@ pub use outcome::{Goal, OUTCOME_SCAN_CAP, forces, lay_down};
 pub use physics::{Declaration, Physics};
 pub use policy::{
     Allowed, Choice, CompiledPolicy, DecisionProvenance, Declared, ExactRule, Fallback, GuardWitnesses,
-    PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, Selector, Trump,
+    PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, ReadingDecl, Selector, Trump,
 };
 pub use reading::{
     CallEvidence, Evidence, Likelihood, PlayEvidence, READING_CAP, ReadChair, Reading, ReadingPredicate, SeatEvidence,

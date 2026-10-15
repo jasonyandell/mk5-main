@@ -348,13 +348,21 @@ fn policy_program(path: &str) -> Result<PolicyProgram> {
     }
 }
 
+/// Compile the policy read from `path`: a reader its readings name is the
+/// policy file of that name beside it.
+fn compile_at(program: &PolicyProgram, path: &str, registry: &Registry, physics: &Physics) -> Result<CompiledPolicy> {
+    let dir = std::path::Path::new(path).parent().map(std::path::Path::to_path_buf).unwrap_or_default();
+    let resolve = |name: &str| policy_program(&dir.join(format!("{name}.silas")).display().to_string());
+    program.compile_reading(registry, physics, &resolve)
+}
+
 fn eval(args: &[String]) -> Result<bool> {
     let options = Options::parse(args, &[], &["hand", "trick", "seat", "policy", "book"])?;
     let path = file(&options, "silas eval POLICY --hand ID [--trick N] [--seat ROLE]")?;
     let program = policy_program(path)?;
     let (frame, heading) = position(&options)?;
     let registry = Registry::standard();
-    let policy = program.compile(&registry, frame.physics())?;
+    let policy = compile_at(&program, path, &registry, frame.physics())?;
     describe(&frame, &heading);
     let legal = frame.physics().legal_plays(frame.kernel().viewer_hand(), frame.lead());
     println!("  legal: {}", tiles(legal));
@@ -426,7 +434,7 @@ fn bid(args: &[String]) -> Result<bool> {
     let state = match_state(&options)?;
     let scoring = state.scoring();
     let frame = AuctionFrame::new(auction.clone(), seat, dealt, state, declarations.clone())?;
-    let policy = program.compile(&Registry::standard(), &declarations[0])?;
+    let policy = compile_at(&program, path, &Registry::standard(), &declarations[0])?;
     println!("{}: the {role} ({seat}) to call; {auction}; {scoring}", hand.id);
     println!("  hand: {}", tiles(dealt));
     let legal: Vec<String> = auction.legal_calls().iter().map(Call::to_string).collect();
@@ -558,7 +566,7 @@ fn read_record(options: &Options, frame: Frame) -> Result<(Frame, Reading)> {
     let mut readers = Vec::new();
     for pair in words(options.need("read")?) {
         let (role, path) = pair.split_once('=').ok_or_else(|| fail("--read takes ROLE=POLICY, ..."))?;
-        let policy = policy_program(path)?.compile(&Registry::standard(), frame.physics())?;
+        let policy = compile_at(&policy_program(path)?, path, &Registry::standard(), frame.physics())?;
         readers.push((seat(role)?, policy));
     }
     let Some(calls) = options.get("auction") else {
@@ -704,7 +712,8 @@ fn coverage_frames(options: &Options) -> Result<Frames> {
             Some(program) => {
                 let id = physics.identity().to_owned();
                 if !players_by_physics.contains_key(&id) {
-                    players_by_physics.insert(id.clone(), program.compile(&registry, &physics)?);
+                    let at = options.get("play").expect("--play names the players");
+                    players_by_physics.insert(id.clone(), compile_at(program, at, &registry, &physics)?);
                 }
                 Some(&players_by_physics[&id])
             }
@@ -798,7 +807,7 @@ fn coverage(args: &[String]) -> Result<bool> {
             for (deal, frame) in &frames {
                 let id = frame.physics().identity().to_owned();
                 if !compiled.contains_key(&id) {
-                    compiled.insert(id.clone(), program.compile(&registry, frame.physics())?);
+                    compiled.insert(id.clone(), compile_at(&program, path, &registry, frame.physics())?);
                 }
                 let policy = &compiled[&id];
                 let coverage = match &mut coverage {
@@ -1008,7 +1017,7 @@ fn check(args: &[String]) -> Result<bool> {
                 }
                 Program::Policy(policy) => {
                     for rules in Straight42::ALL {
-                        policy.compile(&registry, &rules.physics())?;
+                        compile_at(&policy, &name, &registry, &rules.physics())?;
                     }
                     Ok(("policy", policy.lint()))
                 }

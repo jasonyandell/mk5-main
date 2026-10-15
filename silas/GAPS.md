@@ -94,12 +94,30 @@ event at a probability of at least a literal bound, evaluated by `Reading::evide
 impossible record, remembered by record. `tests/guard_reading.rs` holds a rule that leads
 trump into the left setter to firing exactly where Hand 31's reading is certain.
 
-**What remains: the rules above, written.** A reading is named in Rust, not in a `.silas`
-file: a file cannot yet name another file's policy as a reader, so the four rules above
-still carry `; GAP likelihood`, and each waits on a text form for a reading (a
-`(reading ...)` declaration naming the reader's policy file) and on the arena registering
-it (#162). Its cost is a reading per new record (40 ms on average at the book's positions,
-1.3 s at worst).
+**Built: a reading in a policy file (#162, 2026-10-14; README, The record as evidence).**
+`(reading name (read chair policy) ... clause ...)` in a policy declares the guard; the
+reader is found by name (`compile_reading`; the `silas` command looks beside the file).
+`examples/book/crisis-read.silas` is the crisis as Hand 31 reads it: its two-trump trigger
+asks that one setter certainly holds both trumps out, read from the setters' plays under
+`protect-the-count`. It leads the bait at Hand 31 trick 2 as `crisis.silas` does, and waits
+where `crisis.silas` fires on two trumps out that no play places (`tests/reading_text.rs`).
+
+**What remains.**
+- **The arena.** `scenario_core.SilasPolicy` compiles each file alone against the standard
+  registry, so `crisis-read` is not yet in the book player's stack; that binding is gated
+  (`scenario/`) and is the second half of #162.
+- **Hand 27's crisis** (S-0127-a) reads the partner's follow to the bidder's trump lead to
+  place the undrawn trump with a setter, before the partner has shown out; `crisis-read`
+  keeps `crisis.silas`'s shown-out condition and does not write that reading yet.
+- **The other three rules, which are not a guard's reading.** `dead-double`'s decoy (Hand
+  34) and `defend-the-84`'s decoys keep a tile for an opponent's reading of the viewer's
+  own plays: that is the reading from another seat, gap 3 (#132), not a reading of others.
+  `defend-the-84`'s signal (the low tile that tells the partner which double to drop) is a
+  sender and receiver of one convention; the receiver reads the partner under the sender's
+  own policy, so the file would read itself, which is refused. `partner-leads`'s exception
+  reads the bidder's trumps from his bid as well as his play: a reading of calls needs the
+  match state and the declarations offered, which a play frame does not hold.
+- Cost: a reading per new record (40 ms on average at the book's positions, 1.3 s at worst).
 
 ## 2. Cross-game policy comparison (Ch. 2, 7, 12)
 

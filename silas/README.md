@@ -498,6 +498,8 @@ other refusal, returns an error and no partial result.
 policy   := (policy name [(fallback lowest-legal)] form ...)
 form     := (rule name (select selector) (guard query))
           | (rule name (play action) body)     ; short form
+          | (reading name (read chair policy) ... [(likelihood l)] [(at-least p)] body)
+                                               ; The record as evidence, below
           | (exact key (play domino))
           | (bidding brule ...) | (declaring drule ...)   ; The auction, below
 selector := answer | tile domino
@@ -894,6 +896,31 @@ let mut registry = Registry::standard();
 registry.register(guard)?;
 let policy = PolicyProgram::parse(text, name)?.compile(&registry, &physics)?;
 ```
+
+**A reading in a policy file (#162).** A policy may declare its readings
+before its rules, and its rules name them like any atom:
+
+```text
+(policy crisis-read
+  (reading one-setter-holds-the-trumps-out
+    (read left-setter protect-the-count)
+    (read right-setter protect-the-count)
+    (trump q)
+    (some (roles s) (setter s) (none (roles t) (in t q) (live t) (not (mine t)) (not (holds s t)))))
+  (rule ... (one-setter-holds-the-trumps-out) ...))
+```
+
+A chair is `bidder`, `left-setter`, `partner` or `right-setter`; a reader is
+named by its policy's name; the likelihood is `consistent` unless said, and
+the bound 1 unless `(at-least p)` says otherwise (`p` is `n` or `n/d`). The
+body is the event's, as a rule's short form is its guard's, and prints as
+`(event (query ...))`, which reads back. Such a policy is compiled with
+`PolicyProgram::compile_reading(registry, physics, resolve)`, where `resolve`
+finds a reader by name; plain `compile` refuses it and says so, and so does a
+reader that cannot be found or a policy that reads itself, however far round.
+The `silas` command finds a reader as the policy file of that name beside the
+file that reads it. `examples/book/crisis-read.silas` is the book's crisis as
+Hand 31 reads it (`tests/reading_text.rs`).
 
 `tests/guard_reading.rs` asks the book's two readings of Hand 31 as guards at
 every seating (certain read, 5/22 and 2/15 unread), holds a rule that leads

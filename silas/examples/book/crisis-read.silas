@@ -1,0 +1,86 @@
+; The crisis as Hand 31 reads it. Winning 42 pp. 106-108 (S-0138-e, S-0139-a); the
+; rules are crisis.silas's (pp. 50, 92-96; Hands 26 and 31), and only the trigger
+; differs.
+; Rule, in our words: two trumps are out that the bidder cannot draw with what he
+; holds, and the partner has shown out of trump. That is a crisis only if one
+; setter holds both, and the book knows he does by reading the other setter's
+; count play to the first trump trick: a setter keeps his count off the bidder's
+; sure trick when he can (protect-the-count), so a count trump given there was
+; his only trump. Here the trigger is that reading, certain, where crisis.silas
+; fires on any two trumps out (its prelude's trumps-he-cannot-draw, marked GAP
+; likelihood). A lone trump out above all the bidder's is a setter's once the
+; partner is out, read or not, as in crisis.silas.
+; Evidence: in Hand 31 at trick 2 the right setter's 3-2 on the bidder's 2-2 puts
+; both trumps out with the left setter (5/22 unread, certain read), and the bait
+; is led as in crisis.silas; where no setter's play says which of them holds the
+; two trumps out, crisis.silas cashes a count double and this file waits
+; (tests/reading_text.rs).
+; Not yet in the arena's stack: the stack compiles each file alone, and a reading
+; needs its reader's file (#162).
+
+(include book)
+
+(define crisis-as-read (roles)
+  (some (roles p) (bidders-partner p) (shown-out-of-trump p))
+  (or (trump-he-cannot-draw) (and (trumps-he-cannot-draw) (one-setter-holds-the-trumps-out))))
+
+(policy crisis-read
+  (reading one-setter-holds-the-trumps-out
+    (read left-setter protect-the-count)
+    (read right-setter protect-the-count)
+    (trump q)
+    (some (roles s) (setter s) (none (roles t) (in t q) (live t) (not (mine t)) (not (holds s t)))))
+  (rule the-six-five-bait (play 6-5)
+    (viewer b)
+    (bidder b)
+    (on-lead b)
+    (crisis-as-read)
+    (own-legal 6-5)
+    (own-legal 6-4)
+    (not (trump-tile 6-5))
+    (not (trump-tile 6-4)))
+  (rule cash-a-double-that-is-count (play dd)
+    (viewer b)
+    (bidder b)
+    (on-lead b)
+    (crisis-as-read)
+    (own-legal dd)
+    (double dd)
+    (not (trump-tile dd))
+    (count-tile dd))
+  (rule a-count-double-away-from-his-suit (play dd)
+    (viewer b)
+    (bidder b)
+    (on-lead b)
+    (crisis-as-read)
+    (own-legal dd)
+    (double dd)
+    (not (trump-tile dd))
+    (calls-for-count dd)
+    (leads-context dd s)
+    (none (roles h l his) (setter h) (not (shown-out-of-trump h)) (played-to l h his) (in his s))
+    (none (roles ee t)
+      (own-legal ee)
+      (double ee)
+      (not (trump-tile ee))
+      (calls-for-count ee)
+      (leads-context ee t)
+      (none (roles h l his) (setter h) (not (shown-out-of-trump h)) (played-to l h his) (in his t))
+      (more-out t s)))
+  (rule a-count-double (play dd)
+    (viewer b)
+    (bidder b)
+    (on-lead b)
+    (crisis-as-read)
+    (own-legal dd)
+    (double dd)
+    (not (trump-tile dd))
+    (calls-for-count dd)
+    (leads-context dd s)
+    (none (roles ee t)
+      (own-legal ee)
+      (double ee)
+      (not (trump-tile ee))
+      (calls-for-count ee)
+      (leads-context ee t)
+      (more-out t s))))

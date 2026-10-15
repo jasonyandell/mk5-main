@@ -17,12 +17,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::str::FromStr;
 
+use num_bigint::BigInt;
+use num_rational::BigRational;
+
 use crate::auction::{Auction, AuctionConfig, AuctionFrame, Call};
 use crate::dominance::Dominance;
 use crate::eval::{Budget, CompiledNumber, CompiledQuery, Memo, Witness};
 use crate::frame::{Bid, Frame};
 use crate::nouns::{Context, Domino, DominoSet, Pip, Seat};
 use crate::physics::Physics;
+use crate::reading::{Likelihood, ReadChair, ReadingPredicate};
 use crate::registry::{Phase, Registry};
 use crate::syntax::{Expr, Library, Quantity, Query, Sort, Span, Value, quantity_names, quantity_text, valid_name};
 use crate::{Error, Result, error};
@@ -38,6 +42,25 @@ pub struct PolicyProgram {
     /// The declaring rules: each selects a declaration.
     pub declaring: Vec<PolicyRule>,
     pub fallback: Fallback,
+    /// The readings its rules may name, each a guard atom (#128, #162).
+    pub readings: Vec<ReadingDecl>,
+}
+
+/// A reading a policy declares: `(reading name (read chair policy) ...
+/// [(likelihood consistent|uniform)] [(at-least p)] clause ...)`. Its rules
+/// may then name `(name)`, which holds where the plays of the chairs read, by
+/// the policies named, put the event (the clauses, a query with no outputs)
+/// at a probability of at least `p` (1 unless said). A reader is named by its
+/// policy's name and found by the resolver [`PolicyProgram::compile_reading`]
+/// is given; see [`crate::ReadingPredicate`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReadingDecl {
+    pub name: String,
+    pub readers: Vec<(ReadChair, String)>,
+    pub likelihood: Likelihood,
+    pub bound: BigRational,
+    pub event: Query,
+    pub span: Span,
 }
 
 /// The complete viewer information at a decision of the play: the frame's
@@ -231,7 +254,67 @@ const LAYERS: [&str; 2] = ["exact", "fallback"];
 impl PolicyProgram {
     /// Compile against a registry. Exact rules are validated under `physics`,
     /// and every exact key must name it; relational rules run under any.
+    /// Refused when the policy declares a reading: its readers are other
+    /// policies, found by [`Self::compile_reading`].
     pub fn compile(&self, registry: &Registry, physics: &Physics) -> Result<CompiledPolicy> {
+        if let Some(reading) = self.readings.first() {
+            let names: Vec<&str> = reading.readers.iter().map(|(_, n)| n.as_str()).collect();
+            return Err(reading.span.error(format!(
+                "policy {} declares the reading {}, which reads the policy {}: compile it with \
+                 compile_reading, which finds a reader by name",
+                self.name,
+                reading.name,
+                names.join(" and ")
+            )));
+        }
+        self.compile_rules(registry, physics)
+    }
+
+    /// Compile a policy that may declare readings: each reader is the policy
+    /// `resolve` finds by name, compiled the same way, and each reading is
+    /// registered as a guard atom in a copy of `registry` the rules are
+    /// compiled against. Refused for a reader that cannot be found, and for a
+    /// policy that reads itself, however far round.
+    pub fn compile_reading(
+        &self,
+        registry: &Registry,
+        physics: &Physics,
+        resolve: &dyn Fn(&str) -> Result<PolicyProgram>,
+    ) -> Result<CompiledPolicy> {
+        self.compile_resolving(registry, physics, resolve, &mut vec![self.name.clone()])
+    }
+
+    fn compile_resolving(
+        &self,
+        registry: &Registry,
+        physics: &Physics,
+        resolve: &dyn Fn(&str) -> Result<PolicyProgram>,
+        reading: &mut Vec<String>,
+    ) -> Result<CompiledPolicy> {
+        let mut extended = registry.clone();
+        for decl in &self.readings {
+            let mut readers = Vec::new();
+            for (chair, name) in &decl.readers {
+                if reading.contains(name) {
+                    return Err(decl
+                        .span
+                        .error(format!("a reading reads itself: {} reads {name}", reading.join(" reads "))));
+                }
+                let program = resolve(name).map_err(|e| decl.span.error(format!("the reader {name}: {}", e.0)))?;
+                reading.push(name.clone());
+                let compiled = program.compile_resolving(registry, physics, resolve, reading)?;
+                reading.pop();
+                readers.push((*chair, compiled));
+            }
+            let event = decl.event.compile(registry)?;
+            let guard = ReadingPredicate::new(&decl.name, readers, decl.likelihood, event, decl.bound.clone())
+                .map_err(|e| decl.span.error(e.0))?;
+            extended.register(guard).map_err(|e| decl.span.error(e.0))?;
+        }
+        self.compile_rules(&extended, physics)
+    }
+
+    fn compile_rules(&self, registry: &Registry, physics: &Physics) -> Result<CompiledPolicy> {
         if !valid_name(&self.name) {
             return Err(error(format!("{} is not a valid policy name", self.name)));
         }
@@ -701,6 +784,7 @@ impl PolicyProgram {
             bidding: vec![],
             declaring: vec![],
             fallback: Fallback::LowestLegal,
+            readings: vec![],
         };
         let mut fallbacks = 0;
         let mut sections = BTreeSet::new();
@@ -714,6 +798,7 @@ impl PolicyProgram {
                     }
                 }
                 Some("rule") => program.rules.push(rule(&library, form, Section::Play)?),
+                Some("reading") => program.readings.push(reading_decl(&library, form)?),
                 Some(tag @ ("bidding" | "declaring")) => {
                     if !sections.insert(tag) {
                         return Err(form.span.error(format!("a policy has one ({tag} ...) section")));
@@ -750,7 +835,7 @@ impl PolicyProgram {
                 }
                 _ => {
                     return Err(form.span.error(
-                        "a policy form is (fallback ...), (rule ...), (exact ...), (bidding ...) or (declaring ...)",
+                        "a policy form is (fallback ...), (reading ...), (rule ...), (exact ...), (bidding ...) or (declaring ...)",
                     ));
                 }
             }
@@ -899,6 +984,78 @@ fn rule(library: &Library, form: &Expr, section: Section) -> Result<PolicyRule> 
     Ok(PolicyRule { name: name.word()?.to_owned(), selector, guard, span: form.span.clone() })
 }
 
+/// `(reading name (read chair policy) ... [(likelihood l)] [(at-least p)]
+/// clause ...)`, or with `(event (query ...))` for the clauses, as it prints.
+fn reading_decl(library: &Library, form: &Expr) -> Result<ReadingDecl> {
+    let body = form.tagged("reading")?;
+    let syntax = "reading syntax is (reading name (read chair policy) ... [(likelihood consistent|uniform)] \
+                  [(at-least p)] clause ...)";
+    let [name, fields @ ..] = body else {
+        return Err(form.span.error(syntax));
+    };
+    let name = name.word()?.to_owned();
+    let (mut readers, mut likelihood, mut bound, mut rest) = (Vec::new(), None, None, fields);
+    while let Some((field, tail)) = rest.split_first() {
+        match field.head() {
+            Some("read") => {
+                let [chair, policy] = field.tagged("read")? else {
+                    return Err(field.span.error("read syntax is (read chair policy)"));
+                };
+                let chair = ReadChair::parse(chair.word()?).map_err(|e| chair.span.error(e.0))?;
+                if readers.iter().any(|(c, _)| *c == chair) {
+                    return Err(field.span.error(format!("the {} is read twice", chair.name())));
+                }
+                readers.push((chair, policy.word()?.to_owned()));
+            }
+            Some("likelihood") if likelihood.is_none() => {
+                likelihood = Some(match field.tagged("likelihood")? {
+                    [w] if w.word()? == "consistent" => Likelihood::Consistent,
+                    [w] if w.word()? == "uniform" => Likelihood::Uniform,
+                    _ => return Err(field.span.error("likelihood is consistent or uniform")),
+                });
+            }
+            Some("at-least") if bound.is_none() => {
+                let [p] = field.tagged("at-least")? else {
+                    return Err(field.span.error("at-least takes one probability"));
+                };
+                let p: BigRational = p.word()?.parse().map_err(|_| p.span.error("a probability is n or n/d"))?;
+                bound = Some(p);
+            }
+            _ => break,
+        }
+        rest = tail;
+    }
+    if readers.is_empty() {
+        return Err(form.span.error(format!("the reading {name} reads no chair: {syntax}")));
+    }
+    let at = &form.span;
+    let event = match rest {
+        [event] if event.head() == Some("event") => match event.tagged("event")? {
+            [query] if query.head() == Some("query") => Query::from_expr(library, query)?,
+            _ => return Err(event.span.error("event syntax is (event (query ...))")),
+        },
+        _ => {
+            let (roles, clauses) = match rest.split_first() {
+                Some((roles, tail)) if roles.head() == Some("roles") => (vec![roles.clone()], tail),
+                _ => (vec![], rest),
+            };
+            let out = Expr::list_at(vec![Expr::word_at("out", at)], at);
+            let query =
+                Expr::list_at([vec![Expr::word_at("query", at)], roles, vec![out], clauses.to_vec()].concat(), at);
+            Query::from_expr(library, &query)?
+        }
+    };
+    let one = BigRational::from_integer(BigInt::from(1));
+    Ok(ReadingDecl {
+        name,
+        readers,
+        likelihood: likelihood.unwrap_or(Likelihood::Consistent),
+        bound: bound.unwrap_or(one),
+        event,
+        span: form.span.clone(),
+    })
+}
+
 /// A Silas text: a query or a policy, after its `include` and `define`
 /// forms.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -959,6 +1116,17 @@ impl fmt::Display for PolicyProgram {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "(policy {}", self.name)?;
         writeln!(f, "  (fallback lowest-legal)")?;
+        for r in &self.readings {
+            write!(f, "  (reading {}", r.name)?;
+            for (chair, policy) in &r.readers {
+                write!(f, " (read {} {policy})", chair.name())?;
+            }
+            let likelihood = match r.likelihood {
+                Likelihood::Consistent => "consistent",
+                Likelihood::Uniform => "uniform",
+            };
+            writeln!(f, " (likelihood {likelihood}) (at-least {}) (event {}))", r.bound, r.event)?;
+        }
         for rule in &self.exact_rules {
             writeln!(f, "  (exact {} (play {}))", KeyDisplay(&rule.key), rule.action)?;
         }

@@ -657,7 +657,17 @@ impl ReadChair {
         declarer.plus(self as usize)
     }
 
-    fn name(self) -> &'static str {
+    /// The chair a reading names: `bidder`, `left-setter`, `partner` or
+    /// `right-setter`.
+    pub fn parse(word: &str) -> Result<ReadChair> {
+        [ReadChair::Bidder, ReadChair::LeftSetter, ReadChair::Partner, ReadChair::RightSetter]
+            .into_iter()
+            .find(|c| c.name() == word)
+            .ok_or_else(|| error(format!("a chair is bidder, left-setter, partner or right-setter, not {word}")))
+    }
+
+    /// The chair's name in a reading.
+    pub fn name(self) -> &'static str {
         match self {
             ReadChair::Bidder => "bidder",
             ReadChair::LeftSetter => "left-setter",

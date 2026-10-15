@@ -89,6 +89,7 @@ fn program(key: PolicyKey) -> PolicyProgram {
         bidding: vec![],
         declaring: vec![],
         fallback: Fallback::LowestLegal,
+        readings: vec![],
     }
 }
 
@@ -181,6 +182,7 @@ fn a_table_policy_exports_and_replays_through_its_serialized_program() {
         bidding: vec![],
         declaring: vec![],
         fallback: Fallback::LowestLegal,
+        readings: vec![],
     };
     let parsed: PolicyProgram = program.to_string().parse().unwrap();
     assert_eq!(parsed, program);
@@ -270,6 +272,7 @@ fn contract_resolution_counts_every_point_the_physics_awards() {
         bidding: vec![],
         declaring: vec![],
         fallback: Fallback::LowestLegal,
+        readings: vec![],
     };
     let compiled = source.compile(&Registry::standard(), &table.physics).unwrap();
     let resolved = |bid: u32| compiled.decide(&table.at_bid(bid), &mut budget()).unwrap().contract_resolved;
