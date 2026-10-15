@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.0 — 2026-10-14
+
+**Match-aware bidding, opt-in.** `chooseBid` takes a new `match` option: the
+score, who holds the high bid, how many seats speak after you, and the
+highest legal bid. With it, `chooseBid` is the hand-only rule plus one more
+option, a mark bid (84, or one mark over an 84), at the declaration most
+likely to take all 42 points. It bids the mark when the chance of winning the
+game from there, by an exact match-equity table to `marksToWin` (7), beats
+the hand-only call's. A tie keeps the hand-only call. There is no mark
+option when `pointsToWin` is set or when `maxBid` is under 84. Behind a
+partner's bid the hand-only call is a pass, but the mark bid is still priced.
+
+- **Measured**, bidding at 160 worlds with both sides playing deployed Zeb
+  and games to 7 marks: the match-aware bidder won **53.37% of games
+  [52.47, 54.27]** against the hand-only bidder, over 4,096 duplicate
+  orientations (a coin is 50%; the model's first-order prediction was
+  52.94%). Most of the gain comes from hands where the hand-only bidder
+  would bid 42 and neither side needs a single mark. See
+  `wiki/experiments/match-aware-bidding-2026-10-14.md` in the repository.
+- **The law behind it is fitted to the deployed field.** The hand law and
+  the auction odds (how often a point bid stands, what passing leaves) were
+  measured on Zeb playing Zeb and frozen. Against other fields the numbers
+  will differ; follow-ups will refine them in 0.4.x.
+- `matchPrice({ ... })` exposes the two match equities and the call.
+- **Without `match`, `chooseBid` is unchanged from 0.3.0**, and so is
+  everything else. A parity test in the repository holds the JavaScript to
+  the arena's Python (`arena/match_equity.py`, `arena/zeb_bid.py`) to 1e-12.
+
 ## 0.3.0 — 2026-10-14
 
 Two new defaults, each measured on its own and then together:

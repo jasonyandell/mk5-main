@@ -9,12 +9,16 @@
  * Node — then `forecast`, `play` and `analyze` answer synchronously. A call
  * takes tens of milliseconds to seconds, so run them off the UI thread.
  */
+import { checkMatch, chooseWithMatch } from './match.js';
+
 export { default, initSync, forecast, play, analyze, version, netId } from './pkg/zeb.js';
+export { matchPrice } from './match.js';
 
 /** The bid a forecast supports, or null to pass: the contract is in index.d.ts. */
-export function chooseBid(forecast, { need, cutoff = 0.8, legalDeclarations } = {}) {
+export function chooseBid(forecast, { need, cutoff = 0.8, legalDeclarations, match } = {}) {
   if (!Array.isArray(forecast)) throw new TypeError('forecast must be the array forecast() returned');
-  if (!Number.isInteger(need) || need < 30 || need > 42) {
+  // With `match`, `need` may exceed 42: a seat facing an 84 has no point bid, only the mark option.
+  if (!Number.isInteger(need) || need < 30 || (match === undefined && need > 42)) {
     throw new RangeError(`need must be an integer bid in 30..42, not ${need}`);
   }
   if (typeof cutoff !== 'number' || !(cutoff > 0 && cutoff <= 1)) {
@@ -23,7 +27,15 @@ export function chooseBid(forecast, { need, cutoff = 0.8, legalDeclarations } = 
   if (legalDeclarations !== undefined && !Array.isArray(legalDeclarations)) {
     throw new TypeError('legalDeclarations must be an array of declarations');
   }
+  if (match !== undefined) checkMatch(match);
   const allowed = forecast.filter((f) => legalDeclarations === undefined || legalDeclarations.includes(f.decl));
+  if (match === undefined) return handOnly(allowed, need, cutoff);
+  // Behind the partner's bid the hand-only call is a pass (Plunge's rule), and above 42 there is no point bid.
+  const hand = match.holder === 'partner' || need > 42 ? null : handOnly(allowed, need, cutoff);
+  return chooseWithMatch(allowed, hand, match);
+}
+
+function handOnly(allowed, need, cutoff) {
   for (let bid = 42; bid >= need; bid--) {
     let best = null;
     for (const f of allowed) {

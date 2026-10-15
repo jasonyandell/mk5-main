@@ -52,3 +52,20 @@ test('bad options are refused', () => {
   assert.throws(() => chooseBid(sixes, { need: 30 }), TypeError);
   assert.throws(() => chooseBid([sixes], { need: 30, legalDeclarations: 6 }), TypeError);
 });
+
+test('match: mark bid, ties, and the options that remove it', () => {
+  const sure = row(6, () => 0.95);
+  const match = { us: 0, them: 6, weShakeNext: false, holder: 'none', passesAfter: 0, maxBid: 84 };
+  // Down 6-0 a set loses the game at 42 or 84 alike, and a make at 84 is two marks: all upside.
+  assert.deepEqual(chooseBid([sure], { need: 30, match }), { bid: 84, decl: 6, pmake: 0.95 });
+  assert.deepEqual(chooseBid([sure], { need: 30, match: { ...match, maxBid: 42 } }), chooseBid([sure], { need: 30 }));
+  assert.deepEqual(chooseBid([sure], { need: 30, match: { ...match, pointsToWin: true } }), chooseBid([sure], { need: 30 }));
+  // Up 6-0 the 42 dominates (the book's rule): the hand-only call stands.
+  assert.equal(chooseBid([sure], { need: 30, match: { ...match, us: 6, them: 0 } }).bid, 42);
+  // Behind the partner the hand-only call is a pass; facing an 84 there is no point bid.
+  assert.equal(chooseBid([weak], { need: 30, match: { ...match, holder: 'partner' } }), null);
+  assert.equal(chooseBid([weak], { need: 126, match: { ...match, us: 6, them: 0, holder: 'opp', maxBid: 126 } }), null);
+  assert.throws(() => chooseBid([sure], { need: 30, match: { ...match, holder: 'me' } }), RangeError);
+  assert.throws(() => chooseBid([sure], { need: 30, match: { ...match, weShakeNext: 0 } }), TypeError);
+  assert.throws(() => chooseBid([sure], { need: 43 }), RangeError);
+});

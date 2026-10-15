@@ -120,6 +120,40 @@ declarations at thirteen targets, so the noise leans toward bolder bids on
 top of the measured 3 to 5 points. Pass `worlds: 512` to bid as graded, or
 raise the cutoff a little.
 
+### Match-aware bidding
+
+`chooseBid` also takes an optional `match`. With it, the bid is the hand-only
+call plus one more option: a mark bid (84, or one mark over an 84) at the
+declaration most likely to take all 42 points. The mark bid wins when its
+chance of winning the *game* beats the hand-only call's, by a match-equity
+table solved exactly to `marksToWin`. Every contract from 30 to 42 pays one
+mark, made or set, so the score only matters where the marks at stake differ.
+
+```js
+chooseBid(f, {
+  need: 30,
+  match: {
+    us: 5, them: 3,        // marks
+    marksToWin: 7,         // default
+    weShakeNext: false,    // our side shakes first on the next hand
+    holder: 'none',        // who holds the high bid: 'none' | 'partner' | 'opp'
+    passesAfter: 2,        // seats still to speak after you, 0..3
+    maxBid: 84,            // highest legal bid; a mark bid needs 84 or more
+    // pointsToWin: true   // a points-to-win game has no mark option
+  },
+}); // e.g. { bid: 84, decl: 6, pmake: 0.31 }, or the hand-only call, or null to pass
+```
+
+Without `match`, `chooseBid` is the hand-only rule above, as in 0.3.0. A
+tie keeps the hand-only call. Behind a partner's bid (`holder: 'partner'`)
+the hand-only call is a pass, and the mark bid is still priced. With `match`,
+`need` may exceed 42, for a seat facing an 84. The pricing uses the hand law
+and the auction odds fitted to the deployed field (Zeb bidding at 160 worlds
+and playing both sides). Over 4,096 duplicate games to 7 marks it won 53.37%
+of games [52.47, 54.27] against the hand-only bidder (a coin is 50%); see
+`wiki/experiments/match-aware-bidding-2026-10-14.md` in the repository.
+`matchPrice` returns the two match equities and the call.
+
 ## Playing: `play` and `analyze`
 
 ```js
