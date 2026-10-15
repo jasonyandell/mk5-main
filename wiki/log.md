@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-14, 268 archived entries)
+## Digest (2026-04-09 → 2026-10-14, 274 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -39,6 +39,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Generated data to Hugging Face** (2026-10-12, 1 archived entry) — [[publish-data-to-huggingface]]: the 250k Zeb pour and the day's research artifacts public. Hub: [[scenario-player]].
 - **The book face-off** (2026-10-12, 2 archived entries) — [[book-study-2026-10-12]] § The face-off: the same gates asked of random, jud, E[Q] n=10 and the field net; closed by a k1,n2048 re-plan, a counterexample the standard for siding against the book (#121).
 - **The book corrected** (2026-10-12, 1 archived entry) — [[book-study-2026-10-12]] and the w42 pages: chance baselines everywhere; #122–#125 opened.
+- **Desks, the license line, the Demon, the book's first measurements** (2026-10-14, 6 archived entries) — [[standing-desks]], the license line ([[strategy-fusion-fence]] inventory), [[the-demon]], [[book-partners-read-2026-10-14]] (#150), the header audit (#153; [[book-assumptions]]), [[book-small-n-2026-10-14]] (#154).
 - **The tournament, the Book Authority, Zeb 0.3.0** (2026-10-14, 6 archived entries) — [[tournament]] (production Walt, Zeb, fenced E[Q] on a Bradley–Terry ladder), [[book-authority]] and [[book-assumptions]] (the charter and eleven assumptions), [[zeb-030-confirmation-2026-10-14]], [[regulars-table-2026-10-14]], the fly connectome as a player, [[legacy-42-bots]].
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
@@ -47,6 +48,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | 228812ff | Demon power: smaller exact search; 1,600 worlds do not establish a strength gain]
 
 [[demon-power-2026-10-14]]: exact parity, 13.2% less CPU and 70.4% less peak RSS at 400 worlds; 128 duplicate pairs finish 124–132 at 1,600 versus 100, with no demonstrated gain. Public data, verified pins, and GREEN gates in the study. [[the-demon]] · [[silas]] · [[3cd6ae53]] · [[228812ff]].
+
 ## [2026-10-14 | f105f56a | The crisis as read joins the book player's stack: the re-price reads +0.01 [−0.02, +0.04] marks/game (MDE 0.04), 12% of game pairs differ]
 
 **Updated:** [[crisis-read-reprice-2026-10-14]] (complete; 48 batches, none dropped), `arena/book_play.py` (lead order: `crisis-read`), `silas/GAPS.md` 1, `crisis-read.silas` header. Data `book/crisis-read-reprice/` in texas-42-zeb-research-2026-10.
@@ -80,27 +82,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | c9a868cb | match-aware bidding: Zeb's bidder in the arena, the 84 priced by match equity wins 53.4% [52.5, 54.3] of games vs the hand-only bidder; 51.4% [50.6, 52.2] vs the same 84 priced score-blind; A/A exact; no drops]
 
 **Added:** [[match-aware-bidding-2026-10-14]] (pre-registered at c9a868cb, model frozen at ee2c95b7), [[match-equity]]. **Updated:** [[scenario-player]] (§ Match-aware bidding), `index-experiments.md`, `index-topics.md`. Code: `arena/zeb_bid.py`, `arena/match_equity.py` (default off). Data: `zeb/match-aware-bidding/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-ups: #160.
-
-## [2026-10-14 | bf16fdfe | The book at small n (#154): the near-tie break is free at 16, 64 and 160 worlds; the book's sets cost a 16-world plan 0.21 [−0.02, 0.44] marks/game and a 160-world plan 1.10 [0.93, 1.27]]
-
-**Added:** [[book-small-n-2026-10-14]] (pre-registered at bf16fdfe, 280 batches through `scripts/cpu-slot`, none dropped; D16 −0.01 [−0.18, +0.17], MDE 0.25; A/A −0.03), `scenario/small_n.py`; data `book/small-n/` in texas-42-zeb-research-2026-10. **Updated:** [[book-assumptions]] (A7 measured to 16 worlds; #161 the reader with no plan). Pre-registered, queued: [[deviant-field-2026-10-14]] (#152, `scenario/deviant_field.py`, 98f5d16c).
-
-## [2026-10-14 | 5807425c | The header audit (#153): the gates are history]
-
-The 21 rows that stayed on a gate are listed in their rule's header or recorded as no rule's; `setter-leads` repaired at Hand 27 (a low tile that calls for a five and no ten goes last); `low-from-a-pair` learns the spare (Hand 29); the three "book against its rule" rows re-read under [[book-authority]]'s presumption, one reconciled. Ledger in [[book-assumptions]] (gate-only 21 → 0); rule table in [[silas]].
-
-## [2026-10-14 | desks | the standing desks: Mayor, Book, Media, Archive; blob first, link second; the links registry in the feed's db]
-
-**Added:** [[standing-desks]].
-
-## [2026-10-14 | b88c5432 | the Demon summoned: a fenced CPU PIMC player (Walt's sampler, Silas's double-dummy solve per world, 100 worlds, margin tiebreak, heuristic bidder) seated as `demon-pimc-n100-b88c5432`; 32 ms a decision; smoke round vs E[Q] n=10 11–9, +0.35 [−0.98, +1.68] marks/game over 10 pairs (close cousins), vs Walt 4–2 and Zeb 0.3.0 1–5 (3 pairs each, a smoke test)]
-
-**Added:** [[the-demon]], `tournament/demon/` (Rust), `tournament/demon_fenced_seat.py`, `tournament/tests/test_demon.py`, the `demon` suite in `scripts/check`. **Updated:** [[strategy-fusion-fence]] (inventory, sanctioned uses, guard), [[tournament]] (participants, seating, cloud worker), [[scenario-player]], `index-topics.md`, the fence guard test (no player may reach the Demon; only its crate turns on `clairvoyant`). Records: 16 faceoffs in `jasonyandell/texas-42-tournament`.
-
-## [2026-10-14 | 70e2c569 | the license line: the science (engine, Walt, Silas, wiki, data) CC0, Zeb MIT; SPDX on every live code file, REUSE.toml for the rest, `reuse lint` in scripts/check; planner's mixed files CC0-1.0 AND MIT until #158]
-
-**Added:** [[license-line]], `LICENSE` (rewritten), `REUSE.toml`, `LICENSES/`, `docs/powered-by-walt.svg`. **Updated:** [[scenario-player]] (Links), `index-decisions.md`, `CLAUDE.md` (hard rule), READMEs. Issue: #158.
-
-## [2026-10-14 | cf89472b | book partners read each other by the book (#150, A2's receiving half): plays by the stack, calls by bid-only-enough; vs deployed Zeb 0.3.0 +0.10 [−0.06, +0.26] marks/game, A/A −0.05; null at this power, every sign positive]
-
-**Added:** [[book-partners-read-2026-10-14]] (pre-registered at `cf89472b`). **Updated:** [[book-assumptions]] (A2 row, opinion, order), [[book-authority]], [[w42]] (frontier, routes, leaves-out), `index-experiments.md`. Code: `arena/book_play.py` (`read=`, shadow), `arena/book_read.py` (`seats`, `calls_weight`), `arena/walt_play.py` (`s<seed>`). Data: `book/partners-read/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.

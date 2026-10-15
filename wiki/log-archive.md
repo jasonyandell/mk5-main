@@ -4218,3 +4218,27 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-14 | adcc454c | legacy 42 bots surveyed (Win42, texas42 0.46, 42-LX, Palm42, iOS Texas 42, dead GitHub repos); first target Win42 via its author-documented protocol (#157); the GPL texas42 AI seated at the arena in a pilot (854/854 legal plays; a smoke test, not a rating)]
 
 **Added:** [[legacy-42-bots]]. **Updated:** [[tournament]] (§ Participants, Links), `index-topics.md`. Issue: #157. Pilot code and logs in `scratch/legacy-42/` (gitignored; no third-party bytes committed).
+
+## [2026-10-14 | cf89472b | book partners read each other by the book (#150, A2's receiving half): plays by the stack, calls by bid-only-enough; vs deployed Zeb 0.3.0 +0.10 [−0.06, +0.26] marks/game, A/A −0.05; null at this power, every sign positive]
+
+**Added:** [[book-partners-read-2026-10-14]] (pre-registered at `cf89472b`). **Updated:** [[book-assumptions]] (A2 row, opinion, order), [[book-authority]], [[w42]] (frontier, routes, leaves-out), `index-experiments.md`. Code: `arena/book_play.py` (`read=`, shadow), `arena/book_read.py` (`seats`, `calls_weight`), `arena/walt_play.py` (`s<seed>`). Data: `book/partners-read/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | 70e2c569 | the license line: the science (engine, Walt, Silas, wiki, data) CC0, Zeb MIT; SPDX on every live code file, REUSE.toml for the rest, `reuse lint` in scripts/check; planner's mixed files CC0-1.0 AND MIT until #158]
+
+**Added:** [[license-line]], `LICENSE` (rewritten), `REUSE.toml`, `LICENSES/`, `docs/powered-by-walt.svg`. **Updated:** [[scenario-player]] (Links), `index-decisions.md`, `CLAUDE.md` (hard rule), READMEs. Issue: #158.
+
+## [2026-10-14 | b88c5432 | the Demon summoned: a fenced CPU PIMC player (Walt's sampler, Silas's double-dummy solve per world, 100 worlds, margin tiebreak, heuristic bidder) seated as `demon-pimc-n100-b88c5432`; 32 ms a decision; smoke round vs E[Q] n=10 11–9, +0.35 [−0.98, +1.68] marks/game over 10 pairs (close cousins), vs Walt 4–2 and Zeb 0.3.0 1–5 (3 pairs each, a smoke test)]
+
+**Added:** [[the-demon]], `tournament/demon/` (Rust), `tournament/demon_fenced_seat.py`, `tournament/tests/test_demon.py`, the `demon` suite in `scripts/check`. **Updated:** [[strategy-fusion-fence]] (inventory, sanctioned uses, guard), [[tournament]] (participants, seating, cloud worker), [[scenario-player]], `index-topics.md`, the fence guard test (no player may reach the Demon; only its crate turns on `clairvoyant`). Records: 16 faceoffs in `jasonyandell/texas-42-tournament`.
+
+## [2026-10-14 | desks | the standing desks: Mayor, Book, Media, Archive; blob first, link second; the links registry in the feed's db]
+
+**Added:** [[standing-desks]].
+
+## [2026-10-14 | 5807425c | The header audit (#153): the gates are history]
+
+The 21 rows that stayed on a gate are listed in their rule's header or recorded as no rule's; `setter-leads` repaired at Hand 27 (a low tile that calls for a five and no ten goes last); `low-from-a-pair` learns the spare (Hand 29); the three "book against its rule" rows re-read under [[book-authority]]'s presumption, one reconciled. Ledger in [[book-assumptions]] (gate-only 21 → 0); rule table in [[silas]].
+
+## [2026-10-14 | bf16fdfe | The book at small n (#154): the near-tie break is free at 16, 64 and 160 worlds; the book's sets cost a 16-world plan 0.21 [−0.02, 0.44] marks/game and a 160-world plan 1.10 [0.93, 1.27]]
+
+**Added:** [[book-small-n-2026-10-14]] (pre-registered at bf16fdfe, 280 batches through `scripts/cpu-slot`, none dropped; D16 −0.01 [−0.18, +0.17], MDE 0.25; A/A −0.03), `scenario/small_n.py`; data `book/small-n/` in texas-42-zeb-research-2026-10. **Updated:** [[book-assumptions]] (A7 measured to 16 worlds; #161 the reader with no plan). Pre-registered, queued: [[deviant-field-2026-10-14]] (#152, `scenario/deviant_field.py`, 98f5d16c).
