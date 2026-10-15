@@ -37,6 +37,8 @@ partner's standing bid. [[demon-next-form-2026-10-14]] defines the policy and it
 ten-declaration evidence. That promotion is withdrawn: declaration 8 belongs to
 nello, outside straight 42. New bidders explicitly restrict declarations to
 0–7 and 9; [[demon-vs-zeb-2026-10-15]] holds the audit and corrected comparisons.
+The current confirmation candidate uses 64 bidding worlds and searches only
+the requested declarations; the native Zeb comparison is still in progress.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw
 every hand, and E[max] ≥ max E ([[strategy-fusion]]). That is why the Demon makes a useful
