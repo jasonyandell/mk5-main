@@ -52,11 +52,6 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 **Updated:** [[match-aware-bidding-2026-10-14]] (§ Follow-ups; pre-registered at 98552881, calibration frozen at 979124a1), [[match-equity]]. Code: `arena/zeb_bid.py` `over`, `cal` (default off). Data: `zeb/match-aware-bidding-2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-up: #170
 
-## [2026-10-14 | archive | recover everything to Hugging Face: the Archive desk's inventory and first batch (five repos, ~8 GB, screened, verified by download)]
-
-**Touched pages:** [[the-demon]] [[demon-vs-zeb-2026-10-15]] [[7e00788a]]
-**Updated:** Completed corrected development, native parity, explicit forecast declarations and confirmation protocol; evidence published, confirmation still running.
-
 ## [2026-10-15 | 1273bc97 | Demon versus Zeb: correct the declaration domain before measuring strength]
 
 **Added:** [[demon-vs-zeb-2026-10-15]] (active; pinned Zeb 0.4.0, whole-seat timing and independent confirmation protocol). **Corrected:** [[demon-next-form-2026-10-14]] (ten-declaration result, not straight 42; promotion withdrawn), [[the-demon]], [[tournament]], [[scenario-player]]. Initial invalid trials preserved publicly; new PIMC identities restrict declarations, workers exclude incompatible records and preserve their pending claims.
