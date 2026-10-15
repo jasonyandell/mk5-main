@@ -123,11 +123,22 @@ fn the_solve_agrees_with_brute_force_minimax_on_every_world_of_the_fiber() {
                 h[viewer as usize] &= !(1 << t);
                 (h, sp.rec.advance(t, &rules))
             };
-            let want: i32 = worlds.iter().map(|w| { let (h, r) = after(w); points(&rules, h, r, side, threshold, true) }).sum();
+            let want: i32 = worlds
+                .iter()
+                .map(|w| {
+                    let (h, r) = after(w);
+                    points(&rules, h, r, side, threshold, true)
+                })
+                .sum();
             assert_eq!(makes as i32, want, "make count of tile {t}");
             if let Some(m) = margin {
-                let want: i64 =
-                    worlds.iter().map(|w| { let (h, r) = after(w); points(&rules, h, r, side, threshold, false) as i64 }).sum();
+                let want: i64 = worlds
+                    .iter()
+                    .map(|w| {
+                        let (h, r) = after(w);
+                        points(&rules, h, r, side, threshold, false) as i64
+                    })
+                    .sum();
                 assert_eq!(m, want, "margin of tile {t}");
                 tiebreaks += 1;
             }
@@ -205,7 +216,7 @@ fn a_request_that_misstates_the_record_is_refused() {
 #[test]
 fn every_source_file_carries_the_fence_token() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    for f in ["Cargo.toml", "src/lib.rs", "src/main.rs", "tests/demon.rs"] {
+    for f in ["Cargo.toml", "src/lib.rs", "src/main.rs", "src/sampling.rs", "tests/demon.rs"] {
         let text = std::fs::read_to_string(root.join(f)).unwrap();
         let head: String = text.lines().take(12).collect::<Vec<_>>().join("\n");
         assert!(head.contains("STRATEGY-FUSION FENCE"), "{f} lacks the fence token at its top");

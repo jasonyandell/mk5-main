@@ -30,10 +30,12 @@
 //! best.
 //!
 //! The search is integer alpha-beta with a transposition table at each
-//! trick's start, keyed on the exact state (the four hands, the leader and the
-//! declaring side), holding proven lower and upper bounds on the declaring
-//! side's points still to come. Those bounds are facts about the state alone,
-//! so one table serves both objectives and every position of a deal.
+//! trick's start, holding proven lower and upper bounds on the declaring
+//! side's points still to come. With tile ownership fixed, the remaining pool,
+//! leader and declaring side are an exact 31-bit key; changing an owner clears
+//! the table. Scores and bids do not enter the key, so one table serves both
+//! objectives and every position of a deal. Interchangeable plays are searched
+//! once, and the forced final trick is resolved directly.
 
 use crate::frame::{Contract, Frame, World};
 use crate::nouns::{Context, Domino, DominoSet, Seat};
@@ -41,6 +43,7 @@ use crate::physics::Physics;
 use crate::{Result, error};
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hasher};
+use std::sync::Arc;
 
 /// A position with every hand face up: the contract, the four remaining
 /// hands, the current trick's leader and plays, and the points each side has
@@ -239,11 +242,13 @@ impl RootValues {
 /// value averaged over worlds is strategy fusion. A reference for tests and
 /// showcases only (`wiki/topics/strategy-fusion-fence.md`); a player solves
 /// information states instead. Its transposition table persists across calls,
-/// so solving the positions of one deal in turn reuses the work.
+/// so solving the positions of one deal in turn reuses the work. When a tile
+/// changes hands between calls, the old bounds are discarded.
 pub struct ClairvoyantSolver {
     physics: Physics,
-    rules: Rules,
-    table: HashMap<u128, Bounds, BuildHasherDefault<Mix>>,
+    rules: Arc<Rules>,
+    table: HashMap<u32, Bounds, BuildHasherDefault<Mix>>,
+    owners: [u32; Seat::COUNT],
     nodes: u64,
 }
 
@@ -251,7 +256,24 @@ impl ClairvoyantSolver {
     /// STRATEGY-FUSION FENCE: a clairvoyant solver, which sees all four hands.
     /// Never a player's value (`wiki/topics/strategy-fusion-fence.md`).
     pub fn new(physics: &Physics) -> ClairvoyantSolver {
-        ClairvoyantSolver { physics: physics.clone(), rules: Rules::new(physics), table: HashMap::default(), nodes: 0 }
+        ClairvoyantSolver {
+            physics: physics.clone(),
+            rules: Arc::new(Rules::new(physics)),
+            table: HashMap::default(),
+            owners: [0; Seat::COUNT],
+            nodes: 0,
+        }
+    }
+
+    /// An independent search table under the same precomputed rules.
+    pub fn fresh(&self) -> ClairvoyantSolver {
+        ClairvoyantSolver {
+            physics: self.physics.clone(),
+            rules: self.rules.clone(),
+            table: HashMap::default(),
+            owners: [0; Seat::COUNT],
+            nodes: 0,
+        }
     }
 
     pub fn physics(&self) -> &Physics {
@@ -268,6 +290,7 @@ impl ClairvoyantSolver {
     pub fn solve(&mut self, position: &OpenPosition, objective: Objective) -> Result<RootValues> {
         let mover = position.next_actor().ok_or_else(|| error("every tile is played; there is no move to value"))?;
         self.check(position)?;
+        self.scope(position);
         let moves = position
             .legal()
             .iter()
@@ -287,10 +310,28 @@ impl ClairvoyantSolver {
         Ok(())
     }
 
+    /// With tile ownership fixed, the remaining pool determines all four
+    /// hands. Extend that ownership as new tiles appear; if a tile changes
+    /// owner, discard the old bounds before admitting the new world. A tile
+    /// on the open trick need not be owned: no table entry includes it.
+    fn scope(&mut self, position: &OpenPosition) {
+        let hands = position.hands.map(|h| h.bits());
+        let known = self.owners.iter().fold(0, |all, h| all | h);
+        if (0..Seat::COUNT).any(|s| hands[s] & known & !self.owners[s] != 0) {
+            self.table.clear();
+            self.owners = hands;
+        } else {
+            for (owner, hand) in self.owners.iter_mut().zip(hands) {
+                *owner |= hand;
+            }
+        }
+    }
+
     /// The value of `position` under best play by both sides. The position
     /// must be under the solver's physics.
     pub fn value(&mut self, position: &OpenPosition, objective: Objective) -> i32 {
         assert!(self.check(position).is_ok(), "a position under the solver's physics");
+        self.scope(position);
         let side = position.declaring();
         let banked = [position.banked[side], position.banked[1 - side]].map(|p| p as i32);
         let unbanked = position.unbanked() as i32;
@@ -315,20 +356,30 @@ impl ClairvoyantSolver {
         self.nodes += 1;
         let leader = usize::from(node.leader);
         let n = usize::from(node.n);
+        let tricks = node.hands[(leader + n) % Seat::COUNT].count_ones() as i32;
+        if tricks == 0 {
+            return 0;
+        }
+        let most = tricks + i32::from(node.unbanked_count);
+        if most <= alpha {
+            return most;
+        }
+        if beta <= 0 {
+            return 0;
+        }
+        // The last trick has no choice left. Resolve it once, including any
+        // prefix already on the table, without four more search frames.
+        if tricks == 1 {
+            let mut trick = node.trick;
+            for (i, tile) in trick.iter_mut().enumerate().skip(n) {
+                *tile = node.hands[(leader + i) % Seat::COUNT].trailing_zeros() as u8;
+            }
+            let (offset, points) = self.rules.resolve(trick);
+            return if (leader + offset) % 2 == usize::from(node.side) { i32::from(points) } else { 0 };
+        }
         let mut first = NO_TILE;
         let mut key = 0;
         if n == 0 {
-            let tricks = node.hands[leader].count_ones() as i32;
-            if tricks == 0 {
-                return 0;
-            }
-            let most = tricks + i32::from(node.unbanked_count);
-            if most <= alpha {
-                return most;
-            }
-            if beta <= 0 {
-                return 0;
-            }
             key = node.key();
             if let Some(b) = self.table.get(&key) {
                 let (lo, hi) = (i32::from(b.lo), i32::from(b.hi));
@@ -407,6 +458,9 @@ impl ClairvoyantSolver {
     /// The order to try `legal` in: the table's best move first, then the
     /// rest by a cheap guess at their worth to the mover.
     fn order(&self, node: &Node, seat: usize, legal: u32, first: u8) -> Moves {
+        if legal.is_power_of_two() {
+            return Moves { tiles: [legal.trailing_zeros() as u8; 7], len: 1, at: 0 };
+        }
         let mut moves = Moves { tiles: [0; 7], len: 0, at: 0 };
         let mut scored = [(0i32, 0u8); 7];
         let mut bits = legal;
@@ -421,7 +475,7 @@ impl ClairvoyantSolver {
         for (slot, (_, tile)) in moves.tiles.iter_mut().zip(scored) {
             *slot = tile;
         }
-        moves
+        self.rules.distinct(node, seat, moves)
     }
 }
 
@@ -465,11 +519,11 @@ impl Node {
         }
     }
 
-    /// The exact state at a trick's start: the four hands (which determine the
-    /// count still to bank), the leader, and the declaring side.
-    fn key(&self) -> u128 {
-        let hands = self.hands.iter().enumerate().fold(0u128, |k, (i, h)| k | u128::from(*h) << (28 * i));
-        hands | u128::from(self.leader) << 112 | u128::from(self.side) << 114
+    /// Exact within the table's fixed tile ownership: the remaining pool,
+    /// leader and declaring side. The count is a function of the pool.
+    fn key(&self) -> u32 {
+        let pool = self.hands.iter().fold(0, |all, h| all | h);
+        pool | u32::from(self.leader) << 28 | u32::from(self.side) << 30
     }
 }
 
@@ -480,18 +534,81 @@ struct Rules {
     follow: [u32; Context::COUNT],
     key: [[u8; Domino::COUNT]; Context::COUNT],
     count: [u8; Domino::COUNT],
+    interchangeable: [u32; Domino::COUNT],
+    distinguishes: [[u32; Domino::COUNT]; Domino::COUNT],
 }
 
 impl Rules {
     fn new(physics: &Physics) -> Rules {
         let count = Domino::ALL.map(|d| u8::try_from(physics.count(d)).expect("a tile counts under 256 points"));
         assert!(count.iter().map(|c| u32::from(*c)).sum::<u32>() + 7 <= 127, "a hand's points fit the table's bounds");
-        Rules {
+        let mut rules = Rules {
             led: Domino::ALL.map(|d| physics.led_context(d).index() as u8),
             follow: Context::ALL.map(|q| physics.incidence(q).bits()),
             key: Context::ALL.map(|q| Domino::ALL.map(|d| physics.trick_key(d, q))),
             count,
+            interchangeable: [0; Domino::COUNT],
+            distinguishes: [[0; Domino::COUNT]; Domino::COUNT],
+        };
+        for a in 0..Domino::COUNT {
+            for b in 0..a {
+                if rules.count[a] != rules.count[b]
+                    || rules.led[a] != rules.led[b]
+                    || rules.follow.iter().any(|f| (f >> a & 1) != (f >> b & 1))
+                {
+                    continue;
+                }
+                rules.interchangeable[a] |= 1 << b;
+                rules.interchangeable[b] |= 1 << a;
+                let mut mask = 0;
+                for t in 0..Domino::COUNT {
+                    if rules.key.iter().any(|k| k[a].cmp(&k[t]) != k[b].cmp(&k[t])) {
+                        mask |= 1 << t;
+                    }
+                }
+                rules.distinguishes[a][b] = mask;
+                rules.distinguishes[b][a] = mask;
+            }
         }
+        rules
+    }
+
+    /// Two tiles of one hand are interchangeable when they have identical
+    /// count, led context and follow membership, and compare alike against
+    /// every tile outside that hand (including the open trick). Swapping
+    /// their names preserves every legal continuation and trick outcome:
+    /// only one tile of their owner can appear in any trick.
+    fn distinct(&self, node: &Node, seat: usize, ordered: Moves) -> Moves {
+        let mut outside = 0;
+        for s in 0..Seat::COUNT {
+            if s != seat {
+                outside |= node.hands[s];
+            }
+        }
+        for t in &node.trick[..usize::from(node.n)] {
+            outside |= 1 << t;
+        }
+        let mut kept = Moves { tiles: [0; 7], len: 0, at: 0 };
+        let mut seen = 0;
+        for tile in ordered {
+            let t = usize::from(tile);
+            let mut candidates = self.interchangeable[t] & seen;
+            let mut redundant = false;
+            while candidates != 0 {
+                let other = candidates.trailing_zeros() as usize;
+                candidates &= candidates - 1;
+                if self.distinguishes[t][other] & outside == 0 {
+                    redundant = true;
+                    break;
+                }
+            }
+            if !redundant {
+                kept.tiles[kept.len] = tile;
+                kept.len += 1;
+                seen |= 1 << tile;
+            }
+        }
+        kept
     }
 
     /// The winner's offset from the leader (the first of the greatest keys)
@@ -554,7 +671,7 @@ impl Iterator for Moves {
     }
 }
 
-/// A deterministic hash for the table's 115-bit keys.
+/// A deterministic hash for the table's 31-bit keys.
 #[derive(Default)]
 struct Mix(u64);
 
@@ -569,9 +686,8 @@ impl Hasher for Mix {
         }
     }
 
-    fn write_u128(&mut self, k: u128) {
-        let folded = (k as u64) ^ ((k >> 64) as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15);
-        self.0 = (folded ^ folded >> 29).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    fn write_u32(&mut self, k: u32) {
+        self.0 = u64::from(k).wrapping_mul(0x9e37_79b9_7f4a_7c15);
         self.0 ^= self.0 >> 32;
     }
 

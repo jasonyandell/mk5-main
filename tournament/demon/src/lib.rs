@@ -9,8 +9,8 @@
 //!
 //! 1. replays the public record (Walt's [`Rec`]: who played what, the banked
 //!    points, the voids each seat has shown),
-//! 2. draws `n` worlds from its fiber with Walt's exact-uniform sampler
-//!    ([`sample_worlds`]; the whole fiber when it has at most `n` members),
+//! 2. draws `n` worlds from its fiber without replacement, using the fiber
+//!    completion-count dynamic program (the whole fiber when it has at most `n` members),
 //! 3. solves each world double dummy with Silas's [`ClairvoyantSolver`]: the
 //!    exact make-or-set of the contract under perfect play by all four seats
 //!    with every hand face up,
@@ -29,7 +29,9 @@
 //! solver's values are exact (its transposition table changes the work, never
 //! a value), and every tie is broken by a fixed rule.
 
-use scenario_core::fiber::sample_worlds;
+mod sampling;
+
+use scenario_core::fiber::Fiber;
 use scenario_core::physics::{ZebPhysics, domino, dominoes, seat};
 use scenario_core::planner::{Rec, SplitMix};
 use scenario_core::rules::{N_DECLS, Rules};
@@ -122,7 +124,11 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     }
     let sizes: [u8; 4] = std::array::from_fn(|s| rec.hand_size(s as u8));
     if req.hand.count_ones() != sizes[req.seat as usize] as u32 {
-        return Err(format!("the hand has {} tiles; the record says {}", req.hand.count_ones(), sizes[req.seat as usize]));
+        return Err(format!(
+            "the hand has {} tiles; the record says {}",
+            req.hand.count_ones(),
+            sizes[req.seat as usize]
+        ));
     }
     if req.hand & rec.forbid[req.seat as usize] != 0 {
         return Err("the hand holds a tile of a suit this seat has shown void in".into());
@@ -133,8 +139,8 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
         return Ok(Decision { tile: tiles[0], moves: vec![(tiles[0], 0, None)], worlds: 0, exact: false, nodes: 0 });
     }
 
-    let (worlds, exact) =
-        sample_worlds(req.seat, req.hand, rec.played, sizes, rec.forbid, cfg.worlds, &mut SplitMix::new(req.seed));
+    let mut fiber = Fiber::new(req.seat, req.hand, rec.played, sizes, rec.forbid);
+    let (worlds, exact) = sampling::sample(&mut fiber, cfg.worlds, &mut SplitMix::new(req.seed))?;
     let physics = ZebPhysics::new(req.decl).expect("checked above").physics();
     let bid = Bid::number(req.bid).map_err(|e| e.0)?;
     let contract = Contract::new(seat(req.bidder).expect("checked above"), bid, physics.clone()).map_err(|e| e.0)?;
@@ -152,7 +158,8 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     // Keep each world's bounds in a small table, and retain its make search
     // for the possible margin pass. Tables across unrelated worlds cost more
     // to look up than they save in shared states. Values remain exact.
-    let mut solvers: Vec<_> = positions.iter().map(|_| ClairvoyantSolver::new(&physics)).collect();
+    let template = ClairvoyantSolver::new(&physics);
+    let mut solvers: Vec<_> = positions.iter().map(|_| template.fresh()).collect();
     let mut makes = vec![0u32; tiles.len()];
     for (p, solver) in positions.iter().zip(&mut solvers) {
         let values = solver.solve(p, Objective::Make).map_err(|e| e.0)?;

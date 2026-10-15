@@ -256,3 +256,35 @@ fn hand_28_from_the_opening_lead_agrees_with_the_whole_tree() {
     let make: Vec<(Domino, i32)> = tree.iter().map(|(d, m)| (*d, i32::from((42 + m) / 2 >= 30))).collect();
     assert_eq!(solver.solve(&opening, Objective::Make).unwrap().moves, make);
 }
+
+/// A remaining pool alone is not a world. Reusing a solver across different
+/// owners of that same pool must discard the old table, while score, bid and
+/// declaring-side changes must still read the normalized bounds correctly.
+#[test]
+fn reused_tables_distinguish_ownership_scores_and_declaring_side() {
+    let mut rng = Rng(0xd3_0066);
+    for physics in Straight42::ALL.map(|r| r.physics()) {
+        let mut solver = ClairvoyantSolver::new(&physics);
+        for _ in 0..12 {
+            let shuffled = rng.shuffled();
+            let hands: [DominoSet; 4] = std::array::from_fn(|s| shuffled[s * 3..s * 3 + 3].iter().copied().collect());
+            for turn in [0, 1, 2, 0] {
+                let mut assigned = hands;
+                assigned.swap(0, turn);
+                let c = contract(&physics, Seat::ALL[rng.below(4)], 20 + rng.below(23) as u32);
+                let banked = [rng.below(21) as u32, rng.below(21) as u32];
+                let mut p = OpenPosition::new(c, assigned, Seat::ALL[rng.below(4)], vec![], banked).unwrap();
+                for _ in 0..rng.below(4) {
+                    let legal: Vec<_> = p.legal().iter().collect();
+                    p = p.play(legal[rng.below(legal.len())]).unwrap();
+                }
+                for o in [Objective::Make, Objective::Margin, Objective::Make] {
+                    assert_eq!(solver.solve(&p, o).unwrap().moves, exhaustive_root(&p, o), "{p:?}");
+                }
+                let mut fresh = solver.fresh();
+                assert_eq!(fresh.nodes(), 0);
+                assert_eq!(fresh.value(&p, Objective::Margin), exhaustive(&p, Objective::Margin));
+            }
+        }
+    }
+}
