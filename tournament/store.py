@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import subprocess
 import time
 from pathlib import Path
@@ -71,7 +72,7 @@ def _check_path(path: str) -> None:
 class GitStore:
     """A clone of a git remote. Every append is one commit, pushed at once."""
 
-    def __init__(self, root: str | os.PathLike, *, push: bool = True, retries: int = 20):
+    def __init__(self, root: str | os.PathLike, *, push: bool = True, retries: int = 60):
         self.root = Path(root)
         self.push = push
         self.retries = retries
@@ -113,13 +114,15 @@ class GitStore:
             if self._git("push", "-q", check=False).returncode == 0:
                 return
             self.rejected += 1
+            # Back off first, with jitter, so rival writers fall out of step; then
+            # rebase and push at once, before the fresh base goes stale.
+            time.sleep(random.uniform(0, 0.05 * 2 ** min(attempt, 5)))
             # Someone else pushed first. Their commits add other files, so the
             # rebase replays ours on top without a conflict, by construction.
             r = self._git("pull", "-q", "--rebase", check=False)
             if r.returncode != 0:
                 self._git("rebase", "--abort", check=False)
                 raise RuntimeError(f"rebase failed (should be impossible): {r.stderr.strip()}")
-            time.sleep(0.05 * (attempt + 1))
         raise RuntimeError(f"push did not land after {self.retries} attempts")
 
     def read_all(self, prefix: str) -> Iterator[tuple[str, bytes]]:
