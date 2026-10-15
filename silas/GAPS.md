@@ -103,9 +103,9 @@ asks that one setter certainly holds both trumps out, read from the setters' pla
 where `crisis.silas` fires on two trumps out that no play places (`tests/reading_text.rs`).
 
 **What remains.**
-- **The arena.** `scenario_core.SilasPolicy` compiles each file alone against the standard
-  registry, so `crisis-read` is not yet in the book player's stack; that binding is gated
-  (`scenario/`) and is the second half of #162.
+- **The arena: done.** `scenario_core.SilasPolicy` finds a file's readers (#162), and
+  `crisis-read` replaced `crisis` in the book player's stack after a registered re-price
+  (2026-10-14: +0.01 [−0.02, +0.04] marks/game, MDE 0.04; `wiki/experiments/crisis-read-reprice-2026-10-14.md`).
 - **Hand 27's crisis** (S-0127-a) reads the partner's follow to the bidder's trump lead to
   place the undrawn trump with a setter, before the partner has shown out; `crisis-read`
   keeps `crisis.silas`'s shown-out condition and does not write that reading yet.

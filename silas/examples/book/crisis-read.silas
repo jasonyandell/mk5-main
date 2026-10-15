@@ -15,8 +15,9 @@
 ; is led as in crisis.silas; where no setter's play says which of them holds the
 ; two trumps out, crisis.silas cashes a count double and this file waits
 ; (tests/reading_text.rs).
-; Not yet in the arena's stack: the stack compiles each file alone, and a reading
-; needs its reader's file (#162).
+; In the book player's stack in place of crisis.silas since 2026-10-14, after a
+; registered re-price (+0.01 [-0.02, +0.04] marks/game, MDE 0.04;
+; wiki/experiments/crisis-read-reprice-2026-10-14.md).
 
 (include book)
 

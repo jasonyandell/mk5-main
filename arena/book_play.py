@@ -17,8 +17,11 @@ together; the order decides only where two do.
 
 Leading, per seat:
 
-- the bidder: `first-lead` (trick one), then `crisis` (a trump he cannot draw:
-  the book's override of the plan), then `dead-double` (a dead double cashed
+- the bidder: `first-lead` (trick one), then `crisis-read` (a trump he cannot
+  draw, the two-trump case read from the setters' plays as Hand 31 reads it;
+  adopted from `crisis` 2026-10-14 by a registered re-price,
+  `wiki/experiments/crisis-read-reprice-2026-10-14.md`: the book's override of
+  the plan), then `dead-double` (a dead double cashed
   at once while a setter holds trump), then `bidders-plan`;
 - his partner: `partner-leads`;
 - a setter: `trump-set` (a high trump at once, holding the trumps), then
@@ -93,7 +96,7 @@ from scenario.silas import frame
 BOOK = Path(__file__).resolve().parents[1] / "silas" / "examples" / "book"
 
 LEAD_ORDER = (
-    "first-lead", "crisis", "dead-double", "bidders-plan",
+    "first-lead", "crisis-read", "dead-double", "bidders-plan",
     "partner-leads",
     "trump-set", "setter-leads",
 )
@@ -149,8 +152,8 @@ class Verdict:
 def ask(state: ZebGameState, bid: int, swap: dict[str, str] | None = None) -> Verdict:
     """Every book policy at the decision of `state`'s seat to play, under the
     contract `bid` as the table says it (a marks bid stays a marks bid).
-    `swap` compiles a stack name from another book file (`{"crisis":
-    "crisis-read"}`): the stack's names and order are unchanged."""
+    `swap` compiles a stack name from another book file (`{"crisis-read":
+    "crisis"}`): the stack's names and order are unchanged."""
     sit = situation_from_state(state, bid)
     seat = sit.viewer
     own = mask_of(t for t in state.hands[seat] if t not in state.played)
@@ -196,7 +199,7 @@ class BookPlay:
         if within is not None and (within < 0 or fallback != "zeb" or ties != "zeb"):
             raise ValueError("book: w<eps> is Zeb deciding with the book at its near-ties: eps >= 0, zeb,zeb")
         self.fallback, self.ties, self.zeb, self.within = fallback, ties, zeb, within
-        # swap: a stack name compiled from another book file, e.g. {"crisis": "crisis-read"}.
+        # swap: a stack name compiled from another book file, e.g. {"crisis-read": "crisis"}.
         self.swap = dict(swap or {})
         for name, file in self.swap.items():
             if name not in POLICIES or not (BOOK / f"{file}.silas").exists():

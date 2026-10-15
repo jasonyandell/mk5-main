@@ -303,18 +303,19 @@ def test_a_policy_that_reads_is_compiled_with_the_books_readers():
 
 def test_a_swap_compiles_a_stack_name_from_another_book_file():
     """`swap` keeps the stack's names and order and compiles one of them from
-    another file: crisis from crisis-read decides wherever crisis does at the
-    opening of random deals (neither fires on the first lead)."""
+    another file: the stack's crisis-read compiled from crisis decides wherever
+    crisis-read does at the opening of random deals (neither fires on the
+    first lead)."""
     import pytest
 
     from arena.book_play import BookPlay
 
     with pytest.raises(ValueError):
-        BookPlay("lowest", "least", swap={"no-such-policy": "crisis-read"})
+        BookPlay("lowest", "least", swap={"no-such-policy": "crisis"})
     with pytest.raises(ValueError):
-        BookPlay("lowest", "least", swap={"crisis": "no-such-file"})
-    swapped = BookPlay("lowest", "least", swap={"crisis": "crisis-read"})
-    assert "crisis=crisis-read" in repr(swapped)
+        BookPlay("lowest", "least", swap={"crisis-read": "no-such-file"})
+    swapped = BookPlay("lowest", "least", swap={"crisis-read": "crisis"})
+    assert "crisis-read=crisis" in repr(swapped)
     for seed in range(4):
         state = playing(seed, 2)
-        assert ask(state, 30, {"crisis": "crisis-read"}) == ask(state, 30)
+        assert ask(state, 30, {"crisis-read": "crisis"}) == ask(state, 30)

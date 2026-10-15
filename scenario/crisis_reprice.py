@@ -74,7 +74,10 @@ from scenario.small_n import _games, _meta, contrast, diff, pairs, player
 MARK_ARMS = ("C", "R")
 POINT_ARMS = ("PC", "PR")
 ARMS = MARK_ARMS + POINT_ARMS
-SWAP = {"crisis": "crisis-read"}
+# The stack adopted crisis-read under the registered rule (see the page); its
+# slot is now named crisis-read, so C swaps it back to crisis and R plays the
+# stack as it stands: each arm plays exactly as registered.
+BACK = {"crisis-read": "crisis"}
 PILOT = (2390,)               # the timing pilot, excluded
 GAMES = 12                    # game pairs per batch
 SEEDS = tuple(range(2401, 2417))         # marks: 16 batches per arm, 192 game pairs
@@ -86,7 +89,7 @@ def seats(arm: str) -> tuple:
     from arena.bidders import HeuristicBidder
     from arena.book_play import BookPlay
 
-    swap = SWAP if arm.removeprefix("P") == "R" else None
+    swap = BACK if arm.removeprefix("P") == "C" else None
     return HeuristicBidder(), BookPlay("zeb", "zeb", player(), swap=swap), HeuristicBidder(), player()
 
 

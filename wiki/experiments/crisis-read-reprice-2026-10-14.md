@@ -3,7 +3,7 @@ title: The crisis as read, priced in the book player's stack (#162's next step, 
 kind: experiment
 first_seen: 2026-10-14
 last_updated: 2026-10-14
-status: active
+status: complete
 ---
 
 ## Summary
@@ -15,7 +15,46 @@ trigger asks that one setter certainly holds both trumps out, read from the sett
 seat's plays ([[book-assumptions]] A2). This study prices it in the book player's stack before the
 stack adopts it, under [[book-authority]]: the book's crisis is the read one.
 
-*Results follow once every registered batch has run.*
+## Results (complete, 2026-10-14; 48 of 48 registered batches ran, none dropped)
+
+**One line.** Putting the crisis as read in the book player's stack costs nothing measurable:
+Q = R − C = +0.01 [−0.02, +0.04] marks/game over 192 game pairs, its MDE 0.04 (the per-pair SD came
+in at 0.20, far under the 1.0 sized for). The two stacks played out differently in 23 of 192 game
+pairs (12%). In the book's game to 250 they are level too. Under the registered rule (adopt unless
+Q's interval lies below 0) the stack adopts `crisis-read`.
+
+Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
+`book/crisis-read-reprice/`.
+
+| contrast | value [95%] | pairs | SD/pair | MDE |
+|---|---|---|---|---|
+| **primary Q = R − C, marks/game** | **+0.01 [−0.02, +0.04]** | 192 | 0.20 | 0.04 |
+| 250: PR − PC, share of games won | +0.5 pts [−1.0, +2.1] | 96 | | 2.5 pts |
+| 250: PR − PC, settled points/game | +1.8 [−0.5, +4.2] | 96 | 11.8 | 3.4 |
+| game pairs that differ, marks / 250 | 23 of 192 (12%) / 14 of 96 (15%) | | | |
+
+Each arm against deployed Zeb: C −0.90 [−1.13, −0.68], R −0.89 [−1.11, −0.67] marks/game; to 250,
+PC 33.9% [28.1, 39.6] and PR 34.4% [28.6, 40.1] of games.
+
+### Reading, under [[book-authority]]
+
+- **Assumptions.** The change restores one reading the book makes (A2, a seat reading another's
+  play); everything else is the head-to-head's block c, violating A1, A3, A4 and A6.
+- **What our model can see.** The book's own crisis, the one it knows from a count play, plays
+  as well as the encoding's broader trigger at a twentieth of a mark's resolution, and differs from
+  it in about one game pair in eight. The encoding's two-trump crisis fired where the book would
+  still be drawing; the read one waits. Neither changes the book player's standing against Zeb.
+- **Adopted.** `arena/book_play.py`'s lead order names `crisis-read` where it named `crisis`;
+  `crisis.silas` stays as the encoding the head-to-head and the investigation priced. Every block
+  run before this commit used `crisis`.
+
+### Receipts
+
+Pre-registered at f105f56a (`scenario/crisis_reprice.py`); 48 batches through `scripts/cpu-slot`, two
+at a time, one queue copy checked; none dropped. Timing pilot seed 2390 excluded (its first run
+failed on the binding's default work cap and was rerun after the cap was raised; no measured batch
+ran before the registration). At adoption the runner's arms were rewritten so each plays as
+registered: C swaps the stack's `crisis-read` back to `crisis`, R plays the stack.
 
 ## Design (pre-registered before any measured batch; see `scenario/crisis_reprice.py`)
 
