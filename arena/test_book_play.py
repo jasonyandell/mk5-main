@@ -299,3 +299,22 @@ def test_a_policy_that_reads_is_compiled_with_the_books_readers():
     with pytest.raises(SilasError, match="compile_reading"):
         SilasPolicy(text, 2)
     assert "one-setter-holds-the-trumps-out" in compiled("crisis-read", 2).identity
+
+
+def test_a_swap_compiles_a_stack_name_from_another_book_file():
+    """`swap` keeps the stack's names and order and compiles one of them from
+    another file: crisis from crisis-read decides wherever crisis does at the
+    opening of random deals (neither fires on the first lead)."""
+    import pytest
+
+    from arena.book_play import BookPlay
+
+    with pytest.raises(ValueError):
+        BookPlay("lowest", "least", swap={"no-such-policy": "crisis-read"})
+    with pytest.raises(ValueError):
+        BookPlay("lowest", "least", swap={"crisis": "no-such-file"})
+    swapped = BookPlay("lowest", "least", swap={"crisis": "crisis-read"})
+    assert "crisis=crisis-read" in repr(swapped)
+    for seed in range(4):
+        state = playing(seed, 2)
+        assert ask(state, 30, {"crisis": "crisis-read"}) == ask(state, 30)

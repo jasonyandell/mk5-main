@@ -111,6 +111,11 @@ NO_COUNT = frozenset({
     ("donate-when-safe", "no-count-on-a-trick-that-can-be-lost"),
 })
 FALLBACKS = ("lowest", "zeb")
+# The work cap for one policy at one decision. A cap only stops runaway work:
+# a policy that finishes under it allows the same tiles under any larger one.
+# A policy that reads another seat's plays (crisis-read) runs that seat's
+# policy on every hand he could hold, far past the binding's default 10^7.
+BUDGET = 10**12
 TIES = ("least", "zeb", "union")
 
 
@@ -141,16 +146,18 @@ class Verdict:
         return [name for name in (LEAD_ORDER if leading else FOLLOW_ORDER) if name in self.fired]
 
 
-def ask(state: ZebGameState, bid: int) -> Verdict:
+def ask(state: ZebGameState, bid: int, swap: dict[str, str] | None = None) -> Verdict:
     """Every book policy at the decision of `state`'s seat to play, under the
-    contract `bid` as the table says it (a marks bid stays a marks bid)."""
+    contract `bid` as the table says it (a marks bid stays a marks bid).
+    `swap` compiles a stack name from another book file (`{"crisis":
+    "crisis-read"}`): the stack's names and order are unchanged."""
     sit = situation_from_state(state, bid)
     seat = sit.viewer
     own = mask_of(t for t in state.hands[seat] if t not in state.played)
     f = frame(sit, own)
     fired = {}
     for name in POLICIES:
-        layer, tiles = compiled(name, state.decl_id).allowed(f)
+        layer, tiles = compiled((swap or {}).get(name, name), state.decl_id).allowed(f, budget=BUDGET)
         if layer != "fallback":
             fired[name] = (layer, tuple(sorted(tiles)))
     order = LEAD_ORDER if not state.current_trick else FOLLOW_ORDER
@@ -180,7 +187,8 @@ class BookPlay:
     """The book player as an arena `PlayPolicy` (see the module docstring)."""
 
     def __init__(self, fallback: str = "zeb", ties: str = "least", zeb=None, log: bool = False,
-                 within: float | None = None, read: str | None = None, shadow: bool = False):
+                 within: float | None = None, read: str | None = None, shadow: bool = False,
+                 swap: dict[str, str] | None = None):
         if fallback not in FALLBACKS or ties not in TIES:
             raise ValueError(f"book: fallback is one of {FALLBACKS}, ties one of {TIES}")
         if zeb is None and (fallback == "zeb" or ties != "least"):
@@ -188,6 +196,11 @@ class BookPlay:
         if within is not None and (within < 0 or fallback != "zeb" or ties != "zeb"):
             raise ValueError("book: w<eps> is Zeb deciding with the book at its near-ties: eps >= 0, zeb,zeb")
         self.fallback, self.ties, self.zeb, self.within = fallback, ties, zeb, within
+        # swap: a stack name compiled from another book file, e.g. {"crisis": "crisis-read"}.
+        self.swap = dict(swap or {})
+        for name, file in self.swap.items():
+            if name not in POLICIES or not (BOOK / f"{file}.silas").exists():
+                raise ValueError(f"book: swap names a stack policy and a book file, not {name}={file}")
         self.log: list[dict] | None = [] if log else None
         self.partner = None
         if read is not None:
@@ -216,7 +229,7 @@ class BookPlay:
         marks: Sequence[tuple[int, int]] | None = None,
         marks_to_win: int = 7,
     ) -> list[int]:
-        verdicts = [ask(s, int(b)) for s, b in zip(states, bid_values)]
+        verdicts = [ask(s, int(b), self.swap) for s, b in zip(states, bid_values)]
         points = [contract_points(int(b)) for b in bid_values]
         if self.partner is not None:
             self.partner.note(states, bid_values)
@@ -273,7 +286,8 @@ class BookPlay:
         within = "" if self.within is None else f", within={self.within:g}"
         read = ("" if self.partner is None else
                 f", read=partner:{self.partner.likelihood}" + ("+calls" if self.partner.calls else ""))
-        return f"BookPlay(fallback={self.fallback}, ties={self.ties}{within}{read}{zeb})"
+        swap = "".join(f", {n}={f}" for n, f in sorted(self.swap.items()))
+        return f"BookPlay(fallback={self.fallback}, ties={self.ties}{within}{read}{swap}{zeb})"
 
 
 def _legal_slots(state: ZebGameState) -> tuple[int, ...]:
