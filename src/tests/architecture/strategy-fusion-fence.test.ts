@@ -29,6 +29,9 @@ const projectRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../
 const TOKEN = 'STRATEGY-FUSION FENCE';
 const RULING = 'wiki/topics/strategy-fusion-fence.md';
 
+/** The Demon: PIMC over Silas's solver, a fenced tournament opponent (wiki/topics/the-demon.md). */
+const DEMON_API = /\b(demon_fenced_seat|DemonSeat)\b|tournament\/demon\b/;
+
 /** The clairvoyant APIs, by home. A use of any of them needs the token. */
 const CLAIRVOYANT_APIS: Record<string, RegExp> = {
   // silas/src/clairvoyant.rs and the predicate in silas/src/outcome.rs
@@ -42,8 +45,7 @@ const CLAIRVOYANT_APIS: Record<string, RegExp> = {
       '|generate_eq_from_snapshots|ClairvoyantPolicy|load_clairvoyant_policy|LensPlay' +
       '|evaluate_eq_vs_random|eq_player)\\b'
   ),
-  // the Demon: PIMC over Silas's solver, a fenced tournament opponent (wiki/topics/the-demon.md)
-  demon: /\b(demon_fenced_seat|DemonSeat)\b|tournament\/demon\b/
+  demon: DEMON_API
 };
 
 /** Where a player lives: none of these may reach for the Demon. */
@@ -124,7 +126,7 @@ describe('Architecture: the strategy-fusion fence', () => {
     // The Demon is an opponent and a measuring stick, never a component of Zeb, Walt or Silas.
     const reach = files
       .filter(({ file }) => PLAYER_HOMES.test(file))
-      .filter(({ text }) => CLAIRVOYANT_APIS.demon.test(text) || /\bdemon\s*=\s*\{\s*path/.test(text))
+      .filter(({ text }) => DEMON_API.test(text) || /\bdemon\s*=\s*\{\s*path/.test(text))
       .map(({ file }) => file);
     expect(reach).toEqual([]);
   });
