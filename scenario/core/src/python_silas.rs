@@ -222,10 +222,27 @@ pub struct SilasPolicy(CompiledPolicy);
 
 #[pymethods]
 impl SilasPolicy {
+    /// The policy `text` under Zeb's declaration `decl`. A policy that
+    /// declares a reading (#162) names its readers by policy name, found as
+    /// `<readers>/<name>.silas`; without `readers` such a policy is refused.
     #[new]
-    fn new(text: &str, decl: u8) -> PyResult<Self> {
+    #[pyo3(signature = (text, decl, readers = None))]
+    fn new(text: &str, decl: u8, readers: Option<std::path::PathBuf>) -> PyResult<Self> {
         let program: PolicyProgram = text.parse().map_err(refused)?;
-        program.compile(&Registry::standard(), &physics(decl)?).map(SilasPolicy).map_err(refused)
+        let physics = physics(decl)?;
+        let compiled = match readers {
+            None => program.compile(&Registry::standard(), &physics),
+            Some(dir) => {
+                let resolve = |name: &str| {
+                    let path = dir.join(format!("{name}.silas"));
+                    let text = std::fs::read_to_string(&path)
+                        .map_err(|e| silas::Error(format!("{}: {e}", path.display())))?;
+                    PolicyProgram::parse(&text, &path.display().to_string())
+                };
+                program.compile_reading(&Registry::standard(), &physics, &resolve)
+            }
+        };
+        compiled.map(SilasPolicy).map_err(refused)
     }
 
     #[getter]

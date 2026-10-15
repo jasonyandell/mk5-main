@@ -284,3 +284,18 @@ def test_risk_budget_reads_no_score_in_either_game():
         points = run_auction(hands, seed % 4, (bidder,) * 4, random.Random(0), force_shaker=True,
                              points=(240, 230), points_to_win=250)
         assert marks == points
+
+
+def test_a_policy_that_reads_is_compiled_with_the_books_readers():
+    """A book file that declares a reading (#162) names its reader by policy
+    name: `compiled` finds it beside the file; without a readers directory the
+    binding refuses it and says how to compile it."""
+    import pytest
+    from scenario_core import SilasError, SilasPolicy
+
+    from arena.book_play import BOOK, compiled
+
+    text = (BOOK / "crisis-read.silas").read_text()
+    with pytest.raises(SilasError, match="compile_reading"):
+        SilasPolicy(text, 2)
+    assert "one-setter-holds-the-trumps-out" in compiled("crisis-read", 2).identity

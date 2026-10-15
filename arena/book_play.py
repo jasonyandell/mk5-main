@@ -123,7 +123,7 @@ def _text(path: Path) -> str:
 def compiled(name: str, decl: int):
     """The book policy `name` compiled under Zeb's declaration `decl`."""
     from scenario_core import SilasPolicy
-    return SilasPolicy(_text(BOOK / f"{name}.silas"), decl)
+    return SilasPolicy(_text(BOOK / f"{name}.silas"), decl, readers=str(BOOK))
 
 
 @dataclass(frozen=True)
