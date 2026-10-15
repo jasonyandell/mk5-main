@@ -43,6 +43,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 98f5d16c | The named deviant field (#152): the book's bidding costs 0.92 [0.60, 1.22] marks/game against a field that bids its hand and 0.57 [0.22, 0.91] against one 10 points past it; level in the book's game]
+
+**Updated:** [[deviant-field-2026-10-14]] (complete; 192 batches through `scripts/cpu-slot`, none dropped; C10 − C0 +0.35 [−0.02, +0.71], MDE 0.52; S-0114-b seen in the field's own arms), [[book-assumptions]] (A6 measured in one dimension). Data `book/deviant-field/` in texas-42-zeb-research-2026-10. **Filed:** #163, the book's kind of overbidder, powered.
+
 ## [2026-10-14 | guard-reads | Silas: a guard that reads (#128): a rule acts on a reading of another seat's plays]
 
 **Updated:** [[silas]] (§ the record as evidence; next), `silas/README.md`, `silas/GAPS.md` 1. **Added:** `ReadingPredicate` and `ReadChair` in `silas/src/reading.rs`, `silas/tests/guard_reading.rs` (Hand 31's two readings as guards at every seating). No core pin moved. **Filed:** #162, a reading written in a `.silas` file and registered by the arena.
