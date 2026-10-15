@@ -4292,3 +4292,27 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-14 | 4454f603 | The Demon earns a held-out bidding gain at 100 play worlds]
 
 **Completed:** [[demon-next-form-2026-10-14]] (all 1,360 games; independent bidder confirmation 324–188, 63.28% [59.38%, 67.19%]; reader and combination not promoted). **Updated:** [[the-demon]], [[tournament]], [[scenario-player]]; new immutable bidder pin, complete public evidence and verified source parity. **Added:** [[4454f603]]. Wider validation remains #165.
+
+## [2026-10-15 | archive/gpl-home | GPL texas42 gets its own repo]
+- [[legacy-42-bots]]: the open question is answered. The GPL sources, shim and seat live in the private `jasonyandell/texas-42-gpl` (upstream tarball verified, tag `upstream-0.46`, headless build, smoke game clean). mk5 stays MIT; it talks to the built seat only over stdin/stdout.
+
+## [2026-10-15 | 1273bc97 | Demon versus Zeb: correct the declaration domain before measuring strength]
+
+**Added:** [[demon-vs-zeb-2026-10-15]] (active; pinned Zeb 0.4.0, whole-seat timing and independent confirmation protocol). **Corrected:** [[demon-next-form-2026-10-14]] (ten-declaration result, not straight 42; promotion withdrawn), [[the-demon]], [[tournament]], [[scenario-player]]. Initial invalid trials preserved publicly; new PIMC identities restrict declarations, workers exclude incompatible records and preserve their pending claims.
+
+## [2026-10-15 | 98552881 | match-aware bidding follow-ups (#160): overcalling an opponent when the mark beats passing's 18% wins 71.0% [69.0, 73.0] of games vs deployed Zeb, 63.4% [61.4, 65.4] vs met; calibrated forecast honest out of sample; A/A exact; no drops]
+
+**Updated:** [[match-aware-bidding-2026-10-14]] (§ Follow-ups; pre-registered at 98552881, calibration frozen at 979124a1), [[match-equity]]. Code: `arena/zeb_bid.py` `over`, `cal` (default off). Data: `zeb/match-aware-bidding-2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-up: #170
+
+## [2026-10-15 | 7e00788a | Demon candidate frozen against native Zeb]
+
+**Touched pages:** [[the-demon]] [[demon-vs-zeb-2026-10-15]] [[7e00788a]]
+**Updated:** Completed corrected development, native parity, explicit forecast declarations and confirmation protocol; evidence published, confirmation still running.
+
+## [2026-10-15 | 881197d5 | match-aware bidding #170: against a table that contests back, over keeps +5.6 [+1.7, +9.4] of its +14 points; the frozen bidder wins 43.5% [40.8, 46.2] vs the refit (replicated 43.0%); the refit gives back 3.4 vs a passive table; over,cal without the 84 wins 70.1%; A/A exact; no drops]
+
+**Updated:** [[match-aware-bidding-2026-10-14]] (§ #170; pre-registered at 881197d5, refit frozen at c9ed282e), [[match-equity]]. Data: `zeb/match-aware-bidding-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. No code change.
+
+## [2026-10-15 | demon/attempt-1 | Complete native Zeb confirmation: joint criterion not met]
+
+**Completed:** [[demon-vs-zeb-2026-10-15]]; all 1,024 games and timings published, standard bar clears but match-aware win interval crosses chance. **Added:** [[demon-zeb-attempt-1]]. **Updated:** [[the-demon]] [[scenario-player]]. No candidate promotion; #165 remains open.
