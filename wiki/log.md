@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Rotation** happens on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-14, 280 archived entries)
+## Digest (2026-04-09 → 2026-10-14, 294 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -44,6 +44,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **otis, the algebra, walt endgame, parlor** (2026-07-15 → 07-18, 6 entries) — [[otis]] [[otis-v0]] graded, the referees doctrine on [[count-fate-ledger]], [[belief-policy-value-algebra]] promoted, [[jud-v2-retrain-probe]], [[walt]] endgame solver (+3.00 over jud), [[parlor]] promoted.
 
 - **Match bidding, readings and exact search** (2026-10-14, 6 archived entries) — [[match-aware-bidding-2026-10-14]], [[match-equity]], [[publish-data-to-huggingface]], [[silas]], [[deviant-field-2026-10-14]], [[demon-search-tables-2026-10-14]].
+- **The reader without a plan, the archive's cleanup, the Demon's power** (2026-10-14, 7 archived entries) — [[no-plan-2026-10-14]], [[crisis-read-reprice-2026-10-14]], [[huggingface-assets]], [[demon-power-2026-10-14]], [[demon-next-form-2026-10-14]], [[the-demon]].
 
 ---
 
@@ -68,6 +69,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-15 | demon/attempt-1 | Complete native Zeb confirmation: joint criterion not met]
 
 **Completed:** [[demon-vs-zeb-2026-10-15]]; all 1,024 games and timings published, standard bar clears but match-aware win interval crosses chance. **Added:** [[demon-zeb-attempt-1]]. **Updated:** [[the-demon]] [[scenario-player]]. No candidate promotion; #165 remains open.
+
 ## [2026-10-15 | 881197d5 | match-aware bidding #170: against a table that contests back, over keeps +5.6 [+1.7, +9.4] of its +14 points; the frozen bidder wins 43.5% [40.8, 46.2] vs the refit (replicated 43.0%); the refit gives back 3.4 vs a passive table; over,cal without the 84 wins 70.1%; A/A exact; no drops]
 
 **Updated:** [[match-aware-bidding-2026-10-14]] (§ #170; pre-registered at 881197d5, refit frozen at c9ed282e), [[match-equity]]. Data: `zeb/match-aware-bidding-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. No code change.
@@ -87,31 +89,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ## [2026-10-15 | archive/gpl-home | GPL texas42 gets its own repo]
 - [[legacy-42-bots]]: the open question is answered. The GPL sources, shim and seat live in the private `jasonyandell/texas-42-gpl` (upstream tarball verified, tag `upstream-0.46`, headless build, smoke game clean). mk5 stays MIT; it talks to the built seat only over stdin/stdout.
-
-## [2026-10-14 | 4454f603 | The Demon earns a held-out bidding gain at 100 play worlds]
-
-**Completed:** [[demon-next-form-2026-10-14]] (all 1,360 games; independent bidder confirmation 324–188, 63.28% [59.38%, 67.19%]; reader and combination not promoted). **Updated:** [[the-demon]], [[tournament]], [[scenario-player]]; new immutable bidder pin, complete public evidence and verified source parity. **Added:** [[4454f603]]. Wider validation remains #165.
-
-## [2026-10-14 | issues-165-167 | Demon declaration reading and contract forecasts; queued CPU jobs retry promptly]
-
-**Updated:** [[demon-next-form-2026-10-14]] (opt-in candidates; independent confirmations running), [[the-demon]], [[scenario-player]], [[standing-desks]] (50 ms retry, unchanged capacity and limits). Existing tournament pins remain unchanged.
-
-## [2026-10-14 | 228812ff | PIMC's remaining knobs: beliefs, bidding and budget allocation]
-
-**Updated:** [[the-demon]] distinguishes exact per-world search, the inconclusive larger-sample trial, untested PIMC improvements and the strategy-fusion limit; links [[silas]]'s inference and the primary literature.
-
-## [2026-10-14 | 228812ff | Demon power: smaller exact search; 1,600 worlds do not establish a strength gain]
-
-[[demon-power-2026-10-14]]: exact parity, 13.2% less CPU and 70.4% less peak RSS at 400 worlds; 128 duplicate pairs finish 124–132 at 1,600 versus 100, with no demonstrated gain. Public data, verified pins, and GREEN gates in the study. [[the-demon]] · [[silas]] · [[3cd6ae53]] · [[228812ff]].
-
-## [2026-10-14 | f105f56a | The crisis as read joins the book player's stack: the re-price reads +0.01 [−0.02, +0.04] marks/game (MDE 0.04), 12% of game pairs differ]
-
-**Updated:** [[crisis-read-reprice-2026-10-14]] (complete; 48 batches, none dropped), `arena/book_play.py` (lead order: `crisis-read`), `silas/GAPS.md` 1, `crisis-read.silas` header. Data `book/crisis-read-reprice/` in texas-42-zeb-research-2026-10.
-
-## [2026-10-14 | e611a79e | The book over a reader with no plan (#161): the rules are worth +2.47 [2.28, 2.65] marks/game to him, about 61% of a 16-world plan; worth −0.10 inside one]
-
-**Updated:** [[no-plan-2026-10-14]] (complete; 152 batches through `scripts/cpu-slot`, none dropped; A/A −0.04), [[book-assumptions]] (A7), [[book-small-n-2026-10-14]]. Data `book/no-plan/` in texas-42-zeb-research-2026-10.
-
-## [2026-10-14 | archive | the two superseded Zeb pours deleted (every chunk matched by SHA-256 in the 250k pour), and the four unlicensed repos dedicated CC0 with cards]
-
-**Updated:** [[huggingface-assets]] (17 datasets; licenses; mk5-fleet-payload belongs to [[otis-phase-r]], not the February fleet), [[scenario-player]] and [[publish-data-to-huggingface]] (the deleted repos named as history). Cards for mk5-run-evidence, mk5-fleet-payload and zeb-42-examples drafted by a Sonnet agent and checked against the Hub before upload.

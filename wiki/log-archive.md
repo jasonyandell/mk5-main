@@ -4264,3 +4264,31 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-14 | 18ac096d | the Demon: exact search-table locality, compact 100- and 400-world tournament challengers]
 
 **Added:** [[demon-search-tables-2026-10-14]], [[18ac096d]]. **Updated:** [[the-demon]], [[tournament]]; the roster retains the original and adds compact-table builds. Parity, resource measurements, the fixed duplicate-match pilot, and public data are on the experiment page.
+
+## [2026-10-14 | archive | the two superseded Zeb pours deleted (every chunk matched by SHA-256 in the 250k pour), and the four unlicensed repos dedicated CC0 with cards]
+
+**Updated:** [[huggingface-assets]] (17 datasets; licenses; mk5-fleet-payload belongs to [[otis-phase-r]], not the February fleet), [[scenario-player]] and [[publish-data-to-huggingface]] (the deleted repos named as history). Cards for mk5-run-evidence, mk5-fleet-payload and zeb-42-examples drafted by a Sonnet agent and checked against the Hub before upload.
+
+## [2026-10-14 | e611a79e | The book over a reader with no plan (#161): the rules are worth +2.47 [2.28, 2.65] marks/game to him, about 61% of a 16-world plan; worth −0.10 inside one]
+
+**Updated:** [[no-plan-2026-10-14]] (complete; 152 batches through `scripts/cpu-slot`, none dropped; A/A −0.04), [[book-assumptions]] (A7), [[book-small-n-2026-10-14]]. Data `book/no-plan/` in texas-42-zeb-research-2026-10.
+
+## [2026-10-14 | f105f56a | The crisis as read joins the book player's stack: the re-price reads +0.01 [−0.02, +0.04] marks/game (MDE 0.04), 12% of game pairs differ]
+
+**Updated:** [[crisis-read-reprice-2026-10-14]] (complete; 48 batches, none dropped), `arena/book_play.py` (lead order: `crisis-read`), `silas/GAPS.md` 1, `crisis-read.silas` header. Data `book/crisis-read-reprice/` in texas-42-zeb-research-2026-10.
+
+## [2026-10-14 | 228812ff | Demon power: smaller exact search; 1,600 worlds do not establish a strength gain]
+
+[[demon-power-2026-10-14]]: exact parity, 13.2% less CPU and 70.4% less peak RSS at 400 worlds; 128 duplicate pairs finish 124–132 at 1,600 versus 100, with no demonstrated gain. Public data, verified pins, and GREEN gates in the study. [[the-demon]] · [[silas]] · [[3cd6ae53]] · [[228812ff]].
+
+## [2026-10-14 | 228812ff | PIMC's remaining knobs: beliefs, bidding and budget allocation]
+
+**Updated:** [[the-demon]] distinguishes exact per-world search, the inconclusive larger-sample trial, untested PIMC improvements and the strategy-fusion limit; links [[silas]]'s inference and the primary literature.
+
+## [2026-10-14 | issues-165-167 | Demon declaration reading and contract forecasts; queued CPU jobs retry promptly]
+
+**Updated:** [[demon-next-form-2026-10-14]] (opt-in candidates; independent confirmations running), [[the-demon]], [[scenario-player]], [[standing-desks]] (50 ms retry, unchanged capacity and limits). Existing tournament pins remain unchanged.
+
+## [2026-10-14 | 4454f603 | The Demon earns a held-out bidding gain at 100 play worlds]
+
+**Completed:** [[demon-next-form-2026-10-14]] (all 1,360 games; independent bidder confirmation 324–188, 63.28% [59.38%, 67.19%]; reader and combination not promoted). **Updated:** [[the-demon]], [[tournament]], [[scenario-player]]; new immutable bidder pin, complete public evidence and verified source parity. **Added:** [[4454f603]]. Wider validation remains #165.
