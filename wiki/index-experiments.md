@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/demon-vs-zeb-2026-10-15|demon-vs-zeb-2026-10-15]] — comparable-runtime target against pinned Zeb 0.4.0; declaration-domain audit and corrected trials (active)
+- [[experiments/demon-vs-zeb-2026-10-15|demon-vs-zeb-2026-10-15]] — complete native Zeb comparison; standard bar clears, match-aware win interval crosses chance, no joint promotion (complete)
 - [[experiments/demon-next-form-2026-10-14|demon-next-form-2026-10-14]] — bidding won in a ten-declaration arena; promotion withdrawn after the straight-42 declaration audit (complete)
 - [[demon-power-2026-10-14]] — Compact exact search, distinct-world sampling, and a fixed 1,600-versus-100-world strength trial.
 - [[experiments/demon-search-tables-2026-10-14|demon-search-tables-2026-10-14]] — exact decision parity with smaller per-world search tables; lower CPU and memory at 100 and 400 worlds; duplicate-match strength pilot (complete)

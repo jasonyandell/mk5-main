@@ -45,7 +45,8 @@ of (rung, seat, remaining hand, record) and is cached as such.
   including the 1,600-world trial, is in [[demon-power-2026-10-14]]. Declaration
   evidence and bidding are graded in [[demon-next-form-2026-10-14]]; that bidder's
   straight-game promotion is withdrawn after the declaration-domain audit.
-  [[demon-vs-zeb-2026-10-15]] runs the corrected comparable-runtime comparison.
+  [[demon-vs-zeb-2026-10-15]] completes the corrected comparable-runtime comparison:
+  the standard-opponent bar clears, but the joint criterion is not met.
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).

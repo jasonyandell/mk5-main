@@ -2,6 +2,8 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/demon-zeb-attempt-1|demon-zeb-attempt-1]] — complete 1,024-game native Zeb trial, timings, traces, frozen provenance and audit (complete)
+
 - [[sources/7e00788a|7e00788a]] — explicit forecast declarations avoid unused search; corrected development freezes a candidate against native Zeb (complete)
 - [[sources/1273bc97|1273bc97]] — restrict new PIMC bidders to straight declarations, exclude incompatible historical policies and correct study scope (complete)
 - [[sources/4454f603|4454f603]] — fenced declaration evidence and PIMC bidding; the later straight-42 scope correction applies (complete)
