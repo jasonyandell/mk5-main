@@ -23,6 +23,10 @@ partner's bid the hand-only call is a pass, but the mark bid is still priced.
   the auction odds (how often a point bid stands, what passing leaves) were
   measured on Zeb playing Zeb and frozen. Against other fields the numbers
   will differ; follow-ups will refine them in 0.4.x.
+- **The measured bidder leans on the seven pip trumps only.** Pass
+  `legalDeclarations: [0, 1, 2, 3, 4, 5, 6]` to bid exactly as measured. The
+  package's default forecast also offers doubles and no-trump, so its mark bid
+  can lean on them too. That is untested, and probably a little bolder.
 - `matchPrice({ ... })` exposes the two match equities and the call.
 - **Without `match`, `chooseBid` is unchanged from 0.3.0**, and so is
   everything else. A parity test in the repository holds the JavaScript to
