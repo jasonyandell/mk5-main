@@ -42,6 +42,9 @@ def write_batch(arm: str, seed: int, games: int, out: str, seats: tuple, points:
     outdir.mkdir(parents=True, exist_ok=True)
     meta = {"arm": arm, "seed": seed, "games_per_half": games, "wall_s": round(wall, 1),
             "load_avg": list(os.getloadavg()), "a": f"{bid_a!r} / {play_a!r}", "b": f"{bid_b!r} / {play_b!r}"}
+    peak = getattr(play_a, "peak_work", None)
+    if peak is not None:
+        meta["a_peak_work"] = peak   # the most Silas work at one decision of team A's
     (outdir / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
     with open(outdir / "games.jsonl", "w") as f:
         for g in result.games:

@@ -319,3 +319,16 @@ def test_a_swap_compiles_a_stack_name_from_another_book_file():
     for seed in range(4):
         state = playing(seed, 2)
         assert ask(state, 30, {"crisis-read": "crisis"}) == ask(state, 30)
+
+
+def test_the_stack_reports_its_work():
+    """Each decision records the Silas work the whole stack spent, and a book
+    player keeps the most at any one decision, so a cap can be set from it."""
+    from arena.book_play import BookPlay
+
+    v = ask(playing(0, 2), 30)
+    assert v.work > 0
+    player = BookPlay("lowest", "least")
+    assert player.peak_work == 0
+    player.choose([playing(0, 2), playing(1, 2)], [30, 30])
+    assert player.peak_work >= v.work

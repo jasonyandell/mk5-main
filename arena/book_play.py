@@ -81,7 +81,7 @@ and q beside the book's wherever a rule fired.
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Sequence
@@ -117,8 +117,13 @@ FALLBACKS = ("lowest", "zeb")
 # The work cap for one policy at one decision. A cap only stops runaway work:
 # a policy that finishes under it allows the same tiles under any larger one.
 # A policy that reads another seat's plays (crisis-read) runs that seat's
-# policy on every hand he could hold, far past the binding's default 10^7.
-BUDGET = 10**12
+# policy on every hand that seat could hold, far past the binding's default
+# 10^7. Measured 2026-10-14 on the crisis-read re-price's own batches (seeds
+# 2401, 2451, replayed): the most any decision of the whole stack spent was
+# 3.95 x 10^7. The cap is 10^9, about 25 times that. Each decision's work is
+# recorded (`Verdict.work`, `BookPlay.peak_work`, a batch's meta) so a run
+# that nears it shows.
+BUDGET = 10**9
 TIES = ("least", "zeb", "union")
 
 
@@ -143,6 +148,9 @@ class Verdict:
     policy: str | None
     rule: str | None
     allowed: tuple[int, ...]
+    # Units of Silas work the whole stack spent at this decision (not compared:
+    # two stacks that decide alike may spend differently).
+    work: int = field(default=0, compare=False)
 
     def phase(self, leading: bool) -> list[str]:
         """The firing policies that may decide in this phase, in its order."""
@@ -158,13 +166,14 @@ def ask(state: ZebGameState, bid: int, swap: dict[str, str] | None = None) -> Ve
     seat = sit.viewer
     own = mask_of(t for t in state.hands[seat] if t not in state.played)
     f = frame(sit, own)
-    fired = {}
+    fired, work = {}, 0
     for name in POLICIES:
-        layer, tiles = compiled((swap or {}).get(name, name), state.decl_id).allowed(f, budget=BUDGET)
+        layer, tiles, spent = compiled((swap or {}).get(name, name), state.decl_id).allowed_work(f, budget=BUDGET)
+        work += spent
         if layer != "fallback":
             fired[name] = (layer, tuple(sorted(tiles)))
     order = LEAD_ORDER if not state.current_trick else FOLLOW_ORDER
-    return Verdict(fired, *decide(fired, order))
+    return Verdict(fired, *decide(fired, order), work=work)
 
 
 def decide(fired: dict[str, tuple[str, tuple[int, ...]]], order: Sequence[str]):
@@ -201,6 +210,8 @@ class BookPlay:
         self.fallback, self.ties, self.zeb, self.within = fallback, ties, zeb, within
         # swap: a stack name compiled from another book file, e.g. {"crisis-read": "crisis"}.
         self.swap = dict(swap or {})
+        # The most Silas work the stack spent at any one decision so far.
+        self.peak_work = 0
         for name, file in self.swap.items():
             if name not in POLICIES or not (BOOK / f"{file}.silas").exists():
                 raise ValueError(f"book: swap names a stack policy and a book file, not {name}={file}")
@@ -233,6 +244,7 @@ class BookPlay:
         marks_to_win: int = 7,
     ) -> list[int]:
         verdicts = [ask(s, int(b), self.swap) for s, b in zip(states, bid_values)]
+        self.peak_work = max([self.peak_work, *(v.work for v in verdicts)])
         points = [contract_points(int(b)) for b in bid_values]
         if self.partner is not None:
             self.partner.note(states, bid_values)

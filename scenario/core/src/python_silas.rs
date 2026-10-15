@@ -256,8 +256,17 @@ impl SilasPolicy {
     /// least of them. Spends at most `budget` units of work.
     #[pyo3(signature = (frame, budget = 10_000_000))]
     fn allowed(&self, frame: &SilasFrame, budget: u64) -> PyResult<(String, Vec<u8>)> {
-        let allowed = self.0.allowed(&frame.0, &mut Budget::new(budget)).map_err(refused)?;
-        Ok((layer(allowed.provenance), allowed.tiles.iter().map(tile).collect()))
+        let (layer, tiles, _) = self.allowed_work(frame, budget)?;
+        Ok((layer, tiles))
+    }
+
+    /// [`Self::allowed`], and the units of work it spent: what a decision
+    /// costs, to set a cap from (a cap changes no tile allowed within it).
+    #[pyo3(signature = (frame, budget = 10_000_000))]
+    fn allowed_work(&self, frame: &SilasFrame, budget: u64) -> PyResult<(String, Vec<u8>, u64)> {
+        let mut spent = Budget::new(budget);
+        let allowed = self.0.allowed(&frame.0, &mut spent).map_err(refused)?;
+        Ok((layer(allowed.provenance), allowed.tiles.iter().map(tile).collect(), spent.spent()))
     }
 
     /// The tile the policy plays at `frame`, as Zeb's tile id.

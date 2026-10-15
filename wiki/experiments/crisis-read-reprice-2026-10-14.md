@@ -56,6 +56,11 @@ failed on the binding's default work cap and was rerun after the cap was raised;
 ran before the registration). At adoption the runner's arms were rewritten so each plays as
 registered: C swaps the stack's `crisis-read` back to `crisis`, R plays the stack.
 
+The study ran under a work cap of 10^12 per decision, which is no cap in practice. Each decision's
+work is now recorded. Replaying R at seed 2401 and PR at seed 2451, the most any decision of the
+whole stack spent was 3.95 × 10^7, four times the binding's default, and the replayed games were
+byte-identical to the published batch. The cap is now 10^9 (`arena.book_play.BUDGET`).
+
 ## Design (pre-registered before any measured batch; see `scenario/crisis_reprice.py`)
 
 - **Players.** Team B is deployed Zeb 0.3.0; both teams bid by the heuristic rule at caution 0.
