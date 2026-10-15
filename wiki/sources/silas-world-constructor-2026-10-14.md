@@ -15,6 +15,7 @@ lessons and record checks. The bundle contains `construct_42.py`, `README.md` an
 Python prototype counts labelled allocations, partitions them by resolved ownership,
 and samples a uniform integer rank over the accepted completion counts. The local
 rerun reproduced its JSON exactly before integration.
+Bundle SHA-256: `32c6194288b869357f4241b78b42530d393af3ea7629e90ba86fa603dc5db49a`.
 
 ## Native artifacts
 
@@ -47,10 +48,29 @@ replays each completion from every seat. Hand 33 stops before the recorded illeg
 24th play; the source fixture is preserved.
 
 The full repository gate is `SILAS_FULL_PROOF=1 python -u scripts/check`; the flag
-asks the bidding proofs to enumerate all hands. A pre-existing TypeScript gate
-error in the strategy-fusion test's API map requires an inferred-key `satisfies`
-annotation, preserving the guard's behavior. The README's opening record example
-is synchronized with its executable test while documenting the constructor.
+asks the bidding proofs to enumerate all hands. The integration is rebased onto
+main's reading-policy support and its fence typing fix; neither is reimplemented
+here. The README's opening and construction examples are synchronized with their
+executable test.
+
+At integration code commit `c4697e6e` (main base `07b5484a`), the full gate is
+GREEN: 17 suites pass, zero fail; Forge is unavailable without CUDA and the gate
+excludes retired Burl. Silas passes 485 tests across 37 binaries plus doctests.
+The language check compiles all 110 sources with zero failures and one existing
+warning. All 19 book policies run through both `allowed` and `decide` over all
+205 available narrated frames of 33 hands, with matching provenance, legal
+allowed moves and any selected move in the allowed set. The two records whose
+continuations are refused remain bounded at their last valid prefix. Another
+300 CLI receipts (100 fixed, 100 fresh opening, 100 later-position worlds) pass
+construction validation and an independent tile-partition check.
+
+The new reading-based policy exposes a separate diagnostic defect: `coverage`
+recompiles funnel guards without the policy's registered reading predicates.
+[Issue #164](https://github.com/jasonyandell/mk5-main/issues/164) tracks it outside
+this integration. The 18 other policies pass CLI coverage; all 19 pass the
+compiled-policy replay described above, which does not use the defective
+diagnostic path. Verification logs and receipt files remain in this worktree's
+`scratch/construction-verification/`.
 
 ## Boundaries
 
