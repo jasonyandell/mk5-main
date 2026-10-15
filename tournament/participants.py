@@ -209,8 +209,16 @@ DEMON_DISTINCT_N100 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=100,
 DEMON_DISTINCT_N1600 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=1600,
                              sampler_note=_DISTINCT_SAMPLER)
 
+# Straight-42 overcalling form: the exact frozen record confirmed against both
+# native Zeb 0.4.0 bidders (wiki/experiments/demon-overcalling-2026-10-15.md).
+DEMON_OVERCALL_N100 = demon("2e233d29387c2aea0404adffadcaffac3a845a38",
+                            {"silas": "2330f0f2e2458f966629830dd7aa091b44872fbb",
+                             "scenario/core": "61cd6a5225f664be24bcd2f27d74b6744c71e769",
+                             "tournament/demon": "9ddb6a5856af05bada8da8ce1ba6db869386f3ee"},
+                            worlds=100, bidder="pimc-over:64:0.875:0.5")
+
 ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
-          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600)
+          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100)
 ANCHOR = WALT.id
 
 

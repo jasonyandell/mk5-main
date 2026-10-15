@@ -2,6 +2,8 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/demon-zeb-attempt-2|demon-zeb-attempt-2]] — complete 2,048-game native Zeb confirmation, both strength/runtime criteria met, audited and public (complete)
+
 - [[sources/2e233d29|2e233d29]] — explicit opponent-held PIMC point-bid thresholds, tested without added search and frozen for development (complete)
 
 - [[sources/demon-zeb-attempt-1|demon-zeb-attempt-1]] — complete 1,024-game native Zeb trial, timings, traces, frozen provenance and audit (complete)

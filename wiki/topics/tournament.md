@@ -37,6 +37,7 @@ are a function of the participant alone, so two writers adding it write the same
 | `demon-pimc-n400-18ac096d` | the compact Demon at 400 worlds; experimental challenger, strength not established | the same source pin, distinct world-count config and id; [[demon-search-tables-2026-10-14]] |
 | `demon-pimc-n100-228812ff`, `demon-pimc-n1600-228812ff` | exact compact search and distinct uniform worlds; the larger budget remains experimental | mk5 `228812ff`, immutable source trees; [[demon-power-2026-10-14]] |
 | `demon-pimc-n100-bid7ff83929-4454f603` (withdrawn) | historical ten-declaration PIMC bidder; excluded from straight-game scheduling and ratings | immutable record retained; [[demon-vs-zeb-2026-10-15]]'s declaration-domain audit |
+| `demon-pimc-n100-bidc102a137-straight-2e233d29` | 100 play worlds, 64 bidding worlds, opponent-held point-bid cutoff 0.5, opening cutoff 0.875, nine straight declarations | mk5 `2e233d29`, immutable source trees and registered record; [[demon-overcalling-2026-10-15]] |
 
 Seating. The referee is the arena (`arena/engine.py`: deal, auction, play, marks to 7). A
 JavaScript participant runs in `tournament/seat/host.mjs`, one process per team per game, sent
@@ -59,8 +60,10 @@ its own dealt tiles and the public record only.
   with MPS or CUDA (forge is GPU-only), never read by anything else.
 - **The Demon** is the CPU fusion stick (STRATEGY-FUSION FENCE, [[the-demon]]): seated only by
   `tournament/demon_fenced_seat.py`, a Rust binary per team per game, sent its own tiles and the
-  public record and checked against the table's leader and points. The current baseline pins
-  use the arena's `heuristic` bidder. PIMC bidding candidates must explicitly restrict their
+  public record and checked against the table's leader and points. The original baseline pins
+  use the arena's `heuristic` bidder. The confirmed overcalling form uses common-world PIMC
+  forecasts and a lower cutoff over an opponent's point bid ([[demon-overcalling-2026-10-15]]).
+  PIMC bidding candidates must explicitly restrict their
   declarations to the nine straight ones (0–7 and 9); the first ten-declaration pin is
   incompatible and withdrawn. It needs
   `cargo` and `git`: the worker builds it from the pinned trees (`git archive <tree>`, then

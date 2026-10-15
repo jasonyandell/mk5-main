@@ -37,11 +37,12 @@ partner's standing bid. [[demon-next-form-2026-10-14]] defines the policy and it
 ten-declaration evidence. That promotion is withdrawn: declaration 8 belongs to
 nello, outside straight 42. New bidders explicitly restrict declarations to
 0–7 and 9; [[demon-vs-zeb-2026-10-15]] holds the audit and corrected comparisons.
-The 64-world bidder searches only the requested declarations. Its completed
-native Zeb comparison clears the standard-opponent bar, but the match-aware
-win interval crosses 50%; the joint promotion criterion is not met.
-[[demon-overcalling-2026-10-15]] tests lower thresholds when an opponent
-already holds a point bid, with the same forecast and no added search work.
+The 64-world bidder searches only the requested declarations. Its first native
+Zeb comparison fails the joint promotion criterion. The next form lowers the
+threshold when an opponent already holds a point bid, with the same forecast
+and no added search work. [[demon-overcalling-2026-10-15]] confirms this form
+beats both pinned native Zeb 0.4.0 bidders at lower total seat CPU and wall
+time on Apple M5 Max; its exact participant is registered and rostered.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw
 every hand, and E[max] ≥ max E ([[strategy-fusion]]). That is why the Demon makes a useful
@@ -143,9 +144,9 @@ Three unexhausted directions remain within a PIMC-based player:
   gain. Bids and discretionary plays are still unmodeled. [[silas]]'s bid/play
   reading supplies related model-conditioned inference machinery; a model
   calibrated to the actual opponent remains a candidate.
-- **Bidding and declaration.** Common-world forecasts improved the tested
-  ten-declaration result; a straight-42 gain remains to be demonstrated. The
-  cutoff is a decision parameter; double-dummy
+- **Bidding and declaration.** The overcalling form now meets the straight-42
+  strength/runtime objective against pinned native Zeb in
+  [[demon-overcalling-2026-10-15]]. The cutoff is a decision parameter; double-dummy
   make frequency is not a calibrated imperfect-information win probability.
   Bidding utility, score-aware risk and separating the contributions of
   partner pass, willingness and declaration remain open.
@@ -163,9 +164,9 @@ There is also a structural limit. Even complete enumeration still credits each
 world with continuations tailored to hidden hands. [[strategy-fusion]] remains
 regardless of sample count ([Long et al., 2010](https://webdocs.cs.ualberta.ca/~nathanst/papers/pimc.pdf)).
 Requiring one action across indistinguishable information states changes the
-search beyond plain independent-world PIMC. Matched-compute comparisons and
-validation against other pinned opponents remain under
-[#165](https://github.com/jasonyandell/mk5-main/issues/165).
+search beyond plain independent-world PIMC. [[demon-overcalling-2026-10-15]]
+completes [#165](https://github.com/jasonyandell/mk5-main/issues/165)'s pinned
+Zeb comparison; optimal PIMC and generalization to other opponents remain open.
 
 ## Original cost (measured 2026-10-14, Apple M-series, one core)
 
@@ -216,6 +217,14 @@ verification, held-out trial and cost are in [[demon-next-form-2026-10-14]]. It
 uses 100 uniform play worlds and `pimc:16:0.875` bidding over all ten physics.
 It is historical research only after [[demon-vs-zeb-2026-10-15]]'s domain audit;
 the declaration reader also stays experimental.
+
+The confirmed overcalling form is
+`demon-pimc-n100-bidc102a137-straight-2e233d29`, source [[2e233d29]], with
+trees `silas/` `2330f0f2…`, `scenario/core/` `61cd6a52…` and
+`tournament/demon/` `9ddb6a58…`. It uses 100 uniform play worlds and
+`pimc-over:64:0.875:0.5` bidding over the nine straight declarations. Its
+immutable registry record, source rebuild proof and independent confirmation
+are in [[demon-overcalling-2026-10-15]]. Existing participant bytes are unchanged.
 
 ## First results: a smoke test, not a ranking (2026-10-14)
 

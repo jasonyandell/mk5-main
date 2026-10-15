@@ -3,12 +3,14 @@ title: "Demon: contesting an opponent's point bid"
 kind: experiment
 first_seen: 2026-10-15
 last_updated: 2026-10-15
-status: active
+status: complete
 ---
 
 **STRATEGY-FUSION FENCE.** This is the next development phase of the fenced
 [[the-demon]] after [[demon-vs-zeb-2026-10-15]]'s completed attempt 1 failed
-the joint game-win criterion. It does not change that trial's result.
+the joint game-win criterion. Attempt 2 completes the objective against both
+pinned native Zeb 0.4.0 bidders on Apple M5 Max: its game-win intervals exceed
+chance and its total seat runtime is lower. Attempt 1's result is unchanged.
 
 ## Question and implemented policy
 
@@ -89,7 +91,7 @@ intervals), 40,000 whole-pair bootstrap resamples, seed 666. Both game-win lower
 bounds must exceed 50%; both CPU and wall ratio upper bounds must be at most
 1.20 for each opponent. Faster is acceptable. All games finish before judgment;
 no attempt-1 or development games enter the confirmation. Every attempt is
-retained regardless of its outcome. There is no promotion yet.
+retained regardless of its outcome. These criteria were fixed before play.
 
 The selected record is `demon-pimc-n100-bidc102a137-straight-2e233d29`, source
 `2e233d29387c2aea0404adffadcaffac3a845a38`, bidder
@@ -109,24 +111,95 @@ fixed interleaved schedule runs at most three serial pairs through shared
 CPU slots. Preflight checks both actual runner setups without creating seats:
 zero confirmation games had started when the freeze was published.
 
-## Status
+## Completed confirmation
 
-The policy is merged at [[2e233d29]], development is complete, and attempt 2
-is running from the frozen protocol. The first pair against each opponent has
-completed; no interim strength result is used for selection. The freeze was
+All **2,048 games** finished, with no dropped games, restarts or infrastructure
+errors. Both opponents qualify. Intervals below are the predeclared **99.1667%
+whole-pair bootstrap intervals**; chance is 50%, marks baseline is zero, and
+runtime ratios divide Demon by Zeb (parity is 1).
+
+| Native Zeb 0.4.0 bidder | Wins–losses | Win percentage [interval] | Marks/game [interval] | CPU ratio [interval] | Wall ratio [interval] |
+|---|---:|---:|---:|---:|---:|
+| Match-aware, pip-only | 667–357 | 65.14 [61.52, 68.85] | 1.813 [1.535, 2.095] | 0.6788 [0.6737, 0.6839] | 0.6796 [0.6745, 0.6847] |
+| Standard, nine declarations | 678–346 | 66.21 [62.70, 69.63] | 1.316 [1.080, 1.551] | 0.2853 [0.2835, 0.2870] | 0.2854 [0.2837, 0.2872] |
+
+The full audit covers **21,412 hands and 62,242 candidate bid decisions**:
+straight declarations, seed schedule, frozen source hashes, seat-visible
+request boundaries, each bid against its recorded forecast, whole-seat cost
+sums, raw/report totals and the predeclared verdict. All checks pass.
+
+These are complete straight-42 games to seven marks, with native play and
+forecasting on both sides. Zeb uses source
+`29f519953467f6aacd78bd17700f3c67fda6b4eb`, 160 worlds, seed 0, shipped soft
+reading and exact margin ties. Its JavaScript bidding policies are unmodified.
+Package/native parity covers 203 requests, 27 adapter cases and four complete
+games (47 hands). The npm registry still identified 0.4.0 with the same
+integrity and shasum after the trial. This is evidence for those pinned
+opponents on this machine, not for other processors or future Zeb releases.
+
+### Runtime detail
+
+The runtime criterion is total seat cost, including the operations described
+above. Across the match-aware trial Demon used 6,362.39 CPU seconds and
+6,366.23 wall seconds; Zeb used 9,372.81 and 9,367.89. Against standard Zeb the
+totals were 7,031.43 / 7,035.65 for Demon and 24,649.73 / 24,650.95 for Zeb.
+CPU and wall have independent clocks; CPU includes waited native descendants.
+
+Descriptive per-call latency percentiles in milliseconds (p50 / p95):
+
+| Trial | Operation | Demon | Zeb |
+|---|---|---:|---:|
+| Match-aware | Bid | 163.750 / 259.058 | 240.944 / 280.518 |
+| Match-aware | Play | 0.294 / 85.915 | 0.581 / 69.246 |
+| Match-aware | Startup | 6.173 / 7.088 | 48.329 / 50.684 |
+| Standard | Bid | 164.247 / 259.609 | 697.105 / 795.073 |
+| Standard | Play | 0.313 / 88.985 | 0.518 / 69.754 |
+| Standard | Startup | 6.115 / 7.161 | 48.360 / 50.573 |
+
+Demon's play p95 is higher in both trials. Lower total seat runtime does not
+mean every operation is faster. All operation distributions, including
+declaration and close, are retained in the reports.
+
+## Evidence and registered participant
+
+The complete CC0 results, raw games, costs, traces, reports, audit, frozen
+protocol and executable source are public in [[demon-zeb-attempt-2]]. Both
+reports, verdict, audit, a raw game and manifest were freshly downloaded and
+byte-verified. The dataset card records this result alongside the failed
+attempt and earlier declaration-domain correction.
+
+The exact selected participant is registered in the existing tournament store:
+[immutable participant record](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/blob/93553b19f17719caff725b8aa70afe33876aa69c/participants/demon-pimc-n100-bidc102a137-straight-2e233d29.json).
+Its freshly downloaded canonical bytes match the frozen selection; SHA-256
+`0c05f48ca2c73008f8faba83e5f69cf5d8490cc0a453acb19546c6393314fee2`.
+`DEMON_OVERCALL_N100` appends that record to `tournament/participants.py`'s
+roster without changing any existing participant. These research games are
+not relabeled as standing-ladder faceoffs or Bradley–Terry ratings.
+
+Final roster integration passes `scripts/check --fast`: fence 8,
+py-tournament 44, wiki and reuse, with no failed or unavailable suites.
+A separate byte check verifies equality to the frozen selected and registered
+record, straight-game eligibility, all three source trees and preservation of
+every existing roster record.
+
+The policy is merged at [[2e233d29]]. The freeze was
 [recorded on issue 165](https://github.com/jasonyandell/mk5-main/issues/165#issuecomment-6189308298)
 before launch. Boundary tests
 cover every seat orientation, opponent versus partner, no point raise left,
 unchanged existing specs and malformed parameters. Whole-game tests check
-legality and determinism. `scripts/check --fast` is GREEN: fence 8,
+legality and determinism. The policy's `scripts/check --fast` is GREEN: fence 8,
 py-tournament 44, wiki and reuse. The native binary and all three Rust trees
-are unchanged from attempt 1; its SHA-256 remains `1c2ccee8…`.
+are unchanged from attempt 1; its SHA-256 remains `1c2ccee8…`. The public-tree
+rebuild matches all 185 held-out replies and node counts; the source-reuse
+receipt verifies the same immutable Rust trees under source `2e233d29`.
 
 [Public frozen protocol](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/fc266b135b6830785edb9b725c8cfae8bc41d478/demon/2026-10-15-vs-zeb/development-2/protocol)
 includes executable configuration, runners, source patch and check receipts.
 The plan and manifest were freshly downloaded and verified. The source and
 protocol were recorded [before play](https://github.com/jasonyandell/mk5-main/issues/165#issuecomment-6188236020).
-Issue #165 remains open until the full strength/runtime objective is achieved.
+The selected overcall rule improves this measured opponent comparison without
+additional forecast requests. It does not establish an optimal cutoff or a
+PIMC ceiling; the strategy-fusion fence remains unchanged.
 
 ## Links
 

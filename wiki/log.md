@@ -47,6 +47,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | demon/confirmation-2 | Demon beats both pinned native Zeb bidders within the runtime bar]
+
+**Completed:** [[demon-overcalling-2026-10-15]]: all 2,048 games audited and public; both predeclared strength/runtime criteria met. **Added:** [[demon-zeb-attempt-2]] and the exact frozen participant to the roster. **Updated:** [[the-demon]] [[tournament]] [[scenario-player]].
+
 ## [2026-10-15 | 2e233d29 | Demon overcalling development complete; second confirmation frozen]
 
 **Updated:** [[demon-overcalling-2026-10-15]]: all 192 development games audited and public; fixed rule selects Over 0.50. Exact candidate and 2,048-game fresh confirmation protocol published before play. No promotion; #165 remains open.
