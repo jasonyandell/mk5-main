@@ -45,6 +45,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 228812ff | PIMC's remaining knobs: beliefs, bidding and budget allocation]
+
+**Updated:** [[the-demon]] distinguishes exact per-world search, the inconclusive larger-sample trial, untested PIMC improvements and the strategy-fusion limit; links [[silas]]'s inference and the primary literature.
+
 ## [2026-10-14 | 228812ff | Demon power: smaller exact search; 1,600 worlds do not establish a strength gain]
 
 [[demon-power-2026-10-14]]: exact parity, 13.2% less CPU and 70.4% less peak RSS at 400 worlds; 128 duplicate pairs finish 124–132 at 1,600 versus 100, with no demonstrated gain. Public data, verified pins, and GREEN gates in the study. [[the-demon]] · [[silas]] · [[3cd6ae53]] · [[228812ff]].

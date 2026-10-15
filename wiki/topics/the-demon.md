@@ -109,6 +109,45 @@ pairs: 48.4% [44.1%, 52.7%], no demonstrated gain, at 11.49× native play CPU fo
 the frozen pre-bisection policy. The larger budget stays experimental. The earlier
 pins keep their original sampler.
 
+## Is sample count the only remaining strength knob?
+
+No. The per-world solve is already exact through the end of the hand; deeper
+search cannot improve that world's answer. More worlds reduce sampling error
+in the chosen PIMC expectation. Transposition tables and exact pruning reduce
+its cost. Neither establishes the best possible PIMC player for Texas 42.
+[[demon-power-2026-10-14]] tests one joint change of budget and sampler against
+one baseline with a shared bidder; its null result does not prove saturation.
+
+Three unexhausted directions remain within a PIMC-based player:
+
+- **Beliefs.** The current fiber uses legality, hand sizes and proven voids.
+  It does not weight a hand by the likelihood of the observed bids, declaration
+  or discretionary plays (`tournament/demon/src/lib.rs`, `decide`). [[silas]]'s
+  bid/play reading already supplies model-conditioned inference machinery;
+  integrating a suitable weighted sampler into the Demon remains work. A wrong
+  policy model can exclude the true hand, so model calibration matters.
+- **Bidding and declaration.** The arena heuristic still chooses both. Comparing
+  calibrated contract forecasts and match utilities could change whole-game
+  strength without changing the exact play solver. Double-dummy make frequency
+  is not an achievable imperfect-information win probability.
+- **Budget allocation and decision rules.** The current fixed world budget and
+  exact-make-tie margin rule are design choices. Adaptive sampling of close
+  choices and alternative tie rules are testable; their strength is unmeasured.
+  Allocation can improve strength per unit compute even if it leaves the
+  infinite-sample policy unchanged.
+
+The first direction has precedent: [Solinas, Rebstock and Buro (2019)](https://arxiv.org/abs/1903.09604)
+improved PIMC Skat cardplay by sampling worlds informed by move history. That
+supports an experiment here, not a claim of a measured Texas 42 gain.
+
+There is also a structural limit. Even complete enumeration still credits each
+world with continuations tailored to hidden hands. [[strategy-fusion]] remains
+regardless of sample count ([Long et al., 2010](https://webdocs.cs.ualberta.ca/~nathanst/papers/pimc.pdf)).
+Requiring one action across indistinguishable information states changes the
+search beyond plain independent-world PIMC. The proposed next experiments are
+record-conditioned beliefs, then bidding, each isolated at a fixed budget and
+graded on held-out complete games under [#165](https://github.com/jasonyandell/mk5-main/issues/165).
+
 ## Original cost (measured 2026-10-14, Apple M-series, one core)
 
 Pilot: whole hands with the Demon at all four seats, random deals, declarations 0–9, bids
