@@ -400,6 +400,97 @@ diverge. (4) O was not run. The by-turn tables and the mark/contract shares are 
 field model refitted on the release's own field. Jason decides. No zeb crate or default
 changed here. Follow-up: #170 (a table that overcalls back; refit the field model; the O arm).
 
+## #170: does `over` survive a table that contests back?
+
+Every opponent in #160 still needed 0.8 to answer an overcall, and the field model behind
+`over` and `cal` (`ZEB_LAW`, `ZEB_ODDS`, `ZEB_SHRINK`) was fitted on that passive field.
+Before zeb 0.4.1 ships `met,over,cal`, this section measures it against a bidder that
+contests back.
+
+### Pre-registration (committed before any game)
+
+**The contesting table** is `met,over,cal` with its field model and calibration **refit** on
+a field that overcalls: the `R` bidder (spec token `refit`). The fixed bidder keeps its frozen
+constants. Fixed against fixed is the A/A, 50% by symmetry; fixed against `R` is the question.
+
+**The fit set** (`FIT`, never the test deals): the fixed bidder against itself on fresh seeds
+5001–5096, games 0–3, one orientation (384 games; both sides are the same bidder). `fit.py`
+refits on it, with #160's estimators on this field:
+
+- `win_flip` (the hand law) from every hand.
+- `keep`, `pass_ours` and `over_set` from every turn whose call was the one-mark call
+  (`call == c0`). A turn where `met` bid the mark does not show what its point bid or pass would
+  have met. A cell under 20 turns takes its holder's pooled value, as before.
+- `shrink` (a, b) by maximum likelihood on every over-an-opponent contract that stood. The raw
+  forecast is recovered from the record's calibrated one by inverting the frozen `ZEB_SHRINK`.
+
+Each constant is reported against its frozen value with a bootstrap interval over FIT games
+(1,000 resamples). The refit is written to `out/refit.json` and committed to this page before
+any test game.
+
+**Test deals:** the first 384 of #160's clusters (seeds 1001–1096, games 0–3), both
+orientations, every game played in full (768 per arm; no divergence shortcut, since nearly
+every orientation diverges). Play on both sides is deployed Zeb, as in #160.
+
+**Arms** (A on team t; run in this order):
+
+- **AA**: fixed vs fixed, the first 16 test clusters. Every cluster must be the same game
+  mirrored, or the study stops.
+- **C (primary)**: A = `met,over,cal` (frozen) vs B = `R`.
+- **REPRO**: C's first 8 orientations rerun in a separate process. They must match C game for
+  game and turn for turn, or the study stops.
+- **CM**: A = `met` (no `over`) vs B = `R`.
+- **O** (the arm #160 skipped): A = `over,cal` in hand mode (no 84) vs B = deployed hand-only.
+
+**Statistics.** A's game share per arm: cluster = one test game, both orientations; 95%
+percentile bootstrap over clusters, 10,000 resamples (seed 7). Chance is 50%. Beside each arm:
+A's share by team (the seat swap), the mark margin, and the auction's shape. The auction
+numbers are how often each side overcalls an opponent, how often that overcall stands, how
+often its side takes the mark, and made against forecast.
+
+- **E, the edge that survives** = C − CM, paired by cluster. It is the gain from adding
+  `over,cal` to `met` when the table contests back. Its passive-table twin is #160's FM − 50
+  on the same 384 clusters (64.3% there; met vs met is exactly 50%). The page reports E, and
+  E / (FM − 50) with a paired bootstrap interval.
+- **F − O**, paired with #160's F on the same clusters: what `met`'s 84 adds on top of
+  `over,cal`.
+
+**Decision rule** for zeb 0.4.1 (the page's recommendation; Jason decides):
+
+- E's lower bound > 0 and C's upper bound ≥ 50%: `over` survives, and the frozen constants
+  lose nothing measurable to the refit. Recommend shipping `met,over,cal` as frozen.
+- E's lower bound > 0 and C's upper bound < 50%: `over` survives, but its frozen model costs
+  games against a table that contests. Recommend `met,over,cal` with the refit constants.
+- E's interval holds 0, or lies below it: `over`'s edge does not survive a table that contests
+  back. Recommend `met` alone for 0.4.1, and file `over` for a human-table measurement.
+
+Whether the constants "move enough to matter" is judged by C, not by the size of the move.
+
+**Size.** FIT 384 games, AA 32, C, CM and O 768 each, REPRO 8: 2,728 games. A two-game harness
+smoke ran at 23 s. At #160's lockstep rate (30 games in about 150 s) that is about 4 slot-hours.
+Each half-width is about ±2.9 points (#160's F on these clusters: 71.1% [68.2, 73.8]). The
+size is not extended.
+
+**Batches.** 20 games per `scripts/cpu-slot` run (300 s cap), at most two runs waiting for
+slots at once. A run that fails or is killed is retried at half its games, down to one. A game
+that still fails is DROPPED: logged, reported, and its cluster leaves the arm's mean. It is
+never imputed.
+
+**Known limits, stated now.**
+
+- The refit is one step: it is fitted on the fixed bidder against itself, not on `R` against
+  the fixed bidder, so it is not a fixed point.
+- `Odds.take` still treats a 42 as never overcalled, and this field bids 84 over it.
+- The contesting table is Zeb's own bidder. It is not a human, and it does not adapt across
+  hands ([[book-assumptions]]).
+- A two-game harness smoke on seed 7777 (neither a fit seed nor a test seed) checked `sim.py`
+  and `fit.py` before this registration. Its auction counts were seen: about 80% of
+  opponent-held turns overcall when both sides play `over`.
+
+Scripts at registration (`scratch/m170/`, sha256 prefixes): `sim.py` 57a7e94e9cbf,
+`sched.py` daab0eb0bd4f, `fit.py` ac9a41c1028d, `grade.py` c8e6d442284c, `blocks.json`
+29eb525c6c7a.
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/match-aware-bidding/`: every block's
