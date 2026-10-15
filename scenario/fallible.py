@@ -48,8 +48,14 @@ of forgetting to the field itself, Z_p (the field's loss to deployed Zeb as
 it forgets); the book's game, PB40 - PZ40 against PB0 on games won; ΔG(0.1)
 and ΔG(0.2) as the trend.
 
-*Size.* Set from the timing pilot (`PILOT` = seed 2890, 4 game pairs of B0,
-B40, Z40 and PB40, excluded), written here before any measured batch.
+*Size.* From the timing pilot (`PILOT` = seed 2890, 4 game pairs of B0,
+B40, Z40 and PB40, excluded): 17-21 s a batch of 4 pairs at load 5-11, so
+a batch of 12 runs about 60 s quiet and well inside the 300 s cap loaded.
+Marks: `SEEDS` = 2901-2948 x 12 game pairs, **576 game pairs per arm**
+(336 batches); the book's game: `POINT_SEEDS` = 3001-3016 x 12, **192 per
+arm** (48 batches); 384 batches in all. The per-pair SD of a three-arm
+contrast in #163 was 1.6-2.3 marks, so ΔG's MDE at 80% power is about
+0.19-0.27 marks/game; the book's game reads to about 7 points of share.
 
 *Batch-drop rule and fence.* As `scenario.small_n`; every batch through
 `scripts/cpu-slot`, two at a time, seed-major. The fallible field is an
@@ -72,8 +78,8 @@ POINT_ARMS = ("PB0", "PB40", "PZ40")
 ARMS = MARK_ARMS + POINT_ARMS
 PILOT = (2890,)               # the timing pilot, excluded
 GAMES = 12                    # game pairs per batch
-SEEDS: tuple[int, ...] = ()
-POINT_SEEDS: tuple[int, ...] = ()
+SEEDS = tuple(range(2901, 2949))
+POINT_SEEDS = tuple(range(3001, 3017))
 
 
 def field(p100: int):

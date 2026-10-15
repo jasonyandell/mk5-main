@@ -48,6 +48,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | book/fallible | The fallible field pre-registered (#151): the book's play against opponents who lose track]
+
+- [[fallible-field-2026-10-15]]: deployed Zeb forgetting a seat's voids with probability p per decision (`void_miss`), p ∈ {0, 0.1, 0.2, 0.4}; primary ΔG(0.4) and p*; 384 batches; `scenario/fallible.py`.
+
 ## [2026-10-15 | book/overbidders | The book's own overbidders: its bidding loses less ground against them (#163)]
 
 - [[overbidders-2026-10-14]] complete: X_S = +0.15 [+0.02, +0.28], X_T = +0.23 [+0.03, +0.41] marks/game, the book's prediction; `risk-budget` still trails the control in every field; the ten-count 35 sets itself (+1.30 [1.13, 1.45]).
