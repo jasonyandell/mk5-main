@@ -125,7 +125,11 @@ def summarize(runs: Sequence[str]) -> dict:
             marks, diff(f"B{p}", f"Z{p}") + [(-1.0, "B0")])
     for p in PS[1:]:
         reg[f"the field's cost of forgetting: Z{p}, marks/game"] = contrast(marks, [(1.0, f"Z{p}")])
-    reg["250: (PB40 - PZ40) - PB0 on share of games won"] = contrast(won, diff("PB40", "PZ40") + [(-1.0, "PB0")])
+    # PB0 is a share whose chance baseline is a half. The registration omitted the
+    # half; adding it back shifts the mean and both ends alike.
+    gap = contrast(won, diff("PB40", "PZ40") + [(-1.0, "PB0")])
+    reg["250: (PB40 - PZ40) - (PB0 - 1/2) on share of games won"] = {
+        **gap, **{k: gap[k] + 0.5 for k in ("mean", "lo", "hi")}}
     reg["250: PB40 - PZ40 on share of games won"] = contrast(won, diff("PB40", "PZ40"))
     return out
 

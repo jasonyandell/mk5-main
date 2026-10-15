@@ -57,6 +57,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-15 | rematch | Zeb 0.4.1 vs the overcalling Demon: pre-registered before any game]
 
 **Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). Results follow.
+## [2026-10-15 | book/fallible | The fallible field (#151): a field that forgets voids pays, and the book player and Zeb collect it equally]
+
+- [[fallible-field-2026-10-15]] complete: ΔG(0.4) = −0.03 [−0.14, +0.08] marks/game (MDE 0.16), p* beyond the grid; the field's cost of forgetting 0.32 [0.23, 0.41] at p = 0.4.
+- [[book-assumptions]] A3 row and reading. The book's ploys lean on losing the count, filed as #172.
+- Data: HF `book/fallible/`.
 
 ## [2026-10-15 | book/fallible | The fallible field pre-registered (#151): the book's play against opponents who lose track]
 
