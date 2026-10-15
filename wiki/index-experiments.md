@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/demon-next-form-2026-10-14|demon-next-form-2026-10-14]] — soft declaration evidence and common-world contract forecasts; independent confirmation trials (active)
+- [[experiments/demon-next-form-2026-10-14|demon-next-form-2026-10-14]] — PIMC bidding earns a held-out gain at 100 play worlds; declaration reading and its combination do not establish gains (complete)
 - [[demon-power-2026-10-14]] — Compact exact search, distinct-world sampling, and a fixed 1,600-versus-100-world strength trial.
 - [[experiments/demon-search-tables-2026-10-14|demon-search-tables-2026-10-14]] — exact decision parity with smaller per-world search tables; lower CPU and memory at 100 and 400 worlds; duplicate-match strength pilot (complete)
 

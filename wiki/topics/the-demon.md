@@ -29,9 +29,11 @@ At each play the seat:
 4. plays the tile that makes in the most worlds (sets, when defending). Exact ties go to the
    best summed double-dummy margin, then to the lowest tile id.
 
-A seat with one legal tile plays it without solving anything. In bidding the Demon uses the
+A seat with one legal tile plays it without solving anything. The original pins use the
 arena's `heuristic` bidder (Roberson risk budget), the same bidder E[Q] n=10 uses in the
-tournament. The two fusion players therefore differ only in how they play.
+tournament. The promoted `4454f603` form instead uses `pimc:16:0.875`: forecasts on
+16 common hidden deals choose a declaration and whether to bid; it passes over a
+partner's standing bid. [[demon-next-form-2026-10-14]] defines the policy and its evidence.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw
 every hand, and E[max] ≥ max E ([[strategy-fusion]]). That is why the Demon makes a useful
@@ -58,9 +60,9 @@ opponent and why it is fenced.
 
 | Where | What |
 |---|---|
-| `tournament/demon/` (Rust crate) | `src/lib.rs` `decide` (the four steps), `src/sampling.rs` (uniform subsets), `src/main.rs` (one JSON request per line; refuses a record that disagrees with the table's leader or points), `tests/demon.rs` |
+| `tournament/demon/` (Rust crate) | `src/lib.rs` `decide` (the four steps), `src/sampling.rs` (uniform subsets or posterior draws), `src/bidding.rs` (contract forecasts), `src/main.rs` (JSON protocol; refuses inconsistent public records), `tests/demon.rs` |
 | `tournament/demon_fenced_seat.py` | `DemonSeat`: the bidder and one binary process per team per game; `build` from the pinned trees |
-| `tournament/participants.py` | `demon(...)`, `DEMON_N100` |
+| `tournament/participants.py` | `demon(...)`, original and later immutable pins, including `DEMON_BID_N100` |
 | `tournament/tests/test_demon.py` | whole faceoff games, determinism, the pin's tree check |
 
 How it stays fenced:
@@ -111,9 +113,10 @@ pins keep their original sampler.
 
 ## Is sample count the only remaining strength knob?
 
-The declaration-reader and contract-forecast candidates are now implemented;
-their separate development/confirmation protocol is in [[demon-next-form-2026-10-14]].
-The existing tournament pins remain unchanged pending those measurements.
+The declaration-reader and contract-forecast candidates are implemented and
+graded in [[demon-next-form-2026-10-14]]. PIMC bidding earns a held-out gain at
+the same play-world budget; the reader and combined form do not establish gains.
+The new bidder is seated under its own identity; existing pins remain unchanged.
 
 No. The per-world solve is already exact through the end of the hand; deeper
 search cannot improve that world's answer. More worlds reduce sampling error
@@ -124,16 +127,17 @@ one baseline with a shared bidder; its null result does not prove saturation.
 
 Three unexhausted directions remain within a PIMC-based player:
 
-- **Beliefs.** The current fiber uses legality, hand sizes and proven voids.
-  It does not weight a hand by the likelihood of the observed bids, declaration
-  or discretionary plays (`tournament/demon/src/lib.rs`, `decide`). [[silas]]'s
-  bid/play reading already supplies model-conditioned inference machinery;
-  integrating a suitable weighted sampler into the Demon remains work. A wrong
-  policy model can exclude the true hand, so model calibration matters.
-- **Bidding and declaration.** The arena heuristic still chooses both. Comparing
-  calibrated contract forecasts and match utilities could change whole-game
-  strength without changing the exact play solver. Double-dummy make frequency
-  is not an achievable imperfect-information win probability.
+- **Beliefs.** The promoted form still uses legality, hand sizes and proven
+  voids. The opt-in declaration reader has positive support and a direct
+  posterior sampler, but its heuristic-based likelihood did not establish a
+  gain. Bids and discretionary plays are still unmodeled. [[silas]]'s bid/play
+  reading supplies related model-conditioned inference machinery; a model
+  calibrated to the actual opponent remains a candidate.
+- **Bidding and declaration.** Common-world forecasts now improve the tested
+  whole-game result. The promoted cutoff is a decision parameter; double-dummy
+  make frequency is not a calibrated imperfect-information win probability.
+  Bidding utility, score-aware risk and separating the contributions of
+  partner pass, willingness and declaration remain open.
 - **Budget allocation and decision rules.** The current fixed world budget and
   exact-make-tie margin rule are design choices. Adaptive sampling of close
   choices and alternative tie rules are testable; their strength is unmeasured.
@@ -148,9 +152,9 @@ There is also a structural limit. Even complete enumeration still credits each
 world with continuations tailored to hidden hands. [[strategy-fusion]] remains
 regardless of sample count ([Long et al., 2010](https://webdocs.cs.ualberta.ca/~nathanst/papers/pimc.pdf)).
 Requiring one action across indistinguishable information states changes the
-search beyond plain independent-world PIMC. The proposed next experiments are
-record-conditioned beliefs, then bidding, each isolated at a fixed budget and
-graded on held-out complete games under [#165](https://github.com/jasonyandell/mk5-main/issues/165).
+search beyond plain independent-world PIMC. Matched-compute comparisons and
+validation against other pinned opponents remain under
+[#165](https://github.com/jasonyandell/mk5-main/issues/165).
 
 ## Original cost (measured 2026-10-14, Apple M-series, one core)
 
@@ -193,6 +197,13 @@ The distinct-world builds are `demon-pimc-n100-228812ff` and
 are published and freshly verified at tournament-store revision `382c4233`.
 The 1,600-world pin builds from its archived public trees and answers the protocol.
 [[demon-power-2026-10-14]] reports their search and strength evidence.
+
+The confirmed bidding form is `demon-pimc-n100-bid7ff83929-4454f603`, pinned to
+[[4454f603]] (trees `silas/` `2330f0f2…`, `scenario/core/` `61cd6a52…`,
+`tournament/demon/` `1873a3de…`). Its published immutable record, fresh download
+verification, held-out trial and cost are in [[demon-next-form-2026-10-14]]. It
+uses 100 uniform play worlds and `pimc:16:0.875` bidding; the declaration reader
+stays experimental.
 
 ## First results: a smoke test, not a ranking (2026-10-14)
 

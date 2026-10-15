@@ -45,6 +45,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 4454f603 | The Demon earns a held-out bidding gain at 100 play worlds]
+
+**Completed:** [[demon-next-form-2026-10-14]] (all 1,360 games; independent bidder confirmation 324–188, 63.28% [59.38%, 67.19%]; reader and combination not promoted). **Updated:** [[the-demon]], [[tournament]], [[scenario-player]]; new immutable bidder pin, complete public evidence and verified source parity. **Added:** [[4454f603]]. Wider validation remains #165.
+
 ## [2026-10-14 | issues-165-167 | Demon declaration reading and contract forecasts; queued CPU jobs retry promptly]
 
 **Updated:** [[demon-next-form-2026-10-14]] (opt-in candidates; independent confirmations running), [[the-demon]], [[scenario-player]], [[standing-desks]] (50 ms retry, unchanged capacity and limits). Existing tournament pins remain unchanged.

@@ -35,6 +35,8 @@ are a function of the participant alone, so two writers adding it write the same
 | `demon-pimc-n100-b88c5432` | the Demon ([[the-demon]]): CPU PIMC, 100 worlds, Silas's double-dummy solve per world, margin tiebreak, `heuristic` bidder | mk5 commit `b88c5432` and the git trees of `silas/` `75b67c11…`, `scenario/core/` `11735eb0…`, `tournament/demon/` `40738d38…`; built from those trees on the worker |
 | `demon-pimc-n100-18ac096d` | the Demon with compact per-world search tables, 100 worlds, the same values and tie rules | mk5 `18ac096d`, pinned source trees; [[demon-search-tables-2026-10-14]] |
 | `demon-pimc-n400-18ac096d` | the compact Demon at 400 worlds; experimental challenger, strength not established | the same source pin, distinct world-count config and id; [[demon-search-tables-2026-10-14]] |
+| `demon-pimc-n100-228812ff`, `demon-pimc-n1600-228812ff` | exact compact search and distinct uniform worlds; the larger budget remains experimental | mk5 `228812ff`, immutable source trees; [[demon-power-2026-10-14]] |
+| `demon-pimc-n100-bid7ff83929-4454f603` | confirmed PIMC bidder, 16 common forecast worlds and cutoff 0.875; uniform 100-world play | mk5 `4454f603`, immutable source trees and bidder settings; [[demon-next-form-2026-10-14]] |
 
 Seating. The referee is the arena (`arena/engine.py`: deal, auction, play, marks to 7). A
 JavaScript participant runs in `tournament/seat/host.mjs`, one process per team per game, sent

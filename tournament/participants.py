@@ -201,8 +201,18 @@ DEMON_DISTINCT_N100 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=100,
 DEMON_DISTINCT_N1600 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=1600,
                              sampler_note=_DISTINCT_SAMPLER)
 
+# PIMC bidding (16 common worlds, cutoff 14/16, partner pass), uniform n100
+# play. Frozen selection confirmed against the prior n100 Demon on 256 fresh
+# duplicate pairs; see wiki/experiments/demon-next-form-2026-10-14.md.
+_DEMON_NEXT_COMMIT = "4454f60361a1ded95a628f9939a5d4a645ef994b"
+_DEMON_NEXT_TREES = {"silas": "2330f0f2e2458f966629830dd7aa091b44872fbb",
+                     "scenario/core": "61cd6a5225f664be24bcd2f27d74b6744c71e769",
+                     "tournament/demon": "1873a3de7f6eaca2b2bfee1eda61d3363aa750c7"}
+DEMON_BID_N100 = demon(_DEMON_NEXT_COMMIT, _DEMON_NEXT_TREES, worlds=100,
+                       bidder="pimc:16:0.875", sampler_note=_DISTINCT_SAMPLER)
+
 ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
-          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600)
+          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_BID_N100)
 ANCHOR = WALT.id
 
 

@@ -2,6 +2,7 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/4454f603|4454f603]] — fenced declaration evidence and PIMC bidding, with complete held-out strength evidence (complete)
 - [[sources/228812ff|228812ff]] — exact margins by repeated threshold queries, with held-out parity and performance evidence (complete)
 - [[sources/3cd6ae53|3cd6ae53]] — compact exact transpositions, interchangeable plays and distinct-world sampling (complete)
 
