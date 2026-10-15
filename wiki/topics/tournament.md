@@ -33,6 +33,8 @@ are a function of the participant alone, so two writers adding it write the same
 | `zeb-0.2.0` | `@jasonyandell/zeb` 0.2.0, same settings | npm integrity `sha512-YnlKLquB…`, shasum `12763486…` |
 | `eq-n10-fenced` | E[Q] n=10 (`heuristic+lens:ev`), the oracle era's champion | checkpoint sha256 `5f3f00de…`; the faceoff records the mk5 commit that ran it |
 | `demon-pimc-n100-b88c5432` | the Demon ([[the-demon]]): CPU PIMC, 100 worlds, Silas's double-dummy solve per world, margin tiebreak, `heuristic` bidder | mk5 commit `b88c5432` and the git trees of `silas/` `75b67c11…`, `scenario/core/` `11735eb0…`, `tournament/demon/` `40738d38…`; built from those trees on the worker |
+| `demon-pimc-n100-18ac096d` | the Demon with compact per-world search tables, 100 worlds, the same values and tie rules | mk5 `18ac096d`, pinned source trees; [[demon-search-tables-2026-10-14]] |
+| `demon-pimc-n400-18ac096d` | the compact Demon at 400 worlds; experimental challenger, strength not established | the same source pin, distinct world-count config and id; [[demon-search-tables-2026-10-14]] |
 
 Seating. The referee is the arena (`arena/engine.py`: deal, auction, play, marks to 7). A
 JavaScript participant runs in `tournament/seat/host.mjs`, one process per team per game, sent

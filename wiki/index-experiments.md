@@ -3,6 +3,10 @@
 Grouped by workstream. Route via the family trail first; this is the fallback catalog.
 
 
+## Tournament
+
+- [[experiments/demon-search-tables-2026-10-14|demon-search-tables-2026-10-14]] — exact decision parity with smaller per-world search tables; lower CPU and memory at 100 and 400 worlds; duplicate-match strength pilot (complete)
+
 ## Jud (current frontier; the era's GitHub milestone is named Champion)
 
 - [[experiments/jud-v2-retrain-probe|jud-v2-retrain-probe]] — is jud's play badness MRV-corpus contamination or mechanism? Clean-sampler corpus (same-seed drift null) + ε-explore self-play reproduces v1's grade trajectory within CI; 10-agent audit finds no live line-bug; the 0.68 table claim root-caused to the round-0 checkpoint; play wall = 9-of-350-dim ply-1 signal × greedy 1-ply consumer (complete)

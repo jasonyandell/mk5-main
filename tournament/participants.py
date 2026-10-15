@@ -162,7 +162,16 @@ DEMON_N100 = demon("b88c5432e16bbc5d32ad8d1a71e010e7144da24c",
                     "tournament/demon": "40738d38be3880339f0ee49e4da1ab4ad813b791"},
                    worlds=100)
 
-ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100)
+# Exact move/value parity with smaller per-world search tables. The original
+# pin remains a baseline; 400 worlds is a challenger, not a strength verdict.
+_DEMON_COMPACT_COMMIT = "18ac096d4c56506f8115f53daf2c95d6151ee0ea"
+_DEMON_COMPACT_TREES = {"silas": "c10cb8b362c00b0ff7efad58d4e77e85219f346f",
+                        "scenario/core": "11735eb06e3f89c5c9c2d86ece0295a077c2cde8",
+                        "tournament/demon": "2431c1f1a62cbf2f4dc53d9273564f54bf285af5"}
+DEMON_FAST_N100 = demon(_DEMON_COMPACT_COMMIT, _DEMON_COMPACT_TREES, worlds=100)
+DEMON_N400 = demon(_DEMON_COMPACT_COMMIT, _DEMON_COMPACT_TREES, worlds=400)
+
+ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400)
 ANCHOR = WALT.id
 
 

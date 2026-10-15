@@ -89,7 +89,14 @@ Tests (`scripts/check demon`, `py-tournament`):
 - **Legality.** Whole hands play legally at all four seats under all ten declarations. Whole
   faceoff games play through the arena referee.
 
-## Cost (measured 2026-10-14, Apple M-series, one core)
+## Search-table locality (2026-10-14)
+
+The current implementation keeps one small search table per world, completes that
+world's margin tie work together, and drops its table before the next world.
+Moves and values are preserved. The paired replay, CPU and memory measurements,
+and 400-versus-100-world pilot live in [[demon-search-tables-2026-10-14]].
+
+## Original cost (measured 2026-10-14, Apple M-series, one core)
 
 Pilot: whole hands with the Demon at all four seats, random deals, declarations 0–9, bids
 30–42. Per decision:
@@ -116,6 +123,13 @@ archives those trees (`git archive <tree>`) and builds them with `cargo build --
 --locked`. It never builds the checkout's copy, so later edits to Silas or Walt cannot move the
 Demon. Changing a knob or the code means a new participant id. In a shallow clone where a tree
 is missing, the worker fetches the pinned commit first.
+
+The compact-table builds are `demon-pimc-n100-18ac096d` and
+`demon-pimc-n400-18ac096d`, pinned to commit `18ac096d` and trees
+`silas/` `c10cb8b3…`, `scenario/core/` `11735eb0…`, `tournament/demon/` `2431c1f1…`.
+The original participant remains immutable. The new 100-world build preserves
+its play for a given request and seed; 400 worlds is an experimental challenger.
+The roster includes both; their evidence is in [[demon-search-tables-2026-10-14]].
 
 ## First results: a smoke test, not a ranking (2026-10-14)
 

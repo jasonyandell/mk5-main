@@ -44,6 +44,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 18ac096d | the Demon: exact search-table locality, compact 100- and 400-world tournament challengers]
+
+**Added:** [[demon-search-tables-2026-10-14]], [[18ac096d]]. **Updated:** [[the-demon]], [[tournament]]; the roster retains the original and adds compact-table builds. Parity, resource measurements, the fixed duplicate-match pilot, and public data are on the experiment page.
+
 ## [2026-10-14 | reading-text | Silas: a reading written in a policy file (#162); the book's crisis as Hand 31 reads it]
 
 **Updated:** [[silas]], `silas/README.md`, `silas/GAPS.md` 1. **Added:** `(reading ...)` in a policy and `PolicyProgram::compile_reading`; the `silas` command finds a reader beside its file; `examples/book/crisis-read.silas` (one new pin, none moved); `silas/tests/reading_text.rs`. The arena's half of #162 (gated) is next.

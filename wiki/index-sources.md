@@ -2,6 +2,8 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/18ac096d|18ac096d]] — the Demon keeps exact search tables local to each sampled world; parity and resource evidence in its experiment (complete)
+
 - [[sources/0168210|0168210]] — 2026-04-19: Phase 3-4 training + primer-tradeoff decision (active)
 - [[sources/0472125|0472125]] — 2026-04-21: MORNING2_STATUS — 2000g scaling results; 1.60 Q-pt regret; scaling lessons (?)
 - [[sources/0545342|0545342]] — 2026-04-20: session close; candlewax/iter-5 cluster docs (active)
