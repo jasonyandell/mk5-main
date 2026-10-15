@@ -104,9 +104,9 @@ fn the_solve_agrees_with_brute_force_minimax_on_every_world_of_the_fiber() {
             plays: sp.plays.clone(),
             seed: 7,
         };
-        let d = decide(Config { worlds: 2000, margin_tiebreak: true }, &req).unwrap();
+        let d = decide(Config { worlds: 2000, margin_tiebreak: true, ..Config::default() }, &req).unwrap();
         assert!(d.exact && d.worlds == worlds.len());
-        let no_margin = decide(Config { worlds: 2000, margin_tiebreak: false }, &req).unwrap();
+        let no_margin = decide(Config { worlds: 2000, margin_tiebreak: false, ..Config::default() }, &req).unwrap();
         assert_eq!(no_margin.worlds, d.worlds);
         assert!(no_margin.exact);
         assert_eq!(no_margin.moves, d.moves.iter().map(|&(t, m, _)| (t, m, None)).collect::<Vec<_>>());
@@ -149,6 +149,93 @@ fn the_solve_agrees_with_brute_force_minimax_on_every_world_of_the_fiber() {
 }
 
 #[test]
+fn exact_posterior_values_agree_with_independent_weighted_minimax() {
+    let mut rng = SplitMix::new(666123);
+    let mut checked = 0;
+    while checked < 20 {
+        let sp = spot(&mut rng, 19);
+        let viewer = sp.rec.seat();
+        if viewer == sp.bidder || sp.decl >= 7 {
+            continue;
+        }
+        let rules = Rules::new(sp.decl).unwrap();
+        let legal = tiles_of(rules.legal(sp.hands[viewer as usize], sp.rec.led()));
+        if legal.len() < 2 {
+            continue;
+        }
+        let mut fiber = Fiber::new(
+            viewer,
+            sp.hands[viewer as usize],
+            sp.rec.played,
+            std::array::from_fn(|s| sp.rec.hand_size(s as u8)),
+            sp.rec.forbid,
+        );
+        let worlds = fiber.worlds();
+        let known = sp.plays.iter().filter(|&&(s, _)| s == sp.bidder).fold(0, |m, &(_, t)| m | 1 << t);
+        let weights: Vec<_> = worlds
+            .iter()
+            .map(|w| demon::hand_model::declaration_likelihood(w[sp.bidder as usize] | known, sp.decl, 32))
+            .collect();
+        let req = Request {
+            seat: viewer,
+            hand: sp.hands[viewer as usize],
+            decl: sp.decl,
+            bid: sp.bid,
+            bidder: sp.bidder,
+            plays: sp.plays.clone(),
+            seed: 1,
+        };
+        let d = decide(Config { worlds: 2000, margin_tiebreak: true, declaration_weight: 32 }, &req).unwrap();
+        assert!(d.exact);
+        assert_eq!(d.mass, weights.iter().sum());
+        for &(t, makes, margin) in &d.moves {
+            let mut expected_make = 0;
+            let mut expected_margin = 0;
+            for (w, &weight) in worlds.iter().zip(&weights) {
+                let mut after = *w;
+                after[viewer as usize] &= !(1 << t);
+                let r = sp.rec.advance(t, &rules);
+                expected_make +=
+                    weight * points(&rules, after, r.clone(), sp.bidder as usize % 2, sp.bid.min(42), true) as u32;
+                expected_margin +=
+                    weight as i64 * points(&rules, after, r, sp.bidder as usize % 2, sp.bid.min(42), false) as i64;
+            }
+            assert_eq!(makes, expected_make);
+            if let Some(m) = margin {
+                assert_eq!(m, expected_margin);
+            }
+        }
+        let sign = if viewer % 2 == sp.bidder % 2 { 1 } else { -1 };
+        let expected =
+            d.moves.iter().max_by_key(|&&(t, m, g)| (sign * m as i64, sign * g.unwrap_or(0), -(t as i64))).unwrap().0;
+        assert_eq!(d.tile, expected);
+        checked += 1;
+    }
+}
+
+#[test]
+fn contract_forecast_recognizes_all_trumps_and_is_repeatable() {
+    let sixes = (21..28).fold(0, |m, t| m | 1 << t);
+    let a = demon::bidding::forecast(sixes, 2, 42, 2, 666).unwrap();
+    let b = demon::bidding::forecast(sixes, 2, 42, 2, 666).unwrap();
+    assert_eq!(a.makes[6], 2, "seven trumps sweep every hidden deal");
+    assert_eq!(a.makes, b.makes);
+    assert_eq!(a.nodes, b.nodes);
+    assert!(demon::bidding::forecast(sixes, 4, 30, 2, 666).is_err());
+    assert!(demon::bidding::forecast(sixes & !(1 << 27), 0, 30, 2, 666).is_err());
+}
+
+#[test]
+fn reading_own_declaration_or_an_unmodeled_contract_changes_nothing() {
+    let sixes = (21..28).fold(0, |m, t| m | 1 << t);
+    for decl in [6, 7, 8, 9] {
+        let req = Request { seat: 0, hand: sixes, decl, bid: 30, bidder: 0, plays: vec![], seed: 8 };
+        let cfg = Config { worlds: 8, ..Config::default() };
+        assert_eq!(decide(cfg, &req).unwrap(), decide(Config { declaration_weight: 32, ..cfg }, &req).unwrap());
+    }
+}
+
+#[test]
 fn the_same_seed_gives_the_same_decision_and_the_seed_moves_the_worlds() {
     let mut rng = SplitMix::new(3);
     let mut moved = false;
@@ -165,7 +252,7 @@ fn the_same_seed_gives_the_same_decision_and_the_seed_moves_the_worlds() {
             plays: sp.plays.clone(),
             seed,
         };
-        let cfg = Config { worlds: 24, margin_tiebreak: true };
+        let cfg = Config { worlds: 24, margin_tiebreak: true, ..Config::default() };
         let a = decide(cfg, &req(11)).unwrap();
         assert_eq!(a, decide(cfg, &req(11)).unwrap());
         moved |= a.moves != decide(cfg, &req(12)).unwrap().moves;
@@ -192,7 +279,7 @@ fn whole_hands_at_all_four_seats_are_legal_under_every_declaration() {
                 plays: plays.clone(),
                 seed: rng.next_u64(),
             };
-            let d = decide(Config { worlds: 8, margin_tiebreak: true }, &req).unwrap();
+            let d = decide(Config { worlds: 8, margin_tiebreak: true, ..Config::default() }, &req).unwrap();
             assert!(rules.legal(hands[s as usize], rec.led()) >> d.tile & 1 == 1, "decl {decl}: an illegal tile");
             hands[s as usize] &= !(1 << d.tile);
             plays.push((s, d.tile));
@@ -216,7 +303,15 @@ fn a_request_that_misstates_the_record_is_refused() {
 #[test]
 fn every_source_file_carries_the_fence_token() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    for f in ["Cargo.toml", "src/lib.rs", "src/main.rs", "src/sampling.rs", "tests/demon.rs"] {
+    for f in [
+        "Cargo.toml",
+        "src/lib.rs",
+        "src/main.rs",
+        "src/sampling.rs",
+        "src/hand_model.rs",
+        "src/bidding.rs",
+        "tests/demon.rs",
+    ] {
         let text = std::fs::read_to_string(root.join(f)).unwrap();
         let head: String = text.lines().take(12).collect::<Vec<_>>().join("\n");
         assert!(head.contains("STRATEGY-FUSION FENCE"), "{f} lacks the fence token at its top");

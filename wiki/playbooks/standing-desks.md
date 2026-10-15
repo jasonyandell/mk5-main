@@ -88,7 +88,8 @@ first, and let the central authority manage only links and lookups.
   at `nice` 10 and kills it at 300 s. Five minutes per run is the house rule unless there is a
   really good reason, and the reason gets written down (`--timeout`). A runner that fans out
   wraps each batch, so one batch takes one slot. Tests, merges and interactive work don't take
-  slots. Nice keeps the shop responsive, and the slots keep wall-clock players (Walt thinks on
+  slots. Blocked commands retry every 50 ms so they can catch openings between
+  chained batches (#167); this does not promise FIFO ordering. Nice keeps the shop responsive, and the slots keep wall-clock players (Walt thinks on
   a clock) from being measured on a crowded machine.
 - **Plunge is production.** Read-only, unless Jason approves a specific change. Plunge merges
   are Jason's call.

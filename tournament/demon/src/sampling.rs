@@ -52,6 +52,44 @@ pub(crate) fn sample(fiber: &mut Fiber, n: usize, rng: &mut SplitMix) -> Result<
     Ok((worlds, false))
 }
 
+/// Exact enumeration with integer likelihoods, or IID draws from the modeled
+/// posterior by rejection. No self-normalized importance approximation, sample
+/// impoverishment, hard exclusion, or silent return to a uniform belief.
+pub(crate) fn posterior(
+    fiber: &mut Fiber,
+    n: usize,
+    rng: &mut SplitMix,
+    bound: u32,
+    likelihood: impl Fn(&[u32; 4]) -> u32,
+) -> Result<(Vec<[u32; 4]>, Vec<u32>, bool, usize), String> {
+    let total = fiber.size();
+    if total <= 0 {
+        return Err("no hidden deal fits the record".into());
+    }
+    if bound == 1 {
+        let (worlds, exact) = sample(fiber, n, rng)?;
+        let len = worlds.len();
+        return Ok((worlds, vec![1; len], exact, len));
+    }
+    if total as usize <= n {
+        let worlds = fiber.worlds();
+        let weights = worlds.iter().map(&likelihood).collect();
+        return Ok((worlds, weights, true, total as usize));
+    }
+    let mut worlds = Vec::with_capacity(n);
+    let mut proposals = 0;
+    while worlds.len() < n {
+        let w = fiber.world_at(below(rng, total as u64) as i64);
+        let weight = likelihood(&w);
+        assert!(weight > 0 && weight <= bound);
+        proposals += 1;
+        if below(rng, bound as u64) < weight as u64 {
+            worlds.push(w);
+        }
+    }
+    Ok((worlds, vec![1; n], false, proposals))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,5 +134,32 @@ mod tests {
         assert_eq!(sample(&mut fiber, 6, &mut SplitMix::new(7)).unwrap(), (all, true));
         let mut impossible = Fiber::new(0, own, played, [1; 4], [0, 0xf, 0xf, 0xf]);
         assert!(sample(&mut impossible, 6, &mut SplitMix::new(7)).is_err());
+    }
+
+    #[test]
+    fn posterior_draws_match_enumerated_likelihoods_and_never_exclude_a_world() {
+        let played = ((1 << 28) - 1) & !0xf;
+        let mut fiber = Fiber::new(0, 1, played, [1; 4], [0; 4]);
+        let likelihood = |w: &[u32; 4]| if w[1] == 2 { 9 } else { 1 };
+        let (all, weights, exact, proposals) = posterior(&mut fiber, 6, &mut SplitMix::new(7), 9, likelihood).unwrap();
+        assert!(exact);
+        assert_eq!(proposals, 6);
+        assert_eq!(weights.iter().sum::<u32>(), 22); // two high, four low
+        assert_eq!(weights, all.iter().map(likelihood).collect::<Vec<_>>());
+        let mut counts = vec![0; 6];
+        let mut rng = SplitMix::new(123456);
+        for _ in 0..30_000 {
+            let (draws, weights, exact, _) = posterior(&mut fiber, 1, &mut rng, 9, likelihood).unwrap();
+            assert!(!exact);
+            assert_eq!(weights, vec![1]);
+            counts[all.iter().position(|w| w == &draws[0]).unwrap()] += 1;
+        }
+        for (i, w) in all.iter().enumerate() {
+            let want = 30_000.0 * likelihood(w) as f64 / 22.0;
+            assert!((counts[i] as f64 - want).abs() < 350.0, "{counts:?}");
+        }
+        let a = posterior(&mut fiber, 4, &mut SplitMix::new(8), 9, likelihood).unwrap();
+        let b = posterior(&mut fiber, 4, &mut SplitMix::new(8), 9, likelihood).unwrap();
+        assert_eq!(a, b);
     }
 }

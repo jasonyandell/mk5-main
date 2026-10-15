@@ -78,20 +78,51 @@ class DemonSeat:
         from arena.cli import parse_bidder
 
         cfg = p.config
-        self.bidder = parse_bidder(cfg["bidder"], device="cpu", gus_adapter=None)
+        self.bid_spec = cfg["bidder"]
+        self.bidder = parse_bidder("heuristic" if self.bid_spec.startswith("pimc") else self.bid_spec,
+                                   device="cpu", gus_adapter=None)
+        self._bid_seats = {}
+        self._forecasts = {}
         self.game = game
         self.hand_no = 1
+        args = [str(artifacts / BINARY), str(cfg["worlds"]), "1" if cfg["margin_tiebreak"] else "0"]
+        if "declaration_weight" in cfg:
+            args.append(str(cfg["declaration_weight"]))
         self.proc = subprocess.Popen(
-            [str(artifacts / BINARY), str(cfg["worlds"]), "1" if cfg["margin_tiebreak"] else "0"],
+            args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
         self.decisions: list[dict] = []  # per decision: worlds, ms (for cost reports)
 
     # BidPolicy
     def bid(self, ctx, rng):
+        self._bid_seats[tuple(ctx.hand)] = ctx.seat
+        if self.bid_spec.startswith("pimc:"):
+            # A whole-game experiment: minimum point raise, partner pass,
+            # and a stated threshold on the optimistic DD forecast.
+            target = min((b for b in ctx.legal if b <= 42), default=None)
+            if target is None or (ctx.high_seat >= 0 and ctx.high_seat % 2 == ctx.seat % 2):
+                return 0
+            decl, reply = self._forecast(ctx.hand, ctx.seat, target)
+            cutoff = float(self.bid_spec.split(":")[2])
+            return target if reply["makes"][decl] / reply["worlds"] >= cutoff else 0
         return self.bidder.bid(ctx, rng)
 
     def declare(self, hand, bid, rng):
+        if self.bid_spec.startswith("pimc"):
+            return self._forecast(hand, self._bid_seats[tuple(hand)], bid)[0]
         return self.bidder.declare(hand, bid, rng)
+
+    def _forecast(self, hand, seat, bid):
+        key = (self.hand_no, tuple(hand), seat, bid)
+        if key not in self._forecasts:
+            n = int(self.bid_spec.split(":")[1])
+            reply = self._ask({"op":"forecast", "hand_mask":sum(1 << t for t in hand),
+                               "seat":seat, "bid":bid, "worlds":n,
+                               "seed":decision_seed(self.game, self.hand_no, seat, -1)})
+            heuristic = self._ask({"op":"declaration_model", "hand_mask":sum(1 << t for t in hand)})["decl"]
+            decl = max(range(10), key=lambda d:(reply["makes"][d], d == heuristic, -d))
+            self._forecasts[key] = decl, reply
+        return self._forecasts[key]
 
     # PlayPolicy
     def choose(self, states, bid_values: Sequence[int], marks=None, marks_to_win: int = 7) -> list[int]:
@@ -107,7 +138,7 @@ class DemonSeat:
                    "leader": s.trick_leader, "points": list(s.team_points),
                    "seed": decision_seed(self.game, self.hand_no, seat, len(s.play_history))}
             reply = self._ask(req)
-            self.decisions.append({"worlds": reply["worlds"], "ms": reply["ms"]})
+            self.decisions.append({k: reply[k] for k in ("worlds", "ms", "proposals", "mass") if k in reply})
             slots.append(dealt.index(int(reply["tile"])))
         return slots
 

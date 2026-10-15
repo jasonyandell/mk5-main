@@ -45,6 +45,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | issues-165-167 | Demon declaration reading and contract forecasts; queued CPU jobs retry promptly]
+
+**Updated:** [[demon-next-form-2026-10-14]] (opt-in candidates; independent confirmations running), [[the-demon]], [[scenario-player]], [[standing-desks]] (50 ms retry, unchanged capacity and limits). Existing tournament pins remain unchanged.
+
 ## [2026-10-14 | 228812ff | PIMC's remaining knobs: beliefs, bidding and budget allocation]
 
 **Updated:** [[the-demon]] distinguishes exact per-world search, the inconclusive larger-sample trial, untested PIMC improvements and the strategy-fusion limit; links [[silas]]'s inference and the primary literature.

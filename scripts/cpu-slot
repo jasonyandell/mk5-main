@@ -53,7 +53,9 @@ def take_slot():
         if not waited:
             print(f"cpu-slot: all {args.slots} slots busy; waiting", file=sys.stderr, flush=True)
             waited = True
-        time.sleep(5)
+        # Chained batches can release and reacquire a slot between long polls.
+        # Retry promptly so queued sessions can catch those openings (#167).
+        time.sleep(0.05)
 
 
 fd, slot = take_slot()

@@ -111,6 +111,10 @@ pins keep their original sampler.
 
 ## Is sample count the only remaining strength knob?
 
+The declaration-reader and contract-forecast candidates are now implemented;
+their separate development/confirmation protocol is in [[demon-next-form-2026-10-14]].
+The existing tournament pins remain unchanged pending those measurements.
+
 No. The per-world solve is already exact through the end of the hand; deeper
 search cannot improve that world's answer. More worlds reduce sampling error
 in the chosen PIMC expectation. Transposition tables and exact pruning reduce

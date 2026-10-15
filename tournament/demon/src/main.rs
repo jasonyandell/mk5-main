@@ -92,13 +92,35 @@ fn answer(cfg: Config, line: &str) -> Value {
             match request(&v).and_then(|r| table_agrees(&v, &r)).and_then(|r| decide(cfg, &r)) {
                 Ok(d) => json!({
                     "tile": d.tile, "worlds": d.worlds, "exact": d.exact, "nodes": d.nodes,
+                    "mass": d.mass, "proposals": d.proposals,
                     "ms": t0.elapsed().as_secs_f64() * 1e3,
                     "moves": d.moves.iter().map(|&(t, m, g)| json!([t, m, g])).collect::<Vec<_>>(),
                 }),
                 Err(e) => json!({"error": e}),
             }
         }
-        _ => json!({"error": "op must be \"play\" or \"hello\""}),
+        Some("declaration_model") => match v.get("hand_mask").and_then(Value::as_u64) {
+            Some(h) if h < (1 << 28) && h.count_ones() == 7 => {
+                json!({"decl": demon::hand_model::heuristic_declaration(h as u32)})
+            }
+            _ => json!({"error": "hand_mask must contain seven of the 28 tiles"}),
+        },
+        Some("forecast") => {
+            let t0 = Instant::now();
+            let run = || -> Result<_, String> {
+                let h = u32::try_from(int(&v, "hand_mask")?).map_err(|_| "hand_mask out of range")?;
+                let s = u8::try_from(int(&v, "seat")?).map_err(|_| "seat out of range")?;
+                let b = u32::try_from(int(&v, "bid")?).map_err(|_| "bid out of range")?;
+                let n = usize::try_from(int(&v, "worlds")?).map_err(|_| "worlds out of range")?;
+                demon::bidding::forecast(h, s, b, n, int(&v, "seed")?)
+            };
+            match run() {
+                Ok(f) => json!({"makes": f.makes, "worlds": f.worlds, "nodes": f.nodes,
+                               "ms": t0.elapsed().as_secs_f64() * 1e3}),
+                Err(e) => json!({"error":e}),
+            }
+        }
+        _ => json!({"error": "op must be play, hello, forecast or declaration_model"}),
     }
 }
 
@@ -108,9 +130,15 @@ fn main() {
         [_, n, tb] => Config {
             worlds: n.parse().expect("worlds is a positive integer"),
             margin_tiebreak: tb == "1",
+            ..Config::default()
+        },
+        [_, n, tb, ratio] => Config {
+            worlds: n.parse().expect("worlds is a positive integer"),
+            margin_tiebreak: tb == "1",
+            declaration_weight: ratio.parse().expect("declaration weight is an integer 1..=1024"),
         },
         [_] => Config::default(),
-        _ => panic!("usage: demon [<worlds> <margin-tiebreak 0|1>]"),
+        _ => panic!("usage: demon [<worlds> <margin-tiebreak 0|1> [<declaration-weight>]]"),
     };
     let stdin = std::io::stdin();
     let mut out = std::io::stdout().lock();

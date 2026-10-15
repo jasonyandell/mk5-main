@@ -12,6 +12,7 @@ minimax; here it plays real faceoff games through the tournament's seat.
 from __future__ import annotations
 
 import json
+import random
 import subprocess
 from pathlib import Path
 
@@ -44,10 +45,13 @@ def _game(spec: F.FaceoffSpec, participants: dict, progress: Path) -> dict:
     return F.play_game(spec.__dict__, 0, 0, str(progress), participants)
 
 
-def test_the_demon_plays_whole_games_legally_and_the_same_game_twice(working_tree_demon, tmp_path, monkeypatch):
+@pytest.mark.parametrize("bidder,weight", [("heuristic", 1), ("heuristic", 32),
+                                          ("pimc-declare:2", 1), ("pimc:2:0.75", 1)])
+def test_the_demon_plays_whole_games_legally_and_the_same_game_twice(working_tree_demon, tmp_path, monkeypatch, bidder, weight):
     monkeypatch.setattr(S, "materialize", lambda p: working_tree_demon)
     head = _git("rev-parse", "HEAD")
-    d = demon(head, {p: _git("rev-parse", f"HEAD:{p}") for p in DEMON_SOURCE}, worlds=8)
+    d = demon(head, {p: _git("rev-parse", f"HEAD:{p}") for p in DEMON_SOURCE}, worlds=8,
+              bidder=bidder, declaration_weight=weight)
     foe = Participant("heur-rand", "arena", {"spec": "heuristic+random"})
     participants = {p.id: p.to_record() for p in (d, foe)}
     spec = F.FaceoffSpec("marks7", d.id, foe.id, 0x5EED, 1, "20261014T000000Z")
@@ -61,6 +65,31 @@ def test_the_demon_plays_whole_games_legally_and_the_same_game_twice(working_tre
 def test_decision_seeds_depend_on_the_place_in_the_faceoff_only():
     assert decision_seed("g", 1, 0, 0) == decision_seed("g", 1, 0, 0)
     assert len({decision_seed("g", h, s, n) for h in (1, 2) for s in range(4) for n in (0, 4)}) == 16
+
+
+def test_native_declaration_model_matches_arena_bidder(working_tree_demon):
+    from arena.bidders import HeuristicBidder
+
+    rng = random.Random(666888)
+    hands = [tuple(sorted(rng.sample(range(28), 7))) for _ in range(2000)]
+    requests = [json.dumps({"op": "declaration_model", "hand_mask": sum(1 << t for t in hand)})
+                for hand in hands]
+    result = subprocess.run([str(working_tree_demon / BINARY)], input="\n".join(requests) + "\n",
+                            capture_output=True, text=True, check=True)
+    got = [json.loads(line)["decl"] for line in result.stdout.splitlines()]
+    bidder = HeuristicBidder()
+    assert got == [bidder.declare(hand, 30, rng) for hand in hands]
+
+
+def test_new_models_get_distinct_participant_ids():
+    base = demon("a" * 40, {}, worlds=100)
+    read = demon("a" * 40, {}, worlds=100, declaration_weight=32)
+    bid = demon("a" * 40, {}, worlds=100, bidder="pimc:16:0.875")
+    assert len({p.id for p in (base, read, bid)}) == 3
+    assert "declaration_weight" not in base.config
+    assert read.config["declaration_weight"] == 32
+    with pytest.raises(ValueError):
+        demon("a" * 40, {}, worlds=100, declaration_weight=0)
 
 
 def test_the_pinned_build_checks_its_trees(tmp_path):

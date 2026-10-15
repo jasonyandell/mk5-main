@@ -27,6 +27,7 @@ Kinds, and what pins each:
 from __future__ import annotations
 
 import json
+import hashlib
 from dataclasses import dataclass, field
 
 SCHEMA = "texas42-tournament-participant/1"
@@ -135,24 +136,39 @@ DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
 
 
 def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
-          bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler") -> Participant:
+          bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler",
+          declaration_weight: int = 1) -> Participant:
     # The source pin selects the sampler; this describes it without changing
     # the bytes of already-published participant records.
     tb = "" if margin_tiebreak else "-notb"
+    if not 1 <= declaration_weight <= 1024:
+        raise ValueError("declaration_weight must be 1..=1024")
+    suffix = f"-read{declaration_weight}" if declaration_weight != 1 else ""
+    if bidder != "heuristic":
+        suffix += "-bid" + hashlib.sha256(bidder.encode()).hexdigest()[:8]
+    extra = {"declaration_weight": declaration_weight} if declaration_weight != 1 else {}
+    belief_note = (f" Declaration evidence uses a soft heuristic model: matching original "
+                   f"hands have likelihood {declaration_weight}, others 1; posterior draws are IID "
+                   f"by rejection, and small fibers use exact weighted sums."
+                   if declaration_weight != 1 else "")
+    bid_note = (f"Bids with the arena's `{bidder}` bidder, as E[Q] n=10 does. "
+                if bidder == "heuristic" else
+                f"Bidder `{bidder}`: common-world double-dummy contract forecasts; "
+                f"minimum point raise and partner pass in full bidding mode. ")
     return Participant(
-        id=f"demon-pimc-n{worlds}{tb}-{commit[:8]}",
+        id=f"demon-pimc-n{worlds}{tb}{suffix}-{commit[:8]}",
         kind="demon",
         pin={"repo": "jasonyandell/mk5-main", "commit": commit, "trees": dict(trees)},
-        config={"worlds": worlds, "margin_tiebreak": margin_tiebreak, "bidder": bidder},
+        config={"worlds": worlds, "margin_tiebreak": margin_tiebreak, "bidder": bidder, **extra},
         needs=("cargo",),
         note=(f"STRATEGY-FUSION FENCE: the Demon, classic PIMC. At each play it draws {worlds} "
               f"worlds from its fiber ({sampler_note}; the whole fiber when "
               f"smaller), solves each double dummy (Silas's ClairvoyantSolver, make-or-set of the "
               f"contract), and plays the tile that makes or sets in the most worlds"
               f"{', then the best summed double-dummy margin' if margin_tiebreak else ''}, then the "
-              f"lowest tile id. Bids with the arena's `{bidder}` bidder, as E[Q] n=10 does. "
+              f"lowest tile id. {bid_note}"
               f"Built on the CPU from the pinned git trees. A fenced measuring stick, never a "
-              f"foundation."),
+              f"foundation.{belief_note}"),
     )
 
 

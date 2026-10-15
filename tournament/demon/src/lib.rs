@@ -29,6 +29,8 @@
 //! solver's values are exact (its transposition table changes the work, never
 //! a value), and every tie is broken by a fixed rule.
 
+pub mod bidding;
+pub mod hand_model;
 mod sampling;
 
 use scenario_core::fiber::Fiber;
@@ -37,18 +39,21 @@ use scenario_core::planner::{Rec, SplitMix};
 use scenario_core::rules::{N_DECLS, Rules};
 use silas::{Bid, ClairvoyantSolver, Contract, Domino, DominoSet, Objective, OpenPosition, Seat};
 
-/// The Demon's two knobs.
+/// The Demon's solve budget and decision model.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Config {
     /// Worlds drawn per decision (the whole fiber when it is no larger).
     pub worlds: usize,
     /// Break exact make-count ties by summed double-dummy margin.
     pub margin_tiebreak: bool,
+    /// Likelihood ratio for the heuristic's declared trump versus another
+    /// pip trump. One is the uniform baseline; supported range 1..=1024.
+    pub declaration_weight: u32,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { worlds: 32, margin_tiebreak: true }
+        Config { worlds: 32, margin_tiebreak: true, declaration_weight: 1 }
     }
 }
 
@@ -74,16 +79,20 @@ pub struct Request {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Decision {
     pub tile: u8,
-    /// Each legal tile with the worlds where the declaring side makes after
-    /// it, and (when a margin tiebreak ran for it) its summed double-dummy
-    /// margin for the declaring side.
+    /// Each legal tile with the mass where the declaring side makes after
+    /// it, and (when a margin tiebreak ran for it) its weighted double-dummy
+    /// margin. Divide by `mass`; sampled worlds each have unit weight.
     pub moves: Vec<(u8, u32, Option<i64>)>,
     /// Worlds solved (zero when only one tile was legal).
     pub worlds: usize,
-    /// The worlds were the whole fiber.
+    /// The whole fiber was integrated exactly under the stated model.
     pub exact: bool,
     /// Positions the solver searched.
     pub nodes: u64,
+    /// Uniform proposals used by rejection, or worlds enumerated.
+    pub proposals: usize,
+    /// Denominator of make/margin sums: samples, or exact likelihood mass.
+    pub mass: u32,
 }
 
 /// The public record after `plays`, each play checked as the seat to move's
@@ -109,8 +118,8 @@ pub fn record(decl: u8, bidder: u8, plays: &[(u8, u8)]) -> Result<(Rules, Rec), 
 /// STRATEGY-FUSION FENCE: the Demon's decision. Per-world clairvoyant values,
 /// averaged: a fenced opponent's choice, never a seat's value anywhere else.
 pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
-    if cfg.worlds == 0 {
-        return Err("the Demon needs at least one world".into());
+    if cfg.worlds == 0 || cfg.worlds > 1_000_000 || !(1..=1024).contains(&cfg.declaration_weight) {
+        return Err("worlds must be 1..=1000000 and declaration weight 1..=1024".into());
     }
     let (rules, rec) = record(req.decl, req.bidder, &req.plays)?;
     if rec.finished() {
@@ -136,11 +145,26 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     let legal = rules.legal(req.hand, rec.led());
     let tiles: Vec<u8> = (0..28u8).filter(|&t| legal >> t & 1 == 1).collect();
     if tiles.len() == 1 {
-        return Ok(Decision { tile: tiles[0], moves: vec![(tiles[0], 0, None)], worlds: 0, exact: false, nodes: 0 });
+        return Ok(Decision {
+            tile: tiles[0],
+            moves: vec![(tiles[0], 0, None)],
+            worlds: 0,
+            exact: false,
+            nodes: 0,
+            proposals: 0,
+            mass: 0,
+        });
     }
 
     let mut fiber = Fiber::new(req.seat, req.hand, rec.played, sizes, rec.forbid);
-    let (worlds, exact) = sampling::sample(&mut fiber, cfg.worlds, &mut SplitMix::new(req.seed))?;
+    let known = req.plays.iter().filter(|&&(s, _)| s == req.bidder).fold(0, |m, &(_, t)| m | 1 << t);
+    // The bidder knows its own hand; its declaration adds no evidence to it.
+    let ratio = if req.seat == req.bidder || req.decl >= 7 { 1 } else { cfg.declaration_weight };
+    let (worlds, weights, exact, proposals) =
+        sampling::posterior(&mut fiber, cfg.worlds, &mut SplitMix::new(req.seed), ratio, |w| {
+            hand_model::declaration_likelihood(w[req.bidder as usize] | known, req.decl, ratio)
+        })?;
+    let mass = weights.iter().sum();
     let physics = ZebPhysics::new(req.decl).expect("checked above").physics();
     let bid = Bid::number(req.bid).map_err(|e| e.0)?;
     let contract = Contract::new(seat(req.bidder).expect("checked above"), bid, physics.clone()).map_err(|e| e.0)?;
@@ -161,14 +185,14 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     let template = ClairvoyantSolver::new(&physics);
     let mut solvers: Vec<_> = positions.iter().map(|_| template.fresh()).collect();
     let mut makes = vec![0u32; tiles.len()];
-    for (p, solver) in positions.iter().zip(&mut solvers) {
+    for ((p, solver), &weight) in positions.iter().zip(&mut solvers).zip(&weights) {
         let values = solver.solve(p, Objective::Make).map_err(|e| e.0)?;
         for (i, &t) in tiles.iter().enumerate() {
-            makes[i] += values.value(domino(t).expect("a tile")).expect("a legal tile") as u32;
+            makes[i] += weight * values.value(domino(t).expect("a tile")).expect("a legal tile") as u32;
         }
     }
     let declaring = req.seat % 2 == req.bidder % 2;
-    let n = positions.len() as u32;
+    let n = mass;
     let score = |m: u32| if declaring { m } else { n - m };
     let best = makes.iter().map(|&m| score(m)).max().expect("a legal tile");
     let tied: Vec<usize> = (0..tiles.len()).filter(|&i| score(makes[i]) == best).collect();
@@ -177,12 +201,12 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     let mut margins: Vec<Option<i64>> = vec![None; tiles.len()];
     // Finish all tied tiles of one world together, then drop its table. The
     // much larger margin searches never accumulate across the whole sample.
-    for (p, mut solver) in positions.iter().zip(solvers) {
+    for ((p, mut solver), &weight) in positions.iter().zip(solvers).zip(&weights) {
         if cfg.margin_tiebreak && tied.len() > 1 {
             for &i in &tied {
                 let tile = domino(tiles[i]).expect("a tile");
                 let margin = solver.value(&p.play(tile).map_err(|e| e.0)?, Objective::Margin) as i64;
-                *margins[i].get_or_insert(0) += margin;
+                *margins[i].get_or_insert(0) += margin * weight as i64;
             }
         }
         nodes += solver.nodes();
@@ -196,5 +220,7 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
         worlds: positions.len(),
         exact,
         nodes,
+        proposals,
+        mass,
     })
 }
