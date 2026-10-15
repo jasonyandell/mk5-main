@@ -25,7 +25,7 @@ No confirmation had started. The new participant factory records the allowed
 declarations explicitly and uses a new identity. Workers exclude nonstraight
 PIMC records from scheduling and ratings, and preserve incompatible pending
 claims under `unsupported/` without continuing them. Historical participant
-records and raw game bytes remain unchanged.
+records and raw game bytes remain unchanged. Source: [[1273bc97]].
 
 The earlier [[demon-next-form-2026-10-14]] bidder confirmation used declaration
 8 in **87 of 5,620 hands**. Its 324–188 result describes the ten-declaration

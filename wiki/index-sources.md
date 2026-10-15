@@ -2,6 +2,7 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/1273bc97|1273bc97]] — restrict new PIMC bidders to straight declarations, exclude incompatible historical policies and correct study scope (complete)
 - [[sources/4454f603|4454f603]] — fenced declaration evidence and PIMC bidding; the later straight-42 scope correction applies (complete)
 - [[sources/228812ff|228812ff]] — exact margins by repeated threshold queries, with held-out parity and performance evidence (complete)
 - [[sources/3cd6ae53|3cd6ae53]] — compact exact transpositions, interchangeable plays and distinct-world sampling (complete)

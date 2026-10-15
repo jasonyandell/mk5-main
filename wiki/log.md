@@ -45,7 +45,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
-## [2026-10-15 | issue-165 | Demon versus Zeb: correct the declaration domain before measuring strength]
+## [2026-10-15 | 1273bc97 | Demon versus Zeb: correct the declaration domain before measuring strength]
 
 **Added:** [[demon-vs-zeb-2026-10-15]] (active; pinned Zeb 0.4.0, whole-seat timing and independent confirmation protocol). **Corrected:** [[demon-next-form-2026-10-14]] (ten-declaration result, not straight 42; promotion withdrawn), [[the-demon]], [[tournament]], [[scenario-player]]. Initial invalid trials preserved publicly; new PIMC identities restrict declarations, workers exclude incompatible records and preserve their pending claims.
 
