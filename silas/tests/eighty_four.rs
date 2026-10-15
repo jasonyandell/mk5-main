@@ -58,10 +58,17 @@ fn the_readme_example_runs_as_written() -> Result<()> {
     let root = Frame::new(auction, fives, Seat::S0, bidder, vec![])?;
 
     let query = include_str!("../examples/six-five-guarded.silas").parse::<Query>()?.compile(&Registry::standard())?;
-    let belief = Belief::uniform_for(root, &query, 1000, &mut Budget::new(10_000_000))?;
+    let belief = Belief::uniform_for(root.clone(), &query, 1000, &mut Budget::new(10_000_000))?;
     let p = query.summarize(&belief, &mut Budget::new(10_000_000))?.event_probability();
     assert_eq!((p.value().to_string(), p.authority().is_exact()), ("33/95".to_string(), true));
     // It resolved the three tiles the query reads, and nothing else.
     assert_eq!((belief.len(), belief.unresolved().len()), (27, 18));
+    // The construction example continues from that same root and query.
+    let space = WorldSpace::new(root, &query, 1000, &mut Budget::new(10_000_000))?;
+    assert_eq!(space.count(), 138_625_344);
+    assert_eq!(space.cell_count(), 10);
+    assert_eq!(space.probability().value().to_string(), "33/95");
+    let first = space.unrank(0, &mut Budget::new(10_000_000))?;
+    assert!(space.frame().contains(&first));
     Ok(())
 }

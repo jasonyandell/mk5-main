@@ -32,7 +32,7 @@ let auction = Auction::won_by(Seat::S0, Bid::number(84)?)?;
 let root = Frame::new(auction, fives, Seat::S0, bidder, vec![])?;
 
 let query = include_str!("examples/six-five-guarded.silas").parse::<Query>()?.compile(&Registry::standard())?;
-let belief = Belief::uniform_for(root, &query, 1000, &mut Budget::new(10_000_000))?;
+let belief = Belief::uniform_for(root.clone(), &query, 1000, &mut Budget::new(10_000_000))?;
 let p = query.summarize(&belief, &mut Budget::new(10_000_000))?.event_probability();
 assert_eq!((p.value().to_string(), p.authority().is_exact()), ("33/95".to_string(), true));
 ```
