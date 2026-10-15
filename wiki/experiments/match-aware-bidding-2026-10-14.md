@@ -514,6 +514,91 @@ stands. An overcaller is set 57% of the time, not 17%. The forecast over an oppo
 now nearly honest (a ≈ 0): an opponent's bid shows less strength when everyone contests. The
 calibration's slope does not move. Whether any of this matters is C's question.
 
+### #170 summary
+
+**`over` survives a table that contests back, at about two fifths of its size, and its
+constants matter. Adding `over,cal` to `met` is worth +5.6 [+1.7, +9.4] points of game share
+against a bidder that contests back, against +14.3 [+11.5, +17.2] against a passive `met` table
+on the same 384 clusters (0.39 [0.14, 0.61] of the edge survives).** Against that table, the
+frozen bidder wins only 43.5% [40.8, 46.2] of games (chance 50%). The refit constants beat the
+frozen ones, and a replication on 192 fresh clusters gives 43.0% [39.6, 46.4]. The registered
+rule therefore recommends `met,over,cal` with the refit constants. One exploratory arm adds a
+catch. Against deployed Zeb's passive bidder, the refit bidder wins 67.2% [63.3, 71.1], which
+is −3.4 [−6.0, −0.8] points behind the frozen one on the same clusters. Each set of constants is
+right for the table it was fitted on. The no-84 arm (`over,cal` alone) wins 70.1% [67.2, 72.8]
+against deployed Zeb. The 84 adds +1.0 [−0.8, +2.9] on top, which this size cannot resolve.
+Every arm has 0 drops. AA is exact (16 of 16 mirrored), and REPRO matches 8 of 8 games, turn for
+turn. Pre-registered at `881197d5`; the refit was frozen at `c9ed282e`.
+
+### #170 results
+
+| arm | A vs B | games | A's game share [95%] | A on team 0 / team 1 |
+|---|---|---|---|---|
+| AA | met,over,cal vs itself | 32 | 50% (16 of 16 clusters mirrored exactly) | — |
+| **C** | met,over,cal (frozen) vs R (refit) | 768 | **43.49% [40.76, 46.22]** | 39.3 / 47.7 |
+| CM | met vs R | 768 | 37.89% [34.90, 40.76] | 37.2 / 38.5 |
+| O | over,cal (no 84) vs hand | 768 | 70.05% [67.19, 72.79] | 65.9 / 74.2 |
+| CR *(exploratory)* | C on seeds 1097–1144 | 384 | 42.97% [39.58, 46.35] | 34.9 / 51.0 |
+| FR *(exploratory)* | R vs hand, seeds 1001–1048 | 384 | 67.19% [63.28, 71.09] | 66.2 / 68.2 |
+
+Paired by cluster (10,000 bootstrap resamples):
+
+- **E = C − CM**, the gain from `over,cal` against the contesting table: **+5.60 [+1.69,
+  +9.38]** points. Its passive-table twin, FM − 50 on the same clusters, is +14.32 [+11.46,
+  +17.19]. The ratio is 0.39 [0.14, 0.61].
+- **F − O**, what `met`'s 84 adds on top of `over,cal` against deployed Zeb: +1.04 [−0.78,
+  +2.86] points.
+- **FR − F** *(exploratory)*, refit against frozen with deployed Zeb as the opponent: −3.39
+  [−5.99, −0.78] points (192 clusters; F there is 70.6% [66.4, 74.7]).
+
+**The auction in C** (turns where an opponent held the bid):
+
+| side | turns | overcalls | overcall stood | its side took the mark | made / forecast |
+|---|---|---|---|---|---|
+| frozen | 6,030 | 80.6% | 69.3% | 42.3% | 42.9% / 38.6% |
+| refit | 5,733 | 64.2% | 33.3% | 54.1% | 53.2% / 54.6% |
+
+In O, `over,cal` alone overcalls 84.8% of those turns. Its contracts made 39.7% against a
+forecast of 39.7%: the frozen calibration is honest against the passive field it was fitted on,
+and 4 points cold in C.
+
+**Reading.**
+
+- *The question was the right one to ask before shipping.* `over` keeps a real edge (E > 0,
+  lower bound +1.7), but most of #160's +14 came from a table that never answered.
+- *The frozen constants lose to the refit because they misprice passing.* Against a contesting
+  table, passing over an opponent leaves our side the mark about 40% of the time. The frozen
+  model says 18%, so the frozen bidder overcalls on hands where passing is nearly as good. It
+  contests 81% of opponent-held turns and its side takes 42% of those marks. The refit
+  contests 64% and takes 54%. The refit's forecast is also honest there (53.2% made against
+  54.6%), while the frozen one runs 4 points cold.
+- *No single set of constants wins both tables.* The refit gains about 6.5 points against a
+  table that contests and gives back about 3.4 against one that does not (FR, exploratory, 192
+  clusters). Which of the two the humans Zeb meets resemble is not measured here. The arena still
+  seats no opponent who models you across hands ([[book-assumptions]]). The long-run object is a
+  field model that reads the table it is at, not either frozen set.
+- *The seat swap shows a team effect in C and CR.* The frozen bidder does worse on team 0 (39.3
+  and 34.9) than on team 1 (47.7 and 51.0). The duplicate pairing averages it out, and AA is
+  exact, so it is an interaction with who bids first in hand one, not a harness bias. It is
+  reported, not explained.
+- *The 84 is a small part.* Without it, `over,cal` alone wins 70.1% against deployed Zeb. The
+  84 adds +1.0 [−0.8, +2.9], in line with the about +1 that #160 put on the mark bids.
+
+**Deviations from the registration.** (1) The Mayor held all heavy runs for the Demon
+confirmation trial (#165) from 05:07 to 09:47. CM b0023 and b0024 were already running and
+finished under the hold. They were filed by hand: the scheduler, which was stopped, would have
+renamed them itself. Nothing else ran during the hold (`logs/sched.log`). (2) CR and FR were added
+after C was read. They are exploratory, and `sched.py`, `grade.py` and `blocks.json` gained
+only those two arms (hashes became `3e057649d834`, `df2c15e04554` and `9c212ec08eed`). `sim.py`
+and `fit.py` are unchanged.
+
+**Decision.** By the registered rule (E's lower bound > 0, C's upper bound < 50%): recommend
+`met,over,cal` for zeb 0.4.1 with the refit constants (`out/refit.json`), Jason's call. With
+it goes the caveat the rule did not foresee: against a passive table the refit costs about 3
+points of game share relative to the frozen constants. Both beat deployed Zeb by 17 points or
+more. If the humans Zeb will meet mostly pass over an opening, the frozen constants are the
+better bet. No zeb crate or default changed here.
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/match-aware-bidding/`: every block's
@@ -540,6 +625,17 @@ python -u scratch/met2/fit_cal.py > scratch/met2/out/cal.json
 python -u scratch/met2/sched.py forecasts; python -u scratch/met2/plan.py
 python -u scratch/met2/run_all.py AA VALID F FM
 python -u scratch/met2/grade.py AA VALID F FM
+```
+
+#170 is under `zeb/match-aware-bidding-3/` (HF commit `0aa92ed8`): the fit set (`out/FIT`), the
+refit (`out/refit.json`), every arm's games and priced turns (`out/<arm>/b*.json`), the grade,
+the log (with the hold), the scripts, `CARD.md` and `SHA256SUMS`. Recompute (#160's
+`zeb/match-aware-bidding*/` into `scratch/hf/zeb/` for the paired lines):
+
+```bash
+python -u scratch/m170/sched.py FIT; python -u scratch/m170/fit.py > scratch/m170/out/refit.json
+for a in AA C REPRO CM O CR FR; do python -u scratch/m170/sched.py $a; done
+python -u scratch/m170/grade.py > scratch/m170/out/grade.md
 ```
 
 ## Links

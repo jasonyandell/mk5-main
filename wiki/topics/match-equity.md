@@ -67,7 +67,10 @@ The hand law Zeb plays against itself is a coin to three places (the first shake
   84; the opponents at 6 are about a third of the gain. Its follow-up (#160) applied the
   one-mark theorem to the pass over an opponent's bid: overcall whenever the call's π beats
   passing's 18%. The bidder with that repair and a calibrated forecast wins 71.0% [69.0, 73.0]
-  of games against deployed Zeb and 63.4% [61.4, 65.4] against `met`.
+  of games against deployed Zeb and 63.4% [61.4, 65.4] against `met`. Against a table that
+  contests back (#170), the repair keeps +5.6 [+1.7, +9.4] points of its +14. Its field model
+  must be refit to that table: the frozen bidder wins 43.5% [40.8, 46.2] against the refit one,
+  while the refit gives back about 3 points against a passive table.
 
 ## Links
 

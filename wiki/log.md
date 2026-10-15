@@ -62,6 +62,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-15 | demon/attempt-1 | Complete native Zeb confirmation: joint criterion not met]
 
 **Completed:** [[demon-vs-zeb-2026-10-15]]; all 1,024 games and timings published, standard bar clears but match-aware win interval crosses chance. **Added:** [[demon-zeb-attempt-1]]. **Updated:** [[the-demon]] [[scenario-player]]. No candidate promotion; #165 remains open.
+## [2026-10-15 | 881197d5 | match-aware bidding #170: against a table that contests back, over keeps +5.6 [+1.7, +9.4] of its +14 points; the frozen bidder wins 43.5% [40.8, 46.2] vs the refit (replicated 43.0%); the refit gives back 3.4 vs a passive table; over,cal without the 84 wins 70.1%; A/A exact; no drops]
+
+**Updated:** [[match-aware-bidding-2026-10-14]] (§ #170; pre-registered at 881197d5, refit frozen at c9ed282e), [[match-equity]]. Data: `zeb/match-aware-bidding-3/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. No code change.
 
 ## [2026-10-15 | 7e00788a | Demon candidate frozen against native Zeb]
 
