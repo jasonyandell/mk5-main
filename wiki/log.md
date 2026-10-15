@@ -57,6 +57,9 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ## [2026-10-15 | 7e00788a | Demon candidate frozen against native Zeb]
 
+**Touched pages:** [[the-demon]] [[demon-vs-zeb-2026-10-15]] [[7e00788a]]
+**Updated:** Completed corrected development, native parity, explicit forecast declarations and confirmation protocol; evidence published, confirmation still running.
+
 ## [2026-10-15 | 98552881 | match-aware bidding follow-ups (#160): overcalling an opponent when the mark beats passing's 18% wins 71.0% [69.0, 73.0] of games vs deployed Zeb, 63.4% [61.4, 65.4] vs met; calibrated forecast honest out of sample; A/A exact; no drops]
 
 **Updated:** [[match-aware-bidding-2026-10-14]] (§ Follow-ups; pre-registered at 98552881, calibration frozen at 979124a1), [[match-equity]]. Code: `arena/zeb_bid.py` `over`, `cal` (default off). Data: `zeb/match-aware-bidding-2/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS. Follow-up: #170
