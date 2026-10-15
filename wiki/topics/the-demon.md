@@ -21,9 +21,9 @@ At each play the seat:
 
 1. replays the public record with Walt's `Rec` (`scenario/core/src/planner.rs`): the plays,
    the banked points and every void a seat has shown;
-2. draws 100 worlds from its fiber with Walt's exact-uniform sampler
-   (`scenario_core::fiber::sample_worlds`), or takes the whole fiber when it has 100 members
-   or fewer;
+2. draws the configured number of distinct worlds uniformly from its fiber, or takes
+   the whole fiber when it is no larger. A completion-count dynamic program un-ranks
+   each selected world without enumerating its predecessors;
 3. solves each world double dummy with Silas's `ClairvoyantSolver` ([[silas]]): exact
    make-or-set of the contract, all four hands face up, every seat playing perfectly;
 4. plays the tile that makes in the most worlds (sets, when defending). Exact ties go to the
@@ -45,7 +45,7 @@ opponent and why it is fenced.
   texas-42's Rust "scalar PI" (`walt/walt/src/strat/scalar.rs`) and its Python
   `exp5_core.Solver` compute the margin by tricks or points only. They have no make-or-set and
   no Python or Rust API in mk5. Forge's oracle and E[Q] are GPU-only.
-- **The sampler and the rules.** Walt's fiber sampler, record and rules tables, plus
+- **The sampler and the rules.** Walt's fiber completion counts, record and rules tables, plus
   `ZebPhysics` (`scenario/core/src/physics.rs`), which maps Zeb's declaration ids onto Silas's
   physics.
 - **The cross-game labs** (`~/code/plunge-walt-bridge/lab/`). Their PIMC bots are for bridge,
@@ -58,7 +58,7 @@ opponent and why it is fenced.
 
 | Where | What |
 |---|---|
-| `tournament/demon/` (Rust crate) | `src/lib.rs` `decide` (the four steps), `src/main.rs` (one JSON request per line; refuses a record that disagrees with the table's leader or points), `tests/demon.rs` |
+| `tournament/demon/` (Rust crate) | `src/lib.rs` `decide` (the four steps), `src/sampling.rs` (uniform subsets), `src/main.rs` (one JSON request per line; refuses a record that disagrees with the table's leader or points), `tests/demon.rs` |
 | `tournament/demon_fenced_seat.py` | `DemonSeat`: the bidder and one binary process per team per game; `build` from the pinned trees |
 | `tournament/participants.py` | `demon(...)`, `DEMON_N100` |
 | `tournament/tests/test_demon.py` | whole faceoff games, determinism, the pin's tree check |
@@ -96,6 +96,19 @@ world's margin tie work together, and drops its table before the next world.
 Moves and values are preserved. The paired replay, CPU and memory measurements,
 and 400-versus-100-world pilot live in [[demon-search-tables-2026-10-14]].
 
+## Compact keys and distinct worlds (2026-10-14)
+
+The next pass uses 31-bit ownership-scoped transposition keys, exact pruning of
+interchangeable plays, direct final-trick resolution and shared immutable rules.
+The sampler draws distinct uniform worlds through the fiber's completion-count
+DP. Its proof, exact-parity checks and fixed 1,600-versus-100-world strength trial
+are in [[demon-power-2026-10-14]]. At 400 identical worlds, final search uses 13.2%
+less CPU and 70.4% less peak RSS than the compact build (paired elapsed saving
+13.4% [9.7%, 17.1%]). The 1,600-world trial finishes 124–132 over 128 duplicate
+pairs: 48.4% [44.1%, 52.7%], no demonstrated gain, at 11.49× native play CPU for
+the frozen pre-bisection policy. The larger budget stays experimental. The earlier
+pins keep their original sampler.
+
 ## Original cost (measured 2026-10-14, Apple M-series, one core)
 
 Pilot: whole hands with the Demon at all four seats, random deals, declarations 0–9, bids
@@ -130,6 +143,13 @@ The compact-table builds are `demon-pimc-n100-18ac096d` and
 The original participant remains immutable. The new 100-world build preserves
 its play for a given request and seed; 400 worlds is an experimental challenger.
 The roster includes both; their evidence is in [[demon-search-tables-2026-10-14]].
+
+The distinct-world builds are `demon-pimc-n100-228812ff` and
+`demon-pimc-n1600-228812ff`, with source pin `228812ff` (trees `silas/` `9dff8ca1…`,
+`scenario/core/` `66a68a2a…`, `tournament/demon/` `35495a96…`). Both participant records
+are published and freshly verified at tournament-store revision `382c4233`.
+The 1,600-world pin builds from its archived public trees and answers the protocol.
+[[demon-power-2026-10-14]] reports their search and strength evidence.
 
 ## First results: a smoke test, not a ranking (2026-10-14)
 

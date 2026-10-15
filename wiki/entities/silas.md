@@ -194,18 +194,24 @@ test profile, now opt-level 1 (the slowest binaries killed at 300 s → 34 s for
 BigRational is under 1% of every profile. The one route that could make a GPU worth revisiting
 is compiling guards to bitmask operations, a language-design question.
 
-Collapsing equivalent hidden tiles is not a speed lever: worlds never compress ([[endgame-equivalence-census]]).
+Collapsing equivalent hidden tiles is not a speed lever: worlds never compress ([[endgame-equivalence-census]]). Pruning interchangeable plays inside one fully specified search is a different operation (§ The double-dummy reference).
 
 ## The double-dummy reference
 
 `silas::ClairvoyantSolver` (2026-10-13; renamed and gated behind the non-default `clairvoyant` feature by the [[strategy-fusion-fence]]) is an exact perfect-information solver over any `Physics`:
-integer fail-soft alpha-beta with a transposition table at each trick's start, keyed on
-the exact state, holding proven bounds. It values every legal move at a fully specified
-position under two objectives, the declaring side's points margin and make-or-set
+integer fail-soft alpha-beta with a transposition table at each trick's start, holding
+proven bounds on points still to come. The table fixes tile ownership, so the remaining
+pool, leader and declaring side are an exact 31-bit key; moving a tile to another hand
+clears the table. Equal-count tiles with identical suit behavior and identical rank
+comparisons against every tile outside their hand are interchangeable, so the search
+keeps one branch; the forced last trick is resolved directly. Independent solvers share
+precomputed rules through `fresh()`. Exact margins bisect the remaining-point
+interval through null-window queries, reusing the bounds until they meet. It values
+every legal move at a fully specified position under two objectives, the declaring side's points margin and make-or-set
 against the bid (a null-window search). It **sees all four hands**: a reference, never a
 player ([[the-wall]]). It explains a book move only where the book argues from a known
-position; elsewhere it bounds what a real seat can achieve. A full deal solves in a
-median 1.7 ms (worst 29 ms over 900 random deals). It agrees with an unpruned
+position; elsewhere it bounds what a real seat can achieve. The original 2026-10-13 measurement
+was median 1.7 ms per full deal (worst 29 ms over 900 random deals). It agrees with an unpruned
 exhaustive search on sampled endings, with an unpruned memoized search of whole game
 trees (Hand 28 in the tests; 40 random deals and Hands 34 and 35 in a one-off check),
 and under seat rotation. The forge oracle could not referee it on this machine: on MPS

@@ -41,7 +41,8 @@ of (rung, seat, remaining hand, record) and is cached as such.
   joins by `python -m tournament add-zeb 0.3.0` ([[tournament]]). Since 2026-10-14 the ladder
   also seats [[the-demon]], a fenced CPU PIMC player, so Walt and Zeb meet strategy fusion
   head-on on any machine. Its compact-table builds and 400-world pilot are in
-  [[demon-search-tables-2026-10-14]].
+  [[demon-search-tables-2026-10-14]]. The later exact-search and distinct-world pass,
+  including the 1,600-world trial, is in [[demon-power-2026-10-14]].
 - **The champion is `walt:k1,n512,m8`** (two rungs, 512 root worlds, floor
   16). It stays champion until a field-net player beats it with an interval
   clear of zero; none has (best: +0.13 [−0.17, +0.44], the 250,000-deal net).

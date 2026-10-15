@@ -5,6 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+- [[demon-power-2026-10-14]] — Compact exact search, distinct-world sampling, and a fixed 1,600-versus-100-world strength trial.
 - [[experiments/demon-search-tables-2026-10-14|demon-search-tables-2026-10-14]] — exact decision parity with smaller per-world search tables; lower CPU and memory at 100 and 400 worlds; duplicate-match strength pilot (complete)
 
 ## Jud (current frontier; the era's GitHub milestone is named Champion)

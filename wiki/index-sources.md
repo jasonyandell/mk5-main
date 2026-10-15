@@ -2,6 +2,9 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/228812ff|228812ff]] — exact margins by repeated threshold queries, with held-out parity and performance evidence (complete)
+- [[sources/3cd6ae53|3cd6ae53]] — compact exact transpositions, interchangeable plays and distinct-world sampling (complete)
+
 - [[sources/18ac096d|18ac096d]] — the Demon keeps exact search tables local to each sampled world; parity and resource evidence in its experiment (complete)
 
 - [[sources/0168210|0168210]] — 2026-04-19: Phase 3-4 training + primer-tradeoff decision (active)

@@ -135,7 +135,9 @@ DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
 
 
 def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
-          bidder: str = "heuristic") -> Participant:
+          bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler") -> Participant:
+    # The source pin selects the sampler; this describes it without changing
+    # the bytes of already-published participant records.
     tb = "" if margin_tiebreak else "-notb"
     return Participant(
         id=f"demon-pimc-n{worlds}{tb}-{commit[:8]}",
@@ -144,7 +146,7 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
         config={"worlds": worlds, "margin_tiebreak": margin_tiebreak, "bidder": bidder},
         needs=("cargo",),
         note=(f"STRATEGY-FUSION FENCE: the Demon, classic PIMC. At each play it draws {worlds} "
-              f"worlds from its fiber (Walt's exact-uniform sampler; the whole fiber when "
+              f"worlds from its fiber ({sampler_note}; the whole fiber when "
               f"smaller), solves each double dummy (Silas's ClairvoyantSolver, make-or-set of the "
               f"contract), and plays the tile that makes or sets in the most worlds"
               f"{', then the best summed double-dummy margin' if margin_tiebreak else ''}, then the "
@@ -171,7 +173,20 @@ _DEMON_COMPACT_TREES = {"silas": "c10cb8b362c00b0ff7efad58d4e77e85219f346f",
 DEMON_FAST_N100 = demon(_DEMON_COMPACT_COMMIT, _DEMON_COMPACT_TREES, worlds=100)
 DEMON_N400 = demon(_DEMON_COMPACT_COMMIT, _DEMON_COMPACT_TREES, worlds=400)
 
-ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400)
+# Compact ownership keys, equivalent-play pruning, exact threshold margins,
+# and uniform samples without replacement. The code pin fixes the algorithm.
+_DEMON_POWER_COMMIT = "228812ff5348868213f7f6ef1eda762f52a52429"
+_DEMON_POWER_TREES = {"silas": "9dff8ca1be3bfbd511ecf84dc27934c71aab65cb",
+                      "scenario/core": "66a68a2aba792c870d8be1692833669d34652658",
+                      "tournament/demon": "35495a961ee9cc4fd24f03b1dff0809a4e08951f"}
+_DISTINCT_SAMPLER = "uniform without replacement through exact completion-count ranks"
+DEMON_DISTINCT_N100 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=100,
+                            sampler_note=_DISTINCT_SAMPLER)
+DEMON_DISTINCT_N1600 = demon(_DEMON_POWER_COMMIT, _DEMON_POWER_TREES, worlds=1600,
+                             sampler_note=_DISTINCT_SAMPLER)
+
+ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
+          DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600)
 ANCHOR = WALT.id
 
 

@@ -44,6 +44,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | 228812ff | Demon power: smaller exact search; 1,600 worlds do not establish a strength gain]
+
+[[demon-power-2026-10-14]]: exact parity, 13.2% less CPU and 70.4% less peak RSS at 400 worlds; 128 duplicate pairs finish 124–132 at 1,600 versus 100, with no demonstrated gain. Public data, verified pins, and GREEN gates in the study. [[the-demon]] · [[silas]] · [[3cd6ae53]] · [[228812ff]].
+
 ## [2026-10-14 | e611a79e | The book over a reader with no plan (#161): the rules are worth +2.47 [2.28, 2.65] marks/game to him, about 61% of a 16-world plan; worth −0.10 inside one]
 
 **Updated:** [[no-plan-2026-10-14]] (complete; 152 batches through `scripts/cpu-slot`, none dropped; A/A −0.04), [[book-assumptions]] (A7), [[book-small-n-2026-10-14]]. Data `book/no-plan/` in texas-42-zeb-research-2026-10.
