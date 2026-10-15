@@ -611,6 +611,13 @@ and 18 always sets (c07-three-out-an-opponent); and how often Hand 34's two ways
 seat's policy at its own information state up to a horizon, then evaluate a
 query, carrying the belief's authority. It needs gap 3's per-seat frames.
 
+Opening ownership families are constructive (`README.md`, Constructing worlds):
+`OpeningSpace` varies all four hands under a fixed legal auction and declaration,
+using standard queries written with `holds`, and counts/samples complete deals.
+This supplies a bounded opening fragment of gap 6, not a general deal-view frame:
+`mine`/`own-legal`, auction-only and solved-outcome predicates are not admitted,
+and histories and policy-weighted posteriors are not synthesized.
+
 ## Added by the solved outcomes (`README.md`, Solved outcomes)
 
 The book's claims of certainty need the outcome of the rest of the hand, not a fact about

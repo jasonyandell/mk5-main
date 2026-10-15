@@ -9,6 +9,9 @@
 //! exact measure over the hidden [`World`]s of a [`Frame`]; a query summarized
 //! over a belief yields exact probabilities, each carrying its [`Authority`].
 //! A [`PolicyProgram`] chooses plays from what the viewer alone can see.
+//! [`WorldSpace`] constructs uniform query-conditioned worlds; [`OpeningSpace`]
+//! constructs opening families with a varying viewer hand. Both count exactly
+//! and return complete legal worlds, not their cells' representatives.
 //! [`forces`] and [`lay_down`] are what the viewer can guarantee: exact
 //! information-state solves, one choice per frame, never one per world.
 //! An [`Auction`] settles the hand's [`Contract`]; a policy's bidding and
@@ -37,6 +40,7 @@ mod belief;
 // a value); exported only under the `clairvoyant` feature.
 #[cfg_attr(not(feature = "clairvoyant"), allow(dead_code))]
 mod clairvoyant;
+mod construct;
 mod coverage;
 mod dominance;
 mod dynamics;
@@ -57,6 +61,7 @@ mod syntax;
 
 pub use auction::{Auction, AuctionConfig, AuctionFrame, Call, MIN_BID};
 pub use belief::{Belief, Certainty, Comparison, Difference, QuerySummary, Selection, SelectionLaw};
+pub use construct::{OpeningSpace, WorldSpace};
 pub use coverage::{Coverage, Funnel, RuleCoverage, why_not};
 pub use dominance::{Counterexample, Criterion, Decision, Dominance, Place};
 pub use dynamics::{
@@ -69,7 +74,7 @@ pub use lint::Warning;
 pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
 pub use outcome::{Goal, OUTCOME_SCAN_CAP, forces, lay_down};
-pub use physics::{Declaration, Physics};
+pub use physics::{Declaration, Physics, PreparedFiber};
 pub use policy::{
     Allowed, Choice, CompiledPolicy, DecisionProvenance, Declared, ExactRule, Fallback, GuardWitnesses,
     PolicyDecisionTrace, PolicyKey, PolicyProgram, PolicyRule, Program, ReadingDecl, Selector, Trump,

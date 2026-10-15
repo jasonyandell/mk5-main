@@ -80,6 +80,9 @@ usage:
                  [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                   [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
   silas query    DOMINANCE
+  silas construct QUERY (--hand ID [--trick N] [--seat ROLE] [--book FILE]
+                   | --opening --declaration D [--bid N] [--viewer S0] [--declarer S0])
+                   [--draws N --seed N | --rank N] [--cap N] [--budget N]
   silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
                  [--play POLICY]] [--book FILE]
   silas expand   FILE ...
@@ -98,6 +101,7 @@ fn main() -> ExitCode {
         Some("bid") => bid(rest),
         Some("query") => query(rest),
         Some("coverage") => coverage(rest),
+        Some("construct") => construct(rest),
         Some("expand") => expand(rest),
         Some("fmt") => fmt(rest),
         Some("check") => check(rest),
@@ -1046,4 +1050,137 @@ fn check(args: &[String]) -> Result<bool> {
     }
     println!("{ok} compiled, {failed} failed, {warned} warnings");
     Ok(failed == 0)
+}
+
+/// Construct complete worlds, with a replayable record and the query's exact
+/// count. JSON is printed only once every requested draw has been checked.
+fn construct(args: &[String]) -> Result<bool> {
+    let options = Options::parse(
+        args,
+        &["opening"],
+        &[
+            "hand",
+            "trick",
+            "seat",
+            "book",
+            "declaration",
+            "bid",
+            "viewer",
+            "declarer",
+            "draws",
+            "seed",
+            "rank",
+            "cap",
+            "budget",
+        ],
+    )?;
+    let path = file(&options, "silas construct QUERY (--hand ID | --opening --declaration D) ...")?;
+    let query = Query::parse(&read(path)?, path)?;
+    let opening = options.flags.iter().any(|s| s == "opening");
+    let wrong = if opening {
+        &["hand", "trick", "seat", "book"][..]
+    } else {
+        &["declaration", "bid", "viewer", "declarer"][..]
+    };
+    if let Some(name) = wrong.iter().find(|name| options.get(name).is_some()) {
+        return Err(fail(format!("--{name} does not belong to this construction scope")));
+    }
+    let cap = options.number("cap", 100_000)?;
+    let parse_u64 = |name: &str, default: u64| -> Result<u64> {
+        options.get(name).map_or(Ok(default), |v| v.parse().map_err(|_| fail(format!("--{name} takes a u64"))))
+    };
+    let mut budget = Budget::new(parse_u64("budget", 1_000_000_000_000)?);
+    let requested_rank: Option<u128> =
+        options.get("rank").map(|v| v.parse().map_err(|_| fail("--rank takes an unsigned integer"))).transpose()?;
+    if requested_rank.is_some() && (options.get("draws").is_some() || options.get("seed").is_some()) {
+        return Err(fail("--rank is used alone, without --draws or --seed"));
+    }
+    let seed = parse_u64("seed", 0)?;
+    let mut state = seed;
+    let mut next = || {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut z = state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        z ^ (z >> 31)
+    };
+    let draws = options.number("draws", 1)?;
+    let hand_json = |hand: DominoSet| hand.iter().map(|d| d.to_string()).collect::<Vec<_>>();
+    let record = |frame: &Frame, world: &World| {
+        serde_json::json!({
+            "auction": { "shaker": frame.auction().shaker().to_string(),
+                         "calls": frame.auction().calls().iter().map(ToString::to_string).collect::<Vec<_>>() },
+            "declaration": frame.physics().name(), "physics": frame.physics().identity(),
+            "viewer": frame.viewer().to_string(), "dealt": hand_json(frame.dealt()),
+            "plays": frame.plays().iter().map(ToString::to_string).collect::<Vec<_>>(),
+            "remaining": Seat::ALL.map(|s| hand_json(world.hand(s))),
+        })
+    };
+    let (count, base, cells, resolved, probability, identity, records) = if opening {
+        let declaration = options.need("declaration")?.parse::<Straight42>()?.physics();
+        let seat = |name: &str| -> Result<Seat> {
+            let value = options.get(name).unwrap_or("S0");
+            Seat::ALL
+                .into_iter()
+                .find(|s| s.to_string() == value)
+                .ok_or_else(|| fail(format!("--{name} takes S0, S1, S2 or S3")))
+        };
+        let viewer = seat("viewer")?;
+        let declarer = seat("declarer")?;
+        let bid: Bid = options.get("bid").unwrap_or("30").parse()?;
+        let space = OpeningSpace::new(Auction::won_by(declarer, bid)?, declaration, viewer, &query, cap, &mut budget)?;
+        let mut records = Vec::new();
+        for _ in 0..draws {
+            let (frame, world) = match requested_rank {
+                Some(k) => space.unrank(k, &mut budget)?,
+                None => space.sample(&mut next, &mut budget)?,
+            };
+            records.push(record(&frame, &world));
+        }
+        (
+            space.count(),
+            space.base_count(),
+            space.cell_count(),
+            space.resolved(),
+            space.probability().map(|p| p.value().to_string()),
+            space.query().identity(),
+            records,
+        )
+    } else {
+        let (frame, _) = position(&options)?;
+        let query = query.compile(&Registry::standard())?;
+        let space = WorldSpace::new(frame, &query, cap, &mut budget)?;
+        let mut records = Vec::new();
+        for _ in 0..draws {
+            let world = match requested_rank {
+                Some(k) => space.unrank(k, &mut budget)?,
+                None => space.sample(&mut next, &mut budget)?,
+            };
+            records.push(record(space.frame(), &world));
+        }
+        (
+            space.count(),
+            space.base_count(),
+            space.cell_count(),
+            space.resolved(),
+            Some(space.probability().value().to_string()),
+            space.query().identity(),
+            records,
+        )
+    };
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "schema": "silas-construction-v1", "scope": if opening { "opening" } else { "fixed-frame" },
+            "query": identity, "count": count.to_string(), "base_count": base.to_string(),
+            "cells": cells, "resolved": hand_json(resolved), "probability": probability, "count_authority": "exact",
+            "sampling": if requested_rank.is_some() { "rank" } else { "uniform-worlds-with-replacement" },
+            "rank": requested_rank.map(|k| k.to_string()),
+            "seed": if requested_rank.is_none() { Some(seed.to_string()) } else { None },
+            "rng": if requested_rank.is_none() { Some("splitmix64-u128-rejection-v1") } else { None },
+            "work": budget.spent(), "records": records,
+        }))
+        .map_err(|e| fail(e.to_string()))?
+    );
+    Ok(true)
 }

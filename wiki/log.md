@@ -47,6 +47,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-14 | reading-text | Silas: a reading written in a policy file (#162); the book's crisis as Hand 31 reads it]
 
 **Updated:** [[silas]], `silas/README.md`, `silas/GAPS.md` 1. **Added:** `(reading ...)` in a policy and `PolicyProgram::compile_reading`; the `silas` command finds a reader beside its file; `examples/book/crisis-read.silas` (one new pin, none moved); `silas/tests/reading_text.rs`. The arena's half of #162 (gated) is next.
+## [2026-10-14 | silas-construct | Silas constructs query-conditioned worlds and opening families]
+
+**Touched pages:** [[silas]] [[silas-world-constructor-2026-10-14]].
+**Added:** Native count/unrank/sample, checked opening fragment, replayable CLI records and lesson/record regression checks.
 
 ## [2026-10-14 | 98f5d16c | The named deviant field (#152): the book's bidding costs 0.92 [0.60, 1.22] marks/game against a field that bids its hand and 0.57 [0.22, 0.91] against one 10 points past it; level in the book's game]
 

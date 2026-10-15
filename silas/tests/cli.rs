@@ -315,3 +315,112 @@ fn a_misspelt_option_an_unknown_hand_or_command_is_refused_with_the_choices() {
     let (ok, out) = silas(&["help"]);
     assert!(ok && out.starts_with("usage:"), "{out}");
 }
+
+#[test]
+fn construction_emits_replayable_records_and_keeps_counts_distinct_from_draws() {
+    use silas::*;
+    fn check_records(json: &serde_json::Value) {
+        for rec in json["records"].as_array().unwrap() {
+            let seat =
+                |v: &serde_json::Value| Seat::ALL.into_iter().find(|s| s.to_string() == v.as_str().unwrap()).unwrap();
+            let hand = |v: &serde_json::Value| {
+                v.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|s| s.as_str().unwrap().parse::<Domino>().unwrap())
+                    .collect::<DominoSet>()
+            };
+            let auction = Auction::new(
+                AuctionConfig::STRAIGHT,
+                seat(&rec["auction"]["shaker"]),
+                rec["auction"]["calls"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|s| s.as_str().unwrap().parse().unwrap())
+                    .collect(),
+            )
+            .unwrap();
+            let physics = rec["declaration"]
+                .as_str()
+                .unwrap()
+                .rsplit('/')
+                .next()
+                .unwrap()
+                .parse::<reference::Straight42>()
+                .unwrap()
+                .physics();
+            assert_eq!(physics.identity(), rec["physics"].as_str().unwrap());
+            let plays = rec["plays"].as_array().unwrap().iter().map(|d| d.as_str().unwrap().parse().unwrap()).collect();
+            let f = Frame::new(auction, physics, seat(&rec["viewer"]), hand(&rec["dealt"]), plays).unwrap();
+            let remaining = &rec["remaining"];
+            let w = f.kernel().world(f.kernel().hidden().map(|h| hand(&remaining[h.seat.index()])));
+            assert_eq!(w.hand(f.viewer()), hand(&remaining[f.viewer().index()]));
+            assert!(f.contains(&w));
+        }
+    }
+    let args = ["construct", "examples/six-five-guarded.silas", "--hand", "hand-34", "--draws", "3", "--seed", "42"];
+    let (ok, out) = silas(&args);
+    assert!(ok, "{out}");
+    assert_eq!(silas(&args).1, out, "a seed reproduces the entire receipt");
+    let json: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(json["count"], "138625344");
+    assert_eq!(json["probability"], "33/95");
+    assert_eq!(json["records"].as_array().unwrap().len(), 3);
+    check_records(&json);
+    let (ok, out) = silas(&[
+        "construct",
+        "examples/construction/four-fives.silas",
+        "--opening",
+        "--declaration",
+        "P5",
+        "--bid",
+        "84",
+        "--rank",
+        "1843717075199",
+    ]);
+    assert!(ok, "{out}");
+    let json: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(json["count"], "1843717075200");
+    assert_eq!(json["sampling"], "rank");
+    check_records(&json);
+    // A later record: own dealt tiles, past plays and remaining hands all round trip.
+    let (ok, out) = silas(&[
+        "construct",
+        "examples/book/reading/bidder-holds-the-trumps-out.silas",
+        "--hand",
+        "hand-31",
+        "--trick",
+        "6",
+        "--seat",
+        "left",
+        "--rank",
+        "0",
+    ]);
+    assert!(ok, "{out}");
+    check_records(&serde_json::from_str(&out).unwrap());
+}
+
+#[test]
+fn construction_refuses_scope_mixes_bad_ranks_and_budget_exhaustion() {
+    let fixed = ["construct", "examples/six-five-guarded.silas", "--hand", "hand-34"];
+    for extra in [
+        vec!["--rank", "138625344"],
+        vec!["--rank", "0", "--seed", "1"],
+        vec!["--opening", "--declaration", "P5"],
+        vec!["--budget", "1"],
+        vec!["--cap", "1"],
+        vec!["--read", "left=whatever.silas"],
+    ] {
+        let (ok, out) = silas(&[&fixed[..], &extra].concat());
+        assert!(!ok, "{out}");
+        assert!(!out.contains("silas-construction-v1"), "no partial receipt on refusal");
+    }
+    // Count-only is useful for a proved empty event; sampling it is refused.
+    let base = ["construct", "examples/book/lay-down.silas", "--hand", "hand-34"];
+    let (ok, out) = silas(&[&base[..], &["--draws", "0"]].concat());
+    assert!(ok, "{out}");
+    assert_eq!(serde_json::from_str::<serde_json::Value>(&out).unwrap()["count"], "0");
+    let (ok, out) = silas(&base);
+    assert!(!ok && out.contains("exactly empty"), "{out}");
+}

@@ -96,6 +96,7 @@ examples/book/shed-for-a-void.silas 1c63059df2c4a4aa
 examples/book/take-the-trick.silas 7df3ccfc3e188e79
 examples/book/trump-set.silas 6f3bbe2ca0e7a438
 examples/book/watch-list.silas 88b3de6426e6aec1
+examples/construction/four-fives.silas d11ca059fc3fdf5b
 examples/current-forced-play.silas 275bf6e70ef1d193
 examples/partner-count.silas e7712f0cf43a39ec
 examples/partner-has-count.silas bc3e200b28e739de

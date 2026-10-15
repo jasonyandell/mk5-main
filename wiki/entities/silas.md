@@ -69,6 +69,30 @@ hand (p. 113: the bidder holds 5-5 5-4 5-2 5-0 4-4 4-2 2-2, fives trump) gives "
 opponent holds the 6-5 with another five" at exactly 33/95, `Exact`, over a root of
 399,072,960 worlds ([[book-study-2026-10-12]]).
 
+## Constructing worlds (2026-10-14)
+
+`WorldSpace` prepares the uniform legal fiber of a fixed frame conditioned on a
+query having an answer. The evaluator resolves the ownership reads; disjoint
+ownership cells carry reusable residual allocation tables. Checked `unrank` and
+integer-rejection `sample` return complete worlds, each verified by frame membership
+and the original query. Multiple witnesses do not multiply a world's mass. An empty
+count is proved impossible; work/cell exhaustion refuses the computation.
+`Physics::prepare_worlds` exposes the unconditioned count/unrank table.
+
+`OpeningSpace` also varies the viewer's hand, under a fixed legal auction and
+declaration. It admits a checked standard-predicate fragment using `holds` for all
+four hands, together with tile and fixed public facts; hand-sensitive viewer and
+custom predicates are refused. It constructs a legal opening frame with each deal,
+not an invented history. This is a bounded opening fragment of gap 6, not a general
+deal-view frame. Neither constructor accepts a policy-weighted belief or evidence.
+
+`silas construct QUERY --hand ID` or `--opening --declaration D` emits a JSON receipt:
+query identity, exact counts, seed/RNG or rank, auction, viewer, dealt tiles, plays
+and remaining hands. A finite collection of draws is still a sample. The API,
+fragment boundary, proof of the sampling law, and commands are in
+`silas/README.md` § Constructing worlds. Source and validation map:
+[[silas-world-constructor-2026-10-14]].
+
 ## The book, rule by rule
 
 The book's rules are Silas policies twice over (2026-10-13). The 21 rule gates of
