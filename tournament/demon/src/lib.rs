@@ -149,9 +149,12 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
         })
         .collect::<Result<_, _>>()?;
 
-    let mut solver = ClairvoyantSolver::new(&physics);
+    // Keep each world's bounds in a small table, and retain its make search
+    // for the possible margin pass. Tables across unrelated worlds cost more
+    // to look up than they save in shared states. Values remain exact.
+    let mut solvers: Vec<_> = positions.iter().map(|_| ClairvoyantSolver::new(&physics)).collect();
     let mut makes = vec![0u32; tiles.len()];
-    for p in &positions {
+    for (p, solver) in positions.iter().zip(&mut solvers) {
         let values = solver.solve(p, Objective::Make).map_err(|e| e.0)?;
         for (i, &t) in tiles.iter().enumerate() {
             makes[i] += values.value(domino(t).expect("a tile")).expect("a legal tile") as u32;
@@ -163,16 +166,19 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     let best = makes.iter().map(|&m| score(m)).max().expect("a legal tile");
     let tied: Vec<usize> = (0..tiles.len()).filter(|&i| score(makes[i]) == best).collect();
 
+    let mut nodes = 0;
     let mut margins: Vec<Option<i64>> = vec![None; tiles.len()];
-    if cfg.margin_tiebreak && tied.len() > 1 {
-        for &i in &tied {
-            let tile = domino(tiles[i]).expect("a tile");
-            let mut sum = 0i64;
-            for p in &positions {
-                sum += solver.value(&p.play(tile).map_err(|e| e.0)?, Objective::Margin) as i64;
+    // Finish all tied tiles of one world together, then drop its table. The
+    // much larger margin searches never accumulate across the whole sample.
+    for (p, mut solver) in positions.iter().zip(solvers) {
+        if cfg.margin_tiebreak && tied.len() > 1 {
+            for &i in &tied {
+                let tile = domino(tiles[i]).expect("a tile");
+                let margin = solver.value(&p.play(tile).map_err(|e| e.0)?, Objective::Margin) as i64;
+                *margins[i].get_or_insert(0) += margin;
             }
-            margins[i] = Some(sum);
         }
+        nodes += solver.nodes();
     }
     // Make count first, then margin for the mover's side, then the lowest tile.
     let key = |i: usize| (score(makes[i]), margins[i].map_or(0, |m| if declaring { m } else { -m }));
@@ -182,6 +188,6 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
         moves: (0..tiles.len()).map(|i| (tiles[i], makes[i], margins[i])).collect(),
         worlds: positions.len(),
         exact,
-        nodes: solver.nodes(),
+        nodes,
     })
 }

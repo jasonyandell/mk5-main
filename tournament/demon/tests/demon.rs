@@ -106,6 +106,15 @@ fn the_solve_agrees_with_brute_force_minimax_on_every_world_of_the_fiber() {
         };
         let d = decide(Config { worlds: 2000, margin_tiebreak: true }, &req).unwrap();
         assert!(d.exact && d.worlds == worlds.len());
+        let no_margin = decide(Config { worlds: 2000, margin_tiebreak: false }, &req).unwrap();
+        assert_eq!(no_margin.worlds, d.worlds);
+        assert!(no_margin.exact);
+        assert_eq!(no_margin.moves, d.moves.iter().map(|&(t, m, _)| (t, m, None)).collect::<Vec<_>>());
+        let declaring = viewer % 2 == sp.bidder % 2;
+        let score = |m: u32| if declaring { m } else { d.worlds as u32 - m };
+        let best = d.moves.iter().map(|&(_, m, _)| score(m)).max().unwrap();
+        let first_best = d.moves.iter().find(|&&(_, m, _)| score(m) == best).unwrap().0;
+        assert_eq!(no_margin.tile, first_best, "without margins, the lowest tile wins the make-count tie");
         let side = (sp.bidder % 2) as usize;
         let threshold = if sp.bid >= 42 { 42 } else { sp.bid };
         for &(t, makes, margin) in &d.moves {
