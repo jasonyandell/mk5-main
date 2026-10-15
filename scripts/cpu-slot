@@ -4,14 +4,23 @@
 
 """cpu-slot — run one experiment niced, time-capped, and only when a slot is free.
 
-    scripts/cpu-slot [--slots N] [--timeout S] [--nice K] -- <command> [args...]
+    scripts/cpu-slot [--slots N] [--timeout S] [--nice K] [--owner TAG] [--exclusive WHY] -- <command> [args...]
 
 Every heavy run on this Mac (arena batches, pours, studies) goes through here. It waits
 for one of N slots (default 3, shared by every session through lock files in
-/tmp/mk5-cpu-slots), then runs the command at `nice` K (default 10) under a
-hard timeout of S seconds (default 300). The house rule is five minutes per run unless
-there is a really good reason (Jason, 2026-10-14). The slot is released when the
+/tmp/mk5-cpu-slots, or $MK5_CPU_SLOT_DIR), then runs the command at `nice` K (default 10)
+under a hard timeout of S seconds (default 300). The house rule is five minutes per run
+unless there is a really good reason (Jason, 2026-10-14). The slot is released when the
 command exits, however it exits, because the OS drops the lock with the process.
+
+Fairness (#169). An owner (the worktree root of the cwd, or --owner TAG) may hold at
+most N-1 slots while a different owner is waiting; with nobody else waiting it may take
+them all. --exclusive "reason" (required, logged) is for runs that need a quiet machine,
+such as a wall-clock confirmation: it waits until it holds every slot, and while it waits
+no one else starts a new run. Waiters register in $DIR/waiters, one flock-held file each,
+so a killed waiter's entry is dead the moment its process is and is swept by the next
+caller. All decisions are made under the short flock on $DIR/gate. Old-script holders
+and waiters ignore the registry and keep working; they only take slots by flock.
 
 Exit status is the command's own, or 124 on timeout, matching `timeout(1)`.
 """
@@ -27,38 +36,162 @@ parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
 parser.add_argument("--slots", type=int, default=int(os.environ.get("MK5_CPU_SLOTS", "3")))
 parser.add_argument("--timeout", type=int, default=300)
 parser.add_argument("--nice", type=int, default=10)
+parser.add_argument("--owner", help="fairness tag; default is the worktree root of the cwd")
+parser.add_argument("--exclusive", metavar="REASON", help="hold every slot; the reason is required and logged")
 parser.add_argument("cmd", nargs=argparse.REMAINDER)
 args = parser.parse_args()
 cmd = args.cmd[1:] if args.cmd[:1] == ["--"] else args.cmd
 if not cmd:
     parser.error("give a command after --")
+if args.exclusive is not None and not args.exclusive.strip():
+    parser.error("--exclusive needs a written reason")
+exclusive = args.exclusive is not None
+
+
+def default_owner():
+    try:
+        out = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=10)
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return os.path.realpath(os.getcwd())
+
+
+owner = " ".join((args.owner or default_owner()).split())
 
 lock_dir = os.environ.get("MK5_CPU_SLOT_DIR", "/tmp/mk5-cpu-slots")
-os.makedirs(lock_dir, exist_ok=True)
+waiter_dir = os.path.join(lock_dir, "waiters")
+os.makedirs(waiter_dir, exist_ok=True)
+gate_fd = os.open(os.path.join(lock_dir, "gate"), os.O_CREAT | os.O_RDWR, 0o644)
+my_name = f"{time.time_ns():020d}-{os.getpid()}"
+my_waiter = None  # fd of our registry file while we wait
 
 
-def take_slot():
+def describe():
+    why = f" EXCLUSIVE: {args.exclusive}" if exclusive else ""
+    return f"{os.getpid()} {' '.join(cmd)[:200]}{why}\nowner {owner}\n"
+
+
+def live_waiters():
+    """(name, owner, exclusive) of every other live waiter; sweeps dead ones. Call under the gate."""
+    live = []
+    for name in sorted(os.listdir(waiter_dir)):
+        if name == my_name:
+            continue
+        path = os.path.join(waiter_dir, name)
+        try:
+            fd = os.open(path, os.O_RDWR)
+        except OSError:
+            continue
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            lines = os.read(fd, 4096).decode(errors="replace").split("\n") + ["", ""]
+            live.append((name, lines[0].removeprefix("owner "), lines[1] == "exclusive"))
+        else:  # nobody holds it: its waiter died
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        finally:
+            os.close(fd)
+    return live
+
+
+def register():
+    global my_waiter
+    my_waiter = os.open(os.path.join(waiter_dir, my_name), os.O_CREAT | os.O_RDWR, 0o644)
+    fcntl.flock(my_waiter, fcntl.LOCK_EX)
+    os.write(my_waiter, f"owner {owner}\n{'exclusive' if exclusive else 'shared'}\n".encode())
+
+
+def unregister():
+    global my_waiter
+    if my_waiter is not None:
+        os.unlink(os.path.join(waiter_dir, my_name))
+        os.close(my_waiter)
+        my_waiter = None
+
+
+def slot_owner(path):
+    try:
+        with open(path) as f:
+            lines = f.read().split("\n")
+        return lines[1].removeprefix("owner ") if len(lines) > 1 and lines[1].startswith("owner ") else None
+    except OSError:
+        return None
+
+
+def try_lock_slots():
+    """Lock-test every slot. Returns (free [(fd, i)], owners of the busy slots)."""
+    free, busy_owners = [], []
+    for i in range(args.slots):
+        path = os.path.join(lock_dir, f"slot-{i}")
+        fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            free.append((fd, i))
+        except BlockingIOError:
+            os.close(fd)
+            busy_owners.append(slot_owner(path))
+    return free, busy_owners
+
+
+def claim(fd):
+    os.ftruncate(fd, 0)
+    os.write(fd, describe().encode())
+
+
+def take_slots():
+    """Return the held [(fd, i)]: one slot, or all of them for --exclusive."""
+    held = []
     waited = False
     while True:
-        for i in range(args.slots):
-            fd = os.open(os.path.join(lock_dir, f"slot-{i}"), os.O_CREAT | os.O_RDWR, 0o644)
-            try:
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                os.close(fd)
-                continue
-            os.ftruncate(fd, 0)
-            os.write(fd, f"{os.getpid()} {' '.join(cmd)[:200]}\n".encode())
-            return fd, i
-        if not waited:
-            print(f"cpu-slot: all {args.slots} slots busy; waiting", file=sys.stderr, flush=True)
-            waited = True
+        fcntl.flock(gate_fd, fcntl.LOCK_EX)
+        try:
+            others = live_waiters()
+            foreign = any(o != owner for _, o, _ in others)
+            if exclusive:  # an exclusive waiter registered before us goes first
+                blocked = any(ex and n < my_name for n, _, ex in others)
+            else:
+                blocked = any(ex for _, _, ex in others)
+            if not blocked:
+                free, busy_owners = try_lock_slots()
+                if exclusive:
+                    for fd, i in free:
+                        claim(fd)
+                        held.append((fd, i))
+                    if len(held) == args.slots:
+                        unregister()
+                        return held
+                else:
+                    cap = max(1, args.slots - 1) if foreign else args.slots
+                    if free and busy_owners.count(owner) < cap:
+                        fd, i = free.pop(0)
+                        claim(fd)
+                        for other, _ in free:
+                            os.close(other)
+                        unregister()
+                        return [(fd, i)]
+                    for other, _ in free:
+                        os.close(other)
+            if my_waiter is None:
+                register()
+            if not waited:
+                what = "every slot (exclusive)" if exclusive else f"a slot (owner {owner})"
+                print(f"cpu-slot: waiting for {what}", file=sys.stderr, flush=True)
+                waited = True
+        finally:
+            fcntl.flock(gate_fd, fcntl.LOCK_UN)
         # Chained batches can release and reacquire a slot between long polls.
         # Retry promptly so queued sessions can catch those openings (#167).
         time.sleep(0.05)
 
 
-fd, slot = take_slot()
+if exclusive:
+    print(f"cpu-slot: exclusive run requested: {args.exclusive}", file=sys.stderr, flush=True)
+held = take_slots()
 try:
     proc = subprocess.Popen(cmd, preexec_fn=lambda: os.nice(args.nice))
     try:
@@ -72,4 +205,5 @@ try:
         print(f"cpu-slot: timed out after {args.timeout}s", file=sys.stderr, flush=True)
         sys.exit(124)
 finally:
-    os.close(fd)
+    for fd, _ in held:
+        os.close(fd)

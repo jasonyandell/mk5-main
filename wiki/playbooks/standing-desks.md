@@ -89,7 +89,11 @@ first, and let the central authority manage only links and lookups.
   really good reason, and the reason gets written down (`--timeout`). A runner that fans out
   wraps each batch, so one batch takes one slot. Tests, merges and interactive work don't take
   slots. Blocked commands retry every 50 ms so they can catch openings between
-  chained batches (#167); this does not promise FIFO ordering. Nice keeps the shop responsive, and the slots keep wall-clock players (Walt thinks on
+  chained batches (#167); this does not promise FIFO ordering. While another owner (the
+  worktree root of the cwd, or `--owner TAG`) waits, one owner holds at most 2 slots; with nobody
+  waiting it may take all 3. A wall-clock confirmation that needs a quiet machine asks for
+  `--exclusive "reason"` (reason required, logged): it holds every slot and blocks new starts
+  while it waits (#169). Nice keeps the shop responsive, and the slots keep wall-clock players (Walt thinks on
   a clock) from being measured on a crowded machine.
 - **Plunge is production.** Read-only, unless Jason approves a specific change. Plunge merges
   are Jason's call.

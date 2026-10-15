@@ -148,6 +148,9 @@ SUITES = [
     Suite("burl", ("burl/",), [], not_run=(
         "superseded project (wiki/entities/burl.md); its tests need the Gemma 4 MLX weights, "
         "modal and burl/eval data that no checkout carries"), what="pytest burl"),
+    Suite("cpu-slot", ("scripts/cpu-slot", "scripts/tests/"),
+          [(".", [sys.executable, "-u", "-W", "ignore", "-m", "unittest", "scripts.tests.test_cpu_slot"])], (),
+          lambda: which("git"), what="unittest scripts/tests: per-owner cap, exclusive, stale waiters (temporary slot dir)"),
     Suite("wiki", ("wiki/", "scripts/wiki_"), [(".", [sys.executable, "-u", "scripts/wiki_lint.py", "--strict"])],
           (), what="wiki_lint.py --strict"),
     # Every path triggers it: any new file needs its license (an SPDX header, or REUSE.toml).

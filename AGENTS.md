@@ -16,7 +16,9 @@ Several sessions (Claude desks, Codex worktrees) work this repo at once; the rul
 [wiki/playbooks/standing-desks.md](wiki/playbooks/standing-desks.md). In short:
 
 - **Every heavy run goes through `scripts/cpu-slot -- <command>`** (3 shared slots, `nice` 10,
-  300 s cap). Runs outside it starve the others and skew anything timed on a clock.
+  300 s cap). Runs outside it starve the others and skew anything timed on a clock. One
+  owner (worktree, or `--owner TAG`) holds at most 2 slots while another waits; a wall-clock
+  run that needs a quiet machine says `--exclusive "why"` (#169).
 - **Merge your own work**: rebase on `origin/main`, `scripts/check` GREEN, fast-forward push,
   never force. Add a line to `wiki/log.md`; that log and `git log` are how the others hear.
 - **Coordinated changes get a heads-up first**: Silas core pins or the standard registry,
