@@ -98,7 +98,7 @@ its size; PT16 wins 35.2% [31.3, 39.1], PZ16 34.4% [30.7, 38.0].
 - **The measurement that restores A7.** The same design at n = 0: a lowest-legal-tile (or
   random-legal) fallback, alone and under the book's rules, against deployed Zeb and against each
   other, both games. If the rules raise that reader, the gain the book claims for its reader is
-  measured where the reader lives; the arm is cheap and is filed as #161.
+  measured where the reader lives; the arm is cheap and is filed as #161. Done: [[no-plan-2026-10-14]], +2.47 [2.28, 2.65] marks/game.
 
 ### Receipts
 

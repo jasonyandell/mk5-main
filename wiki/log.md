@@ -44,6 +44,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-14 | e611a79e | The book over a reader with no plan (#161): the rules are worth +2.47 [2.28, 2.65] marks/game to him, about 61% of a 16-world plan; worth −0.10 inside one]
+
+**Updated:** [[no-plan-2026-10-14]] (complete; 152 batches through `scripts/cpu-slot`, none dropped; A/A −0.04), [[book-assumptions]] (A7), [[book-small-n-2026-10-14]]. Data `book/no-plan/` in texas-42-zeb-research-2026-10.
+
 ## [2026-10-14 | archive | the two superseded Zeb pours deleted (every chunk matched by SHA-256 in the 250k pour), and the four unlicensed repos dedicated CC0 with cards]
 
 **Updated:** [[huggingface-assets]] (17 datasets; licenses; mk5-fleet-payload belongs to [[otis-phase-r]], not the February fleet), [[scenario-player]] and [[publish-data-to-huggingface]] (the deleted repos named as history). Cards for mk5-run-evidence, mk5-fleet-payload and zeb-42-examples drafted by a Sonnet agent and checked against the Hub before upload.
