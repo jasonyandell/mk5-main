@@ -47,6 +47,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | 2e233d29 | Demon overcalling development complete; second confirmation frozen]
+
+**Updated:** [[demon-overcalling-2026-10-15]]: all 192 development games audited and public; fixed rule selects Over 0.50. Exact candidate and 2,048-game fresh confirmation protocol published before play. No promotion; #165 remains open.
+
 ## [2026-10-15 | demon/overcalls | Contest opponent-held point bids without more search]
 
 **Added:** [[demon-overcalling-2026-10-15]] and [[2e233d29]]: explicit opponent cutoff, boundary and whole-game checks, three fixed development arms and fresh attempt-2 protocol. **Updated:** [[the-demon]]; attempt 1 remains complete and unpromoted.
