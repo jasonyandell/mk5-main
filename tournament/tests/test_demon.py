@@ -82,6 +82,19 @@ def test_native_declaration_model_matches_arena_bidder(working_tree_demon):
     assert got == [bidder.declare(hand, 30, rng) for hand in hands]
 
 
+def test_native_forecast_requires_explicit_valid_declarations(working_tree_demon):
+    base = {"op": "forecast", "hand_mask": sum(1 << t for t in range(21, 28)),
+            "seat": 0, "bid": 42, "worlds": 1, "seed": 7}
+    requests = [{**base, "declarations": ds} for ds in
+                ([6], [], [6, 6], [10], [256], [True], [-1], [1.5])] + [base]
+    result = subprocess.run([str(working_tree_demon / BINARY)],
+                            input="".join(json.dumps(r) + "\n" for r in requests),
+                            capture_output=True, text=True, check=True)
+    replies = [json.loads(line) for line in result.stdout.splitlines()]
+    assert replies[0]["makes"] == [None] * 6 + [1] + [None] * 3
+    assert all("error" in r for r in replies[1:])
+
+
 def test_new_models_get_distinct_participant_ids():
     base = demon("a" * 40, {}, worlds=100)
     read = demon("a" * 40, {}, worlds=100, declaration_weight=32)

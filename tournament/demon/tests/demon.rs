@@ -216,13 +216,34 @@ fn exact_posterior_values_agree_with_independent_weighted_minimax() {
 #[test]
 fn contract_forecast_recognizes_all_trumps_and_is_repeatable() {
     let sixes = (21..28).fold(0, |m, t| m | 1 << t);
-    let a = demon::bidding::forecast(sixes, 2, 42, 2, 666).unwrap();
-    let b = demon::bidding::forecast(sixes, 2, 42, 2, 666).unwrap();
-    assert_eq!(a.makes[6], 2, "seven trumps sweep every hidden deal");
+    let declarations: Vec<u8> = (0..10).collect();
+    let a = demon::bidding::forecast(sixes, 2, 42, 2, 666, &declarations).unwrap();
+    let b = demon::bidding::forecast(sixes, 2, 42, 2, 666, &declarations).unwrap();
+    assert_eq!(a.makes[6], Some(2), "seven trumps sweep every hidden deal");
     assert_eq!(a.makes, b.makes);
     assert_eq!(a.nodes, b.nodes);
-    assert!(demon::bidding::forecast(sixes, 4, 30, 2, 666).is_err());
-    assert!(demon::bidding::forecast(sixes & !(1 << 27), 0, 30, 2, 666).is_err());
+    assert!(demon::bidding::forecast(sixes, 4, 30, 2, 666, &declarations).is_err());
+    assert!(demon::bidding::forecast(sixes & !(1 << 27), 0, 30, 2, 666, &declarations).is_err());
+    for bad in [vec![], vec![10], vec![6, 6]] {
+        assert!(demon::bidding::forecast(sixes, 0, 30, 2, 666, &bad).is_err());
+    }
+}
+
+#[test]
+fn requested_declarations_keep_the_same_worlds_and_exact_counts() {
+    let all: Vec<u8> = (0..10).collect();
+    let mut rng = SplitMix::new(73);
+    for seat in 0..4 {
+        let hand = deal(&mut rng)[seat as usize];
+        let full = demon::bidding::forecast(hand, seat, 31, 4, 91, &all).unwrap();
+        // Reordered and incomplete: only the selected physics is searched.
+        let partial = demon::bidding::forecast(hand, seat, 31, 4, 91, &[9, 6, 0, 7]).unwrap();
+        assert_eq!(full.worlds, partial.worlds);
+        assert!(partial.nodes < full.nodes);
+        for d in 0..10 {
+            assert_eq!(partial.makes[d], if [9, 6, 0, 7].contains(&d) { full.makes[d] } else { None });
+        }
+    }
 }
 
 #[test]

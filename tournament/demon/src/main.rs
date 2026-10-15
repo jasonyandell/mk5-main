@@ -112,7 +112,14 @@ fn answer(cfg: Config, line: &str) -> Value {
                 let s = u8::try_from(int(&v, "seat")?).map_err(|_| "seat out of range")?;
                 let b = u32::try_from(int(&v, "bid")?).map_err(|_| "bid out of range")?;
                 let n = usize::try_from(int(&v, "worlds")?).map_err(|_| "worlds out of range")?;
-                demon::bidding::forecast(h, s, b, n, int(&v, "seed")?)
+                let declarations = v
+                    .get("declarations")
+                    .and_then(Value::as_array)
+                    .ok_or("forecast requires declarations")?
+                    .iter()
+                    .map(|d| d.as_u64().and_then(|d| u8::try_from(d).ok()).ok_or("declaration out of range"))
+                    .collect::<Result<Vec<_>, _>>()?;
+                demon::bidding::forecast(h, s, b, n, int(&v, "seed")?, &declarations)
             };
             match run() {
                 Ok(f) => json!({"makes": f.makes, "worlds": f.worlds, "nodes": f.nodes,

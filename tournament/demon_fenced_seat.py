@@ -123,6 +123,7 @@ class DemonSeat:
             n = int(self.bid_spec.split(":")[1])
             reply = self._ask({"op":"forecast", "hand_mask":sum(1 << t for t in hand),
                                "seat":seat, "bid":bid, "worlds":n,
+                               "declarations":list(self.declarations),
                                "seed":decision_seed(self.game, self.hand_no, seat, -1)})
             heuristic = self._ask({"op":"declaration_model", "hand_mask":sum(1 << t for t in hand)})["decl"]
             decl = max(self.declarations, key=lambda d:(reply["makes"][d], d == heuristic, -d))
