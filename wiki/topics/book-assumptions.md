@@ -6,6 +6,10 @@ last_updated: 2026-10-14
 status: active
 ---
 
+> **Zeb isn’t better at 42; nobody at the table is punishing its predictability.** That is the reason Zeb “wins”.
+>
+> — the shop, 2026-10-14
+
 ## Summary
 
 The [[book-authority]]'s core inventory. Every lesson of *Winning 42* ([[w42]]) is written for a

@@ -6,6 +6,10 @@ last_updated: 2026-10-14
 status: active
 ---
 
+> **It’s not what you hold, it’s what you need.**
+>
+> — the shop, 2026-10-14
+
 ## What it is
 
 The match equity V(a, b, d) is the probability that our side wins the game to seven marks
