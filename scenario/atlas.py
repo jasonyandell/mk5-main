@@ -545,13 +545,16 @@ def _main(argv: Sequence[str] | None = None) -> None:
               f"{positions} kept, {time.time() - t0:.0f}s", flush=True)
         status.update(wave=wave, positions=positions)
 
+    # The commit is the code that runs: read it before the first wave, not at save. A commit
+    # that lands mid-run must not be recorded as the code that produced the pour (#171).
+    commit = _git_head()
     threading.Thread(target=heartbeat, daemon=True).start()
     try:
         p = pour(deals, args.bidder, args.bid, _declared_trump, walt, progress)
     finally:
         done.set()
     wall = time.time() - t0
-    save(p, args.out, spec=args.spec, seed=args.seed, fiber=args.fiber, commit=_git_head(),
+    save(p, args.out, spec=args.spec, seed=args.seed, fiber=args.fiber, commit=commit,
          deal_seeds=None if args.fiber else [args.seed + i for i in range(args.deals)],
          wall_seconds=round(wall, 1))
     size = (Path(args.out) / "pour.npz").stat().st_size

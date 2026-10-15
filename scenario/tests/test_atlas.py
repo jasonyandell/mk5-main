@@ -153,6 +153,15 @@ def test_calibration_reads_the_opening_leads(poured):
     assert c.real_margin == np.mean(bt[:, 0] - bt[:, 1])
 
 
+def test_the_manifest_names_the_commit_the_run_started_at(tmp_path, monkeypatch):
+    # A commit landing mid-run (#171): the head reads A at start and B at save.
+    import scenario.atlas as atlas
+    heads = iter(["A" * 40, "B" * 40])
+    monkeypatch.setattr(atlas, "_git_head", lambda: next(heads))
+    _main(["pour", "--deals", "1", "--spec", SPEC + ",u=points", "--seed", "5", "--out", str(tmp_path)])
+    assert json.loads((tmp_path / "manifest.json").read_text())["commit"] == "A" * 40
+
+
 def test_the_command_line_pours_and_molds(tmp_path, capsys):
     _main(["pour", "--deals", "2", "--spec", SPEC + ",u=points", "--seed", "5", "--out", str(tmp_path)])
     p = load(tmp_path)
