@@ -4194,3 +4194,27 @@ of its net after the root; floor-off-when-exact is correct and null. Pages:
 ## [2026-10-14 | e45238fc | the tie band's registered replication (#120 follow-up): δ = 0.02 against exact-tie margin fails both bars (51.4% [49.9, 52.9] to 250; marks −0.01 [−0.085, +0.075]); A/A exact; no drops; the band is closed]
 
 **Updated:** [[tie-band-2026-10-14]] (§ Replication, pre-registered at e45238fc; § Summary), [[scenario-player]], `index-experiments.md`. Data: `zeb/tie-band-rep/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | 1cbb8417 | the tournament: production Walt, Zeb 0.1.0/0.2.0 and fenced E[Q] n=10 on a Bradley–Terry ladder; append-only records on HF, one commit per faceoff; concurrent writers and kill-resume tested; first round 9 faceoffs]
+
+**Added:** [[tournament]], `tournament/`, the `py-tournament` check suite, dataset `jasonyandell/texas-42-tournament` (+ `-selftest`, the live race). **Updated:** [[scenario-player]] (§ Where it stands, Links), [[strategy-fusion-fence]] (inventory: `tournament/eq_fenced_seat.py`), `index-topics.md`. Follow-ups: #156 (cloud worker, points250, catalogue deals).
+
+## [2026-10-14 | 132878a4 | the Book Authority: the book is the authority, our measurement the suspect; charter, eleven implicit assumptions, completion ledger, the regulars' table (#149) as the next experiment]
+
+**Added:** [[topics/book-authority|book-authority]] (the charter, vocabulary, worked examples), [[topics/book-assumptions|book-assumptions]] (the inventory A1–A11, the ledger, the order, #149's sketch and its ≤1-min pilot). **Updated:** `CLAUDE.md` (the project today; hard rule THE BOOK IS THE AUTHORITY), `AGENTS.md`, [[w42]], [[book-study-2026-10-12]], [[book-head-to-head-2026-10-13]], [[book-investigation-2026-10-14]], [[book-reads-by-the-book-2026-10-14]] (each gains a "what our model leaves out" section; numbers unchanged), [[scenario-player]], [[silas]], [[the-wall]], the indexes. Issues: #149–#155.
+
+## [2026-10-14 | a0656fe2 | zeb 0.3.0 built: soft uniform reading (ε 0.28, `reading: false` to turn off) + make-then-margin as defaults; pre-registered confirmation vs 0.2.0 +0.21 [+0.08, +0.34] marks/game, passes; not yet published]
+
+**Added:** [[zeb-030-confirmation-2026-10-14]] (pre-registered at 91855dc6). **Updated:** [[scenario-player]] (§ Zeb 0.3.0, § Where it stands, the reading and tie paragraphs), `index-experiments.md`. Code: `zeb/` 0.3.0, `scenario/zeb030.py`. Data: `zeb/release-0.3.0/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | d432a216 | the regulars' table (#149): a regular who learns bidding caution within a game; interaction with a varied bidder +0.04 [−0.15, +0.22] marks/game, A/A −0.02; null; the auction in the reading's draw, both engines]
+
+**Added:** [[regulars-table-2026-10-14]] (pre-registered at d432a216; 288 batches, none dropped). **Updated:** [[topics/book-authority|book-authority]], [[topics/book-assumptions|book-assumptions]] (A1 row, #149 result, order), [[scenario-player]], `index-experiments.md`. Code: `Situation.auction` (planner.py + core), `arena/regulars.py`, `VariedBidder`, the engine's `remembers` hook, `scenario/regulars.py`. Data: `book/regulars-table/` in `jasonyandell/texas-42-zeb-research-2026-10` with SHA256SUMS.
+
+## [2026-10-14 | 2bae0410 | the fly connectome as a 42 player: viable as a toy, not as a player; pre-registered reservoir pilot (5-5's seat, exact uniform posterior): real wiring ties or trails rewired/ER nulls, mb +1.7 [+1.0, +2.4] mnat vs rewired]
+
+**Added:** [[topics/fly-connectome-42|fly-connectome-42]] (sources: FlyWire v783, Shiu LIF, Eon's embodied fly, FlyGM; options ranked; pre-registered at 2bae0410), `scenario/flybrain_pilot.py`. **Updated:** [[scenario-player]] (Links), `index-topics.md`, `index.md`. Data: connectome downloaded to `scratch/fly/data/` (MIT code, FlyWire CC BY 4.0), not committed.
+
+## [2026-10-14 | adcc454c | legacy 42 bots surveyed (Win42, texas42 0.46, 42-LX, Palm42, iOS Texas 42, dead GitHub repos); first target Win42 via its author-documented protocol (#157); the GPL texas42 AI seated at the arena in a pilot (854/854 legal plays; a smoke test, not a rating)]
+
+**Added:** [[legacy-42-bots]]. **Updated:** [[tournament]] (§ Participants, Links), `index-topics.md`. Issue: #157. Pilot code and logs in `scratch/legacy-42/` (gitignored; no third-party bytes committed).
