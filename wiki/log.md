@@ -48,6 +48,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
+
+- `silas/src/field.rs`: a field of four Silas players, `play_out` (the auction, the declaration, all 28 plays, each seat at its own frame), `Deals::{Listed, Uniform}`, the paired `Trial::compare` with flips, the chance arm and an empirical-Bernstein interval (exact given the field over a list; never `exact`). Choices in `silas/docs/cross-game.md`, Slice 3 as built; Fiber and Hands deferred. [[silas]]
+
 ## [2026-10-15 | book/count-lapse | The field that loses the count pre-registered (#172)]
 
 - [[count-lapse-2026-10-15]]: `arena/count_lapse.py`, a seat's view with a played and a live tile exchanged (a legal game, sticky for the hand); not a fiber, so the shared record is untouched; primary ΔG(0.2), 384 batches. [[book-assumptions]] A3 scope line.
