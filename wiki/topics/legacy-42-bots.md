@@ -2,7 +2,7 @@
 title: "Legacy 42 bots: old Texas 42 programs as ladder opponents and as a source of ideas"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-15
 status: active
 ---
 
@@ -32,9 +32,13 @@ The repo and the Hugging Face datasets are public, so these rules hold for every
   the author's permission. Disassembly (Ghidra) is the last resort. It is never needed for
   the top two targets.
 - **GPL code** (the `texas42` 0.46 AI) may be run, modified and even redistributed under
-  GPL-2. Linking it into a seat makes that seat binary GPL. mk5 is MIT, so the adapter stays
-  out of the tree until Jason picks a home: a GPL-2 subdirectory, a separate repo, or an
-  on-demand build from the SourceForge tarball.
+  GPL-2. Linking it into a seat makes that seat binary GPL. mk5 is MIT, so no GPL file enters
+  this tree. Home, decided 2026-10-14: the separate repo `jasonyandell/texas-42-gpl`, private
+  for now (going public is Jason's later call). It holds the pristine tarball (tag
+  `upstream-0.46`), then our shim and seat, with a `CHANGES.md` per GPL-2 §2(a). mk5 uses the
+  built seat only as a separate process over a line protocol on stdin/stdout, never linked or
+  imported; that boundary keeps mk5 MIT. `pilot.py` is a pure client of that protocol with no
+  upstream code, so it stays in mk5.
 
 ## Candidates
 
@@ -101,7 +105,7 @@ Jason's call. The issue lists the steps.
 
 ## Pilot: texas42 0.46 at the arena's table (2026-10-14)
 
-Built in `scratch/legacy-42/` (gitignored; the pilot's script and records are `zeb/legacy-42/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10), the GPL sources and the shim left out until their home is chosen). The SourceForge tarball, the original `AiPlayer.cpp`,
+Built in `scratch/legacy-42/` (gitignored; the pilot's script and records are `zeb/legacy-42/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10), the GPL sources and the shim live in the private `texas-42-gpl` repo, not here). The SourceForge tarball, the original `AiPlayer.cpp`,
 `Domino.cpp` and `DominoList.cpp` unchanged, a Qt 3 shim (QString, QValueList, QPair, no-op
 QTimer), a stub `Engine` that records the decision, and `seat.cpp`. Each request rebuilds the
 AI's state from the public record (hand, history, current trick by relative seat, trump) and

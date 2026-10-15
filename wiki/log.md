@@ -45,6 +45,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+
+## [2026-10-15 | archive/gpl-home | GPL texas42 gets its own repo]
+- [[legacy-42-bots]]: the open question is answered. The GPL sources, shim and seat live in the private `jasonyandell/texas-42-gpl` (upstream tarball verified, tag `upstream-0.46`, headless build, smoke game clean). mk5 stays MIT; it talks to the built seat only over stdin/stdout.
+
 ## [2026-10-14 | 4454f603 | The Demon earns a held-out bidding gain at 100 play worlds]
 
 **Completed:** [[demon-next-form-2026-10-14]] (all 1,360 games; independent bidder confirmation 324–188, 63.28% [59.38%, 67.19%]; reader and combination not promoted). **Updated:** [[the-demon]], [[tournament]], [[scenario-player]]; new immutable bidder pin, complete public evidence and verified source parity. **Added:** [[4454f603]]. Wider validation remains #165.
