@@ -15,7 +15,9 @@
 //! declaring rules read an [`AuctionFrame`]. A [`Contract`] settles a hand
 //! under a [`Scoring`] and moves a
 //! [`MatchState`]; a [`Dominance`] compares two contracts over every outcome
-//! of the hand, exactly.
+//! of the hand, exactly. A [`Field`] of four [`Player`]s plays a hand out
+//! ([`play_out`]); a [`Trial`] compares two players in its chair over deals,
+//! paired, given the field.
 //!
 //! Silas owns the nouns of the game, the language, and every derived rule. A
 //! rules engine supplies only one declaration's tables, through
@@ -41,6 +43,7 @@ mod coverage;
 mod dominance;
 mod dynamics;
 mod eval;
+mod field;
 mod frame;
 mod lint;
 mod measure;
@@ -64,6 +67,7 @@ pub use dynamics::{
     step_belief_given, step_frame, step_world, transport_answers,
 };
 pub use eval::{Answer, Answers, Budget, CompiledNumber, CompiledQuery, Witness};
+pub use field::{Deals, Field, Paired, Player, Seats, Settlement, Table, Trial, play_out};
 pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
 pub use lint::Warning;
 pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};

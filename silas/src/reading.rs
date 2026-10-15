@@ -243,7 +243,7 @@ fn subsets(set: DominoSet, k: usize) -> impl Iterator<Item = DominoSet> {
 }
 
 /// FNV-1a, 64 bits: a digest that names a model, not a security property.
-fn digest(text: &str) -> u64 {
+pub(crate) fn digest(text: &str) -> u64 {
     text.bytes().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3))
 }
 

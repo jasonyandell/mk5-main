@@ -144,6 +144,18 @@ pub struct World {
 }
 
 impl World {
+    /// The deal of `hands`, by seat: seven tiles each, every tile once.
+    pub fn deal(hands: [DominoSet; Seat::COUNT]) -> Result<World> {
+        let mut seen = DominoSet::EMPTY;
+        for (seat, hand) in Seat::ALL.iter().zip(hands) {
+            if hand.len() != MAX_CAPACITY || !hand.is_disjoint(seen) {
+                return Err(error(format!("{seat} is dealt {hand:?}: a deal gives each seat seven tiles of its own")));
+            }
+            seen = seen.union(hand);
+        }
+        Ok(World { hands })
+    }
+
     pub fn hand(&self, seat: Seat) -> DominoSet {
         self.hands[seat.index()]
     }

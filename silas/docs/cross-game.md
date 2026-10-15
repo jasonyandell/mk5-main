@@ -758,6 +758,77 @@ field (S-0089-a: "two in three"); cluster B's variance claims given a `V` built
 from a Silas-field outcome table (7 rows). 19 rows priced against a Silas field; all
 labelled with that field.
 
+#### Slice 3 as built (2026-10-15)
+
+Built: `Player`, `Field`, `Table`, `play_out` and `Settlement`, `World::deal`,
+`Deals::{Listed, Uniform}`, `Seats`, `Trial::compare` and `Paired` with its
+chance arm (`src/field.rs`; README § The field; `tests/field.rs`). Where this
+spec was silent or did not fit the code, the choice made:
+
+1. **Not built: `Fiber` and `Hands`.** The deal measures are the listed set
+   and the uniform sample only; a comparison over one hand's completions or
+   over the viewer's hands waits on its own slice, and nothing stands in for
+   it (no variant, no stub).
+2. **A seat is one `CompiledPolicy`.** A policy already carries its play,
+   bidding and declaring sections and a fallback for each, and a reading
+   already reads one policy for a seat's calls and plays; a pair would let a
+   seat bid by one policy and play by another, which is a new policy, written
+   as one. Beside it the chance player (`Player::Chance { seed }`), since a
+   Silas policy is deterministic. `HandPolicySpec` is `Player`; `Named` is
+   slice 4's.
+3. **The field's identity is its players**, seat by seat (`NAME#DIGEST`, as a
+   reading names a policy), not a caller's string, so a field cannot be named
+   for what it is not. The auction's rules, the declarations offered and the
+   match state are the `Table`, a parameter of the question, not of the model.
+4. **The whole hand is played**, all 28 tiles, never stopped once made or set
+   (the § 4 text said stop early under marks): the outcome is the points each
+   side took, and conservation is a test.
+5. **Passed out.** Four passes without the forced bid settle as
+   `Settlement::PassedOut`: no contract, no play. The reshake is another deal,
+   so the hand moves no score: zero in marks or points, and under a match-win
+   value the value of the state itself. A comparison counts it like any other
+   settlement, so a player that passes a hand out its rival bids is credited
+   or charged the difference.
+6. **Seatings.** `Rotate` is every chair at every shaker (16 a deal), `Fixed`
+   one chair at every shaker (4): the shaker is symmetrized, not a property of
+   the deal. The field's player in the chair under test sits out.
+7. **The chance player** is the arena's `RandomBidder` (`p_bid` 3/10,
+   uniform among the legal bids of at most one mark, a uniform pip trump) and
+   lowest-legal play, drawn exactly (splitmix64 with rejection) and keyed on
+   its seed and its auction frame. Where it may not pass it bids. The chance
+   arm is `Player::CHANCE` (seed 0) in place of `b`, from the same play-outs
+   of `a`; it has no chance arm of its own. "The self-arm (`a` against `a`
+   under a reseed)" of § 5 is the chance player against a reseeded self.
+8. **The interval.** Over a listed set the mean is exact given the field, so
+   the interval is the mean and the verdict its sign. Over a sample it is the
+   empirical Bernstein bound (Maurer and Pontil 2009, Theorem 4, both sides:
+   `ln(4/δ)`), not Hoeffding's: it uses the per-deal sample variance, and
+   paired differences are mostly ties. At 2,000 deals, `risk-budget` against
+   `bid-only-enough` in the tests' field is −0.083 marks a deal, [−0.204,
+   +0.039] at 95%: a half-width of 0.122, where Hoeffding's on the same range
+   is 0.607. The range is the
+   utility's a priori one, never the sample's: four times the most marks four
+   calls reach under the cap (20 straight), four times a set marks bid at that
+   most in points, 2 for a match-win value. `ln` and `sqrt` are bounded above
+   in exact rationals (the `atanh` series with a geometric tail; an integer
+   root), and the half-width rounded up to a millionth, so no float enters.
+   The confidence is the trial's, a rational in (0, 1).
+9. **No `(compare ...)` form and no `silas compare` yet.** The text form
+   needs listed deals by name and a field of four policy files; it, and the
+   command, land with slice 4's `silas compare --ledger FILE`, where the
+   ledger names both.
+10. **The replay check is not built.** The book's rules are 18 partial
+    policies, each governing a slice of the decisions, with no stated
+    precedence among them, and of `hands.json` only 8 examples are full
+    deals, whose auctions are a convention (`Auction::won_by`). A play-out
+    "under the book-faithful policies" needs one composed policy whose rule
+    order is ours: new modelling, not a check.
+
+Cost: release build, every core: 500 deals at one chair (2,000 seatings, three
+arms) in about 0.15 s with the chance players; 2,000 deals rotated (32,000
+seatings) of three bidding policies in about 2 s. `tests/field.rs` runs in
+under a second.
+
 ### Slice 4: the arena ledger (medium; a week, mostly arena-side)
 
 **API.** The ledger format of § 2.5; `Comparison::from_ledger(path, utility)`

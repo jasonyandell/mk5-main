@@ -1182,8 +1182,8 @@ hands that look as strong but can be set.
 The book's rules compare whole contracts and policies under a scoring and a
 match score, not plays in one hand. This is the frame they need
 (`docs/cross-game.md`, slice 1); the bid action is The auction (slice 2),
-and the deal measure and the comparison of policies over deals come later
-(`GAPS.md`, 2).
+and the deal measure and the comparison of policies over deals are The field
+(slice 3).
 
 ```rust
 pub enum Scoring { Points { target: u32 }, Marks { target: u32 } }  // POINTS: 250; MARKS: 7
@@ -1257,6 +1257,69 @@ scorings (`bid-only-enough`, the contract half of cluster A); and in linear
 marks the 84 is a belief statement, not a dominance (`eighty-four-in-marks`).
 `tests/cross_game.rs` checks the settlement on the book's own vectors, the
 award, the set's floor of 43, every example and the programme.
+
+## The field
+
+A field is four players, one a seat; a comparison asks how much better one
+player does than another in a chair of that field (`docs/cross-game.md`,
+slice 3; `tests/field.rs`).
+
+```rust
+pub enum Player { Policy(Arc<CompiledPolicy>), Chance { seed: u64 } }
+pub struct Field;                                   // Field::new([Player; 4]), id(): the players, seat by seat
+pub struct Table { config: AuctionConfig, offered: Arc<[Physics]>, state: MatchState }
+pub fn play_out(world: &World, shaker: Seat, field: &Field, table: &Table, budget: &mut Budget) -> Result<Settlement>;
+pub enum Settlement { Played { auction, contract, outcome, plays }, PassedOut { auction } }
+pub enum Deals { Listed(Vec<World>), Uniform(Sample) }
+pub enum Seats { Rotate, Fixed(Seat) }
+pub struct Trial { field, deals, seats, table, utility: Utility, confidence: BigRational }
+impl Trial { pub fn compare(&self, a: &Player, b: &Player, budget: &mut Budget) -> Result<Paired>; }
+```
+
+- **A player** is a Silas policy, which bids, declares and plays by its
+  sections (a section it lacks is its fallback: it passes, or bids 30 when
+  forced, declares the first offered and plays its lowest legal tile), or the
+  chance player: the arena's `RandomBidder` and lowest-legal play, drawn
+  exactly. It bids with probability 3/10 (always when it may not pass),
+  uniformly among the legal bids of at most one mark, declares uniformly
+  among the pip suits offered, and plays its lowest legal tile; its draws are
+  keyed on its seed and its auction frame, so it too is a function of what it
+  sees.
+- **A play-out** (`play_out`) is one deal (`World::deal`, seven tiles to
+  each seat) from one shaker: every seat calls by its player at its own
+  `AuctionFrame`, the winner declares, then all 28 tiles are played, each
+  seat choosing by its player at its own `Frame`. The settlement is the
+  auction, the contract, the `Outcome` (the two sides' points, 42 together)
+  and the plays. Four passes without the forced bid are `PassedOut`: no
+  contract; the next seat shakes, which is another deal, so the hand moves
+  no score (nothing in marks or points; the match-win value of the state
+  itself).
+- **The deals.** `Listed` is those deals, each once: a claim about them
+  alone. `Uniform(Sample { n, seed })` is `n` deals from a seeded splitmix64
+  stream, a Fisher–Yates shuffle with every draw exactly uniform, so each of
+  the 472,518,347,558,400 deals is equally likely. `Rotate` puts the player
+  under test in every chair, `Fixed(seat)` in one, each at every shaker: 16
+  or 4 seatings a deal.
+- **The comparison.** `a` and `b` each take the chair, on the same deal, at
+  the same shaker, against the same three other seats (the field's player
+  in the chair sits out). A deal's difference in the utility of the chair's
+  side is its mean over the seatings: one cluster. The answer (`Paired`) is
+  the mean over deals (`delta`, an `Estimate`), each deal's difference, the
+  flips (deals `a` did better, `b` did, tied) and an interval: over a listed
+  set, the mean itself, exact given the field; over a sample, the empirical
+  Bernstein bound (Maurer and Pontil 2009, Theorem 4, both sides) at the
+  trial's confidence, from the sample variance and the width of the range a
+  difference lies in (four times the most marks four calls reach; in points,
+  four times a set marks bid at that most; 2 for a match-win value), its
+  logarithm and root bounded above in exact rationals and its half-width
+  rounded up to a millionth. The verdict is `Better` or `Worse` only when
+  the interval clears zero. Every comparison runs `a` against the chance
+  player too (`chance()`), from the same play-outs of `a`.
+- **Authority.** A field is a model: every answer is `exact_given(field)`,
+  the field named by its players (`NAME#DIGEST`, as a reading names a
+  policy, or `chance#SEED`), met with the sample's `sampled(n, seed)` and the
+  utility's value. None is `exact`. A match-win value is one side's, so a
+  chair on the other side is refused.
 
 ## Numbers
 
