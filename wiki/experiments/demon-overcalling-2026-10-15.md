@@ -70,11 +70,19 @@ retained regardless of its outcome. There is no promotion yet.
 
 ## Status
 
-The policy is implemented; development games have not started. Boundary tests
+The policy is merged at [[2e233d29]] and the three development arms are running.
+No development result or candidate selection is reported yet. Boundary tests
 cover every seat orientation, opponent versus partner, no point raise left,
 unchanged existing specs and malformed parameters. Whole-game tests check
-legality and determinism. The protocol is fixed before measurement; #165 remains
-open until the full strength/runtime objective is achieved.
+legality and determinism. `scripts/check --fast` is GREEN: fence 8,
+py-tournament 44, wiki and reuse. The native binary and all three Rust trees
+are unchanged from attempt 1; its SHA-256 remains `1c2ccee8…`.
+
+[Public frozen protocol](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/fc266b135b6830785edb9b725c8cfae8bc41d478/demon/2026-10-15-vs-zeb/development-2/protocol)
+includes executable configuration, runners, source patch and check receipts.
+The plan and manifest were freshly downloaded and verified. The source and
+protocol were recorded [before play](https://github.com/jasonyandell/mk5-main/issues/165#issuecomment-6188236020).
+Issue #165 remains open until the full strength/runtime objective is achieved.
 
 ## Links
 

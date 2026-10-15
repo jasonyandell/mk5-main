@@ -2,6 +2,8 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/2e233d29|2e233d29]] — explicit opponent-held PIMC point-bid thresholds, tested without added search and frozen for development (complete)
+
 - [[sources/demon-zeb-attempt-1|demon-zeb-attempt-1]] — complete 1,024-game native Zeb trial, timings, traces, frozen provenance and audit (complete)
 
 - [[sources/7e00788a|7e00788a]] — explicit forecast declarations avoid unused search; corrected development freezes a candidate against native Zeb (complete)

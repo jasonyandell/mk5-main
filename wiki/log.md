@@ -49,7 +49,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ## [2026-10-15 | demon/overcalls | Contest opponent-held point bids without more search]
 
-**Added:** [[demon-overcalling-2026-10-15]]: explicit opponent cutoff, boundary and whole-game checks, three fixed development arms and fresh attempt-2 protocol. **Updated:** [[the-demon]]; attempt 1 remains complete and unpromoted.
+**Added:** [[demon-overcalling-2026-10-15]] and [[2e233d29]]: explicit opponent cutoff, boundary and whole-game checks, three fixed development arms and fresh attempt-2 protocol. **Updated:** [[the-demon]]; attempt 1 remains complete and unpromoted.
 
 ## [2026-10-15 | demon/attempt-1 | Complete native Zeb confirmation: joint criterion not met]
 
