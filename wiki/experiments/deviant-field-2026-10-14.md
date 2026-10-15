@@ -2,7 +2,7 @@
 title: The named deviant field — the book's bidding against the overbidders it was written for (#152, 2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-15
 status: complete
 ---
 
@@ -90,7 +90,10 @@ read in one unit (MDE about 8 points in the marks game, about 10 in the book's).
   than the control at k = 0 (exploratory). In points to 250, where a set pays the setters and a high
   bid's reward is in the count, it is level at every k (+0.5 [−6.3, +7.3] at k = 0). The two games
   are not paired, so the gap between them carries no interval of its own; what each says alone is
-  that the cost of the book's bidding is a marks game's cost, consistent with A5.
+  that the cost of the book's bidding is a marks game's cost, consistent with A5. *Later
+  (2026-10-15):* the same pairing on new seeds, [[overbidders-2026-10-14]]'s PRH over 192 pairs,
+  wins 38.8% [34.1, 43.5]; PR0 seed 1951 re-run at 363b0c41 is byte-identical, so the gap is the
+  draw, and k = 0's level reading here was likely a high one.
 - **What the field does to itself.** The book predicts overbidders set themselves (H<k> above 0).
   Against Zeb's caution-0 bidder the k = 5 field gains 0.24 [0.01, 0.47] marks/game, and the k = 10
   field is level (−0.02 [−0.29, +0.25]): in this arena a mechanical overbid of one step pays.

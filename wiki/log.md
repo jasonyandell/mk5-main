@@ -47,6 +47,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | book/overbidders | The book's own overbidders: its bidding loses less ground against them (#163)]
+
+- [[overbidders-2026-10-14]] complete: X_S = +0.15 [+0.02, +0.28], X_T = +0.23 [+0.03, +0.41] marks/game, the book's prediction; `risk-budget` still trails the control in every field; the ten-count 35 sets itself (+1.30 [1.13, 1.45]).
+- [[book-assumptions]] A6 row and reading; [[deviant-field-2026-10-14]] notes that its k = 0 "level to 250" did not replicate on new seeds (byte-identical re-run, so the draw).
+- Data: HF `book/overbidders/`.
+
 ## [2026-10-15 | demon/confirmation-2 | Demon beats both pinned native Zeb bidders within the runtime bar]
 
 **Completed:** [[demon-overcalling-2026-10-15]]: all 2,048 games audited and public; both predeclared strength/runtime criteria met. **Added:** [[demon-zeb-attempt-2]] and the exact frozen participant to the roster. **Updated:** [[the-demon]] [[tournament]] [[scenario-player]].

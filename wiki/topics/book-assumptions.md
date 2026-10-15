@@ -36,7 +36,7 @@ trick.
 | A3 | **Opponents are fallible**: they lose track, misdiscard, can be lured | S-0088-a, S-0083-b, S-0079-a, S-0079-b, S-0169-b, S-0080-a, S-0078-d | **absent**: Zeb never forgets a tile or a void | none | **#151**, the fallible-tracker field and its crossover p* |
 | A4 | **The auction is a signal made by a known method**: a bid tells its level's shape | S-0021-a, S-0027-b, S-0027-d, S-0077-c, S-0077-d, S-0078-a, S-0078-b, S-0155-b, S-0165-a | **absent**: worlds uniform given the auction (#117) | pilot below: a deterministic bidder's opening carries 0.93 of 1.58 bits about its hand's strength bucket | #117 / #134; inside #149 |
 | A5 | **The book's game and the match**: points to 250, a set rewarded, bidding that reads the score | S-0015-c, S-0017-c, S-0063-b, S-0114-a, S-0114-b, S-0047-a, S-0080-e, S-0110-a, S-0122-a, S-0129-b, S-0165-b, S-0170-a | **partial**: points to 250 exists (`points_to_win`); Zeb plans for the make, bids score-blind, never bids 84 (#115) | the book as Zeb's near-tie break wins 53.2% [51.1, 55.2] of games to 250, replicated | #115, #77 (marks-race utility), #130 slices 3–4 |
-| A6 | **The field has bidding styles** (overbidders, wild bidders) | S-0080-c, S-0070-a, S-0155-a, S-0155-b, S-0114-b, S-0034-a, S-0184-a, S-0188-b, S-0190-a, S-0191-a | **one dimension measured** (#152): a field that overbids by a fixed k | `risk-budget` bidding −0.71 [−1.00, −0.41] marks/game against the style-free field; against a field k points past its hand it costs 0.92 [0.60, 1.22] at k = 0 and 0.57 [0.22, 0.91] at k = 10, the shrink +0.35 [−0.02, +0.71] (MDE 0.52); level in the book's game to 250 at every k | **#163**, the book's kind of overbidder, powered |
+| A6 | **The field has bidding styles** (overbidders, wild bidders) | S-0080-c, S-0070-a, S-0155-a, S-0155-b, S-0114-b, S-0034-a, S-0184-a, S-0188-b, S-0190-a, S-0191-a | **two dimensions measured**: a field that overbids by a fixed k (#152), and the book's two named overbidders (#163) | `risk-budget` bidding −0.51 [−0.69, −0.33] marks/game against the style-free field; against the set-bidder (S-0155-a) and the habitual ten-count 35 (S-0070-a) it loses less, X_S = +0.15 [+0.02, +0.28] and X_T = +0.23 [+0.03, +0.41], the book's prediction, while still trailing the control (−0.36, −0.29); the ten-count field sets itself (control +1.30 [1.13, 1.45]). #152's fixed-k field: shrink +0.35 [−0.02, +0.71] (MDE 0.52). To 250 the bidding trails the control by about 7 points of share in both named fields ([[overbidders-2026-10-14]], [[deviant-field-2026-10-14]]) | a `risk-budget` that reads the field's style (#116, #130 slice 5); a set-bidder whose raises climb |
 | A7 | **The reader is a bounded human**: the rules are a fast policy, not a replacement for enumeration | the whole book; S-0076-a, S-0078-d | **measured to 16 worlds** (#154): the fallback still plans | the book as tie-break wins its game (A5); as Zeb's near-tie break it neither raises nor costs Zeb at 16, 64 or 160 worlds (D16 −0.01 [−0.18, +0.17], MDE 0.25); inside its sets the cost falls from 1.10 [0.93, 1.27] at 160 worlds to 0.21 [−0.02, 0.44] at 16, the predicted direction, never crossing 0 | done: **#161**, the reader with no plan: the rules are worth +2.47 [2.28, 2.65] marks/game to the reader, about 61% of a 16-world plan |
 | A8 | **A rule is applied with judgment inside its stated scope** | every rule file's header | **partial**: the Silas stack is literal | the census: 44% of the first head-to-head's loss was the encoding; repairs moved +0.47 [+0.33, +0.62] marks/game | #146 done; #153 |
 | A9 | **The value of unpredictability is a response, not a fixed field** (an equilibrium claim) | S-0089-e, S-0081-a, S-0037-a, S-0154-a | **absent**: no mixed policies, no response map | none | #130 slice 5; #116; #149 is the fixed-learner first step |
@@ -77,11 +77,14 @@ trick.
 - **A5 is where restoring an assumption first paid.** Given its own game, the book's count play
   earned 53% of games as Zeb's tie-break. What remains is a utility that sees the score and an
   84 bid (#115).
-- **A6, now measured in one dimension** ([[deviant-field-2026-10-14]]): against a field that
-  overbids by a fixed step, the cost of the book's bidding shrinks from 0.92 to 0.57 marks/game as
-  the step grows to 10 points, the direction the book predicts, a null at its MDE of 0.52. In the
-  book's own game it is level at every step. The field here overbids mechanically; the book's
-  overbidders bid on a partner's hand and to stop the opponents, and that field is #163.
+- **A6, measured for the book's own overbidders** ([[overbidders-2026-10-14]]): against the
+  set-bidder and the habitual ten-count 35 the book names, its bidding loses less ground than against
+  the style-free field (X_S = +0.15 [+0.02, +0.28], X_T = +0.23 [+0.03, +0.41] marks/game), the
+  direction the book predicts, and the ten-count field sets itself as the book says. The bidding
+  still trails the control in every field, because `risk-budget` reads no style: the book's "pass
+  and set them" assumes the reader knows who overbids (A1). #152's fixed-step field leaned the
+  same way as a null ([[deviant-field-2026-10-14]]); its "level to 250" at k = 0 did not replicate
+  on new seeds (38.8% [34.1, 43.5] here against 50.5% [43.8, 57.3]; the code reproduces byte for byte).
 - **A7, held, now measured to 16 worlds** ([[book-small-n-2026-10-14]]): the book is a policy for a
   player who cannot enumerate. Its one measured win is in exactly that role, breaking ties for a
   planner. #154 predicted the book raises a bounded Zeb by more as n falls; what it saw is that the
