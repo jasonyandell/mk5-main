@@ -63,7 +63,8 @@ there). The sample for the page and the reasons: from chunk s100001, per shape, 
 departures from different rules and one agreement, at random (seed 20261013).
 
 **Producing player.** The pour's: `k0,n512`, utility `make`, bid 30, seat 0 bids, field nets
-`field_make_d5000_v2` and `v2/margin_d50k_h128x64`, before the #110 and #112 fixes; not the
+`field_make_d5000_v2` (reproducible at `31ecd76d` with `nets/field_make_d5000_v2.field-v2.npz`, #136) and
+`v2/margin_d50k_h128x64`, before the #110 and #112 fixes; not the
 deployed Zeb. Every number is that player's 512-world forecast.
 
 ## The metasplat

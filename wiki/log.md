@@ -48,6 +48,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | archive | the s100001 field net in layout field-v2, published with its hash (#136)]
+- `field_make_d5000_v2` converted once (13 zero bid rows); `31ecd76d` + the converted net and `2577f404` + the original
+  both reproduce the published s100001 chunk bit for bit (512 deals, 8,844 positions). The manifest's `31ecd76d` is a
+  save-time stamp; the run itself was `2577f404`. `margin_d50k_h128x64` loads as is.
+- Touched: [[book-study-2026-10-12]], [[lumps-voi-2026-10-13]], [[metasplat-2026-10-13]]; the pour's card on HF.
+
 ## [2026-10-15 | rematch | Zeb 0.4.1 vs the overcalling Demon: pre-registered before any game]
 
 **Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). Results follow.

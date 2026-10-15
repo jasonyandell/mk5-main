@@ -376,7 +376,7 @@ legal tile fires, and those legal tiles are its allowed set. Cost: 66 s per 50,0
 chunk, five chunks in parallel, about 5.5 CPU-minutes (`scratch/silas-reprice/`).
 
 *Zeb* here is the pour player, `k0,n512`, utility `make`, bid 30, over the field net
-`field_make_d5000_v2` (seeds 100,001 up, code `31ecd76d`) and `v2/margin_d50k_h128x64`
+`field_make_d5000_v2` (seeds 100,001 up, code `31ecd76d`; its run ran the code of `2577f404` (the pour stamps its commit on save) with the net in layout `field-v1`; `31ecd76d` with the converted `nets/field_make_d5000_v2.field-v2.npz` (sha256 `c94028cc…88c1`, beside the pour on [HF](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k)) reproduces it bit for bit, #136) and `v2/margin_d50k_h128x64`
 (seeds 200,001 up, code `b30603ad`), before the #110 and #112 fixes. Every q is a sampled
 estimate over 512 worlds.
 
@@ -467,7 +467,7 @@ fallback is no firing) at all 4,343,426 planned positions of the pour; every fra
 set equals the pour's legal tiles. The gate encodings reproduce the previous section exactly
 (21 of 21 price rows). Producing player, metrics, drops and † as in the previous section: the
 pour player `k0,n512`, utility `make`, bid 30, field nets `field_make_d5000_v2` (code
-`31ecd76d`) and `v2/margin_d50k_h128x64` (`b30603ad`); every q sampled over 512 worlds;
+`31ecd76d`, with the net converted to `field-v2`, #136) and `v2/margin_d50k_h128x64` (`b30603ad`); every q sampled over 512 worlds;
 765,507 rule-position rows decided by the banked score dropped. The bands were fixed
 before the first of these prices and have not moved, read on the unrounded estimate: sides
 with at chance-corrected agreement of 0.44 or more, weak 0.11 to 0.37, no relation 0.07 or
