@@ -112,7 +112,10 @@ zero confirmation games had started when the freeze was published.
 ## Status
 
 The policy is merged at [[2e233d29]], development is complete, and attempt 2
-is frozen pending execution. Boundary tests
+is running from the frozen protocol. The first pair against each opponent has
+completed; no interim strength result is used for selection. The freeze was
+[recorded on issue 165](https://github.com/jasonyandell/mk5-main/issues/165#issuecomment-6189308298)
+before launch. Boundary tests
 cover every seat orientation, opponent versus partner, no point raise left,
 unchanged existing specs and malformed parameters. Whole-game tests check
 legality and determinism. `scripts/check --fast` is GREEN: fence 8,
