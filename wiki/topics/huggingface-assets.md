@@ -13,30 +13,32 @@ secret; it's the opposite). HF is the
 durable home for anything too big for git — [[run-artifacts-policy]] governs
 the split. The established upload path is `scripts/hf_publish/upload.py`.
 
-## Datasets (19, inventoried 2026-10-14 by the Archive desk)
+## Datasets (17, inventoried 2026-10-14 by the Archive desk)
 
 Sizes from the Hub's file metadata. Every dataset is public except
-`plunge-backups`. The license column is the card's front matter; four older
-repos declare none and a feed ask waits on Jason to make them CC0 (the
-science line, [[license-line]]).
+`plunge-backups`. The two superseded pour repos (`texas-42-zeb-pour`,
+`texas-42-zeb-pour-200k`, 36 GB) were deleted 2026-10-14 on Jason's word; every
+chunk is in the 250k pour, matched by SHA-256. The license column is the card's front matter. The four older repos that
+declared none (walt-archive, mk5-run-evidence, mk5-fleet-payload, zeb-42-examples)
+were dedicated CC0 on 2026-10-14 on Jason's word, each with a card and `LICENSE`
+([[license-line]]).
 
 | repo | size | license | what | hub |
 |---|---|---|---|---|
 | [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k) | 36.2 GB | CC0 | the Zeb pour, 5 × 50k deals, Parquet + raw + 3 nets | [[scenario-player]] |
-| [texas-42-zeb-pour-200k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-200k), [texas-42-zeb-pour](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour) | 29.0 + 7.2 GB | CC0 | superseded by the 250k pour; retiring them is Jason's call | [[publish-data-to-huggingface]] |
 | [texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour) | 0.76 GB | CC0 | the k1 Walt pour, margin utility | [[scenario-player]] |
 | [texas-42-walt-pour-make](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour-make) | 0.72 GB | CC0 | the k1 Walt pour, make utility (recovered 2026-10-14) | [[scenario-player]] |
 | [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10) | 1.4 GB | CC0 | October's studies, one directory each: `book/`, `zeb/`, `research-night/`, `posterior-arena/`, `endgames-o2/`, `tidy-arena/` | [[book-study-2026-10-12]], [[scenario-player]] |
 | [texas-42-mk5-research-2026-04-07](https://huggingface.co/datasets/jasonyandell/texas-42-mk5-research-2026-04-07) | 4.9 GB | CC0 | the oracle and LLM era's evidence (Burl harvests and STaR runs, champion runs, jud, Gus adapters, burl-perf, w42, family hands, resume smoke, candlewax) | [[burl]], [[jud]], [[gus]], [[champion-ladder]] |
 | [texas-42-walt-lanes-2026-08-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-lanes-2026-08-09) | 0.67 GB | CC0 | `~/data/texas-42`: the partnership gym, relational and policy-synthesis campaigns, the sunshine cycles, the Plunge evidence lanes | texas-42 `experiments/partnership`, `experiments/kiln` |
 | [texas-42-walt-speed-2026-09](https://huggingface.co/datasets/jasonyandell/texas-42-walt-speed-2026-09) | 0.49 GB | CC0 | texas-42 `experiments/`: full-game-speed results and docs, the response ladder's inputs, the walt42x intake | texas-42 |
-| [texas-42-walt-archive](https://huggingface.co/datasets/jasonyandell/texas-42-walt-archive) | 1.9 GB | none | the walt-factory probe era (2026-08), the kiln snapshots, the tiny-net ladder tarballs | texas-42 `walt/ARCHIVE.md` |
+| [texas-42-walt-archive](https://huggingface.co/datasets/jasonyandell/texas-42-walt-archive) | 1.9 GB | CC0 | the walt-factory probe era (2026-08), the kiln snapshots, the tiny-net ladder tarballs | texas-42 `walt/ARCHIVE.md` |
 | [texas-42-walt-response-ladder](https://huggingface.co/datasets/jasonyandell/texas-42-walt-response-ladder) | 0.24 GB | CC0 | the compiled-policy head-to-heads, curated | texas-42 |
 | [texas-42-walt-ladder-labels](https://huggingface.co/datasets/jasonyandell/texas-42-walt-ladder-labels) | 2.2 GB | CC0 | the tiny-net ladder's label piles | texas-42 |
 | [texas-42-tournament](https://huggingface.co/datasets/jasonyandell/texas-42-tournament), [texas-42-tournament-selftest](https://huggingface.co/datasets/jasonyandell/texas-42-tournament-selftest) | 1.6 MB | CC0 | the ladder's participants and faceoffs (live) | [[tournament]] |
 | [texas-42-joint-world-corpus](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus), [-v2](https://huggingface.co/datasets/jasonyandell/texas-42-joint-world-corpus-v2) | 118.7 + 118.1 GB | MIT | Gus's joint-world corpora (the local `gus/data` is a copy of v1) | [[joint-world-tensor]], [[otis-phase-r]] |
-| [mk5-run-evidence](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence) | 89 MB | none, no card | w42 tactical replication, otis models, table42, arena results, champion, parlor | [[run-artifacts-policy]] |
-| [mk5-fleet-payload](https://huggingface.co/datasets/jasonyandell/mk5-fleet-payload) | 142 MB | none, no card | the fleet payload tarball | [[zeb-fleet-ops]] |
+| [mk5-run-evidence](https://huggingface.co/datasets/jasonyandell/mk5-run-evidence) | 89 MB | CC0 | w42 tactical replication, otis models, table42, arena results, champion, parlor | [[run-artifacts-policy]] |
+| [mk5-fleet-payload](https://huggingface.co/datasets/jasonyandell/mk5-fleet-payload) | 142 MB | CC0 | the tarball each rented box pulled for the July 2026 corpus regeneration (not the February Zeb fleet) | [[otis-phase-r]] |
 | plunge-backups | 59 KB | private | age-encrypted D1 dumps of Plunge production; `RESTORE.md` inside | Plunge branch `claude/offsite-backup` |
 
 ## Models (106)
@@ -44,7 +46,8 @@ science line, [[license-line]]).
 - [`zeb-42`](https://huggingface.co/jasonyandell/zeb-42) (MIT, 74 MB) — the
   February Zeb model, the old meaning of the name ([[zeb]]);
   [`zeb-42-examples`](https://huggingface.co/jasonyandell/zeb-42-examples)
-  (no license, 20.6 GB) — its 3,418 worked-example `.pt` files.
+  (CC0, 20.6 GB) — the 3,418 self-play example batches the Vast workers
+  pushed while training it, including the full-teacher E[Q] run (`lb-v-eq-1920`).
 - [`texas-42-walt-tiny-net-ladder`](https://huggingface.co/jasonyandell/texas-42-walt-tiny-net-ladder)
   (CC0, 265 MB) — the tiny-net ladder weights (texas-42).
 

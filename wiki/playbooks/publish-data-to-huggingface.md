@@ -42,7 +42,8 @@ Not for: code (git), prose (the wiki), anything under the "Never" list below.
 A pour that grows (expert iteration's next round) is republished as the whole
 pour under one repo, not scattered: the 250k pour first went out as two repos
 (`texas-42-zeb-pour`, `texas-42-zeb-pour-200k`) whose cards described the
-planner wrongly, and a later reader downloaded the wrong pour. A research repo
+planner wrongly, and a later reader downloaded the wrong pour. Both were
+deleted 2026-10-14 after every raw chunk was matched by SHA-256 in the 250k repo. A research repo
 can take more directories in later sessions of the same month (`upload_folder`
 adds; it does not delete unless told to).
 

@@ -629,9 +629,9 @@ ingredient." The family of things built on Walt — the atlas, the pour, the
 field net, whatever comes next — is **Zeb**, the first project's name
 reclaimed ([[zeb]] was the January AlphaZero-style self-play player, superseded
 on fused labels). Not diverging from Walt, evolving; no self-play mandate
-comes with the name. The 50,000-deal pour is published under it:
-[jasonyandell/texas-42-zeb-pour](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour),
-CC0 (a separate repo because `scenario/hf.py` refuses to mix specs in one;
+comes with the name. The 50,000-deal pour was published under it as `jasonyandell/texas-42-zeb-pour`,
+CC0, now split `s100001` of [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k) (the old repo was deleted 2026-10-14
+after its chunk was matched there by SHA-256; it was a separate repo because `scenario/hf.py` refuses to mix specs in one;
 the k1 pours stay in [texas-42-walt-pour](https://huggingface.co/datasets/jasonyandell/texas-42-walt-pour)).
 
 **The 250,000-deal pour (2026-10-11): the data lever stops at parity.**
@@ -660,9 +660,8 @@ planner above it is still a one-rung Walt. Five times the data bought a
 better model and the same player. Parity with the two-rung champion at a
 quarter of the cost is the result; a stronger player will not come from
 more of this pour. The four chunks are
-published as
-[jasonyandell/texas-42-zeb-pour-200k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-200k)
-(CC0; a separate repo because the chunks' pour spec names the 50k net, not
+first published as `jasonyandell/texas-42-zeb-pour-200k`
+(CC0, deleted 2026-10-14 once all four chunks were matched by SHA-256 in the 250k repo; a separate repo because the chunks' pour spec names the 50k net, not
 the 5k one). Republished whole (2026-10-12) as
 [jasonyandell/texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k):
 five splits, the three field nets in `nets/` with sha256, the repo to cite (the
