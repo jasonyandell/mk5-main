@@ -2,7 +2,7 @@
 title: Match equity — the value of a score in the game to seven marks
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-15
 status: active
 ---
 
@@ -64,7 +64,10 @@ The hand law Zeb plays against itself is a coin to three places (the first shake
 - [[match-aware-bidding-2026-10-14]] — Zeb's bidder with the 84 priced by match equity
   (`arena/zeb_bid.py`, `zeb:…,met`): 53.4% [52.5, 54.3] of games against the hand-only bidder,
   51.4% [50.6, 52.2] against the same 84 priced by expected marks. Every change is an added
-  84; the opponents at 6 are about a third of the gain.
+  84; the opponents at 6 are about a third of the gain. Its follow-up (#160) applied the
+  one-mark theorem to the pass over an opponent's bid: overcall whenever the call's π beats
+  passing's 18%. The bidder with that repair and a calibrated forecast wins 71.0% [69.0, 73.0]
+  of games against deployed Zeb and 63.4% [61.4, 65.4] against `met`.
 
 ## Links
 

@@ -2,7 +2,7 @@
 title: Match-aware bidding — Zeb's bidder with the 84 priced by match equity (2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-15
 status: complete
 ---
 
@@ -321,6 +321,85 @@ Scripts at registration (sha256 prefixes): `sim_games.py` 6fb1b3cfe300, `refc.py
 6fce0193c427, `plan.py` 396361403de5, `sched.py` 1586f6a0168e, `grade.py` 931c67b3ac88,
 `fit_cal.py` d5c90a653386, `blocks.json` 86cd4628fd99.
 
+### Follow-up summary
+
+**The pass-over-an-opponent repair is enormous; deployed Zeb's bidder concedes the auction.
+The fixed bidder `met,over,cal` wins 71.0% [69.0, 73.0] of games against deployed Zeb and
+63.4% [61.4, 65.4] against `met` (chance 50%; the A/A exact), 768 duplicate clusters, no
+drops.** The realistic estimate is the second number. It is measured against a table that
+bids 84 by match equity but, like every arena seat, never answers an overcall with an
+overcall of its own. By the registered rule (F clears, FM's lower bound > 50%) the page
+recommends `met,over,cal` for zeb 0.4, Jason's call. Pre-registered at `98552881`, calibration
+frozen at `979124a1`.
+
+### Follow-up results
+
+**Checks.** All 9,270 recomputed forecasts reproduce BASE's record to the bit. AA, met vs met:
+32 clusters, every one the same game mirrored. VALID: all 17 never-diverging orientations
+reproduce BASE exactly. 112,708 recorded turns were checked: every one sat on the team its
+orientation says, so the duplicate pairing swaps seats. A's share is 68.6% with A on team 0
+and 73.0% on team 1.
+
+**The calibration** (`cal`): logit p̃ = −0.248 + 0.926·logit p (2,600 prior contracts; p 0.2
+becomes 0.178, p 0.8 becomes 0.738). Out of sample, over 9,883 of `over`'s calls that stood in
+F and FM, the calibrated forecast says 38.5–38.9% and they made 39.0% [37.7, 40.2] and 39.5%
+[38.0, 40.9]. The raw forecast said 43.6–44.0%, so it is about 5 points hot and the shrink
+removes it.
+
+| arm | A vs B | diverging / all | A's game share [95%] | model (first order) |
+|---|---|---|---|---|
+| **F** | met,over,cal vs hand | 1,519 / 1,536 | **71.03% [69.01, 73.05]** | 54.28% |
+| **FM** | met,over,cal vs met | 1,533 / 1,536 | **63.41% [61.39, 65.43]** | 53.31% |
+| O | over,cal vs hand | — | not run (slot budget) | 54.14% |
+
+By first differing turn, `over`'s overcalls account for +19.3 of F's +21.0 points and +11.7
+of FM's +13.4. The mark bids account for about +1.
+
+**What `over` exploits, in plain words.** Deployed Zeb overcalls an opponent only when it is
+80% sure of making the higher bid. In BASE it did so on 4.8% of the turns an opponent held the
+bid (446 of 9,270), so it concedes the hand almost every time an opponent opens. When it passes
+there, the opponents' contract stands and makes about 80% of the time, and our side takes the
+mark only 18%. With `over`, the fixed bidder contests whenever its own make chance beats that
+18%. Its contracts made 39%, and our side took 38.5–40.8% of those hands' marks. That is more
+than twice what the pass got, on about a quarter of all turns. Since every one-mark call moves
+one mark, that difference is worth taking at any score. The result: A holds the contract in
+84% of hands against deployed Zeb (75% against `met`; 49% in BASE) and takes 56–57% of all
+marks. Over a race to seven, that compounds into 63–71% of games. The first-order model sees
+only the first such turn (+3.5–3.9 points). The same trade recurs hand after hand, which the
+model does not count.
+
+**Reading.**
+
+- *The 0.8 cutoff is the defect, not match equity.* `met`'s 84 is worth about +1 point here
+  (as in P). Contesting an opponent's opening is worth ten or more. The one-mark theorem
+  predicted the direction; the size comes from how lopsided the passive auction is.
+- *The opponents here never fight back.* Neither table re-overcalls a weak overcall: the
+  hand-only rule still needs 0.8, and `met` adds only 84s. A table that also contests (`over`
+  on both sides) is 50% by symmetry. What `over` is worth against a human who re-overcalls,
+  or who reads that Zeb now bids on 30–40% hands, is not measured. The field model's `keep`
+  and `pass_ours` were fitted on the passive field too, so they should be refitted on a field
+  that overcalls before 0.4 freezes them.
+- *Against a table that bids 84 too, the gain survives.* FM is smaller than F (63.4 against
+  71.0) because `met`'s own 84s answer some of the fixed bidder's overcalls. The lower bound
+  still clears 50% by 11 points.
+- *What `cal` adds alone was not isolated.* O was registered last and not run. 1,511 games on
+  one slot, during a night when other studies held all three slots for 20–35 minutes at a
+  time, did not fit. `over` without `cal` would overcall at raw p > about 0.2. It would act on
+  more hands, about 5 points hot.
+
+**Deviations from the registration.** (1) `plan.py` first took BASE's recorded priced call as
+met's call. BASE ran before the model was fitted, so that call was priced on the placeholder
+odds. The registered forecast check stopped the plan at its first opp turn. The plan now
+re-prices every turn under the frozen model, as the prior study's `plan.py` did. No game had
+been played (hash `396361403de5` became `f2ffca148b3f`). (2) `sched.py`'s `fc` argument was
+renamed `forecasts`, because `fc` is a shell builtin and the harness refused it (hash became
+`1e8c8ac72ed6`). (3) VALID holds 17 orientations, not 32, because only 17 of F's 1,536 never
+diverge. (4) O was not run. The by-turn tables and the mark/contract shares are exploratory.
+
+**Decision.** By the registered rule: recommend `zeb:n160,met,over,cal` for zeb 0.4, with the
+field model refitted on the release's own field. Jason decides. No zeb crate or default
+changed here. Follow-up: #170 (a table that overcalls back; refit the field model; the O arm).
+
 ## Data
 
 `jasonyandell/texas-42-zeb-research-2026-10` under `zeb/match-aware-bidding/`: every block's
@@ -334,6 +413,19 @@ python -u scratch/met/fit_model.py FIT > scratch/met/out/model.json
 python -u scratch/met/plan.py BASE
 python -u scratch/met/sched_sim.py VALID; python -u scratch/met/sched_sim.py P; python -u scratch/met/sched_sim.py S
 python -u scratch/met/grade.py VALID P S; python -u scratch/met/breakdown.py P
+```
+
+The follow-up (#160) is under `zeb/match-aware-bidding-2/`: the calibration fit
+(`out/cal.json`), the recomputed forecasts (`out/fc/`), the plan, every played arm
+(`out/<arm>/b*.json`, games and priced turns; BASE is the prior directory's), the grade, the
+log, the scripts, `CARD.md` and `SHA256SUMS`. Recompute (BASE from `zeb/match-aware-bidding/out/BASE`
+into `scratch/met2/out/BASE`; the prior P into `scratch/met-prev/` for the fit):
+
+```bash
+python -u scratch/met2/fit_cal.py > scratch/met2/out/cal.json
+python -u scratch/met2/sched.py forecasts; python -u scratch/met2/plan.py
+python -u scratch/met2/run_all.py AA VALID F FM
+python -u scratch/met2/grade.py AA VALID F FM
 ```
 
 ## Links
