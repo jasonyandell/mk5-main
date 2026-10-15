@@ -15,7 +15,7 @@ lifecycles"); the desks are durable.
 
 | Desk | Remote Control name | Beat |
 |---|---|---|
-| **Mayor** | the lead session | Central admin. Priorities and routing; the only writer to `main`; keeper of the link registry. |
+| **Mayor** | the lead session | Central admin. Priorities and routing; the gate for coordinated changes; keeper of the link registry. |
 | **Book** | `Book` | The [[book-authority]] role, permanently: *Winning 42*, the private archive, the Silas book encodings, [[book-assumptions]], driving the book to completion. |
 | **Media** | `Media` | The "journalinfluencer". The 42 Feed, reels and front pages, the Haiku cold-read pipeline and the Haiku feed workers. It turns every result into a post. |
 | **Archive** | `Archive` | Data. Hugging Face datasets, the Plunge backups, the tournament store, "recover everything to HF", data hygiene and provenance. |
@@ -62,9 +62,27 @@ first, and let the central authority manage only links and lookups.
   STRATEGY-FUSION FENCE, THE BOOK IS THE AUTHORITY, THE LICENSE LINE, no skipped tests,
   generated data to Hugging Face, the HF token only from Keychain (`huggingface-token`) and
   never written anywhere.
-- **Main has one writer: the Mayor.** A desk works in its own git worktree on its own branch
-  (`git worktree add .claude/worktrees/<desk>-<topic> -b <desk>/<topic> main`), commits, and
-  sends the Mayor the branch name. It never pushes `main`, never merges, never force-pushes.
+- **Every desk merges its own work** (Jason, 2026-10-14: "each session needs to have
+  authority to merge their own stuff without worry and gate coordinated features only").
+  Work in your own worktree and branch
+  (`git worktree add .claude/worktrees/<desk>-<topic> -b <desk>/<topic> main`). When it's
+  done: `git rebase origin/main`, run `scripts/check --fast` (the full `scripts/check` if you
+  touched shared code) until it's GREEN, then `git push origin HEAD:main`. If the push is
+  rejected, fetch, rebase, re-check and push again. Then run `python -u scripts/wiki_log_rotate.py`
+  if `wiki/log.md` grew, close your issues with receipts, and delete the branch and worktree.
+  Never force-push, never skip a suite, never push red.
+- **Gated changes go to the Mayor first** (send the branch and one line; the Mayor merges or
+  says go). Gated means a change other desks build on:
+  - the core: Silas core pins and the standard registry, `scenario/` and `core/src/`
+    (Walt's planner), the Rust/Python bit-identity;
+  - the house rules: `CLAUDE.md`, `LICENSE`/`REUSE.toml`, this playbook, `scripts/check`,
+    `scripts/cpu-slot`;
+  - releases: a `zeb-v*` tag or npm publish, a new public HF repo name;
+  - another desk's beat (ask that desk; copy the Mayor only if you disagree).
+  Plunge stays Jason's call. Everything else (your own wiki pages, studies, scratch tooling,
+  new Silas files, data uploads, issues) merges without asking.
+- **Tell after, not before.** After an ungated merge, add one line to the feed's `links`
+  registry (kind `merge`, the commit). That is the whole notification.
 - **CPU: `scripts/cpu-slot`.** Every heavy run (arena batches, pours, studies) goes
   through `scripts/cpu-slot -- <command>`. It waits for one of 3 shared slots, runs the command
   at `nice` 10 and kills it at 300 s. Five minutes per run is the house rule unless there is a
