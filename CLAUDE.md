@@ -40,7 +40,8 @@ Two halves, one game:
   The book (Roberson's *Winning 42*, [[w42]]) is the project's authority on play, and our
   measurements of it are the suspect ([[book-authority]]). Where Zeb and the book part, the
   finding is what our arena cannot yet see. The arena seats no opponent who models you across
-  hands, no partner who reads the book's conventions, and no opponent who ever loses track
+  hands, no partner who reads the book's conventions, and, though it now seats opponents who
+  lose track of voids and of the count, no player who aims at those lapses
   ([[book-assumptions]]). Where one assumption was restored, the book's own game (points to
   250), its edge appeared: as Zeb's near-tie break it wins 53.2% [51.1, 55.2] of games,
   replicated ([[book-investigation-2026-10-14]]). Every number still ships with its interval
