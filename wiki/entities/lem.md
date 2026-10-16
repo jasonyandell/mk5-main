@@ -2,7 +2,7 @@
 title: LEM — Little Expert Model
 kind: entity
 first_seen: 2026-04-09
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 status: complete
 superseded_by: burl
 ---
@@ -21,6 +21,132 @@ LEM (Little Expert Model) is an experiment in training a phone-class open model 
 base model is [[gemma-4-e2b]] — a model that has never heard of Texas 42 at the start of
 the experiment. LEM replaces a bot mid-game and asks whether Gemma can match or beat the
 bot's expected outcome. (lem/OVERVIEW.md @ a8bccfa)
+
+## Tombstone
+
+The old LEM is finished. This section is its epitaph: what it was, what it measured, why it
+stopped, and what the new [[lem-the-teacher]] takes from it. The chronological record is under
+"Progress" below.
+
+### Dates and commits
+
+| Event | Date | Commit |
+|---|---|---|
+| Born: narration generator, rules primer, first Gemma contact | 2026-04-09 | a8bccfa |
+| Last substantive code commit: completion-only loss, 1.7B v10-maskfix | 2026-04-17 | be7efc4 |
+| Last doc commit to `lem/`: "current working vision" appended to the overview | 2026-04-18 | e2d30362 |
+| Retired: Burl introduced as the successor mechanism | 2026-04-18 | 8d26e0d |
+| Code deleted under the no-legacy rule | 2026-10-15 (23:45 CDT, 2026-10-16 UTC) | b4a3e5b7 |
+
+The `lem/` code history is `git log a8bccfa^..be7efc4 -- lem/` (40 commits touching `lem/`
+between 2026-04-09 and 2026-04-17); `git log --all -- lem/` also lists the doc commits
+(8d26e0d, e2d30362, e2171816) and the new Lem's own commits. (git log, lem/ @ b4a3e5b7)
+
+### What it tried
+
+Teach a phone-class open model to play [[texas-42]] with no prior knowledge of it: a rules
+adapter first (Stage 0), then [[star]] on trick-6 decisions graded by [[k1-grading]], then a
+[[backwards-curriculum]] one ply at a time. The base was [[gemma-4-e2b]], then
+[[qwen3-1.7b]] from 2026-04-16 (and [[qwen3-14b]] as a capacity probe). The north star was
+[[expected-q-value]] delta against the bot LEM replaced. (lem/OVERVIEW.md @ a8bccfa)
+
+### What it found
+
+Each number is as its source has it. No source reports an interval for any of them.
+
+| Finding | Number | Source |
+|---|---|---|
+| First STaR chain, 15 iterations on Gemma | 30% pass at iter 0, plateau 36-42%, best 42% (iters 5 and 7); 200 or 300 examples per iteration | [[star-10-iterations]] |
+| Kerry and v3 curriculum raised the floor | avg ~37% to ~43% to ~44%; peak 42% to 46% to 48%; illegal 33% to ~12% to ~13% | [[stage-0-adapter-line]] (8c1bb14) |
+| Rigid grader hid real knowledge | `legal_moves` 0% under the rigid grader, 70% under the flexible one; v4 overall 67% | [[flexible-grader]], [[stage-0-v4-comprehension-eval]] |
+| Base-model pivot | 100% on Qwen 3 1.7B vs 60% on Gemma, same corpus and eval | [[base-model-pivot-qwen]] (3465e29) |
+| 14B capacity probe | 86% comprehension, 97/100 clean rationalizations vs ~68/100 on 1.7B | [[qwen-14b-capacity]] (0c7392f) |
+| Completion-only loss | 1.7B comprehension 83% to 86%, equal to 14B v9 at about a third of the compute | [[sft-completion-only-loss]], [[v10-maskfix-breakthrough]] (be7efc4) |
+| The plateau that did not move | bot-match 55/100 before and after the mask fix; 96/100 legal | [[v10-adapter]] |
+| Total STaR compute | ~$25 on B200 for 15 iterations | [[star-10-iterations]] |
+
+Caveats the sources state. The 14B run predates the mask fix and was never rerun with it, so
+its 97/100 is confounded with the loss bug ([[sft-completion-only-loss]], scope note). The
+rationalization numbers come from scouted decisions filtered by the
+[[rationalization-verifier]], not from play. The "86%" is comprehension of engine-verified
+facts, not strength at play.
+
+### Why it ended
+
+Superseded by [[burl]], a sibling mechanism rather than a continuation. The 55/100 bot-match
+did not move with gradient reallocation or with capacity, which left the diagnosis that
+open-ended play selection is a different skill from fact recall and that more flashcard-shaped
+SFT might not move it. Burl moved the rules into the [[engine]] as tools, put beliefs behind
+a tool call, trained on trajectories, and chose Gemma for agentic tool use, which reversed the
+rationale of the Qwen pivot. ([[lem-to-burl-handoff]] sections 2, 3 and 5; [[burl]], "The bet")
+Burl was in turn superseded by [[jud]] (burl, status note). None of LEM's open questions was
+answered; the pivot closed them.
+
+### Lessons learned
+
+1. **Clairvoyant targets teach clairvoyant play.** LEM's Stage 1 games came from the E[Q]
+   greedy policy, its keep rule compared `E[Q][gemma]` to `E[Q][bot]`, and its bot-match
+   grade measured agreement with the bot (the E[Q] bot, as 8d26e0d's vocabulary names it). E[Q] is built from per-world solves of a
+   player who sees all four hands, and [[the-wall]] records that every student of that teacher
+   learned to play as if it saw them. LEM's measured plateau is not attributed to this in any
+   source; the lesson is about target design. The new Lem trains on information-state targets
+   only, Zeb's value for the seat and every seat's next play, never a per-world clairvoyant
+   value, under the [[strategy-fusion-fence]]. (lem/OVERVIEW.md @ a8bccfa; [[lem-the-teacher]],
+   "The fence")
+2. **When SFT stalls, inspect the loss mask.** A ~50-token answer was diluted about 9 times by
+   ~400 memorized prompt tokens; three stuck metrics moved 10-18 points once the loss covered
+   only the completion. ([[sft-completion-only-loss]], be7efc4.) The new Lem's plan records no
+   masking rule yet; the check is filed on its stage 3 epic (#178): the loss covers the targets only.
+3. **A broken grader reads as a broken model.** A rigid grader scored `legal_moves` 0% and a
+   five-category inline grader scored a 14-category eval 35% where the shared grader read 86%
+   on the same responses. ([[flexible-grader]], [[v10-maskfix-breakthrough]].) The new Lem's
+   stage 1 reports every share with its interval and against a shuffled-label baseline, and
+   was pre-registered before it ran ([[lem-field-net-audit-2026-10-15]]).
+4. **Compare capacity arms under one pipeline.** The 14B-over-1.7B gap was partly the loss
+   bug, which only 1.7B had fixed, so "capacity helps" and "the mask helps" were entangled.
+   ([[qwen-14b-capacity]].) The new Lem's scaling family runs every arm under one pipeline and one loss, and prices
+   every spend first ([[lem-the-teacher]], "The nets" and "Budget").
+5. **Training shape must match target behavior.** Flashcards, rationalizations and structured
+   templates moved comprehension and left play selection flat at 55/100. The new Lem's net
+   predicts the next play of every seat and the value of the position from the information
+   state, which is the behavior itself. ([[lem-to-burl-handoff]], section 2; [[lem-the-teacher]],
+   "The nets".)
+6. **Pick the base model for the consumer's job.** Qwen won on comprehension and speed
+   (throughput on B200 was the real fix for the underutilization bead, not kernel tuning);
+   Gemma won on tool use for Burl. ([[base-model-pivot-qwen]]; [[lem-to-burl-handoff]], section 5.)
+   The new Lem is not a language model: a small GPT over the information state, read back out
+   by interpretability ([[lem-the-teacher]], "Prior work").
+7. **Stages that end by pivot leave no answers.** The Stage 2 ratchet, the variance-filter
+   thresholds, DPO versus rationalization, and STaR on the post-maskfix stack were all
+   never run. ("Open questions" below; lem/OVERVIEW.md @ e2d30362 notes STaR had never run on
+   the post-maskfix stack.) The new Lem's five stages each stand alone and ship their own
+   result, and stage 1 states its decision rule in advance ([[lem-the-teacher]], "The five
+   stages").
+
+### Where everything lives now
+
+- **Hugging Face, `jasonyandell/` (about 80 repos; adapters and per-epoch checkpoints, none deleted):**
+  - Gemma 4 E2B Stage 0: `gemma-4-e2b-texas42-stage0`, `-stage0-kerry`, `-stage0-v3`,
+    `-stage0-v4-*` (iter0-3, tiny10ep, full3ep and its epochs), `-stage0-v5` and `-stage0-v5-clean`
+    (with `-ep1..3`).
+  - Gemma STaR chain: `gemma-4-e2b-texas42-star-iter0` through `-iter27` (the wiki documents
+    iter0-14).
+  - Qwen 3 1.7B: `qwen3-1.7b-texas42-stage0-v5` through `-v10`, `-v10-maskfix` (each with
+    `-ep1..3`), and `qwen3-1.7b-texas42-rationalize-v1`.
+  - Qwen 3 14B: `qwen3-14b-texas42-stage0-v9` (with `-ep1..3`).
+  - The best LEM adapter is `qwen3-1.7b-texas42-stage0-v10-maskfix` ([[v10-adapter]]).
+  - `gemma-4-e2b-texas42-burl-*` belong to [[burl]], not to LEM ([[burl-line]]).
+- **Weights & Biases:** `jasonyandell-forge42/lem-stage0` and `jasonyandell-forge42/lem-star`.
+- **Git history:** `git show a8bccfa:lem/OVERVIEW.md` is the original plan;
+  `git show be7efc4:lem/OVERVIEW.md` (897 lines) is the full working log;
+  `git show e2d30362:lem/OVERVIEW.md` adds the 2026-04-18 "current working vision" (reasoning as
+  exploring the distribution, claims phrased as `P(...)`, the 100%-legal gate, three next moves).
+  `git show b4a3e5b7^:lem/` holds the code before deletion (`lem/OVERVIEW.md` there is already a
+  stub pointing to this page). The narration and Q&A corpora (`lem/data/`, gitignored) are in neither git nor Hugging Face;
+  no record says whether a copy survives on disk.
+- **Wiki:** the adapter chain and its table are [[stage-0-adapter-line]]; the narrative is
+  [[lem-to-burl-handoff]]; commit digests are in `wiki/sources/` (a8bccfa, 6bb8a40, 24ae55a,
+  efad16e, 908773a, 8c1bb14, 3465e29, b857299, 0c7392f, be7efc4).
 
 ## North star
 

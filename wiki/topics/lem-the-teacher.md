@@ -83,7 +83,8 @@ Every game draws its table at random, so the net must infer who it faces. The so
 - A GPT over the information state that predicts **every seat's next play** (the model of
   others) and **Zeb's value for our seat** (the splat, as in #175's design). Never a world.
 - Checkpoints kept along the run, and a scaling family (widths and data sizes), so stage 4 can
-  watch concepts form and ask where the knee moves.
+  watch concepts form and ask where the knee moves. Every arm of the family runs under one
+  pipeline and one loss, the old LEM's lesson ([[lem]], "Lessons learned").
 - Data generation is CPU (the vast.ai CPU fleet, through `scripts/cpu-slot` locally). Training is
   the M5 Max GPU or rented B200s.
 
