@@ -331,6 +331,7 @@ fn every_source_file_carries_the_fence_token() {
         "src/sampling.rs",
         "src/hand_model.rs",
         "src/bidding.rs",
+        "src/search.rs",
         "tests/demon.rs",
     ] {
         let text = std::fs::read_to_string(root.join(f)).unwrap();

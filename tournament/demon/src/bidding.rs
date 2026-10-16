@@ -7,9 +7,9 @@
 //! double-dummy frequencies, not calibrated wins.
 
 use scenario_core::fiber::Fiber;
-use scenario_core::physics::{ZebPhysics, dominoes, seat};
+use scenario_core::physics::{dominoes, seat};
 use scenario_core::planner::SplitMix;
-use silas::{Bid, ClairvoyantSolver, Contract, OpenPosition};
+use silas::{Bid, Contract, OpenPosition};
 
 pub struct Forecast {
     /// Make counts indexed by declaration. Unrequested declarations are None.
@@ -44,9 +44,9 @@ pub fn best_forecast(
     order.sort_by_key(|&d| (d != preferred, d));
     let mut best = BestForecast { decl: order[0], makes: 0, worlds: deals.len(), nodes: 0, solves: 0 };
     for (rank, &decl) in order.iter().enumerate() {
-        let physics = ZebPhysics::new(decl).expect("declaration").physics();
+        let template = super::search::template(decl);
+        let physics = template.physics();
         let contract = Contract::new(seat(bidder).expect("seat"), bid, physics.clone()).map_err(|e| e.0)?;
-        let template = ClairvoyantSolver::new(&physics);
         let mut count = 0;
         for (i, w) in deals.iter().enumerate() {
             if rank > 0 && count + (deals.len() - i) as u32 <= best.makes {
@@ -84,9 +84,9 @@ pub fn forecast(
     let mut nodes = 0;
     for &decl in declarations {
         let mut count = 0;
-        let physics = ZebPhysics::new(decl).expect("declaration").physics();
+        let template = super::search::template(decl);
+        let physics = template.physics();
         let contract = Contract::new(seat(bidder).expect("seat"), bid, physics.clone()).map_err(|e| e.0)?;
-        let template = ClairvoyantSolver::new(&physics);
         for w in &deals {
             let position =
                 OpenPosition::deal(contract.clone(), w.map(|h| dominoes(h).expect("hand"))).map_err(|e| e.0)?;
@@ -151,9 +151,9 @@ pub fn supports(
     order.sort_by_key(|&d| (d != preferred, d));
     let mut out = Support { supported: false, worlds: deals.len(), nodes: 0, solves: 0, checked: vec![] };
     for decl in order {
-        let physics = ZebPhysics::new(decl).expect("declaration").physics();
+        let template = super::search::template(decl);
+        let physics = template.physics();
         let contract = Contract::new(seat(bidder).expect("seat"), bid, physics.clone()).map_err(|e| e.0)?;
-        let template = ClairvoyantSolver::new(&physics);
         let (mut successes, mut tested) = (0, 0);
         for w in &deals {
             if successes >= required || successes + ((deals.len() - tested) as u32) < required {
