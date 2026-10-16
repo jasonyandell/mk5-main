@@ -116,6 +116,9 @@ All artifacts are CC0-1.0 in the existing
   Fresh plan, manifest, first raw input/result and report downloads match
   local bytes. Compiler and all three measured binary hashes are in the plan.
 
+- [Registry integration and quality-gate receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/b97653381ab9c59b3fce722afdfc2cb2e34db5cc/demon/2026-10-16-instructions/integration).
+  Fresh manifest, registry receipt and canonical participant downloads match.
+
 Binaries, build caches, repository copies and credentials are excluded from
 publication. Strength generalization and a complete instruction-primary
 Demon-versus-Zeb trial remain separate questions.
