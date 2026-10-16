@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-16, 315 archived entries)
+## Digest (2026-04-09 → 2026-10-16, 321 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -49,6 +49,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | book | The auction read, pre-registered: does reading a bid by a known method pay by itself? (#117)]
+
+- [[auction-read-2026-10-16]]: the #149 reader alone, under the field's true bidding method (K) and an unknown one (U), against plain deployed Zeb, with a re-seeded A/A (Za). Primary K; 576 pairs per marks arm and 192 to 250; 176 batches. `scenario/auction_read.py`.
+
 ## [2026-10-16 | Demon | Early-forty Demon confirmed against Zeb 0.4.1]
 
 [[demon-ascent-2026-10-16]] completes 512 fresh duplicate pairs: 911/1,024 wins, 88.96% [86.72, 91.11], at 0.13584 [0.13355, 0.13818] times total seat CPU (97.5% intervals). The opponent-specific early-40 form passes both criteria, all 9,759 hands audit, and the exact frozen participant is registered and rostered with prior records unchanged. All raw evidence is public.
@@ -85,31 +89,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-16 | Demon | Exact declaration elimination]
 
 [[demon-ascent-2026-10-16]] records the complete first cutoff sweep (no established win), the frozen second development round, and an isolated bidding prototype. Incumbent bounds preserve all 1,934 saved forecast winners/counts while using 0.5210 [0.5124, 0.5295] of full-forecast native CPU. Public source, replay inputs and outputs are linked; this is kernel performance, not whole-player strength or promotion.
-
-## [2026-10-16 | demon/ascent | Next Demon trial targets native Zeb 0.4.1 at comparable CPU]
-
-**Added:** [[demon-ascent-2026-10-16]]: fixed seven-arm threshold sweep and independent confirmation rule, public protocol and exact native/package provenance; #184. **Updated:** [[the-demon]] routes the completed 0.4.1 rematch and the new trial.
-
-## [2026-10-16 | book | The field that loses the count: it bleeds 0.71 marks a game, and the book player and Zeb collect it equally (#172)]
-
-- Results on [[count-lapse-2026-10-15]]: 384 of 384 batches, none dropped. Primary ΔG(0.2) = +0.07 [−0.08, +0.22] marks/game, a null at MDE 0.21; p* is beyond the grid. The field's cost of losing the count is Z5 +0.15, Z10 +0.39, Z20 +0.71 [0.60, 0.82], more than twice #151's void lapse at p = 0.4 (0.32). To 250, (PB20 − PZ20) − (PB0 − ½) = −0.5 pts [−6.0, +4.9].
-- The A3 row and reading in [[book-assumptions]] now cover two dimensions; what remains unpriced is the aim, a player that models the lapse (#182). Data: HF `book/count-lapse/` (95b3308d, SHA verified).
-
-## [2026-10-16 | sweep | Branch rescue: the tombstone count stated once, as 13]
-
-- [[branch-rescue-2026-10]] § Tombstones now opens with the verified count: 13 `attic/` tags, 13 branches deleted.
-
-## [2026-10-16 | lead | the fair Walt: Walt on a virtual clock anchors the ladder; production Walt withdrawn (#181)]
-
-**Touched pages:** [[fair-walt-2026-10-16]] [[tournament]]
-**Added:** [[fair-walt-2026-10-16]]: `walt-plunge-26043bf9-fair`, the identical pinned wasm, book and manifest behind a host whose `now_us` advances 0.839 µs a read (1e6 over production's 1,191,753 reads/s on the pre-registered panel). On a quiet Mac it is production Walt move for move: 48 of 48 panel replies and 6 of 6 played games identical (production's own rerun too); paired 12 duplicate pairs, 13 of 24 games (54%, [35%, 72%] against 50%), +0.29 marks/game [-0.77, +1.35].
-**Updated:** `tournament/seat/host.mjs` (virtual clock; the survey's pool race replayed as a virtual-time schedule), `tournament/participants.py` (`FAIR_WALT` is the anchor; `WITHDRAWN`; `deterministic_budget`, `schedulable`), `tournament/seats.py` and `worker.py` (FAIR CLOCKS guards), `tournament/tests/test_fair_clocks.py`. Production Walt keeps its records and its place in the fit; re-anchoring only shifts the scale.
-
-## [2026-10-16 | book | Silas reads the arena's ledger; the differential check finds no disagreement (#130 slice 4)]
-
-- `silas/src/ledger.rs`: `Ledger::from_json` (outcomes, never utilities; any other key refused), `Paired::from_ledger` replaying and settling every row under Silas's rules, `silas compare --ledger FILE`. `arena/ledger.py`: the fixed-state runner and ledger writer, `SilasSeat`, the chance arm, `overbidding_field(k)`. Choices in `silas/docs/cross-game.md`, Slice 4 as built. [[silas]]
-- Round trip: two arena ledgers of a Silas-only field (marks with the straight auction; points from 200-180 with the forced shaker) are Silas's own `play_out` hand for hand, 192 hands, and read to the arena's paired mean exactly (`silas/tests/ledger.rs`, `arena/test_ledger.py`).
-
-## [2026-10-16 | sweep | table42 closed out: issues #65 and #66 closed, worktree-table42 tombstoned]
-
-- [[branch-rescue-2026-10]]: table42 landed (`f529d358`, fence ruling `9cebd296`); `attic/worktree-table42` tagged, branch and PR #68 closed.
