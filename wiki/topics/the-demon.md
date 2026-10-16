@@ -47,11 +47,11 @@ time on Apple M5 Max; its exact participant is registered and rostered.
 [[rematch-zeb-041-vs-demon-2026-10-15]] measures Zeb 0.4.1's reply: its
 contested bidder wins against that Demon at greater CPU cost.
 [[demon-ascent-2026-10-16]] starts the next development and independent
-confirmation. Its first three development rounds do not establish a win.
+confirmation. Its first four development rounds do not establish a win.
 The optional bounded forecast preserves declaration choices while pruning
 losing searches; exact support predicates further reduce bidding work. The
 preemptive jump bidder does not earn promotion. An early-opening bidder is
-the next auction hypothesis; the study records its rules and evidence. No
+cheaper but does not establish a win; the study records its rules and evidence. No
 new participant has been promoted.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw

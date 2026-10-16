@@ -281,6 +281,87 @@ were frozen before development. Plan SHA-256:
 `d934cdca2dd901067b2f726500d96bfa1e63b2e09e5f97cc1807ba740ad4b81a`.
 Fresh plan, manifest and raw smoke downloads match local bytes.
 
+## Round 4 result: cheaper, still no established win
+
+All **256 duplicate pairs / 512 games / 5,424 hands** completed without
+a failed pair. The full source, support-certificate, bidding, declaration,
+play, score and cost audit passes. Every arm meets the development CPU
+criterion. Intervals are 95% whole-pair bootstrap intervals; the game-win
+chance baseline is 50%.
+
+| Arm | Demon wins | Win fraction [95% CI] | Total seat CPU / Zeb [95% CI] |
+|---|---|---|---|
+| reference | 24/64 | 37.50% [23.44, 51.56] | 0.402 [0.390, 0.413] |
+| bait625 | 22/64 | 34.38% [23.44, 45.31] | 0.244 [0.234, 0.254] |
+| bait75 | 29/64 | 45.31% [32.81, 57.81] | 0.211 [0.203, 0.219] |
+| bait875 | 27/64 | 42.19% [28.12, 56.25] | 0.155 [0.147, 0.162] |
+| bait9375 | 27/64 | 42.19% [29.69, 54.69] | 0.126 [0.120, 0.133] |
+| bait1 | 25/64 | 39.06% [26.56, 51.56] | 0.099 [0.094, 0.104] |
+| bait875play400 | 30/64 | 46.88% [34.38, 59.38] | 0.407 [0.384, 0.429] |
+| bait1play400 | 30/64 | 46.88% [34.38, 59.38] | 0.313 [0.295, 0.332] |
+
+The fixed selection is `bait875play400`: its +11 net marks break the tie
+with `bait1play400` (+5). Neither establishes a win; no independent
+confirmation starts. The selected form's CPU ratio leaves room to test
+larger play budgets and the existing reader/tie-rule options.
+[All raw games and reports](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/d051c06c0fa2e525b83748b3c5b42ccee6fa7c9a/demon/2026-10-16-ascent/development-4-results)
+are public: 104,217,670 bytes, 1,580 files. The upload succeeded before a
+resolver-rate limit interrupted verification. After the prescribed backoff,
+fresh downloads of the same immutable commit's plan, manifest, raw game
+and every arm report matched. No game, result or upload was rerun.
+
+## Auxiliary audits
+
+The early-opening hypothesis has a source-level mechanism. In Zeb 0.4.1's
+opponent-held auctions with one or two seats still to speak, the point-bid
+model is `keep*p + (1-keep)*0.571`. For bids 31–41, even its `p=0` floor
+exceeds the model's passing value in both bid buckets. Its overcall rule
+therefore returns a point bid, and the match-aware step can retain it or
+replace it with a mark bid, but cannot turn it into a pass. An audit of
+2,156 synthetic zero-forecast cases covers all marks scores 0–6 on both
+sides, both next-dealer flags, one/two seats afterward and needs 31–41.
+Every case overcalls; a need-42 boundary passes. This is a shipped-policy
+audit, not calibration on real hands or a strength result. Round 4 does
+not establish that exploiting the mechanism wins games.
+
+A separate census of all 64 completed round-3 reference games finds
+147,352,683 of 4,954,384,150 play-search nodes (2.97%) after banked points
+have already decided the contract. No shortcut is implemented: the share
+is small, nodes are not CPU, and a marks-game reward argument does not
+apply to points-to-win games. Any integration would need whole-game outcome
+parity. [Both audit scripts, reports and provenance](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/6af8e9b008d4ce3c2edc684b16b71266323bcb6a/demon/2026-10-16-ascent/auxiliary-audits)
+are public and freshly verified. Neither changes the frozen development
+selection or the independent-confirmation rule.
+
+## Fixed development, round 5
+
+The native source stays `db239f39`; the exact verified native/package bytes
+are reused from round 4's clean public-source build. This round changes
+explicit existing budgets and model options, not policy code. Six initial
+smoke games (59 hands) pass every source, trace, certificate, score and cost
+audit. Two repeat games reproduce the 3,200-world no-margin policy exactly
+at both seatings. No arm is changed from those outcomes.
+
+The fixed sweep is **nine arms × 32 fresh duplicate pairs / 576 games**,
+seed base `0xD4540000`. The reference is round 4's selected early-opening
+policy: 400 play worlds, 64 bid worlds, late-opening/opponent cutoffs
+0.875/0.875, exact support bounds. Separate arms are:
+
+- 800 or 1,200 play worlds;
+- opponent cutoff 1 with 1,200 or 1,600 play worlds;
+- no margin tiebreak with 1,600 or 3,200 play worlds;
+- soft declaration-reader weight 2 or 4 with 800 play worlds.
+
+Unspecified settings equal the reference. The reader is an explicit
+positive-support heuristic likelihood model, not calibrated evidence.
+Every arm finishes before the existing CPU-qualified selection; no
+independent confirmation or participant promotion starts from development.
+
+The [public protocol and preflight](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/078c3d54ba9b57536a3c31634c0458fd6947175d/demon/2026-10-16-ascent/development-5-protocol)
+were frozen before development. Plan SHA-256:
+`522133a8290cdac59b37136b4063a0cefd5db8075d945aac4f939123b7323465`.
+Fresh plan, manifest and raw smoke downloads match local bytes.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**
