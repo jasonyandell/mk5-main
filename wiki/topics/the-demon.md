@@ -80,6 +80,11 @@ opponent and why it is fenced.
 
 ## Code and the fence
 
+[[demon-repository-prep-2026-10-16]] audits a separate repository and tests a
+native export with immutable upstream dependencies. The full auction policy
+must move with the engine; the tournament and shared science have distinct
+cutover gates. No repository cutover has occurred.
+
 | Where | What |
 |---|---|
 | `tournament/demon/` (Rust crate) | `src/lib.rs` `decide` (the four steps), `src/sampling.rs` (uniform subsets or posterior draws), `src/bidding.rs` (contract forecasts), `src/main.rs` (JSON protocol; refuses inconsistent public records), `tests/demon.rs` |

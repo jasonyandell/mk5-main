@@ -5,6 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+- [[experiments/demon-repository-prep-2026-10-16|demon-repository-prep-2026-10-16]] — native export with pinned dependencies; auction-policy, license and tournament cutover audit (complete)
 - [[experiments/demon-instructions-2026-10-16|demon-instructions-2026-10-16]] — exact root reuse lowers native instructions with full response parity; same early-40 policy, new immutable pin (complete)
 
 - [[experiments/demon-ascent-2026-10-16|demon-ascent-2026-10-16]] — early-40 Demon independently beats pinned native Zeb 0.4.1 at lower total seat CPU; opponent-specific policy, audited and public (complete)
