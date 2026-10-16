@@ -2,7 +2,7 @@
 title: Suit algebra — absorption vs. power, S₇ symmetry, τ-encoding
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-07-11
+last_updated: 2026-10-15
 status: active
 ---
 
@@ -99,8 +99,15 @@ substrate. It does not touch how a computed value gets consumed into a plan; tha
 using the oracle the algebra had made trustworthy. See [[breakthrough-and-oracle]] for the
 full era narrative.
 
+## Proposed learning experiment
+
+[[recursive-generalization]] asks whether ordinary information-honest training discovers
+reusable relational mechanisms, with [[silas]] supplying legal transfer tests and
+counterexamples. It is an unrun proposal, not a new algebraic theorem or a claim that
+suit-incidence symmetries preserve the full ranked, scored game.
+
 ## Links
 
 [[suit-algebra-spec]] · [[play-phase-algebra]] · [[the-oracle]] ·
-[[breakthrough-and-oracle]] · [[forge]] ·
+[[breakthrough-and-oracle]] · [[forge]] · [[recursive-generalization]] ·
 [[era2-breakthrough-oracle|conversation digest]]
