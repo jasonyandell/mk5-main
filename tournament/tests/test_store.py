@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from tournament.store import AppendConflict, GitStore, dumps
+from tournament.store import AppendConflict, GitStore, HfStore, dumps
 
 
 def git(cwd, *args, check=True):
@@ -146,3 +146,94 @@ def test_control_a_shared_index_file_does_conflict(tmp_path):
     rebase = git(a, "pull", "-q", "--rebase", check=False)
     assert rebase.returncode != 0 and "CONFLICT" in (rebase.stdout + rebase.stderr)
     git(a, "rebase", "--abort", check=False)
+
+
+# ---------------------------------------------------------------- HfStore (incremental reads)
+
+class FakeHub:
+    """A directory standing in for the Hub: counts listing calls and file resolves."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        root.mkdir(parents=True, exist_ok=True)
+        self.listings = 0
+        self.resolves = 0
+
+    # the HfApi surface HfStore uses
+    def list_repo_tree(self, repo_id, path_in_repo, recursive, repo_type):
+        self.listings += 1
+        base = self.root / path_in_repo
+        return [type("E", (), {"path": f.relative_to(self.root).as_posix()})
+                for f in base.rglob("*") if f.is_file()]
+
+    def create_commit(self, repo_id, repo_type, operations, commit_message):
+        for op in operations:
+            f = self.root / op.path_in_repo
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(op.path_or_fileobj)
+
+    def file_exists(self, repo_id, path, repo_type):
+        return (self.root / path).is_file()
+
+
+def hf_store(hub: FakeHub, cache: Path) -> HfStore:
+    store = HfStore("x/y", cache=cache, api=hub)
+
+    def fetch(path):
+        hub.resolves += 1
+        target = store._root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_name(f"{target.name}.{os.getpid()}.{time.monotonic_ns()}.tmp")
+        tmp.write_bytes((hub.root / path).read_bytes())
+        os.replace(tmp, target)
+
+    store._fetch = fetch
+    return store
+
+
+def test_hf_reads_resolve_only_files_the_cache_lacks(tmp_path):
+    hub = FakeHub(tmp_path / "hub")
+    for i in range(30):
+        hub.create_commit("", "", [type("Op", (), {"path_in_repo": f"faceoffs/l/{i:02d}.json",
+                                                    "path_or_fileobj": dumps({"i": i})})], "m")
+    store = hf_store(hub, tmp_path / "cache")
+    assert len(list(store.read_all("faceoffs/l"))) == 30
+    assert (hub.listings, hub.resolves) == (1, 30)
+    for _ in range(5):  # every later read is one listing and no resolves
+        assert len(list(store.read_all("faceoffs/l"))) == 30
+    assert (hub.listings, hub.resolves) == (6, 30)
+    # a record added elsewhere costs exactly one resolve
+    hub.create_commit("", "", [type("Op", (), {"path_in_repo": "faceoffs/l/zz.json",
+                                                "path_or_fileobj": dumps({"i": 99})})], "m")
+    assert len(list(store.read_all("faceoffs/l"))) == 31
+    assert hub.resolves == 31
+    # our own appends are cached on the way out: no resolve to read them back
+    assert store.append("faceoffs/l/mine.json", dumps({"i": 7}), "m") is True
+    assert len(list(store.read_all("faceoffs/l"))) == 32
+    assert hub.resolves == 31
+    # append-only holds through the cache
+    assert store.append("faceoffs/l/mine.json", dumps({"i": 7}), "m") is False
+    with pytest.raises(AppendConflict):
+        store.append("faceoffs/l/mine.json", dumps({"i": 8}), "m")
+
+
+def test_hf_concurrent_workers_share_one_cache(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    hub = FakeHub(tmp_path / "hub")
+    cache = tmp_path / "cache"
+
+    def worker(w):
+        store = hf_store(hub, cache)
+        for i in range(10):
+            assert store.append(f"faceoffs/l/w{w}-{i}.json", dumps({"w": w, "i": i}), "m")
+            list(store.read_all("faceoffs/l"))
+        return store
+
+    with ThreadPoolExecutor(4) as ex:
+        list(ex.map(worker, range(4)))
+    final = hf_store(hub, cache)
+    got = dict(final.read_all("faceoffs/l"))
+    assert len(got) == 40
+    assert all(got[f"faceoffs/l/w{w}-{i}.json"] == dumps({"w": w, "i": i})
+               for w in range(4) for i in range(10))

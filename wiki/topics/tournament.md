@@ -163,7 +163,12 @@ add different new paths touch disjoint trees, so every interleaving rebases clea
 re-append is a no-op, and different bytes at an existing path are refused.
 
 On the Hub (`HfStore`) each append is one `create_commit` with no `parent_commit`, which the Hub
-applies on top of its current head. A plain git remote (`GitStore`) is commit, push, and on a
+applies on top of its current head. Reads are incremental (2026-10-16): records are immutable, so
+`HfStore.read_all` lists the tree once per prefix and resolves only the files its local cache lacks.
+The earlier `snapshot_download` re-checked every file (~694 resolver requests) whenever the Hub head
+had moved, which with two workers hit the 5000-resolvers-per-5-minutes quota and killed a worker;
+now a read is 2 listing calls and 0 resolves when nothing is new (`test_hf_*` in `test_store.py`).
+A plain git remote (`GitStore`) is commit, push, and on a
 rejected push `pull --rebase` and push again.
 
 **Tested deliberately (2026-10-14).**

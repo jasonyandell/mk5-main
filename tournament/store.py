@@ -134,31 +134,57 @@ class GitStore:
 
 
 class HfStore:
-    """A Hugging Face dataset repo, appended through the Hub's commit API."""
+    """A Hugging Face dataset repo, appended through the Hub's commit API.
 
-    def __init__(self, repo_id: str, *, cache: str | os.PathLike, retries: int = 8):
+    Reads are incremental. Records are immutable, so a file already in the
+    local cache is never asked for again: `read_all` makes ONE listing call
+    (the Hub's tree API) and resolves only the paths the cache lacks. A chunk
+    of the always-on ladder therefore costs a handful of requests, not one
+    per record (the full re-fetch hit the Hub's 5000-resolvers-per-5-minutes
+    quota with two workers). Workers may share a cache directory: a file is
+    complete or absent, and its bytes are the same whoever fetched it.
+    """
+
+    def __init__(self, repo_id: str, *, cache: str | os.PathLike, retries: int = 8, api=None):
         from huggingface_hub import HfApi
 
         self.repo_id = repo_id
-        self.api = HfApi()
+        self.api = api or HfApi()
         self.cache = Path(cache)
         self.retries = retries
         self.retried = 0
 
+    @property
+    def _root(self) -> Path:
+        return self.cache / "snapshot"
+
+    def _fetch(self, path: str) -> None:
+        """Resolve one record into the cache (one resolver request)."""
+        from huggingface_hub import hf_hub_download
+
+        hf_hub_download(self.repo_id, path, repo_type="dataset", local_dir=self._root)
+
+    def _cached(self, path: str) -> bytes | None:
+        f = self._root / path
+        return f.read_bytes() if f.is_file() else None
+
     def exists(self, path: str) -> bool:
-        return self.api.file_exists(self.repo_id, path, repo_type="dataset")
+        return (self._root / path).is_file() or self.api.file_exists(
+            self.repo_id, path, repo_type="dataset")
 
     def append(self, path: str, data: bytes, message: str) -> bool:
-        from huggingface_hub import CommitOperationAdd, hf_hub_download
+        from huggingface_hub import CommitOperationAdd
 
         from huggingface_hub.errors import HfHubHTTPError
 
         _check_path(path)
         for attempt in range(self.retries):
             if self.exists(path):
-                local = hf_hub_download(self.repo_id, path, repo_type="dataset",
-                                        local_dir=self.cache / "verify", force_download=True)
-                if Path(local).read_bytes() == data:
+                have = self._cached(path)
+                if have is None:
+                    self._fetch(path)
+                    have = self._cached(path)
+                if have == data:
                     return False  # landed already (perhaps by an attempt whose reply was lost)
                 raise AppendConflict(path)
             try:
@@ -169,6 +195,12 @@ class HfStore:
                     operations=[CommitOperationAdd(path_in_repo=path, path_or_fileobj=data)],
                     commit_message=message,
                 )
+                # Our own record is already in hand; no need to resolve it back.
+                target = self._root / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                tmp = target.with_name(f"{target.name}.{os.getpid()}.tmp")
+                tmp.write_bytes(data)
+                os.replace(tmp, target)
                 return True
             except HfHubHTTPError as e:  # a rate limit or a transient error: the retry is idempotent
                 self.retried += 1
@@ -178,13 +210,12 @@ class HfStore:
         raise AssertionError("unreachable")
 
     def read_all(self, prefix: str) -> Iterator[tuple[str, bytes]]:
-        from huggingface_hub import snapshot_download
-
-        root = Path(snapshot_download(self.repo_id, repo_type="dataset",
-                                      allow_patterns=[f"{prefix}/**"],
-                                      local_dir=self.cache / "snapshot"))
-        base = root / prefix
-        if not base.exists():
-            return
-        for f in sorted(base.rglob("*.json")):
-            yield f.relative_to(root).as_posix(), f.read_bytes()
+        listed = sorted(e.path for e in self.api.list_repo_tree(
+            self.repo_id, path_in_repo=prefix, recursive=True, repo_type="dataset")
+            if e.path.endswith(".json"))
+        for path in listed:
+            data = self._cached(path)
+            if data is None:
+                self._fetch(path)
+                data = self._cached(path)
+            yield path, data
