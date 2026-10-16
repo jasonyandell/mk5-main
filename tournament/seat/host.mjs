@@ -18,7 +18,13 @@
 //          (src/ai/auction.ts auctionMove, src/ai/book-auction.ts,
 //          src/ai/phone/auction-pool.ts, src/ai/native.ts livePlayerCall,
 //          difficulty 'native-partner'). Ported line for line; the source
-//          lines are cited where each rule lives.
+//          lines are cited where each rule lives. config.clock says what the
+//          wasm's now_us reads (FAIR CLOCKS, #181): "real", the machine's
+//          clock as Plunge runs it (a historical participant whose moves
+//          depend a little on the load), or "virtual", a counter whose n-th
+//          read in a call is floor(n * clock_step_us) microseconds, so every
+//          deadline is a count of the solver's own work and a game replays
+//          bit for bit on any machine at any load.
 //
 // requests  {op:"bid", hand, seat, high_bid, high_seat, legal, game, hand_no}
 //           {op:"declare", hand, seat, bid, game, hand_no}
@@ -89,6 +95,14 @@ function toSeed(s) {
 }
 const nativeSeed = (gameId, handNumber) => toSeed(`sunshine/${gameId}/${handNumber}`);
 
+// The virtual clock: the n-th read since the call began returns floor(n * step)
+// microseconds. `spent_us` is the last value handed out, the call's virtual elapsed time.
+function virtualClock(step) {
+  let reads = 0, last = 0;
+  return { now_us: () => { last = Math.floor(++reads * step); return BigInt(last); },
+           spent_us: () => last };
+}
+
 async function waltSeat() {
   const wasm = readFileSync(join(dir, 'walt-player.wasm'));
   const module = await WebAssembly.compile(wasm);
@@ -101,11 +115,19 @@ async function waltSeat() {
     panels.reduce((a, b) => (b.tails[bid - 30] * a.games > a.tails[bid - 30] * b.games ? b : a));
   const qualifies = (p, bid) => p.tails[bid - 30] * thrDen >= p.games * thrNum;
 
+  if (config.clock !== 'real' && config.clock !== 'virtual') {
+    throw new Error(`walt: config.clock must be "real" or "virtual", not ${JSON.stringify(config.clock)}`);
+  }
+  const VIRTUAL = config.clock === 'virtual';
+  const STEP = config.clock_step_us;
+  if (VIRTUAL && !(STEP > 0)) throw new Error('walt: a virtual clock needs clock_step_us > 0');
+
   const decoder = new TextDecoder();
   const call = (obj) => {
     let x;
     const instance = new WebAssembly.Instance(module, { walt_host: {
-      now_us: () => BigInt(Math.floor(performance.now() * 1000)), checkpoint: () => {} } });
+      now_us: VIRTUAL ? virtualClock(STEP).now_us : () => BigInt(Math.floor(performance.now() * 1000)),
+      checkpoint: () => {} } });
     x = instance.exports;
     const bytes = new TextEncoder().encode(JSON.stringify(obj));
     const ptr = x.walt_in_prepare(bytes.length);
@@ -123,26 +145,30 @@ async function waltSeat() {
   const POOL = 4, AUCTION_WORLDS = 160, AUCTION_BUDGET_MS = 20000;
   const workerSource = `
     const { parentPort, workerData } = require('node:worker_threads');
-    const module = new WebAssembly.Module(workerData);
+    const module = new WebAssembly.Module(workerData.wasm);
     const decoder = new TextDecoder();
+    const step = workerData.step;
     parentPort.on('message', (obj) => {
       try {
+        let reads = 0, last = 0;
+        const now_us = step
+          ? () => { last = Math.floor(++reads * step); return BigInt(last); }
+          : () => BigInt(Math.floor(performance.now() * 1000));
         let x;
-        const instance = new WebAssembly.Instance(module, { walt_host: {
-          now_us: () => BigInt(Math.floor(performance.now() * 1000)), checkpoint: () => {} } });
+        const instance = new WebAssembly.Instance(module, { walt_host: { now_us, checkpoint: () => {} } });
         x = instance.exports;
         const bytes = new TextEncoder().encode(JSON.stringify(obj));
         const ptr = x.walt_in_prepare(bytes.length);
         new Uint8Array(x.memory.buffer, ptr, bytes.length).set(bytes);
         const len = x.walt_call();
-        parentPort.postMessage({ result: JSON.parse(decoder.decode(new Uint8Array(x.memory.buffer, x.walt_out_ptr(), len))) });
+        parentPort.postMessage({ result: JSON.parse(decoder.decode(new Uint8Array(x.memory.buffer, x.walt_out_ptr(), len))), spent_us: last });
       } catch (e) { parentPort.postMessage({ error: String(e) }); }
     });`;
   const pool = Array.from({ length: POOL }, () =>
-    new Worker(workerSource, { eval: true, workerData: wasm }));
+    new Worker(workerSource, { eval: true, workerData: { wasm, step: VIRTUAL ? STEP : 0 } }));
   for (const w of pool) w.unref();
   const onWorker = (w, obj) => new Promise((resolve, reject) => {
-    w.once('message', (m) => (m.error ? reject(new Error(m.error)) : resolve(m.result)));
+    w.once('message', (m) => (m.error ? reject(new Error(m.error)) : resolve(m)));
     w.postMessage(obj);
   });
 
@@ -156,7 +182,7 @@ async function waltSeat() {
         while (queue.length && !late) {
           const budget = Math.floor(end - performance.now() - 80);
           if (budget < 5) { late = true; break; }
-          const r = await onWorker(w, { auction_price: request, decl: queue.shift(), worlds, budget_ms: budget });
+          const { result: r } = await onWorker(w, { auction_price: request, decl: queue.shift(), worlds, budget_ms: budget });
           if (r && r.error) { late = true; break; }
           receipts.push(r);
         }
@@ -169,12 +195,56 @@ async function waltSeat() {
     return saved;
   }
 
+  // The same survey on the virtual clock. The pool's wall-clock race becomes a schedule
+  // computed in virtual time: the nine jobs go, in declaration order, each to the worker
+  // that is free first (ties: the lowest index), each with the budget the 20 s deadline
+  // leaves it. The jobs of a round are run at once on the real pool with the budget the
+  // round's start leaves; a job that spent less than the budget it was really owed ran
+  // exactly as it would have under it, and any other is run again under the exact budget.
+  async function surveyVirtual(request) {
+    const END_US = AUCTION_BUDGET_MS * 1000;
+    let saved = call({ auction_merge: request, worlds: 0, receipts: [] });
+    let t = 0;
+    for (const worlds of [4, 12, 40, AUCTION_WORLDS]) {
+      const budgetAt = (free) => Math.floor((END_US - free) / 1000 - 80);
+      const first = budgetAt(t);
+      if (first < 5) break;
+      const trial = new Array(DECLS.length);
+      await Promise.all(pool.map(async (w, k) => {
+        for (let i = k; i < DECLS.length; i += POOL) {
+          trial[i] = await onWorker(w, { auction_price: request, decl: DECLS[i], worlds, budget_ms: first });
+        }
+      }));
+      const free = Array(POOL).fill(t), receipts = [];
+      let late = false;
+      for (let i = 0; i < DECLS.length && !late; i++) {
+        let w = 0;
+        for (let k = 1; k < POOL; k++) if (free[k] < free[w]) w = k;
+        const budget = budgetAt(free[w]);
+        if (budget < 5) { late = true; break; }
+        let job = trial[i];
+        if (budget !== first && !(job.spent_us < budget * 1000 - 2 * STEP)) {
+          job = await onWorker(pool[w], { auction_price: request, decl: DECLS[i], worlds, budget_ms: budget });
+        }
+        if (job.result && job.result.error) { late = true; break; }
+        free[w] += job.spent_us;
+        receipts.push(job.result);
+      }
+      t = Math.max(...free);
+      if (late || receipts.length !== DECLS.length || t >= END_US) break;
+      const merged = call({ auction_merge: request, worlds, receipts });
+      if (merged.worlds !== worlds) break;
+      saved = merged;
+    }
+    return saved;
+  }
+
   const surveys = new Map(); // auctionMove's `previous`: the same request reuses its survey
   async function surveyOf(request) {
     const k = JSON.stringify([request.seat, request.bid, request.seed, request.hand]);
     if (!surveys.has(k)) {
       if (surveys.size > 64) surveys.clear();
-      surveys.set(k, await survey(request));
+      surveys.set(k, await (VIRTUAL ? surveyVirtual : survey)(request));
     }
     return surveys.get(k);
   }
