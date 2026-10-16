@@ -50,6 +50,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | lem | The audit read against Zeb's earlier nets (exploratory): concepts rise with data, the play stays dense]
+
+- [[lem-field-net-audit-2026-10-15]] § Exploratory: clean share 0.297 → 0.519 → 0.597 across the 5k, 50k and 250k nets (one net per size, chance 0.000 each), declaration detectors flat (68, 71, 69), knee 176 → 170 → 165; every "master" pole is a trump master; the trick-position poles are conjunctions. Read-outs in `audit/reads.md`, series on HF.
+
 ## [2026-10-16 | book | The full declaration menu at the arena: doubles as trumps and no trump, opt-in and provisional (#155)]
 
 - **Substrate.** The arena engine plays whole doubles-trump and no-trump hands by the rules, checked against the rules written out independently of `forge.oracle.tables`. Zeb's plan on the random field decides under both, with the compiled core equal to the Python referee at every decision of a whole hand (`arena/test_declarations.py`). Deployed Zeb's field net plays pip trumps only and refuses decls 7–9. At a menu table a net seat is `DTNT=random` (`arena.walt_play.MenuWalt`): its random-field twin plays those hands, and it is the net byte for byte under a pip trump. Every Ch. 9 number from it is provisional until a net covers them (#177). The engine refuses a table where a bidder may declare what a seat cannot play (`arena.play.check_menu`).
