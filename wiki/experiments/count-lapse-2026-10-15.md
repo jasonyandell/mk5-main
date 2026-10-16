@@ -2,8 +2,8 @@
 title: The field that loses the count — the book's play against opponents who forget which tiles have gone (#172, 2026-10-15)
 kind: experiment
 first_seen: 2026-10-15
-last_updated: 2026-10-15
-status: active
+last_updated: 2026-10-16
+status: complete
 ---
 
 ## Summary
@@ -15,7 +15,76 @@ else, the *count*, and that is what its ploys lean on: the straight-off 84 that 
 misdiscard, and the low-looking master late in a hand (S-0088-a, S-0079-a, S-0169-b). Here the field
 loses the count.
 
-*Results follow once every registered batch has run.*
+## Results (complete, 2026-10-16; 384 of 384 registered batches ran, none dropped)
+
+**One line.** Against a field that loses the count, the book player gains as much as plain Zeb
+does, and no more. ΔG(0.2) = +0.07 [−0.08, +0.22] marks/game, a null at an MDE of 0.21, so its gap
+to Zeb does not close and p* is **beyond the grid**. Losing the count costs the field far more than
+forgetting voids did: plain Zeb takes +0.71 [0.60, 0.82] marks/game from it at p = 0.2. #151's
+void lapse cost +0.32 at p = 0.4. The book player takes about as much (B0 −1.07 to B20 −0.29).
+
+Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
+`book/count-lapse/` (per batch `meta.json` and `games.jsonl`, `summary.json`, the queue log, `CARD.md`).
+
+### The arms (team A's margin against the field; 1,152 games per marks arm, 384 per points arm)
+
+| p | tiles forgotten / stood in for, per field decision | B_p, the book player | Z_p, plain Zeb (the field's cost) | G(p) = B_p − Z_p |
+|---|---|---|---|---|
+| 0 | 0 / 0 | −1.07 [−1.19, −0.94] | 0 exactly (Zeb against itself; not run) | −1.07 [−1.19, −0.94] |
+| 0.05 | 0.45 / 0.28 | −0.83 [−0.96, −0.71] | +0.15 [+0.07, +0.22] | −0.98 [−1.12, −0.84] |
+| 0.1 | 0.90 / 0.54 | −0.64 [−0.77, −0.52] | +0.39 [+0.31, +0.48] | −1.04 [−1.18, −0.89] |
+| 0.2 | 1.81 / 1.02 | −0.29 [−0.42, −0.17] | +0.71 [+0.60, +0.82] | −1.00 [−1.16, −0.84] |
+
+The book's game, share of games won against the field: PB0 38.0% [34.1, 41.9], PB20 45.1% [41.1,
+49.0], PZ20 57.6% [54.4, 60.7].
+
+### The registered contrasts (paired by game pair; MDE at 80% power)
+
+| contrast | marks/game [95%] | pairs | SD/pair | MDE |
+|---|---|---|---|---|
+| **primary ΔG(0.2) = G(0.2) − G(0)** | **+0.07 [−0.08, +0.22]** | 576 | 1.82 | 0.21 |
+| ΔG(0.05) | +0.09 [−0.02, +0.19] | 576 | 1.27 | 0.15 |
+| ΔG(0.1) | +0.03 [−0.09, +0.16] | 576 | 1.53 | 0.18 |
+| the field's cost: Z5 | +0.15 [+0.07, +0.22] | 576 | 0.93 | 0.11 |
+| the field's cost: Z10 | +0.39 [+0.31, +0.48] | 576 | 1.05 | 0.12 |
+| the field's cost: Z20 | +0.71 [+0.60, +0.82] | 576 | 1.30 | 0.15 |
+| to 250: PB20 − PZ20, share of games won | −12.5 pts [−17.4, −7.6] | 192 | 0.35 | 7.2 pts |
+| to 250: (PB20 − PZ20) − (PB0 − 50%) | −0.5 pts [−6.0, +4.9] | 192 | 0.38 | 7.7 pts |
+
+The SD per pair came out above #151's (1.82 against 1.37 on the primary), so the registered MDE of
+about 0.16 became 0.21. The 250 contrast carries PB0's 50% baseline as registered here.
+
+### Reading, under [[book-authority]]
+
+- **Assumptions held and violated.** A3 is restored in a second dimension: the field loses the
+  count, sticky for the hand, at a rate of 0.45–1.8 tiles per decision. The stand-in rule keeps the
+  view a legal history, so a forgotten trick-winner is lost at about 0.4p and a played master less
+  often than a played loser. The field still never misdiscards by inattention, never forgets its
+  own hand, and loses no voids (#168). The book's straight-off 84 hopes for a misdiscard, and a
+  misdiscard is a play this field makes only when its forgotten count makes the discard look right.
+  A1, A2, A4 and A6 are violated as in every arena block. The marks arms violate A5, and the points
+  arms restore it.
+- **What our model can see.** A field that loses the count bleeds marks steeply: 0.15, 0.39 and
+  0.71 marks/game at p = 0.05, 0.1 and 0.2. That is roughly twice #151's cost at a tenth of its
+  rate per tile. Both team A players collect it, and they collect it equally (B gains +0.78, Z
+  +0.71). The planner, which never models the field's lapse, takes the gifts as readily as the
+  book's rules do. ΔG leans the book's way at every p (+0.09, +0.03, +0.07), but none of it clears
+  its MDE and the trend is not monotone.
+- **The book's game.** To 250 the book player trails plain Zeb by 12.5 points of share against
+  this field. That is the distance it trails at p = 0 (−0.5 [−6.0, +4.9] on the contrast).
+- **The measurement that restores more of A3.** The book's ploys are aimed: a lure is played *at*
+  a seat that might lose track, and it is worth something only when the player chooses it for that
+  reason. Neither team A player here models the field's lapse. So the next measurement is a
+  player that does, with the lapse as a parameter of the model of the other seat ([[lem-the-teacher]]'s
+  population, #182). Also the sticky void lapse (#168), and the two lapses together.
+
+### Receipts
+
+Pre-registered at 02f3b304 (`scenario/count_lapse.py`, `arena/count_lapse.py`). 384 batches
+through `scripts/cpu-slot`, two at a time, 30–70 s a batch when a slot was free. While other desks
+held the machine, some batches waited up to 58 minutes for a slot, and every one completed. Every batch
+directory holds its 24 games; none dropped. Timing pilot seed 3090 excluded. Run 2026-10-15 14:53
+to 2026-10-16 02:33.
 
 ## Why a view, not a fiber
 
