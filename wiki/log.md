@@ -49,6 +49,22 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | sweep | Branch rescue: Book's two worktrees merged and gone]
+
+- [[branch-rescue-2026-10]]: `book/count-lapse` and `silas/cross-game-slice4` merged by the Book desk; off the live list.
+
+## [2026-10-16 | Demon | Exact bidding bounds and preemptive bidding capability]
+
+[[demon-ascent-2026-10-16]] integrates the exact bounded forecast, with all 1,934 original forecast winners/counts preserved, and adds an opt-in highest-supported-point bidder using common-world monotone bisection. Existing participant records remain unchanged; no new roster entry or strength claim. Both completed development rounds and all raw evidence remain public. The next trial tests preemption against pinned native Zeb 0.4.1.
+
+## [2026-10-16 | Demon | Exact declaration elimination]
+
+[[demon-ascent-2026-10-16]] records the complete first cutoff sweep (no established win), the frozen second development round, and an isolated bidding prototype. Incumbent bounds preserve all 1,934 saved forecast winners/counts while using 0.5210 [0.5124, 0.5295] of full-forecast native CPU. Public source, replay inputs and outputs are linked; this is kernel performance, not whole-player strength or promotion.
+
+## [2026-10-16 | demon/ascent | Next Demon trial targets native Zeb 0.4.1 at comparable CPU]
+
+**Added:** [[demon-ascent-2026-10-16]]: fixed seven-arm threshold sweep and independent confirmation rule, public protocol and exact native/package provenance; #184. **Updated:** [[the-demon]] routes the completed 0.4.1 rematch and the new trial.
+
 ## [2026-10-16 | book | The field that loses the count: it bleeds 0.71 marks a game, and the book player and Zeb collect it equally (#172)]
 
 - Results on [[count-lapse-2026-10-15]]: 384 of 384 batches, none dropped. Primary ΔG(0.2) = +0.07 [−0.08, +0.22] marks/game, a null at MDE 0.21; p* is beyond the grid. The field's cost of losing the count is Z5 +0.15, Z10 +0.39, Z20 +0.71 [0.60, 0.82], more than twice #151's void lapse at p = 0.4 (0.32). To 250, (PB20 − PZ20) − (PB0 − ½) = −0.5 pts [−6.0, +4.9].
