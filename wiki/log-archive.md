@@ -4504,3 +4504,33 @@ The same early-40 configuration is registered and rostered at source [[d48909c4]
 all earlier participant bytes remain unchanged. #187 is the coordinated registry
 heads-up. Public protocol, raw responses, cost reports and build receipts are
 linked from the experiment. No new strength or Zeb instruction-cost claim.
+
+## [2026-10-16 | book | The full declaration menu at the arena: doubles as trumps and no trump, opt-in and provisional (#155)]
+
+- **Substrate.** The arena engine plays whole doubles-trump and no-trump hands by the rules, checked against the rules written out independently of `forge.oracle.tables`. Zeb's plan on the random field decides under both, with the compiled core equal to the Python referee at every decision of a whole hand (`arena/test_declarations.py`). Deployed Zeb's field net plays pip trumps only and refuses decls 7–9. At a menu table a net seat is `DTNT=random` (`arena.walt_play.MenuWalt`): its random-field twin plays those hands, and it is the net byte for byte under a pip trump. Every Ch. 9 number from it is provisional until a net covers them (#177). The engine refuses a table where a bidder may declare what a seat cannot play (`arena.play.check_menu`).
+- **The bidder.** `MenuBidder` (opt-in, `menu` in the CLI) is `HeuristicBidder` below four doubles. From four it declares doubles when the best suit leaves a high off and no trump when the hand lacks the double-six and every high off and no trump prices better (catalog rows W42-p075-b, W42-p078-b, W42-p079-a, W42-p080-a). It declares Hands 23–25 as the book does and keeps the book's suit on its other hands of four doubles. It changes the bid or the declaration on 0.8% of hands. `HeuristicBidder` is pinned byte-identical by digest.
+- **Silas.** `bidding/menu.silas` is `MenuBidder`, one digest on all 51,108 hands of four doubles. `risk-budget` declares doubles or no trump where the table offers them, and is unchanged where only pip trumps are offered. [[book-assumptions]] A10, [[scenario-player]]
+- **All desks:** stale venvs must rebuild scenario_core, because lib/bidding.silas is embedded in it. `scripts/check` builds its own; a local `scratch/venv` fails `arena/test_book_play` until its core is rebuilt.
+
+## [2026-10-16 | lem | The audit read against Zeb's earlier nets (exploratory): concepts rise with data, the play stays dense]
+
+- [[lem-field-net-audit-2026-10-15]] § Exploratory: clean share 0.297 → 0.519 → 0.597 across the 5k, 50k and 250k nets (one net per size, chance 0.000 each), declaration detectors flat (68, 71, 69), knee 176 → 170 → 165; every "master" pole is a trump master; the trick-position poles are conjunctions. Read-outs in `audit/reads.md`, series on HF.
+
+## [2026-10-16 | demon | Repository extraction preparation]
+
+- Added [[demon-repository-prep-2026-10-16]]: native export, dependency/license audit and complete-player cutover gates; routed from [[the-demon]].
+- Follow-up [#188](https://github.com/jasonyandell/mk5-main/issues/188); no new repository or production cutover.
+
+## [2026-10-16 | book | The auction read: +0.17 marks a game by the known method, but the A/A moved too (#117)]
+
+- Results on [[auction-read-2026-10-16]]: 176 of 176 batches, none dropped. Primary K = +0.17 [+0.06, +0.29] marks/game clears its bar. The A/A (plain Zeb at seed 1) also clears, +0.12 [+0.02, +0.23], so K − Za = +0.05 [−0.09, +0.19]. The read does not cost, and its gain is not separable from planner-seed scatter. U +0.07, K − U +0.10 (both nulls); to 250, PK 53.4%. The A4 row is updated. #190 files seed-varied fields. Data: HF `book/auction-read/` (7877cd92, SHA verified).
+
+## [2026-10-16 | lem | Pour A pre-registered: positions on all nine playable declarations, the book's menu declaring, a labelled forced share]
+
+- [[lem-pour-a-2026-10-16]]: 250,000 deals in 50 slot-sized chunks on the Mac (Jason: "the Mac is available for a pour"); the book's menu (#155) declares, one pip deal in eight forced to doubles or no trump and listed in the manifests; pips over the shipped net, doubles/no-trump over the one-rung Walt; `lem/pour/a.py`.
+- [[lem-the-teacher]] stage 2 links it. The field-v3 canon (branch `lem/field-v3-r2`) is with the Mayor; the first v3 net trains on this pour.
+
+## [2026-10-16 | book | Seed-varied Zeb seats, and #117 re-registered against a seed-varied field (#190)]
+
+- `arena.seed_varied.SeedVaried`: a Zeb seat that plays each hand at a planner seed picked from a pool by the deal (keyed as a set of hands; FNV plus splitmix64's mixer, because FNV's low bits alone reached 4 of 16 seeds). It plays the same seed in every arm and both halves, and at a pool of one it is the plain player byte for byte. Its `.walt` is a pooled planner, so RegularsPlay and BookPlay get the deal's seed too.
+- [[seed-varied-2026-10-16]] is pre-registered: #117's K, U and Za against a seed-varied field, primary K read against an honest A/A; 352 batches.

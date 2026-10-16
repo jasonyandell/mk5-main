@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-16, 333 archived entries)
+## Digest (2026-04-09 → 2026-10-16, 339 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -49,8 +49,22 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The ledger, the count lapse, fair clocks, the rescue** (2026-10-16, 6 archived entries) — [[silas]] (#130 slice 4, the arena ledger), [[count-lapse-2026-10-15]], [[fair-walt-2026-10-16]], [[branch-rescue-2026-10]], [[the-demon]].
 - **The Demon's exact bidding, Lem's first audit** (2026-10-16, 6 archived entries) — [[the-demon]] (exact declaration elimination, exact bid bounds and support, the preemption and early-opening sweeps), [[lem-field-net-audit-2026-10-15]], [[branch-rescue-2026-10]].
 - **The Demon's early forty + the auction read** (2026-10-16, 6 archived entries) — the Demon's higher early opening bids selected and confirmed against Zeb 0.4.1, exact root reuse under FAIR CLOCKS ([[demon-ascent-2026-10-16]], [[demon-instructions-2026-10-16]]); the auction read pre-registered (#117, [[auction-read-2026-10-16]]) and Silas cross-game loose ends ([[silas]]).
+- **The full menu, Pour A, the audit against earlier nets, the A/A** (2026-10-16, 6 archived entries) — the ten declarations at the arena ([[book-assumptions]], #155), the Demon's repository extraction ([[the-demon]]), the auction read by the known method (#117), [[lem-pour-a-2026-10-16]] registered, the audit read against Zeb's earlier nets ([[lem-field-net-audit-2026-10-15]] § Exploratory), seed-varied seats and #117 re-registered (#190).
 
 ---
+
+## [2026-10-16 | lem | Split-half A/A of the audit's intervals: row Wilson 1.17× too narrow, the clean share replicates (#191)]
+
+Inez (#191) asked how Lem's intervals are made and whether an A/A exists; the Mayor ruled the audit's
+0.597 [0.581, 0.608] provisional because its Wilson intervals are over rows, not deals. Registered and
+ran the A/A the same afternoon ([[lem-field-net-audit-2026-10-15]] § Split-half A/A): deals halved,
+the audit rerun per half, 372 live poles. The row Wilson SEs are about **1.17× too narrow**
+(|z| > 1.96 on 0.093 of non-degenerate poles vs 0.05), not the several-fold the desk predicted; a
+deal-clustered bootstrap barely helps (1.12×) because a top set of 2,174 rows spans 1,730 deals.
+The noise the row interval misses is the top set's own selection. The clean share replicates at
+0.594 / 0.599 and is no longer provisional. The belief probes' R² now carry deal-clustered bands
+(±0.004, ±0.007, ±0.003) and agree in both split directions ([[lem-belief-probe-2026-10-16]]).
+Code `lem/probe/aa.py`; evidence `lem/aa-2026-10-16/` in the research repo (3eafdc57).
 
 ## [2026-10-16 | book | Calibrating the estimator, pre-registered: forty A/A replicates (#191)]
 
@@ -92,33 +106,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-16 | book | Seed-scatter caveats on single-arm margins against a one-seed field (#190)]
 
 - One line each on [[rematch-zeb-041-vs-demon-2026-10-15]], [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]]: their single-arm margins exclude planner-seed scatter of about ±0.1 marks/game, and the paired differences on shared seeds are unaffected. Results whose ends lie inside the scatter: the rematch's +0.330 [+0.055, …] marks, #151's Z10 and Z20, and #172's Z5. The Mayor asked for this.
-
-## [2026-10-16 | book | Seed-varied Zeb seats, and #117 re-registered against a seed-varied field (#190)]
-
-- `arena.seed_varied.SeedVaried`: a Zeb seat that plays each hand at a planner seed picked from a pool by the deal (keyed as a set of hands; FNV plus splitmix64's mixer, because FNV's low bits alone reached 4 of 16 seeds). It plays the same seed in every arm and both halves, and at a pool of one it is the plain player byte for byte. Its `.walt` is a pooled planner, so RegularsPlay and BookPlay get the deal's seed too.
-- [[seed-varied-2026-10-16]] is pre-registered: #117's K, U and Za against a seed-varied field, primary K read against an honest A/A; 352 batches.
-
-## [2026-10-16 | lem | Pour A pre-registered: positions on all nine playable declarations, the book's menu declaring, a labelled forced share]
-
-- [[lem-pour-a-2026-10-16]]: 250,000 deals in 50 slot-sized chunks on the Mac (Jason: "the Mac is available for a pour"); the book's menu (#155) declares, one pip deal in eight forced to doubles or no trump and listed in the manifests; pips over the shipped net, doubles/no-trump over the one-rung Walt; `lem/pour/a.py`.
-- [[lem-the-teacher]] stage 2 links it. The field-v3 canon (branch `lem/field-v3-r2`) is with the Mayor; the first v3 net trains on this pour.
-
-## [2026-10-16 | book | The auction read: +0.17 marks a game by the known method, but the A/A moved too (#117)]
-
-- Results on [[auction-read-2026-10-16]]: 176 of 176 batches, none dropped. Primary K = +0.17 [+0.06, +0.29] marks/game clears its bar. The A/A (plain Zeb at seed 1) also clears, +0.12 [+0.02, +0.23], so K − Za = +0.05 [−0.09, +0.19]. The read does not cost, and its gain is not separable from planner-seed scatter. U +0.07, K − U +0.10 (both nulls); to 250, PK 53.4%. The A4 row is updated. #190 files seed-varied fields. Data: HF `book/auction-read/` (7877cd92, SHA verified).
-
-## [2026-10-16 | demon | Repository extraction preparation]
-
-- Added [[demon-repository-prep-2026-10-16]]: native export, dependency/license audit and complete-player cutover gates; routed from [[the-demon]].
-- Follow-up [#188](https://github.com/jasonyandell/mk5-main/issues/188); no new repository or production cutover.
-
-## [2026-10-16 | lem | The audit read against Zeb's earlier nets (exploratory): concepts rise with data, the play stays dense]
-
-- [[lem-field-net-audit-2026-10-15]] § Exploratory: clean share 0.297 → 0.519 → 0.597 across the 5k, 50k and 250k nets (one net per size, chance 0.000 each), declaration detectors flat (68, 71, 69), knee 176 → 170 → 165; every "master" pole is a trump master; the trick-position poles are conjunctions. Read-outs in `audit/reads.md`, series on HF.
-
-## [2026-10-16 | book | The full declaration menu at the arena: doubles as trumps and no trump, opt-in and provisional (#155)]
-
-- **Substrate.** The arena engine plays whole doubles-trump and no-trump hands by the rules, checked against the rules written out independently of `forge.oracle.tables`. Zeb's plan on the random field decides under both, with the compiled core equal to the Python referee at every decision of a whole hand (`arena/test_declarations.py`). Deployed Zeb's field net plays pip trumps only and refuses decls 7–9. At a menu table a net seat is `DTNT=random` (`arena.walt_play.MenuWalt`): its random-field twin plays those hands, and it is the net byte for byte under a pip trump. Every Ch. 9 number from it is provisional until a net covers them (#177). The engine refuses a table where a bidder may declare what a seat cannot play (`arena.play.check_menu`).
-- **The bidder.** `MenuBidder` (opt-in, `menu` in the CLI) is `HeuristicBidder` below four doubles. From four it declares doubles when the best suit leaves a high off and no trump when the hand lacks the double-six and every high off and no trump prices better (catalog rows W42-p075-b, W42-p078-b, W42-p079-a, W42-p080-a). It declares Hands 23–25 as the book does and keeps the book's suit on its other hands of four doubles. It changes the bid or the declaration on 0.8% of hands. `HeuristicBidder` is pinned byte-identical by digest.
-- **Silas.** `bidding/menu.silas` is `MenuBidder`, one digest on all 51,108 hands of four doubles. `risk-budget` declares doubles or no trump where the table offers them, and is unchanged where only pip trumps are offered. [[book-assumptions]] A10, [[scenario-player]]
-- **All desks:** stale venvs must rebuild scenario_core, because lib/bidding.silas is embedded in it. `scripts/check` builds its own; a local `scratch/venv` fails `arena/test_book_play` until its core is rebuilt.
