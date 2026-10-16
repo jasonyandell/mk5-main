@@ -3,7 +3,7 @@ title: Clean neurons for 42 — reading Zeb's own net, concept by concept, as it
 kind: topic
 first_seen: 2026-10-15
 last_updated: 2026-10-15
-status: idea
+status: active
 ---
 
 > **The neurons gaining concepts. That's what I want for 42.** This recursive generalization is

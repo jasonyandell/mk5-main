@@ -60,7 +60,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/logged-arrows|logged-arrows]] — Burl Lab harness algebra: input -> optional output plus journalable Moves; composition concatenates logs (superseded)
 - [[topics/lora-unsloth|lora-unsloth]] — parameter-efficient fine-tuning; full reproducible Stage 0 recipe: ClippableLinear patch, bf16, gradient checkpointing, eval disabled, 1 epoch (superseded)
 - [[topics/ls-mixture|ls-mixture]] — staged workstream: blend short/long reasoning traces (arxiv-2505.03469 sense) into SFT; iter-2 blend regressed (retired)
-- [[topics/clean-neurons-42|clean-neurons-42]] — Cammarata/Goodfire's "already clean" thesis (recursive generalization) applied to 42: audit every neuron of Zeb's shipped field net against Silas predicates and the book, then watch concepts form; the cheap first step before #175's GPT (idea)
+- [[topics/clean-neurons-42|clean-neurons-42]] — Cammarata/Goodfire's "already clean" thesis (recursive generalization) applied to 42: audit every neuron of Zeb's shipped field net against Silas predicates and the book, then watch concepts form; the cheap first step before #175's GPT (active, not yet run)
 - [[topics/match-equity|match-equity]] — V(a, b, d), the chance of winning the game to seven from a score; one-mark calls are score-blind, so the score enters a bid only through the 84; the 84-over-42 threshold table (active)
 - [[topics/multiplayer-lineage|multiplayer-lineage]] — evaluated multiplayer frameworks for the web game; none adopted wholesale — the Socket/GameClient/Room pattern was distilled instead (retired)
 - [[topics/multiplayer-pattern|multiplayer-pattern]] — Socket/GameClient/Room, capability tokens, filtered GameView only, dumb-client projection (active)
