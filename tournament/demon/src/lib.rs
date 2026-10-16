@@ -11,7 +11,7 @@
 //!    points, the voids each seat has shown),
 //! 2. draws `n` worlds from its fiber without replacement, using the fiber
 //!    completion-count dynamic program (the whole fiber when it has at most `n` members),
-//! 3. solves each world double dummy with Silas's [`ClairvoyantSolver`]: the
+//! 3. solves each world double dummy with Silas's [`silas::ClairvoyantSolver`]: the
 //!    exact make-or-set of the contract under perfect play by all four seats
 //!    with every hand face up,
 //! 4. plays the legal tile that makes (or, defending, sets) in the most worlds;
@@ -32,12 +32,13 @@
 pub mod bidding;
 pub mod hand_model;
 mod sampling;
+mod search;
 
 use scenario_core::fiber::Fiber;
-use scenario_core::physics::{ZebPhysics, domino, dominoes, seat};
+use scenario_core::physics::{domino, dominoes, seat};
 use scenario_core::planner::{Rec, SplitMix};
 use scenario_core::rules::{N_DECLS, Rules};
-use silas::{Bid, ClairvoyantSolver, Contract, Domino, DominoSet, Objective, OpenPosition, Seat};
+use silas::{Bid, Contract, Domino, DominoSet, Objective, OpenPosition, Seat};
 
 /// The Demon's solve budget and decision model.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -156,6 +157,9 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
         });
     }
 
+    let on_table = rec.trick[..rec.n as usize].iter().fold(0, |m, &t| m | 1 << t);
+    let outside = (((1 << 28) - 1) & !rec.played & !req.hand) | on_table;
+    let reps = search::representatives(&rules, &tiles, outside);
     let mut fiber = Fiber::new(req.seat, req.hand, rec.played, sizes, rec.forbid);
     let known = req.plays.iter().filter(|&&(s, _)| s == req.bidder).fold(0, |m, &(_, t)| m | 1 << t);
     // The bidder knows its own hand; its declaration adds no evidence to it.
@@ -165,7 +169,8 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
             hand_model::declaration_likelihood(w[req.bidder as usize] | known, req.decl, ratio)
         })?;
     let mass = weights.iter().sum();
-    let physics = ZebPhysics::new(req.decl).expect("checked above").physics();
+    let template = search::template(req.decl);
+    let physics = template.physics();
     let bid = Bid::number(req.bid).map_err(|e| e.0)?;
     let contract = Contract::new(seat(req.bidder).expect("checked above"), bid, physics.clone()).map_err(|e| e.0)?;
     let leader = seat(rec.leader).expect("a seat");
@@ -182,14 +187,18 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     // Keep each world's bounds in a small table, and retain its make search
     // for the possible margin pass. Tables across unrelated worlds cost more
     // to look up than they save in shared states. Values remain exact.
-    let template = ClairvoyantSolver::new(&physics);
     let mut solvers: Vec<_> = positions.iter().map(|_| template.fresh()).collect();
     let mut makes = vec![0u32; tiles.len()];
     for ((p, solver), &weight) in positions.iter().zip(&mut solvers).zip(&weights) {
-        let values = solver.solve(p, Objective::Make).map_err(|e| e.0)?;
         for (i, &t) in tiles.iter().enumerate() {
-            makes[i] += weight * values.value(domino(t).expect("a tile")).expect("a legal tile") as u32;
+            if reps[i] == i {
+                let next = p.play(domino(t).expect("a tile")).map_err(|e| e.0)?;
+                makes[i] += weight * solver.value(&next, Objective::Make) as u32;
+            }
         }
+    }
+    for (i, &rep) in reps.iter().enumerate() {
+        makes[i] = makes[rep];
     }
     let declaring = req.seat % 2 == req.bidder % 2;
     let n = mass;
@@ -204,12 +213,17 @@ pub fn decide(cfg: Config, req: &Request) -> Result<Decision, String> {
     for ((p, mut solver), &weight) in positions.iter().zip(solvers).zip(&weights) {
         if cfg.margin_tiebreak && tied.len() > 1 {
             for &i in &tied {
-                let tile = domino(tiles[i]).expect("a tile");
-                let margin = solver.value(&p.play(tile).map_err(|e| e.0)?, Objective::Margin) as i64;
-                *margins[i].get_or_insert(0) += margin * weight as i64;
+                if reps[i] == i {
+                    let tile = domino(tiles[i]).expect("a tile");
+                    let margin = solver.value(&p.play(tile).map_err(|e| e.0)?, Objective::Margin) as i64;
+                    *margins[i].get_or_insert(0) += margin * weight as i64;
+                }
             }
         }
         nodes += solver.nodes();
+    }
+    for (i, &rep) in reps.iter().enumerate() {
+        margins[i] = margins[rep];
     }
     // Make count first, then margin for the mover's side, then the lowest tile.
     let key = |i: usize| (score(makes[i]), margins[i].map_or(0, |m| if declaring { m } else { -m }));
