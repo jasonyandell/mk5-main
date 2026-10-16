@@ -311,7 +311,10 @@ impl Core {
             .map(|req| {
                 let rules = self.rules_for(req.0)?;
                 if !net.plays(rules.decl) {
-                    return Err(PyValueError::new_err("the field net does not play this declaration"));
+                    return Err(PyValueError::new_err(match net.layout() {
+                        field::Layout::V2 => "a field-v2 field net plays pip-trump declarations only",
+                        _ => "the field net does not play this declaration",
+                    }));
                 }
                 let rec = rec_of(req)?;
                 let bt = (req.9 % 2) as usize;

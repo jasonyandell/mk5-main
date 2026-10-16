@@ -110,12 +110,19 @@ def plays(layout: str, decl_id: int) -> bool:
     return canon_for(layout, decl_id) is not None
 
 
+def refusal(layout: str, decl_id: int) -> str:
+    """Why a net of `layout` will not play `decl_id` (the message every refusal carries)."""
+    if layout == "field-v2":
+        return f"a field-v2 field net plays pip-trump declarations only, not {decl_id}"
+    return f"a {layout} field net does not play declaration {decl_id}"
+
+
 def features(rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_team: int,
              layout: str = LAYOUT) -> list[int]:
     """The active feature indices of a modeled seat's decision, in `layout`."""
     canon = canon_for(layout, rules.decl_id)
     if canon is None:
-        raise ValueError(f"a {layout} field net does not play declaration {rules.decl_id}")
+        raise ValueError(refusal(layout, rules.decl_id))
     on = [OFFSET["hand"] + canon[t] for t in tiles_of(own)]
     on += [OFFSET["gone"] + canon[t] for t in tiles_of(rec.played)]
     n = len(rec.trick)

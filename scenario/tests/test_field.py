@@ -459,7 +459,7 @@ def test_field_v3_plays_doubles_and_no_trump_with_the_kind_bit():
         else:
             assert canon_for("field-v3", state.decl_id) == tuple(range(28))
             assert canon_for("field-v2", state.decl_id) is None
-            with pytest.raises(ValueError, match="does not play"):
+            with pytest.raises(ValueError, match="pip-trump declarations only"):
                 features(rules, sit.viewer, own, sit.record, 30, sit.bidder_team, "field-v2")
     v2net, v3net = random_net(3), random_net(3, layout="field-v3")
     assert v3net.layout == "field-v3" and v3net.plays(7) and v3net.plays(9) and not v3net.plays(8)
@@ -487,7 +487,7 @@ def test_the_shipped_v2_net_still_refuses_doubles_and_no_trump():
     v2 = FieldNet.from_bytes(Path("zeb/net/margin_d250k_h128x64.fnet").read_bytes())
     assert v2.layout == "field-v2" and v2.n_features == N_FEATURES_OF["field-v2"]
     state = _states_of({7, 9}, 1, seed=14)[0]
-    with pytest.raises(ValueError, match="does not play"):
+    with pytest.raises(ValueError, match="pip-trump declarations only"):
         CompiledWalt(Config((Rung(4, None),), field=v2)).decide(state, 30)
-    with pytest.raises(ValueError, match="does not play"):
+    with pytest.raises(ValueError, match="pip-trump declarations only"):
         Walt(Config((Rung(4, None),), field=v2)).decide(state, 30)
