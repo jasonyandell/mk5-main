@@ -76,65 +76,137 @@ computed exactly from the rules and the information state (suit membership, coun
 proven voids). Proven math can therefore grade the neuron map. Because the models are small,
 the essay's size sweep is cheap to run in full here.
 
-## Why 42 is a good place to look
+## Why 42 is a good place to look: the mathematics is an answer key
 
-Jason's thesis is that recursive generalization is the shape of 42's mathematics. The
-project already has concrete branchings that a network could rediscover, each with a known
-right answer to check a neuron against:
+Jason's thesis is that recursive generalization is the shape of 42's mathematics. What makes
+42 unusual is that the mathematics is **proved**. The texas-42 repository states, and in
+part kernel-checks in Lean, what a seat's information *is*, which parts of it matter for
+what, and which symmetries hold. A language model's neurons can only be checked against
+each other. A 42 model's neurons can be checked against theorems. Tier labels follow
+texas-42's convention: [corpus] = the reconstructed foundation package (rec: texas-42
+`ingest/texas-42-foundations-source-of-truth-v0.7-reconstructed/docs/20_MATHEMATICAL_FOUNDATION.md`;
+Lean names are in texas-42 `lean/Texas42/`), [Lean] =
+kernel-checked, [CONFIRMED] = exchange-adjudicated, [exploratory] = below every tier.
 
-- **Suits from tiles.** [[suit-algebra]]: absorption (which tiles belong to a suit) and
-  power (which suit beats which) are independent operations. All pip absorptions are
-  isomorphic under S₇. A network shown raw tile IDs has to grow "is a six" first. That could
-  branch to "follows sixes when sixes are led", then to "is trump when sixes are trump",
-  then to the doubles suit under nello. Each step is a branch of the step before. (With
-  the suit algebra given as input, the default below, this branching is watched only in the
-  raw-identity control arm.)
-- **Count.** The five count tiles (5-5, 6-4, 5-0, 4-1, 3-2). A "5-5 is here" feature could
-  branch to "count at risk this trick", then to "count my partner can save".
-- **Inference from the fall.** A failure to follow suit reveals a void. A play reveals
-  something about the hand it came from ([[reads-plays-2026-10-13]]). A "seat is void in X"
-  feature is a branch of "seat did not follow X". The network must infer it, because the
-  hidden hands never reach its input.
-- **The recursion of the trick game itself.** Walt's rungs plan over continuations of
-  continuations ([[scenario-player]]). Whether depth shows up as layered features is an open
-  question, not a prediction.
+- **What the input is.** A seat's perfect-recall record is its own hand plus the public
+  prefix: the auction with actors, the declaration and the plays in order, each attributed
+  to its seat. Trick winners, led suits and scores are *derived* and must not become a
+  second source of truth (rec INFO-01..03A, rec:1203-1257 [corpus]).
+- **What the physics reads.** The mechanical projection keeps the played-by-seat sets and
+  the public voids and deliberately drops the order of completed plays (INFO-07,
+  rec:1298-1340 [corpus]). Equal projections give equal cells and fibers (CELL-05, CELL-14
+  [corpus]; `ViewerCtx.losslessness`, `fiber_eq_iff_totalNF_eq` [Lean]). The reduced
+  viewer kernel K = (declaration, own hand, pool, folded open trick, utility residue) is
+  sufficient for the physics (FAC-02/PLAY-17, rec:4201-4240 [corpus]).
+- **What belief may read.** Support is not belief (INFO-11 [corpus]). Play order can matter
+  to a belief that reads plays as evidence. The 90-world witness has identical support and
+  opposite optimal leads (STR-08/09 [corpus]; `ninety_world_witness` [Lean]). Under the
+  uniform deal law with no action likelihood, the posterior is uniform on the fiber
+  (BEL-07/07A [corpus]), and then the projection is enough.
+- **Which symmetries hold.** Seat rotation is exact if it moves every seat-indexed object;
+  odd rotations swap teams (SYM-01 [corpus]). Bidder anchoring is an exact gauge (SYM-02
+  [corpus]). Reflection is not a symmetry (SYM-03 [corpus]). **S₇ pip relabeling is a
+  symmetry of legality, not of value**: the count tiles break it. Only the 2↔3 swap
+  preserves counts, and it transports the game only between declarations 2 and 3 (ALG-17..19
+  [corpus]; `countPreserving_iff`, `swap23_transport_iff` [Lean]). Count-blind mechanics fall
+  into exactly three classes: pip trumps, doubles-trump and no-trump (ALG-22/23 [corpus];
+  x:004 [CONFIRMED]).
 
-These candidates are hypotheses to pre-register, not findings.
+From this, candidate branchings that a network could grow, each with an exact label:
 
-## The frame: input, output, loss (Jason, 2026-10-16)
+- **Role from pip.** Trumps are seven isomorphic legality structures that are *not* equal in
+  value. A neuron that means "trump" across all seven pip declarations is the trunk; its
+  branches are what the count tiles make different (a trump that is also a count tile, the
+  6-4 under sixes against the 5-0 under fives). This is recursive generalization stated as a
+  theorem about which merges are licensed. The suit algebra goes in, so the network is
+  handed membership and rank. Whether one neuron serves every trump is the question.
+- **Count.** 35 of the 42 points sit on five tiles ([[count-fate-ledger]]). "Count still
+  out" → "count at risk this trick" → "count my side can still save".
+- **Inference from the fall.** `shown-void` (a seat publicly failed to follow) is a viewer
+  fact; `void` in a world is not ([[silas]]). A void is the branch of "did not follow".
+  Earlier work saw a transformer infer voids from attention, where explicit void features
+  added only +1.4 pp (`gus-v2-voids-1000g`).
+- **Sufficiency.** Does the network compress the record toward the projection the
+  mathematics says suffices? This is the sharpest test available, and it has an exact
+  answer key (see H1 below).
 
-Jason: "we need inputs, outputs, loss … have an answer. the source. feed it in, ask the
-model to predict it, loss is the difference." That is supervised learning, and every choice
-below is one of those three slots.
+## What the project already learned, and what it changes
 
-| slot | choice |
-|---|---|
-| **input** | the **seat's view**: its own seven tiles and the **record** (the auction, the declaration, the plays so far in order), then one legal move. Never a world. |
-| **output** | a distribution over the **43 final bidder-point totals** (0..42; margins are even, so 43 values are every outcome) |
-| **answer** | Walt's **splat** for that move at that view: the weighted per-world outcomes over the seat's cell, under Walt's plan, as stored in the pour |
-| **loss** | cross entropy between the predicted distribution and the splat |
+The oracle and champion eras trained many networks on 42. Their lessons, with what each
+changes here:
 
-**Why the record.** It is what [[silas]] needs to state a question at all: a Silas query is
-asked of a viewer given the record, and a Silas policy reads only the viewer's information.
-The record is grounded in the mathematics; the hidden hands are not the seat's to read.
+- **jud v1 was nearly this model** ([[jud]], `w42-jud-v1`): hand, canonical auction and
+  play (350 dims), an MLP to a 43-bin categorical of the declaring team's points, cross
+  entropy. It plateaued. Every information state of a hand shared **one** Monte Carlo
+  label. At an opening lead the candidate states differed in 9 of 350 input dims, and
+  **better test cross entropy gave worse play** (`jud-v2-retrain-probe`). *Changes:* the
+  target is the whole splat, one per (state, move); low loss is never the success measure;
+  move discrimination is graded separately.
+- **Distill for what** ([[the-wall]], [[candlewax]]): any "distill X" proposal must name its
+  consumer first. *Here the consumer is the neuron map, not play.* Imitating Walt yields at
+  best "a cheaper equal" ([[scenario-player]]); that is acceptable because strength is not
+  the goal.
+- **Pricing is policy-conditional** ([[jud]]): a value head is honest only for the policy
+  that produced its data. The splat is Walt's under one field net. *Changes:* never mix
+  splats poured under different field nets.
+- **Sorted hand slots leak** (`q0-positional-bias`): sorted hands gave slot 0 a 1.74-bit
+  bias. *Changes:* own tiles enter as a set, with no positional embedding.
+- **Tokenizers that worked** (`forge/zeb/observation.py`, `gus/model/tokenize.py`): one
+  token per tile, a sum of factored embeddings, seat relative to the viewer (me, left,
+  partner, right), chronological plays with trick index and position in trick. The public
+  tokenizer had lost the trump-rank feature; Gus's transformer beat a flat MLP that overfit.
+- **The suit algebra's τ needs the led suit** (`suit-algebra-spec`): tier (trump, follows,
+  slough) is only defined once a trick is led. *Changes:* declaration-only facts (suit
+  membership, rank in suit, count) go on every tile; the tier goes on play tokens, relative
+  to that trick's lead.
+- **A raw-ID MLP memorized seeds** ([[suit-algebra]]). *Changes:* split by deal; the
+  raw-identity arm is a control, never the default.
+- **Probes need ceilings** ([[belief-bayes-ceiling]]): belief top-1 is capped near 40%, and
+  the cap moves with the decision index. *Changes:* every probe is graded against its own
+  ceiling and chance level.
+- **The only prior interpretability** (`gus-probe`): categorical concepts lived in
+  embeddings, relational ones in the layers. Attention read as a chain from declaration to
+  survey to move. There has been no neuron-level work before this.
 
-**Why a distribution, not a number.** "Loss is the difference" becomes cross entropy, the
-difference between two distributions over the same 43 outcomes. The prediction is a softmax,
-so the loss is smooth in the weights. That is the step from the plain sentence to something
-continuous. It learns the shape, not just the mean, so [[candlewax]] shapes survive.
+## The design
 
-**The splat is the output.** A softmax over 43 totals *is* a splat
-([[splat-visualizer]]). The model maps a view to a splat directly; one output per
-information set (Lemma W, cited in [[splat-search-bounds]]) holds by construction, because
-nothing else reaches the input.
+### Input: one seat's view of a whole hand, causal
 
-**The suit algebra goes in (Jason's call).** The rules of suit and rank are small and odd,
-and a model can spend most of its capacity relearning them. Each tile's embedding is a sum
-of three learned vectors: its identity (one of 28), its suit under the declaration
-(absorption), and its rank in that suit (power, τ) ([[suit-algebra]]). This hands the model
-the *rules*, not the strategy. The concepts worth watching move up a level: winning the
-trick, count at risk, control of trump, voids read from the fall, what partner holds. A
-raw-identity arm stays available as a control.
+The model is a **causal transformer** (a GPT) over one seat's view of one hand. The sequence
+is that seat's perfect-recall record, in the order the seat learns it:
+
+1. the declaration, the bid and the bidder (seat relative to the viewer), and the auction
+   in the canonical encoding (`champion/margin_net.py`), which guards against selection
+   leakage;
+2. the viewer's seven tiles, as a set (no positional embedding);
+3. every play in order, each token carrying the tile, the seat relative to the viewer, the
+   trick index and the position in the trick.
+
+Each tile token's embedding is a sum: identity (one of 28), suit membership under the
+declaration, rank in suit, count value (0, 5 or 10), and on play tokens the tier relative to
+that trick's lead. These are the rules of [[suit-algebra]], which is Jason's call: small,
+odd, and not worth the network's capacity to rediscover.
+
+The causal mask keeps time honest: the prediction at a play sees only what had happened.
+The viewer's own hand is the only private information, and no world ever enters (the fence,
+below).
+
+### Output: a splat table at every decision of the viewer
+
+At each token where the viewer is to play, the model outputs a **28 × 43 table**: for each
+tile, a distribution over the 43 final bidder-point totals (0..42), masked to the legal
+tiles. One forward pass over a seat's hand gives the splats of every move at every one of
+its decisions. A row of that table is a splat ([[splat-visualizer]]).
+
+### Answer and loss
+
+The answer is Walt's splat for each legal move at that decision, read from the pour
+(`scenario/viz/export.py` `splat_bins` already bins one move's 512 outcomes into the 43
+totals). The loss is cross entropy between each legal move's predicted distribution and its
+splat, summed over legal moves and decisions. Cross entropy against an empirical
+distribution is a proper scoring rule: its expectation is minimized by the true splat, so
+the 512-world sampling noise costs variance, not bias. Splats from enumerated fibers
+(`n_worlds` < 512) are exact.
 
 ### The fence, and the mistake it caught
 
@@ -159,49 +231,129 @@ project's history was trained on oracle move frequencies, blind to the transcrip
 killed within about 36 hours ([[strategy-fusion]], "The first fix"). This design differs on
 both counts.
 
-### The data already exists
+## The data, and what it really contains
 
 [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k)
-(CC0; [[huggingface-assets]]) keeps the whole splat for every legal move at every planned
-position. That is 4,343,426 planned positions ([[metasplat-2026-10-13]]), each with up to
-512 worlds per legal move. One row is (view, move, splat), several million rows. A row
-is about 45 tokens (seven tiles, at most 28 plays, the auction, the declaration, the
-move). A
-model with a few million parameters is a CPU-scale experiment, not a GPU campaign.
+(CC0; [[huggingface-assets]]): 250,000 deals, 4,343,426 planned positions
+([[metasplat-2026-10-13]]), a 512-world splat for every legal move (schema:
+`scenario/atlas.py:248-274`, `scenario/hf.py:118-170`). Forced moves are not stored. They are
+still in the record, and their splat is the position's.
 
-Two scope limits are inherited from the pour:
+What a careful reader of the code finds (2026-10-16):
 
-- Its seat 0 always bids 30 and declares its best trump, so the auction is not learned.
-- Past a decided contract, a margin comes from the tape, not the plan (issue #107).
+- **The tail after a decided contract is random play.** The pour plans under `make`. Once
+  the contract is decided, or the horizon is hit, the rest of the hand is played by the
+  record-keyed dice tape, which is random legal play (#107; `scenario/planner.py:864-917`).
+  So the 43-total splat is exact about make or set at 30, and past that point its shape is
+  one random playout.
+- **What the teacher reads.** The splat's seed and worlds come from (config seed, viewer,
+  own hand, the *set* of tiles played, leader, open trick, banked points, voids)
+  (`scenario/planner.py:639-643`). Worlds are uniform on the void-consistent fiber, all
+  weights 1 (`scenario/metasplat.py:288-294`). The posterior draw (#111) and the stochastic
+  field (#108) came after this pour. The other seats are played by the field net, whose
+  features also drop the order of completed tricks (`scenario/field.py:52-64`). So **in this
+  pour the target is a function of the mechanical projection, not of play order**: exactly
+  the uniform-fiber case of BEL-07.
+- **Two field nets.** Split s100001 was poured with the 5k-deal field net; s200001..s350001
+  with the 50k net. Train on the four matching splits (200,000 deals); keep s100001 as a
+  shift test.
+- **Seat 0 always bids 30** and declares its best trump, so the auction carries no
+  information yet. The tokens stay for later pours.
+- **The noise.** pmake per move has a standard error of at most about 0.022 at 512 worlds;
+  the plan's own seed adds 0.005–0.016 ([[metasplat-2026-10-13]]). 45% of the book-rule
+  contrasts sit at an even make and 11% are ties, so sibling splats are often near-identical.
+- **Size.** About 3.5 million decisions over 200,000 deals, each a (view, legal moves,
+  splats) row; a seat's hand is one sequence of at most about 45 tokens. A model of a few
+  million parameters trains on a single machine.
 
-## What to measure
+## Hypotheses, pre-registered before any training
 
-Pre-register the following before the first training run, in the project's habit.
+Each is fixed in code and committed, with the hash cited, before the first count, per the
+project's template (fly-connectome pilot, [[metasplat-2026-10-13]], `count-lapse`):
+intervals by paired bootstrap clustered by deal, a chance level and a ceiling for every
+number, nulls reported in full, "a tie is not agreement" ([[book-authority]]). Splits are by
+deal. Arms: the trained model, the same network at random initialization, shuffled labels,
+a linear probe on the input, and the raw-identity arm.
 
-1. **The concept list and the probes.** For each candidate above, write down the exact label
-   (computable from the information state, or from the deal for the hidden ones, used only
-   to grade a probe, never as input) and the
-   test. The tests read each neuron pole (positive and negative), the context around its top
-   activations, steering, and upstream and downstream weights. A linear probe is the baseline
-   the neurons must beat. The neurons are the unit of study, not a decomposition. Use a modern
-   block (pre-norm, a gated MLP); the essay finds architecture, not size, is what made deep
-   layers legible.
-2. **Branching over training.** Save checkpoints along the run. For each concept-bearing
-   neuron, trace what it covers at each checkpoint. The essay's claim predicts trunks first
-   and branches later.
-3. **The squeeze, as a size sweep.** Train the same architecture across a wide range of
-   widths (the essay used 300×). The claim predicts coarser concepts that can still be read,
-   not noise, and branches that differentiate as room grows.
-4. **Splat fidelity.** On held-out deals, measure the KL to Walt's splat and the error in
-   pmake at the contract. The field net (`margin_d250k_h128x64`, [[scenario-player]]) is the
-   baseline to beat or tie.
-5. **Play, last.** Measure arena regret against Walt, with an interval and its chance
-   baseline. A GPT that plays worse but whose neurons can be read is still the result asked
-   for. A tie is not agreement ([[book-authority]]).
+- **H1, sufficiency.** The teacher reads the record only through the projection (above). If
+  training finds what the teacher reads, the final layers should be **invariant to play
+  orders that preserve the projection**: pairs of records with equal (played set, open
+  trick, voids, leader, banked) but different order should sit closer than matched random
+  pairs, and should move together over training. This is a direct test of whether gradient
+  descent discovers a sufficient statistic that is a theorem (INFO-07, CELL-05 [corpus]).
+  A null is as interesting as a pass: it would say the network keeps order the teacher
+  never uses.
+- **H2, one trump, many branches.** Under the suit algebra, a neuron pole that tracks
+  "trump" (or "boss of trump") should fire across all seven pip declarations. Its offshoots
+  should separate where the count tiles break S₇ (ALG-17 [corpus]). Track over checkpoints:
+  the essay predicts the trunk first and the branches later.
+- **H3, viewer concepts in neurons.** For each label below, the neuron poles that carry it,
+  read the essay's way (both poles, context, steering, upstream and downstream), against
+  the linear-probe baseline and the nulls.
+- **H4, the size sweep.** The same architecture across a wide range of widths. The claim
+  predicts coarser concepts that can still be read, not noise, at small widths, and
+  branches that split as room grows.
+
+### The answer key (labels)
+
+All computed exactly from the viewer's information, in bulk, through [[silas]]'s Python
+bindings (`scenario/core/src/python_silas.rs`; the 18 book rules over the whole pour took
+79 s on 15 processes):
+
+- **Viewer predicates** (`silas/README.md:367-404`): `boss`, `master`, `shown-void`,
+  `trump`, `count`, `current-winner`, `led-context`, `to-make`, `to-set`, `banked`,
+  `trick-number`.
+- **The book prelude** (`silas/lib/book.silas`): `trump-out`, `top-trump`, `sure-trump`,
+  `partner-winning`, `can-take-it`, `safe-trick`, `guards-count`, `dead-double`, `crisis`,
+  `walker`, and the rest: the book's own concepts ([[book-authority]]).
+- **The 18 book-faithful rules**, as "fires here" and as the allowed set.
+- **Outcome predicates** `lay-down`, `certain-make`, `certain-set`. These are three-valued:
+  the solver refuses when over budget. Refused rows are reported, never dropped silently.
+- **Exact holder marginals** under the uniform fiber, Pr(tile in seat) = N(C^{d→s})/N(C)
+  (CELL-10E, BEL-07A [corpus]). This is the belief the teacher actually uses in this pour.
+- **Hidden facts for grading only**, never input: count fates (`otis/fates.py`), the real
+  holder of a tile.
+
+### Secondary measures
+
+- **Splat fidelity** on held-out deals: KL to Walt's splat, error in pmake at the contract,
+  and paired per-threshold contrasts with noise bars (`metasplat.contrasts`).
+- **Discrimination**, separately from loss: regret of the model's argmax against the splats
+  (`scenario/field_train.py:361-409`, in plan units and in points), against the field net
+  (`margin_d250k_h128x64`; best points regret 0.26 at 512×256) and a uniform pick.
+- **Play, last**: arena regret against Walt, with an interval and the chance baseline.
+
+## Decisions for Jason
+
+1. **The target's tail.** The make pour's margins past a decided contract are random play.
+   (a) Train on the 43 totals as they are, knowing the tail is noise. (b) Train on a pour
+   planned under `points`: the 5,000-deal `texas-42-walt-pour` exists (small; check how far
+   its horizon plans before relying on its tail); a 200,000-deal re-pour is about a day of
+   compute. (c) Factor the output into make or set at 30 plus a margin
+   head trained only on the planned part. Recommended: (b), starting from the small pour as
+   the pilot.
+2. **The output space.** 43 totals, or the 256 count-aware outcomes (tricks won × which
+   count tiles captured; score bins from texas-42 `walt/math/anytime_proof_state_score_v0.1.md`
+   [exploratory]). The 256-way output makes count capture visible at the head: more labels
+   for the neuron map, at six times the output size.
+3. **Belief neurons need a teacher that reads plays.** In this pour the teacher's belief is
+   the uniform fiber, so the network has no reason to read order or style. A later pour
+   with the posterior draw (#111) or Zeb's play reading ([[reads-plays-2026-10-13]]) gives
+   the network a teacher whose belief depends on order, and H1 then predicts the *opposite*
+   invariance result. Running both is the cleanest experiment on the list.
+
+## Where it lives
+
+A top-level `gpt/` package, CC0 like the rest of the science (`REUSE.toml`; MIT only if it
+embeds Zeb). It joins `scripts/check` as its own Python suite. Every trained net and dataset
+it cites goes to Hugging Face, CC0, before the page that cites it is committed
+([[publish-data-to-huggingface]]). Issue #175 tracks the build.
 
 ## Next
 
-- Build (#175): tokenizer and dataset reader over the 250k pour, a small GPT, training
-  with checkpoints, then the probe suite. The probes are the deliverable, not the player.
+- Jason decides the three questions above.
+- Build (#175): the reader over the pour (extending `field_train.dataset` with a
+  `[N, 28, 43]` target), the tokenizer, the causal model, the Silas label pass, the
+  pre-registration commit, then training with checkpoints and the probe suite.
 - Read the rest of the essay (its vision and language-model sections) and the companion
   paper once it lands, and fold in what bears on the probe suite.
