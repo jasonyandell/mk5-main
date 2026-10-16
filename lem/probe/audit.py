@@ -120,10 +120,12 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
     k = max(1, int(round(TOP * n)))
     base = allc.mean(axis=0)
     rows: list[PoleRow] = []
+    tops: list[np.ndarray] = []
     for p in range(acts.n_poles):
         alive = acts.alive(p)
         signal = acts.pole(p)
         top, prec, r = score_pole(signal, allc, base, k)
+        tops.append(top)
         best, pr, lo, hi, kind, runner, rp = classify(prec, base, names, k)
         if alive < DEAD:
             kind = "dead"
@@ -146,7 +148,7 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
             if acts.alive(p) < DEAD:
                 kinds.append("dead")
                 continue
-            top, prec, _ = score_pole(acts.pole(p), perm, base, k)
+            prec = perm[tops[p]].mean(axis=0)      # the top set does not move under a label shuffle
             kinds.append(classify(prec, base, names, k)[4])
         shuffled.append(kinds)
         if log is not None:
