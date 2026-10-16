@@ -12,7 +12,9 @@ superseded_by: burl
 **The name lives on.** Since 2026-10-15 "Lem" is also the project's generative player and
 the subject of its interpretability program, [[lem-the-teacher]]; Jason reused the name on
 purpose ("they're good names and it kinda echoes"). This page is the 2026-04 project, kept as
-history.
+history. **Its code was removed from the tree at b4a3e5b7 (2026-10-16)**: `lem/gemma_star/`, `lem/narrate/`, `lem/rules/` and `lem/OVERVIEW.md` survive only in git
+history and in the commit-pinned source digests this page cites; the adapters stay on Hugging Face
+(`jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix` and its line). `lem/` now holds the new Lem.
 
 LEM (Little Expert Model) is an experiment in training a phone-class open model to play
 [[texas-42]] via STaR-style self-taught reasoning layered on a backwards curriculum. The

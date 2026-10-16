@@ -130,9 +130,9 @@ or written down.
 
 ## Where the code lives, and its license
 
-New code goes under the top-level `lem/` tree, beside the old LEM's `lem/gemma_star`,
-`lem/narrate` and `lem/rules` (finished, out of every check suite; their removal is a decision
-for the Mayor, since the wiki and Hugging Face keep that history). Stage 1 is `lem/probe/`.
+The code is the top-level `lem/` tree; stage 1 is `lem/probe/`, its tests `lem/tests/` (the
+`py-lem` suite of `scripts/check`). The old LEM's code was removed at b4a3e5b7 under the no-legacy
+rule; the wiki and Hugging Face keep that history ([[lem]]).
 
 License, on the line of [LICENSE](../../LICENSE): the science is CC0, so the probe kit, the
 data generation, the training code, the nets and the interpretability results are CC0. Whether
