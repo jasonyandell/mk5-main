@@ -92,6 +92,13 @@ uses about two thirds of Zeb's CPU in both arms. Totals: 0.4.1 arm Zeb 5,640 s C
 Demon 3,732 / 3,854; 0.4.0 arm Zeb 5,241 / 5,435, Demon 3,379 / 3,468. Runtime shared the machine
 with other sessions through `scripts/cpu-slot`, so it is as reported, not an isolated timing.
 
+**Seed scatter (#190, added 2026-10-16).** Each Zeb arm here is one planner seed (seed 0), and
+the intervals bootstrap over deals, so they exclude planner-seed scatter: about ±0.1 marks/game
+at this level (#117's A/A read +0.12 [+0.02, +0.23] between two seeds of plain Zeb; #149 saw 0.13).
+The single-arm margins carry it. 0.4.1's +0.330 [+0.055, +0.606] marks/game has a lower end inside
+that scatter, so "above zero in marks" is not secure; the win share's scatter has not been measured.
+The 0.4.1 − 0.4.0 contrast shares seed and deals, so it cancels and is unaffected.
+
 **Reading.** Against the Demon that contests, 0.4.1's shipped overcall wins more games than the
 Demon (57.03%, interval above chance) where 0.4.0 won a third of them (32.62%, in line with the
 34.86% the Demon's confirmed 65.14% [99.17% interval 61.52, 68.85] against 0.4.0 implies, in

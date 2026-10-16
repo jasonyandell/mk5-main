@@ -39,6 +39,12 @@ Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyande
 The book's game, share of games won against the field: PB0 39.1% [35.4, 42.7], PB40 43.2% [39.8,
 46.6], PZ40 52.9% [50.0, 55.7].
 
+**Seed scatter (#190, added 2026-10-16).** The field is one planner seed, and these intervals
+bootstrap over deals, so each single-arm margin against it (B_p, Z_p, the field's cost of
+forgetting) excludes planner-seed scatter of about ±0.1 marks/game (#117's A/A; #149). Z10 = +0.06
+[+0.01, +0.11] and Z20 = +0.12 lie within it; Z40 = +0.32 does not. G(p) and ΔG(p) are differences
+of two team-A arms against the same field and seed, so the field's seed cancels in them.
+
 ### The registered contrasts (paired by game pair; MDE at 80% power)
 
 | contrast | marks/game [95%] | pairs | SD/pair | MDE |
