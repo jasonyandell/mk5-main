@@ -49,6 +49,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | gpt-on-42 | A GPT on 42, read for its neurons: the proposal (#175)]
+
+- [[gpt-on-42]] added: recursive generalization (Cammarata/Goodfire 2026-10-15, from secondary coverage), the mover's information state as raw tiles in, 43 margin tokens out (the softmax is the splat), the 250k pour as data, pre-registered probes. Not built. Backlink from [[strategy-fusion]].
+
 ## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
 
 - `silas/src/field.rs`: a field of four Silas players, `play_out` (the auction, the declaration, all 28 plays, each seat at its own frame), `Deals::{Listed, Uniform}`, the paired `Trial::compare` with flips, the chance arm and an empirical-Bernstein interval (exact given the field over a list; never `exact`). Choices in `silas/docs/cross-game.md`, Slice 3 as built; Fiber and Hands deferred. [[silas]]

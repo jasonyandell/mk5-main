@@ -96,6 +96,9 @@ Frequency-CE doesn't know *when* information has narrowed the game. "who played 
 like 9/10ths of the value of the graveyard." A value function blind to the transcript is a
 value function that can't play.
 
+The 2026-10-16 proposal for a GPT on 42 ([[gpt-on-42]]) differs on both counts. Its input
+is the transcript, and its target is Walt's cell-level splat, not oracle frequencies.
+
 ## Grok, don't converge
 
 Before proposing anything new, Jason names a failure mode of the process itself
