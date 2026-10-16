@@ -48,11 +48,13 @@ state linearly?
 - **Scope.** Play-only evidence (the record and the shown voids). The auction carries nothing
   in these pours (seat 0 always bids 30); the auction-evidence posterior (`Belief::hand_law`,
   #134) is a later arm, and the field's own posterior (reading plays) another.
-- **Cost.** Exact targets were priced at 0.7 ms a position on a quiet machine (one 1-tile
-  resolution per live hidden tile); with pour A saturating the cores they cost about 50 ms, so the
-  first single-slot run hit its cap before any target was written and the targets were computed in
-  16 slot-sized parts (single-threaded) and the fit run separately. The sizes, split and probes are
-  unchanged; this note is the only deviation from the sealed text.
+- **Cost.** Exact targets were priced at 0.7 ms a position (one 1-tile resolution per live
+  hidden tile). The run cost about 50 ms a position, which was not Silas but the probe kit's
+  sample reader decompressing a whole column on every attribute read (fixed the same day: a
+  cached column, 0.45 ms a position after). The first single-slot run hit its cap before any
+  target was written, so the targets were computed in 16 slot-sized parts and the fit run
+  separately. The sizes, split and probes are unchanged; this note is the only deviation from
+  the sealed text.
 
 ## Results
 

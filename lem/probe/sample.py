@@ -109,10 +109,15 @@ class Sample:
 
     def __init__(self, path: str | Path):
         self._z = np.load(path)
+        self._cache: dict[str, np.ndarray] = {}
 
     def __getattr__(self, name: str) -> np.ndarray:
+        # a column is decompressed once; without the cache every attribute read
+        # re-read the whole array, which made per-row loops cost megabytes a step
         if name in COLUMNS or name == "source":
-            return self._z[name]
+            if name not in self._cache:
+                self._cache[name] = self._z[name]
+            return self._cache[name]
         if name == "layout":
             return str(self._z["layout"]) if "layout" in self._z.files else "field-v2"
         raise AttributeError(name)

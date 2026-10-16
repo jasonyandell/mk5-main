@@ -31,18 +31,26 @@ BOOT = 2000
 
 def collect(sample: Sample, pour_dir: str | Path, k: int, log=print) -> dict[str, np.ndarray]:
     """The teacher's q for every legal move of the sample's rows that came from pour k
-    (in the row's `actions` order, −inf padded), with the mover's sign."""
+    (in the row's `actions` order, −inf padded), with the mover's sign. Read straight
+    from the pour's columns by offset (no Position objects), checked row by row against
+    the sample's actions and Walt's choice."""
     from scenario.atlas import load
     rows = np.flatnonzero(sample.pour == k)
     p = load(pour_dir)
+    idx = sample.index[rows].astype(np.int64)
+    ao, _, _ = p._offsets
+    starts, nas, deals, nplays = ao[idx], p.n_actions[idx].astype(np.int64), p.deal[idx].astype(np.int64), p.n_plays[idx].astype(np.int64)
     q = np.full((len(rows), MAX_ACTIONS), -np.inf)
-    sign = np.zeros(len(rows), np.int8)
+    bidder = p.bidder
+    sign = np.where(sample.viewer[rows].astype(np.int64) % 2 == bidder % 2, 1, -1).astype(np.int8)
     for i, r in enumerate(rows):
-        pos = p.position(int(sample.index[r]))
-        if tuple(pos.actions) != tuple(int(a) for a in sample.actions[r] if a >= 0) or pos.chosen != int(sample.chosen[r]):
-            raise AssertionError(f"row {r} is not position {sample.index[r]} of pour {k}")
-        q[i, :len(pos.actions)] = pos.q
-        sign[i] = pos.sign
+        a0, na = int(starts[i]), int(nas[i])
+        acts = p.actions[a0:a0 + na]
+        if not np.array_equal(acts, sample.actions[r, :na]) or sample.actions[r, na:].max(initial=-1) >= 0:
+            raise AssertionError(f"row {r} is not position {idx[i]} of pour {k} (actions differ)")
+        if int(p.plays[deals[i], nplays[i], 1]) != int(sample.chosen[r]):
+            raise AssertionError(f"row {r} is not position {idx[i]} of pour {k} (Walt's choice differs)")
+        q[i, :na] = p.q[a0:a0 + na]
         if log is not None and i % 20000 == 0:
             log(f"  pour {k}: row {i:,} of {len(rows):,}")
     return {"rows": rows, "q": q, "sign": sign}
@@ -101,6 +109,8 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, names: list[str],
     rng = np.random.default_rng(SEED)
     r, gap, n_legal = regret(sample, acts, q_dir)
     ok = ~np.isnan(r)
+    if ok.sum() == 0:
+        raise SystemExit(f"no teacher values found under {q_dir}: run fidelity-collect first")
     log(f"regret on {ok.sum():,} rows: mean {np.nanmean(r):.4f}, agree {np.mean(r[ok] == 0):.3f}")
     deals = sample.deal
     groups = {"all": ok}
