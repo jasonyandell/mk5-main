@@ -19,6 +19,7 @@ lifecycles"); the desks are durable.
 | **Book** | `Book` | The [[book-authority]] role, permanently: *Winning 42*, the private archive, the Silas book encodings, [[book-assumptions]], driving the book to completion. |
 | **Media** | `Media` | The "journalinfluencer". The 42 Feed, reels and front pages, the Haiku cold-read pipeline and the Haiku feed workers. It turns every result into a post. |
 | **Archive** | `Archive` | Data. Hugging Face datasets, the Plunge backups, the tournament store, "recover everything to HF", data hygiene and provenance. |
+| **Lem** | `Lem` | The generative player and the interpretability program: learn 42 as completely as it can be learned (policies, beliefs, models of others), then read the net's concepts. Lem, "who will grow to be our noble teacher" (Jason, 2026-10-15). |
 
 Lab work, meaning experiments like Horatio, #149 or the Demon, runs as ad hoc agents that the
 Mayor or Jason commissions. A finished experiment hands its results to Media and its data to
