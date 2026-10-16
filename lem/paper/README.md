@@ -110,7 +110,20 @@ evidence [`lem/field-net-audit-2026-10-15`](https://huggingface.co/datasets/jaso
   reader's detection (0.5–0.8; null about 0.1) landed inside; the layer prediction did not hold;
   the knee prediction (40–120) was wrong.
 
-## 5. Belief probes **[gap]**
+## 4b. Where the student strays from the teacher
+
+([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md),
+pre-registered.) The student's regret under the teacher's plan is 0.0084 [0.0083, 0.0086] make
+probability over 434,535 held-out positions, and the top decile of positions carries 0.825 of
+it. It sits where the decision is open: on lead (0.0102), as the bidder with the contract within
+ten points (0.0101), holding five-count tiles (0.0098); it is lowest where the trick is already
+decided (safe trick 0.0054, winner cannot be beaten 0.0066, count on the trick 0.0066) and zero
+once the bid is made or set. It grows with how much the teacher cares: 0.0008 where the
+teacher's best two moves tie, 0.0214 where they differ by more than 0.1. The lead is both the
+student's best-labelled region (32 clean `lead` poles) and its least faithful: a legible unit is
+not an accurate one.
+
+## 5. Belief probes
 
 The teacher's belief at a position is exact and computable: for every hidden tile and seat,
 P(seat holds tile | the viewer's information), under the uniform fiber and under the field's
@@ -192,7 +205,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G4 | **The first field-v3 net** on pour A (all nine declarations) and its audit with concept list v2 | pour A running |
 | G5 | **Lem's transformer** with a next-play head over league data (#178); its audit | not started |
 | G6 | **Table-type probes**: does a net trained on a mixed population encode who it faces | needs G5 and the league (#177, #182) |
-| G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | not started; cheap on the audit sample |
+| G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
 
