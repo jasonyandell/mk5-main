@@ -89,6 +89,29 @@ larger-world arms, without assuming they improve play. The
 was published and freshly verified before play (plan SHA-256
 `da05bf7d926fa52bd3bcb8270cb6e6ec397e47a8673f421519c33f996ba1f2e3`).
 
+## Round 2 result
+
+All **576 games / 5,739 hands** finished without replacement; the full audit
+passed. [All arms and raw evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/cfe492814eaf383f03a793f35f102de369f9cfce/demon/2026-10-16-ascent/development-2-results)
+are public, with fresh plan/manifest/raw-game/report downloads verified.
+
+| Arm | Wins / 64 | Win rate, 95% pair interval | Total CPU / native Zeb, 95% pair interval |
+|---|---:|---:|---:|
+| Reference | 28 | 43.8% [32.8, 54.7] | 0.550 [0.541, 0.558] |
+| Opponent cutoff 0.875 | 23 | 35.9% [25.0, 46.9] | 0.524 [0.516, 0.531] |
+| Opponent cutoff 1 | 17 | 26.6% [15.6, 39.1] | 0.516 [0.507, 0.524] |
+| Opening cutoff 0.9375 | 23 | 35.9% [28.1, 43.8] | 0.554 [0.543, 0.564] |
+| Opening cutoff 1 | 11 | 17.2% [9.4, 25.0] | 0.554 [0.547, 0.560] |
+| Both 0.9375 / 0.875 | 15 | 23.4% [15.6, 32.8] | 0.531 [0.521, 0.541] |
+| Both 1 / 1 | 2 | 3.1% [0.0, 7.8] | 0.527 [0.519, 0.535] |
+| 400 play worlds | 27 | 42.2% [31.3, 53.1] | 0.854 [0.835, 0.874] |
+| 128 bid worlds | 29 | 45.3% [35.9, 54.7] | 0.981 [0.962, 0.999] |
+
+The fixed selection is 128 bid worlds, but no arm establishes a win. Merely
+passing more loses badly in this field; additional play/bid samples alone
+also fail to establish a gain in this development set. There is still no
+confirmation or promotion.
+
 ## Exact declaration elimination, prototype
 
 An isolated prototype searches declarations in the existing tie order:
