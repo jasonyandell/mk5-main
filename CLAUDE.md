@@ -120,6 +120,10 @@ TodoWrite/TaskCreate-style scratch lists for durable work items — file an issu
   (the `reuse` suite of `scripts/check`). The line in words: [LICENSE](LICENSE).
 - **ES modules only** (`"type": "module"`): `import { x } from './path'`, never `require`.
 - **Python: always `python -u`** so logs stream in real time.
+- **FAIR CLOCKS.** Every player seated in the arena or the tournament thinks on a deterministic
+  budget (worlds, nodes, work units, or a virtual clock), never on wall time, so a game replays
+  bit-identically on any machine at any load. Wall time, CPU time and instructions are reported,
+  never used as a budget (Jason, 2026-10-16; #173, #181).
 - **Forge is GPU-only.** No CPU fallback paths in forge training/self-play/MCTS — fail fast
   when the GPU is missing. CPU-compatibility changes need an explicit, narrowly-scoped request.
 
