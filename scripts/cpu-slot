@@ -2,38 +2,62 @@
 # SPDX-FileCopyrightText: Jason Yandell
 # SPDX-License-Identifier: CC0-1.0
 
-"""cpu-slot — run one experiment niced, time-capped, and only when a slot is free.
+"""cpu-slot — run one experiment niced, time-capped, and only when the machine has room.
 
-    scripts/cpu-slot [--slots N] [--timeout S] [--nice K] [--owner TAG] [--exclusive WHY] -- <command> [args...]
+    scripts/cpu-slot [--threads T] [--slots N] [--timeout S] [--nice K] [--owner TAG]
+                     [--exclusive WHY] -- <command> [args...]
 
 Every heavy run on this Mac (arena batches, pours, studies) goes through here. It waits
-for one of N slots (default 3, shared by every session through lock files in
-/tmp/mk5-cpu-slots, or $MK5_CPU_SLOT_DIR), then runs the command at `nice` K (default 10)
+until the machine has room for the job, then runs the command at `nice` K (default 10)
 under a hard timeout of S seconds (default 300). The house rule is five minutes per run
-unless there is a really good reason (Jason, 2026-10-14). The slot is released when the
+unless there is a really good reason (Jason, 2026-10-14). Its hold is released when the
 command exits, however it exits, because the OS drops the lock with the process.
 
-Fairness (#169). An owner (the worktree root of the cwd, or --owner TAG) may hold at
-most N-1 slots while a different owner is waiting; with nobody else waiting it may take
-them all. --exclusive "reason" (required, logged) is for runs that need a quiet machine,
-such as a wall-clock confirmation: it waits until it holds every slot, and while it waits
-no one else starts a new run. Waiters register in $DIR/waiters, one flock-held file each,
-so a killed waiter's entry is dead the moment its process is and is swept by the next
-caller. All decisions are made under the short flock on $DIR/gate. Old-script holders
-and waiters ignore the registry and keep working; they only take slots by flock.
+Room (#173). By default a job that says it uses T threads (--threads, default 2) starts
+when the cores busy now, plus the threads of jobs started in the last 3 s (not yet
+visible), plus T, is at most the core count (--cores, $MK5_CPU_SLOT_CORES, default every
+core). "Busy now" is the machine's CPU ticks over the last second, every process counted,
+inside cpu-slot or not. A lone job always starts. The 1-minute load average is not the
+gate: it lags by a minute each way, so a queue gated on it leaves cores idle as jobs end.
+--slots N ($MK5_CPU_SLOTS) is the old fixed mode: at most N jobs, threads ignored.
+
+Holds are flocks on slot-<i> files shared by every session in /tmp/mk5-cpu-slots (or
+$MK5_CPU_SLOT_DIR), one per job, at most one per core; the load mode takes the highest
+free index, so slot-0..2 stay open for holders of the old three-slot script, which keep
+working unchanged and are counted in the busy cores like anything else.
+
+Fairness (#169, generalized). While another owner (the worktree root of the cwd, or
+--owner TAG) waits and that owner holds less than ours (ties: who asked first), our new
+job must leave room for its job. With nobody else waiting an owner may take everything.
+--exclusive "reason" (required, logged) is for runs that need a quiet machine, such as a
+wall-clock confirmation: it waits until it holds every slot, and while it waits no one
+else starts a new run. Waiters register in $DIR/waiters, one flock-held file each, so a
+killed waiter's entry is dead the moment its process is and is swept by the next caller.
+All decisions are made under the short flock on $DIR/gate.
+
+The command sees MK5_CPU_SLOT_EXCLUSIVE=1 or 0 (a clocked player's record says whether
+its machine was quiet) and MK5_CPU_SLOT_THREADS. On exit cpu-slot prints what the run
+cost: wall, CPU (user+sys, children included), and on macOS the job's own instructions
+and cycles; $MK5_CPU_SLOT_COST names a file to append that as a JSON line.
 
 Exit status is the command's own, or 124 on timeout, matching `timeout(1)`.
 """
 
 import argparse
+import ctypes
 import fcntl
+import json
 import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-parser.add_argument("--slots", type=int, default=int(os.environ.get("MK5_CPU_SLOTS", "3")))
+parser.add_argument("--threads", type=int, default=2, help="threads the job keeps busy (default 2)")
+parser.add_argument("--slots", type=int, default=int(os.environ.get("MK5_CPU_SLOTS") or 0) or None,
+                    help="fixed mode: at most N jobs, threads ignored")
+parser.add_argument("--cores", type=int, default=int(os.environ.get("MK5_CPU_SLOT_CORES") or 0) or os.cpu_count())
 parser.add_argument("--timeout", type=int, default=300)
 parser.add_argument("--nice", type=int, default=10)
 parser.add_argument("--owner", help="fairness tag; default is the worktree root of the cwd")
@@ -45,7 +69,20 @@ if not cmd:
     parser.error("give a command after --")
 if args.exclusive is not None and not args.exclusive.strip():
     parser.error("--exclusive needs a written reason")
+if args.threads < 1 or args.cores < 1 or (args.slots is not None and args.slots < 1):
+    parser.error("--threads, --cores and --slots are at least 1")
 exclusive = args.exclusive is not None
+fixed = args.slots is not None
+capacity = args.slots if fixed else args.cores
+weight = 1 if fixed else min(args.threads, capacity)
+n_slots = args.slots if fixed else max(args.cores, 3)  # slot-0..2 always exist for old holders
+YOUNG_S, WINDOW_S = 3.0, 1.0
+
+try:  # cost reporting is optional: cpu-slot works without the repo's arena package
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from arena import cost
+except Exception:  # noqa: BLE001
+    cost = None
 
 
 def default_owner():
@@ -68,13 +105,84 @@ my_name = f"{time.time_ns():020d}-{os.getpid()}"
 my_waiter = None  # fd of our registry file while we wait
 
 
+# ---------------------------------------------------------------- busy cores
+
+def _tick_reader():
+    """(read, split): `read()` returns the machine's cumulative CPU tick counters, or None;
+    `split(old, new)` turns two readings into (busy ticks, all ticks) between them."""
+    if sys.platform == "darwin":
+        try:
+            lib = ctypes.CDLL("/usr/lib/libSystem.dylib")
+            lib.mach_host_self.restype = ctypes.c_uint32
+            host = lib.mach_host_self()
+        except (OSError, AttributeError):
+            return None
+
+        def read():  # HOST_CPU_LOAD_INFO: user, system, idle, nice, summed over every core
+            info, count = (ctypes.c_uint32 * 4)(), ctypes.c_uint32(4)
+            return tuple(info) if lib.host_statistics(host, 3, info, ctypes.byref(count)) == 0 else None
+
+        def split(old, new):  # 32-bit counters: at 100 Hz on 18 cores they wrap every 27 days
+            d = [(y - x) % 2**32 for x, y in zip(old, new)]
+            return d[0] + d[1] + d[3], sum(d)
+        return read, split
+
+    def read():  # /proc/stat: user nice system idle iowait irq softirq steal ...
+        try:
+            with open("/proc/stat") as f:
+                return tuple(int(x) for x in f.readline().split()[1:])
+        except (OSError, ValueError):
+            return None
+
+    def split(old, new):
+        d = [y - x for x, y in zip(old, new)]
+        return sum(d) - d[3] - (d[4] if len(d) > 4 else 0), sum(d)
+    return (read, split) if os.path.exists("/proc/stat") else None
+
+
+ticks = _tick_reader()
+BUSY_FILE = os.environ.get("MK5_CPU_SLOT_BUSY_FILE")  # tests only: a file holding the busy cores
+tick_samples = []  # (monotonic, counters), reaching back about a second
+
+
+def busy_cores():
+    """Cores busy over the last second, every process; the load average where ticks are
+    unreadable; None until there is half a second to measure."""
+    if BUSY_FILE:  # the tests' stand-in for the machine
+        try:
+            return float(Path(BUSY_FILE).read_text())
+        except (OSError, ValueError):
+            return None
+    t = ticks[0]() if ticks else None
+    if t is None:
+        return os.getloadavg()[0]
+    now = time.monotonic()
+    tick_samples.append((now, t))
+    while len(tick_samples) > 2 and now - tick_samples[1][0] >= WINDOW_S:
+        tick_samples.pop(0)
+    t0, first = tick_samples[0]
+    busy, total = ticks[1](first, t)
+    if now - t0 < WINDOW_S / 2 or total == 0:
+        return None
+    return busy / total * (os.cpu_count() or 1)
+
+
+# ---------------------------------------------------------------- the registry
+
 def describe():
     why = f" EXCLUSIVE: {args.exclusive}" if exclusive else ""
-    return f"{os.getpid()} {' '.join(cmd)[:200]}{why}\nowner {owner}\n"
+    return f"{os.getpid()} {' '.join(cmd)[:200]}{why}\nowner {owner}\nthreads {weight}\nstarted {time.time():.3f}\n"
+
+
+def field(lines, key, default=None):
+    for line in lines:
+        if line.startswith(key + " "):
+            return line[len(key) + 1:]
+    return default
 
 
 def live_waiters():
-    """(name, owner, exclusive) of every other live waiter; sweeps dead ones. Call under the gate."""
+    """(name, owner, exclusive, threads) of every other live waiter; sweeps dead ones. Call under the gate."""
     live = []
     for name in sorted(os.listdir(waiter_dir)):
         if name == my_name:
@@ -88,7 +196,8 @@ def live_waiters():
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             lines = os.read(fd, 4096).decode(errors="replace").split("\n") + ["", ""]
-            live.append((name, lines[0].removeprefix("owner "), lines[1] == "exclusive"))
+            live.append((name, lines[0].removeprefix("owner "), lines[1] == "exclusive",
+                         int(field(lines, "threads", "1"))))
         else:  # nobody holds it: its waiter died
             try:
                 os.unlink(path)
@@ -103,7 +212,7 @@ def register():
     global my_waiter
     my_waiter = os.open(os.path.join(waiter_dir, my_name), os.O_CREAT | os.O_RDWR, 0o644)
     fcntl.flock(my_waiter, fcntl.LOCK_EX)
-    os.write(my_waiter, f"owner {owner}\n{'exclusive' if exclusive else 'shared'}\n".encode())
+    os.write(my_waiter, f"owner {owner}\n{'exclusive' if exclusive else 'shared'}\nthreads {weight}\n".encode())
 
 
 def unregister():
@@ -114,19 +223,23 @@ def unregister():
         my_waiter = None
 
 
-def slot_owner(path):
+def holder(path):
+    """(owner, threads, started, exclusive) written by a slot's holder; an old-script holder
+    has no threads (1) or start time (None)."""
     try:
         with open(path) as f:
             lines = f.read().split("\n")
-        return lines[1].removeprefix("owner ") if len(lines) > 1 and lines[1].startswith("owner ") else None
     except OSError:
-        return None
+        lines = [""]
+    started = field(lines, "started")
+    return (field(lines[1:2], "owner"), int(field(lines, "threads", "1")),
+            float(started) if started else None, " EXCLUSIVE: " in lines[0])
 
 
 def try_lock_slots():
-    """Lock-test every slot. Returns (free [(fd, i)], owners of the busy slots)."""
-    free, busy_owners = [], []
-    for i in range(args.slots):
+    """Lock-test every slot. Returns (free [(fd, i)] highest index first, holders of the busy ones)."""
+    free, busy = [], []
+    for i in reversed(range(n_slots)):
         path = os.path.join(lock_dir, f"slot-{i}")
         fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
         try:
@@ -134,13 +247,36 @@ def try_lock_slots():
             free.append((fd, i))
         except BlockingIOError:
             os.close(fd)
-            busy_owners.append(slot_owner(path))
-    return free, busy_owners
+            busy.append(holder(path))
+    return free, busy
 
 
 def claim(fd):
     os.ftruncate(fd, 0)
     os.write(fd, describe().encode())
+
+
+def room(busy, others):
+    """May one shared job of ours start now, given the busy slots' holders and the other waiters?"""
+    if not busy:
+        return True  # a lone job always runs
+    if any(ex for *_, ex in busy):
+        return False  # an old-script exclusive run holds slot-0..2
+    held = {}
+    for o, w, _, _ in busy:
+        held[o] = held.get(o, 0) + (1 if fixed else w)
+    if fixed:
+        used = len(busy)
+    else:
+        now = busy_cores()
+        if now is None:
+            return False
+        used = now + sum(w for _, w, t, _ in busy if t is not None and time.time() - t < YOUNG_S)
+    # The waiting other owner that holds least (ties: who asked first) goes before us.
+    mine = (held.get(owner, 0), my_name)
+    first = min(((held.get(o, 0), n, w) for n, o, ex, w in others if o != owner and not ex), default=None)
+    reserve = (1 if fixed else min(first[2], capacity)) if first and first[:2] < mine else 0
+    return used + weight + reserve <= capacity + 1e-9
 
 
 def take_slots():
@@ -151,23 +287,21 @@ def take_slots():
         fcntl.flock(gate_fd, fcntl.LOCK_EX)
         try:
             others = live_waiters()
-            foreign = any(o != owner for _, o, _ in others)
             if exclusive:  # an exclusive waiter registered before us goes first
-                blocked = any(ex and n < my_name for n, _, ex in others)
+                blocked = any(ex and n < my_name for n, _, ex, _ in others)
             else:
-                blocked = any(ex for _, _, ex in others)
+                blocked = any(ex for _, _, ex, _ in others)
             if not blocked:
-                free, busy_owners = try_lock_slots()
+                free, busy = try_lock_slots()
                 if exclusive:
                     for fd, i in free:
                         claim(fd)
                         held.append((fd, i))
-                    if len(held) == args.slots:
+                    if len(held) == n_slots:
                         unregister()
                         return held
                 else:
-                    cap = max(1, args.slots - 1) if foreign else args.slots
-                    if free and busy_owners.count(owner) < cap:
+                    if free and room(busy, others):
                         fd, i = free.pop(0)
                         claim(fd)
                         for other, _ in free:
@@ -179,7 +313,8 @@ def take_slots():
             if my_waiter is None:
                 register()
             if not waited:
-                what = "every slot (exclusive)" if exclusive else f"a slot (owner {owner})"
+                what = "every slot (exclusive)" if exclusive else \
+                    f"room for {weight} {'slot' if fixed else 'threads'} (owner {owner})"
                 print(f"cpu-slot: waiting for {what}", file=sys.stderr, flush=True)
                 waited = True
         finally:
@@ -189,21 +324,56 @@ def take_slots():
         time.sleep(0.05)
 
 
+# ---------------------------------------------------------------- the run
+
+def wait_exit(proc, timeout):
+    """The child's {"exit", "cpu_s", ...} once it exits within `timeout` s, else None."""
+    if cost is not None:
+        return cost.wait(proc, timeout)
+    try:
+        return {"exit": proc.wait(timeout=timeout)}
+    except subprocess.TimeoutExpired:
+        return None
+
+
+def report(spent, wall, load0):
+    rec = {"cmd": " ".join(cmd)[:200], "owner": owner, "threads": weight, "exclusive": exclusive,
+           **spent, "wall_s": round(wall, 2), "load_start": [round(x, 2) for x in load0],
+           "load_end": [round(x, 2) for x in os.getloadavg()]}
+    line = f"cpu-slot: cost wall {wall:.1f}s"
+    if "cpu_s" in rec:
+        rec["cores"] = round(rec["cpu_s"] / wall, 2) if wall > 0 else None
+        line += f" cpu {rec['cpu_s']:.1f}s ({rec['cores']} cores)"
+    if "self_instructions" in rec:
+        line += f" instructions {rec['self_instructions']:.3e} cycles {rec['self_cycles']:.3e}"
+    print(line, file=sys.stderr, flush=True)
+    path = os.environ.get("MK5_CPU_SLOT_COST")
+    if path:
+        try:
+            with open(path, "a") as f:
+                f.write(json.dumps(rec) + "\n")
+        except OSError as e:
+            print(f"cpu-slot: could not append cost to {path}: {e}", file=sys.stderr, flush=True)
+
+
 if exclusive:
     print(f"cpu-slot: exclusive run requested: {args.exclusive}", file=sys.stderr, flush=True)
 held = take_slots()
 try:
-    proc = subprocess.Popen(cmd, preexec_fn=lambda: os.nice(args.nice))
-    try:
-        sys.exit(proc.wait(timeout=args.timeout))
-    except subprocess.TimeoutExpired:
+    env = {**os.environ, "MK5_CPU_SLOT_EXCLUSIVE": "1" if exclusive else "0",
+           "MK5_CPU_SLOT_THREADS": str(weight)}
+    load0, t0 = os.getloadavg(), time.monotonic()
+    proc = subprocess.Popen(cmd, env=env, preexec_fn=lambda: os.nice(args.nice))
+    done = wait_exit(proc, args.timeout)
+    if done is None:
         proc.terminate()
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
+        if wait_exit(proc, 10) is None:
             proc.kill()
+            proc.wait()
         print(f"cpu-slot: timed out after {args.timeout}s", file=sys.stderr, flush=True)
         sys.exit(124)
+    report(done, time.monotonic() - t0, load0)
+    sys.exit(done["exit"])
 finally:
     for fd, _ in held:
         os.close(fd)
