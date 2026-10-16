@@ -37,6 +37,8 @@ def main(argv=None) -> None:
     s.add_argument("--workers", type=int, default=6); s.add_argument("--model", default="haiku")
     s = sub.add_parser("ablate"); s.add_argument("sample"); s.add_argument("out"); s.add_argument("--net", default=NET)
     s = sub.add_parser("list"); s.add_argument("out")
+    s = sub.add_parser("belief"); s.add_argument("sample"); s.add_argument("out_dir"); s.add_argument("--net", default=NET)
+    s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
     a = ap.parse_args(argv)
 
     if a.cmd == "sample":
@@ -115,6 +117,17 @@ def main(argv=None) -> None:
         result = ablate.run(sample, acts, net, log=log)
         ablate.write(result, a.out)
         log(f"knee at k={result['knee']} (eval fidelity >= {ablate.KNEE})")
+    elif a.cmd == "belief":
+        from lem.probe import belief
+        from lem.probe.net import forward, load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        net = load_net(a.net)
+        acts = forward(net, sample.x)
+        result = belief.run(sample, acts, a.fit, a.eval, log)
+        result["net"] = a.net
+        belief.write(result, a.out_dir)
+        log(json.dumps({k: {n: round(v["r2_moved"], 3) for n, v in result["probes"].items()} for k in ("r2_moved",)}))
     elif a.cmd == "list":
         from lem.probe import concepts
         concepts.write_list(a.out)

@@ -233,3 +233,42 @@ def test_v2_concepts_compile_viewer_only_and_name_the_declaration():
         assert holds("lead-no-trump", f9)                 # no trump to hold
         for name in concepts.NAMES_V2:
             holds(name, f7); holds(name, f9)              # every v2 query answers exactly under 7 and 9
+
+
+def test_belief_targets_are_exact_posteriors_and_ridge_recovers_a_linear_map(tmp_path):
+    from lem.probe import belief
+    from lem.probe import sample as S
+    # a small sample built from random positions
+    rows = _random_positions(40, seed=21)
+    d = dict(x=np.zeros((len(rows), N_FEATURES), np.uint8), legal=np.zeros((len(rows), 28), bool),
+             chosen=np.zeros(len(rows), np.int8), actions=np.full((len(rows), 7), -1, np.int8),
+             deal=np.arange(len(rows), dtype=np.int32), index=np.arange(len(rows), dtype=np.int32),
+             decl=np.zeros(len(rows), np.int8), viewer=np.zeros(len(rows), np.int8), own=np.zeros(len(rows), np.uint32),
+             bidder=np.zeros(len(rows), np.int8), bid=np.full(len(rows), 30, np.int16),
+             plays=np.full((len(rows), 28, 2), -1, np.int8), n_plays=np.zeros(len(rows), np.int8),
+             pour=np.zeros(len(rows), np.int8), source=np.array("test"), layout=np.array(V2))
+    for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
+        d["decl"][i], d["viewer"][i], d["own"][i], d["n_plays"][i] = decl, seat, own, len(plays)
+        for k, (s_, t_) in enumerate(plays):
+            d["plays"][i, k] = (s_, t_)
+    path = tmp_path / "s.npz"; np.savez(path, **d)
+    smp = S.Sample(path)
+    post, prior, mask = belief.targets(smp, np.arange(len(rows)))
+    for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
+        hidden = [t for t in range(28) if not (rec.played >> t) & 1 and not (own >> t) & 1]
+        canon = CANON[decl]
+        assert mask[i].sum() == 3 * len(hidden)
+        for t in hidden:
+            col = post[i, :, canon[t]]
+            assert abs(col.sum() - 1.0) < 1e-9                      # the tile is with exactly one other seat
+            if not any(rec.forbid[(seat + rel) % 4] for rel in (1, 2, 3)):
+                assert np.allclose(col, prior[i, :, canon[t]])     # no voids shown: the posterior is the counting prior
+            for rel in (1, 2, 3):
+                if (rec.forbid[(seat + rel) % 4] >> t) & 1:
+                    assert col[rel - 1] == 0.0                     # a shown void is a zero
+    rng = np.random.default_rng(0)
+    F = rng.standard_normal((500, 6)); Wt = rng.standard_normal((7, 3))
+    Y = np.concatenate([F, np.ones((500, 1))], axis=1) @ Wt
+    M = rng.random((500, 3)) < 0.8
+    W = belief.ridge_fit(F, Y, M, lam=1e-6)
+    assert belief.r2(belief.ridge_predict(F, W), Y, M) > 0.999
