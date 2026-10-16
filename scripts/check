@@ -143,6 +143,9 @@ SUITES = [
     Suite("py-tournament", PY + ("tournament/",), [(".", PYTEST("tournament/tests"))], ("venv",),
           lambda: which("uv", "cargo", "git", "node"),
           what="pytest tournament/tests: the rating fit, concurrent git writers, kill-and-resume"),
+    Suite("py-lem", PY + ("lem/",), [(".", PYTEST("lem/tests"))], ("venv",),
+          lambda: which("uv", "cargo"),
+          what="pytest lem/tests: Lem's probe kit (the field-net audit)"),
     Suite("forge", ("forge/",), [(".", PYTEST("forge"))], ("venv", "forge"), no_cuda,
           what="pytest forge (CUDA only)"),
     Suite("burl", ("burl/",), [], not_run=(
