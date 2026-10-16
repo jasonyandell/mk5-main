@@ -51,7 +51,7 @@ Concepts, methods, and synthesized findings.
 - [[topics/intermediate-ai|intermediate-ai]] — the shipped pre-ML opponent: PIMC world sampling + constraint tracking + partnership minimax (active)
 - [[topics/iter-without-regression|iter-without-regression]] — milestone: harvest-2 + run-4 is the first Burl iteration with no new bug, pathology, or regression; every prior iter introduced one (eq-shy, retry-exhausted, rank-collapse, loss-collapse, three launch failures); foundation for real iter-N comparisons (superseded)
 - [[topics/k1-grading|k1-grading]] — "beat the bot it replaced": STaR keep rule, `E[Q][gemma] ≥ E[Q][bot]` (superseded)
-- [[topics/kerry-curriculum|kerry-curriculum]] — A/B/C/D curriculum from Kerry Newberry's Learner's Guide; 15k examples (A 15%, B 20%, C 25%, D 25%) used in Stage 0 v2 (superseded)
+- [[topics/kerry-curriculum|kerry-curriculum]] — A/B/C/D curriculum from Kerry Newberry's Learner's Guide; 15k examples (A 15%, B 20%, C 40%, D 25%) used in Stage 0 v2 (superseded)
 - [[topics/lamir1-ceiling|lamir1-ceiling]] — direct 0.551 beats all 8 look-ahead modes; q-bootstrap-belief 0.655 closest look-ahead; scalar V/Q noise vs T×T matrix; four pivot options (superseded)
 - [[topics/lamir1|lamir1]] — 5 rollout modes + lamir1-piopp; direct 0.551 beats all 8 look-ahead variants; Q_head OOD at depleted leaves is root cause; Bug 6 + Fix 6 documented (superseded)
 - [[topics/layer-system|layer-system]] — the unified Layer system: two composition surfaces, the 10 registry layers, zero-conditional executors (active)
