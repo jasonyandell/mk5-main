@@ -37,9 +37,9 @@ the measurements pages?
 | `worktree-parlor-promote` | 2026-07-18 | 1 / 427 | PR #79 merged | TOMBSTONE |
 | `worktree-wiki-overhaul` (local) | 2026-07-06 | 1 | PR #34 merged | TOMBSTONE — WIP snapshot |
 | `switch-to-github-issues` (local) | 2026-06-06 | 1 | none | TOMBSTONE — one 10-line `__init__` |
-| `perf/batch`, `perf/cheap` | 2026-04-27 | 5 + 10 / ~900 | main links `burl-perf-phase1` (page only here) | RESCUE the three Burl-perf wiki pages, TOMBSTONE the rest |
-| `research/recursive-generalization-2026-10-15` | 2026-10-15 | 6 / 14 | PR #174 | MERGE if GREEN (wiki only) |
-| `worktree-table42` | 2026-07-18 | 9 / 427 | PR #68; #65 #66 #67 #69 #80 | see Other verdicts |
+| `perf/batch`, `perf/cheap` | 2026-04-27 | 5 + 10 / ~900 | main links `burl-perf-phase1` (page only here) | DONE — three pages rescued, branches tombstoned |
+| `research/recursive-generalization-2026-10-15` | 2026-10-15 | 6 / 14 | PR #174 | MERGED to main (rebased, GREEN); PR #174 closed; tombstoned |
+| `worktree-table42` | 2026-07-18 | 9 / 427 | PR #68; #65 #66 #67 #69 #80 | SENT as `rescue/table42` — fence question |
 | The July stack (ten branches above) | 2026-07-18…22 | 3–56 / ~428 | PRs #78–#95; 10 issues | CATEGORIZE — Jason |
 | `ccr-07735f91-fouydw` | 2026-10-16 | 6 / 14 | #175 | LIVE — a cloud session's branch |
 | `codex/silas-world-constructor` | 2026-10-14 | 3 / 79 | PR #166 | LIVE — Codex worktree |
@@ -71,7 +71,13 @@ Set aside by the same pass (rescued pages only, April 2026, ~900 commits behind)
 
 ## Other verdicts
 
-(Added as each branch is acted on.)
+- **`research/recursive-generalization-2026-10-15`**: merged 2026-10-16 (six commits rebased, its log entry moved to a `wiki/log.d` fragment, `scripts/check --fast` GREEN). Tag `attic/research/recursive-generalization-2026-10-15`, branch deleted, PR #174 closed.
+- **`worktree-table42`** (PR #68; #65 #66 #67 #69 #80): squashed onto current main and pushed as `rescue/table42` with SPDX headers (the host, act/wait, the two #66 probes, the entity page, the game-night playbook). **Not on main yet**: `tools/table42/host.py` imports `LensPlay` (the oracle era's E[Q] player), which the strategy-fusion fence test requires to carry the token with a sanctioned-use entry in [[strategy-fusion-fence]]. That ruling is the Mayor's or Jason's, not the sweep's. The `worktree-table42` branch and PR #68 stay open until then.
+- **The July stack**: waiting on Jason (feed ask `july-stack`). Nothing deleted; no tags needed yet because every branch still exists.
+- **Live, untouched**: `ccr-07735f91-fouydw` (a cloud session wrote it today, #175), `codex/silas-world-constructor` (PR #166) and `codex/fair-42-table-player` (Codex worktrees), `lem/stage1`, `silas/cross-game-slice4`, `worktree-agent-ab9223d8997972645` (locked; `lsof` shows a live `gtimeout`/`node`/`python` there, #173).
+- **Waiting on Jason, one line each**: `switch-to-github-issues` is checked out in `~/intent/workspaces/book-translation/mk5-main`, a live workspace, and holds one 10-line `strategies/__init__.py` ("T5: Analysis, wiki experiment page, manifest"): is that book-translation's work to land?
+- **Worktrees on merged branches** (nothing unmerged, so not this pass's job): `zeb-package`, `book/count-lapse` (a live python holds it), `perf/aggressive`, `lead-notes`, `rob-vs-eq`, `agent-a4a0…`. Whoever owns them can `git worktree remove` them.
+
 
 ## Links
 
