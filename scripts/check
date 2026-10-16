@@ -157,6 +157,11 @@ SUITES = [
     Suite("wiki", ("wiki/", "scripts/wiki_"), [(".", [sys.executable, "-u", "scripts/wiki_lint.py", "--strict"]),
                        (".", [sys.executable, "-u", "-W", "ignore", "-m", "unittest", "scripts.tests.test_wiki_log_rotate"])],
           (), what="wiki_lint.py --strict; unittest scripts/tests: log.d fragment stitcher"),
+    # Every path triggers it: a conflict marker must never reach main (the wiki index once did).
+    Suite("conflict-markers", ("",),
+          [(".", [sys.executable, "-u", "scripts/no_conflict_markers.py"]),
+           (".", [sys.executable, "-u", "-W", "ignore", "-m", "unittest", "scripts.tests.test_no_conflict_markers"])],
+          (), lambda: which("git"), what="no merge-conflict markers in tracked files; unittest for the scanner"),
     # Every path triggers it: any new file needs its license (an SPDX header, or REUSE.toml).
     Suite("reuse", ("",), [(".", [str(VENV / "bin" / "reuse"), "lint"])], ("venv",),
           lambda: which("uv", "cargo"), what="reuse lint: every file has an SPDX license (LICENSE, REUSE.toml)"),
