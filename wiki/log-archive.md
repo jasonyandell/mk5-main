@@ -4391,3 +4391,30 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-16 | sweep | Branch rescue: every unmerged branch inventoried and sorted]
 
 - [[branch-rescue-2026-10]]: 23 remote + 19 local unmerged branches, one table; the July Walt/Hoyt stack (ten PRs) is waiting on Jason; verdicts and tombstones are added to the page as each branch is acted on.
+
+## [2026-10-16 | sweep | Branch rescue: nine branches tombstoned under attic/ tags]
+
+- [[branch-rescue-2026-10]] § Tombstones: beads-sync, gascity, mk9, one-hand-per-page, worktree-walt, worktree-fix-jud, worktree-parlor, worktree-parlor-promote, worktree-wiki-overhaul; tags pushed first, branches deleted after.
+
+## [2026-10-16 | sweep | Burl perf wiki pages rescued from the perf/batch and perf/cheap branches]
+
+- Added [[burl-perf-phase1]] (a link that had been dead since the era-6 audit), [[mlx-cohort-bench-discipline]], [[harvest-cohort-abstraction]], all `status: superseded`. The branches' bench JSON stays in the `attic/perf/*` tags. See [[branch-rescue-2026-10]].
+- Tombstones for `perf/batch` and `perf/cheap` in [[branch-rescue-2026-10]].
+
+## [2026-10-16 | sweep | Branch rescue: verdicts on every branch]
+
+- [[branch-rescue-2026-10]] § Other verdicts: recursive-generalization merged, table42 sent as `rescue/table42` (fence question), the July stack waits on Jason, live branches untouched.
+
+## [2026-10-16 | lead | cpu-slot admits by busy cores; runs report CPU and instructions beside wall (#173)]
+
+**Touched pages:** [[light-every-core-2026-10-16]] [[standing-desks]] [[tournament]]
+**Added:** [[light-every-core-2026-10-16]]: what each job kind keeps busy, who thinks on a clock (only Walt), and the pre-registered drain: 60 batches in 65.9 s instead of 196.1 s, 14.1 busy cores of 18 instead of 3.9, outputs byte-identical, instructions equal to 0.03%.
+**Updated:** `scripts/cpu-slot` (load mode, `--threads`, cost line), `arena/cost.py`, book-desk batch metas and tournament records carry CPU and instructions, `noisy_timed` on clocked faceoffs, `scenario/exploiter.py` takes a node budget.
+
+## [2026-10-16 | lem | Lem's population is a league: mixed-partner self-play, partners from the population, Nash-averaged ratings]
+
+- [[lem-the-teacher]]: Jason's direction (educational play, "the meanest nastiest models with lots of diverse competitors"); stage 2 is a league with Silas and LLM seats as the bootstrap, stage 3 trains from the league's games, stage 5 is scored on the payoff matrix with Nash averaging (#182, filed by the Mayor); the overcall's rock and paper as the first cycle. Epics #177, #178, #180 point at #182.
+
+## [2026-10-16 | sweep | table42 lands on main: host, act/wait, the #66 probes, entity and game-night playbook]
+
+- [[table42]] (entity), [[table42-game-night]] (playbook), [[playing-from-the-inside]]; code in `tools/table42/`. Rescued from the `worktree-table42` branch (PR #68, July) by squash; [[jud]] and [[otis]] gain their table42 pointers. See [[branch-rescue-2026-10]].
