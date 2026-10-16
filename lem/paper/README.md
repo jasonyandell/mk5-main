@@ -89,7 +89,7 @@ evidence [`lem/field-net-audit-2026-10-15`](https://huggingface.co/datasets/jaso
   resolves no hidden tile (a query reading a hidden hand is refused), plus the 343 raw inputs as
   the trivial baseline. A pole's label is the concept of highest precision on its top 1% of
   rows; clean means precision ≥ 0.9.
-- **Result.** 222 of 372 live poles clean, **0.597 [0.581, 0.608]** (interval provisional, #191: Wilson over rows, not deals; a split-half A/A is registered); shuffled-label chance
+- **Result.** 222 of 372 live poles clean, **0.597 [0.581, 0.608]** (row Wilson envelope, about 1.17× too narrow in SE by the split-half A/A of #191, which replicates the share at 0.594 / 0.599 on disjoint deal halves); shuffled-label chance
   **0.000**. 122 by a Silas concept (where the seat sits in the trick 60, partner winning 10, no
   trump held 10, trump led 6, the boss trump 3, three-plus trumps 5, voids 10, count 7), 100 by
   a raw input, of which 43 are **declaration detectors**: the net spends an eighth of its live
@@ -135,7 +135,7 @@ that must hold the master). This is the measurement an answer key makes possible
 **First result** ([`lem-belief-probe-2026-10-16`](../../wiki/experiments/lem-belief-probe-2026-10-16.md),
 pre-registered): on 20,000 held-out rows from deals disjoint from the fit, the raw input bits
 recover **0.79** (R²) of what the voids tell the teacher's posterior, the first hidden layer
-**0.24**, the second **0.04** (no intervals yet; deal-clustered bands from the #191 A/A follow); shuffled targets give 0 (−0.02 to 0.00). The field net's inputs
+**0.24**, the second **0.04** (deal-clustered 95% bands of about ±0.004, ±0.007 and ±0.003; the reverse split gives 0.78, 0.20, 0.02); shuffled targets give 0 (−0.02 to 0.00). The field net's inputs
 carry the teacher's belief and its hidden layers discard most of it on the way to a move: the
 student plays without a readable belief over who holds what. Without the input baseline the
 first layer's 0.24 would have read as "the net represents the posterior"; with it, it reads as

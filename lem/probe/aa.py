@@ -75,8 +75,9 @@ def compare(est: list[dict]) -> dict:
     loA = np.array([e["loA"] for e in est]); hiA = np.array([e["hiA"] for e in est])
     loB = np.array([e["loB"] for e in est]); hiB = np.array([e["hiB"] for e in est])
     seA = np.array([e["seA"] for e in est]); seB = np.array([e["seB"] for e in est])
-    miss = np.concatenate([(pB < loA) | (pB > hiA), (pA < loB) | (pA > hiB)])
-    no_overlap = (hiA < loB) | (hiB < loA)
+    eps = 1e-9                                                       # Wilson at p = 1 returns hi = 1 up to rounding
+    miss = np.concatenate([(pB < loA - eps) | (pB > hiA + eps), (pA < loB - eps) | (pA > hiB + eps)])
+    no_overlap = (hiA < loB - eps) | (hiB < loA - eps)
     se = np.sqrt(seA ** 2 + seB ** 2)
     ok = se > 0
     z = (pA[ok] - pB[ok]) / se[ok]
@@ -85,6 +86,19 @@ def compare(est: list[dict]) -> dict:
             "no_overlap": float(no_overlap.mean()),
             "z_sd": float(z.std()) if ok.any() else None, "z_abs_gt_1_96": float(np.mean(np.abs(z) > Z)) if ok.any() else None,
             "z_abs_gt_1_96_target": 0.05, "mean_abs_diff": float(np.abs(pA - pB).mean())}
+
+
+def recount(result: dict) -> dict:
+    """Recompute the calibration counts from the stored per-pole estimates (no rerun)."""
+    au = result["audit"]
+    rows_w = [{"pA": pp["A"]["p"], "loA": pp["A"]["w_lo"], "hiA": pp["A"]["w_hi"], "seA": pp["A"]["w_se"],
+               "pB": pp["B"]["p"], "loB": pp["B"]["w_lo"], "hiB": pp["B"]["w_hi"], "seB": pp["B"]["w_se"]} for pp in au["poles"]]
+    rows_b = [{"pA": pp["A"]["p"], "loA": pp["A"]["b_lo"], "hiA": pp["A"]["b_hi"], "seA": pp["A"]["b_se"],
+               "pB": pp["B"]["p"], "loB": pp["B"]["b_lo"], "hiB": pp["B"]["b_hi"], "seB": pp["B"]["b_se"]} for pp in au["poles"]]
+    au["wilson"], au["bootstrap"] = compare(rows_w), compare(rows_b)
+    nondeg = [w for w, b in zip(rows_w, rows_b) if b["seA"] ** 2 + b["seB"] ** 2 > 0]
+    au["wilson_nondegenerate"] = compare(nondeg)
+    return result
 
 
 def _phi(x: float) -> float:

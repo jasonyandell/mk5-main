@@ -98,9 +98,9 @@ Run 2026-10-16 on the full pre-registered sample: 434,535 rows, top set 4,345 pe
 cards, every reader output, `ablate.json`, runners, logs, `SHA256SUMS`):
 [`lem/field-net-audit-2026-10-15`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0982f55bd74a92d6819cf29e2fe7f309e998dab5/lem/field-net-audit-2026-10-15).
 
-**The pole table.** 222 of 372 live poles are clean: **0.597 [0.581, 0.608]**, *provisional (#191)*: the
-interval is the share with every precision at its Wilson lower, then upper, bound, and the Wilson
-intervals are over rows, not deals (the split-half A/A below measures how wrong that is). The shuffled-label baseline is
+**The pole table.** 222 of 372 live poles are clean: **0.597 [0.581, 0.608]** (the interval is the
+share with every precision at its Wilson lower, then upper, bound; those are row intervals, about
+1.17× too narrow in SE by the split-half A/A below, #191, which replicates the share at 0.594 / 0.599). The shuffled-label baseline is
 **0.000 [0.000, 0.000]** over 20 shuffles. Partial 136, mixed 14. The clean labels' mean
 precision is 0.980.
 
@@ -200,7 +200,38 @@ how often such an interval is wrong. The test makes no new claim about the net.
   (x ≫ a1 > a2) holds in both directions with non-overlapping bands between representations.
 - Code: `lem/probe/aa.py` (CC0). Cost: one slot call, CPU minutes.
 
-**Results.** Not yet run.
+**Results** (run 2026-10-16, 48 s; evidence `aa.json`, `aa.md`, logs, runner, `SHA256SUMS` at
+`lem/aa-2026-10-16/` in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)).
+Halves of 12,500 deals (217,389 and 217,146 rows); top sets of 2,174 rows spanning a median 1,730
+deals (1.34 rows per deal). 82 poles have precision exactly 1 in both halves (the raw-feature
+detectors), so their bootstrap SE is 0 and their z undefined; the "non-degenerate" line is the other 290.
+
+| interval | pairs | misses the other half's point (0.166) | no overlap (0.006) | sd of z (1) | \|z\| > 1.96 (0.05) |
+|---|---:|---:|---:|---:|---:|
+| row Wilson, all live poles | 372 | 0.202 | 0.013 | 1.03 | 0.073 |
+| row Wilson, non-degenerate poles | 290 | 0.259 | 0.017 | **1.17** | **0.093** |
+| deal bootstrap (non-degenerate) | 290 | 0.188 | 0.011 | **1.12** | **0.076** |
+
+Clean share by half: **0.594 and 0.599**; 0.989 of poles have the same kind (clean or not) in both halves.
+
+| | predicted | measured | |
+|---|---|---|---|
+| 1. row Wilson badly undercovered: \|z\| > 1.96 above 0.15, sd above 1.5 | | 0.093, sd 1.17 | **wrong**: mildly narrow, not badly |
+| 2. deal bootstrap near calibration: \|z\| > 1.96 in [0.03, 0.09] | | 0.076, sd 1.12 | holds, but it is barely better than Wilson |
+| 3. halves' clean shares within 0.03 | | 0.594 vs 0.599 | holds |
+| 4. belief R² order holds both ways with non-overlapping bands | | x 0.78/0.78, a1 0.20/0.20, a2 0.02/0.02; all bands disjoint between representations; \|z\| ≤ 1.04 within | holds |
+
+**Reading.** The audit's row intervals are about 1.17× too narrow in SE terms, not the several-fold
+the desk expected, and the deal-clustered bootstrap recovers only a little of that (1.12×). The reason
+is in the design: a pole's top set is the top 1% of rows, and those 2,174 rows come from 1,730
+different deals, so there is almost no within-deal clustering left to correct. What the row interval
+misses is the other source of noise, the *selection* of the top set (the 1% threshold itself moves
+between halves), which no interval conditional on a fixed top set can see. The split-half replicate
+measures it directly. For #191: quote the audit's Wilson intervals with SEs widened by 1.17, or, better,
+quote the halves; the clean share of 0.597 is replicated at 0.594 / 0.599 and is no longer provisional.
+The belief probes' R² carry deal-clustered 95% bands of about ±0.004 (x), ±0.007 (a1) and ±0.003 (a2),
+and the two directions agree within them. The fidelity study's intervals were deal-clustered from the
+start ([[lem-fidelity-by-concept-2026-10-16]]).
 
 ## Exploratory, not pre-registered (2026-10-16)
 

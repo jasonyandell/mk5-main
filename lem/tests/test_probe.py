@@ -320,6 +320,10 @@ def test_aa_calibration_counts_are_near_their_targets_on_a_simulated_calibrated_
     assert abs(c["miss_other_point"] - c["miss_other_point_target"]) < 0.01
     assert abs(c["z_abs_gt_1_96"] - 0.05) < 0.006 and abs(c["z_sd"] - 1.0) < 0.03
     assert c["no_overlap"] < 0.012 and c["degenerate"] == 0
+    from lem.probe.audit import wilson
+    lo, hi = wilson(2174, 2174)
+    one = {"pA": 1.0, "loA": lo, "hiA": hi, "seA": (hi - lo) / 3.92, "pB": 1.0, "loB": lo, "hiB": hi, "seB": (hi - lo) / 3.92}
+    assert aa.compare([one])["miss_other_point"] == 0.0            # Wilson's hi at p = 1 is 1 up to rounding
     # deal bootstrap: 400 deals of 8 rows; the rows of a deal share a deal effect
     deal = np.repeat(np.arange(400), 8)
     y = (rng.normal(0, 1, 400)[deal] + rng.normal(0, 0.3, 3200) > 0).astype(float)

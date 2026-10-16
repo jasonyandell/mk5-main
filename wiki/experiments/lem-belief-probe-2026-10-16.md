@@ -89,6 +89,20 @@ not into P(seat holds tile). For the paper this is the answer key at work: a mea
 would read as "the net represents the posterior" without the input baseline reads, with it, as
 "the posterior is in the inputs and the net discards most of it on the way to a move".
 
+**Intervals and the reverse direction** (#191, run 2026-10-16; design and evidence on
+[[lem-field-net-audit-2026-10-15]] § Split-half A/A). Each R² with a deal-clustered bootstrap over its
+eval deals (1,000 resamples), the registered direction (fit A, score B) and the reverse:
+
+| representation | A→B R² all | B→A R² all | A→B moved | B→A moved |
+|---|---|---|---|---|
+| `x` | 0.777 [0.773, 0.780] | 0.778 [0.775, 0.782] | 0.791 [0.788, 0.795] | 0.792 [0.788, 0.795] |
+| `a1` | 0.198 [0.192, 0.205] | 0.197 [0.191, 0.204] | 0.241 [0.234, 0.247] | 0.237 [0.230, 0.244] |
+| `a2` | 0.021 [0.019, 0.024] | 0.023 [0.021, 0.026] | 0.035 [0.032, 0.037] | 0.036 [0.034, 0.039] |
+| `a1+a2` | 0.199 [0.192, 0.206] | 0.199 [0.192, 0.205] | 0.244 [0.238, 0.252] | 0.241 [0.235, 0.247] |
+
+The two directions agree within their bands (|z| ≤ 1.04), and the bands of different
+representations do not touch. The reading above stands with intervals.
+
 Caveats: linear probes on ReLU activations; a policy net trained on move advantages, not on
 beliefs, has no reason to keep the posterior readable; play-only evidence (the auction carries
 nothing in these pours); one net, one seed. The next arms: the field's own posterior (reading
