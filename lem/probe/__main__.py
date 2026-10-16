@@ -37,6 +37,9 @@ def main(argv=None) -> None:
     s.add_argument("--workers", type=int, default=6); s.add_argument("--model", default="haiku")
     s = sub.add_parser("ablate"); s.add_argument("sample"); s.add_argument("out"); s.add_argument("--net", default=NET)
     s = sub.add_parser("list"); s.add_argument("out")
+    s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
+    s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
+    s.add_argument("--net", default=NET)
     s = sub.add_parser("belief"); s.add_argument("sample"); s.add_argument("out_dir"); s.add_argument("--net", default=NET)
     s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
     s.add_argument("--parts-dir", default=None, help="assemble the targets from belief-targets parts instead of computing them")
@@ -136,6 +139,26 @@ def main(argv=None) -> None:
         from lem.probe import belief
         from lem.probe.sample import Sample
         belief.targets_part(Sample(a.sample), a.out_dir, a.part, a.parts, a.fit, a.eval, log)
+    elif a.cmd == "fidelity-collect":
+        from lem.probe import fidelity
+        from lem.probe.sample import Sample
+        d = fidelity.collect(Sample(a.sample), a.pour, a.k, log)
+        np.savez_compressed(a.out, **d)
+        log(f"{a.out}: {len(d['rows']):,} rows")
+    elif a.cmd == "fidelity":
+        from lem.probe import concepts, fidelity
+        from lem.probe.net import forward, load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        with np.load(a.labels) as z:
+            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+        net = load_net(a.net)
+        acts = forward(net, sample.x)
+        result = fidelity.run(sample, acts, labels, names, a.q_dir, log)
+        result["net"] = a.net
+        fidelity.write(result, a.out_dir)
+        log(json.dumps({"overall": result["overall"], "high": result["ranked_high"][:5], "low": result["ranked_low"][:5]}))
     elif a.cmd == "list":
         from lem.probe import concepts
         concepts.write_list(a.out)

@@ -272,3 +272,34 @@ def test_belief_targets_are_exact_posteriors_and_ridge_recovers_a_linear_map(tmp
     M = rng.random((500, 3)) < 0.8
     W = belief.ridge_fit(F, Y, M, lam=1e-6)
     assert belief.r2(belief.ridge_predict(F, W), Y, M) > 0.999
+
+
+def test_fidelity_collects_the_teachers_q_and_regret_is_zero_at_agreement(tmp_path):
+    from lem.probe import fidelity
+    from lem.probe import sample as S
+    from lem.probe.net import forward, load_net
+    pour_dir = "/Users/jason/code/mk5-main/scratch/atlas/pour_smoke"
+    import pathlib
+    if not pathlib.Path(pour_dir).exists():
+        pytest.skip("the smoke pour is not on this machine")
+    S.build(pour_dir, tmp_path / "part.npz", every=1, log=lambda m: None)
+    S.merge(tmp_path / "sample.npz", [tmp_path / "part.npz"], log=lambda m: None)
+    smp = S.Sample(tmp_path / "sample.npz")
+    d = fidelity.collect(smp, pour_dir, 0, log=None)
+    (tmp_path / "q").mkdir()
+    np.savez(tmp_path / "q" / "q_0.npz", **d)
+    assert len(d["rows"]) == len(smp) and np.isfinite(d["q"]).sum() == (smp.actions >= 0).sum()
+    net = load_net("zeb/net/margin_d250k_h128x64.fnet")
+    acts = forward(net, smp.x)
+    r, gap, n_legal = fidelity.regret(smp, acts, tmp_path / "q")
+    assert np.isfinite(r).all() and (r >= -1e-12).all() and (gap >= 0).all()
+    assert set(n_legal.tolist()) <= set(range(2, 8))
+    # where the net picks the teacher's own choice, and that choice is the teacher's best, regret is 0
+    from lem.probe.net import picks
+    pick = picks(acts.out, smp.actions, smp.canon())
+    same = pick == smp.chosen
+    assert same.any()
+    for i in np.flatnonzero(same)[:20]:
+        qi = d["q"][i] * d["sign"][i]
+        if np.isclose(qi[np.argmax(qi)], qi[list(smp.actions[i]).index(smp.chosen[i])]):
+            assert r[i] == 0
