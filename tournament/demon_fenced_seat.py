@@ -106,6 +106,7 @@ class DemonSeat:
             args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
         self.decisions: list[dict] = []  # per decision: worlds, ms (for cost reports)
+        self.cost = None  # set by close() (#173)
 
     # BidPolicy
     def bid(self, ctx, rng):
@@ -175,9 +176,6 @@ class DemonSeat:
         return reply
 
     def close(self) -> None:
-        if self.proc.poll() is None:
-            self.proc.stdin.close()
-            try:
-                self.proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.proc.kill()
+        from .seats import close_and_cost
+
+        self.cost = close_and_cost(self.proc)

@@ -126,7 +126,10 @@ def harness() -> dict:
             "mk5_dirty": bool(out("git", "status", "--porcelain", "--", "tournament", "arena", "forge")),
             "python": platform.python_version(), "node": out("node", "--version"),
             "platform": f"{platform.system()}-{platform.machine()}",
-            "worker": os.environ.get("TOURNAMENT_WORKER", "local")}
+            "worker": os.environ.get("TOURNAMENT_WORKER", "local"),
+            # "1" under `cpu-slot --exclusive`, "0" under a shared cpu-slot, None outside it
+            "cpu_slot_exclusive": os.environ.get("MK5_CPU_SLOT_EXCLUSIVE"),
+            "load_avg": [round(x, 2) for x in os.getloadavg()]}
 
 
 # ------------------------------------------------------------- claims

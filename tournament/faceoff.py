@@ -25,6 +25,8 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from arena import cost
+
 LADDERS = {
     "marks7": {"marks_to_win": 7},  # the tournament game: first to 7 marks
     "points250": {"points_to_win": 250},  # the book's game: first to 250 points
@@ -91,6 +93,7 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
     pb = Participant.from_record(participants[spec.b])
     sa, sb = seat(pa, game_key, device), seat(pb, game_key, device)
     seats = (sa, sb)
+    start = cost.snapshot()
     t0 = time.time()
     elapsed0 = state["elapsed_s"]
 
@@ -130,6 +133,19 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
     finally:
         sa.close()
         sb.close()
+    # What this run of the game cost beside its wall time (#173), summed over resumes.
+    spent = cost.since(start)
+    add = {"referee_cpu_s": spent["cpu_self_s"]}
+    if "instructions" in spent:
+        add["referee_instructions"] = spent["instructions"]
+    for side, s in (("a", sa), ("b", sb)):
+        for k, v in (s.cost or {}).items():
+            if k != "exit":
+                add[f"{side}_{k}"] = v
+    total = state.setdefault("cost", {})
+    for k, v in add.items():
+        total[k] = round(total.get(k, 0) + v, 3)
+    _atomic_write(progress, state)
     return state
 
 
@@ -144,6 +160,7 @@ def assemble(spec: FaceoffSpec, participants: dict, games: list[dict], harness: 
             "winner_team": g["winner_team"], "marks": g["marks"], "points": g["points"],
             "a_marks": g["marks"][a], "b_marks": g["marks"][1 - a],
             "n_hands": len(g["hands"]), "elapsed_s": round(g["elapsed_s"], 1), "hands": g["hands"],
+            **({"cost": g["cost"]} if "cost" in g else {}),
         })
     a_wins = sum(g["a_won"] for g in out_games)
     return {
@@ -159,6 +176,10 @@ def assemble(spec: FaceoffSpec, participants: dict, games: list[dict], harness: 
         "claimed_utc": spec.claimed_utc,
         "finished_utc": finished_utc,
         "harness": harness,
+        # A participant that thinks on a wall clock plays a little differently on a busy
+        # machine; its record says so unless cpu-slot gave the run the whole machine (#173).
+        "noisy_timed": any(participants[p].get("config", {}).get("clock") == "real" for p in (spec.a, spec.b))
+                       and harness.get("cpu_slot_exclusive") != "1",
         "summary": {"games": len(out_games), "a_wins": a_wins, "b_wins": len(out_games) - a_wins,
                     "a_marks": sum(g["a_marks"] for g in out_games),
                     "b_marks": sum(g["b_marks"] for g in out_games)},

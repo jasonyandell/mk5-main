@@ -97,6 +97,18 @@ def test_each_faceoff_is_one_file_in_one_commit(store, tmp_path):
         by_pair.setdefault(g["pair"], []).append(g["hands"][0]["hands"])
     assert all(a == b for a, b in by_pair.values())
     assert "rand-a" in W.table(store, anchor="rand-a")
+    # What it cost beside wall time (#173); no participant here thinks on a clock.
+    assert all(g["cost"]["referee_cpu_s"] >= 0 for g in rec["games"])
+    assert rec["noisy_timed"] is False and "cpu_slot_exclusive" in rec["harness"]
+
+
+def test_a_clocked_participant_is_marked_noisy_unless_exclusive():
+    clocked = Participant("clocked", "arena", {"spec": "bid30+random"}, {"clock": "real"}).to_record()
+    spec = F.FaceoffSpec("marks7", "clocked", "rand-b", 1, 1, "20261016T000000Z")
+    parts = {"clocked": clocked, "rand-b": CHEAP[1].to_record()}
+    assert F.assemble(spec, parts, [], {"cpu_slot_exclusive": "0"}, "x")["noisy_timed"] is True
+    assert F.assemble(spec, parts, [], {"cpu_slot_exclusive": None}, "x")["noisy_timed"] is True
+    assert F.assemble(spec, parts, [], {"cpu_slot_exclusive": "1"}, "x")["noisy_timed"] is False
 
 
 KILLER = textwrap.dedent("""

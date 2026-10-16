@@ -3,7 +3,7 @@
 
 """Arena batches for the Book desk's registered studies: one batch is one
 arm at one base seed, written as `meta.json` and `games.jsonl`; a queue runs
-every registered batch through `scripts/cpu-slot`, a fixed number at a time,
+every registered batch through `scripts/cpu-slot`, which starts each as cores free,
 skipping batches already written and dropping (not rerunning) a batch that
 exits nonzero. The estimator (`pairs`, `contrast`, `diff`) is
 `scenario.small_n`'s. `scenario.small_n` and `scenario.deviant_field` keep
@@ -29,19 +29,21 @@ def write_batch(arm: str, seed: int, games: int, out: str, seats: tuple, points:
     """Play `games` game pairs (2·games games, the arena's paired halves) of
     team A against team B, `seats` = (bid_a, play_a, bid_b, play_b), and write
     them to `out`. `points`: the book's game, first to 250 points."""
+    from arena import cost
     from arena.engine import ArenaConfig
     from arena.match import run_match
 
     bid_a, play_a, bid_b, play_b = seats
     cfg = ArenaConfig(base_seed=seed, points_to_win=POINTS if points else None)
-    t0 = time.time()
+    start = cost.snapshot()
     result = run_match(bid_a=bid_a, bid_b=bid_b, play_a=play_a, play_b=play_b,
                        n_games=2 * games, cfg=cfg, fast_batching=True)
-    wall = time.time() - t0
+    spent = cost.since(start)  # wall, and the load-proof CPU seconds and instructions (#173)
     outdir = Path(out)
     outdir.mkdir(parents=True, exist_ok=True)
-    meta = {"arm": arm, "seed": seed, "games_per_half": games, "wall_s": round(wall, 1),
-            "load_avg": list(os.getloadavg()), "a": f"{bid_a!r} / {play_a!r}", "b": f"{bid_b!r} / {play_b!r}"}
+    meta = {"arm": arm, "seed": seed, "games_per_half": games, "wall_s": round(spent.pop("wall_s"), 1),
+            **spent, "load_avg": list(os.getloadavg()),
+            "a": f"{bid_a!r} / {play_a!r}", "b": f"{bid_b!r} / {play_b!r}"}
     peak = getattr(play_a, "peak_work", None)
     if peak is not None:
         meta["a_peak_work"] = peak   # the most Silas work at one decision of team A's
@@ -76,6 +78,8 @@ def queue(module: str, root: str, jobs: Sequence[tuple[str, int]], workers: int,
             print(msg, flush=True)
 
     say(f"queue: {len(todo)} batches to run, {workers} workers, {games} pairs a batch")
+    # The cores a batch keeps busy, measured 2026-10-16 (#173): 1.0 at 1 pair, 1.5 at 2, 4.8 at 12.
+    cores = max(1, min(5, round(games / 2.5)))
 
     def work() -> None:
         while True:
@@ -84,7 +88,7 @@ def queue(module: str, root: str, jobs: Sequence[tuple[str, int]], workers: int,
                     return
                 arm, seed = todo.pop(0)
             out = Path(root) / f"{arm}-s{seed}"
-            cmd = [str(ROOT / "scripts" / "cpu-slot"), "--", sys.executable, "-u", "-m", module,
+            cmd = [str(ROOT / "scripts" / "cpu-slot"), "--threads", str(cores), "--", sys.executable, "-u", "-m", module,
                    "arena", "--arm", arm, "--seed", str(seed), "--games", str(games), "--out", str(out)]
             t0 = time.time()
             r = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -116,7 +120,8 @@ def main(doc: str, module: str, arms: Sequence[str], seats: Callable[[str], tupl
     p.add_argument("--out", required=True)
     p = sub.add_parser("queue")
     p.add_argument("--root", required=True)
-    p.add_argument("--workers", type=int, default=2)
+    p.add_argument("--workers", type=int, default=os.cpu_count(),
+                   help="batches offered to cpu-slot at once; it starts them as cores free (#173)")
     p.add_argument("--pilot", action="store_true")
     p.add_argument("--games", type=int, default=games, help="game pairs a batch")
     p = sub.add_parser("summarize")

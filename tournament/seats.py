@@ -19,6 +19,8 @@ from typing import Sequence
 from arena.auction import BidContext
 from forge.zeb.game import current_player
 
+from arena import cost
+
 from .artifacts import materialize
 from .participants import Participant
 
@@ -34,6 +36,7 @@ class NodeHost:
     """A seat process. Requests are answered in order, one line each."""
 
     def __init__(self, kind: str, artifacts: Path, config: dict, script: Path | None = None):
+        self.cost = None  # set by close(): what the host process cost (#173)
         self.proc = subprocess.Popen(
             ["node", str(script or HOST), kind, str(artifacts), json.dumps(config)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
@@ -50,12 +53,20 @@ class NodeHost:
         return reply
 
     def close(self) -> None:
-        if self.proc.poll() is None:
-            self.proc.stdin.close()
-            try:
-                self.proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.proc.kill()
+        self.cost = close_and_cost(self.proc)
+
+
+def close_and_cost(proc: subprocess.Popen) -> dict | None:
+    """Close a seat process's stdin, reap it (killed after 10 s) and return what it cost:
+    CPU seconds, its waited children included, and on macOS its own instructions."""
+    if proc.returncode is not None:
+        return None
+    proc.stdin.close()
+    spent = cost.wait(proc, 10)
+    if spent is None:
+        proc.kill()
+        spent = cost.wait(proc)
+    return spent
 
 
 class HostSeat:
@@ -103,6 +114,10 @@ class HostSeat:
     def close(self) -> None:
         self.host.close()
 
+    @property
+    def cost(self) -> dict | None:
+        return self.host.cost
+
 
 class NativeZebSeat(HostSeat):
     """A configured Zeb: the release's JavaScript bidder over its native Rust player.
@@ -123,6 +138,8 @@ class NativeZebSeat(HostSeat):
 
 class ArenaSeat:
     """An mk5 arena player (`<bidder>+<play>`), built in this process."""
+
+    cost = None  # in-process: counted in the referee's own CPU
 
     def __init__(self, bidder, play):
         self.bidder, self.play = bidder, play
