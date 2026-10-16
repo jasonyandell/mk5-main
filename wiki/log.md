@@ -50,6 +50,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | book | Silas cross-game loose ends: one unit check, samples that name their stream, net seats named by hash (#183)]
+
+- `Trial::compare` now refuses a utility whose unit is not its table's scoring, through the same `field::check` the ledger uses. The rule found one test of its own that read a marks table as points.
+- `Sample` carries its `Stream`. A ledger's deals are `Sample::arena`, labelled `sampled(n, seed, arena)`, and a trial refuses an arena sample. `Authority::drawn(sample)` joins `sampled(n, seed)`.
+- `arena.ledger.play_name` names a play seat with its seed and each field net with its SHA-256. A deployed Zeb seat sits in the chair in `arena/test_ledger.py`. Choices in `silas/docs/cross-game.md` § Slice 4 as built, items 3, 5 and 6. [[silas]]
+
 ## [2026-10-16 | book | The auction read, pre-registered: does reading a bid by a known method pay by itself? (#117)]
 
 - [[auction-read-2026-10-16]]: the #149 reader alone, under the field's true bidding method (K) and an unknown one (U), against plain deployed Zeb, with a re-seeded A/A (Za). Primary K; 576 pairs per marks arm and 192 to 250; 176 batches. `scenario/auction_read.py`.
