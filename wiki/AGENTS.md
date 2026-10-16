@@ -28,7 +28,8 @@ We track **the frontier**: what the project understood to be true *at this commi
 wiki/
 ├── AGENTS.md          ← this file
 ├── index.md           ← thin router; catalogs split per kind in index-<kind>.md
-├── log.md             ← chronological append-only record of ingests
+├── log.md             ← chronological record of ingests (stitched from log.d/ fragments)
+├── log.d/             ← pending log entries, one file each; deleted when stitched
 ├── entities/          ← named things: projects, people, models, systems, named artifacts
 ├── topics/            ← concepts and methods: STaR, backwards curriculum, K1 grading
 ├── experiments/       ← a specific training run, eval, or named experiment
@@ -207,7 +208,7 @@ For one commit you just made or are ingesting:
    - If the page is being retired/superseded, set `status:` accordingly and add a forward link.
 4. **Create `sources/<sha>.md`** — a compact digest: frontmatter + commit message quote + files-changed table + short "What this commit establishes" narrative + bare `[[backlinks]]` to every touched page.
 5. **Update the catalog** — add new pages to the right `index-<kind>.md` (entry shape: `- [[path|name]] — hook (status)`), update hooks on pages whose gist changed. The linter's IX checks enforce bidirectional coverage.
-6. **Add to `log.md`** — one entry in the format below, at the top. Never rotate on a branch (see Log format).
+6. **Log it** — add your entry as a new file in `wiki/log.d/` (format below); never edit `log.md`, never rotate on a branch (see Log format).
 7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop. Skim the touched pages once for `[[kind/name]]` patterns in body text — those should almost always be bare `[[name]]` (see Backlink style above).
 
 #### Multi-commit replay path
@@ -266,9 +267,9 @@ Entries use this prefix so `grep "^## \[" log.md log-archive.md` gives the full 
 **Questions opened:** ...
 ```
 
-**Adding an entry (every branch):** insert it directly under the `---` that follows the digest, newest first. Touch nothing else in `log.md` or `log-archive.md`: **a branch never rotates.** Parallel branches each add an entry at the same spot, and `.gitattributes` gives both files git's `union` merge driver, so those additions merge without conflict. (Rotating on branches is what broke this: two branches rolled the same entry, the merge conflicted, and its resolution truncated the archive to one entry.)
+**Adding an entry (every branch):** write it as its own new file, `wiki/log.d/<UTC timestamp>-<desk>-<slug>.md` (e.g. `20261016T142500Z-lead-log-fragments.md`), holding exactly one entry in the format above. **Never edit `log.md` or `log-archive.md`, and a branch never rotates.** A new file per entry means no two sessions touch the same file, so there is nothing to merge. (The shared log once cost duplicate entries, a lost body and a red push from a digest miscount.) The lint counts pending fragments as entries (LG01-LG03) and rejects a malformed one (LG04: not exactly one entry).
 
-**Rotation (on main, after merging, by script):** `log.md` holds a phase-by-phase digest plus recent entries. Run `python -u scripts/wiki_log_rotate.py` on main after a merge. It is idempotent: at 15 or fewer entries it changes nothing; past 15 it keeps the newest 10, appends the rest verbatim to `log-archive.md` (oldest first, skipping any already there), re-spaces the log, and sets the digest's archived-entry count. Folding the moved entries into the digest (one line per phase, links only, no new claims) is the one judgment step; do it in the same commit. The lint enforces the rest: LG01 warns when rotation is due, LG02 rejects a duplicated entry, LG03 rejects a digest count that differs from the archive (a truncated archive fails here).
+**Stitching and rotation (on main, after merging, by script):** the stitcher is single-writer: it puts every `log.d/` fragment into `log.md` newest first, deletes the fragments, then rotates; a fragment added meanwhile is picked up next time, and a malformed one aborts the run untouched. `log.md` holds a phase-by-phase digest plus recent entries. Run `python -u scripts/wiki_log_rotate.py` on main after a merge. Rotation is idempotent: at 15 or fewer entries it changes nothing; past 15 it keeps the newest 10, appends the rest verbatim to `log-archive.md` (oldest first, skipping any already there), re-spaces the log, and sets the digest's archived-entry count. Folding the moved entries into the digest (one line per phase, links only, no new claims) is the one judgment step; do it in the same commit. The lint enforces the rest: LG01 warns when rotation is due, LG02 rejects a duplicated entry, LG03 rejects a digest count that differs from the archive (a truncated archive fails here).
 
 ## Question handling
 

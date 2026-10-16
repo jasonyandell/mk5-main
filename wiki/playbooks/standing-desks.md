@@ -70,7 +70,7 @@ first, and let the central authority manage only links and lookups.
   done: `git rebase origin/main`, run `scripts/check --fast` (the full `scripts/check` if you
   touched shared code) until it's GREEN, then `git push origin HEAD:main`. If the push is
   rejected, fetch, rebase, re-check and push again. Then run `python -u scripts/wiki_log_rotate.py`
-  if `wiki/log.md` grew, close your issues with receipts, and delete the branch and worktree.
+  if `wiki/log.d/` has fragments (it stitches them into `wiki/log.md` and rotates; commit and push the result), close your issues with receipts, and delete the branch and worktree.
   Never force-push, never skip a suite, never push red.
 - **Gated changes go to the Mayor first** (send the branch and one line; the Mayor merges or
   says go). Gated means a change other desks build on:

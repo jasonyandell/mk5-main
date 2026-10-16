@@ -2,14 +2,20 @@
 # SPDX-FileCopyrightText: Jason Yandell
 # SPDX-License-Identifier: CC0-1.0
 
-"""wiki_log_rotate.py — roll the oldest wiki/log.md entries into log-archive.md.
+"""wiki_log_rotate.py — stitch wiki/log.d/ fragments into log.md, then roll the
+oldest entries into log-archive.md.
 
-Run on main, after merging, never on a branch. Branches only add their entry
-to the top of log.md; git merges those additions with the union driver
-(.gitattributes), so parallel branches never conflict over the log. Rotation
-is the one step that moves entries between files, so it has a single writer.
+Run on main, after merging, never on a branch. A session adds its entry as a
+new file wiki/log.d/<UTC timestamp>-<desk>-<slug>.md holding exactly one entry
+(`## [date | desk | title]` plus body), so no two sessions edit the same file.
+This script is the single writer: it puts the fragments into log.md newest
+first (a stable date sort; fragments sit above same-day entries already in
+the log, the latest filename first), deletes them, then rotates. A fragment
+whose header log.md or the archive already holds is dropped, not duplicated.
+A malformed fragment (not exactly one entry) aborts before anything changes.
+A fragment added concurrently is simply picked up on the next run.
 
-Idempotent: with 15 or fewer entries it changes nothing. Past 15 it keeps the
+Rotation, idempotent: with 15 or fewer entries it changes nothing. Past 15 it keeps the
 newest 10 (by date; ties keep file order), appends the rest to the archive
 oldest first, skips any entry whose header line the archive already holds,
 and sets the digest's archived-entry count. It also re-spaces log.md, which a
@@ -24,6 +30,7 @@ Usage:
 """
 
 import argparse
+import glob
 import os
 import re
 import sys
@@ -31,6 +38,7 @@ import sys
 WIKI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "wiki")
 LOG = os.path.join(WIKI, "log.md")
 ARCHIVE = os.path.join(WIKI, "log-archive.md")
+FRAGMENTS = os.path.join(WIKI, "log.d")
 ROTATE_ABOVE = 15
 KEEP = 10
 
@@ -58,18 +66,48 @@ def header_of(entry):
     return entry.split("\n", 1)[0]
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--dry-run", action="store_true")
-    args = ap.parse_args()
+def read_fragments(frag_dir):
+    """([(path, entry)] newest filename first, [error strings]). A fragment is
+    well-formed when it holds exactly one entry that starts with its header."""
+    good, errors = [], []
+    for path in sorted(glob.glob(os.path.join(frag_dir, "*.md")), reverse=True):
+        name = os.path.basename(path)
+        with open(path) as fh:
+            text = fh.read().strip()
+        n = len(HEADER_RE.findall(text))
+        if not HEADER_RE.match(text):
+            errors.append(f"{name}: does not start with '## [YYYY-MM-DD | desk | title]'")
+        elif n != 1:
+            errors.append(f"{name}: holds {n} entries; one per file")
+        elif not re.match(r"^## \[.*\]\s*$", text.split("\n", 1)[0]):
+            errors.append(f"{name}: header line is not closed with ']'")
+        else:
+            good.append((path, text))
+    return good, errors
 
-    with open(LOG) as fh:
+
+def rotate(wiki, dry_run=False):
+    log, archive_path = os.path.join(wiki, "log.md"), os.path.join(wiki, "log-archive.md")
+    frags, errors = read_fragments(os.path.join(wiki, "log.d"))
+    if errors:
+        sys.exit("wiki_log_rotate: malformed fragment(s), nothing changed:\n  " + "\n  ".join(errors))
+
+    with open(log) as fh:
         preamble, entries = split_log(fh.read())
-    with open(ARCHIVE) as fh:
+    with open(archive_path) as fh:
         archive = fh.read()
     archived = {header_of(e) for e in split_log(archive)[1]}
 
-    # Newest first; sorted() is stable, so same-day entries keep file order.
+    held = {header_of(e) for e in entries} | archived
+    stitched = []
+    for _, e in frags:
+        if header_of(e) not in held:
+            held.add(header_of(e))
+            stitched.append(e)
+    print(f"log.d: {len(frags)} fragment(s); stitching {len(stitched)}")
+    entries = stitched + entries
+
+    # Newest first; sorted() is stable, so same-day entries keep order.
     entries = sorted(entries, key=date_of, reverse=True)
     if len(entries) > ROTATE_ABOVE:
         keep, moved = entries[:KEEP], entries[KEEP:][::-1]  # moved: oldest first
@@ -78,25 +116,35 @@ def main():
     fresh = [e for e in moved if header_of(e) not in archived]
 
     total = len(archived) + len(fresh)
-    newest_archived = max([date_of(e) for e in split_log(archive)[1]] + [date_of(e) for e in fresh])
+    newest_archived = max([date_of(e) for e in split_log(archive)[1]] + [date_of(e) for e in fresh], default=None)
     m = DIGEST_RE.search(preamble)
     if m is None:
         sys.exit("wiki_log_rotate: log.md has no '## Digest (… → …, N archived entries)' line")
-    preamble = DIGEST_RE.sub(lambda g: f"{g[1]}{newest_archived}{g[3]}{total}{g[5]}", preamble, count=1)
+    if newest_archived is not None:
+        preamble = DIGEST_RE.sub(lambda g: f"{g[1]}{newest_archived}{g[3]}{total}{g[5]}", preamble, count=1)
 
     print(f"log.md: {len(entries)} entries; keeping {len(keep)}; "
           f"moving {len(moved)} ({len(moved) - len(fresh)} already archived); archive now {total}")
     for e in fresh:
         print(f"  -> {header_of(e)[:110]}")
-    if args.dry_run:
+    if dry_run:
         return
 
-    with open(LOG, "w") as fh:
+    with open(log, "w") as fh:
         fh.write(preamble + "\n" + "\n\n".join(keep) + "\n")
     if fresh:
-        with open(ARCHIVE, "w") as fh:
+        with open(archive_path, "w") as fh:
             fh.write(archive.rstrip() + "\n\n" + "\n\n".join(fresh) + "\n")
         print("Fold the moved entries into log.md's digest (one line per phase, links only).")
+    for path, _ in frags:
+        os.remove(path)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args()
+    rotate(WIKI, args.dry_run)
 
 
 if __name__ == "__main__":

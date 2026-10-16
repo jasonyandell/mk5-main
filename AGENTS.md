@@ -20,7 +20,7 @@ Several sessions (Claude desks, Codex worktrees) work this repo at once; the rul
   owner (worktree, or `--owner TAG`) holds at most 2 slots while another waits; a wall-clock
   run that needs a quiet machine says `--exclusive "why"` (#169).
 - **Merge your own work**: rebase on `origin/main`, `scripts/check` GREEN, fast-forward push,
-  never force. Add a line to `wiki/log.md`; that log and `git log` are how the others hear.
+  never force. Add your log entry as a new file in `wiki/log.d/`; never edit `wiki/log.md`. That log and `git log` are how the others hear.
 - **Coordinated changes get a heads-up first**: Silas core pins or the standard registry,
   `silas/src/physics.rs` and `frame.rs`, `scenario/`, `core/src/`, `CLAUDE.md`, `LICENSE`,
   `scripts/check`, `scripts/cpu-slot`, releases. Open a draft PR (or an issue) titled

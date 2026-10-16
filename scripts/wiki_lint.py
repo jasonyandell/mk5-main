@@ -32,6 +32,8 @@ Checks:
     LG02  a log entry appears twice across log.md and log-archive.md (ERROR)
     LG03  the digest's archived-entry count differs from log-archive.md (ERROR)
           — catches an archive truncated by a bad merge
+    LG04  a wiki/log.d/ fragment is not exactly one well-formed entry (ERROR);
+          pending fragments count as live entries for LG01-LG03
     SC01  sources/ file never linked from any page
 
 AGENTS.md is excluded (it contains placeholder links by design).
@@ -45,7 +47,7 @@ import os
 import re
 import sys
 
-from wiki_log_rotate import DIGEST_RE, ROTATE_ABOVE, header_of, split_log
+from wiki_log_rotate import DIGEST_RE, FRAGMENTS, ROTATE_ABOVE, header_of, read_fragments, split_log
 
 WIKI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "wiki")
 
@@ -75,7 +77,9 @@ def base(name):
 
 def load():
     pages = {}
-    for root, _, files in os.walk(WIKI):
+    for root, dirs, files in os.walk(WIKI):
+        if root == WIKI:
+            dirs[:] = [d for d in dirs if d != "log.d"]  # fragments: see LG04
         for f in files:
             if f.endswith(".md"):
                 rel = os.path.relpath(os.path.join(root, f), WIKI)
@@ -208,6 +212,10 @@ def main():
 
     # --- log: rotation due, duplicates, the digest's count ---
     _, live = split_log(pages.get("log.md", ""))
+    frags, frag_errors = read_fragments(FRAGMENTS)
+    for err in frag_errors:
+        add("LG04", "ERROR", err)
+    live = [e for _, e in frags] + live
     _, archived = split_log(pages.get("log-archive.md", ""))
     if len(live) > ROTATE_ABOVE:
         add("LG01", "WARN", f"log.md has {len(live)} entries; on main, run "

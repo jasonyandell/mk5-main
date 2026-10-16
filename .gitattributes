@@ -5,8 +5,9 @@
 # by a driver. Keep it out of diffs.
 .beads/issues.jsonl -diff
 
-# The wiki log: parallel branches each add an entry at the same spot. The
-# union driver keeps both sides instead of conflicting. Rotation runs only on
-# main (scripts/wiki_log_rotate.py); wiki_lint.py flags any duplicate entry.
+# The wiki log: new entries are separate files in wiki/log.d/ (no shared file to
+# collide on); scripts/wiki_log_rotate.py stitches them into log.md on main.
+# The union driver is a safety net for the old edit-the-top habit; wiki_lint.py
+# flags any duplicate entry.
 wiki/log.md merge=union
 wiki/log-archive.md merge=union

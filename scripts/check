@@ -154,8 +154,9 @@ SUITES = [
     Suite("cpu-slot", ("scripts/cpu-slot", "scripts/tests/"),
           [(".", [sys.executable, "-u", "-W", "ignore", "-m", "unittest", "scripts.tests.test_cpu_slot"])], (),
           lambda: which("git"), what="unittest scripts/tests: per-owner cap, exclusive, stale waiters (temporary slot dir)"),
-    Suite("wiki", ("wiki/", "scripts/wiki_"), [(".", [sys.executable, "-u", "scripts/wiki_lint.py", "--strict"])],
-          (), what="wiki_lint.py --strict"),
+    Suite("wiki", ("wiki/", "scripts/wiki_"), [(".", [sys.executable, "-u", "scripts/wiki_lint.py", "--strict"]),
+                       (".", [sys.executable, "-u", "-W", "ignore", "-m", "unittest", "scripts.tests.test_wiki_log_rotate"])],
+          (), what="wiki_lint.py --strict; unittest scripts/tests: log.d fragment stitcher"),
     # Every path triggers it: any new file needs its license (an SPDX header, or REUSE.toml).
     Suite("reuse", ("",), [(".", [str(VENV / "bin" / "reuse"), "lint"])], ("venv",),
           lambda: which("uv", "cargo"), what="reuse lint: every file has an SPDX license (LICENSE, REUSE.toml)"),
