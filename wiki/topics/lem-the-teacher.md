@@ -41,7 +41,7 @@ explicit (sampled worlds, exact beliefs, named concepts), so every feature found
 be checked against what the teacher computes: interpretability with an answer key. The living
 draft is [`lem/paper/README.md`](../../lem/paper/README.md) (CC0); its Gaps list is this desk's
 work order (G1 belief probes, registered at [[lem-belief-probe-2026-10-16]]; G2 checkpoints and widths, G3 causal tests, G4 the first field-v3
-net, G5 Lem's transformer, G6 table-type probes, G7 fidelity by concept region ([[lem-fidelity-by-concept-2026-10-16]]), G8 the book, G9
+net (registered at [[lem-field-v3-audit-2026-10-16]]), G5 Lem's transformer, G6 table-type probes, G7 fidelity by concept region ([[lem-fidelity-by-concept-2026-10-16]]), G8 the book, G9
 seeds).
 
 ## The two claims this program tests
