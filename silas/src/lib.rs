@@ -45,6 +45,7 @@ mod dynamics;
 mod eval;
 mod field;
 mod frame;
+mod ledger;
 mod lint;
 mod measure;
 mod nouns;
@@ -69,6 +70,7 @@ pub use dynamics::{
 pub use eval::{Answer, Answers, Budget, CompiledNumber, CompiledQuery, Witness};
 pub use field::{Deals, Field, Paired, Player, Seats, Settlement, Table, Trial, play_out};
 pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
+pub use ledger::{Arm, Ledger, LedgerRow};
 pub use lint::Warning;
 pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};

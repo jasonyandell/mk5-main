@@ -1321,6 +1321,47 @@ impl Trial { pub fn compare(&self, a: &Player, b: &Player, budget: &mut Budget) 
   utility's value. None is `exact`. A match-win value is one side's, so a
   chair on the other side is refused.
 
+## The arena ledger
+
+A field with a seat only the arena can play (Zeb, a net, an overbidding
+heuristic) is compared by the arena and imported as data
+(`docs/cross-game.md` § 2.5, slice 4; `tests/ledger.rs`).
+
+```rust
+pub struct Ledger { field: String, players: [String; 3], sample: Sample, seats: Seats, table: Table, rows: Vec<LedgerRow> }
+pub struct LedgerRow { deal: usize, world: World, shaker: Seat, chair: Seat, arm: Arm, settlement: Settlement }
+pub enum Arm { A, B, Chance }
+impl Ledger { pub fn from_json(source: &str) -> Result<Ledger>; }   // the `ledger` feature (on with `cli`)
+impl Paired { pub fn from_ledger(ledger: &Ledger, utility: &Utility, confidence: &BigRational) -> Result<Paired>; }
+```
+
+- **The format** (`silas-ledger-1`, written by `arena/ledger.py`) is one JSON
+  object: the field's identity, the three players' names, the sample (`n`,
+  `seed`), the seatings (`"rotate"` or a chair), the auction (`max_marks`,
+  `forced`), the declarations offered (`P6` ... `P0`, `DT`, `NT`), the scoring
+  (`kind`, `target`), the score, and one row per deal, seating and arm: the
+  hands as dealt (tiles `h-l`), the shaker, the chair, the arm (`a`, `b`,
+  `chance`), the calls, the contract (declarer, bid, declaration) and the
+  outcome (each side's points), or neither for a hand passed out, and the 28
+  plays as `[seat, tile]`. Every key is required and no other is read: a
+  ledger that carries a utility (marks won, a transfer, a value) is refused.
+- **Reading it.** `from_ledger` replays every row under Silas's rules: the
+  auction must be the table's, the contract its auction's, the declaration
+  offered, each play by the seat to play, a tile it holds and may play, and
+  the ledger's outcome the replay's; each deal must hold every seating of
+  every arm once, on one deal. It settles every hand by `Contract::settle`
+  and values it by its own `Utility`, so the units are Silas's: the utility's
+  unit must be the ledger's scoring (a marks ledger read as points is
+  refused), since the players bid for that game. The answer is a `Paired`, as
+  `Trial::compare`'s, with the chance arm from the ledger's own chance rows,
+  and the authority `exact_given(field)` met with `sampled(n, seed)`.
+- **The differential check.** For a field of Silas policies the arena's
+  ledger and Silas's `play_out` agree hand for hand, call for call and tile
+  for tile (`data/ledger-*.json`, written by `arena/test_ledger.py`); each
+  reads to the arena's own paired mean to the rational, and its flips. That
+  is how a ledger from a field Silas cannot play earns trust in its plumbing.
+  `silas compare --ledger FILE` prints the comparison.
+
 ## Numbers
 
 Weights are exact rationals (`Weight`, a nonnegative `BigRational`). Silas
@@ -1357,6 +1398,7 @@ silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
                [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 silas query    DOMINANCE
+silas compare  --ledger FILE [--utility marks|points] [--confidence P/Q]
 silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
                [--play POLICY]] [--book FILE]
 silas expand   FILE ...

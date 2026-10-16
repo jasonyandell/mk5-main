@@ -1,0 +1,6 @@
+# The arena's paired mean of each ledger beside this file, in its own unit,
+# settled by the arena's scoring (arena.ledger.paired_mean), exactly; then
+# the flips: deals a did better, b did, tied. Written and checked by
+# arena/test_ledger.py; read by silas/tests/ledger.rs.
+ledger-marks.json marks 1/8 2 1 1
+ledger-points.json points -133/16 0 2 6

@@ -10,6 +10,7 @@
 //!                [--read ROLE=POLICY,... [--likelihood consistent|uniform]
 //!                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 //! silas query    DOMINANCE
+//! silas compare  --ledger FILE [--utility marks|points] [--confidence P/Q]
 //! silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
 //!                [--play POLICY]] [--book FILE]
 //! silas expand   FILE ...
@@ -44,7 +45,11 @@
 //! `--scoring` the match (at 0-0). Each is exact given those policies. On a
 //! `(dominates ...)` file it needs no hand: it decides the form
 //! by enumerating the hand's outcomes, exactly, and prints the first
-//! counterexample when there is one. `coverage` reads a policy (or a query of
+//! counterexample when there is one. `compare` reads an arena ledger (the
+//! hands of a paired comparison, outcomes only), replays and settles every
+//! row under Silas's rules, and prints the mean paired difference in the
+//! ledger's unit (or `--utility`), its interval at `--confidence` (19/20 by
+//! default), the flips, the verdict and the chance arm. `coverage` reads a policy (or a query of
 //! the viewer's frame) at every point of the book's narrated lines, and of
 //! `--random` seeded deals, and counts how often each rule answered, allowed a
 //! legal tile and decided, and how often each step of each pattern held: a
@@ -80,6 +85,7 @@ usage:
                  [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                   [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
   silas query    DOMINANCE
+  silas compare  --ledger FILE [--utility marks|points] [--confidence P/Q]
   silas coverage POLICY-OR-QUERY [--hand ID] [--random N [--bidders POLICY [--offered D,...] [--scoring S]]
                  [--play POLICY]] [--book FILE]
   silas expand   FILE ...
@@ -97,6 +103,7 @@ fn main() -> ExitCode {
         Some("eval") => eval(rest),
         Some("bid") => bid(rest),
         Some("query") => query(rest),
+        Some("compare") => compare(rest),
         Some("coverage") => coverage(rest),
         Some("expand") => expand(rest),
         Some("fmt") => fmt(rest),
@@ -161,6 +168,62 @@ impl Options {
     fn number(&self, name: &str, default: usize) -> Result<usize> {
         self.get(name).map_or(Ok(default), |v| v.parse().map_err(|_| fail(format!("--{name} takes a number"))))
     }
+}
+
+/// `x` to four decimal places, rounded half away from zero; no float.
+fn decimal(x: &num_rational::BigRational) -> String {
+    let scaled = (x * num_rational::BigRational::from_integer(10_000.into())).round().to_integer();
+    let sign = if scaled < 0.into() { "-" } else { "" };
+    let digits = format!("{:05}", scaled.magnitude());
+    let (whole, frac) = digits.split_at(digits.len() - 4);
+    format!("{sign}{whole}.{frac}")
+}
+
+/// An arena ledger's paired comparison, replayed and settled by Silas.
+fn compare(args: &[String]) -> Result<bool> {
+    let options = Options::parse(args, &[], &["ledger", "utility", "confidence"])?;
+    if !options.words.is_empty() {
+        return Err(fail("silas compare --ledger FILE [--utility marks|points] [--confidence P/Q]"));
+    }
+    let path = options.need("ledger")?;
+    let ledger = Ledger::from_json(&read(path)?).map_err(|e| fail(format!("{path}: {e}")))?;
+    let unit = match ledger.table.state.scoring() {
+        Scoring::Marks { .. } => "marks",
+        Scoring::Points { .. } => "points",
+    };
+    let (unit, utility) = match options.get("utility").unwrap_or(unit) {
+        "marks" => ("marks", Utility::Marks),
+        "points" => ("points", Utility::Points),
+        other => return Err(fail(format!("--utility is marks or points, not {other}"))),
+    };
+    let confidence: num_rational::BigRational = options
+        .get("confidence")
+        .unwrap_or("19/20")
+        .parse()
+        .map_err(|_| fail("--confidence is a fraction, such as 19/20"))?;
+    let paired = Paired::from_ledger(&ledger, &utility, &confidence)?;
+    let seats = match ledger.seats {
+        Seats::Rotate => "every chair".to_owned(),
+        Seats::Fixed(chair) => format!("the chair {chair}"),
+    };
+    let [a, b, chance] = &ledger.players;
+    println!("compare {path}: {a} against {b}, in {seats} at every shaker, from {}", ledger.table.state);
+    println!("  field: {}", ledger.field);
+    let show = |name: &str, p: &Paired| {
+        let (lo, hi) = p.interval();
+        let (wins, losses, ties) = p.flips();
+        println!(
+            "  {name}: {} {unit} a deal [{}, {}] at {confidence}; flips {wins} for, {losses} against, {ties} tied; {:?}",
+            decimal(p.delta().value()),
+            decimal(lo),
+            decimal(hi),
+            p.verdict()
+        );
+    };
+    show(&format!("{a} - {b}"), &paired);
+    show(&format!("{a} - {chance}"), paired.chance().expect("the chance arm"));
+    println!("  {} deals; {}", paired.n(), paired.delta().authority());
+    Ok(true)
 }
 
 fn read(path: &str) -> Result<String> {

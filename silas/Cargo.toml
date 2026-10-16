@@ -12,7 +12,9 @@ publish = false
 [features]
 default = ["cli"]
 # The `silas` command (src/bin/silas.rs), which reads the book's hands.
-cli = ["dep:serde_json"]
+cli = ["ledger"]
+# `Ledger::from_json`: the arena's ledger (docs/cross-game.md, slice 4).
+ledger = ["dep:serde_json"]
 # STRATEGY-FUSION FENCE: the clairvoyant (double-dummy, perfect-information)
 # reference: `ClairvoyantSolver`, `clairvoyant_grade_line` and the World atom
 # `(clairvoyant-dd-make)`. Each sees all four hands, so its value used as a

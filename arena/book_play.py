@@ -76,7 +76,9 @@ reads them) at every decision of its seats, so that the log holds Zeb's tile
 and q beside the book's wherever a rule fired.
 
 `SilasBidder` is a bidding policy of `silas/examples/book/bidding/`
-(`risk-budget`, `bid-only-enough`, ...) as an arena `BidPolicy`.
+(`risk-budget`, `bid-only-enough`, ...) as an arena `BidPolicy`; `SilasSeat`
+is one Silas policy as a whole seat, bidding, declaring and playing (the
+least tile it allows), as Silas's own `Player::Policy` sits.
 """
 from __future__ import annotations
 
@@ -354,7 +356,8 @@ class SilasBidder:
         from scenario_core import SilasPolicy
         self.name = name
         path = BOOK.parent / f"{name}.silas" if "/" in name else BOOK / "bidding" / f"{name}.silas"
-        self.policy = SilasPolicy(path.read_text(), 6)
+        self.text = path.read_text()
+        self.policy = SilasPolicy(self.text, 6)
 
     def bid(self, ctx: BidContext, rng: random.Random) -> int:
         order = bidding_order(ctx.dealer)
@@ -373,3 +376,38 @@ class SilasBidder:
     def __repr__(self) -> str:
         return f"SilasBidder({self.name})"
 
+
+class SilasSeat(SilasBidder):
+    """One Silas policy as a whole seat: it bids and declares as
+    `SilasBidder`, and plays as an arena `PlayPolicy` the least tile it
+    allows at its frame (`SilasPolicy.choose`), its fallback the lowest legal
+    tile. `name` is a policy of the book's bidding, or a path under
+    `silas/examples/` (`book/pounce`). The play frame's auction is the
+    shortest one the bidder wins with the bid (`SilasFrame`), so a play rule
+    that reads another seat's call would see that convention, not the table."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._by_decl: dict[int, object] = {}
+
+    def choose(
+        self,
+        states: Sequence[ZebGameState],
+        bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
+    ) -> list[int]:
+        from scenario_core import SilasPolicy
+        slots = []
+        for state, bid in zip(states, bid_values):
+            policy = self._by_decl.get(state.decl_id)
+            if policy is None:
+                policy = self._by_decl[state.decl_id] = SilasPolicy(self.text, state.decl_id)
+            sit = situation_from_state(state, int(bid))
+            own = mask_of(t for t in state.hands[sit.viewer] if t not in state.played)
+            tile = policy.choose(frame(sit, own), budget=BUDGET)
+            slots.append(list(state.hands[sit.viewer]).index(tile))
+        return slots
+
+    def __repr__(self) -> str:
+        return f"SilasSeat({self.name})"

@@ -849,6 +849,65 @@ hypothesis measured (`OvercallMonotone` and the raise histogram: 9); cluster E's
 ten fixed-field rows against the named deviant field. About 98 rows receive a
 measured verdict; none is `exact`.
 
+#### Slice 4 as built (2026-10-15)
+
+Built: the ledger (`Ledger`, `LedgerRow`, `Arm`, `Ledger::from_json` under a
+`ledger` feature, `Paired::from_ledger`, `src/ledger.rs`) and `silas compare
+--ledger FILE`; on the arena's side the fixed-state runner and ledger writer
+(`arena/ledger.py`), `SilasSeat` (one Silas policy as a whole seat,
+`arena/book_play.py`), `LowestPlay` (`arena/play.py`), the chance arm and
+`overbidding_field(k)`. README § The arena ledger; `tests/ledger.rs`,
+`arena/test_ledger.py`. Where this spec was silent, the choice made:
+
+1. **Outcomes, checked.** A row carries the hands as dealt, the calls, the
+   contract, the outcome and the plays; Silas replays every row (the auction
+   under the table's rules, the contract from the auction, each play's turn,
+   holding and legality, the tricks) and refuses a row whose outcome is not
+   its plays'. The arena's word is checked, never taken.
+2. **No other key.** Every key is required and no other allowed, so a
+   utility in a ledger is refused by name, not ignored.
+3. **The unit is the ledger's scoring.** A marks utility reads only a marks
+   ledger, points only points, a match-win value only its own scoring: the
+   players bid for one game, and reading their hands as another's measures
+   players who were not playing it. `Trial::compare` does not yet check its
+   table's scoring against its utility.
+4. **The chance arm is in the ledger**, as rows of arm `chance` (the arena's
+   `RandomBidder` and lowest-legal play), and is required: `Paired.chance` is
+   never absent. Silas cannot replay it (the arena's random draws are not
+   Silas's chance player's), so it is read, not replayed.
+5. **Fixed-state runner.** Every hand from the ledger's score; a hand passed
+   out (no forced bid) is a row with no contract, as `Settlement::PassedOut`.
+   The deals are `random.Random(seed)` shuffles (the arena's stream, not
+   Silas's), and `sampled(n, seed)` names that stream. Each seating's
+   auction draws from a generator keyed on (seed, deal, chair, shaker), the
+   same for every arm. Play runs in lockstep, one batched call per play
+   policy a tick, so a GPU player amortizes.
+6. **The field's identity** is the arena's seat specs, seat by seat. For a
+   `Named` field it should carry the net's content hash, eps and seed; the
+   runner writes whatever spec string the seat was built from.
+7. **`SilasSeat`'s play frame** is `SilasFrame`'s, whose auction is the
+   shortest one the bidder wins with the bid (Zeb's record carries the
+   contract, not the auction). A play rule that reads another seat's call
+   would see that convention in the arena and the table's auction in Silas;
+   no policy in the round trip has one. Its declaration reads the same
+   convention (`SilasBidder.declare`), which agrees with the table for every
+   rule that reads only the declarer's own call; and the arena forces a
+   shaker's pass to 30, where Silas asks the policy with the pass illegal.
+   Neither showed a difference on the fixtures (the points ledger is forced).
+8. **No `(compare ...)` text form**: the command reads the ledger, and the
+   utility (the ledger's unit by default) and the confidence (19/20) are its
+   options.
+
+**The differential check found no disagreement.** Two ledgers of a field of
+five Silas policies (`bid-only-enough`, `pounce`, `risk-budget`,
+`protect-the-count`; `risk-budget` against `never-32-or-33` in the chair),
+in marks from 0-0 with every chair rotated and the straight auction (hands
+passed out), and in points from 200-180 at one chair with the forced
+shaker: every a and b row (192 hands, 4 of them passed out) is Silas's own `play_out`, call for
+call and tile for tile, under Zeb's engine and rules on one side and
+`Straight42` on the other, and each ledger reads to the arena's paired mean
+exactly (+1/8 marks a deal; −133/16 points a deal) with the arena's flips.
+
 ### Slice 5: mixed policies and a response map (high; out of scope until 4 lands)
 
 `(mix (q σ₁) (1 − q σ₂))` as a `FinPMF` over policies; `Field::respond(σ)` by the

@@ -367,29 +367,14 @@ impl Trial {
     /// a sample of fewer than two (the interval needs two), for a match-win
     /// value of the other side than a chair's, and for any refused play-out.
     pub fn compare(&self, a: &Player, b: &Player, budget: &mut Budget) -> Result<Paired> {
-        if self.confidence <= BigRational::zero() || self.confidence >= BigRational::one() {
-            return Err(error(format!("a confidence lies strictly between 0 and 1, not {}", self.confidence)));
-        }
         let worlds = self.deals.worlds();
         let sampled = match &self.deals {
             Deals::Listed(_) if worlds.is_empty() => return Err(error("a comparison needs a deal")),
-            Deals::Uniform(sample) if sample.n < 2 => {
-                return Err(error("a sampled comparison needs two deals for its interval"));
-            }
-            Deals::Listed(_) => None,
             Deals::Uniform(sample) => Some(*sample),
+            Deals::Listed(_) => None,
         };
         let seatings = self.seats.seatings();
-        if let Utility::MatchWin(value) = &self.utility
-            && let Some((chair, _)) = seatings.iter().find(|(chair, _)| chair.team() != value.team())
-        {
-            return Err(error(format!(
-                "the match-win value is {}'s, but the chair {chair} is on {}: seat the player under test on {}",
-                value.team(),
-                chair.team(),
-                value.team()
-            )));
-        }
+        check(&self.utility, &self.confidence, sampled, &seatings)?;
         let chance = Player::CHANCE;
         let differences = on_every_core(&worlds, budget, |world, budget| {
             let mut ab = BigRational::zero();
@@ -416,68 +401,101 @@ impl Trial {
             authority = authority.meet(&Authority::sampled(sample.n, sample.seed));
         }
         let (ab, ac): (Vec<_>, Vec<_>) = differences.into_iter().unzip();
-        let chance = self.summarize(ac, sampled.is_some(), authority.clone(), None);
-        Ok(self.summarize(ab, sampled.is_some(), authority, Some(Box::new(chance))))
+        let range = range(&self.table, &self.utility);
+        let chance = summarize(ac, sampled.is_some(), &range, &self.confidence, authority.clone(), None);
+        Ok(summarize(ab, sampled.is_some(), &range, &self.confidence, authority, Some(Box::new(chance))))
     }
+}
 
-    /// The width of the range a per-deal difference lies in. A hand's marks
-    /// or points to a side lie within plus or minus the most it can be worth
-    /// (in marks, the most four calls can reach under the cap; in points, a
-    /// set marks bid at that most, its value and the setters' points: 42 a
-    /// mark and 42), so a difference within plus or minus twice that; a
-    /// match-win value lies in [0, 1], a difference in [-1, 1].
-    fn range(&self) -> BigRational {
-        let marks = self.table.config.max_marks().min(5);
-        let total = self.table.offered.first().map_or(42, Physics::total_points);
-        let width = match self.utility {
-            Utility::Marks => 4 * marks,
-            Utility::Points => 4 * total * (marks + 1),
-            Utility::MatchWin(_) => 2,
-        };
-        BigRational::from_integer(BigInt::from(width))
+/// Refused for a confidence outside (0, 1), for a sample of fewer than two
+/// deals (the interval needs two), and for a match-win value of the other
+/// side than a chair's.
+pub(crate) fn check(
+    utility: &Utility,
+    confidence: &BigRational,
+    sampled: Option<Sample>,
+    seatings: &[(Seat, Seat)],
+) -> Result<()> {
+    if *confidence <= BigRational::zero() || *confidence >= BigRational::one() {
+        return Err(error(format!("a confidence lies strictly between 0 and 1, not {confidence}")));
     }
+    if sampled.is_some_and(|sample| sample.n < 2) {
+        return Err(error("a sampled comparison needs two deals for its interval"));
+    }
+    if let Utility::MatchWin(value) = utility
+        && let Some((chair, _)) = seatings.iter().find(|(chair, _)| chair.team() != value.team())
+    {
+        return Err(error(format!(
+            "the match-win value is {}'s, but the chair {chair} is on {}: seat the player under test on {}",
+            value.team(),
+            chair.team(),
+            value.team()
+        )));
+    }
+    Ok(())
+}
 
-    fn summarize(
-        &self,
-        per_deal: Vec<BigRational>,
-        sampled: bool,
-        authority: Authority,
-        chance: Option<Box<Paired>>,
-    ) -> Paired {
-        let n = BigRational::from_integer(BigInt::from(per_deal.len()));
-        let mean: BigRational = per_deal.iter().sum::<BigRational>() / &n;
-        let flips = per_deal.iter().fold((0, 0, 0), |(a, b, t), d| {
-            if d.is_positive() {
-                (a + 1, b, t)
-            } else if d.is_negative() {
-                (a, b + 1, t)
-            } else {
-                (a, b, t + 1)
-            }
-        });
-        let half = if sampled {
-            let one = BigRational::one();
-            let variance: BigRational =
-                per_deal.iter().map(|d| (d - &mean) * (d - &mean)).sum::<BigRational>() / (&n - &one);
-            // Each side at half the miss: ln(2 / (miss / 2)).
-            let log = ln_upper(&(BigRational::from_integer(BigInt::from(4)) / (one - &self.confidence)));
-            let two = BigRational::from_integer(BigInt::from(2));
-            let seven_thirds = BigRational::new(BigInt::from(7), BigInt::from(3));
-            sqrt_upper(&(two * variance * &log / &n)) + seven_thirds * self.range() * log / (&n - BigRational::one())
+/// The width of the range a per-deal difference lies in. A hand's marks or
+/// points to a side lie within plus or minus the most it can be worth (in
+/// marks, the most four calls can reach under the cap; in points, a set marks
+/// bid at that most, its value and the setters' points: 42 a mark and 42), so
+/// a difference within plus or minus twice that; a match-win value lies in
+/// [0, 1], a difference in [-1, 1].
+pub(crate) fn range(table: &Table, utility: &Utility) -> BigRational {
+    let marks = table.config.max_marks().min(5);
+    let total = table.offered.first().map_or(42, Physics::total_points);
+    let width = match utility {
+        Utility::Marks => 4 * marks,
+        Utility::Points => 4 * total * (marks + 1),
+        Utility::MatchWin(_) => 2,
+    };
+    BigRational::from_integer(BigInt::from(width))
+}
+
+/// The answer from each deal's difference: the mean, the flips, and the
+/// interval (the mean itself unless `sampled`; else the empirical Bernstein
+/// bound at `confidence` for differences of width `range`).
+pub(crate) fn summarize(
+    per_deal: Vec<BigRational>,
+    sampled: bool,
+    range: &BigRational,
+    confidence: &BigRational,
+    authority: Authority,
+    chance: Option<Box<Paired>>,
+) -> Paired {
+    let n = BigRational::from_integer(BigInt::from(per_deal.len()));
+    let mean: BigRational = per_deal.iter().sum::<BigRational>() / &n;
+    let flips = per_deal.iter().fold((0, 0, 0), |(a, b, t), d| {
+        if d.is_positive() {
+            (a + 1, b, t)
+        } else if d.is_negative() {
+            (a, b + 1, t)
         } else {
-            BigRational::zero()
-        };
-        let half = round_up(&half, 1_000_000);
-        let interval = (&mean - &half, &mean + &half);
-        let verdict = if interval.0.is_positive() {
-            Verdict::Better
-        } else if interval.1.is_negative() {
-            Verdict::Worse
-        } else {
-            Verdict::Indistinguishable
-        };
-        Paired { delta: Estimate::new(mean, authority), per_deal, flips, interval, verdict, chance }
-    }
+            (a, b, t + 1)
+        }
+    });
+    let half = if sampled {
+        let one = BigRational::one();
+        let variance: BigRational =
+            per_deal.iter().map(|d| (d - &mean) * (d - &mean)).sum::<BigRational>() / (&n - &one);
+        // Each side at half the miss: ln(2 / (miss / 2)).
+        let log = ln_upper(&(BigRational::from_integer(BigInt::from(4)) / (&one - confidence)));
+        let two = BigRational::from_integer(BigInt::from(2));
+        let seven_thirds = BigRational::new(BigInt::from(7), BigInt::from(3));
+        sqrt_upper(&(two * variance * &log / &n)) + seven_thirds * range * log / (&n - one)
+    } else {
+        BigRational::zero()
+    };
+    let half = round_up(&half, 1_000_000);
+    let interval = (&mean - &half, &mean + &half);
+    let verdict = if interval.0.is_positive() {
+        Verdict::Better
+    } else if interval.1.is_negative() {
+        Verdict::Worse
+    } else {
+        Verdict::Indistinguishable
+    };
+    Paired { delta: Estimate::new(mean, authority), per_deal, flips, interval, verdict, chance }
 }
 
 /// `f` on each world, on every core, in order. Each core draws on an equal

@@ -54,6 +54,22 @@ shipped bidders declare pip trumps only and never bid past 42. Special
 contracts (nello, sevens, plunge) and model-backed bidding are Champion
 rungs #21–#22.
 
+## The ledger for Silas
+
+`arena/ledger.py` is the fixed-state runner: one hand per deal, seating and
+arm from a given score (never a game to the target), every seat its own
+player, the player under test replacing the field's in its chair, and the
+chance arm (the random bidder, lowest legal play) alongside. It writes the
+ledger Silas reads (`silas compare --ledger FILE`; `silas/README.md`, The
+arena ledger): outcomes, never utilities. `SilasSeat` (`book_play.py`) is one
+Silas policy as a whole seat; `overbidding_field(k)` is the named deviant
+field, `HeuristicBidder(caution=-k)` at every seat.
+
+```bash
+python -u -m arena.ledger --a silas:risk-budget --b heuristic+lowest \
+    --field overbid:5 --n 200 --seed 1 --out ledger.json
+```
+
 ## Decision measurement
 
 `--emit-decisions <path.jsonl.gz>` writes a post-match canonical decision stream

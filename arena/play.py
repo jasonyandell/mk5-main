@@ -52,3 +52,24 @@ class RandomPlay:
 
     def __repr__(self) -> str:
         return "RandomPlay()"
+
+
+class LowestPlay:
+    """The lowest legal tile by id (Silas's order: `h-l` is h(h+1)/2 + l):
+    the chance arm's play, and a Silas policy's fallback."""
+
+    def choose(
+        self,
+        states: Sequence[ZebGameState],
+        bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
+    ) -> list[int]:
+        return [min(legal_actions(s), key=lambda slot, s=s: s.hands[_mover(s)][slot]) for s in states]
+
+    def __repr__(self) -> str:
+        return "LowestPlay()"
+
+
+def _mover(state: ZebGameState) -> int:
+    return (state.trick_leader + len(state.current_trick)) % 4
