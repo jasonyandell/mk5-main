@@ -191,7 +191,7 @@ The causal mask keeps time honest: the prediction at a play sees only what had h
 The viewer's own hand is the only private information, and no world ever enters (the fence,
 below).
 
-### Output: a splat table at every decision of the viewer
+### Output (the value head): a splat table at every decision of the viewer
 
 At each token where the viewer is to play, the model outputs a **28 × 43 table**: for each
 tile, a distribution over the 43 final bidder-point totals (0..42), masked to the legal
@@ -230,6 +230,58 @@ answer, where Walt has already averaged them over the seat's cell. The first nan
 project's history was trained on oracle move frequencies, blind to the transcript, and was
 killed within about 36 hours ([[strategy-fusion]], "The first fix"). This design differs on
 both counts.
+
+## Two heads: the map and the navigator (Jason, 2026-10-16)
+
+Jason: "policy head. I think history goes to the policy head. and we aren't dodging
+history." And: "Zeb is merely superhuman at memory. it has no strategy there's nothing to
+exploit. it's a map, basically. damn fine map don't get me wrong but it isn't a navigator."
+
+The model has one trunk over the seat's history and two heads:
+
+- **The value head is the map.** It predicts Walt's splat table, as above. Walt's splat is
+  a map: perfect memory of what has fallen, every consistent world counted, one plan per
+  cell. In the 250k pour it reads the record only through the projection (see the data
+  section), so this head has no use for history beyond what the physics needs.
+- **The policy head is where history goes.** At **every** play token, for any seat, it
+  predicts that play from what the viewer knew just before it. This is next-token
+  prediction, the objective a GPT is built on. For the viewer's own plays it is the
+  viewer's policy. For the other seats it is a model of another mind read from its
+  history: what partner is doing, what the bidder is planning, what a seat's earlier plays
+  say about its hand and its intent. That needs order, style and plans across tricks:
+  navigation, not mapping.
+
+**What this changes in H1.** The two heads give a dissociation that can be pre-registered.
+Value-head features should be invariant to play orders that preserve the projection.
+Policy-head features should not be, wherever the players the head imitates read order.
+One trunk, two predictions, both with an exact answer key.
+
+**A navigator needs navigators to learn from.** A policy head trained on the pour learns to
+predict Walt and the field net, which are maps; it can only learn map-following there. The
+pour is the pretraining corpus, not the destination. The navigator corpus is people:
+
+- **Plunge already records every human hand.** The D1 table `hands`
+  (`plunge/migrations/0006_hands.sql`) keeps every hand a human played, solo or at the
+  family table, including the takeback branches. `payload` holds the engine replay of every
+  bid, call and play; `hand_players` names the human seats; the exact Walt build at the
+  table is recorded (`plunge/src/history/legacy.ts:20-46`). Humans against Walt, with full
+  history.
+- **Takebacks are a separate signal.** A takeback branch is a human changing a decision
+  after seeing what followed. It should be filtered from imitation data, and is worth
+  studying on its own.
+- **It is family data.** It is not "generated data" under the Hugging Face rule
+  ([[publish-data-to-huggingface]]). Nothing from it is published, or leaves Jason's
+  hands, without the consent of the people at the table. Only aggregates go into the wiki.
+
+**History queries live in history space.** Jason, 2026-10-16: [[silas]] cannot quickly
+express "how many hands made their bid missing the 5-5", because a world has no history. A
+Silas world is a hidden deal at one frame. That question ranges over *completed histories*,
+and is a query over a corpus of hands: SQL over Plunge's `hands` (the deal, the bidder, the
+result), or over the pour's `deals`. The label pass this study needs evaluates Silas's
+viewer predicates at every frame of every history. That pass writes exactly the
+history-indexed table that makes such questions joins: "made their bid" ∧ "the bidder's
+dealt hand lacks the 5-5", or "partner held the 5-5 and showed it at trick 2". The policy
+head is a probability model over that same space of histories.
 
 ## The data, and what it really contains
 
@@ -275,7 +327,11 @@ number, nulls reported in full, "a tie is not agreement" ([[book-authority]]). S
 deal. Arms: the trained model, the same network at random initialization, shuffled labels,
 a linear probe on the input, and the raw-identity arm.
 
-- **H1, sufficiency.** The teacher reads the record only through the projection (above). If
+- **H1, sufficiency, and its dissociation.** The value head's teacher reads the record only
+  through the projection (above); the policy head's targets are plays by players who may
+  read order. Prediction: value-head features are invariant to projection-preserving play
+  orders, and policy-head features are not wherever the imitated players read order. For
+  the value head: if
   training finds what the teacher reads, the final layers should be **invariant to play
   orders that preserve the projection**: pairs of records with equal (played set, open
   trick, voids, leader, banked) but different order should sit closer than matched random
@@ -336,11 +392,15 @@ bindings (`scenario/core/src/python_silas.rs`; the 18 book rules over the whole 
    count tiles captured; score bins from texas-42 `walt/math/anytime_proof_state_score_v0.1.md`
    [exploratory]). The 256-way output makes count capture visible at the head: more labels
    for the neuron map, at six times the output size.
-3. **Belief neurons need a teacher that reads plays.** In this pour the teacher's belief is
+3. **A map teacher that reads plays.** In this pour the teacher's belief is
    the uniform fiber, so the network has no reason to read order or style. A later pour
    with the posterior draw (#111) or Zeb's play reading ([[reads-plays-2026-10-13]]) gives
-   the network a teacher whose belief depends on order, and H1 then predicts the *opposite*
-   invariance result. Running both is the cleanest experiment on the list.
+   the value head a teacher whose belief depends on order, and H1 then predicts the
+   *opposite* invariance result for that head.
+4. **The navigator corpus.** How many human hands Plunge holds, whether the family consents
+   to their use for training, and whether a policy head may be trained on them at all. If
+   yes: pretrain on the pour, fine-tune the policy head on human hands, keep the data
+   private, and publish only aggregates and, with consent, the trained net.
 
 ## Where it lives
 
@@ -351,7 +411,7 @@ it cites goes to Hugging Face, CC0, before the page that cites it is committed
 
 ## Next
 
-- Jason decides the three questions above.
+- Jason decides the four questions above.
 - Build (#175): the reader over the pour (extending `field_train.dataset` with a
   `[N, 28, 43]` target), the tokenizer, the causal model, the Silas label pass, the
   pre-registration commit, then training with checkpoints and the probe suite.
