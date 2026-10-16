@@ -52,7 +52,8 @@ The optional bounded forecast preserves declaration choices while pruning
 losing searches; exact support predicates further reduce bidding work. The
 preemptive jump bidder does not earn promotion. An early-opening bidder is
 cheaper but does not establish a win. Its optional early point bid now allows
-30–40; the next test targets Zeb's willingness to overcall 40. The study
+30–40. The sixth fixed sweep selects early 40, which targets pinned Zeb's
+willingness to overcall; an independent confirmation is frozen. The study
 records the rules and evidence. No
 new participant has been promoted.
 

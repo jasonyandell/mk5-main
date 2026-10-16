@@ -421,6 +421,68 @@ the more direct auction hypothesis is tested.
 [Source overlay, replay plan, raw replies and reports](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/eb3a4d2dcaa6ff396ddae1fe62e66e712a6637a5/demon/2026-10-16-ascent/margin-band-prototype)
 are public and freshly verified.
 
+## Fixed development, round 6
+
+The new public adapter source is `a561552d9007283f51e67fba8d85d4ed528589c1`.
+Its three native source trees exactly equal `db239f39`; the verified native
+binary and pinned Zeb package bytes are reused. The fixed sweep is
+**nine arms × 32 fresh duplicate pairs / 576 games**, seed `0xD4550000`:
+
+- the round-5 selected reference, 800 play worlds, reader weight 4, early
+  bid 30, late-opening/opponent cutoffs 0.875/0.875;
+- matched 100-world, reader-weight-1, margin-on arms opening 30, 35, 38,
+  39 or 40 early, with late-opening/opponent cutoffs 0.875/1;
+- three additional early-40 arms: opponent cutoff 0.875, 400 play worlds,
+  or 400 play worlds without margin ties.
+
+Every arm uses 64 bidding worlds and exact best/support bounds. The existing
+CPU-qualified selection rule applies after every arm finishes. This tests
+an opponent-specific auction hypothesis; no independent confirmation has
+started.
+
+Six smoke games (64 hands) and two repeat games pass the full audit.
+An initial audit edit accidentally changed its ordinary minimum-raise check
+as well as the intended early-opening check. The failed audits and six
+original games are preserved. Only that audit was corrected and refrozen;
+all six rerun games reproduce exactly, and early-40 repeats both seatings.
+No policy or fixed arm was changed after smoke outcomes.
+
+The [public protocol and preflight](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/53dfaec8b0ee2939c3d4437f7c9fd06e071336c7/demon/2026-10-16-ascent/development-6-protocol)
+were frozen and freshly verified before development. Plan SHA-256:
+`d59e62250062c3be3b1e4c2033732cffded7f22876473eee8daea8ad67cd3f2e`.
+The freeze was [recorded on issue 184](https://github.com/jasonyandell/mk5-main/issues/184#issuecomment-6212790712)
+before the first development game.
+
+## Round 6 result
+
+All 288 pairs / 576 games and 5,720 hands finish without game failures.
+Every trace, declaration, support certificate, score, source and cost audit
+passes. All arms qualify on CPU. The fixed selection chooses
+`bait40over875`: early bid 40, 100 play worlds, 64 bid worlds, late-opening
+and opponent cutoffs 0.875, exact margin ties and uniform play worlds.
+
+| Arm | Wins | Win rate, paired 95% CI | Total seat CPU ratio, paired 95% CI |
+|---|---:|---:|---:|
+| reference | 29/64 | 45.31% [34.38, 57.81] | 0.733 [0.689, 0.776] |
+| lowcontrol | 28/64 | 43.75% [31.25, 56.25] | 0.101 [0.095, 0.106] |
+| bait35 | 52/64 | 81.25% [70.31, 90.62] | 0.108 [0.101, 0.115] |
+| bait38 | 55/64 | 85.94% [78.12, 93.75] | 0.115 [0.109, 0.123] |
+| bait39 | 54/64 | 84.38% [76.56, 92.19] | 0.116 [0.109, 0.122] |
+| bait40 | 58/64 | 90.62% [82.81, 96.88] | 0.122 [0.115, 0.130] |
+| bait40over875 | 59/64 | 92.19% [85.94, 98.44] | 0.139 [0.131, 0.148] |
+| bait40play400 | 57/64 | 89.06% [81.25, 95.31] | 0.414 [0.385, 0.446] |
+| bait40notb400 | 57/64 | 89.06% [81.25, 95.31] | 0.116 [0.109, 0.123] |
+
+The selected arm wins 59/64 at 0.1392 times Zeb's total seat CPU. This is a
+development selection, requiring fresh confirmation. Descriptively, Zeb
+holds 530 contracts at 41 and makes 137 of them. Contract counts within a
+game are dependent; this breakdown supports the auction mechanism without
+being a separate significance test.
+
+[All raw games and reports](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/fbc8dfbdda8b9e3d66005744a5ed3cd025343983/demon/2026-10-16-ascent/development-6-results)
+are public: 107,714,804 bytes, 1,775 files. Fresh downloads of the plan,
+manifest, raw game and every report match the local evidence.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**
@@ -429,6 +491,29 @@ with 40,000 whole-pair bootstrap resamples (seed 666). Success requires
 game-win lower bound above 50% and total seat CPU-ratio upper bound at most
 1.20. Every attempt remains public; no development deals enter confirmation.
 There is no candidate promotion yet.
+
+## Independent confirmation, attempt 1
+
+The fixed round-6 selection is frozen as
+`demon-pimc-n100-bid9dee8eeb-straight-bounds-support-bait40-a561552d`.
+Source `a561552d` and its native trees/binary are unchanged. The canonical
+factory omits explicit reader weight 1; preflight verifies identical native
+values, moves and nodes for 15 requests. The effective policy is unchanged.
+
+The trial is **512 fresh duplicate pairs / 1,024 games**, seed base
+`0xD4600000`, against pinned native Zeb 0.4.1. Attempt-1 alpha is 0.025;
+the joint criterion uses 97.5% whole-pair intervals. No development deal is
+reused, every pair finishes, and all results are published regardless of
+success. No participant is promoted before the independent audit.
+
+[The public frozen protocol](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/e19a9af24fae8b1879abd50ab6a50cc0ec5c1499/demon/2026-10-16-ascent/confirmation-1-protocol)
+contains the canonical participant, source/artifact hashes and executable
+runner/report/audit scripts. Plan SHA-256:
+`8b1662121d4c939bb716a816f327603e2a59993dd5e777acc068220fe6b143c7`.
+Fresh plan and manifest downloads match. A 17-second resolver backoff
+interrupted verification after successful upload; verification resumed at
+the same immutable commit after at least 22 seconds. No reupload or policy
+change occurred. The protocol was recorded on issue 184 before play.
 
 ## Measurement and clocks
 
