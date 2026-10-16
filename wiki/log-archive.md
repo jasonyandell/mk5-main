@@ -4446,3 +4446,28 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-16 | demon/ascent | Next Demon trial targets native Zeb 0.4.1 at comparable CPU]
 
 **Added:** [[demon-ascent-2026-10-16]]: fixed seven-arm threshold sweep and independent confirmation rule, public protocol and exact native/package provenance; #184. **Updated:** [[the-demon]] routes the completed 0.4.1 rematch and the new trial.
+
+## [2026-10-16 | Demon | Exact declaration elimination]
+
+[[demon-ascent-2026-10-16]] records the complete first cutoff sweep (no established win), the frozen second development round, and an isolated bidding prototype. Incumbent bounds preserve all 1,934 saved forecast winners/counts while using 0.5210 [0.5124, 0.5295] of full-forecast native CPU. Public source, replay inputs and outputs are linked; this is kernel performance, not whole-player strength or promotion.
+
+## [2026-10-16 | Demon | Exact bidding bounds and preemptive bidding capability]
+
+[[demon-ascent-2026-10-16]] integrates the exact bounded forecast, with all 1,934 original forecast winners/counts preserved, and adds an opt-in highest-supported-point bidder using common-world monotone bisection. Existing participant records remain unchanged; no new roster entry or strength claim. Both completed development rounds and all raw evidence remain public. The next trial tests preemption against pinned native Zeb 0.4.1.
+
+## [2026-10-16 | sweep | Branch rescue: Book's two worktrees merged and gone]
+
+- [[branch-rescue-2026-10]]: `book/count-lapse` and `silas/cross-game-slice4` merged by the Book desk; off the live list.
+
+## [2026-10-16 | Demon | Exact bid support and the failed preemption sweep]
+
+[[demon-ascent-2026-10-16]] records all 384 round-3 games: no tested jump bidder establishes a win; the minimum-raise reference remains selected. An exact support predicate matches all 1,934 saved forecasts at native CPU ratio 0.4754 [0.4652, 0.4853] against the already-pruned best forecast. The opt-in adapter and experimental early-opening bidder are implemented; no participant is promoted. Generated evidence is public, and the study retains every negative result.
+
+## [2026-10-16 | lem | The field-net audit (Lem stage 1): clean neurons, play that is not sparse]
+
+- [[lem-field-net-audit-2026-10-15]] complete: 222 of 372 live poles clean, 0.597 [0.581, 0.608], shuffled chance 0.000; 122 by a Silas concept, 100 by a raw feature of which 43 are declaration detectors (a concept the list lacked); Haiku readers detect 0.758 of poles vs 0.124 under the shifted null; greedy curve knee at k = 165 of 192 (prediction 40–120 wrong); 12 dead layer-2 neurons. Evidence on HF `lem/field-net-audit-2026-10-15/`.
+- [[lem-the-teacher]] and [[clean-neurons-42]] carry the result line; `lem/probe/ablate.py` scores candidates incrementally (same statistic, by test).
+
+## [2026-10-16 | Demon | Early-opening sweep is cheaper but has no established win]
+
+[[demon-ascent-2026-10-16]] records all 512 round-4 games and the unchanged source: selected bait875play400 wins 46.9% [34.4%, 59.4%] against native Zeb 0.4.1 at CPU ratio 0.407 [0.384, 0.429]. No promotion or confirmation starts. All raw evidence is public; fresh verification resumed after a resolver-rate limit without rerunning games or uploading again. Source-policy and settled-contract audits are published separately.
