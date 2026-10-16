@@ -5,6 +5,7 @@
 
     python -u -m lem.pour.a chunk --seed 400001 --deals 5000 --out DIR [--pip-spec S] [--dtnt-spec S]
     python -u -m lem.pour.a card DIR...          # the coverage counts over finished chunks
+    python -u -m lem.pour.a merge OUT DIR...     # one pour per half (OUT/pip, OUT/dtnt) from finished chunks
 
 A chunk is `deals` seeded deals from `seed` (deal i is `deal(seed + i)`, as
 every pour numbers them). Seat 0 bids 30 and declares by the book's menu
@@ -37,7 +38,9 @@ from pathlib import Path
 
 from arena.hand_metrics import menu_choice
 from arena.walt_play import _declared_trump, parse_walt_spec
-from scenario.atlas import N_PLAYS, Pour, _git_head, calibration, calibration_table, deal, pour, save
+import numpy as np
+
+from scenario.atlas import _COLUMNS, N_PLAYS, Pour, _git_head, calibration, calibration_table, deal, load, pour, save
 from scenario.compiled import CompiledWalt
 from scenario.field import FieldNet
 from scenario.rules import tiles_of
@@ -164,6 +167,50 @@ def card(dirs: list[str | Path]) -> dict:
     return total
 
 
+def concat(pours: list[Pour]) -> Pour:
+    """The pours' columns in order, each position's `deal` offset by the deals before it."""
+    if len({(p.bidder, p.bid, p.utility) for p in pours}) != 1:
+        raise ValueError("pours of one contract and utility merge")
+    cols = {c: [] for c in _COLUMNS}
+    first = 0
+    for p in pours:
+        for c in _COLUMNS:
+            a = getattr(p, c)
+            cols[c].append(a + first if c == "deal" else a)
+        first += len(p.hands)
+    return Pour(pours[0].bidder, pours[0].bid, pours[0].utility, **{c: np.concatenate(v) for c, v in cols.items()})
+
+
+def merge(out: str | Path, dirs: list[str | Path], log=print) -> dict:
+    """One pour directory per half from the finished chunks, with a manifest
+    that keeps every chunk's seed, deal seeds, forced deals and book declarations."""
+    out = Path(out)
+    result = {}
+    for half in ("pip", "dtnt"):
+        pours, about = [], {"pour": "A", "half": half, "chunks": [], "deal_seeds": [], "forced_deals": [], "book_decls": [], "specs": set()}
+        for d in sorted(Path(x) for x in dirs):
+            if not (d / "chunk.json").exists() or not (d / half / "manifest.json").exists():
+                continue
+            m = json.loads((d / half / "manifest.json").read_text())
+            pours.append(load(d / half))
+            about["chunks"].append(d.name)
+            about["deal_seeds"] += m["deal_seeds"]
+            about["forced_deals"] += m["forced_deals"]
+            about["book_decls"] += m["book_decls"]
+            about["specs"].add(m["spec"])
+        if not pours:
+            continue
+        p = concat(pours)
+        if len(about["deal_seeds"]) != len(p.hands):
+            raise AssertionError("one deal seed per deal")
+        about["specs"] = sorted(about["specs"])
+        about["spec"] = about["specs"][0] if len(about["specs"]) == 1 else "mixed"
+        save(p, out / half, **about, commit=_git_head())
+        result[half] = {"deals": len(p.hands), "positions": len(p), "chunks": len(about["chunks"]), "forced": len(about["forced_deals"])}
+        log(f"{out / half}: {len(p.hands):,} deals, {len(p):,} positions from {len(about['chunks'])} chunks")
+    return result
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(prog="python -u -m lem.pour.a")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -176,10 +223,15 @@ def main(argv=None) -> None:
     c.add_argument("--share", type=int, default=SHARE)
     k = sub.add_parser("card")
     k.add_argument("dirs", nargs="+")
+    m = sub.add_parser("merge")
+    m.add_argument("out")
+    m.add_argument("dirs", nargs="+")
     a = ap.parse_args(argv)
     log = lambda m: print(f"[{time.strftime('%H:%M:%S')}] {m}", flush=True)
     if a.cmd == "chunk":
         chunk(a.seed, a.deals, a.out, a.pip_spec, a.dtnt_spec, a.share, log)
+    elif a.cmd == "merge":
+        print(json.dumps(merge(a.out, a.dirs, log), indent=1))
     else:
         print(json.dumps(card(a.dirs), indent=1))
 

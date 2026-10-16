@@ -63,3 +63,21 @@ def test_a_tiny_chunk_pours_both_halves(tmp_path):
     card = A.card([tmp_path])
     assert card["chunks"] == 1 and card["deals"] == 24
     assert card["forced_dt"] + card["forced_nt"] == sum(p.forced for p in planned)
+
+
+def test_merge_concatenates_chunks_with_deal_offsets(tmp_path):
+    for i, seed in enumerate((7_000_001, 7_000_101)):
+        A.chunk(seed, 12, tmp_path / f"c{i}", pip_spec="k0,n8,F={net}", dtnt_spec="k1,n8,m8", share=2, log=lambda m: None)
+    r = A.merge(tmp_path / "merged", [tmp_path / "c0", tmp_path / "c1"], log=lambda m: None)
+    for half in ("pip", "dtnt"):
+        p = load(tmp_path / "merged" / half)
+        parts = [load(tmp_path / f"c{i}" / half) for i in range(2)]
+        assert len(p.hands) == sum(len(q.hands) for q in parts) == r[half]["deals"]
+        assert len(p) == sum(len(q) for q in parts)
+        # the second chunk's positions point at the second chunk's deals
+        n0 = len(parts[0].hands)
+        assert set(p.deal[len(parts[0]):].tolist()) <= set(range(n0, len(p.hands)))
+        pos = p.position(len(parts[0]))                   # the second chunk's first position, replayed
+        assert pos.hands == tuple(int(h) for h in parts[1].hands[parts[1].deal[0]])
+        m = json.loads((tmp_path / "merged" / half / "manifest.json").read_text())
+        assert len(m["deal_seeds"]) == len(p.hands) and set(m["forced_deals"]) <= set(m["deal_seeds"])
