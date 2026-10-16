@@ -49,6 +49,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | Demon | Higher early opening bids]
+
+[[demon-ascent-2026-10-16]] records the fifth fixed sweep: selected 33/64, no established win, all evidence public. The fenced bidder accepts explicit early openings 30–40 with default records preserved; a source audit motivates testing 40 against pinned Zeb 0.4.1. The margin-band replay remains a parked prototype. No participant promotion.
+
 ## [2026-10-16 | Demon | Early-opening sweep is cheaper but has no established win]
 
 [[demon-ascent-2026-10-16]] records all 512 round-4 games and the unchanged source: selected bait875play400 wins 46.9% [34.4%, 59.4%] against native Zeb 0.4.1 at CPU ratio 0.407 [0.384, 0.429]. No promotion or confirmation starts. All raw evidence is public; fresh verification resumed after a resolver-rate limit without rerunning games or uploading again. Source-policy and settled-contract audits are published separately.
