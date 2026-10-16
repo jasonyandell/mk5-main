@@ -109,6 +109,11 @@ while; #173's work-unit budgets made a game about 3× cheaper, and the FAIR CLOC
   pipeline and one loss, the old LEM's lesson ([[lem]], "Lessons learned").
 - Data generation is CPU (the vast.ai CPU fleet, through `scripts/cpu-slot` locally). Training is
   the M5 Max GPU or rented B200s.
+- **All ten declarations.** The population and its pour cover doubles-trump and no-trump as well
+  as the seven pips (the Mayor, 2026-10-16): deployed Zeb's field net is pip-only (`CANON` has no
+  entry for declarations 7–9), so the book's Chapter 9 (#155) has never been measured against a
+  real field; this pour supplies that data once, for Lem and for the Book desk. Extending the
+  canon in `scenario/core/src/field.rs` is a gated change and goes to the Mayor.
 - The league is the data source as well as the judge: each checkpoint joins the ladder, its
   games (with partners and opponents drawn from the population) feed the next round of
   training, and the model of others is learned from a table that keeps changing (#182).
