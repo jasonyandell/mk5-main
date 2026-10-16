@@ -197,14 +197,27 @@ def merge(out: str | Path, dirs: list[str | Path], log=print) -> dict:
             about["deal_seeds"] += m["deal_seeds"]
             about["forced_deals"] += m["forced_deals"]
             about["book_decls"] += m["book_decls"]
-            about["specs"].add(m["spec"])
+            spec = m["spec"]
+            if "F=" in spec:
+                # every chunk wrote its own copy of the shipped net; the merged pour names one
+                net_src = Path(spec.split("F=", 1)[1].split(",")[0])
+                shared = out / "net.npz"
+                if not shared.exists():
+                    out.mkdir(parents=True, exist_ok=True)
+                    shared.write_bytes(net_src.read_bytes())
+                elif shared.read_bytes() != net_src.read_bytes():
+                    raise AssertionError(f"{d.name} was poured over a different net")
+                spec = spec.replace(str(net_src), str(shared))
+            about["specs"].add(spec)
         if not pours:
             continue
         p = concat(pours)
         if len(about["deal_seeds"]) != len(p.hands):
             raise AssertionError("one deal seed per deal")
         about["specs"] = sorted(about["specs"])
-        about["spec"] = about["specs"][0] if len(about["specs"]) == 1 else "mixed"
+        if len(about["specs"]) != 1:
+            raise AssertionError(f"the {half} chunks were poured under several specs: {about['specs']}")
+        about["spec"] = about["specs"][0]
         save(p, out / half, **about, commit=_git_head())
         result[half] = {"deals": len(p.hands), "positions": len(p), "chunks": len(about["chunks"]), "forced": len(about["forced_deals"])}
         log(f"{out / half}: {len(p.hands):,} deals, {len(p):,} positions from {len(about['chunks'])} chunks")

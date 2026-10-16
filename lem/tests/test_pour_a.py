@@ -81,3 +81,6 @@ def test_merge_concatenates_chunks_with_deal_offsets(tmp_path):
         assert pos.hands == tuple(int(h) for h in parts[1].hands[parts[1].deal[0]])
         m = json.loads((tmp_path / "merged" / half / "manifest.json").read_text())
         assert len(m["deal_seeds"]) == len(p.hands) and set(m["forced_deals"]) <= set(m["deal_seeds"])
+        assert m["spec"] != "mixed" and len(m["specs"]) == 1
+        if half == "pip":
+            assert m["spec"].endswith("merged/net.npz") and (tmp_path / "merged" / "net.npz").exists()
