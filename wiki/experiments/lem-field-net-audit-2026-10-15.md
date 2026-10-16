@@ -176,7 +176,48 @@ rows under `scripts/cpu-slot`, about 2.5 hours of wall on two shared slots; the 
 (0.89 cores); the readers 47 minutes, about 1,100 `claude -p --model haiku` calls; the curve
 3 minutes.
 
+## Exploratory, not pre-registered (2026-10-16)
+
+Read-only looks taken after the sealed study, for the Lem special (Media) and the question
+"is there evidence of recursive generalization in Zeb already?" None was predicted in advance;
+each is a read of existing data, not a test. Files:
+[`series/`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/d2fa52c3be5074e6efca6330975117ef8f96c95d/lem/field-net-audit-2026-10-15/series)
+and `audit/reads.json`, `audit/reads.md` in the evidence folder.
+
+**The data series.** The pour repo publishes three nets of this architecture; the same sample and
+labels read against each. One net per size, so the trend itself carries no interval.
+
+| net (deals) | live | clean share | by Silas | by raw feature (count block) | mixed | dead | knee |
+|---|---:|---|---:|---:|---:|---:|---:|
+| 5,000 (`field_make_d5000_v2`, older trainer, different pour and target) | 384 | 0.297 [0.273, 0.333] | 30 | 84 (68) | 35 | 0 | 176 |
+| 50,000 (`margin_d50k_h128x64`) | 378 | 0.519 [0.505, 0.553] | 104 | 92 (71) | 20 | 6 | 170 |
+| 250,000 (the shipped net) | 372 | 0.597 [0.581, 0.608] | 122 | 100 (69) | 14 | 12 | 165 |
+
+The shuffled chance is 0.000 at every size. The 50k and 250k nets share the trainer, the target
+and a pour (the 50k's is one of the 250k's five chunks), so that pair is the clean comparison.
+Reading: with more data the nameable concepts rise and the mixing falls; the declaration
+detectors (the count-block labels) are there from the start and stay flat; the play stays dense
+(the knee moves 176, 170, 165 of 192). This is the direction the recursive-generalization
+hypothesis predicts at the level of one snapshot per size ([[recursive-generalization]]); it is not
+checkpoint evidence and shows no branching.
+
+**The trump ladder, at the final net** (`audit/reads.md`). Every trump-labelled pole carries the
+rungs together: on the three `holds-boss-trump` poles (L1+009, L1+108, L1+118) the precision of
+`holds-sure-trump`, `holds-master` and `holds-trump` is 1.00 each; on the four `holds-master` poles
+`holds-trump` is 0.88 to 1.00. No live pole has `holds-master` ≥ 0.9 together with `no-trump-held`
+≥ 0.5: the nearest is L1-040 (0.70 and 0.28). In this net "master" is "master of trump"; "master of
+a side suit" has no unit. Consistent with a concept formed around trump that has not extended, and
+equally with a facet the net never needed; the sample's base rates are `holds-boss-trump` 0.257,
+`holds-master` 0.314, `no-trump-held` 0.437.
+
+**The structural poles are conjunctions.** For each of the 60 clean `lead`/`last`/`third` poles,
+the second predicate of highest lift on its top set: three `lead` poles carry `no-trump-held` at
+precision 1.00 (L1+080, L2-003, L2-027; base 0.437), `lead` poles carry `set` at 0.82 to 0.91
+(L2+022, L1+057, L2-006; base 0.19), `last` poles carry `safe-trick` 1.00 (L1+032; base 0.10) or
+`winner-cannot-be-beaten` 0.68 to 0.70 (L1-064, L1-067, L1-122; base 0.25). The full table is
+`audit/reads.md`. These are the conjunctions #185 adds to the list.
+
 ## Links
 
-[[lem-the-teacher]] · [[clean-neurons-42]] · [[scenario-player]] · [[silas]] ·
+[[lem-the-teacher]] · [[clean-neurons-42]] · [[recursive-generalization]] · [[scenario-player]] · [[silas]] ·
 [[strategy-fusion-fence]] · [[gus-probe]]
