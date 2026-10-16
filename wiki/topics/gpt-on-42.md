@@ -19,32 +19,62 @@ issue #175.
 
 ## The source: "Neural Networks Are Already Clean"
 
-Nick Cammarata, Goodfire, 2026-10-15 (`already-clean.goodfire.com`; a companion paper was
-announced as pending). **This page was written from secondary coverage.** The sandbox that
-wrote it could not reach the essay. Re-read the primary before quoting it anywhere else.
-What the coverage agrees on:
+Nick Cammarata, Goodfire, 2026-10-15 (`already-clean.goodfire.com`), subtitled "a working
+hypothesis". A technical companion paper is announced. This section was first drafted from
+secondary coverage, then corrected the same day against the essay's text, which Jason pasted
+in (through the opening of "Cars and Animals"). The essay is © Goodfire and is **not** copied
+into this repo. Short quotations are attributed below. The rest of the essay (its vision and
+language-model sections) has not been read here yet.
 
-- **The claim.** Most apparent polysemanticity is not superposition (unrelated features
-  packed into one neuron). It is **recursive generalization**: a neuron learns one
-  function, extends it to nearby cases, then sends sub-branches into adjacent territory.
-  The cases it ends up covering look unrelated only if the branches between them are
-  missed. The coverage's example is a neuron for the sound "iy". It extends to "diy", then
-  to "do it yourself", which shares the concept but not the sound. The InceptionV1 neuron
-  for cat faces and car fronts is reread as one for shared V-shaped geometry.
-- **The distinction it draws.** Generalization groups similar things and teaches the
-  network something. Superposition groups unrelated things and teaches nothing.
-- **The squeeze.** InceptionV1 was retrained with layer 3b cut from 480 neurons to 10. Its
-  neurons stayed interpretable and coarser: the branches merge back toward their trunk.
-- **The audit.** A preliminary audit of Qwen3-32B estimates that about 90% of **neuron
-  poles** (a neuron's positive and negative directions, read separately) have one main job,
-  with 2–4% unexplained.
-- **Its own caveats.** The essay calls this a working hypothesis and one step of its
-  argument highly speculative. At the time of writing there was no independent replication,
-  and commentators dispute that superposition is disproven.
+- **The claim.** The canonical evidence for polysemanticity and superposition "was misread.
+  What looked like arbitrary packing was mostly a motif I'll call recursive generalization."
+  The motif: "as a neuron grows, it sprouts offshoots the way a tree branch sprouts
+  sub-branches." Example: a neuron that detected "iy" grew to detect "diy", then "do it
+  yourself", which does not contain "iy" at all. The idea first appeared in *Multimodal
+  Neurons* (2021). It became checkable once neurons could be watched growing over training.
+- **One learning principle, not two.** "Generalization groups similar things together and
+  superposition groups unrelated things together." The essay keeps only generalization:
+  "it turns out generalization is fractal." So explanations can be fractal too: "start with a
+  basic explanation, then zoom in when you want to understand more."
+- **Capacity makes concepts coarser, not tangled.** InceptionV1 was retrained across a 300×
+  range of sizes and stayed legible at every scale. "With less room, the network doesn't fold
+  unrelated things together; its neurons just cover coarser-grained concepts", like one car
+  neuron covering many cars. With more room, that neuron differentiates into specific cars.
+  (A secondary source's "layer 3b cut from 480 to 10" is not in the text read here.)
+- **Architecture, not size, fixed the deep layers.** InceptionV1's last layer once looked
+  almost uninterpretable. With ordinary architectural improvements for deep layers, and no
+  change to size or data, 99–100% of its neurons are easily interpretable.
+- **The canonical cases, reread.** InceptionV1's neuron 4e:55, "cats and cars", is a V-shape
+  (pointed) neuron. Its circuit connects to V-shaped flames and fox faces, and its negative
+  pole is round. The *Zoom In* "car hidden in dog neurons" circuit is shared pose, carried by
+  over a hundred generalized pose neurons. Feature visualization had been reward-hacked into
+  dogs.
+- **The audit.** Preliminary audits of Qwen3-32B: about 90% of neuron poles have one main
+  job, often with small related offshoots; about 7% have two related jobs; about 2–4% are not
+  yet understood. Similar results hold in dense and mixture-of-experts models, up to
+  trillions of parameters (Kimi K3). The exact numbers depend on thresholds.
+- **The method.** The essay studies a network's own neurons, not a trained decomposition
+  such as a sparse autoencoder. For each neuron it reads both poles (what drives it positive,
+  what drives it negative). It reads the context around top activations, not only the token
+  where the neuron fires; feeling detectors, for example, fire on commas. It checks steering
+  (turn the neuron up and see what the model writes), upstream construction, downstream
+  readers and growth over training. Understanding compounds "like a jigsaw puzzle or
+  crossword": once most of the map is known, the unexplained remainder points at broken
+  tools. That is how the essay found a double-negative regime in SwiGLU neurons.
+- **The four steps, verbatim in substance.** (1) One learning principle, so ordinary science
+  on the network can begin. (2) With modern models and tools that science goes better than
+  expected. (3) Understanding compounds, so a network's own mechanisms belong in the
+  toolkit. (4) "Highly speculative": this might be most of what interpretability needs.
 
 What makes it relevant to 42: on this account clean concepts come from **ordinary training**.
 No sparse dictionary or special loss is needed. If that is true, a small transformer trained
 on 42 should grow neurons that can be read, and they should branch.
+
+**What 42 offers that language does not: an answer key.** In a language model the crossword
+is checked only against itself. In 42, many of the concepts a neuron might carry can be
+computed exactly from the rules and the information state (suit membership, count still out,
+proven voids). Proven math can therefore grade the neuron map. Because the models are small,
+the essay's size sweep is cheap to run in full here.
 
 ## Why 42 is a good place to look
 
@@ -125,13 +155,17 @@ Pre-register the following before the first training run, in the project's habit
 
 1. **The concept list and the probes.** For each candidate above, write down the exact label
    (computable from the information state, or from the deal for the hidden ones) and the
-   test. The tests are neuron-pole top activations, plus a linear probe as the baseline the
-   neurons must beat.
+   test. The tests read each neuron pole (positive and negative), the context around its top
+   activations, steering, and upstream and downstream weights. A linear probe is the baseline
+   the neurons must beat. The neurons are the unit of study, not a decomposition. Use a modern
+   block (pre-norm, a gated MLP); the essay finds architecture, not size, is what made deep
+   layers legible.
 2. **Branching over training.** Save checkpoints along the run. For each concept-bearing
    neuron, trace what it covers at each checkpoint. The essay's claim predicts trunks first
    and branches later.
-3. **The squeeze.** Retrain with one layer's width cut hard. The claim predicts coarser
-   concepts that can still be read, not noise.
+3. **The squeeze, as a size sweep.** Train the same architecture across a wide range of
+   widths (the essay used 300×). The claim predicts coarser concepts that can still be read,
+   not noise, and branches that differentiate as room grows.
 4. **Splat fidelity.** On held-out deals, measure the KL to Walt's splat and the error in
    pmake at the contract. The field net (`margin_d250k_h128x64`, [[scenario-player]]) is the
    baseline to beat or tie.
@@ -143,5 +177,5 @@ Pre-register the following before the first training run, in the project's habit
 
 - Build (#175): tokenizer and dataset reader over the 250k pour, a small GPT, training
   with checkpoints, then the probe suite. The probes are the deliverable, not the player.
-- Re-read the primary essay (and the companion paper once it lands) and correct this page
-  wherever the coverage was wrong.
+- Read the rest of the essay (its vision and language-model sections) and the companion
+  paper once it lands, and fold in what bears on the probe suite.
