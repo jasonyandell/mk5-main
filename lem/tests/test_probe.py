@@ -205,3 +205,31 @@ def test_ablate_candidates_equal_direct_fidelity(net):
     for j in list(cands)[::7]:
         k2 = keep.copy(); k2[j] = 1
         assert cands[j] == ablate.fidelity(net, acts.a1, legal, ref, k2)
+
+
+def test_v2_concepts_compile_viewer_only_and_name_the_declaration():
+    from scenario_core import SilasBelief, SilasFrame
+    from scenario.atlas import deal
+    queries = dict(zip(concepts.NAMES_V2, concepts.compile_all(concepts.CONCEPTS_V2)))
+    assert concepts.identity(concepts.CONCEPTS_V2) != concepts.identity()
+    assert concepts.NAMES_V2[:len(concepts.NAMES)] == concepts.NAMES          # v1 is a prefix of v2
+
+    def holds(name, frame):
+        e = queries[name].summarize(SilasBelief.uniform_resolving(frame, 0, 1), 10_000_000).event_probability
+        assert e.authority.label == "exact", name
+        return e.value == 1
+
+    for s in range(1, 8):
+        hands = deal(s)
+        for decl in range(7):
+            f = SilasFrame(decl, 0, hands[0], 0, 30, [])
+            assert [holds(f"trump-is-{p}", f) for p in concepts.PIPS] == [q == decl for q in range(7)]
+            assert not holds("trump-is-doubles", f) and not holds("no-trump-game", f)
+        f7 = SilasFrame(7, 0, hands[0], 0, 30, [])
+        assert holds("trump-is-doubles", f7) and not holds("no-trump-game", f7)
+        assert not any(holds(f"trump-is-{p}", f7) for p in concepts.PIPS)
+        f9 = SilasFrame(9, 0, hands[0], 0, 30, [])
+        assert holds("no-trump-game", f9) and not holds("trump-is-doubles", f9)
+        assert holds("lead-no-trump", f9)                 # no trump to hold
+        for name in concepts.NAMES_V2:
+            holds(name, f7); holds(name, f9)              # every v2 query answers exactly under 7 and 9
