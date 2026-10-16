@@ -181,3 +181,24 @@ def test_card_shows_the_viewer_only(tmp_path):
     assert "Your hand:" in text and "Trump:" in text and "Shown voids:" in text
     assert "partner holds" not in text.lower()
     assert text.count("\n") == 5
+
+
+def test_ablate_candidates_equal_direct_fidelity(net):
+    from lem.probe import ablate
+    rows = _random_positions(300, seed=7)
+    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+    legal = np.zeros((len(rows), N_TILES), bool)
+    for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
+        rules = rules_for(decl)
+        x[i, features(rules, seat, own, rec, bid, bidder % 2)] = 1
+        legal[i, [CANON[decl][t] for t in tiles_of(rules.legal(own, rec.led))]] = True
+    acts = forward(net, x)
+    ref = ablate._pick_slots(acts.out, legal)
+    rng = np.random.default_rng(0)
+    h = net.b1.shape[0] + net.b2.shape[0]
+    keep = (rng.random(h) < 0.3).astype(np.int64)
+    cands = ablate._step_candidates(net, acts.a1, legal, ref, keep)
+    assert set(cands) == {j for j in range(h) if not keep[j]}
+    for j in list(cands)[::7]:
+        k2 = keep.copy(); k2[j] = 1
+        assert cands[j] == ablate.fidelity(net, acts.a1, legal, ref, k2)

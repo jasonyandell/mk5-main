@@ -48,6 +48,32 @@ def fidelity(net: FieldNet, a1: np.ndarray, legal: np.ndarray, ref: np.ndarray, 
     return float((_pick_slots(out, legal) == ref).mean())
 
 
+def _step_candidates(net: FieldNet, a1: np.ndarray, legal: np.ndarray, ref: np.ndarray, keep: np.ndarray):
+    """Fidelity of keep ∪ {j} for every j not kept, computed incrementally and
+    exactly: layer-1 candidates add one rank-one term to the second layer's
+    pre-activation, layer-2 candidates unmask one unit of the output's sum."""
+    h1 = net.b1.shape[0]
+    keep1, keep2 = keep[:h1], keep[h1:]
+    z2_base = (a1 * keep1) @ net.w2.T + net.b2
+    a2_base = np.maximum(z2_base >> net.s2, 0) * keep2
+    out_base = a2_base @ net.w3.T + net.b3
+    out = {}
+    for j in range(h1):
+        if keep[j]:
+            continue
+        z2 = z2_base + np.outer(a1[:, j], net.w2[:, j])
+        a2 = np.maximum(z2 >> net.s2, 0) * keep2
+        out[j] = float((_pick_slots(a2 @ net.w3.T + net.b3, legal) == ref).mean())
+    for j in range(h1, h1 + net.b2.shape[0]):
+        if keep[j]:
+            continue
+        u = j - h1
+        a2u = np.maximum(z2_base[:, u] >> net.s2, 0)
+        o = out_base + np.outer(a2u, net.w3[:, u])
+        out[j] = float((_pick_slots(o, legal) == ref).mean())
+    return out
+
+
 def run(sample: Sample, acts: Activations, net: FieldNet, fit: int = FIT, eval_n: int = EVAL,
         log=print) -> dict:
     rng = np.random.default_rng(SEED)
@@ -61,25 +87,19 @@ def run(sample: Sample, acts: Activations, net: FieldNet, fit: int = FIT, eval_n
     keep = np.zeros(h, np.int64)
     chosen: list[int] = []
     curve = []
-    base_fit = fidelity(net, acts.a1[fit_rows], legal[fit_rows], ref[fit_rows], keep)
-    base_eval = fidelity(net, acts.a1[eval_rows], legal[eval_rows], ref[eval_rows], keep)
-    curve.append({"k": 0, "neuron": None, "fit": base_fit, "eval": base_eval})
-    log(f"  k=0 fit {base_fit:.3f} eval {base_eval:.3f}")
     a1f, lf, rf = acts.a1[fit_rows], legal[fit_rows], ref[fit_rows]
     a1e, le, re_ = acts.a1[eval_rows], legal[eval_rows], ref[eval_rows]
+    base_fit = fidelity(net, a1f, lf, rf, keep)
+    base_eval = fidelity(net, a1e, le, re_, keep)
+    curve.append({"k": 0, "neuron": None, "fit": base_fit, "eval": base_eval})
+    log(f"  k=0 fit {base_fit:.3f} eval {base_eval:.3f}")
     knee = None
     for step in range(h):
-        best, best_f = None, -1.0
-        for j in range(h):
-            if keep[j]:
-                continue
-            keep[j] = 1
-            f = fidelity(net, a1f, lf, rf, keep)
-            keep[j] = 0
-            if f > best_f:
-                best, best_f = j, f
+        cands = _step_candidates(net, a1f, lf, rf, keep)
+        best = max(cands, key=lambda j: (cands[j], -j))     # ties to the lowest neuron index
+        best_f = cands[best]
         keep[best] = 1
-        chosen.append(best)
+        chosen.append(int(best))
         fe = fidelity(net, a1e, le, re_, keep)
         curve.append({"k": step + 1, "neuron": int(best), "fit": best_f, "eval": fe})
         if knee is None and fe >= KNEE:
@@ -88,7 +108,7 @@ def run(sample: Sample, acts: Activations, net: FieldNet, fit: int = FIT, eval_n
             log(f"  k={step + 1} add {best} fit {best_f:.3f} eval {fe:.3f}")
         if fe >= 0.999 and step >= 32:
             break
-    # random-k baseline on the eval slice, one draw per k of the curve
+    # random-k baseline on the eval slice, five draws per k
     random_curve = []
     for k in (1, 2, 4, 8, 16, 32, 64, 96, 128, 192):
         if k > h:
