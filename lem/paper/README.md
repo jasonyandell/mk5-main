@@ -117,8 +117,17 @@ P(seat holds tile | the viewer's information), under the uniform fiber and under
 posterior. The question: does the student encode it? Linear probes from each hidden layer to
 the teacher's posterior, scored against the prior that counting alone gives (the uniform fiber
 marginal), on the audit sample; then the same for the book's reads (a seat shown void, a seat
-that must hold the master). This is the measurement an answer key makes possible and no
-prior interpretability study of a game net has had. Not yet run.
+that must hold the master). This is the measurement an answer key makes possible.
+
+**First result** ([`lem-belief-probe-2026-10-16`](../../wiki/experiments/lem-belief-probe-2026-10-16.md),
+pre-registered): on 20,000 held-out rows from deals disjoint from the fit, the raw input bits
+recover **0.79** (R²) of what the voids tell the teacher's posterior, the first hidden layer
+**0.24**, the second **0.04**; shuffled targets give 0 (−0.02 to 0.00). The field net's inputs
+carry the teacher's belief and its hidden layers discard most of it on the way to a move: the
+student plays without a readable belief over who holds what. Without the input baseline the
+first layer's 0.24 would have read as "the net represents the posterior"; with it, it reads as
+compression. Next arms: the field's posterior from reading plays as the target, Lem's nets, and
+a nonlinear probe as an upper bound.
 
 ## 6. Concept formation across data and checkpoints
 
@@ -177,7 +186,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 
 | # | measurement the paper needs | status |
 |---|---|---|
-| G1 | **Belief probes**: linear probes from hidden activations to the teacher's exact posterior P(seat holds tile), against the counting prior; then the book's reads | not started; the big one |
+| G1 | **Belief probes**: linear probes from hidden activations to the teacher's exact posterior P(seat holds tile), against the counting prior; then the book's reads | first arm done (play-only, linear): inputs 0.79, a1 0.24, a2 0.04; next arms: the reading posterior, Lem's nets, a nonlinear bound |
 | G2 | **Checkpointed retraining + width family** on the 250k pour, 3 seeds; concept formation and the knee per checkpoint and width | registered as the next stage-1 follow-up; $0 on the M5 Max |
 | G3 | **Causal tests**: per-concept ablation and activation patching between matched legal positions, against matched random units | not started |
 | G4 | **The first field-v3 net** on pour A (all nine declarations) and its audit with concept list v2 | pour A running |

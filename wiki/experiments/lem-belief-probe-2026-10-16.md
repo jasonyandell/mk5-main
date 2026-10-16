@@ -3,7 +3,7 @@ title: "Belief probes: does Zeb's field net encode the teacher's exact posterior
 kind: experiment
 first_seen: 2026-10-16
 last_updated: 2026-10-16
-status: active
+status: complete
 ---
 
 G1 of the paper's work order ([`lem/paper/README.md`](../../lem/paper/README.md) § 5; [[lem-the-teacher]]).
@@ -53,7 +53,42 @@ state linearly?
 
 ## Results
 
-Not yet run.
+Run 2026-10-16 as registered: 20,000 fit and 20,000 eval rows from disjoint deals; 724,221 defined
+eval entries, of which 370,025 (0.511) are moved by the voids. The counting prior's mean absolute
+error is 0.0532 over all entries and 0.1041 over the moved ones. Evidence (targets, `belief.json`,
+`belief.md`, runner, logs, `SHA256SUMS`): `lem/belief-probe-2026-10-16/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10).
+
+| representation | width | R² all | R² moved | MAE all | MAE moved | R² shuffled (all / moved) |
+|---|---:|---:|---:|---:|---:|---:|
+| raw inputs `x` | 343 | **0.777** | **0.791** | 0.0260 | 0.0420 | −0.023 / −0.014 |
+| first hidden layer `a1` | 128 | 0.198 | 0.241 | 0.0568 | 0.0888 | −0.013 / −0.005 |
+| second hidden layer `a2` | 64 | 0.021 | 0.035 | 0.0579 | 0.1016 | −0.008 / −0.003 |
+| `a1+a2` | 192 | 0.199 | 0.244 | 0.0572 | 0.0887 | −0.023 / −0.012 |
+
+**The predictions, graded.**
+
+| | predicted | measured | |
+|---|---|---|---|
+| 1. the inputs state most of it | R² of `x` on moved ≥ 0.8 | 0.791 | just under; the posterior is nearly, not quite, linear in the inputs |
+| 2. `a1` within 0.1 of `x`; `a2` ≥ 0.1 below `a1` | yes / yes | `a1` is 0.55 below `x`; `a2` is 0.21 below `a1` | first half wrong, second half right |
+| 3. no hidden layer beats `x` by > 0.02 | yes | none comes near | holds |
+| 4. shuffled within ±0.02 of 0 | yes | −0.023 to −0.003 | holds (one at the edge) |
+
+**Reading.** The teacher's belief is in the student's inputs (the void bits and hand sizes carry
+0.79 of what the voids tell the posterior, linearly) and almost not in its hidden layers: the first
+layer keeps a quarter of it, the second nearly none, and the second layer's error against the
+prior is the prior's own. The field net plays without a readable belief over who holds what. It
+uses the voids (its play changes with them), but it compresses them into what the move needs,
+not into P(seat holds tile). For the paper this is the answer key at work: a measurement that
+would read as "the net represents the posterior" without the input baseline reads, with it, as
+"the posterior is in the inputs and the net discards most of it on the way to a move".
+
+Caveats: linear probes on ReLU activations; a policy net trained on move advantages, not on
+beliefs, has no reason to keep the posterior readable; play-only evidence (the auction carries
+nothing in these pours); one net, one seed. The next arms: the field's own posterior (reading
+plays, `draw=posterior`) as the target; Lem's nets, which have a value head and more width; and a
+nonlinear probe as an upper bound, registered before it runs.
 
 ## Links
 
