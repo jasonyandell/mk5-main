@@ -3,7 +3,7 @@ title: "Rematch: Zeb 0.4.1 (the overcall) against the overcalling Demon"
 kind: experiment
 first_seen: 2026-10-15
 last_updated: 2026-10-15
-status: active
+status: complete
 ---
 
 **STRATEGY-FUSION FENCE.** The Demon ([[the-demon]]) is seated as a sanctioned
@@ -77,7 +77,38 @@ arms see identical deals. Those four games are not part of the study.
 
 ## Results
 
-(Written after all 1,024 games finish.)
+All 1,024 games finished (512 per arm, 5,421 and 5,071 hands), every batch exited 0, no game was
+restarted or dropped. Intervals are 95% pair bootstraps over 256 pairs (40,000 resamples, seed 666);
+chance is 50% and the marks baseline is zero. Runtime ratios divide the Demon's total seat cost by Zeb's.
+
+| Arm vs the Demon | Wins-losses | Win share [interval] | Marks/game [interval] | CPU ratio [interval] | Wall ratio [interval] |
+|---|---:|---:|---:|---:|---:|
+| Zeb 0.4.1 contested | 292-220 | 57.03% [53.12, 60.94] | +0.330 [+0.055, +0.606] | 0.6616 [0.6563, 0.6668] | 0.6582 [0.6501, 0.6655] |
+| Zeb 0.4.0 match-aware | 167-345 | 32.62% [28.91, 36.13] | -1.904 [-2.193, -1.617] | 0.6448 [0.6389, 0.6504] | 0.6381 [0.6273, 0.6477] |
+| 0.4.1 minus 0.4.0 | | +24.41 points [+19.53, +29.30] | +2.234 [+1.867, +2.607] | | |
+
+0.4.1 costs 1.076 [1.049, 1.104] times 0.4.0's Zeb CPU (wall 1.077 [1.038, 1.117]); the Demon still
+uses about two thirds of Zeb's CPU in both arms. Totals: 0.4.1 arm Zeb 5,640 s CPU / 5,855 s wall,
+Demon 3,732 / 3,854; 0.4.0 arm Zeb 5,241 / 5,435, Demon 3,379 / 3,468. Runtime shared the machine
+with other sessions through `scripts/cpu-slot`, so it is as reported, not an isolated timing.
+
+**Reading.** Against the Demon that contests, 0.4.1's shipped overcall wins more games than the
+Demon (57.03%, interval above chance) where 0.4.0 won a third of them (32.62%, in line with the
+34.86% the Demon's confirmed 65.14% [99.17% interval 61.52, 68.85] against 0.4.0 implies, in
+[[demon-overcalling-2026-10-15]]). The gain on the same seeds is 24 points. It is the scope the
+changelog states: the constants were fitted on a table that overcalls back, and this Demon is one.
+It says nothing about opponents who mostly pass, where the refit gives back about 3 points.
+
+**Caveat on "equal deals".** Both arms use the same faceoff seed, so each pair starts from the same
+deals; once the auctions diverge (a passed-out hand redeals), later hands differ by design of the
+duplicate pair. The first played hand is identical in 443 of 512 games; in the rest one arm passed out
+a hand the other played. The pair bootstrap is paired by pair index.
+
+Evidence: [`rematch/2026-10-15-zeb-041-vs-demon`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/d99eb5fd839cd9b3282c098f2a805088e1f3bcce/rematch/2026-10-15-zeb-041-vs-demon)
+(games, costs, traces, report, plan, runners, `SHA256SUMS`). The two faceoff records are appended to
+`hf:jasonyandell/texas-42-tournament` (`faceoffs/marks7/20261015T171735Z-zeb-0.4.1-contested--demon-...-44b264ca537d025d.json`
+and the `zeb-0.4.0-match` twin), with the participants `zeb-0.4.1-contested` and `zeb-0.4.0-match`.
+npm 0.4.1 was not yet on the registry when the plan was sealed; the arm used the tag's JavaScript.
 
 ## Links
 

@@ -69,7 +69,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ## [2026-10-15 | rematch | Zeb 0.4.1 vs the overcalling Demon: pre-registered before any game]
 
-**Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). Results follow.
+**Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). **Result:** 0.4.1 wins 57.03% [53.12, 60.94] vs the Demon, 0.4.0 32.62% [28.91, 36.13] on the same seeds; +24.4 points [+19.5, +29.3]; no drops. Evidence on HF, faceoffs in the store.
 
 ## [2026-10-15 | book/fallible | The fallible field (#151): a field that forgets voids pays, and the book player and Zeb collect it equally]
 
