@@ -2,7 +2,7 @@
 title: "The Demon: a fenced CPU PIMC player, seated in the tournament as strategy fusion's measuring stick"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 status: active
 ---
 
@@ -43,6 +43,11 @@ threshold when an opponent already holds a point bid, with the same forecast
 and no added search work. [[demon-overcalling-2026-10-15]] confirms this form
 beats both pinned native Zeb 0.4.0 bidders at lower total seat CPU and wall
 time on Apple M5 Max; its exact participant is registered and rostered.
+
+[[rematch-zeb-041-vs-demon-2026-10-15]] measures Zeb 0.4.1's reply: its
+contested bidder wins against that Demon at greater CPU cost.
+[[demon-ascent-2026-10-16]] starts the next development and independent
+confirmation, first varying auction cutoffs at the same search budget.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw
 every hand, and E[max] ≥ max E ([[strategy-fusion]]). That is why the Demon makes a useful
