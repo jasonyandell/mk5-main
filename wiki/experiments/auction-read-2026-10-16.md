@@ -3,7 +3,7 @@ title: The auction read — what a bid, a pass, or a bid that lost tells the tab
 kind: experiment
 first_seen: 2026-10-16
 last_updated: 2026-10-16
-status: active
+status: complete
 ---
 
 ## Summary
@@ -17,7 +17,62 @@ bidder's method unknown, the read looked worth 0.05–0.19 marks/game there, unr
 inside seed noise. This is the registered test of the read by itself, and of the read by a
 *known* method, which is the form A4 assumes.
 
-*Results follow once every registered batch has run.*
+## Results (complete, 2026-10-16; 176 of 176 registered batches ran, none dropped)
+
+**One line.** Reading the auction by the field's known method clears its registered bar: K =
++0.17 [+0.06, +0.29] marks/game against plain deployed Zeb, the sign the book predicts. **But the
+A/A cleared too.** Plain Zeb at another planner seed takes +0.12 [+0.02, +0.23] from the same
+field, so the read's margin over that seed scatter is K − Za = +0.05 [−0.09, +0.19], a null. What
+this table can claim is that the read does not cost. Whether it pays at the size the book implies
+waits on a field that is not one planner seed (below).
+
+Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
+`book/auction-read/` (per batch `meta.json` and `games.jsonl`, `summary.json`, the queue log, `CARD.md`).
+
+### The registered contrasts (paired by game pair; MDE at 80% power)
+
+| contrast | estimate [95%] | pairs | SD/pair | MDE |
+|---|---|---|---|---|
+| **primary K, the read by a known method** | **+0.17 [+0.06, +0.29] marks/game** | 576 | 1.39 | 0.16 |
+| U, the read by an unknown method | +0.07 [−0.04, +0.18] | 576 | 1.35 | 0.16 |
+| K − U, the value of knowing the method | +0.10 [−0.03, +0.23] | 576 | 1.65 | 0.19 |
+| Za, the A/A (plain Zeb at seed 1) | +0.12 [+0.02, +0.23] | 576 | 1.35 | 0.16 |
+| K − Za | +0.05 [−0.09, +0.19] | 576 | 1.72 | 0.20 |
+| to 250: PK − PZa, share of games won | +2.6 pts [−1.8, +7.0] | 192 | 0.32 | 6.4 pts |
+| to 250: PK − 50% | +3.4 pts [+0.3, +6.5] | 192 | 0.23 | 4.6 pts |
+
+Games to 250 won by team A: PK 53.4% [50.3, 56.5], PZa 50.8% [47.4, 53.9].
+
+### Reading, under [[book-authority]]
+
+- **Assumptions held and violated.** A4 is restored as far as one bidder can restore it: the
+  field bids by one fixed, known rule, and K reads every opposing turn of the auction (a bid, a
+  pass, a bid since overcalled) under that rule. The book's reader knows a richer method, the
+  levels' meanings (31 = one ten-count off, a 35's shape), and reads the declaration and
+  partner's bid as well. The heuristic bidder bids only the lowest legal level, so the levels
+  carry less than the book's do. A1, A2, A3, A6 and A7 are violated as in every arena block. The
+  marks arms violate A5, and the points arms restore it.
+- **What our model can see.** The A/A failed: a re-seeded copy of the field beats the field by
+  0.12 marks/game, outside its interval. #149 saw the same spread ([[regulars-table-2026-10-14]]:
+  Z and Za 0.13 apart against R0). Team B is one planner seed, and planner seed 0 may simply be
+  a weaker-than-average draw. Any perturbation of team A's worlds then regresses toward the mean
+  and shows as a gain: a new seed (Za, +0.12), a read whose method is unknown (U, +0.07), and a
+  read whose method is known (K, +0.17). The read *orders* as the book predicts: the known
+  method more than the unknown (K − U = +0.10 [−0.03, +0.23]), and both more than no read
+  over the A/A. But no step clears its MDE, and the bootstrap over deals does not see the
+  scatter between planner seeds, which is real variance at this size.
+- **The book's game.** To 250 the reader wins 53.4% of games, 3.4 points of share over a coin
+  ([+0.3, +6.5]), which is the registered secondary. Against the A/A's share the gap is +2.6
+  points ([−1.8, +7.0]).
+- **The measurement that would settle it.** A field and readers whose planner seed varies by
+  game (a seed per game pair, the same in every arm), so that seed scatter becomes part of the
+  sampling and the interval sees it. Filed as #190.
+
+### Receipts
+
+Pre-registered at a389af35 (`scenario/auction_read.py`). 176 batches through `scripts/cpu-slot`,
+two at a time, 25–149 s each including the wait for a slot. Every batch directory holds its 24 games; none dropped. Timing pilot
+seed 3290 excluded. Run 2026-10-16 09:47–10:51.
 
 ## Design (pre-registered before any measured batch; see `scenario/auction_read.py`)
 
