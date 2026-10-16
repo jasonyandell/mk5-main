@@ -52,6 +52,7 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-16 | gpt-on-42 | A GPT on 42, read for its neurons: the proposal (#175)]
 
 - [[gpt-on-42]] added: recursive generalization (Cammarata/Goodfire 2026-10-15, checked against the essay text), the mover's information state as raw tiles in, 43 margin tokens out (the softmax is the splat), the 250k pour as data, pre-registered probes. Not built. Backlink from [[strategy-fusion]].
+- Same day: the frame set (Jason): input a world plus its record, suit algebra given; output the 43 totals; loss cross entropy against the per-world outcome under Walt's fixed plan.
 
 ## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
 
