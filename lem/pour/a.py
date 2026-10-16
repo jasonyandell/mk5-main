@@ -226,6 +226,12 @@ def merge(out: str | Path, dirs: list[str | Path], log=print) -> dict:
         if len(about["specs"]) != 1:
             raise AssertionError(f"the {half} chunks were poured under several specs: {about['specs']}")
         about["spec"] = about["specs"][0]
+        forced = len(about["forced_deals"])
+        about["declare"] = (
+            "declares by the book's menu (`arena.hand_metrics.menu_choice`, no minimum trump length: the pip "
+            "heuristic below four doubles, doubles trump or no trump from four by Chapter 9's conditions), with "
+            f"one pip deal in {SHARE} forced to doubles or no trump, alternating, and listed in `forced_deals` "
+            f"({forced:,} of this split's {len(p.hands):,} deals)")
         save(p, out / half, **about, commit=_git_head())
         result[half] = {"deals": len(p.hands), "positions": len(p), "chunks": len(about["chunks"]), "forced": len(about["forced_deals"])}
         log(f"{out / half}: {len(p.hands):,} deals, {len(p):,} positions from {len(about['chunks'])} chunks")
