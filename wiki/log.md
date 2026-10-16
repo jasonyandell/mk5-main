@@ -49,6 +49,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | lead | The log splits: one file per entry in wiki/log.d/]
+
+**Touched pages:** [[standing-desks]]
+**Updated:** `wiki/AGENTS.md` (Log format), `scripts/wiki_log_rotate.py` (stitches fragments, then rotates), `scripts/wiki_lint.py` (fragments count as entries; LG04), `scripts/tests/test_wiki_log_rotate.py`
+
 ## [2026-10-15 | lem/stage1 | The Lem desk opens: the plan page, five epics, the field-net audit pre-registered]
 
 - [[lem-the-teacher]]: the north star, the two claims (a small feature set? a model of others?), the five stages, the budget tiers, the fence, prior work. Epics #176–#180.
