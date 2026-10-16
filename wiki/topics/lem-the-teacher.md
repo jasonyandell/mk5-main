@@ -2,7 +2,7 @@
 title: Lem, the teacher — the generative player, and the program to read it
 kind: topic
 first_seen: 2026-10-15
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 status: active
 ---
 
@@ -19,6 +19,11 @@ status: active
 Lem is the project's generative player: a net trained on 42 that learns policies, beliefs and
 dynamics, and models the other seats. It is also the subject of the project's interpretability
 work. Jason's line for the PRs: "Lem, who will grow to be our noble teacher."
+
+Lem is an educational play, not a strength play (Jason, 2026-10-16): "It doesn't have to
+produce something fun to play against. I just want the meanest nastiest models with lots of
+diverse competitors so we see what features arise and can follow them." The population is the
+instrument, and the features that arise under it are the result.
 
 The name is reused on purpose. The old [[lem]] (the Little Expert Model, 2026-04, a phone-class
 language model taught the game by STaR) is finished and stays as history; its page links here.
@@ -67,7 +72,12 @@ idea it grew from is [[clean-neurons-42]].
 
 ### 2. The population
 
-Every game draws its table at random, so the net must infer who it faces. The sources:
+Every game draws its table at random, so the net must infer who it faces, and who it plays
+with: **partners come from the population too**, so a seat reads its partner as well as its
+opponents. The engine is **mixed-partner self-play** in a league (league training, PSRO style;
+#182): every Lem checkpoint and every configured seat joins the always-on ladder
+([[tournament]]), and the hand-written seats are the bootstrap. Jason: "the Silas/pure LLM ideas
+will bootstrap nicely but won't scale like self play of mixed partners will." The bootstrap:
 
 - **parameterized Zeb fields**: play-ε (`field_eps`), `void_miss` ([[fallible-field-2026-10-15]]),
   the count lapse ([[count-lapse-2026-10-15]], #172), both overcall tunings (0.4.0's and
@@ -78,6 +88,15 @@ Every game draws its table at random, so the net must infer who it faces. The so
 - **the Demon's plays as behavior.** Its plays are fine as data about a table; its per-world
   values never enter anything ([[strategy-fusion-fence]]).
 
+**Ratings that survive cycles.** The clean hierarchy is already gone: the overcall tunings of
+Zeb 0.4.0 and 0.4.1 each beat the other's table (rock and paper; [[rematch-zeb-041-vs-demon-2026-10-15]]),
+and Jason expects scissors: "it wasn't the k-levels loop either, just regular policies." The
+ladder keeps Bradley–Terry and adds the full pairwise payoff matrix with Nash-averaged ratings,
+which are invariant to redundant players, so non-transitivity is shown rather than averaged
+away (#182). The arena runs all the time, idling only when no participant has joined for a
+while; #173's work-unit budgets made a game about 3× cheaper, and the FAIR CLOCKS rule
+(`CLAUDE.md`, #181) keeps every game replayable.
+
 ### 3. The nets
 
 - A GPT over the information state that predicts **every seat's next play** (the model of
@@ -87,6 +106,9 @@ Every game draws its table at random, so the net must infer who it faces. The so
   pipeline and one loss, the old LEM's lesson ([[lem]], "Lessons learned").
 - Data generation is CPU (the vast.ai CPU fleet, through `scripts/cpu-slot` locally). Training is
   the M5 Max GPU or rented B200s.
+- The league is the data source as well as the judge: each checkpoint joins the ladder, its
+  games (with partners and opponents drawn from the population) feed the next round of
+  training, and the model of others is learned from a table that keeps changing (#182).
 
 ### 4. Interpretability
 
@@ -98,7 +120,8 @@ for a word the game needed and did not have.
 
 ### 5. The player
 
-In-context adaptation, priced in the arena ([[tournament]]):
+In-context adaptation, priced in the arena ([[tournament]]) against the whole league, with the
+payoff matrix and Nash averaging as the scoreboard (#182):
 
 - against each specialist of stage 2: nearly win at both kinds of table (the overcall's two
   tunings are the first pair);
@@ -159,7 +182,8 @@ a shipped Lem player follows Zeb (MIT) is the Mayor's call when there is one to 
 ## Issues
 
 One epic per stage: #176 (stage 1, the audit), #177 (the population), #178 (the nets), #179
-(interpretability), #180 (the player).
+(interpretability), #180 (the player). #182 is the league: the arena as Lem's population
+engine, across stages 2, 3 and 5.
 
 ## Links
 
