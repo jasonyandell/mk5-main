@@ -55,6 +55,40 @@ records, binary hashes and package parity. Plan SHA-256:
 `d6ffaec97d8c29649bde0deed59feadae85b749218898be1edea31112522d23e`.
 Fresh downloads of plan and manifest match local bytes.
 
+## Stage 1 result and round 2
+
+All **448 games / 4,777 hands** finished without replacement, and the source,
+seat-visible request, bidding, scoring and cost audit passed. The
+[complete evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/64ead57317cf2ec67fcc450b4ffa1fcecd5bd029/demon/2026-10-16-ascent/development-results)
+contains every game, trace, cost and arm report. Fresh downloads of the plan,
+manifest, a raw game and all reports match local bytes.
+
+| Arm | Wins / 64 | Win rate, 95% pair interval | Total CPU / native Zeb, 95% pair interval |
+|---|---:|---:|---:|
+| Control | 29 | 45.3% [35.9, 54.7] | 0.579 [0.567, 0.590] |
+| Open 0.50 | 21 | 32.8% [21.9, 43.8] | 0.547 [0.535, 0.560] |
+| Open 0.625 | 18 | 28.1% [18.8, 37.5] | 0.554 [0.541, 0.568] |
+| Open 0.75 | 20 | 31.3% [21.9, 40.6] | 0.563 [0.551, 0.574] |
+| Over 0.25 | 27 | 42.2% [29.7, 54.7] | 0.594 [0.581, 0.606] |
+| Over 0.625 | 32 | 50.0% [39.1, 60.9] | 0.567 [0.555, 0.581] |
+| Over 0.75 | 32 | 50.0% [39.1, 60.9] | 0.555 [0.543, 0.568] |
+
+The fixed tiebreak selects over 0.625 (+0.047 marks/game, 95% [-0.688,
++0.813]) over 0.75 (-0.078, [-0.859, +0.703]). None establishes a win
+against Zeb. This is development, not a promotion.
+
+Round 2 fixes **nine arms × 32 fresh duplicate pairs / 576 games**, seed
+base `0xD4510000`. Reference: opening 0.875 / opponent 0.625, 100 play
+worlds, 64 bid worlds. The other arms change opponent cutoff to 0.875 or
+1; opening cutoff to 0.9375 or 1; both cutoffs to 0.9375/0.875 or 1/1;
+play worlds to 400; or bid worlds to 128. The engines and adapters remain
+identical. Every arm finishes before the same CPU-qualified selection;
+confirmation remains separate. The remaining CPU budget motivates the
+larger-world arms, without assuming they improve play. The
+[round 2 protocol](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0fda7a1c52e6143f05c7dd78a3a9e36cc03cf35a/demon/2026-10-16-ascent/development-2-protocol)
+was published and freshly verified before play (plan SHA-256
+`da05bf7d926fa52bd3bcb8270cb6e6ec397e47a8673f421519c33f996ba1f2e3`).
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**
