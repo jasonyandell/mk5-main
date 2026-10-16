@@ -4316,3 +4316,45 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-15 | demon/attempt-1 | Complete native Zeb confirmation: joint criterion not met]
 
 **Completed:** [[demon-vs-zeb-2026-10-15]]; all 1,024 games and timings published, standard bar clears but match-aware win interval crosses chance. **Added:** [[demon-zeb-attempt-1]]. **Updated:** [[the-demon]] [[scenario-player]]. No candidate promotion; #165 remains open.
+
+## [2026-10-15 | demon/overcalls | Contest opponent-held point bids without more search]
+
+**Added:** [[demon-overcalling-2026-10-15]] and [[2e233d29]]: explicit opponent cutoff, boundary and whole-game checks, three fixed development arms and fresh attempt-2 protocol. **Updated:** [[the-demon]]; attempt 1 remains complete and unpromoted.
+
+## [2026-10-15 | 2e233d29 | Demon overcalling development complete; second confirmation frozen]
+
+**Updated:** [[demon-overcalling-2026-10-15]]: all 192 development games audited and public; fixed rule selects Over 0.50. Exact candidate and 2,048-game fresh confirmation protocol published before play. No promotion; #165 remains open.
+
+## [2026-10-15 | demon/confirmation-2 | Demon beats both pinned native Zeb bidders within the runtime bar]
+
+**Completed:** [[demon-overcalling-2026-10-15]]: all 2,048 games audited and public; both predeclared strength/runtime criteria met. **Added:** [[demon-zeb-attempt-2]] and the exact frozen participant to the roster. **Updated:** [[the-demon]] [[tournament]] [[scenario-player]].
+
+## [2026-10-15 | book/overbidders | The book's own overbidders: its bidding loses less ground against them (#163)]
+
+- [[overbidders-2026-10-14]] complete: X_S = +0.15 [+0.02, +0.28], X_T = +0.23 [+0.03, +0.41] marks/game, the book's prediction; `risk-budget` still trails the control in every field; the ten-count 35 sets itself (+1.30 [1.13, 1.45]).
+- [[book-assumptions]] A6 row and reading; [[deviant-field-2026-10-14]] notes that its k = 0 "level to 250" did not replicate on new seeds (byte-identical re-run, so the draw).
+- Data: HF `book/overbidders/`.
+
+## [2026-10-15 | book/fallible | The fallible field pre-registered (#151): the book's play against opponents who lose track]
+
+- [[fallible-field-2026-10-15]]: deployed Zeb forgetting a seat's voids with probability p per decision (`void_miss`), p ∈ {0, 0.1, 0.2, 0.4}; primary ΔG(0.4) and p*; 384 batches; `scenario/fallible.py`.
+
+## [2026-10-15 | book/fallible | The fallible field (#151): a field that forgets voids pays, and the book player and Zeb collect it equally]
+
+- [[fallible-field-2026-10-15]] complete: ΔG(0.4) = −0.03 [−0.14, +0.08] marks/game (MDE 0.16), p* beyond the grid; the field's cost of forgetting 0.32 [0.23, 0.41] at p = 0.4.
+- [[book-assumptions]] A3 row and reading. The book's ploys lean on losing the count, filed as #172.
+- Data: HF `book/fallible/`.
+
+## [2026-10-15 | rematch | Zeb 0.4.1 vs the overcalling Demon: pre-registered before any game]
+
+**Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). **Result:** 0.4.1 wins 57.03% [53.12, 60.94] vs the Demon, 0.4.0 32.62% [28.91, 36.13] on the same seeds; +24.4 points [+19.5, +29.3]; no drops. Evidence on HF, faceoffs in the store.
+
+## [2026-10-15 | archive | the s100001 field net in layout field-v2, published with its hash (#136)]
+- `field_make_d5000_v2` converted once (13 zero bid rows); `31ecd76d` + the converted net and `2577f404` + the original
+  both reproduce the published s100001 chunk bit for bit (512 deals, 8,844 positions). The manifest's `31ecd76d` is a
+  save-time stamp; the run itself was `2577f404`. `margin_d50k_h128x64` loads as is.
+- Touched: [[book-study-2026-10-12]], [[lumps-voi-2026-10-13]], [[metasplat-2026-10-13]]; the pour's card on HF.
+
+## [2026-10-15 | book/count-lapse | The field that loses the count pre-registered (#172)]
+
+- [[count-lapse-2026-10-15]]: `arena/count_lapse.py`, a seat's view with a played and a live tile exchanged (a legal game, sticky for the hand); not a fiber, so the shared record is untouched; primary ΔG(0.2), 384 batches. [[book-assumptions]] A3 scope line.

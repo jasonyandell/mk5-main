@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-15, 293 archived entries)
+## Digest (2026-04-09 → 2026-10-15, 302 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -49,6 +49,23 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | sweep | Branch rescue: verdicts on every branch]
+
+- [[branch-rescue-2026-10]] § Other verdicts: recursive-generalization merged, table42 sent as `rescue/table42` (fence question), the July stack waits on Jason, live branches untouched.
+
+## [2026-10-16 | sweep | Burl perf wiki pages rescued from the perf/batch and perf/cheap branches]
+
+- Added [[burl-perf-phase1]] (a link that had been dead since the era-6 audit), [[mlx-cohort-bench-discipline]], [[harvest-cohort-abstraction]], all `status: superseded`. The branches' bench JSON stays in the `attic/perf/*` tags. See [[branch-rescue-2026-10]].
+- Tombstones for `perf/batch` and `perf/cheap` in [[branch-rescue-2026-10]].
+
+## [2026-10-16 | sweep | Branch rescue: nine branches tombstoned under attic/ tags]
+
+- [[branch-rescue-2026-10]] § Tombstones: beads-sync, gascity, mk9, one-hand-per-page, worktree-walt, worktree-fix-jud, worktree-parlor, worktree-parlor-promote, worktree-wiki-overhaul; tags pushed first, branches deleted after.
+
+## [2026-10-16 | sweep | Branch rescue: every unmerged branch inventoried and sorted]
+
+- [[branch-rescue-2026-10]]: 23 remote + 19 local unmerged branches, one table; the July Walt/Hoyt stack (ten PRs) is waiting on Jason; verdicts and tombstones are added to the page as each branch is acted on.
+
 ## [2026-10-16 | lem | The old LEM's code removed; its tombstone and seven lessons on the entity page]
 
 - [[lem]]: code gone at b4a3e5b7 under the no-legacy rule (the Mayor's go); § Tombstone (cd5683c0): dates and commits, every finding with its source and "no interval reported", why [[burl]] superseded it, seven sourced lessons each paired with what [[lem-the-teacher]] does differently, where the adapters, W&B runs and git history live.
@@ -58,6 +75,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 **Touched pages:** [[standing-desks]]
 **Updated:** `wiki/AGENTS.md` (Log format), `scripts/wiki_log_rotate.py` (stitches fragments, then rotates), `scripts/wiki_lint.py` (fragments count as entries; LG04), `scripts/tests/test_wiki_log_rotate.py`
+
+## [2026-10-15 | 8df99e8b | Recursive generalization as an information-honest concept-learning proposal]
+
+- Added [[recursive-generalization]]: original CC0 research note, ordinary training with checkpoint lineage, Silas transfer/counterexamples, causal tests and separate play-strength gates. No experiment run; constructor dependency is unmerged PR #166.
+- Routed from [[suit-algebra]] and the topics catalog.
 
 ## [2026-10-15 | lem/stage1 | The Lem desk opens: the plan page, five epics, the field-net audit pre-registered]
 
@@ -72,45 +94,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
 
 - `silas/src/field.rs`: a field of four Silas players, `play_out` (the auction, the declaration, all 28 plays, each seat at its own frame), `Deals::{Listed, Uniform}`, the paired `Trial::compare` with flips, the chance arm and an empirical-Bernstein interval (exact given the field over a list; never `exact`). Choices in `silas/docs/cross-game.md`, Slice 3 as built; Fiber and Hands deferred. [[silas]]
-
-## [2026-10-15 | book/count-lapse | The field that loses the count pre-registered (#172)]
-
-- [[count-lapse-2026-10-15]]: `arena/count_lapse.py`, a seat's view with a played and a live tile exchanged (a legal game, sticky for the hand); not a fiber, so the shared record is untouched; primary ΔG(0.2), 384 batches. [[book-assumptions]] A3 scope line.
-
-## [2026-10-15 | archive | the s100001 field net in layout field-v2, published with its hash (#136)]
-- `field_make_d5000_v2` converted once (13 zero bid rows); `31ecd76d` + the converted net and `2577f404` + the original
-  both reproduce the published s100001 chunk bit for bit (512 deals, 8,844 positions). The manifest's `31ecd76d` is a
-  save-time stamp; the run itself was `2577f404`. `margin_d50k_h128x64` loads as is.
-- Touched: [[book-study-2026-10-12]], [[lumps-voi-2026-10-13]], [[metasplat-2026-10-13]]; the pour's card on HF.
-
-## [2026-10-15 | rematch | Zeb 0.4.1 vs the overcalling Demon: pre-registered before any game]
-
-**Added:** [[rematch-zeb-041-vs-demon-2026-10-15]] (256 duplicate pairs per arm, 0.4.0 match-aware as the equal-deals reference). **Added:** participants `zeb-0.4.1-contested`, `zeb-0.4.0-match` (kind `zeb-native`, roster only). **Result:** 0.4.1 wins 57.03% [53.12, 60.94] vs the Demon, 0.4.0 32.62% [28.91, 36.13] on the same seeds; +24.4 points [+19.5, +29.3]; no drops. Evidence on HF, faceoffs in the store.
-
-## [2026-10-15 | book/fallible | The fallible field (#151): a field that forgets voids pays, and the book player and Zeb collect it equally]
-
-- [[fallible-field-2026-10-15]] complete: ΔG(0.4) = −0.03 [−0.14, +0.08] marks/game (MDE 0.16), p* beyond the grid; the field's cost of forgetting 0.32 [0.23, 0.41] at p = 0.4.
-- [[book-assumptions]] A3 row and reading. The book's ploys lean on losing the count, filed as #172.
-- Data: HF `book/fallible/`.
-
-## [2026-10-15 | book/fallible | The fallible field pre-registered (#151): the book's play against opponents who lose track]
-
-- [[fallible-field-2026-10-15]]: deployed Zeb forgetting a seat's voids with probability p per decision (`void_miss`), p ∈ {0, 0.1, 0.2, 0.4}; primary ΔG(0.4) and p*; 384 batches; `scenario/fallible.py`.
-
-## [2026-10-15 | book/overbidders | The book's own overbidders: its bidding loses less ground against them (#163)]
-
-- [[overbidders-2026-10-14]] complete: X_S = +0.15 [+0.02, +0.28], X_T = +0.23 [+0.03, +0.41] marks/game, the book's prediction; `risk-budget` still trails the control in every field; the ten-count 35 sets itself (+1.30 [1.13, 1.45]).
-- [[book-assumptions]] A6 row and reading; [[deviant-field-2026-10-14]] notes that its k = 0 "level to 250" did not replicate on new seeds (byte-identical re-run, so the draw).
-- Data: HF `book/overbidders/`.
-
-## [2026-10-15 | demon/confirmation-2 | Demon beats both pinned native Zeb bidders within the runtime bar]
-
-**Completed:** [[demon-overcalling-2026-10-15]]: all 2,048 games audited and public; both predeclared strength/runtime criteria met. **Added:** [[demon-zeb-attempt-2]] and the exact frozen participant to the roster. **Updated:** [[the-demon]] [[tournament]] [[scenario-player]].
-
-## [2026-10-15 | 2e233d29 | Demon overcalling development complete; second confirmation frozen]
-
-**Updated:** [[demon-overcalling-2026-10-15]]: all 192 development games audited and public; fixed rule selects Over 0.50. Exact candidate and 2,048-game fresh confirmation protocol published before play. No promotion; #165 remains open.
-
-## [2026-10-15 | demon/overcalls | Contest opponent-held point bids without more search]
-
-**Added:** [[demon-overcalling-2026-10-15]] and [[2e233d29]]: explicit opponent cutoff, boundary and whole-game checks, three fixed development arms and fresh attempt-2 protocol. **Updated:** [[the-demon]]; attempt 1 remains complete and unpromoted.
