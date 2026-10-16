@@ -93,8 +93,8 @@ right answer to check a neuron against:
   branch to "count at risk this trick", then to "count my partner can save".
 - **Inference from the fall.** A failure to follow suit reveals a void. A play reveals
   something about the hand it came from ([[reads-plays-2026-10-13]]). A "seat is void in X"
-  feature is a branch of "seat did not follow X". (A world model is handed the hands, so
-  this needs the information-state arm below.)
+  feature is a branch of "seat did not follow X". The network must infer it, because the
+  hidden hands never reach its input.
 - **The recursion of the trick game itself.** Walt's rungs plan over continuations of
   continuations ([[scenario-player]]). Whether depth shows up as layered features is an open
   question, not a prediction.
@@ -109,64 +109,64 @@ below is one of those three slots.
 
 | slot | choice |
 |---|---|
-| **input** | one **world** (all 28 tiles placed: the four hands at the deal) and one **record** (the history: the auction, the declaration, the plays so far in order), then one legal move of the seat to play |
+| **input** | the **seat's view**: its own seven tiles and the **record** (the auction, the declaration, the plays so far in order), then one legal move. Never a world. |
 | **output** | a distribution over the **43 final bidder-point totals** (0..42; margins are even, so 43 values are every outcome) |
-| **loss** | cross entropy between that distribution and **the answer**: the final total that move reached in that world when the hand was finished by Walt's fixed plan, as stored in the pour |
+| **answer** | Walt's **splat** for that move at that view: the weighted per-world outcomes over the seat's cell, under Walt's plan, as stored in the pour |
+| **loss** | cross entropy between the predicted distribution and the splat |
 
-**Why world plus record.** It is the input Walt and [[silas]] already use. A Silas query is
-evaluated in each hidden world consistent with what a seat knows, *given the record*; the
-record is required for Silas to state a question at all, and it is grounded in the
-mathematics. A world has many records (every position along a hand, every alternative
-move), and a record has many worlds (the seat's cell), so the data is a grid. The pour
-already stores that grid: at each planned position, a per-world outcome for every legal
-move, together with the worlds and their weights ([[scenario-player]], "The pour").
+**Why the record.** It is what [[silas]] needs to state a question at all: a Silas query is
+asked of a viewer given the record, and a Silas policy reads only the viewer's information.
+The record is grounded in the mathematics; the hidden hands are not the seat's to read.
 
 **Why a distribution, not a number.** "Loss is the difference" becomes cross entropy, the
-difference between the predicted distribution and the answer. The answer is one point mass;
-the prediction is a softmax over 43 values, so the loss is smooth in the weights. That is
-the step from the plain sentence to something continuous. Where the field is stochastic
-(#108), the same world and record can end differently. Cross entropy on those samples
-learns the *distribution* of endings, not their average, so [[candlewax]] shapes survive.
+difference between two distributions over the same 43 outcomes. The prediction is a softmax,
+so the loss is smooth in the weights. That is the step from the plain sentence to something
+continuous. It learns the shape, not just the mean, so [[candlewax]] shapes survive.
 
-**The splat falls out exactly.** For a seat's cell with world weights w, the move's splat
-is Σ w · model(world, record, move): the weighted average of per-world predictions. A splat
-([[splat-visualizer]]) is that average by definition, so nothing new is assumed. The
-weights come from Walt's sampler or posterior; the network never decides who holds what.
+**The splat is the output.** A softmax over 43 totals *is* a splat
+([[splat-visualizer]]). The model maps a view to a splat directly; one output per
+information set (Lemma W, cited in [[splat-search-bounds]]) holds by construction, because
+nothing else reaches the input.
 
 **The suit algebra goes in (Jason's call).** The rules of suit and rank are small and odd,
 and a model can spend most of its capacity relearning them. Each tile's embedding is a sum
 of three learned vectors: its identity (one of 28), its suit under the declaration
 (absorption), and its rank in that suit (power, τ) ([[suit-algebra]]). This hands the model
 the *rules*, not the strategy. The concepts worth watching move up a level: winning the
-trick, count at risk, control of trump, partner's hand. The cost: "is a six" no longer has
-to be grown, so it cannot be watched growing. A raw-identity arm stays available as a
-control, not the default.
+trick, count at risk, control of trump, voids read from the fall, what partner holds. A
+raw-identity arm stays available as a control.
 
-**What a world model can and cannot show.** With every hand given, the network never has to
-infer a hidden tile. Inference (voids from the fall, reads of a play) lives in the weights w,
-outside the network. Neurons for play (tricks, count, trump control, entries) are on the
-table. Neurons for belief are not, unless an information-state arm is added later (record
-without the world, the target being the splat itself).
+### The fence, and the mistake it caught
 
-### The fence
+A draft of this page (2026-10-16) fed the network a whole **world** (all four hands) and
+trained it on per-world outcomes, averaging the predictions over the cell afterwards. The
+target was honest, being Walt's plan played out, and the average is how a splat is defined.
+Jason rejected it ("strategy fusion is a demon! it is fenced!"), and he was right on two
+counts:
 
-The answer is a per-world outcome under **Walt's fixed plan**: one choice per information
-set, then played out. That is what a splat is made of, and it is sanctioned. A per-world
-**double-dummy** optimum is not: there, play in each world is chosen knowing that world,
-which is the oracle-era mistake that taught every student to play as if it could see all
-four hands ([[the-wall]], [[strategy-fusion-fence]]). The input may be a whole world; the
-target must never be a clairvoyant value, and the seat's value is only ever the cell-weighted
-average. The first nanoGPT in this project's history was trained on oracle move frequencies,
-blind to the transcript, and was killed within about 36 hours ([[strategy-fusion]], "The
-first fix"). This design differs on both counts.
+- **The neurons would see all four hands.** The concepts to be studied would form in a
+  network that never has to infer a hidden tile. They would be a seer's concepts, which is
+  the disease of the oracle era: students that play as if they could see every hand
+  ([[the-wall]]). An honest target does not undo a clairvoyant input.
+- **A per-world value is one argmax from fusion.** The fence
+  ([[strategy-fusion-fence]]) makes the mistake structurally impossible; it does not trust
+  discipline at the call site. A model with a world in its input is a clairvoyant API, and
+  this project does not build new ones.
+
+The rule for this work: **no world ever enters the input.** Worlds appear only inside the
+answer, where Walt has already averaged them over the seat's cell. The first nanoGPT in this
+project's history was trained on oracle move frequencies, blind to the transcript, and was
+killed within about 36 hours ([[strategy-fusion]], "The first fix"). This design differs on
+both counts.
 
 ### The data already exists
 
 [texas-42-zeb-pour-250k](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-pour-250k)
 (CC0; [[huggingface-assets]]) keeps the whole splat for every legal move at every planned
 position. That is 4,343,426 planned positions ([[metasplat-2026-10-13]]), each with up to
-512 worlds per legal move: billions of (world, record, move, answer) rows, far more than a
-small model needs, so rows are sampled. A row is about 70 tokens (28 placed tiles, at most 28 plays, the auction, the declaration, the move). A
+512 worlds per legal move. One row is (view, move, splat), several million rows. A row
+is about 45 tokens (seven tiles, at most 28 plays, the auction, the declaration, the
+move). A
 model with a few million parameters is a CPU-scale experiment, not a GPU campaign.
 
 Two scope limits are inherited from the pour:
@@ -179,7 +179,8 @@ Two scope limits are inherited from the pour:
 Pre-register the following before the first training run, in the project's habit.
 
 1. **The concept list and the probes.** For each candidate above, write down the exact label
-   (computable from the information state, or from the deal for the hidden ones) and the
+   (computable from the information state, or from the deal for the hidden ones, used only
+   to grade a probe, never as input) and the
    test. The tests read each neuron pole (positive and negative), the context around its top
    activations, steering, and upstream and downstream weights. A linear probe is the baseline
    the neurons must beat. The neurons are the unit of study, not a decomposition. Use a modern
@@ -191,8 +192,7 @@ Pre-register the following before the first training run, in the project's habit
 3. **The squeeze, as a size sweep.** Train the same architecture across a wide range of
    widths (the essay used 300×). The claim predicts coarser concepts that can still be read,
    not noise, and branches that differentiate as room grows.
-4. **Splat fidelity.** On held-out deals, average the model's per-world predictions with
-   the cell's weights and measure the KL to Walt's splat and the error in
+4. **Splat fidelity.** On held-out deals, measure the KL to Walt's splat and the error in
    pmake at the contract. The field net (`margin_d250k_h128x64`, [[scenario-player]]) is the
    baseline to beat or tie.
 5. **Play, last.** Measure arena regret against Walt, with an interval and its chance

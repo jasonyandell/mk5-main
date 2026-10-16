@@ -2,7 +2,7 @@
 title: "The strategy-fusion fence: clairvoyant solvers fenced, information-state solvers welcome"
 kind: topic
 first_seen: 2026-10-13
-last_updated: 2026-10-14
+last_updated: 2026-10-16
 status: active
 ---
 
@@ -23,6 +23,12 @@ every usable API answers with the token and a link here.
 - **Findable by grep.** "Agent will find it by grep, not chunk. 'Oh there's a DD solver,
   I'll just use that' is entirely fair play by a future model." So the fence carries one
   fixed token, `STRATEGY-FUSION FENCE`, wherever a clairvoyant API is defined or called.
+
+- **Learned models too (Jason, 2026-10-16).** No world enters a learned model's input:
+  a network with all four hands in its input is a clairvoyant API, even when its target is
+  an honest per-world outcome under a fixed plan. Its concepts would be a seer's, and it is
+  one argmax from fusion. Worlds may appear only inside a target that has already been
+  averaged over a seat's cell (a splat). The case that drew the ruling: [[gpt-on-42]].
 
 Why: E[max] ≥ max E. A per-world best line credits each world with a play no seat that
 cannot see the hands could choose ([[strategy-fusion]]). The oracle taught every student
