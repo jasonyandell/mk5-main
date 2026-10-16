@@ -19,7 +19,7 @@ import pytest
 from tournament import artifacts, seats
 from tournament import worker as W
 from tournament import zeb_native_seat as Z
-from tournament.participants import (DEMON_OVERCALL_N100, ROSTER, WALT, ZEB_040_MATCH,
+from tournament.participants import (DEMON_OVERCALL_N100, FAIR_WALT, ROSTER, ZEB_040_MATCH,
                                      ZEB_041_CONTESTED, Participant, load_all,
                                      supports_straight_games)
 from tournament.schedule import next_pair
@@ -84,13 +84,13 @@ def test_the_worker_advertises_zeb_native_only_when_it_can_build_it(monkeypatch)
 
 
 def test_the_scheduler_can_pick_the_configured_seats(monkeypatch):
-    records = {p.id: p.to_record() for p in (WALT, *CONFIGURED, DEMON_OVERCALL_N100)}
+    records = {p.id: p.to_record() for p in (FAIR_WALT, *CONFIGURED, DEMON_OVERCALL_N100)}
     fake_machine(monkeypatch, {"node", "cargo", "git"})
     caps = W.capabilities()
     assert W.runnable(records, caps) == sorted(records)
     fake_machine(monkeypatch, {"node"})
-    assert W.runnable(records, W.capabilities()) == [WALT.id]  # no capability, no seat
-    fit = W.ratings(records, [], WALT.id)
+    assert W.runnable(records, W.capabilities()) == [FAIR_WALT.id]  # no capability, no seat
+    fit = W.ratings(records, [], FAIR_WALT.id)
     allowed = W.runnable(records, caps)
     choice = next_pair(fit, 2, allowed, rng=random.Random(0))
     assert {choice.a, choice.b} <= set(records) and choice.a != choice.b

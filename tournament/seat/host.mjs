@@ -104,6 +104,13 @@ function virtualClock(step) {
 }
 
 async function waltSeat() {
+  if (config.clock !== 'real' && config.clock !== 'virtual') {
+    throw new Error(`walt: config.clock must be "real" or "virtual", not ${JSON.stringify(config.clock)}`);
+  }
+  const VIRTUAL = config.clock === 'virtual';
+  const STEP = config.clock_step_us;
+  if (VIRTUAL && !(STEP > 0)) throw new Error('walt: a virtual clock needs clock_step_us > 0');
+
   const wasm = readFileSync(join(dir, 'walt-player.wasm'));
   const module = await WebAssembly.compile(wasm);
   const book = JSON.parse(readFileSync(join(dir, 'played.json'), 'utf8'));
@@ -114,13 +121,6 @@ async function waltSeat() {
   const bestPanel = (panels, bid) =>
     panels.reduce((a, b) => (b.tails[bid - 30] * a.games > a.tails[bid - 30] * b.games ? b : a));
   const qualifies = (p, bid) => p.tails[bid - 30] * thrDen >= p.games * thrNum;
-
-  if (config.clock !== 'real' && config.clock !== 'virtual') {
-    throw new Error(`walt: config.clock must be "real" or "virtual", not ${JSON.stringify(config.clock)}`);
-  }
-  const VIRTUAL = config.clock === 'virtual';
-  const STEP = config.clock_step_us;
-  if (VIRTUAL && !(STEP > 0)) throw new Error('walt: a virtual clock needs clock_step_us > 0');
 
   const decoder = new TextDecoder();
   const call = (obj) => {

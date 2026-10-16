@@ -28,7 +28,8 @@ are a function of the participant alone, so two writers adding it write the same
 
 | id | what | pinned by |
 |---|---|---|
-| `walt-plunge-26043bf9` (anchor, 1500) | Plunge's production Walt, difficulty `native-partner` | Plunge commit `26043bf9` (what plunge.texas42.workers.dev/version.json served 2026-10-14); `walt-player.wasm` sha256 `40d7a1ee…`, `book/played.json` `3e2bf7ae…`, `manifest.json` `e15bc53e…`, each fetched from that commit and checked on load; built from texas-42 `cb1ef3b2` |
+| `walt-plunge-26043bf9` (withdrawn from scheduling, records kept) | Plunge's production Walt, difficulty `native-partner`; thinks on a wall clock (`"clock": "real"`) | Plunge commit `26043bf9` (what plunge.texas42.workers.dev/version.json served 2026-10-14); `walt-player.wasm` sha256 `40d7a1ee…`, `book/played.json` `3e2bf7ae…`, `manifest.json` `e15bc53e…`, each fetched from that commit and checked on load; built from texas-42 `cb1ef3b2` |
+| `walt-plunge-26043bf9-fair` (anchor, 1500) | the fair Walt ([[fair-walt-2026-10-16]]): production Walt's identical wasm, book and manifest (the same pin, the same three sha256s) driven by a host whose `now_us` is a counter, `"clock": "virtual"`, `clock_step_us` 0.839 | the same Plunge commit `26043bf9` and checks as the row above; the step is 1e6 over production's pooled `now_us` reads per second on the registered panel |
 | `zeb-0.1.0` | `@jasonyandell/zeb` 0.1.0, 160 worlds, cutoff 0.8 | npm integrity `sha512-GyEDG0FE…`, shasum `30aee968…` |
 | `zeb-0.2.0` | `@jasonyandell/zeb` 0.2.0, same settings | npm integrity `sha512-YnlKLquB…`, shasum `12763486…` |
 | `eq-n10-fenced` | E[Q] n=10 (`heuristic+lens:ev`), the oracle era's champion | checkpoint sha256 `5f3f00de…`; the faceoff records the mk5 commit that ran it |
@@ -51,9 +52,28 @@ its own dealt tiles and the public record only.
   `sunshine/<game>/<hand>`; every reply cross-checked against the table's leader and points.
   Two honest differences from the phone: tournament deals are random, so the live survey bids
   almost every hand where Plunge (which deals only its 130 catalogue deals) uses the book; and
-  Walt's budgets are wall-clock, so a reply depends a little on the machine. Its record says
-  `"clock": "real"`, and a faceoff it plays outside `cpu-slot --exclusive` is marked
-  `noisy_timed` (#173). Every other participant decides by worlds and seeds, not by a clock.
+  production's budgets are wall-clock, so a reply depends a little on the machine. That record
+  says `"clock": "real"`, is **withdrawn from scheduling** (its faceoffs stay in the fit), and
+  a faceoff it plays is marked `noisy_timed` unless it ran under `cpu-slot --exclusive` (#173).
+  The seat that plays is the **fair Walt** (`walt-plunge-26043bf9-fair`, #181): the same wasm
+  behind a host whose clock is virtual. The n-th `now_us` read of a call returns
+  `floor(n × clock_step_us)` microseconds, so the 14 s, 20 s and 500 ms budgets are counts of the
+  solver's own work. The survey's four-worker race becomes a schedule in virtual time (the nine
+  jobs in declaration order, each to the worker free first, each with the budget the 20 s
+  deadline leaves it; the real pool still runs a round at once and a job that overran its true
+  budget is rerun with it), so a game replays bit for bit on any machine at any load.
+
+- **FAIR CLOCKS** (CLAUDE.md, Jason 2026-10-16: "all players in the arena should be made fair not
+  wall"). Every seated player thinks on worlds, nodes, work units or a virtual clock, never wall
+  time; wall time, CPU time and instructions are reported, not budgeted. Enforced three ways:
+  `deterministic_budget(record)` (no `"clock": "real"`; a Walt seat must declare the virtual
+  clock and its step) gates `schedulable()`, which `runnable()` and resumed claims use; `work()`
+  refuses to claim a pair that fails it; and `seats.seat()` refuses to build such a seat unless
+  asked for a `historical` research seat (the paired check against withdrawn production Walt).
+  `tournament/tests/test_fair_clocks.py` pins all of it. Audit of `arena/` (#181): every
+  `time.time()`/`monotonic` is a progress log or a reported `elapsed_s`; no arena seat reads a
+  clock to decide. Zeb (npm and native), the Demon (`ms` reported only) and E[Q] n=10 decide by
+  worlds and seeds, and the study exploiter takes node budgets (#173).
 - **Zeb** bids with its own rule (`forecast` + `chooseBid`) behind Plunge's partner-pass
   convention, never past one mark, declares the likeliest declaration at the contract, plays with
   `play`, all at 160 worlds, seed 0 (the package defaults).
@@ -100,7 +120,7 @@ pair's seed and the hand number, never on who sits where), so card luck cancels 
 **Rating model: Bradley–Terry, fitted, not online Elo.** P(i beats j) = σ(θ_i − θ_j), fitted by
 maximum a posteriori over every game ever recorded, with a weak prior θ ~ N(0, 2²) (347 Elo; it
 keeps an unbeaten player finite and is overruled by a few games). Reported as
-1500 + (400 / ln 10)(θ_i − θ_anchor), anchored on production Walt. Online Elo would depend on
+1500 + (400 / ln 10)(θ_i − θ_anchor), anchored on the fair Walt (production Walt until #181). Online Elo would depend on
 the order records arrive in, which concurrent workers do not choose; the fit does not (tested).
 
 **Intervals that know about the pairing.** The two games of a duplicate pair share their cards,
@@ -110,6 +130,15 @@ V = H⁻¹(B + P)H⁻¹, one cluster per pair. A pair that splits 1–1 carries 
 independent games, one that always agrees carries more (tested both ways). Measured coverage of
 the 95% intervals on simulated duplicate pairs: 94.8% without deal luck, 93.8% with strong deal
 luck (800 intervals each). Intervals are for θ_i − θ_anchor.
+
+**Re-anchoring (#181).** The anchor moved from production Walt to the fair Walt. The fit is
+unchanged by that: P(i beats j) = σ(θ_i − θ_j) depends only on differences, so the anchor chooses
+which player reads 1500 and nothing else. Every rating shifts by one constant, every gap between
+two players is the same, and the games stay what they were (`tournament/tests/test_fair_clocks.py`
+fits one set of games on both anchors and compares). Intervals are for θ_i − θ_anchor, so they
+are re-expressed against the new anchor and the fair Walt's own interval is a point. Until
+the fair Walt has played, its rating is the prior's and the table is still linked through production
+Walt's kept records. Rows in "The first round" below are the old scale (production Walt = 1500).
 
 **Scheduling for information.** One faceoff between i and j adds about w = games·p(1−p) of Fisher
 information along e_i − e_j; the trace of the (centred) rating covariance then falls by

@@ -22,7 +22,7 @@ from forge.zeb.game import current_player
 from arena import cost
 
 from .artifacts import materialize
-from .participants import Participant
+from .participants import Participant, deterministic_budget
 
 HOST = Path(__file__).resolve().parent / "seat" / "host.mjs"
 NATIVE_HOST = Path(__file__).resolve().parent / "seat" / "native-host.mjs"
@@ -158,8 +158,14 @@ class ArenaSeat:
         pass
 
 
-def seat(p: Participant, game: str, device: str | None = None):
-    """A fresh seat for one team in one game."""
+def seat(p: Participant, game: str, device: str | None = None, *, historical: bool = False):
+    """A fresh seat for one team in one game.
+
+    FAIR CLOCKS (#181): a participant whose config says `clock: real` thinks on wall time and is
+    not seated, except as a `historical` research seat (a paired check against a withdrawn player).
+    """
+    if not historical and not deterministic_budget(p.to_record()):
+        raise ValueError(f"{p.id} thinks on wall time; FAIR CLOCKS forbids seating it")
     if p.kind == "zeb-npm":
         return HostSeat(NodeHost("zeb", materialize(p), p.config), game)
     if p.kind == "zeb-native":

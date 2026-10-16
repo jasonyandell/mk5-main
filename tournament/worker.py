@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .faceoff import LADDERS, FaceoffSpec, assemble, play_game
-from .participants import ANCHOR, Participant, supports_straight_games
+from .participants import ANCHOR, Participant, deterministic_budget, schedulable, supports_straight_games
 from .rating import Game, fit
 from .schedule import next_pair
 from .store import dumps
@@ -113,7 +113,7 @@ def capabilities() -> set[str]:
 def runnable(participants: dict, caps: set[str], only: set[str] | None = None) -> list[str]:
     return sorted(pid for pid, r in participants.items()
                   if set(r.get("needs", ())) <= caps and (only is None or pid in only)
-                  and supports_straight_games(r))
+                  and schedulable(r))
 
 
 def harness() -> dict:
@@ -179,14 +179,15 @@ class Claims:
 
 # ------------------------------------------------------------- one faceoff
 
-def run_claim(claim: Path, store, *, parallel: bool = True, device: str | None = None) -> str:
+def run_claim(claim: Path, store, *, parallel: bool = True, device: str | None = None,
+              historical: bool = False) -> str:
     """Finish the claimed faceoff and append its record. Returns its path."""
     meta = json.loads((claim / "spec.json").read_text())
     spec = FaceoffSpec(**meta["spec"])
     participants = meta["participants"]
     record_file = claim / "record.json"
     if not record_file.exists():
-        jobs = [(spec.__dict__, p, t, str(claim / f"game-{p}-{t}.json"), participants, device)
+        jobs = [(spec.__dict__, p, t, str(claim / f"game-{p}-{t}.json"), participants, device, historical)
                 for p, t in spec.games()]
         if parallel and len(jobs) > 1:
             with ProcessPoolExecutor(max_workers=len(jobs)) as pool:
@@ -231,11 +232,11 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
         log(f"resuming claim {claim.name}")
         try:
             meta = json.loads((claim / "spec.json").read_text())
-            if not all(supports_straight_games(p) for p in meta["participants"].values()):
+            if not all(schedulable(p) for p in meta["participants"].values()):
                 destination = claims.root / "unsupported" / claim.name
                 destination.parent.mkdir(exist_ok=True)
                 os.rename(claim, destination)
-                log(f"preserved unsupported straight-game claim at {destination}")
+                log(f"preserved unschedulable claim (straight games, withdrawn, or a wall clock) at {destination}")
                 continue
             run_claim(claim, store, parallel=parallel, device=device)
         finally:
@@ -250,6 +251,9 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
             break
         f = ratings(participants, records, anchor)
         choice = next_pair(f, 2 * pairs, allowed, rng=random.SystemRandom())
+        for pid in (choice.a, choice.b):  # FAIR CLOCKS: runnable() already filters; this is the guard
+            if not deterministic_budget(participants[pid]):
+                raise RuntimeError(f"{pid} thinks on wall time; FAIR CLOCKS forbids scheduling it")
         spec = FaceoffSpec(ladder, choice.a, choice.b, secrets.randbits(64), pairs, utc_stamp())
         log(f"claim {spec.id} (gain {choice.gain:.3f}, P(a wins) {f.p_win(choice.a, choice.b):.2f})")
         claim = claims.create(spec, {k: participants[k] for k in (spec.a, spec.b)})

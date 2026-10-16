@@ -73,7 +73,7 @@ def _hand_dict(h) -> dict:
 
 
 def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
-              participants: dict, device: str | None = None) -> dict:
+              participants: dict, device: str | None = None, historical: bool = False) -> dict:
     """Play (or finish) one game; returns its progress dict with done=True."""
     from arena.engine import ArenaConfig, _LiveGame, _run_lockstep, _seat_policies
 
@@ -91,7 +91,7 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
     game_key = f"{spec.id}/{pair}/{a_team}"
     pa = Participant.from_record(participants[spec.a])
     pb = Participant.from_record(participants[spec.b])
-    sa, sb = seat(pa, game_key, device), seat(pb, game_key, device)
+    sa, sb = seat(pa, game_key, device, historical=historical), seat(pb, game_key, device, historical=historical)
     seats = (sa, sb)
     start = cost.snapshot()
     t0 = time.time()

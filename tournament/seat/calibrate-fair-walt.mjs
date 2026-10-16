@@ -8,7 +8,7 @@
 //     Runs every panel call on the pinned wasm under the REAL clock, one at a time, and counts
 //     the wasm's now_us reads. Prints JSON: per call {kind, reads, sec} (sec = the median of
 //     `passes` passes), and the pooled rate = total reads / total seconds.
-//   node tournament/seat/calibrate-fair-walt.mjs host <artifacts> <panel.json> <config json>
+//   node tournament/seat/calibrate-fair-walt.mjs host <artifacts> <panel.json> <config json | file>
 //     Sends the panel through tournament/seat/host.mjs under that config, and prints each
 //     request's wall seconds and reply (the match check: wall per decision and the moves).
 import { readFileSync } from 'node:fs';
@@ -37,7 +37,8 @@ async function reads() {
     const x = new WebAssembly.Instance(module, { walt_host: {
       now_us: () => { n++; return BigInt(Math.floor(performance.now() * 1000)); }, checkpoint: () => {} } }).exports;
     const bytes = new TextEncoder().encode(JSON.stringify(obj));
-    new Uint8Array(x.memory.buffer, x.walt_in_prepare(bytes.length), bytes.length).set(bytes);
+    const ptr = x.walt_in_prepare(bytes.length);
+    new Uint8Array(x.memory.buffer, ptr, bytes.length).set(bytes);
     const t = performance.now();
     x.walt_call();
     return { reads: n, sec: (performance.now() - t) / 1000 };
@@ -78,7 +79,8 @@ async function reads() {
 
 async function host() {
   const here = dirname(fileURLToPath(import.meta.url));
-  const p = spawn('node', [join(here, 'host.mjs'), 'walt', dir, extra], { stdio: ['pipe', 'pipe', 'inherit'] });
+  const config = extra.trim().startsWith('{') ? extra : readFileSync(extra, 'utf8'); // JSON, or a file of it
+  const p = spawn('node', [join(here, 'host.mjs'), 'walt', dir, config], { stdio: ['pipe', 'pipe', 'inherit'] });
   const rl = createInterface({ input: p.stdout })[Symbol.asyncIterator]();
   const rows = [];
   for (const r of requests) {

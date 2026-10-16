@@ -144,6 +144,28 @@ WALT = Participant(
           "bids almost every hand; on Plunge itself every deal is a catalogue deal."),
 )
 
+# FAIR CLOCKS (#181): the same player on a virtual clock. The pinned wasm, book and manifest are
+# production Walt's, byte for byte; only the host differs: it hands the wasm a now_us that
+# advances `clock_step_us` per read, so the 14 s, 20 s and 500 ms budgets are counts of the
+# solver's own work and a game replays bit for bit on any machine at any load. The step is
+# 1e6 / (production's pooled now_us reads per real second on the registered panel, one quiet
+# Apple-silicon Mac): wiki/experiments/fair-walt-2026-10-16.md.
+FAIR_WALT_STEP_US = 0.839
+FAIR_WALT = Participant(
+    id="walt-plunge-26043bf9-fair",
+    kind="plunge-walt",
+    pin=json.loads(json.dumps(WALT.pin)),
+    config={"difficulty": "native-partner", "auction_pool": 4, "clock": "virtual",
+            "clock_step_us": FAIR_WALT_STEP_US},
+    needs=("node",),
+    note=("Production Walt on a virtual clock (FAIR CLOCKS, #181): the identical pinned wasm, book "
+          "and manifest, driven by the same host with now_us a counter (the n-th read of a call "
+          f"returns floor(n * {FAIR_WALT_STEP_US}) microseconds), so every deadline is a count of "
+          "work and the auction survey's four-worker race is replayed as a schedule in virtual "
+          "time. It is the ladder's anchor (1500) and replaces production Walt, withdrawn from "
+          "scheduling with its records kept."),
+)
+
 ZEB_010 = zeb_npm("0.1.0",
                   "sha512-GyEDG0FESKp31IjsvI1uGZkKI+eLhbO92DF+vfUy0bGT5Z8PoUSGNX/nqg+qMWv1cHz4QgUD3ssZzOQ2HwJOdQ==",
                   "30aee96882e6f2f72b186a850a8ac56205a2b6fb")
@@ -268,10 +290,15 @@ ZEB_041_CONTESTED = zeb_native(
      "package/match.js": "85aaa9b7242f00386cef77134fd332484228c5aac690280f7f3ec7107e292e61"},
     overcall=True)
 
-ROSTER = (WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
+ROSTER = (WALT, FAIR_WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
           DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100,
           ZEB_040_MATCH, ZEB_041_CONTESTED)
-ANCHOR = WALT.id
+ANCHOR = FAIR_WALT.id
+
+# Withdrawn from scheduling, records kept: their faceoffs still count in the rating fit, so the
+# scale stays connected, but no worker starts a new one. Production Walt thinks on a wall clock
+# (config "clock": "real"), which FAIR CLOCKS forbids at the table.
+WITHDRAWN = {WALT.id: "wall-clock budgets (FAIR CLOCKS, #181); replaced by " + FAIR_WALT.id}
 
 
 def supports_straight_games(record: dict) -> bool:
@@ -286,6 +313,27 @@ def supports_straight_games(record: dict) -> bool:
         allowed = cfg.get("declarations", range(10))
         return bool(allowed) and set(allowed) <= set(STRAIGHT_DECLARATIONS)
     return True
+
+
+def deterministic_budget(record: dict) -> bool:
+    """FAIR CLOCKS: a player thinks on work, never on wall time (CLAUDE.md, #181).
+
+    A record whose config says `"clock": "real"` is refused. A Walt seat must declare the
+    virtual clock and its step (the wasm reads a clock; the host must be told which). Every
+    other kind decides by worlds, nodes or seeds in its config and has no clock to declare.
+    """
+    cfg = record.get("config", {})
+    if cfg.get("clock") == "real":
+        return False
+    if record.get("kind") == "plunge-walt":
+        return cfg.get("clock") == "virtual" and cfg.get("clock_step_us", 0) > 0
+    return True
+
+
+def schedulable(record: dict) -> bool:
+    """May a worker start a new faceoff with this participant?"""
+    return (supports_straight_games(record) and record.get("id") not in WITHDRAWN
+            and deterministic_budget(record))
 
 
 def load_all(store) -> dict[str, Participant]:
