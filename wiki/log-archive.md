@@ -4358,3 +4358,36 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-15 | book/count-lapse | The field that loses the count pre-registered (#172)]
 
 - [[count-lapse-2026-10-15]]: `arena/count_lapse.py`, a seat's view with a played and a live tile exchanged (a legal game, sticky for the hand); not a fiber, so the shared record is untouched; primary ΔG(0.2), 384 batches. [[book-assumptions]] A3 scope line.
+
+## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
+
+- `silas/src/field.rs`: a field of four Silas players, `play_out` (the auction, the declaration, all 28 plays, each seat at its own frame), `Deals::{Listed, Uniform}`, the paired `Trial::compare` with flips, the chance arm and an empirical-Bernstein interval (exact given the field over a list; never `exact`). Choices in `silas/docs/cross-game.md`, Slice 3 as built; Fiber and Hands deferred. [[silas]]
+
+## [2026-10-15 | mayor | Clean neurons for 42: the "already clean" thesis, written up as an experiment]
+
+- [[clean-neurons-42]]: Cammarata/Goodfire's "Neural Networks Are Already Clean" (linked, summarized in our words, not copied; the essay states no license), why 42's concepts generalize recursively (mastery, count, voids), and a cheap first experiment: audit all 384 poles of Zeb's shipped field net against Silas predicates and the book, then watch them form. [#175](https://github.com/jasonyandell/mk5-main/issues/175)'s GPT is the bigger second step.
+
+## [2026-10-15 | lem/stage1 | The Lem desk opens: the plan page, five epics, the field-net audit pre-registered]
+
+- [[lem-the-teacher]]: the north star, the two claims (a small feature set? a model of others?), the five stages, the budget tiers, the fence, prior work. Epics #176–#180.
+- [[lem-field-net-audit-2026-10-15]]: stage 1 pre-registered (concept list sha256 13e4d525…, statistics, Haiku readers, neuron-count curve, four predictions); the probe kit `lem/probe/` and its tests.
+- [[lem]] links forward; [[clean-neurons-42]] is absorbed as stage 1.
+
+## [2026-10-15 | 8df99e8b | Recursive generalization as an information-honest concept-learning proposal]
+
+- Added [[recursive-generalization]]: original CC0 research note, ordinary training with checkpoint lineage, Silas transfer/counterexamples, causal tests and separate play-strength gates. No experiment run; constructor dependency is unmerged PR #166.
+- Routed from [[suit-algebra]] and the topics catalog.
+
+## [2026-10-16 | lead | The log splits: one file per entry in wiki/log.d/]
+
+**Touched pages:** [[standing-desks]]
+**Updated:** `wiki/AGENTS.md` (Log format), `scripts/wiki_log_rotate.py` (stitches fragments, then rotates), `scripts/wiki_lint.py` (fragments count as entries; LG04), `scripts/tests/test_wiki_log_rotate.py`
+
+## [2026-10-16 | lem | The old LEM's code removed; its tombstone and seven lessons on the entity page]
+
+- [[lem]]: code gone at b4a3e5b7 under the no-legacy rule (the Mayor's go); § Tombstone (cd5683c0): dates and commits, every finding with its source and "no interval reported", why [[burl]] superseded it, seven sourced lessons each paired with what [[lem-the-teacher]] does differently, where the adapters, W&B runs and git history live.
+- [[lem-the-teacher]] takes the one-pipeline rule for its scaling family; the loss-mask check is filed on #178.
+
+## [2026-10-16 | sweep | Branch rescue: every unmerged branch inventoried and sorted]
+
+- [[branch-rescue-2026-10]]: 23 remote + 19 local unmerged branches, one table; the July Walt/Hoyt stack (ten PRs) is waiting on Jason; verdicts and tombstones are added to the page as each branch is acted on.
