@@ -171,6 +171,29 @@ repeatable legal jump-bidding games, monotonicity on common worlds, maximum
 legal supported bids and partner pass. The five relevant check suites pass:
 16 Rust, 66 tournament and 8 fence tests, plus wiki and license checks.
 
+## Fixed development, round 3
+
+The search/bidder capability is merged at `87951424`; no new participant is
+rostered. A clean build from its public native trees has SHA-256
+`e5cecac715b0f344daae58cdec3bb149163dfe9c8461c844def738bfb1ac0711`.
+The full and bounded jump policies play identical games at both seatings
+against native Zeb: 22 distinct hands, every auction/play/score identical,
+and the source, maximal-bid, declaration and cost audit passes. The initial
+smoke wrapper omitted the new `historical` keyword; both failures occurred
+before seat startup, with zero game records. Their logs are retained.
+
+Round 3 fixes **six arms × 32 fresh duplicate pairs / 384 games**, seed
+base `0xD4520000`. All use 100 play worlds and the bounded forecast. The
+reference retains minimum raises with 128 bid worlds and cutoffs
+0.875/0.625. Jump arms use 32, 64 or 128 bid worlds at those cutoffs; two
+more use 64 worlds with opponent cutoffs 0.5 and 0.75. Every arm finishes
+before the same CPU-qualified selection. This is development only.
+
+The [public protocol and preflight](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/121a18e5ec83d2ebe7c66a9f835b5de17c0013ae/demon/2026-10-16-ascent/development-3-protocol)
+were frozen before development. Plan SHA-256:
+`3977417585105e5e54894c3801698cd4cc80e186778a90dad0a0522ba9d23b25`.
+Fresh plan, manifest and raw smoke downloads match local bytes.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**
