@@ -89,6 +89,39 @@ larger-world arms, without assuming they improve play. The
 was published and freshly verified before play (plan SHA-256
 `da05bf7d926fa52bd3bcb8270cb6e6ec397e47a8673f421519c33f996ba1f2e3`).
 
+## Exact declaration elimination, prototype
+
+An isolated prototype searches declarations in the existing tie order:
+heuristic preference first, then ascending id. The first is evaluated fully.
+For a later declaration, successes plus unsearched worlds is an upper bound
+on its final count. When that bound is at most the incumbent's count, it
+cannot displace the incumbent, including on a tie. The winning declaration
+and its count remain exact on the same sampled worlds.
+
+All **1,934 forecasts** from stage 1's 64 control games were replayed without
+outcome filtering. Every winner, winning count and sample size matches; the
+full reference also reproduces every saved original node count. Three Rust
+tests cover randomized/subset/reordered declaration sets, ties, invalid
+inputs and the perfect preferred declaration. The replay alternates full
+and bounded process order; intervals resample the 32 whole duplicate pairs,
+40,000 times, seed 666.
+
+| Native forecast cost | Bounded / full | 95% pair interval |
+|---|---:|---:|
+| CPU, including process startup and shutdown | 0.5210 | [0.5124, 0.5295] |
+| Complete native self instructions | 0.5221 | [0.5135, 0.5306] |
+| Search nodes | 0.5220 | [0.5134, 0.5306] |
+| Per-world solves | 0.5520 | [0.5440, 0.5601] |
+
+CPU falls from 424.873 to 221.368 seconds over the fixed corpus. This is
+**forecast-kernel performance**, not a whole-seat runtime ratio or a strength
+result. Wall time is descriptive under shared load. The prototype is isolated
+from both frozen strength rounds and is not a registered player.
+
+[Public source overlay, inputs, both outputs and report](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/f41144e612b1dae5f175ac30a1ed7cee367c096f/demon/2026-10-16-ascent/bid-pruning-prototype)
+reconstruct the prototype from the original native source pin `2e233d29`.
+Fresh downloads of its plan, manifest and report match local bytes.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**
