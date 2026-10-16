@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Jason Yandell
 # SPDX-License-Identifier: CC0-1.0
+# STRATEGY-FUSION FENCE: the jud seat plays lens:ev (forge E[Q], clairvoyant per world) as an
+# opponent at game night only; nothing reads its values but the log. Sanctioned in
+# wiki/topics/strategy-fusion-fence.md (inventory: tools/table42).
 """
 host — the local game authority for table42.
 
