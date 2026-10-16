@@ -259,6 +259,28 @@ Zeb's aggressive overcalling can be induced to carry weaker contracts. This
 is not established by the failed conservative or preemptive sweeps; a new
 fixed development trial is required. No new participant is promoted.
 
+## Fixed development, round 4
+
+The support/bait capability is merged at `db239f39`; no participant is
+rostered. A clean public-source build has SHA-256
+`16d755fb3feb86e0952310f069516c2545826e931db201df67d5594fbd719847`.
+Best-forecast and support-predicate early-opening policies play identical
+whole games at both seatings against native Zeb: 21 distinct hands, with
+all auctions, plays, scores, support certificates and cost audits checked.
+
+The fixed sweep is **eight arms × 32 fresh duplicate pairs / 512 games**,
+seed base `0xD4530000`. All use exact support bounds. The reference is
+100 play worlds, 128 bid worlds, minimum raises and cutoffs 0.875/0.625.
+Five early-opening arms use 100 play worlds, 64 bid worlds, later-opening
+cutoff 0.875 and opponent cutoffs 0.625, 0.75, 0.875, 0.9375 or 1. Two more
+use the 0.875 and 1 opponent cutoffs with 400 play worlds. All arms finish
+before the existing CPU-qualified selection; this remains development.
+
+The [public protocol and preflight](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/e7044f0dc95cf5f79ae1786e2059ee30c25f433e/demon/2026-10-16-ascent/development-4-protocol)
+were frozen before development. Plan SHA-256:
+`d934cdca2dd901067b2f726500d96bfa1e63b2e09e5f97cc1807ba740ad4b81a`.
+Fresh plan, manifest and raw smoke downloads match local bytes.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**
