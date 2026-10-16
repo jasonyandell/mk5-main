@@ -185,7 +185,8 @@ a shipped Lem player follows Zeb (MIT) is the Mayor's call when there is one to 
 ## Issues
 
 One epic per stage: #176 (stage 1, the audit), #177 (the population), #178 (the nets), #179
-(interpretability), #180 (the player). #182 is the league: the arena as Lem's population
+(interpretability), #180 (the player). #176 closed 2026-10-16 with #185 (concept list v2) as its
+follow-up. #182 is the league: the arena as Lem's population
 engine, across stages 2, 3 and 5.
 
 ## Links
