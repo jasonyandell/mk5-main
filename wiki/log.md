@@ -52,6 +52,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | book | Calibrating the estimator, pre-registered: forty A/A replicates (#191)]
+
+- [[estimator-calibration-2026-10-16]]: twenty replicates of seed 1 against seed 0 on disjoint deals (does the house interval cover the fixed δ(1,0)?) and twenty of fresh seed pairs (the seed-to-seed spread), 288 game pairs each; 960 batches. Deployed Zeb's choices proved independent of batch composition first (40 states, 0 differences). `scenario/calibration.py`.
+
 ## [2026-10-16 | book | The seed-varied re-run: the A/A missed again, the other way, and seed scatter is not why (#190 → #191)]
 
 - Results on [[seed-varied-2026-10-16]]: 352 of 352 batches, none dropped. The A/A read Za −0.14 [−0.25, −0.03] marks/game, and PZa won 53.9% of games, so K = +0.12 [+0.00, +0.23] is reported, not claimed. Post-hoc checks found no per-seed effect (per-position spread below noise) and no batch correlation, so planner-seed scatter is not the mechanism. #191 calibrates the estimator directly.
