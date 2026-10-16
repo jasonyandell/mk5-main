@@ -33,6 +33,17 @@ echoes."
 The Lem desk ([[standing-desks]]) owns this page, the `lem/` tree, the five epics below, and
 the Lem Desk notebook (registered as `links/lem-notebook` in the feed).
 
+## The paper
+
+Jason's concrete goal for Lem (2026-10-16): a paper, working title *Interpreting a distilled
+imperfect-information player against an inspectable teacher*. The teacher's computation is
+explicit (sampled worlds, exact beliefs, named concepts), so every feature found in a student can
+be checked against what the teacher computes: interpretability with an answer key. The living
+draft is [`lem/paper/README.md`](../../lem/paper/README.md) (CC0); its Gaps list is this desk's
+work order (G1 belief probes, G2 checkpoints and widths, G3 causal tests, G4 the first field-v3
+net, G5 Lem's transformer, G6 table-type probes, G7 fidelity by concept region, G8 the book, G9
+seeds).
+
 ## The two claims this program tests
 
 1. **The feature claim.** Jason's bet is that no small set of features covers 42, and he wants
