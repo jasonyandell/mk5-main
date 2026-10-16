@@ -72,6 +72,24 @@ def decision_seed(game: str, hand_no: int, seat: int, n_plays: int) -> int:
     return int(h[:15], 16)
 
 
+def required_makes(cutoff: float, worlds: int) -> int:
+    """Smallest count whose floating ratio clears the existing cutoff rule.
+
+    ceil(cutoff * worlds) can round up incorrectly (0.07 * 100 > 7).
+    Integer bisection uses the exact comparison made by the original seat.
+    """
+    if worlds < 1 or not math.isfinite(cutoff) or not 0 <= cutoff <= 1:
+        raise ValueError("a positive world count and finite cutoff in 0..1 are required")
+    lo, hi = 0, worlds
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if mid / worlds >= cutoff:
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+
+
 class DemonSeat:
     """BidPolicy and PlayPolicy for one team in one game."""
 
@@ -80,17 +98,20 @@ class DemonSeat:
 
         cfg = p.config
         self.bid_spec = cfg["bidder"]
-        if self.bid_spec.startswith(("pimc-over", "pimc-jump")):
+        if self.bid_spec.startswith(("pimc-over", "pimc-jump", "pimc-bait")):
             parts = self.bid_spec.split(":")
-            if len(parts) != 4 or parts[0] not in ("pimc-over", "pimc-jump"):
-                raise ValueError("pimc-over / pimc-jump needs worlds:opening_cutoff:opponent_cutoff")
+            if len(parts) != 4 or parts[0] not in ("pimc-over", "pimc-jump", "pimc-bait"):
+                raise ValueError("pimc-over / pimc-jump / pimc-bait needs worlds:opening_cutoff:opponent_cutoff")
             if not 1 <= int(parts[1]) <= 4096 or any(
                 not math.isfinite(float(x)) or not 0 <= float(x) <= 1 for x in parts[2:]
             ):
-                raise ValueError("pimc-over / pimc-jump needs worlds 1..4096 and finite cutoffs in 0..1")
+                raise ValueError("pimc-over / pimc-jump / pimc-bait needs worlds 1..4096 and finite cutoffs in 0..1")
         self.bounded_forecast = cfg.get("bounded_forecast", False)
         if not isinstance(self.bounded_forecast, bool):
             raise ValueError("bounded_forecast must be a boolean")
+        self.support_forecast = cfg.get("support_forecast", False)
+        if not isinstance(self.support_forecast, bool) or (self.support_forecast and not self.bounded_forecast):
+            raise ValueError("support_forecast requires bounded_forecast and a boolean")
         self.declarations = tuple(cfg.get("declarations", range(10)))
         if not self.declarations or len(set(self.declarations)) != len(self.declarations) or any(
             not isinstance(d, int) or not 0 <= d < 10 for d in self.declarations
@@ -114,12 +135,18 @@ class DemonSeat:
     # BidPolicy
     def bid(self, ctx, rng):
         self._bid_seats[tuple(ctx.hand)] = ctx.seat
-        if self.bid_spec.startswith(("pimc:", "pimc-over:", "pimc-jump:")):
+        if self.bid_spec.startswith(("pimc:", "pimc-over:", "pimc-jump:", "pimc-bait:")):
             points = sorted(b for b in ctx.legal if b <= 42)
             if not points or (ctx.high_seat >= 0 and ctx.high_seat % 2 == ctx.seat % 2):
                 return 0
+            # With at least two seats still to speak, an opponent can overcall
+            # before the final bidder. This experimental policy opens cheaply
+            # even with a weak hand; the normal cutoff applies later.
+            if (self.bid_spec.startswith("pimc-bait:") and ctx.high_seat < 0
+                    and sum(b < 0 for b in ctx.bids) - 1 >= 2):
+                return points[0]
             cutoff = float(self.bid_spec.split(":")[2])
-            if self.bid_spec.startswith(("pimc-over:", "pimc-jump:")) and ctx.high_seat >= 0:
+            if self.bid_spec.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:")) and ctx.high_seat >= 0:
                 # The partner case returned above. The opponent already holds
                 # the auction, so passing is not the same option as opening.
                 # This is an explicit experimental DD threshold, not a
@@ -127,6 +154,16 @@ class DemonSeat:
                 cutoff = float(self.bid_spec.split(":")[3])
             jump = self.bid_spec.startswith("pimc-jump:")
             def supported(target):
+                if self.support_forecast:
+                    n = int(self.bid_spec.split(":")[1])
+                    reply = self._ask({"op": "forecast_support", "hand_mask": sum(1 << t for t in ctx.hand),
+                                       "seat": ctx.seat, "bid": target, "worlds": n,
+                                       "required": required_makes(cutoff, n),
+                                       "declarations": list(self.declarations),
+                                       "seed": decision_seed(self.game, self.hand_no, ctx.seat, -1)})
+                    if reply["worlds"] != n or not isinstance(reply["supported"], bool):
+                        raise RuntimeError("support forecast returned an invalid predicate")
+                    return reply["supported"]
                 decl, reply = self._forecast(ctx.hand, ctx.seat, target)
                 return reply["makes"][decl] / reply["worlds"] >= cutoff
 

@@ -105,7 +105,7 @@ fn answer(cfg: Config, line: &str) -> Value {
             }
             _ => json!({"error": "hand_mask must contain seven of the 28 tiles"}),
         },
-        Some("forecast") | Some("forecast_best") => {
+        Some("forecast") | Some("forecast_best") | Some("forecast_support") => {
             let t0 = Instant::now();
             let run = || -> Result<_, String> {
                 let h = u32::try_from(int(&v, "hand_mask")?).map_err(|_| "hand_mask out of range")?;
@@ -120,7 +120,12 @@ fn answer(cfg: Config, line: &str) -> Value {
                     .map(|d| d.as_u64().and_then(|d| u8::try_from(d).ok()).ok_or("declaration out of range"))
                     .collect::<Result<Vec<_>, _>>()?;
                 let seed = int(&v, "seed")?;
-                if v["op"] == "forecast_best" {
+                if v["op"] == "forecast_support" {
+                    let required = u32::try_from(int(&v, "required")?).map_err(|_| "required out of range")?;
+                    let f = demon::bidding::supports(h, s, b, n, seed, &declarations, required)?;
+                    Ok(json!({"supported": f.supported, "worlds": f.worlds, "nodes": f.nodes,
+                              "solves": f.solves, "checked": f.checked}))
+                } else if v["op"] == "forecast_best" {
                     let f = demon::bidding::best_forecast(h, s, b, n, seed, &declarations)?;
                     // Only the winner is fully scored. None never means zero:
                     // other declarations may have been eliminated by a bound.
@@ -141,7 +146,7 @@ fn answer(cfg: Config, line: &str) -> Value {
                 Err(e) => json!({"error":e}),
             }
         }
-        _ => json!({"error": "op must be play, hello, forecast, forecast_best or declaration_model"}),
+        _ => json!({"error": "op must be play, hello, forecast, forecast_best, forecast_support or declaration_model"}),
     }
 }
 

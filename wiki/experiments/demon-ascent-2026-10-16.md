@@ -194,6 +194,71 @@ were frozen before development. Plan SHA-256:
 `3977417585105e5e54894c3801698cd4cc80e186778a90dad0a0522ba9d23b25`.
 Fresh plan, manifest and raw smoke downloads match local bytes.
 
+## Round 3 result: preemption does not establish a gain
+
+All **192 duplicate pairs / 384 games / 4,105 hands** completed. The
+source, seat-visible trace, legal bid, maximal supported jump, declaration,
+score and cost audits pass. Every arm stays within the development CPU
+criterion, but none establishes a win above the 50% chance baseline.
+Intervals below are 95% whole-pair bootstrap intervals.
+
+| Arm | Demon wins | Win fraction [95% CI] | Total seat CPU / Zeb [95% CI] |
+|---|---|---|---|
+| reference | 29/64 | 45.31% [32.81, 57.81] | 0.581 [0.569, 0.592] |
+| jump32 | 16/64 | 25.00% [15.62, 34.38] | 0.358 [0.343, 0.373] |
+| jump64 | 26/64 | 40.62% [28.12, 53.12] | 0.574 [0.556, 0.592] |
+| jump128 | 20/64 | 31.25% [20.31, 42.19] | 1.005 [0.975, 1.034] |
+| jump50 | 16/64 | 25.00% [15.62, 34.38] | 0.615 [0.594, 0.635] |
+| jump75 | 26/64 | 40.62% [29.69, 51.56] | 0.527 [0.510, 0.544] |
+
+The fixed selection returns the minimum-raise reference, 29/64. No independent
+confirmation starts from this result. The data reject promoting the tested
+preemptive arms; they do not prove every preemptive policy inferior.
+[All raw games, costs, traces, reports and audits](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/bc8fd1ee839e3abfdc781cb97e6cd1a679147087/demon/2026-10-16-ascent/development-3-results)
+are public: 87,661,418 bytes, 1,197 files; the plan, manifest, one raw game
+and every arm report were freshly downloaded and matched.
+
+## Exact support predicates and the next auction hypothesis
+
+A bid decision needs only `max(make_count) >= required`, not the winning
+declaration. A declaration passes once enough sampled worlds make; it fails
+when even every remaining world making cannot reach the required count. The
+search returns on the first supported declaration. This is an exact predicate
+on the same sample. A won auction still computes the best declaration.
+
+The isolated prototype replays **all 1,934 original control forecasts**, with
+required count 56 at bid 30 and 40 at higher bids, out of 64 worlds. Every
+predicate agrees with the existing exact best forecast, and every stopping
+certificate passes. Native lifetime CPU is 90.274 versus 189.892 seconds:
+ratio **0.4754 [0.4652, 0.4853]** (95%, 32 whole duplicate pairs, 40,000
+resamples, seed 666). Complete self-instruction ratio is
+**0.4770 [0.4673, 0.4864]**. Process startup/shutdown are included;
+shared-load wall is descriptive. This is predicate cost, not whole-seat
+cost or strength; eventual declaration work remains.
+[Prototype source overlay, inputs, outputs, tests and report](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0f5bcde41da7889abf90ee79990b360ca0321e1a/demon/2026-10-16-ascent/bid-support-prototype)
+are public and freshly verified.
+
+The optional `support_forecast` mode uses that native operation for bidding
+and the existing bounded forecast for declaration. Its count threshold is
+found with the original division/comparison rule, avoiding multiplication
+rounding at cutoffs such as `0.07` with 100 worlds. It has its own participant
+ID suffix; existing records and native protocols stay unchanged.
+The integrated JSON operation also matches all 1,934 prototype predicates,
+world counts, search nodes, solve counts and stopping certificates
+([production replay](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/364619a7c9cc66133f46e59f34317e530b3b6a81/demon/2026-10-16-ascent/bid-support-integration)).
+Complete-game parity covers minimum, jump and early-opening bidders across
+full, bounded-best and support-predicate modes. The relevant gates pass:
+18 Rust, 81 tournament and 8 fence tests, plus wiki and licenses. All 13
+existing roster records are byte-for-byte unchanged; no roster entry is added.
+
+The experimental `pimc-bait:n:opening:opponent` bidder opens the minimum legal
+point bid unconditionally when no bid stands and at least two seats remain
+after it. Later openings and opponent-held auctions use their named cutoffs;
+it still passes over partner and standing mark bids. The hypothesis is that
+Zeb's aggressive overcalling can be induced to carry weaker contracts. This
+is not established by the failed conservative or preemptive sweeps; a new
+fixed development trial is required. No new participant is promoted.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**

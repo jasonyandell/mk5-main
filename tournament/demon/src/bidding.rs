@@ -120,3 +120,58 @@ fn prepare(
     let (deals, _) = super::sampling::sample(&mut fiber, worlds, &mut SplitMix::new(seed))?;
     Ok((bid, deals))
 }
+
+/// STRATEGY-FUSION FENCE: a threshold certificate on the fixed DD sample.
+pub struct Support {
+    pub supported: bool,
+    pub worlds: usize,
+    pub nodes: u64,
+    pub solves: usize,
+    pub checked: Vec<(u8, usize, u32)>,
+}
+
+/// STRATEGY-FUSION FENCE: exact predicate max(make_count) >= required. A
+/// declaration passes once enough worlds make, and fails once even every
+/// unsearched world making would leave it below the required count.
+pub fn supports(
+    hand: u32,
+    bidder: u8,
+    bid: u32,
+    worlds: usize,
+    seed: u64,
+    declarations: &[u8],
+    required: u32,
+) -> Result<Support, String> {
+    let (bid, deals) = prepare(hand, bidder, bid, worlds, seed, declarations)?;
+    if required as usize > deals.len() {
+        return Err("required count exceeds sampled worlds".into());
+    }
+    let preferred = super::hand_model::heuristic_declaration(hand);
+    let mut order = declarations.to_vec();
+    order.sort_by_key(|&d| (d != preferred, d));
+    let mut out = Support { supported: false, worlds: deals.len(), nodes: 0, solves: 0, checked: vec![] };
+    for decl in order {
+        let physics = ZebPhysics::new(decl).expect("declaration").physics();
+        let contract = Contract::new(seat(bidder).expect("seat"), bid, physics.clone()).map_err(|e| e.0)?;
+        let template = ClairvoyantSolver::new(&physics);
+        let (mut successes, mut tested) = (0, 0);
+        for w in &deals {
+            if successes >= required || successes + ((deals.len() - tested) as u32) < required {
+                break;
+            }
+            let position =
+                OpenPosition::deal(contract.clone(), w.map(|h| dominoes(h).expect("hand"))).map_err(|e| e.0)?;
+            let mut solver = template.fresh();
+            successes += solver.value(&position, silas::Objective::Make) as u32;
+            out.nodes += solver.nodes();
+            out.solves += 1;
+            tested += 1;
+        }
+        out.checked.push((decl, tested, successes));
+        if successes >= required {
+            out.supported = true;
+            break;
+        }
+    }
+    Ok(out)
+}

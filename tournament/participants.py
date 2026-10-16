@@ -198,7 +198,7 @@ DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
 
 def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
           bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler",
-          declaration_weight: int = 1, bounded_forecast: bool = False) -> Participant:
+          declaration_weight: int = 1, bounded_forecast: bool = False, support_forecast: bool = False) -> Participant:
     # The source pin selects the sampler; this describes it without changing
     # the bytes of already-published participant records.
     tb = "" if margin_tiebreak else "-notb"
@@ -216,6 +216,11 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     if bounded_forecast:
         suffix += "-bounds"
         extra["bounded_forecast"] = True
+    if not isinstance(support_forecast, bool) or (support_forecast and not bounded_forecast):
+        raise ValueError("support_forecast requires bounded_forecast and a boolean")
+    if support_forecast:
+        suffix += "-support"
+        extra["support_forecast"] = True
     belief_note = (f" Declaration evidence uses a soft heuristic model: matching original "
                    f"hands have likelihood {declaration_weight}, others 1; posterior draws are IID "
                    f"by rejection, and small fibers use exact weighted sums."
@@ -227,9 +232,15 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
                 f"Bidder `{bidder}`: common-world double-dummy contract forecasts; "
                 f"{raise_note} and partner pass in full bidding mode; "
                 f"the nine straight declarations only (not nello's declaration 8). ")
-    if bidder.startswith(("pimc-over:", "pimc-jump:")):
+    if bidder.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:")):
         bid_note += (f"Uses DD cutoff {bidder.split(':')[3]} over an opponent's point bid "
                      f"and {bidder.split(':')[2]} when opening; no mark overcalls. ")
+    if bidder.startswith("pimc-bait:"):
+        bid_note += ("With no standing bid and at least two seats still to speak, opens the "
+                     "minimum point bid regardless of its forecast. ")
+    if support_forecast:
+        bid_note += ("Bid decisions use exact sample support bounds; only a won auction computes "
+                     "the best declaration and its winning count. ")
     if bounded_forecast:
         bid_note += ("Exact incumbent bounds skip losing declaration searches while preserving "
                      "the winning declaration and its count on the same sampled worlds. ")
