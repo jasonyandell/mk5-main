@@ -2,12 +2,17 @@
 title: LEM — Little Expert Model
 kind: entity
 first_seen: 2026-04-09
-last_updated: 2026-07-15
+last_updated: 2026-10-15
 status: complete
 superseded_by: burl
 ---
 
 ## What it is
+
+**The name lives on.** Since 2026-10-15 "Lem" is also the project's generative player and
+the subject of its interpretability program, [[lem-the-teacher]]; Jason reused the name on
+purpose ("they're good names and it kinda echoes"). This page is the 2026-04 project, kept as
+history.
 
 LEM (Little Expert Model) is an experiment in training a phone-class open model to play
 [[texas-42]] via STaR-style self-taught reasoning layered on a backwards curriculum. The

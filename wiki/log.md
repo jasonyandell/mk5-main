@@ -49,6 +49,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | lem/stage1 | The Lem desk opens: the plan page, five epics, the field-net audit pre-registered]
+
+- [[lem-the-teacher]]: the north star, the two claims (a small feature set? a model of others?), the five stages, the budget tiers, the fence, prior work. Epics #176–#180.
+- [[lem-field-net-audit-2026-10-15]]: stage 1 pre-registered (concept list sha256 13e4d525…, statistics, Haiku readers, neuron-count curve, four predictions); the probe kit `lem/probe/` and its tests.
+- [[lem]] links forward; [[clean-neurons-42]] is absorbed as stage 1.
+
 ## [2026-10-15 | mayor | Clean neurons for 42: the "already clean" thesis, written up as an experiment]
 
 - [[clean-neurons-42]]: Cammarata/Goodfire's "Neural Networks Are Already Clean" (linked, summarized in our words, not copied; the essay states no license), why 42's concepts generalize recursively (mastery, count, voids), and a cheap first experiment: audit all 384 poles of Zeb's shipped field net against Silas predicates and the book, then watch them form. [#175](https://github.com/jasonyandell/mk5-main/issues/175)'s GPT is the bigger second step.

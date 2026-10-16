@@ -5,6 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+- [[experiments/lem-field-net-audit-2026-10-15|lem-field-net-audit-2026-10-15]] — Lem stage 1: the 384 poles of Zeb's shipped field net labelled by 48 Silas concepts and the 343 raw features, with Wilson intervals and a shuffled-label baseline; Haiku explain-then-score readers; a first greedy neuron-count curve; pre-registered with predictions (active)
 - [[experiments/rematch-zeb-041-vs-demon-2026-10-15|rematch-zeb-041-vs-demon-2026-10-15]] — Zeb 0.4.1 (the overcall) against the confirmed overcalling Demon, 256 duplicate pairs, 0.4.0 as the equal-deals reference (active)
 - [[experiments/demon-overcalling-2026-10-15|demon-overcalling-2026-10-15]] — fixed development of opponent-held point-bid thresholds and a larger fresh attempt-2 protocol (active)
 - [[experiments/demon-vs-zeb-2026-10-15|demon-vs-zeb-2026-10-15]] — complete native Zeb comparison; standard bar clears, match-aware win interval crosses chance, no joint promotion (complete)

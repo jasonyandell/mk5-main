@@ -103,5 +103,7 @@ the bulk labelling.
 
 ## Status
 
-An idea, not yet run. Next step: a pre-registered audit of the 384 poles (A1), about one lab-agent
-job.
+Absorbed into the Lem program as its stage 1 ([[lem-the-teacher]], #176). The audit of the 384
+poles (A1) is pre-registered in [[lem-field-net-audit-2026-10-15]], with the concept list, the
+statistics, the Haiku readers and a first neuron-count curve; the probe kit is `lem/probe/`.
+A2–A4 and experiment B are stages 3 and 4 of that program.
