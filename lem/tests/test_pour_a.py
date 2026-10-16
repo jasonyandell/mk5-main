@@ -84,3 +84,10 @@ def test_merge_concatenates_chunks_with_deal_offsets(tmp_path):
         assert m["spec"] != "mixed" and len(m["specs"]) == 1
         if half == "pip":
             assert m["spec"].endswith("merged/net.npz") and (tmp_path / "merged" / "net.npz").exists()
+
+
+def test_the_pour_honours_the_slots_thread_count(monkeypatch):
+    monkeypatch.setenv("OMP_NUM_THREADS", "6")
+    assert A.threads() == 6 and A._walt("k1,n8,m8").threads == 6
+    monkeypatch.delenv("OMP_NUM_THREADS")
+    assert A.threads() == 0 and A._walt("k1,n8,m8").threads == 0

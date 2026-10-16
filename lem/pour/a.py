@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -87,10 +88,17 @@ def plan(seed: int, n: int, share: int = SHARE) -> list[Planned]:
     return out
 
 
+def threads() -> int:
+    """The OS threads the core may use: what `scripts/cpu-slot` declared
+    (`OMP_NUM_THREADS`, set from `--threads`), else every core (0)."""
+    return int(os.environ.get("OMP_NUM_THREADS") or 0)
+
+
 def _walt(spec: str) -> CompiledWalt:
     walt = parse_walt_spec(spec).walt
     if not isinstance(walt, CompiledWalt):
         raise SystemExit("the pour needs the compiled core")
+    walt.threads = threads()          # the compiled core's pool is sized per caller, not by the env
     return walt
 
 
