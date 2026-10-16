@@ -66,7 +66,9 @@ Games to 250 won by team A: PK 53.4% [50.3, 56.5], PZa 50.8% [47.4, 53.9].
   points ([−1.8, +7.0]).
 - **The measurement that would settle it.** A field and readers whose planner seed varies by
   game (a seed per game pair, the same in every arm), so that seed scatter becomes part of the
-  sampling and the interval sees it. Filed as #190.
+  sampling and the interval sees it. Filed as #190 and run ([[seed-varied-2026-10-16]]): its A/A
+  missed too, the other way, with no per-seed effect, so the open question is the estimator's
+  calibration (#191).
 
 ### Receipts
 

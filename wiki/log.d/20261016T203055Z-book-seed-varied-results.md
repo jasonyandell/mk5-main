@@ -1,0 +1,4 @@
+## [2026-10-16 | book | The seed-varied re-run: the A/A missed again, the other way, and seed scatter is not why (#190 → #191)]
+
+- Results on [[seed-varied-2026-10-16]]: 352 of 352 batches, none dropped. The A/A read Za −0.14 [−0.25, −0.03] marks/game, and PZa won 53.9% of games, so K = +0.12 [+0.00, +0.23] is reported, not claimed. Post-hoc checks found no per-seed effect (per-position spread below noise) and no batch correlation, so planner-seed scatter is not the mechanism. #191 calibrates the estimator directly.
+- The caveats on [[rematch-zeb-041-vs-demon-2026-10-15]], [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]] are restated as estimator caveats: an extra ±0.15 marks/game and ±4 points of share on single-arm margins. A4 is updated. Data: HF `book/seed-varied/` (c62bf021, SHA verified).

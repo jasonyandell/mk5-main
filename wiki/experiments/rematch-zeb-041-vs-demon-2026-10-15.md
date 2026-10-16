@@ -92,12 +92,15 @@ uses about two thirds of Zeb's CPU in both arms. Totals: 0.4.1 arm Zeb 5,640 s C
 Demon 3,732 / 3,854; 0.4.0 arm Zeb 5,241 / 5,435, Demon 3,379 / 3,468. Runtime shared the machine
 with other sessions through `scripts/cpu-slot`, so it is as reported, not an isolated timing.
 
-**Seed scatter (#190, added 2026-10-16).** Each Zeb arm here is one planner seed (seed 0), and
-the intervals bootstrap over deals, so they exclude planner-seed scatter: about ±0.1 marks/game
-at this level (#117's A/A read +0.12 [+0.02, +0.23] between two seeds of plain Zeb; #149 saw 0.13).
-The single-arm margins carry it. 0.4.1's +0.330 [+0.055, +0.606] marks/game has a lower end inside
-that scatter, so "above zero in marks" is not secure; the win share's scatter has not been measured.
-The 0.4.1 − 0.4.0 contrast shares seed and deals, so it cancels and is unaffected.
+**Estimator caveat (#191, restated 2026-10-16).** Two A/A arms in the Book desk's arena missed
+their 95% intervals: plain Zeb against plain Zeb differing only in planner seed read +0.12 [+0.02,
++0.23] marks/game (#117) and −0.14 [−0.25, −0.03] (#190), and one missed by 4 points of share.
+Planner-seed scatter was tested as the cause and is not supported ([[seed-varied-2026-10-16]]),
+so the cause is open. Until #191 calibrates it, read a single-arm margin with an extra ±0.15
+marks/game and ±4 points of share. This study uses the tournament's own estimator, not the Book desk's, and its
+A/A has not been measured. Here 0.4.1's +0.330 [+0.055, +0.606] marks/game and its 57.03% [53.12,
+60.94] both have lower ends inside that allowance. The 0.4.1 − 0.4.0 contrast shares seed and
+deals, and is probably safer.
 
 **Reading.** Against the Demon that contests, 0.4.1's shipped overcall wins more games than the
 Demon (57.03%, interval above chance) where 0.4.0 won a third of them (32.62%, in line with the

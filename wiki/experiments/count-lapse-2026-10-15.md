@@ -38,11 +38,14 @@ Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyande
 The book's game, share of games won against the field: PB0 38.0% [34.1, 41.9], PB20 45.1% [41.1,
 49.0], PZ20 57.6% [54.4, 60.7].
 
-**Seed scatter (#190, added 2026-10-16).** The field is one planner seed, and these intervals
-bootstrap over deals, so each single-arm margin against it (B_p, Z_p, the field's cost of losing
-the count) excludes planner-seed scatter of about ±0.1 marks/game (#117's A/A; #149). Z5 = +0.15
-[+0.07, +0.22] lies within it; Z10 = +0.39 and Z20 = +0.71 do not. G(p) and ΔG(p) are differences
-of two team-A arms against the same field and seed, so the field's seed cancels in them.
+**Estimator caveat (#191, restated 2026-10-16).** Two A/A arms in the Book desk's arena missed
+their 95% intervals: plain Zeb against plain Zeb differing only in planner seed read +0.12 [+0.02,
++0.23] marks/game (#117) and −0.14 [−0.25, −0.03] (#190), and one missed by 4 points of share.
+Planner-seed scatter was tested as the cause and is not supported ([[seed-varied-2026-10-16]]),
+so the cause is open. Until #191 calibrates it, read a single-arm margin with an extra ±0.15
+marks/game and ±4 points of share. Here Z5 = +0.15 lies inside it, and Z10 = +0.39
+and Z20 = +0.71 do not. G(p) and ΔG(p) are differences of two team-A arms against the same field,
+and are probably safer.
 
 ### The registered contrasts (paired by game pair; MDE at 80% power)
 
