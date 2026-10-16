@@ -49,6 +49,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-15 | 8df99e8b | Recursive generalization as an information-honest concept-learning proposal]
+
+- Added [[recursive-generalization]]: original CC0 research note, ordinary training with checkpoint lineage, Silas transfer/counterexamples, causal tests and separate play-strength gates. No experiment run; constructor dependency is unmerged PR #166.
+- Routed from [[suit-algebra]] and the topics catalog.
+
 ## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
 
 - `silas/src/field.rs`: a field of four Silas players, `play_out` (the auction, the declaration, all 28 plays, each seat at its own frame), `Deals::{Listed, Uniform}`, the paired `Trial::compare` with flips, the chance arm and an empirical-Bernstein interval (exact given the field over a list; never `exact`). Choices in `silas/docs/cross-game.md`, Slice 3 as built; Fiber and Hands deferred. [[silas]]
