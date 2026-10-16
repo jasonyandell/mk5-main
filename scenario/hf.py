@@ -21,8 +21,10 @@ weights) and `deals` (each deal and how it really ended) — plus the raw
 `scenario.atlas.load`, a dataset card, the CC0 legal code and SHA256SUMS.
 A field net named by a split's spec (`F=<npz>`) is copied into `nets/` with
 its training sidecar, so the pour can be re-poured from the repo alone; the
-splits must share one planner and contract but may differ in that net (the
-rounds of an expert iteration). `--net` attaches a net trained on the pour,
+splits must share one contract and utility but may differ in their planner
+or net (the rounds of an expert iteration; a pour whose doubles and no-trump
+deals had no net yet). A manifest's `declare` (a sentence) names the
+declaring rule in the card; without it the card states the pip heuristic. `--net` attaches a net trained on the pour,
 `--notes` a provenance section for the card.
 Every list column is a pour column cut at the pour's own offsets, so a row
 is its position's slice of the arrays, bit for bit.
@@ -224,10 +226,9 @@ def stage(splits: Sequence[Split], out: str | Path, repo: str, title: str = "Tex
 def _check(splits: Sequence[Split]) -> None:
     if not splits or len({s.name for s in splits}) != len(splits):
         raise SystemExit("name each split once")
-    same = {(re.sub(r"(^|,)F=[^,]+", r"\1F=", s.manifest["spec"]), s.manifest["bidder"], s.manifest["bid"],
-             s.manifest["utility"]) for s in splits}
+    same = {(s.manifest["bidder"], s.manifest["bid"], s.manifest["utility"]) for s in splits}
     if len(same) != 1:
-        raise SystemExit(f"the splits were poured under different specs: {sorted(same)}")
+        raise SystemExit(f"the splits were poured under different contracts: {sorted(same)}")
     seeds = [x for s in splits for x in s.manifest.get("deal_seeds") or ()]
     if len(seeds) != len(set(seeds)):
         raise SystemExit("two splits share a deal")
@@ -331,8 +332,14 @@ def card(splits: Sequence[Split], rows: dict, facts: dict[str, Facts], out: Path
     first = splits[0].name
     plan = re.sub(r"(^|,)F=[^,]+", r"\1F=<net>", m["spec"]) if any(s.net for s in splits) else m["spec"]
     one = len({s.net for s in splits}) == 1
-    spec = (f"`{_shown(m['spec'])}`" if one else
-            f"`{plan}`, each split's field net as in the table (`nets/`)")
+    planners = {re.sub(r"(^|,)F=[^,]+", r"\1F=", s.manifest["spec"]) for s in splits}
+    if len(planners) > 1:
+        spec = "one contract and a planner per split: " + "; ".join(f"{s.name} `{_shown(s.manifest['spec'])}`" for s in splits)
+    else:
+        spec = (f"`{_shown(m['spec'])}`" if one else
+                f"`{plan}`, each split's field net as in the table (`nets/`)")
+    declare = m.get("declare") or ("declares the pip trump the arena's hand heuristic rates strongest "
+                                   "(`arena.hand_metrics.best_trump`: bid ceiling, then trump length)")
     about = f"\n## This release\n\n{notes.strip()}\n" if notes else ""
     key = re.sub(r"[^a-z0-9]", "", repo.split("/")[-1].lower())
     return f"""---
@@ -398,9 +405,8 @@ which is what a group-relative trainer consumes, and keeps a position's worlds s
 |---|---|---|---|---|---|---|---|---|---|---|
 {split_rows}
 
-The splits are disjoint deals poured under the same planner and contract: {spec}; seat {bidder} bids {bid} and
-declares the pip trump the arena's hand heuristic rates strongest (`arena.hand_metrics.best_trump`:
-bid ceiling, then trump length), seat {bidder} leads,
+The splits are disjoint deals poured under {spec}; seat {bidder} bids {bid} and
+{declare}, seat {bidder} leads,
 utility `{utility}`. Deal *i* of a split is `scenario.atlas.deal(seed + i)`.
 
 ### Encodings

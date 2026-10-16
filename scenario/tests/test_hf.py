@@ -131,10 +131,34 @@ def test_rounds_of_an_expert_iteration_ship_their_nets(pours, tmp_path):
     assert "modeled by the field net `<net>`" in text and "cell-size floor of 16" in text
     assert "nets/trained.npz" in (out / "SHA256SUMS").read_text()
     bad = tmp_path / "k1"
-    save(load(pours["validation"]), bad, spec=f"k1,n8,F={nets['round2']}", deal_seeds=[4, 5], commit="c0ffee")
-    with pytest.raises(SystemExit, match="different specs"):
-        stage([splits[0], read_split("validation", bad)], tmp_path / "x", "x/y")
+    # a split under another planner is allowed (one contract, a planner per split, named in the card);
+    # another contract is not
+    save(load(pours["validation"]), bad, spec=f"k1,n8,F={nets['round2']}", seed=4, fiber=False, deal_seeds=[4, 5], commit="c0ffee")
+    out2 = stage([splits[0], read_split("validation", bad)], tmp_path / "x", "x/y")
+    assert "a planner per split" in (out2 / "README.md").read_text()
+    m = json.loads((bad / "manifest.json").read_text()); m["bid"] = 31
+    (bad / "manifest.json").write_text(json.dumps(m))
+    with pytest.raises(SystemExit, match="different contracts"):
+        stage([splits[0], read_split("validation", bad)], tmp_path / "x2", "x/y")
     gone = tmp_path / "gone"
     save(load(pours["validation"]), gone, spec="k0,n8,F=/no/such.npz", deal_seeds=[4, 5], commit="c0ffee")
     with pytest.raises(SystemExit, match="no such field net"):
         stage([read_split("validation", gone)], tmp_path / "y", "x/y")
+
+
+def test_splits_may_differ_in_planner_but_not_in_contract(pours, tmp_path):
+    other = tmp_path / "other"
+    save(_poured((7, 8)), other, spec="k1,n8,m8", seed=7, fiber=False, deal_seeds=[7, 8], commit="c0ffee",
+         declare="declares by the book's menu, one pip deal in eight forced to doubles or no trump")
+    out = stage([read_split("pip", pours["train"]), read_split("dtnt", other)], tmp_path / "s", "x/y")
+    card = (out / "README.md").read_text()
+    assert "a planner per split" in card and "k1,n8,m8" in card
+    assert "one pip deal in eight" not in card           # the first split's manifest names the rule
+    out2 = stage([read_split("dtnt", other), read_split("pip", pours["train"])], tmp_path / "s2", "x/y")
+    assert "one pip deal in eight" in (out2 / "README.md").read_text()
+    bad = tmp_path / "bad"
+    save(_poured((9,)), bad, spec=SPEC, seed=9, fiber=False, deal_seeds=[9], commit="c0ffee")
+    m = json.loads((bad / "manifest.json").read_text()); m["bid"] = 31
+    (bad / "manifest.json").write_text(json.dumps(m))
+    with pytest.raises(SystemExit, match="different contracts"):
+        stage([read_split("pip", pours["train"]), read_split("b", bad)], tmp_path / "s3", "x/y")
