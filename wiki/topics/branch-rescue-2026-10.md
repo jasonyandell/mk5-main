@@ -62,6 +62,13 @@ Each tag is `attic/<branch>`, pushed to origin before the branch was deleted. `g
 | `worktree-parlor-promote` | `3abde763` | the salon promoted to a wiki citizen | merged as PR #79; tip is the PR head |
 | `worktree-wiki-overhaul` | local only | a WIP snapshot of the wiki overhaul (459 files) | merged as PR #34 from a later branch; snapshot says "worktree based on stale main" |
 
+Set aside by the same pass (rescued pages only, April 2026, ~900 commits behind):
+
+| Branch (tag) | Tip | What it tried | Why it stopped |
+|---|---|---|---|
+| `perf/batch` | `7d80bab7` | the Burl phase-2 clean re-validation (retracts magnitude claims), the cohort abstraction spec, mlx-lm internals | wiki pages rescued to main ([[harvest-cohort-abstraction]]); its bench JSON and edits to pages main has since moved on stay in the tag. Burl's perf program ended with the champion era |
+| `perf/cheap` | `8928bfe7` | Burl phase-1 cheap wins: turn-aware budgets, temp-0 clean baselines, lever-1 pre/post codepath benches | [[burl-perf-phase1]] and [[mlx-cohort-bench-discipline]] rescued to main; bench JSON stays in the tag |
+
 ## Other verdicts
 
 (Added as each branch is acted on.)
