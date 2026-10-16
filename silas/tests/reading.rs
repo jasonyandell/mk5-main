@@ -366,3 +366,30 @@ fn the_hand_law_resolves_its_seat_alone_and_answers_above_the_cap() {
     assert!(Belief::hand_law(&evidence, Seat::S0, 100_000).err().unwrap().0.contains("viewer"));
     assert!(Belief::hand_law(&evidence, Seat::S2, 1_000).err().unwrap().0.contains("cap"));
 }
+
+#[test]
+fn a_pattern_binds_its_roles_by_the_frame_before_it_reads_a_world() {
+    // A conjunction's order is not its meaning, but its evaluation is: a
+    // clause that reads only the frame (`declarer`) binds the role before a
+    // clause that reads a hidden hand (`holds`) is asked (`Clause::rank`, #134).
+    // Read the other way round, `holds` would be asked of every seat, and the
+    // hand law of S2, which resolves his hand alone, would refuse the reads of
+    // S1 and S3. So both orders answer, and alike.
+    let six_six = policy("(policy six-six (bidding (rule r (bid least-raise) (mine 6-6))))");
+    let hand = tiles(&["5-5", "5-4", "4-4", "3-2", "2-0", "1-1", "1-0"]);
+    let auction = Auction::new(
+        AuctionConfig::STRAIGHT,
+        Seat::S3,
+        vec![Call::Pass, Call::Pass, "30".parse().unwrap(), Call::Pass],
+    );
+    let frame = Frame::new(auction.unwrap(), physics("P6"), Seat::S0, hand, vec![]).unwrap();
+    let belief = law(&frame, &[(Seat::S2, &six_six)], Seat::S2).unwrap();
+    // The 5-3 is a tile S2 may or may not hold, so whether S1 or S3 holds it
+    // is a read the law refuses (the 6-6 would not do: it is S2's for certain,
+    // so it is no one else's).
+    let named = exact_given(probability("(query (holds S2 5-3))", &belief));
+    assert!(named > r(0, 1) && named < r(1, 1));
+    for text in ["(query (holds s 5-3) (declarer s))", "(query (declarer s) (holds s 5-3))"] {
+        assert_eq!(exact_given(probability(text, &belief)), named, "{text}");
+    }
+}
