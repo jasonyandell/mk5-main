@@ -98,8 +98,9 @@ Run 2026-10-16 on the full pre-registered sample: 434,535 rows, top set 4,345 pe
 cards, every reader output, `ablate.json`, runners, logs, `SHA256SUMS`):
 [`lem/field-net-audit-2026-10-15`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0982f55bd74a92d6819cf29e2fe7f309e998dab5/lem/field-net-audit-2026-10-15).
 
-**The pole table.** 222 of 372 live poles are clean: **0.597 [0.581, 0.608]** (the interval is the
-share with every precision at its Wilson lower, then upper, bound). The shuffled-label baseline is
+**The pole table.** 222 of 372 live poles are clean: **0.597 [0.581, 0.608]**, *provisional (#191)*: the
+interval is the share with every precision at its Wilson lower, then upper, bound, and the Wilson
+intervals are over rows, not deals (the split-half A/A below measures how wrong that is). The shuffled-label baseline is
 **0.000 [0.000, 0.000]** over 20 shuffles. Partial 136, mixed 14. The clean labels' mean
 precision is 0.980.
 
@@ -175,6 +176,31 @@ the partner's and setters' shown voids by suit.
 rows under `scripts/cpu-slot`, about 2.5 hours of wall on two shared slots; the pole table 172 s
 (0.89 cores); the readers 47 minutes, about 1,100 `claude -p --model haiku` calls; the curve
 3 minutes.
+
+## Split-half A/A of the intervals (#191; registered 2026-10-16 before counting)
+
+The Mayor's ruling on #191: the audit's Wilson intervals are over rows (positions), and a deal's
+positions share the hand and the voids, so the headline interval is provisional until an A/A says
+how often such an interval is wrong. The test makes no new claim about the net.
+
+- **Design.** The sample's deals halved at random (seed 20261017, disjoint); the audit's procedure
+  run on each half with its own top 1% (about 2,170 rows per pole), the pole's label held fixed to
+  the audit's; dead poles excluded (372 pairs). Two intervals per half: the audit's **row Wilson**,
+  and a **deal-clustered bootstrap** over the top set's deals (1,000 resamples, percentile 2.5/97.5,
+  SE = the bootstrap sd; the Wilson SE = half-width / 1.96).
+- **Counts** (Inez's request). The rate at which a half's 95% interval misses the *other* half's
+  point estimate (calibrated: 0.166, since the other point carries its own noise); the rate of
+  non-overlap (calibrated: 0.006); and z = (p_A − p_B) / sqrt(SE_A² + SE_B²), whose sd should be
+  near 1 with |z| > 1.96 on 0.05 (the cleanest test). Also the clean share by half.
+- **Belief probe** ([[lem-belief-probe-2026-10-16]]). The registered fit (half A) scored on half B,
+  and the reverse, each R² with a deal-clustered bootstrap over its eval deals; the same z.
+- **Predictions.** (1) Row Wilson is badly undercovered: |z| > 1.96 on more than 0.15 of poles,
+  sd of z above 1.5. (2) The deal bootstrap is near calibration: |z| > 1.96 within [0.03, 0.09].
+  (3) The two halves' clean shares differ by less than 0.03. (4) The belief R² story
+  (x ≫ a1 > a2) holds in both directions with non-overlapping bands between representations.
+- Code: `lem/probe/aa.py` (CC0). Cost: one slot call, CPU minutes.
+
+**Results.** Not yet run.
 
 ## Exploratory, not pre-registered (2026-10-16)
 

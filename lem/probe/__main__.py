@@ -36,6 +36,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("readers"); s.add_argument("cards"); s.add_argument("out_dir")
     s.add_argument("--workers", type=int, default=6); s.add_argument("--model", default="haiku")
     s = sub.add_parser("ablate"); s.add_argument("sample"); s.add_argument("out"); s.add_argument("--net", default=NET)
+    s = sub.add_parser("aa"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("belief_parts"); s.add_argument("out_dir")
+    s.add_argument("--net", default=NET)
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
@@ -159,6 +161,23 @@ def main(argv=None) -> None:
         result["net"] = a.net
         fidelity.write(result, a.out_dir)
         log(json.dumps({"overall": result["overall"], "high": result["ranked_high"][:5], "low": result["ranked_low"][:5]}))
+    elif a.cmd == "aa":
+        from lem.probe import aa, concepts
+        from lem.probe.net import forward, load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        with np.load(a.labels) as z:
+            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+        audit = json.loads((Path(a.audit_dir) / "audit.json").read_text())
+        net = load_net(a.net)
+        acts = forward(net, sample.x)
+        log("audit halves")
+        result = {"net": a.net, "audit": aa.audit_aa(sample, acts, labels, names, audit, log)}
+        log(json.dumps({k: v for k, v in result["audit"].items() if k in ("wilson", "bootstrap", "clean_share")}))
+        log("belief, both ways")
+        result["belief"] = aa.belief_aa(sample, acts, a.belief_parts, log=log)
+        aa.write(result, a.out_dir)
     elif a.cmd == "list":
         from lem.probe import concepts
         concepts.write_list(a.out)

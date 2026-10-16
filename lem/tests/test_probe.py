@@ -303,3 +303,35 @@ def test_fidelity_collects_the_teachers_q_and_regret_is_zero_at_agreement(tmp_pa
         qi = d["q"][i] * d["sign"][i]
         if np.isclose(qi[np.argmax(qi)], qi[list(smp.actions[i]).index(smp.chosen[i])]):
             assert r[i] == 0
+
+
+def test_aa_calibration_counts_are_near_their_targets_on_a_simulated_calibrated_estimator():
+    """A/A bookkeeping (#191): with exact normal intervals on independent halves, the
+    interval misses the other half's point about 0.166 of the time, |z| > 1.96 about 0.05,
+    and no-overlap about 0.006; the deal bootstrap recovers a cluster mean's spread."""
+    from lem.probe import aa
+    rng = np.random.default_rng(0)
+    est = []
+    for _ in range(20000):
+        pA, pB = rng.normal(0.5, 0.01, 2)
+        est.append({"pA": pA, "loA": pA - 1.96 * 0.01, "hiA": pA + 1.96 * 0.01, "seA": 0.01,
+                    "pB": pB, "loB": pB - 1.96 * 0.01, "hiB": pB + 1.96 * 0.01, "seB": 0.01})
+    c = aa.compare(est)
+    assert abs(c["miss_other_point"] - c["miss_other_point_target"]) < 0.01
+    assert abs(c["z_abs_gt_1_96"] - 0.05) < 0.006 and abs(c["z_sd"] - 1.0) < 0.03
+    assert c["no_overlap"] < 0.012 and c["degenerate"] == 0
+    # deal bootstrap: 400 deals of 8 rows; the rows of a deal share a deal effect
+    deal = np.repeat(np.arange(400), 8)
+    y = (rng.normal(0, 1, 400)[deal] + rng.normal(0, 0.3, 3200) > 0).astype(float)
+    bs = aa.deal_bootstrap(y, deal, rng, boot=2000)
+    truth_se = np.std([y[rng.integers(0, 400, 400)[:, None] * 8 + np.arange(8)].mean() for _ in range(2000)])
+    assert abs(bs.std() - truth_se) / truth_se < 0.15 and bs.std() > 1.5 * np.sqrt(y.mean() * (1 - y.mean()) / 3200)
+    a, b = aa.halves(deal)
+    assert a.sum() == b.sum() == 1600 and not (a & b).any()
+    # R² bootstrap equals the plain R² when every deal is drawn once
+    pred, yy = rng.normal(0, 1, (200, 5)), rng.normal(0, 1, (200, 5)); m = np.ones_like(yy, bool); d = np.arange(200)
+    class Once:  # a "rng" that draws every deal exactly once
+        def integers(self, lo, hi, size): return np.tile(np.arange(hi), (size[0], 1))
+    r = aa.r2_bootstrap(pred, yy, m, d, Once(), boot=3)
+    e, v = (yy - pred).ravel(), (yy - yy.mean()).ravel()
+    assert np.allclose(r, 1 - e @ e / (v @ v))
