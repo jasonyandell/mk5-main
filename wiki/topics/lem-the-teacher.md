@@ -67,8 +67,11 @@ so 192 neurons and 384 poles). Label every pole two ways:
 
 Every share is reported with its interval and against a shuffled-label baseline. The products
 are the **concept list** and the **probe kit** (`lem/probe/`), which stages 3 and 4 reuse
-unchanged. The design and the pre-registration are [[lem-field-net-audit-2026-10-15]]; the
-idea it grew from is [[clean-neurons-42]].
+unchanged. The design, the pre-registration and the result are [[lem-field-net-audit-2026-10-15]];
+the idea it grew from is [[clean-neurons-42]]. **Result (2026-10-16):** 222 of 372 live poles are
+clean, 0.597 [0.581, 0.608] against a shuffled chance of 0.000; Haiku readers detect 0.758 of poles
+(shifted null 0.124); the play needs 165 of 192 neurons for 0.95 fidelity, so the neurons are clean
+and the play is not sparse; the biggest unnamed concept was the declaration itself.
 
 ### 2. The population
 

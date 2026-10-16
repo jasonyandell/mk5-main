@@ -49,6 +49,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | lem | The field-net audit (Lem stage 1): clean neurons, play that is not sparse]
+
+- [[lem-field-net-audit-2026-10-15]] complete: 222 of 372 live poles clean, 0.597 [0.581, 0.608], shuffled chance 0.000; 122 by a Silas concept, 100 by a raw feature of which 43 are declaration detectors (a concept the list lacked); Haiku readers detect 0.758 of poles vs 0.124 under the shifted null; greedy curve knee at k = 165 of 192 (prediction 40–120 wrong); 12 dead layer-2 neurons. Evidence on HF `lem/field-net-audit-2026-10-15/`.
+- [[lem-the-teacher]] and [[clean-neurons-42]] carry the result line; `lem/probe/ablate.py` scores candidates incrementally (same statistic, by test).
+
 ## [2026-10-16 | Demon | Exact bid support and the failed preemption sweep]
 
 [[demon-ascent-2026-10-16]] records all 384 round-3 games: no tested jump bidder establishes a win; the minimum-raise reference remains selected. An exact support predicate matches all 1,934 saved forecasts at native CPU ratio 0.4754 [0.4652, 0.4853] against the already-pruned best forecast. The opt-in adapter and experimental early-opening bidder are implemented; no participant is promoted. Generated evidence is public, and the study retains every negative result.

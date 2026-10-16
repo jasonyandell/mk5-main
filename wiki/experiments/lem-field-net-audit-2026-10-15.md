@@ -2,8 +2,8 @@
 title: "The field-net audit: 384 poles of Zeb's net, labelled by Silas and by Haiku (Lem stage 1)"
 kind: experiment
 first_seen: 2026-10-15
-last_updated: 2026-10-15
-status: active
+last_updated: 2026-10-16
+status: complete
 ---
 
 Stage 1 of [[lem-the-teacher]] (#176); the idea is [[clean-neurons-42]]'s experiment A1.
@@ -93,7 +93,88 @@ numbers are not the study. Evidence (sample manifest, labels identity, `audit.js
 
 ## Results
 
-Not yet run.
+Run 2026-10-16 on the full pre-registered sample: 434,535 rows, top set 4,345 per pole, 384 poles,
+372 live. Nothing was dropped or re-rolled. Evidence (sample, labels, `audit.json`, `poles.md`,
+cards, every reader output, `ablate.json`, runners, logs, `SHA256SUMS`):
+[`lem/field-net-audit-2026-10-15`](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0982f55bd74a92d6819cf29e2fe7f309e998dab5/lem/field-net-audit-2026-10-15).
+
+**The pole table.** 222 of 372 live poles are clean: **0.597 [0.581, 0.608]** (the interval is the
+share with every precision at its Wilson lower, then upper, bound). The shuffled-label baseline is
+**0.000 [0.000, 0.000]** over 20 shuffles. Partial 136, mixed 14. The clean labels' mean
+precision is 0.980.
+
+| | live | clean | by a Silas concept | by a raw feature | partial | mixed |
+|---|---:|---:|---:|---:|---:|---:|
+| layer 1 (128 neurons) | 256 | 162 | 89 | 73 | 89 | 5 |
+| layer 2 (64 neurons) | 116 | 60 | 33 | 27 | 47 | 9 |
+| all | 372 | 222 | 122 | 100 | 136 | 14 |
+
+- **Dead poles: 12**, all `+` poles of layer 2: twelve of the 64 second-layer neurons never fire
+  on any of the 434,535 rows.
+- **The Silas labels** (poles per concept): lead 32, last 23, partner-winning 10, no-trump-held 10,
+  trump-led 6, trumps-3plus 5, partner-out-of-trump 5, third 5, setter-out-of-trump 5,
+  holds-master 4, late 3, holds-boss-trump 3, count-out-20plus 3, count-on-trick 3,
+  winner-cannot-be-beaten 2, doubles-2plus 1, holds-ten 1, to-set-le-5 1. Where in the trick the
+  viewer sits (lead, third, last) labels 60 of the 122.
+- **26 of the 48 concepts label no pole**: second, trick-1, trick-2, trick-7, hand-le-3, forced,
+  bidding-side, is-bidder, holds-trump, holds-sure-trump, trump-out, can-ruff, masters-2plus,
+  holds-walker, holds-off, holds-boss-of-led, bidder-winning, safe-trick, ten-on-trick,
+  holds-count, count-out, made, set, to-make-le-10, to-make-ge-20, holds-double. Several are
+  runners-up (holds-sure-trump sits at precision 1.00 behind holds-boss-trump on L1+009).
+- **The raw-feature labels are mostly the declaration.** 69 of the 100 come from the `count`
+  block, which records where the ten- and five-count tiles sit after the trump pip is relabelled
+  to 6, so it is the only trace of *which pip is trump*. 45 poles have a top set at least 90%
+  one declaration (fives 17, fours 13, sixes 11, blanks 2, ones 2; 43 of them labelled by a
+  `count` feature). "The trump is fives" is a concept the sealed list did not name, and the net
+  spends about an eighth of its live poles on it. The sample's declarations are skewed by the
+  pour's own bidder (fours 35.8%, fives 31.9%, sixes 10.6%, each other pip about 5%).
+
+**The Haiku readers.** 372 poles explained from 12 cards each; 19 answered `none`; 349 scored
+(4 answers could not be parsed). **Detected: 282 of 372 = 0.758**; mean detection accuracy
+0.843. **Shifted null: 46 of 372 = 0.124**, mean 0.531 (chance 0.5). By the exact table's
+kind: clean 179 of 213 detected (mean 0.861), partial 93 of 123 (0.820), mixed 10 of 13 (0.769);
+67 poles scored 1.0 on all 20 cards. The readers' words are usually conjunctions where the exact
+label is one predicate: L1+032's label is `last` and its description "partner is winning the trick
+and I play last" (accuracy 1.0); L1+008's `no-trump-held` reads "holds no trump tiles at all"
+(0.7); L1-008's `trumps-3plus` reads "leads holding six of the seven trumps" (0.9). Every
+description sits beside its Silas label in the evidence.
+
+**The neuron-count curve.** Greedy forward selection, 20,000 fit rows, 20,000 eval rows.
+
+| neurons kept | 0 | 16 | 32 | 64 | 96 | 128 | 160 | 165 | 179 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| eval fidelity | 0.389 | 0.497 | 0.562 | 0.636 | 0.702 | 0.775 | 0.928 | **0.952** | 1.000 |
+| random k (mean of 5) | | 0.383 | 0.395 | 0.418 | 0.484 | 0.582 | | | |
+
+The **knee is at k = 165 of 192**. Half the play is matched at k = 20, 0.9 at k = 155, and
+13 neurons add nothing on the eval rows (the 12 dead ones and one more). The first run of the
+curve was cut by the 1,200 s slot cap; the rerun scores candidates incrementally (exactly the
+same statistic, held equal by test) and took three minutes.
+
+**The predictions, graded.**
+
+| | predicted | measured | |
+|---|---|---|---|
+| 1. clean share | 0.3–0.6 | 0.597 [0.581, 0.608]; chance 0.000 | inside, at the top |
+| 2. layer 1 has more raw-feature labels | yes | 45% of clean poles in both layers | not supported |
+| 3. Haiku detects / shifted null | 0.5–0.8 / about 0.1 | 0.758 / 0.124 | inside |
+| 4. knee | k in 40–120 | k = 165 | wrong: later than predicted |
+
+**Reading.** At the level of poles the net is largely clean: three poles in five have one main
+job in the game's words or in one input feature, against a chance of zero, and a reader with only
+the viewer's cards names most of those jobs. At the level of play it is not sparse: matching its
+own move 95% of the time takes 165 of 192 neurons, and no small k stands out. For this net the
+"clean neurons" claim of [[clean-neurons-42]] holds and the "small set of features" claim does not;
+both are statements about one 192-neuron field net on one contract (seat 0 bids 30), and
+[[lem-the-teacher]]'s stage 4 asks the same two questions of nets that grow. Three things the
+list should learn before the next audit: a concept for the declaration itself (`trump-is q`), the
+conjunctions the readers kept finding (position in the trick × who is winning × trump held), and
+the partner's and setters' shown voids by suit.
+
+**Runtime.** Labels about 21 ms a row (the book's definitions over 28 tiles), 55 chunks of 8,000
+rows under `scripts/cpu-slot`, about 2.5 hours of wall on two shared slots; the pole table 172 s
+(0.89 cores); the readers 47 minutes, about 1,100 `claude -p --model haiku` calls; the curve
+3 minutes.
 
 ## Links
 

@@ -5,10 +5,16 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+<<<<<<< HEAD
 - [[experiments/demon-ascent-2026-10-16|demon-ascent-2026-10-16]] — next Demon versus native Zeb 0.4.1 at comparable CPU, fixed threshold development and fresh confirmation protocol (active)
 - [[experiments/lem-field-net-audit-2026-10-15|lem-field-net-audit-2026-10-15]] — Lem stage 1: the 384 poles of Zeb's shipped field net labelled by 48 Silas concepts and the 343 raw features, with Wilson intervals and a shuffled-label baseline; Haiku explain-then-score readers; a first greedy neuron-count curve; pre-registered with predictions (active)
 - [[experiments/rematch-zeb-041-vs-demon-2026-10-15|rematch-zeb-041-vs-demon-2026-10-15]] — Zeb 0.4.1's contested bidder beats the confirmed Demon at greater CPU cost, with 0.4.0 as the reference (complete)
 - [[experiments/demon-overcalling-2026-10-15|demon-overcalling-2026-10-15]] — overcalling Demon beats both pinned native Zeb 0.4.0 bidders within the runtime bar in 2,048 audited fresh games (complete)
+=======
+- [[experiments/lem-field-net-audit-2026-10-15|lem-field-net-audit-2026-10-15]] — Lem stage 1: 222 of 372 live poles of Zeb's shipped field net are clean (0.597 [0.581, 0.608], chance 0.000), 122 by a Silas concept and 100 by a raw feature (mostly which pip is trump); Haiku readers detect 0.758 of poles vs 0.124 under a shifted null; the play needs 165 of 192 neurons for 0.95 fidelity, no small knee; 12 dead layer-2 neurons; predictions graded (complete)
+- [[experiments/rematch-zeb-041-vs-demon-2026-10-15|rematch-zeb-041-vs-demon-2026-10-15]] — Zeb 0.4.1 (the overcall) against the confirmed overcalling Demon, 256 duplicate pairs, 0.4.0 as the equal-deals reference (active)
+- [[experiments/demon-overcalling-2026-10-15|demon-overcalling-2026-10-15]] — fixed development of opponent-held point-bid thresholds and a larger fresh attempt-2 protocol (active)
+>>>>>>> 1b76faf7 (lem: the field-net audit's results — 0.597 [0.581, 0.608] of live poles clean (chance 0.000), Haiku detects 0.758 (null 0.124), knee at 165 of 192)
 - [[experiments/demon-vs-zeb-2026-10-15|demon-vs-zeb-2026-10-15]] — complete native Zeb comparison; standard bar clears, match-aware win interval crosses chance, no joint promotion (complete)
 - [[experiments/demon-next-form-2026-10-14|demon-next-form-2026-10-14]] — bidding won in a ten-declaration arena; promotion withdrawn after the straight-42 declaration audit (complete)
 - [[demon-power-2026-10-14]] — Compact exact search, distinct-world sampling, and a fixed 1,600-versus-100-world strength trial.

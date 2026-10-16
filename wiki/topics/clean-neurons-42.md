@@ -2,7 +2,7 @@
 title: Clean neurons for 42 — reading Zeb's own net, concept by concept, as it grows
 kind: topic
 first_seen: 2026-10-15
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 status: active
 ---
 
@@ -106,4 +106,6 @@ the bulk labelling.
 Absorbed into the Lem program as its stage 1 ([[lem-the-teacher]], #176). The audit of the 384
 poles (A1) is pre-registered in [[lem-field-net-audit-2026-10-15]], with the concept list, the
 statistics, the Haiku readers and a first neuron-count curve; the probe kit is `lem/probe/`.
-A2–A4 and experiment B are stages 3 and 4 of that program.
+A2–A4 and experiment B are stages 3 and 4 of that program. **A1's result (2026-10-16):** 0.597
+[0.581, 0.608] of live poles clean against a chance of 0.000, in the essay's direction though below its
+"about 90%"; the play itself needs 165 of 192 neurons for 0.95 fidelity.
