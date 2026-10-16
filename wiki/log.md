@@ -52,6 +52,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | lem | G7 pre-registered: where the field net's regret under the teacher's plan sits]
+
+- [[lem-fidelity-by-concept-2026-10-16]]: regret by the audit's 48 concepts, legal-move count and the teacher's best-minus-second gap, deal-clustered bootstrap; three predictions (regret concentrated in the top decile; highest with can-take-it and count-on-trick; rising with legal moves). `lem/probe/fidelity.py`.
+
 ## [2026-10-16 | lem | G1 result: the teacher's belief is in the field net's inputs, not its hidden layers]
 
 - [[lem-belief-probe-2026-10-16]] complete: R² on the void-moved posterior entries, raw inputs 0.791, first hidden layer 0.241, second 0.035, shuffled ≈ 0 (deal-disjoint 20k/20k); the field net plays without a readable belief over who holds what. Predictions: inputs-state-most just under (0.79 vs ≥ 0.8), a1-near-x wrong, a2-below-a1 right, no-layer-beats-x right.
