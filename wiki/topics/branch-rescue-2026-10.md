@@ -48,6 +48,8 @@ the measurements pages?
 
 ## Tombstones
 
+**13 branches were tagged `attic/<name>` and deleted** (`git ls-remote --tags origin 'attic/*'` lists 13): the nine in the first table, `perf/batch` and `perf/cheap`, `research/recursive-generalization-2026-10-15` (merged first) and `worktree-table42` (landed first). Two of the 13 (`gascity`, `worktree-wiki-overhaul`) were local-only, so their tags are the only copy of them on origin.
+
 Each tag is `attic/<branch>`, pushed to origin before the branch was deleted. `git log attic/<branch>` reads it back.
 
 | Branch (tag) | Tip | What it tried | Why it stopped |
