@@ -15,7 +15,7 @@
 //! | bytes | field |
 //! |---|---|
 //! | 4 | magic `FNET` |
-//! | 1 + len | the feature layout's name, length-prefixed ASCII: `field-v2` |
+//! | 1 + len | the feature layout's name, length-prefixed ASCII: `field-v2` or `field-v3` ([`Layout`]) |
 //! | 4 × u32 | h1, h2 (hidden widths), s1, s2 (hidden-layer shifts) |
 //! | i16 × features·h1 | w1, a row of h1 per feature |
 //! | i64 × h1 | b1 |
@@ -51,32 +51,78 @@ const WINNING: usize = OPEN + 4;
 const NEED: usize = WINNING + 3;
 const SLACK: usize = NEED + STEPS;
 const BID: usize = SLACK + STEPS;
-/// The width of the feature layout the net reads.
-pub const N_FEATURES: usize = BID + BIDS;
+const KIND: usize = BID + BIDS; // field-v3 only: the declaration's kind, one-hot
+const KINDS: usize = 3; // a pip trump, doubles trump, no trump
 
 /// The blob's first four bytes.
 pub const MAGIC: &[u8; 4] = b"FNET";
-/// The feature layout this module computes; a blob must name it.
-pub const LAYOUT: &str = "field-v2";
 
-/// Tile id → canonical tile id under a pip-trump declaration: the trump pip
-/// becomes 6 and the other pips keep their order, so the net learns one
-/// trump suit instead of seven. None for declarations 7, 8, 9: the net
-/// plays pip trumps only.
-pub fn canon(decl: u8) -> Option<[u8; N]> {
-    if decl > 6 {
-        return None;
+/// A feature layout: which declarations a net plays and how it sees them.
+/// `field-v2` is the shipped net's: the seven pip trumps, the trump pip
+/// relabelled to 6 so one trump suit is learned. `field-v3` appends one
+/// block, the declaration's kind, and plays doubles trump (7) and no trump
+/// (9) as well, with the tiles unrelabelled; every v2 feature keeps its
+/// index, so a v2 net is a v3 net with three zero rows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Layout {
+    V2,
+    V3,
+}
+
+impl Layout {
+    /// The name a blob carries.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Layout::V2 => "field-v2",
+            Layout::V3 => "field-v3",
+        }
     }
-    let pip = |q: u8| match q.cmp(&decl) {
-        std::cmp::Ordering::Less => q,
-        std::cmp::Ordering::Equal => 6,
-        std::cmp::Ordering::Greater => q - 1,
-    };
-    Some(std::array::from_fn(|t| {
-        let (high, low) = pips(t as u8);
-        let (a, b) = (pip(high), pip(low));
-        tile(a.max(b), a.min(b))
-    }))
+
+    /// The layout a blob names, if this module computes it.
+    pub fn parse(name: &[u8]) -> Option<Layout> {
+        [Layout::V2, Layout::V3].into_iter().find(|l| l.name().as_bytes() == name)
+    }
+
+    /// The width of the feature row.
+    pub const fn n_features(self) -> usize {
+        match self {
+            Layout::V2 => KIND,
+            Layout::V3 => KIND + KINDS,
+        }
+    }
+
+    /// Tile id → canonical tile id under `decl`, or None where this layout
+    /// does not play: under a pip trump the trump pip becomes 6 and the
+    /// others keep their order (`field.py`'s `_canon`); under doubles trump
+    /// and no trump (v3 only) the tiles stay as they are, and the kind bit
+    /// says which game it is. Doubles-suit (8) is no game's declaration.
+    pub fn canon(self, decl: u8) -> Option<[u8; N]> {
+        match (self, decl) {
+            (_, 0..=6) => {
+                let pip = |q: u8| match q.cmp(&decl) {
+                    std::cmp::Ordering::Less => q,
+                    std::cmp::Ordering::Equal => 6,
+                    std::cmp::Ordering::Greater => q - 1,
+                };
+                Some(std::array::from_fn(|t| {
+                    let (high, low) = pips(t as u8);
+                    let (a, b) = (pip(high), pip(low));
+                    tile(a.max(b), a.min(b))
+                }))
+            }
+            (Layout::V3, 7 | 9) => Some(std::array::from_fn(|t| t as u8)),
+            _ => None,
+        }
+    }
+
+    /// The kind bit of a declaration this layout plays: 0 a pip trump, 1 doubles trump, 2 no trump.
+    fn kind(decl: u8) -> usize {
+        match decl {
+            0..=6 => 0,
+            7 => 1,
+            _ => 2,
+        }
+    }
 }
 
 /// Why a blob is not a field net.
@@ -136,6 +182,7 @@ fn tiles(mut mask: u32) -> impl Iterator<Item = usize> {
 /// [`FieldNet::from_bytes`], so its shapes always fit.
 #[derive(Clone)]
 pub struct FieldNet {
+    layout: Layout,
     h1: usize,
     h2: usize,
     w1: Vec<i64>, // [features][h1]
@@ -157,9 +204,7 @@ impl FieldNet {
             return Err(BlobError("not a field net blob (bad magic)"));
         }
         let len = b.take(1)?[0] as usize;
-        if b.take(len)? != LAYOUT.as_bytes() {
-            return Err(BlobError("field net blob is not layout field-v2"));
-        }
+        let layout = Layout::parse(b.take(len)?).ok_or(BlobError("field net blob names a layout this core does not compute"))?;
         let (h1, h2, s1, s2) = (b.u32()? as usize, b.u32()? as usize, b.u32()?, b.u32()?);
         if h1 == 0 || h2 == 0 {
             return Err(BlobError("field net hidden widths must be positive"));
@@ -168,7 +213,7 @@ impl FieldNet {
             return Err(BlobError("field net shifts must be below 63"));
         }
         let overflow = BlobError("field net shape overflows");
-        let w1 = b.i16s(N_FEATURES.checked_mul(h1).ok_or(overflow.clone())?)?;
+        let w1 = b.i16s(layout.n_features().checked_mul(h1).ok_or(overflow.clone())?)?;
         let b1 = b.i64s(h1)?;
         let w2 = b.i16s(h2.checked_mul(h1).ok_or(overflow.clone())?)?;
         let b2 = b.i64s(h2)?;
@@ -177,17 +222,23 @@ impl FieldNet {
         if !b.0.is_empty() {
             return Err(BlobError("field net blob has trailing bytes"));
         }
-        Ok(FieldNet { h1, h2, w1, b1, w2, b2, w3, b3, s1, s2 })
+        Ok(FieldNet { layout, h1, h2, w1, b1, w2, b2, w3, b3, s1, s2 })
     }
 
-    /// Whether the net plays declaration `decl` (the pip trumps, 0..=6).
+    /// The feature layout the net was trained on.
+    pub fn layout(&self) -> Layout {
+        self.layout
+    }
+
+    /// Whether the net plays declaration `decl`: the pip trumps (0..=6) under
+    /// every layout, doubles trump and no trump under `field-v3`.
     pub fn plays(&self, decl: u8) -> bool {
-        canon(decl).is_some()
+        self.layout.canon(decl).is_some()
     }
 
     /// The active feature indices of a modeled seat's decision (`field.features`).
     pub fn features(&self, rules: &Rules, seat: u8, own: u32, rec: &Rec, bid: i32, bt: usize) -> Vec<usize> {
-        let canon = canon(rules.decl).expect("the field net plays pip trumps only");
+        let canon = self.layout.canon(rules.decl).expect("the field net does not play this declaration");
         let mut on = Vec::with_capacity(64);
         on.extend(tiles(own).map(|t| HAND + canon[t] as usize));
         on.extend(tiles(rec.played).map(|t| GONE + canon[t] as usize));
@@ -233,6 +284,9 @@ impl FieldNet {
             }
         }
         on.push(BID + (bid.clamp(30, 42) - 30) as usize);
+        if self.layout == Layout::V3 {
+            on.push(KIND + Layout::kind(rules.decl));
+        }
         on
     }
 
@@ -262,7 +316,7 @@ impl FieldNet {
     /// The highest-scoring legal tile; ties to the lowest tile id.
     pub fn decide(&self, rules: &Rules, seat: u8, own: u32, rec: &Rec, bid: i32, bt: usize) -> u8 {
         let z = self.scores(&self.features(rules, seat, own, rec, bid, bt));
-        let canon = canon(rules.decl).expect("the field net plays pip trumps only");
+        let canon = self.layout.canon(rules.decl).expect("the field net does not play this declaration");
         let mut best: Option<(usize, i64)> = None;
         for t in tiles(rules.legal(own, rec.led())) {
             let v = z[canon[t] as usize];
@@ -280,7 +334,7 @@ impl FieldNet {
     #[allow(clippy::too_many_arguments)]
     pub fn allowed(&self, rules: &Rules, seat: u8, own: u32, rec: &Rec, bid: i32, bt: usize, margin: i64) -> u32 {
         let z = self.scores(&self.features(rules, seat, own, rec, bid, bt));
-        let canon = canon(rules.decl).expect("the field net plays pip trumps only");
+        let canon = self.layout.canon(rules.decl).expect("the field net does not play this declaration");
         let legal = rules.legal(own, rec.led());
         let best = tiles(legal).map(|t| z[canon[t] as usize]).max().expect("a legal play exists");
         tiles(legal).filter(|&t| z[canon[t] as usize] >= best.saturating_sub(margin)).fold(0, |a, t| a | 1 << t)
@@ -292,16 +346,16 @@ mod tests {
     use super::*;
     use crate::rules::N_DECLS;
 
-    /// A blob of the given widths: weights 1, biases 0, shifts 0.
-    fn blob(h1: u32, h2: u32) -> Vec<u8> {
+    /// A blob of the given layout and widths: weights 1, biases 0, shifts 0.
+    fn blob(layout: Layout, h1: u32, h2: u32) -> Vec<u8> {
         let mut out = MAGIC.to_vec();
-        out.push(LAYOUT.len() as u8);
-        out.extend(LAYOUT.as_bytes());
+        out.push(layout.name().len() as u8);
+        out.extend(layout.name().as_bytes());
         for v in [h1, h2, 0, 0] {
             out.extend(v.to_le_bytes());
         }
         let (h1, h2) = (h1 as usize, h2 as usize);
-        for (weights, biases) in [(N_FEATURES * h1, h1), (h2 * h1, h2), (N * h2, N)] {
+        for (weights, biases) in [(layout.n_features() * h1, h1), (h2 * h1, h2), (N * h2, N)] {
             out.extend(std::iter::repeat_n(1i16.to_le_bytes(), weights).flatten());
             out.extend(std::iter::repeat_n(0i64.to_le_bytes(), biases).flatten());
         }
@@ -310,41 +364,72 @@ mod tests {
 
     #[test]
     fn a_blob_parses_and_scores() {
-        let net = FieldNet::from_bytes(&blob(3, 2)).unwrap();
+        let net = FieldNet::from_bytes(&blob(Layout::V2, 3, 2)).unwrap();
         // Two active features: each first-layer unit is 2, each second 3·2, each score 2·6.
         assert_eq!(net.scores(&[0, 1]), vec![12; N]);
+        assert_eq!(net.layout(), Layout::V2);
         assert!((0..=6).all(|d| net.plays(d)) && !(7..=10).any(|d| net.plays(d)));
+        let v3 = FieldNet::from_bytes(&blob(Layout::V3, 3, 2)).unwrap();
+        assert_eq!(v3.layout(), Layout::V3);
+        assert!((0..=6).all(|d| v3.plays(d)) && v3.plays(7) && v3.plays(9) && !v3.plays(8) && !v3.plays(10));
+        // A v2 blob is three rows short of a v3 net, and the other way round.
+        let mut short = blob(Layout::V3, 3, 2);
+        let name_at = MAGIC.len() + 1;
+        short[name_at + 7] = b'2';
+        assert_eq!(FieldNet::from_bytes(&short).err().map(|e| e.to_string()).as_deref(), Some("field net blob has trailing bytes"));
     }
 
     #[test]
     fn a_bad_blob_is_refused() {
-        let good = blob(3, 2);
+        let good = blob(Layout::V2, 3, 2);
         let refused = |b: &[u8]| FieldNet::from_bytes(b).err().map(|e| e.to_string());
         let mut magic = good.clone();
         magic[0] = b'X';
         assert_eq!(refused(&magic).as_deref(), Some("not a field net blob (bad magic)"));
         let mut layout = good.clone();
-        layout[MAGIC.len() + LAYOUT.len()] = b'1';
-        assert_eq!(refused(&layout).as_deref(), Some("field net blob is not layout field-v2"));
+        layout[MAGIC.len() + Layout::V2.name().len()] = b'1';
+        assert_eq!(refused(&layout).as_deref(), Some("field net blob names a layout this core does not compute"));
         assert_eq!(refused(&good[..good.len() - 1]).as_deref(), Some("field net blob is truncated"));
         let mut trailing = good.clone();
         trailing.push(0);
         assert_eq!(refused(&trailing).as_deref(), Some("field net blob has trailing bytes"));
-        assert_eq!(refused(&blob(0, 2)).as_deref(), Some("field net hidden widths must be positive"));
+        assert_eq!(refused(&blob(Layout::V2, 0, 2)).as_deref(), Some("field net hidden widths must be positive"));
         assert_eq!(refused(&[]).as_deref(), Some("field net blob is truncated"));
     }
 
     #[test]
     fn canon_sends_trump_to_six_and_keeps_the_set() {
-        assert_eq!(canon(6), Some(std::array::from_fn(|t| t as u8)));
-        for d in 0..=6 {
-            let c = canon(d).unwrap();
-            let mut sorted = c;
-            sorted.sort_unstable();
-            assert_eq!(sorted, std::array::from_fn(|t| t as u8));
-            let mut trumps = (0..28u8).filter(|&t| pips(t).0 == d || pips(t).1 == d);
-            assert!(trumps.all(|t| pips(c[t as usize]).0 == 6), "decl {d}");
+        for layout in [Layout::V2, Layout::V3] {
+            assert_eq!(layout.canon(6), Some(std::array::from_fn(|t| t as u8)));
+            for d in 0..=6 {
+                let c = layout.canon(d).unwrap();
+                let mut sorted = c;
+                sorted.sort_unstable();
+                assert_eq!(sorted, std::array::from_fn(|t| t as u8));
+                let mut trumps = (0..28u8).filter(|&t| pips(t).0 == d || pips(t).1 == d);
+                assert!(trumps.all(|t| pips(c[t as usize]).0 == 6), "decl {d}");
+            }
         }
-        assert!((7..N_DECLS).all(|d| canon(d).is_none()));
+        assert!((7..N_DECLS).all(|d| Layout::V2.canon(d).is_none()));
+        let identity: [u8; N] = std::array::from_fn(|t| t as u8);
+        assert_eq!(Layout::V3.canon(7), Some(identity));
+        assert_eq!(Layout::V3.canon(9), Some(identity));
+        assert_eq!(Layout::V3.canon(8), None);
+    }
+
+    #[test]
+    fn v3_rows_carry_the_kind_bit_and_v2_rows_do_not() {
+        let v2 = FieldNet::from_bytes(&blob(Layout::V2, 3, 2)).unwrap();
+        let v3 = FieldNet::from_bytes(&blob(Layout::V3, 3, 2)).unwrap();
+        let rec = Rec::opening(0);
+        for (decl, kind) in [(4u8, 0usize), (7, 1), (9, 2)] {
+            let rules = Rules::new(decl).unwrap();
+            let v3_on = v3.features(&rules, 1, 0b1111111, &rec, 30, 0);
+            assert_eq!(v3_on.iter().filter(|&&i| i >= KIND).copied().collect::<Vec<_>>(), vec![KIND + kind], "decl {decl}");
+            if decl <= 6 {
+                let v2_on = v2.features(&rules, 1, 0b1111111, &rec, 30, 0);
+                assert_eq!(v2_on, v3_on[..v3_on.len() - 1].to_vec(), "a v2 row is the v3 row without its kind bit");
+            }
+        }
     }
 }

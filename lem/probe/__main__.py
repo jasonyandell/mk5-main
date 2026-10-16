@@ -24,7 +24,7 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(prog="python -m lem.probe")
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("sample"); s.add_argument("pour"); s.add_argument("out")
-    s.add_argument("--every", type=int, default=10)
+    s.add_argument("--every", type=int, default=10); s.add_argument("--layout", default="field-v2")
     s = sub.add_parser("merge"); s.add_argument("out"); s.add_argument("parts", nargs="+")
     s = sub.add_parser("concepts"); s.add_argument("sample"); s.add_argument("out")
     s.add_argument("--start", type=int, default=0); s.add_argument("--stop", type=int, default=None)
@@ -41,7 +41,7 @@ def main(argv=None) -> None:
 
     if a.cmd == "sample":
         from lem.probe.sample import build
-        build(a.pour, a.out, a.every, log)
+        build(a.pour, a.out, a.every, log, a.layout)
     elif a.cmd == "merge":
         from lem.probe.sample import merge
         merge(a.out, a.parts, log)
@@ -68,6 +68,7 @@ def main(argv=None) -> None:
             labels, names = z["labels"], [str(n) for n in z["names"]]
         assert len(labels) == len(sample), "one label row per sample row"
         net = load_net(a.net)
+        assert net.layout == sample.layout, f"the net is {net.layout}, the sample {sample.layout}"
         log(f"forward over {len(sample):,} rows")
         acts = forward(net, sample.x)
         result = audit.run(sample, acts, labels, names, log)

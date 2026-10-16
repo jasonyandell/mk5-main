@@ -34,7 +34,7 @@ import numpy as np
 
 from lem.probe.net import Activations, pole_name
 from lem.probe.sample import Sample
-from scenario.field import BLOCKS, OFFSET
+from scenario.field import BLOCKS, N_FEATURES_OF
 
 TOP = 0.01
 BASE_CAP = 0.5
@@ -45,12 +45,12 @@ SHUFFLES = 20
 SEED = 20261015
 
 
-def feature_names() -> list[str]:
+def feature_names(n: int) -> list[str]:
     names = []
     for block, width in BLOCKS:
         for i in range(width):
             names.append(f"x:{block}:{i}")
-    return names
+    return names[:n]
 
 
 def wilson(k: int, n: int, z: float = 1.959964) -> tuple[float, float]:
@@ -115,7 +115,7 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
         log=print) -> dict:
     x = sample.x.astype(bool)
     allc = np.concatenate([labels, x], axis=1)
-    names = list(concept_names) + feature_names()
+    names = list(concept_names) + feature_names(x.shape[1])
     n = len(allc)
     k = max(1, int(round(TOP * n)))
     base = allc.mean(axis=0)

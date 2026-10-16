@@ -311,7 +311,7 @@ impl Core {
             .map(|req| {
                 let rules = self.rules_for(req.0)?;
                 if !net.plays(rules.decl) {
-                    return Err(PyValueError::new_err("the field net plays pip-trump declarations only"));
+                    return Err(PyValueError::new_err("the field net does not play this declaration"));
                 }
                 let rec = rec_of(req)?;
                 let bt = (req.9 % 2) as usize;
@@ -478,10 +478,12 @@ fn constellation(
     Ok((c.form.words, c.order, c.automorphisms))
 }
 
-/// The field net's tile relabeling for one declaration, or None where the net does not play.
+/// A field layout's tile relabeling for one declaration, or None where that layout does not play.
 #[pyfunction]
-fn canon(decl: u8) -> Option<Vec<u8>> {
-    field::canon(decl).map(|c| c.to_vec())
+fn canon(layout: &str, decl: u8) -> PyResult<Option<Vec<u8>>> {
+    let layout = field::Layout::parse(layout.as_bytes())
+        .ok_or_else(|| PyValueError::new_err(format!("unknown field layout {layout:?}")))?;
+    Ok(layout.canon(decl).map(|c| c.to_vec()))
 }
 
 /// The auction slot of a dealt hand ([`planner::ceiling_slot`]): 0 with no

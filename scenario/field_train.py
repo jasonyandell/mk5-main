@@ -57,7 +57,7 @@ from pathlib import Path
 import numpy as np
 
 from scenario.atlas import Pour, makes
-from scenario.field import CANON, N_FEATURES, FieldNet, features
+from scenario.field import LAYOUT, N_FEATURES, FieldNet, canon_for, features
 from scenario.rules import N_TILES, rules_for
 
 NEG = np.float32(-1e9)
@@ -105,8 +105,8 @@ def _dataset(p: Pour) -> Data:
     hinge = np.zeros(n, bool)
     for i, pos in enumerate(p.positions()):
         rules = rules_for(pos.decl_id)
-        x[i, features(rules, pos.viewer, pos.own, pos.record, pos.bid, pos.bidder % 2)] = 1
-        canon = CANON[pos.decl_id]
+        x[i, features(rules, pos.viewer, pos.own, pos.record, pos.bid, pos.bidder % 2, LAYOUT)] = 1
+        canon = canon_for(LAYOUT, pos.decl_id)
         slots = [canon[t] for t in pos.actions]
         legal[i, slots] = True
         w = pos.weights / pos.weights.sum()
@@ -355,7 +355,7 @@ def quantize(params, x: np.ndarray, act_bits: int = 12) -> FieldNet:
         return 1 << (s - 1) if s > 0 else 0
 
     return FieldNet(r(w1, e1), r(b1, e1) + half(s1), r(w2.T, e2), r(b2, e2 + x1) + half(s2),
-                    r(w3.T, e3), r(b3, e3 + x2), s1, s2)
+                    r(w3.T, e3), r(b3, e3 + x2), s1, s2, LAYOUT)
 
 
 def int_scores(net: FieldNet, x: np.ndarray) -> np.ndarray:

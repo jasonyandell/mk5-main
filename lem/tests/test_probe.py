@@ -12,7 +12,10 @@ import pytest
 
 from lem.probe import audit, concepts
 from lem.probe.net import forward, load_net, picks
-from scenario.field import CANON, N_FEATURES, FieldNet, features
+from scenario.field import CANON, FieldNet, features
+
+N_FEATURES = 343     # the shipped net's layout, field-v2
+V2 = "field-v2"
 from scenario.record import empty_record
 from scenario.rules import N_TILES, rules_for, tiles_of
 
@@ -55,10 +58,10 @@ def test_forward_matches_the_referee(net):
     rows = _random_positions(200)
     x = np.zeros((len(rows), N_FEATURES), np.uint8)
     for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
-        x[i, features(rules_for(decl), seat, own, rec, bid, bidder % 2)] = 1
+        x[i, features(rules_for(decl), seat, own, rec, bid, bidder % 2, V2)] = 1
     acts = forward(net, x)
     for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
-        ref = net.scores(features(rules_for(decl), seat, own, rec, bid, bidder % 2))
+        ref = net.scores(features(rules_for(decl), seat, own, rec, bid, bidder % 2, V2))
         assert np.array_equal(acts.out[i], ref)
     assert acts.n_poles == 2 * (net.b1.shape[0] + net.b2.shape[0]) == 384
 
@@ -70,7 +73,7 @@ def test_picks_match_move(net):
     canon = np.zeros((len(rows), N_TILES), np.int64)
     for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
         rules = rules_for(decl)
-        x[i, features(rules, seat, own, rec, bid, bidder % 2)] = 1
+        x[i, features(rules, seat, own, rec, bid, bidder % 2, V2)] = 1
         legal = tiles_of(rules.legal(own, rec.led))
         actions[i, :len(legal)] = legal
         canon[i] = CANON[decl]
@@ -84,7 +87,7 @@ def test_pole_signals_are_the_pre_activations(net):
     rows = _random_positions(20, seed=3)
     x = np.zeros((len(rows), N_FEATURES), np.uint8)
     for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
-        x[i, features(rules_for(decl), seat, own, rec, bid, bidder % 2)] = 1
+        x[i, features(rules_for(decl), seat, own, rec, bid, bidder % 2, V2)] = 1
     acts = forward(net, x)
     assert np.array_equal(acts.pole(0), acts.z1[:, 0])
     assert np.array_equal(acts.pole(1), -acts.z1[:, 0])
@@ -165,14 +168,14 @@ def test_card_shows_the_viewer_only(tmp_path):
     decl, seat, own, bidder, bid, plays, rec = _random_positions(1, seed=6)[0]
     rules = rules_for(decl)
     x = np.zeros((1, N_FEATURES), np.uint8)
-    x[0, features(rules, seat, own, rec, bid, bidder % 2)] = 1
+    x[0, features(rules, seat, own, rec, bid, bidder % 2, V2)] = 1
     legal = tiles_of(rules.legal(own, rec.led))
     d = dict(x=x, legal=np.zeros((1, 28), bool), chosen=np.array([legal[0]], np.int8),
              actions=np.full((1, 7), -1, np.int8), deal=np.zeros(1, np.int32), index=np.zeros(1, np.int32),
              decl=np.array([decl], np.int8), viewer=np.array([seat], np.int8), own=np.array([own], np.uint32),
              bidder=np.array([bidder], np.int8), bid=np.array([bid], np.int16),
              plays=np.full((1, 28, 2), -1, np.int8), n_plays=np.array([len(plays)], np.int8),
-             pour=np.zeros(1, np.int8), source=np.array("test"))
+             pour=np.zeros(1, np.int8), source=np.array("test"), layout=np.array(V2))
     for i, (s, t) in enumerate(plays):
         d["plays"][0, i] = (s, t)
     path = tmp_path / "s.npz"
@@ -190,7 +193,7 @@ def test_ablate_candidates_equal_direct_fidelity(net):
     legal = np.zeros((len(rows), N_TILES), bool)
     for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
         rules = rules_for(decl)
-        x[i, features(rules, seat, own, rec, bid, bidder % 2)] = 1
+        x[i, features(rules, seat, own, rec, bid, bidder % 2, V2)] = 1
         legal[i, [CANON[decl][t] for t in tiles_of(rules.legal(own, rec.led))]] = True
     acts = forward(net, x)
     ref = ablate._pick_slots(acts.out, legal)

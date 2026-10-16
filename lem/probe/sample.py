@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from scenario.atlas import Pour, load
-from scenario.field import CANON, N_FEATURES, features
+from scenario.field import N_FEATURES_OF, canon_for, features
 from scenario.rules import N_TILES, rules_for
 
 EVERY = 10          # the trainer's validation split: deal % EVERY == 0
@@ -32,13 +32,13 @@ COLUMNS = ("x", "legal", "chosen", "actions", "deal", "index", "decl", "viewer",
            "bidder", "bid", "plays", "n_plays", "pour")
 
 
-def rows(pour: Pour, every: int = EVERY) -> dict[str, np.ndarray]:
+def rows(pour: Pour, every: int = EVERY, layout: str = "field-v2") -> dict[str, np.ndarray]:
     keep = []
     for i, pos in enumerate(pour.positions()):
         if pos.deal % every == 0:
             keep.append((i, pos))
     n = len(keep)
-    x = np.zeros((n, N_FEATURES), np.uint8)
+    x = np.zeros((n, N_FEATURES_OF[layout]), np.uint8)
     legal = np.zeros((n, N_TILES), bool)
     chosen = np.zeros(n, np.int8)
     actions = np.full((n, MAX_ACTIONS), -1, np.int8)
@@ -53,8 +53,8 @@ def rows(pour: Pour, every: int = EVERY) -> dict[str, np.ndarray]:
     n_plays = np.zeros(n, np.int8)
     for r, (i, pos) in enumerate(keep):
         rules = rules_for(pos.decl_id)
-        x[r, features(rules, pos.viewer, pos.own, pos.record, pos.bid, pos.bidder % 2)] = 1
-        canon = CANON[pos.decl_id]
+        x[r, features(rules, pos.viewer, pos.own, pos.record, pos.bid, pos.bidder % 2, layout)] = 1
+        canon = canon_for(layout, pos.decl_id)
         legal[r, [canon[t] for t in pos.actions]] = True
         chosen[r] = pos.chosen
         actions[r, :len(pos.actions)] = pos.actions
@@ -68,11 +68,12 @@ def rows(pour: Pour, every: int = EVERY) -> dict[str, np.ndarray]:
                 viewer=viewer, own=own, bidder=bidder, bid=bid, plays=plays, n_plays=n_plays, pour=pour_col)
 
 
-def build(pour_dir: str | Path, out: str | Path, every: int = EVERY, log=print) -> int:
+def build(pour_dir: str | Path, out: str | Path, every: int = EVERY, log=print, layout: str = "field-v2") -> int:
     pour = load(pour_dir)
     log(f"{pour_dir}: {len(pour):,} positions, {len(pour.hands):,} deals, utility {pour.utility}")
-    d = rows(pour, every)
+    d = rows(pour, every, layout)
     d["source"] = np.array(str(pour_dir))
+    d["layout"] = np.array(layout)
     np.savez_compressed(out, **d)
     log(f"{out}: {len(d['x']):,} rows (deal % {every} == 0)")
     return len(d["x"])
@@ -92,10 +93,12 @@ def merge(out: str | Path, parts: list[str | Path], log=print) -> int:
                     a = np.full(n, k, np.int8)
                 cols[c].append(a)
             sources.append(str(z["source"]))
+            layout = str(z["layout"]) if "layout" in z.files else "field-v2"
             deals = int(z["deal"].max()) + 1 if n else 0
             first += max(deals, 50_000)    # the training pours are 50,000 deals each
     d = {c: np.concatenate(v) for c, v in cols.items()}
     d["source"] = np.array(sources)
+    d["layout"] = np.array(layout)
     np.savez_compressed(out, **d)
     log(f"{out}: {len(d['x']):,} rows from {len(parts)} parts")
     return len(d["x"])
@@ -110,6 +113,8 @@ class Sample:
     def __getattr__(self, name: str) -> np.ndarray:
         if name in COLUMNS or name == "source":
             return self._z[name]
+        if name == "layout":
+            return str(self._z["layout"]) if "layout" in self._z.files else "field-v2"
         raise AttributeError(name)
 
     def __len__(self) -> int:
@@ -117,7 +122,7 @@ class Sample:
 
     def canon(self) -> np.ndarray:
         """[N, 28] the canonical slot of each real tile, per row."""
-        table = np.array([CANON.get(d, tuple(range(N_TILES))) for d in range(10)], np.int64)
+        table = np.array([canon_for(self.layout, d) or tuple(range(N_TILES)) for d in range(10)], np.int64)
         return table[self.decl.astype(np.int64)]
 
     def frame_args(self, r: int) -> tuple:

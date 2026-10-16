@@ -17,8 +17,11 @@ and its side — exactly the key the planner caches
 modeled moves under. The features are that and nothing more, read from the
 mover's chair (partner, left, right) with the tiles relabeled so the trump
 pip is pip 6 and the other pips keep their order (`canon`): one trump suit
-to learn instead of seven. The net is defined on the pip-trump declarations,
-the only ones the `bid30` and heuristic bidders call.
+to learn instead of seven. Two feature layouts exist. `field-v2`, the
+shipped net's, plays the seven pip trumps only. `field-v3` appends one
+block, the declaration's kind (a pip trump, doubles trump, no trump), and
+plays doubles trump (7) and no trump (9) as well, with the tiles left as
+they are; every v2 feature keeps its index. A net carries its layout.
 
 Inference is integer arithmetic, so the referee (this file) and the compiled
 core (`scenario/core/src/field.rs`) agree by construction: the features are
@@ -42,8 +45,9 @@ from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW, DOMINOES
 from scenario.record import Record
 from scenario.rules import N_TILES, Rules, tiles_of
 
-LAYOUT = "field-v2"
-_BLOB_HEAD = b"FNET" + bytes([len(LAYOUT)]) + LAYOUT.encode("ascii")   # magic, then the layout's name
+LAYOUTS = ("field-v2", "field-v3")
+LAYOUT = "field-v3"                     # what the trainer builds
+_MAGIC = b"FNET"
 _BLOB_DTYPES = ("<i2", "<i8", "<i2", "<i8", "<i2", "<i8")              # w1 b1 w2 b2 w3 b3
 STEPS = tuple(range(2, 43, 2))          # thermometer thresholds, in points
 BIDS = tuple(range(30, 43))             # the contract, in points: a mark bid needs all 42
@@ -61,13 +65,17 @@ BLOCKS = (
     ("need", len(STEPS)),           # the bidding side still needs >= step points to make
     ("slack", len(STEPS)),          # the defenders still need >= step points to set
     ("bid", len(BIDS)),             # the contract, one-hot (bids above 42 read as 42)
+    ("kind", 3),                    # field-v3 only: a pip trump, doubles trump, no trump
 )
 OFFSET = {}
 _at = 0
 for _name, _width in BLOCKS:
     OFFSET[_name] = _at
     _at += _width
-N_FEATURES = _at
+N_FEATURES = _at                                    # field-v3's width
+N_FEATURES_OF = {"field-v2": OFFSET["kind"], "field-v3": N_FEATURES}
+DOUBLES_TRUMP, NO_TRUMP = 7, 9
+KIND = {**{d: 0 for d in PIP_TRUMP_IDS}, DOUBLES_TRUMP: 1, NO_TRUMP: 2}
 
 
 def _canon(decl_id: int) -> tuple[int, ...]:
@@ -82,13 +90,32 @@ def _canon(decl_id: int) -> tuple[int, ...]:
 
 
 CANON: dict[int, tuple[int, ...]] = {d: _canon(d) for d in PIP_TRUMP_IDS}
+_IDENTITY = tuple(range(N_TILES))
 
 
-def features(rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_team: int) -> list[int]:
-    """The active feature indices of a modeled seat's decision."""
-    canon = CANON.get(rules.decl_id)
+def canon_for(layout: str, decl_id: int) -> tuple[int, ...] | None:
+    """Tile id -> canonical tile id under `layout`, or None where that layout
+    does not play: pips relabel the trump to 6; doubles trump and no trump
+    (`field-v3`) keep the tiles as they are and set the kind bit instead."""
+    if layout not in LAYOUTS:
+        raise ValueError(f"unknown field layout {layout!r}")
+    if decl_id in CANON:
+        return CANON[decl_id]
+    if layout == "field-v3" and decl_id in (DOUBLES_TRUMP, NO_TRUMP):
+        return _IDENTITY
+    return None
+
+
+def plays(layout: str, decl_id: int) -> bool:
+    return canon_for(layout, decl_id) is not None
+
+
+def features(rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_team: int,
+             layout: str = LAYOUT) -> list[int]:
+    """The active feature indices of a modeled seat's decision, in `layout`."""
+    canon = canon_for(layout, rules.decl_id)
     if canon is None:
-        raise ValueError(f"the field net plays pip-trump declarations only, not {rules.decl_id}")
+        raise ValueError(f"a {layout} field net does not play declaration {rules.decl_id}")
     on = [OFFSET["hand"] + canon[t] for t in tiles_of(own)]
     on += [OFFSET["gone"] + canon[t] for t in tiles_of(rec.played)]
     n = len(rec.trick)
@@ -116,6 +143,8 @@ def features(rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_te
     on += [OFFSET["need"] + i for i, s in enumerate(STEPS) if need >= s]
     on += [OFFSET["slack"] + i for i, s in enumerate(STEPS) if slack >= s]
     on.append(OFFSET["bid"] + min(max(bid, BIDS[0]), BIDS[-1]) - BIDS[0])
+    if layout == "field-v3":
+        on.append(OFFSET["kind"] + KIND[rules.decl_id])
     return on
 
 
@@ -133,28 +162,41 @@ class FieldNet:
     b3: np.ndarray
     s1: int
     s2: int
+    layout: str = LAYOUT
 
     def __post_init__(self) -> None:
+        if self.layout not in LAYOUTS:
+            raise ValueError(f"unknown field layout {self.layout!r}")
         h1, h2 = self.b1.shape[0], self.b2.shape[0]
+        n = N_FEATURES_OF[self.layout]
         shapes = (self.w1.shape, self.w2.shape, self.w3.shape, self.b3.shape)
-        if shapes != ((N_FEATURES, h1), (h2, h1), (N_TILES, h2), (N_TILES,)):
-            raise ValueError(f"field net shapes {shapes} do not fit {N_FEATURES} features")
+        if shapes != ((n, h1), (h2, h1), (N_TILES, h2), (N_TILES,)):
+            raise ValueError(f"field net shapes {shapes} do not fit {n} features ({self.layout})")
         if self.s1 < 0 or self.s2 < 0:
             raise ValueError("shifts are non-negative")
         for a in (self.w1, self.b1, self.w2, self.b2, self.w3, self.b3):
             if a.dtype != np.int64:
                 raise ValueError("field net arrays are int64")
 
+    @property
+    def n_features(self) -> int:
+        return N_FEATURES_OF[self.layout]
+
+    def plays(self, decl_id: int) -> bool:
+        """Whether the net plays this declaration (its layout's canon has it)."""
+        return plays(self.layout, decl_id)
+
     @staticmethod
     def load(path: str | Path) -> FieldNet:
         with np.load(path) as z:
-            if str(z["layout"]) != LAYOUT:
-                raise ValueError(f"{path} is layout {z['layout']}, not {LAYOUT}")
+            layout = str(z["layout"])
+            if layout not in LAYOUTS:
+                raise ValueError(f"{path} is layout {layout}, not one of {LAYOUTS}")
             return FieldNet(*(z[k].astype(np.int64) for k in ("w1", "b1", "w2", "b2", "w3", "b3")),
-                            int(z["s1"]), int(z["s2"]))
+                            int(z["s1"]), int(z["s2"]), layout)
 
     def save(self, path: str | Path) -> None:
-        np.savez(path, layout=LAYOUT, w1=self.w1, b1=self.b1, w2=self.w2, b2=self.b2,
+        np.savez(path, layout=self.layout, w1=self.w1, b1=self.b1, w2=self.w2, b2=self.b2,
                  w3=self.w3, b3=self.b3, s1=self.s1, s2=self.s2)
 
     def to_bytes(self) -> bytes:
@@ -166,18 +208,26 @@ class FieldNet:
         for w in (self.w1, self.w2, self.w3):
             if w.min() < -(1 << 15) or w.max() >= 1 << 15:
                 raise ValueError("field net weights must fit int16")
-        head = _BLOB_HEAD + struct.pack("<4I", self.b1.shape[0], self.b2.shape[0], self.s1, self.s2)
+        name = self.layout.encode("ascii")
+        head = _MAGIC + bytes([len(name)]) + name + struct.pack("<4I", self.b1.shape[0], self.b2.shape[0], self.s1, self.s2)
         arrays = zip((self.w1, self.b1, self.w2, self.b2, self.w3, self.b3), _BLOB_DTYPES)
         return head + b"".join(a.astype(dtype).tobytes() for a, dtype in arrays)
 
     @staticmethod
     def from_bytes(blob: bytes) -> FieldNet:
-        """The net `to_bytes` wrote; refuses another magic, layout or size."""
-        at = len(_BLOB_HEAD) + 16
-        if blob[:len(_BLOB_HEAD)] != _BLOB_HEAD or len(blob) < at:
-            raise ValueError(f"not a {LAYOUT} field net blob")
-        h1, h2, s1, s2 = struct.unpack_from("<4I", blob, len(_BLOB_HEAD))
-        shapes = ((N_FEATURES, h1), (h1,), (h2, h1), (h2,), (N_TILES, h2), (N_TILES,))
+        """The net `to_bytes` wrote; refuses another magic, an unknown layout or a wrong size."""
+        if blob[:4] != _MAGIC or len(blob) < 5:
+            raise ValueError("not a field net blob")
+        n = blob[4]
+        layout = blob[5:5 + n].decode("ascii", "replace")
+        if layout not in LAYOUTS:
+            raise ValueError(f"field net blob names layout {layout!r}, not one of {LAYOUTS}")
+        head = 5 + n
+        at = head + 16
+        if len(blob) < at:
+            raise ValueError("field net blob is truncated")
+        h1, h2, s1, s2 = struct.unpack_from("<4I", blob, head)
+        shapes = ((N_FEATURES_OF[layout], h1), (h1,), (h2, h1), (h2,), (N_TILES, h2), (N_TILES,))
         sizes = [math.prod(shape) * np.dtype(dtype).itemsize for shape, dtype in zip(shapes, _BLOB_DTYPES)]
         if len(blob) != at + sum(sizes):
             raise ValueError("field net blob is the wrong size for its widths")
@@ -186,7 +236,7 @@ class FieldNet:
             arrays.append(np.frombuffer(blob, dtype=dtype, count=math.prod(shape), offset=at)
                           .astype(np.int64).reshape(shape))
             at += size
-        return FieldNet(*arrays, s1, s2)
+        return FieldNet(*arrays, s1, s2, layout)
 
     def scores(self, active: list[int]) -> np.ndarray:
         """[28] int64 scores over canonical tiles."""
@@ -200,16 +250,16 @@ class FieldNet:
         a mask: the set a reading holds the seat to (`planner.Reading`).
         Margin 0 is the best score and its ties; a margin wider than every
         gap is every legal tile."""
-        z = self.scores(features(rules, seat, own, rec, bid, bidder_team))
-        canon = CANON[rules.decl_id]
+        z = self.scores(features(rules, seat, own, rec, bid, bidder_team, self.layout))
+        canon = canon_for(self.layout, rules.decl_id)
         legal = tiles_of(rules.legal(own, rec.led))
         best = max(int(z[canon[t]]) for t in legal)
         return sum(1 << t for t in legal if int(z[canon[t]]) >= best - margin)
 
     def move(self, rules: Rules, seat: int, own: int, rec: Record, bid: int, bidder_team: int) -> int:
         """The highest-scoring legal tile; ties to the lowest tile id."""
-        z = self.scores(features(rules, seat, own, rec, bid, bidder_team))
-        canon = CANON[rules.decl_id]
+        z = self.scores(features(rules, seat, own, rec, bid, bidder_team, self.layout))
+        canon = canon_for(self.layout, rules.decl_id)
         legal = tiles_of(rules.legal(own, rec.led))
         best = legal[0]
         for t in legal[1:]:

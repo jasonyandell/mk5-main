@@ -28,7 +28,6 @@ from typing import Sequence
 from forge.zeb.game import current_player
 from forge.zeb.types import ZebGameState
 
-from scenario.field import CANON
 from scenario.planner import Analysis, Auction, Belief, Config, Situation, Step, situation_from_state
 from scenario.record import remaining_hand
 from scenario.rules import rules_for, tiles_of
@@ -127,8 +126,8 @@ class CompiledWalt:
             if len(legal) == 1:
                 out[i] = (legal[0], None)
                 continue
-            if self.config.field is not None and state.decl_id not in CANON:
-                raise ValueError(f"the field net plays pip-trump declarations only, not {state.decl_id}")
+            if self.config.field is not None and not self.config.field.plays(state.decl_id):
+                raise ValueError(f"the {self.config.field.layout} field net does not play declaration {state.decl_id}")
             reqs.append((
                 state.decl_id, viewer, own, rec.played, rec.leader, list(rec.trick),
                 rec.banked, rec.forbid, sit.bid, sit.bidder, list(sit.plays),

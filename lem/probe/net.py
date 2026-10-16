@@ -64,7 +64,9 @@ def pole_name(net: FieldNet, p: int) -> str:
 
 
 def load_net(path: str | Path) -> FieldNet:
-    return FieldNet.from_bytes(Path(path).read_bytes())
+    """A `.fnet` blob (the package's) or a trainer `.npz`."""
+    path = Path(path)
+    return FieldNet.load(path) if path.suffix == ".npz" else FieldNet.from_bytes(path.read_bytes())
 
 
 def forward(net: FieldNet, x: np.ndarray) -> Activations:

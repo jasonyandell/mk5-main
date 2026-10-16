@@ -17,7 +17,8 @@ from forge.zeb.game import is_terminal, legal_actions
 from arena.walt_play import _declared_trump, parse_walt_spec
 from scenario.atlas import deal, in_plan_units, pour
 from scenario.compiled import CompiledWalt
-from scenario.field import BIDS, CANON, N_FEATURES, OFFSET, FieldNet, features
+from pathlib import Path
+from scenario.field import BIDS, CANON, FieldNet, LAYOUTS, N_FEATURES, N_FEATURES_OF, OFFSET, canon_for, features
 from scenario.field_train import _forward, _loss_dlogits, dataset, dequantize, int_scores, regret, targets, train
 from scenario.planner import Config, Rung, Walt, situation_from_state
 from scenario.record import remaining_hand
@@ -26,14 +27,19 @@ from scenario.tests.test_compiled import _belief, _same, _same_analysis
 from scenario.tests.test_rules_record import random_playing_states
 
 
-def random_net(seed: int, h1: int = 24, h2: int = 12) -> FieldNet:
+def random_net(seed: int, h1: int = 24, h2: int = 12, layout: str = "field-v2") -> FieldNet:
+    """A random integer net. The v2 arrays are drawn first, so a v3 net of the
+    same seed is the v2 net plus three fresh kind rows."""
     rng = np.random.default_rng(seed)
 
     def ints(*shape, scale=2000):
         return rng.integers(-scale, scale, size=shape, dtype=np.int64)
 
-    return FieldNet(ints(N_FEATURES, h1), ints(h1, scale=4000), ints(h2, h1), ints(h2),
-                    ints(28, h2), ints(28), 4, 9)
+    n2 = N_FEATURES_OF["field-v2"]
+    w1, b1, w2, b2, w3, b3 = ints(n2, h1), ints(h1, scale=4000), ints(h2, h1), ints(h2), ints(28, h2), ints(28)
+    if layout == "field-v3":
+        w1 = np.concatenate([w1, ints(N_FEATURES_OF[layout] - n2, h1)])
+    return FieldNet(w1, b1, w2, b2, w3, b3, 4, 9, layout)
 
 
 def _pip_states(n: int, seed: int, min_plays: int = 0, unforced: bool = True):
@@ -80,10 +86,10 @@ def test_the_bid_is_one_hot_and_a_mark_bid_needs_all_42():
 
     def bid_rows(bid):
         f = features(rules, sit.viewer, own, sit.record, bid, sit.bidder_team)
-        return [i - OFFSET["bid"] for i in f if i >= OFFSET["bid"]]
+        return [i - OFFSET["bid"] for i in f if OFFSET["bid"] <= i < OFFSET["kind"]]
 
     assert [bid_rows(b) for b in BIDS] == [[i] for i in range(len(BIDS))]
-    assert bid_rows(84) == bid_rows(42) and OFFSET["bid"] + len(BIDS) == N_FEATURES
+    assert bid_rows(84) == bid_rows(42) and OFFSET["bid"] + len(BIDS) == OFFSET["kind"] == N_FEATURES_OF["field-v2"]
 
 
 def test_core_forward_matches_the_referee_to_the_integer():
@@ -98,7 +104,7 @@ def test_core_forward_matches_the_referee_to_the_integer():
         sit = situation_from_state(state, bid)
         rules = rules_for(state.decl_id)
         own = remaining_hand(state, sit.viewer)
-        assert z == net.scores(features(rules, sit.viewer, own, sit.record, bid, sit.bidder_team)).tolist()
+        assert z == net.scores(features(rules, sit.viewer, own, sit.record, bid, sit.bidder_team, net.layout)).tolist()
         assert tile == net.move(rules, sit.viewer, own, sit.record, bid, sit.bidder_team)
         tiles.add(tile)
     assert len(tiles) > 10
@@ -111,8 +117,8 @@ def test_dequantize_is_the_net_up_to_its_floors():
     for state in _pip_states(60, seed=23, unforced=False):
         sit = situation_from_state(state, 30)
         rows.append(features(rules_for(state.decl_id), sit.viewer, remaining_hand(state, sit.viewer),
-                             sit.record, 30, sit.bidder_team))
-    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+                             sit.record, 30, sit.bidder_team, net.layout))
+    x = np.zeros((len(rows), net.n_features), np.uint8)
     for i, f in enumerate(rows):
         x[i, f] = 1
     z_int = int_scores(net, x).astype(np.float64)
@@ -126,8 +132,8 @@ def test_batched_integer_scores_are_the_referees():
     for state in _pip_states(40, seed=19, unforced=False):
         sit = situation_from_state(state, 30)
         rows.append(features(rules_for(state.decl_id), sit.viewer, remaining_hand(state, sit.viewer),
-                             sit.record, 30, sit.bidder_team))
-    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+                             sit.record, 30, sit.bidder_team, net.layout))
+    x = np.zeros((len(rows), net.n_features), np.uint8)
     for i, f in enumerate(rows):
         x[i, f] = 1
     assert np.array_equal(int_scores(net, x), np.array([net.scores(f) for f in rows]))
@@ -418,6 +424,70 @@ def test_the_blob_round_trips_and_refuses_what_it_did_not_write():
 
 
 def test_the_core_canon_is_the_referees():
-    for d in range(10):
-        c = scenario_core.canon(d)
-        assert (None if c is None else tuple(c)) == CANON.get(d), d
+    for layout in LAYOUTS:
+        for d in range(10):
+            c = scenario_core.canon(layout, d)
+            assert (None if c is None else tuple(c)) == canon_for(layout, d), (layout, d)
+    with pytest.raises(ValueError):
+        scenario_core.canon("field-v9", 0)
+
+
+def _states_of(decls, n: int, seed: int):
+    out = []
+    for s in random_playing_states(400, seed=seed):
+        if not is_terminal(s) and s.decl_id in decls and len(legal_actions(s)) > 1:
+            out.append(s)
+        if len(out) == n:
+            break
+    assert len(out) == n
+    return out
+
+
+def test_field_v3_plays_doubles_and_no_trump_with_the_kind_bit():
+    """A v3 row is the v2 row plus one kind bit; under doubles trump and no
+    trump the tiles are not relabelled, and a v2 net refuses those games."""
+    assert N_FEATURES_OF["field-v2"] + 3 == N_FEATURES_OF["field-v3"] == N_FEATURES
+    for state in _states_of({4, 7, 9}, 30, seed=11):
+        sit = situation_from_state(state, 30)
+        rules, own = rules_for(state.decl_id), remaining_hand(state, sit.viewer)
+        v3 = features(rules, sit.viewer, own, sit.record, 30, sit.bidder_team, "field-v3")
+        kind = [i for i in v3 if i >= OFFSET["kind"]]
+        assert kind == [OFFSET["kind"] + {4: 0, 7: 1, 9: 2}[state.decl_id]]
+        if state.decl_id == 4:
+            v2 = features(rules, sit.viewer, own, sit.record, 30, sit.bidder_team, "field-v2")
+            assert v2 == v3[:-1]
+        else:
+            assert canon_for("field-v3", state.decl_id) == tuple(range(28))
+            assert canon_for("field-v2", state.decl_id) is None
+            with pytest.raises(ValueError, match="does not play"):
+                features(rules, sit.viewer, own, sit.record, 30, sit.bidder_team, "field-v2")
+    v2net, v3net = random_net(3), random_net(3, layout="field-v3")
+    assert v3net.layout == "field-v3" and v3net.plays(7) and v3net.plays(9) and not v3net.plays(8)
+    assert v2net.plays(4) and not v2net.plays(7) and not v2net.plays(9)
+    assert np.array_equal(v3net.w1[:N_FEATURES_OF["field-v2"]], v2net.w1), "a v3 random net is the v2 one plus kind rows"
+    assert FieldNet.from_bytes(v2net.to_bytes()).layout == "field-v2"
+    assert FieldNet.from_bytes(v3net.to_bytes()).layout == "field-v3"
+    with pytest.raises(ValueError, match="layout"):
+        FieldNet.from_bytes(b"FNET\x08field-v9" + v3net.to_bytes()[13:])
+
+
+def test_core_forward_matches_the_referee_under_doubles_and_no_trump():
+    net = random_net(4, layout="field-v3")
+    fast = CompiledWalt(Config((Rung(4, None),), field=net))
+    states = _states_of({7, 9}, 60, seed=12) + _states_of({0, 3, 6}, 60, seed=13)
+    got = fast._core.field_scores([_req(s) for s in states])
+    for state, (tile, z) in zip(states, got):
+        sit = situation_from_state(state, 30)
+        rules, own = rules_for(state.decl_id), remaining_hand(state, sit.viewer)
+        assert z == net.scores(features(rules, sit.viewer, own, sit.record, 30, sit.bidder_team, net.layout)).tolist()
+        assert tile == net.move(rules, sit.viewer, own, sit.record, 30, sit.bidder_team)
+
+
+def test_the_shipped_v2_net_still_refuses_doubles_and_no_trump():
+    v2 = FieldNet.from_bytes(Path("zeb/net/margin_d250k_h128x64.fnet").read_bytes())
+    assert v2.layout == "field-v2" and v2.n_features == N_FEATURES_OF["field-v2"]
+    state = _states_of({7, 9}, 1, seed=14)[0]
+    with pytest.raises(ValueError, match="does not play"):
+        CompiledWalt(Config((Rung(4, None),), field=v2)).decide(state, 30)
+    with pytest.raises(ValueError, match="does not play"):
+        Walt(Config((Rung(4, None),), field=v2)).decide(state, 30)
