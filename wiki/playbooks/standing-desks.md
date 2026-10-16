@@ -2,7 +2,7 @@
 title: Standing desks — Playbook
 kind: playbook
 first_seen: 2026-10-14
-last_updated: 2026-10-14
+last_updated: 2026-10-16
 status: active
 ---
 
@@ -85,17 +85,26 @@ first, and let the central authority manage only links and lookups.
 - **Tell after, not before.** After an ungated merge, add one line to the feed's `links`
   registry (kind `merge`, the commit). That is the whole notification.
 - **CPU: `scripts/cpu-slot`.** Every heavy run (arena batches, pours, studies) goes
-  through `scripts/cpu-slot -- <command>`. It waits for one of 3 shared slots, runs the command
-  at `nice` 10 and kills it at 300 s. Five minutes per run is the house rule unless there is a
-  really good reason, and the reason gets written down (`--timeout`). A runner that fans out
-  wraps each batch, so one batch takes one slot. Tests, merges and interactive work don't take
-  slots. Blocked commands retry every 50 ms so they can catch openings between
-  chained batches (#167); this does not promise FIFO ordering. While another owner (the
-  worktree root of the cwd, or `--owner TAG`) waits, one owner holds at most 2 slots; with nobody
-  waiting it may take all 3. A wall-clock confirmation that needs a quiet machine asks for
-  `--exclusive "reason"` (reason required, logged): it holds every slot and blocks new starts
-  while it waits (#169). Nice keeps the shop responsive, and the slots keep wall-clock players (Walt thinks on
-  a clock) from being measured on a crowded machine.
+  through `scripts/cpu-slot [--threads T] -- <command>`. It starts the run when the cores busy
+  over the last second (every process on the machine), plus the threads of runs started in the
+  last 3 s, plus T, fit in the 18 cores; a lone run always starts. It runs the command at `nice` 10
+  and kills it at 300 s. Five minutes per run is the house rule unless there is a really good
+  reason, and the reason gets written down (`--timeout`). Say what the run keeps busy: `--threads`
+  defaults to 2; measured, a 1-pair arena batch, a probe or one Zeb or Demon game is 1, a
+  `tournament work` chunk 2, a 12-pair arena batch 5 ([[light-every-core-2026-10-16]]). A runner
+  that fans out offers every batch at once and wraps each one, so cpu-slot fills the machine as
+  cores free (`scenario/book_batches.py` does). Tests, merges and interactive work don't take
+  slots. Blocked commands retry every 50 ms (#167); this does not promise FIFO ordering. While
+  another owner (the worktree root of the cwd, or `--owner TAG`) that holds less is waiting, a
+  new run must leave room for its run; with nobody waiting an owner may take everything (#169).
+  On exit cpu-slot prints the run's wall, CPU and instructions (`$MK5_CPU_SLOT_COST` appends them
+  as JSON); quote instructions when comparing cost, since they hardly move with load. `--slots N`
+  is the old fixed mode. Only Walt (`walt-plunge-26043bf9`) still thinks on a wall clock; every
+  other seat decides by worlds and seeds, so load changes no one's moves (#173). A run that times
+  a clocked player, or any wall-clock confirmation, asks for `--exclusive "reason"` (reason
+  required, logged): it holds every slot and blocks new starts while it waits. Otherwise its
+  record says so: a tournament faceoff with a clocked participant outside `--exclusive` is
+  marked `noisy_timed`.
 - **Plunge is production.** Read-only, unless Jason approves a specific change. Plunge merges
   are Jason's call.
 - **Voice.** Plain and short, for a reader on a phone. Every number carries its interval and

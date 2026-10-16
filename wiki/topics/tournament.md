@@ -2,7 +2,7 @@
 title: "The tournament: an append-only, Bradley–Terry-rated ladder of Texas 42 players"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 status: active
 ---
 
@@ -51,7 +51,9 @@ its own dealt tiles and the public record only.
   `sunshine/<game>/<hand>`; every reply cross-checked against the table's leader and points.
   Two honest differences from the phone: tournament deals are random, so the live survey bids
   almost every hand where Plunge (which deals only its 130 catalogue deals) uses the book; and
-  Walt's budgets are wall-clock, so a reply depends a little on the machine.
+  Walt's budgets are wall-clock, so a reply depends a little on the machine. Its record says
+  `"clock": "real"`, and a faceoff it plays outside `cpu-slot --exclusive` is marked
+  `noisy_timed` (#173). Every other participant decides by worlds and seeds, not by a clock.
 - **Zeb** bids with its own rule (`forecast` + `chooseBid`) behind Plunge's partner-pass
   convention, never past one mark, declares the likeliest declaration at the contract, plays with
   `play`, all at 160 worlds, seed 0 (the package defaults).
@@ -123,7 +125,9 @@ metric of [[scenario-player]] and [[champion-ladder]]).
 The whole state is a directory of immutable files. A faceoff is one file,
 `faceoffs/<ladder>/<claimed UTC>-<a>--<b>-<64-bit random seed>.json`, holding every hand (deal,
 auction, plays, points, marks), the participants' full records and the harness (mk5 commit, Node,
-Python). It is written once, in its own commit, at a path no other writer can choose. There is no
+Python, the cpu-slot mode and load). Since #173 each game also records what it cost beside its wall
+seconds: the referee's CPU and instructions and each seat process's CPU and own instructions. It is
+written once, in its own commit, at a path no other writer can choose. There is no
 index, manifest or stored rating: every table is derived by reading the directory. Two commits that
 add different new paths touch disjoint trees, so every interleaving rebases cleanly; an identical
 re-append is a no-op, and different bytes at an existing path are refused.
