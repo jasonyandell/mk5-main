@@ -51,6 +51,13 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | book | Silas: a seat's hand law; the losing 31 and the 35's two offs as queries (#134)]
+
+- [[silas]] gains `Belief::hand_law` (and `--law ROLE`): a read seat's whole hand as a belief of its own, held to brute force; `silas/GAPS.md` § 4 narrowed a third time.
+- W42-p054-a: a 35 in fours read as `risk-budget` is two offs 1,587/1,751 (77/646 unread); a 36 in blanks, one off certainly (Hands 33 and 32).
+- W42-p054-b: a losing 31 lifts "a double" to 24,033/24,989 as `bid-only-enough` reads it, to 1 as `risk-budget` (the deal of Hand 33, our auction).
+- **All desks:** stale venvs must rebuild scenario_core, which embeds silas: the evaluator now orders clauses at compile time. `scripts/check` builds its own.
+
 ## [2026-10-16 | book | Seed-scatter caveats on single-arm margins against a one-seed field (#190)]
 
 - One line each on [[rematch-zeb-041-vs-demon-2026-10-15]], [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]]: their single-arm margins exclude planner-seed scatter of about ±0.1 marks/game, and the paired differences on shared seeds are unaffected. Results whose ends lie inside the scatter: the rematch's +0.330 [+0.055, …] marks, #151's Z10 and Z20, and #172's Z5. The Mayor asked for this.
