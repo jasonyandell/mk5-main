@@ -13,6 +13,9 @@
 
 Player spec: <bidder>+<play>
     bidder: heuristic | heuristic:<min_trumps>,<caution> | bid30 | random[:<p_bid>]
+            | menu | menu:<min_trumps>,<caution>   (the heuristic bidder with the
+              book's Ch. 9 menu, doubles as trumps and no trump, #155; it sits
+              only with play policies that can play them, e.g. walt's DTNT=random)
             | zeb[:n<worlds>][,c<cutoff>][,s<seed>][,met|marks]   (Zeb's forecast +
               chooseBid, never above 42; met adds 84 when its match equity
               beats the hand-only call, marks the same by expected marks)
@@ -33,6 +36,8 @@ Player spec: <bidder>+<play>
     play:   lens:<utility> | scorelens[:<band>] | belieflens[:<utility>]
             | judplay[:model=<path>] | judsearch[:n<worlds>[,model=<path>]]
             | walt[:k<level>][,n<outer>][,m<inner>][,h<horizon>][,g<inner horizon>][,u=make|points]
+              [,DTNT=random]   (DTNT=random: a net seat that plays doubles-trump and
+              no-trump hands with the random field, provisional; arena/walt_play.py)
             | book[:<lowest|zeb>,<least|zeb>[,read=<consistent|uniform>[+calls]]][/<walt options>]
             | bookread:<consistent|uniform>/<walt options>
             | random
@@ -68,7 +73,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from arena.auction import BidPolicy
-from arena.bidders import Bid30Bidder, HeuristicBidder, RandomBidder
+from arena.bidders import Bid30Bidder, HeuristicBidder, MenuBidder, RandomBidder
 from arena.engine import ArenaConfig
 from arena.match import game_rows, hand_rows, run_match, snapshot_rows, summarize
 from arena.play import PlayPolicy, RandomPlay
@@ -84,6 +89,11 @@ def parse_bidder(
             min_trumps, _, caution = arg.partition(",")
             return HeuristicBidder(int(min_trumps), int(caution or 0))
         return HeuristicBidder()
+    if name == "menu":
+        if arg:
+            min_trumps, _, caution = arg.partition(",")
+            return MenuBidder(int(min_trumps), int(caution or 0))
+        return MenuBidder()
     if name == "bid30":
         return Bid30Bidder()
     if name == "silas":

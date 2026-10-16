@@ -273,6 +273,12 @@ class BookPlay:
             slots.append(list(state.hands[seat]).index(tile))
         return slots
 
+    def plays(self, decl: int) -> bool:
+        """Whether its Zeb (and a shadow's plain twin) can play `decl` (#155)."""
+        from arena.play import plays
+        plain = self._plain is None or self._plain.config.field is None or decl in range(7)
+        return plain and (self.zeb is None or plays(self.zeb, decl))
+
     def _pick(self, state: ZebGameState, v: Verdict, legal: list[int], z_tile, q: dict):
         """The book player's (policy, rule, allowed, tile) at one decision, given Zeb's tile and q."""
         seat = (state.trick_leader + len(state.current_trick)) % 4

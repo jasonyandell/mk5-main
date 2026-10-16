@@ -50,6 +50,12 @@
 //! `populations/set-bid` and `populations/ten-count-35`, pinned as first
 //! written.
 //!
+//! The book's Ch. 9 menu (#155, 2026-10-16) added `bidding/menu` and the
+//! prelude's `four-doubles` and `high-off`, pinned as first written, and
+//! moved one pin on purpose: `risk-budget` declares doubles or no trump where
+//! the table offers them (`tests/bidding.rs`; offered only the pip trumps,
+//! every call and declaration is the pinned digest's, on every hand).
+//!
 //! Each prelude definition is pinned by the core of a query that calls it on
 //! roles of its parameters' sorts, so a definition no file calls is pinned too;
 //! a number definition by a comparison that reads it, `(<= (name ...) 5)`.

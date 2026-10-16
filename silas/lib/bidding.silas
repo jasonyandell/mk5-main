@@ -130,3 +130,19 @@
   (<= (card (roles a) (mine a) (double a) (not (bears a t))) 3)
   (offs-at-most t 1)
   (none (roles o p) (off-under o t) (high-pip o p) (none (roles d) (mine d) (double d) (bears d p))))
+
+; -- The book's Ch. 9 (#155): doubles as trumps and no trump. A doubles hand
+; holds four or five doubles, and four is when to weigh the option (W42-p075-b,
+; W42-p079-a); its off is a high four, five or six (W42-p078-b).
+
+; Four doubles or more in the viewer's hand.
+(define four-doubles (roles)
+  (<= 4 (card (roles d) (mine d) (double d))))
+
+; o is a high off: not a double, both pips four or more.
+(define high-off (roles (domino o))
+  (not (double o))
+  (or
+    (and (bears o q6) (bears o q5))
+    (and (bears o q6) (bears o q4))
+    (and (bears o q5) (bears o q4))))

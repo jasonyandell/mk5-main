@@ -3,15 +3,21 @@
 
 """Bid policies for the arena.
 
-All policies declare a pip trump (decl_id 0-6); doubles/no-trump contracts
-await a bidder that can evaluate them (Champion rungs #21-#22).
+Every policy declares a pip trump (decl_id 0-6) except `MenuBidder`, the
+heuristic bidder with the book's full menu (#155), which may also declare
+doubles as trumps (7) or no trump (9). A bid policy that may declare beyond
+the pip trumps says so in `declarations`; the engine refuses a table where
+such a bidder sits with a play policy that cannot play what it may declare
+(`arena.play.check_menu`).
 """
 from __future__ import annotations
 
 import random
 
+from forge.oracle.declarations import GAME_DECL_IDS
+
 from .auction import ONE_MARK, PASS, BidContext
-from .hand_metrics import PIP_TRUMPS, best_trump
+from .hand_metrics import PIP_TRUMPS, best_trump, menu_choice
 
 
 def _declare_best(hand: tuple[int, ...]) -> int:
@@ -53,6 +59,34 @@ class HeuristicBidder:
 
     def __repr__(self) -> str:
         return f"HeuristicBidder(min_trumps={self.min_trumps}, caution={self.caution})"
+
+
+class MenuBidder(HeuristicBidder):
+    """The heuristic bidder over all nine game declarations (#155): the
+    book's Ch. 9 choice (`arena.hand_metrics.menu_choice`) of doubles as
+    trumps or no trump where the hand holds four doubles or more and the
+    book's condition holds, else exactly `HeuristicBidder` (the pip trump,
+    its ceiling, its declaration). Opt-in: `HeuristicBidder` itself never
+    leaves the pip trumps, and every registered study bids with it."""
+
+    declarations = GAME_DECL_IDS
+
+    def bid(self, ctx: BidContext, rng: random.Random) -> int:
+        choice = menu_choice(ctx.hand, self.min_trumps)
+        if choice is None:
+            return PASS
+        willing = min(ONE_MARK, choice.bid_ceiling - self.caution)
+        target = min((b for b in ctx.legal if b <= ONE_MARK), default=None)
+        if target is None or target > willing:
+            return PASS
+        return target
+
+    def declare(self, hand: tuple[int, ...], bid: int, rng: random.Random) -> int:
+        choice = menu_choice(hand, self.min_trumps)
+        return choice.decl if choice is not None else _declare_best(hand)
+
+    def __repr__(self) -> str:
+        return f"MenuBidder(min_trumps={self.min_trumps}, caution={self.caution})"
 
 
 class VariedBidder(HeuristicBidder):

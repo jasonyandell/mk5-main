@@ -28,7 +28,7 @@ from forge.zeb.game import apply_action, current_player, is_terminal
 from forge.zeb.types import BidState, GamePhase, ZebGameState
 
 from .auction import AuctionResult, BidPolicy, run_auction, score_hand, settle_points
-from .play import PlayPolicy
+from .play import PlayPolicy, check_menu
 
 
 @dataclass(frozen=True)
@@ -258,8 +258,12 @@ def _run_lockstep(
     `observe(game, hand)` at the end of every hand of every game: every hand
     is played out, so each seat's dealt tiles are public by then. Games may mix
     a_team assignments — routing is per game. With log_every_s, prints a
-    progress heartbeat so long runs are never silent.
+    progress heartbeat so long runs are never silent. A table whose bidders
+    may declare what a play policy cannot play is refused before play
+    (`arena.play.check_menu`).
     """
+    # Refused before the first tile: a bidder that may declare what a seat cannot play (#155).
+    check_menu({id(b): b for g in games for b in g.bid_policies}.values(), (play_a, play_b))
     observers = [p for p in {id(play_a): play_a, id(play_b): play_b}.values() if getattr(p, "remembers", False)]
     t0 = last_log = time.time()
     while True:

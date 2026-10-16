@@ -35,6 +35,36 @@ class PlayPolicy(Protocol):
         ...
 
 
+PIP_DECLS = tuple(range(7))
+
+
+def plays(policy, decl: int) -> bool:
+    """Whether a play policy can play declaration `decl`: its own `plays`
+    if it states one, else every inner play policy it wraps (`inner`,
+    `zeb`, `walt`) can; a policy that states nothing plays every
+    declaration."""
+    own = getattr(policy, "plays", None)
+    if callable(own):
+        return own(decl)
+    inner = (getattr(policy, name, None) for name in ("inner", "zeb", "walt"))
+    return all(plays(p, decl) for p in inner if p is not None and hasattr(p, "choose"))
+
+
+def check_menu(bid_policies, play_policies) -> None:
+    """Refuse a table where a bidder may declare what a seat cannot play
+    (#155): a bid policy names the declarations it may make in
+    `declarations` (the pip trumps when it names none)."""
+    menu = sorted({d for b in bid_policies for d in getattr(b, "declarations", PIP_DECLS)})
+    for policy in play_policies:
+        missing = [d for d in menu if not plays(policy, d)]
+        if missing:
+            raise ValueError(
+                f"#155: a bidder here may declare {missing}, which {policy!r} cannot play "
+                "(the field net plays pip trumps only); seat Zeb with walt's DTNT=random "
+                "(arena.walt_play.MenuWalt) at a menu table"
+            )
+
+
 class RandomPlay:
     """Uniform-legal baseline."""
 

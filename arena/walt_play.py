@@ -14,7 +14,7 @@ Spec: walt[:k<level>][,n<outer worlds>][,m<inner worlds>][,h<outer horizon>]
           [,g<inner horizon>][,u=make|points][,b=<belief>][,e=<eps>][,f=<floor>]
           [,F=<field net .npz>][,E=<field eps>][,d=uniform|posterior][,D=<budget>]
           [,r=consistent|uniform:<margin>[:<eps>]][,c=<convention>:S|R|SR][,t=lowest|margin[:<band>]]
-          [,s<planner seed>][,py]
+          [,s<planner seed>][,py][,DTNT=random]
 Defaults: k=1 (the usual two-response form), n=16, m=4, h=full, g=4 plays, s=0,
 uniform belief, random-play field, f=16 (f=1 at k=0 with the random field,
 which leaves no rung to hand down to).
@@ -31,6 +31,12 @@ seat explores with probability ε, playing a uniform legal tile drawn from
 the scenario's record-keyed tape, else the net's move — P_σ(t) = ε/n +
 (1 − ε)·[t = the net's move] — so the posterior under the field has full
 support. The default, 0, is the deterministic net.
+
+`DTNT=random` seats a field-net player at a table with the book's full
+menu (#155, `arena.bidders.MenuBidder`): the net plays pip trumps only, so
+under doubles trump or no trump the seat plays as its random-field twin
+(`MenuWalt`). Every Ch. 9 number from it is provisional until a net covers
+those declarations (#177).
 
 `V=` makes the player a fallible tracker (`Config.void_miss`, #151): at each
 decision each hidden seat's shown voids are forgotten with probability p, by
@@ -109,6 +115,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Sequence
 
+from forge.oracle.declarations import PIP_TRUMP_IDS
 from forge.zeb.types import ZebGameState
 
 from arena.auction import contract_points
@@ -150,6 +157,8 @@ class WaltPlay:
                  field_eps: float = 0.0, draw: str = "uniform", draw_budget: int = DRAW_BUDGET,
                  convention: Convention | None = None, reading: Reading | None = None, tie: str = "lowest",
                  tie_band: float = 0.0, compiled: bool = True, void_miss: float = 0.0):
+        # Every argument, so a twin can be built with the same spec (`MenuWalt`).
+        self.kwargs = {k: v for k, v in locals().items() if k not in ("self", "__class__")}
         if floor is None:
             floor = 16 if level >= 1 or field is not None else 1
         rungs = tuple([Rung(n_inner, horizon_inner)] * level + [Rung(n_outer, horizon, floor)])
@@ -161,6 +170,10 @@ class WaltPlay:
         else:
             self.walt = Walt(config, belief=belief)
         self.last_values: list[dict[int, float]] = []
+
+    def plays(self, decl: int) -> bool:
+        """Every declaration, except that a field net plays pip trumps only."""
+        return self.walt.config.field is None or decl in PIP_TRUMP_IDS
 
     def choose(
         self,
@@ -202,8 +215,89 @@ class WaltPlay:
                 f"field={field}, draw={c.draw}{conv}{tie}, {engine})")
 
 
-def parse_walt_spec(arg: str) -> WaltPlay:
+class _ByDeclaration:
+    """The planner a `MenuWalt` holds as `walt`, for wrappers that call the
+    planner directly (`arena.book_play.BookPlay`): each state goes to the
+    net's planner under a pip trump, else the random-field twin's."""
+
+    def __init__(self, net, random):
+        self._net, self._random = net, random
+        self.config = net.config
+
+    @property
+    def belief(self):
+        return self._net.belief
+
+    @belief.setter
+    def belief(self, value) -> None:
+        self._net.belief = self._random.belief = value
+
+    def decide_batch(self, states, bids):
+        out: list = [None] * len(states)
+        for planner, pip in ((self._net, True), (self._random, False)):
+            idx = [i for i, s in enumerate(states) if (s.decl_id in PIP_TRUMP_IDS) == pip]
+            if idx:
+                for i, r in zip(idx, planner.decide_batch([states[i] for i in idx], [bids[i] for i in idx])):
+                    out[i] = r
+        return out
+
+
+class MenuWalt:
+    """A Zeb seat at a table with the book's full menu (#155): the net
+    player under a pip trump, and under doubles trump or no trump (decls
+    7-9, which the field net does not play) its twin with the random field
+    (no net), built from the same spec and seed with the net-only options
+    off (the floor, the posterior draw and its reading, the field's ε).
+
+    PROVISIONAL. Every Ch. 9 number from this seat is the random field's,
+    not the net's, until a field net covers decls 7-9 (#177). The arena
+    seats Zeb at a menu table only this way (`arena.play.check_menu`
+    refuses a bare net seat), so both teams, both arms and the declarer
+    all play a doubles-trump or no-trump hand in the same random-field
+    form. On pip-trump states it is the net player itself, byte for byte.
+    Its spec tag is `DTNT=random`."""
+
+    def __init__(self, net: WaltPlay):
+        if net.walt.config.field is None:
+            raise ValueError("DTNT=random wraps a field-net seat; a random-field seat plays every declaration")
+        twin = dict(net.kwargs, field=None, field_eps=0.0, floor=None, draw="uniform",
+                    draw_budget=DRAW_BUDGET, reading=None)
+        self.net, self.random = net, WaltPlay(**twin)
+        self.walt = _ByDeclaration(net.walt, self.random.walt)
+        self.last_values: list[dict[int, float]] = []
+
+    def plays(self, decl: int) -> bool:
+        return True
+
+    def choose(
+        self,
+        states: Sequence[ZebGameState],
+        bid_values: Sequence[int],
+        marks: Sequence[tuple[int, int]] | None = None,
+        marks_to_win: int = 7,
+        auctions: Sequence | None = None,
+    ) -> list[int]:
+        out: list[int | None] = [None] * len(states)
+        values: list = [None] * len(states)
+        for player, pip in ((self.net, True), (self.random, False)):
+            idx = [i for i, s in enumerate(states) if (s.decl_id in PIP_TRUMP_IDS) == pip]
+            if not idx:
+                continue
+            pick = lambda col: None if col is None else [col[i] for i in idx]  # noqa: E731
+            slots = player.choose([states[i] for i in idx], pick(bid_values), pick(marks), marks_to_win,
+                                  pick(auctions))
+            for i, slot, q in zip(idx, slots, player.last_values):
+                out[i], values[i] = slot, q
+        self.last_values = values
+        return out  # type: ignore[return-value]
+
+    def __repr__(self) -> str:
+        return f"MenuWalt({self.net!r}, DTNT=random)"
+
+
+def parse_walt_spec(arg: str) -> WaltPlay | MenuWalt:
     kw: dict = {}
+    menu = False
     beliefs: set[str] = set()
     eps = 0.1
     for t in (p for p in arg.split(",") if p):
@@ -245,6 +339,10 @@ def parse_walt_spec(arg: str) -> WaltPlay:
             kw["horizon" if t[0] == "h" else "horizon_inner"] = None
         elif t == "py":
             kw["compiled"] = False
+        elif t.startswith("DTNT="):
+            if t != "DTNT=random":
+                raise ValueError(f"doubles trump and no trump are played with the random field: DTNT=random, not {t!r}")
+            menu = True
         else:
             raise ValueError(f"unknown walt option {t!r}")
     unknown = beliefs - {"auction"}
@@ -252,4 +350,4 @@ def parse_walt_spec(arg: str) -> WaltPlay:
         raise ValueError(f"unknown walt belief {sorted(unknown)}")
     if "auction" in beliefs:
         kw["belief"] = declaration_belief(eps)
-    return WaltPlay(**kw)
+    return MenuWalt(WaltPlay(**kw)) if menu else WaltPlay(**kw)

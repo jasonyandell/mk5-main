@@ -23,6 +23,16 @@
 ; for an 84; else the least at risk, when that is 12 or less, ties to the
 ; first suit offered; else the first offered of those at risk 17 or less,
 ; where the 30 was tried.
+;
+; Where the table offers them (Ch. 9, #155), doubles as trumps or no trump
+; come next after the 84's suit: four doubles or more, and doubles when the least-at-risk suit of
+; three leaves a high off (W42-p078-b; Hands 23, 24), no trump when the hand
+; holds neither the double-six nor a high off (W42-p080-a; Hand 25) and no
+; suit of three (the book bids such a hand in its suit: Hands 2, 13). The
+; bid stays the count above: the book prices Ch. 9 hands by their play lines
+; (Hands 23-25 bid 31, 30, 30), not by a count we can state. Offered only the
+; pip trumps, as the arena offers, these two rules name nothing offered and
+; the declaration is the suit's, as before.
 (include bidding)
 
 (policy risk-budget
@@ -39,6 +49,15 @@
       (viewer v)
       (bid-of v 84)
       (eighty-four-shape t))
+    (rule doubles-for-a-high-off (declare doubles)
+      (four-doubles)
+      (least t (risk t) (suit-at-least t 3))
+      (some (roles o) (off-under o t) (high-off o)))
+    (rule no-trump (declare no-trump)
+      (four-doubles)
+      (not (mine 6-6))
+      (none (roles o) (mine o) (high-off o))
+      (none (roles t) (suit-at-least t 3)))
     (rule least-at-risk (declare t)
       (least t (risk t) (suit-at-least t 3))
       (<= (risk t) 12))

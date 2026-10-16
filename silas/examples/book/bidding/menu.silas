@@ -1,0 +1,98 @@
+; Bid only enough over the book's full menu: the arena's MenuBidder
+; (arena/bidders.py, min_trumps 3, caution 0; #155) written in Silas. Below
+; four doubles it is bid-only-enough.silas, rule for rule. From four doubles
+; (Winning 42 Ch. 9, the catalog rows W42-p075-b, W42-p079-a: a doubles hand
+; holds four or five of them, and four is when to weigh the option):
+;
+; - doubles as trumps when the best suit of three leaves a high off, one with
+;   both pips four or more (W42-p078-b: the off that makes normal trumps too
+;   risky). The call may rise to 42 less the count exposed under the doubles,
+;   where an off's side exposes nothing when the hand holds that suit's top,
+;   the six of it (W42-p075-b: under doubles trump the six-end tops each
+;   suit), or under the best suit, whichever exposes less: the option only
+;   adds (Hands 23, 24);
+; - no trump when the hand holds neither the double-six nor a high off
+;   (W42-p080-a) and no trump exposes less than every suit of three, where an
+;   off's side exposes nothing when the hand holds that suit's double (each
+;   double tops its own suit, W42-p079-d; Hand 25's doubles guard its offs);
+; - else the best suit, as bid-only-enough declares it.
+;
+; The book prices these hands by their play lines, not one formula (Hands
+; 23-25 bid 31, 30 and 30); the protection by a suit's top is our reading,
+; applied to the two Ch. 9 declarations only. tests/bidding.rs holds this file
+; to MenuBidder on every hand of four doubles or more, by a digest the arena's
+; test pins too.
+(include bidding)
+
+; Pip u is higher than pip t: the tile of the two has u for its high pip
+; and t for its other.
+(define higher-pip (roles (context u) (context t))
+  (some (roles x) (high-pip x u) (bears x t) (not (high-pip x t))))
+
+; t is the best suit of three or more (bid-only-enough's declaration), the
+; arena's last tie-break, the higher pip, written out: the doubles rule reads
+; this suit's offs, so it cannot leave the tie to the order offered.
+(define best-suit (roles (context t))
+  (suit-at-least t 3)
+  (none (roles u) (suit-at-least u 3) (less-exposed u t))
+  (none (roles u) (suit-at-least u 3) (not (less-exposed t u)) (higher-pip u t)))
+
+; Doubles as trumps: the best suit leaves a high off.
+(define doubles-hand (roles)
+  (four-doubles)
+  (some (roles t o) (best-suit t) (off-under o t) (high-off o)))
+
+; The viewer holds suit p's top under doubles trump: 6-5 for the sixes, the
+; six of any other suit.
+(define doubles-top-held (roles (context p))
+  (or
+    (and (context p q6) (mine 6-5))
+    (and (not (context p q6)) (some (roles x) (mine x) (not (double x)) (bears x p) (bears x q6)))))
+
+; Count tile c is exposed under doubles trump: the viewer lacks it, it is no
+; double, and it bears the pip p of an off's side whose top he lacks.
+(define doubles-exposed (roles (domino c))
+  (count-tile c)
+  (not (mine c))
+  (not (double c))
+  (some (roles o p) (mine o) (not (double o)) (bears o p) (bears c p) (not (doubles-top-held p))))
+
+; Count tile c is exposed under no trump: the viewer lacks it, and it bears
+; the pip p of an off's side whose double he lacks.
+(define no-trump-exposed (roles (domino c))
+  (count-tile c)
+  (not (mine c))
+  (some (roles o p) (mine o) (not (double o)) (bears o p) (bears c p) (not (suit-double p))))
+
+; No trump: four doubles, neither the double-six nor a high off, and less
+; exposed than any suit of three.
+(define no-trump-hand (roles)
+  (four-doubles)
+  (not (mine 6-6))
+  (none (roles o) (mine o) (high-off o))
+  (none (roles u)
+    (suit-at-least u 3)
+    (<= (points (roles c) (exposed c u)) (points (roles c) (no-trump-exposed c)))))
+
+(policy menu
+  (bidding
+    (rule raise (bid least-raise)
+      (some (roles t)
+        (suit-at-least t 3)
+        (<= (+ (least-raise) (points (roles c) (exposed c t))) 42)))
+    (rule raise-on-the-doubles (bid least-raise)
+      (doubles-hand)
+      (<= (+ (least-raise) (points (roles c) (doubles-exposed c))) 42))
+    (rule raise-at-no-trump (bid least-raise)
+      (no-trump-hand)
+      (<= (+ (least-raise) (points (roles c) (no-trump-exposed c))) 42)))
+  (declaring
+    (rule doubles (declare doubles)
+      (doubles-hand))
+    (rule no-trump (declare no-trump)
+      (no-trump-hand))
+    (rule best-suit (declare t)
+      (best-suit t))
+    (rule best-of-any-length (declare t)
+      (pip-suit t)
+      (none (roles u) (pip-suit u) (less-exposed u t)))))

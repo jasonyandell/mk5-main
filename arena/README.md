@@ -19,6 +19,7 @@ A player is `<bidder>+<play>`:
 | `heuristic` | Roberson risk-budget: bid the minimum legal raise while it stays within `42 − unique_exposed_points` for the best ≥3-tile trump; never bids marks. `heuristic:<min_trumps>,<caution>` to tune. |
 | `bid30` | Opens 30 if nothing has been bid, else passes — the arena analogue of the historical forced-bid-30 evals, with a sane declaration. |
 | `random` | Bids a uniform legal point bid with probability p (`random:<p>`); noise floor. |
+| `menu` | `heuristic` with the book's Ch. 9 menu (#155): from four doubles it may declare doubles as trumps or no trump (`arena.hand_metrics.menu_choice`); below four it is `heuristic` call for call. It sits only with play policies that can play those contracts: a net Zeb seat needs `DTNT=random`. `menu:<min_trumps>,<caution>` to tune. |
 | `silas[:<policy>]` | A bid policy of `silas/examples/book/bidding/` (`risk-budget`, the default; `bid-only-enough` is `heuristic` call for call). |
 
 | play | what it does |
@@ -50,7 +51,9 @@ A player is `<bidder>+<play>`:
   model; the bid value enters only through utility thresholds.
 
 v0 scope: point bids 30–42 plus mark bids by the rules (84, then +42); the
-shipped bidders declare pip trumps only and never bid past 42. Special
+shipped bidders declare pip trumps only (`menu` adds doubles and no trump,
+opt-in) and never bid past 42. A table where a bidder may declare what a
+play policy cannot play is refused before play (`arena.play.check_menu`). Special
 contracts (nello, sevens, plunge) and model-backed bidding are Champion
 rungs #21–#22.
 

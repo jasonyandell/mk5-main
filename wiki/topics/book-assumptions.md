@@ -40,7 +40,7 @@ trick.
 | A7 | **The reader is a bounded human**: the rules are a fast policy, not a replacement for enumeration | the whole book; S-0076-a, S-0078-d | **measured to 16 worlds** (#154): the fallback still plans | the book as tie-break wins its game (A5); as Zeb's near-tie break it neither raises nor costs Zeb at 16, 64 or 160 worlds (D16 −0.01 [−0.18, +0.17], MDE 0.25); inside its sets the cost falls from 1.10 [0.93, 1.27] at 160 worlds to 0.21 [−0.02, 0.44] at 16, the predicted direction, never crossing 0 | done: **#161**, the reader with no plan: the rules are worth +2.47 [2.28, 2.65] marks/game to the reader, about 61% of a 16-world plan |
 | A8 | **A rule is applied with judgment inside its stated scope** | every rule file's header | **partial**: the Silas stack is literal | the census: 44% of the first head-to-head's loss was the encoding; repairs moved +0.47 [+0.33, +0.62] marks/game | #146 done; #153 |
 | A9 | **The value of unpredictability is a response, not a fixed field** (an equilibrium claim) | S-0089-e, S-0081-a, S-0037-a, S-0154-a | **absent**: no mixed policies, no response map | none | #130 slice 5; #116; #149 is the fixed-learner first step |
-| A10 | **The full declaration menu** (doubles as trumps, no trumps) | Ch. 9's 34 rows, Hands 23–25 | **absent**: pip trumps only | none | **#155** |
+| A10 | **The full declaration menu** (doubles as trumps, no trumps) | Ch. 9's 34 rows, Hands 23–25 | **plumbed, opt-in** (#155): `MenuBidder` (`menu.silas` in Silas, equal on every hand of four doubles) declares doubles or no trump by the book's Ch. 9 conditions, Hands 23–25 as the book does; `risk-budget` declares them where they are offered. Deployed Zeb's net plays pip trumps only, so at a menu table every seat plays doubles and no-trump hands with the random field (`DTNT=random`), **provisional** | none yet; the menu changes the bid or the declaration on 0.8% of hands | a field net covering decls 7–9 (#177), then the head-to-head re-read for the hands that change declaration |
 | A11 | **A lifetime at the table**: learning, enjoyment and conduct are part of the objective | S-0081-b, S-0080-e; Ch. 11's table-talk rows; S-0209-e | out of scope, correctly | none | none in marks |
 
 ### Opinions
@@ -105,7 +105,11 @@ trick.
   The three rows filed as "the book against its rule" are re-read under that presumption (#153).
 - **A9:** the full statement of "keep them honest" needs mixed policies and a response map
   (#130 slice 5). #149 is the cheap step before that: a fixed learner, not an equilibrium.
-- **A10 is plumbing,** but 34 rows can never fire until it is done.
+- **A10 is plumbing,** and the plumbing is in (#155): the Ch. 9 rows can fire at a menu table. Every number
+  from one is provisional until a net plays decls 7–9 (#177), because until then every seat plays those
+  hands with the random field. The arena's count prices Hands 23 and 24 below the book's 31 and 30
+  (the book prices them by their play lines), so the menu bidder passes Hand 23. That is the scope
+  of our count, not a verdict on the hand.
 - **A11 is outside a marks measurement.** It is recorded so that nobody charges the book a loss
   for advice whose objective is learning or enjoyment.
 

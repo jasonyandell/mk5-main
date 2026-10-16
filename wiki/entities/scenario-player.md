@@ -204,7 +204,8 @@ The first beliefs on the seam, each a likelihood factor on every live scenario
   have played that tile].
 - **auction** — the declaration: ε/7 + (1−ε)·[the bidder's dealt hand in this
   scenario would have called this trump]; exact for the `bid30`/heuristic
-  bidders, which declare `best_trump` deterministically.
+  bidders, which declare `best_trump` deterministically (not for `MenuBidder`,
+  which may declare doubles or no trump from four doubles, #155).
 
 Also landed: **exact endgame enumeration** — when the fiber is no larger than
 the rung's sample (90 completions with two tricks left, 1,680 with three) it is
@@ -495,7 +496,7 @@ rung-0 Walt) but costs more than the champion, not less.
 | choice | what |
 |---|---|
 | features (330 bits) | the modeled seat's own hand, tiles gone, open trick by who played it (left/partner/right), voids shown by each other seat, count-tile slots, side, trick position, who is winning the trick, thermometers of points the bidder still needs and the defenders still need — exactly the modeled-move cache key, nothing hidden |
-| canon | tiles relabeled so trump is pip 6, other pips in order: one trump suit to learn, not seven. Pip-trump declarations only (the `bid30`/heuristic bidders call nothing else); others refuse |
+| canon | tiles relabeled so trump is pip 6, other pips in order: one trump suit to learn, not seven. Pip-trump declarations only (the `bid30`/heuristic bidders call nothing else); others refuse. At a table with the book's full menu (`MenuBidder`, #155) a net seat is `DTNT=random` (`arena.walt_play.MenuWalt`): its random-field twin plays decls 7–9, and those numbers are provisional until a net covers them (#177) |
 | target | cross-entropy to softmax(sign·m/τ) over the legal moves, m = each move's mean margin read off the splat (points under every utility, #107), τ = 2 points: near-ties flat, hinges sharp |
 | net | MLP 330→128→64→28, 52k params, numpy + Adam (no torch), every tenth deal held out |
 | parity | integer inference: bit features, int16 weights at power-of-two scales, `max(acc >> s, 0)`, rounding folded into biases, ties to the lowest tile id. Referee and core agree by construction; tested on 300 positions' raw scores and on `decide`/`analyze` across four net-field configs |

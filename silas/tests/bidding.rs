@@ -1193,3 +1193,143 @@ fn the_set_bidding_fallacy_raises_over_an_opponent_only() {
     }
     assert!(only_the_fallacy > 50, "{only_the_fallacy}");
 }
+
+// -------------------------------------------- the book's Ch. 9 menu (#155)
+
+/// The arena's declarations with the book's Ch. 9 two after them: the pip
+/// trumps first, the higher pip first (the arena's last tie-break).
+fn full_menu() -> Arc<[Physics]> {
+    ARENA_DECLARATIONS.iter().chain(&["DT", "NT"]).map(|d| physics(d)).collect()
+}
+
+/// `menu.silas` on one hand, in the arena test's format (`arena/test_bidders.py`,
+/// `menu_lines`): the hand's bits, the call opening the auction, over a 31
+/// and over a 36, and the declaration won at 30.
+fn menu_line(policy: &CompiledPolicy, menu: &Arc<[Physics]>, hand: DominoSet) -> String {
+    let state = MatchState::new(Scoring::MARKS, [0, 0]).unwrap();
+    let mut line = format!("{:07x}", hand.bits());
+    for before in [vec![], vec![Call::Bid(Bid::Points(31))], vec![Call::Bid(Bid::Points(36))]] {
+        let auction = Auction::new(AuctionConfig::STRAIGHT, Seat::S3, before).unwrap();
+        let viewer = auction.actor().unwrap();
+        let frame = AuctionFrame::new(auction, viewer, hand, state, menu.clone()).unwrap();
+        line += &format!(" {}", policy.bid(&frame, &mut unlimited()).unwrap().choice);
+    }
+    let declared = policy.declare(&won(Seat::S2, hand, Bid::Points(30), menu), &mut unlimited()).unwrap().choice;
+    line += &match Trump::of(&declared) {
+        Some(Trump::Suit(p)) => format!(" P{p}"),
+        Some(Trump::Doubles) => " DT".to_owned(),
+        Some(Trump::None) => " NT".to_owned(),
+        None => panic!("{} is no straight declaration", declared.name()),
+    };
+    line
+}
+
+/// The arena pins the same digest of `MenuBidder` (`MENU_DIGEST`).
+const PINNED_MENU: u64 = 0x8308_f0f1_62a2_dc1b;
+
+#[test]
+fn menu_is_the_arenas_menu_bidder_on_every_hand_of_four_doubles() {
+    // Below four doubles menu.silas is bid-only-enough rule for rule (its
+    // Ch. 9 rules need four doubles), which the tests above hold to the
+    // arena on every hand. From four doubles, every one of the 51,108 hands:
+    // one digest, the arena's.
+    let policy = policy("menu.silas");
+    let menu = full_menu();
+    let hands: Vec<DominoSet> = every_hand().filter(|h| h.iter().filter(|d| d.is_double()).count() >= 4).collect();
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let lines: Vec<String> = std::thread::scope(|s| {
+        let handles: Vec<_> = hands
+            .chunks(hands.len().div_ceil(threads))
+            .map(|part| {
+                let (policy, menu) = (&policy, &menu);
+                s.spawn(move || part.iter().map(|hand| menu_line(policy, menu, *hand)).collect::<Vec<_>>())
+            })
+            .collect();
+        handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
+    });
+    assert_eq!(lines.len(), 51_108);
+    if let Some(path) = std::env::var_os("SILAS_MENU_LINES") {
+        std::fs::write(path, lines.join("\n") + "\n").unwrap();
+    }
+    assert_eq!(fnv1a(lines.join("\n").as_bytes()), PINNED_MENU, "first line {}", lines[0]);
+}
+
+#[test]
+fn menu_declares_the_books_ch9_hands() {
+    // Hands 23 and 24 at doubles trump, Hand 25 at no trump (W42-p076-a,
+    // W42-p078-d, W42-p081-a), each by its rule; Hand 2, four doubles and
+    // threes, at threes, as the book bids it.
+    let (menu_policy, enough) = (policy("menu.silas"), policy("bid-only-enough.silas"));
+    let menu = full_menu();
+    let declares = |hand: &[&str]| {
+        let choice = menu_policy.declare(&won(Seat::S0, tiles(hand), Bid::Points(30), &menu), &mut unlimited()).unwrap();
+        (Trump::of(&choice.choice), choice.provenance)
+    };
+    let rule = |name: &str| DecisionProvenance::RelationalRule { name: name.to_owned() };
+    let hand_23 = ["6-1", "1-1", "6-6", "0-0", "3-3", "5-4", "6-5"];
+    let hand_24 = ["6-6", "6-4", "5-5", "1-1", "5-1", "3-1", "2-2"];
+    let hand_25 = ["5-0", "5-5", "2-2", "4-4", "1-1", "2-1", "3-3"];
+    let hand_2 = ["0-0", "3-3", "4-3", "6-3", "6-1", "5-5", "2-2"];
+    assert_eq!(declares(&hand_23), (Some(Trump::Doubles), rule("doubles")));
+    assert_eq!(declares(&hand_24), (Some(Trump::Doubles), rule("doubles")));
+    assert_eq!(declares(&hand_25), (Some(Trump::None), rule("no-trump")));
+    assert_eq!(declares(&hand_2), (Some(Trump::Suit(Pip::new(3).unwrap())), rule("best-suit")));
+    // Hand 25 has no suit of three: bid-only-enough passes it, the menu opens.
+    let opening = first_call(Seat::S0, tiles(&hand_25), &menu);
+    assert_eq!(enough.bid(&opening, &mut unlimited()).unwrap().choice, Call::Pass);
+    let call = menu_policy.bid(&opening, &mut unlimited()).unwrap();
+    assert_eq!((call.choice, call.provenance), (Call::Bid(Bid::Points(30)), rule("raise-at-no-trump")));
+}
+
+#[test]
+fn menu_is_bid_only_enough_below_four_doubles() {
+    // On 20,000 seeded hands of fewer than four doubles: the same three
+    // calls and the same declaration as bid-only-enough, offered the full menu.
+    let (menu_policy, enough) = (policy("menu.silas"), policy("bid-only-enough.silas"));
+    let menu = full_menu();
+    let mut rng = Rng(155);
+    let mut seen = 0;
+    while seen < 20_000 {
+        let hand: DominoSet = rng.shuffled()[..7].iter().copied().collect();
+        if hand.iter().filter(|d| d.is_double()).count() >= 4 {
+            continue;
+        }
+        seen += 1;
+        assert_eq!(menu_line(&menu_policy, &menu, hand), menu_line(&enough, &menu, hand), "{hand:?}");
+    }
+}
+
+#[test]
+fn risk_budget_declares_the_books_ch9_hands_where_they_are_offered() {
+    // Offered the full menu: Hands 23 and 24 at doubles trump, Hand 25 at no
+    // trump, each by its Ch. 9 rule; the book's other hands of four doubles
+    // with a stated suit keep it (Hands 2 and 13 threes, 9 fives, 21 twos at
+    // 84). Offered the arena's pip trumps only, no hand changes: the Ch. 9
+    // rules name nothing offered (the pinned digests above say so on every
+    // hand), and Hand 23 goes to its suit.
+    let risk_budget = policy("risk-budget.silas");
+    let (full, pips) = (full_menu(), arena_menu());
+    let declares = |hand: &[&str], bid: Bid, menu: &Arc<[Physics]>| {
+        let choice = risk_budget.declare(&won(Seat::S0, tiles(hand), bid, menu), &mut unlimited()).unwrap();
+        (Trump::of(&choice.choice).unwrap(), choice.provenance)
+    };
+    let rule = |name: &str| DecisionProvenance::RelationalRule { name: name.to_owned() };
+    let suit = |p: u8| Trump::Suit(Pip::new(p).unwrap());
+    let thirty = Bid::Points(30);
+    let hand_23 = ["6-1", "1-1", "6-6", "0-0", "3-3", "5-4", "6-5"];
+    assert_eq!(declares(&hand_23, thirty, &full), (Trump::Doubles, rule("doubles-for-a-high-off")));
+    let hand_24 = ["6-6", "6-4", "5-5", "1-1", "5-1", "3-1", "2-2"];
+    assert_eq!(declares(&hand_24, thirty, &full), (Trump::Doubles, rule("doubles-for-a-high-off")));
+    let hand_25 = ["5-0", "5-5", "2-2", "4-4", "1-1", "2-1", "3-3"];
+    assert_eq!(declares(&hand_25, thirty, &full), (Trump::None, rule("no-trump")));
+    for (hand, bid, p) in [
+        (["0-0", "3-3", "4-3", "6-3", "6-1", "5-5", "2-2"], thirty, 3),
+        (["5-2", "5-1", "5-5", "6-6", "1-1", "3-3", "4-0"], thirty, 5),
+        (["2-0", "5-2", "6-2", "1-1", "2-2", "5-5", "3-3"], Bid::Marks(2), 2),
+    ] {
+        let (declared, _) = declares(&hand, bid, &full);
+        assert_eq!(declared, suit(p), "{hand:?}");
+        assert_eq!(declares(&hand, bid, &pips).0, suit(p), "{hand:?}");
+    }
+    assert_eq!(declares(&hand_23, thirty, &pips).0, suit(6));
+}
