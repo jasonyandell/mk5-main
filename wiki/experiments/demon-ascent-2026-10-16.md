@@ -362,6 +362,65 @@ were frozen before development. Plan SHA-256:
 `522133a8290cdac59b37136b4063a0cefd5db8075d945aac4f939123b7323465`.
 Fresh plan, manifest and raw smoke downloads match local bytes.
 
+## Round 5 result and the next auction test
+
+All 288 pairs / 576 games and 6,082 hands finish without a game failure;
+every trace, source, support certificate, declaration, score and cost audit
+passes. The fixed selection chooses `read4play800`, with 33/64 wins. Its
+interval still includes chance. `notb3200` alone exceeds the CPU ceiling;
+no independent confirmation or promotion starts.
+
+| Arm | Wins | Win rate, paired 95% CI | Total seat CPU ratio, paired 95% CI |
+|---|---:|---:|---:|
+| reference | 31/64 | 48.44% [35.94, 60.94] | 0.397 [0.365, 0.431] |
+| play800 | 32/64 | 50.00% [35.94, 64.06] | 0.707 [0.648, 0.773] |
+| play1200 | 32/64 | 50.00% [37.50, 62.50] | 1.030 [0.935, 1.138] |
+| bait1play1200 | 29/64 | 45.31% [32.81, 57.81] | 0.808 [0.748, 0.869] |
+| bait1play1600 | 28/64 | 43.75% [31.25, 56.25] | 1.055 [0.979, 1.132] |
+| notb1600 | 31/64 | 48.44% [35.94, 60.94] | 0.848 [0.788, 0.917] |
+| notb3200 | 31/64 | 48.44% [35.94, 60.94] | 1.636 [1.516, 1.774] |
+| read2play800 | 32/64 | 50.00% [39.06, 60.94] | 0.732 [0.669, 0.802] |
+| read4play800 | 33/64 | 51.56% [40.62, 62.50] | 0.732 [0.670, 0.801] |
+
+[All raw games and reports](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/3c2a9f4f202388d68200553d7cf28f355acb548e/demon/2026-10-16-ascent/development-5-results)
+are public: 115,456,574 bytes, 1,775 files. Upload succeeded before a
+resolver-rate limit interrupted verification. After the required backoff,
+fresh downloads of the same immutable commit's plan, manifest, raw game and
+every report matched. No games or upload were rerun.
+
+The next hypothesis follows the shipped-policy audit above: an early
+opening **40** asks Zeb for 41, the highest point overcall below the
+need-42 boundary. With one or two seats afterward, the pinned policy must
+overcall at least 41; its actual forecast can instead choose 42 or a mark
+bid. This is a policy property, not yet a measured strength result.
+
+The optional `bait_bid` parameter now lets `pimc-bait` open any integer
+30–40 in the first two auction positions with no standing bid. It defaults
+to 30; later-opening and opponent cutoffs, partner pass and mark pass are
+unchanged. Nondefault values have distinct participant IDs. If an opponent
+passes, declaration forecasts the actual bid from the bidder's own hand.
+All 13 roster records and both existing bait records remain unchanged;
+104 tournament tests, the fence, reuse and conflict checks pass. The three
+native source trees are unchanged from `db239f39`. No roster addition is
+made before independent confirmation.
+
+## Parked margin-band prototype
+
+An isolated prototype permits a margin tiebreak among moves within a fixed
+make-rate band of the best sampled move. Integer basis points define the
+boundary; zero reproduces the current rule. All 9,408 saved play requests
+from the 64 round-4 selected-arm games reproduce their moves, worlds,
+values and search nodes at zero. Independent small-fiber tests check
+weighted and uniform selection across six bands; all 20 native tests pass.
+
+On those frozen positions, 100 and 300 basis points change 264 and 406
+decisions respectively, but cost 1.356 [1.322, 1.393] and 1.681
+[1.633, 1.731] times native play CPU (whole-pair 95% intervals). These are
+replay costs, not game strength. The prototype remains unintegrated while
+the more direct auction hypothesis is tested.
+[Source overlay, replay plan, raw replies and reports](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/eb3a4d2dcaa6ff396ddae1fe62e66e712a6637a5/demon/2026-10-16-ascent/margin-band-prototype)
+are public and freshly verified.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**

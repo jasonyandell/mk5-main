@@ -106,6 +106,10 @@ class DemonSeat:
                 not math.isfinite(float(x)) or not 0 <= float(x) <= 1 for x in parts[2:]
             ):
                 raise ValueError("pimc-over / pimc-jump / pimc-bait needs worlds 1..4096 and finite cutoffs in 0..1")
+        self.bait_bid = cfg.get("bait_bid", 30)
+        if (type(self.bait_bid) is not int or not 30 <= self.bait_bid <= 40
+                or (self.bait_bid != 30 and not self.bid_spec.startswith("pimc-bait:"))):
+            raise ValueError("bait_bid must be an integer 30..40 and requires a pimc-bait bidder")
         self.bounded_forecast = cfg.get("bounded_forecast", False)
         if not isinstance(self.bounded_forecast, bool):
             raise ValueError("bounded_forecast must be a boolean")
@@ -140,11 +144,12 @@ class DemonSeat:
             if not points or (ctx.high_seat >= 0 and ctx.high_seat % 2 == ctx.seat % 2):
                 return 0
             # With at least two seats still to speak, an opponent can overcall
-            # before the final bidder. This experimental policy opens cheaply
-            # even with a weak hand; the normal cutoff applies later.
+            # before the final bidder. This experimental policy opens its
+            # configured legal point bid even with a weak hand; the normal
+            # cutoff applies later. Forty leaves a point overcall below 42.
             if (self.bid_spec.startswith("pimc-bait:") and ctx.high_seat < 0
                     and sum(b < 0 for b in ctx.bids) - 1 >= 2):
-                return points[0]
+                return self.bait_bid if self.bait_bid in points else 0
             cutoff = float(self.bid_spec.split(":")[2])
             if self.bid_spec.startswith(("pimc-over:", "pimc-jump:", "pimc-bait:")) and ctx.high_seat >= 0:
                 # The partner case returned above. The opponent already holds

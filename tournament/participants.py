@@ -198,7 +198,8 @@ DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
 
 def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
           bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler",
-          declaration_weight: int = 1, bounded_forecast: bool = False, support_forecast: bool = False) -> Participant:
+          declaration_weight: int = 1, bounded_forecast: bool = False, support_forecast: bool = False,
+          bait_bid: int = 30) -> Participant:
     # The source pin selects the sampler; this describes it without changing
     # the bytes of already-published participant records.
     tb = "" if margin_tiebreak else "-notb"
@@ -221,6 +222,12 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     if support_forecast:
         suffix += "-support"
         extra["support_forecast"] = True
+    if (type(bait_bid) is not int or not 30 <= bait_bid <= 40
+            or (bait_bid != 30 and not bidder.startswith("pimc-bait:"))):
+        raise ValueError("bait_bid must be an integer 30..40 and requires a pimc-bait bidder")
+    if bait_bid != 30:
+        suffix += f"-bait{bait_bid}"
+        extra["bait_bid"] = bait_bid
     belief_note = (f" Declaration evidence uses a soft heuristic model: matching original "
                    f"hands have likelihood {declaration_weight}, others 1; posterior draws are IID "
                    f"by rejection, and small fibers use exact weighted sums."
@@ -236,8 +243,9 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
         bid_note += (f"Uses DD cutoff {bidder.split(':')[3]} over an opponent's point bid "
                      f"and {bidder.split(':')[2]} when opening; no mark overcalls. ")
     if bidder.startswith("pimc-bait:"):
+        opening = "minimum point bid" if bait_bid == 30 else f"point bid {bait_bid}"
         bid_note += ("With no standing bid and at least two seats still to speak, opens the "
-                     "minimum point bid regardless of its forecast. ")
+                     f"{opening} regardless of its forecast. ")
     if support_forecast:
         bid_note += ("Bid decisions use exact sample support bounds; only a won auction computes "
                      "the best declaration and its winning count. ")

@@ -112,7 +112,11 @@ def test_new_models_get_distinct_participant_ids():
     support = demon("a" * 40, {}, worlds=100, bidder="pimc-over:16:0.875:0.5",
                     bounded_forecast=True, support_forecast=True)
     bait = demon("a" * 40, {}, worlds=100, bidder="pimc-bait:16:0.875:0.5", bounded_forecast=True)
-    assert len({p.id for p in (base, read, bid, over, bounded, jump, support, bait)}) == 8
+    high_bait = demon("a" * 40, {}, worlds=100, bidder="pimc-bait:16:0.875:0.5",
+                      bounded_forecast=True, bait_bid=40)
+    assert len({p.id for p in (base, read, bid, over, bounded, jump, support, bait, high_bait)}) == 9
+    assert "bait_bid" not in bait.config
+    assert high_bait.config["bait_bid"] == 40
     assert "support_forecast" not in bounded.config
     assert support.config["support_forecast"] is True
     with pytest.raises(ValueError):
@@ -131,6 +135,7 @@ def test_new_models_get_distinct_participant_ids():
 
 def test_forecast_cannot_choose_nello_physics_even_when_it_scores_best():
     seat = object.__new__(DemonSeat)
+    seat.bait_bid = 30
     seat.support_forecast = False
     seat.hand_no = 1
     seat.game = "straight"
@@ -164,6 +169,7 @@ def test_jump_bids_the_highest_supported_legal_point_and_passes_over_partner():
     from arena.auction import BidContext, legal_bids
 
     seat = object.__new__(DemonSeat)
+    seat.bait_bid = 30
     seat.support_forecast = False
     seat._bid_seats = {}
     seat.bid_spec = "pimc-jump:64:0.875:0.5"
@@ -197,6 +203,7 @@ def test_overcalling_changes_only_opponent_held_point_auctions(seat_id, bidder):
     from arena.auction import BidContext, legal_bids
 
     seat = object.__new__(DemonSeat)
+    seat.bait_bid = 30
     seat.support_forecast = False
     seat._bid_seats = {}
     seat.bid_spec = bidder
@@ -257,13 +264,16 @@ def test_the_pinned_build_checks_its_trees(tmp_path):
 
 
 @pytest.mark.parametrize("seat_id", range(4))
-def test_bait_opens_only_in_the_first_two_positions_without_a_standing_bid(seat_id):
+@pytest.mark.parametrize("opening", [30, 35, 38, 39, 40])
+def test_bait_opens_only_in_the_first_two_positions_without_a_standing_bid(seat_id, opening):
     from arena.auction import BidContext, bidding_order, legal_bids
 
     seat = object.__new__(DemonSeat)
+    seat.bait_bid = 30
     seat.support_forecast = False
     seat._bid_seats = {}
     seat.bid_spec = "pimc-bait:64:0.875:0.875"
+    seat.bait_bid = opening
     requests = []
     def forecast(hand, bidder, target):
         requests.append(target)
@@ -275,8 +285,13 @@ def test_bait_opens_only_in_the_first_two_positions_without_a_standing_bid(seat_
         bids = tuple(0 if s in prior else -1 for s in range(4))
         ctx = BidContext(tuple(range(7)), seat_id, dealer, bids, 0, -1, legal_bids(0))
         requests.clear()
-        assert seat.bid(ctx, random.Random(0)) == (30 if position < 2 else 0)
+        assert seat.bid(ctx, random.Random(0)) == (opening if position < 2 else 0)
         assert requests == ([] if position < 2 else [30])
+        if position < 2:
+            # If the opponent passes unexpectedly, declaration still forecasts
+            # the actual high bid from this seat's own hand.
+            assert seat.declare(ctx.hand, opening, random.Random(0)) == 6
+            assert requests == [opening]
 
 
 def test_required_counts_preserve_float_cutoff_boundaries():
@@ -294,3 +309,35 @@ def test_required_counts_preserve_float_cutoff_boundaries():
     for cutoff, n in ((float("nan"), 64), (float("inf"), 64), (-0.1, 64), (1.1, 64), (0.5, 0)):
         with pytest.raises(ValueError):
             required_makes(cutoff, n)
+
+
+@pytest.mark.parametrize("opening", [29, 41, True, 35.0])
+def test_invalid_bait_openings_fail_before_starting_a_seat(tmp_path, opening):
+    p = Participant("bad", "demon", {}, {"bidder": "pimc-bait:64:0.875:1", "bait_bid": opening})
+    with pytest.raises(ValueError, match="bait_bid"):
+        DemonSeat(p, tmp_path, "invalid")
+    with pytest.raises(ValueError, match="bait_bid"):
+        demon("a" * 40, {}, worlds=100, bidder="pimc-bait:64:0.875:1", bait_bid=opening)
+
+
+def test_high_bait_requires_the_explicit_bait_policy(tmp_path):
+    with pytest.raises(ValueError, match="bait_bid"):
+        demon("a" * 40, {}, worlds=100, bidder="pimc-over:64:0.875:1", bait_bid=40)
+    p = Participant("bad", "demon", {}, {"bidder": "pimc-over:64:0.875:1", "bait_bid": 40})
+    with pytest.raises(ValueError, match="bait_bid"):
+        DemonSeat(p, tmp_path, "invalid")
+
+
+@pytest.mark.parametrize("opening", [35, 40])
+def test_high_early_openings_play_legal_repeatable_whole_games(working_tree_demon, tmp_path, monkeypatch, opening):
+    monkeypatch.setattr(S, "materialize", lambda p: working_tree_demon)
+    head = _git("rev-parse", "HEAD")
+    d = demon(head, {p: _git("rev-parse", f"HEAD:{p}") for p in DEMON_SOURCE}, worlds=8,
+              bidder="pimc-bait:8:0.875:1", bounded_forecast=True, support_forecast=True, bait_bid=opening)
+    foe = Participant("heur-rand", "arena", {"spec": "heuristic+random"})
+    participants = {p.id: p.to_record() for p in (d, foe)}
+    spec = F.FaceoffSpec("marks7", d.id, foe.id, 0xBA1740, 1, "20261016T000000Z")
+    first = _game(spec, participants, tmp_path / "one.json")
+    second = _game(spec, participants, tmp_path / "two.json")
+    assert first["done"] and first["hands"] == second["hands"] and first["marks"] == second["marks"]
+    assert all(h["decl_id"] in STRAIGHT_DECLARATIONS for h in first["hands"])
