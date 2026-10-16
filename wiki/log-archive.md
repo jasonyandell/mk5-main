@@ -4471,3 +4471,36 @@ The 21 rows that stayed on a gate are listed in their rule's header or recorded 
 ## [2026-10-16 | Demon | Early-opening sweep is cheaper but has no established win]
 
 [[demon-ascent-2026-10-16]] records all 512 round-4 games and the unchanged source: selected bait875play400 wins 46.9% [34.4%, 59.4%] against native Zeb 0.4.1 at CPU ratio 0.407 [0.384, 0.429]. No promotion or confirmation starts. All raw evidence is public; fresh verification resumed after a resolver-rate limit without rerunning games or uploading again. Source-policy and settled-contract audits are published separately.
+
+## [2026-10-16 | Demon | Higher early opening bids]
+
+[[demon-ascent-2026-10-16]] records the fifth fixed sweep: selected 33/64, no established win, all evidence public. The fenced bidder accepts explicit early openings 30–40 with default records preserved; a source audit motivates testing 40 against pinned Zeb 0.4.1. The margin-band replay remains a parked prototype. No participant promotion.
+
+## [2026-10-16 | Demon | Early forty selected for independent confirmation]
+
+[[demon-ascent-2026-10-16]] publishes all 576 round-6 games and audits. The fixed selection wins 59/64 at 0.139 times pinned Zeb 0.4.1 CPU; this is development. Its exact source/config is frozen for 512 fresh duplicate pairs, with a predeclared joint win/CPU criterion. No participant promotion yet.
+
+## [2026-10-16 | Demon | Early-forty Demon confirmed against Zeb 0.4.1]
+
+[[demon-ascent-2026-10-16]] completes 512 fresh duplicate pairs: 911/1,024 wins, 88.96% [86.72, 91.11], at 0.13584 [0.13355, 0.13818] times total seat CPU (97.5% intervals). The opponent-specific early-40 form passes both criteria, all 9,759 hands audit, and the exact frozen participant is registered and rostered with prior records unchanged. All raw evidence is public.
+
+## [2026-10-16 | book | The auction read, pre-registered: does reading a bid by a known method pay by itself? (#117)]
+
+- [[auction-read-2026-10-16]]: the #149 reader alone, under the field's true bidding method (K) and an unknown one (U), against plain deployed Zeb, with a re-seeded A/A (Za). Primary K; 576 pairs per marks arm and 192 to 250; 176 batches. `scenario/auction_read.py`.
+
+## [2026-10-16 | book | Silas cross-game loose ends: one unit check, samples that name their stream, net seats named by hash (#183)]
+
+- `Trial::compare` now refuses a utility whose unit is not its table's scoring, through the same `field::check` the ledger uses. The rule found one test of its own that read a marks table as points.
+- `Sample` carries its `Stream`. A ledger's deals are `Sample::arena`, labelled `sampled(n, seed, arena)`, and a trial refuses an arena sample. `Authority::drawn(sample)` joins `sampled(n, seed)`.
+- `arena.ledger.play_name` names a play seat with its seed and each field net with its SHA-256. A deployed Zeb seat sits in the chair in `arena/test_ledger.py`. Choices in `silas/docs/cross-game.md` § Slice 4 as built, items 3, 5 and 6. [[silas]]
+
+## [2026-10-16 | Demon | Exact root reuse under FAIR CLOCKS]
+
+[[demon-instructions-2026-10-16]] completes #186: all 18,125 native requests from
+128 fixed confirmation games preserve every semantic reply. Cached immutable
+rules plus equivalent root values save 3.36% [2.82%, 3.98%] of complete native
+process instructions on M5 Max, and beat caching alone. CPU/wall are descriptive.
+The same early-40 configuration is registered and rostered at source [[d48909c4]];
+all earlier participant bytes remain unchanged. #187 is the coordinated registry
+heads-up. Public protocol, raw responses, cost reports and build receipts are
+linked from the experiment. No new strength or Zeb instruction-cost claim.

@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-16, 327 archived entries)
+## Digest (2026-04-09 → 2026-10-16, 333 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -50,6 +50,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The Demon's exact bidding, Lem's first audit** (2026-10-16, 6 archived entries) — [[the-demon]] (exact declaration elimination, exact bid bounds and support, the preemption and early-opening sweeps), [[lem-field-net-audit-2026-10-15]], [[branch-rescue-2026-10]].
 
 ---
+
+## [2026-10-16 | lem | G1 pre-registered: belief probes from the field net to the teacher's exact ownership posterior]
+
+- [[lem-belief-probe-2026-10-16]]: targets P(seat holds tile) exact under shown voids minus the counting prior; ridge probes from raw inputs and both hidden layers; deal-disjoint 20k/20k; shuffled chance; four predictions (the inputs state most of it; the hidden layers add nothing beyond them). `lem/probe/belief.py`.
 
 ## [2026-10-16 | lem | The paper: a living draft and its Gaps list as the desk's work order]
 
@@ -95,36 +99,3 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The bidder.** `MenuBidder` (opt-in, `menu` in the CLI) is `HeuristicBidder` below four doubles. From four it declares doubles when the best suit leaves a high off and no trump when the hand lacks the double-six and every high off and no trump prices better (catalog rows W42-p075-b, W42-p078-b, W42-p079-a, W42-p080-a). It declares Hands 23–25 as the book does and keeps the book's suit on its other hands of four doubles. It changes the bid or the declaration on 0.8% of hands. `HeuristicBidder` is pinned byte-identical by digest.
 - **Silas.** `bidding/menu.silas` is `MenuBidder`, one digest on all 51,108 hands of four doubles. `risk-budget` declares doubles or no trump where the table offers them, and is unchanged where only pip trumps are offered. [[book-assumptions]] A10, [[scenario-player]]
 - **All desks:** stale venvs must rebuild scenario_core, because lib/bidding.silas is embedded in it. `scripts/check` builds its own; a local `scratch/venv` fails `arena/test_book_play` until its core is rebuilt.
-
-## [2026-10-16 | Demon | Exact root reuse under FAIR CLOCKS]
-
-[[demon-instructions-2026-10-16]] completes #186: all 18,125 native requests from
-128 fixed confirmation games preserve every semantic reply. Cached immutable
-rules plus equivalent root values save 3.36% [2.82%, 3.98%] of complete native
-process instructions on M5 Max, and beat caching alone. CPU/wall are descriptive.
-The same early-40 configuration is registered and rostered at source [[d48909c4]];
-all earlier participant bytes remain unchanged. #187 is the coordinated registry
-heads-up. Public protocol, raw responses, cost reports and build receipts are
-linked from the experiment. No new strength or Zeb instruction-cost claim.
-
-## [2026-10-16 | book | Silas cross-game loose ends: one unit check, samples that name their stream, net seats named by hash (#183)]
-
-- `Trial::compare` now refuses a utility whose unit is not its table's scoring, through the same `field::check` the ledger uses. The rule found one test of its own that read a marks table as points.
-- `Sample` carries its `Stream`. A ledger's deals are `Sample::arena`, labelled `sampled(n, seed, arena)`, and a trial refuses an arena sample. `Authority::drawn(sample)` joins `sampled(n, seed)`.
-- `arena.ledger.play_name` names a play seat with its seed and each field net with its SHA-256. A deployed Zeb seat sits in the chair in `arena/test_ledger.py`. Choices in `silas/docs/cross-game.md` § Slice 4 as built, items 3, 5 and 6. [[silas]]
-
-## [2026-10-16 | book | The auction read, pre-registered: does reading a bid by a known method pay by itself? (#117)]
-
-- [[auction-read-2026-10-16]]: the #149 reader alone, under the field's true bidding method (K) and an unknown one (U), against plain deployed Zeb, with a re-seeded A/A (Za). Primary K; 576 pairs per marks arm and 192 to 250; 176 batches. `scenario/auction_read.py`.
-
-## [2026-10-16 | Demon | Early-forty Demon confirmed against Zeb 0.4.1]
-
-[[demon-ascent-2026-10-16]] completes 512 fresh duplicate pairs: 911/1,024 wins, 88.96% [86.72, 91.11], at 0.13584 [0.13355, 0.13818] times total seat CPU (97.5% intervals). The opponent-specific early-40 form passes both criteria, all 9,759 hands audit, and the exact frozen participant is registered and rostered with prior records unchanged. All raw evidence is public.
-
-## [2026-10-16 | Demon | Early forty selected for independent confirmation]
-
-[[demon-ascent-2026-10-16]] publishes all 576 round-6 games and audits. The fixed selection wins 59/64 at 0.139 times pinned Zeb 0.4.1 CPU; this is development. Its exact source/config is frozen for 512 fresh duplicate pairs, with a predeclared joint win/CPU criterion. No participant promotion yet.
-
-## [2026-10-16 | Demon | Higher early opening bids]
-
-[[demon-ascent-2026-10-16]] records the fifth fixed sweep: selected 33/64, no established win, all evidence public. The fenced bidder accepts explicit early openings 30–40 with default records preserved; a source audit motivates testing 40 against pinned Zeb 0.4.1. The margin-band replay remains a parked prototype. No participant promotion.
