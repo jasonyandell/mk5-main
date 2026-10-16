@@ -44,7 +44,8 @@ the measurements pages?
 | `ccr-07735f91-fouydw` | 2026-10-16 | 6 / 14 | #175 | LIVE — a cloud session's branch |
 | `codex/silas-world-constructor` | 2026-10-14 | 3 / 79 | PR #166 | LIVE — Codex worktree |
 | `codex/fair-42-table-player` | 2026-05-26 | 9 (local) | none | LIVE — Codex worktree `cf79` |
-| `lem/stage1`, `silas/cross-game-slice4`, `worktree-agent-ab92…` | 2026-10-16 | 2 / 4 / 6 | desks, #173 | LIVE |
+| `lem/stage1`, `worktree-agent-ab92…` | 2026-10-16 | 2 / 6 | desks, #173 | LIVE |
+| `silas/cross-game-slice4`, `book/count-lapse` | 2026-10-16 | 4 / — | Book desk | MERGED by Book (`aba0c958`, `3aba8426`), branches and worktrees removed |
 
 ## Tombstones
 
@@ -76,7 +77,7 @@ Set aside by the same pass (rescued pages only, April 2026, ~900 commits behind)
 - **`research/recursive-generalization-2026-10-15`**: merged 2026-10-16 (six commits rebased, its log entry moved to a `wiki/log.d` fragment, `scripts/check --fast` GREEN). Tag `attic/research/recursive-generalization-2026-10-15`, branch deleted, PR #174 closed.
 - **`worktree-table42`** (PR #68; #65 #66 #67 #69 #80): squashed onto current main with SPDX headers and landed as `f529d358`; the Mayor's fence ruling `9cebd296` makes the jud seat's E[Q] a sanctioned opponent (token plus an inventory row in [[strategy-fusion-fence]]). #65 and #66 closed with receipts; #67, #69, #80 stay open. Tag `attic/worktree-table42`, branch deleted, PR #68 closed.
 - **The July stack**: waiting on Jason (feed ask `july-stack`). Nothing deleted; no tags needed yet because every branch still exists.
-- **Live, untouched** (Book desk, 2026-10-16: leave `.claude/worktrees/book-count` / `book/count-lapse` and `.claude/worktrees/silas-slice4` / `silas/cross-game-slice4` alone even when no process shows; Book removes both after merging): `book/count-lapse`, `ccr-07735f91-fouydw` (a cloud session wrote it today, #175), `codex/silas-world-constructor` (PR #166) and `codex/fair-42-table-player` (Codex worktrees), `lem/stage1`, `silas/cross-game-slice4`, `worktree-agent-ab9223d8997972645` (locked; `lsof` shows a live `gtimeout`/`node`/`python` there, #173).
+- **Live, untouched** `ccr-07735f91-fouydw` (a cloud session wrote it today, #175), `codex/silas-world-constructor` (PR #166) and `codex/fair-42-table-player` (Codex worktrees), `lem/stage1`, `worktree-agent-ab9223d8997972645` (locked; `lsof` shows a live `gtimeout`/`node`/`python` there, #173). Book's `book/count-lapse` and `silas/cross-game-slice4` were live earlier tonight; Book merged both (`3aba8426`, `aba0c958`) and removed the branches and worktrees.
 - **Waiting on Jason, one line each**: `switch-to-github-issues` is checked out in `~/intent/workspaces/book-translation/mk5-main`, a live workspace, and holds one 10-line `strategies/__init__.py` ("T5: Analysis, wiki experiment page, manifest"): is that book-translation's work to land?
 - **Worktrees on merged branches** (nothing unmerged, so not this pass's job): `zeb-package`, `perf/aggressive`, `lead-notes`, `rob-vs-eq`, `agent-a4a0…`. Whoever owns them can `git worktree remove` them.
 
