@@ -65,8 +65,8 @@ about 0.16 became 0.21. The 250 contrast carries PB0's 50% baseline as registere
   A1, A2, A4 and A6 are violated as in every arena block. The marks arms violate A5, and the points
   arms restore it.
 - **What our model can see.** A field that loses the count bleeds marks steeply: 0.15, 0.39 and
-  0.71 marks/game at p = 0.05, 0.1 and 0.2. That is roughly twice #151's cost at a tenth of its
-  rate per tile. Both team A players collect it, and they collect it equally (B gains +0.78, Z
+  0.71 marks/game at p = 0.05, 0.1 and 0.2. That is more than twice what #151's void lapse cost at
+  p = 0.4 (0.32), though the two p's count different things. Both team A players collect it, and they collect it equally (B gains +0.78, Z
   +0.71). The planner, which never models the field's lapse, takes the gifts as readily as the
   book's rules do. ΔG leans the book's way at every p (+0.09, +0.03, +0.07), but none of it clears
   its MDE and the trend is not monotone.
