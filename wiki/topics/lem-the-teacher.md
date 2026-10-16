@@ -114,6 +114,8 @@ while; #173's work-unit budgets made a game about 3× cheaper, and the FAIR CLOC
   entry for declarations 7–9), so the book's Chapter 9 (#155) has never been measured against a
   real field; this pour supplies that data once, for Lem and for the Book desk. Extending the
   canon in `scenario/core/src/field.rs` is a gated change and goes to the Mayor.
+- **Pour A** ([[lem-pour-a-2026-10-16]]): the first pour, positions with splats on every playable
+  declaration, the book's menu declaring with a labelled forced share for doubles and no trump.
 - The league is the data source as well as the judge: each checkpoint joins the ladder, its
   games (with partners and opponents drawn from the population) feed the next round of
   training, and the model of others is learned from a table that keeps changing (#182).
