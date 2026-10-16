@@ -362,6 +362,12 @@ held = take_slots()
 try:
     env = {**os.environ, "MK5_CPU_SLOT_EXCLUSIVE": "1" if exclusive else "0",
            "MK5_CPU_SLOT_THREADS": str(weight)}
+    # Hold the job to the threads it declared: thread pools (rayon, OpenMP, numba, BLAS) size
+    # themselves to every core by default, so three 4-thread jobs ran 19 threads each and pushed
+    # the load to ~55 on 18 cores. A caller's explicit setting wins.
+    for var in ("RAYON_NUM_THREADS", "OMP_NUM_THREADS", "NUMBA_NUM_THREADS",
+                "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+        env.setdefault(var, str(args.threads))
     load0, t0 = os.getloadavg(), time.monotonic()
     proc = subprocess.Popen(cmd, env=env, preexec_fn=lambda: os.nice(args.nice))
     done = wait_exit(proc, args.timeout)
