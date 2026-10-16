@@ -17,9 +17,15 @@ Several sessions (Claude desks, Codex worktrees) work this repo at once; the rul
 
 - **Every heavy run goes through `scripts/cpu-slot [--threads T] -- <command>`** (starts when
   the busy cores plus T fit in the machine, `nice` 10, 300 s cap; #173). Runs outside it starve
-  the others and skew anything timed on a clock. While another owner (worktree, or `--owner TAG`)
-  that holds less waits, a new run leaves room for it; a wall-clock run that needs a quiet machine
-  says `--exclusive "why"` (#169).
+  the others. While another owner (worktree, or `--owner TAG`) that holds less waits, a new run
+  leaves room for it.
+- **Don't wait for a quiet machine; time with the right watch.** FAIR CLOCKS (CLAUDE.md): every
+  arena and tournament player thinks on a deterministic budget, so results don't depend on load.
+  Compare cost by **instructions retired** (cpu-slot prints them; `arena/cost.py`), and report CPU
+  and wall time as descriptive only. `--exclusive "why"` is a rare last resort, not the default
+  for timing studies.
+- **A slot is busy only while its file is `flock`ed.** The text inside `/tmp/mk5-cpu-slots/slot-N`
+  is the last holder's note and stays after release; never read it as "in use".
 - **Merge your own work**: rebase on `origin/main`, `scripts/check` GREEN, fast-forward push,
   never force. Add your log entry as a new file in `wiki/log.d/`; never edit `wiki/log.md`. That log and `git log` are how the others hear.
 - **Coordinated changes get a heads-up first**: Silas core pins or the standard registry,
