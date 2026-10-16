@@ -49,6 +49,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-16 | Demon | Early-opening sweep is cheaper but has no established win]
+
+[[demon-ascent-2026-10-16]] records all 512 round-4 games and the unchanged source: selected bait875play400 wins 46.9% [34.4%, 59.4%] against native Zeb 0.4.1 at CPU ratio 0.407 [0.384, 0.429]. No promotion or confirmation starts. All raw evidence is public; fresh verification resumed after a resolver-rate limit without rerunning games or uploading again. Source-policy and settled-contract audits are published separately.
+
 ## [2026-10-16 | lem | The field-net audit (Lem stage 1): clean neurons, play that is not sparse]
 
 - [[lem-field-net-audit-2026-10-15]] complete: 222 of 372 live poles clean, 0.597 [0.581, 0.608], shuffled chance 0.000; 122 by a Silas concept, 100 by a raw feature of which 43 are declaration detectors (a concept the list lacked); Haiku readers detect 0.758 of poles vs 0.124 under the shifted null; greedy curve knee at k = 165 of 192 (prediction 40–120 wrong); 12 dead layer-2 neurons. Evidence on HF `lem/field-net-audit-2026-10-15/`.
