@@ -91,9 +91,15 @@ struct Core {
     rules: Vec<Rules>, // by declaration id
 }
 
+/// `threads` 0 means the process's share: `OMP_NUM_THREADS` when set (scripts/cpu-slot sets it
+/// to the job's declared `--threads`), else every core. Results are in job order, so the count
+/// never changes an answer, only how many cores the call keeps busy.
 fn workers(threads: usize, jobs: usize) -> usize {
-    let all = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
-    (if threads == 0 { all } else { threads }).min(jobs.max(1))
+    let share = || {
+        std::env::var("OMP_NUM_THREADS").ok().and_then(|v| v.trim().parse::<usize>().ok()).filter(|&n| n > 0)
+    };
+    let all = || std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+    (if threads == 0 { share().unwrap_or_else(all) } else { threads }).min(jobs.max(1))
 }
 
 /// `f` over every job on `threads` OS threads with the GIL released, results in job order.
