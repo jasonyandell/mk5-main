@@ -160,6 +160,31 @@ impl<'a> Sum<&'a Weight> for Weight {
 pub struct Sample {
     pub n: usize,
     pub seed: u64,
+    pub stream: Stream,
+}
+
+impl Sample {
+    /// `n` worlds from the drawing computation's own stream seeded `seed`.
+    pub fn own(n: usize, seed: u64) -> Sample {
+        Sample { n, seed, stream: Stream::Own }
+    }
+
+    /// `n` deals from the arena's stream seeded `seed`.
+    pub fn arena(n: usize, seed: u64) -> Sample {
+        Sample { n, seed, stream: Stream::Arena }
+    }
+}
+
+/// The seeded stream a sample was drawn from. The same (n, seed) in two
+/// streams are two different samples, so the label says whose it is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Stream {
+    /// The drawing computation's own: Silas's `Deals::Uniform`, or the plan
+    /// that handed Silas its worlds. Unmarked in the label.
+    Own,
+    /// The arena's `random.Random(seed)` shuffles, which a ledger's deals
+    /// come from (`crate::Ledger`). Marked `arena` in the label.
+    Arena,
 }
 
 /// Where a number's exactness comes from: the pinned models whose weights
@@ -195,9 +220,14 @@ impl Authority {
         Ok(Authority { models: BTreeSet::from([model]), samples: BTreeSet::new() })
     }
 
-    /// `n` worlds drawn from the stream seeded `seed`.
+    /// `n` worlds drawn from the computation's own stream seeded `seed`.
     pub fn sampled(n: usize, seed: u64) -> Authority {
-        Authority { models: BTreeSet::new(), samples: BTreeSet::from([Sample { n, seed }]) }
+        Authority::drawn(Sample::own(n, seed))
+    }
+
+    /// The worlds of `sample`, from whichever stream it names.
+    pub fn drawn(sample: Sample) -> Authority {
+        Authority { models: BTreeSet::new(), samples: BTreeSet::from([sample]) }
     }
 
     pub fn is_exact(&self) -> bool {
@@ -236,7 +266,8 @@ impl Authority {
 
 impl fmt::Display for Authority {
     /// `exact`; otherwise `exact_given(a + b)` for the models and
-    /// `sampled(n, seed)` for each sample, joined by `and`.
+    /// `sampled(n, seed)` for each sample (`sampled(n, seed, arena)` for the
+    /// arena's stream), joined by `and`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_exact() {
             return f.write_str("exact");
@@ -245,7 +276,10 @@ impl fmt::Display for Authority {
         if !self.models.is_empty() {
             parts.push(format!("exact_given({})", self.models.iter().cloned().collect::<Vec<_>>().join(" + ")));
         }
-        parts.extend(self.samples.iter().map(|s| format!("sampled({}, {})", s.n, s.seed)));
+        parts.extend(self.samples.iter().map(|s| match s.stream {
+            Stream::Own => format!("sampled({}, {})", s.n, s.seed),
+            Stream::Arena => format!("sampled({}, {}, arena)", s.n, s.seed),
+        }));
         f.write_str(&parts.join(" and "))
     }
 }

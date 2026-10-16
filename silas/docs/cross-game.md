@@ -869,8 +869,8 @@ Built: the ledger (`Ledger`, `LedgerRow`, `Arm`, `Ledger::from_json` under a
 3. **The unit is the ledger's scoring.** A marks utility reads only a marks
    ledger, points only points, a match-win value only its own scoring: the
    players bid for one game, and reading their hands as another's measures
-   players who were not playing it. `Trial::compare` does not yet check its
-   table's scoring against its utility.
+   players who were not playing it. `Trial::compare` refuses the same way
+   (#183): the check is one, `field::check`, for both.
 4. **The chance arm is in the ledger**, as rows of arm `chance` (the arena's
    `RandomBidder` and lowest-legal play), and is required: `Paired.chance` is
    never absent. Silas cannot replay it (the arena's random draws are not
@@ -878,13 +878,19 @@ Built: the ledger (`Ledger`, `LedgerRow`, `Arm`, `Ledger::from_json` under a
 5. **Fixed-state runner.** Every hand from the ledger's score; a hand passed
    out (no forced bid) is a row with no contract, as `Settlement::PassedOut`.
    The deals are `random.Random(seed)` shuffles (the arena's stream, not
-   Silas's), and `sampled(n, seed)` names that stream. Each seating's
+   Silas's), so a ledger's sample is `Sample::arena` and its label
+   `sampled(n, seed, arena)`: the same (n, seed) in Silas's own stream is
+   another sample, and `Trial::compare` refuses an arena sample (#183). Each
+   seating's
    auction draws from a generator keyed on (seed, deal, chair, shaker), the
    same for every arm. Play runs in lockstep, one batched call per play
    policy a tick, so a GPU player amortizes.
-6. **The field's identity** is the arena's seat specs, seat by seat. For a
-   `Named` field it should carry the net's content hash, eps and seed; the
-   runner writes whatever spec string the seat was built from.
+6. **The field's identity** is the arena's seat specs, seat by seat, each
+   play policy named with the seed it plays at and each field net (`F=`)
+   with the first 16 hex digits of its SHA-256 (`arena.ledger.play_name`,
+   #183), so two ledgers name one field alike only when they seated the
+   same nets at the same seed. A deployed Zeb seat sits in the chair in
+   `arena/test_ledger.py`.
 7. **`SilasSeat`'s play frame and declaration carry the table's auction**
    (#183, closed here). `SilasFrame(..., auction=(shaker, calls))` takes the
    calls the arena ran, refused unless they end with the bidder winning at the

@@ -25,12 +25,12 @@ use num_traits::{One, Signed, Zero};
 use crate::auction::{Auction, AuctionConfig, AuctionFrame, Call};
 use crate::eval::Budget;
 use crate::frame::{Bid, Contract, Frame, World};
-use crate::measure::{Authority, Estimate, Sample, Verdict};
+use crate::measure::{Authority, Estimate, Sample, Stream, Verdict};
 use crate::nouns::{Domino, DominoSet, Seat, Team};
 use crate::physics::Physics;
 use crate::policy::{CompiledPolicy, Trump};
 use crate::reading::digest;
-use crate::scoring::{MatchState, Outcome, Utility};
+use crate::scoring::{MatchState, Outcome, Scoring, Utility};
 use crate::{Result, error};
 
 /// Who sits in a seat: a Silas policy, which bids, declares and plays by its
@@ -72,7 +72,7 @@ impl Player {
         let legal = auction.legal_calls();
         let bids: Vec<Call> =
             legal.iter().copied().filter(|c| matches!(c, Call::Bid(b) if *b <= Bid::Marks(1))).collect();
-        let mut draws = Stream::keyed(seed, frame);
+        let mut draws = Draws::keyed(seed, frame);
         if bids.is_empty() || (legal.contains(&Call::Pass) && draws.below(10) >= 3) {
             return Ok(Call::Pass);
         }
@@ -87,7 +87,7 @@ impl Player {
         let offered = frame.declarations();
         let suits: Vec<&Physics> = offered.iter().filter(|d| matches!(Trump::of(d), Some(Trump::Suit(_)))).collect();
         let menu = if suits.is_empty() { offered.iter().collect() } else { suits };
-        Ok(menu[Stream::keyed(seed, frame).below(menu.len())].clone())
+        Ok(menu[Draws::keyed(seed, frame).below(menu.len())].clone())
     }
 
     fn play(&self, frame: &Frame, budget: &mut Budget) -> Result<Domino> {
@@ -250,7 +250,7 @@ impl Deals {
         match self {
             Deals::Listed(worlds) => worlds.clone(),
             Deals::Uniform(sample) => {
-                let mut stream = Stream(sample.seed);
+                let mut stream = Draws(sample.seed);
                 (0..sample.n)
                     .map(|_| {
                         let mut deck = Domino::ALL;
@@ -373,8 +373,16 @@ impl Trial {
             Deals::Uniform(sample) => Some(*sample),
             Deals::Listed(_) => None,
         };
+        if let Some(sample) = sampled
+            && sample.stream != Stream::Own
+        {
+            return Err(error(format!(
+                "Silas draws its deals from its own stream; a sample of the {:?} stream is a ledger's",
+                sample.stream
+            )));
+        }
         let seatings = self.seats.seatings();
-        check(&self.utility, &self.confidence, sampled, &seatings)?;
+        check(&self.utility, &self.confidence, sampled, &seatings, &self.table)?;
         let chance = Player::CHANCE;
         let differences = on_every_core(&worlds, budget, |world, budget| {
             let mut ab = BigRational::zero();
@@ -398,7 +406,7 @@ impl Trial {
         })?;
         let mut authority = Authority::given(self.field.id())?.meet(&self.utility.authority());
         if let Some(sample) = sampled {
-            authority = authority.meet(&Authority::sampled(sample.n, sample.seed));
+            authority = authority.meet(&Authority::drawn(sample));
         }
         let (ab, ac): (Vec<_>, Vec<_>) = differences.into_iter().unzip();
         let range = range(&self.table, &self.utility);
@@ -408,19 +416,38 @@ impl Trial {
 }
 
 /// Refused for a confidence outside (0, 1), for a sample of fewer than two
-/// deals (the interval needs two), and for a match-win value of the other
-/// side than a chair's.
+/// deals (the interval needs two), for a utility whose unit is not the
+/// table's scoring (the players bid for one game, and reading their hands as
+/// another's measures players who were not playing it), and for a match-win
+/// value of the other side than a chair's.
 pub(crate) fn check(
     utility: &Utility,
     confidence: &BigRational,
     sampled: Option<Sample>,
     seatings: &[(Seat, Seat)],
+    table: &Table,
 ) -> Result<()> {
     if *confidence <= BigRational::zero() || *confidence >= BigRational::one() {
         return Err(error(format!("a confidence lies strictly between 0 and 1, not {confidence}")));
     }
     if sampled.is_some_and(|sample| sample.n < 2) {
         return Err(error("a sampled comparison needs two deals for its interval"));
+    }
+    let scoring = table.state.scoring();
+    let unit_fits = match utility {
+        Utility::Marks => matches!(scoring, Scoring::Marks { .. }),
+        Utility::Points => matches!(scoring, Scoring::Points { .. }),
+        Utility::MatchWin(value) => value.scoring() == scoring,
+    };
+    if !unit_fits {
+        return Err(error(format!(
+            "the hands are played for {scoring}; read them in that unit, not as {}",
+            match utility {
+                Utility::Marks => "marks".to_owned(),
+                Utility::Points => "points".to_owned(),
+                Utility::MatchWin(value) => format!("a match-win value for {}", value.scoring()),
+            }
+        )));
     }
     if let Utility::MatchWin(value) = utility
         && let Some((chair, _)) = seatings.iter().find(|(chair, _)| chair.team() != value.team())
@@ -532,21 +559,21 @@ fn on_every_core<T: Send>(
 }
 
 /// A splitmix64 stream: the deals' and the chance player's draws.
-struct Stream(u64);
+struct Draws(u64);
 
-impl Stream {
+impl Draws {
     /// The chance player's stream at `frame`: its seed, seat, tiles, the
     /// shaker and every call so far.
-    fn keyed(seed: u64, frame: &AuctionFrame) -> Stream {
+    fn keyed(seed: u64, frame: &AuctionFrame) -> Draws {
         let auction = frame.auction();
         let calls = auction.calls().iter().map(|c| match c {
             Call::Pass => 0,
             Call::Bid(bid) => 1 + u64::from(bid.value()),
         });
         let key = [frame.viewer().index() as u64, u64::from(frame.dealt().bits()), auction.shaker().index() as u64];
-        let mut stream = Stream(seed);
+        let mut stream = Draws(seed);
         for word in key.into_iter().chain(calls) {
-            stream = Stream(stream.next() ^ word);
+            stream = Draws(stream.next() ^ word);
         }
         stream
     }

@@ -32,6 +32,7 @@ is the named deviant field: `HeuristicBidder(caution=-k)` at every seat.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 from dataclasses import dataclass
@@ -229,8 +230,25 @@ def parse_seat(spec: str, seed: int = 0) -> Seat:
     bid, _, play = spec.partition("+")
     from arena.cli import parse_bidder, parse_play
     bidder = parse_bidder(bid, device="cpu", gus_adapter=None)
-    player = LowestPlay() if play == "lowest" else parse_play(play, model=None, n_samples=0, device="cpu", seed=seed)
-    return Seat(bidder, player, spec)
+    if play == "lowest":
+        return Seat(bidder, LowestPlay(), spec)
+    player = parse_play(play, model=None, n_samples=0, device="cpu", seed=seed)
+    return Seat(bidder, player, f"{bid}+{play_name(play, seed)}")
+
+
+def play_name(spec: str, seed: int) -> str:
+    """A play policy's name in the field's identity: its spec with each field net
+    (`F=<path>`) named by its content (`#` and the first 16 hex digits of its
+    SHA-256), and the seed it plays at, so two ledgers name one field alike
+    only when they seated the same nets at the same seed."""
+    def named(token: str) -> str:
+        if not token.startswith("F="):
+            return token
+        digest = hashlib.sha256(Path(token[2:]).read_bytes()).hexdigest()[:16]
+        return f"{token}#{digest}"
+    head, sep, options = spec.partition(":")
+    spec = head + sep + ",".join(named(t) for t in options.split(",")) if sep else spec
+    return f"{spec} seed={seed}"
 
 
 def main() -> None:

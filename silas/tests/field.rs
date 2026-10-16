@@ -47,12 +47,18 @@ fn field() -> Field {
     ])
 }
 
+/// A trial whose table plays the utility's own game.
 fn trial(deals: Deals, seats: Seats, utility: Utility) -> Trial {
+    let scoring = match &utility {
+        Utility::Marks => Scoring::MARKS,
+        Utility::Points => Scoring::POINTS,
+        Utility::MatchWin(value) => value.scoring(),
+    };
     Trial {
         field: field(),
         deals,
         seats,
-        table: table(AuctionConfig::STRAIGHT, Scoring::MARKS),
+        table: table(AuctionConfig::STRAIGHT, scoring),
         utility,
         confidence: r(19, 20),
     }
@@ -65,7 +71,7 @@ fn budget() -> Budget {
 #[test]
 fn every_play_out_plays_seven_tricks_of_every_tile_for_the_hands_42_points() {
     let field = field();
-    let worlds = Deals::Uniform(Sample { n: 30, seed: 11 }).worlds();
+    let worlds = Deals::Uniform(Sample::own(30, 11)).worlds();
     let mut passed_out = 0;
     for (config, scoring) in
         [(AuctionConfig::STRAIGHT, Scoring::MARKS), (AuctionConfig::new(2, true).unwrap(), Scoring::POINTS)]
@@ -133,10 +139,10 @@ fn a_deal_gives_each_seat_seven_tiles_of_its_own() {
 
 #[test]
 fn the_uniform_deals_and_the_comparison_are_determined_by_their_seed() {
-    let deals = |seed| Deals::Uniform(Sample { n: 12, seed }).worlds();
+    let deals = |seed| Deals::Uniform(Sample::own(12, seed)).worlds();
     assert_eq!(deals(5), deals(5));
     assert_ne!(deals(5), deals(6));
-    let t = trial(Deals::Uniform(Sample { n: 12, seed: 5 }), Seats::Fixed(Seat::S1), Utility::Marks);
+    let t = trial(Deals::Uniform(Sample::own(12, 5)), Seats::Fixed(Seat::S1), Utility::Marks);
     let (a, b) = (player("bidding/risk-budget.silas"), player("bidding/never-32-or-33.silas"));
     assert_eq!(t.compare(&a, &b, &mut budget()).unwrap(), t.compare(&a, &b, &mut budget()).unwrap());
     // The chance player is a function of its seed and its frame.
@@ -149,9 +155,9 @@ fn a_comparison_rests_on_its_field_and_sample_and_is_never_exact() {
     let (a, b) = (player("bidding/risk-budget.silas"), player("bidding/bid-only-enough.silas"));
     let id = field().id();
     assert!(id.starts_with("S0 bid-only-enough#") && id.ends_with("S3 chance#7"), "{id}");
-    let listed = trial(Deals::Listed(Deals::Uniform(Sample { n: 3, seed: 1 }).worlds()), Seats::Rotate, Utility::Marks);
-    let sampled = trial(Deals::Uniform(Sample { n: 3, seed: 1 }), Seats::Rotate, Utility::Points);
-    for (t, samples) in [(&listed, vec![]), (&sampled, vec![Sample { n: 3, seed: 1 }])] {
+    let listed = trial(Deals::Listed(Deals::Uniform(Sample::own(3, 1)).worlds()), Seats::Rotate, Utility::Marks);
+    let sampled = trial(Deals::Uniform(Sample::own(3, 1)), Seats::Rotate, Utility::Points);
+    for (t, samples) in [(&listed, vec![]), (&sampled, vec![Sample::own(3, 1)])] {
         let paired = t.compare(&a, &b, &mut budget()).unwrap();
         for p in [&paired, paired.chance().expect("the chance arm")] {
             let authority = p.delta().authority();
@@ -169,7 +175,7 @@ fn a_comparison_rests_on_its_field_and_sample_and_is_never_exact() {
 
 #[test]
 fn a_player_against_itself_is_zero_on_every_deal_and_swapping_negates() {
-    let t = trial(Deals::Uniform(Sample { n: 24, seed: 2 }), Seats::Rotate, Utility::Marks);
+    let t = trial(Deals::Uniform(Sample::own(24, 2)), Seats::Rotate, Utility::Marks);
     let (a, b) = (player("bidding/risk-budget.silas"), player("bidding/never-32-or-33.silas"));
     let same = t.compare(&a, &a, &mut budget()).unwrap();
     assert!(same.per_deal().iter().all(Zero::is_zero));
@@ -186,7 +192,7 @@ fn a_player_against_itself_is_zero_on_every_deal_and_swapping_negates() {
 
 #[test]
 fn the_chance_player_against_a_reseeded_self_is_indistinguishable_on_500_deals() {
-    let t = trial(Deals::Uniform(Sample { n: 500, seed: 42 }), Seats::Fixed(Seat::S0), Utility::Marks);
+    let t = trial(Deals::Uniform(Sample::own(500, 42)), Seats::Fixed(Seat::S0), Utility::Marks);
     let paired = t.compare(&Player::Chance { seed: 1 }, &Player::Chance { seed: 2 }, &mut budget()).unwrap();
     let (lo, hi) = paired.interval();
     assert!(*lo < BigRational::zero() && BigRational::zero() < *hi, "[{lo}, {hi}]");
@@ -198,10 +204,10 @@ fn the_chance_player_against_a_reseeded_self_is_indistinguishable_on_500_deals()
 #[test]
 fn a_comparison_refuses_what_it_cannot_answer() {
     let a = Player::CHANCE;
-    let mut t = trial(Deals::Uniform(Sample { n: 4, seed: 0 }), Seats::Rotate, Utility::Marks);
+    let mut t = trial(Deals::Uniform(Sample::own(4, 0)), Seats::Rotate, Utility::Marks);
     t.confidence = r(1, 1);
     assert!(t.compare(&a, &a, &mut budget()).is_err());
-    let t = trial(Deals::Uniform(Sample { n: 1, seed: 0 }), Seats::Rotate, Utility::Marks);
+    let t = trial(Deals::Uniform(Sample::own(1, 0)), Seats::Rotate, Utility::Marks);
     assert!(t.compare(&a, &a, &mut budget()).is_err());
     let t = trial(Deals::Listed(vec![]), Seats::Rotate, Utility::Marks);
     assert!(t.compare(&a, &a, &mut budget()).is_err());
@@ -211,9 +217,33 @@ fn a_comparison_refuses_what_it_cannot_answer() {
         Ok(vec![(k.clone(), Outcome::new(30, 12), w(1, 2)), (k, Outcome::new(0, 42), w(1, 2))])
     })
     .unwrap();
-    let t = trial(Deals::Uniform(Sample { n: 2, seed: 0 }), Seats::Rotate, Utility::MatchWin(value.clone()));
+    let t = trial(Deals::Uniform(Sample::own(2, 0)), Seats::Rotate, Utility::MatchWin(value.clone()));
     assert!(t.compare(&a, &a, &mut budget()).is_err());
-    let t = trial(Deals::Uniform(Sample { n: 2, seed: 0 }), Seats::Fixed(Seat::S2), Utility::MatchWin(value));
+    let t = trial(Deals::Uniform(Sample::own(2, 0)), Seats::Fixed(Seat::S2), Utility::MatchWin(value));
     let paired = t.compare(&a, &a, &mut budget()).unwrap();
     assert!(paired.delta().authority().models().contains("toy: even"));
+}
+
+#[test]
+fn a_trial_reads_its_hands_only_in_the_unit_they_were_played_for() {
+    // The players bid for one game; reading their hands as another's
+    // measures players who were not playing it (the ledger's rule, #183).
+    let (a, b) = (player("bidding/risk-budget.silas"), player("bidding/bid-only-enough.silas"));
+    let mut t = trial(Deals::Uniform(Sample::own(2, 0)), Seats::Fixed(Seat::S0), Utility::Marks);
+    t.utility = Utility::Points;
+    let refused = t.compare(&a, &b, &mut budget()).unwrap_err().to_string();
+    assert!(refused.contains("read them in that unit, not as points"), "{refused}");
+}
+
+#[test]
+fn silas_draws_only_from_its_own_stream_and_the_label_says_whose() {
+    // A ledger's deals are the arena's shuffles: the same (n, seed) is a
+    // different sample, so a trial refuses one and the label names it.
+    let (a, b) = (player("bidding/risk-budget.silas"), player("bidding/bid-only-enough.silas"));
+    let t = trial(Deals::Uniform(Sample::arena(2, 0)), Seats::Fixed(Seat::S0), Utility::Marks);
+    let refused = t.compare(&a, &b, &mut budget()).unwrap_err().to_string();
+    assert!(refused.contains("its own stream"), "{refused}");
+    assert_eq!(Authority::drawn(Sample::arena(4, 9)).to_string(), "sampled(4, 9, arena)");
+    assert_eq!(Authority::drawn(Sample::own(4, 9)).to_string(), "sampled(4, 9)");
+    assert_ne!(Sample::arena(4, 9), Sample::own(4, 9));
 }

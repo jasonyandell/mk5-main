@@ -1319,7 +1319,8 @@ impl Trial { pub fn compare(&self, a: &Player, b: &Player, budget: &mut Budget) 
   the field named by its players (`NAME#DIGEST`, as a reading names a
   policy, or `chance#SEED`), met with the sample's `sampled(n, seed)` and the
   utility's value. None is `exact`. A match-win value is one side's, so a
-  chair on the other side is refused.
+  chair on the other side is refused, and a utility whose unit is not the
+  table's scoring is refused, since the players bid for that game.
 
 ## The arena ledger
 
@@ -1354,7 +1355,8 @@ impl Paired { pub fn from_ledger(ledger: &Ledger, utility: &Utility, confidence:
   unit must be the ledger's scoring (a marks ledger read as points is
   refused), since the players bid for that game. The answer is a `Paired`, as
   `Trial::compare`'s, with the chance arm from the ledger's own chance rows,
-  and the authority `exact_given(field)` met with `sampled(n, seed)`.
+  and the authority `exact_given(field)` met with `sampled(n, seed, arena)`:
+  the arena's deal stream, not Silas's (`Sample::arena`).
 - **The differential check.** For a field of Silas policies the arena's
   ledger and Silas's `play_out` agree hand for hand, call for call and tile
   for tile (`data/ledger-*.json`, written by `arena/test_ledger.py`); each

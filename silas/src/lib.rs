@@ -72,7 +72,7 @@ pub use field::{Deals, Field, Paired, Player, Seats, Settlement, Table, Trial, p
 pub use frame::{Bid, Contract, Frame, HIDDEN_SEATS, Hidden, Holdings, Kernel, MAX_CAPACITY, World};
 pub use ledger::{Arm, Ledger, LedgerRow};
 pub use lint::Warning;
-pub use measure::{Authority, Estimate, Sample, Verdict, Weight, compare};
+pub use measure::{Authority, Estimate, Sample, Stream, Verdict, Weight, compare};
 pub use nouns::{Context, ContextSet, Domino, DominoSet, Pip, Seat, Team};
 pub use outcome::{Goal, OUTCOME_SCAN_CAP, forces, lay_down};
 pub use physics::{Declaration, Physics};

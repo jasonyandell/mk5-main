@@ -19,11 +19,12 @@ To rewrite the fixtures after a deliberate change to the arena:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from fractions import Fraction
 from pathlib import Path
 
-from arena.ledger import FORMAT, overbidding_field, paired_mean, parse_seat, run_ledger
+from arena.ledger import FORMAT, overbidding_field, paired_mean, parse_seat, play_name, run_ledger
 
 DATA = Path(__file__).resolve().parent.parent / "silas" / "tests" / "data"
 MEANS = DATA / "ledger-arena-means.txt"
@@ -92,3 +93,33 @@ def test_the_overbidding_field_bids_past_the_heuristic_ceiling():
     assert over["field"].startswith("S0 heuristic:3,-10+lowest")
     # The same player in both arms reads zero on every deal.
     assert paired_mean(over) == (Fraction(0), (0, 0, 6))
+
+
+def test_a_net_seat_is_named_by_its_net_and_seed(tmp_path):
+    # Two ledgers name one field alike only when they seated the same nets at
+    # the same seed (#183): the file name alone is not the net.
+    net = tmp_path / "f.fnet"
+    net.write_bytes(b"one net")
+    name = play_name(f"walt:k0,n16,F={net},d=posterior", 3)
+    assert name == f"walt:k0,n16,F={net}#{hashlib.sha256(b'one net').hexdigest()[:16]},d=posterior seed=3"
+    net.write_bytes(b"another net")
+    assert play_name(f"walt:k0,n16,F={net},d=posterior", 3) != name
+    assert play_name("random", 3) == "random seed=3"
+
+
+def test_zeb_sits_in_the_chair_and_its_ledger_reads(tmp_path):
+    # The runner seats a planner as readily as a Silas policy: deployed Zeb's
+    # net and plan (at 16 worlds, to keep the test quick) against the lowest
+    # tile, in one chair of the heuristic field.
+    from scenario.field import FieldNet
+    shipped = Path(__file__).resolve().parent.parent / "zeb" / "net" / "margin_d250k_h128x64.fnet"
+    net = tmp_path / "zeb.npz"
+    FieldNet.from_bytes(shipped.read_bytes()).save(net)
+    zeb = parse_seat(f"heuristic+walt:k0,n16,F={net},f=16,d=posterior,t=margin", seed=0)
+    assert f"#{hashlib.sha256(net.read_bytes()).hexdigest()[:16]}" in zeb.name
+    led = run_ledger(field=overbidding_field(0), a=zeb, b=parse_seat("heuristic+lowest"), n=2, seed=5, seats=0)
+    assert led["players"]["a"] == zeb.name
+    played = [r for r in led["rows"] if r["contract"] is not None]
+    assert played and all(len(r["plays"]) == 28 and sum(r["outcome"].values()) == 42 for r in played)
+    mean, flips = paired_mean(led)
+    assert sum(flips) == 2

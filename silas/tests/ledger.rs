@@ -165,5 +165,5 @@ fn silas_compare_reads_a_ledger() {
     assert!(out.status.success(), "{text}");
     assert!(text.contains("silas:risk-budget - silas:never-32-or-33: 0.1250 marks a deal"), "{text}");
     assert!(text.contains("flips 2 for, 1 against, 1 tied"), "{text}");
-    assert!(text.contains("and sampled(4, 20261015)"), "{text}");
+    assert!(text.contains("and sampled(4, 20261015, arena)"), "{text}");
 }

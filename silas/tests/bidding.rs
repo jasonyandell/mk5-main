@@ -1128,13 +1128,18 @@ fn after_calls(viewer: Seat, hand: DominoSet, first: usize, calls: &[Call], menu
 /// not a double, not of the suit) shares a pip with a ten-count tile it lacks
 /// that is not of the suit: the 5-5 or the 6-4. Written in Rust.
 fn ten_count_off(hand: DominoSet) -> bool {
-    let tens = [Domino::new(Pip::new(5).unwrap(), Pip::new(5).unwrap()), Domino::new(Pip::new(6).unwrap(), Pip::new(4).unwrap())];
+    let tens = [
+        Domino::new(Pip::new(5).unwrap(), Pip::new(5).unwrap()),
+        Domino::new(Pip::new(6).unwrap(), Pip::new(4).unwrap()),
+    ];
     Pip::ALL.into_iter().any(|t| {
         hand.iter().filter(|d| d.has(t)).count() >= 3
             && tens.iter().any(|&c| {
                 !hand.contains(c)
                     && !c.has(t)
-                    && hand.iter().any(|o| !o.has(t) && !o.is_double() && Pip::ALL.into_iter().any(|p| o.has(p) && c.has(p)))
+                    && hand
+                        .iter()
+                        .any(|o| !o.has(t) && !o.is_double() && Pip::ALL.into_iter().any(|p| o.has(p) && c.has(p)))
             })
     })
 }

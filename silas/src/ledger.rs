@@ -20,7 +20,7 @@ use crate::field::{Paired, Seats, Settlement, Table, check, range, summarize};
 use crate::frame::{Contract, World};
 use crate::measure::{Authority, Sample};
 use crate::nouns::{Domino, DominoSet, Seat};
-use crate::scoring::{Outcome, Scoring, Utility};
+use crate::scoring::{Outcome, Utility};
 use crate::{Result, error};
 
 /// Which player sat in the chair under test: the first, the second, or the
@@ -75,24 +75,8 @@ impl Paired {
     /// declaration is not offered, or whose plays are illegal or out of turn.
     pub fn from_ledger(ledger: &Ledger, utility: &Utility, confidence: &BigRational) -> Result<Paired> {
         let state = &ledger.table.state;
-        let scoring = state.scoring();
-        let unit_fits = match utility {
-            Utility::Marks => matches!(scoring, Scoring::Marks { .. }),
-            Utility::Points => matches!(scoring, Scoring::Points { .. }),
-            Utility::MatchWin(value) => value.scoring() == scoring,
-        };
-        if !unit_fits {
-            return Err(error(format!(
-                "the ledger's hands were played for {scoring}; read them in that unit, not as {}",
-                match utility {
-                    Utility::Marks => "marks".to_owned(),
-                    Utility::Points => "points".to_owned(),
-                    Utility::MatchWin(value) => format!("a match-win value for {}", value.scoring()),
-                }
-            )));
-        }
         let seatings = ledger.seats.seatings();
-        check(utility, confidence, Some(ledger.sample), &seatings)?;
+        check(utility, confidence, Some(ledger.sample), &seatings, &ledger.table)?;
         let mut deals: BTreeMap<usize, BTreeMap<(Seat, Seat, Arm), &LedgerRow>> = BTreeMap::new();
         for row in &ledger.rows {
             if row.deal >= ledger.sample.n {
@@ -136,9 +120,8 @@ impl Paired {
             ab.push(x / &k);
             ac.push(y / &k);
         }
-        let authority = Authority::given(ledger.field.clone())?
-            .meet(&Authority::sampled(ledger.sample.n, ledger.sample.seed))
-            .meet(&utility.authority());
+        let authority =
+            Authority::given(ledger.field.clone())?.meet(&Authority::drawn(ledger.sample)).meet(&utility.authority());
         let width = range(&ledger.table, utility);
         let chance = summarize(ac, true, &width, confidence, authority.clone(), None);
         Ok(summarize(ab, true, &width, confidence, authority, Some(Box::new(chance))))
@@ -284,10 +267,10 @@ mod json {
             let players = object(&top["players"], "players", &["a", "b", "chance"])?;
             let name = |k: &str| text(&players[k], k).map(str::to_owned);
             let sample = object(&top["sample"], "sample", &["n", "seed"])?;
-            let sample = Sample {
-                n: usize::try_from(uint(&sample["n"], "sample.n")?).map_err(|_| error("sample.n is too large"))?,
-                seed: uint(&sample["seed"], "sample.seed")?,
-            };
+            let sample = Sample::arena(
+                usize::try_from(uint(&sample["n"], "sample.n")?).map_err(|_| error("sample.n is too large"))?,
+                uint(&sample["seed"], "sample.seed")?,
+            );
             let seats = match &top["seats"] {
                 Value::String(s) if s == "rotate" => Seats::Rotate,
                 other => Seats::Fixed(seat(other, "seats")?),
