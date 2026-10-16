@@ -145,6 +145,32 @@ from both frozen strength rounds and is not a registered player.
 reconstruct the prototype from the original native source pin `2e233d29`.
 Fresh downloads of its plan, manifest and report match local bytes.
 
+## Integrated search and preemptive bidder
+
+`bounded_forecast=True` opts a new participant into the native `forecast_best`
+operation. It returns the exact winning declaration and count; other counts
+are explicitly absent. Existing participant records and their full-forecast
+path remain unchanged. The integrated native protocol reproduces all 1,934
+original winners/counts and the prototype's sampled-world, node and solve
+counts ([complete integration replay](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/aab6fe30cd93560bcc33e83291952b0999b9f1a6/demon/2026-10-16-ascent/bid-pruning-integration)).
+
+The experimental `pimc-jump:worlds:opening_cutoff:opponent_cutoff` bidder
+searches for the **highest supported legal bid from 30 through 42**, instead
+of the minimum raise. Each target uses the same hidden deals and exact DD
+values. For each declaration, make count is nonincreasing in the point
+target; its maximum across declarations is therefore nonincreasing too.
+After checking the minimum legal bid, binary search needs at most four
+more forecasts. The winning declaration is cached for the won contract.
+Partner pass remains; a standing bid of 42 or more is not raised. These
+cutoffs remain decision parameters, not calibrated make probabilities.
+
+The hypothesis is that preemption makes it more costly for Zeb to take a
+contract from a strong Demon hand. This bidder is implemented, not yet
+strength-validated or rostered. Tests cover bounded/full whole-game parity,
+repeatable legal jump-bidding games, monotonicity on common worlds, maximum
+legal supported bids and partner pass. The five relevant check suites pass:
+16 Rust, 66 tournament and 8 fence tests, plus wiki and license checks.
+
 ## Independent confirmation rule
 
 Freeze the selected policy and source before **512 fresh duplicate pairs**

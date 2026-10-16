@@ -198,7 +198,7 @@ DEMON_SOURCE = ("silas", "scenario/core", "tournament/demon")
 
 def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: bool = True,
           bidder: str = "heuristic", sampler_note: str = "Walt's exact-uniform sampler",
-          declaration_weight: int = 1) -> Participant:
+          declaration_weight: int = 1, bounded_forecast: bool = False) -> Participant:
     # The source pin selects the sampler; this describes it without changing
     # the bytes of already-published participant records.
     tb = "" if margin_tiebreak else "-notb"
@@ -211,18 +211,28 @@ def demon(commit: str, trees: dict[str, str], *, worlds: int, margin_tiebreak: b
     if bidder.startswith("pimc"):
         suffix += "-straight"
         extra["declarations"] = list(STRAIGHT_DECLARATIONS)
+    if not isinstance(bounded_forecast, bool) or (bounded_forecast and not bidder.startswith("pimc")):
+        raise ValueError("bounded_forecast requires a boolean and a PIMC bidder")
+    if bounded_forecast:
+        suffix += "-bounds"
+        extra["bounded_forecast"] = True
     belief_note = (f" Declaration evidence uses a soft heuristic model: matching original "
                    f"hands have likelihood {declaration_weight}, others 1; posterior draws are IID "
                    f"by rejection, and small fibers use exact weighted sums."
                    if declaration_weight != 1 else "")
+    raise_note = ("highest supported legal point bid by monotone bisection"
+                  if bidder.startswith("pimc-jump:") else "minimum point raise")
     bid_note = (f"Bids with the arena's `{bidder}` bidder, as E[Q] n=10 does. "
                 if bidder == "heuristic" else
                 f"Bidder `{bidder}`: common-world double-dummy contract forecasts; "
-                f"minimum point raise and partner pass in full bidding mode; "
+                f"{raise_note} and partner pass in full bidding mode; "
                 f"the nine straight declarations only (not nello's declaration 8). ")
-    if bidder.startswith("pimc-over:"):
+    if bidder.startswith(("pimc-over:", "pimc-jump:")):
         bid_note += (f"Uses DD cutoff {bidder.split(':')[3]} over an opponent's point bid "
                      f"and {bidder.split(':')[2]} when opening; no mark overcalls. ")
+    if bounded_forecast:
+        bid_note += ("Exact incumbent bounds skip losing declaration searches while preserving "
+                     "the winning declaration and its count on the same sampled worlds. ")
     return Participant(
         id=f"demon-pimc-n{worlds}{tb}{suffix}-{commit[:8]}",
         kind="demon",

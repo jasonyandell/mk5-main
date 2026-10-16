@@ -80,14 +80,17 @@ class DemonSeat:
 
         cfg = p.config
         self.bid_spec = cfg["bidder"]
-        if self.bid_spec.startswith("pimc-over"):
+        if self.bid_spec.startswith(("pimc-over", "pimc-jump")):
             parts = self.bid_spec.split(":")
-            if len(parts) != 4 or parts[0] != "pimc-over":
-                raise ValueError("pimc-over needs worlds:opening_cutoff:opponent_cutoff")
+            if len(parts) != 4 or parts[0] not in ("pimc-over", "pimc-jump"):
+                raise ValueError("pimc-over / pimc-jump needs worlds:opening_cutoff:opponent_cutoff")
             if not 1 <= int(parts[1]) <= 4096 or any(
                 not math.isfinite(float(x)) or not 0 <= float(x) <= 1 for x in parts[2:]
             ):
-                raise ValueError("pimc-over needs worlds 1..4096 and finite cutoffs in 0..1")
+                raise ValueError("pimc-over / pimc-jump needs worlds 1..4096 and finite cutoffs in 0..1")
+        self.bounded_forecast = cfg.get("bounded_forecast", False)
+        if not isinstance(self.bounded_forecast, bool):
+            raise ValueError("bounded_forecast must be a boolean")
         self.declarations = tuple(cfg.get("declarations", range(10)))
         if not self.declarations or len(set(self.declarations)) != len(self.declarations) or any(
             not isinstance(d, int) or not 0 <= d < 10 for d in self.declarations
@@ -111,21 +114,37 @@ class DemonSeat:
     # BidPolicy
     def bid(self, ctx, rng):
         self._bid_seats[tuple(ctx.hand)] = ctx.seat
-        if self.bid_spec.startswith(("pimc:", "pimc-over:")):
-            # A whole-game experiment: minimum point raise, partner pass,
-            # and a stated threshold on the optimistic DD forecast.
-            target = min((b for b in ctx.legal if b <= 42), default=None)
-            if target is None or (ctx.high_seat >= 0 and ctx.high_seat % 2 == ctx.seat % 2):
+        if self.bid_spec.startswith(("pimc:", "pimc-over:", "pimc-jump:")):
+            points = sorted(b for b in ctx.legal if b <= 42)
+            if not points or (ctx.high_seat >= 0 and ctx.high_seat % 2 == ctx.seat % 2):
                 return 0
-            decl, reply = self._forecast(ctx.hand, ctx.seat, target)
             cutoff = float(self.bid_spec.split(":")[2])
-            if self.bid_spec.startswith("pimc-over:") and ctx.high_seat >= 0:
+            if self.bid_spec.startswith(("pimc-over:", "pimc-jump:")) and ctx.high_seat >= 0:
                 # The partner case returned above. The opponent already holds
                 # the auction, so passing is not the same option as opening.
                 # This is an explicit experimental DD threshold, not a
                 # calibrated claim about the chance of making the contract.
                 cutoff = float(self.bid_spec.split(":")[3])
-            return target if reply["makes"][decl] / reply["worlds"] >= cutoff else 0
+            jump = self.bid_spec.startswith("pimc-jump:")
+            def supported(target):
+                decl, reply = self._forecast(ctx.hand, ctx.seat, target)
+                return reply["makes"][decl] / reply["worlds"] >= cutoff
+
+            if not supported(points[0]):
+                return 0
+            if not jump:
+                return points[0]
+            # Every target uses the same sampled worlds. Exact DD make counts
+            # are nonincreasing in the target, including after maximizing over
+            # declarations. Bisect to the highest supported legal point bid.
+            lo, hi = 0, len(points)
+            while lo + 1 < hi:
+                mid = (lo + hi) // 2
+                if supported(points[mid]):
+                    lo = mid
+                else:
+                    hi = mid
+            return points[lo]
         return self.bidder.bid(ctx, rng)
 
     def declare(self, hand, bid, rng):
@@ -137,12 +156,18 @@ class DemonSeat:
         key = (self.hand_no, tuple(hand), seat, bid)
         if key not in self._forecasts:
             n = int(self.bid_spec.split(":")[1])
-            reply = self._ask({"op":"forecast", "hand_mask":sum(1 << t for t in hand),
+            reply = self._ask({"op":"forecast_best" if self.bounded_forecast else "forecast",
+                               "hand_mask":sum(1 << t for t in hand),
                                "seat":seat, "bid":bid, "worlds":n,
                                "declarations":list(self.declarations),
                                "seed":decision_seed(self.game, self.hand_no, seat, -1)})
-            heuristic = self._ask({"op":"declaration_model", "hand_mask":sum(1 << t for t in hand)})["decl"]
-            decl = max(self.declarations, key=lambda d:(reply["makes"][d], d == heuristic, -d))
+            if self.bounded_forecast:
+                decl = reply["best_decl"]
+                if decl not in self.declarations or reply["makes"][decl] is None:
+                    raise RuntimeError("bounded forecast returned an invalid winning declaration")
+            else:
+                heuristic = self._ask({"op":"declaration_model", "hand_mask":sum(1 << t for t in hand)})["decl"]
+                decl = max(self.declarations, key=lambda d:(reply["makes"][d], d == heuristic, -d))
             self._forecasts[key] = decl, reply
         return self._forecasts[key]
 
