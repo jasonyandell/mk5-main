@@ -50,12 +50,12 @@ contested bidder wins against that Demon at greater CPU cost.
 confirmation. Its first five development rounds do not establish a win.
 The optional bounded forecast preserves declaration choices while pruning
 losing searches; exact support predicates further reduce bidding work. The
-preemptive jump bidder does not earn promotion. An early-opening bidder is
+preemptive jump bidder does not earn promotion. An early opening of 30 is
 cheaper but does not establish a win. Its optional early point bid now allows
 30–40. The sixth fixed sweep selects early 40, which targets pinned Zeb's
-willingness to overcall; an independent confirmation is frozen. The study
-records the rules and evidence. No
-new participant has been promoted.
+willingness to overcall. That exact early-40 form now passes the independent
+win/CPU criterion and is registered and rostered. The study records the
+opponent-specific rules, full evidence and limits.
 
 Step 3 is the fusion. Each world is credited with the line a seat could choose only if it saw
 every hand, and E[max] ≥ max E ([[strategy-fusion]]). That is why the Demon makes a useful

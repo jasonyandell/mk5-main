@@ -319,9 +319,20 @@ ZEB_041_CONTESTED = zeb_native(
      "package/match.js": "85aaa9b7242f00386cef77134fd332484228c5aac690280f7f3ec7107e292e61"},
     overcall=True)
 
+# Opponent-specific early-40 form, independently confirmed against native
+# Zeb 0.4.1 contested (wiki/experiments/demon-ascent-2026-10-16.md).
+# This targets that bidder's overcall policy; it is not a general strength claim.
+DEMON_BAIT40_N100 = demon("a561552d9007283f51e67fba8d85d4ed528589c1",
+                          {"silas": "fad0fc47d19b57c796d182657fb9cf404984a438",
+                           "scenario/core": "84714a99f9ff1d1ba532f9983e74f73c83cafe8e",
+                           "tournament/demon": "3e7cab13b2819903c7616a480542905c0cd1919c"},
+                          worlds=100, bidder="pimc-bait:64:0.875:0.875",
+                          sampler_note=_DISTINCT_SAMPLER, bounded_forecast=True,
+                          support_forecast=True, bait_bid=40)
+
 ROSTER = (WALT, FAIR_WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
           DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100,
-          ZEB_040_MATCH, ZEB_041_CONTESTED)
+          ZEB_040_MATCH, ZEB_041_CONTESTED, DEMON_BAIT40_N100)
 ANCHOR = FAIR_WALT.id
 
 # Withdrawn from scheduling, records kept: their faceoffs still count in the rating fit, so the

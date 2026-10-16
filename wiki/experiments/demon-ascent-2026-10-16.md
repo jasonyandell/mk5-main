@@ -3,14 +3,15 @@ title: "Demon next ascent: answering Zeb 0.4.1 at comparable CPU"
 kind: experiment
 first_seen: 2026-10-16
 last_updated: 2026-10-16
-status: active
+status: complete
 ---
 
 **STRATEGY-FUSION FENCE.** [[the-demon]] remains a sanctioned tournament
 opponent. This study follows [[rematch-zeb-041-vs-demon-2026-10-15]]: the
 shipped contested bidder beat the confirmed Demon while using more CPU.
-The objective is to improve the Demon against that pinned opponent within
-comparable total seat CPU. [Issue 184](https://github.com/jasonyandell/mk5-main/issues/184).
+The early-40 form meets the objective: an independently confirmed win
+against that pinned opponent at lower total seat CPU. The completed
+confirmation and exact registered form appear below. [Issue 184](https://github.com/jasonyandell/mk5-main/issues/184).
 
 ## Opponent and baseline
 
@@ -437,8 +438,8 @@ binary and pinned Zeb package bytes are reused. The fixed sweep is
 
 Every arm uses 64 bidding worlds and exact best/support bounds. The existing
 CPU-qualified selection rule applies after every arm finishes. This tests
-an opponent-specific auction hypothesis; no independent confirmation has
-started.
+an opponent-specific auction hypothesis; no independent confirmation had
+started at that freeze.
 
 Six smoke games (64 hands) and two repeat games pass the full audit.
 An initial audit edit accidentally changed its ordinary minimum-raise check
@@ -490,7 +491,7 @@ against the pinned Zeb 0.4.1. Attempt r spends alpha `0.05/(r*(r+1))`,
 with 40,000 whole-pair bootstrap resamples (seed 666). Success requires
 game-win lower bound above 50% and total seat CPU-ratio upper bound at most
 1.20. Every attempt remains public; no development deals enter confirmation.
-There is no candidate promotion yet.
+Attempt 1 below passes the rule and its exact participant is promoted.
 
 ## Independent confirmation, attempt 1
 
@@ -514,6 +515,55 @@ Fresh plan and manifest downloads match. A 17-second resolver backoff
 interrupted verification after successful upload; verification resumed at
 the same immutable commit after at least 22 seconds. No reupload or policy
 change occurred. The protocol was recorded on issue 184 before play.
+
+## Completed independent confirmation and promotion
+
+**The joint criterion passes.** All 512 fresh duplicate pairs / 1,024 games
+finish with no failures, restarts or dropped outcomes. The full audit covers
+9,759 hands, frozen source/artifact hashes, seat-visible request
+boundaries, every auction rule and support certificate, declaration, play,
+score, cost sum and raw/report total. All checks pass.
+
+Intervals are the predeclared **97.5% whole-pair bootstrap intervals**
+(40,000 resamples, seed 666); chance is 50%, marks baseline zero, CPU parity 1.
+
+| Metric | Result and interval |
+|---|---:|
+| Demon wins | 911–113 / 1024 |
+| Win percentage | 88.9648 [86.7188, 91.1133] |
+| Net marks per game | 3.7920 [3.6055, 3.9766] |
+| Total seat CPU ratio, Demon/Zeb | 0.1358 [0.1336, 0.1382] |
+| Shared-machine wall ratio, descriptive | 0.1363 [0.1340, 0.1386] |
+
+Demon uses 1,395.107 total seat CPU seconds;
+Zeb uses 10,270.203. Startup, bidding, declaration,
+play, close, IPC, Python and waited native-descendant CPU are included.
+The CPU upper bound is below 1.20 and the win lower bound exceeds 50%.
+Shared wall is not an isolated wall-clock claim. These results apply to
+pinned native Zeb 0.4.1 contested on this Apple M5 Max, with the stated
+budgets; the early-40 policy targets that bidder's overcall behavior.
+It is not evidence of an optimal PIMC player or superiority over other foes.
+The npm registry still reports 0.4.1 after the freeze.
+
+[Complete CC0 evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/b5991ae8d34e12cd96d4b32d7d71200eadce3b9a/demon/2026-10-16-ascent/confirmation-1-results) includes every raw game, cost and trace,
+the frozen protocol, scripts, reports, audit and verdict. Fresh downloads
+of the plan, manifest, raw game and report match local bytes. The earlier
+five development rounds without an established win and the full sixth sweep remain public.
+
+The exact frozen participant is [registered in the existing tournament store](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/blob/f44601ddc5acb09e5c81cb8188e6b891430a010a/participants/demon-pimc-n100-bid9dee8eeb-straight-bounds-support-bait40-a561552d.json)
+and appended as `DEMON_BAIT40_N100` to the roster. Its canonical SHA-256 is
+`7eced797b7a54c717d3230b33091645d1fbda9d9997504c3fbe5afb5f2096db0`. Fresh registry bytes equal the frozen selected record;
+all prior public participant blobs and all 13 prior roster records are
+unchanged. Its source is `a561552d9007283f51e67fba8d85d4ed528589c1`, with
+the same native trees and binary proved in the protocol. The research games
+are not relabeled as standing-ladder faceoffs or Bradley–Terry ratings.
+
+Final roster integration passes `scripts/check --fast`: 104 tournament tests,
+8 fence tests, wiki, reuse and conflict checks, with no failed or unavailable
+suite. The [promotion receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/8fbd4639d606010a71cadd79885954f6151bac16/demon/2026-10-16-ascent/promotion-receipts)
+include the registry verification, exact roster comparison, source-tree
+check, quality-gate log and unchanged npm release metadata. Their public
+plan and manifest were freshly downloaded and byte-verified.
 
 ## Measurement and clocks
 

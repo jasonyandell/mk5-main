@@ -39,6 +39,7 @@ are a function of the participant alone, so two writers adding it write the same
 | `demon-pimc-n100-228812ff`, `demon-pimc-n1600-228812ff` | exact compact search and distinct uniform worlds; the larger budget remains experimental | mk5 `228812ff`, immutable source trees; [[demon-power-2026-10-14]] |
 | `demon-pimc-n100-bid7ff83929-4454f603` (withdrawn) | historical ten-declaration PIMC bidder; excluded from straight-game scheduling and ratings | immutable record retained; [[demon-vs-zeb-2026-10-15]]'s declaration-domain audit |
 | `demon-pimc-n100-bidc102a137-straight-2e233d29` | 100 play worlds, 64 bidding worlds, opponent-held point-bid cutoff 0.5, opening cutoff 0.875, nine straight declarations | mk5 `2e233d29`, immutable source trees and registered record; [[demon-overcalling-2026-10-15]] |
+| `demon-pimc-n100-bid9dee8eeb-straight-bounds-support-bait40-a561552d` | 100 play worlds, 64 bidding worlds, early bid 40, opening/opponent cutoffs 0.875; targets Zeb 0.4.1's overcall rule | mk5 `a561552d`, exact registered record and independent win/CPU confirmation; [[demon-ascent-2026-10-16]] |
 
 Seating. The referee is the arena (`arena/engine.py`: deal, auction, play, marks to 7). A
 JavaScript participant runs in `tournament/seat/host.mjs`, one process per team per game, sent
