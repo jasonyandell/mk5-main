@@ -13,7 +13,8 @@ holds and Rust does not: the decision. `frame(sit, own)` turns Zeb's
 `Situation` and the viewer's remaining hand into a `SilasFrame`.
 
 A `SilasFrame` is built from the hand's public record alone: the contract
-(the bidder and the bid) and every play, attributed to its seat. Silas reads
+(the bidder and the bid; or the whole auction, when the table has it) and
+every play, attributed to its seat. Silas reads
 the rest off the plays, and `frame` checks that reading against Zeb's own
 `Record`: the played set, the leader, the open trick, the banked points, each
 seat's remaining size, and each seat's voids (the record keeps them as the
@@ -28,11 +29,13 @@ from scenario.planner import Situation
 from scenario.rules import rules_for
 
 
-def frame(sit: Situation, own: int) -> SilasFrame:
+def frame(sit: Situation, own: int, auction: tuple[int, list[int]] | None = None) -> SilasFrame:
     """The Silas frame of the seat to play at `sit`, holding `own` (its
-    remaining hand, a tile mask)."""
+    remaining hand, a tile mask). `auction` is the table's own, `(shaker,
+    calls)` with the calls from the shaker's left (0 a pass); without it the
+    frame's auction is the shortest one the bidder wins with the bid."""
     rules, rec = rules_for(sit.decl_id), sit.record
-    f = SilasFrame(sit.decl_id, sit.viewer, own, sit.bidder, sit.bid, list(sit.plays))
+    f = SilasFrame(sit.decl_id, sit.viewer, own, sit.bidder, sit.bid, list(sit.plays), auction)
     forbid = [0, 0, 0, 0]
     for seat in range(4):
         for k in range(8):

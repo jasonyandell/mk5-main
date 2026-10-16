@@ -885,15 +885,17 @@ Built: the ledger (`Ledger`, `LedgerRow`, `Arm`, `Ledger::from_json` under a
 6. **The field's identity** is the arena's seat specs, seat by seat. For a
    `Named` field it should carry the net's content hash, eps and seed; the
    runner writes whatever spec string the seat was built from.
-7. **`SilasSeat`'s play frame** is `SilasFrame`'s, whose auction is the
-   shortest one the bidder wins with the bid (Zeb's record carries the
-   contract, not the auction). A play rule that reads another seat's call
-   would see that convention in the arena and the table's auction in Silas;
-   no policy in the round trip has one. Its declaration reads the same
-   convention (`SilasBidder.declare`), which agrees with the table for every
-   rule that reads only the declarer's own call; and the arena forces a
-   shaker's pass to 30, where Silas asks the policy with the pass illegal.
-   Neither showed a difference on the fixtures (the points ledger is forced).
+7. **`SilasSeat`'s play frame and declaration carry the table's auction**
+   (#183, closed here). `SilasFrame(..., auction=(shaker, calls))` takes the
+   calls the arena ran, refused unless they end with the bidder winning at the
+   bid; `SilasSeat` passes the state's dealer and bids (`table_auction`), and
+   `run_auction` hands a bidder with `declare_at` the whole auction and the
+   match score. A state that holds no whole legal auction (a hand set up from
+   its contract) keeps `Auction::won_by`. What remains: the arena forces a
+   shaker's pass to 30, so Silas sees a bid of 30 where the policy might have
+   passed (`forced` is not recorded in Zeb's state); a rule reading that call
+   would differ from Silas asked with the pass made illegal. No policy in the
+   round trip has one, and the points ledger is forced.
 8. **No `(compare ...)` text form**: the command reads the ledger, and the
    utility (the ledger's unit by default) and the confidence (19/20) are its
    options.

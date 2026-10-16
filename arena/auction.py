@@ -95,6 +95,11 @@ class BidPolicy(Protocol):
         """Return the decl_id (0-9) to play the won contract under."""
         ...
 
+    # A bidder may also define `declare_at(ctx: BidContext, rng) -> int`, asked
+    # instead of `declare` with the whole auction: `ctx.bids` are all four
+    # calls (the forced shaker's 30 among them), `ctx.seat` the winner holding
+    # `ctx.hand`, and the match as at the bidding.
+
 
 @dataclass(frozen=True)
 class AuctionResult:
@@ -158,7 +163,16 @@ def run_auction(
     if high_seat == -1:
         return None
 
-    decl_id = policies[high_seat].declare(hands[high_seat], high_bid, rng)
+    winner = policies[high_seat]
+    declare_at = getattr(winner, "declare_at", None)
+    if declare_at is None:
+        decl_id = winner.declare(hands[high_seat], high_bid, rng)
+    else:
+        decl_id = declare_at(BidContext(
+            hand=hands[high_seat], seat=high_seat, dealer=dealer, bids=tuple(bids), high_bid=high_bid,
+            high_seat=high_seat, legal=(), marks=marks, marks_to_win=marks_to_win, points=points,
+            points_to_win=points_to_win,
+        ), rng)
     if not 0 <= decl_id <= 9:
         raise ValueError(f"Illegal declaration {decl_id} from seat {high_seat}")
 

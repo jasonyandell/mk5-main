@@ -341,3 +341,138 @@ def test_a_population_bids_as_a_field():
 
     for name in ("populations/set-bid", "populations/ten-count-35"):
         assert SilasBidder(name).name == name
+
+
+# ------------------------------------------------ the real auction reaches Silas (#183)
+
+READS_THE_AUCTION = """
+(policy reads-the-auction
+  (rule s1-called (play d)
+    (viewer me)
+    (own-legal d)
+    (not (passed S1)))
+  (rule s1-passed (play d)
+    (viewer me)
+    (own-legal d)
+    (passed S1)))
+"""
+
+
+def s1_called(shaker: int, calls: list[int]) -> bool:
+    """S1's call in `calls` (from the shaker's left) is a bid."""
+    return calls[(1 - shaker - 1) % 4] != 0
+
+
+def test_the_frame_carries_the_table_auction_and_refuses_another():
+    """S1 bids 31 and is outbid: a rule reading S1's call sees it only in the
+    real auction; the contract's own convention has S1 pass."""
+    import pytest
+    from scenario_core import SilasError, SilasPolicy
+
+    from arena.book_play import table_auction
+
+    hands = tuple(tuple(h) for h in deal_from_seed(7))
+    state = ZebGameState(      # S1 31, S2 pass, S3 32, the shaker S0 pass
+        hands=hands, dealer=0, phase=GamePhase.PLAYING,
+        bid_state=BidState(bids=(0, 31, 0, 32), high_bidder=3, high_bid=32),
+        decl_id=6, bidder=3, played=frozenset(), play_history=(),
+        current_trick=(), trick_leader=3, team_points=(0, 0),
+    )
+    assert table_auction(state, 32) == (0, [31, 0, 32, 0])
+    policy = SilasPolicy(READS_THE_AUCTION, 6)
+    sit = situation_from_state(state, 32)
+    own = mask_of(state.hands[3])
+    assert policy.allowed(frame(sit, own, table_auction(state, 32)))[0] == "s1-called"
+    assert policy.allowed(frame(sit, own))[0] == "s1-passed"
+    with pytest.raises(SilasError, match="is not won by"):
+        frame(sit, own, (0, [31, 0, 33, 0]))
+
+
+def test_a_state_without_a_whole_auction_keeps_the_contract_convention():
+    from arena.book_play import table_auction
+
+    assert table_auction(playing(0, 2, bidder=1), 30) is None             # its bids are S0's, not the bidder's
+    assert table_auction(playing(0, 2, bidder=0, bid=126), 126) is None   # not a legal auction
+    assert table_auction(playing(0, 2, bidder=0), 30) == (3, [30, 0, 0, 0])
+
+
+def test_run_auction_gives_a_bidder_the_whole_auction_to_declare_from():
+    """A bidder with `declare_at` is asked with all four calls, the winner's
+    seat and hand, and the match."""
+    seen = []
+
+    class Scripted:
+        def __init__(self, call):
+            self.call = call
+
+        def bid(self, ctx, rng):
+            return self.call if self.call in ctx.legal else 0
+
+        def declare_at(self, ctx, rng):
+            seen.append(ctx)
+            return 4
+
+    hands = tuple(tuple(h) for h in deal_from_seed(3))
+    policies = (Scripted(32), Scripted(31), Scripted(30), Scripted(33))
+    result = run_auction(hands, 0, policies, random.Random(0), marks=(2, 1), marks_to_win=7)
+    # S1 31; S2's 30 is not above it; S3 33; the shaker's 32 is not above it.
+    assert result.bids == (0, 31, 0, 33) and result.winner == 3 and result.decl_id == 4
+    (ctx,) = seen
+    assert (ctx.seat, ctx.dealer, ctx.bids, ctx.high_bid, ctx.marks) == (3, 0, (0, 31, 0, 33), 33, (2, 1))
+    assert ctx.hand == hands[3]
+
+
+def test_silas_declares_by_the_table_auction():
+    from scenario_core import SilasPolicy
+
+    text = """
+(policy declares-by-the-call
+  (declaring
+    (rule after-s1-called (declare q5) (not (passed S1)))
+    (rule after-s1-passed (declare q2) (passed S1))))
+"""
+    bidder = SilasBidder("risk-budget")
+    bidder.policy = SilasPolicy(text, 6)
+    hand = tuple(deal_from_seed(3)[3])
+
+    def declared(bids):
+        from arena.auction import BidContext
+        return bidder.declare_at(BidContext(
+            hand=hand, seat=3, dealer=0, bids=bids, high_bid=33, high_seat=3, legal=()), random.Random(0))
+
+    assert declared((0, 31, 0, 33)) == 5
+    assert declared((0, 0, 0, 33)) == 2
+    assert bidder.declare(hand, 33, random.Random(0)) == 2      # the contract alone: S1 passes
+
+
+def test_a_silas_seat_plays_an_arena_game_after_the_real_auction(monkeypatch):
+    """In a ledger over an overbidding field, each frame a `SilasSeat` plays
+    from is built on an auction the arena ran (the rows' shaker and calls),
+    and a policy reading S1's call decides by it."""
+    import arena.book_play as book_play
+    from scenario_core import SilasPolicy
+
+    from arena.ledger import Seat, chance_seat, overbidding_field, run_ledger
+
+    asked = []
+    real_frame = book_play.frame
+
+    def recording(sit, own, auction=None):
+        f = real_frame(sit, own, auction)
+        asked.append((sit.decl_id, auction, f))
+        return f
+
+    monkeypatch.setattr(book_play, "frame", recording)
+    seat = book_play.SilasSeat("book/pounce")
+    seat.text, seat.policy, seat._by_decl = READS_THE_AUCTION, SilasPolicy(READS_THE_AUCTION, 6), {}
+    led = run_ledger(field=overbidding_field(2), a=Seat(seat, seat, "reader"), b=chance_seat(), n=3, seed=5,
+                     seats=1, forced=True)
+
+    ran = {(r["shaker"], tuple(0 if c == "pass" else int(c) for c in r["calls"]))
+           for r in led["rows"] if r["contract"] is not None}
+    assert asked and all(auction is not None for _, auction, _ in asked)
+    assert {(shaker, tuple(calls)) for _, (shaker, calls), _ in asked} <= ran
+    assert any(s1_called(*auction) for _, auction, _ in asked), "S1 never bid"
+    for decl, auction, f in asked:
+        layer = SilasPolicy(READS_THE_AUCTION, decl).allowed(f)[0]
+        assert layer == ("s1-called" if s1_called(*auction) else "s1-passed")

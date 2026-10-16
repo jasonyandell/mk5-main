@@ -110,17 +110,42 @@ impl SilasFrame {
     /// tile mask `own`; `bidder` the seat that won the auction, and `bid` its
     /// bid as the table says it (30 to 41 points; 42, 84, ... marks); `plays`
     /// every play so far as `(seat, tile)`, in order, the bidder leading the
-    /// first trick. Zeb's record carries the contract, not the auction, so the
-    /// frame's auction is the shortest one the bidder wins with the bid.
+    /// first trick. `auction` is the table's own auction, `(shaker, calls)`:
+    /// the calls in order from the shaker's left, 0 a pass, else the bid as
+    /// the table says it; `forced` says the shaker may not pass over three
+    /// passes. It must end with `bidder` winning at `bid`, or the frame is
+    /// refused. Without it, Zeb's record carries the contract and not the
+    /// auction, so the frame's auction is the shortest one the bidder wins
+    /// with the bid (`Auction::won_by`).
     #[new]
-    fn new(decl: u8, viewer: u8, own: u32, bidder: u8, bid: u32, plays: Vec<(u8, u8)>) -> PyResult<Self> {
+    #[pyo3(signature = (decl, viewer, own, bidder, bid, plays, auction = None, forced = false))]
+    fn new(
+        decl: u8,
+        viewer: u8,
+        own: u32,
+        bidder: u8,
+        bid: u32,
+        plays: Vec<(u8, u8)>,
+        auction: Option<(u8, Vec<u32>)>,
+        forced: bool,
+    ) -> PyResult<Self> {
         let physics = physics(decl)?;
         let at = |s: u8| seat(s).ok_or_else(|| invalid(format!("no seat {s}")));
         let plays = plays
             .iter()
             .map(|&(s, t)| Ok((at(s)?, domino(t).ok_or_else(|| invalid(format!("no tile {t}")))?)))
             .collect::<PyResult<Vec<_>>>()?;
-        let auction = Auction::won_by(at(bidder)?, Bid::number(bid).map_err(refused)?).map_err(refused)?;
+        let (bidder, bid) = (at(bidder)?, Bid::number(bid).map_err(refused)?);
+        let auction = match auction {
+            None => Auction::won_by(bidder, bid).map_err(refused)?,
+            Some((shaker, calls)) => {
+                let auction = table_auction(shaker, &calls, forced)?;
+                if auction.result() != Some((bidder, bid)) {
+                    return Err(invalid(format!("{auction} is not won by {bidder} at {bid}")));
+                }
+                auction
+            }
+        };
         Frame::from_history(auction, physics, at(viewer)?, tiles(own)?, &plays).map(SilasFrame).map_err(refused)
     }
 
@@ -354,6 +379,17 @@ fn match_scoring(name: &str, target: u32) -> PyResult<Scoring> {
         "points" => Ok(Scoring::Points { target }),
         _ => Err(invalid(format!("a match is scored in \"marks\" or \"points\", not {name:?}"))),
     }
+}
+
+/// The table's auction: `shaker` shook, `calls` from the shaker's left (0 a pass).
+fn table_auction(shaker: u8, calls: &[u32], forced: bool) -> PyResult<Auction> {
+    let at = |s: u8| seat(s).ok_or_else(|| invalid(format!("no seat {s}")));
+    let calls = calls
+        .iter()
+        .map(|&c| if c == 0 { Ok(Call::Pass) } else { Bid::number(c).map(Call::Bid).map_err(refused) })
+        .collect::<PyResult<Vec<_>>>()?;
+    let config = AuctionConfig::new(AuctionConfig::STRAIGHT.max_marks(), forced).map_err(refused)?;
+    Auction::new(config, at(shaker)?, calls).map_err(refused)
 }
 
 /// The auction as `viewer` sees it, in the arena's terms (`SilasPolicy.bid`).

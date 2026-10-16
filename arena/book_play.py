@@ -90,7 +90,7 @@ from typing import Sequence
 
 from forge.zeb.types import ZebGameState
 
-from arena.auction import PASS, BidContext, bidding_order, contract_points
+from arena.auction import PASS, BidContext, bidding_order, contract_points, legal_bids
 from scenario.planner import situation_from_state
 from scenario.rules import mask_of
 from scenario.silas import frame
@@ -336,6 +336,31 @@ def parse_book_spec(arg: str, log: bool = False) -> BookPlay:
 
 # ------------------------------------------------------------------ bidding
 
+def _match(ctx: BidContext) -> dict:
+    """The match as `SilasPolicy.bid` takes it: marks, or the book's points."""
+    if ctx.points_to_win is None:
+        return dict(score=ctx.marks, scoring="marks", target=ctx.marks_to_win)
+    return dict(score=ctx.points, scoring="points", target=ctx.points_to_win)
+
+
+def table_auction(state: ZebGameState, bid: int) -> tuple[int, list[int]] | None:
+    """The auction the state's hand was played after, as `SilasFrame` takes
+    it: `(shaker, calls from the shaker's left, 0 a pass)`. None where the
+    state does not hold one: its bids are not all four calls, or are not a
+    legal auction the bidder won at `bid` (a hand set up from its contract
+    alone)."""
+    bids, shaker = state.bid_state.bids, state.dealer
+    calls = [int(bids[s]) for s in bidding_order(shaker)]
+    high = 0
+    for call in calls:
+        if call < 0 or (call != PASS and call not in legal_bids(high)):
+            return None
+        high = call if call != PASS else high
+    if high != bid or calls[(state.bidder - shaker - 1) % 4] != bid:
+        return None
+    return shaker, calls
+
+
 class SilasBidder:
     """A bidding policy of `silas/examples/book/bidding/` as an arena
     `BidPolicy`: its call at each turn, read off the auction so far and the
@@ -344,10 +369,11 @@ class SilasBidder:
     arena's forced bid replaces the shaker's pass itself, as Silas's forced
     fallback would.
 
-    The arena asks for the declaration with the hand and the bid alone, so
-    the declaration is read off the shortest auction the winner wins with that
-    bid (he opens it, the others pass), as Silas frames a hand known by its
-    contract (`Auction::won_by`)."""
+    The arena hands the declaration the auction it ran (`declare_at`), so
+    the declaration is read off the table's own calls and score. `declare`,
+    asked with the hand and the bid alone, reads the shortest auction the
+    winner wins with that bid (he opens it, the others pass), as Silas frames
+    a hand known by its contract (`Auction::won_by`)."""
 
     def __init__(self, name: str):
         """`name` is a policy of the book's bidding (`risk-budget`), or a path
@@ -362,15 +388,20 @@ class SilasBidder:
     def bid(self, ctx: BidContext, rng: random.Random) -> int:
         order = bidding_order(ctx.dealer)
         calls = [ctx.bids[s] for s in order if ctx.bids[s] != -1]
-        if ctx.points_to_win is None:
-            match = dict(score=ctx.marks, scoring="marks", target=ctx.marks_to_win)
-        else:
-            match = dict(score=ctx.points, scoring="points", target=ctx.points_to_win)
-        _, call = self.policy.bid(ctx.dealer, calls, ctx.seat, mask_of(ctx.hand), **match)
+        _, call = self.policy.bid(ctx.dealer, calls, ctx.seat, mask_of(ctx.hand), **_match(ctx))
         return PASS if call == 0 else call
 
     def declare(self, hand: tuple[int, ...], bid: int, rng: random.Random) -> int:
         _, decl = self.policy.declare(3, [bid, PASS, PASS, PASS], 0, mask_of(hand))
+        return decl
+
+    def declare_at(self, ctx: BidContext, rng: random.Random) -> int:
+        """The declaration where `ctx.seat` won the auction: `ctx.bids` are
+        all four calls, and the score is the match's, as in `bid`. (A shaker
+        forced to open is seen as having bid 30.)"""
+        order = bidding_order(ctx.dealer)
+        _, decl = self.policy.declare(ctx.dealer, [ctx.bids[s] for s in order], ctx.seat, mask_of(ctx.hand),
+                                      **_match(ctx))
         return decl
 
     def __repr__(self) -> str:
@@ -382,9 +413,11 @@ class SilasSeat(SilasBidder):
     `SilasBidder`, and plays as an arena `PlayPolicy` the least tile it
     allows at its frame (`SilasPolicy.choose`), its fallback the lowest legal
     tile. `name` is a policy of the book's bidding, or a path under
-    `silas/examples/` (`book/pounce`). The play frame's auction is the
-    shortest one the bidder wins with the bid (`SilasFrame`), so a play rule
-    that reads another seat's call would see that convention, not the table."""
+    `silas/examples/` (`book/pounce`). The play frame carries the auction the
+    hand was bid in (`table_auction`: the state's dealer and calls), so a
+    rule that reads another seat's call sees the table's; a state that holds
+    no whole auction is framed by its contract alone (`SilasFrame`'s
+    convention). The viewer sees the public auction and nothing else."""
 
     def __init__(self, name: str):
         super().__init__(name)
@@ -405,7 +438,7 @@ class SilasSeat(SilasBidder):
                 policy = self._by_decl[state.decl_id] = SilasPolicy(self.text, state.decl_id)
             sit = situation_from_state(state, int(bid))
             own = mask_of(t for t in state.hands[sit.viewer] if t not in state.played)
-            tile = policy.choose(frame(sit, own), budget=BUDGET)
+            tile = policy.choose(frame(sit, own, table_auction(state, int(bid))), budget=BUDGET)
             slots.append(list(state.hands[sit.viewer]).index(tile))
         return slots
 
