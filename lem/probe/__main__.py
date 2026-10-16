@@ -39,6 +39,10 @@ def main(argv=None) -> None:
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("belief"); s.add_argument("sample"); s.add_argument("out_dir"); s.add_argument("--net", default=NET)
     s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
+    s.add_argument("--parts-dir", default=None, help="assemble the targets from belief-targets parts instead of computing them")
+    s = sub.add_parser("belief-targets"); s.add_argument("sample"); s.add_argument("out_dir")
+    s.add_argument("--part", type=int, required=True); s.add_argument("--parts", type=int, required=True)
+    s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
     a = ap.parse_args(argv)
 
     if a.cmd == "sample":
@@ -124,10 +128,14 @@ def main(argv=None) -> None:
         sample = Sample(a.sample)
         net = load_net(a.net)
         acts = forward(net, sample.x)
-        result = belief.run(sample, acts, a.fit, a.eval, log)
+        result = belief.run(sample, acts, a.fit, a.eval, log, a.parts_dir)
         result["net"] = a.net
         belief.write(result, a.out_dir)
         log(json.dumps({k: {n: round(v["r2_moved"], 3) for n, v in result["probes"].items()} for k in ("r2_moved",)}))
+    elif a.cmd == "belief-targets":
+        from lem.probe import belief
+        from lem.probe.sample import Sample
+        belief.targets_part(Sample(a.sample), a.out_dir, a.part, a.parts, a.fit, a.eval, log)
     elif a.cmd == "list":
         from lem.probe import concepts
         concepts.write_list(a.out)

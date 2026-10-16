@@ -98,18 +98,58 @@ def r2(pred: np.ndarray, y: np.ndarray, m: np.ndarray) -> float:
     return float(1.0 - (e @ e) / max(v @ v, 1e-12))
 
 
-def run(sample: Sample, acts: Activations, fit: int = 20_000, eval_n: int = 20_000, log=print) -> dict:
+def select_rows(sample: Sample, fit: int = 20_000, eval_n: int = 20_000) -> tuple[np.ndarray, np.ndarray]:
+    """Deal-disjoint fit and eval rows, deterministic in the sample and the sizes."""
     rng = np.random.default_rng(SEED)
     deals = np.unique(sample.deal)
     rng.shuffle(deals)
     half = len(deals) // 2
-    fit_deals, eval_deals = set(deals[:half].tolist()), set(deals[half:].tolist())
+    fit_deals = set(deals[:half].tolist())
     is_fit = np.array([d in fit_deals for d in sample.deal.tolist()])
     fit_rows = rng.choice(np.flatnonzero(is_fit), fit, replace=False)
     eval_rows = rng.choice(np.flatnonzero(~is_fit), eval_n, replace=False)
-    log(f"targets for {fit:,} fit rows and {eval_n:,} eval rows (deal-disjoint)")
-    Pf, Bf, Mf = targets(sample, fit_rows, log)
-    Pe, Be, Me = targets(sample, eval_rows, log)
+    return fit_rows, eval_rows
+
+
+def targets_part(sample: Sample, out_dir: str | Path, part: int, parts: int, fit: int = 20_000, eval_n: int = 20_000,
+                 log=print) -> Path:
+    """The exact targets for one slice of the fit+eval rows (one `cpu-slot` call), saved as a part."""
+    fit_rows, eval_rows = select_rows(sample, fit, eval_n)
+    rows = np.concatenate([fit_rows, eval_rows])
+    bounds = np.linspace(0, len(rows), parts + 1).astype(int)
+    mine = rows[bounds[part]:bounds[part + 1]]
+    post, prior, mask = targets(sample, mine, log)
+    out = Path(out_dir) / f"targets_{part:02d}.npz"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(out, rows=mine, post=post, prior=prior, start=bounds[part], stop=bounds[part + 1], parts=parts)
+    log(f"{out}: {len(mine):,} rows")
+    return out
+
+
+def run(sample: Sample, acts: Activations, fit: int = 20_000, eval_n: int = 20_000, log=print,
+        parts_dir: str | Path | None = None) -> dict:
+    fit_rows, eval_rows = select_rows(sample, fit, eval_n)
+    rng = np.random.default_rng(SEED + 1)
+    if parts_dir is None:
+        log(f"targets for {fit:,} fit rows and {eval_n:,} eval rows (deal-disjoint)")
+        Pf, Bf, Mf = targets(sample, fit_rows, log)
+        Pe, Be, Me = targets(sample, eval_rows, log)
+    else:
+        files = sorted(Path(parts_dir).glob("targets_*.npz"))
+        rows_all = np.concatenate([fit_rows, eval_rows])
+        post = np.full((len(rows_all), SEATS, N_TILES), np.nan)
+        prior = np.full((len(rows_all), SEATS, N_TILES), np.nan)
+        got = np.zeros(len(rows_all), bool)
+        for f in files:
+            with np.load(f) as z:
+                a, b = int(z["start"]), int(z["stop"])
+                if not np.array_equal(z["rows"], rows_all[a:b]):
+                    raise AssertionError(f"{f} does not hold rows {a}:{b} of this selection")
+                post[a:b], prior[a:b], got[a:b] = z["post"], z["prior"], True
+        if not got.all():
+            raise AssertionError(f"targets missing for {int((~got).sum()):,} rows; parts present: {len(files)}")
+        Pf, Bf, Mf = post[:fit], prior[:fit], ~np.isnan(post[:fit])
+        Pe, Be, Me = post[fit:], prior[fit:], ~np.isnan(post[fit:])
     Yf, Ye = (Pf - Bf).reshape(fit, -1), (Pe - Be).reshape(eval_n, -1)
     Mf2, Me2 = Mf.reshape(fit, -1), Me.reshape(eval_n, -1)
     moved = Me2 & (np.abs(Ye) > 1e-9)                      # where the voids move the posterior
