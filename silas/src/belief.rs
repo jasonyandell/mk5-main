@@ -21,12 +21,18 @@ use crate::{Result, error};
 /// A belief may leave some pool tiles *unresolved*: a point then stands for
 /// every world that agrees with it on the resolved tiles, weighted by how many
 /// there are, and queries may read only resolved tiles (see [`Holdings`]).
+///
+/// A hand law ([`Belief::hand_law`]) resolves one hidden seat's whole hand
+/// and leaves the other two seats' unresolved: a point stands for every
+/// world in which that seat holds that hand, and queries may read that
+/// seat's hand alone.
 #[derive(Clone, Debug)]
 pub struct Belief {
     frame: Frame,
     id: String,
     authority: Authority,
     unresolved: DominoSet,
+    known: Option<Seat>,
     points: BTreeMap<[u32; Seat::COUNT], (World, Weight)>,
     total: Weight,
 }
@@ -45,7 +51,7 @@ impl Belief {
         if authority.is_exact() {
             return Err(error("caller-supplied weights name a model or a sample; Exact is the support's own"));
         }
-        Self::assemble(frame, id.into(), authority, DominoSet::EMPTY, entries, max_worlds)
+        Self::assemble(frame, id.into(), authority, DominoSet::EMPTY, None, entries, max_worlds)
     }
 
     fn assemble(
@@ -53,12 +59,15 @@ impl Belief {
         id: String,
         authority: Authority,
         unresolved: DominoSet,
+        known: Option<Seat>,
         entries: impl IntoIterator<Item = (World, Weight)>,
         max_worlds: usize,
     ) -> Result<Self> {
         if id.trim().is_empty() {
             return Err(error("a belief requires a declared identity"));
         }
+        // A tile played since is no longer the pool's to leave unresolved.
+        let unresolved = unresolved.intersection(frame.kernel().pool());
         let mut points: BTreeMap<_, (World, Weight)> = BTreeMap::new();
         for (world, weight) in entries {
             if !frame.contains(&world) {
@@ -67,7 +76,8 @@ impl Belief {
             if weight.is_zero() {
                 continue;
             }
-            let key = Seat::ALL.map(|s| world.hand(s).difference(unresolved).bits());
+            let key = Seat::ALL
+                .map(|s| if Some(s) == known { world.hand(s) } else { world.hand(s).difference(unresolved) }.bits());
             if !points.contains_key(&key) && points.len() >= max_worlds {
                 return Err(error(format!("the belief exceeds its cap of {max_worlds} points")));
             }
@@ -77,7 +87,7 @@ impl Belief {
         if total.is_zero() {
             return Err(error("a zero-mass belief (the conditioning event may be impossible)"));
         }
-        Ok(Self { frame, id, authority, unresolved, points, total })
+        Ok(Self { frame, id, authority, unresolved, known, points, total })
     }
 
     /// The uniform measure on every world consistent with the frame. The
@@ -88,7 +98,15 @@ impl Belief {
             return Err(error(format!("the support has {count} worlds, above the cap of {max_worlds}")));
         }
         let entries: Vec<_> = frame.worlds().map(|w| (w, Weight::one())).collect();
-        Self::assemble(frame, "uniform-full-support".into(), Authority::exact(), DominoSet::EMPTY, entries, max_worlds)
+        Self::assemble(
+            frame,
+            "uniform-full-support".into(),
+            Authority::exact(),
+            DominoSet::EMPTY,
+            None,
+            entries,
+            max_worlds,
+        )
     }
 
     /// The uniform measure on every world consistent with the frame, resolved
@@ -130,7 +148,7 @@ impl Belief {
             &mut point,
         )?;
         let id = format!("uniform-resolving {:?}", DominoSet::from_iter(tiles));
-        Self::assemble(frame, id, Authority::exact(), unresolved, entries, max_points)
+        Self::assemble(frame, id, Authority::exact(), unresolved, None, entries, max_points)
     }
 
     /// The uniform measure resolved on exactly the pool tiles `query` reads:
@@ -172,7 +190,7 @@ impl Belief {
         let unresolved = frame.kernel().pool().difference(tiles);
         let entries = evidence.count(tiles)?;
         let id = format!("given [{}] resolving {tiles:?}", evidence.authority());
-        Self::assemble(frame, id, evidence.authority().clone(), unresolved, entries, max_points)
+        Self::assemble(frame, id, evidence.authority().clone(), unresolved, None, entries, max_points)
     }
 
     /// [`Belief::given`] resolved on the tiles `query` reads: those
@@ -190,6 +208,33 @@ impl Belief {
         Self::given(evidence, resolved, max_points)
     }
 
+    /// The hand law of `seat`, a hidden seat `evidence` reads: the law of its
+    /// whole hand under the record, a belief of its own. One point per
+    /// agreeing hand, weighing its weight times the ways the other two seats
+    /// complete the deal; a query may read `seat`'s hand and the viewer's, and
+    /// a read of the other two seats' is refused. Its authority is
+    /// `exact_given` the read policies, as [`Belief::given`]'s; a query of
+    /// `seat`'s hand alone has the same summary over either. Refused when
+    /// `seat` is the viewer or is not read, when the record is impossible,
+    /// and above `max_points` (at most C(21,7) = 116,280 hands).
+    pub fn hand_law(evidence: &Evidence, seat: Seat, max_points: usize) -> Result<Self> {
+        let frame = evidence.frame().clone();
+        let entries = evidence.law(seat)?;
+        let id = format!("given [{}] the hand law of {seat}", evidence.authority());
+        let unresolved = frame.kernel().pool();
+        Self::assemble(frame, id, evidence.authority().clone(), unresolved, Some(seat), entries, max_points)
+    }
+
+    /// The uniform deal's hand law of `seat`, a hidden seat: every hand it
+    /// holds in some world, weighed by the worlds that extend it. Exact, as
+    /// the uniform measure is.
+    pub fn uniform_hand_law(frame: Frame, seat: Seat, max_points: usize, budget: &mut Budget) -> Result<Self> {
+        let entries = Evidence::uniform_law(&frame, seat, budget)?;
+        let id = format!("uniform the hand law of {seat}");
+        let unresolved = frame.kernel().pool();
+        Self::assemble(frame, id, Authority::exact(), unresolved, Some(seat), entries, max_points)
+    }
+
     pub fn frame(&self) -> &Frame {
         &self.frame
     }
@@ -203,9 +248,15 @@ impl Belief {
     }
 
     /// Pool tiles this belief does not resolve; empty unless built by
-    /// [`Belief::uniform_resolving`].
+    /// [`Belief::uniform_resolving`] or as a hand law, which leaves every
+    /// pool tile unresolved but the [`Belief::known`] seat's.
     pub fn unresolved(&self) -> DominoSet {
         self.unresolved
+    }
+
+    /// The hidden seat whose whole hand every point resolves: a hand law's.
+    pub fn known(&self) -> Option<Seat> {
+        self.known
     }
 
     /// The positive-weight points. Under an unresolved tile set each world is
@@ -227,7 +278,7 @@ impl Belief {
     }
 
     pub(crate) fn holdings<'a>(&'a self, world: &'a World) -> Holdings<'a> {
-        Holdings::new(&self.frame, world, self.unresolved)
+        Holdings::new(&self.frame, world, self.unresolved).knowing(self.known)
     }
 
     pub(crate) fn rebuild(
@@ -238,7 +289,7 @@ impl Belief {
         entries: Vec<(World, Weight)>,
         max_worlds: usize,
     ) -> Result<Self> {
-        Self::assemble(frame, id, authority, self.unresolved, entries, max_worlds)
+        Self::assemble(frame, id, authority, self.unresolved, self.known, entries, max_worlds)
     }
 
     /// Condition on caller-declared evidence: each world's weight times its

@@ -496,10 +496,59 @@ impl Evidence {
     /// representative world and the total weight for each placement that has
     /// any.
     pub(crate) fn count(&self, resolved: DominoSet) -> Result<Vec<(World, Weight)>> {
+        let shown = resolved.intersection(self.frame.kernel().pool());
+        self.tally(shown, |hands| hands.map(|h| h.intersection(shown).bits()))
+    }
+
+    /// The hand law of `seat`, a read hidden seat: the same worlds, summed by
+    /// that seat's whole hand. One representative world and the total weight
+    /// for each of its agreeing hands that some world extends: its weight
+    /// times the ways the other two seats complete the deal (README, A seat's
+    /// hand law).
+    pub(crate) fn law(&self, seat: Seat) -> Result<Vec<(World, Weight)>> {
+        let kernel = self.frame.kernel();
+        if seat == kernel.viewer() {
+            return Err(error(format!("{seat} is the viewer: his hand is known, not a law")));
+        }
+        let slot = kernel.slot(seat);
+        if self.agreeing[slot].is_none() {
+            return Err(error(format!("{seat} is not read: a hand law is counted for a read seat")));
+        }
+        self.tally(DominoSet::EMPTY, |hands| {
+            let mut key = [0; HIDDEN_SEATS];
+            key[slot] = hands[slot].bits();
+            key
+        })
+    }
+
+    /// The uniform deal's hand law of `seat`, a hidden seat: every hand it
+    /// holds in some world, weighed by the worlds that extend it. It is the
+    /// law of a reading that every hand agrees with, which reads nothing.
+    pub(crate) fn uniform_law(frame: &Frame, seat: Seat, budget: &mut Budget) -> Result<Vec<(World, Weight)>> {
+        let kernel = frame.kernel();
+        if seat == kernel.viewer() {
+            return Err(error(format!("{seat} is the viewer: his hand is known, not a law")));
+        }
+        let slot = kernel.slot(seat);
+        let every = possible_hands(frame.physics(), kernel, slot, budget)?.into_iter().map(|h| (h, 1)).collect();
+        let mut agreeing: [Option<Hands>; HIDDEN_SEATS] = [None, None, None];
+        agreeing[slot] = Some(Hands::new(kernel.pool(), every));
+        let open = Evidence { frame: frame.clone(), agreeing, seats: Vec::new(), authority: Authority::exact() };
+        open.law(seat)
+    }
+
+    /// The worlds every read seat's hand agrees in, weighed and summed by
+    /// `key` of their hidden hands: a function of the read seats' hands and
+    /// of where the `shown` tiles lie, which the completions of a lone read
+    /// seat place one placement at a time.
+    fn tally(
+        &self,
+        shown: DominoSet,
+        key: impl Fn(&[DominoSet; HIDDEN_SEATS]) -> [u32; HIDDEN_SEATS] + Sync,
+    ) -> Result<Vec<(World, Weight)>> {
         let kernel = self.frame.kernel();
         let physics = self.frame.physics();
         let pool = kernel.pool();
-        let shown = resolved.intersection(pool);
         let allowed: [DominoSet; HIDDEN_SEATS] = std::array::from_fn(|slot| kernel.allowed(physics, slot));
         let capacity: [usize; HIDDEN_SEATS] = std::array::from_fn(|slot| kernel.hidden()[slot].capacity);
         let mut read: Vec<usize> = (0..HIDDEN_SEATS).filter(|s| self.agreeing[*s].is_some()).collect();
@@ -521,8 +570,7 @@ impl Evidence {
             let mut hands = [DominoSet::EMPTY; HIDDEN_SEATS];
             hands[first] = h0;
             let mut add = |hands: [DominoSet; HIDDEN_SEATS], worlds: u128| {
-                let key = hands.map(|h| h.intersection(shown).bits());
-                placed.entry(key).or_insert((hands, 0)).1 += m0 * worlds;
+                placed.entry(key(&hands)).or_insert((hands, 0)).1 += m0 * worlds;
             };
             if read.len() == 1 {
                 complete(&mut hands, rest, [unread[0], unread[1]], &allowed, &capacity, shown, &mut add);
@@ -531,7 +579,7 @@ impl Evidence {
             // The second read seat's agreeing hands within the rest; the third
             // seat takes what is left, and agrees too when it is read.
             let (second, third) = (read[1], read.get(2).copied().unwrap_or_else(|| unread[0]));
-            let mut local: HashMap<u32, (DominoSet, u128)> = HashMap::new();
+            let mut local: Placed = HashMap::new();
             for h1 in subsets(rest.intersection(allowed[second]), capacity[second]) {
                 let h2 = rest.difference(h1);
                 if !agreeing(second).contains(h1)
@@ -541,11 +589,15 @@ impl Evidence {
                     continue;
                 }
                 let m2 = self.agreeing[third].as_ref().map_or(1, |h| h.multiple(h2));
-                local.entry(h1.intersection(shown).bits()).or_insert((h1, 0)).1 += agreeing(second).multiple(h1) * m2;
-            }
-            for (h1, worlds) in local.into_values() {
                 hands[second] = h1;
-                hands[third] = rest.difference(h1);
+                hands[third] = h2;
+                local.entry(key(&hands)).or_insert((hands, 0)).1 += agreeing(second).multiple(h1) * m2;
+            }
+            // In order, so that a key's representative does not depend on
+            // the map's.
+            let mut local: Vec<_> = local.into_values().collect();
+            local.sort_by_key(|(hands, _)| hands.map(|h| h.bits()));
+            for (hands, worlds) in local {
                 add(hands, worlds);
             }
         };

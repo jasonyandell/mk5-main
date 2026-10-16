@@ -1,0 +1,20 @@
+; A failed bid as a signal (W42-p054-b, p. 54): a 31 that is outbid still
+; says its caller probably holds a double or two. Asked from the caller's
+; partner, the caller's 31 read as evidence (README, The record as evidence):
+;
+;   silas query examples/book/bidding/losing-31-holds-a-double.silas \
+;     --hand hand-33 --seat left --auction 30,pass,31,35 --shaker bidder \
+;     --read right=examples/book/bidding/bid-only-enough.silas \
+;     --offered P6,P5,P4,P3,P2,P1,P0
+;
+; The deal of Hand 33 (fours, 35) under an auction of ours, not the book's:
+; the left setter opens 30, the partner passes, the right setter bids 31 and
+; the bidder, the shaker, takes it at 35. Read as bid-only-enough makes it,
+; the 31 lifts "a double" from 2,441/2,584 to 24,033/24,989 before the lead,
+; and as risk-budget makes it, to certainty (tests/book_auction.rs, with
+; "two or more"; tests/cli.rs has this command's numbers at trick one).
+(include book)
+
+(query
+  (right-setter s)
+  (<= 1 (card (roles d) (double d) (holds s d))))

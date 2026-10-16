@@ -732,8 +732,8 @@ What of gap 4 (#134) this closes and what it leaves is `GAPS.md` § 4.
 on named seats' calls, and the declarer's declaration, being what their bidding
 policies make from their hands, counted exactly and `exact_given` those policies. It is
 the field-free half of a field: the same object a slice-3 field's seats would be, read
-backwards. C4 is statable as a query; the offs readings of pp. 53–54 wait on a seat's
-hand law (`GAPS.md` § 4).
+backwards. C4 is statable as a query; the offs readings of pp. 53–54 waited on a seat's
+hand law, built 2026-10-16 (`Belief::hand_law`; `GAPS.md` § 4).
 
 ### Slice 3: the deal measure and the exact play-out (medium-high; two weeks)
 

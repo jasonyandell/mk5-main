@@ -572,12 +572,15 @@ impl Frame {
 /// leave some pool tiles unresolved: each of its points then stands for every
 /// world that agrees on the resolved tiles. A read that could tell those
 /// worlds apart is refused, so an answer is exact for every world it stands
-/// for.
+/// for. A hand law resolves one hidden seat's whole hand (`known`): that
+/// seat's reads are never refused, and another seat's tiles it holds are
+/// known not to be theirs.
 #[derive(Clone, Copy, Debug)]
 pub struct Holdings<'a> {
     frame: &'a Frame,
     world: &'a World,
     unresolved: DominoSet,
+    known: Option<Seat>,
     /// When set, a refused read records the tiles it needed here.
     needed: Option<&'a Cell<DominoSet>>,
 }
@@ -585,7 +588,12 @@ pub struct Holdings<'a> {
 impl<'a> Holdings<'a> {
     pub(crate) fn new(frame: &'a Frame, world: &'a World, unresolved: DominoSet) -> Holdings<'a> {
         debug_assert!(frame.contains(world) && unresolved.is_subset_of(frame.kernel().pool));
-        Holdings { frame, world, unresolved, needed: None }
+        Holdings { frame, world, unresolved, known: None, needed: None }
+    }
+
+    /// The same window, with `known`'s whole hand resolved.
+    pub(crate) fn knowing(self, known: Option<Seat>) -> Holdings<'a> {
+        Holdings { known, ..self }
     }
 
     /// The same window, recording into `needed` the tiles any refused read
@@ -601,16 +609,25 @@ impl<'a> Holdings<'a> {
     /// The tiles of `tiles` that `seat` holds.
     pub fn hand_within(&self, seat: Seat, tiles: DominoSet) -> Result<DominoSet> {
         let kernel = self.frame.kernel();
-        if seat != kernel.viewer {
+        if seat != kernel.viewer && Some(seat) != self.known {
             let slot = kernel.slot(seat);
             let open = if kernel.hidden[slot].capacity == 0 {
                 DominoSet::EMPTY
             } else {
-                tiles.intersection(self.unresolved).intersection(kernel.allowed(self.frame.physics(), slot))
+                let theirs = self.known.map_or(DominoSet::EMPTY, |k| self.world.hand(k));
+                tiles
+                    .intersection(self.unresolved)
+                    .intersection(kernel.allowed(self.frame.physics(), slot))
+                    .difference(theirs)
             };
             if !open.is_empty() {
                 if let Some(needed) = self.needed {
                     needed.set(needed.get().union(open));
+                }
+                if let Some(known) = self.known {
+                    return Err(error(format!(
+                        "reading {seat} needs the tiles {open:?}, and the hand law of {known} resolves his hand alone"
+                    )));
                 }
                 return Err(error(format!("reading {seat} needs the unresolved tiles {open:?}; resolve them")));
             }

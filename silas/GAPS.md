@@ -31,7 +31,7 @@ means it needs a hidden hand or a model of another seat's play.
 | 1 | policy likelihood (#128), narrowed again: the readings are built; a rule acting on one is not | belief in a guard | 4 places in the rules | world | Silas |
 | 2 | cross-game policy comparison (#130), narrowed | new layer | 3 (C17 in part) | world | Silas and the arena |
 | 3 | another seat's knowledge (#132) | modal construct | 1 (the donation lead) | world | Silas |
-| 4 | the auction as information (#134), narrowed again | belief | 1 (pp. 53–54's offs) | world | Silas |
+| 4 | the auction as information (#134), narrowed a third time: the book's readings of a bid are queries; a reading mid-auction and the match state in the play frame are not | belief | 0 as queries | world | Silas |
 
 ## 1. Policy likelihood: reading a convention, and acting on the reading
 
@@ -243,8 +243,8 @@ read from the world and the record).
 ## 4. The auction as information (Ch. 2, 12)
 
 **What.** The bid tells the table about the bidder's hand. In the book's examples, a 35
-means two offs and a 36 means one off; a losing 31 means a double or two (pp. 53–54,
-109). The partner's bid is the only information before play (p. 89).
+means two offs (W42-p054-a) and a 36 means one off; a losing 31 means a double or two
+(W42-p054-b, p. 54). The partner's bid is the only information before play (p. 89).
 
 **Narrowed (slice 2 of gap 2, 2026-10-13).** The structure is in. The whole auction is
 in the record, every call attributed, and the contract is derived from it; a play rule
@@ -269,15 +269,36 @@ table's (`--auction`), never a contract-only hand's convention. What moved:
 - **C12B's condition** (S-0232-c, "only the auction could move it"): 194/285 from the
   bidder's hand; the three passes after his 30 move it to 69.4% read as
   `bid-only-enough`, 67.0% as `risk-budget`.
-- **p. 109's "a losing 31 means a double or two"** reads the doubles alone: statable
-  the same way, not yet written.
+- **p. 54's "a losing 31 means a double or two"** (W42-p054-b) reads the doubles
+  alone: written (`examples/book/bidding/losing-31-holds-a-double.silas`,
+  `tests/book_auction.rs`). The deal of Hand 33 under an auction of ours (the left
+  setter 30, the partner passes, the right setter 31, the bidder 35); the left setter,
+  the 31's partner, before the lead, reads the 31 alone. As `bid-only-enough` makes
+  it, "a double" goes from 2,441/2,584 to 24,033/24,989 and "two or more" from 313/456
+  to 18,684/24,989; as `risk-budget` makes it (a risk of exactly 11), to 1 and
+  2,158/2,187.
+
+**Narrowed a third time (a seat's hand law, 2026-10-16; README, A seat's hand law).**
+A read seat's hand law is a belief of its own: `Belief::hand_law(&evidence, seat,
+cap)` (and `Belief::uniform_hand_law` unread; `--law ROLE` on the command line). Its
+points are the seat's agreeing hands, each weighed by its completions, at most
+116,280 whatever the question reads of that hand; a query may read that seat's hand
+and the viewer's. Held to brute force on every world of small frames
+(`tests/reading.rs`). What moved:
+
+- **pp. 53–54's "a 35 means two offs, a 36 one off": statable as a query**
+  (`examples/book/bidding/bidder-holds-two-offs.silas`, `tests/book_auction.rs`).
+  Hands 33 and 32 are one deal; the bidder opens, the rest pass, and the left setter
+  reads the call and declaration as `risk-budget` makes them, before the lead. The 35
+  in fours: two offs (neither trump nor double) 1,587/1,751, one off 164/1,751, never
+  none or three; 77/646 for two unread. The 36 in blanks: one off, certainly. Both of
+  the book's bidders are among the agreeing hands. `bid-only-enough` raises to the
+  least bid and never bids 35 or 36 in one round, so these read `risk-budget` alone.
+  W42-p054-a's "one of them from a five-count suit" is statable the same way and not
+  yet written; no catalog row of pp. 53–54 states the 36's one off (W42-p046-k, at 35
+  or 36 the off is probably not a high one, is the nearest).
 
 **What remains.**
-- pp. 53–54's "a 35 means two offs, a 36 one off": a question about a whole hidden hand
-  resolves most of the pool, and a belief's points are placements of what it resolves,
-  so it is refused above the cap. It needs a seat's hand law (the read seat's agreeing
-  hands, each weighted by its completions, which the counting already has) as a belief
-  of its own.
 - A policy acting on a reading: a rule's guard reads its frame, never a belief, so a
   play rule may state the bid ("partner bid 30") but not its reading; the book's rules
   that act on one are statable as queries, as the repaired rules are.
@@ -285,10 +306,12 @@ table's (`--auction`), never a contract-only hand's convention. What moved:
   auction is won, so the reading is at the play.
 - The match state in the play frame, for a play rule that reads the score.
 
-**Rules.** pp. 53–54's offs.
+**Rules.** None as a query. A rule that acts on a bid's reading is the bullet above;
+the book's mid-auction use (W42-p054-b's partner deciding whether to bid higher)
+waits on a reading at the auction frame.
 
-**Smallest addition.** A seat's hand law as a belief over that seat's hands (the counts
-are there), and the match state in the play frame.
+**Smallest addition.** The match state in the play frame, and a reading at the auction
+frame.
 
 ## Closed
 

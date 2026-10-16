@@ -364,9 +364,18 @@ cores. C12B's condition, 194/285 from the bidder's hand, moves to 69.4% when the
 passes after his 30 are read as `bid-only-enough`'s and to 67.0% as `risk-budget`'s: the
 auction moves it a point either way. In Hand 29 the partner reading the bidder's 30 in
 fours puts the 4-4 in his hand at 6,003/8,669 against 1/3. `silas query ... --auction
-... --read ...` asks it at the command line. What it cannot yet ask: a question about a
-whole hidden hand ("a 35 means two offs", pp. 53–54), which needs a seat's hand law; a
-reading inside a policy's guard; and a seat mid-auction (`silas/GAPS.md` 1 and 4).
+... --read ...` asks it at the command line. What it cannot yet ask: a reading inside a
+policy's guard, and a seat mid-auction (`silas/GAPS.md` 1 and 4).
+
+**A seat's hand law (2026-10-16).** A question of one read seat's whole hand is asked of
+his hand law (`Belief::hand_law`, `--law ROLE`; `silas/README.md` § A seat's hand law): a
+belief whose points are his agreeing hands, each weighed by its completions, so it never
+meets the cap. pp. 53–54 (W42-p054-a), Hands 33 and 32 read from the left setter as
+`risk-budget` makes the call: the 35 in fours is two offs 1,587/1,751 (77/646 unread),
+the 36 in blanks one off certainly. p. 54's losing 31 (W42-p054-b) under an auction of
+ours: a double 2,441/2,584 to 24,033/24,989 read as `bid-only-enough`, to 1 as
+`risk-budget`. Each number is `exact_given` the policy; the book's own bidders are among
+the agreeing hands.
 
 ## The plays as evidence (2026-10-13)
 

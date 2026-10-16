@@ -102,6 +102,49 @@ fn query_reads_the_auction_as_evidence_exactly_given_the_policies() {
 }
 
 #[test]
+fn query_reads_a_losing_31_and_a_35_bidders_hand_law() {
+    // W42-p054-b, the deal of Hand 33 under our auction, the left setter at
+    // trick one (the bidder has led the 4-4): his partner's 31 read as
+    // bid-only-enough's lifts "a double" from 4739/5168 to 29351/31263.
+    let pips = ["--offered", "P6,P5,P4,P3,P2,P1,P0"];
+    let at = ["--hand", "hand-33", "--seat", "left"];
+    let file = "examples/book/bidding/losing-31-holds-a-double.silas";
+    let (ok, out) = silas(&[&["query", file][..], &at].concat());
+    assert!(ok && out.contains("P(answer) = 4739/5168 (exact)"), "{out}");
+    let read = [
+        "--auction",
+        "30,pass,31,35",
+        "--shaker",
+        "bidder",
+        "--read",
+        "right=examples/book/bidding/bid-only-enough.silas",
+    ];
+    let (ok, out) = silas(&[&["query", file][..], &at, &read, &pips].concat());
+    assert!(ok && out.contains("auction: S0 shook: S1 30, S2 pass, S3 31, S0 35"), "{out}");
+    assert!(out.contains("P(answer) = 29351/31263 (exact_given(S3 bids by bid-only-enough#"), "{out}");
+    // W42-p054-a: "two offs" reads the bidder's whole hand, above the cap
+    // by placement; his hand law answers it. Uniformly 231/1292; his 35 and
+    // fours read as risk-budget's, with the 4-4 he led, make it certain.
+    let file = "examples/book/bidding/bidder-holds-two-offs.silas";
+    let law = ["--law", "bidder"];
+    let (ok, out) = silas(&[&["query", file][..], &at, &law].concat());
+    assert!(ok && out.contains("as 38760 points, the hand law of S0"), "{out}");
+    assert!(out.contains("P(answer) = 231/1292 (exact)"), "{out}");
+    let read = ["--auction", "35,pass,pass,pass", "--read", "bidder=examples/book/bidding/risk-budget.silas"];
+    let (ok, out) = silas(&[&["query", file][..], &at, &read, &pips].concat());
+    assert!(!ok && out.contains("cap of 100000 points"), "{out}");
+    let (ok, out) = silas(&[&["query", file][..], &at, &read, &pips, &law].concat());
+    assert!(ok && out.contains("from 1587 of the 38760 hands it could hold"), "{out}");
+    assert!(out.contains("as 1587 points, the hand law of S0"), "{out}");
+    assert!(out.contains("P(answer) = 1 (exact_given(S0 bids by risk-budget#"), "{out}");
+    // A law is of a hidden seat, and reads that seat's hand alone.
+    let (ok, out) = silas(&[&["query", file][..], &at, &["--law", "left"]].concat());
+    assert!(!ok && out.contains("S1 is the viewer"), "{out}");
+    let (ok, out) = silas(&[&["query", file][..], &at, &["--law", "right"]].concat());
+    assert!(!ok && out.contains("the hand law of S3 resolves his hand alone"), "{out}");
+}
+
+#[test]
 fn query_reads_the_plays_as_evidence_exactly_given_the_policies() {
     // S-0140-e: Hand 31 trick 6, the left setter on lead. Uniformly the
     // bidder holds both trumps out in 2 of the 15 worlds; with the right

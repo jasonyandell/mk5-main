@@ -6,7 +6,7 @@
 //! ```text
 //! silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
 //! silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
-//! silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+//! silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE] [--law ROLE]
 //!                [--read ROLE=POLICY,... [--likelihood consistent|uniform]
 //!                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 //! silas query    DOMINANCE
@@ -81,7 +81,7 @@ const USAGE: &str = "\
 usage:
   silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
   silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
-  silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+  silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE] [--law ROLE]
                  [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                   [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
   silas query    DOMINANCE
@@ -521,9 +521,32 @@ fn bid(args: &[String]) -> Result<bool> {
 }
 
 fn query(args: &[String]) -> Result<bool> {
-    let named =
-        ["hand", "trick", "seat", "cap", "book", "auction", "shaker", "read", "likelihood", "offered", "scoring"];
+    let named = [
+        "hand",
+        "trick",
+        "seat",
+        "cap",
+        "book",
+        "auction",
+        "shaker",
+        "read",
+        "likelihood",
+        "offered",
+        "scoring",
+        "law",
+    ];
     let options = Options::parse(args, &[], &named)?;
+    // `--law ROLE`: the belief is that hidden seat's hand law.
+    let law = options
+        .get("law")
+        .map(|role| {
+            ROLES
+                .iter()
+                .position(|r| *r == role)
+                .map(|i| Seat::ALL[i])
+                .ok_or_else(|| fail(format!("--law is one of {}", ROLES.join(", "))))
+        })
+        .transpose()?;
     let path = file(&options, "silas query FILE --hand ID [--trick N] [--seat ROLE] [--cap N]")?;
     let text = read(path)?;
     let query = match Program::parse(&text, path)? {
@@ -551,7 +574,10 @@ fn query(args: &[String]) -> Result<bool> {
     let cap = options.number("cap", 100_000)?;
     let mut budget = Budget::new(1_000_000_000_000);
     let belief = match reading {
-        None => Belief::uniform_for(frame.clone(), &query, cap, &mut budget)?,
+        None => match law {
+            None => Belief::uniform_for(frame.clone(), &query, cap, &mut budget)?,
+            Some(seat) => Belief::uniform_hand_law(frame.clone(), seat, cap, &mut budget)?,
+        },
         Some(reading) => {
             if options.get("auction").is_some() {
                 println!("  auction: {}", frame.auction());
@@ -580,7 +606,10 @@ fn query(args: &[String]) -> Result<bool> {
                     seat.candidates
                 );
             }
-            Belief::given_for(&evidence, &query, cap, &mut budget)?
+            match law {
+                None => Belief::given_for(&evidence, &query, cap, &mut budget)?,
+                Some(seat) => Belief::hand_law(&evidence, seat, cap)?,
+            }
         }
     };
     let summary = query.summarize(&belief, &mut budget)?;
@@ -592,12 +621,12 @@ fn query(args: &[String]) -> Result<bool> {
         (false, true) => format!(" ({} kept)", belief.total_mass()),
         (false, false) => format!(" (weighing {})", belief.total_mass()),
     };
-    println!(
-        "  {} worlds{mass}, as {} points resolving {}",
-        frame.count_worlds(),
-        belief.len(),
-        if resolved.is_empty() { "nothing".to_owned() } else { tiles(resolved) }
-    );
+    let what = match belief.known() {
+        Some(seat) => format!("points, the hand law of {seat}"),
+        None if resolved.is_empty() => "points resolving nothing".to_owned(),
+        None => format!("points resolving {}", tiles(resolved)),
+    };
+    println!("  {} worlds{mass}, as {} {what}", frame.count_worlds(), belief.len());
     println!("  P(answer) = {} ({})", p.value(), p.authority());
     for answer in summary.answer_presence_mass.keys().filter(|a| !a.0.is_empty()) {
         let shown: Vec<String> = answer.0.iter().map(Value::to_string).collect();

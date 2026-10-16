@@ -445,7 +445,8 @@ impl Query {
             let outer = compiler.sorts.len();
             let scope: Scope =
                 self.roles.iter().zip(&class).map(|(role, c)| (role.name.clone(), (*c, role.sort))).collect();
-            let clauses = compiler.clauses(pattern, &scope)?;
+            let mut clauses = compiler.clauses(pattern, &scope)?;
+            clauses.sort_by_key(Clause::rank);
             used.append(&mut compiler.used);
             patterns.push(CompiledPattern {
                 sorts: compiler.sorts,
@@ -566,6 +567,36 @@ impl Reader<'_> {
 }
 
 impl Clause {
+    /// Whether the clause reads a hidden world anywhere within it.
+    fn reads_world(&self) -> bool {
+        fn quantity(q: &CompiledQuantity) -> bool {
+            match q {
+                CompiledQuantity::Number(_) => false,
+                CompiledQuantity::Function(atom) => atom.access.reads_world(),
+                CompiledQuantity::Aggregate(a) => a.binder.body.iter().any(Clause::reads_world),
+                CompiledQuantity::Sum(parts) | CompiledQuantity::Difference(parts) => parts.iter().any(quantity),
+            }
+        }
+        match self {
+            Clause::Atom(atom) => atom.access.reads_world(),
+            Clause::Scope(scope) => scope.binder.body.iter().any(Clause::reads_world),
+            Clause::AtMost(bound) => quantity(&bound.left) || quantity(&bound.right),
+        }
+    }
+
+    /// Where the clause stands in a pattern's order of evaluation: what reads
+    /// only the frame before what reads a world, so that a read a belief
+    /// leaves unresolved is never asked where the frame already rejects the
+    /// binding; then atoms, comparisons and scopes, the likely cheaper first.
+    fn rank(&self) -> (bool, u8) {
+        let kind = match self {
+            Clause::Atom(_) => 0,
+            Clause::AtMost(_) => 1,
+            Clause::Scope(_) => 2,
+        };
+        (self.reads_world(), kind)
+    }
+
     /// The classes the clause reads from outside itself.
     fn vars(&self) -> BTreeSet<usize> {
         match self {
@@ -1115,19 +1146,12 @@ impl CompiledPattern {
         // Constant clauses are checked once; single-variable clauses shrink
         // their variable's domain before the join; the rest are checked as
         // soon as every role they read is bound. A conjunction's order is
-        // not its meaning: atoms first, then comparisons, then scopes, the
-        // likely cheaper first, so a scope runs only where the rest hold.
+        // not its meaning: the clauses stand in their order of evaluation
+        // (`Clause::rank`), so a scope runs only where the rest hold.
         let mut constant = Vec::new();
         let mut unary = vec![Vec::new(); self.outer];
         let mut joined = Vec::new();
-        let rank = |c: &Clause| match c {
-            Clause::Atom(_) => 0,
-            Clause::AtMost(_) => 1,
-            Clause::Scope(_) => 2,
-        };
-        let mut order: Vec<usize> = (0..self.clauses.len()).collect();
-        order.sort_by_key(|i| rank(&self.clauses[*i]));
-        for (i, clause) in order.into_iter().map(|i| (i, &self.clauses[i])) {
+        for (i, clause) in self.clauses.iter().enumerate() {
             let vars = clause.vars();
             match (vars.len(), vars.first()) {
                 (0, _) => constant.push(i),

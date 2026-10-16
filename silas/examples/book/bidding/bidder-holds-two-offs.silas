@@ -1,0 +1,20 @@
+; What a 35 says (W42-p054-a, p. 54): the bidder probably holds two offs,
+; an off here a tile neither trump nor double, as the bid book counts them.
+; A question of the bidder's whole hand, so asked of his hand law (README, A
+; seat's hand law), his call and declaration read as evidence:
+;
+;   silas query examples/book/bidding/bidder-holds-two-offs.silas \
+;     --hand hand-33 --seat left --auction 35,pass,pass,pass \
+;     --read bidder=examples/book/bidding/risk-budget.silas \
+;     --offered P6,P5,P4,P3,P2,P1,P0 --law bidder
+;
+; Hand 33 (fours, 35), the left setter: read as risk-budget makes them, the
+; bidder's 35 and fours put two offs at 1,587/1,751 before the lead, from
+; 77/646 uniformly, and one off the rest; Hand 32's 36 (the same deal, in
+; blanks) puts one off at certainty (tests/book_auction.rs; tests/cli.rs has
+; this command's numbers at trick one).
+(include book)
+
+(query
+  (bidder b)
+  (= 2 (card (roles o) (holds b o) (not (trump-tile o)) (not (double o)))))

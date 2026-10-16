@@ -1,6 +1,8 @@
 examples/book/bidders-plan.silas be1e8e009889710b
 examples/book/bidding/bid-only-enough.silas 871bf4036a292adc
 examples/book/bidding/bidder-holds-two-doubles.silas 58b4a0e33e8f3ce8
+examples/book/bidding/bidder-holds-two-offs.silas 586ae779718800a1
+examples/book/bidding/losing-31-holds-a-double.silas 993050e1681c0caa
 examples/book/bidding/menu.silas 50da343a6787f66b
 examples/book/bidding/never-32-or-33.silas 9f8409c2c63c9276
 examples/book/bidding/risk-budget.silas 8849b68678680b4c

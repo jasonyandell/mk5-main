@@ -749,7 +749,8 @@ by fifteen rules); what remains is the evaluation of the atoms in the
 aggregates' bodies. The computed call reads every suit's risk whole (the
 least has no literal to stop at), and two changes keep it cheaper than the
 levels were: a pattern checks its atoms, then its comparisons, then its
-scopes (a conjunction's order is not its meaning), and an aggregate is
+scopes, each that reads only the frame before any that reads a world (a
+conjunction's order is not its meaning), and an aggregate is
 counted once per shape up to the names around it, so `(risk t)` in a rule,
 in its rival under `least` and in its call is one count a suit.
 `risk-budget`'s calls at all seventeen least raises and three declarations
@@ -838,9 +839,53 @@ evidence to him and is refused. A record no read hand agrees with is refused,
 as an impossible condition is. A question whose answer reads most of a hidden
 hand ("he holds two offs") resolves most of the pool, and the belief's points
 are placements of what it resolves: such a question is refused above the
-cap, here as for the uniform measure. A question over the trumps out reads
+cap, here as for the uniform measure, and asked of the seat's hand law
+instead (below). A question over the trumps out reads
 best with the trump bound first, `(trump q) (none (roles t) (in t q) ...)`,
 so that it resolves the trumps alone.
+
+**A seat's hand law.** A question of one read seat's whole hand ("the
+bidder holds two offs", pp. 53–54) is asked of that seat's hand law, a belief
+of its own:
+
+```rust
+let law = Belief::hand_law(&evidence, seat, cap)?;           // read
+let open = Belief::uniform_hand_law(frame, seat, cap, &mut budget)?;   // unread
+```
+
+Its points are the seat's agreeing hands, each weighing its weight times the
+ways the other two seats complete the deal: the sums the counting already
+makes, keyed by the seat's hand instead of by a placement (with two or three
+seats read, each world's weight is every read seat's, summed into the hand of
+the one asked). At most C(21,7) = 116,280 points, whatever the question
+reads of that hand. A query may read the seat's hand and the viewer's; a
+read of either other hidden seat is refused, except that a tile the seat
+holds is no one else's (`Belief::known` names the seat; `Holdings` refuses
+the rest). The authority is the evidence's, `exact_given` the read policies,
+and a question of the seat's hand alone has the same answer under the law as
+under `Belief::given` (`tests/reading.rs` holds both to brute force on every
+world of small frames, every set of read seats, under the three policies;
+the uniform law to the uniform measure). The unread law is `exact`. On the
+command line, `--law ROLE` asks it of a hidden seat, read or not:
+
+```text
+$ silas query examples/book/bidding/bidder-holds-two-offs.silas --hand hand-33 --seat left \
+    --auction 35,pass,pass,pass --read bidder=examples/book/bidding/risk-budget.silas \
+    --offered P6,P5,P4,P3,P2,P1,P0 --law bidder
+hand-33: trick 1, the left (S1) to play
+  ...
+  read S0: risk-budget calls 35 and declares straight42/P4, and risk-budget allows its plays 4-4, from 1587 of the 38760 hands it could hold
+query examples/book/bidding/bidder-holds-two-offs.silas
+  133024320 worlds (5446584 kept), as 1587 points, the hand law of S0
+  P(answer) = 1 (exact_given(S0 bids by risk-budget#7996dcc962c3ff7e + S0 plays within risk-budget#d6e3de7f59acb0b2))
+```
+
+Before the lead his 35 and fours make two offs 1,587/1,751 (77/646 unread);
+the 4-4 he led takes away the one-off 35s, which lack the trump double
+(`tests/book_auction.rs`). Without `--law` the question is refused above the
+cap. Because a law leaves the other seats unresolved, a pattern checks every
+clause that reads only the frame before any that reads a world, so that
+`(right-setter s)` binds `s` before `s`'s hand is read.
 
 **Cost.** The calls: from the opening, with three seats read, running the
 policies over all their hands takes 0.5 s on 18 cores for `bid-only-enough`
@@ -928,7 +973,8 @@ trump into the left setter to firing exactly where the reading is certain,
 and holds the viewer's chair, an impossible record, the identity and the
 memory to their statements.
 
-The book's readings of a bid (`tests/book_auction.rs`, `examples/book/bidding/bidder-holds-two-doubles.silas`):
+The book's readings of a bid (`tests/book_auction.rs`; `examples/book/bidding/bidder-holds-two-doubles.silas`,
+`losing-31-holds-a-double.silas`, `bidder-holds-two-offs.silas`):
 
 - **C12B's condition** (the repaired low trump lead, S-0232-c): the bidder's
   hand alone puts it at 194/285; the three passes after his 30, read as
@@ -940,6 +986,21 @@ The book's readings of a bid (`tests/book_auction.rs`, `examples/book/bidding/bi
   (69.2%) of those where `bid-only-enough` opens 30 and declares fours; two
   doubles or more, 313/456 (68.6%) against 6,814/8,669 (78.6%); with the
   setters' passes read too, 2,198,843/3,237,964 and 5,252,929/6,475,928.
+- **A losing 31** (W42-p054-b, p. 54: a double or two): the deal of Hand 33
+  under an auction of ours (the left setter 30, the partner passes, the right
+  setter 31, the bidder 35), seen by the left setter before the lead. The
+  31, read as `bid-only-enough` makes it, lifts "a double" from 2,441/2,584
+  (94.5%) to 24,033/24,989 (96.2%) and "two or more" from 313/456 (68.6%) to
+  18,684/24,989 (74.8%); read as `risk-budget` (a risk of exactly 11), to
+  certainty and 2,158/2,187 (98.7%).
+- **A 35 means two offs** (W42-p054-a; the bidder's hand law): Hands 33 and 32
+  are one deal; the bidder opens, the rest pass, and the left setter reads
+  his call and declaration as `risk-budget` makes them, before the lead. The
+  35 in fours puts two offs (a tile neither trump nor double) at
+  1,587/1,751 (90.6%) and one off at 164/1,751, never none or three, from
+  77/646 (11.9%) for two unread; with every call read, 1,897,452/2,112,947.
+  The 36 in blanks puts one off at certainty. `bid-only-enough` raises to the
+  least bid and never bids 35 or 36 in one round.
 
 The book's readings of a play (`tests/book_reading.rs`, `examples/book/reading/`),
 with the bidder in every chair, each the same under both likelihoods but the last:
@@ -1396,7 +1457,7 @@ a model or a sample: exact numbers are never blurred.
 ```text
 silas eval     POLICY --hand ID [--trick N] [--seat ROLE] [--book FILE]
 silas bid      POLICY --hand ID [--seat ROLE] [--calls C,...] [--scoring S] [--book FILE]
-silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE]
+silas query    QUERY --hand ID [--trick N] [--seat ROLE] [--cap N] [--book FILE] [--law ROLE]
                [--read ROLE=POLICY,... [--likelihood consistent|uniform]
                 [--auction C,C,C,C [--shaker ROLE] [--offered D,...] [--scoring S]]]
 silas query    DOMINANCE

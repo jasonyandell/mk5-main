@@ -253,3 +253,116 @@ fn the_reading_names_its_policies_and_refuses_what_it_cannot_read() {
     let message = reading.evidence(&opening, &mut budget()).err().unwrap().0;
     assert!(message.contains("not among those offered"), "{message}");
 }
+
+/// The hand law of `seat` under the calls of `readers`.
+fn law(frame: &Frame, readers: &[(Seat, &CompiledPolicy)], seat: Seat) -> Result<Belief> {
+    let evidence = reading(readers).evidence(frame, &mut budget())?;
+    Belief::hand_law(&evidence, seat, 100_000)
+}
+
+#[test]
+fn the_hand_law_is_brute_force_over_every_world_of_a_small_frame() {
+    // The brute-force reading's cases again, asked of each read seat's hand
+    // law, a belief over his whole hand: every question of his hand alone
+    // (one tile, a double, a sum, two tiles, a count of his non-doubles) has
+    // brute force's answer, and the law's mass is the worlds kept. The
+    // uniform deal's law is the uniform measure's.
+    let only = book_policy("bid-only-enough.silas");
+    let risk = book_policy("risk-budget.silas");
+    let toy =
+        policy("(policy toy (bidding (rule r (bid least-raise) (mine 5-5)) (rule s (bid least-raise) (mine 6-4))))");
+    let auctions: [(Seat, &[&str]); 3] = [
+        (Seat::S3, &["30", "pass", "pass", "pass"]),
+        (Seat::S0, &["30", "pass", "31", "32"]),
+        (Seat::S1, &["30", "31", "35", "pass"]),
+    ];
+    let queries = |s: Seat| {
+        [
+            format!("(query (holds {s} 6-5))"),
+            format!("(query (some (roles d) (double d) (holds {s} d)))"),
+            format!("(query (<= 10 (points (roles d) (holds {s} d))))"),
+            format!("(query (holds {s} 3-2) (holds {s} 1-0))"),
+            format!("(query (= 1 (card (roles d) (not (double d)) (holds {s} d))))"),
+        ]
+    };
+    let (mut compared, mut impossible) = (0, 0);
+    for (shaker, calls) in auctions {
+        let frame = small(shaker, calls);
+        let uniform = Belief::uniform(frame.clone(), 90).unwrap();
+        for seat in [Seat::S1, Seat::S2, Seat::S3] {
+            let open = Belief::uniform_hand_law(frame.clone(), seat, 100, &mut budget()).unwrap();
+            assert!(open.authority().is_exact());
+            assert_eq!((open.known(), open.total_mass()), (Some(seat), &Weight::integer(90)));
+            for q in queries(seat) {
+                assert_eq!(probability(&q, &open).value(), probability(&q, &uniform).value(), "{q}");
+            }
+        }
+        for policies in [[&only, &only, &only], [&risk, &risk, &risk], [&toy, &only, &risk]] {
+            for mask in 1..8u32 {
+                let readers: Vec<(Seat, &CompiledPolicy)> =
+                    (0..3).filter(|i| mask >> i & 1 == 1).map(|i| (Seat::ALL[i + 1], policies[i])).collect();
+                let truth = brute(&frame, &readers);
+                for (seat, _) in &readers {
+                    match (law(&frame, &readers, *seat), &truth) {
+                        (Ok(belief), Ok(truth)) => {
+                            assert_eq!(belief.total_mass(), truth.total_mass(), "{calls:?} {mask} {seat}");
+                            for q in queries(*seat) {
+                                assert_eq!(
+                                    exact_given(probability(&q, &belief)),
+                                    probability(&q, truth).value().clone(),
+                                    "{calls:?} {mask} {q}"
+                                );
+                                compared += 1;
+                            }
+                        }
+                        (Err(e), Err(_)) => {
+                            assert!(e.0.contains("zero-mass"), "{e}");
+                            impossible += 1;
+                        }
+                        (a, b) => panic!("{calls:?} {mask} {seat}: {:?} against {:?}", a.err(), b.as_ref().err()),
+                    }
+                }
+            }
+        }
+    }
+    assert!(compared > 300 && impossible > 0, "{compared} compared, {impossible} impossible");
+}
+
+#[test]
+fn the_hand_law_resolves_its_seat_alone_and_answers_above_the_cap() {
+    // The opening of `a_policy_that_bids_on_the_six_six_places_it_for_certain`:
+    // S2 bid 30 holding the 6-6. His law has a point for each of his 38,760
+    // agreeing hands, each weighing the C(14,7) ways S1 and S3 complete it.
+    let six_six = policy("(policy six-six (bidding (rule r (bid least-raise) (mine 6-6))))");
+    let hand = tiles(&["5-5", "5-4", "4-4", "3-2", "2-0", "1-1", "1-0"]);
+    let auction = Auction::new(
+        AuctionConfig::STRAIGHT,
+        Seat::S3,
+        vec![Call::Pass, Call::Pass, "30".parse().unwrap(), Call::Pass],
+    );
+    let frame = Frame::new(auction.unwrap(), physics("P6"), Seat::S0, hand, vec![]).unwrap();
+    let readers = [(Seat::S2, &six_six)];
+    let belief = law(&frame, &readers, Seat::S2).unwrap();
+    assert_eq!((belief.len(), belief.total_mass()), (38_760, &Weight::integer(38_760 * 3_432)));
+    assert_eq!(exact_given(probability("(query (holds S2 6-6))", &belief)), r(1, 1));
+    // A question of most of his hand: does he hold exactly five non-doubles?
+    // By placement it reads the 17 hidden non-doubles, above the cap; the law
+    // answers it. Beside the 6-6 he holds one of the other three hidden
+    // doubles and five of the 17 in 3·C(17,5) of his C(20,6) hands.
+    let offs = "(query (= 5 (card (roles d) (not (double d)) (holds S2 d))))";
+    let refused = read(&frame, &readers, offs).unwrap_err();
+    assert!(refused.0.contains("cap"), "{refused}");
+    assert_eq!(exact_given(probability(offs, &belief)), r(3 * 6_188, 38_760));
+    // The other seats' tiles are not resolved, except that his are not
+    // theirs: S1 never holds the 6-6, and whether he holds the 5-3 is refused.
+    assert_eq!(exact_given(probability("(query (holds S1 6-6))", &belief)), r(0, 1));
+    let query = compile("(include book) (query (holds S1 5-3))");
+    let refused = query.summarize(&belief, &mut budget()).unwrap_err();
+    assert!(refused.0.contains("the hand law of S2 resolves his hand alone"), "{refused}");
+    // A law is counted for a read hidden seat only, within its cap.
+    let unread = law(&frame, &readers, Seat::S1).err().unwrap();
+    assert!(unread.0.contains("not read"), "{unread}");
+    let evidence = reading(&readers).evidence(&frame, &mut budget()).unwrap();
+    assert!(Belief::hand_law(&evidence, Seat::S0, 100_000).err().unwrap().0.contains("viewer"));
+    assert!(Belief::hand_law(&evidence, Seat::S2, 1_000).err().unwrap().0.contains("cap"));
+}
