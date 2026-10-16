@@ -133,6 +133,14 @@ pairs: 48.4% [44.1%, 52.7%], no demonstrated gain, at 11.49× native play CPU fo
 the frozen pre-bisection policy. The larger budget stays experimental. The earlier
 pins keep their original sampler.
 
+## Exact root reuse (2026-10-16)
+
+[[demon-instructions-2026-10-16]] measures cached immutable declaration tables
+and shared values for interchangeable root tiles. The same early-40 policy
+uses fewer native instructions with every saved semantic response preserved;
+the new immutable pin is rostered. This is cost evidence, with the earlier
+strength confirmation retaining its original scope.
+
 ## Is sample count the only remaining strength knob?
 
 The declaration-reader and contract-forecast candidates are implemented and

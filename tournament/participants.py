@@ -330,9 +330,19 @@ DEMON_BAIT40_N100 = demon("a561552d9007283f51e67fba8d85d4ed528589c1",
                           sampler_note=_DISTINCT_SAMPLER, bounded_forecast=True,
                           support_forecast=True, bait_bid=40)
 
+# Same early-40 policy, with exact root equivalence and cached immutable rules.
+# Instruction-primary native replay: wiki/experiments/demon-instructions-2026-10-16.md.
+DEMON_BAIT40_REUSE_N100 = demon("d48909c485dc647ac6bada3577000b5602b95f64",
+                                {"silas": "fad0fc47d19b57c796d182657fb9cf404984a438",
+                                 "scenario/core": "84714a99f9ff1d1ba532f9983e74f73c83cafe8e",
+                                 "tournament/demon": "26dd409acd3e71ac4bcab367fcd46906ffdea4f3"},
+                                worlds=100, bidder="pimc-bait:64:0.875:0.875",
+                                sampler_note="Walt's completion-count DP, distinct uniform worlds without replacement",
+                                bounded_forecast=True, support_forecast=True, bait_bid=40)
+
 ROSTER = (WALT, FAIR_WALT, ZEB_010, ZEB_020, EQ_N10, DEMON_N100, DEMON_FAST_N100, DEMON_N400,
           DEMON_DISTINCT_N100, DEMON_DISTINCT_N1600, DEMON_OVERCALL_N100,
-          ZEB_040_MATCH, ZEB_041_CONTESTED, DEMON_BAIT40_N100)
+          ZEB_040_MATCH, ZEB_041_CONTESTED, DEMON_BAIT40_N100, DEMON_BAIT40_REUSE_N100)
 ANCHOR = FAIR_WALT.id
 
 # Withdrawn from scheduling, records kept: their faceoffs still count in the rating fit, so the

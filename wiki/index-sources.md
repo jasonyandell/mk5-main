@@ -2,6 +2,8 @@
 
 Per-commit digests (`<sha>`) and named per-document snapshots.
 
+- [[sources/d48909c4|d48909c4]] — exact root equivalence and immutable declaration-table reuse in the fenced Demon (complete)
+
 - [[sources/demon-zeb-attempt-2|demon-zeb-attempt-2]] — complete 2,048-game native Zeb confirmation, both strength/runtime criteria met, audited and public (complete)
 
 - [[sources/2e233d29|2e233d29]] — explicit opponent-held PIMC point-bid thresholds, tested without added search and frozen for development (complete)

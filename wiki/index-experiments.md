@@ -5,7 +5,9 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/demon-ascent-2026-10-16|demon-ascent-2026-10-16]] — next Demon versus native Zeb 0.4.1 at comparable CPU, fixed threshold development and fresh confirmation protocol (active)
+- [[experiments/demon-instructions-2026-10-16|demon-instructions-2026-10-16]] — exact root reuse lowers native instructions with full response parity; same early-40 policy, new immutable pin (complete)
+
+- [[experiments/demon-ascent-2026-10-16|demon-ascent-2026-10-16]] — early-40 Demon independently beats pinned native Zeb 0.4.1 at lower total seat CPU; opponent-specific policy, audited and public (complete)
 - [[experiments/lem-field-net-audit-2026-10-15|lem-field-net-audit-2026-10-15]] — Lem stage 1: 222 of 372 live poles of Zeb's shipped field net are clean (0.597 [0.581, 0.608], chance 0.000), 122 by a Silas concept and 100 by a raw feature (mostly which pip is trump); Haiku readers detect 0.758 of poles vs 0.124 under a shifted null; the play needs 165 of 192 neurons for 0.95 fidelity, no small knee; 12 dead layer-2 neurons; predictions graded (complete)
 - [[experiments/rematch-zeb-041-vs-demon-2026-10-15|rematch-zeb-041-vs-demon-2026-10-15]] — Zeb 0.4.1's contested bidder beats the confirmed Demon at greater CPU cost, with 0.4.0 as the reference (complete)
 - [[experiments/demon-overcalling-2026-10-15|demon-overcalling-2026-10-15]] — overcalling Demon beats both pinned native Zeb 0.4.0 bidders within the runtime bar in 2,048 audited fresh games (complete)
