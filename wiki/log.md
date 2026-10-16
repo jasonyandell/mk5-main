@@ -68,10 +68,6 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 ## [2026-10-15 | mayor | Clean neurons for 42: the "already clean" thesis, written up as an experiment]
 
 - [[clean-neurons-42]]: Cammarata/Goodfire's "Neural Networks Are Already Clean" (linked, summarized in our words, not copied; the essay states no license), why 42's concepts generalize recursively (mastery, count, voids), and a cheap first experiment: audit all 384 poles of Zeb's shipped field net against Silas predicates and the book, then watch them form. [#175](https://github.com/jasonyandell/mk5-main/issues/175)'s GPT is the bigger second step.
-## [2026-10-15 | 8df99e8b | Recursive generalization as an information-honest concept-learning proposal]
-
-- Added [[recursive-generalization]]: original CC0 research note, ordinary training with checkpoint lineage, Silas transfer/counterexamples, causal tests and separate play-strength gates. No experiment run; constructor dependency is unmerged PR #166.
-- Routed from [[suit-algebra]] and the topics catalog.
 
 ## [2026-10-15 | silas/cross-game-slice3 | Silas plays a whole hand and compares two policies over deals (#130 slice 3)]
 
