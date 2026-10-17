@@ -53,6 +53,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | lem | The squeeze: narrow field nets are cleaner, not mixed (G2 width pilot)]
+
+Jason's pilot idea (undersized nets, look for coarse features), from Cammarata's "Already Clean"
+squeeze. Seven nets retrained from scratch on the 250k pour; clean share 0.610 at 192 neurons, 0.833
+at 24 (seeds 0.65–0.83); broadening within families, chiefly "late in the trick"; 24 neurons close
+0.684 of the random-to-teacher gap vs 0.804. Predictions graded, the main one backwards.
+[[lem-squeeze-2026-10-16]]; evidence `lem/squeeze-2026-10-16/` (cbb42932).
+
 ## [2026-10-17 | book | The book's Ch. 9 at the table, registered (#189), provisional (random field for 7–9)]
 
 - [[ch9-at-the-table-2026-10-17]]: the chair's full menu (`MenuBidder`) against pip trumps only, on deals where it holds four doubles or more, every seat `MenuWalt`; primary a − b in marks per hand, the book predicts > 0; 288 batches, 23,040 deals, MDE about 0.026 on the changed deals. `scenario/ch9.py`.
