@@ -49,6 +49,12 @@ Two halves, one game:
 - **Silas** (`silas/`) — a typed relational language over the worlds a seat cannot tell apart:
   queries, exact beliefs, policies that read only the viewer's information ([[silas]]). The
   vocabulary for writing the book's rules down and for Zeb's reasons; Lean is the long-run spec.
+- **Lem** (`lem/`) — the generative player and the interpretability program: learn 42 as
+  completely as it can be learned, then read the net. Its core thesis is THE ALREADY-CLEAN TEST
+  (#193), Cammarata's claim that a net's own neurons are clean and that a squeezed net grows
+  coarser, not mixed. Zeb's field net retrained at 24 neurons is cleaner than at 192 (0.83 vs
+  0.61), which a superposition prior says should not happen. Keep it central and test it hard;
+  if a test breaks it, that is the finding ([[lem-the-teacher]]).
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the
