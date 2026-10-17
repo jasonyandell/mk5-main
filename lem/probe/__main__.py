@@ -189,8 +189,9 @@ def main(argv=None) -> None:
         log("audit halves")
         result = {"net": a.net, "audit": aa.audit_aa(sample, acts, labels, names, audit, log)}
         log(json.dumps({k: v for k, v in result["audit"].items() if k in ("wilson", "bootstrap", "clean_share")}))
-        log("belief, both ways")
-        result["belief"] = aa.belief_aa(sample, acts, a.belief_parts, log=log)
+        if a.belief_parts != "-":                                   # "-": the audit half only
+            log("belief, both ways")
+            result["belief"] = aa.belief_aa(sample, acts, a.belief_parts, log=log)
         aa.write(result, a.out_dir)
     elif a.cmd == "squeeze-train":
         from lem.probe import squeeze

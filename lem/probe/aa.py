@@ -229,7 +229,11 @@ def write(result: dict, out_dir: str | Path) -> None:
         zr = f"{c['z_abs_gt_1_96']:.3f}" if c["z_abs_gt_1_96"] is not None else "—"
         lines.append(f"| {'row Wilson' if nm == 'wilson' else 'deal bootstrap'} | {c['pairs']} | {c['miss_other_point']:.3f} | {c['no_overlap']:.3f} | {zsd} | {zr} | {c['degenerate']} |")
     cs = au["clean_share"]
-    lines += ["", f"Clean share by half: A {cs['A']:.3f}, B {cs['B']:.3f}; poles with the same kind (clean or not) in both halves: {cs['same_kind_share']:.3f}.", "",
+    lines += ["", f"Clean share by half: A {cs['A']:.3f}, B {cs['B']:.3f}; poles with the same kind (clean or not) in both halves: {cs['same_kind_share']:.3f}."]
+    if "belief" not in result:
+        (out_dir / "aa.md").write_text("\n".join(lines) + "\n")
+        return
+    lines += ["",
               "Belief probe, fit on one half and scored on the other, both ways (deal bootstrap over the eval deals):", "",
               "| representation | A→B R² all [95%] | B→A R² all [95%] | z | A→B moved | B→A moved | z |", "|---|---|---|---:|---|---|---:|"]
     for name, p in result["belief"]["probes"].items():
