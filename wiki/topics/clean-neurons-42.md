@@ -137,7 +137,9 @@ keeps the essay's slogans and loses these, and the slogans misused are worse tha
 
 Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
 [[lem-formation-2026-10-17]] (family kept 0.82 vs 0.28, but one unit kind formed coarse first),
-[[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets). The
+[[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets),
+[[lem-dropout-order-2026-10-17]] (cleaner to 12 neurons over 3 seeds; the last words are `lead` and
+the coarse `late`). The
 untrained floor (0.15–0.28 clean) goes with every share. Steering and negative poles are #198.
 
 ## The scope clause: what this net can and cannot tell us

@@ -198,7 +198,15 @@ later. An untrained net already scores 0.15–0.28 clean, the honest floor for e
 ([`wiki/experiments/lem-width-tree-2026-10-17.md`](../../wiki/experiments/lem-width-tree-2026-10-17.md),
 #195): a narrow unit's closest counterparts in a wide net trained from scratch come from its own
 concept family at 2.4–2.9 times the random-family rate. The coarse unit spreads along one
-concept's facets (the wide net has 47 `last` units), not into its sibling seats.
+concept's facets (the wide net has 47 `last` units), not into its sibling seats. **The drop-out order**
+([`wiki/experiments/lem-dropout-order-2026-10-17.md`](../../wiki/experiments/lem-dropout-order-2026-10-17.md),
+#196): three seeds at seven widths, each with its untrained floor. Narrower nets are cleaner down
+to 12 neurons (means 0.633 at 192, 0.759 at 24, 0.735 at 12; floors 0.17–0.23; wide seeds
+within 0.06). The concepts give out in order. The last words are the mover's place in the trick
+(`lead`, the coarse `late`). Before them go the trick in front of the mover and the mover's trump,
+then count and trump on the table, then whether the winner can be beaten. Mastery outside trump
+and the setters' voids need 136 neurons. Two neurons close only 0.28 of the gap. Two of three
+six-neuron nets failed to learn the play, and their units fell to the floor with it.
 
 ## 8. Models of others **[gap]**
 
@@ -243,7 +251,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196, naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 
