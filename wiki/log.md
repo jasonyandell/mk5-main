@@ -53,6 +53,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | book | A reporting rule: calibrate before you chase an A/A miss (#191)]
+
+- [[book-authority]] § How to report a book result, rule 6: replicate an A/A that misses before explaining it, because the miss that starts a search is chosen for having missed and is no evidence for what the search finds. #117 → #190 → #191 is the worked case. The Mayor asked for this rule.
+
 ## [2026-10-17 | book | The estimator is calibrated: both A/A misses were chance (#191)]
 
 - [[estimator-calibration-2026-10-16]], part 1: 960 of 960 batches. R_F = 1.06, 2 of 20 misses, δ(1,0) = −0.004 [−0.040, +0.031] marks/game, σ_seed = 0. The Book arena's intervals cover as they say, so #117's and #190's A/A misses were chance. With part 2 (the tournament, calibrated) and part 3 (Lem, 1.17× narrow from top-set selection), the ±0.15 / ±4-point allowance is withdrawn for the Book arena and the tournament.
