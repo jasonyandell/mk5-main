@@ -92,21 +92,7 @@ uses about two thirds of Zeb's CPU in both arms. Totals: 0.4.1 arm Zeb 5,640 s C
 Demon 3,732 / 3,854; 0.4.0 arm Zeb 5,241 / 5,435, Demon 3,379 / 3,468. Runtime shared the machine
 with other sessions through `scripts/cpu-slot`, so it is as reported, not an isolated timing.
 
-**Estimator caveat (#191, restated 2026-10-16).** Two A/A arms in the Book desk's arena missed
-their 95% intervals: plain Zeb against plain Zeb differing only in planner seed read +0.12 [+0.02,
-+0.23] marks/game (#117) and −0.14 [−0.25, −0.03] (#190), and one missed by 4 points of share.
-Planner-seed scatter was tested as the cause and is not supported ([[seed-varied-2026-10-16]]),
-so the cause is open. Until #191 calibrates it, read a single-arm margin with an extra ±0.15
-marks/game and ±4 points of share. This study uses the tournament's own estimator, not the Book desk's, and its
-A/A has not been measured. Here 0.4.1's +0.330 [+0.055, +0.606] marks/game and its 57.03% [53.12,
-60.94] both have lower ends inside that allowance. The 0.4.1 − 0.4.0 contrast shares seed and
-deals, and is probably safer.
-**Update 2026-10-16 (#191 part 2):** the tournament's own estimator was then calibrated by an A/A
-(Zeb 0.4.1 contested at planner seed 1 against seed 0, twelve replicates of 64 pairs): R_F 0.85 in
-share and 1.02 in marks, 0 of 24 intervals missed. The allowance above does not apply to this
-estimator for equal players ([[estimator-calibration-2026-10-16]]). Zeb against the Demon (unequal
-players, a possibly skewed per-pair distribution) is untested, and lifting this page's provisional
-label is the Mayor's call.
+**Estimator (#191).** The estimator is calibrated on equal players (#191 part 2, [[estimator-calibration-2026-10-16]]); calibration on unequal players is open (#192).
 
 **Reading.** Against the Demon that contests, 0.4.1's shipped overcall wins more games than the
 Demon (57.03%, interval above chance) where 0.4.0 won a third of them (32.62%, in line with the
