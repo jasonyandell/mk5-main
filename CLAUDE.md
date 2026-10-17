@@ -54,7 +54,11 @@ Two halves, one game:
   (#193), Cammarata's claim that a net's own neurons are clean and that a squeezed net grows
   coarser, not mixed. Zeb's field net retrained at 24 neurons is cleaner than at 192 (0.83 vs
   0.61), which a superposition prior says should not happen. Keep it central and test it hard;
-  if a test breaks it, that is the finding ([[lem-the-teacher]]).
+  if a test breaks it, that is the finding ([[lem-the-teacher]]). Every result is scoped to this
+  net, these inputs and this vocabulary: our concept list and our one-position inputs (no
+  player-behaviour history, uniform beliefs) may not express what the net found, so an unnamed
+  unit is a vocabulary or data gap before it is superposition (#202). We can say what we learned
+  from this model, not all of 42, yet.
 - **The oracle era** (`forge/`, `gus/`, `champion/`, `w42/`) — the GPU oracle that solves
   the game with perfect information, E[Q] under uncertainty, and the distilled students and
   belief players (jud, champion ladders) built on it. Finished, graded, and kept as the
