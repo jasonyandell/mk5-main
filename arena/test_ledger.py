@@ -10,7 +10,12 @@ points from 200-180 with one chair and the forced shaker. Silas's
 `tests/ledger.rs` replays every a and b row by its own `play_out` and must get
 the same hand tile for tile (the differential check across the boundary), and
 reads each ledger to the arena's own paired mean and flips, which this file
-writes beside them (`ledger-arena-means.txt`). The chance arm is the arena's
+writes beside them (`ledger-arena-means.txt`). A third, the menu ledger
+(#189), seats the book's full menu (`MenuBidder`) in chair 0 of a heuristic
+field on deals where that chair holds four doubles or more, every seat
+playing the lowest legal tile: its table offers all nine declarations and its
+rows hold doubles-trump and no-trump contracts, which Silas replays under its
+own rules (the same means file). The chance arm is the arena's
 random bidder, which Silas cannot replay, so it is read, not replayed.
 
 To rewrite the fixtures after a deliberate change to the arena:
@@ -24,7 +29,11 @@ import json
 from fractions import Fraction
 from pathlib import Path
 
-from arena.ledger import FORMAT, overbidding_field, paired_mean, parse_seat, play_name, run_ledger
+import pytest
+
+from arena.ledger import (FORMAT, MENU as NINE, OFFERED, Seat, deals, overbidding_field, paired_mean, parse_seat,
+                          play_name, run_ledger, tile)
+from forge.oracle.tables import DOMINO_IS_DOUBLE
 
 DATA = Path(__file__).resolve().parent.parent / "silas" / "tests" / "data"
 MEANS = DATA / "ledger-arena-means.txt"
@@ -36,9 +45,22 @@ LEDGERS = {
     "ledger-points.json": dict(n=8, seed=20261016, seats=1, scoring="points", target=250, score=(200, 180),
                                forced=True),
 }
+# The menu ledger: its own field and players, on the four-double deals of chair 0.
+MENU_FIELD = ("heuristic+lowest",) * 4
+MENU_A, MENU_B = "menu+lowest", "heuristic+lowest"
+MENU = "ledger-menu.json"
+MENU_ARGS = dict(n=10, seed=20261017, seats=0, scoring="marks", target=7, score=(0, 0))
+NAMES = (*LEDGERS, MENU)
+
+
+def four_doubles(deal) -> bool:
+    return sum(DOMINO_IS_DOUBLE[t] for t in deal[0]) >= 4
 
 
 def ledger(name: str) -> dict:
+    if name == MENU:
+        return run_ledger(field=tuple(parse_seat(s) for s in MENU_FIELD), a=parse_seat(MENU_A),
+                          b=parse_seat(MENU_B), keep=four_doubles, **MENU_ARGS)
     return run_ledger(field=tuple(parse_seat(s) for s in FIELD), a=parse_seat(A), b=parse_seat(B), **LEDGERS[name])
 
 
@@ -56,14 +78,14 @@ def means(ledgers: dict[str, dict]) -> str:
 
 
 def write() -> None:
-    ledgers = {name: ledger(name) for name in LEDGERS}
+    ledgers = {name: ledger(name) for name in NAMES}
     for name, led in ledgers.items():
         (DATA / name).write_text(json.dumps(led) + "\n")
     MEANS.write_text(means(ledgers))
 
 
 def test_the_ledger_fixtures_are_the_arenas():
-    ledgers = {name: ledger(name) for name in LEDGERS}
+    ledgers = {name: ledger(name) for name in NAMES}
     for name, led in ledgers.items():
         assert json.loads((DATA / name).read_text()) == led, name
     assert MEANS.read_text() == means(ledgers)
@@ -123,3 +145,43 @@ def test_zeb_sits_in_the_chair_and_its_ledger_reads(tmp_path):
     assert played and all(len(r["plays"]) == 28 and sum(r["outcome"].values()) == 42 for r in played)
     mean, flips = paired_mean(led)
     assert sum(flips) == 2
+
+
+def test_a_deal_filter_keeps_the_first_n_of_the_same_stream():
+    # The filter draws from the stream every ledger deals from and keeps the
+    # first n deals it accepts, numbered in the order kept; no filter is the
+    # stream itself (the two older fixtures above are byte-identical).
+    stream = deals(400, MENU_ARGS["seed"])
+    kept = [d for d in stream if four_doubles(d)]
+    assert len(kept) >= 10
+    assert deals(10, MENU_ARGS["seed"], four_doubles) == kept[:10]
+    assert deals(10, MENU_ARGS["seed"]) == stream[:10] == deals(10, MENU_ARGS["seed"], None)
+    led = json.loads((DATA / MENU).read_text())
+    dealt = {r["deal"]: r["hands"] for r in led["rows"]}
+    assert [dealt[d] for d in range(10)] == [[[tile(t) for t in hand] for hand in deal] for deal in kept[:10]]
+
+
+def test_a_menu_table_offers_all_nine_declarations():
+    # `offered` is true of the table: the pip trumps, unless a seat's bidder
+    # may declare beyond them, then all nine (#189).
+    led = json.loads((DATA / MENU).read_text())
+    assert led["offered"] == NINE == OFFERED + ["DT", "NT"]
+    declared = [r["contract"]["declaration"] for r in led["rows"] if r["contract"] is not None]
+    assert {"DT", "NT"} <= set(declared), "the fixture holds a doubles-trump and a no-trump contract"
+    assert all(r["arm"] == "a" for r in led["rows"]
+               if r["contract"] is not None and r["contract"]["declaration"] in ("DT", "NT"))
+    assert json.loads((DATA / "ledger-marks.json").read_text())["offered"] == OFFERED
+
+
+def test_a_menu_table_with_a_seat_that_cannot_play_it_is_refused():
+    class PipOnly:
+        def plays(self, decl: int) -> bool:
+            return decl < 7
+
+        def choose(self, states, bid_values, marks=None, marks_to_win=7):
+            raise AssertionError("never seated")
+
+    field = tuple(parse_seat("heuristic+lowest") for _ in range(4))
+    with pytest.raises(ValueError, match="#155"):
+        run_ledger(field=field, a=parse_seat("menu+lowest"), b=Seat(field[0].bid, PipOnly(), "pip-only"),
+                   n=1, seed=1, seats=0)

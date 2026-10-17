@@ -167,3 +167,32 @@ fn silas_compare_reads_a_ledger() {
     assert!(text.contains("flips 2 for, 1 against, 1 tied"), "{text}");
     assert!(text.contains("and sampled(4, 20261015, arena)"), "{text}");
 }
+
+#[test]
+fn a_menu_ledger_replays_its_doubles_trump_and_no_trump_hands() {
+    // The book's full menu in the chair (#189): the table offers all nine
+    // declarations, and every doubles-trump and no-trump row is replayed under
+    // Silas's own rules and settles as the arena says (the means test above
+    // reads it to the arena's paired mean).
+    let menu = ledger("ledger-menu.json");
+    let names: Vec<String> = menu.table.offered.iter().map(|d| d.name().to_owned()).collect();
+    assert!(names.contains(&"straight42/DT".to_owned()) && names.contains(&"straight42/NT".to_owned()), "{names:?}");
+    let declared: Vec<String> = menu
+        .rows
+        .iter()
+        .filter_map(|r| match &r.settlement {
+            Settlement::Played { contract, .. } => Some(contract.declaration().name().to_owned()),
+            Settlement::PassedOut { .. } => None,
+        })
+        .collect();
+    for want in ["straight42/DT", "straight42/NT"] {
+        assert!(declared.iter().any(|d| d == want), "{want} in {declared:?}");
+    }
+    assert!(Paired::from_ledger(&menu, &Utility::Marks, &half()).is_ok());
+    // The same rows at a table that offers only the pip trumps are refused.
+    let mut v: serde_json::Value = serde_json::from_str(&data("ledger-menu.json")).unwrap();
+    v["offered"] = serde_json::json!(["P6", "P5", "P4", "P3", "P2", "P1", "P0"]);
+    let pips = Ledger::from_json(&v.to_string()).unwrap();
+    let refused = Paired::from_ledger(&pips, &Utility::Marks, &half()).unwrap_err();
+    assert!(refused.0.contains("is not offered"), "{refused}");
+}

@@ -4,3 +4,4 @@
 # arena/test_ledger.py; read by silas/tests/ledger.rs.
 ledger-marks.json marks 1/8 2 1 1
 ledger-points.json points -133/16 0 2 6
+ledger-menu.json marks 1/20 1 0 9

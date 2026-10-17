@@ -63,10 +63,13 @@ def write_batch(arm: str, seed: int, games: int, out: str, seats: tuple, points:
     return meta
 
 
-def queue(module: str, root: str, jobs: Sequence[tuple[str, int]], workers: int, games: int) -> None:
+def queue(module: str, root: str, jobs: Sequence[tuple[str, int]], workers: int, games: int,
+          threads: int | None = None) -> None:
     """Run `python -m <module> arena --arm A --seed S` for every job through
     scripts/cpu-slot, `workers` at a time, skipping batches whose output
-    exists; a nonzero exit is logged and the batch is left out."""
+    exists; a nonzero exit is logged and the batch is left out. `threads` is
+    the cores a batch declares to cpu-slot; by default the game-pair batches'
+    measured share."""
     todo = [(a, s) for a, s in jobs if not (Path(root) / f"{a}-s{s}" / "meta.json").exists()]
     log = open(Path(root) / "queue.log", "a")
     lock = threading.Lock()
@@ -79,7 +82,7 @@ def queue(module: str, root: str, jobs: Sequence[tuple[str, int]], workers: int,
 
     say(f"queue: {len(todo)} batches to run, {workers} workers, {games} pairs a batch")
     # The cores a batch keeps busy, measured 2026-10-16 (#173): 1.0 at 1 pair, 1.5 at 2, 4.8 at 12.
-    cores = max(1, min(5, round(games / 2.5)))
+    cores = threads or max(1, min(5, round(games / 2.5)))
 
     def work() -> None:
         while True:

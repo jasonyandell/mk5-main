@@ -17,7 +17,8 @@ one-hand games at 0-0 are the case), never a game to the target, and every
 seat its own player, the chair's replacing the field's. A hand passed out (no
 forced bid) is recorded as passed out: the reshake is another deal. The deals
 are `random.Random(seed)` shuffles of the 28 tiles, seven to each seat from
-seat 0.
+seat 0; with a deal filter (`keep`), the first n of that same stream it
+accepts, numbered from zero in the order kept.
 
     python -u -m arena.ledger --a silas:risk-budget --b heuristic+lowest \\
         --field overbid:5 --n 200 --seed 1 --out ledger.json
@@ -37,7 +38,9 @@ import json
 import random
 from dataclasses import dataclass
 from fractions import Fraction
+from itertools import islice
 from pathlib import Path
+from typing import Callable, Iterator
 
 from forge.oracle.tables import DOMINOES
 from forge.zeb.game import apply_action, current_player, is_terminal
@@ -45,7 +48,7 @@ from forge.zeb.types import BidState, GamePhase, ZebGameState
 
 from arena.auction import PASS, BidPolicy, bidding_order, run_auction, score_hand, settle_points
 from arena.bidders import HeuristicBidder, RandomBidder
-from arena.play import LowestPlay, PlayPolicy
+from arena.play import PIP_DECLS, LowestPlay, PlayPolicy, check_menu
 
 FORMAT = "silas-ledger-1"
 # The arena's auction has no marks cap below the five that four calls reach.
@@ -53,6 +56,10 @@ MAX_MARKS = 5
 DECLARATIONS = {**{p: f"P{p}" for p in range(7)}, 7: "DT", 9: "NT"}
 # The arena's menu (SilasBidder, HeuristicBidder): a pip trump, the higher pip first.
 OFFERED = ["P6", "P5", "P4", "P3", "P2", "P1", "P0"]
+# The book's full menu (`MenuBidder`, #155): the pip trumps, doubles trump, no trump.
+MENU = OFFERED + ["DT", "NT"]
+
+Deal = tuple[tuple[int, ...], ...]
 
 
 @dataclass(frozen=True)
@@ -82,14 +89,27 @@ def tile(t: int) -> str:
     return f"{high}-{low}"
 
 
-def deals(n: int, seed: int) -> list[tuple[tuple[int, ...], ...]]:
+def deal_stream(seed: int) -> Iterator[Deal]:
+    """The deals from `seed`, without end: `random.Random(seed)` shuffles of
+    the 28 tiles, seven to each seat from seat 0."""
     rng = random.Random(seed)
-    out = []
-    for _ in range(n):
+    while True:
         deck = list(range(28))
         rng.shuffle(deck)
-        out.append(tuple(tuple(sorted(deck[7 * s:7 * s + 7])) for s in range(4)))
-    return out
+        yield tuple(tuple(sorted(deck[7 * s:7 * s + 7])) for s in range(4))
+
+
+def deals(n: int, seed: int, keep: Callable[[Deal], bool] | None = None) -> list[Deal]:
+    """The first `n` deals from `seed` that `keep` accepts (every deal when
+    `keep` is None), in the stream's order."""
+    return list(islice((d for d in deal_stream(seed) if keep is None or keep(d)), n))
+
+
+def offered(seats: tuple[Seat, ...]) -> list[str]:
+    """The declarations a ledger's table offers: the pip trumps, or all nine
+    when a seat's bidder may declare beyond them (`declarations`, #155)."""
+    menu = {d for s in seats for d in getattr(s.bid, "declarations", PIP_DECLS)}
+    return OFFERED if menu <= set(PIP_DECLS) else MENU
 
 
 class _Hand:
@@ -137,13 +157,18 @@ def run_ledger(
     target: int = 7,
     score: tuple[int, int] = (0, 0),
     forced: bool = False,
+    keep: Callable[[Deal], bool] | None = None,
 ) -> dict:
     """The ledger of `a` against `b` in the chair (`seats`: "rotate" for
     every chair, or one seat) of `field`, at every shaker, on `n` deals from
     `seed`, every hand from `score` under `scoring` to `target`. The chance
     arm is played alongside. Play runs in lockstep: each tick, one batched
-    call per play policy."""
+    call per play policy. `keep` filters the deals (the first `n` of the
+    stream it accepts); the default keeps every deal. A table where a bidder
+    may declare what a seat cannot play is refused (`check_menu`)."""
     chance = chance or chance_seat()
+    everyone = (*field, a, b, chance)
+    check_menu([s.bid for s in everyone], [s.play for s in everyone])
     chairs = range(4) if seats == "rotate" else (int(seats),)
     points = scoring == "points"
     match = dict(
@@ -151,7 +176,7 @@ def run_ledger(
         points=score if points else (0, 0), points_to_win=target if points else None,
     )
     live = []
-    for d, hands in enumerate(deals(n, seed)):
+    for d, hands in enumerate(deals(n, seed, keep)):
         for chair in chairs:
             for shaker in range(4):
                 for arm, player in (("a", a), ("b", b), ("chance", chance)):
@@ -182,7 +207,7 @@ def run_ledger(
         sample=dict(n=n, seed=seed),
         seats="rotate" if seats == "rotate" else int(seats),
         auction=dict(max_marks=MAX_MARKS, forced=forced),
-        offered=OFFERED,
+        offered=offered(everyone),
         scoring=dict(kind=scoring, target=target),
         score=list(score),
         rows=rows,
@@ -195,6 +220,15 @@ def paired_mean(ledger: dict, unit: str | None = None) -> tuple[Fraction, tuple[
     settled by the arena's scoring (`score_hand` in marks, `settle_points` in
     points; a passed-out hand moves nothing), exactly; and the flips (deals a
     did better, b did, tied)."""
+    diffs = list(deal_differences(ledger, unit).values())
+    flips = (sum(x > 0 for x in diffs), sum(x < 0 for x in diffs), sum(x == 0 for x in diffs))
+    return sum(diffs, Fraction(0)) / len(diffs), flips
+
+
+def deal_differences(ledger: dict, unit: str | None = None) -> dict[int, Fraction]:
+    """Each deal's mean over its seatings of a's net transfer less b's, for
+    the chair's side, in `unit` (the ledger's scoring by default), exactly:
+    the terms `paired_mean` averages, by deal."""
     unit = unit or ledger["scoring"]["kind"]
     per: dict[int, dict[str, Fraction]] = {}
     seatings: dict[int, int] = {}
@@ -215,9 +249,7 @@ def paired_mean(ledger: dict, unit: str | None = None) -> tuple[Fraction, tuple[
         cell[r["arm"]] += net
         if r["arm"] == "a":
             seatings[r["deal"]] = seatings.get(r["deal"], 0) + 1
-    diffs = [(per[d]["a"] - per[d]["b"]) / seatings[d] for d in sorted(per)]
-    flips = (sum(x > 0 for x in diffs), sum(x < 0 for x in diffs), sum(x == 0 for x in diffs))
-    return sum(diffs, Fraction(0)) / len(diffs), flips
+    return {d: (per[d]["a"] - per[d]["b"]) / seatings[d] for d in sorted(per)}
 
 
 def parse_seat(spec: str, seed: int = 0) -> Seat:
