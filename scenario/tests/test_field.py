@@ -494,18 +494,19 @@ def test_the_shipped_v2_net_still_refuses_doubles_and_no_trump():
 
 
 def test_checkpoints_come_from_the_one_run_and_warm_means_warm(make_pour):
-    """`on_checkpoint` sees the integer net at the asked epochs (0 is the initial net) of the
-    same run: the last checkpoint is the returned net, and checkpointing leaves the run
-    unchanged. `warm` is true only when the caller passed `init`."""
+    """`on_checkpoint` sees the integer net at the asked optimizer steps (0 is the initial net)
+    of the same run: the last step's checkpoint is the returned net, and checkpointing leaves
+    the run unchanged. `warm` is true only when the caller passed `init`."""
     data = dataset(make_pour)
+    steps = 3 * -(-int((data.deal % 10 != 0).sum()) // 256)      # three epochs of batches of 256
     seen = {}
-    t = train(data, "pmake", epochs=3, seed=5, hidden=(16, 8), checkpoints=(0, 1, 3),
+    t = train(data, "pmake", epochs=3, seed=5, hidden=(16, 8), checkpoints=(0, 1, steps),
               on_checkpoint=lambda e, n: seen.__setitem__(e, n))
-    assert sorted(seen) == [0, 1, 3]
-    assert np.array_equal(seen[3].w1, t.net.w1) and np.array_equal(seen[3].b3, t.net.b3)
+    assert sorted(seen) == [0, 1, steps]
+    assert np.array_equal(seen[steps].w1, t.net.w1) and np.array_equal(seen[steps].b3, t.net.b3)
     plain = train(data, "pmake", epochs=3, seed=5, hidden=(16, 8))
     assert np.array_equal(plain.net.w1, t.net.w1) and plain.losses == t.losses
-    assert not np.array_equal(seen[0].w1, seen[3].w1)
+    assert not np.array_equal(seen[0].w1, seen[steps].w1)
     assert t.metrics["warm"] is False
     assert train(data, "pmake", epochs=1, seed=5, hidden=(16, 8), init=dequantize(t.net)).metrics["warm"] is True
     with pytest.raises(ValueError):

@@ -278,9 +278,10 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
           decay: float = 1e-4, device: str = "numpy", log=None,
           init: list[np.ndarray] | None = None, checkpoints: tuple[int, ...] = (),
           on_checkpoint=None) -> Trained:
-    """`checkpoints`: epochs (0 is the initial net) after which the integer net is handed to
-    `on_checkpoint(epoch, net)`, from the one run, so formation can be watched without
-    restarting the optimizer."""
+    """`checkpoints`: optimizer steps (0 is the initial net) after which the integer net is
+    handed to `on_checkpoint(step, net)`, from the one run, so formation can be watched
+    without restarting the optimizer. Steps, not epochs: on a large pour one epoch is
+    thousands of steps and most units form inside it."""
     if device not in DEVICES:
         raise ValueError(f"device is one of {tuple(DEVICES)}, not {device!r}")
     val = data.deal % 10 == 0
@@ -301,6 +302,7 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
     losses, val_losses, t = [], [], 0
     if checkpoints and on_checkpoint is None:
         raise ValueError("checkpoints need an on_checkpoint")
+    checkpoints = frozenset(checkpoints)
     if 0 in checkpoints:
         on_checkpoint(0, quantize(dev.get(params), data.x[tr]))
     for epoch in range(epochs):
@@ -311,12 +313,12 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
             t += 1
             loss, params, m, v = dev.step(params, m, v, t, b)
             total += loss * len(b)
+            if t in checkpoints:
+                on_checkpoint(t, quantize(dev.get(params), data.x[tr]))
         losses.append(total / len(rows))
         val_losses.append(dev.loss(params, val_rows) if len(val_rows) else math.nan)
         if log is not None:
             log(f"  epoch {epoch + 1:3d}: train {losses[-1]:.4f}  val {val_losses[-1]:.4f}")
-        if epoch + 1 in checkpoints:
-            on_checkpoint(epoch + 1, quantize(dev.get(params), data.x[tr]))
     params = dev.get(params)
     net = quantize(params, data.x[tr])
     metrics = {
