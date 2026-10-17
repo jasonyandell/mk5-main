@@ -101,8 +101,15 @@ def _shown(spec: str) -> str:
 # -- the tables ----------------------------------------------------------------------
 
 
-def _lists(lengths: np.ndarray, values: pa.Array) -> pa.ListArray:
+INT32_MAX = (1 << 31) - 1
+
+
+def _lists(lengths: np.ndarray, values: pa.Array) -> pa.ListArray | pa.LargeListArray:
+    """A list column; int64 offsets (`large_list`) once a column holds more than 2^31 values,
+    as a 250,000-deal split's splat outcomes do."""
     offsets = np.concatenate(([0], np.cumsum(lengths, dtype=np.int64)))
+    if offsets[-1] > INT32_MAX:
+        return pa.LargeListArray.from_arrays(pa.array(offsets, pa.int64()), values)
     return pa.ListArray.from_arrays(pa.array(offsets, pa.int32()), values)
 
 

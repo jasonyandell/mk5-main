@@ -162,3 +162,15 @@ def test_splits_may_differ_in_planner_but_not_in_contract(pours, tmp_path):
     (bad / "manifest.json").write_text(json.dumps(m))
     with pytest.raises(SystemExit, match="different contracts"):
         stage([read_split("pip", pours["train"]), read_split("b", bad)], tmp_path / "s3", "x/y")
+
+
+def test_a_list_column_past_two_to_the_31_takes_int64_offsets(monkeypatch):
+    """A split's splat outcomes can hold more than 2^31 values (pour A's pip half does);
+    the list column then takes int64 offsets instead of overflowing int32."""
+    import pyarrow as pa
+    from scenario import hf
+    small = hf._lists(np.array([2, 1]), pa.array(np.arange(3, dtype=np.int8)))
+    assert isinstance(small, pa.ListArray) and small.to_pylist() == [[0, 1], [2]]
+    monkeypatch.setattr(hf, "INT32_MAX", 2)       # the same branch, without allocating 2^31 values
+    large = hf._lists(np.array([2, 1]), pa.array(np.arange(3, dtype=np.int8)))
+    assert isinstance(large, pa.LargeListArray) and large.to_pylist() == [[0, 1], [2]]
