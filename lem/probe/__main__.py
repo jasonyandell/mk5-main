@@ -38,6 +38,11 @@ def main(argv=None) -> None:
     s = sub.add_parser("ablate"); s.add_argument("sample"); s.add_argument("out"); s.add_argument("--net", default=NET)
     s = sub.add_parser("aa"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("belief_parts"); s.add_argument("out_dir")
     s.add_argument("--net", default=NET)
+    s = sub.add_parser("squeeze-train"); s.add_argument("pours", nargs="+"); s.add_argument("--out", required=True)
+    s.add_argument("--widths", required=True, help="128x64,32x16,..."); s.add_argument("--seeds", default="0")
+    s.add_argument("--epochs", type=int, default=60); s.add_argument("--device", default="mlx")
+    s = sub.add_parser("squeeze-families"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("out")
+    s.add_argument("--net", default=NET)
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
@@ -178,6 +183,23 @@ def main(argv=None) -> None:
         log("belief, both ways")
         result["belief"] = aa.belief_aa(sample, acts, a.belief_parts, log=log)
         aa.write(result, a.out_dir)
+    elif a.cmd == "squeeze-train":
+        from lem.probe import squeeze
+        widths = [tuple(int(v) for v in w.split("x")) for w in a.widths.split(",")]
+        squeeze.train_family(a.pours, a.out, widths, [int(v) for v in a.seeds.split(",")], a.epochs, a.device, log)
+    elif a.cmd == "squeeze-families":
+        from lem.probe import concepts, squeeze
+        from lem.probe.net import forward, load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        with np.load(a.labels) as z:
+            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+        audit = json.loads((Path(a.audit_dir) / "audit.json").read_text())
+        acts = forward(load_net(a.net), sample.x)
+        out = squeeze.families(labels, names, acts, audit, log)
+        out["net"] = a.net
+        Path(a.out).write_text(json.dumps(out, indent=1))
     elif a.cmd == "list":
         from lem.probe import concepts
         concepts.write_list(a.out)

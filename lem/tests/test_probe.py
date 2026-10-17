@@ -339,3 +339,26 @@ def test_aa_calibration_counts_are_near_their_targets_on_a_simulated_calibrated_
     r = aa.r2_bootstrap(pred, yy, m, d, Once(), boot=3)
     e, v = (yy - pred).ravel(), (yy - yy.mean()).ravel()
     assert np.allclose(r, 1 - e @ e / (v @ v))
+
+
+def test_squeeze_fold_is_exact_on_pip_positions_and_families_cover_the_list():
+    """The folded v2 net scores every pip position exactly as the v3 net it came from,
+    and every v1 concept has exactly one family (the squeeze's family test, G2)."""
+    from lem.probe import concepts, squeeze
+    from scenario.field import N_FEATURES, OFFSET, FieldNet
+    rng = np.random.default_rng(3)
+    h1, h2 = 16, 8
+    v3 = FieldNet(rng.integers(-300, 300, (N_FEATURES, h1)).astype(np.int64), rng.integers(-5000, 5000, h1).astype(np.int64),
+                  rng.integers(-300, 300, (h2, h1)).astype(np.int64), rng.integers(-5000, 5000, h2).astype(np.int64),
+                  rng.integers(-300, 300, (28, h2)).astype(np.int64), rng.integers(-5000, 5000, 28).astype(np.int64), 6, 6, "field-v3")
+    v2 = squeeze.fold_to_v2(v3)
+    for _ in range(50):
+        active = sorted(rng.choice(OFFSET["kind"], 30, replace=False).tolist())
+        assert np.array_equal(v3.scores(active + [OFFSET["kind"]]), v2.scores(active))
+    names = [c.name for c in concepts.CONCEPTS]
+    members = [c for cs in squeeze.FAMILIES.values() for c in cs]
+    assert sorted(members) == sorted(names) and len(members) == len(set(members))
+    # the union table: P(a or b) on a toy top set, cap respected, diagonal excluded
+    tl = np.array([[1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1]], bool)
+    u = squeeze.union_table(tl, np.ones((3, 3), bool))
+    assert u[0, 1] == 0.75 and u[0, 2] == 0.75 and u[0, 0] == -1

@@ -185,6 +185,11 @@ a shipped Lem player follows Zeb (MIT) is the Mayor's call when there is one to 
 
 ## Prior work
 
+- **The foundation:** Nick Cammarata, ["Neural Networks Are Already Clean"](https://already-clean.goodfire.com/)
+  (Goodfire): networks' own neurons are mostly clean once tools, architecture, data and training are
+  sound; the remaining mixing is recursive generalization; squeezed layers grow coarser concepts,
+  not mixed ones. The program's ideas rest on it; re-read it before designing a stage. Summary and
+  the 42 translation: [[clean-neurons-42]]. Its squeeze is G2's pilot ([[lem-squeeze-2026-10-16]]).
 - [[clean-neurons-42]]: the audit-first plan this page absorbs; Cammarata's "already clean"
   thesis as a 42 experiment.
 - #175: the GPT-on-42 proposal (tokenizer, small GPT, probe suite); stage 3's trunk and heads
