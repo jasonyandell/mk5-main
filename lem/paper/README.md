@@ -174,7 +174,11 @@ A pruned curve overstates what is needed; a net trained at width k is the honest
 retrained from scratch at 128×64, 32×16, 16×8, 8×4 and 128×8 test the essay's squeeze [1]: narrow
 neurons should cover coarser families of the teacher's concepts, not unrelated mixtures. Under a
 fine label a coarse neuron scores partial, so the test is whether a pole's best two-concept union
-lies within one concept family more often than random families give.
+lies within one concept family more often than random families give. **Result:** narrow nets are cleaner, not
+mixed. The clean share is 0.610 at 192 neurons and 0.833 at 24 (three seeds 0.65–0.83). Where
+units broaden, they broaden within a family, chiefly one coarse unit, "late in the trick". 24
+neurons close 0.684 of the gap from random play to the teacher (192 neurons: 0.804; 12: 0.615).
+A small clean vocabulary, the trick in front of the mover, carries most of the play.
 
 ## 8. Models of others **[gap]**
 
@@ -207,7 +211,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | # | measurement the paper needs | status |
 |---|---|---|
 | G1 | **Belief probes**: linear probes from hidden activations to the teacher's exact posterior P(seat holds tile), against the counting prior; then the book's reads | first arm done (play-only, linear): inputs 0.79, a1 0.24, a2 0.04; next arms: the reading posterior, Lem's nets, a nonlinear bound |
-| G2 | **Checkpointed retraining + width family** on the 250k pour, 3 seeds; concept formation and the knee per checkpoint and width | width pilot (the squeeze) registered 2026-10-16; checkpoints next; $0 on the M5 Max |
+| G2 | **Checkpointed retraining + width family** on the 250k pour, 3 seeds; concept formation and the knee per checkpoint and width | width pilot (the squeeze) done 2026-10-17: narrow nets cleaner (0.61 → 0.83); checkpoints next; $0 on the M5 Max |
 | G3 | **Causal tests**: per-concept ablation and activation patching between matched legal positions, against matched random units | not started |
 | G4 | **The first field-v3 net** on pour A (all nine declarations) and its audit with concept list v2 | pour A running |
 | G5 | **Lem's transformer** with a next-play head over league data (#178); its audit | not started |
