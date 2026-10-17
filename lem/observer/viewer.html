@@ -19,8 +19,9 @@ const DATA=__OBSERVER_DATA__;
 const el=id=>document.getElementById(id), pct=n=>(100*n).toFixed(1)+'%';
 let step=0,viewer=0,layer=0,head=0,unit=0,revealed=false,guess=null;
 const R=DATA.report;
-el('stats').innerHTML=[['Parameters',R.parameters.toLocaleString()],['Training deals',R.split_deals.train.toLocaleString()],['Unseen next tiles',pct(R.test.all.top1)],['Before learning',pct(R.initial_test.all.top1)]].map(([label,n])=>`<div class="stat"><strong>${n}</strong>${label}</div>`).join('');
+el('stats').innerHTML=[['Parameters',R.parameters.toLocaleString()],['Training deals',R.split_deals.train.toLocaleString()],['Next-tile accuracy',pct(R.test.all.top1)],['Before learning',pct(R.initial_test.all.top1)]].map(([label,n])=>`<div class="stat"><strong>${n}</strong>${label}</div>`).join('');
 el('scope').textContent=`The accuracy is exact next-tile agreement across ${R.split_deals.test} held-out deals, viewed from all four seats, including forced moves. On discretionary moves: ${pct(R.test.discretionary.top1)}. These views are correlated, not independent trials.`;
+if(DATA.intervals){const ci=DATA.intervals.groups.all.top1.ci95;el('scope').textContent+=` The 95% interval is ${pct(ci[0])}–${pct(ci[1])}, resampling whole deals. The rule-based visible-support baseline gets ${pct(R.test.all.visible_uniform_expected_top1)} expected accuracy.`;}
 const points=R.history.map(h=>h.validation.all.nll),lo=Math.min(...points),hi=Math.max(...points);
 el('curve').innerHTML=`<polyline fill="none" stroke="#d65d28" stroke-width="3" points="${points.map((p,i)=>`${10+780*i/Math.max(1,points.length-1)},${90-80*(p-lo)/Math.max(.01,hi-lo)}`).join(' ')}"/>`;
 el('curveText').textContent=`Validation loss: ${points[0].toFixed(3)} at step ${R.history[0].step} → ${points.at(-1).toFixed(3)} at step ${R.steps}. Selected checkpoint: step ${R.best_step}. Test loss: ${R.test.all.nll.toFixed(3)}; a uniform 28-tile guess: ${R.uniform_28_nll.toFixed(3)}. A rule-based visible-support guess: ${R.test.all.visible_uniform_nll.toFixed(3)}.`;

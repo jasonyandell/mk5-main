@@ -69,9 +69,12 @@ def load_deals(sources, limit):
         if hands.shape != (len(m["deal_seeds"]), 4) or plays.shape != (len(hands), 28, 2) or decls.shape != (len(hands),):
             raise ValueError("malformed deal arrays")
         forced = set(m.get("forced_deals", []))
-        records.extend(dict(seed=int(seed), hands=h.tolist(), decl=int(d), plays=a.tolist(),
-                            coverage_forced=int(seed) in forced)
-                       for seed, h, d, a in zip(m["deal_seeds"], hands, decls, plays))
+        # A source's (limit+1)th seed cannot enter the combined first `limit`.
+        # Avoid building Python objects for the other quarter-million games.
+        for i in np.argsort(m["deal_seeds"])[:limit]:
+            seed = int(m["deal_seeds"][i])
+            records.append(dict(seed=seed, hands=hands[i].tolist(), decl=int(decls[i]),
+                                plays=plays[i].tolist(), coverage_forced=seed in forced))
         provenance.append({"source": str(source), "commit": m.get("commit"), "spec": m.get("spec"),
                            "manifest_sha256": hashlib.sha256(raw).hexdigest()})
     records.sort(key=lambda r: r["seed"])

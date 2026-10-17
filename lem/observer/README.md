@@ -41,6 +41,9 @@ scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.train
   --source /path/to/pour-a/merged/pip --source /path/to/pour-a/merged/dtnt \
   --out scratch/lem/observer-first --deals 5000 --steps 2000 --device mps
 
+scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.uncertainty \
+  scratch/lem/observer-first
+
 scratch/venv/bin/python -u -m lem.observer.inspect scratch/lem/observer-first \
   --out scratch/lem/observer-first/worked-hand.html
 
@@ -74,8 +77,9 @@ own legality or public exclusions for another seat; it never reads that seat's
 hidden hand. Hidden-hand legality labels discretionary moves for diagnostics
 only. The model's probabilities are never repaired with a legality mask.
 
-Views and moves from one deal are correlated. These are descriptive metrics
-from one seed, not confidence intervals over independent moves. The fixed
+Views and moves from one deal are correlated. The uncertainty command bootstraps
+whole deals, keeping all their views and plays together. Its intervals condition
+on this one trained model, not uncertainty across training seeds. The fixed
 bid-30 pour has no auction, persistent identities or cross-hand memory. All
 predictions use the recorded past; this is not a generated game or a strength
 evaluation. No native neuron has yet been named or causally tested.

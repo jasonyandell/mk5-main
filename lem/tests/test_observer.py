@@ -12,6 +12,8 @@ import torch
 from lem.observer.data import QUERIES, SEAT, encode, load_deals, partition, prepare
 from lem.observer.model import Config, Observer
 from lem.observer.train import evaluate, run
+from lem.observer.inspect import build
+from lem.observer.uncertainty import summarize
 from scenario.atlas import deal
 from scenario.record import empty_record
 from scenario.rules import rules_for, tiles_of
@@ -110,8 +112,21 @@ def test_training_resume_matches_uninterrupted_and_rejects_changed_data(tmp_path
     assert torch.equal(a["sampler_state"], b["sampler_state"])
     for key in a["model"]:
         torch.testing.assert_close(a["model"][key], b["model"][key], rtol=0, atol=0)
+    intervals = summarize(tmp_path / "continuous", draws=100)
+    report = json.loads((tmp_path / "continuous" / "report.json").read_text())
+    for group in ("all", "own", "others", "discretionary"):
+        assert intervals["groups"][group]["top1"]["estimate"] == report["test"][group]["top1"]
+    page = tmp_path / "worked-hand.html"
+    payload = build(tmp_path / "continuous", page)
+    assert "__OBSERVER_DATA__" not in page.read_text()
+    assert len(payload["views"]) == 4
+    view = payload["views"][0]
+    assert len(view["tokens"]) == 68 and len(view["trained"]) == 28
+    assert len(view["units"][0][0]) == 32  # test model width 8
+    assert sum(view["attention"][0][0][0][14:]) == 0
     staged.deals = 49
     with pytest.raises(ValueError, match="identical data"):
         run(staged)
+    assert len(json.loads((tmp_path / "staged" / "deals.json").read_text())) == 50
     with pytest.raises(ValueError, match="overlapping"):
         load_deals([source, source], 50)

@@ -22,6 +22,9 @@ def build(run, destination):
                "seed": record["seed"], "decl": record["decl"],
                "tile_names": [label(t) for t in range(28)], "queries": QUERIES.tolist(),
                "views": []}
+    intervals = run / "intervals.json"
+    if intervals.exists():
+        payload["intervals"] = json.loads(intervals.read_text())
     predictions, traces = {}, None
     for name in ("initial", "best"):
         saved = torch.load(run / f"{name}.pt", map_location="cpu", weights_only=True)
