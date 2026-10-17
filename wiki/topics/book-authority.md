@@ -117,6 +117,13 @@ Use: *scope*, *under assumptions*, *our arena cannot yet see*, *the measurement 
    report ([[scenario-player]] § the reason report) shows the book's header states no
    condition that would reconcile them. The rule-fidelity census found 44% of the first
    head-to-head's loss was the encoding.
+6. **Calibrate before you chase an A/A miss.** An A/A arm that reads outside its interval is
+   one draw from a test that misses 1 time in 20. Before building a mechanism to explain it,
+   replicate the A/A. #117's A/A missed (+0.12), and #190 built a seed-varied field to explain it
+   as planner-seed scatter. #190's own A/A then missed the other way, and the 40-replicate
+   calibration showed the estimator covers as it says (R_F 1.06), that the pair differs by −0.004,
+   and that seeds do not matter ([[estimator-calibration-2026-10-16]]). The miss that starts a
+   search is never evidence for what the search finds, because it was chosen for having missed.
 
 ## Links
 
