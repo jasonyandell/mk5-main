@@ -216,7 +216,8 @@ Every clean share is quoted against the floor for its own list. **Causal** ([`wi
 #198): switching off a named unit of a 24-neuron net makes the play worse where its concept holds
 (45 of 45 units). The median rise in teacher regret is 0.0093 there and 0.0037 elsewhere, and among
 rows where the unit fires either way, the move changes more often inside the concept for 39 of 45.
-A random other concept separates the effect for 7 of 40 (median ratio 0.94 against 1.49). A clamp
+The unit's own concept separates the effect better than a random other concept for 33 of 40
+(median in/out ratio 1.49 against 0.94). A clamp
 at the 99th percentile changes 46% of all moves and cannot show steering. A dose-response clamp is
 next.
 

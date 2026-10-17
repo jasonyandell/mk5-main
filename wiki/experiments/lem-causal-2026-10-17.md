@@ -93,8 +93,9 @@ at least 200 rows on each side of their concept.
 - **The exceptions.** Six `+` poles changed play more outside their concept than inside:
   - `third` (s2 L1+004);
   - `trump-led` (s2 L1+008);
-  - two of four `winner-cannot-be-beaten`;
-  - two raw-input units (`x:winning:2`, s0 L1+000; and one `no-trump-held`, s1 L1+002).
+  - two of four `winner-cannot-be-beaten` (s0 L1+006, L1+015);
+  - one `no-trump-held` (s1 L1+002);
+  - one raw-input unit, `x:winning:2` (s0 L1+000).
 
   These are candidates for walking the ladder. A unit named by a narrow precision on its top 1%
   may do its work at moderate activations, where the label does not hold. Rung 1 asks whether
