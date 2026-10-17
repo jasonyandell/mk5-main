@@ -276,3 +276,15 @@ def test_a_menu_match_plays_a_ch9_contract(base_seed, decl):
     (h,) = g.hands
     assert h.decl_id == decl
     assert _check_hand(h.hands, h.plays, h.decl_id, h.bidder) == h.team_points
+
+
+def test_a_menu_seat_takes_a_twin_that_plays_doubles_and_no_trump():
+    """The field-v3 re-run's seat (#189): a given twin plays decls 7 and 9 in
+    place of the random field; a twin that cannot is refused."""
+    from arena.walt_play import WaltPlay
+    with pytest.raises(ValueError, match="must play doubles trump and no trump"):
+        MenuWalt(_deployed(), twin=_deployed())
+    seat = MenuWalt(_deployed(), twin=WaltPlay(level=0, n_outer=16, seed=3), tag="probe")
+    end = _play_out(seat, _state(7, DOUBLES_TRUMP))
+    assert _check_hand(end.hands, end.play_history, DOUBLES_TRUMP, 0) == end.team_points
+    assert "DTNT=probe" in repr(seat)

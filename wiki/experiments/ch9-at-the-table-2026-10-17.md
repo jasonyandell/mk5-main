@@ -3,7 +3,7 @@ title: The book's Ch. 9 at the table — doubles trump and no trump priced, prov
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: complete
+status: active
 ---
 
 ## Summary
@@ -73,6 +73,24 @@ determinism check).
 
 Receipts: pre-registered at 519935de (`scenario/ch9.py`). 288 batches through `scripts/cpu-slot`,
 four at a time, 113–147 s of compute each. Pilot seed 4890 excluded. Run 2026-10-17 00:58–04:31.
+
+## The re-run on field-v3 (pre-registered 2026-10-17, before any field-v3 batch)
+
+Lem's first field-v3 net (`field_v3_pour_a_h128x64.npz`, pinned by SHA-256, HF
+`lem/field-v3-audit-2026-10-16/`) plays declarations 0–7 and 9 ([[lem-field-v3-audit-2026-10-16]]).
+Two arms play the same 4,800 changed deals each: four doubles in the chair, and the menu's choice
+differs. On every other deal a − b is exactly 0.
+
+- **v3dt** (the Mayor's re-run): pip trumps on the deployed net exactly as above, and doubles
+  trump and no trump on Zeb's same spec over field-v3.
+- **v3all** (the clean contrast): every declaration on Zeb's same spec over field-v3, so the
+  chair's two declarations are played by one player.
+- **Primary per arm:** a − b in marks per hand. **The book predicts > 0.** Secondaries: the DT and
+  NT splits, points, and v3all − v3dt per deal. The MDE is about 0.027 marks per hand (DT about
+  0.048).
+- **Label.** "field-v3", never "the book's opponent". Lem's audit finds the net weakest on trump
+  questions under doubles and on the book's own doubles and no-trump hands.
+- 120 batches (seeds 5201–5260 × 80 deals, both arms); timing pilot seed 5190 excluded.
 
 ## Design (pre-registered before any measured batch; see `scenario/ch9.py`)
 

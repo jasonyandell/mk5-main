@@ -78,8 +78,39 @@ trump and no trump every seat plays the random field, not a net. The study is
 re-run with Lem's first field-v3 net (#185, G4) once that net covers
 declarations 7-9 (#177).
 
+RE-RUN ON FIELD-V3 (pre-registered 2026-10-17, after the provisional
+result above and before any field-v3 batch; arms `v3dt` and `v3all`).
+
+The provisional result: the menu costs -0.045 [-0.065, -0.025] marks per hand
+on changed deals, all of it doubles trump (-0.106), with every seat playing
+7-9 on the random field. Lem's first field-v3 net
+(`field_v3_pour_a_h128x64.npz`, sha256 `77a43723...f8d49e`, HF
+`lem/field-v3-audit-2026-10-16/`) plays decls 0-7 and 9 (#185). Its audit
+warns it is weakest on trump questions under doubles and on the book's own
+DT/NT declarations, so these arms read "field-v3", never "the book's
+opponent".
+- **v3dt** (the Mayor's re-run): every seat is `MenuWalt(player(),
+  twin=<player() with the field-v3 net>)`. Pip trumps are played by the
+  deployed net exactly as in `menu`, and decls 7 and 9 by Zeb's same spec
+  over field-v3.
+- **v3all** (the clean contrast): every seat is Zeb's same spec over field-v3
+  for every declaration, so both of the chair's declarations are played by
+  one player and the contrast separates the declaration from the player.
+- *Deals.* Four doubles in the chair *and* the menu's choice changed
+  (`menu_kind` is DT or NT); on every other deal a - b is exactly 0 (checked
+  in `menu`: `unchanged_nonzero` 0). Both arms play the same deals:
+  `V3_SEEDS` = 5201-5260 x 80 = **4,800 changed deals per arm**, 120 batches.
+- *Primary per arm.* a - b in marks per hand on the changed deals; **the book
+  predicts > 0.** Secondaries: the DT and NT splits, points per hand, and
+  v3all - v3dt per deal (what playing pips on field-v3 too changes).
+- *Size.* At `menu`'s changed-deal SD (0.66 marks), 4,800 deals give an MDE of
+  about 0.027 marks per hand; DT (about 1,800 deals) about 0.048. Timing
+  pilot (seed 5190, 16 changed deals an arm, excluded): 24-25 s a batch, so
+  80 deals run about 125 s, inside the 300 s cap.
+- Batch-drop rule as above. Every player thinks on a fixed world budget.
+
     python -u -m scenario.ch9 arena --arm menu --seed S --games DEALS --out DIR
-    python -u -m scenario.ch9 queue --root DIR [--workers 4] [--pilot]
+    python -u -m scenario.ch9 queue --root DIR [--workers 4] [--pilot] [--arms v3dt,v3all]
     python -u -m scenario.ch9 summarize --runs DIR... --out FILE.json
 """
 from __future__ import annotations
@@ -93,6 +124,11 @@ from typing import Sequence
 from scenario import book_batches
 
 LABEL = "provisional (random field for 7-9)"
+LABELS = {"menu": LABEL, "v3dt": "field-v3 for 7 and 9", "v3all": "field-v3 for every declaration"}
+ARMS = tuple(LABELS)
+V3_SEEDS = tuple(range(5201, 5261))      # 60 batches an arm, 4,800 changed deals
+V3_NET = Path(__file__).resolve().parents[1] / "scratch" / "nets" / "lem" / "field-v3-audit-2026-10-16" / "field_v3_pour_a_h128x64.npz"
+V3_SHA256 = "77a437235499496788f130ea62eac10d4384e26ccfb8f5b7d3e05f3790f8d49e"
 CHAIR = 0
 ARM = "menu"                  # one arm per batch: the ledger holds a and b
 PILOT = (4890,)               # the timing pilot, excluded
@@ -125,34 +161,59 @@ def menu_kind(hand: Sequence[int]) -> str:
     return {DOUBLES_TRUMP: "DT", NOTRUMP: "NT"}[chosen[0]]
 
 
-def seats():
-    """(field, a, b): every seat MenuWalt, the field and b bidding heuristic, a the menu."""
+def changed(deal) -> bool:
+    """Four doubles in the chair, and the menu's choice differs from the heuristic's."""
+    return four_doubles(deal) and menu_kind(deal[CHAIR]) != "same"
+
+
+def v3_player():
+    """Deployed Zeb's spec over Lem's field-v3 net, refused unless the file is the pinned one."""
+    import hashlib
+
+    from arena.walt_play import WaltPlay
+    from scenario.field import FieldNet
+    from scenario.small_n import player
+
+    blob = V3_NET.read_bytes()
+    if hashlib.sha256(blob).hexdigest() != V3_SHA256:
+        raise SystemExit(f"{V3_NET} is not the pinned field-v3 net (fetch HF lem/field-v3-audit-2026-10-16/)")
+    return WaltPlay(**dict(player().kwargs, field=FieldNet.load(V3_NET)))
+
+
+def seats(arm: str = "menu"):
+    """(field, a, b): one play policy at every seat, the field and b bidding heuristic, a the menu."""
     from arena.bidders import HeuristicBidder, MenuBidder
     from arena.ledger import Seat
     from arena.walt_play import MenuWalt
     from scenario.small_n import player
 
-    play = MenuWalt(player())
-    name = "zeb-0.3.0:DTNT=random"
+    if arm == "menu":
+        play, name = MenuWalt(player()), "zeb-0.3.0:DTNT=random"
+    elif arm == "v3dt":
+        play, name = MenuWalt(player(), twin=v3_player(), tag="field-v3"), "zeb-0.3.0:DTNT=field-v3"
+    else:
+        play, name = v3_player(), "zeb-spec:field-v3"
     field = tuple(Seat(HeuristicBidder(), play, f"heuristic+{name}") for _ in range(4))
     return field, Seat(MenuBidder(), play, f"menu+{name}"), Seat(HeuristicBidder(), play, f"heuristic+{name}")
 
 
-def arena(seed: int, deals: int, out: str) -> dict:
+def arena(seed: int, deals: int, out: str, arm: str = "menu") -> dict:
     """One batch: the ledger of a against b in the chair on `deals` filtered
     deals from `seed`, written with its cost as `ledger.json` and `meta.json`."""
     from arena import cost
     from arena.ledger import run_ledger
 
-    field, a, b = seats()
+    field, a, b = seats(arm)
+    keep = four_doubles if arm == "menu" else changed
     start = cost.snapshot()
-    ledger = run_ledger(field=field, a=a, b=b, n=deals, seed=seed, seats=CHAIR, keep=four_doubles)
+    ledger = run_ledger(field=field, a=a, b=b, n=deals, seed=seed, seats=CHAIR, keep=keep)
     spent = cost.since(start)
     outdir = Path(out)
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "ledger.json").write_text(json.dumps(ledger) + "\n")
-    meta = {"arm": ARM, "seed": seed, "deals": deals, "filter": f"seat {CHAIR} holds four doubles or more",
-            "label": LABEL, "wall_s": round(spent.pop("wall_s"), 1), **spent, "load_avg": list(os.getloadavg()),
+    meta = {"arm": arm, "seed": seed, "deals": deals,
+            "filter": f"seat {CHAIR} holds four doubles or more" + ("" if arm == "menu" else ", and the menu's choice differs"),
+            "label": LABELS[arm], "wall_s": round(spent.pop("wall_s"), 1), **spent, "load_avg": list(os.getloadavg()),
             "players": ledger["players"], "field": ledger["field"]}
     (outdir / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
     return meta
@@ -164,6 +225,26 @@ def _table_differed(rows: list[dict]) -> bool:
 
 
 def summarize(runs: Sequence[str]) -> dict:
+    """Every arm's reads; with both v3 arms, v3all - v3dt per deal as well."""
+    by: dict[str, list[str]] = {}
+    for run in runs:
+        by.setdefault(json.loads((Path(run) / "meta.json").read_text()).get("arm", "menu"), []).append(run)
+    if set(by) == {"menu"}:
+        return _summarize(by["menu"], LABEL)
+    out = {arm: _summarize(rs, LABELS[arm]) for arm, rs in sorted(by.items())}
+    if {"v3dt", "v3all"} <= set(by):
+        from scenario.small_n import contrast
+        a, b = (out[k].pop("_marks") for k in ("v3all", "v3dt"))
+        both = sorted(set(a) & set(b))
+        r = contrast({"x": {k: a[k] - b[k] for k in both}}, [(1.0, "x")])
+        out["v3all - v3dt, marks per hand (what field-v3 on pips too changes)"] = r
+    for v in out.values():
+        if isinstance(v, dict):
+            v.pop("_marks", None)
+    return out
+
+
+def _summarize(runs: Sequence[str], label: str) -> dict:
     from arena.auction import contract_points
     from arena.ledger import deal_differences
     from scenario.small_n import contrast
@@ -208,11 +289,12 @@ def summarize(runs: Sequence[str]) -> dict:
         if r:
             r["deals"] = r.pop("game_pairs")
             r["sd_per_deal"] = r.pop("sd_per_pair")
-        return {"label": LABEL, **r}
+        return {"label": label, **r}
 
     every = sorted(marks)
     changed = [k for k in every if kind[k] != "same"]
-    out: dict = {"label": LABEL, "batches": batches, "deals": len(every), "registered": {}, "mechanism": {}}
+    out: dict = {"label": label, "batches": batches, "deals": len(every), "registered": {}, "mechanism": {},
+                 "_marks": marks}
     reg = out["registered"]
     reg["primary: a - b, marks per hand, four-double deals"] = read(marks, every)
     reg["changed deals (menu chose DT or NT): a - b, marks per hand"] = read(marks, changed)
@@ -223,7 +305,7 @@ def summarize(runs: Sequence[str]) -> dict:
         reg[f"split {k}: a - b, marks per hand"] = read(marks, keys)
     reg["chance baseline: a - chance, marks per hand"] = read(chance, every)
     out["mechanism"] = {
-        "label": LABEL,
+        "label": label,
         "menu_kind_counts": {k: sum(kind[x] == k for x in every) for k in ("DT", "NT", "same")},
         "table_differed": len(differed),
         "unchanged_nonzero": sum(1 for x in every if kind[x] == "same" and marks[x] != 0),
@@ -239,16 +321,21 @@ def _tile_id(name: str) -> int:
     return next(t for t, (h, lo) in enumerate(DOMINOES) if (h, lo) == (high, low))
 
 
-def jobs(pilot: bool = False) -> list[tuple[str, int]]:
-    """Every registered batch: (arm, base seed)."""
-    return [(ARM, s) for s in (PILOT if pilot else SEEDS)]
+def jobs(pilot: bool = False, arms: Sequence[str] = ("menu",)) -> list[tuple[str, int]]:
+    """Every registered batch of `arms`: (arm, base seed), seed-major for the v3 arms."""
+    out = []
+    if "menu" in arms:
+        out += [("menu", s) for s in (PILOT if pilot else SEEDS)]
+    v3 = [a for a in ("v3dt", "v3all") if a in arms]
+    out += [(a, s) for s in V3_SEEDS for a in v3]
+    return out
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("arena")
-    p.add_argument("--arm", choices=(ARM,), default=ARM)
+    p.add_argument("--arm", choices=ARMS, default=ARM)
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--games", type=int, default=DEALS, help="filtered deals in the batch")
     p.add_argument("--out", required=True)
@@ -256,20 +343,23 @@ def main() -> None:
     p.add_argument("--root", required=True)
     p.add_argument("--workers", type=int, default=WORKERS)
     p.add_argument("--pilot", action="store_true")
+    p.add_argument("--arms", default="menu", help="comma-separated arms to queue")
     p.add_argument("--games", type=int, default=DEALS, help="filtered deals a batch")
     p = sub.add_parser("summarize")
     p.add_argument("--runs", nargs="+", required=True)
     p.add_argument("--out", required=True)
     a = ap.parse_args()
     if a.cmd == "arena":
-        print(json.dumps(arena(a.seed, a.games, a.out), indent=1), flush=True)
+        print(json.dumps(arena(a.seed, a.games, a.out, a.arm), indent=1), flush=True)
     elif a.cmd == "queue":
         Path(a.root).mkdir(parents=True, exist_ok=True)
-        book_batches.queue("scenario.ch9", a.root, jobs(a.pilot), a.workers, a.games, threads=THREADS)
+        book_batches.queue("scenario.ch9", a.root, jobs(a.pilot, a.arms.split(",")), a.workers, a.games,
+                           threads=THREADS)
     else:
         r = summarize(a.runs)
+        r.pop("_marks", None)
         Path(a.out).write_text(json.dumps(r, indent=1) + "\n")
-        print(json.dumps(r["registered"], indent=1), flush=True)
+        print(json.dumps(r.get("registered", {k: v.get("registered", v) for k, v in r.items()}), indent=1), flush=True)
 
 
 if __name__ == "__main__":

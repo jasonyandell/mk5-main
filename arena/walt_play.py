@@ -115,7 +115,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Sequence
 
-from forge.oracle.declarations import PIP_TRUMP_IDS
+from forge.oracle.declarations import DOUBLES_TRUMP, NOTRUMP, PIP_TRUMP_IDS
 from forge.zeb.types import ZebGameState
 
 from arena.auction import contract_points
@@ -172,8 +172,9 @@ class WaltPlay:
         self.last_values: list[dict[int, float]] = []
 
     def plays(self, decl: int) -> bool:
-        """Every declaration, except that a field net plays pip trumps only."""
-        return self.walt.config.field is None or decl in PIP_TRUMP_IDS
+        """Every declaration with the random field; with a field net, what its
+        layout covers (pip trumps only for v2; field-v3 adds 7 and 9, #185)."""
+        return self.walt.config.field is None or self.walt.config.field.plays(decl)
 
     def choose(
         self,
@@ -255,14 +256,20 @@ class MenuWalt:
     refuses a bare net seat), so both teams, both arms and the declarer
     all play a doubles-trump or no-trump hand in the same random-field
     form. On pip-trump states it is the net player itself, byte for byte.
-    Its spec tag is `DTNT=random`."""
+    Its spec tag is `DTNT=random`.
 
-    def __init__(self, net: WaltPlay):
+    `twin`, when given, plays decls 7-9 in place of the random field: a
+    player whose net covers them (Lem's field-v3, #185), tagged `tag`."""
+
+    def __init__(self, net: WaltPlay, twin: WaltPlay | None = None, tag: str = "random"):
         if net.walt.config.field is None:
             raise ValueError("DTNT=random wraps a field-net seat; a random-field seat plays every declaration")
-        twin = dict(net.kwargs, field=None, field_eps=0.0, floor=None, draw="uniform",
-                    draw_budget=DRAW_BUDGET, reading=None)
-        self.net, self.random = net, WaltPlay(**twin)
+        if twin is None:
+            twin = WaltPlay(**dict(net.kwargs, field=None, field_eps=0.0, floor=None, draw="uniform",
+                                   draw_budget=DRAW_BUDGET, reading=None))
+        elif not all(twin.plays(d) for d in (DOUBLES_TRUMP, NOTRUMP)):
+            raise ValueError("a DTNT twin must play doubles trump and no trump")
+        self.net, self.random, self.tag = net, twin, tag
         self.walt = _ByDeclaration(net.walt, self.random.walt)
         self.last_values: list[dict[int, float]] = []
 
@@ -292,7 +299,7 @@ class MenuWalt:
         return out  # type: ignore[return-value]
 
     def __repr__(self) -> str:
-        return f"MenuWalt({self.net!r}, DTNT=random)"
+        return f"MenuWalt({self.net!r}, DTNT={self.tag})"
 
 
 def parse_walt_spec(arg: str) -> WaltPlay | MenuWalt:
