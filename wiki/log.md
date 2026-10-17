@@ -55,6 +55,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | book | the book-interp skill; the clean card carries our position]
+
+- [[clean-neurons-42]]: Jason's position heads the reloaded section (the lessons fit 42 unusually
+  well; for 42, superposition is not the right null; no claim about interpretability at large),
+  with the book rhyme and the guardrails a compact summary lost (the Tokyo warning first).
+- New `.claude/skills/book-interp`: the book charter and the essay as one discipline; fixes major
+  problems at once, logs the rest, rolls three logs into a rewrite. The compact hook names it.
+
 ## [2026-10-17 | lem | the scope clause: what we learned from this model, not all of 42 (#202)]
 
 After a re-read of the essay on both sides of a compact, Jason added a scope clause to the already-clean test. Our tools and vocabulary may be unable to express what the net finds, and our inputs miss concepts such as player-behaviour history, so every result is scoped to this net, these inputs and this vocabulary. The clause is in [[clean-neurons-42]] and the inventory of what is missing is #202.
