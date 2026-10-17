@@ -19,6 +19,9 @@ one tiny model, within-hand history, existing Pour A records and a worked-hand
 viewer. Population construction and reward learning are deferred. Field-net
 results are not GPT results.
 
+The same hatchling now has a deliberately extended formation run registered in
+[[lem-observer-overbake-2026-10-17]], with live W&B tracking and retained checkpoints.
+
 The checkout is `/Users/jason/code/mk5-lem-nanogpt`, branch `codex/lem-nanogpt`,
 initially at `aa0af91d`. The reference clone is `/Users/jason/code/nanoGPT`, upstream
 [`karpathy/nanoGPT`](https://github.com/karpathy/nanoGPT), pinned at

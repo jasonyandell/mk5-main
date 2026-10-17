@@ -14,6 +14,7 @@ from lem.observer.model import Config, Observer
 from lem.observer.train import evaluate, run
 from lem.observer.inspect import build
 from lem.observer.uncertainty import summarize
+from lem.observer.tracking import metrics
 from scenario.atlas import deal
 from scenario.record import empty_record
 from scenario.rules import rules_for, tiles_of
@@ -101,17 +102,26 @@ def test_training_resume_matches_uninterrupted_and_rejects_changed_data(tmp_path
              decl=[r["decl"] for r in records], plays=[r["plays"] for r in records])
     (source / "manifest.json").write_text(json.dumps(dict(bidder=0, bid=30, deal_seeds=list(range(50)))))
     common = dict(source=[str(source)], deals=50, steps=4, eval_every=2, batch=4,
-                  width=8, layers=1, heads=1, lr=0.001, seed=42, device="cpu", resume=False)
+                  width=8, layers=1, heads=1, lr=0.001, seed=42, device="cpu", resume=False,
+                  init_from=None, checkpoint_every=2, wandb_project=None, wandb_entity=None, wandb_name=None)
     run(Namespace(**common, out=str(tmp_path / "continuous")))
     staged = Namespace(**common, out=str(tmp_path / "staged"))
     staged.steps = 2
     run(staged)
+    fork = Namespace(**{**common, "steps": 4, "init_from": str(tmp_path / "staged")}, out=str(tmp_path / "fork"))
+    # A fork at step 2 must continue the optimizer and sampler exactly, too.
+    fork_report = run(fork)
     staged.steps, staged.resume = 4, True
     run(staged)
     a, b = [torch.load(tmp_path / folder / "latest.pt", weights_only=True) for folder in ("continuous", "staged")]
     assert torch.equal(a["sampler_state"], b["sampler_state"])
     for key in a["model"]:
         torch.testing.assert_close(a["model"][key], b["model"][key], rtol=0, atol=0)
+    fork_saved = torch.load(tmp_path / "fork" / "latest.pt", weights_only=True)
+    for key in a["model"]:
+        torch.testing.assert_close(a["model"][key], fork_saved["model"][key], rtol=0, atol=0)
+    assert fork_report["parent_step"] == 2
+    assert (tmp_path / "fork" / "initial.pt").read_bytes() == (tmp_path / "staged" / "initial.pt").read_bytes()
     intervals = summarize(tmp_path / "continuous", draws=100)
     report = json.loads((tmp_path / "continuous" / "report.json").read_text())
     for group in ("all", "own", "others", "discretionary"):
@@ -130,3 +140,12 @@ def test_training_resume_matches_uninterrupted_and_rejects_changed_data(tmp_path
     assert len(json.loads((tmp_path / "staged" / "deals.json").read_text())) == 50
     with pytest.raises(ValueError, match="overlapping"):
         load_deals([source, source], 50)
+
+
+def test_tracking_calls_an_epoch_sampling_exposure_not_a_completed_pass():
+    row = {"step": 2000, "train_batch_nll": 1.5,
+           "validation": {"all": {"nll": 1.8, "top1": .4, "known_impossible_mass": .17}}}
+    result = metrics(row, 64, 3988 * 4)
+    assert result["epoch_equivalent"] == 2000 * 64 / (3988 * 4)
+    assert result["validation_all_nll"] == 1.8
+    assert not any(k.startswith("test") for k in result)
