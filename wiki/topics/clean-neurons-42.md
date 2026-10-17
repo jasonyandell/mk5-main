@@ -43,6 +43,26 @@ hypothesis to test here, not a settled result to cite.
 
 ## Re-read 2026-10-17: what to carry into every test
 
+**Drift alarm (read this first).** This thesis cuts against most interpretability research a
+model has read, so a model will drift back to superposition as the null, often within a few
+turns. Jason, 2026-10-17: even a model that accepts it "drift[s] really quickly into the old null
+of superposition and related regressions towards the mean". The essay's author was "a staunch
+superposition believer" until the evidence moved him, and our own registered prediction (that
+small nets mix) was broken by the squeeze. Drift sounds like any of these:
+- calling a unit "polysemantic", "mixed" or "superposed" when no list names it (write "not named
+  in list vN");
+- reaching first for an SAE or dictionary "to find the real features";
+- reading a clean share below 1 as evidence of superposition, rather than walking the ladder;
+- predicting that a narrower net will be messier;
+- softening the thesis into "partly clean" with no test that broke it;
+- asking the clean reading for extraordinary proof while superposition goes unexamined (both
+  readings carry the same burden).
+
+When you catch it, walk the ladder (tools, explanations, data and inputs, recursive
+generalization, then superposition) and write down which rung you checked. A test that breaks the
+thesis is the finding. Drifting away from it is not.
+
+
 The essay's own practices, in our words, beyond the claims above:
 - **Superposition is the last hypothesis, not the null.** For a messy unit, suspect bad tools,
   bad explanations, narrow data or old architecture, and generalization not yet followed, in that
