@@ -2,7 +2,7 @@
 title: Clean neurons for 42 — reading Zeb's own net, concept by concept, as it grows
 kind: topic
 first_seen: 2026-10-15
-last_updated: 2026-10-16
+last_updated: 2026-10-17
 status: active
 ---
 
@@ -40,6 +40,27 @@ This page itself is CC0, like the rest of the wiki. It was written from the prim
 **Its own limits.** The thresholds are judgment calls, some samples are small, the language-model
 results are preliminary, and its scaling step is labelled "highly speculative". Treat it as a strong
 hypothesis to test here, not a settled result to cite.
+
+## Re-read 2026-10-17: what to carry into every test
+
+The essay's own practices, in our words, beyond the claims above:
+- **Superposition is the last hypothesis, not the null.** For a messy unit, suspect bad tools,
+  bad explanations, narrow data or old architecture, and generalization not yet followed, in that
+  order, before superposition.
+- **Growth is local.** A unit forms on a narrow pattern and grows along its facets. Generalization
+  groups related things; superposition would group unrelated ones.
+- **Read a unit as a gate, a shared pattern, not a list of nouns.** Both poles matter: check the
+  negative pole whenever a grouping is claimed.
+- **Strong activations carry the work.** In the essay, ablating the weakest 75% of activations
+  cost one point of accuracy, and ablating the strongest 7% cost almost all of it. Our audit
+  reads the top 1%, which fits.
+- **Test an explanation by steering the unit**, and watch formation across checkpoints.
+- **Small models are coarse, big ones narrow**; decompositions help most on the small, coarse ones.
+
+Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
+[[lem-formation-2026-10-17]] (family kept 0.82 vs 0.28, but one unit kind formed coarse first),
+[[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets). The
+untrained floor (0.15–0.28 clean) goes with every share. Steering and negative poles are #198.
 
 ## Why it fits 42
 
