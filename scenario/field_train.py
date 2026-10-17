@@ -276,13 +276,18 @@ DEVICES = {"numpy": _Numpy, "mlx": _MLX}
 def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
           hidden: tuple[int, int] = (128, 64), tau: float = 2.0, lr: float = 1e-3, batch: int = 256,
           decay: float = 1e-4, device: str = "numpy", log=None,
-          init: list[np.ndarray] | None = None) -> Trained:
+          init: list[np.ndarray] | None = None, checkpoints: tuple[int, ...] = (),
+          on_checkpoint=None) -> Trained:
+    """`checkpoints`: epochs (0 is the initial net) after which the integer net is handed to
+    `on_checkpoint(epoch, net)`, from the one run, so formation can be watched without
+    restarting the optimizer."""
     if device not in DEVICES:
         raise ValueError(f"device is one of {tuple(DEVICES)}, not {device!r}")
     val = data.deal % 10 == 0
     tr = ~val
     rng = np.random.default_rng(seed)
     h1, h2 = hidden
+    warm = init is not None
     init = init if init is not None else [
         (rng.standard_normal((N_FEATURES, h1)) * math.sqrt(2 / 40)).astype(np.float32), np.zeros(h1, np.float32),
         (rng.standard_normal((h1, h2)) * math.sqrt(2 / h1)).astype(np.float32), np.zeros(h2, np.float32),
@@ -294,6 +299,10 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
     v = dev.put([np.zeros_like(q) for q in init])
     rows, val_rows = np.flatnonzero(tr), np.flatnonzero(val)
     losses, val_losses, t = [], [], 0
+    if checkpoints and on_checkpoint is None:
+        raise ValueError("checkpoints need an on_checkpoint")
+    if 0 in checkpoints:
+        on_checkpoint(0, quantize(dev.get(params), data.x[tr]))
     for epoch in range(epochs):
         order = rng.permutation(rows)
         total = 0.0
@@ -306,11 +315,13 @@ def train(data: Data, target: str = "margin", epochs: int = 30, seed: int = 0,
         val_losses.append(dev.loss(params, val_rows) if len(val_rows) else math.nan)
         if log is not None:
             log(f"  epoch {epoch + 1:3d}: train {losses[-1]:.4f}  val {val_losses[-1]:.4f}")
+        if epoch + 1 in checkpoints:
+            on_checkpoint(epoch + 1, quantize(dev.get(params), data.x[tr]))
     params = dev.get(params)
     net = quantize(params, data.x[tr])
     metrics = {
         "target": target, "tau": tau, "hidden": list(hidden), "epochs": epochs, "seed": seed,
-        "device": device, "batch": batch, "lr": lr, "warm": init is not None,
+        "device": device, "batch": batch, "lr": lr, "warm": warm,
         "rows": {"train": int(tr.sum()), "val": int(val.sum())},
         "train": _grade(data, tr, net, params), "val": _grade(data, val, net, params),
     }
