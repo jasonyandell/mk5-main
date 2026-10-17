@@ -54,6 +54,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | book | Ch. 9 at the table, provisional: our random-field player cannot carry a doubles hand (#189)]
+
+- Results on [[ch9-at-the-table-2026-10-17]]: 288 of 288 batches. The menu costs −0.045 [−0.065, −0.025] marks/hand on the 4,234 deals where it changes the declaration: doubles trump −0.106 [−0.142, −0.070], no trump −0.009 [−0.033, +0.015]. Every seat plays doubles and no trump on the random field, so this is the scope of our player, not a reading of the book's declaration. The A10 row is updated. Next is the re-run on Lem's field-v3 net (decls 7 and 9). Data: HF `book/ch9-provisional/` (97769d4e, SHA verified).
+
 ## [2026-10-17 | lem | Pour A published; the first field-v3 net plays all ten declarations as cleanly as the pip net]
 
 [[lem-pour-a-2026-10-16]]: 250,000 deals, 4,349,960 positions, on `jasonyandell/texas-42-lem-pour-a`
