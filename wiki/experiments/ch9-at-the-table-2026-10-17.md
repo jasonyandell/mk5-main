@@ -3,7 +3,7 @@ title: The book's Ch. 9 at the table — doubles trump and no trump priced, prov
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: active
+status: complete
 ---
 
 ## Summary
@@ -22,7 +22,57 @@ random-field twin (`DTNT=random`): in both arms, on both teams, the declarer inc
 Mayor's symmetry ruling on #155). The study is re-run with Lem's first field-v3 net (#185, G4,
 [[lem-field-v3-audit-2026-10-16]]) once that net covers declarations 7–9 (#177).
 
-*Results follow once every registered batch has run.*
+## Results (provisional, random field for 7–9; complete 2026-10-17; 288 of 288 batches, none dropped)
+
+**One line.** At a table where every seat plays doubles and no trump on the random field, the
+menu costs the chair −0.045 [−0.065, −0.025] marks per hand on the 4,234 deals where it changes
+the declaration. All of that is doubles trump: −0.106 [−0.142, −0.070] on its 1,560 deals. No
+trump is level: −0.009 [−0.033, +0.015] on 2,674 deals. Read under [[book-authority]], this is
+what our provisional player can and cannot carry. It plans a doubles hand against seats it models
+as random legal play, while the book's declarer plays it by Ch. 9's lines. It is not a reading of
+the book's declaration.
+
+Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
+`book/ch9-provisional/` (per batch `meta.json` and ledgers, `summary.json`, the queue log, `CARD.md`).
+
+| registered read | a − b [95%] | deals | SD/deal | MDE |
+|---|---|---|---|---|
+| **primary: marks per hand, every four-double deal** | **−0.008 [−0.012, −0.005]** | 23,040 | 0.29 | 0.005 |
+| changed deals (the menu chose DT or NT) | −0.045 [−0.065, −0.025] | 4,234 | 0.66 | 0.029 |
+| points per hand, every four-double deal | −0.68 [−0.84, −0.53] | 23,040 | 11.9 | 0.22 |
+| points per hand, changed deals | −3.72 [−4.55, −2.87] | 4,234 | 27.6 | 1.19 |
+| split: the menu declared doubles trump | −0.106 [−0.142, −0.070] | 1,560 | 0.73 | 0.052 |
+| split: the menu declared no trump | −0.009 [−0.033, +0.015] | 2,674 | 0.62 | 0.034 |
+| split: unchanged | 0 exactly | 18,806 | 0 | — |
+| chance baseline: a − the random chair | +0.526 [+0.516, +0.537] | 23,040 | 0.79 | 0.015 |
+
+The table played differently on 2,219 of the 4,234 changed deals. On the rest the chair did not win
+the auction, so its declaration never came up. No unchanged deal read anything but 0 (the
+determinism check).
+
+### Reading, under [[book-authority]]
+
+- **Assumptions.** See below. A10 is held only in the menu's *declarations*. Its *play* is the
+  random field's for both teams, because the deployed net plays pip trumps only. The provisional
+  label is exactly this.
+- **What our model can see.** Given the choice, our chair declares doubles on the book's
+  condition (a high off beside four doubles) and then plays the hand worse than it would play its
+  best pip suit, by 0.11 marks a hand. The random field is a k0 planner that models every other
+  seat as random legal play. Under doubles, where trump is the question (leading the boss trump,
+  ruffing, keeping a sure trump), that is the weakest form a declarer can take. No trump, which
+  asks less of a model of the other seats, comes out level.
+- **What it cannot see.** Whether the book's doubles declaration pays when the hand is played the
+  way Ch. 9 plays it. The pip alternative is played by the deployed net, so the comparison is
+  between two declarations played by two different players. Only a field that plays doubles and
+  no trump as well as pips can separate the declaration from the player.
+- **The restoring measurement.** The re-run with Lem's first field-v3 net, which plays
+  declarations 0–7 and 9, as the field for doubles and no trump. It is next, and it is registered
+  separately. Lem's audit warns that the net is weakest on trump questions under doubles and on
+  the book's own doubles and no-trump hands (regret 0.0163 on 2,110 rows), so even that re-run
+  reads "field-v3 for 7 and 9", not "the book's opponent". A play-line price at the bid stays open.
+
+Receipts: pre-registered at 519935de (`scenario/ch9.py`). 288 batches through `scripts/cpu-slot`,
+four at a time, 113–147 s of compute each. Pilot seed 4890 excluded. Run 2026-10-17 00:58–04:31.
 
 ## Design (pre-registered before any measured batch; see `scenario/ch9.py`)
 
