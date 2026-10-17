@@ -260,10 +260,10 @@ selects earlier information; loss measures prediction error; a checkpoint preser
 a moment in learning. The learner should be able to explain the experiment's
 question, evidence and limits before another objective is added.
 
-## Open choices
+## Decisions and later choices
 
-1. First milestone: observer, population corpus first, or joint observer/value.
-2. Initial scope: fixed-contract play, or auction/match context immediately.
+1. First milestone: observer, selected and completed in [[lem-observer-2026-10-17]].
+2. Initial scope: fixed-contract play from the existing pour; auction and match context deferred.
 3. Population: persistent styles, partner systems, encounter/reset length and
    known-type diagnostic versus hidden-type evaluation.
 4. Value target: make probability, continuation-dependent margins, or a new
@@ -273,6 +273,6 @@ question, evidence and limits before another objective is added.
 
 The existing epics remain the durable ledger (#175, #177–#180, #182, #193, #202);
 [#203](https://github.com/jasonyandell/mk5-main/issues/203) coordinates this workstream.
-Register the chosen experiment, predictions and controls before implementation.
+Register each subsequent experiment's predictions and controls before its run.
 Shared planner, registry and check-runner changes follow [[standing-desks]]. Heavy
 local runs use `scripts/cpu-slot`; training compute is priced before use.
