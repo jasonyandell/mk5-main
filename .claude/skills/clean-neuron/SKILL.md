@@ -1,0 +1,92 @@
+---
+name: clean-neuron
+description: Read a unit of a Texas 42 net (Lem, Zeb's field net) the way the already-clean test reads it. Use whenever a task touches a neuron, pole, unit, clean share, concept audit, squeeze, formation, width tree, SAE, dictionary, "polysemantic", "mixed" or "superposition" in lem/ or the field net, and before writing any Lem result.
+---
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+# Reading a unit of a 42 net
+
+You do not have to believe anything general about neural networks to do this
+work. The question is narrow and empirical: **what does this unit do in 42?**
+Every unit gets asked it, and "we cannot say yet" means the instruments ran out.
+It is never a verdict about the unit.
+
+The program's bet (THE ALREADY-CLEAN TEST, #193; Cammarata, "Neural Networks Are
+Already Clean", https://already-clean.goodfire.com/) is that the answer is usually
+one job, and that a squeezed net's units get coarser rather than mixed. In 42 that
+bet has already survived a test that should have broken it: 24 neurons came out
+cleaner than 192 (0.83 vs 0.61). Stay curious about the next unit. You are not
+being asked to defend the bet. Full card: `wiki/topics/clean-neurons-42.md`.
+
+## The ladder: walk it for every unit you cannot name
+
+Check the rungs in this order, and write down which one you stopped at.
+
+1. **Tools.** Is the reading sound?
+   - Top 1% of activations, both poles (the negative pole too).
+   - Held-out rows only.
+   - The untrained floor (0.15–0.28 clean) reported beside every share.
+   - Row Wilson intervals widened about 1.17× (the split-half A/A, #191).
+2. **Explanations (the vocabulary).** Does the list have a word for it?
+   - The list is Silas concepts v1 (48) or v2 (70), plus the raw inputs.
+   - If not: read the top positions as a gate, a shared pattern across them,
+     not a list of nouns. Try conjunctions and coarser families (#197).
+   - The declaration detectors were exactly this case. The v1 list had no word
+     for which pip is trump, and the net spent an eighth of its poles on it.
+3. **Data and inputs.** Could the net be computing something its inputs or our
+   positions cannot show?
+   - The field net sees one position, against uniform beliefs, with no
+     player-behaviour history, over arena data that seats no one who models you
+     across hands.
+   - Check whether the unit's top positions differ in history: the bidding,
+     earlier tricks, the score (#202).
+4. **Recursive generalization.** Is the unit one concept spread along its
+   facets (one coarse unit, "late in the trick", growing into the wide net's 47
+   `last` units)?
+   - Use the family statistic (`squeeze-families`), the width tree (`tree`) and
+     formation across checkpoints.
+5. **Superposition.** Reach this rung only after 1–4 are written down, and hold
+   it to the same burden of proof as the clean reading.
+
+## The kit (`python -u -m lem.probe <cmd>`, heavy runs via `scripts/cpu-slot`)
+
+| Stage | Command | What it does |
+|---|---|---|
+| sample | `sample` | builds the position sample |
+| | `concepts --list v2` | labels the sample with Silas concepts |
+| | `list` | prints the concept list |
+| audit | `audit` | precision ≥ 0.9 on the top 1% = clean; shuffled-label chance included |
+| | `cards` + `readers` | a language model names a pole from 12 cards and marks 20 held-out |
+| families | `squeeze-families` | is a pole's best two-concept union within one family? |
+| | `tree` | a narrow unit's counterparts in a wide net |
+| formation | `formation-train` / `formation-report` | units across checkpoints |
+| causal | `ablate` | the start of #198 (steer and patch next) |
+| beyond units | `belief`, `fidelity`, `aa` | belief probes, fidelity to the teacher, the split-half A/A |
+
+Concepts read the viewer's information only. A query that reads a hidden hand is
+refused. The STRATEGY-FUSION FENCE holds: no clairvoyant value becomes a label or
+a target.
+
+## How to write the result
+
+- Report an unnamed unit as **"not named in list vN"**. Never call it "mixed",
+  "polysemantic" or "superposed".
+- Every result carries the scope sentence: *this net, these inputs (one
+  position, uniform beliefs, no history), this vocabulary (list vN). What we
+  learned from this model, not all of 42, yet.*
+- Report every share with its interval, its chance baseline and the untrained
+  floor.
+- Register predictions before the run, then grade them, including the ones you
+  got wrong.
+
+## Signs you have slipped into the old null
+
+Stop and walk the ladder if you find yourself doing any of these:
+- calling a unit mixed;
+- reaching for an SAE first;
+- reading a share below 1 as evidence of superposition;
+- predicting that narrower nets will be messier;
+- writing "partly clean" with no test that broke the thesis.
+
+A test that breaks the thesis is the finding. Drift is not.

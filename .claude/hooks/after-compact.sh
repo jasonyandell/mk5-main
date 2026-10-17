@@ -4,8 +4,13 @@
 #
 # SessionStart (compact): put Lem's framing back in context after every compaction,
 # from the wiki's own card, so a summary cannot paraphrase it away (#193, #202).
-page="$CLAUDE_PROJECT_DIR/wiki/topics/clean-neurons-42.md"
+# Read the session's own checkout (a worktree may be ahead of the main one), else the project's.
+cwd=$(sed -n 's/.*"cwd" *: *"\([^"]*\)".*/\1/p')
+page="$cwd/wiki/topics/clean-neurons-42.md"
+[ -f "$page" ] || page="$CLAUDE_PROJECT_DIR/wiki/topics/clean-neurons-42.md"
 [ -f "$page" ] || exit 0
 echo "THE FRAME, reloaded after compaction (Cammarata, \"Neural Networks Are Already Clean\", https://already-clean.goodfire.com/; Lem's core thesis, THE ALREADY-CLEAN TEST #193). From $page:"
 echo
 awk '/^## Re-read /{on=1} /^## Why it fits 42/{on=0} on' "$page"
+echo
+echo "To read or audit a unit, use the clean-neuron skill (.claude/skills/clean-neuron)."

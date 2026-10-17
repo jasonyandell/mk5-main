@@ -9,6 +9,10 @@
 > mostly clean, and squeezed layers grow coarser, not mixed. On the field net, 24 neurons are cleaner
 > than 192 (0.83 vs 0.61) and carry 0.684 of the play's gap to the teacher (§7). The result looks
 > impossible to a superposition prior. The paper tests it until it breaks or holds: #194–#200.
+> Every result is scoped to this net, these inputs (one position, uniform beliefs, no
+> player-behaviour history) and this vocabulary (Silas concept list v1 or v2). A unit we cannot
+> name is "not named in list vN", a vocabulary or data gap before it is superposition (#202). We
+> can say what we learned from this model, not all of 42, yet.
 
 Every claim below links to the experiment page that measured it and to the evidence on
 Hugging Face. Numbers carry their interval and their chance baseline. Sections marked
@@ -30,7 +34,10 @@ a reader with only the viewer's cards names most of them (0.758 detected; shifte
 and the play nonetheless needs 165 of 192 neurons to match itself 95% of the time: clean units,
 dense decision. Across nets trained on 5k, 50k and 250k deals the nameable share rises
 (0.297, 0.519, 0.597) while the declaration detectors are present from the start and the play
-stays dense. We set out the belief probes, checkpoint studies and causal tests that an answer
+stays dense. Retrained from scratch at 24 neurons, the net is cleaner, not mixed (0.83 against
+0.61 at 192), and still closes 0.684 of the gap from random play to the teacher; its units
+broaden within one concept family, keep the family they formed in (0.82 against a 0.28 null),
+and match their own family in a wide net at 2.4–2.9 times the random rate. We set out the belief probes, checkpoint studies and causal tests that an answer
 key makes possible.
 
 ## 1. The lab
@@ -153,13 +160,13 @@ Exploratory, not pre-registered ([`§ Exploratory`](../../wiki/experiments/lem-f
 evidence `series/`): the same sample and labels read against the three published nets of this
 architecture, one net per size.
 
-| deals | live | clean share | by Silas | by raw feature (declaration) | mixed | dead | knee |
+| deals | live | clean share | by Silas | by raw feature (declaration) | not named in v1 | dead | knee |
 |---:|---:|---|---:|---:|---:|---:|---:|
 | 5,000 | 384 | 0.297 [0.273, 0.333] | 30 | 84 (68) | 35 | 0 | 176 |
 | 50,000 | 378 | 0.519 [0.505, 0.553] | 104 | 92 (71) | 20 | 6 | 170 |
 | 250,000 | 372 | 0.597 [0.581, 0.608] | 122 | 100 (69) | 14 | 12 | 165 |
 
-With more data the nameable concepts rise and the mixing falls; the declaration is learned
+With more data the nameable concepts rise and the units list v1 cannot name fall; the declaration is learned
 first and stays; the play stays dense. This is a snapshot per size, not checkpoint evidence, and
 shows no branching. Checkpointed retraining and a width family are the registered next step
 **[gap]** (Cammarata's recursive-generalization hypothesis predicts concepts that extend along
@@ -213,7 +220,11 @@ table-type units form, and do they read what the teacher's posterior over polici
   all nine playable declarations, is running: [`lem-pour-a-2026-10-16`](../../wiki/experiments/lem-pour-a-2026-10-16.md)).
 - Precision on top activations is correlation, not use; no per-concept ablation or patching yet.
 - "Clean" is relative to a list; the readers kept finding conjunctions the list lacked
-  (concept list v2, #185, now exists and is unrun).
+  (concept list v2, #185). An unnamed unit is a gap in the list before it is a mixture.
+- The inputs are one position against uniform beliefs: no bidding history, no record of how
+  a seat has played, no model of the table. A unit computing something those inputs cannot show
+  would read as unnamed here (#202), as the essay's comma neuron read as mixed until a longer
+  context showed it tracked Colorado.
 - One net per data size; no seeds; the series is exploratory.
 - The reader is a language model; its agreement with the exact label is read, not scored.
 - The teacher is a finite-budget planner, not an optimum; fidelity to the teacher is not
