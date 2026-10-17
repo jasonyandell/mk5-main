@@ -4534,3 +4534,31 @@ linked from the experiment. No new strength or Zeb instruction-cost claim.
 
 - `arena.seed_varied.SeedVaried`: a Zeb seat that plays each hand at a planner seed picked from a pool by the deal (keyed as a set of hands; FNV plus splitmix64's mixer, because FNV's low bits alone reached 4 of 16 seeds). It plays the same seed in every arm and both halves, and at a pool of one it is the plain player byte for byte. Its `.walt` is a pooled planner, so RegularsPlay and BookPlay get the deal's seed too.
 - [[seed-varied-2026-10-16]] is pre-registered: #117's K, U and Za against a seed-varied field, primary K read against an honest A/A; 352 batches.
+
+## [2026-10-16 | book | Seed-scatter caveats on single-arm margins against a one-seed field (#190)]
+
+- One line each on [[rematch-zeb-041-vs-demon-2026-10-15]], [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]]: their single-arm margins exclude planner-seed scatter of about ±0.1 marks/game, and the paired differences on shared seeds are unaffected. Results whose ends lie inside the scatter: the rematch's +0.330 [+0.055, …] marks, #151's Z10 and Z20, and #172's Z5. The Mayor asked for this.
+
+## [2026-10-16 | book | Silas: a seat's hand law; the losing 31 and the 35's two offs as queries (#134)]
+
+- [[silas]] gains `Belief::hand_law` (and `--law ROLE`): a read seat's whole hand as a belief of its own, held to brute force; `silas/GAPS.md` § 4 narrowed a third time.
+- W42-p054-a: a 35 in fours read as `risk-budget` is two offs 1,587/1,751 (77/646 unread); a 36 in blanks, one off certainly (Hands 33 and 32).
+- W42-p054-b: a losing 31 lifts "a double" to 24,033/24,989 as `bid-only-enough` reads it, to 1 as `risk-budget` (the deal of Hand 33, our auction).
+- **All desks:** stale venvs must rebuild scenario_core, which embeds silas: the evaluator now orders clauses at compile time. `scripts/check` builds its own.
+
+## [2026-10-16 | lem | The paper: a living draft and its Gaps list as the desk's work order]
+
+- `lem/paper/README.md` (CC0): "Interpreting a distilled imperfect-information player against an inspectable teacher"; the lab, the teacher, the students, the concept audit, belief probes [gap], concept formation across data size, the feature-count curve, models of others [gap], honest limits; nine gaps G1–G9. [[lem-the-teacher]] § The paper links it.
+
+## [2026-10-16 | lem | G1 pre-registered: belief probes from the field net to the teacher's exact ownership posterior]
+
+- [[lem-belief-probe-2026-10-16]]: targets P(seat holds tile) exact under shown voids minus the counting prior; ridge probes from raw inputs and both hidden layers; deal-disjoint 20k/20k; shuffled chance; four predictions (the inputs state most of it; the hidden layers add nothing beyond them). `lem/probe/belief.py`.
+
+## [2026-10-16 | lem | G1 result: the teacher's belief is in the field net's inputs, not its hidden layers]
+
+- [[lem-belief-probe-2026-10-16]] complete: R² on the void-moved posterior entries, raw inputs 0.791, first hidden layer 0.241, second 0.035, shuffled ≈ 0 (deal-disjoint 20k/20k); the field net plays without a readable belief over who holds what. Predictions: inputs-state-most just under (0.79 vs ≥ 0.8), a1-near-x wrong, a2-below-a1 right, no-layer-beats-x right.
+- The paper's § 5 and G1 carry it; evidence on HF `lem/belief-probe-2026-10-16/`.
+
+## [2026-10-16 | lem | G7 pre-registered: where the field net's regret under the teacher's plan sits]
+
+- [[lem-fidelity-by-concept-2026-10-16]]: regret by the audit's 48 concepts, legal-move count and the teacher's best-minus-second gap, deal-clustered bootstrap; three predictions (regret concentrated in the top decile; highest with can-take-it and count-on-trick; rising with legal moves). `lem/probe/fidelity.py`.

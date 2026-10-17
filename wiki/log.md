@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-16, 339 archived entries)
+## Digest (2026-04-09 → 2026-10-16, 345 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -50,8 +50,18 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The Demon's exact bidding, Lem's first audit** (2026-10-16, 6 archived entries) — [[the-demon]] (exact declaration elimination, exact bid bounds and support, the preemption and early-opening sweeps), [[lem-field-net-audit-2026-10-15]], [[branch-rescue-2026-10]].
 - **The Demon's early forty + the auction read** (2026-10-16, 6 archived entries) — the Demon's higher early opening bids selected and confirmed against Zeb 0.4.1, exact root reuse under FAIR CLOCKS ([[demon-ascent-2026-10-16]], [[demon-instructions-2026-10-16]]); the auction read pre-registered (#117, [[auction-read-2026-10-16]]) and Silas cross-game loose ends ([[silas]]).
 - **The full menu, Pour A, the audit against earlier nets, the A/A** (2026-10-16, 6 archived entries) — the ten declarations at the arena ([[book-assumptions]], #155), the Demon's repository extraction ([[the-demon]]), the auction read by the known method (#117), [[lem-pour-a-2026-10-16]] registered, the audit read against Zeb's earlier nets ([[lem-field-net-audit-2026-10-15]] § Exploratory), seed-varied seats and #117 re-registered (#190).
+- **The paper, belief in the inputs, the hand law** (2026-10-16, 6 archived entries) — the living draft and its Gaps (`lem/paper/README.md`), G1 registered and run ([[lem-belief-probe-2026-10-16]]), G7 registered ([[lem-fidelity-by-concept-2026-10-16]]), [[silas]]'s hand law (#134), seed-scatter caveats (#190).
 
 ---
+
+## [2026-10-17 | lem | Pour A published; the first field-v3 net plays all ten declarations as cleanly as the pip net]
+
+[[lem-pour-a-2026-10-16]]: 250,000 deals, 4,349,960 positions, on `jasonyandell/texas-42-lem-pour-a`
+(CC0); coverage predictions held (book doubles/no trump 0.56%, forced 12.49%).
+[[lem-field-v3-audit-2026-10-16]] (G4): validation regret 0.0087 (pip 0.0082, doubles/no trump
+0.0120), clean share 0.628 (halves 0.633/0.625) vs the shipped net's 0.602; concept list v2 renames
+clean units rather than adding them; the declaration itself is barely named. Evidence
+`lem/field-v3-audit-2026-10-16/` (3936f450).
 
 ## [2026-10-17 | lem | The squeeze: narrow field nets are cleaner, not mixed (G2 width pilot)]
 
@@ -104,31 +114,3 @@ Code `lem/probe/aa.py`; evidence `lem/aa-2026-10-16/` in the research repo (3eaf
 ## [2026-10-16 | lem | G7 result: the field net strays on lead and near the contract, holds where the trick is decided]
 
 - [[lem-fidelity-by-concept-2026-10-16]] complete: mean regret 0.0084 [0.0083, 0.0086] (434,535 rows), top decile carries 0.825; highest with masters-2plus, lead, to-make-le-10, is-bidder, holds-five; lowest where the trick is decided; regret 0.0008 at teacher ties, 0.0214 at gaps > 0.1. Prediction 1 held, 2 wrong (lead is high, not low), 3 half right. Paper § 4b and G7.
-
-## [2026-10-16 | lem | G7 pre-registered: where the field net's regret under the teacher's plan sits]
-
-- [[lem-fidelity-by-concept-2026-10-16]]: regret by the audit's 48 concepts, legal-move count and the teacher's best-minus-second gap, deal-clustered bootstrap; three predictions (regret concentrated in the top decile; highest with can-take-it and count-on-trick; rising with legal moves). `lem/probe/fidelity.py`.
-
-## [2026-10-16 | lem | G1 result: the teacher's belief is in the field net's inputs, not its hidden layers]
-
-- [[lem-belief-probe-2026-10-16]] complete: R² on the void-moved posterior entries, raw inputs 0.791, first hidden layer 0.241, second 0.035, shuffled ≈ 0 (deal-disjoint 20k/20k); the field net plays without a readable belief over who holds what. Predictions: inputs-state-most just under (0.79 vs ≥ 0.8), a1-near-x wrong, a2-below-a1 right, no-layer-beats-x right.
-- The paper's § 5 and G1 carry it; evidence on HF `lem/belief-probe-2026-10-16/`.
-
-## [2026-10-16 | lem | G1 pre-registered: belief probes from the field net to the teacher's exact ownership posterior]
-
-- [[lem-belief-probe-2026-10-16]]: targets P(seat holds tile) exact under shown voids minus the counting prior; ridge probes from raw inputs and both hidden layers; deal-disjoint 20k/20k; shuffled chance; four predictions (the inputs state most of it; the hidden layers add nothing beyond them). `lem/probe/belief.py`.
-
-## [2026-10-16 | lem | The paper: a living draft and its Gaps list as the desk's work order]
-
-- `lem/paper/README.md` (CC0): "Interpreting a distilled imperfect-information player against an inspectable teacher"; the lab, the teacher, the students, the concept audit, belief probes [gap], concept formation across data size, the feature-count curve, models of others [gap], honest limits; nine gaps G1–G9. [[lem-the-teacher]] § The paper links it.
-
-## [2026-10-16 | book | Silas: a seat's hand law; the losing 31 and the 35's two offs as queries (#134)]
-
-- [[silas]] gains `Belief::hand_law` (and `--law ROLE`): a read seat's whole hand as a belief of its own, held to brute force; `silas/GAPS.md` § 4 narrowed a third time.
-- W42-p054-a: a 35 in fours read as `risk-budget` is two offs 1,587/1,751 (77/646 unread); a 36 in blanks, one off certainly (Hands 33 and 32).
-- W42-p054-b: a losing 31 lifts "a double" to 24,033/24,989 as `bid-only-enough` reads it, to 1 as `risk-budget` (the deal of Hand 33, our auction).
-- **All desks:** stale venvs must rebuild scenario_core, which embeds silas: the evaluator now orders clauses at compile time. `scripts/check` builds its own.
-
-## [2026-10-16 | book | Seed-scatter caveats on single-arm margins against a one-seed field (#190)]
-
-- One line each on [[rematch-zeb-041-vs-demon-2026-10-15]], [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]]: their single-arm margins exclude planner-seed scatter of about ±0.1 marks/game, and the paired differences on shared seeds are unaffected. Results whose ends lie inside the scatter: the rematch's +0.330 [+0.055, …] marks, #151's Z10 and Z20, and #172's Z5. The Mayor asked for this.
