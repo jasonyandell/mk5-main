@@ -4562,3 +4562,38 @@ linked from the experiment. No new strength or Zeb instruction-cost claim.
 ## [2026-10-16 | lem | G7 pre-registered: where the field net's regret under the teacher's plan sits]
 
 - [[lem-fidelity-by-concept-2026-10-16]]: regret by the audit's 48 concepts, legal-move count and the teacher's best-minus-second gap, deal-clustered bootstrap; three predictions (regret concentrated in the top decile; highest with can-take-it and count-on-trick; rising with legal moves). `lem/probe/fidelity.py`.
+
+## [2026-10-16 | lem | G7 result: the field net strays on lead and near the contract, holds where the trick is decided]
+
+- [[lem-fidelity-by-concept-2026-10-16]] complete: mean regret 0.0084 [0.0083, 0.0086] (434,535 rows), top decile carries 0.825; highest with masters-2plus, lead, to-make-le-10, is-bidder, holds-five; lowest where the trick is decided; regret 0.0008 at teacher ties, 0.0214 at gaps > 0.1. Prediction 1 held, 2 wrong (lead is high, not low), 3 half right. Paper § 4b and G7.
+
+## [2026-10-16 | book | The seed-varied re-run: the A/A missed again, the other way, and seed scatter is not why (#190 → #191)]
+
+- Results on [[seed-varied-2026-10-16]]: 352 of 352 batches, none dropped. The A/A read Za −0.14 [−0.25, −0.03] marks/game, and PZa won 53.9% of games, so K = +0.12 [+0.00, +0.23] is reported, not claimed. Post-hoc checks found no per-seed effect (per-position spread below noise) and no batch correlation, so planner-seed scatter is not the mechanism. #191 calibrates the estimator directly.
+- The caveats on [[rematch-zeb-041-vs-demon-2026-10-15]], [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]] are restated as estimator caveats: an extra ±0.15 marks/game and ±4 points of share on single-arm margins. A4 is updated. Data: HF `book/seed-varied/` (c62bf021, SHA verified).
+
+## [2026-10-16 | book | Calibrating the estimator, pre-registered: forty A/A replicates (#191)]
+
+- [[estimator-calibration-2026-10-16]]: twenty replicates of seed 1 against seed 0 on disjoint deals (does the house interval cover the fixed δ(1,0)?) and twenty of fresh seed pairs (the seed-to-seed spread), 288 game pairs each; 960 batches. Deployed Zeb's choices proved independent of batch composition first (40 states, 0 differences). `scenario/calibration.py`.
+
+## [2026-10-16 | lem | Split-half A/A of the audit's intervals: row Wilson 1.17× too narrow, the clean share replicates (#191)]
+
+Inez (#191) asked how Lem's intervals are made and whether an A/A exists; the Mayor ruled the audit's
+0.597 [0.581, 0.608] provisional because its Wilson intervals are over rows, not deals. Registered and
+ran the A/A the same afternoon ([[lem-field-net-audit-2026-10-15]] § Split-half A/A): deals halved,
+the audit rerun per half, 372 live poles. The row Wilson SEs are about **1.17× too narrow**
+(|z| > 1.96 on 0.093 of non-degenerate poles vs 0.05), not the several-fold the desk predicted; a
+deal-clustered bootstrap barely helps (1.12×) because a top set of 2,174 rows spans 1,730 deals.
+The noise the row interval misses is the top set's own selection. The clean share replicates at
+0.594 / 0.599 and is no longer provisional. The belief probes' R² now carry deal-clustered bands
+(±0.004, ±0.007, ±0.003) and agree in both split directions ([[lem-belief-probe-2026-10-16]]).
+Code `lem/probe/aa.py`; evidence `lem/aa-2026-10-16/` in the research repo (3eafdc57).
+
+## [2026-10-16 | book | The tournament's pair bootstrap is calibrated: an A/A covers at n = 64 (#191 part 2)]
+
+- [[estimator-calibration-2026-10-16]] Part 2: Zeb 0.4.1 contested against itself is an exact mirror (its host always sends seed 0), so the A/A is seed 1 against the ladder's seed 0 through a seed shim. Twelve replicates of 64 duplicate pairs on disjoint faceoff seeds, 1,536 games: R_F 0.85 in share and 1.02 in marks (calibrated range [0.59, 1.41]), 0 of 24 intervals missed the pooled mean, δ(1,0) −0.05 [−0.21, +0.12] marks/game, per-pair excess kurtosis −0.15, 25.4% of pairs at |margin| ≥ 6. The ±0.15 / ±4 allowance does not apply to the tournament's intervals for equal players; [[rematch-zeb-041-vs-demon-2026-10-15]] notes it. `tournament/calibration.py`; data HF `book/calibration-tournament/` (1ee36c0d, SHA verified).
+
+## [2026-10-17 | book | The estimator is calibrated: both A/A misses were chance (#191)]
+
+- [[estimator-calibration-2026-10-16]], part 1: 960 of 960 batches. R_F = 1.06, 2 of 20 misses, δ(1,0) = −0.004 [−0.040, +0.031] marks/game, σ_seed = 0. The Book arena's intervals cover as they say, so #117's and #190's A/A misses were chance. With part 2 (the tournament, calibrated) and part 3 (Lem, 1.17× narrow from top-set selection), the ±0.15 / ±4-point allowance is withdrawn for the Book arena and the tournament.
+- The caveats on #151 and #172 are replaced; A4 is updated; the #117 and #190 pages carry the resolution. *Exploratory:* the auction read pooled over both studies is +0.14 [+0.06, +0.22] marks/game. Data: HF `book/calibration/` (b1286005, SHA verified).
