@@ -13,4 +13,4 @@ echo "THE FRAME, reloaded after compaction (Cammarata, \"Neural Networks Are Alr
 echo
 awk '/^## Re-read /{on=1} /^## Why it fits 42/{on=0} on' "$page"
 echo
-echo "To read or audit a unit, use the clean-neuron skill (.claude/skills/clean-neuron)."
+echo "To read or audit a unit, use the clean-neuron skill (.claude/skills/clean-neuron). To read the book and the net together, use the book-interp skill (.claude/skills/book-interp)."

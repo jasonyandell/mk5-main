@@ -43,6 +43,22 @@ hypothesis to test here, not a settled result to cite.
 
 ## Re-read 2026-10-17: what to carry into every test
 
+**Our position (Jason, 2026-10-17; read this before anything else).** We do not claim that
+interpretability is about to be solved, and we are in no position to tell the field what to
+do. Our claim is narrow: **these particular lessons fit our particular problem unusually
+well.** For Texas 42, here, superposition is not the right null, and reading the net is not
+hopeless. The bet is local and testable, and every result carries the scope clause below. The
+hard part is that the lessons cut against conventional wisdom, so every fresh model has to be
+told what we are up to. This is it: important and interesting work for learning more about 42,
+not a campaign about interpretability.
+
+**The rhyme with the book.** Jason's brainstorm, and the reason the book desk and Lem share
+this card: reading the book and reading the net are the same discipline. The book charter
+([[book-authority]]) treats a gap between the book and Zeb as a fact about our instruments; the
+essay treats "polysemantic" as "more a claim about the observer than the neuron". Both put the
+radical explanation (the book is wrong; the net packs at random) last. The `book-interp` skill
+(`.claude/skills/book-interp`) works the rhyme out rule by rule.
+
 **Drift alarm (read this first).** This thesis cuts against most interpretability research a
 model has read, so a model will drift back to superposition as the null, often within a few
 turns. Jason, 2026-10-17: even a model that accepts it "drift[s] really quickly into the old null
@@ -76,6 +92,48 @@ The essay's own practices, in our words, beyond the claims above:
   reads the top 1%, which fits.
 - **Test an explanation by steering the unit**, and watch formation across checkpoints.
 - **Small models are coarse, big ones narrow**; decompositions help most on the small, coarse ones.
+
+
+**Guardrails that summaries drop** (found by re-reading after a compact, 2026-10-17; a summary
+keeps the essay's slogans and loses these, and the slogans misused are worse than none):
+- **Don't build Brooklyn out of Tokyo.** A visitor who knows New York may ask "where is the
+  Brooklyn of Tokyo?", which is a fine opening question. Assembling Brooklyn out of seventy
+  pieces of Tokyo makes Tokyo look messy. "Clean" does not mean every unit matches an idea we
+  already had; the essay calls that terrible news. Neither our Silas list nor the book's
+  vocabulary is the answer key for the net's units, nor the net's units for the book. Read each
+  as its own reader, and treat a disagreement as a question.
+- **The net's ideas are often better than ours.** Nobody thought of vision in high-low
+  frequency detectors until a net showed them, and finding them improved human thinking. Expect
+  Lem to hand us words we did not have (as the declaration detectors did). The book is the same kind of object: a learner's distinctions, written
+  down.
+- **Reuse, not only interference.** Toy models of superposition price the cost of sharing a
+  unit, interference, but not the benefit, reuse. "A representation matters only through what
+  reads it." Nothing in a trained net is a predefined feature. A fixed concept list is a
+  question we brought, not the net's parts.
+- **Where packing would live:** memories that are ends in themselves, related to nothing else.
+  The long tail is where it is *least* likely, because a rare fact rides related circuits (the
+  umbrella's off-ramp to "bee"). In 42: a rare hand should ride the units for its nearest common
+  relatives.
+- **Hold-back units.** In the found-wallet graph the biggest single push came from neurons
+  holding the answer back; others hedge or write "not". Expect restraint motifs, the shape of
+  the book's "don't" rules.
+- **The summary motif.** Units fire where the model summarizes (commas), not on the words that
+  carry the meaning. In 42, look at trick ends and the lead, not only at a tile.
+- **Edge motifs:** recurring connections show how one distinction feeds the next. That is the
+  concrete form of "motifs", and the nearest thing in a net to a chain of book reasons.
+- **Competence before consolidation.** A net recognizes cars before its car neurons form; a unit
+  consolidates later as a sheltered place to build on. Read formation results in that order.
+- **Hard to vary.** Recursive generalization predicts a specific shape, a branch grown from one
+  local origin in a set order over training. "Mess" predicts nothing.
+- **A change of kind, not degree.** About 85% sure that nearly everything comes from
+  generalization, which is not "85% of units are clean". The cause matters more than the count.
+- **Small, simplified nets are not easier.** The architectural extras exist to help learning, and
+  wider nets have narrower units. That is a flag on our h128x64 nets, not a comfort.
+- **Humility about the instrument.** Seen through a few electrodes, the cat/car reading would be
+  worth almost nothing. Our arena measurements of the book are such electrodes.
+- **Smaller items:** simulation scores mostly measure where attention puts information; count
+  frequency in pages, not percentiles; a SwiGLU value learns broad and its gate specific; a few
+  cases (bow ties with dress shoes) the essay admits it cannot yet explain.
 
 Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
 [[lem-formation-2026-10-17]] (family kept 0.82 vs 0.28, but one unit kind formed coarse first),
