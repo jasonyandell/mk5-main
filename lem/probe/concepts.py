@@ -164,10 +164,11 @@ def compile_all(concepts: tuple[Concept, ...] = CONCEPTS):
 
 
 def evaluate(sample: Sample, start: int = 0, stop: int | None = None, budget: int = 10_000_000,
-             log=print) -> np.ndarray:
+             log=print, concepts: tuple[Concept, ...] = CONCEPTS) -> np.ndarray:
     """[rows, C] bool: each concept at each row, exactly."""
     from scenario_core import SilasBelief, SilasFrame
-    queries = compile_all()
+    queries = compile_all(concepts)
+    names = [c.name for c in concepts]
     stop = len(sample) if stop is None else min(stop, len(sample))
     out = np.zeros((stop - start, len(queries)), bool)
     for r in range(start, stop):
@@ -176,18 +177,31 @@ def evaluate(sample: Sample, start: int = 0, stop: int | None = None, budget: in
         for k, q in enumerate(queries):
             e = q.summarize(belief, budget).event_probability
             if e.authority.label != "exact":
-                raise AssertionError(f"{NAMES[k]} is not exact at row {r}: {e.authority.label}")
+                raise AssertionError(f"{names[k]} is not exact at row {r}: {e.authority.label}")
             out[r - start, k] = e.value == 1
         if (r - start) % 20_000 == 0 and log is not None:
             log(f"  concepts: row {r:,} of {stop:,}")
     return out
 
 
-def save(path: str | Path, labels: np.ndarray) -> None:
-    np.savez_compressed(path, labels=labels, names=np.array(NAMES), identity=np.array(identity()))
+def save(path: str | Path, labels: np.ndarray, concepts: tuple[Concept, ...] = CONCEPTS) -> None:
+    if labels.shape[1] != len(concepts):
+        raise ValueError(f"{labels.shape[1]} label columns for {len(concepts)} concepts")
+    np.savez_compressed(path, labels=labels, names=np.array([c.name for c in concepts]), identity=np.array(identity(concepts)))
 
 
 def write_list(path: str | Path) -> None:
     """The concept list as JSON, for the record and the readers."""
     Path(path).write_text(json.dumps(
         {"identity": identity(), "concepts": [c.__dict__ for c in CONCEPTS]}, indent=1))
+
+
+LISTS = {"v1": CONCEPTS, "v2": CONCEPTS_V2}
+
+
+def list_of(identity_hash: str) -> tuple[Concept, ...]:
+    """The concept list a label file was made with, by its identity (v1 or v2)."""
+    for concepts in LISTS.values():
+        if identity(concepts) == identity_hash:
+            return concepts
+    raise ValueError(f"labels made with an unknown concept list ({identity_hash[:12]})")

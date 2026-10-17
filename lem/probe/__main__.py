@@ -25,10 +25,13 @@ def main(argv=None) -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("sample"); s.add_argument("pour"); s.add_argument("out")
     s.add_argument("--every", type=int, default=10); s.add_argument("--layout", default="field-v2")
+    s.add_argument("--offset", type=int, default=0, help="the trainer's deal offset for this pour")
     s = sub.add_parser("merge"); s.add_argument("out"); s.add_argument("parts", nargs="+")
     s = sub.add_parser("concepts"); s.add_argument("sample"); s.add_argument("out")
     s.add_argument("--start", type=int, default=0); s.add_argument("--stop", type=int, default=None)
+    s.add_argument("--list", choices=("v1", "v2"), default="v1")
     s = sub.add_parser("concepts-merge"); s.add_argument("out"); s.add_argument("parts", nargs="+")
+    s.add_argument("--as-list", choices=("v1", "v2"), default=None, help="v2 labels saved as v1 (its first columns)")
     s = sub.add_parser("audit"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s.add_argument("--net", default=NET)
     s = sub.add_parser("cards"); s.add_argument("sample"); s.add_argument("audit_dir"); s.add_argument("out")
@@ -57,7 +60,7 @@ def main(argv=None) -> None:
 
     if a.cmd == "sample":
         from lem.probe.sample import build
-        build(a.pour, a.out, a.every, log, a.layout)
+        build(a.pour, a.out, a.every, log, a.layout, a.offset)
     elif a.cmd == "merge":
         from lem.probe.sample import merge
         merge(a.out, a.parts, log)
@@ -65,22 +68,28 @@ def main(argv=None) -> None:
         from lem.probe import concepts
         from lem.probe.sample import Sample
         sample = Sample(a.sample)
-        labels = concepts.evaluate(sample, a.start, a.stop, log=log)
-        concepts.save(a.out, labels)
-        log(f"{a.out}: {labels.shape} ({concepts.identity()[:12]})")
+        cl = concepts.LISTS[a.list]
+        labels = concepts.evaluate(sample, a.start, a.stop, log=log, concepts=cl)
+        concepts.save(a.out, labels, cl)
+        log(f"{a.out}: {labels.shape} ({concepts.identity(cl)[:12]}, list {a.list})")
     elif a.cmd == "concepts-merge":
         from lem.probe import concepts
         parts = [np.load(p) for p in a.parts]
-        for p in parts:
-            assert str(p["identity"]) == concepts.identity(), "every part was labelled with this concept list"
-        concepts.save(a.out, np.concatenate([p["labels"] for p in parts]))
+        ids = {str(p["identity"]) for p in parts}
+        assert len(ids) == 1, "every part was labelled with one concept list"
+        cl, labels = concepts.list_of(ids.pop()), np.concatenate([p["labels"] for p in parts])
+        if a.as_list:
+            want = concepts.LISTS[a.as_list]
+            assert cl[:len(want)] == want, "the target list is a prefix of the labelled one"
+            cl, labels = want, labels[:, :len(want)]
+        concepts.save(a.out, labels, cl)
     elif a.cmd == "audit":
         from lem.probe import audit, concepts
         from lem.probe.net import forward, load_net
         from lem.probe.sample import Sample
         sample = Sample(a.sample)
         with np.load(a.labels) as z:
-            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            concepts.list_of(str(z["identity"]))                     # a known list (v1 or v2), or refuse
             labels, names = z["labels"], [str(n) for n in z["names"]]
         assert len(labels) == len(sample), "one label row per sample row"
         net = load_net(a.net)
@@ -89,7 +98,7 @@ def main(argv=None) -> None:
         acts = forward(net, sample.x)
         result = audit.run(sample, acts, labels, names, log)
         result["net"] = a.net
-        result["concepts"] = concepts.identity()
+        result["concepts"] = str(np.load(a.labels)["identity"])
         audit.write(result, a.out_dir)
         concepts.write_list(Path(a.out_dir) / "concepts.json")
         log(json.dumps(result["shares"]))
@@ -158,7 +167,7 @@ def main(argv=None) -> None:
         from lem.probe.sample import Sample
         sample = Sample(a.sample)
         with np.load(a.labels) as z:
-            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            concepts.list_of(str(z["identity"]))                     # a known list (v1 or v2), or refuse
             labels, names = z["labels"], [str(n) for n in z["names"]]
         net = load_net(a.net)
         acts = forward(net, sample.x)
@@ -172,7 +181,7 @@ def main(argv=None) -> None:
         from lem.probe.sample import Sample
         sample = Sample(a.sample)
         with np.load(a.labels) as z:
-            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            concepts.list_of(str(z["identity"]))                     # a known list (v1 or v2), or refuse
             labels, names = z["labels"], [str(n) for n in z["names"]]
         audit = json.loads((Path(a.audit_dir) / "audit.json").read_text())
         net = load_net(a.net)
@@ -193,7 +202,7 @@ def main(argv=None) -> None:
         from lem.probe.sample import Sample
         sample = Sample(a.sample)
         with np.load(a.labels) as z:
-            assert str(z["identity"]) == concepts.identity(), "the labels were made with this concept list"
+            concepts.list_of(str(z["identity"]))                     # a known list (v1 or v2), or refuse
             labels, names = z["labels"], [str(n) for n in z["names"]]
         audit = json.loads((Path(a.audit_dir) / "audit.json").read_text())
         acts = forward(load_net(a.net), sample.x)

@@ -32,10 +32,12 @@ COLUMNS = ("x", "legal", "chosen", "actions", "deal", "index", "decl", "viewer",
            "bidder", "bid", "plays", "n_plays", "pour")
 
 
-def rows(pour: Pour, every: int = EVERY, layout: str = "field-v2") -> dict[str, np.ndarray]:
+def rows(pour: Pour, every: int = EVERY, layout: str = "field-v2", offset: int = 0) -> dict[str, np.ndarray]:
+    """`offset`: the trainer numbers a later pour's deals after the earlier pours', so its held-out
+    deals are those with (deal + offset) % every == 0."""
     keep = []
     for i, pos in enumerate(pour.positions()):
-        if pos.deal % every == 0:
+        if (pos.deal + offset) % every == 0:
             keep.append((i, pos))
     n = len(keep)
     x = np.zeros((n, N_FEATURES_OF[layout]), np.uint8)
@@ -68,14 +70,14 @@ def rows(pour: Pour, every: int = EVERY, layout: str = "field-v2") -> dict[str, 
                 viewer=viewer, own=own, bidder=bidder, bid=bid, plays=plays, n_plays=n_plays, pour=pour_col)
 
 
-def build(pour_dir: str | Path, out: str | Path, every: int = EVERY, log=print, layout: str = "field-v2") -> int:
+def build(pour_dir: str | Path, out: str | Path, every: int = EVERY, log=print, layout: str = "field-v2", offset: int = 0) -> int:
     pour = load(pour_dir)
     log(f"{pour_dir}: {len(pour):,} positions, {len(pour.hands):,} deals, utility {pour.utility}")
-    d = rows(pour, every, layout)
+    d = rows(pour, every, layout, offset)
     d["source"] = np.array(str(pour_dir))
     d["layout"] = np.array(layout)
     np.savez_compressed(out, **d)
-    log(f"{out}: {len(d['x']):,} rows (deal % {every} == 0)")
+    log(f"{out}: {len(d['x']):,} rows ((deal + {offset}) % {every} == 0)")
     return len(d["x"])
 
 

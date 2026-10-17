@@ -362,3 +362,19 @@ def test_squeeze_fold_is_exact_on_pip_positions_and_families_cover_the_list():
     tl = np.array([[1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1]], bool)
     u = squeeze.union_table(tl, np.ones((3, 3), bool))
     assert u[0, 1] == 0.75 and u[0, 2] == 0.75 and u[0, 0] == -1
+
+
+def test_label_files_carry_their_concept_list_and_the_sample_honours_the_trainers_offset(tmp_path):
+    """A label file names the list it was made with (v1 or v2) and the kit reads either; a sample
+    of a later pour takes the trainer's deal offset, so its held-out rows are the trainer's."""
+    from lem.probe import concepts
+    for name, cl in concepts.LISTS.items():
+        f = tmp_path / f"{name}.npz"
+        concepts.save(f, np.zeros((3, len(cl)), bool), cl)
+        with np.load(f) as z:
+            assert concepts.list_of(str(z["identity"])) is cl and len(z["names"]) == len(cl)
+    with pytest.raises(ValueError):
+        concepts.save(tmp_path / "bad.npz", np.zeros((3, 5), bool), concepts.CONCEPTS)
+    with pytest.raises(ValueError):
+        concepts.list_of("0" * 64)
+    assert concepts.identity(concepts.CONCEPTS).startswith("13e4d525")
