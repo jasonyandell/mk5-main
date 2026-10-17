@@ -77,6 +77,11 @@ The intake's reported finite rational checks and step-checked theorems are
 historical evidence, not a new Lean certification. Its common-information
 partnership bridge is explicitly future architecture. The rules alone do not
 determine human behavior; exact answers under specified behavior are still possible.
+This is not all proposal: `texas-42/walt/MAP.md` and `walt/FACTOR-BELIEF.md`
+record experimental exact late-game mixtures and a positive model-fusion price.
+They do not establish a general learned population player. The strategic-state
+account retains mechanical state, continuation history and a joint physical/type
+belief; dropping history or factoring that belief needs an additional argument.
 
 The Lean audit inspected source and existing build artifacts, without rebuilding:
 
@@ -98,9 +103,14 @@ partnership-optimality theorem.
 
 The outboxes reinforce the evidence boundary. `exchange/outbox/013-constellation-lean-stage1.md`
 asks for source first and local compilation afterward; a requested theorem is not
-a completed proof. `018-fee-correlation-update.md` explicitly scopes its fixed
-uniform-field work as exploratory. Its clairvoyant upper-bound instruments are
-not learning targets; the [[strategy-fusion-fence]] remains in force.
+a completed proof. `016-cheap-upper-witness-handoff.md` separates a lawful policy
+lower witness from an information-relaxed upper. `017-second-rung-gluing-handoff.md`
+records two repaired shortcuts: even random-legal play induces nonuniform belief
+through differing legal-set sizes, and later arrival masses depend on earlier
+focal actions. History and the distribution of reached positions are policy-dependent.
+`018-fee-correlation-update.md` explicitly scopes its fixed uniform-field work as
+exploratory. These upper-bound instruments are not learning targets; the
+[[strategy-fusion-fence]] remains in force.
 
 ## Data available now
 
@@ -188,6 +198,13 @@ formation trajectories. Sources: pinned `model.py`, `train.py`, and
 
 ## A discriminating population experiment
 
+Before scaling, use the 90-world witness as a representation challenge: retain
+the actor-attributed auction histories that distinguish its posterior-sensitive
+lead preferences, although its mechanical endpoint and world support agree.
+It tests information retained by the encoding; it is not itself a population
+training result. For a learned observer, add a tractable family of late-game
+cases whose behavioral likelihoods and resulting decision values can be checked.
+
 Use a few pinned, behaviorally distinct seats, including varied partners. Keep
 assignments fixed through an encounter of several hands; draw new assignments
 between encounters. Changing style every move erases the persistent thing history
@@ -198,6 +215,8 @@ previous hands plus current history, and known type as a diagnostic. For the
 cross-hand contrast, remove or shuffle only previous-hand evidence, preserving
 the current legal record. For a current-history contrast, preserve the same
 rules information so remembering legality is not mistaken for reading a style.
+The type-revealed optimum is an information upper under exact optimization;
+a learned type-conditioned model is only a diagnostic, not a guaranteed upper.
 
 Measure next-action log loss, calibration, discretionary-action prediction and
 adaptation versus encounter length. Use encounter-level uncertainty and unfamiliar
