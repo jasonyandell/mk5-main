@@ -55,6 +55,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | lem | causal (#198): switching off a named unit hurts the play where its name says]
+
+[[lem-causal-2026-10-17]]: on three 24-neuron nets, ablating a named unit raises the teacher's
+regret where its concept holds for 45 of 45. Among rows where the unit fires, the move changes
+more inside the concept for 39 of 45, and the unit's own concept beats a random one for 33 of 40.
+This is the first evidence of use rather than correlation. Steering failed: a 99th-percentile
+clamp changes 46% of all moves. That is a tools rung, and a dose-response clamp is next. Four of
+five predictions held. The clean-neuron skill's fourth friction log came from this result.
+
 ## [2026-10-17 | lem | naming the narrow nets (#197): 201 of 210 units named; the floor rises with the list]
 
 [[lem-naming-2026-10-17]]: list v2 and Haiku readers name 201 of the 210 live units of the 12- and
