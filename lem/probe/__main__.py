@@ -48,6 +48,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("formation-train"); s.add_argument("pours", nargs="+"); s.add_argument("--out", required=True)
     s.add_argument("--widths", required=True); s.add_argument("--seeds", default="0,1,2"); s.add_argument("--epochs", type=int, default=60)
     s.add_argument("--device", default="mlx")
+    s = sub.add_parser("formation-report"); s.add_argument("audit_root"); s.add_argument("runs_root"); s.add_argument("sample")
+    s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out")
     s = sub.add_parser("squeeze-families"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET)
     s = sub.add_parser("list"); s.add_argument("out")
@@ -205,6 +207,9 @@ def main(argv=None) -> None:
         from lem.probe import squeeze
         widths = [tuple(int(v) for v in w.split("x")) for w in a.widths.split(",")]
         squeeze.train_formation(a.pours, a.out, widths, [int(v) for v in a.seeds.split(",")], a.epochs, a.device, log)
+    elif a.cmd == "formation-report":
+        from lem.probe import formation
+        Path(a.out).write_text(json.dumps(formation.report(a.audit_root, a.runs_root, a.sample, a.labels, a.q_dir, log), indent=1))
     elif a.cmd == "squeeze-families":
         from lem.probe import concepts, squeeze
         from lem.probe.net import forward, load_net

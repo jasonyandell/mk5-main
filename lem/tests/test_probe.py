@@ -385,3 +385,20 @@ def test_formation_checkpoints_are_early_steps_then_epoch_ends():
     s = formation_steps(3_915_000)                    # 15,293 steps an epoch at batch 256
     assert s[:7] == (0, 30, 100, 300, 1_000, 3_000, 10_000) and s[7] == 15_293 and s[-1] == 60 * 15_293 and len(s) == 15
     assert formation_steps(1_000, epochs=3) == (0, 4, 8, 12, 30, 100, 300, 1_000, 3_000, 10_000)
+
+
+def test_formation_reads_first_clean_steps_and_family_kept():
+    """A pole is first clean at the earliest checkpoint after which it stays clean; family kept
+    compares its label there with its final label."""
+    from lem.probe import formation
+    def audit(rows):
+        return {"rows": [{"pole": p, "kind": k, "label": l, "precision": 0.95} for p, k, l in rows]}
+    ser = [(0, audit([(0, "mixed", "lead"), (1, "clean", "holds-boss-trump"), (2, "dead", "x")])),
+           (10, audit([(0, "clean", "last"), (1, "partial", "holds-master"), (2, "clean", "holds-ten")])),
+           (20, audit([(0, "clean", "third"), (1, "clean", "holds-master"), (2, "clean", "count-on-trick")]))]
+    ps = {p["pole"]: p for p in formation.poles(ser)}
+    assert ps[0]["first_clean_step"] == 10 and ps[0]["first_label"] == "last" and ps[0]["final_label"] == "third"
+    assert ps[1]["first_clean_step"] == 20 and ps[1]["first_label"] == "holds-master"
+    assert ps[2]["first_clean_step"] == 10
+    k = formation.kept_share(list(ps.values()))
+    assert k["n"] == 3 and k["kept"] == 1.0 and abs(k["null"] - 1 / 3) < 1e-9          # three final families, one pole each
