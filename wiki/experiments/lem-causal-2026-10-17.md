@@ -3,7 +3,7 @@ title: "Already-clean test 5: causal — do the narrow nets' named units do what
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]], [[lem-the-teacher]]). So far every
@@ -141,6 +141,40 @@ a measured amount.
   8. **Dose-response.** The overall move-change rate rises with k for at least 0.9 of units.
      This one is a sanity check.
 - Same nets, rows, labels and teacher q as above. Groups with fewer than 200 rows are not scored.
+
+### Addendum results
+
+Run 2026-10-17 as registered. The evidence is `steer_*.json`, `grade_steer.py` and
+`grade_steer.txt` in the same HF folder
+([@2045cc84](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/2045cc843216a5caf876eee38a5caab7f60c842c/lem/causal-2026-10-17)).
+
+| dose k | moves changed, all rows (median) | `+` poles: cheaper where C holds | `−` poles: dearer where C holds |
+|---:|---:|---:|---:|
+| 0.25 | 0.086 | 24 / 45 = 0.533 | 26 / 57 = 0.456 |
+| 0.5 | 0.150 | **27 / 45 = 0.600** | **20 / 57 = 0.351** |
+| 1 | 0.247 | **29 / 45 = 0.644** | **25 / 57 = 0.439** |
+| 2 | 0.354 | 21 / 45 = 0.467 | 24 / 57 = 0.421 |
+
+The predictions, graded:
+
+| prediction | result |
+|---|---|
+| 6. `+` poles cheaper where C holds | **holds at the threshold**: 0.600 and 0.644, near a coin flip (one-sided binomial about 0.12 and 0.04) |
+| 7. `−` poles dearer where C holds | **wrong**: 0.351 and 0.439 |
+| 8. dose-response | holds: 108 of 108 monotone |
+
+**Reading.** Steering by addition, scored by cost, barely separates inside from outside a unit's
+concept. At every dose the median regret rise inside is within 0.001 of the median outside.
+Ablation separated them clearly (above), and steering does not.
+
+The ladder stops at rung 1, the tools. The comparison mixes rows of different difficulty: lead
+rows and last-seat rows carry different regret before any intervention, and a small added signal
+costs whatever the row's own difficulty allows. Cost is also the wrong reading for steering. The
+essay steers and watches what the output does, not how much it hurts. The fair version compares
+each unit against matched rows (same seat in the trick, number of legal moves and decisiveness),
+or against a random unit at the same dose, and reads the move's shift toward the concept's
+behaviour. That is #205. The ablation result above stands, and the steering result is unresolved
+by this tool.
 
 ## Links
 

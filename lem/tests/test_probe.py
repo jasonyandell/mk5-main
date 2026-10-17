@@ -393,7 +393,7 @@ def test_formation_reads_first_clean_steps_and_family_kept():
     from lem.probe import formation
     def audit(rows):
         return {"rows": [{"pole": p, "kind": k, "label": l, "precision": 0.95} for p, k, l in rows]}
-    ser = [(0, audit([(0, "mixed", "lead"), (1, "clean", "holds-boss-trump"), (2, "dead", "x")])),
+    ser = [(0, audit([(0, "unnamed", "lead"), (1, "clean", "holds-boss-trump"), (2, "dead", "x")])),
            (10, audit([(0, "clean", "last"), (1, "partial", "holds-master"), (2, "clean", "holds-ten")])),
            (20, audit([(0, "clean", "third"), (1, "clean", "holds-master"), (2, "clean", "count-on-trick")]))]
     ps = {p["pole"]: p for p in formation.poles(ser)}
@@ -429,3 +429,4 @@ def test_causal_downstream_is_the_forward_pass_and_ablating_an_off_neuron_change
         out = downstream(net, x, layer, j, 0)
         off = a[:, j] == 0
         assert np.array_equal(out[off], acts.out[off])        # rows where it was off are untouched
+    assert np.array_equal(downstream(net, x, 2, 0, None, add=0), acts.out)   # a zero dose is no dose

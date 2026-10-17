@@ -14,7 +14,11 @@ exactly those rows. So the `+` comparison is made **among the rows where the neu
 does ablation change the move more where the pole's concept holds than where it does not? For
 a `−` pole the rows are those where the neuron is off, and the intervention is the clamp.
 
-    python -u -m lem.probe causal SAMPLE.npz LABELS.npz AUDIT_DIR Q_DIR OUT.json --net NET
+*Steer* (`--steer`) adds k·σ instead, σ the unit's standard deviation over the rows where it
+fires, for each dose k, scored on the rows where the unit was off: there the signal is new, and a
+right name says where it belongs.
+
+    python -u -m lem.probe causal SAMPLE.npz LABELS.npz AUDIT_DIR Q_DIR OUT.json --net NET [--steer]
 """
 from __future__ import annotations
 
@@ -30,18 +34,22 @@ SEED = 20261017
 MIN_ROWS = 200
 
 
-def downstream(net, x: np.ndarray, layer: int, j: int, value: int | None) -> np.ndarray:
+def downstream(net, x: np.ndarray, layer: int, j: int, value: int | None, add: int = 0) -> np.ndarray:
     """The net's tile scores with neuron j of `layer` set to `value` after its ReLU
-    (None: unchanged), [N, 28] int64, in chunks."""
+    (None: unchanged), then `add` added to it, [N, 28] int64, in chunks."""
     outs = []
     for at in range(0, len(x), CHUNK):
         xi = x[at:at + CHUNK].astype(np.int64)
         a1 = np.maximum((xi @ net.w1 + net.b1) >> net.s1, 0)
         if layer == 1 and value is not None:
             a1[:, j] = value
+        if layer == 1:
+            a1[:, j] += add
         a2 = np.maximum((a1 @ net.w2.T + net.b2) >> net.s2, 0)
         if layer == 2 and value is not None:
             a2[:, j] = value
+        if layer == 2:
+            a2[:, j] += add
         outs.append(a2 @ net.w3.T + net.b3)
     return np.concatenate(outs)
 
@@ -105,4 +113,47 @@ def run(net, sample, labels: np.ndarray, names: list[str], audit: dict, regret_o
                "null_out": _rate(changed, rows & ~n) if n is not None else None}
         out.append(rec)
         log(f"  {r['name']} {r['label']} ({kind}): changed {rec['changed_in']} in / {rec['changed_out']} out")
+    return {"base_regret": float(np.nanmean(base_r)), "poles": out}
+
+
+DOSES = (0.25, 0.5, 1.0, 2.0)
+
+
+def steer(net, sample, labels: np.ndarray, names: list[str], audit: dict, regret_of, log=print) -> dict:
+    """Per named pole and dose: move-change rate and regret rise among rows where the unit was off,
+    split by the pole's concept."""
+    x = sample.x
+    acts: Activations = forward(net, x)
+    canon, actions = sample.canon(), sample.actions
+    base_pick = picks(acts.out, actions, canon)
+    base_r = regret_of(acts.out)
+    h1 = net.b1.shape[0]
+    clean = [r for r in audit["rows"] if r["kind"] == "clean"]
+    cache: dict[tuple[int, int, float], tuple[np.ndarray, np.ndarray]] = {}
+    out = []
+    for r in clean:
+        p = r["pole"]
+        layer, j = (1, p // 2) if p < 2 * h1 else (2, (p - 2 * h1) // 2)
+        a = acts.a1[:, j] if layer == 1 else acts.a2[:, j]
+        on = a > 0
+        if on.sum() < MIN_ROWS or (~on).sum() < MIN_ROWS:
+            continue
+        c = concept_mask(r["label"], labels, names, x)
+        if c is None:
+            continue
+        sigma = float(a[on].std())
+        rec = {"pole": r["name"], "label": r["label"], "sign": "+" if p % 2 == 0 else "-", "sigma": sigma, "doses": []}
+        for k in DOSES:
+            key = (layer, j, k)
+            if key not in cache:
+                o = downstream(net, x, layer, j, None, add=int(round(k * sigma)))
+                cache[key] = (picks(o, actions, canon) != base_pick, regret_of(o) - base_r)
+            changed, dr = cache[key]
+            off = ~on
+            rec["doses"].append({"k": k, "changed_all": float(changed.mean()),
+                                 "changed_in": _rate(changed, off & c), "changed_out": _rate(changed, off & ~c),
+                                 "regret_in": _mean(dr, off & c), "regret_out": _mean(dr, off & ~c)})
+        out.append(rec)
+        d1 = rec["doses"][2]
+        log(f"  {r['name']} {r['label']} k=1: regret {d1['regret_in']} in / {d1['regret_out']} out")
     return {"base_regret": float(np.nanmean(base_r)), "poles": out}
