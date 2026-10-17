@@ -112,7 +112,8 @@ def classify(prec: np.ndarray, base: np.ndarray, names: list[str], k: int):
 
 
 def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: list[str],
-        log=print) -> dict:
+        log=print, shuffles: int = SHUFFLES) -> dict:
+    """`shuffles` = 0 skips the chance baseline (a checkpoint series runs it at the end only)."""
     x = sample.x.astype(bool)
     allc = np.concatenate([labels, x], axis=1)
     names = list(concept_names) + feature_names(x.shape[1])
@@ -139,7 +140,7 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
     # the shuffled baseline: every concept's column permuted independently, SHUFFLES times
     rng = np.random.default_rng(SEED)
     shuffled = []
-    for s in range(SHUFFLES):
+    for s in range(shuffles):
         perm = np.empty_like(allc)
         for c in range(allc.shape[1]):
             perm[:, c] = allc[rng.permutation(n), c]
@@ -152,15 +153,15 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
             kinds.append(classify(prec, base, names, k)[4])
         shuffled.append(kinds)
         if log is not None:
-            log(f"  shuffle {s + 1}/{SHUFFLES}: clean {kinds.count('clean')} partial {kinds.count('partial')}")
+            log(f"  shuffle {s + 1}/{shuffles}: clean {kinds.count('clean')} partial {kinds.count('partial')}")
     live = [r for r in rows if r.kind != "dead"]
     sh_clean = [ks.count("clean") / max(1, len([x for x in ks if x != "dead"])) for ks in shuffled]
     return {
         "rows": [asdict(r) for r in rows],
         "n_rows": n, "top_k": k, "n_poles": acts.n_poles, "n_live": len(live),
         "shares": shares,
-        "shuffled": {"clean_share_mean": float(np.mean(sh_clean)), "clean_share_min": float(np.min(sh_clean)),
-                     "clean_share_max": float(np.max(sh_clean)), "shuffles": SHUFFLES},
+        "shuffled": ({"clean_share_mean": float(np.mean(sh_clean)), "clean_share_min": float(np.min(sh_clean)),
+                      "clean_share_max": float(np.max(sh_clean)), "shuffles": shuffles} if shuffles else {"shuffles": 0}),
         "params": {"TOP": TOP, "BASE_CAP": BASE_CAP, "CLEAN": CLEAN, "PARTIAL": PARTIAL, "DEAD": DEAD, "SEED": SEED},
     }
 
@@ -204,6 +205,7 @@ def write(result: dict, out_dir: str | Path) -> None:
     head = [f"Rows {result['n_rows']:,}, top set {result['top_k']:,} per pole, {result['n_poles']} poles, {s['live']} live.",
             f"Clean {s['clean']} of {s['live']} live poles = {s['clean_share']:.3f} [{s['clean_share_lo']:.3f}, {s['clean_share_hi']:.3f}] "
             f"(by a Silas concept {s['clean_by_silas']}, by a raw feature {s['clean_by_feature']}); partial {s['partial']}, mixed {s['mixed']}.",
-            f"Shuffled-label baseline: clean share {sh['clean_share_mean']:.3f} [{sh['clean_share_min']:.3f}, {sh['clean_share_max']:.3f}] over {sh['shuffles']} shuffles.",
+            (f"Shuffled-label baseline: clean share {sh['clean_share_mean']:.3f} [{sh['clean_share_min']:.3f}, {sh['clean_share_max']:.3f}] over {sh['shuffles']} shuffles."
+             if sh["shuffles"] else "No shuffled-label baseline in this run."),
             f"Layer 1: {s['L1_clean']} of {s['L1_live']} live clean; layer 2: {s['L2_clean']} of {s['L2_live']}.", ""]
     (out_dir / "poles.md").write_text("\n".join(head + lines) + "\n")

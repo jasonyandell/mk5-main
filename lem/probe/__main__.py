@@ -34,6 +34,7 @@ def main(argv=None) -> None:
     s.add_argument("--as-list", choices=("v1", "v2"), default=None, help="v2 labels saved as v1 (its first columns)")
     s = sub.add_parser("audit"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s.add_argument("--net", default=NET)
+    s.add_argument("--shuffles", type=int, default=20, help="0 skips the chance baseline")
     s = sub.add_parser("cards"); s.add_argument("sample"); s.add_argument("audit_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET)
     s = sub.add_parser("readers"); s.add_argument("cards"); s.add_argument("out_dir")
@@ -96,7 +97,7 @@ def main(argv=None) -> None:
         assert net.layout == sample.layout, f"the net is {net.layout}, the sample {sample.layout}"
         log(f"forward over {len(sample):,} rows")
         acts = forward(net, sample.x)
-        result = audit.run(sample, acts, labels, names, log)
+        result = audit.run(sample, acts, labels, names, log, a.shuffles)
         result["net"] = a.net
         result["concepts"] = str(np.load(a.labels)["identity"])
         audit.write(result, a.out_dir)
