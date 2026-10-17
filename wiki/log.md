@@ -53,6 +53,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | book | The estimator is calibrated: both A/A misses were chance (#191)]
+
+- [[estimator-calibration-2026-10-16]], part 1: 960 of 960 batches. R_F = 1.06, 2 of 20 misses, δ(1,0) = −0.004 [−0.040, +0.031] marks/game, σ_seed = 0. The Book arena's intervals cover as they say, so #117's and #190's A/A misses were chance. With part 2 (the tournament, calibrated) and part 3 (Lem, 1.17× narrow from top-set selection), the ±0.15 / ±4-point allowance is withdrawn for the Book arena and the tournament.
+- The caveats on #151 and #172 are replaced; A4 is updated; the #117 and #190 pages carry the resolution. *Exploratory:* the auction read pooled over both studies is +0.14 [+0.06, +0.22] marks/game. Data: HF `book/calibration/` (b1286005, SHA verified).
+
 ## [2026-10-16 | book | The tournament's pair bootstrap is calibrated: an A/A covers at n = 64 (#191 part 2)]
 
 - [[estimator-calibration-2026-10-16]] Part 2: Zeb 0.4.1 contested against itself is an exact mirror (its host always sends seed 0), so the A/A is seed 1 against the ladder's seed 0 through a seed shim. Twelve replicates of 64 duplicate pairs on disjoint faceoff seeds, 1,536 games: R_F 0.85 in share and 1.02 in marks (calibrated range [0.59, 1.41]), 0 of 24 intervals missed the pooled mean, δ(1,0) −0.05 [−0.21, +0.12] marks/game, per-pair excess kurtosis −0.15, 25.4% of pairs at |margin| ≥ 6. The ±0.15 / ±4 allowance does not apply to the tournament's intervals for equal players; [[rematch-zeb-041-vs-demon-2026-10-15]] notes it. `tournament/calibration.py`; data HF `book/calibration-tournament/` (1ee36c0d, SHA verified).
