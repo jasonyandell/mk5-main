@@ -26,6 +26,10 @@ Several sessions (Claude desks, Codex worktrees) work this repo at once; the rul
   for timing studies.
 - **A slot is busy only while its file is `flock`ed.** The text inside `/tmp/mk5-cpu-slots/slot-N`
   is the last holder's note and stays after release; never read it as "in use".
+- **Gate the push on the check's own exit code.** `scripts/check … | tail && git push` pushes
+  red, because the pipe returns `tail`'s status. That has put red on main three times. Use
+  `scripts/check …  && git push`, or `set -o pipefail` first. The same goes for a `git rebase`
+  piped anywhere.
 - **Merge your own work**: rebase on `origin/main`, `scripts/check` GREEN, fast-forward push,
   never force. Add your log entry as a new file in `wiki/log.d/`; never edit `wiki/log.md`. That log and `git log` are how the others hear.
 - **Coordinated changes get a heads-up first**: Silas core pins or the standard registry,
