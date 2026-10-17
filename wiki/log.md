@@ -54,6 +54,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | book | Ch. 9 re-run on Lem's field-v3 net, pre-registered (#189)]
+
+- [[ch9-at-the-table-2026-10-17]]: two arms on the same 4,800 changed four-double deals. v3dt plays doubles and no trump on field-v3 and pips on the deployed net; v3all plays every declaration on field-v3, so both declarations have one player. `MenuWalt` takes a `twin`, and `WaltPlay.plays` asks its net (field-v3 covers 7 and 9). The net is pinned by SHA-256. 120 batches.
+
 ## [2026-10-17 | book | Ch. 9 at the table, provisional: our random-field player cannot carry a doubles hand (#189)]
 
 - Results on [[ch9-at-the-table-2026-10-17]]: 288 of 288 batches. The menu costs −0.045 [−0.065, −0.025] marks/hand on the 4,234 deals where it changes the declaration: doubles trump −0.106 [−0.142, −0.070], no trump −0.009 [−0.033, +0.015]. Every seat plays doubles and no trump on the random field, so this is the scope of our player, not a reading of the book's declaration. The A10 row is updated. Next is the re-run on Lem's field-v3 net (decls 7 and 9). Data: HF `book/ch9-provisional/` (97769d4e, SHA verified).
