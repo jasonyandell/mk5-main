@@ -122,11 +122,25 @@ Its row-Wilson intervals are calibrated here: \|z\| > 1.96 on 0.052 of 368 poles
   dictionary, as it should.
 - **One net plays all ten declarations as cleanly as the pip-only net plays pips** (0.628 vs 0.602,
   replicated 0.633 / 0.625), at the same pip fidelity (0.0082).
-- **It names the declaration poorly.** One clean `trump-is-doubles` pole, no `no-trump-game` pole,
-  and no pole labelled by a kind bit. It plays doubles and no trump worse, at 0.0120. It is worst
-  where trump itself is the question: leading the boss trump, ruffing, holding a sure trump.
-  Under doubles trump those mean the doubles. A field net reads "trump" through the pip-suit
-  features it learned on pips, and the kind bit alone does not re-map them.
+- **It detects the declaration; it plays doubles worse.** *Corrected 2026-10-17. The first
+  reading said the net "names the declaration poorly", from one clean `trump-is-doubles` pole and
+  no `no-trump-game` pole. That counted labels, not units.* Ranking poles by the share of
+  doubles-trump positions in their top 1% tells the other story:
+  - 32 poles' top sets are mostly doubles positions (23 clean, 8 partial, 1 mixed), against a
+    base rate of 0.067;
+  - 22 poles are mostly no-trump positions (19 clean).
+  - The audit labels most of them by a raw `count` bit, which records where the count tiles sit
+    under the declaration (`x:count:39`, `x:count:20`). That bit scores 1.00 against
+    `trump-is-doubles` at 0.99, so it wins the label; the unit is the same declaration detector
+    under either name.
+  - The 16 dead poles are dead on doubles positions too, so no doubles unit is hiding among them.
+
+  So the doubles weakness is not missing, dead or mixed doubles units. The net plays doubles worse
+  (0.0120), and worst where trump itself is the question: leading the boss trump, ruffing,
+  holding a sure trump. Under doubles trump those mean the doubles. Two candidates: doubles
+  positions are sparse in pour A (6.7% of rows), and the net reads "trump" through features it
+  learned on pips. Over field-v3, declaring doubles costs the planner −0.072 marks a hand in the
+  Book desk's Ch. 9 re-run (#189, #201), which points the same way.
 - **The book's own doubles and no-trump declarations are the hardest positions** (0.0163 vs
   0.0119 forced), with few rows (2,110). Those are the deals where a player chose doubles or no
   trump on purpose. Measuring them takes a pour that weights them.
