@@ -54,6 +54,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | lem | The width tree (#195): narrow units' counterparts share their family, along one concept's facets]
+
+[[lem-width-tree-2026-10-17]]: each squeezed unit matched to units of wider nets trained from
+scratch. Own family in the 3 best matches at 2.4–2.9× random families, for every narrow net against
+128×64. The coarse "late in the trick" unit spreads into many wide `last` units, not into the two
+seats. The split regression was unfair to the family (pool sizes), and that goes to #200. One of four
+predictions held. Evidence `lem/width-tree-2026-10-17/` (27c87534).
+
 ## [2026-10-17 | lem | Formation (#194): units keep their concept family as they form; an untrained net is the honest floor]
 
 [[lem-formation-2026-10-17]]: six runs (16×8 and 128×64, three seeds), 15 in-run checkpoints each.
