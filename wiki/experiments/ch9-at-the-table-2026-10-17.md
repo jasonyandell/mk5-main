@@ -3,7 +3,7 @@ title: The book's Ch. 9 at the table — doubles trump and no trump priced, prov
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: active
+status: complete
 ---
 
 ## Summary
@@ -91,6 +91,49 @@ differs. On every other deal a − b is exactly 0.
 - **Label.** "field-v3", never "the book's opponent". Lem's audit finds the net weakest on trump
   questions under doubles and on the book's own doubles and no-trump hands.
 - 120 batches (seeds 5201–5260 × 80 deals, both arms); timing pilot seed 5190 excluded.
+
+### Re-run results on field-v3 (complete 2026-10-17; 120 of 120 batches, none dropped)
+
+**One line.** With Lem's field-v3 net playing doubles and no trump, the menu's overall cost
+disappears to a null: −0.010 [−0.028, +0.008] marks per hand on 4,800 changed deals, MDE 0.026.
+No trump moves to the book's sign, +0.024 [+0.002, +0.045], while doubles trump still costs
+−0.067 [−0.100, −0.034]. Playing pips on field-v3 as well changes nothing (v3all − v3dt = −0.004
+[−0.017, +0.010]). So with one player for both declarations, doubles trump costs −0.072
+[−0.105, −0.039] and no trump reads +0.021 [−0.002, +0.042].
+
+| read (a − b, per hand) | menu, random field | **v3dt**, field-v3 for 7 and 9 | **v3all**, field-v3 everywhere |
+|---|---|---|---|
+| changed deals, marks | −0.045 [−0.065, −0.025] (4,234) | **−0.010 [−0.028, +0.008]** (4,800) | **−0.014 [−0.033, +0.004]** (4,800) |
+| doubles trump, marks | −0.106 [−0.142, −0.070] | −0.067 [−0.100, −0.034] (1,798) | −0.072 [−0.105, −0.039] |
+| no trump, marks | −0.009 [−0.033, +0.015] | **+0.024 [+0.002, +0.045]** (3,002) | +0.021 [−0.002, +0.042] |
+| changed deals, points | −3.72 [−4.55, −2.87] | −2.13 [−2.88, −1.37] | −2.26 [−3.04, −1.49] |
+| chance baseline (a − random chair) | +0.526 | +0.447 | +0.436 |
+
+Both v3 arms play the same deals, and the chair's side declared the same contracts in each: under
+doubles trump it made 1,964 of 3,127 (63%), under no trump 2,359 of 3,629 (65%). The table differed
+on 2,572 of the 4,800 deals. The menu arm's deals are different seeds, so its column sits beside the
+others rather than paired with them.
+
+**Reading, under [[book-authority]].**
+- **What a field that knows doubles and no trump changes.** The menu's cost halves under doubles
+  (−0.106 → −0.067) and turns to the book's sign under no trump (−0.009 → +0.024). Most of the
+  provisional cost was the random field's, as the provisional label warned.
+- **What it does not.** Doubles trump still costs about 0.07 marks a hand, and it costs the same
+  when one player plays both declarations. So it is not that the pip alternative had the better
+  player. Lem's audit finds field-v3 weakest on exactly the trump questions under doubles (leading
+  the boss trump, ruffing, holding a sure trump) and on the book's own doubles hands. The book
+  prices these hands by play lines our planner does not yet find. This is the scope of our player,
+  not a verdict on the declaration. **Never "the book loses."**
+- **Assumptions.** A10 is held in declaration and now in play, on field-v3. A1, A2, A3, A5 and
+  A9 are violated as before. The menu still bids by the count, below the book on hands like
+  Hand 23.
+- **The restoring measurement** is filed: a stronger doubles field or a deeper search on doubles
+  hands, and the book's Ch. 9 play rules as the declarer's policy (#201).
+
+Receipts: pre-registered at 170348de (`scenario/ch9.py`, arms `v3dt` and `v3all`; field-v3 pinned by
+SHA-256 `77a43723…f8d49e`). 120 batches through `scripts/cpu-slot`, four at a time, 104–145 s of
+compute each. Timing pilot seed 5190 excluded. Run 2026-10-17 04:46–07:03. Data: HF
+`book/ch9-field-v3/`.
 
 ## Design (pre-registered before any measured batch; see `scenario/ch9.py`)
 
