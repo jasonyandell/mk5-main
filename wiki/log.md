@@ -53,6 +53,11 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | book | The book's Ch. 9 at the table, registered (#189), provisional (random field for 7–9)]
+
+- [[ch9-at-the-table-2026-10-17]]: the chair's full menu (`MenuBidder`) against pip trumps only, on deals where it holds four doubles or more, every seat `MenuWalt`; primary a − b in marks per hand, the book predicts > 0; 288 batches, 23,040 deals, MDE about 0.026 on the changed deals. `scenario/ch9.py`.
+- The arena's ledger gains a deal filter (`keep`, default unchanged, fixtures byte-identical) and writes all nine declarations in `offered` at a menu table; Silas replays a menu ledger's doubles and no-trump rows (`silas/tests/data/ledger-menu.json`).
+
 ## [2026-10-17 | book | A reporting rule: calibrate before you chase an A/A miss (#191)]
 
 - [[book-authority]] § How to report a book result, rule 6: replicate an A/A that misses before explaining it, because the miss that starts a search is chosen for having missed and is no evidence for what the search finds. #117 → #190 → #191 is the worked case. The Mayor asked for this rule.
