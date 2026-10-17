@@ -187,7 +187,11 @@ A small clean vocabulary, the trick in front of the mover, carries most of the p
 ([`wiki/experiments/lem-formation-2026-10-17.md`](../../wiki/experiments/lem-formation-2026-10-17.md),
 #194): across 15 in-run checkpoints, 0.82 of the wide net's clean units end in the concept family
 they first became clean in (null 0.28). Position and trick units form first, and count and mastery
-later. An untrained net already scores 0.15–0.28 clean, the honest floor for every clean share.
+later. An untrained net already scores 0.15–0.28 clean, the honest floor for every clean share. **The width tree**
+([`wiki/experiments/lem-width-tree-2026-10-17.md`](../../wiki/experiments/lem-width-tree-2026-10-17.md),
+#195): a narrow unit's closest counterparts in a wide net trained from scratch come from its own
+concept family at 2.4–2.9 times the random-family rate. The coarse unit spreads along one
+concept's facets (the wide net has 47 `last` units), not into its sibling seats.
 
 ## 8. Models of others **[gap]**
 
@@ -228,7 +232,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195, drop-out order #196, naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196, naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 
