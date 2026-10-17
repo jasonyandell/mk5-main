@@ -174,3 +174,10 @@ def test_a_list_column_past_two_to_the_31_takes_int64_offsets(monkeypatch):
     monkeypatch.setattr(hf, "INT32_MAX", 2)       # the same branch, without allocating 2^31 values
     large = hf._lists(np.array([2, 1]), pa.array(np.arange(3, dtype=np.int8)))
     assert isinstance(large, pa.LargeListArray) and large.to_pylist() == [[0, 1], [2]]
+
+
+def test_a_manifest_that_names_its_reproduction_is_quoted_not_rebuilt():
+    """A pour merged from chunks has no single seed; its manifest's `reproduce` is the card's command."""
+    from scenario import hf
+    assert hf._command({"reproduce": "for i in ...; done"}) == "for i in ...; done"
+    assert "--seed 5" in hf._command({"seed": 5, "deals": 3, "spec": "k0,n8", "bid": 30, "bidder": 0})

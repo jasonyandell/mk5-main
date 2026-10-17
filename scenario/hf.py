@@ -259,6 +259,10 @@ def _mb(paths) -> str:
 
 
 def _command(m: dict) -> str:
+    """The command that re-pours a split: the manifest's own `reproduce` when it has one
+    (a pour merged from chunks has no single seed), else the one `scenario.atlas pour` call."""
+    if m.get("reproduce"):
+        return m["reproduce"]
     seed = f"--seed {m['seed']}" + (" --fiber" if m.get("fiber") else "")
     spec = re.sub(r"(^|,)F=([^,]+)", lambda f: f"{f[1]}F=nets/{Path(f[2]).stem}.npz", m["spec"])
     return (f"python -u -m scenario.atlas pour --deals {m['deals']} --spec {spec} "

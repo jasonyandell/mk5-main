@@ -189,6 +189,24 @@ def concat(pours: list[Pour]) -> Pour:
     return Pour(pours[0].bidder, pours[0].bid, pours[0].utility, **{c: np.concatenate(v) for c, v in cols.items()})
 
 
+def reproduce(dirs: list[Path]) -> str:
+    """The commands that re-pour a merged pour, from its chunks' own records (seed, deals,
+    share): a loop when the seeds step by a constant, else one line per chunk."""
+    cs = [json.loads((d / "chunk.json").read_text()) for d in dirs]
+    deals, share = {c["deals"] for c in cs}, {c["share"] for c in cs}
+    if len(deals) != 1 or len(share) != 1:
+        raise AssertionError(f"chunks of several sizes or shares: deals {sorted(deals)}, share {sorted(share)}")
+    n, k = deals.pop(), share.pop()
+    seeds = [c["seed"] for c in cs]
+    tail = f"python -u -m lem.pour.a merge DIR chunks/c*/"
+    step = seeds[1] - seeds[0] if len(seeds) > 1 else n
+    if all(b - a == step for a, b in zip(seeds, seeds[1:])):
+        return (f"for i in $(seq 0 {len(seeds) - 1}); do python -u -m lem.pour.a chunk --seed $(({seeds[0]} + {step}*i)) "
+                f"--deals {n} --share {k} --out chunks/c$i; done; {tail}")
+    return "; ".join(f"python -u -m lem.pour.a chunk --seed {sd} --deals {n} --share {k} --out chunks/c{i}"
+                     for i, sd in enumerate(seeds)) + f"; {tail}"
+
+
 def merge(out: str | Path, dirs: list[str | Path], log=print) -> dict:
     """One pour directory per half from the finished chunks, with a manifest
     that keeps every chunk's seed, deal seeds, forced deals and book declarations."""
@@ -232,6 +250,7 @@ def merge(out: str | Path, dirs: list[str | Path], log=print) -> dict:
             "heuristic below four doubles, doubles trump or no trump from four by Chapter 9's conditions), with "
             f"one pip deal in {SHARE} forced to doubles or no trump, alternating, and listed in `forced_deals` "
             f"({forced:,} of this split's {len(p.hands):,} deals)")
+        about["reproduce"] = reproduce([Path(c) for c in dirs])
         save(p, out / half, **about, commit=_git_head())
         result[half] = {"deals": len(p.hands), "positions": len(p), "chunks": len(about["chunks"]), "forced": len(about["forced_deals"])}
         log(f"{out / half}: {len(p.hands):,} deals, {len(p):,} positions from {len(about['chunks'])} chunks")
