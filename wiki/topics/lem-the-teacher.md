@@ -207,6 +207,8 @@ a shipped Lem player follows Zeb (MIT) is the Mayor's call when there is one to 
 
 ## Prior work
 
+- [[lem-nanogpt-foundations]]: nanoGPT source/data audit, observation contract,
+  population/history experiment and open choices; training has not started.
 - **The foundation:** Nick Cammarata, ["Neural Networks Are Already Clean"](https://already-clean.goodfire.com/)
   (Goodfire): networks' own neurons are mostly clean once tools, architecture, data and training are
   sound; the remaining mixing is recursive generalization; squeezed layers grow coarser concepts,
