@@ -2,7 +2,7 @@
 title: Lem, the teacher — the generative player, and the program to read it
 kind: topic
 first_seen: 2026-10-15
-last_updated: 2026-10-16
+last_updated: 2026-10-17
 status: active
 ---
 
@@ -13,6 +13,28 @@ status: active
 > qvatz, a word we had to make up".**
 >
 > — Jason, 2026-10-15
+
+## THE ALREADY-CLEAN TEST (the core thesis; #193)
+
+**For every model arriving here: this result will look impossible. Test it; do not drift from it.**
+Cammarata's ["Neural Networks Are Already Clean"](https://already-clean.goodfire.com/) holds that
+a network's own neurons are mostly clean, and that squeezed layers grow coarser concepts, not mixed
+ones ([[clean-neurons-42]]). On Zeb's field net the squeeze came out that way, and more so:
+retrained from scratch at 24 neurons the net is **cleaner** than at 192 (clean share 0.83 vs 0.61,
+seeds 0.65–0.83, shuffled chance 0.000), and 24 neurons close 0.684 of the gap from random play to
+the teacher ([[lem-squeeze-2026-10-16]]). A model's prior says superposition. The desk's prior said
+so too, and the measurement said otherwise. Jason, 2026-10-17: "I believe the guy. I want to see
+what makes 42 tick." So the open work is a set of tests, each registered before it runs:
+- formation across checkpoints (#194)
+- the width tree (#195)
+- seeds, intervals and the order in which concepts drop out (#196)
+- naming every unit (#197)
+- causal tests (#198)
+- the squeeze on pour A (#199)
+- a sharper family statistic (#200)
+
+A test that breaks the thesis is a finding, reported with its interval; a re-scope that drops the
+thesis is not.
 
 ## What Lem is
 

@@ -5,6 +5,11 @@
 
 *Jason Yandell. Living draft, started 2026-10-16. CC0.*
 
+> **The thesis under test (#193).** Cammarata's "already clean" [1]: a network's own neurons are
+> mostly clean, and squeezed layers grow coarser, not mixed. On the field net, 24 neurons are cleaner
+> than 192 (0.83 vs 0.61) and carry 0.684 of the play's gap to the teacher (§7). The result looks
+> impossible to a superposition prior. The paper tests it until it breaks or holds: #194–#200.
+
 Every claim below links to the experiment page that measured it and to the evidence on
 Hugging Face. Numbers carry their interval and their chance baseline. Sections marked
 **[gap]** name a measurement that does not exist yet; the Gaps list at the end is the work
@@ -219,6 +224,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194, width tree #195, drop-out order #196, naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 

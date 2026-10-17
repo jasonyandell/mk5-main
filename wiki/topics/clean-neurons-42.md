@@ -109,3 +109,5 @@ statistics, the Haiku readers and a first neuron-count curve; the probe kit is `
 A2–A4 and experiment B are stages 3 and 4 of that program. **A1's result (2026-10-16):** 0.597
 [0.581, 0.608] of live poles clean against a chance of 0.000, in the essay's direction though below its
 "about 90%"; the play itself needs 165 of 192 neurons for 0.95 fidelity.
+
+**The squeeze (A3), 2026-10-17:** narrow nets cleaner, not mixed (0.61 → 0.83 at 24 neurons; [[lem-squeeze-2026-10-16]]). The follow-ups are THE ALREADY-CLEAN TEST, #193 (#194–#200), the core thesis of [[lem-the-teacher]].
