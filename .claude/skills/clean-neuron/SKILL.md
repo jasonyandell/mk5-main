@@ -7,6 +7,9 @@ description: Read a unit of a Texas 42 net (Lem, Zeb's field net) the way the al
 
 # Reading a unit of a 42 net
 
+*This is the best we know how to do so far, not a finished method. It improves from
+friction: see "Make this skill better" at the end.*
+
 You do not have to believe anything general about neural networks to do this
 work. The question is narrow and empirical: **what does this unit do in 42?**
 Every unit gets asked it, and "we cannot say yet" means the instruments ran out.
@@ -90,3 +93,29 @@ Stop and walk the ladder if you find yourself doing any of these:
 - writing "partly clean" with no test that broke the thesis.
 
 A test that breaks the thesis is the finding. Drift is not.
+
+## Make this skill better
+
+This skill is a working draft, written from what the Lem desk has learned so far.
+When it slows you down, misleads you, misses a step, or names a command that no
+longer exists, write a friction log. A friction log is a new file
+`.claude/skills/clean-neuron/friction/<UTC yyyy-mm-ddThhmmZ>-<slug>.md`:
+
+- the SPDX header as above;
+- what you were doing;
+- where the skill failed you;
+- what you did instead;
+- the change you would make.
+
+Keep it short and concrete. The logs are evidence, not complaints.
+
+**On the fifth log, integrate; do not roll.** Whoever adds the fifth log folds
+all five into this skill in the same commit:
+- Make the fix each log asks for, or write down why not.
+- Delete the five files. Git keeps them.
+- Add one line to the record below.
+
+Keep the curiosity framing and the ladder's order unless a test broke them.
+
+Lessons folded in:
+- (none yet)
