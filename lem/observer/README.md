@@ -62,6 +62,35 @@ and `--heads`; width must divide into heads.
 
 ## Evidence and limits
 
+### Live W&B and a longer continuation
+
+Install the optional SDK with
+`uv pip install --python scratch/venv/bin/python -r lem/observer/requirements-wandb.txt`.
+W&B uses its existing login (`docs/SECRETS.md`); credentials do not go in arguments
+or source. Add `--wandb-project lem-observer --wandb-entity YOUR_ENTITY
+--wandb-name YOUR_RUN` to enable online tracking. The live URL is printed and
+saved in the output directory's `wandb-run.json`.
+
+`--init-from EXISTING_RUN --out NEW_RUN` continues a saved model, optimizer and
+sampler into a separate experiment, preserving the original lesson and run.
+`--resume` continues the same output directory and the same W&B run ID. Choose a
+larger total `--steps`; use `--checkpoint-every 5000` for a long formation study.
+It must be a multiple of `--eval-every`. Latest and best are still saved at every
+evaluation; the periodic formation snapshots are also uploaded to W&B.
+
+Charts use `epoch_equivalent = training_step * batch / training_views`. Sampling
+is with replacement, so these are equivalent passes, not completed shuffled
+epochs. Train-probe metrics use the first 256 training deals, all four views;
+validation uses the full validation split. Test is evaluated only after training,
+for both the best and final checkpoints. No early stopping is applied.
+
+The deliberately long run is registered in
+[the overbake experiment](../../wiki/experiments/lem-observer-overbake-2026-10-17.md).
+Ordinary heavy work retains the default cpu-slot time cap; that run's explicit
+30-minute exception and fixed update budget are documented there.
+
+### What a result measures
+
 The first N deals by seed are split by a hash of the physical deal, before
 constructing four views. Train, validation and test deals are disjoint. Each
 checkpoint records the config, tokenizer version, data hash, optimizer, sampler

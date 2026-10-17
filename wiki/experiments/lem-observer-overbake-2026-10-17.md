@@ -38,6 +38,13 @@ floors and interval correction are not assumed to apply to this transformer.
 
 ## Monitoring and preservation
 
+Live run: [hatchling-overbake-200k](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/q61r1lm5),
+entity `jasonyandell-forge42`, project `lem-observer`. The server confirmed it
+running with streamed epoch metrics and an uploaded formation checkpoint.
+The local run directory is `scratch/lem/observer-overbake`; tmux session
+`lem-observer-overbake` owns the training job. Source/registration commit:
+`47797a4a`. This page records a launched experiment, not a completed result.
+
 W&B logs train-batch loss, a fixed 256-deal training probe, validation losses,
 accuracies and impossible mass every 250 updates, using equivalent epochs on the
 horizontal axis. Validation includes all 509 deals. The sampler is untouched by
@@ -50,6 +57,14 @@ best checkpoint whenever validation loss improves. W&B receives snapshots and a
 final evidence artifact; local files retain exact recordings, source hashes and
 the initial twin. The original worked-hand lesson and first-run files remain
 available unchanged.
+
+A detached completion helper (`lem-observer-archive`) waits for this job, then
+computes whole-deal intervals for the best checkpoint, exports its worked hand,
+and publishes an allowlisted evidence directory to the existing monthly HF repo.
+It verifies a fresh download of the final checkpoint. Its receipt is
+`scratch/lem/observer-overbake/archive-status.json`; `needs_attention` is a failed
+archive, not a successful publication. This is queued preservation, not a claim
+that the final evidence already exists.
 
 The local MPS job uses `scripts/cpu-slot --threads 2 --timeout 1800`, nice 10, in
 a detached tmux session. The explicit 30-minute cap is an exception to the default
