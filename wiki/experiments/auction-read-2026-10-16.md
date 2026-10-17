@@ -70,6 +70,13 @@ Games to 250 won by team A: PK 53.4% [50.3, 56.5], PZa 50.8% [47.4, 53.9].
   missed too, the other way, with no per-seed effect, so the open question is the estimator's
   calibration (#191).
 
+### Resolution (#191, 2026-10-17)
+
+The pair this A/A used, seed 1 against seed 0, was measured over twenty times the deals: δ(1,0) =
+−0.004 [−0.040, +0.031] ([[estimator-calibration-2026-10-16]]). So this page's A/A (+0.12) was
+chance, and the estimator is calibrated (R_F 1.06). K = +0.17 [+0.06, +0.29] cleared its
+registered bar and stands. #190's K, on disjoint deals, agrees.
+
 ### Receipts
 
 Pre-registered at a389af35 (`scenario/auction_read.py`). 176 batches through `scripts/cpu-slot`,

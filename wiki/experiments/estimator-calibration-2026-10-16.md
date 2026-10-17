@@ -2,8 +2,8 @@
 title: Calibrating the estimator — how often does an A/A miss? (#191, 2026-10-16)
 kind: experiment
 first_seen: 2026-10-16
-last_updated: 2026-10-16
-status: active
+last_updated: 2026-10-17
+status: complete
 ---
 
 ## Summary
@@ -22,7 +22,70 @@ pair fixed (seed 1 against seed 0) across twenty replicates on disjoint deals, w
 true difference δ(1,0) and tests whether the house intervals cover it. **V** draws a fresh pair of
 seeds per replicate, which measures how far apart two seeds' policies typically are.
 
-*Part 1's results follow once every registered batch has run. Part 2 (the tournament's pair bootstrap) is done: calibrated at n = 64, R_F 0.85 in share and 1.02 in marks, 0 of 24 intervals missed.*
+## Results: all three estimators
+
+**One line.** The Book arena's estimator is calibrated: its intervals are as wide as the
+replicates say they should be. The two A/A arms that missed were chance, not a broken method.
+The tournament's pair bootstrap is calibrated too (Part 2). Lem's audit intervals run about 1.17×
+narrow, from the selection of each pole's top set (Part 3). So the ±0.15 marks/game and ±4 points
+allowance on single-arm margins is withdrawn for the Book arena and the tournament.
+
+### Part 1 results: the Book arena (960 of 960 batches ran, none dropped)
+
+| registered read | result | calibrated |
+|---|---|---|
+| **R_F**, SD of the 20 fixed-pair means over their RMS SE | **1.06** (0.086 / 0.081 marks/game) | about [0.68, 1.31] |
+| F intervals missing the pooled F mean | **2 of 20** | 1 expected; 4 or more means undercoverage |
+| **δ(1,0)**, seed 1 over seed 0, pooled over 5,760 pairs | **−0.004 [−0.040, +0.031] marks/game** | — |
+| R_V, the same ratio for 20 fresh seed pairs | 0.86 | about [0.68, 1.31] |
+| σ_seed, the spread between two seeds' policies | **0** (no excess variance) | — |
+| V intervals missing 0 | 1 of 20 | 1 expected |
+| tails, pooled F pairs | excess kurtosis 0.59; no pair at \|margin\| ≥ 6 | — |
+
+- **The intervals are right.** The F means scatter by 0.086 marks/game, and the intervals say
+  0.081. Two of twenty miss, as chance allows.
+- **#117's A/A was chance.** It was this exact pair, seed 1 against seed 0, and read +0.12 [+0.02,
+  +0.23]. Over twenty times the deals the pair differs by −0.004 [−0.040, +0.031]. A miss of about
+  2.2 standard errors is what about 1 in 35 A/As shows, and #117's was noticed *because* it missed, so
+  it was never evidence that the method was broken. #190's A/A, −0.14 at about 2.4 SE, was a fresh
+  test and is the one genuine surprise; once in many A/A reads across the desk's studies, it fits
+  chance.
+- **Two seeds are two policies, and here they are the same.** σ_seed is 0 within this
+  resolution: the twenty fresh pairs scatter *less* than their intervals allow (R_V 0.86). This
+  agrees with #190's diagnostic, where no seed had an effect of its own. Planner-seed scatter is not
+  a confound at these sizes.
+
+### What this changes
+
+- **The allowance is withdrawn** for the Book arena and the tournament. The caveats added to
+  [[fallible-field-2026-10-15]] and [[count-lapse-2026-10-15]] are replaced by a pointer to this
+  page, and the rematch was settled in Part 2.
+- **The auction read (#117 / #190).** Each registered read stands as its study wrote it: #117's K
+  cleared its bar, and #190, whose A/A missed, reported K without claiming it. With the A/A shown
+  to be chance, the two K estimates (+0.17 [+0.06, +0.29] and +0.12 [+0.00, +0.23], on disjoint
+  deals) agree. *Exploratory, not registered:* their inverse-variance pool is +0.14 [+0.06, +0.22]
+  marks/game, the book's sign ([[auction-read-2026-10-16]], [[seed-varied-2026-10-16]]).
+- **Lem.** Quote the audit's Wilson SEs widened by 1.17, or quote the halves (Part 3, on the audit
+  page).
+
+Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10)
+`book/calibration/` (per batch `meta.json` and `games.jsonl`, `summary.json`, the queue log, the
+determinism check, `CARD.md`). Part 2 is at `book/calibration-tournament/`; Part 3 is at
+`lem/aa-2026-10-16/`.
+
+Receipts (Part 1): pre-registered at c4fe25fc (`scenario/calibration.py`). 960 batches through
+`scripts/cpu-slot`, up to six at a time, 33–997 s each including the wait for a slot. Every batch
+holds its 24 games; none dropped. Run 2026-10-16 15:37 to 2026-10-17 00:31.
+
+### Part 3: Lem's intervals (Opal, merged 5956f191, c78dcbb3)
+
+The audit's deals were split into halves, and each pole's precision was compared across them. On
+the 290 non-degenerate poles, the SD of z is 1.17 for row Wilson and 1.12 for the deal-clustered
+bootstrap, so both are slightly narrow. The cause is the selection of the top set, which moves
+between halves, and only a replicate sees it. The belief probes now carry deal-clustered bands,
+and fidelity-by-concept was deal-clustered from the start. The details are on
+[[lem-field-net-audit-2026-10-15]].
+
 
 ## Design (pre-registered before any measured batch; see `scenario/calibration.py`)
 

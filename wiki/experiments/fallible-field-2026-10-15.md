@@ -39,14 +39,7 @@ Data: [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyande
 The book's game, share of games won against the field: PB0 39.1% [35.4, 42.7], PB40 43.2% [39.8,
 46.6], PZ40 52.9% [50.0, 55.7].
 
-**Estimator caveat (#191, restated 2026-10-16).** Two A/A arms in the Book desk's arena missed
-their 95% intervals: plain Zeb against plain Zeb differing only in planner seed read +0.12 [+0.02,
-+0.23] marks/game (#117) and −0.14 [−0.25, −0.03] (#190), and one missed by 4 points of share.
-Planner-seed scatter was tested as the cause and is not supported ([[seed-varied-2026-10-16]]),
-so the cause is open. Until #191 calibrates it, read a single-arm margin with an extra ±0.15
-marks/game and ±4 points of share. Here Z10 = +0.06 and Z20 = +0.12 lie inside
-it, and Z40 = +0.32 does not. G(p) and ΔG(p) are differences of two team-A arms against the same
-field, and are probably safer.
+**Estimator (#191, 2026-10-17).** The Book arena's estimator is calibrated: twenty fixed-pair A/A replicates scatter as their intervals say (R_F 1.06), and two seeds' policies do not differ measurably ([[estimator-calibration-2026-10-16]]). The intervals here stand as reported.
 
 ### The registered contrasts (paired by game pair; MDE at 80% power)
 

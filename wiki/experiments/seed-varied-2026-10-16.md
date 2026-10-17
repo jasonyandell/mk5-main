@@ -78,6 +78,14 @@ should read 50%.
   scatter. That mechanism is not supported, so the caveat is restated as an estimator caveat: A/A
   arms have missed by ±0.12–0.14 marks/game and by 4 points of share, cause open (#191).
 
+### Resolution (#191, 2026-10-17)
+
+The calibration this page called for came back clean ([[estimator-calibration-2026-10-16]]).
+Twenty fixed-pair A/A replicates scatter as their intervals say (R_F 1.06, 2 of 20 misses), and
+σ_seed is 0. So this page's A/A miss (−0.14) was chance, at about 2.4 standard errors, and the
+estimator is not suspect. K stays "reported, not claimed" here as registered. Pooled with #117's
+K on disjoint deals, exploratory: +0.14 [+0.06, +0.22] marks/game.
+
 ### Receipts
 
 Pre-registered at dae7ee3e (`scenario/seed_varied.py`, `arena/seed_varied.py`). 352 batches
