@@ -50,6 +50,8 @@ def main(argv=None) -> None:
     s.add_argument("--device", default="mlx")
     s = sub.add_parser("formation-report"); s.add_argument("audit_root"); s.add_argument("runs_root"); s.add_argument("sample")
     s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out")
+    s = sub.add_parser("tree"); s.add_argument("sample"); s.add_argument("narrow_net"); s.add_argument("narrow_audit")
+    s.add_argument("wide_net"); s.add_argument("wide_audit"); s.add_argument("out")
     s = sub.add_parser("squeeze-families"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET)
     s = sub.add_parser("list"); s.add_argument("out")
@@ -210,6 +212,15 @@ def main(argv=None) -> None:
     elif a.cmd == "formation-report":
         from lem.probe import formation
         Path(a.out).write_text(json.dumps(formation.report(a.audit_root, a.runs_root, a.sample, a.labels, a.q_dir, log), indent=1))
+    elif a.cmd == "tree":
+        from lem.probe import tree
+        from lem.probe.net import forward, load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        res = tree.match(forward(load_net(a.narrow_net), sample.x), json.loads((Path(a.narrow_audit) / "audit.json").read_text()),
+                         forward(load_net(a.wide_net), sample.x), json.loads((Path(a.wide_audit) / "audit.json").read_text()), sample.deal, log)
+        res.update(narrow=a.narrow_net, wide=a.wide_net)
+        Path(a.out).write_text(json.dumps(res, indent=1))
     elif a.cmd == "squeeze-families":
         from lem.probe import concepts, squeeze
         from lem.probe.net import forward, load_net

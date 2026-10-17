@@ -402,3 +402,15 @@ def test_formation_reads_first_clean_steps_and_family_kept():
     assert ps[2]["first_clean_step"] == 10
     k = formation.kept_share(list(ps.values()))
     assert k["n"] == 3 and k["kept"] == 1.0 and abs(k["null"] - 1 / 3) < 1e-9          # three final families, one pole each
+
+
+def test_tree_rows_are_deal_disjoint_and_r2_recovers_a_linear_split():
+    from lem.probe import tree
+    deal = np.repeat(np.arange(500), 100)
+    fit, ev = tree.rows(deal, n=4000)
+    assert len(fit) + len(ev) == 4000 and not set(deal[fit]) & set(deal[ev])
+    rng = np.random.default_rng(1)
+    X, Xv = rng.normal(size=(400, 3)), rng.normal(size=(400, 3))
+    w = np.array([1.0, -2.0, 0.5])
+    assert tree.r2(X @ w, X, Xv @ w, Xv) > 0.999
+    assert tree.r2(rng.normal(size=400), X, rng.normal(size=400), Xv) < 0.05
