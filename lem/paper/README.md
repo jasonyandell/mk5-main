@@ -208,9 +208,9 @@ then count and trump on the table, then whether the winner can be beaten. Master
 and the setters' voids need 136 neurons. Two neurons close only 0.28 of the gap. Two of three
 six-neuron nets failed to learn the play, and their units fell to the floor with it. **Naming** ([`wiki/experiments/lem-naming-2026-10-17.md`](../../wiki/experiments/lem-naming-2026-10-17.md),
 #197): with concept list v2 and Haiku readers, 201 of the 210 live units of the 12- and 24-neuron
-nets have a name, and readers detect 0.80–0.87 of the units the list cannot name (null 0.13). The
-nine named by neither are conjunctions of who is winning the trick and where the mover sits, a gap
-in the list, not in the inputs. The list's size moves the floor: an untrained net scores 0.11–0.23
+nets have a name, and readers detect 0.80–0.87 of the units the list cannot name (null 0.13). Of the
+nine named by neither, seven of the eight that got a reader description describe who is winning the
+trick together with where the mover sits: a gap in the list, not in the inputs. The list's size moves the floor: an untrained net scores 0.11–0.23
 clean under the 48 concepts of v1 and 0.28–0.39 under the 70 of v2, while trained nets barely move.
 Every clean share is quoted against the floor for its own list.
 
