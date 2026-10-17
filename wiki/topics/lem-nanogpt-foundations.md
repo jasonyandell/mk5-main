@@ -14,9 +14,10 @@ Jason commissioned it on 2026-10-17, including an Astra review of the mathematic
 in `texas-42`, its intakes and outboxes, and its Lean sources. Learning enough to
 explain every experiment is part of the deliverable.
 
-This is a researched starting point. The first objective, history horizon,
-population schedule, and value-head semantics remain choices. No GPT has been
-trained by this workstream. Field-net results are not GPT results.
+Jason selected the observer-first lesson: [[lem-observer-2026-10-17]] implements
+one tiny model, within-hand history, existing Pour A records and a worked-hand
+viewer. Population construction and reward learning are deferred. Field-net
+results are not GPT results.
 
 The checkout is `/Users/jason/code/mk5-lem-nanogpt`, branch `codex/lem-nanogpt`,
 initially at `aa0af91d`. The reference clone is `/Users/jason/code/nanoGPT`, upstream

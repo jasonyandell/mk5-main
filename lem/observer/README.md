@@ -1,0 +1,83 @@
+# A tiny observer of 42
+
+The first lesson is **next-tile prediction**. The model sees one player's original
+seven tiles and the public play history, then guesses the next tile. It learns
+recorded behavior, not an optimal move or a value function.
+
+`model.py` adapts [Karpathy's nanoGPT](https://github.com/karpathy/nanoGPT/tree/3adf61e154c3fe3fca428ad6bc3818b27a3b8291),
+preserving its MIT license in `LICENSE.nanoGPT`. The surrounding data and experiment
+code is CC0. There are no downloaded weights.
+
+## Follow a prediction
+
+1. `data.encode` turns **only** the viewer's original hand, the declaration,
+   bidder, fixed bid 30 and public seat/tile pairs into tokens. Seats are relative
+   to the viewer. The 46 context tokens include 28 tile IDs.
+2. `Observer` turns token IDs and positions into width-64 vectors. Two residual
+   blocks each apply two attention heads and a 256-unit GELU MLP. Layer
+   normalization precedes each operation.
+3. At each actor token, the model produces 28 tile scores. Softmax makes them
+   probabilities. The output tile weights are the same weights used to embed tiles.
+4. Cross-entropy is `-log(probability of the recorded tile)`. Only the 28 play
+   targets contribute loss; there is no loss on sorted hand tokens or metadata.
+5. Backpropagation and AdamW adjust the parameters. Every prediction is causally
+   masked, so a future tile cannot help predict an earlier tile. Each batch row
+   is a separate episode: there is no attention across deals.
+
+The causal mask cannot hide private information already placed in the prefix.
+That is why `encode` accepts only one initial hand. Using a later remaining hand
+to supervise earlier moves would leak the future.
+
+## Train, then look
+
+Use this checkout's `scratch/venv` from `scripts/check`. PyTorch and NumPy are its
+existing dependencies. Source directories contain `pour.npz` and `manifest.json`;
+these are the Pour A `merged/pip` and `merged/dtnt` directories, or raw chunk halves
+from [the public pour](https://huggingface.co/datasets/jasonyandell/texas-42-lem-pour-a).
+The loader reads only `hands`, `decl` and `plays`, not the large worlds/outcomes arrays.
+
+```sh
+scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.train \
+  --source /path/to/pour-a/merged/pip --source /path/to/pour-a/merged/dtnt \
+  --out scratch/lem/observer-first --deals 5000 --steps 2000 --device mps
+
+scratch/venv/bin/python -u -m lem.observer.inspect scratch/lem/observer-first \
+  --out scratch/lem/observer-first/worked-hand.html
+
+scripts/check py-lem wiki reuse conflict-markers
+```
+
+The lesson is a standalone HTML file. It selects the first test deal in seed
+order; there is no search for a flattering example. It lets the reader change
+viewer, play, block, attention head and MLP unit; compare predictions with the
+saved untrained twin; and reveal the recorded tile. The traces are native units,
+not an interpretation or a causal attribution.
+
+For a machine with CUDA, explicitly choose `--device cuda`. `cpu` is useful for
+small correctness tests. Model sizes can be selected with `--width`, `--layers`
+and `--heads`; width must divide into heads.
+
+## Evidence and limits
+
+The first N deals by seed are split by a hash of the physical deal, before
+constructing four views. Train, validation and test deals are disjoint. Each
+checkpoint records the config, tokenizer version, data hash, optimizer, sampler
+and RNG state. `initial.pt`, genuine `best.pt`, `latest.pt` and periodic snapshots
+are distinct. Evaluation does not consume the sampler. Resume with the same
+arguments plus `--resume` and a larger total `--steps`; extending after inspecting
+test results makes that test exploratory, not a fresh confirmation.
+
+The raw test metrics include next-tile accuracy, log loss and probability on
+visibly impossible tiles, separated into own/other plays, discretionary/forced
+moves and coverage-forced/book declarations. The visible-support baseline uses
+own legality or public exclusions for another seat; it never reads that seat's
+hidden hand. Hidden-hand legality labels discretionary moves for diagnostics
+only. The model's probabilities are never repaired with a legality mask.
+
+Views and moves from one deal are correlated. These are descriptive metrics
+from one seed, not confidence intervals over independent moves. The fixed
+bid-30 pour has no auction, persistent identities or cross-hand memory. All
+predictions use the recorded past; this is not a generated game or a strength
+evaluation. No native neuron has yet been named or causally tested.
+
+Registration and results: [the first observer experiment](../../wiki/experiments/lem-observer-2026-10-17.md).
