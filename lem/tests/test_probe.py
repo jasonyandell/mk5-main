@@ -378,3 +378,10 @@ def test_label_files_carry_their_concept_list_and_the_sample_honours_the_trainer
     with pytest.raises(ValueError):
         concepts.list_of("0" * 64)
     assert concepts.identity(concepts.CONCEPTS).startswith("13e4d525")
+
+
+def test_formation_checkpoints_are_early_steps_then_epoch_ends():
+    from lem.probe.squeeze import formation_steps
+    s = formation_steps(3_915_000)                    # 15,293 steps an epoch at batch 256
+    assert s[:7] == (0, 30, 100, 300, 1_000, 3_000, 10_000) and s[7] == 15_293 and s[-1] == 60 * 15_293 and len(s) == 15
+    assert formation_steps(1_000, epochs=3) == (0, 4, 8, 12, 30, 100, 300, 1_000, 3_000, 10_000)

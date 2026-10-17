@@ -89,6 +89,42 @@ def train_family(pours: list[str], out_dir: str | Path, widths: list[tuple[int, 
     return done
 
 
+EPOCH_MARKS = (1, 2, 3, 5, 10, 20, 40, 60)
+EARLY_STEPS = (0, 30, 100, 300, 1_000, 3_000, 10_000)
+
+
+def formation_steps(train_rows: int, batch: int = 256, epochs: int = 60) -> tuple[int, ...]:
+    """The formation test's checkpoints (#194): early optimizer steps, then epoch ends."""
+    per = -(-train_rows // batch)
+    return tuple(sorted(set(EARLY_STEPS) | {e * per for e in EPOCH_MARKS if e <= epochs}))
+
+
+def train_formation(pours: list[str], out_dir: str | Path, widths: list[tuple[int, int]], seeds: list[int],
+                    epochs: int = 60, device: str = "mlx", log=print) -> None:
+    """Every (width, seed) from one dataset build, each with its in-run checkpoints saved
+    (folded to field-v2 like the squeeze's nets) as `<run>/step_<n>.npz`."""
+    from scenario.atlas import load
+    from scenario.field_train import dataset, train
+    out_dir = Path(out_dir)
+    t0 = time.time()
+    data = dataset(*[load(p) for p in pours])
+    steps = formation_steps(int((data.deal % 10 != 0).sum()), epochs=epochs)
+    log(f"dataset: {len(data.x):,} rows in {time.time() - t0:.0f}s; checkpoints at steps {steps}")
+    for h1, h2 in widths:
+        for seed in seeds:
+            run = out_dir / f"field_h{h1}x{h2}_s{seed}"
+            if (run / "run.json").exists():
+                log(f"{run.name}: already trained")
+                continue
+            run.mkdir(parents=True, exist_ok=True)
+            save = lambda step, net: (fold_to_v2(net).save(run / f"step_{step:07d}.npz"), log(f"  {run.name} checkpoint step {step:,}"))
+            t1 = time.time()
+            t = train(data, "margin", epochs, seed, (h1, h2), device=device, checkpoints=steps, on_checkpoint=save)
+            (run / "run.json").write_text(json.dumps(dict(t.metrics, steps=list(steps), losses=t.losses, val_losses=t.val_losses,
+                                                          train_seconds=round(time.time() - t1, 1)), indent=1) + "\n")
+            log(f"{run.name}: val regret {t.metrics['val'].get('regret_q', float('nan')):.4f} in {time.time() - t1:.0f}s")
+
+
 def union_table(top_labels: np.ndarray, pair_base_ok: np.ndarray) -> np.ndarray:
     """Precision of every concept pair's union on one top set: P(a or b) = P(a) + P(b) − P(a and b);
     pairs whose union's base rate is above the cap are −1."""
