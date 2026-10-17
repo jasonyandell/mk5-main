@@ -120,7 +120,7 @@ fix this file in the same commit as your work. Add a line to "Lessons folded in"
 leave a major problem for a log.
 
 **Log the rest.** For friction, a missing step, a better example or a learning, add a file
-`.claude/skills/book-interp/logs/<UTC yyyy-mm-ddThhmmZ>-<slug>.md` containing:
+`.claude/skills/book-interp/learnings/<UTC yyyy-mm-ddThhmmZ>-<slug>.md` containing:
 - the SPDX header (as at the top of this file);
 - what you were doing;
 - where the skill helped or failed you;
@@ -129,7 +129,7 @@ leave a major problem for a log.
 
 Short and concrete; the logs are evidence.
 
-**Log rolling.** Before you add a log, count the files in `logs/`. If there are already three,
+**Log rolling.** Before you add a log, count the log files in `learnings/` (not its README). If there are already three,
 roll them in the same commit as your own lesson:
 - rewrite this skill fully, folding in all of them plus yours (make each change asked for, or
   write down why not);
