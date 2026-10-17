@@ -58,6 +58,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
     s.add_argument("--net", default=NET)
+    s = sub.add_parser("causal"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("q_dir"); s.add_argument("out")
+    s.add_argument("--net", default=NET)
     s = sub.add_parser("belief"); s.add_argument("sample"); s.add_argument("out_dir"); s.add_argument("--net", default=NET)
     s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
     s.add_argument("--parts-dir", default=None, help="assemble the targets from belief-targets parts instead of computing them")
@@ -163,6 +165,19 @@ def main(argv=None) -> None:
         from lem.probe import belief
         from lem.probe.sample import Sample
         belief.targets_part(Sample(a.sample), a.out_dir, a.part, a.parts, a.fit, a.eval, log)
+    elif a.cmd == "causal":
+        from lem.probe import causal, fidelity
+        from lem.probe.net import Activations, load_net
+        from lem.probe.sample import Sample
+        sample, net = Sample(a.sample), load_net(a.net)
+        with np.load(a.labels) as z:
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+        audit = json.loads((Path(a.audit_dir) / "audit.json").read_text())
+        z0 = np.zeros((0, 0), np.int64)
+        regret_of = lambda out: fidelity.regret(sample, Activations(z0, z0, z0, z0, out), a.q_dir)[0]
+        result = causal.run(net, sample, labels, names, audit, regret_of, log)
+        Path(a.out).write_text(json.dumps(result, indent=1))
+        log(f"wrote {a.out}: {len(result['poles'])} named poles")
     elif a.cmd == "fidelity-collect":
         from lem.probe import fidelity
         from lem.probe.sample import Sample

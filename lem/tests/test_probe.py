@@ -414,3 +414,18 @@ def test_tree_rows_are_deal_disjoint_and_r2_recovers_a_linear_split():
     w = np.array([1.0, -2.0, 0.5])
     assert tree.r2(X @ w, X, Xv @ w, Xv) > 0.999
     assert tree.r2(rng.normal(size=400), X, rng.normal(size=400), Xv) < 0.05
+
+
+def test_causal_downstream_is_the_forward_pass_and_ablating_an_off_neuron_changes_nothing(net):
+    from lem.probe.causal import downstream
+    rows = _random_positions(200, seed=5)
+    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+    for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
+        x[i, features(rules_for(decl), seat, own, rec, bid, bidder % 2, V2)] = 1
+    acts = forward(net, x)
+    assert np.array_equal(downstream(net, x, 1, 0, None), acts.out)
+    for layer, a in ((1, acts.a1), (2, acts.a2)):
+        j = int(np.argmin((a > 0).sum(axis=0)))
+        out = downstream(net, x, layer, j, 0)
+        off = a[:, j] == 0
+        assert np.array_equal(out[off], acts.out[off])        # rows where it was off are untouched
