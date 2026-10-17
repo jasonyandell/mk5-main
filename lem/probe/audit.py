@@ -9,7 +9,8 @@ concept holds; its *base rate* is its share of all rows; its *lift* is the
 ratio. The pole's label is the concept of highest precision among those
 whose base rate is at most `BASE_CAP` (a concept true nearly everywhere
 explains nothing). A pole is *clean* when its label's precision is at least
-`CLEAN`, *partial* at `PARTIAL` or above, *mixed* below that, and *dead*
+`CLEAN`, *partial* at `PARTIAL` or above, *unnamed* below that (no concept in the list
+reaches `PARTIAL`: a gap in the list, not a verdict on the unit), and *dead*
 when its neuron is on (`+`) or off (`−`) in fewer than `DEAD` of rows.
 
 Concepts are the Silas list (`concepts.py`) and, as the trivial baseline,
@@ -68,7 +69,7 @@ class PoleRow:
     pole: int
     name: str
     alive: float
-    kind: str                 # clean | partial | mixed | dead
+    kind: str                 # clean | partial | unnamed | dead
     label: str
     precision: float
     lo: float
@@ -107,7 +108,7 @@ def classify(prec: np.ndarray, base: np.ndarray, names: list[str], k: int):
     runner = int(order[1]) if len(order) > 1 else best
     p = float(cand[best])
     lo, hi = wilson(int(round(p * k)), k)
-    kind = "clean" if p >= CLEAN else "partial" if p >= PARTIAL else "mixed"
+    kind = "clean" if p >= CLEAN else "partial" if p >= PARTIAL else "unnamed"
     return best, p, lo, hi, kind, runner, float(cand[runner])
 
 
@@ -176,7 +177,7 @@ def summarize(rows: list[PoleRow]) -> dict:
     live = [r for r in rows if r.kind != "dead"]
     n = max(1, len(live))
     out = {"live": len(live), "dead": len(rows) - len(live)}
-    for kind in ("clean", "partial", "mixed"):
+    for kind in ("clean", "partial", "unnamed"):
         out[kind] = sum(r.kind == kind for r in live)
     out["clean_share"] = out["clean"] / n
     out["clean_share_lo"] = sum(r.lo >= CLEAN for r in live) / n
@@ -204,7 +205,7 @@ def write(result: dict, out_dir: str | Path) -> None:
     sh = result["shuffled"]
     head = [f"Rows {result['n_rows']:,}, top set {result['top_k']:,} per pole, {result['n_poles']} poles, {s['live']} live.",
             f"Clean {s['clean']} of {s['live']} live poles = {s['clean_share']:.3f} [{s['clean_share_lo']:.3f}, {s['clean_share_hi']:.3f}] "
-            f"(by a Silas concept {s['clean_by_silas']}, by a raw feature {s['clean_by_feature']}); partial {s['partial']}, mixed {s['mixed']}.",
+            f"(by a Silas concept {s['clean_by_silas']}, by a raw feature {s['clean_by_feature']}); partial {s['partial']}, unnamed {s['unnamed']}.",
             (f"Shuffled-label baseline: clean share {sh['clean_share_mean']:.3f} [{sh['clean_share_min']:.3f}, {sh['clean_share_max']:.3f}] over {sh['shuffles']} shuffles."
              if sh["shuffles"] else "No shuffled-label baseline in this run."),
             f"Layer 1: {s['L1_clean']} of {s['L1_live']} live clean; layer 2: {s['L2_clean']} of {s['L2_live']}.", ""]

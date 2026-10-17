@@ -55,6 +55,38 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | lem | steering is unresolved (#198 closed, #205); the clean-neuron skill folds its first five lessons]
+
+[[lem-causal-2026-10-17]] addendum: adding a matched dose k·σ to named units barely separates
+inside from outside their concept. `+` poles hold at the threshold (0.60–0.64), `−` poles were
+wrong (0.35–0.44), and the dose-response is monotone for 108 of 108 units. The cost comparison
+mixes rows of different difficulty, so matched-row steering moves to #205, and the ablation
+result stands. The clean-neuron skill reached its fifth friction log and folded all five in:
+- the third rung covers learning, and every share reports its net's gap closed;
+- the audit's `mixed` kind is now `unnamed`;
+- the floor belongs to its list;
+- steering uses matched doses;
+- causal rows are named and matched.
+
+## [2026-10-17 | lem | causal (#198): switching off a named unit hurts the play where its name says]
+
+[[lem-causal-2026-10-17]]: on three 24-neuron nets, ablating a named unit raises the teacher's
+regret where its concept holds for 45 of 45. Among rows where the unit fires, the move changes
+more inside the concept for 39 of 45, and the unit's own concept beats a random one for 33 of 40.
+This is the first evidence of use rather than correlation. Steering failed: a 99th-percentile
+clamp changes 46% of all moves. That is a tools rung, and a dose-response clamp is next. Four of
+five predictions held. The clean-neuron skill's fourth friction log came from this result.
+
+## [2026-10-17 | lem | naming the narrow nets (#197): 201 of 210 units named; the floor rises with the list]
+
+[[lem-naming-2026-10-17]]: list v2 and Haiku readers name 201 of the 210 live units of the 12- and
+24-neuron nets. Readers detect 0.80–0.87 of the units the list can't name, against a null of 0.13.
+Of the nine left, seven of the eight that got a reader description are conjunctions of who is
+winning the trick and where the mover sits, a vocabulary gap rather than a history gap (#202). The untrained floor is 0.11–0.23 under v1 and 0.28–0.39
+under v2, while trained nets barely move, so each share goes against its own list's floor. Three
+of five predictions held. Scope: this net, these inputs, these vocabularies. The clean-neuron
+skill's third friction log came from this grade.
+
 ## [2026-10-17 | lem | the drop-out order (#196): cleaner to 12 neurons over three seeds; the last words are the trick position]
 
 [[lem-dropout-order-2026-10-17]]: 21 trained and 21 untrained nets at seven widths. Narrower is

@@ -206,7 +206,21 @@ within 0.06). The concepts give out in order. The last words are the mover's pla
 (`lead`, the coarse `late`). Before them go the trick in front of the mover and the mover's trump,
 then count and trump on the table, then whether the winner can be beaten. Mastery outside trump
 and the setters' voids need 136 neurons. Two neurons close only 0.28 of the gap. Two of three
-six-neuron nets failed to learn the play, and their units fell to the floor with it.
+six-neuron nets failed to learn the play, and their units fell to the floor with it. **Naming** ([`wiki/experiments/lem-naming-2026-10-17.md`](../../wiki/experiments/lem-naming-2026-10-17.md),
+#197): with concept list v2 and Haiku readers, 201 of the 210 live units of the 12- and 24-neuron
+nets have a name, and readers detect 0.80–0.87 of the units the list cannot name (null 0.13). Of the
+nine named by neither, seven of the eight that got a reader description describe who is winning the
+trick together with where the mover sits: a gap in the list, not in the inputs. The list's size moves the floor: an untrained net scores 0.11–0.23
+clean under the 48 concepts of v1 and 0.28–0.39 under the 70 of v2, while trained nets barely move.
+Every clean share is quoted against the floor for its own list. **Causal** ([`wiki/experiments/lem-causal-2026-10-17.md`](../../wiki/experiments/lem-causal-2026-10-17.md),
+#198): switching off a named unit of a 24-neuron net makes the play worse where its concept holds
+(45 of 45 units). The median rise in teacher regret is 0.0093 there and 0.0037 elsewhere, and among
+rows where the unit fires either way, the move changes more often inside the concept for 39 of 45.
+The unit's own concept separates the effect better than a random other concept for 33 of 40
+(median in/out ratio 1.49 against 0.94). A clamp
+at the 99th percentile changes 46% of all moves and cannot show steering. Adding a matched dose
+(k·σ) barely separates inside from outside: 0.60–0.64 of `+` poles, below chance for `−` poles. The
+comparison mixes rows of different difficulty, and matched-row steering is #205.
 
 ## 8. Models of others **[gap]**
 
@@ -244,14 +258,14 @@ table-type units form, and do they read what the teacher's posterior over polici
 |---|---|---|
 | G1 | **Belief probes**: linear probes from hidden activations to the teacher's exact posterior P(seat holds tile), against the counting prior; then the book's reads | first arm done (play-only, linear): inputs 0.79, a1 0.24, a2 0.04; next arms: the reading posterior, Lem's nets, a nonlinear bound |
 | G2 | **Checkpointed retraining + width family** on the 250k pour, 3 seeds; concept formation and the knee per checkpoint and width | width pilot (the squeeze) done 2026-10-17: narrow nets cleaner (0.61 → 0.83); checkpoints next; $0 on the M5 Max |
-| G3 | **Causal tests**: per-concept ablation and activation patching between matched legal positions, against matched random units | not started |
+| G3 | **Causal tests**: per-concept ablation and activation patching between matched legal positions, against matched random units | ablation on the 24-neuron nets done (#198): 45 of 45 named units raise regret where their concept holds; steering and patching next |
 | G4 | **The first field-v3 net** on pour A (all nine declarations) and its audit with concept list v2 | done 2026-10-17: clean share 0.628 (halves 0.633/0.625), pip regret 0.0082, doubles/no trump 0.0120; the declaration detected (32 doubles units) but doubles played worse |
 | G5 | **Lem's transformer** with a next-play head over league data (#178); its audit | not started |
 | G6 | **Table-type probes**: does a net trained on a mixed population encode who it faces | needs G5 and the league (#177, #182) |
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198 (ablation done: named units are used where their names say; steering unresolved, #205), pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 

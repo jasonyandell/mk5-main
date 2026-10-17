@@ -29,16 +29,27 @@ Check the rungs in this order, and write down which one you stopped at.
 1. **Tools.** Is the reading sound?
    - Top 1% of activations, both poles (the negative pole too).
    - Held-out rows only.
-   - The untrained floor (0.15–0.28 clean) reported beside every share.
+   - The untrained floor **for the same list**, audited alongside the trained nets (an untrained
+     twin per width and seed). It rises with the list: 0.11–0.28 under v1, 0.28–0.39 under v2,
+     while trained nets barely move. A share quoted against another list's floor is wrong.
    - Row Wilson intervals widened about 1.17× (the split-half A/A, #191).
+   - In a causal test, name the rows and match them. Ablate among the rows where the unit fires,
+     because the audit chose its name from those rows. Compare rows of the same difficulty: same
+     seat in the trick, same number of legal moves, same decisiveness, or a random unit at the
+     same dose.
+   - Steer by small matched doses (k·σ) and report the dose-response. Read where the move goes,
+     not only what it costs. One extreme clamp breaks the net and tells you nothing (#198).
 2. **Explanations (the vocabulary).** Does the list have a word for it?
    - The list is Silas concepts v1 (48) or v2 (70), plus the raw inputs.
    - If not: read the top positions as a gate, a shared pattern across them,
      not a list of nouns. Try conjunctions and coarser families (#197).
    - The declaration detectors were exactly this case. The v1 list had no word
      for which pip is trump, and the net spent an eighth of its poles on it.
-3. **Data and inputs.** Could the net be computing something its inputs or our
-   positions cannot show?
+3. **Data, inputs and learning.** Did the net learn the play, and could it be computing
+   something its inputs or our positions cannot show?
+   - Report the net's gap to the teacher closed beside every share. A net that did not learn the
+     play did not learn its words either: two of three six-neuron nets in #196 closed 0.2 of the
+     gap and fell to the floor.
    - The field net sees one position, against uniform beliefs, with no
      player-behaviour history, over arena data that seats no one who models you
      across hands.
@@ -64,12 +75,25 @@ Check the rungs in this order, and write down which one you stopped at.
 | families | `squeeze-families` | is a pole's best two-concept union within one family? |
 | | `tree` | a narrow unit's counterparts in a wide net |
 | formation | `formation-train` / `formation-report` | units across checkpoints |
-| causal | `ablate` | the start of #198 (steer and patch next) |
+| causal | `ablate` | the neuron-count curve |
+| | `causal` / `causal --steer` | ablate a `+` pole or clamp a `−` pole; add k·σ doses (#198, #205) |
 | beyond units | `belief`, `fidelity`, `aa` | belief probes, fidelity to the teacher, the split-half A/A |
 
 Concepts read the viewer's information only. A query that reads a hidden hand is
 refused. The STRATEGY-FUSION FENCE holds: no clairvoyant value becomes a label or
 a target.
+
+Audit runners put the untrained twins in `floor/` beside `nets/`, and audit both with the same
+labels.
+
+The audit's kinds are:
+- **clean**: precision ≥ 0.9;
+- **partial**: [0.7, 0.9);
+- **unnamed**: below 0.7, meaning no concept in the list fits;
+- **dead**.
+
+Evidence on HF from before 2026-10-17 calls `unnamed` "mixed". That was the tool's word, not a
+finding.
 
 ## How to write the result
 
@@ -118,4 +142,10 @@ all five into this skill in the same commit:
 Keep the curiosity framing and the ladder's order unless a test broke them.
 
 Lessons folded in:
-- (none yet)
+- 2026-10-17, five logs from #196–#198:
+  - the ladder's third rung covers learning, and every share reports its net's gap closed;
+  - the audit says `unnamed`, not `mixed`;
+  - the floor belongs to its list;
+  - steering uses matched doses;
+  - causal rows are named and matched.
+  Git has the five logs.
