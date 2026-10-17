@@ -62,6 +62,30 @@ Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
 [[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets). The
 untrained floor (0.15–0.28 clean) goes with every share. Steering and negative poles are #198.
 
+## The scope clause: what this net can and cannot tell us
+
+Jason, 2026-10-17: "I believe the recursive generalization is what is needed for 42. I also
+believe our tools may be unable to express what they're finding, and it is likely that we haven't
+yet tokenized the right concepts." He offers player-behaviour history as one thing we were blind
+to. It shows the model is incomplete; it is not a claim that history is the missing piece. "We can
+say what we learned from this model. We can't say we learned all of 42. Yet. But we will."
+
+The essay backs this. Most of its "mixed" neurons were the observer's fault:
+- short contexts made a comma neuron look polysemantic, until a longer one showed it tracked Colorado;
+- narrow data hid another neuron's job;
+- a tool that looked only backward missed what the Titanic neuron predicted;
+- researchers "looked for the wrong kinds of things".
+
+In Lem, the first three rungs of the essay's ladder have concrete counterparts:
+- **the vocabulary** is the 70-concept Silas list;
+- **the short context** is the field net's input: one position, in one hand, against uniform beliefs;
+- **the narrow data** is the arena, which seats no one who models you across hands ([[book-assumptions]]).
+
+This rhymes with Zeb, which is unbeatable until you exploit its uniform beliefs. A vocabulary as
+expressive as [[silas]] can read as complete over the wrong inputs. So every Lem result states its
+scope as "this net, these inputs, this vocabulary". A unit we cannot name is reported as "not named
+in list vN", never as mixed. The inventory of what is missing is #202.
+
 ## Why it fits 42
 
 The game's concepts generalize recursively in exactly this shape.
