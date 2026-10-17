@@ -117,6 +117,31 @@ Caveats:
 - the regret is the teacher's under its own plan, so it measures fidelity, not strength;
 - the move-change rate counts any change, good or bad.
 
+## Addendum, registered 2026-10-17 before it ran: steering by a measured dose
+
+The 99th-percentile clamp swamped prediction 5. This arm steers the way the essay does, by adding
+a measured amount.
+
+- **Intervention** (`lem.probe causal --steer`). Add k·σ to a unit after its ReLU, for k in
+  0.25, 0.5, 1 and 2. σ is the standard deviation of the unit's activation over the rows where it
+  fires, so the dose is matched across units.
+- **Rows.** Only rows where the unit was off. There steering creates a signal the net did not
+  have, and neither group is chosen by the audit's top 1%.
+- **The semantic test.** A unit whose name is right carries a signal that is appropriate where
+  its concept holds:
+  - for a `+` pole named C, adding the signal should cost less where C holds than where it does
+    not;
+  - for a `−` pole named C (the net shuts the unit off when C holds), it should cost more where C
+    holds.
+- **Predictions.**
+  6. **`+` poles.** At k = 0.5 and at k = 1, steering's regret rise among off rows is smaller
+     where the concept holds, for at least 0.6 of named `+` poles.
+  7. **`−` poles.** At k = 0.5 and at k = 1, steering's regret rise among off rows is larger
+     where the concept holds, for at least 0.6 of named `−` poles.
+  8. **Dose-response.** The overall move-change rate rises with k for at least 0.9 of units.
+     This one is a sanity check.
+- Same nets, rows, labels and teacher q as above. Groups with fewer than 200 rows are not scored.
+
 ## Links
 
 [[lem-naming-2026-10-17]] · [[lem-dropout-order-2026-10-17]] · [[lem-fidelity-by-concept-2026-10-16]] ·
