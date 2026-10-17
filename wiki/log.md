@@ -55,6 +55,16 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | lem | naming the narrow nets (#197): 201 of 210 units named; the floor rises with the list]
+
+[[lem-naming-2026-10-17]]: list v2 and Haiku readers name 201 of the 210 live units of the 12- and
+24-neuron nets. Readers detect 0.80–0.87 of the units the list can't name, against a null of 0.13.
+The nine left are conjunctions of who is winning the trick and where the mover sits, a vocabulary
+gap rather than a history gap (#202). The untrained floor is 0.11–0.23 under v1 and 0.28–0.39
+under v2, while trained nets barely move, so each share goes against its own list's floor. Three
+of five predictions held. Scope: this net, these inputs, these vocabularies. The clean-neuron
+skill's third friction log came from this grade.
+
 ## [2026-10-17 | lem | the drop-out order (#196): cleaner to 12 neurons over three seeds; the last words are the trick position]
 
 [[lem-dropout-order-2026-10-17]]: 21 trained and 21 untrained nets at seven widths. Narrower is
