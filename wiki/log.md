@@ -54,6 +54,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 
 ---
 
+## [2026-10-17 | lem | Formation (#194): units keep their concept family as they form; an untrained net is the honest floor]
+
+[[lem-formation-2026-10-17]]: six runs (16×8 and 128×64, three seeds), 15 in-run checkpoints each.
+0.82 of the wide net's clean units end in the family they first became clean in (null 0.28).
+Position and trick units form first, and count and mastery later. Untrained nets already score
+0.15–0.28 clean, a floor the shuffled-label chance (0.000) misses. Late-in-the-trick units form
+coarse first. Two predictions held, one held pooled, one was wrong, one was ill-posed. Evidence
+`lem/formation-2026-10-17/` (9c16180e).
+
 ## [2026-10-17 | book | Ch. 9 on field-v3: no trump turns the book's way, doubles trump still costs our planner (#189)]
 
 - [[ch9-at-the-table-2026-10-17]], re-run on Lem's field-v3: 120 of 120 batches. Where the menu changes the declaration it is level overall, −0.010 [−0.028, +0.008] marks/hand. No trump reads +0.024 [+0.002, +0.045], the book's sign. Doubles trump is still −0.067 [−0.100, −0.034], and −0.072 with one player for both declarations, where field-v3 is weakest. The provisional cost was mostly the random field's. A10 is updated, and #201 is the doubles follow-up. Data: HF `book/ch9-field-v3/` (55dd9418, SHA verified).
