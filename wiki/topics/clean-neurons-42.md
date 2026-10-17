@@ -140,7 +140,9 @@ Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
 [[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets),
 [[lem-dropout-order-2026-10-17]] (cleaner to 12 neurons over 3 seeds; the last words are `lead` and
 the coarse `late`). The
-untrained floor (0.15–0.28 clean) goes with every share. Naming with list v2 and the readers is [[lem-naming-2026-10-17]] (#197). Steering and negative poles are #198.
+untrained floor goes with every share, for its own list: 0.11–0.28 under v1 and 0.28–0.39
+under v2. [[lem-naming-2026-10-17]] (#197): 201 of 210 narrow units are named by list v2 or the
+readers, and the 9 left are trick × seat conjunctions. Steering and negative poles are #198.
 
 ## The scope clause: what this net can and cannot tell us
 

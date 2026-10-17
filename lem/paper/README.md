@@ -206,7 +206,13 @@ within 0.06). The concepts give out in order. The last words are the mover's pla
 (`lead`, the coarse `late`). Before them go the trick in front of the mover and the mover's trump,
 then count and trump on the table, then whether the winner can be beaten. Mastery outside trump
 and the setters' voids need 136 neurons. Two neurons close only 0.28 of the gap. Two of three
-six-neuron nets failed to learn the play, and their units fell to the floor with it.
+six-neuron nets failed to learn the play, and their units fell to the floor with it. **Naming** ([`wiki/experiments/lem-naming-2026-10-17.md`](../../wiki/experiments/lem-naming-2026-10-17.md),
+#197): with concept list v2 and Haiku readers, 201 of the 210 live units of the 12- and 24-neuron
+nets have a name, and readers detect 0.80–0.87 of the units the list cannot name (null 0.13). The
+nine named by neither are conjunctions of who is winning the trick and where the mover sits, a gap
+in the list, not in the inputs. The list's size moves the floor: an untrained net scores 0.11–0.23
+clean under the 48 concepts of v1 and 0.28–0.39 under the 70 of v2, while trained nets barely move.
+Every clean share is quoted against the floor for its own list.
 
 ## 8. Models of others **[gap]**
 
@@ -251,7 +257,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197, causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198, pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 
