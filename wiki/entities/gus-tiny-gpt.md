@@ -60,6 +60,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
+- [[gus-fixed-field-curriculum-2026-10-18]] — exact G0/Zeb endgame construction and a matched outcome-learning/rehearsal comparison in progress.
+
 - [[gus-update-scale-2026-10-18]] — matched learning rates, verified lazy reuse and an exact fixed-field endgame feasibility probe; no promotion.
 
 - [[gus-independent-root-batches-2026-10-18]] — training-gradient diagnosis, four/eight independent deals per update and exact-inference-state lazy evidence.

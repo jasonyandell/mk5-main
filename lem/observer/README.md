@@ -70,6 +70,15 @@ optimizes exact conditional hand success with the existing KL/rehearsal recipe.
 why a direct sum over the two known rewards needs neither a critic nor action
 sampling, and records the completed matched comparison. No search is added to Gus.
 
+`lem.observer.rlvr.fixed_data --plan PLAN --out DIR --seconds 45` constructs the
+separate exact G0/Zeb endgame curriculum with immutable replay witnesses and
+resumable units. Its uniform legal root belief is an explicit approximation.
+Use the registered source/weights/splits and run through `cpu-slot`; `--recheck`
+recomputes completed units byte-for-byte. The
+[fixed-field study](../../wiki/experiments/gus-fixed-field-curriculum-2026-10-18.md)
+defines the scope. `rlvr.train --mode rehearsal` supplies the matched
+supervised-only comparator; both arms retain the original prediction tasks.
+
 For full-hand outcome post-training, use `python -u -m lem.observer.outcomes
 --plan PLAN.json --out RUN --mode grpo --device mps --seconds 45` through
 `cpu-slot`. The plan pins disjoint deals, fixed G0 partner/Zeb opponents and the

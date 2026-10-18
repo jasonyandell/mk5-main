@@ -56,7 +56,8 @@ def test_growth_preserves_both_heads_and_new_block_learns():
 
 
 @pytest.mark.parametrize('mode,extra,reward', [('grpo', 0, 'best'), ('exact', 1, 'best'),
-                                             ('sft', 0, 'best'), ('exact', 0, 'success')])
+                                             ('sft', 0, 'best'), ('exact', 0, 'success'),
+                                             ('rehearsal', 0, 'best')])
 def test_rehearsal_signal_resume_preserves_all_samplers_and_heads(tmp_path, monkeypatch, mode, extra, reward):
     common = tiny_run(tmp_path) + ['--mode', mode, '--extra-layers', str(extra), '--reward', reward]
     replay = tmp_path / 'replay'; replay_fixture(replay)
@@ -99,6 +100,14 @@ def test_success_reward_preserves_gap_and_ignores_action_independent_baseline():
     shifted = logits.log_softmax(-1)
     other, _ = objective(shifted, shifted.detach(), 'exact', q - .4, beta=0)
     torch.testing.assert_close(torch.autograd.grad(other, logits)[0], gradient)
+
+
+def test_rehearsal_control_has_no_policy_or_reference_gradient():
+    logits = torch.tensor([[0., 1.]], requires_grad=True)
+    loss, _ = objective(logits.log_softmax(-1), torch.tensor([[.8, .2]]).log(),
+                        'rehearsal', torch.tensor([[1., 0.]]), beta=1.)
+    loss.backward()
+    assert float(loss.detach()) == 0 and torch.equal(logits.grad, torch.zeros_like(logits))
 
 
 @pytest.mark.parametrize('mode', ['grpo', 'sft'])

@@ -61,7 +61,10 @@ def advantages(rewards):
 
 def objective(logp, ref, mode, targets, actions=None, old=None, adv=None, clip=.2, beta=.02):
     kl = (logp.exp() * (logp - ref)).sum(-1).mean()
-    if mode == 'sft':
+    if mode == 'rehearsal':
+        policy = logp.sum() * 0
+        clip_fraction = logp.new_tensor(0.)
+    elif mode == 'sft':
         target = targets / targets.sum(-1, keepdim=True)
         policy = -(target * logp).sum(-1).mean()
         clip_fraction = logp.new_tensor(0.)
@@ -74,7 +77,7 @@ def objective(logp, ref, mode, targets, actions=None, old=None, adv=None, clip=.
         ratio = (logp.gather(1, actions) - old.gather(1, actions)).exp()
         policy = -torch.minimum(ratio * adv, ratio.clamp(1 - clip, 1 + clip) * adv).mean()
         clip_fraction = ((ratio - 1).abs() > clip).float().mean()
-    return policy + beta * kl, {'policy_loss': float(policy.detach()), 'kl': float(kl.detach()),
+    return policy + (0 if mode == 'rehearsal' else beta) * kl, {'policy_loss': float(policy.detach()), 'kl': float(kl.detach()),
                               'clip_fraction': float(clip_fraction.detach())}
 
 
@@ -119,6 +122,8 @@ def run(args):
         raise ValueError('invalid rehearsal or growth settings')
     if args.replay_weight and not args.replay:
         raise ValueError('rehearsal weight requires a replay bundle')
+    if args.mode == 'rehearsal' and not args.replay_weight:
+        raise ValueError('rehearsal control requires supervised replay')
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(1)
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
@@ -152,7 +157,8 @@ def run(args):
                     replay_sha256=replay.manifest['sha256'] if replay else None,
                     initial_retention=initial_retention,
                     parameters=sum(p.numel() for p in model.parameters()),
-                    source_sha256={p.name: digest(p) for p in (Path(__file__), Path(__file__).with_name('rehearsal.py'))})
+                    source_sha256={str(p.relative_to(Path(__file__).parents[1])): digest(p)
+                                   for p in sorted(Path(__file__).parents[1].rglob('*.py'))})
     saved = None; completed = 0; history = []; best = None; example = None
     if args.resume:
         saved = torch.load(out / 'latest.pt', map_location='cpu', weights_only=True)
@@ -285,7 +291,7 @@ def run(args):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--data', required=True); p.add_argument('--initial', required=True); p.add_argument('--out', required=True)
-    p.add_argument('--mode', choices=('sft', 'grpo', 'exact'), required=True); p.add_argument('--device', default='mps')
+    p.add_argument('--mode', choices=('sft', 'grpo', 'exact', 'rehearsal'), required=True); p.add_argument('--device', default='mps')
     p.add_argument('--reward', choices=('best', 'success'), default='best',
                    help='best-set correctness, or exact conditional hand success (exact mode only)')
     p.add_argument('--rounds', type=int, default=256); p.add_argument('--batch', type=int, default=64)

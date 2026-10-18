@@ -255,11 +255,29 @@ learning-rate increase. The update-scale study in
 at matched data and optimizer counts, with a higher-rate rehearsal control.
 
 That comparison increased policy movement without promoting a selected player.
-Its training-only endgame probe shows a next curriculum can enumerate actual
-G0/Zeb continuations cheaply. Treat this as a new verifier identity, not a
-replacement of the existing three-style model or an already trained candidate.
+Its training-only endgame probe led to `rlvr.fixed_field` and `rlvr.fixed_data`,
+tracked in `wiki/experiments/gus-fixed-field-curriculum-2026-10-18.md`. This is a
+new verifier identity, not a replacement of the existing three-style model.
 The same clean inputs, common root action and forced later learner action are
 required. Uniform legal-consistent worlds still omit pre-root behavior likelihood;
 exact arithmetic does not repair that modeling approximation. When complete
 rewards are available, direct expected-success gradients remove unnecessary
 action sampling; check transfer with actual full-hand outcomes afterward.
+
+Run `python -u -m lem.observer.rlvr.fixed_data --plan PLAN --out DIR --seconds 45`
+through `cpu-slot`. The plan reserves all possible physical roots and the
+collection batch size before screening. Prefix histories use sampled parent
+Gus with fixed G0/Zeb seats. First eligible questions fill split quotas without
+correctness filtering. Preserve all screened trajectories and rational witnesses;
+reserve future training exclusions for the whole root plan, including unused
+roots. Resume the same command after a pause; `--recheck` verifies immutable
+unit bytes. Completed construction validates without rerunning games. A changed
+source, policy, root pool or quota needs a new plan. The loader accepts this
+declared verifier and checks every selected row against its stored witness.
+
+For a matched control, `rlvr.train --mode rehearsal --replay DIR --replay-weight 1`
+takes the same supervised draws and optimizer steps without policy reward or
+reference KL. Preserve exact-success and rehearsal runs separately. Resume
+identity now includes all observer Python sources; older runs require their
+published source version. Keep initial checkpoint selection and original-task
+retention bounds in both arms.

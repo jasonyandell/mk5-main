@@ -145,7 +145,9 @@ def build(args):
 
 def load(root):
     root = Path(root); manifest = json.loads((root / 'manifest.json').read_text())
-    if manifest['model_id'] != MODEL_ID or digest(root / 'questions.jsonl.gz') != manifest['questions_sha256']:
+    from .fixed_field import valid_model
+    fixed = valid_model(manifest)
+    if (manifest['model_id'] != MODEL_ID and not fixed) or digest(root / 'questions.jsonl.gz') != manifest['questions_sha256']:
         raise ValueError('exercise specification or bytes changed')
     with gzip.open(root / 'questions.jsonl.gz', 'rt') as stream:
         rows = [json.loads(line) for line in stream]
@@ -154,6 +156,32 @@ def load(root):
     for r in rows:
         if r['tokens'] != tokens(r['question']):
             raise ValueError('input receipt differs from clean encoder')
+        certificate = r['question']['certificate']
+        values = {int(a): Fraction(v) for a, v in certificate['values'].items()}
+        if (certificate['model_id'] != manifest['model_id'] or sorted(values) != certificate['legal']
+                or len(values) != 2 or any(not 0 <= q <= 1 for q in values.values())
+                or certificate['best'] != [a for a in sorted(values) if values[a] == max(values.values())]):
+            raise ValueError('certificate identity, support or rational values changed')
+    if fixed:
+        from ..benchmark.extension import Extension
+        from ..benchmark.build import identity
+        recipe = json.loads((root / 'units/recipe.json').read_text())
+        store = Extension(root / 'units', recipe['recipe'])
+        if (identity(recipe['recipe']['plan']) != manifest['plan_sha256']
+                or recipe['recipe']['plan']['model'] != manifest['model']):
+            raise ValueError('curriculum plan identity changed')
+        witnessed = {}
+        for name, checksum in manifest['units'].items():
+            path = store.records / name
+            if path.parent != store.records or digest(path) != checksum:
+                raise ValueError('curriculum unit checksum changed')
+            result = store.read(path)['result']
+            for row in result['questions']:
+                if identity(result['witnesses'][row['id']]) != row['witness_sha256']:
+                    raise ValueError('curriculum witness changed')
+                witnessed[row['id']] = {**row, 'unit': name}
+        if any(witnessed.get(row['id']) != row for row in rows):
+            raise ValueError('training row differs from its verified unit')
     return manifest, rows
 
 

@@ -170,6 +170,8 @@ noise; it does not replace the terminal objective with teacher agreement. Keep
 fresh physical-deal splits, initial/selected/final specimens and full-hand
 transfer checks. General playing improvement still requires fresh actual games.
 [[gus-success-probability-planning]] owns the objective and lazy-evidence contract.
+[[gus-fixed-field-curriculum-2026-10-18]] implements the ensuing curriculum and
+tracks its bounded comparison separately.
 
 ## Public evidence
 
