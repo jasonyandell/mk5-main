@@ -268,3 +268,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-frozen-benchmark-2026-10-18|Gus frozen benchmark]] — fixed games, fast static decisions, exact endgame subset and native representation archives (complete)
 
 - [[experiments/gus-retention-iterations-2026-10-18|Gus quick retention iterations]] — five bounded arms, exact reward with rehearsal, capacity null and fresh confirmation (complete)
+- [[experiments/gus-lazy-rlvr-smoke-2026-10-18|Gus lazy RLVR smoke]] — immutable continuation extensions, replay/resume parity and probability-reward integration (complete)

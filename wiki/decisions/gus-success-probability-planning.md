@@ -122,3 +122,6 @@ never rewrite existing evidence to make a larger panel look untouched.
 
 The operational commands live in the `gus-training` skill's
 `references/benchmark.md`; representation and unit claims follow `clean-neuron`.
+
+Implementation and same-runtime replay evidence: [[gus-lazy-rlvr-smoke-2026-10-18]].
+The matched multi-seed training comparison remains the next experiment.
