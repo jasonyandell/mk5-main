@@ -232,9 +232,11 @@ resemblance is a useful hypothesis for [[recursive-generalization]] and
 | Predictive observation law | Next-tile probabilities conditioned on that prefix | Trained and measured in [[lem-observer-data-scale-2026-10-17]] |
 | Backward lawful planning | Learned evaluation, distilled decisions, or a separate search using a model | No equivalence or planning mechanism established by next-tile accuracy |
 
-Jason's subsequent proposal to tokenize the splat would expose the teacher's
-evaluated consequences as an additional learning target. The candidate input/output
-contract, uniform-belief distinction and make-pour target qualification live in
+Jason subsequently selected predicting the splat from the **unchanged input**,
+exposing the teacher's evaluated consequences as an additional learning target.
+Candidate tiles index the output; they are not appended to the input sequence.
+The selected input/output boundary, remaining distribution choices,
+uniform-belief distinction and make-pour target qualification live in
 [[lem-nanogpt-foundations]] under "Candidate extension: predict the splat."
 
 ## A small arithmetic example

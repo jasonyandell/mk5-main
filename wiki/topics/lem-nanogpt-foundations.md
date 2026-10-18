@@ -181,10 +181,12 @@ player identity; the target and the population must actually reward that inferen
 
 ### Candidate extension: predict the splat
 
-Jason proposed tokenizing the splat on 2026-10-17, after the
-[[two-recursions-and-transformers]] comparison. This is a **design candidate**, not
-a selected representation or a new training run. It makes the teacher's evaluated
-consequences explicit instead of supervising only the move selected from them.
+Jason selected predicting the splat on 2026-10-17, after the
+[[two-recursions-and-transformers]] comparison, and fixed the input boundary:
+**the same viewer-visible input, with nothing appended**. The extension makes the
+teacher's evaluated consequences explicit instead of supervising only the move
+selected from them. The input/output boundary is selected; the distribution-loss
+details remain a design, and no splat-output model has been implemented or trained.
 The broader value-plus-policy design is already tracked in
 [#175](https://github.com/jasonyandell/mk5-main/issues/175).
 
@@ -204,19 +206,32 @@ A uniform foundation therefore does not make the splat an unbiased account of al
 players. Teacher configuration, objective and finite sampling remain part of its
 meaning. Within a plan, observable field actions also partition scenario cells.
 
-A concrete candidate interface, **only at the viewer's own decision**, is:
+The selected input/output interface, **at the viewer's own decision**, is:
 
 ```text
 INPUT:  original own hand + contract + public actor/tile prefix
-        + EVALUATE + candidate tile
-OUTPUT: probability over bidder-team final totals 0, 1, ..., 42
+        (exactly the existing tokens, ending at the current actor)
+OUTPUT: for each candidate tile, a probability distribution over outcomes
+        alongside the existing next-tile prediction
 ```
 
-This keeps private information at the existing boundary and supplies a candidate
-action, not a solved answer. Splats computed from another seat's private view must
-not be inserted as this viewer's inputs. Supplying a viewer's own computed splat as
-input would be a different, planner-assisted task; it would require that computation
-at use time. Predicting it makes Walt a training teacher instead.
+There is no `EVALUATE` token, candidate-action token, legal-action list, teacher
+answer, or extra state feature in the input. "Same input" includes the viewer's
+original seven tiles, which are private to that viewer, and the existing public
+contract and history; it does not mean removing the own-hand tokens. The existing
+encoder, 46-token vocabulary and causal visibility boundary remain unchanged.
+
+Candidate identity belongs to an **output axis**. At the existing actor-token
+position, the same representation can produce a `28 × 43` table: one distribution
+over bidder-team totals for each tile. Splat supervision applies only to the
+viewer's legal candidate rows with available teacher labels. Invalid candidate
+rows are not outcome estimates; the mask selects loss terms and is not a model
+input. The next-tile output continues to apply at every observed seat's turn.
+
+Splats computed from another seat's private view must not be inserted as this
+viewer's inputs. Walt supplies training targets outside the input sequence;
+the trained student must produce its predictions without a Walt answer supplied
+at use time. No predicted splat is appended to the next game-state input either.
 
 For stored margin `m[a,j]` and scenario weight `w[j]`, define the target histogram
 
