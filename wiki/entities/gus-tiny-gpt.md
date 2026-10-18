@@ -61,7 +61,9 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-staged-outcomes-2026-10-18]] — registered common-reference full-hand GRPO from three initializations, with a supervised-only continuation control.
+- [[gus-exposure-budget-2026-10-18]] — fourfold on-policy exposure test with short-prefix and matched rehearsal controls.
+
+- [[gus-staged-outcomes-2026-10-18]] — completed initialization comparison; no reward-specific full-hand gain.
 
 - [[gus-fixed-field-curriculum-2026-10-18]] — exact G0/Zeb feedback beats rehearsal on held-out endgames; no full-hand promotion; lazy witnesses and native specimens.
 

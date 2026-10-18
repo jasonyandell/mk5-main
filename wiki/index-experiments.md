@@ -271,7 +271,8 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-lazy-rlvr-smoke-2026-10-18|Gus lazy RLVR smoke]] — immutable continuation extensions, replay/resume parity and probability-reward integration (complete)
 - [[experiments/gus-probability-reward-v3-2026-10-18|Gus probability-reward comparison]] — three paired seeds, fresh exact-model confirmation and canonical G0/Zeb/Demon games (complete)
 
-- [[experiments/gus-staged-outcomes-2026-10-18|Gus staged outcome training]] — common-reference initialization comparison (active)
+- [[experiments/gus-exposure-budget-2026-10-18|Gus outcome-training exposure]] — fourfold fresh exposure with prefix and rehearsal controls (active)
+- [[experiments/gus-staged-outcomes-2026-10-18|Gus staged outcome training]] — common-reference initialization comparison; no promotion (complete)
 - [[experiments/gus-fixed-field-curriculum-2026-10-18|Gus exact fixed-field curriculum]] — G0/Zeb endgame gain, no full-hand promotion, resumable witnesses (complete)
 - [[experiments/gus-update-scale-2026-10-18|Gus outcome update scale]] — larger policy updates, no selected gain, exact fixed-field verifier feasibility (complete)
 - [[experiments/gus-independent-root-batches-2026-10-18|Gus independent deals per update]] — more independent deals reduce empty batches without a confirmed player gain; exact-state reuse (complete)

@@ -289,3 +289,20 @@ reference KL. Preserve exact-success and rehearsal runs separately. Resume
 identity now includes all observer Python sources; older runs require their
 published source version. Keep initial checkpoint selection and original-task
 retention bounds in both arms.
+
+
+## Sparse outcomes are not automatically failed exploration
+
+Before changing temperature or adding an exploration mechanism, count distinct
+learner paths only before public settlement; arbitrary later moves can inflate
+diversity. Inspect legal entropy and largest-action probability on unsettled
+discretionary decisions. All-loss groups do not prove a root is unwinnable.
+The staged study measured diverse paths but few mixed-outcome groups; it did not
+establish collapsed exploration. A separate old-training-endgame diagnostic
+checked forgetting without consuming another held-out panel.
+
+For a registered exposure test, a long continuous run can supply its own short
+control. Freeze the short selection from that boundary checkpoint's saved best
+record; do not reconstruct it using later history or restart AdamW at the boundary.
+Preserve both selection windows and exact inference identities. Increasing fresh
+roots and updates together tests exposure budget, not their separate effects.

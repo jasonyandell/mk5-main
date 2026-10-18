@@ -97,7 +97,14 @@ finite-model endgame regret beyond rehearsal with retention, without establishin
 a fresh full-hand gain. Uniform legal root belief remains an approximation;
 the earlier three-style verifier is preserved. The root action is shared across
 worlds and the later learner choice is forced. The experiment page owns the
-measurements and the proposed staged full-hand comparison.
+measurements.
+
+The completed [[gus-staged-outcomes-2026-10-18]] compares three starting policies
+with a common frozen reference and a supervised-only control. It establishes no
+reward-specific full-hand gain. Training-only diagnostics find substantial path
+diversity and mostly retained endgame skill, with few mixed-outcome groups.
+The next [[gus-exposure-budget-2026-10-18]] tests more ordinary on-policy data and
+updates before adding a new architecture or exploration mechanism.
 
 Full-hand recovery publishes the same completion state to `status.json` and
 `report.json`; a previous pause no longer remains the live status. Completed
