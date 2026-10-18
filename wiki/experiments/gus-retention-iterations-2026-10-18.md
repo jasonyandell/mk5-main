@@ -225,3 +225,42 @@ The `gus-training` skill now carries retention-aware selection, the direct
 finite-reward option and criteria for bounded capacity tests. This protocol
 stops after the registered three iterations. A broader curriculum remains a
 future experiment rather than an unbounded automatic continuation.
+
+## Current RLVR leads, not yet run
+
+All leads preserve the fixed nonlearner policies and teacher assumptions in
+[[gus-tiny-gpt]]. The successful baseline is exact binary reward plus rehearsal;
+GRPO with rehearsal remains a close comparator. These are proposals, not new
+results or an authorization to resume the completed protocol.
+
+1. **Use the size of the verified mistake.** Compare the binary reward with
+   the existing rational Q values in the direct objective: `-sum_a pi(a) Q(a)`.
+   This minimizes expected regret up to the action-independent constant
+   `max_a Q(a)`. It changes the learner's reward transformation, not the verifier,
+   opponents, input or answer key. A large success-probability gap then exerts
+   more pressure than a near tie. Keep the data and update budget matched;
+   account explicitly for changed reward scale relative to KL and rehearsal.
+   This is the finite expected-reward calculation from the policy-gradient
+   source above, not an observed improvement. For two answers, simply replacing
+   binary rewards inside GRPO normally has no such effect: `Q = q_low + gap*r`,
+   so within-question mean/std normalization cancels the positive gap whenever
+   group variance is nonzero and the numerical floor is inactive.
+2. **More distinct questions under the same law.** The current exact training
+   bank has only2,048 physical deals. Compare a larger bank at a matched update
+   budget before adding more layers. Keep retention, matched development and
+   fresh confirmation separate; hardest-question mining stays train-only.
+3. **Replicate and measure retention tradeoffs.** Repeat the baseline across
+   training-sampler seeds, then compare a small declared rehearsal/KL range.
+   One short seed cannot establish a method ranking. Measure exact regret and
+   both original losses together; protect the previously selected specimen.
+4. **Move the question earlier.** Three tiles remaining introduces a later
+   discretionary learner decision and tests sequential credit assignment.
+   This requires an information-state continuation policy/solver under the
+   same fixed opponents; a per-world best continuation would violate the
+   strategy-fusion fence. It is a larger verifier extension after the cheaper
+   reward/data comparisons, with deterministic node and runtime caps.
+
+The selected order is a proposed baseline replication, then the matched
+binary-versus-Q comparison, then data breadth. GRPO's sampled-answer machinery
+can be reconsidered when exhaustive continuation evaluation becomes costly;
+current evidence does not favor it over direct summation in the two-answer task.
