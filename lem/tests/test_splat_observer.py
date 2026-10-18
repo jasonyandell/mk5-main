@@ -183,3 +183,14 @@ def test_multiple_caches_device_gather_and_paired_eval(tmp_path):
     assert report['metrics']['delta_tile_hits']=={'estimate':0.,'ci95':[0.,0.]}
     assert report['metrics']['g0_regret']==report['metrics']['joint_tile_regret']
     assert report['physical_deals']==len(d.splits['test'])//4
+
+
+def test_completed_publication_retry_does_not_rewrite_receipts(tmp_path):
+    from lem.observer.splat.release import publish_data,publish_model
+    data={'revision':'fixture','verification':'complete'}
+    model={'revision':'fixture','tensor_and_both_head_parity':True}
+    (tmp_path/'data-publication.json').write_text(json.dumps(data))
+    (tmp_path/'model-publication.json').write_text(json.dumps(model))
+    assert publish_data(tmp_path)==data
+    assert publish_model(tmp_path)==model
+    assert sorted(p.name for p in tmp_path.iterdir())==['data-publication.json','model-publication.json']

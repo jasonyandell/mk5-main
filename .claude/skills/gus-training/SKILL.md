@@ -69,8 +69,10 @@ token precedes the tile to be predicted.
   may define a deployable baseline; its hidden hand cannot repair predictions.
 - Split physical deals before constructing four observer views, copies or
   augmentations. Reject overlap with training and reserved panels.
-- Player identity, auction transcript, score, Nello, splat/value heads and
-  cross-hand memory are changes to the task, not already implemented abilities.
+- Player identity, auction transcript, score, Nello and cross-hand memory are
+  changes to the task, not already implemented abilities. The splat output head
+  is implemented separately in `lem/observer/splat/`; original G0 and population
+  releases do not contain it.
   Preserve Jason's selected clean inputs unless he changes that scope. A richer
   lawful output target does not require adding its teacher's internals to inputs.
 - No clairvoyant value becomes a learning target. Lawful Walt forecasts are
@@ -83,6 +85,18 @@ for evaluation, including impossible probability. Sampling is with replacement;
 `steps × batch / training_views` is an equivalent number of passes, not completed
 shuffled epochs. The original corpus-squeeze protocol and results live in
 `wiki/experiments/lem-observer-corpus-squeeze-2026-10-17.md`.
+
+**Joint splat pretraining:** `lem/observer/splat/` keeps the exact encoder and
+adds a 28 × 43 outcome head at the viewer's own actor positions. Read
+`wiki/experiments/gus-splat-pretraining-2026-10-18.md` before reusing it. Weighted
+margin histograms must reproduce every teacher make probability; supervise only
+legal candidates with labels. Missing rows mean no supervision. The make-pour
+histogram includes random post-settlement continuation, so play uses its make/set
+tail, not expected points. It is a parallel categorical output, not a serialized
+sequence fed back as input. Original tile-only and joint checkpoints have
+distinct explicit loaders. Splats from another private view are never inputs.
+Compare histogram KL (CE minus label entropy), consequential teacher regret,
+calibration to the named teacher, and actual play separately.
 
 **Reward learning:** improve actual team outcomes against a declared population.
 The initial recipe lives in `wiki/decisions/gus-population-iteration.md`: one

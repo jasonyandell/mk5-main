@@ -181,3 +181,43 @@ predictions use the recorded past; this is not a generated game or a strength
 evaluation. No native neuron has yet been named or causally tested.
 
 Registration and results: [the first observer experiment](../../wiki/experiments/lem-observer-2026-10-17.md).
+
+## Joint splat pretraining
+
+`splat/` implements the richer output selected for Gus. The original encoder
+and backbone are unchanged. `SplatObserver` produces the original tile logits
+and a `[28,43]` distribution at a queried actor position: each candidate tile's
+bidder-team points under the named lawful teacher continuation. No candidate
+token or teacher feature enters the input. `positions` only selects output rows.
+
+```sh
+scripts/cpu-slot --threads 2 --timeout 300 -- scratch/venv/bin/python -u -m lem.observer.splat.data \
+  --source /path/to/raw/pour --out scratch/lem/splat-cache
+
+scripts/cpu-slot --threads 2 --timeout 300 -- scratch/venv/bin/python -u -m lem.observer.splat.train \
+  --cache scratch/lem/splat-cache --out scratch/lem/splat-smoke --steps 100 --eval-every 100
+```
+
+Repeat `--cache` for multiple nonoverlapping source caches. Full runs require
+their own registered fixed update budget and compute exception. The October
+experiment uses 500k deals, 200k updates, the original small backbone, equal
+objective weights, and full validation joint-loss selection. The extra linear
+head raises parameter count from 107,392 to 185,652.
+
+Histogram labels use the weighted marginal of `(margin+42)/2`; every candidate's
+30–42 tail is checked against recorded teacher `q`. Only the viewer's own legal
+labelled rows enter the soft cross entropy. Missing/forced positions with no
+labels contribute no splat loss. Candidate means are averaged within positions,
+then over labelled positions; next-tile loss averages all 28 plays.
+
+`SplatPlay(..., head="splat")` maximizes predicted make probability for the bidder
+team and set probability for defenders. `head="tile"` selects from this same
+model's next-tile predictions. Both use the acting seat's original hand/public
+prefix and output-only legality. Arbitrary bids and Nello remain unsupported.
+Make-pour random finishes mean expected final points are not the playing policy.
+
+Use `splat.evaluate` for whole-deal diagnostic intervals and G0 comparisons; use
+`splat.h2h` for one existing-arena duplicate pair under an outer 60-second cap.
+Preserve all scheduled pairs, including timeouts. See
+[the registered experiment](../../wiki/experiments/gus-splat-pretraining-2026-10-18.md)
+for the exposure, teacher scope, formation and publication receipts.

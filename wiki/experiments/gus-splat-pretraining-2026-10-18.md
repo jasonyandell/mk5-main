@@ -85,3 +85,21 @@ The [[clean-neurons-42]] interpretation question remains ungraded until native
 unit/causal evidence exists. The new specimen and matched untrained twin are
 preserved for that work. The implementation is `lem/observer/splat/` and the
 reusable workflow is the `gus-training` skill, with companion `clean-neuron`.
+
+## Initial evidence
+
+[Exact compiled targets, input audit and untrained twin](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/454bb660295c57f8061d45d82cad014d3265ba90/lem/gus-splat-pretraining-2026-10-18)
+are public CC0. Seven compressed numeric caches contain 8,693,386 planned
+positions and 31,688,423 legal candidate histograms. Maximum make-tail discrepancy
+from source `q`, before float32 cache transport, is 2.22e-16. Every token in all
+two million views and every physical-deal split matches the original G0 corpus;
+all initial backbone tensors also match exactly. The caches use source order
+rather than the original globally seed-sorted training order, so individual
+minibatches are not matched between the two trajectories.
+
+Source implementation and registration: `c2903541`. Training telemetry:
+[W&B run 28dc40c6](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/28dc40c6).
+The initial archive is 1,283,235,412 bytes; small receipts/checkpoints passed fresh
+anonymous downloads. All archive sizes and LFS hashes are checked; cache 0 also
+passed a fresh anonymous download and all decoded-array checksum checks. The
+other six compressed caches have metadata/hash verification, not fresh downloads.

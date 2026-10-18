@@ -15,6 +15,10 @@ Run from the chosen mk5 checkout using its `scratch/venv/bin/python -u`.
 
 | Need | Entry point |
 |---|---|
+| Compile weighted splats | `python -u -m lem.observer.splat.data --source POUR --out FRESH_CACHE`; one bounded source at a time |
+| Joint tile/splat training | `python -u -m lem.observer.splat.train --cache CACHE` (repeat), fresh `--out`, fixed steps; `--resume` retains optimizer/RNG |
+| Compare splat forecasts and G0 | `lem.observer.splat.evaluate`; paired physical-deal diagnostics, not strength confirmation |
+| Short splat arena pair | `lem.observer.splat.h2h`; outer `cpu-slot --timeout 60`, explicit excluded hands and fresh seed |
 | Prepare lawful pours and pretrain | `python -u -m lem.observer.train --help`; repeat `--source`, declare `--deals`, `--steps`, device and fresh `--out` |
 | Continue same run | Same arguments plus `--resume`, larger total `--steps`; same run ID |
 | Branch a supervised continuation | `--init-from EXISTING_RUN --out NEW_RUN`; reads `latest.pt` and carries optimizer/sampler; see restrictions below |
@@ -132,3 +136,19 @@ checkpoint was selected and which fully trained layers changed. Native attention
 or activation pictures are observations; they do not establish a unit's meaning.
 Keep the original interactive lesson as a stable specimen when later models
 arrive. Verify the actual delivery surface before claiming it renders on mobile.
+
+## Splat-specific friction
+
+Large NPZ sources must be streamed into memory-mapped label arrays. Do not load
+`worlds.npy`: it is unnecessary for histogram construction and the model must
+never receive it. Cache one source at a time with completion manifests; retain
+only compact numeric tokens, lookup indices and weighted histograms. Compress
+caches for publication after measuring size; the original seven caches fit
+under the documented 2GB study review threshold alongside formation weights.
+The device corpus gathers immutable labels by index, avoiding Python example
+construction on every update. The encoder and original backbone files stay
+unchanged, preserving the earlier tournament source pins.
+
+Splat model releases use a separate `splat-v1` branch/tag in `jasonyandell/gus`;
+publication alone does not replace the supported incumbent. `SplatPlay` reads
+the explicit joint task version; `ObserverPlay` is for the original tile model.

@@ -10,7 +10,9 @@ status: active
 
 The current 500k-deal model is now named **[[gus-tiny-gpt|Gus]]** and published
 as a Hugging Face model. [[gus-population-iteration]] records Jason's latest-five
-population with permanent Zeb and the proposed first reward-learning round.
+population with permanent Zeb. The completed reward/depth campaign is in
+[[gus-population-depth-2026-10-18]]; its fresh confirmation established no gain.
+[[gus-splat-pretraining-2026-10-18]] now implements joint tile/outcome pretraining.
 
 The nanoGPT workstream implements stage 3 of [[lem-the-teacher]] (#178), with
 the population (#177, #182) and [[clean-neurons-42]] as its experimental setting.
@@ -20,8 +22,8 @@ explain every experiment is part of the deliverable.
 
 Jason selected the observer-first lesson: [[lem-observer-2026-10-17]] implements
 one tiny model, within-hand history, existing Pour A records and a worked-hand
-viewer. Population construction and reward learning are deferred. Field-net
-results are not GPT results.
+viewer. The later population campaign completed; field-net results remain
+distinct from GPT results.
 
 The extended run completed 200,000 updates and selected step 4,000 by validation;
 [[lem-observer-overbake-2026-10-17]] records its overfitting, frozen evidence and
@@ -209,7 +211,8 @@ tile supplies its own label. The selected splat extension adds teacher-supervise
 distribution learning, or **distillation**: matching Walt's evaluated consequences.
 Both belong to pretraining here; neither is an online reward-optimization loop.
 Starting from random parameters is compatible with pretraining, and is how the fresh
-observer runs began. The splat extension remains unimplemented.
+observer runs began. The splat extension is implemented in
+[[gus-splat-pretraining-2026-10-18]]; it was absent from the earlier runs.
 
 The learning sequence now includes the selected joint observer/value extension,
 with separate losses and metrics, followed by a fixed population with repeated
@@ -254,7 +257,8 @@ recorded behavior and winning these games are distinct measurements.
 The first comparison is complete: the 500k specimen wins 57.03% [52.73, 61.72]
 against the 50k predecessor, neutral 50%, over 128 paired seeds / 256 games.
 Initialization, uniform-legal and exact self-match controls are in the experiment.
-This establishes the starting player; reward training remains unimplemented.
+This established the starting player. The later reward campaign is reported in
+[[gus-population-depth-2026-10-18]].
 
 Jason narrowed the immediate head-to-head work to smoke tests after that baseline.
 The CLI now defaults to **one duplicate pair (two games)**. The next smoke seats
@@ -290,7 +294,7 @@ comparison. Keep its receipts separate from the completed 256-game comparisons.
   [[scenario-player]] records why exact teacher-tile agreement was retired as
   a field-net quality grade. Observer next-tile accuracy still measures behavior
   prediction; it must not substitute for this decision-quality diagnostic.
-- **Forecasts need a separate check.** A future splat head should be assessed
+- **Forecasts need a separate check.** The splat head must be assessed
   against held-out teacher distributions and, separately, realized outcomes
   under the declared continuation and table. The current observer has no value
   head; calibration or regret numbers have not been manufactured from tile logits.
@@ -344,7 +348,9 @@ Jason selected predicting the splat on 2026-10-17, after the
 **the same viewer-visible input, with nothing appended**. The extension makes the
 teacher's evaluated consequences explicit instead of supervising only the move
 selected from them. The input/output boundary is selected; the distribution-loss
-details remain a design, and no splat-output model has been implemented or trained.
+implementation is now `lem/observer/splat/`, with the fixed-budget run recorded
+in [[gus-splat-pretraining-2026-10-18]]. Earlier observer and reward runs had no
+splat-output head.
 The broader value-plus-policy design is already tracked in
 [#175](https://github.com/jasonyandell/mk5-main/issues/175).
 
@@ -402,7 +408,9 @@ Those outcomes can be categorical tokens: a distribution output trained against
 the weighted histogram avoids pretending decimal probability strings have any
 special meaning. Literal autoregressive serialization of counts/probabilities is
 another candidate, requiring an explicit ordering and numerical precision.
-Neither encoding is implemented here.
+The categorical distribution head is implemented in
+[[gus-splat-pretraining-2026-10-18]]; literal serialized probabilities remain an
+unimplemented alternative.
 
 **This histogram is a deliberate summary of the splat.** It preserves each move's
 outcome distribution, but discards which moves succeed in the same scenarios.
@@ -417,7 +425,9 @@ Its mass at totals ≥30 reproduces the teacher's make probability. A different
 threshold is an event under that same plan, not a policy optimized for another bid.
 Predicting every candidate's make/set probability is the smaller, objective-aligned
 alternative; retaining the full histogram teaches additional features of the stated
-continuation process. The choice remains open under #175.
+continuation process. Jason selected implementation on 2026-10-18; the full
+43-bin histogram is the registered target, and its make/set tail is the playing
+policy. The broader #175 interpretation agenda remains separate.
 
 Source audit: `scenario/atlas.py::Position`, `in_plan_units`, `scenario/hf.py::tables`,
 `scenario/planner.py::_invocation`, and `scenario/core/src/planner.rs::{settled,trace,playout}`

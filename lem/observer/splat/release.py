@@ -25,18 +25,24 @@ TAG='splat-v1-20261018'
 def publish_data(root, initial=False):
     from huggingface_hub import HfApi, CommitOperationAdd, hf_hub_download
     root=Path(root)
+    receipt=root/('initial-publication.json' if initial else 'data-publication.json')
+    previous=json.loads(receipt.read_text()) if receipt.exists() else None
+    if previous and previous.get('verification') != 'pending':
+        return previous
     files=list(sorted((root/'archive').glob('cache-*.tar.gz')))
     files += [root/f'cache-{i}'/'manifest.json' for i in range(7)]
     files += [root/'input-audit.json',root/'h2h-plan.json',root/'exclusions.json',root/'excluded-hands.npy']
     files += [root/'training'/name for name in ('data.json','initial.json','initial.pt','wandb-run.json')]
     if not initial:
+        files += [root/'initial-archive-verification.json']
         files += list(sorted((root/'training').glob('step-*.pt')))
         files += [root/'training'/name for name in ('best.pt','latest.pt','report.json','progress.json')]
         files += [root/'diagnostics'/name for name in ('report.json','per-deal.npz')]
         files += [root/'h2h'/name for name in ('attempts.json','summary.json')]
-        for pair in sorted((root/'h2h').glob('*-pair-*')):
+        for pair in sorted(p for p in (root/'h2h').glob('*-pair-*') if p.is_dir()):
             files += [p for p in pair.iterdir() if p.is_file() and p.name in ('manifest.json','report.json','games.jsonl.gz')]
         files += list((root/'h2h').glob('*.log'))
+        files += list((root/'h2h').glob('*-cost.jsonl'))
         for name in ('training.log','progress.png','progress.pdf','example.json'):
             if (root/name).exists():files.append(root/name)
     if len(list((root/'archive').glob('cache-*.tar.gz')))!=7 or not all(p.is_file() for p in files):
@@ -50,32 +56,44 @@ def publish_data(root, initial=False):
         'bytes':size,'license':'CC0-1.0','initial_only':initial,
         'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()}
     manifest_path=root/('initial-publication-manifest.json' if initial else 'publication-manifest.json')
-    atomic_json(manifest_path,manifest);files.append(manifest_path)
+    if previous:
+        original=json.loads(manifest_path.read_text())
+        if manifest['files'] != original['files']:
+            raise ValueError('evidence changed after publication; preserve the original package')
+    else:
+        atomic_json(manifest_path,manifest)
+    files.append(manifest_path)
     api=HfApi()
-    receipt=root/('initial-publication.json' if initial else 'data-publication.json')
-    if receipt.exists():return json.loads(receipt.read_text())
-    # One commit avoids the per-file commit quota that interrupted the first pilot.
-    commit=api.create_commit(DATA_REPO,repo_type='dataset',commit_message='Gus splat: '+('compiled lawful labels and untrained twin' if initial else 'complete formation, forecast comparison and short H2H'),
-        operations=[CommitOperationAdd(path_in_repo=f'{ARCHIVE}/{p.relative_to(root)}',path_or_fileobj=str(p)) for p in files])
-    atomic_json(receipt,{'revision':commit.oid,'bytes':size,'files':len(files),'verification':'pending'})
+    if previous:
+        revision=previous['revision']
+    else:
+        # One commit avoids the per-file commit quota that interrupted the first pilot.
+        commit=api.create_commit(DATA_REPO,repo_type='dataset',commit_message='Gus splat: '+('compiled lawful labels and untrained twin' if initial else 'complete formation, forecast comparison and short H2H'),
+            operations=[CommitOperationAdd(path_in_repo=f'{ARCHIVE}/{p.relative_to(root)}',path_or_fileobj=str(p)) for p in files])
+        revision=commit.oid
+        atomic_json(receipt,{'revision':revision,'bytes':size,'files':len(files),'verification':'pending'})
     verified=[]
     samples=[manifest_path,root/'input-audit.json',root/'training'/'initial.pt']
     if not initial:samples += [root/'training'/'best.pt',root/'diagnostics'/'report.json',root/'h2h'/'summary.json']
     for p in samples:
         remote=Path(hf_hub_download(DATA_REPO,f'{ARCHIVE}/{p.relative_to(root)}',repo_type='dataset',
-                    revision=commit.oid,token=False,force_download=True,local_dir=root/'verify-data'))
+                    revision=revision,token=False,force_download=True,local_dir=root/'verify-data'))
         if digest(remote)!=digest(p):raise ValueError('fresh data download differs')
         verified.append(str(p.relative_to(root)))
-    result={'revision':commit.oid,'bytes':size,'files':len(files),'anonymous_verified_samples':verified,
+    result={'revision':revision,'bytes':size,'files':len(files),'anonymous_verified_samples':verified,
             'verification':'listed small evidence and checkpoint downloads; bulk cache archives separately checksummed',
-            'url':f'https://huggingface.co/datasets/{DATA_REPO}/tree/{commit.oid}/{ARCHIVE}'}
+            'url':f'https://huggingface.co/datasets/{DATA_REPO}/tree/{revision}/{ARCHIVE}'}
     atomic_json(receipt,result);return result
 
 
 def publish_model(root):
     from huggingface_hub import HfApi, CommitOperationAdd, hf_hub_download, ModelCard
     from safetensors.torch import save_file,load_file
-    root=Path(root);stage=root/'model-release';stage.mkdir(exist_ok=True)
+    root=Path(root)
+    receipt=root/'model-publication.json'
+    if receipt.exists() and json.loads(receipt.read_text()).get('tensor_and_both_head_parity'):
+        return json.loads(receipt.read_text())
+    stage=root/'model-release';stage.mkdir(exist_ok=True)
     checkpoint=root/'training'/'best.pt'
     player=SplatPlay(checkpoint,'cpu');model=player.model
     saved=torch.load(checkpoint,map_location='cpu',weights_only=True)
