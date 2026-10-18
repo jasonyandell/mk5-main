@@ -15,6 +15,7 @@ from lem.observer.train import evaluate, run
 from lem.observer.inspect import build
 from lem.observer.uncertainty import summarize
 from lem.observer.tracking import metrics
+from lem.observer.compare import cohorts, compare, interval
 from scenario.atlas import deal
 from scenario.record import empty_record
 from scenario.rules import rules_for, tiles_of
@@ -97,10 +98,10 @@ def test_evaluation_does_not_consume_sampler_or_training_rng():
 def test_training_resume_matches_uninterrupted_and_rejects_changed_data(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
-    records = [recording(seed) for seed in range(50)]
+    records = [recording(seed) for seed in range(100)]
     np.savez(source / "pour.npz", hands=[r["hands"] for r in records],
              decl=[r["decl"] for r in records], plays=[r["plays"] for r in records])
-    (source / "manifest.json").write_text(json.dumps(dict(bidder=0, bid=30, deal_seeds=list(range(50)))))
+    (source / "manifest.json").write_text(json.dumps(dict(bidder=0, bid=30, deal_seeds=list(range(100)))))
     common = dict(source=[str(source)], deals=50, steps=4, eval_every=2, batch=4,
                   width=8, layers=1, heads=1, lr=0.001, seed=42, device="cpu", resume=False,
                   init_from=None, checkpoint_every=2, wandb_project=None, wandb_entity=None, wandb_name=None)
@@ -134,6 +135,14 @@ def test_training_resume_matches_uninterrupted_and_rejects_changed_data(tmp_path
     assert len(view["tokens"]) == 68 and len(view["trained"]) == 28
     assert len(view["units"][0][0]) == 32  # test model width 8
     assert sum(view["attention"][0][0][0][14:]) == 0
+    expanded = Namespace(**{**common, "deals": 100}, out=str(tmp_path / "expanded"))
+    run(expanded)
+    comparison = compare(tmp_path / "continuous", tmp_path / "expanded", tmp_path / "comparison.json",
+                         step=4, device="cpu", draws=100)
+    assert comparison["initial_tensors_identical"]
+    assert comparison["cohorts"]["fresh"]["deals"] == sum(r['split'] == 'test' for r in records[50:])
+    assert comparison["cohorts"]["reused"]["deals"] == sum(r['split'] == 'test' for r in records[:50])
+    assert comparison["cohorts"]["fresh"]["groups"]["all"]["visible_uniform"]["known_impossible_mass"]["estimate"] == 0
     staged.deals = 49
     with pytest.raises(ValueError, match="identical data"):
         run(staged)
@@ -149,3 +158,32 @@ def test_tracking_calls_an_epoch_sampling_exposure_not_a_completed_pass():
     assert result["epoch_equivalent"] == 2000 * 64 / (3988 * 4)
     assert result["validation_all_nll"] == 1.8
     assert not any(k.startswith("test") for k in result)
+
+
+def test_comparison_keeps_fresh_deals_separate_and_rejects_relabeling():
+    records = [recording(seed) for seed in range(100)]
+    old = records[:50]
+    selected = cohorts(old, records)
+    assert all(r['seed'] >= 50 for r in selected['fresh'])
+    assert all(r['seed'] < 50 for r in selected['reused'])
+    assert all(r['split'] == 'test' for rows in selected.values() for r in rows)
+    altered = deepcopy(records)
+    test_row = next(r for r in altered if r['split'] == 'test')
+    test_row['split'] = 'train'
+    with pytest.raises(ValueError, match='partition'):
+        cohorts(old, altered)
+    with pytest.raises(ValueError, match='duplicate'):
+        cohorts(old, records + [records[0]])
+
+
+def test_paired_intervals_cluster_views_and_weight_decision_counts():
+    counts = np.array([2, 4, 8])
+    totals = np.array([0., 2., 8.])
+    draws = np.random.default_rng(42).integers(0, 3, (100, 3))
+    a = interval(totals, counts, draws)
+    assert a['estimate'] == 10 / 14
+    # Duplicating correlated rows within each deal adds no independent evidence.
+    assert interval(totals * 4, counts * 4, draws) == a
+    # A constant paired per-decision improvement has no between-deal spread.
+    same = interval(-counts.astype(float), counts, draws)
+    assert same == {'estimate': -1.0, 'ci95': [-1.0, -1.0]}

@@ -91,6 +91,20 @@ Ordinary heavy work retains the default cpu-slot time cap; that run's explicit
 
 ### What a result measures
 
+For a nested data experiment, compare both models on the same fresh test deals:
+
+```sh
+scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.compare \
+  scratch/lem/observer-overbake scratch/lem/observer-data-scale \
+  --step 20000 --out scratch/lem/observer-data-scale/comparison.json
+```
+
+This verifies identical initial parameters and unchanged original recordings /
+splits, then separates test deals outside the original corpus from the reused
+test cohort. Both fixed-update and validation-best comparisons use paired
+whole-deal intervals. It reports native predictions without legality filtering;
+visible-uniform guessing and the saved untrained twin remain baselines.
+
 The first N deals by seed are split by a hash of the physical deal, before
 constructing four views. Train, validation and test deals are disjoint. Each
 checkpoint records the config, tokenizer version, data hash, optimizer, sampler
