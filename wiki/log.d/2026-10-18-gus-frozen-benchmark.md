@@ -1,7 +1,7 @@
+## [2026-10-18 | Codex | Gus frozen games and native representation benchmark]
+
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
-
-## 2026-10-18 — Gus frozen games and native representation benchmark
 
 [[gus-frozen-benchmark-2026-10-18]] freezes 18 duplicate pairs, 36 games and
 11,116 clean actor decisions, with 471 exact finite-model endgames and all 234
