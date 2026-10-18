@@ -260,3 +260,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 - [[experiments/gus-population-depth-2026-10-18|gus-population-depth-2026-10-18]] — completed 757k reward-depth campaign; fresh confirmation found no established gain (complete)
 - [[experiments/gus-training-review-2026-10-18|gus-training-review-2026-10-18]] — saved-hand review finds 23.9–26.2% of discretionary choices already publicly settled in three generations; next learning-signal ablations and reusable skill (complete)
+- [[experiments/gus-tournament-pilot-2026-10-18|gus-tournament-pilot-2026-10-18]] — separate bid-30 tournament division, 21 Gus entries and pinned Zeb; 15 faceoffs under one minute each, public pilot evidence, canonical Hub sync pending (complete)
