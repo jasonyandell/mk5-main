@@ -239,6 +239,15 @@ def publish_final(root):
     delta = confirmation["vs_reference"]
     lo, hi = delta["ci95"]
     tag = "campaign-selected-20261018"
+    latest_tag = f"gus-{state['generations'][-1]['id']}"
+    selection_note = (
+        "The selected specimen is an identity-grown initialization: its inherited "
+        "learned policy is preserved, and the newly appended blocks have zero "
+        "output projections. Its parameter count does not mean those added blocks "
+        "learned useful features."
+        if checkpoint.name == "initial.pt" else
+        "The selected specimen is a completed reward-trained candidate."
+    )
     card = f'''---
 license: cc0-1.0
 library_name: pytorch
@@ -268,6 +277,11 @@ gain, at depths 2, 4, 8, 12 and 15. Best development weights, including a depth'
 identity-grown initialization, remained eligible. Identity-grown initialization
 selected: **{checkpoint.name == 'initial.pt'}**. An operational plateau does not
 prove a capacity ceiling. Neuron meanings remain for separate interpretation.
+
+{selection_note}
+The [last fully trained final-depth candidate](https://huggingface.co/{MODEL_REPO}/tree/{latest_tag})
+is also preserved, along with every intermediate formation checkpoint. It may
+have a lower development score than the selected specimen.
 
 ## Inputs, outputs and learning
 

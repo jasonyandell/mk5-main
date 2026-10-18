@@ -75,6 +75,8 @@ publishes the preselected final-depth specimen, confirmation evidence and
 `campaign-selected-20261018` model tag. Publication checks the requested size,
 completed final-depth plateau, unchanged selected checkpoint and complete panel;
 anonymous downloads verify every release file and the confirmation replay.
+The final model card explicitly distinguishes an identity-grown selection from
+a fully trained candidate and links the last trained final-depth specimen.
 An offline Hub round-trip test checks selected-versus-latest weight identity,
 adapter/safetensors parity, example logits, retry idempotency and refusal to
 publish before campaign completion.
