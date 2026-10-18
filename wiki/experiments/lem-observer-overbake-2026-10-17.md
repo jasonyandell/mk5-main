@@ -99,7 +99,8 @@ cover seed or population uncertainty. The reused test set is exploratory.
 
 ## Interpretability handoff
 
-Jason selected handoff to the interp work on 2026-10-17 while this workstream
+Jason selected handoff to the interp work on 2026-10-17, posted as
+[#207](https://github.com/jasonyandell/mk5-main/issues/207), while this workstream
 continues with [[lem-observer-data-scale-2026-10-17]]. The specimens are ready;
 no unit has been named or causally explained here.
 

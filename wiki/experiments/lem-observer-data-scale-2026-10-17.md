@@ -3,7 +3,7 @@ title: "Lem observer: more deals at the same model size"
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: active
+status: complete
 ---
 
 ## Question and registration
@@ -70,5 +70,63 @@ The first model and both lessons stay as they were.
 - Source declaration counts: 0: 2018; 1: 2413; 2: 2475; 3: 2447; 4: 15612;
   5: 14057; 6: 4535; doubles: 3346; no trump: 3097. Declaration 8 is absent.
 
-This page is the registration. Results and a frozen artifact link follow the
-run; no training or interpretability success is claimed in advance.
+The registration was committed as `a2ec2d63` before training. The comparison
+implementation and its tests are `3770c0f8`.
+
+## Result
+
+Completed the fixed 20,000-update budget; validation selected **step 18,500**.
+The initial parameter tensors matched the original run exactly. Both registered
+predictions held on the 4,436 fresh test deals, with paired intervals excluding
+zero. At the same update budget:
+
+| Fresh-test measurement | 5,000-deal run, step 20,000 | 50,000-deal run, step 20,000 |
+|---|---:|---:|
+| Next-tile accuracy | 39.08% [38.88, 39.28] | 49.00% [48.80, 49.20] |
+| NLL | 2.210 [2.198, 2.223] | 1.370 [1.365, 1.375] |
+| Visibly impossible probability | 9.75% [9.66, 9.84] | 4.70% [4.64, 4.76] |
+
+The paired differences, new minus old, are **+9.92 percentage points
+[9.72, 10.11]** accuracy, **−0.840 [−0.850, −0.830]** NLL, and **−5.05 points
+[−5.11, −4.99]** impossible mass. On the same fresh cohort, saved initialization
+gets 3.32% [3.27, 3.37] accuracy and 3.348 [3.347, 3.348] NLL;
+visible-uniform gets 29.28% [29.24, 29.32] expected accuracy and
+1.750 [1.749, 1.751] NLL, with zero impossible mass by construction.
+
+This does not merely beat an overfitted reference: in the separate
+validation-best comparison, the new specimen gets **49.21% [49.00, 49.41]**
+against **42.31% [42.11, 42.51]** for the original best on the same fresh deals.
+The paired gain is 6.89 points [6.72, 7.07]. Discretionary-play accuracy is
+36.54% [36.25, 36.81] versus 29.92% [29.66, 30.17], with a visible-uniform
+baseline of 16.77% [16.74, 16.80]. Best-model update counts differ (18,500 vs
+4,000), so that comparison is descriptive rather than the primary fixed-budget
+test. The reused 503-deal cohort is reported separately in the artifact.
+
+The result supports using more recorded experience for this architecture and
+seed. It establishes neither population modeling, autonomous playing strength
+nor neuron meanings. Data-prefix composition, one initialization and the
+fixed-contract teacher remain the experiment's scope.
+
+## Evidence and verification
+
+[Frozen archive, commit 93ea96c](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/93ea96ca04d305ee215f693b5f1ee0e492dbf89a/lem/observer-data-scale-2026-10-17)
+contains the exact 50,000 recordings and splits, 23 model files (initial,
+best, final and twenty 1,000-update snapshots), hashes, preflight, report,
+intervals, the paired comparison and the best-model worked hand. `intervals.json`
+describes the best checkpoint on all 4,939 test deals; `comparison.json`
+separates fresh and reused cohorts and fixed-budget / best comparisons.
+The fresh download of `best.pt` matched SHA256
+`5d4823891bd8690fd99e517c9b75f649e304a9957bdedb04217059cde04cad99`.
+
+[W&B run 6l2c7jji](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/6l2c7jji)
+is finished and includes the fresh-test comparison in its summary. The full
+training job used 1.909e12 CPU instructions, 123.6 CPU seconds and 148.6 wall
+seconds; MPS did the neural computation, so CPU instructions do not measure its
+GPU cost. The registered cap was respected.
+
+Comparison tests check the nested recording contract, rejected split relabeling
+and duplicates, identical initialization, correct fresh/reused cohorts, exact
+CPU continuation, decision-weighted paired intervals and invariance to duplicating
+correlated views within a deal. The full observer test module passes nine tests.
+The shared handoff for subsequent unit reading is
+[#207](https://github.com/jasonyandell/mk5-main/issues/207).

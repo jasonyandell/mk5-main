@@ -24,6 +24,10 @@ The extended run completed 200,000 updates and selected step 4,000 by validation
 interpretability handoff. Jason chose to leave unit reading to the interp work
 and continue here with [[lem-observer-data-scale-2026-10-17]]: the same small
 architecture, more observed deals, and comparisons at matched update counts.
+That 50,000-deal run is complete: at 20,000 updates it gains 9.92 percentage
+points [9.72, 10.11] in next-tile accuracy over the original corpus on 4,436
+fresh shared test deals. The experiment scopes the result and preserves the
+second formation trajectory for the interp handoff (#207).
 
 The checkout is `/Users/jason/code/mk5-lem-nanogpt`, branch `codex/lem-nanogpt`,
 initially at `aa0af91d`. The reference clone is `/Users/jason/code/nanoGPT`, upstream
