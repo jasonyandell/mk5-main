@@ -124,3 +124,15 @@ def test_paired_roots_clean_inputs_and_independent_terminal_replay():
     assert canonical(r) == before
     with pytest.raises(ValueError, match='legal outputs'):
         continuation({**r, 'legal': []}, 0, coupling, Lowest(), (Lowest(),) * 4)
+
+
+def test_recheck_compares_json_bytes_not_python_container_types(tmp_path):
+    store = Extension(tmp_path, {'field': 'fixed'})
+    question = {'id': 'one', 'question': {'seed': 7}}
+    producer = lambda *_: {'plays': ((0, 6), (1, 9)), 'points': (30, 12)}
+    store.ensure(question, 0, producer)
+    before = {p.name: p.read_bytes() for p in store.records.glob('*.json')}
+    store.ensure(question, 0, producer, recheck=True)
+    assert before == {p.name: p.read_bytes() for p in store.records.glob('*.json')}
+    with pytest.raises(ValueError, match='changed immutable evidence'):
+        store.ensure(question, 0, lambda *_: {'plays': ((0, 6), (1, 9)), 'points': (29, 13)}, recheck=True)

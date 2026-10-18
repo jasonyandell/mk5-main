@@ -82,7 +82,7 @@ class Extension:
             result = produce(row, sample)
             record = {'key': key, 'result': result, 'sha256': identity([key, result])}
             if existing:
-                if record != existing:
+                if canonical(record) != canonical(existing):
                     raise ValueError('recomputation changed immutable evidence')
             else:
                 atomic(path, record)
