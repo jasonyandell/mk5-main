@@ -158,6 +158,27 @@ Sources: `scenario/atlas.py::Pour`, `Position`; `scenario/hf.py::tables`;
 `scratch/lem/pour-a/card.json`, `merged/{pip,dtnt}/manifest.json` and array headers;
 public [Pour A](https://huggingface.co/datasets/jasonyandell/texas-42-lem-pour-a).
 
+### The Nello teacher already exists
+
+The shared Texas-42 Walt player supports Nello. Its implementation
+[#90](https://github.com/jasonyandell/texas-42/pull/90) merged on 2026-09-27 at
+`e66ec54e`; the opt-in counterexample work
+[#96](https://github.com/jasonyandell/texas-42/pull/96) merged immediately afterward
+at `ccf14870`. Merge status was verified on 2026-10-17. The
+[Nello implementation record](https://github.com/jasonyandell/texas-42/blob/ccf14870/walt/NELLO-PLAYER.md)
+defines three active seats, four physical hidden hands, and the declarer's zero-trick
+objective; it retains play receipts and per-action evaluations.
+
+The gap for this workstream is the training adapter/corpus and contract-specific
+outcome targets, not the existence of a Nello player. Pour A and the existing
+observer runs contain no Nello. The observer currently assumes four active seats,
+28 recorded plays and a straight bid-30 contract. Nello needs its public contract
+and three-seat/early-terminal histories represented correctly, preserving the same
+viewer-information boundary. Its primary outcome is the zero-trick event, not a
+tail of the straight game's point total. No Nello training run or ready-to-load
+observer-format Nello corpus is established here. The counterexample adapter's
+deliberately selected stress scores are separate from ordinary evaluation probabilities.
+
 ## Three objectives
 
 | Lesson | Training question | What success does not establish |
@@ -171,9 +192,18 @@ nanoGPT supplies next-token prediction. For observed action `a`, loss is
 the penalty. Reward optimization is additional work, not a consequence of
 repeatedly imitating generated games.
 
-The proposed learning sequence is an observer over the existing pour, then a
-fixed population with repeated encounters, then reward-based improvement. A
-joint observer/value model is an alternative, with separate losses and metrics.
+This is the **pretraining stage** of the proposed player program: learning useful
+representations and predictions from recorded data before reward-driven improvement.
+The completed next-tile runs are self-supervised sequence learning: the next recorded
+tile supplies its own label. The selected splat extension adds teacher-supervised
+distribution learning, or **distillation**: matching Walt's evaluated consequences.
+Both belong to pretraining here; neither is an online reward-optimization loop.
+Starting from random parameters is compatible with pretraining, and is how the fresh
+observer runs began. The splat extension remains unimplemented.
+
+The learning sequence now includes the selected joint observer/value extension,
+with separate losses and metrics, followed by a fixed population with repeated
+encounters and later reward-based improvement.
 More history alone cannot make a history-blind teacher's targets sensitive to
 player identity; the target and the population must actually reward that inference.
 
