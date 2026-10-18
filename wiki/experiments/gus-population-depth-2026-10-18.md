@@ -73,6 +73,8 @@ Work units run through `scripts/cpu-slot --threads 2` with the default 300-secon
 cap; the orchestrator holds no slot while waiting or uploading. No game chooses
 an action from elapsed wall time. The deterministic seeds/specs and model/field
 hashes are retained. A terminal job failure preserves receipts for inspection.
+Each work unit records the executing Git commit and observer source-file hashes;
+the archive includes those receipts, cost logs and the G0 panel's replay evidence.
 
 Tests cover team reward signs, mixed-seat ownership, causal input/own-legality
 invariance to hidden hands, stored action-probability parity, policy-gradient

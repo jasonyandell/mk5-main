@@ -141,8 +141,11 @@ release files. The historical April oracle-era Gus is a separate model lineage.
         if total > 2_000_000_000:
             raise ValueError("generation archive exceeds the 2GB per-upload review limit")
         common=[root/p for p in ["campaign.json","development-specs.json","confirmation-specs.json","prediction-deals.json","prediction.npz"]]
+        common += [root / "baseline" / p for p in ["report.json", "hands.jsonl.gz"]]
+        common += list(root.glob(f"{name}-*.log")) + list(root.glob(f"{name}-*-execution.json"))
+        common += list(root.glob(f"prepare-{name}*"))
         operations=[CommitOperationAdd(path_in_repo=f"{ARCHIVE}/{name}/{p.relative_to(run)}",path_or_fileobj=str(p)) for p in files]
-        operations += [CommitOperationAdd(path_in_repo=f"{ARCHIVE}/{p.name}",path_or_fileobj=str(p)) for p in common]
+        operations += [CommitOperationAdd(path_in_repo=f"{ARCHIVE}/{p.relative_to(root)}",path_or_fileobj=str(p)) for p in common]
         commit=api.create_commit(repo_id=DATA_REPO,repo_type="dataset",commit_message=f"Gus {name}: complete formation and lawful population trajectories",
                                 operations=operations)
         progress.update(archive_revision=commit.oid,archive_bytes=total);atomic_json(phases,progress)

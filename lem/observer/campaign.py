@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import uuid
 
 import numpy as np
 import torch
@@ -121,6 +122,11 @@ def unit(root, label, arguments, timeout=300):
     log = root / f"{label}.log"
     command = ["scripts/cpu-slot","--threads","2","--timeout",str(timeout),"--",
                sys.executable,"-u",*map(str,arguments)]
+    atomic_json(root / f"{label}-execution.json", {
+        "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        "source_sha256": {str(p): digest(p) for p in sorted(Path("lem/observer").glob("*.py"))},
+        "command": command,
+    })
     print(f"START {label}",flush=True)
     with log.open("a") as stream:
         result = subprocess.run(command,stdout=stream,stderr=subprocess.STDOUT)
@@ -173,7 +179,7 @@ def run_campaign(root):
             state["best_path"] = str(run/"initial.pt")
         recipe = json.loads((run/"config.json").read_text())
         tracking = run/"wandb-run.json"
-        track_id = json.loads(tracking.read_text())["id"] if tracking.exists() else wandb.util.generate_id()
+        track_id = json.loads(tracking.read_text())["id"] if tracking.exists() else uuid.uuid4().hex[:8]
         with wandb.init(project=config["wandb_project"],entity=config["wandb_entity"],
                         name=f"gus-{name}-depth{depth}",id=track_id,resume="allow",dir=str(run),
                         group="depth-ladder-20261018",job_type="population-ppo",
