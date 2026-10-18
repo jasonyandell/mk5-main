@@ -30,6 +30,10 @@ For exact Silas endgame verifiers, GRPO/SFT/direct reward comparisons,
 retention-aware rehearsal and bounded capacity experiments, read [references/rlvr.md](references/rlvr.md).
 For every new model's repeatable static check and fixed H2H anchors, read
 [references/benchmark.md](references/benchmark.md).
+The current next step is verified success-probability RLVR with the other seats
+fixed. Use direct expected reward when all legal rewards are known. Extend
+frozen evaluation lazily through immutable row/sample continuations; external
+search and future-splat auxiliary training are deferred.
 
 ## The companion is `clean-neuron`
 

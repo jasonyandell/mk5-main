@@ -41,6 +41,10 @@ class Exercises:
                                  for r in rows], dtype=torch.float32, device=device)
         self.q = [[Fraction(r['question']['certificate']['values'][str(a)])
                    for a in r['question']['certificate']['legal']] for r in rows]
+        if any(not 0 <= q <= 1 for row in self.q for q in row):
+            raise ValueError('verified success probabilities must lie in [0, 1]')
+        self.success = torch.tensor([[float(q) for q in row] for row in self.q],
+                                    dtype=torch.float32, device=device)
 
     def logp(self, model, index):
         index = index.to(self.x.device)
@@ -62,7 +66,7 @@ def objective(logp, ref, mode, targets, actions=None, old=None, adv=None, clip=.
         policy = -(target * logp).sum(-1).mean()
         clip_fraction = logp.new_tensor(0.)
     elif mode == 'exact':
-        # The one-step binary verifier has only two answers. Sum over both;
+        # Every legal action's verified reward is known. Sum over both;
         # no sampled actions, critic or off-policy importance ratio is needed.
         policy = -(logp.exp() * targets).sum(-1).mean()
         clip_fraction = logp.new_tensor(0.)
@@ -107,6 +111,8 @@ def grow(model, extra_layers, seed):
 
 
 def run(args):
+    if args.reward == 'success' and args.mode != 'exact':
+        raise ValueError('success reward requires exact mode; group standardization discards the two-action gap')
     if min(args.rounds, args.batch, args.group, args.inner, args.eval_every) < 1 or args.lr <= 0 or args.beta < 0 or not 0 < args.clip < 1:
         raise ValueError('positive budgets/rate, nonnegative KL, and 0 < clip < 1 required')
     if args.replay_weight < 0 or args.replay_batch < 1 or args.extra_layers < 0 or min(args.retention_nll, args.retention_splat) < 0:
@@ -139,7 +145,7 @@ def run(args):
     sampler = torch.Generator().manual_seed(args.seed)
     answer_rng = torch.Generator().manual_seed(args.seed + 1)
     replay_rng = torch.Generator().manual_seed(args.seed + 2)
-    settings = {k: getattr(args, k) for k in ('mode', 'rounds', 'batch', 'group', 'inner', 'lr', 'beta', 'clip', 'seed', 'device', 'eval_every', 'wandb_project', 'wandb_entity',
+    settings = {k: getattr(args, k) for k in ('mode', 'reward', 'rounds', 'batch', 'group', 'inner', 'lr', 'beta', 'clip', 'seed', 'device', 'eval_every', 'wandb_project', 'wandb_entity',
         'replay_weight', 'replay_batch', 'extra_layers', 'retention_nll', 'retention_splat')}
     settings.update(initial_sha256=digest(args.initial), data_sha256=manifest['questions_sha256'],
                     model_id=manifest['model_id'], torch_version=str(torch.__version__),
@@ -223,7 +229,7 @@ def run(args):
         while completed < args.rounds and not stop.requested():
             index = torch.randint(len(train.rows), (args.batch,), generator=sampler)
             device_index = index.to(args.device)
-            targets = train.best[device_index]
+            targets = (train.success if args.reward == 'success' else train.best)[device_index]
             with torch.no_grad():
                 old = train.logp(model, index).detach()
                 if args.mode == 'grpo':
@@ -280,6 +286,8 @@ def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--data', required=True); p.add_argument('--initial', required=True); p.add_argument('--out', required=True)
     p.add_argument('--mode', choices=('sft', 'grpo', 'exact'), required=True); p.add_argument('--device', default='mps')
+    p.add_argument('--reward', choices=('best', 'success'), default='best',
+                   help='best-set correctness, or exact conditional hand success (exact mode only)')
     p.add_argument('--rounds', type=int, default=256); p.add_argument('--batch', type=int, default=64)
     p.add_argument('--group', type=int, default=8); p.add_argument('--inner', type=int, default=2)
     p.add_argument('--lr', type=float, default=1e-5); p.add_argument('--beta', type=float, default=.02)

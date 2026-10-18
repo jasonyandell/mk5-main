@@ -7,12 +7,12 @@ Read `wiki/experiments/gus-rlvr-silas-2026-10-18.md` for the registered question
 worked update, results and primary sources. This is a one-answer endgame
 curriculum, not the earlier full-game population PPO implementation.
 
-For the subsequently selected success-probability objective and proposed
-future-splat planning, read `wiki/decisions/gus-success-probability-planning.md`.
-The current `--mode exact` still sums binary exact-best rewards; do not describe
-it as implemented Q-reward training. The decision also specifies the missing
-continuation-win-rate supplement and distinguishes teacher supervision, verified
-reward learning, external search and a claim of planning inside the network.
+For the selected success-probability objective, read
+`wiki/decisions/gus-success-probability-planning.md`. Use `--mode exact --reward
+success` for direct verified expected success; `--reward best` is the explicit
+binary-correctness control. Search and future-splat auxiliary training are
+deferred. Keep the other seats fixed. Lazy continuation commands are in
+`references/benchmark.md`; the fixed training and evaluation fields differ.
 
 ## Specify what the verifier proves
 
@@ -98,9 +98,12 @@ universal algorithm ranking or evidence that larger models cannot help.
   `-sum(pi * is_exact_best) + beta * KL(pi || frozen_parent)`. This directly
   differentiates the finite expected reward; it needs neither a learned critic
   nor action sampling. It differs from GRPO's normalized clipped surrogate.
-  Exact rational Q determines binary best-set rewards, but is not itself the
-  optimized reward. Evaluate rational regret as well as correctness. Both tied
-  answers receive reward1, making the reward gradient zero for that question.
+  The default `--reward best` uses binary best-set labels. With `--reward success`,
+  it uses Q directly: probability gaps scale the reward gradient. Both tied
+  answers have equal reward and zero reward gradient. Evaluate rational regret,
+  greedy success and stochastic policy return as well as correctness. Success
+  rewards are restricted to exact mode: two-level within-question GRPO
+  standardization would discard their gap. Keep KL and rehearsal scales explicit.
 - Keep matched `--mode sft` and `--mode grpo` controls when answering a method
   question. Rehearsal reuses supervised labels; it is not stale-policy replay
   inside the on-policy GRPO objective. Use a fixed parent KL reference and save

@@ -57,6 +57,19 @@ skill's `references/benchmark.md` gives both commands and the required future
 training exclusions. Recorded outcomes label their actual continuation;
 static agreement is not a new model's win rate.
 
+`lem.observer.benchmark.continue_rows` lazily adds immutable, resumable endgame
+continuations for selected anchor rows. Named per-row/sample seeds pair the
+baseline and candidate; the other three seats retain their original policies.
+Recipe/source/weight/runtime hashes and independent terminal replay accompany
+each record. See the skill's `references/benchmark.md` for append/recheck commands.
+
+For current post-training, `lem.observer.rlvr.train --mode exact --reward success`
+optimizes exact conditional hand success with the existing KL/rehearsal recipe.
+`--reward best` is the binary-correctness control. The
+[RLVR decision](../../wiki/decisions/gus-success-probability-planning.md) explains
+why a direct sum over the two known rewards needs neither a critic nor action
+sampling, and specifies the next matched comparison. No search is added to Gus.
+
 `ObserverPlay` implements the arena's batched play interface. It uses the exact
 training prefix for the acting seat and chooses the highest-scoring legal tile.
 The legal mask constrains outputs; it is not another input. Bid values other than

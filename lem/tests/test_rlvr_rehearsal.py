@@ -55,9 +55,10 @@ def test_growth_preserves_both_heads_and_new_block_learns():
     assert not torch.equal(bigger(x, pos)[0], original[0])
 
 
-@pytest.mark.parametrize('mode,extra', [('grpo', 0), ('exact', 1), ('sft', 0)])
-def test_rehearsal_signal_resume_preserves_all_samplers_and_heads(tmp_path, monkeypatch, mode, extra):
-    common = tiny_run(tmp_path) + ['--mode', mode, '--extra-layers', str(extra)]
+@pytest.mark.parametrize('mode,extra,reward', [('grpo', 0, 'best'), ('exact', 1, 'best'),
+                                             ('sft', 0, 'best'), ('exact', 0, 'success')])
+def test_rehearsal_signal_resume_preserves_all_samplers_and_heads(tmp_path, monkeypatch, mode, extra, reward):
+    common = tiny_run(tmp_path) + ['--mode', mode, '--extra-layers', str(extra), '--reward', reward]
     replay = tmp_path / 'replay'; replay_fixture(replay)
     common += ['--replay', str(replay), '--replay-weight', '1', '--replay-batch', '3']
     whole, split = tmp_path / 'whole', tmp_path / 'split'
@@ -81,6 +82,31 @@ def test_rehearsal_signal_resume_preserves_all_samplers_and_heads(tmp_path, monk
     assert 'retention_pass' in a['best']
     with pytest.raises(ValueError, match='identity changed'):
         run(parser().parse_args(common + ['--out', str(split), '--resume', '--replay-weight', '.5']))
+    if reward == 'success':
+        with pytest.raises(ValueError, match='identity changed'):
+            run(parser().parse_args(common + ['--out', str(split), '--resume', '--reward', 'best']))
+
+
+def test_success_reward_preserves_gap_and_ignores_action_independent_baseline():
+    logits = torch.zeros((3, 2), requires_grad=True)
+    q = torch.tensor([[.8, .4], [.8, .79], [.4, .4]])
+    lp = logits.log_softmax(-1)
+    loss, _ = objective(lp, lp.detach(), 'exact', q, beta=0)
+    gradient, = torch.autograd.grad(loss, logits)
+    torch.testing.assert_close(gradient[:, 0], -(q[:, 0] - q[:, 1]) / 12)
+    torch.testing.assert_close(gradient[:, 1], -gradient[:, 0])
+    torch.testing.assert_close(gradient[0], 40 * gradient[1], rtol=1e-5, atol=1e-7)
+    shifted = logits.log_softmax(-1)
+    other, _ = objective(shifted, shifted.detach(), 'exact', q - .4, beta=0)
+    torch.testing.assert_close(torch.autograd.grad(other, logits)[0], gradient)
+
+
+@pytest.mark.parametrize('mode', ['grpo', 'sft'])
+def test_probability_objective_rejects_a_different_loss(mode):
+    args = parser().parse_args(['--data', 'unused', '--initial', 'unused', '--out', 'unused',
+                               '--mode', mode, '--reward', 'success'])
+    with pytest.raises(ValueError, match='success reward requires exact'):
+        run(args)
 
 
 def test_rehearsal_deal_split_and_corruption_fail_closed(tmp_path):

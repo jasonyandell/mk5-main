@@ -91,3 +91,49 @@ captures and a G0 anchor repeat matching every reference action/outcome.
 Use the wiki's immutable revision to locate them. Keep future run entries
 distinct; do not overwrite the frozen baseline or promote a player from a
 static regression score alone.
+
+## Lazy continuation supplements
+
+Keep the base panel immutable. `lem.observer.benchmark.continue_rows` initially
+supports unsettled, two-legal penultimate-trick rows in `anchor-0`/`anchor-1`.
+Put the chosen IDs in a newline-delimited file, then run:
+
+```sh
+scripts/cpu-slot --threads 1 --timeout 60 -- scratch/venv/bin/python -u \
+  -m lem.observer.benchmark.continue_rows \
+  --benchmark scratch/lem/gus-frozen-benchmark-v1/panel \
+  --row-file scratch/lem/selected-rows.txt --samples 4 --seconds 40 \
+  --out scratch/lem/continuation-zeb
+```
+
+Omitting `--checkpoint` uses pinned Zeb in the viewer seat. Repeat with
+`--checkpoint PATH --head tile --out scratch/lem/continuation-CANDIDATE` to
+replace only that seat. The other three seats keep their original anchor G0/Zeb
+policies, including the partner. Root hidden deals are uniform over Silas's
+complete legal-consistent fiber, deliberately without behavior likelihood.
+This evaluation law is separate from the exact curriculum's three-style field.
+It measures actual continuation success, not the teacher's forecast.
+
+Repeat the same command to resume. Increase `--samples` to the desired total
+per row, or append IDs to the row file. `--start N` partitions sample-index work;
+it does not reseed it. `--stop-file PATH` and signals stop after a complete hand.
+Busy units are skipped for the next invocation; repeat until completed equals
+requested. A failed/incomplete unit is recomputed, never recorded as a loss.
+
+Each record is atomic, canonical and checksummed. `--recheck` recomputes existing
+units and rejects changed bytes. Recipes include source/runtime/native/weight
+pins, the root sampling law, seating and deterministic budgets. Record ordering,
+wall clocks, machine load, selection files and desired sample count do not
+change a unit's identity. Candidate weights do not alter paired hidden-deal
+seeds. Changes to the scientific recipe require a fresh output directory.
+Cross-runtime byte identity is not assumed: use the pinned environment and
+recheck parity before claiming it.
+
+Publish `recipe.json`, `records/*.json`, and the desired content-addressed
+`snapshots/*.json` with row-selection files and provenance. Exclude `.locks/`
+and `pending-*` crash residue. A snapshot names a stable subset with per-file
+hashes; later appends preserve it. Never present a repeatedly inspected subset
+as fresh confirmation. Include sampled full-hand identities in future training
+exclusions. Compare candidates only on matching row/sample keys and root seeds;
+report sample counts and cluster uncertainty at the source-deal/pair level.
+Do not convert a tiny infrastructure smoke into a strength claim.

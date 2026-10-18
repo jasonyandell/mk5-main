@@ -50,7 +50,7 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-success-probability-planning]] — selected success-probability objective; proposed future-splat/search distillation and a continuation-win-rate supplement, with opponents fixed.
+- [[gus-success-probability-planning]] — direct verified-success reward and lazy immutable continuation supplements; next is a matched RLVR comparison with opponents fixed.
 - [[gus-retention-iterations-2026-10-18]] — three bounded iterations: exact reward plus rehearsal improves fresh finite-model answers while retaining prediction losses; extra depth earns no gain.
 
 - [[gus-frozen-benchmark-2026-10-18]] — reusable games, clean static decision rows and native representations for checkpoint comparisons.
