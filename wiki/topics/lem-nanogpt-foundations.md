@@ -303,6 +303,12 @@ The teams split the two games; this is no strength verdict. A one-pair
 bootstrap cannot estimate between-pair uncertainty, so the runner now returns
 unavailable intervals for that case. The smoke's stored games are reanalyzed
 with that correction, preserving the original report; no further games are needed.
+[Frozen smoke receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/01001b947b81709ca269b713f756f2ec43b90340/lem/observer-zeb-smoke-2026-10-17)
+include the complete games, field-byte identity, corrected report and cost.
+The fresh replay download matched SHA256
+`2c46dc95d5191e79359991030ceda9170023b4bfbab434544e8a870a500136c6`.
+The process exited 0 in 10.09 wall seconds (1.606e11 CPU instructions; MPS work
+excluded). All 48 Lem tests and the wiki/license/conflict gates passed.
 
 The next improvement loop is: freeze the incumbent; collect games from a
 trainable challenger; update its action probabilities using its team's actual
