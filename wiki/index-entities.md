@@ -20,6 +20,7 @@ Named things: projects, systems, models, artifacts. Hubs in bold below.
 - [[entities/gemma-4-e2b|gemma-4-e2b]] — former LEM base, 2.3B params; retired-as-lem-base; active in Burl for agentic reasons (retired)
 - [[entities/gen-fleet|gen-fleet]] — Vast.ai distributed corpus generation plan; 5 pre-launch fixes identified (bid=30 bias, schema v2, lazy dataset done); not yet launched (plan) (superseded)
 - [[entities/gus|gus]] — third sibling project; distills forge's E[Q] oracle via multi-head transformer; skips reasoning channel; 5-head LAMIR-ready (complete)
+- [[entities/gus-tiny-gpt|gus-tiny-gpt]] — October history-conditioned GPT, public model release and population iteration (active)
 - [[entities/haiku-4-5|haiku-4-5]] — Claude Haiku 4.5; Burl reference-trace teacher; N=30 run: 72.4% bot-match; zero conditional_outcome usage (complete)
 - [[entities/improvised-tools|improvised-tools]] — hot-register tool registry inside burl-chat; MCP bridge lets Claude author wax_museum-shaped tools mid-conversation; persists to burl/chat/server/tools_library/ (superseded)
 - [[entities/joint-world-tensor|joint-world-tensor]] — packed game-state representation enabling look-ahead without oracle calls; core Gus data structure (complete)

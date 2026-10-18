@@ -2,11 +2,15 @@
 title: "Lem with nanoGPT: history, a population, and models that can teach"
 kind: topic
 first_seen: 2026-10-17
-last_updated: 2026-10-17
+last_updated: 2026-10-18
 status: active
 ---
 
 ## Purpose and status
+
+The current 500k-deal model is now named **[[gus-tiny-gpt|Gus]]** and published
+as a Hugging Face model. [[gus-population-iteration]] records Jason's latest-five
+population with permanent Zeb and the proposed first reward-learning round.
 
 The nanoGPT workstream implements stage 3 of [[lem-the-teacher]] (#178), with
 the population (#177, #182) and [[clean-neurons-42]] as its experimental setting.

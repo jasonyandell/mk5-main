@@ -2,11 +2,14 @@
 title: Gus (sibling project — neural player + belief + value)
 kind: entity
 first_seen: 2026-04-23
-last_updated: 2026-07-13
+last_updated: 2026-10-18
 status: complete
 ---
 
 ## What it is
+
+The October 2026 tiny history-conditioned GPT is [[gus-tiny-gpt]]. This page
+documents the separate, completed April oracle-era line.
 
 Gus is a third sibling project alongside [[lem]] and [[burl]]: a multi-task transformer
 that provides neural policy, belief, and value heads for [[texas-42]]. It **skips the

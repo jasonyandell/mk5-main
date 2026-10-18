@@ -29,3 +29,5 @@ Explicit design choices. `active` = still governs live work.
 - [[decisions/w42-next-model-decision|w42-next-model-decision]] — next w42 step is a targeted v2 direct-detector probe; the phase-2 decision table is the bridge artifact for distribution-aware labels and belief-impact diagnostics (complete)
 - [[decisions/w42-promote-or-retire|w42-promote-or-retire]] — keep w42 active as top-level research; promote tracked artifacts into `w42/`, but do not promote research models into Gus/Burl yet (complete)
 - [[decisions/zeb-parked-eq-primitive|zeb-parked-eq-primitive]] — Zeb parked after calibration gap discovered; E[Q] N=10 PDF is new Burl belief primitive (superseded)
+
+- [[decisions/gus-population-iteration|gus-population-iteration]] — last five Gus generations, permanent Zeb and proposed first reward round (active)

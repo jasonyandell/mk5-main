@@ -1,4 +1,10 @@
-# A tiny observer of 42
+# Gus — a tiny observer of 42
+
+The current 500k-deal model is **[Gus](https://huggingface.co/jasonyandell/gus)**,
+release `pretrained-v0`. Its model card supplies weights, exact token schema and
+a pinned loading example. The next population iteration is charted in
+[the wiki](../../wiki/decisions/gus-population-iteration.md); reward training is
+not yet implemented.
 
 The first lesson is **next-tile prediction**. The model sees one player's original
 seven tiles and the public play history, then guesses the next tile. It learns
