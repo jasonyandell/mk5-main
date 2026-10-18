@@ -203,3 +203,5 @@ Per-commit digests (`<sha>`) and named per-document snapshots.
 - [[research-night-2026-10-12/15-fable2]] — research night 2026-10-12, verbatim: Fable session 2 (2026-10-12)
 - [[research-night-2026-10-12/16-critic]] — research night 2026-10-12, verbatim: Fable critic (2026-10-12)
 - [[endgames-o2-vs-o1-2026-10-12-report]] — the lab's two-part report behind the O2-vs-O1 endgame study, verbatim (2026-10-12)
+
+- [[sources/gus-depth-campaign-evidence-2026-10-18|gus-depth-campaign-evidence-2026-10-18]] — immutable Gus depth-campaign model, formation, confirmation and verification pins (complete)

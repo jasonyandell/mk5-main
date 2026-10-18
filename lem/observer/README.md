@@ -7,6 +7,12 @@ implemented in `population.py`, `reward.py`, and `campaign.py`; the
 [registered campaign](../../wiki/experiments/gus-population-depth-2026-10-18.md)
 records the exact scope, stopping rule, and current results.
 
+The first depth campaign is complete at **757,184 parameters**. The Hub tag
+`campaign-selected-20261018` is the preselected identity-grown G10 policy;
+`gus-g017` through `gus-g020` are fully trained fifteen-layer candidates.
+Fresh confirmation did not establish improvement over G0. The campaign page
+links the independent audits, complete formation archive and final chart.
+
 The optional `python -u -m lem.observer.plot --root <campaign>` command writes
 `progress.png`, `progress.pdf` and their exact source values in `progress.json`.
 It needs Matplotlib; a separate plotting environment keeps training dependencies

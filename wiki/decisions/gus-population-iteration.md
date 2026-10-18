@@ -14,8 +14,11 @@ five checkpoints as its active population and required Zeb to stay in the loop
 immediate H2H to smokes. This page records the iteration settings. The collector, policy-only PPO,
 checkpoint retention and growth orchestration are implemented in `lem/observer/`.
 Jason authorized execution to a plateau and depth growth through 709k–800k;
-[[gus-population-depth-2026-10-18]] registers the stopping rule and tracks results
-(#213). Tracks #178, #182, #203; publication heads-up #212.
+[[gus-population-depth-2026-10-18]] records the completed campaign, preregistered
+stopping rule, independent confirmation and preserved formation (#213).
+These implemented settings remain the reproducible initial recipe, not a claim
+that the experiment established stronger play. Tracks #178, #182, #203;
+publication heads-up #212.
 
 “Generation” here means one frozen result of a complete reward iteration, not
 one optimizer step or intermediate formation snapshot. `G0` is the published

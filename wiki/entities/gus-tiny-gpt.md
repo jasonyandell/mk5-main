@@ -11,15 +11,17 @@ status: active
 Jason named the current [[lem-the-teacher]] nanoGPT model **Gus** on 2026-10-18.
 This October lineage began as the 107,392-parameter, 500k-deal next-tile observer
 implemented in `lem/observer/`. Its reward-training depth ladder has reached the
-757,184-parameter architecture; final-depth training and confirmation remain
-in progress in [[gus-population-depth-2026-10-18]]. The April oracle-era [[gus]] project is separate history;
+757,184-parameter architecture and completed its registered plateau and fresh
+confirmation in [[gus-population-depth-2026-10-18]]. No playing-strength gain was
+established by confirmation. The April oracle-era [[gus]] project is separate history;
 its code, weights and findings are not this model's.
 
 Public model: [jasonyandell/gus](https://huggingface.co/jasonyandell/gus),
 initial release `pretrained-v0`, followed by population candidates tagged
 `gus-gNNN`. The initial release is supervised pretraining; each later tag is a
-completed reward-learning generation. The main Hub revision follows the latest
-candidate until final campaign selection, so reproducible consumers pin a tag.
+completed reward-learning generation. The main Hub revision now contains the
+preselected campaign specimen, tagged `campaign-selected-20261018`.
+Reproducible consumers pin a tag or commit.
 The card includes safe-format weights, an adapter-compatible inference checkpoint,
 exact input/output schema, a pinned loading example, provenance and scoped metrics.
 Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
@@ -31,7 +33,17 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 - [[lem-nanogpt-foundations]] — clean inputs, math, pending splat/Nello and Zeb methodology.
 - [[gus-population-iteration]] — latest five generations plus permanent Zeb; implemented reward-round settings.
 
-## Release verification
+## Campaign release
+
+[Selected release](https://huggingface.co/jasonyandell/gus/tree/e6b88165cc017594f09f62d55c2d28ea55b450d3)
+is G17's identity-grown initialization: G10's learned function with zero-output
+residual blocks appended to reach fifteen layers. Fully trained fifteen-layer
+specimens remain under `gus-g017` through `gus-g020`, with the complete formation
+in the research archive. Every final export file passed anonymous download/hash
+verification. [[gus-depth-campaign-evidence-2026-10-18]] records the immutable
+model, archive and independent-audit pins.
+
+## Initial release verification
 
 Release commit [`378813257486`](https://huggingface.co/jasonyandell/gus/tree/37881325748671214bcedddf3953615958eeaaf7),
 tag `pretrained-v0`: 11 release files, 900,351 bytes. Fresh anonymous download
