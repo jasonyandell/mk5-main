@@ -129,3 +129,18 @@ and [cosine continuation](https://forge.coreweave.com/wandb/jasonyandell-forge42
 The evidence package contains the preregistration, source hashes, every local
 formation checkpoint, initial/final measurements, comparison audit and tests.
 The source article remains at its publisher; it is not relicensed as CC0 data.
+
+## Immutable publication
+
+[Complete matched-continuation archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/f7bd44b36c8f005d3e34ebea548393b5e325392a/lem/gus-modern-learning-2026-10-18)
+and [shared verification receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/3242419683586c7fd80e1954506baea931c3c568/lem/gus-rlvr-silas-2026-10-18/verification) preserve the registered
+plan, source digest/inventory, full formation, measurements and recovery tests.
+All archived files passed fresh anonymous download/checksum verification.
+
+[Cosine specimen](https://huggingface.co/jasonyandell/gus/tree/splat-cooldown-v1-20261018), immutable Hub revision
+`76e67ca98ac57fadbfab5090e4987a7fa4cbb0ab`, selected full-checkpoint SHA256
+`13ae575ab1aa6264c304b9ab1b7dffa5df34daa70e405a1cd7383ff0494a13af`. Model files, tensors and both
+heads' CPU logits passed fresh-download parity. This separate research tag
+does not replace the Hub main incumbent. Full source at `e8a4566d` passed the
+repository check:20 suites green, CUDA-only Forge unavailable, retired Burl
+excluded by the standard gate.

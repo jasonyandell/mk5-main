@@ -63,7 +63,7 @@ the rational certificate; training reads that pinned answer key.
    rewarded decision per question. Restricting the horizon makes the verifier
    exhaustive and the credit assignment clear. This is a curriculum choice;
    it does not silently solve full sequential play. The underlying finite-RL
-   vocabulary is that of [Sutton and Barto](https://incompleteideas.net/book/the-book-2nd.html).
+   vocabulary is that of [Sutton and Barto, contextual bandits, §2.8 in this author draft](https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf).
 2. **Pretraining.** The existing network already represents hands, contracts
    and public history. Fine-tuning starts with those weights. The original
    seven own tiles and public record remain the entire input; the legal mask
@@ -201,3 +201,26 @@ no training/reserved-deal overlap was found.
 The next justified experiment is broader lawful curriculum with an explicit
 old-task retention objective or constraint, followed by fresh full-game
 confirmation. It is a proposal, not a completed or secretly continued run.
+
+## Immutable publication
+
+[Complete exercise/formation/evaluation archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/f7bd44b36c8f005d3e34ebea548393b5e325392a/lem/gus-rlvr-silas-2026-10-18)
+and [verification receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/3242419683586c7fd80e1954506baea931c3c568/lem/gus-rlvr-silas-2026-10-18/verification). The combined companion packages
+contain 142 files / 91,165,523 bytes; every file passed fresh anonymous download
+and SHA256 comparison. The 3,072 deal records and inputs were reconstructed,
+64 sampled exact certificates recomputed, and all 95 unique smoke deals checked
+against training, reserved and feasibility-probe exclusions. Independent referee
+tests compare 12 exact trees, including all three styles.
+
+[GRPO model release](https://huggingface.co/jasonyandell/gus/tree/rlvr-grpo-v1-20261018), immutable revision
+`0d3210f08de6d039176c6fcdf05a6c13d54e80e8`. Every staged model file passed fresh
+anonymous checksum verification; safe-format and inference-checkpoint tensors
+and both heads' CPU logits match the selected full checkpoint. Use `head="tile"`.
+The SFT best/final and all formation checkpoints remain in the data archive.
+The Hub main incumbent is unchanged.
+
+Source implementation: `e8a4566d`. Full `scripts/check`: GREEN, 20 suites passed,
+zero failures; CUDA-only Forge unavailable and retired Burl excluded by the
+repository's standard gate. Lem has91 passing tests. W&B final metrics were
+read back against local history; the installed `gus-training` skill matches
+the validated repository files. No training process remains.

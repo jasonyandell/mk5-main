@@ -72,3 +72,13 @@ Source full checkpoint SHA256:
 Exported safetensors SHA256:
 `8ea269f24892d1e852d1ab7d2de3c3963298d01a85cf29388d9c9843070fa9f0`.
 [Release checksums](https://huggingface.co/jasonyandell/gus/blob/37881325748671214bcedddf3953615958eeaaf7/SHA256SUMS).
+
+## Controlled continuations
+
+[[gus-modern-learning-recovery-2026-10-18]] publishes the improved forecasting
+specimen at [splat-cooldown-v1-20261018](https://huggingface.co/jasonyandell/gus/tree/splat-cooldown-v1-20261018).
+[[gus-rlvr-silas-2026-10-18]] publishes the exact-endgame learner at
+[rlvr-grpo-v1-20261018](https://huggingface.co/jasonyandell/gus/tree/rlvr-grpo-v1-20261018).
+Both retain the same clean inputs. Their scoped gains do not establish a new
+general-playing incumbent; full recovery state and formation live in the
+linked public archives. The `gus-training` skill carries both workflows.
