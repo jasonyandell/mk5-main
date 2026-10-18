@@ -11,10 +11,11 @@ status: active
 Jason named the current tiny GPT **[[gus-tiny-gpt|Gus]]**, selected the last
 five checkpoints as its active population and required Zeb to stay in the loop
 (2026-10-18). Earlier instructions retain the clean input boundary and limit
-immediate H2H to smokes. This page charts the next iteration; **no population
-collector or reward trainer exists yet, and no reward run has started**.
-Existing code implements supervised pretraining and frozen homogeneous-team
-H2H (`lem/observer/`). Tracks #178, #182, #203; publication heads-up #212.
+immediate H2H to smokes. This page records the iteration settings. The collector, policy-only PPO,
+checkpoint retention and growth orchestration are implemented in `lem/observer/`.
+Jason authorized execution to a plateau and depth growth through 709k–800k;
+[[gus-population-depth-2026-10-18]] registers the stopping rule and tracks results
+(#213). Tracks #178, #182, #203; publication heads-up #212.
 
 “Generation” here means one frozen result of a complete reward iteration, not
 one optimizer step or intermediate formation snapshot. `G0` is the published

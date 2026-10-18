@@ -257,3 +257,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[endgames-o2-vs-o1-2026-10-12]] — O2 vs O1 on real three-trick endgames: the coordinator beats the Walt partnership map by +0.027 margin, half of it a convention on reached sets; the first one measured (2026-10-12)
 - [[exploiter-endgames-2026-10-14]] — an exploiter against Zeb on 568 three-trick endgames (#77): knowing Zeb is worth +0.50 [+0.42, +0.58] margin over best-responding to the net, half of it Zeb's lowest-id ties once the contract is decided; +0.004 in contract probability; neither sturdy nor shown exploitable (2026-10-14)
 - [[splat-visualizer]] — the splat visualizer: per-move outcome distributions world by world, what-must-be-true, conditioning on holdings; vanilla SVG, published as an artifact (2026-10-12)
+
+- [[experiments/gus-population-depth-2026-10-18|gus-population-depth-2026-10-18]] — reward population campaign with fixed development panel and depth ladder through 757k parameters (active)

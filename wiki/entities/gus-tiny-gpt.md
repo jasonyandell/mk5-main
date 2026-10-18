@@ -14,7 +14,8 @@ in `lem/observer/`. The April oracle-era [[gus]] project is separate history;
 its code, weights and findings are not this model's.
 
 Public model: [jasonyandell/gus](https://huggingface.co/jasonyandell/gus),
-release `pretrained-v0`. This is supervised pretraining; no reward run has started.
+release `pretrained-v0`. The initial release is supervised pretraining. The authorized reward/depth campaign
+is registered in [[gus-population-depth-2026-10-18]].
 The card includes safe-format weights, an adapter-compatible inference checkpoint,
 exact input/output schema, a pinned loading example, provenance and scoped metrics.
 Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
