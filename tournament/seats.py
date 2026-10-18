@@ -166,6 +166,9 @@ def seat(p: Participant, game: str, device: str | None = None, *, historical: bo
     """
     if not historical and not deterministic_budget(p.to_record()):
         raise ValueError(f"{p.id} thinks on wall time; FAIR CLOCKS forbids seating it")
+    if p.kind == "gus-observer":
+        from .gus_seat import make_seat
+        return make_seat(p, materialize(p))
     if p.kind == "zeb-npm":
         return HostSeat(NodeHost("zeb", materialize(p), p.config), game)
     if p.kind == "zeb-native":

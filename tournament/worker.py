@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .faceoff import LADDERS, FaceoffSpec, assemble, play_game
-from .participants import ANCHOR, Participant, deterministic_budget, schedulable, supports_straight_games
+from .participants import ANCHOR, Participant, deterministic_budget, schedulable, supports_straight_games, supports_ladder
 from .rating import Game, fit
 from .schedule import next_pair
 from .store import dumps
@@ -100,6 +100,7 @@ def capabilities() -> set[str]:
         import torch
 
         caps.add("torch")
+        caps.add("gus-observer")
         # Forge is GPU-only (CLAUDE.md): the oracle's seat needs MPS or CUDA.
         if torch.backends.mps.is_available() or torch.cuda.is_available():
             caps.add("gpu")
@@ -110,10 +111,11 @@ def capabilities() -> set[str]:
     return caps
 
 
-def runnable(participants: dict, caps: set[str], only: set[str] | None = None) -> list[str]:
+def runnable(participants: dict, caps: set[str], only: set[str] | None = None,
+             ladder: str = "marks7") -> list[str]:
     return sorted(pid for pid, r in participants.items()
                   if set(r.get("needs", ())) <= caps and (only is None or pid in only)
-                  and schedulable(r))
+                  and schedulable(r) and supports_ladder(r, ladder))
 
 
 def harness() -> dict:
@@ -122,7 +124,9 @@ def harness() -> dict:
             return subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT).stdout.strip()
         except OSError:
             return ""
-    return {"mk5_commit": out("git", "rev-parse", "HEAD"),
+    import torch
+
+    return {"torch": torch.__version__, "mk5_commit": out("git", "rev-parse", "HEAD"),
             "mk5_dirty": bool(out("git", "status", "--porcelain", "--", "tournament", "arena", "forge")),
             "python": platform.python_version(), "node": out("node", "--version"),
             "platform": f"{platform.system()}-{platform.machine()}",
@@ -214,7 +218,7 @@ def run_claim(claim: Path, store, *, parallel: bool = True, device: str | None =
 def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240.0,
          max_faceoffs: int | None = None, only: set[str] | None = None,
          claims_dir: Path | None = None, parallel: bool = True, device: str | None = None,
-         anchor: str = ANCHOR) -> int:
+         anchor: str | None = None) -> int:
     """Run faceoffs until the budget (wall seconds) or max_faceoffs is spent.
 
     The budget bounds when a NEW faceoff may start; a claim in progress is
@@ -222,6 +226,7 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
     """
     if ladder not in LADDERS:
         raise ValueError(f"unknown ladder {ladder!r}; ladders: {', '.join(LADDERS)}")
+    anchor = anchor or ladder_anchor(ladder)
     claims = Claims(claims_dir or ROOT / "scratch" / "tournament" / "claims")
     t0 = time.time()
     done = 0
@@ -232,7 +237,8 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
         log(f"resuming claim {claim.name}")
         try:
             meta = json.loads((claim / "spec.json").read_text())
-            if not all(schedulable(p) for p in meta["participants"].values()):
+            if not all(schedulable(p) and supports_ladder(p, meta["spec"]["ladder"])
+                       for p in meta["participants"].values()):
                 destination = claims.root / "unsupported" / claim.name
                 destination.parent.mkdir(exist_ok=True)
                 os.rename(claim, destination)
@@ -245,7 +251,7 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
     caps = capabilities()
     while (max_faceoffs is None or done < max_faceoffs) and time.time() - t0 < budget_s:
         participants, records = read_state(store, ladder)
-        allowed = runnable(participants, caps, only)
+        allowed = runnable(participants, caps, only, ladder)
         if len(allowed) < 2:
             log(f"fewer than two participants this machine can seat ({caps}); stopping")
             break
@@ -272,11 +278,20 @@ def seed_roster(store, roster) -> None:
             log(f"added participant {p.id}")
 
 
-def table(store, ladder: str = "marks7", anchor: str = ANCHOR) -> str:
+def ladder_anchor(ladder):
+    if ladder == "marks7-bid30":
+        from .gus_seat import ANCHOR as bid30_anchor
+        return bid30_anchor
+    return ANCHOR
+
+
+def table(store, ladder: str = "marks7", anchor: str | None = None) -> str:
     """The derived rating table, as Markdown."""
     from .rating import paired_margin
 
+    anchor = anchor or ladder_anchor(ladder)
     participants, records = read_state(store, ladder)
+    participants = {k: p for k, p in participants.items() if supports_ladder(p, ladder)}
     if anchor not in participants:
         return "(no participants yet)"
     f = ratings(participants, records, anchor)

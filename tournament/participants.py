@@ -380,6 +380,14 @@ def deterministic_budget(record: dict) -> bool:
     return True
 
 
+def supports_ladder(record: dict, ladder: str) -> bool:
+    """Restricted contract seats never leak into the ordinary-auction ladder."""
+    allowed = record.get("config", {}).get("ladders")
+    if allowed is not None:
+        return ladder in allowed
+    return ladder != "marks7-bid30"
+
+
 def schedulable(record: dict) -> bool:
     """May a worker start a new faceoff with this participant?"""
     return (supports_straight_games(record) and record.get("id") not in WITHDRAWN

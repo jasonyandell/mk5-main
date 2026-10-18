@@ -2,7 +2,7 @@
 title: "The tournament: an append-only, Bradley–Terry-rated ladder of Texas 42 players"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-16
+last_updated: 2026-10-18
 status: active
 ---
 
@@ -20,6 +20,34 @@ python -u -m tournament table                       # the derived rating table
 timeout 300 python -u -m tournament work --budget-s 200   # one chunk of the worker loop
 python -u -m tournament add-zeb 0.3.0                # a new npm release joins (no code change)
 ```
+
+## Fixed-contract Gus ladder
+
+`marks7-bid30` uses this same append-only store, duplicate games and fitted
+Bradley–Terry model. Both partnerships use the pinned arena `Bid30Bidder`:
+open 30, otherwise pass, declare the best pip trump. First to seven marks.
+Its separate anchor is `zeb-0.4.1-contested-bid30` at 1500: the immutable
+Zeb 0.4.1 native play pin with the common bidder replacing its auction.
+These ratings cannot be compared numerically with the ordinary `marks7` scale.
+
+`python -u -m tournament add-gus g020 gus-g020` resolves a Gus release tag to
+an immutable Hub commit, hashes `gus.pt`, and appends a complete participant
+record. Each record pins the model, encoder, forward pass, adapter and bidder
+sources. Source or cached-weight mismatches fail closed. Gus uses CPU float32,
+one thread, one forward pass and legal argmax; exact ties use lowest tile id.
+Only the original own hand and public bid-30/pip/play prefix reach the net.
+No learned bidder is claimed. Contract-scoped participants cannot enter the
+ordinary-auction ladder; ordinary participants cannot silently enter this one.
+
+```bash
+python -u -m tournament table --ladder marks7-bid30
+scripts/cpu-slot --threads 2 --timeout 60 -- scratch/venv/bin/python -u -m tournament work \
+  --ladder marks7-bid30 --max-faceoffs 1
+```
+
+The external timeout caps a run, not thinking. A timeout preserves its claim
+and completed hands; it is unfinished evidence, never a scored loss or a
+reason to reroll a seed. `work --budget-s` alone does not cap a faceoff.
 
 ## Participants, pinned
 

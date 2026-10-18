@@ -29,6 +29,7 @@ from arena import cost
 
 LADDERS = {
     "marks7": {"marks_to_win": 7},  # the tournament game: first to 7 marks
+    "marks7-bid30": {"marks_to_win": 7},  # fixed common bidder; pip declarations only
     "points250": {"points_to_win": 250},  # the book's game: first to 250 points
 }
 
@@ -77,7 +78,7 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
     """Play (or finish) one game; returns its progress dict with done=True."""
     from arena.engine import ArenaConfig, _LiveGame, _run_lockstep, _seat_policies
 
-    from .participants import Participant
+    from .participants import Participant, supports_ladder
     from .seats import seat
 
     spec = FaceoffSpec(**spec_dict)
@@ -91,8 +92,18 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
     game_key = f"{spec.id}/{pair}/{a_team}"
     pa = Participant.from_record(participants[spec.a])
     pb = Participant.from_record(participants[spec.b])
+    if not all(supports_ladder(p.to_record(), spec.ladder) for p in (pa, pb)):
+        raise ValueError("participant does not support this ladder's contract")
+    if spec.ladder == "marks7-bid30":
+        from .gus_seat import verify_sources
+        for p in (pa, pb):
+            verify_sources(p.pin)
     sa, sb = seat(pa, game_key, device, historical=historical), seat(pb, game_key, device, historical=historical)
     seats = (sa, sb)
+    bidders = seats
+    if spec.ladder == "marks7-bid30":
+        from arena.bidders import Bid30Bidder
+        bidders = (Bid30Bidder(), Bid30Bidder())
     start = cost.snapshot()
     t0 = time.time()
     elapsed0 = state["elapsed_s"]
@@ -102,7 +113,7 @@ def play_game(spec_dict: dict, pair: int, a_team: int, progress_path: str,
             done = state["hands"]
             # Restore the game at the boundary after its last finished hand.
             self._restore = done[-1] if done else None
-            super().__init__(pair, a_team, cfg, _seat_policies(a_team, sa, sb))
+            super().__init__(pair, a_team, cfg, _seat_policies(a_team, *bidders))
 
         def _deal_and_bid(self):
             r = getattr(self, "_restore", None)
@@ -167,7 +178,9 @@ def assemble(spec: FaceoffSpec, participants: dict, games: list[dict], harness: 
         "schema": "texas42-tournament-faceoff/1",
         "id": spec.id,
         "ladder": spec.ladder,
-        "rules": LADDERS[spec.ladder],
+        "rules": {**LADDERS[spec.ladder], **({"bidder": "Bid30Bidder",
+                  "bid": 30, "declarations": list(range(7))}
+                  if spec.ladder == "marks7-bid30" else {})},
         "seed": f"{spec.seed:016x}",
         "pairs": spec.pairs,
         "a": spec.a,

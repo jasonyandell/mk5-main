@@ -47,6 +47,9 @@ def main() -> int:
     z = sub.add_parser("add-zeb", help="pin @jasonyandell/zeb@<version> from npm as a participant")
     z.add_argument("version")
     z.add_argument("--worlds", type=int, default=160)
+    g = sub.add_parser("add-gus", help="pin one Gus model release to the bid30 ladder")
+    g.add_argument("generation", help="g000 (pretrained) or g001..g020")
+    g.add_argument("revision", help="Hub tag or commit, resolved to an immutable commit")
     w = sub.add_parser("work", help="run the worker loop")
     w.add_argument("--ladder", default="marks7")
     w.add_argument("--pairs", type=int, default=1, help="duplicate deal pairs per faceoff")
@@ -68,6 +71,15 @@ def main() -> int:
             check=True, capture_output=True, text=True).stdout)
         p = zeb_npm(args.version, info["integrity"], info["shasum"], worlds=args.worlds)
         seed_roster(store, [p])
+    elif args.cmd == "add-gus":
+        import hashlib
+        from huggingface_hub import HfApi, hf_hub_download
+        from tournament.gus_seat import SOURCE_FILES, gus_participant, zeb_bid30
+        revision = HfApi().model_info("jasonyandell/gus", revision=args.revision).sha
+        checkpoint = Path(hf_hub_download("jasonyandell/gus", "gus.pt", revision=revision))
+        commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", *SOURCE_FILES], cwd=ROOT, text=True).strip()
+        p = gus_participant(args.generation, revision, hashlib.sha256(checkpoint.read_bytes()).hexdigest(), commit)
+        seed_roster(store, [zeb_bid30(commit), p])
     elif args.cmd == "work":
         only = set(args.only.split(",")) if args.only else None
         n = work(store, ladder=args.ladder, pairs=args.pairs, budget_s=args.budget_s,
