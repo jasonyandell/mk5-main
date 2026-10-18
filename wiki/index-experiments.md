@@ -263,3 +263,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-tournament-pilot-2026-10-18|gus-tournament-pilot-2026-10-18]] — separate bid-30 tournament division, 21 Gus entries and pinned Zeb; 15 faceoffs under one minute each, public pilot evidence, canonical Hub sync pending (complete)
 
 - [[experiments/gus-splat-pretraining-2026-10-18|Gus splat pretraining: the same view, richer consequences]]
+- [[experiments/gus-rlvr-silas-2026-10-18|Gus exact Silas RLVR]] — rational endgame verifier, matched GRPO/SFT, worked update and retention (complete)
+- [[experiments/gus-modern-learning-recovery-2026-10-18|Gus modern learning and recovery]] — matched cooldown, full article grounding, interruption and exact resume (complete)

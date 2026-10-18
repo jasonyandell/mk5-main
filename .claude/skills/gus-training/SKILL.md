@@ -26,6 +26,8 @@ Implementation: `lem/observer/README.md`. Historical `gus/` and the oracle-era
 forge students are a different lineage. Prefer the existing CLIs over new loops.
 For execution, recovery, telemetry and publishing, read
 [references/operations.md](references/operations.md).
+For exact Silas endgame verifiers, the GRPO/SFT comparison and its teaching
+examples, read [references/rlvr.md](references/rlvr.md).
 
 ## The companion is `clean-neuron`
 
@@ -49,6 +51,14 @@ actual history-conditioned scope; do not import the field net's “no history”
 sentence, numerical untrained floor, or 1.17 interval adjustment. Use a matched
 untrained twin and uncertainty appropriate to correlated deals/sequences.
 Training quality and causal unit evidence must accompany interpretation claims.
+
+When applying an article's learning advice, inventory the actual architecture
+first. Gus already has residuals, pre-LayerNorm, GELU and AdamW matrix decay.
+`wiki/experiments/gus-modern-learning-recovery-2026-10-18.md` separates the
+article's claims from the standard cosine continuation tested here. Do not
+turn unspecified regularization into an attributed recipe, or confuse tuning
+a visualization optimizer with changing the model. Read the full article's
+`essay.md` text and appendices when a request depends on what it actually says.
 
 ## Keep the information contract visible
 
@@ -156,6 +166,13 @@ Save optimizer/sampler/RNG state, full hands, literal learner tensors, old
 probabilities, legal masks, outcomes and formation checkpoints. Independently
 replay and reconstruct the inputs; test frozen-seat equality until the learner
 first changes history. Preserve best, final and initialization separately.
+
+For splat training, a pause preserves the fixed plan: SIGINT/SIGTERM,
+`--stop-file`, or `--stop-after-seconds` checkpoints at a completed update.
+Resume the same output with the same arguments and `--resume`; a changed recipe
+uses `--fork-from` and a fresh output. The operations reference gives the exact
+boundary and W&B recovery contract. Loading only published inference weights is
+a warm start, not exact optimizer recovery.
 
 Identity-appended residual blocks preserve an initial function, not evidence of
 new learned depth. Verify initial logit equality and subsequent block updates.

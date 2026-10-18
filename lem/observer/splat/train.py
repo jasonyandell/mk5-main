@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: Jason Yandell
 # SPDX-License-Identifier: CC0-1.0
-"""Pretrain both heads from scratch; fixed updates and preserved formation."""
+"""Joint pretraining or explicit continuation; cooperative exact recovery."""
 import argparse
 from dataclasses import asdict
 import json
+import random
 from pathlib import Path
 import subprocess
 import time
@@ -14,9 +15,10 @@ import torch
 
 from ..data import QUERIES, VERSION
 from ..model import Config
-from ..population import atomic_json, atomic_save
+from ..population import atomic_json, atomic_save, digest
 from .data import Corpus
 from .model import SplatObserver, TASK, joint_loss
+from .recovery import StopRequest, capture_rng, restore_rng, learning_rate
 
 
 class DeviceCorpus:
@@ -114,16 +116,37 @@ def evaluate(model, data, indices, batch_size=256):
     return result
 
 
-def save(path,model,optimizer,sampler,step,best,history,args,data):
+def save(path,model,optimizer,sampler,step,best,history,args,data,schedule,identity):
     atomic_save(path,{'task':TASK,'tokenizer':VERSION,'config':asdict(model.config),
         'model':model.state_dict(),'optimizer':optimizer.state_dict(),
         'sampler_state':sampler.get_state(),'torch_rng_state':torch.get_rng_state(),
+        'rng_state':capture_rng(args.device),'schedule':schedule,'run_identity':identity,
         'step':step,'best_loss':best,'history':history,'arguments':vars(args),
         'data_sha256':data.corpus.sha256})
 
 
+DEFAULTS = dict(schedule='constant',min_lr=.0001,fork_from=None,
+                stop_file=None,stop_after_seconds=None)
+
+
 def run(args):
+    for key,value in DEFAULTS.items():
+        if not hasattr(args,key):setattr(args,key,value)
+    if args.resume and args.fork_from:
+        # The recorded fork source remains an argument when resuming that fork.
+        if not (Path(args.out)/'latest.pt').exists():
+            raise ValueError('resume requires the existing continuation checkpoint')
+    if min(args.steps,args.eval_every,args.batch)<1 or args.lr<=0 or not 0<=args.min_lr<=args.lr:
+        raise ValueError('positive budgets/rate and 0 <= min_lr <= lr required')
+    if args.stop_after_seconds is not None and args.stop_after_seconds<=0:
+        raise ValueError('stop-after-seconds must be positive')
+    with StopRequest(args.stop_file,args.stop_after_seconds) as stop:
+        return _run(args,stop)
+
+
+def _run(args,stop):
     torch.set_num_threads(2);torch.manual_seed(args.seed)
+    random.seed(args.seed);np.random.seed(args.seed)
     out=Path(args.out)
     if out.exists() and not args.resume:
         raise ValueError('run exists; choose new out or resume')
@@ -135,47 +158,104 @@ def run(args):
         {'params':[p for p in model.parameters() if p.ndim>=2],'weight_decay':.1},
         {'params':[p for p in model.parameters() if p.ndim<2],'weight_decay':0.}],lr=args.lr,betas=(.9,.95))
     sampler=torch.Generator().manual_seed(args.seed+1)
-    history=[];start=0;best=float('inf')
-    if args.resume:
-        saved=torch.load(out/'latest.pt',weights_only=True,map_location='cpu')
-        if saved['task']!=TASK or saved['data_sha256']!=corpus.sha256 or saved['config']!=asdict(model.config):
-            raise ValueError('resume task/data/model mismatch')
-        for k in ('seed','lr','batch','eval_every','device','width'):
-            if saved['arguments'][k]!=vars(args)[k]:
-                raise ValueError(f'resume settings differ: {k}')
+    schedule=dict(kind=args.schedule,peak=args.lr,minimum=args.min_lr,steps=args.steps)
+    history=[];start=0;best=float('inf');saved=None;parent=None
+    if args.resume or args.fork_from:
+        source=out/'latest.pt' if args.resume else Path(args.fork_from)
+        saved=torch.load(source,weights_only=True,map_location='cpu')
+        if saved['task']!=TASK or saved['tokenizer']!=VERSION or saved['data_sha256']!=corpus.sha256 or saved['config']!=asdict(model.config):
+            raise ValueError('resume/fork task/data/model mismatch')
+        if args.resume:
+            for k in ('seed','lr','batch','eval_every','device','width','schedule','min_lr','fork_from',
+                      'wandb_project','wandb_entity','wandb_name'):
+                if saved['arguments'].get(k,DEFAULTS.get(k))!=vars(args)[k]:
+                    raise ValueError(f'resume settings differ: {k}')
+            if args.schedule!='constant' and saved['arguments']['steps']!=args.steps:
+                raise ValueError('resume settings differ: schedule horizon')
+            start,best,history=saved['step'],saved['best_loss'],saved['history']
+            if args.steps<start:raise ValueError('cannot rewind a training trajectory')
+        else:
+            parent=dict(path=str(source.resolve()),sha256=digest(source),step=saved['step'],
+                        optimizer_and_sampler_inherited=True)
         model.load_state_dict(saved['model']);optimizer.load_state_dict(saved['optimizer'])
-        sampler.set_state(saved['sampler_state']);torch.set_rng_state(saved['torch_rng_state'])
-        start,best,history=saved['step'],saved['best_loss'],saved['history']
+        sampler.set_state(saved['sampler_state'])
     about={'task':TASK,'tokenizer':VERSION,'data_sha256':corpus.sha256,'sources':corpus.manifests,
            'config':asdict(model.config),'parameters':sum(p.numel() for p in model.parameters()),
            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+           'source_files':{str(p):digest(p) for p in (Path(__file__),Path(__file__).with_name('recovery.py'))},
            'split_deals':{k:len(v)//4 for k,v in data.splits.items()},
            'recipe':'tile CE + mean position/mean legal candidate soft histogram CE, weights 1:1',
            'selection':'minimum full validation joint loss; fixed update budget',
            'epoch_definition':'updates * batch / training_views; sampling with replacement',
-           'arguments':vars(args)}
-    atomic_json(out/'data.json',about)
-    tracker=None
+           'arguments':vars(args),'schedule':schedule,'parent':parent}
+    if args.resume:
+        about=json.loads((out/'data.json').read_text())
+        if about.get('parent') and digest(args.fork_from)!=about['parent']['sha256']:
+            raise ValueError('fork source bytes changed')
+        if (out/'report.json').exists():
+            report=json.loads((out/'report.json').read_text())
+            if report['steps']==args.steps:return report
+    else:
+        atomic_json(out/'data.json',about)
+    tracker=None;identity=None
+    receipt=out/'wandb-run.json'
     if args.wandb_project:
         import wandb
-        receipt=out/'wandb-run.json'
         identity=json.loads(receipt.read_text()) if args.resume and receipt.exists() else None
-        tracker=wandb.init(project=args.wandb_project,entity=args.wandb_entity,name=args.wandb_name,
-            id=identity['id'] if identity else uuid.uuid4().hex[:8],resume='must' if identity else 'never',
+        if args.resume and saved.get('run_identity') and identity!=saved['run_identity']:
+            raise ValueError('resume W&B identity mismatch')
+        if identity is None:
+            identity=dict(id=uuid.uuid4().hex[:8],project=args.wandb_project,entity=args.wandb_entity)
+            atomic_json(receipt,identity)
+        tracker=wandb.init(project=identity['project'],entity=identity['entity'],name=args.wandb_name,
+            id=identity['id'],resume='allow' if args.resume else 'never',
             dir=str(out),config=about,tags=['gus','splat','pretraining','clean-neuron'])
-        atomic_json(receipt,dict(id=tracker.id,url=tracker.url,entity=tracker.entity,project=tracker.project))
+        identity=dict(id=tracker.id,url=tracker.url,entity=tracker.entity,project=tracker.project)
+        atomic_json(receipt,identity)
         tracker.define_metric('epoch_equivalent');tracker.define_metric('*',step_metric='epoch_equivalent')
         print('LIVE_RUN '+tracker.url,flush=True)
-    started=time.monotonic()
+    # Tracking setup may use RNGs. The optimizer trajectory starts after setup.
+    if saved is not None:
+        if 'rng_state' in saved:restore_rng(saved['rng_state'])
+        else:torch.set_rng_state(saved['torch_rng_state'])
+    initial_rng=capture_rng(args.device)
+    started=time.monotonic();step=start;paused=False
+    def checkpoint(path):
+        save(path,model,optimizer,sampler,step,best,history,args,data,schedule,identity)
+    def pause():
+        nonlocal paused
+        checkpoint(out/'latest.pt')
+        checkpoint(out/f'pause-{step:06d}.pt')
+        result=dict(status='paused',step=step,planned_steps=args.steps,reason=stop.reason,
+                    checkpoint='latest.pt',sha256=digest(out/'latest.pt'),
+                    segment_seconds=time.monotonic()-started)
+        atomic_json(out/'status.json',result)
+        paused=True
+        if tracker:tracker.summary.update({'training_status':'paused','paused_step':step})
+        print(json.dumps(result),flush=True)
+        return result
     try:
         if not args.resume:
-            save(out/'initial.pt',model,optimizer,sampler,0,best,history,args,data)
+            checkpoint(out/'initial.pt');checkpoint(out/'latest.pt')
+        if stop.requested():return pause()
+        if not (out/'initial.json').exists():
             initial=evaluate(model,data,data.splits['validation'])
             atomic_json(out/'initial.json',initial)
+            # A continuation can keep its starting model if every update worsens it.
+            if args.fork_from:
+                best=initial['joint_loss'];checkpoint(out/'best.pt')
             print(json.dumps({'initial_validation':initial,'parameters':about['parameters']}),flush=True)
+            restore_rng(initial_rng)
+        if stop.requested():return pause()
+        atomic_json(out/'status.json',dict(status='running',step=step,planned_steps=args.steps))
         train=torch.tensor(data.splits['train'],device=args.device)
         for step in range(start+1,args.steps+1):
+            if stop.requested():
+                step-=1
+                return pause()
             model.train()
+            lr=learning_rate(schedule,step)
+            for group in optimizer.param_groups:group['lr']=lr
             ix=train[torch.randint(len(train),(args.batch,),generator=sampler).to(args.device)]
             b=data.batch(ix)
             tile,splat=model(b['x'],b['own_positions'])
@@ -186,23 +266,23 @@ def run(args):
             if early or step%args.eval_every==0 or step==args.steps:
                 validation=evaluate(model,data,data.splits['validation'])
                 probe=evaluate(model,data,data.splits['train'][:1024])
-                row={'step':step,'epoch_equivalent':step*args.batch/len(train),
+                row={'step':step,'epoch_equivalent':step*args.batch/len(train),'learning_rate':lr,
                      'train_tile_ce':float(tl.detach().cpu()),'train_splat_ce':float(sl.detach().cpu()),
                      'validation':validation,'train_probe':probe,'segment_seconds':time.monotonic()-started}
                 if not np.isfinite(validation['joint_loss']):
                     raise ValueError('nonfinite validation loss')
                 history.append(row)
                 improved=validation['joint_loss']<best;best=min(best,validation['joint_loss'])
-                save(out/'latest.pt',model,optimizer,sampler,step,best,history,args,data)
-                save(out/f'step-{step:06d}.pt',model,optimizer,sampler,step,best,history,args,data)
-                if improved:save(out/'best.pt',model,optimizer,sampler,step,best,history,args,data)
+                checkpoint(out/'latest.pt');checkpoint(out/f'step-{step:06d}.pt')
+                if improved:checkpoint(out/'best.pt')
                 atomic_json(out/'progress.json',row)
                 print(json.dumps(row),flush=True)
                 if tracker:
                     tracker.log({'training_step':step,'epoch_equivalent':row['epoch_equivalent'],
-                         'train_tile_ce':row['train_tile_ce'],'train_splat_ce':row['train_splat_ce'],
+                         'learning_rate':lr,'train_tile_ce':row['train_tile_ce'],'train_splat_ce':row['train_splat_ce'],
                          **{f'validation_{k}':v for k,v in validation.items()},
                          **{f'train_probe_{k}':v for k,v in probe.items()}})
+            if stop.requested():return pause()
         final=evaluate(model,data,data.splits['test'])
         saved=torch.load(out/'best.pt',weights_only=True,map_location='cpu')
         model.load_state_dict(saved['model'])
@@ -210,10 +290,11 @@ def run(args):
         report={**about,'best_step':saved['step'],'steps':args.steps,'test':test,'final_test':final,'history':history,
                 'seconds':time.monotonic()-started}
         atomic_json(out/'report.json',report)
-        if tracker:tracker.summary.update({'best_step':saved['step'],**{f'best_test_{k}':v for k,v in test.items()}})
+        atomic_json(out/'status.json',dict(status='complete',step=step,planned_steps=args.steps))
+        if tracker:tracker.summary.update({'training_status':'complete','best_step':saved['step'],**{f'best_test_{k}':v for k,v in test.items()}})
         return report
     finally:
-        if tracker:tracker.finish(exit_code=0 if (out/'report.json').exists() else 1)
+        if tracker:tracker.finish(exit_code=0 if paused or (out/'report.json').exists() else 1)
 
 
 def main():
@@ -228,6 +309,11 @@ def main():
     p.add_argument('--seed',type=int,default=42)
     p.add_argument('--device',choices=('mps','cuda','cpu'),default='mps')
     p.add_argument('--resume',action='store_true')
+    p.add_argument('--fork-from',help='new continuation from full checkpoint, retaining optimizer and sampler')
+    p.add_argument('--schedule',choices=('constant','cosine'),default='constant')
+    p.add_argument('--min-lr',type=float,default=.0001)
+    p.add_argument('--stop-file',help='pause at an optimizer boundary while this path exists')
+    p.add_argument('--stop-after-seconds',type=float,help='cooperative segment budget; use below the outer cpu-slot cap')
     p.add_argument('--wandb-project');p.add_argument('--wandb-entity');p.add_argument('--wandb-name')
     args=p.parse_args()
     if min(args.steps,args.eval_every,args.batch)<1:p.error('positive training budgets required')

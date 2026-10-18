@@ -17,10 +17,11 @@ Run from the chosen mk5 checkout using its `scratch/venv/bin/python -u`.
 |---|---|
 | Compile weighted splats | `python -u -m lem.observer.splat.data --source POUR --out FRESH_CACHE`; one bounded source at a time |
 | Joint tile/splat training | `python -u -m lem.observer.splat.train --cache CACHE` (repeat), fresh `--out`, fixed steps; `--resume` retains optimizer/RNG |
+| Splat continuation with a new recipe | `lem.observer.splat.train --fork-from FULL_CHECKPOINT --out FRESH_RUN`; preserves parent optimizer/sampler and records parent hash |
 | Compare splat forecasts and G0 | `lem.observer.splat.evaluate`; paired physical-deal diagnostics, not strength confirmation |
 | Short splat arena pair | `lem.observer.splat.h2h`; outer `cpu-slot --timeout 60`, explicit excluded hands and fresh seed |
 | Prepare lawful pours and pretrain | `python -u -m lem.observer.train --help`; repeat `--source`, declare `--deals`, `--steps`, device and fresh `--out` |
-| Continue same run | Same arguments plus `--resume`, larger total `--steps`; same run ID |
+| Extend original tile-only run | `lem.observer.train`, same arguments plus `--resume`, larger total `--steps`; same run ID |
 | Branch a supervised continuation | `--init-from EXISTING_RUN --out NEW_RUN`; reads `latest.pt` and carries optimizer/sampler; see restrictions below |
 | Whole-deal prediction intervals/comparison | `lem.observer.uncertainty`, `lem.observer.compare` |
 | Rebuild worked-hand lesson | `lem.observer.inspect`; preserve the original lesson's checkpoint identity |
@@ -70,6 +71,42 @@ or quietly reuse its confirmation panel.
   optional graphics dependencies are missing; don't upgrade a live trainer.
 - Large pours should use preallocated numeric arrays. The first scale-up risk
   was Python-object expansion, not the tiny transformer's memory footprint.
+
+### Graceful splat recovery
+
+Use a cooperative budget below the outer slot cap, for example
+`scripts/cpu-slot --threads 2 --timeout 300 -- python -u -m
+lem.observer.splat.train ... --stop-after-seconds 240`. The cap is still a hard
+backstop; actual training progress is governed by the declared update count.
+SIGINT, SIGTERM or creation of `--stop-file PATH` sets the same stop request.
+The trainer finishes its current optimizer step and scheduled validation,
+atomically writes `latest.pt`, retains `pause-NNNNNN.pt`, and reports `paused`
+in `status.json`. It does not write `report.json` for an unfinished trajectory.
+Remove a stop file deliberately before resuming; a persistent file pauses again.
+
+Use the same CLI arguments plus `--resume`. The cooperative time budget may
+change between segments; the cosine schedule horizon and training recipe may
+not. The checkpoint includes model, AdamW moments, sampler, Python/NumPy/Torch
+and active-device RNG, learning-rate schedule, completed update number, best
+selection/history and W&B identity. Tracking setup runs before RNG restoration.
+This is tested by delivering actual SIGINT and SIGTERM during optimizer updates
+and comparing the resumed weights, moments, sampler, random state and metrics
+bit-for-bit with uninterrupted CPU training. It is not a promise of bitwise
+equality across different hardware or PyTorch versions. SIGKILL cannot save.
+
+`--fork-from FULL_CHECKPOINT` is explicitly different: it starts a new local
+update count and run identity, preserving the source parameters and optimizer
+state while allowing a declared new schedule. Register the changed recipe
+first. A constant/cosine comparison can inherit the same next sampler state to
+match minibatches. The inherited initial model participates in best-validation
+selection, so a continuation that worsens everything need not replace it.
+The original experiment's bytes remain untouched.
+
+`lem.observer.splat.recovery.StopRequest` and its RNG helpers are reusable for
+other Gus trainers. Poll at a complete state boundary, never save halfway
+through an optimizer write. A controller that already holds a slot should not
+acquire another slot around the same work. To capture cost JSON, use the actual
+`MK5_CPU_SLOT_COST` environment variable; `--cost-log` is not a cpu-slot option.
 
 ## W&B and readable progress
 
