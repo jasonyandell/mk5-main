@@ -179,6 +179,81 @@ player identity; the target and the population must actually reward that inferen
 
 ## Representation before size
 
+### Candidate extension: predict the splat
+
+Jason proposed tokenizing the splat on 2026-10-17, after the
+[[two-recursions-and-transformers]] comparison. This is a **design candidate**, not
+a selected representation or a new training run. It makes the teacher's evaluated
+consequences explicit instead of supervising only the move selected from them.
+The broader value-plus-policy design is already tracked in
+[#175](https://github.com/jasonyandell/mk5-main/issues/175).
+
+The raw splat is an `[action, scenario]` matrix of bidder-team final margins, with
+the same scenarios shared across actions, their unnormalized weights, and the
+sampled remaining hands. Each row follows the planner's information-consistent
+continuation for that root action. These are model-relative planned outcomes,
+not independently optimized clairvoyant values. The physical deal that actually
+happened is a separate record, not the definition of a splat column.
+
+**Uniform has two different domains.** Pour A's manifest specifications use the
+default uniform draw over rule-compatible hidden hands, with no behavioral-history
+posterior selected. Modeled choices still depend on the field: the pip split uses
+the learned `margin_d250k_h128x64` net; doubles/no-trump uses a Walt rung whose bottom
+field is random legal play. Response optimization changes the action distribution.
+A uniform foundation therefore does not make the splat an unbiased account of all
+players. Teacher configuration, objective and finite sampling remain part of its
+meaning. Within a plan, observable field actions also partition scenario cells.
+
+A concrete candidate interface, **only at the viewer's own decision**, is:
+
+```text
+INPUT:  original own hand + contract + public actor/tile prefix
+        + EVALUATE + candidate tile
+OUTPUT: probability over bidder-team final totals 0, 1, ..., 42
+```
+
+This keeps private information at the existing boundary and supplies a candidate
+action, not a solved answer. Splats computed from another seat's private view must
+not be inserted as this viewer's inputs. Supplying a viewer's own computed splat as
+input would be a different, planner-assisted task; it would require that computation
+at use time. Predicting it makes Walt a training teacher instead.
+
+For stored margin `m[a,j]` and scenario weight `w[j]`, define the target histogram
+
+$$
+p_a(s)=\frac{\sum_j w_j\,\mathbf1[(m_{a,j}+42)/2=s]}{\sum_j w_j}.
+$$
+
+The existing score convention converts exactly to 43 integer total outcomes.
+Those outcomes can be categorical tokens: a distribution output trained against
+the weighted histogram avoids pretending decimal probability strings have any
+special meaning. Literal autoregressive serialization of counts/probabilities is
+another candidate, requiring an explicit ordering and numerical precision.
+Neither encoding is implemented here.
+
+**This histogram is a deliberate summary of the splat.** It preserves each move's
+outcome distribution, but discards which moves succeed in the same scenarios.
+The raw paired matrix should remain the evidence source for any later paired
+comparison target; arbitrary scenario order is not a meaningful sequence to learn.
+
+**Current target qualification:** both manifest halves say `utility=make`, bid 30.
+The planner stops optimizing when making/setting is decided; trace generation then
+finishes the margin by random legal play. Consequently the whole histogram means
+"this make-30 plan, with the specified random finish," not optimal points play.
+Its mass at totals ≥30 reproduces the teacher's make probability. A different
+threshold is an event under that same plan, not a policy optimized for another bid.
+Predicting every candidate's make/set probability is the smaller, objective-aligned
+alternative; retaining the full histogram teaches additional features of the stated
+continuation process. The choice remains open under #175.
+
+Source audit: `scenario/atlas.py::Position`, `in_plan_units`, `scenario/hf.py::tables`,
+`scenario/planner.py::_invocation`, and `scenario/core/src/planner.rs::{settled,trace,playout}`
+at `e02040b8`. The local merged Pour A manifests name source commits `9e0d3c04` (pip)
+and `634323bc` (doubles/no-trump), matching the provenance in the observer's `data.json`.
+No new samples or teacher values were generated for this design note.
+
+### Existing observation contract
+
 Start with explicit tiles, relative seats, declarations, boundaries and actions.
 The observation contract matters more than the number of layers:
 

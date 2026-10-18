@@ -232,6 +232,11 @@ resemblance is a useful hypothesis for [[recursive-generalization]] and
 | Predictive observation law | Next-tile probabilities conditioned on that prefix | Trained and measured in [[lem-observer-data-scale-2026-10-17]] |
 | Backward lawful planning | Learned evaluation, distilled decisions, or a separate search using a model | No equivalence or planning mechanism established by next-tile accuracy |
 
+Jason's subsequent proposal to tokenize the splat would expose the teacher's
+evaluated consequences as an additional learning target. The candidate input/output
+contract, uniform-belief distinction and make-pour target qualification live in
+[[lem-nanogpt-foundations]] under "Candidate extension: predict the splat."
+
 ## A small arithmetic example
 
 This is a schematic two-situation example, not a recorded 42 hand. Suppose hidden
