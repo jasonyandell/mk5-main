@@ -108,12 +108,14 @@ W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 Registration preceded the first population-training outcome. G1 completed all
 4,096 training hands, eight updates, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
-deal overlap. The campaign continues; G1 alone does not establish a plateau.
+deal overlap. The campaign continues; two generations without a material gain
+do not establish the registered four-generation plateau.
 
 | Specimen | Blocks / parameters | Development team wins | Difference from G0 |
 |---|---|---:|---:|
 | G0 | 2 / 107,392 | 51.95% | reference |
 | G1 | 2 / 107,392 | 50.00% | −1.95 pp [−5.08, +1.17] |
+| G2 | 2 / 107,392 | 50.00% | −1.95 pp [−5.08, +1.17] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -130,6 +132,12 @@ and [formation/panel/smoke evidence](https://huggingface.co/datasets/jasonyandel
 are public. The generation archive is 16,105,574 bytes, plus shared panel files;
 fresh anonymous downloads verified the exported weights and a raw hand replay.
 [W&B G1](https://forge.coreweave.com/wandb/jasonyandell-forge42/gus-population/runs/f9414e5b).
+
+G2 completed the same registered budget and checks, with no development gain.
+[G2 model](https://huggingface.co/jasonyandell/gus/tree/965cb7d33e38e2a5f27518e50c5a2dc46b233b54)
+and [G2 evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0d4f472e43c0a7bca309f93a2c46a55fca732b51/lem/gus-depth-campaign-2026-10-18/g002)
+passed anonymous weight/replay verification. G0 remains the best development
+specimen; the continuation follows G2 while preserving G0 for possible growth.
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.
