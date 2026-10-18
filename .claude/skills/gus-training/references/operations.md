@@ -159,6 +159,13 @@ An available research archive can preserve verified study evidence while a
 canonical store waits, but report those as different publication states. Save
 the idempotent upload package and any unfinished work explicitly.
 
+A deferred receipt is resumable work, not permanent failure. After its recorded
+deadline, combine completed local batches, reject conflicting duplicate bytes,
+compare remote records at a pinned parent revision and commit only missing
+files. Guard that parent against concurrent writers. Preserve previous attempt
+receipts and verify anonymous downloads at the returned revision. The v4 study's
+archived `sync_tournament.py` implements this for the completed v2–v4 stores.
+
 Use cached Hub auth or the documented Keychain path, not credentials in files.
 Publish through existing staged/hash-checked code. Verify immutable revisions
 with fresh anonymous downloads and tensor/logit parity; listing a remote file

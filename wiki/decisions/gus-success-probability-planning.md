@@ -87,6 +87,15 @@ fixed. Empty batches fell from 6/32 to 1/32. Fresh greedy wins were 202/512 for
 the larger batch versus 201/512 parent, with no confirmed gain or promotion.
 It also added exact inference-state identities for safe reuse of lazy evidence.
 
+[[gus-update-scale-2026-10-18]] increases learning rate at matched data and update
+counts. Policy movement increases, but all selections retain initialization.
+Its training-only feasibility probe shows that short endgames can cheaply use
+the actual fixed G0/Zeb continuation policies for exact rational feedback.
+This proposed curriculum needs its own verifier identity: the uniform legal
+root belief is still an approximation, and the old three-style verifier is
+not silently replaced. The root action is shared across worlds and the later
+learner choice is forced. The experiment page owns the measurements.
+
 Full-hand recovery publishes the same completion state to `status.json` and
 `report.json`; a previous pause no longer remains the live status. Completed
 resumes validate checksums and preserve checkpoint and JSON artifact bytes.

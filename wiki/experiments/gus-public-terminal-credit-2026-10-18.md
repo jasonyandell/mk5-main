@@ -141,9 +141,10 @@ never learning targets.
 
 All24 games,254 hands and7112 plays independently replayed. The slowest faceoff
 was5.69s, below the one-minute cap. These are integration observations, not a
-strength ranking. Canonical tournament synchronization hit the shared Hub
-repository's128-commit/hour quota; its pending receipt and complete immutable
-records are preserved in the research archive. No game is rerun for publishing.
+strength ranking. Canonical tournament synchronization subsequently completed
+with the v3/v4 records in [one verified batch](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/3e2c74cc5f8900435fbbd4696ce6af1eb05be1ac).
+[[gus-update-scale-2026-10-18]] owns that receipt. The original archive preserves
+the earlier quota-delayed state; no games were rerun for publication.
 
 Final trained research releases: [full credit](https://huggingface.co/jasonyandell/gus/tree/ed4cdf45d41c35bb166536af3ee1c3230fa97c3f),
 [unsettled credit](https://huggingface.co/jasonyandell/gus/tree/6110f707d3997dff2e06a7ae96267ed41b0a9abe),

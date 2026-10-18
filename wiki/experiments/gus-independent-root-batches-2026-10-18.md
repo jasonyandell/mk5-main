@@ -183,11 +183,12 @@ CPU logits match their sources. Final trained exports are distinct from the
 selected checkpoints above; the archive preserves both with initialization,
 every formation round, optimizer/RNG recovery and literal inputs/outputs.
 
-Canonical tournament synchronization is deferred until the shared repository's
-existing commit quota permits the already prepared immutable batch. All records
-remain in the public research archive; no games are rerun to publish them.
-Issue [#223](https://github.com/jasonyandell/mk5-main/issues/223) tracks this and
-continued outcome-learning diagnosis.
+Canonical tournament synchronization subsequently completed with the v2/v4
+records in [one verified batch](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/3e2c74cc5f8900435fbbd4696ce6af1eb05be1ac).
+No games were rerun. [[gus-update-scale-2026-10-18]] owns that publication receipt;
+this study's original archive retains its earlier deferred state.
+Issue [#223](https://github.com/jasonyandell/mk5-main/issues/223) tracks continued
+outcome-learning diagnosis.
 
 [Public CC0 evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/14308a0aefd185cd9dbd29fa84d12dab83e8c8db/lem/gus-independent-root-batches-2026-10-18) contains the registered plans, exclusions,
 training-gradient audit, recovery and formation, selected confirmation,
@@ -203,3 +204,6 @@ Curves: [small](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-obser
 [rehearsal](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/7d235fe6).
 The `gus-training` skill carries the diagnosis, exact-state reuse and recovery
 workflow. Generated science and weights are CC0; nanoGPT code retains MIT.
+
+The follow-up update-movement diagnostic and matched learning-rate comparison
+are complete in [[gus-update-scale-2026-10-18]].

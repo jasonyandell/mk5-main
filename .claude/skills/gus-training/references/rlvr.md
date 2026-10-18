@@ -238,3 +238,28 @@ update, holding eight rollouts per deal and64 optimizer steps fixed. Count its
 extra rollout/data cost. Increasing roots and increasing draws of the same root
 answer different variance/coverage questions; do not silently conflate them.
 Use fresh reserved confirmation after selection and retain the rehearsal control.
+
+
+## Distinguish update movement from training progress
+
+Before changing optimizer scale, use saved before/after legal distributions to
+measure clipped reward-surrogate change, old-to-new full categorical KL, total
+variation and greedy-action changes. Show all-turn and unsettled discretionary
+slices; forced moves dilute movement statistics. The per-batch old policy is
+not the frozen pretrained reference. Keep both identities and denominators clear.
+Positive surrogate progress does not estimate playing-strength improvement,
+and a zero median per-batch argmax change does not mean the whole model stayed
+unchanged. These diagnostics justify a bounded comparison, not an automatic
+learning-rate increase. The update-scale study in
+`wiki/experiments/gus-update-scale-2026-10-18.md` compares one learning-rate change
+at matched data and optimizer counts, with a higher-rate rehearsal control.
+
+That comparison increased policy movement without promoting a selected player.
+Its training-only endgame probe shows a next curriculum can enumerate actual
+G0/Zeb continuations cheaply. Treat this as a new verifier identity, not a
+replacement of the existing three-style model or an already trained candidate.
+The same clean inputs, common root action and forced later learner action are
+required. Uniform legal-consistent worlds still omit pre-root behavior likelihood;
+exact arithmetic does not repair that modeling approximation. When complete
+rewards are available, direct expected-success gradients remove unnecessary
+action sampling; check transfer with actual full-hand outcomes afterward.
