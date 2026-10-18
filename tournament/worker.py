@@ -124,9 +124,13 @@ def harness() -> dict:
             return subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT).stdout.strip()
         except OSError:
             return ""
-    import torch
+    from importlib.metadata import PackageNotFoundError, version
+    try:
+        torch_version = version("torch")
+    except PackageNotFoundError:
+        torch_version = None
 
-    return {"torch": torch.__version__, "mk5_commit": out("git", "rev-parse", "HEAD"),
+    return {"torch": torch_version, "mk5_commit": out("git", "rev-parse", "HEAD"),
             "mk5_dirty": bool(out("git", "status", "--porcelain", "--", "tournament", "arena", "forge")),
             "python": platform.python_version(), "node": out("node", "--version"),
             "platform": f"{platform.system()}-{platform.machine()}",
@@ -234,9 +238,12 @@ def work(store, *, ladder: str = "marks7", pairs: int = 1, budget_s: float = 240
         if not claims.try_lock(claim):
             log(f"claim {claim.name} is being run by another worker; leaving it")
             continue
-        log(f"resuming claim {claim.name}")
         try:
             meta = json.loads((claim / "spec.json").read_text())
+            spec = meta["spec"]
+            if spec["ladder"] != ladder or (only is not None and not {spec["a"], spec["b"]} <= only):
+                continue
+            log(f"resuming claim {claim.name}")
             if not all(schedulable(p) and supports_ladder(p, meta["spec"]["ladder"])
                        for p in meta["participants"].values()):
                 destination = claims.root / "unsupported" / claim.name

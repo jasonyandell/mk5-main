@@ -78,3 +78,27 @@ def test_same_policy_duplicate_games_repeat_exactly(frozen):
     assert rec["summary"]["a_wins"] == rec["summary"]["b_wins"] == 1
     assert rec["rules"]["bidder"] == "Bid30Bidder"
     assert len(worker.games_of([json.loads(json.dumps(rec))])) == 2
+
+
+def test_resume_preserves_claims_outside_requested_ladder_or_pair(frozen, monkeypatch):
+    p, path = frozen
+    q = replace(p, id="gus-copy")
+    claims = worker.Claims(path / "claims")
+    specs = [faceoff.FaceoffSpec(LADDER, p.id, q.id, 1, 1, "x"),
+             faceoff.FaceoffSpec("marks7", "a", "b", 2, 1, "x")]
+    paths = []
+    for spec in specs:
+        claim = claims.create(spec, {r.id: r.to_record() for r in (p, q)})
+        claims.release(claim)
+        paths.append(claim)
+    monkeypatch.setattr(worker, "run_claim", lambda *a, **k: pytest.fail("unrelated claim ran"))
+    assert worker.work(None, ladder=LADDER, only={p.id}, max_faceoffs=0, claims_dir=claims.root) == 0
+    assert all((p / "spec.json").exists() for p in paths)
+
+
+def test_harness_does_not_require_torch(monkeypatch):
+    import importlib.metadata
+    def missing(name):
+        raise importlib.metadata.PackageNotFoundError(name)
+    monkeypatch.setattr(importlib.metadata, "version", missing)
+    assert worker.harness()["torch"] is None
