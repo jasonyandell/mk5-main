@@ -208,6 +208,7 @@ and vary only its starting checkpoint: original splat parent, endgame success,
 and matched rehearsal. To isolate initialization, all arms must use the same
 original frozen KL reference and common retention bounds; loading the initial
 policy must be separate from loading that reference. Reserve fresh confirmation
-before training. This is a proposal, not a trained result; the
-current endgame gain does not already prove transfer. External search,
+before training. [[gus-staged-outcomes-2026-10-18]] implements and registers
+that comparison, with a supervised-only continuation control. The current
+endgame gain does not already prove transfer. External search,
 future-splat targets and evolving opponents remain deferred.

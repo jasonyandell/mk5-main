@@ -61,7 +61,7 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-staged-outcomes-2026-10-18]] — common-reference full-hand GRPO from original, endgame-trained and rehearsal initializations; implementation before registration.
+- [[gus-staged-outcomes-2026-10-18]] — registered common-reference full-hand GRPO from three initializations, with a supervised-only continuation control.
 
 - [[gus-fixed-field-curriculum-2026-10-18]] — exact G0/Zeb feedback beats rehearsal on held-out endgames; no full-hand promotion; lazy witnesses and native specimens.
 

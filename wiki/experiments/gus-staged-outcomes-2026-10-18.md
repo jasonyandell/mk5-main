@@ -43,15 +43,44 @@ within that phase. Completed resumes still preserve existing bytes.
 
 ## Study state
 
-Implementation and tests precede preregistration. No staged-training result is
-yet claimed. The planned bounded comparison uses three GRPO arms from the
-original splat parent, the predeclared seed42 exact-endgame selection and its
-matched rehearsal selection. A fourth, supervised-only continuation from the
-endgame-trained start controls for additional rehearsal during this new phase.
-Full parameters, disjoint roots, development
-selection, material-gain rule and untouched confirmation will be published
-before training. The established GRPO implementation is described in
-[[gus-full-hand-outcomes-2026-10-18]]; the objective and lazy evidence contract
-are in [[gus-success-probability-planning]].
+Source `1dff0a63` is merged with 146 Python tests and repository gates GREEN.
+The [public preregistration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/885cede1d7ac6ee021adcb28772236c273271823/lem/gus-staged-outcomes-2026-10-18)
+contains all plans and exclusions; all 11 files (12,423,655 bytes) passed fresh
+anonymous hashes. Registration SHA256:
+`13c07ae7ad556c9199ee80550a817df896546ffbdd52c83527d85737e8a5df8e`.
+All 896 reserved physical roots exclude 599,687 prior deals and become future
+exclusions themselves.
+
+| Arm | Initial policy | Phase objective |
+|---|---|---|
+|parent|Original splat parent|Full-hand GRPO + KL + rehearsal|
+|endgame|Predeclared seed42 exact-success selection|Same full-hand GRPO + KL + rehearsal|
+|rehearsal_start|Predeclared seed42 endgame rehearsal selection|Same full-hand GRPO + KL + rehearsal|
+|rehearsal_only|Same start as endgame|Supervised rehearsal only|
+
+Every arm uses 256 fresh physical training roots with eight draws per root,
+32 rounds/64 AdamW steps, learning rate 3e-5, clip .2, KL .02, rehearsal weight 1
+and batch 32. The seven-turn reward horizon is unchanged. Cooperative segments
+are 45s with 90s outer caps; at most 16 per arm, with two live arms. This is
+an initialization comparison plus a matched supervised-continuation control,
+not a changed opponent population or new architecture.
+
+The shared 128-root development panel selects greedy then sampled success within
+the common original-loss bounds +.02 each, including initialization and retaining
+the earliest tie. The development method criterion requires the endgame arm to
+gain at least 1/128 over its start and 2/128 over each other selected arm. All four
+selections freeze before reading the separate 512-root confirmation. Confirmation
+measures all four selected functions and all three original starts, with greedy
+and one coupled sampled rollout per root. Identical inference states may share
+records under the same pinned runtime/field/seed recipe; labels are counted
+separately from unique trajectories.
+
+Promotion requires the selected endgame arm to gain at least 2pp over the original
+parent and 1pp over its own start and each other selected arm, with positive paired
+95% lower bounds and common-reference retention. This prevents an already-stronger
+start from being mistaken for learning during the new phase. The study is running;
+no result is claimed yet. The established objective is in
+[[gus-full-hand-outcomes-2026-10-18]] and the lazy evidence contract is in
+[[gus-success-probability-planning]].
 
 The continuation is tracked by [issue #223](https://github.com/jasonyandell/mk5-main/issues/223).
