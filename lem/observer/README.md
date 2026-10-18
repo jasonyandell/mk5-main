@@ -48,6 +48,15 @@ to supervise earlier moves would leak the future.
 
 ## Seat the frozen model
 
+For routine comparisons, use the
+[frozen benchmark](../../wiki/experiments/gus-frozen-benchmark-2026-10-18.md):
+`lem.observer.benchmark.evaluate` scores identical public-history inputs and
+saves logits, native activations and attention; `lem.observer.benchmark.h2h`
+replays a fixed seed schedule with fresh challenger decisions. The training
+skill's `references/benchmark.md` gives both commands and the required future
+training exclusions. Recorded outcomes label their actual continuation;
+static agreement is not a new model's win rate.
+
 `ObserverPlay` implements the arena's batched play interface. It uses the exact
 training prefix for the acting seat and chooses the highest-scoring legal tile.
 The legal mask constrains outputs; it is not another input. Bid values other than

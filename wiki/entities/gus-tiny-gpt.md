@@ -28,6 +28,7 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
 ## Routes
 
+- [[gus-frozen-benchmark-2026-10-18]] — reusable games, clean static decision rows and native representations for checkpoint comparisons.
 - [[gus-rlvr-silas-2026-10-18]] — exact rational endgame curriculum; GRPO improves fresh finite-model answers but costs old-task retention; no general-player promotion.
 - [[gus-modern-learning-recovery-2026-10-18]] — complete article read, controlled cooldown improvement, and tested interruption/recovery.
 - [[gus-splat-pretraining-2026-10-18]] — completed joint tile/outcome pretraining; learned forecasts, no measured improvement over G0; full formation preserved.

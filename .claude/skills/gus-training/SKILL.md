@@ -28,6 +28,8 @@ For execution, recovery, telemetry and publishing, read
 [references/operations.md](references/operations.md).
 For exact Silas endgame verifiers, the GRPO/SFT comparison and its teaching
 examples, read [references/rlvr.md](references/rlvr.md).
+For every new model's repeatable static check and fixed H2H anchors, read
+[references/benchmark.md](references/benchmark.md).
 
 ## The companion is `clean-neuron`
 
@@ -140,12 +142,20 @@ Reserve fresh confirmation before selection; never use it to choose again.
 | Did a candidate improve in the training setting? | Fixed paired development hands with frozen other seats; exploratory after repeated selection |
 | Does it play a stronger game? | Fresh paired full-game H2H against named pinned opponents, shared bidder/contract, pair-level uncertainty and marks/game |
 | Is the adapter working? | A short replayed smoke; no promotion claim from a handful of wins |
+| What changed on the same positions? | Frozen benchmark rows, paired deltas and retained logits/native traces; repeated development evaluation |
 | What does a native unit do? | Held-out activation evidence, formation and matched causal interventions under `clean-neuron` |
 
 NLL rewards probability assigned to the observed tile; top-1 checks only whether
 it was ranked first. Their disagreement is expected. Neither is team win rate.
 All-play NLL includes other seats' hidden-hand uncertainty and forced moves.
 For playing progress, inspect consequential own decisions as well.
+Use the frozen benchmark before spending new games. Preserve its 234 scheduled
+physical deals as training exclusions, including the reference game's unplayed
+hands. Agreement with a recorded move is not optimality; its known final result
+labels only the recorded continuation. The exact subset uses its separately
+declared finite-model field and includes ties: report uniform-legal accuracy
+and regret beside model scores. New-policy win rates require actual play on the
+same schedule, and eventual promotion still requires fresh confirmation.
 In particular, report legal-renormalized own-seat choices that are discretionary
 and occur before public make/set settlement. Raw impossible mass is diagnostic;
 the deployed legal mask prevents those tiles from being chosen. PPO trains a
