@@ -29,6 +29,8 @@ open 30, otherwise pass, declare the best pip trump. First to seven marks.
 Its separate anchor is `zeb-0.4.1-contested-bid30` at 1500: the immutable
 Zeb 0.4.1 native play pin with the common bidder replacing its auction.
 These ratings cannot be compared numerically with the ordinary `marks7` scale.
+[[gus-tournament-pilot-2026-10-18]] records the first 30 games and the canonical
+Hub synchronization still pending under its repository commit quota.
 
 `python -u -m tournament add-gus g020 gus-g020` resolves a Gus release tag to
 an immutable Hub commit, hashes `gus.pt`, and appends a complete participant
