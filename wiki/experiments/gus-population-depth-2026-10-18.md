@@ -120,7 +120,7 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1–G12 each completed all
+Registration preceded the first population-training outcome. G1–G15 each completed all
 4,096 training hands, eight collection/update blocks, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
 deal overlap. Four generations without a two-point gain triggered the registered
@@ -141,6 +141,9 @@ plateau at depths two, four and eight; the campaign now continues at depth twelv
 | G10 | 8 / 407,296 | 53.13% | +1.17 pp [−2.34, +4.69] |
 | G11 | 8 / 407,296 | 52.73% | +0.78 pp [−2.73, +4.30] |
 | G12 | 8 / 407,296 | 51.17% | −0.78 pp [−3.91, +2.34] |
+| G13 | 12 / 607,232 | 53.13% | +1.17 pp [−2.73, +5.47] |
+| G14 | 12 / 607,232 | 50.00% | −1.95 pp [−5.86, +1.95] |
+| G15 | 12 / 607,232 | 48.83% | −3.13 pp [−6.64, +0.78] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -231,10 +234,41 @@ the development outcomes and frozen-player consistency.
 passed anonymous download verification. The chart uses a common percentage scale
 and separates observed scores from the retained maximum; confirmation is reserved.
 
-At fixed 4,096-hand budgets, G1/G5/G9 used respectively 178.6/194.0/191.8 seconds
-for collection, 5.1/8.6/14.4 seconds for optimization, and 11.4/11.4/11.5 seconds
-for evaluation. All three performed 448 optimizer steps. These are descriptive
-wall times; game generation still dominates the eight-layer iteration.
+G13 tied the retained high; G14 and G15 scored below it. The twelve-layer phase
+therefore has three consecutive non-material iterations, with the retained
+specimen still G13's identity-grown initialization of G10. The fresh confirmation
+panel remains unused.
+[G13 weights](https://huggingface.co/jasonyandell/gus/tree/gus-g013),
+[G14 weights](https://huggingface.co/jasonyandell/gus/tree/gus-g014),
+[G15 weights](https://huggingface.co/jasonyandell/gus/tree/gus-g015) and
+[formation through G15](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/786465330fe38507b4efa7d8b968a2d91cf53fac/lem/gus-depth-campaign-2026-10-18)
+passed anonymous weight/replay verification.
+
+## Measured iteration time
+
+A generation is 4,096 fresh training hands followed by evaluation, not another
+pass over the original pretraining corpus. Collection and optimization alternate
+in eight blocks. The original [[lem-observer-corpus-squeeze-2026-10-17]] pretraining
+took 21 minutes 44 seconds; the smaller outcome-learning iterations have these
+measured costs:
+
+| Work | G1, 107k | G9, 407k | G15, 607k |
+|---|---:|---:|---:|
+| Collect 4,096 hands | 178.60 s | 191.84 s | 182.07 s |
+| Optimize, 448 updates | 5.07 s | 14.43 s | 18.31 s |
+| All eight training workers, including local overhead | 187.47 s | 212.12 s | 208.05 s |
+| 256-hand development panel plus prediction diagnostics | 11.43 s | 11.50 s | 12.09 s |
+| Two parent games plus two Zeb games | 6.98 s | 7.53 s | 9.22 s |
+| Training workers + evaluation + smokes | 205.88 s | 231.15 s | 229.35 s |
+
+At G15, optimizer work averages 40.9 ms per update. Experience generation,
+including the frozen players' moves, dominates the iteration. The total excludes
+slot waiting, subprocess startup outside the reported worker timers, W&B and
+Hugging Face publication. It is descriptive wall time on the shared machine,
+not a player thinking budget or an end-to-end latency guarantee. CPU instructions
+remain in each work unit's cost log. Exact receipts are each generation's
+`block-*/complete.json`, `development/report.json` and `smoke-*/report.json` in the
+linked formation archive.
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.
