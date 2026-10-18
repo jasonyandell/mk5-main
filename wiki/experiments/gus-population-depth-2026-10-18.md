@@ -120,11 +120,11 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1–G15 each completed all
+Registration preceded the first population-training outcome. G1–G16 each completed all
 4,096 training hands, eight collection/update blocks, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
 deal overlap. Four generations without a two-point gain triggered the registered
-plateau at depths two, four and eight; the campaign now continues at depth twelve.
+plateau at depths two, four, eight and twelve; the campaign now continues at depth fifteen.
 
 | Specimen | Blocks / parameters | Development team wins | Difference from G0 |
 |---|---|---:|---:|
@@ -144,6 +144,7 @@ plateau at depths two, four and eight; the campaign now continues at depth twelv
 | G13 | 12 / 607,232 | 53.13% | +1.17 pp [−2.73, +5.47] |
 | G14 | 12 / 607,232 | 50.00% | −1.95 pp [−5.86, +1.95] |
 | G15 | 12 / 607,232 | 48.83% | −3.13 pp [−6.64, +0.78] |
+| G16 | 12 / 607,232 | 46.88% | −5.08 pp [−9.38, −0.78] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -234,15 +235,28 @@ the development outcomes and frozen-player consistency.
 passed anonymous download verification. The chart uses a common percentage scale
 and separates observed scores from the retained maximum; confirmation is reserved.
 
-G13 tied the retained high; G14 and G15 scored below it. The twelve-layer phase
-therefore has three consecutive non-material iterations, with the retained
-specimen still G13's identity-grown initialization of G10. The fresh confirmation
+G13 tied the retained high; G14–G16 scored below it. The twelve-layer phase
+therefore reached its fourth consecutive non-material iteration. The retained
+specimen is G13's identity-grown initialization of G10. The fresh confirmation
 panel remains unused.
 [G13 weights](https://huggingface.co/jasonyandell/gus/tree/gus-g013),
 [G14 weights](https://huggingface.co/jasonyandell/gus/tree/gus-g014),
 [G15 weights](https://huggingface.co/jasonyandell/gus/tree/gus-g015) and
 [formation through G15](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/786465330fe38507b4efa7d8b968a2d91cf53fac/lem/gus-depth-campaign-2026-10-18)
 passed anonymous weight/replay verification.
+
+G17 begins at the final depth: **15 layers and 757,184 parameters**. All existing
+tensors were copied exactly; the three new blocks' output projections are zero.
+All logits at all positions are bit-identical to the parent on 512 fixed MPS
+probe sequences. The independent archive audit verified **65,536 hands and
+458,752 learner decisions** through G16, including public input reconstruction,
+rewards, checkpoint chains and development-table consistency.
+[G16 model](https://huggingface.co/jasonyandell/gus/tree/84c9fd01fbd087aaca25cd10ce29d8b372334f40),
+[formation through G16](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/9a3bf045972a7627def14280ee14e0f462e9baea/lem/gus-depth-campaign-2026-10-18),
+and [audit and 757k growth receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/72a6539f3ac9677f89f28d6515754d353d3639bc/lem/gus-depth-campaign-2026-10-18)
+passed anonymous download verification. The final-depth phase still must reach
+its registered plateau before the reserved confirmation and final selection
+publication; reaching the parameter target alone does not finish the campaign.
 
 ## Measured iteration time
 

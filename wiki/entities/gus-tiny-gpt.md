@@ -9,13 +9,17 @@ status: active
 ## Identity
 
 Jason named the current [[lem-the-teacher]] nanoGPT model **Gus** on 2026-10-18.
-This is the October 107,392-parameter, 500k-deal next-tile observer implemented
-in `lem/observer/`. The April oracle-era [[gus]] project is separate history;
+This October lineage began as the 107,392-parameter, 500k-deal next-tile observer
+implemented in `lem/observer/`. Its reward-training depth ladder has reached the
+757,184-parameter architecture; final-depth training and confirmation remain
+in progress in [[gus-population-depth-2026-10-18]]. The April oracle-era [[gus]] project is separate history;
 its code, weights and findings are not this model's.
 
 Public model: [jasonyandell/gus](https://huggingface.co/jasonyandell/gus),
-release `pretrained-v0`. The initial release is supervised pretraining. The authorized reward/depth campaign
-is registered in [[gus-population-depth-2026-10-18]].
+initial release `pretrained-v0`, followed by population candidates tagged
+`gus-gNNN`. The initial release is supervised pretraining; each later tag is a
+completed reward-learning generation. The main Hub revision follows the latest
+candidate until final campaign selection, so reproducible consumers pin a tag.
 The card includes safe-format weights, an adapter-compatible inference checkpoint,
 exact input/output schema, a pinned loading example, provenance and scoped metrics.
 Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
@@ -25,7 +29,7 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 - [[lem-observer-corpus-squeeze-2026-10-17]] — G0's training and formation archive.
 - [[lem-observer-first-h2h-2026-10-17]] — measured play versus the predecessor.
 - [[lem-nanogpt-foundations]] — clean inputs, math, pending splat/Nello and Zeb methodology.
-- [[gus-population-iteration]] — latest five generations plus permanent Zeb; proposed first reward round.
+- [[gus-population-iteration]] — latest five generations plus permanent Zeb; implemented reward-round settings.
 
 ## Release verification
 

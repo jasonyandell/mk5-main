@@ -44,7 +44,7 @@ flowchart TD
   initial pin is the pip-play configuration and field hash already verified
   in [[lem-nanogpt-foundations]]' Zeb smoke. Replacing it creates a separately
   named population revision; it does not silently move the reference.
-- Proposed sampling: each of the other three seats independently receives
+- Implemented sampling: each of the other three seats independently receives
   **25% Zeb, 75% a uniform draw from the active Gus pool**, with replacement.
   The learner occupies one seat, rotated evenly across hands and bidder roles.
   Thus Zeb occurs as partner and either opponent. With five generations each
@@ -63,13 +63,13 @@ flowchart TD
   cannot promote it to “better.” If the incumbent ages out of the recent-five
   pool, retain it as a frozen evaluation reference.
 
-This distribution is a proposed first experiment, not a claim that five is
+This distribution is the initial experiment, not a claim that five is
 optimal or that the resulting population covers human styles. The objective
 is explicitly conditional on this partner/opponent distribution. There is no
 identity token: Gus can respond to behavior visible within the current hand,
 but cannot identify a player or remember earlier hands by an added feature.
 
-## Proposed first training round
+## Implemented training round
 
 | Item | Pilot setting |
 |---|---|
@@ -86,7 +86,7 @@ but cannot identify a player or remember earlier hands by an added feature.
 | Step guard | If measured old-to-current action-distribution KL exceeds 0.03 after a pass, skip remaining passes on that batch and record it |
 | Saving | Before training and after each collection/update block; complete replay, tensors, optimizer and RNG state |
 
-These are proposed settings to make the pilot executable, not validated
+These are the initial experimental settings, not validated
 hyperparameters. The PPO policy component follows
 [Schulman et al.](https://arxiv.org/abs/1707.06347); the first pilot uses a simple
 terminal-return baseline, **no new critic head**. This will likely have more
