@@ -228,6 +228,11 @@ future experiment rather than an unbounded automatic continuation.
 
 ## Current RLVR leads, not yet run
 
+Jason subsequently selected the probability-reward direction and proposed
+future-splat planning; [[gus-success-probability-planning]] records that decision
+and the required continuation scoreboard. The implementation below is still a
+proposal, not a result from the completed binary-reward study.
+
 All leads preserve the fixed nonlearner policies and teacher assumptions in
 [[gus-tiny-gpt]]. The successful baseline is exact binary reward plus rehearsal;
 GRPO with rehearsal remains a close comparator. These are proposals, not new

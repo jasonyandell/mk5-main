@@ -7,6 +7,13 @@ Read `wiki/experiments/gus-rlvr-silas-2026-10-18.md` for the registered question
 worked update, results and primary sources. This is a one-answer endgame
 curriculum, not the earlier full-game population PPO implementation.
 
+For the subsequently selected success-probability objective and proposed
+future-splat planning, read `wiki/decisions/gus-success-probability-planning.md`.
+The current `--mode exact` still sums binary exact-best rewards; do not describe
+it as implemented Q-reward training. The decision also specifies the missing
+continuation-win-rate supplement and distinguishes teacher supervision, verified
+reward learning, external search and a claim of planning inside the network.
+
 ## Specify what the verifier proves
 
 `lem.observer.rlvr.verifier` enumerates Silas's full legal-consistent remaining

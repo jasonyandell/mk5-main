@@ -31,3 +31,4 @@ Explicit design choices. `active` = still governs live work.
 - [[decisions/zeb-parked-eq-primitive|zeb-parked-eq-primitive]] — Zeb parked after calibration gap discovered; E[Q] N=10 PDF is new Burl belief primitive (superseded)
 
 - [[decisions/gus-population-iteration|gus-population-iteration]] — last five Gus generations, permanent Zeb and proposed first reward round (active)
+- [[decisions/gus-success-probability-planning|Gus success probability and planning]] — selected reward target, proposed future-splat/search distillation, fixed opponents and outcome-based continuation evaluation (active)
