@@ -100,6 +100,20 @@ Research data: `jasonyandell/texas-42-zeb-research-2026-10`, original prefix
 `lem/gus-depth-campaign-2026-10-18`. Tournament records have their own existing
 `jasonyandell/texas-42-tournament` dataset. New runs need distinct identities.
 
+Tournament setup must populate both participant records and faceoffs in the
+chosen store; a sidecar roster alone leaves the standard `table` command empty.
+The `marks7-bid30` division uses a common bidder, its own Zeb anchor, and CPU
+float32 Gus inference. `work --budget-s` stops starting new faceoffs; it does
+not enforce a hard timeout on one already running. Use the outer cap above.
+
+The first pilot hit the Hub's 128-commit/hour repository limit while appending
+individual entries. Stage canonical immutable records locally, then batch
+missing files in one commit with exact-byte conflict checks. Respect the actual
+Retry-After; don't keep retrying or replay games to work around publishing.
+An available research archive can preserve verified study evidence while a
+canonical store waits, but report those as different publication states. Save
+the idempotent upload package and any unfinished work explicitly.
+
 Use cached Hub auth or the documented Keychain path, not credentials in files.
 Publish through existing staged/hash-checked code. Verify immutable revisions
 with fresh anonymous downloads and tensor/logit parity; listing a remote file
