@@ -3,7 +3,7 @@ title: "Lem observer: half a million games for the same tiny model"
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: active
+status: complete
 ---
 
 ## Question
@@ -106,10 +106,7 @@ preserves the untrained twin, source hashes, split counts and W&B identity;
 its downloaded initialization matched the local SHA256. The initial tensors
 also match the 50k specimen exactly.
 
-Training and the subsequent comparison/coverage/archive jobs are running as a
-single experiment workflow. Final training results remain pending; the local
-`corpus-squeeze/finalization-status.json` records evidence-job progress. The
-completion archive will use the same study directory at a later HF commit.
+Training and the subsequent comparison, coverage and archive jobs completed.
 The original lesson remains tied to its original model.
 
 Validation before launch: `scripts/check --fast` GREEN (33 Lem tests, wiki,
@@ -117,3 +114,65 @@ licenses, conflict markers). Every prepared array matched the preceding
 implementation across 90 replayed deals, all nine declarations and four views.
 The training probe uses the first 256 training deals, all from the older field
 generation; it is a local diagnostic rather than a mixture-balanced loss estimate.
+
+## Result
+
+Completed 200,000 updates; validation selected the final step. The sampled
+exposure audit exactly reproduced the saved sampler state: all **399,752
+training deals** were encountered, covering 1,598,492 of 1,599,008 viewer
+sequences. There were 12.8 million sampled sequences and 358.4 million tile
+loss targets, or 8.005 equivalent passes. The unobserved 516 individual views
+are consistent with replacement sampling; no whole training deal was missed.
+
+On the **45,099 fresh test deals**, with whole-deal 95% bootstrap intervals:
+
+| Measurement | 50k corpus, validation best | 500k corpus, validation best |
+|---|---:|---:|
+| Next-tile accuracy | 49.36% [49.30, 49.43] | **52.93% [52.86, 53.00]** |
+| NLL | 1.368 [1.366, 1.369] | **1.261 [1.260, 1.263]** |
+| Visibly impossible probability | 4.664% [4.645, 4.682] | **1.421% [1.413, 1.428]** |
+
+Paired changes, large minus small: accuracy **+3.567 percentage points
+[3.519, 3.618]**, NLL **−0.1063 [−0.1071, −0.1055]**, and impossible mass
+**−3.243 points [−3.258, −3.226]**. Predictions 1–2 held with intervals
+excluding zero. Prediction 3 remains ungraded: no unit interpretation or
+causal test was performed by the training job.
+
+Fresh-test saved initialization gets 3.345% [3.327, 3.363] accuracy and
+3.3473 [3.3471, 3.3475] NLL. The stronger visible-uniform baseline gets
+29.270% [29.257, 29.282] expected accuracy and 1.7501 [1.7498, 1.7503] NLL;
+it has zero visibly impossible mass by construction.
+
+| Prediction group | Trained accuracy | Visible-uniform expected accuracy |
+|---|---:|---:|
+| Viewer owns the acting hand | 79.52% [79.43, 79.61] | 58.73% [58.68, 58.78] |
+| Another seat acts | 44.07% [44.00, 44.13] | 19.45% [19.44, 19.46] |
+| More than one legal move exists | 40.23% [40.14, 40.33] | 16.77% [16.76, 16.78] |
+
+Three quarters of the scored targets concern other seats. These are predictions
+from the recorded prefix with hidden hands unavailable, not autonomous playing
+strength. The interpretation of NLL beside accuracy is in
+[[lem-nanogpt-foundations]].
+
+**The equal-update comparison is different.** At 20,000 updates the large
+corpus's accuracy is 49.05% [48.99, 49.12] versus 49.15% [49.08, 49.21]; paired
+change **−0.091 points [−0.139, −0.048]**. NLL improves slightly,
+**−0.00194 [−0.00254, −0.00136]**, as does impossible mass,
+**−0.131 points [−0.138, −0.125]**. This gives a concrete case where loss
+improves while top-1 accuracy does not. The larger best specimen consumed
+more updates; the result does not isolate corpus size from compute or teacher
+mixture. One initialization does not estimate seed-to-seed variation.
+
+## Completed evidence
+
+[Frozen archive, commit db83ef2](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/db83ef2ea26e95cba36340e9dab87c3c055f7057/lem/observer-corpus-squeeze-2026-10-17)
+contains 307,533,405 bytes: all recordings and provenance, the untrained twin,
+83 formation checkpoints, best/final checkpoints, report, paired fresh/reused
+comparisons, verified sampling coverage, W&B receipt and checksums.
+The fresh download of `best.pt` matched SHA256
+`99fd106a15ae468dca9c02426541816f1121a2cdef0cc7b96fd37f2122f31d8d`.
+
+The run finished within its registered cap: 1.526e13 CPU instructions,
+1,098.2 CPU seconds and 1,304.2 wall seconds. MPS did the neural computation;
+CPU instructions do not measure GPU work. The interpretability handoff remains
+[#207](https://github.com/jasonyandell/mk5-main/issues/207).

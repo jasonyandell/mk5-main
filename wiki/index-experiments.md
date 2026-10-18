@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/lem-observer-corpus-squeeze-2026-10-17|lem-observer-corpus-squeeze-2026-10-17]] — half a million games, unchanged tiny observer, about eight equivalent passes; capacity pressure for native-neuron study (active)
+- [[experiments/lem-observer-corpus-squeeze-2026-10-17|lem-observer-corpus-squeeze-2026-10-17]] — half a million games, unchanged tiny observer, eight equivalent passes; 52.93% fresh-test accuracy, 83 formation checkpoints archived for native-neuron study (complete)
 
 - [[experiments/demon-repository-prep-2026-10-16|demon-repository-prep-2026-10-16]] — native export with pinned dependencies; auction-policy, license and tournament cutover audit (complete)
 - [[experiments/demon-instructions-2026-10-16|demon-instructions-2026-10-16]] — exact root reuse lowers native instructions with full response parity; same early-40 policy, new immutable pin (complete)

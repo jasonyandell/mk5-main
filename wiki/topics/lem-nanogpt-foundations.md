@@ -29,11 +29,11 @@ points [9.72, 10.11] in next-tile accuracy over the original corpus on 4,436
 fresh shared test deals. The experiment scopes the result and preserves the
 second formation trajectory for the interp handoff (#207).
 
-Jason's next selected run is [[lem-observer-corpus-squeeze-2026-10-17]]:
-the full half-million-game lawful corpus for the same tiny architecture,
-trained for about eight equivalent passes. Its purpose is a specimen under
-capacity pressure for native-neuron reading. The splat-output extension below
-remains selected but is not part of this training run.
+[[lem-observer-corpus-squeeze-2026-10-17]] completed the full half-million-game
+lawful corpus experiment at the same tiny architecture, about eight equivalent
+passes. Its frozen formation trajectory is the specimen under capacity pressure
+for native-neuron reading; that interpretation remains unperformed. The
+splat-output extension below remains selected but was not part of this run.
 
 The checkout is `/Users/jason/code/mk5-lem-nanogpt`, branch `codex/lem-nanogpt`,
 initially at `aa0af91d`. The reference clone is `/Users/jason/code/nanoGPT`, upstream
@@ -212,6 +212,31 @@ with separate losses and metrics, followed by a fixed population with repeated
 encounters and later reward-based improvement.
 More history alone cannot make a history-blind teacher's targets sensitive to
 player identity; the target and the population must actually reward that inference.
+
+### Reading loss beside accuracy
+
+Observer accuracy asks whether the recorded tile has the largest predicted
+probability. NLL averages `-ln(probability assigned to the recorded tile)`.
+Probability can improve without changing the winner: moving the actual tile
+from 5% to 40%, while a different tile stays above it, lowers that prediction's
+loss from 3.00 to 0.92 but leaves accuracy at zero. Conversely, a correct
+51% prediction and a correct 99% prediction both count as one accuracy hit.
+
+Loss is not an error percentage. Uniform probability over 28 tiles gives
+`ln(28) = 3.332`; perfect probability on every actual tile gives zero. A mean
+loss of 1.26 corresponds to a **geometric**, not arithmetic, mean probability
+of `exp(-1.26) ≈ 28.4%` on the recorded tile. It need not imply near-perfect
+top-1 accuracy. The visible-uniform baseline is stronger than guessing over
+all 28 tiles and is reported alongside it.
+
+Three quarters of the observer's targets concern another seat, whose hand
+is unavailable. Different hidden hands can produce different next actions
+from the same visible prefix. Report own-seat and other-seat predictions
+separately, and distinguish forced from discretionary moves. Recorded-choice
+accuracy neither measures playing strength nor establishes the best possible
+prediction ceiling under this information boundary. Implementation:
+`lem/observer/train.py::evaluate`; the current specimen's measurements live in
+[[lem-observer-corpus-squeeze-2026-10-17]].
 
 ## Representation before size
 
