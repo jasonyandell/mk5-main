@@ -82,7 +82,10 @@ supervised-only comparator; both arms retain the original prediction tasks.
 For full-hand outcome post-training, use `python -u -m lem.observer.outcomes
 --plan PLAN.json --out RUN --mode grpo --device mps --seconds 45` through
 `cpu-slot`. The plan pins disjoint deals, fixed G0 partner/Zeb opponents and the
-recipe. `--mode rehearsal` is the matched control. Groups of legal learner
+recipe. Explicit `initial` and `reference` checkpoint paths/hashes separate the
+starting policy from the frozen KL/retention anchor. Initial weights start fresh
+AdamW; they must satisfy the reference retention bounds. Old plans run under
+their published source. `--mode rehearsal` is the matched control. Groups of legal learner
 trajectories receive independently replayed terminal rewards; all seven learner
 turns share the group advantage. The plan explicitly chooses `reward_horizon`:
 `full`, or `unsettled` to remove credit after public make/set settlement while

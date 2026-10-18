@@ -46,6 +46,9 @@ The update-scale diagnostic and matched learning-rate comparison are in
 The exact G0/Zeb curriculum improves held-out finite-model endgames without
 confirming stronger full-hand play; construction and the completed study are in
 `wiki/experiments/gus-fixed-field-curriculum-2026-10-18.md`.
+The next staged full-hand comparison separates initial policy weights from the
+common frozen KL/retention reference; see
+`wiki/experiments/gus-staged-outcomes-2026-10-18.md`.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## The companion is `clean-neuron`

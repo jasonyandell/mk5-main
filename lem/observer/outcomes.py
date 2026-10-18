@@ -32,7 +32,7 @@ from .splat.model import TASK
 from .splat.play import SplatPlay
 from .splat.recovery import StopRequest, capture_rng, restore_rng
 
-SCHEMA = 'gus-full-hand-grpo-v2'
+SCHEMA = 'gus-full-hand-grpo-v3'
 
 
 def publicly_settled(points, bidder, bid=30):
@@ -196,14 +196,16 @@ def _run(args):
         raise ValueError('invalid full-hand recipe')
     if len(plan['train']) != recipe['rounds']*recipe['roots']:
         raise ValueError('each round requires its registered fresh roots')
-    for key in ('initial', 'replay'):
-        path = plan[key] if key == 'initial' else Path(plan[key]) / 'rehearsal.npz'
+    for key in ('initial', 'reference', 'replay'):
+        if key not in plan or key+'_sha256' not in plan:
+            raise ValueError('explicit initial/reference/replay identities required')
+        path = Path(plan[key]) / 'rehearsal.npz' if key == 'replay' else plan[key]
         if digest(path) != plan[key+'_sha256']:
-            raise ValueError('initial/replay identity changed')
+            raise ValueError(f'{key} identity changed')
     torch.set_num_threads(1)
     random.seed(plan['seed']); np.random.seed(plan['seed']); torch.manual_seed(plan['seed'])
     model = SplatPlay(plan['initial'], args.device, 'tile').model
-    reference = SplatPlay(plan['initial'], args.device, 'tile').model
+    reference = SplatPlay(plan['reference'], args.device, 'tile').model
     reference.requires_grad_(False)
     replay = Rehearsal(plan['replay'], args.device); validate_plan(plan, replay)
     field = policies(plan['field'], args.device)
@@ -253,7 +255,7 @@ def _run(args):
         restore_rng(saved['rng_state'])
     else:
         random.seed(plan['seed']); np.random.seed(plan['seed']); torch.manual_seed(plan['seed'])
-    initial_retention = replay.evaluate(reference)
+    reference_retention = replay.evaluate(reference)
 
     def save(path):
         atomic_save(path, {'task': TASK, 'tokenizer': VERSION, 'config': asdict(model.config),
@@ -271,13 +273,16 @@ def _run(args):
             save_episodes(folder/(label+'.jsonl.gz'), episodes)
             scores[label] = stats['win_rate']
         retention = replay.evaluate(model)
-        feasible = all(retention[k] <= initial_retention[k]+recipe[bound]
+        feasible = all(retention[k] <= reference_retention[k]+recipe[bound]
                        for k, bound in [('tile_nll','retention_nll'), ('splat_ce','retention_splat')])
         return dict(round=completed, **scores, retention=retention, retention_pass=feasible)
 
     with StopRequest(args.stop_file, args.seconds) as stop:
         if not saved:
-            best = evaluate(); save(out/'initial.pt'); save(out/'best.pt'); save(out/'latest.pt')
+            best = evaluate()
+            if not best['retention_pass']:
+                raise ValueError('initial policy violates reference retention bounds')
+            save(out/'initial.pt'); save(out/'best.pt'); save(out/'latest.pt')
         while completed < recipe['rounds'] and not stop.requested():
             folder = out/f'round-{completed+1:04d}'; folder.mkdir(exist_ok=True)
             roots = plan['train'][completed*recipe['roots']:(completed+1)*recipe['roots']]
@@ -316,7 +321,7 @@ def _run(args):
         state = 'complete' if completed == recipe['rounds'] else 'paused'
         save(out/'latest.pt')
         report = {'state': state, 'round': completed, 'reason': stop.reason, 'best': best,
-                  'settings': settings, 'initial_retention': initial_retention,
+                  'settings': settings, 'reference_retention': reference_retention,
                   'latest_sha256': digest(out/'latest.pt'), 'best_sha256': digest(out/'best.pt')}
         atomic_json(out/'status.json', report)
         if state == 'complete':

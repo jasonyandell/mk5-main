@@ -177,6 +177,14 @@ The controlled comparison is recorded in
 
 The JSON plan declares train/development/confirmation physical deals, source,
 weights, fixed policies, namespaces, seed, recipe, retention bounds and selection.
+Explicit `initial`/`initial_sha256` and `reference`/`reference_sha256` separate the
+starting policy from the frozen KL and retention anchor. To compare initialization
+alone, keep that reference and the retention bounds common across arms. The initial
+policy must already satisfy those bounds. Loading weights starts fresh AdamW;
+`--resume` instead recovers the phase's optimizer/RNG. Changing either checkpoint
+invalidates resume. Old plans require their published runtime; there is no
+implicit reference fallback. The staged comparison is tracked in
+`wiki/experiments/gus-staged-outcomes-2026-10-18.md`.
 `validate_plan` rejects split overlap, rehearsal overlap and changed seating.
 Source hashes include the native binary; a changed runtime requires a new plan.
 Original deal seeds and independently derived rollout action seeds are distinct.

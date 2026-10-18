@@ -34,7 +34,8 @@ def setup(tmp_path):
     specs = make_specs(8, 'outcome-unit-test', ['g0'], [])
     for s in specs:
         s['seats'] = ['zeb']*4; s['seats'][s['learner']] = 'learner'; s['seats'][(s['learner']+2)%4] = 'g0'
-    plan = {'initial': str(initial), 'initial_sha256': digest(initial), 'replay': str(tmp_path/'replay'),
+    plan = {'initial': str(initial), 'initial_sha256': digest(initial),
+        'reference': str(initial), 'reference_sha256': digest(initial), 'replay': str(tmp_path/'replay'),
         'replay_sha256': digest(tmp_path/'replay/rehearsal.npz'), 'seed': 12, 'namespace': 'outcome-unit', 'field': {},
         'train': specs[:4], 'development': specs[4:6], 'confirmation': specs[6:],
         'recipe': {'rounds': 2, 'roots': 2, 'group': 3, 'inner': 2, 'batch': 16, 'eval_every': 1,
@@ -42,6 +43,16 @@ def setup(tmp_path):
             'retention_nll': .02, 'retention_splat': .02, 'reward_horizon': 'full'}}
     atomic_json(tmp_path/'plan.json', plan)
     return model, plan
+
+
+def distinct_start(tmp_path, plan):
+    saved = torch.load(plan['reference'], weights_only=True)
+    generator = torch.Generator().manual_seed(51)
+    weights = saved['model']['backbone.token.weight']
+    weights.add_(.002 * torch.randn(weights.shape, generator=generator))
+    path = tmp_path/'warm-start.pt'; atomic_save(path, saved)
+    plan.update(initial=str(path), initial_sha256=digest(path))
+    atomic_json(tmp_path/'plan.json', plan)
 
 
 def test_full_hand_grouping_audit_and_replay_bytes(tmp_path):
@@ -67,9 +78,12 @@ def test_full_hand_grouping_audit_and_replay_bytes(tmp_path):
         outcomes.audit(a, bad)
 
 
-@pytest.mark.parametrize('mode,horizon', [('grpo','full'), ('grpo','unsettled'), ('rehearsal','full')])
-def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon):
+@pytest.mark.parametrize('mode,horizon,distinct', [('grpo','full',False), ('grpo','unsettled',False),
+    ('rehearsal','full',False), ('grpo','full',True)])
+def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon, distinct):
     _, plan = setup(tmp_path)
+    if distinct:
+        distinct_start(tmp_path, plan)
     plan['recipe']['reward_horizon'] = horizon; atomic_json(tmp_path/'plan.json', plan)
     monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
     def args(name, resume=False):
@@ -131,6 +145,51 @@ def test_completed_resume_does_not_change_artifact_bytes(tmp_path, monkeypatch):
     assert outcomes.run(outcomes.parser().parse_args(common+['--resume'])) == report
     assert before == {p.name:p.read_bytes() for p in (tmp_path/'run').iterdir() if p.suffix in ('.pt', '.json')}
     assert digest(tmp_path/'run/best.pt') == report['best_sha256']
+
+
+def test_starting_policy_is_separate_from_frozen_reference_and_retention(tmp_path, monkeypatch):
+    reference, plan = setup(tmp_path); distinct_start(tmp_path, plan)
+    monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
+    original_update = outcomes.update; seen = []
+    def checked_update(model, frozen, *args):
+        assert all(not p.requires_grad and p.grad is None for p in frozen.parameters())
+        nested_equal(reference.state_dict(), frozen.state_dict())
+        result, distributions = original_update(model, frozen, *args)
+        assert not np.array_equal(distributions['before'], distributions['reference'])
+        nested_equal(reference.state_dict(), frozen.state_dict())
+        seen.append(True)
+        return result, distributions
+    monkeypatch.setattr(outcomes, 'update', checked_update)
+    common = ['--plan', str(tmp_path/'plan.json'), '--out', str(tmp_path/'run'), '--mode', 'grpo', '--device', 'cpu']
+    report = outcomes.run(outcomes.parser().parse_args(common))
+    assert len(seen) == 2
+    assert report['reference_retention'] == outcomes.Rehearsal(plan['replay'], 'cpu').evaluate(reference)
+    initial = torch.load(tmp_path/'run/initial.pt', weights_only=True)
+    nested_equal(initial['model'], torch.load(plan['initial'], weights_only=True)['model'])
+    # A different declared reference must invalidate exact recovery, even if
+    # architecture and all training hyperparameters remain unchanged.
+    plan.update(reference=plan['initial'], reference_sha256=plan['initial_sha256'])
+    atomic_json(tmp_path/'plan.json', plan)
+    with pytest.raises(ValueError, match='resume identity changed'):
+        outcomes.run(outcomes.parser().parse_args(common+['--resume']))
+
+
+def test_reference_bytes_and_initial_feasibility_are_required(tmp_path, monkeypatch):
+    _, plan = setup(tmp_path); distinct_start(tmp_path, plan)
+    monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
+    common = ['--plan', str(tmp_path/'plan.json'), '--out', str(tmp_path/'run'), '--mode', 'grpo', '--device', 'cpu']
+    good = plan['reference_sha256']; plan['reference_sha256'] = 'changed'
+    atomic_json(tmp_path/'plan.json', plan)
+    with pytest.raises(ValueError, match='reference identity changed'):
+        outcomes.run(outcomes.parser().parse_args(common))
+    plan['reference_sha256'] = good
+    saved = torch.load(plan['initial'], weights_only=True)
+    saved['model']['outcomes.bias'][0] = 100
+    atomic_save(plan['initial'], saved); plan['initial_sha256'] = digest(plan['initial'])
+    atomic_json(tmp_path/'plan.json', plan)
+    with pytest.raises(ValueError, match='initial policy violates reference retention bounds'):
+        outcomes.run(outcomes.parser().parse_args(common))
+    assert not list((tmp_path/'run').glob('*.pt'))
 
 
 def test_training_output_has_one_writer(tmp_path):
