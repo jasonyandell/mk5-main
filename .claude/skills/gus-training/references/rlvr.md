@@ -306,3 +306,12 @@ control. Freeze the short selection from that boundary checkpoint's saved best
 record; do not reconstruct it using later history or restart AdamW at the boundary.
 Preserve both selection windows and exact inference identities. Increasing fresh
 roots and updates together tests exposure budget, not their separate effects.
+
+The completed exposure comparison did not confirm a full-hand gain. Extra
+updates improved imitation losses while the selected player's fresh win rate
+did not improve. Count zero-variance groups and distinguish changed outputs
+from better decisions before repeating the budget. A learned value baseline
+is a standard next candidate for sequential credit assignment, not an established
+fix: first measure prediction error on disjoint physical roots using only clean
+information-state features and verified terminal labels. A value estimate must
+remain separate from reward authority; never let it replace the rules verifier.

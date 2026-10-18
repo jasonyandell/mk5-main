@@ -213,3 +213,11 @@ Normalize member order, timestamps, ownership and permissions; exclude live
 tracking caches, locks and credentials. Verify the fresh anonymous bundle hash
 and every member hash, and publish the registration, summary and restore paths
 as directly readable files. Byte verification does not replace replay checks.
+
+When regenerating a saved JSON plan, compare its canonical serialized structure:
+Python tuples in hands/bids become JSON lists. Exercise root reconstruction as
+well as sampled-round checks before freezing an audit. If a frozen audit needs
+a correction, retain the original script, failure log and protocol; disclose
+the exact diff and whether outcomes were already read, then publish the correction
+before executing it. Do not change evaluator identities or tolerances to conceal
+an audit repair. The exposure study preserves one such correction.

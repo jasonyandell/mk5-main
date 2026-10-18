@@ -61,7 +61,7 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-exposure-budget-2026-10-18]] — fourfold on-policy exposure test with short-prefix and matched rehearsal controls.
+- [[gus-exposure-budget-2026-10-18]] — completed fourfold exposure comparison; changed choices and lower imitation loss, no fresh full-hand gain.
 
 - [[gus-staged-outcomes-2026-10-18]] — completed initialization comparison; no reward-specific full-hand gain.
 

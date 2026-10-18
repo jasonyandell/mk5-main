@@ -103,8 +103,10 @@ The completed [[gus-staged-outcomes-2026-10-18]] compares three starting policie
 with a common frozen reference and a supervised-only control. It establishes no
 reward-specific full-hand gain. Training-only diagnostics find substantial path
 diversity and mostly retained endgame skill, with few mixed-outcome groups.
-The next [[gus-exposure-budget-2026-10-18]] tests more ordinary on-policy data and
-updates before adding a new architecture or exploration mechanism.
+The completed [[gus-exposure-budget-2026-10-18]] tests four times the ordinary
+on-policy exposure. Outputs move and imitation losses improve, but the registered
+fresh full-hand gain does not appear. Zero-variance groups remain common despite
+diverse paths. More exposure is not an automatic next step.
 
 Full-hand recovery publishes the same completion state to `status.json` and
 `report.json`; a previous pause no longer remains the live status. Completed
@@ -116,6 +118,39 @@ selection and extend actual continuations only where needed. Existing tests,
 model sizes and qualitative hypotheses are not grounds for a general-player
 promotion. The pinned Demon is a separate evaluation competitor; its internal
 forecasts never become learning targets.
+
+## Next diagnostic: a success-value baseline
+
+The proposed next step is to measure whether a small value predictor can learn
+eventual success from the existing clean information-state representation.
+Use saved training trajectories first, with physical roots split before fitting
+so all draws and prefixes of a deal remain together. Freeze the original parent
+representation for this diagnostic; its outcome-training exposure must not leak
+across the split. Compare held-out Brier error and calibration with a fitted
+constant baseline, especially on unsettled discretionary decisions. This is
+diagnostic supervised fitting of a baseline, not an actor update or a strength
+claim. No new games, hidden-hand input or confirmation-based selection is needed.
+The saved trajectories span changing learner snapshots; their pooled forecast is
+not an on-policy critic. Actual actor-critic training must collect fresh outcomes
+under its current policy and preserve the snapshot identity.
+
+If that diagnostic supports a useful baseline, a declared matched PPO/value
+comparison is the conventional sequential extension. `V(I_t)` estimates success
+under the current learner and fixed other seats. Terminal rewards still come
+from the independently replayed rules verifier. At undiscounted hand scope,
+the temporal difference is `delta_t = r_t + V(I_next) - V(I_t)`, with zero value
+after termination; generalized advantage estimation combines these differences
+to trade bias against variance. A finite learned estimate is neither an exact
+Silas probability nor reward authority. Sources:
+[PPO algorithm and value regression](https://spinningup.openai.com/en/latest/algorithms/ppo.html),
+[generalized advantage estimation](https://arxiv.org/abs/1506.02438).
+
+This addresses credit assignment without assuming collapsed exploration or a
+capacity shortage. A learned baseline need not vanish when all eight sampled
+outcomes agree, but that alone does not make its gradient useful or unbiased
+under every fitting scheme. Fit/evaluation separation, old-policy value estimates,
+terminal handling and recovery need explicit tests before an actor-critic run.
+No critic or new actor-critic trainer is implemented by the exposure study.
 
 ## Lazy immutable continuation evidence
 
