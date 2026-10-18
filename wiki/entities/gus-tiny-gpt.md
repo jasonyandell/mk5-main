@@ -45,6 +45,10 @@ to histories changed by the learner; fixed does not mean replaying stale moves.
 A later arena with multiple evolving models and successive distillation from
 belief-aware Walt through Zeb to Gus is a proposed direction, not the current
 experiment. Updating those opponents is a separate experimental dimension.
+Jason subsequently authorized autonomous splat-to-outcome iterations and named
+the pinned Demon as an additional competitor. Its separate bid30 evaluation seat
+does not change training opponents; its internal estimates remain fenced. The
+goal includes full-trajectory outcome training beyond the exact endgame exercise.
 The older latest-five population recipe below is historical, not the default
 for this fixed-opponent series. Source: Jason's instruction in this session.
 

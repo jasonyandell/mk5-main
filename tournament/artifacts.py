@@ -46,7 +46,7 @@ def materialize(p: Participant, cache: Path = DEFAULT_CACHE) -> Path:
             _zeb(p, tmp)
         elif p.kind == "plunge-walt":
             _plunge(p, tmp)
-        elif p.kind == "gus-observer":
+        elif p.kind in ("gus-observer", "gus-splat"):
             from .gus_seat import download
             download(p, tmp)
         elif p.kind == "arena":

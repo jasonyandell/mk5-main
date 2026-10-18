@@ -53,6 +53,19 @@ reason to reroll a seed. `work --budget-s` alone does not cap a faceoff.
 
 ## Participants, pinned
 
+Joint tile/splat checkpoints use a separate `gus-splat` adapter, preserving the
+original tile-only participant pins. `python -u -m tournament add-gus-splat NAME
+REVISION --head tile` resolves an immutable model release and pins both output
+implementations; `--head splat` is a distinct deployment policy. `add-demon-bid30`
+registers the existing 100-world root-reuse Demon cardplay in this same restricted
+ladder. The common auction replaces its native bidder; ordinary-auction ratings
+and early-40 bidding strength do not transfer to this comparison. Neither command
+changes an existing participant or the default roster. Its `paired-deal-v1`
+seed protocol derives draws from faceoff seed, pair, side, hand and decision;
+candidate names and claim timestamps cannot change the fixed opponent's draws.
+The original Demon participant keeps its original seed protocol. The Demon remains a
+fenced competitor: no internal estimates become Gus labels.
+
 Every participant is a record, `participants/<id>.json`, added once and never edited; its bytes
 are a function of the participant alone, so two writers adding it write the same file.
 

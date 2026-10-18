@@ -50,6 +50,11 @@ def main() -> int:
     g = sub.add_parser("add-gus", help="pin one Gus model release to the bid30 ladder")
     g.add_argument("generation", help="g000 (pretrained) or g001..g020")
     g.add_argument("revision", help="Hub tag or commit, resolved to an immutable commit")
+    j = sub.add_parser("add-gus-splat", help="pin a joint Gus release and its explicit deployment head")
+    j.add_argument("name")
+    j.add_argument("revision", help="Hub tag or commit, resolved to an immutable commit")
+    j.add_argument("--head", choices=("tile", "splat"), default="tile")
+    sub.add_parser("add-demon-bid30", help="pin the existing Demon cardplay under the common bid30 auction")
     w = sub.add_parser("work", help="run the worker loop")
     w.add_argument("--ladder", default="marks7")
     w.add_argument("--pairs", type=int, default=1, help="duplicate deal pairs per faceoff")
@@ -86,6 +91,19 @@ def main() -> int:
                  max_faceoffs=args.max_faceoffs, only=only, parallel=not args.serial,
                  device=args.device)
         log(f"done: {n} faceoff(s) this run")
+    elif args.cmd == "add-gus-splat":
+        import hashlib
+        from huggingface_hub import HfApi, hf_hub_download
+        from tournament.gus_splat_seat import participant, source_hashes
+        revision = HfApi().model_info("jasonyandell/gus", revision=args.revision).sha
+        checkpoint = Path(hf_hub_download("jasonyandell/gus", "gus.pt", revision=revision))
+        commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", *source_hashes()], cwd=ROOT, text=True).strip()
+        seed_roster(store, [participant(args.name, revision, hashlib.sha256(checkpoint.read_bytes()).hexdigest(), commit, args.head)])
+    elif args.cmd == "add-demon-bid30":
+        # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
+        from tournament.demon_bid30 import participant
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        seed_roster(store, [participant(commit)])
     elif args.cmd == "table":
         print(table(store, args.ladder))
     return 0

@@ -169,6 +169,9 @@ def seat(p: Participant, game: str, device: str | None = None, *, historical: bo
     if p.kind == "gus-observer":
         from .gus_seat import make_seat
         return make_seat(p, materialize(p))
+    if p.kind == "gus-splat":
+        from .gus_splat_seat import make_seat
+        return make_seat(p, materialize(p))
     if p.kind == "zeb-npm":
         return HostSeat(NodeHost("zeb", materialize(p), p.config), game)
     if p.kind == "zeb-native":
@@ -181,6 +184,9 @@ def seat(p: Participant, game: str, device: str | None = None, *, historical: bo
     if p.kind == "demon":
         # STRATEGY-FUSION FENCE. The Demon: a fenced tournament opponent; measuring stick only.
         from .demon_fenced_seat import DemonSeat
+        if p.config.get("seed_key") == "paired-deal-v1":
+            from .demon_bid30 import game_key
+            game = game_key(game)
         return DemonSeat(p, materialize(p), game)
     if p.kind == "arena":
         materialize(p)
