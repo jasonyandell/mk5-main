@@ -205,7 +205,9 @@ Can the successful endgame curriculum serve as a better initialization for
 full-hand outcome post-training? A bounded staged-training comparison can
 hold the established GRPO recipe, original rehearsal and G0/Zeb field fixed,
 and vary only its starting checkpoint: original splat parent, endgame success,
-and matched rehearsal. Each arm needs a separate fixed-reference identity and
-fresh reserved confirmation. This is a proposal, not a trained result; the
+and matched rehearsal. To isolate initialization, all arms must use the same
+original frozen KL reference and common retention bounds; loading the initial
+policy must be separate from loading that reference. Reserve fresh confirmation
+before training. This is a proposal, not a trained result; the
 current endgame gain does not already prove transfer. External search,
 future-splat targets and evolving opponents remain deferred.
