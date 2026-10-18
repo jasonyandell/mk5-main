@@ -68,6 +68,12 @@ independent public-record replay, team reward and policy-only PPO.
 `campaign.py`: persistent generation state, recent-five pool, separate best and
 progress anchors, depth growth, W&B and resumable subprocess orchestration.
 `release.py`: versioned model releases and allowlisted full trajectories.
+After the controller finishes reserved confirmation,
+`python -u -m lem.observer.release --root scratch/lem/gus-population/campaign`
+publishes the preselected final-depth specimen, confirmation evidence and
+`campaign-selected-20261018` model tag. Publication checks the requested size,
+completed final-depth plateau, unchanged selected checkpoint and complete panel;
+anonymous downloads verify every release file and the confirmation replay.
 
 Work units run through `scripts/cpu-slot --threads 2` with the default 300-second
 cap; the orchestrator holds no slot while waiting or uploading. No game chooses
