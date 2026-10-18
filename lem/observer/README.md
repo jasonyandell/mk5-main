@@ -40,7 +40,7 @@ scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.h2h \
   --candidate scratch/lem/observer-corpus-squeeze/best.pt \
   --opponent scratch/lem/observer-data-scale/best.pt \
   --exclude-deals scratch/lem/observer-corpus-squeeze/deals.json \
-  --games 256 --seed 20261017 --device mps --out scratch/lem/h2h-vs-50k
+  --games 2 --seed 20261018 --device mps --out scratch/lem/h2h-smoke
 ```
 
 Opponent may also be `random`, another checkpoint (including `initial.pt`), or
@@ -49,6 +49,9 @@ marks with paired team swaps. The report resamples complete seed pairs and
 checks the replay and optional excluded physical deals. Complete game records
 are saved alongside checkpoint hashes and the runtime configuration. Output
 directories must be fresh. This measures frozen play; no learning occurs.
+The default is now one duplicate pair (two games): check that the integration
+runs and replays legally. A smoke's win count or bootstrap interval is not a
+strength verdict. Larger measurements need an explicitly selected game count.
 
 ## Train, then look
 

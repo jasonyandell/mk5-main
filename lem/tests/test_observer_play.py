@@ -90,6 +90,30 @@ def test_variable_prefix_batch_matches_single_choice(player):
         state = apply_action(state, legal_actions(state)[0])
     singles = [player.choose([s], [30])[0] for s in states]
     assert player.choose(states, [30]*len(states)) == singles
+    order = np.random.default_rng(19).permutation(len(states))
+    assert player.choose([states[i] for i in order], [30]*len(states)) == [singles[i] for i in order]
+    fresh = ObserverPlay(player.identity["path"], "cpu")
+    assert fresh.choose(states, [30]*len(states)) == singles
+
+
+def test_rotating_seat_labels_preserves_visible_tokens_and_selected_tile(player):
+    state = state_from_record(recording())
+    for _ in range(9):
+        state = apply_action(state, legal_actions(state)[0])
+    original = player.choose([state], [30])[0]
+    tile = state.hands[current_player(state)][original]
+    for shift in (1, 2, 3):
+        rotate = lambda seat: (seat + shift) % 4
+        hands = tuple(state.hands[(seat-shift) % 4] for seat in range(4))
+        rotated = replace(state, hands=hands, dealer=rotate(state.dealer),
+                          bidder=rotate(state.bidder), trick_leader=rotate(state.trick_leader),
+                          bid_state=BidState(tuple(30 if s == rotate(state.bidder) else 0 for s in range(4)),
+                                             rotate(state.bidder), 30),
+                          play_history=tuple((rotate(s), t) for s, t in state.play_history),
+                          team_points=state.team_points[::-1] if shift % 2 else state.team_points)
+        np.testing.assert_array_equal(prefix(rotated, 30), prefix(state, 30))
+        choice = player.choose([rotated], [30])[0]
+        assert rotated.hands[current_player(rotated)][choice] == tile
 
 
 def test_same_player_paired_arena_is_exactly_neutral_and_replays(player):

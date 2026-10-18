@@ -86,6 +86,11 @@ def run(args):
         from arena.walt_play import parse_walt_spec
         opponent = parse_walt_spec(args.opponent.removeprefix("walt:"))
         opponent_id = {"policy": args.opponent, "resolved": repr(opponent)}
+        for token in args.opponent.split(","):
+            if token.startswith("F="):
+                path = Path(token[2:])
+                opponent_id["field_file"] = {"path": str(path),
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     else:
         opponent = ObserverPlay(args.opponent, args.device)
         opponent_id = opponent.identity
@@ -126,7 +131,8 @@ def main():
     parser.add_argument("--candidate", required=True)
     parser.add_argument("--opponent", required=True, help="checkpoint, random, or walt:<spec>")
     parser.add_argument("--out", required=True)
-    parser.add_argument("--games", type=int, default=256)
+    parser.add_argument("--games", type=int, default=2,
+                        help="total games; default 2 is one duplicate pair, a plumbing smoke only")
     parser.add_argument("--seed", type=int, default=20261017)
     parser.add_argument("--device", choices=("cpu", "mps", "cuda"), default="mps")
     parser.add_argument("--exclude-deals", action="append", default=[])

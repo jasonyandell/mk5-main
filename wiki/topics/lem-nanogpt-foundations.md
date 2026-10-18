@@ -252,6 +252,50 @@ against the 50k predecessor, neutral 50%, over 128 paired seeds / 256 games.
 Initialization, uniform-legal and exact self-match controls are in the experiment.
 This establishes the starting player; reward training remains unimplemented.
 
+Jason narrowed the immediate head-to-head work to smoke tests after that baseline.
+The CLI now defaults to **one duplicate pair (two games)**. The next smoke seats
+the frozen 500k observer against Zeb's pip-play configuration in the arena:
+`k0,n160,f=16,u=make,d=posterior,r=uniform:4194304:0.28,t=margin,s0`, using
+`margin_d250k_h128x64`. Both still bid 30. Match seed 20261018, one pair, no
+extension based on the result, 60-second process cap, CPU slot with two threads.
+This checks integration; it is not a rating or a complete released-Zeb bidder
+comparison. Keep its receipts separate from the completed 256-game comparisons.
+
+### Methodology borrowed from Zeb
+
+- **Smoke before measurement.** [[rematch-zeb-041-vs-demon-2026-10-15]] used
+  one throwaway duplicate pair to check seating, behavior and shared deals.
+  A later measurement fixes its size and fresh seeds before seeing outcomes;
+  it retains interrupted/error records rather than rerolling unfavorable games.
+- **Referee and interface parity.** `zeb/src/tests.rs`,
+  `zeb/tests/zeb.test.js`, and `zeb/tests/test_match_parity.py` test the same
+  requests across implementations, forced moves, defender turns, declaration
+  coverage, repeated requests, invalid requests and artifact identity. Lem's
+  applicable checks are unchanged training/live prefixes, hidden-hand
+  invariance, seat rotation, legal outputs and independently replayed scores.
+  No claim of an integer-identical GPT implementation on different hardware is made.
+- **Batch and lifetime independence.** The diagnostic in
+  [[estimator-calibration-2026-10-16]] compares isolated positions, shuffled
+  batches, repeated calls and fresh player objects. Lem's fixture now checks
+  those choices too. Exact-self neutrality is a symmetry check; a degenerate
+  zero-width self-match interval cannot calibrate sampling uncertainty.
+- **Price a disagreement.** `scenario/tests/test_field.py` pins `regret_q`:
+  the best legal move's value minus the selected move's value, in the acting
+  team's units under the named teacher. Every exactly tied best move has zero
+  regret. `at_best`, points regret and sharp-choice/hinge slices complement it.
+  [[scenario-player]] records why exact teacher-tile agreement was retired as
+  a field-net quality grade. Observer next-tile accuracy still measures behavior
+  prediction; it must not substitute for this decision-quality diagnostic.
+- **Forecasts need a separate check.** A future splat head should be assessed
+  against held-out teacher distributions and, separately, realized outcomes
+  under the declared continuation and table. The current observer has no value
+  head; calibration or regret numbers have not been manufactured from tile logits.
+- **Reproducibility and scope.** [[tournament]] pins model/configuration bytes
+  and deterministic work budgets; [[estimator-calibration-2026-10-16]] keeps
+  paired games together and separates fixed-policy uncertainty from variation
+  between policies/seeds. The observer runner now also hashes a named Walt field
+  file. Its own immutable model hash, complete receipts and no-overlap audit remain.
+
 The next improvement loop is: freeze the incumbent; collect games from a
 trainable challenger; update its action probabilities using its team's actual
 return; freeze a new checkpoint; evaluate on separate paired game seeds. Merely
