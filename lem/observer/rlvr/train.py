@@ -18,11 +18,13 @@ import numpy as np
 import torch
 
 from ..data import VERSION
-from ..population import atomic_json, atomic_save, digest
-from ..splat.model import TASK
+from ..model import Config
+from ..population import atomic_json, atomic_save, digest, deepen
+from ..splat.model import TASK, SplatObserver
 from ..splat.play import SplatPlay
 from ..splat.recovery import StopRequest, capture_rng, restore_rng
 from .data import load
+from .rehearsal import Rehearsal
 
 
 class Exercises:
@@ -59,6 +61,11 @@ def objective(logp, ref, mode, targets, actions=None, old=None, adv=None, clip=.
         target = targets / targets.sum(-1, keepdim=True)
         policy = -(target * logp).sum(-1).mean()
         clip_fraction = logp.new_tensor(0.)
+    elif mode == 'exact':
+        # The one-step binary verifier has only two answers. Sum over both;
+        # no sampled actions, critic or off-policy importance ratio is needed.
+        policy = -(logp.exp() * targets).sum(-1).mean()
+        clip_fraction = logp.new_tensor(0.)
     else:
         ratio = (logp.gather(1, actions) - old.gather(1, actions)).exp()
         policy = -torch.minimum(ratio * adv, ratio.clamp(1 - clip, 1 + clip) * adv).mean()
@@ -86,9 +93,26 @@ def metrics(logp, data):
             'entropy': float(-(logp.exp() * logp).sum(-1).mean())}
 
 
+def grow(model, extra_layers, seed):
+    """Identity residual insertion changes capacity, not the initial function."""
+    old = model.config
+    saved = deepen({'config': asdict(old), 'model': model.backbone.state_dict(),
+                    'data_sha256': 'same-clean-inputs'}, old.layers + extra_layers, seed)
+    with torch.random.fork_rng():
+        torch.manual_seed(seed)
+        result = SplatObserver(Config(**saved['config'])).to(next(model.parameters()).device)
+    result.backbone.load_state_dict(saved['model'])
+    result.outcomes.load_state_dict(model.outcomes.state_dict())
+    return result.eval()
+
+
 def run(args):
     if min(args.rounds, args.batch, args.group, args.inner, args.eval_every) < 1 or args.lr <= 0 or args.beta < 0 or not 0 < args.clip < 1:
         raise ValueError('positive budgets/rate, nonnegative KL, and 0 < clip < 1 required')
+    if args.replay_weight < 0 or args.replay_batch < 1 or args.extra_layers < 0 or min(args.retention_nll, args.retention_splat) < 0:
+        raise ValueError('invalid rehearsal or growth settings')
+    if args.replay_weight and not args.replay:
+        raise ValueError('rehearsal weight requires a replay bundle')
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(1)
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
@@ -97,18 +121,32 @@ def run(args):
     validation = Exercises([r for r in rows if r['split'] == 'validation'], args.device)
     model = SplatPlay(args.initial, args.device, 'tile').model
     reference = SplatPlay(args.initial, args.device, 'tile').model
+    if args.extra_layers:
+        model = grow(model, args.extra_layers, args.seed)
+    replay = Rehearsal(args.replay, args.device) if args.replay else None
+    if replay:
+        reserved = {tuple(map(int, r['physical_hands'])) for r in rows}
+        if reserved & {tuple(map(int, h)) for h in replay.hands}:
+            raise ValueError('rehearsal overlaps exact exercises')
+    initial_retention = replay.evaluate(reference) if replay else None
     for p in reference.parameters():
         p.requires_grad_(False)
     for p in model.outcomes.parameters():
-        p.requires_grad_(False)
+        p.requires_grad_(bool(args.replay_weight))
     groups = [{'params': [p for p in model.parameters() if p.requires_grad and (p.ndim >= 2) == matrix],
                'weight_decay': .1 if matrix else 0.} for matrix in (True, False)]
     optimizer = torch.optim.AdamW(groups, lr=args.lr, betas=(.9, .95))
     sampler = torch.Generator().manual_seed(args.seed)
     answer_rng = torch.Generator().manual_seed(args.seed + 1)
-    settings = {k: getattr(args, k) for k in ('mode', 'rounds', 'batch', 'group', 'inner', 'lr', 'beta', 'clip', 'seed', 'device', 'eval_every', 'wandb_project', 'wandb_entity')}
+    replay_rng = torch.Generator().manual_seed(args.seed + 2)
+    settings = {k: getattr(args, k) for k in ('mode', 'rounds', 'batch', 'group', 'inner', 'lr', 'beta', 'clip', 'seed', 'device', 'eval_every', 'wandb_project', 'wandb_entity',
+        'replay_weight', 'replay_batch', 'extra_layers', 'retention_nll', 'retention_splat')}
     settings.update(initial_sha256=digest(args.initial), data_sha256=manifest['questions_sha256'],
-                    model_id=manifest['model_id'], torch_version=str(torch.__version__))
+                    model_id=manifest['model_id'], torch_version=str(torch.__version__),
+                    replay_sha256=replay.manifest['sha256'] if replay else None,
+                    initial_retention=initial_retention,
+                    parameters=sum(p.numel() for p in model.parameters()),
+                    source_sha256={p.name: digest(p) for p in (Path(__file__), Path(__file__).with_name('rehearsal.py'))})
     saved = None; completed = 0; history = []; best = None; example = None
     if args.resume:
         saved = torch.load(out / 'latest.pt', map_location='cpu', weights_only=True)
@@ -116,6 +154,7 @@ def run(args):
             raise ValueError('resume identity changed; use a fresh output for a new recipe')
         model.load_state_dict(saved['model']); optimizer.load_state_dict(saved['optimizer'])
         sampler.set_state(saved['sampler']); answer_rng.set_state(saved['answer_rng'])
+        replay_rng.set_state(saved['replay_rng'])
         completed, history, best, example = saved['round'], saved['history'], saved['best'], saved['example']
         if completed == args.rounds and (out / 'report.json').exists():
             report = json.loads((out / 'report.json').read_text())
@@ -134,7 +173,7 @@ def run(args):
             raise ValueError('W&B identity changed')
         atomic_json(receipt, identity)
         tracker = wandb.init(project=identity['project'], entity=identity['entity'], id=identity['id'],
-                             name='silas-rlvr-v1-' + args.mode, resume='allow', dir=str(out), config=settings,
+                             name=out.name, resume='allow', dir=str(out), config=settings,
                              tags=['gus', 'rlvr', 'silas', args.mode])
         identity = dict(id=tracker.id, project=tracker.project, entity=tracker.entity, url=tracker.url)
         atomic_json(receipt, identity)
@@ -153,6 +192,7 @@ def run(args):
         atomic_save(path, {'task': TASK, 'tokenizer': VERSION, 'config': asdict(model.config),
                           'model': model.state_dict(), 'optimizer': optimizer.state_dict(),
                           'sampler': sampler.get_state(), 'answer_rng': answer_rng.get_state(),
+                          'replay_rng': replay_rng.get_state(),
                           'rng_state': capture_rng(args.device), 'round': completed, 'step': completed * args.inner,
                           'data_sha256': manifest['questions_sha256'], 'settings': settings, 'best': best,
                           'history': history, 'example': example, 'run_identity': identity})
@@ -160,14 +200,20 @@ def run(args):
     def evaluate():
         nonlocal best
         report = {'round': completed, **metrics(predictions(model, validation), validation)}
+        if replay:
+            report['retention'] = replay.evaluate(model)
+            report['retention_pass'] = (report['retention']['tile_nll'] <= initial_retention['tile_nll'] + args.retention_nll
+                and report['retention']['splat_ce'] <= initial_retention['splat_ce'] + args.retention_splat)
         history.append(report)
-        key = (Fraction(report['regret_exact']), -report['accuracy'], completed)
-        if best is None or key < (Fraction(best['regret_exact']), -best['accuracy'], best['round']):
+        def rank(r):
+            return (not r.get('retention_pass', True), Fraction(r['regret_exact']), -r['accuracy'], r['round'])
+        if best is None or rank(report) < rank(best):
             best = report; save(out / 'best.pt')
         save(out / f'round-{completed:04d}.pt')
         atomic_json(out / 'history.json', history)
         if tracker:
-            tracker.log({'round': completed, **{'validation/' + k: v for k, v in report.items() if isinstance(v, (int, float))}})
+            tracker.log({'round': completed, **{'validation/' + k: v for k, v in report.items() if isinstance(v, (int, float))},
+                **{'retention/' + k: v for k,v in report.get('retention', {}).items()}})
         print(report, flush=True)
 
     start = time.monotonic()
@@ -180,13 +226,25 @@ def run(args):
             targets = train.best[device_index]
             with torch.no_grad():
                 old = train.logp(model, index).detach()
-                actions = torch.multinomial(old.cpu().exp(), args.group, replacement=True, generator=answer_rng).to(args.device)
-                rewards = targets.gather(1, actions)
-                adv = advantages(rewards)
+                if args.mode == 'grpo':
+                    actions = torch.multinomial(old.cpu().exp(), args.group, replacement=True, generator=answer_rng).to(args.device)
+                    rewards = targets.gather(1, actions)
+                    adv = advantages(rewards)
+                else:
+                    actions, adv = None, None
+                    rewards = targets
             log = {}
             for _ in range(args.inner):
                 logp = train.logp(model, index)
                 loss, log = objective(logp, ref_train[device_index], args.mode, targets, actions, old, adv, args.clip, args.beta)
+                if replay and args.replay_weight:
+                    ix = torch.randint(len(replay.splits['train']), (args.replay_batch,), generator=replay_rng).numpy()
+                    joint, tile_ce, splat_ce, _ = replay.loss(model, replay.splits['train'][ix])
+                    loss = loss + args.replay_weight * joint
+                    log.update(rehearsal_loss=float(joint.detach()), rehearsal_tile_nll=float(tile_ce.detach()),
+                               rehearsal_splat_ce=float(splat_ce.detach()))
+                if not torch.isfinite(loss):
+                    raise ValueError('nonfinite objective; latest completed round remains resumable')
                 optimizer.zero_grad(set_to_none=True); loss.backward()
                 grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
                 optimizer.step()
@@ -221,7 +279,7 @@ def run(args):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--data', required=True); p.add_argument('--initial', required=True); p.add_argument('--out', required=True)
-    p.add_argument('--mode', choices=('sft', 'grpo'), required=True); p.add_argument('--device', default='mps')
+    p.add_argument('--mode', choices=('sft', 'grpo', 'exact'), required=True); p.add_argument('--device', default='mps')
     p.add_argument('--rounds', type=int, default=256); p.add_argument('--batch', type=int, default=64)
     p.add_argument('--group', type=int, default=8); p.add_argument('--inner', type=int, default=2)
     p.add_argument('--lr', type=float, default=1e-5); p.add_argument('--beta', type=float, default=.02)
@@ -229,6 +287,9 @@ def parser():
     p.add_argument('--eval-every', type=int, default=32); p.add_argument('--seconds', type=float, default=240)
     p.add_argument('--stop-file'); p.add_argument('--resume', action='store_true')
     p.add_argument('--wandb-project'); p.add_argument('--wandb-entity')
+    p.add_argument('--replay'); p.add_argument('--replay-weight', type=float, default=0.)
+    p.add_argument('--replay-batch', type=int, default=32); p.add_argument('--extra-layers', type=int, default=0)
+    p.add_argument('--retention-nll', type=float, default=.02); p.add_argument('--retention-splat', type=float, default=.02)
     return p
 
 
