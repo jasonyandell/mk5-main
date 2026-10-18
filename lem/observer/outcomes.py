@@ -318,7 +318,9 @@ def _run(args):
         report = {'state': state, 'round': completed, 'reason': stop.reason, 'best': best,
                   'settings': settings, 'initial_retention': initial_retention,
                   'latest_sha256': digest(out/'latest.pt'), 'best_sha256': digest(out/'best.pt')}
-        atomic_json(out/('report.json' if state == 'complete' else 'status.json'), report)
+        atomic_json(out/'status.json', report)
+        if state == 'complete':
+            atomic_json(out/'report.json', report)
     if tracker:
         tracker.finish()
     return report

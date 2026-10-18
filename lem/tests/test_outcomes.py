@@ -87,6 +87,9 @@ def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon)
     assert outcomes.run(args('split'))['state'] == 'paused'
     monkeypatch.setattr(torch.optim.AdamW, 'step', original)
     outcomes.run(args('split', True))
+    status = json.loads((tmp_path/'split/status.json').read_text())
+    report = json.loads((tmp_path/'split/report.json').read_text())
+    assert status == report and status['state'] == 'complete'
     for name in ('latest.pt', 'best.pt'):
         a,b = [torch.load(tmp_path/p/name, weights_only=True) for p in ('whole','split')]
         nested_equal(a,b)
@@ -124,9 +127,9 @@ def test_completed_resume_does_not_change_artifact_bytes(tmp_path, monkeypatch):
     monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
     common=['--plan', str(tmp_path/'plan.json'), '--out', str(tmp_path/'run'), '--mode', 'grpo', '--device', 'cpu']
     report=outcomes.run(outcomes.parser().parse_args(common))
-    before={p.name:p.read_bytes() for p in (tmp_path/'run').glob('*.pt')}
+    before={p.name:p.read_bytes() for p in (tmp_path/'run').iterdir() if p.suffix in ('.pt', '.json')}
     assert outcomes.run(outcomes.parser().parse_args(common+['--resume'])) == report
-    assert before == {p.name:p.read_bytes() for p in (tmp_path/'run').glob('*.pt')}
+    assert before == {p.name:p.read_bytes() for p in (tmp_path/'run').iterdir() if p.suffix in ('.pt', '.json')}
     assert digest(tmp_path/'run/best.pt') == report['best_sha256']
 
 

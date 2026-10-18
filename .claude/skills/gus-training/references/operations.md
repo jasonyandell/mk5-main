@@ -60,8 +60,9 @@ or quietly reuse its confirmation panel.
   slow pairings without reporting that coverage is incomplete.
 - An exec timeout/yield is not process exit. Keep its session handle and check
   whether it is alive before any restart. For full-hand `outcomes` runs, the
-  completed `report.json` is authoritative; `status.json` can still describe
-  the last pause. Never restart a completed run from that stale pause label.
+  completed `report.json` is authoritative; current training updates
+  `status.json` on both pause and completion. Verify the completion receipt
+  before restarting; a completed resume leaves artifact bytes unchanged.
   Slot-file text can be stale: only an
   active `flock` means occupied. Do not wait for a quiet machine or kill peers.
 - Bounded blocks write completion receipts atomically. Resume from verified
