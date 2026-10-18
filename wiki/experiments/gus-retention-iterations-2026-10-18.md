@@ -177,8 +177,10 @@ Two fixed actual-game anchors against Zeb finish in4.39s and3.69s: selected
 Gus wins1/4 versus G0's recorded2/4, with a −0.5 marks/game difference from that
 reference. Every move and score replays correctly. Four games cannot estimate
 strength; neither these results nor exact-model gains promote an incumbent.
-The transfer boundary remains early/middle-hand decisions, richer lawful
-opponent models and eventually fresh paired full games. Nello is still pending.
+The transfer boundary remains early/middle-hand decisions and eventually fresh
+paired full games under the same fixed nonlearner policies. The current control
+is recorded in [[gus-tiny-gpt]]: expanding decision coverage does not authorize
+changing the opponent model. Nello is still pending.
 
 ## Recovery, interpretation and publication
 

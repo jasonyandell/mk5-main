@@ -26,6 +26,28 @@ The card includes safe-format weights, an adapter-compatible inference checkpoin
 exact input/output schema, a pinned loading example, provenance and scoped metrics.
 Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
+## Current experimental control
+
+Jason's 2026-10-18 instruction fixes the opponent dimension across the current
+learner/recipe investigations. Preserve the nonlearner policies (partner as
+well as opponents), weights, mixture, belief semantics, bidder and deterministic
+budgets. Preserve the teacher checkpoints and label recipe. The exact verifier's
+lowest/highest/uniform mixture and the frozen benchmark's pinned Zeb are
+separate existing controls; neither is replaced or evolved between learner
+candidates. The controls and identities are recorded in
+[[gus-retention-iterations-2026-10-18]] and [[gus-frozen-benchmark-2026-10-18]].
+
+Vary learner training, model size or decision coverage in declared comparisons;
+more situations must still use the same behavioral law. Keep matched evaluation
+fixtures and fresh confirmation separate. Fixed policies may respond differently
+to histories changed by the learner; fixed does not mean replaying stale moves.
+
+A later arena with multiple evolving models and successive distillation from
+belief-aware Walt through Zeb to Gus is a proposed direction, not the current
+experiment. Updating those opponents is a separate experimental dimension.
+The older latest-five population recipe below is historical, not the default
+for this fixed-opponent series. Source: Jason's instruction in this session.
+
 ## Routes
 
 - [[gus-retention-iterations-2026-10-18]] — three bounded iterations: exact reward plus rehearsal improves fresh finite-model answers while retaining prediction losses; extra depth earns no gain.
@@ -38,7 +60,7 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 - [[lem-observer-corpus-squeeze-2026-10-17]] — G0's training and formation archive.
 - [[lem-observer-first-h2h-2026-10-17]] — measured play versus the predecessor.
 - [[lem-nanogpt-foundations]] — clean inputs, math, implemented splat interface, pending Nello and Zeb methodology.
-- [[gus-population-iteration]] — latest five generations plus permanent Zeb; implemented reward-round settings.
+- [[gus-population-iteration]] — historical latest-five population recipe; held separate from the current fixed-opponent series.
 - [[gus-training-review-2026-10-18]] — independent replay review, next controlled experiments and the `gus-training` skill.
 - [[gus-tournament-pilot-2026-10-18]] — G0–G20 entries, common-bidder Zeb and 30 bounded games; public evidence and pending canonical tournament synchronization.
 

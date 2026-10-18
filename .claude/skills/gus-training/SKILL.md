@@ -90,6 +90,23 @@ token precedes the tile to be predicted.
 - No clairvoyant value becomes a learning target. Lawful Walt forecasts are
   conditional on a specified behavioral field, not an optimal-play certificate.
 
+## Current series: keep opponents fixed
+
+Jason explicitly fixed the opponent dimension on 2026-10-18; the scope is in
+`wiki/entities/gus-tiny-gpt.md`. During these learner/recipe investigations,
+preserve all nonlearner policies, including the partner, their checkpoints,
+mixture weights, belief semantics, bidder and deterministic budgets. Keep the
+teacher and label-generation recipe pinned too. Existing exact-verifier and
+Zeb benchmark controls are distinct; hold each unchanged within its comparison.
+
+Vary learner training, size or decision coverage through declared comparisons.
+Broader coverage means more situations under the same behavior law, not new
+opponents. Keep matched fixtures; reserve fresh confirmation under the same law.
+A frozen policy still responds to the new history a learner creates: do not
+substitute a reference game's moves after histories diverge. A future arena
+with evolving models/distillation is a separate direction. Do not rotate recent
+Gus checkpoints into this series using the historical population recipe below.
+
 ## Choose the question before spending the run
 
 **Pretraining:** imitate recorded next tiles. Preserve all raw 28-way predictions
@@ -110,8 +127,7 @@ distinct explicit loaders. Splats from another private view are never inputs.
 Compare histogram KL (CE minus label entropy), consequential teacher regret,
 calibration to the named teacher, and actual play separately.
 
-**Reward learning:** improve actual team outcomes against a declared population.
-The initial recipe lives in `wiki/decisions/gus-population-iteration.md`: one
+**Historical population reward learning:** the separate initial recipe lives in `wiki/decisions/gus-population-iteration.md`: one
 learner seat; each other seat independently 25% pinned Zeb and 75% uniform over
 the latest five completed Gus generations. Freeze assignments within a hand and
 the roster within a generation. Five is a sampling window, never an archive
