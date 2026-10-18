@@ -194,3 +194,12 @@ def test_completed_publication_retry_does_not_rewrite_receipts(tmp_path):
     assert publish_data(tmp_path)==data
     assert publish_model(tmp_path)==model
     assert sorted(p.name for p in tmp_path.iterdir())==['data-publication.json','model-publication.json']
+
+
+def test_cache_mutation_cannot_masquerade_as_identical_resume_data(tmp_path):
+    make_source(tmp_path/'source')
+    build(tmp_path/'source',tmp_path/'cache')
+    data=np.load(tmp_path/'cache/targets.npy',mmap_mode='r+')
+    data[0,0]=(data[0,0]+1)%28;data.flush()
+    with pytest.raises(ValueError,match='cache checksum'):
+        Corpus([tmp_path/'cache'])

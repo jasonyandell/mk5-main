@@ -150,12 +150,19 @@ class Corpus:
         self.manifests = [json.loads((p/"manifest.json").read_text()) for p in self.roots]
         if any(m["schema"] != SCHEMA or m["tokenizer"] != VERSION for m in self.manifests):
             raise ValueError("cache schema mismatch")
+        for root,manifest in zip(self.roots,self.manifests):
+            for name,want in manifest["files"].items():
+                if digest(root/name) != want:
+                    raise ValueError(f"cache checksum mismatch: {root/name}")
         self.shards = [{k:np.load(p/f"{k}.npy",mmap_mode="r",allow_pickle=False) for k in
                        ("x","targets","own_positions","split","possible","legal","lookup","histograms","candidates","seed","hands","settled")}
                        for p in self.roots]
         hands = np.concatenate([s["hands"] for s in self.shards])
         if len(np.unique(hands,axis=0)) != len(hands):
             raise ValueError("physical deal overlap between sources")
+        seeds=np.concatenate([s["seed"] for s in self.shards])
+        if len(np.unique(seeds)) != len(seeds):
+            raise ValueError("overlapping source seeds")
         self.offsets = np.r_[0,np.cumsum([len(s["x"]) for s in self.shards])]
         self.split = np.concatenate([s["split"] for s in self.shards])
         self.sha256 = hashlib.sha256(json.dumps(self.manifests,sort_keys=True).encode()).hexdigest()
