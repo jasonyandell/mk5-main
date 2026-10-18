@@ -91,10 +91,13 @@ It also added exact inference-state identities for safe reuse of lazy evidence.
 counts. Policy movement increases, but all selections retain initialization.
 Its training-only feasibility probe shows that short endgames can cheaply use
 the actual fixed G0/Zeb continuation policies for exact rational feedback.
-This proposed curriculum needs its own verifier identity: the uniform legal
-root belief is still an approximation, and the old three-style verifier is
-not silently replaced. The root action is shared across worlds and the later
-learner choice is forced. The experiment page owns the measurements.
+The resulting [[gus-fixed-field-curriculum-2026-10-18]] implements a separate
+verifier identity and completes a matched three-seed study. It improves fresh
+finite-model endgame regret beyond rehearsal with retention, without establishing
+a fresh full-hand gain. Uniform legal root belief remains an approximation;
+the earlier three-style verifier is preserved. The root action is shared across
+worlds and the later learner choice is forced. The experiment page owns the
+measurements and the proposed staged full-hand comparison.
 
 Full-hand recovery publishes the same completion state to `status.json` and
 `report.json`; a previous pause no longer remains the live status. Completed

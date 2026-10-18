@@ -43,7 +43,8 @@ The independent-deal batch comparison and exact-inference-state reuse are in
 `wiki/experiments/gus-independent-root-batches-2026-10-18.md`.
 The update-scale diagnostic and matched learning-rate comparison are in
 `wiki/experiments/gus-update-scale-2026-10-18.md`.
-The next exact G0/Zeb curriculum is implemented and tracked in
+The exact G0/Zeb curriculum improves held-out finite-model endgames without
+confirming stronger full-hand play; construction and the completed study are in
 `wiki/experiments/gus-fixed-field-curriculum-2026-10-18.md`.
 The pinned Demon is an evaluation competitor, never a source of labels.
 

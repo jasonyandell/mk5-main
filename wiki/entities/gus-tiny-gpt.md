@@ -53,14 +53,15 @@ small fresh gain does not pass promotion. The public-terminal credit ablation in
 also retained initialization. Gradient diagnosis and the independent-deal batch
 comparison are in [[gus-independent-root-batches-2026-10-18]].
 [[gus-update-scale-2026-10-18]] finds that larger updates still retain the parent;
-its next lead is exact short-endgame feedback under the same G0/Zeb field. The continuing
+[[gus-fixed-field-curriculum-2026-10-18]] then confirms a finite-model endgame
+gain under G0/Zeb without a fresh full-hand gain. The continuing
 fixed-player investigation remains open in [#223](https://github.com/jasonyandell/mk5-main/issues/223).
 The older latest-five population recipe below is historical, not the default
 for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-fixed-field-curriculum-2026-10-18]] — exact G0/Zeb endgame construction and a matched outcome-learning/rehearsal comparison in progress.
+- [[gus-fixed-field-curriculum-2026-10-18]] — exact G0/Zeb feedback beats rehearsal on held-out endgames; no full-hand promotion; lazy witnesses and native specimens.
 
 - [[gus-update-scale-2026-10-18]] — matched learning rates, verified lazy reuse and an exact fixed-field endgame feasibility probe; no promotion.
 
