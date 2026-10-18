@@ -116,3 +116,24 @@ def test_zero_variance_and_split_rejection(tmp_path):
     plan['confirmation'][0] = plan['train'][0]
     with pytest.raises(ValueError, match='overlap'):
         outcomes.validate_plan(plan, replay)
+
+
+def test_completed_resume_does_not_change_artifact_bytes(tmp_path, monkeypatch):
+    setup(tmp_path)
+    monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
+    common=['--plan', str(tmp_path/'plan.json'), '--out', str(tmp_path/'run'), '--mode', 'grpo', '--device', 'cpu']
+    report=outcomes.run(outcomes.parser().parse_args(common))
+    before={p.name:p.read_bytes() for p in (tmp_path/'run').glob('*.pt')}
+    assert outcomes.run(outcomes.parser().parse_args(common+['--resume'])) == report
+    assert before == {p.name:p.read_bytes() for p in (tmp_path/'run').glob('*.pt')}
+    assert digest(tmp_path/'run/best.pt') == report['best_sha256']
+
+
+def test_training_output_has_one_writer(tmp_path):
+    import fcntl
+    out=tmp_path/'run'; out.mkdir()
+    with (out/'.run.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        args=outcomes.parser().parse_args(['--plan','unused','--out',str(out),'--mode','grpo'])
+        with pytest.raises(ValueError, match='already owned'):
+            outcomes.run(args)

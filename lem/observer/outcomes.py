@@ -8,6 +8,7 @@ streams separately. A complete round is the recovery/commit boundary.
 """
 import argparse
 from dataclasses import asdict
+import fcntl
 import json
 from pathlib import Path
 import platform
@@ -161,7 +162,7 @@ def source_identity():
     return {str(p.relative_to(root)) if p.is_relative_to(root) else str(p): digest(p) for p in sorted(set(paths))}
 
 
-def run(args):
+def _run(args):
     plan_path = Path(args.plan); plan = json.loads(plan_path.read_text())
     recipe = dict(plan['recipe'], mode=args.mode)
     if (args.mode not in ('grpo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
@@ -199,14 +200,15 @@ def run(args):
         model.load_state_dict(saved['model']); optimizer.load_state_dict(saved['optimizer'])
         replay_rng.set_state(saved['replay_rng'])
         completed, history, best = saved['round'], saved['history'], saved['best']
+        if completed == recipe['rounds'] and (out/'report.json').exists():
+            report = json.loads((out/'report.json').read_text())
+            if (report['settings'] != settings or report['latest_sha256'] != digest(out/'latest.pt')
+                or report['best_sha256'] != digest(out/'best.pt')):
+                raise ValueError('completion checksum changed')
+            return report
         # Repair an interrupted best-file write from the committed selection.
         selected_path = out / (f"formation-{best['round']:04d}.pt" if best['round'] else 'initial.pt')
         (out/'best.pt').write_bytes(selected_path.read_bytes())
-        if completed == recipe['rounds'] and (out/'report.json').exists():
-            report = json.loads((out/'report.json').read_text())
-            if report['latest_sha256'] != digest(out/'latest.pt'):
-                raise ValueError('completion checksum changed')
-            return report
     elif any(out.glob('*.pt')):
         raise ValueError('existing run requires --resume')
     tracker = None; identity = None
@@ -294,6 +296,16 @@ def run(args):
     if tracker:
         tracker.finish()
     return report
+
+
+def run(args):
+    out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
+    with (out/'.run.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise ValueError('training output is already owned by another process') from exc
+        return _run(args)
 
 
 def parser():
