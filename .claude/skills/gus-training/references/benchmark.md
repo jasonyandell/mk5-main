@@ -166,3 +166,21 @@ The v3 study completed nine faceoffs against fixed G0/Zeb/Demon in under60s each
 then batch-published all15 immutable records to the canonical tournament store
 and freshly verified them. See its wiki page for revisions. One pair per matchup
 is integration/development evidence; do not turn its Elo fit into a ranking claim.
+
+
+## Reuse exact inference states
+
+Full recovery checkpoints can differ in optimizer/history while containing the
+same network. `lem.weights.state_identity` fingerprints exact tensor names,
+dtypes, shapes and bytes plus caller-supplied architecture, tokenizer, task,
+head and evaluation settings. It takes a normalized metadata snapshot; it does
+not infer behavioral equivalence from scores, similar weights or a few logits.
+
+An evaluator may share one `Extension` store for identical inference states
+only under the same source/runtime/field/root/sample recipe. Pin the identity
+helper itself, preserve each checkpoint hash in a separate label reference,
+and report model labels and unique trajectories separately. Equal network
+weights alone do not permit reuse across devices, batching, stochastic streams
+or execution code. Different tensors or metadata invalidate the identity.
+The root-batch study's published evaluator and replay audit demonstrate this
+without rewriting earlier frozen evidence.

@@ -39,6 +39,8 @@ the recipe. Extend frozen evaluation lazily; external search is deferred.
 The public-terminal credit ablation is recorded in
 `wiki/experiments/gus-public-terminal-credit-2026-10-18.md`; neither horizon
 established a stronger selected player in that comparison.
+The independent-deal batch comparison and exact-inference-state reuse are in
+`wiki/experiments/gus-independent-root-batches-2026-10-18.md`.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## The companion is `clean-neuron`

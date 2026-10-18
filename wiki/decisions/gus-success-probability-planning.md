@@ -81,6 +81,12 @@ reward-score terms after public make/set settlement while retaining the original
 normalization, full KL and rehearsal. All three arms selected initialization;
 the mathematically motivated cleanup did not establish stronger play.
 
+The subsequent [[gus-independent-root-batches-2026-10-18]] used saved training
+gradients to choose more independent deals per update, leaving loss weights
+fixed. Empty batches fell from 6/32 to 1/32. Fresh greedy wins were 202/512 for
+the larger batch versus 201/512 parent, with no confirmed gain or promotion.
+It also added exact inference-state identities for safe reuse of lazy evidence.
+
 The frozen panel remains development evidence. Reserve new confirmation before
 selection and extend actual continuations only where needed. Existing tests,
 model sizes and qualitative hypotheses are not grounds for a general-player

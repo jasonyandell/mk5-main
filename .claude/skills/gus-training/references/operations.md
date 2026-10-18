@@ -59,7 +59,10 @@ or quietly reuse its confirmation panel.
   claims; do not convert a timeout into a loss, reroll it, or selectively omit
   slow pairings without reporting that coverage is incomplete.
 - An exec timeout/yield is not process exit. Keep its session handle and check
-  whether it is alive before any restart. Slot-file text can be stale: only an
+  whether it is alive before any restart. For full-hand `outcomes` runs, the
+  completed `report.json` is authoritative; `status.json` can still describe
+  the last pause. Never restart a completed run from that stale pause label.
+  Slot-file text can be stale: only an
   active `flock` means occupied. Do not wait for a quiet machine or kill peers.
 - Bounded blocks write completion receipts atomically. Resume from verified
   state and existing receipts. An incomplete smoke directory is retained for

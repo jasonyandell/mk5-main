@@ -56,7 +56,7 @@ deals, eight trajectories per deal,32 rounds and64 AdamW steps. Development has
 The registered prior-data exclusions and all13 potential prior tournament deals per opponent are retained.
 
 Fixed controls: G0 partner, pinned Zeb opponents, bid30/pip, root/action/replay
-streams, learning rate3e-5, clip0.2, parent KL0.02, rehearsal weight1, microbatch32.
+streams, learning rate3e-5, clip0.2, parent KL0.02, rehearsal weight1, rollout microbatch112 and rehearsal batch32.
 Rehearsal alone receives the same supervised draws and optimizer count, without
 RL or KL. Each arm includes initialization in selection; maximize development
 greedy success, then sampled success, then earliest round, within+.02 retention
@@ -100,8 +100,8 @@ The first winning trajectory's5-0 probability changed0.76015 to0.75440 across
 two updates. That is the combined minibatch, KL and rehearsal result, not
 proof that every move in a winning trajectory is individually good or must
 increase. The archive preserves its literal prefix and both legal probabilities.
-The next diagnostic is reward-gradient strength/alignment against rehearsal on
-saved training batches before changing a coefficient or rollout budget.
+The follow-up gradient diagnosis and independent-deal batch comparison are
+recorded in [[gus-independent-root-batches-2026-10-18]].
 Confirmation remains excluded from future training and recipe selection.
 
 ## Reproducibility and interpretation

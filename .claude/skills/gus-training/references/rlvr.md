@@ -218,3 +218,23 @@ Changed request order or work slicing must not change the completed bytes.
 Seeds alone do not establish that guarantee. The study's published evaluator
 preserves each full-hand confirmation as such a record; interrupted runs compute
 only missing units. Keep sampled and greedy deployment scores separate.
+
+
+## Diagnose gradient signal before choosing the next lever
+
+Compare loss gradients on the shared backbone, not just scalar losses or a
+whole-network norm dominated by an output head. Reconstruct a saved batch's
+pre-update checkpoint and rehearsal RNG, then separate reward, KL, tile and
+splat gradients. Check their weighted sum against the recorded pre-clipping
+norm and component losses. Cross-device reconstruction needs explicit numeric
+tolerances; it is not bitwise replay. Raw gradient alignment does not attribute
+AdamW's step, which also depends on moments, clipping and decay.
+
+The public-terminal study's follow-up measured comparable, nearly orthogonal
+reward/rehearsal backbone gradients; it did not support assuming rehearsal
+swamped reward. Six of32 batches had zero current reward gradient. The next
+registered root-batch comparison therefore increased independent deals per
+update, holding eight rollouts per deal and64 optimizer steps fixed. Count its
+extra rollout/data cost. Increasing roots and increasing draws of the same root
+answer different variance/coverage questions; do not silently conflate them.
+Use fresh reserved confirmation after selection and retain the rehearsal control.
