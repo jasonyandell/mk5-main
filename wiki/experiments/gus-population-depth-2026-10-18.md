@@ -74,6 +74,9 @@ publishes the preselected final-depth specimen, confirmation evidence and
 `campaign-selected-20261018` model tag. Publication checks the requested size,
 completed final-depth plateau, unchanged selected checkpoint and complete panel;
 anonymous downloads verify every release file and the confirmation replay.
+An offline Hub round-trip test checks selected-versus-latest weight identity,
+adapter/safetensors parity, example logits, retry idempotency and refusal to
+publish before campaign completion.
 
 Work units run through `scripts/cpu-slot --threads 2` with the default 300-second
 cap; the orchestrator holds no slot while waiting or uploading. No game chooses
