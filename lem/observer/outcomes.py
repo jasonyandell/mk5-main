@@ -20,7 +20,8 @@ import numpy as np
 import torch
 
 from forge.zeb.game import apply_action, current_player
-from scenario.rules import mask_of
+from scenario.rules import mask_of, rules_for
+from scenario.record import empty_record
 from .data import VERSION
 from .population import (atomic_json, atomic_save, collect, digest, features,
                          initial_state, log_distribution, seed_for, verify_episode)
@@ -31,7 +32,16 @@ from .splat.model import TASK
 from .splat.play import SplatPlay
 from .splat.recovery import StopRequest, capture_rng, restore_rng
 
-SCHEMA = 'gus-full-hand-grpo-v1'
+SCHEMA = 'gus-full-hand-grpo-v2'
+
+
+def publicly_settled(points, bidder, bid=30):
+    """The binary contract outcome is fixed by public banked points alone.
+
+    Remaining points are nonnegative and the hand totals 42. Once the bidder
+    has 30 or defenders have 13, later legal plays cannot change make/set.
+    """
+    return points[bidder % 2] >= bid or points[1-bidder % 2] > 42-bid
 
 
 def validate_plan(plan, replay):
@@ -75,29 +85,35 @@ def trajectories(model, field, roots, group, namespace, device, sample=True):
     data, episodes = collect(model.backbone, field, grouped_specs(roots, group, namespace), device, sample)
     for episode in episodes:
         episode['seed'] = episode['root_deal_seed']
-    audit(data, episodes)
+    data['pre_settlement'] = audit(data, episodes)
     rewards = torch.tensor([(e['reward'] + 1) / 2 for e in episodes]).reshape(len(roots), group)
     adv = advantages(rewards).numpy().ravel()
     data['advantage'] = adv[data['hand']]
     return data, episodes, {'win_rate': float(rewards.mean()),
         'zero_variance_groups': float((rewards.std(-1, correction=0) == 0).float().mean()),
-        'hands': len(episodes), 'decisions': len(data['action'])}
+        'hands': len(episodes), 'decisions': len(data['action']),
+        'post_settlement_fraction': float(1-data['pre_settlement'].mean())}
 
 
 def audit(data, episodes):
     """Rebuild every actual decision from the replay, never from saved labels."""
     if len(data['action']) != 7 * len(episodes):
         raise ValueError('incomplete trajectory decisions')
+    active = np.empty(len(data['action']), dtype=bool)
     for i, episode in enumerate(episodes):
         verify_episode(episode)
         state = initial_state(episode)
+        record = empty_record(episode['bidder']); rules = rules_for(episode['decl'])
         ids = np.flatnonzero(data['hand'] == i)
         if len(ids) != 7:
             raise ValueError('one learner decision per trick required')
         at = 0
         for seat, tile in episode['plays']:
+            if tuple(state.team_points) != record.banked:
+                raise ValueError('public partial-score replay mismatch')
             if seat == episode['learner']:
                 j = ids[at]; x, length, legal = features([state]); at += 1
+                active[j] = not publicly_settled(record.banked, episode['bidder'])
                 if (not np.array_equal(data['x'][j], x[0]) or data['length'][j] != length[0]
                     or not np.array_equal(data['legal'][j], legal[0]) or data['action'][j] != tile):
                     raise ValueError('learner input/output replay mismatch')
@@ -108,6 +124,10 @@ def audit(data, episodes):
                     or data['reward'][j] != episode['reward']):
                     raise ValueError('saved probability/reward mismatch')
             state = apply_action(state, state.hands[current_player(state)].index(tile))
+            record = record.advance(tile, rules)
+    if 'pre_settlement' in data and not np.array_equal(active, data['pre_settlement']):
+        raise ValueError('public settlement mask replay mismatch')
+    return active
 
 
 def update(model, reference, optimizer, data, replay, replay_rng, recipe, device):
@@ -130,6 +150,9 @@ def update(model, reference, optimizer, data, replay, replay_rng, recipe, device
             sl = slice(start, start+batch); lp = distribution(model, sl)
             ratio = (lp.gather(1, tensors['action'][sl, None]).squeeze(1) - tensors['old_logp'][sl]).exp()
             adv = tensors['advantage'][sl]
+            if recipe['reward_horizon'] == 'unsettled':
+                # Same seven-turn denominator; no renormalization by active length.
+                adv = adv * tensors['pre_settlement'][sl]
             policy = -torch.minimum(ratio*adv, ratio.clamp(1-recipe['clip'], 1+recipe['clip'])*adv).mean()
             kl = (lp.exp() * (lp - ref[sl])).sum(-1).mean()
             entropy = -(lp.exp()*lp).sum(-1).mean()
@@ -165,6 +188,8 @@ def source_identity():
 def _run(args):
     plan_path = Path(args.plan); plan = json.loads(plan_path.read_text())
     recipe = dict(plan['recipe'], mode=args.mode)
+    if recipe.get('reward_horizon') not in ('full', 'unsettled'):
+        raise ValueError('declare reward_horizon as full or unsettled')
     if (args.mode not in ('grpo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
         or recipe['group'] < 2 or recipe['lr'] <= 0 or not 0 < recipe['clip'] < 1 or recipe['beta'] < 0
         or recipe['replay_weight'] <= 0 or min(recipe['retention_nll'], recipe['retention_splat']) < 0):
@@ -284,6 +309,7 @@ def _run(args):
             if tracker:
                 tracker.log({'round': completed, 'train/win_rate': stats['win_rate'],
                     'train/zero_variance_groups': stats['zero_variance_groups'],
+                    'train/post_settlement_fraction': stats['post_settlement_fraction'],
                     'train/reference_kl': metrics['updates'][-1]['reference_kl'],
                     **({'dev/'+k: row['development'][k] for k in ('greedy','sampled')} if 'development' in row else {})})
             print(json.dumps(row), flush=True)

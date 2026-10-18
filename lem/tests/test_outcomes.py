@@ -39,7 +39,7 @@ def setup(tmp_path):
         'train': specs[:4], 'development': specs[4:6], 'confirmation': specs[6:],
         'recipe': {'rounds': 2, 'roots': 2, 'group': 3, 'inner': 2, 'batch': 16, 'eval_every': 1,
             'replay_batch': 3, 'replay_weight': 1., 'lr': .001, 'beta': .02, 'clip': .2,
-            'retention_nll': .02, 'retention_splat': .02}}
+            'retention_nll': .02, 'retention_splat': .02, 'reward_horizon': 'full'}}
     atomic_json(tmp_path/'plan.json', plan)
     return model, plan
 
@@ -67,9 +67,10 @@ def test_full_hand_grouping_audit_and_replay_bytes(tmp_path):
         outcomes.audit(a, bad)
 
 
-@pytest.mark.parametrize('mode', ['grpo', 'rehearsal'])
-def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode):
+@pytest.mark.parametrize('mode,horizon', [('grpo','full'), ('grpo','unsettled'), ('rehearsal','full')])
+def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon):
     _, plan = setup(tmp_path)
+    plan['recipe']['reward_horizon'] = horizon; atomic_json(tmp_path/'plan.json', plan)
     monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
     def args(name, resume=False):
         return outcomes.parser().parse_args(['--plan', str(tmp_path/'plan.json'), '--out', str(tmp_path/name),
@@ -137,3 +138,80 @@ def test_training_output_has_one_writer(tmp_path):
         args=outcomes.parser().parse_args(['--plan','unused','--out',str(out),'--mode','grpo'])
         with pytest.raises(ValueError, match='already owned'):
             outcomes.run(args)
+
+
+def test_public_settlement_boundaries_and_remaining_points():
+    # Exhaust every publicly possible banked-score pair and allocation of what
+    # remains. This is a point-total proof, independent of either game engine.
+    for bidder in range(4):
+        for a in range(43):
+            for b in range(43-a):
+                points=(a,b); made=points[bidder%2]>=30
+                settled=outcomes.publicly_settled(points,bidder)
+                futures={points[bidder%2]+extra>=30 for extra in range(43-a-b)}
+                assert settled == (len(futures)==1)
+                if settled:
+                    assert futures=={made}
+    assert not outcomes.publicly_settled((29,12),0)
+    assert outcomes.publicly_settled((30,0),0)
+    assert outcomes.publicly_settled((0,13),0)
+
+
+def test_settlement_mask_follows_public_replay_and_rejects_tampering(tmp_path):
+    model,plan=setup(tmp_path)
+    data,episodes,stats=outcomes.trajectories(model, {'g0':Fixed(),'zeb':Fixed()}, plan['train'],4,'mask','cpu')
+    assert data['pre_settlement'].any() and (~data['pre_settlement']).any()
+    outcomes.audit(data,episodes)
+    for hand in range(len(episodes)):
+        active=data['pre_settlement'][data['hand']==hand]
+        assert not np.any(np.diff(active.astype(int))>0)
+    data['pre_settlement'][0] = ~data['pre_settlement'][0]
+    with pytest.raises(ValueError,match='settlement mask'):
+        outcomes.audit(data,episodes)
+
+
+def test_post_terminal_score_terms_have_zero_mean_but_sample_noise():
+    # One relevant binary decision determines success; a later independent
+    # binary move has no possible effect. Exact expectation cancels its score.
+    theta=torch.tensor([.4,-.7],requires_grad=True)
+    p=theta.sigmoid(); gradients=[]; probabilities=[]
+    for first in (0,1):
+        for later in (0,1):
+            prob=(p[0] if first else 1-p[0])*(p[1] if later else 1-p[1])
+            logp=torch.stack([torch.log(p[0] if first else 1-p[0]),torch.log(p[1] if later else 1-p[1])])
+            full,=torch.autograd.grad(-first*logp.sum()/2,theta,retain_graph=True)
+            cut,=torch.autograd.grad(-first*logp[0]/2,theta,retain_graph=True)
+            gradients.append((full,cut));probabilities.append(prob.detach())
+    mean_full=sum(w*g[0] for w,g in zip(probabilities,gradients))
+    mean_cut=sum(w*g[1] for w,g in zip(probabilities,gradients))
+    torch.testing.assert_close(mean_full,mean_cut,atol=1e-7,rtol=1e-6)
+    assert any(float(g[0][1])!=0 for g in gradients)
+    assert all(float(g[1][1])==0 for g in gradients)
+
+
+def test_public_mask_uses_independent_partial_score_referee(tmp_path,monkeypatch):
+    from dataclasses import replace
+    model,plan=setup(tmp_path)
+    data,episodes,_=outcomes.trajectories(model,{'g0':Fixed(),'zeb':Fixed()},plan['train'],2,'referee','cpu')
+    original=outcomes.apply_action
+    monkeypatch.setattr(outcomes,'apply_action',lambda *args:replace(original(*args),team_points=(1,0)))
+    with pytest.raises(ValueError,match='partial-score replay mismatch'):
+        outcomes.audit(data,episodes)
+
+
+def test_masked_post_terminal_credit_equals_rehearsal_update(tmp_path):
+    model,plan=setup(tmp_path)
+    data,_,_=outcomes.trajectories(model,{'g0':Fixed(),'zeb':Fixed()},plan['train'],4,'gradient','cpu')
+    # Nonzero advantages only where the public outcome is already fixed.
+    data['advantage']=(~data['pre_settlement']).astype(np.float32)
+    reference=copy.deepcopy(model).requires_grad_(False)
+    replay=outcomes.Rehearsal(plan['replay'],'cpu');trained={}
+    for name,mode,horizon in [('masked','grpo','unsettled'),('control','rehearsal','full'),('full','grpo','full')]:
+        candidate=copy.deepcopy(model);opt=torch.optim.AdamW(candidate.parameters(),lr=.001)
+        # Isolate reward credit from floating-point cancellation in the KL gradient.
+        recipe=dict(plan['recipe'],mode=mode,reward_horizon=horizon,inner=1,beta=0.)
+        outcomes.update(candidate,reference,opt,data,replay,torch.Generator().manual_seed(4),recipe,'cpu')
+        trained[name]=candidate.state_dict()
+    for name in trained['masked']:
+        assert torch.equal(trained['masked'][name],trained['control'][name]),name
+    assert any(not torch.equal(trained['full'][name],trained['control'][name]) for name in trained['full'])
