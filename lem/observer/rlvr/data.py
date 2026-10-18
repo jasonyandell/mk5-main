@@ -65,7 +65,7 @@ def baseline_choices(model, questions):
 def build(args):
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(1)
-    settings = {'namespace': NAMESPACE, 'counts': {'train': args.train, 'validation': args.validation, 'test': args.test},
+    settings = {'namespace': args.namespace, 'counts': {'train': args.train, 'validation': args.validation, 'test': args.test},
                 'model': MODEL, 'model_id': MODEL_ID, 'baseline_sha256': digest(args.baseline),
                 'excluded_sha256': digest(args.exclude),
                 'selection': 'highest frozen-baseline exact regret among penultimate-trick choices in each TRAIN deal; first discretionary unsettled position in validation/test; ties earliest'}
@@ -97,7 +97,7 @@ def build(args):
         while any(counts[s] < n for s, n in settings['counts'].items()):
             if stop.requested():
                 db.close(); print({'paused': stop.reason, 'cursor': cursor, 'counts': counts}, flush=True); return
-            seed = seed_for(NAMESPACE, 'deal', cursor)
+            seed = seed_for(args.namespace, 'deal', cursor)
             hands, questions = candidate_questions(seed)
             split = partition(hands)
             key = json.dumps(hands)
@@ -160,6 +160,7 @@ def load(root):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--out', required=True); p.add_argument('--baseline', required=True); p.add_argument('--exclude', required=True)
+    p.add_argument('--namespace', default=NAMESPACE)
     p.add_argument('--train', type=int, default=2048); p.add_argument('--validation', type=int, default=512)
     p.add_argument('--test', type=int, default=512); p.add_argument('--seconds', type=float, default=240)
     build(p.parse_args())
