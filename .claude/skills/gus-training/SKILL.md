@@ -30,12 +30,13 @@ For exact Silas endgame verifiers, GRPO/SFT/direct reward comparisons,
 retention-aware rehearsal and bounded capacity experiments, read [references/rlvr.md](references/rlvr.md).
 For every new model's repeatable static check and fixed H2H anchors, read
 [references/benchmark.md](references/benchmark.md).
-The current next step is full-hand verified-outcome post-training after splat
-pretraining. The three-seed probability-reward comparison is complete; read
-`wiki/experiments/gus-probability-reward-v3-2026-10-18.md`. Keep other seats fixed,
-compare against rehearsal alone, and register the full-trajectory protocol before
-training. Extend frozen evaluation lazily; external search is deferred. The
-pinned Demon is an additional evaluation competitor, never a source of labels.
+The full-hand outcome stage is implemented in `lem.observer.outcomes`, after
+completed splat pretraining and exact-endgame comparisons. Read
+`wiki/experiments/gus-full-hand-outcomes-2026-10-18.md` for the bounded matched
+iterations, selection, confirmation and actual-game limits. Keep other seats
+fixed and compare against rehearsal alone; register a new plan before changing
+the recipe. Extend frozen evaluation lazily; external search is deferred.
+The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## The companion is `clean-neuron`
 

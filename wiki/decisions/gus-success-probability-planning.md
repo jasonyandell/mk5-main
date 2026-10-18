@@ -10,14 +10,14 @@ status: active
 
 ## Selected direction
 
-The next step for [[gus-tiny-gpt]] is textbook reward learning on **verified
+The selected path for [[gus-tiny-gpt]] is textbook reward learning on **verified
 hand success**, with the existing architecture, clean inputs and other seats
 fixed. Jason explicitly selected this direction and lazy frozen-set expansion
 on 2026-10-18. External search and future-splat auxiliary training are deferred.
 [Issue #220](https://github.com/jasonyandell/mk5-main/issues/220) records the completed
 matched probability-reward experiment in [[gus-probability-reward-v3-2026-10-18]].
-[Issue #222](https://github.com/jasonyandell/mk5-main/issues/222) continues the
-broader autonomous goal through full-hand terminal-outcome training.
+The full-hand terminal-outcome stage is implemented and measured in
+[[gus-full-hand-outcomes-2026-10-18]] ([issue #222](https://github.com/jasonyandell/mk5-main/issues/222)).
 
 This is post-training: the pretrained policy is improved using a verifier.
 The objective is making or setting the bid30 hand, not unspecified match win
@@ -68,13 +68,13 @@ did not pass the registered improvement criterion. Both predeclared seed42
 representatives improved fresh finite-model regret with retention; brief game
 checks did not establish transfer. The experiment page owns the measurements.
 
-The next stage broadens training to full-hand sampled trajectories and verified
-terminal outcomes, with a matched rehearsal-only control. One learner seat,
+[[gus-full-hand-outcomes-2026-10-18]] broadens training to full-hand sampled
+trajectories and verified terminal outcomes, with a matched rehearsal-only control. One learner seat,
 fixed G0 partner and pinned Zeb opponents define the declared full-game stage.
 Its actual outcome verifier remains distinct from the exact three-style
 endgame approximation. Grouped samples justify a GRPO estimator when complete
-continuation values are no longer cheaply available. Register that protocol
-before training; do not silently substitute it for the completed experiment.
+continuation values are no longer cheaply available. Its two registered bounded
+iterations retain the parent incumbent; the experiment page owns the measurements.
 
 The frozen panel remains development evidence. Reserve new confirmation before
 selection and extend actual continuations only where needed. Existing tests,
@@ -132,6 +132,6 @@ The operational commands live in the `gus-training` skill's
 
 Implementation and same-runtime replay evidence: [[gus-lazy-rlvr-smoke-2026-10-18]].
 The matched multi-seed comparison is complete in [[gus-probability-reward-v3-2026-10-18]];
-full-hand outcome post-training is next, with a matched rehearsal-only control
+full-hand outcome post-training is measured in [[gus-full-hand-outcomes-2026-10-18]] with a matched rehearsal-only control
 and the same clean inputs. Existing exact labels and measured terminal game
 outcomes retain their distinct authority.

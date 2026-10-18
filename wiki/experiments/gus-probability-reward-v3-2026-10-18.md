@@ -17,9 +17,8 @@ splat-pretrained parent, with original-task retention. Short full-game checks
 showed no win-count improvement. Neither is promoted as a general player.
 
 This completes the comparison selected in [[gus-success-probability-planning]],
-not Jason's broader autonomous training goal. [Issue #222](https://github.com/jasonyandell/mk5-main/issues/222)
-continues to full-hand verified-outcome post-training with fixed nonlearner
-policies. The existing [[gus-splat-pretraining-2026-10-18]] supplies the pretrained
+not Jason's broader autonomous training goal. [[gus-full-hand-outcomes-2026-10-18]] records the subsequent full-hand
+verified-outcome stage with fixed nonlearner policies ([issue #222](https://github.com/jasonyandell/mk5-main/issues/222)). The existing [[gus-splat-pretraining-2026-10-18]] supplies the pretrained
 representation; the exact curriculum covers only one late discretionary choice.
 
 ## Registered comparison

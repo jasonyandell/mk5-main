@@ -136,7 +136,7 @@ for teaching. Distinguish an initial/final comparison from a recorded single
 optimizer update. Preserve all formation checkpoints and static native traces
 for `clean-neuron`; successful training alone is not a unit explanation.
 
-## The completed probability comparison and full-hand next step
+## The completed probability comparison
 
 `wiki/experiments/gus-probability-reward-v3-2026-10-18.md` records three paired
 seeds, 256 rounds each. Probability rewards did not beat binary best-set rewards
@@ -146,22 +146,63 @@ Do not rerun that completed confirmation or interpret the null as evidence
 against expected success as the objective. The two rewards agree on the optimal
 move set; their finite-capacity gradients and regularization scales differ.
 
-Issue #222 carries the next authorized stage: full trajectories with independently
-verified terminal make/set rewards, one learner seat, fixed G0 partner and pinned
-Zeb opponents, same joint network and clean encoder. This is a declared full-game
-stage, separate from the three-style exact endgame model. Preserve the previous
-fields and results rather than silently relabelling them.
+## Full-hand terminal-outcome training
 
-When all continuation rewards are no longer cheaply enumerable, grouped sampled
-trajectories justify GRPO's estimator. Register the actual groups, normalization,
-old/reference probabilities, clipping, KL, replay and update budgets. Compare a
-matched rehearsal-only control. Preserve root deal seeds separately from rollout
-sampling seeds; repeating a deal must not accidentally repeat the identical
-learner random stream. Every seven-decision trajectory has one independently
-verified terminal reward. Full hands and verifier results stay audit/output data.
+`lem.observer.outcomes` implements grouped legal rollouts for the existing joint
+model: one learner, fixed G0 partner and pinned Zeb opponents, same clean encoder.
+The complete study is `wiki/experiments/gus-full-hand-outcomes-2026-10-18.md`.
+This is a declared full-game stage, separate from the exact three-style endgame
+model. A verified observed terminal result is not an exact population win rate.
 
-Use short collection/update segments and complete atomic recovery state. Measure
-zero-variance groups, legal policy entropy, initial probability-ratio alignment,
-retention and actual paired outcomes before changing capacity. Preserve fixed
-other-seat identities; initial model, latest checkpoint and selected checkpoint
-must stay distinct. No long run or general-player promotion follows from a smoke.
+When continuation rewards cannot cheaply be enumerated, sampled trajectories
+justify GRPO. Group rewards use their mean and population standard deviation;
+all seven learner decisions share the trajectory advantage. Retain and measure
+zero-variance groups. Record old legal probabilities separately from the frozen
+parent distribution. The implementation uses clipped action ratios and exact
+full-support categorical KL, with the original tile/splat supervised rehearsal.
+The matched rehearsal control has the same optimizer steps and supervised draws,
+without the RL or KL term. It also collects trajectories for matched diagnostics.
+
+The JSON plan declares train/development/confirmation physical deals, source,
+weights, fixed policies, namespaces, seed, recipe, retention bounds and selection.
+`validate_plan` rejects split overlap, rehearsal overlap and changed seating.
+Source hashes include the native binary; a changed runtime requires a new plan.
+Original deal seeds and independently derived rollout action seeds are distinct.
+The unchanged collector internally uses the action key; archived episode `seed`
+is restored to the original deal seed, with `action_seed` explicitly retained.
+Inputs, legal supports, chosen actions, scores and rewards are rebuilt from every
+full replay before training. Exact old/new log probability alignment is checked.
+
+```sh
+scripts/cpu-slot --threads 2 --timeout 90 -- scratch/venv/bin/python -u \
+  -m lem.observer.outcomes --plan PLAN.json --out RUN --mode grpo \
+  --device mps --seconds 45
+```
+
+Use `--mode rehearsal` for the control and a different output. Resume the same
+plan/output with `--resume`. A completed round, including all inner updates and
+scheduled development checks, is the atomic progress boundary. SIGINT/SIGTERM,
+a stop file or cooperative deadline completes that boundary. A hard crash
+repeats only the uncommitted round from saved state. Latest retains AdamW,
+rehearsal RNG, Python/NumPy/Torch/device RNG, source/config hashes, history,
+selection and W&B identity. One writer owns the run lock. Completed resumes
+verify receipts without changing artifact bytes. Real SIGTERM and simulated
+mid-update crash recovery have bitwise CPU tests; MPS and cross-runtime bitwise
+training are not promised.
+
+`round-*/` stores trajectories, literal decision arrays, before/after/reference
+distributions and separate timing receipts. Formation checkpoints preserve every
+round. Before/after distributions span the declared inner updates, not one step.
+Include initialization in selection: maximize development greedy success within
+retention bounds, break ties by sampled success and then earliest round. Read
+fresh confirmation only after selection; never promote from a handful of games.
+A final trained specimen can differ from the selected checkpoint, especially
+when selection retains initialization. Label both explicitly on Hugging Face.
+
+Use the existing `benchmark.extension.Extension` for lazy actual-game evidence:
+key by pinned recipe, physical question and sample stream, use individual CPU
+float32 inference, independently replay, atomically commit and hash snapshots.
+Changed request order or work slicing must not change the completed bytes.
+Seeds alone do not establish that guarantee. The study's published evaluator
+preserves each full-hand confirmation as such a record; interrupted runs compute
+only missing units. Keep sampled and greedy deployment scores separate.

@@ -63,12 +63,22 @@ baseline and candidate; the other three seats retain their original policies.
 Recipe/source/weight/runtime hashes and independent terminal replay accompany
 each record. See the skill's `references/benchmark.md` for append/recheck commands.
 
-For current post-training, `lem.observer.rlvr.train --mode exact --reward success`
+For the exact endgame curriculum, `lem.observer.rlvr.train --mode exact --reward success`
 optimizes exact conditional hand success with the existing KL/rehearsal recipe.
 `--reward best` is the binary-correctness control. The
 [RLVR decision](../../wiki/decisions/gus-success-probability-planning.md) explains
 why a direct sum over the two known rewards needs neither a critic nor action
-sampling, and specifies the next matched comparison. No search is added to Gus.
+sampling, and records the completed matched comparison. No search is added to Gus.
+
+For full-hand outcome post-training, use `python -u -m lem.observer.outcomes
+--plan PLAN.json --out RUN --mode grpo --device mps --seconds 45` through
+`cpu-slot`. The plan pins disjoint deals, fixed G0 partner/Zeb opponents and the
+recipe. `--mode rehearsal` is the matched control. Groups of legal learner
+trajectories receive independently replayed terminal rewards; all seven learner
+turns share the group advantage. Original tile/splat rehearsal protects retention.
+`--resume` preserves the registered plan, AdamW, all RNG, selection and tracking.
+The [full-hand study](../../wiki/experiments/gus-full-hand-outcomes-2026-10-18.md)
+records results; the training skill's RLVR reference carries the recovery contract.
 
 `ObserverPlay` implements the arena's batched play interface. It uses the exact
 training prefix for the acting seat and chooses the highest-scoring legal tile.

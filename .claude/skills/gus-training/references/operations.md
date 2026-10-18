@@ -189,3 +189,9 @@ unchanged, preserving the earlier tournament source pins.
 Splat model releases use a separate `splat-v1` branch/tag in `jasonyandell/gus`;
 publication alone does not replace the supported incumbent. `SplatPlay` reads
 the explicit joint task version; `ObserverPlay` is for the original tile model.
+
+Anonymous Hub verification can exhaust resolver quotas when an archive has many
+small files. Preserve the immutable revision and already-downloaded bytes, respect
+Retry-After, checksum the local downloads, then request only missing/mismatched
+files. Do not reupload or force-download the entire archive again. Keep completed
+file verification distinct from a partially downloaded or metadata-only check.

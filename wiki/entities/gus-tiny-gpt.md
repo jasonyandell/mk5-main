@@ -48,13 +48,16 @@ experiment. Updating those opponents is a separate experimental dimension.
 Jason subsequently authorized autonomous splat-to-outcome iterations and named
 the pinned Demon as an additional competitor. Its separate bid30 evaluation seat
 does not change training opponents; its internal estimates remain fenced. The
-goal includes full-trajectory outcome training beyond the exact endgame exercise.
+full-trajectory stage is measured in [[gus-full-hand-outcomes-2026-10-18]]; its
+small fresh gain does not pass promotion. Further recipe iterations remain open
+in [#223](https://github.com/jasonyandell/mk5-main/issues/223).
 The older latest-five population recipe below is historical, not the default
 for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-probability-reward-v3-2026-10-18]] — three-seed reward comparison, fresh finite-model gains and fixed G0/Zeb/Demon games; next is full-hand outcome training.
+- [[gus-full-hand-outcomes-2026-10-18]] — two matched full-hand GRPO/rehearsal iterations, fresh confirmation, lazy replay, native captures and fixed G0/Zeb/Demon games; no promotion.
+- [[gus-probability-reward-v3-2026-10-18]] — completed three-seed reward comparison and fresh finite-model gains, before the full-hand stage.
 - [[gus-success-probability-planning]] — direct verified-success reward and lazy immutable continuation supplements; fixed-opponent methodology.
 - [[gus-lazy-rlvr-smoke-2026-10-18]] — lazy replay byte checks and the success-reward integration smoke; no player promotion.
 - [[gus-retention-iterations-2026-10-18]] — three bounded iterations: exact reward plus rehearsal improves fresh finite-model answers while retaining prediction losses; extra depth earns no gain.
