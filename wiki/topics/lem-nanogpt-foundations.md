@@ -19,8 +19,11 @@ one tiny model, within-hand history, existing Pour A records and a worked-hand
 viewer. Population construction and reward learning are deferred. Field-net
 results are not GPT results.
 
-The same hatchling now has a deliberately extended formation run registered in
-[[lem-observer-overbake-2026-10-17]], with live W&B tracking and retained checkpoints.
+The extended run completed 200,000 updates and selected step 4,000 by validation;
+[[lem-observer-overbake-2026-10-17]] records its overfitting, frozen evidence and
+interpretability handoff. Jason chose to leave unit reading to the interp work
+and continue here with [[lem-observer-data-scale-2026-10-17]]: the same small
+architecture, more observed deals, and comparisons at matched update counts.
 
 The checkout is `/Users/jason/code/mk5-lem-nanogpt`, branch `codex/lem-nanogpt`,
 initially at `aa0af91d`. The reference clone is `/Users/jason/code/nanoGPT`, upstream
