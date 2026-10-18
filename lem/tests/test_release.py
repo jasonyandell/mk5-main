@@ -27,8 +27,10 @@ def test_final_release_roundtrip_selects_weights_before_confirmation(tmp_path, m
                 "tokenizer":VERSION, "data_sha256":"trajectories"}, checkpoint)
     selected = {"path":str(checkpoint), "sha256":digest(checkpoint)}
     state = {"status":"complete", "depth_index":4, "stale":4,
-             "generations":[{"id":"g000"},{"id":"g001"}]}
+             "generations":[{"id":"g000"},{"id":"g001","sha256":selected["sha256"]}]}
     atomic_json(tmp_path/"state.json", state)
+    atomic_json(tmp_path/"audit.json", {"all_completed_generations_verified":True,
+        "generations":[{"generation":"g001","checkpoint_sha256":selected["sha256"]}]})
     atomic_json(tmp_path/"campaign.json", {"depths":[2,4,8,12,15], "plateau_patience":4, "confirmation_hands":512})
     panel = {"hands":512, "team_win_rate":.55, "specs_sha256":"same-panel",
              "checkpoint_sha256":selected["sha256"],

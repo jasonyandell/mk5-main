@@ -68,8 +68,9 @@ independent public-record replay, team reward and policy-only PPO.
 `campaign.py`: persistent generation state, recent-five pool, separate best and
 progress anchors, depth growth, W&B and resumable subprocess orchestration.
 `release.py`: versioned model releases and allowlisted full trajectories.
-After the controller finishes reserved confirmation,
-`python -u -m lem.observer.release --root scratch/lem/gus-population/campaign`
+After the controller finishes reserved confirmation, run
+`scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.audit --root scratch/lem/gus-population/campaign`, then
+`scratch/venv/bin/python -u -m lem.observer.release --root scratch/lem/gus-population/campaign`
 publishes the preselected final-depth specimen, confirmation evidence and
 `campaign-selected-20261018` model tag. Publication checks the requested size,
 completed final-depth plateau, unchanged selected checkpoint and complete panel;
@@ -77,6 +78,12 @@ anonymous downloads verify every release file and the confirmation replay.
 An offline Hub round-trip test checks selected-versus-latest weight identity,
 adapter/safetensors parity, example logits, retry idempotency and refusal to
 publish before campaign completion.
+The archive audit independently reconstructs every saved learner prefix from
+own initial tiles and public plays, checks legal outputs/rewards and checkpoint
+chains, verifies the rolling population and deal exclusions, and requires
+actual finite weight changes. A corruption test updates a polluted input's
+checksum and confirms that the semantic audit still rejects it. Final publication
+requires an audit covering every completed generation's exact checkpoint.
 
 Work units run through `scripts/cpu-slot --threads 2` with the default 300-second
 cap; the orchestrator holds no slot while waiting or uploading. No game chooses
@@ -105,17 +112,19 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1 completed all
+Registration preceded the first population-training outcome. G1–G4 each completed all
 4,096 training hands, eight updates, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
-deal overlap. The campaign continues; two generations without a material gain
-do not establish the registered four-generation plateau.
+deal overlap. Four generations without a two-point gain triggered the registered
+plateau at depth two; the campaign now continues at depth four.
 
 | Specimen | Blocks / parameters | Development team wins | Difference from G0 |
 |---|---|---:|---:|
 | G0 | 2 / 107,392 | 51.95% | reference |
 | G1 | 2 / 107,392 | 50.00% | −1.95 pp [−5.08, +1.17] |
 | G2 | 2 / 107,392 | 50.00% | −1.95 pp [−5.08, +1.17] |
+| G3 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
+| G4 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -136,8 +145,23 @@ fresh anonymous downloads verified the exported weights and a raw hand replay.
 G2 completed the same registered budget and checks, with no development gain.
 [G2 model](https://huggingface.co/jasonyandell/gus/tree/965cb7d33e38e2a5f27518e50c5a2dc46b233b54)
 and [G2 evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0d4f472e43c0a7bca309f93a2c46a55fca732b51/lem/gus-depth-campaign-2026-10-18/g002)
-passed anonymous weight/replay verification. G0 remains the best development
-specimen; the continuation follows G2 while preserving G0 for possible growth.
+passed anonymous weight/replay verification.
+
+G3 supplied the retained best weights for the first growth. G4 tied its score;
+the registered material-improvement anchor remained G0's 51.95%, so four
+consecutive non-material generations triggered growth. The +0.78-point best
+development difference does not establish a strength improvement.
+[G3 model](https://huggingface.co/jasonyandell/gus/tree/gus-g003),
+[G4 model](https://huggingface.co/jasonyandell/gus/tree/1f367791e382020165226eac78b307049d62e5d9)
+and [complete first-depth evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/262a24d063a40d1476c6cfa135dafacecf5ae836/lem/gus-depth-campaign-2026-10-18).
+
+G5 begins at four blocks and **207,360 parameters**. Its initialization produced
+bit-identical MPS logits to G3 at every position of 512 fixed validation-view
+sequences (maximum absolute difference zero). The independent archive audit
+verified all **16,384 hands and 114,688 learner decisions** from G1–G4.
+[Audits and growth initialization](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/a8bedd32415179d0ac82630fe6138350a36c46c7/lem/gus-depth-campaign-2026-10-18)
+were anonymously downloaded and hash-verified. G5 training is tracked in
+[W&B](https://forge.coreweave.com/wandb/jasonyandell-forge42/gus-population/runs/f5e1911c).
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.

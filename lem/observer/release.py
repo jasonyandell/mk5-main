@@ -187,6 +187,11 @@ def publish_final(root):
     if (state["status"] != "complete" or state["depth_index"] != len(campaign["depths"])-1
             or state["stale"] < campaign["plateau_patience"]):
         raise ValueError("finish all registered depths and confirmation before publishing selection")
+    audit = json.loads((root / "audit.json").read_text())
+    expected = {g["id"]:g["sha256"] for g in state["generations"][1:]}
+    audited = {g["generation"]:g["checkpoint_sha256"] for g in audit["generations"]}
+    if not audit["all_completed_generations_verified"] or audited != expected:
+        raise ValueError("audit the complete formation before final publication")
     checkpoint = Path(final["selected"]["path"])
     if digest(checkpoint) != final["selected"]["sha256"]:
         raise ValueError("selected checkpoint changed")
@@ -307,7 +312,8 @@ The April oracle-era Gus is a different model lineage.
     if api.model_info(MODEL_REPO,revision=tag).sha != progress["model_revision"]:
         raise ValueError("selected tag points at a different release")
     if "archive_revision" not in progress:
-        files = [root/p for p in ["final.json","state.json","campaign.json"]]
+        files = [root/p for p in ["final.json","state.json","campaign.json","audit.json"]]
+        files += list(root.glob("growth-*.json"))
         for label in ("confirmation-g0", "confirmation-selected"):
             files += [root/label/p for p in ("report.json", "hands.jsonl.gz")]
             files += list(root.glob(f"{label}*.log")) + list(root.glob(f"{label}*-execution.json"))
