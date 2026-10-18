@@ -18,7 +18,37 @@ import torch
 from scenario.record import empty_record
 from scenario.rules import mask_of, rules_for
 from .data import VERSION
-from .population import atomic_json, digest
+from .population import atomic_json, digest, verify_episode
+
+
+def audit_panel(root, name, baseline):
+    root = Path(root)
+    folder = root / name / "development"
+    report = json.loads((folder / "report.json").read_text())
+    assert report["specs_sha256"] == digest(root / "development-specs.json")
+    specs = json.loads((root / "development-specs.json").read_text())
+    with gzip.open(folder / "hands.jsonl.gz", "rt") as stream:
+        episodes = [json.loads(line) for line in stream]
+    assert len(episodes) == len(baseline) == len(specs) == report["hands"]
+    changed, won, lost = 0, 0, 0
+    wins = []
+    for before, after, spec in zip(baseline, episodes, specs):
+        verify_episode(before); verify_episode(after)
+        assert all(before[k] == v and after[k] == v for k,v in spec.items())
+        first = next((i for i,(a,b) in enumerate(zip(before["plays"],after["plays"])) if a != b), None)
+        if first is not None:
+            changed += 1
+            # Only the learner changes. A frozen player's first divergence on
+            # identical public history would invalidate the fixed-table claim.
+            assert before["plays"][first][0] == after["plays"][first][0] == spec["learner"]
+        won += after["reward"] > before["reward"]
+        lost += after["reward"] < before["reward"]
+        wins.append((after["reward"]+1)/2)
+    assert wins == report["wins"] and float(np.mean(wins)) == report["team_win_rate"]
+    assert (won-lost)/len(episodes) == report["vs_reference"]["win_rate_difference"]
+    return {"hands_with_different_play":changed, "loss_to_win":won, "win_to_loss":lost,
+            "all_first_divergences_belong_to_learner":True,
+            "reported_wins_match_independent_replays":True}
 
 
 def audit_generation(run, generation, expected_pool, excluded):
@@ -137,10 +167,13 @@ def audit(root):
             assert deal not in excluded
             excluded.add(deal)
     generations = state["generations"]
+    with gzip.open(root / "baseline/hands.jsonl.gz", "rt") as stream:
+        baseline = [json.loads(line) for line in stream]
     results = []
     for i,generation in enumerate(generations[1:],start=1):
         expected = [g["id"] for g in generations[max(0,i-5):i]]
         results.append(audit_generation(root/generation["id"],generation,expected,excluded))
+        results[-1]["development"] = audit_panel(root,generation["id"],baseline)
         print(f"AUDITED {generation['id']}",flush=True)
     report = {"generations":results, "completed_generation_count":len(results),
               "total_hands":sum(r["hands"] for r in results), "total_learner_decisions":sum(r["decisions"] for r in results),

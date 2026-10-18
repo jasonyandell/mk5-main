@@ -9,11 +9,11 @@ import pytest
 import torch
 
 from forge.zeb.game import legal_actions
-from lem.observer.audit import audit_generation
+from lem.observer.audit import audit_generation, audit_panel
 from lem.observer.data import VERSION
 from lem.observer.model import Config, Observer
-from lem.observer.population import atomic_json, digest, make_specs
-from lem.observer.reward import train_block
+from lem.observer.population import atomic_json, collect, digest, make_specs
+from lem.observer.reward import save_episodes, train_block
 
 
 def test_audit_rejects_extra_input_even_after_checksums_are_updated(tmp_path, monkeypatch):
@@ -51,3 +51,37 @@ def test_audit_rejects_extra_input_even_after_checksums_are_updated(tmp_path, mo
     atomic_json(block/"complete.json",receipt)
     with pytest.raises(AssertionError):
         audit_generation(tmp_path,generation,["g000"],set())
+
+
+def test_panel_rejects_a_frozen_player_changing_before_learner(tmp_path):
+    class LegalFixture:
+        def __init__(self,last=False): self.last=last
+        def choose(self,states,bids):
+            return [legal_actions(s)[-1 if self.last else 0] for s in states]
+
+    torch.set_num_threads(2)
+    torch.manual_seed(42)
+    model=Observer(Config(width=8,layers=1,heads=1)).eval()
+    # Learner 1 is not the opening bidder, so the first choice is frozen.
+    specs=[make_specs(4,"panel-fixture",["g000"],set())[1]]
+    _,baseline=collect(model,{n:LegalFixture() for n in ("g000","zeb")},specs,"cpu",sample=False)
+    _,changed=collect(model,{n:LegalFixture(True) for n in ("g000","zeb")},specs,"cpu",sample=False)
+    baseline=json.loads(json.dumps(baseline))  # The audit reads archived JSON.
+    folder=tmp_path/"g001/development";folder.mkdir(parents=True)
+    atomic_json(tmp_path/"development-specs.json",specs)
+
+    def write_panel(episodes):
+        save_episodes(folder/"hands.jsonl.gz",episodes)
+        wins=[(e["reward"]+1)/2 for e in episodes]
+        delta=(episodes[0]["reward"]-baseline[0]["reward"])/2
+        atomic_json(folder/"report.json",{"specs_sha256":digest(tmp_path/"development-specs.json"),
+            "hands":1,"wins":wins,"team_win_rate":float(np.mean(wins)),
+            "vs_reference":{"win_rate_difference":delta}})
+
+    write_panel(baseline)
+    assert audit_panel(tmp_path,"g001",baseline)["hands_with_different_play"] == 0
+    write_panel(changed)
+    # Both full games are legal, all scores and checksums are accurate, and
+    # seat assignments match. The uncontrolled frozen-policy change is rejected.
+    with pytest.raises(AssertionError):
+        audit_panel(tmp_path,"g001",baseline)

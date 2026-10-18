@@ -84,6 +84,10 @@ chains, verifies the rolling population and deal exclusions, and requires
 actual finite weight changes. A corruption test updates a polluted input's
 checksum and confirms that the semantic audit still rejects it. Final publication
 requires an audit covering every completed generation's exact checkpoint.
+The development audit also replays reported wins and verifies that any hand's
+first changed action belongs to the learner, before which all frozen players
+must behave identically. A regression test rejects an otherwise lawful replay
+in which a frozen seat changes first.
 
 Work units run through `scripts/cpu-slot --threads 2` with the default 300-second
 cap; the orchestrator holds no slot while waiting or uploading. No game chooses
@@ -112,7 +116,7 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1–G5 each completed all
+Registration preceded the first population-training outcome. G1–G6 each completed all
 4,096 training hands, eight collection/update blocks, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
 deal overlap. Four generations without a two-point gain triggered the registered
@@ -126,10 +130,11 @@ plateau at depth two; the campaign now continues at depth four.
 | G3 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
 | G4 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
 | G5 | 4 / 207,360 | 52.73% | +0.78 pp [−3.13, +4.69] |
+| G6 | 4 / 207,360 | 51.17% | −0.78 pp [−4.69, +3.13] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
-score. The separate confirmation panel remains unused. Both full-game smokes
+score. The separate confirmation panel remains unused. G1's two full-game smokes
 split 1–1; they are integration checks, not evidence of equal strength.
 
 G1's eight training blocks used 178.60 seconds for collection, 5.07 seconds for
@@ -167,6 +172,20 @@ Its first completed iteration matched the inherited development score;
 [G5 weights](https://huggingface.co/jasonyandell/gus/tree/83646a18c39876666bc24fa0aa24be3cd26f54c0)
 and [full formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7601f75e1b40f0085508dbdad93f2abb9c1775a2/lem/gus-depth-campaign-2026-10-18/g005)
 passed anonymous verification. Depth-four training continues.
+
+Equal win rates do not imply equal policies. G5 changed the play of 184 of the
+256 development hands versus G0: 14 losses became wins and 12 wins became
+losses. The net two hands produce the +0.78-point difference. Every first
+divergence belonged to the learner. The expanded audit verified all 20,480
+training hands and 143,360 learner decisions through G5, including the exact
+evaluation outcomes and fixed-player consistency.
+[Audit through G5](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/blob/476380e3046a8f0d15f0a59bf5eb42bd63633fbc/lem/gus-depth-campaign-2026-10-18/audit-through-g005.json).
+
+G6 scored 51.17%, leaving the retained best at 52.73% and the depth-four
+non-improvement counter at two.
+[G6 weights](https://huggingface.co/jasonyandell/gus/tree/b9b216ee129a159999ba76d5f9ff54a9883aa7a9)
+and [formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/eb0704eebed4dca10d1cbb2920c3985a7aa9dd3b/lem/gus-depth-campaign-2026-10-18/g006)
+passed anonymous verification. No selection uses the reserved confirmation panel.
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.
