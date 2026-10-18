@@ -34,7 +34,7 @@ def publish_data(root, initial=False):
     files += [root/'input-audit.json',root/'h2h-plan.json',root/'exclusions.json',root/'excluded-hands.npy']
     files += [root/'training'/name for name in ('data.json','initial.json','initial.pt','wandb-run.json')]
     if not initial:
-        files += [root/'initial-archive-verification.json']
+        files += [root/'initial-archive-verification.json',root/'trajectory-audit.json']
         files += list(sorted((root/'training').glob('step-*.pt')))
         files += [root/'training'/name for name in ('best.pt','latest.pt','report.json','progress.json')]
         files += [root/'diagnostics'/name for name in ('report.json','per-deal.npz')]
