@@ -2,7 +2,7 @@
 title: Texas 42
 kind: entity
 first_seen: 2026-04-09
-last_updated: 2026-07-11
+last_updated: 2026-10-18
 status: active
 ---
 
@@ -11,6 +11,8 @@ status: active
 Texas 42 is a trick-taking partnership game played with a standard double-six domino set —
 the game this whole project is about. This page is the terse quick-reference for the
 straight tournament form, the form every model and experiment in this repo plays.
+
+The compact, source-pinned publication is [[mathematical-notes]].
 
 **The game-of-42 cluster** — where to go deeper:
 
@@ -39,7 +41,7 @@ rank by off-pip descending. Example (fives, no trump): 5-5 > 6-5 > 5-4 > 5-3 > 5
 
 ## Trump declarations
 
-The winning bidder names one of ten declarations, which reduce to three kinds:
+In straight play the winning bidder names one of nine declarations, which reduce to three kinds:
 
 1. **Pip suit trump** (blanks, ones, twos, threes, fours, fives, or sixes): every domino
    containing that pip is trump. The double of the trump suit is the highest trump. Trumps

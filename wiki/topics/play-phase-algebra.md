@@ -2,7 +2,7 @@
 title: Play-phase algebra — state model, rewards, and the solved game
 kind: topic
 first_seen: 2025-12-28
-last_updated: 2026-07-11
+last_updated: 2026-10-18
 status: active
 ---
 
@@ -152,12 +152,14 @@ $\pi_{\mathsf{player}(s)}$, and the game graph and payoffs are isomorphic. Concr
 permutes bits inside each 7-bit hand mask and the context tables. **Practical corollary:**
 sorted global domino IDs as the local order is a gauge-fix that makes contexts reproducible.
 
-### 8.2 Table symmetries: dihedral action on seats
+### 8.2 Table symmetries: cyclic action on seats
 
-Any rotation/reflection of the 4 seats ($D_4$) acts on the deal by permuting hands and
-leader. If it preserves the team partition it preserves payoffs; if it swaps teams it
-negates the signed payoff (and swaps max/min roles). A useful normalization lever, though
-the oracle fixes the initial leader to seat 0.
+The four rotations $f(s)=s+a$ ($C_4$) preserve clockwise successor and transport the deal,
+leader, states and actions. Even rotations preserve signed payoffs; odd rotations exchange
+teams and negate them (swapping max/min roles). Reflections are not symmetries of this
+fixed-clockwise game: $f(s)=-s$ maps the successor of seat 0 to seat 3, but the reflected
+game's successor of seat 0 is still seat 1. A reflection would also have to reverse the
+stipulated direction of play. The oracle fixes the initial leader to seat 0.
 
 ### 8.3 Contrast with the suit-algebra symmetry
 

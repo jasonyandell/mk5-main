@@ -2,7 +2,7 @@
 title: Match equity — the value of a score in the game to seven marks
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-15
+last_updated: 2026-10-18
 status: active
 ---
 
@@ -23,21 +23,28 @@ a coin per one-mark hand it is the oracle era's `race_wp` (`champion/utility.py`
 ## One-mark calls are score-blind
 
 Every contract from 30 to 42 pays one mark, made or set. If every branch of a decision moves
-exactly one mark,
+exactly one mark, with the same continuation context (including next shaker) after each
+outcome and a fixed future hand law,
 
-    E[V] = V(a, b+1) + π · [V(a+1, b) − V(a, b+1)],   the bracket > 0,
+    E[V] = V(a, b+1) + π · [V(a+1, b) − V(a, b+1)].
 
-with π the chance our side takes the mark. The score scales the stakes and never changes the
-best call: among pass, 30, …, 42 the best call maximizes π at every score. The score enters a
-bid only where the marks at stake differ: 84 and up. ("Within a hand, marks-optimal ≈ maximize
+Here π is the chance our side takes the mark. For a monotone equity table the bracket is
+nonnegative: maximizing π maximizes equity, with the same ordering when it is positive.
+Thus the score does not change the best one-mark call **if the calls' mark-win probabilities
+are themselves score-independent**. Score-sensitive opponents or different continuation
+contexts can violate that premise. Different stakes (84 and up) change the equity comparison
+even with fixed make probabilities. ("Within a hand, marks-optimal ≈ maximize
 P(make), which is score-independent" was rung #27's play-side finding, [[champion-ladder]];
 this is its bid-side form.)
 
 ## The 84 against the 42
 
-Both need all 42 points, so they make or fail together; the 84 pays two. Bid 84 over 42 iff
+Both need all 42 points; the 84 pays two. Assume the same make event and continuation
+context for the comparison (a changed bid can otherwise change play). Bid 84 over 42 iff
 
-    p / (1 − p) > [V(a, b+1) − V(a, b+2)] / [V(a+2, b) − V(a+1, b)].
+    p · [V(a+2, b) − V(a+1, b)] > (1 − p) · [V(a, b+1) − V(a, b+2)].
+
+The undivided inequality also handles zero increments and terminal boundaries.
 
 Under the coin law the threshold p* is (rows: our marks; columns: theirs):
 

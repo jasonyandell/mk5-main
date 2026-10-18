@@ -1,22 +1,35 @@
 ---
-title: Endgame equivalence census — worlds never compress
+title: Endgame equivalence census — no hidden-moving symmetries in the tested roots
 kind: topic
 first_seen: 2026-07-20
-last_updated: 2026-10-14
+last_updated: 2026-10-18
 status: complete
 ---
 
-Can exact equivalence classes over hidden dominoes shrink the endgame solve space with fully correct results? No. **Swapping two hidden tiles never preserves value, at any depth.** The one exact equivalence lives inside the viewer's own hand. A proposal to "collapse equivalent hidden tiles to solve the middle of the hand" is answered by this page.
+The 200-root census found no hidden-moving automorphisms under its tested residual
+signatures. It found useful equivalences within the viewer's hand. This is a scoped
+measurement, not a proof that hidden worlds never compress or that hidden swaps never
+preserve value. With one trick left and the viewer holding the highest trump, reassigning
+the other three tiles leaves the winner and total trick points unchanged. Scalar value
+equality is weaker than game isomorphism.
 
 Measured 2026-07-20 on the frozen 200-root H4 evalset (the endgame solver `hoyt`, branch `origin/worktree-equiv-census`, not on main) with a certified instrument, `hoyt/equivcensus.py`.
 
-## The co-occurrence theorem
+## What co-occurrence does and does not establish
 
-In a 4-seat trick game, any two comparable hidden tiles co-occur in a trick in some consistent world, one in each of two seats. Their relative rank is therefore always game-live, and no exact swap of hidden tiles exists. The only tiles that can never resolve a trick against each other are two tiles of one hand (one play per seat per trick), so interchangeability exists only within the observer's own hand.
+Tiles in one hand cannot meet in a trick. Hidden tiles in different hands can meet when
+the capacities, void constraints and legal continuations permit it. Such co-occurrence
+can expose a rank difference and defeat a proposed structural swap. It does not prove
+that every swap changes the final payoff or optimal value.
 
-The mechanism is depth-independent: world-level dedup is dead at every horizon, not only H4. The sole loophole, mutually incomparable "dead trash" pairs in entirely dead suits, occurred 0 times in 200 roots. Voids are irrelevant to the null; a no-void regime also found nothing.
+No hidden-moving symmetry was found in this H4 sample, including its no-void regime;
+the reported dead-suit loophole occurred zero times in 200 roots. Other roots, horizons,
+query-specific quotients and accidental value equalities are not excluded by that census.
 
-Corollary: pip relabeling is not a per-deal game isomorphism. A mixed domino leads its higher end and in-suit ranks are pip sums, so only the unique monotone relabeling transports even the unscored play tree ([[suit-algebra-spec]] §9, [[play-phase-algebra]]). The game re-reads its pips at every mixed lead.
+Arbitrary pip relabeling is not a symmetry of the full rule system. Preserving numeric-max
+lead selection for every pair requires an order-preserving permutation, hence identity
+([[suit-algebra-spec]] §9, [[play-phase-algebra]]). Special residual states may still admit
+equivalences; this global rule observation is not an impossibility result from the census.
 
 ## The instrument
 
@@ -32,7 +45,10 @@ The play phase touches tiles only through led suit, follow-legality, trick-order
 | solver receipt for the 29 pairs | 29/29 bitwise value ties against a uniform field; non-paired moves differ, median 1.54 pts |
 | pip-relabeled roots matching their originals | 0/200 |
 
-Dead: world-orbit quotients, cross-root dedup, orbit-aware world caps, and any "solve one representative per class" scheme over hidden-tile assignments.
+The measured signatures supplied no reduction for world-orbit quotients, cross-root dedup
+or orbit-aware world caps on this corpus. A new quotient still needs to prove preservation
+of its chosen query, transition law or value; the census is evidence about expected savings,
+not a universal obstruction.
 
 ## What survives: own-hand equals
 
@@ -67,7 +83,7 @@ Verdict: exact and cheap, but about 3% on top of the 83% forced-slot compression
 
 ## Prior work
 
-The same null was reached earlier and independently in texas-42:
+Related earlier evidence in texas-42, concerning different equivalence criteria:
 
 - `wiki/idea-hierarchical-fibers.md` §7, the "rung 2" probe: 28% of 160,012 swaps change the outcome.
 - `walt/CENSUS-RULINGS.md:1364`, Corollary S-rigid (on paper): at the first play the seat-side quotient is the identity, 1,184,040 classes. "Compression in this project is bought with deadness."

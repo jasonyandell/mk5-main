@@ -2,7 +2,7 @@
 title: "Strategy Fusion — E[max(score)] ≥ max(E[score]), the diagnosis, and the E[Q] founding sentence"
 kind: topic
 first_seen: 2026-07-06
-last_updated: 2026-10-13
+last_updated: 2026-10-18
 status: complete
 ---
 
@@ -11,9 +11,11 @@ status: complete
 Strategy fusion is the failure mode of a value model trained on fully-observed game states
 when that model is then asked to act under partial information: it plays as if it can see all
 four hands, because it can. Formally: **E[max_play(outcome)] ≥ max_play(E[outcome])**.
-Averaging a perfect-information oracle's per-world best play over sampled hidden-hand
-completions is not the value of the imperfect-information game — it is strictly an upper
-bound on it (citing Frank & Basin 1998; magnitude studies via Long et al. 2010). This page
+With the same belief, field and policy menu, permitting the focal player to select a plan
+separately in each hidden world gives an upper bound; equality is possible. This does **not**
+make averaged all-four-clairvoyant minimax a general upper bound: revealing hands to the
+opponents also changes their choices, and the two effects have no fixed ordering
+([[belief-policy-value-algebra]], [[splat-search-bounds]]). This page
 covers the whole arc: the Jan 3–5 diagnosis and formal naming (era 2, [[breakthrough-and-oracle]]),
 the Jan 9–11 abandoned first fix, the process-discipline correction that preceded the real
 fix, and the founding of [[expected-q-value]] as the answer.
@@ -32,7 +34,8 @@ critique Jason endorsed outright: *"Averaging the results of Perfect Information
 does not equal the value of the Imperfect Information game. It is strictly an Upper Bound...
 Path A calculates the Expected Value of Perfect Play. Reality requires the Maximum Value of
 Expected Play... Your 'Path A' will systematically advise you to bid too high."* (conv
-adb6de51, "yes to all").
+adb6de51, "yes to all"). The quoted bound is the historical diagnosis; the overview above
+states its corrected mathematical scope.
 
 Jason had already felt the bug in the model before the formal name arrived, and held the line
 on describing it precisely against a looser paraphrase: *"it doesn't confuse those two. it

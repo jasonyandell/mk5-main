@@ -2,7 +2,7 @@
 title: The Belief/Policy/Value Algebra
 kind: topic
 first_seen: 2026-07-16
-last_updated: 2026-07-16
+last_updated: 2026-10-18
 status: active
 ---
 
@@ -73,8 +73,9 @@ mid-game position, in [[jud]]'s 2026-06-14 demo sketch: ESS 128 → 10.5.
 
 ## The coupling theorem ("the tiger")
 
-Perturb the field, log σ̃ → log σ̃ + ε·φ, and accumulate the direction along
-the observed history: φ_h(ω) = Σ_t φ(a_t, s_t(ω)). Then
+For a smooth field family with fixed positive support, let φ be the derivative of its
+normalized log action probability at ε = 0, and accumulate it along the observed history:
+φ_h(ω) = Σ_t φ(a_t, s_t(ω)). With sufficient smoothness for the remainder, then
 
 ```
 d/dε log b(ω) = φ_h(ω) − E_b[φ_h]                      (centered score)
@@ -96,10 +97,12 @@ I(ω ; a_t | h_<t) = E_{ω~b} [ D( σ(·|s_t(ω)) ‖ σ̄ ) ],    σ̄ = E_b[σ
 
 Per-decision meaning is the belief-expected divergence of the actor's
 world-conditional action distribution from its predictive mixture; the whole
-hand's meaning is the sum. Tiger and treasure are **one functional** —
-world-discrimination — evaluated at the update direction (tiger) vs the
-current field (treasure). Corollary: the update directions that grow meaning
-are exactly the belief-destabilizing ones, direction by direction.
+hand's meaning is the sum. This information identity and the centered-score identity
+describe different quantities. Posterior movement does not imply information growth:
+for a uniform hidden bit sent through a binary symmetric channel of correctness
+$q>1/2$, decreasing $q$ decreases $I=\log 2-H(q)$ while changing the posterior after
+either observation. Reversing a perturbation leaves its score variance unchanged but
+reverses first-order information growth. There is no equivalence between these directions.
 
 ## E[Q], located
 
@@ -165,8 +168,8 @@ with a dialed revelation rate. The strategic options differ by two knobs
    change's accumulated log-likelihood — zero for world-nondiscriminating
    updates, zero from forced actions. A loop that improves play without
    changing hand-conditional choice structure moves no beliefs.
-3. **Information identity + chain rule**, and the tiger/treasure coincidence:
-   meaning-growth and belief-churn are the same directions.
+3. **Information identity + chain rule**: conditional information is expected KL from
+   the predictive action mixture. Its growth is not equivalent to posterior movement.
 4. **V is (π,b)-determined**: convergence is diagnosed on (π, b) consistency;
    V-error is repairable by evaluation data alone.
 5. **eq = π deleted twice**, and the deletions are not a bound in general.

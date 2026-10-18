@@ -2,7 +2,7 @@
 title: Suit algebra — the formal specification
 kind: topic
 first_seen: 2025-12-28
-last_updated: 2026-07-11
+last_updated: 2026-10-18
 status: active
 ---
 
@@ -177,7 +177,7 @@ The called set $\kappa(\delta)$, power set $\pi(\delta)$, and rank are **configu
 
 **Claim:** Let $d_1, d_2, d_3, d_4 \in \mathcal{D}$ be distinct, with $d_1$ the lead and $\ell = \ell(d_1, \delta)$. Then:
 
-$$\exists! \, d^* : \forall i, \; \tau(d^*, \ell, \delta) \geq \tau(d_i, \ell, \delta)$$
+$$\exists! \, j\in\{1,2,3,4\}: \forall i\in\{1,2,3,4\}, \; \tau(d_j, \ell, \delta) \geq \tau(d_i, \ell, \delta)$$
 
 Distinctness is the only hypothesis—legality of the trick is not needed.
 
@@ -239,14 +239,15 @@ $$\phi_g\{i, j\} = \{g(i), g(j)\} \quad \text{for } g \in S_7$$
 
 $$\hat{\Sigma}^p \cong \hat{\Sigma}^{g(p)} \quad \forall g \in S_7$$
 
-All pip-trump declarations share **one** following/legality structure, instantiated seven ways. This is the isomorphism that lets training-data generation sample one pip-trump representative instead of all seven (see [[suit-algebra]]).
+All pip-trump declarations have isomorphic **suit-incidence** structures. Following is preserved when a separately specified led suit is transported too. This alone does not justify transporting ranked, scored training targets between declarations (see [[suit-algebra]]).
 
 **What the symmetry does not preserve.** The action preserves suit *membership* only—not the ranked game:
 
-- *Intra-suit order:* the swap $0 \leftrightarrow 6$ carries trump-0 to trump-6 but sends $\{3,6\}$—the top non-double of suit 3—to $\{3,0\}$, the bottom. Pip sums are not equivariant.
+- *Lead selection:* numeric maximum is not equivariant. With ones trump, lead $63$ permits only $62$ from hand $\{62,33\}$. Swapping $0\leftrightarrow6$ gives lead $30$ and hand $\{20,33\}$, which permits only $33$.
+- *Intra-suit order:* with ones trump fixed, the same swap sends $\{3,6\}$—the top non-double of suit 3—to $\{3,0\}$, the bottom. Pip sums are not equivariant.
 - *Count points:* $\{5,0\}, \{4,1\}, \{3,2\}, \{5,5\}, \{6,4\}$ are fixed targets, not symmetric under relabeling.
 
-Pip-trump declarations are isomorphic as legality structures, not as games. ([[play-phase-algebra]] §8.3 develops why the full scored game breaks the big symmetry.)
+Pip-trump declarations are isomorphic as incidence structures, not generally as legal play trees or games. ([[play-phase-algebra]] §8.3 develops why the full scored game breaks the big symmetry.)
 
 ## §10. Summary: the 8-suit model
 
