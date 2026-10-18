@@ -98,5 +98,22 @@ mixture and whichever vocabulary the interp study actually tests.
 
 Output directory: `scratch/lem/observer-corpus-squeeze`.
 Preflight and source list: `scratch/lem/corpus-squeeze/`.
-The experiment is registered; training results and archive receipt will be
-added when available. The original lesson remains tied to its original model.
+Registered and implemented at `655bc7de` ([PR #210](https://github.com/jasonyandell/mk5-main/pull/210),
+merged). Training started in
+[W&B run 5lvllnsj](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/5lvllnsj).
+The [registration archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/24c9731450d2bb9a130d34cc3c208f5da4a8cdd6/lem/observer-corpus-squeeze-2026-10-17)
+preserves the untrained twin, source hashes, split counts and W&B identity;
+its downloaded initialization matched the local SHA256. The initial tensors
+also match the 50k specimen exactly.
+
+Training and the subsequent comparison/coverage/archive jobs are running as a
+single experiment workflow. Final training results remain pending; the local
+`corpus-squeeze/finalization-status.json` records evidence-job progress. The
+completion archive will use the same study directory at a later HF commit.
+The original lesson remains tied to its original model.
+
+Validation before launch: `scripts/check --fast` GREEN (33 Lem tests, wiki,
+licenses, conflict markers). Every prepared array matched the preceding
+implementation across 90 replayed deals, all nine declarations and four views.
+The training probe uses the first 256 training deals, all from the older field
+generation; it is a local diagnostic rather than a mixture-balanced loss estimate.
