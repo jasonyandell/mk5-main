@@ -3,8 +3,17 @@ title: "Gus splat pretraining: the same view, richer consequences"
 kind: experiment
 first_seen: 2026-10-18
 last_updated: 2026-10-18
-status: active
+status: complete
 ---
+
+## Outcome
+
+The joint model learned the richer forecasts but did **not** improve the
+measured decisions over G0. On the shared diagnostic deals, its splat policy
+has higher teacher-relative regret than G0; its tile head also loses accuracy.
+The fresh game smoke finished 3–5 against G0 and 3–5 against the campaign Zeb.
+Four duplicate pairs per opponent cannot establish a general win rate. No
+promotion or further training followed these results.
 
 ## Question and preregistration
 
@@ -103,3 +112,79 @@ The initial archive is 1,283,235,412 bytes; small receipts/checkpoints passed fr
 anonymous downloads. All archive sizes and LFS hashes are checked; cache 0 also
 passed a fresh anonymous download and all decoded-array checksum checks. The
 other six compressed caches have metadata/hash verification, not fresh downloads.
+
+## Completed formation and diagnostics
+
+The 185,652-parameter model completed 200,000 updates / 8.005 equivalent passes
+in 1,576.45 seconds (26m16s, training plus evaluation). Minimum full-validation
+joint loss selected step 195,000. The 84 formation checkpoints include the
+untrained twin, early steps and every periodic step; all parameters are finite,
+optimizer/sampler state is preserved, and the selection criterion was audited.
+Best full checkpoint SHA256:
+`f261e0f257047565cb481f88c5480e39e219d951173710c3dbf858b4b9cd563c`.
+
+The paired diagnostic covers 50,038 previously inspected test deals, 200,152
+views and 679,985 discretionary own choices before public settlement. Intervals
+below use 2,000 physical-deal bootstrap draws; they measure this corpus, not
+playing strength against fresh opponents.
+
+| Measure | G0 tile policy | Joint tile policy | Splat policy | Uniform legal |
+|---|---:|---:|---:|---:|
+| All-play raw tile accuracy | 52.90% | 50.73% | — | — |
+| All-play tile NLL | 1.2620 | 1.3275 | — | — |
+| Consequential own legal teacher-move accuracy | 58.32% | 56.36% | — | — |
+| Consequential teacher make/set regret, percentage points | 2.413 | 2.700 | 3.040 | 5.256 |
+
+Splat minus G0 regret is **+0.627 pp [0.604, 0.649]**, and splat minus its own
+tile policy is **+0.340 pp [0.318, 0.362]**. Lower regret is better: the selected
+move gives up that much of the best labelled move's teacher make/set probability.
+G0's matched advantage is diagnostic evidence against an improvement from this
+first joint recipe. The joint tile-accuracy change is −2.166 pp
+[−2.212, −2.122].
+
+The splat head's consequential make-probability MAE is **10.050 pp
+[10.010, 10.089]**, histogram KL **0.3681 nats [0.3669, 0.3693]**, and tie-aware
+teacher-best accuracy **55.47% [55.34, 55.60]**. All-labelled-position histogram
+CE is 2.3649 nats, comprising teacher entropy 1.9647 plus KL 0.4002. Probability
+reliability bins compare forecasts with teacher probabilities, not actual game
+outcomes. Literal inputs, 43-bin predictions and each policy's choice are in
+`example.json`; no extra candidate feature enters the prefix.
+
+## Fresh short games
+
+All eight scheduled pairs completed, 16 games / 179 hands, with legal-play and
+score replay checks and zero overlap against 584,958 excluded physical deals.
+Both partnerships use the same bid-30 bidder; games finish at seven marks.
+Zeb is the campaign's frozen 160-world posterior/make configuration, not the
+separate tournament's native Zeb 0.4.1 reference. Its precise spec and field hash
+are in the published manifests.
+
+| Opponent | Splat wins | Marks per game | Duplicate pairs |
+|---|---:|---:|---:|
+| G0 | 3 / 8 | −0.875 | 4 |
+| Campaign Zeb | 3 / 8 | −2.000 | 4 |
+
+Chance is 50% game wins; neutral marks/game is zero. The exploratory pair
+bootstrap win interval is [12.5%, 50.0%] for each opponent, but four pairs cannot
+support reliable tail estimates: the conservative bounded-pair 95% interval is
+[0%, 100%]. These are smoke results, not a strength ranking. Every faceoff took
+under 5.81 seconds, within its 60-second cap; all eight invocations took 28.55
+seconds including queue/startup. The full paired forecast diagnostic took 19.2
+wall seconds. These times are descriptive, not player thinking budgets.
+
+## Evidence and interpretation handoff
+
+The [complete 1.488 GB formation and evaluation archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/ae0c9139dd74a5c281353319bd6db5571223c613/lem/gus-splat-pretraining-2026-10-18)
+contains exact compiled targets, all 84 formation checkpoints, full best/final
+optimizer states, paired per-deal diagnostics, every scheduled H2H attempt and
+replay, cost receipts, literal example, input and trajectory audits, and
+[phone-readable training curves](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/resolve/ae0c9139dd74a5c281353319bd6db5571223c613/lem/gus-splat-pretraining-2026-10-18/progress.png).
+The manifest, input audit, initialization, best checkpoint, diagnostic report
+and H2H summary passed fresh anonymous download/hash verification.
+
+This is a useful specimen for `clean-neuron`: the same initial backbone and
+clean inputs now faced a richer supervised task. No native-unit or causal
+interpretation has been performed here. Loss balancing, competition for the
+small shared representation, and whether histogram fitting preserves fine
+between-action differences are hypotheses for later controlled experiments,
+not established explanations or authorization for another run.

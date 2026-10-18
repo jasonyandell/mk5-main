@@ -341,7 +341,7 @@ not prerequisites or measured promises for Texas 42. The project's scope is
 [[lem-the-teacher]] and league issue #182; richer learned distinctions under this
 population remain a result to investigate with the interp work.
 
-### Candidate extension: predict the splat
+### Implemented extension: predict the splat
 
 Jason selected predicting the splat on 2026-10-17, after the
 [[two-recursions-and-transformers]] comparison, and fixed the input boundary:

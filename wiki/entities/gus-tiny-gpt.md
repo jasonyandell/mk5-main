@@ -28,11 +28,11 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
 ## Routes
 
-- [[gus-splat-pretraining-2026-10-18]] — authorized joint tile/outcome pretraining; unchanged inputs, full weighted splat targets.
+- [[gus-splat-pretraining-2026-10-18]] — completed joint tile/outcome pretraining; learned forecasts, no measured improvement over G0; full formation preserved.
 
 - [[lem-observer-corpus-squeeze-2026-10-17]] — G0's training and formation archive.
 - [[lem-observer-first-h2h-2026-10-17]] — measured play versus the predecessor.
-- [[lem-nanogpt-foundations]] — clean inputs, math, pending splat/Nello and Zeb methodology.
+- [[lem-nanogpt-foundations]] — clean inputs, math, implemented splat interface, pending Nello and Zeb methodology.
 - [[gus-population-iteration]] — latest five generations plus permanent Zeb; implemented reward-round settings.
 - [[gus-training-review-2026-10-18]] — independent replay review, next controlled experiments and the `gus-training` skill.
 - [[gus-tournament-pilot-2026-10-18]] — G0–G20 entries, common-bidder Zeb and 30 bounded games; public evidence and pending canonical tournament synchronization.
