@@ -247,6 +247,10 @@ arena with unchanged inputs and a legal-output argmax. Both sides use fixed
 bid-30 bidding; this isolates play before the input vocabulary supports other
 bids. Its own generated moves now change the histories it encounters. Matching
 recorded behavior and winning these games are distinct measurements.
+The first comparison is complete: the 500k specimen wins 57.03% [52.73, 61.72]
+against the 50k predecessor, neutral 50%, over 128 paired seeds / 256 games.
+Initialization, uniform-legal and exact self-match controls are in the experiment.
+This establishes the starting player; reward training remains unimplemented.
 
 The next improvement loop is: freeze the incumbent; collect games from a
 trainable challenger; update its action probabilities using its team's actual

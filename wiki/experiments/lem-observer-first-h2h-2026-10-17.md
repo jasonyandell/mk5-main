@@ -3,7 +3,7 @@ title: "Lem observer: first head-to-head games"
 kind: experiment
 first_seen: 2026-10-17
 last_updated: 2026-10-17
-status: active
+status: complete
 ---
 
 ## Question and registration
@@ -56,6 +56,44 @@ Implementation: `lem/observer/play.py`, `lem/observer/h2h.py`. Tests compare
 every live prefix to its training counterpart in all nine supported declarations,
 perturb hidden hands, exercise variable history lengths and legal-output
 selection, and check deterministic replay and paired self-match neutrality.
+
+## Result
+
+The registration and implementation were frozen at `38d3285b` before the games.
+All four arms completed at that clean commit. The 500k observer's outcomes:
+
+| Opponent | Games | Game wins, 95% paired interval | Mark margin/game, 95% paired interval |
+|---|---:|---:|---:|
+| 50k observer, best step 18500 | 256 | **57.03% [52.73, 61.72]** | **+0.609 [+0.367, +0.852]** |
+| Saved untrained twin | 256 | **89.06% [85.55, 92.58]** | **+3.227 [+2.980, +3.465]** |
+| Uniform legal | 256 | **87.11% [83.20, 90.63]** | **+3.141 [+2.879, +3.398]** |
+| Itself | 32 | **50.00% [50.00, 50.00]** | **0.000 [0.000, 0.000]** |
+
+Neutral baselines are 50% wins and zero margin. All three positive-direction
+predictions held with their individual, unadjusted intervals excluding neutral;
+the self-match was exactly neutral. The improved predictive specimen also plays
+better against its predecessor in this setting. This is not a causal estimate
+of data size: training updates and source mixture differ too. It does not establish
+an ordering against stronger planners or a diverse partner/opponent population.
+
+Across 800 games and 8,448 hands, every recorded play was legal and the public
+referee reproduced every score. No evaluated physical deal was in the 500k
+source corpus. Candidate checkpoint SHA256:
+`99fd106a15ae468dca9c02426541816f1121a2cdef0cc7b96fd37f2122f31d8d`.
+The candidate and predecessor both kept their validation-selected weights;
+there was no head-to-head-based checkpoint selection or weight update.
+
+The four jobs consumed 3.702e11 CPU instructions, 25.6 CPU seconds and 29.9
+wall seconds in total, including source loading and audits. MPS inference
+work is not included in CPU instructions. These are descriptive costs, not
+policy thinking budgets or a comparison between machines.
+
+[Frozen evidence, d92c5c9](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/d92c5c9ebe7b3568f5f8e081c14885131a2e1790/lem/observer-first-h2h-2026-10-17)
+preserves all game records, manifests, reports, cost records and check logs
+(793,758 bytes). A fresh download of the predecessor-match replay matched
+SHA256 `48575f7ffe64d1d4b23dd41c178d4d631adb3b25487f6dac522e9a1258dc15b9`.
+`scripts/check --fast` passed all 47 Lem tests and the wiki, conflict and
+license gates. The implementation is [PR #211](https://github.com/jasonyandell/mk5-main/pull/211).
 
 ## What this prepares
 
