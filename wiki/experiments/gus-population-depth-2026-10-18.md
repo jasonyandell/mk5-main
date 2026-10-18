@@ -102,7 +102,32 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration precedes the first population-training outcome. Results are pending.
+Registration preceded the first population-training outcome. G1 completed all
+4,096 training hands, eight updates, the 256-hand panel and both two-game smokes.
+Every recorded hand replayed lawfully; the smokes had no source/training/panel
+deal overlap. The campaign continues; G1 alone does not establish a plateau.
+
+| Specimen | Blocks / parameters | Development team wins | Difference from G0 |
+|---|---|---:|---:|
+| G0 | 2 / 107,392 | 51.95% | reference |
+| G1 | 2 / 107,392 | 50.00% | −1.95 pp [−5.08, +1.17] |
+
+The interval is the registered whole-hand paired bootstrap on the repeatedly
+used development panel; it is exploratory. G1 did not improve the development
+score. The separate confirmation panel remains unused. Both full-game smokes
+split 1–1; they are integration checks, not evidence of equal strength.
+
+G1's eight training blocks used 178.60 seconds for collection, 5.07 seconds for
+optimizer work and 187.47 seconds total inside the worker processes. Development
+evaluation used 11.43 seconds. These exclude shared-slot waiting and publication;
+wall times are descriptive, with CPU instructions retained in the cost logs.
+
+[G1 model](https://huggingface.co/jasonyandell/gus/tree/6e4f09e4dbd5c3aeca7bcb76545c8d4d6a6f4f14)
+and [formation/panel/smoke evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/1362807a377256a42bacb73a8620eae38bd91728/lem/gus-depth-campaign-2026-10-18)
+are public. The generation archive is 16,105,574 bytes, plus shared panel files;
+fresh anonymous downloads verified the exported weights and a raw hand replay.
+[W&B G1](https://forge.coreweave.com/wandb/jasonyandell-forge42/gus-population/runs/f9414e5b).
+
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.
 Scope: this sequence model, original-own-hand and within-hand public history,
