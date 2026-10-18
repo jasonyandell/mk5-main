@@ -112,8 +112,8 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1–G4 each completed all
-4,096 training hands, eight updates, the 256-hand panel and both two-game smokes.
+Registration preceded the first population-training outcome. G1–G5 each completed all
+4,096 training hands, eight collection/update blocks, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
 deal overlap. Four generations without a two-point gain triggered the registered
 plateau at depth two; the campaign now continues at depth four.
@@ -125,6 +125,7 @@ plateau at depth two; the campaign now continues at depth four.
 | G2 | 2 / 107,392 | 50.00% | −1.95 pp [−5.08, +1.17] |
 | G3 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
 | G4 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
+| G5 | 4 / 207,360 | 52.73% | +0.78 pp [−3.13, +4.69] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -162,6 +163,10 @@ verified all **16,384 hands and 114,688 learner decisions** from G1–G4.
 [Audits and growth initialization](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/a8bedd32415179d0ac82630fe6138350a36c46c7/lem/gus-depth-campaign-2026-10-18)
 were anonymously downloaded and hash-verified. G5 training is tracked in
 [W&B](https://forge.coreweave.com/wandb/jasonyandell-forge42/gus-population/runs/f5e1911c).
+Its first completed iteration matched the inherited development score;
+[G5 weights](https://huggingface.co/jasonyandell/gus/tree/83646a18c39876666bc24fa0aa24be3cd26f54c0)
+and [full formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7601f75e1b40f0085508dbdad93f2abb9c1775a2/lem/gus-depth-campaign-2026-10-18/g005)
+passed anonymous verification. Depth-four training continues.
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.
