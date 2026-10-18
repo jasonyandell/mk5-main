@@ -88,6 +88,10 @@ The development audit also replays reported wins and verifies that any hand's
 first changed action belongs to the learner, before which all frozen players
 must behave identically. A regression test rejects an otherwise lawful replay
 in which a frozen seat changes first.
+`plot.py` renders the completed-generation score/parameter chart as PNG and PDF,
+with exact values in `progress.json`. Matplotlib runs in a separate plotting
+environment, leaving the training runtime unchanged. Rerender after confirmation;
+final publication rejects a stale chart and archives the refreshed figure/data.
 
 Work units run through `scripts/cpu-slot --threads 2` with the default 300-second
 cap; the orchestrator holds no slot while waiting or uploading. No game chooses
@@ -116,11 +120,11 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1–G9 each completed all
+Registration preceded the first population-training outcome. G1–G12 each completed all
 4,096 training hands, eight collection/update blocks, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
 deal overlap. Four generations without a two-point gain triggered the registered
-plateau at depth two and then at depth four; the campaign now continues at depth eight.
+plateau at depths two, four and eight; the campaign now continues at depth twelve.
 
 | Specimen | Blocks / parameters | Development team wins | Difference from G0 |
 |---|---|---:|---:|
@@ -134,6 +138,9 @@ plateau at depth two and then at depth four; the campaign now continues at depth
 | G7 | 4 / 207,360 | 51.95% | 0.00 pp [−3.91, +3.91] |
 | G8 | 4 / 207,360 | 50.78% | −1.17 pp [−5.08, +3.13] |
 | G9 | 8 / 407,296 | 52.34% | +0.39 pp [−3.13, +4.30] |
+| G10 | 8 / 407,296 | 53.13% | +1.17 pp [−2.34, +4.69] |
+| G11 | 8 / 407,296 | 52.73% | +0.78 pp [−2.73, +4.30] |
+| G12 | 8 / 407,296 | 51.17% | −0.78 pp [−3.91, +2.34] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -205,7 +212,29 @@ including evaluation replay and frozen-player consistency.
 G9's first completed iteration scored 52.34%, below the retained 52.73% best.
 [G9 weights](https://huggingface.co/jasonyandell/gus/tree/434ed1511ef7cbc5207717dd38b680d9b308a373)
 and [formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/e25f23a90979842af6de85ddfc2576eebbeb6669/lem/gus-depth-campaign-2026-10-18/g009)
-passed anonymous verification. Depth-eight training continues.
+passed anonymous verification.
+
+G10 set the retained development high at **53.13%**, a small increase below the
+two-point reset threshold. G11 scored 52.73% and G12 scored 51.17%, completing
+four depth-eight generations without a material gain. G10's trained weights,
+not an identity initialization, supplied the next growth.
+[G10 model](https://huggingface.co/jasonyandell/gus/tree/ac3fbdaeb81d7f5ed8de35eaf20800a6ee35315f),
+[G11 model](https://huggingface.co/jasonyandell/gus/tree/09bd64fe5a06f0ab44bfe94321003caacb66a893),
+[G12 model](https://huggingface.co/jasonyandell/gus/tree/b286cc4ce528d1ef8ab99a44f334c9e01ca01447)
+and [third-depth formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/4c485efe7044427720a79bd776ae0e2aada4219c/lem/gus-depth-campaign-2026-10-18).
+
+G13 starts at twelve layers and **607,232 parameters**. Its initialization was
+bit-identical to G10 over all logits on the 512-sequence MPS probe. The complete
+audit through G12 verified **49,152 hands and 344,064 learner decisions**, plus
+the development outcomes and frozen-player consistency.
+[Growth, audit and twelve-generation chart](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/0f00771337756fc96829487dc495fd0ae6b7b7d3/lem/gus-depth-campaign-2026-10-18)
+passed anonymous download verification. The chart uses a common percentage scale
+and separates observed scores from the retained maximum; confirmation is reserved.
+
+At fixed 4,096-hand budgets, G1/G5/G9 used respectively 178.6/194.0/191.8 seconds
+for collection, 5.1/8.6/14.4 seconds for optimization, and 11.4/11.4/11.5 seconds
+for evaluation. All three performed 448 optimizer steps. These are descriptive
+wall times; game generation still dominates the eight-layer iteration.
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.

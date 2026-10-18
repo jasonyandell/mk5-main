@@ -192,6 +192,10 @@ def publish_final(root):
     audited = {g["generation"]:g["checkpoint_sha256"] for g in audit["generations"]}
     if not audit["all_completed_generations_verified"] or audited != expected:
         raise ValueError("audit the complete formation before final publication")
+    if (root / "progress.json").exists():
+        chart = json.loads((root / "progress.json").read_text())
+        if chart["completed_generations"] != len(expected) or chart.get("confirmation") != final:
+            raise ValueError("refresh the campaign chart after confirmation")
     checkpoint = Path(final["selected"]["path"])
     if digest(checkpoint) != final["selected"]["sha256"]:
         raise ValueError("selected checkpoint changed")
@@ -314,6 +318,7 @@ The April oracle-era Gus is a different model lineage.
     if "archive_revision" not in progress:
         files = [root/p for p in ["final.json","state.json","campaign.json","audit.json"]]
         files += list(root.glob("growth-*.json"))
+        files += [root/f"progress.{suffix}" for suffix in ("png","pdf","json") if (root/f"progress.{suffix}").exists()]
         for label in ("confirmation-g0", "confirmation-selected"):
             files += [root/label/p for p in ("report.json", "hands.jsonl.gz")]
             files += list(root.glob(f"{label}*.log")) + list(root.glob(f"{label}*-execution.json"))
