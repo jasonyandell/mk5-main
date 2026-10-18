@@ -240,6 +240,37 @@ prediction ceiling under this information boundary. Implementation:
 
 ## Representation before size
 
+### From prediction to improving play
+
+[[lem-observer-first-h2h-2026-10-17]] seats the frozen observer in the existing
+arena with unchanged inputs and a legal-output argmax. Both sides use fixed
+bid-30 bidding; this isolates play before the input vocabulary supports other
+bids. Its own generated moves now change the histories it encounters. Matching
+recorded behavior and winning these games are distinct measurements.
+
+The next improvement loop is: freeze the incumbent; collect games from a
+trainable challenger; update its action probabilities using its team's actual
+return; freeze a new checkpoint; evaluate on separate paired game seeds. Merely
+copying all self-play actions is self-imitation, with no winning signal. A
+policy-gradient method such as PPO is an established candidate, not yet built
+for this observer. Keep the input boundary, save formation checkpoints, and
+retain the predictive pretraining task as a candidate auxiliary objective.
+
+The opponent and partner distribution is a parameter of that training objective.
+Keep older checkpoints and fixed external opponents, then mix partners as well
+as opponents. A challenger that beats only the latest incumbent can cycle or
+forget an earlier counter. The full payoff matrix belongs beside ratings;
+promotion uses held-out selection games, and final claims use fresh games after
+selection. Neither this procedure nor a positive head-to-head result proves
+equilibrium or a universal player ordering.
+
+This follows established population self-play practice: [OpenAI Five](https://openai.com/index/openai-five/)
+mixed current and past policies, and [AlphaStar](https://deepmind.google/blog/alphastar-grandmaster-level-in-starcraft-ii-using-multi-agent-reinforcement-learning/)
+used a league of agents and exploiters. Their architecture and compute scale are
+not prerequisites or measured promises for Texas 42. The project's scope is
+[[lem-the-teacher]] and league issue #182; richer learned distinctions under this
+population remain a result to investigate with the interp work.
+
 ### Candidate extension: predict the splat
 
 Jason selected predicting the splat on 2026-10-17, after the

@@ -5,6 +5,8 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+- [[experiments/lem-observer-first-h2h-2026-10-17|lem-observer-first-h2h-2026-10-17]] — frozen observer plays paired bid-30 games against the earlier model, initialization and random legal play (active)
+
 - [[experiments/lem-observer-corpus-squeeze-2026-10-17|lem-observer-corpus-squeeze-2026-10-17]] — half a million games, unchanged tiny observer, eight equivalent passes; 52.93% fresh-test accuracy, 83 formation checkpoints archived for native-neuron study (complete)
 
 - [[experiments/demon-repository-prep-2026-10-16|demon-repository-prep-2026-10-16]] — native export with pinned dependencies; auction-policy, license and tournament cutover audit (complete)

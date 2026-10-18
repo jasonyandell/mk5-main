@@ -28,6 +28,28 @@ The causal mask cannot hide private information already placed in the prefix.
 That is why `encode` accepts only one initial hand. Using a later remaining hand
 to supervise earlier moves would leak the future.
 
+## Seat the frozen model
+
+`ObserverPlay` implements the arena's batched play interface. It uses the exact
+training prefix for the acting seat and chooses the highest-scoring legal tile.
+The legal mask constrains outputs; it is not another input. Bid values other than
+30 are refused because the current tokenizer cannot represent them.
+
+```sh
+scripts/cpu-slot --threads 2 -- scratch/venv/bin/python -u -m lem.observer.h2h \
+  --candidate scratch/lem/observer-corpus-squeeze/best.pt \
+  --opponent scratch/lem/observer-data-scale/best.pt \
+  --exclude-deals scratch/lem/observer-corpus-squeeze/deals.json \
+  --games 256 --seed 20261017 --device mps --out scratch/lem/h2h-vs-50k
+```
+
+Opponent may also be `random`, another checkpoint (including `initial.pt`), or
+`walt:<arena-spec>`. Both partnerships use `Bid30Bidder`; games run to seven
+marks with paired team swaps. The report resamples complete seed pairs and
+checks the replay and optional excluded physical deals. Complete game records
+are saved alongside checkpoint hashes and the runtime configuration. Output
+directories must be fresh. This measures frozen play; no learning occurs.
+
 ## Train, then look
 
 Use this checkout's `scratch/venv` from `scripts/check`. PyTorch and NumPy are its
