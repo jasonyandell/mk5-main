@@ -42,13 +42,17 @@ def paired_summary(games, draws=10000):
         "game_win_rate": np.array([sum(g.a_won for g in p.values()) / 2 for p in paired]),
         "marks_per_game": np.array([sum(g.a_marks-g.b_marks for g in p.values()) / 2 for p in paired]),
     }
-    idx = np.random.default_rng(42).integers(0, len(paired), (draws, len(paired)))
+    # A single pair cannot estimate between-pair uncertainty. Repeating its
+    # one value 10,000 times would print a misleading zero-width interval.
+    idx = (np.random.default_rng(42).integers(0, len(paired), (draws, len(paired)))
+           if len(paired) > 1 else None)
     return {"games": len(games), "pairs": len(paired),
             "hands": sum(len(g.hands) for g in games), "declarations": declarations,
             "method": "paired game-seed percentile bootstrap; 95%; seed 42", "draws": draws,
+            "inference": "one-pair smoke; intervals unavailable" if idx is None else "fixed-policy paired sample",
             "chance_game_win_rate": 0.5, "neutral_marks_per_game": 0,
             **{name: {"estimate": float(v.mean()),
-                       "ci95": np.quantile(v[idx].mean(1), [.025, .975]).tolist()}
+                       "ci95": None if idx is None else np.quantile(v[idx].mean(1), [.025, .975]).tolist()}
                for name, v in values.items()}}
 
 

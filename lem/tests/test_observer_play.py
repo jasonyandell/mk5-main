@@ -125,6 +125,9 @@ def test_same_player_paired_arena_is_exactly_neutral_and_replays(player):
     summary = paired_summary(a.games, draws=100)
     assert summary["game_win_rate"] == {"estimate": .5, "ci95": [.5, .5]}
     assert summary["marks_per_game"] == {"estimate": 0., "ci95": [0., 0.]}
+    smoke = paired_summary([g for g in a.games if g.game_idx == 0], draws=100)
+    assert smoke["game_win_rate"] == {"estimate": .5, "ci95": None}
+    assert smoke["marks_per_game"] == {"estimate": 0., "ci95": None}
     assert verify_replays(a.games, set())["all_plays_legal_and_scores_replayed"]
     hand = a.games[0].hands[0]
     excluded = {tuple(sum(1 << t for t in h) for h in hand.hands)}

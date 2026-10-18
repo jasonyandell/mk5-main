@@ -296,6 +296,14 @@ comparison. Keep its receipts separate from the completed 256-game comparisons.
   between policies/seeds. The observer runner now also hashes a named Walt field
   file. Its own immutable model hash, complete receipts and no-overlap audit remain.
 
+The one-pair smoke completed: 21 hands, every play legal, scores reproduced,
+12 distinct physical deals absent from all 500k source recordings. The field
+net's decoded bytes matched `zeb/net/margin_d250k_h128x64.fnet` exactly.
+The teams split the two games; this is no strength verdict. A one-pair
+bootstrap cannot estimate between-pair uncertainty, so the runner now returns
+unavailable intervals for that case. The smoke's stored games are reanalyzed
+with that correction, preserving the original report; no further games are needed.
+
 The next improvement loop is: freeze the incumbent; collect games from a
 trainable challenger; update its action probabilities using its team's actual
 return; freeze a new checkpoint; evaluate on separate paired game seeds. Merely
