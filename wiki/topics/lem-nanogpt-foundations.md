@@ -29,6 +29,12 @@ points [9.72, 10.11] in next-tile accuracy over the original corpus on 4,436
 fresh shared test deals. The experiment scopes the result and preserves the
 second formation trajectory for the interp handoff (#207).
 
+Jason's next selected run is [[lem-observer-corpus-squeeze-2026-10-17]]:
+the full half-million-game lawful corpus for the same tiny architecture,
+trained for about eight equivalent passes. Its purpose is a specimen under
+capacity pressure for native-neuron reading. The splat-output extension below
+remains selected but is not part of this training run.
+
 The checkout is `/Users/jason/code/mk5-lem-nanogpt`, branch `codex/lem-nanogpt`,
 initially at `aa0af91d`. The reference clone is `/Users/jason/code/nanoGPT`, upstream
 [`karpathy/nanoGPT`](https://github.com/karpathy/nanoGPT), pinned at

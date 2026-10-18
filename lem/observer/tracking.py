@@ -37,7 +37,7 @@ class Tracking:
             config={**vars(args), **about, "model": config, "training_views": training_views,
                     "epoch_definition": "training_step * batch / training_views; sampling with replacement",
                     "learning_rate_schedule": "constant", "early_stopping": False},
-            tags=["tiny_gpt", "observer", "formation", "deliberate_overtraining"],
+            tags=["tiny_gpt", "observer", "formation", *(getattr(args, "wandb_tag", None) or [])],
         )
         receipt.write_text(json.dumps({"id": self.run.id, "url": self.run.url,
                                        "entity": self.run.entity, "project": self.run.project}, indent=2) + "\n")

@@ -92,8 +92,20 @@ def load_deals(sources, limit):
 
 
 def prepare(records):
-    rows = {k: [] for k in ("x", "targets", "legal", "possible", "own", "coverage_forced", "split", "seed", "viewer")}
-    for r in records:
+    # Allocate numeric arrays directly. Nested Python booleans for a whole pour
+    # otherwise cost far more memory than the tokens or the model itself.
+    n = 4 * len(records)
+    rows = {"x": np.empty((n, 68), dtype=np.int64),
+            "targets": np.empty((n, 28), dtype=np.int64),
+            "legal": np.empty((n, 28, 28), dtype=bool),
+            "possible": np.empty((n, 28, 28), dtype=bool),
+            "own": np.empty((n, 28), dtype=bool),
+            "coverage_forced": np.empty((n, 28), dtype=bool),
+            "split": np.empty(n, dtype="<U10"),
+            "seed": np.empty(n, dtype=np.int64),
+            "viewer": np.empty(n, dtype=np.int64)}
+    bits = 1 << np.arange(28)
+    for ri, r in enumerate(records):
         hands = list(map(int, r["hands"]))
         if any(h.bit_count() != 7 for h in hands) or (hands[0] | hands[1] | hands[2] | hands[3]) != ALL_TILES:
             raise ValueError("not a complete disjoint deal")
@@ -105,25 +117,26 @@ def prepare(records):
             available = rules.legal(hands[rec.seat] & ~rec.played, rec.led)
             if seat != rec.seat or not 0 <= tile < 28 or not available & (1 << tile):
                 raise ValueError("illegal recorded play")
-            legal.append([bool(available & (1 << t)) for t in range(28)])
+            legal.append(available)
             actors.append(seat)
             for viewer in range(4):
                 # The actor's actual hidden hand is not used for other-seat support.
                 support = (available if viewer == seat else
                            ALL_TILES & ~(rec.played | hands[viewer] | rec.forbid[seat]))
-                possible[viewer].append([bool(support & (1 << t)) for t in range(28)])
+                possible[viewer].append(support)
             rec = rec.advance(tile, rules)
         for viewer in range(4):
+            row = 4 * ri + viewer
             tokens = encode(hands[viewer], viewer, 0, r["decl"], r["plays"])
-            rows["x"].append(tokens[:-1])
-            rows["targets"].append(tokens[QUERIES + 1])
-            rows["legal"].append(legal)  # diagnostics only, never supplied to the model
-            rows["possible"].append(possible[viewer])
-            rows["own"].append(np.array(actors) == viewer)
-            rows["coverage_forced"].append([r["coverage_forced"]] * 28)
+            rows["x"][row] = tokens[:-1]
+            rows["targets"][row] = tokens[QUERIES + 1]
+            rows["legal"][row] = (np.asarray(legal)[:, None] & bits) != 0
+            rows["possible"][row] = (np.asarray(possible[viewer])[:, None] & bits) != 0
+            rows["own"][row] = np.array(actors) == viewer
+            rows["coverage_forced"][row] = r["coverage_forced"]
             for k, value in (("split", r["split"]), ("seed", r["seed"]), ("viewer", viewer)):
-                rows[k].append(value)
-    return {k: np.asarray(v) for k, v in rows.items()}
+                rows[k][row] = value
+    return rows
 
 
 def fingerprint(records):

@@ -142,7 +142,10 @@ def run(args):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            if step % args.eval_every == 0 or step == args.steps:
+            # Preserve early formation when a large corpus needs less frequent
+            # full validation later in training.
+            early = step in (250, 500, 1000)
+            if early or step % args.eval_every == 0 or step == args.steps:
                 validation = evaluate(model, data, splits["validation"], args.device)
                 train_probe = evaluate(model, data, probe, args.device)
                 row = {"step": step, "train_batch_nll": float(loss.detach().cpu()), "train_probe": train_probe,
@@ -151,7 +154,7 @@ def run(args):
                 improved = validation["all"]["nll"] < best_loss
                 best_loss = min(best_loss, validation["all"]["nll"])
                 save_checkpoint(out / "latest.pt", model, optimizer, sampler, step, best_loss, history, data_hash, vars(args))
-                if step % args.checkpoint_every == 0 or step == args.steps:
+                if early or step % args.checkpoint_every == 0 or step == args.steps:
                     save_checkpoint(out / f"step-{step:05d}.pt", model, optimizer, sampler, step, best_loss, history, data_hash, vars(args))
                     tracker.checkpoint(step)
                 if improved:
@@ -196,6 +199,7 @@ def main():
     p.add_argument("--wandb-project", help="enable online tracking in this project")
     p.add_argument("--wandb-entity")
     p.add_argument("--wandb-name")
+    p.add_argument("--wandb-tag", action="append", help="experiment tag; repeat as needed")
     args = p.parse_args()
     if min(args.deals, args.steps, args.eval_every, args.checkpoint_every, args.batch) < 1 or args.lr <= 0:
         p.error("positive training sizes and learning rate required")

@@ -77,6 +77,9 @@ sampler into a separate experiment, preserving the original lesson and run.
 larger total `--steps`; use `--checkpoint-every 5000` for a long formation study.
 It must be a multiple of `--eval-every`. Latest and best are still saved at every
 evaluation; the periodic formation snapshots are also uploaded to W&B.
+Steps 250, 500 and 1,000 also receive full validation and formation snapshots,
+so a coarse later interval does not erase early learning. Use repeated
+`--wandb-tag` arguments to describe the experiment; overtraining is not assumed.
 
 Charts use `epoch_equivalent = training_step * batch / training_views`. Sampling
 is with replacement, so these are equivalent passes, not completed shuffled
@@ -88,6 +91,13 @@ The deliberately long run is registered in
 [the overbake experiment](../../wiki/experiments/lem-observer-overbake-2026-10-17.md).
 Ordinary heavy work retains the default cpu-slot time cap; that run's explicit
 30-minute exception and fixed update budget are documented there.
+
+The capacity-pressure run is registered in
+[the corpus squeeze experiment](../../wiki/experiments/lem-observer-corpus-squeeze-2026-10-17.md):
+500,000 distinct deals, unchanged architecture and objective, about eight
+equivalent passes. Preparation preallocates numeric arrays so the full pours do
+not first become billions of Python boolean references. Tokens and labels are
+unchanged; early formation, saved initialization and native units remain available.
 
 ### What a result measures
 
