@@ -76,6 +76,11 @@ endgame approximation. Grouped samples justify a GRPO estimator when complete
 continuation values are no longer cheaply available. Its two registered bounded
 iterations retain the parent incumbent; the experiment page owns the measurements.
 
+The next completed ablation, [[gus-public-terminal-credit-2026-10-18]], removes
+reward-score terms after public make/set settlement while retaining the original
+normalization, full KL and rehearsal. All three arms selected initialization;
+the mathematically motivated cleanup did not establish stronger play.
+
 The frozen panel remains development evidence. Reserve new confirmation before
 selection and extend actual continuations only where needed. Existing tests,
 model sizes and qualitative hypotheses are not grounds for a general-player

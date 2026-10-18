@@ -156,12 +156,24 @@ model. A verified observed terminal result is not an exact population win rate.
 
 When continuation rewards cannot cheaply be enumerated, sampled trajectories
 justify GRPO. Group rewards use their mean and population standard deviation;
-all seven learner decisions share the trajectory advantage. Retain and measure
+all seven learner decisions initially share the trajectory advantage. Retain and measure
 zero-variance groups. Record old legal probabilities separately from the frozen
 parent distribution. The implementation uses clipped action ratios and exact
 full-support categorical KL, with the original tile/splat supervised rehearsal.
 The matched rehearsal control has the same optimizer steps and supervised draws,
 without the RL or KL term. It also collects trajectories for matched diagnostics.
+
+Declare `recipe.reward_horizon` explicitly: `full` credits all seven decisions;
+`unsettled` removes reward credit after public banked points guarantee make/set.
+For bid30 this is bidder points >=30 or defender points >12. The mask is an
+independently replayed loss sidecar, never a new model input. Preserve all28
+plays, the original seven-turn denominator, full-state KL and rehearsal. Dividing
+by only active turns would change trajectory weighting and confound the ablation.
+This removes zero-mean post-outcome score terms by policy-gradient causality;
+it does not repair all-win/all-loss groups or prove a finite clipped update helps.
+Old v1 plans must run under their pinned source, not an implicit default horizon.
+The controlled comparison is recorded in
+`wiki/experiments/gus-public-terminal-credit-2026-10-18.md`.
 
 The JSON plan declares train/development/confirmation physical deals, source,
 weights, fixed policies, namespaces, seed, recipe, retention bounds and selection.

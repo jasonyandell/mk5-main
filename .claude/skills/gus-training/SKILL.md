@@ -36,6 +36,9 @@ completed splat pretraining and exact-endgame comparisons. Read
 iterations, selection, confirmation and actual-game limits. Keep other seats
 fixed and compare against rehearsal alone; register a new plan before changing
 the recipe. Extend frozen evaluation lazily; external search is deferred.
+The public-terminal credit ablation is recorded in
+`wiki/experiments/gus-public-terminal-credit-2026-10-18.md`; neither horizon
+established a stronger selected player in that comparison.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## The companion is `clean-neuron`

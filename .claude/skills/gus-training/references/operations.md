@@ -195,3 +195,10 @@ small files. Preserve the immutable revision and already-downloaded bytes, respe
 Retry-After, checksum the local downloads, then request only missing/mismatched
 files. Do not reupload or force-download the entire archive again. Keep completed
 file verification distinct from a partially downloaded or metadata-only check.
+
+For a new study with thousands of small immutable records, a deterministic tar
+bundle plus a member SHA256/size manifest can avoid per-file resolver quotas.
+Normalize member order, timestamps, ownership and permissions; exclude live
+tracking caches, locks and credentials. Verify the fresh anonymous bundle hash
+and every member hash, and publish the registration, summary and restore paths
+as directly readable files. Byte verification does not replace replay checks.
