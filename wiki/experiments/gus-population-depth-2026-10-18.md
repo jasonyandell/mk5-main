@@ -116,11 +116,11 @@ input/output decisions, game replays, metrics and panel specifications go to
 `lem/gus-depth-campaign-2026-10-18/` in the existing research dataset.
 W&B project: `jasonyandell-forge42/gus-population`, with hands seen as the axis.
 
-Registration preceded the first population-training outcome. G1–G6 each completed all
+Registration preceded the first population-training outcome. G1–G9 each completed all
 4,096 training hands, eight collection/update blocks, the 256-hand panel and both two-game smokes.
 Every recorded hand replayed lawfully; the smokes had no source/training/panel
 deal overlap. Four generations without a two-point gain triggered the registered
-plateau at depth two; the campaign now continues at depth four.
+plateau at depth two and then at depth four; the campaign now continues at depth eight.
 
 | Specimen | Blocks / parameters | Development team wins | Difference from G0 |
 |---|---|---:|---:|
@@ -131,6 +131,9 @@ plateau at depth two; the campaign now continues at depth four.
 | G4 | 2 / 107,392 | 52.73% | +0.78 pp [−2.73, +4.30] |
 | G5 | 4 / 207,360 | 52.73% | +0.78 pp [−3.13, +4.69] |
 | G6 | 4 / 207,360 | 51.17% | −0.78 pp [−4.69, +3.13] |
+| G7 | 4 / 207,360 | 51.95% | 0.00 pp [−3.91, +3.91] |
+| G8 | 4 / 207,360 | 50.78% | −1.17 pp [−5.08, +3.13] |
+| G9 | 8 / 407,296 | 52.34% | +0.39 pp [−3.13, +4.30] |
 
 The interval is the registered whole-hand paired bootstrap on the repeatedly
 used development panel; it is exploratory. G1 did not improve the development
@@ -171,7 +174,7 @@ were anonymously downloaded and hash-verified. G5 training is tracked in
 Its first completed iteration matched the inherited development score;
 [G5 weights](https://huggingface.co/jasonyandell/gus/tree/83646a18c39876666bc24fa0aa24be3cd26f54c0)
 and [full formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7601f75e1b40f0085508dbdad93f2abb9c1775a2/lem/gus-depth-campaign-2026-10-18/g005)
-passed anonymous verification. Depth-four training continues.
+passed anonymous verification.
 
 Equal win rates do not imply equal policies. G5 changed the play of 184 of the
 256 development hands versus G0: 14 losses became wins and 12 wins became
@@ -186,6 +189,23 @@ non-improvement counter at two.
 [G6 weights](https://huggingface.co/jasonyandell/gus/tree/b9b216ee129a159999ba76d5f9ff54a9883aa7a9)
 and [formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/eb0704eebed4dca10d1cbb2920c3985a7aa9dd3b/lem/gus-depth-campaign-2026-10-18/g006)
 passed anonymous verification. No selection uses the reserved confirmation panel.
+
+G7 recovered to 51.95% and G8 fell to 50.78%; four depth-four generations failed
+to exceed the inherited best. G9 therefore grew to **407,296 parameters** from
+the retained G5 initialization, which preserves G3's function. None of the
+reward-trained depth-four candidates surpassed that inherited score.
+[Complete second-depth evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/03a8dba92737989f40ffa4874be177a4216c8c10/lem/gus-depth-campaign-2026-10-18).
+
+The eight-layer initialization was bit-identical to its parent over all logits
+at all positions of the same 512 MPS probe sequences. An independent audit
+verified all **32,768 training hands and 229,376 learner decisions** through G8,
+including evaluation replay and frozen-player consistency.
+[Growth and audit receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7d10e82e95ff088d05268739f3bdfb6da92e1be1/lem/gus-depth-campaign-2026-10-18).
+
+G9's first completed iteration scored 52.34%, below the retained 52.73% best.
+[G9 weights](https://huggingface.co/jasonyandell/gus/tree/434ed1511ef7cbc5207717dd38b680d9b308a373)
+and [formation](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/e25f23a90979842af6de85ddfc2576eebbeb6669/lem/gus-depth-campaign-2026-10-18/g009)
+passed anonymous verification. Depth-eight training continues.
 
 The hypothesis is improvement against a fixed mixed table after outcome learning;
 no native-unit meaning or clean-share claim follows from a reward increase.
