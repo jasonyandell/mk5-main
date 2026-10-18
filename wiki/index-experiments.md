@@ -266,3 +266,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-rlvr-silas-2026-10-18|Gus exact Silas RLVR]] — rational endgame verifier, matched GRPO/SFT, worked update and retention (complete)
 - [[experiments/gus-modern-learning-recovery-2026-10-18|Gus modern learning and recovery]] — matched cooldown, full article grounding, interruption and exact resume (complete)
 - [[experiments/gus-frozen-benchmark-2026-10-18|Gus frozen benchmark]] — fixed games, fast static decisions, exact endgame subset and native representation archives (complete)
+
+- [[experiments/gus-retention-iterations-2026-10-18|Gus quick retention iterations]] — five bounded arms, exact reward with rehearsal, capacity null and fresh confirmation (complete)

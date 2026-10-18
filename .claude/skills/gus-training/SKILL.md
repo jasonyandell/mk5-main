@@ -26,8 +26,8 @@ Implementation: `lem/observer/README.md`. Historical `gus/` and the oracle-era
 forge students are a different lineage. Prefer the existing CLIs over new loops.
 For execution, recovery, telemetry and publishing, read
 [references/operations.md](references/operations.md).
-For exact Silas endgame verifiers, the GRPO/SFT comparison and its teaching
-examples, read [references/rlvr.md](references/rlvr.md).
+For exact Silas endgame verifiers, GRPO/SFT/direct reward comparisons,
+retention-aware rehearsal and bounded capacity experiments, read [references/rlvr.md](references/rlvr.md).
 For every new model's repeatable static check and fixed H2H anchors, read
 [references/benchmark.md](references/benchmark.md).
 

@@ -198,9 +198,10 @@ opponent budgets. These small samples neither establish an improvement nor
 estimate a stable win rate. Every move and score was independently replayed;
 no training/reserved-deal overlap was found.
 
-The next justified experiment is broader lawful curriculum with an explicit
-old-task retention objective or constraint, followed by fresh full-game
-confirmation. It is a proposal, not a completed or secretly continued run.
+The retention follow-up is complete in [[gus-retention-iterations-2026-10-18]]:
+three bounded iterations compare rehearsal, exact reward summation and one
+extra block, with a new finite-model confirmation. Broader lawful curriculum
+and fresh full-game strength confirmation remain proposals.
 
 ## Immutable publication
 
