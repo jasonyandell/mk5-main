@@ -179,8 +179,10 @@ training signal, endgame retention, replay audit, costs and the restore map.
 - [rehearsal_start selected model](https://huggingface.co/jasonyandell/gus/tree/1d00e4e03f1c08ac5ef3645859f2319cd3b2ee8c) — exact tensor and both-head CPU logit export parity.
 - [rehearsal_only selected model](https://huggingface.co/jasonyandell/gus/tree/48eb75c61846151e42b2c3a871251c91bb9ce08c) — exact tensor and both-head CPU logit export parity.
 
-Canonical tournament synchronization remains deferred until the recorded service
-window (2026-10-18 23:24:27 UTC); all audited records are already in the public
-research archive. The existing idempotent batch includes the preceding exact
-curriculum. No games need to be rerun. The broader investigation remains open
-in [#223](https://github.com/jasonyandell/mk5-main/issues/223).
+[Canonical tournament synchronization](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/73a45c01b524e8c0531c741fa0fd3efda37e4852) is complete. The combined
+batch for this study and the preceding exact curriculum verified all 31 records
+by fresh anonymous download; 27 records were newly added. The existing immutable
+records matched exactly and no games were rerun. Earlier archive/completion
+snapshots retain their historical deferred state; the canonical receipt is the
+current publication state. The broader investigation remains open in
+[#223](https://github.com/jasonyandell/mk5-main/issues/223).

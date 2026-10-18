@@ -71,3 +71,9 @@ and the `gus-training` skill. The ongoing investigation is
 
 Live telemetry: [GRPO](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/4b35a82a)
 and [rehearsal](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/e462da85).
+
+The [frozen evaluation protocol](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/a9548387906b37716763dcea9af5aca208a961f3/lem/gus-exposure-budget-2026-10-18/protocol) was published before confirmation:
+all 16 files passed fresh anonymous hashes. It pins the five-label comparison,
+independent selection reconstruction, probability tolerances, actual lazy replay
+checks and separate short/long native captures. Confirmation remains unread
+until all four selections freeze.

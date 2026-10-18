@@ -160,9 +160,10 @@ original frozen rows. Final traces are distinct from selected-model confirmation
 Nine duplicate faceoffs produced 18 games, 198 hands and 5,544 independently
 replayed plays against fixed G0, native Zeb and fenced Demon. The longest
 faceoff was 5.20s, below the 60s cap. Each model/opponent cell has only one pair;
-these are adapter checks, not a strength ranking. Canonical tournament upload
-is pending the service's explicit commit-quota reset; the full records and audit
-are preserved in the research archive. No games need rerunning.
+these are adapter checks, not a strength ranking. [Canonical tournament records](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/73a45c01b524e8c0531c741fa0fd3efda37e4852)
+are published and freshly verified in the combined batch recorded by
+[[gus-staged-outcomes-2026-10-18]]. Full records and audit also remain in the research
+archive; no games were rerun for synchronization.
 
 ## A literal learning signal
 
