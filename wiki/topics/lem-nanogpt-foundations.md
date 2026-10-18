@@ -66,6 +66,11 @@ readings needing context absent from a play frame. Name the missing construction
 
 ## Mathematical foundation and proof boundary
 
+[[two-recursions-and-transformers]] compares the mathematics' forward information
+update and backward planning with the observer's actual attention and autoregressive
+loss. It identifies the exact predictive-coordinate connection and the conditions
+that next-tile prediction has not established.
+
 The `texas-42` review is pinned to `9d6a5a2e`. Its controlling
 [model-belief intake](https://github.com/jasonyandell/texas-42/blob/9d6a5a2e/walt/math/model_belief_base_player_v0.1_intake.md)
 narrows the parent proposal where they differ. It adopts hidden state
