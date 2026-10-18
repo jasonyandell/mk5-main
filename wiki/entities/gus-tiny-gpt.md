@@ -54,7 +54,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-success-probability-planning]] — direct verified-success reward and lazy immutable continuation supplements; next is a matched RLVR comparison with opponents fixed.
+- [[gus-probability-reward-v3-2026-10-18]] — three-seed reward comparison, fresh finite-model gains and fixed G0/Zeb/Demon games; next is full-hand outcome training.
+- [[gus-success-probability-planning]] — direct verified-success reward and lazy immutable continuation supplements; fixed-opponent methodology.
 - [[gus-lazy-rlvr-smoke-2026-10-18]] — lazy replay byte checks and the success-reward integration smoke; no player promotion.
 - [[gus-retention-iterations-2026-10-18]] — three bounded iterations: exact reward plus rehearsal improves fresh finite-model answers while retaining prediction losses; extra depth earns no gain.
 

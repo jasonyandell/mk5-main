@@ -30,10 +30,12 @@ For exact Silas endgame verifiers, GRPO/SFT/direct reward comparisons,
 retention-aware rehearsal and bounded capacity experiments, read [references/rlvr.md](references/rlvr.md).
 For every new model's repeatable static check and fixed H2H anchors, read
 [references/benchmark.md](references/benchmark.md).
-The current next step is verified success-probability RLVR with the other seats
-fixed. Use direct expected reward when all legal rewards are known. Extend
-frozen evaluation lazily through immutable row/sample continuations; external
-search and future-splat auxiliary training are deferred.
+The current next step is full-hand verified-outcome post-training after splat
+pretraining. The three-seed probability-reward comparison is complete; read
+`wiki/experiments/gus-probability-reward-v3-2026-10-18.md`. Keep other seats fixed,
+compare against rehearsal alone, and register the full-trajectory protocol before
+training. Extend frozen evaluation lazily; external search is deferred. The
+pinned Demon is an additional evaluation competitor, never a source of labels.
 
 ## The companion is `clean-neuron`
 

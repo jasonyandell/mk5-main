@@ -1,4 +1,4 @@
-## [2026-10-18 | pending | Joint Gus releases and pinned Demon evaluation seats]
+## [2026-10-18 | ecd610b7 | Joint Gus releases and pinned Demon evaluation seats]
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 

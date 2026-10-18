@@ -269,3 +269,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 - [[experiments/gus-retention-iterations-2026-10-18|Gus quick retention iterations]] — five bounded arms, exact reward with rehearsal, capacity null and fresh confirmation (complete)
 - [[experiments/gus-lazy-rlvr-smoke-2026-10-18|Gus lazy RLVR smoke]] — immutable continuation extensions, replay/resume parity and probability-reward integration (complete)
+- [[experiments/gus-probability-reward-v3-2026-10-18|Gus probability-reward comparison]] — three paired seeds, fresh exact-model confirmation and canonical G0/Zeb/Demon games (complete)

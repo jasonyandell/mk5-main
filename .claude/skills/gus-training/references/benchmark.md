@@ -137,3 +137,32 @@ as fresh confirmation. Include sampled full-hand identities in future training
 exclusions. Compare candidates only on matching row/sample keys and root seeds;
 report sample counts and cluster uncertainty at the source-deal/pair level.
 Do not convert a tiny infrastructure smoke into a strength claim.
+
+## Joint models and the fixed Demon competitor
+
+Joint releases now use their own pinned tournament adapter:
+
+```sh
+scratch/venv/bin/python -u -m tournament add-gus-splat \
+  rlvr-success-v3 rlvr-success-v3-20261018 --head tile
+scratch/venv/bin/python -u -m tournament add-demon-bid30
+```
+
+These register participants; they do not start games. Use the existing worker
+under a60-second outer cpu-slot cap for one faceoff, preserving unfinished claims.
+The joint model's head is part of identity. Original observer pins remain valid.
+The Demon retains100-world root-reuse cardplay; the common bid30 auction replaces
+its native bidder, so ordinary-auction Elo is a different comparison. It is a
+fenced evaluation opponent: no internal value becomes a target.
+
+For paired studies, freeze the faceoff seeds and all thirteen potential deals
+before results, exclude prior data, and reuse them across candidates. The new
+Demon wrapper uses `paired-deal-v1`: draws depend on faceoff seed, pair, side,
+hand and decision, not candidate name or claim timestamp. Existing Demon pins
+keep their original seed protocol. Preserve complete registered participants,
+model revisions, source pins, outcomes and independent replay audit.
+
+The v3 study completed nine faceoffs against fixed G0/Zeb/Demon in under60s each,
+then batch-published all15 immutable records to the canonical tournament store
+and freshly verified them. See its wiki page for revisions. One pair per matchup
+is integration/development evidence; do not turn its Elo fit into a ranking claim.

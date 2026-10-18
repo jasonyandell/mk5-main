@@ -135,3 +135,33 @@ Save a real prefix, exact values, legal probabilities and an analytic derivative
 for teaching. Distinguish an initial/final comparison from a recorded single
 optimizer update. Preserve all formation checkpoints and static native traces
 for `clean-neuron`; successful training alone is not a unit explanation.
+
+## The completed probability comparison and full-hand next step
+
+`wiki/experiments/gus-probability-reward-v3-2026-10-18.md` records three paired
+seeds, 256 rounds each. Probability rewards did not beat binary best-set rewards
+at the registered threshold. Both improved fresh finite-model regret while
+retaining the original losses; brief actual games did not establish transfer.
+Do not rerun that completed confirmation or interpret the null as evidence
+against expected success as the objective. The two rewards agree on the optimal
+move set; their finite-capacity gradients and regularization scales differ.
+
+Issue #222 carries the next authorized stage: full trajectories with independently
+verified terminal make/set rewards, one learner seat, fixed G0 partner and pinned
+Zeb opponents, same joint network and clean encoder. This is a declared full-game
+stage, separate from the three-style exact endgame model. Preserve the previous
+fields and results rather than silently relabelling them.
+
+When all continuation rewards are no longer cheaply enumerable, grouped sampled
+trajectories justify GRPO's estimator. Register the actual groups, normalization,
+old/reference probabilities, clipping, KL, replay and update budgets. Compare a
+matched rehearsal-only control. Preserve root deal seeds separately from rollout
+sampling seeds; repeating a deal must not accidentally repeat the identical
+learner random stream. Every seven-decision trajectory has one independently
+verified terminal reward. Full hands and verifier results stay audit/output data.
+
+Use short collection/update segments and complete atomic recovery state. Measure
+zero-variance groups, legal policy entropy, initial probability-ratio alignment,
+retention and actual paired outcomes before changing capacity. Preserve fixed
+other-seat identities; initial model, latest checkpoint and selected checkpoint
+must stay distinct. No long run or general-player promotion follows from a smoke.

@@ -14,8 +14,10 @@ The next step for [[gus-tiny-gpt]] is textbook reward learning on **verified
 hand success**, with the existing architecture, clean inputs and other seats
 fixed. Jason explicitly selected this direction and lazy frozen-set expansion
 on 2026-10-18. External search and future-splat auxiliary training are deferred.
-[Issue #220](https://github.com/jasonyandell/mk5-main/issues/220) tracks the
-matched probability-reward experiment.
+[Issue #220](https://github.com/jasonyandell/mk5-main/issues/220) records the completed
+matched probability-reward experiment in [[gus-probability-reward-v3-2026-10-18]].
+[Issue #222](https://github.com/jasonyandell/mk5-main/issues/222) continues the
+broader autonomous goal through full-hand terminal-outcome training.
 
 This is post-training: the pretrained policy is improved using a verifier.
 The objective is making or setting the bid30 hand, not unspecified match win
@@ -57,23 +59,28 @@ standardized surrogate does not test this hypothesis. Success rewards therefore
 require exact mode. GRPO remains available for the original experiment; it is
 not renamed to cover a different objective. Source: [DeepSeekMath / GRPO](https://arxiv.org/abs/2402.03300).
 
-## Next bounded comparison
+## Completed bounded comparison and next stage
 
-Start both arms from the same original splat checkpoint; use the selected
-185,652-parameter architecture and rehearsal recipe. Change only `best` versus
-`success` reward, pairing training minibatches and replay streams at each seed.
-Register a small seed list, fixed 256-round budget, retention bounds and
-checkpoint selection before running. Keep KL/rehearsal coefficients fixed in
-this first comparison: the smaller probability gaps alter the relative scale
-of regularization, and that consequence must be reported rather than silently
-normalized away. Resume short segments with identical flags.
+[[gus-probability-reward-v3-2026-10-18]] completed the matched three-seed
+comparison from the original splat parent, keeping architecture, question/replay
+streams, update budget and KL/rehearsal coefficients fixed. Probability reward
+did not pass the registered improvement criterion. Both predeclared seed42
+representatives improved fresh finite-model regret with retention; brief game
+checks did not establish transfer. The experiment page owns the measurements.
 
-Read exact success/regret, stochastic policy return, original-task retention,
-and the existing frozen representations. The frozen panel remains development
-evidence. Reserve fresh confirmation before selection; do not reuse the
-previous study's already-read confirmation as a new test. Only expand actual
-continuations where the current comparison needs them. A few continuation
-samples validate integration, not a stronger general player.
+The next stage broadens training to full-hand sampled trajectories and verified
+terminal outcomes, with a matched rehearsal-only control. One learner seat,
+fixed G0 partner and pinned Zeb opponents define the declared full-game stage.
+Its actual outcome verifier remains distinct from the exact three-style
+endgame approximation. Grouped samples justify a GRPO estimator when complete
+continuation values are no longer cheaply available. Register that protocol
+before training; do not silently substitute it for the completed experiment.
+
+The frozen panel remains development evidence. Reserve new confirmation before
+selection and extend actual continuations only where needed. Existing tests,
+model sizes and qualitative hypotheses are not grounds for a general-player
+promotion. The pinned Demon is a separate evaluation competitor; its internal
+forecasts never become learning targets.
 
 ## Lazy immutable continuation evidence
 
@@ -124,4 +131,7 @@ The operational commands live in the `gus-training` skill's
 `references/benchmark.md`; representation and unit claims follow `clean-neuron`.
 
 Implementation and same-runtime replay evidence: [[gus-lazy-rlvr-smoke-2026-10-18]].
-The matched multi-seed training comparison remains the next experiment.
+The matched multi-seed comparison is complete in [[gus-probability-reward-v3-2026-10-18]];
+full-hand outcome post-training is next, with a matched rehearsal-only control
+and the same clean inputs. Existing exact labels and measured terminal game
+outcomes retain their distinct authority.
