@@ -8,3 +8,8 @@ diagnostics and replayed games are public CC0. [[gus-splat-pretraining-2026-10-1
 is the completed result; [[gus-tiny-gpt]] and [[lem-nanogpt-foundations]] route it.
 The `gus-training` skill now documents this workflow and its `clean-neuron`
 companion. No further optimizer updates follow the evaluations.
+
+The separate `splat-v1-20261018` model release passed fresh anonymous verification
+of all 11 files and exact parity of both output heads. The old tournament pilot's
+canonical synchronization remains pending in #216 after another quota response;
+its already published research archive and games are unchanged.

@@ -47,6 +47,15 @@ in the research archive. Every final export file passed anonymous download/hash
 verification. [[gus-depth-campaign-evidence-2026-10-18]] records the immutable
 model, archive and independent-audit pins.
 
+## Splat release
+
+The separate [splat-v1-20261018 release](https://huggingface.co/jasonyandell/gus/tree/splat-v1-20261018)
+learns per-move outcome distributions alongside the original tile prediction,
+with unchanged clean inputs. Its first completed recipe does not improve the
+measured choices over G0. [[gus-splat-pretraining-2026-10-18]] holds the results,
+full formation archive and exact release verification. It is an interpretation
+specimen and a baseline for future controlled work, not a promoted incumbent.
+
 ## Initial release verification
 
 Release commit [`378813257486`](https://huggingface.co/jasonyandell/gus/tree/37881325748671214bcedddf3953615958eeaaf7),

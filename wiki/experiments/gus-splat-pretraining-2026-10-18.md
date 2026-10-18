@@ -188,3 +188,22 @@ interpretation has been performed here. Loss balancing, competition for the
 small shared representation, and whether histogram fitting preserves fine
 between-action differences are hypotheses for later controlled experiments,
 not established explanations or authorization for another run.
+
+## Published model and verification
+
+[Gus splat v1](https://huggingface.co/jasonyandell/gus/tree/81a8a2da9dbcaeee754072a90e931c0c72c9d739)
+is tagged `splat-v1-20261018`, on separate branch `splat-v1`. The model repository's
+main branch remains the earlier campaign release. Its 11 export files passed
+fresh anonymous download and checksum verification; safe-format tensors and
+both CPU float32 output heads exactly match the source best checkpoint. The
+model card pins merged implementation commit `6cbf7db7` and distinguishes the
+inference export from the full resumable research archive.
+
+[Publication and verification receipts](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/4d3d70ed1de11806127249d08d757453fb773104/lem/gus-splat-pretraining-2026-10-18)
+include final archive verification: every one of its 159 evidence files had
+size and LFS SHA256 checked, or a fresh anonymous download for non-LFS files;
+the manifest was separately freshly downloaded. This is distinct from fresh
+downloading every bulk cache. The source merge passed `scripts/check --fast`:
+69 Lem tests, wiki, conflict-marker and REUSE checks; zero skipped tests.
+The completed W&B run also links the model/archive and records the paired
+regret comparison and both smoke win counts, verified by API readback.

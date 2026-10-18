@@ -20,9 +20,14 @@ The complete records and audit are public in the existing
 **Canonical tournament Hub synchronization remains pending:** only G0–G4's five
 participant files reached `jasonyandell/texas-42-tournament`; its commit endpoint
 then returned HTTP 429, repository commit creation quota **128/hour**, with
-`Retry-After: 3445`. No game record was appended there. The earliest recorded
-retry time is **2026-10-18 14:36 UTC / 09:36 America/Chicago**. No background retry
-or additional game run was started. The quota concerns publication, not playing.
+`Retry-After: 3445`. No game record was appended there. The first recorded
+retry time was **2026-10-18 14:36 UTC / 09:36 America/Chicago**. One batch retry at
+14:39 UTC also returned 429 with `Retry-After: 3449`; the new conservative
+not-before time is **15:37:28 UTC / 10:37:28 America/Chicago**.
+[Retry receipt and log](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/blob/4d3d70ed1de11806127249d08d757453fb773104/lem/gus-splat-pretraining-2026-10-18/previous-tournament-retry.json)
+record the failure. No background retry or additional game run was started.
+The quota concerns canonical tournament publication, not playing or the
+separately completed splat-model release.
 
 ## Contract, identity and runtime
 
