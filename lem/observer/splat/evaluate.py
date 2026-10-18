@@ -34,6 +34,7 @@ def run(args):
     candidate=SplatPlay(args.candidate,args.device)
     baseline,saved=load_model(args.baseline,args.device)
     rows={}; indices=d.splits['test']
+    calibration=np.zeros((10,3),np.float64)
     for lo in range(0,len(indices),256):
         ix=indices[lo:lo+256];b=d.batch(ix)
         tile,splat=candidate.model(b['x'],b['own_positions'])
@@ -48,6 +49,12 @@ def run(args):
         consequential &= available.any(-1)
         q=splat.gather(-2,b['candidates'][...,None].expand(*b['candidates'].shape,43)).softmax(-1).cpu().numpy()
         truth=targets[...,30:].sum(-1);forecast=q[...,30:].sum(-1)
+        selected_candidates=available & consequential[...,None]
+        forecast_values=forecast[selected_candidates];truth_values=truth[selected_candidates]
+        bins=np.minimum((forecast_values*10).astype(np.int64),9)
+        calibration[:,0]+=np.bincount(bins,minlength=10)
+        calibration[:,1]+=np.bincount(bins,weights=forecast_values,minlength=10)
+        calibration[:,2]+=np.bincount(bins,weights=truth_values,minlength=10)
         sign=np.where((b['x'][:,2].cpu().numpy()-28)%2==0,1.,-1.)[:,None,None]
         best=np.max(np.where(available,truth*sign,-np.inf),axis=-1)
         def append(key,value):rows.setdefault(key,[]).append(value.astype(np.float64))
@@ -92,7 +99,12 @@ def run(args):
         'physical_deals':len(indices)//4,'views':len(indices),'consequential_choices':int(sums['choices'].sum()),
         'uncertainty':'2000 physical-deal percentile bootstrap draws, seed42; ratio of total sums',
         'candidate':candidate.identity,'baseline_sha256':hashlib.sha256(Path(args.baseline).read_bytes()).hexdigest(),
-        'data_sha256':c.sha256,'metrics':stats}
+        'data_sha256':c.sha256,'metrics':stats,
+        'teacher_reliability':{'scope':'equal legal candidates at consequential own labelled positions; compare predicted probability with teacher probability, not actual game outcomes',
+            'bins':[{'lower':i/10,'upper':(i+1)/10,'count':int(n),
+                     'mean_predicted_make':float(p/n) if n else None,
+                     'mean_teacher_make':float(q/n) if n else None}
+                    for i,(n,p,q) in enumerate(calibration)]}}
     atomic_json(out/'report.json',report)
     print(report,flush=True)
     return report
