@@ -58,9 +58,9 @@ def test_unlabelled_candidates_have_zero_gradient_and_position_weighting():
     assert torch.count_nonzero(s.grad[0,0,1:]) == 0
 
 
-def make_source(path, n=30):
+def make_source(path, n=30, base=101):
     path.mkdir()
-    records = [recording(i+101) for i in range(n)]
+    records = [recording(i+base) for i in range(n)]
     deals=[];ks=[];actions=[]
     for i,r in enumerate(records):
         p = prepare([r])
@@ -145,3 +145,41 @@ def test_splat_policy_defender_sign_visibility_and_legality(tmp_path):
         hidden[others[0]],hidden[others[1]]=hidden[others[1]],hidden[others[0]]
         assert player.choose([replace(state,hands=tuple(hidden))],[30],[(0,6)])==[choice]
         state=apply_action(state,legal[0])
+
+
+def test_splat_arena_pair_smoke_replays(tmp_path):
+    from lem.observer.splat.h2h import run
+    from lem.observer.model import Observer
+    m=SplatObserver(Config(width=8,layers=1,heads=1))
+    path=tmp_path/'splat.pt';other=tmp_path/'tile.pt'
+    torch.save(dict(task=TASK,tokenizer=VERSION,config=asdict(m.config),model=m.state_dict(),
+                    step=0,data_sha256='fixture'),path)
+    torch.save(dict(tokenizer=VERSION,config=asdict(m.config),model=Observer(m.config).state_dict(),
+                    step=0,data_sha256='fixture'),other)
+    np.save(tmp_path/'exclusions.npy',np.empty((0,4),np.uint32))
+    r=run(Namespace(candidate=str(path),opponent=str(other),head='splat',
+          exclude_hands=str(tmp_path/'exclusions.npy'),seed=987612345,out=str(tmp_path/'games')))
+    assert r['games']==2 and r['pairs']==1
+    assert r['audit']['all_plays_legal_and_scores_replayed']
+    assert r['game_win_rate']['ci95'] is None
+
+
+def test_multiple_caches_device_gather_and_paired_eval(tmp_path):
+    from lem.observer.splat.train import DeviceCorpus
+    from lem.observer.splat.evaluate import run
+    make_source(tmp_path/'source-a');make_source(tmp_path/'source-b',base=201)
+    build(tmp_path/'source-a',tmp_path/'cache-a');build(tmp_path/'source-b',tmp_path/'cache-b')
+    roots=[str(tmp_path/'cache-a'),str(tmp_path/'cache-b')]
+    corpus=Corpus(roots);d=DeviceCorpus(corpus,'cpu')
+    ix=np.array([0,119,120,239,201,17])
+    expected=corpus.batch(ix);actual=d.batch(ix)
+    for k in expected:np.testing.assert_array_equal(expected[k],actual[k].numpy())
+    model=SplatObserver(Config(width=8,layers=1,heads=1))
+    candidate=tmp_path/'candidate.pt';baseline=tmp_path/'baseline.pt'
+    common=dict(config=asdict(model.config),step=0,tokenizer=VERSION,data_sha256='test')
+    torch.save({**common,'task':TASK,'model':model.state_dict()},candidate)
+    torch.save({**common,'model':model.backbone.state_dict()},baseline)
+    report=run(Namespace(cache=roots,device='cpu',candidate=str(candidate),baseline=str(baseline),out=str(tmp_path/'eval')))
+    assert report['metrics']['delta_tile_hits']=={'estimate':0.,'ci95':[0.,0.]}
+    assert report['metrics']['g0_regret']==report['metrics']['joint_tile_regret']
+    assert report['physical_deals']==len(d.splits['test'])//4
