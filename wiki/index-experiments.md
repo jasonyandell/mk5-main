@@ -259,3 +259,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[splat-visualizer]] — the splat visualizer: per-move outcome distributions world by world, what-must-be-true, conditioning on holdings; vanilla SVG, published as an artifact (2026-10-12)
 
 - [[experiments/gus-population-depth-2026-10-18|gus-population-depth-2026-10-18]] — completed 757k reward-depth campaign; fresh confirmation found no established gain (complete)
+- [[experiments/gus-training-review-2026-10-18|gus-training-review-2026-10-18]] — saved-hand review finds 23.9–26.2% of discretionary choices already publicly settled in three generations; next learning-signal ablations and reusable skill (complete)

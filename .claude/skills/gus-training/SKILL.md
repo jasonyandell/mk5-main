@@ -1,0 +1,158 @@
+---
+name: gus-training
+description: Train, resume, evaluate, publish, and prepare interpretability specimens for Gus, the tiny history-conditioned Texas 42 GPT in mk5 lem/observer. Use for corpus squeeze, population reward learning, checkpoint comparisons, training telemetry, or Gus player improvement; not the historical oracle-era gus/ pipeline.
+---
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+# Gus training
+
+Build a better player while leaving an experiment another buddy can replay and
+understand. Jason wants to inspect the actual inputs and outputs, and learn the
+concepts well enough to explain them. Describe one real decision before hiding
+it behind ML shorthand. Keep prediction, playing strength, and interpretation as
+three separate claims.
+
+## Find the live experiment
+
+The repository is `/Users/jason/code/mk5-main`; the original Gus research worktree
+is `/Users/jason/code/mk5-lem-nanogpt`. Locate the current checkout and artifacts
+rather than assuming either branch is current. Read its `CLAUDE.md`,
+`wiki/AGENTS.md`, and `wiki/entities/gus-tiny-gpt.md` first. Follow the entity's
+current experiment routes. Work in the user's authorized worktree; don't edit
+shared main or restart a completed campaign merely to answer a status question.
+
+Implementation: `lem/observer/README.md`. Historical `gus/` and the oracle-era
+forge students are a different lineage. Prefer the existing CLIs over new loops.
+For execution, recovery, telemetry and publishing, read
+[references/operations.md](references/operations.md).
+
+## The companion is `clean-neuron`
+
+Read the repository's **`.claude/skills/clean-neuron/SKILL.md`** before designing
+an interpretability training specimen or writing a unit result. It implements
+the already-clean test from Nick Cammarata's working hypothesis,
+[Neural Networks Are Already Clean](https://already-clean.goodfire.com/).
+The working bet is that capacity pressure can yield coherent, broader concepts;
+it is not a promise that every small model will be easy to read.
+
+“Too many games for a little model” means broad, distinct lawful experience at
+fixed capacity with a declared exposure budget. It is different from repeating
+a tiny corpus hundreds of times. Neither procedure alone establishes that
+capacity has been exhausted, explains a neuron, or improves play.
+
+Preserve initialization, early formation, periodic full checkpoints and native
+activations. Follow `clean-neuron`'s ladder: tools → explanation vocabulary →
+data/inputs/learning → recursive generalization → only then superposition.
+An unnamed unit is not evidence of arbitrary mixing. For this GPT, state its
+actual history-conditioned scope; do not import the field net's “no history”
+sentence, numerical untrained floor, or 1.17 interval adjustment. Use a matched
+untrained twin and uncertainty appropriate to correlated deals/sequences.
+Training quality and causal unit evidence must accompany interpretation claims.
+
+## Keep the information contract visible
+
+The original observer receives the viewer's **own original seven tiles**, fixed
+bid 30, bidder, declaration, relative seats and the public actor/tile history.
+The viewer is the acting seat when deployed as a player; pretraining also
+predicts other seats from that viewer's information. Its context vocabulary has
+46 tokens; its output has 28 tile logits. Own hand is private information
+legitimately available to the viewer. Other hands are not inputs. The actor
+token precedes the tile to be predicted.
+
+- Show a literal encoded prefix, its decoded meaning, target/output distribution
+  and chosen action when changing data, tokenizer or output semantics.
+- Causal attention blocks future tokens, not secrets accidentally in the prefix.
+  A later remaining hand or future actor schedule can leak future play.
+- A legal-action mask constrains the acting player's output choice; it is not an
+  extra input. For another seat's prediction, only publicly visible exclusions
+  may define a deployable baseline; its hidden hand cannot repair predictions.
+- Split physical deals before constructing four observer views, copies or
+  augmentations. Reject overlap with training and reserved panels.
+- Player identity, auction transcript, score, Nello, splat/value heads and
+  cross-hand memory are changes to the task, not already implemented abilities.
+  Preserve Jason's selected clean inputs unless he changes that scope. A richer
+  lawful output target does not require adding its teacher's internals to inputs.
+- No clairvoyant value becomes a learning target. Lawful Walt forecasts are
+  conditional on a specified behavioral field, not an optimal-play certificate.
+
+## Choose the question before spending the run
+
+**Pretraining:** imitate recorded next tiles. Preserve all raw 28-way predictions
+for evaluation, including impossible probability. Sampling is with replacement;
+`steps × batch / training_views` is an equivalent number of passes, not completed
+shuffled epochs. The original corpus-squeeze protocol and results live in
+`wiki/experiments/lem-observer-corpus-squeeze-2026-10-17.md`.
+
+**Reward learning:** improve actual team outcomes against a declared population.
+The initial recipe lives in `wiki/decisions/gus-population-iteration.md`: one
+learner seat; each other seat independently 25% pinned Zeb and 75% uniform over
+the latest five completed Gus generations. Freeze assignments within a hand and
+the roster within a generation. Five is a sampling window, never an archive
+deletion rule. Count behavioral differences; five nearby checkpoints need not
+be five useful styles.
+
+The first implementation uses legal-softmax exploration, terminal ±1 team reward,
+policy-only clipped PPO and a baseline from previous completed batches. Preserve
+actual sampled log probabilities, legal sets, rewards and replay prefixes; only
+the learner's decisions enter the policy gradient. Old/new probabilities use
+the same support. This is an initial tested implementation, not a validated
+optimal recipe. Read `wiki/experiments/gus-population-depth-2026-10-18.md` before
+reusing it: twenty generations and depth growth did not establish a fresh-panel
+gain. Do not treat that as a capacity ceiling or silently repeat the campaign.
+
+Before a new experiment, record the hypothesis, one main changed factor,
+population, seed namespaces, deterministic sample/update budgets, selection
+metric, minimum meaningful gain, stopping rule and independent confirmation.
+Keep the latest learner, highest development score, material-gain anchor and
+supported incumbent separate. Make any revised recipe explicit before results.
+Reserve fresh confirmation before selection; never use it to choose again.
+
+## Read the right scoreboard
+
+| Question | Evidence |
+|---|---|
+| Did it predict recorded behavior? | Raw NLL, top-1, impossible mass; own/other and forced/discretionary slices; visible-uniform and untrained baselines |
+| Did a candidate improve in the training setting? | Fixed paired development hands with frozen other seats; exploratory after repeated selection |
+| Does it play a stronger game? | Fresh paired full-game H2H against named pinned opponents, shared bidder/contract, pair-level uncertainty and marks/game |
+| Is the adapter working? | A short replayed smoke; no promotion claim from a handful of wins |
+| What does a native unit do? | Held-out activation evidence, formation and matched causal interventions under `clean-neuron` |
+
+NLL rewards probability assigned to the observed tile; top-1 checks only whether
+it was ranked first. Their disagreement is expected. Neither is team win rate.
+All-play NLL includes other seats' hidden-hand uncertainty and forced moves.
+For playing progress, inspect consequential own decisions as well.
+In particular, report legal-renormalized own-seat choices that are discretionary
+and occur before public make/set settlement. Raw impossible mass is diagnostic;
+the deployed legal mask prevents those tiles from being chosen. PPO trains a
+sampled legal-softmax policy, while current panels and deployment use argmax:
+measure both when testing an improvement, rather than assuming they move together.
+
+Cluster uncertainty by physical deal or complete duplicate pair, not individual
+tokens. Preserve the cross-play matrix beside ratings: population responses can
+cycle. The existing tournament fits Bradley–Terry on an Elo scale; ratings are
+conditional on the ladder, opponents and wrapper. The bid-30 model cannot
+honestly enter unrestricted auctions. Route through `wiki/topics/tournament.md`
+and the current Gus tournament experiment for the supported division.
+
+## Leave a readable specimen
+
+Pin source, tokenizer, dataset/split, field, population and checkpoint hashes.
+Save optimizer/sampler/RNG state, full hands, literal learner tensors, old
+probabilities, legal masks, outcomes and formation checkpoints. Independently
+replay and reconstruct the inputs; test frozen-seat equality until the learner
+first changes history. Preserve best, final and initialization separately.
+
+Identity-appended residual blocks preserve an initial function, not evidence of
+new learned depth. Verify initial logit equality and subsequent block updates.
+The 2026-10-18 selected release is G10's function padded to fifteen blocks;
+`gus-g017` through `gus-g020` are genuinely trained fifteen-block specimens.
+
+Report what changed, what was measured and what remains unestablished. Publish
+generated evidence to the existing public CC0 Hub destination before citing it
+in the wiki; pin immutable revisions, verify fresh downloads, and keep the MIT
+nanoGPT implementation attribution. Update the wiki and pass the repo's own
+checks before merging. Leave future experiments as proposals unless authorized.
+
+Improve this skill when real friction changes a decision: fix the narrow
+instruction or operations note, rather than accumulating generic warnings.

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Gus Training"
+  short_description: "Train, evaluate, and study tiny Texas 42 players"

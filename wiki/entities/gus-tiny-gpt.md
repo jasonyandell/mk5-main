@@ -32,6 +32,7 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 - [[lem-observer-first-h2h-2026-10-17]] — measured play versus the predecessor.
 - [[lem-nanogpt-foundations]] — clean inputs, math, pending splat/Nello and Zeb methodology.
 - [[gus-population-iteration]] — latest five generations plus permanent Zeb; implemented reward-round settings.
+- [[gus-training-review-2026-10-18]] — independent replay review, next controlled experiments and the `gus-training` skill.
 
 ## Campaign release
 
