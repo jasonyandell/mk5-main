@@ -150,7 +150,8 @@ affect legal probabilities on both splits. The study separates this sensitivity
 from unestablished partner-style inference or playing improvement. See its
 literal worked hand and fixed-table evidence before proposing a partner roster.
 
-[[gus-public-score-probe-2026-10-19]] prepares a frozen-representation probe for
-current public score, separating factual game-state bookkeeping from future
-success prediction and partner-style inference. Existing exact public replay
-provides labels; no hidden-world verifier or changed partner roster is needed.
+[[gus-public-score-probe-2026-10-19]] completed a frozen-representation probe for
+current public score. The final pretrained vector did not support a better
+linear readout than metadata and untrained controls. This is a scoped negative
+accessibility result, not evidence that score information is absent. Exact public
+replay supplied labels without hidden-world queries or a changed partner roster.

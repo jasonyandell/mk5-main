@@ -101,8 +101,11 @@ agree. It does not provide individual-move causal credit. Neither registered cri
 groups had unanimous outcomes; that does not prove no better continuation exists.
 The later completed `wiki/experiments/gus-partner-history-2026-10-19.md` study
 tests attention-path sensitivity without training. Read
-`scratch/lem/gus-partner-history-v1/CURRENT.md` and its readout window before
-the next comparison. No completed evaluation or archive should be rerun.
+the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
+the final frozen representation did not support a better linear public-score
+readout than metadata and untrained controls. Read
+`scratch/lem/gus-public-score-v1/CURRENT.md` and its steering window before
+selecting another comparison. No completed evaluation or archive should be rerun.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities
@@ -214,6 +217,14 @@ The completed partner-history study establishes sensitivity, including ordinary
 played-tile bookkeeping, not partner-style inference or winning benefit. Reuse
 its sham, matched-seat, dose and untrained controls; do not interpret nonlinear
 all-layer minus last-layer effects as an isolated indirect information amount.
+A frozen linear probe tests accessibility to that fitted readout, not causal
+use or native-unit meaning. Failure does not establish absent information.
+`lem.observer.state_probe` reconstructs within-hand banked score from original
+prefixes; that is a past public fact, distinct from a future-success target.
+Keep fit-only normalization, physical-root splits and structured/untrained
+controls. A constant or shuffled-label baseline alone can be too weak.
+Any auxiliary public-state loss is a separately registered learning experiment,
+not a new actor input or an established remedy for weak playing progress.
 
 ## Current series: keep opponents fixed
 

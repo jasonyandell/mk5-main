@@ -153,7 +153,10 @@ general-playing incumbent; full recovery state and formation live in the
 linked public archives. The `gus-training` skill carries both workflows.
 
 Completed [[gus-leave-one-out-2026-10-19]] found no confirmed playing gain from
-a leave-one-out success baseline versus GRPO or rehearsal. Next comparison unselected.
+a leave-one-out success baseline versus GRPO or rehearsal. Subsequent
+[[gus-partner-history-2026-10-19]] establishes history-path sensitivity;
+[[gus-public-score-probe-2026-10-19]] does not establish a superior linear public-
+score readout. Neither establishes stronger play. Next comparison unselected.
 
 
 Partner-awareness and whole-game training are proposed directions, not selected
