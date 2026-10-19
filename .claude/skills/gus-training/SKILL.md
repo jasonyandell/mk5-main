@@ -99,8 +99,10 @@ clipped actor. Declare reward scale and clipping explicitly; this is not a full
 paper reproduction. Like GRPO, leave-one-out gives no contrast when all outcomes
 agree. It does not provide individual-move causal credit. Neither registered criterion passed; no promotion. About73% of sampled root
 groups had unanimous outcomes; that does not prove no better continuation exists.
-Inspect `scratch/lem/gus-rloo-v1/CURRENT.md` and its readout window before the next
-comparison. No completed evaluation or archive should be rerun.
+The later completed `wiki/experiments/gus-partner-history-2026-10-19.md` study
+tests attention-path sensitivity without training. Read
+`scratch/lem/gus-partner-history-v1/CURRENT.md` and its readout window before
+the next comparison. No completed evaluation or archive should be rerun.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities
@@ -205,7 +207,13 @@ partner every hand removes persistence across hands. Whole games also introduce
 auction, score, match reward and memory questions; do not bundle these with a
 partner-only comparison. Prefer one interpretable factor, fixed opponents and
 explicit partner assignments if that direction is selected. Keep attention
-visualization separate from causal evidence of using partner history.
+visualization separate from causal evidence of using partner history. The tested
+`lem.observer.history_probe` instrument temporarily attenuates tile-key columns;
+all-layer cuts prevent earlier-layer relaying that last-layer cuts can miss.
+The completed partner-history study establishes sensitivity, including ordinary
+played-tile bookkeeping, not partner-style inference or winning benefit. Reuse
+its sham, matched-seat, dose and untrained controls; do not interpret nonlinear
+all-layer minus last-layer effects as an isolated indirect information amount.
 
 ## Current series: keep opponents fixed
 

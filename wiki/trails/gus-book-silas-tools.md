@@ -144,6 +144,8 @@ gain. Completion refresh again found no Lem/Book reply and SilasPR166open;
 no new capability or scope change. The saved formation/native captures remain
 available for the separate transformer bridge.
 
-[[gus-partner-history-2026-10-19]] prepares a bounded causal attention-path
-instrument on fixed reference histories. It separates sensitivity to earlier
-partner tiles from unestablished partner-style inference or playing improvement.
+[[gus-partner-history-2026-10-19]] completed a bounded causal attention-path
+diagnostic on fixed reference histories. Earlier partner-tile paths materially
+affect legal probabilities on both splits. The study separates this sensitivity
+from unestablished partner-style inference or playing improvement. See its
+literal worked hand and fixed-table evidence before proposing a partner roster.
