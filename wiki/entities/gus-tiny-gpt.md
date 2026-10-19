@@ -28,9 +28,11 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
 ## Current experimental control
 
-The objective is winning more under the declared game and field. Jason's
-2026-10-19 steering treats imitation as a starting point, with verified outcome
-learning responsible for improvement beyond it. Teacher agreement and forecast
+Jason's later2026-10-19 charter puts learning Texas42 and understanding
+transformers hands-on first; stronger play is a hoped-for consequence.
+Experiments should identify a teachable game or representation question.
+Winning more under the declared game and field remains the criterion for
+claims of player improvement. Imitation supplies the initial policy. Teacher agreement and forecast
 accuracy do not establish stronger play. [[gus-success-probability-planning]]
 records how this constrains future regularization and selection choices.
 
@@ -152,3 +154,11 @@ linked public archives. The `gus-training` skill carries both workflows.
 
 Completed [[gus-leave-one-out-2026-10-19]] found no confirmed playing gain from
 a leave-one-out success baseline versus GRPO or rehearsal. Next comparison unselected.
+
+
+Partner-awareness and whole-game training are proposed directions, not selected
+protocols. The current encoder already supplies partner-role tokens and public
+plays (`lem/observer/data.py`); adaptation to diverse partner policies and
+cross-hand memory are untested/unimplemented respectively. A partner-only
+comparison can keep opponents fixed; whole games add auction, score and memory
+questions. See [[gus-success-probability-planning]] for the charter clarification.

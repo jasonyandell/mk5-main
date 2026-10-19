@@ -13,8 +13,13 @@ concepts well enough to explain them. Describe one real decision before hiding
 it behind ML shorthand. Keep prediction, playing strength, and interpretation as
 three separate claims.
 
-Jason's 2026-10-19 steering makes the priority explicit: **learn to win more**.
-Imitation supplies the starting policy and a control to beat. Lower imitation
+Jason's later 2026-10-19 clarification puts **learning Texas42 and understanding
+transformers hands-on** first; a strong player is a hoped-for consequence.
+Choose experiments for a clear game/representation question and a teachable
+mechanism, not only another small win-rate change. Negative strength results
+can be valuable learning evidence. For claims of player improvement, verified
+winning remains the criterion. Imitation supplies the starting policy and a
+control to beat. Lower imitation
 loss, closer teacher agreement or better critic forecasts do not count as player
 improvement. Reward-training updates must be driven by verified outcomes; a
 candidate may need to disagree with its teacher to improve. Exact copying
@@ -185,6 +190,22 @@ token precedes the tile to be predicted.
   lawful output target does not require adding its teacher's internals to inputs.
 - No clairvoyant value becomes a learning target. Lawful Walt forecasts are
   conditional on a specified behavioral field, not an optimal-play certificate.
+
+## Partner-awareness brainstorming
+
+Jason proposed partner-aware training and whole games with changing partners
+as possible learning directions, while also permitting useful hill climbing.
+These are proposals, not a silently selected new population or input contract.
+The current encoder already marks the partner's seat and public plays; this
+provides capacity to use partner history, not evidence that it learned a partner
+model. Fixed G0 training does not test adaptation to diverse partners.
+Distinguish role recognition, within-hand behavioral inference, coordination,
+and persistent cross-hand partner learning. An independently redrawn hidden
+partner every hand removes persistence across hands. Whole games also introduce
+auction, score, match reward and memory questions; do not bundle these with a
+partner-only comparison. Prefer one interpretable factor, fixed opponents and
+explicit partner assignments if that direction is selected. Keep attention
+visualization separate from causal evidence of using partner history.
 
 ## Current series: keep opponents fixed
 

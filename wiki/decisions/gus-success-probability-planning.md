@@ -337,3 +337,37 @@ training comparison is selected yet; changing decoding alone lacks support. The 
 Lem/Book replies and Silas PR #166 still open. Existing outcome replay and native
 captures suffice; the transformer causal bridge remains separate. No repeat
 collaborator request was sent.
+
+
+## Later charter clarification: learn the game and the transformer
+
+Jason clarified after [[gus-leave-one-out-2026-10-19]] that learning Texas42
+and personally understanding transformers hands-on are the primary goals.
+A stronger player is a hoped-for consequence; lack of an aggregate win gain
+does not exhaust the value of an experiment. Claims of stronger play still
+require verified outcome evidence. This clarification does not alter completed
+registrations, thresholds or reported failures.
+
+Partner-aware training and whole games with random partners per hand were
+brainstormed, alongside continued useful hill climbing. No new population,
+input or experiment was selected. Existing clean inputs already distinguish
+partner from opponents and retain public within-hand history. This permits
+partner-history use but does not establish a learned behavioral model.
+A fixed G0 partner does not test adaptation across partner types.
+
+A possible progression separates role recognition, inference of a partner's
+behavior from lawful history, coordinated choices, and persistent cross-hand
+learning. A partner independently redrawn each hand provides no persistent
+identity to learn across hands. Full games additionally require declared
+auction/score/reward/memory semantics. These factors should not be silently
+bundled into a single comparison. Attention maps can illustrate computation;
+causal use of partner history needs a controlled test and appropriate replay
+and legality checks. The transformer causal adapter remains separate work.
+
+Uniform beliefs and uniform action choices are different objects. Walt's
+belief weights hidden worlds; its response chooses a common information-lawful
+policy to maximize expected utility against the stated behavioral field.
+Uniform weights do not make that decision rule random or establish a minimax
+or equilibrium guarantee. See [the mathematical definition](../../docs/math/walt.md)
+and [[scenario-player]]. This statement does not establish the cause of any
+particular observed exploit or import old deployment defaults into current pins.
