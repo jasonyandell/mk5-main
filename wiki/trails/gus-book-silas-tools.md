@@ -93,9 +93,11 @@ automatically. No such adapter is claimed by the existing captures.
 
 ## Consequence for the next experiment
 
-The next comparison to register remains PPO with a separate success-value
-baseline versus GRPO and supervised rehearsal, as specified in the decision
-page. Keep the G0 partner, pinned Zeb opponents, original clean tokens and fresh
+[[gus-ppo-value-2026-10-19]] completed the matched PPO/value comparison without
+a fresh playing gain. Its online critic forecasts worse than a simple prior
+before fitting new batches, despite the earlier pooled representation result.
+The next hypothesis must address that distinction before increasing exposure.
+Keep the G0 partner, pinned Zeb opponents, original clean tokens and fresh
 confirmation discipline. The frozen panel is development evidence, not training
 material. Book/Silas concepts can later explain where behavior changes; they do
 not replace verified rewards or require expanding inputs now.

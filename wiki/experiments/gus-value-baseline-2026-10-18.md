@@ -2,7 +2,7 @@
 title: "Gus: a success-value baseline on the frozen representation"
 kind: experiment
 first_seen: 2026-10-18
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -85,7 +85,7 @@ fit resume preserves the fit, prediction and report bytes. Four focused tests
 cover root grouping, independent fitting, causal capture and atomic chunks.
 This is not a cross-runtime or arbitrary-batch identity claim.
 
-## Conventional next comparison
+## Subsequent comparison
 
 [[gus-success-probability-planning]] selects a matched PPO/value versus GRPO and
 rehearsal comparison. `lem/observer/value.py` implements a separate linear
@@ -95,8 +95,11 @@ the undiscounted GAE λ=1 case. The current batch fits the critic only after its
 actor update. The diagnostic regression is not used as a warm start.
 
 PPO implementation and recovery are engineering work distinct from this completed
-prediction study. A new registered comparison is required before any claim that
-the learned baseline improves the actor. Other seats remain fixed.
+prediction study. The subsequent registered [[gus-ppo-value-2026-10-19]] comparison establishes
+no full-hand gain. Its freshly fitted eight-root online critic forecasts worse
+than a simple prior before fitting the next batch. This differs from the pooled
+standardized ridge fit here; the representation result does not validate that
+online fitting recipe. Other seats remain fixed.
 
 ## Implementation verification
 

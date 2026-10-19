@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/gus-ppo-value-2026-10-19|gus-ppo-value-2026-10-19]] — matched PPO/value, GRPO and rehearsal; fixed-field outcome training with untouched confirmation (active)
+- [[experiments/gus-ppo-value-2026-10-19|gus-ppo-value-2026-10-19]] — PPO/value vs GRPO/rehearsal; no fresh play gain and weak before-fit critic forecasts (complete)
 
 - [[experiments/lem-observer-first-h2h-2026-10-17|lem-observer-first-h2h-2026-10-17]] — frozen 500k observer wins 57.03% [52.73, 61.72] against its 50k predecessor; untrained/random/self controls and complete bid-30 game evidence archived (complete)
 

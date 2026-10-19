@@ -53,8 +53,11 @@ comparison uses short prefixes of continuous runs and matched rehearsal, without
 establishing a fresh full-hand gain:
 `wiki/experiments/gus-exposure-budget-2026-10-18.md`.
 The completed value diagnostic supports a matched PPO/value comparison:
-`wiki/experiments/gus-value-baseline-2026-10-18.md`. The `--mode ppo` estimator
-is implemented; a learned forecast is a baseline, never the reward authority.
+`wiki/experiments/gus-value-baseline-2026-10-18.md`. The completed
+`wiki/experiments/gus-ppo-value-2026-10-19.md` comparison found no fresh playing
+gain; its online critic forecast new batches worse than an earlier-batch prior.
+Distinguish that fitting regime from the pooled diagnostic. The `--mode ppo`
+estimator is implemented; a learned forecast is a baseline, never reward authority.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities

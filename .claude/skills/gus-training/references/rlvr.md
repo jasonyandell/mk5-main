@@ -311,8 +311,10 @@ The completed exposure comparison did not confirm a full-hand gain. Extra
 updates improved imitation losses while the selected player's fresh win rate
 did not improve. Count zero-variance groups and distinguish changed outputs
 from better decisions before repeating the budget. The completed value diagnostic
-in `wiki/experiments/gus-value-baseline-2026-10-18.md` supports the next matched
-PPO/value comparison. Its held-out prediction gain is not a playing gain.
+in `wiki/experiments/gus-value-baseline-2026-10-18.md` motivated the completed matched
+PPO/value comparison in `wiki/experiments/gus-ppo-value-2026-10-19.md`. Neither
+PPO nor GRPO established a fresh gain beyond rehearsal. The diagnostic's
+held-out prediction gain is not a playing gain.
 
 ## PPO with a separate success-value baseline
 
@@ -349,3 +351,20 @@ MPS two-round signal/resume smoke preserved trajectories and recovered the criti
 exactly, but failed strict actor equality (maximum weight delta about 2.1e-6).
 Do not promise bitwise GPU training. Completed resumes preserve artifact bytes;
 frozen evaluation retains its separate pinned CPU byte-recheck contract.
+
+
+The completed first online critic fitted current batches but forecast later
+fresh roots worse than an earlier-batch success prior. Compare before-fit
+forecasts, after-fit training error and playing strength separately. Pooled
+standardized ridge regression over hundreds of roots is not evidence that
+20 Adam steps per eight-root batch will maintain a useful online baseline.
+Nonzero advantages alone do not show useful policy credit or reduced variance.
+A changed critic fit, normalization or training history needs a new registration.
+
+For numerical audits, bind a tolerance to its named quantity and runtime.
+Do not reuse a cross-device log-probability tolerance for raw hidden features.
+Use same-device, same-batch identity checks when claiming exact feature replay;
+retain cross-device diagnostics separately. Frozen evaluation scripts stay
+immutable. Preserve any failure and publish a separate correction with its
+before/after-confirmation timing; a serialization-only output cast must not
+silently change arithmetic, selection, bootstrap or acceptance thresholds.

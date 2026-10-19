@@ -119,11 +119,13 @@ model sizes and qualitative hypotheses are not grounds for a general-player
 promotion. The pinned Demon is a separate evaluation competitor; its internal
 forecasts never become learning targets.
 
-## Next comparison: PPO with a success-value baseline
+## Completed comparison: PPO with a success-value baseline
 
-[[gus-ppo-value-2026-10-19]] registers the matched three-arm comparison, bounded
-execution, development selection and untouched confirmation. No strength result
-is established by registration.
+[[gus-ppo-value-2026-10-19]] completes the matched three-arm comparison. PPO
+selects round 16 and wins 221/512 fresh greedy hands versus parent 218, GRPO 222
+and rehearsal 221. Neither registered criterion passes. The critic fits its
+current batch but predicts new batches worse than the earlier-batch success
+prior (Brier .27745 versus .23917). No incumbent is promoted.
 
 The completed [[gus-value-baseline-2026-10-18]] passes its registered prediction
 criterion on disjoint physical roots using the original frozen representation.
@@ -161,8 +163,12 @@ nor reward authority. Sources:
 This tests a variance-reduction/credit estimator without assuming collapsed
 exploration or a capacity shortage. A learned baseline need not vanish when
 all eight sampled outcomes agree; that does not establish a useful gradient.
-Fresh paired confirmation after development selection must establish any playing
-gain. The next comparison is not yet a completed strength result.
+Fresh paired confirmation did not establish a playing gain. The pooled
+prediction study and this tiny online critic use different fitting regimes;
+usable frozen features do not by themselves establish a useful current-policy
+baseline. A next comparison should first justify the critic fitting/stability
+choice from forecast evidence, while preserving fixed seats, clean inputs and
+verifier authority. It requires a fresh registration and Jason's steering window.
 
 ## Lazy immutable continuation evidence
 
