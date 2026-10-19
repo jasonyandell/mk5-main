@@ -84,12 +84,22 @@ For full-hand outcome post-training, use `python -u -m lem.observer.outcomes
 `cpu-slot`. The plan pins disjoint deals, fixed G0 partner/Zeb opponents and the
 recipe. Explicit `initial` and `reference` checkpoint paths/hashes separate the
 starting policy from the frozen KL/retention anchor. Initial weights start fresh
-AdamW; they must satisfy the reference retention bounds. Old plans run under
+AdamW. The recipe explicitly chooses `selection: "retention"` to enforce the
+reference loss bounds or `selection: "outcomes"` to select by greedy then sampled
+development wins while reporting imitation drift. Initialization participates;
+earliest ties remain selected. Old plans run under
 their published source. `--mode rehearsal` is the matched control. Groups of legal learner
 trajectories receive independently replayed terminal rewards; all seven learner
 turns share the group advantage. The plan explicitly chooses `reward_horizon`:
 `full`, or `unsettled` to remove credit after public make/set settlement while
-retaining the seven-turn denominator. Original tile/splat rehearsal protects retention.
+retaining the seven-turn denominator. `replay_weight: 0` disables imitation
+gradients in reward arms; `beta: 0` disables the fixed-parent KL penalty. The
+clipped ratio still uses the policy that collected the current batch, not the
+pretrained parent. Rehearsal-only mode requires a positive rehearsal weight.
+With imitation disabled, the same replay draws produce diagnostics under no-grad;
+unused splat-head parameters receive no gradient or AdamW weight decay. Their
+outputs can nevertheless drift as the shared backbone changes. They are not
+newly supervised current-Gus outcome forecasts.
 `--resume` preserves the registered plan, AdamW, all RNG, selection and tracking.
 The [full-hand study](../../wiki/experiments/gus-full-hand-outcomes-2026-10-18.md)
 records results; the training skill's RLVR reference carries the recovery contract.

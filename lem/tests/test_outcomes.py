@@ -40,7 +40,7 @@ def setup(tmp_path):
         'train': specs[:4], 'development': specs[4:6], 'confirmation': specs[6:],
         'recipe': {'rounds': 2, 'roots': 2, 'group': 3, 'inner': 2, 'batch': 16, 'eval_every': 1,
             'replay_batch': 3, 'replay_weight': 1., 'lr': .001, 'beta': .02, 'clip': .2,
-            'retention_nll': .02, 'retention_splat': .02, 'reward_horizon': 'full'}}
+            'retention_nll': .02, 'retention_splat': .02, 'reward_horizon': 'full', 'selection': 'retention'}}
     atomic_json(tmp_path/'plan.json', plan)
     return model, plan
 
@@ -78,12 +78,15 @@ def test_full_hand_grouping_audit_and_replay_bytes(tmp_path):
         outcomes.audit(a, bad)
 
 
-@pytest.mark.parametrize('mode,horizon,distinct', [('grpo','full',False), ('grpo','unsettled',False),
-    ('rehearsal','full',False), ('grpo','full',True), ('ppo','full',False), ('ppo','unsettled',False)])
-def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon, distinct):
+@pytest.mark.parametrize('mode,horizon,distinct,unanchored', [('grpo','full',False,False), ('grpo','unsettled',False,False),
+    ('rehearsal','full',False,False), ('grpo','full',True,False), ('ppo','full',False,False), ('ppo','unsettled',False,False),
+    ('grpo','full',False,True)])
+def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon, distinct, unanchored):
     _, plan = setup(tmp_path)
     if distinct:
         distinct_start(tmp_path, plan)
+    if unanchored:
+        plan['recipe'].update(replay_weight=0., beta=0., selection='outcomes')
     if mode == 'ppo':
         plan['recipe']['value'] = {'representation':'frozen_reference', 'estimator':'monte_carlo_batch_normalized',
                                    'lr':.001, 'steps':3, 'clip_norm':1.}
@@ -280,3 +283,60 @@ def test_masked_post_terminal_credit_equals_rehearsal_update(tmp_path):
     for name in trained['masked']:
         assert torch.equal(trained['masked'][name],trained['control'][name]),name
     assert any(not torch.equal(trained['full'][name],trained['control'][name]) for name in trained['full'])
+
+
+def test_unanchored_update_ignores_teacher_targets_and_preserves_unused_head(tmp_path):
+    model, plan = setup(tmp_path)
+    data, _, _ = outcomes.trajectories(model, {'g0':Fixed(),'zeb':Fixed()}, plan['train'], 8, 'unanchored', 'cpu')
+    assert np.any(data['advantage'])
+    recipe = dict(plan['recipe'], mode='grpo', replay_weight=0., beta=0.)
+    trained = []
+    for changed in (False, True):
+        candidate = copy.deepcopy(model); reference = copy.deepcopy(model).requires_grad_(False)
+        replay = outcomes.Rehearsal(plan['replay'], 'cpu')
+        if changed:
+            with torch.no_grad():
+                reference.backbone.token.weight.add_(torch.randn_like(reference.backbone.token.weight))
+            replay.arrays['targets'] = (replay.arrays['targets']+1)%28
+            replay.arrays['histograms'] = torch.roll(replay.arrays['histograms'],1,-1)
+        opt = torch.optim.AdamW(candidate.parameters(), lr=.001)
+        outcomes.update(candidate,reference,opt,data,replay,torch.Generator().manual_seed(4),recipe,'cpu')
+        assert all(p.grad is None for p in candidate.outcomes.parameters())
+        nested_equal(candidate.outcomes.state_dict(), model.outcomes.state_dict())
+        trained.append(candidate.state_dict())
+    nested_equal(*trained)
+    assert any(not torch.equal(v,model.state_dict()[k]) for k,v in trained[0].items())
+
+
+def test_outcome_selection_can_choose_a_winner_despite_imitation_drift(tmp_path, monkeypatch):
+    _, plan = setup(tmp_path)
+    monkeypatch.setattr(outcomes,'policies',lambda *a:{'g0':Fixed(),'zeb':Fixed()})
+    original = outcomes.trajectories
+    for selection in ('retention','outcomes'):
+        counters = {'dev':0,'retention':0}
+        def trajectories(*a, **kw):
+            data,episodes,stats = original(*a, **kw)
+            if a[4].endswith('/development'):
+                stats['win_rate'] = (counters['dev']//2)/2
+                counters['dev'] += 1
+            return data,episodes,stats
+        def retention(*a, **kw):
+            drift = counters['retention'] >= 2
+            counters['retention'] += 1
+            return {'tile_nll':float(drift), 'splat_ce':float(drift), 'tile_accuracy':0.}
+        monkeypatch.setattr(outcomes,'trajectories',trajectories)
+        monkeypatch.setattr(outcomes.Rehearsal,'evaluate',retention)
+        plan['recipe']['selection']=selection;atomic_json(tmp_path/'plan.json',plan)
+        args=outcomes.parser().parse_args(['--plan',str(tmp_path/'plan.json'),'--out',str(tmp_path/selection),'--mode','grpo','--device','cpu'])
+        report=outcomes.run(args)
+        assert report['best']['round'] == (2 if selection=='outcomes' else 0)
+        assert report['best']['selection_eligible']
+        assert report['best']['retention_pass'] == (selection=='retention')
+
+
+@pytest.mark.parametrize('patch,mode,match', [({'selection':'unknown'},'grpo','declare selection'),
+    ({'replay_weight':0.},'rehearsal','invalid full-hand'), ({'replay_weight':-1.},'grpo','invalid full-hand')])
+def test_invalid_selection_and_empty_rehearsal_are_rejected(tmp_path, patch, mode, match):
+    _,plan=setup(tmp_path);plan['recipe'].update(patch);atomic_json(tmp_path/'plan.json',plan)
+    args=outcomes.parser().parse_args(['--plan',str(tmp_path/'plan.json'),'--out',str(tmp_path/'out'),'--mode',mode,'--device','cpu'])
+    with pytest.raises(ValueError,match=match):outcomes.run(args)

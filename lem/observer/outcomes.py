@@ -33,7 +33,7 @@ from .splat.play import SplatPlay
 from .splat.recovery import StopRequest, capture_rng, restore_rng
 from .value import ValueBaseline
 
-SCHEMA = 'gus-full-hand-outcomes-v4'
+SCHEMA = 'gus-full-hand-outcomes-v5'
 
 
 def publicly_settled(points, bidder, bid=30):
@@ -163,8 +163,12 @@ def update(model, reference, optimizer, data, replay, replay_rng, recipe, device
             totals += weight*np.array([float(policy.detach()), float(kl.detach()), float(entropy.detach()),
                                       float(((ratio-1).abs() > recipe['clip']).float().mean().detach())])
         ix = torch.randint(len(replay.splits['train']), (recipe['replay_batch'],), generator=replay_rng).numpy()
-        loss, tile, splat, _ = replay.loss(model, replay.splits['train'][ix])
-        (recipe['replay_weight']*loss).backward()
+        # Keep the same sampled diagnostics and RNG stream when imitation is
+        # disabled, without creating zero gradients on the unused splat head.
+        with torch.set_grad_enabled(recipe['replay_weight'] > 0):
+            loss, tile, splat, _ = replay.loss(model, replay.splits['train'][ix])
+        if recipe['replay_weight'] > 0:
+            (recipe['replay_weight']*loss).backward()
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True)
         optimizer.step()
         metrics.append(dict(zip(('policy_loss', 'reference_kl', 'entropy', 'clip_fraction'), map(float, totals)),
@@ -191,9 +195,12 @@ def _run(args):
     recipe = dict(plan['recipe'], mode=args.mode)
     if recipe.get('reward_horizon') not in ('full', 'unsettled'):
         raise ValueError('declare reward_horizon as full or unsettled')
+    if recipe.get('selection') not in ('retention', 'outcomes'):
+        raise ValueError('declare selection as retention or outcomes')
     if (args.mode not in ('grpo', 'ppo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
         or recipe['group'] < 2 or recipe['lr'] <= 0 or not 0 < recipe['clip'] < 1 or recipe['beta'] < 0
-        or recipe['replay_weight'] <= 0 or min(recipe['retention_nll'], recipe['retention_splat']) < 0):
+        or recipe['replay_weight'] < 0 or (args.mode == 'rehearsal' and recipe['replay_weight'] == 0)
+        or min(recipe['retention_nll'], recipe['retention_splat']) < 0):
         raise ValueError('invalid full-hand recipe')
     if len(plan['train']) != recipe['rounds']*recipe['roots']:
         raise ValueError('each round requires its registered fresh roots')
@@ -282,12 +289,13 @@ def _run(args):
         retention = replay.evaluate(model)
         feasible = all(retention[k] <= reference_retention[k]+recipe[bound]
                        for k, bound in [('tile_nll','retention_nll'), ('splat_ce','retention_splat')])
-        return dict(round=completed, **scores, retention=retention, retention_pass=feasible)
+        return dict(round=completed, **scores, retention=retention, retention_pass=feasible,
+                    selection_eligible=recipe['selection'] == 'outcomes' or feasible)
 
     with StopRequest(args.stop_file, args.seconds) as stop:
         if not saved:
             best = evaluate()
-            if not best['retention_pass']:
+            if not best['selection_eligible']:
                 raise ValueError('initial policy violates reference retention bounds')
             save(out/'initial.pt'); save(out/'best.pt'); save(out/'latest.pt')
         while completed < recipe['rounds'] and not stop.requested():
@@ -314,7 +322,7 @@ def _run(args):
             if completed % recipe['eval_every'] == 0 or completed == recipe['rounds']:
                 row['development'] = evaluate()
                 candidate = row['development']
-                if candidate['retention_pass'] and (candidate['greedy'], candidate['sampled']) > (best['greedy'], best['sampled']):
+                if candidate['selection_eligible'] and (candidate['greedy'], candidate['sampled']) > (best['greedy'], best['sampled']):
                     best = candidate; selected = True
             history.append(row)
             if selected:

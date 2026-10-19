@@ -374,6 +374,16 @@ no simulator-only information enters actor inputs. Training-time rollouts do not
 require deployed-player search. Full-match training is not implemented by the
 existing bid30-hand reward.
 
+The full-hand v5 recipe explicitly declares `selection: "outcomes"` or
+`"retention"`. Both maximize greedy then sampled development success, keeping
+initialization and earliest ties; only the latter requires the imitation-loss
+bounds. `replay_weight: 0` is supported for reward arms and `beta: 0` removes
+fixed-parent KL. Clipped old-policy ratios and optimizer controls remain.
+Zero-weight replay still consumes the paired diagnostic draws under no-grad;
+the unused splat head receives no gradient or weight decay. Its output can drift
+with the backbone without becoming a calibrated current-policy forecast. Do not
+resume old-source plans under v5; pin their published source for exact recovery.
+
 For numerical audits, bind a tolerance to its named quantity and runtime.
 Do not reuse a cross-device log-probability tolerance for raw hidden features.
 Use same-device, same-batch identity checks when claiming exact feature replay;

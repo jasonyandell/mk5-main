@@ -69,6 +69,15 @@ coverage and cost budget; simulation may use hidden state, but the learner may
 not. Training-time simulation does not require search inside the deployed player.
 Full-match continuation remains future scope; the current contract is bid30 hands.
 
+The v5 full-hand trainer now supports explicitly declared outcome-only selection
+and zero-weight imitation in reward arms. `selection: outcomes` records original
+loss drift without using it as an eligibility gate; `selection: retention` keeps
+the declared loss bounds. The original frozen-reference KL can independently be
+set to zero. The current-batch old-policy ratio clipping remains in both cases.
+This implements the next controlled question, not a measured strength gain:
+does removing the teacher-anchoring loss package improve verified outcomes?
+GRPO can isolate that package without changing or repairing the recent critic.
+
 ## Textbook choice for the current subproblem
 
 [[gus-rlvr-silas-2026-10-18]] supplies an exact rational value `Q(I,a)` for
