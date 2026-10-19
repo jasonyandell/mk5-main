@@ -2,7 +2,7 @@
 title: "Gus — the tiny history-conditioned Texas 42 GPT"
 kind: entity
 first_seen: 2026-10-18
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 status: active
 ---
 
@@ -60,6 +60,8 @@ The older latest-five population recipe below is historical, not the default
 for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
+
+- [[gus-ppo-value-2026-10-19]] — registered matched PPO/value, GRPO and rehearsal comparison; fixed seats and fresh confirmation.
 
 - [[gus-book-silas-tools]] — book questions, Silas verifier authority, Lem instruments and the missing transformer audit bridge.
 

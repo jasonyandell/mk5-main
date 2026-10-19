@@ -2,7 +2,7 @@
 title: "Gus: success-probability RLVR and lazy frozen evaluation"
 kind: decision
 first_seen: 2026-10-18
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -120,6 +120,10 @@ promotion. The pinned Demon is a separate evaluation competitor; its internal
 forecasts never become learning targets.
 
 ## Next comparison: PPO with a success-value baseline
+
+[[gus-ppo-value-2026-10-19]] registers the matched three-arm comparison, bounded
+execution, development selection and untouched confirmation. No strength result
+is established by registration.
 
 The completed [[gus-value-baseline-2026-10-18]] passes its registered prediction
 criterion on disjoint physical roots using the original frozen representation.
