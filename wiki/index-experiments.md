@@ -286,3 +286,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-full-hand-outcomes-2026-10-18|Gus full-hand outcome GRPO]] — fixed players, two matched recipe iterations, fresh confirmation and lazy replay (complete)
 
 - [[experiments/gus-leave-one-out-2026-10-19|Gus leave-one-out outcome baseline]]
+- [[experiments/gus-partner-history-2026-10-19|Gus partner-history attention paths]]

@@ -143,3 +143,7 @@ The completed [[gus-leave-one-out-2026-10-19]] comparison established no player
 gain. Completion refresh again found no Lem/Book reply and SilasPR166open;
 no new capability or scope change. The saved formation/native captures remain
 available for the separate transformer bridge.
+
+[[gus-partner-history-2026-10-19]] prepares a bounded causal attention-path
+instrument on fixed reference histories. It separates sensitivity to earlier
+partner tiles from unestablished partner-style inference or playing improvement.
