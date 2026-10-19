@@ -233,3 +233,11 @@ On a quota response, preserve the immutable local records and retry deadline;
 never rerun the games. A verified research bundle can include the records and
 explicitly pending canonical receipt. Deliver the canonical batch only after
 the service window, then publish a verified addendum; keep the original failure.
+
+
+The standard tournament Hub store now queues durable records and batches CLI
+publication at most once per five minutes per shared cache. Use
+`tournament publication-status` to distinguish queued evidence from delivered
+records and `tournament sync` to drain an idle queue when its deadline permits.
+Do not implement another per-record uploader; immutable file identity does not
+require one remote commit per file. Shared workers should share the same cache.

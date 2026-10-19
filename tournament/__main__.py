@@ -43,6 +43,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--store", default=DEFAULT_STORE)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("sync", help="publish queued Hub records when the shared cooldown permits")
+    sub.add_parser("publication-status", help="show queued Hub records and publication deadline")
     sub.add_parser("seed", help="append the initial roster's participant records")
     z = sub.add_parser("add-zeb", help="pin @jasonyandell/zeb@<version> from npm as a participant")
     z.add_argument("version")
@@ -68,6 +70,13 @@ def main() -> int:
     args = ap.parse_args()
 
     store = open_store(args.store)
+    if args.cmd in ("sync", "publication-status"):
+        if not isinstance(store, HfStore):
+            ap.error("sync/publication-status require an hf: store")
+        print(json.dumps(store.flush() if args.cmd == "sync" else store.publication_status()))
+        return 0
+    if isinstance(store, HfStore) and args.cmd != "table":
+        log("Hub publication: " + json.dumps(store.flush()))
     if args.cmd == "seed":
         seed_roster(store, ROSTER)
     elif args.cmd == "add-zeb":
@@ -106,6 +115,8 @@ def main() -> int:
         seed_roster(store, [participant(commit)])
     elif args.cmd == "table":
         print(table(store, args.ladder))
+    if isinstance(store, HfStore) and args.cmd != "table":
+        log("Hub publication: " + json.dumps(store.flush()))
     return 0
 
 

@@ -158,6 +158,8 @@ class FakeHub:
         root.mkdir(parents=True, exist_ok=True)
         self.listings = 0
         self.resolves = 0
+        self.commits = 0
+        self.revision = "0"
 
     # the HfApi surface HfStore uses
     def list_repo_tree(self, repo_id, path_in_repo, recursive, repo_type):
@@ -166,11 +168,22 @@ class FakeHub:
         return [type("E", (), {"path": f.relative_to(self.root).as_posix()})
                 for f in base.rglob("*") if f.is_file()]
 
-    def create_commit(self, repo_id, repo_type, operations, commit_message):
+    def repo_info(self, *args, **kwargs):
+        return type("Info", (), {"sha": self.revision})
+
+    def list_repo_files(self, *args, **kwargs):
+        return [p.relative_to(self.root).as_posix() for p in self.root.rglob("*.json")]
+
+    def create_commit(self, repo_id, repo_type, operations, commit_message, parent_commit=None):
+        if parent_commit is not None:
+            assert parent_commit == self.revision
+        self.commits += 1
+        self.revision = str(self.commits)
         for op in operations:
             f = self.root / op.path_in_repo
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(op.path_or_fileobj)
+        return type("Commit", (), {"oid": self.revision})
 
     def file_exists(self, repo_id, path, repo_type):
         return (self.root / path).is_file()
@@ -179,7 +192,7 @@ class FakeHub:
 def hf_store(hub: FakeHub, cache: Path) -> HfStore:
     store = HfStore("x/y", cache=cache, api=hub)
 
-    def fetch(path):
+    def fetch(path, revision=None):
         hub.resolves += 1
         target = store._root / path
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -237,3 +250,98 @@ def test_hf_concurrent_workers_share_one_cache(tmp_path):
     assert len(got) == 40
     assert all(got[f"faceoffs/l/w{w}-{i}.json"] == dumps({"w": w, "i": i})
                for w in range(4) for i in range(10))
+
+
+def test_hf_batches_durable_outbox_and_shared_cooldown(tmp_path, monkeypatch):
+    import tournament.store as module
+    clock = [1000.0]
+    monkeypatch.setattr(module.time, "time", lambda: clock[0])
+    hub = FakeHub(tmp_path / "hub")
+    store = hf_store(hub, tmp_path / "cache")
+    for i in range(125):
+        store.append(f"faceoffs/l/{i}.json", dumps({"i": i}), "record")
+    assert hub.commits == 0
+    # A new process can see all durable records before any remote publication.
+    recovered = hf_store(hub, store.cache)
+    assert len(dict(recovered.read_all("faceoffs/l"))) == 125
+    result = recovered.flush()
+    assert result["added_records"] == 125 and result["pending_records"] == 0
+    assert hub.commits == 1
+    store.append("faceoffs/l/later.json", b"{}", "later")
+    assert recovered.flush()["pending_records"] == 1 and hub.commits == 1
+    clock[0] += 300
+    assert store.flush()["pending_records"] == 0 and hub.commits == 2
+    store.flush()  # never publish an empty batch
+    assert hub.commits == 2
+
+
+def test_hf_persisted_retry_after_without_sleep(tmp_path, monkeypatch):
+    import httpx
+    import tournament.store as module
+    from huggingface_hub.errors import HfHubHTTPError
+    clock = [1000.0]
+    monkeypatch.setattr(module.time, "time", lambda: clock[0])
+    monkeypatch.setattr(module.time, "sleep", lambda _: pytest.fail("must not sleep/retry"))
+    hub = FakeHub(tmp_path / "hub")
+    store = hf_store(hub, tmp_path / "cache")
+    store.append("faceoffs/l/a.json", b"{}", "a")
+    original = hub.create_commit
+    attempts = []
+    def limited(*args, **kwargs):
+        attempts.append(1)
+        raise HfHubHTTPError("quota", response=httpx.Response(429, headers={"retry-after": "3600"}, request=httpx.Request("POST", "https://hub.test/commit")))
+    hub.create_commit = limited
+    assert store.flush()["next_attempt_unix"] == 4600
+    recovered = hf_store(hub, store.cache)
+    clock[0] = 4599
+    assert recovered.flush()["pending_records"] == 1 and len(attempts) == 1
+    hub.create_commit = original
+    clock[0] = 4600
+    assert recovered.flush()["pending_records"] == 0
+
+
+def test_hf_uncertain_success_reconciles_without_duplicate_commit(tmp_path, monkeypatch):
+    import tournament.store as module
+    clock = [1000.0]
+    monkeypatch.setattr(module.time, "time", lambda: clock[0])
+    hub = FakeHub(tmp_path / "hub")
+    store = hf_store(hub, tmp_path / "cache")
+    store.append("faceoffs/l/a.json", b"{}", "a")
+    original = hub.create_commit
+    def lost_reply(*args, **kwargs):
+        original(*args, **kwargs)
+        raise ConnectionError("reply lost")
+    hub.create_commit = lost_reply
+    with pytest.raises(ConnectionError):
+        store.flush()
+    assert store.publication_status()["pending_records"] == 1
+    clock[0] += 300
+    hub.create_commit = original
+    result = hf_store(hub, store.cache).flush()
+    assert result["added_records"] == 0 and result["pending_records"] == 0
+    assert hub.commits == 1
+
+
+def test_hf_conflicting_remote_bytes_leave_outbox_intact(tmp_path):
+    hub = FakeHub(tmp_path / "hub")
+    store = hf_store(hub, tmp_path / "cache")
+    store.append("faceoffs/l/a.json", b"{}", "a")
+    target = hub.root / "faceoffs/l/a.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b'{"other":1}')
+    with pytest.raises(AppendConflict):
+        store.flush()
+    assert (store._pending / "faceoffs/l/a.json").read_bytes() == b"{}"
+    assert hub.commits == 0
+
+
+def test_hf_parallel_flushes_share_one_commit(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    hub = FakeHub(tmp_path / "hub")
+    stores = [hf_store(hub, tmp_path / "cache") for _ in range(4)]
+    for i, store in enumerate(stores):
+        store.append(f"faceoffs/l/{i}.json", b"{}", "record")
+    with ThreadPoolExecutor(4) as pool:
+        list(pool.map(lambda s: s.flush(), stores))
+    assert hub.commits == 1
+    assert stores[0].publication_status()["pending_records"] == 0

@@ -2,7 +2,7 @@
 title: "The tournament: an append-only, Bradley–Terry-rated ladder of Texas 42 players"
 kind: topic
 first_seen: 2026-10-14
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 status: active
 ---
 
@@ -200,19 +200,34 @@ The whole state is a directory of immutable files. A faceoff is one file,
 auction, plays, points, marks), the participants' full records and the harness (mk5 commit, Node,
 Python, the cpu-slot mode and load). Since #173 each game also records what it cost beside its wall
 seconds: the referee's CPU and instructions and each seat process's CPU and own instructions. It is
-written once, in its own commit, at a path no other writer can choose. There is no
+written once at a path no other writer can choose; multiple files can share a publication commit. There is no
 index, manifest or stored rating: every table is derived by reading the directory. Two commits that
 add different new paths touch disjoint trees, so every interleaving rebases cleanly; an identical
 re-append is a no-op, and different bytes at an existing path are refused.
 
-On the Hub (`HfStore`) each append is one `create_commit` with no `parent_commit`, which the Hub
-applies on top of its current head. Reads are incremental (2026-10-16): records are immutable, so
-`HfStore.read_all` lists the tree once per prefix and resolves only the files its local cache lacks.
-The earlier `snapshot_download` re-checked every file (~694 resolver requests) whenever the Hub head
-had moved, which with two workers hit the 5000-resolvers-per-5-minutes quota and killed a worker;
-now a read is 2 listing calls and 0 resolves when nothing is new (`test_hf_*` in `test_store.py`).
-A plain git remote (`GitStore`) is commit, push, and on a
-rejected push `pull --rebase` and push again.
+On the Hub (`HfStore`), appends first fsync immutable files into a local outbox.
+Local ratings merge those records with the published snapshot immediately.
+The CLI attempts publication at worker-chunk boundaries, and `tournament sync`
+can drain an idle queue. `tournament publication-status` reports its pending count
+and deadline. A shared cache lock permits at most one commit attempt per five
+minutes, up to 500 records per batch. Two workers using the same cache share that
+cadence; separate hosts/caches have separate budgets. No empty commits.
+
+Each batch pins the remote parent and checks existing paths byte-for-byte before
+adding only missing records. A lost commit reply leaves the outbox intact; the
+next attempt reconciles identical remote files without publishing duplicates.
+429 responses persist Retry-After (seconds or HTTP date, one-hour fallback), so
+restarting or invoking sync cannot bypass the cooldown. Local queue acceptance
+and confirmed remote publication are different states, printed explicitly.
+This replaces the one-record-per-commit publisher that exhausted the shared
+128-commit/hour quota ([#224](https://github.com/jasonyandell/mk5-main/issues/224)).
+
+Reads remain incremental: list each prefix and resolve only missing immutable
+files, then merge local queued/cached records under the shared lock. A plain git
+remote (`GitStore`) retains commit/push/rebase semantics. Tests cover 125 staged
+records in one commit, concurrent flushers, restart recovery, lost replies,
+conflicting remote bytes and cooldown persistence. No game, player, seed or
+rating formula changes.
 
 **Tested deliberately (2026-10-14).**
 

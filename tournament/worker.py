@@ -10,7 +10,7 @@
        (a fresh 64-bit random seed) and, as games run, each game's progress.
     5. Play its games, all at once, each resumable at every hand boundary.
     6. Assemble the record ONCE, save it in the claim, append it to the store
-       (one file, one commit), then delete the claim.
+       (durable local outbox for the Hub), then delete the claim.
 
 A kill at any point loses at most the hands in flight:
 - before step 4: nothing was started;
@@ -212,7 +212,7 @@ def run_claim(claim: Path, store, *, parallel: bool = True, device: str | None =
     added = store.append(spec.path, data,
                          f"faceoff {spec.ladder}: {spec.a} {s['a_wins']}-{s['b_wins']} {spec.b} "
                          f"(marks {s['a_marks']}-{s['b_marks']}, {spec.pairs} duplicate pairs)")
-    log(f"{'appended' if added else 'already recorded'} {spec.path}")
+    log(f"{'recorded locally' if added else 'already recorded'} {spec.path}")
     shutil.rmtree(claim)
     return spec.path
 

@@ -1,14 +1,15 @@
 # SPDX-FileCopyrightText: Jason Yandell
 # SPDX-License-Identifier: CC0-1.0
 
-"""The no-conflict property on the real backend: writers racing commits to one HF dataset.
+"""Concurrent durable appends followed by one batch on the real HF backend.
 
     python -u -m tournament.hf_race --repo jasonyandell/texas-42-tournament-selftest
 
 W processes start together (a barrier) and each appends N files through
-HfStore, one commit each. Afterwards the repo must hold every file, one
-commit per file, and each re-append must be a no-op. The offline twin with
-plain git clones is tests/test_store.py; this one checks the Hub itself.
+HfStore with a shared cache. Afterwards one flush must publish every file in
+one commit, and each re-append must be a no-op. A service cooldown leaves the
+outbox intact and reports an incomplete run; it is never bypassed for a test.
+The offline batching and plain-git tests are in tests/test_store.py.
 """
 from __future__ import annotations
 
@@ -25,8 +26,12 @@ sys.path.insert(0, str(ROOT))
 from tournament.store import AppendConflict, HfStore, dumps  # noqa: E402
 
 
+def _cache(repo):
+    return ROOT / "scratch" / "tournament" / "hf-race" / repo.replace("/", "__")
+
+
 def _writer(repo, run, name, n, barrier, out):
-    store = HfStore(repo, cache=ROOT / "scratch" / "tournament" / "hf-race" / name)
+    store = HfStore(repo, cache=_cache(repo))
     barrier.wait()
     paths, err = [], None
     try:
@@ -44,7 +49,7 @@ def _writer(repo, run, name, n, barrier, out):
             err = "a re-append was not a no-op"
     except Exception as e:
         err = repr(e)
-    out.put((name, paths, store.retried, err))
+    out.put((name, paths, err))
 
 
 def main() -> int:
@@ -53,6 +58,8 @@ def main() -> int:
     ap.add_argument("--writers", type=int, default=6)
     ap.add_argument("--each", type=int, default=4)
     args = ap.parse_args()
+    if args.writers < 1 or args.each < 1 or args.writers * args.each > 500:
+        ap.error("use positive counts with at most 500 total records for one batch")
     from huggingface_hub import HfApi
 
     api = HfApi()
@@ -69,16 +76,18 @@ def main() -> int:
     results = [out.get(timeout=600) for _ in procs]
     for p in procs:
         p.join()
+    publication = HfStore(args.repo, cache=_cache(args.repo)).flush()
     wall = time.time() - t0
-    errors = [(n, e) for n, _, _, e in results if e]
-    written = sorted(p for _, ps, _, _ in results for p in ps)
+    errors = [(n, e) for n, _, e in results if e]
+    written = sorted(p for _, ps, _ in results for p in ps)
     files = {f for f in api.list_repo_files(args.repo, repo_type="dataset") if f.startswith(f"race/{run}/")}
     new = [c for c in api.list_repo_commits(args.repo, repo_type="dataset") if c.commit_id not in before]
     print(f"run {run}: {args.writers} writers x {args.each} appends in {wall:.1f}s")
     print(f"  files written {len(written)}, files on the Hub {len(files)}, missing {len(set(written) - files)}")
-    print(f"  new commits {len(new)} (expected {len(written)}), retried calls {sum(r for _, _, r, _ in results)}")
+    print(f"  new commits {len(new)} (expected 1), publication {publication}")
     print(f"  errors {errors or 'none'}")
-    ok = not errors and set(written) == files and len(new) == len(written) == args.writers * args.each
+    ok = (not errors and set(written) == files and len(new) == 1
+          and len(written) == args.writers * args.each and publication["pending_records"] == 0)
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1
 
