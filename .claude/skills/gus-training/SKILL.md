@@ -88,7 +88,7 @@ It changed neither weights nor the preceding study's endpoint. No decoder
 or checkpoint promotion follows; inspect its readout window before selecting
 the next learning-signal comparison. Repeated draws stay clustered by physical
 deal; more trajectories are not automatically more independent situations.
-The prepared `wiki/experiments/gus-leave-one-out-2026-10-19.md` comparison tests
+The registered `wiki/experiments/gus-leave-one-out-2026-10-19.md` comparison tests
 `--mode rloo`: verified 0/1 success minus other draws' mean, inside the existing
 clipped actor. Declare reward scale and clipping explicitly; this is not a full
 paper reproduction. Like GRPO, leave-one-out gives no contrast when all outcomes

@@ -10,9 +10,9 @@ status: active
 
 ## Question and motivation
 
-Prepared comparison for [[gus-tiny-gpt]]: does a leave-one-out success baseline
+Registered comparison for [[gus-tiny-gpt]]: does a leave-one-out success baseline
 improve learning over the current within-root standardized GRPO advantages?
-Public registration must be verified before training. No result exists yet.
+Public registration is verified and the bounded controller has started. No result exists yet.
 The independently tested sampled-policy lead failed in
 [[gus-sampled-confirmation-2026-10-19]]. The earlier online critic did not
 forecast new batches well ([[gus-ppo-value-2026-10-19]]). This factor tests a
@@ -88,3 +88,15 @@ advantages. Actual SIGTERM and simulated mid-update crash tests compare resumed
 CPU model/optimizer/RNG state with uninterrupted training. MPS has no byte-level
 resume promise. Full formation and native captures remain available to
 `clean-neuron`; prediction drift is not improved forecast calibration.
+
+## Publication and execution
+
+[Immutable preregistration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/b4e31df1a504a84fc043bd5e96cb1d749a8845d9/lem/gus-leave-one-out-2026-10-19/registration) contains all13 executable study scripts, plans, exclusions and thresholds:
+22 files,11840313 bytes, each freshly downloaded anonymously and SHA256 verified.
+Registration SHA256 `f691cd67313dfffc7baf07b09a949026d3eb6922053800b692c089fcb004d838`;
+source `66af9b26`. All604707 prior physical deals are excluded.
+The controller performs training, independent selection reconstruction, native
+capture, fresh evaluation, replay audit and summary, then stops for publication
+and interpretation. It does not select another study. Runtime gates:165 Lem tests,
+changed-suite GREEN4. The original failed schema assertions and wiki checks were
+repaired before merge and registration; no experiment outcomes existed then.
