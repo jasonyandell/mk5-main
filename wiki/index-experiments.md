@@ -291,3 +291,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-native-cooldown-2026-10-19|Gus native cooldown microscope]]
 
 - [[experiments/gus-blank-lead-2026-10-19|Gus blank-suit lead confirmation]]
+- [[experiments/gus-first-look-2026-10-19|Gus current-lead routing into L1/U65]] — reused-row attention intervention; layer-0 sensitivity, no exclusive semantics or output mediation (complete)

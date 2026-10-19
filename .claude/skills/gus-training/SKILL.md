@@ -104,7 +104,7 @@ tests attention-path sensitivity without training. Read
 the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
 the final frozen representation did not support a better linear public-score
 readout than metadata and untrained controls. Read
-`scratch/lem/gus-blank-lead-v1/CURRENT.md` and its steering window before
+`scratch/lem/gus-first-look-v1/CURRENT.md` and current user steering before
 selecting another comparison. No completed evaluation or archive should be rerun.
 The completed `wiki/experiments/gus-native-cooldown-2026-10-19.md` pilot then
 inspected eight preselected native MLP coordinates across saved constant/cosine
@@ -113,6 +113,26 @@ promotion. A blank-suit response candidate already exists before cooldown.
 The subsequent `wiki/experiments/gus-blank-lead-2026-10-19.md` fresh test
 replicates the double-blank lead association, while its broader suit hypothesis
 remains inconclusive for insufficient near-miss coverage in one panel.
+The completed `wiki/experiments/gus-first-look-2026-10-19.md` adds a registered
+reused-row attention-route diagnostic: changing layer-0 attention to the current
+lead produces most of the measured L1/U65 response; layer-1-only effects are small.
+Every-query source attenuation changes earlier representations too, so this is
+not an isolated actor-query edge or unit-only output mediation. Keep raw pre-GELU
+units distinct from frozen-SD association coefficients. Card suffix `:k` is the
+viewer decision/trick index, not within-trick slot; legal model probabilities are
+not recorded reference actions. Independent readers must verify these schemas.
+
+Jason requested a growing Sites First Look and explicitly said not to wait on him.
+During that authorized interpretation effort, continue bounded, preregistered work
+without imposing the old absence-only steering delay. Respect later steering and
+stop requests. Reuse `scratch/sites/gus-first-look` and Site project
+`appgprj_6ad6a8a32a648191bd607f16eed40ee4`; never create a duplicate. Read the Sites
+skill before source/publishing work, preserve owner-private access, publish only
+verified milestones and distinguish exploratory readings from new confirmation.
+The report is https://gus-first-look.psychometrix.chatgpt.site. Keep controls and
+phone layout checked. Prefer existing formation specimens before another squeeze
+unless a new bounded question warrants training. The field-net clean-neuron
+numbers do not transfer to this GPT. All607306 reserved roots remain excluded.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities

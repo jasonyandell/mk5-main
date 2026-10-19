@@ -167,3 +167,10 @@ mechanism question before further training.
 The adjusted double-blank lead association replicates, but the broader blank-suit
 test is inconclusive because one panel lacks non-double blank-trump coverage.
 The player and inputs stay unchanged; no cooldown cleanliness gain follows.
+
+[[gus-first-look-2026-10-19]] then attenuates current-lead tile attention on
+matched rows reused from those panels. The U65 preactivation response is dominated
+by layer-0 routing in both panels. Downstream output movement is not evidence of
+unit-specific mediation, new semantics or a playing gain. The 48 prefixes and
+607,306 root exclusions remain reused/unchanged; the full audited bundle is
+publicly verified.
