@@ -2,6 +2,7 @@
 
 ## Trails
 
+- [[trails/gus-book-silas-tools|gus-book-silas-tools]] — connects Gus training to book assumptions, available Silas verifiers and Lem's instruments; identifies the transformer bridge (active)
 - [[trails/alphazero-under-imperfect-information|alphazero-under-imperfect-information]] — Era 4: 16 days answering whether AlphaZero-style self-play beats the E[Q] oracle under hidden information (complete)
 - [[trails/breakthrough-and-oracle|breakthrough-and-oracle]] — the fortnight (Dec 24 – Jan 8) the project stopped being a web game with a decent minimax and became a machine that computes ground truth (complete)
 - [[trails/burl-line|burl-line]] — the Burl arc: tool-use spikes → STaR harvests → perf phases → instruments → dormancy; routes every burl leaf (complete)
