@@ -13,6 +13,24 @@ concepts well enough to explain them. Describe one real decision before hiding
 it behind ML shorthand. Keep prediction, playing strength, and interpretation as
 three separate claims.
 
+Jason's 2026-10-19 steering makes the priority explicit: **learn to win more**.
+Imitation supplies the starting policy and a control to beat. Lower imitation
+loss, closer teacher agreement or better critic forecasts do not count as player
+improvement. Reward-training updates must be driven by verified outcomes; a
+candidate may need to disagree with its teacher to improve. Exact copying
+reproduces a teacher's policy; this is not a theorem that every distilled student
+is bounded by its teacher's measured strength.
+
+Rehearsal, frozen-reference KL and imitation-retention thresholds are experiment
+choices, not permanent requirements to remain teacher-like. Keep completed and
+running registrations intact. Before the next registration, inspect whether
+these choices obstruct the winning objective; compare changes explicitly rather
+than silently removing them. Prediction/critic diagnostics are bounded support
+work with a stated path back to actor training and fresh outcome confirmation.
+Preserve clean inputs, fixed seats, legality, verifier authority and replay checks.
+Jason may miss discussion windows; continue the authorized loop after the window,
+incorporating his latest steering without requiring another reply.
+
 ## Find the live experiment
 
 The repository is `/Users/jason/code/mk5-main`; the original Gus research worktree

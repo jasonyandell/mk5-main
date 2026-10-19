@@ -28,6 +28,12 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
 ## Current experimental control
 
+The objective is winning more under the declared game and field. Jason's
+2026-10-19 steering treats imitation as a starting point, with verified outcome
+learning responsible for improvement beyond it. Teacher agreement and forecast
+accuracy do not establish stronger play. [[gus-success-probability-planning]]
+records how this constrains future regularization and selection choices.
+
 Jason's 2026-10-18 instruction fixes the opponent dimension across the current
 learner/recipe investigations. Preserve the nonlearner policies (partner as
 well as opponents), weights, mixture, belief semantics, bidder and deterministic

@@ -25,6 +25,26 @@ probability. Exactness is conditional on the named finite game model. The
 three-style training field and the G0/Zeb evaluation field remain distinct and
 fixed within their respective comparisons.
 
+Jason reaffirmed on 2026-10-19 that the objective is stronger play and winning;
+copying establishes a starting point. Teacher agreement, imitation losses and
+critic accuracy are supporting measurements, never substitutes for verified
+outcome gains. Reward training must be able to prefer a winning departure from
+the teacher. Exact policy copying supplies no behavioral improvement by itself;
+this is not a general upper-bound theorem for distilled students.
+
+The implemented full-hand trainer already optimizes verified rewards, alongside
+supervised rehearsal and frozen-reference KL. Its selection also requires tile
+NLL and splat CE within declared bounds. Those restrictions can exclude a
+different policy independently of its outcome score; whether they have obstructed
+progress is an empirical question, not established by the current null result.
+The next registration must justify their role against the winning objective.
+Existing registrations and their results remain unchanged; future comparisons
+may explicitly vary regularization or treat imitation drift as a diagnostic.
+A critic-only diagnostic must remain bounded and lead back to a test of actor
+improvement. The fixed G0 partner, pinned Zeb opponents, clean inputs, verified
+rewards and independent confirmation remain controls. An absent discussion reply
+does not block the authorized research loop after its steering window.
+
 ## Textbook choice for the current subproblem
 
 [[gus-rlvr-silas-2026-10-18]] supplies an exact rational value `Q(I,a)` for
