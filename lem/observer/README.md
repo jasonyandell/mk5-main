@@ -94,6 +94,18 @@ retaining the seven-turn denominator. Original tile/splat rehearsal protects ret
 The [full-hand study](../../wiki/experiments/gus-full-hand-outcomes-2026-10-18.md)
 records results; the training skill's RLVR reference carries the recovery contract.
 
+`--mode ppo` replaces the group-relative advantage with complete binary returns
+minus a learned value baseline, normalized across the batch. Declare
+`recipe.value = {"representation": "frozen_reference", "estimator":
+"monte_carlo_batch_normalized", "lr": 0.001, "steps": 20, "clip_norm": 1.0}`.
+The separate linear head uses the frozen reference's original actor-position
+features. It starts at 0.5, captures old values before actor updates, then fits
+current rollout returns with its own Adam. This is undiscounted GAE λ=1, without
+bootstrapped targets. Recovery checkpoints include critic weights and optimizer;
+saved decision arrays retain old values, returns and both advantage definitions.
+The [value diagnostic](../../wiki/experiments/gus-value-baseline-2026-10-18.md)
+motivates the comparison; it does not establish stronger play.
+
 `ObserverPlay` implements the arena's batched play interface. It uses the exact
 training prefix for the acting seat and chooses the highest-scoring legal tile.
 The legal mask constrains outputs; it is not another input. Bid values other than

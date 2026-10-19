@@ -61,6 +61,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
+- [[gus-value-baseline-2026-10-18]] — frozen pretrained features improve held-out success prediction; motivates a separate matched PPO/value comparison.
+
 - [[gus-exposure-budget-2026-10-18]] — completed fourfold exposure comparison; changed choices and lower imitation loss, no fresh full-hand gain.
 
 - [[gus-staged-outcomes-2026-10-18]] — completed initialization comparison; no reward-specific full-hand gain.

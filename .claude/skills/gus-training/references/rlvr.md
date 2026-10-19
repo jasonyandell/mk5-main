@@ -310,8 +310,42 @@ roots and updates together tests exposure budget, not their separate effects.
 The completed exposure comparison did not confirm a full-hand gain. Extra
 updates improved imitation losses while the selected player's fresh win rate
 did not improve. Count zero-variance groups and distinguish changed outputs
-from better decisions before repeating the budget. A learned value baseline
-is a standard next candidate for sequential credit assignment, not an established
-fix: first measure prediction error on disjoint physical roots using only clean
-information-state features and verified terminal labels. A value estimate must
-remain separate from reward authority; never let it replace the rules verifier.
+from better decisions before repeating the budget. The completed value diagnostic
+in `wiki/experiments/gus-value-baseline-2026-10-18.md` supports the next matched
+PPO/value comparison. Its held-out prediction gain is not a playing gain.
+
+## PPO with a separate success-value baseline
+
+`lem.observer.outcomes --mode ppo` uses complete terminal binary returns minus
+old value estimates, with batch-wide advantage normalization. This is the
+undiscounted GAE λ=1 case. Complete seven-decision hands make bootstrapped
+targets unnecessary for this first comparison; other λ choices are separate
+experiments. Do not describe finite-batch normalization as unbiased.
+
+Declare every critic choice in `recipe.value`:
+`{"representation":"frozen_reference","estimator":"monte_carlo_batch_normalized",
+"lr":0.001,"steps":20,"clip_norm":1.0}`. The linear head has 65 parameters for
+the current 64-wide representation. It starts with zero weights and bias 0.5,
+uses a separate Adam optimizer, and does not alter actor inputs or size. Its
+features come from the existing frozen reference at the original actor token.
+The pooled diagnostic fit is not an on-policy critic or an initialization.
+
+Capture old values and advantages before fitting this batch; keep them fixed
+through all actor updates. Only afterward fit the critic to current rollout
+returns. Save features, old values, returns, raw/global/group advantages and
+after-fit predictions alongside the original trajectory audit. Value loss
+after fitting is training error. Before-fit predictions on fresh roots are
+more informative about whether the baseline predicts current-policy returns.
+A value estimate must never replace the rules verifier.
+
+Compare PPO against existing GRPO and rehearsal with matched actor/data budgets,
+fixed other seats and a separately reported critic cost. Retain initial-model
+selection and fresh confirmation. The existing clipping, frozen-parent KL and
+rehearsal terms remain declared controls, not universal PPO requirements.
+
+Complete-round checkpoints include critic weights, Adam moments and step count.
+CPU signal/crash tests recover actor, critic, optimizers and RNG exactly. A real
+MPS two-round signal/resume smoke preserved trajectories and recovered the critic
+exactly, but failed strict actor equality (maximum weight delta about 2.1e-6).
+Do not promise bitwise GPU training. Completed resumes preserve artifact bytes;
+frozen evaluation retains its separate pinned CPU byte-recheck contract.

@@ -79,11 +79,14 @@ def test_full_hand_grouping_audit_and_replay_bytes(tmp_path):
 
 
 @pytest.mark.parametrize('mode,horizon,distinct', [('grpo','full',False), ('grpo','unsettled',False),
-    ('rehearsal','full',False), ('grpo','full',True)])
+    ('rehearsal','full',False), ('grpo','full',True), ('ppo','full',False), ('ppo','unsettled',False)])
 def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon, distinct):
     _, plan = setup(tmp_path)
     if distinct:
         distinct_start(tmp_path, plan)
+    if mode == 'ppo':
+        plan['recipe']['value'] = {'representation':'frozen_reference', 'estimator':'monte_carlo_batch_normalized',
+                                   'lr':.001, 'steps':3, 'clip_norm':1.}
     plan['recipe']['reward_horizon'] = horizon; atomic_json(tmp_path/'plan.json', plan)
     monkeypatch.setattr(outcomes, 'policies', lambda *args: {'g0':Fixed(), 'zeb':Fixed()})
     def args(name, resume=False):

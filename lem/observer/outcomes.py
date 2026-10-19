@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Jason Yandell
 # SPDX-License-Identifier: CC0-1.0
-"""Full-hand GRPO: grouped legal trajectories, verified outcomes, fixed seats.
+"""Full-hand GRPO/PPO: legal trajectories, verified outcomes, fixed seats.
 
 Run through cpu-slot. The plan contains disjoint train/development/confirmation
 physical deals and explicit frozen policies. Seeds identify deals and action
@@ -31,8 +31,9 @@ from .rlvr.train import advantages
 from .splat.model import TASK
 from .splat.play import SplatPlay
 from .splat.recovery import StopRequest, capture_rng, restore_rng
+from .value import ValueBaseline
 
-SCHEMA = 'gus-full-hand-grpo-v3'
+SCHEMA = 'gus-full-hand-outcomes-v4'
 
 
 def publicly_settled(points, bidder, bid=30):
@@ -157,7 +158,7 @@ def update(model, reference, optimizer, data, replay, replay_rng, recipe, device
             kl = (lp.exp() * (lp - ref[sl])).sum(-1).mean()
             entropy = -(lp.exp()*lp).sum(-1).mean()
             weight = len(lp)/n
-            if recipe['mode'] == 'grpo':
+            if recipe['mode'] in ('grpo', 'ppo'):
                 ((policy + recipe['beta']*kl)*weight).backward()
             totals += weight*np.array([float(policy.detach()), float(kl.detach()), float(entropy.detach()),
                                       float(((ratio-1).abs() > recipe['clip']).float().mean().detach())])
@@ -190,7 +191,7 @@ def _run(args):
     recipe = dict(plan['recipe'], mode=args.mode)
     if recipe.get('reward_horizon') not in ('full', 'unsettled'):
         raise ValueError('declare reward_horizon as full or unsettled')
-    if (args.mode not in ('grpo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
+    if (args.mode not in ('grpo', 'ppo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
         or recipe['group'] < 2 or recipe['lr'] <= 0 or not 0 < recipe['clip'] < 1 or recipe['beta'] < 0
         or recipe['replay_weight'] <= 0 or min(recipe['retention_nll'], recipe['retention_splat']) < 0):
         raise ValueError('invalid full-hand recipe')
@@ -217,6 +218,9 @@ def _run(args):
     groups = [{'params': [p for p in model.parameters() if (p.ndim >= 2) == matrix],
                'weight_decay': .1 if matrix else 0.} for matrix in (True, False)]
     optimizer = torch.optim.AdamW(groups, lr=recipe['lr'], betas=(.9, .95))
+    if args.mode == 'ppo' and 'value' not in recipe:
+        raise ValueError('explicit value-baseline recipe required for PPO')
+    value = ValueBaseline(reference.config.width, recipe['value'], args.device) if args.mode == 'ppo' else None
     replay_rng = torch.Generator().manual_seed(plan['seed']+2)
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     completed = 0; history = []; best = None; saved = None
@@ -225,6 +229,8 @@ def _run(args):
         if saved['settings'] != settings:
             raise ValueError('resume identity changed')
         model.load_state_dict(saved['model']); optimizer.load_state_dict(saved['optimizer'])
+        if value is not None:
+            value.restore(saved['value'])
         replay_rng.set_state(saved['replay_rng'])
         completed, history, best = saved['round'], saved['history'], saved['best']
         if completed == recipe['rounds'] and (out/'report.json').exists():
@@ -260,6 +266,7 @@ def _run(args):
     def save(path):
         atomic_save(path, {'task': TASK, 'tokenizer': VERSION, 'config': asdict(model.config),
             'model': model.state_dict(), 'optimizer': optimizer.state_dict(), 'replay_rng': replay_rng.get_state(),
+            'value': value.state() if value is not None else None,
             'rng_state': capture_rng(args.device), 'round': completed, 'step': completed*recipe['inner'],
             'data_sha256': settings['plan_sha256'], 'settings': settings, 'history': history, 'best': best,
             'run_identity': identity})
@@ -289,11 +296,15 @@ def _run(args):
             started = time.monotonic()
             data, episodes, stats = trajectories(model, field, roots, recipe['group'],
                 f"{plan['namespace']}/train/{completed}", args.device)
+            if value is not None:
+                stats['value_advantage'] = value.attach(data, reference, recipe['batch'])
             collection_seconds = time.monotonic()-started
             save_episodes(folder/'hands.jsonl.gz', episodes)
             np.savez_compressed(folder/'decisions.npz', **data)
             before = time.monotonic()
             metrics, distributions = update(model, reference, optimizer, data, replay, replay_rng, recipe, args.device)
+            if value is not None:
+                metrics['value'], distributions['value_after'] = value.update(data)
             np.savez_compressed(folder/'update.npz', **distributions)
             # Wall clocks are descriptive receipts, never part of recovery or selection.
             atomic_json(folder/'timing.json', {'collection_seconds': collection_seconds, 'update_seconds': time.monotonic()-before})
@@ -316,6 +327,8 @@ def _run(args):
                     'train/zero_variance_groups': stats['zero_variance_groups'],
                     'train/post_settlement_fraction': stats['post_settlement_fraction'],
                     'train/reference_kl': metrics['updates'][-1]['reference_kl'],
+                    **({'value/'+k: v for k,v in metrics['value'].items()} if value is not None else {}),
+                    **({'value_advantage/'+k: v for k,v in stats['value_advantage'].items()} if value is not None else {}),
                     **({'dev/'+k: row['development'][k] for k in ('greedy','sampled')} if 'development' in row else {})})
             print(json.dumps(row), flush=True)
         state = 'complete' if completed == recipe['rounds'] else 'paused'
@@ -344,7 +357,7 @@ def run(args):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--plan', required=True); p.add_argument('--out', required=True)
-    p.add_argument('--mode', choices=('grpo','rehearsal'), required=True)
+    p.add_argument('--mode', choices=('grpo','ppo','rehearsal'), required=True)
     p.add_argument('--device', choices=('cpu','mps','cuda'), default='mps')
     p.add_argument('--seconds', type=float); p.add_argument('--stop-file'); p.add_argument('--resume', action='store_true')
     return p

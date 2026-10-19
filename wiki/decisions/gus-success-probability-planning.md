@@ -119,38 +119,46 @@ model sizes and qualitative hypotheses are not grounds for a general-player
 promotion. The pinned Demon is a separate evaluation competitor; its internal
 forecasts never become learning targets.
 
-## Next diagnostic: a success-value baseline
+## Next comparison: PPO with a success-value baseline
 
-The proposed next step is to measure whether a small value predictor can learn
-eventual success from the existing clean information-state representation.
-Use saved training trajectories first, with physical roots split before fitting
-so all draws and prefixes of a deal remain together. Freeze the original parent
-representation for this diagnostic; its outcome-training exposure must not leak
-across the split. Compare held-out Brier error and calibration with a fitted
-constant baseline, especially on unsettled discretionary decisions. This is
-diagnostic supervised fitting of a baseline, not an actor update or a strength
-claim. No new games, hidden-hand input or confirmation-based selection is needed.
-The saved trajectories span changing learner snapshots; their pooled forecast is
-not an on-policy critic. Actual actor-critic training must collect fresh outcomes
-under its current policy and preserve the snapshot identity.
+The completed [[gus-value-baseline-2026-10-18]] passes its registered prediction
+criterion on disjoint physical roots using the original frozen representation.
+It motivates a declared PPO/value comparison against GRPO and rehearsal. The
+diagnostic spans changing learner snapshots: its pooled predictor is not an
+on-policy critic, and its fitted head is not carried into actor training.
 
-If that diagnostic supports a useful baseline, a declared matched PPO/value
-comparison is the conventional sequential extension. `V(I_t)` estimates success
-under the current learner and fixed other seats. Terminal rewards still come
-from the independently replayed rules verifier. At undiscounted hand scope,
-the temporal difference is `delta_t = r_t + V(I_next) - V(I_t)`, with zero value
-after termination; generalized advantage estimation combines these differences
-to trade bias against variance. A finite learned estimate is neither an exact
-Silas probability nor reward authority. Sources:
+`lem.observer.outcomes --mode ppo` now implements that estimator with a separate
+65-parameter linear head over the frozen reference's actor-position features.
+`V(I_t)` estimates success under the current learner and fixed other seats;
+terminal rewards still come from independently replayed game rules. The actor
+remains 185,652 parameters with the original tokens. The critic begins with
+zero weights and bias 0.5, uses its own Adam optimizer, and receives no hidden
+hand, legal-mask feature or teacher forecast.
+
+For these short complete hands, `A_t = G - V_old(I_t)`, where `G` is the verified
+binary terminal success. This is the undiscounted GAE λ=1 case: the temporal
+differences telescope, with zero value after termination. It needs no bootstrapped
+target. Batch normalization replaces within-root group standardization; it is
+a finite-sample PPO convention, not an unbiasedness guarantee. Old predictions
+and advantages are captured before any fitting to the current batch and remain
+fixed throughout the actor update. The critic subsequently regresses on current
+rollout returns. PPO clipping, fixed-parent KL, rehearsal and actor optimizer
+remain the existing controls. Complete-round recovery includes both optimizers
+and all RNG states. The explicit value recipe is part of resume identity.
+
+The standard components are PPO-Clip, return regression and a state-dependent
+baseline. The frozen linear representation, retained KL/rehearsal terms and
+fixed update budgets are declared experimental choices, not universal textbook
+requirements. A finite learned estimate is neither an exact Silas probability
+nor reward authority. Sources:
 [PPO algorithm and value regression](https://spinningup.openai.com/en/latest/algorithms/ppo.html),
 [generalized advantage estimation](https://arxiv.org/abs/1506.02438).
 
-This addresses credit assignment without assuming collapsed exploration or a
-capacity shortage. A learned baseline need not vanish when all eight sampled
-outcomes agree, but that alone does not make its gradient useful or unbiased
-under every fitting scheme. Fit/evaluation separation, old-policy value estimates,
-terminal handling and recovery need explicit tests before an actor-critic run.
-No critic or new actor-critic trainer is implemented by the exposure study.
+This tests a variance-reduction/credit estimator without assuming collapsed
+exploration or a capacity shortage. A learned baseline need not vanish when
+all eight sampled outcomes agree; that does not establish a useful gradient.
+Fresh paired confirmation after development selection must establish any playing
+gain. The next comparison is not yet a completed strength result.
 
 ## Lazy immutable continuation evidence
 

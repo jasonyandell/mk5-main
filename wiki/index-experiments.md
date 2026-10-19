@@ -272,6 +272,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-probability-reward-v3-2026-10-18|Gus probability-reward comparison]] — three paired seeds, fresh exact-model confirmation and canonical G0/Zeb/Demon games (complete)
 
 - [[experiments/gus-exposure-budget-2026-10-18|Gus outcome-training exposure]] — fourfold exposure changes choices without a confirmed full-hand gain (complete)
+- [[experiments/gus-value-baseline-2026-10-18|Gus success-value baseline]] — frozen pretrained features improve held-out terminal-success prediction; no actor update (complete)
 - [[experiments/gus-staged-outcomes-2026-10-18|Gus staged outcome training]] — common-reference initialization comparison; no promotion (complete)
 - [[experiments/gus-fixed-field-curriculum-2026-10-18|Gus exact fixed-field curriculum]] — G0/Zeb endgame gain, no full-hand promotion, resumable witnesses (complete)
 - [[experiments/gus-update-scale-2026-10-18|Gus outcome update scale]] — larger policy updates, no selected gain, exact fixed-field verifier feasibility (complete)
