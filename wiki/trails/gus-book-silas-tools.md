@@ -149,3 +149,8 @@ diagnostic on fixed reference histories. Earlier partner-tile paths materially
 affect legal probabilities on both splits. The study separates this sensitivity
 from unestablished partner-style inference or playing improvement. See its
 literal worked hand and fixed-table evidence before proposing a partner roster.
+
+[[gus-public-score-probe-2026-10-19]] prepares a frozen-representation probe for
+current public score, separating factual game-state bookkeeping from future
+success prediction and partner-style inference. Existing exact public replay
+provides labels; no hidden-world verifier or changed partner roster is needed.

@@ -287,3 +287,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 - [[experiments/gus-leave-one-out-2026-10-19|Gus leave-one-out outcome baseline]]
 - [[experiments/gus-partner-history-2026-10-19|Gus partner-history attention paths]]
+- [[experiments/gus-public-score-probe-2026-10-19|Gus public-score linear probe]]
