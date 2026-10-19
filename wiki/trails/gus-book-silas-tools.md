@@ -116,3 +116,14 @@ before a new experiment, after a completed comparison or at a capability blocker
 read related progress and pending replies, verify available implementations,
 then state whether the new evidence changes the lever or its measurement.
 An unchanged short resume segment does not require repeating the full refresh.
+
+
+Completion refresh for [[gus-unanchored-outcomes-2026-10-19]]: the latest Lem
+and Book comments are still the requests linked above, with no new replies;
+Silas PR #166 remains open and unmerged. No additional message was sent. Existing
+verifiers and native captures supported the completed evaluation. Neither
+teacher-anchor removal nor permission to drift established a greedy gain;
+the secondary sampled-policy signal warrants independent confirmation, not a
+new information contract or opponent change. Canonical tournament publication
+is deferred by its service quota; the full verified research archive includes
+the raw records and pending receipt.

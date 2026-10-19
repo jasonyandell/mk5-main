@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/gus-unanchored-outcomes-2026-10-19|Gus without teacher anchoring]] — matched GRPO loss-package comparison with outcome-only selection (active)
+- [[experiments/gus-unanchored-outcomes-2026-10-19|Gus without teacher anchoring]] — no greedy promotion; secondary sampled-policy signal; canonical upload pending
 
 - [[experiments/gus-ppo-value-2026-10-19|gus-ppo-value-2026-10-19]] — PPO/value vs GRPO/rehearsal; no fresh play gain and weak before-fit critic forecasts (complete)
 

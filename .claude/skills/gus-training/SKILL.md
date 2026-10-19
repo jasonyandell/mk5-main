@@ -76,8 +76,12 @@ The completed value diagnostic supports a matched PPO/value comparison:
 gain; its online critic forecast new batches worse than an earlier-batch prior.
 Distinguish that fitting regime from the pooled diagnostic. The `--mode ppo`
 estimator is implemented; a learned forecast is a baseline, never reward authority.
-The active `wiki/experiments/gus-unanchored-outcomes-2026-10-19.md` comparison
-keeps GRPO, tests removal of teacher-anchoring losses and selects by outcomes.
+The completed `wiki/experiments/gus-unanchored-outcomes-2026-10-19.md` comparison
+selects by outcomes and removes teacher-anchoring losses, without meeting its
+fresh greedy promotion criterion. Sampled reward policies showed a secondary
+gain against the sampled parent, without establishing an advantage from removing
+anchors. Confirm the policy/decoder distinction independently; do not switch the
+registered endpoint after seeing results. Canonical delivery remains pending.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities

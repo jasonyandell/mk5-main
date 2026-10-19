@@ -221,3 +221,15 @@ a correction, retain the original script, failure log and protocol; disclose
 the exact diff and whether outcomes were already read, then publish the correction
 before executing it. Do not change evaluator identities or tolerances to conceal
 an audit repair. The exposure study preserves one such correction.
+
+Use registered arm names as experiment labels, not optimizer mode names. Two
+GRPO arms can differ in rehearsal/KL while sharing the same mode; keying their
+selections, native captures or exports by mode silently collides. The unanchored
+comparison preserves distinct arm identities through selection and publication.
+
+
+Canonical tournament commit quotas are separate from research-evidence delivery.
+On a quota response, preserve the immutable local records and retry deadline;
+never rerun the games. A verified research bundle can include the records and
+explicitly pending canonical receipt. Deliver the canonical batch only after
+the service window, then publish a verified addendum; keep the original failure.

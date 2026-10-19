@@ -74,11 +74,11 @@ and zero-weight imitation in reward arms. `selection: outcomes` records original
 loss drift without using it as an eligibility gate; `selection: retention` keeps
 the declared loss bounds. The original frozen-reference KL can independently be
 set to zero. The current-batch old-policy ratio clipping remains in both cases.
-This implements the next controlled question, not a measured strength gain:
-does removing the teacher-anchoring loss package improve verified outcomes?
-GRPO can isolate that package without changing or repairing the recent critic.
-[[gus-unanchored-outcomes-2026-10-19]] registers that bounded three-arm comparison
-with outcome-only selection and fresh confirmation.
+[[gus-unanchored-outcomes-2026-10-19]] tests that loss package while keeping
+GRPO fixed. Outcome-only selection and fresh confirmation do not establish a
+greedy gain. Both reward arms show a secondary sampled-policy gain against the
+sampled parent, without an established unanchored advantage over anchored GRPO.
+Confirm that distinction independently before changing the deployment decoder.
 
 ## Textbook choice for the current subproblem
 
@@ -278,3 +278,11 @@ The matched multi-seed comparison is complete in [[gus-probability-reward-v3-202
 full-hand outcome post-training is measured in [[gus-full-hand-outcomes-2026-10-18]] with a matched rehearsal-only control
 and the same clean inputs. Existing exact labels and measured terminal game
 outcomes retain their distinct authority.
+
+
+The completed [[gus-unanchored-outcomes-2026-10-19]] comparison removes the
+teacher-loss package and selects all arms by outcomes. Fresh paired confirmation
+does not meet its promotion criterion. This preserves winning as the objective
+without claiming that permission to drift alone supplies useful policy credit.
+Current-Gus splat calibration and action-conditioned continuation collection
+remain separate capabilities; this comparison implements neither.
