@@ -96,7 +96,10 @@ automatically. No such adapter is claimed by the existing captures.
 [[gus-ppo-value-2026-10-19]] completed the matched PPO/value comparison without
 a fresh playing gain. Its online critic forecasts worse than a simple prior
 before fitting new batches, despite the earlier pooled representation result.
-The next hypothesis must address that distinction before increasing exposure.
+Jason's subsequent winning/drift steering selects
+[[gus-unanchored-outcomes-2026-10-19]]: keep GRPO and compare teacher-anchoring
+losses with outcome-only selection. This avoids combining critic repair with
+the new factor; it does not repeat a longer exposure budget.
 Keep the G0 partner, pinned Zeb opponents, original clean tokens and fresh
 confirmation discipline. The frozen panel is development evidence, not training
 material. Book/Silas concepts can later explain where behavior changes; they do

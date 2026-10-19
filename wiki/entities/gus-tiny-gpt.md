@@ -67,6 +67,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
+- [[gus-unanchored-outcomes-2026-10-19]] — registered outcome-only selection and removal of teacher-anchoring losses; fixed full-hand controls.
+
 - [[gus-ppo-value-2026-10-19]] — completed matched PPO/value comparison; no confirmed play gain, online critic forecasts worse than the prior.
 
 - [[gus-book-silas-tools]] — book questions, Silas verifier authority, Lem instruments and the missing transformer audit bridge.

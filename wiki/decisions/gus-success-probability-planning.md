@@ -77,6 +77,8 @@ set to zero. The current-batch old-policy ratio clipping remains in both cases.
 This implements the next controlled question, not a measured strength gain:
 does removing the teacher-anchoring loss package improve verified outcomes?
 GRPO can isolate that package without changing or repairing the recent critic.
+[[gus-unanchored-outcomes-2026-10-19]] registers that bounded three-arm comparison
+with outcome-only selection and fresh confirmation.
 
 ## Textbook choice for the current subproblem
 
