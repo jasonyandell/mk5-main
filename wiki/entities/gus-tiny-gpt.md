@@ -67,7 +67,7 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
-- [[gus-sampled-confirmation-2026-10-19]] — registered fresh-deal confirmation of frozen sampled and greedy policies; evaluation underway.
+- [[gus-sampled-confirmation-2026-10-19]] — complete; the sampled-policy gain did not replicate; no deployment improvement or promotion.
 - [[gus-unanchored-outcomes-2026-10-19]] — complete and published; no greedy promotion, secondary sampled-policy signal.
 
 - [[gus-ppo-value-2026-10-19]] — completed matched PPO/value comparison; no confirmed play gain, online critic forecasts worse than the prior.

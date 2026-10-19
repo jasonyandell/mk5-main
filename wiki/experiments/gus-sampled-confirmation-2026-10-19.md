@@ -3,7 +3,7 @@ title: "Gus: independently confirming the sampled policy"
 kind: experiment
 first_seen: 2026-10-19
 last_updated: 2026-10-19
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -67,15 +67,14 @@ seconds per state, at most2 concurrent; summary cap90 seconds. Preflight used
 only two already-consumed development draws, checked distinct seeds and exact
 reverse-order replay before fresh roots were generated.
 
-## Public registration and live state
+## Public registration and completed state
 
 [Verified preregistration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7c2230d5b4a7a9336f327c1e717360f253a5df18/lem/gus-sampled-confirmation-2026-10-19/registration) precedes evaluation:16 files, including all
 four checkpoints, excluded deals, roots, scripts and checksums. Registration
 SHA256:`e65fd2893a800a9ad589b1bf541f63163e13bc18889a61d6eea389a5f450cbbb`.
 Source:`cc5e021a`; local recovery:`scratch/lem/gus-sampled-confirm-v1`.
 `run.py` owns the bounded evaluator/audit/summary controller. Inspect its process,
-`controller.json`, segment receipts and `CURRENT.md` before any resume. No
-results are reported in this registration.
+`controller.json`, segment receipts and `CURRENT.md` before any resume. The results below follow the frozen registration.
 
 The preceding study's [completion addendum](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/1e02a48b65bf66c96734741690e6a7903de17b77/lem/gus-unanchored-outcomes-2026-10-19)
 is verified; canonical delivery is resolved. Jason authorized continuing.
@@ -92,3 +91,54 @@ directories and resumed the same immutable protocol. No scripts, seeds, weights,
 endpoints or record bytes changed, and no scores were inspected. Failed attempts
 still consume the registered segment budget. This was filesystem preparation,
 not a changed experiment or an added evaluation budget.
+
+## Result: sampled-policy replication did not pass
+
+| Frozen policy | Greedy wins /512 | Sampled wins /2,048 | Sampled success |
+|---|---:|---:|---:|
+| initial_parent | 208 | 798 | 38.965% |
+| unanchored | 213 | 801 | 39.111% |
+| anchored | 212 | 793 | 38.721% |
+| rehearsal | 212 | 797 | 38.916% |
+
+The registered primary difference is **+0.146 percentage points**, paired95%
+**[−0.732,+1.025]**, for unanchored sampled versus sampled parent. The earlier
+secondary signal did not replicate under the registered criterion. This interval
+does not prove identical policies or rule out every small gain. Both primary
+replication and deployment-evidence criteria are false; no promotion.
+
+Unanchored sampled versus greedy parent is **−1.514pp [−3.467,+0.488]**; versus
+sampled rehearsal, **+0.195pp [−0.685,+1.123]**. Unanchored greedy is208→213 wins,
+**+0.977pp [−0.781,+2.930]**, a descriptive comparison that does not establish a
+stronger greedy player. No checkpoint or decoder was reselected from these results.
+
+Every greedy policy has higher observed success than its sampled version on this
+panel. The registered primary remains sampled-policy replication. Switching to
+sampling is not supported as a deployment improvement by this confirmation.
+Intervals resample512 physical deals after averaging four within-deal draws;
+the2,048 sampled hands are not treated as independent deals. Absolute success
+rates differ from the earlier panel because the deals are different.
+
+## Verified evidence and implications
+
+All10,240 hands passed independent rules/input/legal/reward replay. Sixteen
+reverse-order CPU rechecks were byte-identical;7,680 paired trajectories retained
+identical frozen-seat prefixes until the first learner divergence. Each policy
+used13 of24 allowed segment attempts, including one failed initial attempt for
+parent and unanchored. The filesystem-only recovery is preserved; no protocol
+or outcome threshold changed. Audits and summary completed inside their caps.
+
+[Verified evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/8045ce8d52ecb64dba2dc2537ef2d3702a74e51e/lem/gus-sampled-confirmation-2026-10-19/evidence):14 files,11,009,773 bytes,10,344 archive members. Every fresh anonymous download and every member matches its SHA256 manifest. Registration separately preserves the checkpoints and exclusions.
+
+The new512 roots become future training exclusions. The completed comparison
+closes the sampled-decoder lead for these selected weights without establishing
+an architecture limit or failure of reinforcement learning generally. Merely
+running the same recipe longer or changing decoding lacks new support here.
+A next hypothesis should target the learning signal and its variance or credit
+assignment, with its own registration, rather than replace this endpoint.
+No next training experiment is selected by this readout.
+
+Completion capability refresh: no new Lem207/Book121 replies; SilasPR166 remains
+open. Existing outcome verifiers were sufficient. The transformer causal adapter
+remains separate; no new collaborator request was sent. The next research
+comparison follows Jason's30-minute steering window.

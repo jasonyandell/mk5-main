@@ -330,9 +330,10 @@ partial evidence and no strength claim. Audit all completed hands and recheck
 only under identical pinned recipes. This is a measurement step toward the
 winning objective, not a new model architecture or deployed search.
 
-The proposal is now registered as [[gus-sampled-confirmation-2026-10-19]], after
-verified canonical delivery and completion publication. Its public protocol and
-fresh roots are frozen before evaluation. The live refresh found no new
+The proposal completed as [[gus-sampled-confirmation-2026-10-19]] after verified
+canonical delivery. Its sampled-policy replication and deployment-evidence
+criteria both failed; see the experiment for root-clustered intervals. No new
+training comparison is selected yet; changing decoding alone lacks support. The live refresh found no new
 Lem/Book replies and Silas PR #166 still open. Existing outcome replay and native
 captures suffice; the transformer causal bridge remains separate. No repeat
 collaborator request was sent.

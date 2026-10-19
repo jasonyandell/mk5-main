@@ -126,3 +126,11 @@ teacher-anchor removal nor permission to drift established a greedy gain;
 the secondary sampled-policy signal warrants independent confirmation, not a
 new information contract or opponent change. Canonical tournament publication is now verified; the original service-quota
 failure remains preserved in the full research archive.
+
+
+[[gus-sampled-confirmation-2026-10-19]] independently tested the sampled-policy
+lead and did not replicate it. All10,240 hands replayed; no promotion. The
+completion refresh found no new Lem/Book replies and SilasPR166 still open.
+Existing verifiers sufficed; no new capability changes the next comparison's
+controls. Selection of another learning-signal comparison follows the readout
+steering window, not a switch of the completed endpoint.
