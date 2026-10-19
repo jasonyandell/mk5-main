@@ -138,3 +138,8 @@ steering window, not a switch of the completed endpoint.
 The19:00UTC boundary refresh found those same pending replies and open Silas PR.
 [[gus-leave-one-out-2026-10-19]] uses existing verified full-hand returns to test
 a parameter-free baseline; no new capability or information contract is required.
+
+The completed [[gus-leave-one-out-2026-10-19]] comparison established no player
+gain. Completion refresh again found no Lem/Book reply and SilasPR166open;
+no new capability or scope change. The saved formation/native captures remain
+available for the separate transformer bridge.

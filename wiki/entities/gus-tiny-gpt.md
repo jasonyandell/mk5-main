@@ -150,5 +150,5 @@ Both retain the same clean inputs. Their scoped gains do not establish a new
 general-playing incumbent; full recovery state and formation live in the
 linked public archives. The `gus-training` skill carries both workflows.
 
-Current registered comparison: [[gus-leave-one-out-2026-10-19]] tests a leave-one-out
-success baseline in the same clipped actor against GRPO and rehearsal.
+Completed [[gus-leave-one-out-2026-10-19]] found no confirmed playing gain from
+a leave-one-out success baseline versus GRPO or rehearsal. Next comparison unselected.

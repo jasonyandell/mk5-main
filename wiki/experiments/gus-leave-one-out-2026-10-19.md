@@ -3,7 +3,7 @@ title: Gus leave-one-out outcome baseline
 kind: experiment
 first_seen: 2026-10-19
 last_updated: 2026-10-19
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -12,7 +12,8 @@ status: active
 
 Registered comparison for [[gus-tiny-gpt]]: does a leave-one-out success baseline
 improve learning over the current within-root standardized GRPO advantages?
-Public registration is verified and the bounded controller has started. No result exists yet.
+The registered comparison is complete, audited and publicly verified. Neither
+registered criterion passed; no stronger player or method advantage was established.
 The independently tested sampled-policy lead failed in
 [[gus-sampled-confirmation-2026-10-19]]. The earlier online critic did not
 forecast new batches well ([[gus-ppo-value-2026-10-19]]). This factor tests a
@@ -100,3 +101,61 @@ capture, fresh evaluation, replay audit and summary, then stops for publication
 and interpretation. It does not select another study. Runtime gates:165 Lem tests,
 changed-suite GREEN4. The original failed schema assertions and wiki checks were
 repaired before merge and registration; no experiment outcomes existed then.
+
+## Completed result
+
+| Label | Selected round | Greedy wins /512 | Sampled wins /512 |
+|---|---:|---:|---:|
+| Parent | initialization |224|215|
+| Leave-one-out |32|227|216|
+| GRPO |32|228|217|
+| Rehearsal |24|226|223|
+
+Leave-one-out minus parent greedy: **+0.586 percentage points**, paired95
+**[-1.367,+2.539]**. Versus GRPO: -0.195pp[-1.172,+0.586]; versus rehearsal:
++0.195pp[-1.953,+2.344]. Both development and fresh promotion criteria failed.
+No endpoint switch, confirmation reselection or main model replacement follows.
+The sampled leave-one-out difference from parent is +0.195pp[-1.367,+1.953].
+Rehearsal has a secondary sampled-parent difference +1.563pp[+0.195,+3.125];
+this is descriptive and does not establish reward learning or authorize selecting
+that decoder/checkpoint from confirmation. Prior sampled-policy replication failed.
+
+73.44% of leave-one-out training groups and72.66% of GRPO groups had the same
+outcome in all eight draws, hence zero within-root contrast. This is evidence
+about these sampled attempts, not proof that their positions have no better
+continuation. Both arms had mean training success36.52%. Altering the estimator
+at this exposure did not materially separate the resulting player outcomes;
+more varied training trajectories is a candidate question, not a selected next
+recipe or proven explanation. Moving individual action credit earlier in the
+hand remains a distinct comparison requiring its own information-state design.
+
+## Audit and publication
+
+All6144 training and4096 confirmation hands replayed independently, with original
+inputs, legal supports and verified outcomes. NumPy reconstructs each advantage;
+43008 common-reference decision probabilities and all96 formation outputs checked.
+Maximum CPU/MPS log-probability errors were3.15e-5 and3.53e-5, below the frozen
+5e-5 tolerance. Sixteen lazy CPU units passed reverse-order byte checks;4096
+paired training prefixes agree until learner divergence. All896 roots regenerated.
+Three final native captures each contain11116 frozen rows. None is a unit-level
+causal explanation. All32 rounds completed in8/16segments per arm, all four
+confirmation states in5/12segments each. Every pipeline receipt exited0.
+
+Selected and final inference exports for all three arms preserve exact tensors
+and both-head CPU outputs. Full optimizer/RNG recovery and all formation snapshots
+remain in the archive. Inputs, other seats and verifier authority stayed fixed.
+
+[Verified research archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/bbad1223099d5b42cdb3fda844bc2f331f551b63/lem/gus-leave-one-out-2026-10-19): 16 files,
+537732982 bytes, 4943 members; every fresh anonymous file and
+bundle member passed SHA256 verification. [Canonical integration records](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/c19bd828351d463f03da0d263b366fda007562c9)
+were delivered in one batch: 15 records. 9 bounded duplicate
+faceoffs, 18 games, 195 hands and 5460 plays were replayed;
+maximum faceoff wall time 5.25s, below60s. These are
+integration checks, not a strength estimate or promotion evidence.
+
+Research exports: [rloo](https://huggingface.co/jasonyandell/gus/tree/0dad0795969c6eef2939f69ab5e35f84a94de3d7), [grpo](https://huggingface.co/jasonyandell/gus/tree/5e1251ae692a16f8f4048eb9a6b716bd0899b92f), [rehearsal](https://huggingface.co/jasonyandell/gus/tree/aeea8b632da9941edbde857da4c9ae2b6a69d69b).
+
+Completion capability refresh: Lem#207 and Book#121 still have no new replies;
+SilasPR166 remains open. No repeat request. Existing verifiers sufficed, and
+the transformer causal adapter remains separate. The next experiment is unselected
+and must wait for the actual readout steering window in readout-window.json.
