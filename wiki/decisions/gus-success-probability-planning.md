@@ -45,6 +45,30 @@ improvement. The fixed G0 partner, pinned Zeb opponents, clean inputs, verified
 rewards and independent confirmation remain controls. An absent discussion reply
 does not block the authorized research loop after its steering window.
 
+Jason's further steering expects behavioral drift after pretraining and questions
+the continuing value of original mimicry. Outcome distributions are conditional
+on continuation policies: changing Gus's later decisions can change its own
+success distribution even with the other seats fixed. The original splat labels
+still describe their named teacher-plus-finish law; they do not automatically
+become current-Gus forecasts. Requiring agreement with them is a distinct
+auxiliary objective, not verification of the new policy's consequences.
+
+The current trainer already samples eight complete 28-play trajectories from
+each training deal, with seven learner decisions per trajectory. In the latest
+comparison, each arm collects 256 deals times eight draws: 2,048 complete hands.
+Repeated draws hold the complete environment deal fixed while sampling Gus's
+actions; hidden hands stay outside the policy input. Verified terminal make/set
+outcomes train the move policy. The splat head is still supervised by original
+teacher histograms through rehearsal, not refreshed current-policy histograms.
+
+Branching from a particular public prefix, forcing each candidate move and
+sampling the remaining hand repeatedly would be a separate action-value data
+collection method. It is not the current whole-trajectory sampler. Such a design
+must declare the hidden-deal belief, lawful continuation policies, sampled-action
+coverage and cost budget; simulation may use hidden state, but the learner may
+not. Training-time simulation does not require search inside the deployed player.
+Full-match continuation remains future scope; the current contract is bid30 hands.
+
 ## Textbook choice for the current subproblem
 
 [[gus-rlvr-silas-2026-10-18]] supplies an exact rational value `Q(I,a)` for

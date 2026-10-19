@@ -361,6 +361,19 @@ standardized ridge regression over hundreds of roots is not evidence that
 Nonzero advantages alone do not show useful policy credit or reduced variance.
 A changed critic fit, normalization or training history needs a new registration.
 
+Jason expects behavior and current-policy forecasts to drift after pretraining;
+original mimicry has no independent priority over winning. Distinguish the fixed
+teacher's outcome distribution from the current learner's continuation law.
+The full-hand trainer already samples complete 28-play hands repeatedly per deal
+and learns from terminal make/set outcomes. Its splat rehearsal still uses old
+teacher labels; it does not refresh a current-Gus outcome head. Repeated complete
+trajectories are also distinct from forcing each legal candidate at a shared
+prefix and rolling out the remaining hand. Register that action-value collection
+scheme separately, including its hidden-deal belief and continuation policies;
+no simulator-only information enters actor inputs. Training-time rollouts do not
+require deployed-player search. Full-match training is not implemented by the
+existing bid30-hand reward.
+
 For numerical audits, bind a tolerance to its named quantity and runtime.
 Do not reuse a cross-device log-probability tolerance for raw hidden features.
 Use same-device, same-batch identity checks when claiming exact feature replay;
