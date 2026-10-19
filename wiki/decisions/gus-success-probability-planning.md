@@ -286,3 +286,53 @@ does not meet its promotion criterion. This preserves winning as the objective
 without claiming that permission to drift alone supplies useful policy credit.
 Current-Gus splat calibration and action-conditioned continuation collection
 remain separate capabilities; this comparison implements neither.
+
+
+## Next bounded question: confirm the sampled policy
+
+Jason authorized continuation on 2026-10-19. The next proposed comparison is
+independent evaluation of the already selected checkpoints from
+[[gus-unanchored-outcomes-2026-10-19]], before another training change.
+Its sampled-policy gain was secondary; it cannot replace that study's failed
+greedy endpoint. Policy-gradient learning optimizes expected return under an
+action distribution. Taking its largest probability at every turn defines a
+different policy; training gains need not survive that substitution.
+[Spinning Up: stochastic policies and the RL objective](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html),
+[PPO exploration and exploitation](https://spinningup.openai.com/en/latest/algorithms/ppo.html#exploration-vs-exploitation).
+
+The proposed budget is 512 new physical deals, four independently seeded sampled
+complete hands and one greedy hand per frozen checkpoint: parent, unanchored,
+anchored and rehearsal, at most 10,240 complete trajectories. No retraining,
+checkpoint reselection or temperature sweep. Seeds pair the models and exclude
+model identity; repeat index must actually change the learner action stream.
+The unchanged G0 partner, pinned Zeb opponents and bid30/pip task remain fixed.
+All prior reserved deals, including the unanchored study and its tournament
+schedule, enter the exclusion set before new roots are generated.
+
+The primary replication question is unanchored sampled success versus parent
+sampled success. A proposed meaningful-gain rule is at least 1 percentage point
+with a paired 95% lower bound above zero. Compare mean outcome across the four
+draws within each root, then bootstrap physical roots (20,000 draws, fixed seed);
+2,048 sampled hands are not 2,048 independent deals. Report anchored and rehearsal
+controls and greedy decoding separately. A claim of improved deployment also
+requires at least 2 points over the greedy parent and 1 point over sampled
+rehearsal, both lower bounds above zero. Passing sampled-parent replication alone
+does not establish a better deployed player or trigger promotion. Every result
+remains conditional on this training seed, selected weights and fixed field.
+
+Use existing immutable lazy records and CPU float32 single-example inference,
+with complete input/probability/outcome sidecars and independent rules replay.
+Pin scripts, tensors, field, runtime and binary hashes before evaluation.
+Proposed caps: 24 cooperative 45-second segments per unique inference state,
+90-second outer caps, at most two live evaluators; exhausted budgets stop with
+partial evidence and no strength claim. Audit all completed hands and recheck
+16 units in reverse order byte-for-byte. Identical functions may share records
+only under identical pinned recipes. This is a measurement step toward the
+winning objective, not a new model architecture or deployed search.
+
+This is preparation, **not a registered or started experiment**. First resolve
+the existing canonical publication after its recorded retry deadline, publish
+the completion addendum, then freeze and publicly verify the new protocol before
+running it. The live refresh found no new Lem/Book replies and Silas PR #166
+still open. Existing outcome replay and native captures suffice; the transformer
+causal bridge remains separate. No repeat collaborator request was sent.
