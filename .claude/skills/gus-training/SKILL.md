@@ -57,6 +57,35 @@ The completed value diagnostic supports a matched PPO/value comparison:
 is implemented; a learned forecast is a baseline, never the reward authority.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
+## Recenter the research loop on current capabilities
+
+Before selecting a new experiment, after a completed comparison, or when a
+missing capability blocks progress, check the related Lem, Book and Silas work.
+Use `wiki/trails/gus-book-silas-tools.md` as the route, then inspect their current
+wiki findings, issue replies and relevant merged changes. Check available tool
+entry points and source/CLI behavior before assuming a capability exists.
+Distinguish available on main, branch-only, proposed and blocked; a saved trace
+is not an implemented audit adapter, and a world constructor is not an outcome
+verifier. Avoid repeating the full refresh for every short resume segment.
+
+Jason requested ongoing progress checks with these collaborators as part of
+this research loop. Read pending replies first; when new information is needed,
+send a short, scoped question with a durable context link to the relevant desk
+or session. Keep an unanswered request pending rather than repeatedly pinging
+or restarting its terminal. If the desk is unavailable, use its latest evidence
+and record that no response was received. This does not authorize new experiments
+in another desk, changes to its work, or unrelated messages.
+
+Before spending the next run, record what changed, which tool can answer the
+question now, and whether that changes the selected lever or only its measurement.
+Prefer an existing verifier, fixture or instrument over rebuilding it. Recheck
+the user's fixed inputs, opponents, outcome objective and interpretation scope;
+new capabilities alone do not change those controls. Preserve book concepts as
+questions for the net, not an answer key (`book-interp`, beside `clean-neuron`).
+File useful synthesis back into the wiki and carry unresolved dependencies into
+the next registration. Continue a bounded justified experiment when ready; discuss
+a genuine choice with Jason when the evidence leaves materially different paths.
+
 ## The companion is `clean-neuron`
 
 Read the repository's **`.claude/skills/clean-neuron/SKILL.md`** before designing

@@ -2,7 +2,7 @@
 title: "Gus: connecting the book, Silas and Lem's instruments"
 kind: trail
 first_seen: 2026-10-18
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -105,3 +105,9 @@ for the Lem bridge and Book's current executable distinctions are recorded in
 [Lem #207](https://github.com/jasonyandell/mk5-main/issues/207#issuecomment-6258785752)
 and [Book #121](https://github.com/jasonyandell/mk5-main/issues/121#issuecomment-6258785965).
 These are requests, not completed desk endorsements or adapter work.
+
+The `gus-training` skill incorporates this refresh into the research loop:
+before a new experiment, after a completed comparison or at a capability blocker,
+read related progress and pending replies, verify available implementations,
+then state whether the new evidence changes the lever or its measurement.
+An unchanged short resume segment does not require repeating the full refresh.
