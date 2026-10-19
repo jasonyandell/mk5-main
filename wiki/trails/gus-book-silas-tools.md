@@ -124,6 +124,5 @@ Silas PR #166 remains open and unmerged. No additional message was sent. Existin
 verifiers and native captures supported the completed evaluation. Neither
 teacher-anchor removal nor permission to drift established a greedy gain;
 the secondary sampled-policy signal warrants independent confirmation, not a
-new information contract or opponent change. Canonical tournament publication
-is deferred by its service quota; the full verified research archive includes
-the raw records and pending receipt.
+new information contract or opponent change. Canonical tournament publication is now verified; the original service-quota
+failure remains preserved in the full research archive.

@@ -81,7 +81,7 @@ selects by outcomes and removes teacher-anchoring losses, without meeting its
 fresh greedy promotion criterion. Sampled reward policies showed a secondary
 gain against the sampled parent, without establishing an advantage from removing
 anchors. Confirm the policy/decoder distinction independently; do not switch the
-registered endpoint after seeing results. Canonical delivery remains pending.
+registered endpoint after seeing results. Canonical delivery is verified; original service failures remain archived.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities

@@ -3,7 +3,7 @@ title: "Gus: outcome learning without teacher anchoring"
 kind: experiment
 first_seen: 2026-10-19
 last_updated: 2026-10-19
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -192,15 +192,15 @@ The main Hub incumbent remains unchanged. The registered integration smoke
 completes 9 duplicate faceoffs, 18 games,
 198 hands and 5544 plays, all independently replayed.
 Maximum faceoff wall time 5.45s under 60-second caps.
-Canonical publication is **pending**: the tournament repository returned its
-hourly commit limit. Retry no earlier than 2026-10-19T17:15:37Z (12:15 p.m. Chicago).
-All raw records and the successful replay are in the study archive. The original
-upload failure and archive prerequisite failure remain preserved; no game is
-rerun. These are integration records, not strength confirmation.
+[Canonical tournament records](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/b2d54393002a549fb1407380852706aaca3a1ddc) are published and verified:15 immutable
+records,12 new files in one batch; every file freshly downloaded anonymously
+and SHA256-checked. The original hourly-quota failure remains in the research
+archive. No game was rerun. These are integration records, not strength
+confirmation.
 Whole-arm host instructions, CPU and wall receipts are archived; host
 instructions do not count MPS GPU work and wall time is descriptive under load.
 
-## Public evidence; canonical delivery pending
+## Public evidence and completed delivery
 
 [Verified archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/c0fb9da4fd8b493c7fa5e58228d097da98775178/lem/gus-unanchored-outcomes-2026-10-19): 18 files,
 557,814,648 bytes, 4,953 bundle members. Every fresh
@@ -210,6 +210,6 @@ native traces, literal worked updates and restore paths. Source remains
 `b9a44691`; recovery root remains `scratch/lem/gus-unanchored-v1`.
 
 The completion capability refresh is recorded in [[gus-book-silas-tools]].
-Canonical delivery remains the only unfinished publication step. No new
-experiment begins until that failure is resolved and the result-readout steering
-window has elapsed; new ideas require a separate registration and fresh confirmation roots.
+Canonical delivery is resolved. The completed comparison retains its original
+endpoints and selections. A new sampled-policy confirmation requires its own
+registration and fresh roots; its proposal is in [[gus-success-probability-planning]].
