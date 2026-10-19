@@ -104,12 +104,15 @@ tests attention-path sensitivity without training. Read
 the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
 the final frozen representation did not support a better linear public-score
 readout than metadata and untrained controls. Read
-`scratch/lem/gus-native-cooldown-v1/CURRENT.md` and its steering window before
+`scratch/lem/gus-blank-lead-v1/CURRENT.md` and its steering window before
 selecting another comparison. No completed evaluation or archive should be rerun.
 The completed `wiki/experiments/gus-native-cooldown-2026-10-19.md` pilot then
 inspected eight preselected native MLP coordinates across saved constant/cosine
 formation. Read its exploratory limits: no overall cleanliness test or player
 promotion. A blank-suit response candidate already exists before cooldown.
+The subsequent `wiki/experiments/gus-blank-lead-2026-10-19.md` fresh test
+replicates the double-blank lead association, while its broader suit hypothesis
+remains inconclusive for insufficient near-miss coverage in one panel.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities
@@ -235,6 +238,12 @@ small actor-site doses, same-row control units, exact sham and an independent
 explicit-forward audit. Reused panels and post-inspection semantic summaries are
 exploratory; freeze a hypothesis and matched near misses before fresh confirmation.
 A forecasting improvement or coordinate correlation is not cleaner mechanisms.
+Do not equate a blank-containing tile with the blank suit: use declaration and
+current lead rules. The bid-30 schedule does not sample declarations uniformly.
+Predeclare rare-context support/identification requirements; a bootstrap with
+an unidentifiable target does not supply usable confidence bounds. Keep a
+coverage failure distinct from evidence against the response. Targeted lawful
+sampling needs a new registration; it cannot repair a completed test silently.
 Reuse saved formation checkpoints before spending another training run when they
 already answer the question; a late continuation is not formation from scratch.
 Any auxiliary public-state loss is a separately registered learning experiment,

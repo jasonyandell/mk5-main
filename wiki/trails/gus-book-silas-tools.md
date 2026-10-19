@@ -162,3 +162,8 @@ The blank-suit response candidate is exploratory and predates cooldown; no
 cleanliness improvement or stronger player is established. Raw pre/post-GELU
 cards and independently audited local interventions now support a narrower
 mechanism question before further training.
+
+[[gus-blank-lead-2026-10-19]] tests that candidate on fresh fixed-table histories.
+The adjusted double-blank lead association replicates, but the broader blank-suit
+test is inconclusive because one panel lacks non-double blank-trump coverage.
+The player and inputs stay unchanged; no cooldown cleanliness gain follows.
