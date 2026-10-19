@@ -284,3 +284,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-independent-root-batches-2026-10-18|Gus independent deals per update]] — more independent deals reduce empty batches without a confirmed player gain; exact-state reuse (complete)
 - [[experiments/gus-public-terminal-credit-2026-10-18|Gus public-terminal policy credit]] — full/unsettled GRPO and rehearsal, immutable replay and no promotion (complete)
 - [[experiments/gus-full-hand-outcomes-2026-10-18|Gus full-hand outcome GRPO]] — fixed players, two matched recipe iterations, fresh confirmation and lazy replay (complete)
+
+- [[experiments/gus-leave-one-out-2026-10-19|Gus leave-one-out outcome baseline]]

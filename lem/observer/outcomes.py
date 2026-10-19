@@ -33,7 +33,7 @@ from .splat.play import SplatPlay
 from .splat.recovery import StopRequest, capture_rng, restore_rng
 from .value import ValueBaseline
 
-SCHEMA = 'gus-full-hand-outcomes-v5'
+SCHEMA = 'gus-full-hand-outcomes-v6'
 
 
 def publicly_settled(points, bidder, bid=30):
@@ -82,13 +82,28 @@ def grouped_specs(roots, group, namespace):
     return result
 
 
-def trajectories(model, field, roots, group, namespace, device, sample=True):
+def leave_one_out(rewards):
+    """Other independent draws supply each hand's baseline; no normalization.
+
+    Rewards are verified success indicators (0/1). At the sampling policy this
+    action-independent baseline preserves the expected score-function gradient.
+    Clipping and subsequent optimization are separate approximations.
+    """
+    if rewards.ndim != 2 or rewards.shape[1] < 2 or not torch.isfinite(rewards).all():
+        raise ValueError('leave-one-out requires finite groups of at least two')
+    group = rewards.shape[1]
+    return rewards - (rewards.sum(-1, keepdim=True) - rewards) / (group - 1)
+
+
+def trajectories(model, field, roots, group, namespace, device, sample=True, estimator='grpo'):
     data, episodes = collect(model.backbone, field, grouped_specs(roots, group, namespace), device, sample)
     for episode in episodes:
         episode['seed'] = episode['root_deal_seed']
     data['pre_settlement'] = audit(data, episodes)
     rewards = torch.tensor([(e['reward'] + 1) / 2 for e in episodes]).reshape(len(roots), group)
-    adv = advantages(rewards).numpy().ravel()
+    if estimator not in ('grpo', 'rloo'):
+        raise ValueError('unknown trajectory estimator')
+    adv = (leave_one_out(rewards) if estimator == 'rloo' else advantages(rewards)).numpy().ravel()
     data['advantage'] = adv[data['hand']]
     return data, episodes, {'win_rate': float(rewards.mean()),
         'zero_variance_groups': float((rewards.std(-1, correction=0) == 0).float().mean()),
@@ -158,7 +173,7 @@ def update(model, reference, optimizer, data, replay, replay_rng, recipe, device
             kl = (lp.exp() * (lp - ref[sl])).sum(-1).mean()
             entropy = -(lp.exp()*lp).sum(-1).mean()
             weight = len(lp)/n
-            if recipe['mode'] in ('grpo', 'ppo'):
+            if recipe['mode'] in ('grpo', 'ppo', 'rloo'):
                 ((policy + recipe['beta']*kl)*weight).backward()
             totals += weight*np.array([float(policy.detach()), float(kl.detach()), float(entropy.detach()),
                                       float(((ratio-1).abs() > recipe['clip']).float().mean().detach())])
@@ -197,7 +212,7 @@ def _run(args):
         raise ValueError('declare reward_horizon as full or unsettled')
     if recipe.get('selection') not in ('retention', 'outcomes'):
         raise ValueError('declare selection as retention or outcomes')
-    if (args.mode not in ('grpo', 'ppo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
+    if (args.mode not in ('grpo', 'ppo', 'rloo', 'rehearsal') or min(recipe[k] for k in ('rounds', 'roots', 'group', 'inner', 'batch', 'replay_batch', 'eval_every')) < 1
         or recipe['group'] < 2 or recipe['lr'] <= 0 or not 0 < recipe['clip'] < 1 or recipe['beta'] < 0
         or recipe['replay_weight'] < 0 or (args.mode == 'rehearsal' and recipe['replay_weight'] == 0)
         or min(recipe['retention_nll'], recipe['retention_splat']) < 0):
@@ -303,7 +318,8 @@ def _run(args):
             roots = plan['train'][completed*recipe['roots']:(completed+1)*recipe['roots']]
             started = time.monotonic()
             data, episodes, stats = trajectories(model, field, roots, recipe['group'],
-                f"{plan['namespace']}/train/{completed}", args.device)
+                f"{plan['namespace']}/train/{completed}", args.device,
+                estimator='rloo' if args.mode == 'rloo' else 'grpo')
             if value is not None:
                 stats['value_advantage'] = value.attach(data, reference, recipe['batch'])
             collection_seconds = time.monotonic()-started
@@ -365,7 +381,7 @@ def run(args):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--plan', required=True); p.add_argument('--out', required=True)
-    p.add_argument('--mode', choices=('grpo','ppo','rehearsal'), required=True)
+    p.add_argument('--mode', choices=('grpo','ppo','rloo','rehearsal'), required=True)
     p.add_argument('--device', choices=('cpu','mps','cuda'), default='mps')
     p.add_argument('--seconds', type=float); p.add_argument('--stop-file'); p.add_argument('--resume', action='store_true')
     return p

@@ -289,3 +289,12 @@ Use `splat.evaluate` for whole-deal diagnostic intervals and G0 comparisons; use
 Preserve all scheduled pairs, including timeouts. See
 [the registered experiment](../../wiki/experiments/gus-splat-pretraining-2026-10-18.md)
 for the exposure, teacher scope, formation and publication receipts.
+
+
+`--mode rloo` uses the verified 0/1 success return minus the mean return of
+other independent draws at the same physical root. It does not divide by group
+standard deviation. This is a leave-one-out advantage inside the existing
+clipped actor update, not a reproduction of the entire original RLOO algorithm.
+It shares full-hand replay, formation and exact CPU resume guarantees. See
+[the bounded comparison](../../wiki/experiments/gus-leave-one-out-2026-10-19.md)
+for reward scale, controls, selection and scope.

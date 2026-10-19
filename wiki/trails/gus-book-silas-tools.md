@@ -134,3 +134,7 @@ completion refresh found no new Lem/Book replies and SilasPR166 still open.
 Existing verifiers sufficed; no new capability changes the next comparison's
 controls. Selection of another learning-signal comparison follows the readout
 steering window, not a switch of the completed endpoint.
+
+The19:00UTC boundary refresh found those same pending replies and open Silas PR.
+[[gus-leave-one-out-2026-10-19]] uses existing verified full-hand returns to test
+a parameter-free baseline; no new capability or information contract is required.

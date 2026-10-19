@@ -87,7 +87,7 @@ def test_critic_optimizer_interruption_recovers_actor_and_value(tmp_path,monkeyp
     for name in ('latest.pt','best.pt'):
         nested_equal(*[torch.load(tmp_path/folder/name,weights_only=True) for folder in ('whole','split')])
     saved=torch.load(tmp_path/'split/latest.pt',weights_only=True)
-    assert saved['value']['steps']==6 and saved['settings']['schema']=='gus-full-hand-outcomes-v5'
+    assert saved['value']['steps']==6 and saved['settings']['schema']=='gus-full-hand-outcomes-v6'
     assert saved['value']['optimizer']['state']
     before={p.name:p.read_bytes() for p in (tmp_path/'split').iterdir() if p.suffix in ('.pt','.json')}
     outcomes.run(args('split',True))

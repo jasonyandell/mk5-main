@@ -80,7 +80,7 @@ def test_full_hand_grouping_audit_and_replay_bytes(tmp_path):
 
 @pytest.mark.parametrize('mode,horizon,distinct,unanchored', [('grpo','full',False,False), ('grpo','unsettled',False,False),
     ('rehearsal','full',False,False), ('grpo','full',True,False), ('ppo','full',False,False), ('ppo','unsettled',False,False),
-    ('grpo','full',False,True)])
+    ('grpo','full',False,True), ('rloo','full',False,True)])
 def test_actual_sigterm_and_crash_recovery(tmp_path, monkeypatch, mode, horizon, distinct, unanchored):
     _, plan = setup(tmp_path)
     if distinct:
@@ -340,3 +340,37 @@ def test_invalid_selection_and_empty_rehearsal_are_rejected(tmp_path, patch, mod
     _,plan=setup(tmp_path);plan['recipe'].update(patch);atomic_json(tmp_path/'plan.json',plan)
     args=outcomes.parser().parse_args(['--plan',str(tmp_path/'plan.json'),'--out',str(tmp_path/'out'),'--mode',mode,'--device','cpu'])
     with pytest.raises(ValueError,match=match):outcomes.run(args)
+
+
+@pytest.mark.parametrize('probability', [.13, .5, .82])
+def test_leave_one_out_exact_expected_policy_gradient(probability):
+    # Exhaust all 2^3 independent binary completions. For a Bernoulli logit,
+    # d E[success]/d logit = p(1-p); baseline must preserve that expectation.
+    import itertools
+    rewards = torch.tensor(list(itertools.product((0., 1.), repeat=3)), dtype=torch.float64)
+    probability_mass = torch.where(rewards.bool(), torch.full_like(rewards, probability), torch.full_like(rewards, 1-probability)).prod(-1)
+    advantage = outcomes.leave_one_out(rewards)
+    estimate = (probability_mass * (advantage * (rewards-probability)).mean(-1)).sum()
+    assert float(estimate) == pytest.approx(probability*(1-probability), abs=1e-12)
+    for i in range(3):
+        others = torch.cat((rewards[:, :i], rewards[:, i+1:]), dim=1).mean(-1)
+        torch.testing.assert_close(advantage[:, i], rewards[:, i]-others)
+    assert torch.equal(advantage[[0,-1]], torch.zeros(2,3,dtype=torch.float64))
+
+
+def test_leave_one_out_uses_verified_success_and_preserves_sampling(tmp_path):
+    model, plan = setup(tmp_path); field = {'g0':Fixed(), 'zeb':Fixed()}
+    standard, first, _ = outcomes.trajectories(model,field,plan['train'],8,'paired','cpu')
+    actual, episodes, _ = outcomes.trajectories(model,field,plan['train'],8,'paired','cpu',estimator='rloo')
+    assert first == episodes
+    rewards = np.array([(e['reward']+1)/2 for e in episodes]).reshape(-1,8)
+    expected = np.empty_like(rewards)
+    for i in range(8):
+        expected[:,i] = rewards[:,i] - np.delete(rewards,i,axis=1).mean(-1)
+    np.testing.assert_allclose(actual['advantage'],expected.ravel()[actual['hand']],atol=1e-7)
+    for k in actual:
+        if k != 'advantage':
+            assert np.array_equal(actual[k], standard[k])
+    for bad in (torch.ones(2,1), torch.ones(2), torch.tensor([[0.,float('nan')]])):
+        with pytest.raises(ValueError,match='finite groups'):
+            outcomes.leave_one_out(bad)

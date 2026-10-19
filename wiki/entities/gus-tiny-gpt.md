@@ -149,3 +149,6 @@ specimen at [splat-cooldown-v1-20261018](https://huggingface.co/jasonyandell/gus
 Both retain the same clean inputs. Their scoped gains do not establish a new
 general-playing incumbent; full recovery state and formation live in the
 linked public archives. The `gus-training` skill carries both workflows.
+
+Current prepared comparison: [[gus-leave-one-out-2026-10-19]] tests a leave-one-out
+success baseline in the same clipped actor against GRPO and rehearsal.
