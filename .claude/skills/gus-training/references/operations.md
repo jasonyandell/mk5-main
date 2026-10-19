@@ -241,3 +241,8 @@ publication at most once per five minutes per shared cache. Use
 records and `tournament sync` to drain an idle queue when its deadline permits.
 Do not implement another per-record uploader; immutable file identity does not
 require one remote commit per file. Shared workers should share the same cache.
+
+Scratch evaluation controllers must precreate their progress and audit directories.
+Include the first partial-status write in preflight: valid trajectory generation
+alone missed this in the sampled-confirmation controller. Preserve failed segment
+receipts; a directory-only repair does not reset the registered segment budget.

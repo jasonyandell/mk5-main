@@ -82,6 +82,10 @@ fresh greedy promotion criterion. Sampled reward policies showed a secondary
 gain against the sampled parent, without establishing an advantage from removing
 anchors. Confirm the policy/decoder distinction independently; do not switch the
 registered endpoint after seeing results. Canonical delivery is verified; original service failures remain archived.
+The registered `wiki/experiments/gus-sampled-confirmation-2026-10-19.md`
+independently checks those frozen checkpoints on fresh roots and repeated
+sampled draws. It changes neither weights nor the preceding study's endpoint;
+read its live recovery handoff before starting another training comparison.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities
