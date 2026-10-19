@@ -104,8 +104,12 @@ tests attention-path sensitivity without training. Read
 the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
 the final frozen representation did not support a better linear public-score
 readout than metadata and untrained controls. Read
-`scratch/lem/gus-public-score-v1/CURRENT.md` and its steering window before
+`scratch/lem/gus-native-cooldown-v1/CURRENT.md` and its steering window before
 selecting another comparison. No completed evaluation or archive should be rerun.
+The completed `wiki/experiments/gus-native-cooldown-2026-10-19.md` pilot then
+inspected eight preselected native MLP coordinates across saved constant/cosine
+formation. Read its exploratory limits: no overall cleanliness test or player
+promotion. A blank-suit response candidate already exists before cooldown.
 The pinned Demon is an evaluation competitor, never a source of labels.
 
 ## Recenter the research loop on current capabilities
@@ -223,6 +227,16 @@ use or native-unit meaning. Failure does not establish absent information.
 prefixes; that is a past public fact, distinct from a future-success target.
 Keep fit-only normalization, physical-root splits and structured/untrained
 controls. A constant or shuffled-label baseline alone can be too weak.
+For native Gus cards, preserve signed pre-GELU values, post-GELU values and
+actual output effects separately. Strong negative preactivation can be nearly
+silent; the upper tail of a mostly inactive unit can still be negative. Show raw
+ranges and moderate examples beside ranked tails. Use complete lawful prefixes,
+small actor-site doses, same-row control units, exact sham and an independent
+explicit-forward audit. Reused panels and post-inspection semantic summaries are
+exploratory; freeze a hypothesis and matched near misses before fresh confirmation.
+A forecasting improvement or coordinate correlation is not cleaner mechanisms.
+Reuse saved formation checkpoints before spending another training run when they
+already answer the question; a late continuation is not formation from scratch.
 Any auxiliary public-state loss is a separately registered learning experiment,
 not a new actor input or an established remedy for weak playing progress.
 

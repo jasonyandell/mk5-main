@@ -155,3 +155,10 @@ current public score. The final pretrained vector did not support a better
 linear readout than metadata and untrained controls. This is a scoped negative
 accessibility result, not evidence that score information is absent. Exact public
 replay supplied labels without hidden-world queries or a changed partner roster.
+
+[[gus-native-cooldown-2026-10-19]] follows the complete fresh Cammarata reread
+with a bounded native-unit microscope on saved constant/cosine formation.
+The blank-suit response candidate is exploratory and predates cooldown; no
+cleanliness improvement or stronger player is established. Raw pre/post-GELU
+cards and independently audited local interventions now support a narrower
+mechanism question before further training.
