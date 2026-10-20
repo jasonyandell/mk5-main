@@ -113,7 +113,8 @@ curve.)
 
 - **The floor is the finding, and it is a tools finding (rung 1).** An untrained Gus's units are
   0.91–0.94 clean, and almost every one is named by the mover's place in the trick: `lead`,
-  `second`, `third` or `last`, 859–882 of the clean units. At the decision token an untrained
+  `second`, `third` or `last`: 859 of 932, 882 of 914 and 828 of 894 clean units across the three
+  untrained nets. At the decision token an untrained
   transformer's units read mostly the position embedding. The number of tiles played fixes the
   seat in the trick, so top-1% precision hands every random unit a perfect position word.
   - The field net never had this: its untrained floor is 0.11–0.23, because random integer
