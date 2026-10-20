@@ -161,6 +161,19 @@ def test_audit_statistics_on_known_rows():
     assert 0.82 < lo2 < 0.9 < hi2 < 0.96
 
 
+def test_onoff_match_names_the_boundary_not_the_pole():
+    # a unit on exactly where "none" holds: its deepest rows may be anything, its boundary is "none"
+    rng = np.random.default_rng(1)
+    n = 5_000
+    none = rng.random(n) < 0.6
+    noise = rng.random(n) < 0.3
+    on = none.copy()
+    name, agree, chance = audit.onoff_match(on, np.stack([noise, none], axis=1), ["noise", "none"])
+    assert name == "none" and agree == 1.0 and abs(chance - none.mean()) < 1e-12
+    name, agree, _ = audit.onoff_match(~on, np.stack([noise, none], axis=1), ["noise", "none"])
+    assert name == "¬none" and agree == 1.0
+
+
 def test_card_shows_the_viewer_only(tmp_path):
     from lem.probe import sample as S
     from lem.probe.cards import card

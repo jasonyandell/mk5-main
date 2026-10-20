@@ -81,6 +81,12 @@ class PoleRow:
     runner_up: str
     runner_precision: float
     top: list[int]            # the top set's row indices, highest signal first
+    # reported beside the label, never used to classify (#236)
+    excluded: str = ""        # the best concept the play-count baseline excluded (e.g. `last`)
+    excluded_precision: float = 0.0
+    onoff: str = ""           # the concept, or its negation (`¬`), that best agrees with the unit on/off
+    onoff_agree: float = 0.0
+    onoff_chance: float = 0.0 # agreement of the unit with a constant: max(on, off)
 
 
 def top_set(signal: np.ndarray, k: int) -> np.ndarray:
@@ -147,6 +153,20 @@ def expected_from_strata(top: np.ndarray, rates: np.ndarray, idx: np.ndarray) ->
     return (h / h.sum()) @ rates
 
 
+def onoff_match(on: np.ndarray, allc: np.ndarray, names: list[str]) -> tuple[str, float, float]:
+    """The concept, or its negation, whose rows best agree with a unit being on, its agreement, and
+    the agreement of a constant (#236). The pole's top set names its deepest rows; this names the
+    boundary where the unit decides, which can differ (#235 papers 1 and 5)."""
+    o = on.astype(np.float64)
+    c = allc.astype(np.float64)
+    both = (c.T @ o) / len(o)                       # P(concept and on)
+    agree = both + (1 - c.mean(0) - o.mean() + both)  # P(c = on)
+    best_pos, best_neg = int(np.argmax(agree)), int(np.argmin(agree))
+    if agree[best_pos] >= 1 - agree[best_neg]:
+        return names[best_pos], float(agree[best_pos]), float(max(o.mean(), 1 - o.mean()))
+    return "¬" + names[best_neg], float(1 - agree[best_neg]), float(max(o.mean(), 1 - o.mean()))
+
+
 def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: list[str],
         log=print, shuffles: int = SHUFFLES, strata: np.ndarray | None = None) -> dict:
     """`shuffles` = 0 skips the chance baseline (a checkpoint series runs it at the end only).
@@ -164,12 +184,23 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
     base = allc.mean(axis=0)
     rows: list[PoleRow] = []
     tops: list[np.ndarray] = []
+    h1 = acts.a1.shape[1]
+    onoff = {}
+    for p in range(0, acts.n_poles, 2):
+        a = acts.a1[:, p // 2] if p < 2 * h1 else acts.a2[:, (p - 2 * h1) // 2]
+        onoff[p] = onoff_match(a > 0, allc, names)
     for p in range(acts.n_poles):
         alive = acts.alive(p)
         signal = acts.pole(p)
         top, prec, r = score_pole(signal, allc, base, k)
+        excl, excl_p = "", 0.0
         if rates is not None:
-            prec = np.where(prec - expected_from_strata(top, rates, idx) >= BASELINE_MARGIN, prec, 0.0)
+            raw = prec
+            granted = prec - expected_from_strata(top, rates, idx) >= BASELINE_MARGIN
+            prec = np.where(granted, prec, 0.0)
+            lost = np.where(~granted & (base <= BASE_CAP), raw, -1.0)
+            if lost.max() > 0:
+                excl, excl_p = names[int(np.argmax(lost))], float(lost.max())
         tops.append(top)
         best, pr, lo, hi, kind, runner, rp = classify(prec, base, names, k)
         if np.ptp(signal) == 0:
@@ -179,7 +210,7 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
         jr = int(np.argmax(np.abs(r)))
         rows.append(PoleRow(p, pole_name_of(acts, p), alive, kind, names[best], pr, lo, hi,
                             float(base[best]), float(pr / max(base[best], 1e-9)), names[jr], float(r[jr]),
-                            names[runner], rp, top[:64].tolist()))
+                            names[runner], rp, top[:64].tolist(), excl, excl_p, *onoff[p - p % 2]))
         if p % 32 == 0 and log is not None:
             log(f"  pole {p:3d} {rows[-1].name}: {kind} {names[best]} p={pr:.3f} [{lo:.3f}, {hi:.3f}] base={base[best]:.3f}")
     shares = summarize(rows)
@@ -243,15 +274,22 @@ def summarize(rows: list[PoleRow]) -> dict:
     return out
 
 
+def excluded_cell(r: dict) -> str:
+    return f"{r['excluded']} ({r['excluded_precision']:.2f})" if r.get("excluded") else ""
+
+
 def write(result: dict, out_dir: str | Path) -> None:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "audit.json").write_text(json.dumps(result, indent=1))
-    lines = ["| pole | alive | kind | label | precision [95%] | base | lift | runner-up | top r |", "|---|---:|---|---|---|---:|---:|---|---|"]
+    lines = ["| pole | alive | kind | label | precision [95%] | base | lift | runner-up | top r | baseline excluded | on/off match (chance) |",
+             "|---|---:|---|---|---|---:|---:|---|---|---|---|"]
     for r in result["rows"]:
         lines.append(f"| {r['name']} | {r['alive']:.3f} | {r['kind']} | {r['label']} | {r['precision']:.3f} "
                      f"[{r['lo']:.3f}, {r['hi']:.3f}] | {r['base']:.3f} | {r['lift']:.1f} | {r['runner_up']} "
-                     f"({r['runner_precision']:.2f}) | {r['label_r']} ({r['r']:+.2f}) |")
+                     f"({r['runner_precision']:.2f}) | {r['label_r']} ({r['r']:+.2f}) | "
+                     f"{excluded_cell(r)} | "
+                     f"{r['onoff']} {r['onoff_agree']:.3f} ({r['onoff_chance']:.3f}) |")
     s = result["shares"]
     sh = result["shuffled"]
     head = [f"Rows {result['n_rows']:,}, top set {result['top_k']:,} per pole, {result['n_poles']} poles, {s['live']} live.",
