@@ -247,7 +247,11 @@ overstated what units name beyond position. The conditioned read is the honest a
 #227), the squeeze holds: 24 neurons are cleaner than 192 (0.549 against 0.406, three seeds; floors
 0.014 and 0.077). Below 12 neurons the units do the play count's own job, the mover's place in the
 trick, which a read conditioned on the play count cannot credit by construction. The last words
-beyond position are the mover's trump.
+beyond position are the mover's trump. On pour A, with every declaration
+([`wiki/experiments/lem-squeeze-pour-a-2026-10-20.md`](../../wiki/experiments/lem-squeeze-pour-a-2026-10-20.md),
+#199), the squeeze holds (conditioned 0.504 at 192 neurons, 0.626 at 24, 0.677 at 12), and doubles
+trump is the declaration a narrow net keeps: `trump-is-doubles` survives to 12 neurons after every
+pip trump is gone. No trump never gets a clean unit.
 
 **The words need data**
 ([`wiki/experiments/lem-overbake-units-2026-10-20.md`](../../wiki/experiments/lem-overbake-units-2026-10-20.md),
@@ -303,7 +307,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198 (ablation done: named units are used where their names say; steering by cost null even with matched rows, #205), pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198 (ablation done: named units are used where their names say; steering by cost null even with matched rows, #205), pour A #199 (done: the squeeze holds with every declaration; doubles trump outlasts the pips), family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 
