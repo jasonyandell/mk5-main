@@ -2,13 +2,36 @@
 title: "Gus: success-probability RLVR and lazy frozen evaluation"
 kind: decision
 first_seen: 2026-10-18
-last_updated: 2026-10-19
+last_updated: 2026-10-20
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 
 ## Selected direction
+
+On 2026-10-20 Jason resumed the loop with the explicit objective: **use the
+continuation machinery to discover better contingent decisions, then train Gus
+on those decisions**. Offline teacher planning is now authorized; deployed Gus
+still has no search. Another auxiliary future-prediction objective is not the
+selected lever. The preparation root is
+`scratch/lem/gus-contingent-teacher-v1`; no exact two-decision teacher or new
+learning result is established by this authorization.
+
+The first proposed scope is a bid30 learner acting last in trick five, with
+three tiles against two in each other seat: at most 90 legal-consistent hidden
+remainders and nine remaining plays. Unlike the existing forced-tail verifier,
+the teacher must make later choices conditional on observations, sharing an
+action across worlds the learner still cannot distinguish. Carry root masses
+forward through the fixed field's actions rather than resetting child beliefs.
+Direct policy distillation follows only an independently checked improvement
+witness. Student selection and untouched-root evaluation must integrate its
+entire remaining policy; root-action accuracy is only a diagnostic. Original
+clean inputs, fixed G0 partner, pinned Zeb, finite-model scope, capped resumable
+work and public preregistration remain controls. Periodic independent
+collaborators should check that the work serves this objective.
+
+The following records the preceding reward-learning direction and its results.
 
 The selected path for [[gus-tiny-gpt]] is textbook reward learning on **verified
 hand success**, with the existing architecture, clean inputs and other seats

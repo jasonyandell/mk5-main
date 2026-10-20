@@ -38,6 +38,33 @@ incorporating his latest steering without requiring another reply.
 
 ## Find the live experiment
 
+Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
+continuation machinery to discover better contingent decisions, then train Gus
+on those decisions**. Start at
+`scratch/lem/gus-contingent-teacher-v1/CURRENT.md`. The earlier stop is revoked.
+Occasionally involve an independent collaborator to check that the work still
+serves this prize. Another auxiliary future-prediction loss or probe is not the
+selected next avenue.
+
+The proposed teacher extends the existing exact one-choice verifier to at least
+two genuinely discretionary learner decisions. Offline teacher planning is
+authorized; deployed Gus still has no search. Carry the named root prior through
+observed field actions, sum indistinguishable worlds before maximizing one
+shared learner action, and never reset child beliefs to uniform legality.
+Uniform legal-consistent root support is an explicit approximation, not a
+behavior-conditioned posterior. Preserve the original bid-30 actor inputs,
+fixed G0 partner and pinned Zeb opponents. Hidden-state certificates and teacher
+values are targets/audit evidence, never actor inputs.
+
+Before training, independently replay the exported complete policy and require
+a worked training witness of better observation-contingent decisions. Freeze
+scripts, source pools, endpoints and caps in a verified public registration
+before measurements. Evaluate students by exact whole-policy continuation
+success on untouched roots; first-move agreement alone is insufficient.
+Keep separate the finite-model result and fresh full-hand playing strength.
+Do not silently extend a failed or exhausted pilot. Current proposal details
+are preparation, not evidence that a two-decision teacher already works.
+
 The repository is `/Users/jason/code/mk5-main`; the original Gus research worktree
 is `/Users/jason/code/mk5-lem-nanogpt`. Locate the current checkout and artifacts
 rather than assuming either branch is current. Read its `CLAUDE.md`,
@@ -58,7 +85,8 @@ completed splat pretraining and exact-endgame comparisons. Read
 `wiki/experiments/gus-full-hand-outcomes-2026-10-18.md` for the bounded matched
 iterations, selection, confirmation and actual-game limits. Keep other seats
 fixed and compare against rehearsal alone; register a new plan before changing
-the recipe. Extend frozen evaluation lazily; external search is deferred.
+the recipe. Extend frozen evaluation lazily; deployed player search remains
+deferred. The later contingent-teacher steering above authorizes offline planning.
 The public-terminal credit ablation is recorded in
 `wiki/experiments/gus-public-terminal-credit-2026-10-18.md`; neither horizon
 established a stronger selected player in that comparison.
@@ -104,6 +132,7 @@ tests attention-path sensitivity without training. Read
 the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
 the final frozen representation did not support a better linear public-score
 readout than metadata and untrained controls. Read
+`scratch/lem/gus-u65-formation-v1/CURRENT.md`, the completed
 `scratch/lem/gus-value-numerics-v1/CURRENT.md`, the stopped
 `scratch/lem/gus-value-route-v1/CURRENT.md`, and current user steering before
 selecting another comparison. No completed evaluation or archive should be rerun.
@@ -290,6 +319,16 @@ coverage failure distinct from evidence against the response. Targeted lawful
 sampling needs a new registration; it cannot repair a completed test silently.
 Reuse saved formation checkpoints before spending another training run when they
 already answer the question; a late continuation is not formation from scratch.
+The saved-checkpoint study in `wiki/experiments/gus-u65-formation-2026-10-20.md`
+tracks a final-selected coordinate from its exact training initialization. A
+fixed unit index does not establish persistent semantic identity. Match contexts
+across checkpoints; keep metadata-side labels distinct from activation signs,
+pre/post-GELU values distinct, and allow raw-scale changes as an explanation.
+Compare endpoint changes using the same physical pairs rather than independent
+endpoint intervals. Intermediate snapshots do not identify an exact formation
+time. Reuse an audited checkpoint only after tensor, input and intervention
+identity checks; retain the historical audit's missing fields explicitly instead
+of rerunning it to manufacture a complete-looking record.
 Any auxiliary public-state loss is a separately registered learning experiment,
 not a new actor input or an established remedy for weak playing progress.
 

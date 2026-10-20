@@ -2,7 +2,7 @@
 title: "Gus: connecting the book, Silas and Lem's instruments"
 kind: trail
 first_seen: 2026-10-18
-last_updated: 2026-10-19
+last_updated: 2026-10-20
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
@@ -197,3 +197,23 @@ the prior strict numeric audit; in the same case the float64 path difference is
 near machine precision. This supports local precision/order sensitivity, but
 the original run's unsaved failing condition remains unknown and its primary
 prediction unevaluated. No whole-study or playing claim follows.
+
+[[gus-u65-formation-2026-10-20]] follows the registered fixed-coordinate
+trajectory from splat initialization through 200,000 steps on those same 48
+prefixes. The dose-0.5 tile-minus-actor route-sensitivity endpoint shifted
+negative in both reused panels, as predicted. This tracks one final-selected
+coordinate and local intervention across checkpoints; it does not show
+monotone formation, preserved semantics, fresh confirmation, output mediation
+or a playing gain.
+
+The 2026-10-20 contingent-teacher boundary refresh found Lem
+[#207](https://github.com/jasonyandell/mk5-main/issues/207) closed with its final
+overbake interpretation, Book #121 still open without the requested reply, and
+Silas PR #166 still open. No repeated request was sent. Existing exact holdings,
+lawful seat-policy wrappers and replay instruments can support a bounded
+extension, but `fixed_field.solve` still rejects a second discretionary learner
+choice. The supplied continuation v3 paper gives the information-consistent
+policy calculus, not a ready-made generic teacher. The selected direction in
+[[gus-success-probability-planning]] therefore calls for an independently checked
+information-cell solver and direct decision labels, preserving the original
+encoder and fixed field.

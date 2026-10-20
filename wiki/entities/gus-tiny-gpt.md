@@ -69,6 +69,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
 
+- [[gus-u65-formation-2026-10-20]] — saved initialization-to-final history of one coordinate and its lead-attention sensitivity; both reused-panel endpoint tests pass.
+
 - [[gus-value-routing-2026-10-20]] — stopped at an instrument audit; primary comparison unevaluated. A separate fixed-row numerical diagnosis is linked there.
 - [[gus-route-rescue-2026-10-20]] — current-query head sensitivity; the unit restoration prediction did not hold across both reused panels.
 - [[gus-first-look-2026-10-19]] — native-unit reading, circuit evidence and the growing [First Look report](https://gus-first-look.psychometrix.chatgpt.site).
@@ -160,7 +162,14 @@ Completed [[gus-leave-one-out-2026-10-19]] found no confirmed playing gain from
 a leave-one-out success baseline versus GRPO or rehearsal. Subsequent
 [[gus-partner-history-2026-10-19]] establishes history-path sensitivity;
 [[gus-public-score-probe-2026-10-19]] does not establish a superior linear public-
-score readout. Neither establishes stronger play. Next comparison unselected.
+score readout. Neither establishes stronger play.
+
+Jason resumed the loop on 2026-10-20 to use continuation machinery to discover
+better contingent decisions, then train Gus on them. The proposed first teacher
+has two discretionary learner choices on a small exact fixed-field endgame.
+It is preparation, not an implemented or measured improvement; see
+[[gus-success-probability-planning]] and
+`scratch/lem/gus-contingent-teacher-v1/CURRENT.md`.
 
 
 Partner-awareness and whole-game training are proposed directions, not selected
