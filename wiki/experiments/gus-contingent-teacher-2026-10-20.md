@@ -3,7 +3,7 @@ title: "Gus: discover better contingent decisions, then train on them"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -36,7 +36,7 @@ finite model. Approximate neural fitting does not inherit that guarantee.
 
 ## Small enough to check, long enough to plan
 
-The proposed root is immediately before play 20: the learner acts last in the
+The root is immediately before play 20: the learner acts last in the
 fifth trick, holding three tiles while each other seat holds two. Six hidden
 remaining tiles admit at most `6!/(2!2!2!) = 90` allocations. Nine plays remain.
 The learner can choose now, observe more play, then choose again with two tiles.
@@ -65,7 +65,7 @@ occupies the other team. Each simulated seat receives only its own lawful
 policy request. Exact request identities, fixed policy bytes and deterministic
 responses are checked independently.
 
-The proposed matched comparison starts both arms at the same 195,000-update
+The matched comparison started both arms at the same 195,000-update
 splat checkpoint's **tile-policy backbone**. One arm learns the exact teacher's
 actions; the other learns the frozen parent's actions on the same prefixes.
 Legal-masked cross-entropy trains the actor directly, without an auxiliary
@@ -79,25 +79,81 @@ integrates its entire remaining policy over the exact root support, including
 its own later decisions. Agreement on the first move is only a diagnostic.
 Fresh full-hand play is a separate conditional stage and a separate strength claim.
 
-## Current status and provenance
+## Result: better teacher, no transferred student gain
 
-Preparation only: the information-cell solver, actual-game adapter, collector,
-matched trainer and evaluator are being integrated and independently reviewed.
-The synthetic solver checks observation-dependent choices against exhaustive
-lawful-policy enumeration. The synthetic trainer checks exact recovery of
-weights, optimizer and random state after interruption. These are instrument
-tests, not measured Gus improvements.
+The pilot completed in ten normal segments: seven collection, one training,
+one development and one test. The teacher found strict complete-policy gains
+on 8/32 training roots and 15/32 untouched test roots. On test, the exact
+teacher averages 32.3553% success versus the original parent's 25.2976%.
+These are averages over finite root priors, not observed full-hand win rates.
 
-A mechanical support fixture used during preparation is retained with its
-receipt and excluded from study pools. All 607,306 earlier reserved deals,
-that fixture, and 1,408 newly reserved source deals are kept separate. No
-training or actual-policy measurement is authorized by this preparation page;
-the reviewed frozen protocol, code hashes and bounded stage caps must first
-be publicly registered and freshly verified.
+Both training arms completed 64 updates. Sixteen development roots selected
+teacher-arm initialization and parent-action control step 32. On 32 untouched
+test roots the selected teacher arm therefore equals the original parent:
+25.2976%, difference zero, paired interval [0, 0]. The control averages
+23.9575%; its degradation cannot establish a learned improvement. The
+registered requirement to beat both controls failed. No full-hand stage or
+promotion followed, and no unselected checkpoint was tested.
 
-Recovery and detailed preparation live at
-`scratch/lem/gus-contingent-teacher-v1/CURRENT.md`. The exact one-choice
-predecessor remains [[gus-fixed-field-curriculum-2026-10-18]]; its verifier
-explicitly rejects a second discretionary learner choice and is not relabeled
-as the new teacher. Lem, Book and Silas capability boundaries are recorded in
-[[gus-book-silas-tools]].
+One training witness makes the teacher gain concrete. In `train-0056`, both
+policies first play 3-1. After left 0-0, partner 4-4, right 2-0, Gus chooses
+4-1 with exact value 0; the teacher chooses 5-3 with value 1 in that cell.
+The complete teacher policy improves root success from 1/18 to 4/18. A
+different reached branch selects another action from a value tie, so this
+is evidence of a useful later correction, not proof every branch requires
+adaptation. Five training roots pass the registered contingency-witness gate.
+
+## Why change the learning objective next?
+
+The saved training table has 622 discretionary unsettled nodes. All legal
+Q values tie on 556 rows, representing 87.6984% of root-balanced sampling
+weight. Only 18 rows across nine roots strictly change the parent's action:
+4.2379% of sampling weight. All 18 were sampled; the 2,048 draws contain 88
+strict corrections and 1,824 all-action-tie examples. Most cross-entropy
+pressure therefore reinforced parent choices or arbitrary value ties.
+This is a measured imbalance, not proof of the cause of failed transfer.
+
+The selected successor is a separately registered comparison of expected
+exact action regret against ordinary teacher-label cross-entropy. Reuse only
+these training roots, with fresh development/test confirmation. The actor
+loss `sum_a pi(a|I) [max_b Q*(I,b) - Q*(I,a)]` gives flat-value rows zero
+policy gradient and respects optimal ties. It is an offline cost-sensitive
+expert-guidance step, related to [AggreVaTe](https://arxiv.org/abs/1406.5979),
+not its full interactive algorithm or a borrowed no-regret guarantee.
+Q uses optimal teacher continuation; the student still needs complete-policy
+evaluation because its later actions can differ. No auxiliary head or new
+actor input is selected.
+
+## Verification and provenance
+
+[Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7a87aaad030605e02dddb10a3dca30d898efe578/lem/gus-contingent-teacher-2026-10-20/registration)
+was freshly verified before collection: 11 files, 245 archive members, 23
+frozen protocol/instrument/input files. Independent source reviews covered
+lawful seat inputs, information-cell recursion, training isolation and
+resume/failure guards. Collection performed independent full-policy forward
+checks and native-request replay. The later saved-evidence audit verified
+80 selected root certificates, 30,300 listed cache hashes, 160 development
+and 96 test records, selection and registered paired-bootstrap arithmetic.
+It loaded no models or game replay; signal-forward arrays are retained only
+as digests, a recorded limit of that later audit.
+
+The first parent launch used system Python by resolving the venv symlink;
+it failed during imports before any worker attempt or model call. Its command,
+traceback and cost remain in `launch-failure-v1`. An explicitly inspected
+interpreter-path correction changed no frozen science or budgets. The
+scientific controller completed without failures or cap growth. Audit-script
+construction errors are likewise disclosed without changing experiment data.
+
+All 607,307 prior/fixture deals plus all 1,408 new potential source deals are
+reserved: 608,715 exclusions for future fresh sampling. Old dev/test roots
+remain unavailable for training. Recovery and receipts live in
+`scratch/lem/gus-contingent-teacher-v1/CURRENT.md`; `READOUT.md` and the
+independent saved-data reviews separate teacher, student and full-hand claims.
+The prior one-choice verifier remains [[gus-fixed-field-curriculum-2026-10-18]];
+capability boundaries are in [[gus-book-silas-tools]].
+
+[Complete pilot evidence and independent saved-data audit](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/acfad317b78720517a61378a9c80641f0c38ba7c/lem/gus-contingent-teacher-2026-10-20/evidence)
+was freshly downloaded and verified: 11 files and 56,578 archive members. It
+retains the new root certificates, native caches, both training trajectories,
+selection, test traces and the original launcher failure in one immutable batch.
+The growing report has a [contingent-decisions chapter](https://gus-first-look.psychometrix.chatgpt.site/#contingent).

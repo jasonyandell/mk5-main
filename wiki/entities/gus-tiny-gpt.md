@@ -28,6 +28,14 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
 ## Current experimental control
 
+Jason resumed the loop on 2026-10-20 with this prize: discover better contingent
+decisions using continuation machinery, then train Gus on those decisions.
+[[gus-contingent-teacher-2026-10-20]] completed that first bounded teacher and
+matched distillation pilot. The planner improves finite-model policies, but
+development retains the student's initialization; no full-hand gain is claimed.
+A cost-sensitive policy-distillation successor is being prepared. Offline
+teacher planning is authorized; deployed Gus still performs no search.
+
 Jason's later2026-10-19 charter puts learning Texas42 and understanding
 transformers hands-on first; stronger play is a hoped-for consequence.
 Experiments should identify a teachable game or representation question.
@@ -68,6 +76,8 @@ The older latest-five population recipe below is historical, not the default
 for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
+
+- [[gus-contingent-teacher-2026-10-20]] - exact two-decision teacher, useful later corrections, and a first action-distillation comparison with no selected student gain.
 
 - [[gus-u65-formation-2026-10-20]] — saved initialization-to-final history of one coordinate and its lead-attention sensitivity; both reused-panel endpoint tests pass.
 
