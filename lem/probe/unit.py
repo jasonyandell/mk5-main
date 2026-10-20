@@ -344,3 +344,237 @@ def run(sample, labels: np.ndarray, names: list[str], net_path: str, j: int, twi
             log(f"  {ck.stem}: + {lp} pw {form[-1]['+']['partner-winning']:.3f} | − {ln}")
         out["formation"] = form
     return out
+
+
+def r2(z: np.ndarray, cols: np.ndarray) -> float:
+    """Variance of z explained by a least-squares fit on the given 0/1 columns."""
+    X = np.c_[np.ones(len(z)), cols.astype(np.float64)]
+    b = np.linalg.lstsq(X, z, rcond=None)[0]
+    return float(1 - ((z - X @ b) ** 2).mean() / z.var())
+
+
+def shifts(trick: Trick, base: np.ndarray, new: np.ndarray, slot_tile: np.ndarray | None,
+           suit_real: np.ndarray | None = None) -> dict[str, np.ndarray]:
+    """Per-row shifts, steered minus base: take, smear, and (where given) playing the gated tile
+    and playing a non-double tile of its suit (`suit_real` [N, k] real tile ids)."""
+    out = {"take": trick.beats(new).astype(float) - trick.beats(base),
+           "smear": trick.count(new).astype(float) - trick.count(base)}
+    if slot_tile is not None:
+        out["plays-gated"] = (new == slot_tile).astype(float) - (base == slot_tile)
+    if suit_real is not None:
+        out["plays-its-suit"] = (new[:, None] == suit_real).any(1).astype(float) - (base[:, None] == suit_real).any(1)
+    return out
+
+
+def paired(own: dict, others: list[dict], rows: np.ndarray, deal: np.ndarray, rng: np.random.Generator,
+           where: dict[str, np.ndarray] | None = None) -> dict:
+    """Own shift, the layer's mean shift (the other units' mean, row by row) and their paired
+    difference, each with a deal-clustered interval, per measure, on `rows` (or its own mask)."""
+    rec = {}
+    for name, v in own.items():
+        m = where.get(name, rows) if where else rows
+        layer = np.mean([o[name] for o in others], axis=0)
+        rec[name] = {"rows": int(m.sum()), "own": clustered(v[m], deal[m], rng),
+                     "layer": clustered(layer[m], deal[m], rng), "own-layer": clustered((v - layer)[m], deal[m], rng),
+                     "others": [float(o[name][m].mean()) for o in others]}
+    return rec
+
+
+def pip_tiles(pip: int) -> list[int]:
+    """Canonical slots of the non-double tiles carrying `pip`, trump (pip 6) excluded."""
+    out = []
+    for hi in range(7):
+        for lo in range(hi + 1):
+            if hi != lo and pip in (hi, lo) and 6 not in (hi, lo):
+                out.append(hi * (hi + 1) // 2 + lo)
+    return out
+
+
+def double_pip(slot: int) -> int:
+    for p in range(7):
+        if p * (p + 1) // 2 + p == slot:
+            return p
+    raise ValueError(f"slot {slot} is not a double")
+
+
+def run_gate(sample, labels: np.ndarray, names: list[str], net_path: str, j: int, gate: str, twin_path: str,
+             audit: dict, formation_dir: str | None, log=print) -> dict:
+    """A unit paper for a unit gated by one input bit (`gate`, e.g. `x:hand:14`: I hold canonical
+    tile 14). The cells are the gated tile's state (held, gone, out) by seat."""
+    x = sample.x
+    fn = feature_names(x.shape[1])
+    tile = int(gate.split(":")[2])
+    g = x[:, fn.index(gate)].astype(bool)
+    gone = x[:, fn.index(f"x:gone:{tile}")].astype(bool)
+    ten, five = x[:, fn.index(f"x:count:{tile}")].astype(bool), x[:, fn.index(f"x:count:{N_TILES + tile}")].astype(bool)
+    net = load_net(net_path)
+    acts = forward(net, x)
+    z, a = acts.z1[:, j].astype(np.float64), acts.a1[:, j]
+    k = max(1, int(round(TOP * len(z))))
+    top_p, top_n = np.argsort(-z, kind="stable")[:k], np.argsort(z, kind="stable")[:k]
+    trick = Trick(sample)
+    lab = Labeller(labels, names, x, sample.n_plays.astype(np.int64))
+    out: dict = {"unit": j, "net": net_path, "gate": gate, "rows": len(z), "top_k": k,
+                 "max_z": float(z.max()), "min_z": float(z.min())}
+
+    # 1. label: the gated tile's state by seat, both poles raw and under read R, the twin
+    state = np.where(g, 0, np.where(gone, 1, 2))
+    out["cells"] = [{"tile": st, "seat": SEATS[s], "rows": int(m.sum()), "mean_z": float(z[m].mean()),
+                     "on": float((a[m] > 0).mean())}
+                    for i, st in enumerate(("held", "gone", "out")) for s in range(4)
+                    for m in [(state == i) & (trick.seat == s)] if m.sum()]
+    out["poles"] = {"+": {"label": lab.best(top_p), "not gate": float((~g[top_p]).mean())},
+                    "-": {"label": lab.best(top_n), "gate": float(g[top_n].mean())}}
+    out["r2"] = {"gate": r2(z, g[:, None]), "gate+gone": r2(z, np.c_[g, gone]), "all inputs": r2(z, x)}
+    out["count_slot"] = {kind: {"rows": int(m.sum()), "held": float(z[m & g].mean()), "not held": float(z[m & ~g].mean())}
+                         for kind, m in (("ten", ten), ("five", five), ("none", ~ten & ~five)) if (m & g).sum() >= 200}
+    # the open side: what grades z where the gate is shut off (I do not hold the tile)
+    allc = np.concatenate([labels, x], 1).astype(np.float64)
+    nm = list(names) + fn
+    zo = z[~g]
+    c = allc[~g]
+    r = ((c - c.mean(0)) / (c.std(0) + 1e-9) * ((zo - zo.mean()) / zo.std())[:, None]).mean(0)
+    out["open_side"] = [(nm[i], float(r[i])) for i in np.argsort(-np.abs(r))[:12]]
+    tw = forward(load_net(twin_path), x)
+    best = 0.0
+    for zz in (tw.z1, tw.z2):
+        for jj in range(zz.shape[1]):
+            for sgn in (1, -1):
+                best = max(best, float(g[np.argsort(-sgn * zz[:, jj], kind="stable")[:k]].mean()))
+    def raw_bit_clean(zz: np.ndarray) -> float:
+        """Share of a layer's live poles whose top 1% is ≥ 0.9 one raw input bit (base ≤ BASE_CAP)."""
+        ok = x.mean(0) <= BASE_CAP
+        n = c = 0
+        for jj in range(zz.shape[1]):
+            if zz[:, jj].std() == 0:
+                continue
+            for sgn in (1, -1):
+                t = np.argsort(-sgn * zz[:, jj], kind="stable")[:k]
+                n += 1
+                c += float(np.where(ok, x[t].mean(0), 0).max()) >= 0.9
+        return c / max(n, 1)
+    out["raw_bit_clean_layer1"] = {"trained": raw_bit_clean(acts.z1), "twin": raw_bit_clean(tw.z1)}
+    pip = double_pip(tile)
+    suit = pip_tiles(pip)
+    held_any = lambda slots: x[:, [fn.index(f"x:hand:{t}") for t in slots]].any(1)
+    gate_gap = float(z[~g].mean() - z[g].mean())
+    near = {}
+    for name, slots in [(f"double {p}-{p}", [p * (p + 1) // 2 + p]) for p in range(6) if p != pip] + \
+                       [(f"a {pip}-x (not the double)", suit)]:
+        h = held_any(slots)
+        near[name] = float(z[~g & ~h].mean() - z[~g & h].mean()) / gate_gap
+    out["near_misses"] = {"gate gap": gate_gap, "gap / gate gap (among rows without the gated tile)": near}
+    out["twin"] = {"best gate precision": best,
+                   "best gate r2": max(r2(zz[:, jj].astype(np.float64), g[:, None]) for zz in (tw.z1, tw.z2)
+                                       for jj in range(zz.shape[1]) if zz[:, jj].std() > 0)}
+    log(f"label: {out['poles']}  r2 {out['r2']}  twin {out['twin']}")
+
+    # 2. the circuit in
+    w = net.w1[:, j].astype(np.float64)
+    out["votes"] = {pole: [{"input": fn[f], "w": int(w[f]), "vote": float(v[f])}
+                           for f in np.argsort(-np.abs(v))[:10]]
+                    for pole, top in (("+", top_p), ("-", top_n)) for v in [w * x[top].mean(0)]}
+
+    # 3. the circuit out: readers, and the push of +σ on each legal tile where the unit is off
+    reader_label = {r["name"]: r["label"] for r in audit["rows"]}
+    col = net.w2[:, j]
+    out["readers"] = [{"unit": int(i), "w2": int(col[i]),
+                       "labels": [reader_label.get(f"L2+{i:03d}"), reader_label.get(f"L2-{i:03d}")]}
+                      for i in np.argsort(-np.abs(col))]
+    sigma = float(a[a > 0].std())
+    out["sigma"] = sigma
+    up = downstream(net, x, 1, j, None, add=int(round(sigma)))
+    canon = sample.canon()
+    rows_i = np.arange(len(z))
+    acts_ = sample.actions.astype(np.int64)
+    push: dict[str, list[float]] = {}
+    for kk in range(acts_.shape[1]):
+        t = acts_[:, kk]
+        m = (a == 0) & (t >= 0)
+        slot = canon[rows_i, np.maximum(t, 0)]
+        d = (up[rows_i, slot] - acts.out[rows_i, slot]).astype(np.float64)
+        in_suit = np.isin(slot, suit)
+        for cls, cm in (("gated tile", slot == tile), ("other tiles", slot != tile),
+                        ("its suit (not the double)", in_suit), ("other non-trump, not its suit", ~in_suit & (slot != tile) & ~trick.trump(t)),
+                        ("count", trick.count(t)), ("no count", ~trick.count(t)),
+                        ("trump", trick.trump(t)), ("not trump", ~trick.trump(t)),
+                        ("beats winner", trick.beats(t) & (trick.seat > 0)),
+                        ("does not beat", ~trick.beats(t) & (trick.seat > 0))):
+            push.setdefault(cls, []).extend(d[m & cm].tolist())
+    out["push"] = {c: {"mean": float(np.mean(v)) if v else None, "n": len(v)} for c, v in push.items()}
+    log(f"push per σ: { {c: v['mean'] for c, v in out['push'].items()} }")
+
+    # 5. steering, read by where play goes, against the layer-mean null
+    rng = np.random.default_rng(SEED)
+    actions, deal = sample.actions, sample.deal
+    base_pick = picks(acts.out, actions, canon)
+    real_of_slot = np.argsort(canon, axis=1)            # [N, 28]: the real tile in each canonical slot
+    gated_real = real_of_slot[rows_i, tile]
+    suit_real = real_of_slot[:, suit]
+    legal_suit = (actions[:, :, None] == suit_real[:, None, :]).any((1, 2))
+    legal_gated = (actions == gated_real[:, None]).any(1)
+    el = eligible(trick, acts_)
+    multi = (actions >= 0).sum(1) > 1
+    h1 = net.b1.shape[0]
+    live = [u for u in range(h1) if u != j and (acts.a1[:, u] > 0).sum() >= 200]
+    out["null_units"] = live
+    on_rows, off_rows = el & (a > 0), el & (a == 0)
+    gated_rows = multi & legal_gated & (a == 0)
+    suit_lead_rows = (trick.seat == 0) & g & legal_suit & (a == 0)
+    out["rows"] = {"on": int(on_rows.sum()), "off": int(off_rows.sum()), "off, gated tile legal": int(gated_rows.sum()),
+                   "base plays-gated": float((base_pick == gated_real)[gated_rows].mean()),
+                   "lead, double held, its suit legal": int(suit_lead_rows.sum()),
+                   "base plays-its-suit there": float((base_pick[:, None] == suit_real).any(1)[suit_lead_rows].mean())}
+    sig = {u: float(acts.a1[:, u][acts.a1[:, u] > 0].std()) for u in [j] + live}
+    steer: dict = {"up": []}
+    for kd in DOSES:
+        sh = {u: shifts(trick, base_pick, picks(downstream(net, x, 1, u, None, add=int(round(kd * sig[u]))), actions, canon),
+                        gated_real, suit_real) for u in [j] + live}
+        rec = paired(sh[j], [sh[u] for u in live], off_rows, deal, rng,
+                     where={"plays-gated": gated_rows, "plays-its-suit": suit_lead_rows})
+        rec["k"] = kd
+        steer["up"].append(rec)
+        log(f"up k={kd}: " + "  ".join(f"{m} own {v['own'][0]:+.3f} layer {v['layer'][0]:+.3f}" for m, v in rec.items() if m != "k"))
+    sh = {u: shifts(trick, base_pick, picks(downstream(net, x, 1, u, 0), actions, canon), None) for u in [j] + live}
+    steer["down"] = paired(sh[j], [sh[u] for u in live], on_rows, deal, rng)
+    log("down: " + "  ".join(f"{m} own {v['own'][0]:+.3f} layer {v['layer'][0]:+.3f}" for m, v in steer["down"].items()))
+    # the input flip: the gate bit turned off on rows where I hold the tile (the tile stays legal)
+    fl = multi & g & legal_gated
+    xf = x[fl].copy()
+    xf[:, fn.index(gate)] = 0
+    fo = forward(net, xf)
+    flip_pick = base_pick.copy()
+    flip_pick[fl] = picks(fo.out, actions[fl], canon[fl])
+    up1 = picks(downstream(net, x, 1, j, None, add=int(round(sigma))), actions, canon)
+    steer["flip"] = {"rows": int(fl.sum()), "unit a before": float(a[fl].mean()), "unit a after": float(fo.a1[:, j].mean()),
+                     "flip": {m: clustered(v[fl], deal[fl], rng) for m, v in shifts(trick, base_pick, flip_pick, gated_real).items()},
+                     "unit k=1": {m: clustered(v[fl], deal[fl], rng) for m, v in shifts(trick, base_pick, up1, gated_real).items()},
+                     "flip, leads": {m: clustered(v[fl & (trick.seat == 0)], deal[fl & (trick.seat == 0)], rng)
+                                     for m, v in shifts(trick, base_pick, flip_pick, gated_real, suit_real).items()},
+                     "unit k=1, leads": {m: clustered(v[fl & (trick.seat == 0)], deal[fl & (trick.seat == 0)], rng)
+                                         for m, v in shifts(trick, base_pick, up1, gated_real, suit_real).items()}}
+    log(f"flip: {steer['flip']['flip']}  unit {steer['flip']['unit k=1']}")
+    ch = np.flatnonzero(gated_rows & (up1 != base_pick))
+    steer["examples"] = [{"row": int(r), "decl": int(sample.decl[r]), "seat": SEATS[int(trick.seat[r])],
+                          "trick": [int(t) for t in sample.plays[r, int(sample.n_plays[r]) - int(trick.seat[r]):int(sample.n_plays[r]), 1]],
+                          "legal": [int(t) for t in actions[r] if t >= 0], "gated": int(gated_real[r]),
+                          "base": int(base_pick[r]), "steered": int(up1[r])}
+                         for r in rng.choice(ch, size=min(8, len(ch)), replace=False)]
+    out["steer"] = steer
+
+    # 4. formation: when the gate formed, and what the open side was
+    if formation_dir:
+        form = []
+        for ck in sorted(Path(formation_dir).glob("step_*.npz")):
+            fa = forward(load_net(ck), x)
+            fz, fa1 = fa.z1[:, j].astype(np.float64), fa.a1[:, j]
+            tp_, tn_ = np.argsort(-fz, kind="stable")[:k], np.argsort(fz, kind="stable")[:k]
+            seat1h = np.eye(4)[trick.seat[~g]]
+            form.append({"step": int(ck.stem.split("_")[1]), "r2 gate": r2(fz, g[:, None]),
+                         "r2 seat, open side": r2(fz[~g], seat1h[:, 1:]),
+                         "on held": float((fa1[g] > 0).mean()), "on not held": float((fa1[~g] > 0).mean()),
+                         "- gate": float(g[tn_].mean()), "+": lab.best(tp_), "-": lab.best(tn_)})
+            f = form[-1]
+            log(f"  {ck.stem}: r2 {f['r2 gate']:.3f} seat-open {f['r2 seat, open side']:.3f} on held {f['on held']:.3f} / not {f['on not held']:.3f} + {f['+']} − {f['-']}")
+        out["formation"] = form
+    return out
