@@ -112,6 +112,9 @@ question. Rebuilding Brooklyn from seventy pieces of Tokyo is not; it makes Toky
      `wiki/topics/clean-neurons-42.md`;
    - for an experiment about the book, the book itself, from the private OCR in
      `scratch/winning42/text/` (never published; the reviewer paraphrases and cites pages).
+   It reads the source whole: Read with `allow_large`, or page with offset/limit to the last
+   line; never WebFetch, which returns a model's summary. Check its transcript for a "PARTIAL
+   view" notice or a truncated result before you trust the review.
    Then it reads the proposal and says where it drifts from that framing: what the source
    claims, what would count as a test of it, and what would not.
 3. Adjust the proposal, note the review in the registration (who read what, what changed), then
