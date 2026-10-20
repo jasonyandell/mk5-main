@@ -189,4 +189,4 @@ cross-hand memory are untested/unimplemented respectively. A partner-only
 comparison can keep opponents fixed; whole games add auction, score and memory
 questions. See [[gus-success-probability-planning]] for the charter clarification.
 
-The next registered comparison is [[gus-contingent-cost-2026-10-20]]: use exact action costs to focus learning on consequential decisions, with fresh complete-policy evaluation.
+[[gus-contingent-cost-2026-10-20]] trained exact action costs versus teacher-label CE, but stopped when512reserved test deals supplied24of32required positions. Transfer is UNEVALUATED; the next question is acquisition on the existing TRAIN positions, with a separate fixed-checkpoint diagnostic.

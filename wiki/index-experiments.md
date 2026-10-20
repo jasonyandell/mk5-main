@@ -5,7 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
-- [[experiments/gus-contingent-teacher-2026-10-20|Gus contingent teacher]] — preparation; exact small observation-contingent plans followed by matched direct policy distillation
+- [[experiments/gus-contingent-teacher-2026-10-20|Gus contingent teacher]] — complete; exact contingent teacher gains, selected student remains initialization
 - [[experiments/gus-sampled-confirmation-2026-10-19|Gus sampled-policy confirmation]] — complete; sampled-policy replication failed; all10,240 hands replayed
 - [[experiments/gus-unanchored-outcomes-2026-10-19|Gus without teacher anchoring]] — complete; no greedy promotion; secondary sampled-policy signal
 
@@ -313,4 +313,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-value-numerics-2026-10-20|Gus fixed-row value/routing numerical diagnostic]] — one float32 audit threshold crossing at logit[19] on the fixed row; same-case float64 discrepancy near machine precision, local-only diagnosis (complete)
 - [[experiments/gus-u65-formation-2026-10-20|Gus U65 formation trajectory]] — registered native-coordinate and layer-0/head1 lead-route sensitivity from splat initialization to 200k on reused prefixes; directional endpoint supported in both reused panels, no feature-continuity or player claim (complete)
 
-- [[gus-contingent-cost-2026-10-20]] — Expected exact action regret versus teacher-label CE, reused training and fresh whole-policy evaluation.
+- [[gus-contingent-cost-2026-10-20]] — Stopped/inconclusive; cost versus teacher-label CE trained, reserved test pool short before transfer evaluation.
