@@ -42,6 +42,7 @@ Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
 `scratch/lem/gus-contingent-teacher-v1/CURRENT.md`. The earlier stop is revoked.
+The experiment route is `wiki/experiments/gus-contingent-teacher-2026-10-20.md`.
 Occasionally involve an independent collaborator to check that the work still
 serves this prize. Another auxiliary future-prediction loss or probe is not the
 selected next avenue.

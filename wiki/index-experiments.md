@@ -5,6 +5,7 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 ## Tournament
 
+- [[experiments/gus-contingent-teacher-2026-10-20|Gus contingent teacher]] — preparation; exact small observation-contingent plans followed by matched direct policy distillation
 - [[experiments/gus-sampled-confirmation-2026-10-19|Gus sampled-policy confirmation]] — complete; sampled-policy replication failed; all10,240 hands replayed
 - [[experiments/gus-unanchored-outcomes-2026-10-19|Gus without teacher anchoring]] — complete; no greedy promotion; secondary sampled-policy signal
 
