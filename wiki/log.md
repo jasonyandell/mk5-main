@@ -58,6 +58,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 ---
 
+## [2026-10-20 | lem | the squeeze on pour A (#199): narrower is cleaner with every declaration, and doubles trump is the declaration a narrow net keeps]
+
+[[lem-squeeze-pour-a-2026-10-20]]: 12 field-v3 nets on pour A, read conditioned.
+- The shares are 0.504 at 192 neurons, 0.626 at 24 and 0.677 at 12, against floors of 0.04–0.14.
+- `trump-is-doubles` survives to 12 neurons after every pip trump is gone, which is the opposite of
+  my prediction.
+- No trump never gets a clean unit.
+- 3 of 4 predictions held.
+
 ## [2026-10-20 | lem | the words come with data (#228): from one start, 4k deals 0.019, 50k 0.173, 500k 0.237]
 
 [[lem-words-need-data-2026-10-20]]: the 50,000-deal observer is the middle point between the
