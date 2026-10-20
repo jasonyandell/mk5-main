@@ -564,3 +564,34 @@ def test_a_planted_fold_is_one_real_unit_with_both_donors_input_and_output(net):
     assert (f.a1[:, 5] == 0).all()                                     # k never fires again
     assert np.array_equal(fold(net, 3, 5).w2[:, 3], net.w2[:, 3] + net.w2[:, 5])
     assert cos(np.array([1.0, 0.0]), np.array([0.0, 2.0])) == 0.0 and cos(np.zeros(2), np.ones(2)) is None
+
+
+def test_unit_trick_reads_the_record_as_the_net_does():
+    """`lem.probe.unit.Trick` (#235): who is winning agrees with the net's own `winning` input
+    bits, and take, count and trump agree with the rules, on random positions."""
+    from types import SimpleNamespace
+    from lem.probe.unit import Trick
+    from scenario.field import OFFSET
+    pos = _random_positions(200, seed=7)
+    plays = np.full((len(pos), 28, 2), -1, np.int8)
+    for r, (_, _, _, _, _, p, _) in enumerate(pos):
+        for k, (s, t) in enumerate(p):
+            plays[r, k] = (s, t)
+    sample = SimpleNamespace(n_plays=np.array([len(p[5]) for p in pos], np.int8),
+                             decl=np.array([p[0] for p in pos], np.int8), plays=plays)
+    trick = Trick(sample)
+    for r, (decl, seat, own, bidder, bid, _, rec) in enumerate(pos):
+        rules = rules_for(decl)
+        on = features(rules, seat, own, rec, bid, bidder % 2)
+        w = [i - OFFSET["winning"] for i in on if OFFSET["winning"] <= i < OFFSET["winning"] + 3]
+        assert trick.seat[r] == len(rec.trick)
+        assert trick.winner[r] == (w[0] if w else -1)
+        for t in tiles_of(rules.legal(own, rec.led)):
+            tile = np.full(len(pos), t)
+            if rec.trick:
+                ranks = rules.rank[rules.led_suit[rec.trick[0]]]
+                assert trick.beats(tile)[r] == (ranks[t] > max(ranks[x] for x in rec.trick))
+            else:
+                assert not trick.beats(tile)[r]
+            assert trick.count(tile)[r] == (rules.count[t] > 0)
+            assert trick.trump(tile)[r] == bool((rules.follow_bits[7] >> t) & 1)
