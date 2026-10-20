@@ -57,6 +57,12 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus: recentred on winning; tournament batching** (2026-10-19, 19 archived entries) — the learning charter, leave-one-out baseline, partner-history and public-score instruments, [[gus-blank-lead-2026-10-19]], [[gus-first-look-2026-10-19]], PPO/value comparison and outcome learning without teacher anchoring; Hub publication batched for the tournament.
 ---
 
+## [2026-10-20 | book | `scenario.hf verify`: count and name every published file, not just one checksum]
+
+- [[publish-data-to-huggingface]] Verify: the Hub must hold exactly the staged files; `scenario.hf
+  publish` checks after uploading, and study folders run `scenario.hf verify` (Mayor-approved).
+- Why: the ch9 datasets had published one batch each and passed the one-file checksum (#201).
+
 ## [2026-10-20 | book | #201: the doubles cost lives in thin top doubles; ch9 data republished whole]
 
 - [[ch9-at-the-table-2026-10-17]] follow-up: with ≤1 of 6-6/5-5/4-4 the declared-doubles cost is
