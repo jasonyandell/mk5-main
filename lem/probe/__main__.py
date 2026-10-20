@@ -77,6 +77,7 @@ def main(argv=None) -> None:
     s.add_argument("--gate", default=None, help="an input bit that gates the unit (e.g. x:hand:14): the gate paper")
     s.add_argument("--layer", type=int, default=1, help="2: a layer-2 unit that acts on lead (the reader paper)")
     s.add_argument("--trick", action="store_true", help="a layer-1 unit shut by trumps on the open trick (paper 5)")
+    s.add_argument("--winner", action="store_true", help="a layer-1 unit read by who wins the open trick, and with what (paper 6)")
     s = sub.add_parser("route"); s.add_argument("sample"); s.add_argument("net"); s.add_argument("bit"); s.add_argument("tile", type=int); s.add_argument("out")
     s = sub.add_parser("gus-sample"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s = sub.add_parser("gus-audit"); s.add_argument("rows_dir"); s.add_argument("ckpt"); s.add_argument("out_dir")
@@ -213,7 +214,9 @@ def main(argv=None) -> None:
         with np.load(a.labels) as z:
             labels, names = z["labels"], [str(n) for n in z["names"]]
         audit = json.loads((Path(a.audit) / "audit.json").read_text())
-        if a.trick:
+        if a.winner:
+            result = unit.run_winner(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)
+        elif a.trick:
             result = unit.run_trick(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)
         elif a.layer == 2:
             result = unit.run_reader(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)
