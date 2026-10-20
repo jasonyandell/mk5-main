@@ -59,6 +59,15 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus value numerics, #201's doubles cost, the first transformer audit** (2026-10-20, 6 archived entries) — [[gus-value-routing-2026-10-20]] (stopped before its primary), [[gus-value-numerics-2026-10-20]]; the Book desk's #201 (the doubles cost in thin top doubles) and `scenario.hf verify`; Lem's [[lem-gus-formation-2026-10-20]].
 ---
 
+## [2026-10-20 | lem | the two mixed-unit candidates are artifacts of the conditioned instrument (#232), and the instrument needs a fix]
+
+[[lem-lead-units-2026-10-20]]: read upstream and downstream, both lead-plus-trick-state candidates
+come out unresolved, not mixed. Their "lead" halves barely fire in raw terms (0.00014 and 0.127 of
+max). Conditioning z-scores each play count separately, so noise in strata where a unit is nearly
+silent fills its top set. That flaw reaches every conditioned read, the CLAUDE.md headline
+included. Its size is unmeasured, and the fix plus a re-run of #227 is filed. 2 of 4 predictions
+held.
+
 ## [2026-10-20 | book | #201 confirmation: thin top doubles cost more, the book's two-high cut does as well]
 
 On fresh seeds (120 batches, [[ch9-at-the-table-2026-10-17]]) the menu's doubles-trump cost is larger in thin hands: thin − deep −0.119 [−0.196, −0.042] (hit), but deep hands cost too (miss), the book's 6-6 and 5-5 split did as well (−0.124, registered blind), and the 6-6 alone did not separate. The arm's no-trump read at the book's sign did not replicate. Our menu omits trump losers (#230), so not a verdict on the book. Data: HF `book/ch9-201-confirm/`.
