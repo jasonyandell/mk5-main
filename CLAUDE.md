@@ -168,6 +168,11 @@ your branch and worktree path; every background run, subagent or cpu-slot job st
 how to collect its output; open asks to Jason or the Mayor; the issue numbers in hand. Drop file
 dumps and command output already acted on.
 
+Lem work is the exception: hand off and start a fresh session rather than compact. A summary keeps
+the essay's slogans and loses its moves, and no model has the essay in its weights. A fresh session
+reads the essay whole before planning, as the sealing reviewer does; the after-compact hook
+(`.claude/hooks/after-compact.sh`) reloads its method sections when a compact happens anyway.
+
 ## References
 
 - `wiki/index.md` — full page catalog; `wiki/playbooks/` — operational how-tos
