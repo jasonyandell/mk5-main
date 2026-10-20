@@ -7,7 +7,8 @@
 
 > **The thesis under test (#193).** Cammarata's "already clean" [1]: a network's own neurons are
 > mostly clean, and squeezed layers grow coarser, not mixed. On the field net, 24 neurons are cleaner
-> than 192 (0.83 vs 0.61) and carry 0.684 of the play's gap to the teacher (§7). The result looks
+> than 192 (0.83 vs 0.61; conditioned on the play count, 0.549 vs 0.406, #227) and carry 0.684 of
+> the play's gap to the teacher (§7). The result looks
 > impossible to a superposition prior. The paper tests it until it breaks or holds: #194–#200.
 > Every result is scoped to this net, these inputs (one position, uniform beliefs, no
 > player-behaviour history) and this vocabulary (Silas concept list v1 or v2). A unit we cannot
@@ -239,7 +240,12 @@ fall to near zero (Gus 0.014; field net 0.077). Trained Gus reads 0.275 and the 
 net 0.406, on different rows. Gus's units keep their family as they form, 0.981 against 0.266. The
 field net carried position too: about a third of its unconditioned share, and most of its 0.31 floor.
 Comparisons made under one instrument (squeeze, drop-out, naming) stand, but their absolute shares
-overstated what units name beyond position. The conditioned read is the honest absolute.
+overstated what units name beyond position. The conditioned read is the honest absolute. Re-read conditioned
+([`wiki/experiments/lem-squeeze-conditioned-2026-10-20.md`](../../wiki/experiments/lem-squeeze-conditioned-2026-10-20.md),
+#227), the squeeze holds: 24 neurons are cleaner than 192 (0.549 against 0.406, three seeds; floors
+0.014 and 0.077). Below 12 neurons the units do the play count's own job, the mover's place in the
+trick, which a read conditioned on the play count cannot credit by construction. The last words
+beyond position are the mover's trump.
 
 ## 8. Models of others **[gap]**
 

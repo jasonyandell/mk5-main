@@ -146,7 +146,8 @@ readers; of the 9 left, 7 of the 8 that got a reader description are trick × se
 floor belongs to the architecture too. An untrained transformer's units read position for free
 (0.91–0.94 clean), so its audit must condition on the play count. Conditioned
 ([[lem-conditioned-audit-2026-10-20]]), the floors fall to near zero, trained Gus reads 0.275 and
-the field net 0.406, and the field net's earlier absolute shares turn out to include position too.
+the field net 0.406, and the field net's earlier absolute shares turn out to include position too. Re-read conditioned
+([[lem-squeeze-conditioned-2026-10-20]]), the squeeze holds: 24 neurons 0.549 against 192 neurons 0.406.
 
 ## The scope clause: what this net can and cannot tell us
 
