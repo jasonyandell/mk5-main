@@ -75,6 +75,7 @@ def main(argv=None) -> None:
     s.add_argument("--twin", required=True); s.add_argument("--audit", required=True, help="the net's audit dir (reader labels)")
     s.add_argument("--formation", default=None, help="a formation run dir of step_*.npz checkpoints")
     s.add_argument("--gate", default=None, help="an input bit that gates the unit (e.g. x:hand:14): the gate paper")
+    s = sub.add_parser("route"); s.add_argument("sample"); s.add_argument("net"); s.add_argument("bit"); s.add_argument("tile", type=int); s.add_argument("out")
     s = sub.add_parser("gus-sample"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s = sub.add_parser("gus-audit"); s.add_argument("rows_dir"); s.add_argument("ckpt"); s.add_argument("out_dir")
     s.add_argument("--untrained", type=int, default=None, help="an untrained twin under this torch seed (ckpt gives the config)")
@@ -214,6 +215,12 @@ def main(argv=None) -> None:
             result = unit.run_gate(Sample(a.sample), labels, names, a.net, a.j, a.gate, a.twin, audit, a.formation, log)
         else:
             result = unit.run(Sample(a.sample), labels, names, a.net, a.j, a.twin, audit, a.formation, log)
+        Path(a.out).write_text(json.dumps(result, indent=1))
+        log(f"wrote {a.out}")
+    elif a.cmd == "route":
+        from lem.probe import unit
+        from lem.probe.sample import Sample
+        result = unit.route(Sample(a.sample), a.net, a.bit, a.tile, log)
         Path(a.out).write_text(json.dumps(result, indent=1))
         log(f"wrote {a.out}")
     elif a.cmd == "gus-sample":

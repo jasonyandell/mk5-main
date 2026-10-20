@@ -454,13 +454,16 @@ def run_gate(sample, labels: np.ndarray, names: list[str], net_path: str, j: int
                 c += float(np.where(ok, x[t].mean(0), 0).max()) >= 0.9
         return c / max(n, 1)
     out["raw_bit_clean_layer1"] = {"trained": raw_bit_clean(acts.z1), "twin": raw_bit_clean(tw.z1)}
-    pip = double_pip(tile)
-    suit = pip_tiles(pip)
+    is_double = tile in {p * (p + 1) // 2 + p for p in range(7)}
+    pip = double_pip(tile) if is_double else None
+    suit = pip_tiles(pip) if is_double else []
     held_any = lambda slots: x[:, [fn.index(f"x:hand:{t}") for t in slots]].any(1)
     gate_gap = float(z[~g].mean() - z[g].mean())
     near = {}
-    for name, slots in [(f"double {p}-{p}", [p * (p + 1) // 2 + p]) for p in range(6) if p != pip] + \
-                       [(f"a {pip}-x (not the double)", suit)]:
+    trumps = [6 * 7 // 2 + q for q in range(7)]
+    misses = ([(f"double {p}-{p}", [p * (p + 1) // 2 + p]) for p in range(6) if p != pip] + [(f"a {pip}-x (not the double)", suit)]
+              if is_double else [(f"trump 6-{q}", [6 * 7 // 2 + q]) for q in range(7) if 6 * 7 // 2 + q != tile])
+    for name, slots in misses:
         h = held_any(slots)
         near[name] = float(z[~g & ~h].mean() - z[~g & h].mean()) / gate_gap
     out["near_misses"] = {"gate gap": gate_gap, "gap / gate gap (among rows without the gated tile)": near}
@@ -510,8 +513,8 @@ def run_gate(sample, labels: np.ndarray, names: list[str], net_path: str, j: int
     base_pick = picks(acts.out, actions, canon)
     real_of_slot = np.argsort(canon, axis=1)            # [N, 28]: the real tile in each canonical slot
     gated_real = real_of_slot[rows_i, tile]
-    suit_real = real_of_slot[:, suit]
-    legal_suit = (actions[:, :, None] == suit_real[:, None, :]).any((1, 2))
+    suit_real = real_of_slot[:, suit] if suit else None
+    legal_suit = (actions[:, :, None] == suit_real[:, None, :]).any((1, 2)) if suit else np.zeros(len(z), bool)
     legal_gated = (actions == gated_real[:, None]).any(1)
     el = eligible(trick, acts_)
     multi = (actions >= 0).sum(1) > 1
@@ -524,14 +527,19 @@ def run_gate(sample, labels: np.ndarray, names: list[str], net_path: str, j: int
     out["rows"] = {"on": int(on_rows.sum()), "off": int(off_rows.sum()), "off, gated tile legal": int(gated_rows.sum()),
                    "base plays-gated": float((base_pick == gated_real)[gated_rows].mean()),
                    "lead, double held, its suit legal": int(suit_lead_rows.sum()),
-                   "base plays-its-suit there": float((base_pick[:, None] == suit_real).any(1)[suit_lead_rows].mean())}
+                   "base plays-its-suit there": float((base_pick[:, None] == suit_real).any(1)[suit_lead_rows].mean()) if suit else None,
+                   "lead, gated tile legal": int((gated_rows & (trick.seat == 0)).sum()),
+                   "base plays-gated on lead": float((base_pick == gated_real)[gated_rows & (trick.seat == 0)].mean())}
     sig = {u: float(acts.a1[:, u][acts.a1[:, u] > 0].std()) for u in [j] + live}
     steer: dict = {"up": []}
     for kd in DOSES:
         sh = {u: shifts(trick, base_pick, picks(downstream(net, x, 1, u, None, add=int(round(kd * sig[u]))), actions, canon),
                         gated_real, suit_real) for u in [j] + live}
+        for u in sh:
+            sh[u]["plays-gated, lead"] = sh[u]["plays-gated"]
         rec = paired(sh[j], [sh[u] for u in live], off_rows, deal, rng,
-                     where={"plays-gated": gated_rows, "plays-its-suit": suit_lead_rows})
+                     where={"plays-gated": gated_rows, "plays-gated, lead": gated_rows & (trick.seat == 0),
+                            "plays-its-suit": suit_lead_rows})
         rec["k"] = kd
         steer["up"].append(rec)
         log(f"up k={kd}: " + "  ".join(f"{m} own {v['own'][0]:+.3f} layer {v['layer'][0]:+.3f}" for m, v in rec.items() if m != "k"))
@@ -577,4 +585,80 @@ def run_gate(sample, labels: np.ndarray, names: list[str], net_path: str, j: int
             f = form[-1]
             log(f"  {ck.stem}: r2 {f['r2 gate']:.3f} seat-open {f['r2 seat, open side']:.3f} on held {f['on held']:.3f} / not {f['on not held']:.3f} + {f['+']} − {f['-']}")
         out["formation"] = form
+    return out
+
+
+def route(sample, net_path: str, bit: str, tile: int, log=print, pair: tuple[int, int] = (13, 0)) -> dict:
+    """Which layer-1 units carry an input bit's effect on playing one tile (#235, paper 3).
+
+    On rows where the bit is on, the tile is legal and there is a choice, turn the bit off. The
+    tile stays legal, so the flipped input is one training never saw: read it as an intervention,
+    not a position. Then, per layer-1 unit u:
+      - *share*: the flip's effect minus the effect with u held at its unflipped activation
+        (what depends on u, given every other unit has moved);
+      - *alone*: the effect of moving u only, every other unit unflipped.
+    Layer 2 is a ReLU layer, so neither sums to the flip; both sums are reported. Each effect is
+    read on the pick (does the net play the tile) and on the margin (the tile's score minus the best
+    other legal score), over all rows, over leads, and per row on which u moved. `pair` is also held
+    jointly, to read its interaction."""
+    x = sample.x
+    fn = feature_names(x.shape[1])
+    net = load_net(net_path)
+    f = fn.index(bit)
+    canon = sample.canon()
+    n_all = len(x)
+    real = np.argsort(canon, axis=1)[np.arange(n_all), tile]
+    actions = sample.actions
+    rows = x[:, f].astype(bool) & (actions == real[:, None]).any(1) & ((actions >= 0).sum(1) > 1)
+    xr, ar, cr, rr = x[rows].astype(np.int64), actions[rows], canon[rows], real[rows]
+    n = len(xr)
+    lead = (sample.n_plays[rows] % 4) == 0
+    a1 = np.maximum((xr @ net.w1 + net.b1) >> net.s1, 0)
+    xf = xr.copy()
+    xf[:, f] = 0
+    a1f = np.maximum((xf @ net.w1 + net.b1) >> net.s1, 0)
+    other = (ar >= 0) & (ar != rr[:, None])
+    oslot = cr[np.arange(n)[:, None], np.where(ar >= 0, ar, 0)]
+
+    def read(a: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        a2 = np.maximum((a @ net.w2.T + net.b2) >> net.s2, 0)
+        out = a2 @ net.w3.T + net.b3
+        sc = out[np.arange(n)[:, None], oslot].astype(float)
+        margin = out[np.arange(n), tile] - np.where(other, sc, -np.inf).max(1)
+        return picks(out, ar, cr) == rr, margin
+
+    bp, bm = read(a1)
+
+    def eff(a: np.ndarray, m=slice(None)) -> dict:
+        p, mg = read(a)
+        return {"pick": float((p.astype(float) - bp)[m].mean()), "margin": float((mg - bm)[m].mean())}
+
+    def both(a: np.ndarray) -> dict:
+        return {"all": eff(a), "lead": eff(a, lead)}
+
+    flip = both(a1f)
+    out = {"rows": n, "lead rows": int(lead.sum()), "base": float(bp.mean()), "base, lead": float(bp[lead].mean()),
+           "base margin": float(bm.mean()), "flip": flip, "units": []}
+    diff = lambda e, g: {k: {m: e[k][m] - g[k][m] for m in e[k]} for k in e}
+    for u in range(a1.shape[1]):
+        held = a1f.copy()
+        held[:, u] = a1[:, u]
+        alone = a1.copy()
+        alone[:, u] = a1f[:, u]
+        moved = a1f[:, u] != a1[:, u]
+        out["units"].append({"unit": u, "w": int(net.w1[f, u]), "moved": float(moved.mean()),
+                             "moved, lead": float(moved[lead].mean()),
+                             "share": diff(flip, both(held)), "alone": both(alone),
+                             "alone per moved row": eff(alone, moved) if moved.any() else None})
+    for kind in ("share", "alone"):
+        out[f"sum of {kind}s"] = {k: {m: sum(r[kind][k][m] for r in out["units"]) for m in ("pick", "margin")}
+                                  for k in ("all", "lead")}
+    held = a1f.copy()
+    held[:, list(pair)] = a1[:, list(pair)]
+    joint = diff(flip, both(held))
+    s0, s1 = (out["units"][u]["share"] for u in pair)
+    out["pair"] = {"units": list(pair), "joint share": joint,
+                   "interaction": {k: {m: joint[k][m] - s0[k][m] - s1[k][m] for m in ("pick", "margin")} for k in joint}}
+    log(f"route {bit} -> tile {tile}: flip pick {flip['all']['pick']:+.3f} margin {flip['all']['margin']:+.0f}; shares "
+        + " ".join(f"u{r['unit']}:{r['share']['all']['pick']:+.3f}" for r in out["units"] if abs(r["share"]["all"]["pick"]) >= 0.005))
     return out
