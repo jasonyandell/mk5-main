@@ -36,6 +36,12 @@ checked against the page.
 - **One departure from the review.** Co-occurrence lift is not the bar. Related coarse merges such
   as `late` = `third` ∪ `last` are mutually exclusive.
 
+**A note on the review, added 2026-10-20 after the run.** Both review turns read the essay
+through WebFetch, which returns a small model's summary in slices, not the text. So this review
+did not read the paper itself. The quotes used here were later checked against the local verbatim
+copy, and all of them appear exactly. The test was void by its own rule regardless, so nothing it
+concluded rests on the review. [[lem-unit-origin-2026-10-20]] was reviewed on the full text.
+
 ## Pre-registration
 
 - **Nets.** The drop-out nets ([[lem-dropout-order-2026-10-17]]): trained and untrained at 16×8 and

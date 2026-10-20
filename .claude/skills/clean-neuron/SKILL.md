@@ -111,8 +111,10 @@ finding.
   Then spawn one fresh-context Opus subagent, which:
   - reads Cammarata's essay itself from the local verbatim copy,
     `~/code/mk5-main/scratch/sources/already-clean/essay.md` (with `SOURCE.txt`: URL and sha256),
-    not the site and not our summary in `wiki/topics/clean-neurons-42.md`. The copy has no licence:
-    never commit it, quote it at length, or publish it;
+    not the site and not our summary in `wiki/topics/clean-neurons-42.md`. **Read essay.md with
+    `allow_large: true` (or page to line 943); never WebFetch it.** WebFetch returns a small model's
+    summary in slices, not the text, and a plain Read stops at line 379 of 944. The copy has no
+    licence: never commit it, quote it at length, or publish it;
   - then reads the proposal;
   - says where the proposal drifts from the article's framing: what the thesis claims, what
     would count as a test of it, and what would not.
