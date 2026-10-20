@@ -41,7 +41,7 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-practice-recovery-v1/CURRENT.md`; inspect receipts and live
+`scratch/lem/gus-contingent-flatmask-v1/CURRENT.md`; inspect receipts and live
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
 
@@ -57,14 +57,24 @@ Cumulative usage collection9/training2/development1/test1/fullhand0. Never rerun
 completed science or archives, resume the original failed root, or reset budgets.
 Read recovery CURRENT and completion receipts for delivery state.
 
-Next comparison is NOT selected. Collaborator suggests isolating flat-row CE masking:
-1151/1356rows (~79%root-balanced mass) have all-action teacher ties. Keep CE on
-205nonflat rows, original full-batch denominator and every AdamW step, including
-all-flat batches (momentum/decay can still move weights). This is a candidate,
-not proof ties caused failure. Teacher ties assume optimal future continuation;
-student whole-policy outcomes remain decisive. The previous cost loss also changed
-nonflat gradients, so it did not isolate this factor. Any new study needs fresh
-registration, held-out splits and independent confirmation before strength claims.
+Jason selected flat-row CE masking on2026-10-20. The comparison is registered and
+launched at `scratch/lem/gus-contingent-flatmask-v1`: same64TRAIN/1356rows,
+zero only1151all-action-tie row losses (~79%root-balanced mass), unchanged CE
+on205nonflat rows, full-batch denominator and all512scheduledAdamW steps.
+Do not skip all-flat updates: actorgradient zero does not eliminate momentum/decay.
+Historical ordinaryCE512 is immutable reuse; both arms offer0/128/256/384/512.
+Fresh32development selects; only then64test. Finitegate .5pp over bothparent/CE,
+each paired95lowerpositive; onlypass opens128fullhands with2pp/1pp gates.
+All620747 reserved deals are future exclusions. Caps24/2/4/4/8,45scooperative/90souter,
+no automaticretry/growth. Nine synthetic tests and independent source review passed;
+publicregistration57d5dcc53094e4024cca1e0fa414ff740ba4935a verified11files/54members.
+Never duplicate the controller or change frozen sources/endpoints. Inspect live
+receipts and pending auditor replies. Prior practice recovery is complete; do not rerun.
+
+This tests a selected factor, not a proven diagnosis of flat-target interference.
+Teacher ties assume optimalfuture; student complete-policy outcomes remain decisive.
+Earlier costloss also changed nonflat gradients and did not isolate the mask.
+Preserve clean inputs/fixedG0/pinnedZeb and separate finite transfer/full-hand claims.
 
 The first contingent-teacher pilot is complete: the planner improved15/32 fresh
 finite-model root policies, but development retained student step0. The separate
