@@ -3,7 +3,7 @@ title: "Already-clean test 1 on Gus: do a tiny GPT's own neurons come out clean,
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]], [[lem-the-teacher]]). Every test so
@@ -71,7 +71,90 @@ An unnamed unit is "not named in list v2", never mixed.
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered, plus one exploratory arm, labelled below. Evidence is
+`lem/gus-formation-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/1579b9ae90b1994361cf3aaf84f4ddf87d77d816/lem/gus-formation-2026-10-20):
+- both arms' 18 audits;
+- the 43,927 rows with their tokens and labels;
+- the blanked-column list;
+- `grade.py`, `grade.txt` and `grade.json`;
+- the runner.
+
+The checkpoints are Codex's run, archived at
+[`lem/observer-corpus-squeeze-2026-10-17` @ db83ef2e](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/db83ef2ea26e95cba36340e9dab87c3c055f7057/lem/observer-corpus-squeeze-2026-10-17).
+Every share was 0.000 on all 20 label shuffles at step 200,000.
+
+| step | live poles | clean share (list v2) | Gus's top tile = recorded move |
+|---:|---:|---|---:|
+| untrained, seeds 42 / 1 / 2 | 1,001 / 974 / 986 | **0.931 / 0.938 / 0.907** | 0.035 / 0.034 / 0.031 |
+| 250 | 1,015 | 0.357 [0.282, 0.432] | 0.249 |
+| 1,000 | 1,022 | 0.348 [0.279, 0.423] | 0.407 |
+| 5,000 | 1,024 | 0.287 [0.208, 0.375] | 0.578 |
+| 20,000 | 978 | 0.446 [0.372, 0.505] | 0.640 |
+| 40,000 | 950 | 0.500 [0.431, 0.566] | 0.656 |
+| 80,000 | 918 | 0.514 [0.449, 0.580] | 0.665 |
+| 140,000 | 899 | 0.537 [0.461, 0.592] | 0.667 |
+| 200,000 | 887 | 0.517 [0.440, 0.595] | 0.667 |
+
+(Steps 500, 2,500, 10,000, 60,000, 100,000 and 170,000 are in `grade.json` and lie on the same
+curve.)
+
+**The predictions, graded.**
+
+| | measured | |
+|---|---|---|
+| 1. final clean share ≥ floor + 0.20 | 0.517 against a floor of 0.925: margin **−0.408** | **wrong** |
+| 2. final clean share in [0.45, 0.75] | 0.517 | holds |
+| 3. family kept ≥ 0.6 and ≥ 2× null | 0.825 against a null of 0.291 (280 units) | holds |
+| 4. position/trick units clean before count/mastery units (median first-clean step) | 80,000 (144 units) against 90,000 (30 units) | holds, narrowly |
+| 5. final above step 1,000, and above the floor from step 2,500 | above step 1,000; never above the floor | **wrong** |
+
+**Reading.**
+
+- **The floor is the finding, and it is a tools finding (rung 1).** An untrained Gus's units are
+  0.91–0.94 clean, and almost every one is named by the mover's place in the trick: `lead`,
+  `second`, `third` or `last`, 859–882 of the clean units. At the decision token an untrained
+  transformer's units read mostly the position embedding. The number of tiles played fixes the
+  seat in the trick, so top-1% precision hands every random unit a perfect position word.
+  - The field net never had this: its untrained floor is 0.11–0.23, because random integer
+    weights over input bits do not concentrate on one fact.
+  - So the clean share is not comparable across architectures, and Gus's registered floor
+    measures the instrument, not the net. Predictions 1 and 5 broke on the instrument.
+- **Training dissolves the free units and builds new ones.** The curve is U-shaped:
+  - from 0.93 at initialization it falls to 0.29 by step 5,000, while the top-1 agreement climbs
+    from 0.03 to 0.58;
+  - then it rises to 0.52–0.54 as agreement levels at 0.667.
+  - At the end the clean units' words are no longer mostly position words (`lead` 112, `late`
+    68, `third` 15, `last` 10). They include the declaration (`trump-is-fives` 25,
+    `trump-is-fours` 15), the contract (`to-set-le-5` 26, `count-out-20plus` 13), the bidder's
+    lead and the count bits.
+  - This is the formation signature the essay describes: units that grow into concepts. Here
+    they grow out of a random positional start.
+- **Units keep their family.** 0.825 of the units clean at the end were first clean in the same
+  concept family, against a null of 0.291. The field net's formation gave 0.82 against 0.28 on a
+  different architecture, inputs and training. The free position words make this weaker than it
+  looks for the position family; the blanked arm below removes them.
+- **Exploratory, not registered: the blanked arm.**
+  - The same 18 nets were re-audited with 10 Silas concepts and 75 raw bits blanked. These are
+    the columns constant within every play count on these rows (`rows-nopos/blanked.json`:
+    `lead`, `second`, `third`, `last`, `late`, `trick-1`, `trick-2`, `trick-7`, `hand-le-3`,
+    `forced`, the trick-slot bits, and count bits that never fire here).
+  - The untrained floor falls to 0.427–0.465, still mostly raw bits such as `gone` that move with
+    how far the hand has gone.
+  - Trained Gus ends at 0.389 [0.312, 0.479], 196 units by a Silas concept, with family kept 0.956
+    against a null of 0.267.
+  - Blanking the position words does not remove position from the units. A fair instrument has to
+    condition on the play count, and that is #226.
+
+**What this says and does not say.** It does not say Gus's units are mixed, or less clean than
+the field net's. The instrument cannot yet tell a learned unit from one that reads position for
+free. It does say:
+- a transformer's untrained units carry a large free signal that our audit counts as clean;
+- training replaces that signal with units named by the declaration, the contract and the count;
+- those units keep their family as they form, as the field net's did.
+
+Scope: this net (`pretrained-v0`), these inputs (within-hand history, no cross-hand history),
+this vocabulary (list v2 and the field-v3 bits).
 
 ## Links
 

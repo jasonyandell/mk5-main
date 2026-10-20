@@ -222,6 +222,17 @@ at the 99th percentile changes 46% of all moves and cannot show steering. Adding
 (k·σ) barely separates inside from outside: 0.60–0.64 of `+` poles, below chance for `−` poles. The
 comparison mixes rows of different difficulty, and matched-row steering is #205.
 
+**The first transformer**
+([`wiki/experiments/lem-gus-formation-2026-10-20.md`](../../wiki/experiments/lem-gus-formation-2026-10-20.md),
+#194 on Gus). Gus is a two-block GPT that sees a seat's hand and the public play. Read with the same
+audit across 15 checkpoints of its own run, it exposes a limit of the instrument. Untrained Gus units
+score 0.91–0.94 clean, nearly all by the mover's seat in the trick, because a transformer's decision
+token reads its position and the play count fixes the seat. Against that floor trained Gus (0.517)
+reads lower, so the clean share is not comparable across architectures until it conditions on
+position (#226). Within the run, training dissolves the free units (0.29 by step 5,000) and builds
+units named by the declaration, the contract and the count (0.52–0.54). They keep their concept
+family as they form, 0.825 against a 0.291 null, as the field net's did (0.82 against 0.28).
+
 ## 8. Models of others **[gap]**
 
 The book's lessons assume opponents who model you, partners who read a system, fallible

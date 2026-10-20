@@ -142,7 +142,9 @@ Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
 the coarse `late`). The
 untrained floor goes with every share, for its own list: 0.11–0.28 under v1 and 0.28–0.39
 under v2. [[lem-naming-2026-10-17]] (#197): 201 of 210 narrow units are named by list v2 or the
-readers; of the 9 left, 7 of the 8 that got a reader description are trick × seat conjunctions. Steering and negative poles are [[lem-causal-2026-10-17]] (#198). The first transformer, Gus, is [[lem-gus-formation-2026-10-20]].
+readers; of the 9 left, 7 of the 8 that got a reader description are trick × seat conjunctions. Steering and negative poles are [[lem-causal-2026-10-17]] (#198). The first transformer, Gus ([[lem-gus-formation-2026-10-20]]), showed that the
+floor belongs to the architecture too. An untrained transformer's units read position for free
+(0.91–0.94 clean), so its audit must condition on the play count (#226).
 
 ## The scope clause: what this net can and cannot tell us
 
