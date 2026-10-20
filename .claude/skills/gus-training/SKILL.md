@@ -41,7 +41,7 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-transfer-v1/CURRENT.md`; inspect receipts and live
+`scratch/lem/gus-contingent-maskbreadth-v1/CURRENT.md`; inspect receipts and live
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
 
@@ -97,7 +97,21 @@ and97,404final output hashes; no independent candidate native/game replay.
 Evidence28d0d8ed3b6d736f3d1323014749f4201c261e34 verified10files/97477members.
 Read CURRENT/completion receipts for delivery; never repeat science or archives.
 Preserve pre-execution auditor corrections and result-review hash-typo history.
-Next comparison NOT SELECTED. Jason wants partner practice with table talk to
+The masked teaching breadth comparison is REGISTERED at
+`scratch/lem/gus-contingent-maskbreadth-v1`:64 versus128 distinct TRAIN roots,
+same maskedCE512 updates, fixed final endpoints and fresh128-root test; no
+development selection/fullhands/promotion. Original64 rows/labels and historical
+narrow512 are reused; one wide128 student starts originalparent. New6144 potential
+deals are reserved; all630987 remain future exclusions. Public registration
+28d64232f670a49153e351f49d22d985a1fb55fd verified11 files/89 members before responses.
+Read CURRENT/controller/attempt receipts and processes before launch or resume.
+Caps48collection/2training/4TRAINdiagnostic/8test;45s cooperative90s outer.
+Preserve preparation-v3 ancestry andv4 isolated-import failures; both inspected
+repairs passed11 synthetic tests and independent review before registration.
+No scientific failure at registration. Do not edit frozen sources or reuse old
+held-out outcomes for selection. Saved-data audit implementation/review is still
+required before result publication; audit design alone is not an executed audit.
+Jason wants partner practice with table talk to
 expose meaningful decision nodes; future human examples must retain lawful
 observations and be separated from verification. No human play/table talk entered
 this study. Near-complete known-example acquisition leaves transfer as the open

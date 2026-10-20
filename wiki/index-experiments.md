@@ -327,3 +327,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-contingent-maskfit-2026-10-20|Gus masked-CE TRAIN acquisition]] — fixed specimens nearly acquire known contingent corrections; transfer remains open (complete)
 
 - [[experiments/gus-contingent-transfer-2026-10-20|Gus fixed-checkpoint contingent transfer]] — fixed final students on128 fresh finite roots; favorable means, both improvement intervals cross zero (complete)
+- [[experiments/gus-contingent-maskbreadth-2026-10-20|Gus masked teaching breadth]] — registered 64 versus 128 TRAIN roots at fixed 512 updates; unseen continuation transfer (active)
