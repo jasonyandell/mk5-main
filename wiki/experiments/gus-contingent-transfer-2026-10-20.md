@@ -3,10 +3,18 @@ title: "Gus fixed-checkpoint contingent transfer"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
+
+## Result
+
+The registered pooled128 criterion FAILED. Fixed masked-final512 success36.5188%, original parent35.9649%, ordinary CE-final51235.9172%. Masked−parent+0.5539pp, paired95[-2.0448,+3.1414]; masked−CE+0.6016pp, paired95[-2.3028,+3.4282]. Both means exceed0.5pp, both intervals include zero. No selection, full-hand test or promotion. The previous selected128/CE384 gate remains failed.
+
+Against parent, masked has higher/lower/equal exact root values on19/14/95positions; against CE18/11/99. Equal values need not mean equal actions. Cohorts are descriptive: masked−parent−1.3947pp in first64 and+2.5025pp in next64; neither rescues the pooled criterion. The intervals permit benefit or harm, so this is not proof of zero transfer.
+
+Known-example acquisition remains established by [[gus-contingent-maskfit-2026-10-20]], while reliable unseen transfer remains open. Jason's later partner-play/table-talk proposal could supply concrete decision-node questions; no human conversation or human-play data entered this experiment, and no next training recipe is selected here.
 
 ## Question
 
@@ -32,6 +40,8 @@ Capability refresh: Lem207 closed with unchanged09:48 reply; Book121 pending; Si
 
 ## Registration and status
 
-Registered and running from2026-10-20T21:48:16Z. [Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/80d9993c2a7efa181f9b916fe2cb3b952578d52d/lem/gus-contingent-transfer-2026-10-20/registration) `80d9993c2a7efa181f9b916fe2cb3b952578d52d` freshly verified11files/53members before responses; source registration SHA `fd93c0485d8960d172c5093fbe587492103453eba6a79806bf66c96f3cb3f2f3`. Seven mocked tests passed, including successful serialized pause/resume without duplicate capture. Parent and independent source reviews cleared.
+Registered before responses, launched2026-10-20T21:48:16Z and completed21:58:52Z. [Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/80d9993c2a7efa181f9b916fe2cb3b952578d52d/lem/gus-contingent-transfer-2026-10-20/registration) `80d9993c2a7efa181f9b916fe2cb3b952578d52d` freshly verified11files/53members before responses; source registration SHA `fd93c0485d8960d172c5093fbe587492103453eba6a79806bf66c96f3cb3f2f3`. Seven mocked tests passed, including successful serialized pause/resume without duplicate capture. Parent and independent source reviews cleared.
 
-Local recovery root `scratch/lem/gus-contingent-transfer-v1`; inspect CURRENT.md, controller identity and closed receipts before any action. Independent saved-data audit is prepared separately and may run only after terminal completion and source review. Collection repeats parent/G0/Zeb native requests; final students have one input-guarded response per new request, with no second native replay. Raw Oracle records contain requests, returned slots/actions and states, not student logits. Saved-data auditing verifies evidence/arithmetic rather than native execution or game replay. No scientific outcome yet.
+Local recovery root `scratch/lem/gus-contingent-transfer-v1`; inspect CURRENT.md, controller identity and closed receipts before any action. Independent saved-data audit completed after terminal completion and source review:1,670,510checks,97,404final output files,128selected roots from1661source deals. Twelve collection/one evaluation segments closed normally,550.538summed worker wallseconds. No scientific failure or budget growth. Collection repeats parent/G0/Zeb native requests; final students have one input-guarded response per new request, with no second native replay. Raw Oracle records contain requests, returned slots/actions and states, not student logits. Saved-data auditing verifies evidence/arithmetic rather than native execution or game replay. The auditor's pre-execution bootstrap/schema mistakes were corrected with original source retained; its single run passed. Independent result review recomputed exact paired means/counts; a prose hash typo was corrected with original retained. Scientific sources, criteria and evidence stayed unchanged.
+
+[Verified new evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/28d0d8ed3b6d736f3d1323014749f4201c261e34/lem/gus-contingent-transfer-2026-10-20/evidence) `28d0d8ed3b6d736f3d1323014749f4201c261e34` includes97,477new members and references historical model/registration archives rather than uploading them again.
