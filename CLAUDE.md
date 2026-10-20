@@ -105,8 +105,9 @@ gh issue create --title "..."    # file follow-up work
 gh issue close <n> --comment "…" # close with receipts
 ```
 
-Beads (`bd`) is retired; the old archive is grep-able at `.beads/issues.jsonl`. Do not use
-TodoWrite/TaskCreate-style scratch lists for durable work items — file an issue.
+Beads (`bd`) is retired; the old archive is grep-able at `.beads/issues.jsonl`. Durable work
+items get a GitHub issue, never a TodoWrite/TaskCreate list. A checklist for the parts of the
+task in hand is fine, and helps a long turn finish.
 
 ## Hard rules
 
@@ -157,9 +158,22 @@ Work is NOT complete until `git push` succeeds.
 4. Push: `git pull --rebase && git push`, then `git status` must show "up to date"
 5. Never stop before pushing; never say "ready to push when you are" — push it
 
+## When compacting
+
+Keep, word for word: which desk or agent you are and who commissioned you; your notebook URL;
+your branch and worktree path; every background run, subagent or cpu-slot job still running and
+how to collect its output; open asks to Jason or the Mayor; the issue numbers in hand. Drop file
+dumps and command output already acted on.
+
 ## References
 
 - `wiki/index.md` — full page catalog; `wiki/playbooks/` — operational how-tos
 - `docs/SECRETS.md` — where credentials live (HF / W&B / Vast / SSH; Keychain-backed)
 - `forge/README.md` — ML pipeline entry (points into the wiki)
 - `wiki/topics/rules-of-42.md` — the complete game rules
+
+## Sharing the machine
+
+Claude Code reads AGENTS.md only when there is no CLAUDE.md, so it is imported here:
+
+@AGENTS.md

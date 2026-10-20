@@ -34,7 +34,8 @@ first, and let the central authority manage only links and lookups.
    durable first: a Claude artifact (the default; private, and Jason can share it publicly
    with one click), a wiki page, a Hugging Face commit, or a branch.
 2. **Link second.** Then send the link plus one line. Use `SendMessage` to a desk's Remote
-   Control name, or to the Mayor.
+   Control name, or to the Mayor. A message to an idle desk starts a turn that re-reads its
+   whole context, so send one message per handoff, with no acks or thanks.
 3. **One notebook per desk.** Each desk keeps one standing artifact at a fixed URL and appends
    to it. Republish the same file path to keep the URL. Anyone can read the latest at the same
    link.
@@ -117,10 +118,12 @@ first, and let the central authority manage only links and lookups.
   thesis claims, and what would or wouldn't test it. Adjust, note the review in the registration,
   then seal. That's one extra Opus subagent for a turn or two, allowed even on a usage diet. For
   book experiments, the framing source is the book (private archive only).
-- **Voice.** Plain and short, for a reader on a phone. Every number carries its interval and
+- **Voice.** Plain and short, for a reader on a phone. Match a document's length to what it
+  needs: no filler sections, no repeated summaries. Every number carries its interval and
   baseline. Book work follows [[book-authority]].
-- **Restarts.** A desk restarted cold reads this page and its own notebook artifact (find it
-  in the registry), then carries on.
+- **Restarts and compactions.** A desk restarted cold, or just compacted, reads this page and its
+  own notebook artifact (find it in the registry), checks for runs and subagents it started that
+  are still going, then carries on. Compaction keeps CLAUDE.md but only summarizes this page.
 
 ## Starting a desk
 
