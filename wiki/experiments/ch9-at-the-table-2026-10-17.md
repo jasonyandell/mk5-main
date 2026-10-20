@@ -96,7 +96,7 @@ differs. On every other deal a − b is exactly 0.
 
 **One line.** With Lem's field-v3 net playing doubles and no trump, the menu's overall cost
 disappears to a null: −0.010 [−0.028, +0.008] marks per hand on 4,800 changed deals, MDE 0.026.
-No trump moves to the book's sign, +0.024 [+0.002, +0.045], while doubles trump still costs
+No trump moves to the book's sign, +0.024 [+0.002, +0.045] (on fresh seeds +0.009 [−0.006, +0.025], so not replicated; see the #201 results), while doubles trump still costs
 −0.067 [−0.100, −0.034]. Playing pips on field-v3 as well changes nothing (v3all − v3dt = −0.004
 [−0.017, +0.010]). So with one player for both declarations, doubles trump costs −0.072
 [−0.105, −0.039] and no trump reads +0.021 [−0.002, +0.042].
@@ -210,7 +210,8 @@ register on fresh seeds. Data and scripts are at HF `book/ch9-field-v3/analysis/
 
 **Data correction.** The first uploads of both ch9 datasets were flattened, so only one batch each
 was published. Every batch is now under `runs/<arm>-s<seed>/` (2026-10-20). The summaries are
-byte-identical, so the numbers above stand.
+byte-identical, so the numbers above stand. On fresh seeds the no-trump read crosses 0 and
+doubles trump costs more (see the #201 confirmation results below).
 
 ## #201 confirmation: thin top doubles (registered 2026-10-20, before any fresh batch)
 
@@ -255,6 +256,52 @@ looking, so it is a lead until fresh seeds answer it.
   thin/deep is ours and cuts across the book's hands, that the menu omits trump losers, and that
   the first draft read the gap as play. This section was rewritten on those points: the
   book-native secondaries, the selection statement, the meaning paragraph, and #230.
+
+### #201 confirmation results (complete 2026-10-20; 120 of 120 batches, none dropped)
+
+**One line.** On fresh seeds, the menu's doubles-trump cost is larger in the thin hands than in the
+deep ones, as registered, but smaller than the exploratory gap. The deep hands cost as well. The
+book's own variable, holding the 6-6 and 5-5 together, separates the hands as well as our cut did.
+The 6-6 alone does not separate them, which again conflicts with the book's emphasis.
+
+| read (DT deals, a − b marks/hand) | registered call | fresh seeds 5261–5380 | graded |
+|---|---|---|---|
+| **thin − deep (primary)** | below 0, band −0.08 to −0.20 | **−0.119 [−0.196, −0.042]** (983 vs 1,230; MDE 0.111) | hit |
+| thin (0–1 top doubles) | below 0 | −0.229 [−0.289, −0.170] | hit |
+| deep (2–3) | crosses 0 | −0.110 [−0.158, −0.061] | **miss** |
+| without − with the 6-6 and 5-5 | below 0 | −0.124 [−0.201, −0.044] (1,613 vs 600) | hit |
+| without − with the 6-6 | none (tension) | −0.008 [−0.084, +0.069] | no separation, again |
+
+- **Cells by count of top doubles held.** 0: −0.041 [−0.238, +0.151] (86 deals; no prediction). 1: −0.247
+  [−0.310, −0.184]. 2: −0.103 [−0.159, −0.049]. 3: −0.143 [−0.238, −0.050]. The exploratory
+  −0.473 on 55 deals in the 0 cell did not recur, so that cell's number was noise. The cost
+  centres on hands with exactly one top double.
+- **Chance baseline** (a − random chair) per cell: +0.145, +0.284, +0.583, +0.723. Thin hands are
+  weaker hands, so the split is confounded with hand strength. That confound was not controlled
+  here.
+- **Selection.** The chair's side won the doubles contract on 67.2% of a's shakers in thin hands
+  and 71.8% in deep hands.
+- **Floor.** The shuffled-label null's 95% band is [−0.085, +0.078]; 0.2% of shuffles reach the real
+  gap. The bootstrap covered 0 on 188 of 200 shuffles.
+- **The arm's overall reads, re-measured on fresh seeds (not this registration's calls).**
+  Changed deals −0.032 [−0.045, −0.019] (9,600 deals); doubles trump −0.098 [−0.121, −0.075];
+  no trump +0.009 [−0.006, +0.025]. On the first seeds the same reads were −0.010 (null), −0.067
+  and +0.024. The no-trump read at the book's sign does not replicate: on fresh seeds its interval
+  crosses 0. `unchanged_nonzero` is 0.
+
+**Reading, under [[book-authority]].** The menu's doubles-trump cost is real across both sets of
+seeds, and it is heaviest in hands holding one of the top three doubles. It is not confined to
+them. Two places to look come first. The menu declares and bids these hands without counting
+trump losers, the first thing the book counts (#230). And the thin split follows hand strength.
+Until both are restored, this measures our declaration rule, our bid and our play together. It
+is not a verdict on the book's declaration. The book's variable (the 6-6 and 5-5 together) did
+as well as ours, and was registered blind. That makes it the natural cut for the next run: the
+menu with trump losers priced, and the book's line on Hands 23 and 24 at its own bids.
+
+Receipts: registered at cf114c02, after the fresh framing review. The first launch failed before
+any deal was played, because the pinned net was missing in this checkout. It was copied in, its
+SHA-256 matched the pin, and the queue was relaunched with no output kept. Reader:
+`analysis/read.py`. Data: HF `book/ch9-201-confirm/`.
 
 ## Links
 
