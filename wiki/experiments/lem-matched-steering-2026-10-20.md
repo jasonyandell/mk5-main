@@ -3,7 +3,7 @@ title: "Already-clean test 5b: steering with matched rows — does a named unit'
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]]). In [[lem-causal-2026-10-17]],
@@ -40,7 +40,46 @@ history, list v2.
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered. Evidence is `lem/matched-steering-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/02c07602e6828c5e79b2034b2e73b38556c73f8b/lem/matched-steering-2026-10-20):
+one JSON per net with every pole's `own` and five `random` gaps per dose, plus `grade.py` and
+`grade.txt`.
+
+| | k = 0.5 | k = 1 | needed |
+|---|---:|---:|---:|
+| 1. `+` poles with `own` below the random median | 15 / 37 = 0.405 | 17 / 37 = 0.459 | 0.6 |
+| 2. `−` poles with `own` above the random median | 23 / 43 = 0.535 | 21 / 43 = 0.488 | 0.6 |
+| 3. pooled sign-corrected median (n = 160) | | **−0.000102** (0.475 positive) | > 0 |
+
+**All three predictions are wrong. Steering cost, compared fairly, shows no unit-specific
+signal.** The stratified gaps are of the order 10⁻⁴ in regret, a named unit's own gap sits
+inside the spread of five random units' gaps on the same rows, and the pooled median is at
+chance.
+
+**Reading.**
+
+- **What it rules out.** The earlier near-chance steering result
+  ([[lem-causal-2026-10-17]] addendum) was not hiding a real effect behind mixed row difficulty.
+  With difficulty matched within the play count and the comparison made against other units on
+  the same rows, the effect is still absent.
+- **What it does not rule out.** That steering moves the play *in the concept's direction*. The
+  statistic reads the cost of an added signal, not where the move goes. Three readings remain
+  open, and this test cannot choose between them:
+  1. Cost is the wrong reading: a unit's added signal changes the move toward the concept's play,
+     and the teacher's regret, on rows where the concept does not hold, is about equally hurt by
+     any change.
+  2. The rows are the wrong rows: the rows where a unit is off and its concept holds are the
+     unit's own judgement that the concept-like play is wrong, so adding its signal there need not
+     help.
+  3. The units are named but their effect in this net is mostly to gate, not to vote. Ablation
+     shows they are used where their names say, and steering a gate open on the wrong rows has
+     no specific cost.
+- **Where it leaves the causal case.** Ablation is the evidence of use (45 of 45 named units raise
+  regret where their concept holds; 39 of 45 selective). Steering, read by cost, adds nothing for
+  or against. A direction-based steering test needs a definition of "the concept's play" first,
+  and it will be filed when it has one.
+
+Scope: three 24-neuron field nets, one position against uniform beliefs, no history, list v2.
 
 ## Links
 

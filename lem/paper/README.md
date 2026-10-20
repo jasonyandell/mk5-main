@@ -220,8 +220,10 @@ rows where the unit fires either way, the move changes more often inside the con
 The unit's own concept separates the effect better than a random other concept for 33 of 40
 (median in/out ratio 1.49 against 0.94). A clamp
 at the 99th percentile changes 46% of all moves and cannot show steering. Adding a matched dose
-(k·σ) barely separates inside from outside: 0.60–0.64 of `+` poles, below chance for `−` poles. The
-comparison mixes rows of different difficulty, and matched-row steering is #205.
+(k·σ) barely separates inside from outside: 0.60–0.64 of `+` poles, below chance for `−` poles. Compared
+within the play count and against random units on the same rows (#205), steering cost is still at
+chance (0.41–0.54; pooled median −0.0001). Ablation is the evidence of use; steering read by cost
+adds nothing for or against.
 
 **The first transformer**
 ([`wiki/experiments/lem-gus-formation-2026-10-20.md`](../../wiki/experiments/lem-gus-formation-2026-10-20.md),
@@ -290,7 +292,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198 (ablation done: named units are used where their names say; steering unresolved, #205), pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198 (ablation done: named units are used where their names say; steering by cost null even with matched rows, #205), pour A #199, family statistic #200 | the core thesis; queued ahead of G3–G8 |
 
 ## References
 
