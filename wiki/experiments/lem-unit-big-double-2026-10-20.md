@@ -1,9 +1,9 @@
 ---
-title: "Unit paper 2: the 16×8 seed-0 net's unit 13, a gate that shuts when I hold canonical tile 14 (Lem, #235)"
+title: "Unit paper 2: the 16×8 seed-0 net's unit 13, a gate whose silence plays the double: shut when I hold canonical tile 14 (Lem, #235)"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: sealed
+status: complete
 ---
 
 The second **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the same net as
@@ -161,7 +161,127 @@ Sealed 2026-10-20.
 
 ## Results
 
-*(not run)*
+Run 2026-10-20 as registered, in one `scripts/cpu-slot` run of 105 s (2.32e12 instructions). The
+evidence (`unit.json`, the log, the code, the exploration script, `SHA256SUMS`) is
+`lem/unit-big-double-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/8c558bea5382447f80593cf32ed06285c27c9da8/lem/unit-big-double-2026-10-20).
+
+**The picture.** Unit 13 is a **switch for playing one tile**. It is open whenever I don't hold
+the double in slot 14, which is exactly when that tile can't be played. When I do hold it, the unit
+falls silent, and the silence is what lets the net play the double. Turned up on rows where I hold
+the double, the net stops playing it, far beyond what the rest of the layer does. The walker
+reading, "the boss isn't mine, so leave its suit alone", is wrong: an open gate makes the suit's
+other tiles more attractive.
+
+**The label.** The run reproduces the raw table: held rows on 0.000–0.010 with mean z₁₃ −25,060 to
+−30,689; gone and out rows on 0.53–0.99. Read R gives `void-in-led` 0.766 for the + pole and
+`x:hand:14` 1.000 for the − pole. R² on the gate is 0.699, and adding `gone:14` gives 0.700.
+- **Slot, not tile.** Held minus not held is 32,079 where slot 14 is the 5-5 and 31,921 where it
+  is the 4-4, a ratio of 1.005.
+- **Near misses.** Holding the 0-0, 1-1, 2-2, 3-3 or 5-5 slot moves z₁₃ by −0.012 to +0.009 of
+  the gate's gap. Holding a non-double 4-x moves it by 0.038.
+- **The floor for this kind of clean.** 0.625 of the trained net's layer-1 poles read ≥ 0.9 on one
+  raw input bit, against 0.219 in the untrained twin. The twin's best top-1% precision for this
+  gate is 0.503, and its best R² is 0.085.
+- **The open side** (rows without the tile). Its strongest correlates are trick state:
+  - `x:trick:83`, my right-hand opponent has played the trump double (−0.42);
+  - `x:trick:42`, partner has played this double (+0.27);
+  - `third-partner-winning` (+0.26), `partner-winning` (+0.26), `third` (+0.21).
+
+  The + pole's top 1% has no stable job. Its read-R label went from `trump-is-fours` to
+  `void-in-led` to `x:gone:12` and back across formation. A partial + pole on a gate unit is the
+  open door, not a job.
+
+**Circuit in.**
+- The − pole is `x:hand:14` (vote −31,388), then the trump double on the trick from RHO (−9,793).
+- The + pole's largest votes are the left opponent's tile on the trick being a non-double 4
+  (`x:trick:10` to `13`, +2,777 to +3,687), then partner's tile being this double (`x:trick:42`,
+  +2,712).
+- So the open side opens widest when this suit is being played and someone else has its boss.
+
+**Circuit out.**
+- One reader dominates: layer-2 unit 3, at w₂ −1,434. The next reader is under 130. Its poles read
+  `no-trump-held` and `setter-void-off-suit`.
+- The push of +σ where I hold the double:
+  - on the double, −5.99M;
+  - on its suit's other tiles, +293k;
+  - on other non-trump tiles, −77k;
+  - on trump, +759k.
+- The open gate holds the double down and lifts trump and the rest of its suit.
+
+**Steering, read by where play goes, against the layer-mean null.**
+
+| k | Δplays the double (59,745 rows held) | own − layer [95%] | Δleads its suit (16,433 lead rows, double held) | own − layer [95%] |
+|---:|---:|---|---:|---|
+| 0.25 | −0.155 | **−0.161 [−0.164, −0.159]** | +0.029 | +0.030 [+0.027, +0.032] |
+| 0.5 | −0.263 | −0.262 [−0.265, −0.258] | +0.062 | +0.060 [+0.056, +0.063] |
+| 1 | −0.332 | **−0.318 [−0.321, −0.315]** | +0.104 | **+0.087 [+0.082, +0.092]** |
+| 2 | −0.344 | −0.308 [−0.311, −0.306] | +0.099 | +0.048 [+0.043, +0.053] |
+
+- **The base rate of playing the double on those rows is 0.402.** A quarter of a σ removes 0.155
+  of it, and the layer's mean shift is +0.007. This is the first strongly specific steering result
+  in the program. Paper 1's unit beat the other units by 0.005.
+- **On leads alone**, k = 1 drops leading the double by 0.651 [0.644, 0.658].
+- **Take and smear** (read off): at k = 1, take −0.021 against the layer's −0.023, and smear −0.022
+  against +0.002. Smear falls because the double is often the 5-5. Down (ablate where open): take
+  −0.005, smear +0.021 (own − layer +0.008).
+- **Eight steered picks**, all leads. In five the base lead was the double and the steered lead is
+  something else. Two of those are now leading a trump (5-4 under fives; 6-3 under fours).
+- **The input flip** (`x:hand:14` → 0 on 59,908 held rows; the unit goes from a₁ 0.35 to 303, near
+  0.9σ). Plays the double −0.045 [−0.049, −0.042], against the unit's own k = 1, −0.332, on the same
+  rows. The bit's other routes push the other way: flipping the bit moves play far less than the
+  gate alone. The gate is the majority route by the registered rule, but not the whole story. Some
+  other unit also reads "I hold it" and works against it.
+
+**Formation.**
+
+| step | R² on the gate | R² of the open side on seat | on, held / not held | − pole |
+|---:|---:|---:|---|---|
+| 0 | 0.002 | 0.031 | 0.33 / 0.30 | `setter-void-off-suit` |
+| 1,000 | 0.002 | 0.044 | 0.05 / 0.05 | `x:gone:0` |
+| 3,000 | 0.000 | 0.066 | 0.05 / 0.08 | `x:gone:6` |
+| 10,000 | 0.322 | **0.300** | 0.00 / 0.18 | `x:hand:14` |
+| 15,270 | 0.403 | 0.154 | 0.00 / 0.33 | `x:hand:14` |
+| 30,540 | 0.641 | 0.030 | 0.00 / 0.58 | `x:hand:14` |
+| 916,200 | 0.699 | 0.054 | 0.00 / 0.79 | `x:hand:14` |
+
+- **It nearly died first.** By step 1,000 it fired on 5% of rows.
+- **Then it came back as the gate**, between steps 3,000 and 10,000. In that window it was also,
+  briefly, a seat unit on its open side (R² 0.30).
+- **The seat dependence then faded** as the open side widened to fire on 0.79 of not-held rows.
+- **The shut side was settled at once**: from step 10,000 on, holding the tile shuts it on
+  ≥ 0.997 of rows.
+
+**The predictions, graded: 2 of 5 hold.**
+
+| | measured | |
+|---|---|---|
+| 1. slot, not tile (gap ratio within 1.33) | 1.005 | holds |
+| 2. near misses under 0.1 of the gap | all within 0.038 | holds |
+| 3. the walker reading: double and suit pushed down; plays-gated falls beyond the layer; the gate is the majority route | the double −5.99M; plays-gated −0.332, own − layer −0.318; unit 7× the flip. **But its suit is pushed up** (+293k against −77k), and leading it rises (+0.087 beyond the layer) | **wrong** (the suit) |
+| 4. the gate first: step-0 R² < 0.05, gate reaches half before the open side's seat R² | 0.002 at step 0; but the open side's seat R² is at half its final value at step 0 (0.031 of 0.054) | **wrong** |
+| 5. a suit-4 input among the five strongest open-side correlates | trick state and the double itself (`x:trick:42`); the suit-4 inputs lead the + pole's votes, not the correlates | **wrong** |
+
+**Reading.**
+
+- **Named the essay's way, as a verb**: *"the double isn't in my hand"*. It is on exactly when the
+  double can't be played, and its silence plays the double. A ReLU unit can't fire for "I hold X,
+  play X" and still be quiet elsewhere for free. This net built the inverse: an always-on brake on
+  one tile, lifted when the tile is mine. One reader carries it.
+- **The messiest pole in the net was the open side of a clean gate.** Its partial label, `void-in-led`
+  at 0.766, is where the open side's other votes add up. Its − pole is clean at 1.000. A unit is two
+  poles: read the shut side as the gate before calling the open side unnamed. This is the essay's
+  negative pole as a gate, in 42.
+- **The steering measure separated a unit from its layer for the first time**, at 0.318 against
+  paper 1's 0.005. Where play goes is the right read. A unit tied to a tile shows it plainly. A unit
+  tied to a situation (paper 1) shares its push with the layer.
+- **The walker reading lost, and that is the finding.** With the gate open the net favours its suit
+  and trump. Holding the double is not about the suit's other tiles here. It is about this tile.
+- **The flip is the open question.** The bit's other routes nearly cancel the gate. Paper 3 can
+  follow the second carrier of `x:hand:14`.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 
