@@ -38,11 +38,14 @@ a reader with only the viewer's cards names most of them (0.758 detected; shifte
 and the play nonetheless needs 165 of 192 neurons to match itself 95% of the time: clean units,
 dense decision. Across nets trained on 5k, 50k and 250k deals the nameable share rises
 (0.297, 0.519, 0.597) while the declaration detectors are present from the start and the play
-stays dense. Retrained from scratch at 24 neurons, the net is cleaner, not mixed (0.83 against
-0.61 at 192), and still closes 0.684 of the gap from random play to the teacher; its units
-broaden within one concept family, keep the family they formed in (0.82 against a 0.28 null),
-and match their own family in a wide net at 2.4–2.9 times the random rate. We set out the belief probes, checkpoint studies and causal tests that an answer
-key makes possible.
+stays dense. Retrained from scratch at 24 neurons, the net reads cleaner against our concept list
+than at 192. Read raw with a play-count baseline over three seeds, it averages 0.695 against 0.542,
+with one seed pair reversed and untrained floors of 0.375 and 0.276. It still closes 0.684 of the
+gap from random play to the teacher. The essay predicts squeezed units grow *coarser*, not cleaner,
+so this measures fit to the list. Whether the units are coarser or mixed is open: read by how they
+grew, most broadened units sprouted or were born coarse, and someone downstream reads the union.
+Our family-based statistics failed their own calibration and are withdrawn. We set out the belief
+probes, checkpoint studies and causal tests that an answer key makes possible.
 
 ## 1. The lab
 
@@ -190,8 +193,8 @@ A pruned curve overstates what is needed; a net trained at width k is the honest
 retrained from scratch at 128×64, 32×16, 16×8, 8×4 and 128×8 test the essay's squeeze [1]: narrow
 neurons should cover coarser families of the teacher's concepts, not unrelated mixtures. Under a
 fine label a coarse neuron scores partial, so the test is whether a pole's best two-concept union
-lies within one concept family more often than random families give. **Result:** narrow nets are cleaner, not
-mixed. The clean share is 0.610 at 192 neurons and 0.833 at 24 (three seeds 0.65–0.83). Where
+lies within one concept family more often than random families give. **Result:** narrow nets read cleaner
+against the list (see the re-reads below; the family test itself was withdrawn, #200). The clean share is 0.610 at 192 neurons and 0.833 at 24 (three seeds 0.65–0.83). Where
 units broaden, they broaden within a family, chiefly one coarse unit, "late in the trick". 24
 neurons close 0.684 of the gap from random play to the teacher (192 neurons: 0.804; 12: 0.615).
 A small clean vocabulary, the trick in front of the mover, carries most of the play. **Formation**
@@ -249,7 +252,10 @@ fall to near zero (Gus 0.014; field net 0.077). Trained Gus reads 0.275 and the 
 net 0.406, on different rows. Gus's units keep their family as they form, 0.981 against 0.266. The
 field net carried position too: about a third of its unconditioned share, and most of its 0.31 floor.
 Comparisons made under one instrument (squeeze, drop-out, naming) stand, but their absolute shares
-overstated what units name beyond position. The conditioned read is the honest absolute. Re-read conditioned
+overstated what units name beyond position. *Superseded (#233):* the conditioned read amplified noise where a unit is nearly silent. Raw
+activations with a play-count baseline in the labeller replace it, and the numbers under that read
+are in the abstract and [`wiki/experiments/lem-fixed-conditioning-2026-10-20.md`](../../wiki/experiments/lem-fixed-conditioning-2026-10-20.md).
+The conditioned figures in this paragraph and the next are kept as history. Re-read conditioned
 ([`wiki/experiments/lem-squeeze-conditioned-2026-10-20.md`](../../wiki/experiments/lem-squeeze-conditioned-2026-10-20.md),
 #227), the squeeze holds: 24 neurons are cleaner than 192 (0.549 against 0.406, three seeds; floors
 0.014 and 0.077). Below 12 neurons the units do the play count's own job, the mover's place in the
@@ -322,7 +328,7 @@ table-type units form, and do they read what the teacher's posterior over polici
 | G7 | **Fidelity to the teacher by concept region**: where the student's regret under the teacher's plan concentrates | done ([`lem-fidelity-by-concept-2026-10-16`](../../wiki/experiments/lem-fidelity-by-concept-2026-10-16.md)): mean 0.0084, top decile carries 0.825; highest on lead and with the contract close, lowest where the trick is decided; the lead is the best-labelled and least faithful region |
 | G8 | **Meet the book**: the clean units against the book's rules (Silas gates); which rules have a unit and which do not | not started |
 | G9 | **Replication across seeds** for every share and interval in §4 | needs G2 |
-| G10 | **THE ALREADY-CLEAN TEST** (#193): formation #194 (done: family kept 0.82 vs 0.28), width tree #195 (done: own family 2.4–2.9× random), drop-out order #196 (done: cleaner to 12 neurons; the last words are the trick position), naming #197 (done: 201 of 210 narrow units named; the floor rises with the list), causal #198 (ablation done: named units are used where their names say; steering by cost null even with matched rows, #205), pour A #199 (done: the squeeze holds with every declaration; doubles trump outlasts the pips), family statistic #200 (done: fails its calibration; untrained nets beat permuted-family nulls, so the family claims await #229) | the core thesis; queued ahead of G3–G8 |
+| G10 | **THE ALREADY-CLEAN TEST** (#193). Done: the drop-out order #196; naming #197; causal #198 (ablation shows use, steering null); pour A #199; the instrument #226/#233 (raw read with a play-count baseline replaces conditioning); unit origin #231 (mostly sprouts or born coarse; two candidates were instrument artifacts, #232). Withdrawn or not yet shown: the family statistics and family kept (#200, #229). Open: coarse versus mixed by a test that reads relatedness the essay's way | the core thesis; queued ahead of G3–G8 |
 
 ## References
 
