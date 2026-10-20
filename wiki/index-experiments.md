@@ -325,3 +325,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-contingent-practice-recovery-2026-10-20|Gus practice startup recovery]] — 512 updates completed; selection retained parent, finite gate failed; audited and published
 
 - [[experiments/gus-contingent-maskfit-2026-10-20|Gus masked-CE TRAIN acquisition]] — fixed specimens nearly acquire known contingent corrections; transfer remains open (complete)
+
+- [[experiments/gus-contingent-transfer-2026-10-20|Gus fixed-checkpoint contingent transfer]] — fixed final students on128 fresh finite roots; pooled-only criterion, no selection (active)

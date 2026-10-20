@@ -41,7 +41,7 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-maskfit-v1/CURRENT.md`; inspect receipts and live
+`scratch/lem/gus-contingent-transfer-v1/CURRENT.md`; inspect receipts and live
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
 
@@ -84,10 +84,20 @@ One scientific segment,6158new native calls/288new values;622parent captures/
 Evidence afa22e9d330667948ef6aa70469c58758e1c349c verified11files/12955members.
 Read completion receipts for delivery. Do not rerun the diagnostic or archives.
 Acquisition is nearly complete here; transfer is unestablished. Final512 is a
-fixed diagnostic specimen, not a new deployment selection. Next comparison NOT
-selected: a fresh disjoint-root transfer question is a candidate, not permission
-to rescue an old gate or select from its test. Retain corrected result-review
-history. All620747 exclusions unchanged.
+fixed diagnostic specimen, not a new deployment selection. The fixed-checkpoint fresh transfer comparison is now REGISTERED/RUNNING at
+`scratch/lem/gus-contingent-transfer-v1`. Three fixed policies: parent, masked-final512,
+CE-final512; no training, selection, fullhands or promotion. First128 eligible roots
+from one4096 source pool; all624843 reservations excluded from future training.
+All128 precede final-student responses. Pooled128 alone gates >=0.5pp over each
+comparator with both paired95lower>0; first/next64 cohorts descriptive only.
+Caps32collection/8evaluation,45s cooperative90s outer, sequential. Public
+registration80d9993c2a7efa181f9b916fe2cb3b952578d52d verified11files/53members.
+Seven mocked tests, including serialized normal resume, and two reviews cleared.
+Collection native-audits parent/field; candidate captures are single guarded
+forwards. Oracle records have slots/actions, not student logits. Saved-data audit
+must not be described as native execution/replay. Inspect receipts and processes;
+never duplicate a controller or retry an unresolved failure. Prior held-out failure
+stands; preserve corrected review histories. Read CURRENT for completion state.
 
 This tests a selected factor, not a proven diagnosis of flat-target interference.
 Teacher ties assume optimalfuture; student complete-policy outcomes remain decisive.
