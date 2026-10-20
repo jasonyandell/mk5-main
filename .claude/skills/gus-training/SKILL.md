@@ -41,13 +41,38 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-teacher-v1/CURRENT.md`. The earlier stop is revoked.
-The experiment route is `wiki/experiments/gus-contingent-teacher-2026-10-20.md`.
-Occasionally involve an independent collaborator to check that the work still
-serves this prize. Another auxiliary future-prediction loss or probe is not the
-selected next avenue.
+`scratch/lem/gus-contingent-breadth-v1/CURRENT.md`; inspect receipts and live
+processes before acting. The earlier stop is revoked. Occasionally involve an
+independent collaborator to check that the work still serves this prize.
 
-The proposed teacher extends the existing exact one-choice verifier to at least
+The first contingent-teacher pilot is complete: the planner improved15/32 fresh
+finite-model root policies, but development retained student step0. The separate
+cost-sensitive comparison trained successfully, then STOPPED when512reserved
+test deals yielded24of32required eligible roots. Transfer remains UNEVALUATED;
+never enlarge that pool, lower its quota or grade24as a substitute. Both studies
+and their publication are complete; do not repeat them.
+
+The separate TRAIN acquisition diagnostic is also complete: both final students
+repair14/18strict corrections; cost creates4newnonflat errors, ordinary CE1.
+Complete TRAIN value is higher for CEfinal despite higher strict-correction
+optimal-action probability for costfinal. Read the exact occupancy decomposition
+before attributing residual errors to capacity, loss dilution or interference.
+Acquisition on known positions does not establish transfer or full-hand strength.
+
+The registered running successor is a32-versus64 TRAIN-root breadth comparison at the same
+64-update CE budget. Reuse the original32-root CE trajectory transparently as
+an immutable control; train one64-root arm from the same original parent using
+the old32 plus32fresh structurally eligible roots. Fresh shared development
+selects each trajectory; fresh test evaluates complete contingent policies.
+Public registration c6d35e2277cd4faad64645f7e64fcf5e5ff75756 verified12files/50members
+after independent review and synthetic checks. The controller launched at
+2026-10-20T19:04:12Z; follow CURRENT and actual process/receipt state before acting.
+All609611 previous reserved deals remain excluded; the new fixed pools reserved
+3712more before responses,613323future exclusions. No auxiliary prediction
+objective or opponent change. Never duplicate a controller, alter frozen code,
+or automatically retry a failed/unclosed attempt or enlarge a cap.
+
+The contingent teacher extends the existing exact one-choice verifier to at least
 two genuinely discretionary learner decisions. Offline teacher planning is
 authorized; deployed Gus still has no search. Carry the named root prior through
 observed field actions, sum indistinguishable worlds before maximizing one
@@ -63,8 +88,8 @@ scripts, source pools, endpoints and caps in a verified public registration
 before measurements. Evaluate students by exact whole-policy continuation
 success on untouched roots; first-move agreement alone is insufficient.
 Keep separate the finite-model result and fresh full-hand playing strength.
-Do not silently extend a failed or exhausted pilot. Current proposal details
-are preparation, not evidence that a two-decision teacher already works.
+Do not silently extend a failed or exhausted pilot. The completed pilot establishes a bounded two-decision teacher; it does not
+establish transfer into a stronger deployed student.
 
 The repository is `/Users/jason/code/mk5-main`; the original Gus research worktree
 is `/Users/jason/code/mk5-lem-nanogpt`. Locate the current checkout and artifacts
@@ -456,3 +481,13 @@ checks before merging. Leave future experiments as proposals unless authorized.
 
 Improve this skill when real friction changes a decision: fix the narrow
 instruction or operations note, rather than accumulating generic warnings.
+
+## Reuse controls without changing the comparison
+
+A historical training trajectory may be reused when its parent, TRAIN inputs,
+optimizer recipe, update count, runtime, checkpoint bytes and recovery provenance
+match the new comparison. State that it is reused; fresh selection and evaluation
+are new measurements, not new training. Preserve the original labels on reused
+TRAIN roots and validate overlapping observable-key contracts before combining
+new data. Root breadth at a fixed update budget changes repetitions per root;
+it does not independently identify an interference mechanism.

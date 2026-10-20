@@ -33,8 +33,11 @@ decisions using continuation machinery, then train Gus on those decisions.
 [[gus-contingent-teacher-2026-10-20]] completed that first bounded teacher and
 matched distillation pilot. The planner improves finite-model policies, but
 development retains the student's initialization; no full-hand gain is claimed.
-A cost-sensitive policy-distillation successor is being prepared. Offline
-teacher planning is authorized; deployed Gus still performs no search.
+The cost comparison stopped before transfer evaluation for insufficient eligible
+test roots. [[gus-contingent-fit-2026-10-20]] subsequently established acquisition
+on its known TRAIN roots. [[gus-contingent-breadth-2026-10-20]] is registered and running: more distinct
+teacher roots at the same actor-update budget. Offline teacher planning is
+authorized; deployed Gus still performs no search.
 
 Jason's later2026-10-19 charter puts learning Texas42 and understanding
 transformers hands-on first; stronger play is a hoped-for consequence.
@@ -174,12 +177,10 @@ a leave-one-out success baseline versus GRPO or rehearsal. Subsequent
 [[gus-public-score-probe-2026-10-19]] does not establish a superior linear public-
 score readout. Neither establishes stronger play.
 
-Jason resumed the loop on 2026-10-20 to use continuation machinery to discover
-better contingent decisions, then train Gus on them. The proposed first teacher
-has two discretionary learner choices on a small exact fixed-field endgame.
-It is preparation, not an implemented or measured improvement; see
-[[gus-success-probability-planning]] and
-`scratch/lem/gus-contingent-teacher-v1/CURRENT.md`.
+The exact two-decision teacher is implemented and measured in
+[[gus-contingent-teacher-2026-10-20]]. Its gains under the finite fixed-field
+model do not establish a stronger distilled student or full-hand player.
+
 
 
 Partner-awareness and whole-game training are proposed directions, not selected
@@ -189,6 +190,6 @@ cross-hand memory are untested/unimplemented respectively. A partner-only
 comparison can keep opponents fixed; whole games add auction, score and memory
 questions. See [[gus-success-probability-planning]] for the charter clarification.
 
-[[gus-contingent-cost-2026-10-20]] trained exact action costs versus teacher-label CE, but stopped when512reserved test deals supplied24of32required positions. Transfer is UNEVALUATED; the next question is acquisition on the existing TRAIN positions, with a separate fixed-checkpoint diagnostic.
+[[gus-contingent-cost-2026-10-20]] trained exact action costs versus teacher-label CE, but stopped when512reserved test deals supplied24of32required positions. Transfer is UNEVALUATED. The separate completed acquisition diagnostic is linked below; the stopped comparison stays closed.
 
 [[gus-contingent-fit-2026-10-20]] is complete: both final saved students repair 14/18 strict TRAIN errors; cost adds four consequential errors and CE one. CE final TRAIN value is 37.6558% versus parent 36.1636%, with exact teacher 38.6310%. No new training or held-out claim; [[gus-contingent-cost-2026-10-20]] remains stopped before transfer evaluation.
