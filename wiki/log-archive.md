@@ -5329,3 +5329,67 @@ checkpoints (#203), over 15 checkpoints and three untrained floors, with list v2
 - 3 of 5 predictions held.
 
 The clean-neuron skill's first new friction log since the fold came from this run.
+
+## [2026-10-20 | lem | the conditioned audit (#226): position out, both architectures clean above a near-zero floor; Gus's units keep their family 0.981]
+
+[[lem-conditioned-audit-2026-10-20]]: each unit is z-scored within each play count before its top
+1%.
+- The untrained floors fall to near zero: Gus 0.014, field net 0.077.
+- Trained Gus reads 0.275 and the 128×64 field net 0.406, on different rows.
+- Gus's conditioned curve rises from about 0.01 to 0.28 with no U-shape. Its units keep their
+  family as they form, 0.981 against 0.266.
+- The field net carried position too, about a third of its unconditioned share, so that
+  prediction was wrong. Earlier comparisons stand, but earlier absolute shares overstated what
+  units name beyond position.
+- 4 of 5 predictions held.
+
+## [2026-10-20 | lem | the squeeze holds with position out (#227): 24 neurons 0.549 against 192 neurons 0.406]
+
+[[lem-squeeze-conditioned-2026-10-20]]: the 42 drop-out nets re-read conditioned on the play count.
+- The field net at 24 neurons is still cleaner than at 192: 0.549 against 0.406 over three seeds,
+  with floors of 0.014 and 0.077. Every width from 12 neurons up is 0.33–0.53 above its floor.
+- Below 12 neurons the units do the play count's own job, the mover's place in the trick. A
+  conditioned read cannot credit that by construction; unconditioned they are far above their
+  floor.
+- The last words beyond position are the mover's trump: `holds-boss-trump` and `no-trump-held`.
+- 4 of 4 predictions held.
+
+CLAUDE.md's sentence goes to the Mayor with the conditioned numbers.
+
+## [2026-10-20 | lem | matched-row steering (#205): no unit-specific signal; ablation stays the evidence of use]
+
+[[lem-matched-steering-2026-10-20]]: steering cost was compared within each play count and against
+five random units on the same rows. It shows no signal specific to a named unit:
+- `+` poles: 0.41–0.46 below the random median (0.6 needed);
+- `−` poles: 0.49–0.54 above it;
+- pooled median −0.0001.
+
+All three predictions were wrong. The test reads cost, not where the move goes, so a
+direction-based steering test is the open question. It will be filed once it has a definition.
+
+## [2026-10-20 | lem | the words need data (#207): a 4k-deal observer plays at 0.53 agreement with no nameable units]
+
+[[lem-overbake-units-2026-10-20]]: the overbake observer was trained on 3,988 deals.
+- At its validation best it agrees with the recorded move on 0.53 of held-out decisions, but its
+  units stay at the untrained floor, conditioned (0.034 against 0.014).
+- Overtraining memorizes: agreement falls to 0.43, and the words never form.
+- Gus on 500,000 deals formed them after about 10,000 steps.
+
+This is rung 3, narrow data, not mixing. 1 of 5 predictions held. The 50k point is filed.
+
+## [2026-10-20 | lem | the words come with data (#228): from one start, 4k deals 0.019, 50k 0.173, 500k 0.237]
+
+[[lem-words-need-data-2026-10-20]]: the 50,000-deal observer is the middle point between the
+overbake run and Gus, from the same seed-42 initialization.
+- At step 20,000 the conditioned share is 0.019 on 4k deals, 0.173 on 50k and 0.237 on 500k.
+- The 50k run forms words from step 2,000, and they keep their family (0.978 against 0.233).
+- 4 of 4 predictions held. More data adds words without mixing them.
+
+## [2026-10-20 | lem | the squeeze on pour A (#199): narrower is cleaner with every declaration, and doubles trump is the declaration a narrow net keeps]
+
+[[lem-squeeze-pour-a-2026-10-20]]: 12 field-v3 nets on pour A, read conditioned.
+- The shares are 0.504 at 192 neurons, 0.626 at 24 and 0.677 at 12, against floors of 0.04–0.14.
+- `trump-is-doubles` survives to 12 neurons after every pip trump is gone, which is the opposite of
+  my prediction.
+- No trump never gets a clean unit.
+- 3 of 4 predictions held.
