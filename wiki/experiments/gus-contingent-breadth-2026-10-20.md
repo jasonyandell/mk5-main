@@ -3,7 +3,7 @@ title: "Gus contingent teaching — 32 versus 64 training roots"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -28,6 +28,24 @@ All609611prior reserveddeals remain excluded. New fixed pools reserve1536TRAIN/5
 
 ## Evidence and status
 
-[Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/c6d35e2277cd4faad64645f7e64fcf5e5ff75756/lem/gus-contingent-breadth-2026-10-20/registration) `c6d35e2277cd4faad64645f7e64fcf5e5ff75756` freshly verified all12files and50archive members before launch. Registration SHA256 `4fdecd1c102bd17ff66fc6a31d318f36dce9313cc04e799496f64ca61821819d`. Controller launched2026-10-20T19:04:12Z after the pinned runtime check; collection is running. No student or transfer result yet.
+[Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/c6d35e2277cd4faad64645f7e64fcf5e5ff75756/lem/gus-contingent-breadth-2026-10-20/registration) `c6d35e2277cd4faad64645f7e64fcf5e5ff75756` freshly verified all12files and50archive members before launch. Registration SHA256 `4fdecd1c102bd17ff66fc6a31d318f36dce9313cc04e799496f64ca61821819d`. Controller launched at 2026-10-20T19:04:12Z after the pinned runtime check. All eleven scientific segments completed normally: eight collection, one training, one development and one test. The finite gate failed; the conditional full-hand stage did not open.
 
 Recovery root: `scratch/lem/gus-contingent-breadth-v1`. Independent reviews and synthetic broad-data/reuse/resume checks precede registration. Lem, Book and Silas capability refresh changes no field, verifier or actor input. The current teacher already supplies the required information-consistent continuation values.
+
+## Result
+
+Development retained wide step 0: all five wide snapshots tied at exact mean 3139/10080. Narrow steps 16/32/48/64 tied at 323/1008, selecting step 16. Test evaluated only these prospectively selected policies.
+
+| Policy | Fresh finite-test success |
+|---|---:|
+| Original parent | 38.6768% |
+| Wide selected, step 0 | 38.6768% |
+| Narrow selected, step 16 | 39.1109% |
+
+Wide minus parent is exactly zero on all 32 roots. Wide minus narrow is −0.4340 percentage points, paired physical-root bootstrap 95% [−2.4657, +1.0069]. No improvement is established, no checkpoint is reselected, and no player is promoted. The selected wide policy is its pretrained initialization; this does not show that its trained checkpoints are identical or that breadth cannot help. More roots at fixed updates also reduces repetitions per root, and one seed plus a historical control limit causal interpretation.
+
+The 32 new TRAIN roots supplied seven frozen-criterion contingent witnesses while preserving all 622 original rows. The offline teacher continues to discover useful contingent decisions; this short recipe has not established transfer. All 613323 reserved roots remain training exclusions. Acquisition, finite-model transfer and full-hand strength remain separate claims.
+
+The independent auditor passed 557955 checks across all 112 selected roots and 72478 final snapshot entries. It checks saved identities, exact support-weighted values, selection and paired summaries without model or game calls. Its original cache-inventory assumption final-artifact candidate-count assumption, field-only audit-coverage assumption, and root-ID-list/count assumption were corrected only in the auditor, with all four failed attempts retained. Scientific files, endpoints and tolerances were unchanged. Saved consistency does not independently prove native-response provenance or replay every game transition.
+
+[Verified evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/616a05a83462ab1899406febc7ea213ad0fb7a5d/lem/gus-contingent-breadth-2026-10-20/evidence) `616a05a83462ab1899406febc7ea213ad0fb7a5d` freshly verifies 11 files and 59487 archive members. Original gzip packaging stopped before upload at the unchanged 100 MB staging cap; a lossless xz package retained every scientific member and the first failure. No scientific rerun or cap increase. The same [owner-private report](https://gus-first-look.psychometrix.chatgpt.site/#contingent-breadth) presents the result.

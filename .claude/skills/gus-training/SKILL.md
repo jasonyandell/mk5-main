@@ -59,18 +59,21 @@ optimal-action probability for costfinal. Read the exact occupancy decomposition
 before attributing residual errors to capacity, loss dilution or interference.
 Acquisition on known positions does not establish transfer or full-hand strength.
 
-The registered running successor is a32-versus64 TRAIN-root breadth comparison at the same
-64-update CE budget. Reuse the original32-root CE trajectory transparently as
-an immutable control; train one64-root arm from the same original parent using
-the old32 plus32fresh structurally eligible roots. Fresh shared development
-selects each trajectory; fresh test evaluates complete contingent policies.
-Public registration c6d35e2277cd4faad64645f7e64fcf5e5ff75756 verified12files/50members
-after independent review and synthetic checks. The controller launched at
-2026-10-20T19:04:12Z; follow CURRENT and actual process/receipt state before acting.
-All609611 previous reserved deals remain excluded; the new fixed pools reserved
-3712more before responses,613323future exclusions. No auxiliary prediction
-objective or opponent change. Never duplicate a controller, alter frozen code,
-or automatically retry a failed/unclosed attempt or enlarge a cap.
+The 32-versus-64 TRAIN-root breadth comparison is complete. Eleven scientific
+segments closed normally. At the same 64-update CE budget, development retained
+wide step 0 (all five snapshots tied), and narrow step 16. Fresh finite-test success:
+wide/parent 38.6768%, narrow 39.1109%; wide minus narrow −0.4340pp, paired95%
+[−2.4657,+1.0069]. The finite gate failed; no full-hand run, test reselection or
+promotion. This is not proof of a capacity limit or that additional data cannot help:
+fixed updates also changes repetitions per root. Preserve its four auditor-only
+failure histories and their inspected schema corrections. Never rerun completed
+science or archives. Read CURRENT for publication/completion receipts.
+
+All 613323 reserved deals remain future training exclusions. A successor is not
+selected. Choose a separately registered question that serves contingent decision
+learning; do not silently extend the update budget or select a checkpoint from
+this test. Keep the immutable historical control provenance, original clean inputs,
+fixed G0/pinned Zeb and explicit root law. No automatic retry or budget growth.
 
 The contingent teacher extends the existing exact one-choice verifier to at least
 two genuinely discretionary learner decisions. Offline teacher planning is
@@ -491,3 +494,19 @@ are new measurements, not new training. Preserve the original labels on reused
 TRAIN roots and validate overlapping observable-key contracts before combining
 new data. Root breadth at a fixed update budget changes repetitions per root;
 it does not independently identify an interference mechanism.
+
+Build saved-data audits from the frozen writer's actual schemas and lifecycle.
+An accepted root pins its original cache, while later student evaluation can append
+requests; require the original hashes unchanged and bind permitted additions to
+registered policy IDs and closed-segment snapshots. The original native audit
+covers parent requests as well as G0/Zeb. Derive selectable checkpoints from the
+registered list, not every saved artifact (`final.pt` may be an extra export).
+Inspect whether a field contains IDs or a count before comparing it. Preserve a
+failed auditor's source and receipt; repair only an inspected schema mistake,
+never modify scientific evidence to make an audit pass.
+
+Repeated per-segment snapshots compress poorly when separated beyond gzip's
+window. Before upload, check the total staged size including standalone manifests.
+If that cap stops packaging, preserve the pre-upload failure and use a lossless
+format suited to repeated manifests rather than dropping receipts or raising the
+cap. Verify every original member after a fresh immutable download.

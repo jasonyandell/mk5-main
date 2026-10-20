@@ -35,8 +35,9 @@ matched distillation pilot. The planner improves finite-model policies, but
 development retains the student's initialization; no full-hand gain is claimed.
 The cost comparison stopped before transfer evaluation for insufficient eligible
 test roots. [[gus-contingent-fit-2026-10-20]] subsequently established acquisition
-on its known TRAIN roots. [[gus-contingent-breadth-2026-10-20]] is registered and running: more distinct
-teacher roots at the same actor-update budget. Offline teacher planning is
+on its known TRAIN roots. [[gus-contingent-breadth-2026-10-20]] completed without established improvement:
+development retained wide step 0; fresh finite-test success matched parent
+at 38.6768%, versus narrow 39.1109%. The full-hand gate stayed closed. Offline teacher planning is
 authorized; deployed Gus still performs no search.
 
 Jason's later2026-10-19 charter puts learning Texas42 and understanding
