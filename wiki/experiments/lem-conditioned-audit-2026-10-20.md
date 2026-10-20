@@ -85,7 +85,7 @@ at 20,000, 0.252 at 100,000, 0.281 at 140,000 and 0.275 at 200,000. All 15 steps
     wide, trained against untrained under one instrument.
   - Their absolute shares and floors overstated how much the units name beyond position.
   - The conditioned read is the honest absolute. Re-reading the squeeze and drop-out families
-    under it is the follow-up.
+    under it is [[lem-squeeze-conditioned-2026-10-20]] (#227).
 - **Gus forms cleanly once position is removed.** The U-shape of the unconditioned read is gone,
   and the conditioned share rises from about 0.01 to 0.28 as the top-1 agreement climbs. Units keep
   their family as they form: 0.981 against a 0.266 null. That is the essay's formation signature,
