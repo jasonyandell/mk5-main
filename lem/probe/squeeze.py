@@ -192,3 +192,86 @@ def families(sample_labels: np.ndarray, names: list[str], acts: Activations, aud
     log(f"live {len(poles)}, broadened {len(broad)}; within-family share {obs:.3f} vs random families "
         f"{out['null_mean']:.3f} [{out['null_lo']:.3f}, {out['null_hi']:.3f}]")
     return out
+
+
+def subset_max_below(n_below: int, n_all: int, m: int) -> float:
+    """The share of m-subsets of n_all items whose every member is among the n_below lowest:
+    C(n_below, m) / C(n_all, m), in logs so large counts stay finite."""
+    from math import lgamma, exp
+    if m <= 0 or n_below < m:
+        return 0.0
+    lc = lambda a, b: lgamma(a + 1) - lgamma(b + 1) - lgamma(a - b + 1)
+    return exp(lc(n_below, m) - lc(n_all, m))
+
+
+def family_u(excess: np.ndarray, valid: np.ndarray, fam: np.ndarray) -> float | None:
+    """#200: for one pole, how well its best within-family union ranks among all its valid unions,
+    corrected for how many within-family unions there are. `excess` [C, C] is each union's precision
+    on the pole's top set minus the union's base rate. The answer is the share of random subsets,
+    as large as the within-family set, whose best is lower than the within-family best, ties counted
+    half: 0.5 in expectation when families mean nothing, near 1 for a coarse unit, near 0 when
+    within-family unions are worst."""
+    iu = np.triu_indices(len(fam), 1)
+    v = valid[iu]
+    e = excess[iu][v]
+    same = (fam[:, None] == fam[None, :])[iu][v]
+    m = int(same.sum())
+    if m == 0 or m == len(e):
+        return None
+    best = float(e[same].max())
+    nb, n_all = int((e < best).sum()), len(e)
+    # mid-rank: a random subset that holds the observed best (and nothing above it) ties, and counts half
+    return subset_max_below(nb, n_all, m) + 0.5 * subset_max_below(nb, n_all, m - 1) * m / (n_all - m + 1)
+
+
+def families_u(sample_labels: np.ndarray, names: list[str], acts: Activations, audit: dict,
+               nulls: int = NULLS, log=print) -> dict:
+    """The sharper family statistic (#200) over one net's broadened poles (Silas concepts only):
+    the mean of `family_u` per pole and per distinct best within-family union, against the same
+    statistic under permuted family labels."""
+    fam_of = {c: f for f, cs in FAMILIES.items() for c in cs}
+    fam = np.array([list(FAMILIES).index(fam_of[n]) for n in names])
+    n, c = sample_labels.shape
+    k = max(1, int(round(TOP * n)))
+    L = sample_labels.astype(np.float64)
+    base = L.mean(axis=0)
+    base_u = base[:, None] + base[None, :] - (L.T @ L) / n
+    ok = base_u <= BASE_CAP
+    single_ok = base <= BASE_CAP
+    excess_of = []
+    for r in audit["rows"]:
+        if r["kind"] == "dead":
+            continue
+        tl = sample_labels[top_set(acts.pole(r["pole"]), k)]
+        prec = tl.mean(axis=0)
+        u = union_table(tl, ok)
+        p1 = float(np.where(single_ok, prec, -1).max())
+        if u.max() - p1 >= GAIN:
+            excess_of.append((r["name"], u - base_u))
+    iu = np.triu_indices(c, 1)
+
+    def stat(f: np.ndarray) -> tuple[float, float, int]:
+        per, uniq = [], {}
+        same = f[:, None] == f[None, :]
+        for name, ex in excess_of:
+            val = family_u(ex, ok, f)
+            if val is None:
+                continue
+            per.append(val)
+            w = np.where(same & ok, ex, -np.inf)
+            i, j = np.unravel_index(int(np.argmax(w)), w.shape)
+            uniq.setdefault((min(i, j), max(i, j)), []).append(val)
+        if not per:
+            return float("nan"), float("nan"), 0
+        return float(np.mean(per)), float(np.mean([np.mean(v) for v in uniq.values()])), len(uniq)
+
+    obs, obs_u, n_unique = stat(fam)
+    rng = np.random.default_rng(SEED)
+    null = [stat(rng.permutation(fam)) for _ in range(nulls)]
+    nm, nu = [x[0] for x in null], [x[1] for x in null]
+    out = {"broadened": len(excess_of), "u_mean": obs, "u_unique_mean": obs_u, "unique_unions": n_unique,
+           "null_mean": float(np.nanmean(nm)), "null_lo": float(np.nanpercentile(nm, 2.5)), "null_hi": float(np.nanpercentile(nm, 97.5)),
+           "null_unique_mean": float(np.nanmean(nu)), "null_unique_hi": float(np.nanpercentile(nu, 97.5)), "nulls": nulls}
+    log(f"broadened {len(excess_of)}; u {obs:.3f} (unique {obs_u:.3f} over {n_unique}) vs permuted families "
+        f"{out['null_mean']:.3f} [{out['null_lo']:.3f}, {out['null_hi']:.3f}]")
+    return out

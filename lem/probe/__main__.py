@@ -55,6 +55,9 @@ def main(argv=None) -> None:
     s.add_argument("wide_net"); s.add_argument("wide_audit"); s.add_argument("out")
     s = sub.add_parser("squeeze-families"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET)
+    s = sub.add_parser("families-u"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("out")
+    s.add_argument("--net", default=NET); s.add_argument("--condition", choices=("n_plays",), default=None)
+    s.add_argument("--shuffle-rows", type=int, default=None, help="calibration: permute the label rows under this seed")
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
@@ -219,6 +222,22 @@ def main(argv=None) -> None:
         result["condition"] = a.condition
         audit.write(result, a.out_dir)
         log(json.dumps(result["shares"]))
+    elif a.cmd == "families-u":
+        from lem.probe import audit, concepts, squeeze
+        from lem.probe.net import forward, load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        with np.load(a.labels) as z:
+            concepts.list_of(str(z["identity"]))
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+        acts = forward(load_net(a.net), sample.x)
+        if a.condition:
+            acts = audit.condition(acts, sample.n_plays.astype(np.int64))
+        if a.shuffle_rows is not None:
+            labels = labels[np.random.default_rng(a.shuffle_rows).permutation(len(labels))]
+        res = squeeze.families_u(labels, names, acts, json.loads((Path(a.audit_dir) / "audit.json").read_text()), log=log)
+        res.update(net=a.net, condition=a.condition, shuffle_rows=a.shuffle_rows)
+        Path(a.out).write_text(json.dumps(res, indent=1))
     elif a.cmd == "fidelity-collect":
         from lem.probe import fidelity
         from lem.probe.sample import Sample

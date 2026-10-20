@@ -508,3 +508,22 @@ def test_stratified_gap_compares_rows_only_within_their_stratum():
     v2 = v + np.where(c, 1.0, 0.0)                             # a real one-unit gap inside the concept
     assert abs(stratified_gap(v2, rows, c, strata) - 1.0) < 1e-12
     assert np.nanmean(v[c]) - np.nanmean(v[~c]) > 5            # the unstratified gap is fooled
+
+
+def test_family_u_is_half_when_families_mean_nothing_and_high_for_a_coarse_unit():
+    """#200: the subset correction makes a big family no likelier to win than a small one."""
+    from lem.probe.squeeze import family_u, subset_max_below
+    assert abs(subset_max_below(3, 5, 2) - 3 / 10) < 1e-12          # C(3,2)/C(5,2)
+    assert subset_max_below(1, 5, 2) == 0.0
+    rng = np.random.default_rng(1)
+    c = 12
+    fam = np.repeat(np.arange(4), 3)
+    valid = np.ones((c, c), bool)
+    vals = []
+    for _ in range(4000):                                           # random excesses: mean u about 0.5
+        e = rng.random((c, c))
+        vals.append(family_u(np.maximum(e, e.T), valid, fam))
+    assert abs(np.mean(vals) - 0.5) < 0.02
+    e = np.zeros((c, c))
+    e[0, 1] = e[1, 0] = 1.0                                          # the best union lies in one family:
+    assert abs(family_u(e, valid, fam) - 60 / 66) < 1e-12           # misses it 54/66, ties it 12/66 (counted half)
