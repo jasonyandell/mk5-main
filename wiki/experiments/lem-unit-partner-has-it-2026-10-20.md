@@ -1,9 +1,9 @@
 ---
-title: "Unit paper 1: the 16×8 seed-0 net's unit 5, \"partner has it\" against \"the player just before me has it\" (Lem, #235)"
+title: "Unit paper 1: the 16×8 seed-0 net's unit 5, registered as \"partner has it\", read raw as \"I play last, and how good the trick is for my side\" (Lem, #235)"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: sealed
+status: complete
 ---
 
 The first **unit paper** of [[clean-neurons-42]]'s new mode (#235): one unit of one net, read the
@@ -185,7 +185,126 @@ Sealed 2026-10-20.
 
 ## Results
 
-*(not run)*
+Run 2026-10-20 as registered, in one `scripts/cpu-slot` run of 135 s (2.96e12 instructions). The
+evidence (`unit.json`, the log, the code, `SHA256SUMS`) is `lem/unit-partner-has-it-2026-10-20/`
+in [texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/e597dc9284afd27e747d914648fcc8ad9303807b/lem/unit-partner-has-it-2026-10-20).
+
+**The picture.** Read raw, unit 5 is not a partner-winning detector. It is an **"I play last"** unit
+that turns up the louder the trick is for my side. The top 1% saw only the peak of that dial.
+
+**The gate, raw (z₅; the unit's maximum is 38,542).**
+
+| seat | who is winning | rows | mean z₅ | on |
+|---|---|---:|---:|---:|
+| lead | — | 150,000 | −8,285 | 0.000 |
+| second | RHO | 94,926 | −11,004 | 0.027 |
+| third | partner | 65,249 | −11,201 | 0.002 |
+| third | RHO | 30,162 | **−30,989** | 0.000 |
+| last | LHO | 51,579 | 6,268 | 0.915 |
+| last | partner | 21,110 | **21,407** | 0.999 |
+| last | RHO | 21,509 | 3,097 | 0.738 |
+
+- **It opens at last seat**, for every winner. It is shut at third seat even when partner has the
+  trick: 75.6% of partner-winning rows are at third seat, and there it fires on 0.2% of them.
+- **Within last seat it is a dial**: partner > LHO > RHO.
+- **Its deepest closure is third seat with RHO winning.** That is the negative pole's distinction:
+  an opponent on top, with one more opponent still to play.
+- **It fires on 0.200 of rows, close to `partner-winning`'s 0.199, by coincidence.** Last seat is
+  0.217 of rows, and the unit is off on a quarter of the last-seat rows where RHO is winning.
+- **Why the label said `partner-winning`.** `last` is precise at 1.000 on the top set too. But read
+  R's play-count baseline explains `last` by construction (seat is the play count mod 4), so it can
+  never be granted. The label went to the dial's peak instead. This is a tools-rung finding, filed
+  as **#236**. It affects read R's *names* for position units; the clean shares are probably little
+  changed, but that is not measured.
+
+**Circuit in.** The + pole's largest votes are `x:winning:1` (+18,524) and `x:open:3` (+4,763). The
+− pole's are `x:open:2` (−29,065, third seat) and `x:winning:2` (−5,684). The unit is built from
+"I play last" and "partner has it", and shut by "I play third" and "RHO has it". The `need` bits
+follow, small.
+
+**Circuit out.** The readers by |w₂| are layer-2 units 5 (−668; its poles read `count-on-trick` and
+`partner-winning`), 7 (−413), 3 (−271) and 1 (+237). The push of +σ on legal tiles, in raw score
+units: count +864k against no count −497k; beats the winner −2.75M against does not beat +486k;
+trump −2.77M against not trump +541k. **Turning it up says "don't take it, put count on it".**
+
+**Steering, read by where play goes** (k = 1, 123,807 off rows, base take 0.394 and smear 0.324):
+
+| arm | Δtake [95%] | Δsmear [95%] | moves changed | the 15 other units |
+|---|---|---|---:|---|
+| up k = 0.25 | −0.040 | +0.029 | 0.092 | take ≥ −0.038, smear ≤ +0.059 |
+| up k = 0.5 | −0.081 | +0.060 | 0.180 | take ≥ −0.077, smear ≤ +0.052 |
+| **up k = 1** | **−0.149 [−0.151, −0.147]** | **+0.126 [+0.124, +0.128]** | 0.331 | take ≥ −0.144, smear ≤ +0.110 |
+| up k = 2 | −0.200 | +0.219 | 0.476 | take ≥ −0.207, smear ≤ +0.190 |
+| down (ablate, 53,250 on rows) | +0.092 [+0.090, +0.095] | −0.041 [−0.044, −0.039] | 0.189 | take ≤ +0.098, smear ≥ −0.027 |
+| input flip to "partner has it" (25,348 rows) | −0.181 [−0.186, −0.176] | +0.228 [+0.222, +0.234] | 0.488 | — |
+| unit up k = 1 on the flip's rows | −0.144 | +0.034 | — | — |
+
+- **The direction is right, but it is not specific.** Turning unit 5 up makes the net take less and
+  smear more. So does turning up almost any other unit. Unit 5 clears the other 15 units at k = 1
+  by 0.005 on take and 0.016 on smear. Ablating it raises take less than ablating another unit does.
+  Positive drive into this net's first layer pushes play generally toward "leave it, smear". The
+  measure can tell a unit's direction. It cannot yet tell a unit from the layer, and a null that
+  subtracts the layer's mean push is the next step for the measure.
+- **The unit carries the "don't take" half of "partner has it", not the "smear" half.** On the
+  flip's rows the unit's own steering gives 0.80 of the flip's take shift (−0.144 against −0.181)
+  and 0.15 of its smear shift (+0.034 against +0.228). Flipping the input turns the unit on
+  (a₁ 0 → 317, about 0.6σ). Other units carry the count.
+- **The steering effect is largest at second seat** (Δtake −0.212 at k = 1), where the unit never
+  fires. A dose into a silent unit is a new signal there, which is what steering on off rows means.
+- Eight steered picks are in `unit.json` under `examples`. Six of the eight are at second seat.
+
+**Formation.**
+
+| step | + pole's read-R label | precision of `partner-winning` | top set at last seat |
+|---:|---|---:|---:|
+| 0 | `setter-out-of-trump` (0.78) | 0.19 | 0.54 |
+| 1,000 | `x:gone:19` (0.79) | 0.26 | 0.42 |
+| 10,000 | `setter-void-off-suit` (0.94) | 0.26 | **0.86** |
+| 15,270 | `setter-void-off-suit` (0.88) | 0.30 | **0.99** |
+| 30,540 | `partner-winning` (0.84) | 0.84 | 1.00 |
+| 45,810 | `partner-winning` (0.97) | 0.97 | 1.00 |
+| 76,350 to 916,200 | `partner-winning` (0.99–1.00) | 0.99–1.00 | 1.00 |
+
+It grew in two steps. By step 15,270 it was a last-seat unit, labelled `setter-void-off-suit` because
+read R cannot say `last` (#236). Then the dial sharpened toward partner having the trick, between
+steps 15,270 and 45,810. The facet grew out of its own seat.
+
+**History (#202).** The top 1% sits slightly later in the hand than partner-winning rows below the
+median: trick 3.85 against 3.46. Need and slack are similar, and the bid is 30 in both. Every top
+row is at last seat, and no low row is. The gap is the seat, not history.
+
+**The predictions, graded: 4 of 9 hold.**
+
+| | measured | |
+|---|---|---|
+| 1. partner > LHO > RHO at last; partner > RHO at third; second below every partner cell | last 21.4k > 6.3k > 3.1k; third −11.2k > −31.0k; second −11.0k is *above* third-with-partner −11.2k | **wrong** (third clause) |
+| 2. − pole on third/last still `x:winning:2` ≥ 0.9 | 1.000 | holds |
+| 3. a detector: gaps < 0.1 of max, overlap < 0.01 | safe gap 0.079 and count gap 0.002 hold; declaration spread 0.170 and overlap 0.909 fail | **wrong** |
+| 4. readers 4 and 5 (w₂[4] > 0, w₂[5] < 0); push favours count, disfavours taking | top two readers are 5 (−668) and 7; push both directions hold | **wrong** (readers) |
+| 5. up: Δtake < 0, Δsmear > 0, beyond all 15 | −0.149 and +0.126, beyond all 15 by 0.005 and 0.016 | holds, narrowly |
+| 6. down: Δtake > 0, Δsmear < 0, beyond all 15 | +0.092 inside the 15 (max +0.098); smear beyond | **wrong** (take) |
+| 7. the flip moves the same ways and further | take −0.181 vs −0.144; smear +0.228 vs +0.034 | holds |
+| 8. the twin is blind under read R | best `partner-winning` 0.000 (raw 0.475) | holds |
+| 9. clean by 91,620 and stays; local labels from 1,000 on; last seat first | clean at 45,810 and after, last seat 1.00 vs 0.24; the labels at 1,000 to 15,270 are not trick-state | **wrong** (labels) |
+
+**Reading.**
+
+- **The loop worked on its calibration unit, by catching the label.** The raw seat-by-winner
+  table, the raw shape and formation each said the same thing on their own: last seat first, then
+  the dial. Predictions 1, 3 and 9 failed for that reason. They were written for the label, not
+  for the unit. This is the essay's warning about percentiles, from one top-1% window: they flatten
+  what tells a dial from a detector.
+- **Named the essay's way, as a verb**: *"I'm last; lean toward leaving it, more so the better the
+  trick already is for us."* It opens at last seat and closes hardest at third seat with an
+  opponent on top. It pushes the net away from taking and toward count.
+- **The steering measure works and is not yet specific.** Direction by where play goes was the
+  missing measure (#205). It reads the right direction here, but the layer's common push nearly
+  matches the unit's own. Paper 2 adds a layer-mean null.
+- **Next:** paper 2 is the messiest pole in this net under read R, L1+013 (`void-in-led`, 0.766).
+  It is read with the seat-by-winner table first (#236).
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 

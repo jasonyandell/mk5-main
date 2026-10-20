@@ -160,6 +160,17 @@ that *separate* or *cancel* the halves, and specialists that each read one half 
 differentiation. So the two candidates' lack of a union reader does not count toward mixing. #232
 replaces part 3 with a cancelling-reader test and requires a positive packing signature.
 
+## Correction, 2026-10-20: `late` is not third ∪ last
+
+The refutation clause failed (`third`, `last`) on part 1 because "list v1's own coarse `late`"
+names it. It does not. List v1's `late` is "the fifth trick or later" (`(<= 5 (trick-number))`,
+`lem/probe/concepts.py`), a time concept, not a seat. So no v1 concept names the union of third
+and last seat. Part 1 does not dispose of those units. They still have union readers, but by the
+correction above, a union reader is no mark against mixing either. The seat-union units (16×8
+seed 1, unit 12; seed 2, units 7 and 13) are open, not disposed of. This page also read them
+under the retired conditioned instrument (#233). Found while starting the unit papers
+([[lem-unit-partner-has-it-2026-10-20]], #235).
+
 ## Links
 
 [[lem-formation-2026-10-17]] · [[lem-coarse-or-mixed-2026-10-20]] · [[lem-family-statistic-2026-10-20]] ·
