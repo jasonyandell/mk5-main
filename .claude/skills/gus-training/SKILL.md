@@ -104,7 +104,8 @@ tests attention-path sensitivity without training. Read
 the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
 the final frozen representation did not support a better linear public-score
 readout than metadata and untrained controls. Read
-`scratch/lem/gus-route-rescue-v1/CURRENT.md` and current user steering before
+`scratch/lem/gus-value-numerics-v1/CURRENT.md`, the stopped
+`scratch/lem/gus-value-route-v1/CURRENT.md`, and current user steering before
 selecting another comparison. No completed evaluation or archive should be rerun.
 The completed `wiki/experiments/gus-native-cooldown-2026-10-19.md` pilot then
 inspected eight preselected native MLP coordinates across saved constant/cosine
@@ -132,6 +133,18 @@ and projection directions prevent interpreting control-unit comparisons as
 intrinsic importance or a mediation fraction. An unsuccessful restoration is
 not evidence of arbitrary mixing. Preserve the first failure receipt even when
 a later resume refuses to proceed; see the operations reference.
+
+The value-versus-routing instrument in
+`wiki/experiments/gus-value-routing-2026-10-20.md` stopped at its first
+numerical audit failure after 42 accepted original-parent rows. Its cosine
+primary endpoint is UNEVALUATED. Preserve the original failure and unclosed
+attempt: do not resume, summarize as complete science, or relax its threshold.
+The separately registered `wiki/experiments/gus-value-numerics-2026-10-20.md`
+diagnostic reproduced one finite float32 logit discrepancy of 2.002716e-5
+against the unchanged 2e-5 bound. Float64 paths agree within 5.24e-14 across
+that fixed row, supporting local rounding-order amplification. It cannot
+validate unrun rows or rescue the stopped comparison. Future numeric audits should save the condition, finite flags,
+per-field differences and raw values before asserting the tolerance.
 
 Jason requested a growing Sites First Look and explicitly said not to wait on him.
 During that authorized interpretation effort, continue bounded, preregistered work

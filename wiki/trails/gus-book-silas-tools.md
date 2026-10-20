@@ -183,3 +183,17 @@ more than U193 in both panels; this prespecified prediction fails across-panel
 replication. The scalar patches differ greatly in magnitude and projection
 direction, so neither result identifies exclusive semantics, per-edge
 importance, or unit mediation.
+
+[[gus-value-routing-2026-10-20]] attempted a registered same-position value vs
+routing decomposition at that final query. The numeric/nonfinite audit stopped
+on original-parent confirmation row `292:6` before cosine-final was measured.
+Only 42 original-parent row records were accepted; the failing condition and
+its numerical error were not saved. Its single primary prediction therefore
+remains untested, with no scientific conclusion from the stopped instrument.
+
+[[gus-value-numerics-2026-10-20]] is a separately scoped fixed-row numerical
+diagnostic on that original-parent row. One float32 condition narrowly crosses
+the prior strict numeric audit; in the same case the float64 path difference is
+near machine precision. This supports local precision/order sensitivity, but
+the original run's unsaved failing condition remains unknown and its primary
+prediction unevaluated. No whole-study or playing claim follows.

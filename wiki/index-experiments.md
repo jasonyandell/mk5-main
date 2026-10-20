@@ -293,3 +293,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-blank-lead-2026-10-19|Gus blank-suit lead confirmation]]
 - [[experiments/gus-first-look-2026-10-19|Gus current-lead routing into L1/U65]] — reused-row attention intervention; layer-0 sensitivity, no exclusive semantics or output mediation (complete)
 - [[experiments/gus-route-rescue-2026-10-20|Gus route/rescue: actor-query path and scalar restoration]] — final-query effect concentrated in one layer-0 head; scalar-restoration prediction does not hold across reused panels (complete)
+- [[experiments/gus-value-routing-2026-10-20|Gus value-versus-routing: stopped instrument audit]] — numeric audit stopped after 42 original-parent rows; cosine and registered primary prediction unmeasured (complete)
+- [[experiments/gus-value-numerics-2026-10-20|Gus fixed-row value/routing numerical diagnostic]] — one float32 audit threshold crossing at logit[19] on the fixed row; same-case float64 discrepancy near machine precision, local-only diagnosis (complete)

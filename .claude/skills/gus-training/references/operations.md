@@ -72,6 +72,11 @@ or quietly reuse its confirmation panel.
   existing failure before writing an exception receipt, rather than overwriting
   the cause with the later refusal. The route/rescue instrument caught this in
   prepublication review; preserve unpublished preparation revisions when refreezing.
+  A started segment also needs a durable normal pause/completion receipt. Refuse
+  resume and summary after an unclosed attempt, including an unhandleable kill.
+  Catch SIGTERM/KeyboardInterrupt after acquiring the controller lock; a refused
+  duplicate must not write a failure into the healthy lock owner's run. The
+  value/routing instrument tests these recovery cases before registration.
 - Checkpoints may record absolute participant paths. In a new checkout, fetch
   the pinned bytes and update an explicit new manifest; don't silently point
   an old identity at different weights.

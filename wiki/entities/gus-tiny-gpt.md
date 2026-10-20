@@ -2,7 +2,7 @@
 title: "Gus — the tiny history-conditioned Texas 42 GPT"
 kind: entity
 first_seen: 2026-10-18
-last_updated: 2026-10-19
+last_updated: 2026-10-20
 status: active
 ---
 
@@ -68,6 +68,10 @@ The older latest-five population recipe below is historical, not the default
 for this fixed-opponent series. Source: Jason's instruction in this session.
 
 ## Routes
+
+- [[gus-value-routing-2026-10-20]] — stopped at an instrument audit; primary comparison unevaluated. A separate fixed-row numerical diagnosis is linked there.
+- [[gus-route-rescue-2026-10-20]] — current-query head sensitivity; the unit restoration prediction did not hold across both reused panels.
+- [[gus-first-look-2026-10-19]] — native-unit reading, circuit evidence and the growing [First Look report](https://gus-first-look.psychometrix.chatgpt.site).
 
 - [[gus-sampled-confirmation-2026-10-19]] — complete; the sampled-policy gain did not replicate; no deployment improvement or promotion.
 - [[gus-unanchored-outcomes-2026-10-19]] — complete and published; no greedy promotion, secondary sampled-policy signal.
