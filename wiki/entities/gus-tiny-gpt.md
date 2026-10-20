@@ -39,6 +39,8 @@ on its known TRAIN roots. [[gus-contingent-breadth-2026-10-20]] completed withou
 development retained wide step 0; fresh finite-test success matched parent
 at 38.6768%, versus narrow 39.1109%. The full-hand gate stayed closed.
 [[gus-contingent-flatmask-2026-10-20]] completed: masked42.3121%, ordinary CE40.3714%, parent39.5703% on64fresh finite roots. Both paired improvement intervals include zero; the registered gate failed, with no full-hand test or promotion. Five roots improve, seven worsen and52tie against each comparator; the favorable mean is magnitude-driven. Independent saved-data audit and compact evidence are verified.
+
+[[gus-contingent-maskfit-2026-10-20]] diagnoses fixed specimens on the same64 TRAIN roots: masked final512 repairs71/72 corrections, introduces one other nonflat error, and reaches43.0605% versus exact teacher43.1126%. Both remaining errors lie on reached paths. This establishes known-example acquisition only; it does not reselect final512 or rescue the failed held-out gate. Fresh transfer remains open.
 [[gus-contingent-practice-recovery-2026-10-20]] completed 512 total updates: development selected long0/short16; fresh finite-test long/parent35.5045%, short36.3436%. The longer-course gate failed; no full-hand evaluation or promotion. The short control is a secondary confirmation lead, not an established stronger player. Independent saved-data audit and new evidence are verified.
 [[gus-contingent-practice-2026-10-20]] stopped at training initialization after
 collecting fresh development positions. No new updates ran; transfer is unevaluated.

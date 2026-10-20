@@ -41,7 +41,7 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-flatmask-v1/CURRENT.md`; inspect receipts and live
+`scratch/lem/gus-contingent-maskfit-v1/CURRENT.md`; inspect receipts and live
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
 
@@ -70,9 +70,24 @@ No claim of flat-target interference or stronger play. All620747reservations
 remain future exclusions. Twelve closed segments;1,041,834independent saved-data
 checks, not native forward/game replay. Evidence1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f
 verified11files/76716members. Read completion receipts for remaining delivery;
-never rerun completed science or archives. Next study NOT selected. A bounded
-TRAIN occupancy/value diagnosis of fixed specimens is a collaborator proposal;
-register separately before measuring, never use it to rescue the held-out gate.
+never rerun completed science or archives. The subsequent TRAIN diagnosis below
+does not rescue this failed held-out gate.
+
+The separately registered masked-CE TRAIN diagnosis is COMPLETE and audited at
+`scratch/lem/gus-contingent-maskfit-v1`. Five fixed policies on the same64 roots/
+1356rows: masked final512 repairs71/72 known corrections and adds one other
+nonflat error; complete TRAIN43.0605%, teacher43.1126%, parent36.3600%, CEfinal
+42.5730%. Both remaining masked errors are visited; unvisited rows are optimal.
+Exact occupied regret1/1920 splits equally between correction and retention.
+One scientific segment,6158new native calls/288new values;622parent captures/
+32values reused. Audit415646saved-data checks; no independent native/game replay.
+Evidence afa22e9d330667948ef6aa70469c58758e1c349c verified11files/12955members.
+Read completion receipts for delivery. Do not rerun the diagnostic or archives.
+Acquisition is nearly complete here; transfer is unestablished. Final512 is a
+fixed diagnostic specimen, not a new deployment selection. Next comparison NOT
+selected: a fresh disjoint-root transfer question is a candidate, not permission
+to rescue an old gate or select from its test. Retain corrected result-review
+history. All620747 exclusions unchanged.
 
 This tests a selected factor, not a proven diagnosis of flat-target interference.
 Teacher ties assume optimalfuture; student complete-policy outcomes remain decisive.
