@@ -136,6 +136,11 @@ From `/Users/jason/code/mk5-main`, the Mayor runs one detached tmux session per 
     tmux new-session -d -s desk-<name> -c /Users/jason/code/mk5-main \
       "claude --remote-control <Name> -n <Name> '<the desk prompt>'"
 
+Desks auto-compact at 300k (`autoCompactWindow` in Jason's user settings). Lem gets more room:
+launch it with `--autocompact 400k` after `claude` (Jason, 2026-10-20: "give the team room to
+breathe"; his gut says 500k). Never run `/autocompact` inside a desk, because it saves to the
+shared per-model settings and changes every desk.
+
 The desk prompt names the desk and says: read `wiki/playbooks/standing-desks.md`, create or
 find your notebook, register it, then take your first job. Jason reaches each desk from the
 Claude app over Remote Control under its name.
