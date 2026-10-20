@@ -59,6 +59,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus value numerics, #201's doubles cost, the first transformer audit** (2026-10-20, 6 archived entries) — [[gus-value-routing-2026-10-20]] (stopped before its primary), [[gus-value-numerics-2026-10-20]]; the Book desk's #201 (the doubles cost in thin top doubles) and `scenario.hf verify`; Lem's [[lem-gus-formation-2026-10-20]].
 ---
 
+## [2026-10-20 | book | #201 confirmation: thin top doubles cost more, the book's two-high cut does as well]
+
+On fresh seeds (120 batches, [[ch9-at-the-table-2026-10-17]]) the menu's doubles-trump cost is larger in thin hands: thin − deep −0.119 [−0.196, −0.042] (hit), but deep hands cost too (miss), the book's 6-6 and 5-5 split did as well (−0.124, registered blind), and the 6-6 alone did not separate. The arm's no-trump read at the book's sign did not replicate. Our menu omits trump losers (#230), so not a verdict on the book. Data: HF `book/ch9-201-confirm/`.
+
 ## [2026-10-20 | mayor | tidy: seven off-topic skills and a stale subagent retired]
 
 - Retired from `.claude/skills` and `.agents/skills`: ecological, volcano-plots, survival-forest,
