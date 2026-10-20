@@ -61,6 +61,10 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Lem's raw re-read and unit papers; Gus's contingent teaching** (2026-10-20, 30 archived entries) — [[lem-family-statistic-2026-10-20]] (fails its calibration), [[lem-coarse-or-mixed-2026-10-20]] (void by its own rule), [[lem-unit-origin-2026-10-20]] (#231), the raw headline re-read (#233) and unit papers 1–4 (#235); the Book desk's #201 registration and confirmation; the Mayor's fresh-read-before-sealing rule and tidy; Gus's fixed-checkpoint transfer ([[gus-contingent-transfer-2026-10-20]]), [[gus-u65-formation-2026-10-20]], the contingent teacher, cost, breadth and practice runs ([[gus-contingent-teacher-2026-10-20]], [[gus-contingent-cost-2026-10-20]], [[gus-contingent-breadth-2026-10-20]], [[gus-contingent-practice-recovery-2026-10-20]]).
 ---
 
+## [2026-10-20 | book | the book's surface count for doubles trump, encoded and unread (#230 A)]
+
+`arena.hand_metrics.ch9_doubles_loss` counts what a doubles-trump hand can lose the way Ch. 9 does: trump losers, each open off's worst count (its own included), a point per trick. It matches the book's tallies on Hands 23–25 (checked privately; the tests use synthetic hands). No player reads it, so every ledger is unchanged. [[book-assumptions]] A10 now says the menu's ceilings omit these terms, and that the no-trump read at the book's sign did not replicate (#201).
+
 ## [2026-10-20 | archive | the Gus bid-30 pilot synced to the canonical tournament store (#216)]
 
 - 31 missing records added in one commit (`9d02d5a3`): 17 participants (G5–G20) and 15 faceoffs in
