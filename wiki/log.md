@@ -57,6 +57,17 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus: recentred on winning; tournament batching** (2026-10-19, 19 archived entries) — the learning charter, leave-one-out baseline, partner-history and public-score instruments, [[gus-blank-lead-2026-10-19]], [[gus-first-look-2026-10-19]], PPO/value comparison and outcome learning without teacher anchoring; Hub publication batched for the tournament.
 ---
 
+## [2026-10-20 | lem | matched-row steering (#205): no unit-specific signal; ablation stays the evidence of use]
+
+[[lem-matched-steering-2026-10-20]]: steering cost was compared within each play count and against
+five random units on the same rows. It shows no signal specific to a named unit:
+- `+` poles: 0.41–0.46 below the random median (0.6 needed);
+- `−` poles: 0.49–0.54 above it;
+- pooled median −0.0001.
+
+All three predictions were wrong. The test reads cost, not where the move goes, so a
+direction-based steering test is the open question. It will be filed once it has a definition.
+
 ## [2026-10-20 | lem | the squeeze holds with position out (#227): 24 neurons 0.549 against 192 neurons 0.406]
 
 [[lem-squeeze-conditioned-2026-10-20]]: the 42 drop-out nets re-read conditioned on the play count.
