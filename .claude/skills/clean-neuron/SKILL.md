@@ -106,6 +106,16 @@ finding.
   floor.
 - Register predictions before the run, then grade them, including the ones you
   got wrong.
+- **Before sealing any registration, get an independent read against the article**
+  (Jason, 2026-10-20). Write the proposal: question, predictions, instrument and floors.
+  Then spawn one fresh-context Opus subagent, which:
+  - reads Cammarata's essay itself (https://already-clean.goodfire.com/), not our summary
+    in `wiki/topics/clean-neurons-42.md`;
+  - then reads the proposal;
+  - says where the proposal drifts from the article's framing: what the thesis claims, what
+    would count as a test of it, and what would not.
+
+  Adjust, record the review in the registration, then seal.
 
 ## Signs you have slipped into the old null
 
