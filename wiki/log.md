@@ -60,6 +60,37 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Lem's conditioned reads, steering, words and pour A** (2026-10-20, 6 archived entries) — [[lem-conditioned-audit-2026-10-20]] and [[lem-squeeze-conditioned-2026-10-20]] (both later superseded by [[lem-fixed-conditioning-2026-10-20]]), [[lem-matched-steering-2026-10-20]], [[lem-overbake-units-2026-10-20]], [[lem-words-need-data-2026-10-20]], [[lem-squeeze-pour-a-2026-10-20]].
 ---
 
+## [2026-10-20 | claude | lem: unit paper 1, the 16×8 s0 net's unit 5, is an "I play last" dial, not a partner-winning detector (#235, #236)]
+
+- The first unit paper ([[lem-unit-partner-has-it-2026-10-20]]), registered, reviewed against the
+  essay's full text, sealed, then run. It is a calibration unit for the loop. `lem.probe unit` is
+  new: a seat × winner table, the circuit in and out, formation, steering read by where play goes
+  (take and smear), and an input flip.
+- Read R labels the unit `partner-winning` at 1.000. Read raw, it fires at last seat for every
+  winner (0.91 / 1.00 / 0.74) and is shut at third seat even with partner winning (0.002). It is a
+  dial: partner > LHO > RHO. The play-count baseline can never grant `last`, so read R named the
+  dial's peak (#236).
+- Steering by where play goes: at k = 1, Δtake −0.149 [−0.151, −0.147] and Δsmear +0.126. But the
+  15 other units nearly match, so the measure needs a layer-mean null. The unit carries 0.80 of an
+  input flip's take shift and 0.15 of its smear shift. 4 of 9 predictions held.
+- A correction on [[lem-unit-origin-2026-10-20]]: list v1's `late` is "fifth trick or later", not
+  third ∪ last, so the seat-union units there are open.
+
+## [2026-10-20 | claude | lem: the after-compact hook reloads the essay's words, and the card leads with the work]
+
+- Diagnosis (Jason, 2026-10-20: after one compact, models drop the article's words, revert to
+  priors and test off-path): the essay postdates every model's training, so what a compaction
+  summary drops is refilled from the superposition literature. The hook reloaded only our card's
+  guardrails, about 1,650 words with no sentence of the essay and 19 uses of the prior's terms.
+- `.claude/hooks/after-compact.sh` now reloads six method sections from the local verbatim copy
+  (Cars and Animals, Recursive Generalization, How I Think About Neurons, What I Mean by Clean,
+  Motifs Over Monosemanticity, What a Solution Might Look Like), checks it against SOURCE.txt's
+  sha256, and says plainly when the copy is missing. The copy stays local and uncommitted.
+- [[clean-neurons-42]] gains "The work": the essay's loop (label, circuit, motif, formation,
+  steering, look harder) and the unit paper as the artifact. The hook reloads that section; the
+  guardrails stay on the card.
+- CLAUDE.md: Lem sessions hand off and restart rather than compact.
+
 ## [2026-10-20 | lem | the headline re-read raw (#233): 24 neurons 0.695 vs 192 neurons 0.542 against list v2, one seed pair reversed]
 
 [[lem-fixed-conditioning-2026-10-20]]: read raw with a play-count baseline in the labeller (which
