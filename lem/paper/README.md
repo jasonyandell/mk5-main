@@ -255,7 +255,10 @@ beyond position are the mover's trump.
 decisions at its validation best, yet its units stay at the untrained floor, conditioned (0.034
 against 0.014). Training past the best memorizes: agreement falls to 0.43, and the words never form.
 Gus on 500,000 deals formed them after about 10,000 steps. Play can be learned to a fair level without
-nameable units; the units come with data (#228 adds the 50,000-deal point).
+nameable units; the units come with data. With one initialization and three amounts of data
+([`wiki/experiments/lem-words-need-data-2026-10-20.md`](../../wiki/experiments/lem-words-need-data-2026-10-20.md),
+#228), the conditioned share at step 20,000 is 0.019 on 4,000 deals, 0.173 on 50,000 and 0.237 on
+500,000, and the 50,000-deal net's units keep their family as they form (0.978 against 0.233).
 
 ## 8. Models of others **[gap]**
 
