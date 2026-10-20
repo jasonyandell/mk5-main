@@ -109,8 +109,10 @@ finding.
 - **Before sealing any registration, get an independent read against the article**
   (Jason, 2026-10-20). Write the proposal: question, predictions, instrument and floors.
   Then spawn one fresh-context Opus subagent, which:
-  - reads Cammarata's essay itself (https://already-clean.goodfire.com/), not our summary
-    in `wiki/topics/clean-neurons-42.md`;
+  - reads Cammarata's essay itself from the local verbatim copy,
+    `~/code/mk5-main/scratch/sources/already-clean/essay.md` (with `SOURCE.txt`: URL and sha256),
+    not the site and not our summary in `wiki/topics/clean-neurons-42.md`. The copy has no licence:
+    never commit it, quote it at length, or publish it;
   - then reads the proposal;
   - says where the proposal drifts from the article's framing: what the thesis claims, what
     would count as a test of it, and what would not.
