@@ -58,6 +58,14 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 ---
 
+## [2026-10-20 | lem | the words come with data (#228): from one start, 4k deals 0.019, 50k 0.173, 500k 0.237]
+
+[[lem-words-need-data-2026-10-20]]: the 50,000-deal observer is the middle point between the
+overbake run and Gus, from the same seed-42 initialization.
+- At step 20,000 the conditioned share is 0.019 on 4k deals, 0.173 on 50k and 0.237 on 500k.
+- The 50k run forms words from step 2,000, and they keep their family (0.978 against 0.233).
+- 4 of 4 predictions held. More data adds words without mixing them.
+
 ## [2026-10-20 | lem | the words need data (#207): a 4k-deal observer plays at 0.53 agreement with no nameable units]
 
 [[lem-overbake-units-2026-10-20]]: the overbake observer was trained on 3,988 deals.
