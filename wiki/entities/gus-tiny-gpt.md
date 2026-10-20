@@ -190,3 +190,5 @@ comparison can keep opponents fixed; whole games add auction, score and memory
 questions. See [[gus-success-probability-planning]] for the charter clarification.
 
 [[gus-contingent-cost-2026-10-20]] trained exact action costs versus teacher-label CE, but stopped when512reserved test deals supplied24of32required positions. Transfer is UNEVALUATED; the next question is acquisition on the existing TRAIN positions, with a separate fixed-checkpoint diagnostic.
+
+The current [[gus-contingent-fit-2026-10-20]] diagnostic measures acquisition on the original TRAIN roots with five fixed saved policies and exact continuation regret. No new training or held-out claim; [[gus-contingent-cost-2026-10-20]] remains stopped before transfer evaluation.
