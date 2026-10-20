@@ -89,7 +89,8 @@ conditioned; the plain read gives the same sets):
 - **Doubles trump is the declaration a narrow net keeps.** I predicted the rarer declarations
   would buy their own units and lose them first. Instead `trump-is-doubles` is in every width's
   vocabulary down to 12 neurons, after the pip trumps are gone. Even the two common pip trumps,
-  fours and fives (0.32 and 0.30 of pour A's deals), are lost at 12 neurons.
+  fours and fives (0.313 and 0.281 of pour A's 250,000 deals), are lost at 12 neurons, while doubles
+  trump (0.068) is kept.
   - Doubles trump is the declaration that most changes the suit algebra: every double becomes a
     trump and leaves its suit. A unit for it changes the meaning of every other input, and a pip
     trump does not.
