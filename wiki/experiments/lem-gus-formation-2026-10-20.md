@@ -157,6 +157,16 @@ free. It does say:
 Scope: this net (`pretrained-v0`), these inputs (within-hand history, no cross-hand history),
 this vocabulary (list v2 and the field-v3 bits).
 
+## Correction, 2026-10-20: family kept
+
+"Family kept" is compared with independent draws from the final labels. That null misses
+continuity: a unit's label persists between checkpoints for reasons that have nothing to do with
+concepts, and most of family kept is the same label staying. When a label does change, a
+co-occurring concept, often in the same family, is the likeliest replacement
+([[lem-family-statistic-2026-10-20]]). Read the number as "units keep their label as they form",
+which is expected, and not yet as growth along a concept's facets. The re-check against a
+shuffled-label run and a co-occurrence-weighted null is #229.
+
 ## Links
 
 [[gus-tiny-gpt]] · [[lem-formation-2026-10-17]] · [[lem-naming-2026-10-17]] ·

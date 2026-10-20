@@ -199,7 +199,8 @@ later. An untrained net already scores 0.15–0.28 clean, the honest floor for e
 ([`wiki/experiments/lem-width-tree-2026-10-17.md`](../../wiki/experiments/lem-width-tree-2026-10-17.md),
 #195): a narrow unit's closest counterparts in a wide net trained from scratch come from its own
 concept family at 2.4–2.9 times the random-family rate. The coarse unit spreads along one
-concept's facets (the wide net has 47 `last` units), not into its sibling seats. *Correction (#200, #229):* the
+concept's facets (the wide net has 47 `last` units), not into its sibling seats. *Correction (#200, #229; this also covers every "family kept" figure, which is mostly the same label persisting under a
+continuity-blind null):* the
 family nulls behind this and the squeeze's family test permute family labels, and untrained nets beat
 them too (a sharper statistic scores untrained 0.583 against 0.5), so both family claims await a check
 against untrained twins. **The drop-out order**

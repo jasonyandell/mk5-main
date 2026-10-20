@@ -136,7 +136,8 @@ keeps the essay's slogans and loses these, and the slogans misused are worse tha
   cases (bow ties with dress shoes) the essay admits it cannot yet explain.
 
 Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
-[[lem-formation-2026-10-17]] (family kept 0.82 vs 0.28, but one unit kind formed coarse first),
+[[lem-formation-2026-10-17]] (family kept 0.82 vs 0.28, but one unit kind formed coarse first; mostly
+the same label persisting, so not yet growth along facets, #229),
 [[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets; not yet shown
 against untrained twins, [[lem-family-statistic-2026-10-20]], #229),
 [[lem-dropout-order-2026-10-17]] (cleaner to 12 neurons over 3 seeds; the last words are `lead` and

@@ -104,6 +104,16 @@ at 20,000, 0.252 at 100,000, 0.281 at 140,000 and 0.275 at 200,000. All 15 steps
 Scope: these nets, these inputs and list v2. What we learned from these models, not all of 42,
 yet.
 
+## Correction, 2026-10-20: family kept
+
+"Family kept" is compared with independent draws from the final labels. That null misses
+continuity: a unit's label persists between checkpoints for reasons that have nothing to do with
+concepts, and most of family kept is the same label staying. When a label does change, a
+co-occurring concept, often in the same family, is the likeliest replacement
+([[lem-family-statistic-2026-10-20]]). Read the number as "units keep their label as they form",
+which is expected, and not yet as growth along a concept's facets. The re-check against a
+shuffled-label run and a co-occurrence-weighted null is #229.
+
 ## Links
 
 [[lem-gus-formation-2026-10-20]] · [[lem-naming-2026-10-17]] · [[lem-dropout-order-2026-10-17]] ·

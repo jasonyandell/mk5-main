@@ -109,6 +109,16 @@ largest groups are `x:count:14` 32, `trump-is-fives` 27, `late` 22 and `x:count:
 Scope: this architecture, these inputs (within-hand history, no cross-hand history), list v2,
 conditioned on the play count. What we learned from this model, not all of 42, yet.
 
+## Correction, 2026-10-20: family kept
+
+"Family kept" is compared with independent draws from the final labels. That null misses
+continuity: a unit's label persists between checkpoints for reasons that have nothing to do with
+concepts, and most of family kept is the same label staying. When a label does change, a
+co-occurring concept, often in the same family, is the likeliest replacement
+([[lem-family-statistic-2026-10-20]]). Read the number as "units keep their label as they form",
+which is expected, and not yet as growth along a concept's facets. The re-check against a
+shuffled-label run and a co-occurrence-weighted null is #229.
+
 ## Links
 
 [[lem-overbake-units-2026-10-20]] · [[lem-conditioned-audit-2026-10-20]] ·
