@@ -5256,3 +5256,34 @@ registered experiment. Other seats and original model inputs remain fixed.
 
 **Touched pages:** [[gus-success-probability-planning]]
 **Updated:** Jason authorized continuing the loop. Prepared independent sampled-policy confirmation of frozen checkpoints with fresh deals, repeated draws and physical-root uncertainty; no experiment started before the outstanding canonical delivery. Lem/Book requests remain unanswered; Silas #166 remains open. Live ladder workers now acknowledge local queued records and share the publication cooldown.
+
+## [2026-10-19 | Gus | Canonical delivery complete]
+
+**Touched pages:** [[gus-unanchored-outcomes-2026-10-19]], [[gus-tiny-gpt]], [[gus-book-silas-tools]]
+**Updated:** The15 immutable tournament records are published in one batch and freshly verified at b2d54393002a549fb1407380852706aaca3a1ddc. No rerun, reselection or promotion. Original service failures remain archived; study and skill now record completed delivery.
+
+## [2026-10-19 | Gus | Independent sampled-policy confirmation]
+
+**Touched pages:** [[gus-sampled-confirmation-2026-10-19]], [[gus-tiny-gpt]], [[gus-success-probability-planning]]
+**Created:** Frozen-checkpoint confirmation on512 fresh physical deals, four sampled and one greedy draw each. Public16-file registration verified before execution; bounded resumable evaluation and replay, no training or reselection. Prior canonical delivery and completion addendum verified.
+
+## [2026-10-19 | Gus | Sampled-policy replication did not pass]
+
+**Touched pages:** [[gus-sampled-confirmation-2026-10-19]], [[gus-tiny-gpt]], [[gus-success-probability-planning]], [[gus-book-silas-tools]]
+**Updated:**512 fresh deals,10,240 hands:unanchored sampled39.111% versus parent38.965%,+0.146pp95%[-0.732,+1.025]. Neither registered criterion passes; no promotion or endpoint switch. All hands replayed and16 CPU units byte-rechecked. Compact14-file evidence verified at8045ce8d; original directory failure retained.
+
+## [2026-10-19 | First Look | Gus current-lead routing diagnostic]
+
+**Touched pages:** [[gus-first-look-2026-10-19]] [[gus-book-silas-tools]] [[index-experiments]]
+**Added:** Verified reused-row circuit result: layer-0 attention drives the measured U65 preactivation response; no exclusive semantics, unit-specific output mediation, or playing gain.
+
+## [2026-10-20 | Gus route/rescue | Final actor-query path and native scalar restoration]
+
+**Touched pages:** [[gus-route-rescue-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
+
+**Added:** Preregistered actor-query versus earlier-query routing and baseline scalar-restoration diagnostic on 48 reused prefixes. The U65 preactivation effect is concentrated in layer-0's second head at the final actor query in both panels. The U65-versus-U193 raw-TV restoration prediction does not hold across both panels; patches differ in magnitude and projection direction. Full audit and immutable evidence are anonymously verified. No new semantics, mediation, training gain or playing result.
+
+## [2026-10-20 | sweep | The July Walt/Hoyt stack shelved: nine branches in attic/ tags, eleven pages kept]
+
+- [[branch-rescue-2026-10]] § The July stack, shelved: Jason's word, "Keep the wiki pages, shelve the code in attic/ tags".
+- Rescued to main: [[atlas]], [[hoyt]], [[metal-hoyt]], [[cfr-primer]], [[forty-two-native-object]], [[full-metal-hoyt]], [[fundamental-factorization]], [[hoyt-perf-primer]], [[perf-log]], [[perf]], [[role-threat-tensor]].
