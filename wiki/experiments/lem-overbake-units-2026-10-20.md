@@ -3,7 +3,7 @@ title: "Already-clean test 1c: what overfitting does to a tiny GPT's units — t
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]]), and the interpretability handoff of
@@ -45,7 +45,54 @@ An unnamed unit is "not named in list v2".
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered. The ten checkpoints were checked against the handoff's
+`SHA256SUMS` before any forward pass, and all matched. Evidence is
+`lem/overbake-units-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/028b83fae7ef8e14fac61cfe75fc0b778ab4aee1/lem/overbake-units-2026-10-20):
+12 audits, `grade.py`, `grade.txt` and `grade.json`. Shuffled labels gave 0.000 on all 20 shuffles
+at step 200,000.
+
+| step | conditioned clean share | Silas / raw | top-1 agreement with the recorded move |
+|---:|---|---:|---:|
+| untrained, seeds 42 / 1 / 2 | 0.026 / 0.009 / 0.008 | | 0.035 / 0.034 / 0.031 |
+| 4,000 (validation best) | 0.034 [0.015, 0.075] | 9 / 26 | **0.527** |
+| 5,000 | 0.039 [0.015, 0.069] | 9 / 31 | 0.533 |
+| 10,000 | 0.022 [0.005, 0.043] | 1 / 22 | 0.500 |
+| 20,000 | 0.019 [0.008, 0.042] | 0 / 19 | 0.475 |
+| 40,000 | 0.013 [0.006, 0.036] | 0 / 13 | 0.446 |
+| 80,000 | 0.019 [0.003, 0.037] | 2 / 17 | 0.445 |
+| 120,000 | 0.019 [0.006, 0.033] | 0 / 19 | 0.427 |
+| 160,000 | 0.019 [0.007, 0.036] | 0 / 19 | 0.436 |
+| 200,000 (overbaked) | 0.015 [0.006, 0.036] | 1 / 14 | 0.428 |
+
+**The predictions, graded.**
+
+| | measured | |
+|---|---|---|
+| 1. step 4,000 ≥ floor + 0.03 (0.044) | 0.034 | **wrong** |
+| 2. step 200,000 above step 4,000 | 0.015 against 0.034 | **wrong** |
+| 3. step 200,000 at least 0.03 below the series maximum (0.039) | 0.024 below | **wrong**, narrowly |
+| 4. step 200,000 below `pretrained-v0`'s 0.275 | 0.015 | holds |
+| 5. family kept ≥ 0.6 and ≥ 2× null | one unit clean with a Silas label at the end | not gradeable (ill-posed) |
+
+**Reading.**
+
+- **The words need data.** On 3,988 deals the observer agrees with the recorded move on 0.53 of
+  held-out decisions at its validation best. That is close to the 500,000-deal Gus at the same
+  step (0.578 at step 5,000). But its units never rise much above the untrained floor: 0.034 to
+  0.039 against 0.014, with 9 Silas-named units at most.
+  - Gus on 500,000 deals formed its words after about 10,000 steps (0.135 at step 10,000, 0.237 at
+    20,000).
+  - This net's validation best comes at step 4,000, before any words have formed.
+  - Training on keeps lowering the training loss and memorizes. Held-out agreement falls to 0.43,
+    the conditioned share stays at the floor, and the few clean units are raw `gone` bits.
+- **What this says on the ladder.** It is rung 3, narrow data. The small-data net's units are not
+  named in list v2. Nothing here says they are mixed. A memorizing net could hold deal-specific
+  features that no general vocabulary names, and that is the data gap the essay describes. My
+  predictions assumed the general words would form first and erode later. They never formed.
+- **The third point** is the 50,000-deal data-scale specimen of #207, filed as #228.
+
+Scope: this architecture, these inputs, list v2, conditioned on the play count.
 
 ## Links
 

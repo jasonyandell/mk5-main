@@ -249,6 +249,14 @@ overstated what units name beyond position. The conditioned read is the honest a
 trick, which a read conditioned on the play count cannot credit by construction. The last words
 beyond position are the mover's trump.
 
+**The words need data**
+([`wiki/experiments/lem-overbake-units-2026-10-20.md`](../../wiki/experiments/lem-overbake-units-2026-10-20.md),
+#207). The same architecture trained on 3,988 deals agrees with the recorded move on 0.53 of held-out
+decisions at its validation best, yet its units stay at the untrained floor, conditioned (0.034
+against 0.014). Training past the best memorizes: agreement falls to 0.43, and the words never form.
+Gus on 500,000 deals formed them after about 10,000 steps. Play can be learned to a fair level without
+nameable units; the units come with data (#228 adds the 50,000-deal point).
+
 ## 8. Models of others **[gap]**
 
 The book's lessons assume opponents who model you, partners who read a system, fallible
