@@ -107,6 +107,14 @@ first, and let the central authority manage only links and lookups.
   marked `noisy_timed`.
 - **Plunge is production.** Read-only, unless Jason approves a specific change. Plunge merges
   are Jason's call.
+- **Interp experiments get a fresh read of the source before they're sealed.** Jason, 2026-10-20:
+  write the proposal (question, predictions, instrument, floors). Then one Opus subagent with
+  fresh context reads the original article itself, Cammarata's
+  ["Neural Networks Are Already Clean"](https://already-clean.goodfire.com/), not our
+  [[clean-neurons-42]] summary. It reviews the proposal against the article's framing: what the
+  thesis claims, and what would or wouldn't test it. Adjust, note the review in the registration,
+  then seal. That's one extra Opus subagent for a turn or two, allowed even on a usage diet. For
+  book experiments, the framing source is the book (private archive only).
 - **Voice.** Plain and short, for a reader on a phone. Every number carries its interval and
   baseline. Book work follows [[book-authority]].
 - **Restarts.** A desk restarted cold reads this page and its own notebook artifact (find it
