@@ -137,6 +137,13 @@ Caveats: one seed except at 16×8; the 48-concept v1 list (the declaration enter
 pip trumps, seat 0 bids 30. Next: checkpoints of the 16×8 and 128×64 nets to watch the units form
 (the essay's formation test), and concept list v2 on these nets once #185's labels run.
 
+## Correction, 2026-10-20
+
+The family test's null (random reassignment of concepts to families) sets the bar too low.
+Untrained nets beat it too ([[lem-family-statistic-2026-10-20]]), so "units broaden within one
+family" is not yet shown against untrained twins. The re-check is #229. The clean shares, and
+narrower-is-cleaner under conditioning ([[lem-squeeze-conditioned-2026-10-20]]), are unaffected.
+
 ## Links
 
 [[clean-neurons-42]] · [[lem-the-teacher]] · [[lem-field-net-audit-2026-10-15]] ·

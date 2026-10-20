@@ -93,6 +93,12 @@ narrow pole's matches): `lem/width-tree-2026-10-17/` in
 
 Caveats: one wide seed; correlation matching on pre-activations; labels from the v1 list.
 
+## Correction, 2026-10-20
+
+The tree's null (random families) sets the bar too low. Concepts of one family co-occur, and
+untrained nets beat a permuted-family null ([[lem-family-statistic-2026-10-20]]). "Own family
+2.4–2.9× random" is not yet shown against an untrained wide or narrow net. The re-check is #229.
+
 ## Links
 
 [[lem-squeeze-2026-10-16]] · [[lem-formation-2026-10-17]] · [[clean-neurons-42]] · [[lem-the-teacher]]
