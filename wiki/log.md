@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-20, 457 archived entries)
+## Digest (2026-04-09 → 2026-10-20, 487 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -58,116 +58,92 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 - **Gus value numerics, #201's doubles cost, the first transformer audit** (2026-10-20, 6 archived entries) — [[gus-value-routing-2026-10-20]] (stopped before its primary), [[gus-value-numerics-2026-10-20]]; the Book desk's #201 (the doubles cost in thin top doubles) and `scenario.hf verify`; Lem's [[lem-gus-formation-2026-10-20]].
 - **Lem's conditioned reads, steering, words and pour A** (2026-10-20, 6 archived entries) — [[lem-conditioned-audit-2026-10-20]] and [[lem-squeeze-conditioned-2026-10-20]] (both later superseded by [[lem-fixed-conditioning-2026-10-20]]), [[lem-matched-steering-2026-10-20]], [[lem-overbake-units-2026-10-20]], [[lem-words-need-data-2026-10-20]], [[lem-squeeze-pour-a-2026-10-20]].
+- **Lem's raw re-read and unit papers; Gus's contingent teaching** (2026-10-20, 30 archived entries) — [[lem-family-statistic-2026-10-20]] (fails its calibration), [[lem-coarse-or-mixed-2026-10-20]] (void by its own rule), [[lem-unit-origin-2026-10-20]] (#231), the raw headline re-read (#233) and unit papers 1–4 (#235); the Book desk's #201 registration and confirmation; the Mayor's fresh-read-before-sealing rule and tidy; Gus's fixed-checkpoint transfer ([[gus-contingent-transfer-2026-10-20]]), [[gus-u65-formation-2026-10-20]], the contingent teacher, cost, breadth and practice runs ([[gus-contingent-teacher-2026-10-20]], [[gus-contingent-cost-2026-10-20]], [[gus-contingent-breadth-2026-10-20]], [[gus-contingent-practice-recovery-2026-10-20]]).
 ---
 
-## [2026-10-20 | claude | lem: unit paper 1, the 16×8 s0 net's unit 5, is an "I play last" dial, not a partner-winning detector (#235, #236)]
+## [2026-10-20 | archive | the Gus bid-30 pilot synced to the canonical tournament store (#216)]
 
-- The first unit paper ([[lem-unit-partner-has-it-2026-10-20]]), registered, reviewed against the
-  essay's full text, sealed, then run. It is a calibration unit for the loop. `lem.probe unit` is
-  new: a seat × winner table, the circuit in and out, formation, steering read by where play goes
-  (take and smear), and an input flip.
-- Read R labels the unit `partner-winning` at 1.000. Read raw, it fires at last seat for every
-  winner (0.91 / 1.00 / 0.74) and is shut at third seat even with partner winning (0.002). It is a
-  dial: partner > LHO > RHO. The play-count baseline can never grant `last`, so read R named the
-  dial's peak (#236).
-- Steering by where play goes: at k = 1, Δtake −0.149 [−0.151, −0.147] and Δsmear +0.126. But the
-  15 other units nearly match, so the measure needs a layer-mean null. The unit carries 0.80 of an
-  input flip's take shift and 0.15 of its smear shift. 4 of 9 predictions held.
-- A correction on [[lem-unit-origin-2026-10-20]]: list v1's `late` is "fifth trick or later", not
-  third ∪ last, so the seat-union units there are open.
+- 31 missing records added in one commit (`9d02d5a3`): 17 participants (G5–G20) and 15 faceoffs in
+  `faceoffs/marks7-bid30/20261018/`. All 37 checked anonymously against the manifest. The table
+  built from the published bytes matches the pilot's exactly.
+- Touched: [[gus-tournament-pilot-2026-10-18]].
 
-## [2026-10-20 | claude | lem: the after-compact hook reloads the essay's words, and the card leads with the work]
+## [2026-10-20 | claude | mayor: desks are background sessions after the reboot; the Lem frame is gated by session id]
 
-- Diagnosis (Jason, 2026-10-20: after one compact, models drop the article's words, revert to
-  priors and test off-path): the essay postdates every model's training, so what a compaction
-  summary drops is refilled from the superposition literature. The hook reloaded only our card's
-  guardrails, about 1,650 words with no sentence of the essay and 19 uses of the prior's terms.
-- `.claude/hooks/after-compact.sh` now reloads six method sections from the local verbatim copy
-  (Cars and Animals, Recursive Generalization, How I Think About Neurons, What I Mean by Clean,
-  Motifs Over Monosemanticity, What a Solution Might Look Like), checks it against SOURCE.txt's
-  sha256, and says plainly when the copy is missing. The copy stays local and uncommitted.
-- [[clean-neurons-42]] gains "The work": the essay's loop (label, circuit, motif, formation,
-  steering, look harder) and the unit paper as the artifact. The hook reloads that section; the
-  guardrails stay on the card.
-- CLAUDE.md: Lem sessions hand off and restart rather than compact.
+- The machine rebooted at 18:17 CDT and took the tmux server, every desk, the ladder and the
+  watcher with it. The desks came back as `claude --bg --resume <id>` sessions; the ladder and
+  watcher were restarted by the Mayor.
+- `.claude/hooks/after-compact.sh` gated the Lem essay reload on a tmux session name, which a
+  background session doesn't have, so every desk would have paid for the ~4,300-word frame at
+  each compaction. It now reloads the frame only for a session whose id is listed in
+  `scratch/lem/sessions` (local, gitignored), or a tmux `desk-lem`; everyone else gets one line.
+- [[standing-desks]] records the new launch form and the session list.
 
-## [2026-10-20 | lem | the headline re-read raw (#233): 24 neurons 0.695 vs 192 neurons 0.542 against list v2, one seed pair reversed]
+## [2026-10-20 | claude | lem: the audit reports what the baseline excluded and the on/off match (#236)]
 
-[[lem-fixed-conditioning-2026-10-20]]: read raw with a play-count baseline in the labeller (which
-replaces conditioning), against list v2.
-- The field net at 24 neurons averages 0.695 clean against 0.542 at 192. One of three seed pairs
-  reverses, and the floors are 0.375 against 0.276.
-- Gus is 0.312 against a floor of 0.014.
-- The pooled conditioning still leaves near-silent top rows in 21% of 128×64 units, so it is
-  retired.
-- 2 of 5 predictions held. The headline now says what it measures: fit to our list, not "coarser,
-  not mixed".
+- `lem/probe/audit.py` adds two report-only columns per pole, beside the label (never used to
+  classify):
+  - the best concept the play-count baseline excluded;
+  - the concept, or its negation, that best agrees with the unit's on/off, against the agreement
+    of a constant.
+- On 16×8 s0 the labels are unchanged, and the columns recover the unit papers' hand findings:
+  - L1+005 `last` (excluded 1.00; on/off 0.971 against chance 0.800);
+  - L2+003 `lead` (0.96; 0.911 against 0.605);
+  - L1±014 `¬partner-winning` (0.831);
+  - L1±007 `¬trump-led` (0.925), where list v2 lacks the true boundary (#202).
+- Reproduce with `python -u -m lem.probe audit SAMPLE LABELS OUT --net NET --baseline n_plays --shuffles 0`.
 
-## [2026-10-20 | lem | the two mixed-unit candidates are artifacts of the conditioned instrument (#232), and the instrument needs a fix]
+## [2026-10-20 | claude | lem: the six unit papers, filed back to the card (#235)]
 
-[[lem-lead-units-2026-10-20]]: read upstream and downstream, both lead-plus-trick-state candidates
-come out unresolved, not mixed. Their "lead" halves barely fire in raw terms (0.00014 and 0.127 of
-max). Conditioning z-scores each play count separately, so noise in strata where a unit is nearly
-silent fills its top set. That flaw reaches every conditioned read, the CLAUDE.md headline
-included. Its size is unmeasured, and the fix plus a re-run of #227 is filed. 2 of 4 predictions
-held.
+- [[clean-neurons-42]] Status gains a table of the six unit papers on the 16×8 s0 net (L1 5, 13,
+  0, 7, 14; L2 3): each one's verb, use and score.
+- Also five lessons that carried across them: read steering by where play goes against the layer;
+  the pole is not the job; layer-1 units are graded sums; growth was never a merge; when
+  predictions contradict, suspect the shared premise.
 
-## [2026-10-20 | book | #201 confirmation: thin top doubles cost more, the book's two-high cut does as well]
+## [2026-10-20 | Gus | Known contingent corrections acquired]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
 
-On fresh seeds (120 batches, [[ch9-at-the-table-2026-10-17]]) the menu's doubles-trump cost is larger in thin hands: thin − deep −0.119 [−0.196, −0.042] (hit), but deep hands cost too (miss), the book's 6-6 and 5-5 split did as well (−0.124, registered blind), and the 6-6 alone did not separate. The arm's no-trump read at the book's sign did not replicate. Our menu omits trump losers (#230), so not a verdict on the book. Data: HF `book/ch9-201-confirm/`.
+[[gus-contingent-maskfit-2026-10-20]] completed and independently saved-data audited: masked final512 repairs71/72 known corrections with one new other-nonflat error; exact TRAIN43.0605%, teacher43.1126%. Occupancy locates both errors on reached paths. No new training or roots; prior held-out gate stays failed, no reselection/promotion. Verified compact evidence and owner-private report published.
 
-## [2026-10-20 | mayor | tidy: seven off-topic skills and a stale subagent retired]
+## [2026-10-20 | claude | lem: unit paper 6, keep your count off their trick (#235)]
 
-- Retired from `.claude/skills` and `.agents/skills`: ecological, volcano-plots, survival-forest,
-  minirocket, word2vec, pymc, umap (generic data-science packs, unused here). Also retired
-  `.claude/agents/analytics-engineer.md`, which pointed at a WSL path. Every listed skill costs
-  context on every turn. They can be restored from the tag `attic/skills-2026-10-20`.
+- [[lem-unit-theirs-2026-10-20]]: 16×8 s0 unit 14, #232's C1, read whole with `run_winner`.
+  Two additive terms: an opponent's off double on the trick (+15k) and partner winning (−21k).
+  Partner's term wins when both apply (mean z −2,475 when partner has trumped the double).
+- Its use: where an opponent's double wins and nothing of mine can, ablating it raises count given
+  away from 0.044 to 0.426, rank 1 of 16. In trumping in it ranks fourth; unit 7 leads there.
+- 3 of 5 held. The double term was in the random initial weights; the partner shut-off grew last
+  (epoch 10), the reverse of the registered order.
 
-## [2026-10-20 | mayor | six small fixes from a fresh read of Anthropic's model and Claude Code guides]
+## [2026-10-20 | Gus | Flat-row masking has favorable estimates but fails the improvement gate]
 
-- CLAUDE.md imports AGENTS.md (Claude Code reads AGENTS.md only when there is no CLAUDE.md), adds
-  "When compacting" (what a summary must keep), and allows in-session checklists.
-- [[standing-desks]]: restarts include compactions; documents get no filler; one message per handoff,
-  no acks, since each message wakes an idle desk.
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
 
-## [2026-10-20 | lem | read by origin, narrow nets' broadened units are mostly grown; two candidates await observer checks (#231)]
+[[gus-contingent-flatmask-2026-10-20]] complete. Fresh64finite success masked42.3121%, ordinary CE40.3714%, parent39.5703%; both paired improvement intervals cross zero, registered gate failed, no full-hand test or promotion. Twelve closed segments and1,041,834saved-data audit checks; new evidence1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f freshly verified. All620747reserved deals excluded. Same owner-private First Look report updated; no next experiment selected.
 
-[[lem-unit-origin-2026-10-20]]: across six formation runs, each broadened unit's own checkpoints
-show how its second concept arrived.
-- At 16×8, 16 of 21 resolved units sprouted it or were born coarse, and 24 of 27 have a layer-2
-  reader of the union. At 128×64, 248 of 271 did.
-- The 16×8 non-local share (0.238, prediction wrong) is mostly the mover's seat values, which can
-  have no bridge rows.
-- Two units pass parts 1–3 of the sealed refutation clause, and their observer checks are filed.
-- 3 of 4 predictions held. The registration was reviewed twice against the essay's full text.
+## [2026-10-20 | gus | Teach consequential preferences without flat-action targets]
 
-## [2026-10-20 | lem | coarse or mixed (#229): void by its own rule; the planted controls did not separate]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+**Created:** [[gus-contingent-flatmask-2026-10-20]] — Jason selected exact flat-row CE masking. Same TRAIN lessons and full512 batch stream; ordinary CE reused; fresh development/test; no outcome yet.
+**Updated:** [[gus-tiny-gpt]] and gus-training skill route the registered controller. Nine synthetic tests, exact public reuse and source review passed; original pre-registration helper failure retained. Lem/Book/Silas capability refresh found no changed prerequisite. Registration publicly verified before launch.
 
-[[lem-coarse-or-mixed-2026-10-20]], the first registration reviewed against the essay before
-sealing. It used planted folds (two units merged in a trained net's weights) as positive controls
-for mixed and coarse, and read routes in and uses out. The controls overlapped:
-- routes in cannot tell a merge of mutually exclusive values (`lead` + `last`) from a fold of
-  unrelated ones, which is the essay's own-route point;
-- uses out separated only partly.
+## [2026-10-20 | claude | lem: unit paper 5, a trump counter that opens trumping in (#235)]
 
-So the instrument is void and nothing is concluded. A uses-out instrument is filed.
+- [[lem-unit-no-trump-yet-2026-10-20]]: 16×8 s0 unit 7, the doubles switch's largest input.
+  `run_trick` builds the concept list v2 lacks ("trumps on the open trick") from the record.
+- On-rate falls in a staircase: 0.954 with no trump on the trick, 0.361 with one partner trump,
+  0.231 with one opponent trump, ≤ 0.009 with two. Opponents' trumps weigh about twice as much.
+- Where I can trump in, ablating it cuts trumping in by 0.411 (base 0.797), the largest of the 16
+  units, each ablated on the same rows.
+- 1 of 5 held. The label predictions assumed a bit and missed narrowly. Read R's `trump-led` names
+  the deepest rows, not the none-vs-one boundary where the job lives (#236, #202).
 
-## [2026-10-20 | mayor | interp experiments get a fresh read of the source before they're sealed]
+## [2026-10-20 | gus | Finish the registered longer-practice comparison]
 
-- [[standing-desks]] house rule (Jason): after the proposal is written, one Opus subagent reads
-  Cammarata's article itself (not [[clean-neurons-42]]) and reviews the proposal against its
-  framing. The desk adjusts, then seals. This is allowed even on a usage diet.
-
-## [2026-10-20 | book | #201 registered after a fresh framing review]
-
-The #201 thin-top-doubles confirmation is sealed on [[ch9-at-the-table-2026-10-17]] (v3dt, fresh seeds 5261–5380). A fresh Opus reader read the book's Ch. 9 first and found thin/deep is our cut and the menu prices doubles without trump losers (#230); the registration gained book-native secondaries (the 6-6; the 6-6 and 5-5) and an honest meaning paragraph. The book-interp skill now carries the review step.
-
-## [2026-10-20 | lem | the sharper family statistic (#200) fails its calibration: permuted-family nulls set the bar too low]
-
-[[lem-family-statistic-2026-10-20]]: corrected for base rates, family size and lumpiness, the
-coarse-versus-mixed statistic scores 0.583 on untrained nets and 0.425 on shuffled labels, not 0.5.
-Trained nets are no higher than their untrained twins (16×8: 0.518 against 0.601). Concepts of one
-family co-occur, so a null that permutes family labels sets the bar too low. The squeeze's and the
-width tree's family claims are now "not yet shown against untrained twins" (#229), and both pages
-carry a correction. The clean shares and narrower-is-cleaner are unaffected. 0 of 4 predictions
-held.
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+**Updated:** [[gus-contingent-practice-recovery-2026-10-20]], [[gus-tiny-gpt]] — 448 new updates completed, long selected step0; no primary improvement or promotion. Short control secondary finite-model lead requires confirmation. Independent saved-data audit passed 1,249,974 checks; new evidence freshly verified; same owner-private report updated. Original failed attempt retained. Skill routes completed receipts and an unselected flat-mask candidate.

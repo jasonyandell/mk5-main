@@ -1,3 +1,0 @@
-## [2026-10-20 | Lem | Gus learns TRAIN corrections with collateral errors]
-
-[[gus-contingent-fit-2026-10-20]] completes all 3110 native captures and 160 exact TRAIN policy/root values in one short segment. Both final students repair 14/18 strict errors; cost introduces four new non-flat errors and CE one. TRAIN success reaches 37.6558% for CE final versus parent 36.1636% and teacher 38.6310%. Independent saved-data audit passes 187637 checks; public evidence verifies 9 files/6565 members. No training or new field calls, no held-out claim, checkpoint reselection or promotion. The stopped cost transfer remains unevaluated.
