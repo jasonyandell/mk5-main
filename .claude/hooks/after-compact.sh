@@ -10,7 +10,9 @@
 # ("The work"). The copy has no licence: it is read into this local session only, never committed.
 #
 # Read the session's own checkout (a worktree may be ahead of the main one), else the project's.
-cwd=$(sed -n 's/.*"cwd" *: *"\([^"]*\)".*/\1/p')
+input=$(cat)
+cwd=$(printf '%s' "$input" | sed -n 's/.*"cwd" *: *"\([^"]*\)".*/\1/p')
+session=$(printf '%s' "$input" | sed -n 's/.*"session_id" *: *"\([^"]*\)".*/\1/p')
 
 first_file() {
   for f in "$@"; do [ -f "$f" ] && { echo "$f"; return; }; done
@@ -32,15 +34,20 @@ section() {
   ' "$1"
 }
 
-# Standing desks run in tmux sessions named desk-<beat>. Only the Lem desk gets the frame; the
-# other desks get one line, so they neither pay for the essay nor take its work as theirs. A
-# session outside tmux (a Lem worktree, a lab agent) can't be told apart, so it gets the frame.
+# Only a Lem session gets the frame; every other session gets one line, so it neither pays for
+# the essay nor takes its work as its own. A Lem session is one whose session_id is listed in
+# scratch/lem/sessions (local, gitignored; one id per line, added when a Lem desk or lab agent is
+# launched, since the desks are plain `claude --bg` sessions since 2026-10-20), or, in the old
+# form, a tmux session named desk-lem.
+sessions=$(first_file "$cwd/scratch/lem/sessions" "$CLAUDE_PROJECT_DIR/scratch/lem/sessions" "$HOME/code/mk5-main/scratch/lem/sessions")
 desk=$( [ -n "$TMUX_PANE" ] && tmux display-message -p -t "$TMUX_PANE" '#S' 2>/dev/null )
-case "$desk" in
-  desk-*) [ "$desk" = desk-lem ] || {
-    echo "Lem's frame (THE ALREADY-CLEAN TEST, #193) is not reloaded for $desk. If you take up Lem work, read wiki/topics/clean-neurons-42.md and the essay whole first."
-    exit 0; } ;;
-esac
+is_lem=0
+[ "$desk" = desk-lem ] && is_lem=1
+[ -n "$session" ] && [ -n "$sessions" ] && grep -qx "$session" "$sessions" && is_lem=1
+if [ "$is_lem" = 0 ]; then
+  echo "Lem's frame (THE ALREADY-CLEAN TEST, #193) is not reloaded for this session. If you take up Lem work, add your session id to scratch/lem/sessions, then read wiki/topics/clean-neurons-42.md and the essay whole first."
+  exit 0
+fi
 
 echo "THE FRAME, reloaded after compaction: Lem's core thesis, THE ALREADY-CLEAN TEST (#193)."
 echo "Below are Cammarata's own words, then our card's description of the work. Do the work they"

@@ -2,7 +2,7 @@
 title: Standing desks — Playbook
 kind: playbook
 first_seen: 2026-10-14
-last_updated: 2026-10-16
+last_updated: 2026-10-20
 status: active
 ---
 
@@ -131,15 +131,22 @@ first, and let the central authority manage only links and lookups.
 
 ## Starting a desk
 
-From `/Users/jason/code/mk5-main`, the Mayor runs one detached tmux session per desk:
+From `/Users/jason/code/mk5-main`, each desk is a background Claude Code session (since the
+2026-10-20 reboot; before that, a detached tmux session named `desk-<name>`):
 
-    tmux new-session -d -s desk-<name> -c /Users/jason/code/mk5-main \
-      "claude --remote-control <Name> -n <Name> '<the desk prompt>'"
+    claude --bg -n <Name> --remote-control <Name> --permission-mode bypassPermissions '<the desk prompt>'
+    claude --bg --resume <session id>        # to bring a desk back after a reboot
 
-Desks auto-compact at 300k (`autoCompactWindow` in Jason's user settings). Lem gets more room:
-launch it with `--autocompact 400k` after `claude` (Jason, 2026-10-20: "give the team room to
-breathe"; his gut says 500k). Never run `/autocompact` inside a desk, because it saves to the
+Passing flags to `--resume` forks the session into a copy, so a resumed desk keeps its saved
+options. Desks auto-compact at 300k (`autoCompactWindow` in Jason's user settings). Lem gets more
+room: launch it with `--autocompact 400k` after `claude` (Jason, 2026-10-20: "give the team room
+to breathe"; his gut says 500k). Never run `/autocompact` inside a desk, because it saves to the
 shared per-model settings and changes every desk.
+
+**Lem sessions are listed by id.** The after-compact hook (`.claude/hooks/after-compact.sh`)
+reloads the essay's method sections only for a session whose id is in
+`~/code/mk5-main/scratch/lem/sessions` (local, gitignored, one id per line); every other session
+gets one line. When you launch a Lem desk or a Lem lab agent, add its session id there.
 
 The desk prompt names the desk and says: read `wiki/playbooks/standing-desks.md`, create or
 find your notebook, register it, then take your first job. Jason reaches each desk from the
