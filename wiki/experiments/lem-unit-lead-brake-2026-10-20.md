@@ -1,9 +1,9 @@
 ---
-title: "Unit paper 3: the 16×8 seed-0 net's unit 0, on lead when I hold neither the 6-5 nor the slot-14 double, and the routes of paper 2's bit (Lem, #235)"
+title: "Unit paper 3: the 16×8 seed-0 net's unit 0, shut when I hold the 6-5 or the slot-14 double; it brakes the one and lifts the other, and is the counter-route of paper 2's bit (Lem, #235)"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: sealed
+status: complete
 ---
 
 The third **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field net.
@@ -143,7 +143,113 @@ Sealed 2026-10-20.
 
 ## Results
 
-*(not run)*
+Run 2026-10-20 as registered under `scripts/cpu-slot`: two gate runs (102 s and 107 s), two route
+runs and the off-lead script (seconds each), 4.7e12 instructions in all. The evidence (both gate
+JSONs, both routes, the off-lead script and output, the code, the log, `SHA256SUMS`) is
+`lem/unit-lead-brake-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/708825f6ed3883daebb3ee9015e108c137747ed8/lem/unit-lead-brake-2026-10-20).
+
+**The picture.** Unit 0 is shut by either tile, but it writes **opposite things** about them. Open,
+it brakes the 6-5 and lifts the slot-14 double. Its main reader is layer-2 unit 3, the same reader
+paper 2's gate brakes: unit 0 drives it (w₂ +877) and unit 13 brakes it (w₂ −1,434). Reader 3
+writes +16,538 on slot 14 and −9,613 on the 6-5. So `x:hand:14` reaches reader 3 by two units of
+opposite sign, and they nearly cancel there. That is why paper 2's flip moved play by only 0.045.
+
+**Steering, against the layer-mean null** (k = 1; rows where I hold the tile and it is legal):
+
+| tile | Δplays it, all seats | own − layer [95%] | Δplays it, leads | own − layer [95%] |
+|---|---:|---|---:|---|
+| the 6-5 (60,682 rows; 25,724 leads) | −0.189 | **−0.194 [−0.196, −0.191]** | −0.361 | **−0.378 [−0.381, −0.375]** |
+| the slot-14 double (59,283; 27,019) | **+0.192** | **+0.242 [+0.239, +0.244]** | **+0.305** | **+0.431 [+0.428, +0.435]** |
+
+- **The push of +σ where it is shut agrees:** −3.45M on the 6-5 and −1.65M on trump overall;
+  +5.05M on the double and +563k on non-trump.
+- **Take** falls (−0.042 at k = 1, own − layer −0.022 [−0.023, −0.021]). **Smear** barely moves.
+- **Down** (ablating where it is naturally on): take +0.003, smear +0.002, both small.
+
+**Routes.**
+- **`x:hand:14` → the double (59,908 rows).** The flip moves play by −0.045 (pick).
+  - Unit 13's share is −0.186 (alone −0.307).
+  - **Unit 0's share is +0.183 (alone +0.081). It is the largest positive share**, and the next is
+    unit 7's +0.046.
+  - The 13 × 0 joint share is −0.140, an interaction of −0.137 against the two separate shares.
+    The decomposition is far from additive here, so read the shares as dependence, not parts.
+  - Sums of shares +0.115 and of alones −0.113, against the flip's −0.045.
+- **`x:hand:26` → the 6-5 (60,821 rows).** The flip moves play by −0.010 over all seats and −0.240
+  on leads.
+  - Unit 0 carries the most: share −0.188 (leads −0.435), alone −0.122 (leads −0.275). It moves on
+    0.77 of lead rows.
+  - Unit 4 pushes back (share +0.161), and unit 13 is next (+0.045, alone on leads +0.364).
+
+**The label.**
+- **Held cells.** Holding the 6-5 shuts it at every seat (on 0.000–0.009). Holding the slot-14
+  double shuts it on lead (0.000) and at second (0.000), but less fully at third (0.051) and last
+  (0.012).
+- **R² of z₀ on the bit** is 0.296 for the 6-5 and 0.070 for slot 14. Off lead, the trick dominates.
+- **Near misses** (fractions of each gate's gap):
+  - other trumps against the 6-5: 0.014 to 0.073, but the **6-6 at −0.121** (holding it opens the
+    unit);
+  - other doubles against slot 14: −0.072 to −0.130, and a non-double 4-x −0.090. The slot-14 gap
+    is smaller (13,636 against the 6-5's 28,942), so the doubles' common pull shows.
+- **Off lead, a trump on the trick opens it**, the reverse of the registered verb. Among rows
+  holding neither tile:
+  - at third seat, on 0.466 with a trump on the trick against 0.282 without;
+  - at last, 0.146 against 0.039;
+  - at second, 0.059 against 0.000.
+
+  The single large negative weights (partner's 6-5 and 6-4 on the trick, the left opponent's 6-6)
+  are particular trumps, not trump.
+
+**Formation: it died, then came back as the double's gate.**
+- From step 0 to step 300 it decayed from firing on 0.44 of rows to 0.04.
+- From step 1,000 to step 45,810 it was dead: on ≤ 0.007 of every set of rows.
+- It revived by step 76,350 (epoch 5), with its − pole `x:hand:14`. Its R² on the slot-14 bit
+  peaked there (0.235) and declined to 0.070.
+- Its R² on the 6-5 bit grew last, from 0.081 to 0.296 between steps 610,800 and 916,200 (epochs
+  40 to 60). The final − label `x:hand:26` appeared only at the end.
+- So the double's gate came first and the 6-5's last, the reverse of prediction 4's order. Its
+  "first under 5%" test is void: both tiles cross it at step 300 together, while the whole unit was
+  dying.
+
+**The predictions, graded: 0 of 5 hold.**
+
+| | measured | |
+|---|---|---|
+| 1. what it writes brakes both tiles | the 6-5: own − layer −0.378 on leads, holds; **the double: +0.431, the opposite** | **wrong** |
+| 2. unit 0's share in the double's route negative, like unit 13's | **+0.183, the largest positive share**: it is the counter-route | **wrong** |
+| 3. near misses < 0.1 of each gap | the 6-6 −0.121; doubles up to −0.130 | **wrong** |
+| 4. the 6-5 brake strictly first | tie at step 300 while the unit was dying; the gate grew back as the double's first | **wrong** |
+| 5. a trump on the trick shuts it off lead | it opens it (third 0.466 vs 0.282; last 0.146 vs 0.039) | **wrong** |
+
+**Reading.**
+
+- **The first draft's guess was right, and the sealed one was wrong.** The draft predicted that
+  unit 0 counters paper 2's gate. The review pointed out that this contradicted the brake reading
+  (prediction 1), and the fix kept prediction 1 and flipped prediction 2. Both sealed predictions
+  rested on one wrong idea, that unit 0 treats its two tiles alike. The review's logic was sound;
+  its premise was the one the data broke. The lesson for registration: when two predictions
+  contradict, the shared premise is the suspect, not either prediction.
+- **Named the essay's way, as a verb:** *"lead the double, not the 6-5"*. Open, it lifts the
+  slot-14 double and brakes trump, the 6-5 most. It is shut when I hold the 6-5, which releases
+  the trump lead. It is also shut when I hold the double, which takes back its own lift: it only
+  lifts the double when the double isn't in my hand. On lead its write onto the double is almost
+  never exercised in play, and shows only under steering. A unit's write and its use differ, and
+  the essay's reading is of what it does in context. That still needs the natural-rows read this
+  paper could not make.
+- **The bit's two routes meet at one reader.** Units 0 and 13 both read `x:hand:14` and both feed
+  layer-2 unit 3, with opposite signs. Holding the double shuts both, so reader 3 loses a push and a
+  brake together. That is the measured cancellation. Reader 3 is the next subject: its labels
+  (`no-trump-held`, `setter-void-off-suit`) and its writes (lead the double, not the 6-5) are paper
+  4's start.
+- **Formation as growth:** a unit that died at step 1,000 was reborn at epoch 5 as one gate, and
+  took on the second tile in the last 20 epochs. In this net, one tile was added to a living gate,
+  not two mixed at birth.
+- None of this is read as mixing. The unit is one gate (two tiles that shut it) with one main
+  reader. Its write is a single direction in tile space ("the double over trump") that the two
+  tiles stand on opposite sides of.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 
