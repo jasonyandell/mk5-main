@@ -112,6 +112,22 @@ def classify(prec: np.ndarray, base: np.ndarray, names: list[str], k: int):
     return best, p, lo, hi, kind, runner, float(cand[runner])
 
 
+def condition(acts: Activations, strata: np.ndarray) -> Activations:
+    """Each neuron's pre-activation z-scored within each stratum (#226). A unit that reads only the
+    stratum, such as a transformer's position when the stratum is the play count, keeps nothing to
+    rank by, and a concept fixed by the stratum falls to its base rate in any top set. On/off
+    (`a`) stays the raw activation's."""
+    def z(m: np.ndarray) -> np.ndarray:
+        m = m.astype(np.float64)
+        out = np.zeros_like(m)
+        for v in np.unique(strata):
+            rows = strata == v
+            mu, sd = m[rows].mean(axis=0), m[rows].std(axis=0)
+            out[rows] = (m[rows] - mu) / np.where(sd > 0, sd, 1.0)
+        return out
+    return Activations(z(acts.z1), acts.a1, z(acts.z2), acts.a2, acts.out)
+
+
 def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: list[str],
         log=print, shuffles: int = SHUFFLES) -> dict:
     """`shuffles` = 0 skips the chance baseline (a checkpoint series runs it at the end only)."""
@@ -129,6 +145,8 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
         top, prec, r = score_pole(signal, allc, base, k)
         tops.append(top)
         best, pr, lo, hi, kind, runner, rp = classify(prec, base, names, k)
+        if np.ptp(signal) == 0:
+            kind = "unnamed"                     # no order left to take a top set from (#226)
         if alive < DEAD:
             kind = "dead"
         jr = int(np.argmax(np.abs(r)))
@@ -149,6 +167,9 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
         for p in range(acts.n_poles):
             if acts.alive(p) < DEAD:
                 kinds.append("dead")
+                continue
+            if np.ptp(acts.pole(p)) == 0:
+                kinds.append("unnamed")
                 continue
             prec = perm[tops[p]].mean(axis=0)      # the top set does not move under a label shuffle
             kinds.append(classify(prec, base, names, k)[4])

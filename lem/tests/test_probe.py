@@ -456,3 +456,19 @@ def test_gus_reads_the_last_real_token_and_ignores_right_padding():
         assert np.allclose(acts.z1[i], traces[0]["pre"][0, -1].numpy(), atol=1e-5)
         assert np.allclose(acts.z2[i], traces[1]["pre"][0, -1].numpy(), atol=1e-5)
     assert acts.n_poles == 2 * 2 * 256
+
+
+def test_conditioning_on_the_stratum_leaves_a_stratum_only_unit_nothing_to_rank():
+    from lem.probe.audit import condition
+    from lem.probe.net import Activations
+    rng = np.random.default_rng(0)
+    strata = rng.integers(0, 28, 5000)
+    pos_only = (strata * 7 % 11).astype(np.float64)[:, None]           # reads only the stratum
+    real = rng.normal(size=(5000, 1)) + 3 * (strata % 2)[:, None]       # a stratum shift plus a signal
+    z = np.concatenate([pos_only, real], axis=1)
+    c = condition(Activations(z, z, z, z, z), strata)
+    assert np.allclose(c.z1[:, 0], 0)                                    # nothing left to rank
+    for v in np.unique(strata):                                         # within every stratum: mean 0, sd 1
+        r = strata == v
+        assert abs(c.z1[r, 1].mean()) < 1e-9 and abs(c.z1[r, 1].std() - 1) < 1e-9
+    assert np.array_equal(c.a1, z)                                       # on/off stays raw
