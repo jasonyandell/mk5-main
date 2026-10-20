@@ -2,7 +2,7 @@
 title: Clean neurons for 42 — reading Zeb's own net, concept by concept, as it grows
 kind: topic
 first_seen: 2026-10-15
-last_updated: 2026-10-17
+last_updated: 2026-10-20
 status: active
 ---
 
@@ -40,6 +40,39 @@ This page itself is CC0, like the rest of the wiki. It was written from the prim
 **Its own limits.** The thresholds are judgment calls, some samples are small, the language-model
 results are preliminary, and its scaling step is labelled "highly speculative". Treat it as a strong
 hypothesis to test here, not a settled result to cite.
+
+## The work: what a day of Lem looks like
+
+This is the part of the card the after-compact hook reloads, beside the essay's own words. It
+says what to do, in the essay's terms. The guardrails further down say what to watch for.
+
+**The stance.** We are naturalists in a rainforest, not a court. The network has already prepared
+itself to be read by its own downstream readers; our job is to become one more reader. The
+network is the answer, and the work is finding the right questions to ask it.
+
+**The day's work is the essay's loop, run on one unit at a time:**
+1. **Label a unit.** Both poles, top activations on held-out rows, its untrained twin beside it.
+   Read it as a gate: what it lets through, what it keeps out, what it hands to whom. Look for
+   the shared pattern (a V, a pose, "late in the trick") before a list of nouns.
+2. **Follow the data through its circuit.** The inputs that vote for each pole, the readers that
+   take each pole downstream, and where a position like this one goes next.
+3. **Find the motif.** Gates, hold-backs, summary units, edges where one distinction feeds the
+   next. A motif that recurs across units and nets is worth more than any one label.
+4. **Watch it grow.** Formation across checkpoints: where it started, which facet it sprouted
+   next, which reader came to depend on it.
+5. **Test the explanation by using it.** Steer with matched doses and read where play goes.
+   An explanation that can lose, and does not, is the one we keep.
+6. **When it looks messy, look harder.** The noise usually points to the explanation: a missing
+   word in the list, a missing input, a facet not yet followed. Write which one you checked.
+
+**The artifact is a unit paper**, like the essay's thousand neuron papers for Qwen: one page per
+unit, carrying the label, both poles, the circuit in and out, formation, the steering check, the
+scope clause, and what it taught us about 42. Registrations and predictions still come before
+runs; the question they ask is "what does this unit do, and how did it come to do it?"
+
+**Read the source, not this card.** Before planning Lem work, and after every compaction, read
+the essay's own text (the local copy, whole). This card is our summary, and summaries are what
+drift.
 
 ## Re-read 2026-10-17: what to carry into every test
 
