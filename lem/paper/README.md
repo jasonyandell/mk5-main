@@ -7,8 +7,11 @@
 
 > **The thesis under test (#193).** Cammarata's "already clean" [1]: a network's own neurons are
 > mostly clean, and squeezed layers grow coarser, not mixed. On the field net, 24 neurons are cleaner
-> than 192 (0.83 vs 0.61; conditioned on the play count, 0.549 vs 0.406, #227) and carry 0.684 of
-> the play's gap to the teacher (§7). The result looks
+> than 192 against our concept list v2: 0.83 vs 0.61 in the first single-seed read, and, read raw with a
+> play-count baseline over three seeds, 0.695 vs 0.542 (one seed pair reverses; untrained floors 0.375 and
+> 0.276; #233). The essay predicts coarser, not cleaner, units, so this measures fit to our list, and whether
+> the units are coarser or mixed is the live question (#231–#233). They carry 0.684 of the play's gap to the
+> teacher (§7). The result looks
 > impossible to a superposition prior. The paper tests it until it breaks or holds: #194–#200.
 > Every result is scoped to this net, these inputs (one position, uniform beliefs, no
 > player-behaviour history) and this vocabulary (Silas concept list v1 or v2). A unit we cannot

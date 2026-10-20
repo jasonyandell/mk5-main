@@ -95,8 +95,10 @@ list v2. What we learned from this model, not all of 42, yet.
 
 The conditioning z-scores each play count separately. Where a unit is nearly silent, that promotes
 noise into its top set ([[lem-lead-units-2026-10-20]]). For 12.5% of 16×8 and 25% of 128×64 layer-1
-units, over a quarter of the conditioned top rows fire below 5% of the unit's maximum. The shares
-here await a re-read under a fixed instrument, #233. Comparisons made under one instrument may
+units, over a quarter of the conditioned top rows fire below 5% of the unit's maximum. The re-read is
+[[lem-fixed-conditioning-2026-10-20]]: read raw with a play-count baseline in the labeller, which
+replaces conditioning, the squeeze's 24-neuron and 192-neuron means are 0.695 and 0.542 (floors 0.375
+and 0.276), and Gus is 0.312 against a floor of 0.014. Comparisons made under one instrument may
 survive, since the artifact hits trained and untrained nets alike.
 
 ## Links
