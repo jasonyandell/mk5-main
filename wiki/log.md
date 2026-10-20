@@ -58,6 +58,16 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 ---
 
+## [2026-10-20 | lem | the sharper family statistic (#200) fails its calibration: permuted-family nulls set the bar too low]
+
+[[lem-family-statistic-2026-10-20]]: corrected for base rates, family size and lumpiness, the
+coarse-versus-mixed statistic scores 0.583 on untrained nets and 0.425 on shuffled labels, not 0.5.
+Trained nets are no higher than their untrained twins (16×8: 0.518 against 0.601). Concepts of one
+family co-occur, so a null that permutes family labels sets the bar too low. The squeeze's and the
+width tree's family claims are now "not yet shown against untrained twins" (#229), and both pages
+carry a correction. The clean shares and narrower-is-cleaner are unaffected. 0 of 4 predictions
+held.
+
 ## [2026-10-20 | lem | the squeeze on pour A (#199): narrower is cleaner with every declaration, and doubles trump is the declaration a narrow net keeps]
 
 [[lem-squeeze-pour-a-2026-10-20]]: 12 field-v3 nets on pour A, read conditioned.
