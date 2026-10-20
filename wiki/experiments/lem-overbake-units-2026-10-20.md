@@ -90,7 +90,8 @@ at step 200,000.
   named in list v2. Nothing here says they are mixed. A memorizing net could hold deal-specific
   features that no general vocabulary names, and that is the data gap the essay describes. My
   predictions assumed the general words would form first and erode later. They never formed.
-- **The third point** is the 50,000-deal data-scale specimen of #207, filed as #228.
+- **The third point** is the 50,000-deal data-scale specimen of #207, filed as #228:
+  [[lem-words-need-data-2026-10-20]].
 
 Scope: this architecture, these inputs, list v2, conditioned on the play count.
 
