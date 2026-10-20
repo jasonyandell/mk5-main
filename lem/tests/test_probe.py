@@ -493,3 +493,18 @@ def test_merge_numbers_a_later_part_after_all_of_the_earlier_pours_deals(tmp_pat
     with np.load(tmp_path / "merged.npz") as z:
         assert z["deal"].tolist() == [0, 10, 217_370, 217_376 + 4, 217_376 + 14]
         assert z["pour"].tolist() == [0, 0, 0, 1, 1]
+
+
+def test_stratified_gap_compares_rows_only_within_their_stratum():
+    """A concept that holds mostly in an expensive stratum must not look costly by itself (#205)."""
+    from lem.probe.causal import stratified_gap
+    strata = np.repeat([0, 1], 1000)
+    v = np.where(strata == 1, 10.0, 0.0)                       # stratum 1 is costly for everyone
+    c = np.zeros(2000, bool)
+    c[:100] = True                                             # rare in stratum 0
+    c[1000:1900] = True                                        # common in stratum 1
+    rows = np.ones(2000, bool)
+    assert abs(stratified_gap(v, rows, c, strata)) < 1e-12     # no gap within either stratum
+    v2 = v + np.where(c, 1.0, 0.0)                             # a real one-unit gap inside the concept
+    assert abs(stratified_gap(v2, rows, c, strata) - 1.0) < 1e-12
+    assert np.nanmean(v[c]) - np.nanmean(v[~c]) > 5            # the unstratified gap is fooled

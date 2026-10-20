@@ -173,7 +173,7 @@ costs whatever the row's own difficulty allows. Cost is also the wrong reading f
 essay steers and watches what the output does, not how much it hurts. The fair version compares
 each unit against matched rows (same seat in the trick, number of legal moves and decisiveness),
 or against a random unit at the same dose, and reads the move's shift toward the concept's
-behaviour. That is #205. The ablation result above stands, and the steering result is unresolved
+behaviour. That is #205, [[lem-matched-steering-2026-10-20]]. The ablation result above stands, and the steering result is unresolved
 by this tool.
 
 ## Links

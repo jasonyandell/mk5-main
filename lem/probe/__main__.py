@@ -61,6 +61,7 @@ def main(argv=None) -> None:
     s.add_argument("--net", default=NET)
     s = sub.add_parser("causal"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("q_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET); s.add_argument("--steer", action="store_true", help="add k·sigma doses instead of ablate/clamp")
+    s.add_argument("--matched", action="store_true", help="#205: own unit vs random units, stratified by play count")
     s = sub.add_parser("gus-sample"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s = sub.add_parser("gus-audit"); s.add_argument("rows_dir"); s.add_argument("ckpt"); s.add_argument("out_dir")
     s.add_argument("--untrained", type=int, default=None, help="an untrained twin under this torch seed (ckpt gives the config)")
@@ -184,7 +185,7 @@ def main(argv=None) -> None:
         audit = json.loads((Path(a.audit_dir) / "audit.json").read_text())
         z0 = np.zeros((0, 0), np.int64)
         regret_of = lambda out: fidelity.regret(sample, Activations(z0, z0, z0, z0, out), a.q_dir)[0]
-        result = (causal.steer if a.steer else causal.run)(net, sample, labels, names, audit, regret_of, log)
+        result = (causal.matched_steer if a.matched else causal.steer if a.steer else causal.run)(net, sample, labels, names, audit, regret_of, log)
         Path(a.out).write_text(json.dumps(result, indent=1))
         log(f"wrote {a.out}: {len(result['poles'])} named poles")
     elif a.cmd == "gus-sample":

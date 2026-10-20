@@ -157,3 +157,70 @@ def steer(net, sample, labels: np.ndarray, names: list[str], audit: dict, regret
         d1 = rec["doses"][2]
         log(f"  {r['name']} {r['label']} k=1: regret {d1['regret_in']} in / {d1['regret_out']} out")
     return {"base_regret": float(np.nanmean(base_r)), "poles": out}
+
+
+MATCH_DOSES = (0.5, 1.0)
+MIN_STRATUM = 20
+RANDOM_UNITS = 5
+
+
+def stratified_gap(v: np.ndarray, rows: np.ndarray, c: np.ndarray, strata: np.ndarray) -> float | None:
+    """Mean of `v` where `c` holds minus where it does not, taken within each stratum and
+    averaged with weight min(n_in, n_out), over strata with at least MIN_STRATUM rows on each side.
+    Rows of different difficulty never meet in one difference."""
+    num = den = 0.0
+    for s in np.unique(strata[rows]):
+        m = rows & (strata == s)
+        i, o = m & c, m & ~c
+        ni, no = int(i.sum()), int(o.sum())
+        if ni < MIN_STRATUM or no < MIN_STRATUM:
+            continue
+        w = min(ni, no)
+        num += w * (float(np.nanmean(v[i])) - float(np.nanmean(v[o])))
+        den += w
+    return num / den if den else None
+
+
+def matched_steer(net, sample, labels: np.ndarray, names: list[str], audit: dict, regret_of, log=print) -> dict:
+    """#205: per named pole and dose, the stratified gap (concept holds minus not, within each play
+    count) of steering's regret rise on the rows where the pole's unit was off, for its own unit and
+    for RANDOM_UNITS other live units steered on the same rows at their own matched dose."""
+    x = sample.x
+    acts: Activations = forward(net, x)
+    canon, actions = sample.canon(), sample.actions
+    base_r = regret_of(acts.out)
+    strata = sample.n_plays.astype(np.int64)
+    h1, h2 = net.b1.shape[0], net.b2.shape[0]
+    units = [(1, j) for j in range(h1)] + [(2, j) for j in range(h2)]
+    act = {(1, j): acts.a1[:, j] for j in range(h1)} | {(2, j): acts.a2[:, j] for j in range(h2)}
+    live = [u for u in units if (act[u] > 0).sum() >= MIN_ROWS]
+    rise: dict[tuple[int, int, float], np.ndarray] = {}
+    for u in live:
+        sigma = float(act[u][act[u] > 0].std())
+        for k in MATCH_DOSES:
+            o = downstream(net, x, u[0], u[1], None, add=int(round(k * sigma)))
+            rise[(u[0], u[1], k)] = regret_of(o) - base_r
+    rng = np.random.default_rng(SEED)
+    out = []
+    for r in (r for r in audit["rows"] if r["kind"] == "clean"):
+        p = r["pole"]
+        u = (1, p // 2) if p < 2 * h1 else (2, (p - 2 * h1) // 2)
+        if u not in live:
+            continue
+        c = concept_mask(r["label"], labels, names, x)
+        if c is None:
+            continue
+        off = ~(act[u] > 0)
+        others = [v for v in live if v != u]
+        pick = [others[i] for i in rng.choice(len(others), size=min(RANDOM_UNITS, len(others)), replace=False)]
+        rec = {"pole": r["name"], "label": r["label"], "sign": "+" if p % 2 == 0 else "-", "random_units": [list(v) for v in pick], "doses": []}
+        for k in MATCH_DOSES:
+            own = stratified_gap(rise[(u[0], u[1], k)], off, c, strata)
+            rand = [stratified_gap(rise[(v[0], v[1], k)], off, c, strata) for v in pick]
+            rand = [g for g in rand if g is not None]
+            rec["doses"].append({"k": k, "own": own, "random": rand,
+                                 "random_median": float(np.median(rand)) if rand else None})
+        out.append(rec)
+        d = rec["doses"][1]
+        log(f"  {r['name']} {r['label']}: own {d['own']} vs random median {d['random_median']}")
+    return {"base_regret": float(np.nanmean(base_r)), "poles": out}
