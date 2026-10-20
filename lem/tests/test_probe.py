@@ -430,3 +430,29 @@ def test_causal_downstream_is_the_forward_pass_and_ablating_an_off_neuron_change
         off = a[:, j] == 0
         assert np.array_equal(out[off], acts.out[off])        # rows where it was off are untouched
     assert np.array_equal(downstream(net, x, 2, 0, None, add=0), acts.out)   # a zero dose is no dose
+
+
+def test_gus_reads_the_last_real_token_and_ignores_right_padding():
+    import torch
+    from lem.observer.data import SEAT, encode
+    from lem.observer.model import Config
+    from lem.probe.gus import forward, load_model
+    model, _ = load_model(None, untrained_seed=7, config=Config().__dict__)
+    rng = np.random.default_rng(3)
+    seqs = []
+    for n in (0, 3, 9):
+        hand = int(sum(1 << int(t) for t in rng.choice(28, 7, replace=False)))
+        plays = [(int(i % 4), int(t)) for i, t in enumerate(rng.choice(28, n, replace=False))]
+        seqs.append(np.append(encode(hand, 1, 0, 4, plays), SEAT))
+    lengths = np.array([len(q) for q in seqs])
+    tokens = np.zeros((len(seqs), int(lengths.max())), np.int64)
+    for i, q in enumerate(seqs):
+        tokens[i, :len(q)] = q
+    acts = forward(model, tokens, lengths)
+    for i, q in enumerate(seqs):
+        with torch.inference_mode():
+            logits, traces = model(torch.from_numpy(q[None]), inspect=True)
+        assert np.allclose(acts.out[i], logits[0, -1].numpy(), atol=1e-5)
+        assert np.allclose(acts.z1[i], traces[0]["pre"][0, -1].numpy(), atol=1e-5)
+        assert np.allclose(acts.z2[i], traces[1]["pre"][0, -1].numpy(), atol=1e-5)
+    assert acts.n_poles == 2 * 2 * 256
