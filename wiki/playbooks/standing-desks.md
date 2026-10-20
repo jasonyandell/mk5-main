@@ -111,7 +111,9 @@ first, and let the central authority manage only links and lookups.
   write the proposal (question, predictions, instrument, floors). Then one Opus subagent with
   fresh context reads the original article itself, Cammarata's
   ["Neural Networks Are Already Clean"](https://already-clean.goodfire.com/), not our
-  [[clean-neurons-42]] summary. It reviews the proposal against the article's framing: what the
+  [[clean-neurons-42]] summary. Read the local verbatim copy at
+  `~/code/mk5-main/scratch/sources/already-clean/essay.md` (the author's own text version, so we
+  don't hit the site on every review). It has no license, so it stays local and uncommitted. It reviews the proposal against the article's framing: what the
   thesis claims, and what would or wouldn't test it. Adjust, note the review in the registration,
   then seal. That's one extra Opus subagent for a turn or two, allowed even on a usage diet. For
   book experiments, the framing source is the book (private archive only).
