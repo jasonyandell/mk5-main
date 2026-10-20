@@ -60,6 +60,10 @@ def main(argv=None) -> None:
     s.add_argument("--net", default=NET)
     s = sub.add_parser("causal"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("q_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET); s.add_argument("--steer", action="store_true", help="add k·sigma doses instead of ablate/clamp")
+    s = sub.add_parser("gus-sample"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
+    s = sub.add_parser("gus-audit"); s.add_argument("rows_dir"); s.add_argument("ckpt"); s.add_argument("out_dir")
+    s.add_argument("--untrained", type=int, default=None, help="an untrained twin under this torch seed (ckpt gives the config)")
+    s.add_argument("--shuffles", type=int, default=20)
     s = sub.add_parser("belief"); s.add_argument("sample"); s.add_argument("out_dir"); s.add_argument("--net", default=NET)
     s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
     s.add_argument("--parts-dir", default=None, help="assemble the targets from belief-targets parts instead of computing them")
@@ -178,6 +182,33 @@ def main(argv=None) -> None:
         result = (causal.steer if a.steer else causal.run)(net, sample, labels, names, audit, regret_of, log)
         Path(a.out).write_text(json.dumps(result, indent=1))
         log(f"wrote {a.out}: {len(result['poles'])} named poles")
+    elif a.cmd == "gus-sample":
+        from lem.probe import gus
+        gus.build(a.sample, a.labels, a.out_dir, log)
+    elif a.cmd == "gus-audit":
+        import torch
+        from lem.probe import audit, gus
+        from lem.probe.sample import Sample
+        torch.set_num_threads(max(1, int(__import__("os").environ.get("OMP_NUM_THREADS", "1"))))
+        d = Path(a.rows_dir)
+        sample = Sample(d / "sample.npz")
+        with np.load(d / "labels.npz") as z:
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+            identity = str(z["identity"])
+        with np.load(d / "tokens.npz") as z:
+            tokens, lengths = z["tokens"], z["lengths"]
+        cfg = torch.load(a.ckpt, map_location="cpu", weights_only=True)["config"] if a.untrained is not None else None
+        model, ident = gus.load_model(None if a.untrained is not None else a.ckpt, a.untrained, cfg)
+        log(f"forward over {len(tokens):,} rows: {ident}")
+        acts = gus.forward(model, tokens, lengths)
+        hit = float((acts.out.argmax(axis=1) == sample.chosen.astype(np.int64)).mean())
+        log(f"Gus's top tile matches the recorded move on {hit:.4f} of rows")
+        result = audit.run(sample, acts, labels, names, log, shuffles=a.shuffles)
+        result["concepts"] = identity
+        result["net"] = ident
+        result["top1_agrees_with_recorded"] = hit
+        audit.write(result, a.out_dir)
+        log(json.dumps(result["shares"]))
     elif a.cmd == "fidelity-collect":
         from lem.probe import fidelity
         from lem.probe.sample import Sample
