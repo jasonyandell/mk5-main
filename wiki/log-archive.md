@@ -4597,3 +4597,662 @@ Code `lem/probe/aa.py`; evidence `lem/aa-2026-10-16/` in the research repo (3eaf
 
 - [[estimator-calibration-2026-10-16]], part 1: 960 of 960 batches. R_F = 1.06, 2 of 20 misses, δ(1,0) = −0.004 [−0.040, +0.031] marks/game, σ_seed = 0. The Book arena's intervals cover as they say, so #117's and #190's A/A misses were chance. With part 2 (the tournament, calibrated) and part 3 (Lem, 1.17× narrow from top-set selection), the ±0.15 / ±4-point allowance is withdrawn for the Book arena and the tournament.
 - The caveats on #151 and #172 are replaced; A4 is updated; the #117 and #190 pages carry the resolution. *Exploratory:* the auction read pooled over both studies is +0.14 [+0.06, +0.22] marks/game. Data: HF `book/calibration/` (b1286005, SHA verified).
+
+## [2026-10-17 | book | A reporting rule: calibrate before you chase an A/A miss (#191)]
+
+- [[book-authority]] § How to report a book result, rule 6: replicate an A/A that misses before explaining it, because the miss that starts a search is chosen for having missed and is no evidence for what the search finds. #117 → #190 → #191 is the worked case. The Mayor asked for this rule.
+
+## [2026-10-17 | book | The book's Ch. 9 at the table, registered (#189), provisional (random field for 7–9)]
+
+- [[ch9-at-the-table-2026-10-17]]: the chair's full menu (`MenuBidder`) against pip trumps only, on deals where it holds four doubles or more, every seat `MenuWalt`; primary a − b in marks per hand, the book predicts > 0; 288 batches, 23,040 deals, MDE about 0.026 on the changed deals. `scenario/ch9.py`.
+- The arena's ledger gains a deal filter (`keep`, default unchanged, fixtures byte-identical) and writes all nine declarations in `offered` at a menu table; Silas replays a menu ledger's doubles and no-trump rows (`silas/tests/data/ledger-menu.json`).
+
+## [2026-10-17 | lem | The squeeze: narrow field nets are cleaner, not mixed (G2 width pilot)]
+
+Jason's pilot idea (undersized nets, look for coarse features), from Cammarata's "Already Clean"
+squeeze. Seven nets retrained from scratch on the 250k pour; clean share 0.610 at 192 neurons, 0.833
+at 24 (seeds 0.65–0.83); broadening within families, chiefly "late in the trick"; 24 neurons close
+0.684 of the random-to-teacher gap vs 0.804. Predictions graded, the main one backwards.
+[[lem-squeeze-2026-10-16]]; evidence `lem/squeeze-2026-10-16/` (cbb42932).
+
+## [2026-10-17 | lem | Pour A published; the first field-v3 net plays all ten declarations as cleanly as the pip net]
+
+[[lem-pour-a-2026-10-16]]: 250,000 deals, 4,349,960 positions, on `jasonyandell/texas-42-lem-pour-a`
+(CC0); coverage predictions held (book doubles/no trump 0.56%, forced 12.49%).
+[[lem-field-v3-audit-2026-10-16]] (G4): validation regret 0.0087 (pip 0.0082, doubles/no trump
+0.0120), clean share 0.628 (halves 0.633/0.625) vs the shipped net's 0.602; concept list v2 renames
+clean units rather than adding them; the declaration itself is barely named. Evidence
+`lem/field-v3-audit-2026-10-16/` (3936f450).
+
+## [2026-10-17 | book | Ch. 9 at the table, provisional: our random-field player cannot carry a doubles hand (#189)]
+
+- Results on [[ch9-at-the-table-2026-10-17]]: 288 of 288 batches. The menu costs −0.045 [−0.065, −0.025] marks/hand on the 4,234 deals where it changes the declaration: doubles trump −0.106 [−0.142, −0.070], no trump −0.009 [−0.033, +0.015]. Every seat plays doubles and no trump on the random field, so this is the scope of our player, not a reading of the book's declaration. The A10 row is updated. Next is the re-run on Lem's field-v3 net (decls 7 and 9). Data: HF `book/ch9-provisional/` (97769d4e, SHA verified).
+
+## [2026-10-17 | book | Ch. 9 re-run on Lem's field-v3 net, pre-registered (#189)]
+
+- [[ch9-at-the-table-2026-10-17]]: two arms on the same 4,800 changed four-double deals. v3dt plays doubles and no trump on field-v3 and pips on the deployed net; v3all plays every declaration on field-v3, so both declarations have one player. `MenuWalt` takes a `twin`, and `WaltPlay.plays` asks its net (field-v3 covers 7 and 9). The net is pinned by SHA-256. 120 batches.
+
+## [2026-10-17 | book | Ch. 9 on field-v3: no trump turns the book's way, doubles trump still costs our planner (#189)]
+
+- [[ch9-at-the-table-2026-10-17]], re-run on Lem's field-v3: 120 of 120 batches. Where the menu changes the declaration it is level overall, −0.010 [−0.028, +0.008] marks/hand. No trump reads +0.024 [+0.002, +0.045], the book's sign. Doubles trump is still −0.067 [−0.100, −0.034], and −0.072 with one player for both declarations, where field-v3 is weakest. The provisional cost was mostly the random field's. A10 is updated, and #201 is the doubles follow-up. Data: HF `book/ch9-field-v3/` (55dd9418, SHA verified).
+
+## [2026-10-17 | lem | Formation (#194): units keep their concept family as they form; an untrained net is the honest floor]
+
+[[lem-formation-2026-10-17]]: six runs (16×8 and 128×64, three seeds), 15 in-run checkpoints each.
+0.82 of the wide net's clean units end in the family they first became clean in (null 0.28).
+Position and trick units form first, and count and mastery later. Untrained nets already score
+0.15–0.28 clean, a floor the shuffled-label chance (0.000) misses. Late-in-the-trick units form
+coarse first. Two predictions held, one held pooled, one was wrong, one was ill-posed. Evidence
+`lem/formation-2026-10-17/` (9c16180e).
+
+## [2026-10-17 | lem | The width tree (#195): narrow units' counterparts share their family, along one concept's facets]
+
+[[lem-width-tree-2026-10-17]]: each squeezed unit matched to units of wider nets trained from
+scratch. Own family in the 3 best matches at 2.4–2.9× random families, for every narrow net against
+128×64. The coarse "late in the trick" unit spreads into many wide `last` units, not into the two
+seats. The split regression was unfair to the family (pool sizes), and that goes to #200. One of four
+predictions held. Evidence `lem/width-tree-2026-10-17/` (27c87534).
+
+## [2026-10-17 | lem | the scope clause: what we learned from this model, not all of 42 (#202)]
+
+After a re-read of the essay on both sides of a compact, Jason added a scope clause to the already-clean test. Our tools and vocabulary may be unable to express what the net finds, and our inputs miss concepts such as player-behaviour history, so every result is scoped to this net, these inputs and this vocabulary. The clause is in [[clean-neurons-42]] and the inventory of what is missing is #202.
+
+## [2026-10-17 | book | the book-interp skill; the clean card carries our position]
+
+- [[clean-neurons-42]]: Jason's position heads the reloaded section (the lessons fit 42 unusually
+  well; for 42, superposition is not the right null; no claim about interpretability at large),
+  with the book rhyme and the guardrails a compact summary lost (the Tokyo warning first).
+- New `.claude/skills/book-interp`: the book charter and the essay as one discipline; fixes major
+  problems at once, logs the rest, rolls three logs into a rewrite. The compact hook names it.
+
+## [2026-10-17 | lem | the drop-out order (#196): cleaner to 12 neurons over three seeds; the last words are the trick position]
+
+[[lem-dropout-order-2026-10-17]]: 21 trained and 21 untrained nets at seven widths. Narrower is
+cleaner down to 12 neurons (0.633 at 192 → 0.759 at 24 → 0.735 at 12, floors 0.17–0.23). The
+drop-out order: `lead` and `late` last, then the trick in front of the mover and the mover's
+trump, then count and trump on the table; mastery outside trump needs 136 neurons. Predictions
+held 3 of 5: two neurons close 0.28, not 0.40, and two of three 4×2 nets failed to learn and fell
+to the floor. Scope: this net, these inputs, list v1. The first two friction logs on the
+clean-neuron skill came from this grade.
+
+## [2026-10-17 | lem | naming the narrow nets (#197): 201 of 210 units named; the floor rises with the list]
+
+[[lem-naming-2026-10-17]]: list v2 and Haiku readers name 201 of the 210 live units of the 12- and
+24-neuron nets. Readers detect 0.80–0.87 of the units the list can't name, against a null of 0.13.
+Of the nine left, seven of the eight that got a reader description are conjunctions of who is
+winning the trick and where the mover sits, a vocabulary gap rather than a history gap (#202). The untrained floor is 0.11–0.23 under v1 and 0.28–0.39
+under v2, while trained nets barely move, so each share goes against its own list's floor. Three
+of five predictions held. Scope: this net, these inputs, these vocabularies. The clean-neuron
+skill's third friction log came from this grade.
+
+## [2026-10-17 | lem | causal (#198): switching off a named unit hurts the play where its name says]
+
+[[lem-causal-2026-10-17]]: on three 24-neuron nets, ablating a named unit raises the teacher's
+regret where its concept holds for 45 of 45. Among rows where the unit fires, the move changes
+more inside the concept for 39 of 45, and the unit's own concept beats a random one for 33 of 40.
+This is the first evidence of use rather than correlation. Steering failed: a 99th-percentile
+clamp changes 46% of all moves. That is a tools rung, and a dose-response clamp is next. Four of
+five predictions held. The clean-neuron skill's fourth friction log came from this result.
+
+## [2026-10-17 | lem | steering is unresolved (#198 closed, #205); the clean-neuron skill folds its first five lessons]
+
+[[lem-causal-2026-10-17]] addendum: adding a matched dose k·σ to named units barely separates
+inside from outside their concept. `+` poles hold at the threshold (0.60–0.64), `−` poles were
+wrong (0.35–0.44), and the dose-response is monotone for 108 of 108 units. The cost comparison
+mixes rows of different difficulty, so matched-row steering moves to #205, and the ablation
+result stands. The clean-neuron skill reached its fifth friction log and folded all five in:
+- the third rung covers learning, and every share reports its net's gap closed;
+- the audit's `mixed` kind is now `unnamed`;
+- the floor belongs to its list;
+- steering uses matched doses;
+- causal rows are named and matched.
+
+## [2026-10-17 | lem-nanogpt | foundations for small history-aware models (#203)]
+
+**Touched pages:** [[lem-nanogpt-foundations]] [[lem-the-teacher]]
+**Added:** nanoGPT pin, pour/source audit, lawful observation contract and proposed population-history controls.
+**Updated:** Lem's stage-3 route; clean-neuron friction on sequence scope and calibration.
+**Questions opened:** first objective, encounter history and population, value semantics and improvement algorithm; no training result claimed.
+
+## [2026-10-17 | lem-observer | a first tiny GPT and a worked hand (#203, #204)]
+
+**Touched pages:** [[lem-observer-2026-10-17]] [[lem-nanogpt-foundations]]
+**Built:** `lem/observer/`: a 107,392-parameter nanoGPT-style causal observer, whole-deal splits, checkpointed training and a standalone worked-hand lesson with attention and native MLP traces.
+**Measured:** 39.56% next-tile accuracy [39.01, 40.15] on 503 unseen deals; initial twin 3.34%, visible-uniform baseline 29.32% expected. Raw impossible mass remains 17.44%; log loss is about even with visible-uniform guessing. Three registered predictions held; no playing-strength or neuron-meaning claim.
+**Evidence:** [frozen run](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/242f07beededcd8d1750c6cdda54e72d5449cee9/lem/observer-2026-10-17); checkpoint download hash verified. Full repository check GREEN; browser replay and inspection controls exercised.
+
+## [2026-10-17 | lem-observer | live W&B formation run launched]
+
+**Touched pages:** [[lem-observer-overbake-2026-10-17]] [[lem-nanogpt-foundations]]
+**Built:** optional W&B tracking, exact continuation into a new experiment, equivalent-epoch charts, fixed training-probe metrics, sparse formation snapshots and separate final/best test reports.
+**Launched:** the same 107k-parameter hatchling from step 2,000 to a fixed 200,000-update target, constant learning rate, no early stop. [Live run](https://forge.coreweave.com/wandb/jasonyandell-forge42/lem-observer/runs/q61r1lm5). Three learning predictions registered; no neuron-meaning result claimed.
+**Verified:** 31 Lem tests and affected repository checks GREEN; remote W&B history and formation artifact present. The job is detached and the original lesson remains unchanged.
+
+## [2026-10-17 | 3770c0f8 | Lem observer handoff and next data experiment]
+
+**Touched pages:** [[lem-observer-overbake-2026-10-17]] [[lem-observer-data-scale-2026-10-17]] [[lem-nanogpt-foundations]]
+**Updated:** Closed the 200,000-update run, graded its predictions and linked the verified checkpoint archive and interp handoff.
+**Added:** Completed the registered 50,000-deal run; paired fresh-deal comparison gained 9.92 points [9.72, 10.11] accuracy at equal updates. Both predictions held; artifacts verified on HF. Interp handoff: #207.
+
+## [2026-10-17 | docs | The two recursions and the observer]
+
+**Added:** [[two-recursions-and-transformers]] traces forward information and backward planning to the Texas-42 math, compares the actual attention and autoregressive equations, and scopes the predictive-coordinate connection.
+**Updated:** [[lem-nanogpt-foundations]] routes the synthesis; no new training or Nello implementation.
+
+## [2026-10-17 | docs | A splat prediction target for the observer]
+
+**Updated:** [[lem-nanogpt-foundations]] records the candidate splat input/output contract, uniform worlds versus modeled behavior, and the make-pour random-finish qualification; [[two-recursions-and-transformers]] links the proposed consequence target.
+
+## [2026-10-17 | docs | Keep the splat predictor's input unchanged]
+
+**Updated:** [[lem-nanogpt-foundations]] fixes the selected input boundary: existing viewer-visible tokens only, candidate tiles on the output axis; [[two-recursions-and-transformers]] carries the same decision. Implementation and training remain pending.
+
+## [2026-10-17 | docs | Pretraining and the existing Nello teacher]
+
+**Updated:** [[lem-nanogpt-foundations]] distinguishes completed self-supervised play prediction from planned splat distillation, records the merged Nello-capable Walt, and identifies the remaining training adapter and outcome-contract work.
+
+## [2026-10-17 | pending | Half a million games for the tiny observer]
+
+**Added:** [[lem-observer-corpus-squeeze-2026-10-17]] registers ordinary exposure to the full lawful pours at fixed model capacity.
+**Updated:** [[lem-nanogpt-foundations]] routes the run; unchanged inputs and next-tile objective, native formation checkpoints retained.
+
+## [2026-10-17 | pending | Full-corpus observer trained and archived]
+
+**Updated:** [[lem-observer-corpus-squeeze-2026-10-17]] closes the fixed budget, grades prediction results and preserves the formation trajectory; native-unit hypothesis remains ungraded.
+**Updated:** [[lem-nanogpt-foundations]] explains why log loss and exact next-tile accuracy can move differently.
+
+## [2026-10-17 | pending | Seat the observer for its first head-to-head games]
+
+**Added:** [[lem-observer-first-h2h-2026-10-17]] registers paired games, an unchanged-input adapter and physical-deal/replay audits.
+**Updated:** [[lem-nanogpt-foundations]] connects the first matchup to reward learning and population self-play.
+
+## [2026-10-17 | pending | First observer head-to-head results]
+
+**Completed:** [[lem-observer-first-h2h-2026-10-17]] grades all registered predictions; replay, source-deal exclusion and paired neutral checks pass; frozen games published.
+**Updated:** [[lem-nanogpt-foundations]] records the playing baseline for later reward learning.
+
+## [2026-10-17 | pending | Smoke first and reuse Zeb's evaluation methods]
+
+**Updated:** [[lem-nanogpt-foundations]] adopts one-pair H2H smokes and routes Zeb's parity, batch-independence, regret and estimator-calibration methods.
+**Changed:** observer H2H defaults to two games; field artifact identity and seat-rotation checks complement the existing information-boundary tests.
+
+## [2026-10-18 | Gus | Canonical sync and frozen exposure protocol]
+
+The completed [[gus-fixed-field-curriculum-2026-10-18]] and
+[[gus-staged-outcomes-2026-10-18]] now have canonical tournament records published
+and freshly verified in one batch, without rerunning games. The active
+[[gus-exposure-budget-2026-10-18]] has a publicly pinned evaluation/replay protocol
+before confirmation; training continues with the fixed field and registered budget.
+
+## [2026-10-18 | Gus | Fixed-field exact curriculum construction]
+
+- [[gus-fixed-field-curriculum-2026-10-18]] adds exact rational short-endgame outcomes under pinned G0/Zeb continuation policies, with explicit uniform-root approximation and full independently replayed witnesses.
+- Reserved physical roots and deterministic collection batches feed resumable immutable units. Clean training rows are checked against those witnesses; signals, duplicate requests and byte rechecks preserve completed work.
+- The existing exact-success trainer gains a matched rehearsal-only control and complete observer-source resume pins. No trained curriculum result or player promotion is claimed by this implementation commit.
+
+## [2026-10-18 | Gus | Fixed-field exact gains and full-hand transfer limits]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-fixed-field-curriculum-2026-10-18]] completes three paired exact-success/rehearsal seeds under unchanged G0/Zeb policies. Fresh finite-model regret improves with retention; fresh full-hand confirmation does not promote a player. Immutable source/counterfactual witnesses, six formation histories/native captures, selected Hub specimens and replayed fixed-competitor games are published. Canonical tournament synchronization awaits its recorded service deadline. [[gus-success-probability-planning]] routes the staged full-hand follow-up; `gus-training` carries the completed result.
+
+## [2026-10-18 | Codex | Gus frozen games and native representation benchmark]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-frozen-benchmark-2026-10-18]] freezes 18 duplicate pairs, 36 games and
+11,116 clean actor decisions, with 471 exact finite-model endgames and all 234
+potential scheduled deals reserved from future training. Four checkpoint
+captures preserve logits, residuals, MLP activations and attention; scoring takes
+2.9–4.4 seconds on one CPU thread. G0 reproduces every recorded G0 decision and
+both games of its repeated anchor exactly. Runtime/asset hashes prevent silent
+H2H protocol changes. Static regression, conditional exact regret and actual
+game outcomes retain separate scopes.
+
+The public CC0 HF study is pinned at `df8277f60d2c95ce16dfca9473b8eed58a696c40`:
+119 files, 410,609,771 bytes, all freshly downloaded anonymously and hash
+verified. `gus-training` now carries the fixed-panel workflow, exclusions,
+matched policy-head comparisons and the `clean-neuron` representation handoff.
+The affected-suite gate passes all 102 Lem tests plus wiki, license and conflict
+checks. Implementation: `cbc47a83`; results and immutable links live on the
+experiment page.
+
+## [2026-10-18 | 1ab5d586 | Gus full-hand RLVR and immutable replay]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-full-hand-outcomes-2026-10-18]] completes two matched full-hand GRPO/rehearsal
+iterations from the joint splat parent, with fixed G0 partner and Zeb opponents.
+The selected follow-up wins 58/128 fresh greedy hands versus 56 parent and 55
+control, missing the registered promotion rule; sampled play does not improve.
+All 2,048 training hands and the short G0/Zeb/Demon tournament were independently
+replayed. Lazy confirmation retains 768 immutable units; 12 reverse-order rechecks
+match canonical bytes. The tuple/list false-drift check is repaired and tested.
+Full formation/native captures, recovery state, plans and evidence are public;
+`gus-training` and [[gus-success-probability-planning]] route the current procedure.
+
+## [2026-10-18 | f87d6edb | Gus: independent deals per outcome update]
+
+- [[gus-independent-root-batches-2026-10-18]] completes a registered four/eight-deal GRPO comparison with a matched rehearsal control. More deals reduce entirely uniform batches from 6/32 to 1/32; fresh greedy wins remain 202/512 versus parent 201/512, without promotion.
+- `lem.weights.state_identity` permits lazy evidence reuse only for exact inference tensors and metadata under the same execution recipe; checkpoint-history identity remains separate. Eight targeted tests and actual-game byte rechecks cover the boundary.
+- Full recovery, formation, native frozen captures, model releases and all training/confirmation/game replays are preserved publicly. Canonical tournament synchronization remains deferred by its existing shared commit quota; [#223](https://github.com/jasonyandell/mk5-main/issues/223) tracks follow-up.
+- The `gus-training` skill records gradient diagnosis, independent-deal cost, inference-state reuse and completion-status authority; installed instructions are synchronized and validated.
+
+## [2026-10-18 | ecd610b7 | Joint Gus releases and pinned Demon evaluation seats]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[tournament]] supports a separately pinned joint tile/splat Gus adapter and
+registration command, plus unchanged 100-world root-reuse Demon cardplay under
+the common bid30 auction. Existing tile-only source pins and the ordinary roster
+remain unchanged. [[gus-tiny-gpt]] now records the autonomous full-trajectory
+outcome-training goal; the Demon is an evaluation competitor, never a source of
+clairvoyant learning targets. Coordinated dispatch heads-up: issue #221.
+
+## [2026-10-18 | ba31124a | Gus probability reward and lazy frozen continuations]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-success-probability-planning]] now selects direct verified expected
+success plus the existing KL/rehearsal recipe; search and future-splat auxiliary
+training are deferred. The trainer pins the reward choice and preserves complete
+signal/resume state. Frozen anchor supplements append deterministic row/sample
+continuations with unchanged nonlearner seating, full recipe identities, atomic
+records, replay verification and immutable snapshots. `gus-training` documents
+append, resume, recheck and the next matched probability-versus-correctness test.
+
+[[gus-lazy-rlvr-smoke-2026-10-18]] records byte-identical lazy reconstruction,
+paired fixed-seat continuations and an eight-round trainer smoke. Evidence is
+published at the immutable Hub revision linked there; no strength claim or
+model promotion. All 116 Lem tests and the required repository gates passed.
+
+## [2026-10-18 | Lem | Register Gus reward population and depth campaign]
+
+Jason authorized [[gus-population-depth-2026-10-18]] (#213): execute the
+[[gus-population-iteration]] protocol to an operational plateau, then add blocks
+through 757,184 parameters. The collector, policy-only PPO, replay validation,
+block resume, recent-five pool, identity-preserving growth and release loop are
+implemented. A fixed 256-hand G0/Zeb development panel drives stopping; a separate
+512-hand confirmation panel is reserved. Four-game H2H remains a smoke. This
+entry is registration; no learning outcome is claimed.
+
+## [2026-10-18 | ecd610b7 | Gus probability-reward comparison and fixed competitors]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-probability-reward-v3-2026-10-18]] completes six matched runs and fresh
+512-deal confirmation. Probability reward does not improve on the binary-reward
+control; both improve finite-model regret over the splat parent with retention.
+Both scoped specimens and full formation are verified on Hugging Face. Nine
+fixed G0/Zeb/Demon faceoffs complete in under60s each, all199 hands independently
+replayed; the15 immutable records are published and verified in the canonical
+tournament store. No general-player promotion. Issue #222 continues the broader
+autonomous goal through full-hand verified-outcome training. `gus-training` and
+[[gus-success-probability-planning]] now route to that stage.
+
+## [2026-10-18 | 7747f5c2 | Gus public-terminal reward credit]
+
+- [[gus-public-terminal-credit-2026-10-18]] completes three matched full-hand arms: full credit, unsettled credit and rehearsal. All select initialization; no promotion. The loss-only mask preserves clean inputs and the seven-turn normalization.
+- All3072 training hands and2048 confirmation trajectories independently replay;16 reversed-order units reproduce identical bytes. Three final models and the2816-member research bundle are freshly download/hash-verified.
+- Twelve fixed G0/Zeb/Demon smoke faceoffs stay below6s. Canonical tournament sync is pending its shared Hub commit quota; complete records remain in the public archive.
+- `gus-training` now documents explicit horizons and bundle verification. Further training-signal diagnosis remains in#223.
+
+## [2026-10-18 | Lem | Gus named, published, and its next iteration charted]
+
+Jason named the 500k-deal tiny GPT **[[gus-tiny-gpt|Gus]]**. Published
+[jasonyandell/gus](https://huggingface.co/jasonyandell/gus) at `pretrained-v0`
+(`37881325748671214bcedddf3953615958eeaaf7`), with safetensors, an adapter-ready
+checkpoint, input/output schema, pinned loading example, provenance and scoped
+metrics. Anonymous fresh-download hashes and exact tensor/forward parity passed.
+The April oracle-era [[gus]] page routes explicitly to this separate lineage.
+
+[[gus-population-iteration]] records the requested latest-five active window and
+permanent pinned Zeb. Proposed pilot: 4,096 fresh hands, mixed partners/opponents,
+unchanged tokens, policy-only PPO from team outcomes, four-game H2H smoke. The
+collector/trainer remain unimplemented; no reward training or new games ran.
+Full formation archives are retained, and a smoke cannot promote the incumbent.
+Release heads-up: #212; implementation continues under #178/#182/#203.
+
+## [2026-10-18 | 3a6a4af6 | Gus: bounded retention and capacity iterations]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-retention-iterations-2026-10-18]] completes three registered iterations: five short arms, original-task rehearsal, exact finite reward and one-block capacity control. Fresh confirmation supports the small model's scoped endgame gain; extra depth earns no gain, full-game strength remains unestablished. Full formation and native traces are public and anonymously verified. Signal/resume tests and the updated `gus-training` skill preserve the reproducible workflow; no training remains active.
+
+## [2026-10-18 | Gus | Separate initial policy from the outcome reference]
+
+[[gus-staged-outcomes-2026-10-18]] prepares the endgame-to-full-hand comparison. Explicit initial/reference weights keep the KL and retention anchor common, with identity checks, initial-feasibility rejection and tested signal/crash recovery. Older studies retain their published source. No staged model result is claimed yet.
+
+## [2026-10-18 | Gus | Register common-reference staged outcome training]
+
+[[gus-staged-outcomes-2026-10-18]] publishes the four-arm plan before training: three GRPO initializations and a supervised-only continuation, with common original KL/retention reference. All 896 reserved roots exclude 599,687 prior deals. Budgets, selection and fresh confirmation are fixed; the evidence remains a running study, not a promoted player.
+
+## [2026-10-18 | Gus | Staged results and exposure comparison]
+
+Completed [[gus-staged-outcomes-2026-10-18]]: four common-reference arms, no
+reward-specific full-hand gain or promotion, full replay and byte-checked lazy
+evidence, verified models/archive, and twelve bounded competitor faceoffs.
+Training diagnostics motivate [[gus-exposure-budget-2026-10-18]], a preregistered
+fourfold exposure test with continuous short-prefix and rehearsal controls.
+The `gus-training` skill now carries the path-diversity and prefix-selection
+lessons. Canonical tournament synchronization awaits its recorded service window;
+verified records are public in the research archive. #223 remains open.
+
+## [2026-10-18 | 14298336 | Gus: outcome update scale and exact-field feasibility]
+
+- [[gus-update-scale-2026-10-18]] completes matched 3e-5/1e-4 GRPO plus a higher-rate rehearsal control. Larger policy movement does not improve the selected player: all arms retain initialization. Every training and unique confirmation hand independently replays; equal selected networks reuse one lazy evidence store.
+- A separate training-only probe enumerates rational short-endgame outcomes under the same G0/Zeb continuation policies. It is a proposed new curriculum with an explicit uniform-root approximation, not a trained player or search inside Gus. [[gus-success-probability-planning]] and `gus-training` record the distinction.
+- Full-hand completion now updates both live status and report; actual-signal recovery tests preserve completed checkpoint and JSON bytes. Verified model/evidence releases and bounded fixed-competitor games are linked from the experiment; no promotion.
+- Previously deferred canonical tournament records from v2–v4 are published together after the service retry window, with exact-byte conflict checks and fresh anonymous verification. No games rerun; prior archive receipts remain intact.
+
+## [2026-10-18 | b8f1e432 | Gus success probability and future-splat planning]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-success-probability-planning]] records Jason's selected reward objective and proposed future prediction/search direction. It separates teacher forecasts from continuation win rates, external search from learned planning, and post-training components; issue #220 tracks the missing fixed-opponent evaluation supplement and bounded pilot.
+
+## [2026-10-18 | 036dc68e | Gus RLVR leads under fixed opponents]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-retention-iterations-2026-10-18]] separates established results from proposed reward-magnitude, data-breadth, replication/retention and earlier-decision tests. It records why two-answer GRPO normalization cancels reward-gap magnitude. Opponent behavior remains fixed; no new runs started.
+
+## [2026-10-18 | G1 | First Gus population generation]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records G1's complete 4,096-hand iteration, 50.00% development score against G0's 51.95%, verified public formation archive, and measured collection/update costs. The registered depth campaign continues; confirmation remains reserved.
+
+## [2026-10-18 | release-test | Selected Gus release round trip]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records the offline selected-versus-latest publication test, exact exported weight/logit parity and completion guard. All 57 Lem tests pass.
+
+## [2026-10-18 | G2 | Second Gus population generation]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records G2's 50.00% development score and verified public model/formation evidence. Two non-improving generations leave G0 as the retained best; training continues under the registered four-generation rule.
+
+## [2026-10-18 | G4 | Gus first plateau and verified growth]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records the depth-two plateau, G3's retained 52.73% development score and G5's 207,360-parameter identity-preserving growth.
+**Added:** Independent audit of all 114,688 learner inputs/outputs through G4, public receipts, and a semantic-corruption regression test; final publication requires the complete archive audit.
+
+## [2026-10-18 | G5 | First four-block Gus result]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records G5's completed 207,360-parameter iteration, unchanged 52.73% development score and verified public weights/formation. Depth-four training continues.
+
+## [2026-10-18 | G6 | Gus fixed-panel behavior audit]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records G6's 51.17% development score, verified archive and continued depth-four training.
+**Added:** Independent evaluation replay and frozen-player consistency checks; G5 changed 184 hands, trading 14 newly won outcomes for 12 newly lost ones. Audit evidence through G5 is public; all 59 Lem tests pass.
+
+## [2026-10-18 | G9 | Gus grows to eight layers]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records the depth-four plateau, exact 407,296-parameter growth and G9's 52.34% development result.
+**Added:** Public verification of all 229,376 learner decisions through G8 and unchanged frozen-player behavior before learner divergence. The best retained development function remains G3's 52.73% specimen; training continues at depth eight.
+
+## [2026-10-18 | G12 | Gus grows to twelve layers]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records the depth-eight plateau, G10's retained 53.13% development score and verified growth to 607,232 parameters.
+**Added:** Public progress chart, exact chart values and audit of all 344,064 learner decisions through G12. Chart rendering uses a separate environment; final publication requires a refreshed confirmation chart.
+
+## [2026-10-18 | runtime | Gus campaign execution provenance]
+
+**Updated:** [[gus-population-depth-2026-10-18]] records source hashes per bounded work unit and archives baseline replay/cost evidence. W&B run identifiers use standard UUIDs independently of SDK helper availability.
+**Added:** Final-selection publication requires the final-depth plateau and reserved confirmation, preserves the versioned candidates, and verifies the selected public release anonymously.
+
+## [2026-10-18 | 94107270 | Gus iteration costs and twelve-layer progress]
+
+**Touched pages:** [[gus-population-depth-2026-10-18]]
+**Updated:** G13–G15 results and public receipts; measured collection, optimizer, panel and smoke costs, separated from queueing and publication.
+
+## [2026-10-18 | a414740b | Gus reaches the final 757k architecture]
+
+**Touched pages:** [[gus-population-depth-2026-10-18]] [[gus-tiny-gpt]] [[gus-population-iteration]]
+**Updated:** Fourth operational plateau, exact identity growth to 15 layers, and public audit of 65,536 hands and 458,752 learner decisions. Final-depth training and reserved confirmation remain in progress.
+
+## [2026-10-18 | 55c51eea | Explain identity-grown selections in Gus releases]
+
+**Touched pages:** [[gus-population-depth-2026-10-18]]
+**Updated:** Final publication explains whether added depth was trained in the selected specimen and separately links the last fully trained final-depth candidate.
+
+## [2026-10-18 | a9cf6c5c | Complete Gus depth campaign and reserved confirmation]
+
+**Touched pages:** [[gus-population-depth-2026-10-18]] [[gus-tiny-gpt]] [[gus-population-iteration]] [[gus-depth-campaign-evidence-2026-10-18]]
+**Added:** Immutable source digest for final model, formation, confirmation and independent verification receipts.
+**Updated:** Completed twenty generations through 757k parameters, final selection versus trained specimens, fresh confirmation and audited publication; no playing-strength gain established.
+
+## [2026-10-18 | 507637ba | Gus fixed-contract tournament pilot]
+
+**Added:** [[gus-tournament-pilot-2026-10-18]]: 21 model participant records, a pinned common-bidder Zeb anchor, and 15 duplicate faceoffs / 30 games, each under 60 seconds. All 326 hands replayed; no timeouts or excluded-deal overlap. The existing research archive holds the complete evidence; canonical tournament Hub synchronization is quota-blocked after five participant appends.
+**Updated:** [[tournament]] documents the separate bid-30 ladder, immutable source checks, contract restrictions and resume filtering. Full applicable gate GREEN; 112 tournament and 59 Lem tests.
+
+## [2026-10-18 | b3c80377 | Gus training method and independent review]
+
+**Added:** Versioned and locally installed `gus-training` skill, explicitly paired with `clean-neuron`; operations guidance from the completed campaign and an independent forward review.
+**Touched pages:** [[gus-training-review-2026-10-18]] [[gus-tiny-gpt]].
+**Finding:** Replay of G1/G10/G20 identifies discretionary choices after public make/set settlement; proposed reward-advantage ablation remains unrun. All 160 blocks completed four PPO passes. Script, exact counts and input hashes published and anonymously verified.
+
+## [2026-10-18 | gus | Splat forecasts with the same clean inputs]
+
+Implemented joint tile/weighted-outcome pretraining in `lem/observer/splat/`,
+completed the fixed 500k-deal, 200k-update trajectory, and preserved 84 formation
+checkpoints. Paired diagnostics favor G0 over the first splat policy; the bounded
+16-game smoke offers no promotion evidence. Exact inputs, labels, trajectory,
+diagnostics and replayed games are public CC0. [[gus-splat-pretraining-2026-10-18]]
+is the completed result; [[gus-tiny-gpt]] and [[lem-nanogpt-foundations]] route it.
+The `gus-training` skill now documents this workflow and its `clean-neuron`
+companion. No further optimizer updates follow the evaluations.
+
+The separate `splat-v1-20261018` model release passed fresh anonymous verification
+of all 11 files and exact parity of both output heads. The old tournament pilot's
+canonical synchronization remains pending in #216 after another quota response;
+its already published research archive and games are unchanged.
+
+## [2026-10-18 | e8a4566d | Gus exact RLVR and recoverable learning]
+
+**Touched pages:** [[gus-tiny-gpt]] [[gus-rlvr-silas-2026-10-18]] [[gus-modern-learning-recovery-2026-10-18]]
+**Added:** Exact rational Silas curriculum, matched GRPO/SFT, real worked update, retention/probe and bounded transfer evidence.
+**Updated:** Gus training skill; complete-article attribution; graceful stop and exact resume contracts.
+
+## [2026-10-18 | math-publication | Compact 42 and Walt mathematical notes]
+
+<!-- SPDX-FileCopyrightText: 2026 Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+**Added:** [[mathematical-notes]] — two short source-pinned papers and introduction, with reviewed proof boundaries.
+**Updated:** [[suit-algebra-spec]] [[play-phase-algebra]] [[texas-42]] [[strategy-fusion]] [[belief-policy-value-algebra]] [[endgame-equivalence-census]] [[match-equity]] — corrected scope of mathematical claims.
+
+## [2026-10-18 | 5f658043 | Keep the Gus opponent dimension fixed]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-tiny-gpt]] records Jason's fixed-opponent control for the learner/recipe series. [[gus-retention-iterations-2026-10-18]] and `gus-training` keep broader decision coverage under the same behavioral law; evolving populations and the proposed distillation arena are separate future work.
+
+## [2026-10-18 | 77e0dc44 | Gus exposure comparison completed]
+
+**Touched pages:** [[gus-exposure-budget-2026-10-18]] [[gus-success-probability-planning]] [[gus-tiny-gpt]]
+**Added:** Verified selected models, full evidence and canonical fixed-competitor records; disclosed one-line audit container correction.
+**Updated:** No confirmed gain from fourfold exposure; proposed clean-input value-baseline diagnostic and Gus skill recovery guidance.
+**Questions opened:** Can an outcome-trained value baseline improve sequential credit assignment under the fixed field?
+
+## [2026-10-18 | codex-gus | Gus value diagnostic and PPO baseline]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-value-baseline-2026-10-18]] completes the registered frozen-feature
+diagnostic: held-out terminal-success prediction improves over fitted priors
+and matched random features, without an actor update. Public evidence includes
+all chunks, fits, independent audit and actual-signal recovery. The next estimator
+in [[gus-success-probability-planning]] is PPO with a separate linear value
+baseline, complete returns and unchanged clean inputs/fixed other seats.
+Actor and critic recover exactly in CPU interruption tests; the real MPS smoke
+preserves trajectories but fails strict actor-weight identity at a small numeric
+delta. The training skill records the distinction. No playing promotion.
+
+## [2026-10-18 | codex-gus | Gus book, Silas and Lem tool routes]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+**Added:** [[gus-book-silas-tools]] routes executable verifiers, book assumptions
+and native interpretation tools. Separates branch-only construction and the
+missing transformer audit bridge from capabilities available on main.
+**Updated:** [[gus-tiny-gpt]] routes the synthesis; the fixed-opponent comparison
+in [[gus-success-probability-planning]] remains the selected next experiment.
+
+## [2026-10-19 | Gus | Learning charter and partner-awareness questions]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+Jason clarifies the [[gus-tiny-gpt]] charter: learn42 and understand transformers
+hands-on; stronger play remains a measurable hoped-for consequence.
+[[gus-success-probability-planning]] separates proposed partner-awareness and
+whole-game directions from current fixed controls. Skill updated; no new run or
+population selected, and completed outcome criteria remain unchanged.
+
+## [2026-10-19 | Gus | Leave-one-out outcome baseline]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+- 2026-10-19: Prepared [[gus-leave-one-out-2026-10-19]] after failed independent sampled confirmation. Trainer v6 adds leave-one-out success advantages inside the existing clipped actor, with analytic estimator and recovery tests. No improved-player claim; registration precedes training.
+
+## [2026-10-19 | Gus | Native cooldown microscope]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+Fresh full Cammarata reread redirects the next bounded step to saved native
+mechanisms. [[gus-native-cooldown-2026-10-19]] inspects eight preselected MLP
+coordinates across original/constant/cosine formation and an untrained twin,
+with pre/post-GELU cards and independently audited small local interventions.
+A blank-suit response candidate already exists before cooldown; no global
+cleanliness or stronger-play claim. No new games or training. Evidence publicly
+verified before this wiki result; the skill preserves the instrument distinctions.
+
+## [2026-10-19 | Gus | Partner-history attention instrument]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-partner-history-2026-10-19]] prepares a fixed-table attention-path diagnostic
+following Jason's learning-first steering. Temporary edge attenuation preserves
+literal inputs and ordinary inference. Instrument tests cover sham parity,
+information-path isolation, cleanup and independent weight renormalization.
+Fresh data require verified public registration before execution. No strength claim.
+
+## [2026-10-19 | Gus | Earlier partner-tile paths matter]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-partner-history-2026-10-19]] completed its registered diagnostic on256
+fresh fixed-table reference hands. Partner-path sensitivity replicated;
+confirmation total variation .09663 [.08514,.10887], with matched seat, half-dose,
+last-layer-only, exact sham and untrained controls. All256 hands and629 eligible
+outputs audited; public9-file/290-member archive freshly verified. Includes a
+literal worked hand. No training, partner-style understanding or strength gain
+is claimed. `gus-training` routes to the instrument and its interpretation limits.
+
+## [2026-10-19 | Gus | Public-score readout instrument]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-public-score-probe-2026-10-19]] prepares a bounded fixed-table probe of
+already-public score in frozen Gus features. Exact prefix replay supplies
+labels; phase/role, orderless tile, untrained and shuffled-label controls remain
+separate from the actor. Public registration must precede fresh collection.
+
+## [2026-10-19 | Gus | Public-score probe prediction failed]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-public-score-probe-2026-10-19]] completed896 fresh fixed-table hands and
+fitted small readouts with Gus frozen. The predicted final-representation
+advantage failed both panels: confirmation margin RMSE14.51 points, metadata
+14.10, random controls14.03. No endpoint/layer reselection or playing claim.
+All6272 rows/score labels/features audited; independent least squares reproduced
+predictions to8.21e-12 points. Public10-file/946-member archive freshly verified.
+The wiki and `gus-training` separate accessibility from absent information,
+causal use, future-success forecasting and a possible auxiliary learning test.
+
+## [2026-10-19 | Gus | Leave-one-out comparison complete]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+Completed [[gus-leave-one-out-2026-10-19]]:227/512 greedy wins versus parent224,
+GRPO228 and rehearsal226. Neither registered criterion passed; no promotion.
+All10240 training/confirmation hands audited,96 formation checkpoints preserved,
+selected/final exports and batched integration records published and freshly
+verified. Skill updated; next study awaits the readout steering window.
+
+## [2026-10-19 | Gus | Fresh blank-lead association test]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+[[gus-blank-lead-2026-10-19]] tests the microscope's selected layer1/unit65
+hypothesis on512 fresh fixed-G0/Zeb hands. Adjusted double-blank lead response
+replicates strongly; the broader blank-suit criterion remains inconclusive
+because one panel has only5positive/9negative non-double blank-trump roots.
+No extra sampling, endpoint change, training or stronger-player claim.
+All3584prefixes and10752manual model rows audited exactly; four full units
+reverse-byte replayed. Registration06b1f628 and evidence259f8940 publicly
+verified in batches. Future training excludes607306roots. Wiki/skill now retain
+rare-context support and target-identification limits explicitly.
+
+## [2026-10-19 | codex-gus | Recenter the Gus research loop]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+**Updated:** `gus-training` adds periodic collaborator progress and verified
+capability checks, with [[gus-book-silas-tools]] as the route. Pending requests
+are read before another outreach; the fixed inputs and other seats remain controls.
+
+## [2026-10-19 | codex-gus | Register matched Gus PPO value comparison]
+
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+**Added:** [[gus-ppo-value-2026-10-19]] fixes three short outcome-training arms,
+development selection, fresh confirmation and capability boundaries before training.
+**Updated:** [[gus-tiny-gpt]] and [[gus-success-probability-planning]] route the
+registered experiment. Other seats and original model inputs remain fixed.
+
+## [2026-10-19 | Gus PPO comparison | Complete fixed-field PPO/value comparison]
+
+**Touched pages:** [[gus-ppo-value-2026-10-19]] [[gus-tiny-gpt]] [[gus-success-probability-planning]] [[gus-value-baseline-2026-10-18]] [[gus-book-silas-tools]]
+**Updated:** No fresh playing gain; online critic forecasts worse than prior before fitting. Verified public recovery, native captures, model specimens and canonical smoke records; skill carries the fitting and numerical-audit lessons.
+
+## [2026-10-19 | Gus objective | Recenter post-training on winning]
+
+**Touched pages:** [[gus-tiny-gpt]] [[gus-success-probability-planning]]
+**Updated:** Jason's winning objective governs the research loop; imitation and critic scores remain supporting evidence. Future registrations must justify rehearsal, reference KL and retention gates against outcome gains; existing experiments stay intact.
+
+## [2026-10-19 | Gus continuation | Distinguish policy drift from teacher splat retention]
+
+**Touched pages:** [[gus-success-probability-planning]]
+**Updated:** Current training already repeats complete hands; verified outcomes train the actor while splat rehearsal retains teacher targets. Current-policy forecast drift, action-conditioned continuation sampling and eventual match training are distinct questions.
+
+## [2026-10-19 | Gus trainer | Enable explicit outcome-only selection and zero imitation]
+
+**Touched pages:** [[gus-success-probability-planning]]
+**Updated:** Full-hand v5 declares selection semantics and supports reward training without imitation gradients; frozen-parent KL is independently optional. Recovery and teacher-independence tests cover the unanchored recipe; no new strength finding.
+
+## [2026-10-19 | Gus unanchored | Register outcome learning without teacher anchoring]
+
+**Touched pages:** [[gus-unanchored-outcomes-2026-10-19]] [[gus-tiny-gpt]] [[gus-success-probability-planning]] [[gus-book-silas-tools]]
+**Added:** Publicly verified three-arm loss-package comparison; outcome-only selection, fixed inputs/other seats, bounded recovery and untouched confirmation.
+
+## [2026-10-19 | Gus outcome learning | Read out teacher-anchor comparison]
+
+**Touched pages:** [[gus-unanchored-outcomes-2026-10-19]] [[gus-tiny-gpt]] [[gus-success-probability-planning]] [[gus-book-silas-tools]]
+**Updated:** Outcome-only selection and loss-anchor removal evaluated on fresh paired hands; no greedy promotion, secondary sampled-policy signal. Verified recovery, native captures and exports. Canonical integration upload waits for the service quota; raw records and its pending receipt are in the verified archive. Skill distinguishes arm identity from optimizer mode.
+
+## [2026-10-19 | Tournament | Batch Hub publication]
+
+**Touched pages:** [[tournament]]
+**Updated:** Durable local outbox with immediate local ratings, shared five-minute publication cadence, parent-guarded immutable batches and persisted service cooldowns. Worker chunks and explicit sync use the same queue. No game or policy changes; #224.
+
+## [2026-10-19 | Gus | Resume after publication batching]
+
+**Touched pages:** [[gus-success-probability-planning]]
+**Updated:** Jason authorized continuing the loop. Prepared independent sampled-policy confirmation of frozen checkpoints with fresh deals, repeated draws and physical-root uncertainty; no experiment started before the outstanding canonical delivery. Lem/Book requests remain unanswered; Silas #166 remains open. Live ladder workers now acknowledge local queued records and share the publication cooldown.

@@ -1,6 +1,0 @@
-## [2026-10-18 | 14298336 | Gus: outcome update scale and exact-field feasibility]
-
-- [[gus-update-scale-2026-10-18]] completes matched 3e-5/1e-4 GRPO plus a higher-rate rehearsal control. Larger policy movement does not improve the selected player: all arms retain initialization. Every training and unique confirmation hand independently replays; equal selected networks reuse one lazy evidence store.
-- A separate training-only probe enumerates rational short-endgame outcomes under the same G0/Zeb continuation policies. It is a proposed new curriculum with an explicit uniform-root approximation, not a trained player or search inside Gus. [[gus-success-probability-planning]] and `gus-training` record the distinction.
-- Full-hand completion now updates both live status and report; actual-signal recovery tests preserve completed checkpoint and JSON bytes. Verified model/evidence releases and bounded fixed-competitor games are linked from the experiment; no promotion.
-- Previously deferred canonical tournament records from v2–v4 are published together after the service retry window, with exact-byte conflict checks and fresh anonymous verification. No games rerun; prior archive receipts remain intact.

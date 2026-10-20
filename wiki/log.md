@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-17, 351 archived entries)
+## Digest (2026-04-09 → 2026-10-19, 439 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -52,114 +52,61 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **The full menu, Pour A, the audit against earlier nets, the A/A** (2026-10-16, 6 archived entries) — the ten declarations at the arena ([[book-assumptions]], #155), the Demon's repository extraction ([[the-demon]]), the auction read by the known method (#117), [[lem-pour-a-2026-10-16]] registered, the audit read against Zeb's earlier nets ([[lem-field-net-audit-2026-10-15]] § Exploratory), seed-varied seats and #117 re-registered (#190).
 - **The paper, belief in the inputs, the hand law** (2026-10-16, 6 archived entries) — the living draft and its Gaps (`lem/paper/README.md`), G1 registered and run ([[lem-belief-probe-2026-10-16]]), G7 registered ([[lem-fidelity-by-concept-2026-10-16]]), [[silas]]'s hand law (#134), seed-scatter caveats (#190).
 - **G7's result, the estimator calibrated** (2026-10-16 → 10-17, 6 archived entries) — [[lem-fidelity-by-concept-2026-10-16]], [[estimator-calibration-2026-10-16]] (the Book arena, the tournament and Lem's split-half A/A; #190 → #191), [[lem-field-net-audit-2026-10-15]].
-
+- **Ch. 9 at the table, the squeeze and the scope clause** (2026-10-17, 28 archived entries) — Rule 6 and [[ch9-at-the-table-2026-10-17]] (provisional, then field-v3: no trump the book's way, doubles still costs our planner); Lem's [[lem-squeeze-2026-10-16]], [[lem-formation-2026-10-17]], [[lem-width-tree-2026-10-17]], [[lem-dropout-order-2026-10-17]], [[lem-naming-2026-10-17]], [[lem-causal-2026-10-17]] and steering left open (#205); the scope clause and the book-interp skill on [[clean-neurons-42]]; the first tiny observer GPT ([[lem-observer-2026-10-17]], #203, #204).
+- **Gus: training, depth and release** (2026-10-18, 41 archived entries) — [[gus]] named and published: fixed-field curriculum, frozen benchmark, full-hand outcomes ([[gus-fixed-field-curriculum-2026-10-18]], [[gus-frozen-benchmark-2026-10-18]], [[gus-full-hand-outcomes-2026-10-18]]), exposure budget ([[gus-exposure-budget-2026-10-18]]), the population and depth campaign to twelve layers ([[gus-population-iteration]]).
+- **Gus: recentred on winning; tournament batching** (2026-10-19, 19 archived entries) — the learning charter, leave-one-out baseline, partner-history and public-score instruments, [[gus-blank-lead-2026-10-19]], [[gus-first-look-2026-10-19]], PPO/value comparison and outcome learning without teacher anchoring; Hub publication batched for the tournament.
 ---
 
-## [2026-10-17 | lem | steering is unresolved (#198 closed, #205); the clean-neuron skill folds its first five lessons]
+## [2026-10-20 | book | #201: the doubles cost lives in thin top doubles; ch9 data republished whole]
 
-[[lem-causal-2026-10-17]] addendum: adding a matched dose k·σ to named units barely separates
-inside from outside their concept. `+` poles hold at the threshold (0.60–0.64), `−` poles were
-wrong (0.35–0.44), and the dose-response is monotone for 108 of 108 units. The cost comparison
-mixes rows of different difficulty, so matched-row steering moves to #205, and the ablation
-result stands. The clean-neuron skill reached its fifth friction log and folded all five in:
-- the third rung covers learning, and every share reports its net's gap closed;
-- the audit's `mixed` kind is now `unnamed`;
-- the floor belongs to its list;
-- steering uses matched doses;
-- causal rows are named and matched.
+- [[ch9-at-the-table-2026-10-17]] follow-up: with ≤1 of 6-6/5-5/4-4 the declared-doubles cost is
+  −0.17 to −0.47; with ≥2 it is level. Exploratory, to register; the book's Hand 23 is in a costly
+  cell, so the reading is play. HF `book/ch9-field-v3/analysis/`.
+- Both ch9 HF datasets had been flattened to one batch; every batch now published, summaries unchanged.
 
-## [2026-10-17 | lem | causal (#198): switching off a named unit hurts the play where its name says]
+## [2026-10-20 | Gus value-numerics | Fixed-row precision diagnostic]
 
-[[lem-causal-2026-10-17]]: on three 24-neuron nets, ablating a named unit raises the teacher's
-regret where its concept holds for 45 of 45. Among rows where the unit fires, the move changes
-more inside the concept for 39 of 45, and the unit's own concept beats a random one for 33 of 40.
-This is the first evidence of use rather than correlation. Steering failed: a 99th-percentile
-clamp changes 46% of all moves. That is a tools rung, and a dose-response clamp is next. Four of
-five predictions held. The clean-neuron skill's fourth friction log came from this result.
+**Touched pages:** [[gus-value-numerics-2026-10-20]] [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
+**Added:** The separately registered 90-call fixed-row diagnostic found one finite float32 crossing of the unchanged `2e-5` audit at logit 19 (`2.002716064453125e-5`); same-case float64 discrepancy was `2.6645352591003757e-14`. The verified archive and independent saved-array review support local precision/order sensitivity only. The original factorial remains stopped, with its cause and primary prediction unresolved.
 
-## [2026-10-17 | lem | naming the narrow nets (#197): 201 of 210 units named; the floor rises with the list]
+## [2026-10-20 | Gus value-numerics | Fixed-row diagnostic preparation]
 
-[[lem-naming-2026-10-17]]: list v2 and Haiku readers name 201 of the 210 live units of the 12- and
-24-neuron nets. Readers detect 0.80–0.87 of the units the list can't name, against a null of 0.13.
-Of the nine left, seven of the eight that got a reader description are conjunctions of who is
-winning the trick and where the mover sits, a vocabulary gap rather than a history gap (#202). The untrained floor is 0.11–0.23 under v1 and 0.28–0.39
-under v2, while trained nets barely move, so each share goes against its own list's floor. Three
-of five predictions held. Scope: this net, these inputs, these vocabularies. The clean-neuron
-skill's third friction log came from this grade.
+**Touched pages:** [[gus-value-numerics-2026-10-20]] [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
+**Added:** A separately scoped fixed-row float32/float64 forward-path diagnostic is in preparation for the row where the prior instrument stopped. No trained response or result is available; the wrapper's raw-shape capture gap must be fixed and independently reviewed before registration or execution.
 
-## [2026-10-17 | lem | the drop-out order (#196): cleaner to 12 neurons over three seeds; the last words are the trick position]
+## [2026-10-20 | Gus value-versus-routing | Instrument stopped before primary comparison]
 
-[[lem-dropout-order-2026-10-17]]: 21 trained and 21 untrained nets at seven widths. Narrower is
-cleaner down to 12 neurons (0.633 at 192 → 0.759 at 24 → 0.735 at 12, floors 0.17–0.23). The
-drop-out order: `lead` and `late` last, then the trick in front of the mover and the mover's
-trump, then count and trump on the table; mastery outside trump needs 136 neurons. Predictions
-held 3 of 5: two neurons close 0.28, not 0.40, and two of three 4×2 nets failed to learn and fell
-to the floor. Scope: this net, these inputs, list v1. The first two friction logs on the
-clean-neuron skill came from this grade.
+**Touched pages:** [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
 
-## [2026-10-17 | book | the book-interp skill; the clean card carries our position]
+**Added:** The registered value/routing study is terminally complete as a stopped instrument audit after a numeric/nonfinite assertion and 42 original-parent row/model records (840 intervention cases plus 42 baselines). Failure row is identified from run order as `292:6`; exact condition, error magnitude and failed audit conjunct were not saved. Cosine-final was never measured, so the primary prediction remains unevaluated. The anonymously verified partial archive is linked from the experiment page. No scientific or playing conclusion follows. A separate one-row numerical diagnostic is being prepared under its own registration; it is not a resume of this study.
 
-- [[clean-neurons-42]]: Jason's position heads the reloaded section (the lessons fit 42 unusually
-  well; for 42, superposition is not the right null; no claim about interpretability at large),
-  with the book rhyme and the guardrails a compact summary lost (the Tokyo warning first).
-- New `.claude/skills/book-interp`: the book charter and the essay as one discipline; fixes major
-  problems at once, logs the rest, rolls three logs into a rewrite. The compact hook names it.
+## [2026-10-20 | sweep | The July Walt/Hoyt stack shelved: nine branches in attic/ tags, eleven pages kept]
 
-## [2026-10-17 | lem | the scope clause: what we learned from this model, not all of 42 (#202)]
+- [[branch-rescue-2026-10]] § The July stack, shelved: Jason's word, "Keep the wiki pages, shelve the code in attic/ tags".
+- Rescued to main: [[atlas]], [[hoyt]], [[metal-hoyt]], [[cfr-primer]], [[forty-two-native-object]], [[full-metal-hoyt]], [[fundamental-factorization]], [[hoyt-perf-primer]], [[perf-log]], [[perf]], [[role-threat-tensor]].
 
-After a re-read of the essay on both sides of a compact, Jason added a scope clause to the already-clean test. Our tools and vocabulary may be unable to express what the net finds, and our inputs miss concepts such as player-behaviour history, so every result is scoped to this net, these inputs and this vocabulary. The clause is in [[clean-neurons-42]] and the inventory of what is missing is #202.
+## [2026-10-20 | Gus route/rescue | Final actor-query path and native scalar restoration]
 
-## [2026-10-17 | lem | The width tree (#195): narrow units' counterparts share their family, along one concept's facets]
+**Touched pages:** [[gus-route-rescue-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
 
-[[lem-width-tree-2026-10-17]]: each squeezed unit matched to units of wider nets trained from
-scratch. Own family in the 3 best matches at 2.4–2.9× random families, for every narrow net against
-128×64. The coarse "late in the trick" unit spreads into many wide `last` units, not into the two
-seats. The split regression was unfair to the family (pool sizes), and that goes to #200. One of four
-predictions held. Evidence `lem/width-tree-2026-10-17/` (27c87534).
+**Added:** Preregistered actor-query versus earlier-query routing and baseline scalar-restoration diagnostic on 48 reused prefixes. The U65 preactivation effect is concentrated in layer-0's second head at the final actor query in both panels. The U65-versus-U193 raw-TV restoration prediction does not hold across both panels; patches differ in magnitude and projection direction. Full audit and immutable evidence are anonymously verified. No new semantics, mediation, training gain or playing result.
 
-## [2026-10-17 | lem | Formation (#194): units keep their concept family as they form; an untrained net is the honest floor]
+## [2026-10-19 | First Look | Gus current-lead routing diagnostic]
 
-[[lem-formation-2026-10-17]]: six runs (16×8 and 128×64, three seeds), 15 in-run checkpoints each.
-0.82 of the wide net's clean units end in the family they first became clean in (null 0.28).
-Position and trick units form first, and count and mastery later. Untrained nets already score
-0.15–0.28 clean, a floor the shuffled-label chance (0.000) misses. Late-in-the-trick units form
-coarse first. Two predictions held, one held pooled, one was wrong, one was ill-posed. Evidence
-`lem/formation-2026-10-17/` (9c16180e).
+**Touched pages:** [[gus-first-look-2026-10-19]] [[gus-book-silas-tools]] [[index-experiments]]
+**Added:** Verified reused-row circuit result: layer-0 attention drives the measured U65 preactivation response; no exclusive semantics, unit-specific output mediation, or playing gain.
 
-## [2026-10-17 | book | Ch. 9 on field-v3: no trump turns the book's way, doubles trump still costs our planner (#189)]
+## [2026-10-19 | Gus | Sampled-policy replication did not pass]
 
-- [[ch9-at-the-table-2026-10-17]], re-run on Lem's field-v3: 120 of 120 batches. Where the menu changes the declaration it is level overall, −0.010 [−0.028, +0.008] marks/hand. No trump reads +0.024 [+0.002, +0.045], the book's sign. Doubles trump is still −0.067 [−0.100, −0.034], and −0.072 with one player for both declarations, where field-v3 is weakest. The provisional cost was mostly the random field's. A10 is updated, and #201 is the doubles follow-up. Data: HF `book/ch9-field-v3/` (55dd9418, SHA verified).
+**Touched pages:** [[gus-sampled-confirmation-2026-10-19]], [[gus-tiny-gpt]], [[gus-success-probability-planning]], [[gus-book-silas-tools]]
+**Updated:**512 fresh deals,10,240 hands:unanchored sampled39.111% versus parent38.965%,+0.146pp95%[-0.732,+1.025]. Neither registered criterion passes; no promotion or endpoint switch. All hands replayed and16 CPU units byte-rechecked. Compact14-file evidence verified at8045ce8d; original directory failure retained.
 
-## [2026-10-17 | book | Ch. 9 re-run on Lem's field-v3 net, pre-registered (#189)]
+## [2026-10-19 | Gus | Independent sampled-policy confirmation]
 
-- [[ch9-at-the-table-2026-10-17]]: two arms on the same 4,800 changed four-double deals. v3dt plays doubles and no trump on field-v3 and pips on the deployed net; v3all plays every declaration on field-v3, so both declarations have one player. `MenuWalt` takes a `twin`, and `WaltPlay.plays` asks its net (field-v3 covers 7 and 9). The net is pinned by SHA-256. 120 batches.
+**Touched pages:** [[gus-sampled-confirmation-2026-10-19]], [[gus-tiny-gpt]], [[gus-success-probability-planning]]
+**Created:** Frozen-checkpoint confirmation on512 fresh physical deals, four sampled and one greedy draw each. Public16-file registration verified before execution; bounded resumable evaluation and replay, no training or reselection. Prior canonical delivery and completion addendum verified.
 
-## [2026-10-17 | book | Ch. 9 at the table, provisional: our random-field player cannot carry a doubles hand (#189)]
+## [2026-10-19 | Gus | Canonical delivery complete]
 
-- Results on [[ch9-at-the-table-2026-10-17]]: 288 of 288 batches. The menu costs −0.045 [−0.065, −0.025] marks/hand on the 4,234 deals where it changes the declaration: doubles trump −0.106 [−0.142, −0.070], no trump −0.009 [−0.033, +0.015]. Every seat plays doubles and no trump on the random field, so this is the scope of our player, not a reading of the book's declaration. The A10 row is updated. Next is the re-run on Lem's field-v3 net (decls 7 and 9). Data: HF `book/ch9-provisional/` (97769d4e, SHA verified).
-
-## [2026-10-17 | lem | Pour A published; the first field-v3 net plays all ten declarations as cleanly as the pip net]
-
-[[lem-pour-a-2026-10-16]]: 250,000 deals, 4,349,960 positions, on `jasonyandell/texas-42-lem-pour-a`
-(CC0); coverage predictions held (book doubles/no trump 0.56%, forced 12.49%).
-[[lem-field-v3-audit-2026-10-16]] (G4): validation regret 0.0087 (pip 0.0082, doubles/no trump
-0.0120), clean share 0.628 (halves 0.633/0.625) vs the shipped net's 0.602; concept list v2 renames
-clean units rather than adding them; the declaration itself is barely named. Evidence
-`lem/field-v3-audit-2026-10-16/` (3936f450).
-
-## [2026-10-17 | lem | The squeeze: narrow field nets are cleaner, not mixed (G2 width pilot)]
-
-Jason's pilot idea (undersized nets, look for coarse features), from Cammarata's "Already Clean"
-squeeze. Seven nets retrained from scratch on the 250k pour; clean share 0.610 at 192 neurons, 0.833
-at 24 (seeds 0.65–0.83); broadening within families, chiefly "late in the trick"; 24 neurons close
-0.684 of the random-to-teacher gap vs 0.804. Predictions graded, the main one backwards.
-[[lem-squeeze-2026-10-16]]; evidence `lem/squeeze-2026-10-16/` (cbb42932).
-
-## [2026-10-17 | book | The book's Ch. 9 at the table, registered (#189), provisional (random field for 7–9)]
-
-- [[ch9-at-the-table-2026-10-17]]: the chair's full menu (`MenuBidder`) against pip trumps only, on deals where it holds four doubles or more, every seat `MenuWalt`; primary a − b in marks per hand, the book predicts > 0; 288 batches, 23,040 deals, MDE about 0.026 on the changed deals. `scenario/ch9.py`.
-- The arena's ledger gains a deal filter (`keep`, default unchanged, fixtures byte-identical) and writes all nine declarations in `offered` at a menu table; Silas replays a menu ledger's doubles and no-trump rows (`silas/tests/data/ledger-menu.json`).
-
-## [2026-10-17 | book | A reporting rule: calibrate before you chase an A/A miss (#191)]
-
-- [[book-authority]] § How to report a book result, rule 6: replicate an A/A that misses before explaining it, because the miss that starts a search is chosen for having missed and is no evidence for what the search finds. #117 → #190 → #191 is the worked case. The Mayor asked for this rule.
+**Touched pages:** [[gus-unanchored-outcomes-2026-10-19]], [[gus-tiny-gpt]], [[gus-book-silas-tools]]
+**Updated:** The15 immutable tournament records are published in one batch and freshly verified at b2d54393002a549fb1407380852706aaca3a1ddc. No rerun, reselection or promotion. Original service failures remain archived; study and skill now record completed delivery.
