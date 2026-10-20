@@ -200,14 +200,61 @@ python -u -m scenario.ch9 summarize --runs scratch/ch9-2026-10-17/menu-s*/ --out
 On the 1,129 deals where the chair declared doubles, the cost depends on how many of the 6-6, 5-5
 and 4-4 it holds. With two or three, it plays level (every cell's interval crosses zero). With one
 it costs −0.174 [−0.258, −0.089] marks/hand (v3dt), and with none −0.473 [−0.718, −0.227]. Holding the 6-6
-alone does not separate them. The book's own Hand 23 (the 6-6 and three low doubles) sits in a
-costly cell, so the reading is play, not the book's condition: thin top doubles are where the
-declarer must play the book's line. The splits were chosen after looking, so they are leads to
+alone does not separate them, which is in tension with the book, whose distinction among doubles
+is the 6-6 and then the 6-6 and 5-5 together. Thin/deep is our cut, not the book's: its Hand 23 is
+thin and its Hand 25 (not a doubles hand, by the book) is deep. Nor is this a reading of play. Our
+menu prices a doubles hand by its exposed count only (`ch9_ceiling`) and never budgets the trump
+tricks the book counts first, so the declaration rule, the bid and the play are not separated
+here (#230). The splits were chosen after looking, so they are leads to
 register on fresh seeds. Data and scripts are at HF `book/ch9-field-v3/analysis/`.
 
 **Data correction.** The first uploads of both ch9 datasets were flattened, so only one batch each
 was published. Every batch is now under `runs/<arm>-s<seed>/` (2026-10-20). The summaries are
 byte-identical, so the numbers above stand.
+
+## #201 confirmation: thin top doubles (registered 2026-10-20, before any fresh batch)
+
+**Question.** On the deals where the menu chair declares doubles trump, does the menu's cost
+live in the hands that hold one or none of the 6-6, 5-5 and 4-4? The split above was chosen after
+looking, so it is a lead until fresh seeds answer it.
+
+- **Arm and deals.** `v3dt` exactly as registered above (same nets, players, filter and ledger),
+  on fresh seeds **5261–5380 × 80 changed deals, 120 batches**, through `scripts/cpu-slot
+  --threads 4`, four at once. No seed in 5201–5260 is reused. The batch-drop rule stands.
+- **Cells.** Deals where arm a's chair side holds a doubles-trump contract at some shaker, split
+  by the chair's count of {6-6, 5-5, 4-4}: **thin** (0 or 1) and **deep** (2 or 3). The count is
+  read from the dealt hand, before any play.
+- **Primary.** thin − deep, the difference of the two cells' mean a − b in marks per hand, 95%
+  percentile bootstrap over deals (each cell resampled within itself). **Prediction: below 0.**
+  Point band −0.08 to −0.20 (the exploratory gap was −0.18 [about 515 vs 614 deals]; a lead picked
+  after looking should shrink). Expected about 2,260 DT deals; MDE (80%, two-sided 5%) about 0.11.
+- **Secondaries.** thin alone below 0; deep alone crossing 0; the 0, 1, 2 and 3 cells with their
+  intervals (0 is small, about 110 deals, and gets no prediction); the chance baseline per cell
+  (a − random chair).
+- **Floor.** Rule 6: shuffle the thin/deep label across the DT deals 1,000 times. The real
+  difference is read against that null, and the bootstrap's coverage is checked on the shuffles
+  (about 95% of their intervals should cover 0).
+- **Falsifier.** If the primary's interval contains 0, the lead does not replicate at this MDE.
+  It is reported as a null with its MDE, and the exploratory split above keeps its label.
+- **Book-native secondaries (registered now, never looked at for the two-high split).** (1)
+  holds the 6-6 or not (the exploratory read found no separation; reported as a tension with the
+  book either way); (2) **holds both the 6-6 and 5-5 ("the two high", Hand 24's condition) or
+  not: the not cell below the two-high cell.** Thin/deep stays labeled as ours.
+- **Selection, stated.** The cells hold deals where the menu chair's side won a doubles contract
+  at some shaker, so they are conditioned on the auction. The share of shakers won per cell is
+  reported. The menu bids by count, below the book on hands like Hand 23 (27 against its 31).
+- **What it would and would not mean.** A replication puts the cost in hands the menu declares
+  doubles without the top doubles. Those are the hands where the book first counts trump losers,
+  which our `ch9_ceiling` leaves out (#230). It cannot separate our declaration rule, our bid and
+  our play, and it is not a test of the book's declaration: the book itself would price these
+  hands lower, and calls some of them (four low doubles beside a high off, the 0 cell) no
+  doubles hand at all. The restoring measurements: the book's line on Hands 23 and 24 at the
+  book's bids, then the menu with trump losers priced, re-run on the same cells.
+- **Framing review (the new step).** Before sealing, a fresh Opus reader read the book's Ch. 9
+  (from the private text, cited by page, nothing quoted) and then this proposal. It found that
+  thin/deep is ours and cuts across the book's hands, that the menu omits trump losers, and that
+  the first draft read the gap as play. This section was rewritten on those points: the
+  book-native secondaries, the selection statement, the meaning paragraph, and #230.
 
 ## Links
 

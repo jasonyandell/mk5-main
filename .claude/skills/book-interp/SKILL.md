@@ -100,6 +100,21 @@ question. Rebuilding Brooklyn from seventy pieces of Tokyo is not; it makes Toky
 - Never claim more than the local bet. "Fits 42 unusually well", not "interpretability is solved".
 - The book's text stays private: cite catalog rows by id and paraphrase.
 
+## Before you seal a registration (Jason, 2026-10-20; every interp experiment)
+
+1. Write the proposal: the question, the predictions, the instrument and its floors.
+2. Before you seal it, spawn one Opus subagent with fresh context (cleared even on the usage
+   diet, for one or two turns of read and review). It reads the framing document itself, not our
+   summary:
+   - for a test of the clean-neurons thesis, Cammarata's essay
+     (https://already-clean.goodfire.com/), not `wiki/topics/clean-neurons-42.md`;
+   - for an experiment about the book, the book itself, from the private OCR in
+     `scratch/winning42/text/` (never published; the reviewer paraphrases and cites pages).
+   Then it reads the proposal and says where it drifts from that framing: what the source
+   claims, what would count as a test of it, and what would not.
+3. Adjust the proposal, note the review in the registration (who read what, what changed), then
+   seal it by committing before the first measured batch.
+
 ## Signs you have drifted
 
 Stop and walk the ladder if you are about to:
@@ -139,4 +154,4 @@ roll them in the same commit as your own lesson:
 Keep the position statement, the ladder's order and the Tokyo guardrail unless a test broke them.
 
 Lessons folded in:
-- (none yet)
+- 2026-10-20: the fresh-context framing review before sealing (Jason's ruling, via the Mayor).
