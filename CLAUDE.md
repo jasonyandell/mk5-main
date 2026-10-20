@@ -52,8 +52,11 @@ Two halves, one game:
 - **Lem** (`lem/`) — the generative player and the interpretability program: learn 42 as
   completely as it can be learned, then read the net. Its core thesis is THE ALREADY-CLEAN TEST
   (#193), Cammarata's claim that a net's own neurons are clean and that a squeezed net grows
-  coarser, not mixed. Zeb's field net retrained at 24 neurons is cleaner than at 192 (0.83 vs
-  0.61), which a superposition prior says should not happen. Keep it central and test it hard;
+  coarser, not mixed. Zeb's field net retrained at 24 neurons is cleaner than at 192, conditioned
+  on the play count (0.549 vs 0.406 over three seeds, against untrained floors of 0.014 and
+  0.077; #227), which a superposition prior says should not happen. A clean share is read
+  against untrained twins of the same architecture under the same instrument; a transformer's
+  untrained units read position for free (#226). Keep it central and test it hard;
   if a test breaks it, that is the finding ([[lem-the-teacher]]). Every result is scoped to this
   net, these inputs and this vocabulary: our concept list and our one-position inputs (no
   player-behaviour history, uniform beliefs) may not express what the net found, so an unnamed
