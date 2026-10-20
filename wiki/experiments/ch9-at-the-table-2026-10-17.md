@@ -2,7 +2,7 @@
 title: The book's Ch. 9 at the table — doubles trump and no trump priced, provisional (#189, 2026-10-17)
 kind: experiment
 first_seen: 2026-10-17
-last_updated: 2026-10-17
+last_updated: 2026-10-20
 status: complete
 ---
 
@@ -194,6 +194,20 @@ python -u -m scenario.ch9 summarize --runs scratch/ch9-2026-10-17/menu-s*/ --out
   is off in deployed Zeb.
 - **Restoring measurements.** A field net covering decls 7–9 (#177; the first field-v3 net,
   #185), then this registration re-run. A play-line price at the bid (open on #189).
+
+## Follow-up 2026-10-20: where the doubles cost lives (exploratory, #201)
+
+On the 1,129 deals where the chair declared doubles, the cost depends on how many of the 6-6, 5-5
+and 4-4 it holds. With two or three, it plays level (every cell's interval crosses zero). With one
+it costs −0.174 [−0.258, −0.089] marks/hand (v3dt), and with none −0.473 [−0.718, −0.227]. Holding the 6-6
+alone does not separate them. The book's own Hand 23 (the 6-6 and three low doubles) sits in a
+costly cell, so the reading is play, not the book's condition: thin top doubles are where the
+declarer must play the book's line. The splits were chosen after looking, so they are leads to
+register on fresh seeds. Data and scripts are at HF `book/ch9-field-v3/analysis/`.
+
+**Data correction.** The first uploads of both ch9 datasets were flattened, so only one batch each
+was published. Every batch is now under `runs/<arm>-s<seed>/` (2026-10-20). The summaries are
+byte-identical, so the numbers above stand.
 
 ## Links
 
