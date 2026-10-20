@@ -151,6 +151,15 @@ sends each non-local arrival in as a candidate, not a finding.
 Scope: the field net's recipe on pip pours, list v1, layer-1 `+` poles, signals conditioned on
 the play count. What we learned from this model, not all of 42, yet.
 
+## Correction, 2026-10-20: refutation clause part 3
+
+Part 3 of the sealed clause treated "no layer-2 reader takes both halves" as a mark of mixing. The
+review of #232, which read the essay's full text, showed that this misreads the essay. There, "nothing
+reads that combination" was evidence *against* a hiding place. A packed code needs downstream units
+that *separate* or *cancel* the halves, and specialists that each read one half can be
+differentiation. So the two candidates' lack of a union reader does not count toward mixing. #232
+replaces part 3 with a cancelling-reader test and requires a positive packing signature.
+
 ## Links
 
 [[lem-formation-2026-10-17]] · [[lem-coarse-or-mixed-2026-10-20]] · [[lem-family-statistic-2026-10-20]] ·
