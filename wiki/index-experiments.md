@@ -311,3 +311,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-value-routing-2026-10-20|Gus value-versus-routing: stopped instrument audit]] — numeric audit stopped after 42 original-parent rows; cosine and registered primary prediction unmeasured (complete)
 - [[experiments/gus-value-numerics-2026-10-20|Gus fixed-row value/routing numerical diagnostic]] — one float32 audit threshold crossing at logit[19] on the fixed row; same-case float64 discrepancy near machine precision, local-only diagnosis (complete)
 - [[experiments/gus-u65-formation-2026-10-20|Gus U65 formation trajectory]] — registered native-coordinate and layer-0/head1 lead-route sensitivity from splat initialization to 200k on reused prefixes; directional endpoint supported in both reused panels, no feature-continuity or player claim (complete)
+
+- [[gus-contingent-cost-2026-10-20]] — Expected exact action regret versus teacher-label CE, reused training and fresh whole-policy evaluation.

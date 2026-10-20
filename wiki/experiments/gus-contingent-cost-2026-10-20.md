@@ -1,3 +1,10 @@
+---
+title: "Gus: expected exact action regret versus teacher-label imitation"
+kind: experiment
+first_seen: 2026-10-20
+last_updated: 2026-10-20
+status: active
+---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 # Gus: expected exact action regret versus teacher-label imitation

@@ -188,3 +188,5 @@ plays (`lem/observer/data.py`); adaptation to diverse partner policies and
 cross-hand memory are untested/unimplemented respectively. A partner-only
 comparison can keep opponents fixed; whole games add auction, score and memory
 questions. See [[gus-success-probability-planning]] for the charter clarification.
+
+The next registered comparison is [[gus-contingent-cost-2026-10-20]]: use exact action costs to focus learning on consequential decisions, with fresh complete-policy evaluation.
