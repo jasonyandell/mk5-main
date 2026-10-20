@@ -8,7 +8,7 @@ from pathlib import Path
 
 from forge.oracle.tables import DOMINOES
 
-from arena.hand_metrics import best_trump, evaluate_trump
+from arena.hand_metrics import best_trump, ch9_doubles_loss, evaluate_trump
 
 NAME_TO_ID = {f"{h}-{l}": i for i, (h, l) in enumerate(DOMINOES)}
 
@@ -41,6 +41,23 @@ def test_best_trump_respects_min_trumps():
     h = hand("6-6", "6-5", "6-4", "3-2", "1-0", "2-0", "4-4")
     assert best_trump(h, min_trumps=3).trump == 6
     assert best_trump(h, min_trumps=4) is None
+
+
+def test_doubles_loss_counts_the_trumps_the_book_counts_first():
+    # Synthetic hands (the book's are private). Every off is its suit's top on both sides.
+    assert ch9_doubles_loss(hand("6-6", "5-5", "4-4", "3-3", "6-5", "6-4", "6-3")) == 0
+    # The 6-6 without the 5-5: the 5-5's trick and its ten.
+    assert ch9_doubles_loss(hand("6-6", "2-2", "4-4", "3-3", "6-5", "6-4", "6-3")) == 11
+    # No 6-6: the first trick.
+    assert ch9_doubles_loss(hand("5-5", "2-2", "4-4", "3-3", "6-5", "6-4", "6-3")) == 1
+
+
+def test_doubles_loss_prices_an_off_by_its_worst_count():
+    # 5-4: the five side is safe behind the held 6-5; the four side can lose the 6-4's ten.
+    assert ch9_doubles_loss(hand("6-6", "5-5", "4-4", "3-3", "6-5", "6-3", "5-4")) == 11
+    # Without the 6-5 the held 6-4 can lose itself (a trick and its ten); 6-3 and 6-2
+    # risk a trick each with no count left on the six side.
+    assert ch9_doubles_loss(hand("6-6", "5-5", "4-4", "3-3", "6-4", "6-3", "6-2")) == 13
 
 
 def test_matches_original_w42_hand_eval():
