@@ -174,3 +174,12 @@ by layer-0 routing in both panels. Downstream output movement is not evidence of
 unit-specific mediation, new semantics or a playing gain. The 48 prefixes and
 607,306 root exclusions remain reused/unchanged; the full audited bundle is
 publicly verified.
+
+[[gus-route-rescue-2026-10-20]] separates the layer-0 final actor query from the
+bundle of earlier queries on those same 48 prefixes. The U65 raw-preactivation
+contrast is concentrated in zero-based head1 at the final query in both panels.
+Restoring the baseline U65 post-GELU scalar does not reduce raw output distance
+more than U193 in both panels; this prespecified prediction fails across-panel
+replication. The scalar patches differ greatly in magnitude and projection
+direction, so neither result identifies exclusive semantics, per-edge
+importance, or unit mediation.

@@ -68,6 +68,10 @@ or quietly reuse its confirmation panel.
 - Bounded blocks write completion receipts atomically. Resume from verified
   state and existing receipts. An incomplete smoke directory is retained for
   inspection, not deleted to obtain a fresh favorable result.
+  A refused resume must preserve the first failure receipt too: check for an
+  existing failure before writing an exception receipt, rather than overwriting
+  the cause with the later refusal. The route/rescue instrument caught this in
+  prepublication review; preserve unpublished preparation revisions when refreezing.
 - Checkpoints may record absolute participant paths. In a new checkout, fetch
   the pinned bytes and update an explicit new manifest; don't silently point
   an old identity at different weights.

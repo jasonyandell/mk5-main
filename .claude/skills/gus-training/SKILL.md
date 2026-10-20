@@ -104,7 +104,7 @@ tests attention-path sensitivity without training. Read
 the completed `wiki/experiments/gus-public-score-probe-2026-10-19.md` next:
 the final frozen representation did not support a better linear public-score
 readout than metadata and untrained controls. Read
-`scratch/lem/gus-first-look-v1/CURRENT.md` and current user steering before
+`scratch/lem/gus-route-rescue-v1/CURRENT.md` and current user steering before
 selecting another comparison. No completed evaluation or archive should be rerun.
 The completed `wiki/experiments/gus-native-cooldown-2026-10-19.md` pilot then
 inspected eight preselected native MLP coordinates across saved constant/cosine
@@ -121,6 +121,17 @@ not an isolated actor-query edge or unit-only output mediation. Keep raw pre-GEL
 units distinct from frozen-SD association coefficients. Card suffix `:k` is the
 viewer decision/trick index, not within-trick slot; legal model probabilities are
 not recorded reference actions. Independent readers must verify these schemas.
+
+The completed `wiki/experiments/gus-route-rescue-2026-10-20.md` narrows this
+intervention sensitivity to the final query and the second head of layer0 on
+reused matched rows. Restoring U65's baseline post-GELU scalar did not meet the
+registered output-restoration prediction across both panels. Keep raw/legal TV
+and centered-logit distance distinct: they need not improve together. A scalar
+restoration changes a concrete residual-write vector; unequal patch magnitudes
+and projection directions prevent interpreting control-unit comparisons as
+intrinsic importance or a mediation fraction. An unsuccessful restoration is
+not evidence of arbitrary mixing. Preserve the first failure receipt even when
+a later resume refuses to proceed; see the operations reference.
 
 Jason requested a growing Sites First Look and explicitly said not to wait on him.
 During that authorized interpretation effort, continue bounded, preregistered work
