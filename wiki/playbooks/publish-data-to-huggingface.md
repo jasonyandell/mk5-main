@@ -2,7 +2,7 @@
 title: Publish data to Hugging Face — Playbook
 kind: playbook
 first_seen: 2026-10-12
-last_updated: 2026-10-12
+last_updated: 2026-10-20
 status: active
 ---
 
@@ -109,6 +109,20 @@ Every repo's `README.md`:
 - What was left out, and why.
 
 ### Verify
+
+**Count and name every file first.** A study folder must hold on the Hub exactly the files you
+staged. A flattened upload (every run's ledger copied onto one `runs/ledger.json`) once
+published one batch of 288 and one of 120, and the one-file checksum below passed both times
+(the ch9 datasets, fixed 2026-10-20, #201). `scenario.hf publish` checks this itself after
+uploading. For a study folder, run it yourself:
+
+```bash
+python -u -m scenario.hf verify --repo jasonyandell/texas-42-zeb-research-2026-10 \
+    --staged scratch/<stage>/book/<study> --path book/<study>
+```
+
+It fails naming every missing or extra file, then matches one file's SHA-256 downloaded
+fresh. Keep the spot check below as well when the source lives outside the staging folder.
 
 Download one raw file into a fresh directory and match its SHA256 against the
 local source (and against the repo's `SHA256SUMS`):

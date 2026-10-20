@@ -248,7 +248,41 @@ def upload(staged: Path, repo: str, message: str) -> str:
     api.create_repo(repo, repo_type="dataset", exist_ok=True)
     api.upload_folder(repo_id=repo, repo_type="dataset", folder_path=staged, commit_message=message,
                       delete_patterns=["data/**", "raw/**", "nets/**"])
+    verify(staged, repo, exact=False)
     return f"https://huggingface.co/datasets/{repo}"
+
+
+def differences(local: set[str], remote: set[str], exact: bool = True) -> list[str]:
+    """What keeps the Hub from holding exactly the staged files: those missing, and
+    (when `exact`) those extra. Paths are relative to the staged folder. A flattened
+    upload, every run's ledger copied onto one `runs/ledger.json`, shows here as
+    missing files, where a one-file checksum would pass (#201)."""
+    remote = remote - {".gitattributes"}
+    out = [f"missing on the Hub: {f}" for f in sorted(local - remote)]
+    if exact:
+        out += [f"on the Hub but not staged: {f}" for f in sorted(remote - local)]
+    return out
+
+
+def verify(staged: str | Path, repo: str, path: str = "", exact: bool = True) -> str:
+    """Check the Hub against a staged folder uploaded to `path` in `repo`: the same
+    files (counted and named), then one file's SHA-256 downloaded fresh against the
+    staged copy. Raises SystemExit naming every difference."""
+    import tempfile
+
+    from huggingface_hub import HfApi, hf_hub_download
+
+    staged, prefix = Path(staged), f"{path.strip('/')}/" if path.strip("/") else ""
+    local = {str(f.relative_to(staged)) for f in staged.rglob("*") if f.is_file()}
+    remote = {f[len(prefix):] for f in HfApi().list_repo_files(repo, repo_type="dataset") if f.startswith(prefix)}
+    if bad := differences(local, remote, exact):
+        raise SystemExit(f"{repo}/{prefix}: {len(local)} staged, {len(remote)} on the Hub\n" + "\n".join(bad))
+    probe = max(sorted(local), key=lambda f: (staged / f).stat().st_size)
+    with tempfile.TemporaryDirectory() as tmp:
+        got = Path(hf_hub_download(repo, prefix + probe, repo_type="dataset", local_dir=tmp))
+        if hashlib.sha256(got.read_bytes()).digest() != hashlib.sha256((staged / probe).read_bytes()).digest():
+            raise SystemExit(f"{repo}/{prefix}{probe}: the Hub's copy differs from the staged one")
+    return f"verified {repo}/{prefix}: {len(local)} files, {probe} by sha256"
 
 
 # -- the card ------------------------------------------------------------------------
@@ -567,7 +601,14 @@ def _main(argv: Sequence[str] | None = None) -> None:
     pp.add_argument("--notes", help="a Markdown file: the card's provenance section (\"This release\")")
     pp.add_argument("--net", action="append", default=[], help="a field net trained on the pour, shipped in nets/")
     pp.add_argument("--no-upload", action="store_true", help="stage only")
+    vp = sub.add_parser("verify", help="check an uploaded folder on the Hub against its staging folder")
+    vp.add_argument("--repo", required=True, help="the dataset repo id")
+    vp.add_argument("--staged", required=True, help="the folder that was uploaded")
+    vp.add_argument("--path", default="", help="where in the repo it went, e.g. book/ch9-field-v3")
     args = ap.parse_args(argv)
+    if args.cmd == "verify":
+        print(verify(args.staged, args.repo, args.path), flush=True)
+        return
 
     splits = [read_split(*s.split("=", 1), args.commit) for s in args.split]
     out = Path(args.stage or HERE.parent / "scratch" / "hf" / args.repo.split("/")[-1])

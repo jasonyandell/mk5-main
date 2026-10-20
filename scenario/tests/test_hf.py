@@ -181,3 +181,17 @@ def test_a_manifest_that_names_its_reproduction_is_quoted_not_rebuilt():
     from scenario import hf
     assert hf._command({"reproduce": "for i in ...; done"}) == "for i in ...; done"
     assert "--seed 5" in hf._command({"seed": 5, "deals": 3, "spec": "k0,n8", "bid": 30, "bidder": 0})
+
+
+def test_a_flattened_upload_is_named_where_one_checksum_would_pass():
+    from scenario import hf
+
+    staged = {"CARD.md", "runs/v3dt-s1/ledger.json", "runs/v3dt-s2/ledger.json"}
+    flat = {"CARD.md", "runs/ledger.json", ".gitattributes"}
+    assert hf.differences(staged, staged | {".gitattributes"}) == []
+    assert hf.differences(staged, flat) == [
+        "missing on the Hub: runs/v3dt-s1/ledger.json",
+        "missing on the Hub: runs/v3dt-s2/ledger.json",
+        "on the Hub but not staged: runs/ledger.json",
+    ]
+    assert hf.differences(staged, staged | {"README.md"}, exact=False) == []
