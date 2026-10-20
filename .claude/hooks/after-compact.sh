@@ -32,6 +32,16 @@ section() {
   ' "$1"
 }
 
+# Standing desks run in tmux sessions named desk-<beat>. Only the Lem desk gets the frame; the
+# other desks get one line, so they neither pay for the essay nor take its work as theirs. A
+# session outside tmux (a Lem worktree, a lab agent) can't be told apart, so it gets the frame.
+desk=$( [ -n "$TMUX_PANE" ] && tmux display-message -p -t "$TMUX_PANE" '#S' 2>/dev/null )
+case "$desk" in
+  desk-*) [ "$desk" = desk-lem ] || {
+    echo "Lem's frame (THE ALREADY-CLEAN TEST, #193) is not reloaded for $desk. If you take up Lem work, read wiki/topics/clean-neurons-42.md and the essay whole first."
+    exit 0; } ;;
+esac
+
 echo "THE FRAME, reloaded after compaction: Lem's core thesis, THE ALREADY-CLEAN TEST (#193)."
 echo "Below are Cammarata's own words, then our card's description of the work. Do the work they"
 echo "describe: label a unit, follow its circuit, find the motif, watch it grow, steer it."
@@ -55,7 +65,7 @@ if [ -n "$essay" ]; then
   echo "=== End of the essay excerpts. Before planning or interpreting a Lem test, read the whole copy (Read with allow_large: true, or page to the end; never WebFetch). ==="
 else
   echo "MISSING: the essay's local copy ($rel_essay) is not in this checkout or ~/code/mk5-main."
-  echo "Before any Lem work, read the essay itself (https://already-clean.goodfire.com/essay.md, whole),"
+  echo "Before any Lem work, restore the copy (curl -sL https://already-clean.goodfire.com/essay.md into ~/code/mk5-main/$rel_essay; never WebFetch, it returns a summary) and read it whole,"
   echo "and tell Jason the copy is missing. The card below is our summary, not the source."
 fi
 
