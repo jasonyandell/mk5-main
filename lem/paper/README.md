@@ -268,6 +268,14 @@ nameable units; the units come with data. With one initialization and three amou
 #228), the conditioned share at step 20,000 is 0.019 on 4,000 deals, 0.173 on 50,000 and 0.237 on
 500,000, and the 50,000-deal net's units keep their family as they form (0.978 against 0.233).
 
+**Coarse or mixed, read by origin**
+([`wiki/experiments/lem-unit-origin-2026-10-20.md`](../../wiki/experiments/lem-unit-origin-2026-10-20.md),
+#231; reviewed twice against the essay's full text before sealing). For each broadened unit, its
+own training checkpoints show how its second concept arrived. At 16×8, 16 of 21 resolved units
+sprouted it or were born coarse, and 24 of 27 have a layer-2 reader of the union. At 128×64, 248 of
+271 did. Two units, both starting from `lead`, pass three of the four parts of the sealed refutation
+clause; the observer checks are #232.
+
 ## 8. Models of others **[gap]**
 
 The book's lessons assume opponents who model you, partners who read a system, fallible

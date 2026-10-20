@@ -3,7 +3,7 @@ title: "Already-clean test 7c: coarse or mixed by how a unit grew — bridge row
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]]). [[lem-coarse-or-mixed-2026-10-20]]
@@ -97,7 +97,59 @@ list v1, signals conditioned on the play count. What we learn here is about this
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered, on all six runs. Evidence is `lem/unit-origin-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/fab6b4c1506e0bcb2da7e5a136a0a693ad094ce0/lem/unit-origin-2026-10-20):
+one JSON per run with every broadened pole's shares, Jaccard series, entry measures and readers,
+plus `grade.py` and `grade.txt`.
+
+| width | broadened layer-1 `+` poles | sprout | born coarse | non-local | unresolved | with a union reader |
+|---|---:|---:|---:|---:|---:|---:|
+| 16×8 (3 seeds) | 27 | 10 | 6 | 5 | 6 | 24 of 27 |
+| 128×64 (3 seeds) | 280 | 217 | 31 | 23 | 9 | 224 of 280 |
+
+**The predictions, graded.**
+
+| | measured | |
+|---|---|---|
+| 1. 16×8: sprout or born coarse ≥ 0.6 of resolved | 16 / 21 = 0.762 | holds |
+| 2. 16×8: non-local ≤ 0.15 of resolved | 5 / 21 = 0.238 | **wrong** |
+| 3. 128×64: non-local ≤ 0.15 of resolved | 23 / 271 = 0.085 | holds |
+| 4. 16×8: ≥ 0.6 have a union reader | 24 / 27 = 0.889 | holds |
+
+**The refutation clause on the non-local candidates.** By the sealed rule, prediction 2's failure
+sends each non-local arrival in as a candidate, not a finding.
+- **Most candidates are values of one variable**, the mover's seat: (`third`, `last`),
+  (`second`, `third`), (`last`, `second`). These are mutually exclusive, so their bridge share is
+  0 by construction. That is a limit of the bridge measure, which the input-commonality reference
+  then has to carry alone.
+  - (`third`, `last`) is named by list v1's own coarse `late`, so it fails part 1.
+  - Nearly all of these candidates have union readers, so they fail part 3.
+- **The 16×8 `trick-1` → `to-set-le-5` unit** (seed 0, unit 3) has 3 union readers, so it fails
+  part 3.
+- **Two units pass parts 1–3:**
+  - 16×8 seed 0, unit 14, `lead` → `ten-on-trick`: entry at step 30, no union reader, no
+    specialist;
+  - 128×64 seed 0, unit 59, `lead` → `safe-trick`: entry at step 100, no union reader, 7
+    specialists.
+
+  They are **candidates**. Part 4's observer checks are not done: a v2 or reader name for the
+  union, the top-5% window, the negative pole, and missing inputs or history (#202). Those are
+  #232. Neither is a finding yet.
+
+**Reading.**
+
+- **Read the way the essay reads them, by origin, the broadened units are mostly grown.** At 16×8,
+  16 of 21 resolved units sprouted their second concept or were born coarse, and 24 of 27 have a
+  layer-2 unit that reads both halves together: someone reads the union. At 128×64, 248 of 271 are
+  sprouts or born coarse.
+- **Prediction 2's miss is mostly the instrument meeting mutually exclusive values.** Seat
+  concepts never share a row, so no bridge can exist. Their unions are named (`late`) or read by a
+  union reader, which is how the essay says a coarse unit looks downstream.
+- **Two candidates remain**, one per width, both starting from `lead`. In the essay's terms each
+  is worth a careful look. One convincing example would matter, scoped to this toy setting.
+
+Scope: the field net's recipe on pip pours, list v1, layer-1 `+` poles, signals conditioned on
+the play count. What we learned from this model, not all of 42, yet.
 
 ## Links
 
