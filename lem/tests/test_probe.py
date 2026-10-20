@@ -472,3 +472,24 @@ def test_conditioning_on_the_stratum_leaves_a_stratum_only_unit_nothing_to_rank(
         r = strata == v
         assert abs(c.z1[r, 1].mean()) < 1e-9 and abs(c.z1[r, 1].std() - 1) < 1e-9
     assert np.array_equal(c.a1, z)                                       # on/off stays raw
+
+
+def test_merge_numbers_a_later_part_after_all_of_the_earlier_pours_deals(tmp_path):
+    """#225: pour A's pip half has 217,376 deals but its sample may end earlier; the trainer
+    numbers the next pour's deals after all of them, and so must the merge."""
+    from lem.probe.sample import COLUMNS, merge
+    parts = []
+    for k, (n_deals, sampled) in enumerate(((217_376, [0, 10, 217_370]), (32_624, [4, 14]))):
+        pour = tmp_path / f"pour{k}"
+        pour.mkdir()
+        np.savez(pour / "pour.npz", hands=np.zeros((n_deals, 4), np.uint32))
+        n = len(sampled)
+        cols = {c: np.zeros((n, 2), np.uint8) if c == "x" else np.zeros(n, np.int64) for c in COLUMNS}
+        cols["deal"] = np.array(sampled, np.int64)
+        part = tmp_path / f"part{k}.npz"
+        np.savez(part, **cols, source=np.array(str(pour)), layout=np.array("field-v3"))
+        parts.append(part)
+    merge(tmp_path / "merged.npz", parts, log=lambda m: None)
+    with np.load(tmp_path / "merged.npz") as z:
+        assert z["deal"].tolist() == [0, 10, 217_370, 217_376 + 4, 217_376 + 14]
+        assert z["pour"].tolist() == [0, 0, 0, 1, 1]

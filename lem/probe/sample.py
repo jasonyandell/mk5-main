@@ -96,8 +96,8 @@ def merge(out: str | Path, parts: list[str | Path], log=print) -> int:
                 cols[c].append(a)
             sources.append(str(z["source"]))
             layout = str(z["layout"]) if "layout" in z.files else "field-v2"
-            deals = int(z["deal"].max()) + 1 if n else 0
-            first += max(deals, 50_000)    # the training pours are 50,000 deals each
+            with np.load(Path(str(z["source"])) / "pour.npz") as pz:
+                first += len(pz["hands"])  # the trainer numbers a later pour after all of this one's deals (#225)
     d = {c: np.concatenate(v) for c, v in cols.items()}
     d["source"] = np.array(sources)
     d["layout"] = np.array(layout)
