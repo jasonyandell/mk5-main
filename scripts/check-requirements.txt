@@ -6,6 +6,7 @@
 numpy>=1.26
 pyarrow>=14.0
 huggingface_hub>=0.30
+httpx>=0.27  # tournament/tests builds a Hub HTTP error by hand
 pandas>=2.2
 scipy>=1.13
 scikit-learn>=1.5
