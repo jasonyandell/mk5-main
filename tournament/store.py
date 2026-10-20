@@ -6,7 +6,7 @@
 The tournament's whole state is a directory of immutable JSON files:
 
     participants/<participant id>.json
-    faceoffs/<ladder>/<faceoff id>.json
+    faceoffs/<ladder>/<claim day>/<faceoff id>.json
 
 A writer only ever ADDS a file whose path no other writer can choose (the
 faceoff id carries a 64-bit random seed and the claim's UTC time; a

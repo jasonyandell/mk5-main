@@ -49,7 +49,8 @@ class FaceoffSpec:
 
     @property
     def path(self) -> str:
-        return f"faceoffs/{self.ladder}/{self.id}.json"
+        # one folder per claim day: the Hub refuses a folder past 10,000 files
+        return f"faceoffs/{self.ladder}/{self.claimed_utc[:8]}/{self.id}.json"
 
     def games(self) -> list[tuple[int, int]]:
         return [(p, t) for p in range(self.pairs) for t in (0, 1)]
