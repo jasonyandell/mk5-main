@@ -43,3 +43,6 @@ Named things: projects, systems, models, artifacts. Hubs in bold below.
 - [[entities/web-game|web-game]] — Era 1 prologue: the pure-functional, event-sourced TypeScript engine (`state = replayActions(config, history)`) that is the project's founding substrate; every later layer inherits its spine (retired)
 - [[entities/zeb-fleet-ops|zeb-fleet-ops]] — self-healing Vast.ai spot-GPU fleet that kept Zeb's self-play training running past one dev machine's ceiling (complete)
 - [[entities/zeb|zeb]] — 3.3M-param belief model; parked then superseded by Gus (superseded)
+- [[entities/atlas|atlas]] — atlas — the game as an addressed space; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)
+- [[entities/hoyt|hoyt]] — hoyt — the game's own referee; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)
+- [[entities/metal-hoyt|metal-hoyt]] — metal_hoyt — the GPU searcher under the fp64 referee; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)

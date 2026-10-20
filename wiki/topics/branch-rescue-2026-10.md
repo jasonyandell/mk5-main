@@ -11,7 +11,7 @@ branch not on `main` and sorted it: **merge**, **tombstone** (tag `attic/<branch
 branch deleted, nothing lost), **categorize** (waits on Jason), or **live** (another session is using it;
 untouched). Snapshot taken at main `082dcf33`. Live card: The 42 Feed, post `branch-rescue`.
 
-## The July stack (one stack, ten open PRs, Jason's call)
+## The July stack (one stack, nine open PRs; shelved 2026-10-20 on Jason's word)
 
 `worktree-walt-perf` ⊂ `worktree-perf-day` ⊂ `fused-iterate` ⊂ `worktree-equiv-census` ⊂ {`worktree-metal-hoyt`,
 `codex/full-metal-hoyt-problem`, `worktree-roles` ⊂ `worktree-atlas` ⊂ `worktree-atlas-92`}. Each is the base of the
@@ -20,8 +20,25 @@ next PR (#78 → #81 → #83 → #84 → #89/#86/#91 → #92 → #95; #78 target
 merge conflicts each (all in the wiki router files and logs). Issues citing it, all open: #72, #74, #77, #82, #87, #88,
 #90, #92, #93, #94. The Rust `scenario/` Walt of 2026-10-09 is a different, later line; `hoyt/` and `atlas/` are not on main.
 Wiki pages on main already name the stack as "not on main" ([[endgame-equivalence-census]]).
-**Question for Jason:** merge the stack in order (conflicts resolved, `scripts/check` GREEN), or tag it `attic/` and keep only
-the measurements pages?
+**Jason's answer (2026-10-20, feed ask `july-stack`, answered 2026-10-17T16:56:51-05:00):** "Keep the wiki pages, shelve the code in attic/ tags." Done: see § The July stack, shelved.
+
+## The July stack, shelved
+
+**9 branches were tagged `attic/<name>` and deleted, and their 9 stacked PRs closed** (`git ls-remote --tags origin 'attic/*'` lists them; the stack was nine branches, not the ten I first wrote). The code (`hoyt/`, `metal_hoyt/`, `atlas/`, `roles/`, `walt/kernel`) is not on main. `git log attic/worktree-atlas-92` reads the whole main chain (it contains `worktree-roles`, `worktree-atlas`, `worktree-equiv-census`, `fused-iterate`, `worktree-perf-day` and `worktree-walt-perf`); `attic/worktree-metal-hoyt` and `attic/codex/full-metal-hoyt-problem` are the two side branches.
+
+Kept on main, eleven pages that exist only on the stack, each with a shelved-code note at the top: [[atlas]], [[hoyt]], [[metal-hoyt]], [[cfr-primer]], [[forty-two-native-object]], [[full-metal-hoyt]], [[fundamental-factorization]], [[hoyt-perf-primer]], [[perf-log]], [[perf]], [[role-threat-tensor]]. The stack's edits to pages main already has (`walt`, `walt-spec`, `count-fate-ledger`, `play-phase-algebra`, `suit-algebra-spec`, `perf-on-the-table`, `questions/open`) stay in the tags: main's newer versions win. [[endgame-equivalence-census]] was already on main. Issues #74, #82, #87, #88, #90, #92, #93, #94 stay open; their work resumes from the tags.
+
+| Branch (tag) | Tip | PR | What it was |
+|---|---|---|---|
+| `worktree-walt-perf` | `2370f1a0` | #78 | the wavefront engine, world-cap, the net-free kernel and CFR+ instrument |
+| `worktree-perf-day` | `2473d115` | #81 | columnar profile, cap-ledger cascade, the 200-root reference line |
+| `fused-iterate` | `38106b26` | #83 | the fused iterate kernel (#82), anchor 88.6 s to 15.9 s |
+| `worktree-equiv-census` | `c3e1374c` | #84 | the endgame equivalence census |
+| `worktree-metal-hoyt` | `3bd3f947` | #89 | the GPU searcher under the fp64 referee |
+| `codex/full-metal-hoyt-problem` | `1056ffd2` | #86 | the bounded full-Metal H5/H6 lane and playable table |
+| `worktree-roles` | `2cdcaa0f` | #91 | the role threat tensor |
+| `worktree-atlas` | `1d8d8c21` | #92 | atlas, the game as an addressed space |
+| `worktree-atlas-92` | `f4764a2f` | #95 | the fundamental factorization |
 
 ## Table
 
@@ -40,7 +57,7 @@ the measurements pages?
 | `perf/batch`, `perf/cheap` | 2026-04-27 | 5 + 10 / ~900 | main links `burl-perf-phase1` (page only here) | DONE — three pages rescued, branches tombstoned |
 | `research/recursive-generalization-2026-10-15` | 2026-10-15 | 6 / 14 | PR #174 | MERGED to main (rebased, GREEN); PR #174 closed; tombstoned |
 | `worktree-table42` | 2026-07-18 | 9 / 427 | PR #68; #65 #66 #67 #69 #80 | LANDED on main (`f529d358`) after the fence ruling; tombstoned |
-| The July stack (ten branches above) | 2026-07-18…22 | 3–56 / ~428 | PRs #78–#95; 10 issues | CATEGORIZE — Jason |
+| The July stack (nine branches above) | 2026-07-18…22 | 14–56 / ~428 | PRs #78–#95; 10 issues | TOMBSTONED 2026-10-20 — code in `attic/` tags, 11 wiki pages kept |
 | `ccr-07735f91-fouydw` | 2026-10-16 | 6 / 14 | #175 | LIVE — a cloud session's branch |
 | `codex/silas-world-constructor` | 2026-10-14 | 3 / 79 | PR #166 | LIVE — Codex worktree |
 | `codex/fair-42-table-player` | 2026-05-26 | 9 (local) | none | LIVE — Codex worktree `cf79` |
@@ -76,7 +93,7 @@ Set aside by the same pass (rescued pages only, April 2026, ~900 commits behind)
 
 - **`research/recursive-generalization-2026-10-15`**: merged 2026-10-16 (six commits rebased, its log entry moved to a `wiki/log.d` fragment, `scripts/check --fast` GREEN). Tag `attic/research/recursive-generalization-2026-10-15`, branch deleted, PR #174 closed.
 - **`worktree-table42`** (PR #68; #65 #66 #67 #69 #80): squashed onto current main with SPDX headers and landed as `f529d358`; the Mayor's fence ruling `9cebd296` makes the jud seat's E[Q] a sanctioned opponent (token plus an inventory row in [[strategy-fusion-fence]]). #65 and #66 closed with receipts; #67, #69, #80 stay open. Tag `attic/worktree-table42`, branch deleted, PR #68 closed.
-- **The July stack**: waiting on Jason (feed ask `july-stack`). Nothing deleted; no tags needed yet because every branch still exists.
+- **The July stack**: shelved on Jason's answer; see § The July stack, shelved.
 - **Live, untouched** `ccr-07735f91-fouydw` (a cloud session wrote it today, #175), `codex/silas-world-constructor` (PR #166) and `codex/fair-42-table-player` (Codex worktrees), `lem/stage1`, `worktree-agent-ab9223d8997972645` (locked; `lsof` shows a live `gtimeout`/`node`/`python` there, #173). Book's `book/count-lapse` and `silas/cross-game-slice4` were live earlier tonight; Book merged both (`3aba8426`, `aba0c958`) and removed the branches and worktrees.
 - **Waiting on Jason, one line each**: `switch-to-github-issues` is checked out in `~/intent/workspaces/book-translation/mk5-main`, a live workspace, and holds one 10-line `strategies/__init__.py` ("T5: Analysis, wiki experiment page, manifest"): is that book-translation's work to land?
 - **Worktrees on merged branches** (nothing unmerged, so not this pass's job): `zeb-package`, `perf/aggressive`, `lead-notes`, `rob-vs-eq`, `agent-a4a0…`. Whoever owns them can `git worktree remove` them.
