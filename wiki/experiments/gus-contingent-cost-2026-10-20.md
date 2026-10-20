@@ -9,7 +9,7 @@ status: active
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 # Gus: expected exact action regret versus teacher-label imitation
 
-Status: independently reviewed preparation; public registration and launch receipts in `scratch/lem/gus-contingent-cost-v1/`. This is an adaptive successor to [the contingent teacher pilot](gus-contingent-teacher-2026-10-20.md), not an independent replication.
+Status: publicly registered and running; [registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/8292643bd20d86eab57b4173136ecb4be54e92cb/lem/gus-contingent-cost-2026-10-20/registration) freshly verified all 13 files and 43 archive members before launch at 18:14:38 UTC. Recovery and launch receipts are in `scratch/lem/gus-contingent-cost-v1/`. This is an adaptive successor to [the contingent teacher pilot](gus-contingent-teacher-2026-10-20.md), not an independent replication.
 
 The prize remains: use continuation machinery to discover better contingent decisions, then train Gus on those decisions. The first teacher improved 15 of 32 unseen exact roots, but development selected the student at initialization. On the reused training distribution, 87.7% of root-balanced mass has all legal actions equally valued; only 4.24% supplies a strict changed teacher action. This motivates testing action costs; it does not prove the reason distillation failed.
 
