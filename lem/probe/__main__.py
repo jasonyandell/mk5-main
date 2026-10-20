@@ -60,6 +60,7 @@ def main(argv=None) -> None:
     s.add_argument("--shuffle-rows", type=int, default=None, help="calibration: permute the label rows under this seed")
     s = sub.add_parser("coarse"); s.add_argument("sample"); s.add_argument("labels_v2"); s.add_argument("audit_v1_dir"); s.add_argument("donor_audit_v2_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET); s.add_argument("--folds", action="store_true", help="also read planted folds (the positive controls)")
+    s = sub.add_parser("origin"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("run_dir"); s.add_argument("out")
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
@@ -255,6 +256,15 @@ def main(argv=None) -> None:
             res["folds"] = coarse.folds(sample, L2, n2, net, json.loads((Path(a.donor_audit_v2_dir) / "audit.json").read_text()), log)
         Path(a.out).write_text(json.dumps(res, indent=1))
         log(f"wrote {a.out}: {len(res['broadened'])} broadened, {len(res.get('folds', []))} folds")
+    elif a.cmd == "origin":
+        from lem.probe import concepts, origin
+        from lem.probe.sample import Sample
+        with np.load(a.labels) as z:
+            concepts.list_of(str(z["identity"]))
+            labels, names = z["labels"], [str(n) for n in z["names"]]
+        res = origin.run(Sample(a.sample), labels, names, a.run_dir, log)
+        Path(a.out).write_text(json.dumps(res, indent=1))
+        log(f"wrote {a.out}: {len(res['broadened'])} broadened, {len(res['clean'])} clean")
     elif a.cmd == "fidelity-collect":
         from lem.probe import fidelity
         from lem.probe.sample import Sample
