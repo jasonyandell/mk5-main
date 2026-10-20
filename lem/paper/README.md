@@ -231,7 +231,15 @@ token reads its position and the play count fixes the seat. Against that floor t
 reads lower, so the clean share is not comparable across architectures until it conditions on
 position (#226). Within the run, training dissolves the free units (0.29 by step 5,000) and builds
 units named by the declaration, the contract and the count (0.52–0.54). They keep their concept
-family as they form, 0.825 against a 0.291 null, as the field net's did (0.82 against 0.28).
+family as they form, 0.825 against a 0.291 null, as the field net's did (0.82 against 0.28). **Conditioned
+on the play count**
+([`wiki/experiments/lem-conditioned-audit-2026-10-20.md`](../../wiki/experiments/lem-conditioned-audit-2026-10-20.md),
+#226), each unit is z-scored within each play count before its top 1% is read. The untrained floors
+fall to near zero (Gus 0.014; field net 0.077). Trained Gus reads 0.275 and the trained 128×64 field
+net 0.406, on different rows. Gus's units keep their family as they form, 0.981 against 0.266. The
+field net carried position too: about a third of its unconditioned share, and most of its 0.31 floor.
+Comparisons made under one instrument (squeeze, drop-out, naming) stand, but their absolute shares
+overstated what units name beyond position. The conditioned read is the honest absolute.
 
 ## 8. Models of others **[gap]**
 

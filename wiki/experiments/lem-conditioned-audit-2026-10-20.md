@@ -3,7 +3,7 @@ title: "Already-clean test 1b: the position-conditioned audit — Gus and the fi
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]]). [[lem-gus-formation-2026-10-20]]
@@ -45,7 +45,64 @@ Scope: these nets, these inputs and list v2. An unnamed unit is "not named in li
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered. Evidence is `lem/conditioned-audit-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/d08009bf4262423b4c2667591886e88da646bfbf/lem/conditioned-audit-2026-10-20):
+24 audits, `grade.py`, `grade.txt`, `grade.json` and the runner. Every share was 0.000 on all 20
+label shuffles at each series' final net.
+
+| | unconditioned (earlier pages) | **conditioned on the play count** |
+|---|---|---|
+| Gus, untrained (3 nets) | 0.931 / 0.938 / 0.907 | **0.026 / 0.009 / 0.008** |
+| Gus, step 200,000 | 0.517 [0.440, 0.595] | **0.275 [0.239, 0.333]** |
+| field net 128×64, untrained (3 seeds) | mean 0.312 | **0.076 / 0.057 / 0.099** |
+| field net 128×64, trained (3 seeds) | mean 0.638 | **0.385 / 0.420 / 0.412** |
+
+Gus's conditioned curve: 0.026 at step 0, 0.046 at 1,000, 0.069 at 5,000, 0.135 at 10,000, 0.237
+at 20,000, 0.252 at 100,000, 0.281 at 140,000 and 0.275 at 200,000. All 15 steps are in
+`grade.json`.
+
+**The predictions, graded.**
+
+| | measured | |
+|---|---|---|
+| 1. untrained Gus conditioned ≤ 0.30 | mean 0.014 | holds |
+| 2. trained Gus ≥ conditioned floor + 0.20 | 0.275 against 0.214 | holds |
+| 3. field net within 0.10 of unconditioned (trained 0.638, untrained 0.312) | 0.406 and 0.077 | **wrong** |
+| 4. Gus family kept ≥ 0.6 and ≥ 2× null | **0.981** against 0.266 (108 units) | holds |
+| 5. Gus rises: final above step 1,000, above the floor from step 5,000 | 0.275 > 0.046; above from 5,000 | holds |
+
+**Reading.**
+
+- **On the same footing, both architectures are clean well above chance.** Conditioned on the
+  play count, the untrained floors are near zero (Gus 0.014, field net 0.077). Trained Gus is
+  0.26 above its floor and the trained field net 0.33 above its own. Gus's rows are pour A, all
+  declarations, 43,927 test rows; the field net's are pip, 434,535 rows. So the gap between the
+  two is not a measured architecture difference.
+- **The field net carried position too, and prediction 3 was wrong about it.** Its unconditioned
+  floor of 0.31 and about a third of its trained share were the play count. That is a correction
+  to every earlier field-net share in the program: the squeeze, the drop-out order and the naming.
+  - Those studies compared nets read the same way, so their *comparisons* stand: narrow against
+    wide, trained against untrained under one instrument.
+  - Their absolute shares and floors overstated how much the units name beyond position.
+  - The conditioned read is the honest absolute. Re-reading the squeeze and drop-out families
+    under it is the follow-up.
+- **Gus forms cleanly once position is removed.** The U-shape of the unconditioned read is gone,
+  and the conditioned share rises from about 0.01 to 0.28 as the top-1 agreement climbs. Units keep
+  their family as they form: 0.981 against a 0.266 null. That is the essay's formation signature,
+  and it is stronger here than the field net's 0.82.
+- **What Gus's clean units are named.** At step 200,000 the 244 clean units are 188 by a Silas
+  concept and 56 by a raw bit:
+  - the declaration (`trump-is-fives` 31, `trump-is-fours` 19);
+  - the count bit for one tile (`x:count:14`, 35);
+  - the coarse `late` 53 and `lead` 23.
+- **A residual, stated plainly.** Conditioning removes each play count's mean and scale, not the
+  shape of its tail. A unit whose variation is widest late in the trick still takes its top 1%
+  from those rows, so `late` and `lead` survive. Read them as "this unit's variation is widest
+  there", a weaker statement than the other names. A rank-within-stratum top set would remove
+  this too.
+
+Scope: these nets, these inputs and list v2. What we learned from these models, not all of 42,
+yet.
 
 ## Links
 

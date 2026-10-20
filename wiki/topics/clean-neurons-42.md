@@ -144,7 +144,9 @@ untrained floor goes with every share, for its own list: 0.11–0.28 under v1 an
 under v2. [[lem-naming-2026-10-17]] (#197): 201 of 210 narrow units are named by list v2 or the
 readers; of the 9 left, 7 of the 8 that got a reader description are trick × seat conjunctions. Steering and negative poles are [[lem-causal-2026-10-17]] (#198). The first transformer, Gus ([[lem-gus-formation-2026-10-20]]), showed that the
 floor belongs to the architecture too. An untrained transformer's units read position for free
-(0.91–0.94 clean), so its audit must condition on the play count ([[lem-conditioned-audit-2026-10-20]], #226).
+(0.91–0.94 clean), so its audit must condition on the play count. Conditioned
+([[lem-conditioned-audit-2026-10-20]]), the floors fall to near zero, trained Gus reads 0.275 and
+the field net 0.406, and the field net's earlier absolute shares turn out to include position too.
 
 ## The scope clause: what this net can and cannot tell us
 
