@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-20, 445 archived entries)
+## Digest (2026-04-09 → 2026-10-20, 451 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -57,6 +57,17 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus: recentred on winning; tournament batching** (2026-10-19, 19 archived entries) — the learning charter, leave-one-out baseline, partner-history and public-score instruments, [[gus-blank-lead-2026-10-19]], [[gus-first-look-2026-10-19]], PPO/value comparison and outcome learning without teacher anchoring; Hub publication batched for the tournament.
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 ---
+
+## [2026-10-20 | lem | coarse or mixed (#229): void by its own rule; the planted controls did not separate]
+
+[[lem-coarse-or-mixed-2026-10-20]], the first registration reviewed against the essay before
+sealing. It used planted folds (two units merged in a trained net's weights) as positive controls
+for mixed and coarse, and read routes in and uses out. The controls overlapped:
+- routes in cannot tell a merge of mutually exclusive values (`lead` + `last`) from a fold of
+  unrelated ones, which is the essay's own-route point;
+- uses out separated only partly.
+
+So the instrument is void and nothing is concluded. A uses-out instrument is filed.
 
 ## [2026-10-20 | mayor | interp experiments get a fresh read of the source before they're sealed]
 
@@ -141,45 +152,3 @@ CLAUDE.md's sentence goes to the Mayor with the conditioned numbers.
   prediction was wrong. Earlier comparisons stand, but earlier absolute shares overstated what
   units name beyond position.
 - 4 of 5 predictions held.
-
-## [2026-10-20 | lem | the first transformer audit (Gus): its untrained units read position for free; training builds declaration and contract units that keep their family]
-
-[[lem-gus-formation-2026-10-20]]: an all-neuron audit of Gus `pretrained-v0`, read-only on Codex's
-checkpoints (#203), over 15 checkpoints and three untrained floors, with list v2:
-- Untrained Gus units are 0.91–0.94 clean, nearly all by the mover's seat in the trick, because a
-  transformer's decision token reads position. Trained Gus (0.517) reads below that floor. This is
-  a tools rung, and a position-conditioned audit is filed.
-- Training dissolves the free units (0.29 by step 5,000) and builds units named by the
-  declaration, the contract and the count. They keep their family, 0.825 against 0.291.
-- 3 of 5 predictions held.
-
-The clean-neuron skill's first new friction log since the fold came from this run.
-
-## [2026-10-20 | book | `scenario.hf verify`: count and name every published file, not just one checksum]
-
-- [[publish-data-to-huggingface]] Verify: the Hub must hold exactly the staged files; `scenario.hf
-  publish` checks after uploading, and study folders run `scenario.hf verify` (Mayor-approved).
-- Why: the ch9 datasets had published one batch each and passed the one-file checksum (#201).
-
-## [2026-10-20 | book | #201: the doubles cost lives in thin top doubles; ch9 data republished whole]
-
-- [[ch9-at-the-table-2026-10-17]] follow-up: with ≤1 of 6-6/5-5/4-4 the declared-doubles cost is
-  −0.17 to −0.47; with ≥2 it is level. Exploratory, to register; the book's Hand 23 is in a costly
-  cell, so the reading is play. HF `book/ch9-field-v3/analysis/`.
-- Both ch9 HF datasets had been flattened to one batch; every batch now published, summaries unchanged.
-
-## [2026-10-20 | Gus value-numerics | Fixed-row precision diagnostic]
-
-**Touched pages:** [[gus-value-numerics-2026-10-20]] [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
-**Added:** The separately registered 90-call fixed-row diagnostic found one finite float32 crossing of the unchanged `2e-5` audit at logit 19 (`2.002716064453125e-5`); same-case float64 discrepancy was `2.6645352591003757e-14`. The verified archive and independent saved-array review support local precision/order sensitivity only. The original factorial remains stopped, with its cause and primary prediction unresolved.
-
-## [2026-10-20 | Gus value-numerics | Fixed-row diagnostic preparation]
-
-**Touched pages:** [[gus-value-numerics-2026-10-20]] [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
-**Added:** A separately scoped fixed-row float32/float64 forward-path diagnostic is in preparation for the row where the prior instrument stopped. No trained response or result is available; the wrapper's raw-shape capture gap must be fixed and independently reviewed before registration or execution.
-
-## [2026-10-20 | Gus value-versus-routing | Instrument stopped before primary comparison]
-
-**Touched pages:** [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
-
-**Added:** The registered value/routing study is terminally complete as a stopped instrument audit after a numeric/nonfinite assertion and 42 original-parent row/model records (840 intervention cases plus 42 baselines). Failure row is identified from run order as `292:6`; exact condition, error magnitude and failed audit conjunct were not saved. Cosine-final was never measured, so the primary prediction remains unevaluated. The anonymously verified partial archive is linked from the experiment page. No scientific or playing conclusion follows. A separate one-row numerical diagnostic is being prepared under its own registration; it is not a resume of this study.
