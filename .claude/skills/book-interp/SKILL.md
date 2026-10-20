@@ -107,7 +107,9 @@ question. Rebuilding Brooklyn from seventy pieces of Tokyo is not; it makes Toky
    diet, for one or two turns of read and review). It reads the framing document itself, not our
    summary:
    - for a test of the clean-neurons thesis, Cammarata's essay
-     (https://already-clean.goodfire.com/), not `wiki/topics/clean-neurons-42.md`;
+     (https://already-clean.goodfire.com/), read from the local verbatim copy
+     `scratch/sources/already-clean/essay.md` (unlicensed: local only, never committed), not
+     `wiki/topics/clean-neurons-42.md`;
    - for an experiment about the book, the book itself, from the private OCR in
      `scratch/winning42/text/` (never published; the reviewer paraphrases and cites pages).
    Then it reads the proposal and says where it drifts from that framing: what the source
