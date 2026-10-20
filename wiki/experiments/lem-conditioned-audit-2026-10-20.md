@@ -114,6 +114,14 @@ co-occurring concept, often in the same family, is the likeliest replacement
 which is expected, and not yet as growth along a concept's facets. The re-check against a
 shuffled-label run and a co-occurrence-weighted null is #229.
 
+## Caution, 2026-10-20
+
+The conditioning z-scores each play count separately. Where a unit is nearly silent, that promotes
+noise into its top set ([[lem-lead-units-2026-10-20]]). For 12.5% of 16×8 and 25% of 128×64 layer-1
+units, over a quarter of the conditioned top rows fire below 5% of the unit's maximum. The shares
+here await a re-read under a fixed instrument, #233. Comparisons made under one instrument may
+survive, since the artifact hits trained and untrained nets alike.
+
 ## Links
 
 [[lem-gus-formation-2026-10-20]] · [[lem-naming-2026-10-17]] · [[lem-dropout-order-2026-10-17]] ·

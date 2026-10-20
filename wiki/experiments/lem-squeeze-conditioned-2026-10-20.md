@@ -91,6 +91,14 @@ Run 2026-10-20 as registered. Evidence is `lem/squeeze-conditioned-2026-10-20/` 
 Scope: the field net's recipe on pip pours, one position against uniform beliefs, no history,
 list v2. What we learned from this model, not all of 42, yet.
 
+## Caution, 2026-10-20
+
+The conditioning z-scores each play count separately. Where a unit is nearly silent, that promotes
+noise into its top set ([[lem-lead-units-2026-10-20]]). For 12.5% of 16×8 and 25% of 128×64 layer-1
+units, over a quarter of the conditioned top rows fire below 5% of the unit's maximum. The shares
+here await a re-read under a fixed instrument, #233. Comparisons made under one instrument may
+survive, since the artifact hits trained and untrained nets alike.
+
 ## Links
 
 [[lem-conditioned-audit-2026-10-20]] · [[lem-squeeze-2026-10-16]] · [[lem-dropout-order-2026-10-17]] ·

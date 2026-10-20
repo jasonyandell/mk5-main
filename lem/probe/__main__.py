@@ -61,6 +61,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("coarse"); s.add_argument("sample"); s.add_argument("labels_v2"); s.add_argument("audit_v1_dir"); s.add_argument("donor_audit_v2_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET); s.add_argument("--folds", action="store_true", help="also read planted folds (the positive controls)")
     s = sub.add_parser("origin"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("run_dir"); s.add_argument("out")
+    s = sub.add_parser("candidates"); s.add_argument("sample"); s.add_argument("labels_v2"); s.add_argument("out")
+    s.add_argument("--unit", action="append", required=True, help="NET:J:B"); s.add_argument("--recur", nargs="+", required=True)
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
@@ -265,6 +267,33 @@ def main(argv=None) -> None:
         res = origin.run(Sample(a.sample), labels, names, a.run_dir, log)
         Path(a.out).write_text(json.dumps(res, indent=1))
         log(f"wrote {a.out}: {len(res['broadened'])} broadened, {len(res['clean'])} clean")
+    elif a.cmd == "candidates":
+        from lem.probe import candidates as cd, concepts
+        from lem.probe.net import load_net
+        from lem.probe.sample import Sample
+        sample = Sample(a.sample)
+        with np.load(a.labels_v2) as z:
+            assert concepts.list_of(str(z["identity"])) is concepts.LISTS["v2"]
+            L, names = z["labels"], [str(n) for n in z["names"]]
+        n1 = len(concepts.LISTS["v1"])
+        trick, other = 0, 0
+        for path in a.recur:
+            for u in cd.broadened_unions(sample, L[:, :n1], names[:n1], load_net(path)):
+                if "lead" in u:
+                    p = u[1] if u[0] == "lead" else u[0]
+                    trick += p in cd.TRICK_STATE
+                    other += p not in cd.TRICK_STATE
+            log(f"  recurrence after {path}: lead+trick-state {trick}, lead+other {other}")
+        recurs = trick > other
+        res = {"recurrence": {"lead_trick_state": trick, "lead_other_family": other, "nets": a.recur, "recurs_above_baseline": recurs}, "units": []}
+        for spec in a.unit:
+            path, j, b = spec.rsplit(":", 2)
+            rec = cd.read_unit(sample, L, names, load_net(path), int(j), b, log)
+            rec["net"] = path
+            rec["verdict"] = cd.verdict(rec, recurs)
+            res["units"].append(rec)
+            log(f"  verdict {path} unit {j}: {rec['verdict']}")
+        Path(a.out).write_text(json.dumps(res, indent=1, default=str))
     elif a.cmd == "fidelity-collect":
         from lem.probe import fidelity
         from lem.probe.sample import Sample

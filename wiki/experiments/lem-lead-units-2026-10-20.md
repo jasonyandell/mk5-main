@@ -3,7 +3,7 @@ title: "Already-clean test 7d: the two lead-plus-trick-state units, read in both
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]]). [[lem-unit-origin-2026-10-20]] left two
@@ -95,7 +95,58 @@ signals conditioned on the play count.
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered, with one deviation. Evidence is `lem/lead-units-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/af3975a0320142bbe3e9b776208525e7a1b1a8cd/lem/lead-units-2026-10-20).
+
+**The deviation.** Check 2's per-half KL could not be computed meaningfully. A field net plays the
+argmax of integer scores, the float scale of those scores is not stored in the net, and so a
+softmax over them is uncalibrated: the values came out in the millions. No verdict uses the KL, and
+it is dropped. The verdicts rest on the shared-input, specificity, demultiplexing and recurrence
+checks, as sealed.
+
+| | C1: 16×8 s0 unit 14, `lead` + `ten-on-trick` | C2: 128×64 s0 unit 59, `lead` + `safe-trick` |
+|---|---|---|
+| held-out top set: A (`lead`) / B (b) | 1,400 / 369 of 2,174 | 1,213 / 604 of 2,174 |
+| shared input (check 1) | none | none |
+| partner on held-out deals (check 3) | `third` beats b by 0.146; near-ties from 4 families | b ties with `last`, `partner-winning` and others; 3 families |
+| distant control `to-make-le-10` | 0.681 against b's 0.814 | 0.614 against 0.836 |
+| demultiplexing (check 2) | no (one reader cancels one half) | no |
+| raw shape (check 4): weakness A / B | **0.127 / 0.584** of max | **0.00014 / 0.315** of max |
+| verdict | **unresolved** | **unresolved** |
+
+Recurrence (check 5), over 19 drop-out nets with the twins excluded: `lead` + trick-state 5,
+against `lead` + another family 11. That is not above baseline.
+
+**The predictions, graded.**
+
+| | measured | |
+|---|---|---|
+| 1. both partners specific | neither: C1's partner is beaten on held-out deals, C2's is tied | **wrong** |
+| 2. neither unit demultiplexes | neither does | holds |
+| 3. `lead` + trick-state recurs above baseline | 5 against 11 | **wrong** |
+| 4. neither unit gets the packing verdict | both unresolved | holds |
+
+**Reading.**
+
+- **Neither candidate is a mixed unit, and the reason is the instrument, not the net.** The raw
+  shape, the check the essay asks for ("percentiles flatten"), shows it.
+  - C2's whole "lead" half has a mean raw activation of 0.00014 of the unit's maximum. It does not
+    fire on lead positions at all.
+  - C1's lead half fires at 0.127 of max, against 0.584 on its other half.
+  - Both units entered the candidate list because the conditioned audit z-scores each play count
+    separately. Leading is its own play count, and in a stratum where a unit is nearly silent,
+    noise becomes a large z-score and fills the top set.
+  - So "lead ∪ b" was largely a union the instrument made. Read raw, C2 is a `safe-trick`-side
+    unit and C1 mostly a `ten-on-trick`-side one.
+- **This is a flaw in the conditioned instrument, and it is wider than these two units.** Across
+  the layer-1 units of the s0 nets, the median unit is unaffected. But 12.5% of 16×8 units and 25%
+  of 128×64 units have more than a quarter of their conditioned top rows below 5% of their
+  maximum. Every conditioned read is affected, the CLAUDE.md headline included (#227). Its size is
+  not measured yet. The fix, and the re-run of #227 under it, is #233.
+- **What stands from this test:** no demultiplexing in either unit, no packing signature, and
+  `lead` + trick-state does not recur above baseline. Nothing here is evidence of mixing.
+
+Scope: these nets, one position against uniform beliefs, no history, lists v1 and v2.
 
 ## Links
 
