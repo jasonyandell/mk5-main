@@ -3,7 +3,7 @@ title: "Gus: did the actor acquire the computed TRAIN decisions?"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -30,3 +30,22 @@ The maximum is 3110 actor forwards and 160 policy/root evaluations, in two seque
 ## Interpretation boundary
 
 Perfect TRAIN policy value would establish acquisition under this finite teacher. Residual TRAIN regret identifies unfinished acquisition or interference, whose magnitude and source should guide the next comparison. Neither outcome proves new-hand generalization or actual full-hand strength, and this cannot rescue the stopped cost test. No player promotion follows from this diagnostic.
+
+## Measured acquisition
+
+All 3110 native captures and 160 root values completed in one 6.839-second segment, with no failures or field calls. Both independent value walks and every exact occupancy identity agreed. The independent saved-data auditor reconstructed 187637 checks across all 6541 output files without loading models or replaying games. It checks saved outputs and arithmetic, not the neural forward implementation. Its pre-execution provenance lookup correction and original source are preserved.
+
+| Fixed policy | Complete TRAIN success | Gap to exact teacher | Corrections repaired /18 | New non-flat errors /48 |
+|---|---:|---:|---:|---:|
+| Parent | 36.1636% | 2.4673 pp | 0 | 0 |
+| Cost selected16 | 37.1937% | 1.4373 pp | 9 | 4 |
+| Cost final64 | 37.3557% | 1.2752 pp | 14 | 4 |
+| CE selected48 | 37.5401% | 1.0909 pp | 13 | 1 |
+| CE final64 | 37.6558% | 0.9751 pp | 14 | 1 |
+| Exact teacher | 38.6310% | 0 | — | — |
+
+Both final students acquired 14 requested consequential corrections. Cost final assigns more optimal probability on the correction subset (87.40% versus CE final 74.46%, root-node weighted), yet its complete TRAIN policy has lower value. Local probability, argmax repair and visited-path outcome are distinct. Remaining missed corrections and newly introduced errors both matter. This supports acquisition under the finite training model; it does not identify the cause of interference, establish transfer, select final64 for deployment, or promote a player.
+
+[Public evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/7cf364398d400a0de0cd9e7213c98fcf6c32532e/lem/gus-contingent-fit-2026-10-20/evidence) freshly verifies 9 files and 6565 archive members. Prior source data and checkpoints are linked by immutable identities, not duplicated. The next candidate question is how to preserve already-good consequential decisions while acquiring the remaining corrections; no next recipe is selected by this descriptive readout.
+
+The [report chapter](https://gus-first-look.psychometrix.chatgpt.site/#contingent-fit) is deployed from `d25b592cde78afdbfa0889d617a09005e82e2bb5`, preserving owner-private access. New mobile score cards, navigation and disclosure passed 390px visual/interaction QA; existing JS controls were unchanged.

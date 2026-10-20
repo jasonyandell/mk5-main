@@ -191,4 +191,4 @@ questions. See [[gus-success-probability-planning]] for the charter clarificatio
 
 [[gus-contingent-cost-2026-10-20]] trained exact action costs versus teacher-label CE, but stopped when512reserved test deals supplied24of32required positions. Transfer is UNEVALUATED; the next question is acquisition on the existing TRAIN positions, with a separate fixed-checkpoint diagnostic.
 
-The current [[gus-contingent-fit-2026-10-20]] diagnostic measures acquisition on the original TRAIN roots with five fixed saved policies and exact continuation regret. No new training or held-out claim; [[gus-contingent-cost-2026-10-20]] remains stopped before transfer evaluation.
+[[gus-contingent-fit-2026-10-20]] is complete: both final saved students repair 14/18 strict TRAIN errors; cost adds four consequential errors and CE one. CE final TRAIN value is 37.6558% versus parent 36.1636%, with exact teacher 38.6310%. No new training or held-out claim; [[gus-contingent-cost-2026-10-20]] remains stopped before transfer evaluation.
