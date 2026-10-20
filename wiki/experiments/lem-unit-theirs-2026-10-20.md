@@ -3,7 +3,7 @@ title: "Unit paper 6: the 16×8 seed-0 net's unit 14, 'not partner's trick', lou
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: sealed
+status: complete
 ---
 
 The sixth **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field net.
@@ -150,7 +150,113 @@ Sealed 2026-10-20.
 
 ## Results
 
-*(not run)*
+Run 2026-10-20 as registered, in one `scripts/cpu-slot` run of 93 s (2.19e12 instructions). The
+evidence (`unit.json`, the log, the code, `SHA256SUMS`) is `lem/unit-not-partners-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/a811456336e4da17110bd83c901b6641740a9b44/lem/unit-not-partners-2026-10-20).
+
+**The picture.** Unit 14 tells the net **not to throw count onto a trick an opponent's double is
+winning**. Where nothing of mine can win such a trick, the net gives count away 0.044 of the time.
+Ablate this unit and it gives count away 0.426 of the time (Δ +0.383 [+0.375, +0.390]). That is
+the largest effect of the 16 units, each ablated on the same rows. The unit's reading of the trick
+is "not partner's", with an opponent's winning double the loudest case.
+
+**The label, as mean z [95%]** (following unless noted):
+
+| | rows | on | mean z |
+|---|---:|---:|---|
+| an opponent's off double in the led suit, an opponent winning | 76,515 | 1.000 | +18,813 [18,778, 18,849] |
+| an opponent's off double discarded, an opponent winning | 3,760 | 0.905 | +12,777 |
+| no opponent's double, an opponent winning | 117,901 | 0.663 | +3,703 |
+| lead (nobody winning) | 150,000 | 0.814 | +2,026 |
+| an opponent's off double in the led suit, partner winning (partner trumped it) | 5,677 | 0.352 | **−2,475** [−2,650, −2,293] |
+| an opponent's off double discarded, partner winning | 11,087 | 0.247 | −2,488 |
+| no opponent's double, partner winning | 69,595 | 0.008 | −17,628 |
+
+- Partner winning subtracts about 21k (−17.6k against +3.7k without a double).
+- An opponent's double adds about 15k, wherever it is: in the led suit, discarded, or beaten.
+- They are two additive terms, as a linear unit must be. Partner winning outweighs a double, just.
+- **Lead rows sit between the two**, on 0.814: "not partner's", not "theirs".
+- The double, led or played later, is on 1.000 either way.
+
+**The poles.**
+- The − pole is `partner-winning` 0.929.
+- The + pole's top 1% is 0.551 opponents'-double tricks. Read R's label `setter-void-off-suit`
+  (0.826) is a correlate of those tricks: the defenders are void in an off suit and can trump.
+
+**R²** on a: opponent winning 0.297, the winning kind 0.615.
+
+**Circuit out:** layer-2 unit 3 (the doubles switch) −970, unit 1 −443, unit 0 +295, unit 2 +191.
+
+**Steering, every unit ablated on the same rows (pool of 16).**
+
+| rows | base | unit 14's Δ [95%] | rank | the top unit |
+|---|---:|---|---:|---|
+| an opponent's double winning, I can trump in: plays trump (25,819) | 0.800 | −0.187 [−0.192, −0.183] | 4 | unit 7 (paper 5) −0.453 |
+| an opponent's double winning, nothing of mine wins: count given away (20,011) | 0.044 | **+0.383 [+0.375, +0.390]** | **1** | — (next: unit 10 +0.271) |
+| partner winning, count choice: count given, not overtaking (41,370; unit 14 on for 0.060) | 0.583 | — | — | unit 2 −0.251 |
+
+- By seat, ablation lowers trumping in by 0.214 at second, 0.177 at third and 0.163 at last.
+- **Up** (k = 1, own − layer):
+  - trumping in +0.117 [+0.114, +0.120] where an opponent's double wins;
+  - count given away −0.097 [−0.099, −0.095] there;
+  - on partner's tricks, count given −0.013 [−0.015, −0.011].
+
+**Formation.**
+
+| step | on | on, partner winning | on, an opponent's double | partner term (z) | double term (z) |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0.607 | 0.558 | 0.666 | −971 | **+11,572** |
+| 1,000 | 0.963 | 0.993 | 0.988 | −10,865 | +5,777 |
+| 10,000 | 0.981 | 0.991 | 0.998 | −7,525 | +9,933 |
+| 45,810 | 0.834 | 0.717 | 0.996 | −3,022 | +8,711 |
+| 76,350 | 0.787 | 0.276 | 0.998 | +4,933 | +11,450 |
+| 152,700 | 0.756 | **0.070** | 0.997 | **+15,184** | +15,453 |
+| 916,200 | 0.657 | 0.061 | 1.000 | +16,187 | +17,091 |
+
+- **The double term was there at step 0**: an untrained unit already at 0.68 of its final value.
+  It dipped while the unit turned on almost everywhere (steps 300–30k), and has stayed above half
+  from step 10,000.
+- **The partner shut-off came last.** Partner-winning rows were on 0.99 at step 3,000. The term
+  went negative before it went positive, and reached half its final value only at epoch 10
+  (step 152,700).
+- The − label became `partner-winning` at epoch 5 and stayed.
+
+**The predictions, graded: 3 of 5 hold.**
+
+| | measured | |
+|---|---|---|
+| 1. ablation lowers trumping in, top three | −0.187, interval below 0; **rank 4** (unit 7, 10 and 8 ahead) | **wrong** (rank) |
+| 2. ablation raises count given away on a lost trick | +0.383 [+0.375, +0.390], rank 1 of 16 | holds |
+| 3. forced on partner's trick, less count given beyond the layer | −0.013 [−0.015, −0.011] | holds (small) |
+| 4. partner's trump overrides the double: mean z < 0 | −2,475 [−2,650, −2,293] | holds |
+| 5. "whose" before "with what" | the double term stays above half from step 10k; the partner term from step 152.7k | **wrong** (the reverse) |
+
+**Reading.**
+
+- **Named the essay's way, as a verb:** *"not partner's trick; keep your count off it"*. Its main
+  use is to hold count back from a trick the opponents hold, most of all one an opponent's double
+  wins. Without it, the net throws count there nearly ten times as often. Trumping in on that trick
+  belongs mainly to paper 5's unit 7. Unit 14 helps, ranked fourth.
+- **Two additive terms, as the review said a linear unit must be.** "An opponent's double is on
+  the trick" (+15k) and "partner is winning" (−21k). The unit sums them; downstream, its
+  readers see one quantity. Prediction 4 shows the partner term wins when both apply, which is
+  what makes "not partner's" the verb rather than "a double is here".
+- **"With what" came first and "whose" last.** The double term was in the random initial weights
+  and was kept. The partner shut-off was carved out between epochs 3 and 10, turning a unit that
+  fired for any trick with an opponent's double into one that stays quiet when partner has the
+  trick. In the essay's terms this is formation as growth: a facet present at birth, refined by a
+  gate added late. It is not two concepts merged.
+- **The series' uses, side by side.**
+  - Paper 4's switch leads doubles.
+  - Paper 5's counter opens trumping in.
+  - Paper 6's unit keeps count off the opponents' tricks.
+
+  Each is the largest-use unit of its layer on its own rows. Paper 1's unit, which shared its push
+  with the layer, is the exception so far.
+- Not read as mixing. One sum of two related terms, one quantity downstream.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
 
 ## Links
 
