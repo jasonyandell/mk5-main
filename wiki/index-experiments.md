@@ -314,3 +314,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[experiments/gus-u65-formation-2026-10-20|Gus U65 formation trajectory]] — registered native-coordinate and layer-0/head1 lead-route sensitivity from splat initialization to 200k on reused prefixes; directional endpoint supported in both reused panels, no feature-continuity or player claim (complete)
 
 - [[gus-contingent-cost-2026-10-20]] — Stopped/inconclusive; cost versus teacher-label CE trained, reserved test pool short before transfer evaluation.
+- [Gus TRAIN acquisition diagnostic](experiments/gus-contingent-fit-2026-10-20.md) — fixed saved policies and exact TRAIN continuation regret; registered and running, no held-out claim.
