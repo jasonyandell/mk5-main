@@ -114,7 +114,11 @@ first, and let the central authority manage only links and lookups.
   ["Neural Networks Are Already Clean"](https://already-clean.goodfire.com/), not our
   [[clean-neurons-42]] summary. Read the local verbatim copy at
   `~/code/mk5-main/scratch/sources/already-clean/essay.md` (the author's own text version, so we
-  don't hit the site on every review). It has no license, so it stays local and uncommitted. It reviews the proposal against the article's framing: what the
+  don't hit the site on every review). It has no license, so it stays local and uncommitted.
+  It is about 53k tokens. A plain Read stops at 25k (lines 1–379 of 944), so read it with
+  `allow_large: true` or page with offset/limit until line 943. Never WebFetch a source you
+  must read whole: WebFetch hands back a small model's summary of at most 100k characters,
+  not the text. For web docs, curl the raw page instead (code.claude.com docs serve `<page>.md`). It reviews the proposal against the article's framing: what the
   thesis claims, and what would or wouldn't test it. Adjust, note the review in the registration,
   then seal. That's one extra Opus subagent for a turn or two, allowed even on a usage diet. For
   book experiments, the framing source is the book (private archive only).
