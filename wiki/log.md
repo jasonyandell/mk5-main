@@ -59,6 +59,31 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus value numerics, #201's doubles cost, the first transformer audit** (2026-10-20, 6 archived entries) — [[gus-value-routing-2026-10-20]] (stopped before its primary), [[gus-value-numerics-2026-10-20]]; the Book desk's #201 (the doubles cost in thin top doubles) and `scenario.hf verify`; Lem's [[lem-gus-formation-2026-10-20]].
 ---
 
+## [2026-10-20 | mayor | tidy: seven off-topic skills and a stale subagent retired]
+
+- Retired from `.claude/skills` and `.agents/skills`: ecological, volcano-plots, survival-forest,
+  minirocket, word2vec, pymc, umap (generic data-science packs, unused here). Also retired
+  `.claude/agents/analytics-engineer.md`, which pointed at a WSL path. Every listed skill costs
+  context on every turn. They can be restored from the tag `attic/skills-2026-10-20`.
+
+## [2026-10-20 | mayor | six small fixes from a fresh read of Anthropic's model and Claude Code guides]
+
+- CLAUDE.md imports AGENTS.md (Claude Code reads AGENTS.md only when there is no CLAUDE.md), adds
+  "When compacting" (what a summary must keep), and allows in-session checklists.
+- [[standing-desks]]: restarts include compactions; documents get no filler; one message per handoff,
+  no acks, since each message wakes an idle desk.
+
+## [2026-10-20 | lem | read by origin, narrow nets' broadened units are mostly grown; two candidates await observer checks (#231)]
+
+[[lem-unit-origin-2026-10-20]]: across six formation runs, each broadened unit's own checkpoints
+show how its second concept arrived.
+- At 16×8, 16 of 21 resolved units sprouted it or were born coarse, and 24 of 27 have a layer-2
+  reader of the union. At 128×64, 248 of 271 did.
+- The 16×8 non-local share (0.238, prediction wrong) is mostly the mover's seat values, which can
+  have no bridge rows.
+- Two units pass parts 1–3 of the sealed refutation clause, and their observer checks are filed.
+- 3 of 4 predictions held. The registration was reviewed twice against the essay's full text.
+
 ## [2026-10-20 | lem | coarse or mixed (#229): void by its own rule; the planted controls did not separate]
 
 [[lem-coarse-or-mixed-2026-10-20]], the first registration reviewed against the essay before
