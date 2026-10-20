@@ -45,12 +45,26 @@ on those decisions**. Start at
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
 
-The separately registered practice recovery launched after parent/independent review
-and nine synthetic tests covering full serialized initialization. It reuses exact
-64TRAIN/32development outputs and the same unopened test schedule. Remaining
-caps are21collection/1training/4development/4test/8conditionalfullhands; the old
-failed startup counts. Never resume the original failed root or reset its budget.
-Registration and sources are frozen; read recovery CURRENT before acting.
+The separately registered practice recovery is COMPLETE and independently saved-data
+AUDITED. All448 new updates completed; development selected long0 and short16.
+On64fresh finite-test roots, long/parent35.5045%, short36.3436%; long−short
+−.8391pp, paired95[−2.0833,−.0058], long−parent exactly0. Primary gate failed;
+no full-hand test, test reselection or promotion. The short reverse contrast
+(6better,2worse,56ties) is a secondary lead requiring independent confirmation.
+Audit passed1,249,974saved-data checks; not native forward/game replay. Evidence
+ee434b1f6ee4280794ef7701da0109fa3421c0d5 freshly verified10files/54376members.
+Cumulative usage collection9/training2/development1/test1/fullhand0. Never rerun
+completed science or archives, resume the original failed root, or reset budgets.
+Read recovery CURRENT and completion receipts for delivery state.
+
+Next comparison is NOT selected. Collaborator suggests isolating flat-row CE masking:
+1151/1356rows (~79%root-balanced mass) have all-action teacher ties. Keep CE on
+205nonflat rows, original full-batch denominator and every AdamW step, including
+all-flat batches (momentum/decay can still move weights). This is a candidate,
+not proof ties caused failure. Teacher ties assume optimal future continuation;
+student whole-policy outcomes remain decisive. The previous cost loss also changed
+nonflat gradients, so it did not isolate this factor. Any new study needs fresh
+registration, held-out splits and independent confirmation before strength claims.
 
 The first contingent-teacher pilot is complete: the planner improved15/32 fresh
 finite-model root policies, but development retained student step0. The separate
@@ -91,9 +105,8 @@ hash helper. No new optimizer updates or test selection occurred. Never resume
 or edit this frozen study. A separately registered repair can reuse completed
 outputs, with unchanged endpoints and remaining caps; first test the full JSON
 manifest-to-initialize_run boundary, not only the fork helper. Failure evidence is independently audited and publicly verified; see CURRENT
-for docs/completion status. Separate recovery preparation is at
-`scratch/lem/gus-contingent-practice-recovery-v1`; do not launch it before its own
-reviewed public registration. Preserve cumulative stage usage (collection3,
+for docs/completion status. The separately registered recovery at
+`scratch/lem/gus-contingent-practice-recovery-v1` has now completed; never rerun it. Preserve cumulative stage usage (collection3,
 training1 already consumed), no new pools or repeated collection.
 
 All613323prior reserved deals plus3712new reservations remain future exclusions:

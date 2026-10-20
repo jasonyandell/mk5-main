@@ -319,4 +319,4 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 
 - [[experiments/gus-contingent-breadth-2026-10-20|Gus contingent teaching breadth]] — 32 versus 64 TRAIN roots at fixed 64 updates did not establish transfer (complete)
 - [[experiments/gus-contingent-practice-2026-10-20|Gus contingent teaching practice]] — 64 versus 512 update comparison stopped before training; transfer unevaluated (complete)
-- [[experiments/gus-contingent-practice-recovery-2026-10-20|Gus practice startup recovery]] — same lessons and endpoints, repaired initialization with cumulative original budget (active)
+- [[experiments/gus-contingent-practice-recovery-2026-10-20|Gus practice startup recovery]] — 512 updates completed; selection retained parent, finite gate failed; audited and published
