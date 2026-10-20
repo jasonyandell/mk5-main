@@ -527,3 +527,17 @@ def test_family_u_is_half_when_families_mean_nothing_and_high_for_a_coarse_unit(
     e = np.zeros((c, c))
     e[0, 1] = e[1, 0] = 1.0                                          # the best union lies in one family:
     assert abs(family_u(e, valid, fam) - 60 / 66) < 1e-12           # misses it 54/66, ties it 12/66 (counted half)
+
+
+def test_a_planted_fold_is_one_real_unit_with_both_donors_input_and_output(net):
+    """#229: the fold merges unit k into unit j (inputs, bias, outgoing weights) and removes k."""
+    from lem.probe.coarse import cos, fold
+    rows = _random_positions(200, seed=9)
+    x = np.zeros((len(rows), N_FEATURES), np.uint8)
+    for i, (decl, seat, own, bidder, bid, plays, rec) in enumerate(rows):
+        x[i, features(rules_for(decl), seat, own, rec, bid, bidder % 2, V2)] = 1
+    a, f = forward(net, x), forward(fold(net, 3, 5), x)
+    assert np.array_equal(f.z1[:, 3], a.z1[:, 3] + a.z1[:, 5])          # one unit, both donors' input
+    assert (f.a1[:, 5] == 0).all()                                     # k never fires again
+    assert np.array_equal(fold(net, 3, 5).w2[:, 3], net.w2[:, 3] + net.w2[:, 5])
+    assert cos(np.array([1.0, 0.0]), np.array([0.0, 2.0])) == 0.0 and cos(np.zeros(2), np.ones(2)) is None

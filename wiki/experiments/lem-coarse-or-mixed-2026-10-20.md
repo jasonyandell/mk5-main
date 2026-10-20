@@ -3,7 +3,7 @@ title: "Already-clean test 7b: coarse or mixed, by the essay's own discriminator
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 Part of THE ALREADY-CLEAN TEST (#193; [[clean-neurons-42]]). [[lem-family-statistic-2026-10-20]]
@@ -95,7 +95,43 @@ checked against the page.
 
 ## Results
 
-Not yet run.
+Run 2026-10-20 as registered. Evidence is `lem/coarse-or-mixed-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/9583f00503a38c88fa8e6fe752429512a33ad32c/lem/coarse-or-mixed-2026-10-20):
+one JSON per net with every broadened pole and every fold, plus `grade.py`, `grade.txt` and
+`grade.json`. The donor nets were the trained 32×16, 16×8 and 8×4 nets. There were 27 mixed folds
+and 26 coarse folds with both sides of at least 30 rows.
+
+**The controls, prediction 1.**
+
+| | `r` (routes in): median [q25, q75] | `d` (uses out): median [q25, q75] |
+|---|---|---|
+| mixed folds (27) | 0.199 [−0.107, 0.488] | 0.777 [0.457, 0.876] |
+| coarse folds (26) | 0.363 [−0.015, 0.550] | 0.930 [0.633, 0.973] |
+
+**Prediction 1 is wrong.** The mixed folds' medians are not below the coarse folds' 25th
+percentiles (0.199 against −0.015; 0.777 against 0.633). **By the sealed rule the instrument is
+void, and nothing is concluded about coarse or mixed.** Predictions 2–4 are not graded as
+evidence. Their numbers are recorded below for the next instrument only.
+
+**Why the controls overlap.** Routes in do not separate the controls, and the essay says why: an
+offshoot can arrive "by its own route". The coarse folds join mutually exclusive values of one
+variable: `lead` and `last`, `trump-is-fives` and `trump-is-fours`. The input features that say
+"I lead" and "I play last" are different features by construction, so even a merge of one concept
+has disjoint routes in. Uses out does separate the controls in the expected direction (0.930
+against 0.777), but not past the sealed bar. The random-split ceilings are about 1.0 for both
+measures, so any real split reads below its ceiling.
+
+**Recorded, not read** (for the next instrument):
+- the 37 trained broadened layer-1 poles at 16×8 and 8×4 have medians `r` 0.369 and `d` 0.943;
+- 0.216 of them fall in the mixed-like region as defined, and so do 0.000 of the 70 untrained;
+- there are 4 {`third`, `last`} poles, none mixed-like.
+
+**Next.** Uses out as the primary measure, read more sharply (on the legal tiles, or the chosen
+move's probability), with more folds and a threshold sealed from the controls: #231. It will be
+reviewed against the essay copy before sealing.
+
+Scope: the field net's recipe on pip pours, list v1, layer-1 units, signals conditioned on the
+play count.
 
 ## Links
 

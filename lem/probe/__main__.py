@@ -58,6 +58,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("families-u"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("audit_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET); s.add_argument("--condition", choices=("n_plays",), default=None)
     s.add_argument("--shuffle-rows", type=int, default=None, help="calibration: permute the label rows under this seed")
+    s = sub.add_parser("coarse"); s.add_argument("sample"); s.add_argument("labels_v2"); s.add_argument("audit_v1_dir"); s.add_argument("donor_audit_v2_dir"); s.add_argument("out")
+    s.add_argument("--net", default=NET); s.add_argument("--folds", action="store_true", help="also read planted folds (the positive controls)")
     s = sub.add_parser("list"); s.add_argument("out")
     s = sub.add_parser("fidelity-collect"); s.add_argument("sample"); s.add_argument("pour"); s.add_argument("k", type=int); s.add_argument("out")
     s = sub.add_parser("fidelity"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("q_dir"); s.add_argument("out_dir")
@@ -238,6 +240,21 @@ def main(argv=None) -> None:
         res = squeeze.families_u(labels, names, acts, json.loads((Path(a.audit_dir) / "audit.json").read_text()), log=log)
         res.update(net=a.net, condition=a.condition, shuffle_rows=a.shuffle_rows)
         Path(a.out).write_text(json.dumps(res, indent=1))
+    elif a.cmd == "coarse":
+        from lem.probe import coarse, concepts
+        from lem.probe.net import load_net
+        from lem.probe.sample import Sample
+        sample, net = Sample(a.sample), load_net(a.net)
+        with np.load(a.labels_v2) as z:
+            assert concepts.list_of(str(z["identity"])) is concepts.LISTS["v2"], "coarse reads list v2 (v1 is its first columns)"
+            L2, n2 = z["labels"], [str(n) for n in z["names"]]
+        n1 = len(concepts.LISTS["v1"])
+        res = {"net": a.net,
+               "broadened": coarse.broadened(sample, L2[:, :n1], n2[:n1], net, json.loads((Path(a.audit_v1_dir) / "audit.json").read_text()), log)}
+        if a.folds:
+            res["folds"] = coarse.folds(sample, L2, n2, net, json.loads((Path(a.donor_audit_v2_dir) / "audit.json").read_text()), log)
+        Path(a.out).write_text(json.dumps(res, indent=1))
+        log(f"wrote {a.out}: {len(res['broadened'])} broadened, {len(res.get('folds', []))} folds")
     elif a.cmd == "fidelity-collect":
         from lem.probe import fidelity
         from lem.probe.sample import Sample
