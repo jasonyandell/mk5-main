@@ -468,10 +468,33 @@ def test_conditioning_on_the_stratum_leaves_a_stratum_only_unit_nothing_to_rank(
     z = np.concatenate([pos_only, real], axis=1)
     c = condition(Activations(z, z, z, z, z), strata)
     assert np.allclose(c.z1[:, 0], 0)                                    # nothing left to rank
-    for v in np.unique(strata):                                         # within every stratum: mean 0, sd 1
-        r = strata == v
-        assert abs(c.z1[r, 1].mean()) < 1e-9 and abs(c.z1[r, 1].std() - 1) < 1e-9
+    for v in np.unique(strata):                                         # within every stratum: mean 0
+        assert abs(c.z1[strata == v, 1].mean()) < 1e-9
+    assert abs(np.sqrt((c.z1[:, 1] ** 2).mean()) - 1) < 1e-9           # one pooled scale per unit (#233)
     assert np.array_equal(c.a1, z)                                       # on/off stays raw
+
+
+def test_a_stratum_where_the_unit_is_nearly_silent_gives_it_no_top_rows():
+    """#233: per-stratum scaling amplified a near-silent stratum's noise into the top set."""
+    from lem.probe.audit import condition, top_set
+    from lem.probe.net import Activations
+    rng = np.random.default_rng(4)
+    strata = np.repeat([0, 1], 5000)
+    sig = np.where(strata == 0, 1e-4 * rng.normal(size=10000), rng.normal(size=10000))[:, None]
+    c = condition(Activations(sig, sig, sig, sig, sig), strata)
+    top = top_set(c.z1[:, 0], 100)
+    assert (strata[top] == 1).all()
+
+
+def test_the_play_count_baseline_refuses_a_label_the_stratum_alone_explains():
+    """#233: a concept fixed by the stratum cannot make a pole clean under the baseline."""
+    from lem.probe.audit import BASELINE_MARGIN, expected_from_strata, stratum_rates
+    strata = np.repeat([0, 1, 2, 3], 250)
+    lead = (strata == 0)[:, None]                                       # true exactly in stratum 0
+    rates, idx = stratum_rates(lead, strata)
+    top = np.flatnonzero(strata == 0)[:50]                             # a pole that fires only on stratum 0
+    exp = expected_from_strata(top, rates, idx)
+    assert exp[0] == 1.0 and lead[top, 0].mean() - exp[0] < BASELINE_MARGIN
 
 
 def test_merge_numbers_a_later_part_after_all_of_the_earlier_pours_deals(tmp_path):

@@ -113,26 +113,51 @@ def classify(prec: np.ndarray, base: np.ndarray, names: list[str], k: int):
 
 
 def condition(acts: Activations, strata: np.ndarray) -> Activations:
-    """Each neuron's pre-activation z-scored within each stratum (#226). A unit that reads only the
-    stratum, such as a transformer's position when the stratum is the play count, keeps nothing to
-    rank by, and a concept fixed by the stratum falls to its base rate in any top set. On/off
-    (`a`) stays the raw activation's."""
+    """Each neuron's pre-activation centred within each stratum and scaled by one pooled
+    within-stratum standard deviation (#226, fixed in #233). The stratum's mean is removed, so a
+    unit that reads only the stratum keeps nothing to rank by. Dividing by each stratum's own
+    spread instead (the first version) amplified noise where a unit is nearly silent and pulled
+    it into the top set. On/off (`a`) stays the raw activation's."""
     def z(m: np.ndarray) -> np.ndarray:
         m = m.astype(np.float64)
         out = np.zeros_like(m)
         for v in np.unique(strata):
             rows = strata == v
-            mu, sd = m[rows].mean(axis=0), m[rows].std(axis=0)
-            out[rows] = (m[rows] - mu) / np.where(sd > 0, sd, 1.0)
-        return out
+            out[rows] = m[rows] - m[rows].mean(axis=0)
+        sd = np.sqrt((out ** 2).mean(axis=0))
+        return out / np.where(sd > 0, sd, 1.0)
     return Activations(z(acts.z1), acts.a1, z(acts.z2), acts.a2, acts.out)
 
 
+BASELINE_MARGIN = 0.1
+
+
+def stratum_rates(allc: np.ndarray, strata: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """P(concept | stratum) for every concept column, and each row's stratum index."""
+    vals, idx = np.unique(strata, return_inverse=True)
+    S = np.zeros((len(strata), len(vals)))
+    S[np.arange(len(strata)), idx] = 1.0
+    counts = S.sum(axis=0)
+    return (S.T @ allc.astype(np.float64)) / counts[:, None], idx
+
+
+def expected_from_strata(top: np.ndarray, rates: np.ndarray, idx: np.ndarray) -> np.ndarray:
+    """What the stratum mix of a top set alone predicts for each concept's precision."""
+    h = np.bincount(idx[top], minlength=rates.shape[0]).astype(np.float64)
+    return (h / h.sum()) @ rates
+
+
 def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: list[str],
-        log=print, shuffles: int = SHUFFLES) -> dict:
-    """`shuffles` = 0 skips the chance baseline (a checkpoint series runs it at the end only)."""
+        log=print, shuffles: int = SHUFFLES, strata: np.ndarray | None = None) -> dict:
+    """`shuffles` = 0 skips the chance baseline (a checkpoint series runs it at the end only).
+    `strata` (the play count) turns on the position baseline in the labeller (#233): a concept counts
+    for a pole only where its precision beats what the stratum mix of the pole's top set alone
+    predicts by BASELINE_MARGIN, so a label the play count explains is never the reason a pole is clean."""
     x = sample.x.astype(bool)
     allc = np.concatenate([labels, x], axis=1)
+    rates = idx = None
+    if strata is not None:
+        rates, idx = stratum_rates(allc, strata)
     names = list(concept_names) + feature_names(x.shape[1])
     n = len(allc)
     k = max(1, int(round(TOP * n)))
@@ -143,6 +168,8 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
         alive = acts.alive(p)
         signal = acts.pole(p)
         top, prec, r = score_pole(signal, allc, base, k)
+        if rates is not None:
+            prec = np.where(prec - expected_from_strata(top, rates, idx) >= BASELINE_MARGIN, prec, 0.0)
         tops.append(top)
         best, pr, lo, hi, kind, runner, rp = classify(prec, base, names, k)
         if np.ptp(signal) == 0:
@@ -163,6 +190,7 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
         perm = np.empty_like(allc)
         for c in range(allc.shape[1]):
             perm[:, c] = allc[rng.permutation(n), c]
+        prates = stratum_rates(perm, strata)[0] if strata is not None else None
         kinds = []
         for p in range(acts.n_poles):
             if acts.alive(p) < DEAD:
@@ -172,6 +200,8 @@ def run(sample: Sample, acts: Activations, labels: np.ndarray, concept_names: li
                 kinds.append("unnamed")
                 continue
             prec = perm[tops[p]].mean(axis=0)      # the top set does not move under a label shuffle
+            if prates is not None:
+                prec = np.where(prec - expected_from_strata(tops[p], prates, idx) >= BASELINE_MARGIN, prec, 0.0)
             kinds.append(classify(prec, base, names, k)[4])
         shuffled.append(kinds)
         if log is not None:

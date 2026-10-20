@@ -35,7 +35,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("audit"); s.add_argument("sample"); s.add_argument("labels"); s.add_argument("out_dir")
     s.add_argument("--net", default=NET)
     s.add_argument("--shuffles", type=int, default=20, help="0 skips the chance baseline")
-    s.add_argument("--condition", choices=("n_plays",), default=None, help="z-score each unit within each play count (#226)")
+    s.add_argument("--condition", choices=("n_plays",), default=None, help="centre each unit within each play count, pooled scale (#226, #233)")
+    s.add_argument("--baseline", choices=("n_plays",), default=None, help="labels must beat what the play count alone predicts (#233)")
     s = sub.add_parser("cards"); s.add_argument("sample"); s.add_argument("audit_dir"); s.add_argument("out")
     s.add_argument("--net", default=NET)
     s = sub.add_parser("readers"); s.add_argument("cards"); s.add_argument("out_dir")
@@ -74,7 +75,8 @@ def main(argv=None) -> None:
     s = sub.add_parser("gus-audit"); s.add_argument("rows_dir"); s.add_argument("ckpt"); s.add_argument("out_dir")
     s.add_argument("--untrained", type=int, default=None, help="an untrained twin under this torch seed (ckpt gives the config)")
     s.add_argument("--shuffles", type=int, default=20)
-    s.add_argument("--condition", choices=("n_plays",), default=None, help="z-score each unit within each play count (#226)")
+    s.add_argument("--condition", choices=("n_plays",), default=None, help="centre each unit within each play count, pooled scale (#226, #233)")
+    s.add_argument("--baseline", choices=("n_plays",), default=None, help="labels must beat what the play count alone predicts (#233)")
     s = sub.add_parser("belief"); s.add_argument("sample"); s.add_argument("out_dir"); s.add_argument("--net", default=NET)
     s.add_argument("--fit", type=int, default=20000); s.add_argument("--eval", type=int, default=20000)
     s.add_argument("--parts-dir", default=None, help="assemble the targets from belief-targets parts instead of computing them")
@@ -123,9 +125,11 @@ def main(argv=None) -> None:
         acts = forward(net, sample.x)
         if a.condition:
             acts = audit.condition(acts, sample.n_plays.astype(np.int64))
-        result = audit.run(sample, acts, labels, names, log, a.shuffles)
+        result = audit.run(sample, acts, labels, names, log, a.shuffles,
+                           strata=sample.n_plays.astype(np.int64) if a.baseline else None)
         result["net"] = a.net
         result["condition"] = a.condition
+        result["baseline"] = a.baseline
         result["concepts"] = str(np.load(a.labels)["identity"])
         audit.write(result, a.out_dir)
         concepts.write_list(Path(a.out_dir) / "concepts.json")
@@ -220,7 +224,9 @@ def main(argv=None) -> None:
             acts = audit.condition(acts, sample.n_plays.astype(np.int64))
         hit = float((raw_out.argmax(axis=1) == sample.chosen.astype(np.int64)).mean())
         log(f"Gus's top tile matches the recorded move on {hit:.4f} of rows")
-        result = audit.run(sample, acts, labels, names, log, shuffles=a.shuffles)
+        result = audit.run(sample, acts, labels, names, log, shuffles=a.shuffles,
+                           strata=sample.n_plays.astype(np.int64) if a.baseline else None)
+        result["baseline"] = a.baseline
         result["concepts"] = identity
         result["net"] = ident
         result["top1_agrees_with_recorded"] = hit
