@@ -57,19 +57,22 @@ Cumulative usage collection9/training2/development1/test1/fullhand0. Never rerun
 completed science or archives, resume the original failed root, or reset budgets.
 Read recovery CURRENT and completion receipts for delivery state.
 
-Jason selected flat-row CE masking on2026-10-20. The comparison is registered and
-launched at `scratch/lem/gus-contingent-flatmask-v1`: same64TRAIN/1356rows,
-zero only1151all-action-tie row losses (~79%root-balanced mass), unchanged CE
-on205nonflat rows, full-batch denominator and all512scheduledAdamW steps.
-Do not skip all-flat updates: actorgradient zero does not eliminate momentum/decay.
-Historical ordinaryCE512 is immutable reuse; both arms offer0/128/256/384/512.
-Fresh32development selects; only then64test. Finitegate .5pp over bothparent/CE,
-each paired95lowerpositive; onlypass opens128fullhands with2pp/1pp gates.
-All620747 reserved deals are future exclusions. Caps24/2/4/4/8,45scooperative/90souter,
-no automaticretry/growth. Nine synthetic tests and independent source review passed;
-publicregistration57d5dcc53094e4024cca1e0fa414ff740ba4935a verified11files/54members.
-Never duplicate the controller or change frozen sources/endpoints. Inspect live
-receipts and pending auditor replies. Prior practice recovery is complete; do not rerun.
+Jason's selected flat-row CE masking comparison is COMPLETE and audited at
+`scratch/lem/gus-contingent-flatmask-v1`. Same64TRAIN/1356rows;1151flat row CE
+contributions zeroed,205nonflat retained, full denominator and512scheduledAdamW
+steps unchanged. Historical CE512 reused. Fresh32development selected masked128
+and CE384. Fresh64finite success: masked42.3121%, CE40.3714%, parent39.5703%.
+Masked−parent+2.7418pp paired95[-1.5812,+8.2025]; masked−CE+1.9407pp
+[-1.8630,+6.9416]. Both positive means, both intervals include0: primary gate
+FAILED, no full-hand test/reselection/promotion. Five roots improve,7worsen,52
+have equal values against each comparator; equal values do not imply same actions.
+No claim of flat-target interference or stronger play. All620747reservations
+remain future exclusions. Twelve closed segments;1,041,834independent saved-data
+checks, not native forward/game replay. Evidence1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f
+verified11files/76716members. Read completion receipts for remaining delivery;
+never rerun completed science or archives. Next study NOT selected. A bounded
+TRAIN occupancy/value diagnosis of fixed specimens is a collaborator proposal;
+register separately before measuring, never use it to rescue the held-out gate.
 
 This tests a selected factor, not a proven diagnosis of flat-target interference.
 Teacher ties assume optimalfuture; student complete-policy outcomes remain decisive.
@@ -562,3 +565,11 @@ window. Before upload, check the total staged size including standalone manifest
 If that cap stops packaging, preserve the pre-upload failure and use a lossless
 format suited to repeated manifests rather than dropping receipts or raising the
 cap. Verify every original member after a fresh immutable download.
+
+A preregistered audit design remains immutable after publication. Keep implementation
+schema notes in a separate file. If explanatory prose is edited inadvertently,
+preserve the edited bytes and restore the exact original from the verified archive
+before audit execution; record the incident without changing scientific sources,
+criteria or publication pins. Review reuse ancestry against each original root's
+plan hash, not only its immediate copied directory. Count TRAIN flatness separately
+from development rows; bind assertions to exact Fraction values.

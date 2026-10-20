@@ -38,7 +38,7 @@ test roots. [[gus-contingent-fit-2026-10-20]] subsequently established acquisiti
 on its known TRAIN roots. [[gus-contingent-breadth-2026-10-20]] completed without established improvement:
 development retained wide step 0; fresh finite-test success matched parent
 at 38.6768%, versus narrow 39.1109%. The full-hand gate stayed closed.
-[[gus-contingent-flatmask-2026-10-20]] now tests Jason’s selected removal of teacher-action loss only on exact all-action ties, against the reused ordinary-CE512 control. Same TRAIN lessons and stream; fresh development/test, fixed field and complete-policy outcomes. Registered and launched, no result yet.
+[[gus-contingent-flatmask-2026-10-20]] completed: masked42.3121%, ordinary CE40.3714%, parent39.5703% on64fresh finite roots. Both paired improvement intervals include zero; the registered gate failed, with no full-hand test or promotion. Five roots improve, seven worsen and52tie against each comparator; the favorable mean is magnitude-driven. Independent saved-data audit and compact evidence are verified.
 [[gus-contingent-practice-recovery-2026-10-20]] completed 512 total updates: development selected long0/short16; fresh finite-test long/parent35.5045%, short36.3436%. The longer-course gate failed; no full-hand evaluation or promotion. The short control is a secondary confirmation lead, not an established stronger player. Independent saved-data audit and new evidence are verified.
 [[gus-contingent-practice-2026-10-20]] stopped at training initialization after
 collecting fresh development positions. No new updates ran; transfer is unevaluated.

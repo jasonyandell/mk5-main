@@ -3,7 +3,7 @@ title: "Gus contingent decisions — mask all-action-tie teaching loss"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -33,3 +33,19 @@ Nine synthetic checks passed, including exact mask/gradient tests, nonzero ties,
 The capability refresh found unchanged Lem #207, pending Book #121 and open Silas #166. The new Lem field-net unit-paper result at `6e0aa141` concerns another architecture and supplies no new requirement for this comparison. Existing information-cell teacher and evaluation tools suffice. No field, actor input or interpreter scope changes follow.
 
 [Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/57d5dcc53094e4024cca1e0fa414ff740ba4935a/lem/gus-contingent-flatmask-2026-10-20/registration) `57d5dcc53094e4024cca1e0fa414ff740ba4935a` freshly verified 11 files / 54 members before launch. Registration SHA `81f77f834e7c81ae4117874b2b8573e86dbcd6e14ee198b092b8be036739015e`. Parent and independent source reviews cleared. Controller launched2026-10-20T20:31:51Z after the pinned runtime check; every short segment repeats it. Current receipts: `scratch/lem/gus-contingent-flatmask-v1/CURRENT.md`. No measured outcome is claimed at launch.
+
+## Result
+
+All512 masked updates and the registered test completed. Fresh32 development selected masked128 and historical ordinary-CE384. On64 untouched finite roots, complete-policy success was masked42.3121%, CE40.3714%, parent39.5703%. Masked minus parent was +2.7418 percentage points, paired95% [-1.5812,+8.2025]; masked minus CE was +1.9407pp [-1.8630,+6.9416]. Both means exceed0.5pp, but neither lower bound is positive. **The finite improvement gate failed.** No full-hand test, reselection or promotion.
+
+Against each comparator, masked improves5 roots, worsens7 and has equal values on52. The favorable mean is magnitude-driven; equal values do not imply identical actions. Against parent, two roots each gain1 in conditional success, while one loses23/45. These post-readout examples describe concentration, not a selected target set or a causal account of masking. Teacher flatness assumes optimal future play; students can make different later mistakes. One seed, reused control and narrow finite-endgame scope limit inference. These are exact remaining-hand values under the declared model, not full-game win rates.
+
+## Audit and delivery
+
+Twelve scientific segments closed: collection9, training1, development1, test1, fullhand0. No scientific failure or budget growth. Independent saved-data audit passed1,041,834 checks over160 selected roots,2071 dataset rows and102352 final snapshot entries. Original/historical initialization tensors, exact mask,512 shared batches, reuse ancestry, exclusions, selection, value sums, paired bootstrap and closed-output identities passed. This is not independent native forward, gradient replay or transition replay.
+
+Source review corrected audit-only ancestry/count bookkeeping before its first execution. A post-registration explanatory-note edit was restored byte-for-byte from the registered archive; the newer implementation notes and restoration receipt remain preserved. Scientific sources and criteria did not change. Pre-registration preparation failures remain in the original registration archive.
+
+[New evidence and independent reviews](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f/lem/gus-contingent-flatmask-2026-10-20/evidence) `1630bd6b59ba6933d720b9c6fb1b8233b9fa7c8f` verified11 files/76716 members after fresh anonymous download. Unchanged TRAIN bytes and historical CE assets are referenced by immutable public anchors rather than uploaded again. All620747 reserved physical deals remain future training exclusions, including rejected and unplayed candidates. The same owner-private [growing report](https://gus-first-look.psychometrix.chatgpt.site/#flatmask) presents the comparison and limits.
+
+The collaborator proposes a separately registered TRAIN-only occupancy/value diagnosis of fixed masked/CE policies: inspect acquisition of known consequential corrections and errors on paths actually visited. This has not run and cannot replace fresh transfer confirmation. No next experiment is selected by this result.
