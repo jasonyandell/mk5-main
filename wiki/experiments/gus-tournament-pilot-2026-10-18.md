@@ -2,7 +2,7 @@
 title: "Gus G0–G20 tournament registration and bounded bid-30 pilot"
 kind: experiment
 first_seen: 2026-10-18
-last_updated: 2026-10-18
+last_updated: 2026-10-20
 status: complete
 ---
 
@@ -17,17 +17,20 @@ games**. Every faceoff took under 60 seconds. It uses the existing [[tournament]
 
 The complete records and audit are public in the existing
 [research archive](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/984edd66744d0c6917293fb821ebf55480db1bad/lem/gus-tournament-pilot-2026-10-18).
-**Canonical tournament Hub synchronization remains pending:** only G0–G4's five
-participant files reached `jasonyandell/texas-42-tournament`; its commit endpoint
-then returned HTTP 429, repository commit creation quota **128/hour**, with
-`Retry-After: 3445`. No game record was appended there. The first recorded
-retry time was **2026-10-18 14:36 UTC / 09:36 America/Chicago**. One batch retry at
-14:39 UTC also returned 429 with `Retry-After: 3449`; the new conservative
-not-before time is **15:37:28 UTC / 10:37:28 America/Chicago**.
+**Canonical tournament Hub synchronization is complete (2026-10-20, #216).** All 22
+participant records and all 15 faceoffs are in `jasonyandell/texas-42-tournament` at
+[`9d02d5a3`](https://huggingface.co/datasets/jasonyandell/texas-42-tournament/tree/9d02d5a376b00b29187a22d12b4bb2e441956ab5):
+one commit added the 31 missing files. The 6 already there (G0–G4 and the Zeb anchor) were
+byte-identical. The faceoffs sit in the per-claim-day layout,
+`faceoffs/marks7-bid30/20261018/`. Every one of the 37 files was then downloaded anonymously
+at that revision and matched its manifest hash, and the table built from exactly those
+downloads reproduces the table below line for line. The batch's 27 `experiments/` files
+were not added to the store: 26 are already in the research archive above, and the 27th is
+the batch builder. Before that, the first attempt on 2026-10-18 returned HTTP 429 (repository
+commit creation quota **128/hour**), and so did one retry at 14:39 UTC; only G0–G4's five
+participant files had landed.
 [Retry receipt and log](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/blob/4d3d70ed1de11806127249d08d757453fb773104/lem/gus-splat-pretraining-2026-10-18/previous-tournament-retry.json)
-record the failure. No background retry or additional game run was started.
-The quota concerns canonical tournament publication, not playing or the
-separately completed splat-model release.
+record that failure.
 
 ## Contract, identity and runtime
 
@@ -143,7 +146,7 @@ that batch after an unknown outcome is idempotent. No new games are needed. The
 contain 64 files / 859,603 bytes; `upload-package.tar.gz` is 90,001 bytes,
 SHA256 `0e650c9cd5e84eddd7fac907594584d1f780203b7aa92fcda63471f528a34a6f`.
 Fresh anonymous verification matched every original evidence file and the
-supplemental upload package. Canonical synchronization is tracked in #216.
+supplemental upload package. Canonical synchronization completed under #216 (above).
 
 The retained local store already contains all 22 participants and 15 faceoffs.
 The existing command reproduces the table immediately from that store:
