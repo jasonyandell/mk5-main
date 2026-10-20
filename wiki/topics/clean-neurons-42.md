@@ -168,22 +168,28 @@ keeps the essay's slogans and loses these, and the slogans misused are worse tha
   frequency in pages, not percentiles; a SwiGLU value learns broad and its gate specific; a few
   cases (bow ties with dress shoes) the essay admits it cannot yet explain.
 
-Where 42 stands against it: [[lem-squeeze-2026-10-16]] (narrow nets cleaner),
-[[lem-formation-2026-10-17]] (family kept 0.82 vs 0.28, but one unit kind formed coarse first; mostly
-the same label persisting, so not yet growth along facets, #229),
-[[lem-width-tree-2026-10-17]] (counterparts share their family, along one concept's facets; not yet shown
-against untrained twins, [[lem-family-statistic-2026-10-20]], #229),
-[[lem-dropout-order-2026-10-17]] (cleaner to 12 neurons over 3 seeds; the last words are `lead` and
-the coarse `late`). The
-untrained floor goes with every share, for its own list: 0.11–0.28 under v1 and 0.28–0.39
-under v2. [[lem-naming-2026-10-17]] (#197): 201 of 210 narrow units are named by list v2 or the
-readers; of the 9 left, 7 of the 8 that got a reader description are trick × seat conjunctions. Steering and negative poles are [[lem-causal-2026-10-17]] (#198). The first transformer, Gus ([[lem-gus-formation-2026-10-20]]), showed that the
-floor belongs to the architecture too. An untrained transformer's units read position for free
-(0.91–0.94 clean), so its audit must condition on the play count. Conditioned
-([[lem-conditioned-audit-2026-10-20]]), the floors fall to near zero, trained Gus reads 0.275 and
-the field net 0.406, and the field net's earlier absolute shares turn out to include position too. The words need data
-([[lem-words-need-data-2026-10-20]]): from one start, 4k deals form none, 50k form 0.173 and 500k 0.237. Re-read conditioned
-([[lem-squeeze-conditioned-2026-10-20]]), the squeeze holds: 24 neurons 0.549 against 192 neurons 0.406.
+Where 42 stands against it, as of 2026-10-20 (the instrument and the framing both changed that day):
+- **The instrument.** Read raw activations and take the play count out in the labeller: a label counts
+  only if it beats what the play count alone predicts ([[lem-fixed-conditioning-2026-10-20]], #233).
+  Z-scoring activations within each play count was tried and retired, because it amplified near-silent
+  strata. Every share is read against untrained twins of the same architecture, under the same
+  instrument.
+- **The squeeze, against list v2.** 24 neurons average 0.695 clean, against 0.542 at 192, over three
+  seeds. One seed pair reverses, and the floors are 0.375 and 0.276. **The essay predicts squeezed
+  units grow coarser, not cleaner**, and that bigger nets have narrower neurons. So "narrow reads
+  cleaner" measures fit to our 70 concepts. It is not the thesis winning.
+- **Coarser or mixed, the live question.** Read by how they grew ([[lem-unit-origin-2026-10-20]]), most
+  broadened units sprouted their second concept or were born coarse, and something downstream reads
+  the union. The two mixed-unit candidates were artifacts of the instrument
+  ([[lem-lead-units-2026-10-20]]). Family-based statistics failed their own calibration and are
+  withdrawn ([[lem-family-statistic-2026-10-20]], #229). "Family kept" is mostly the same label
+  persisting.
+- **Use.** Ablating a named unit hurts the play where its name says, 45 of 45
+  ([[lem-causal-2026-10-17]]). Steering, read by cost, is null.
+- **Gus**, a transformer, reads 0.312 against a floor of 0.014. Its units' words come with data: from one
+  start, 4k deals form none, 50k form some and 500k more ([[lem-words-need-data-2026-10-20]]).
+- **Process.** Every registration is reviewed by a fresh reader of the essay's full text before
+  sealing (the clean-neuron skill).
 
 ## The scope clause: what this net can and cannot tell us
 
