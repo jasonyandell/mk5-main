@@ -58,6 +58,16 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus confirmation and routing; the July shelf** (2026-10-19 → 10-20, 6 archived entries) — [[gus-sampled-confirmation-2026-10-19]] (the sampled-policy gain did not replicate), [[gus-unanchored-outcomes-2026-10-19]], [[gus-first-look-2026-10-19]], [[gus-route-rescue-2026-10-20]], [[gus-tiny-gpt]] canonical delivery; the sweep's [[branch-rescue-2026-10]] (the Walt/Hoyt stack in attic/ tags).
 ---
 
+## [2026-10-20 | mayor | interp experiments get a fresh read of the source before they're sealed]
+
+- [[standing-desks]] house rule (Jason): after the proposal is written, one Opus subagent reads
+  Cammarata's article itself (not [[clean-neurons-42]]) and reviews the proposal against its
+  framing. The desk adjusts, then seals. This is allowed even on a usage diet.
+
+## [2026-10-20 | book | #201 registered after a fresh framing review]
+
+The #201 thin-top-doubles confirmation is sealed on [[ch9-at-the-table-2026-10-17]] (v3dt, fresh seeds 5261–5380). A fresh Opus reader read the book's Ch. 9 first and found thin/deep is our cut and the menu prices doubles without trump losers (#230); the registration gained book-native secondaries (the 6-6; the 6-6 and 5-5) and an honest meaning paragraph. The book-interp skill now carries the review step.
+
 ## [2026-10-20 | lem | the sharper family statistic (#200) fails its calibration: permuted-family nulls set the bar too low]
 
 [[lem-family-statistic-2026-10-20]]: corrected for base rates, family size and lumpiness, the
