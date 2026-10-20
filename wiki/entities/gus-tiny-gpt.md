@@ -38,8 +38,8 @@ test roots. [[gus-contingent-fit-2026-10-20]] subsequently established acquisiti
 on its known TRAIN roots. [[gus-contingent-breadth-2026-10-20]] completed without established improvement:
 development retained wide step 0; fresh finite-test success matched parent
 at 38.6768%, versus narrow 39.1109%. The full-hand gate stayed closed.
-[[gus-contingent-practice-2026-10-20]] is running a registered 64-versus-512-update
-comparison on those same teaching roots, with fresh selection and test positions.
+[[gus-contingent-practice-2026-10-20]] stopped at training initialization after
+collecting fresh development positions. No new updates ran; transfer is unevaluated.
 Offline teacher planning is
 authorized; deployed Gus still performs no search.
 

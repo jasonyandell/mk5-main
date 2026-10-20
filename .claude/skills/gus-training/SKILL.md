@@ -69,7 +69,7 @@ fixed updates also changes repetitions per root. Preserve its four auditor-only
 failure histories and their inspected schema corrections. Never rerun completed
 science or archives. Read CURRENT for publication/completion receipts.
 
-The practice comparison is publicly registered and running: 64 versus 512 total CE updates
+The practice comparison is STOPPED before training: 64 versus 512 total CE updates
 on the SAME 64 TRAIN roots and 1356 rows. The short trajectory is immutable reuse;
 long imports its exact step64 model/optimizer/RNG/history and performs only448
 new updates. The extended minibatch stream must exactly match the original64
@@ -78,7 +78,16 @@ these different grids compare declared budget/selection procedures, not all
 possible stopping times. Fresh32 development selects, then64 test measures exact
 complete-policy value; only a finite gate pass opens128 fullhands. No old test
 reselection, changed teacher labels, new TRAIN roots or repeated completed updates.
-Read CURRENT for preparation/public-registration/launch status before execution.
+Read CURRENT and the preserved failure before acting. Collection completed32fresh
+development roots; training initialization passed a string path to a Path-only
+hash helper. No new optimizer updates or test selection occurred. Never resume
+or edit this frozen study. A separately registered repair can reuse completed
+outputs, with unchanged endpoints and remaining caps; first test the full JSON
+manifest-to-initialize_run boundary, not only the fork helper. Failure evidence is independently audited and publicly verified; see CURRENT
+for docs/completion status. Separate recovery preparation is at
+`scratch/lem/gus-contingent-practice-recovery-v1`; do not launch it before its own
+reviewed public registration. Preserve cumulative stage usage (collection3,
+training1 already consumed), no new pools or repeated collection.
 
 All613323prior reserved deals plus3712new reservations remain future exclusions:
 617035 total. The long run is a separately registered fork, never a silent budget

@@ -3,7 +3,7 @@ title: "Gus contingent decisions — more practice on the same lessons"
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
@@ -34,6 +34,12 @@ Caps: 24 collection, 2 training, 4 development, 4 test and 8 conditional full-ha
 
 [Public registration](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/859a7495c8d226d8d0e6386a0135a45199d3fba3/lem/gus-contingent-practice-2026-10-20/registration) `859a7495c8d226d8d0e6386a0135a45199d3fba3` freshly verified all 12 files and 60 archive members before launch. Registration SHA256 `c64a37a16677e8287033e2acf52214b0abbe9f7a46d75538e962d56b02f0b8d9`. Independent source review and seven synthetic tests passed, including exact fork/resume state parity and retained fork-origin bytes. A preparation-only receipt collision was preserved and repaired by limiting test hashes to explicit science/test sources; no scientific evidence was changed.
 
-Controller launched at 2026-10-20T19:43:37Z after the pinned runtime check. No result or stronger player is claimed. Recovery root: `scratch/lem/gus-contingent-practice-v1`.
+Controller launched at 2026-10-20T19:43:37Z after the pinned runtime check. It stopped during the fourth attempted segment, before any new optimizer update. The scientific question is UNEVALUATED. Recovery root: `scratch/lem/gus-contingent-practice-v1`.
 
 Lem's new field-net unit result concerns a different architecture and information scope; it supplies no recipe or neuron claim for this comparison. Book's pending reply and Silas's unmerged constructor do not block the existing exact verifier. Capability refresh and the collaborator's prize check are retained with preparation evidence.
+
+## Training-start stop
+
+Three collection segments completed all 32 fresh development roots and preserved the 64 TRAIN roots / 1356 rows. Training initialization passed a JSON string path into a hash helper that requires a Path object. The resulting AttributeError stopped the controller before creating a training directory or running an optimizer update. No checkpoint selection or test collection occurred; there is no transfer result or promotion.
+
+The original failure, unclosed attempt 003 and frozen sources remain intact. Synthetic tests had exercised the fork helper and dataset loader separately, missing the full initialization entrypoint with JSON path values. Any repair must test that boundary and receive a separate registration; it may reuse completed collection under unchanged criteria and remaining caps. This stopped run is not resumed silently. Independent saved-data audit passed 4235 stop checks and 466224 certificate/root checks across 96 selected roots, 2360 dataset rows and 49127 snapshot entries. It confirms 339 scanned development candidates, 32 accepted, unchanged TRAIN rows and exact equality with the last closed output snapshot. No native model or game replay was performed. [Verified failure evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/4c45a7507a2c675cd8f58be75375b30679a5d638/lem/gus-contingent-practice-2026-10-20/failure-evidence) `4c45a7507a2c675cd8f58be75375b30679a5d638` freshly verifies 11 files and 23463 archive members.
