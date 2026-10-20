@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-19, 439 archived entries)
+## Digest (2026-04-09 → 2026-10-20, 445 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -56,6 +56,16 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus: training, depth and release** (2026-10-18, 41 archived entries) — [[gus]] named and published: fixed-field curriculum, frozen benchmark, full-hand outcomes ([[gus-fixed-field-curriculum-2026-10-18]], [[gus-frozen-benchmark-2026-10-18]], [[gus-full-hand-outcomes-2026-10-18]]), exposure budget ([[gus-exposure-budget-2026-10-18]]), the population and depth campaign to twelve layers ([[gus-population-iteration]]).
 - **Gus: recentred on winning; tournament batching** (2026-10-19, 19 archived entries) — the learning charter, leave-one-out baseline, partner-history and public-score instruments, [[gus-blank-lead-2026-10-19]], [[gus-first-look-2026-10-19]], PPO/value comparison and outcome learning without teacher anchoring; Hub publication batched for the tournament.
 ---
+
+## [2026-10-20 | lem | the words need data (#207): a 4k-deal observer plays at 0.53 agreement with no nameable units]
+
+[[lem-overbake-units-2026-10-20]]: the overbake observer was trained on 3,988 deals.
+- At its validation best it agrees with the recorded move on 0.53 of held-out decisions, but its
+  units stay at the untrained floor, conditioned (0.034 against 0.014).
+- Overtraining memorizes: agreement falls to 0.43, and the words never form.
+- Gus on 500,000 deals formed them after about 10,000 steps.
+
+This is rung 3, narrow data, not mixing. 1 of 5 predictions held. The 50k point is filed.
 
 ## [2026-10-20 | lem | matched-row steering (#205): no unit-specific signal; ablation stays the evidence of use]
 
@@ -135,34 +145,3 @@ The clean-neuron skill's first new friction log since the fold came from this ru
 **Touched pages:** [[gus-value-routing-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
 
 **Added:** The registered value/routing study is terminally complete as a stopped instrument audit after a numeric/nonfinite assertion and 42 original-parent row/model records (840 intervention cases plus 42 baselines). Failure row is identified from run order as `292:6`; exact condition, error magnitude and failed audit conjunct were not saved. Cosine-final was never measured, so the primary prediction remains unevaluated. The anonymously verified partial archive is linked from the experiment page. No scientific or playing conclusion follows. A separate one-row numerical diagnostic is being prepared under its own registration; it is not a resume of this study.
-
-## [2026-10-20 | sweep | The July Walt/Hoyt stack shelved: nine branches in attic/ tags, eleven pages kept]
-
-- [[branch-rescue-2026-10]] § The July stack, shelved: Jason's word, "Keep the wiki pages, shelve the code in attic/ tags".
-- Rescued to main: [[atlas]], [[hoyt]], [[metal-hoyt]], [[cfr-primer]], [[forty-two-native-object]], [[full-metal-hoyt]], [[fundamental-factorization]], [[hoyt-perf-primer]], [[perf-log]], [[perf]], [[role-threat-tensor]].
-
-## [2026-10-20 | Gus route/rescue | Final actor-query path and native scalar restoration]
-
-**Touched pages:** [[gus-route-rescue-2026-10-20]] [[gus-book-silas-tools]] [[index-experiments]]
-
-**Added:** Preregistered actor-query versus earlier-query routing and baseline scalar-restoration diagnostic on 48 reused prefixes. The U65 preactivation effect is concentrated in layer-0's second head at the final actor query in both panels. The U65-versus-U193 raw-TV restoration prediction does not hold across both panels; patches differ in magnitude and projection direction. Full audit and immutable evidence are anonymously verified. No new semantics, mediation, training gain or playing result.
-
-## [2026-10-19 | First Look | Gus current-lead routing diagnostic]
-
-**Touched pages:** [[gus-first-look-2026-10-19]] [[gus-book-silas-tools]] [[index-experiments]]
-**Added:** Verified reused-row circuit result: layer-0 attention drives the measured U65 preactivation response; no exclusive semantics, unit-specific output mediation, or playing gain.
-
-## [2026-10-19 | Gus | Sampled-policy replication did not pass]
-
-**Touched pages:** [[gus-sampled-confirmation-2026-10-19]], [[gus-tiny-gpt]], [[gus-success-probability-planning]], [[gus-book-silas-tools]]
-**Updated:**512 fresh deals,10,240 hands:unanchored sampled39.111% versus parent38.965%,+0.146pp95%[-0.732,+1.025]. Neither registered criterion passes; no promotion or endpoint switch. All hands replayed and16 CPU units byte-rechecked. Compact14-file evidence verified at8045ce8d; original directory failure retained.
-
-## [2026-10-19 | Gus | Independent sampled-policy confirmation]
-
-**Touched pages:** [[gus-sampled-confirmation-2026-10-19]], [[gus-tiny-gpt]], [[gus-success-probability-planning]]
-**Created:** Frozen-checkpoint confirmation on512 fresh physical deals, four sampled and one greedy draw each. Public16-file registration verified before execution; bounded resumable evaluation and replay, no training or reselection. Prior canonical delivery and completion addendum verified.
-
-## [2026-10-19 | Gus | Canonical delivery complete]
-
-**Touched pages:** [[gus-unanchored-outcomes-2026-10-19]], [[gus-tiny-gpt]], [[gus-book-silas-tools]]
-**Updated:** The15 immutable tournament records are published in one batch and freshly verified at b2d54393002a549fb1407380852706aaca3a1ddc. No rerun, reselection or promotion. Original service failures remain archived; study and skill now record completed delivery.
