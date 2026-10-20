@@ -41,9 +41,16 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-practice-v1/CURRENT.md`; inspect receipts and live
+`scratch/lem/gus-contingent-practice-recovery-v1/CURRENT.md`; inspect receipts and live
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
+
+The separately registered practice recovery launched after parent/independent review
+and nine synthetic tests covering full serialized initialization. It reuses exact
+64TRAIN/32development outputs and the same unopened test schedule. Remaining
+caps are21collection/1training/4development/4test/8conditionalfullhands; the old
+failed startup counts. Never resume the original failed root or reset its budget.
+Registration and sources are frozen; read recovery CURRENT before acting.
 
 The first contingent-teacher pilot is complete: the planner improved15/32 fresh
 finite-model root policies, but development retained student step0. The separate
@@ -69,7 +76,7 @@ fixed updates also changes repetitions per root. Preserve its four auditor-only
 failure histories and their inspected schema corrections. Never rerun completed
 science or archives. Read CURRENT for publication/completion receipts.
 
-The practice comparison is STOPPED before training: 64 versus 512 total CE updates
+The original practice comparison is STOPPED before training: 64 versus 512 total CE updates
 on the SAME 64 TRAIN roots and 1356 rows. The short trajectory is immutable reuse;
 long imports its exact step64 model/optimizer/RNG/history and performs only448
 new updates. The extended minibatch stream must exactly match the original64
