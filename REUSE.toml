@@ -34,13 +34,8 @@ SPDX-License-Identifier = "CC0-1.0"
 [[annotations]]
 path = [
     ".claude/skills/clustering/**", ".agents/skills/clustering/**",
-    ".claude/skills/ecological/**", ".agents/skills/ecological/**",
-    ".claude/skills/minirocket/**", ".agents/skills/minirocket/**",
-    ".claude/skills/pymc/**", ".agents/skills/pymc/**",
     ".claude/skills/shap/**", ".agents/skills/shap/**",
     ".claude/skills/statistical-rigor/**", ".agents/skills/statistical-rigor/**",
-    ".claude/skills/survival-forest/**", ".agents/skills/survival-forest/**",
-    ".claude/skills/umap/**", ".agents/skills/umap/**",
 ]
 SPDX-FileCopyrightText = "K-Dense Inc."
 SPDX-License-Identifier = "LicenseRef-third-party"
