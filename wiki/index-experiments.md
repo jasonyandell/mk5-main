@@ -317,4 +317,5 @@ Grouped by workstream. Route via the family trail first; this is the fallback ca
 - [[gus-contingent-cost-2026-10-20]] — Stopped/inconclusive; cost versus teacher-label CE trained, reserved test pool short before transfer evaluation.
 - [[gus-contingent-fit-2026-10-20]] — fixed saved policies and exact TRAIN continuation regret; complete; useful corrections acquired with residual errors/interference, no held-out claim.
 
-- [[experiments/gus-contingent-breadth-2026-10-20|Gus contingent teaching breadth]] — 32versus64TRAINroots at fixed64updates; historical CE control and fresh exact-policy evaluation (active)
+- [[experiments/gus-contingent-breadth-2026-10-20|Gus contingent teaching breadth]] — 32 versus 64 TRAIN roots at fixed 64 updates did not establish transfer (complete)
+- [[experiments/gus-contingent-practice-2026-10-20|Gus contingent teaching practice]] — prospective 64 versus 512 updates on the same 64 roots, with fresh complete-policy selection and test (active)

@@ -41,7 +41,7 @@ incorporating his latest steering without requiring another reply.
 Jason resumed the loop on 2026-10-20 with this explicit prize: **use the
 continuation machinery to discover better contingent decisions, then train Gus
 on those decisions**. Start at
-`scratch/lem/gus-contingent-breadth-v1/CURRENT.md`; inspect receipts and live
+`scratch/lem/gus-contingent-practice-v1/CURRENT.md`; inspect receipts and live
 processes before acting. The earlier stop is revoked. Occasionally involve an
 independent collaborator to check that the work still serves this prize.
 
@@ -69,11 +69,24 @@ fixed updates also changes repetitions per root. Preserve its four auditor-only
 failure histories and their inspected schema corrections. Never rerun completed
 science or archives. Read CURRENT for publication/completion receipts.
 
-All 613323 reserved deals remain future training exclusions. A successor is not
-selected. Choose a separately registered question that serves contingent decision
-learning; do not silently extend the update budget or select a checkpoint from
-this test. Keep the immutable historical control provenance, original clean inputs,
-fixed G0/pinned Zeb and explicit root law. No automatic retry or budget growth.
+The practice comparison is publicly registered and running: 64 versus 512 total CE updates
+on the SAME 64 TRAIN roots and 1356 rows. The short trajectory is immutable reuse;
+long imports its exact step64 model/optimizer/RNG/history and performs only448
+new updates. The extended minibatch stream must exactly match the original64
+prefix. Five candidates each: short0/16/32/48/64 and long0/128/256/384/512;
+these different grids compare declared budget/selection procedures, not all
+possible stopping times. Fresh32 development selects, then64 test measures exact
+complete-policy value; only a finite gate pass opens128 fullhands. No old test
+reselection, changed teacher labels, new TRAIN roots or repeated completed updates.
+Read CURRENT for preparation/public-registration/launch status before execution.
+
+All613323prior reserved deals plus3712new reservations remain future exclusions:
+617035 total. The long run is a separately registered fork, never a silent budget
+extension of the completed breadth study. Source review, synthetic fork/resume
+parity and verified public registration precede new responses. Keep original
+inputs, fixedG0/pinnedZeb and the explicit root law. Falling changing-minibatch
+loss is motivation to test optimization duration, not evidence of underfitting.
+Failure or exhausted cap requires inspection, not automatic retry or growth.
 
 The contingent teacher extends the existing exact one-choice verifier to at least
 two genuinely discretionary learner decisions. Offline teacher planning is
