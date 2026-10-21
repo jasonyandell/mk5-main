@@ -2,7 +2,7 @@
 title: "Gus — the tiny history-conditioned Texas 42 GPT"
 kind: entity
 first_seen: 2026-10-18
-last_updated: 2026-10-20
+last_updated: 2026-10-21
 status: active
 ---
 
@@ -42,7 +42,7 @@ at 38.6768%, versus narrow 39.1109%. The full-hand gate stayed closed.
 
 [[gus-contingent-maskfit-2026-10-20]] diagnoses fixed specimens on the same64 TRAIN roots: masked final512 repairs71/72 corrections, introduces one other nonflat error, and reaches43.0605% versus exact teacher43.1126%. Both remaining errors lie on reached paths. This establishes known-example acquisition only; it does not reselect final512 or rescue the failed held-out gate. Fresh transfer remains open. [[gus-contingent-transfer-2026-10-20]] completed on128fresh finite roots: fixed masked-final51236.5188%, parent35.9649%, CE-final51235.9172%. Both paired improvement intervals cross zero; the registered gate failed. No training, selection or promotion. Audit/evidence verified; near-complete TRAIN acquisition has not established reliable fresh transfer.
 
-[[gus-contingent-maskbreadth-2026-10-20]] is registered: broaden masked training from64 to128 roots with the same512 updates and fixed final checkpoints. A fresh128-root finite test compares wide with parent and historical narrow; no development selection, fullhand stage or promotion. More examples also reduce repetitions per root. Preparation fixes and independent source review are preserved; no result yet.
+[[gus-contingent-maskbreadth-2026-10-20]] is complete:64→128 masked TRAIN roots at the same512 updates. Fresh128-root success wide39.5881%, narrow36.5458%, parent37.3162%. Wide−narrow+3.0423pp paired95[.9060,5.6521]; wide−parent+2.2719pp[-.2944,5.5247]. Combined gate failed; no fullhand test or promotion. Added lessons were acquired with slight old-lesson loss. Audit/publication verified; broader teaching is a lead, reliable parent improvement remains open.
 [[gus-contingent-practice-recovery-2026-10-20]] completed 512 total updates: development selected long0/short16; fresh finite-test long/parent35.5045%, short36.3436%. The longer-course gate failed; no full-hand evaluation or promotion. The short control is a secondary confirmation lead, not an established stronger player. Independent saved-data audit and new evidence are verified.
 [[gus-contingent-practice-2026-10-20]] stopped at training initialization after
 collecting fresh development positions. No new updates ran; transfer is unevaluated.

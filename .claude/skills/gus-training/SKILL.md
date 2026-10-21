@@ -97,20 +97,23 @@ and97,404final output hashes; no independent candidate native/game replay.
 Evidence28d0d8ed3b6d736f3d1323014749f4201c261e34 verified10files/97477members.
 Read CURRENT/completion receipts for delivery; never repeat science or archives.
 Preserve pre-execution auditor corrections and result-review hash-typo history.
-The masked teaching breadth comparison is REGISTERED at
+The masked teaching breadth comparison is COMPLETE and audited at
 `scratch/lem/gus-contingent-maskbreadth-v1`:64 versus128 distinct TRAIN roots,
-same maskedCE512 updates, fixed final endpoints and fresh128-root test; no
-development selection/fullhands/promotion. Original64 rows/labels and historical
-narrow512 are reused; one wide128 student starts originalparent. New6144 potential
-deals are reserved; all630987 remain future exclusions. Public registration
-28d64232f670a49153e351f49d22d985a1fb55fd verified11 files/89 members before responses.
-Read CURRENT/controller/attempt receipts and processes before launch or resume.
-Caps48collection/2training/4TRAINdiagnostic/8test;45s cooperative90s outer.
-Preserve preparation-v3 ancestry andv4 isolated-import failures; both inspected
-repairs passed11 synthetic tests and independent review before registration.
-No scientific failure at registration. Do not edit frozen sources or reuse old
-held-out outcomes for selection. Saved-data audit implementation/review is still
-required before result publication; audit design alone is not an executed audit.
+same maskedCE512 updates, fixed final endpoints and fresh128-root test. Wide
+39.5881%, narrow36.5458%, parent37.3162%. Wide−narrow+3.0423pp paired95
+[.9060,5.6521]; wide−parent+2.2719pp[-.2944,5.5247]. Combined gate FAILED;
+no fullhands/reselection/promotion. Added TRAIN lessons acquired nearly to teacher,
+with .3964pp old-lesson loss versus narrow. Not a general scaling or causality claim;
+fixed updates also reduce repetitions. All630987 reservations remain exclusions.
+23 normal scientific segments; audit6,272,340 saved-data checks, not native,
+gradient or transition replay. Two auditor-only schema failures preserved: scalar support pins live in companion
+receipts; label support pins use canonical identity, not file bytes. Inspected
+repairs leave frozen science unchanged. Initial xz9 packaging timed out before upload;
+fast default-dictionary packing hit the size cap. Inspected lossless fast parsing
+with64MiB dictionary completed the archive; lossless descriptor deduplication
+then fit the same size cap, reusing that archive unchanged. Evidence762b5a71a622a1ff6df8fed47e50ebe5b2a43e44
+freshly verified12files/144960members. Read CURRENT/completion receipts;
+never repeat completed science or archives. No next comparison selected.
 Jason wants partner practice with table talk to
 expose meaningful decision nodes; future human examples must retain lawful
 observations and be separated from verification. No human play/table talk entered
@@ -617,3 +620,18 @@ before audit execution; record the incident without changing scientific sources,
 criteria or publication pins. Review reuse ancestry against each original root's
 plan hash, not only its immediate copied directory. Count TRAIN flatness separately
 from development rows; bind assertions to exact Fraction values.
+
+Reused scalar evidence may split provenance between a value JSON and its sibling
+receipt. Validate against the original writer: require the value hash, checkpoint,
+graph and support pins in their actual locations, and bind receipt bytes to the
+immutable public archive. Never invent a field on the value object or weaken the
+provenance requirement when an auditor finds that schema mismatch.
+
+For large repeated receipt snapshots, separate compression dictionary size from
+compression effort. The maskbreadth delivery hit180s with xz preset9, then100MB
+with preset1 (small dictionary). Fast LZMA2 parsing with64MiB dictionary retained
+long-distance repetition compression; the total still exceeded100MB due to duplicate
+standalone metadata. Reuse the completed archive unchanged and publish a losslessly
+reconstructible descriptor delta against its already archived exact base. Verify
+reconstructed descriptor bytes before upload and after fresh download. Preserve each
+failed stage and input manifest; do not drop scientific members or increase caps.
