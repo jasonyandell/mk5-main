@@ -123,3 +123,5 @@ Concepts, methods, and synthesized findings.
 - [[topics/perf-log|perf-log]] — Perf log — append-only field notes; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)
 - [[topics/perf|perf]] — Perf — the measured laws of making this project fast; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)
 - [[topics/role-threat-tensor|role-threat-tensor]] — Role threat tensor — domino roles as monotone bitmasks; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)
+
+- [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]] — native contingent solvers, Silas generation, field adapters and richer Gus teaching data (active)

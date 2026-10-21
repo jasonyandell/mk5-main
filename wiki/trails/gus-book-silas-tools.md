@@ -2,13 +2,17 @@
 title: "Gus: connecting the book, Silas and Lem's instruments"
 kind: trail
 first_seen: 2026-10-18
-last_updated: 2026-10-20
+last_updated: 2026-10-21
 status: active
 ---
 <!-- SPDX-FileCopyrightText: Jason Yandell -->
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 
 ## The division of work
+
+For the current four-tile solver and generative-data inventory, read
+[[gus-continuation-teaching-tools]]. The constructor remains on open PR #166;
+the loop is stopped and the inventory is not a new experiment.
 
 [[gus-tiny-gpt]] learns from lawful forecasts and verified outcomes. The book
 supplies strategic questions and their assumptions; [[silas]] makes distinctions

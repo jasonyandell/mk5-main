@@ -28,6 +28,10 @@ Weights are CC0; the nanoGPT-derived implementation retains MIT attribution.
 
 ## Current experimental control
 
+The autonomous loop is stopped at Jason’s request. The subsequent solver/data
+inventory is recorded in [[gus-continuation-teaching-tools]]; it selects no new
+training run.
+
 Jason resumed the loop on 2026-10-20 with this prize: discover better contingent
 decisions using continuation machinery, then train Gus on those decisions.
 [[gus-contingent-teacher-2026-10-20]] completed that first bounded teacher and
