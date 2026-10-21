@@ -21,6 +21,8 @@ source of supervision.
 The research loop is stopped at Jason's request. The authorized capability
 inventory does not restart training or select a new experiment. The next useful
 bridge is earlier information-consistent teaching under the same G0/Zeb field.
+The conversation-derived teaching direction is recorded separately as the
+IDEATED [[gus-historical-choice-wish]].
 
 ## Solver shortlist
 

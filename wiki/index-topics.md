@@ -125,3 +125,4 @@ Concepts, methods, and synthesized findings.
 - [[topics/role-threat-tensor|role-threat-tensor]] — Role threat tensor — domino roles as monotone bitmasks; July Walt/Hoyt campaign page rescued from the shelved stack (code at `attic/` tags)
 
 - [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]] — native contingent solvers, Silas generation, field adapters and richer Gus teaching data (active)
+- [[topics/gus-historical-choice-wish|gus-historical-choice-wish]] — IDEATED: teach Gus from history-conditioned choice values and consequential contingent forks (active)
