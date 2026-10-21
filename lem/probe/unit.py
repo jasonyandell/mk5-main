@@ -1204,3 +1204,171 @@ def run_winner(sample, labels: np.ndarray, names: list[str], net_path: str, j: i
                 f"other {f['on: opp other']:.3f} lead {f['on: lead']:.3f} r2 {f['r2 opp winning (a)']:.3f} + {f['+']} − {f['-']}")
         out["formation"] = form
     return out
+
+
+
+def run_lead(sample, labels: np.ndarray, names: list[str], net_path: str, j: int, twin_path: str,
+             audit: dict, formation_dir: str | None, log=print) -> dict:
+    """A unit paper for a layer-1 unit on almost everywhere and shut on many leads (#235, paper 7).
+    Its v2 boundary is near chance (#202), so the label is read in trumps: held, gone, and still
+    out in other hands; and its use in whether the net leads trump, and what it leads instead."""
+    x = sample.x
+    fn = feature_names(x.shape[1])
+    net = load_net(net_path)
+    acts = forward(net, x)
+    z, a = acts.z1[:, j].astype(np.float64), acts.a1[:, j]
+    k = max(1, int(round(TOP * len(z))))
+    top_p, top_n = np.argsort(-z, kind="stable")[:k], np.argsort(z, kind="stable")[:k]
+    trick = Trick(sample)
+    lab = Labeller(labels, names, x, sample.n_plays.astype(np.int64))
+    bit = lambda f: x[:, fn.index(f)] > 0
+    nt = sum(bit(f"x:hand:{s}").astype(np.int64) for s in TRUMPS)
+    ng = sum(bit(f"x:gone:{s}").astype(np.int64) for s in TRUMPS)
+    nout = len(TRUMPS) - nt - ng                     # trumps still in the other three hands
+    nd = sum(bit(f"x:hand:{s}").astype(np.int64) for s in OFF_DOUBLES)
+    boss, five = bit("x:hand:27"), bit("x:hand:26")
+    side = labels[:, names.index("bidding-side")].astype(bool)
+    lead, off = trick.seat == 0, a <= 0
+    sixes = trick.decl == 6
+    tn = sample.n_plays.astype(np.int64) // 4
+    out: dict = {"unit": j, "net": net_path, "rows total": len(z), "top_k": k, "on": float((a > 0).mean()),
+                 "max_z": float(z.max()), "min_z": float(z.min())}
+
+    # 1. label
+    cell = lambda m: {"rows": int(m.sum()), "off": float(off[m].mean()), "mean_z": float(z[m].mean())} if m.sum() >= 200 else None
+    out["off by seat"] = [float(off[trick.seat == s].mean()) for s in range(4)]
+    out["lead by trumps"] = {int(t): cell(lead & (nt == t)) for t in range(8)}
+    out["lead by trumps out"] = {int(t): cell(lead & (nout == t)) for t in range(8)}
+    out["lead by held × out"] = {f"held {h} out {o}": cell(lead & (np.minimum(nt, 4) == h) & (np.minimum(nout, 4) == o))
+                                 for h in range(5) for o in range(5)}
+    out["lead, 0-1 trumps"] = {"by trick": {int(n): cell(lead & (nt <= 1) & (tn == n)) for n in range(7)},
+                               "by trumps gone": {int(g): cell(lead & (nt <= 1) & (np.minimum(ng, 6) == g)) for g in range(7)},
+                               "by declaration": {int(d): cell(lead & (nt <= 1) & (trick.decl == d)) for d in range(7)},
+                               "share of off-leads": float((nt[lead & off] <= 1).mean())}
+    # length within controls: non-sixes, without the boss, tricks 1-2 apart from the rest
+    early = tn <= 1
+    out["lead by trumps, no boss, not sixes"] = {
+        when: {int(t): cell(lead & ~boss & ~sixes & m & (np.minimum(nt, 4) == t)) for t in range(1, 5)}
+        for when, m in (("tricks 1-2", early), ("tricks 3+", ~early))}
+    out["lead by trumps × boss"] = {f"{t} {'boss' if b else 'no boss'}": cell(lead & (np.minimum(nt, 4) == t) & (boss == b))
+                                   for t in range(1, 5) for b in (False, True)}
+    out["lead by trumps × 6-5, no boss"] = {f"{t} {'6-5' if f else 'no 6-5'}": cell(lead & ~boss & (np.minimum(nt, 4) == t) & (five == f))
+                                           for t in range(1, 5) for f in (False, True)}
+    out["lead by trumps × side"] = {f"{t} {'bidding side' if b else 'defenders'}": cell(lead & (np.minimum(nt, 4) == t) & (side == b))
+                                   for t in range(5) for b in (True, False)}
+    out["lead by trick, 3+ trumps"] = {int(n): cell(lead & (nt >= 3) & (tn == n)) for n in range(7)}
+    out["lead by declaration"] = {int(d): cell(lead & (trick.decl == d)) for d in range(7)}
+    rng = np.random.default_rng(SEED)
+    deal = sample.deal
+    dd = lambda m1, m0: {"a": cell(m1), "b": cell(m0),
+                         "a - b": float(off[m1].mean() - off[m0].mean()) if m1.sum() >= 200 and m0.sum() >= 200 else None}
+    out["near misses"] = {"following, 4+ trumps, by seat": {SEATS[s]: cell((trick.seat == s) & (nt >= 4)) for s in (1, 2, 3)},
+                          "lead 0-1 trumps: 3+ off doubles (a) vs none (b)": dd(lead & (nt <= 1) & (nd >= 3), lead & (nt <= 1) & (nd == 0))}
+    nl = ~lead & ~sixes
+    zl, ls = z[lead & ~sixes], lead & ~sixes
+    oh = lambda v, n: np.eye(n)[np.minimum(v, n - 1)][:, 1:]
+    ctl = np.c_[oh(tn[ls], 7), boss[ls], five[ls]]
+    out["r2 on lead, not sixes"] = {
+        "trick + boss + 6-5": r2(zl, ctl),
+        "+ trumps held": r2(zl, np.c_[ctl, oh(nt[ls], 6)]),
+        "trumps held": r2(zl, oh(nt[ls], 6)),
+        "trumps out": r2(zl, oh(nout[ls], 8)),
+        "trumps gone": r2(zl, oh(ng[ls], 8)),
+        "held + gone": r2(zl, np.c_[oh(nt[ls], 6), oh(ng[ls], 8)]),
+        "off doubles held": r2(zl, oh(nd[ls], 5))}
+    on_ = a > 0
+    out["on agrees on lead"] = {f"fewer than {t} trumps held": float((on_ == (nt < t))[lead].mean()) for t in (2, 3, 4)}
+    out["on agrees on lead"].update({f"more than {t} trumps out": float((on_ == (nout > t))[lead].mean()) for t in (0, 1, 2)})
+    out["on agrees on lead"]["chance"] = float(max(on_[lead].mean(), 1 - on_[lead].mean()))
+    out["poles"] = {"+": lab.best(top_p), "-": lab.best(top_n), "- lead share": float(lead[top_n].mean()),
+                    "- mean trumps held": float(nt[top_n].mean()), "- mean trumps out": float(nout[top_n].mean()),
+                    "- sixes share": float(sixes[top_n].mean())}
+    log(f"label: on {out['on']:.3f} off by seat {out['off by seat']} r2 {out['r2 on lead, not sixes']}")
+
+    # 2. circuit in, 3. circuit out
+    w = net.w1[:, j].astype(np.float64)
+    out["weights"] = [{"input": fn[f], "w": int(w[f])} for f in np.argsort(-np.abs(w))[:24]]
+    out["bias"] = int(net.b1[j])
+    out["weights, trumps"] = {blk: {s: int(w[fn.index(f"x:{blk}:{s}")]) for s in TRUMPS} for blk in ("hand", "gone")}
+    reader_label = {r["name"]: r["label"] for r in audit["rows"]}
+    col = net.w2[:, j]
+    out["readers"] = [{"unit": int(i), "w2": int(col[i]), "labels": [reader_label.get(f"L2+{i:03d}"), reader_label.get(f"L2-{i:03d}")]}
+                      for i in np.argsort(-np.abs(col))]
+
+    # 5. steering: on leads with a trump and a non-trump, whether the net leads trump, and what instead;
+    # on following rows void in the led suit, with a trump and a non-trump legal, whether it trumps in
+    actions = sample.actions
+    canon = sample.canon()
+    acts_ = actions.astype(np.int64)
+    base_pick = picks(acts.out, actions, canon)
+    legal = acts_ >= 0
+    is_t = np.where(legal, trick._led[trick.decl[:, None], np.maximum(acts_, 0)] == TRUMP_SUIT, False)
+    assert (is_t.sum(1)[lead] == nt[lead]).all(), "canonical trumps held disagree with the rules' trumps on lead"
+    dbl = np.isin(np.arange(N_TILES), [p * (p + 1) // 2 + p for p in range(7)])   # real ids share the triangular order
+    choice = lead & is_t.any(1) & (legal & ~is_t).any(1)
+    follows_suit = np.where(legal, trick._led[trick.decl[:, None], np.maximum(acts_, 0)] == trick.suit[:, None], False)
+    ruff = (trick.seat > 0) & (trick.suit != TRUMP_SUIT) & ~follows_suit.any(1) & is_t.any(1) & (legal & ~is_t).any(1)
+    where = {"leads trump": choice, "leads trump, unit off": choice & off, "leads trump, unit on": choice & ~off,
+             "leads off double": choice, "leads count": choice, "trumps in (following, void, use near miss)": ruff}
+    def reads(pick: np.ndarray) -> dict[str, np.ndarray]:
+        t = trick.trump(pick).astype(float)
+        return {"leads trump": t, "leads trump, unit off": t, "leads trump, unit on": t,
+                "leads off double": (dbl[np.maximum(pick, 0)] & ~trick.trump(pick)).astype(float),
+                "leads count": trick.count(pick).astype(float), "trumps in (following, void, use near miss)": t}
+    base = reads(base_pick)
+    out["rows"] = {m: int(v.sum()) for m, v in where.items()}
+    out["base"] = {m: float(base[m][v].mean()) for m, v in where.items()}
+    h1 = net.b1.shape[0]
+    live = [u for u in range(h1) if u != j and (acts.a1[:, u] > 0).sum() >= 200]
+    sig = {u: float(acts.a1[:, u][acts.a1[:, u] > 0].std()) for u in [j] + live}
+    # the gate-closed value: the unit's median activation on leads with 0-1 trumps where it is on
+    med = {u: int(np.median(acts.a1[lead & (nt <= 1) & (acts.a1[:, u] > 0), u])) if (lead & (nt <= 1) & (acts.a1[:, u] > 0)).sum() >= 200
+           else int(np.median(acts.a1[acts.a1[:, u] > 0, u])) for u in [j] + live}
+    out["sigma"], out["median on value, 0-1 trump leads"] = sig[j], med[j]
+    shift = lambda pick: {m: v - base[m] for m, v in reads(pick).items()}
+    steer: dict = {"up": []}
+    for kd in DOSES:
+        sh = {u: shift(picks(downstream(net, x, 1, u, None, add=int(round(kd * sig[u]))), actions, canon)) for u in [j] + live}
+        rec = paired(sh[j], [sh[u] for u in live], choice, deal, rng, where=where)
+        rec["k"] = kd
+        steer["up"].append(rec)
+        log(f"up k={kd}: " + "  ".join(f"{m} own {v['own'][0]:+.3f} layer {v['layer'][0]:+.3f}" for m, v in rec.items() if m != "k"))
+    pset = {u: picks(downstream(net, x, 1, u, None, add=med[u]), actions, canon) for u in [j] + live}
+    sh = {u: shift(pset[u]) for u in [j] + live}
+    rec = paired(sh[j], [sh[u] for u in live], choice, deal, rng, where=where)
+    rec["changed, unit off choice leads"] = float((pset[j] != base_pick)[choice & off].mean())
+    steer["up, add the gate-closed value"] = rec
+    log("up med: " + "  ".join(f"{m} own-layer {v['own-layer'][0]:+.3f}" for m, v in rec.items() if isinstance(v, dict)))
+    pdn = {u: picks(downstream(net, x, 1, u, 0), actions, canon) for u in [j] + live}
+    sh = {u: shift(pdn[u]) for u in [j] + live}
+    steer["down, every unit on the same rows"] = {
+        m: {"rows": int(where[m].sum()), "base": out["base"][m], "pool": [j] + live,
+            "units": {int(u): {"Δ": clustered(sh[u][m][where[m]], deal[where[m]], rng),
+                               "on there": float((acts.a1[where[m], u] > 0).mean())} for u in [j] + live},
+            "rank of own Δ, largest first": 1 + int(sum(sh[u][m][where[m]].mean() > sh[j][m][where[m]].mean() for u in live))}
+        for m in ("leads trump, unit on", "leads trump", "leads off double", "leads count")}
+    log("down: " + "  ".join(f"{u} {v['Δ'][0]:+.3f}" for u, v in steer["down, every unit on the same rows"]["leads trump, unit on"]["units"].items()))
+    out["steer"] = steer
+
+    # 4. formation, in mean z, each term measured from its value at initialisation:
+    # the lead term (following minus lead, on 0-1 trumps held), and the trump term (leads with 0-1
+    # trumps minus leads with 3+, tricks 1-2)
+    if formation_dir:
+        form = []
+        lo_f, lo_l = ~lead & (nt <= 1), lead & (nt <= 1)
+        hi_e, lo_e = lead & (nt >= 3) & early, lead & (nt <= 1) & early
+        for ck in sorted(Path(formation_dir).glob("step_*.npz")):
+            fa = forward(load_net(ck), x)
+            fz = fa.z1[:, j].astype(np.float64)
+            tp_, tn_ = np.argsort(-fz, kind="stable")[:k], np.argsort(fz, kind="stable")[:k]
+            form.append({"step": int(ck.stem.split("_")[1]), "on": float((fa.a1[:, j] > 0).mean()),
+                         "lead term": float(fz[lo_f].mean() - fz[lo_l].mean()),
+                         "trump term": float(fz[lo_e].mean() - fz[hi_e].mean()),
+                         "off on lead": float((fa.a1[lead, j] <= 0).mean()),
+                         "r2 trumps held on lead": r2(fz[lead], oh(nt[lead], 6)),
+                         "r2 trumps out on lead": r2(fz[lead], oh(nout[lead], 8)), "+": lab.best(tp_), "-": lab.best(tn_)})
+            f = form[-1]
+            log(f"  {ck.stem}: on {f['on']:.3f} lead {f['lead term']:.0f} trump {f['trump term']:.0f} "
+                f"off|lead {f['off on lead']:.3f} r2 held {f['r2 trumps held on lead']:.3f} out {f['r2 trumps out on lead']:.3f} + {f['+']} − {f['-']}")
+        out["formation"] = form
+    return out
