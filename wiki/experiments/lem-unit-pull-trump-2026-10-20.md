@@ -3,7 +3,7 @@ title: "Unit paper 7: the 16×8 seed-0 net's unit 8, on almost everywhere and sh
 kind: experiment
 first_seen: 2026-10-20
 last_updated: 2026-10-20
-status: active
+status: complete
 ---
 
 The seventh **unit paper** of [[clean-neurons-42]]'s new mode (#235), on the 16×8 seed-0 field
@@ -223,3 +223,107 @@ page, the six-paper synthesis and the raw notes. Its points, and what changed:
 - **Name.** The slug is distinct from paper 5's `no-trump-yet`, and the verb no longer says "yet".
 
 Sealed 2026-10-20.
+
+## Results
+
+Run 2026-10-20 as registered, in one `scripts/cpu-slot` run of 117 s (2.68e12 instructions). The
+evidence (`unit.json`, the log, the code, the run script, `SHA256SUMS`) is
+`lem/unit-pull-trump-2026-10-20/` in
+[texas-42-zeb-research-2026-10](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/b9efa3a614a94073fbb82b3bf7faa6318355b9af/lem/unit-pull-trump-2026-10-20).
+
+**The picture.** Unit 8 is a dial on **how much trump is still out against me**, and the lead
+subtracts from it. While it is on, it holds the net off leading trump. Forced on where it was
+off, the net leads trump 0.33 less often and leads an off double or count instead. Its graded
+variable is verb B's. Its use is verb A's. On a lead, the two are one reading: lead trump only
+when trump is settled.
+
+**Graded.**
+
+| | prediction | result | |
+|---|---|---|---|
+| 1 | forced on (gate-closed value, 378) on unit-off choice leads lowers leads trump beyond the layer | own − layer −0.330 [−0.335, −0.326]; 0.48 of picks changed | **held** |
+| 2a | ablated on unit-on choice leads, leads trump rises | +0.235 [+0.232, +0.238], from 0.281 | **held** |
+| 2b | that Δ is the largest of 16 | rank 2: unit 2 +0.375; unit 11 +0.217 third | **missed**: a shared brake |
+| 3 | R² gain from trumps held over trick + boss + 6-5, non-sixes leads, ≥ 0.05 | 0.231 → 0.423 (+0.19) | **held** |
+| 3 | tricks 1–2, no boss, not sixes: off at 4+ minus off at 1 ≥ 0.3 | 0.918 − 0.023 = +0.895 | **held** |
+| 4 | following with 4+ trumps: off ≤ 0.05 at every seat | second 0.115, third 0.255, last 0.146 | **missed** |
+| 4 | leading with 0–1 trumps: 3+ off doubles vs none, within ±0.05 | +0.019 (0.169 vs 0.149) | **held** |
+| 5 | trumps-in shift on the use near miss < half of prediction 1's | −0.146 [−0.149, −0.144] against a bound of 0.165 | **held, narrowly** |
+
+So 1, 3 and 5 held. 2 held on sign and missed on rank. 4 missed on followers.
+
+**What the misses say.**
+- **2b.** Leading trump has more than one brake in this layer. Unit 2 releases more trump leads
+  when ablated (+0.375), and unit 11 nearly as many (+0.217). This is the outcome the registration
+  named for a rank-only miss: a shared brake, not a non-brake. Units 9 (−0.216) and 14 (−0.110)
+  push the other way.
+- **4.** Holding four or more trumps shuts the unit on 0.12–0.25 of following rows, not ≤ 0.05.
+  The unit is a linear sum: every trump in hand subtracts (weights −413 to −4,748). Following
+  rows keep a high mean z (+4,400 to +7,400), against −4,700 on leads with 4+ trumps. So the lead
+  is the larger term, but holding alone can close the gate. "The lead, not the holding" loses as
+  stated. "The holding, with the lead as the larger term" is the reading that survives.
+- **5**, though held, is not a null. Forcing the unit on also lowers trumping in while following,
+  by 0.146 with an interval far from 0. The vote is mostly about the lead, and partly about
+  spending trump at all.
+
+**Read off: the variable is trumps still out.**
+- R² of z on non-sixes leads:
+
+  | trumps held | trumps out (in others' hands) | trumps gone | held + gone | off doubles held |
+  |---:|---:|---:|---:|---:|
+  | 0.192 | **0.525** | 0.161 | **0.793** | 0.002 |
+
+- By trumps out on leads, the off rate falls from 0.630 at none out, to 0.366 at 1, 0.208 at 2,
+  0.049 at 5, and 0.000 at 7.
+- The weights say the same, with no bit for "out" itself:
+  - every trump in hand subtracts, heaviest the 6-5 (−4,748) and the 6-4 (−4,137);
+  - every trump gone subtracts (−816 to −2,774), except the 6-6 gone (+533);
+  - so z rises with the trumps that are neither mine nor played.
+- **The 0–1-trump off-leads**, the review's question: off rises with trick number, from 0.010 in
+  trick 1 to 0.226 in trick 6. It rises with trumps gone, from 0.006 at none gone to 0.095 at 4.
+  These are the leads where the other hands have run out of trump.
+- The boss (6-6) adds little at fixed length (3 trumps: 0.463 without, 0.414 with). The 6-5 adds a
+  lot without the boss (1 trump: 0.171 → 0.387; 3: 0.291 → 0.651). That fits "trump strength still
+  against me", in which the 6-5 in my hand removes the second-best trump from the others.
+- **Where the pick goes.** At the gate-closed value: leads trump −0.272, off double +0.092, count
+  +0.082 (own − layer). Ablated over all choice leads: off double −0.085, count −0.025.
+- **The poles.** + `no-trump-held` (0.894). − `x:count:39` (0.869): 0.95 of the − pole are leads and
+  0.81 are sixes, with mean trumps out 1.08. So the − pole is the sixes declaration's settled-trump
+  leads, and its count bit is a correlate of that declaration.
+- **On/off is a poor boundary for any one threshold.** On agrees with "more than 0 trumps out"
+  0.796 of leads, and with "fewer than 3 held" 0.774, against chance 0.765. The variable is graded
+  and gated, which is why list v2 found no boundary (κ 0.02).
+- **Side.** At 0–1 trumps, the bidding side's leads are off more than the defenders' (1 trump:
+  0.247 against 0.166). At 2–3 trumps it reverses (3 trumps: 0.426 against 0.624). Trumps out was
+  not controlled here. This is read off, beside *Winning 42*'s guidance on who pulls trump, and not
+  weighed against it ([[book-authority]]).
+- **Readers.** L2 6 +365 (`winner-cannot-be-beaten` / `no-trump-held`), L2 5 −307, L2 7 −283,
+  L2 4 +241, L2 2 +222.
+
+**Formation (read off, seen in the smoke run).**
+- Initialisation: off on 0.24 of leads, R² of out 0.17.
+- Steps 300–45,810: the unit is on for nearly every lead (off 0.00–0.02).
+- R² of trumps out climbs from 0.02 at step 1,000 to 0.29 at step 15,270.
+- The gate on leads opens late: off on lead 0.14 at step 76,350, 0.47 at step 152,700, then
+  0.24 at the end.
+- So the dial grew first and the lead gate after, as in paper 6.
+
+**Against the frame.**
+- The unit is clean in the essay's sense: one graded quantity, trump still out against me, with a
+  gate.
+- The negative side is where the vote is withdrawn, not an opposite meaning.
+- Its two v2 near-misses (`¬lead-boss-trump`, `trump-is-sixes`) are shadows of that dial.
+- **The vocabulary gap is named.** List v2 has `trump-out` as a bit, not a count, and no
+  "trumps out against me". #202's κ 0.02 is a vocabulary gap over this net's own inputs.
+- The list-v3 candidates change with the result. Drop `lead-trumps-3plus` and `lead-trumps-4plus`,
+  which read held, the weaker variable. Keep `trumps-out-at-most-1`, and add `trumps-out-count`
+  as a graded concept (R² 0.525 on leads).
+- Not read as mixing.
+
+Scope: this net, these inputs (one position, uniform beliefs, no history), list v2 plus the raw
+inputs. What we learned from this model, not all of 42, yet.
+
+## Links
+
+[[clean-neurons-42]] · [[lem-unit-lead-brake-2026-10-20]] · [[lem-unit-lead-doubles-2026-10-20]] ·
+[[lem-unit-no-trump-yet-2026-10-20]] · [[lem-unit-theirs-2026-10-20]] · [[book-authority]]
