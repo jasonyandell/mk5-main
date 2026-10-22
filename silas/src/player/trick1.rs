@@ -547,21 +547,21 @@ impl Ladder {
     }
 
     /// The rung of gathers of one horizon, each over every shard, whose root tiles are
-    /// together the menu, each tile once; refused past `budget` plays in all.
-    pub fn rung(&self, gathers: &[Gathered], budget: u64) -> Result<Rung> {
-        let k = gathers.first().ok_or_else(|| error("a rung needs a gather"))?.k;
-        let (mut actions, mut leaves, mut work, mut mass) = (Vec::new(), 0, Work::default(), None);
+    /// together the menu, each tile once; refused past `budget` plays in all. The gathers are
+    /// consumed one at a time, so a rung whose tiles do not fit in memory together still reduces.
+    pub fn rung(&self, gathers: impl IntoIterator<Item = Gathered>, budget: u64) -> Result<Rung> {
+        let (mut actions, mut leaves, mut work, mut mass, mut k) = (Vec::new(), 0, Work::default(), None, None);
         for g in gathers {
             let covered: usize = g.ranges.iter().map(|(a, b)| b - a).sum();
             if covered != self.shards.len() {
                 return Err(error(format!("a gather covers {covered} of {} shards", self.shards.len())));
             }
-            if g.k != k || mass.is_some_and(|m| m != g.worlds) {
+            if k.is_some_and(|k| k != g.k) || mass.is_some_and(|m| m != g.worlds) {
                 return Err(error("the gathers are of different horizons or roots"));
             }
-            mass = Some(g.worlds);
+            (k, mass) = (Some(g.k), Some(g.worlds));
             work.add(&g.work);
-            let mut sorted: Vec<(Path, Leaf)> = g.leaves.iter().map(|(p, l)| (*p, *l)).collect();
+            let mut sorted: Vec<(Path, Leaf)> = g.leaves.into_iter().collect();
             sorted.sort_unstable_by_key(|(p, _)| *p);
             leaves += sorted.len();
             let mut i = 0;
@@ -579,6 +579,7 @@ impl Ladder {
             }
         }
         actions.sort_unstable_by_key(|a| a.0);
+        let k = k.ok_or_else(|| error("a rung needs a gather"))?;
         let tiles: Vec<Domino> = actions.iter().map(|a| a.0).collect();
         let menu: Vec<Domino> = Domino::ALL.into_iter().filter(|d| self.menu() >> d.index() & 1 == 1).collect();
         if tiles != menu {
@@ -592,7 +593,7 @@ impl Ladder {
 
     /// The rung at horizon `k` in one run.
     pub fn solve(&self, k: usize, threads: usize, budget: u64) -> Result<Rung> {
-        self.rung(&[self.gather(k, self.menu(), 0, self.shards.len(), threads)], budget)
+        self.rung([self.gather(k, self.menu(), 0, self.shards.len(), threads)], budget)
     }
 
     /// Bellman over the sorted leaves sharing a prefix of length `at`, the public state
@@ -753,8 +754,9 @@ impl Gathered {
         let ranges = (0..get()?).map(|_| Ok((get()? as usize, get()? as usize))).collect::<Result<Vec<_>>>()?;
         let worlds = get()?;
         let work = Work { tree: get()?, tails: get()?, god: get()? };
-        let mut leaves = HashMap::new();
-        for _ in 0..get()? {
+        let n = get()?;
+        let mut leaves = HashMap::with_capacity((n as usize).min(bytes.len() / 56));
+        for _ in 0..n {
             let bits = u128::from(get()?) | u128::from(get()?) << 64;
             let p = Path { bits, len: get()? as u8 };
             let mut l = Leaf { mass: get()?, ..Leaf::default() };

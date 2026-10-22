@@ -131,16 +131,11 @@ fn main() {
         let rungs: Vec<_> = match arg(&args, "--load") {
             Some(files) => {
                 let t = Instant::now();
-                // Pieces of one root-tile set merge; the sets join in the rung.
-                let mut sets: Vec<Gathered> = Vec::new();
-                for f in files.split(',') {
-                    let g = Gathered::from_bytes(&std::fs::read(f).unwrap()).unwrap();
-                    match sets.iter().position(|s| s.roots() == g.roots()) {
-                        Some(i) => sets[i] = sets[i].clone().merge(g).unwrap(),
-                        None => sets.push(g),
-                    }
-                }
-                vec![(sets[0].k, ladder.rung(&sets, budget), t.elapsed().as_secs_f64())]
+                // One whole gather per file (merge pieces first with `--load … --save`), read
+                // one at a time as the rung consumes them; the root tiles join in the rung.
+                let gathers = files.split(',').map(|f| Gathered::from_bytes(&std::fs::read(f).unwrap()).unwrap());
+                let rung = ladder.rung(gathers, budget);
+                vec![(rung.as_ref().map_or(kmax, |r| r.k), rung, t.elapsed().as_secs_f64())]
             }
             None => (kmin..=kmax)
                 .map(|k| {

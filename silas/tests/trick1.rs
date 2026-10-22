@@ -106,21 +106,21 @@ fn the_ladder_contains_nests_and_collapses_onto_the_second_construction() {
                 let whole = ladder.gather(k, menu, 0, n, 1);
                 assert!(g.agrees(&whole), "pieces merged are the whole gather");
                 assert_eq!(g.to_bytes(), whole.to_bytes(), "and write its bytes");
-                assert!(ladder.rung(&[piece(1, n)], u64::MAX).is_err(), "a rung needs every shard");
+                assert!(ladder.rung([piece(1, n)], u64::MAX).is_err(), "a rung needs every shard");
                 // Split by root tile: one gather per tile, joined by the rung.
                 let tiles: Vec<u32> = (0..32).filter(|t| menu >> t & 1 == 1).map(|t| 1 << t).collect();
                 let parts: Vec<Gathered> = tiles.iter().map(|t| ladder.gather(k, *t, 0, n, 2)).collect();
                 assert!(parts.iter().zip(&tiles).all(|(p, t)| p.roots() == *t));
                 let solved = ladder.solve(k, 3, u64::MAX).unwrap();
-                let by_tile = ladder.rung(&parts, u64::MAX).unwrap();
+                let by_tile = ladder.rung(parts.clone(), u64::MAX).unwrap();
                 assert_eq!((&by_tile.actions, by_tile.mass), (&solved.actions, solved.mass), "split by tile");
                 if parts.len() > 1 {
-                    assert!(ladder.rung(&parts[1..], u64::MAX).is_err(), "a rung needs every root tile");
+                    assert!(ladder.rung(parts[1..].to_vec(), u64::MAX).is_err(), "a rung needs every root tile");
                     let twice = [parts.clone(), vec![parts[0].clone()]].concat();
-                    assert!(ladder.rung(&twice, u64::MAX).is_err(), "and each once");
+                    assert!(ladder.rung(twice, u64::MAX).is_err(), "and each once");
                     assert!(parts[0].clone().merge(parts[1].clone()).is_err(), "tiles join in a rung, not a merge");
                 }
-                let r = ladder.rung(&[g], u64::MAX).unwrap();
+                let r = ladder.rung([g], u64::MAX).unwrap();
                 assert_eq!(r, solved, "a resumed rung is the rung");
                 r
             } else {
