@@ -135,12 +135,19 @@ fn main() {
             let mut tiles: Vec<(Domino, [u64; 7])> = Vec::new();
             for line in std::fs::read_to_string(file).unwrap().lines() {
                 let mut w: Vec<&str> = line.split_whitespace().collect();
-                // A follow root's line carries its viewer after the deal (`d v tile …`).
+                // A follow root's line carries its viewer after the deal (`d v tile …`), and past
+                // k = 2 its horizon too (`d v k tile …`).
                 if let Some(v) = w.get(1).and_then(|s| s.parse::<usize>().ok()) {
                     if v != viewer.index() {
                         continue;
                     }
                     w.remove(1);
+                    if let Some(k) = w.get(1).and_then(|s| s.parse::<usize>().ok()) {
+                        if k != kmax {
+                            continue;
+                        }
+                        w.remove(1);
+                    }
                 } else if viewer.index() != 0 {
                     continue;
                 }
