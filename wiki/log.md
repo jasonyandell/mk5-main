@@ -8,7 +8,7 @@ Entry prefix convention: `## [YYYY-MM-DD | shortsha | subject]` so `grep "^## \[
 
 **Stitching and rotation** happen on main after a merge, by script: `python -u scripts/wiki_log_rotate.py` first stitches the `log.d/` fragments in here, newest first, then keeps the newest 10 entries once there are more than 15, moves the rest verbatim into [[log-archive]] and sets the digest's count; whoever runs it folds their gist into the digest.
 
-## Digest (2026-04-09 → 2026-10-20, 494 archived entries)
+## Digest (2026-04-09 → 2026-10-21, 504 archived entries)
 
 What the log recorded, phase by phase. The story itself lives in the hubs and trails linked here; this is only a map of when the wiki ingested what.
 
@@ -59,7 +59,71 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
 - **Gus value numerics, #201's doubles cost, the first transformer audit** (2026-10-20, 6 archived entries) — [[gus-value-routing-2026-10-20]] (stopped before its primary), [[gus-value-numerics-2026-10-20]]; the Book desk's #201 (the doubles cost in thin top doubles) and `scenario.hf verify`; Lem's [[lem-gus-formation-2026-10-20]].
 - **Lem's conditioned reads, steering, words and pour A** (2026-10-20, 6 archived entries) — [[lem-conditioned-audit-2026-10-20]] and [[lem-squeeze-conditioned-2026-10-20]] (both later superseded by [[lem-fixed-conditioning-2026-10-20]]), [[lem-matched-steering-2026-10-20]], [[lem-overbake-units-2026-10-20]], [[lem-words-need-data-2026-10-20]], [[lem-squeeze-pour-a-2026-10-20]].
 - **Lem's raw re-read and unit papers; Gus's contingent teaching** (2026-10-20, 37 archived entries) — [[lem-family-statistic-2026-10-20]] (fails its calibration), [[lem-coarse-or-mixed-2026-10-20]] (void by its own rule), [[lem-unit-origin-2026-10-20]] (#231), the raw headline re-read (#233) and unit papers 1–4 (#235); the Book desk's #201 registration and confirmation; the Mayor's fresh-read-before-sealing rule and tidy; Gus's fixed-checkpoint transfer ([[gus-contingent-transfer-2026-10-20]]), [[gus-u65-formation-2026-10-20]], the contingent teacher, cost, breadth and practice runs ([[gus-contingent-teacher-2026-10-20]], [[gus-contingent-cost-2026-10-20]], [[gus-contingent-breadth-2026-10-20]], [[gus-contingent-practice-recovery-2026-10-20]]).
+- **Lem unit papers 7–8, the audit's baseline report, Gus's contingent teaching tools** (2026-10-20 → 10-21, 10 archived entries) — unit papers 7 and 8 (#235, #202) and the audit's baseline and on/off report (#236); the Mayor's background desks and session-gated Lem frame; the Gus bid-30 pilot in the tournament store (#216); the Book desk's doubles-trump surface count (#230 A); Gus's historical-choice wish and broader contingent teaching ([[gus-tiny-gpt]]).
 ---
+
+## [2026-10-22 | claude | lem: Night-Probe-2 — posterior-statistic labels and the decision-only audit (#239)]
+
+- Six posterior facts per observed play (unseen trumps and count, voids and exhausted suits per
+  seat, unseen tiles outranking the play, unseen tiles still following) plus a likelihood bucket.
+  The finest lawful label leaves 7 roots with a decision collision (hand-relative: 47) but sees 0
+  of 128 fresh roots; no label routes better than `seat` without seeing fewer. The 11 surviving
+  groups differ in nothing the family states: the joint placement of hidden tiles decides them.
+  [[gus-posterior-labels-2026-10-22]]
+- Decision-only (the subset construction) fails at exactly the decision-collision roots in every
+  row. Every label's quotient refines fork, so 56 of 128 bounds fresh roots seen; the solved label,
+  the next decision's answer (four symbols at a root), reaches it and covers 95 decision-only.
+- `lem/quotient.py --labels`, default report byte-identical (14fde1ac…). Evidence on HF
+  `lem/gus-posterior-labels-2026-10-22/`; the research card now maps the night's three label dirs.
+
+## [2026-10-22 | claude | lem: Night-Probe — the decision class in Gus, and tile-free routing labels (#239, #240)]
+
+- Gus does not linearly carry the decision class or the Q contrasts at the query token on fresh
+  roots (three-way: 107 fitting rows for 13 classes, underpowered). Pretraining put two-way
+  flatness there: parent layer-2 AUC 0.767, +0.157 [+0.048, +0.281] over untrained twins. The
+  masked lessons wore it down (wide −0.085 [−0.156, −0.017]) and moved the net's own three-way
+  choice instead (+0.129 [+0.016, +0.258]). [[gus-decision-class-probe-2026-10-21]]
+- No label in an eight-fact tile-free family routes the decision quotient, and none sees more than
+  7 of 128 fresh roots (fork: 56). Under the finest label, 47 roots keep a decision collision whose
+  blocks agree in every fact: the identity of a hidden tile decides the next choice.
+  [[gus-observation-labels-2026-10-21]]
+- `lem/probe/decision.py`; `lem/quotient.py --labels`, default report byte-identical. Evidence on
+  HF `lem/gus-decision-class-probe-2026-10-21/`, `lem/gus-observation-labels-2026-10-21/`.
+
+## [2026-10-22 | claude | night-math: the whole ending in Silas; good play meets only the knots]
+
+- Silas rebuilds the note's 560-deal no-trump ending on its own rules (`silas/src/family.rs`,
+  `silas/tests/controller.rs`) and reproduces every number:
+  - 14 thresholds and 31 classes;
+  - the 767-state controller, root ladder 1, 18, 31, 31;
+  - 302 states with 2-1 committed.
+- It derives the gap (5p − 1)/(1 + 18p) that Lean had taken as given.
+- New: the root optimum has five affine pieces, so five fixed plans suffice and are needed
+  (`scenario/lean/Stab/Plans.lean`, two lemmas).
+- Along good play only the four knots of the optimum move the best play. The path controller
+  has 132 states; the other ten thresholds are counterfactual.
+- The comparison dimension (`silas/src/comparison.rs`) is 2 at the note's local history and
+  168 at the root.
+- Page: [[comparison-algebra-2026-10-21]].
+
+## [2026-10-22 | claude | night-math: the minimal comparison algebra in Lean, the decision quotient in Silas]
+
+- Lean (`scenario/lean/Stab/Hexagon.lean`, `Residual.lean`, `Mixing.lean`): 22 theorems on the
+  three standard axioms, no sorry. They cover:
+  - the note's two numbers per decision and the hexagon;
+  - the 13 sign patterns as the sequential classes;
+  - the coarsest output-keeping right congruence, attained by the quotient machine;
+  - refinement exact after n − 1 blocks;
+  - convex mixing forcing equality at the 1/5 boundary.
+- Two brief claims proved false. The root Q triple has 4 weak orders, not 13, and one block is
+  not enough (a three-tile witness needs two). [[gus-decision-quotient-2026-10-21]]'s "every
+  ladder stabilizes after one block" is corrected: shape needs two.
+- Silas `quotient.rs` and `silas quotient --course FILE` (fed by `lem/quotient.py --export`)
+  reproduce `gus-decision-quotient-v1/report.json` in every count: 8,257 raw, 477 shape and 144
+  fork states, 0 differences.
+- Gate call: these Lean files are additive proofs in `scenario/lean`, as the brief placed them,
+  with no Walt code touched, so they merged ungated (precedent cb95168e). Silas changes avoid
+  core pins, physics and frame. [[comparison-algebra-2026-10-21]].
 
 ## [2026-10-22 | mayor | Desks become agent files; The 42 Ladder page]
 
@@ -75,77 +139,67 @@ What the log recorded, phase by phase. The story itself lives in the hubs and tr
   [1797, 1826]; the Demon with the c102 straight bidder is next at 1787 [1773, 1802], intervals
   overlapping. See [[tournament]].
 
-## [2026-10-21 | pending | Gus continuation teaching tools]
+## [2026-10-21 | claude | lem: unit paper 10 graded: 16×8 s0 layer-1 unit 1 saves the doubles (#235, #202)]
 
-**Added:** [[gus-continuation-teaching-tools]] — native solver, generation and pour inventory; Rust counted-belief extraction is the preferred bridge candidate, not an integrated G0/Zeb teacher.
-**Updated:** [[gus-tiny-gpt]], [[gus-book-silas-tools]] — stopped loop and current capability route; Silas constructors remain on open PR #166.
-**Questions opened:** whether richer four-tile lessons transfer; no new experiment or training launched.
+- L1 1 keeps the doubles back and spends singles and lesser trumps. Ablated on trump-led follows
+  with the trump double legal, the double played rises +0.427 [0.417, 0.436], rank 1 of 16. On
+  discards the low doubles rise +0.051 [0.047, 0.055].
+- Registered between verbs A ("take with trump") and B ("keep the doubles back"). Prediction 1
+  missed toward B, and that miss is the finding. The lead null the arithmetic implied before
+  sealing was a dose: forced on at a follow dose, it holds doubles back on no-trump leads too
+  (−0.154).
+- 4 of 5 graded held:
+  - rank 3 of the trump-in votes;
+  - L-27 +0.020;
+  - the trump-lead job before the kill (−0.193 at step 30,540);
+  - the kill's reason, "let the trump double cover": where the gate is missing, ablating raises
+    the double +0.242 [0.199, 0.285].
+- v3 boundary κ 0.554 vs 0.447 for v2. Evidence on HF `lem/unit-hold-trump-2026-10-21/`.
+  [[lem-unit-hold-trump-2026-10-21]], card synthesis updated. This was the last unit of the #202
+  queue.
 
-## [2026-10-21 | Gus | Broader contingent teaching result]
-<!-- SPDX-FileCopyrightText: Jason Yandell -->
-<!-- SPDX-License-Identifier: CC0-1.0 -->
+## [2026-10-21 | claude | lem: unit paper 9 graded: 16×8 s0 layer-2 unit 1 leads the top off double under fives and sixes (#235, #202)]
 
-**Updated:** [[gus-contingent-maskbreadth-2026-10-20]] completed; fresh narrow contrast favorable, parent uncertainty keeps combined gate failed. [[gus-tiny-gpt]] and training skill route to verified evidence; no full-hand test or promotion.
+- Ablated on leads where I hold the top double (the 6-6, or the 5-5 under sixes), that lead falls
+  0.633 → 0.197, rank 1 of 8. Its gate is "slot 14 holds no ten" (κ 0.786 against 0.437 for the
+  best v2 concept), so it corrects the layer's slot-14 vote: L2 0, 3 and 4 each zero slot 14 when
+  ablated.
+- Graded 3 of 3 held:
+  - with L2 3 jointly ablated, slot 14 falls 0.771 → 0.040;
+  - on sixes follows with the 5-5 legal, B beat A: laying it on partner's trick −0.571 against
+    following fives −0.279;
+  - the follow job grew after the lead job (step 152,700 against 30,540, after a death and rebirth).
+- One confirmatory missed: with both doubles in hand, the net leads the 4-4 first (0.447 against
+  0.244).
+- Evidence on HF `lem/unit-top-double-2026-10-21/`. [[lem-unit-top-double-2026-10-21]], card
+  synthesis updated.
 
-## [2026-10-20 | f9d9fe1 | Gus historical choice teaching wish]
+## [2026-10-21 | f811360 | Gus decision quotient of the contingent course]
 
-**Touched pages:** [[topics/gus-historical-choice-wish|gus-historical-choice-wish]] [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]]
-**Added:** IDEATED history-conditioned choice-value and consequential-fork teaching wish; explicitly not built and no training restarted.
-**Updated:** [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]] routes to the wish.
+**Touched pages:** [[experiments/gus-decision-quotient-2026-10-21|gus-decision-quotient-2026-10-21]] [[gus-tiny-gpt]] [[gus-historical-choice-wish]]
+**Added:** exact decision quotient (coarsest right congruence of the menu/maximizing-set interface) over the 256 eligible maskbreadth roots: 8,257 raw states, fresh roots never repeat a raw state, 139 fork structures; `lem/quotient.py` with tests; a measurement on saved data, no training.
+**Updated:** [[gus-tiny-gpt]] routes to it; [[gus-historical-choice-wish]] names it as the first measurement of the adopted formulation.
 
-## [2026-10-20 | claude | lem: unit paper 7 graded: 16×8 s0 unit 8 is a dial on trump still out against me (#235, #202)]
+## [2026-10-21 | claude | lem: unit paper 9 registered and sealed: 16×8 s0 layer-2 unit 1, leading the top off double under fives and sixes (#235, #202)]
 
-- Predictions 1, 3 and 5 held. Prediction 2 held on sign and missed on rank: unit 2 is the larger
-  brake on leading trump. Prediction 4 missed on followers: 4+ trumps in hand shut the unit
-  0.12–0.25 of the time.
-- Its graded variable is the trumps neither mine nor played: R² 0.525 on leads, and held + gone
-  0.793. The lead subtracts. Forced on, the net leads trump 0.330 less and leads off doubles and
-  count instead.
-- The #202 κ 0.02 gap is vocabulary: list v2 has no count of trumps out. The candidate is
-  `trumps-out-count`.
-- Evidence is on HF at `lem/unit-pull-trump-2026-10-20/`, in [[lem-unit-pull-trump-2026-10-20]].
+- Raw read: on 0.201, at 0.96–0.99 of leads under fives and sixes and about 0.05 elsewhere. Its gate
+  is "slot 14 holds no ten" (L1 15, `x:count:14`). Its canonical push leads slot 20, the top off
+  double (the 6-6, or the 5-5 under sixes), over slot 14 and trump: the correction of paper 4's L2 3.
+- Graded: the joint ablation with L2 3 (composition), a causal A/B on sixes follows with the 5-5
+  legal (cash it vs lay it on partner's trick), and a formation order (the follow job as a later
+  branch).
+- Reviewed against the essay's full text by a fresh Opus. It found three of four first predictions
+  already settled by what was seen, and prediction 3 mixing feeding with taking. Both were fixed.
+  [[lem-unit-top-double-2026-10-21]], `run_double`.
 
-## [2026-10-20 | claude | lem: unit paper 7 registered: 16×8 s0 unit 8, the deepest list-v2 gap (#235, #202)]
+## [2026-10-21 | claude | lem: unit paper 8 graded: 16×8 s0 layer-2 unit 4 is the net's "feed partner's trick" unit under ones–fours (#235, #202)]
 
-- [[lem-unit-pull-trump-2026-10-20]] is registered and sealed after a fresh-context Opus review of
-  the essay's full text. The review moved the label from trump length alone to two candidate verbs:
-  a brake on leading trump, or "trump is still contested".
-- The instrument is `run_lead` in `lem/probe/unit.py`, run with `python -m lem.probe unit … --lead`.
-- Disclosed on the page: a smoke test exposed seed 0's formation, so formation is read off, not
-  graded.
-
-## [2026-10-20 | book | the book's surface count for doubles trump, encoded and unread (#230 A)]
-
-`arena.hand_metrics.ch9_doubles_loss` counts what a doubles-trump hand can lose the way Ch. 9 does: trump losers, each open off's worst count (its own included), a point per trick. It matches the book's tallies on Hands 23–25 (checked privately; the tests use synthetic hands). No player reads it, so every ledger is unchanged. [[book-assumptions]] A10 now says the menu's ceilings omit these terms, and that the no-trump read at the book's sign did not replicate (#201).
-
-## [2026-10-20 | archive | the Gus bid-30 pilot synced to the canonical tournament store (#216)]
-
-- 31 missing records added in one commit (`9d02d5a3`): 17 participants (G5–G20) and 15 faceoffs in
-  `faceoffs/marks7-bid30/20261018/`. All 37 checked anonymously against the manifest. The table
-  built from the published bytes matches the pilot's exactly.
-- Touched: [[gus-tournament-pilot-2026-10-18]].
-
-## [2026-10-20 | claude | mayor: desks are background sessions after the reboot; the Lem frame is gated by session id]
-
-- The machine rebooted at 18:17 CDT and took the tmux server, every desk, the ladder and the
-  watcher with it. The desks came back as `claude --bg --resume <id>` sessions; the ladder and
-  watcher were restarted by the Mayor.
-- `.claude/hooks/after-compact.sh` gated the Lem essay reload on a tmux session name, which a
-  background session doesn't have, so every desk would have paid for the ~4,300-word frame at
-  each compaction. It now reloads the frame only for a session whose id is listed in
-  `scratch/lem/sessions` (local, gitignored), or a tmux `desk-lem`; everyone else gets one line.
-- [[standing-desks]] records the new launch form and the session list.
-
-## [2026-10-20 | claude | lem: the audit reports what the baseline excluded and the on/off match (#236)]
-
-- `lem/probe/audit.py` adds two report-only columns per pole, beside the label (never used to
-  classify):
-  - the best concept the play-count baseline excluded;
-  - the concept, or its negation, that best agrees with the unit's on/off, against the agreement
-    of a constant.
-- On 16×8 s0 the labels are unchanged, and the columns recover the unit papers' hand findings:
-  - L1+005 `last` (excluded 1.00; on/off 0.971 against chance 0.800);
-  - L2+003 `lead` (0.96; 0.911 against 0.605);
-  - L1±014 `¬partner-winning` (0.831);
-  - L1±007 `¬trump-led` (0.925), where list v2 lacks the true boundary (#202).
-- Reproduce with `python -u -m lem.probe audit SAMPLE LABELS OUT --net NET --baseline n_plays --shuffles 0`.
+- Predictions 1, 2, 3 and 5 held. Under declarations 1–4, ablated where partner holds the trick,
+  count played falls 0.669 → 0.086 (−0.583 [−0.589, −0.575]), rank 1 of 8. L2 2 does the same job
+  under 5–6.
+- 4 missed narrowly: partner's trump lowers the dial 0.265 of an opponent's trump-lead dip, against
+  a bar of 0.25. 6 missed: verb B ("feed, don't take") lost to A. The dip holds where I cannot take
+  the trick back (0.894).
+- The #202 κ 0.00 is a 1.3% tail of a dial. The v3 word is `trick-holder-kind` × seat (R² 0.640).
+- The card's synthesis now has papers 7 and 8. Evidence is on HF at
+  `lem/unit-count-on-it-2026-10-21/`, in [[lem-unit-count-on-it-2026-10-21]].

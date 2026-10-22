@@ -5709,3 +5709,88 @@ The next selected preparation asks whether five fixed saved policies learned the
 - Also five lessons that carried across them: read steering by where play goes against the layer;
   the pole is not the job; layer-1 units are graded sums; growth was never a merge; when
   predictions contradict, suspect the shared premise.
+
+## [2026-10-20 | claude | lem: the audit reports what the baseline excluded and the on/off match (#236)]
+
+- `lem/probe/audit.py` adds two report-only columns per pole, beside the label (never used to
+  classify):
+  - the best concept the play-count baseline excluded;
+  - the concept, or its negation, that best agrees with the unit's on/off, against the agreement
+    of a constant.
+- On 16×8 s0 the labels are unchanged, and the columns recover the unit papers' hand findings:
+  - L1+005 `last` (excluded 1.00; on/off 0.971 against chance 0.800);
+  - L2+003 `lead` (0.96; 0.911 against 0.605);
+  - L1±014 `¬partner-winning` (0.831);
+  - L1±007 `¬trump-led` (0.925), where list v2 lacks the true boundary (#202).
+- Reproduce with `python -u -m lem.probe audit SAMPLE LABELS OUT --net NET --baseline n_plays --shuffles 0`.
+
+## [2026-10-20 | claude | mayor: desks are background sessions after the reboot; the Lem frame is gated by session id]
+
+- The machine rebooted at 18:17 CDT and took the tmux server, every desk, the ladder and the
+  watcher with it. The desks came back as `claude --bg --resume <id>` sessions; the ladder and
+  watcher were restarted by the Mayor.
+- `.claude/hooks/after-compact.sh` gated the Lem essay reload on a tmux session name, which a
+  background session doesn't have, so every desk would have paid for the ~4,300-word frame at
+  each compaction. It now reloads the frame only for a session whose id is listed in
+  `scratch/lem/sessions` (local, gitignored), or a tmux `desk-lem`; everyone else gets one line.
+- [[standing-desks]] records the new launch form and the session list.
+
+## [2026-10-20 | archive | the Gus bid-30 pilot synced to the canonical tournament store (#216)]
+
+- 31 missing records added in one commit (`9d02d5a3`): 17 participants (G5–G20) and 15 faceoffs in
+  `faceoffs/marks7-bid30/20261018/`. All 37 checked anonymously against the manifest. The table
+  built from the published bytes matches the pilot's exactly.
+- Touched: [[gus-tournament-pilot-2026-10-18]].
+
+## [2026-10-20 | book | the book's surface count for doubles trump, encoded and unread (#230 A)]
+
+`arena.hand_metrics.ch9_doubles_loss` counts what a doubles-trump hand can lose the way Ch. 9 does: trump losers, each open off's worst count (its own included), a point per trick. It matches the book's tallies on Hands 23–25 (checked privately; the tests use synthetic hands). No player reads it, so every ledger is unchanged. [[book-assumptions]] A10 now says the menu's ceilings omit these terms, and that the no-trump read at the book's sign did not replicate (#201).
+
+## [2026-10-20 | claude | lem: unit paper 7 registered: 16×8 s0 unit 8, the deepest list-v2 gap (#235, #202)]
+
+- [[lem-unit-pull-trump-2026-10-20]] is registered and sealed after a fresh-context Opus review of
+  the essay's full text. The review moved the label from trump length alone to two candidate verbs:
+  a brake on leading trump, or "trump is still contested".
+- The instrument is `run_lead` in `lem/probe/unit.py`, run with `python -m lem.probe unit … --lead`.
+- Disclosed on the page: a smoke test exposed seed 0's formation, so formation is read off, not
+  graded.
+
+## [2026-10-20 | claude | lem: unit paper 7 graded: 16×8 s0 unit 8 is a dial on trump still out against me (#235, #202)]
+
+- Predictions 1, 3 and 5 held. Prediction 2 held on sign and missed on rank: unit 2 is the larger
+  brake on leading trump. Prediction 4 missed on followers: 4+ trumps in hand shut the unit
+  0.12–0.25 of the time.
+- Its graded variable is the trumps neither mine nor played: R² 0.525 on leads, and held + gone
+  0.793. The lead subtracts. Forced on, the net leads trump 0.330 less and leads off doubles and
+  count instead.
+- The #202 κ 0.02 gap is vocabulary: list v2 has no count of trumps out. The candidate is
+  `trumps-out-count`.
+- Evidence is on HF at `lem/unit-pull-trump-2026-10-20/`, in [[lem-unit-pull-trump-2026-10-20]].
+
+## [2026-10-20 | f9d9fe1 | Gus historical choice teaching wish]
+
+**Touched pages:** [[topics/gus-historical-choice-wish|gus-historical-choice-wish]] [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]]
+**Added:** IDEATED history-conditioned choice-value and consequential-fork teaching wish; explicitly not built and no training restarted.
+**Updated:** [[topics/gus-continuation-teaching-tools|gus-continuation-teaching-tools]] routes to the wish.
+
+## [2026-10-21 | Gus | Broader contingent teaching result]
+<!-- SPDX-FileCopyrightText: Jason Yandell -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+
+**Updated:** [[gus-contingent-maskbreadth-2026-10-20]] completed; fresh narrow contrast favorable, parent uncertainty keeps combined gate failed. [[gus-tiny-gpt]] and training skill route to verified evidence; no full-hand test or promotion.
+
+## [2026-10-21 | pending | Gus continuation teaching tools]
+
+**Added:** [[gus-continuation-teaching-tools]] — native solver, generation and pour inventory; Rust counted-belief extraction is the preferred bridge candidate, not an integrated G0/Zeb teacher.
+**Updated:** [[gus-tiny-gpt]], [[gus-book-silas-tools]] — stopped loop and current capability route; Silas constructors remain on open PR #166.
+**Questions opened:** whether richer four-tile lessons transfer; no new experiment or training launched.
+
+## [2026-10-21 | claude | lem: unit paper 8 registered and sealed: 16×8 s0 layer-2 unit 4, a dial on feeding the trick (#235, #202)]
+
+- Raw read: on 0.987; its off tail is RHO holding a trump lead (third seat 0.37–0.48 off). While on
+  it is a dial on who holds the trick (R² 0.62 on follows). Its canonical push holds the boss trump
+  back and lays slots that carry count only under declarations 0–4.
+- Six graded predictions, among them the rank of its feeding vote under 1–4, a division by
+  declaration, and `can-take-it` separating "count welcome" (A) from "feed, don't take" (B).
+- Reviewed against the essay's full text by a fresh Opus, which found two row-set bugs and two
+  predictions that couldn't lose, all fixed. [[lem-unit-count-on-it-2026-10-21]], `run_count`.
