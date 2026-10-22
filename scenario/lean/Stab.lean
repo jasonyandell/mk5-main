@@ -7,3 +7,6 @@ import Stab.Coherence
 import Stab.Sharp
 import Stab.Cycle
 import Stab.Floor
+import Stab.Hexagon
+import Stab.Residual
+import Stab.Mixing
