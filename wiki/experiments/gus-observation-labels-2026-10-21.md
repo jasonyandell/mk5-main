@@ -61,7 +61,7 @@ Under coarser labels the facts do separate many collisions. Under brief, `winnin
 ## Reading
 
 - Routing and reuse pull in opposite directions inside this family. Every fact added to route splits training states, and fresh roots stay unseen: 2 to 7 of 128, against 56 for fork, which routes nothing.
-- What is missing is not a relation to the viewer's hand but information about the hidden tiles: which remain out, and who must play them. A label that could route would carry a statistic of the posterior, such as unseen trumps or count, suits exhausted per seat, or the field's likelihood of the play. That is the note's warning that the quotient depends on the kernel, seen from the label side. It is the next family to try (#239).
+- What is missing is not a relation to the viewer's hand but information about the hidden tiles: which remain out, and who must play them. A label that could route would carry a statistic of the posterior, such as unseen trumps or count, suits exhausted per seat, or the field's likelihood of the play. That is the note's warning that the quotient depends on the kernel, seen from the label side. It is the next family to try (#239). Tried in [[gus-posterior-labels-2026-10-22]]: it routes better (7 roots with a decision collision) but sees no fresh root, and the label that routes while keeping 56 is the next decision's answer.
 - Domain collisions (206 roots under the finest label) come from preserving which label sequences are feasible. A decision-only interface that accepts any label would drop them, as the note's 11/15 counts drop its 23/31 tie-and-domain profiles. The decision collisions remain either way.
 
 ## Scope
