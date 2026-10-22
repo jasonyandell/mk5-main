@@ -14,7 +14,6 @@
 //! bound, the fence page's first sanctioned use (a bound that refutes); nothing here
 //! chooses by it.
 
-use std::collections::BTreeMap;
 
 use silas::player::{Root, SeatLaw};
 use silas::{Context, Domino, Frame, HIDDEN_SEATS, Seat};
@@ -63,12 +62,13 @@ impl Work {
     }
 }
 
-/// Exact-T1's `Gathered`, with the same bytes. Leaves are keyed by (path bits, length).
+/// Exact-T1's `Gathered`, with the same bytes. Leaves are keyed by the path bits (the length
+/// is a function of them), ascending and distinct, which is Exact-T1's path order.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Gathered {
     pub k: usize,
     pub ranges: Vec<(usize, usize)>,
-    pub leaves: BTreeMap<(u128, u8), Leaf>,
+    pub leaves: Vec<(u128, Leaf)>,
     pub worlds: u64,
     pub work: Work,
 }
@@ -81,7 +81,14 @@ fn path_len(bits: u128) -> u8 {
 impl Gathered {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        let mut put = |x: u64| out.extend_from_slice(&x.to_le_bytes());
+        self.stream(|b| out.extend_from_slice(b));
+        out
+    }
+
+    /// The bytes of [`Gathered::to_bytes`], handed to `sink` a word at a time, never held
+    /// whole (a k = 2 tile is gigabytes).
+    pub fn stream(&self, mut sink: impl FnMut(&[u8])) {
+        let mut put = |x: u64| sink(&x.to_le_bytes());
         put(self.k as u64);
         put(self.ranges.len() as u64);
         for &(a, b) in &self.ranges {
@@ -93,15 +100,14 @@ impl Gathered {
         put(self.work.tails);
         put(self.work.god);
         put(self.leaves.len() as u64);
-        for ((bits, len), l) in &self.leaves {
+        for (bits, l) in &self.leaves {
             put(*bits as u64);
             put((bits >> 64) as u64);
-            put(u64::from(*len));
+            put(u64::from(path_len(*bits)));
             put(l.mass);
             l.tails.iter().for_each(|t| put(*t));
             put(l.god);
         }
-        out
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Gathered, String> {
@@ -114,16 +120,21 @@ impl Gathered {
         let ranges = (0..get()?).map(|_| Ok((get()? as usize, get()? as usize))).collect::<Result<Vec<_>, String>>()?;
         let worlds = get()?;
         let work = Work { tree: get()?, tails: get()?, god: get()? };
-        let mut leaves = BTreeMap::new();
+        let mut leaves: Vec<(u128, Leaf)> = Vec::new();
         for _ in 0..get()? {
             let bits = u128::from(get()?) | (u128::from(get()?) << 64);
-            let len = get()? as u8;
+            if get()? != u64::from(path_len(bits)) {
+                return Err(format!("a leaf's length disagrees with its path {bits:#x}"));
+            }
+            if leaves.last().is_some_and(|(b, _)| *b >= bits) {
+                return Err("the leaves are not ascending".into());
+            }
             let mut l = Leaf { mass: get()?, ..Leaf::default() };
             for t in l.tails.iter_mut() {
                 *t = get()?;
             }
             l.god = get()?;
-            leaves.insert((bits, len), l);
+            leaves.push((bits, l));
         }
         if get().is_ok() {
             return Err("the gather runs long".into());
@@ -206,16 +217,19 @@ fn law_code(law: SeatLaw) -> Result<u32, String> {
 }
 
 /// The gather's memory: a device leaf table of `2^table_bits` slots (drained to the host
-/// whenever it passes a quarter full), and at most `max_leaves` leaves held on the host.
+/// whenever it passes a quarter full), at most `max_leaves` leaves held on the host, and at
+/// least `min_free` bytes left for the machine after every drain (a guard that refuses, never
+/// a budget that shapes the result).
 #[derive(Clone, Copy, Debug)]
 pub struct Limits {
     pub table_bits: u32,
     pub max_leaves: usize,
+    pub min_free: u64,
 }
 
 impl Default for Limits {
     fn default() -> Limits {
-        Limits { table_bits: 23, max_leaves: usize::MAX }
+        Limits { table_bits: 23, max_leaves: usize::MAX, min_free: 0 }
     }
 }
 
@@ -317,7 +331,7 @@ impl Problem {
         if covered != self.shards.len() {
             return Err(format!("the gather covers {covered} of {} shards", self.shards.len()));
         }
-        let leaves: Vec<(u128, u8, Leaf)> = g.leaves.iter().map(|((b, l), x)| (*b, *l, *x)).collect();
+        let leaves = &g.leaves[..];
         let at = |bits: u128, i: u8| Domino::from_index((((bits >> (5 * (24 - i))) & 31) - 1) as usize).expect("a tile");
         let start = Public { leader: frame.leader(), trick: frame.prefix().to_vec() };
         let viewer = frame.viewer();
@@ -332,18 +346,18 @@ impl Problem {
             n
         };
         fn reduce(
-            leaves: &[(u128, u8, Leaf)],
+            leaves: &[(u128, Leaf)],
             depth: u8,
             s: &Public,
             viewer: Seat,
             at: &dyn Fn(u128, u8) -> Domino,
             play: &dyn Fn(&Public, Domino) -> Public,
         ) -> Result<(u64, u64, u64), String> {
-            if leaves.len() == 1 && leaves[0].1 == depth {
-                let l = &leaves[0].2;
+            if leaves.len() == 1 && path_len(leaves[0].0) == depth {
+                let l = &leaves[0].1;
                 return Ok((*l.tails.iter().max().expect("a tail"), l.god, l.mass));
             }
-            if leaves.iter().any(|x| x.1 <= depth) {
+            if leaves.iter().any(|x| path_len(x.0) <= depth) {
                 return Err(format!("a leaf is a prefix of another at depth {depth}"));
             }
             let focal = s.leader.plus(s.trick.len()) == viewer;
@@ -403,7 +417,7 @@ impl Problem {
         to: usize,
         limits: Limits,
     ) -> Result<Gathered, EpochError> {
-        let Limits { table_bits, max_leaves } = limits;
+        let Limits { table_bits, max_leaves, min_free } = limits;
         assert!(from <= to && to <= self.shards.len(), "shards {from}..{to} of {}", self.shards.len());
         if k >= 6 {
             return Err(EpochError::Depth);
@@ -418,20 +432,31 @@ impl Problem {
         let vals = gpu.zeroed(slots * 4)?;
         let out = gpu.zeroed(9)?;
         let err = gpu.zeroed(1)?;
-        let mut leaves: BTreeMap<(u128, u8), Leaf> = BTreeMap::new();
-        let drain = |leaves: &mut BTreeMap<(u128, u8), Leaf>| {
+        // The host's leaves stay one ascending run: each drain is sorted, appended, merged
+        // (a stable sort of two runs) and its equal paths summed, 48 bytes a leaf.
+        let mut leaves: Vec<(u128, Leaf)> = Vec::new();
+        let drain = |leaves: &mut Vec<(u128, Leaf)>| {
             let kw = Gpu::read(&keys, slots * 4);
             let vw = Gpu::read(&vals, slots * 4);
-            for s in 0..slots {
-                let key = &kw[4 * s..4 * s + 4];
-                if key.contains(&EMPTY) {
-                    continue;
+            let mut fresh: Vec<(u128, Leaf)> = (0..slots)
+                .filter(|s| !kw[4 * s..4 * s + 4].contains(&EMPTY))
+                .map(|s| {
+                    let bits = kw[4 * s..4 * s + 4].iter().enumerate().fold(0u128, |a, (i, x)| a | (u128::from(*x) << (32 * i)));
+                    let v = &vw[4 * s..4 * s + 4];
+                    (bits, Leaf { mass: v[0].into(), tails: [v[1].into(), v[2].into()], god: v[3].into() })
+                })
+                .collect();
+            drop((kw, vw));
+            fresh.sort_unstable_by_key(|x| x.0);
+            leaves.append(&mut fresh);
+            leaves.sort_by_key(|x| x.0);
+            leaves.dedup_by(|b, a| {
+                let same = a.0 == b.0;
+                if same {
+                    a.1.add(&b.1);
                 }
-                let bits = key.iter().enumerate().fold(0u128, |a, (i, x)| a | (u128::from(*x) << (32 * i)));
-                let v = &vw[4 * s..4 * s + 4];
-                let leaf = Leaf { mass: v[0].into(), tails: [v[1].into(), v[2].into()], god: v[3].into() };
-                leaves.entry((bits, path_len(bits))).or_default().add(&leaf);
-            }
+                same
+            });
             Gpu::fill(&keys, slots * 4, EMPTY);
             Gpu::fill(&vals, slots * 4, 0);
         };
@@ -465,6 +490,10 @@ impl Problem {
                 if leaves.len() > max_leaves {
                     return Err(EpochError::Memory { leaves: leaves.len(), budget: max_leaves });
                 }
+                let available = if min_free > 0 { available_bytes() } else { u64::MAX };
+                if available < min_free {
+                    return Err(EpochError::Free { leaves: leaves.len(), available, floor: min_free });
+                }
             }
         }
         drain(&mut leaves);
@@ -481,4 +510,25 @@ impl Problem {
             work: Work { tree: pair(2), tails: pair(4), god: pair(6) },
         })
     }
+}
+
+/// Memory the system could hand out now (free, inactive and speculative pages, from
+/// `vm_stat`): a guard before a piece starts, never a budget inside one.
+pub fn available_bytes() -> u64 {
+    let out = std::process::Command::new("vm_stat").output().expect("vm_stat");
+    let text = String::from_utf8_lossy(&out.stdout);
+    let page: u64 = text
+        .split("page size of ")
+        .nth(1)
+        .and_then(|s| s.split_whitespace().next())
+        .and_then(|s| s.parse().ok())
+        .expect("a page size");
+    let pages = |name: &str| -> u64 {
+        text.lines()
+            .find(|l| l.starts_with(name))
+            .and_then(|l| l.split(':').nth(1))
+            .and_then(|v| v.trim().trim_end_matches('.').parse().ok())
+            .unwrap_or(0)
+    };
+    page * (pages("Pages free") + pages("Pages inactive") + pages("Pages speculative"))
 }

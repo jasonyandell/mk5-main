@@ -190,6 +190,8 @@ pub enum EpochError {
     Device(String),
     /// The host would hold more than its leaf budget: a memory refusal, reported, not a crash.
     Memory { leaves: usize, budget: usize },
+    /// The machine had less memory to hand out than the floor, with this many leaves held.
+    Free { leaves: usize, available: u64, floor: u64 },
 }
 
 impl EpochError {

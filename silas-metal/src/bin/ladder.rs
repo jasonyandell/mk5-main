@@ -11,15 +11,19 @@
 //! ```text
 //! ladder DIR --deals 0,1 --viewer 0 --k 0 [--from 0 --to 1000] [--root 6-5 | --per-root]
 //!        [--save deal{d}-{tile}.bin] [--compare their.bin] [--table-bits 23] [--max-leaves N]
+//!        [--min-free-gb 10] [--triples k2-triples.txt] [--budget 3000000000000]
 //! ```
 
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::time::Instant;
 
+use sha2::{Digest, Sha256};
 use silas::player::{Root, SeatLaw};
 use silas::reference::Straight42;
 use silas::{Auction, Bid, Domino, DominoSet, Frame, Seat};
 use silas_metal::Gpu;
-use silas_metal::ladder::{Gathered, Limits, Problem, Rung, Work};
+use silas_metal::ladder::{Gathered, Limits, Problem, Rung, Work, available_bytes};
 
 fn npy(path: &str) -> Vec<u8> {
     let bytes = std::fs::read(path).unwrap_or_else(|e| panic!("{path}: {e}"));
@@ -49,10 +53,13 @@ fn main() {
     let deals: Vec<usize> = arg(&args, "--deals").unwrap_or("0").split(',').map(|s| s.parse().unwrap()).collect();
     let viewer = Seat::ALL[arg(&args, "--viewer").unwrap_or("0").parse::<usize>().unwrap()];
     let k: usize = arg(&args, "--k").unwrap_or("0").parse().unwrap();
+    let min_free: u64 = arg(&args, "--min-free-gb").map_or(0, |s| s.parse::<u64>().unwrap() << 30);
     let limits = Limits {
         table_bits: arg(&args, "--table-bits").unwrap_or("23").parse().unwrap(),
         max_leaves: arg(&args, "--max-leaves").map_or(usize::MAX, |s| s.parse().unwrap()),
+        min_free,
     };
+    let budget: u64 = arg(&args, "--budget").map_or(u64::MAX, |s| s.parse().unwrap());
     let law = match arg(&args, "--law").unwrap_or("lowest") {
         "lowest" => SeatLaw::Lowest,
         "highest" => SeatLaw::Highest,
@@ -90,7 +97,14 @@ fn main() {
         };
         let mut actions = Vec::new();
         let mut mass = None;
+        let mut spent = 0u64;
         for (label, mask) in &pieces {
+            let free = available_bytes();
+            if free < min_free {
+                println!("deal {d} decl P{decl} k {k} root {label}: refused, {free} bytes available, under {min_free}");
+                ok = false;
+                continue;
+            }
             let t = Instant::now();
             let g = match problem.gather(&mut gpu, k, *mask, from, to, limits) {
                 Ok(g) => g,
@@ -113,17 +127,51 @@ fn main() {
                 g.work.god,
                 u128::from(g.work.total()) * 1000 / ms,
             );
+            // The bytes streamed once: to the file when saved, through SHA-256 (the receipt)
+            // and FNV-64 (Exact-T1's key).
+            let mut sha = Sha256::new();
+            let mut fnv = 0xcbf2_9ce4_8422_2325u64;
+            let mut file = arg(&args, "--save").map(|save| {
+                // `{d}` in the path names the deal, `{tile}` the piece's root tiles.
+                BufWriter::new(File::create(save.replace("{d}", &d.to_string()).replace("{tile}", label)).unwrap())
+            });
+            g.stream(|b| {
+                sha.update(b);
+                fnv = b.iter().fold(fnv, |h, x| (h ^ u64::from(*x)).wrapping_mul(0x0100_0000_01b3));
+                if let Some(f) = file.as_mut() {
+                    f.write_all(b).unwrap();
+                }
+            });
+            if let Some(mut f) = file {
+                f.flush().unwrap();
+            }
+            let sha: String = sha.finalize().iter().map(|b| format!("{b:02x}")).collect();
+            println!("  sha256 {sha} fnv64 {fnv:016x}");
             if whole {
                 let r = problem.rung(&frame, &g).expect("the rung");
+                if let Some(path) = arg(&args, "--triples") {
+                    // One line per piece: deal tile L U mass leaves plays tree tails god fnv64 sha256 engine.
+                    let mut out = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+                    for (a, lo, up) in &r.actions {
+                        writeln!(
+                            out,
+                            "{d} {a} {lo} {up} {} {} {} {} {} {} {fnv:016x} {sha} metal",
+                            r.mass,
+                            g.leaves.len(),
+                            g.work.total(),
+                            g.work.tree,
+                            g.work.tails,
+                            g.work.god
+                        )
+                        .unwrap();
+                    }
+                }
                 actions.extend(r.actions);
                 mass = Some(r.mass);
-            }
-            let bytes = g.to_bytes();
-            if let Some(save) = arg(&args, "--save") {
-                // `{d}` in the path names the deal, `{tile}` the piece's root tiles.
-                std::fs::write(save.replace("{d}", &d.to_string()).replace("{tile}", label), &bytes).unwrap();
+                spent += g.work.total();
             }
             if let Some(theirs) = arg(&args, "--compare") {
+                let bytes = g.to_bytes();
                 let other = std::fs::read(theirs).unwrap();
                 let same = other == bytes;
                 ok &= same;
@@ -131,12 +179,15 @@ fn main() {
                 if !same {
                     let o = Gathered::from_bytes(&other).unwrap();
                     println!("  theirs: worlds {} leaves {} work {:?}; ours work {:?}", o.worlds, o.leaves.len(), o.work, g.work);
-                    let diff = o.leaves.iter().filter(|(p, l)| g.leaves.get(p) != Some(l)).count();
+                    let diff = o.leaves.iter().filter(|(p, l)| g.leaves.binary_search_by_key(p, |x| x.0).map(|i| &g.leaves[i].1) != Ok(l)).count();
                     println!("  leaves differing or missing: {diff}");
                 }
             }
         }
-        if let (Some(m), true) = (mass, actions.len() == legal.len()) {
+        if spent > budget {
+            println!("  rung k {k}: refused, {spent} plays past the budget {budget}");
+            ok = false;
+        } else if let (Some(m), true) = (mass, actions.len() == legal.len()) {
             actions.sort_by_key(|a| a.0);
             let r = Rung { k, actions, mass: m, leaves: 0, work: Work::default() };
             let iv: Vec<String> =

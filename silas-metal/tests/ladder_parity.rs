@@ -56,7 +56,7 @@ fn per_root_gathers_partition_the_whole() {
     let mut gpu = Gpu::new().expect("a Metal device");
     let limits = Limits { table_bits: 20, ..Limits::default() };
     let whole = problem.gather(&mut gpu, 2, u32::MAX, 0, 20, limits).unwrap();
-    let mut joined = std::collections::BTreeMap::new();
+    let mut joined = Vec::new();
     let mut work = Work::default();
     for tile in 0..28 {
         if 67_732_752u32 >> tile & 1 == 0 {
@@ -64,10 +64,11 @@ fn per_root_gathers_partition_the_whole() {
         }
         let g = problem.gather(&mut gpu, 2, 1 << tile, 0, 20, limits).unwrap();
         assert_eq!(g.worlds, whole.worlds);
-        assert!(g.leaves.keys().all(|(bits, _)| (bits >> 120) as u32 == tile + 1));
+        assert!(g.leaves.iter().all(|(bits, _)| (bits >> 120) as u32 == tile + 1));
         joined.extend(g.leaves);
         work = Work { tree: work.tree + g.work.tree, tails: work.tails + g.work.tails, god: work.god + g.work.god };
     }
+    joined.sort_by_key(|x: &(u128, _)| x.0);
     assert_eq!(joined, whole.leaves);
     assert_eq!(work, whole.work);
 }
