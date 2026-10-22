@@ -2,7 +2,7 @@
 title: The named deviant field — the book's bidding against the overbidders it was written for (#152, 2026-10-14)
 kind: experiment
 first_seen: 2026-10-14
-last_updated: 2026-10-15
+last_updated: 2026-10-22
 status: complete
 ---
 
@@ -156,3 +156,10 @@ place and each seed counts once. Every batch holds its 24 games; none dropped. T
 
 [[book-authority]] · [[book-assumptions]] · [[book-head-to-head-2026-10-13]] ·
 [[book-small-n-2026-10-14]] · [[scenario-player]] · [[silas]] · [[strategy-fusion-fence]]
+
+## Stack version (#245)
+
+These numbers were played on the book stack as it stood before #245 (2026-10-22), which
+changed what the bidder counts as an off's guard (`bare-off`, `bidders-plan`; the double or
+the top tile left in the suit, W42 p. 77). They reproduce at commit `64ecc6cf`. Re-runs on
+the repaired stack are tracked on #245.

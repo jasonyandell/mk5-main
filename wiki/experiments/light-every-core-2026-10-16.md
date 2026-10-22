@@ -2,7 +2,7 @@
 title: Light every core — cpu-slot by busy cores against the fixed three slots (#173, 2026-10-16)
 kind: experiment
 first_seen: 2026-10-16
-last_updated: 2026-10-16
+last_updated: 2026-10-22
 status: complete
 ---
 
@@ -107,3 +107,10 @@ fixed (before first). Other sessions' unslotted work ran in both arms. Not measu
 12-pair batches (about 5 cores each) should gain less, since three of them already kept about 15
 cores busy under the old cap; it hurt most where jobs are light (single-threaded seats, probes,
 1-pair batches).
+
+## Stack version (#245)
+
+These numbers were played on the book stack as it stood before #245 (2026-10-22), which
+changed what the bidder counts as an off's guard (`bare-off`, `bidders-plan`; the double or
+the top tile left in the suit, W42 p. 77). They reproduce at commit `64ecc6cf`. Re-runs on
+the repaired stack are tracked on #245.

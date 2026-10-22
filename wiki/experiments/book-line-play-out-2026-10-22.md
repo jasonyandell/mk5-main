@@ -300,3 +300,10 @@ narrow reading of Hand 23's "no other trick" for the duck.
 Per-deal rows (hand, arm, deal index, the four hands, the 28 plays, points, made), with
 `run.py` and `read.py`, go to Hugging Face: `jasonyandell/texas-42-zeb-research-2026-10`
 under `book/book-line-230c/`.
+
+## Stack version (#245)
+
+These numbers were played on the book stack as it stood before #245 (2026-10-22), which
+changed what the bidder counts as an off's guard (`bare-off`, `bidders-plan`; the double or
+the top tile left in the suit, W42 p. 77). They reproduce at commit `64ecc6cf`. Re-runs on
+the repaired stack are tracked on #245.
