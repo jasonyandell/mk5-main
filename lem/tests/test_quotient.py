@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: CC0-1.0
 """The decision quotient on a hand-built course where every count is known."""
 import json
+from collections import Counter
 from fractions import Fraction
 from pathlib import Path
 
@@ -121,9 +122,9 @@ def play(count=0, unseen_count=0):
 
 
 def route(nodes, per_root, facts, label, *, decisions_only=False):
-    from lem.quotient import (LABELS, POSTERIOR_LABELS, decision_only, measure, output_shape, routing,
-                              successors_labelled)
-    fields = {**LABELS, **POSTERIOR_LABELS}[label]
+    from lem.quotient import (JOINT_LABELS, LABELS, POSTERIOR_LABELS, decision_only, measure, output_shape,
+                              routing, successors_labelled)
+    fields = {**LABELS, **POSTERIOR_LABELS, **JOINT_LABELS}[label]
     succ = successors_labelled(facts, fields)
     _, cls = measure(nodes, per_root, label, output_shape, succ)
     return (decision_only if decisions_only else routing)(nodes, cls, *(() if decisions_only else (succ,)),
@@ -221,6 +222,66 @@ def test_a_decision_collision_survives_decision_only(tmp_path):
     from lem.quotient import BLOCK_FIELDS, output_shape
     solved = {k: (s, p, (0, output_shape(nodes[k]), None)) for k, (s, p, _) in facts.items()}
     assert BLOCK_FIELDS[1] == "next_output" and route(nodes, per_root, solved, "solved_next_output")["routes"]
+
+
+# ---- the joint family: the support of the unseen tiles ----------------------------------------------
+
+def test_support_closes_under_hand_sizes():
+    from lem.quotient import _closure
+    # One tile only seat 1 may hold, one seats 1 or 2, one anyone; each seat holds one.  The first
+    # fills seat 1, so the second must go to seat 2 and the third to seat 3: one world.
+    classes = (((1,), 1), ((1, 2), 1), ((1, 2, 3), 1))
+    assert _closure(classes, (1, 1, 1)) == {(1,): (1,), (1, 2): (2,), (1, 2, 3): (3,)}
+    # Seat 1 holding three, nothing binds that the voids do not already say.
+    assert _closure(classes, (3, 0, 0)) == {(1,): (1,), (1, 2): (1,), (1, 2, 3): (1,)}
+    assert _closure((((1, 2, 3), 3),), (1, 1, 1)) == {(1, 2, 3): (1, 2, 3)}
+    with pytest.raises(ValueError, match="no world"):
+        _closure((((1,), 2),), (1, 1, 0))
+
+
+def test_canonical_forgets_which_pip_is_which():
+    from lem.quotient import canonical
+    a = [(0, 0, "x"), (1, 0, "y"), (3, 2, "y")]
+    swapped = [(1, 1, "x"), (1, 0, "y"), (3, 2, "y")]          # pips 0 and 1 exchanged
+    assert canonical(a) == canonical(swapped)
+    assert canonical(a) != canonical([(0, 0, "x"), (2, 1, "y"), (3, 2, "y")])   # the double now touches nothing
+    assert canonical(a) != canonical([(0, 0, "y"), (1, 0, "y"), (3, 2, "y")])   # attributes are kept
+
+
+def test_joint_facts_lead_with_hand_sizes_and_read_shown_voids():
+    from scenario.record import empty_record
+    from scenario.rules import rules_for
+    from lem.quotient import joint_facts
+    rules, own = rules_for(4), {13, 19, 27, 0, 1, 2, 3}       # fours are trump
+    record = empty_record(1)
+    counts, graph, hand, shape, named = joint_facts(rules, record, own, 25)   # seat 1 leads 6-4
+    assert counts[0] == graph[0] == hand[0] == shape[0] == named[0] == (6, 7, 7)
+    assert len(named[1]) == 20 and all(s == (1, 2, 3) for _, s in named[1])
+    assert sum(n for _, n in counts[1]) == 20 and len(graph[1]) == 20 and len(hand[1]) == len(shape[1]) == 27
+    # The control keeps the focal seat's seven tiles as seat 0 and erases every unseen tile's seats.
+    assert Counter(e[2][0] for e in shape[1]) == {(): 20, (0,): 7}
+    # Seat 2 plays 3-3 under the trump lead and shows void in fours.
+    after = record.advance(25, rules)
+    named = joint_facts(rules, after, own, 9)[4][1]
+    trumps = [t for t, _ in named if (rules.follow_bits[7] >> t) & 1]
+    assert trumps and all(dict(named)[t] == (1, 3) for t in trumps)
+
+
+def test_a_joint_fact_tells_apart_blocks_the_whole_posterior_family_merges(tmp_path):
+    nodes, per_root, facts = labelled_course(tmp_path, {5: Fraction(1), 6: Fraction(0)}, {5: Fraction(0), 6: Fraction(1)})
+    key = next(k for k in facts if k[1][-2] == 11)
+    joint = ("s", "g", "h", "e", "n")
+    for k, (slot, plays, block) in facts.items():
+        facts[k] = (slot, tuple(p + joint for p in plays), block)
+    facts[key] = (0, (play() + ("s", "g2", "h2", "e", "n2"),), BLOCK)
+    everything = route(nodes, per_root, facts, "everything")
+    assert not everything["routes"]
+    assert everything["consecutive_colliding_blocks_told_apart_by"] == {
+        "decision": {"support+support_hand+support_named": 1}}
+    assert not route(nodes, per_root, facts, "support_counts")["routes"]
+    assert route(nodes, per_root, facts, "support")["routes"]
+    assert route(nodes, per_root, facts, "joint_everything")["routes"]
+    assert not route(nodes, per_root, facts, "shape_everything")["routes"]     # the seats did the work
 
 
 def test_default_report_has_no_label_interfaces(study):

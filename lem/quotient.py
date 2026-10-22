@@ -23,7 +23,7 @@ Interfaces (what a block label and an output are allowed to mention):
          the menu), and under each slot the *multiset* of successor classes.
          This counts distinct decision-problem shapes, not a controller.
 
-Run: python -u -m lem.quotient <study> [--out report.json] [--all-solved] [--labels] [--export course.json]
+Run: python -u -m lem.quotient <study> [--out report.json] [--all-solved] [--labels [--joint]] [--export course.json]
 
 --export writes the audited course as a neutral graph (silas-decision-course-v1) for
 Silas's independent implementation, `silas quotient --course course.json`.
@@ -42,6 +42,8 @@ import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from fractions import Fraction
+from functools import lru_cache
+from itertools import groupby, permutations, product
 from pathlib import Path
 
 PREFIX = 13
@@ -227,6 +229,23 @@ POSTERIOR_LABELS = {
     "solved_next_output": ("next_output",),
     "solved_next_fork": ("next_fork",),
 }
+# The joint family (--joint) reads the support of the unseen tiles: which worlds the record leaves.
+# `shape_hand` erases who may hold each tile and is the control for the support; `support_end` reads
+# the support once, at the next decision, and is the control for reading it after every play.
+JOINT_FIELDS = ("support_counts", "support", "support_hand", "shape_hand", "support_named")
+PLAY_FIELDS = FIELDS + JOINT_FIELDS
+ALL_BLOCK_FIELDS = BLOCK_FIELDS + ("support_end",)
+JOINT_LABELS = {
+    "support_counts": ("seat", "support_counts"),
+    "support": ("seat", "support"),
+    "support_hand": ("seat", "support_hand"),
+    "shape_hand": ("seat", "shape_hand"),
+    "support_end": ("seat", "support_end"),
+    "joint_everything": FIELDS + ("likelihood", "support_hand"),
+    "shape_everything": FIELDS + ("likelihood", "shape_hand"),
+    "named_support": ("seat", "support_named"),
+    "named_everything": FIELDS + ("likelihood", "support_named"),
+}
 LABELS = {
     "hand_relative": HAND_FIELDS,
     "brief_follow_slots": ("seat", "trump", "follows", "count", "beats_all", "follow_slots"),
@@ -281,6 +300,88 @@ def posterior_facts(rules, record, own, tile):
             (rules.follow_bits[suit] & held).bit_count())
 
 
+SEAT_SETS = tuple(frozenset(s for s in (1, 2, 3) if m >> (s - 1) & 1) for m in range(8))
+
+
+def support(record, own):
+    """Per unseen tile, the other seats (relative order 1, 2, 3) that hold it in some world the record
+    allows: no shown void excludes it and the other tiles still fill every hand.  These pairs are
+    exactly the ones some consistent world uses, so they and the hand sizes determine the set of
+    consistent worlds and are its canonical form: the support of the joint posterior under a prior
+    that gives every world mass.  `own` is the focal seat's original hand."""
+    unseen = [t for t in range(28) if not (record.played >> t) & 1 and t not in own]
+    sizes = tuple(record.hand_size(s) for s in (1, 2, 3))
+    if len(unseen) != sum(sizes):
+        raise ValueError("unseen tiles do not fill the other hands")
+    allowed = {t: tuple(s for s in (1, 2, 3) if not (record.forbid[s] >> t) & 1) for t in unseen}
+    closure = _closure(tuple(sorted(Counter(allowed.values()).items())), sizes)
+    return sizes, {t: closure[a] for t, a in allowed.items()}
+
+
+@lru_cache(maxsize=None)
+def _closure(classes, sizes):
+    """For each allowed seat set, the seats a tile with that set reaches in some full assignment.
+    Hall: tiles go one to a seat and fill it exactly, so an assignment exists iff no set of seats
+    must absorb more tiles than it has room for."""
+    def fills(count, room):
+        return all(sum(n for a, n in count.items() if set(a) <= ss) <= sum(room[s - 1] for s in ss)
+                   for ss in SEAT_SETS)
+    count = dict(classes)
+    if not fills(count, sizes):
+        raise ValueError("no world fits the record")
+    out = {}
+    for a in count:
+        less = {**count, a: count[a] - 1}
+        out[a] = tuple(s for s in a if fills(less, tuple(r - (i + 1 == s) for i, r in enumerate(sizes))))
+    return out
+
+
+def canonical(edges):
+    """The least encoding of a set of dominoes over all relabelings of the seven pips: the set up to
+    which pip is which.  `edges` are (pip, pip, attribute); candidates relabel only within classes
+    of pips with equal incident attributes, which every relabeling respects."""
+    return _canonical(tuple(sorted(edges)))
+
+
+@lru_cache(maxsize=None)
+def _canonical(edges):
+    inv = {p: tuple(sorted((attr, a == b) for a, b, attr in edges if p in (a, b))) for p in range(7)}
+    used = sorted((p for p in range(7) if inv[p]), key=lambda p: inv[p])
+    groups = [list(g) for _, g in groupby(used, key=lambda p: inv[p])]
+    best = None
+    for choice in product(*(permutations(g) for g in groups)):
+        label = {p: i for i, p in enumerate(q for g in choice for q in g)}
+        code = tuple(sorted((max(label[a], label[b]), min(label[a], label[b]), attr) for a, b, attr in edges))
+        if best is None or code < best:
+            best = code
+    return best
+
+
+def joint_facts(rules, record, own, tile):
+    """The joint facts of an observed play: the support pattern once `tile` joins the record."""
+    return joint_pattern(rules, record.advance(tile, rules), own)
+
+
+def joint_pattern(rules, after, own):
+    """The support of the unseen tiles under `after`, at five grains: the multiset of (seats, trump,
+    count) over unseen tiles; the same placed on the pip graph up to relabeling; that graph with the
+    focal seat's remaining tiles as seat 0; the last with every unseen tile's seats erased, the
+    control; and every unseen tile by name, which is not tile-free (a diagnostic of what support
+    carries, not a candidate).  Each leads with the other seats' hand sizes."""
+    from forge.oracle.tables import DOMINOES
+    sizes, seats = support(after, own)
+
+    def attr(t, s):
+        return s, (rules.follow_bits[7] >> t) & 1, rules.count[t]
+
+    unseen = [(*DOMINOES[t], attr(t, s)) for t, s in seats.items()]
+    mine = [(*DOMINOES[t], attr(t, (0,))) for t in own if not (after.played >> t) & 1]
+    return ((sizes, tuple(sorted(Counter(e[2] for e in unseen).items()))),
+            (sizes, canonical(unseen)), (sizes, canonical(unseen + mine)),
+            (sizes, canonical([(a, b, ((),) + x[1:]) for a, b, x in unseen] + mine)),
+            (sizes, tuple(sorted(seats.items()))))
+
+
 def likelihood_bucket(p):
     """The k with 2^-(k+1) < p <= 2^-k: an observation's probability to within a factor of two."""
     k = 0
@@ -289,10 +390,11 @@ def likelihood_bucket(p):
     return k
 
 
-def block_facts(course, fork=None):
+def block_facts(course, fork=None, joint=False):
     """For every non-root node: its action's slot in the parent menu, the facts of each observed play
-    (hand-relative, then posterior) and the block facts.  `fork`, the fork classes, feeds the solved
-    ceiling `next_fork`; without it that fact is None."""
+    (hand-relative, posterior, then with `joint` the support facts) and the block facts.  `fork`, the
+    fork classes, feeds the solved ceiling `next_fork`; without it that fact is None.  With `joint`
+    the block also carries `support_end`, the support pattern at the next decision."""
     facts = {}
     for key, node in course.items():
         if not node.children:
@@ -306,10 +408,13 @@ def block_facts(course, fork=None):
             for seat, tile in observed:
                 if seat - YOU != record.seat or seat == YOU:
                     raise ValueError("observed play out of turn")
-                plays.append(play_facts(rules, record, left, tile) + posterior_facts(rules, record, own, tile))
+                plays.append(play_facts(rules, record, left, tile) + posterior_facts(rules, record, own, tile)
+                             + (joint_facts(rules, record, own, tile) if joint else ()))
                 record = record.advance(tile, rules)
             nxt = course[child]
             block = (likelihood_bucket(nxt.mass / node.mass), output_shape(nxt), None if fork is None else fork[child])
+            if joint:
+                block += (joint_pattern(rules, record, own)[2],)
             facts[child] = (slots[action], tuple(plays), block)
     return facts
 
@@ -318,8 +423,8 @@ def project(entry, fields):
     """A block's label under `fields`: its slot, its play labels and its kept block facts.  A label
     that keeps no play fact does not see how many plays there were either."""
     slot, plays, block = entry
-    at = [FIELDS.index(f) for f in fields if f in FIELDS]
-    bt = [BLOCK_FIELDS.index(f) for f in fields if f in BLOCK_FIELDS]
+    at = [PLAY_FIELDS.index(f) for f in fields if f in PLAY_FIELDS]
+    bt = [ALL_BLOCK_FIELDS.index(f) for f in fields if f in ALL_BLOCK_FIELDS]
     return slot, tuple(tuple(p[i] for i in at) for p in plays) if at else (), tuple(block[i] for i in bt)
 
 
@@ -333,14 +438,14 @@ def successors_labelled(facts, fields):
     return succ
 
 
-def routing(course, cls, succ, facts, fields):
+def routing(course, cls, succ, facts, fields, examples_kept=8):
     """Where a label fails to route: a (slot, label) out of one node that reaches two states.
     Each colliding group is a *decision* collision when the states it reaches answer differently
     (menu size or maximizing slots), a *domain* collision when they answer alike but accept
     different label sequences afterwards, else *deeper*.  For consecutive colliding blocks, the
     facts outside the label that tell them apart; "nothing" means no field of the family does.
     The alphabet is the number of distinct observation labels (the label less its slot) read out
-    of nodes at each stage."""
+    of nodes at each stage.  `examples_kept` decision collisions are listed (None: every one)."""
     groups_by_kind, nodes_by_kind, told_apart, examples = Counter(), defaultdict(set), defaultdict(Counter), []
     failing, alphabet = set(), defaultdict(set)
     for node in course.values():
@@ -371,10 +476,11 @@ def routing(course, cls, succ, facts, fields):
             failing.add(cls[key])
             for (b1, c1), (b2, c2) in zip(reps, reps[1:]):
                 (_, f1, g1), (_, f2, g2) = facts[c1], facts[c2]
-                differ = [f for i, f in enumerate(FIELDS) if any(x[i] != y[i] for x, y in zip(f1, f2))]
-                differ += [f for f, x, y in zip(BLOCK_FIELDS[:1], g1, g2) if x != y]
+                differ = [f for i, f in enumerate(PLAY_FIELDS) if any(x[i:i + 1] != y[i:i + 1] for x, y in zip(f1, f2))]
+                differ += [f for i, f in enumerate(ALL_BLOCK_FIELDS)
+                           if f in ("likelihood", "support_end") and g1[i:i + 1] != g2[i:i + 1]]
                 told_apart[kind.split(":")[0]]["+".join(differ) or "nothing"] += 1
-            if kind.startswith("decision") and len(examples) < 8:
+            if kind.startswith("decision") and (examples_kept is None or len(examples) < examples_kept):
                 examples.append({"root": node.root_id, "ply": node.ply, "kind": kind,
                                  "blocks": [[b[0], [list(o) for o in b[1]]] for b, _ in reps],
                                  "next_menus": [list(course[c].legal) for _, c in reps],
@@ -534,7 +640,7 @@ def export(course):
     return {"schema": "silas-decision-course-v1", "nodes": nodes}
 
 
-def analyse(study: Path, *, eligible_only=True, labels=False):
+def analyse(study: Path, *, eligible_only=True, labels=False, joint=False):
     course, per_root = load_course(study, eligible_only=eligible_only)
     report = {"study": str(study), "eligible_only": eligible_only, "roots": len(per_root),
               "splits": dict(Counter(next(iter(n.values())).split for n in per_root.values())),
@@ -565,15 +671,15 @@ def analyse(study: Path, *, eligible_only=True, labels=False):
     classes_of = {}
     for name, (out, succ) in INTERFACES.items():
         report["interfaces"][name], classes_of[name] = measure(course, per_root, name, out, succ)
-    if labels:
-        facts = block_facts(course, classes_of["fork"])
-        every = {**LABELS, **POSTERIOR_LABELS}
+    if labels or joint:
+        facts = block_facts(course, classes_of["fork"], joint=joint)
+        every = {**LABELS, **POSTERIOR_LABELS, **(JOINT_LABELS if joint else {})}
         report["label_fields"] = {name: list(fields) for name, fields in every.items()}
         report["label_interfaces"] = {}
         for name, fields in every.items():
             succ = successors_labelled(facts, fields)
             entry, cls = measure(course, per_root, name, output_shape, succ)
-            entry["routing"] = routing(course, cls, succ, facts, fields)
+            entry["routing"] = routing(course, cls, succ, facts, fields, None if name in JOINT_LABELS else 8)
             entry["decision_only"] = decision_only(course, cls, facts, fields)
             report["label_interfaces"][name] = entry
     return report
@@ -624,12 +730,15 @@ def main():
     ap.add_argument("--out", type=Path)
     ap.add_argument("--all-solved", action="store_true", help="include solved roots the study rejected as ineligible")
     ap.add_argument("--labels", action="store_true", help="also measure the tile-free observation-label interfaces")
+    ap.add_argument("--joint", action="store_true",
+                    help="with --labels, also the joint family: the support of the unseen tiles across seats")
     ap.add_argument("--export", type=Path, help="also write the course graph for `silas quotient`")
     args = ap.parse_args()
     if args.export:
         course, _ = load_course(args.study, eligible_only=not args.all_solved)
         args.export.write_text(json.dumps(export(course)))
-    report = analyse(args.study, eligible_only=not args.all_solved, labels=args.labels)
+    report = analyse(args.study, eligible_only=not args.all_solved, labels=args.labels,
+                     joint=args.joint)
     text = json.dumps(report, indent=1)
     if args.out:
         args.out.write_text(text)
