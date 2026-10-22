@@ -55,6 +55,7 @@ const PLAYER_HOMES = /^(silas|scenario|zeb|arena|src\/game|walt)\//;
 const DEFINING_MODULES = [
   'silas/src/clairvoyant.rs',
   'silas/src/outcome.rs',
+  'silas/src/player/trick1.rs',
   'src/game/ai/clairvoyant-minimax.ts',
   'src/game/ai/monte-carlo.ts',
   'scripts/clairvoyant-minimax-eval.ts',
