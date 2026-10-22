@@ -589,6 +589,20 @@ fn s0105d_hand_23_leads_trump_again_with_none_out() {
 }
 
 #[test]
+fn s0105d_hand_23_saves_the_6_5_as_a_double_ahead_of_the_6_1() {
+    // Hand 23 tricks 5 and 6 (#245; ours: the setters' follows, the partner
+    // without the 6-4): the book leads its other trumps and saves the 6-5 for
+    // the next-to-last trick, as if it were a double ahead of the 6-1 off; it
+    // draws the sixes still out and the 6-1 walks. Our stack dumped the 6-1.
+    let four = [
+        "1-1", "5-5", "4-4", "3-1", "5-3", "5-1", "5-0", "5-4", "6-6", "5-2", "2-2", "6-2", "3-3", "4-3", "4-1", "3-2",
+    ];
+    assert_eq!(fires(BIDDERS_PLAN, &hand("hand-23", &four)).map(|(_, allowed)| allowed), Some(tiles(&["0-0"])));
+    let five = [four.as_slice(), &["0-0", "4-0", "2-1", "3-0"]].concat();
+    assert_eq!(fires(BIDDERS_PLAN, &hand("hand-23", &five)).map(|(_, allowed)| allowed), Some(tiles(&["6-5"])));
+}
+
+#[test]
 fn s0122b_hand_26_draws_with_the_6_4() {
     // Hand 26 trick 2 (ours: trick 1's tiles): the partner followed the 4-4,
     // so the gate is silent; the book leads the 6-4.
