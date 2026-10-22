@@ -179,11 +179,64 @@ upper bound costs 37–92% of them. Leaves (public histories at the horizon): k 
   - Γ at k = 1 > 150‰ on ≥ 5/7: **met** (6/7);
   - survivors ≥ 3 at k = 1 on ≥ 5/7: **met** (7/7);
   - act ≠ law with gain ≥ 10‰ on ≥ 5/7: **met** (6/7);
-  - the follow-root clause is below.
+  - follow roots settle at k ≤ 2 on ≥ 1/3: **met** (11/21, carried by 8 forced roots and deal 2; below).
 
 ## Results: the follow roots
 
-<!-- FOLLOWS -->
+**Partial: as the climb stood when the track stopped (2026-10-22, Jason's stop).** Six roots
+were still climbing on Metal and one was not measured. Those rungs are not on this page.
+
+The 21 roots are seats 1–3 at their trick-1 play behind the recorded lead, on the same seven
+deals. Their beliefs are `FiberUniform`: under the one Lowest type the recorded lead is
+impossible at every follow root, so the record is read through counts and voids only. The
+value is the share of worlds in which **the viewer's side** has its way: seats 1 and 3 set the
+contract, seat 2 (the bidder's partner) makes it. Rungs below k = 3 ran on CPU. Rungs at k ≥ 3,
+plus two that CPU could not hold, ran on Metal, split by tile and reply, with a count-only walk
+first. Metal's follow-root gather equals the CPU's byte for byte at k = 0 and 1 (shards
+0..2000, pinned as a test by Exact-GPU). Every Metal rung is folded by `trick1.rs`'s rung
+(`--triples`).
+- **Stop rules:** 190 follow intervals, none empty, and all 135 consecutive pairs nest.
+
+**Forced roots (8)**, one legal tile. These settle by default; Γ here is the spread of the
+seat's value, not a choice:
+
+| deal, seat | tile | Γ‰ at k = 0 |
+|---|---|---|
+| 0, 1 / 0, 3 | 4-4 / 6-4 | 186.2 / 24.6 |
+| 1, 1 / 1, 3 | 6-0 / 6-2 | 148.5 / 167.5 |
+| 12, 1 / 12, 2 | 3-1 / 5-3 | 129.0 / 407.1 |
+| 15, 1 / 39, 2 | 3-0 / 5-1 | 274.9 / 301.8 |
+
+**Roots with a choice (13).** Γ‰ by k, and the act at the last rung:
+
+| deal, seat (worlds) | Γ‰ k = 0 → last | act (survivors) | law's tile | Walt's tile | status |
+|---|---|---|---|---|---|
+| 2, 1 (133,024,320) | 0 | 5-4 (2) | 1-0 | 5-5 | **proved** at k = 0: 5-4 and 5-5 set in every world |
+| 2, 2 (13,741,728) | 0 | 6-0 (2) | 6-0 | 6-0 | **proved** at k = 0: the contract fails in every world |
+| 2, 3 (7,399,392) | 0 | 6-1 (2) | 6-1 | 6-1 | **proved** at k = 0: set in every world |
+| 12, 3 (17,153,136) | 190.8 → 145.8 → 78.3 → 41.5 | 6-3 (1) | 3-2 | 6-3 | **settled** at k = 3; the law's tile is refuted |
+| 15, 2 (46,558,512) | 227.2 → 202.3 → 131.7 → 62.5 → 6.4 | 5-0 (1) | 1-0 | 5-0 | **settled** at k = 4; the law's tile is refuted |
+| 5, 1 (133,024,320) | 244.2 → 167.4 → 92.3 | 6-0 (6) | 5-0 | 6-0 | **ended**: k = 3 refused at 1,038,660,632,236 plays > 10¹² |
+| 0, 2 (46,558,512) | 317.0 → 229.5 → 106.5 → 54.3 | 4-2 (2) | 4-1 | 4-3 | open at k = 3. 4-2 and 4-3 are twins, equal intervals at every k; the law's 4-1 is refuted, [0.3157, 0.3158] against L = 0.7170 |
+| 1, 2 (46,558,512) | 491.3 → 467.9 → 376.3 → 157.4 | 6-1 (2) | 6-1 | 6-1 | open at k = 3 |
+| 5, 2 (13,741,728) | 444.3 → 390.7 → 269.0 → 134.3 → 25.3 | 2-1 (3) | 2-1 | 2-1 | open at k = 4; 5-2 and 6-2 equal at k = 4 |
+| 5, 3 (1,585,584) | 220.1 → 195.7 → 143.9 → 67.3 | 3-0 (5) | 0-0 | 5-3 | open at k = 3 |
+| 15, 3 (17,153,136) | 147.2 → 101.4 → 69.5 → 31.3 | 6-2 (4) | 2-2 | 5-2 | open at k = 3 |
+| 39, 3 (7,399,392) | 31.7 → 9.0 → 4.0 → 1.4 | 6-1 (2) | 3-1 | 6-1 | open at k = 3 |
+| 39, 1 (133,024,320) | — | — | — | — | not measured (CPU capped at k = 0; Metal queued at the stop) |
+
+- **Γ falls with every rung on every root that climbs.**
+- **The law's tile is refuted at three follow roots** (deal 0 seat 2, deal 12 seat 3, deal 15
+  seat 2). Its upper bound falls below the act's lower bound, a certified gain that no lead
+  showed.
+- **Twin tiles** (equal intervals at every k) are lumpability seen directly.
+- **Deal 2 is decided at the follow roots.** Behind the recorded lead, under the declared laws,
+  the contract is set in every world of every follower's belief.
+
+**The registered clause** ("follow roots settle at k ≤ 2 on at least a third"): **met**, 11 of
+21 (8 forced, 3 proved, all of deal 2). The registration did not set forced roots apart, so the
+clause counts them. Among the 12 measured roots with a choice, 3 settle at k ≤ 2 (deal 2's), and
+2 more by k = 4.
 
 ## The shape of the frontier
 
