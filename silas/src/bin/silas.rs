@@ -116,6 +116,7 @@ fn main() -> ExitCode {
         Some("compare") => compare(rest),
         Some("quotient") => quotient(rest),
         Some("family") => family(rest),
+        Some("exact") => exact(rest),
         Some("coverage") => coverage(rest),
         Some("expand") => expand(rest),
         Some("fmt") => fmt(rest),
@@ -216,6 +217,74 @@ fn family(args: &[String]) -> Result<bool> {
         let course = family::file::FamilyFile::from_json(line).map_err(at)?;
         let report = course.report().map_err(at)?;
         println!("{}", serde_json::to_string(&report).map_err(|e| fail(e.to_string()))?);
+    }
+    Ok(true)
+}
+
+/// The exact player at each position of a file: one decision row a line, or with
+/// `--play` the hand played on to its end, a row for each of the viewer's decisions and
+/// one for the hand.
+fn exact(args: &[String]) -> Result<bool> {
+    use silas::player::{self, Budget};
+    let named = ["positions", "library", "root", "settle", "p", "seed", "table", "reads"];
+    let options = Options::parse(args, &["play", "quotient", "recount"], &named)?;
+    if !options.words.is_empty() {
+        return Err(fail(
+            "silas exact --positions FILE --library FILE [--root posterior|fiber] [--settle decided|hand] [--p P] [--play [--seed N] [--table K]] [--quotient] [--recount] [--reads N]",
+        ));
+    }
+    let spec: Json =
+        serde_json::from_str(&read(options.need("library")?)?).map_err(|e| fail(format!("library: {e}")))?;
+    let library = player::file::library(&spec)?;
+    let root_name = options.get("root").unwrap_or("posterior");
+    let settle_name = options.get("settle").unwrap_or("decided");
+    let (root, settle) = (player::file::root(root_name)?, player::file::settle(settle_name)?);
+    let p: num_rational::BigRational =
+        options.get("p").unwrap_or("0").parse().map_err(|_| fail("--p takes a rational"))?;
+    let budget = Budget { reads: options.number("reads", 1_000_000_000)? as u64 };
+    let (seed, table) = (options.number("seed", 0)? as u64, options.number("table", 0)?);
+    let quotient = options.flags.iter().any(|f| f == "quotient");
+    let recount = options.flags.iter().any(|f| f == "recount");
+    let path = options.need("positions")?;
+    let print = |v: &Json| -> Result<()> {
+        println!("{}", serde_json::to_string(v).map_err(|e| fail(e.to_string()))?);
+        Ok(())
+    };
+    for (i, line) in read(path)?.lines().enumerate().filter(|(_, l)| !l.trim().is_empty()) {
+        let at = |e: Error| fail(format!("{path}:{}: {e}", i + 1));
+        let pos = player::file::Position::from_json(line).map_err(at)?;
+        let row = |frame: &Frame, solved: &player::Solved, wall: std::time::Duration| {
+            let r = player::file::row(
+                &pos,
+                frame,
+                &spec,
+                &library,
+                root,
+                root_name,
+                settle_name,
+                solved,
+                &p,
+                wall.as_nanos(),
+                quotient,
+                recount,
+            )?;
+            print(&r)
+        };
+        if options.flags.iter().any(|f| f == "play") {
+            let played =
+                player::play_hand(&pos.frame, &pos.truth, &library, table, &p, root, settle, budget, seed, row)
+                    .map_err(at)?;
+            print(&serde_json::json!({
+                "kind": "hand", "id": pos.id, "seed": seed, "table": table,
+                "history": played.history.iter().map(|(s, d)| [s.index(), d.index()]).collect::<Vec<_>>(),
+                "success": played.success, "decisions": played.decisions, "consistent": played.consistent,
+            }))?;
+        } else {
+            let t0 = std::time::Instant::now();
+            let belief = player::Belief::new(&pos.frame, &library, root).map_err(at)?;
+            let solved = player::solve(&pos.frame, &library, &belief, settle, budget).map_err(at)?;
+            row(&pos.frame, &solved, t0.elapsed()).map_err(at)?;
+        }
     }
     Ok(true)
 }

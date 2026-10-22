@@ -53,6 +53,7 @@ mod measure;
 mod nouns;
 mod outcome;
 mod physics;
+pub mod player;
 mod policy;
 pub mod quotient;
 mod reading;
