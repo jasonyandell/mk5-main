@@ -20,7 +20,7 @@
 
 use std::time::Instant;
 
-use silas::player::trick1::{Gathered, Ladder};
+use silas::player::trick1::{Gathered, Ladder, Rung, Work};
 use silas::player::{Root, SeatLaw};
 use silas::reference::Straight42;
 use silas::{Auction, Bid, Domino, DominoSet, Frame, Seat};
@@ -128,6 +128,57 @@ fn main() {
             continue;
         }
         // The rung from saved pieces, or whole in this run.
+        // A rung from another engine's per-tile counts (`--triples FILE --k K`): lines
+        // `deal tile L U mass leaves plays tree tails god …`; a tile split into pieces has one
+        // line per piece (`deal tile/reply …`), and its counts are their sums (the next seat's
+        // node sums). Other lines (refusals, history) are skipped.
+        if let Some(file) = arg(&args, "--triples") {
+            let mut tiles: Vec<(Domino, [u64; 7])> = Vec::new();
+            for line in std::fs::read_to_string(file).unwrap().lines() {
+                let w: Vec<&str> = line.split_whitespace().collect();
+                let Some(n) =
+                    w.get(2..10).and_then(|x| x.iter().map(|s| s.parse::<u64>().ok()).collect::<Option<Vec<u64>>>())
+                else {
+                    continue;
+                };
+                if w[0].parse::<usize>() != Ok(d) {
+                    continue;
+                }
+                let tile: Domino = w[1].split('/').next().unwrap().parse().unwrap();
+                // L, U, mass, leaves, tree, tails, god (plays is their sum).
+                let add = [n[0], n[1], n[2], n[3], n[5], n[6], n[7]];
+                match tiles.iter_mut().find(|t| t.0 == tile) {
+                    Some(t) => t.1.iter_mut().zip(add).for_each(|(a, b)| *a += b),
+                    None => tiles.push((tile, add)),
+                }
+            }
+            tiles.sort_unstable_by_key(|t| t.0);
+            let menu: Vec<Domino> = own.iter().collect();
+            let mass = tiles.first().map(|t| t.1[2]);
+            let rung = if tiles.iter().map(|t| t.0).collect::<Vec<_>>() != menu {
+                Err(format!(
+                    "the triples hold {:?}, not the menu {menu:?}",
+                    tiles.iter().map(|t| t.0).collect::<Vec<_>>()
+                ))
+            } else if tiles.iter().any(|t| Some(t.1[2]) != mass) {
+                Err("the tiles' masses differ".to_string())
+            } else {
+                let sum = |i: usize| tiles.iter().map(|t| t.1[i]).sum();
+                let work = Work { tree: sum(4), tails: sum(5), god: sum(6) };
+                Ok(Rung {
+                    k: kmax,
+                    actions: tiles.iter().map(|t| (t.0, t.1[0], t.1[1])).collect(),
+                    mass: mass.unwrap(),
+                    leaves: tiles.iter().map(|t| t.1[3] as usize).sum(),
+                    work,
+                })
+            };
+            match rung {
+                Ok(r) => print_rung(&head, &r, law_tile, chosen, 0.0, args.iter().any(|a| a == "--counts"), d),
+                Err(e) => println!("{head} k {kmax} {e}"),
+            }
+            continue;
+        }
         let rungs: Vec<_> = match arg(&args, "--load") {
             Some(files) => {
                 let t = Instant::now();
@@ -146,37 +197,37 @@ fn main() {
         };
         for (k, rung, wall) in rungs {
             match rung {
-                Ok(r) => {
-                    let m = r.mass;
-                    // The exact counts, one line per root tile (`--counts`).
-                    if args.iter().any(|a| a == "--counts") {
-                        for (a, lo, up) in &r.actions {
-                            println!("{d} {a} {lo} {up} {m}");
-                        }
-                    }
-                    let iv: Vec<String> = r
-                        .actions
-                        .iter()
-                        .map(|(a, lo, up)| format!("{a}[{},{}]", fixed(*lo, m, 4), fixed(*up, m, 4)))
-                        .collect();
-                    println!(
-                        "{head} k {k} worlds {} | {} | choice {} survivors {} gamma {}‰ ({}) settled {} | law {law_tile} walt {chosen} | leaves {} plays {} (tree {} tails {} god {}) wall {wall:.1}s",
-                        r.mass,
-                        iv.join(" "),
-                        r.choice(),
-                        r.survivors().len(),
-                        fixed(1000 * r.gamma(), m, 1),
-                        r.gamma(),
-                        r.settled().map(|x| x.to_string()).unwrap_or("-".into()),
-                        r.leaves,
-                        r.work.total(),
-                        r.work.tree,
-                        r.work.tails,
-                        r.work.god,
-                    );
-                }
+                Ok(r) => print_rung(&head, &r, law_tile, chosen, wall, args.iter().any(|a| a == "--counts"), d),
                 Err(e) => println!("{head} k {k} {} wall {wall:.1}s", e.0),
             }
         }
     }
+}
+
+/// One rung's line; with `counts`, first each root tile's exact (L, U, mass).
+fn print_rung(head: &str, r: &Rung, law_tile: Domino, chosen: Domino, wall: f64, counts: bool, d: usize) {
+    let m = r.mass;
+    if counts {
+        for (a, lo, up) in &r.actions {
+            println!("{d} {a} {lo} {up} {m}");
+        }
+    }
+    let iv: Vec<String> =
+        r.actions.iter().map(|(a, lo, up)| format!("{a}[{},{}]", fixed(*lo, m, 4), fixed(*up, m, 4))).collect();
+    println!(
+        "{head} k {} worlds {} | {} | choice {} survivors {} gamma {}‰ ({}) settled {} | law {law_tile} walt {chosen} | leaves {} plays {} (tree {} tails {} god {}) wall {wall:.1}s",
+        r.k,
+        r.mass,
+        iv.join(" "),
+        r.choice(),
+        r.survivors().len(),
+        fixed(1000 * r.gamma(), m, 1),
+        r.gamma(),
+        r.settled().map(|x| x.to_string()).unwrap_or("-".into()),
+        r.leaves,
+        r.work.total(),
+        r.work.tree,
+        r.work.tails,
+        r.work.god,
+    );
 }
