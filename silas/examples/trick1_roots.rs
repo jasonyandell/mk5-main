@@ -127,21 +127,30 @@ fn main() {
             );
             continue;
         }
-        // The rung from saved pieces, or whole in this run.
         // A rung from another engine's per-tile counts (`--triples FILE --k K`): lines
         // `deal tile L U mass leaves plays tree tails god …`; a tile split into pieces has one
         // line per piece (`deal tile/reply …`), and its counts are their sums (the next seat's
-        // node sums). Other lines (refusals, history) are skipped.
+        // node sums). Other lines (refusals, history) are skipped. Refused past `--budget`.
         if let Some(file) = arg(&args, "--triples") {
             let mut tiles: Vec<(Domino, [u64; 7])> = Vec::new();
             for line in std::fs::read_to_string(file).unwrap().lines() {
-                let w: Vec<&str> = line.split_whitespace().collect();
+                let mut w: Vec<&str> = line.split_whitespace().collect();
+                // A follow root's line carries its viewer after the deal (`d v tile …`).
+                if let Some(v) = w.get(1).and_then(|s| s.parse::<usize>().ok()) {
+                    if v != viewer.index() {
+                        continue;
+                    }
+                    w.remove(1);
+                } else if viewer.index() != 0 {
+                    continue;
+                }
                 let Some(n) =
                     w.get(2..10).and_then(|x| x.iter().map(|s| s.parse::<u64>().ok()).collect::<Option<Vec<u64>>>())
                 else {
                     continue;
                 };
-                if w[0].parse::<usize>() != Ok(d) {
+                // A split tile's own summary line repeats its pieces' sums: read the pieces.
+                if w[0].parse::<usize>() != Ok(d) || w.contains(&"split") {
                     continue;
                 }
                 let tile: Domino = w[1].split('/').next().unwrap().parse().unwrap();
@@ -155,6 +164,8 @@ fn main() {
             tiles.sort_unstable_by_key(|t| t.0);
             let menu: Vec<Domino> = own.iter().collect();
             let mass = tiles.first().map(|t| t.1[2]);
+            let sum = |i: usize| tiles.iter().map(|t| t.1[i]).sum();
+            let work = Work { tree: sum(4), tails: sum(5), god: sum(6) };
             let rung = if tiles.iter().map(|t| t.0).collect::<Vec<_>>() != menu {
                 Err(format!(
                     "the triples hold {:?}, not the menu {menu:?}",
@@ -162,9 +173,9 @@ fn main() {
                 ))
             } else if tiles.iter().any(|t| Some(t.1[2]) != mass) {
                 Err("the tiles' masses differ".to_string())
+            } else if work.total() > budget {
+                Err(format!("refused: horizon {kmax} took {} plays, past {budget}", work.total()))
             } else {
-                let sum = |i: usize| tiles.iter().map(|t| t.1[i]).sum();
-                let work = Work { tree: sum(4), tails: sum(5), god: sum(6) };
                 Ok(Rung {
                     k: kmax,
                     actions: tiles.iter().map(|t| (t.0, t.1[0], t.1[1])).collect(),
@@ -179,6 +190,7 @@ fn main() {
             }
             continue;
         }
+        // The rung from saved gathers, or whole in this run.
         let rungs: Vec<_> = match arg(&args, "--load") {
             Some(files) => {
                 let t = Instant::now();
