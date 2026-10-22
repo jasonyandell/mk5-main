@@ -44,6 +44,11 @@ At the 223 three-way nodes all 13 realizable weak orders occur: 106 triple ties,
 - The course holds 139 distinct fork structures among 256 roots, and 56 of 128 fresh roots share one with training. Fork is tile-free and ignores routing, which observation leads to which next decision, so it bounds merging from above. It is not a controller.
 - All 13 weak orders are realized, and ties are the majority class: half the roots and nearly nine tenths of second decisions are flat. The flat row is a class of the hexagon, not an absence of information.
 
+## Follow-ups
+
+- [[gus-decision-class-probe-2026-10-21]]: does Gus's representation already carry the class? Not linearly at the query token on fresh roots; flatness yes, from pretraining (#240).
+- [[gus-observation-labels-2026-10-21]]: a tile-free label that routes? None in an eight-fact family; the collision is a hidden tile's identity (#239).
+
 ## Scope and verification
 
 One fixture (three own tiles, acting last in trick five, nine plays left), fixed G0 partner and pinned Zeb, uniform legal-consistent root prior carried through observations. The quotient depends on the kernel and the interface; the note says so for its own family. The tool rebuilds every tree from saved rows and audits them exactly: parent links, every legal action explored, children partitioning the cell mass, and Bellman consistency `q[a] * mass = sum over observations of child.mass * max child.q`. All 256 graphs pass. That re-verifies the saved DP from its rows; it does not replay the native field or any model. The note's realization hexagon and its mixing boundary are not exercised: nothing here mixes beliefs. Inputs are the per-root `teacher.json` files in the published maskbreadth [evidence](https://huggingface.co/datasets/jasonyandell/texas-42-zeb-research-2026-10/tree/762b5a71a622a1ff6df8fed47e50ebe5b2a43e44/lem/gus-contingent-maskbreadth-2026-10-20/evidence); the report is reproduced by `python -u -m lem.quotient <study> --out report.json`. The note's own bundle (atlas, tables, runtime) was not in hand; its figures are cited, not reproduced. Tools for extending the course are inventoried in [[gus-continuation-teaching-tools]]; the first teacher is [[gus-contingent-teacher-2026-10-20]].

@@ -95,6 +95,8 @@ for this fixed-opponent series. Source: Jason's instruction in this session.
 ## Routes
 
 - [[gus-decision-quotient-2026-10-21]] — exact decision quotient of the 256-root contingent course: 8,257 raw states, no fresh root repeats a raw state, 139 fork structures revealed one block ahead; a saved-data measurement, no training.
+- [[gus-decision-class-probe-2026-10-21]] — linear probes at the query token do not read the decision class or Q contrasts on fresh roots; pretraining put two-way flatness there (AUC 0.767 vs twins 0.610), the masked lessons wore it down and moved the three-way policy instead (+0.129).
+- [[gus-observation-labels-2026-10-21]] — no tile-free observation label in an eight-fact family routes the quotient; the breaking collision is a hidden tile's identity, which no fact relative to the viewer's hand sees (#239).
 
 - [[gus-contingent-teacher-2026-10-20]] - exact two-decision teacher, useful later corrections, and a first action-distillation comparison with no selected student gain.
 
